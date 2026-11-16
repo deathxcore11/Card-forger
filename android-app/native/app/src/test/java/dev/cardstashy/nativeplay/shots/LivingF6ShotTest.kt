@@ -128,8 +128,8 @@ class LivingF6ShotTest {
         val face = Rect(orb.center.x - orb.width * .3f, orb.top + orb.height * .15f, orb.center.x + orb.width * .3f, orb.center.y)
         assertTrue("the number is on the picture: ${diff(plain, life, face)}", diff(plain, life, face) > .25f)
         assertTrue("the life total is clear of the number and the burst: ${diff(plain, life, inner)}", diff(plain, life, inner) < .12f)
-        // A loss with no charge (a spell at you): the same one burst on your picture, the number on it, and the red at the screen's
-        // edges goes round your square, so your life total is read at the red's peak.
+        // A loss with no charge (a spell at you): the same one burst on your picture, the number on it, and your square's edge
+        // glows red, so your life total is read at the red's peak.
         val mineOrb = anchors.rects.getValue("orb${base.viewer}"); val minePill = anchors.rects.getValue("lifepill${base.viewer}")
         val burn = at(listOf(FxItem(Fx.LIFE, 3, 950, player = base.viewer, toKey = "orb${base.viewer}", tone = Color(0xFFFF5A4A), power = .5f).also { it.label = "−3"; it.points = 3 }), 90, "full-burn-you", burstAt = 1)
         assertTrue("the number is on your picture: ${diff(plain, burn, Rect(mineOrb.center.x - mineOrb.width * .3f, mineOrb.top + mineOrb.height * .15f, mineOrb.center.x + mineOrb.width * .3f, mineOrb.center.y))}",
@@ -137,6 +137,10 @@ class LivingF6ShotTest {
         assertTrue("your life total is clear of the red and the burst: ${diff(plain, burn, Rect(minePill.left + 3 * dp, minePill.top + 3 * dp, minePill.right - 3 * dp, minePill.bottom - 3 * dp))}",
             diff(plain, burn, Rect(minePill.left + 3 * dp, minePill.top + 3 * dp, minePill.right - 3 * dp, minePill.bottom - 3 * dp)) < .12f)
         val rim = Rect(plain.width - 12 * dp, plain.height * .44f, plain.width.toFloat(), plain.height * .56f)
-        assertTrue("the red is at the screen's edges: ${diff(plain, burn, rim)}", diff(plain, burn, rim) > .5f)
+        // Better table scene 7: no red at the screen's edges; your square's own edge glows instead.
+        assertTrue("no red at the screen's edges: ${diff(plain, burn, rim)}", diff(plain, burn, rim) < .002f)
+        val mineSq = anchors.rects.getValue("square${base.viewer}")
+        val above = Rect(mineSq.left + 16 * dp, mineSq.top - 12 * dp, mineSq.right - 16 * dp, mineSq.top - 2 * dp)
+        assertTrue("your square's edge glows: ${diff(plain, burn, above)}", diff(plain, burn, above) > .5f)
     }
 }

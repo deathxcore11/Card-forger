@@ -176,6 +176,30 @@ internal object TableFeel {
     const val CHARGE_NUMBER_SP = 26f
     /** Whether the charge is drawn (and its number and reach used): Match effects on, on a device that draws particles ([low] is false). */
     fun charged(low: Boolean): Boolean = !low && mode() != Mode.OFF
+    /** Better table scene 7: a hit to a player lights that player's square, not the screen. The red (the design's --foe). */
+    val SEAT_HIT = Color(0xFFF0564E)
+    /** The ring on the struck square's border, and how far its glow reaches out (yours only). */
+    const val SEAT_RING_DP = 3f
+    const val SEAT_GLOW_DP = 18f
+    /** The glow's life: in over 80 ms, held to 240, gone by 760. */
+    const val SEAT_IN_MS = 80f
+    const val SEAT_HOLD_MS = 240f
+    const val SEAT_OUT_MS = 760f
+    /** The square's glow [ms] after the hit, 0..1. */
+    fun seatGlow(ms: Float): Float = when {
+        ms <= 0f -> 0f
+        ms < SEAT_IN_MS -> ms / SEAT_IN_MS
+        ms < SEAT_HOLD_MS -> 1f
+        ms < SEAT_OUT_MS -> { val t = (ms - SEAT_HOLD_MS) / (SEAT_OUT_MS - SEAT_HOLD_MS); (1f - t) * (1f - t) }
+        else -> 0f
+    }
+    /**
+     * Better table scene 7: when the last hit to a player still in flight ends (uptime ms), set by the Battlefield as it queues
+     * them. The turn banner waits for it, so it never comes up over a hit. Capped at [HIT_WAIT_MAX_MS] from now.
+     */
+    @Volatile var hitUntil = 0L
+    const val HIT_WAIT_MAX_MS = 4000L
+    fun hitWait(nowMs: Long = android.os.SystemClock.uptimeMillis()): Long = if (Motion.still) 0L else (hitUntil - nowMs).coerceIn(0L, HIT_WAIT_MAX_MS)
     /** A colour run [by] of the way to white (45 % unless said): the hot middle of a streak, a spark, a ring. */
     fun hot(c: Color, by: Float = .45f): Color = Color(1f - (1f - c.red) * (1f - by), 1f - (1f - c.green) * (1f - by), 1f - (1f - c.blue) * (1f - by))
     val DECLARE_GOLD = Color(0xFFF3D27E)

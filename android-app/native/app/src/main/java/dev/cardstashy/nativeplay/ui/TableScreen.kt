@@ -227,7 +227,8 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
                     }
                 }
             }
-            banner?.let { b -> BannerView(b.text, b.yours, Modifier) }
+            // Better table scene 7: the turn banner waits for a hit still landing on a player, then plays its own time.
+            WaitedBanner(banner)
         }
         ((if (DualScreen.active) null else afk) ?: note)?.let { Text(it, style = Type.Label.copy(color = Color(0xFFFFB4A8), fontSize = 14.sp), modifier = Modifier.align(Alignment.TopCenter).padding(top = 96.dp)
             .clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0C0E)).border(1.dp, Palette.Red, RoundedCornerShape(999.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) }
@@ -845,6 +846,27 @@ private fun PromptPanel(p: Prompt, st: MatchState, c: MatchController, live: Boo
 }
 
 // ---- Overlays ----
+
+/**
+ * Better table scene 7: the turn banner comes up only once the hits to a player still in flight have played out
+ * ([TableFeel.hitWait]), so it never covers a hit. Once up it keeps its own time ([Director.BANNER_MS]): the controller
+ * clearing its banner does not cut a late one short; a newer banner takes its place. Still frames show the controller's banner as is.
+ */
+@Composable
+internal fun WaitedBanner(banner: dev.cardstashy.nativeplay.match.Banner?) {
+    if (Motion.still) { banner?.let { b -> BannerView(b.text, b.yours, Modifier) }; return }
+    var up by remember { mutableStateOf<dev.cardstashy.nativeplay.match.Banner?>(null) }
+    // The last banner the controller raised; its clearing (null) is not a change here, so it never cancels a late banner.
+    var asked by remember { mutableStateOf<dev.cardstashy.nativeplay.match.Banner?>(null) }
+    LaunchedEffect(banner) { if (banner != null) asked = banner }
+    LaunchedEffect(asked) {
+        val b = asked ?: return@LaunchedEffect
+        val w = TableFeel.hitWait(); if (w > 0L) delay(w)
+        up = b; delay(dev.cardstashy.nativeplay.match.Director.BANNER_MS)
+        if (up == b) up = null
+    }
+    up?.let { b -> key(b) { BannerView(b.text, b.yours, Modifier) } }
+}
 
 @Composable
 private fun BannerView(text: String, yours: Boolean, modifier: Modifier) {

@@ -736,6 +736,8 @@ class Battlefield {
                 // F7 starts at the hit still in flight, else as soon as the finished board is shown; the result card waits for it.
                 if (it.kind == Fx.WIN && it.player != null) { it.t0 = maxOf(t, seatHit[it.player] ?: 0L); TableFeel.resultWait = st.revision to (it.t0 - t) + TableFeel.resultHold() }
                 items += it
+                // Better table scene 7: the turn banner waits until the last hit to a player has played out.
+                if (it.kind == Fx.LIFE && it.level == 3) TableFeel.hitUntil = maxOf(TableFeel.hitUntil, android.os.SystemClock.uptimeMillis() + (it.t0 + it.dur - t))
             }
             if (staged) stagedEnd = maxOf(stagedEnd, g.maxOf { it.t0 + it.dur })
             if (focal) cursor += g.filter { it.level >= 2 }.maxOf { it.delay + it.dur }
@@ -2279,7 +2281,25 @@ private fun DrawScope.drawEmbers(fx: Battlefield, it: FxItem, p: Float, r: Rect,
     if (k in 0f..1f) drawCircle(Color(0xFFF3D27E).copy(alpha = .9f * (1f - k)), radius = 15.dp.toPx() + 25.dp.toPx() * (1f - (1f - k) * (1f - k)), center = to, style = Stroke((2f * (1f - k) + .6f) * density))
 }
 
-/** A hit to a face: a red flash across the board edge, a big shockwave from the orb, sparks, and the life number slamming in. */
+/**
+ * Better table scene 7: the struck square's edge in red at strength [a] (0..1). A 3 dp ring on the border; for [hard] (your
+ * square) a soft glow out to about 18 dp, built from rings that fade outward, and a thin red light just inside the border.
+ */
+private fun DrawScope.seatGlow(sq: Rect, a: Float, hard: Boolean) {
+    if (a <= 0f) return
+    val foe = TableFeel.SEAT_HIT; val c = 11f * density
+    if (hard) {
+        val steps = 9; val reach = TableFeel.SEAT_GLOW_DP * density
+        for (i in steps downTo 1) { val q = i / steps.toFloat(); val o = reach * q
+            drawRoundRect(foe.copy(alpha = .5f * a * (1f - q) * (1f - q)), Offset(sq.left - o, sq.top - o), Size(sq.width + 2 * o, sq.height + 2 * o),
+                CornerRadius(c + o), style = Stroke(reach / steps * 1.6f)) }
+        for (i in 1..3) { val o = i * 2f * density
+            drawRoundRect(foe.copy(alpha = .3f * a * (1f - i / 4f)), Offset(sq.left + o, sq.top + o), Size(sq.width - 2 * o, sq.height - 2 * o), CornerRadius((c - o).coerceAtLeast(2f)), style = Stroke(2f * density)) }
+    }
+    drawRoundRect(foe.copy(alpha = .95f * a), sq.topLeft, sq.size, CornerRadius(c), style = Stroke(TableFeel.SEAT_RING_DP * density))
+}
+
+/** A hit to a face: the square's edge flares red, a big shockwave from the orb, sparks, and the life number slamming in. */
 private fun DrawScope.faceHit(fx: Battlefield, it: FxItem, p: Float, r: Rect, low: Boolean = false, quiet: Boolean = false, square: Rect? = null) {
     val k = it.power
     val ms = p * it.dur
@@ -2290,23 +2310,12 @@ private fun DrawScope.faceHit(fx: Battlefield, it: FxItem, p: Float, r: Rect, lo
         fx.bits.ring(r.center, r.maxDimension * 1.7f, coral, now, lifeMs = 360)
         fx.bits.sparks(r.center, (16 + 12 * k).toInt(), coral, now, 290f * density, lifeMs = 600, sizePx = 1.6f * density, seed = seed)
     }
-    // Red at the screen's edges only, peaking near 0.9 and gone by about 700 ms.
-    // Mobile table M10 (and match-punch-brief): only when you are hit. Damage to the CPU does not wash the screen red. Yours is
-    // the hit on your own life; with no viewer known (a drawn test), the square in the lower half is yours.
+    // Better table scene 7: no red wash over the screen. The struck square's own edge flares red: a ring on its border and a
+    // glow out from it, in fast (80 ms) and gone by 760 ms. Yours glows hard; the CPU's square gets the ring only. The middle
+    // of the square (the picture and the life total) is left clear, so the number and the count down read through it.
     val you = fx.viewerId?.let { v -> it.player == v } ?: (r.center.y > size.height / 2)
-    val vig = if (!you) 0f else (if (ms < 90f) ms / 90f else 1f - smooth(90f, 700f, ms)) * .9f * (.75f + .25f * k)
-    // The red vignette lives at the screen's edges; the middle of the board stays readable.
-    // A band along each edge, as deep on a wide screen's sides as on its top and bottom, so the board stays readable.
-    val band = size.minDimension * .24f; val red = Color(0xFFE02A1A).copy(alpha = vig)
-    // F6: your own square sits in the screen's corner, inside two of these bands. With the living table on, the red goes round
-    // it and not over it, so your life total is read while it ticks down.
-    clipOut(square?.takeIf { quiet }, 14f * density) {
-        drawRect(Brush.horizontalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(band, size.height))
-        drawRect(Brush.horizontalGradient(listOf(Color.Transparent, red), size.width - band, size.width), Offset(size.width - band, 0f), Size(band, size.height))
-        drawRect(Brush.verticalGradient(listOf(red, Color.Transparent), 0f, band), Offset.Zero, Size(size.width, band))
-        drawRect(Brush.verticalGradient(listOf(Color.Transparent, red), size.height - band, size.height), Offset(0f, size.height - band), Size(size.width, band))
-    }
-    // F6: a charge has drawn its own hit on this picture (one core, one ring, its spikes); the loss adds only the red edges above.
+    square?.let { sq -> seatGlow(sq, TableFeel.seatGlow(ms) * (.8f + .2f * k), you) }
+    // F6: a charge has drawn its own hit on this picture (one core, one ring, its spikes); the loss adds only the glow above.
     if (quiet) return
     for (j in 0..2) { val q = ((p - j * .08f) / .6f).coerceIn(0f, 1f); if (q > 0f)
         drawCircle(it.tone.copy(alpha = .85f * (1f - q)), radius = r.maxDimension * (.5f + (2.4f + 2f * k) * q), center = r.center, style = Stroke((7f - 6f * q) * density)) }
