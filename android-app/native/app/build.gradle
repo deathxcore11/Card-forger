@@ -94,3 +94,45 @@ dependencies {
     if (gradleJunit.exists()) testImplementation files(gradleJunit, "${gradle.gradleHomeDir}/lib/hamcrest-core-1.3.jar")
     else testImplementation 'junit:junit:4.13.2'
 }
+
+// 0.4.86 crash (Randall 16 Nov: every match closed the app right after the coin toss). The board's content lambda had grown to
+// 264 registers as one method; the release D8 then read a boxed Integer argument where the $changed int belongs, and Android's
+// verifier rejected the whole ForgeTableKt class (VerifyError) the moment the table composed. Robolectric runs the JVM classes,
+// so no unit test saw it. This check reads the built APK's dex and fails the release build if any method of ours needs more
+// than 255 registers (past that, 8-bit instructions like and-int/lit8 cannot reach the arguments and D8 has to shuffle them).
+def dexRegisterLimit = 255
+def checkDexRegisters = { File apk ->
+    def tools = new File(android.sdkDirectory, 'build-tools').listFiles()?.findAll { new File(it, 'dexdump').exists() }?.sort { it.name }
+    if (!tools) throw new GradleException("dexdump not found under ${android.sdkDirectory}/build-tools: the dex register check cannot run")
+    def dexdump = new File(tools.last(), 'dexdump')
+    def tmp = new File(buildDir, 'dex-register-check'); project.delete(tmp); tmp.mkdirs()
+    def over = []
+    def zip = new java.util.zip.ZipFile(apk)
+    try {
+        zip.entries().findAll { it.name ==~ /classes\d*\.dex/ }.each { e ->
+            def dex = new File(tmp, e.name); dex.withOutputStream { o -> o << zip.getInputStream(e) }
+            def out = new ByteArrayOutputStream()
+            project.exec { commandLine dexdump.absolutePath, dex.absolutePath; standardOutput = out; errorOutput = new ByteArrayOutputStream() }
+            def cls = null; def name = null
+            out.toString('UTF-8').eachLine { line ->
+                def c = line =~ /Class descriptor\s*:\s*'(.*)'/; if (c.find()) cls = c.group(1)
+                def n = line =~ /^\s+name\s*:\s*'(.*)'/; if (n.find()) name = n.group(1)
+                def r = line =~ /^\s+registers\s*:\s*(\d+)/
+                if (r.find() && cls?.startsWith('Ldev/cardstashy/') && (r.group(1) as int) > dexRegisterLimit) over << "${r.group(1)} registers: $cls $name"
+            }
+        }
+    } finally { zip.close() }
+    project.delete(tmp)
+    if (over) throw new GradleException("Methods past $dexRegisterLimit registers (split them, see ForgeBoard's TablePart):\n" + over.join('\n'))
+    logger.lifecycle("Dex register check: every dev.cardstashy method is at most $dexRegisterLimit registers (${apk.name})")
+}
+tasks.register('checkDexRegisters') {
+    description = 'Fails if a release dex method of ours needs more than 255 registers (the 0.4.86 VerifyError).'
+    dependsOn 'assembleRelease'
+    doLast {
+        def apks = fileTree(layout.buildDirectory.dir('outputs/apk/release')).matching { include '*.apk' }.files
+        if (apks.isEmpty()) throw new GradleException('No release APK to check')
+        apks.each { checkDexRegisters(it) }
+    }
+}
+afterEvaluate { tasks.named('assembleRelease') { finalizedBy 'checkDexRegisters' } }

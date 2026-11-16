@@ -75,6 +75,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -389,9 +390,17 @@ internal class Du(val u: Float) {
 }
 
 /**
+ * A part of the board composed in its own lambda: a non-inline wrapper, so the code inside it is compiled as its own method. It
+ * emits no layout of its own (its children are placed in the board's box as before). See the 0.4.86 note in ForgeBoard.
+ */
+@Composable
+private fun BoxWithConstraintsScope.TablePart(content: @Composable BoxWithConstraintsScope.() -> Unit) = content()
+
+/**
  * The board while a match is on: everything on one surface, nothing in a sidebar. [stops] are the phase lights you set;
  * [selectedHand] is the lifted hand card (tap once to lift, again to open it; slide up or the gold button to play).
  */
+
 @Composable
 fun ForgeBoard(
     st: MatchState, live: Boolean, intents: TableIntents, selectedHand: Int?, onSelectHand: (Int?) -> Unit, onInspect: (Card) -> Unit,
@@ -850,6 +859,12 @@ fun ForgeBoard(
 
             // The hand: centred 44 du right of the middle (between your seat and the buttons), the middle card's top 67 du above the bottom.
             // T6: the card you cancelled comes back to the place it left, not to the end of its mana value.
+            // 0.4.86 crash (Randall 16 Nov, every match closed the app after the coin toss): this board's content had grown past 256
+            // registers as one method, and the build's D8 then read a boxed Integer argument as the $changed int, so Android's
+            // verifier rejected all of ForgeTableKt ("register v7 has type Reference: java.lang.Integer but expected Integer").
+            // Everything from the hand on composes in its own lambda (TablePart), which keeps both methods well under that line.
+            // DexSizeTest checks every built method stays under it.
+            TablePart {
             val leftAt = remember { HashMap<Int, Int>() }
             val lastHand = remember { arrayOf(emptyList<Int>()) }
             // Your own drag order wins: a drag forgets where a cancelled card came back to.
@@ -1343,6 +1358,7 @@ fun ForgeBoard(
                 if (menu.history) HistoryPanel(st, menu.story, onInspect, { menu.history = false }, u)
             }
             if (menu != null) { DeckTracker(st, menu, H, d, menuX + 44.du - 210.du, menuY + 44.du + 10.du); if (menu.open) MenuPanel(menu, st.stack.size, d, menuX + 44.du - 220.du, menuY + 44.du + 8.du) }
+            }
         }
     }
     }
