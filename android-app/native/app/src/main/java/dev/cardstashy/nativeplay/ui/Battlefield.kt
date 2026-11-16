@@ -144,6 +144,14 @@ internal const val DECLARE_MS = 210; internal const val DECLARE_GAP_MS = 95L
 internal const val BLOCK_MS = 700L
 /** P5, a kill: grey and shudder (240), flash and break (200); its embers reach the owner's square in 380 to 560 and the pile answers. */
 internal const val DEATH_MS = 440L; internal const val EMBERS_MS = 880L
+/**
+ * Better table scene 8: after the break a kill's card (and the Auras that were on it, [FxItem.under]) slides to its owner's graveyard
+ * together, shrinking on a shallow arc, for this long; the whole kill is [KILL_MS]. Its sound stays on the break, [KILL_BREAK_MS] in.
+ */
+internal const val KILL_SLIDE_MS = 320L; internal const val KILL_MS = DEATH_MS + KILL_SLIDE_MS
+internal const val KILL_BREAK_MS = 240L
+/** An Aura's ghost leaves this long after its creature's, so it reads as carried along. */
+internal const val AURA_FOLLOW_MS = 40L
 /** P6: Fire is 110 of swell and flash and 130 of streak; the impact plays 450; the spent spell leaves 160 after the impact, 320 to the square and 300 of ring. */
 internal const val FIRE_MS = 240L; internal const val BOLT_MS = 450L; internal const val SPENT_MS = 620L; internal const val AIM_MS = 320L
 /** P5: the life pill comes down one point every 90 ms from contact (faster past eight points, so a big hit still ends in time). */
@@ -204,6 +212,8 @@ internal class FxItem(
     val caster: Color = Color.White, val note: String = "",
     /** A cause plate: the name of the card whose picture it carries ("" for none), the card it is about (for a screen reader), and whether that card stays on the table (the plate then keeps off its numbers). */
     val art: String = "", val about: String = "", val beside: Boolean = false,
+    /** Scene 8: a kill's ghost that is an Aura riding under its creature's ghost (drawn beneath it, silent). */
+    val under: Boolean = false,
 ) {
     var t0 = 0L; var dur = baseMs; var p0 = 0f
     /** Things this effect has thrown once (a freeze, a burst of particles), by bit. */
@@ -423,7 +433,7 @@ class Battlefield {
                 Fx.CLOCK -> for (k in 0 until minOf(it.points, 20)) { val at = TableFeel.CLOCK_IN_MS + k * TableFeel.CLOCK_PIECE_GAP_MS
                     if (at <= it.dur - TableFeel.CLOCK_OUT_MS) once(1 shl (8 + k), at.toFloat() / it.dur, "life_tick", .8f, Math.pow(TableFeel.CLOCK_PITCH.toDouble(), k.toDouble()).toFloat()) }
                 // A death: on the white flash after the 260 ms shake; a non-creature to the graveyard softer.
-                Fx.DEATH -> if (it.toKey != null || it.ghost?.token == true) once(1, if (it.dur == DEATH_MS) .54f else .38f, if (it.ghost?.isCreature == true) "CMB-009" else "CARD-018", 1f)
+                Fx.DEATH -> if (!it.under && (it.toKey != null || it.ghost?.token == true)) once(1, if (it.toKey != null) DEATH_MS * .54f / it.dur.coerceAtLeast(1L) else .38f, if (it.ghost?.isCreature == true) "CMB-009" else "CARD-018", 1f)
                 else -> {}
             }
         }
@@ -665,12 +675,17 @@ class Battlefield {
                     val id = mv.cardId ?: continue; val c = st.card(id) ?: continue
                     val mineCard = c.controller == st.viewer
                     if (mv.from == "Battlefield") {
+                        // Already on its way (the table's own diff saw it leave with its creature): not twice.
+                        if (items.any { it.kind == Fx.DEATH && it.ghost?.id == id }) { claimedMoves[id] = until; continue }
                         val rect = anchors.rects["c$id"] ?: anchors.rects["aura$id"] ?: continue
                         val grave = mv.to == "Graveyard"
-                        // An Aura that fell off sat behind its permanent as a strip: only its embers fly to the pile.
-                        if (mv.went != dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF)
-                            add(FxItem(Fx.DEATH, 2, if (grave) DEATH_MS else 600, mine = mineCard, from = rect, toKey = if (grave) "grave${c.owner}" else null, ghost = c))
-                        if (grave) add(FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = mineCard, from = rect, toKey = "grave${c.owner}", delay = 240L))
+                        // Scene 8: an Aura that fell off is the card edge behind its permanent; it slides to the pile with it, a beat behind.
+                        if (mv.went == dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF) {
+                            add(FxItem(Fx.DEATH, 2, if (grave) KILL_MS else 600, mine = mineCard, from = rect, toKey = if (grave) "grave${c.owner}" else null, ghost = c, under = true, delay = AURA_FOLLOW_MS))
+                            claimedMoves[id] = until; continue
+                        }
+                        add(FxItem(Fx.DEATH, 2, if (grave) KILL_MS else 600, mine = mineCard, from = rect, toKey = if (grave) "grave${c.owner}" else null, ghost = c))
+                        if (grave) add(FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = mineCard, from = rect, toKey = "grave${c.owner}", delay = KILL_BREAK_MS))
                         claimedMoves[id] = until
                     } else if (mv.to == "Battlefield") {
                         // A card that was held in exile comes back from where it hung on its holder.
@@ -1015,15 +1030,21 @@ class Battlefield {
             val rect = anchors.rects["c$id"] ?: continue
             val toGrave = b.players.any { p -> p.graveyard.any { it.id == id } }
             val clash = lunged && c.isCreature && (c.attacking || c.blocking)
-            val item = FxItem(Fx.DEATH, 2, if (toGrave) DEATH_MS else 600, mine = c.controller == viewer, from = rect, toKey = if (toGrave) "grave${c.owner}" else null, ghost = c, delay = if (clash) hitAt(id) else 0L)
+            val item = FxItem(Fx.DEATH, 2, if (toGrave) KILL_MS else 600, mine = c.controller == viewer, from = rect, toKey = if (toGrave) "grave${c.owner}" else null, ghost = c, delay = if (clash) hitAt(id) else 0L)
             // P6: a card a spell struck breaks 300 after its impact (inside the resolve), while the hit still rings.
             val struckAt = boltAt[id]?.takeIf { toGrave && !clash }
             val group = if (clash) hits else if (struckAt != null) resolves else deaths
-            if (struckAt != null) { resolves += FxItem(Fx.DEATH, 2, DEATH_MS, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", ghost = c, delay = struckAt + 300L)
-                resolves += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = struckAt + 540L); continue }
+            // Scene 8: the Auras that were on it (their card edges) go to the pile with it, a beat behind, under it.
+            fun auras(at: Long) = if (!toGrave) emptyList() else (c.attachments + bfA.values.filter { it.attachedTo == id }.map { it.id }).distinct().mapNotNull { x ->
+                val aura = bfA[x]?.takeIf { x !in bfB && b.players.any { p -> p.graveyard.any { g -> g.id == x } } } ?: return@mapNotNull null
+                val box = anchors.rects["aura$x"] ?: return@mapNotNull null
+                FxItem(Fx.DEATH, 2, KILL_MS, mine = aura.controller == viewer, from = box, toKey = "grave${aura.owner}", ghost = aura, under = true, delay = at + AURA_FOLLOW_MS) }
+            if (struckAt != null) { resolves += auras(struckAt + 300L); resolves += FxItem(Fx.DEATH, 2, KILL_MS, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", ghost = c, delay = struckAt + 300L)
+                resolves += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = struckAt + 300L + KILL_BREAK_MS); continue }
+            group += auras(item.delay)
             group += item
-            // The embers follow the break and do not hold the table (level 1): the next thing starts while they fly.
-            if (toGrave) group += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = item.delay + 240L)
+            // The burst and smoke follow the break and do not hold the table (level 1): the next thing starts while they play.
+            if (toGrave) group += FxItem(Fx.EMBERS, 1, EMBERS_MS, card = id, mine = c.controller == viewer, from = rect, toKey = "grave${c.owner}", delay = item.delay + KILL_BREAK_MS)
         }
         return listOf(clocks, draws, casts, resolves, arrivals, combat, hits, deaths, counters, ends).filter { it.isNotEmpty() }
     }
@@ -1417,7 +1438,7 @@ internal fun FxLayer(force: Boolean = false) {
     val density = LocalDensity.current
     Box(Modifier.fillMaxSize().onGloballyPositioned { val b = it.boundsInRoot(); self = b.topLeft; fx.origin = b.topLeft; fx.stageCentre = b.center }) {
         // Dying cards: the last picture of the card, breaking into holo bands as it drifts to its graveyard.
-        for (it in fx.items) if ((it.kind == Fx.DEATH || (it.kind == Fx.SPENT && !fx.reduced)) && it.ghost != null && it.from != null) key(it) { Ghost(it, fx, anchors, self, density) }
+        for (it in fx.items.sortedBy { !it.under }) if ((it.kind == Fx.DEATH || (it.kind == Fx.SPENT && !fx.reduced)) && it.ghost != null && it.from != null) key(it) { Ghost(it, fx, anchors, self, density) }
         // P4: your drawn card itself, on its way from your deck to its place in your hand.
         if (!fx.reduced) for (it in fx.items) if (it.kind == Fx.DRAW && it.ghost != null) key(it) { DrawnCard(it, fx, anchors, self, density) }
         // Every Result Names Its Cause: the plates, over the streaks and the dying cards.
@@ -1486,6 +1507,7 @@ internal fun FxLayer(force: Boolean = false) {
                         else pop(tm, it.label, p, Offset(r.center.x, if (r.center.y < size.height / 2) r.bottom + 16.dp.toPx() else r.top - 6.dp.toPx()), it.tone, if (it.level == 3) 34f + 8f * it.power else 20f, down = r.center.y < size.height / 2) }
                     Fx.COUNTER -> rect("c${it.card}")?.let { r -> drawPour(p, r); pop(tm, it.label, p, Offset(r.center.x, r.top + 4.dp.toPx()), Color(0xFFF3D27E), 15f) }
                     Fx.DEATH -> if (!fx.low && it.toKey == null) it.from?.translate(-self.x, -self.y)?.let { r -> drawShards(it, p, r, rect(it.toKey)) }
+                        else if (!fx.low && !it.under) it.from?.translate(-self.x, -self.y)?.let { r -> rect(it.toKey)?.let { g -> drawKillTrail(p * it.dur, it.dur.toFloat(), r.center, g.center) } }
                     Fx.EMBERS -> if (!fx.low) it.from?.translate(-self.x, -self.y)?.let { r -> drawEmbers(fx, it, p, r, rect(it.toKey)) }
                     Fx.STAGE -> drawStage(tm, it, p, rect(it.fromKey), rect(it.toKey))
                     Fx.TRIG_SOURCE -> rect("c${it.card}")?.let { r -> drawTrigSource(it, p, r) }
@@ -1682,15 +1704,25 @@ internal fun causePlates(r: dev.cardstashy.nativeplay.match.Director.Resolution,
         // A follow-up: the card that left is the cause ("Sheltered by Ghosts left"); a resolve's own return says "by".
         dev.cardstashy.nativeplay.match.Director.Went.RETURNED -> l.forEach { out += CausePlateSpec(at(it), "RETURNED", if (r.follow) "$by left" else "by $by", art, PLATE_LIGHT, streak = !r.follow,
             about = it.cardName.orEmpty(), beside = true) }
-        // The Aura's own picture, on the permanent it was on (so it joins that permanent's own plate in one column), else where
-        // its strip sat; the permanent is the cause.
-        dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF -> l.forEach { out += CausePlateSpec(it.hostId?.let { h -> "c$h" } ?: "aura${it.cardId}", "FELL OFF", "${it.hostName ?: by} ${if (it.hostDied) "died" else "left"}",
-            it.cardName.orEmpty(), TRIG_GOLD, orKey = "aura${it.cardId}", streak = false, about = it.cardName.orEmpty()) }
+        // Better table scene 8: the Auras that went with a permanent join its plate (below), never a plate each.
+        dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF -> {}
         dev.cardstashy.nativeplay.match.Director.Went.DREW -> for ((p, d) in l.groupBy { it.player }) out += if (p == viewer)
             CausePlateSpec(d.last().cardId?.let { "hand$it" } ?: "handTray", "DREW ${d.size}", "from $by", art, TRIG_GOLD, orKey = "handTray")
             else CausePlateSpec("cpuhand", "CPU DREW ${d.size}", "from $by", art, TRIG_GOLD)
         dev.cardstashy.nativeplay.match.Director.Went.DISCARDED -> for ((p, d) in l.groupBy { it.player }) out += CausePlateSpec("grave$p", (if (p == viewer) "DISCARDED" else "CPU DISCARDED") + n(d), "by $by", art, TRIG_CORAL)
         dev.cardstashy.nativeplay.match.Director.Went.MILLED -> for ((p, d) in l.groupBy { it.player }) out += CausePlateSpec("grave$p", "MILLED ${d.size}", "by $by", art, TRIG_CORAL)
+    }
+    // Better table scene 8 ("one plate says what happened"): the Auras that fell off a permanent ride on that permanent's plate when
+    // this result moved it ("by Ravenous Chupacabra · 2 Auras went with it"); else (a follow-up: it died in combat, or to damage)
+    // they make one plate for it: "DIED", "Veteran Survivor · 2 Auras went with it", with its picture.
+    for ((host, auras) in r.moves.filter { it.went == dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF }.groupBy { it.hostId }) {
+        val f = auras.first()
+        val with = auraWords(auras.size, f.cardName, f.hostDied)
+        val own = if (host != null && r.moves.any { it.went != dev.cardstashy.nativeplay.match.Director.Went.FELL_OFF && it.cardId == host }) out.indexOfFirst { it.key == "c$host" } else -1
+        if (own >= 0) { out[own] = out[own].copy(sub = out[own].sub + " · " + with); continue }
+        val name = f.hostName ?: by
+        out += CausePlateSpec(host?.let { "c$it" } ?: "aura${f.cardId}", if (f.hostDied) "DIED" else "LEFT", "$name · $with", f.hostName.orEmpty(), TRIG_CORAL,
+            orKey = "aura${f.cardId}", streak = false, about = name)
     }
     val ward = r.text?.trimStart()?.startsWith("Ward", ignoreCase = true) == true
     // A countered ability: on the card whose ability it was (it is still on the table), else where the item stood on the stack.
@@ -1700,6 +1732,9 @@ internal fun causePlates(r: dev.cardstashy.nativeplay.match.Director.Resolution,
         streak = false, about = by, beside = true)
     return out.take(6)
 }
+
+/** Scene 8's words for the Auras on a plate: "2 Auras went with it", "Feather of Flight went with it" (one); "fell off" when the permanent left without dying. */
+internal fun auraWords(n: Int, name: String?, died: Boolean): String = (if (n == 1) name ?: "its Aura" else "$n Auras") + if (died) " went with it" else " fell off"
 
 /**
  * The cause plates of the moment, each on its card, a little under the card's middle, never off the table's edges. A plate on
@@ -1788,6 +1823,40 @@ private fun CausePlate(it: FxItem, fx: Battlefield) {
     }
 }
 
+/**
+ * Better table scene 8: the dashed grey line a kill's card leaves on its way to the pile (the preview's dashed arc), drawn behind
+ * the card's centre along [killSlide]'s own path, fading out once the card has landed.
+ */
+private fun DrawScope.drawKillTrail(ms: Float, dur: Float, from: Offset, to: Offset) {
+    val start = KILL_BREAK_MS + 40f
+    if (ms <= start) return
+    val path = Path(); path.moveTo(from.x, from.y)
+    val n = 24
+    for (i in 1..n) { val t = start + (ms - start) * i / n; val k = killSlide(t, dur, from, to); path.lineTo(from.x + k.dx, from.y + k.dy) }
+    val fade = 1f - smooth(dur - 80f, dur, ms)
+    drawPath(path, Color(0xFF9A9FB2).copy(alpha = .75f * fade), style = Stroke(width = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round,
+        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(9.dp.toPx(), 7.dp.toPx()))))
+}
+
+/** One frame of a kill's slide to the pile: its offset (px), turn (degrees), scale and alpha. */
+internal data class KillSlide(val dx: Float, val dy: Float, val turn: Float, val scale: Float, val alpha: Float)
+
+/**
+ * Better table scene 8, a kill's card at [ms] of [dur]: it swells 8 % on the break ([KILL_BREAK_MS]), then from 40 ms later to its
+ * end it travels from [from] to the pile at [to] on a shallow arc (lifted 10 % of the way at its middle), gathering speed and easing
+ * in, shrinking to .35 and turning 10° toward the pile, and fades over its last 15 %. Pure, so the path is tested without a screen.
+ */
+internal fun killSlide(ms: Float, dur: Float, from: Offset, to: Offset): KillSlide {
+    val start = KILL_BREAK_MS + 40f
+    val swell = .08f * sin(PI.toFloat() * ((ms - KILL_BREAK_MS) / 160f).coerceIn(0f, 1f))
+    val s = ((ms - start) / (dur - start).coerceAtLeast(1f)).coerceIn(0f, 1f)
+    // Slow out of the break, fast into the pile, a soft landing: smootherstep weighted toward the end.
+    val e = s * s * s * (s * (s * 6f - 15f) + 10f)
+    val d = to - from
+    val lift = sin(PI.toFloat() * e) * d.getDistance() * .1f
+    return KillSlide(d.x * e, d.y * e - lift, (if (d.x < 0f) -10f else 10f) * e, (1f + swell) * (1f - .65f * e), 1f - smooth(.85f, 1f, e))
+}
+
 @Composable
 private fun Ghost(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, density: androidx.compose.ui.unit.Density) {
     val r = it.from!!
@@ -1812,18 +1881,26 @@ private fun Ghost(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, d
                 if (g != null) { translationX = (g.center.x - r.center.x) * e; translationY = (g.center.y - r.center.y) * e }
                 val s = 1f - .7f * e; scaleX = s; scaleY = s; alpha = 1f - smooth(.55f, 1f, q)
             } else if (it.toKey != null) {
-                // P5, a kill: it shudders where it stands (240), then swells 18 % and is gone (200); its embers carry it to the square.
-                val ms = p * DEATH_MS; val q = (ms / 240f).coerceAtMost(1f); val out = ((ms - 240f) / 200f).coerceIn(0f, 1f)
-                rotationZ = turn + sin(q * 40f) * 2.9f * (1f - q)
-                val s = 1f + .18f * (1f - (1f - out) * (1f - out)); scaleX = s; scaleY = s
-                alpha = 1f - out
+                // P5, a kill: it shudders where it stands (240) and breaks. Better table scene 8: then it slides to its owner's graveyard
+                // ([killSlide]: a swell on the break, a shallow arc, gathering speed, shrinking to a third and turning toward the pile).
+                anchors.version.intValue
+                val ms = p * it.dur; val q = (ms / KILL_BREAK_MS).coerceAtMost(1f)
+                val g = it.toKey.let { k -> anchors.rects[k] }
+                val shudder = sin(q * 40f) * 2.9f * (1f - q)
+                if (g == null) { val out = ((ms - KILL_BREAK_MS) / 200f).coerceIn(0f, 1f)
+                    rotationZ = turn + shudder; val s = 1f + .18f * (1f - (1f - out) * (1f - out)); scaleX = s; scaleY = s; alpha = 1f - out }
+                else { val k = killSlide(ms, it.dur.toFloat(), r.center, g.center)
+                    // A ghost of itself on the way (the preview's grey .ghost), not the live card.
+                    translationX = k.dx; translationY = k.dy; rotationZ = turn + shudder + k.turn; scaleX = k.scale; scaleY = k.scale
+                    alpha = k.alpha * (1f - .3f * smooth(KILL_BREAK_MS.toFloat(), KILL_BREAK_MS + 160f, ms)) }
             } else { val s = 1f - .12f * drift; scaleX = s; scaleY = s; rotationZ = turn; alpha = 1f - smooth(.7f, 1f, p) }
         }
         .drawWithContent {
             if (fx.reduced || fx.low || it.kind == Fx.SPENT) { drawContent(); return@drawWithContent }
             val p = it.p(fx.now.longValue).coerceAtLeast(0f)
-            val kill = it.toKey != null; val ms = p * DEATH_MS
-            val brk = if (kill) smooth(240f, DEATH_MS.toFloat(), ms) else smooth(.12f, .55f, p)
+            val kill = it.toKey != null; val ms = p * it.dur
+            // A sliding kill parts its bands half as far, so the card still reads as the card on its way to the pile.
+            val brk = if (kill) smooth(KILL_BREAK_MS.toFloat(), DEATH_MS.toFloat(), ms) * (if (it.dur > DEATH_MS) .5f else 1f) else smooth(.12f, .55f, p)
             val n = 6; val bh = size.height / n
             for (i in 0 until n) {
                 val dx = (if (i % 2 == 0) 1f else -1f) * brk * (5f + i * 1.4f) * density.density
@@ -1839,7 +1916,7 @@ private fun Ghost(it: FxItem, fx: Battlefield, anchors: Anchors, self: Offset, d
             if (kill) {
                 // It greys as it shudders, then one white flash (160 ms) as it breaks.
                 drawRect(Color(0xFF55524E).copy(alpha = .62f * smooth(0f, 200f, ms)))
-                if (ms >= 240f && ms < 400f) drawRect(Color.White.copy(alpha = 1f - (ms - 240f) / 160f))
+                if (ms >= KILL_BREAK_MS && ms < KILL_BREAK_MS + 160f) drawRect(Color.White.copy(alpha = 1f - (ms - KILL_BREAK_MS) / 160f))
             }
             // The hit-stop: a white flash for the first 70 ms.
             else if (p < .12f) drawRect(Color.White.copy(alpha = .45f * (1f - p / .12f)))
@@ -2186,17 +2263,19 @@ private fun DrawScope.drawDeclare(fx: Battlefield, it: FxItem, p: Float, home: R
 private fun DrawScope.drawEmbers(fx: Battlefield, it: FxItem, p: Float, r: Rect, grave: Rect?) {
     val ms = p * EMBERS_MS; val seed = (it.card ?: 3)
     if (it.once(1)) { val now = fx.now.longValue
+        // Better table scene 8: a burst on the card as it breaks (white heart, peach, a red rim: the preview's .burst) and a plume of
+        // dark smoke over the place it stood (.smoke), with the pale sparks; the card itself slides to the pile (the ghost), so no
+        // streaks run across the table to it any more.
+        fx.bits.blob(r.center, r.maxDimension * .95f, Color(0xFFF0564E), now, lifeMs = 420)
+        fx.bits.blob(r.center, r.maxDimension * .7f, Color(0xFFFFD9A8), now, lifeMs = 340)
+        fx.bits.blob(r.center, r.maxDimension * .45f, Color(0xFFFFFFFF), now, lifeMs = 260)
+        fx.bits.ring(r.center, r.maxDimension * 1.1f, Color(0xFFFFD9A8), now, lifeMs = 360)
         fx.bits.sparks(r.center, 18, Color(0xFFE9DFC8), now, 130f * density, lifeMs = 600, sizePx = 1.5f * density, seed = seed and 0xff)
-        fx.bits.smoke(r.center, 6, Color(0xFF8A8478), now, 30f * density, lifeMs = 800, sizePx = r.height * .14f, seed = seed and 0xff) }
+        fx.bits.smoke(r.center, 7, Color(0xFF262632), now, 30f * density, lifeMs = 1300, sizePx = r.width * .3f, seed = seed and 0xff)
+        fx.bits.smoke(r.center, 6, Color(0xFF8A8478), now, 30f * density, lifeMs = 900, sizePx = r.height * .16f, seed = (seed + 5) and 0xff) }
     val to = grave?.center ?: return
-    val rnd = java.util.Random(seed.toLong() * 131L + 7L)
-    for (i in 0 until 9) {
-        val from = Offset(r.left + rnd.nextFloat() * r.width, r.top + rnd.nextFloat() * r.height)
-        val life = 380f + rnd.nextFloat() * 180f; val bend = (rnd.nextFloat() - .5f) * .6f
-        val q = ms / life
-        if (q < 1f) streak(from, to, q * q * (3f - 2f * q), if (i % 2 == 1) Color(0xFFF3D27E) else Color(0xFFCFC6B4), 3.5f * density, tail = .3f, bend = bend)
-    }
-    val k = (ms - 580f) / 300f
+    // The pile answers with a gold ring when the card lands there (the kill's end, this effect having started on its break).
+    val k = (ms - (KILL_MS - KILL_BREAK_MS)) / 300f
     if (k in 0f..1f) drawCircle(Color(0xFFF3D27E).copy(alpha = .9f * (1f - k)), radius = 15.dp.toPx() + 25.dp.toPx() * (1f - (1f - k) * (1f - k)), center = to, style = Stroke((2f * (1f - k) + .6f) * density))
 }
 

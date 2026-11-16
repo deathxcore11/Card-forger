@@ -21,13 +21,35 @@ class CausePlateTest {
     @Test fun thePlateStandsOnTheCardThatChangedAndNamesTheCause() {
         assertEquals(listOf(Triple("c64", "EXILED", "by Sheltered by Ghosts")), said(results(71, 75, setOf(7)).single()))
         val (kill, back) = results(281, 285, setOf(28), mapOf(64 to 40))
-        // The creature and the Auras that fell off it, one result: each Aura's plate joins the creature's, with its own picture.
-        assertEquals(listOf(Triple("c33", "DESTROYED", "by Ravenous Chupacabra"), Triple("c33", "FELL OFF", "Savannah Lions died"), Triple("c33", "FELL OFF", "Savannah Lions died")), said(kill))
-        assertEquals(listOf("Ravenous Chupacabra" to null, "Sheltered by Ghosts" to "aura40", "Feather of Flight" to "aura3"), causePlates(kill, me).map { it.art to it.orKey })
+        // Better table scene 8: the creature and the Auras that fell off it, one result, one plate: the Auras ride on the creature's.
+        assertEquals(listOf(Triple("c33", "DESTROYED", "by Ravenous Chupacabra · 2 Auras went with it")), said(kill))
+        assertEquals(listOf("Ravenous Chupacabra" to null), causePlates(kill, me).map { it.art to it.orKey })
         assertEquals(listOf(Triple("c64", "RETURNED", "Sheltered by Ghosts left")), said(back))
         assertTrue("a card that stays keeps its numbers clear", causePlates(back, me).single().beside)
         // The beat is as long as the plates the table draws for it.
         for (r in listOf(kill, back)) assertEquals(causePlates(r, me).size, r.plateCount)
+    }
+
+    /**
+     * Better table scene 8 (the recording: a creature that died with two Auras and no card as its cause): ONE plate, "DIED",
+     * "<creature> · 2 Auras went with it", with the creature's picture, never a stacked "FELL OFF" per Aura. Built from the real
+     * boards as a death with no item gives it (a follow-up of the creature), as CauseResultTest does.
+     */
+    @Test fun aCreatureThatDiesWithItsAurasHasOnePlate() {
+        val (kill, _) = results(281, 285, setOf(28), mapOf(64 to 40))
+        val alone = kill.copy(moves = kill.moves.filter { it.went == Director.Went.FELL_OFF }, follow = true, sourceId = 33, sourceName = "Savannah Lions", text = "died")
+        val plate = causePlates(alone, me).single()
+        assertEquals(Triple("c33", "DIED", "Savannah Lions · 2 Auras went with it"), Triple(plate.key, plate.title, plate.sub))
+        assertEquals("Savannah Lions", plate.art); assertEquals("aura40", plate.orKey); assertEquals(TRIG_CORAL, plate.tone); assertEquals(false, plate.streak)
+        assertEquals(1, alone.plateCount); assertEquals(Director.NAMED_MS, Director.namedMs(alone))
+        // One Aura: its name; a permanent that left without dying: the Auras "fell off".
+        assertEquals("Savannah Lions · Sheltered by Ghosts went with it", causePlates(alone.copy(moves = alone.moves.take(1)), me).single().sub)
+        val left = alone.copy(moves = alone.moves.map { it.copy(hostDied = false) })
+        assertEquals("LEFT" to "Savannah Lions · 2 Auras fell off", causePlates(left, me).single().let { it.title to it.sub })
+        // Two permanents with Auras in one follow-up poll: one plate each.
+        val two = alone.copy(moves = alone.moves.take(1) + alone.moves.drop(1).map { it.copy(hostId = 68, hostName = "Ravenous Chupacabra") })
+        assertEquals(listOf("c33", "c68"), causePlates(two, me).map { it.key }); assertEquals(2, two.plateCount)
+        for (r in listOf(alone, left, two)) assertEquals(causePlates(r, me).size, r.plateCount)
     }
 
     @Test fun aDrawStandsOnTheHandAndWardOnTheWardedCard() {

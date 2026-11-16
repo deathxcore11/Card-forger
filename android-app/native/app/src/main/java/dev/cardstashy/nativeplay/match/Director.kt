@@ -136,9 +136,17 @@ object Director {
             return out
         }
 
-        /** How many cause plates the table draws for it (one per card moved; cards drawn, discarded or milled share one per player), six at most: its beat is that much longer. */
-        val plateCount: Int get() = (moves.groupBy { it.went }.entries.sumOf { (w, l) -> if (w == Went.DREW || w == Went.DISCARDED || w == Went.MILLED) l.map { it.player }.distinct().size else l.size } +
-            countered.size + (if (paid != null) 1 else 0)).coerceAtMost(6)
+        /**
+         * How many cause plates the table draws for it (one per card moved; cards drawn, discarded or milled share one per player), six
+         * at most: its beat is that much longer. Better table scene 8: the Auras that went with a permanent add no plate of their own.
+         * They join the permanent's plate when it has one here ("· 2 Auras went with it"), else they make one plate for that permanent.
+         */
+        val plateCount: Int get() = (moves.filter { it.went != Went.FELL_OFF }.groupBy { it.went }.entries.sumOf { (w, l) -> if (w == Went.DREW || w == Went.DISCARDED || w == Went.MILLED) l.map { it.player }.distinct().size else l.size } +
+            auraHosts.count { it !in movedHere } + countered.size + (if (paid != null) 1 else 0)).coerceAtMost(6)
+        /** Scene 8: the permanents whose Auras fell off in this result, in the order they fell. */
+        val auraHosts: List<Int?> get() = moves.filter { it.went == Went.FELL_OFF }.map { it.hostId }.distinct()
+        /** The cards this result moved itself (a permanent here already has a plate the Auras join). */
+        private val movedHere: Set<Int?> get() = moves.filter { it.went != Went.FELL_OFF }.map { it.cardId }.toSet()
 
         /** What it did, without its name: "exiled Memnite", "drew you a card", "+1/+1 counter on Grizzly Bears". Null when nothing shown changed. */
         fun said(viewer: Int): String? {
@@ -712,6 +720,16 @@ object Director {
     }
 
     /** [held] (exiled card to its holder) without the pairs Forge's board no longer shows: the card left exile, or the holder left the battlefield. */
+    /**
+     * Better table scene 9: the card that wears "No legal target" for [step], when Forge said its item fizzled (a resolve with
+     * `fizzled`) and its source is still a permanent on [st] (a trigger or an ability; a spell that fizzles has gone to its graveyard
+     * and has no tile). Null for any other step. Forge sends nothing for a trigger it drops before the stack (NoTargetProbe).
+     */
+    fun noTargetOn(step: Step, st: MatchState): Int? {
+        val id = when { step.result?.fizzled == true -> step.result.sourceId; step.kind == Kind.FIZZLE -> step.cardId; else -> null } ?: return null
+        return id.takeIf { st.players.any { p -> p.battlefield.any { it.id == id } } }
+    }
+
     fun stillHeld(held: Map<Int, Int>, st: MatchState): Map<Int, Int> {
         val exiled = st.players.flatMap { it.exile }.map { it.id }.toSet()
         val field = st.players.flatMap { it.battlefield }.map { it.id }.toSet()

@@ -88,10 +88,11 @@ class CauseResultTest {
         assertEquals(listOf(Director.Line(65, "Ravenous Chupacabra", false, "destroyed Savannah Lions"), Director.Line(33, "Savannah Lions", true, "died, so its 2 Auras fell off")),
             kill.lines(me).map { it.copy(at = 0) })
         assertEquals(2, kill.lines(me).map { it.at }.distinct().size)
-        assertEquals(3, kill.plateCount); assertEquals(Director.NAMED_MS + 2 * Director.PLATE_GAP_MS, Director.namedMs(kill))
+        // Better table scene 8: the Auras ride on the Lions' own plate ("· 2 Auras went with it"), so one plate and a one-plate beat.
+        assertEquals(1, kill.plateCount); assertEquals(Director.NAMED_MS, Director.namedMs(kill))
         assertTrue(back.follow); assertEquals(40, back.sourceId); assertEquals(listOf(Went.RETURNED), back.moves.map { it.went })
         assertEquals(listOf(Director.Line(40, "Sheltered by Ghosts", true, "left, so Memnite returns")), back.lines(me).map { it.copy(at = 0) })
-        // Two beats, in the order they read; the first is as long as its three plates need.
+        // Two beats, in the order they read; the first is as long as its plate needs.
         val beats = steps(cpu, 281, 285, setOf(28), held).filter { it.kind == Director.Kind.RESULT }
         assertEquals(listOf(kill, back), beats.map { it.result }); assertEquals(listOf(Director.namedMs(kill), Director.NAMED_MS), beats.map { it.ms })
         // The table before each beat: all still to come (the Auras on the Lions), then only Memnite to come, then the real board.

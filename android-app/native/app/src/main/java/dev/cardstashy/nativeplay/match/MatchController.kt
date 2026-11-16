@@ -520,6 +520,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     val ms = Director.lengthOf(step, waiting, steps.drop(i).sumOf { it.ms })
                     TableLog.line("step ${i + 1}/${steps.size} ${step.kind}${step.travel?.let { " ${it.leg}" } ?: ""} ${step.cardName ?: step.beat?.title ?: step.banner?.text ?: ""} ${ms}ms cpu=${step.cpu} hidden=${hidden.size}")
                     step.travel?.let { startLeg(it, i) }
+                    // Better table scene 9: an item Forge says fizzled leaves "No legal target" on its source's tile for a few seconds.
+                    Director.noTargetOn(step, st)?.let { id -> scope.launch(Dispatchers.Main) { dev.cardstashy.nativeplay.ui.TileTags.post(id, dev.cardstashy.nativeplay.ui.NO_LEGAL_TARGET) } }
                     when {
                         step.kind == Director.Kind.THINK -> think(ms, st.cpu.handCount)
                         // Match punch P4: the banner plays out its 1190 ms on its own while the steps after it start 380 ms in, under it.

@@ -59,8 +59,9 @@ class PunchCombatTest {
         assertEquals(235f, Strike.hit(false), 0f); assertEquals(335f, Strike.after(false), 0f)
         val lands = STAGE_LEAD_MS + 335L
         assertEquals("both numbers on the frame the freeze ends", setOf(5 to lands, 7 to lands), fx.items.filter { it.kind == Fx.DAMAGE }.map { it.card to it.t0 }.toSet())
-        // The kill: shudder and break on that frame (440, holds the table); its embers leave 240 later and hold nothing.
-        val death = one(Fx.DEATH); assertEquals(lands, death.t0); assertEquals(DEATH_MS, death.dur); assertEquals("grave2", death.toKey)
+        // The kill: shudder and break on that frame, then (better table scene 8) its slide to the pile (440 + 320, holds the table);
+        // its burst and smoke come on the break, 240 later, and hold nothing.
+        val death = one(Fx.DEATH); assertEquals(lands, death.t0); assertEquals(KILL_MS, death.dur); assertEquals(DEATH_MS + KILL_SLIDE_MS, KILL_MS); assertEquals("grave2", death.toKey)
         val embers = one(Fx.EMBERS); assertEquals(lands + 240L, embers.t0); assertEquals(1, embers.level); assertEquals("grave2", embers.toKey)
         // The face hit follows the clash's pair: pull back 160, fly 200, freeze 125 (the burst at 485), 1100 in all.
         val face = one(Fx.LUNGE) { it.card == 6 }

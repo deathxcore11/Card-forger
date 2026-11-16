@@ -262,6 +262,24 @@ class GapsShotTest {
     @Test fun noManaSkippedFold() = noManaSkipped("fold")
     @Config(qualifiers = "w844dp-h390dp-land-xhdpi") @Test fun noManaSkippedPhone() = noManaSkipped("phone")
 
+    /**
+     * Better table scene 9: an ability or trigger Forge says fizzled leaves "No legal target" on its source for a few seconds (the
+     * same timed tag), here on your Arcane Signet at the right of your lands while the table goes on in your first main.
+     */
+    private fun noLegalTarget(tag: String) {
+        val src = base.me.battlefield.first { it.name == "Arcane Signet" }
+        TileTags.shown.clear(); TileTags.post(src.id, dev.cardstashy.nativeplay.ui.NO_LEGAL_TARGET)
+        try {
+            shot(main1(), "no-legal-target-$tag")
+            rule.onNodeWithText("No legal target").assertExists()
+            val t = anchors.rects["tiletag${src.id}"]!!; val c = anchors.rects["c${src.id}"]!!
+            assertTrue("the tag hangs under its own tile: $t / $c", t.top >= c.bottom - 12 && t.center.x in c.left..c.right)
+            inside("tiletag${src.id}")
+        } finally { TileTags.shown.clear() }
+    }
+    @Test fun noLegalTargetFold() = noLegalTarget("fold")
+    @Config(qualifiers = "w844dp-h390dp-land-xhdpi") @Test fun noLegalTargetPhone() = noLegalTarget("phone")
+
     /** The timed tag goes by itself (and runs nothing on once gone): after its time the tile wears nothing. */
     @Test fun tileTagGoes() {
         val src = me[1]

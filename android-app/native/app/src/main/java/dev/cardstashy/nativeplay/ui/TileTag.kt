@@ -44,6 +44,8 @@ internal const val TAG_IN_MS = 220; internal const val TAG_OUT_MS = 260
 
 /** Scene 2's tag on a trigger's source whose optional payment was declined because no mana was open. */
 internal const val NO_MANA_SKIPPED = "No mana · skipped"
+/** Scene 9's tag on a trigger's or ability's source when Forge says its item fizzled ([dev.cardstashy.nativeplay.match.Director.noTargetOn]). */
+internal const val NO_LEGAL_TARGET = "No legal target"
 
 /**
  * The pill every tile tag wears: a full round, a hairline [edge], one line of [text] that is cut with … rather than run wider than
