@@ -91,7 +91,7 @@ class CardData(json: JsonObject) {
 
         @Volatile private var loaded: CardData? = null
         fun load(context: Context): CardData = loaded ?: synchronized(this) {
-            loaded ?: CardData(JsonParser.parseString(context.assets.open("card-data.json").bufferedReader().readText()).asJsonObject).also { loaded = it; _ready.value = it }
+            loaded ?: CardData(JsonParser.parseString(context.assets.open("card-data.json").bufferedReader().readText()).asJsonObject).also { loaded = it; _ready.value = it; dev.cardstashy.nativeplay.ui.Foil.warm(it) }
         }
         private val _ready = kotlinx.coroutines.flow.MutableStateFlow<CardData?>(null)
         /** The data once parsed; screens read this instead of parsing on the main thread. */

@@ -514,8 +514,12 @@ half4 main(float2 fc){
     fun source(r: CardData.Recipe?): String { val d = defs(r); val key = listOf("PAT", "COVER", "FILM", "SPARK", "STAMP", "RELIEF").joinToString(".") { "${d[it]}" }
         return composed.getOrPut(key) { compose(AGSL_HEAD + AGSL_TEMPLATE + AGSL_MAIN, d) } }
 
+    private val COND = Regex("""^([A-Z_]+)\s*(?:(==|!=|>=|<=|>|<)\s*(-?\d+))?$""")
+    private val DIRECTIVE = Regex("""^#(if|elif|else|endif)\b\s*(.*)$""")
+    private val STRAY = Regex("""^\s*#""")
+    private val COMMENT = Regex("""^\s*//""")
     private fun holds(expr: String, defs: Map<String, Int>): Boolean = expr.split("||").any { or -> or.split("&&").all { t ->
-        val m = Regex("""^([A-Z_]+)\s*(?:(==|!=|>=|<=|>|<)\s*(-?\d+))?$""").matchEntire(t.trim()) ?: error("foil shader: bad condition \"${t.trim()}\"")
+        val m = COND.matchEntire(t.trim()) ?: error("foil shader: bad condition \"${t.trim()}\"")
         val v = defs[m.groupValues[1]] ?: error("foil shader: unknown name ${m.groupValues[1]}")
         val op = m.groupValues[2]; val n = m.groupValues[3].toIntOrNull() ?: 0
         when (op) { "" -> v != 0; "==" -> v == n; "!=" -> v != n; ">" -> v > n; "<" -> v < n; ">=" -> v >= n; else -> v <= n } } }
@@ -525,9 +529,9 @@ half4 main(float2 fc){
         class Level(val outer: Boolean, var taken: Boolean)
         val out = StringBuilder(); val stack = ArrayList<Level>(); var on = true; var first = true
         for (line in template.split('\n')) {
-            val m = Regex("""^#(if|elif|else|endif)\b\s*(.*)$""").matchEntire(line)
-            if (m == null) { if (Regex("""^\s*#""").containsMatchIn(line)) error("foil shader: stray directive \"${line.trim()}\"")
-                if (on && !Regex("""^\s*//""").containsMatchIn(line)) { if (!first) out.append('\n'); out.append(line); first = false }; continue }
+            val m = DIRECTIVE.matchEntire(line)
+            if (m == null) { if (STRAY.containsMatchIn(line)) error("foil shader: stray directive \"${line.trim()}\"")
+                if (on && !COMMENT.containsMatchIn(line)) { if (!first) out.append('\n'); out.append(line); first = false }; continue }
             val d = m.groupValues[1]; val e = m.groupValues[2]
             when {
                 d == "if" -> { val taken = on && holds(e, defs); stack.add(Level(on, taken)); on = taken }
@@ -579,6 +583,9 @@ half4 main(float2 fc){
         return Look(recipe, frame, CardData.holoStamp(card), label, image, walker, frameKey)
     }
 
+    /** Composes every foil type's program once, off the main thread (app start), so the first card of a type never pays for it. */
+    fun warm(data: CardData) { Thread({ runCatching { source(null); data.recipes.values.forEach { source(it) } } }, "foil-compose").apply { isDaemon = true }.start() }
+
     val supported: Boolean get() = Build.VERSION.SDK_INT >= 33 && !testFallback
     /** Robolectric has no runtime shaders: screenshots use the stand-in sheen. */
     @Volatile var testFallback = false
@@ -602,7 +609,8 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
     val stampPaint = remember { Paint() }
     if (Foil.supported) {
         // One program per foil type, composed as the site composes it (Foil.source), so a card runs only its own type's lines.
-        val shader = remember(look.recipe) { runCatching { RuntimeShader(Foil.source(look.recipe)) }.getOrNull() }
+        val shader = remember(look.recipe) { runCatching { RuntimeShader(Foil.source(look.recipe)) }
+            .onFailure { android.util.Log.w("Foil", "foil shader ${look.recipe?.key ?: "stamp"} did not compile; stand-in drawn", it) }.getOrNull() }
         // The card's own maps, measured once off the main thread exactly as the site does (FoilMaps.mtgCard, MtgFoil.cardMaps):
         // nothing of the foil is drawn until they land, then it fades in (no pop while a binder scrolls).
         val measured = look.measure

@@ -139,16 +139,28 @@ object FoilMaps {
         val key = "mtgcard|$image|$pat|$frameKey"
         flows[key] ?: MutableStateFlow<Ready?>(null).also { fl ->
             flows[key] = fl
+            // A picture that did not load or could not be measured is forgotten, so the next view tries again (the site retries too);
+            // so is a card that left the screen before its turn came (a fast-scrolled binder must not hold back the cards in front).
+            fun forget() = synchronized(flows) { if (flows[key] === fl) flows.remove(key) }
             scope.launch {
-                gate.withPermit {
-                    suspend fun load(url: String) = (CardArt.loader.execute(ImageRequest.Builder(context).data(url).allowHardware(false).build()) as? SuccessResult)?.image?.toBitmap()
-                    val src = (if (pat == 23) load(largeScan(image)) else null) ?: load(image) ?: return@withPermit
-                    val px = mapPixels(src)
-                    val emblem = if (pat == 29) emblem(context) else null // like the site: no emblem picture, the card still gets its maps
-                    val m = MtgFoil.cardMaps(px, MtgFoil.MAP_W, MtgFoil.MAP_H, pat, frame.art, frame.text, emblem)
-                    fl.value = Ready(rgba(m.mask, MtgFoil.MAP_W, MtgFoil.MAP_H), rgba(m.relief, MtgFoil.MAP_W, MtgFoil.MAP_H), null,
-                        rgba(m.stroke, MtgFoil.MAP_W, MtgFoil.MAP_H), null, m.art, m.text, m.star)
-                }
+                val watched = kotlinx.coroutines.withTimeoutOrNull(2000) { fl.subscriptionCount.first { it > 0 } } != null
+                if (!watched) { forget(); return@launch }
+                var done = false
+                try {
+                    gate.withPermit {
+                        if (fl.subscriptionCount.value == 0) return@withPermit
+                        // The large scan is only measured, never shown: kept on disk, out of the memory cache the card art lives in.
+                        suspend fun load(url: String, large: Boolean) = (CardArt.loader.execute(ImageRequest.Builder(context).data(url).allowHardware(false)
+                            .apply { if (large) memoryCachePolicy(coil3.request.CachePolicy.DISABLED) }.build()) as? SuccessResult)?.image?.toBitmap()
+                        val src = (if (pat == 23) load(largeScan(image), true) else null) ?: load(image, false) ?: return@withPermit
+                        val px = mapPixels(src)
+                        val emblem = if (pat == 29) emblem(context) else null // like the site: no emblem picture, the card still gets its maps
+                        val m = MtgFoil.cardMaps(px, MtgFoil.MAP_W, MtgFoil.MAP_H, pat, frame.art, frame.text, emblem)
+                        fl.value = Ready(rgba(m.mask, MtgFoil.MAP_W, MtgFoil.MAP_H), rgba(m.relief, MtgFoil.MAP_W, MtgFoil.MAP_H), null,
+                            rgba(m.stroke, MtgFoil.MAP_W, MtgFoil.MAP_H), null, m.art, m.text, m.star)
+                        done = true
+                    }
+                } finally { if (!done) forget() }
             }
         }
     }
