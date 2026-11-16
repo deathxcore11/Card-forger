@@ -1,5 +1,6 @@
 package dev.cardstashy.nativeplay
 
+import androidx.lifecycle.lifecycleScope
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -115,7 +116,8 @@ private sealed interface Screen {
     /** The Search tab for a game (the site's #search). */
     data class CollectionSearch(val game: String = "mtg") : Screen
     /** The Rules page (#rules) for a game. */
-    data class CollectionRules(val game: String = "mtg") : Screen
+    /** [ref]: a judge's citation to open on the page (its title and quoted words shown in its place if the page can't open it). */
+    data class CollectionRules(val game: String = "mtg", val learn: Boolean = false, val ref: com.google.gson.JsonObject? = null, val refTitle: String = "", val refQuote: String = "") : Screen
     /** The Wiki page (#wiki, #wiki/<topic>) for a game. */
     data class CollectionWiki(val game: String = "mtg", val topic: String = "") : Screen
     /** The Scan tab (the site's #scan) for a game. */
@@ -156,11 +158,23 @@ class MainActivity : ComponentActivity() {
         // Silent: a stall or crash report uploads itself; nothing shows on screen (test strip and frame watch off since 0.3.8).
         FreezeReport.init(this); dev.cardstashy.nativeplay.ui.HomeTest.init(this)
         TestHooks.read(intent)
+        // The sign-in return link on a cold start (gap audit S2).
+        dev.cardstashy.nativeplay.account.AuthReturn.take(intent)
         enableEdgeToEdge()
         fastestRefresh()
         // The card database starts loading as the app opens, so it is ready before Quick Play is.
         ForgeService.prepare(this)
-        Account.init(this); dev.cardstashy.nativeplay.ui.AppSettings.init(this); dev.cardstashy.nativeplay.ui.Aura.init(this); dev.cardstashy.nativeplay.ui.TableEmotes.init(this); dev.cardstashy.nativeplay.ui.MatchMenu.init(this); Thread { dev.cardstashy.nativeplay.ui.BoardIcons.get(applicationContext, "tapped") }.start(); CardArt.init(this); CardArt.oracleOf = { dev.cardstashy.nativeplay.engine.ForgeService.oracleName(it) }; Speed.init(this)
+        Account.init(this); Account.onCleared = { dev.cardstashy.nativeplay.ui.WebSession.clear() }; dev.cardstashy.nativeplay.ui.AppSettings.init(this); dev.cardstashy.nativeplay.ui.Aura.init(this); dev.cardstashy.nativeplay.ui.TableEmotes.init(this); dev.cardstashy.nativeplay.ui.MatchMenu.init(this); Thread { dev.cardstashy.nativeplay.ui.BoardIcons.get(applicationContext, "tapped") }.start(); CardArt.init(this); CardArt.oracleOf = { dev.cardstashy.nativeplay.engine.ForgeService.oracleName(it) }; dev.cardstashy.nativeplay.engine.MatchState.shownName = CardArt::shown; dev.cardstashy.nativeplay.engine.MatchState.shownIn = CardArt::shownIn; Speed.init(this)
+        // Gap audit S3: the return link finishes the Google or email-link sign-in waiting for it (never logged); signed in, as Log in does.
+        lifecycleScope.launch {
+            dev.cardstashy.nativeplay.account.AuthReturn.pending.collect { r ->
+                r ?: return@collect
+                dev.cardstashy.nativeplay.account.AuthReturn.pending.value = null
+                val e = Account.finishReturn(r)
+                if (e != null) dev.cardstashy.nativeplay.ui.CollectionWrites.show(e)
+                else { dev.cardstashy.nativeplay.account.Decks.clear(); dev.cardstashy.nativeplay.account.Decks.load(this@MainActivity); dev.cardstashy.nativeplay.play.Progress.clear() }
+            }
+        }
         dev.cardstashy.nativeplay.play.Progress.init(this); dev.cardstashy.nativeplay.play.SetFacts.init(this); dev.cardstashy.nativeplay.play.CardFacts.init(this); dev.cardstashy.nativeplay.play.DeckEngine.init(this); dev.cardstashy.nativeplay.play.RandomBuild.init(this); dev.cardstashy.nativeplay.collection.ScanWeb.init(this); dev.cardstashy.nativeplay.play.CraftRarity.init(this)
         dev.cardstashy.nativeplay.play.CardData.warm(this); dev.cardstashy.nativeplay.ui.PackSfx.warm(this)
         // Offline play: when a network comes back, matches finished without signal are sent (the server still decides rewards).
@@ -177,7 +191,7 @@ class MainActivity : ComponentActivity() {
             // The app is recorded into a layer as it draws, so the toast pill can blur what is under it (backdrop-filter).
             val page = androidx.compose.ui.graphics.rememberGraphicsLayer()
             androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
-                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().padRoot().drawWithContent { page.record { this@drawWithContent.drawContent() }; drawLayer(page) }) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().padRoot().drawWithContent { dev.cardstashy.nativeplay.ui.RootDraws.tick(); page.record { this@drawWithContent.drawContent() }; drawLayer(page) }) {
                     androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.LocalIndication provides dev.cardstashy.nativeplay.ui.PadFocus) {
                         App(this@MainActivity); dev.cardstashy.nativeplay.ui.ProfileArtPickerHost()
                     }
@@ -190,6 +204,10 @@ class MainActivity : ComponentActivity() {
                 dev.cardstashy.nativeplay.ui.RuleSheetHost()
                 PadPromptBar()
                 PadCursorLayer()
+                // Menus idle after 20 s with no input (gap audit G4): checked once a second.
+                androidx.compose.runtime.LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(1000); dev.cardstashy.nativeplay.ui.MenuIdle.tick(android.os.SystemClock.uptimeMillis()) } }
+                // Loading brief L1: the opening screen over everything until Play home's own waits are over (once per launch).
+                if (!TestHooks.skipOpening) dev.cardstashy.nativeplay.ui.OpeningHost()
             }
         }
         Updater.check(this)
@@ -199,7 +217,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() { dev.cardstashy.nativeplay.play.RandomBuild.detach(this); dev.cardstashy.nativeplay.collection.ScanWeb.detach(this); super.onDestroy() }
-    override fun onNewIntent(intent: android.content.Intent) { super.onNewIntent(intent); setIntent(intent); TestHooks.read(intent) }
+    override fun onNewIntent(intent: android.content.Intent) { super.onNewIntent(intent); setIntent(intent); TestHooks.read(intent); dev.cardstashy.nativeplay.account.AuthReturn.take(intent) }
 
     override fun onResume() { super.onResume(); Updater.resumed(this); dev.cardstashy.nativeplay.collection.WorkspaceSync.kick(this) }
     override fun onStart() { super.onStart(); dev.cardstashy.nativeplay.play.RandomBuild.hidden = false; dev.cardstashy.nativeplay.ui.DualScreen.attach(this) }
@@ -207,7 +225,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) { super.onWindowFocusChanged(hasFocus); dev.cardstashy.nativeplay.ui.PadPrompts.windowFocused = hasFocus }
 
-    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); return super.dispatchTouchEvent(ev) }
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean { FreezeReport.touched(ev); dev.cardstashy.nativeplay.ui.MenuIdle.input(android.os.SystemClock.uptimeMillis()); return super.dispatchTouchEvent(ev) }
 
     /**
      * Controllers on handhelds (AYN Thor, Retroid and the like): A presses what has the gold focus ring
@@ -215,6 +233,7 @@ class MainActivity : ComponentActivity() {
      * gives these fallbacks, so the app maps them itself. The left stick moves focus like the d-pad.
      */
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        dev.cardstashy.nativeplay.ui.MenuIdle.input(android.os.SystemClock.uptimeMillis())
         if (event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD)) dev.cardstashy.nativeplay.ui.Pad.used()
         if (event.action == android.view.KeyEvent.ACTION_DOWN && (event.isFromSource(android.view.InputDevice.SOURCE_GAMEPAD) || event.isFromSource(android.view.InputDevice.SOURCE_DPAD)))
             dev.cardstashy.nativeplay.ui.PadPrompts.lastPress = android.os.SystemClock.uptimeMillis()
@@ -236,7 +255,7 @@ class MainActivity : ComponentActivity() {
                 if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 && dev.cardstashy.nativeplay.ui.PadCursor.pressA()) { android.util.Log.i("PadA", "stick cursor took A"); aTaken = true; return true }
                 // Nothing has the ring (it was lost when the board changed): A puts it on the screen's first stop (the table's hand chip) instead of going nowhere.
                 if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0 && !dev.cardstashy.nativeplay.ui.PadPrompts.anyFocus &&
-                    dev.cardstashy.nativeplay.ui.PadPrompts.entry?.let { runCatching { it() }.getOrDefault(false) } == true) { android.util.Log.i("PadA", "A with no ring: ring to the hand chip"); aTaken = true; return true }
+                    dev.cardstashy.nativeplay.ui.PadPrompts.entry?.let { runCatching { it() }.getOrDefault(false) } == true) { android.util.Log.i("PadA", "A with no ring: ring to the screen's first stop (the table's hand chip, the Quick Play lobby's first deck)"); aTaken = true; return true }
                 if (aTaken) { if (event.action == android.view.KeyEvent.ACTION_UP) aTaken = false; return true }
             }
         }
@@ -257,6 +276,7 @@ class MainActivity : ComponentActivity() {
     private var aTaken = false
     private var dpadEntered = 0
     override fun dispatchGenericMotionEvent(ev: android.view.MotionEvent): Boolean {
+        dev.cardstashy.nativeplay.ui.MenuIdle.input(android.os.SystemClock.uptimeMillis())
         if (ev.isFromSource(android.view.InputDevice.SOURCE_JOYSTICK) && ev.action == android.view.MotionEvent.ACTION_MOVE) {
             dev.cardstashy.nativeplay.ui.Pad.used()
             // The d-pad on many handhelds (the AYN Portal among them) arrives as a hat, not keys: one ring step per press. Taking the
@@ -289,6 +309,7 @@ class MainActivity : ComponentActivity() {
     fun inGame(on: Boolean, play: Boolean = false, force: Boolean = false) {
         if (!force && on && lastGame && lastPlay == play) return // V6: the match asks twice (MatchFlow, Table); the second must not resize the window again
         lastGame = on; lastPlay = play; Updater.inGame = on
+        dev.cardstashy.nativeplay.ui.MenuIdle.onMenu = !on // the table keeps its motion; only menus go idle
         dev.cardstashy.nativeplay.art.ThumbStore.paused = on // the table gets the network and CPU
         dev.cardstashy.nativeplay.play.RandomBuild.paused = on // background random decks wait (app.js playRandomQueue idle())
         val sideways = on || (play && resources.configuration.smallestScreenWidthDp < 600)  // play = Planeswalk on a phone
@@ -377,7 +398,12 @@ private fun App(activity: MainActivity) {
         val prev = trail.getOrNull(trail.size - 2)
         if (prev is Screen.CollectionSearch) { back(); if (prev.game != g) swap(Screen.CollectionSearch(g)) } else go(Screen.CollectionSearch(g))
     }) else null
-    androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) },
+    // An Ask tile's deck (gap audit H3): the app's own deck page.
+    androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.deckNav = if (NATIVE_DECK) ({ id, g -> go(Screen.CollectionDeck(id, g)) }) else null }
+    androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.rulesNav = { g, learn -> go(Screen.CollectionRules(g, learn)) } }
+    androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.wikiNav = { g, t -> go(Screen.CollectionWiki(g, t)) } }
+    androidx.compose.runtime.SideEffect { dev.cardstashy.nativeplay.ui.CollectionWrites.ruleRef = { g, ref, title, quote -> go(Screen.CollectionRules(g, ref = ref, refTitle = title, refQuote = quote)) } }
+    androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalShopNav provides { tab -> go(Screen.Shop(tab)) }, dev.cardstashy.nativeplay.ui.LocalShopSetNav provides { code -> go(Screen.Shop("sets", code)) }, dev.cardstashy.nativeplay.ui.LocalPlayDecksNav provides { if (screen != Screen.PlayDecks) go(Screen.PlayDecks) },
         dev.cardstashy.nativeplay.ui.LocalCollectionSearch provides searchOpen) {
     // The Play theme root: every Play screen draws dark whatever the theme setting says; Collection and the shell follow it.
     remember { dev.cardstashy.nativeplay.ui.AppSettings.playSide = { presenceWhere(trail.last()).view == "play" } }
@@ -473,7 +499,7 @@ private fun App(activity: MainActivity) {
                 onDecks = { if (NATIVE_DECKS) go(Screen.CollectionDecks) else go(Screen.Web("https://cardstashy.com/#decks", null)) },
                 onSearch = { go(Screen.CollectionSearch(s.game)) }, web = { url, press -> site(url, press) }, game = s.game,
                 onGame = { g -> dev.cardstashy.nativeplay.ui.CollectionGame.set(dev.cardstashy.nativeplay.ui.CardGame.of(g)); swap(Screen.CollectionRules(g)) },
-                onWiki = { t -> go(Screen.CollectionWiki(s.game, t)) })
+                onWiki = { t -> go(Screen.CollectionWiki(s.game, t)) }, startLearn = s.learn, startRef = s.ref, refTitle = s.refTitle, refQuote = s.refQuote)
         }
         is Screen.CollectionWiki -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -612,7 +638,9 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
             // Art and engine load side by side. The beat has been on screen since the pick (t0), so its 0.9 s counts from there,
             // not from now (U2); the CPU's plate still gets 0.4 s before the table opens.
             val minBeat = launch { delay(if ((pick as? Pick.Table)?.story != null) 0 else maxOf(400L, 900L - (SystemClock.elapsedRealtime() - t0))) }
-            QuickPlay.gateArt(context, s, controller.firstHand)
+            // Backstop (Randall 14 Nov: the table never opened): the screen stops waiting at the cap whatever the gate is still doing.
+            val gate = QuickPlay.gateAsync(context, s, controller.firstHand)
+            if (kotlinx.coroutines.withTimeoutOrNull(QuickPlay.GATE_CAP_MS + 500) { gate.await() } == null) android.util.Log.i("Speed", "art gate passed its cap; the table opens and art loads behind")
             minBeat.join(); versus = false
         }
         // Pick to table, one line per phase from the same start as the Speed line, so a slow run shows which step took the time (U2).
@@ -647,7 +675,7 @@ private fun Table(activity: MainActivity, s: QuickPlay.Setup.Ready, t0: Long, on
         if (noResult != null) { LaunchedEffect(Unit) { activity.inGame(false) }; NoResult(noResult!!, onHome) }
         else if (versus || holdForScene) VersusScreen(s.you, s.cpu, intro = false, preparing = versus) else Box {
           androidx.compose.runtime.CompositionLocalProvider(dev.cardstashy.nativeplay.ui.LocalLessonGlow provides (lessons?.glow ?: emptySet())) {
-          TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note, cpuPlate = s.cpu,
+          TableScreen(controller, onHome = onHome, onRematch = { round++ }, resultNote = outcome?.note, cpuPlate = s.cpu, youPlate = s.you,
             mat = (pick as? Pick.Table)?.story?.let { c -> remember { dev.cardstashy.nativeplay.ui.StoryMats.forBattle(context, c.act, c.battle.get("slot")?.takeIf { it.isJsonPrimitive }?.asInt, c.battle.get("kind")?.takeIf { it.isJsonPrimitive }?.asString) } },
             storyMusic = (pick as? Pick.Table)?.story?.let { dev.cardstashy.nativeplay.audio.TableMusic.StoryMusic(it.act, it.battle.get("mood")?.takeIf { m -> m.isJsonPrimitive }?.asString, it.battle.get("kind")?.takeIf { m -> m.isJsonPrimitive }?.asString) })
           }

@@ -37,7 +37,29 @@ object AppSettings {
     val GRID_SIZES = listOf("small", "medium", "large")
     /** Table effects (Story playmat MOTION-SPEC): cinematic, balanced (default) or minimal. Reduce motion and battery saver act as minimal. */
     var effects by mutableStateOf("balanced"); private set
+    /** The living table (F1 to F10): the match's feel effects, full (default), reduced (no shake, freeze or clock stop) or off. */
+    var matchEffects by mutableStateOf("full"); private set
+    fun applyMatchEffects(v: String) { matchEffects = if (v in TableFeel.MODES) v else "full"; prefs?.edit()?.putString("cardstashy-match-effects", matchEffects)?.apply() }
     val EFFECTS = listOf("cinematic", "balanced", "minimal")
+    /** Mobile table M4: "Ask me to order triggers". Off: triggers that happen together are ordered for you, as Arena does. */
+    var askTriggerOrder by mutableStateOf(false); private set
+    /** Mobile table M3: "Stop to respond". Off: your own spell or trigger on top of the stack resolves by itself. */
+    var stopToRespond by mutableStateOf(false); private set
+
+    /** Living table F9: "Match vibration" (landings, hits, the winning hit, the clock stop). Its own setting, on by default; never in Reduced. */
+    var matchVibration by mutableStateOf(true); private set
+    /** Price alerts' daily check with a phone notification (gap audit H2 step 4, new beyond the site). On by default. */
+    var priceAlertDaily by mutableStateOf(true); private set
+
+    /** Console Settings: how loud the stage music and the sound effects play, 0 to 100 in steps of 10. 100 is the loudness before the setting existed. */
+    var musicVolume by mutableStateOf(100); private set
+    var effectsVolume by mutableStateOf(100); private set
+    /** The effects volume as a gain, for every sound that is not music. */
+    val effectsGain: Float get() = effectsVolume / 100f
+    val musicGain: Float get() = musicVolume / 100f
+    fun normalizeVolume(v: Int) = ((v.coerceIn(0, 100) + 5) / 10) * 10
+    fun applyMusicVolume(v: Int) { musicVolume = normalizeVolume(v); prefs?.edit()?.putInt("musicVolume", musicVolume)?.apply() }
+    fun applyEffectsVolume(v: Int) { effectsVolume = normalizeVolume(v); prefs?.edit()?.putInt("effectsVolume", effectsVolume)?.apply() }
 
     fun init(context: Context) {
         val p = context.applicationContext.getSharedPreferences("play", Context.MODE_PRIVATE); prefs = p
@@ -46,11 +68,19 @@ object AppSettings {
         chosenTheme = normalizeTheme(p.getString("cardstashy-theme", null)); gridSize = normalizeGridSize(p.getString("cardstashy-grid-size", null))
         gridPinch = p.getString("cardstashy-grid-pinch", null) == "on"
         effects = p.getString("cardstashy-effects", null).takeIf { it in EFFECTS } ?: "balanced"
+        matchEffects = p.getString("cardstashy-match-effects", null).takeIf { it in TableFeel.MODES } ?: "full"
+        askTriggerOrder = p.getBoolean("askTriggerOrder", false); stopToRespond = p.getBoolean("stopToRespond", false)
+        matchVibration = p.getBoolean("matchVibration", true)
+        priceAlertDaily = p.getBoolean("priceAlertDaily", true)
+        musicVolume = normalizeVolume(p.getInt("musicVolume", 100)); effectsVolume = normalizeVolume(p.getInt("effectsVolume", 100))
     }
 
     fun set(key: String, on: Boolean) {
         when (key) {
             "glass" -> glass = on; "finishEffects" -> finish = on; "haptics" -> haptics = on; "appSounds" -> appSounds = on; "presence" -> presence = on; "depthCards" -> depth = on
+            "askTriggerOrder" -> askTriggerOrder = on; "stopToRespond" -> stopToRespond = on
+            "matchVibration" -> matchVibration = on
+            "priceAlertDaily" -> priceAlertDaily = on
             "motionTilt" -> { tilt = on; PackSfx.tilt = on }
             "packSound" -> { sound = on; PackSfx.on = on }
         }

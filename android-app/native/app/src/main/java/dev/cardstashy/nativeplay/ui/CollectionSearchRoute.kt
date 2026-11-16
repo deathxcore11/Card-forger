@@ -51,6 +51,18 @@ private object SearchCache { val models = mutableMapOf<String, CollectionSearchM
  * A search left in the engine by another page (Magic's Deck review: app.js A.findRole, A.formatSearch, which set S.ui.db and go("#search")):
  * the Search tab opens on its words and filters, and pumps the search it started until it lands.
  */
+/** Words typed in Home's search box (game-feel home G3), by game: the Search tab opens with them in its box and searched. Taken once. */
+private val handed = java.util.concurrent.ConcurrentHashMap<String, String>()
+/** Counts each hand-over, so a Search tab that is already open takes the words too (a card page's artist name, 12 Nov). */
+private val handedTick = kotlinx.coroutines.flow.MutableStateFlow(0)
+fun searchFor(game: String, words: String) { if (words.isNotBlank()) { handed[game] = words.trim(); handedTick.value++ } }
+/** A Yu-Gi-Oh! / Pokémon card page's chip (kind, value): the Search tab opens on the site's search for it (A.ruleCards). Taken once. */
+private val discovered = java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
+fun searchDiscover(game: String, kind: String, value: String) { discovered[game] = kind to value; handedTick.value++ }
+/** An answer card's "See them all in Search" (Magic): the Search tab opens on these words and this sort (usd, usdAsc or blank). Taken once. */
+private val answered = java.util.concurrent.ConcurrentHashMap<String, Pair<String, String>>()
+fun searchAnswered(game: String, q: String, sort: String) { answered[game] = q to sort; handedTick.value++ }
+
 fun searchAsked(review: String? = null) { SearchCache.models.remove("mtg"); SearchCache.asked = true; SearchCache.review = review }
 
 private const val SITE = "https://cardstashy.com/"
@@ -79,6 +91,10 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
     var cards by remember(game) { mutableStateOf(listOf<CardOpen>()) }
     var focused by remember(game) { mutableStateOf(false) }
     var suggest by remember(game) { mutableStateOf<SearchSuggest?>(null) }
+    /** The answer card for the words in the box (a question), and a "Read as" chip's other choice for those words. */
+    var answer by remember(game) { mutableStateOf<JsonObject?>(null) }
+    var fixFor by remember(game) { mutableStateOf("" to mapOf<String, String>()) }
+    val fix = if (fixFor.first == query) fixFor.second else emptyMap()
     val scope = rememberCoroutineScope()
     /** Magic's Deck review sheet left open over Search (A.formatSearch: go("#search") with the sheet still up), by its deck. */
     var review by remember { mutableStateOf(SearchCache.review.also { SearchCache.review = null }) }
@@ -121,6 +137,16 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
             SearchSuggest.parse(j)?.takeIf { if (asked.isBlank()) it.recent else it.q == asked }?.let { suggest = it }
         }
     }
+    // A typed question (answer-search.js in the engine): its answer from the app's own lookups, 300 ms after the last key. No AI is asked.
+    val engineUp = HomeCache.loaded != null && model != null
+    LaunchedEffect(game, query, fix, engineUp) {
+        val asked = query.trim()
+        if (asked.isEmpty() || !engineUp) { answer = null; return@LaunchedEffect }
+        if (answer?.get("q")?.asString != asked) answer = null
+        delay(300)
+        val opts = JsonObject().apply { add("fix", JsonObject().apply { fix.forEach { (k, v) -> addProperty(k, v) } }) }
+        answer = runCatching { CollectionEngine.searchAnswer(game, asked, opts) { answer = it } }.getOrNull()
+    }
     fun site(sel: String) = web(SITE + "#search", if (game == "mtg") sel else "[data-act=\"setGame\"][data-game=\"$game\"]\n$sel")
     fun open(w: JsonObject) {
         fun v(k: String) = w.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
@@ -156,15 +182,60 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
             CollectionWrites.show(e.message?.takeIf { it.isNotBlank() } ?: "That didn’t work here.")
         } } }
     }
+    // Home's box handed its words over: they go in this box and its own Enter runs, once the page is up.
+    val ready = model != null
+    val handedNow by handedTick.collectAsState()
+    LaunchedEffect(game, ready, handedNow) {
+        if (!ready) return@LaunchedEffect
+        discovered.remove(game)?.let { (kind, value) ->
+            turn.withLock { runCatching {
+                val j = CollectionEngine.discoverySearch(game, kind, value)
+                j.get("error")?.takeIf { it.isJsonPrimitive }?.asString?.let { CollectionWrites.show(it); return@runCatching }
+                show(j); query = ""
+                CollectionEngine.settle(60_000, CollectionEngine.SEARCH_MODEL, ::show)
+                show(CollectionEngine.searchModel())
+                CollectionEngine.searchToasts().lastOrNull()?.let { CollectionWrites.show(it) }
+            } }
+            return@LaunchedEffect
+        }
+        // An answer's "See them all in Search": the words and the sort set on the page as the site does, and the search run.
+        answered.remove(game)?.let { (q, sort) ->
+            turn.withLock { runCatching {
+                CollectionEngine.searchAnswerSearch(q, sort); query = q
+                show(CollectionEngine.searchModel())
+                CollectionEngine.settle(60_000, CollectionEngine.SEARCH_MODEL, ::show)
+                show(CollectionEngine.searchModel())
+                CollectionEngine.searchToasts().lastOrNull()?.let { CollectionWrites.show(it) }
+            } }
+            return@LaunchedEffect
+        }
+        val words = handed.remove(game) ?: return@LaunchedEffect
+        query = words
+        turn.withLock { runCatching { CollectionEngine.searchRemember(game, words); CollectionEngine.searchFresh(game) } }
+        // A question handed over from Home: its answer card shows; the card search is not run on those words.
+        if (runCatching { CollectionEngine.searchAsks(game, words) }.getOrNull() == "answer") return@LaunchedEffect
+        model?.field?.let { f -> if (f.input.isNotBlank()) run(f.input, emptyMap(), words); if (f.enter.isNotBlank()) run(f.enter, emptyMap(), words) }
+    }
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val focusClear: (() -> Unit)? = { focusManager.clearFocus() }
+    var held by remember(game) { mutableStateOf<SetTileM?>(null) }
+    // A compared card's page over Search (the sheet steps aside first).
+    val compared: (String, String) -> Unit = { name, id ->
+        CollectionWrites.comparing.value = null
+        val page = SITE + "#search"
+        cards = cards + if (id.isNotEmpty()) CardOpen(name, page = page, tile = "[data-act=\"tCard\"][data-id=\"${css(id)}\"]", game = game, id = id)
+            else CardOpen(name, page = page, tile = "[data-act=\"card\"][data-name=\"${css(name)}\"]")
+    }
     val act = remember(game, savedKey) {
         CollectionSearchActions(
             game = { g -> if (g.id != game) onGame(g.id) },
             type = { v -> query = v; model?.field?.input?.takeIf { it.isNotBlank() }?.let { a -> run(a, emptyMap(), v) } },
             // suggest.js keydown Enter: rememberSearch, close the list; then the box's own data-enter.
-            enter = { val q = query; suggest = null; scope.launch { turn.withLock { CollectionEngine.searchRemember(game, q) } }
-                model?.field?.let { f -> if (f.input.isNotBlank()) run(f.input, emptyMap(), q); if (f.enter.isNotBlank()) run(f.enter, emptyMap(), q) } },
+            // A question keeps its answer card on Enter (the card search is not run on its words); anything else searches as before.
+            enter = { val q = query; suggest = null; scope.launch {
+                turn.withLock { CollectionEngine.searchRemember(game, q) }
+                if (runCatching { CollectionEngine.searchAsks(game, q) }.getOrNull() == "answer") return@launch
+                model?.field?.let { f -> if (f.input.isNotBlank()) run(f.input, emptyMap(), q); if (f.enter.isNotBlank()) run(f.enter, emptyMap(), q) } } },
             focus = { f -> focused = f },
             // suggest.js pick: the name fills the box, is remembered, the list closes and the box's Enter runs.
             pick = { name -> query = name; suggest = null; focusClear?.invoke()
@@ -174,8 +245,9 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                 a == "go" -> data["to"].orEmpty().let { to -> if (to == "#sets") onSets(game) else if (to == "#rules" && onRules != null) onRules(game) else web(SITE + to, null) }
                 // app.js A.wikiOpen: the Wiki at the button's topic.
                 a in setOf("mtgWikiOpen", "wikiOpen") && onWiki != null -> onWiki(data["game"]?.takeIf { it.isNotBlank() } ?: game, data["topic"]?.takeIf { it.isNotBlank() } ?: data["wikiTopic"].orEmpty())
-                // Compare and Ask (CardStashy AI) are the website's for now: open it there and press the same control.
-                a in setOf("compareOpen", "tCompareOpen", "mtgWikiOpen", "askOpen") -> site("[data-act=\"${css(a)}\"]")
+                // Compare (gap audit H1): the app's own sheet.
+                a in setOf("compareOpen", "tCompareOpen") -> CollectionWrites.comparing.value = CollectionWrites.CompareOpen(game, openCard = compared)
+                a == "mtgWikiOpen" -> site("[data-act=\"${css(a)}\"]")
                 a.isNotBlank() -> run(a, data, value)
             } },
             view = { v ->
@@ -188,7 +260,16 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                     setId = t.open["setId"].orEmpty(), setVariant = t.open["setVariant"].orEmpty(), printing = t.open["printing"].orEmpty(), edition = t.open["edition"].orEmpty())
                     else CardOpen(t.r.name, page = page, tile = "[data-act=\"card\"][data-name=\"${css(t.r.name)}\"]")
             },
+            // A held result: its card actions (card-actions.js cardActionButtons' Compare), as the preview's "hold a card and choose Compare".
+            hold = { t -> held = t },
             fan = { c -> open(JsonObject().apply { addProperty("act", c.act); addProperty("name", c.name); addProperty("id", c.id) }) },
+            answer = AnswerEnv(game, SITE + "#search", card = { c -> cards = cards + c }, sets = onSets, set = onSet, wiki = onWiki, web = web,
+                search = { g, q, sort -> focusClear?.invoke(); searchAnswered(g, q, sort); if (g != game) onGame(g) },
+                discover = { g, k, v -> focusClear?.invoke(); searchDiscover(g, k, v); if (g != game) onGame(g) },
+                play = onPlay, cards = onCards, decks = onDecks, rules = onRules).let { env ->
+                AnswerActs(open = { show -> focusClear?.invoke(); answerShow(scope, show, env) }, go = { d -> focusClear?.invoke(); answerGo(scope, d, env) },
+                    fix = { kind, choice -> fixFor = query to ((if (fixFor.first == query) fixFor.second else emptyMap()) + (kind to choice)) },
+                    ask = { q -> query = q; model?.field?.input?.takeIf { it.isNotBlank() }?.let { a -> run(a, emptyMap(), q) } }) },
         )
     }
     val top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit = { tabs ->
@@ -209,7 +290,7 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
     val pageLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }) {
-            if (m != null) CollectionSearch(m, top, act, nav, query, suggest)
+            if (m != null) CollectionSearch(m, top, act, nav, query, suggest, answer)
             else SearchWaiting(top, nav, failed)
         }
         review?.takeIf { game == "mtg" }?.let { deck ->
@@ -231,6 +312,15 @@ fun CollectionSearchRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () 
                     // Anything else (A.deckTab among them: the deck's own tab): the website's deck page, its review pressed, then the button.
                     else -> { review = null; web(deckPage, "[data-act=\"deckReview\"]\n[data-act=\"${css(x.act)}\"]" + (if (x.id.isNotBlank()) "[data-id=\"${css(x.id)}\"]" else "") + (if (x.role.isNotBlank()) "[data-role=\"${css(x.role)}\"]" else "")) }
                 } }))
+        }
+        // A held result's card actions: Compare (card-actions.js "Choose another card while browsing" / "Use as the second card").
+        held?.let { t ->
+            ContextSheet("Card actions", t.r.name, t.price.ifBlank { null }, t.r.art, listOf(listOf(
+                ContextAction(SiteIcons.ViewStacks, "Compare", "Choose another card while browsing") {
+                    held = null
+                    CollectionWrites.comparing.value = CollectionWrites.CompareOpen(game, first = if (game == "mtg") t.r.name else t.id, openCard = compared)
+                },
+                ContextAction(SiteIcons.CardStack, "Open card") { held = null; act.card(t) }))) { held = null }
         }
         cards.lastOrNull()?.let { c -> androidx.compose.runtime.key(c) {
             CollectionCardHost(c, onClose = { cards = cards.dropLast(1) }, onOpen = { cards = cards + it }, web = web, onSet = { s -> onSet(c.game, s) },

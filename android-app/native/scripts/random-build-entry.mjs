@@ -12,6 +12,7 @@ import {metaState, loadMeta as loadMetaData} from 'WEB/meta.js';
 import {cardKey as key} from 'WEB/core.js';
 import {loadMtgTags, mtgTagsReady, setMtgTags} from 'WEB/mtg-tags.js';
 import {engineRoles} from 'WEB/insights.js';
+import {forgeTags} from 'WEB/deck-forge.js';
 
 // app.js:475-484, verbatim.
 const api = createScryfallClient();
@@ -32,7 +33,17 @@ const playRandomProducer=createRandomDeckProducer({pipeline:deckPipeline,pickSee
 // app.js playRandomQueue: one finished deck waits per format (bracket, style, power), built in the background one at a time and
 // again after each is taken; scope is the signed-in account (app.js readScope), idle is the app's (no match on the table, app in front).
 let scope = null, idle = true;
-const playRandomQueue = createRandomDeckQueue({produce: playRandomProducer, readScope: () => scope, idle: () => idle});
+// The app keeps finished decks between launches (gap audit G1): [kept] is what the queue holds ready, by its key, and [onFile] the decks
+// read back at start, which the producer hands over at once instead of building. A taken deck leaves [kept]; a new account drops both.
+const kept = new Map(), onFile = new Map();
+let keptDirty = false;
+const keptProducer = (request, o) => {
+  const k = playRandomQueue.key(request);
+  if (onFile.has(k)) { const deck = onFile.get(k); onFile.delete(k); kept.set(k, {request, deck}); keptDirty = true; return Promise.resolve(deck); }
+  return playRandomProducer(request, o).then(deck => { if (deck && o?.current?.() !== false) { kept.set(k, {request, deck}); keptDirty = true; } return deck; });
+};
+const playRandomQueue = createRandomDeckQueue({produce: keptProducer, readScope: () => scope, idle: () => idle});
+const keptTake = request => { if (kept.delete(playRandomQueue.key(request))) keptDirty = true; };
 // A finished deck as the app reads it: the site's Power number with it (power.js shownPower, as the Play deck chip shows).
 const withPower = deck => deck && {...deck, power: shownPower(mtgPower({...deck, id: 'construction'}))};
 
@@ -101,6 +112,13 @@ const calls = {
   },
   // Deck Bench (the app's deck editor): quickContext's Power and bracket for the deck being edited, and deck-viewer.js stackSummary's
   // roles (deck-viewer.js deckCardAttrs: insights.js engineRoles without Land, by copies, main deck only, in the list's order).
+  // Deck Bench's Does filter (deck view redesign, 14 Nov): the builder's own role tags (deck-forge.js forgeTags: ramp, draw,
+  // removal, wipe, protection, wincon) for the cards the browser shows, by name. Rules only: no network, no AI.
+  roleTags: a => {
+    const keep = new Set(['ramp', 'draw', 'removal', 'wipe', 'protection', 'wincon']), out = {};
+    for (const c of a.cards || []) { if (!c || !c.name) continue; try { out[c.name] = [...new Set(forgeTags(c).map(t => t.tag).filter(t => keep.has(t)))]; } catch (e) { out[c.name] = []; } }
+    return out;
+  },
   benchContext: async a => {
     const [ctx] = await calls.quickContext({format: a.format, decks: [a.deck]});
     const counts = new Map(), cards = {};
@@ -119,7 +137,13 @@ globalThis.RandomBuild = {
   },
   takeDone() { return done.length ? JSON.stringify(done.splice(0)) : ''; },
   // The account the queued decks belong to; a new one drops them (play-random-queue.js check).
-  scope(json) { scope = JSON.parse(json); },
+  scope(json) { const next = JSON.parse(json); if (JSON.stringify(next) !== JSON.stringify(scope)) { if (scope !== null) { kept.clear(); onFile.clear(); keptDirty = true; } } scope = next; },
+  // The ready decks to keep on the device ([{request, deck}]), when they changed since the last ask; '' when not.
+  keptChanged() { if (!keptDirty) return ''; keptDirty = false; return JSON.stringify([...kept.values()]); },
+  // The decks kept from the last launch: the next warm() for their request hands them over without building. Returns how many.
+  restore(json) { const list = JSON.parse(json || '[]'); for (const e of list) if (e && e.request && e.deck) onFile.set(playRandomQueue.key(e.request), e.deck); return String(onFile.size); },
+  // How many restored decks still wait to be handed to the queue.
+  onFile() { return String(onFile.size); },
   idle(on) { idle = !!on; },
   // app.js warmPlayRandom: these requests ({format, targetBracket, deckStyle, power}) start building in the background.
   warm(json) { playRandomQueue.warm(JSON.parse(json)); },
@@ -137,8 +161,8 @@ globalThis.RandomBuild = {
         result = {busy: false, status: '', deck: withPower(deck), error: deck ? null : 'cancelled', ticket: tag};
         return;
       }
-      let deck = playRandomQueue.take(ask);
-      if (!deck && playRandomQueue.pending(ask)) { result = {...result, status: 'Finishing your next deck…'}; await playRandomQueue.pending(ask); if (!current()) return; deck = playRandomQueue.take(ask); }
+      let deck = playRandomQueue.take(ask); if (deck) keptTake(ask);
+      if (!deck && playRandomQueue.pending(ask)) { result = {...result, status: 'Finishing your next deck…'}; await playRandomQueue.pending(ask); if (!current()) return; deck = playRandomQueue.take(ask); if (deck) keptTake(ask); }
       if (!deck) { deck = await playRandomProducer(ask, {current, onStatus: m => { if (current()) result.status = String(m); }}); if (!current()) return; playRandomQueue.warm([ask]); }
       result = {busy: false, status: '', deck: withPower(deck), error: deck ? null : 'cancelled', ticket: tag};
     })().catch(e => { if (current()) result = {busy: false, status: '', deck: null, error: String(e && e.message || e), trace: String(e && e.stack || ''), ticket: tag}; });

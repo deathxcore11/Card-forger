@@ -182,20 +182,53 @@ class Bb0457ShotTest {
     }
 
     /**
-     * Thor 0.4.56 (finding C): Sheltered by Ghosts' second prompt read "Choose target nonland permanent an opponent contr…". On
-     * two screens (the Thor's top screen about 640 × 360 dp, and the sizes above) the whole ask shows, off the gold button and the
-     * hand chip.
+     * Thor 0.4.56 (finding C): Sheltered by Ghosts' second prompt read "Choose target nonland permanent an opponent contr…". The
+     * whole ask shows. Since b80f7350 (live 0.4.57, fault list 4, 12, 14; table-info I5.1) a target ask on two screens is asked
+     * once, on the bottom screen, where it wraps and is never cut: the top (the Thor's top screen about 640 × 360 dp, and the
+     * sizes above) draws no line, and the bottom says the whole ask. The Thor on one screen (960 × 540) keeps the line on the table,
+     * whole, off the gold button and the hand chip (the phone was never part of this finding).
      */
     @Test fun cAskLineWhole() {
         Pad.used()
         val t = state("targets")
         val st = t.copy(message = "Select targets for Sheltered by Ghosts\nChoose target nonland permanent an opponent controls.")
+        val ask = dev.cardstashy.nativeplay.ui.askLine(st) ?: error("no ask for the target prompt")
+        assertTrue("the ask itself is cut: $ask", ask.contains("choose target nonland permanent an opponent controls", ignoreCase = true) && ask.startsWith("Sheltered by Ghosts: ") && "…" !in ask)
         for (size in listOf(Size("640x360-dual", 640, 360, true)) + sizes.filter { it.dual }) {
+            val a = board("c-askline", st, size, clock = null)
+            assertTrue("the top still says the ask at ${size.tag}", a.rects["askline"] == null)
+            val words = dev.cardstashy.nativeplay.ui.bottomWords(st, true, st.me.hand, null, null, ask)
+            assertTrue("the bottom does not ask at ${size.tag}: $words", words is dev.cardstashy.nativeplay.ui.BottomWords.Ask && words.text == ask)
+        }
+        for (size in sizes.filter { !it.dual && it.tag.startsWith("960") }) {
             val a = board("c-askline", st, size, clock = null)
             val line = a.rects["askline"] ?: error("no ask line at ${size.tag}")
             assertTrue("ask line cut at ${size.tag}", a.rects["askline.cut"] == null)
             inside("Ask line", line, size)
             for (k in listOf("gold", "handchip", "phasetrack")) a.rects[k]?.let { apart("Ask line / $k at ${size.tag}", line, it) }
+        }
+    }
+
+    /**
+     * Live 0.4.57 on the Thor (fault list 5): the two-line ask came down over your seat's tool row (Smart, Full Control,
+     * Auto-pay) and hid the hand. On two screens a target ask is now asked below (MatchBottom), so the line left on top is
+     * "Respond to X?"; with all three tools up and a long name it stays right of the tray, whole, at the Thor's sizes.
+     */
+    @Test fun askLineClearsSeatTray() {
+        Pad.used()
+        val t = state("targets").copy(controlMode = "smart", autoPay = true)
+        // The CPU's spell on the stack while you hold priority: the top's line reads "Respond to <name>?" (askLine).
+        fun respond(name: String) = t.copy(inputType = "InputPassPriority", message = "", priorityPlayer = t.viewer,
+            stack = t.stack.take(1).map { it.copy(text = "$name — Counter target spell.", source = it.source?.copy(name = name)) })
+        val long = respond("Sorin, Grim Nemesis of the Ancient Vampire Court")
+        val longer = respond("Sorin, Grim Nemesis of the Ancient Vampire Court and Its Heirs")
+        for ((st, size) in listOf(long to Size("640x360-dual", 640, 360, true), long to Size("731x411-dual", 731, 411, true),
+            longer to Size("960x540-dual", 960, 540, true))) {
+            val a = board("askline-tray", st, size, clock = null)
+            val line = a.rects["askline"] ?: error("no ask line at ${size.tag}")
+            val tools = a.rects["tools"] ?: error("no seat tray at ${size.tag}")
+            apart("Ask line / tools at ${size.tag}", line, tools)
+            assertTrue("ask line cut at ${size.tag}", a.rects["askline.cut"] == null)
         }
     }
 }

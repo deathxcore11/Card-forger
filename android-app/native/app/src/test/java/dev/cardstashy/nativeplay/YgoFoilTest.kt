@@ -55,4 +55,37 @@ class YgoFoilTest {
         assertNull(CardFinish.ygo("Common", "LOB-EN001", "", "Normal Monster", "x"))
         assertNull(CardFinish.ygo("Ultra Rare", "RD/KP01", "", "Rush Duel Effect Monster", "x"))
     }
+    /** smoothstep(edge0, edge1, x) with edge0 >= edge1 is undefined in the shading language: a phone's graphics driver may answer
+     *  anything, and one bad number blanks the whole card. The prism pattern (Prismatic Secret Rare, the one rarity whose picture
+     *  stayed empty in Randall's 12 Nov recording) was the only place that wrote it that way. No foil shader may. */
+    @Test fun noShaderAsksForAnUndefinedSmoothstep() {
+        val call = Regex("""smoothstep\(\s*(-?[0-9]*\.?[0-9]+)\s*,\s*(-?[0-9]*\.?[0-9]+)\s*,""")
+        for ((name, src) in listOf("ygo" to YgoFoil.AGSL, "ptcg" to dev.cardstashy.nativeplay.foil.PtcgFoil.AGSL, "depth" to dev.cardstashy.nativeplay.foil.Depth.AGSL)) {
+            val bad = call.findAll(src).filter { it.groupValues[1].toFloat() >= it.groupValues[2].toFloat() }.map { it.value }.toList()
+            assertTrue("$name shader has reversed smoothstep edges: $bad", bad.isEmpty())
+        }
+    }
+    /** The graphics chip's language keeps every name that starts with "gl_" for itself, and the renderer adds "_S1_c0" and the like
+     *  to each helper's name when it builds the program. A helper called gl() became gl_S1_c0, the phone refused the whole program
+     *  and drew NOTHING for every Yu-Gi-Oh! foil card (Randall 12 Nov, 0.4.65; reproduced on a software graphics chip: "name
+     *  'gl_S1_c0' is reserved", all pixels empty). The app's own compile check never sees this. No foil shader may name anything gl. */
+    @Test fun noShaderNameBecomesReservedOnTheGraphicsChip() {
+        val named = Regex("""\b(?:float[234]?|half[34]?|int|bool|void)\s+(gl\w*)\b""")
+        for ((name, src) in listOf("ygo" to YgoFoil.AGSL, "ptcg" to dev.cardstashy.nativeplay.foil.PtcgFoil.AGSL, "depth" to dev.cardstashy.nativeplay.foil.Depth.AGSL,
+            "mtg" to dev.cardstashy.nativeplay.ui.Foil.AGSL)) {
+            val bad = named.findAll(src).map { it.groupValues[1] }.filter { it == "gl" || it.startsWith("gl_") }.toList()
+            assertTrue("$name shader names $bad: reserved once the renderer adds its suffix", bad.isEmpty())
+        }
+    }
+
+    /** The Yu-Gi-Oh! shader reads the card picture a second time (the name bar's ground). With an early "return" in main before those
+     *  reads, a graphics chip drew the name foil but dropped the whole art foil, while the software path drew both (GPU check,
+     *  12 Nov: prismatic, tile and full size). A shader that reads the card more than once must leave main only at its end. */
+    @Test fun aShaderThatReadsTheCardTwiceLeavesMainOnlyAtItsEnd() {
+        for ((name, src) in listOf("ygo" to YgoFoil.AGSL, "ptcg" to dev.cardstashy.nativeplay.foil.PtcgFoil.AGSL, "mtg" to dev.cardstashy.nativeplay.ui.Foil.AGSL)) {
+            if (Regex("""u_card\.eval""").findAll(src).count() < 2) continue
+            val main = src.substring(src.indexOf("half4 main("))
+            assertEquals("$name: main returns early", 1, Regex("""\breturn\b""").findAll(main).count())
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.graphics.Color
 import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.engine.MatchState
 
@@ -93,6 +94,9 @@ object Glow {
             blockingNow && card.id == blockPick -> Mark.PICKED
             discardAsk && card.id == selectedHand && card.id in st.selection.cards -> Mark.PICKED
             blockingNow && aimed && card.attacking && card.controller != st.viewer -> Mark.TARGET
+            // Gaps list 4 (15 Nov): "Block the CPU's attack?" with no creature lit, so he never blocked. Every creature of yours that
+            // could meet an attacker wears the pick ring, as Arena rings its able blockers.
+            blockingNow && canBlock(card, st) -> Mark.PICKABLE
             card.id in blocked -> Mark.NONE
             card.id in st.selection.chosenCards -> Mark.PICKED
             card.id in st.selection.targetCards -> Mark.TARGET
@@ -100,6 +104,31 @@ object Glow {
             // glow-rules.md rules 1-7: playable (hand, command zone, graveyard, exile), usable (a permanent's ability), or nothing.
             else -> usable(card, st, live, blocked, quiet)
         }
+    }
+
+    /**
+     * While you declare blockers: [card] is your untapped creature, not blocking yet, that Forge offers (or Forge lists nothing, as
+     * InputBlock does) and that could meet at least one attacker by what the cards show (flying, reach, "can't block"). Forge still
+     * judges the block itself.
+     */
+    fun canBlock(card: Card, st: MatchState): Boolean {
+        if (card.controller != st.viewer || card.zone != "Battlefield" || !card.isCreature || card.attacking || card.blocking || card.tapped) return false
+        val offered = st.selection.cards + st.selection.actionable
+        if (offered.isNotEmpty() && card.id !in offered) return false
+        if (blockRefusal(null, card) != null) return false
+        return st.players.filter { it.id != st.viewer }.flatMap { it.battlefield }.any { it.attacking && mayBlock(it, card) && blockRefusal(it, card) == null }
+    }
+
+    /**
+     * Mobile table M2: while a target question offers permanents on both sides of the table, each offered one says whose it is
+     * (true: yours, a blue ring and your seat name; false: the other side's, a red ring and its seat name). Whose it is comes from the table state
+     * (its controller), never from a rules judgment. One side only, or no target question: empty, the ring alone.
+     */
+    fun sideTags(st: MatchState, live: Boolean): Map<Int, Boolean> {
+        if (!live || st.prompt != null || st.inputType != "InputSelectTargets") return emptyMap()
+        val sides = (st.selection.cards + st.selection.targetCards + st.selection.chosenCards).mapNotNull { st.card(it) }
+            .filter { it.zone == "Battlefield" }.associate { it.id to (it.controller == st.viewer) }
+        return if (sides.values.toSet().size == 2) sides else emptyMap()
     }
 
     /** Every card this snapshot shows with its board light (see [mark]), for checks. */
@@ -122,8 +151,23 @@ object Glow {
         if (carried == null || usable(carried, st, live, blocked, quiet) != Mark.PLAYABLE) return emptySet()
         return st.selection.tapPlans[carried.id]?.sources?.toSet() ?: emptySet()
     }
+
+    /**
+     * 0.4.60 G6 review (glow-rules.md "The ability opens on the card": "The payment light shows what it would tap"): while [open]'s
+     * ability rows are open, the sources the bridge's tapPreview names for it. Only for a permanent that wears the usable ring; no
+     * preview from the bridge, no light (the same rule as [payment]).
+     */
+    fun abilityPayment(st: MatchState, live: Boolean, open: Card, blocked: Map<Int, String>, quiet: Set<Int>): Set<Int> {
+        if (usable(open, st, live, blocked, quiet) != Mark.USABLE) return emptySet()
+        return st.selection.tapPlans[open.id]?.sources?.toSet() ?: emptySet()
+    }
 }
 
+/** M2: the offered targets that say whose they are ([Glow.sideTags]): card id to "yours". */
+val LocalSideTags = compositionLocalOf<Map<Int, Boolean>> { emptyMap() }
+/** M2: your side's ring and tag, and the CPU's. */
+val SideYours = Color(0xFF5CC8FF)
+val SideCpu = Color(0xFFFF5A4A)
 /** The sources lit as payment for the carried hand card (mana gold over the card). */
 val LocalPayLight = compositionLocalOf<Set<Int>> { emptySet() }
 /** A payment light is showing (a hand card carried with a plan): the usable ring steps back so the payment light reads alone. */

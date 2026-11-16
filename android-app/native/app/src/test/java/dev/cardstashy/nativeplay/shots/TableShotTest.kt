@@ -70,14 +70,13 @@ class TableShotTest {
                 }
             }
         }
-        // The cast spotlight (table-feel spec 2): a CPU creature and your own spell, card at the right and the glass box beside it.
+        // The spotlight (table-feel spec 2), card at the right and the glass box beside it. Your own spell has none since 0.4.59 T5
+        // (the card itself travels to the stack); the CPU's picture stays, as its triggers and abilities still use the spotlight.
         for ((size, q) in listOf("844x390" to "w844dp-h390dp-land-xxhdpi", "960x840" to "w960dp-h840dp-land-xhdpi")) {
             RuntimeEnvironment.setQualifiers(q)
             val st = state("main")
             val cpuCard = (st.cpu.battlefield + st.cpu.graveyard).filter { !it.isLand }.maxByOrNull { it.text.length + if (it.isCreature) 100 else 0 }!!
-            val myCard = (st.me.hand + st.me.battlefield).filter { !it.isLand && !it.isCreature }.maxByOrNull { it.text.length } ?: st.me.hand.first()
-            for ((name, spot) in listOf("cpu" to dev.cardstashy.nativeplay.ui.Spotlight(cpuCard, "CPU", "casts", emptyList(), 4000, false),
-                    "you" to dev.cardstashy.nativeplay.ui.Spotlight(myCard, "You", "casts", listOf(cpuCard.name), 1600, true))) {
+            for ((name, spot) in listOf("cpu" to dev.cardstashy.nativeplay.ui.Spotlight(cpuCard, "CPU", "casts", emptyList(), 4000, false))) {
                 dev.cardstashy.nativeplay.ui.TableEmotes.destroy()
                 captureRoboImage(File(System.getProperty("shotsDir"), "table/table-spotlight-$name-$size.png").path) {
                     val anchors = remember { Anchors() }

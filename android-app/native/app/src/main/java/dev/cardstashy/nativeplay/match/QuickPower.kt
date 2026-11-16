@@ -94,12 +94,21 @@ object QuickPower {
                 }
             }
             save()
+            version.value++
         }
     }
 
     /** Reads for [decks] in [format], waiting until [deadline] (System.currentTimeMillis()); a read not in by then is null (unrated). */
     suspend fun rate(format: String, decks: List<JsonObject>, deadline: Long): List<QuickOpponent.Ctx?> =
         start(format, decks, urgent = true).map { d -> withTimeoutOrNull((deadline - System.currentTimeMillis()).coerceAtLeast(1)) { d.await() } }
+
+    /** Bumps when new reads are kept, so a screen showing [peek]s draws them as they arrive (0.4.59 T8 deck tiles). */
+    val version = kotlinx.coroutines.flow.MutableStateFlow(0)
+    /** A kept read for [d] in [format], without asking for one (null: not read yet). */
+    fun peek(format: String, d: JsonObject): QuickOpponent.Ctx? {
+        val k = key(format, d); val now = System.currentTimeMillis()
+        return synchronized(lock) { known[k]?.takeIf { now - it.first < TTL }?.second }
+    }
 
     /** The lobby's background read of the Quick Play pool in [format]. */
     fun warm(format: String, decks: List<JsonObject>) { start(format, decks, urgent = false) }

@@ -34,7 +34,7 @@ object CollectionEngine {
     private val answers = ConcurrentLinkedQueue<Triple<Int, Int, Pair<String, String>>>()
     private val client by lazy { OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).build() }
 
-    fun init(context: Context) { val app = context.applicationContext; filesDir = app.filesDir; source = { app.assets.open("collection-engine.js").bufferedReader().readText() }
+    fun init(context: Context) { val app = context.applicationContext; filesDir = app.filesDir; shipped = { name -> runCatching { app.assets.open(name).use { it.readBytes() } }.getOrNull() }; source = { app.assets.open("collection-engine.js").bufferedReader().readText() }
         if (store !is FileStore) store = FileStore(File(app.filesDir, "collection-store"), app.getSharedPreferences("collection-engine-storage", Context.MODE_PRIVATE)) }
 
     /**
@@ -80,6 +80,8 @@ object CollectionEngine {
     @Volatile var store: Store = MemoryStore()
     /** This device's files (rulebooks kept for offline use); unset in tests run from a file. */
     @Volatile internal var filesDir: File? = null
+    /** A file shipped inside the app (assets), or null: the rulebooks and the card-name list, so Ask a Judge works with no network. */
+    @Volatile internal var shipped: ((String) -> ByteArray?)? = null
     /** For tests: the bundle from a file. */
     fun initFrom(file: File) { source = { file.readText() } }
     /** For tests: a fresh engine (the bundle read again on the next call), so one test's pages don't carry into the next. */
@@ -125,6 +127,8 @@ object CollectionEngine {
         while (true) { val a = answers.poll() ?: break; landed = true; q.evaluate("__host.answer(${a.first}, ${a.second}, ${str(a.third.first)}, ${str(a.third.second)})") }
         val p = JsonParser.parseString(q.evaluate("__host.pump(${System.currentTimeMillis()})") as String).asJsonObject
         for (x in p.getAsJsonArray("requests")) send(x.asJsonObject)
+        // Price alerts a price seen in this turn set off (app.js onAlert): their lines for the app's toast.
+        p.getAsJsonArray("alerts")?.forEach { a -> runCatching { alertsFired.tryEmit(a.asJsonObject) } }
         p.getAsJsonObject("stored")?.entrySet()?.forEach { (k, v) -> runCatching { store.save(k, v.takeIf { it.isJsonPrimitive }?.asString) } }
         p to after(q, p, landed)
     }
@@ -402,19 +406,152 @@ object CollectionEngine {
     suspend fun searchDo(act: String, data: JsonObject = JsonObject()): JsonObject =
         on { q -> JsonParser.parseString(q.evaluate("Collection.searchDo(${str(act)}, ${str(data.toString())})") as String).asJsonObject }
     const val SEARCH_MODEL = "Collection.searchModel()"
+    /** A Yu-Gi-Oh! / Pokémon card page's chip (app.js A.ruleCards): the game's search set to it and started; {error} when it can't be. */
+    suspend fun discoverySearch(game: String, kind: String, value: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.discoverySearch(${str(game)}, ${str(kind)}, ${str(value)})") as String).asJsonObject }
     suspend fun searchModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(SEARCH_MODEL) as String).asJsonObject }
     /** The card a press opened (Random: {act: card, name} or {act: tCard, id, game}), once; null when none. */
     suspend fun searchWent(): JsonObject? = on { q -> JsonParser.parseString(q.evaluate("Collection.searchWent()") as String).takeIf { it.isJsonObject }?.asJsonObject }
     /** What the search's handlers said (toast), once. */
     suspend fun searchToasts(): List<String> = on { q -> JsonParser.parseString(q.evaluate("Collection.searchToasts()") as String).asJsonArray.map { it.asString } }
     /** The saved searches (tcg.js savedSearches' device storage, every game), to keep and to put back. */
+    // ---- Compare cards (gap audit H1; the engine's Collection.compare*) ----
+    /** The compare sheet of [game]: {title, sides [{empty, i} or {i, name, picture, id, lines, chips, facts, effects}], verdict, swap, foot, clear}. */
+    suspend fun compareModel(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.compareModel(${str(game)})") as String).asJsonObject }
+    private suspend fun compareWait(maxMs: Long): String? {
+        val until = System.currentTimeMillis() + maxMs
+        while (System.currentTimeMillis() < until) {
+            val r = on { q -> JsonParser.parseString(q.evaluate("Collection.compareDone()") as String).asJsonObject }
+            if (r["done"]?.asBoolean == true) return r["error"]?.takeIf { it.isJsonPrimitive }?.asString
+            settle(1_000)
+        }
+        return "Card lookup timed out. Check your connection and try again."
+    }
+    /** A held card into the first empty side ([ref]: a Magic name, else the card id); the error line or null. */
+    suspend fun compareFrom(game: String, ref: String, maxMs: Long = 30_000): String? { on { q -> q.evaluate("Collection.compareFrom(${str(game)}, ${str(ref)})") }; return compareWait(maxMs) }
+    /** Side [i] from a typed name; the site's error line ("No card with that name.") or null. */
+    suspend fun compareLookup(game: String, i: Int, name: String, maxMs: Long = 30_000): String? { on { q -> q.evaluate("Collection.compareLookup(${str(game)}, $i, ${str(name)})") }; return compareWait(maxMs) }
+    /** Clear side [i], or both with -1 (A.compareReset); the sheet again. */
+    suspend fun compareClear(game: String, i: Int): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.compareClear(${str(game)}, $i)") as String).asJsonObject }
+
+    // ---- Ask a Judge (gap audit H4: ai-rules.js in the engine; Collection.judge*) ----
+    const val JUDGE_MODEL = "Collection.judgeModel()"
+    /** A judge's citation on the open Rules page (rule-learning.js openRuleReference): the panel, or {opened: false}. */
+    suspend fun ruleOpen(ref: JsonObject): JsonObject = askEval("Collection.ruleOpen(${str(ref.toString())})")
+    /**
+     * Ask a Judge, no AI (judge-search.js) for [context] ({game, format, cards, question}): {open, game, eyebrow, title, placeholder,
+     * hello, blurb, cards [{name}], examples, lines, busy}. A line is {who: me|error|judge}; an answer has status (answered | related |
+     * none), read, rules [{number, heading, text, whole, lead, reference, title, quote}], rulesLabel, cards [{name, text, rulings
+     * [{label, text}], note}], terms [{label, def, ours}], foot, and for a miss missTitle, missText, examples.
+     */
+    suspend fun judgeOpen(context: JsonObject): JsonObject = askEval("Collection.judgeOpen(${str(context.toString())})")
+    suspend fun judgeModel(): JsonObject = askEval(JUDGE_MODEL)
+    suspend fun judgeFormat(format: String): JsonObject = askEval("Collection.judgeFormat(${str(format)})")
+    suspend fun judgeSend(text: String): JsonObject = askEval("Collection.judgeSend(${str(text)})")
+    suspend fun judgeNew(): JsonObject = askEval("Collection.judgeNew()")
+    suspend fun judgeDropCards(): JsonObject = askEval("Collection.judgeDropCards()")
+    suspend fun judgeClose() { askEval("Collection.judgeClose()") }
+    /** Runs the question out to its answer, [onModel] seeing the chat as it changes. */
+    suspend fun judgeWait(maxMs: Long = 30_000, onModel: (JsonObject) -> Unit = {}): JsonObject {
+        val until = System.currentTimeMillis() + maxMs
+        var m = judgeModel()
+        while (m.get("busy")?.asBoolean == true && System.currentTimeMillis() < until) {
+            val t = System.currentTimeMillis()
+            settle(1_000, JUDGE_MODEL) { onModel(it) }
+            if (System.currentTimeMillis() - t < 20) delay(40)
+            m = judgeModel()
+        }
+        onModel(m)
+        return m
+    }
+
+    // ---- The app's own lookups behind the search answers (ai-tools.js in the engine: plain app code, no AI) ----
+    private suspend fun askEval(code: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate(code) as String).asJsonObject }
+    /**
+     * A tapped tile ([show], its data-ask-show): the site's tools.open worked out; where the app goes, or null. {to: card (game, name
+     * or id, setId), meta (game, key, format), route (hash), build (game, id or seed, budget, format), help (id), wiki (game, topic)}.
+     */
+    suspend fun askShow(show: JsonObject, maxMs: Long = 30_000): JsonObject? {
+        askEval("Collection.askShow(${str(show.toString())})")
+        val until = System.currentTimeMillis() + maxMs
+        while (System.currentTimeMillis() < until) {
+            val r = askEval("Collection.askShowDone()")
+            if (r["done"]?.asBoolean == true) return r.getAsJsonObject("dest")
+            settle(1_000)
+        }
+        return null
+    }
+
+    // ---- Price alerts (pricehist.js; the engine's Collection.alert*) ----
+    /** Each alert a price seen in the engine set off: {game, id, name, usd, text} (pricehist.js alertText). */
+    val alertsFired = kotlinx.coroutines.flow.MutableSharedFlow<JsonObject>(extraBufferCapacity = 16)
+    /** Whose alerts the site's code reads and writes: the signed-in account, or "guest". */
+    suspend fun alertOwner(user: String?) = on { q -> q.evaluate("Collection.alertOwner(${str(user ?: "guest")})"); Unit }
+    /** The alert sheet for one card: {name, price, exists, below, above, hintBelow, hintAbove, series}. */
+    suspend fun alertOpen(game: String, id: String, name: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.alertOpen(${str(game)}, ${str(id)}, ${str(name)})") as String).asJsonObject }
+    /** Save Alert with the two fields as typed: {error} or {ok, toast}. A turn follows so the list reaches the device's storage. */
+    suspend fun alertSave(game: String, id: String, name: String, below: String, above: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.alertSave(${str(game)}, ${str(id)}, ${str(name)}, ${str(below)}, ${str(above)})") as String).asJsonObject }.also { turn { _, _, _ -> } }
+    suspend fun alertClear(game: String, id: String): JsonObject =
+        on { q -> JsonParser.parseString(q.evaluate("Collection.alertClear(${str(game)}, ${str(id)})") as String).asJsonObject }.also { turn { _, _, _ -> } }
+    /**
+     * The daily check (gap audit H2 step 4): every alerted card's price fetched now and recorded as the site records a price it sees;
+     * returns what it set off ({game, id, name, usd, text}). Gives up after [maxMs].
+     */
+    suspend fun alertCheck(maxMs: Long = 120_000): List<JsonObject> = kotlinx.coroutines.coroutineScope {
+        val got = java.util.Collections.synchronizedList(mutableListOf<JsonObject>())
+        val listen = launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) { alertsFired.collect { got += it } }
+        try {
+            on { q -> q.evaluate("Collection.alertCheck()") }
+            val until = System.currentTimeMillis() + maxMs
+            while (System.currentTimeMillis() < until) {
+                settle(2_000)
+                if (on { q -> JsonParser.parseString(q.evaluate("Collection.alertCheckPoll()") as String).asJsonObject["done"].asBoolean }) break
+            }
+            settle(1_000)
+        } finally { listen.cancel() }
+        got.toList()
+    }
+    /** This account's alerts: [{game, id, name, below, above, created, firedAt}]. */
+    suspend fun alertList(): com.google.gson.JsonArray = on { q -> JsonParser.parseString(q.evaluate("Collection.alertList()") as String).asJsonObject.getAsJsonArray("alerts") }
     suspend fun searchSaved(): String = on { q -> q.evaluate("Collection.searchSaved()") as String }
     suspend fun searchSavedSet(raw: String) = on { q -> q.evaluate("Collection.searchSavedSet(${str(raw)})"); Unit }
     /** suggest.js under the search box: start it for [text] (empty: the recent searches at once); pump with [settle] on [SUGGEST_MODEL]. */
     suspend fun searchSuggest(game: String, text: String): JsonObject? = on { q -> JsonParser.parseString(q.evaluate("Collection.searchSuggest(${str(game)}, ${str(text)})") as String).takeIf { it.isJsonObject }?.asJsonObject }
     const val SUGGEST_MODEL = "Collection.searchSuggestModel()"
     suspend fun searchSuggestModel(): JsonObject? = on { q -> JsonParser.parseString(q.evaluate(SUGGEST_MODEL) as String).takeIf { it.isJsonObject }?.asJsonObject }
+    /**
+     * The search box's answer card (answer-search.js / answer-run.js, no AI): reads [text] into one of the app's own lookups and runs it.
+     * [opts] = {fix: {format, game}, set, card}. Null when the words are a plain card name or the box is empty; else
+     * {q, game, read: [{label, kind, choices}], answer: {ok, say, strong, fact, quote, note, source, miss, ask, items, more, buttons, others}}.
+     */
+    suspend fun searchAnswer(game: String, text: String, opts: JsonObject = JsonObject(), maxMs: Long = 30_000, buildMs: Long = 120_000, onModel: (JsonObject) -> Unit = {}): JsonObject? {
+        fun read(raw: Any?) = JsonParser.parseString(raw as String).takeIf { it.isJsonObject }?.asJsonObject
+        var j = on { q -> read(q.evaluate("Collection.searchAnswer(${str(game)}, ${str(text)}, ${str(opts.toString())})")) }
+        var until = System.currentTimeMillis() + maxMs
+        /** The answer as it stands while the deck builder is still making its deck: shown at once, and kept if the build runs out of time. */
+        var partial: JsonObject? = null
+        while (System.currentTimeMillis() < until) {
+            val state = j?.get("state")?.asString
+            if (state == "done" && j?.get("q")?.asString == text) return j
+            if (state == "none") return null
+            if (state == "loading") {
+                j?.let(onModel)
+                if (partial == null && j?.get("answer")?.isJsonObject == true && j.get("q")?.asString == text) { partial = j; until = System.currentTimeMillis() + buildMs }
+                else if (partial != null && j?.get("answer")?.isJsonObject == true) partial = j
+            }
+            settle(400)
+            j = on { q -> read(q.evaluate("Collection.searchAnswerModel()")) }
+        }
+        return partial
+    }
+    /** Whether [text] is a question the app answers ("answer"), one it can't ("miss") or a plain search ("none"). */
+    suspend fun searchAsks(game: String, text: String): String = on { q -> q.evaluate("Collection.searchAsks(${str(game)}, ${str(text)})") as String }
+    /** An answer's "See them all in Search" for Magic: the Search page set to [q] and [sort] (usd, usdAsc or blank) and started. */
+    suspend fun searchAnswerSearch(q: String, sort: String): JsonObject = askEval("Collection.searchAnswerSearch(${str(q)}, ${str(sort)})")
     /** suggest.js rememberSearch: Enter, or a picked suggestion. */
+    /** Home's words are a new search: filters an earlier page left on are cleared (app.js submitHome). */
+    suspend fun searchFresh(game: String) = on { q -> q.evaluate("Collection.searchFresh(${str(game)})"); Unit }
     suspend fun searchRemember(game: String, text: String) = on { q -> q.evaluate("Collection.searchRemember(${str(game)}, ${str(text)})"); Unit }
     const val SETS_MODEL = "Collection.setsModel()"
     suspend fun setsModel(): JsonObject = on { q -> JsonParser.parseString(q.evaluate(SETS_MODEL) as String).asJsonObject }
@@ -555,6 +692,10 @@ object CollectionEngine {
 
     /** app.js A.undo: the state before the last undoable change, written the same way; {writes, toasts}. */
     suspend fun undo(): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.undo()") as String).asJsonObject }
+    /** Settings > Backup's file (app.js backupPayload): the workspace in confidence.js backupEnvelope with its cards' data. */
+    suspend fun backupPayload(): String = on { q -> q.evaluate("Collection.backupPayload()") as String }
+    /** Settings > Backup's Check file line (app.js C.checkBackup) for a picked file's words. */
+    suspend fun backupCheck(text: String): String = on { q -> q.evaluate("Collection.backupCheck(${str(text)})") as String }
     /** The workspace as the account keeps it (this device's copy, and what a push sends). */
     suspend fun saved(): String = on { q -> q.evaluate("Collection.saved()") as String }
     /** cloud.js workspaceSig and isEmptyWorkspace of [saved]: {sig, empty}. */
@@ -595,12 +736,15 @@ object CollectionEngine {
     suspend fun hints(game: String): JsonObject = on { q -> JsonParser.parseString(q.evaluate("Collection.hints(${str(game)})") as String).asJsonObject }
 
     /** The catalog the lookups filled (store.js S.catalog), for the app to keep between visits. */
+    /** Card art saved once: every picture the player's decks, collection and wishlist draw, in every game (art/ArtKeep.kt). */
+    suspend fun artKeep(): List<String> = on { q -> JsonParser.parseString(q.evaluate("Collection.artKeep()") as String).asJsonObject.getAsJsonArray("urls").mapNotNull { it?.takeIf { e -> e.isJsonPrimitive }?.asString } }
     suspend fun catalog(): String = on { q -> q.evaluate("Collection.catalog()") as String }
 
     /** For tests: any expression in the bundle's scope, as a string. */
     internal suspend fun eval(code: String): String = on { q -> q.evaluate("String($code)") as String }
 
     private val JSON = "application/json".toMediaType()
+    private val SHIPPED = Regex("^https://cardstashy\\.com/(?:rulebooks/)?((?:manifest\\.json|[a-z]+-rules-v\\d+\\.json\\.gz|forge-card-names-[\\w.-]+\\.txt))$")
     /** A body as text: a gzip file (the rulebooks, .json.gz) unpacked first, as the site's loadRulePack unpacks it. */
     private fun body(b: ByteArray): String =
         if (b.size > 2 && b[0] == 0x1f.toByte() && b[1] == 0x8b.toByte()) java.util.zip.GZIPInputStream(b.inputStream()).use { it.readBytes() }.toString(Charsets.UTF_8)
@@ -620,6 +764,8 @@ object CollectionEngine {
         val raw = r.get("url").asString
         // The site's own routes are relative ("api/meta/mtg?…", "/api/…"): they resolve against the site.
         val url = if (raw.startsWith("http")) raw else "https://cardstashy.com/" + raw.removePrefix("/")
+        // The rulebooks and the card-name list ship inside the app: read there first, so the Judge never waits on the network.
+        SHIPPED.find(url.substringBefore('?'))?.let { m -> shipped?.invoke("rulebooks/" + m.groupValues[1])?.let { b -> answers.add(Triple(id, 200, "{}" to body(b))); return } }
         answerForTest?.invoke(url)?.let { (code, text) -> if (code == 0) heldForTest.add(r) else answers.add(Triple(id, code, "{}" to text)); return }
         val method = r.get("method")?.asString ?: "GET"
         val body = r.get("body")?.takeIf { it.isJsonPrimitive }?.asString

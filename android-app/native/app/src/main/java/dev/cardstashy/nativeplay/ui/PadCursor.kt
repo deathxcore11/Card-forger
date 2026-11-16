@@ -50,10 +50,36 @@ object PadCursor {
 
     fun attach(decor: View) { root = decor }
 
+    /**
+     * A page with no Compose targets under it (Planeswalk in the web view, gap audit G6): A taps the screen where the cursor
+     * points, as a finger would, instead of looking for something the ring can rest on.
+     */
+    @Volatile var freeTap = false
+
     private const val DEAD = .18f
 
     /** The left stick's position (-1..1 each way). */
-    fun left(x: Float, y: Float) { lx = x; ly = y; if (hypot(x, y) > DEAD) { if (!shown) appear(); kick() } }
+    fun left(x: Float, y: Float) {
+        snap?.let { s -> snapStick(x, y, s); return }
+        lx = x; ly = y; if (hypot(x, y) > DEAD) { if (!shown) appear(); kick() }
+    }
+
+    /**
+     * 0.4.59 T6: while the table asks for a target the left stick has no free cursor; a push snaps the ring to the nearest legal
+     * answer that way (the same list the d-pad walks), again every [SNAP_REPEAT_MS] while it is held, and once more on each new push.
+     */
+    var snap: ((Offset) -> Boolean)? = null
+    private var snapArmed = false; private var snapAt = 0L
+    internal const val SNAP_PUSH = .5f
+    internal const val SNAP_REPEAT_MS = 220L
+    internal fun snapStick(x: Float, y: Float, s: (Offset) -> Boolean, now: Long = SystemClock.uptimeMillis()) {
+        val m = hypot(x, y)
+        if (m < DEAD) { snapArmed = false; return }
+        if (m < SNAP_PUSH) return
+        if (snapArmed && now - snapAt < SNAP_REPEAT_MS) return
+        snapArmed = true; snapAt = now
+        s(Offset(x, y))
+    }
     /**
      * The right stick scrolls like a console's (Randall 9 Nov: "a real controller going up and down pages that call for it"):
      * analog speed (a nudge creeps, the rim races), one axis at a time, easing in. It drives the scroller the way a finger does
@@ -87,6 +113,12 @@ object PadCursor {
         ev.source = android.view.InputDevice.SOURCE_TOUCHSCREEN
         runCatching { v.dispatchTouchEvent(ev) }
         ev.recycle()
+    }
+
+    /** One finger tap at [p] (window pixels): down, then up. */
+    private fun tap(p: Offset) {
+        val d = Drag(SystemClock.uptimeMillis(), p.x, p.y, false, -1)
+        touch(android.view.MotionEvent.ACTION_DOWN, d); touch(android.view.MotionEvent.ACTION_UP, d)
     }
 
     private fun lift() {
@@ -152,6 +184,7 @@ object PadCursor {
         // Only while the cursor can be seen: once it fades, or the ring moves on by LB/RB, RT or a restore, A belongs to the ring
         // (U8: A on the hand chip opened a field card the faded cursor was still over).
         if (!shown || SystemClock.uptimeMillis() - lastMove > 3500) return false
+        if (freeTap) { val p = pos ?: return false; tap(p); lastMove = SystemClock.uptimeMillis(); return true }
         val id = target?.id ?: return false
         // Read it fresh: the one kept from aim() was taken before the ring moved onto it, so it never read as focused.
         val t = nodes()?.firstOrNull { it.id == id } ?: return false

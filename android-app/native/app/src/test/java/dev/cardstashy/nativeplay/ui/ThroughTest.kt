@@ -4,6 +4,8 @@ import dev.cardstashy.nativeplay.engine.Card
 import dev.cardstashy.nativeplay.engine.MatchState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class ThroughTest {
@@ -44,5 +46,18 @@ class ThroughTest {
         val extra = base.players.first { it.id != base.viewer }.copy(id = 77, battlefield = emptyList())
         val pod = board(emptyList(), listOf(c(1, 0, 3, attacking = true))).let { it.copy(players = it.players + extra) }
         assertNull(damageThrough(pod))
+    }
+
+    /** Better table scene 4: the chip's one line, from the forecast's own numbers; no death is named. */
+    @Test fun chipWordsFollowEachPick() {
+        val them = listOf(c(1, 0, 3, attacking = true))
+        val blocked = board(listOf(c(10, base.viewer, 1, blocks = 1)), them)
+        assertTrue(blocksMade(blocked))
+        assertEquals("Blocked \u00B7 0 gets through", throughWords(damageThrough(blocked)!!, 20, blocksMade(blocked)).text)
+        val open = board(listOf(c(10, base.viewer, 1)), them)
+        assertFalse(blocksMade(open))
+        assertEquals("3 gets through \u00B7 Life 20 \u2192 17", throughWords(damageThrough(open)!!, 20, blocksMade(open)).text)
+        assertEquals("Blocked \u00B7 At least 5 gets through \u00B7 Life 20 \u2192 15 or less", throughWords(Through(5, true), 20, true).text)
+        assertFalse(throughWords(Through(0, false), 20, true).text.contains("dies"))
     }
 }

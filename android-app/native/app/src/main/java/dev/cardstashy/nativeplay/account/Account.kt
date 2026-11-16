@@ -66,6 +66,8 @@ object Account {
 
     /** JVM screenshot tests only: show a signed-in account without the network. */
     internal fun setForTest(session: Session?, profile: Profile?) { _session.value = session; _profile.value = profile }
+    /** JVM tests only: the settings this object keeps (Robolectric gives each test a new app; init keeps the first). */
+    internal val prefsForTest: SharedPreferences get() = prefs
 
     private fun headers(token: String? = null) = buildMap { put("apikey", KEY); if (token != null) put("Authorization", "Bearer $token") }
 
@@ -110,8 +112,11 @@ object Account {
         lock.withLock { clear() }
     }
 
+    /** Runs after the account is cleared (sign-out, or a refresh the server refused): the in-app website forgets it too (WebSession). */
+    @Volatile var onCleared: () -> Unit = {}
     private fun clear() {
         prefs.edit().clear().apply(); _session.value = null; _profile.value = null
+        runCatching { onCleared() }
     }
 
     private fun JsonObject.str(k: String) = get(k)?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
@@ -208,6 +213,61 @@ object Account {
         try { Http.call("POST", "$URL/rest/v1/rpc/delete_my_account", headers(t), "{}"); lock.withLock { clear() }; null }
         catch (e: Http.Failure) { if (Regex("does not exist|PGRST202", RegexOption.IGNORE_CASE).containsMatchIn(e.body)) "Account deletion isn't set up on the server yet. Please try again later." else authError(e.body) }
         catch (_: Exception) { "Couldn't delete the account. Try again." }
+    }
+
+    // ---------------------------------------------------------------- Google and the email link (gap audit S3)
+    // cloud.js signInGoogle / signInEmail with Supabase's PKCE flow, as android-app/runtime/native-auth.js ran it: one sign-in waits at a
+    // time (30 minutes), its verifier kept only in this app's private settings, and the code comes back through the verified return link
+    // (AuthReturn). The code, the verifier and the tokens are never logged, shown or reported.
+    private const val PENDING_TTL = 30 * 60 * 1000L
+    /** A new verifier for [kind] ("oauth" or "email"), replacing any earlier one; returns its S256 challenge. */
+    internal fun beginPkce(kind: String, now: Long = System.currentTimeMillis()): String {
+        val bytes = ByteArray(48).also { java.security.SecureRandom().nextBytes(it) }
+        val b64 = java.util.Base64.getUrlEncoder().withoutPadding()
+        val verifier = b64.encodeToString(bytes)
+        prefs.edit().putString("pkceVerifier", verifier).putString("pkceKind", kind).putLong("pkceAt", now).apply()
+        return b64.encodeToString(java.security.MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(Charsets.US_ASCII)))
+    }
+    private fun pendingVerifier(now: Long): String? {
+        val v = prefs.getString("pkceVerifier", null) ?: return null; val at = prefs.getLong("pkceAt", 0)
+        return v.takeIf { now >= at && now - at < PENDING_TTL }
+    }
+    private fun clearPkce() { prefs.edit().remove("pkceVerifier").remove("pkceKind").remove("pkceAt").apply() }
+
+    /** Supabase's /auth/v1/settings: whether Google sign-in is on (views.js shows the button only then). Null when unknown. */
+    suspend fun googleEnabled(): Boolean? = withContext(Dispatchers.IO) {
+        runCatching { (Http.call("GET", "$URL/auth/v1/settings", headers()) as? JsonObject)?.getAsJsonObject("external")?.get("google")?.asBoolean }.getOrNull()
+    }
+    /** signInGoogle: Google's own page in the browser, returning to the app. The address to open. */
+    fun googleUrl(): String {
+        val challenge = beginPkce("oauth")
+        val enc = { v: String -> java.net.URLEncoder.encode(v, "UTF-8") }
+        return "$URL/auth/v1/authorize?provider=google&redirect_to=${enc(AuthReturn.CALLBACK)}&code_challenge=${enc(challenge)}&code_challenge_method=s256"
+    }
+    /** signInEmail: the site's sign-in link, opening the app. Null when sent, or the site's sentence. */
+    suspend fun sendLink(email: String): String? = withContext(Dispatchers.IO) {
+        val e = email.trim()
+        if (!validEmail(e)) return@withContext "Enter a valid email address."
+        try {
+            val challenge = beginPkce("email")
+            val body = JsonObject().apply { addProperty("email", e); addProperty("create_user", true); addProperty("code_challenge", challenge); addProperty("code_challenge_method", "s256") }.toString()
+            Http.call("POST", "$URL/auth/v1/otp?redirect_to=${java.net.URLEncoder.encode(AuthReturn.CALLBACK, "UTF-8")}", headers(), body); null
+        } catch (x: Http.Failure) { clearPkce(); authError(x.body) } catch (_: Exception) { clearPkce(); "Couldn’t reach the account service. Check your connection and try again." }
+    }
+    /** The return link came back: the code is exchanged for a session with the waiting verifier. Null when signed in, else the sentence. */
+    suspend fun finishReturn(r: AuthReturn.Result, now: Long = System.currentTimeMillis()): String? = withContext(Dispatchers.IO) {
+        val verifier = pendingVerifier(now)
+        clearPkce()
+        if (verifier == null) return@withContext "This sign-in link is no longer pending. Request a new link."
+        val code = (r as? AuthReturn.Result.Code)?.code ?: return@withContext "Sign-in was not completed. Please try again."
+        try {
+            val body = JsonObject().apply { addProperty("auth_code", code); addProperty("code_verifier", verifier) }.toString()
+            val o = Http.call("POST", "$URL/auth/v1/token?grant_type=pkce", headers(), body) as? JsonObject ?: return@withContext "Sign-in was not completed. Please try again."
+            if (o.get("access_token")?.isJsonPrimitive != true) return@withContext "Sign-in was not completed. Please try again."
+            lock.withLock { store(o) }
+            refreshProfile()
+            null
+        } catch (x: Http.Failure) { authError(x.body) } catch (_: Exception) { "Couldn’t reach the account service. Check your connection and try again." }
     }
 
     private const val REDIRECT = "https://cardstashy.com/"

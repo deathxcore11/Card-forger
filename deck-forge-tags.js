@@ -12,15 +12,17 @@
 // one-shot; "mv" = by mana value: <=2 A, 3 B, 4+ C), on ("permanent" |
 // "spell" | "any"), text (regex on a whole ability), cost/effect (regexes on
 // an activated ability), not (regex that vetoes the ability), type / notType
-// (regex on the type line), whole (regex on the whole card text).
+// (regex on the type line), whole (regex on the whole card text), net (a mana
+// ability must add more mana than it costs), maxCost (most mana an activated
+// ability may cost and still count).
 export const DECK_TAGS = Object.freeze({
  version: 'deck-tags.v1',
  date: '2026-11-01',
  rules: [
   // RAMP (permanent): counts toward the ramp target.
-  { id: 'ramp-mana-ability', tag: 'ramp', tier: 'mv', on: 'permanent', notType: '\\bland\\b', cost: '\\{t\\}', effect: '^add\\b|^add one mana|^add \\{', costNot: 'sacrifice (?:~|this)',
+  { id: 'ramp-mana-ability', tag: 'ramp', tier: 'mv', on: 'permanent', net: true, notType: '\\bland\\b', cost: '\\{t\\}', effect: '^add\\b|^add one mana|^add \\{', costNot: 'sacrifice (?:~|this)',
     mustMatch: ['Sol Ring', 'Arcane Signet', 'Mind Stone', 'Llanowar Elves', 'Talisman of Hierarchy', 'Orzhov Signet', 'Birds of Paradise', 'Ornithopter of Paradise', 'Thought Vessel', 'Fellwar Stone'],
-    mustNotMatch: ['Lotus Petal', 'Ancient Den', 'Command Tower', 'Nesting Grounds', 'Dark Ritual'] },
+    mustNotMatch: ['Lotus Petal', 'Ancient Den', 'Command Tower', 'Nesting Grounds', 'Dark Ritual', "Giant's Boulder", 'Prophetic Prism'] },
   { id: 'ramp-land-search', tag: 'ramp', tier: 'mv', on: 'any', notType: '\\bland\\b', text: 'search your library for (?:a|an|up to (?:one|two|three|x)|two|three)? ?(?:basic )?(?:land|plains|island|swamp|mountain|forest)[^\\n]*?(?:onto|put (?:it|one|them|that card|those cards)[^.]*onto) the battlefield', costNot: 'sacrifice (?:~|this)',
     mustMatch: ['Rampant Growth', 'Cultivate', "Kodama's Reach", 'Wood Elves', 'Solemn Simulacrum', 'Explosive Vegetation', 'Three Visits', 'Knight of the White Orchid'],
     mustNotMatch: ['Evolving Wilds', "Wayfarer's Bauble", 'Demonic Tutor'] },
@@ -59,8 +61,8 @@ export const DECK_TAGS = Object.freeze({
     mustMatch: ['Opt'], mustNotMatch: ['Divination'] },
 
   // INTERACTION
-  { id: 'removal-target', tag: 'removal', tier: 'mv', on: 'any', text: '(?:destroy|exile) (?:another |up to (?:one|two|x) )?target (?:[a-z, -]*?)(?:creature|artifact|enchantment|planeswalker|permanent|nonland)', not: 'target [^.]*you control|from (?:a|your|target player.s) graveyard|then return|\\. return (?:it|that card)',
-    mustMatch: ['Swords to Plowshares', 'Path to Exile', 'Generous Gift', 'Anguished Unmaking', 'Mortify'], mustNotMatch: ['Airbender Ascension', 'Restoration Angel', 'Personify', 'Flickerwisp', 'The Ooze'] },
+  { id: 'removal-target', tag: 'removal', tier: 'mv', on: 'any', maxCost: 4, text: '(?:destroy|exile) (?:another |up to (?:one|two|x) )?target (?:[a-z, -]*?)(?:creature|artifact|enchantment|planeswalker|permanent|nonland)', not: 'target [^.]*you control|from (?:a|your|target player.s) graveyard|then return|\\. return (?:it|that card)',
+    mustMatch: ['Swords to Plowshares', 'Path to Exile', 'Generous Gift', 'Anguished Unmaking', 'Mortify'], mustNotMatch: ['Airbender Ascension', 'Restoration Angel', 'Personify', 'Flickerwisp', 'The Ooze', "Giant's Boulder"] },
   { id: 'removal-damage', tag: 'removal', tier: 'mv', on: 'any', text: 'deals? (?:\\d+|x) damage to (?:any target|target creature|target (?:attacking|blocking) creature|target player or planeswalker)',
     mustMatch: ['Lightning Bolt'], mustNotMatch: ['Blood Artist'] },
   { id: 'removal-edict', tag: 'removal', tier: 'B', on: 'any', text: 'target (?:player|opponent) sacrifices', mustMatch: [], mustNotMatch: ['Grave Pact'] },

@@ -26,8 +26,10 @@ object Pacing {
                     val hits = touchesMe(e.targets)
                     val life = if (hits) lifeChange(st, events) else null
                     if (life != null) explainedLife = true
+                    // Better table scene 6: a targeted CPU spell names its target (the Director's own words).
+                    val words = Director.castWords(st, null, e)
                     out += BeatStep(Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
-                        if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
+                        words?.detail, life?.first, life?.second, marks = words?.names.orEmpty()))
                 }
                 "trigger", "ability" -> if (controllerOf(e.source?.id)?.let { it != me } == true) {
                     val hits = touchesMe(e.targets)
@@ -37,7 +39,7 @@ object Pacing {
                     if (prev != null && !hits && prev.kind == Beat.Kind.ACTION && (prev.title == title || prev.title.startsWith("$title ×"))) {
                         val n = (prev.title.substringAfter(" ×", "1").toIntOrNull() ?: 1) + 1
                         out[out.lastIndex] = BeatStep(prev.copy(title = "$title ×$n"))
-                    } else out += BeatStep(Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, title, e.source?.id, e.source?.name, if (hits) targetText(st, e.targets) else null))
+                    } else out += BeatStep(Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, title, e.source?.id, e.source?.name, if (hits) Director.targetText(st, e.targets) else null))
                 }
                 "attack" -> if (e.player != null && e.player != me && e.attackers.isNotEmpty()) {
                     val names = e.attackers.map { it.first.name ?: "a creature" }
@@ -65,8 +67,5 @@ object Pacing {
         return if (to < from) from to to else null
     }
 
-    private fun targetText(st: MatchState, refs: List<Ref>) = refs.joinToString(", ") {
-        if (it.kind == "player") (if (it.id == st.viewer) "Targets you" else "Targets CPU") else "Targets ${it.name ?: "a card"}"
-    }
 
 }

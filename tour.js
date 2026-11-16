@@ -14,7 +14,7 @@ export const STEPS=[
  {key:'find',title:'Find any card. Add it in seconds.',text:'Choose a game at the top or swipe left or right on Home, then search any card, check its price and add your copies.',...clip('find')},
  {key:'collection',title:'Your collection, at a glance.',text:'Coloured borders show what each card is worth. Watch your total value over time, and sort cards into binders.',...clip('collection')},
  {key:'decks',title:'Decks that win right now.',text:'Browse the decks winning tournaments, see how many of their cards you already own, and what the rest would cost.',...clip('decks')},
- {key:'power',title:'Know how strong your deck is.',text:'Deck Power scores every deck, shows what holds it back and what to fix first. The AI coach explains it in plain words.',...clip('power')},
+ {key:'power',title:'Know how strong your deck is.',text:'Deck Power scores every deck, shows what holds it back and what to fix first. The deck coach explains it in plain words.',...clip('power')},
  {key:'ask',title:'Just ask.',text:'Tap Ask and type or say anything: “most valuable card?”, “best Modern deck?”, “build me a Fire deck for $40”.',...clip('ask')},
 ];
 export const LESSONS=[...STEPS,

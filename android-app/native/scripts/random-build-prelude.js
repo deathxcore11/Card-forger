@@ -58,8 +58,14 @@ globalThis.cancelAnimationFrame = id => clearTimeout(id);
 
 // Network: fetch parks a request for the app; the app answers with __answer(id, status, headers, body).
 let reqId = 0; const requests = new Map();
-class Headers { constructor(h = {}) { this.h = {}; for (const [k, v] of Object.entries(h || {})) this.h[k.toLowerCase()] = String(v); } get(k) { return this.h[String(k).toLowerCase()] ?? null; } has(k) { return String(k).toLowerCase() in this.h; } }
+class Headers { constructor(h = {}) { this.h = {}; for (const [k, v] of Object.entries((h instanceof Headers ? h.h : h) || {})) this.h[k.toLowerCase()] = String(v); } get(k) { return this.h[String(k).toLowerCase()] ?? null; } has(k) { return String(k).toLowerCase() in this.h; }
+  // set / delete (ai-auth.js aiFetch puts the account's token on its own request) and walking them.
+  set(k, v) { this.h[String(k).toLowerCase()] = String(v); } append(k, v) { this.set(k, v); } delete(k) { delete this.h[String(k).toLowerCase()]; }
+  forEach(f) { for (const [k, v] of Object.entries(this.h)) f(v, k, this); } entries() { return Object.entries(this.h)[Symbol.iterator](); } }
 globalThis.Headers = Headers;
+// Response.json (ai-auth.js answers a 401 with the site's own sign-in line as a made-up response).
+globalThis.Response = globalThis.Response || {json: (data, init = {}) => { const status = init.status ?? 200, body = JSON.stringify(data);
+  return {ok: status >= 200 && status < 300, status, headers: new Headers(init.headers || {}), json: () => Promise.resolve(JSON.parse(body)), text: () => Promise.resolve(body), clone() { return this; }}; }};
 globalThis.fetch = (url, opts = {}) => new Promise((resolve, reject) => {
   const id = ++reqId, signal = opts.signal;
   if (signal?.aborted) return reject(Object.assign(new Error('aborted'), {name: 'AbortError'}));

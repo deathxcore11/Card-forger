@@ -48,6 +48,21 @@ object Palette {
     val Night = Color(0xFF0C0C0E)
 }
 
+/** The opening screen (loading brief L1): the app's own dark felt with a soft gold light, never playmat art (Randall 12 Nov). */
+object Felt {
+    val Top = Color(0xFF141924)
+    val Bottom = Color(0xFF0A0C11)
+    val GoldGlow = Color(0x29E3C070)
+    val BlueGlow = Color(0x128FD8FF)
+    val Track = Color(0x1FFFFFFF)
+    val GoldLow = Color(0xFFB98D3A)
+    val GoldHigh = Color(0xFFFFF3CF)
+    val Dim = Color(0xFF9AA2B1)
+    val BackTop = Color(0xFF232838)
+    val BackBottom = Color(0xFF12151E)
+    val Shadow = Color(0xA6000000)
+}
+
 object Type {
     val Cinzel = FontFamily(Font(R.font.cinzel_semibold, FontWeight.SemiBold), Font(R.font.cinzel_bold, FontWeight.Bold))
     val Sans = FontFamily(Font(R.font.dmsans_regular, FontWeight.Normal), Font(R.font.dmsans_semibold, FontWeight.SemiBold), Font(R.font.dmsans_bold, FontWeight.Bold))

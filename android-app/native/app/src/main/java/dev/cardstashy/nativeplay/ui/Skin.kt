@@ -178,10 +178,16 @@ object SiteIcons {
     // icons.js actionIcon, path for path (Settings tabs and account rows).
     val Profile = line(circle(12f, 8f, 3.5f), "M5.5 20v-1.5a6.5 6.5 0 0 1 13 0V20")
     val Appearance = line("M12 3.5a8.5 8.5 0 1 0 0 17h1a2 2 0 0 0 1.4-3.4 1.5 1.5 0 0 1 1.1-2.6H17a3.5 3.5 0 0 0 3.5-3.5 8 8 0 0 0-8.5-7.5Z", circle(7.5f, 10f, .7f), circle(11f, 7f, .7f), circle(15.5f, 8f, .7f))
+    /** icons.js "backup": Settings' Backup tab. */
+    val Backup = line("M5 15H3.5v-11H16v2", rrect(7f, 8f, 13.5f, 12.5f, 1.5f), "M13.75 11v6M11 14.5l2.75 2.75 2.75-2.75")
     val Help = line(circle(12f, 12f, 8.5f), "M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1.2-1.5 2.5", "M12 17h.01")
     val Paint = line("m13 11 6.5-6.5a1.4 1.4 0 0 1 2 2L15 13", "M12 12c-2.6 0-4.5 1.8-4.5 4.2 0 1.4-1 2.8-2.5 3.3 4.5 1 9.5-.5 9.5-4 0-1.4-1-3.5-2.5-3.5Z")
     val Friends = line(circle(9f, 8f, 3f), "M3.5 20v-2a5.5 5.5 0 0 1 10-3M19 12v8M15 16h8")
     val Chevron = line("m7.5 10 4.5 4.5 4.5-4.5")
+    /** Console Settings: a row that opens something, the Sound section, and a phone that buzzes. */
+    val ChevronRight = line("m9.5 6.5 5.5 5.5-5.5 5.5")
+    val Sound = line("M4 9.5v5h3.5l4.5 4v-13l-4.5 4z", "M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.6 7.6 0 0 1 0 11")
+    val Vibrate = line(rrect(8f, 4f, 8f, 16f, 2f), "M4.5 9.5v5M19.5 9.5v5")
     val Close = line("m6.5 6.5 11 11M17.5 6.5l-11 11")
     val CardStack = line("M5 16H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1", rrect(7f, 7f, 14f, 14f, 2f), "M11 12h6M11 16h4")
     val Copy = line(rrect(8f, 8f, 11.5f, 12f, 1.8f), "M15.5 8V5.8A1.8 1.8 0 0 0 13.7 4H6.3a1.8 1.8 0 0 0-1.8 1.8v8.4A1.8 1.8 0 0 0 6.3 16H8")
@@ -249,6 +255,30 @@ fun heroPainter(art: Any?): Painter? = when (art) {
     null -> null
     is ImageBitmap -> remember(art) { BitmapPainter(art) }
     else -> coil3.compose.rememberAsyncImagePainter(art, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader)
+}
+
+/** A picture asked for at the size of its box: the [painter], and the [fit] modifier its Image must carry so the box's size is known. */
+class BoxArt(val painter: Painter?, val fit: Modifier)
+
+/** Collection home, lighter C4: the request for [art] decoded to fill a box whose size [size] reports, never at its original size. */
+internal fun boxRequest(context: android.content.Context, art: Any, size: coil3.size.SizeResolver): coil3.request.ImageRequest =
+    coil3.request.ImageRequest.Builder(context).data(art).size(size).scale(coil3.size.Scale.FILL).build()
+
+/**
+ * C4 (Randall 12 Nov: the home "feels clunky and unoptimized"): [heroPainter] gives the image library no size, and it then decodes
+ * every picture at its original size. This one asks for the picture at the size of the box it is laid out in (cropped to fill it).
+ * An in-memory bitmap (tests, bundled art) is used as it is. Put [BoxArt.fit] on the Image that draws it.
+ */
+@Composable
+fun boxArt(art: Any?): BoxArt = when (art) {
+    null -> BoxArt(null, Modifier)
+    is ImageBitmap -> BoxArt(remember(art) { BitmapPainter(art) }, Modifier)
+    else -> {
+        val size = coil3.compose.rememberConstraintsSizeResolver()
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val request = remember(art, size) { boxRequest(context, art, size) }
+        BoxArt(coil3.compose.rememberAsyncImagePainter(request, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader, contentScale = androidx.compose.ui.layout.ContentScale.Crop), size)
+    }
 }
 
 // ---------------------------------------------------------------- 0.1 top bar

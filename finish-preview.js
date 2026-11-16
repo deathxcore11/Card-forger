@@ -16,7 +16,12 @@ export const finishEffectsOn=()=>{try{return localStorage.getItem(KEY)!=='off';}
 export function setFinishEffects(enabled){let saved=false;try{localStorage.setItem(KEY,enabled?'on':'off');saved=true;}catch{}globalThis.dispatchEvent?.(new Event('cardstashy-finish-effects-change'));return saved;}
 const reduced=()=>!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 // The finish of a saved collection entry: its Magic finish, Pokémon version, or Yu-Gi-Oh! printing and edition.
-export function entryFinishContext(game,e={}){return game==='mtg'?{priceFinish:e.finish||'nonfoil'}:{priceFinish:e.variant,savedVariant:e.variant,savedProductId:e.productId,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:'',priceYgoEdition:e.edition};}
+// The printing a saved Yu-Gi-Oh! lot resolves to: its own, or the one its saved release pins (tcg.js savedYgoPresentation sets
+// the resolver). '' when the lot's printing is not known, so nothing is borrowed.
+let savedYgoKey=()=>'';
+export const setSavedYgoPrintingKey=f=>{savedYgoKey=f;};
+export const savedYgoPrintingKey=(card,e)=>{try{return card?.game==='ygo'&&e?savedYgoKey(card,e)||'':'';}catch{return '';}};
+export function entryFinishContext(game,e={},card=null){return game==='mtg'?{priceFinish:e.finish||'nonfoil'}:{priceFinish:e.variant,savedVariant:e.variant,savedProductId:e.productId,priceEdition:e.printing&&e.rarity?e.printing+'::'+e.rarity:savedYgoPrintingKey(card,e),priceYgoEdition:e.edition};}
 export function finishAttrs(game,c,ctx={},view='large'){
  const p=resolveFinish(game,c,ctx);
  p.materialProfile=finishMaterialProfile(game,c,p);

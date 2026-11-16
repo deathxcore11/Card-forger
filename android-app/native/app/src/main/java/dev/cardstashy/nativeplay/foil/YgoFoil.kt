@@ -371,7 +371,7 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 H,float spot
  float fine=max(30.,min(210.,u_px.x/2.7)),prism=max(12.,min(72.,u_px.x/7.9)),dots=max(10.,min(64.,u_px.x/8.9)),flake=max(16.,min(110.,u_px.x/5.2));
  if(pat<1.5){d=1350.;lines=.5+.5*sin(px.x*2.0944);mirror=.7;ex=14.;}
  else if(pat<2.5){float2 r=float2(uv.x+uv.y*u_aspect,uv.x-uv.y*u_aspect);float2 j=hash2(floor(r*float2(90.,22.)));float a=PI*.25+(j.x-.5)*.16;g=float2(cos(a),-sin(a));d=1250.+j.y*450.;lines=.5+.5*sin((px.x+px.y)*1.5708);mirror=.35;}
- else if(pat<3.5){float2 c=floor(q*prism),f=fract(q*prism);g=mod(c.x+c.y,2.)<.5?float2(1.,0.):float2(0.,1.);d=1150.+hash(c)*600.;lines=smoothstep(0.,.12,f.x)*smoothstep(0.,.12,f.y)*smoothstep(1.,.88,f.x)*smoothstep(1.,.88,f.y);mirror=.3;}
+ else if(pat<3.5){float2 c=floor(q*prism),f=fract(q*prism);g=mod(c.x+c.y,2.)<.5?float2(1.,0.):float2(0.,1.);d=1150.+hash(c)*600.;lines=smoothstep(0.,.12,f.x)*smoothstep(0.,.12,f.y)*(1.-smoothstep(.88,1.,f.x))*(1.-smoothstep(.88,1.,f.y));mirror=.3;}
  else if(pat<4.5){float3 w=voro(q*fine);float2 j=mix(hash2(w.xy*1.7),float2(vnoise(q*24.),vnoise(q*24.+5.1)),.6);float a=j.x*PI;g=float2(cos(a),sin(a));d=1000.+j.y*900.;float gk=pow(max(dot(normalize(float3((hash2(w.xy*3.1)-.5)*.5,1.)),H),0.),400.)*twinkle(w.xy);glint=gk*1.8+gk*exp(-sq(seedDist(q*fine)/.45))*.9;mirror=.25;}
  else if(pat<7.5){g=normalize(float2(-stroke.y,stroke.x)+1e-4);mirror=.45;}
  else if(pat<8.5){float3 w=voro(q*18.);float2 j=hash2(w.xy);float a=j.x*PI;g=float2(cos(a),sin(a));d=1100.+j.y*700.;seam=smoothstep(0.,.06,w.z);mirror=.4;}
@@ -397,10 +397,12 @@ float3 overInk(float3 base,float3 F,float cover){float3 T=mix(base,base/max(max(
  // Most of a foil's reflection is broadband metal; only part of it is the grating's hue, so inks keep their own colour.
  float3 Fm=mix(float3(dot(F,float3(.2126,.7152,.0722))),F,.55);float3 o=mix(base,shoulder(T*Fm*1.35),clamp(cover,0.,1.));
  float lb=dot(base,float3(.2126,.7152,.0722)),lo=dot(o,float3(.2126,.7152,.0722));return lo<lb*.8?min(o*(lb*.8/max(lo,1e-4)),float3(1.)):o;}
-float gl(float2 uv){float2 t=(uv-u_name.xy)/(u_name.zw-u_name.xy);if(t.x<0.||t.y<0.||t.x>1.||t.y>1.)return 0.;return u_glyph.eval(t*u_gmap).r;}
+float glyphAt(float2 uv){float2 t=(uv-u_name.xy)/(u_name.zw-u_name.xy);if(t.x<0.||t.y<0.||t.x>1.||t.y>1.)return 0.;return u_glyph.eval(t*u_gmap).r;}
 half4 main(float2 p){
- float2 uv=p/u_size;half4 src=u_card.eval(p);float a=src.a;if(a<=0.)return src;
- float3 base=toLin(float3(src.rgb)/a);float4 mk=mapAt(uv),rl=relAt(uv);
+ // No early way out of main: with the name bar's extra reads of the card, a graphics chip dropped the whole art foil when main
+ // could leave before them (seen on the GPU check, 12 Nov). An empty pixel simply comes out empty at the end (times a = 0).
+ float2 uv=p/u_size;half4 src=u_card.eval(p);float a=src.a;
+ float3 base=toLin(clamp(float3(src.rgb)/max(a,1e-4),0.,1.));float4 mk=mapAt(uv),rl=relAt(uv);
  float art=inBox(uv,u_art),name=inBox(uv,u_name),text=inBox(uv,u_text),frame=(1.-art)*(1.-text)*(1.-name);
  float2 lp=float2(.5,.45)+u_tilt*.6;float3 P=float3(uv.x,uv.y*u_aspect,0.);
  float3 L=normalize(float3(lp.x,lp.y*u_aspect,.85)-P),V=normalize(float3(.5,.5*u_aspect,2.2)-P),H=normalize(L+V);
@@ -434,9 +436,9 @@ half4 main(float2 p){
    float3 metal=u_stars>3.5?float3(1.,.8,.42):float3(1.,.97,.9);float3 sheen=u_stars>3.5?metal*length(dif)*.35:dif*(u_stars>2.5?.42:.3);
    outC+=(1.-outC)*(metal*sp*.85+sheen*(.45+.55*spot))*sc;}}
  // Hot-stamped name: letters pressed into the card (height = -coverage), lit as metal by the same light.
- if(u_metal>.5&&name>.5){float c=gl(uv);if(c>0.){
+ if(u_metal>.5&&name>.5){float c=glyphAt(uv);if(c>0.){
   float2 dg=1.5/u_gmap*(u_name.zw-u_name.xy);
-  float dx=gl(uv+float2(dg.x,0.))-gl(uv-float2(dg.x,0.)),dy=gl(uv+float2(0.,dg.y))-gl(uv-float2(0.,dg.y));
+  float dx=glyphAt(uv+float2(dg.x,0.))-glyphAt(uv-float2(dg.x,0.)),dy=glyphAt(uv+float2(0.,dg.y))-glyphAt(uv-float2(0.,dg.y));
   float3 n=normalize(float3(dx*1.6,dy*1.6,1.));
   float3 toL=float3((lp-uv)*float2(1.,u_aspect),.45),Ln=normalize(toL),Hn=normalize(Ln+float3(0.,0.,1.));
   float sp2=exp(-dot(toL.xy,toL.xy)/.30),shade=clamp(dot(n,Ln)*.6+.4,.15,1.),spec=pow(max(dot(n,Hn),0.),48.),wall=clamp(length(float2(dx,dy)),0.,1.);

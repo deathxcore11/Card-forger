@@ -29,6 +29,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 data class Beat(
     val kind: Kind, val title: String, val cardId: Int?, val cardName: String?, val detail: String?,
     val lifeFrom: Int? = null, val lifeTo: Int? = null, val durationMs: Long = 0,
+    /** Better table scene 6: the card names inside [detail] that the caption draws in gold (the spell's targets). */
+    val marks: List<String> = emptyList(),
 ) {
     enum class Kind { LAND, ACTION, AFFECTS_YOU }
 }
@@ -51,14 +53,20 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         const val LAND_MS = 900L; const val ACTION_MS = 2400L; const val AFFECTS_MS = 3600L
         const val ACTION_FLOOR_MS = 1500L; const val AFFECTS_FLOOR_MS = 2400L
         const val GAP_MS = 250L; const val BACKLOG = 3; const val STEP_GAP_MS = 120L
+        /** Rows kept for "Last moves" (the table shows the newest three; the rest feed nothing else). */
+        const val LAST_MOVES = 12
         const val INTO_HAND_MS = 600L; const val QUIET_MS = 1000L; const val FIRST_BANNER_MS = 1600L; const val BANNER_MS = 1400L
         private const val TAG = "MatchController"
+        /** T5: the legs that end on the board (the card shows there once its leg starts). */
+        private val LANDING = setOf(Director.Leg.TO_SLOT, Director.Leg.TO_HOST, Director.Leg.TO_GROUP)
     }
 
     private val _shown = MutableStateFlow<MatchState?>(null); val shown: StateFlow<MatchState?> = _shown
     private val _beat = MutableStateFlow<Beat?>(null); val beat: StateFlow<Beat?> = _beat
     /** A TRIGGER SHOWS ITSELF: the trigger beat the table draws now (source lift, its stack item held, the result landing). */
     private val _trigger = MutableStateFlow<TriggerMoment?>(null); val trigger: StateFlow<TriggerMoment?> = _trigger
+    /** 0.4.59 T5, the cast travels: the leg the table draws now (taps, to the stack, the rest, to its slot, host or group). */
+    private val _travel = MutableStateFlow<TravelMoment?>(null); val travel: StateFlow<TravelMoment?> = _travel
     private var momentKey = 0L
     /** Stack ids Forge reported as triggers ("trigger" events), so the table can call them "Trigger" and hold them to read. */
     private val triggerIds = HashSet<Int>()
@@ -76,6 +84,14 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private val _live = MutableStateFlow(false); val live: StateFlow<Boolean> = _live // shown == latest and Forge waits on you
     private val _failure = MutableStateFlow<String?>(null); val failure: StateFlow<String?> = _failure
     private val _log = MutableStateFlow<List<String>>(emptyList()); val log: StateFlow<List<String>> = _log
+    /** LAST MOVES (Every Result Names Its Cause): each result as it lands, newest last, with the card that did it. The table shows the last three. */
+    private val _moves = MutableStateFlow<List<Director.Line>>(emptyList()); val moves: StateFlow<List<Director.Line>> = _moves
+    /**
+     * Cards held in exile by a permanent: exiled card id to the id of the card whose own words exiled it "until it leaves the
+     * battlefield" (Forge moved the card to exile while that item resolved; the bridge does not send the link itself). Dropped as
+     * soon as either is no longer where it was. Read by the director (the card comes back) and the table (it sits under its holder).
+     */
+    private val _held = MutableStateFlow<Map<Int, Int>>(emptyMap()); val held: StateFlow<Map<Int, Int>> = _held
     /** The phase lights you stopped at (the table's track): priority there is never passed for you. */
     /**
      * A phase light (approved calm v2: tap a light, an orange ring) is Forge's own phase stop (forge-session.mjs setPhaseStop):
@@ -108,6 +124,19 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     fun unblock(blocker: Int, attacker: Int) { scope.launch { val s = latest ?: return@launch; if (s.inputType != "InputBlock" || s.prompt != null) return@launch
         card(attacker); if (!awaitSettled(s.revision)) return@launch; val now = latest ?: return@launch
         if (now.inputType != "InputBlock" || now.prompt != null || now.lastActionError != null) return@launch; if (awaitLive()) { card(blocker); if (awaitSent() && latest?.card(blocker)?.blocking != true) pairs.remove(blocker) } } }
+    /**
+     * Better table scene 4, "No blocks" after blocks were made: each of your blocks is taken back the way Forge drops one (its
+     * attacker, then the blocker), then the empty declaration is sent. Stops, sending nothing more, if a block does not come off.
+     */
+    fun noBlocks() { scope.launch {
+        repeat(16) {
+            val s = latest ?: return@launch; if (s.inputType != "InputBlock" || s.prompt != null) return@launch
+            val b = paired(s).me.battlefield.firstOrNull { it.blocking } ?: run { if (awaitLive()) ok(); return@launch }
+            val a = b.blockingIds.firstOrNull() ?: run { say("Block not taken back. Try again."); return@launch }
+            if (!clickPair(a, b.id) || latest?.card(b.id)?.blocking == true) { say("Block not taken back. Try again."); return@launch }
+            pairs.remove(b.id)
+        }
+    } }
     /**
      * forge-table.mjs dropCombat (block): Forge pairs a block as two clicks, the attacker and then the blocker. A creature
      * already blocking another attacker leaves that block first (it blocks one), and a block that does not take says so.
@@ -159,6 +188,9 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private suspend fun awaitSent(): Boolean = withTimeoutOrNull(6000) { _sending.first { !it } } != null
     /** A short line over the table ("Block not assigned. Try again."), gone after a few seconds. */
     private val _note = MutableStateFlow<String?>(null); val note: StateFlow<String?> = _note
+    private val _told = MutableStateFlow<String?>(null); val told: StateFlow<String?> = _told
+    /** Better table scene 1: a choice's result on the table ("Scry: 0 top, 1 bottom") for TABLE_BUBBLE_MS. */
+    fun tell(text: String) { scope.launch(Dispatchers.Main) { _told.value = text; delay(dev.cardstashy.nativeplay.ui.TABLE_BUBBLE_MS); if (_told.value == text) _told.value = null } }
     private fun say(text: String) { scope.launch(Dispatchers.Main) { _note.value = text; delay(3500); if (_note.value == text) _note.value = null } }
     private suspend fun awaitLive(): Boolean = withTimeoutOrNull(4000) { _live.first { it } } != null
     private suspend fun awaitSettled(from: Long): Boolean = withTimeoutOrNull(4000) { while (true) { val l = latest; if (l != null && l.revision > from && !l.busy && !_sending.value) break; delay(50) }; true } == true
@@ -178,7 +210,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         return true
     }
     val intents by lazy { dev.cardstashy.nativeplay.ui.TableIntents(card = { card(it) }, stack = { stackItem(it) }, player = { player(it) }, ok = { ok() }, cancel = { cancel() }, reply = { id, v, i, a -> reply(id, v, i, a) },
-        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, block = { b, a -> block(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }, note = { say(it) }) }
+        stop = { toggleStop(it) }, attackAll = { attackAll(it) }, unblock = { b, a -> unblock(b, a) }, noBlocks = { noBlocks() }, block = { b, a -> block(b, a) }, mode = { setMode(it) }, autoPay = { setAutoPay(it) }, yieldSource = { id, on -> yieldSource(id, on) }, note = { say(it) }, told = { tell(it) }) }
     val timings = MutableStateFlow<Map<String, Long>>(emptyMap())
 
     /** match-facts.js for this match, and the finished-match hook (play:match-recorded). */
@@ -202,12 +234,15 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private var poller: Job? = null
     private var player: Job? = null
     private var autoJob: Job? = null
+    private var bannerJob: Job? = null
     /** Snapshots waiting to be shown. Counted on the polling thread and the main thread both, so atomic: a plain count
      *  drifted, and a drifted count kept a decision from ever going live after your tap (a stuck table). */
     private val queue = java.util.concurrent.atomic.AtomicInteger(0)
     private val queued get() = queue.get()
 
     fun start() {
+        // Better table review: no tile tag from an earlier match (Forge's card ids repeat) hangs on in this one.
+        dev.cardstashy.nativeplay.ui.TileTags.clearAll()
         poller = scope.launch(Dispatchers.IO) {
             val t0 = SystemClock.elapsedRealtime()
             val s: EngineSession = try { remote?.invoke() ?: LocalSession(ForgeService.start(input)) } catch (t: Throwable) {
@@ -233,7 +268,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 if (st != null) {
                     // What the table showed (match-facts.js), fed every new snapshot; the match is recorded once when Forge ends it.
                     if (st.revision != lastRev || st.finished) runCatching { facts.update(MatchFacts.surface(com.google.gson.JsonParser.parseString(body).asJsonObject)) }
-                    if (st.revision != lastRev) dev.cardstashy.nativeplay.art.TableFacts.note(st)
+                    if (st.revision != lastRev) runCatching { dev.cardstashy.nativeplay.art.TableFacts.note(st) }.onFailure { Log.w(TAG, "table facts", it) }
                     if (playedFrom == null && st.turn > 0) playedFrom = SystemClock.elapsedRealtime()
                     dev.cardstashy.nativeplay.play.Presence.matchTurn = st.turn
                     if (st.finished && !recorded) { recorded = true; runCatching { onFinished?.invoke(st, facts, playedFrom?.let { SystemClock.elapsedRealtime() - it }) } }
@@ -254,6 +289,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                     else if (st.revision != lastRev || prev == null || prev.busy != st.busy || prev.inputType != st.inputType || prev.prompt?.id != st.prompt?.id) {
                         if (st.revision != lastRev) revisionAt = SystemClock.elapsedRealtime()
                         TableLog.board("read", st, latest?.revision)
+                        TableLog.raw(st, body)
                         if (_firstHand.value == null) runCatching { st.me.hand.map { it.name }.filter { it.isNotBlank() } }.getOrNull()?.takeIf { it.isNotEmpty() }?.let { _firstHand.value = it }
                         lastRev = st.revision; latest = st; queue.incrementAndGet(); snapshots.trySend(st)
                     }
@@ -285,8 +321,10 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         skip = null
     }
 
-    private fun masked(st: MatchState, hidden: Set<Int>, hiddenStack: Set<Int> = emptySet()): MatchState = if (hidden.isEmpty() && hiddenStack.isEmpty()) st else st.copy(
-        players = st.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in hidden }) },
+    /** [st] without the [hidden] cards (board and stack), the [field] cards (board only: their travel has not landed) and the [hiddenStack] items; [untapped] lands are drawn ready until their taps. */
+    private fun masked(st: MatchState, hidden: Set<Int>, hiddenStack: Set<Int> = emptySet(), field: Set<Int> = emptySet(), untapped: Set<Int> = emptySet()): MatchState =
+        if (hidden.isEmpty() && hiddenStack.isEmpty() && field.isEmpty() && untapped.isEmpty()) st else st.copy(
+        players = st.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in hidden && it.id !in field }.map { if (it.id in untapped) it.copy(tapped = false) else it }) },
         stack = st.stack.filter { it.source?.id !in hidden && it.id !in hiddenStack })
 
     /** [st] with [held] stack items on top: a trigger Forge resolved in the poll stays up until its result lands (or, never seen, for its read). */
@@ -303,7 +341,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         val st = if (planned.stack.any { it.id in triggerIds && !it.trigger }) planned.copy(stack = planned.stack.map { if (it.id in triggerIds) it.copy(trigger = true) else it }) else planned
         val seen = SystemClock.elapsedRealtime()
         for (s in st.stack) stackSeenAt.putIfAbsent(s.id, seen)
-        if (_shown.value?.revision != st.revision) TableLog.board("show", st, latest?.revision)
+        if (_shown.value?.revision != st.revision) { TableLog.board("show", st, latest?.revision); TableLog.decision(st) }
         _shown.value = st
         if (_afkNote.value == NAG && dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) == null) _afkNote.value = null
         _live.value = l != null && st.revision == l.revision && st.waitingOnMe && !_sending.value
@@ -328,7 +366,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     fun hold(reason: String, on: Boolean) { if (on) holds.add(reason) else holds.remove(reason) }
     private val timer = TurnClock.Timer(
         snapshot = { latest?.takeIf { (_stage.value == Stage.PLAYING || _stage.value == Stage.MULLIGAN) && _noResult.value == null } },
-        paused = { paused.value || scene.value || holds.isNotEmpty() || _beat.value != null || _trigger.value != null || _think.value != null || _sending.value || _shown.value?.revision != latest?.revision },
+        paused = { paused.value || scene.value || holds.isNotEmpty() || _beat.value != null || _trigger.value != null || _travel.value != null || _think.value != null || _sending.value || _shown.value?.revision != latest?.revision },
         act = { w, st, done ->
             autoAnswering = true
             try {
@@ -419,7 +457,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             // waits on the held ones (a CPU think, the turn banner, a CPU action's caption), one at a time.
             fresh.forEach { if (it.type == "trigger") it.stackId?.let(triggerIds::add) }
             val before = _shown.value
-            val steps = Director.plan(st, fresh, if (remote == null) thinkClock else null, before = before, triggerIds = triggerIds).filter { it.held }
+            val steps = Director.plan(st, fresh, if (remote == null) thinkClock else null, before = before, triggerIds = triggerIds, held = _held.value).filter { it.held }
             TableLog.line("plan rev=${st.revision} fresh=${fresh.size} [${fresh.joinToString(",") { it.type }}] steps=${steps.size} shown=${_shown.value?.revision} queue=${queue.get()}")
             if (steps.isEmpty()) { show(st) } else {
                 // The board advances one CPU action at a time: a CPU card that a step is about to
@@ -433,16 +471,65 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 val hiddenStack = steps.mapNotNull { s -> s.trig?.takeIf { !it.resolvedHere }?.stackId }.toMutableSet()
                 val pending = steps.mapNotNull { it.result }.toMutableList()
                 // Top first: the items that resolve first in this poll.
-                val held = pending.flatMap { r -> r.stackIds.mapNotNull { id -> before?.stack?.firstOrNull { it.id == id } } }.toMutableList()
-                fun board() = withStack(masked(Director.beforeResults(st, before, pending), hidden, hiddenStack), held)
+                // An item a result countered stays up with it, and leaves under its plate.
+                val held = pending.flatMap { r -> (r.stackIds + r.countered.mapNotNull { it.stackId }).mapNotNull { id -> before?.stack?.firstOrNull { it.id == id } } }.toMutableList()
+                // T5, the cast travels: a card on its way stays off the board until its leg to its slot, host or group starts; a cast's
+                // item stays off the stack until it goes up; the lands that paid for it look ready until they tap.
+                val legs = steps.mapNotNull { it.travel }
+                val field = legs.filter { it.leg in LANDING }.mapNotNull { it.cardId }.filter { it !in bfBefore && st.card(it)?.zone == "Battlefield" }.toMutableSet()
+                hiddenStack += legs.filter { it.leg == Director.Leg.TO_STACK }.mapNotNull { it.stackId }
+                val untapped = legs.flatMap { it.taps }.toMutableSet()
+                /** Items put up for a cast Forge already resolved in this poll (none of its snapshots showed it): card id to item. */
+                val putUp = HashMap<Int, dev.cardstashy.nativeplay.engine.StackItem>()
+                fun board() = withStack(masked(Director.beforeResults(st, before, pending), hidden, hiddenStack, field, untapped), held)
+                fun startLeg(t: Director.Travel, at: Int) {
+                    when (t.leg) {
+                        Director.Leg.TAPS, Director.Leg.TO_POOL -> untapped -= t.taps.toSet()
+                        // T6: a spell that went up while it asked has no leg to the stack here; its rest puts it up instead.
+                        Director.Leg.TO_STACK, Director.Leg.REST -> {
+                            t.stackId?.let { hiddenStack.remove(it) }
+                            t.cardId?.let { hidden.remove(it) }
+                            val id = t.cardId
+                            // A card that is waiting in the stack lane while it asks (pendingCast) is drawn there already.
+                            if (id != null && st.stack.none { it.source?.id == id } && held.none { it.source?.id == id } && dev.cardstashy.nativeplay.ui.pendingCast(st)?.id != id) {
+                                val src = st.card(id) ?: before?.card(id)
+                                val item = dev.cardstashy.nativeplay.engine.StackItem(t.stackId ?: -(++momentKey).toInt(), src?.text.orEmpty(), src?.copy(zone = "Stack"),
+                                    if (t.mine) st.viewer else src?.controller?.takeIf { it >= 0 } ?: st.cpu.id, targets = t.targets)
+                                held.add(0, item); putUp[id] = item
+                            }
+                        }
+                        Director.Leg.BACK, Director.Leg.UNTAP, Director.Leg.POP -> {}
+                        Director.Leg.TO_SLOT, Director.Leg.TO_HOST, Director.Leg.TO_GROUP -> t.cardId?.let { id ->
+                            field.remove(id); hidden.remove(id)
+                            putUp.remove(id)?.let { item -> held.removeAll { it === item } }
+                        }
+                    }
+                    _travel.value = TravelMoment(t, SystemClock.elapsedRealtime(), ++momentKey)
+                    show(board())
+                }
+                fun endLeg(t: Director.Travel, at: Int) {
+                    _travel.value = null
+                    // A spell that does not land on the board (an instant, a sorcery) leaves the stack after its rest.
+                    if (t.leg == Director.Leg.REST) t.cardId?.let { id ->
+                        if (steps.drop(at + 1).none { s -> s.travel?.cardId == id && s.travel.leg in LANDING }) putUp.remove(id)?.let { item -> held.removeAll { it === item }; show(board()) }
+                    }
+                }
                 show(board())
+                // Butter pass B4: how long the CPU's moves in this batch are told for (adb logcat -s TableStep).
+                if (steps.any { it.cpu }) TableLog.line("cpu told ${steps.filter { it.cpu }.sumOf { Director.lengthOf(it, Director.waitingFor(latest), 0) }}ms in ${steps.count { it.cpu }} steps")
                 steps.forEachIndexed { i, step ->
-                    val waiting = latest?.waitingOnMe == true
+                    val waiting = Director.waitingFor(latest)
                     val ms = Director.lengthOf(step, waiting, steps.drop(i).sumOf { it.ms })
-                    TableLog.line("step ${i + 1}/${steps.size} ${step.kind} ${step.cardName ?: step.beat?.title ?: step.banner?.text ?: ""} ${ms}ms cpu=${step.cpu} hidden=${hidden.size}")
+                    TableLog.line("step ${i + 1}/${steps.size} ${step.kind}${step.travel?.let { " ${it.leg}" } ?: ""} ${step.cardName ?: step.beat?.title ?: step.banner?.text ?: ""} ${ms}ms cpu=${step.cpu} hidden=${hidden.size}")
+                    step.travel?.let { startLeg(it, i) }
+                    // Better table scene 9: an item Forge says fizzled leaves "No legal target" on its source's tile for a few seconds.
+                    Director.noTargetOn(step, st)?.let { id -> scope.launch(Dispatchers.Main) { dev.cardstashy.nativeplay.ui.TileTags.post(id, dev.cardstashy.nativeplay.ui.NO_LEGAL_TARGET) } }
                     when {
                         step.kind == Director.Kind.THINK -> think(ms, st.cpu.handCount)
-                        step.banner != null -> { _banner.value = step.banner; hold(ms); _banner.value = null }
+                        // Match punch P4: the banner plays out its 1190 ms on its own while the steps after it start 380 ms in, under it.
+                        step.banner != null -> { val b = step.banner; _banner.value = b
+                            bannerJob?.cancel(); bannerJob = scope.launch { delay(ms); if (_banner.value === b) _banner.value = null }
+                            hold(minOf(ms, Director.BANNER_LEAD_MS)) }
                         step.beat != null -> {
                             if (step.beat.cardId != null && hidden.remove(step.beat.cardId)) show(board())
                             beat(step.beat, ms)
@@ -478,21 +565,35 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                             val r = step.result
                             // Beat 3: the item leaves the stack and its result lands on the card it changed.
                             pending.remove(r)
-                            held.removeAll { it.id in r.stackIds || (it.source?.id != null && it.source.id == r.sourceId) }
+                            // A follow-up is no stack item: its cause's own items (a trigger of the card that left) stay up.
+                            if (!r.follow) held.removeAll { it.id in r.stackIds || (it.source?.id != null && it.source.id == r.sourceId) || r.countered.any { c -> c.stackId == it.id } }
                             val line = r.line(st.viewer)
-                            if (line != null) _log.value = (_log.value + line).takeLast(60)
+                            val rows = r.lines(st.viewer)
+                            // The log: its line, then the rows that are not its own doing (the Auras that fell off with the card it moved).
+                            val also = if (r.follow) emptyList() else rows.filter { it.at != r.seq * 8 }.map { "${it.sourceName}: ${it.text}" }
+                            if (line != null || also.isNotEmpty()) _log.value = (_log.value + listOfNotNull(line) + also).takeLast(60)
+                            _moves.value = (_moves.value + rows).takeLast(LAST_MOVES)
+                            // What it exiled "until it leaves the battlefield" is held by it from now on.
+                            if (r.holds && r.sourceId != null) _held.value = _held.value + r.moves.filter { it.went == Director.Went.EXILED && it.cardId != null }.associate { it.cardId!! to r.sourceId }
                             _trigger.value = TriggerMoment(TriggerMoment.Phase.RESULT, r.sourceId, r.sourceName, r.controller == st.viewer, r.stackId, r.count, r, line, ++momentKey)
                             show(board())
                             hold(ms)
-                            _trigger.value = null
+                            // The next beat is a result too (a chain): the table stays in the moment through the gap, so it does
+                            // not go live for 120 ms on a board that still holds cards back.
+                            if (steps.getOrNull(i + 1)?.result == null) _trigger.value = null
                             delay(STEP_GAP_MS)
                         }
+                        step.travel != null -> hold(ms)
                     }
+                    step.travel?.let { endLeg(it, i) }
                 }
+                _travel.value = null
                 _trigger.value = null
                 show(st)
             }
-            if (st.finished) { _stage.value = Stage.FINISHED; show(st) }
+            // A held card that is no longer in exile, or whose holder is no longer on the battlefield, is held no more.
+            if (_held.value.isNotEmpty()) _held.value = Director.stillHeld(_held.value, st)
+            if (st.finished) { _stage.value = Stage.FINISHED; dev.cardstashy.nativeplay.ui.TileTags.clearAll(); show(st) }
         }
     }
 
@@ -689,6 +790,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     /** The newest engine event when you pressed: anything after it (a CPU spell, a trigger) is "something new" and stops the carry. */
     private var passSeq = 0L
     private var carries = 0
+    /** The revision whose unpayable trigger was already announced (one "not paid" chip per ask). */
+    private var declinedAt = -1L
     private val shortCasts = dev.cardstashy.nativeplay.ui.ShortCasts()
     private fun scheduleAutoPass(st: MatchState) {
         autoJob?.cancel()
@@ -705,6 +808,42 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             }
             return
         }
+        // Mobile table M4: triggers that happen together are ordered for you (the box's own Auto order answer), unless you asked to be asked.
+        if (p != null) AutoPass.triggerOrder(st, dev.cardstashy.nativeplay.ui.AppSettings.askTriggerOrder)?.let { order ->
+            Log.i(TableLog.TAG, "decide order: triggers ordered for you $order (${p.options.map { it.label }})")
+            autoJob = scope.launch(Dispatchers.Main) {
+                delay(150)
+                if (_live.value && latest?.prompt?.id == p.id) { autoAnswering = true; try { replyOrder(p.id, order, false) } finally { autoAnswering = false } }
+            }
+            return
+        }
+        // Mobile table M11: Forge offers exactly one target for a must-target: it is taken for you after a beat; the aim line and
+        // the asking card show what happened.
+        AutoPass.onlyTarget(st)?.let { t ->
+            Log.i(TableLog.TAG, "decide target: the one legal target taken for you ${t.kind} ${t.id}")
+            autoJob = scope.launch(Dispatchers.Main) {
+                delay(ONLY_TARGET_MS)
+                if (_live.value && latest?.revision == st.revision && latest?.inputType == "InputSelectTargets") { autoAnswering = true
+                    try { if (t.kind == "player") player(t.id) else card(t.id) } finally { autoAnswering = false } }
+            }
+            return
+        }
+        // Gaps list 2 (15 Nov, 0:25 to 0:27: "Spellbook Vendor: not paid" said, yet Cancel still waited on him): your own trigger's
+        // optional payment with no mana open is declined at once, on Forge's own state, without waiting for a replay or the stack
+        // card's show (either could leave it asking). It stays declined while Forge still asks it, whatever the revision.
+        dev.cardstashy.nativeplay.ui.Affordability.unpayableTrigger(st)?.let { name ->
+            Log.i(TableLog.TAG, "decide ${st.phase} turn ${st.turn} input=${st.inputType} -> cancel (optional payment you can't make: $name)")
+            if (declinedAt != st.revision) { declinedAt = st.revision; say("$name: not paid")
+                // Better table scene 2: the note also hangs on the trigger's source card itself for a few seconds.
+                st.stack.firstOrNull()?.source?.id?.takeIf { id -> st.players.any { p -> p.battlefield.any { it.id == id } } }?.let { id -> scope.launch(Dispatchers.Main) { dev.cardstashy.nativeplay.ui.TileTags.post(id, dev.cardstashy.nativeplay.ui.NO_MANA_SKIPPED) } } }
+            autoJob = scope.launch(Dispatchers.Main) {
+                delay(150)
+                val now = latest
+                if (_live.value && now != null && !now.busy && dev.cardstashy.nativeplay.ui.Affordability.unpayableTrigger(now) == name) {
+                    autoAnswering = true; try { cancel() } finally { autoAnswering = false } }
+            }
+            return
+        }
         // Finding B: decide on Forge's state, not on a replayed board (a resolved trigger held on the stack read as "your own on top").
         val forge = AutoPass.basis(st, latest) ?: run { Log.i(TableLog.TAG, "decide: board mid-replay (stack ${st.stack.map { it.id }}), waits for Forge's own state"); return }
         val d = decide(forge)
@@ -715,11 +854,10 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         // yet on screen (its source is still lifting): nothing is passed now; the show that puts it up schedules again.
         var wait = d.delayMs
         val top = (latest?.takeIf { it.revision == st.revision } ?: st).stack.firstOrNull()
-        if (top != null && top.id in triggerIds) {
-            val w = Director.passWait(stackSeenAt[top.id]?.takeIf { st.stack.any { it.id == top.id } }, SystemClock.elapsedRealtime(), wait)
-            if (w == null) { Log.i(TableLog.TAG, "decide: trigger ${top.id} not on screen yet, pass waits"); return }
-            wait = w
-        }
+        // 0.4.59 T5: every item, spells too: a cast rests on the stack at least 900 ms even when nobody can respond.
+        val w = Director.passWaitFor(top?.id, stackSeenAt, st.stack.map { it.id }, SystemClock.elapsedRealtime(), wait)
+        if (w == null) { Log.i(TableLog.TAG, "decide: stack item ${top?.id} not on screen yet, pass waits"); return }
+        wait = w
         autoJob = scope.launch(Dispatchers.Main) {
             delay(wait)
             if (_live.value && latest?.revision == st.revision) { autoAnswering = true; try { if (op == "cancel") cancel() else ok() } finally { autoAnswering = false } }
@@ -727,6 +865,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     }
 
     private class Decision(val op: String?, val why: String, val delayMs: Long = 0)
+    /** M11: the one legal target is taken after this long, so the question and its asking card are read first. */
+    private val ONLY_TARGET_MS = 650L
 
     /** A permanent whose only abilities make mana (a land, a mana rock): tapping it is never a reason to stop for you (W7, W8). */
     private fun manaOnly(c: dev.cardstashy.nativeplay.engine.Card): Boolean = dev.cardstashy.nativeplay.ui.Glow.manaOnly(c)
@@ -740,11 +880,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
     private fun decide(st: MatchState): Decision {
         // Randall 10 Nov on 0.4.56 (Spellbook Vendor, "you may pay {1}" with no mana): Arena never asks you to pay what you can't.
         // Your own trigger, resolving on top of the stack, asks for an optional payment you have no mana for: it is declined for
-        // you after its beat, and the table says so. A spell or an ability you start yourself is never cancelled for you.
-        dev.cardstashy.nativeplay.ui.Affordability.unpayableTrigger(st)?.let { name ->
-            say("$name: not paid")
-            return Decision("cancel", "optional payment you can't make: $name", 150)
-        }
+        // you at once in scheduleAutoPass (before this), and the table says so. A spell or an ability you start yourself never is.
         if (st.prompt != null || !st.buttons.okEnabled) return Decision(null, "a question or no button")
         val stopHere = st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") == true
         if (st.inputType == "InputBlock") {
@@ -767,7 +903,13 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         if (st.controlMode == "full") return Decision(null, "full control")
         if (stopHere) return Decision(null, "your phase stop")
         val ownTop = st.stack.firstOrNull()?.controller == st.viewer
-        if (ownTop) return Decision("ok", "your own spell or ability on top", 200)
+        // Mobile table M3: your own spell or trigger resolves by itself. With "Stop to respond" on, the table waits when
+        // something of yours could be played in response (what glows, the same rule as every other stop).
+        if (ownTop) {
+            if (dev.cardstashy.nativeplay.ui.AppSettings.stopToRespond && dev.cardstashy.nativeplay.ui.Glow.stopsFor(st, shortCasts).isNotEmpty())
+                return Decision(null, "your own on top: Stop to respond is on and you could respond")
+            return Decision("ok", "your own spell or ability on top", 200)
+        }
         // Smart auto-pass (director spec 6a): Forge sometimes lists a card you plainly can't pay for as actionable ("unknown"
         // affordability, a {1}{R} creature with one land out). Those don't count, nor do mana abilities.
         // W7/W8 (seen again on live 0.4.56: "Respond to …?" with two lands and no instant): the table stops only for what glows

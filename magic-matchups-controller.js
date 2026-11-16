@@ -1,8 +1,11 @@
-import { aiFetch } from './ai-auth.js';
-import {parseMatchupIntent,selectMatchupOpponent,buildMatchupRequest,validateMatchupAnalysis,matchupFormat} from './ai-matchup-core.js';
+import {simulateMatchup,gamePlan} from './matchup.js';
+import {buildMatchupPlan} from './matchup-plan.js';
+import {parseMatchupIntent,selectMatchupOpponent,buildMatchupRequest,matchupFormat} from './ai-matchup-core.js';
 export const matchupFingerprint=deck=>JSON.stringify([deck?.id,deck?.format,deck?.cards,deck?.side,deck?.commander,deck?.commanders]);
-// All results are ephemeral. A request never writes a collection, deck or Power score.
-export function createMagicMatchups({getDeck,state,lookup,loadMeta,metaKey,resolveNames,capture,current,render,fetcher=fetch}){
+// All results are ephemeral: nothing writes a collection, deck or Power score. The read is the app's own
+// simulation (matchup.js) put into words by matchup-plan.js: no AI, no network once the cards are known.
+// profile(deck) returns the matchup.js profile of a list ({cards, side, commander}), or null while cards load.
+export function createMagicMatchups({getDeck,state,lookup,loadMeta,metaKey,resolveNames,capture,current,render,profile}){
  let active=null;
  const cancel=()=>{if(active){active.controller.abort();active.st.busy=false;active=null;}};
  function begin(message){cancel();const deck=getDeck();if(!deck)throw Error('Open a Magic deck first.');const st=state(deck),ticket=capture(),fingerprint=matchupFingerprint(deck),controller=new AbortController();const op={st,deck:structuredClone(deck),ticket,fingerprint,controller};st.controller=controller;active=op;st.busy=true;st.error='';st.result=null;st.message=message||'Finding a matching opponent…';render();return op;}
@@ -34,17 +37,25 @@ export function createMagicMatchups({getDeck,state,lookup,loadMeta,metaKey,resol
  }
  async function analyze(){
   const deck=getDeck();if(!deck||state(deck).busy)return;
-  const op=begin('Analyzing the selected matchup…');try{
+  const op=begin('Simulating 2,000 games…');try{
    if(!op.st.opponent)throw Error('Choose and preview an opponent first.');
    const names=[...(op.deck.cards||[]),...(op.deck.side||[])].map(r=>r.name);if(op.deck.commander)names.push(op.deck.commander);
-   await resolveNames(names);if(!valid(op))return;
+   const selection=JSON.stringify([op.st.opponent,op.st.question,op.st.mode]);
+   await resolveNames(names);if(!valid(op)||selection!==JSON.stringify([op.st.opponent,op.st.question,op.st.mode]))return;
    const request=buildMatchupRequest({deck:op.deck,opponent:op.st.opponent,lookup,question:op.st.question,mode:op.st.mode});
-   const selection=JSON.stringify([op.st.opponent,op.st.question,op.st.mode]);op.st.request=request;
-   const response=await aiFetch('/api/ai/matchup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.any([op.controller.signal,AbortSignal.timeout(110000)])}, fetcher);
-   const body=await response.json();if(!valid(op)||selection!==JSON.stringify([op.st.opponent,op.st.question,op.st.mode]))return;
-   if(!response.ok)throw Error(body.message||'AI Matchups is unavailable. Please try again later.');
-   op.st.result=validateMatchupAnalysis(body.analysis||body,request);
-  }catch(error){if(valid(op))op.st.error=error.name==='AbortError'?'Analysis cancelled.':error.message;}finally{finish(op);}
+   op.st.request=request;
+   const oppNames=[...(op.st.opponent.cards||[]),...(op.st.opponent.side||[])].map(r=>r.name).filter(Boolean);
+   await resolveNames(oppNames);if(!valid(op)||selection!==JSON.stringify([op.st.opponent,op.st.question,op.st.mode]))return;
+   const me=profile?.(op.deck),them=profile?.({...op.st.opponent,cards:op.st.opponent.cards||op.st.opponent.main||[]});
+   if(!me||!them)throw Error('A full list is needed on both sides to simulate this matchup. Finish the deck, or pick another opponent.');
+   let sim=simulateMatchup('mtg',me,them);
+   // Opened from the Power page: use the same field-adjusted odds that page shows for this deck.
+   const by=op.st.shift?.name===op.st.opponent.name?Number(op.st.shift.by)||0:0,cl=v=>Math.max(0,Math.min(1,v+by));
+   if(Math.abs(by)>0.005)sim={...sim,win:cl(sim.win),onPlay:cl(sim.onPlay),onDraw:cl(sim.onDraw),reasons:[...sim.reasons,`Adjusted ${by>0?'up':'down'} ${Math.round(Math.abs(by)*100)} points for how these decks really do against the field.`]};
+   const rows=list=>(list||[]).map(r=>({qty:r.qty,name:r.name,c:lookup(r.name)})).filter(r=>r.c);
+   const plan=op.st.mode==='bo3'?gamePlan('mtg',me,them,{main:rows(op.deck.cards),side:rows(op.deck.side),reprofile:list=>profile({...op.deck,cards:list.map(r=>({name:r.c.name,qty:r.qty})),side:[]}),sim:sim.win}):null;
+   op.st.result=buildMatchupPlan({request,me,op:them,sim,plan,mode:op.st.mode});
+  }catch(error){if(valid(op))op.st.error=error.name==='AbortError'?'Cancelled.':error.message;}finally{finish(op);}
  }
  return {select,analyze,cancel,valid,reset:cancel};
 }

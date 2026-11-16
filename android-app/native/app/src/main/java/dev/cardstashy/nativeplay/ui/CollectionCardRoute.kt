@@ -66,6 +66,7 @@ private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen)
                          onRandom: (() -> Unit)?, onBack: (() -> Unit)?) {
     if (open.game != "mtg") return TcgCardHost(open, onClose, onOpen, web, onSet, onRandom, onBack)
     val context = LocalContext.current
+    val searchOpen = LocalCollectionSearch.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
     /** A control waiting for the site's handler (kind to value). */
@@ -128,13 +129,21 @@ private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen)
                 CollectionWrites.picking.value = CollectionWrites.DeckPick("mtg", d.getValue("name"), closeAll = onClose, go = { to -> web("https://cardstashy.com/$to", null) })
             // pricing-presentation.js's Add to collection (A.own): the add sheet with this printing, saved here.
             p.act == "own" && !d["name"].isNullOrBlank() -> CollectionWrites.openAdd(JsonObject().apply { addProperty("own", d.getValue("name")); addProperty("fromCard", true) })
+            // views.js "⇄ Compare" (A.compareFrom): the app's Compare sheet with this card on the first empty side; a compared card's page over this one.
+            p.act == "compareFrom" && !d["name"].isNullOrBlank() -> CollectionWrites.comparing.value = CollectionWrites.CompareOpen("mtg", first = d.getValue("name"),
+                openCard = { n, _ -> CollectionWrites.comparing.value = null; onOpen(CardOpen(n, page = open.page, tile = "[data-act=\"card\"][data-name=\"${css(n)}\"]")) })
+            // pricehist.js "Set a price alert" / "Price alert active · edit" (A.priceAlert): the app's alert sheet, the page again after.
+            p.act == "priceAlert" -> CollectionWrites.openAlert(d) { scope.launch { CollectionEngine.cardModel().takeIf { it.size() > 0 }?.let { model = CollectionCardModel.parse(it) } } }
             p.act == "buyBack" || p.act == "buyCompare" -> asked = p.act to ""
             p.act == "magicVersionsMore" -> asked = "more" to ""
             p.act == "flipFace" -> asked = "face" to ""
             p.act == "cardTab" && d["tab"] in setOf("overview", "meta", "guide", "prices") -> asked = "tab" to d.getValue("tab")
             p.act == "marketRange" && !d["range"].isNullOrBlank() -> asked = "range" to d.getValue("range")
             p.act == "priceSource" && !d["src"].isNullOrBlank() -> asked = "source" to d.getValue("src")
-            p.act.isNotBlank() -> site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, v) -> "[data-${k}=\"${css(v)}\"]" })
+            // The artist's name and the "Explore types & abilities" chips (card-discovery.js A.ruleCards): the app's own Search tab with
+            // the site's search words, this page closed. Before 12 Nov they opened the website inside the app, which lost the search.
+            p.act == "ruleCards" && searchOpen != null && discoveryWords(d) != null -> { searchFor("mtg", discoveryWords(d)!!); onClose(); searchOpen() }
+            p.act.isNotBlank() -> { SiteHandoff.log("card mtg", p.act); site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, v) -> "[data-${k}=\"${css(v)}\"]" }) }
         }
     }
     val m = model ?: return
@@ -165,6 +174,23 @@ private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen)
 }
 
 /**
+ * card-discovery.js cardDiscoverySpec for Magic, as the words its search takes: an artist's cards (a:"Name"), a type's (t:"x" per
+ * word; "Time Lord" is one type) and a keyword's (the chips come from the card's own keywords). Null for anything else (a concept,
+ * another game, a value the site's own check refuses): the website's handler keeps those.
+ */
+internal fun discoveryWords(d: Map<String, String>): String? {
+    val value = d["discovery-value"].orEmpty().trim()
+    if (d["game"] != "mtg" || value.isEmpty() || value.length > 120 || value.any { it < ' ' || it in "<>\"\\" }) return null
+    fun q(s: String) = "\"" + s.lowercase() + "\""
+    return when (d["discovery-kind"]) {
+        "artist" -> "a:\"$value\""
+        "type" -> (if (value == "Time Lord") listOf(value) else value.split(Regex("\\s+"))).joinToString(" ") { "t:" + q(it) }
+        "keyword" -> "keyword:" + q(value)
+        else -> null
+    }
+}
+
+/**
  * tcg.js tcgCardSheet through the site's own code (Collection.tcard / tcardDo), drawn natively over the page that opened it: the card
  * draws at once from what the set page has, then the full card, Pokémon's other printings, the set list, the Play guide's pairings and
  * the price history fill it in (A.tCard). The tabs, finish chips, Yu-Gi-Oh!'s rarity chips and Edition / Printing pickers, the price
@@ -177,6 +203,7 @@ private fun CardHostBody(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen)
 private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) -> Unit, web: (url: String, press: String?) -> Unit, onSet: ((String) -> Unit)?, onRandom: (() -> Unit)?,
                         onBack: (() -> Unit)? = null) {
     val context = LocalContext.current
+    val searchOpen = LocalCollectionSearch.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var model by remember(open) { mutableStateOf<CollectionCardModel?>(null) }
     var asked by remember(open) { mutableStateOf<Pair<String, String>?>(null) }
@@ -227,13 +254,39 @@ private fun TcgCardHost(open: CardOpen, onClose: () -> Unit, onOpen: (CardOpen) 
             // pricing-presentation.js's Add to collection (A.tOwn): the site's add sheet over this page, saved here; the page shows the copies after.
             p.act == "tOwn" && v("id").isNotBlank() -> CollectionWrites.tAdding.value = CollectionWrites.TcgAddOpen(dataset(d).apply { addProperty("game", open.game) },
                 saved = { scope.launch { show(CollectionEngine.tcardModel()) } }, closeAll = onClose)
+            p.act == "priceAlert" -> CollectionWrites.openAlert(d) { scope.launch { show(CollectionEngine.tcardModel()) } }
+            // tcg.js "⇄ Compare" (A.tCompareFrom): the same for this game.
+            // The artist, type, archetype, attribute and ability chips (card-discovery.js, app.js A.ruleCards): the app's own Search tab
+            // on the site's search for them (gap audit L1).
+            p.act == "ruleCards" && searchOpen != null && v("game") == open.game && open.game != "mtg" && v("discovery-kind").isNotBlank() && v("discovery-value").isNotBlank() -> {
+                searchDiscover(open.game, v("discovery-kind"), v("discovery-value")); onClose(); searchOpen() }
+            p.act == "tCompareFrom" && v("id").isNotBlank() -> CollectionWrites.comparing.value = CollectionWrites.CompareOpen(open.game, first = v("id"),
+                openCard = { n, id -> CollectionWrites.comparing.value = null; onOpen(CardOpen(n, page = open.page, tile = "[data-act=\"tCard\"][data-id=\"${css(id)}\"]", game = open.game, id = id)) })
             p.act == "go" && v("to").isNotBlank() -> web("https://cardstashy.com/" + v("to"), null)
+            // The card head's buttons, here as on a Magic card (gap audit): Add to deck (A.cardDeckPicker) is the app's deck picker over this page.
+            p.act == "cardDeckPicker" && v("game") == open.game && v("id").isNotBlank() ->
+                CollectionWrites.picking.value = CollectionWrites.DeckPick(open.game, v("name"), closeAll = onClose, go = { to -> web("https://cardstashy.com/$to", null) }, cardId = v("id"))
+            // A printing's set (A.tSetByName): the app's set page for the release that name points to; the website when none is found.
+            p.act == "tSetByName" && v("name").isNotBlank() && onSet != null -> scope.launch {
+                val id = runCatching { CollectionEngine.setByName(open.game, v("name")) }.getOrDefault("")
+                if (id.isNotBlank()) onSet(id) else { SiteHandoff.log("card " + open.game, p.act); site("[data-act=\"tSetByName\"][data-name=\"${css(v("name"))}\"]") } }
+            // "Interactive rules · how to play →" (A.learnGame): the app's Rules page on How to play · keywords.
+            p.act == "learnGame" && CollectionWrites.rulesNav != null -> { onClose(); CollectionWrites.rulesNav?.invoke(v("game").ifBlank { open.game }, true) }
+            // ⚒ Build decks (A.tBuild): the site's build request for this card, opened in the app's Build a deck.
+            p.act == "tBuild" && v("id").isNotBlank() -> scope.launch {
+                val r = CollectionWrites.actRaw(context, "tBuildCard", JsonObject().apply { addProperty("game", open.game); addProperty("id", v("id")) })
+                r?.get("error")?.takeIf { it.isJsonPrimitive }?.asString?.let { CollectionWrites.show(it) }
+                r?.getAsJsonArray("toasts")?.forEach { t -> t.asJsonObject.get("text")?.asString?.let { CollectionWrites.show(it) } }
+                val req = r?.get("made")?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.startsWith("{") }?.let { runCatching { com.google.gson.JsonParser.parseString(it).asJsonObject }.getOrNull() }
+                if (req != null) CollectionWrites.building.value = CollectionWrites.BuildOpen(req, "openDeckFlow", web) }
+            // The archetype line and "More <archetype> cards" (A.tArchetype): the app's Search on that archetype's cards.
+            p.act == "tArchetype" && v("name").isNotBlank() && searchOpen != null && open.game != "mtg" -> { searchDiscover(open.game, "tArchetype", v("name")); onClose(); searchOpen() }
             p.act == "cardTab" && v("tab") in setOf("overview", "meta", "guide", "prices", "rulings", "legal") -> asked = "tab" to v("tab")
             p.act == "cardFinishPreview" && v("finish").isNotBlank() -> asked = "finish" to v("finish")
             p.act == "ygoPickRarity" && v("edition").isNotBlank() -> asked = "rarity" to v("edition")
             p.act == "cardPriceJump" -> asked = "jump" to v("finish")
             p.act == "marketRange" && v("range").isNotBlank() -> asked = "range" to v("range")
-            p.act.isNotBlank() -> site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, x) -> "[data-${k}=\"${css(x)}\"]" })
+            p.act.isNotBlank() -> { SiteHandoff.log("card " + open.game, p.act); site("[data-act=\"${css(p.act)}\"]" + d.filterKeys { it != "act" }.entries.joinToString("") { (k, x) -> "[data-${k}=\"${css(x)}\"]" }) }
         }
     }
     val m = model ?: return
@@ -264,7 +317,7 @@ internal fun dataset(d: Map<String, String>) = JsonObject().apply { for ((k, v) 
 
 /**
  * rule-dex.js's glass for a rule word on a card's page (A.ruleHint), drawn over it (SiteGlass): its ✕, a tap outside, Back and
- * Read the exact source run here; its Find related cards, Ask and Explore rules (the Search, AI and Rules pages) open the website's
+ * Read the exact source run here, and Ask about this situation opens the app's Ask a Judge; its Find related cards and Explore rules open the website's
  * card sheet with the same word and press the same button there.
  */
 @Composable
@@ -275,6 +328,8 @@ internal fun RuleGlassOver(glass: SitePanelModel?, open: CardOpen, ruleKey: Stri
     fun shut() { scope.launch { runCatching { CollectionEngine.ruleGlassClose() } }; set(null) }
     fun take(m: SitePanelModel) {
         val a = m.acted?.get("act")?.takeIf { it.isJsonPrimitive }?.asString
+        // Ask about this situation (A.askRules): the app's Ask a Judge, with this card and rule (the engine's judgeContextOf).
+        if (a == "askRules") { shut(); CollectionWrites.judge(m.acted?.getAsJsonObject("data")?.get("judge")?.takeIf { it.isJsonPrimitive }?.asString, open.game.ifBlank { "mtg" }); return }
         if (a != null) { shut()
             web(open.page, listOf(open.tile, "#sheet[open] [data-act=\"ruleHint\"][data-rule=\"${css(ruleKey)}\"]", ".rule-glass [data-act=\"${css(a)}\"]").joinToString("\n")); return }
         if (m.glass == null) shut() else set(m)

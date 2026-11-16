@@ -1,0 +1,41 @@
+{
+  "schema": "cardstashy.rules-data-bundle.v1",
+  "version": "rules-20261114-scryfall20261113-native-cc375dd3",
+  "asOfDate": "2026-11-14",
+  "validUntilExclusive": "2026-11-21",
+  "freshnessPolicy": "maximum7days; earlier revocation/release update requires replacement; not a forever-current certificate",
+  "engineRevision": "cc375dd3b2327b5a8e752422505b65cf91cb661b",
+  "sourceUpdatedAt": "2026-11-13T22:01:58.567+00:00",
+  "sourceRetrievedAt": "2026-11-14T04:13:34.000Z",
+  "sourceUrl": "https://data.scryfall.io/oracle-cards/oracle-cards-20261113220158.jsonl.gz",
+  "sourceSha256": "a46757b67204b4d05167899617c85a2bc8406ad8a37675e7916c4e505626790c",
+  "indexSha256": "ee575780c95be0a8fd772fe3079340021088da29c6784825ea442a885340946b",
+  "indexRows": 33672,
+  "nativeExportSha256": "881a4cd48c795cdfe48f22b97ce007d3fee170193f9cf8b17d0fc1579722413e",
+  "officialFactsSha256": "9c7f2a0dfb8040d2c6707ecd28d2bac9df64ed7d18553d0e66afbad0a3143904",
+  "officialSources": {
+    "standard": "https://magic.wizards.com/en/formats/standard",
+    "modern": "https://magic.wizards.com/en/formats/modern",
+    "banned": "https://magic.wizards.com/en/banned-restricted-list",
+    "latestAnnouncement": "https://magic.wizards.com/en/news/announcements/banned-and-restricted-october-12-2026"
+  },
+  "formatDefinitionDigests": {
+    "Brawl": "405c426ed218f56e8c2f40d974e4fb30191ec2aefc268ea396244300cc5b834f",
+    "Commander": "b95292a637356dcc5766f2176500138f06bd9c5c993fe911e0dc430245c3fb8f",
+    "Legacy": "0c9294918ce805bd85f545e27c6e21b03a45a579b80bf0311468ed3dc1efe87f",
+    "Modern": "07747b965be3ccbf397ba6a45a64fd2a1950c86b224e2662af80d058dcca2724",
+    "Pauper": "6bd4fb6d3937951bae89cefbc347cf69ac276441ce5046b8fcc3b05b778dc057",
+    "Pioneer": "5e17a1195674761dc534f90339c46689bccb26c31cae1e584e6855d25f05ec6d",
+    "Standard": "e3105e77f020642cb97ff2889712cbc8dfa96a945cf2915eb30390228d87234c",
+    "Vintage": "2dede28044a8cbc68cf70a46e8251cf39964cb375d8ce8dc9f24dede5eb05793"
+  },
+  "aliases": {
+    "Ratonhnhaké:ton": {
+      "oracleId": "a37f8381-83a4-4b6b-8176-c90f6a61da74",
+      "sourceName": "Ratonhnhaké꞉ton"
+    }
+  },
+  "existingCatalogSha256": "4711be54f4fb53b2909e98bb839e78abe88f4a99f305dc45dd68611d4e9ac4ec",
+  "unmappedNativeCount": 269,
+  "ambiguousNativeCount": 3
+}

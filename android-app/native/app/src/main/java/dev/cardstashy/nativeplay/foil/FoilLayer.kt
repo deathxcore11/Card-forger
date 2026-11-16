@@ -29,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -179,6 +180,47 @@ object FoilMaps {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Triple<FloatArray, Int, Int>>) = size > 6
     }
     private fun matte(facet: ByteArray, fig: Triple<FloatArray, Int, Int>, w: Int, h: Int, text: FloatArray) = MtgFoil.figureMatte(facet, fig.first, fig.second, fig.third, w, h, text)
+
+    /** Magic's security stamp, measured on this exact picture (MtgStamp, the site's measureStamp): [box] left, top, width, height as
+     *  fractions of the card; [mask] the stamp's outline and print brightness as opaque gray (the shader's input, R = alpha), [alpha]
+     *  the same as white with that alpha (the stand-in below Android 13). */
+    class Stamp(val box: FloatArray, val mask: Bitmap, val alpha: Bitmap)
+    private val stamps = object : LinkedHashMap<String, MutableStateFlow<Stamp?>>(32, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, MutableStateFlow<Stamp?>>) = size > 64
+    }
+    /** Stamps queue on their own gate, so a scrolled list of rares never holds back the card in front's foil maps (FoilMaps.mtg). */
+    private val stampGate = Semaphore(1)
+    /** The stamp of [image], measured once per picture off the main thread from the picture at its full size, like the site
+     *  (mtg-stamp.js stampFor). Null until it lands, and null for good when the picture shows no stamp that can be read: then no
+     *  stamp is drawn, never a guessed one. A picture that did not load (offline, a network error) is forgotten, so a later view
+     *  tries again; so is one whose tile left the screen before its turn came (nobody watching its flow any more). */
+    fun stamp(context: android.content.Context, image: String): StateFlow<Stamp?> = synchronized(stamps) {
+        stamps[image] ?: MutableStateFlow<Stamp?>(null).also { fl ->
+            stamps[image] = fl
+            fun forget() = synchronized(stamps) { if (stamps[image] === fl) stamps.remove(image) }
+            scope.launch {
+                // The composable that asked starts watching a moment after this call; wait for it, then for a turn.
+                val watched = kotlinx.coroutines.withTimeoutOrNull(2000) { fl.subscriptionCount.first { it > 0 } } != null
+                if (!watched) { forget(); return@launch }
+                stampGate.withPermit {
+                    if (fl.subscriptionCount.value == 0) { forget(); return@withPermit }
+                    val req = ImageRequest.Builder(context).data(image).size(coil3.size.Size.ORIGINAL).allowHardware(false)
+                        // Reuses a decode already cached (the foil's maps), never adds a full-size picture to the cache.
+                        .memoryCachePolicy(coil3.request.CachePolicy.READ_ONLY).build()
+                    val src = (CardArt.loader.execute(req) as? SuccessResult)?.image?.toBitmap()
+                    if (src == null) { forget(); return@withPermit }
+                    val bmp = if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false)
+                    val w = bmp.width; val h = bmp.height
+                    val px = IntArray(w * h); bmp.getPixels(px, 0, w, 0, 0, w, h)
+                    val s = MtgStamp.measure(px, w, h) ?: return@withPermit
+                    val gray = IntArray(s.mw * s.mh) { i -> val v = s.mask[i].toInt() and 255; (255 shl 24) or (v shl 16) or (v shl 8) or v }
+                    val alpha = IntArray(s.mw * s.mh) { i -> ((s.mask[i].toInt() and 255) shl 24) or 0xFFFFFF }
+                    fl.value = Stamp(floatArrayOf(s.x.toFloat(), s.y.toFloat(), s.w.toFloat(), s.h.toFloat()),
+                        Bitmap.createBitmap(gray, s.mw, s.mh, Bitmap.Config.ARGB_8888), Bitmap.createBitmap(alpha, s.mw, s.mh, Bitmap.Config.ARGB_8888))
+                }
+            }
+        }
+    }
 
     /** A measured map as a shader input: clamped at the edges, bilinear like the site's textures. */
     fun input(b: Bitmap): Shader = BitmapShader(b, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply { filterMode = BitmapShader.FILTER_MODE_LINEAR }

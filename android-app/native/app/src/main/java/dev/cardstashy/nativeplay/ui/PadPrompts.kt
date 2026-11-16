@@ -84,6 +84,8 @@ class PadActs(
     val page: ((Int) -> Unit)? = null,
     val pageLabel: String = "Page",
     val start: PadAct? = null,
+    /** R3 (press the right stick): a screen's second panel, as the Deck Bench's Filters (deck view redesign, 14 Nov). */
+    val r3: PadAct? = null,
     /** Select (Randall 9 Nov, console convention): the quick menu a long press opens on the thing under the ring. Only the focused
      *  item's counts. [PadAct.run] null = Select long-presses the item itself (PadCursor.holdFocused). */
     val menu: PadAct? = null,
@@ -121,11 +123,18 @@ object PadPrompts {
      */
     /** Where the ring goes first when nothing has it (the match table: the hand chip), else null for the screen's own order. */
     @Volatile var entry: (() -> Boolean)? = null
+    /** A walk of the screen's own (the table's legal targets, live 0.4.57): -1 up or left, +1 down or right. True when it moved the ring. */
+    @Volatile var steer: ((Int) -> Boolean)? = null
+    /** A walk that needs the direction itself (0.4.59 T8, the Quick Play grid): the d-pad's key code. True when it took the press. */
+    @Volatile var steerKey: ((Int) -> Boolean)? = null
+    /** The repeat count of the pad key being handled, so a held trigger can't cancel twice. */
+    @Volatile var keyRepeat = 0
 
     fun enter(keyCode: Int): Boolean {
         if (anyFocus) return false
         // W11/Y5 (Thor test4): on the table the first press lands on your hand, never on whatever spatial search finds first.
-        inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard)
+        // (Live 0.4.61, the Thor freeze: this call runs the board's own focus entry, so nothing it throws may reach the key event.)
+        runCatching { inputModes?.requestInputMode(androidx.compose.ui.input.InputMode.Keyboard) }
         entry?.let { if (runCatching { it() }.getOrDefault(false)) return true }
         val fm = focusManager ?: return false
         val dir = when (keyCode) {
@@ -141,6 +150,11 @@ object PadPrompts {
      * otherwise keep them for its caret and trap it). Left and right go on to the focused thing (sliders, the pack's hand).
      */
     fun navigate(keyCode: Int): Boolean {
+        steerKey?.let { s -> if (runCatching { s(keyCode) }.getOrDefault(false)) return true }
+        steer?.let { s ->
+            val k = when (keyCode) { KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_LEFT -> -1; KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT -> 1; else -> 0 }
+            if (k != 0 && runCatching { s(k) }.getOrDefault(false)) return true
+        }
         if (enter(keyCode)) return true
         val fm = focusManager ?: return false
         return when (keyCode) {
@@ -176,7 +190,7 @@ object PadPrompts {
             x = pick { it.x }, b = pick { it.b },
             tabs = tabsFrom?.tabs, tabsLabel = tabsFrom?.tabsLabel ?: "Tabs",
             page = pageFrom?.page, pageLabel = pageFrom?.pageLabel ?: "Page",
-            start = pick { it.start }, menu = f?.menu, lift = s.firstOrNull()?.lift ?: 0.dp,
+            start = pick { it.start }, r3 = pick { it.r3 }, menu = f?.menu, lift = s.firstOrNull()?.lift ?: 0.dp,
             // Root only while nothing but the root screen and the app's tabs is up (a sheet over Home still shows its B).
             root = s.any { it.root } && s.all { it.root || it.nav },
         )
@@ -194,6 +208,7 @@ object PadPrompts {
             acts.b?.let { add("B" to it) }
             acts.tabs?.let { add("LB RB" to acts.tabsLabel) }
             acts.page?.let { add("LT RT" to acts.pageLabel) }
+            acts.r3?.let { add("R3" to it.label) }
             acts.menu?.let { add("Select" to it.label) }
             acts.start?.let { add("Start" to it.label) }
             if (acts.b == null && !acts.root) add("B" to "Back")
@@ -219,7 +234,8 @@ object PadPrompts {
         val code = event.keyCode
         val ours = code == KeyEvent.KEYCODE_BUTTON_X || code == KeyEvent.KEYCODE_BUTTON_Y || code == KeyEvent.KEYCODE_BUTTON_L1 ||
             code == KeyEvent.KEYCODE_BUTTON_R1 || code == KeyEvent.KEYCODE_BUTTON_L2 || code == KeyEvent.KEYCODE_BUTTON_R2 ||
-            code == KeyEvent.KEYCODE_BUTTON_START || code == KeyEvent.KEYCODE_MENU || code == KeyEvent.KEYCODE_BUTTON_SELECT
+            code == KeyEvent.KEYCODE_BUTTON_START || code == KeyEvent.KEYCODE_MENU || code == KeyEvent.KEYCODE_BUTTON_SELECT ||
+            (code == KeyEvent.KEYCODE_BUTTON_THUMBR && current().r3 != null)
         if (!ours) return false
         val down = event.action == KeyEvent.ACTION_DOWN
         if (down) lastPress = SystemClock.uptimeMillis()
@@ -241,6 +257,7 @@ object PadPrompts {
             return true
         }
         if (!down) return true
+        keyRepeat = event.repeatCount
         when (code) {
             KeyEvent.KEYCODE_BUTTON_X -> if (event.repeatCount == 0) acts.x?.run?.invoke()
             KeyEvent.KEYCODE_BUTTON_L1 -> if (event.repeatCount == 0) acts.tabs?.invoke(-1)
@@ -249,6 +266,7 @@ object PadPrompts {
             KeyEvent.KEYCODE_BUTTON_L2 -> acts.page?.invoke(-1) ?: repeat(6) { dpad(KeyEvent.KEYCODE_DPAD_UP) }
             KeyEvent.KEYCODE_BUTTON_R2 -> acts.page?.invoke(1) ?: repeat(6) { dpad(KeyEvent.KEYCODE_DPAD_DOWN) }
             KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_MENU -> if (event.repeatCount == 0) acts.start?.run?.invoke()
+            KeyEvent.KEYCODE_BUTTON_THUMBR -> if (event.repeatCount == 0) acts.r3?.run?.invoke()
             // Select (Randall 9 Nov): the quick menu a long press opens, on whatever the ring is on, everywhere.
             KeyEvent.KEYCODE_BUTTON_SELECT -> if (event.repeatCount == 0) acts.menu?.run?.invoke() ?: PadCursor.holdFocused()
         }

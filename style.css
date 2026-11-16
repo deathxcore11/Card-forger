@@ -5360,7 +5360,26 @@ body[data-view="scan"] #content:has(.scan-workspace.is-grid) > .context-guide { 
 .scan-dest-new { display:flex;gap:8px;align-items:center;margin-top:10px; }
 .scan-dest-new input { flex:1;min-width:0;min-height:44px;font-size:15px; }
 .scan-dest-new .btn { min-height:44px;padding:0 16px; }
-.scan-grid-error { margin:10px 0 0;font-size:13px;color:var(--bad); }
+.scan-grid-bar { flex-wrap:wrap; }
+.scan-grid-bar > .scan-grid-error,.scan-grid-bar > .scan-grid-note { flex:1 0 100%;margin:0; }
+/* The found card's edge on the live camera: amber while waiting, green as it is captured. */
+.cam-outline { position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:0;transition:opacity .18s; }
+.cam-outline.is-on { opacity:1; }
+.cam-outline polygon { fill:none;stroke:var(--warn);stroke-width:3;stroke-dasharray:10 8;stroke-linejoin:round;filter:drop-shadow(0 0 6px rgba(0,0,0,.6)); }
+.cam-outline.is-green polygon { stroke:var(--good);stroke-width:4;stroke-dasharray:none; } /* waiting is dashed, captured is solid: not colour alone */
+@media (prefers-reduced-motion:reduce) { .cam-outline { transition:none; } }
+/* A toast never sits on the Add button, the tray or the nav. */
+body:has(.scan-workspace.is-grid) #toast { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 104px); }
+body:has(.scan-grid-error) #toast { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 168px); }
+body:has(.scan-select-bar.is-open) #toast { bottom:auto;top:calc(env(safe-area-inset-top) + 76px); }
+.scan-grid-error { display:flex;align-items:center;gap:8px;margin:10px 0 0;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);font-size:14px;font-weight:600;color:var(--text); }
+.scan-grid-error.is-failed::before { content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--bad); }
+.scan-grid-error > span { min-width:0; }
+.scan-grid-error em { font-style:normal;font-weight:500;color:var(--muted); }
+.scan-grid-error em::before { content:"· "; }
+.scan-grid-retry { position:relative;flex:none;white-space:nowrap;margin-left:auto;min-height:32px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--gold);font:inherit;font-size:13px;cursor:pointer; }
+.scan-grid-retry:disabled { opacity:.5; }
+.scan-grid-retry::after { content:"";position:absolute;inset:-6px 0; } /* a 44 tall tap area around the 32 pill */
 .scan-grid-note { margin:10px 0 0;font-size:13px;color:var(--muted); }
 .scan-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px 10px;margin-top:16px; }
 .scan-tile { display:grid;gap:6px;align-content:start;padding:0;border:0;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;border-radius:12px; }
@@ -5707,3 +5726,27 @@ body[data-game="ygo"] .card-grid .tile-chrome { aspect-ratio: 59 / 86; }
 .war-chest-dialog .war-chest{padding-top:64px}
 .wc-close{position:absolute;top:10px;right:10px;z-index:2;width:44px;height:44px;border-radius:50%;border:1px solid rgba(232,206,135,.34);background:rgba(14,19,30,.7);color:#f5f1e6;font-size:22px;cursor:pointer}
 @media (prefers-reduced-motion:reduce){.wc-orb{transition:none}}
+/* Ask a Judge, no AI: the exact rule, its number, and what goes with it. */
+.judge-mark{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--gold);color:var(--gold-ink);font-weight:800;font-size:19px}
+.judge-dialog .ask-head .eyebrow{color:var(--good)}.judge-dialog .ask-head h2{white-space:nowrap}
+.judge-answer{display:flex;flex-direction:column;gap:10px;min-width:0;animation:rules-answer-in .18s ease-out both}
+.judge-read{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0;font-size:12px;color:var(--muted)}
+.judge-rule{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.judge-rule.lead{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.judge-rule p{margin:0;font-size:14px;line-height:1.5;overflow-wrap:anywhere}.judge-rule.lead>p{font-size:16px;line-height:1.45}
+.judge-num{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}.judge-num b{font-size:17px;color:var(--gold);font-variant-numeric:tabular-nums}.judge-num span{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.judge-rule summary{cursor:pointer;font-size:13px;color:var(--muted);padding-block:4px}.judge-rule details p{font-size:13.5px;color:var(--muted);margin-top:4px}
+.judge-open{align-self:flex-start;font:inherit;font-size:12.5px;font-weight:600;min-height:36px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer}.judge-open:hover,.judge-open:focus-visible{border-color:var(--gold)}
+.judge-label{margin:4px 2px -2px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.judge-term{margin:0;padding:2px 0 2px 10px;border-left:2px solid var(--good);font-size:13px;color:var(--muted)}.judge-term b{color:var(--text)}.judge-term small{color:var(--good)}
+.judge-card{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px}.judge-card p{margin:0;font-size:13.5px;overflow-wrap:anywhere}.judge-card-text{white-space:pre-wrap;color:var(--muted)}.judge-ruling small{display:block;font-size:11px;color:var(--gold);letter-spacing:.04em}
+.judge-foot{margin:2px 0 0;border-top:1px solid var(--line);padding-top:8px}
+.judge-miss{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}.judge-miss h3{margin:0;font-size:18px}.judge-miss p{margin:0;color:var(--muted);font-size:14px}
+.judge-try{display:flex;flex-direction:column;gap:6px}.judge-try button{font:inherit;font-size:14px;text-align:left;padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer}
+.judge-with{margin:10px 0 0;font-size:13px;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.judge-answer{animation:none!important}}
+/* Deck coach, no AI: measured odds rows and the tournament-list card. */
+.air-odds{display:grid;gap:8px}.air-odd{display:flex;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent)}.air-odd:first-of-type{border-top:0}
+.air-odd b{flex:none;min-width:58px;font-size:1.15rem;font-variant-numeric:tabular-nums}.air-odd.good b{color:var(--good,#5fd08a)}.air-odd.warn b{color:var(--warn,#e2b657)}
+.air-odd span{min-width:0;line-height:1.35}.air-odd small{display:block;opacity:.7;font-size:.8rem}
+.air-field .air-lead{margin-bottom:4px}.ai-dialog-head .judge-mark{flex:none}

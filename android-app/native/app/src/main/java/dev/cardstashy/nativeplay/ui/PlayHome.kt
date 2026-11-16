@@ -271,10 +271,11 @@ fun Ambient(art: String?) {
         val ctx = LocalContext.current
         // Blurred once, small, off the main thread, and kept per art; a full-screen live blur cost every scroll frame at Fold size.
         val soft = produceState(Aura.cachedSoft(art), art) { value = art?.let { a -> Aura.cachedSoft(a) ?: softArt(ctx, a)?.also { Aura.keepSoft(a, it) } } }.value
+        // Loading brief L1: the opening screen waits for this one picture.
+        if (soft != null) androidx.compose.runtime.SideEffect { HomeStart.picture.value = true }
         // aura.css .aura-art: a new art fades in over 1 s; the layer drifts slowly (22 s, alternate) unless motion is reduced.
         val still = Motion.still || remember { Playmats.reduced(ctx) }
-        val drift = if (theme == "aura" && !still) androidx.compose.animation.core.rememberInfiniteTransition(label = "aura").animateFloat(0f, 1f,
-            androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(22000, easing = androidx.compose.animation.core.FastOutSlowInEasing), androidx.compose.animation.core.RepeatMode.Reverse), label = "drift") else null
+        val drift = if (theme == "aura" && !still) menuLoop(22000, androidx.compose.animation.core.FastOutSlowInEasing, reverse = true) else null
         androidx.compose.animation.Crossfade(soft, androidx.compose.ui.Modifier.fillMaxSize(), animationSpec = androidx.compose.animation.core.tween(if (theme == "aura" && !still) 1000 else 0), label = "ambient") { bmp ->
             if (bmp != null) androidx.compose.foundation.Image(bmp, null, Modifier.fillMaxSize().graphicsLayer {
                 alpha = when (theme) { "light" -> .8f; "aura" -> 1f; else -> .85f }
@@ -605,8 +606,7 @@ private fun FoilBooster(code: String, label: String, f: SetFacts.Set?, modifier:
 /** The art window while its picture is on the way: the dark gradient with one light sweep moving across it. */
 @Composable
 private fun ArtShimmer(modifier: Modifier) {
-    val t = if (Motion.still) 0.3f else androidx.compose.animation.core.rememberInfiniteTransition(label = "shimmer").animateFloat(0f, 1f,
-        androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(1400, easing = androidx.compose.animation.core.LinearEasing)), label = "x").value
+    val t = if (Motion.still) 0.3f else menuLoop(1400).value
     Box(modifier.background(Brush.radialGradient(listOf(Color(0xFF3B4152), Color(0xFF15181F)))).drawBehind {
         val x = (t * 1.6f - .3f) * size.width
         drawRect(Brush.linearGradient(listOf(Color.Transparent, Color(0x22FFFFFF), Color.Transparent), start = Offset(x - size.width * .3f, 0f), end = Offset(x + size.width * .3f, size.height)))
@@ -734,7 +734,7 @@ private fun Modifier.collectorGlow() = drawBehind {
  */
 @Composable
 private fun CollectorSheen(modifier: Modifier) {
-    val t = if (Motion.still) .5f else rememberInfiniteTransition(label = "collector").animateFloat(0f, 1f, infiniteRepeatable(tween(4500, easing = LinearEasing)), label = "c").value
+    val t = if (Motion.still) .5f else menuLoop(4500).value
     Box(modifier.drawWithContent {
         // background-position p% of a 250 % image: its left edge sits at p · (W − 2.5 W) = −1.5 W · p.
         val bw = size.width * 2.5f; val pos = 1f + (-1.5f - 1f) * t
@@ -1093,8 +1093,12 @@ private fun DeckTile(art: String?, name: String, meta: String, modifier: Modifie
     }
 }
 
+/**
+ * The Trunk shelf: your game cards from packs and rewards. It said "Your collection", which is the paper-card tracker's name, so
+ * 1,485 here and 28 there read as one count gone wrong (Randall 11 Nov). The two are separate on purpose (app.js 291-292).
+ */
 @Composable
-private fun Collection(s: JsonObject, act: PlayHomeActions) {
+internal fun Collection(s: JsonObject, act: PlayHomeActions) {
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val owned = produceState(emptyMap<String, Int>(), s) { value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { LinkedHashMap<String, Int>().also { owned ->
         (s.get("cards") as? JsonArray)?.forEach { c -> ((c as? JsonObject)?.get("s") as? JsonArray)?.forEach { it.str()?.let { k -> owned[k] = (owned[k] ?: 0) + 1 } } }
@@ -1102,7 +1106,7 @@ private fun Collection(s: JsonObject, act: PlayHomeActions) {
     val rows = owned.map { (code, have) -> val f = facts[code]; Triple(code, f, have) }
         .sortedWith(compareByDescending<Triple<String, SetFacts.Set?, Int>> { it.second?.released ?: "" }.thenBy { it.second?.name ?: it.first }).take(4)
     val total = (s.get("cards") as? JsonArray)?.size() ?: 0
-    Shelf("Your collection", "${"%,d".format(total)} cards", { act.view("collection") }) {
+    Shelf("Trunk", "${"%,d".format(total)} cards", { act.view("collection") }) {
         if (rows.isEmpty()) Text("Open a pack and your first set starts filling in.", style = TextStyle(fontFamily = P.Sans, fontSize = 15.sp, color = P.PageFaint))
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             rows.forEach { (code, f, have) ->

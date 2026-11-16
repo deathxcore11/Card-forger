@@ -509,7 +509,7 @@ float3 foil(float pat,float tint,float2 uv,float3 L,float3 V,float3 N,float spot
    amp=mix(.4,1.35,on);mirror=hd?.35:.45;lines=on;}
   if(!c2&&(pat<30.5)){c2=true; // 17 Tinsel / 18 Tinsel II: horizontal wavy ribbons with fine vertical striations
    bool two=pat>29.5;float rows=two?52.:28.,row=floor(uv.y*rows),bh=hash(float2(row,3.)),sgn=two?mod(row,2.)*2.-1.:1.,w=sin(uv.x*400.+bh*6.28),a=PI*.5+sgn*(.35+.25*w);
-   g=float2(cos(a),sin(a));d=1250.+bh*500.;lines=(.55+.45*abs(w))*(smoothstep(.5,.38,abs(fract(uv.y*rows)-.5))+.3);amp=.95;mirror=.35;}
+   g=float2(cos(a),sin(a));d=1250.+bh*500.;lines=(.55+.45*abs(w))*(1.-smoothstep(.38,.5,abs(fract(uv.y*rows)-.5))+.3);amp=.95;mirror=.35;}
   if(!c2&&(pat<31.5)){c2=true; // 20 Diagonal Left Sheen: the mirrored -45° band
    float band=pow(.5+.5*sin((q.x-q.y)*5.5-(u_tilt.x-u_tilt.y)*4.5),3.);g=normalize(float2(1.,-1.));d=1500.;lines=band;amp=mix(.3,1.35,band);mirror=.45;ex=8.;}
   if(!c2&&(pat<32.5)){c2=true; // 21 Horizontal Sheen: a wide bar sweeping top to bottom

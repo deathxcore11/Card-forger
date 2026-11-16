@@ -33,4 +33,12 @@ class OptionalPayTest {
         assertEquals(null, Affordability.unpayableTrigger(st(tapped = true, actionable = "", top = spell)))
         assertEquals(null, Affordability.unpayableTrigger(st(tapped = true, actionable = "", top = trigger, cancel = false)))
     }
+
+    /** Gaps list 2 (15 Nov recording 0:25): no Cancel or "Pay automatically" waits on him for a trigger he has no mana for. */
+    @Test fun theCornerOffersNoPayOrCancelForIt() {
+        val c = dev.cardstashy.nativeplay.ui.TableActions.of(st(tapped = true, actionable = "", top = trigger), live = true, selected = null, tucked = false, discarding = false)
+        assertEquals(dev.cardstashy.nativeplay.ui.RESOLVING, c.gold?.label); assertEquals(false, c.gold?.enabled); assertEquals(null, c.quiet)
+        val payable = dev.cardstashy.nativeplay.ui.TableActions.of(st(tapped = false, actionable = """{"kind":"card","id":40}""", top = trigger), live = true, selected = null, tucked = false, discarding = false)
+        assertEquals(true, payable.gold?.label != dev.cardstashy.nativeplay.ui.RESOLVING)
+    }
 }

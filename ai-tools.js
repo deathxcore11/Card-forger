@@ -1,7 +1,12 @@
 import {findInfo,INFO_TOPICS} from './app-info.js';
+import { deckColorsOf } from './deck-colors.js';
 import {FORMATS} from './formats.js';
 import {prepareMtgDeck} from './ai-deck-builder.js';
-import {cardPrice,cardKey} from './core.js';
+import {cardPrice,cardKey,validateDeck} from './core.js';
+import {formatOf as mtgFormatOf} from './formats.js';
+import {trackedQuote,priceSeries} from './pricehist.js';
+import {profileOf,simulateMatchup} from './matchup.js';
+import {mtgConstructedPower} from './deckpower.js';
 import {validateBuildProposal,proposalFeedback} from './ai-build-contract.js';
 import {goalDescription} from './ai-deck-goal.js';
 import {resolveYgoSet} from './ygo.js';
@@ -63,6 +68,7 @@ export function makeAskTools(x) {
     return matches.length===1?matches[0]:null;
   }
   let suggestions = [], buildId = 0, buildEpoch = 0;
+  const angleCache = new Map();
   const builders = new Map();
   let buildReads=new Map(),buildReadVersion=null,bestBuild=null;
   const stateVersion = g => {const st=g==='mtg'?S.state:T.gs?.(g)||S.state;return JSON.stringify([st?.collection||[],st?.decks||[]]);};
@@ -96,16 +102,26 @@ export function makeAskTools(x) {
     } catch {}
     visuals.set(visualKey(item), { image, card, share, name: d.name, label:item.label });
   }
+  // One deck's own cards for "what's in it": the twelve it plays most, lands left out, with how many of each you own.
+  function deckTop(g, d) {
+    let rows = [];
+    if (g === 'mtg') rows = (d.main || []).filter(c => !c.land).map(c => ({ name: c.name, qty: Number(c.qty) || 1, owned: x.inv(c.name).owned || 0 }));
+    else if (g === 'ptcg') rows = (d.list || []).filter(c => c && c.name && c.kind !== 'Energy').map(c => ({ name: c.name, qty: Number(c.qty || c.count) || 1, owned: 0 }));
+    else { const n = new Map(); for (const id of [...(d.main || []), ...(d.extra || [])]) { const c = T.cardOf(g, id); if (c?.name) n.set(c.name, (n.get(c.name) || 0) + 1); } rows = [...n].map(([name, qty]) => ({ name, qty, owned: 0 })); }
+    const all = rows.reduce((t, r) => t + r.qty, 0) + (g === 'mtg' ? (d.main || []).filter(c => c.land).reduce((t, c) => t + (Number(c.qty) || 1), 0) : 0);
+    return { cards: rows.sort((a, b) => b.qty - a.qty).slice(0, 12), cardCount: all };
+  }
   async function decorateMeta(g, data, result) {
     const items = (result.decks || []).slice(0,6).map(d=>({kind:'meta',game:g,ref:d.key || d.name,label:d.name}));
     suggestions = items;
-    await Promise.all(items.map(async (item,i)=> {
+    // The pictures on the tiles are worth a short wait, never a long one: on a slow connection the answer shows without them.
+    await Promise.race([new Promise(r => setTimeout(r, x.artWaitMs || 2500)), Promise.all(items.map(async (item,i)=> {
       const d=(data.decks || []).find(d=>d.key===item.ref) || (data.decks || []).find(d=>d.name===item.ref);
       if (d) {metaTargets.set(visualKey(item),{deck:d,data,format:result.format});return deckVisual(g,d,item,result.decks[i].share);}
       const a=(data.archetypes || []).find(a=>(a.name || a.id)===item.label);
       const icon=a?.icons?.[0];
       visuals.set(visualKey(item), { image:g==='ptcg' && icon?ptcgIcon(icon):'', sprite:!!icon, share:result.decks[i].share, label:item.label });
-    }));
+    })).catch(() => {})]);
     return result;
   }
   const g0 = (g) => (GAMES.includes(g) ? g : T.game());
@@ -119,7 +135,71 @@ export function makeAskTools(x) {
   }
   async function mtgSets() { if (!S.ui.sets?.list?.length) await x.loadSetIndex().catch(() => {}); return (S.ui.sets?.list || []).filter((s) => !s.digital); }
   async function tcgSets(g) { if (!T.ui(g).sets?.list?.length) await x.tcgCtx.loadSets?.(g).catch(() => {}); return T.ui(g).sets?.list || []; }
-  const metaKey = (format) => { const f = String(format || S.ui.mtgMeta?.format || 'Modern'); return 'mtg:' + (/commander|edh|cedh/i.test(f) ? 'EDH' : x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === f.toLowerCase())?.[0] || 'Modern'); };
+  // A Magic deck's colours, read from its nonland cards: a colour counts when at least 4 copies (and 8% of the coloured
+  // copies) carry it, so one hybrid card or a light splash does not rename the deck. Null when too few cards are known.
+  const WUBRG = 'WUBRG';
+  const mtgDeckColors = rows => deckColorsOf(rows, x.meta);
+  const colorFits = (have, { colors, exact, without, count }) => {
+    if (colors?.length && !(exact ? have.length === colors.length && colors.every(c => have.includes(c)) : colors.every(c => have.includes(c)))) return false;
+    if (without?.length && without.some(c => have.includes(c))) return false;
+    if (count && have.length !== count) return false;
+    return true;
+  };
+  // Narrow tournament archetypes by what the question asked: colours, a name or card, a price cap, then the order.
+  // rows: [{a, d, name, cards:[{name,qty}]}]. Returns the rows left (with .matched), or {error, none|noData}.
+  async function narrowMeta(g, rows, args, summary) {
+    const flat = t => ' ' + String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[’']/g, '').replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+    let matched = null;
+    // A follow-up about one deck ("what's in it"): that deck alone, by its key in the feed.
+    if (args.key) rows = rows.filter(r => r.d?.key === args.key);
+    if (g === 'mtg' && (args.colors?.length || args.without?.length || args.count || args.needColors)) {
+      // The server works out each deck's colours once a day and sends them with the feed. Only a feed that came without them
+      // makes the app load the cards itself, and that wait is capped: a slow connection gets a plain sentence, never an endless "Looking…".
+      const need = rows.filter(r => r.d && typeof r.d.colors !== 'string');
+      const names = [...new Set(need.flatMap(r => r.cards.map(c => c.name)))].filter(n => !x.meta(n));
+      let slow = false;
+      if (names.length) {
+        const load = Promise.resolve(x.resolveNames ? x.resolveNames(names) : Promise.all(names.slice(0, 60).map(n => x.resolve(n).catch(() => null)))).catch(() => {});
+        slow = await Promise.race([load.then(() => false), new Promise(r => setTimeout(() => r(true), x.colorWaitMs || 9000))]);
+      }
+      for (const r of rows) r.colors = !r.d ? null : typeof r.d.colors === 'string' ? r.d.colors : mtgDeckColors(r.cards);
+      if (slow && !rows.some(r => r.colors != null)) return { error: "The cards in these decks are still loading on this connection. Ask again in a moment.", noData: true };
+      if (!rows.some(r => r.colors != null) && !(args.needColors && !(args.colors?.length || args.without?.length || args.count))) return { error: "The cards in these decks could not be loaded, so the app can't sort them by colour right now.", noData: true };
+      if (args.colors?.length || args.without?.length || args.count) rows = rows.filter(r => r.colors != null && colorFits(r.colors, args));
+    }
+    if (args.match) {
+      // Pokémon type nicknames read as the energy the deck plays: "dark" is Darkness, "steel" is Metal, "electric" is Lightning.
+      const alias = g === 'ptcg' ? { dark: 'darkness', steel: 'metal', electric: 'lightning' }[String(args.match).toLowerCase()] : null;
+      const m = flat(alias || args.match), one = m.replace(/s $/, ' '), has = t => { const f = flat(t); return f.includes(m) || f.includes(one) || f.replace(/s /g, ' ').includes(one); };
+      const byName = rows.filter(r => has(r.name));
+      if (byName.length) { rows = byName; matched = { by: 'name' }; }
+      else {
+        // Yu-Gi-Oh!: an attribute or monster type ("dark", "dragon") is a deck whose known monsters are mostly that.
+        const word = String(args.match).toLowerCase(), mostly = g === 'ygo' ? rows.filter(r => { const mon = r.cards.filter(c => c.attribute); return mon.length >= 5 && mon.filter(c => String(c.attribute).toLowerCase() === word || String(c.race).toLowerCase() === word).length * 2 >= mon.length; }) : [];
+        const known = rows.some(r => r.cards.length);
+        if (mostly.length) { rows = mostly; matched = { by: 'kind', kind: word }; }
+        else { let card = ''; rows = rows.filter(r => { const c = r.cards.find(c => has(c.name)); if (c && !card) card = c.name; return !!c; }); matched = { by: 'card', card, known }; }
+      }
+    }
+    if (args.sort || args.under != null) for (const r of rows) r.sum = r.d ? summary(r.d) : null;
+    if (args.under != null) rows = rows.filter(r => r.sum?.costToFinish != null && r.sum.costToFinish <= args.under);
+    if (args.sort === 'closest') rows = rows.filter(r => r.sum).sort((a, b) => b.sum.ownedPercent - a.sum.ownedPercent);
+    if (args.sort === 'cheapest' || args.sort === 'priciest') { rows = rows.filter(r => r.sum?.costToFinish != null); rows.sort((a, b) => args.sort === 'cheapest' ? a.sum.costToFinish - b.sum.costToFinish : b.sum.costToFinish - a.sum.costToFinish); }
+    if (!rows.length) return { error: 'No tournament deck matches.', none: true, matched };
+    rows.matched = matched;
+    return rows;
+  }
+  const metaKey = (format) => { const f = String(format || S.ui.mtgMeta?.format || 'Modern'); return 'mtg:' + (x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === f.toLowerCase())?.[0] || (/commander|edh|cedh/i.test(f) ? 'EDH' : 'Modern')); };
+
+  // The one saved deck a question is about, by its name or its commander. Several matches are listed, never guessed.
+  const ownDeck = (g, match) => {
+    const flat = t => ' ' + String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ', all = g === 'mtg' ? S.state.decks : T.gs(g).decks;
+    if (!all.length) return { none: true };
+    const words = flat(match).trim().split(' ').filter(Boolean), hit = all.filter(d => { const hay = flat(d.name) + flat(d.commander); return words.every(w => hay.includes(' ' + w) ); });
+    const exact = hit.filter(d => flat(d.name) === flat(match));
+    const one = exact.length === 1 ? exact[0] : hit.length === 1 ? hit[0] : !words.length && all.length === 1 ? all[0] : null;
+    return one ? { deck: one } : { choose: (hit.length ? hit : all).slice(0, 8).map(d => ({ id: d.id, name: d.name, format: d.format || '' })), unmatched: !!words.length && !hit.length };
+  };
 
   const tools = {
     async game_concepts({game,query}) {
@@ -153,13 +233,13 @@ export function makeAskTools(x) {
       if (g === 'mtg') {
         const c = x.meta(q) || (await x.resolve(q, true).catch(() => null));
         if (!c) return { error: `No Magic card named ${q}.` };
-        return { game: g, card: { ...mtgCard(c), text: mtgText(c).slice(0,6000), textTruncated:mtgText(c).length>6000, oracleId:c.oracle_id||null, pt: c.power != null ? `${c.power}/${c.toughness}` : '', foilPrice: num(c.prices?.usd_foil), legal: Object.entries(c.legalities || {}).filter(([, v]) => v === 'legal').map(([k]) => k).slice(0, 12) },wiki:buildMtgWikiReference(c.name) };
+        return { game: g, card: { ...mtgCard(c), text: mtgText(c).slice(0,6000), textTruncated:mtgText(c).length>6000, oracleId:c.oracle_id||null, pt: c.power != null ? `${c.power}/${c.toughness}` : '', foilPrice: num(c.prices?.usd_foil), legalities: c.legalities || {}, legal: Object.entries(c.legalities || {}).filter(([, v]) => v === 'legal').map(([k]) => k).slice(0, 12) },wiki:buildMtgWikiReference(c.name) };
       }
       let c = await T.SOURCES[g].byName(q).catch(() => null);
       if (!c) c = (await T.SOURCES[g].search({ q, page: 0, size: 1 }).catch(() => ({ cards: [] }))).cards?.[0];
       if (!c) return { error: `No ${g === 'ygo' ? 'Yu-Gi-Oh!' : 'Pokémon'} card named ${q}.` };
       c = (await T.ensureCard(g, c.id).catch(() => null)) || c;
-      return { game: g, card: { ...tcgCard(g, c), text: clip(c.text || c.desc || [...(c.abilities || []).map((a) => `${a.name}: ${a.effect}`), ...(c.attacks || []).map((a) => `${a.name} ${a.damage || ''} ${a.effect || ''}`)].join(' | '), 900), hp: c.hp || null, level: c.level || null, atk: c.atk ?? null, def: c.def ?? null, printings: (c.sets || []).slice(0, 8).map((s) => ({ set: s.name || s.set, code: s.code, rarity: s.rarity, price: num(s.price) })) },wiki:buildGameWikiReference(g,gameWikiTitleForCard(g,c)) };
+      return { game: g, card: { ...tcgCard(g, c), text: clip(c.text || c.desc || [...(c.abilities || []).map((a) => `${a.name}: ${a.effect}`), ...(c.attacks || []).map((a) => `${a.name} ${a.damage || ''} ${a.effect || ''}`)].join(' | '), 900), hp: c.hp || null, legalIn: g === 'ptcg' ? c.legal || null : null, ban: g === 'ygo' ? c.ban || null : null, level: c.level || null, atk: c.atk ?? null, def: c.def ?? null, printings: (c.sets || []).slice(0, 8).map((s) => ({ set: s.name || s.set, code: s.code, rarity: s.rarity, price: num(s.price) })) },wiki:buildGameWikiReference(g,gameWikiTitleForCard(g,c)) };
     },
     async my_collection({ game, sort, limit }) {
       const g = g0(game), n = lim(limit, 10, 25);
@@ -207,7 +287,9 @@ export function makeAskTools(x) {
       if(candidates.length!==1)return {game:g,error:'That name or code identifies more than one release. Choose a full release ID.',requiresChoice:true,candidates:candidates.slice(0,30).map(choice)};
       const s = candidates[0];
       if (g === 'mtg') {
-        const d = await x.api('/cards/search?' + new URLSearchParams({ q: `set:${s.code} game:paper`, order: 'usd', dir: 'desc' })).catch(() => null);
+        const d = await x.api('/cards/search?' + new URLSearchParams({ q: `set:${s.code} game:paper`, order: 'usd', dir: 'desc' })).catch(e => (e?.status === 404 ? { data: [] } : null));
+        // The card database not answering is not "this set has no priced cards": it is said as what it is.
+        if (!d) return { game: g, error: `The cards in ${s.name} could not be loaded right now. Ask again in a moment.` };
         return { game: g, set: { code: s.code, name: s.name, date: s.released_at }, cards: (d?.data || []).slice(0, n).map(c => exactCardResult(g,c,s.code,mtgSetCard(c))) };
       }
       let cards = await T.SOURCES[g].setCards(s).catch(() => []);
@@ -221,13 +303,16 @@ export function makeAskTools(x) {
       const unpriced = full.filter(c=>c.setContext?.price == null);
       return { game: g, set: { ...choice(s), cards: s.count }, cards: [...priced,...unpriced].slice(0,n).map(c=>exactCardResult(g,c,s.id,tcgCard(g,c))), unpricedChecked: unpriced.length, checked: full.length };
     },
-    async meta_decks({ game, format }) {
+    async meta_decks(args) {
+      const { game, format } = args;
       const g = g0(game);
       if (g === 'mtg') {
         const k = metaKey(format), data = await x.loadMetaData(k).catch(() => x.metaState(k).data);
         if (!data) return { error: 'Tournament data for that format isn\'t available right now.' };
         const summary=d=>completionSummary([...(d.commanders||[]).map(r=>typeof r==='string'?{name:r,qty:1}:r),...(d.main||[])],n=>x.inv(n).owned,n=>x.priceOf(n));
-        return decorateMeta(g,data,{game:g,format:k.slice(4),source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,decks:(data.archetypes||[]).slice(0,8).map(a=>{const d=data.decks.find(y=>y.key===a.best)||data.decks.find(y=>(y.archetype||y.name)===a.name);return {name:a.name,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.lists||a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(d?summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})};})});
+        const rows=await narrowMeta(g,(data.archetypes||[]).map(a=>{const d=data.decks.find(y=>y.key===a.best)||data.decks.find(y=>(y.archetype||y.name)===a.name);return {a,d,name:a.name,cards:(d?.main||[]).filter(c=>!c.land)};}),args,summary);
+        if(rows.error)return {game:g,format:k.slice(4),total:(data.decks||[]).length,...rows};
+        return decorateMeta(g,data,{game:g,format:k.slice(4),source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,matched:rows.matched,decks:rows.slice(0,8).map(({a,d,sum,colors})=>({name:a.name,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.lists||a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(colors?{colors}:{}),...(args.key&&d?deckTop(g,d):{}),...(d?sum||summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})}))});
       }
       const data = (await x.tcgCtx.loadMeta?.(g).catch(() => null)) || T.metaState(g).data;
       if (!data) return { error: 'Tournament data isn\'t available right now.' };
@@ -235,12 +320,216 @@ export function makeAskTools(x) {
       const summary=d=>g==='ygo'?completionSummary([...(d.main||[]),...(d.extra||[])].map(id=>({name:String(id),qty:1})),id=>own.get('id:'+id),id=>T.cardOf(g,id)?.prices?.usd):completionSummary(d.list,n=>byName.get(n.toLowerCase().replace(/^basic /,'')),n=>Object.values(T.cache?.[g]||{}).find(c=>c.name.toLowerCase()===n.toLowerCase())?.prices?.usd);
       const metaFormat=g==='ptcg'?'Standard':'Advanced (TCG)';
       if(format&&!(g==='ptcg'?/^standard$/i:/^(tcg|advanced(?: \(tcg\))?)$/i).test(format))return {game:g,error:'This tournament source covers '+metaFormat+'. Choose that format or use the builder for other formats.',format:metaFormat};
-      return decorateMeta(g,data,{game:g,format:metaFormat,source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,decks:(data.archetypes||[]).slice(0,8).map(a=>{const d=data.decks.find(y=>y.key===a.best)||a.representative;return {name:a.name||a.id,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(d?summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})};})});
+      const rows=await narrowMeta(g,(data.archetypes||[]).map(a=>{const d=data.decks.find(y=>y.key===a.best)||a.representative;return {a,d,name:a.name||a.id,cards:g==='ptcg'?(d?.list||[]):[...(d?.main||[]),...(d?.extra||[])].map(id=>T.cardOf(g,id)).filter(Boolean)};}),args,summary);
+      if(rows.error)return {game:g,format:metaFormat,...rows};
+      return decorateMeta(g,data,{game:g,format:metaFormat,source:data.source||'tournament results',fetchedAt:data.fetchedAt||data.updatedAt||null,matched:rows.matched,decks:rows.slice(0,8).map(({a,d,sum})=>({name:a.name||a.id,key:d?.key||'',share:Math.round((a.share||0)*1000)/10,lists:a.count||0,best:d?`${d.place||''} ${d.event||''}`.trim():'',eventDate:d?.date||null,...(args.key&&d?deckTop(g,d):{}),...(d?sum||summary(d):{listUnavailable:true,ownedPercent:null,costToFinish:null})}))});
     },
-    async my_decks({ game }) {
+    async my_decks(args) {
+      const { game, format, match } = args;
+      const g = g0(game), flat = t => ' ' + String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+      const fmt = d => !format || flat(d.format) === flat(format) || (/commander/i.test(format) && /commander|edh/i.test(d.format || ''));
+      const named = d => !match || flat(d.name).includes(flat(match));
+      const wantsColor = g === 'mtg' && (args.colors?.length || args.without?.length || args.count);
+      let unknownColors = 0;
+      const colored = d => { if (!wantsColor) return true; const c = mtgDeckColors(d.cards); if (!c) { unknownColors++; return false; } return colorFits(c, args); };
+      const filtered = !!(format || match || wantsColor);
+      if (g === 'mtg') return { game: g, filtered, unknownColors, decks: S.state.decks.filter(d => fmt(d) && named(d) && colored(d)).slice(0, 15).map((d) => { let power = null; try { power = x.shownPower(x.mtgPower(d)); } catch {} return { id: d.id, name: d.name, format: d.format, commander: d.commander || '', cards: d.cards.reduce((s, r) => s + r.qty, 0), power }; }) };
+      return { game: g, filtered, decks: T.gs(g).decks.filter(d => fmt(d) && named(d)).slice(0, 15).map((d) => ({ id: d.id, name: d.name, format: d.format, cards: (d.zones?.main || []).reduce((s, r) => s + r.qty, 0), power: T.deckPowerScore?.(g, d) ?? null })) };
+    },
+    // Deck check (is my deck legal): every card of one saved deck against the format's card pool, ban list and copy limits,
+    // with the app's own validators (core.js validateDeck, ygo.js validateYgo, ptcg.js validatePtcg). Nothing is judged here.
+    async deck_check({ game, match, format }) {
+      const g = g0(game), found = ownDeck(g, match);
+      if (!found.deck) return { game: g, ...found };
+      const d = found.deck, out = { game: g, deck: { id: d.id, name: d.name, format: d.format || '' }, asked: !!format };
+      if (g === 'mtg') {
+        const f = mtgFormatOf(format || d.format), deck = { ...d, format: f.name };
+        if (format && f.name.toLowerCase() !== String(format).toLowerCase() && f.id !== String(format).toLowerCase()) return { ...out, error: `The app has no deck rules for ${format}.` };
+        const names = [...(d.cards || []), ...(d.side || [])].map(c => c.name).concat(d.commander || []).filter(Boolean);
+        if (names.some(n => !x.meta(n))) await x.resolveNames([...new Set(names)]).catch(() => {});
+        const v = validateDeck(deck, S.catalog, [], []);
+        return { ...out, format: f.name, cards: v.count, issues: v.issues.map(i => ({ kind: i.kind === 'unverified' ? 'unverified' : 'bad', text: i.text })) };
+      }
+      const flat = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ''), all = T.formatsOf(g);
+      const f = format ? all.find(y => flat(y.name) === flat(format) || flat(y.id) === flat(format) || flat(y.name).startsWith(flat(format))) : all.find(y => y.id === d.format) || all[0];
+      if (!f) return { ...out, error: `The app has no deck rules for ${format}.` };
+      const issues = T.SOURCES[g].validate(d, id => T.cardOf(g, id), f);
+      return { ...out, format: f.name, cards: (d.zones?.main || []).reduce((n, r) => n + r.qty, 0), issues: issues.map(i => ({ kind: i.level === 'bad' ? 'bad' : i.level === 'pending' ? 'unverified' : 'note', text: i.text })) };
+    },
+    // Upgrade path: the tournament list in this week's feed that shares the most cards with one saved deck, and the cards
+    // that differ. Only counting: shared copies over the tournament list's size. It says nothing about which deck wins.
+    async deck_upgrade({ game, match }) {
+      const g = g0(game), found = ownDeck(g, match);
+      if (!found.deck) return { game: g, ...found };
+      const d = found.deck, out = { game: g, deck: { id: d.id, name: d.name, format: d.format || '' } }, key = n => String(n).toLowerCase().replace(/^basic /, '');
+      const tally = rows => { const m = new Map(); for (const r of rows) { if (!r?.name) continue; const k = key(r.name), o = m.get(k) || { name: r.name, qty: 0, id: r.id }; o.qty += Number(r.qty) || 1; m.set(k, o); } return m; };
+      let mine, lists, format, owned, price;
+      if (g === 'mtg') {
+        const covered = x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === String(d.format || '').toLowerCase());
+        if (!covered) return { ...out, error: /commander|edh/i.test(d.format || '') ? 'The tournament feed has no lists for casual Commander, so there is no list to compare this deck with.' : `The tournament feed has no ${d.format || 'such'} lists.` };
+        const k = 'mtg:' + covered[0], data = await x.loadMetaData(k).catch(() => x.metaState(k).data);
+        if (!data?.decks?.length) return { ...out, error: 'Tournament data for that format isn\'t available right now.' };
+        format = covered[0]; mine = tally(d.cards || []);
+        lists = data.decks.map(y => ({ name: y.archetype || y.name, key: y.key, best: `${y.place || ''} ${y.event || ''}`.trim(), rows: tally([...(y.commanders || []).map(r => typeof r === 'string' ? { name: r, qty: 1 } : r), ...(y.main || [])]) }));
+        owned = n => x.inv(n).owned || 0; price = n => num(x.priceOf(n));
+      } else {
+        const data = (await x.tcgCtx.loadMeta?.(g).catch(() => null)) || T.metaState(g).data;
+        if (!data?.decks?.length) return { ...out, error: 'Tournament data isn\'t available right now.' };
+        format = g === 'ptcg' ? 'Standard' : 'Advanced (TCG)';
+        const zone = [...(d.zones?.main || []), ...(g === 'ygo' ? d.zones?.extra || [] : [])];
+        mine = tally(zone.map(r => ({ name: T.cardOf(g, r.cardId)?.name || r.name, qty: r.qty })));
+        const nameOf = id => T.cardOf(g, id)?.name || '';
+        lists = data.decks.map(y => ({ name: y.archetype || y.name || y.id, key: y.key, best: `${y.place || ''} ${y.event || ''}`.trim(), rows: g === 'ptcg' ? tally(y.list || []) : tally([...(y.main || []), ...(y.extra || [])].map(id => ({ name: nameOf(id), qty: 1, id }))) }));
+        const byName = new Map(); for (const e of T.gs(g).collection) byName.set(key(e.name), (byName.get(key(e.name)) || 0) + e.qty);
+        const cards = Object.values(T.cache?.[g] || {});
+        owned = n => byName.get(key(n)) || 0; price = n => num(cards.find(c => key(c.name) === key(n))?.prices?.usd);
+      }
+      let best = null;
+      for (const l of lists) { let shared = 0, total = 0; for (const [k, r] of l.rows) { total += r.qty; shared += Math.min(r.qty, mine.get(k)?.qty || 0); } if (total && (!best || shared / total > best.shared / best.total)) best = { ...l, shared, total }; }
+      if (!best) return { ...out, error: 'The tournament lists could not be read right now.' };
+      const percent = Math.round(best.shared / best.total * 100), target = { name: best.name, key: best.key || '', best: best.best, format };
+      if (best.shared / best.total < 0.25) return { ...out, target, percent, far: true };
+      const add = [], cut = []; let cost = 0, unpriced = 0, ownedCopies = 0, addCopies = 0;
+      for (const [k, r] of best.rows) { const have = mine.get(k)?.qty || 0, need = r.qty - have; if (need <= 0) continue; const spare = Math.max(0, Math.min(need, owned(r.name) - have)), each = price(r.name), buy = need - spare; addCopies += need; ownedCopies += spare; if (buy) { if (each == null) unpriced += buy; else cost += each * buy; } add.push({ name: r.name, qty: need, owned: spare, price: each }); }
+      for (const [k, r] of mine) { const over = r.qty - (best.rows.get(k)?.qty || 0); if (over > 0) cut.push({ name: r.name, qty: over }); }
+      add.sort((a, b) => (b.price || 0) * (b.qty - b.owned) - (a.price || 0) * (a.qty - a.owned));
+      return { ...out, target, percent, add, cut, addCopies, ownedCopies, cutCopies: cut.reduce((n, r) => n + r.qty, 0), cost: num(cost), unpriced };
+    },
+    // Price memory: how a price moved since a day, from the prices this device has saved (pricehist.js: a point each time a
+    // price it sees has moved 2% or a week has passed). The price "then" is the last one saved on or before that day; when the
+    // saved prices start later, that later day is used and said. Nothing is estimated between points.
+    async price_moves({ game, name, since, dir }) {
+      const g = g0(game), series = x.priceSeries || priceSeries, from = /^\d{4}-\d{2}-\d{2}$/.test(since || '') ? since : new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+      const move = card => {
+        const q = card && trackedQuote(g, card), pts = q ? series(g, q.id) : [];
+        if (!pts.length) return null;
+        let start = null; for (const p of pts) { if (p[0] <= from) start = p; else break; }
+        const late = !start; if (late) start = pts[0];
+        const now = Number(q.value) > 0 ? Math.round(Number(q.value) * 100) / 100 : pts[pts.length - 1][1];
+        if (late && pts.length === 1 && now === start[1]) return null;
+        return { from: start[1], to: now, since: start[0], late };
+      };
+      if (name) {
+        let c = null;
+        if (g === 'mtg') c = x.meta(name) || (await x.resolve(name, true).catch(() => null));
+        else { c = await T.SOURCES[g].byName(name).catch(() => null); if (!c) c = (await T.SOURCES[g].search({ q: name, page: 0, size: 1 }).catch(() => ({ cards: [] }))).cards?.[0]; if (c) c = (await T.ensureCard?.(g, c.id).catch(() => null)) || c; }
+        if (!c) return { game: g, error: `No card named ${name}.` };
+        const m = move(c);
+        return { game: g, since: from, card: { name: c.name, id: String(c.id || ''), price: num(trackedQuote(g, c)?.value) }, move: m };
+      }
+      const rows = [], col = g === 'mtg' ? S.state.collection : T.gs(g).collection; let missing = 0, counted = 0, total = 0, earliest = '', late = false;
+      const seen = new Map();
+      for (const e of col) {
+        const c = g === 'mtg' ? x.meta(e.name) : T.cardOf(g, e.cardId), m = move(c), qty = Number(e.qty) || 1;
+        if (!m) { missing += qty; continue; }
+        counted += qty; const delta = Math.round((m.to - m.from) * 100) / 100; total += delta * qty; if (m.late) late = true; if (!earliest || m.since > earliest) earliest = m.since;
+        const k = c.name, o = seen.get(k) || { name: c.name, ref: g === 'mtg' ? c.name : String(c.id), from: m.from, to: m.to, delta, qty: 0 }; o.qty += qty; seen.set(k, o);
+      }
+      for (const o of seen.values()) if (o.delta) rows.push(o);
+      rows.sort((a, b) => Math.abs(b.delta * b.qty) - Math.abs(a.delta * a.qty));
+      const pickDir = dir === 'up' ? rows.filter(r => r.delta > 0) : dir === 'down' ? rows.filter(r => r.delta < 0) : rows;
+      return { game: g, since: from, counted, missing, total: num(total), late, earliest, movers: pickDir.slice(0, 6), up: rows.filter(r => r.delta > 0).length, down: rows.filter(r => r.delta < 0).length };
+    },
+    // What is rising: today's tournament shares against a saved earlier day (the feed's "history", one line a day kept by the
+    // server). The earlier day is the saved one at or just before the day asked for; if the saved days start later, the first
+    // saved day is used and said. Only the 40 most played archetypes of a day are kept, so one missing then counts as zero.
+    async meta_trend({ game, format, back, trend }) {
       const g = g0(game);
-      if (g === 'mtg') return { game: g, decks: S.state.decks.slice(0, 15).map((d) => { let power = null; try { power = x.shownPower(x.mtgPower(d)); } catch {} return { id: d.id, name: d.name, format: d.format, commander: d.commander || '', cards: d.cards.reduce((s, r) => s + r.qty, 0), power }; }) };
-      return { game: g, decks: T.gs(g).decks.slice(0, 15).map((d) => ({ id: d.id, name: d.name, format: d.format, cards: (d.zones?.main || []).reduce((s, r) => s + r.qty, 0), power: T.deckPowerScore?.(g, d) ?? null })) };
+      if (g !== 'mtg') return { game: g, error: 'The app only keeps tournament days for Magic so far.' };
+      const k = metaKey(format), data = await x.loadMetaData(k).catch(() => x.metaState(k).data), fmt = k.slice(4);
+      if (!data?.archetypes?.length) return { game: g, format: fmt, error: 'Tournament data for that format isn\'t available right now.' };
+      const h = data.history, days = (h?.days || []).filter(d => d?.day && d.shares);
+      if (!days.length) return { game: g, format: fmt, empty: true, start: h?.start || null };
+      const today = h.today || new Date().toISOString().slice(0, 10), n = Math.max(1, Math.min(120, Number(back) || 7)), target = new Date(Date.parse(today) - n * 864e5).toISOString().slice(0, 10);
+      let day = null; for (const d of days) if (d.day <= target) day = d;
+      const short = !day; if (short) day = days[0];
+      const pct = v => Math.round((Number(v) || 0) * 1000) / 10, now = new Map(data.archetypes.map(a => [a.name, a]));
+      const rows = [...new Set([...now.keys(), ...Object.keys(day.shares)])].map(name => ({ name, key: now.get(name)?.best || '', now: pct(now.get(name)?.share), then: pct(day.shares[name]), fresh: !(name in day.shares), gone: !now.has(name) })).map(r => ({ ...r, delta: Math.round((r.now - r.then) * 10) / 10 }));
+      const picked = trend === 'then' ? rows.filter(r => r.then > 0).sort((a, b) => b.then - a.then) : trend === 'falling' ? rows.filter(r => r.delta < 0).sort((a, b) => a.delta - b.delta) : rows.filter(r => r.delta > 0).sort((a, b) => b.delta - a.delta);
+      return { game: g, format: fmt, trend: trend || 'rising', day: day.day, today, short, start: h.start || day.day, decks: picked.slice(0, 4) };
+    },
+    // Matchups by the app's own simulation (matchup.js, the one the Power page uses): one list against the most played
+    // tournament lists of its format, a couple of thousand simulated games each. It is a model of two decks racing, not games
+    // played on the table, and every answer says so. Magic only for now.
+    async deck_matchup({ game, match, key, format, colors, opponent }) {
+      const g = g0(game);
+      if (g !== 'mtg') return { game: g, error: 'Search can only simulate Magic matchups so far. The deck\'s Power page has matchups for this game.' };
+      let d, mine = !key, fmt;
+      if (mine) { const found = ownDeck(g, match); if (!found.deck) return { game: g, ...found }; d = found.deck; fmt = d.format || ''; }
+      const covered = x.MTG_META_FORMATS.find(([k]) => k.toLowerCase() === String(mine ? fmt : format || '').toLowerCase());
+      if (!covered) return { game: g, ...(d ? { deck: { id: d.id, name: d.name, format: fmt } } : {}), error: /commander|edh/i.test(fmt) ? 'The tournament feed has no lists for casual Commander, so there is nothing to simulate against.' : `The tournament feed has no ${fmt || format || 'such'} lists to simulate against.` };
+      const k = 'mtg:' + covered[0], data = await x.loadMetaData(k).catch(() => x.metaState(k).data);
+      if (!data?.decks?.length) return { game: g, error: 'Tournament data for that format isn\'t available right now.' };
+      const listOf = a => data.decks.find(y => y.key === a.best) || data.decks.find(y => (y.archetype || y.name) === a.name);
+      if (!mine) { const y = data.decks.find(z => z.key === key); if (!y) return { game: g, error: 'That deck is no longer in the tournament feed.' }; d = { name: y.archetype || y.name, key, cards: y.main || [], format: covered[0] }; }
+      const flat = t => ' ' + String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+      let field = [...(data.archetypes || [])].sort((a, b) => (b.share || 0) - (a.share || 0)).map(a => ({ a, y: listOf(a) })).filter(f => f.y?.main?.length && f.y.key !== key);
+      const want = (colors || []).map(c => String(c).toLowerCase());
+      // A deck named in the words ("izzet prowess") wins over its colours; colours alone ("blue") mean the top decks with them.
+      const words = opponent ? flat(opponent).trim().split(' ') : [], named = words.length ? field.filter(f => words.every(w => flat(f.a.name).includes(' ' + w))) : [];
+      if (named.length) field = named;
+      else if (want.length) field = field.filter(f => Array.isArray(f.y.colors) ? want.every(c => f.y.colors.map(z => String(z).toLowerCase()).includes(c)) : false);
+      else if (words.length) field = [];
+      if (!field.length) return { game: g, deck: { id: d.id, name: d.name, format: covered[0] }, mine, noField: true, opponent: opponent || '', colors: want };
+      field = field.slice(0, want.length || opponent ? 3 : 8);
+      const names = [...new Set([...d.cards, ...field.flatMap(f => f.y.main)].map(r => r.name).filter(Boolean))];
+      if (names.some(n => !x.meta(n))) await x.resolveNames(names.slice(0, 700)).catch(() => {});
+      const prof = cards => { const rows = cards.map(r => ({ qty: r.qty, c: x.meta(r.name) })).filter(r => r.c); try { return rows.length ? profileOf('mtg', mtgConstructedPower({ cards }, S.catalog, cardKey, 60), rows) : null; } catch { return null; } };
+      const me = prof(d.cards);
+      if (!me) return { game: g, deck: { id: d.id, name: d.name, format: covered[0] }, mine, error: 'The deck needs a full list with loaded cards before it can be simulated.' };
+      const pct = v => Math.round(v * 100), out = []; let skipped = 0;
+      for (const f of field) { const them = prof(f.y.main), sim = them && simulateMatchup('mtg', me, them); if (!sim) { skipped++; continue; } out.push({ name: f.a.name, key: f.y.key || '', share: Math.round((f.a.share || 0) * 1000) / 10, win: pct(sim.win), onPlay: pct(sim.onPlay), onDraw: pct(sim.onDraw), runs: sim.runs, reasons: sim.reasons || [] }); }
+      if (!out.length) return { game: g, deck: { id: d.id, name: d.name, format: covered[0] }, mine, error: 'The tournament lists could not be loaded for a simulation right now.' };
+      return { game: g, deck: { id: d.id, name: d.name, key: d.key || '', format: covered[0] }, mine, narrowed: !!(want.length || opponent), field: out, skipped };
+    },
+    // The deck builder run from the search box: the same build the Build a deck page runs, finished here, so the answer can show
+    // the list it made. [request] is the builder's own request (answer-run.js buildRequest). Nothing is saved.
+    async build_now(request, handshake={}) {
+      const g = g0(request?.game), current = () => handshake.current?.() !== false;
+      const run = x.deckExperience ? (r, o) => x.deckExperience.build(r, o) : x.buildFlow;
+      if (!run) return { game: g, unavailable: true, error: 'The deck builder cannot run inside search here. Open it to build this deck.' };
+      const version = stateVersion(g), scope = () => stateVersion(g) === version;
+      let result;
+      try { result = await run({ ...request, game: g }, { current, signal: handshake.signal, onStatus: handshake.onStatus }); }
+      catch (e) { return current() ? { game: g, error: String(e?.message || e || 'The deck builder could not finish this deck.') } : { cancelled: true }; }
+      if (!current()) return { cancelled: true };
+      if (!result?.ok) return { game: g, error: result?.message || 'The deck builder could not finish this deck.' };
+      const main = (result.rows || []).filter(r => r.zone === 'main' || !r.zone), isLand = r => /\bLand\b/.test(String(r.card?.type_line || '').split('//')[0]);
+      let item = null;
+      if (x.deckExperience?.register) {
+        const id = x.deckExperience.register(result, scope);
+        x.pending = () => x.deckExperience.openResult(id); x.pending.current = x.deckExperience.isCurrent ? () => x.deckExperience.isCurrent(id) : scope; x.pendingGame = g; x.pending.resultId = id;
+        const cover = result.request.seedCard || result.rows.find(r => r.name === result.deck.commander || r.name === result.deck.buildAround)?.card;
+        x.pending.visual = { card: cover, image: cover?.image_uris?.art_crop || cover?.card_faces?.[0]?.image_uris?.art_crop || mtgImg(cover), name: result.request.seedCard?.name || result.deck.buildAround || result.deck.commander || 'Your deck', format: result.request.formatName, summary: `${main.reduce((n, r) => n + r.qty, 0)} cards · ${result.request.formatName}`, status: result.requestSatisfied ? 'Request checks passed' : 'Review remaining checks', ready: result.requestSatisfied === true, estimate: result.pricing?.estimate };
+        item = tools.pendingItem();
+      }
+      const colors = g === 'mtg' ? mtgDeckColors(main.filter(r => !isLand(r))) : null;
+      return { game: g, format: result.request.formatName || result.request.format || '', around: result.request.seedCard?.name || result.deck?.buildAround || result.deck?.commander || '', commander: result.deck?.commander || '',
+        total: main.reduce((n, r) => n + r.qty, 0), lands: main.filter(isLand).reduce((n, r) => n + r.qty, 0), colors,
+        cards: main.map(r => ({ name: r.name, qty: r.qty, land: isLand(r), type: String(r.card?.type_line || '').split('//')[0].trim(), price: r.price ?? null })),
+        estimate: result.pricing?.estimate ?? null, unpriced: result.pricing?.unpriced ?? 0, power: result.power?.score ?? result.power?.power ?? null,
+        satisfied: result.requestSatisfied === true, complete: !!result.check?.complete, legal: !!result.check?.legal, issues: (result.check?.issues || []).slice(0, 4), item };
+    },
+    // Questions worth asking about a deck in these colours, counted from the cards themselves: the creature types and abilities
+    // the colour really has in this format right now (one card search, kept for the session). Nothing here is a guess.
+    async deck_angles({ game, format, colors }) {
+      const g = g0(game); if (g !== 'mtg' || !colors?.length) return { game: g, angles: [] };
+      const id = colors.map(c => String(c).toLowerCase()).join(''), legal = String(format || 'Standard').toLowerCase().replace(/[^a-z]/g, ''), key = legal + ':' + id;
+      if (angleCache.has(key)) return angleCache.get(key);
+      const d = await x.api('/cards/search?' + new URLSearchParams({ q: `f:${legal} id=${id} t:creature game:paper`, order: 'edhrec', unique: 'cards' })).catch(() => null);
+      if (!d?.data?.length) return { game: g, angles: [] };
+      const skip = new Set(['Human', 'Warrior', 'Soldier', 'Wizard', 'Shaman', 'Cleric', 'Rogue', 'Knight', 'Scout', 'Berserker', 'Artificer', 'Noble', 'Mutant', 'Advisor', 'Citizen', 'Peasant', 'Monk', 'Druid', 'Pirate', 'Ally', 'Hero', 'Villain', 'Performer', 'Detective', 'Mercenary', 'Employee', 'Guest', 'Rebel', 'Assassin', 'Archer', 'Samurai', 'Ninja', 'Barbarian', 'Bard', 'Ranger', 'Warlock', 'Pilot', 'Scientist', 'Robot']);
+      const tribe = new Map(), word = new Map(), bump = (m, k) => m.set(k, (m.get(k) || 0) + 1);
+      for (const c of d.data) {
+        const [types, subs = ''] = String(c.type_line || c.card_faces?.[0]?.type_line || '').split('//')[0].split('—');
+        if (!/\bCreature\b/.test(types)) continue;
+        for (const t of subs.trim().split(/\s+/).filter(Boolean)) if (!skip.has(t)) bump(tribe, t);
+        for (const k of c.keywords || []) if (['Haste', 'Flying', 'Trample', 'First strike', 'Lifelink', 'Deathtouch', 'Prowess', 'Menace', 'Vigilance', 'Flash'].includes(k)) bump(word, k);
+      }
+      const top = m => [...m].sort((a, b) => b[1] - a[1]);
+      const out = { game: g, format, checked: d.data.length, angles: [...top(tribe).filter(t => t[1] >= 5).slice(0, 2).map(([name, cards]) => ({ kind: 'tribe', name, cards })), ...top(word).filter(t => t[1] >= 8).slice(0, 2).map(([name, cards]) => ({ kind: 'ability', name, cards }))] };
+      angleCache.set(key, out);
+      return out;
     },
     async build_deck(input, handshake={}) {
       const checked=validateBuildProposal(input);

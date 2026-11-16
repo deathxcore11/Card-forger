@@ -8,6 +8,9 @@ import { FORMATS, formatOf } from './formats.js';
 import { cardKey, validateDeck } from './core.js';
 import { refineCandidates, towardDeck } from './deck-optimizer.js';
 import { mtgPower } from './power.js';
+import { shapeFaults } from './deck-needs.js';
+import { bracketEstimate } from './extras.js';
+import { META_PRIOR_FORMATS } from './deck-meta-prior.js';
 
 // A refinement pass treats candidate objects as immutable: towardDeck clones
 // each change and refineCandidates adds scored copies. Keep this cache inside
@@ -28,6 +31,27 @@ export async function waitForReferenceRefresh(refresh,{current=()=>true,timeoutM
  finally{clearTimeout(timer);}
 }
 
+// Cards whose own text answers a colour: protection or hexproof from it, text that targets its spells or permanents, and for blue,
+// spells that can't be countered. Only what the card text proves; nothing here knows how a matchup really plays.
+const COLOR_WORD={W:'white',U:'blue',B:'black',R:'red',G:'green'};
+export const againstQuery=(color,{legality='',identity='',cheap=false}={})=>{
+ const n=COLOR_WORD[color];if(!n)return '';
+ return `(o:"protection from ${n}" or o:"hexproof from ${n}" or o:"target ${n}"${color==='U'?` or o:"can't be countered"`:''}) -t:land ${legality?'f:'+legality:'game:paper'}${identity?' id<='+identity:''}${cheap?' usd<5':''}`;
+};
+export async function againstCandidates(request,x){
+ const f=formatOf(request.format),lead=request.seed?x.meta?.(request.seed)||await x.resolve(request.seed,true).catch(()=>null):null;
+ const identity=(request.colors?.length?request.colors:f.commander&&lead?lead.color_identity||[]:[]).join('').toLowerCase()||(f.commander&&lead?'c':'');
+ const colors=[...new Set(request.against)].filter(c=>COLOR_WORD[c]).slice(0,3),out=[],first=[];
+ for(const c of colors){
+  const r=await x.api('/cards/search?'+new URLSearchParams({q:againstQuery(c,{legality:f.legality,identity,cheap:Number(request.budget)>0}),order:'edhrec',unique:'cards'})).catch(()=>null);
+  const found=(r?.data||[]).filter(card=>card.name!==lead?.name).slice(0,Math.ceil(6/colors.length));
+  for(const card of found){x.cacheCard?.(card);out.push(card.name);}
+  if(found[0])first.push(found[0].name);
+ }
+ // The most played answer for each colour goes into the deck; the rest are offered and kept only if they fit.
+ const must=[...new Set(first)].slice(0,3);
+ return {must,offered:[...new Set(out)].filter(n=>!must.includes(n)).slice(0,6)};
+}
 export function createDeckPipeline(x) {
  const {T,S}=x;
  const formats={mtg:FORMATS.filter(f=>!['limited','oathbreaker'].includes(f.id)),ygo:T.SOURCES.ygo.formats,ptcg:T.SOURCES.ptcg.formats};
@@ -91,18 +115,51 @@ export function createDeckPipeline(x) {
     if(options.current?.()===false)throw new DOMException('Build replaced','AbortError');
     const refreshNote=refreshStatus?.status==='timeout'?'Current reference refresh timed out; this build continues with bounded heuristic search. A late cache response cannot relabel this build.':refreshStatus?.status==='failed'?'Current reference refresh failed; this build continues with bounded heuristic search.':'';
     const snapshot=refreshNote?{...state(),error:refreshNote}:state();
-    references=await resolveReferenceCandidates(snapshot.data,request,{now:x.now?.()??Date.now(),cacheState:snapshot,current:options.current,resolve:async name=>{const card=await x.resolve(name,true);if(options.current?.()===false)throw new DOMException('Build replaced','AbortError');if(card)x.cacheCard?.(card);return card;},quote:name=>x.priceOf(name),owned:name=>x.inv(name)?.available??0,priceDeck,withinBudgetCap,inspectPlan:inspectDeckPlan,maxCandidates:2});
+    references=await resolveReferenceCandidates(snapshot.data,request,{now:x.now?.()??Date.now(),resolveMany:x.resolveNames?names=>x.resolveNames(names.filter(n=>!x.meta(n))):undefined,cacheState:snapshot,current:options.current,resolve:async name=>{const card=await x.resolve(name,true);if(options.current?.()===false)throw new DOMException('Build replaced','AbortError');if(card)x.cacheCard?.(card);return card;},quote:name=>x.priceOf(name),owned:name=>x.inv(name)?.available??0,priceDeck,withinBudgetCap,inspectPlan:inspectDeckPlan,maxCandidates:2});
     if(refreshNote)references.notes=[refreshNote,...references.notes];
    }
-   const built=await prepareMtgDeck({...request,flow:true,style:[request.theme,request.easy?'easy to play':'',request.style].filter(Boolean).join(' '),budget_basis:request.ownedOnly?'owned':request.budgetBasis,current:options.current},x);
+   // Tournament lists as a card-quality prior for every 60-card format with a feed (deck-meta-prior.js).
+   // The lists load while the card searches run, and the build waits for them only up to a limit counted
+   // from now (a cold list service can take 15 s): a build never hangs on it, it just builds without the prior.
+   let metaLists=null;
+   if(META_PRIOR_FORMATS.includes(request.format)){
+    const key='mtg:'+request.format,standardState=request.format==='Standard'&&x.referenceMetaState,state=()=>standardState?x.referenceMetaState():metaState(key);
+    const loading=state()?.data?.decks?.length||standardState?null:Promise.resolve().then(()=>request.format==='Standard'&&x.loadReferenceMeta?x.loadReferenceMeta():loadMeta(key)).catch(()=>{});
+    const limit=new Promise(r=>setTimeout(r,x.metaPriorTimeoutMs??20000));
+    metaLists=async()=>{if(loading){options.onStatus?.(`Reading current ${request.format} tournament lists…`);await Promise.race([loading,limit]);}return state()?.data?.decks||null;};
+   }
+   // The deck brief (answer-run.js buildRequest): a power target becomes Deck Forge's own power dial, and cards that answer
+   // the other players' colours are offered to the builder as candidates. It keeps only those that are legal and fit the deck.
+   const brief={...(request.power&&!request.forge?{forge:{power:request.power}}:{})};
+   let answers=[];
+   if(request.against?.length){
+    options.onStatus?.('Looking for cards that answer the other decks…');
+    const found=await againstCandidates(request,x).catch(()=>null),typed=(request.creatureTypesOnly||[]).length>0;
+    if(found){
+     // A creature-type rule of the request wins over an answer card, so nothing is forced then.
+     const must=typed?[]:found.must,offered=typed?[...found.must,...found.offered]:found.offered;
+     answers=[...must,...offered];
+     if(must.length)brief.required_cards=[...new Set([...(request.required_cards||[]),...must])].slice(0,8);
+     if(offered.length)brief.candidate_cards=[...new Set([...(request.candidate_cards||[]),...offered])].slice(0,6);
+    }
+   }
+   const built=await prepareMtgDeck({...request,...brief,metaLists,flow:true,style:[request.theme,request.easy?'easy to play':'',request.style].filter(Boolean).join(' '),budget_basis:request.ownedOnly?'owned':request.budgetBasis,current:options.current},x);
    if(!built.candidates&&!references.decks.length)return {error:built.choice==='infinite'?'The app cannot verify that every possible infinite combo is excluded. No deck was presented. Name specific cards to exclude, or revise that requirement.':built.note||'The card service could not complete this request.'};
-   const candidates=[...references.decks.map(deck=>({...deck,referenceQualifiedForBuild:true,constructionNotes:[...references.notes,...(references.assessments?.find(a=>a.deck?.referenceOrigin.key===deck.referenceOrigin.key)?.notes||[]),'Based on a resolved source list; source results are not results for this generated or adapted deck.']})),...(built.candidates||[]).map(c=>({...c.draft,constructionBasis:'heuristic',referenceSearch:{notes:references.notes,rejections:references.rejections},constructionNotes:request.format==='Standard'?[...references.notes,'Heuristic construction, not a verified tournament-list result. '+(references.decks.length?'A bounded eligible reference lane was also compared.':'No eligible current reference candidate passed the available source, request, quote and list checks.')]:[]}))];if(request.previousDeck){const prior=structuredClone(request.previousDeck);candidates.unshift({...prior,referenceQualifiedForBuild:false,constructionNotes:[...references.notes,...(prior.referenceOrigin?['Preserved previous source-based list; its source was not requalified for this build. Historical source results do not establish current freshness or this deck’s performance.']:(prior.constructionNotes||[]))]});}
+   // What the brief asked for against what the finished list is: the bracket it reads as, and which offered answers it kept.
+   const briefNotes=d=>{const out=[];
+    if(request.bracket&&request.format==='Commander'){try{const b=bracketEstimate(d,S.catalog);if(Number.isInteger(b?.bracket))out.push(b.bracket===request.bracket?`Asked for bracket ${request.bracket}. This list reads as bracket ${b.bracket}.`:`Asked for bracket ${request.bracket}. This list reads as bracket ${b.bracket}${b.reasons?.length?' ('+b.reasons.join(', ')+')':''}.`);}catch{}}
+    if(answers.length){const have=new Set((d.cards||[]).map(c=>String(c.name).toLowerCase())),kept=answers.filter(n=>have.has(n.toLowerCase()));out.push(kept.length?'Answers for the other decks kept in this list: '+kept.join(', ')+'.':'None of the cards that answer the other decks fit this list.');}
+    return out;};
+   const candidates=[...references.decks.map(deck=>({...deck,referenceQualifiedForBuild:true,constructionNotes:[...references.notes,...(references.assessments?.find(a=>a.deck?.referenceOrigin.key===deck.referenceOrigin.key)?.notes||[]),'Based on a resolved source list; source results are not results for this generated or adapted deck.']})),...(built.candidates||[]).map(c=>({...c.draft,constructionBasis:'heuristic',referenceSearch:{notes:references.notes,rejections:references.rejections},constructionNotes:request.format!=='Standard'?briefNotes(c.draft):[...briefNotes(c.draft),...references.notes,'Heuristic construction, not a verified tournament-list result. '+(references.decks.length?'A bounded eligible reference lane was also compared.':'No eligible current reference candidate passed the available source, request, quote and list checks.')]}))];if(request.previousDeck){const prior=structuredClone(request.previousDeck);candidates.unshift({...prior,referenceQualifiedForBuild:false,constructionNotes:[...references.notes,...(prior.referenceOrigin?['Preserved previous source-based list; its source was not requalified for this build. Historical source results do not establish current freshness or this deck’s performance.']:(prior.constructionNotes||[]))]});}
    const assessment=createBuildAssessmentCache(d=>assess(d,request,{withPower:false}),d=>mtgPower({...d,id:'construction'}),{
     // Refinement yields to the screen. A provider refresh may replace or amend
     // card records during that yield, so object identity alone is insufficient.
     revision:d=>JSON.stringify([d.commander,d.commanders,d.referencePriceSelections,...[['main',d.cards||[]],['side',d.side||[]]].flatMap(([zone,list])=>list.map(r=>[zone,r.name,r.qty,x.meta(r.name),x.inv(r.name)?.available??0,d.referencePrices?.[cardKey(r.name)]??x.priceOf(r.name)]))]),
    });
-   const refined=await refineCandidates(candidates,{evaluate:d=>assessment.power(d),cost:d=>{const p=priceDeck(assessment.inspect(d).rows,request.budgetBasis);return {cost:p.subtotal,unknown:p.unpriced};},accept:d=>{const a=assessment.inspect(d);return a.check.legal&&!inspectDeckPlan(request,a.rows,d,{includeFinalSupport:false}).issues.length;},neighbors:d=>candidates.flatMap(target=>towardDeck(d,target,{protectedKeys:new Set([request.seed,request.commander,...(request.required_cards||[]),...(d.internalRequiredCards||[])].filter(Boolean))})),rounds:2,maxNeighbors:12,status:options.onStatus,current:options.current});
+   // An upgrade swap may not add a shape fault (deck-needs.js): an unsupported card, an idle fixer, a third legend copy, a stray one-of.
+   const parentFaults=new WeakMap(),kept=new Set([request.seed,request.commander,...(request.required_cards||[])].filter(Boolean).map(n=>cardKey(n))),
+    faults=d=>shapeFaults((d.cards||[]).map(r=>({card:x.meta(r.name),qty:r.qty})),{size:(d.cards||[]).reduce((n,r)=>n+r.qty,0),colors:d.colors||[],keep:c=>kept.has(cardKey(c.name))});
+   const refined=await refineCandidates(candidates,{evaluate:d=>assessment.power(d),cost:d=>{const p=priceDeck(assessment.inspect(d).rows,request.budgetBasis);return {cost:p.subtotal,unknown:p.unpriced};},accept:d=>{const a=assessment.inspect(d);return a.check.legal&&!inspectDeckPlan(request,a.rows,d,{includeFinalSupport:false}).issues.length&&faults(d)<=(parentFaults.get(d)??Infinity);},neighbors:d=>{const base=faults(d);return candidates.flatMap(target=>towardDeck(d,target,{protectedKeys:new Set([request.seed,request.commander,...(request.required_cards||[]),...(d.internalRequiredCards||[])].filter(Boolean))})).map(n=>{parentFaults.set(n,base);return n;});},rounds:2,maxNeighbors:12,status:options.onStatus,current:options.current});
    return refined.map(deck=>referenceContext(deck,request));
   }
   const candidates=await x.tcgCtx.prepareDeck(request,options);if(request.previousDeck)candidates.unshift(structuredClone(request.previousDeck));

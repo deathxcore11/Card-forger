@@ -4,7 +4,6 @@ import {gunzipSync} from 'node:zlib';
 import {compileCatalog} from './scan-catalog.js';
 import {createScannerLookup,scannerLookupMatches,scannerNumberParts,reviewLookupCatalog} from './scanner-lookup.js';
 import {createScannerBrowse,scannerBrowseHTML,scannerBrowseFilters,scannerLookupHTML} from './scanner-review.js';
-import {scanIdentifyRoute,cleanScanHints} from './scan-identify-route.js';
 import {registerScanner} from './scancam.js';
 import {S,blank} from './store.js';
 globalThis.localStorage={m:new Map(),getItem(k){return this.m.get(k)??null;},setItem(k,v){this.m.set(k,v)}};
@@ -40,33 +39,9 @@ await b.load();assert.equal(b.rows.length,4);assert.match(scannerBrowseHTML(b),/
 assert.match(scannerBrowseFilters(b),/Scanned card number/);b.filter('number','123');assert.equal(preview,1);b.choose(b.rows[0].key);assert.equal(selected,1);assert.equal(b.selectedKey,b.rows[0].key);b.clear();assert.equal(b.selectedKey,'');
 current=false;b.choose(b.rows[0].key);assert.equal(selected,1);
 const stale=createScannerBrowse({game:'mtg',card,loadPage:()=>new Promise(r=>release=r)},{current:()=>true,draw(){}});const pending=stale.load();stale.close();release({cards:[card]});await pending;assert.equal(stale.rows.length,2,'Cancelled response does not append rows to the initial preview');
-assert.match(scannerLookupHTML({game:'ptcg'},{photo:true}),/stashy-logo/);assert.match(scannerLookupHTML({game:'ptcg'},{photo:false}),/scanIdentifyAI" disabled/);
+assert.doesNotMatch(scannerLookupHTML({game:'ptcg'}),/scanIdentifyAI|\bAI\b/,'the correction sheet offers no AI read');
 
-const image='data:image/jpeg;base64,'+'A'.repeat(128),env={OPENAI_API_KEY:'fixture-secret',AI_LIMITS_ENABLED:'false'},body={game:'ptcg',image};
-const request=(value=body,headers={})=>new Request('https://fixture.test/api/ai/identify-card',{method:'POST',headers:{Origin:'https://fixture.test','Content-Type':'application/json',...headers},body:JSON.stringify(value)});
-let providerCalls=0;
-const fetcher=async(url,init)=>{providerCalls++;const payload=JSON.parse(init.body);assert.equal(url,'https://api.openai.com/v1/responses');assert.equal(payload.store,false);assert.equal(payload.input[0].content[1].type,'input_image');assert.equal(payload.input[0].content[1].image_url,image);return Response.json({status:'completed',output:[{content:[{type:'output_text',text:JSON.stringify({game:'ptcg',name:'Bewear',number:'56/111',set:'',readable:true})}]}]});};
-assert.equal((await scanIdentifyRoute(request(),env,{fetcher})).status,200);assert.equal(providerCalls,1);
-assert.equal((await scanIdentifyRoute(request(body,{Origin:'https://elsewhere.test'}),env,{fetcher})).status,403);
-assert.equal((await scanIdentifyRoute(request({...body,image:'https://private.test/photo'}),env,{fetcher})).status,400);
-assert.equal((await scanIdentifyRoute(request({...body,image:'A'.repeat(1800001)}),env,{fetcher})).status,413);
-assert.equal(providerCalls,1,'invalid requests never consume a provider invocation');
-const blocked={...env,AI_LIMITS_ENABLED:'true',AI_REVIEW_LIMITS:{idFromName:()=>'',get:()=>({fetch:async()=>new Response('',{status:429})})}};
-assert.equal((await scanIdentifyRoute(request(),blocked,{fetcher})).status,429);assert.equal(providerCalls,1);
-assert.equal((await scanIdentifyRoute(request(),{}, {fetcher})).status,503);
-assert.throws(()=>cleanScanHints({readable:true,game:'ptcg',name:'x'.repeat(161),number:'1',set:''}));
-
-for(const game of ['mtg','ptcg','ygo']){
- S.state=blank();S.state.settings.game=game;S.ui.view='scan';
- const A={},C={},I={};let resolve,catalogueCalls=0,writes=0;
- registerScanner({A,C,I,game:()=>game,render(){},toast(){},priceOf:()=>null,identifyPhoto:()=>new Promise(r=>resolve=r),lookupCandidates:async()=>{catalogueCalls++;return [{id:'verified',name:'Fixture',card:{id:'verified',name:'Fixture'}}];},addMany:async()=>writes++});
- const review=()=>({game,i:-1,qty:2,condition:'Lightly Played',lang:'ja',finish:''});
- S.ui.scan={confirm:review(),cands:[],shot:image};let q=S.ui.scan.confirm;
- const ai=A.scanIdentifyAI();await A.scanIdentifyAI();assert.equal(q.aiBusy,true);resolve({game,readable:false,name:'',number:''});await ai;assert.match(q.aiMessage,/clearer photo/);assert.equal(catalogueCalls,0);
- const next=A.scanIdentifyAI();S.ui.scan.confirm=review();const replacement=S.ui.scan.confirm;resolve({game,readable:true,name:'Fixture',number:'123'});await next;assert.equal(S.ui.scan.confirm,replacement);assert.equal(catalogueCalls,0);
- const good=A.scanIdentifyAI();resolve({game,readable:true,name:'Fixture',number:'123'});await good;assert.equal(catalogueCalls,1);assert.equal(S.ui.scan.cands[0].exact,false);assert.equal(S.ui.scan.confirm.finish,'');assert.equal(S.ui.scan.confirm.qty,2);assert.equal(S.ui.scan.confirm.lang,'ja');assert.equal(writes,0);
-}
-console.log('PASS: inline carousel/filter identity; real Bewear number lookup; all-game strict matching; AI request validation/budget; unreadable, late and successful AI responses never autosave.');
+console.log('PASS: inline carousel/filter identity; real Bewear number lookup; all-game strict matching; no AI read on the correction sheet.');
 
 // Loading printings in the same panel must not cancel an already confirmed
 // condition selection; only changing the actual card/finish invalidates it.

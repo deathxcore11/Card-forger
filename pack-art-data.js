@@ -157,6 +157,7 @@ export const PACK_ART={
  'tmp':{card:"Dauthi Slayer",art:'6/5/652ccd79-aefd-4b45-b747-75190da0cfc6.jpg'},
  'tmt':{card:"Krang, Utrom Warlord",art:'8/8/88d36c32-d6f9-46e4-9cc8-08e6c0ff05d2.jpg'},
  'tor':{card:"Chainer, Dementia Master",art:'4/0/40342b11-1005-4ccc-bef4-9ea4c640b048.jpg'},
+ 'trk':{card:"Dr. Beverly Crusher",art:'e/f/ef9c5790-d909-4271-90bd-5fa4816ddd6b.jpg'},
  'tsp':{card:"Kaervek the Merciless",art:'4/4/444fa5a5-b5b0-4555-bd69-67c1c0cbf317.jpg'},
  'tsr':{card:"Teferi, Mage of Zhalfir",art:'8/f/8fc5e4a8-ea7b-4803-a7ed-3b915708661f.jpg'},
  'uds':{card:"Junk Diver",art:'c/4/c4f5a9d8-80b9-4765-adb2-10d53baaacb0.jpg'},

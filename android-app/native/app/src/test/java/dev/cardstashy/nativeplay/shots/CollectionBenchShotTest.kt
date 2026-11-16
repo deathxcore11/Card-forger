@@ -132,7 +132,9 @@ class CollectionBenchShotTest {
             rule.onAllNodes(hasContentDescription("Add $outside", substring = true)).onFirst().performClick(); settle()
             assertEquals(listOf(outside), adds)
             // The sideboard sits under the deck, its cards open the card page; the review chip is the page's (A.deckReview).
-            rule.onNode(hasScrollToIndexAction() and hasContentDescription("Deck list")).performScrollToNode(hasText("SIDEBOARD", substring = true)); settle(); shot("$tag-side"); audit(found)
+            // The deck list now opens with the mana curve (deck view redesign): scroll on to the sideboard's own row, not just its heading.
+            rule.onNode(hasScrollToIndexAction() and hasContentDescription("Deck list")).performScrollToNode(hasText("SIDEBOARD", substring = true)); settle()
+            rule.onNode(hasScrollToIndexAction() and hasContentDescription("Deck list")).performScrollToNode(hasContentDescription("2 Counterspell")); settle(); shot("$tag-side"); audit(found)
             rule.onNode(hasContentDescription("2 Counterspell") and hasAnyAncestor(hasContentDescription("Deck list"))).let { n ->
                 rule.onAllNodes(hasContentDescription("2 Counterspell")).fetchSemanticsNodes().size.let { k -> assertTrue("the sideboard's Counterspell shows", k >= 1) } }
             rule.onAllNodesWithText("2 to review").onFirst().performClick(); settle()

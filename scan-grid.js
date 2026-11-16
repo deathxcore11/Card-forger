@@ -45,18 +45,24 @@ export function tileName(row){
 export function tileMeta(row,finishLabel=(g,c,f)=>f){
   const c=tileCandidate(row);
   if(isReading(row))return {text:'Reading the card…',tone:'reading'};
-  if(!c)return {text:row.reason||'Rescan name and bottom code',tone:'warn'};
+  if(!c)return {text:'',tone:'warn'};
   if(row.status==='ready'){
     const parts=[c.sub||'',conditionShort(row.condition),row.finish?finishLabel(row.game,c,row.finish):'',`×${row.qty||1}`].filter(Boolean);
     return {text:parts.join(' · '),tone:'ok'};
   }
   const printings=new Set((row.cands||[]).map(x=>[x.id,x.print||'',x.setReleaseId||''].join('|'))).size;
-  return {text:row.reason==='Check printing'&&printings>1?`${printings} printings match`:row.reason||'Check this card',tone:'warn'};
+  return {text:printings>1?`${printings} printings`:c.sub||'',tone:'warn'};
+}
+// The card's own problem, as a short tag on the card: what to do, never a sentence.
+const TILE_TAGS=new Set(['Pick printing','Pick finish','Printing changed','Retry','Rescan','Compare','No match','No connection']);
+export function tileTag(row){
+  const reason=TILE_TAGS.has(row?.reason)?row.reason:tileCandidate(row)?'Check':'Rescan';
+  return reason==='Pick finish'&&row.game==='ygo'?'Pick edition':reason;
 }
 function badge(row){
   if(isReading(row))return `<span class="scan-tile-state is-reading" aria-hidden="true">…</span>`;
   if(row.status==='ready')return `<span class="scan-tile-state is-ok" aria-hidden="true">${GRID_ICONS.check}</span>`;
-  return `<span class="scan-tile-state is-warn">Check</span>`;
+  return `<span class="scan-tile-state is-warn">${esc(tileTag(row))}</span>`;
 }
 const rowLabel=row=>`${tileName(row)}: ${isReading(row)?'reading':row.status==='ready'?'ready to add':row.reason||'needs a look'}`;
 
@@ -103,7 +109,9 @@ export function scanGridView(st,rows,h){
   const head=`<header class="scan-grid-head"><button class="icon" data-act="scanGridBack" aria-label="Back to the camera">${GRID_ICONS.back}</button><div class="scan-grid-title"><h1>${select?`${plural(selectedRows.length,'card')} selected`:'Your scans'}</h1><span role="status">${esc(summary)}</span></div>${rows.length?select?`<button class="btn ghost small" data-act="${selectedRows.length===rows.length?'scanSelectNone':'scanSelectAll'}">${selectedRows.length===rows.length?'None':'All'}</button>`:`<button class="btn ghost small" data-act="scanSelectToggle" aria-pressed="false">Select</button>`:''}</header>`;
   if(!rows.length)return `<div class="scan-workspace is-grid">${head}<div class="scan-grid-empty"><p>Nothing scanned yet.</p><button class="btn" data-act="scanGridBack">${GRID_ICONS.camera} Back to scanning</button></div></div>`;
   const tiles=`<div class="scan-grid${select?' is-selecting':''}" aria-label="Cards in this batch" data-audit-repeat>${rows.map(row=>tile(row,{selected:select,finishLabel,busy:st.gridBusy})).join('')}</div>`;
-  const note=st.gridError?`<p class="scan-grid-error" role="alert">${esc(st.gridError)}</p>`:st.reviewRequested&&st.status?`<p class="scan-grid-note" role="status">${esc(st.status)}</p>`:'';
+  // One message, in one bar, directly above the Add button: what happened, why in a word, and the fix.
+  const failedSave=/ not added$/.test(st.gridError||'');
+  const note=st.gridError?`<div class="scan-grid-error${failedSave?' is-failed':''}" role="${failedSave?'alert':'status'}"><span>${esc(st.gridError)}</span>${failedSave&&st.gridErrorWhy?`<em>${esc(st.gridErrorWhy)}</em>`:''}${failedSave&&st.gridErrorRetry?`<button class="scan-grid-retry" data-act="scanBatchAddAll" ${st.gridBusy?'disabled':''}>Retry</button>`:''}</div>`:st.reviewRequested&&st.status?`<p class="scan-grid-note" role="status">${esc(st.status)}</p>`:'';
   const bar=select?selectBar(st,rows,selectedRows,{finishLabel,finishOptions}):st.confirm?'':`<div class="scan-grid-bar">${counts.review?`<button class="btn ghost" data-act="scanBatchReview" ${st.gridBusy?'disabled':''}>Fix ${counts.review}</button>`:''}<button class="btn" data-act="scanBatchAddAll" ${!counts.ready||st.gridBusy?'disabled':''}>${st.gridBusy?'Adding…':counts.ready?`Add ${counts.ready} to ${esc(destLabel)}`:counts.reading?'Reading…':'Nothing ready to add'}</button></div>`;
-  return `<div class="scan-workspace is-grid${select?' is-selecting':''}">${head}${destinationChips(st,destinations,destination,{selectMode:!!select})}${note}${tiles}${bar}</div>`;
+  return `<div class="scan-workspace is-grid${select?' is-selecting':''}">${head}${destinationChips(st,destinations,destination,{selectMode:!!select})}${tiles}${bar?bar.replace(/<div class="scan-grid-bar( is-select)?">/,open=>open+note):note}</div>`;
 }

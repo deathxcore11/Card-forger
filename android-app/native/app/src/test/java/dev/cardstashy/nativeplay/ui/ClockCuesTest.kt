@@ -7,8 +7,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The turn clock's sounds (table additions 5): TT-007 is "the noise when it gets red". It must sound once for each of the last ten
- * seconds whatever order the controller's per-second re-emission and the sound loop's poll come in (the old effect restarted on each
+ * The turn clock's sounds (table additions 5; Randall 14 Nov, butter pass B1: no sound when a window opens, only the last 5 s tick).
+ * TT-007 must sound once for each of the last five seconds whatever order the controller's per-second re-emission and the sound loop's poll come in (the old effect restarted on each
  * new Clock and lost the tick whenever the controller saw the second first).
  */
 class ClockCuesTest {
@@ -33,26 +33,37 @@ class ClockCuesTest {
         return played
     }
 
-    @Test fun tenTicksWhateverTheOrder() {
+    @Test fun fiveTicksWhateverTheOrder() {
         for (tp in listOf(0L, 1L, 37L, 99L, 124L, 249L)) for (pp in listOf(0L, 1L, 50L, 99L)) {
             val p = run(tp, pp)
-            assertEquals("timer $tp poll $pp: $p", 10, p.count { it == "TT-007" })
-            assertEquals("timer $tp poll $pp: $p", 1, p.count { it == "TT-008" })
-            assertEquals("timer $tp poll $pp: $p", 1, p.count { it == "TT-006" })
-            assertEquals(listOf("TT-006") + List(10) { "TT-007" } + "TT-008", p)
+            assertEquals("timer $tp poll $pp: $p", List(5) { "TT-007" } + "TT-008", p)
         }
     }
 
+    /** Randall 14 Nov: "when the timer resets it goes off so you hear it like 100 times a match". */
+    @Test fun fortyFreshWindowsInARowPlayNothing() {
+        val played = mutableListOf<String>(); val cues = ClockCues { id, _ -> played += id }
+        var t = 10_000L
+        repeat(40) { i ->
+            val c = MatchController.Clock(endsAt = t + TurnClock.PROMPT_MS, totalMs = TurnClock.PROMPT_MS + i % 2)
+            repeat(20) { cues.step(c, t); t += 100 }   // answered after 2 s
+            cues.step(null, t)
+        }
+        assertEquals(emptyList<String>(), played)
+    }
+
+    @Test fun softerCues() { assertEquals(.35f, ClockCues.TICK_VOL); assertEquals(.6f, ClockCues.OUT_VOL); assertEquals(5, ClockCues.TICK_S) }
+
     @Test fun aHeldClockAndTheRivalsAreSilent() {
         // Held from the start for a minute: no tick, no zero.
-        assertEquals(emptyList<String>(), run(0, 0, held = { true }).filter { it != "TT-006" })
+        assertEquals(emptyList<String>(), run(0, 0, held = { true }))
         assertEquals(emptyList<String>(), run(0, 0, own = false))
     }
 
     @Test fun aHoldInTheLastSecondsResumesWithoutRepeats() {
         // Held for 5 s in the middle of the warning: every second still sounds exactly once.
-        val p = run(0, 30, held = { it in 10_000 + 25_200 until 10_000 + 30_200 })
-        assertEquals(10, p.count { it == "TT-007" }); assertEquals(1, p.count { it == "TT-008" })
+        val p = run(0, 30, held = { it in 10_000 + 26_200 until 10_000 + 31_200 })
+        assertEquals(p.toString(), 5, p.count { it == "TT-007" }); assertEquals(1, p.count { it == "TT-008" })
     }
 
     /** An answer given in time (250 ms before the end) is not a time-out: no TT-008. The timer's own answer at zero still sounds it. */
@@ -66,7 +77,7 @@ class ClockCuesTest {
             return played
         }
         val inTime = last(40_000 - 250)
-        assertEquals(inTime.toString(), 10, inTime.count { it == "TT-007" }); assertEquals(inTime.toString(), 0, inTime.count { it == "TT-008" })
+        assertEquals(inTime.toString(), 5, inTime.count { it == "TT-007" }); assertEquals(inTime.toString(), 0, inTime.count { it == "TT-008" })
         val atZero = last(40_000 + 20)
         assertEquals(atZero.toString(), 1, atZero.count { it == "TT-008" })
     }

@@ -275,14 +275,18 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
                 .graphicsLayer {
                     // .zoom-card-light: perspective(900px) rotateX(−y·8deg) rotateY(x·8deg), .16 s ease-out.
                     cameraDistance = 900f / 72f * density
-                    rotationX = -(g?.y ?: 0f) * 8f; rotationY = (g?.x ?: 0f) * 8f
+                    // A plain card stays still with the phone (CardLean.leans); its light still moves, so its stamp answers.
+                    val turn = look?.recipe != null || finish != null
+                    rotationX = if (turn) -(g?.y ?: 0f) * 8f else 0f; rotationY = if (turn) (g?.x ?: 0f) * 8f else 0f
                 }
                 .shadow(36.dp, RoundedCornerShape(radius), ambientColor = Color(0xCC000000), spotColor = Color(0xCC000000))
                 .clip(RoundedCornerShape(radius))
-                .then(if (v.effects && look != null) Modifier.foil(look, foilTilt) else if (v.effects && finish != null) Modifier.finish(finish, foilTilt) else Modifier)
                 .drawWithContent {
                     drawContent()
                     if (!v.effects || Motion.still || !AppSettings.finish) return@drawWithContent
+                    // Only Pokemon and Yu-Gi-Oh finishes keep the lamp; a Magic card's light is its foil's own (the site hides the lamp under a
+                    // WebGL foil and on plain cards). Randall 15 Nov: "the bright spot light ... way to distracting".
+                    if (look != null || finish == null) return@drawWithContent
                     // finish-effects.css .finish-spotlight on the enlarged card: a neutral lamp at the light, screen blend, .65.
                     val at = lightAt ?: Offset(.5f, .5f)
                     val cx = at.x * size.width; val cy = at.y * size.height
@@ -292,8 +296,13 @@ fun CardZoom(src: String, hi: String?, art: String?, look: Foil.Look?, finish: d
                             center = Offset(cx, cy), radius = rx), radius = rx, center = Offset(cx, cy), alpha = .65f, blendMode = BlendMode.Screen)
                     }
                 }) {
-                Image(base, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                if (hiP != null && hiReady) Image(hiP, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                // Effects: the plain picture stays under the foiled one, so a foil layer the phone cannot draw never leaves the card empty.
+                val foiled = if (v.effects && look != null) Modifier.foil(look, foilTilt) else if (v.effects && finish != null) Modifier.finish(finish, foilTilt) else null
+                if (foiled != null) Image(base, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                Box(Modifier.fillMaxSize().then(foiled ?: Modifier)) {
+                    Image(base, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    if (hiP != null && hiReady) Image(hiP, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                }
             }
         }
 

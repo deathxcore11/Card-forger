@@ -75,8 +75,6 @@ fun CollectionWikiRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () ->
             "wikiRoute" -> { val next = ds("topic").trim() to (ds("query") == "true"); if (next != stack.last()) stack = stack + next }
             "go" -> when (val to = ds("to")) { "#sets" -> onSets(); "#search" -> onSearch(); "#decks" -> onDecks(); "#collection" -> onCards(); "#home" -> onHome(); else -> web(SITE + to, null) }
             "card" -> cards = cards + CardOpen(ds("name"), page = page, tile = "[data-act=\"card\"][data-name=\"${css(ds("name"))}\"]")
-            // A.mtgWikiAsk opens the AI with the words in the field (else the article's topic): the site, at that search.
-            "mtgWikiAsk" -> ds("text").let { t -> web(SITE + hash(t, t.isNotBlank()), "[data-act=\"mtgWikiAsk\"]") }
             // wikiCard (a printing), wikiCards (a card search) and wikiDeck (a source deck): the article on the site, the same link pressed.
             else -> if (act.isNotBlank()) web(page, "[data-act=\"${css(act)}\"]" + d.entrySet().filter { it.value.isJsonPrimitive }.joinToString("") { (k, v) ->
                 "[data-" + k.replace(Regex("[A-Z]")) { "-" + it.value.lowercase() } + "=\"" + css(v.asString) + "\"]" })

@@ -47,6 +47,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 object ScanWeb {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _model = MutableStateFlow<SitePanelModel?>(null); val model: StateFlow<SitePanelModel?> = _model
+    /** The found card's edge for the camera preview (scancam.js showOutline); null when there is none to draw. */
+    private val _outline = MutableStateFlow<ScanOutline?>(null); val outline: StateFlow<ScanOutline?> = _outline
     private val _acted = MutableSharedFlow<JsonObject>(extraBufferCapacity = 8); val acted: SharedFlow<JsonObject> = _acted
     /** The flashlight, as scancam's track.applyConstraints asks for it (the screen's camera sets it). */
     @Volatile var torch: (Boolean) -> Unit = {}
@@ -83,9 +85,11 @@ object ScanWeb {
     private class Bridge {
         @JavascriptInterface fun ready() { scope.launch { ready?.complete(true) } }
         @JavascriptInterface fun model(json: String?) { val j = json ?: return; pushes.trySend(j) }
+        @JavascriptInterface fun outline(json: String?) { _outline.value = ScanOutline.parse(json) }
         @JavascriptInterface fun toast(text: String?) { if (!text.isNullOrBlank()) scope.launch { CollectionWrites.show(text) } }
         @JavascriptInterface fun acted(json: String?) { val j = json ?: return; scope.launch { runCatching { _acted.tryEmit(JsonParser.parseString(j).asJsonObject) } } }
-        @JavascriptInterface fun torch(on: Boolean) { scope.launch { torch(on) } }
+        // ScanWeb.torch, spelled out: a bare torch(on) here is this method again, which looped forever and never reached the camera.
+        @JavascriptInterface fun torch(on: Boolean) { scope.launch { runCatching { ScanWeb.torch.invoke(on) } } }
         @JavascriptInterface fun call(id: Int, name: String?, json: String?) { scope.launch { answer(id, name.orEmpty(), json) } }
     }
 
@@ -113,9 +117,10 @@ object ScanWeb {
             else { if ((r.get("writes")?.asInt ?: 0) > 0) { CollectionWrites.settleLater(c); refresh() }; reply(id, true, "true") }
             return
         }
+        // A save that fails says why to the scanner's own bar over the Add button: no toast on top of it.
         var made: String? = null
-        val saved = runCatching { CollectionWrites.act(c, kind, d) { r -> made = r.get("made")?.takeIf { it.isJsonPrimitive }?.asString } }.getOrDefault(false)
-        if (!saved) { reply(id, false, "{\"message\":\"Could not save to your collection. Try again.\"}"); return }
+        val (saved, why) = runCatching { CollectionWrites.actTelling(c, kind, d) { r -> made = r.get("made")?.takeIf { it.isJsonPrimitive }?.asString } }.getOrDefault(false to null)
+        if (!saved) { reply(id, false, JsonObject().apply { addProperty("message", why ?: "Not added") }.toString()); return }
         refresh()
         reply(id, true, made?.takeIf { it.isNotEmpty() } ?: "true")
     }
@@ -152,9 +157,14 @@ object ScanWeb {
                         "/__native/scan-web.js" -> "scan-web.js"
                         "/vendor/tesseract.min.js" -> "vendor/tesseract.min.js"
                         "/vendor/worker.min.js" -> "vendor/worker.min.js"
+                        // The text reader's engine and English data ship in the app, so the first scan needs no download.
+                        "/vendor/tess/tesseract-core-simd-lstm.wasm.js" -> "vendor/tess/tesseract-core-simd-lstm.wasm.js"
+                        "/vendor/tess/eng.traineddata.gz" -> "vendor/tess/eng.traineddata.gz"
                         else -> return null
                     }
-                    return WebResourceResponse("application/javascript", "utf-8", a.assets.open(file))
+                    val stream = runCatching { a.assets.open(file) }.getOrNull() ?: return null
+                    return if (file.endsWith(".gz")) WebResourceResponse("application/octet-stream", null, stream)
+                    else WebResourceResponse("application/javascript", "utf-8", stream)
                 }
                 override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest) = true
                 override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {

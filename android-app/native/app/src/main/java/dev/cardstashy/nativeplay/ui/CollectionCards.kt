@@ -1001,7 +1001,7 @@ internal fun LotArt(r: CollRow, modifier: Modifier, w: Dp, h: Dp, grey: Boolean 
             val data = if (r.print != null) CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) } else null
             val finish = Foil.finishFor(r.print, r.finishKey.ifBlank { "nonfoil" })
             val look = data?.let { Foil.look(it, r.print, finish) }?.takeIf { it.shines }
-            val tilt = if (look != null) rememberFoilTilt(live = true, phase = (r.id.hashCode() and 0xff) / 255f, tile = true) else null
+            val tilt = if (look != null) rememberTileTilt(look, (r.id.hashCode() and 0xff) / 255f) else null
             CardPicture(r.art, look, tilt, Modifier.fillMaxSize(), RoundedCornerShape(6.dp))
         } else Text(r.fallback.ifBlank { "◇" }, Modifier.padding(4.dp), style = sans(10f, 400, Mute), textAlign = TextAlign.Center)
     }

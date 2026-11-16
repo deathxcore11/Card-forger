@@ -243,7 +243,7 @@ internal fun DeckMenuSheet(o: CollectionWrites.DeckMenuOpen, backdrop: GraphicsL
                     } finally { busy = false }
                 }
             }
-            else -> { onClose(); o.web(act, a.s("scope")) }
+            else -> { SiteHandoff.log("deck menu " + o.game, act); onClose(); o.web(act, a.s("scope")) }
         }
     }
     ContextMenuFrame(backdrop, onClose) { phone, vw ->

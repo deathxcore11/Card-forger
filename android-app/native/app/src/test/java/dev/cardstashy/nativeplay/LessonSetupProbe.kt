@@ -19,7 +19,7 @@ class LessonSetupProbe {
         val act = JsonParser.parseString(File(repo, "data/story/act-1.json").readText()).asJsonObject
         val root = System.getProperty("engineRoot").orEmpty()
         val engine = root.isNotEmpty() && File(root).isDirectory
-        if (engine) { System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/current").absolutePath); println("init ms " + LocalEngine.init(root)) }
+        if (engine) { System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/app").absolutePath); println("init ms " + LocalEngine.init(root)) }
         for (id in listOf("a1b1", "a1b2", "a1b3", "a1b4")) {
             val b = act.getAsJsonArray("battles").map { it.asJsonObject }.first { it["id"].asString == id }
             val hero = b.getAsJsonObject("hero").getAsJsonObject("deck"); val cpu = b.getAsJsonObject("lessonDeck").getAsJsonObject("deck")

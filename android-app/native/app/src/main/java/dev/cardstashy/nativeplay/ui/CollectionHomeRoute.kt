@@ -37,6 +37,21 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 
+/** Lighter Collection home C2: how long Home waits for a slow refresh before it shows what has arrived so far, once. */
+internal const val CALM_CAP_MS = 4_000L
+
+/**
+ * Lighter Collection home C2, calm updates: Home is painted when [refresh] is done ([paint] with true). A refresh slower than
+ * [capMs] gets a paint of what has arrived every [capMs] until then (a slow card lookup must not hold back a feed that is in;
+ * a paint with nothing new redraws nothing). Before, this ran every 1.2 s from the start. A refresh that fails paints nothing more.
+ */
+internal suspend fun calmUpdate(capMs: Long = CALM_CAP_MS, refresh: suspend () -> Unit, paint: suspend (final: Boolean) -> Unit) = coroutineScope {
+    val late = launch { while (true) { delay(capMs); paint(false) } }
+    try { refresh() } finally { late.cancel() }
+    late.join()
+    paint(true)
+}
+
 /** What Home showed last, so coming back paints at once while the feeds refresh. */
 internal object HomeCache {
     /** Each account's Home by game ("<user>|mtg"), as last drawn this run. */
@@ -79,8 +94,13 @@ private suspend fun ensureLoaded(context: android.content.Context, userId: Strin
         if (!HomeCache.warm) CollectionEngine.tcgCacheLoad(withContext(Dispatchers.IO) { tcgCacheFile(context).takeIf { it.isFile }?.readText() })
         // Every deck's Power from the last visit (the site's own signature decides what is still current).
         if (!HomeCache.warm) CollectionEngine.powerLoad(withContext(Dispatchers.IO) { powerFile(context).takeIf { it.isFile }?.readText() })
+        CollectionEngine.alertOwner(userId.takeIf { signedIn })
+        // The daily price check runs while this account has alerts (and the setting is on).
+        runCatching { dev.cardstashy.nativeplay.collection.PriceAlertDaily.sync(context, if (signedIn) CollectionEngine.alertList().size() else 0) }
         CollectionEngine.load(raw ?: "", catalog)
         HomeCache.loaded = key; HomeCache.warm = true
+        // Card art saved once: each picture these cards draw is downloaded once and drawn from the phone after that (ArtKeep).
+        runCatching { dev.cardstashy.nativeplay.art.ArtKeep.keep(CollectionEngine.artKeep()) }
     }
     true
 }
@@ -157,7 +177,9 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     LaunchedEffect(session?.userId) { if (session != null) Decks.load(context) }
     var failed by remember { mutableStateOf<String?>(null) }
     var retry by remember { mutableStateOf(0) }
-    LaunchedEffect(session?.userId, revision, game, retry) { try {
+    // C1: how many checks of the account are running (one, or two for a moment when the game is switched): the thin gold line shows while any is.
+    var checking by remember { mutableStateOf(0) }
+    LaunchedEffect(session?.userId, revision, game, retry) { checking++; try {
         // The account, game and page this effect draws for, fixed as it starts (a paint that ends after a switch is kept under its own).
         val u = session?.userId; val g = game; val k = "$u|${g.id}"; val keep = LastSeenWriter(u, LastSeen.homeName(g.id))
         if (!ensureCollection(context, u, session != null, revision)) {
@@ -178,24 +200,30 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
             }
             HomeCache.raw[k] = raw; shown[k] = m; HomeCache.models[k] = m
             keep.keep(raw, final)
+            // C1: the first screen's pictures stay the newest in the art cache, so they are the last to be dropped from it.
+            if (final) withContext(Dispatchers.IO) { HomePins.pin(m) }
         }
         paint()
         if (hints == null || HomeCache.hintsGame != game) withContext(Dispatchers.Default) { CollectionHomeModel.hints(CollectionEngine.hints(game.id)) }.also { hints = it; HomeCache.hints = it; HomeCache.hintsGame = game }
-        // Card names the catalog lacks, the Card of the Day, Meta and News: repaint as they arrive.
-        coroutineScope {
-            val repaint = launch { while (true) { delay(1200); paint() } }
-            // Whatever names this visit looked up are kept, even when it is cut short (after the last paint, so its Power is kept too).
-            try { CollectionEngine.refresh(g.id); repaint.cancel(); paint(final = true) } finally { repaint.cancel(); withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
-        }
+        // Card names the catalog lacks, the Card of the Day, Meta and News: one calm update when they are all in (C2), not a redraw every 1.2 s.
+        // Whatever names this visit looked up are kept, even when it is cut short (after the last paint, so its Power is kept too).
+        try { calmUpdate(refresh = { CollectionEngine.refresh(g.id) }, paint = { paint(it) }) } finally { withContext(kotlinx.coroutines.NonCancellable) { keepCatalog(context) } }
         failed = null
     } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
         // The site's guard for a workspace it can't open: say so and leave the account copy untouched.
         HomeCache.loaded = null
         if (shown[homeKey] == null && HomeCache.models[homeKey] == null) failed = e.message?.takeIf { it.isNotBlank() } ?: "Your collection couldn’t be opened here."
-    } }
+    } finally { checking-- } }
     val site = "https://cardstashy.com/"
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val searchOpen = LocalCollectionSearch.current
+    // Where an answer card's taps lead from Home: card pages over Home, the app's own Sets, Wiki, Decks and Search pages.
+    fun answerEnv() = AnswerEnv(CollectionGame.current.value.id, site, card = { c -> cards = cards + c },
+        sets = { _ -> onSets?.invoke() ?: web(site + "#sets", null) }, set = { _, code -> onSet?.invoke(code) ?: web(site + "#set/" + android.net.Uri.encode(code), null) },
+        wiki = CollectionWrites.wikiNav, web = web,
+        search = { g, q, sort -> if (CollectionGame.current.value.id != g) CollectionGame.set(CardGame.of(g)); searchAnswered(g, q, sort); searchOpen?.invoke() ?: web(site + "#search", null) },
+        discover = { g, k, v -> if (CollectionGame.current.value.id != g) CollectionGame.set(CardGame.of(g)); searchDiscover(g, k, v); searchOpen?.invoke() ?: web(site + "#search", null) },
+        play = onPlay, cards = onCards, decks = onDecks, rules = CollectionWrites.rulesNav?.let { nav -> { g: String -> nav(g, false) } })
     val act = remember(searchOpen) {
         CollectionHomeActions(
             // tcg.js A.setGame: the header's game tabs switch Home (and Cards and Decks) to that game.
@@ -209,6 +237,20 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
                 else if (to == "#sets" && onSets != null) onSets() else if (to == "#decks" && onDecks != null) onDecks() else web(site + to, null) },
             open = open,
             search = { searchOpen?.invoke() ?: web(site + "#search", null) },
+            // Game-feel home G3: the box is typed in on Home. The matches are the engine's own (suggest.js, as the Search tab's box).
+            suggest = { q -> if (HomeCache.loaded == null) null else {
+                val g = CollectionGame.current.value.id
+                var j = CollectionEngine.searchSuggest(g, q)
+                if (j == null) { CollectionEngine.settle(15_000); j = CollectionEngine.searchSuggestModel() }
+                SearchSuggest.parse(j) } },
+            // A typed question: answered here from the app's own lookups (answer-search.js in the engine; no AI is asked).
+            answer = { q, fix, loading -> if (HomeCache.loaded == null) null else CollectionEngine.searchAnswer(CollectionGame.current.value.id, q,
+                com.google.gson.JsonObject().apply { add("fix", com.google.gson.JsonObject().apply { fix.forEach { (k, v) -> addProperty(k, v) } }) }, onModel = loading) },
+            answerOpen = { show -> answerShow(scope, show, answerEnv()) },
+            answerGo = { d -> answerGo(scope, d, answerEnv()) },
+            // A match picked, or Search pressed: those words on the Search tab, already searched (never its empty page).
+            pick = { name -> searchFor(CollectionGame.current.value.id, name); searchOpen?.invoke() ?: web(site + "#search", null) },
+            find = { q -> searchFor(CollectionGame.current.value.id, q); searchOpen?.invoke() ?: web(site + "#search", null) },
             // A.homeDailyCard: Magic's opens the website's sheet for now; Yu-Gi-Oh!'s and Pokémon's open the native card page (A.tCard).
             daily = { d -> val g = CollectionGame.current.value
                 // app.js A.homeDailyCard: Magic's opens in the printing Home shows (Randall 7 Nov: it opened the website).
@@ -269,7 +311,9 @@ fun CollectionHomeRoute(onPlay: () -> Unit, onProfile: () -> Unit, web: (url: St
     }
     val m = model
     Box(Modifier.fillMaxSize()) {
-    if (m != null) CollectionHome(m, hints, top, act, nav)
+    // C6: the redraw count in the log names this page while it is up.
+    androidx.compose.runtime.DisposableEffect(Unit) { RootDraws.where = "Collection home"; onDispose { RootDraws.where = "?" } }
+    if (m != null) CollectionHome(m, hints, top, act, checking > 0, nav)
     else Column(Modifier.fillMaxSize().background(Site.Bg)) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) { top(null) }
         // app.js's account-opening card, while the account's copy arrives.

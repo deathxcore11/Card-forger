@@ -113,7 +113,8 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
     var seen by remember { mutableStateOf(written) }
     LaunchedEffect(written) { if (written != seen) { seen = written; if (HomeCache.loaded != null) runCatching { paint() } } }
     // Value: the site's page read again when it opens, after a save, and as the collection's prices arrive (paint's model changes).
-    LaunchedEffect(tab, game, written, model) {
+    val alertsChanged by CollectionWrites.alertsChanged.collectAsState()
+    LaunchedEffect(tab, game, written, model, alertsChanged) {
         CardsCache.tab[game] = tab
         // Binders: the shelf as binders.js draws it, read again after a save.
         if (tab == "binders" && HomeCache.loaded != null) {
@@ -213,7 +214,7 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         }
     }
     // Value's taps: Refresh prices (app.js A.refreshPrices / tcg.js A.tRefreshPrices), a card (as the list opens it), Copy list (A.copySpare);
-    // a price alert is the card page's tool, still the website's (A.priceAlert).
+    // a price alert opens the app's alert sheet (A.priceAlert), the page drawn again after.
     val valueAct = remember(game) {
         val tcg = game != CardGame.MTG
         CollectionValueActions(
@@ -225,7 +226,7 @@ fun CollectionCardsRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
                     "card" -> { val n = ds("name").ifBlank { name }; val entry = ds("entry")
                         val tile = if (entry.isBlank()) "[data-act=\"card\"][data-name=\"${css(n)}\"]" else "[data-act=\"card\"][data-entry=\"${css(entry)}\"]"
                         if (nativeCard) cards = cards + CardOpen(n, entry = entry, page = coll, tile = tile) else web(coll, tile) }
-                    "priceAlert" -> site("[data-act=\"priceAlert\"][data-game=\"${css(ds("game"))}\"][data-id=\"${css(ds("id"))}\"][data-name=\"${css(ds("name"))}\"]")
+                    "priceAlert" -> CollectionWrites.openAlert(mapOf("game" to ds("game"), "id" to ds("id"), "name" to ds("name")))
                     else -> if (a.isNotBlank()) site("[data-act=\"${css(a)}\"]")
                 } },
             copySpare = { scope.launch { CollectionWrites.act(context, "copySpare", com.google.gson.JsonObject()) } },

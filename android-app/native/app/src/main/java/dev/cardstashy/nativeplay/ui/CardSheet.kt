@@ -122,12 +122,22 @@ class CardSheetActions(
     val merchant: ((code: String, name: String) -> Unit)? = null,
     /** Null: the Shop's set page (LocalShopSetNav); a host can send it elsewhere. */
     val set: ((code: String) -> Unit)? = null,
-    val precon: (name: String, code: String) -> Unit = { _, _ -> },
-    val newDeck: (name: String) -> Unit = {},
+    /** Null: Play Decks finds the set's precon with the card (DecksAsk.Precon, LocalPlayDecksNav); with neither, the button is hidden. */
+    val precon: ((name: String, code: String) -> Unit)? = null,
+    /** Null: Play Decks opens a new deck holding the card (DecksAsk.NewDeck, LocalPlayDecksNav); with neither, the button is hidden. */
+    val newDeck: ((name: String) -> Unit)? = null,
     val toast: (String) -> Unit = {},
     /** app.js play.edit: a deck open in the builder; the card view steps copies there and can make the card its cover. */
     val edit: DeckEditCtx? = null,
 )
+
+/** A card's New deck and Find it in a precon: the host's own, else Play Decks (one handler for Trunk, lobby, Shop, packs). */
+@Composable
+private fun deckLinks(act: CardSheetActions): Pair<((String) -> Unit)?, ((String, String) -> Unit)?> {
+    val nav = LocalPlayDecksNav.current
+    return (act.newDeck ?: nav?.let { go -> { name: String -> DecksOpen.ask.value = DecksAsk.NewDeck(name); go() } }) to
+        (act.precon ?: nav?.let { go -> { name: String, code: String -> DecksOpen.ask.value = DecksAsk.Precon(name, code); go() } })
+}
 
 class DeckEditCtx(val name: String, val qty: (String) -> Int, val copies: Int, val step: (String, Int) -> Unit)
 
@@ -253,7 +263,7 @@ fun CardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose
             // views.js:461 .cd-zoom: data-src = the normal image, data-hi = this face's png, data-art = the hero art crop.
             val hi = (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
                 ?: shown.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
-            val look = data?.let { Foil.look(it, shown, finish) }
+            val look = data?.let { Foil.look(it, shown, finish, image) }
             zoomed = if (zoom && image != null) ({ CardZoom(image, hi, heroArt, look,
                 gallery = heroArt?.takeIf { it.isNotBlank() && DualScreen.active }?.let { a -> Gallery(listOf(galleryPiece(a, f.s("name").ifBlank { name },
                     f.s("artist").ifBlank { shown.s("artist") }, f.s("flavor_text").ifBlank { shown.s("flavor_text") }, shown))) }) { zoom = false } }) else null
@@ -449,12 +459,12 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
         if (!dual) SetLine(shown, state, act)
         if (!dual) run {
         // The card: drag across it to move the light (the phone's tilt moves it too); tap to enlarge.
-        val look = data?.let { Foil.look(it, shown, finish) }
+        val look = data?.let { Foil.look(it, shown, finish, image) }
         // feel.js attachTilt + attachMotionTilt: the card leans to the finger or the phone, and its light (and foil) follows.
         val lean = rememberCardLean()
         val touch = remember(lean) { androidx.compose.runtime.derivedStateOf { lean.light } }
         val shines = look?.takeIf { it.shines }
-        val tilt = rememberFoilTilt(live = look?.recipe != null, touch = touch)
+        val tilt = rememberFoilTilt(live = look?.recipe != null, touch = touch, rest = if (look?.recipe == null) Offset.Zero else null)
         // A controller: Y enlarges the card (its tap), holding Y leans it under the light as a finger does; on the card itself A enlarges it.
         val zoomNow by androidx.compose.runtime.rememberUpdatedState(onZoom)
         val padScope = rememberCoroutineScope()
@@ -463,7 +473,7 @@ private fun Overview(name: String, shown: JsonObject, faces: List<JsonObject>, i
         val padPic = remember { PadActs(a = "Inspect") }
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             val w = minOf(maxWidth, 340.dp)
-            CardPicture(image, shines, tilt, Modifier.size(w, w * 88f / 63f).cardLean(lean, foil = shines != null, shape = RoundedCornerShape(16.dp))
+            CardPicture(image, shines, tilt, Modifier.size(w, w * 88f / 63f).cardLean(lean, foil = look?.recipe != null, shape = RoundedCornerShape(16.dp))
                 // Site: a tap opens the zoom; a hold does nothing and the release after it opens nothing (card-actions.js press.held).
                 .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.padCardTap(padSource, padPic) { zoomNow() }, shape = RoundedCornerShape(16.dp))
         }
@@ -642,6 +652,7 @@ private fun StepBtn(label: String, enabled: Boolean, gold: Boolean, onClick: () 
 
 @Composable
 private fun PlayActions(name: String, shown: JsonObject, state: JsonObject?, n: Int, act: CardSheetActions, onGet: () -> Unit) {
+    val newDeck = deckLinks(act).first
     val decks = Trunk.decks(state)
     val ownOpen = remember { mutableStateOf(false) }
     val openState: androidx.compose.runtime.MutableState<Boolean> = LocalDecksOpen.current ?: ownOpen
@@ -654,7 +665,7 @@ private fun PlayActions(name: String, shown: JsonObject, state: JsonObject?, n: 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (n < 4) GoldCta(if (n > 0) "Get more copies" else "Get it", onClick = onGet)
             if (decks.isNotEmpty()) GhostButton("Add to deck", gold = n >= 4) { open = !open }
-            GhostButton("New deck") { act.newDeck(name) }
+            newDeck?.let { nd -> GhostButton("New deck") { nd(name) } }
         }
         if (open) Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             decks.forEach { d -> GhostButton(d.s("name").ifBlank { "Untitled deck" }, Modifier.fillMaxWidth()) { scope.launch { addToDeck(d, name, state, act) } } }
@@ -677,6 +688,7 @@ private suspend fun addToDeck(d: JsonObject, name: String, state: JsonObject?, a
 
 @Composable
 private fun GetIt(name: String, shown: JsonObject, state: JsonObject?, n: Int, act: CardSheetActions) {
+    val precon = deckLinks(act).second
     val scope = rememberCoroutineScope()
     val view = LocalView.current
     val st = if (n < 4) Trunk.stamp(state, shown) else null
@@ -705,7 +717,7 @@ private fun GetIt(name: String, shown: JsonObject, state: JsonObject?, n: Int, a
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (toMerchant != null) { if (n < 4) GoldCta("Its pack at the Merchant") { toMerchant(set, name) } else GhostButton("Its pack at the Merchant") { toMerchant(set, name) } }
                 if (toSet != null) GhostButton("See the whole set") { toSet(set) }
-                if (n < 4) GhostButton("Find it in a precon") { act.precon(name, set) }
+                if (n < 4 && precon != null) GhostButton("Find it in a precon") { precon(name, set) }
             }
         }
     }
@@ -821,6 +833,7 @@ private fun stepDown(size: Int): Int = Rule.Sizes.getOrElse(Rule.Sizes.indexOf(s
  */
 @Composable
 private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActions, onClose: () -> Unit, @Suppress("UNUSED_PARAMETER") startTab: String) {
+    val precon = deckLinks(act).second
     val context = LocalContext.current
     val view = LocalView.current
     val data = CardData.ready.collectAsState().value.also { if (it == null) CardData.warm(context) }
@@ -879,9 +892,10 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
     // The tilt drives only the card and its foil; the bleeds and tiles never move.
     val image = shown?.let { (if (imgFaces.size > 1) imgFaces.getOrNull(face) else null)?.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null }
         ?: it.getAsJsonObject("image_uris")?.s("normal")?.ifBlank { null } ?: faces.firstOrNull()?.getAsJsonObject("image_uris")?.s("normal") }
-    val look = if (shown != null) data?.let { Foil.look(it, shown, finish) } else null
+    val look = if (shown != null) data?.let { Foil.look(it, shown, finish, image) } else null
     val shines = look?.takeIf { it.shines }
-    val tilt = rememberFoilTilt(live = true)
+    // A plain card's only shine is its security stamp: it follows the phone but never drifts by itself (single-screen rule).
+    val tilt = rememberFoilTilt(live = look?.recipe != null, rest = if (look?.recipe == null) Offset.Zero else null, follow = look?.stamp == true)
 
     TopScreen {
         Box(Modifier.fillMaxSize().background(Rule.Color.Bg)) {
@@ -965,7 +979,7 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
                 else if (st != null) add(("Stamp it · 1 ${st.rarity} seal") to (if (st.seals >= 1) getNow else null))
             }
             if (code.isNotBlank() && toMerchant != null) add("Its pack at the Merchant" to { toMerchant(code, name) })
-            if (owned < 4 && code.isNotBlank()) add("Find it in a precon" to { act.precon(name, code) })
+            if (owned < 4 && code.isNotBlank() && precon != null) add("Find it in a precon" to { precon(name, code) })
         }
         val sections = listOf(
             DualSection("Yours", .9f, listOfNotNull(
@@ -1002,7 +1016,7 @@ private fun DualCardSheet(pick: CardPick, state: JsonObject?, act: CardSheetActi
             ?: shown.getAsJsonObject("image_uris")?.s("png")?.ifBlank { null }
         val f = faces.getOrElse(face) { faces[0] }
         if (image != null) TopScreen {
-            CardZoom(image, hi, heroArt, data?.let { Foil.look(it, shown, finish) },
+            CardZoom(image, hi, heroArt, data?.let { Foil.look(it, shown, finish, image) },
                 gallery = heroArt?.takeIf { it.isNotBlank() }?.let { a -> Gallery(listOf(galleryPiece(a, f.s("name").ifBlank { name },
                     f.s("artist").ifBlank { shown.s("artist") }, f.s("flavor_text").ifBlank { shown.s("flavor_text") }, shown))) },
                 startArt = zoom == "art") { zoom = null }

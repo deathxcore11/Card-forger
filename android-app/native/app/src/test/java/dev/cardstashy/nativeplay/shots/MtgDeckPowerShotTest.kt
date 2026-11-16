@@ -28,8 +28,8 @@ import java.io.File
 /**
  * A Magic deck's Power tab: power.js powerPageHtml (views.js powerHub, 4.3.131) over a small workspace (Goblin Horde, a Commander
  * list; Izzet Tempo, an unfinished Modern list; Sheoldred Black, a full 60 for Standard): the hero band, Tempo, How it wins, Curve
- * and colors, Matchups and Upgrades as cards, one column on a phone and paired from 820 wide, then the folded panels (Why Bracket N,
- * Mana base and payment, AI coach, rules checks). Rules is the site's interactiveRules("mtg").
+ * and colors, Against the field and Upgrades as cards, one column on a phone and paired from 820 wide, then the folded panels (Why Bracket N,
+ * Mana base and payment, rules checks). The coach is on the page itself, with no AI. Rules is the site's interactiveRules("mtg").
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -65,15 +65,21 @@ class MtgDeckPowerShotTest {
         settle()
     }
 
-    /** A full 60: the hero, Tempo's turns and tiles, How it wins, Curve and colors, Simulate matchups, Find paired upgrades, the folded panels. */
+    /** A full 60: the hero with Fix first, what is strong, the opening hand, Tempo, How it wins, Curve and colors, Against the field, Upgrades; no coach window. */
     @Test fun complete() {
         open("d5", "Sheoldred Black")
-        for (t in listOf("TEMPO", "HOW IT WINS", "CURVE AND COLORS", "MATCHUPS", "UPGRADES", "Simulate matchups", "Find paired upgrades", "Mana base and payment", "AI coach"))
+        for (t in listOf("OPENING HAND", "Deal another hand", "TEMPO", "HOW IT WINS", "CURVE AND COLORS", "AGAINST THE FIELD", "UPGRADES", "Mana base and payment"))
             assertTrue(t, shows(t))
+        assertTrue(shows("FIX FIRST") || shows("NOTHING TO FIX FIRST"))
+        for (t in listOf("AI coach", "Deck coach", "Simulate matchups", "Ask AI", "Pick any other deck")) assertTrue(t, !shows(t))
         assertTrue(webs.isEmpty())
         shot("complete")
-        scrollTo("CURVE AND COLORS"); shot("complete-2")
-        scrollTo("AI coach"); shot("complete-3")
+        scrollTo("OPENING HAND"); shot("complete-2")
+        scrollTo("CURVE AND COLORS"); shot("complete-3")
+        scrollTo("UPGRADES"); shot("complete-4")
+        tap("Deal another hand")
+        assertTrue(shows("OPENING HAND")); assertTrue(webs.isEmpty())
+        scrollTo("OPENING HAND"); shot("complete-redeal")
     }
 
     /** The same deck from 820 wide (an unfolded phone, a tablet): the cards two to a row at the taller one's height. */
@@ -104,13 +110,17 @@ class MtgDeckPowerShotTest {
         scrollTo("Why Bracket"); shot("commander-bracket")
     }
 
-    /** Ask AI about an opponent is the site's sheet (app.js amOpen): the website's Power tab, the same button pressed. */
-    @Test fun askAi() {
-        open("d2", "Izzet Tempo")
-        tap("Ask AI about an opponent")
-        rule.waitUntil(20_000) { webs.isNotEmpty() }
-        assertTrue(webs.last().first, webs.last().first.endsWith("#deck/d2/engine"))
-        assertTrue(webs.last().second.orEmpty(), webs.last().second.orEmpty().contains("[data-act=\"amOpen\"][data-tab=\"setup\"]"))
+    /** A deck of the field tapped: its read opens under its row, from the same simulation (no website, no AI); tapped again it closes. */
+    @Test fun read() {
+        open("d5", "Sheoldred Black")
+        rule.waitUntil(120_000) { settle(); shows("of the field") }
+        tap("of the field", substring = true)
+        rule.waitUntil(20_000) { shows("YOU GO FIRST") }
+        for (t in listOf("when you go first", "when you go second", "YOU GO SECOND", "A LONG GAME", "Watch for.", "no AI")) assertTrue(t, shows(t))
+        assertTrue(webs.isEmpty())
+        scrollTo("when you go first"); shot("read")
+        tap("of the field", substring = true)
+        assertTrue(!shows("YOU GO FIRST"))
     }
 
     /** Magic's Rules tab: rule-learning.js for Magic, drawn here. */

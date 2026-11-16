@@ -157,6 +157,8 @@ class PromptRingShotTest {
             }
         }
         for (b in boards) {
+            // Mobile table M4: the table orders triggers for you, so the order box (and its ring) shows only with "Ask me to order triggers" on.
+            dev.cardstashy.nativeplay.ui.AppSettings.set("askTriggerOrder", b == "triggers")
             anchors = Anchors(); board = b
             rule.waitForIdle(); rule.mainClock.advanceTimeBy(500); rule.waitForIdle()
             val root = rule.onRoot()

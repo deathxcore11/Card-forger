@@ -53,21 +53,7 @@ class DepthMatteTest {
         }
     }
 
-    @Test fun theFullSizeCutKeepsTheApprovedFigure() {
-        for ((k, c) in cases().withIndex()) {
-            val (m, gate) = DepthMatte.matte(DepthMatte.gray(c.argb), c.depth, c.w, c.h)
-            // same size: exactly the matte the gate judged
-            val same = DepthMatte.cut(c.argb, c.depth, c.w, c.h, c.argb, c.w, c.h)
-            assertEquals(gate.toString(), same.gate.toString()); assertTrue(same.figure!!.contentEquals(m))
-            // twice the size (each pixel doubled): the same figure, drawn at the larger size
-            val W = c.w * 2; val H = c.h * 2
-            val big = IntArray(W * H) { i -> c.argb[(i / W / 2) * c.w + (i % W) / 2] }
-            val up = DepthMatte.cut(c.argb, c.depth, c.w, c.h, big, W, H).figure!!
-            var off = 0
-            for (y in 0 until H) for (x in 0 until W) if ((up[y * W + x] > .5f) != (m[(y / 2) * c.w + x / 2] > .5f)) off++
-            assertTrue("case $k: $off of ${W * H} pixels changed side", off < W * H / 50)
-        }
-    }
+    // The window cut itself (DepthMatte.cut) is take 5 now and is checked in DepthTake5Test, against the take-5 reference.
 
     @Test fun aFlatPictureHasNoFigure() {
         val w = 120; val h = 90

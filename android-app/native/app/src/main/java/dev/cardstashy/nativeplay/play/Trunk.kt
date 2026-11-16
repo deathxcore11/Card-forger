@@ -93,6 +93,23 @@ object Trunk {
         return out.values.sortedWith(compareByDescending<SetRow> { it.released }.thenBy { it.name })
     }
 
+    /** One row of the Sets tab: a year line ([set] null) or a set under it. */
+    data class SetTabRow(val year: String, val set: SetRow?) { val key get() = if (set == null) "y:$year" else "s:" + set.code }
+
+    /** The sets a search and a format chip leave ("started" = you own a card of it; a search matches the name or the code). */
+    fun setsMatching(all: List<SetRow>, query: String, format: String): List<SetRow> {
+        val q = query.trim().lowercase()
+        return all.filter { (format.isEmpty() || (if (format == "started") it.owned > 0 else it.format == format)) && (q.isEmpty() || it.name.lowercase().contains(q) || it.code.contains(q)) }
+    }
+
+    /** The Sets tab's rows in order: each year (first seen first, "Other" when a set has no date), then its sets. */
+    fun setTabRows(all: List<SetRow>, query: String, format: String): List<SetTabRow> =
+        setsMatching(all, query, format).groupBy { it.released.take(4).ifBlank { "Other" } }.flatMap { (year, rows) -> listOf(SetTabRow(year, null)) + rows.map { SetTabRow(year, it) } }
+
+    /** Keep collecting: up to 12 sets you have started and not finished; only with no search and no format chosen. */
+    fun keepCollecting(all: List<SetRow>, query: String, format: String): List<SetRow> =
+        if (query.trim().isEmpty() && format.isEmpty()) all.filter { it.owned > 0 && (it.total == null || it.owned < it.total) }.take(12) else emptyList()
+
     // ---------------------------------------------------------------- the Play lens (app.js setPlayLensSource)
 
     private val SEAL = mapOf("common" to "c", "uncommon" to "u", "rare" to "r", "mythic" to "m")

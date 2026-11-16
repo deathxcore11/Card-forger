@@ -24,7 +24,7 @@ class BlockProbe {
     @Test fun blockAGroundAttackerBesideAFlyer() {
         val repo = File(System.getProperty("repoRoot")); val root = System.getProperty("engineRoot").orEmpty()
         assumeTrue(root.isNotEmpty() && File(root).isDirectory)
-        System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/current").absolutePath)
+        System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/app").absolutePath)
         LocalEngine.init(root)
         val hero = deck("Plains" to 56, "Glory Seeker" to 4)
         val cpu = deck("Plains" to 52, "Suntail Hawk" to 4, "Savannah Lions" to 4)

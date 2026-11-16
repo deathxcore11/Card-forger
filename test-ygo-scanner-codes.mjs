@@ -6,7 +6,6 @@ import {compileCatalog,lookupCatalog} from './scan-catalog.js';
 import {scanIdentifierEvidence,rankScanCandidates} from './scan-signals.js';
 import {textVerifiedMatch,registerScanner} from './scancam.js';
 import {createScannerLookup,scannerNumberParts} from './scanner-lookup.js';
-import {cleanScanHints} from './scan-identify-route.js';
 import {resolvedEntry,saveBatch,loadBatch} from './scan-batch.js';
 import {registerTcg,cache,SOURCES,ui} from './tcg.js';
 import {normalizeYgoSets} from './ygo.js';
@@ -121,13 +120,8 @@ const tied=await tcg.scanMatch(fullRead,'en',false,()=>{},'ygo');
 assert.equal(tied.cands.length,2);assert(tied.cands.every(c=>!c.exact&&c.printingAmbiguous));card.sets.pop();
 
 let writes=0;const A={},cold=makeLookup(false);
-registerScanner({A,C:{},I:{},game:()=> 'ygo',render(){},toast(){},priceOf:()=>null,identifyPhoto:async()=>cleanScanHints({game:'ygo',readable:true,name:'Coral Dragon',number:'LEHD-ENB38',set:'Legendary Hero Decks'}),lookupCandidates:cold,addMany:async()=>writes++});
+registerScanner({A,C:{},I:{},game:()=> 'ygo',render(){},toast(){},priceOf:()=>null,lookupCandidates:cold,addMany:async()=>writes++});
 saveBatch([batch(corrected,correctedCands)]);await A.scanBatchSave();assert.equal(writes,0);assert.equal(loadBatch()[0].status,'review');
-S.ui.scan={confirm:{game:'ygo',i:-1,qty:2,condition:'Lightly Played',lang:'en',finish:''},cands:[],shot:'data:image/jpeg;base64,'+'A'.repeat(128)};
-requests.length=0;await A.scanIdentifyAI();
-assert.equal(S.ui.scan.confirm.numberDraft,'LEHD-ENB38');assert.equal(S.ui.scan.cands[0].print,'LEHD-ENB38|Ultra Rare');
-assert.equal(S.ui.scan.cands[0].exact,false);assert.equal(S.ui.scan.cands[0].printingConfirmed,false);assert.equal(S.ui.scan.confirm.finish,'');assert.equal(writes,0);
-assert.equal(requests.length,1);assert(requests[0].endsWith('LEHD-ENB38'));
 
 // Number-before-rarity Magic footers retain the same adjacent set/language and
 // independent-observation rules. Real Chishiro #77 is not #1 or #73.

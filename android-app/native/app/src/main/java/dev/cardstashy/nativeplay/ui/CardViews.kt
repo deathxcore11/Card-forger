@@ -81,6 +81,8 @@ class Anchors {
         val old = rects[key]
         if (old == null || (old.center - r.center).getDistance() > .5f || kotlin.math.abs(old.width - r.width) > .5f) { rects[key] = r; put(key, r.center); version.intValue++ }
     }
+    /** 0.4.60 Z3: text sizes (sp) and line counts as drawn, by key, for tests that check the text floors; never read by the table. */
+    val sizes = HashMap<String, Float>()
 }
 val LocalAnchors = staticCompositionLocalOf<Anchors?> { null }
 

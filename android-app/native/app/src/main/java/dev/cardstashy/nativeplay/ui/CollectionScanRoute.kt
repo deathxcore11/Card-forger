@@ -228,7 +228,8 @@ private fun ScanCamera(modifier: Modifier) {
             val future = ProcessCameraProvider.getInstance(context)
             var provider: ProcessCameraProvider? = null
             future.addListener({
-                val p = runCatching { future.get() }.getOrNull() ?: return@addListener
+                // A phone whose camera service does not answer says so, instead of leaving a black view.
+                val p = runCatching { future.get() }.getOrNull() ?: run { CollectionWrites.show("The camera couldn’t start. Use Photo instead."); return@addListener }
                 provider = p
                 val size = ResolutionSelector.Builder().setResolutionStrategy(ResolutionStrategy(android.util.Size(1920, 1080), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER)).build()
                 val preview = Preview.Builder().setResolutionSelector(size).build().also { it.surfaceProvider = view.surfaceProvider }

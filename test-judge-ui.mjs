@@ -1,0 +1,20 @@
+// The Judge screen's markup: the rule leads with its number, named cards come first, and a miss is said plainly. No AI wording.
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+globalThis.document={createElement:()=>({}),addEventListener(){}};
+const {judgeAnswerHtml,JUDGE_EXAMPLES}=await import('./judge-ui.js');
+const rule=(number,heading,text,extra={})=>({number,heading,text,reference:{kind:'bundled-entry'},...extra});
+let html=judgeAnswerHtml({status:'answered',game:'mtg',read:['Deathtouch','Trample'],lead:rule('702.2c','Deathtouch','Lethal <b>damage</b>.'),rules:[rule('702.19b','Trample','Long whole rule text.',{focus:'Short part …'})],terms:[{label:'Trample',def:'A keyword ability.'}],cards:[],edition:{title:'Comprehensive Rules',date:'2026-09-25'}},3);
+assert.match(html,/Read as <span class="chip">Deathtouch<\/span><span class="chip">Trample<\/span>/);
+assert.match(html,/judge-rule lead"><div class="judge-num"><b>702\.2c<\/b><span>Deathtouch<\/span>/);assert.match(html,/Lethal &lt;b&gt;damage/,'rule text is escaped');
+assert.match(html,/Goes with it<\/p><div class="judge-rule">/);assert.match(html,/<p>Short part …<\/p><details><summary>Read the whole rule<\/summary><p>Long whole rule text\.<\/p>/);
+assert.match(html,/data-judge-ref="3:0"/);assert.match(html,/data-judge-ref="3:1"/);assert.match(html,/Comprehensive Rules, Sept\. 25, 2026\. At an event, the judge there has the final say\./);
+html=judgeAnswerHtml({status:'related',game:'mtg',read:[],lead:rule('509.1a','Declare Blockers Step','Blockers.'),rules:[],terms:[],cards:[{name:'Questing Beast',text:'Vigilance',rulings:[{date:'2019-10-04',text:'A ruling.'}],rulingCount:4}],edition:null});
+assert.ok(html.indexOf('Cards you named')<html.indexOf('509.1a'),'a named card comes before the rules');assert.match(html,/Official ruling · Oct\. 4, 2019<\/small>A ruling\./);assert.doesNotMatch(html,/judge-rule lead/,'an unsure match is not framed as the answer');
+html=judgeAnswerHtml({status:'answered',game:'ptcg',read:['Poisoned'],lead:rule('0-p16','Pokémon rulebook · PDF page 16','Poison marker.'),rules:[],terms:[{label:'Poisoned',def:'Takes 1 damage counter.',points:[],ours:true}],cards:[],edition:{title:'Pokémon rulebook',date:'2026-09'}});
+assert.match(html,/<b>Page 16<\/b><span>Pokémon rulebook<\/span>/);assert.match(html,/CardStashy note/);assert.match(html,/Sept\. 2026/);
+html=judgeAnswerHtml({status:'none',game:'mtg',read:[],lead:null,rules:[],terms:[],cards:[]});assert.match(html,/That isn’t in the rulebook/);assert.match(html,/data-judge-example="Can a creature attack the turn it enters\?"/);
+for(const f of['judge-ui.js','judge-search.js','ai-rules-panel.js'])assert.doesNotMatch(readFileSync(new URL('./'+f,import.meta.url),'utf8'),/aiFetch|\/api\/ai|aiOrb/,f+' never calls or shows AI');
+assert.doesNotMatch(readFileSync(new URL('./app.js',import.meta.url),'utf8'),/from '\.\/ai-rules\.js'/,'the site no longer loads the AI judge');
+assert.equal(Object.keys(JUDGE_EXAMPLES).length,3);
+console.log('judge-ui: rule first with its number, named cards first, plain miss, no AI anywhere');

@@ -227,6 +227,9 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         val act = a.get("act")?.takeIf { it.isJsonPrimitive }?.asString ?: return
         val got = { k: String -> a.getAsJsonObject("data")?.get(k)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty() }
         when {
+            // Ask a Judge (A.askRules, and the War Chest's judge: app.js chestTool's A.askRules with the deck's format): the app's own chat.
+            act == "askRules" -> { CollectionWrites.judge(got("judge").ifBlank { null }, game.id, got("ruleFormat")); return }
+            act == "chestTool" && got("tool") == "judge" -> { CollectionWrites.judge(null, game.id, m.key.split('|').getOrElse(4) { "" }); return }
             // A card in the panel (the War Chest's sample hand, tcg.js A.tCard): its page here.
             act == "tCard" && got("id").isNotEmpty() -> { tcgOpen(got("id")); return }
             // A tab the panel opens (the War Chest's Goldfish, tcg.js A.tDeckTab): here when drawn here, else the website's.
@@ -242,6 +245,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             // Versions' Restore and Delete, a logged game and its delete (app.js A.restoreVer, A.deleteVer, A.logGame, A.deleteNote):
             // saved here, asked first where the site asks; the tab is drawn again from the saved account.
             !tcg && act in setOf("restoreVer", "deleteVer", "deleteNote") -> { write(act, "id" to got("id")); return }
+            // A coach swap on the Power page (app.js A.coachSwap): one copy out, one in, the list before it kept in Versions.
+            !tcg && act == "coachSwap" && got("cut").isNotEmpty() && got("add").isNotEmpty() -> { write(act, "cut" to got("cut"), "add" to got("add")); return }
             !tcg && act == "lifeLog" -> { write(act, "result" to got("result")); return }
             // A.lifeEnd: asked first, then the tracker closes (nothing is saved).
             !tcg && act == "lifeEnd" -> { CollectionWrites.confirm(got("question")) { endLife() }; return }
@@ -257,13 +262,11 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         val sel = "[data-act=\"${css(act)}\"]" + data.joinToString("") { (k, v) -> "[data-" + k.replace(Regex("[A-Z]")) { "-" + it.value.lowercase() } + "=\"${css(v.asString)}\"]" }
         // Game Night (tabletop.js openTabletop) is the website's. From the deck's War Chest it keeps the deck's journal; when the
         // website on this phone does not have the deck (not signed in there, or not synced yet) the Rules page's Tabletop
-        // button (A.tabletop) opens the same table without it, rather than nothing happening (Randall 6 Nov). Ask the Judge the same
-        // way: the Rules page's Ask about rules (A.askRules).
+        // button (A.tabletop) opens the same table without it, rather than nothing happening (Randall 6 Nov).
         // Card lookup (app.js chestTool: go('#search')): the app's own Search.
         if (act == "chestTool" && got("tool") == "lookup") { searchTab?.let { it(); return } }
         val table = act == "chestTool" && got("tool") in setOf("gameNight", "share", "spirit", "journal")
-        val judge = act == "chestTool" && got("tool") == "judge"
-        web("$page/" + android.net.Uri.encode(deckTab), if (table) "$sel\n||\n#rules\n[data-act=\"tabletop\"]" else if (judge) "$sel\n||\n#rules\n[data-act=\"askRules\"]" else sel)
+        web("$page/" + android.net.Uri.encode(deckTab), if (table) "$sel\n||\n#rules\n[data-act=\"tabletop\"]" else sel)
     }
     /** A tap or typing in the panel: the site's listeners, then what they start (the rulebook, a source) as it lands. */
     fun panelDo(call: suspend () -> com.google.gson.JsonObject) = scope.launch {
@@ -292,7 +295,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
         if (deckTab == "cards") { panel = null; return@LaunchedEffect }
         runCatching {
             take(SitePanelModel.parse(CollectionEngine.deckPanel(game.id, deckId, deckTab)))
-            CollectionEngine.settle(15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
+            // Power runs its matchup odds and the coach's swaps by itself as it opens (the field's lists, 2,000 games each): as long as a tap's.
+            CollectionEngine.settle(if (deckTab == "engine" || deckTab == "insights") 120_000 else 15_000, CollectionEngine.PANEL_MODEL) { j -> if (j.has("key")) take(SitePanelModel.parse(j)) }
         }
     }
     // A.deckShare / tcg.js A.tShare: the share sheet; its Preview opens the link (the shared deck's page on the website).
@@ -327,8 +331,8 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                         web = { x, sc -> web(page, "[data-act=\"deckMenu\"]\n[data-act=\"${css(x)}\"]" + (if (sc.isNotEmpty()) "[data-scope=\"${css(sc)}\"]" else "")) },
                         openDeck = onDeck, deleted = onBack, share = ::share, site = { u -> webAt(u, null) })
                     a.isBlank() -> {}
-                    id.isNotBlank() -> web(page, "[data-act=\"${css(a)}\"][data-id=\"${css(id)}\"]")
-                    else -> web(page, "[data-act=\"${css(a)}\"]")
+                    id.isNotBlank() -> { SiteHandoff.log("deck " + game.id, a); web(page, "[data-act=\"${css(a)}\"][data-id=\"${css(id)}\"]") }
+                    else -> { SiteHandoff.log("deck " + game.id, a); web(page, "[data-act=\"${css(a)}\"]") }
                 }
             },
             tab = { k -> openTab(k) },
@@ -416,7 +420,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
                     if (searchOpen != null) { review = false; searchAsked(deckId.takeIf { x.act == "formatSearch" }); searchOpen() }
                     else { review = false; web(site + "#search", null) }
                 }
-                else -> { review = false; web(page, "[data-act=\"deckReview\"]\n[data-act=\"${css(x.act)}\"]" + (if (x.id.isNotBlank()) "[data-id=\"${css(x.id)}\"]" else "") + (if (x.role.isNotBlank()) "[data-role=\"${css(x.role)}\"]" else "")) }
+                else -> { review = false; SiteHandoff.log("deck review", x.act); web(page, "[data-act=\"deckReview\"]\n[data-act=\"${css(x.act)}\"]" + (if (x.id.isNotBlank()) "[data-id=\"${css(x.id)}\"]" else "") + (if (x.role.isNotBlank()) "[data-role=\"${css(x.role)}\"]" else "")) }
             } }))
     }
     tbuild?.let { t ->

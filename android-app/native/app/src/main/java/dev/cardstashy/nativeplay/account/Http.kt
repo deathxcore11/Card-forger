@@ -17,7 +17,11 @@ object Http {
     private val JSON = "application/json".toMediaType()
 
     /** Any method, PATCH included (PostgREST's revision-checked update needs it). OkHttp handles gzip. */
+    /** JVM tests only: answers every call in place of the network (method, url, body). */
+    @Volatile internal var fake: ((String, String, String?) -> JsonElement?)? = null
+
     fun call(method: String, url: String, headers: Map<String, String> = emptyMap(), body: String? = null, timeoutMs: Int = 10000): JsonElement? {
+        fake?.let { return it(method, url, body) }
         val req = Request.Builder().url(url)
             .header("Accept", "application/json").header("User-Agent", dev.cardstashy.nativeplay.art.CardArt.UA)
             .apply { headers.forEach { (k, v) -> header(k, v) } }

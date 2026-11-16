@@ -21,7 +21,7 @@ for(let scenario=0;scenario<3;scenario++){
  assert.ok(!html.includes('<script>'));assert.ok(!html.includes('<svg onload'));assert.ok(!html.includes('src="javascript:'));assert.ok(!html.includes('href="javascript:'));
  assert.equal((html.match(/class="am-scenario"/g)||[]).length,1,'one selected scenario avoids endless page');
  assert.match(html,new RegExp(`aria-label="${s.result.scenarios[scenario].title}"`));
- assert.ok(html.includes('Legality unverified.'));assert.ok(html.includes('both decklists and your question'));
+ assert.ok(html.includes('Legality unverified.'));assert.ok(html.includes('Nothing is sent anywhere'));assert.ok(!/AI Matchups|AI provider|AI coaching/.test(html));
  assert.ok(html.includes('shared card rows'));assert.match(html,/data-act="amView"/);
 }
 s.busy=true;html=renderMagicMatchupSheet(deck,{tab:'analysis'});assert.match(html,/data-act="amCancel"/);assert.match(html,/data-act="amAnalyze" disabled/);

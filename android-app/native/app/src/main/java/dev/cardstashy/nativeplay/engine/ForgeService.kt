@@ -41,7 +41,7 @@ object ForgeService {
     private const val TAG = "ForgeService"
     private const val PACK = "forge-engine/pack.zip"
     private const val VERSION = "forge-engine/pack.version"
-    private const val RULES_URL = "https://cardstashy.com/forge-rules/current/"
+    private const val RULES_URL = "https://cardstashy.com/forge-rules/app/"
 
     // One engine thread with a deep stack, as in the beta (Forge recurses deeply in the AI).
     private val engine: ExecutorService = Executors.newSingleThreadExecutor { r -> Thread(null, r, "forge-engine", 16L shl 20) }

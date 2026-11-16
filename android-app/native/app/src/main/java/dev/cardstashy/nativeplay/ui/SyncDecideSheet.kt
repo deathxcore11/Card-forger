@@ -149,6 +149,10 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
                         /** h2.build-heading: the brand mark at rest (34, brand-idle) 10 before the title. */
                         brand: Boolean = false,
                         foot: (@Composable () -> Unit)? = null,
+                        /** Drawn before the eyebrow and title (ai-ask.js .ask-head's orb). */
+                        lead: (@Composable () -> Unit)? = null,
+                        /** Drawn before the close button (ai-ask.js .ask-new). */
+                        action: (@Composable () -> Unit)? = null,
                         content: @Composable ColumnScope.(vw: androidx.compose.ui.unit.Dp) -> Unit) {
     val still = Motion.still
     val fade = remember { Animatable(if (still) 1f else 0f) }
@@ -268,6 +272,7 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
                 }
                 val h2 = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp,
                     lineHeight = 21.85.sp, letterSpacing = (-.38).sp, color = INK, lineHeightStyle = CSS_LINE)
+                lead?.invoke()
                 // <div><p class="eyebrow">…</p><h2>…</h2></div> (a binder's head): the 11 / 700 tracked eyebrow, 4, then the title.
                 if (eyebrow.isNotEmpty()) Column(Modifier.weight(1f)) {
                     Text(eyebrow, Modifier.padding(bottom = 4.dp), style = TextStyle(fontFamily = Type.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, lineHeight = 15.95.sp,
@@ -279,6 +284,7 @@ internal fun SiteSheet(title: String, backdrop: GraphicsLayer?, onClose: () -> U
                     BrandMark(34.dp); Text(title, style = h2)
                 }
                 else Text(title, Modifier.weight(1f), style = h2, textAlign = if (onBack != null) TextAlign.Center else TextAlign.Start)
+                action?.invoke()
                 Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF1F232B)).border(1.dp, Color(0xFF2A2F39), RoundedCornerShape(12.dp))
                     .clickable(onClick = onClose).semantics { contentDescription = "Close" }, contentAlignment = Alignment.Center) {
                     // ICON.close: m6.5 6.5 11 11 M17.5 6.5l-11 11, stroke 1.75 on a 24 grid.

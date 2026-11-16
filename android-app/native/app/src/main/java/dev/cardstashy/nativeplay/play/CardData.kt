@@ -52,7 +52,7 @@ class CardData(json: JsonObject) {
             "doublerainbow" to "mtg-doublerainbow", "fracturefoil" to "mtg-fracture", "facetfoil" to "mtg-facet", "rainbowfoil" to "mtg-rainbow", "ripplefoil" to "mtg-ripple",
             "manafoil" to "mtg-mana", "dragonscalefoil" to "mtg-dragonscale", "invisibleink" to "mtg-invisible", "silverfoil" to "mtg-silver",
             "firstplacefoil" to "mtg-firstplace", "raisedfoil" to "mtg-raised", "embossed" to "mtg-embossed", "ampersand" to "mtg-ampersand",
-            "silverscreen" to "mtg-silverscreen", "vaultboy" to "mtg-vaultboy")
+            "silverscreen" to "mtg-silverscreen")
         /** Facet foil (FRA borderless shards), app first (7 Nov): the site's prototype row, here until the site's recipe table
          *  carries it (then the site's own row wins). Shards and their cut edges come from MtgFoil.facets. */
         private val FACET = Recipe("mtg-facet", "Facet foil", "2025–today", dev.cardstashy.nativeplay.foil.MtgFoil.FACET, 0f, 0f, 0f, 0f, 0f, 0f, 0f,
@@ -61,8 +61,16 @@ class CardData(json: JsonObject) {
         private val SET_MATERIAL = mapOf("dbl" to "mtg-silverscreen")
         private val NOT_MATERIAL = setOf("foil", "serialized", "scroll", "poster", "boosterfun", "universesbeyond")
 
-        /** mtgHoloStamp: rares and mythics in the M15 frame carry the oval holo stamp. */
-        fun holoStamp(c: JsonObject?) = c.s("frame") == "2015" && c.s("rarity") in setOf("rare", "mythic") && c.s("border_color") != "borderless"
+        /** mtgHoloStamp: rares and mythics in the M15 frame carry the oval holo stamp (the rule when a record has no security_stamp). */
+        fun mtgHoloStamp(c: JsonObject?) = c.s("frame") == "2015" && c.s("rarity") in setOf("rare", "mythic") && c.s("border_color") != "borderless"
+        /** mtgStamped (finish-preview.js): modern-frame cards can carry a holographic security stamp, foil or not: an oval on rares and
+         *  mythics, a triangle on Universes Beyond, an acorn, a heart, a circle. Which cards have one comes from the printing's
+         *  security_stamp; where it is and what shape it has is read from the picture (foil/MtgStamp.kt), never assumed. */
+        fun holoStamp(c: JsonObject?): Boolean {
+            if (c.s("frame") != "2015" || c.s("layout").ifEmpty { "normal" } == "art_series") return false
+            val st = c.s("security_stamp")
+            return if (st.isNotEmpty()) (if (st == "oval") c.s("rarity") in setOf("rare", "mythic") else st != "arena") else mtgHoloStamp(c)
+        }
         /** mtgFrameKey. */
         fun frameKey(c: JsonObject?): String {
             val frame = c.s("frame")

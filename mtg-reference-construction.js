@@ -244,6 +244,8 @@ export async function resolveReferenceCandidates(data,request={},options={}){
  const names=[...new Map(selected.candidates.flatMap(candidate=>[...candidate.main,...candidate.side]).map(row=>[cardKey(row.name),row.name])).values()];
  const bound=bounded(options.maxUniqueNames,REFERENCE_POLICY.maxUniqueNames,REFERENCE_POLICY.maxUniqueNames),width=bounded(options.batchWidth,REFERENCE_POLICY.batchWidth,REFERENCE_POLICY.batchWidth);
  if(names.length>bound)return {...selected,candidates:[],decks:[],assessments:[],constructionBasis:'heuristic',rejections:[...selected.rejections,issue('resolution-bound',`Reference resolution requires ${names.length} names, above the ${bound}-name work bound.`)]};
+ // One request for all the names at once, where the caller has one: the per-name lookups below then read what it loaded.
+ if(options.resolveMany&&names.length){try{await options.resolveMany(names);}catch{}check();}
  for(let at=0;at<names.length;at+=width){
   check();await Promise.all(names.slice(at,at+width).map(async name=>{
    check();let card=null;

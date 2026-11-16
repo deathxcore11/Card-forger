@@ -226,8 +226,9 @@ internal fun Modifier.turnLine(u: Float): Modifier {
 }
 
 /**
- * The clock's sounds (cue map): a quiet TT-006 as a fresh prompt window opens, TT-007 each second of the last 10, TT-008 at zero.
- * Yours only, never while held. Fed the current clock every ~100 ms: it keeps its count across the clock's re-emissions (the
+ * The clock's sounds (cue map). Randall 14 Nov ("when the timer resets it goes off so you hear it like 100 times a match"): a window
+ * opening makes no sound; TT-007 ticks softly for the last [TICK_S] seconds only, and only once the window has been open
+ * [QUIET_MS] (a quick answer never ticks); TT-008 at zero says the clock answered for you. Yours only, never while held. Fed the current clock every ~100 ms: it keeps its count across the clock's re-emissions (the
  * controller sends a new Clock every second), so a second the controller reports first is never lost.
  */
 internal class ClockCues(private val play: (String, Float) -> Unit) {
@@ -243,10 +244,9 @@ internal class ClockCues(private val play: (String, Float) -> Unit) {
             // A new window (or the same one sent again with more time): its count starts here, without a tick.
             ended(now)
             total = c.totalMs; said = s
-            if (c.frozenLeft == null && left > 0 && c.totalMs <= TurnClock.PROMPT_MS && c.totalMs - left < 500) play("TT-006", .4f)
         } else if (c.frozenLeft == null && s < said) {
             said = s
-            if (s == 0) play("TT-008", .8f) else if (s <= 10) play("TT-007", .7f)
+            if (s == 0) play("TT-008", OUT_VOL) else if (s <= TICK_S && c.totalMs - left >= QUIET_MS) play("TT-007", TICK_VOL)
         }
         running = if (c.frozenLeft == null && s > 0) c else null
     }
@@ -258,7 +258,14 @@ internal class ClockCues(private val play: (String, Float) -> Unit) {
     private fun ended(now: Long) {
         val r = running ?: return
         running = null
-        if (said > 0 && now >= r.endsAt - 50) { said = 0; play("TT-008", .8f) }
+        if (said > 0 && now >= r.endsAt - 50) { said = 0; play("TT-008", OUT_VOL) }
+    }
+
+    companion object {
+        const val TICK_S = 5
+        const val QUIET_MS = 10_000L
+        const val TICK_VOL = .35f
+        const val OUT_VOL = .6f
     }
 }
 

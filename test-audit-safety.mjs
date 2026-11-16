@@ -130,7 +130,7 @@ function replacementHarness() {
     writeRecords(records){const snapshots=structuredClone(records);const transaction=async()=>{const n=++writes;if(n===1){started();await gate;}if(c.failAt===n)throw Error('disk full');for(const [k,v] of snapshots)disk.set(k,v);};const result=storageQueue.then(transaction,transaction);storageQueue=result.catch(()=>{});return result;},
     readRecord:async k=>structuredClone(disk.get(k)),readBackup:async()=>({next:c.imported,cache:{}}),slim:x=>x,
     afterLocalSave(){events.push('save-notify');},saveCatalogSoon(){},render(){},refreshSheet(){},haptic(){},appSound(){},flyToCollection(){},toast(text){events.push(text);},autoEnrich(){},setTimeout(){},lastActTarget:null,
-    ask:async()=>true,askText:async()=> 'DELETE',busy:()=>()=>{},deleteAccount:async()=>{c.owner=null;},
+    ask:async()=>true,askText:async()=> 'DELETE',closeJudge(){},busy:()=>()=>{},deleteAccount:async()=>{c.owner=null;},
     cloudInfo:()=>({user:c.owner}),signOut:async()=>{events.push('sign-out');if(c.signOutError)throw Error('sign-out failed');c.owner=null;},detachDeviceSync(){events.push('detach');},clearAskConversations(){},clearRulesConversations(){},rulesGuideOrigin:null,go(){},owner:null};
   Object.assign(c,{mergeValueHistory,T:{readLegacyTcgValueHistory:()=>[]},refreshProfileAvatar(){},createAccountWorkspaces:()=>({guard:null})});
   Object.assign(c,{recoveryKey,recoverySummary,appendRecoverySnapshot,createRecoverySnapshot});vm.createContext(c);

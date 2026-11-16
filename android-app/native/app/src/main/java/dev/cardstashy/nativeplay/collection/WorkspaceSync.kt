@@ -237,7 +237,9 @@ object WorkspaceSync {
 
     private suspend fun merge(c: Context, u: String, m: Meta, revision: Long, data: String) {
         if (!ensureEngine(c, u)) { adopt(c, u, revision, data, m); return }
-        atomic(recoveryFile(c, u), CollectionEngine.saved())
+        val before = CollectionEngine.saved()
+        atomic(recoveryFile(c, u), before)
+        runCatching { RecoveryJournal.append(c, u, before, "Before loading your account copy", "account-merge") }
         val base = if (m.baseRevision == m.revision) baselineFile(c, u).takeIf { it.isFile }?.readText() else null
         val r = CollectionEngine.mergeIn(base, data)
         atomic(Decks.deviceFile(c, u), CollectionEngine.saved())
@@ -275,6 +277,7 @@ object WorkspaceSync {
             "account" -> lock.withLock {
                 Decks.deviceFile(c, p.userId).takeIf { it.isFile }?.readText()?.let { local ->
                     atomic(recoveryFile(c, p.userId), local)
+                    runCatching { RecoveryJournal.append(c, p.userId, local, "Before loading your account copy", "account-adopt") }
                     runCatching { download(c, "Before loading your account copy", local) }
                 }
                 pending.value = null
@@ -283,6 +286,7 @@ object WorkspaceSync {
             "device" -> {
                 lock.withLock {
                     atomic(recoveryFile(c, p.userId), p.cloud.data)
+                    runCatching { RecoveryJournal.append(c, p.userId, p.cloud.data, "Account copy before replacing it", "account-replace") }
                     runCatching { download(c, "Account copy before replacing it", p.cloud.data) }
                     readMeta(c, p.userId)?.let { writeMeta(c, it.copy(revision = p.cloud.revision, sig = "", dirty = true)) }
                     pending.value = null

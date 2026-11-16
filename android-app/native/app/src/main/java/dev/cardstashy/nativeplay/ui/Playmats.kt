@@ -197,6 +197,8 @@ fun PlaymatScene(modifier: Modifier = Modifier) {
 @Composable
 fun PlaymatScene(id: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    // The living table reads which mat is down (F10: the light, air and marks follow the painting).
+    androidx.compose.runtime.SideEffect { TableFeel.mat = id }
     BoxWithConstraints(modifier.background(Color(0xFF0C0C0E)).clipToBounds()) {
         val tall = maxHeight >= maxWidth // @media (orientation:portrait)
         val story = remember(id) { StoryMats.all(context)[id] }

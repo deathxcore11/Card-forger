@@ -18,6 +18,13 @@ for (const file of (await readdir(SHEETS)).filter(f => f.endsWith('.json') && f 
   if (d?.sheets) sets.push({ code: d.set, ids: [...new Set(Object.values(d.sheets).flatMap(s => s.cards.map(([id]) => id)))] });
 }
 const facts = new Map(Object.entries(await readFile(CACHE, 'utf8').then(JSON.parse).catch(() => ({}))));
+// The rows already baked count as cached, so a run with no cache file (the daily job adding a new set) asks Scryfall only for the
+// new set's cards.
+for (const file of await readdir(OUT).catch(() => [])) {
+  if (!file.endsWith('.json')) continue;
+  const d = JSON.parse(await readFile(path.join(OUT, file), 'utf8'));
+  for (const [id, r] of Object.entries(d?.cards || {})) if (!facts.has(id)) facts.set(id, r);
+}
 const want = [...new Set(sets.flatMap(s => s.ids))].filter(id => !facts.has(id));
 console.log(`${sets.length} sets, ${facts.size} cards cached, ${want.length} to fetch`);
 

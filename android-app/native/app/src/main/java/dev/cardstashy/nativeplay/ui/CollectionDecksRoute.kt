@@ -216,12 +216,14 @@ fun CollectionDecksRoute(onPlay: () -> Unit, onProfile: () -> Unit, onHome: () -
         m.toasts.lastOrNull()?.let { CollectionWrites.show(it) }
         val tool = m.acted?.getAsJsonObject("data")?.get("tool")?.takeIf { it.isJsonPrimitive }?.asString ?: return
         chestClose()
-        // Card lookup: go("#search"), the Search tab here. Game Night, Share table, Table Spirit and Ask the Judge: the website's War Chest, the same tool.
+        // Card lookup: go("#search"), the Search tab here. Game Night, Share table and Table Spirit: the website's War Chest, the same tool.
         if (tool == "lookup") searchTab?.invoke() ?: web(site + "#search", null)
+        // Ask the Judge (app.js chestTool: A.askRules with the game): the app's own chat.
+        else if (tool == "judge") CollectionWrites.judge(null, CollectionGame.current.value.id)
         // The website's Decks has no War Chest button while it has no decks of its own (not signed in there): the table tools then
         // open from its Rules page's Tabletop button (A.tabletop), the same Game Night.
         else page(decks, "[data-act=\"warChest\"]\n.war-chest-dialog [data-tool=\"${css(tool)}\"]" +
-            (if (tool in setOf("gameNight", "share", "spirit")) "\n||\n#rules\n[data-act=\"tabletop\"]" else if (tool == "judge") "\n||\n#rules\n[data-act=\"askRules\"]" else ""))
+            (if (tool in setOf("gameNight", "share", "spirit")) "\n||\n#rules\n[data-act=\"tabletop\"]" else ""))
     }
     fun chestOpen() = scope.launch {
         if (HomeCache.loaded == null) { page(decks, "[data-act=\"warChest\"]"); return@launch }

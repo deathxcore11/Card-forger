@@ -76,14 +76,14 @@ export function createScannerPrintingPicker({openPicker,requestMagic,sources={},
           const full=await ensureCard(game,source.id);check(signal);
           if(!samePrintingFamily(game,source,full))throw Error('The source returned a different card.');
           if(!catalogue.length){
-            if(typeof loadCatalogue!=='function')throw Error('The release catalogue is unavailable.');
+            if(typeof loadCatalogue!=='function')throw Error('No connection');
             // Reuse the app catalogue loader: the save adapter must see the same
             // canonical release IDs after the user reviews this capture.
             catalogue=await loadCatalogue(game);check(signal);
           }
-          if(!Array.isArray(catalogue))throw Error('The release catalogue is unavailable.');
+          if(!Array.isArray(catalogue))throw Error('No connection');
           return {cards:[full],catalogue,nextCursor:null,complete:catalogue.length>0,
-            note:catalogue.length?'Only verified releases of this card are listed.':'The release catalogue is unavailable. Reload to retry; no release is assumed.'};
+            note:catalogue.length?'Only verified releases of this card are listed.':'No connection Reload to retry; no release is assumed.'};
         }
         const page=cursor===null?0:Number(cursor);
         if(!Number.isInteger(page)||page<0)throw Error('Invalid printing page. Reopen this capture to retry.');
