@@ -1652,3 +1652,65 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 .pe-dshelf--none .pe-dshelf-head b,.pe-dshelf--none .pe-dshelf-meta{color:var(--muted,#a49c8b);font-weight:600}
 .pe-dshelf-row .pe-pool-card{touch-action:pan-x pan-y}
 .pe-dshelf-all{width:100%;aspect-ratio:63/88;border-radius:4.75%/3.5%;border:1px dashed rgba(229,196,126,.45);background:rgba(229,196,126,.06);color:var(--gold,#e5c47e);font:700 12px/1.3 inherit;padding:8px;cursor:pointer}
+/* Deck builder filters (bench-filter.js; deck view redesign, 14 Nov): the bar, chips, Filters panel, curve and the list's Type / Mana sort. */
+.pe-bench-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+.pe-bench-find{flex:1 1 200px;display:block;min-width:0}
+.pe-bench-find input{width:100%}
+.pe-bench-colors{display:flex;gap:4px;flex-wrap:wrap}
+.pe-bench-color{opacity:.62}
+.pe-bench-color[aria-pressed="true"]{opacity:1;background:color-mix(in srgb,var(--gold) 12%,transparent)}
+.pe-bench-color .pip-M,.pe-bench-opt--pip .pip-M{display:block;width:26px;height:26px;border-radius:50%;background:conic-gradient(var(--W),var(--U),var(--B),var(--R),var(--G),var(--W));box-shadow:0 1px 2px #0006}
+.pe-bench-open{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,#0d0f14 70%,transparent);color:var(--text);font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.pe-bench-open .label-ico .ico{width:16px;height:16px;color:var(--gold)}
+.pe-bench-open.on,.pe-bench-open[aria-expanded="true"]{border-color:color-mix(in srgb,var(--gold) 60%,var(--line));color:var(--gold)}
+.pe-bench-open .filters-count{display:grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--gold);color:var(--gold-ink,#1a1405);font-size:11.5px;font-weight:800}
+.pe-bench-chips{margin:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;min-width:0}
+.pe-bench-chips::-webkit-scrollbar{display:none}
+.pe-bench-chips .fchip{flex:none;color:var(--gold)}
+.pe-bench-reset{flex:none;min-height:44px;padding:0 8px;border:0;background:none;color:var(--muted);font:inherit;font-weight:700;cursor:pointer}
+.pe-bench-scrim{display:none}
+.pe-bench-panel{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;padding:16px 18px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 92%,transparent);min-width:0}
+.pe-bench-head{display:flex;align-items:center;gap:12px;min-width:0}
+.pe-bench-head h2{margin:0;font:700 20px/1.2 Cinzel,Georgia,serif;color:var(--text)}
+.pe-bench-head span{flex:1;min-width:0;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe-bench-close{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:50%;border:0;background:#ffffff0f;color:var(--text);font:600 24px/1 system-ui,sans-serif;cursor:pointer}
+.pe-bench-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:16px 28px;align-content:start;min-width:0}
+.pe-bench-group{display:grid;gap:7px;align-content:start;min-width:0}
+.pe-bench-group h3{margin:0;font:800 11px/1.2 'DM Sans',system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.pe-bench-opts{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.pe-bench-opts--row{display:grid;grid-auto-flow:column;grid-auto-columns:44px;justify-content:space-between;gap:2px;max-width:400px}
+.pe-bench-opt{min-height:44px;min-width:44px;padding:0 13px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;border:1px solid var(--line);background:#ffffff0d;color:var(--text);font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
+.pe-bench-opt--round{width:44px;padding:0;border-radius:50%}
+.pe-bench-opt--pip .pe-mana-sym,.pe-bench-opt--pip .pip-M{width:24px;height:24px;opacity:.5}
+.pe-bench-opt.on{border-color:color-mix(in srgb,var(--gold) 70%,transparent);background:color-mix(in srgb,var(--gold) 14%,transparent);color:var(--gold)}
+.pe-bench-opt--pip.on .pe-mana-sym,.pe-bench-opt--pip.on .pip-M{opacity:1}
+.pe-bench-opt:focus-visible,.pe-bench-open:focus-visible,.pe-bench-close:focus-visible,.pe-curve-bar:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.pe-bench-set{min-height:44px;width:100%;max-width:420px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,#0d0f14 70%,transparent);color:var(--text);font:inherit;font-size:14px}
+.pe-bench-foot{display:flex;gap:10px;align-items:center}
+.pe-bench-foot .btn{min-height:48px;margin:0}
+.pe-bench-show{flex:1}
+/* Wide (two columns): the panel takes the pool's place; the deck stays beside it. */
+@media(min-width:901px){.pe-build-pool[data-filters]>:not(.pe-bench-panel){display:none}}
+/* Stacked: a bottom sheet over the page, with a scrim; the page under it holds still. */
+@media(max-width:900px){
+ .pe-bench-scrim{display:block;position:fixed;inset:0;z-index:60;border:0;padding:0;background:rgba(0,0,0,.6);cursor:default}
+ .pe-bench-panel{position:fixed;left:0;right:0;bottom:0;z-index:61;max-width:640px;margin:0 auto;max-height:85dvh;padding:14px var(--gutter) 0;border-bottom:0;border-radius:22px 22px 0 0;background:var(--bg);box-shadow:0 -12px 40px #000a;animation:rise .22s ease-out}
+ .pe-bench-body{overflow-y:auto;overscroll-behavior:contain;grid-template-columns:minmax(0,1fr);gap:14px}
+ .pe-bench-opts--row{max-width:none}
+ .pe-bench-foot{position:sticky;bottom:0;padding:8px 0 calc(env(safe-area-inset-bottom) + 12px);background:linear-gradient(transparent,var(--bg) 30%)}
+ :root:has(.pe-build-pool[data-filters]),:root:has(.pe-build-pool[data-filters]) body{overflow:hidden}
+}
+@media(prefers-reduced-motion:reduce){.pe-bench-panel{animation:none}}
+/* The deck's mana curve: each bar a mana value filter on the pool. */
+.pe-curve-block{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 20px}
+.pe-curve{flex:1 1 300px;max-width:560px;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));align-items:end;height:84px;margin-inline:-8px}
+.pe-curve-bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:100%;min-height:44px;padding:0 4px;border:0;border-radius:8px;background:none;color:var(--text);font:inherit;cursor:pointer}
+.pe-curve-bar u{display:block;width:100%;max-width:30px;min-height:3px;border-radius:4px 4px 2px 2px;background:#3a4052;text-decoration:none}
+.pe-curve-bar em{font-style:normal;font-size:11px;font-weight:800;line-height:1}
+.pe-curve-bar s{text-decoration:none;font-size:11px;font-weight:700;color:var(--muted);line-height:1.2}
+.pe-curve-bar:hover u{background:#4a5266}
+.pe-curve-bar.on u{background:var(--gold)}
+.pe-curve-bar.on s{color:var(--gold)}
+.pe-deck-sort{margin:0 0 0 auto}
+.pe-deck-sort button{flex:none;min-height:44px;min-width:72px;padding:0 14px}
+@media(max-width:520px){.pe-build-deck{padding:12px}.pe-curve{margin-inline:-10px}.pe-bench-panel{padding-inline:12px}}

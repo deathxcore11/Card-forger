@@ -73,7 +73,7 @@ import {
 } from "./ui.js";
 import {
   cardKey as key, sumQty, rulesText, typeText, isLand, validateDeck,
-  atLeastLands, aggregateCards, commanderEligible, isBasic, cardPrice, namePrice, inventory,
+  atLeastLands, aggregateCards, commanderEligible, isBasic, cardPrice, namePrice, inventory, inCommandZone,
 } from "./core.js";
 import { deckComparison, comparisonTotals } from "./deck-flow.js";
 import { printingState } from "./confidence.js";
@@ -1232,7 +1232,7 @@ export function deckPage() {
   ${mainCopies < target ? `<div class="note warn">Incomplete draft: ${target - mainCopies} slots remain. Power is unavailable. The listed-card price does not include empty slots.${(d.buildDiagnostics?.warnings || []).slice(0, 2).map(w => `<p class="small">${esc(w)}</p>`).join("")}</div>` : ""}
   <nav class="tabs" role="tablist">${tabs.map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
   ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "engine" ? `<button class="note warn block-note" data-act="deckTab" data-id="engine">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
-  <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg", {format:d.format}), cards: deckCards, engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: (d) => warChestMarkup({deck:{id:d.id,name:d.name},resume:chestResume("mtg")}) + `<section class="wc-draw" id="chestDraw"><h3>Draw a hand</h3>${deckPlaytest(d)}</section>`, shop: deckShop }[tab](d, t)}</div>`;
+  <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg", {format:d.format}), cards: (d, t) => deckCards(d, t, p.curve), engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: (d) => warChestMarkup({deck:{id:d.id,name:d.name},resume:chestResume("mtg")}) + `<section class="wc-draw" id="chestDraw"><h3>Draw a hand</h3>${deckPlaytest(d)}</section>`, shop: deckShop }[tab](d, t)}</div>`;
 }
 
 function reviewBadge(d) {
@@ -1296,13 +1296,19 @@ function mtgDeckEmblems(d) {
 // The card area, Arena style: one toolbar (search, filter chips, grouping, view), the cards,
 // then what the deck needs and how to take it to the table. Adding a card opens from the toolbar.
 const DECK_CHIPS = [["all", "All"], ["creatures", "Creatures"], ["spells", "Spells"], ["lands", "Lands"], ["missing", "Missing"]];
-function deckCards(d, t) {
+// The deck's mana curve on the Cards tab (insights.js engineProfile: spells only). Each bar is a mana value filter on the list.
+export function deckCurve(curve = [], picked = []) {
+  const max = Math.max(1, ...curve), labels = ["0", "1", "2", "3", "4", "5", "6", "7+"];
+  return `<div class="deck-curve" role="group" aria-label="Mana curve">${labels.map((l, i) => { const k = curve[i] || 0, on = picked.includes(i);
+    return `<button type="button" class="deck-curve-bar${on ? " on" : ""}" data-act="deckMana" data-mv="${i}" aria-pressed="${on}" aria-label="Mana value ${l}, ${k} card${k === 1 ? "" : "s"}"><em>${k || ""}</em><u style="height:${Math.round(k / max * 100)}%"></u><s>${l}</s></button>`; }).join("")}</div>`;
+}
+function deckCards(d, t, curve = null) {
   const target = formatOf(d).size, mainCopies = sumQty(d.cards), short = mainCopies < target;
   const filter = DECK_CHIPS.some(([id]) => id === S.ui.deckFilter) ? S.ui.deckFilter : "all";
   const chips = DECK_CHIPS.filter(([id]) => id !== "missing" || t.missing).map(([id, label]) => `<button type="button" class="deck-chip${id === filter ? " on" : ""}" data-act="deckChip" data-id="${id}" aria-pressed="${id === filter}">${label}${id === "missing" ? ` <b>${t.missing}</b>` : ""}</button>`).join("");
   const fill = short ? (d.format === "Commander" ? `<button class="btn ghost" data-act="deckTab" data-id="upgrade">Fill ${target - mainCopies} slots</button>` : `<button class="btn ghost" data-act="formatSearch">Find ${esc(formatOf(d).name)} cards</button>`) : "";
   const need = t.missing ? `<b>${t.missing}</b> not in your collection yet` : "Every listed card is in your collection";
-  return `<div class="deck-toolbar">
+  return `${curve ? deckCurve(curve, S.ui.deckMana || []) : ""}<div class="deck-toolbar">
     <input type="search" value="${esc(S.ui.q.deck)}" placeholder="Search this deck" data-input="deckSearch" aria-label="Search deck">
     <div class="deck-chips" role="group" aria-label="Show">${chips}</div>
     <select class="deck-group" data-change="deckSort" aria-label="Group by">${options([["type", "By type"], ["mv", "By mana value"], ["role", "By role"], ["price", "By price"]], S.ui.deckSort)}</select>
@@ -1385,11 +1391,14 @@ export function deckList(d = currentDeck(), opts = {}) {
     d = {...d, cards, commander: d.commander || leaders[0] || ''};
   }
   const q = unfiltered ? '' : S.ui.q.deck.toLowerCase();
+  // The curve's bars (deckCurve): spells at the mana values picked. Lands and the commander are not on the curve (engineProfile).
+  const manaPick = unfiltered || readOnly ? [] : (S.ui.deckMana || []);
   // Shopping aggregates both zones, but editable main-deck rows must show the
   // main quantity. The sideboard is rendered separately below the main list.
   let rows = rowsFor({...d, side: []}).map(r => readOnly && leaders.some(n => key(n) === key(r.name)) ? {...r, category: 'Commander'} : r).filter(
     (r) =>
       (!q || r.name.toLowerCase().includes(q)) &&
+      (!manaPick.length || (r.category !== 'Commander' && !inCommandZone(d, r.name) && !!meta(r.name) && !isLand(meta(r.name)) && manaPick.includes(Math.max(0, Math.min(7, Math.floor(Number(meta(r.name).cmc) || 0)))))) &&
       (unfiltered || S.ui.deckFilter === "all" ||
         (S.ui.deckFilter === "missing" && r.missing > 0) ||
         (S.ui.deckFilter === "creatures" && /Creature/.test(meta(r.name)?.type_line || "")) ||
@@ -1404,10 +1413,13 @@ export function deckList(d = currentDeck(), opts = {}) {
     groups = new Map();
     for (const r of rows.sort((a, b) => mv(a) - mv(b) || a.name.localeCompare(b.name))) {
       const c = meta(r.name),
-        g = r.category === "Commander" ? "Commander" : c && isLand(c) ? "Lands" : !c ? "Unresolved" : "Mana value " + Math.min(7, c.cmc) + (c.cmc >= 7 ? "+" : "");
+        g = r.category === "Commander" ? "Commander" : c && isLand(c) ? "Lands" : !c ? "Unresolved" : "Mana value " + Math.min(7, Math.floor(Number(c.cmc) || 0)) + (c.cmc >= 7 ? "+" : "");
       if (!groups.has(g)) groups.set(g, []);
       groups.get(g).push(r);
     }
+    // The spells by mana value, then any card still loading, then Lands (bench-filter.js benchByMana's order).
+    const last = ["Unresolved", "Lands"];
+    groups = new Map([...groups].sort(([a], [b]) => (a === "Commander" ? -2 : last.indexOf(a)) - (b === "Commander" ? -2 : last.indexOf(b))));
   } else if (S.ui.deckSort === "role") {
     groups = new Map();
     for (const r of rows.sort((a, b) => a.name.localeCompare(b.name))) {
