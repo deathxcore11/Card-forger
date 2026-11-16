@@ -16,6 +16,7 @@ import {BENCH, emptyBench, benchKeeps, benchSorted, benchChips, benchCount, benc
 import {labelIcon} from './icons.js';
 import {secretLairImage, secretLairOfferPrice} from './play-secret-lair.js';
 import {realPhotoCode} from './pack3d.js';
+import {LAND_TYPES, LAND_KINDS, LAND_SORTS, landCraftSeal, landStyleImage, sortLandStyles, deckLandStyle, ownedLandStyles} from './land-styles.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
 const ART = 'https://cards.scryfall.io/art_crop/front/';
@@ -340,8 +341,8 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
   const room = name => isBasicLand(name) ? Infinity : Math.max(0, rules.copies - inDeck(name));
   const craftMenu = (name, miss, seal, id) => `<details class="pe-craft"><summary aria-label="Craft ${esc(name)}: ${miss} missing" title="Craft with seals">${sealIcon(seal || 'c')}<b>${miss}</b></summary><div class="pe-craft-pop" role="group" aria-label="Craft copies of ${esc(name)}">${slimOf(name)?.set ? `<button class="pe-craft-set" data-act="playLensSet" data-code="${esc(slimOf(name).set)}" aria-label="Open ${esc(slimOf(name).set_name || slimOf(name).set.toUpperCase())} to get packs" title="Get packs"><span class="set-icon" style="--icon:url('${esc(setIconUrl(slimOf(name).set))}')" aria-hidden="true"></span></button>` : ''}${Array.from({length: miss}, (_, i) => i + 1).map(k => `<button class="pe-craft-n" data-act="playCraftCopies" data-name="${esc(name)}" data-card-id="${esc(id || '')}" data-n="${k}" ${!id || !seal || k > plan.have[seal] || snapshot.busy ? 'disabled' : ''} aria-label="Craft ${k} for ${k} ${SEALS.find(s => s.key === seal)?.label || 'seal'}${k > 1 ? 's' : ''}">${sealIcon(seal || 'c')}<b>${k}</b></button>`).join('')}</div></details>`;
   const row = c => { const miss = planOf.get(c.name)?.miss || 0, have = c.qty - miss, slim = slimOf(c.name);
-    return `<li class="pe-build-row${miss ? ' pe-build-row--missing' : ''}${ui.justCrafted?.has(c.name) ? ' pe-build-row--crafted' : ''}" data-drag-card="${esc(c.name)}"><button class="pe-build-open" data-act="card" data-name="${esc(c.name)}" data-play-card="1"${byName.get(c.name) ? ` data-oracle="${esc(byName.get(c.name).o)}"` : ''} aria-label="Open ${esc(c.name)}${miss ? `, ${have} of ${c.qty} owned` : ''}"><span class="pe-build-thumb" style="background-image:url(${esc(factOf(c.name)?.a || cardImageByName(c.name, 'art_crop'))})" aria-hidden="true"></span><span class="pe-build-name">${esc(c.name)}</span>${factOf(c.name)?.mc ? `<span class="pe-build-cost">${esc(factOf(c.name).mc.replace(/[{}]/g, ''))}</span>` : ''}</button>${miss ? craftMenu(c.name, miss, planOf.get(c.name).seal, ui.craftId?.(c.name) || slim?.id) : ''}<span class="pe-step"><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="-1" aria-label="Remove one ${esc(c.name)}">−</button><b>${c.qty}</b><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="1" ${room(c.name) < 1 ? 'disabled' : ''} aria-label="Add one ${esc(c.name)}">+</button></span></li>`; };
-  const mode = ui.pool?.mode === 'all' ? 'all' : 'mine';
+    return `<li class="pe-build-row${miss ? ' pe-build-row--missing' : ''}${ui.justCrafted?.has(c.name) ? ' pe-build-row--crafted' : ''}" data-drag-card="${esc(c.name)}"><button class="pe-build-open" data-act="card" data-name="${esc(c.name)}" data-play-card="1"${byName.get(c.name) ? ` data-oracle="${esc(byName.get(c.name).o)}"` : ''} aria-label="Open ${esc(c.name)}${miss ? `, ${have} of ${c.qty} owned` : ''}"><span class="pe-build-thumb" style="background-image:url(${esc((LAND_TYPES.includes(c.name) && landUse(c.name) ? landStyleImage(landUse(c.name), 'art_crop') : '') || factOf(c.name)?.a || cardImageByName(c.name, 'art_crop'))})" aria-hidden="true"></span><span class="pe-build-name">${esc(c.name)}</span>${factOf(c.name)?.mc ? `<span class="pe-build-cost">${esc(factOf(c.name).mc.replace(/[{}]/g, ''))}</span>` : ''}</button>${miss ? craftMenu(c.name, miss, planOf.get(c.name).seal, ui.craftId?.(c.name) || slim?.id) : ''}<span class="pe-step"><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="-1" aria-label="Remove one ${esc(c.name)}">−</button><b>${c.qty}</b><button data-act="playEconStep" data-econ-card="${esc(c.name)}" data-econ-step="1" ${room(c.name) < 1 ? 'disabled' : ''} aria-label="Add one ${esc(c.name)}">+</button></span></li>`; };
+  const mode = ui.pool?.mode === 'all' ? 'all' : ui.pool?.mode === 'lands' ? 'lands' : 'mine';
   // The builder's own filters (bench-filter.js): the bar's colours and the Filters panel. The Trunk keeps its own (filterBar).
   const bench = ui.bench || {}, bf = {...emptyBench(), ...(bench.filter || {})}, colors = bench.colors || [], deckSort = bench.deckSort === 'mana' ? 'mana' : 'type';
   const cardsByName = new Map();
@@ -374,7 +375,10 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
   // "Show N cards" says what the list says: no number while every card is being looked through, and N+ when Scryfall has more.
   const shown = shelfMode || (mode === 'all' && ui.pool?.busy) ? null : tiles.length, shownMore = mode === 'all' && !shelfMode && !!ui.pool?.more;
   const curve = benchCurve(spells.map(c => ({qty: c.qty, cmc: factOf(c.name).m})));
-  const basics = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'];
+  const basics = LAND_TYPES, lp = landView(ui, state, edit);
+  // The style each land type uses in this deck: picked in this edit, else the deck row's printing, else the account default, else the starter.
+  const landUse = type => { if (!lp.owned) return deck.find(c => c.name === type)?.id || ''; const row = deck.find(c => c.name === type);
+    return deckLandStyle(type, lp.picked?.[type] || row?.id, lp.owned, lp.chosen, lp.starter); };
   const craftAll = plan.missing ? `<div class="pe-craft-all-bar"><span class="pe-craft-need" aria-label="Missing ${plan.missing} cards">${SEALS.filter(s => plan.need[s.key]).map(s => `<span class="pe-cost${plan.need[s.key] > plan.have[s.key] ? ' pe-cost--short' : ''}" title="${plan.need[s.key]} ${s.label}${plan.need[s.key] > 1 ? 's' : ''} needed, ${plan.have[s.key]} owned">${sealIcon(s.key)}${plan.need[s.key]}</span>`).join('')}</span><button class="pe-stamp pe-craft-all" data-act="playCraftAll" ${!plan.craftable || snapshot.busy || ui.crafting ? 'disabled' : ''}>${ui.crafting ? 'Crafting…' : ui.craftArmed ? `Craft ${plan.craftable} now` : plan.craftable < plan.missing ? `Craft ${plan.craftable} of ${plan.missing}` : 'Craft all'}</button></div>` : '';
   return `<section class="play-menu pe-screen pe-builder-screen" aria-labelledby="playDeckTitle">
     ${deckShell({game: 'mtg', source: 'play', art, title: edit.name || 'New Play deck',
@@ -393,18 +397,58 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
         ${deck.length ? deckGroups(order.filter(g => groups.has(g)).map(g => ({name: g, rows: groups.get(g).sort((a, b) => (factOf(a.name)?.m ?? 99) - (factOf(b.name)?.m ?? 99) || a.name.localeCompare(b.name))})), deckSort, name => factOf(name)?.m ?? null)
           .map(g => `<h3 class="pe-build-group">${esc(g.name)} <span>${g.rows.reduce((t, c) => t + c.qty, 0)}</span></h3><ul class="pe-build-list">${g.rows.map(row).join('')}</ul>`).join('')
           : '<p class="pe-build-empty">Drag cards here, or tap one to see it.</p>'}
-        <div class="pe-basics" role="group" aria-label="Basic lands, free and unlimited">${basics.map(b => `<button class="pe-basic" data-act="playEconStep" data-econ-card="${b}" data-econ-step="1" aria-label="Add a ${b}"><span style="background-image:url(${esc(cardImageByName(b, 'art_crop'))})" aria-hidden="true"></span><b>${b}</b></button>`).join('')}</div>
+        <div class="pe-basics" role="group" aria-label="Basic lands, free and unlimited. Hold one for its styles.">${basics.map(b => { const id = landUse(b), q = inDeck(b), fresh = lp.fresh?.(b);
+          return `<button class="pe-basic${mode === 'lands' && lp.type === b ? ' on' : ''}${fresh ? ' pe-basic--new' : ''}" data-act="playEconStep" data-econ-card="${b}" data-econ-step="1" data-land-hold="${b}" aria-label="Add a ${b}${q ? `, ${q} in deck` : ''}. Hold for styles"><span style="background-image:url(${esc(id ? landStyleImage(id, 'art_crop') : cardImageByName(b, 'art_crop'))})" aria-hidden="true"></span><b>${b}</b>${q ? `<i>${q}</i>` : ''}${fresh ? '<em class="pe-basic-dot" aria-hidden="true"></em>' : ''}</button>`; }).join('')}</div>
       </section>
       <section class="pe-build-pool" aria-label="Card pool"${bench.open ? ' data-filters="1"' : ''}>
-        ${segmented('playEconPool', mode, [['mine', 'Your cards', 'cardStack'], ['all', 'All cards', 'search']])}
-        ${benchBar(ui, bf, colors, benchSets, !!bench.open)}
+        ${segmented('playEconPool', mode, [['mine', 'Your cards', 'cardStack'], ['all', 'All cards', 'search'], ['lands', 'Lands']])}
+        ${mode === 'lands' ? landPicker(lp, state.wallet || {}, landUse) : `${benchBar(ui, bf, colors, benchSets, !!bench.open)}
         <p class="pe-count" role="status">${shelfMode ? 'A set at a time, newest first' : mode === 'all' ? (ui.pool?.busy ? 'Looking through every card…' : `${n(tiles.length)}${ui.pool?.more ? '+' : ''} ${esc(edit.format || 'Standard')} cards`) : `${n(tiles.length)} of ${n(mineAll.length)} cards`}</p>
         ${poolBody}
         ${mode === 'all' && !shelfMode && ui.pool?.more && !ui.pool?.busy ? '<button class="btn ghost pe-pool-more" data-act="playEconPoolMore">More cards</button>' : ''}
-        ${bench.open ? benchPanel(bf, colors, {shown, more: shownMore, sets: benchSets, mode}) : ''}
+        ${bench.open ? benchPanel(bf, colors, {shown, more: shownMore, sets: benchSets, mode}) : ''}`}
       </section>
     </div>
     ${statusLine(snapshot)}</section>`;
+}
+// Land styles (Randall 16 Nov, preview https://claude.ai/artifact/Xv5a3wJ2Kqmnr2ASuwSsc6): where the card grid was, the styles of one
+// land type. The one in use first and ringed gold, then owned, then locked (dim, with a lock and how to get it). A tap focuses a
+// style; the bar above the grid says what it is and its one action: Use, Craft (1 common or uncommon seal) or "Packs only".
+// What the picker needs, worked out from the baked styles (ui.landData), the player's unlocked styles and Trunk.
+// ui.lands keeps the picker's own choices (type, sort, focus, how many shown) and the styles already looked at (seen).
+export function landView(ui = {}, state = {}, edit = {}) {
+  const ld = ui.landData, own = ui.lands || {}, styles = state.styles || [];
+  const owned = ld ? ownedLandStyles(ld.list, {styles, cards: state.cards || [], starter: ld.data.starter}) : null;
+  const chosen = Object.fromEntries(styles.filter(x => x.on && LAND_TYPES.includes(x.n)).map(x => [x.n, x.id]));
+  const got = new Map(styles.filter(x => LAND_TYPES.includes(x.n) && /^land(open|craft)/.test(x.src || '')).map(x => [x.id, x.n]));
+  const isNew = id => !!own.seen && got.has(id) && !own.seen.has(id);
+  return {...own, list: ld?.list || null, error: ui.landError, starter: ld?.data.starter || {}, config: state.config || {}, owned, chosen, picked: edit.lands || {},
+    isNew, fresh: type => [...got].some(([id, n]) => n === type && isNew(id))};
+}
+function landPicker(lp, wallet, landUse) {
+  const type = lp.type || 'Forest', tabs = `<div class="pe-lp-types" role="tablist" aria-label="Land type">${LAND_TYPES.map(t => `<button role="tab" aria-selected="${t === type}" class="${t === type ? 'on' : ''}" data-act="playLandType" data-id="${t}">${t}</button>`).join('')}<button class="pe-lp-duals" data-act="playLandDuals">Duals</button></div>`;
+  if (!lp.list) return tabs + `<p class="pe-count" role="status">${lp.error ? 'Land styles could not load. Try again in a moment.' : 'Loading land styles…'}</p>`;
+  const owned = lp.owned || new Map(), use = landUse(type), list = sortLandStyles(lp.list.filter(s => s.type === type), owned, lp.sort || 'recent', use);
+  const focus = list.find(s => s.id === lp.focus) || list.find(s => s.id === use) || list[0], mine = list.filter(s => owned.has(s.id)).length;
+  const seal = s => landCraftSeal(s.kind, lp.config), have = k => wallet['seal_' + k] || 0;
+  const status = s => s.id === use ? '<span class="pe-lp-use">In use</span>' : owned.has(s.id) ? 'Owned' : s.kind === 's' ? 'Packs only' : `${sealIcon(seal(s))}Craft`;
+  let act;
+  if (!focus) act = '';
+  else if (focus.id === use) act = '<span class="pe-lp-use">In use</span>';
+  else if (owned.has(focus.id)) act = `<button class="btn primary" data-act="playLandUse" data-id="${focus.id}">Use for ${type}s</button>`;
+  else if (focus.kind === 's') act = '<span class="pe-lp-how">Found in packs</span>';
+  else { const k = seal(focus); act = `<button class="btn primary" data-act="playLandCraft" data-id="${focus.id}"${have(k) < 1 || lp.busy ? ' disabled' : ''}>${sealIcon(k)}Craft</button><span class="pe-lp-how">or open ${esc(focus.setName)} packs</span>`; }
+  const tile = s => `<button class="pe-lp-tile${s.id === use ? ' pe-lp-tile--use' : ''}${owned.has(s.id) ? '' : ' pe-lp-tile--lock'}${focus && s.id === focus.id ? ' pe-lp-tile--focus' : ''}" data-act="playLandFocus" data-id="${s.id}" aria-label="${esc(s.setName)} ${type}, ${s.id === use ? 'in use' : owned.has(s.id) ? 'owned' : 'locked'}" aria-pressed="${!!(focus && s.id === focus.id)}">
+    <img src="${esc(landStyleImage(s.id))}" alt="" loading="lazy" decoding="async">${owned.has(s.id) ? '' : '<span class="pe-lp-lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>'}${lp.isNew?.(s.id) ? '<span class="pe-lp-new">New</span>' : ''}
+    <span class="pe-lp-st">${status(s)}</span><small>${esc(s.setName)}</small></button>`;
+  const shown = list.slice(0, lp.limit || 60);
+  return `${tabs}
+    <div class="pe-lp-head"><span class="pe-lp-cap">${type} styles</span><b>${n(mine)} owned</b><span class="pe-lp-purse">${['c', 'u'].map(k => `<span title="${k === 'c' ? 'Common' : 'Uncommon'} seals">${sealIcon(k)}${n(have(k))}</span>`).join('')}</span></div>
+    ${segmented('playLandSort', lp.sort || 'recent', LAND_SORTS)}
+    ${focus ? `<div class="pe-lp-bar"><div class="pe-lp-what"><b>${esc(focus.setName)}</b> <span>#${esc(focus.num)}</span><span>${LAND_KINDS[focus.kind]} · ${esc(focus.artist)}</span></div>${act}</div>` : ''}
+    <div class="pe-lp-grid">${shown.map(tile).join('')}</div>
+    ${list.length > shown.length ? `<button class="btn ghost pe-pool-more" data-act="playLandMore">More styles (${n(list.length - shown.length)})</button>` : ''}
+    <button class="btn ghost pe-lp-all" data-act="playLandAll"${owned.has(use) ? '' : ' disabled'}>Use this style in all my decks</button>`;
 }
 // The deck list's Type / Mana sort: by type (the app's deck order), or by mana value with Lands after the spells (bench-filter.js).
 function deckGroups(typeGroups, sort, mvOf) {

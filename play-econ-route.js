@@ -10,6 +10,7 @@ import {rewardSet, setFormats} from './play-econ-sets.js';
 import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconQuote, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
 import {RETIRED_STARTER_NAMES} from './play-starter-deck.js';
 import {weeklySecretLairOffers, secretLairOfferPrice, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
+import {landStyleList, ownedLandStyles, landSlotPlan, pickSpecialLand, landSpecialOdds, landCraftSeal, landStyleRow, landStyleImage, isLandType} from './land-styles.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned, keyFeatsMissing} from './story-deeds.js';
 import {rerollUsed, weeklyRerollUsed, ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
@@ -44,6 +45,13 @@ export function cryptoRandom() { const a = new Uint32Array(2); crypto.getRandomV
 function asset(env, request, path, fetcher) {
   const url = new URL(path, request.url).toString();
   return (env.ASSETS ? env.ASSETS.fetch(new Request(url)) : fetcher(url)).then(r => r.ok ? r.json() : null).catch(() => null);
+}
+
+// Land styles (scripts/bake-land-styles.mjs), read once per isolate.
+let landCache = null;
+async function landStyles(env, request, fetcher) {
+  if (!landCache) { const d = await asset(env, request, '/data/land-styles.json', fetcher); if (d?.styles) landCache = {data: d, list: landStyleList(d)}; }
+  return landCache;
 }
 
 // Secret Lair drops (scripts/bake-secret-lair.mjs), read once per isolate.
@@ -183,6 +191,14 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       return {...secretLairStyle(pick.card), card: !pick.owned};
     } catch { return null; }
   };
+  // Land styles the player owns (land-styles.js), and unlocking new ones once per ref. Null until the
+  // Secret Lair styles SQL has run (play.styles holds the unlocked land styles too).
+  const landOwned = async (s0, l0) => {
+    const [lands, l, s] = await Promise.all([landStyles(env, request, fetcher), l0 === undefined ? looks() : l0, s0 || state()]);
+    if (!lands || !l) return null;
+    return {lands, owned: ownedLandStyles(lands.list, {styles: l.styles || [], cards: s.cards || [], starter: lands.data.starter})};
+  };
+  const addLandStyles = (ref, lands, list) => list.length ? rpc(env, 'play_add_styles', {p_user: uid, p_ref: ref, p_styles: list.map(x => landStyleRow(x, lands.data.oracles[x.type]))}, fetcher).catch(() => null) : null;
   // Story progress is the player's own story:* ledger refs (supabase/migrations/20261101190000_play_story.sql).
   // Before that function exists this answers null and the app keeps its device copy.
   const storyRefs = () => rpc(env, 'play_story_refs', {p_user: uid}, fetcher).catch(() => null);
@@ -274,7 +290,14 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       // A collector pack (boss, hard achievement) is the same booster with every card holo; any other pack
       // has a small chance to come out as one too.
       const earned = isCollectorPack(pack), surprise = !earned && cryptoRandom() < collectorOdds(s.config);
-      const drawn = drawMtgBooster(data, known, cryptoRandom), kind = earned || surprise ? 'collector' : 'regular';
+      // The land slot skips land styles the player owns, and a set whose lands are all owned gives a common.
+      const land = await landOwned(s).catch(() => null);
+      const drawn = drawMtgBooster(data, known, cryptoRandom, land ? {landSlot: landSlotPlan(data, land.owned)} : {}), kind = earned || surprise ? 'collector' : 'regular';
+      // About 1 pack in 20, the land slot holds a Special land (Secret Lair or promo) the player doesn't own yet.
+      const slot = drawn.findIndex(c => c.packLand && isLandType(c.name));
+      const special = land && slot >= 0 && cryptoRandom() < landSpecialOdds(s.config) ? pickSpecialLand(land.lands.list, land.owned, cryptoRandom) : null;
+      if (special) drawn[slot] = {id: special.id, oracle_id: land.lands.data.oracles[special.type], name: special.type, rarity: 'common', set: special.set, collector_number: special.num,
+        image_uris: {normal: landStyleImage(special.id), art_crop: landStyleImage(special.id, 'art_crop')}, packSlot: 'land', packLand: true, packSheet: 'special-land', ...(drawn[slot].packFoil ? {packFoil: true} : {})};
       // God pack, at Wizards' own odds (1 in 1,000 packs, 1 in 300 Collector packs): every card a holo rare or mythic.
       const god = cryptoRandom() < godPackOdds(s.config, kind) ? mtgGodPackPicks(data, known, drawn.length, cryptoRandom) : null;
       const picks = god || (kind === 'collector' ? collectorPicks(drawn) : drawn);
@@ -286,7 +309,11 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       await tally('open:' + pack.id, {packs_opened: 1, packs_collector: kind === 'collector' || god ? 1 : 0, packs_god: god ? 1 : 0,
         pulls_mythic: contents.filter(c => c.rarity === 'mythic').length, ...(/^[a-z0-9]{2,8}$/.test(pack.set) ? {['po:' + pack.set]: 1} : {})}, body.tz);
       const style = god ? await grantStyle('slstyle:open:' + pack.id) : null;
-      return json({counters: await counters.read(), ...(style ? {style} : {}), pack: {...pack, contents, ...(earned || surprise ? {collector: true} : {}), ...(surprise ? {surprise: true} : {}), ...(god ? {god: true, collector: true} : {})}, sealBonus: bonus, duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
+      // Every basic land in the pack unlocks its style (once per pack).
+      const byId = land && new Map(land.lands.list.map(x => [x.id, x]));
+      const newLands = land ? [...new Map(contents.filter(c => isLandType(c.name) && byId.has(c.id) && !land.owned.has(c.id)).map(c => [c.id, byId.get(c.id)])).values()] : [];
+      if (newLands.length) await addLandStyles('landopen:' + pack.id, land.lands, newLands);
+      return json({counters: await counters.read(), ...(style ? {style} : {}), pack: {...pack, contents, ...(earned || surprise ? {collector: true} : {}), ...(surprise ? {surprise: true} : {}), ...(god ? {god: true, collector: true} : {})}, sealBonus: bonus, landStyles: newLands.map(x => x.id), duplicateCoins: result.duplicate_coins || 0, converted: result.converted || [], state: await state()});
     }
     if (path === 'craft') {
       const id = String(body.id || '');
@@ -508,6 +535,42 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (out?.error) return fail(/style_locked/.test(out.error) ? 'style_locked' : 'not_ready', /style_locked/.test(out.error) ? 403 : 503);
       return json({styles: out.styles || []});
     }
+    if (path === 'landcraft') {
+      // Unlocks one land style for seals: a regular set land for a common seal, a full art one for an
+      // uncommon seal. Special lands (Secret Lair, promo) are never crafted. Once per style.
+      const land = await landOwned();
+      if (!land) return fail('not_ready', 503);
+      const st = land.lands.list.find(x => x.id === body.id);
+      if (!st) return fail('bad_style');
+      if (land.owned.has(st.id)) return fail('have_style', 409);
+      const s = await state(), seal = landCraftSeal(st.kind, s.config);
+      if (!seal) return fail('no_craft_special', 409);
+      if ((s.wallet?.['seal_' + seal] || 0) < 1) return fail('no_seal', 409);
+      const ref = 'landcraft:' + st.id, paid = await apply(ref, 'craft', {seals: {[seal]: -1}});
+      if (paid?.duplicate) return fail('have_style', 409);
+      await addLandStyles(ref + ':style', land.lands, [st]);
+      await tally(ref, {crafts: 1}, body.tz);
+      return json({counters: await counters.read(), state: await state(), styles: (await looks())?.styles || [], landStyle: st.id});
+    }
+    if (path === 'landstyle') {
+      // Sets a land type's account default to an owned style; with all: true every saved Play deck's lands of
+      // that type switch to it too ("Use this style in all my decks").
+      const land = await landOwned();
+      if (!land) return fail('not_ready', 503);
+      const st = land.lands.list.find(x => x.id === body.id);
+      if (!st) return fail('bad_style');
+      if (!land.owned.has(st.id)) return fail('style_locked', 403);
+      const oracle = land.lands.data.oracles[st.type];
+      await addLandStyles('landown:' + st.id, land.lands, [st]);
+      const out = await rpc(env, 'play_pick_style', {p_user: uid, p_oracle: oracle, p_print: st.id}, fetcher).catch(() => null);
+      if (body.all === true) {
+        for (const d of (await state()).decks || []) {
+          if (!(d.cards || []).some(r => r.name === st.type && r.id !== st.id)) continue;
+          await rpc(env, 'play_save_deck', {p_user: uid, p_id: d.id, p_name: d.name, p_format: d.format || '', p_cards: d.cards.map(r => r.name === st.type ? {...r, id: st.id} : r), p_delete: false}, fetcher).catch(() => null);
+        }
+      }
+      return json({styles: out?.styles || (await looks())?.styles || [], state: await state()});
+    }
     if (path === 'buy') {
       const set = String(body.set || '').toLowerCase();
       if (!/^[a-z0-9]{2,8}$/.test(set)) return fail('bad_set');
@@ -567,7 +630,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       return json({paid, rewardSet: set, ...(style ? {style} : {}), refs: await storyRefs(), state: await state()});
     }
     if (path === 'deck') {
-      const cards = Array.isArray(body.cards) ? body.cards.slice(0, 250).map(c => ({name: String(c?.name || '').slice(0, 160), qty: Math.max(1, Math.min(250, Number(c?.qty) || 1)), ...(c?.board === 'side' ? {board: 'side'} : {})})).filter(c => c.name) : [];
+      const cards = Array.isArray(body.cards) ? body.cards.slice(0, 250).map(c => ({name: String(c?.name || '').slice(0, 160), qty: Math.max(1, Math.min(250, Number(c?.qty) || 1)), ...(c?.board === 'side' ? {board: 'side'} : {}), ...(/^[0-9a-f-]{36}$/.test(c?.id || '') ? {id: c.id} : {})})).filter(c => c.name) : [];
       const id = /^[0-9a-f-]{36}$/i.test(body.id || '') ? body.id : null;
       const deck = await rpc(env, 'play_save_deck', {p_user: uid, p_id: id, p_name: String(body.name || ''), p_format: String(body.format || ''), p_cards: cards, p_delete: body.delete === true && !!id}, fetcher);
       return json({deck});

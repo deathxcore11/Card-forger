@@ -55,7 +55,10 @@ assert.equal(grant.packs.length, 15); assert.equal(grant.packs[0].set, 'fra'); a
 assert.ok(grant.starter);
 assert.deepEqual(sealTrackBonus(config, 3), {u: 1});
 assert.deepEqual(sealTrackBonus(config, 5), {r: 1});
-assert.deepEqual(sealTrackBonus(config, 60), {u: 1, r: 1, m: 1});
+assert.deepEqual(sealTrackBonus(config, 60), {c: 1, u: 1, r: 1, m: 1});
+// Common seals every 2nd pack even when the live config predates them (Randall 16 Nov); c: 0 turns them off.
+assert.deepEqual(sealTrackBonus(config, 2), {c: 1});
+assert.deepEqual(sealTrackBonus({sealTrack: {...config.sealTrack, c: 0}}, 2), {});
 assert.deepEqual(sealTrackBonus(config, 1), {});
 assert.deepEqual(masteryLevel(config, 2500), {level: 3, into: 500, need: 1000});
 const short = deckShortfall([{name: 'Forest', qty: 20}, {name: 'Sheoldred', qty: 4}, {name: 'Bolt', qty: 4}], new Map([['Sheoldred', 1], ['Bolt', 4]]), new Map([['Sheoldred', 'mythic'], ['Bolt', 'common']]));

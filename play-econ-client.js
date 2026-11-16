@@ -35,7 +35,11 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
       return loading;
     },
     // Opens one banked pack on the server; returns {pack, sealBonus, duplicateCoins}.
-    open: id => run('open:' + id, async () => { const out = await call('open', {id, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
+    open: id => run('open:' + id, async () => { const out = await call('open', {id, tz: tz()}); const k = keep(out.state, fresh(out));
+      // Land styles the pack unlocked (land-styles.js) join the styles, newest first, as play_styles lists them.
+      const lands = (out.landStyles || []).filter(id => !k.styles.some(x => x.id === id)), byId = new Map((out.pack?.contents || []).map(c => [c.id, c]));
+      if (lands.length) k.styles = [...lands.map(id => ({id, o: byId.get(id)?.oracle_id || '', n: byId.get(id)?.name || '', i: '', on: false, src: 'landopen:' + (out.pack?.id || '')})), ...k.styles];
+      set(k); return out; }),
     buy: setCode => run('buy', async () => { const out = await call('buy', {set: setCode, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
     forge: (to, times = 1) => run('forge', async () => { const out = await call('forge', {to, times, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
     precon: (file, format) => run('precon', async () => { const out = await call('precon', {file, format, tz: tz()}); set(keep(out.state, fresh(out))); return out; }),
@@ -57,6 +61,9 @@ export function createPlayEcon({getAccessToken, fetchImpl = globalThis.fetch?.bi
     style: (oracle, print = null) => run('style', async () => { const out = await call('style', {oracle, print}); set({...state, styles: out.styles || []}); return out; }),
     // A reward answer that unlocked a style (god pack, Story boss, gold achievement): add it locally.
     noteStyle(style) { if (style?.id && state && !(state.styles || []).some(x => x.id === style.id)) set({...state, styles: [{...style, on: false}, ...(state.styles || [])]}); },
+    // Land styles: unlock one for a seal, or make one the account default (all: every saved deck's lands of that type too).
+    landCraft: id => run('landcraft', async () => { const out = await call('landcraft', {id, tz: tz()}); set(keep(out.state, {...fresh(out), styles: out.styles || state?.styles || []})); return out; }),
+    landStyle: (id, all = false) => run('landstyle', async () => { const out = await call('landstyle', {id, all}); set(keep(out.state, {styles: out.styles || state?.styles || []})); return out; }),
     saveDeck: deck => run('deck', async () => { const out = await call('deck', deck); await api.refresh(); return out.deck; }),
     clear() { state = null; try { storage?.removeItem(privateKey(CACHE)); } catch {} onChange(); },
   };
@@ -86,6 +93,8 @@ const MESSAGES = {
   no_bundle: 'No Secret Lair at the Merchant right now.',
   style_locked: 'Unlock that Secret Lair style first.',
   bad_style: 'That style could not be used.',
+  have_style: 'You already have that land style.',
+  no_craft_special: 'Special lands only come from packs.',
   all_holo: 'Every copy you own is already holo.',
   no_foil: 'This printing has no foil version.',
   claimed: 'You already claimed that reward.',

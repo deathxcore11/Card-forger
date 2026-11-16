@@ -56,11 +56,16 @@ function slotOf(name,sheet){
 const pickWeighted=(list,random)=>{const total=list.reduce((n,[,w])=>n+w,0);let r=random()*total;for(const x of list){r-=x[1];if(r<=0)return x;}return list.at(-1);};
 const COLORS=['W','U','B','R','G'];
 // One pack: [{...card, packSlot, packFoil}] in pack order. cards: the map from mtgBoosterCards.
-export function drawMtgBooster(data,cards,random=Math.random){
+// opts.landSlot (land-styles.js landSlotPlan): the land slot skips land styles the player owns, and gives one of
+// the set's commons once every land style it could give is owned (Randall 16 Nov). Marked packLand:true.
+export function drawMtgBooster(data,cards,random=Math.random,opts={}){
  const layout=pickWeighted(data.boosters.map(b=>[b,b.w]),random)[0],out=[];
  const slots=Object.entries(layout.c).map(([name,count])=>({name,count,sheet:data.sheets[name],...slotOf(name,data.sheets[name]||{})})).filter(s=>s.sheet).sort((a,b)=>a.rank-b.rank);
  for(const {name,count,sheet,role} of slots){
   let list=sheet.cards.filter(([id])=>cards.has(id));if(!list.length)continue;
+  const land=opts.landSlot&&/land|basic/i.test(name)&&!sheet.foil&&!isRare(name);
+  if(land){list=list.filter(([id])=>opts.landSlot.keep(id,cards.get(id)));
+   if(!list.length){const fb=opts.landSlot.fallback&&data.sheets[opts.landSlot.fallback];list=fb?fb.cards.filter(([id])=>cards.has(id)&&!out.some(c=>c.id===id)):[];if(!list.length)continue;}}
   const picked=[];
   if(sheet.fixed)for(const [id,w] of list)for(let k=0;k<w&&picked.length<count;k++)picked.push(id);
   // Colour-balanced commons: one of each colour first, as printed sheets are collated.
@@ -68,7 +73,7 @@ export function drawMtgBooster(data,cards,random=Math.random){
   while(picked.length<count&&list.length){const [id]=pickWeighted(list,random);picked.push(id);if(!sheet.duplicates)list=list.filter(x=>x[0]!==id);}
   // Balanced picks come first; shuffle them in among the rest of this sheet's cards.
   for(let i=picked.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[picked[i],picked[j]]=[picked[j],picked[i]];}
-  for(const id of picked)out.push({...cards.get(id),...(role?{packSlot:role}:{}),...(sheet.foil?{packFoil:true}:{}),packSheet:name});
+  for(const id of picked)out.push({...cards.get(id),...(role?{packSlot:role}:{}),...(sheet.foil?{packFoil:true}:{}),...(land?{packLand:true}:{}),packSheet:name});
  }
  return out;
 }
