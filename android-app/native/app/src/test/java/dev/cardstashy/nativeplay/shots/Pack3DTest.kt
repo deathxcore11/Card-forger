@@ -6,6 +6,9 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.test.performTouchInput
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.google.gson.JsonParser
@@ -54,6 +57,21 @@ class Pack3DTest {
         val codes = File(System.getProperty("repoRoot"), "pack-wrappers.js").readText().let { Regex("new Set\\(\"([^\"]+)\"").find(it)!!.groupValues[1].split(' ') }
         val missing = codes.filterNot { Pack3D.hasArt(app, it) }
         assertTrue("no real wrapper for $missing", missing.isEmpty())
+    }
+
+    /** Randall 16 Nov: Shop > Your packs drew the old silver template packs while the opener showed the real wrapper. The exact
+     *  input: Fourth Edition, Double Masters, Revised and Fifth Dawn tiles, each must be its real photo (the photo carries the name). */
+    @Config(sdk = [35], qualifiers = "w390dp-h844dp-xxhdpi") @Test fun tileWearsTheRealWrapper() {
+        val sets = listOf("4ed" to "Fourth Edition", "2xm" to "Double Masters", "3ed" to "Revised Edition", "5dn" to "Fifth Dawn")
+        // The photos are read before the screen draws (a screenshot can't wait on a coroutine), as a page opened before.
+        kotlinx.coroutines.runBlocking { for ((c, _) in sets) assertNotNull("no photo for $c", AssetImages.load(app, Pack3D.artPath(c), maxWidth = 360)) }
+        rule.setContent {
+            androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.background(androidx.compose.ui.graphics.Color(0xFF1A1614))) {
+                for ((c, n) in sets) dev.cardstashy.nativeplay.ui.Booster(c, n, androidx.compose.ui.Modifier.width(androidx.compose.ui.unit.Dp(96f)))
+            }
+        }
+        for ((_, n) in sets) rule.waitUntil(5000) { rule.onAllNodesWithContentDescription(n).fetchSemanticsNodes().isNotEmpty() }
+        rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "pack-tiles-real.png").path)
     }
 
     @Config(sdk = [35], qualifiers = "w390dp-h844dp-xxhdpi") @Test fun phone() = frames("phone")

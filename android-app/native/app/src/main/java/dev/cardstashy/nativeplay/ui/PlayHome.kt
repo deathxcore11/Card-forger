@@ -536,8 +536,11 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
     val facts: Map<String, SetFacts.Set> = SetFacts.sets.collectAsState().value
     val f = facts[code]
     val label = name?.ifBlank { null } ?: f?.name ?: code.uppercase()
-    // The pack the opener tears (Randall 5 Nov: the Shop showed the old painted art): the template with the set's art under its
-    // window, wherever the set has template art; its painted wrapper only until that art is in.
+    // The pack the opener tears is the set's real wrapper photo wherever the app carries one (Randall 16 Nov: "the pack grid
+    // doesn't follow the new packs"), so every pack on a page looks like the pack that opens.
+    if (template && !HomeTest.noPictures && !brand && RealBooster(code, label, modifier, collector, fill)) return
+    // Without a photo: the template with the set's art under its window (Randall 5 Nov: the Shop showed the old painted art),
+    // wherever the set has template art; its painted wrapper only until that art is in.
     if (template && !HomeTest.noPictures && !brand && PackTemplate.art(LocalContext.current, code) != null) {
         TemplatePack(code, label, { Offset.Zero }, modifier, fill = fill, mini = mini, collector = collector) {
             if (!PaintedBooster(code, label, modifier, mini, collector, fill)) FoilBooster(code, label, f, modifier, mini, collector, brand = false)
@@ -546,6 +549,21 @@ fun Booster(code: String, name: String?, modifier: Modifier = Modifier, mini: Bo
     }
     if (PaintedBooster(code, label, modifier, mini, collector, fill, brand)) return
     FoilBooster(code, label, f, modifier, mini, collector, brand)
+}
+
+/** The set's real wrapper photo (the one the 3D opener wears), sized like the other wrappers; false when the app has none. While the
+ *  photo loads its place stays empty, so a page never shows the old wrapper first and swaps. */
+@Composable
+private fun RealBooster(code: String, label: String, modifier: Modifier, collector: Boolean, fill: Boolean): Boolean {
+    val ctx = LocalContext.current
+    if (!remember(code) { Pack3D.hasArt(ctx, code) }) return false
+    val path = Pack3D.artPath(code)
+    val img = produceState(AssetImages.cached("$path@360"), path) { value = AssetImages.load(ctx, path, maxWidth = 360) }.value
+    Box(if (fill) modifier else modifier.aspectRatio(5f / 8.2f), contentAlignment = Alignment.BottomCenter) {
+        if (img != null) Image(img, label, Modifier.fillMaxSize().then(if (collector) Modifier.collectorGlow() else Modifier),
+            contentScale = ContentScale.Fit, alignment = Alignment.BottomCenter)
+    }
+    return true
 }
 
 /** The set's painted wrapper (Randall's art piece 16, or its theme wrapper) once its picture is in; false when it has none. */
