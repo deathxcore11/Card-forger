@@ -1719,13 +1719,13 @@
 "name": "Summer Magic / Edgar",
 "product": "default",
 "year": "1994",
-"src": "drawn",
-"file": null,
-"w": 420,
+"src": "owner",
+"file": "834326b0-image.jpg",
+"w": 408,
 "h": 720,
-"native": 876,
+"native": 847,
 "rot": false,
-"aspect": 0.583
+"aspect": 0.567
 },
 "tdm": {
 "name": "Tarkir: Dragonstorm",
