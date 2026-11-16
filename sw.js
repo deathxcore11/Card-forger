@@ -28,7 +28,7 @@ const ASSETS = [
   "./play-presence.js",
   "./play-achievements.js",
   "./play-achievement-art.js",
-  "./play-secret-lair.js",
+  "./play-secret-lair.js", "./land-styles.js", "./deck-art-drag.js",
   "./play-deck-emblem.js",
   "./play-econ-rules.js",
   "./play-econ-sets.js", "./story-acts.js", "./story-client.js", "./story-ui.js", "./story-lessons.js", "./story-deeds.js", "./match-facts.js", "./story-mode.css",
