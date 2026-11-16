@@ -1,0 +1,483 @@
+{
+ "mtg-ampersand": {
+  "row": "ampersand",
+  "recipe": {
+   "pat": 19,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-chocobo": {
+  "row": "chocobo_new",
+  "recipe": {
+   "pat": 24,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-compleat": {
+  "row": "compleat",
+  "recipe": {
+   "pat": 22,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-confetti": {
+  "row": "confetti",
+  "recipe": {
+   "pat": 9,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-cosmic": {
+  "row": "cosmic_new",
+  "recipe": {
+   "pat": 25,
+   "tint": 0,
+   "cover": 6,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-dazzle": {
+  "row": "dazzle_new",
+  "recipe": {
+   "pat": 27,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-doublerainbow": {
+  "row": "doublerainbow",
+  "recipe": {
+   "pat": 10,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-dragonscale": {
+  "row": "dragonscale",
+  "recipe": {
+   "pat": 14,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0.3,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-embossed": {
+  "row": "embossed",
+  "recipe": {
+   "pat": 29,
+   "tint": 0,
+   "cover": 2,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-etched": {
+  "row": "etched",
+  "recipe": {
+   "pat": 4,
+   "tint": 0,
+   "cover": 1,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-etched-archive": {
+  "row": "etchedfull",
+  "recipe": {
+   "pat": 4,
+   "tint": 0,
+   "cover": 2,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-facet": {
+  "row": "facet_new",
+  "recipe": {
+   "pat": 21,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-firstplace": {
+  "row": "firstplace",
+  "recipe": {
+   "pat": 18,
+   "tint": 1,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-fracture": {
+  "row": "fracture",
+  "recipe": {
+   "pat": 11,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-ftv": {
+  "row": "ftv",
+  "recipe": {
+   "pat": 3,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-galaxy": {
+  "row": "galaxy",
+  "recipe": {
+   "pat": 7,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 1,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-gilded": {
+  "row": "gilded",
+  "recipe": {
+   "pat": 1,
+   "tint": 0,
+   "cover": 6,
+   "relief": 0.6,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-gleaminggold": {
+  "row": "gleaming_new",
+  "recipe": {
+   "pat": 28,
+   "tint": 0,
+   "cover": 6,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-halo": {
+  "row": "halo",
+  "recipe": {
+   "pat": 8,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-invisible": {
+  "row": "invisible",
+  "recipe": {
+   "pat": 1,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-mana": {
+  "row": "mana",
+  "recipe": {
+   "pat": 13,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-masterpiece": {
+  "row": "masterpiece",
+  "recipe": {
+   "pat": 19,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0.3
+  }
+ },
+ "mtg-neon": {
+  "row": "neon",
+  "recipe": {
+   "pat": 1,
+   "tint": 0,
+   "cover": 3,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-oilslick": {
+  "row": "oilslick",
+  "recipe": {
+   "pat": 1,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0.6,
+   "film": 1,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-oldborder": {
+  "row": "oldborder",
+  "recipe": {
+   "pat": 2,
+   "tint": 0,
+   "cover": 7,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 1,
+   "keep": 0
+  }
+ },
+ "mtg-pds": {
+  "row": "pds",
+  "recipe": {
+   "pat": 1,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-rainbow": {
+  "row": "rainbow",
+  "recipe": {
+   "pat": 15,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-raised": {
+  "row": "raised",
+  "recipe": {
+   "pat": 17,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0.3,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-retro": {
+  "row": "retro_new",
+  "recipe": {
+   "pat": 2,
+   "tint": 0,
+   "cover": 1,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 1,
+   "keep": 0
+  }
+ },
+ "mtg-ripple": {
+  "row": "ripple",
+  "recipe": {
+   "pat": 12,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-silver": {
+  "row": "silver",
+  "recipe": {
+   "pat": 18,
+   "tint": 2,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-silverscreen": {
+  "row": "silverscreen",
+  "recipe": {
+   "pat": 18,
+   "tint": 2,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-silverscroll": {
+  "row": "silverscroll_new",
+  "recipe": {
+   "pat": 23,
+   "tint": 2,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-singularity": {
+  "row": "singularity_new",
+  "recipe": {
+   "pat": 26,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-surge": {
+  "row": "surge",
+  "recipe": {
+   "pat": 6,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0.5,
+   "stamp": 0,
+   "keep": 0
+  }
+ },
+ "mtg-textured": {
+  "row": "textured",
+  "recipe": {
+   "pat": 5,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0.3,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0.3
+  }
+ },
+ "mtg-traditional": {
+  "row": "traditional",
+  "recipe": {
+   "pat": 1,
+   "tint": 0,
+   "cover": 0,
+   "relief": 0,
+   "film": 0,
+   "sparkle": 0,
+   "stamp": 0,
+   "keep": 0
+  }
+ }
+}

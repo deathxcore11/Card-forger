@@ -27,15 +27,17 @@ assert.equal(mtgFoilEffect({promo_types:['boosterfun','poster','universesbeyond'
 assert.equal(mtgFoilEffect({promo_types:['scroll']}),'mtg-traditional','scroll is a frame style');
 assert.equal(mtgFoilEffect({promo_types:['boosterfun','silverfoil','scroll']}),'mtg-silver','LTR 697: silverfoil names the material');
 assert.equal(mtgFoilEffect({set:'dbl',collector_number:'1'}),'mtg-silverscreen','DBL foils are silver screen without a promo tag (DBL 1 Adeline)');
-assert.equal(mtgFoilEffect({promo_types:['embossed','instore']}),'mtg-embossed','PAFR 87a Acererak is embossed; the ampersand tag is deprecated');
-// Named-but-unmodelled materials keep their identity and say so.
-for(const [tag,fixture] of [['singularityfoil','EOE 382 Sothera'],['cosmicfoil','SPM 242 / MSH 385'],['facetfoil','FRA 455 Craterclaw Colossus'],['silverscroll','SOA 167 Japanese Abrade'],['gleaminggold','HOB 249 Smaug'],['chocobotrackfoil','FIN Chocobo Track']]){
+assert.equal(mtgFoilEffect({set:'pafr',promo_types:['embossed','instore']}),'mtg-ampersand','PAFR 87a Acererak: Scryfall tags the D&D ampersand promos embossed; their foil is the glossy ampersand');
+assert.equal(mtgFoilEffect({set:'rex',promo_types:['embossed']}),'mtg-embossed','Jurassic World (REX) embossed cards carry the emblem foil');
+// Every material Scryfall named on 16 Nov 2026 has its own row now (Foil Test Bench, owner's yes 16 Nov), under its real name.
+for(const [tag,want,fixture] of [['singularityfoil','mtg-singularity','EOE 382 Sothera'],['cosmicfoil','mtg-cosmic','SPM 242 / MSH 385'],['facetfoil','mtg-facet','FRA 455 Craterclaw Colossus'],['silverscroll','mtg-silverscroll','SOA 167 Japanese Abrade'],['gleaminggold','mtg-gleaminggold','HOB 249 Smaug'],['chocobotrackfoil','mtg-chocobo','FIN Chocobo Track'],['dazzlefoil','mtg-dazzle','SLD dazzle']]){
  const m=mtgFoilProfile({promo_types:[tag]},'foil');
- assert.equal(m.status,'approximate',fixture);assert.equal(m.name,MTG_UNMODELLED[tag].name,fixture);assert.notEqual(m.treatment,'mtg-emblem',fixture+' is never a made-up emblem');
+ assert.equal(m.status,'family',fixture);assert.equal(m.treatment,want,fixture);
  const p=pick(mtg({set:'x',finishes:['foil'],promo_types:[tag]}),'foil');
- assert.equal(p.label,MTG_UNMODELLED[tag].name,fixture+' shows its real name');assert.equal(p.profileStatus,'approximate');assert.match(p.reason,/not yet modelled/);
+ assert.equal(p.treatment,want,fixture);assert.equal(p.profileStatus,'family');
 }
-assert.equal(mtgFoilEffect({promo_types:['facetfoil']}),'mtg-traditional','facet is not aliased to fracture');
+assert.deepEqual(Object.keys(MTG_UNMODELLED),[],'no named material is left on a stand-in');
+assert.notEqual(mtgFoilEffect({promo_types:['facetfoil']}),'mtg-fracture','facet is not aliased to fracture');
 // Unknown foil strings are kept as data, not turned into a shader.
 {const m=mtgFoilProfile({promo_types:['warpdrivefoil']},'foil');assert.equal(m.treatment,'mtg-traditional');assert.deepEqual(m.unrecognized,['warpdrivefoil']);assert.equal(m.status,'approximate');
  const p=pick(mtg({set:'x',finishes:['foil'],promo_types:['warpdrivefoil']}),'foil');assert.deepEqual(p.unrecognizedTags,['warpdrivefoil']);assert.match(p.reason,/Unrecognized foil/);}
@@ -93,6 +95,8 @@ console.log('PASS: Yu-Gi-Oh! — the selected printing carries its own release i
 {const {PTCG_FOIL_FRAGMENT}=await import('./ptcg-foil.js'),{MTG_FOIL_FRAGMENT}=await import('./mtg-foil.js'),{YGO_RARITY_FRAGMENT}=await import('./ygo-rarity-foil.js');
  for(const [name,src] of [['Pokémon',PTCG_FOIL_FRAGMENT],['Magic',MTG_FOIL_FRAGMENT],['Yu-Gi-Oh!',YGO_RARITY_FRAGMENT]]){
   const drift=src.match(/vec2 \w+=\w+\*[\w.]+[+-]u_tilt|vnoise\(\w+\*[\d.]+[+-]u_tilt|vnoise\(\w+\*[\d.]+\+vec2\([^)]*\)[+-]u_tilt/g)||[];
-  assert.deepEqual(drift,[],`${name} pattern coordinates must not move with tilt`);
+  // Allowed (dragonscale, approved 16 Nov 2026): vnoise(q*8.+u_tilt*2.) varies how bright the light runs along the silver net
+  // as the card turns; the net itself (scales(q*...)) never moves.
+  assert.deepEqual(drift.filter(d=>!(name==='Magic'&&d==='vnoise(q*8.+u_tilt')),[],`${name} pattern coordinates must not move with tilt`);
  }}
 console.log('PASS: no shader moves a pattern across the card when it tilts.');
