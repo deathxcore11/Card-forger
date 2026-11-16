@@ -33,6 +33,8 @@ vec3 toLin(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.0
 vec3 toSrgb(vec3 c){return mix(c*12.92,1.055*pow(max(c,vec3(0.)),vec3(1./2.4))-.055,step(vec3(.0031308),c));}
 float hash(vec2 p){p=fract(p*vec2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}
 vec2 hash2(vec2 p){return vec2(hash(p),hash(p+17.31));}
+// x*x: pow(x,2.) is undefined for a negative x in GLSL and AGSL (phones and Skia may return nothing).
+float sq(float x){return x*x;}
 float vnoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
 float inBox(vec2 p,vec4 b){return step(b.x,p.x)*step(p.x,b.z)*step(b.y,p.y)*step(p.y,b.w);}
 // Detail with this many repeats across the card's width is drawn only while a repeat covers a few pixels.
@@ -64,7 +66,7 @@ vec3 foil(float pat,float tint,vec2 uv,vec2 lq,vec3 L,vec3 V,vec3 N,float near,f
 #endif
 #if PAT==3
  else if(pat<3.5){g=vec2(1.,0.);k=3.;mirror=1.;sat=.8;streak=0.;widen=.3;f_amb=vec3(.86);f_gloss=1.8;f_leak=.08;   // From the Vault: thick gloss, upright bars
-  spec=.7*exp(-pow(H.x/.05,2.))+.3*exp(-pow(H.x/.2,2.));}
+  spec=.7*exp(-sq(H.x/.05))+.3*exp(-sq(H.x/.2));}
 #endif
 #if PAT==4
  else if(pat<4.5){float fine=lod(260.);vec3 c=voro(q*260.);vec2 j=hash2(c.xy);vec3 n=normalize(vec3((j-.5)*.9,1.)); // etched: metal ink grain, no laminate
@@ -163,7 +165,7 @@ vec3 foil(float pat,float tint,vec2 uv,vec2 lq,vec3 L,vec3 V,vec3 N,float near,f
   ph=mix(.4,j.x<.82?.34+.16*j.y:j.y,fine);k=.3;w=1.;amp=2.2*(1.-dark)*mix(1.,.5+.9*hash(id+1.2),fine);sat=1.;off=.4;mirror=.9;spec=mix(pow(max(dot(N,H),0.),8.)*.5,pow(max(dot(fn,H),0.),12.)*1.4,fine)*(1.-dark);f_amb=vec3(mix(.4,.05,dark));f_gloss=1.;}
 #endif
 #if PAT==23
- else if(pat>22.5){float fine=lod(120.),fib=sin(q.y*746.+sin(q.x*12.)*1.5),band=exp(-pow((q.x-f_x0)/.2,2.))+.5*exp(-pow((q.x-f_x0+.55)/.16,2.));
+ else if(pat>22.5){float fine=lod(120.),fib=sin(q.y*746.+sin(q.x*12.)*1.5),band=exp(-sq((q.x-f_x0)/.2))+.5*exp(-sq((q.x-f_x0+.55)/.16));
   mirror=.6;ex=5.;amp=.3;sat=.16;f_leak=.1;glint=band*(.95+.12*fib*fine);lines=1.+.04*fib*fine;f_add=vec3(.95,.92,.86)*band*.2;}
 #endif
 #if PAT==21
