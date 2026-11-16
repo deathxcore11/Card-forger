@@ -1,4 +1,4 @@
-// Website 4.3.207 (with native APK 0.4.86); Android 0.12.38 beta stays on 4.3.74.
+// Website 4.3.207 (with native APK 0.4.86); Android 0.12.38 beta stays on 4.3.74. Build re-trigger commit, no code change.
 export const RELEASE = Object.freeze({
  id:'web-4.3.207-native-0486',date:'2026-11-16',webVersion:'4.3.207',
  notes:["App 0.4.86, a better table: Scry 1 shows its card, triggers you can't pay for skip themselves, blocks are ringed with a gold line, bigger creature tiles, auras as card edges, new player squares, whole-card Sagas, new opening hand and Victory/Defeat screens, and an aura on a creature can be picked as a target."],
