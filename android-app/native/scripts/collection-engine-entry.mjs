@@ -287,6 +287,8 @@ function slidesFor(g) { return communitySlides(g, { metaState: metaState(homeMet
 
 // tcg.js homeHero / homeToday and home-today.js dailyDetails: the Card of the Day art, name, set and rarity.
 const today = new Map();
+// The set whose pack today's is (a bonus sheet's main set), for the app's bundled wrapper photo (Pack3D.artPath).
+const g3 = set => String(set?.pack?.code || set?.code || '').toLowerCase();
 function hero(game) {
   const h = heroFor(game), hh = tree(homeHero(game)), d = h && today.get(h.id + '|' + h.date);
   const set = d?.set ? tree(todaySetMarkup(game, d.set, {rarity: d.rarity})) : null;
@@ -301,7 +303,7 @@ function hero(game) {
       set: set ? text(one(set, cls('today-set-name'))) : '', setCode: set ? one(set, cls('today-set-name'))?.attrs['data-code'] || one(set, cls('today-set-name'))?.attrs['data-id'] || '' : '',
       // home-today.js setAction: Yu-Gi-Oh!'s link names its set (A.tSetByName finds it).
       setName: set ? one(set, cls('today-set-name'))?.attrs['data-name'] || '' : '', rarity: set ? text(one(set, cls('today-rarity'))) : '',
-      pack: pk ? {label: pk.attrs['aria-label'] || '', sources: pkSrc.map((u, i) => ({src: u && u !== '#' ? abs(u) : '', generic: i > 0})).filter(x => x.src)} : null} : null};
+      pack: pk ? {label: pk.attrs['aria-label'] || '', code: g3(d.set), sources: pkSrc.map((u, i) => ({src: u && u !== '#' ? abs(u) : '', generic: i > 0})).filter(x => x.src)} : null} : null};
 }
 function loadToday(game) {
   return loadHero(game).catch(() => false).then(() => { const h = heroFor(game); if (!h) return; return dailyDetails(game, h).then(d => { if (d) today.set(h.id + '|' + h.date, d); }, () => {}); });

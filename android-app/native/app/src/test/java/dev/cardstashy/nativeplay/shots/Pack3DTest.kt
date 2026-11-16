@@ -79,6 +79,30 @@ class Pack3DTest {
         rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "pack-tiles-real.png").path)
     }
 
+    /** Randall 16 Nov: the Magic home page's Card of the Day pack was the old small web photo while the opener and the shop wore
+     *  the real wrapper. The exact input: today's pack in Ravnica: City of Guilds (the set code the engine hands over, "rav"), with
+     *  a web picture that never loads. It must draw the bundled photo; the same pack with no code stays the empty wrapper. */
+    @Config(sdk = [35], qualifiers = "w390dp-h844dp-xxhdpi") @Test fun todayPackWearsTheRealWrapper() {
+        dev.cardstashy.nativeplay.ui.Motion.still = true
+        kotlinx.coroutines.runBlocking { assertNotNull(AssetImages.load(app, Pack3D.artPath("rav"), maxWidth = 360)) }
+        val web = listOf("https://example.invalid/pack.jpg" to false)
+        rule.setContent {
+            androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.background(androidx.compose.ui.graphics.Color(0xFF1A1614))) {
+                dev.cardstashy.nativeplay.ui.TodayPack(dev.cardstashy.nativeplay.ui.TodayPackArt("Open today's Ravnica pack", web, "rav"),
+                    dev.cardstashy.nativeplay.ui.CardGame.MTG, androidx.compose.ui.unit.Dp(390f)) {}
+                dev.cardstashy.nativeplay.ui.TodayPack(dev.cardstashy.nativeplay.ui.TodayPackArt("Open today's other pack", web, ""),
+                    dev.cardstashy.nativeplay.ui.CardGame.MTG, androidx.compose.ui.unit.Dp(390f)) {}
+            }
+        }
+        rule.waitForIdle()
+        val shot = File(System.getProperty("shotsDir"), "today-pack-real.png")
+        rule.onRoot().captureRoboImage(shot.path)
+        val b = android.graphics.BitmapFactory.decodeFile(shot.path); val w = b.width / 2
+        // The photo's art has many colours down its middle; the empty foil wrapper is one smooth gradient.
+        fun colours(x0: Int): Int = (b.height / 5 until b.height * 4 / 5 step 3).map { y -> b.getPixel(x0 + w / 3, y) and 0xF0F0F0 }.toSet().size
+        assertTrue("today's Ravnica pack is not the real photo (${colours(0)} colours vs ${colours(w)})", colours(0) > colours(w) * 3)
+    }
+
     @Config(sdk = [35], qualifiers = "w390dp-h844dp-xxhdpi") @Test fun phone() = frames("phone")
     @Config(sdk = [35], qualifiers = "w800dp-h1280dp-xhdpi") @Test fun tablet() = frames("tablet")
     @Config(sdk = [35], qualifiers = "w960dp-h540dp-xhdpi") @Test fun wide() = frames("wide")

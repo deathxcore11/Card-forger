@@ -24,6 +24,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
@@ -48,12 +50,12 @@ import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
 
 /** home-today.js todayPackMarkup: the set's real booster pack, its pictures best first; one past the first is the generic wrapper. */
-class TodayPackArt(val label: String, val sources: List<Pair<String, Boolean>>) {
+class TodayPackArt(val label: String, val sources: List<Pair<String, Boolean>>, val code: String = "") {
     companion object {
         fun of(j: JsonObject?): TodayPackArt? = j?.let { o ->
             val src = o.getAsJsonArray("sources")?.mapNotNull { e -> e.takeIf { it.isJsonObject }?.asJsonObject?.let { s ->
                 (s.get("src")?.asString.orEmpty()) to (s.get("generic")?.asBoolean == true) }?.takeIf { it.first.isNotBlank() } }.orEmpty()
-            TodayPackArt(o.get("label")?.asString.orEmpty(), src)
+            TodayPackArt(o.get("label")?.asString.orEmpty(), src, o.get("code")?.asString.orEmpty())
         }
     }
 }
@@ -66,6 +68,12 @@ class TodayPackArt(val label: String, val sources: List<Pair<String, Boolean>>) 
  */
 @Composable
 internal fun TodayPack(pack: TodayPackArt, game: CardGame, screen: Dp, onOpen: () -> Unit) {
+    // The bundled photo of the set's real wrapper (the one the opener and the shop tiles wear) before any web picture
+    // (Randall 16 Nov: the home page's pack was the old small photo).
+    val ctx = LocalContext.current
+    val local = remember(pack.code, game) { game == CardGame.MTG && pack.code.isNotBlank() && !HomeTest.noPictures && Pack3D.hasArt(ctx, pack.code) }
+    val photo = if (local) Pack3D.artPath(pack.code).let { path ->
+        produceState(AssetImages.cached("$path@360"), path) { value = AssetImages.load(ctx, path, maxWidth = 360) }.value } else null
     var i by remember(pack) { mutableIntStateOf(0) }
     val cur = pack.sources.getOrNull(i)
     val p = heroPainter(cur?.first?.let(homeArt))
@@ -105,12 +113,13 @@ internal fun TodayPack(pack: TodayPackArt, game: CardGame, screen: Dp, onOpen: (
             drawRect(Brush.linearGradient(listOf(a, b), start = c - d, end = c + d))
             drawRect(Brush.radialGradient(listOf(Color.White.copy(alpha = .18f), Color.Transparent), center = Offset(size.width * .3f, size.height * .2f), radius = size.height * .7f))
         })
-        if (p != null && !none && st !is coil3.compose.AsyncImagePainter.State.Error) {
+        if (local) { if (photo != null) Image(photo, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+        else if (p != null && !none && st !is coil3.compose.AsyncImagePainter.State.Error) {
             if (generic) Image(p, null, Modifier.fillMaxWidth().fillMaxHeight(.82f).align(Alignment.Center), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.64f))
             else Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         }
         // .pack-crimp-band: 9 % tall, 2 px stripes #d9dce4 / #8d93a3, a dark hairline each side.
-        if (generic) for (top in listOf(true, false)) Box(Modifier.fillMaxWidth().fillMaxHeight(.09f).align(if (top) Alignment.TopCenter else Alignment.BottomCenter).drawBehind {
+        if (generic && !local) for (top in listOf(true, false)) Box(Modifier.fillMaxWidth().fillMaxHeight(.09f).align(if (top) Alignment.TopCenter else Alignment.BottomCenter).drawBehind {
             val s = 2.dp.toPx(); var x = 0f; var k = 0
             while (x < size.width) { drawRect(if (k % 2 == 0) Color(0xFFD9DCE4) else Color(0xFF8D93A3), Offset(x, 0f), Size(s, size.height)); x += s; k++ }
             drawRect(Color.Black.copy(alpha = .4f), Offset(0f, if (top) size.height - 1.dp.toPx() else 0f), Size(size.width, 1.dp.toPx()))
