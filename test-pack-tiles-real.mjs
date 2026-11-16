@@ -17,4 +17,13 @@ assert.match(boosterMarkup({code: 'mm2'}), /pe-booster--real/, 'Modern Masters 2
 assert.equal(realPhotoCode('mtg', {code: 'mm2'}), 'mm2');
 assert.equal(pack3dCode('mtg', {code: 'mm2'}), '', 'the cardboard box never goes on the foil model');
 assert.equal(pack3dCode('mtg', {code: 'fra'}), 'fra');
+// Randall 16 Nov: the Magic home page's Card of the Day pack was the old small web photo. The exact input: today's pack in
+// Ravnica: City of Guilds; its first picture must be the bundled real wrapper, then the web ones as before.
+const {todayPackMarkup} = await import('./home-today.js');
+const today = todayPackMarkup('mtg', {code: 'rav', name: 'Ravnica: City of Guilds', set_type: 'expansion', digital: false, released_at: '2005-10-07'});
+assert.match(today, /<img data-pack-art src="\.\/assets\/packs\/real\/rav\.webp"/, "today's Ravnica pack starts with its real photo");
+assert.match(today, /data-real="1"/);
+assert.ok(JSON.parse(today.match(/data-sources="([^"]*)"/)[1].replace(/&quot;/g, '"')).length > 1, 'the web pictures stay as fallbacks');
+const plain = todayPackMarkup('mtg', {code: 'zzz', name: 'No Photo', set_type: 'expansion', digital: false, released_at: '2024-01-01'});
+assert.doesNotMatch(plain, /assets\/packs\/real/, 'a set without a photo keeps the web pictures');
 console.log('PASS: pack tiles wear the real wrapper photo wherever the opener does.');
