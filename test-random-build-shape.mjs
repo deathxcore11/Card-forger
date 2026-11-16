@@ -78,4 +78,22 @@ for (const anchor of ['Gastal Blockbuster', 'Aetherjacket', 'Fanatical Firebrand
  const avg = d => d.spells.reduce((n, r) => n + r.qty * (Number(r.card.cmc) || 0), 0) / d.spells.reduce((n, r) => n + r.qty, 0);
  assert.ok(avg(aggro) <= avg(mid) + 1e-9, 'aggro is not the slower deck');
 }
+// The sideboard (approved 16 Nov): fifteen cards current lists sideboard, castable in the deck's colours, inside the copy limit
+// with the main deck, and never past the budget. With nothing known or nothing affordable it stays empty and says so.
+{
+ const { buildSideboard } = await import('./deck-sideboard.js');
+ const deck = buildDeck(options), base = { rows: deck.cards, catalog, colors: ['R'], prior, copyLimit: () => 4, isLegal: c => c.legalities?.standard === 'legal', cost: (c, n) => (Number(c.prices?.usd) || Infinity) * n };
+ const side = buildSideboard(base), total = side.reduce((n, r) => n + r.qty, 0);
+ assert.equal(total, 15, 'fifteen sideboard cards: ' + side.map(r => r.qty + ' ' + r.name).join(', '));
+ assert.ok(side.some(r => r.name === 'Fire Magic'), 'Fire Magic belongs in the sideboard (25 lists sideboard it, 11 play it main)');
+ for (const r of side) { const c = card(r.name), main = deck.cards.find(m => m.name === r.name)?.qty || 0;
+  assert.ok(c && !isLand(c) && (c.color_identity || []).every(k => k === 'R'), r.name + ' is castable in mono-red');
+  assert.ok(r.qty >= 1 && r.qty + main <= 4, r.name + ' stays inside four copies with the main deck');
+  assert.ok(prior.sideLists(r.name) >= 1, r.name + ' is in a real sideboard'); }
+ assert.ok(!side.some(r => r.name === 'Engineered Explosives'), 'a colour-counting card is idle in one colour');
+ assert.deepEqual(buildSideboard({ ...base, budget: 0 }), [], 'no money left: no sideboard, not a padded one');
+ const cheap = buildSideboard({ ...base, budget: 2 });
+ assert.ok(cheap.reduce((n, r) => n + base.cost(card(r.name), r.qty), 0) <= 2 + 1e-6, 'the sideboard never passes the budget');
+ assert.deepEqual(buildSideboard({ ...base, prior: metaPrior([]) }), [], 'no lists, no sideboard');
+}
 console.log('random build shape: the reported Rubble Rouser pool builds a creature deck with no self-sweeper and no stray one-of');

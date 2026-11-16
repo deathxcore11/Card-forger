@@ -2,8 +2,9 @@
 // unsaved until the player reviews the exact list and uses the normal save action.
 import { forgeOptions } from './deck-forge.js';
 import { metaPrior } from './deck-meta-prior.js';
+import { buildSideboard } from './deck-sideboard.js';
 import { buildDeck, themeQuery, themeQueries, fitsColors, fitsDeck, requestedIntent, inspectMtgTheme, scoreCard } from './builder.js';
-import { cardKey, cardPrice, sumQty, validateDeck } from './core.js';
+import { cardKey, cardPrice, sumQty, validateDeck, effectiveCopyLimit } from './core.js';
 import { formatOf, canLead, legalityIn, verifyLeader } from './formats.js';
 import { normalizeDeckGoal, goalDescription } from './ai-deck-goal.js';
 import { commanderTheme, tribeEvidence, tribalSupport, themeSupport, fitsTypeRestrictions, readCreatureTypeRestrictions, CREATURE_THEMES } from './planner.js';
@@ -188,8 +189,9 @@ export async function prepareMtgDeck(args,x) {
  // Tournament prior (deck-meta-prior.js): the cards current lists in this format play, loaded so the builder can choose them.
  const prior=metaPrior(typeof args.metaLists==='function'?await args.metaLists():args.metaLists);
  if(prior.size&&active()){
-  const wanted=[...prior.top(150),...prior.lands(40)].filter(n=>!catalog[cardKey(n)]&&!x.meta?.(n));
-  for(const n of [...prior.top(150),...prior.lands(40)]){const c=x.meta?.(n);if(c&&!catalog[cardKey(c.name)])remember(c);}
+  const wantSide=args.sideboard===true&&f.sideboard>0&&!f.commander?prior.sideTop(60):[];
+  const wanted=[...prior.top(150),...prior.lands(40),...wantSide].filter(n=>!catalog[cardKey(n)]&&!x.meta?.(n));
+  for(const n of [...prior.top(150),...prior.lands(40),...wantSide]){const c=x.meta?.(n);if(c&&!catalog[cardKey(c.name)])remember(c);}
   for(let i=0;i<wanted.length&&active();i+=75)try{
    const r=await x.api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:wanted.slice(i,i+75).map(name=>({name:name.split(' // ')[0]}))})});
    for(const c of r?.data||[])remember(c);
@@ -221,6 +223,17 @@ export async function prepareMtgDeck(args,x) {
  candidates.push(...alternativeDrafts);
  const finish=draft=>{
  const candidateWarnings=[...warnings];
+ // Sideboard (deck-sideboard.js): asked for on the Build a deck sheet, built only where current lists show what players sideboard,
+ // and only with what the budget has left after the main deck. An empty result is said, never padded.
+ if(args.sideboard===true&&f.sideboard>0&&!f.commander&&draft.total===f.size){
+  const mainCost=deckPriceCoverage(draft.cards,catalog,own,quote),used=basis==='total'?mainCost.totalEstimate:mainCost.purchaseEstimate,inMain=new Map(draft.cards.map(r=>[cardKey(r.name),r.qty]));
+  const cost=(c,n)=>{const free=basis==='total'?0:Math.max(0,own(c.name)-(inMain.get(cardKey(c.name))||0)),buy=Math.max(0,n-free),p=quote(c);return basis==='owned'?(buy?Infinity:0):!buy?0:p===null?Infinity:buy*p;};
+  const side=buildSideboard({rows:draft.cards,catalog,colors:draft.colors||colors,prior,size:f.sideboard,copyLimit:c=>effectiveCopyLimit(c,f),isLegal:c=>isLegal(c,f)&&functionalIn(c,f)&&!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args),cost,budget:limit===Infinity&&basis!=='owned'?Infinity:used===null?0:Math.max(0,limit-used)});
+  draft={...draft,side};
+  const got=side.reduce((n,r)=>n+r.qty,0);
+  if(!prior.size)candidateWarnings.push('No sideboard was built: no current tournament lists are loaded for this format.');
+  else if(got<f.sideboard)candidateWarnings.push(`The sideboard holds ${got} of ${f.sideboard} cards: that is all the loaded lists, your colours and your budget allow.`);
+ }
  const pricing=deckPriceCoverage(draft.cards,catalog,own,quote),validation=validateDeck(draft,catalog,[],[]),issues=[...validation.issues];
  if(f.id==='oathbreaker')issues.push({kind:'unverified',text:'Oathbreaker requires a signature spell. This draft path has not selected or checked that special command-zone requirement.'});
  for(const row of draft.cards){const c=catalog[cardKey(row.name)];if(c&&!Array.isArray(c.color_identity))issues.push({kind:'unverified',text:`${row.name}: color identity data is missing.`});}
