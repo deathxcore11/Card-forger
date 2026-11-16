@@ -1714,3 +1714,9 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 .pe-deck-sort{margin:0 0 0 auto}
 .pe-deck-sort button{flex:none;min-height:44px;min-width:72px;padding:0 14px}
 @media(max-width:520px){.pe-build-deck{padding:12px}.pe-curve{margin-inline:-10px}.pe-bench-panel{padding-inline:12px}}
+
+/* A set's real wrapper photo (the pack the 3D opener tears): the photo is the pack, the drawn foil, art and band step aside. */
+.pe-booster.pe-booster--real{background:none;box-shadow:none;overflow:visible;border-radius:0}
+.pe-booster--real::before,.pe-booster--real::after,.pe-booster--real>.pe-booster-art,.pe-booster--real>.pe-booster-band,.pe-booster--real>.pe-booster-sheen{display:none}
+.pe-booster-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:50% 100%;filter:drop-shadow(0 14px 18px #000a)}
+.pe-booster--real.pe-booster--collector .pe-booster-photo{filter:drop-shadow(0 0 10px #c9a4ff99) drop-shadow(0 14px 18px #000a)}
