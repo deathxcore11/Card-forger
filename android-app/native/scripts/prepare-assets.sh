@@ -52,6 +52,8 @@ mkdir -p "$A/story" && cp "$REPO"/data/story/act-*.json "$REPO"/data/story/pool-
 node "$HERE/scripts/export-audio-loops.mjs" "$REPO" "$A/audio-loops.json"
 # The card pop-up's rule words and foil recipes, from the web's own modules.
 node "$HERE/scripts/export-card-data.mjs" "$REPO" "$A/card-data.json"
+# The Jurassic World emblem foil's one measured shape (FoilMaps.mtgCard, the site's mtg-foil.js emblemPixels).
+mkdir -p "$A/finishes" && cp "$REPO/assets/finishes/mtg-emblem-rex.png" "$A/finishes/"
 # The site's own random deck builder for QuickJS (Lobby > Random, play/RandomBuild.kt), bundled from the web modules with the
 # esbuild pinned in scripts/js-tools. Until 5 Nov this step was missing, so no APK carried it and Random always stopped.
 (cd "$HERE/scripts/js-tools" && npm ci --no-audit --no-fund --silent) && mkdir -p "$HERE/build"

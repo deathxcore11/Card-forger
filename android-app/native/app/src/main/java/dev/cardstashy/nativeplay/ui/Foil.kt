@@ -33,13 +33,13 @@ import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.play.CardData
 
 /**
- * Magic foil, the site's own: the first approved foil (test-fixtures/finish-effects/mtg-foil-first-approved.glsl, the shader behind
- * mtg-foil-shader.js) ported line for line to AGSL and drawn over the card image as a render effect, with the same recipe (pattern,
- * tint, coverage, relief, film, sparkle, stamp, keep) picked by mtgFoilProfile from the printing's Scryfall data and the same frame
- * boxes. Each card's inks and relief are measured from its own image like the site's worker (foil/MtgFoil.kt, analyzeMtgCard); until
- * that lands (a fraction of a second, once per card) covers read as the whole card. App only: facet foil (pattern 21). The holographic
- * security stamp, foil or not, is the site's (mtg-stamp.js): found on each card's own picture (foil/MtgStamp.kt, FoilMaps.stamp) and
- * drawn only there, through its measured outline; unmeasured, none. Below Android 13 a rainbow sheen stands in.
+ * Magic foil, the site's own: the approved Foil Test Bench look (test-fixtures/finish-effects/mtg-foil-blended-approved.glsl, the
+ * shader behind mtg-foil-shader.js), generated into AGSL and composed per foil type, drawn over the card image as a render effect
+ * with the same recipe picked by mtgFoilProfile from the printing's Scryfall data and the same frame boxes. Each card's maps are
+ * measured from its own scan exactly like the site (foil/MtgFoil.kt cardMaps: inks, silver ink and plates, the gold window, the
+ * emblem, facet shards, boxes snapped to its frame lines, the scan's own shooting star); the foil fades in when they land. The
+ * holographic security stamp, foil or not, is the site's (mtg-stamp.js): found on each card's own picture (foil/MtgStamp.kt,
+ * FoilMaps.stamp) and drawn only there, through its measured outline; unmeasured, none. Below Android 13 a rainbow sheen stands in.
  */
 object Foil {
     // The site's foil shader (mtg-foil-shader.js), as the site composes it: AGSL_TEMPLATE is MTG_FOIL_TEMPLATE written by
@@ -542,11 +542,12 @@ half4 main(float2 fc){
 
     /** What one card face wears: the recipe for its finish (null = nonfoil), the frame boxes and the holo stamp. */
     /** [walker]: a planeswalker in the modern frame, whose 3D window is measured from its picture (foil/DepthLayer.kt). */
+    /** [frameKey]: the boxes' name in CardData.frames (CardData.foilFrame), so a card's measured maps are kept per frame layout. */
     data class Look(val recipe: CardData.Recipe?, val frame: CardData.Frame, val stamp: Boolean, val label: String, val image: String? = null,
-                    val walker: Boolean = false) {
+                    val walker: Boolean = false, val frameKey: String = "2015") {
         val shines get() = recipe != null || stamp
-        /** The printing's scan to measure inks from, when this recipe reads them (gilded, neon, textured, raised, oil slick...). */
-        val measure: String? get() = image?.takeIf { recipe != null && dev.cardstashy.nativeplay.foil.MtgFoil.needsMaps(recipe.cover, recipe.relief, recipe.film, recipe.pat) }
+        /** The printing's scan its maps are measured from: every Magic foil, like the site (nothing is drawn until they land). */
+        val measure: String? get() = image?.takeIf { recipe != null }
         /** Facet foil: its shards are cut with the maps, outside this frame's text box. */
         val facetText: FloatArray? get() = frame.text.takeIf { recipe != null && kotlin.math.abs(recipe.pat - dev.cardstashy.nativeplay.foil.MtgFoil.FACET) < .5f }
     }
@@ -564,7 +565,8 @@ half4 main(float2 fc){
     fun look(data: CardData, card: JsonObject?, finish: String, shown: String? = null): Look {
         val p = data.profile(card, finish)
         val recipe = data.recipes[p.treatment]
-        val frame = data.frames[CardData.frameKey(card)] ?: data.frames.getValue("2015")
+        val frameKey = CardData.foilFrame(card, p.treatment).takeIf { it in data.frames } ?: "2015"
+        val frame = data.frames.getValue(frameKey)
         val label = when { recipe == null -> "Nonfoil"; p.name.isNotBlank() -> "${p.name} · shown with ${recipe.label.lowercase()}"; else -> recipe.label }
         fun normal(o: JsonObject?) = (o?.get("image_uris") as? JsonObject)?.get("normal")?.takeIf { it.isJsonPrimitive }?.asString
         val faces = card?.getAsJsonArray("card_faces")?.mapNotNull { it as? JsonObject }.orEmpty()
@@ -574,7 +576,7 @@ half4 main(float2 fc){
         // ("Creature // Planeswalker") while its front picture is the creature, which must not get a planeswalker's window.
         val type = face?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString ?: card?.get("type_line")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
         val walker = "Planeswalker" in type && CardData.frameKey(card) == "2015" // frameKey says "borderless" for borderless and full arts
-        return Look(recipe, frame, CardData.holoStamp(card), label, image, walker)
+        return Look(recipe, frame, CardData.holoStamp(card), label, image, walker, frameKey)
     }
 
     val supported: Boolean get() = Build.VERSION.SDK_INT >= 33 && !testFallback
@@ -599,34 +601,41 @@ fun Modifier.foil(look: Foil.Look, tilt: State<Offset>): Modifier = if (!look.sh
     val stampOpacity = if (look.recipe != null) .5f else .6f
     val stampPaint = remember { Paint() }
     if (Foil.supported) {
-        val shader = remember { runCatching { RuntimeShader(Foil.AGSL) }.getOrNull() }
-        // The printing's own inks, measured once off the main thread (MtgFoil); the foil draws at once and narrows to them when they land.
+        // One program per foil type, composed as the site composes it (Foil.source), so a card runs only its own type's lines.
+        val shader = remember(look.recipe) { runCatching { RuntimeShader(Foil.source(look.recipe)) }.getOrNull() }
+        // The card's own maps, measured once off the main thread exactly as the site does (FoilMaps.mtgCard, MtgFoil.cardMaps):
+        // nothing of the foil is drawn until they land, then it fades in (no pop while a binder scrolls).
         val measured = look.measure
-        val facetText = look.facetText
-        val maps by remember(measured, facetText) { if (measured != null) dev.cardstashy.nativeplay.foil.FoilMaps.mtg(context.applicationContext, measured, facetText) else kotlinx.coroutines.flow.MutableStateFlow(null) }.collectAsState()
+        val pat = look.recipe?.pat?.roundToInt() ?: 0
+        val maps by remember(measured, pat, look.frameKey) { if (measured != null) dev.cardstashy.nativeplay.foil.FoilMaps.mtgCard(context.applicationContext, measured, pat, look.frameKey, look.frame) else kotlinx.coroutines.flow.MutableStateFlow(null) }.collectAsState()
+        val mapsFade by androidx.compose.animation.core.animateFloatAsState(if (maps != null) 1f else 0f,
+            if (Motion.still) androidx.compose.animation.core.snap() else androidx.compose.animation.core.tween(260), label = "foil maps")
         val inputs = remember(maps) { maps?.let { dev.cardstashy.nativeplay.foil.FoilMaps.input(it.mask) to dev.cardstashy.nativeplay.foil.FoilMaps.input(it.relief) } ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank }
-        // Drawn-line direction and facet shards (stand-ins until they land, or for a recipe that has none; the shader skips them then).
-        val extra = remember(maps) { maps?.let { m -> (m.stroke?.let(dev.cardstashy.nativeplay.foil.FoilMaps::input) ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank.first) to
-            (m.facet?.let(dev.cardstashy.nativeplay.foil.FoilMaps::input) ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank.second) } ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank }
+        val strokeIn = remember(maps) { maps?.stroke?.let(dev.cardstashy.nativeplay.foil.FoilMaps::input) ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank.first }
         val stampIn = remember(stamp) { stamp?.let { dev.cardstashy.nativeplay.foil.FoilMaps.input(it.mask) } ?: dev.cardstashy.nativeplay.foil.FoilMaps.blank.first }
         if (shader != null) return@composed this.graphicsLayer {
             val t by tilt
             val w = size.width; val h = size.height
             if (w > 0f && h > 0f) {
                 val r = look.recipe
-                shader.setFloatUniform("u_size", w, h); shader.setFloatUniform("u_px", w / dens, h / dens)
+                val m = maps
+                // The site's canvas: device pixels at most 2 per CSS pixel and 1600 wide (foil-gl.js), which the pattern's fine detail fades by.
+                val pxW = kotlin.math.min(1600f, (w / dens * kotlin.math.min(2f, dens)).roundToInt().toFloat().coerceAtLeast(1f))
+                shader.setFloatUniform("u_size", w, h); shader.setFloatUniform("u_px", pxW, (pxW * h / w).roundToInt().toFloat())
                 shader.setFloatUniform("u_tilt", t.x, t.y); shader.setFloatUniform("u_aspect", h / w); shader.setFloatUniform("u_on", if (r != null) 1f else 0f)
-                shader.setFloatUniform("u_art", look.frame.art); shader.setFloatUniform("u_text", look.frame.text)
+                // The boxes snapped to this card's own frame lines (else the frame type's), and the shooting star: z 2 = the scan
+                // already has one (tint it), 1 = draw one at the rules box's bottom-left corner (mtg-foil.js).
+                val art = m?.art ?: look.frame.art; val text = m?.text ?: look.frame.text; val star = m?.star
+                shader.setFloatUniform("u_art", art); shader.setFloatUniform("u_text", text)
+                shader.setFloatUniform("u_star", star?.get(0) ?: (text[0] + .1f), star?.get(1) ?: (text[3] - .005f), if (star != null) 2f else 1f)
                 shader.setFloatUniform("u_r1", r?.pat ?: 1f, r?.tint ?: 0f, r?.cover ?: 0f, r?.relief ?: 0f)
                 shader.setFloatUniform("u_r2", r?.film ?: 0f, r?.sparkle ?: 0f, r?.stamp ?: 0f, r?.keep ?: 0f)
                 val st = stamp
                 shader.setInputShader("u_smask", stampIn)
                 shader.setFloatUniform("u_stamp", st?.box ?: FloatArray(4))
                 shader.setFloatUniform("u_stampk", (st?.mask?.width ?: 1).toFloat(), (st?.mask?.height ?: 1).toFloat(), stampOpacity * stampFade, 0f)
-                val m = maps
-                shader.setInputShader("u_mask", inputs.first); shader.setInputShader("u_relief", inputs.second)
-                shader.setInputShader("u_stroke", extra.first); shader.setInputShader("u_facet", extra.second)
-                shader.setFloatUniform("u_map", (m?.mask?.width ?: 1).toFloat(), (m?.mask?.height ?: 1).toFloat()); shader.setFloatUniform("u_maps", if (m != null) 1f else 0f)
+                shader.setInputShader("u_mask", inputs.first); shader.setInputShader("u_relief", inputs.second); shader.setInputShader("u_stroke", strokeIn)
+                shader.setFloatUniform("u_map", (m?.mask?.width ?: 1).toFloat(), (m?.mask?.height ?: 1).toFloat()); shader.setFloatUniform("u_maps", if (m != null) mapsFade else 0f)
                 renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "u_card").asComposeRenderEffect()
             }
         }

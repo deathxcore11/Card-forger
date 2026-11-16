@@ -6,7 +6,9 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import path from 'node:path';import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(process.argv[2]&&!process.argv[2].startsWith('--')?process.argv[2]:path.join(here,'..','..','..'));
 const check=process.argv.includes('--check');
-const {MTG_FOIL_TEMPLATE}=await import(path.join(root,'mtg-foil-shader.js'));
+// --golden <file>: the site's composeFoil over Foil.kt's three parts for every recipe (FoilTest.composedLikeTheSite reads it).
+const goldenAt=process.argv.indexOf('--golden'),golden=goldenAt>0?process.argv[goldenAt+1]:null;
+const {MTG_FOIL_TEMPLATE,composeFoil,foilDefs}=await import(path.join(root,'mtg-foil-shader.js'));
 export function toAgsl(t){
  let s=t;
  // The site's uniforms the app declares itself (its own header in Foil.kt).
@@ -29,3 +31,10 @@ if(agsl.includes('"""')||agsl.includes('$'))throw Error('template text cannot si
 const next=src.slice(0,i+a.length)+agsl+src.slice(j);
 if(check){if(next!==src){console.log('Foil.kt AGSL_TEMPLATE is out of date: run gen-foil-agsl.mjs');process.exit(1);}console.log('Foil.kt AGSL_TEMPLATE matches mtg-foil-shader.js');}
 else{writeFileSync(kt,next);console.log('wrote AGSL_TEMPLATE',agsl.length,'chars');}
+if(golden){
+ const {MTG_FOIL_RECIPES}=await import(path.join(root,'mtg-foil-recipes.js'));
+ const now=readFileSync(kt,'utf8'),part=n=>{const m=now.match(new RegExp('const val '+n+' = """([\\s\\S]*?)"""'));if(!m)throw Error('Foil.kt has no '+n);return m[1];};
+ const whole=part('AGSL_HEAD')+part('AGSL_TEMPLATE')+part('AGSL_MAIN'),out={};
+ for(const [k,r] of Object.entries(MTG_FOIL_RECIPES))out[k]=composeFoil(whole,foilDefs(r));
+ writeFileSync(golden,JSON.stringify(out));console.log('wrote',Object.keys(out).length,'composed programs to',golden);
+}

@@ -75,7 +75,9 @@ sealed interface CardFinish {
 /** Measured maps per card picture, made once off the main thread and kept for the session (LRU). */
 object FoilMaps {
     /** [stroke] and [facet]: Magic only (MtgFoil.Maps), the drawn lines' direction and the facet shards; null for the other games. */
-    class Ready(val mask: Bitmap, val relief: Bitmap, val glyph: Bitmap?, val stroke: Bitmap? = null, val facet: Bitmap? = null)
+    class Ready(val mask: Bitmap, val relief: Bitmap, val glyph: Bitmap?, val stroke: Bitmap? = null, val facet: Bitmap? = null,
+                /** Magic (mtgCard): the picture and rules boxes snapped to this card's printed frame lines, and the shooting star its scan carries. */
+                val art: FloatArray? = null, val text: FloatArray? = null, val star: FloatArray? = null)
     // A picture that can't be fetched or measured leaves its card plain (the layer waits for maps that never come); it must never
     // take the app down from a background thread.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, e ->
@@ -126,7 +128,50 @@ object FoilMaps {
         }
     }
 
-    /** Magic: the printing's inks and drawn lines (MtgFoil.analyze) at the site's analysis size, half the scan's width; for a facet
+    /**
+     * Magic foil: the card's own maps, exactly as the site makes them (mtg-foil.js, mtgCardMaps): the scan read at the maps' fixed
+     * 336 x 468 (the Foil Test Bench's size, where every per-card rule was checked), its inks and drawn lines, the pattern's own map
+     * (silver scroll's silver ink and plates, gleaming gold's picture window, the Jurassic emblem, facet shards), the picture and
+     * rules boxes snapped to its printed frame lines, and the shooting star its scan already carries. Silver scroll is read on the
+     * 'large' scan: on the 488 px one its plates are too noisy to read as flat. One flow per picture, pattern and frame.
+     */
+    fun mtgCard(context: android.content.Context, image: String, pat: Int, frameKey: String, frame: dev.cardstashy.nativeplay.play.CardData.Frame): StateFlow<Ready?> = synchronized(flows) {
+        val key = "mtgcard|$image|$pat|$frameKey"
+        flows[key] ?: MutableStateFlow<Ready?>(null).also { fl ->
+            flows[key] = fl
+            scope.launch {
+                gate.withPermit {
+                    suspend fun load(url: String) = (CardArt.loader.execute(ImageRequest.Builder(context).data(url).allowHardware(false).build()) as? SuccessResult)?.image?.toBitmap()
+                    val src = (if (pat == 23) load(largeScan(image)) else null) ?: load(image) ?: return@withPermit
+                    val px = mapPixels(src)
+                    val emblem = if (pat == 29) emblem(context) else null // like the site: no emblem picture, the card still gets its maps
+                    val m = MtgFoil.cardMaps(px, MtgFoil.MAP_W, MtgFoil.MAP_H, pat, frame.art, frame.text, emblem)
+                    fl.value = Ready(rgba(m.mask, MtgFoil.MAP_W, MtgFoil.MAP_H), rgba(m.relief, MtgFoil.MAP_W, MtgFoil.MAP_H), null,
+                        rgba(m.stroke, MtgFoil.MAP_W, MtgFoil.MAP_H), null, m.art, m.text, m.star)
+                }
+            }
+        }
+    }
+    /** mtg-foil.js largeScan: Scryfall's 'large' scan of the same printing. */
+    fun largeScan(src: String): String = Regex("""^(https://cards\.scryfall\.io/)(small|normal)/""").replace(src) { it.groupValues[1] + "large/" }
+    /** The card at the maps' size as ARGB, averaged over each target pixel's footprint (the site draws it with high-quality smoothing). */
+    fun mapPixels(src: Bitmap): IntArray {
+        val sw = src.width; val sh = src.height; val W = MtgFoil.MAP_W; val H = MtgFoil.MAP_H
+        val b = if (src.config == Bitmap.Config.ARGB_8888) src else src.copy(Bitmap.Config.ARGB_8888, false)
+        val sp = IntArray(sw * sh); b.getPixels(sp, 0, sw, 0, 0, sw, sh)
+        if (sw == W && sh == H) return sp
+        if (sw < W || sh < H) { val s = Bitmap.createScaledBitmap(b, W, H, true); return IntArray(W * H).also { s.getPixels(it, 0, W, 0, 0, W, H) } }
+        return MapScale.area(sp, sw, sh, W, H)
+    }
+    @Volatile private var emblemPx: ByteArray? = null
+    /** The Jurassic World emblem (one measured shape for every card, assets/finishes/mtg-emblem-rex.png) at the maps' size, RGBA. */
+    private fun emblem(context: android.content.Context): ByteArray? = emblemPx ?: runCatching {
+        val bmp = context.assets.open("finishes/mtg-emblem-rex.png").use { android.graphics.BitmapFactory.decodeStream(it) }
+        val px = mapPixels(bmp)
+        ByteArray(px.size * 4).also { b -> for (i in px.indices) { val p = px[i]; b[i * 4] = (p shr 16).toByte(); b[i * 4 + 1] = (p shr 8).toByte(); b[i * 4 + 2] = p.toByte(); b[i * 4 + 3] = (p ushr 24).toByte() } }
+    }.getOrNull()?.also { emblemPx = it }
+
+    /** Magic, the 3D window of a facet card (DepthLayers): the printing's inks and drawn lines (MtgFoil.analyze) at the site's analysis size, half the scan's width; for a facet
      *  foil ([facetText] its frame's text box) its shards too, cut once here and kept with the maps. */
     fun mtg(context: android.content.Context, image: String, facetText: FloatArray? = null): StateFlow<Ready?> = synchronized(flows) {
         val key = "mtg|$image" + (facetText?.let { "|facet|" + it.joinToString(",") } ?: "")

@@ -23,17 +23,27 @@ console.log(`card data: ${Object.keys(rules).length} rule words, ${Object.keys(d
 if (golden) {
   const tags = ['oilslick', 'stepandcompleat', 'gilded', 'neonink', 'textured', 'surgefoil', 'galaxyfoil', 'halofoil', 'confettifoil', 'doublerainbow',
     'fracturefoil', 'rainbowfoil', 'ripplefoil', 'manafoil', 'dragonscalefoil', 'invisibleink', 'silverfoil', 'firstplacefoil', 'raisedfoil', 'embossed',
-    'ampersand', 'silverscreen', 'vaultboy', 'silverscroll', 'gleaminggold', 'cosmicfoil', 'serialized', 'boosterfun', 'mysteryfoil'];
+    'ampersand', 'silverscreen', 'vaultboy', 'silverscroll', 'gleaminggold', 'cosmicfoil', 'serialized', 'boosterfun', 'mysteryfoil',
+    'chocobotrackfoil', 'singularityfoil', 'dazzlefoil', 'facetfoil'];
   const cards = [
     ...tags.map(t => ({set: 'neo', frame: '2015', rarity: 'rare', promo_types: [t, 'boosterfun']})),
     {set: 'dbl', frame: '2015', rarity: 'common'}, {set: 'v13', set_type: 'from_the_vault', frame: '2015'}, {set: 'mps', set_type: 'masterpiece', frame: '2015'},
     {set: 'pd2', frame: '2003'}, {set: 'ulg', frame: '1997', rarity: 'rare'}, {set: 'lea', frame: '1993', rarity: 'rare'}, {set: 'hob', frame: '2015', rarity: 'mythic'},
     {set: 'hob', frame: '2015', rarity: 'mythic', border_color: 'borderless'}, {set: 'hob', frame: '2015', rarity: 'uncommon'}, {set: 'mh2', frame: '2003', rarity: 'rare'},
-    {set: 'hob', frame: '2015', rarity: 'rare', full_art: true}];
+    {set: 'hob', frame: '2015', rarity: 'rare', full_art: true},
+    // Bench routing (16 Nov 2026): only Expeditions/Inventions/Invocations are Masterpieces; Mystical Archive etched is its own;
+    // the ampersand promos' "embossed" tag; Jurassic emblems; retro frames printed from 2021 on; textured in Dominaria United.
+    {set: 'exp', set_type: 'masterpiece', frame: '2015', rarity: 'mythic'}, {set: 'sta', set_type: 'masterpiece', frame: '2015', rarity: 'rare'},
+    {set: 'spg', set_type: 'masterpiece', frame: '2015', rarity: 'mythic'}, {set: 'pafr', frame: '2015', rarity: 'rare', promo_types: ['embossed']},
+    {set: 'rex', frame: '2015', rarity: 'rare', promo_types: ['embossed']}, {set: 'dmr', frame: '1997', rarity: 'rare', released_at: '2023-02-17'},
+    {set: 'p30a', frame: '1997', rarity: 'rare', released_at: '2022-09-02'}, {set: '7ed', frame: '1997', rarity: 'rare', released_at: '2001-04-11'},
+    {set: 'dmu', frame: '2015', rarity: 'mythic', border_color: 'borderless', promo_types: ['textured']},
+    {set: 'neo', frame: '2015', rarity: 'rare', promo_types: ['textured']}];
   const rows = [];
   for (const c of cards) for (const finish of ['nonfoil', 'foil', 'etched']) {
     const p = foil.mtgFoilProfile(c, finish);
-    rows.push({card: c, finish, treatment: p.treatment, status: p.status, name: p.name, unrecognized: p.unrecognized, stamp: !!foil.mtgHoloStamp(c), frame: foil.mtgFrameKey(c)});
+    rows.push({card: c, finish, treatment: p.treatment, status: p.status, name: p.name, unrecognized: p.unrecognized, stamp: !!foil.mtgHoloStamp(c), frame: foil.mtgFrameKey(c),
+      foilFrame: foil.mtgFoilFrame(c, p.treatment)});
   }
   writeFileSync(golden, JSON.stringify(rows));
   console.log(`foil golden: ${rows.length} rows`);

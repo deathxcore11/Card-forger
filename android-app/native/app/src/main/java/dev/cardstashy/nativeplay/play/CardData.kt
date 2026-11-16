@@ -32,16 +32,16 @@ class CardData(json: JsonObject) {
 
     /** mtgFoilProfile(c, finish): the printing's foil material for the chosen finish. */
     fun profile(c: JsonObject?, finish: String): Profile {
-        if (finish == "etched") return Profile("mtg-etched", "family", "", emptyList())
+        if (finish == "etched") return Profile(if (c.s("set") == "sta") "mtg-etched-archive" else "mtg-etched", "family", "", emptyList())
         if (finish != "foil") return Profile("", "family", "", emptyList())
         val promos = c?.getAsJsonArray("promo_types")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: emptyList()
-        for ((k, e) in PROMO) if (k in promos) return Profile(e, "family", "", emptyList())
+        for ((k, e) in PROMO) if (k in promos) return Profile((if (k == "embossed") EMBOSSED_AS[c.s("set")] else null) ?: e, "family", "", emptyList())
         promos.firstOrNull { it in unmodelled }?.let { val (name, to) = unmodelled.getValue(it); return Profile(to, "approximate", name, emptyList()) }
         val unrecognized = promos.filter { it.endsWith("foil") && it !in NOT_MATERIAL }
         val set = c.s("set"); val type = c.s("set_type"); val frame = c.s("frame")
         val base = SET_MATERIAL[set] ?: when {
-            type == "from_the_vault" -> "mtg-ftv"; type == "masterpiece" -> "mtg-masterpiece"; set in PDS -> "mtg-pds"
-            frame == "1997" || frame == "1993" -> "mtg-oldborder"; else -> "mtg-traditional" }
+            type == "from_the_vault" -> "mtg-ftv"; set in MASTERPIECE -> "mtg-masterpiece"; set in PDS -> "mtg-pds"
+            frame == "1997" || frame == "1993" -> if (c.s("released_at") >= "2021") "mtg-retro" else "mtg-oldborder"; else -> "mtg-traditional" }
         return Profile(base, if (unrecognized.isNotEmpty()) "approximate" else "family", "", unrecognized)
     }
 
@@ -49,10 +49,15 @@ class CardData(json: JsonObject) {
         // mtg-foil-recipes.js PROMO, most specific first.
         private val PROMO = listOf("oilslick" to "mtg-oilslick", "stepandcompleat" to "mtg-compleat", "gilded" to "mtg-gilded", "neonink" to "mtg-neon",
             "textured" to "mtg-textured", "surgefoil" to "mtg-surge", "galaxyfoil" to "mtg-galaxy", "halofoil" to "mtg-halo", "confettifoil" to "mtg-confetti",
-            "doublerainbow" to "mtg-doublerainbow", "fracturefoil" to "mtg-fracture", "facetfoil" to "mtg-facet", "rainbowfoil" to "mtg-rainbow", "ripplefoil" to "mtg-ripple",
+            "doublerainbow" to "mtg-doublerainbow", "fracturefoil" to "mtg-fracture", "rainbowfoil" to "mtg-rainbow", "ripplefoil" to "mtg-ripple",
             "manafoil" to "mtg-mana", "dragonscalefoil" to "mtg-dragonscale", "invisibleink" to "mtg-invisible", "silverfoil" to "mtg-silver",
             "firstplacefoil" to "mtg-firstplace", "raisedfoil" to "mtg-raised", "embossed" to "mtg-embossed", "ampersand" to "mtg-ampersand",
-            "silverscreen" to "mtg-silverscreen")
+            "silverscreen" to "mtg-silverscreen", "silverscroll" to "mtg-silverscroll", "chocobotrackfoil" to "mtg-chocobo", "cosmicfoil" to "mtg-cosmic",
+            "singularityfoil" to "mtg-singularity", "dazzlefoil" to "mtg-dazzle", "gleaminggold" to "mtg-gleaminggold", "facetfoil" to "mtg-facet")
+        /** The real Masterpiece Series (Expeditions, Inventions, Invocations); other bonus sheets Scryfall files under that set type are ordinary foils. */
+        private val MASTERPIECE = setOf("exp", "mps", "mp2")
+        /** Forgotten Realms ampersand promos carry the same "embossed" tag as the Jurassic World emblem cards. */
+        private val EMBOSSED_AS = mapOf("pafr" to "mtg-ampersand")
         /** Facet foil (FRA borderless shards), app first (7 Nov): the site's prototype row, here until the site's recipe table
          *  carries it (then the site's own row wins). Shards and their cut edges come from MtgFoil.facets. */
         private val FACET = Recipe("mtg-facet", "Facet foil", "2025–today", dev.cardstashy.nativeplay.foil.MtgFoil.FACET, 0f, 0f, 0f, 0f, 0f, 0f, 0f,
@@ -71,6 +76,11 @@ class CardData(json: JsonObject) {
             val st = c.s("security_stamp")
             return if (st.isNotEmpty()) (if (st == "oval") c.s("rarity") in setOf("rare", "mythic") else st != "arena") else mtgHoloStamp(c)
         }
+        /** mtgFoilFrame: the boxes the foil is placed with (a frame type's, or a layout measured on the Foil Test Bench). */
+        fun foilFrame(c: JsonObject?, treatment: String): String = when {
+            c.s("set") == "sta" -> "sta"; treatment == "mtg-cosmic" -> "cosmic"; treatment == "mtg-gleaminggold" -> "smaug"
+            treatment == "mtg-singularity" || treatment == "mtg-dazzle" -> "none"; treatment == "mtg-textured" && c.s("set") == "dmu" -> "dmusg"
+            else -> frameKey(c) }
         /** mtgFrameKey. */
         fun frameKey(c: JsonObject?): String {
             val frame = c.s("frame")

@@ -29,6 +29,7 @@ class FoilTest {
             assertEquals(what, o["unrecognized"].asJsonArray.map { it.asString }, p.unrecognized)
             assertEquals(what, o["stamp"].asBoolean, CardData.holoStamp(card))
             assertEquals(what, o["frame"].asString, CardData.frameKey(card))
+            assertEquals(what, o["foilFrame"].asString, CardData.foilFrame(card, p.treatment))
         }
     }
 
@@ -40,9 +41,9 @@ class FoilTest {
         val r = data.recipes.getValue("mtg-facet")
         assertEquals(21f, r.pat); assertEquals(0f, r.cover); assertEquals("Facet foil", r.label)
         assertEquals("", data.profile(card, "nonfoil").treatment)
-        // every other unmodelled material still draws as before
-        val cosmic = JsonParser.parseString("""{"set":"fra","frame":"2015","promo_types":["cosmicfoil"]}""").asJsonObject
-        assertEquals("mtg-traditional", data.profile(cosmic, "foil").treatment); assertEquals("Cosmic foil", data.profile(cosmic, "foil").name)
+        // Cosmic foil has its own look now (Foil Test Bench, 16 Nov 2026), and its own boxes.
+        val cosmic = JsonParser.parseString("""{"set":"spm","frame":"2015","promo_types":["cosmicfoil"]}""").asJsonObject
+        assertEquals("mtg-cosmic", data.profile(cosmic, "foil").treatment); assertEquals("cosmic", CardData.foilFrame(cosmic, "mtg-cosmic"))
     }
 
     @Test fun ruleWords() {
@@ -57,8 +58,10 @@ class FoilTest {
      *  compiler off the phone (scripts/check-agsl.mjs, CanvasKit) whenever node and canvaskit-wasm are here (CANVASKIT_DIR). With
      *  neither, the test is skipped, never passed. */
     @Test fun shaderCompiles() {
+        // Magic: every foil type's own composed program (Foil.source), and the stamp-only one.
         val all = mapOf("Foil" to dev.cardstashy.nativeplay.ui.Foil.AGSL, "Depth" to dev.cardstashy.nativeplay.foil.Depth.AGSL,
-            "YgoFoil" to dev.cardstashy.nativeplay.foil.YgoFoil.AGSL, "PtcgFoil" to dev.cardstashy.nativeplay.foil.PtcgFoil.AGSL)
+            "YgoFoil" to dev.cardstashy.nativeplay.foil.YgoFoil.AGSL, "PtcgFoil" to dev.cardstashy.nativeplay.foil.PtcgFoil.AGSL) +
+            data.recipes.values.associate { "Foil ${it.key}" to dev.cardstashy.nativeplay.ui.Foil.source(it) }
         val real = runCatching { android.graphics.RuntimeShader("half4 main(float2 p){return half4(1.);}") }.isSuccess &&
             runCatching { android.graphics.RuntimeShader("half4 main(float2 p){return nope;}") }.isFailure
         if (real) for ((name, agsl) in all) {
@@ -71,5 +74,15 @@ class FoilTest {
         }.getOrNull()?.takeIf { it.second != 2 }
         org.junit.Assume.assumeTrue("no shader compiler here (RuntimeShader stubbed, no node + canvaskit-wasm)", real || node != null)
         if (node != null) assertEquals(node.first, 0, node.second)
+    }
+
+    /** The app composes each foil type exactly as the site does (mtg-foil-shader.js composeFoil): the golden is the site's own
+     *  output for every recipe (scripts/gen-foil-agsl.mjs --golden), so a Kotlin compose that keeps or drops a line differently fails. */
+    @Test fun composedLikeTheSite() {
+        val golden = JsonParser.parseString(res("foil/composed-golden.json")).asJsonObject
+        for ((key, r) in data.recipes) {
+            val want = golden[key]?.asString ?: throw AssertionError("no site composition for $key")
+            assertEquals(key, want, dev.cardstashy.nativeplay.ui.Foil.source(r))
+        }
     }
 }

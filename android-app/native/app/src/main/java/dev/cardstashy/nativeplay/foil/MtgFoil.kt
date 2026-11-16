@@ -126,8 +126,10 @@ object MtgFoil {
      * printed line are not glass and are let go too. Each piece's tilt
      * seed is hashed from where it starts, so the same card always cuts the same way. Sizes are set at the analysis width of a normal
      * scan (244 px) and scale with [W]. [text] is the frame's text box in card space. No per-pixel allocation: flat int buffers only.
+     * [siteSeed]: hash each piece's tilt seed in double, as the site's port (mtgFacets) does, so [cardMaps] gives every shard the
+     * site's seed; false keeps this cut's own float hash (the facet map [analyze] has always made).
      */
-    fun facets(argb: IntArray, W: Int, H: Int, text: FloatArray): Facets {
+    fun facets(argb: IntArray, W: Int, H: Int, text: FloatArray, siteSeed: Boolean = false): Facets {
         val N = W * H; val s = W / 244f
         val line = BooleanArray(N); val ink = FloatArray(N); val wall = BooleanArray(N); val box = BooleanArray(N); val seed = BooleanArray(N); val grow = BooleanArray(N)
         for (k in 0 until N) {
@@ -274,7 +276,11 @@ object MtgFoil {
         for (k in 0 until N) { val id = label[k]; if (id > 0 && dist[k] < INF) deepest[id] = max(deepest[id], dist[k]) }
         val ramp0 = 2.5f * s
         val shard = FloatArray(N); val depth = FloatArray(N); val seedOf = FloatArray(count + 1)
-        for (id in 1..count) if (keep[id]) { val k0 = starts[id - 1]; seedOf[id] = hash((k0 % W).toFloat() / W * 97f, (k0 / W).toFloat() / H * 97f) }
+        for (id in 1..count) if (keep[id]) {
+            val k0 = starts[id - 1]
+            seedOf[id] = if (siteSeed) hashJs((k0 % W).toDouble() / W * 97, (k0 / W).toDouble() / H * 97).toFloat()
+                else hash((k0 % W).toFloat() / W * 97f, (k0 / W).toFloat() / H * 97f)
+        }
         // The seed per pixel: the piece's own, then carried two pixels out into free pixels (never over another piece).
         val seedPx = IntArray(N) { if (label[it] > 0) label[it] else 0 }
         repeat(2) {
@@ -322,6 +328,300 @@ object MtgFoil {
             if (v >= text[3] || u >= text[0] && u <= text[2] && (v >= text[1] || v >= .035f && v <= .105f)) m[k] = 0f
         }
         return withFigure(facet, m)
+    }
+
+    // ---- Per-card maps for the approved look (Foil Test Bench "Blended", 16 Nov 2026), ported line for line from the site's
+    // mtg-foil-analysis.js (findScanStar, silverInk, artWindow, cardBoxes, mtgCardMaps). The analysis picture is MAP_W x MAP_H,
+    // as on the bench; every rule below was checked there on real scans. The site computes in double and stores in Float32Array:
+    // so do these (Double arithmetic, Float storage), and round like Math.round (floor(v + .5)), so the maps match the site's
+    // byte for byte nearly everywhere (MtgCardMapsTest).
+
+    /** The maps' fixed size (the site's MTG_MAP_W x MTG_MAP_H, the Foil Test Bench's). */
+    const val MAP_W = 336
+    const val MAP_H = 468
+
+    /** JS Math.round: halves go up, toward +infinity. */
+    private fun jsRound(v: Double): Int = kotlin.math.floor(v + .5).toInt()
+    /** A frame box fraction as the site writes it (.887, not .887f's 0.88700002): its shortest decimal, read back as a double. */
+    private fun dec(v: Float): Double = v.toString().toDouble()
+    private fun dec(b: FloatArray) = DoubleArray(b.size) { dec(b[it]) }
+    /** The site's boxBlur (mtg-foil-analysis.js): YgoFoil.boxBlur's algorithm, but its running sum is a double, as in JS. */
+    private fun boxBlurJs(src: FloatArray, w: Int, h: Int, r: Int, passes: Int = 2): FloatArray {
+        var a = src.copyOf(); var b = FloatArray(a.size)
+        repeat(passes) {
+            for (horiz in booleanArrayOf(true, false)) {
+                val n = if (horiz) w else h; val m = if (horiz) h else w
+                for (o in 0 until m) {
+                    fun at(i: Int): Int { val c = min(n - 1, max(0, i)); return if (horiz) o * w + c else c * w + o }
+                    var s = 0.0
+                    for (i in -r..r) s += a[at(i)]
+                    for (i in 0 until n) { b[at(i)] = (s / (2 * r + 1)).toFloat(); s += a[at(i + r + 1)].toDouble() - a[at(i - r)].toDouble() }
+                }
+                val t = a; a = b; b = t
+            }
+        }
+        return a
+    }
+
+    /**
+     * Finds the shooting star that a scan of a real foil already carries. [argb] is the card picture, top row first; [text] is the
+     * frame's rules box. A star is a white point whose four long rays are all much whiter than the gaps between rays. Returns (x, y)
+     * (0..1 on the card) or null. Tested on Wrath of God 7ED and Eternal Witness P30A (found, at 672, 360 and 200 px wide) and
+     * Counterspell DMR 281 (a nonfoil scan: none).
+     */
+    fun findScanStar(argb: IntArray, W: Int, H: Int, text: FloatArray): FloatArray? {
+        val tx = dec(text)
+        fun wh(x0: Double, y0: Double): Int {
+            val x = jsRound(x0); val y = jsRound(y0)
+            if (x < 0 || y < 0 || x >= W || y >= H) return 0
+            val p = argb[y * W + x]
+            return min(p shr 16 and 255, min(p shr 8 and 255, p and 255))
+        }
+        fun near(x: Double, y: Double): Int { var m = 0; for (dy in -1..1) for (dx in -1..1) m = max(m, wh(x + dx, y + dy)); return m }
+        val R = .06 * W; val T = doubleArrayOf(.25, .45, .65, .85)
+        var best: FloatArray? = null; var top = 18.0
+        var cy = kotlin.math.floor((tx[3] - .035) * H).toInt()
+        while (cy < (tx[3] + .03) * H) {
+            var cx = kotlin.math.floor((tx[0] + .04) * W).toInt()
+            while (cx < (tx[0] + .17) * W) {
+                if (wh(cx.toDouble(), cy.toDouble()) >= 235) {
+                    var off = 0.0; var arm = 255.0
+                    for (k in 0 until 4) {
+                        // StrictMath: the fdlibm sine and cosine, as V8's.
+                        val a = k * Math.PI / 2; val o = a + Math.PI / 8; var r1 = 0.0
+                        for (t in T) {
+                            r1 += near(cx + R * t * StrictMath.cos(a), cy + R * t * StrictMath.sin(a))
+                            off += wh(cx + R * t * StrictMath.cos(o), cy + R * t * StrictMath.sin(o))
+                        }
+                        arm = min(arm, r1 / T.size)
+                    }
+                    val sc = arm - off / (4 * T.size)
+                    if (sc > top) { top = sc; best = floatArrayOf(((cx + .5) / W).toFloat(), ((cy + .5) / H).toFloat()) }
+                }
+                cx++
+            }
+            cy++
+        }
+        return best
+    }
+
+    /** Silver scroll's two maps: [ink] the polished silver ink, [paper] the rules paper (0..1 per pixel). */
+    class SilverInk(val ink: FloatArray, val paper: FloatArray)
+
+    /**
+     * Silver ink on a silver scroll card (Japanese Mystical Archive, SOA): the polished plate borders and bottom frame. In the scan
+     * they are neutral grey and smooth along their length, while the silver picture is grainy and the rules paper is a large bright
+     * area. [argb] is the card at analysis size, top row first. Checked on seven cards (SOA 131, 140, 149, 157, 167, 176, 185): rules
+     * box border and bottom frame found on all, name plate ring on most.
+     */
+    fun silverInk(argb: IntArray, W: Int, H: Int): SilverInk {
+        val N = W * H
+        fun ss(a: Double, b: Double, x: Double) = max(0.0, min(1.0, (x - a) / (b - a)))
+        val lum = FloatArray(N); val neu = FloatArray(N)
+        for (i in 0 until N) {
+            val p = argb[i]; val r = (p shr 16 and 255) / 255.0; val g = (p shr 8 and 255) / 255.0; val b = (p and 255) / 255.0
+            lum[i] = (.2126 * r + .7152 * g + .0722 * b).toFloat(); neu[i] = (1 - ss(.045, .09, max(r, max(g, b)) - min(r, min(g, b)))).toFloat()
+        }
+        // box mean along one axis
+        fun box(src: FloatArray, r: Int, horiz: Boolean): FloatArray {
+            val out = FloatArray(N); val n = if (horiz) W else H; val m = if (horiz) H else W; val st = if (horiz) 1 else W; val ln = if (horiz) W else 1
+            for (j in 0 until m) {
+                val o = j * ln; var acc = 0.0
+                for (t in -r..r) acc += src[o + max(0, min(n - 1, t)) * st]
+                for (i in 0 until n) { out[o + i * st] = (acc / (2 * r + 1)).toFloat(); acc += src[o + min(n - 1, i + r + 1) * st].toDouble() - src[o + max(0, i - r) * st].toDouble() }
+            }
+            return out
+        }
+        val sq = FloatArray(N) { (lum[it].toDouble() * lum[it]).toFloat() }
+        fun sd(h: Boolean): FloatArray {
+            val m = box(lum, 3, h); val m2 = box(sq, 3, h)
+            return FloatArray(N) { kotlin.math.sqrt(max(0.0, m2[it] - m[it].toDouble() * m[it])).toFloat() }
+        }
+        val sh = sd(true); val sv = sd(false)
+        // Flat light areas, split by the printed outlines: the largest one is the rules paper, the other sizeable ones are the
+        // name and type plates. On the real card the plates are bare mirror silver (black out of the light), although a scan
+        // shows them as pale as the paper, so they are told apart by shape, not by colour. Speckled areas (the fur) are neither.
+        val flat = BooleanArray(N) { lum[it] > .5 && max(sh[it], sv[it]) < .05 }
+        val lab = IntArray(N); val sizes = ArrayList<Int>().apply { add(0) }; val cys = ArrayList<Double>().apply { add(0.0) }; var n = 0
+        val q = IntArray(N)
+        for (s0 in 0 until N) {
+            if (!flat[s0] || lab[s0] != 0) continue
+            n++; var len = 0; q[len++] = s0; lab[s0] = n; var cy = 0.0; var h = 0
+            while (h < len) {
+                val i = q[h]; val x = i % W; cy += ((i - x) / W).toDouble()
+                if (x > 0 && flat[i - 1] && lab[i - 1] == 0) { lab[i - 1] = n; q[len++] = i - 1 }
+                if (x < W - 1 && flat[i + 1] && lab[i + 1] == 0) { lab[i + 1] = n; q[len++] = i + 1 }
+                if (i >= W && flat[i - W] && lab[i - W] == 0) { lab[i - W] = n; q[len++] = i - W }
+                if (i < N - W && flat[i + W] && lab[i + W] == 0) { lab[i + W] = n; q[len++] = i + W }
+                h++
+            }
+            sizes.add(len); cys.add(cy / len / H)
+        }
+        // Printed text can cut the paper into strips, so every flat area that sits in the rules box part of the card is paper.
+        var P = FloatArray(N); var plate = FloatArray(N)
+        for (i in 0 until N) {
+            val c = lab[i]; if (c == 0) continue
+            if (cys[c] > .605) { if (sizes[c] > N * .001 && cys[c] < .9) P[i] = 1f } else if (sizes[c] > N * .002 && sizes[c] < N * .04) plate[i] = 1f
+        }
+        fun fill(m: FloatArray, r: Int): FloatArray { val b = box(box(m, r, true), r, false); for (i in 0 until N) b[i] = ss(.3, .5, b[i].toDouble()).toFloat(); return b }
+        // the paper keeps its printed text: everything the paper's outline encloses is paper
+        run {
+            val out = BooleanArray(N); val st = IntArray(N); var sp = 0
+            fun push(i: Int) { if (!out[i] && P[i] < .5f) { out[i] = true; st[sp++] = i } }
+            for (x in 0 until W) { push(x); push(N - W + x) }
+            for (y in 0 until H) { push(y * W); push(y * W + W - 1) }
+            while (sp > 0) { val i = st[--sp]; val x = i % W; if (x > 0) push(i - 1); if (x < W - 1) push(i + 1); if (i >= W) push(i - W); if (i < N - W) push(i + W) }
+            for (i in 0 until N) if (!out[i]) P[i] = 1f
+        }
+        // the paper keeps its printed text: a spot is paper when paper lies to its left and right, and above and below it
+        run {
+            val rf = BooleanArray(N); val cf = BooleanArray(N)
+            val ra = IntArray(H) { -1 }; val rb = IntArray(H) { -1 }
+            for (y in 0 until H) for (x in 0 until W) if (P[y * W + x] > .5f) { if (ra[y] < 0) ra[y] = x; rb[y] = x }
+            for (y in 0 until H) {
+                var a = if (ra[y] < 0) W else ra[y]; var b = rb[y]
+                for (t in -14..14) { val yy = y + t; if (yy >= 0 && yy < H && ra[yy] >= 0) { a = min(a, ra[yy]); b = max(b, rb[yy]) } }
+                for (x in a..b) rf[y * W + x] = true
+            }
+            val ca = IntArray(W) { -1 }; val cb = IntArray(W) { -1 }
+            for (x in 0 until W) for (y in 0 until H) if (P[y * W + x] > .5f) { if (ca[x] < 0) ca[x] = y; cb[x] = y }
+            for (x in 0 until W) {
+                var a = if (ca[x] < 0) H else ca[x]; var b = cb[x]
+                for (t in -14..14) { val xx = x + t; if (xx >= 0 && xx < W && ca[xx] >= 0) { a = min(a, ca[xx]); b = max(b, cb[xx]) } }
+                for (y in a..b) cf[y * W + x] = true
+            }
+            for (i in 0 until N) if (rf[i] && cf[i]) P[i] = 1f
+        }
+        P = fill(P, 2); plate = fill(fill(plate, 6), 2)
+        for (i in 0 until N) plate[i] = (plate[i] * (1.0 - P[i])).toFloat()
+        var k = FloatArray(N) {
+            (neu[it] * (1 - ss(.014, .034, min(sh[it], sv[it]).toDouble())) * ss(.1, .2, lum[it].toDouble()) * (1 - ss(.5, .9, P[it].toDouble()))).toFloat()
+        }
+        k = box(box(k, 1, true), 1, false)
+        for (i in 0 until N) k[i] = max(ss(.35, .75, k[i].toDouble()).toFloat(), plate[i])
+        return SilverInk(box(box(k, 1, true), 1, false), box(box(P, 1, true), 1, false))
+    }
+
+    /**
+     * The picture window of a card with a printed gold frame (Smaug HOB 249): everything the gold frame does not cover, however
+     * uneven the window is and wherever the picture spills over the frame. Gold is told by its colour after a small blur; the frame
+     * is the gold that reaches the card's edge; the picture is what is left, without small specks. 0..1 per pixel.
+     */
+    fun artWindow(argb: IntArray, W: Int, H: Int): FloatArray {
+        val N = W * H
+        fun ch(shift: Int): FloatArray = boxBlurJs(FloatArray(N) { ((argb[it] shr shift and 255) / 255.0).toFloat() }, W, H, 2)
+        val R = ch(16); val G = ch(8); val B = ch(0)
+        var gold = FloatArray(N)
+        for (i in 0 until N) {
+            val r = R[i].toDouble(); val g = G[i].toDouble(); val b = B[i].toDouble()
+            gold[i] = if (r > g && g > b && (r - b) > .22 * r && g > .7 * r && g < .97 * r && r > .3) 1f else 0f
+        }
+        gold = boxBlurJs(gold, W, H, 3)
+        val fr = BooleanArray(N); val st = IntArray(N); var sp = 0
+        fun push(i: Int) { if (!fr[i] && gold[i] > .45) { fr[i] = true; st[sp++] = i } }
+        for (x in 0 until W) { push(x); push((H - 1) * W + x) }
+        for (y in 0 until H) { push(y * W); push(y * W + W - 1) }
+        while (sp > 0) { val i = st[--sp]; val x = i % W; val y = (i - x) / W; if (x > 0) push(i - 1); if (x < W - 1) push(i + 1); if (y > 0) push(i - W); if (y < H - 1) push(i + W) }
+        // components of what is not frame: keep the big ones
+        val lab = IntArray(N); val art = FloatArray(N); var n = 0; val q = IntArray(N)
+        for (s0 in 0 until N) {
+            if (fr[s0] || lab[s0] != 0) continue
+            n++; var len = 0; q[len++] = s0; lab[s0] = n; var h = 0
+            while (h < len) {
+                val i = q[h++]; val x = i % W; val y = (i - x) / W
+                if (x > 0 && !fr[i - 1] && lab[i - 1] == 0) { lab[i - 1] = n; q[len++] = i - 1 }
+                if (x < W - 1 && !fr[i + 1] && lab[i + 1] == 0) { lab[i + 1] = n; q[len++] = i + 1 }
+                if (y > 0 && !fr[i - W] && lab[i - W] == 0) { lab[i - W] = n; q[len++] = i - W }
+                if (y < H - 1 && !fr[i + W] && lab[i + W] == 0) { lab[i + W] = n; q[len++] = i + W }
+            }
+            if (len > N * .03) for (j in 0 until len) art[q[j]] = 1f
+        }
+        return boxBlurJs(boxBlurJs(art, W, H, 2), W, H, 1)
+    }
+
+    /** This card's own picture and rules boxes (left, top, right, bottom on the card, 0..1). */
+    class Boxes(val art: FloatArray, val text: FloatArray)
+
+    /**
+     * The picture and rules boxes of this very card: each side of the frame type's box ([art], [text]) moves to the printed frame
+     * line nearest to it on the scan (showcase and special frames sit a little off the standard measure). A side with no clear line
+     * nearby stays where it was. A box whose frame lines are not on this card (a full-art or sideways layout filed under a standard
+     * frame, Fracture FDN 439 under 2015) is not used: art becomes [0, 0, 1, 1] and text [0, 0, 0, 0].
+     */
+    fun cardBoxes(argb: IntArray, W: Int, H: Int, art: FloatArray, text: FloatArray): Boxes {
+        val lum = FloatArray(W * H) { val p = argb[it]; ((.2126 * (p shr 16 and 255) + .7152 * (p shr 8 and 255) + .0722 * (p and 255)) / 255).toFloat() }
+        fun snap(b: DoubleArray, none: DoubleArray): DoubleArray {
+            if (b[2] - b[0] <= 0) return b.copyOf()
+            val o = b.copyOf(); var found = 0; var tried = 0
+            for (e in 0 until 4) {
+                val vert = e % 2 == 0; val n = if (vert) W else H; val pos = jsRound(b[e] * n)
+                if (b[e] <= .005 || b[e] >= .995) continue
+                tried++
+                val lo0 = if (vert) b[1] * H else b[0] * W; val hi0 = if (vert) b[3] * H else b[2] * W
+                val lo = jsRound(lo0 + (hi0 - lo0) * .1); val hi = jsRound(hi0 - (hi0 - lo0) * .1); val rng = jsRound(n * .03)
+                var best = 0.0; var bp = pos
+                for (p in max(2, pos - rng)..min(n - 3, pos + rng)) {
+                    var acc = 0.0
+                    for (t in lo until hi) acc += if (vert) lum[t * W + p + 1].toDouble() - lum[t * W + p - 1] else lum[(p + 1) * W + t].toDouble() - lum[(p - 1) * W + t]
+                    val sc = abs(acc / (hi - lo)) * (1 - .5 * abs(p - pos) / rng)
+                    if (sc > best) { best = sc; bp = p }
+                }
+                if (best > .05) { o[e] = bp.toDouble() / n; found++ }
+            }
+            if (tried >= 3 && found < 2) return none
+            return o
+        }
+        fun f(d: DoubleArray) = FloatArray(4) { d[it].toFloat() }
+        return Boxes(f(snap(dec(art), doubleArrayOf(0.0, 0.0, 1.0, 1.0))), f(snap(dec(text), doubleArrayOf(0.0, 0.0, 0.0, 0.0))))
+    }
+
+    /** One card's maps for its recipe: [maps] as [analyze] measures them, with the mask's channels the pattern needs replaced (see
+     *  [cardMaps]); [boxes] this card's own picture and rules boxes; [star] the shooting star its scan carries ((x, y) or null). */
+    class CardMaps(val maps: Maps, val boxes: Boxes, val star: FloatArray?) {
+        val mask get() = maps.mask
+        val relief get() = maps.relief
+        val stroke get() = maps.stroke
+        val art get() = boxes.art
+        val text get() = boxes.text
+    }
+
+    /**
+     * Everything one card needs for its recipe (the site's mtgCardMaps): the ink maps, this card's own picture and rules boxes, and
+     * the shooting star its scan already carries. [argb] is the card at MAP_W x MAP_H, top row first; [frameArt] / [frameText] the
+     * frame type's boxes; [emblem] the Jurassic World emblem's shape (RGBA, same size; its R is read) for pattern 29. By pattern the
+     * mask's channels become: 23 silver scroll R silver ink, G neither ink nor paper, B rules paper; 28 gleaming G the picture window,
+     * B 0; 29 R the emblem; 21 facet R the shard's seed, G its depth, B the cut edge (from [facets], the same cut the site ports).
+     */
+    fun cardMaps(argb: IntArray, W: Int, H: Int, pat: Int, frameArt: FloatArray, frameText: FloatArray, emblem: ByteArray? = null): CardMaps {
+        val N = W * H
+        val m = analyze(argb, W, H)
+        val mask = m.mask
+        if (pat == 23) {
+            val k = silverInk(argb, W, H)
+            for (i in 0 until N) {
+                mask[i * 4] = jsRound(k.ink[i] * 255.0).toByte(); mask[i * 4 + 2] = jsRound(k.paper[i] * 255.0).toByte()
+                mask[i * 4 + 1] = jsRound((1.0 - k.paper[i]) * (1.0 - k.ink[i]) * 255).toByte()
+            }
+        }
+        if (pat == 28) { val a = artWindow(argb, W, H); for (i in 0 until N) { mask[i * 4 + 1] = jsRound(a[i] * 255.0).toByte(); mask[i * 4 + 2] = 0 } }
+        if (pat == 29 && emblem != null) for (i in 0 until N) mask[i * 4] = emblem[i * 4]
+        if (pat == FACET.toInt()) {
+            // The shards cut with the frame's text box (seeds hashed as the site does): facet R the seed, B the depth, and the cut edge.
+            // The relief carries the edge in B too, as analyze(facetText) lays it.
+            val f = facets(argb, W, H, frameText, siteSeed = true)
+            for (i in 0 until N) { val e = q(f.edge[i]); mask[i * 4] = f.facet[i * 4]; mask[i * 4 + 1] = f.facet[i * 4 + 2]; mask[i * 4 + 2] = e; m.relief[i * 4 + 2] = e }
+            return CardMaps(Maps(W, H, mask, m.relief, m.stroke, f.facet), cardBoxes(argb, W, H, frameArt, frameText), findScanStar(argb, W, H, frameText))
+        }
+        return CardMaps(m, cardBoxes(argb, W, H, frameArt, frameText), findScanStar(argb, W, H, frameText))
+    }
+
+    /** [hash] as the site's mtgFacets computes it: in double. Float and double part ways after the fractions, so the two give a
+     *  piece different (equally spread) seeds; [cardMaps] uses this one so a shard tilts as it does on the site. */
+    private fun hashJs(x: Double, y: Double): Double {
+        fun fr(v: Double) = v - kotlin.math.floor(v)
+        var px = fr(x * 234.34); var py = fr(y * 435.345)
+        val d = px * (px + 34.23) + py * (py + 34.23); px += d; py += d
+        return fr(px * py)
     }
 
     /** The shader's hash() (Foil.AGSL), so a shard's seed is spread like the prototype's hashed facet ids. */
