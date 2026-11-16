@@ -94,6 +94,18 @@ object TileBadges {
         .map { (n, c) -> Counter(n, c, COUNTER_ICONS[n]?.first, COUNTER_ICONS[n]?.second ?: title(n.replace('_', ' ').lowercase())) }
         .sortedWith(compareBy({ (COUNTER_ORDER.indexOf(it.name) + 1).takeIf { i -> i > 0 } ?: 99 }, { it.name }))
 
+    /**
+     * Better table scene 5 (conflict C1): [m] (from [of] for [card]) with the counters named in [skip] left out of its rail, the rail's
+     * slots worked out again as [of] does. [of] itself is unchanged (CardInspect, SagaProbe and the G shots read it).
+     */
+    fun railWithout(m: Model, card: Card, skip: Set<String>): Model {
+        val plaqueName = if (card.type.contains("Planeswalker")) "LOYALTY" else if (card.type.contains("Battle")) "DEFENSE" else null
+        val slots = if (m.damage > 0) 1 else 2
+        val rail = counterList(card.counters).filter { it.name !in skip && (plaqueName == null || card.isCreature || it.name != plaqueName) }
+        val shown = if (rail.size > slots) rail.take(slots - 1) else rail
+        return m.copy(counters = shown, countersMore = rail.size - shown.size)
+    }
+
     /** tileBadges(card, {actionable}). */
     fun of(card: Card, actionable: Boolean): Model? {
         if (card.hidden || card.zone != "Battlefield") return null

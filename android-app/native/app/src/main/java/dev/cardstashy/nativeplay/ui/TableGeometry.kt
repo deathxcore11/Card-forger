@@ -78,6 +78,27 @@ internal object TableGeometry {
     const val STRIPS_MAX = 2
 
     /**
+     * Better table scene 5 ("each aura is a card edge behind its creature"): an aura is no longer a strip above the tile but the
+     * edge of its card peeking out at the tile's left, behind it. The first edge shows [PEEK] of the tile's width left of the tile,
+     * each further one [PEEK_STEP] more; an edge is [EDGE_W] of the tile wide and [EDGE_H] of its height tall, dropped [EDGE_TOP]
+     * of the height below the tile's top. A pile with edges is laid out that much wider (its lead), so no edge lies on a neighbour.
+     */
+    const val PEEK = .31f
+    const val PEEK_STEP = .094f
+    const val EDGE_W = .5f
+    const val EDGE_H = .86f
+    const val EDGE_TOP = .11f
+    /** The lead (share of the tile's width) a creature wearing [auras] auras needs left of its tile: 0 for none. */
+    fun lead(auras: Int): Float = if (auras <= 0) 0f else PEEK + PEEK_STEP * (minOf(auras, STRIPS_MAX) - 1)
+
+    /**
+     * Better table scene 5 ("tiles a fifth larger, both sides meet at the middle"): on the Fold and a tablet the creature tiles are
+     * this much taller than the 20.5 % of the usable height Z2 gave them (never past 20.5 % of the window's own height). Lands, the
+     * squares, a phone and the dual top keep their sizes.
+     */
+    const val FRONT_BIG_GROW = 1.2f
+
+    /**
      * Mobile table M5: a phone's creature tile is 18.5 % of the height. (Arena's is 12 % and carries no name; ours wears its name, its
      * P/T plate and the G1 keyword marks, which 14 % had no room for: the brief's "Phone conflicts from the full picture run".)
      */
@@ -97,8 +118,10 @@ internal object TableGeometry {
      *  4. the rest is open table between the two sides (a tall screen).
      * Only a board too short for 1 and 2 (a pod's rail along the top) shrinks the tiles, all rows alike.
      */
-    fun rows(dualTop: Boolean, top: Float, bottom: Float, hb: Float): Rows {
-        var c = front(dualTop) * hb
+    fun rows(dualTop: Boolean, top: Float, bottom: Float, hb: Float,
+             /** Better table scene 5: the creature tile's height when it is not [front] of [hb] (a bigger tile, rowsBlock's fallback). */
+             frontH: Float? = null): Rows {
+        var c = frontH ?: (front(dualTop) * hb)
         var l = backShare(dualTop) * hb
         var mid = maxOf(MID_GAP * hb, (2 * TAPPED_HALF - 1) * c)
         var edge = (TAPPED_HALF - .5f) * l
@@ -129,16 +152,34 @@ internal object TableGeometry {
      * between the creature rows. Rows do not move with what is on them. A board too short for the block lays out as [rows] does.
      */
     fun rowsBlock(top: Float, bottom: Float, handTop: Float, winH: Float, hb: Float): Rows {
-        val c = FRONT_ONE * hb; val l = BACK_ONE * hb
+        // Better table scene 5: the creature rows up to a fifth taller (FRONT_BIG_GROW), as much of that as the board has room for;
+        // lands as they were.
+        val c0 = FRONT_ONE * hb; val big = maxOf(c0, minOf(c0 * FRONT_BIG_GROW, FRONT_ONE * winH)); val l = BACK_ONE * hb
+        val edge = (TAPPED_HALF - .5f) * l
+        fun blockOf(c: Float) = 2 * l + 2 * c + 2 * maxOf(BLOCK_SIDE * winH, (TAPPED_HALF - .5f) * (l + c)) + maxOf(BLOCK_MID * winH, (2 * TAPPED_HALF - 1) * c)
+        val room = bottom - top
+        if (room < blockOf(c0) + 2 * edge) {
+            // Too short for the block (a tablet's wide, low board): each side hugs its edge, the tiles as big as fit there.
+            fun rowsNeed(c: Float) = 2 * edge + 2 * l + 2 * c + maxOf(MID_GAP * hb, (2 * TAPPED_HALF - 1) * c)
+            return rows(false, top, bottom, hb, largest(c0, big) { room >= rowsNeed(it) })
+        }
+        val c = largest(c0, big) { room >= blockOf(it) + 2 * edge }
         val mid = maxOf(BLOCK_MID * winH, (2 * TAPPED_HALF - 1) * c)
         val side = maxOf(BLOCK_SIDE * winH, (TAPPED_HALF - .5f) * (l + c))
-        val edge = (TAPPED_HALF - .5f) * l
         val block = 2 * l + 2 * c + 2 * side + mid
-        if (bottom - top < block + 2 * edge) return rows(false, top, bottom, hb)
         // The line where the brief puts it, moved only as far as keeps the whole block (and a tapped land's corner) on the board.
         val line = (top + BLOCK_LINE * (handTop - top)).coerceIn(top + edge + block / 2, bottom - edge - block / 2)
         val cpuFront = Band(line - mid / 2 - c, c); val myFront = Band(line + mid / 2, c)
         return Rows(Band(cpuFront.top - side - l, l), cpuFront, myFront, Band(myFront.bottom + side, l))
+    }
+
+    /** The largest height from [lo] to [hi] that [fits] (all of [hi] when it fits; [lo] when nothing above it does). */
+    private fun largest(lo: Float, hi: Float, fits: (Float) -> Boolean): Float {
+        if (fits(hi)) return hi
+        if (!fits(lo)) return lo
+        var a = lo; var b = hi
+        repeat(24) { val m = (a + b) / 2; if (fits(m)) a = m else b = m }
+        return a
     }
 
     /**
@@ -162,17 +203,19 @@ internal object TableGeometry {
     fun sideReach(w: Float, h: Float): Float = .94f * (w * .9397f + h * .3420f) / 2 - w / 2
 
     /** The width a row of [piles] (each the number of cards in it, at most [PILE_EDGES] showing) takes at tile height [h]. */
-    fun rowWidth(h: Float, piles: List<Int>, lane: Boolean = false, step: Float = STEP, w: Float = h * ASPECT, gap: Float = w * GAP): Float {
+    fun rowWidth(h: Float, piles: List<Int>, lane: Boolean = false, step: Float = STEP, w: Float = h * ASPECT, gap: Float = w * GAP,
+                 /** Better table scene 5: each pile's aura lead ([lead]), a share of the tile's width; missing entries are 0. */
+                 leads: List<Float> = emptyList()): Float {
         if (piles.isEmpty()) return 0f
-        return piles.sumOf { (w * (1 + step * (minOf(it, PILE_EDGES) - 1))).toDouble() }.toFloat() + gap * (piles.size - 1) + if (lane) w * LANE else 0f
+        return piles.sumOf { (w * (1 + step * (minOf(it, PILE_EDGES) - 1))).toDouble() }.toFloat() + w * leads.take(piles.size).sum() + gap * (piles.size - 1) + if (lane) w * LANE else 0f
     }
 
     /** T2: the widest fan step (share of the tile's width) that keeps a row of [piles] at tile height [h] inside [room]. */
-    fun fanStep(h: Float, room: Float, piles: List<Int>, back: Boolean, lane: Boolean = false, w: Float = h * ASPECT, gap: Float = w * GAP): Float {
+    fun fanStep(h: Float, room: Float, piles: List<Int>, back: Boolean, lane: Boolean = false, w: Float = h * ASPECT, gap: Float = w * GAP, leads: List<Float> = emptyList()): Float {
         val max = if (back) FAN_MAX_BACK else FAN_MAX
         val edges = piles.sumOf { minOf(it, PILE_EDGES) - 1 }
         if (edges == 0) return max
-        val spare = room - rowWidth(h, piles, lane, 0f, w, gap)
+        val spare = room - rowWidth(h, piles, lane, 0f, w, gap, leads)
         return (spare / (w * edges)).coerceIn(FAN_MIN, max)
     }
 
@@ -195,12 +238,14 @@ internal object TableGeometry {
      * The widest tile ([h] tall) that lets every row in [rows] (each its pile sizes, and its room) fit side by side at the sizing
      * fan step, gaps [gap] apart: full width (1.3 x [h]) when it fits, else the art cropped, never below [CROP_MIN] x [h].
      */
-    fun width(h: Float, rows: List<Pair<List<Int>, Float>>, gap: Float, lanes: List<Boolean> = rows.map { false }): Float {
+    fun width(h: Float, rows: List<Pair<List<Int>, Float>>, gap: Float, lanes: List<Boolean> = rows.map { false },
+              /** Better table scene 5: each row's per-pile aura leads (empty: none). */
+              leads: List<List<Float>> = rows.map { emptyList() }): Float {
         var w = h * ASPECT
         rows.forEachIndexed { i, (piles, room) ->
             if (piles.isEmpty()) return@forEachIndexed
             val edges = piles.sumOf { minOf(it, PILE_EDGES) - 1 }
-            val fits = (room - gap * (piles.size - 1)) / (piles.size + STEP * edges + if (lanes[i]) LANE else 0f)
+            val fits = (room - gap * (piles.size - 1)) / (piles.size + STEP * edges + (if (lanes[i]) LANE else 0f) + leads.getOrElse(i) { emptyList() }.take(piles.size).sum())
             w = minOf(w, fits)
         }
         return w.coerceIn(h * CROP_MIN, h * ASPECT)
@@ -212,12 +257,14 @@ internal object TableGeometry {
      * The heights are the rows'; never changed by what is on the table (Z2). Strips no longer shrink a tile: the rows keep room.
      */
     fun tiles(rows: Rows, room: Float, backRoom: Float, cpuFront: List<Int>, myFront: List<Int>, cpuBack: List<Int>, myBack: List<Int>,
-              cpuLane: Boolean = false, myLane: Boolean = false, myBackRoom: Float = backRoom, k: Float = 1f): Tiles {
+              cpuLane: Boolean = false, myLane: Boolean = false, myBackRoom: Float = backRoom, k: Float = 1f,
+              /** Better table scene 5: the creature rows' per-pile aura leads ([lead]). */
+              cpuLeads: List<Float> = emptyList(), myLeads: List<Float> = emptyList()): Tiles {
         val front = rows.cpuFront.height; val back = rows.cpuBack.height
         val fg = gap(maxOf(cpuFront.size, myFront.size), k)
         val bg = gap(maxOf(cpuBack.size, myBack.size), k)
         // A creature tile is never squeezed under the brief's 59 (times the chrome scale): its name stays whole on three lines.
-        val fw = width(front, listOf(cpuFront to room, myFront to room), fg).coerceAtLeast(minOf(FRONT_W_MIN * k, front * ASPECT))
+        val fw = width(front, listOf(cpuFront to room, myFront to room), fg, leads = listOf(cpuLeads, myLeads)).coerceAtLeast(minOf(FRONT_W_MIN * k, front * ASPECT))
         val bw = width(back, listOf(cpuBack to backRoom, myBack to myBackRoom), bg, listOf(cpuLane, myLane))
         return Tiles(front, back, fw, bw)
     }
@@ -235,12 +282,14 @@ internal object TableGeometry {
      */
     fun layRow(w: Float, h: Float, room: Float, piles: List<Int>, back: Boolean, laneAt: Int = -1, gap: Float = w * GAP,
                /** Mobile table M13: the piles from this one on (the permanents that are neither land nor creature) stand at the row's right end, the mirror of the lands; -1: none do. */
-               rightFrom: Int = -1): RowLay {
+               rightFrom: Int = -1,
+               /** Better table scene 5: each pile's aura lead ([lead], a share of [w]): the pile is that much wider and its tile stands that far in. */
+               leads: List<Float> = emptyList()): RowLay {
         if (piles.isEmpty()) return RowLay(emptyList(), 0f, 0f, null)
         val n = piles.size
         val lane = laneAt in 1 until n
-        val fan = fanStep(h, room, piles, back, lane, w, gap)
-        val pw = piles.map { w * (1 + fan * (minOf(it, PILE_EDGES) - 1)) }
+        val fan = fanStep(h, room, piles, back, lane, w, gap, leads)
+        val pw = piles.mapIndexed { i, p -> w * (leads.getOrElse(i) { 0f } + 1 + fan * (minOf(p, PILE_EDGES) - 1)) }
         var g = gap; var lg = if (lane) w * LANE else 0f
         var visible: Float? = null
         if (pw.sum() + g * (n - 1) + lg > room && n > 1) {
@@ -248,7 +297,8 @@ internal object TableGeometry {
             if (g < 0f) { lg = 0f; g = (room - pw.sum()) / (n - 1); visible = (w + g).coerceAtLeast(1f) }
         }
         val xs = ArrayList<Float>(n); var x = 0f
-        for (i in 0 until n) { if (i == laneAt && lane) x += lg; xs += x; x += pw[i] + g }
+        // (Each xs is the pile's tile, its lead's edges to its left.)
+        for (i in 0 until n) { if (i == laneAt && lane) x += lg; xs += x + w * leads.getOrElse(i) { 0f }; x += pw[i] + g }
         // M13: with room to spare, the loose permanents move to the right end (a crowded row stays as it was).
         val slack = room - (x - g)
         if (rightFrom in 0 until n && visible == null && slack > 0f) { for (i in rightFrom until n) xs[i] = xs[i] + slack; return RowLay(xs, fan, room, visible) }

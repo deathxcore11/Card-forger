@@ -618,8 +618,11 @@ fun ForgeBoard(
                 val myBack = if (shelfLands) lands(me.battlefield) else backRow(me.battlefield)
                 val cpuFrontPiles = sizes(others(cpu.battlefield), 0); val myFrontPiles = sizes(myFront, myFrontSplit)
                 val cpuBackPiles = sizes(backRow(cpu.battlefield), lands(cpu.battlefield).size); val myBackPiles = sizes(myBack, lands(me.battlefield).size)
+                // Better table scene 5: a creature wearing auras is laid out wider by its aura edges (TableGeometry.lead).
+                val lookupNow: (Int) -> Card? = { st.card(it) }
+                val cpuFrontLeads = auraLeads(others(cpu.battlefield), 0, ::markOf, ::tapOf, lookupNow); val myFrontLeads = auraLeads(myFront, myFrontSplit, ::markOf, ::tapOf, lookupNow)
                 val tiles = TableGeometry.tiles(rowsG, room.value, backRoom.value, cpuFrontPiles, myFrontPiles, cpuBackPiles, myBackPiles,
-                    twoLanes(cpu), twoLanes(me), myBackRoom.value, k = u)
+                    twoLanes(cpu), twoLanes(me), myBackRoom.value, k = u, cpuLeads = cpuFrontLeads, myLeads = myFrontLeads)
                 val frontGap = TableGeometry.gap(maxOf(cpuFrontPiles.size, myFrontPiles.size), u).dp
                 val backGap = TableGeometry.gap(maxOf(cpuBackPiles.size, myBackPiles.size), u).dp
                 val fw = tiles.frontW.dp; val bw = tiles.backW.dp; val bh = tiles.back.dp
@@ -787,8 +790,11 @@ fun ForgeBoard(
                 // drops to the size that fits the strip until the question is answered, so every target stays pickable.
                 val fullH = H * ZoneLayout.stackShare(zones)
                 val sFull = fullH / 145.du
-                val fullX = zones.rightStrip.x.dp - 4.du - 104.du * sFull
-                val fullY = (mid - fullH / 2).coerceIn(zones.window.y.dp + 8.du + (if (lane.size > 1) 22.du * sFull else 0.dp), ((zones.handTray?.y?.dp ?: (zones.window.bottom.dp - 8.du)) - (145.du + 30.du) * sFull).coerceAtLeast(zones.window.y.dp + 8.du + (if (lane.size > 1) 22.du * sFull else 0.dp)))
+                val fullX = stackFullX(zones, H, d)
+                // Better table scene 5: on the Fold and a tablet the full card stands at the right edge, over the right strip's stack
+                // slot, so older cards fan up only as far as the phase box (a phone keeps the whole height above it).
+                val fullTop = if (zones.phone) zones.window.y.dp + 8.du else zones.stack.y.dp
+                val fullY = (mid - fullH / 2).coerceIn(fullTop + (if (lane.size > 1) 22.du * sFull else 0.dp), ((zones.handTray?.y?.dp ?: (zones.window.bottom.dp - 8.du)) - (145.du + 30.du) * sFull).coerceAtLeast(fullTop + (if (lane.size > 1) 22.du * sFull else 0.dp)))
                 val stackDensity = LocalDensity.current
                 // Phone conflicts, 3: the card never rests on a creature tile either, question or not (the cast pop is its own card
                 // and still shows full size).
@@ -809,7 +815,7 @@ fun ForgeBoard(
                 // Fold and tablets (Randall on the Fold, 12 Nov: the small card stood beside the hand, its words under the hand cards): at
                 // strip size the card is centred on the middle line too, inside its slot; the room above it is the older cards'.
                 val stripSpare = if (zones.phone || DualScreen.active) fitSpare else (mid - 145.du * fit / 2 - sz.y.dp).coerceIn(0.dp, fitSpare)
-                val spare = stripSpare + (fullY - zones.window.y.dp - 8.du - stripSpare) * big
+                val spare = stripSpare + (fullY - fullTop - stripSpare) * big
                 val cardX = (sz.x.dp + (sz.w.dp - 104.du * fit) / 2).let { it + (fullX - it) * big }
                 val cardY = (sz.y.dp + stripSpare).let { it + (fullY - it) * big }
                 // The words under the top card end 16 dp inside the screen (the stack zone already does).
@@ -1289,7 +1295,7 @@ fun ForgeBoard(
                 // Mobile table M1: the question is one plain line on the middle of the table, between the rows and beside the targets
                 // (it was a pill in the hand's strip): centred on the board, ending left of the stack card at its full size.
                 val left = zones.board.x.dp + 8.du
-                val right = if (lane.isNotEmpty()) zones.rightStrip.x.dp - 4.du - 104.du * (H * ZoneLayout.stackShare(zones) / 145.du) - 10.du else zones.board.right.dp - 8.du
+                val right = if (lane.isNotEmpty()) stackFullX(zones, H, d) - 10.du else zones.board.right.dp - 8.du
                 TuckedAskLine(parts, left, right, mid, d, big = !zones.phone)
             } else askText?.let { val askBottom = if (dual && hand.isNotEmpty()) H - handW / 66f * 37f - 16.du else null
                 AskLine(it, W, H, d, bottom = askBottom, goldInset = goldInset, leftLimit = if (askBottom != null) trayRight + 12.du else null) { r -> askRight = r } }
@@ -1405,10 +1411,12 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
     // Table additions 2: a pile's cards sit 9 px right and 6 px up of the one under them, at most 4 edges showing.
     // T2: a pile fans sideways as wide as the row has room for (TableGeometry.fanStep), so it shows what is in it; no rise.
     // Z2: the row's layout (fan, gaps, overlap) comes from TableGeometry.layRow; the tiles keep their height.
+    // Better table scene 5: a lone creature's aura edges peek out at its left, so its pile leads by that much (TableGeometry.lead).
+    val leads = if (tile != null) piles.map { p -> if (p.size == 1) TableGeometry.lead(aurasOn(p[0], lookup).size) else 0f } else emptyList()
     val lay = TableGeometry.layRow(w.value, h.value, room.value, piles.map { it.size }, land, laneAt,
         // A land narrower than a finger (a phone's CPU lands): its neighbour stands a touch target away while the row has the room.
         (gap ?: (w * TableGeometry.GAP)).let { if (land && tile != null) maxOf(it, TextFloors.TOUCH.dp - w) else it }.value,
-        rightFrom = if (!looseRight || !land) -1 else if (split == 0) 0 else laneAt)
+        rightFrom = if (!looseRight || !land) -1 else if (split == 0) 0 else laneAt, leads = leads)
     val step = w * lay.fan
     val rise = if (tile != null) 0.dp else if (piece != null) 6.dp else 6.du
     val total = lay.total.dp
@@ -1419,6 +1427,7 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
     // The permanents that hold a card in exile (Every Result Names Its Cause), worked out once for the row.
     val heldNow = LocalHeld.current
     val holding = remember(heldNow) { heldNow.values.toSet() }
+    // (A row centred on [cx] centres its cards and its aura edges together.)
     Box(Modifier.offset(x = if (fromLeft) cx else cx - total / 2, y = cy - h / 2).zIndex(if (cards.any { it.id in strikers }) 50f else 0f)) {
         piles.forEachIndexed { i, pile ->
             val px = lay.xs[i].dp
@@ -1431,9 +1440,9 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
                     val ax by androidx.compose.animation.core.animateDpAsState(px + step * e, tween(260, easing = FastOutSlowInEasing), label = "px")
                     // Every pile's top card sits on the row's line (three rises up, as the rows were tuned); the cards under it hang below.
                     val ay by androidx.compose.animation.core.animateDpAsState(-rise * (e + (PILE_EDGES - 1) - pileEdge(pile.lastIndex, pile.size)), tween(260, easing = FastOutSlowInEasing), label = "py")
-                    // T4 (aura look A): a creature's auras peek above it as strips, drawn under its tile.
+                    // Better table scene 5: a creature's auras are card edges peeking out at its left, drawn under its tile.
                     if (tile != null && pile.size == 1) aurasOn(card, lookup).takeIf { it.isNotEmpty() }?.let { auras ->
-                        AuraStrips(card, auras, w, h, advance, mine, Modifier.offset(x = ax, y = ay).zIndex(z - 1f), d) }
+                        AuraEdges(card, auras, w, h, advance, mine, Modifier.offset(x = ax, y = ay).zIndex(z - 1f), d) }
                     val top = j == pile.lastIndex
                     Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), if (onPile != null) { _ -> onPile(pile) } else onInspect, Modifier.offset(x = ax, y = ay).zIndex(z + j + (if (card.id in strikers) 5000f else 0f)), d,
                         count = if (top && pile.size > 1) pile.size else 1, piece = piece, pileTop = top, advance = advance,
@@ -1563,54 +1572,109 @@ internal val BEHIND = Regex("\\b(?:Aura|Equipment)\\b")
 @Composable
 private fun HeldOn(card: Card, pile: List<Card>, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, lookup: (Int) -> Card?, onInspect: (Card) -> Unit, modifier: Modifier, d: Du) = with(d) {
     val held = LocalHeld.current
-    val shown = auras.take(TableGeometry.STRIPS_MAX); val n = shown.size
-    // Each holder with the height of its top edge over the tile's: the pile's cards 0, strip i of n its raise.
+    val shown = auras.take(TableGeometry.STRIPS_MAX)
+    // Each holder with where its held cards hang: the pile's cards at the tile's top right; an aura (better table scene 5) at the top
+    // left of its card edge, which peeks out left of the tile (AuraEdges).
     // Only a card the board shows in exile: before its "Exiled" beat it still stands on the battlefield, after its return it is back there.
-    val holders = (pile.map { it to 0f } + shown.mapIndexed { i, a -> a to TableGeometry.STRIP * (n - i) })
-        .mapNotNull { (c, up) -> held.filterValues { it == c.id }.keys.mapNotNull(lookup).filter { it.zone == "Exile" }.takeIf { it.isNotEmpty() }?.let { Triple(c, up, it) } }
+    val holders = (pile.map { it to DpOffset(w * .9f, -h * .34f) } + shown.mapIndexed { i, a -> a to DpOffset(-w * (TableGeometry.PEEK + TableGeometry.PEEK_STEP * i) - w * .16f, h * TableGeometry.EDGE_TOP - h * .3f) })
+        .mapNotNull { (c, at) -> held.filterValues { it == c.id }.keys.mapNotNull(lookup).filter { it.zone == "Exile" }.takeIf { it.isNotEmpty() }?.let { Triple(c, at, it) } }
     if (holders.isEmpty()) return@with
     val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tapSpec(card.id), label = "heldTap")
     val stepUp by attackStep(card)
     Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; attackLayer(card.tapped, stepUp, mineSide, advance?.toPx() ?: (12f * u * density)) }) {
-        for ((holder, up, cards) in holders) HeldCards(cards, holder, w, h, Modifier.offset(x = w * .9f, y = -h * maxOf(up + .02f, .34f)), onInspect)
+        for ((holder, at, cards) in holders) HeldCards(cards, holder, w, h, Modifier.offset(x = at.x, y = at.y), onInspect)
     }
 }
 
 /**
- * T4 (specs/table-look-0459.md, aura look A, Randall 10 Nov): each aura on a creature is a strip behind its tile, raised
- * TableGeometry.STRIP of the tile's height per aura, its name bar over a sliver of its art; the creature's art and numbers stay clear.
- * Two strips at most, the upper one saying "+N" for the rest. The strips turn and step with the tile (tapped, attacking).
+ * Where the stack card's left edge stands at its full size (Mobile table M5: 58 % of the height on a phone, 43 % on a big screen).
+ * A phone: against the right strip, over the board's right end. Better table scene 5 (5E): on the Fold and a tablet it moves to the
+ * screen's right edge (ZoneLayout.STACK_EDGE in), over the right strip's empty stack slot, so two creatures at the bigger tile size
+ * stay clear of it and it keeps its full size instead of dropping to a strip over the creature row.
+ */
+internal fun stackFullX(zones: ZoneLayout.Zones, H: Dp, d: Du): Dp = with(d) {
+    val w = 104.du * (H * ZoneLayout.stackShare(zones) / 145.du)
+    if (zones.phone) zones.rightStrip.x.dp - 4.du - w else zones.window.right.dp - ZoneLayout.STACK_EDGE.dp - w
+}
+
+/** Better table scene 5: each pile's aura lead in a creature row ([TableGeometry.lead]; 0 for a pile of more than one card). */
+internal fun auraLeads(cards: List<Card>, split: Int, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, lookup: (Int) -> Card?): List<Float> =
+    pilesOf(cards, split, markOf, tapOf).map { p -> if (p.size == 1) TableGeometry.lead(aurasOn(p[0], lookup).size) else 0f }
+
+/**
+ * Better table scene 5 ("each aura is a card edge behind its creature and travels with it"): each aura on a creature is the left edge
+ * of its card peeking out behind the tile's left side, the art showing in a gold hairline, a little turned, as cards tucked under a
+ * creature lie on a real table. The first edge shows TableGeometry.PEEK of the tile's width, each further one PEEK_STEP more; two
+ * at most, the outer one wearing "+N" for the rest. The edges turn and step with the tile (tapped, attacking) and move with its
+ * effects. An aura that has just arrived slides out from under the tile. The anchors ("aura<id>") are each edge's box at rest.
  */
 @Composable
-private fun AuraStrips(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, modifier: Modifier, d: Du) = with(d) {
+private fun AuraEdges(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, modifier: Modifier, d: Du) = with(d) {
     val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tapSpec(card.id), label = "auraTap")
     val stepUp by attackStep(card)
     val shown = auras.take(TableGeometry.STRIPS_MAX); val n = shown.size; val more = auras.size - n
     val anchors = LocalAnchors.current
-    // 0.4.59 T5: an aura on its way from the stack (TravelCard) shows its strip once it has arrived.
-    val coming = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_HOST && LocalBattlefield.current?.reduced != true }?.cardId
+    val fx = LocalBattlefield.current
+    val calm = Motion.still || fx == null || fx.reduced
+    // 0.4.59 T5: an aura on its way from the stack (TravelCard) shows its edge once it has arrived.
+    val coming = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_HOST && fx?.reduced != true }?.cardId
+    val shape = RoundedCornerShape(7.du)
+    // Where each edge lies at rest: left of the tile by its peek, a little dropped, a little turned.
+    fun spot(i: Int) = Triple(-w * (TableGeometry.PEEK + TableGeometry.PEEK_STEP * i), h * TableGeometry.EDGE_TOP, -3f - 2f * i)
+    val ew = w * TableGeometry.EDGE_W; val eh = h * TableGeometry.EDGE_H
     Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; attackLayer(card.tapped, stepUp, mineSide, advance?.toPx() ?: (12f * u * density)) }) {
-        // The name bar takes about 60 % of the 15 % that shows, so a sliver of the aura's art shows under it; on a small tile
-        // (a phone) the bar takes the whole of it, up to 10 dp, so the name stays readable.
-        val bar = maxOf(h * .095f, minOf(h * TableGeometry.STRIP, 10.dp))
+        // The anchors: each edge at rest, read before any effect moves it (as the tile's own "c<id>" is).
         shown.forEachIndexed { i, a ->
-            val shape = RoundedCornerShape(6.du)
-            Box(Modifier.offset(x = w * .04f, y = -h * (TableGeometry.STRIP * (n - i)))
-                .size(w * .92f, h * .6f)
-                .graphicsLayer { if (a.id == coming) alpha = 0f }
+            val (x, y, tilt) = spot(i)
+            Box(Modifier.offset(x = x, y = y).size(ew, eh).graphicsLayer { rotationZ = tilt }
                 .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("aura${a.id}", it.boundsInRoot()) } else Modifier)
-                .drawBehind { drawRoundRect(Color(0x99000000), topLeft = Offset(0f, 3.dp.toPx()), size = size, cornerRadius = CornerRadius(6.du.toPx())) }
-                .clip(shape).background(Color(0xFF141418)).border(1.dp, Color(0x33E8D3A0), shape)
-                .semantics { contentDescription = "${a.name} on ${card.name}" }) {
-                CardImage(a.name, Modifier.fillMaxSize(), crop = true)
-                Row(Modifier.fillMaxWidth().height(bar).background(Color(0xF0281E08)).padding(horizontal = 5.du), verticalAlignment = Alignment.CenterVertically) {
-                    Text(a.name, style = sans((bar.value * .7f).sp, FontWeight.ExtraBold, Color(0xFFE8C77A)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                    if (i == 0 && more > 0) Text("+$more", style = sans((bar.value * .7f).sp, FontWeight.ExtraBold, Color.White), maxLines = 1)
+                .semantics { contentDescription = "${a.name} on ${card.name}" })
+        }
+        // The edges move with the tile's effects (an arrival, a lift, a knock), in a layer the tile's own size so they keep their place on it.
+        Box(Modifier.fillMaxSize().then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors); if (card.isCreature) fx.breathe(this, card.id); shadowElevation = 0f } else Modifier)) {
+            // Outermost first, so each nearer edge lies over the one beyond it.
+            for (i in n - 1 downTo 0) {
+                val a = shown[i]
+                key(a.id) {
+                    val (x, y, tilt) = spot(i)
+                    // The slide out from under the tile: 0 tucked (behind it), 1 at rest. Still pictures and reduced motion: at rest.
+                    val here = a.id != coming
+                    val out = remember { Animatable(if (calm && here) 1f else 0f) }
+                    LaunchedEffect(here, calm) { if (calm || !here) out.snapTo(if (here) 1f else 0f) else out.animateTo(1f, tween(AURA_SLIDE_MS, easing = androidx.compose.animation.core.Easing { backOut(it) })) }
+                    Box(Modifier.offset(x = x, y = y).size(ew, eh)
+                        .graphicsLayer {
+                            val k = out.value
+                            // Tucked, the edge lies under the tile's left part; it slides left and turns into place.
+                            translationX = -x.toPx() * (1f - k)
+                            rotationZ = tilt * k
+                            alpha = if (here) k.coerceIn(0f, 1f) else 0f
+                        }
+                        .drawBehind {
+                            // A soft drop shadow, so the edge lies on the mat and under the tile.
+                            drawRoundRect(Color(0xA6000000), topLeft = Offset(-1.dp.toPx(), 4.dp.toPx()), size = size, cornerRadius = CornerRadius(7.du.toPx()))
+                        }
+                        .clip(shape).background(Color(0xFF141418))) {
+                        CardImage(a.name, Modifier.fillMaxSize(), crop = true)
+                        // Light along the outer side, shade where it runs under the tile: the edge reads as a card, not a sticker.
+                        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color(0x30FFF1D0), .1f to Color(0x00000000), .5f to Color(0x00000000), 1f to Color(0xA6000000))))
+                        Box(Modifier.fillMaxSize().border(1.dp, Brush.verticalGradient(listOf(Gold.copy(alpha = .9f), Gold.copy(alpha = .35f))), shape))
+                    }
                 }
+            }
+            // More auras than edges: "+N" in the tag pill's shape on the outer edge's foot, over the edges, so it is never covered.
+            if (more > 0) {
+                val (x, y, _) = spot(n - 1)
+                Text("+$more", maxLines = 1, softWrap = false,
+                    style = sans(sp(11f), FontWeight.ExtraBold, Gold).copy(fontFeatureSettings = "tnum"),
+                    modifier = Modifier.offset(x = x - 5.du, y = y + eh - 22.du).anchorRect("auramore${card.id}")
+                        .shadow(4.du, RoundedCornerShape(999.dp)).clip(RoundedCornerShape(999.dp)).background(Color(0xF00C0D12)).border(1.dp, Gold, RoundedCornerShape(999.dp))
+                        .padding(horizontal = 5.du, vertical = 1.du))
             }
         }
     }
 }
+/** How long an arriving aura's edge takes to slide out from under its creature. */
+internal const val AURA_SLIDE_MS = 360
 
 /** At most this many card edges show in a pile. */
 internal const val PILE_EDGES = 4
@@ -1710,6 +1774,12 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
     // name, art and badges stay as they are.
     val crown = pileTop && CommanderMarks.crowned(card)
     anchors?.let { if (crown) it.sizes["crown${card.id}"] = 1f else it.sizes.remove("crown${card.id}") }
+    // Better table scene 5: a creature's +1/+1 and -1/-1 counters are one number in a circle on its top-right corner (Forge's counts,
+    // netted as the rules net them), so the counters rail leaves them out (TileLayer's railSkip).
+    val ctrNet = counterNet(card).takeIf { pileTop && !land && !whole && piece != null && card.isCreature }
+    val ctrD = if (ctrNet == null) 0.dp else maxOf(22.dp, w * .155f) * (if (kotlin.math.abs(ctrNet) >= 10) 1.2f else 1f)
+    // The part of the circle over the tile: the name keeps clear of it.
+    val ctrIn = if (ctrNet != null && visibleW == null) ctrD * .67f else 0.dp
     val ringedTile = LocalRinged.current
     if (pileTop) androidx.compose.runtime.DisposableEffect(card.id, mineSide) {
         val zone = if (mineSide) TableZones.mine else TableZones.theirs
@@ -1795,7 +1865,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             val tight = squeezed || visibleW != null || land
             // The size and lines are found by measuring before drawing (no redraw loop, so the first frame is already right).
             val side = if (tight) 3.dp else 7.dp
-            val room = ((visibleW ?: w) - side * 2).coerceAtLeast(1.dp)
+            val room = ((visibleW ?: w) - side * 2 - ctrIn).coerceAtLeast(1.dp)
             fun nameStyle(sz: Float) = TextStyle(fontFamily = Spectral, fontWeight = FontWeight.Bold, fontSize = sz.sp,
                 color = Color(0xFFF6EFDF), lineHeight = maxOf(sz * 1.15f, minOf(nh.value, sz * 1.5f)).sp, letterSpacing = if (tight) (-.03f).em else androidx.compose.ui.unit.TextUnit.Unspecified,
                 shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 2f))
@@ -1838,7 +1908,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             if (noName) androidx.compose.runtime.SideEffect { anchors?.let { it.rects.remove("name${card.id}"); it.rects.remove("namecut${card.id}"); it.sizes["namelines${card.id}"] = 0f } }
             else Box((if (visibleW != null) Modifier.width(visibleW) else Modifier.fillMaxWidth()).heightIn(min = nh + 10.dp)
                 .background(Brush.verticalGradient(0f to Color(0xF007070B), .55f to Color(0xB807070B), 1f to Color(0x0007070B)))
-                .padding(start = side, end = side, top = 3.dp, bottom = 4.dp)) {
+                .padding(start = side, end = side + ctrIn, top = 3.dp, bottom = 4.dp)) {
                 // (A long last word is put on its own line so the ellipsis falls on it, not on the word before.)
                 val shown = if (fit.newLine) fit.text.substringBeforeLast(' ') + "\n" + fit.text.substringAfterLast(' ') else fit.text
                 Text(shown, maxLines = lines, overflow = if (cut) TextOverflow.Ellipsis else TextOverflow.Clip, style = nameStyle(size),
@@ -1886,7 +1956,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         val plate = if (card.isCreature && card.power != null) measurer.measure(ptText, sans(fsFit, FontWeight.Bold, Color.White)).size
             .let { (it.width / dens).dp + ptPad * 2 to (it.height / dens).dp + 2.du } else null
         TileLayer(card, mark == Mark.PLAYABLE || mark == Mark.USABLE, lookup, d, h, if (card.isCreature && card.power != null) (if (piece != null) statPx / u else statPx) else 0f, top = nh?.let { (if (pileTop) nameH else it) + 6.dp },
-            w = w, visibleW = visibleW, plate = plate, plateLeft = left, plaque = !whole)
+            w = w, visibleW = visibleW, plate = plate, plateLeft = left, plaque = !whole, railSkip = if (ctrNet != null) COUNTER_CIRCLE else emptySet())
         // .play-current-stats: right 6px, bottom 2px, 1px 7px, #d6ad64c0 hairline, radius 7, #111114f2, white 700; the toughness reads #ff8f84 while damage is marked
         // (forge-table.mjs data-damaged; Forge's toughness already counts counters, damage is not subtracted).
         // T2: in a fanned pile only the front card wears its numbers; the ones behind show their art.
@@ -1951,6 +2021,36 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
             }
         }
     }
+    // Better table scene 5: the counter circle, on the tile's top-right corner and mostly outside it. It turns and steps with the tile
+    // and moves with its effects; a new count lands with a short pop and a flash of its ring.
+    if (ctrNet != null) {
+        val up = ctrNet > 0
+        val ink = if (up) Ice else Color(0xFFFF8F84)
+        val calm = Motion.still || fx == null || fx.reduced
+        val pop = remember(card.id) { Animatable(1f) }
+        val last = remember(card.id) { androidx.compose.runtime.mutableIntStateOf(ctrNet) }
+        LaunchedEffect(ctrNet) { if (ctrNet != last.intValue) { last.intValue = ctrNet; if (!calm) { pop.snapTo(0f); pop.animateTo(1f, tween(COUNTER_POP_MS, easing = androidx.compose.animation.core.Easing { backOut(it) })) } } }
+        Box(modifier.size(w, h).zIndex(21f).graphicsLayer { rotationZ = turn; attackLayer(card.tapped, stepUp, mineSide, advance?.toPx() ?: (12f * u * density)) }
+            .then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors); shadowElevation = 0f } else Modifier)) {
+            Box(Modifier.offset(x = (visibleW?.coerceAtMost(w) ?: w) - ctrD * .67f, y = -ctrD * .33f).size(ctrD).anchorRect("ctr${card.id}")
+                .semantics { contentDescription = (if (up) "+$ctrNet/+$ctrNet" else "$ctrNet/$ctrNet") + " counters" }
+                .graphicsLayer { val k = .6f + .4f * pop.value; scaleX = k; scaleY = k }
+                .drawBehind {
+                    // A dark drop under it, then a glow in its tone that flares as a new count lands.
+                    drawCircle(Color(0xB3000000), radius = size.minDimension / 2, center = center + Offset(0f, 1.5.dp.toPx()))
+                    drawIntoCanvas { c ->
+                        val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = ink.copy(alpha = .38f + .5f * (1f - pop.value)).toArgb(); maskFilter = android.graphics.BlurMaskFilter(5.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+                        c.nativeCanvas.drawCircle(center.x, center.y, size.minDimension / 2 + 1.dp.toPx(), p)
+                    }
+                }
+                .clip(CircleShape).background(Brush.verticalGradient(if (up) listOf(Color(0xFF1A4566), Color(0xFF0C2234)) else listOf(Color(0xFF5A1C18), Color(0xFF2E0D0B))))
+                .border(1.5.dp, ink, CircleShape), contentAlignment = Alignment.Center) {
+                Text(if (up) "+$ctrNet" else "\u2212${-ctrNet}", maxLines = 1, softWrap = false,
+                    style = sans(maxOf(11f, ctrD.value * .46f).sp, FontWeight.ExtraBold, Color(0xFFF6EFDF)).copy(fontFeatureSettings = "tnum", letterSpacing = (-.02f).em,
+                        shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 2f)))
+            }
+        }
+    }
     // The attacker's number while you block (1, 2 … in attack order), on its top-left corner.
     LocalAttackNumbers.current[card.id]?.let { n ->
         Box(modifier.size(w, h).zIndex(21f)) {
@@ -1971,6 +2071,13 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         }
     }
 }
+
+/** Better table scene 5: the counters the circle shows, left out of the counters rail while it does. */
+internal val COUNTER_CIRCLE = setOf("P1P1", "M1M1")
+/** How long a new count's pop takes on the counter circle. */
+internal const val COUNTER_POP_MS = 320
+/** The circle's number: Forge's +1/+1 count less its -1/-1 count; null when there are none (or they cancel). */
+internal fun counterNet(card: Card): Int? = ((card.counters["P1P1"] ?: 0) - (card.counters["M1M1"] ?: 0)).takeIf { it != 0 }
 
 /** The rings that keep their meaning clean: a tile wearing one shows no foil (0.4.59 T10). */
 private val FOIL_OFF = setOf(Mark.PICKED, Mark.TARGET, Mark.DISCARD, Mark.PICKABLE, Mark.PLAYABLE)
@@ -3432,8 +3539,10 @@ private fun TileLayer(card: Card, actionable: Boolean, lookup: (Int) -> Card?, d
                       /** 0.4.60 G1: the tile's width, the part of it that shows (an overlapped pile), and the P/T plate's size and side. */
                       w: Dp? = null, visibleW: Dp? = null, plate: Pair<Dp, Dp>? = null, plateLeft: Boolean = false,
                       /** M14: false on a whole planeswalker card, whose loyalty is in the shield on its bottom edge. */
-                      plaque: Boolean = true) = with(d) {
-    val b = remember(card, actionable) { TileBadges.of(card, actionable) } ?: return@with
+                      plaque: Boolean = true,
+                      /** Better table scene 5 (conflict C1): counters drawn elsewhere (the counter circle), left out of the rail; TileBadges.of stays as it is. */
+                      railSkip: Set<String> = emptySet()) = with(d) {
+    val b = remember(card, actionable, railSkip) { TileBadges.of(card, actionable)?.let { m -> if (railSkip.isEmpty()) m else TileBadges.railWithout(m, card, railSkip) } } ?: return@with
     val bsz = 9.du
     // .cs-badge: a dark pill with a gold hairline; an icon (72%) and a white number.
     @Composable fun badge(icon: String?, edge: Color = BadgeEdge, ink: Color = BadgeInk, fill: Color = Color(0xEB101114), glow: Color? = null, text: String? = null, dashed: Boolean = false) {

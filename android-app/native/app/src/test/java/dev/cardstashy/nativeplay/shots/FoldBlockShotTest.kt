@@ -69,9 +69,10 @@ class FoldBlockShotTest {
         val h = rule.onRoot().fetchSemanticsNode().size.height.toFloat(); val dp = h / 796f
         val z = ZoneLayout.of(884f, 796f); val rows = ZoneLayout.rows(z, false)
         fun at(id: Int) = anchors.rects.getValue("c$id")
-        // Your creatures at 46 % of the height (within 2 %), your lands near 62 %, the line near 37 %.
-        assertEquals(.46f, at(creature.id).center.y / h, .02f)
-        assertEquals(.62f, at(901).center.y / h, .02f)
+        // Your creatures at 49 % of the height (within 2 %), your lands near 66 %, the line near 37 %. (Were 46 and 62 % until better
+        // table scene 5 made the creature tiles a fifth taller on the Fold; the block keeps its gaps and its middle line.)
+        assertEquals(.49f, at(creature.id).center.y / h, .02f)
+        assertEquals(.66f, at(901).center.y / h, .02f)
         assertEquals(.37f, rows.divider / 796f, .01f)
         // No empty band: 6.6 % of the height between the two creature rows, 5 % between a creature row and its lands.
         assertEquals(.066f * 796f, rows.myFront.top - rows.cpuFront.bottom, .5f)

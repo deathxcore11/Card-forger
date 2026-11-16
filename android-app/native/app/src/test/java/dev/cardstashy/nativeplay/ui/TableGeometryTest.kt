@@ -30,7 +30,11 @@ class TableGeometryTest {
         for ((w, h) in sizes) for (dual in listOf(false, true)) {
             val z = zones(w, h, dual); val r = rows(w, h, dual); val tag = "$w×$h dual=$dual"
             // Creature tile 20.5 % of the usable height, land 12.5 % (23.5 % and 13 % on the dual top; M5: 18.5 % on a phone).
-            assertEquals(tag, (if (dual) .235f else if (z.phone) TableGeometry.FRONT_PHONE else .205f) * z.hb, r.cpuFront.height, .01f)
+            // Better table scene 5: on the Fold and a tablet up to a fifth more (never past 20.5 % of the window's height), as much of
+            // it as the board has room for.
+            if (dual || z.phone) assertEquals(tag, (if (dual) .235f else TableGeometry.FRONT_PHONE) * z.hb, r.cpuFront.height, .01f)
+            else { assertTrue(tag, r.cpuFront.height >= .205f * z.hb - .01f && r.cpuFront.height <= minOf(.205f * z.hb * 1.2f, .205f * h) + .01f)
+                if (w == 884f || w == 1280f) assertEquals(tag, minOf(.205f * z.hb * 1.2f, .205f * h), r.cpuFront.height, .01f) }
             assertEquals(tag, r.cpuFront.height, r.myFront.height, .001f)
             assertEquals(tag, (if (dual) .13f else .125f) * z.hb, r.cpuBack.height, .01f)
             assertEquals(tag, r.cpuBack.height, r.myBack.height, .001f)
@@ -54,8 +58,9 @@ class TableGeometryTest {
                 assertTrue("$tag creatures on the board", r.cpuBack.top - m >= z.board.y && r.myFront.centre + TableGeometry.TAPPED_HALF * r.myFront.height <= z.board.bottom)
                 assertTrue("$tag your lands in the shelf", r.myBack.top >= shelf.y && r.myBack.bottom + m <= shelf.bottom)
             }
-            // The cap: never more than 4.6 full tiles across the board (4.15 on the dual top).
-            assertTrue(tag, z.board.w / (r.cpuFront.height * TableGeometry.ASPECT) >= (if (dual) 4.15f else 4.6f) - .01f)
+            // The cap: never more than 4.6 full tiles across the board (4.15 on the dual top); better table scene 5's bigger creature
+            // tiles on the Fold and a tablet take that cap a fifth down (lands and the squares keep it).
+            assertTrue(tag, z.board.w / (r.cpuFront.height * TableGeometry.ASPECT) >= (if (dual) 4.15f else if (z.phone) 4.6f else 4.6f / 1.2f) - .01f)
         }
     }
 
@@ -65,12 +70,15 @@ class TableGeometryTest {
         // yours 46 %, your lands 62 %, the hand at 80 %. The spare is above the CPU's lands and between your lands and the hand.
         val z = zones(884f, 796f); val r = rows(884f, 796f)
         assertTrue(z.hb < 796f)
-        assertEquals(105.7f, r.cpuFront.height, .1f)
+        // Better table scene 5: the creature tiles a fifth larger than Z2's 105.7 dp.
+        assertEquals(126.8f, r.cpuFront.height, .1f)
         assertEquals(TableGeometry.BLOCK_MID * 796f, r.myFront.top - r.cpuFront.bottom, .01f)
         assertEquals(TableGeometry.BLOCK_SIDE * 796f, r.myBack.top - r.myFront.bottom, .01f); assertEquals(TableGeometry.BLOCK_SIDE * 796f, r.cpuFront.top - r.cpuBack.bottom, .01f)
         assertEquals(TableGeometry.BLOCK_LINE * z.handTray!!.y, r.divider, .01f)
-        assertEquals(.37f, r.divider / 796f, .01f); assertEquals(.28f, r.cpuFront.centre / 796f, .02f)
-        assertEquals(.46f, r.myFront.centre / 796f, .02f); assertEquals(.62f, r.myBack.centre / 796f, .02f)
+        // Better table scene 5: the creature rows a fifth taller, so the block reaches further: the CPU's creatures 26 %, yours 49 %,
+        // your lands 66 % (were 28, 46 and 62 % at Z2's tile size); the line stays at 37 %.
+        assertEquals(.37f, r.divider / 796f, .01f); assertEquals(.26f, r.cpuFront.centre / 796f, .02f)
+        assertEquals(.49f, r.myFront.centre / 796f, .02f); assertEquals(.66f, r.myBack.centre / 796f, .02f)
         assertEquals(.066f, TableGeometry.BLOCK_MID); assertEquals(.05f, TableGeometry.BLOCK_SIDE); assertEquals(.47f, TableGeometry.BLOCK_LINE)
         // The rows do not move with what is on them: the layout takes no cards. The dual top and a phone are as they were.
         assertEquals(TableGeometry.rows(true, zones(884f, 796f, true).board.y, zones(884f, 796f, true).board.bottom, zones(884f, 796f, true).hb), rows(884f, 796f, true))
@@ -213,20 +221,31 @@ class TableGeometryTest {
         assertTrue(TableGeometry.layRow(held.backW, held.back, 380f, piles, true, gap = TableGeometry.gap(8, 1f)).total <= 380.5f)
     }
 
-    @Test fun auraStripsNeverReachAnotherRow() {
-        // T4: two strips above your creature (30 % of a tile) rise into the gap between the creature rows (Z2: the brief's 6.5 %) and
-        // never reach the CPU's creatures standing; where the board has the height, not even tapped ones. Strips never shrink a tile.
-        for ((w, h) in sizes) for (dual in listOf(false, true)) {
-            val z = zones(w, h, dual); val r = rows(w, h, dual)
-            val t = TableGeometry.tiles(r, z.board.w, z.board.w - 12f, listOf(1), listOf(1), listOf(1), listOf(1))
-            val rise = TableGeometry.STRIP * TableGeometry.STRIPS_MAX * t.front
-            assertTrue("$w×$h dual=$dual yours", r.myFront.centre - t.front / 2 - rise >= r.cpuFront.bottom - .01f)
-            if (r.myFront.top - r.cpuFront.bottom >= rise + (TableGeometry.TAPPED_HALF - .5f) * t.front)
-                assertTrue(r.myFront.centre - t.front / 2 - rise >= r.cpuFront.centre + TableGeometry.TAPPED_HALF * t.front - .01f)
+    @Test fun auraEdgesWidenTheirPileAndStayInTheRoom() {
+        // Better table scene 5 (it replaces T4's strips): an aura is a card edge peeking out left of its creature, so the creature's
+        // pile is laid out wider by its lead and its tile stands that far in; the row still fits its room and no edge reaches the
+        // pile before it.
+        assertEquals(0f, TableGeometry.lead(0)); assertEquals(TableGeometry.PEEK, TableGeometry.lead(1), 1e-6f)
+        assertEquals(TableGeometry.PEEK + TableGeometry.PEEK_STEP, TableGeometry.lead(2), 1e-6f); assertEquals(TableGeometry.lead(2), TableGeometry.lead(5), 1e-6f)
+        val w = 130f; val h = 100f; val gap = 8f
+        val plain = TableGeometry.layRow(w, h, 600f, listOf(1, 1), false, gap = gap)
+        val leads = listOf(0f, TableGeometry.lead(2))
+        val worn = TableGeometry.layRow(w, h, 600f, listOf(1, 1), false, gap = gap, leads = leads)
+        assertEquals(plain.total + w * TableGeometry.lead(2), worn.total, .01f)
+        assertEquals(TableGeometry.rowWidth(h, listOf(1, 1), w = w, gap = gap, leads = leads), worn.total, .01f)
+        // The second tile's edges start after the first tile and its gap.
+        assertEquals(worn.xs[0] + w + gap, worn.xs[1] - w * TableGeometry.lead(2), .01f)
+        // A lead on the first pile moves its tile in by as much.
+        assertEquals(w * TableGeometry.PEEK, TableGeometry.layRow(w, h, 600f, listOf(1), false, gap = gap, leads = listOf(TableGeometry.PEEK)).xs[0], .01f)
+        // Crowded: every row still fits its room, leads and all, the tiles narrowed (never their height).
+        val crowd = List(5) { 1 }; val cl = List(5) { TableGeometry.lead(2) }
+        for ((ww, hh) in sizes) { val z = zones(ww, hh); val r = rows(ww, hh)
+            val t = TableGeometry.tiles(r, z.board.w, z.board.w - 12f, crowd, crowd, listOf(1), listOf(1), k = z.k, myLeads = cl)
+            val plainT = TableGeometry.tiles(r, z.board.w, z.board.w - 12f, crowd, crowd, listOf(1), listOf(1), k = z.k)
+            assertEquals(plainT.front, t.front, .001f); assertTrue(t.frontW <= plainT.frontW + .001f)
+            val lay = TableGeometry.layRow(t.frontW, t.front, z.board.w, crowd, false, gap = TableGeometry.gap(5, z.k), leads = cl)
+            assertTrue("$ww×$hh fits: ${lay.total}", lay.total <= z.board.w + .5f)
         }
-        val z = zones(884f, 796f); val r = rows(884f, 796f)
-        assertTrue(r.myFront.top - TableGeometry.STRIP * TableGeometry.STRIPS_MAX * r.myFront.height >= r.cpuFront.centre + TableGeometry.TAPPED_HALF * r.cpuFront.height)
-        assertTrue(z.hb > 0f)
     }
 
     @Test fun tappedBackTilesStayOnTheBoardBox() {
