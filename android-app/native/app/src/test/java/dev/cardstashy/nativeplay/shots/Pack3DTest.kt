@@ -53,6 +53,11 @@ class Pack3DTest {
         for (g in m.groups) for (v in 0 until g.verts) { assertTrue(g.data[v * 8 + 6] in -.001f..1.001f); assertTrue(g.data[v * 8 + 7] in -.001f..1.001f) }
     }
 
+    /** Modern Masters 2015 came in a cardboard box: its photo shows on its tile and flat in the opener, never on the foil model. */
+    @Test fun cardboardBoxNeverOnTheFoilModel() {
+        assertTrue(Pack3D.hasArt(app, "mm2")); assertTrue(!Pack3D.opensIn3D(app, "mm2")); assertTrue(Pack3D.opensIn3D(app, "fra"))
+    }
+
     @Test fun everySetInTheOpenerHasARealWrapper() {
         val codes = File(System.getProperty("repoRoot"), "pack-wrappers.js").readText().let { Regex("new Set\\(\"([^\"]+)\"").find(it)!!.groupValues[1].split(' ') }
         val missing = codes.filterNot { Pack3D.hasArt(app, it) }

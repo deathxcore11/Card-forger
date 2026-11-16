@@ -735,7 +735,7 @@ private fun Sealed(pack: PackResult, tearing: Boolean, onTear: () -> Unit, loadi
         // The 3D pack in the set's real wrapper: the finger or the phone's tilt turns it, it breathes a little on its own, and the
         // strip above the seam rips off as the tear plays. Without a real wrapper: the set's art under Randall's template, else the wrapper.
         // While a real wrapper is still loading (a first open), the box stays empty for those few frames: never the 2D pack, then a swap.
-        val tpl = if (load.waiting) true else if (skin != null) { Pack3DView(skin, Modifier.fillMaxSize()) { val d = drift?.value ?: Offset.Zero; val fl = float()
+        val tpl = if (load.waiting) true else if (pack.look == null && FlatPackPhoto(pack.set, Modifier.fillMaxSize())) true else if (skin != null) { Pack3DView(skin, Modifier.fillMaxSize()) { val d = drift?.value ?: Offset.Zero; val fl = float()
             PackPose(yaw = -.10f * fl + d.x * .5f, pitch = .05f * fl - d.y * .22f, tear = strip.value, side = 1f) }; true } else TemplatePack(pack.set, pack.name, { drift?.value ?: Offset.Zero }, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null, template = false) }
         // .pack-tpl .pack-crimp, .pack-tpl .pack-sheen { display: none }: the template pack has neither.
         if (!tpl && !Motion.still && !tearing) {
@@ -876,6 +876,7 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
         }) {
             // The 3D pack stays where the finger left it, its strip gone; the cards rise out of its open top.
             if (skin != null) Pack3DView(skin, Modifier.fillMaxSize()) { val d = drift(); PackPose(yaw = d.x * .5f, pitch = -d.y * .22f, stripGone = true) }
+            else if (pack.look == null && FlatPackPhoto(pack.set, Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } })) Unit
             else if (!load.waiting) Box(Modifier.fillMaxSize().drawWithContent { clipRect(top = size.height * .085f) { this@drawWithContent.drawContent() } }) {
                 TemplatePack(pack.set, pack.name, drift, Modifier.fillMaxSize(), brand = pack.shop != null, override = pack.look?.template?.let { PackTemplate.Art("", it.art, it.x, it.y) }) { Booster(pack.set, pack.name, Modifier.fillMaxSize(), fill = true, brand = pack.shop != null, template = false) }
             }

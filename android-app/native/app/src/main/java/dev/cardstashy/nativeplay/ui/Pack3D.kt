@@ -71,6 +71,10 @@ object Pack3D {
     /** The set's real wrapper photo, when the app carries one (every Magic set in the opener). */
     fun artPath(code: String) = "play/pack3d/${code.lowercase()}.webp"
     fun hasArt(context: Context, code: String): Boolean = runCatching { context.assets.open(artPath(code)).close(); true }.getOrDefault(false)
+    /** Sets whose real pack is not a foil wrapper (Modern Masters 2015 came in a cardboard box): the photo shows flat, never on the
+     *  foil model with its crimps and tearing strip (Randall 16 Nov chose the flat photo and the 2D opener). */
+    val flatOnly = setOf("mm2")
+    fun opensIn3D(context: Context, code: String) = code.lowercase() !in flatOnly && hasArt(context, code)
 }
 
 /** The wrapper's two faces and their paints, made once per set. */
@@ -116,7 +120,7 @@ class PackSkinLoad(val skin: PackSkin?, val waiting: Boolean) { companion object
 fun rememberPackSkinLoad(code: String): PackSkinLoad {
     val ctx = LocalContext.current
     if (HomeTest.noPictures || android.os.Build.VERSION.SDK_INT < 29) return PackSkinLoad.None
-    val wants = remember(code) { Pack3D.mesh(ctx) != null && Pack3D.hasArt(ctx, code) }
+    val wants = remember(code) { Pack3D.mesh(ctx) != null && Pack3D.opensIn3D(ctx, code) }
     if (!wants) return PackSkinLoad.None
     return produceState(PackSkin.cached(code)?.let { PackSkinLoad(it, false) } ?: PackSkinLoad(null, true), code) {
         if (value.skin != null) return@produceState
@@ -294,4 +298,17 @@ class PackRenderer(private val m: Pack3D.Mesh) {
         c.drawVertices(NativeCanvas.VertexMode.TRIANGLES, vc, b.pts, 0, b.tex, 0, b.lit, 0, idx, 0, q, paint)
         c.drawVertices(NativeCanvas.VertexMode.TRIANGLES, vc, b.pts, 0, null, 0, b.spec, 0, idx, 0, q, shine)
     }
+}
+
+/** A flat-only set's real pack photo (Pack3D.flatOnly) filling [modifier]: the 2D opener's pack for it, so it looks like its tile. */
+@Composable
+fun FlatPackPhoto(code: String, modifier: Modifier): Boolean {
+    val ctx = LocalContext.current
+    if (HomeTest.noPictures || code.lowercase() !in Pack3D.flatOnly || !remember(code) { Pack3D.hasArt(ctx, code) }) return false
+    val path = Pack3D.artPath(code)
+    val img = produceState(AssetImages.cached("$path@720"), path) { value = AssetImages.load(ctx, path, maxWidth = 720) }.value
+    androidx.compose.foundation.layout.Box(modifier) {
+        if (img != null) androidx.compose.foundation.Image(img, null, Modifier.matchParentSize(), contentScale = androidx.compose.ui.layout.ContentScale.Fit)
+    }
+    return true
 }
