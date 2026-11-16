@@ -76,7 +76,7 @@ class TableLookG3ShotTest {
     private class Seen { var inspected by mutableStateOf<Card?>(null); var acted = mutableListOf<Int>() }
 
     /** The board as TableScreen wires it: onInspect opens CardInspect with what is attached, and a tap on one of those inspects it. */
-    private fun board(st: MatchState, live: Boolean): Pair<Anchors, Seen> {
+    private fun board(st: MatchState, live: Boolean, near: Boolean = false): Pair<Anchors, Seen> {
         Motion()
         CardImageTest.art = { name, crop -> art.resolve(key(name, crop) + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
         DualScreen.pretend(null)
@@ -88,7 +88,10 @@ class TableLookG3ShotTest {
                     PlaymatScene(Modifier.fillMaxSize())
                     ForgeBoard(st, live = live, intents = TableIntents(card = { seen.acted += it }), selectedHand = null, onSelectHand = {}, onInspect = { seen.inspected = it }, onMenu = {},
                         handOrder = emptyList(), onHandOrder = {})
-                    seen.inspected?.let { c -> CardInspect(c, st.viewer, attached = attachedOf(st, st.card(c.id) ?: c), onAttached = { seen.inspected = it }) { seen.inspected = null } }
+                    seen.inspected?.let { c ->
+                        // As TableScreen wires it (better table scene 13): a battlefield card opens beside its tile anchor.
+                        val at = if (near && c.zone == "Battlefield") anchors.rects["c${c.id}"] ?: anchors.rects["aura${c.id}"] else null
+                        CardInspect(c, st.viewer, attached = attachedOf(st, st.card(c.id) ?: c), onAttached = { seen.inspected = it }, near = at) { seen.inspected = null } }
                 }
             }
         }
@@ -163,5 +166,82 @@ class TableLookG3ShotTest {
         assertEquals("$tag: the aura opened", 990, seen.inspected?.id)
         assertTrue("$tag: the aura's rules show", rule.onAllNodesWithText("Enchant creature", substring = true).fetchSemanticsNodes().isNotEmpty())
         shot("aura-opened-$tag")
+    }
+
+    // ---- Better table scene 13: read a card beside its tile ----
+
+    /** The scene's Hill Giant: Ethereal Armor on it, the first strike it grants, a +1/+1 counter. */
+    private fun scene13(): Pair<MatchState, Card> {
+        val (st, giant) = withAura()
+        val g = giant.copy(keywords = listOf("First Strike"), keywordsKnown = true, power = 5, toughness = 5, counters = mapOf("P1P1" to 1))
+        val me = st.me.copy(battlefield = st.me.battlefield.map { if (it.id == g.id) g else it })
+        val s2 = st.copy(players = st.players.map { if (it.id == st.viewer) me else it })
+        return s2 to s2.card(g.id)!!
+    }
+
+    @Test fun scene13ReadsBesideTheTilePhone() = beside("844x390")
+
+    @Config(qualifiers = "w884dp-h796dp-xhdpi")
+    @Test fun scene13ReadsBesideTheTileFold() = beside("884x796")
+
+    @Config(qualifiers = "w1280dp-h800dp-land-mdpi")
+    @Test fun scene13ReadsBesideTheTileTablet() = beside("1280x800")
+
+    private fun beside(tag: String) {
+        val (st, giant) = scene13()
+        val (a, seen) = board(st, live = false, near = true)
+        val tile = a.rects["c${giant.id}"] ?: error("$tag: no tile")
+        val before = shot("read-before-$tag")
+        tap(a, "c${giant.id}")
+        rule.waitForIdle(); rule.mainClock.advanceTimeBy(100); rule.waitForIdle()
+        assertEquals("$tag: the giant opened", giant.id, seen.inspected?.id)
+        val dp = RuntimeEnvironment.getApplication().resources.displayMetrics.density
+        val card = a.rects["inspectCard${giant.id}"] ?: error("$tag: no card")
+        val panels = a.rects["inspectPanels${giant.id}"] ?: error("$tag: the card was not read beside its tile (no panels)")
+        val bmp = shot("read-$tag")
+        val W = bmp.width.toFloat(); val H = bmp.height.toFloat()
+        fun inside(r: androidx.compose.ui.geometry.Rect) = r.left >= -.5f && r.top >= -.5f && r.right <= W + .5f && r.bottom <= H + .5f
+        assertTrue("$tag: the card covers its tile $card / $tile", !card.deflate(1f).overlaps(tile))
+        assertTrue("$tag: the panels cover the tile", !panels.deflate(1f).overlaps(tile))
+        val gap = if (card.left >= tile.right) card.left - tile.right else tile.left - card.right
+        assertTrue("$tag: the card stands ${gap / dp} dp from its tile", gap in 0f..24f * dp)
+        assertTrue("$tag: the card is off screen", inside(card))
+        assertTrue("$tag: the card is the whole card, not a sliver (${card.height / H})", card.height >= H * .3f)
+        assertTrue("$tag: the panels sit on the card's far side from the tile", if (card.left >= tile.right) panels.left >= card.right - .5f else panels.right <= card.left + .5f)
+        val kw = a.rects["inspectKw${giant.id}.0"] ?: error("$tag: no keyword box")
+        val att = a.rects["inspectAttached${giant.id}"] ?: error("$tag: no Attached row")
+        assertTrue("$tag: keyword box off screen", inside(kw)); assertTrue("$tag: Attached row off screen", inside(att))
+        assertTrue("$tag: First strike named", rule.onAllNodesWithText("First strike", substring = true).fetchSemanticsNodes().isNotEmpty())
+        // The card stands level with its tile (centred on it, unless the screen's edge stops it).
+        assertTrue("$tag: the card is not level with its tile", card.top <= tile.center.y && card.bottom >= tile.center.y)
+        // The read tile stays lit (no scrim over it) while the rest of the table is only dimmed.
+        fun lum(b: android.graphics.Bitmap, r: androidx.compose.ui.geometry.Rect): Double {
+            var t = 0.0; var n = 0
+            for (x in (r.left + r.width * .25f).toInt() until (r.right - r.width * .25f).toInt() step 3) for (y in (r.top + r.height * .3f).toInt() until (r.bottom - r.height * .3f).toInt() step 3) {
+                val c = b.getPixel(x, y); t += (c shr 16 and 255) * .3 + (c shr 8 and 255) * .59 + (c and 255) * .11; n++ }
+            return t / maxOf(1, n)
+        }
+        val lit = lum(bmp, tile) / lum(before, tile)
+        assertTrue("$tag: the read tile is dimmed (${"%.2f".format(lit)})", lit > .85)
+        // The aura in the Attached row opens beside its own card edge.
+        tap(a, "inspectAtt990")
+        assertEquals("$tag: the aura opened", 990, seen.inspected?.id)
+        shot("read-aura-$tag")
+        // A tap outside (the table's empty top-left corner under the scrim) closes it.
+        rule.onRoot().performTouchInput { click(androidx.compose.ui.geometry.Offset(W * .5f, 6f * dp)) }
+        rule.mainClock.advanceTimeBy(500); rule.waitForIdle()
+        assertNull("$tag: a tap outside closes the read", seen.inspected)
+    }
+
+    @Test fun scene13NoTileKeepsTheCentredPage() {
+        // A card with no tile anchor (a graveyard card, the stack) keeps today's centred page and its dark scrim.
+        val (st, giant) = scene13()
+        val (a, seen) = board(st, live = false, near = false)
+        tap(a, "c${giant.id}")
+        assertNull("no panels beside a tile", a.rects["inspectPanels${giant.id}"])
+        val card = a.rects["inspectCard${giant.id}"] ?: error("no card")
+        val bmp = shot("read-centred-844x390")
+        assertTrue("centred", kotlin.math.abs(card.center.y - bmp.height / 2f) < bmp.height * .08f)
+        assertNotNull(seen.inspected)
     }
 }

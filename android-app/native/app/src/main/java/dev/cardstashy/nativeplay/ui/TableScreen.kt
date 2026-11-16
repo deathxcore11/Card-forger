@@ -251,7 +251,12 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         // 0.4.60 G3: the one inspect view lists what is attached to the card; a tap on one of those opens it in the same view.
         inspect?.let { c -> val att = attachedOf(shown, shown?.card(c.id)?.takeIf { it.zone == c.zone } ?: c); val openAtt: (Card) -> Unit = { inspect = it }
             if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart, beside = true, attached = att, onAttached = openAtt, ability = abilityNow, onActivate = activate) { inspect = null } }
-            else CardInspect(c, shown?.viewer, inspectStart, attached = att, onAttached = openAtt, ability = abilityNow, onActivate = activate) { inspect = null } }
+            else {
+                // Better table scene 13: a card on the battlefield opens beside its tile (its anchor, read once as it opens; an Aura
+                // read from the Attached row stands beside its card edge).
+                val near = remember(c.id) { if (c.zone == "Battlefield") anchors.rects["c${c.id}"] ?: anchors.rects["aura${c.id}"] else null }
+                CardInspect(c, shown?.viewer, inspectStart, attached = att, onAttached = openAtt, ability = abilityNow, onActivate = activate, near = near) { inspect = null }
+            } }
         if (menu) Menu(onConcede = { menu = false; matchMenu.ask = "concede" }, onLeave = { menu = false; matchMenu.ask = "leave" }, onClose = { menu = false })
         MatchLeaveConfirm(matchMenu)
         // Living table F7: the result card waits for the winning hit to be seen (not after a concession).
