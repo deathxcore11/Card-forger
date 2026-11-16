@@ -110,7 +110,9 @@ class HitSeatShotTest {
         assertEquals("no red at the screen's right edge", 0f, diff(plain, you, right), .002f)
         assertEquals("no red at the screen's top edge", 0f, diff(plain, you, top), .002f)
         // The square's edge glows: a band just above its top border, where the square is open to the table.
-        val above = Rect(sq.left + 16 * dp, sq.top - 12 * dp, sq.right - 16 * dp, sq.top - 2 * dp)
+        // (Better table, life squares: the picture sits at the square's top left now, and its "−3" pops up past the square's top
+        // edge for a while, so the band starts right of the picture.)
+        val above = Rect(maxOf(sq.left + 16 * dp, orb.right + 4 * dp), sq.top - 12 * dp, sq.right - 16 * dp, sq.top - 2 * dp)
         assertTrue("your square's edge glows red: ${diff(plain, you, above)}", diff(plain, you, above) > .5f)
         val px = you.getPixel(sq.center.x.toInt(), (sq.top - 4 * dp).toInt())
         assertTrue("the glow is red: ${Integer.toHexString(px)}", android.graphics.Color.red(px) > android.graphics.Color.green(px) + 40)

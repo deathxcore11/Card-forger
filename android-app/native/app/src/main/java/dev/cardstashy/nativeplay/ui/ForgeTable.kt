@@ -22,6 +22,9 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.IntSize
@@ -669,11 +672,11 @@ fun ForgeBoard(
             // drawn card start and end there ("cpuhand"), so the square's "Hand N" words carry their own key.
             if (!pod) CpuHandFan(cpu.handCount, zones, d)
             if (!pod) PlayerSquare(cpu, zones.cpuSquare, cpu.name, st.activePlayer == cpu.id, d, handKey = "cpuhandwords",
-                portrait = { a, m, lifeSp -> Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, m.anchorRect("cpuseat"), d,
-                    side = a, lifeSp = lifeSp, onOpen = commanderOf(cpu)?.let { c -> { onInspect(c) } }) { intents.player(cpu.id) } },
+                portrait = { a, m, life, lit -> Medallion(cpu, mine = false, live && cpu.id in st.selection.players, cpu.id in st.selection.chosenPlayers, m.anchorRect("cpuseat"), d,
+                    side = a, life = life, lit = lit, onOpen = commanderOf(cpu)?.let { c -> { onInspect(c) } }) { intents.player(cpu.id) } },
                 grave = { w, h, sp -> GravePile(cpu, w, h, sp, d, onInspect, onGrave = openGrave) })
             PlayerSquare(me, zones.mySquare, profile?.name?.takeIf { it.isNotBlank() } ?: me.name, st.activePlayer == me.id, d, handKey = null,
-                portrait = { a, m, lifeSp -> Medallion(me, mine = true, live && me.id in st.selection.players, me.id in st.selection.chosenPlayers, m, d, side = a, lifeSp = lifeSp) { intents.player(me.id) } },
+                portrait = { a, m, life, lit -> Medallion(me, mine = true, live && me.id in st.selection.players, me.id in st.selection.chosenPlayers, m, d, side = a, life = life, lit = lit) { intents.player(me.id) } },
                 grave = { w, h, sp -> GravePile(me, w, h, sp, d, onInspect, playable = { markOf(it) == Mark.PLAYABLE }, onCast = { intents.card(it.id) }, onGrave = openGrave) })
             // The CPU's thinking dots: in its square's top right corner, right of its name.
             if (!pod) ThinkDots(Modifier.offset(x = zones.cpuSquare.right.dp - 37.du, y = zones.cpuSquare.y.dp + 1.du).anchorRect("thinkdots"), d)
@@ -2189,52 +2192,190 @@ private fun CpuHandFan(n: Int, zones: ZoneLayout.Zones, d: Du) = with(d) {
     }
 }
 
+/** Better table, life squares: the square's corner (dp). Battlefield's seatGlow draws the hit on the same corner. */
+internal const val SQUARE_CORNER = 11f
+/** A gain ticks up one point this often (ms), as a loss ticks down. */
+internal const val LIFE_GAIN_STEP_MS = 90L
+/** The low-life edge breathes in and out over this (ms); the turn's light runs once round the edge in [TURN_SWEEP_MS]. */
+internal const val LOW_BREATH_MS = 1600
+internal const val TURN_SWEEP_MS = 2400
+/** The life number's sp in a square [sH] times the mockup's height: 34 on the phone, up to 48 on a tall square, never under 28. */
+/** The life digits' height over their sp (DM Sans's figures stand about this tall). */
+internal const val HERO_CAP = .74f
+internal fun heroLifeSp(sH: Float): Float = (34f * sH).coerceIn(28f, 48f)
+/** The square's low-life state: Forge's life at [LOW_LIFE] or less (0 and below too). */
+internal fun lifeLow(shown: Int): Boolean = shown <= LOW_LIFE
+/** The small tag on the active player's square. */
+internal fun turnTag(mine: Boolean): String = if (mine) "YOUR TURN" else "CPU'S TURN"
+
 /**
- * A player's glass square (mockup .plate, lines 51 to 66 and 306 to 314) filling [box]: the name at the top, the round portrait
- * ([portrait], given its size, its place and the life's sp) with the life on its gold pill under it, "Hand N" and "Deck N" in words
- * to its right and the graveyard's top card with its count ([grave], given the card's size and the count's sp) under them. The
- * player whose turn it is ([active]) wears the gold edge and its glow. [handKey] names the hand's words for the travelling cast and
- * the draw ("cpuhand"); the deck's words are "lib<id>" (where a drawn card leaves from), the square itself "square<id>".
+ * Better table, life squares ("make it cool as shit"): a player's glass square filling [box]. The life total is the hero: big,
+ * heavy, tabular, with a soft glow, ticking down coral on a loss (the Medallion's pipeline, [LifeTicker]) and up green on a gain.
+ * The small round portrait sits at the top left with the name beside it; Hand and Deck are two glyph chips at the foot and the
+ * graveyard's top card with its count ([grave]) at the bottom right. Low life turns the number red and the edge breathes red; the
+ * player whose turn it is ([active]) wears a gold bar along the top, a bright hairline, a light running round the edge and a small
+ * "YOUR TURN" / "CPU'S TURN" tag. Still mode and reduced motion keep one fixed phase. Anchors: "square<id>", "lifepill<id>" (the
+ * number), "lib<id>" (the deck chip), [handKey] (the hand chip), "cmdrdmg<id>"; sizes "lifesp<id>" and "squareactive<id>".
  */
 @Composable
 private fun PlayerSquare(p: Player, box: ZoneLayout.Box, who: String, active: Boolean, d: Du, handKey: String?,
-                         portrait: @Composable (Dp, Modifier, Float) -> Unit, grave: @Composable (Dp, Dp, Float) -> Unit) = with(d) {
-    // 0.4.60 Z7: in a Commander game "Cmdr damage N/21" per opposing commander (Forge's numbers) under the portrait and the
-    // graveyard, at 9 sp: the rest of the square is drawn small enough to leave those lines their room.
+                         portrait: @Composable (Dp, Modifier, LifeTicker, Boolean) -> Unit, grave: @Composable (Dp, Dp, Float) -> Unit) = with(d) {
+    // 0.4.60 Z7: in a Commander game "Cmdr damage N/21" per opposing commander (Forge's numbers) at the square's foot, at 9 sp:
+    // the rest of the square is drawn in the height left above those lines.
     val cmdr = CommanderMarks.damageShown(p)
     val cmdrSp = 9f
     val cmdrRoom = if (cmdr.isEmpty()) 0f else cmdr.size * cmdrSp * 1.3f + 4f
-    val s = squareScale(box.w, box.h - cmdrRoom)
+    val inner = box.h - cmdrRoom
+    val s = squareScale(box.w, inner)
+    // Across the square things grow with its width; down it with its height, so the Fold's tall square gives the number its room.
+    val sH = inner / SQUARE_H
     fun m(v: Float) = (v * s).dp
-    val shape = RoundedCornerShape(m(10f))
+    fun v(y: Float) = (y * sH).dp
+    val shape = RoundedCornerShape(SQUARE_CORNER.dp)
     val anchors = LocalAnchors.current
-    val words = maxOf(9f, 10f * s)
+    val lt = rememberLifeTicker(p, gains = true)
+    val shown = lt.shown
+    val low = lifeLow(shown)
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val calm = remember { Playmats.reduced(ctx) }
+    val moving = !Motion.still && !calm
+    // The two slow loops; in still mode (screenshots) and reduced motion no endless animation runs: one fixed phase instead.
+    val loop = if (moving && (low || active)) rememberInfiniteTransition(label = "seat") else null
+    val breath = if (!low) 0f else loop?.animateFloat(0f, 1f, infiniteRepeatable(tween(LOW_BREATH_MS / 2, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "breath")?.value ?: .6f
+    val sweep = if (!active) -1f else loop?.animateFloat(0f, 1f, infiniteRepeatable(tween(TURN_SWEEP_MS, easing = LinearEasing)), label = "sweep")?.value ?: -1f
+    val foe = Color(0xFFFF6A4A)
+    val edge = when { low -> CpuRed.copy(alpha = .7f + .3f * breath); active -> Palette.GoldBright; else -> Color(0x6BE3C070) }
+    val sweepPath = remember { Path() }; val sweepMeasure = remember { androidx.compose.ui.graphics.PathMeasure() }; val sweepSeg = remember { Path() }
     Box(Modifier.offset(x = box.x.dp, y = box.y.dp).size(box.w.dp, box.h.dp).anchorRect("square${p.id}")
-        .then(if (active) Modifier.drawBehind { drawRoundRect(Gold.copy(alpha = .28f), topLeft = Offset(-5.dp.toPx(), -5.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width + 10.dp.toPx(), size.height + 10.dp.toPx()), cornerRadius = CornerRadius(m(14f).toPx())) } else Modifier)
-        .background(Color(0xD10E121C), shape)
-        .border(if (active) 1.5.dp else 1.dp, if (active) Color(0xFFE3C070) else Color(0x6BE3C070), shape)
+        .drawBehind {
+            val c = SQUARE_CORNER.dp.toPx()
+            // Outside the edge: the turn's soft gold halo, or the low red breathing out.
+            val halo = if (low) CpuRed.copy(alpha = .16f + .22f * breath) else if (active) Gold.copy(alpha = .22f) else Color.Transparent
+            if (halo.alpha > 0f) for (i in 1..4) { val o = i * 2.dp.toPx()
+                drawRoundRect(halo.copy(alpha = halo.alpha * (1f - i / 5f)), Offset(-o, -o), Size(size.width + 2 * o, size.height + 2 * o), CornerRadius(c + o), style = Stroke(2.dp.toPx())) }
+            // A drop shadow under the glass.
+            drawRoundRect(Color(0x99000000), Offset(0f, 3.dp.toPx()), size, CornerRadius(c))
+        }
+        // No clip on the square itself: a small portrait near its corner keeps its 44 dp touch target past the square's edge.
+        .background(Brush.verticalGradient(listOf(Color(0xF5161B29), Color(0xF20B0E17), Color(0xF5080A11))), shape)
+        .drawBehind {
+            val c = SQUARE_CORNER.dp.toPx()
+            sweepPath.reset(); sweepPath.addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, 0f, size.width, size.height, CornerRadius(c)))
+            clipPath(sweepPath) {
+            // The glass's sheen: a faint light across the upper third.
+            drawRect(Brush.verticalGradient(listOf(Color(0x14FFF4D8), Color.Transparent), 0f, size.height * .4f))
+            // Low life: a red light breathing in from the edge.
+            if (low) for (i in 1..5) { val o = i * 2.5f.dp.toPx()
+                drawRoundRect(CpuRed.copy(alpha = (.10f + .14f * breath) * (1f - i / 6f)), Offset(o - 2.5f.dp.toPx(), o - 2.5f.dp.toPx()), Size(size.width - 2 * (o - 2.5f.dp.toPx()), size.height - 2 * (o - 2.5f.dp.toPx())),
+                    CornerRadius((c - o).coerceAtLeast(2f)), style = Stroke(2.5f.dp.toPx())) }
+            // The turn: a gold bar across the top, fading down into the glass.
+            if (active) {
+                drawRect(Brush.horizontalGradient(listOf(Gold.copy(alpha = .75f), Palette.GoldBright, Color(0xFFFFE7B0), Palette.GoldBright, Gold.copy(alpha = .75f))), size = Size(size.width, 3.dp.toPx()))
+                drawRect(Brush.verticalGradient(listOf(Gold.copy(alpha = .20f), Color.Transparent), 3.dp.toPx(), size.height * .45f), Offset(0f, 3.dp.toPx()), Size(size.width, size.height * .45f))
+            }
+            }
+        }
+        .drawWithContent {
+            drawContent()
+            val c = SQUARE_CORNER.dp.toPx(); val w = (if (active || low) 2.dp else 1.dp).toPx()
+            drawRoundRect(edge, Offset(w / 2, w / 2), Size(size.width - w, size.height - w), CornerRadius(c - w / 2), style = Stroke(w))
+            // The turn's light: a short bright run going round the edge.
+            if (sweep >= 0f) {
+                sweepPath.reset(); sweepPath.addRoundRect(androidx.compose.ui.geometry.RoundRect(w / 2, w / 2, size.width - w / 2, size.height - w / 2, CornerRadius(c - w / 2)))
+                sweepMeasure.setPath(sweepPath, true); val len = sweepMeasure.length; val run = len * .14f
+                for ((k, a) in listOf(1f to .35f, .55f to .9f)) { val from = sweep * len; sweepSeg.reset()
+                    sweepMeasure.getSegment(from, from + run * k, sweepSeg, true)
+                    if (from + run * k > len) sweepMeasure.getSegment(0f, from + run * k - len, sweepSeg, true)
+                    drawPath(sweepSeg, Color(0xFFFFF1C8).copy(alpha = a), style = Stroke(if (k == 1f) 4.dp.toPx() else 2.dp.toPx(), cap = StrokeCap.Round)) }
+            }
+        }
         .semantics(mergeDescendants = false) { contentDescription = "$who: life ${p.life}, hand ${p.handCount}, deck ${p.libraryCount}, graveyard ${p.graveyard.size}" +
             cmdr.joinToString("") { ", ${it.damage} of ${CommanderMarks.LETHAL} commander damage from ${it.commander}" } + if (active) ", their turn" else "" }) {
         if (active) anchors?.let { it.sizes["squareactive${p.id}"] = 1f }
         else anchors?.sizes?.remove("squareactive${p.id}")
-        Text(who.uppercase(), style = sans(maxOf(9f, 10f * s).sp, FontWeight.ExtraBold, Color(0xFFC9CFDB)).copy(letterSpacing = .05.em), maxLines = 1, softWrap = false,
-            overflow = TextOverflow.Ellipsis, modifier = Modifier.offset(x = m(8f), y = m(4f)).widthIn(max = box.w.dp - m(16f) - (if (handKey != null) 40.du else 0.dp)))
-        val a = m(38f)
-        portrait(a, Modifier.offset(x = m(6f), y = m(20f)), TextFloors.LIFE * maxOf(1f, s))
-        Column(Modifier.offset(x = m(51f), y = m(18f))) {
-            @Composable fun line(label: String, n: Int, key: String?) = Row(Modifier.then(if (key != null) Modifier.anchorRect(key) else Modifier), verticalAlignment = Alignment.CenterVertically) {
-                Text("$label ", style = sans(words.sp, FontWeight.Bold, Color(0xFFC9CFDB)), maxLines = 1, softWrap = false)
-                Text("$n", style = sans(words.sp, FontWeight.ExtraBold, Color.White).copy(fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
+        val pad = m(7f)
+        // The top: the small portrait, the name beside it and, on this player's turn, the gold tag under the name.
+        val pic = m(26f)
+        Row(Modifier.offset(x = m(6f), y = v(5f)), verticalAlignment = Alignment.CenterVertically) {
+            portrait(pic, Modifier, lt, active)
+            Spacer(Modifier.width(m(5f)))
+            Column {
+                // The name keeps clear of the CPU's thinking dots on its line; the tag under it runs to the square's edge.
+                Text(who.uppercase(), style = sans(maxOf(9f, 9.5f * s).sp, FontWeight.ExtraBold, if (active) Color(0xFFFFF4D8) else Color(0xFFC9CFDB)).copy(letterSpacing = .08.em),
+                    maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = box.w.dp - m(6f) - pic - m(5f) - pad - (if (handKey != null) 34.du else 0.dp)))
+                // A square squeezed by Commander damage lines on a phone has no room for it: its gold bar and edge say the turn.
+                if (active && inner >= SQUARE_H * .9f) Text(turnTag(p.isViewer), style = sans(8f.sp, FontWeight.ExtraBold, Palette.GoldBright).copy(letterSpacing = .03.em),
+                    maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
+                    modifier = Modifier.widthIn(max = box.w.dp - m(6f) - pic - m(5f) - 3.dp).anchorRect("turntag${p.id}"))
+                else anchors?.rects?.remove("turntag${p.id}")
             }
-            line("Hand", p.handCount, handKey)
-            line("Deck", p.libraryCount, "lib${p.id}")
         }
-        Box(Modifier.offset(x = m(51f), y = m(48f))) { grave(m(19f), m(19f / .716f), maxOf(10f, 11f * s)) }
+        Box(Modifier.fillMaxWidth().height(inner.dp)) {
+            val words = maxOf(9f, 9.5f * s)
+            val chipH = (words * 1.3f + 5f).dp
+            val foot = v(5f)
+            // The foot: Hand and Deck as glyph chips.
+            Row(Modifier.align(Alignment.BottomStart).padding(start = pad - m(1f), bottom = foot), horizontalArrangement = Arrangement.spacedBy(m(3f))) {
+                SquareChip(p.handCount, hand = true, words, chipH, handKey, "Hand", d)
+                SquareChip(p.libraryCount, hand = false, words, chipH, "lib${p.id}", "Deck", d)
+            }
+            Box(Modifier.align(Alignment.BottomEnd).padding(end = pad, bottom = foot)) { grave(m(19f), m(19f / .716f), maxOf(10f, 11f * s)) }
+            // The hero: the life total, standing on the chips.
+            val heroSp = heroLifeSp(sH)
+            anchors?.let { it.sizes["lifesp${p.id}"] = heroSp }
+            val k = ((lt.tick.value - 1f) / .4f).coerceIn(0f, 1f)
+            val tone = when { k > .02f && lt.up -> Color(0xFF7BE08A); k > .02f -> Color(0xFFFF8A6A); low -> foe; else -> Color(0xFFFFF4D8) }
+            val glow = when { k > .02f && lt.up -> Color(0xFF7BE08A); low || k > .02f -> foe; else -> Gold }
+            // The number's box is its digits' height (their cap height), so it stands right on the chips and clear of the picture.
+            Box(Modifier.align(Alignment.BottomStart).padding(start = pad - m(1f), bottom = foot + chipH + v(2.5f)).height((heroSp * HERO_CAP).dp).anchorRect("lifepill${p.id}")
+                .drawBehind {
+                    val r = size.maxDimension * .85f
+                    drawCircle(Brush.radialGradient(listOf(glow.copy(alpha = if (low) .26f + .14f * breath else .18f), Color.Transparent), center, r), r, center)
+                    if (lt.beat.value > 0f) drawCircle(Brush.radialGradient(listOf(Color(0xFFE5383B).copy(alpha = .7f * lt.beat.value), Color.Transparent), center, r), r, center)
+                }) {
+                Text("$shown", style = sans(heroSp.sp, FontWeight.Black, tone).copy(fontFeatureSettings = "tnum", letterSpacing = (-.02).em, lineHeight = (heroSp * .86f).sp,
+                    lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both),
+                    platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                    shadow = androidx.compose.ui.graphics.Shadow(glow.copy(alpha = .55f), Offset.Zero, heroSp * .45f * androidx.compose.ui.platform.LocalDensity.current.density)),
+                    maxLines = 1, softWrap = false,
+                    modifier = Modifier.wrapContentHeight(Alignment.CenterVertically, unbounded = true).graphicsLayer {
+                        // The count rolls: each step comes in from above on a loss, from below on a gain, and lands with a punch.
+                        translationY = (if (lt.up) 1f else -1f) * 8.dp.toPx() * k
+                        val sc = 1f + .18f * k; scaleX = sc; scaleY = sc
+                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 1f)
+                    })
+            }
+        }
         if (cmdr.isNotEmpty()) Column(Modifier.offset(x = m(8f), y = (box.h - cmdrRoom + 1f).dp).anchorRect("cmdrdmg${p.id}")) {
             // .czp em: 700, #ffd98a, one line each.
             for (line in CommanderMarks.damageLines(cmdr)) Text(line, style = sans(cmdrSp.sp, FontWeight.Bold, Color(0xFFFFD98A)).copy(fontFeatureSettings = "tnum", lineHeight = (cmdrSp * 1.3f).sp),
                 maxLines = 1, softWrap = false)
         } else anchors?.rects?.remove("cmdrdmg${p.id}")
+    }
+}
+
+/** A square's Hand or Deck chip: a small glyph (a fanned pair of cards, or a stack) and the count, on glass with a gold hairline. */
+@Composable
+private fun SquareChip(n: Int, hand: Boolean, sp: Float, h: Dp, key: String?, label: String, d: Du) = with(d) {
+    val pill = RoundedCornerShape(999.dp)
+    Row(Modifier.then(if (key != null) Modifier.anchorRect(key) else Modifier).height(h).clip(pill)
+        .background(Brush.verticalGradient(listOf(Color(0xE0202536), Color(0xE00D1019)))).border(1.dp, Gold.copy(alpha = .45f), pill)
+        .padding(start = (sp * .45f).dp, end = (sp * .55f).dp).semantics { contentDescription = "$label $n" },
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy((sp * .3f).dp)) {
+        Canvas(Modifier.size((sp * .8f).dp, (sp * 1.0f).dp)) {
+            val w = size.width * .62f; val ht = size.height * .86f; val r = CornerRadius(1.2f * density)
+            val fill = Color(0xFF2A2F44); val line = Palette.GoldBright
+            if (hand) {
+                // Two cards fanned.
+                for ((dx, rot) in listOf(0f to -14f, size.width - w to 12f)) rotate(rot, Offset(dx + w / 2, size.height)) {
+                    drawRoundRect(fill, Offset(dx, size.height - ht), Size(w, ht), r); drawRoundRect(line, Offset(dx, size.height - ht), Size(w, ht), r, style = Stroke(1f * density)) }
+            } else for (i in 2 downTo 0) { val o = i * size.height * .1f
+                drawRoundRect(fill, Offset((size.width - w) / 2 + o * .6f, size.height - ht - o * .2f + o * .0f - i * 0f), Size(w, ht - o), r)
+                drawRoundRect(line.copy(alpha = 1f - i * .3f), Offset((size.width - w) / 2 + o * .6f, size.height - ht - o * .2f), Size(w, ht - o), r, style = Stroke(1f * density)) }
+        }
+        Text("$n", style = sans(sp.sp, FontWeight.ExtraBold, Color(0xFFF4EEDF)).copy(fontFeatureSettings = "tnum",
+            platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)), maxLines = 1, softWrap = false)
     }
 }
 
@@ -2303,47 +2444,82 @@ private fun ThinkDots(modifier: Modifier, d: Du) = with(d) {
 
 // ---- Seats ----
 
-/** .play-match-seat: a 52 du round portrait in a gold ring, the life total on a pill under it (tap to target the player). */
+/**
+ * A seat's life as drawn: the number shown ([shown]), its tick ([tick], 1.4 at each step back to 1), the portrait's [flash] and
+ * [recoil] on the first point of a loss, and the low-life [beat]. [up] says the last change was a gain. One per seat: the Medallion
+ * makes its own, a player square makes one and hands it to its portrait.
+ */
+@androidx.compose.runtime.Stable
+internal class LifeTicker(life: Int) {
+    val flash = Animatable(0f); val recoil = Animatable(0f); val tick = Animatable(1f); val beat = Animatable(0f)
+    var shown by mutableIntStateOf(life)
+    var up by mutableStateOf(false)
+    internal var last = life
+}
+
+/**
+ * The life pipeline (spec 3, Match punch P5, S2): a loss ticks down one point every 90 ms as its blows land, with the CMB-024 cue,
+ * the portrait recoiling and flaring on the first; the first time life shows 5 or less the beat runs twice with CMB-019, once a
+ * game. With [gains] a gain ticks up one point every [LIFE_GAIN_STEP_MS]; without it, and in still mode or reduced motion, a gain
+ * just shows.
+ */
 @Composable
-internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Boolean, modifier: Modifier, d: Du, onOpen: (() -> Unit)? = null,
-                       /** 0.4.60 Z4: the portrait's size (52 du as live; the player squares draw it at the mockup's 38) and the life's sp. */
-                       side: Dp? = null, lifeSp: Float = TextFloors.LIFE, onPick: () -> Unit) = with(d) {
-    val a = side ?: 52.du
-    val flash = remember { Animatable(0f) }
-    val recoil = remember { Animatable(0f) }
-    val tick = remember { Animatable(1f) }
-    var last by remember { mutableStateOf(p.life) }
-    var shown by remember { mutableIntStateOf(p.life) }
+internal fun rememberLifeTicker(p: Player, gains: Boolean = false): LifeTicker {
+    val t = remember { LifeTicker(p.life) }
     val cue = LocalTableCue.current
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val calm = remember { Playmats.reduced(ctx) } // reduce motion: the life still ticks down, the portrait stays put
     // A hit to the face (spec 3): the portrait recoils 14 dp and flares bright at contact, then the life ticks down one by one,
-    // each step popping coral at 1.5x. Gains and reduced motion just show the new number.
+    // each step popping coral at 1.5x.
     val fx = LocalBattlefield.current
     LaunchedEffect(p.life) {
-        val from = last; last = p.life
-        if (p.life >= from || Motion.still || fx == null) { shown = p.life; return@LaunchedEffect }
+        val from = t.last; t.last = p.life
+        if (p.life > from && gains && !Motion.still && !calm) {
+            // Better table, life squares: a gain counts up green, a point at a time.
+            t.up = true
+            while (t.shown < p.life) { t.shown++; t.tick.snapTo(1.4f); launch { t.tick.animateTo(1f, tween(200)) }; delay(LIFE_GAIN_STEP_MS) }
+            t.shown = p.life; return@LaunchedEffect
+        }
+        if (p.life >= from || Motion.still || fx == null) { t.shown = p.life; return@LaunchedEffect }
+        t.up = false
         // Match punch P5: the pill follows the hits themselves. Each loss in flight (Battlefield.lifeShown) comes off one point every
         // 90 ms from the frame its blow lands, each with a punch; the portrait recoils and flares on the first. A loss with no
         // effect in flight (effects skipped by a touch) just shows.
         var first = true; var n = 0
-        while (shown > p.life) {
+        while (t.shown > p.life) {
             androidx.compose.runtime.withFrameMillis { }
-            val v = fx.lifeShown(p.id, p.life).coerceAtMost(shown)
-            if (v < shown) {
-                if (first && !calm) { launch { flash.snapTo(1f); flash.animateTo(0f, tween(900)) }
-                    launch { recoil.snapTo(1f); recoil.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 380f)) } }
-                first = false; shown = v
-                cue?.invoke("CMB-024", .7f, (1f - .03f * n++).coerceAtLeast(.6f)); tick.snapTo(1.4f); launch { tick.animateTo(1f, tween(200)) }
-            } else if (!fx.lifePending(p.id)) shown = p.life
+            val v = fx.lifeShown(p.id, p.life).coerceAtMost(t.shown)
+            if (v < t.shown) {
+                if (first && !calm) { launch { t.flash.snapTo(1f); t.flash.animateTo(0f, tween(900)) }
+                    launch { t.recoil.snapTo(1f); t.recoil.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 380f)) } }
+                first = false; t.shown = v
+                cue?.invoke("CMB-024", .7f, (1f - .03f * n++).coerceAtLeast(.6f)); t.tick.snapTo(1.4f); launch { t.tick.animateTo(1f, tween(200)) }
+            } else if (!fx.lifePending(p.id)) t.shown = p.life
         }
     }
-    // S2: the first time this player's life shows 5 or less, the pill beats red twice with the low-life sound. Once a game.
-    val beat = remember { Animatable(0f) }
-    LaunchedEffect(shown) {
-        if (shown in 1..LOW_LIFE && fx != null && fx.lowSeen.add(p.id)) { cue?.invoke("CMB-019", 1f, 1f)
-            if (!Motion.still) repeat(2) { beat.snapTo(1f); beat.animateTo(0f, tween(LOW_BEAT_MS)) } }
+    // S2: the first time this player's life shows 5 or less, the beat runs twice with the low-life sound. Once a game.
+    LaunchedEffect(t.shown) {
+        if (t.shown in 1..LOW_LIFE && fx != null && fx.lowSeen.add(p.id)) { cue?.invoke("CMB-019", 1f, 1f)
+            if (!Motion.still) repeat(2) { t.beat.snapTo(1f); t.beat.animateTo(0f, tween(LOW_BEAT_MS)) } }
     }
+    return t
+}
+
+/** .play-match-seat: a 52 du round portrait in a gold ring, the life total on a pill under it (tap to target the player). */
+@Composable
+internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Boolean, modifier: Modifier, d: Du, onOpen: (() -> Unit)? = null,
+                       /** 0.4.60 Z4: the portrait's size (52 du as live; the player squares draw it at the mockup's 38) and the life's sp. */
+                       side: Dp? = null, lifeSp: Float = TextFloors.LIFE,
+                       /** Better table: the square's own life pipeline; set, no pill is drawn here (the square draws the number). */
+                       life: LifeTicker? = null,
+                       /** Better table: the turn's bright ring on the portrait. */
+                       lit: Boolean = false, onPick: () -> Unit) = with(d) {
+    val a = side ?: 52.du
+    // Better table, life squares: the life pipeline lives in [LifeTicker]; a square hands its own in ([life]) and draws the number
+    // itself, so the portrait here keeps only its picture, its recoil and its flash.
+    val lt = life ?: rememberLifeTicker(p)
+    val flash = lt.flash; val recoil = lt.recoil; val tick = lt.tick; val beat = lt.beat
+    val shown = lt.shown
     val anchors = LocalAnchors.current
     val feelFx = LocalBattlefield.current
     val pulse = if (pickable && !Motion.still) rememberInfiniteTransition(label = "pick").animateFloat(.55f, 1f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a").value else 1f
@@ -2357,7 +2533,7 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
         Box(Modifier.fillMaxSize().drawBehind {
             drawCircle(Color(0xFF0B0C10), radius = size.minDimension / 2 + 3.du.toPx())
             if (pickable || picked) drawCircle(Palette.GoldBright.copy(alpha = .5f * pulse), radius = size.minDimension / 2 + 9.du.toPx())
-        }.clip(CircleShape).background(Color(0xFF1B1B20)).border(2.dp, if (pickable || picked) Palette.GoldBright else if (mine) Color(0xFFFFD98A) else Gold.copy(alpha = .8f), CircleShape).padding(2.du).clip(CircleShape)) {
+        }.clip(CircleShape).background(Color(0xFF1B1B20)).border(2.dp, if (pickable || picked || lit) Palette.GoldBright else if (mine) Color(0xFFFFD98A) else Gold.copy(alpha = .8f), CircleShape).padding(2.du).clip(CircleShape)) {
             if (mine) {
                 val profile by dev.cardstashy.nativeplay.account.Account.profile.collectAsState()
                 // play-player-mat.js practicePlayerPortrait: your profile picture, else the brand mark (brand-idle).
@@ -2370,7 +2546,7 @@ internal fun Medallion(p: Player, mine: Boolean, pickable: Boolean, picked: Bool
         }
         // .play-match-life (0.4.60 Z3: 19 sp, never less, was 15 px): 800 #fff4d8 on a dark pill with a gold hairline, 39 du below the portrait's top
         // (Z4: three quarters of the way down a portrait of any size; the mockup's square puts its middle 9 above the portrait's foot).
-        Box(Modifier.align(Alignment.TopCenter).offset(y = a * .75f).wrapContentSize(unbounded = true).anchorRect("lifepill${p.id}")
+        if (life == null) Box(Modifier.align(Alignment.TopCenter).offset(y = a * .75f).wrapContentSize(unbounded = true).anchorRect("lifepill${p.id}")
             .drawBehind { drawRoundRect(Color(0xCC000000), topLeft = Offset(0f, 3.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
             .clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(listOf(Color(0xFF26221A), Color(0xFF14120E))))
             .drawBehind { if (beat.value > 0f) drawRect(Color(0xFFE5383B).copy(alpha = .85f * beat.value)) }.border(1.dp, Gold, RoundedCornerShape(999.dp))

@@ -2287,7 +2287,7 @@ private fun DrawScope.drawEmbers(fx: Battlefield, it: FxItem, p: Float, r: Rect,
  */
 private fun DrawScope.seatGlow(sq: Rect, a: Float, hard: Boolean) {
     if (a <= 0f) return
-    val foe = TableFeel.SEAT_HIT; val c = 11f * density
+    val foe = TableFeel.SEAT_HIT; val c = SQUARE_CORNER * density
     if (hard) {
         val steps = 9; val reach = TableFeel.SEAT_GLOW_DP * density
         for (i in steps downTo 1) { val q = i / steps.toFloat(); val o = reach * q
