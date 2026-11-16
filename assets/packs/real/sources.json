@@ -1599,13 +1599,13 @@
 "name": "Scourge",
 "product": "draft",
 "year": "2003",
-"src": "server",
-"file": null,
-"w": 200,
-"h": 348,
-"native": 348,
+"src": "owner",
+"file": "scg-a.png",
+"w": 350,
+"h": 635,
+"native": 672,
 "rot": false,
-"aspect": 0.575
+"aspect": 0.551
 },
 "shm": {
 "name": "Shadowmoor",
