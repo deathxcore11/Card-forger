@@ -87,13 +87,13 @@
 "name": "Fifth Edition",
 "product": "draft",
 "year": "1997",
-"src": "server",
-"file": null,
-"w": 107,
-"h": 179,
-"native": 179,
+"src": "owner",
+"file": "5ed.png",
+"w": 321,
+"h": 554,
+"native": 554,
 "rot": false,
-"aspect": 0.598
+"aspect": 0.579
 },
 "6ed": {
 "name": "Classic Sixth Edition",
@@ -243,13 +243,13 @@
 "name": "Alara Reborn",
 "product": "draft",
 "year": "2009",
-"src": "drawn",
-"file": null,
-"w": 420,
-"h": 720,
-"native": 876,
+"src": "owner",
+"file": "arb-up.png",
+"w": 309,
+"h": 571,
+"native": 573,
 "rot": false,
-"aspect": 0.583
+"aspect": 0.541
 },
 "arn": {
 "name": "Arabian Nights",
@@ -459,13 +459,13 @@
 "name": "Coldsnap",
 "product": "draft",
 "year": "2006",
-"src": "drawn",
-"file": null,
-"w": 420,
-"h": 720,
-"native": 876,
+"src": "owner",
+"file": "csp2.png",
+"w": 286,
+"h": 516,
+"native": 516,
 "rot": false,
-"aspect": 0.583
+"aspect": 0.554
 },
 "dbl": {
 "name": "Innistrad: Double Feature",
@@ -639,13 +639,13 @@
 "name": "Eldritch Moon",
 "product": "draft",
 "year": "2016",
-"src": "server",
-"file": null,
-"w": 122,
-"h": 226,
-"native": 226,
+"src": "owner",
+"file": "a7e07c1d-image.jpg",
+"w": 390,
+"h": 720,
+"native": 740,
 "rot": false,
-"aspect": 0.54
+"aspect": 0.542
 },
 "eoe": {
 "name": "Edge of Eternities",
@@ -675,13 +675,13 @@
 "name": "Exodus",
 "product": "draft",
 "year": "1998",
-"src": "server",
-"file": null,
-"w": 105,
-"h": 182,
-"native": 182,
+"src": "owner",
+"file": "exo.png",
+"w": 365,
+"h": 640,
+"native": 640,
 "rot": false,
-"aspect": 0.577
+"aspect": 0.57
 },
 "fdn": {
 "name": "Foundations",
@@ -903,13 +903,13 @@
 "name": "Journey into Nyx",
 "product": "draft",
 "year": "2014",
-"src": "server",
-"file": null,
-"w": 85,
-"h": 156,
-"native": 156,
+"src": "owner",
+"file": "b4152d09-image.jpg",
+"w": 322,
+"h": 597,
+"native": 597,
 "rot": false,
-"aspect": 0.545
+"aspect": 0.539
 },
 "jud": {
 "name": "Judgment",
@@ -1287,13 +1287,13 @@
 "name": "Modern Masters 2017",
 "product": "draft",
 "year": "2017",
-"src": "server",
-"file": null,
-"w": 211,
-"h": 382,
-"native": 382,
+"src": "owner",
+"file": "b3ba1855-image.jpg",
+"w": 224,
+"h": 409,
+"native": 447,
 "rot": false,
-"aspect": 0.552
+"aspect": 0.548
 },
 "mma": {
 "name": "Modern Masters",
@@ -1659,13 +1659,13 @@
 "name": "Scars of Mirrodin",
 "product": "draft",
 "year": "2010",
-"src": "drawn",
-"file": null,
-"w": 420,
-"h": 720,
-"native": 876,
+"src": "owner",
+"file": "f7704009-image.jpg",
+"w": 315,
+"h": 587,
+"native": 598,
 "rot": false,
-"aspect": 0.583
+"aspect": 0.537
 },
 "sos": {
 "name": "Secrets of Strixhaven",
@@ -1695,13 +1695,13 @@
 "name": "Stronghold",
 "product": "draft",
 "year": "1998",
-"src": "server",
-"file": null,
-"w": 107,
-"h": 185,
-"native": 185,
+"src": "owner",
+"file": "73683d15-image.jpg",
+"w": 287,
+"h": 500,
+"native": 500,
 "rot": false,
-"aspect": 0.578
+"aspect": 0.574
 },
 "stx": {
 "name": "Strixhaven: School of Mages",
@@ -1983,25 +1983,25 @@
 "name": "Weatherlight",
 "product": "draft",
 "year": "1997",
-"src": "server",
-"file": null,
-"w": 103,
-"h": 182,
-"native": 182,
+"src": "owner",
+"file": "08c63d12-image.jpg",
+"w": 323,
+"h": 582,
+"native": 597,
 "rot": false,
-"aspect": 0.566
+"aspect": 0.555
 },
 "wwk": {
 "name": "Worldwake",
 "product": "draft",
 "year": "2010",
-"src": "drawn",
-"file": null,
-"w": 420,
-"h": 720,
-"native": 876,
+"src": "owner",
+"file": "a5e5bfd0-image.jpg",
+"w": 297,
+"h": 549,
+"native": 550,
 "rot": false,
-"aspect": 0.583
+"aspect": 0.541
 },
 "xln": {
 "name": "Ixalan",
