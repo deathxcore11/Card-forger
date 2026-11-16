@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -163,6 +164,8 @@ internal fun spotlightIntent(s: Spotlight): String {
 }
 
 private val GOLD = Color(0xFFE9C98A)
+/** The ice ring a pickable tile wears on the table (ForgeTable's Ice). */
+private val PICK_ICE = Color(0xFF5CC8FF)
 private val GLOW_CPU = Color(0xFFFF5A3C)
 private val GLOW_YOU = Color(0xFFF0C27A)
 
@@ -206,7 +209,7 @@ fun CastSpotlight(s: Spotlight, modifier: Modifier = Modifier, onTap: () -> Unit
 }
 
 @Composable
-private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Card> = emptyList(), onAttached: (Card) -> Unit = {},
+private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Card> = emptyList(), onAttached: (Card) -> Unit = {}, picks: Set<Int> = emptySet(),
     /** 0.4.60 G4: the inspect view's keyword boxes; they replace the keyword lines. [boxesInside]: drawn here under the rules (a short width). */
     boxes: List<KeywordBox>? = null, boxesInside: Boolean = false,
     /** 0.4.60 G6: the inspect view's ability rows, under the rules (glow-rules.md "The ability opens on the card"). */
@@ -257,7 +260,7 @@ private fun GlassBox(s: Spotlight, w: Dp, h: Dp, timer: Float, attached: List<Ca
         // 0.4.60 G4: no room beside the card: the keyword boxes go under the rules.
         if (boxes != null && boxesInside && boxes.isNotEmpty()) KeywordBoxes(c, boxes, Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState()), tight = true)
         // 0.4.60 G3: what is attached to the card (auras, equipment), under the rules as small cards; a tap on one inspects it.
-        if (attached.isNotEmpty()) AttachedRow(c, attached, onAttached)
+        if (attached.isNotEmpty()) AttachedRow(c, attached, onAttached, picks = picks)
         val kws = if (boxes != null) emptyList() else c.keywords.map { it }.distinct().mapNotNull { k -> hintFor(k)?.let { k to it } }.take(3)
         kws.forEach { (k, hint) ->
             val inline = HashMap<String, InlineTextContent>()
@@ -312,21 +315,30 @@ internal fun KeywordBoxes(host: Card, boxes: List<KeywordBox>, modifier: Modifie
     }
 }
 
-/** 0.4.60 G3: the cards attached to [host], each a small card with its name under it; a tap on one opens it in the same view. */
+/**
+ * 0.4.60 G3: the cards attached to [host], each a small card with its name under it; a tap on one opens it in the same view.
+ * Randall 15 Nov (Disenchant on Weakness): one the question being asked offers ([picks]) wears the ice ring of a pickable tile and
+ * "Choose" under its name; the caller's [onAttached] then picks it and closes the page.
+ */
 @Composable
-private fun AttachedRow(host: Card, attached: List<Card>, onAttached: (Card) -> Unit, rule: Boolean = true) {
+private fun AttachedRow(host: Card, attached: List<Card>, onAttached: (Card) -> Unit, rule: Boolean = true, picks: Set<Int> = emptySet()) {
     if (rule) Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x1FFFFFFF)))
     Text("ATTACHED", style = sans(11.sp, FontWeight.Bold, GOLD).copy(letterSpacing = .16.em))
     Row(Modifier.fillMaxWidth().anchorRect("inspectAttached${host.id}"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         attached.take(4).forEach { a ->
             val shape = RoundedCornerShape(5.dp)
-            Column(Modifier.width(58.dp).anchorRect("inspectAtt${a.id}").semantics { contentDescription = "${a.name}, attached to ${host.name}" }
+            val pick = a.id in picks
+            Column(Modifier.width(58.dp).anchorRect("inspectAtt${a.id}").semantics { contentDescription = "${a.name}, attached to ${host.name}"; if (pick) stateDescription = "Choose" }
                 .clickable(remember { MutableInteractionSource() }, null) { onAttached(a) }, horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.size(52.dp, 72.dp).clip(shape).border(1.dp, Color(0x66E9C98A), shape).background(Color(0xFF141418))) {
+                Box(Modifier.size(52.dp, 72.dp).then(if (pick) Modifier.drawBehind {
+                        val o = 2.dp.toPx(); drawRoundRect(PICK_ICE, topLeft = androidx.compose.ui.geometry.Offset(-o, -o), size = androidx.compose.ui.geometry.Size(size.width + 2 * o, size.height + 2 * o),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(5.dp.toPx() + o)) } else Modifier)
+                    .clip(shape).border(1.dp, if (pick) PICK_ICE else Color(0x66E9C98A), shape).background(Color(0xFF141418))) {
                     if (!a.hidden) CardImage(a.name, Modifier.fillMaxSize().padding(1.dp), contentScale = ContentScale.Fit, shape = shape)
                 }
                 Spacer(Modifier.height(3.dp))
                 Text(a.name, style = sans(10.sp, FontWeight.Bold, Color(0xFFC9C2B2)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (pick) Text("Choose", style = sans(10.sp, FontWeight.ExtraBold, PICK_ICE), maxLines = 1)
             }
         }
         if (attached.size > 4) Text("+${attached.size - 4}", style = sans(12.sp, FontWeight.Bold, Color(0xFFC9C2B2)), modifier = Modifier.align(Alignment.CenterVertically))
@@ -359,6 +371,8 @@ private fun SymbolLine(line: String) {
 fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
     /** 0.4.60 G3: the cards attached to [card] (attachedOf), listed under the rules; a tap on one calls [onAttached] to inspect it. */
     attached: List<Card> = emptyList(), onAttached: (Card) -> Unit = {},
+    /** Randall 15 Nov: the attached cards the question being asked offers; they show as pickable and [onAttached] picks them. */
+    picks: Set<Int> = emptySet(),
     /**
      * 0.4.60 G6: the card's ability rows (abilityView) and, while Forge lets you use one, [onActivate]: Forge's own activation path.
      * The gold Activate in a row, a tap on the row, or a controller's A runs it; a tap anywhere else or B puts the card down.
@@ -427,7 +441,7 @@ fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
             val place = InspectNear.place(maxWidth.value, maxHeight.value, tileDp, k)
             androidx.compose.runtime.SideEffect { lit = place != null }
             if (place != null) {
-                InspectBeside(card, s, place, tileDp, k, maxHeight, enter.value, reduced, yours, boxes, attached, onAttached, ability, act)
+                InspectBeside(card, s, place, tileDp, k, maxHeight, enter.value, reduced, yours, boxes, attached, onAttached, ability, act, picks)
                 return@BoxWithConstraints
             }
         }
@@ -462,7 +476,7 @@ fun CardInspect(card: Card, viewer: Int?, start: PadAct? = null,
             .semantics { contentDescription = card.name }, horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             if (glass) {
                 androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(dens.density * k, dens.fontScale)) {
-                    GlassBox(s, boxW / k, cardH / k, 0f, attached, onAttached, boxes = boxes, boxesInside = !kwBeside, ability = ability, onActivate = act)
+                    GlassBox(s, boxW / k, cardH / k, 0f, attached, onAttached, picks = picks, boxes = boxes, boxesInside = !kwBeside, ability = ability, onActivate = act)
                 }
             }
             Box(Modifier.size(cardW, cardH).anchorRect("inspectCard${card.id}").drawBehind {
@@ -510,7 +524,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.litScrim(r: Rect, t
  */
 @Composable
 private fun InspectBeside(card: Card, s: Spotlight, place: InspectNear.Place, tile: Rect, k: Float, maxH: Dp, e: Float, reduced: Boolean, yours: Boolean,
-                          boxes: List<KeywordBox>, attached: List<Card>, onAttached: (Card) -> Unit, ability: AbilityView?, act: (() -> Unit)?) {
+                          boxes: List<KeywordBox>, attached: List<Card>, onAttached: (Card) -> Unit, ability: AbilityView?, act: (() -> Unit)?, picks: Set<Int> = emptySet()) {
     val glow = if (yours) GLOW_YOU else GLOW_CPU
     val c = place.card
     Box(Modifier.offset(c.left.dp, c.top.dp).size(c.width.dp, c.height.dp).anchorRect("inspectCard${card.id}")
@@ -547,7 +561,7 @@ private fun InspectBeside(card: Card, s: Spotlight, place: InspectNear.Place, ti
                 if (attached.isNotEmpty()) {
                     val shape = RoundedCornerShape(12.dp)
                     Column(Modifier.fillMaxWidth().clip(shape).background(Color(0xF00E121C)).border(1.dp, Color(0x6BE3C070), shape).padding(horizontal = 11.dp, vertical = 9.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)) { AttachedRow(card, attached, onAttached, rule = false) }
+                        verticalArrangement = Arrangement.spacedBy(6.dp)) { AttachedRow(card, attached, onAttached, rule = false, picks = picks) }
                 }
             }
         }

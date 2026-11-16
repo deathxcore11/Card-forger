@@ -1275,7 +1275,7 @@ fun ForgeBoard(
                     if (TablePad.held || (PadPrompts.anyFocus && !TableZones.ringIn)) return@snap false
                     val a = handAnchors ?: return@snap false
                     val sel = st.selection
-                    val stops = sel.targetCards.mapNotNull { id -> (TableZones.theirs[id] ?: TableZones.mine[id])?.let { r -> a.rects["c$id"]?.let { r to it } } } +
+                    val stops = sel.targetCards.mapNotNull { id -> (TableZones.theirs[id] ?: TableZones.mine[id])?.let { r -> cardRect(a.rects, "c$id")?.let { r to it } } } +
                         sel.players.filter { it in sel.targetPlayers }.mapNotNull { id -> TableZones.orbs[id]?.let { r -> a.rects["orb$id"]?.let { r to it } } }
                     val from = stops.firstOrNull { it.first === TablePad.last }?.second?.center ?: a.rects["hand"]?.center ?: return@snap false
                     TableZones.nearest(from, dir, stops.filter { it.first !== TablePad.last })?.let { TableZones.snapTo(it) } ?: false
@@ -1470,7 +1470,7 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
                     val ay by androidx.compose.animation.core.animateDpAsState(-rise * (e + (PILE_EDGES - 1) - pileEdge(pile.lastIndex, pile.size)), tween(260, easing = FastOutSlowInEasing), label = "py")
                     // Better table scene 5: a creature's auras are card edges peeking out at its left, drawn under its tile.
                     if (tile != null && pile.size == 1) aurasOn(card, lookup).takeIf { it.isNotEmpty() }?.let { auras ->
-                        AuraEdges(card, auras, w, h, advance, mine, Modifier.offset(x = ax, y = ay).zIndex(z - 1f), d) }
+                        AuraEdges(card, auras, w, h, advance, mine, markOf, tapOf, onInspect, Modifier.offset(x = ax, y = ay).zIndex(z - 1f), d) }
                     val top = j == pile.lastIndex
                     Tile(card, w, h, land, markOf(card), mine, lookup, tapOf(card), if (onPile != null) { _ -> onPile(pile) } else onInspect, Modifier.offset(x = ax, y = ay).zIndex(z + j + (if (card.id in strikers) 5000f else 0f)), d,
                         count = if (top && pile.size > 1) pile.size else 1, piece = piece, pileTop = top, advance = advance,
@@ -1625,6 +1625,16 @@ internal fun stackFullX(zones: ZoneLayout.Zones, H: Dp, d: Du): Dp = with(d) {
     if (zones.phone) zones.rightStrip.x.dp - 4.du - w else zones.window.right.dp - ZoneLayout.STACK_EDGE.dp - w
 }
 
+/**
+ * Randall 15 Nov (Disenchant on Weakness): the cards in [attached] that the question being asked offers ([st]'s selection), not yet
+ * chosen. The inspect page's Attached row shows them as pickable and a tap on one picks it.
+ */
+internal fun attachedPicks(st: MatchState?, live: Boolean, attached: List<Card>): Set<Int> {
+    if (st == null || !live || st.prompt != null) return emptySet()
+    val sel = st.selection
+    return attached.map { it.id }.filter { (it in sel.cards || it in sel.targetCards) && it !in sel.chosenCards }.toSet()
+}
+
 /** Better table scene 5: each pile's aura lead in a creature row ([TableGeometry.lead]; 0 for a pile of more than one card). */
 internal fun auraLeads(cards: List<Card>, split: Int, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, lookup: (Int) -> Card?): List<Float> =
     pilesOf(cards, split, markOf, tapOf).map { p -> if (p.size == 1) TableGeometry.lead(aurasOn(p[0], lookup).size) else 0f }
@@ -1635,9 +1645,16 @@ internal fun auraLeads(cards: List<Card>, split: Int, markOf: (Card) -> Mark, ta
  * creature lie on a real table. The first edge shows TableGeometry.PEEK of the tile's width, each further one PEEK_STEP more; two
  * at most, the outer one wearing "+N" for the rest. The edges turn and step with the tile (tapped, attacking) and move with its
  * effects. An aura that has just arrived slides out from under the tile. The anchors ("aura<id>") are each edge's box at rest.
+ *
+ * Randall 15 Nov (Disenchant could not pick Weakness): an edge is a tap target of its own. An aura the question offers ([markOf]
+ * gives it the mark a tile would wear) slides further out and up, wears that tile's ring and glow, and one tap does what a tap on
+ * its tile would ([tapOf]: the pick). Any other edge opens its card ([onInspect]); a long press always does. The hit area is the
+ * part of the edge left of the tile (never the tile itself), at least [TextFloors.TOUCH] tall. An offered edge takes the
+ * controller's ring with the tiles (TableZones) and points the aim arc at itself.
  */
 @Composable
-private fun AuraEdges(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, modifier: Modifier, d: Du) = with(d) {
+private fun AuraEdges(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?, mineSide: Boolean, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?,
+                      onInspect: (Card) -> Unit, modifier: Modifier, d: Du) = with(d) {
     val turn by animateFloatAsState(if (card.tapped) 20f else 0f, tapSpec(card.id), label = "auraTap")
     val stepUp by attackStep(card)
     val shown = auras.take(TableGeometry.STRIPS_MAX); val n = shown.size; val more = auras.size - n
@@ -1647,16 +1664,21 @@ private fun AuraEdges(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?,
     // 0.4.59 T5: an aura on its way from the stack (TravelCard) shows its edge once it has arrived.
     val coming = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.TO_HOST && fx?.reduced != true }?.cardId
     val shape = RoundedCornerShape(7.du)
+    // The mark each edge wears (the one its tile would), and whether the question offers it.
+    val marks = shown.map { markOf(it) }
+    val offered = marks.map { it in EDGE_PICK }
+    // An offered edge slides further out and lifts (each further one spreads a little more), animated unless the table is still.
+    val lifts = shown.mapIndexed { i, a -> key(a.id) { animateFloatAsState(if (offered[i]) 1f else 0f, if (calm) androidx.compose.animation.core.snap() else tween(220, easing = FastOutSlowInEasing), label = "auraLift").value } }
     // Where each edge lies at rest: left of the tile by its peek, a little dropped, a little turned.
-    fun spot(i: Int) = Triple(-w * (TableGeometry.PEEK + TableGeometry.PEEK_STEP * i), h * TableGeometry.EDGE_TOP, -3f - 2f * i)
+    fun spot(i: Int): Triple<Dp, Dp, Float> { val k = lifts[i]
+        return Triple(-w * (TableGeometry.PEEK + TableGeometry.PEEK_STEP * i + (EDGE_LIFT_X + EDGE_SPREAD * i) * k), h * TableGeometry.EDGE_TOP - h * EDGE_LIFT_Y * k, -3f - 2f * i) }
     val ew = w * TableGeometry.EDGE_W; val eh = h * TableGeometry.EDGE_H
     Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; attackLayer(card.tapped, stepUp, mineSide, advance?.toPx() ?: (12f * u * density)) }) {
         // The anchors: each edge at rest, read before any effect moves it (as the tile's own "c<id>" is).
         shown.forEachIndexed { i, a ->
             val (x, y, tilt) = spot(i)
             Box(Modifier.offset(x = x, y = y).size(ew, eh).graphicsLayer { rotationZ = tilt }
-                .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("aura${a.id}", it.boundsInRoot()) } else Modifier)
-                .semantics { contentDescription = "${a.name} on ${card.name}" })
+                .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("aura${a.id}", it.boundsInRoot()) } else Modifier))
         }
         // The edges move with the tile's effects (an arrival, a lift, a knock), in a layer the tile's own size so they keep their place on it.
         Box(Modifier.fillMaxSize().then(if (fx != null) Modifier.graphicsLayer { fx.move(this, card.id, anchors); if (card.isCreature) fx.breathe(this, card.id); shadowElevation = 0f } else Modifier)) {
@@ -1669,6 +1691,7 @@ private fun AuraEdges(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?,
                     val here = a.id != coming
                     val out = remember { Animatable(if (calm && here) 1f else 0f) }
                     LaunchedEffect(here, calm) { if (calm || !here) out.snapTo(if (here) 1f else 0f) else out.animateTo(1f, tween(AURA_SLIDE_MS, easing = androidx.compose.animation.core.Easing { backOut(it) })) }
+                    val role = markRing(marks[i])?.takeIf { offered[i] || marks[i] == Mark.PICKED }
                     Box(Modifier.offset(x = x, y = y).size(ew, eh)
                         .graphicsLayer {
                             val k = out.value
@@ -1680,14 +1703,30 @@ private fun AuraEdges(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?,
                         .drawBehind {
                             // A soft drop shadow, so the edge lies on the mat and under the tile.
                             drawRoundRect(Color(0xA6000000), topLeft = Offset(-1.dp.toPx(), 4.dp.toPx()), size = size, cornerRadius = CornerRadius(7.du.toPx()))
+                            // An offered edge: the ring and glow its tile would wear (Tile's role ring).
+                            if (role != null) {
+                                val r = 7.du.toPx()
+                                drawIntoCanvas { c ->
+                                    val spread = 4.du.toPx(); val p = Paint().asFrameworkPaint().apply { isAntiAlias = true; color = role.third.let { g -> g.copy(alpha = g.alpha * (fx?.rimPulse() ?: 1f)) }.toArgb(); maskFilter = android.graphics.BlurMaskFilter(10.du.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL) }
+                                    c.nativeCanvas.drawRoundRect(-spread, -spread, size.width + spread, size.height + spread, r + spread, r + spread, p)
+                                }
+                                val ringW = role.second.du.toPx()
+                                drawRoundRect(role.first, topLeft = Offset(-ringW, -ringW), size = Size(size.width + 2 * ringW, size.height + 2 * ringW), cornerRadius = CornerRadius(r + ringW))
+                            }
                         }
                         .clip(shape).background(Color(0xFF141418))) {
                         CardImage(a.name, Modifier.fillMaxSize(), crop = true)
                         // Light along the outer side, shade where it runs under the tile: the edge reads as a card, not a sticker.
                         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color(0x30FFF1D0), .1f to Color(0x00000000), .5f to Color(0x00000000), 1f to Color(0xA6000000))))
-                        Box(Modifier.fillMaxSize().border(1.dp, Brush.verticalGradient(listOf(Gold.copy(alpha = .9f), Gold.copy(alpha = .35f))), shape))
+                        if (role == null) Box(Modifier.fillMaxSize().border(1.dp, Brush.verticalGradient(listOf(Gold.copy(alpha = .9f), Gold.copy(alpha = .35f))), shape))
                     }
                 }
+            }
+            // The tap targets, over the edges: each the part of its edge left of the one nearer the tile (of the tile itself for the
+            // nearest), at least a finger tall, so a tap on the tile is always the tile's.
+            for (i in 0 until n) {
+                val a = shown[i]
+                key(a.id) { EdgeHit(a, card, marks[i], offered[i], spot(i), if (i == 0) 0.dp else spot(i - 1).first, eh, mineSide, tapOf, onInspect) }
             }
             // More auras than edges: "+N" in the tag pill's shape on the outer edge's foot, over the edges, so it is never covered.
             if (more > 0) {
@@ -1703,6 +1742,42 @@ private fun AuraEdges(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?,
 }
 /** How long an arriving aura's edge takes to slide out from under its creature. */
 internal const val AURA_SLIDE_MS = 360
+/** The marks that make an aura's edge an offered pick (it slides out, wears the ring, a tap picks it). */
+private val EDGE_PICK = setOf(Mark.PICKED, Mark.TARGET, Mark.DISCARD, Mark.PICKABLE)
+/** How much further (of the tile's width) an offered edge slides out, how much more each further one spreads, and how far it lifts (of the height). */
+internal const val EDGE_LIFT_X = .1f
+internal const val EDGE_SPREAD = .06f
+internal const val EDGE_LIFT_Y = .07f
+
+/**
+ * One aura edge's tap target (AuraEdges): from the edge's left side ([at]) to [until] (the next edge in, or the tile's left side),
+ * centred on the edge and at least [TextFloors.TOUCH] tall. Offered: a tap is [tapOf]'s (the pick), the controller's ring can reach
+ * it (TableZones, as a tile), A picks and Y opens it; otherwise a tap opens its card. A long press opens it either way.
+ */
+@Composable
+private fun EdgeHit(a: Card, host: Card, mark: Mark, offered: Boolean, at: Triple<Dp, Dp, Float>, until: Dp, eh: Dp, mineSide: Boolean,
+                    tapOf: (Card) -> (() -> Unit)?, onInspect: (Card) -> Unit) {
+    val (x, y, _) = at
+    val hitH = maxOf(eh, TextFloors.TOUCH.dp)
+    val act = if (offered) tapOf(a) else null
+    val tap by androidx.compose.runtime.rememberUpdatedState(act ?: { onInspect(a) })
+    val inspect by androidx.compose.runtime.rememberUpdatedState(onInspect)
+    val aNow by androidx.compose.runtime.rememberUpdatedState(a)
+    val word = when { mark == Mark.PICKED -> "Chosen"; !offered || act == null -> null; mark == Mark.TARGET -> "Target"; mark == Mark.DISCARD -> "Discard"; else -> "Choose" }
+    val padSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val padFocus = remember { FocusRequester() }
+    val padHere = remember(a.id, word) { PadActs(a = word ?: "Inspect", y = PadAct("Inspect") { inspect(aNow) }) }
+    val reach = offered && act != null
+    if (reach) androidx.compose.runtime.DisposableEffect(a.id, mineSide) {
+        val zone = if (mineSide) TableZones.mine else TableZones.theirs
+        zone[a.id] = padFocus
+        onDispose { if (zone[a.id] === padFocus) zone.remove(a.id) }
+    }
+    Box(Modifier.offset(x = x, y = y + (eh - hitH) / 2).size(maxOf(until - x, 1.dp), hitH)
+        .semantics { contentDescription = "${a.name} on ${host.name}"; if (word != null) stateDescription = word }
+        .then(if (reach) Modifier.aimOn("c${a.id}").padActs(padHere).matchPadTap(padSource, padFocus) { tap() } else Modifier)
+        .pointerInput(a.id) { detectTapGestures(onTap = { tap() }, onLongPress = { inspect(aNow) }) })
+}
 
 /** At most this many card edges show in a pile. */
 internal const val PILE_EDGES = 4
@@ -1723,6 +1798,18 @@ internal fun pilesOf(cards: List<Card>, split: Int, markOf: (Card) -> Mark, tapO
         else "${if (i < split) "l" else "o"}|${it.name}|${it.tapped}|${it.summoningSick}|${it.controller}|${it.token}|$m|${tapOf(it) != null}"
     }.values.map { g -> g.map { it.value } }
     return groups.flatMap { g -> if (g.size == 2 && !g[0].isLand && !g[0].token) g.map { listOf(it) } else listOf(g) }
+}
+
+/**
+ * play-forge-table.css: the ring colour, its width (du) and its glow for a role mark (chosen, target, discard, playable or pickable);
+ * null for the others. A tile and an aura's card edge (AuraEdges) wear the same one.
+ */
+internal fun markRing(mark: Mark): Triple<Color, Float, Color>? = when (mark) {
+    Mark.PICKED -> Triple(Color(0xFFF3D27E), 2.5f, Color(0x8CF3D27E))
+    Mark.TARGET -> Triple(Color(0xFFFF9D5C), 2f, Color(0x8CFF9D5C))
+    Mark.DISCARD -> Triple(Color(0xFFFF7A6B), 2f, Color(0x8CFF6A5A))
+    Mark.PLAYABLE, Mark.PICKABLE -> Triple(Ice, 2f, Color(0x8C5CC8FF))
+    else -> null
 }
 
 /** A permanent (.play-match-card on the battlefield): the art crop in a #141418 tile with a 1.5 du ring in its frame colour. */
@@ -1746,10 +1833,7 @@ private fun Tile(card: Card, w: Dp, h: Dp, land: Boolean, mark: Mark, mineSide: 
         card.attacking -> Triple(Color(0xFFFF6A4A), 2f, Color(0x99FF5A3A))
         // Better table scene 4: your blocker and its line are gold (the preview's ring-gold and gold join).
         card.blocking -> Triple(Gold, 2.5f, Color(0x99E8B95B))
-        mark == Mark.PICKED -> Triple(Color(0xFFF3D27E), 2.5f, Color(0x8CF3D27E))
-        mark == Mark.TARGET -> Triple(Color(0xFFFF9D5C), 2f, Color(0x8CFF9D5C))
-        mark == Mark.DISCARD -> Triple(Color(0xFFFF7A6B), 2f, Color(0x8CFF6A5A))
-        mark == Mark.PLAYABLE || mark == Mark.PICKABLE -> Triple(Ice, 2f, Color(0x8C5CC8FF))
+        markRing(mark) != null -> markRing(mark)
         // M14: a planeswalker Forge offers an ability for wears the blue rim.
         whole && mark == Mark.USABLE -> Triple(Ice, 2f, Color(0x8C5CC8FF))
         else -> null
@@ -3365,6 +3449,13 @@ private fun CombatLine(st: MatchState, mid: Dp, W: Dp, d: Du) = with(d) {
  */
 internal data class Rel(val kind: String, val from: String, val to: String, val held: Boolean = false, val blocker: Int? = null, val attacker: Int? = null, val caster: Int? = null, val aim: Boolean = false)
 
+/**
+ * An anchor for an arrow's or the ring's end: a card's "c<id>" tile, or, for an aura that has no tile of its own, its card edge
+ * ("aura<id>", AuraEdges), so an arrow to a chosen aura points at its edge.
+ */
+internal fun cardRect(rects: Map<String, androidx.compose.ui.geometry.Rect>, key: String): androidx.compose.ui.geometry.Rect? =
+    rects[key] ?: key.takeIf { it.startsWith("c") }?.drop(1)?.toIntOrNull()?.let { rects["aura$it"] }
+
 /** 0.4.59 T6: what the arc points at while a target is being chosen: the legal target the finger pressed or the ring is on, whichever moved last. */
 internal object TableAim { var key by mutableStateOf<String?>(null) }
 
@@ -3512,7 +3603,7 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
         val k = 1.du.toPx()
         val found = mutableListOf<Pair<Offset, Rel>>()
         for (r in rels) {
-            val a = (if (r.from == "stackcard" && popping) anchors.rects["travelcard"] else null) ?: anchors.rects[r.from] ?: continue; val b = anchors.rects[r.to] ?: continue
+            val a = (if (r.from == "stackcard" && popping) anchors.rects["travelcard"] else null) ?: anchors.rects[r.from] ?: continue; val b = cardRect(anchors.rects, r.to) ?: continue
             val ax = a.center.x - self.x; val ay = a.center.y - self.y; val bx = b.center.x - self.x; val by = b.center.y - self.y
             val len = kotlin.math.hypot(bx - ax, by - ay); if (len < 20 * k) continue
             val ux = (bx - ax) / len; val uy = (by - ay) / len

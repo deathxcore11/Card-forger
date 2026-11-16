@@ -250,13 +250,16 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         // Start still opens the match menu from an open inspect (U8: on two screens the ring can't come down to it).
         val inspectStart = PadAct("Menu") { inspect = null; matchMenu.open = true }
         // 0.4.60 G3: the one inspect view lists what is attached to the card; a tap on one of those opens it in the same view.
-        inspect?.let { c -> val att = attachedOf(shown, shown?.card(c.id)?.takeIf { it.zone == c.zone } ?: c); val openAtt: (Card) -> Unit = { inspect = it }
-            if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart, beside = true, attached = att, onAttached = openAtt, ability = abilityNow, onActivate = activate) { inspect = null } }
+        // Randall 15 Nov (Disenchant on Weakness): an attached card the question offers is picked from the row, and the page closes.
+        inspect?.let { c -> val att = attachedOf(shown, shown?.card(c.id)?.takeIf { it.zone == c.zone } ?: c)
+            val picks = attachedPicks(shown, boardLive, att)
+            val openAtt: (Card) -> Unit = { a -> if (a.id in picks) { inspect = null; controller.intents.card(a.id) } else inspect = a }
+            if (DualScreen.active) BottomScreen { CardInspect(c, shown?.viewer, inspectStart, beside = true, attached = att, onAttached = openAtt, picks = picks, ability = abilityNow, onActivate = activate) { inspect = null } }
             else {
                 // Better table scene 13: a card on the battlefield opens beside its tile (its anchor, read once as it opens; an Aura
                 // read from the Attached row stands beside its card edge).
                 val near = remember(c.id) { if (c.zone == "Battlefield") anchors.rects["c${c.id}"] ?: anchors.rects["aura${c.id}"] else null }
-                CardInspect(c, shown?.viewer, inspectStart, attached = att, onAttached = openAtt, ability = abilityNow, onActivate = activate, near = near) { inspect = null }
+                CardInspect(c, shown?.viewer, inspectStart, attached = att, onAttached = openAtt, picks = picks, ability = abilityNow, onActivate = activate, near = near) { inspect = null }
             } }
         if (menu) Menu(onConcede = { menu = false; matchMenu.ask = "concede" }, onLeave = { menu = false; matchMenu.ask = "leave" }, onClose = { menu = false })
         MatchLeaveConfirm(matchMenu)
