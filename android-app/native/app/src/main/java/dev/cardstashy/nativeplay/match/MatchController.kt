@@ -29,6 +29,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 data class Beat(
     val kind: Kind, val title: String, val cardId: Int?, val cardName: String?, val detail: String?,
     val lifeFrom: Int? = null, val lifeTo: Int? = null, val durationMs: Long = 0,
+    /** Better table scene 6: the card names inside [detail] that the caption draws in gold (the spell's targets). */
+    val marks: List<String> = emptyList(),
 ) {
     enum class Kind { LAND, ACTION, AFFECTS_YOU }
 }

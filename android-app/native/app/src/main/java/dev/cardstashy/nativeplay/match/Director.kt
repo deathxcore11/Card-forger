@@ -316,8 +316,10 @@ object Director {
             // its arrows 300 + the read (525, or 500 before your prompt).
             // M6: the read is the pop (the card large, with the caption); after the burst only its arrows' 300 remain.
             val read = if (targeted) 300L else 0L
+            // Better table scene 6: every targeted CPU spell names its target and, in Forge's own words, what it does to it.
+            val words = if (targeted) castWords(st, before, e) else null
             castLegs(e, mine = false, readMs = read, beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, "CPU casts ${e.source?.name ?: "a spell"}", e.source?.id, e.source?.name,
-                    if (hits) targetText(st, e.targets) else null, life?.first, life?.second))
+                    words?.detail, life?.first, life?.second, marks = words?.names.orEmpty()))
         }
         loop@ for (e in events) {
             when (e.type) {
@@ -367,7 +369,7 @@ object Director {
                         val n = prev.count + 1
                         out[out.lastIndex] = prev.copy(count = n, beat = prev.beat.copy(title = "$title ×$n"))
                     } else out += Step(Kind.ABILITY, 1020, 600, "CARD-013", focal = true, cpu = true, cardId = e.source?.id, cardName = e.source?.name,
-                        beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, title, e.source?.id, e.source?.name, if (hits) targetText(st, e.targets) else null))
+                        beat = Beat(if (hits) Beat.Kind.AFFECTS_YOU else Beat.Kind.ACTION, title, e.source?.id, e.source?.name, if (hits) targetText(st, e.targets, before) else null))
                 }
                 "attack" -> if (cpu(e.player) && e.attackers.isNotEmpty()) {
                     thinkFor(Decision.ATTACK, e.turn)
@@ -813,8 +815,49 @@ object Director {
         return if (to < from) from to to else null
     }
 
-    private fun targetText(st: MatchState, refs: List<Ref>) = refs.joinToString(", ") {
-        if (it.kind == "player") (if (it.id == st.viewer) "Targets you" else "Targets CPU") else "Targets ${it.name ?: "a card"}"
+    /** Forge's target refs carry no name (cause-murder.jsonl: {"kind":"card","id":33}): the name from the board, or the board before. */
+    internal fun targetName(st: MatchState, before: MatchState?, r: Ref): String? =
+        if (r.kind == "player") (if (r.id == st.viewer) "you" else "CPU") else r.name ?: st.card(r.id)?.name ?: before?.card(r.id)?.name
+            ?: (st.stack + before?.stack.orEmpty()).firstOrNull { it.id == r.id || it.source?.id == r.id }?.source?.name
+
+    internal fun targetText(st: MatchState, refs: List<Ref>, before: MatchState? = null) = refs.joinToString(", ") {
+        if (it.kind == "player") (if (it.id == st.viewer) "Targets you" else "Targets CPU") else "Targets ${targetName(st, before, it) ?: "a card"}"
+    }
+
+    /** Scene 6: the caption's words for a targeted CPU spell: what it does in Forge's words, or "→ <target>"; [names] the card names in it. */
+    data class CastWords(val detail: String, val names: List<String>)
+    /** The longest effect clause the caption takes before it falls back to "→ <target>" (one line beside the names). */
+    const val CLAUSE_MAX = 56
+
+    /**
+     * Better table scene 6 ("CPU · Flame Lash · 4 damage to Veteran Survivor"): Forge's own stack text for the cast, "Flame Lash (90) -
+     * Flame Lash deals 4 damage to Veteran Survivor (45).", read down to "4 damage to Veteran Survivor" (ids, the full stop and the
+     * spell's own "<name> deals" left off; players named "you" and "CPU"). Only a short single clause that names every target is kept;
+     * otherwise, or with no stack text, the words are "→ <target names>". Nothing is made up: no number Forge did not write.
+     */
+    fun castWords(st: MatchState, before: MatchState?, e: GameEvent): CastWords? {
+        if (e.targets.isEmpty()) return null
+        val names = e.targets.mapNotNull { targetName(st, before, it) }
+        if (names.isEmpty()) return null
+        val cards = e.targets.filter { it.kind != "player" }.mapNotNull { targetName(st, before, it) }.distinct()
+        val arrow = CastWords("→ " + names.joinToString(", "), cards)
+        val item = (st.stack + before?.stack.orEmpty()).firstOrNull { (e.stackId != null && it.id == e.stackId) || (e.source?.id != null && it.source?.id == e.source.id && !it.ability) }
+        val clause = item?.text?.let { castClause(it, e.source?.name ?: item.source?.name, st) } ?: return arrow
+        return if (clause.length <= CLAUSE_MAX && names.all { clause.contains(it) }) CastWords(clause, cards) else arrow
+    }
+
+    /** Scene 6: Forge's stack text read down to its effect clause (see [castWords]); null when it has no "<name> (id) - " head. */
+    internal fun castClause(text: String, spell: String?, st: MatchState): String? {
+        val head = Regex("^(.{1,80}?) \\(\\d+\\) - (.+)$", RegexOption.DOT_MATCHES_ALL).find(text.trim()) ?: return null
+        var c = head.groupValues[2].replace(Regex("\\s*\\(Targeting[^)]*\\)"), "").replace(Regex("\\s*\\[[^\\]]{0,160}\\]"), "")
+            .replace(Regex("\\s*\\(\\d+\\)"), "").trim()
+        if (c.endsWith(".")) c = c.dropLast(1).trim()
+        if (c.isEmpty() || c.contains(". ") || c.contains('\n')) return null
+        val own = spell ?: head.groupValues[1]
+        Regex("^${Regex.escape(own)} deals ", RegexOption.IGNORE_CASE).find(c)?.let { c = c.substring(it.range.last + 1) }
+        // Forge names the players by their seat names: the caption says "you" and "CPU", as the rest of the table does.
+        for (p in st.players) if (p.name.isNotBlank()) c = c.replace(Regex("\\b${Regex.escape(p.name)}\\b"), if (p.id == st.viewer) "you" else "CPU")
+        return c.takeIf { it.isNotBlank() }
     }
 
     /**

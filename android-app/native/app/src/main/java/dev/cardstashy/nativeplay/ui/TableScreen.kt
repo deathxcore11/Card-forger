@@ -68,6 +68,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -596,12 +601,37 @@ private fun Sidebar(st: MatchState, c: MatchController, beat: Beat?, live: Boole
     }
 }
 
+/**
+ * Better table scene 6: a CPU spell's caption as its pieces, each with whether it is a name drawn in gold: "CPU · Flame Lash · 4 damage
+ * to Veteran Survivor", or "CPU · Flame Lash → Veteran Survivor" when Forge gave no effect words. Null for any other beat, or a CPU
+ * spell with no target (that keeps "CPU casts Goblin Chariot").
+ */
+internal fun castCaption(b: Beat): List<Pair<String, Boolean>>? {
+    if (!b.title.startsWith("CPU casts ")) return null
+    val name = b.cardName ?: return null
+    val detail = b.detail?.takeIf { it.isNotBlank() } ?: return null
+    val out = mutableListOf("CPU · " to false, name to true, (if (detail.startsWith("→")) " " else " · ") to false)
+    // The target names inside the words, in gold (longest first, so a name inside another is not split).
+    val marks = b.marks.filter { it.isNotBlank() }.sortedByDescending { it.length }
+    var rest = detail
+    while (rest.isNotEmpty()) {
+        val hit = marks.mapNotNull { m -> rest.indexOf(m).takeIf { it >= 0 }?.let { it to m } }.minByOrNull { it.first }
+        if (hit == null) { out += rest to false; break }
+        if (hit.first > 0) out += rest.substring(0, hit.first) to false
+        out += hit.second to true
+        rest = rest.substring(hit.first + hit.second.length)
+    }
+    if (b.lifeFrom != null && b.lifeTo != null) out += " · ${b.lifeFrom} → ${b.lifeTo}" to false
+    return out
+}
+
 /** One line of glass over the felt (.forge-narrate): what just happened, a hairline timer under it, red when it costs you life. Tap to move on. */
 @Composable
-private fun BeatCaption(b: Beat, modifier: Modifier, onTap: () -> Unit) {
+internal fun BeatCaption(b: Beat, modifier: Modifier, onTap: () -> Unit) {
     val timer = remember(b) { Animatable(1f) }
     LaunchedEffect(b) { timer.animateTo(0f, tween(b.durationMs.toInt(), easing = LinearEasing)) }
     val red = b.kind == Beat.Kind.AFFECTS_YOU
+    castCaption(b)?.let { parts -> CastLine(parts, red, timer.value, modifier, onTap); return }
     val tone = if (red) Color(0xFFFFB4A8) else Palette.Ink
     val text = listOfNotNull(b.title, b.detail?.takeIf { it.isNotBlank() }, if (b.lifeFrom != null && b.lifeTo != null) "${b.lifeFrom} → ${b.lifeTo}" else null).joinToString(" · ")
     Column(modifier.widthIn(max = 460.dp).clip(RoundedCornerShape(999.dp)).background(Color(0xB30C0C0E)).border(1.dp, if (red) Palette.Red else Color(0x55F2D496), RoundedCornerShape(999.dp))
@@ -610,6 +640,47 @@ private fun BeatCaption(b: Beat, modifier: Modifier, onTap: () -> Unit) {
         if (b.kind != Beat.Kind.LAND) Box(Modifier.padding(top = 4.dp).fillMaxWidth().height(2.dp).clip(RoundedCornerShape(2.dp)).background(Color(0x22FFFFFF))) {
             Box(Modifier.fillMaxWidth(timer.value).height(2.dp).background(if (red) Palette.Red else Palette.Gold))
         }
+    }
+}
+
+/**
+ * Better table scene 6, the CPU spell's line: a band of night glass that fades out at both ends between two gold hairlines (the
+ * preview's .line), cream words with the spell and its target in gold, and the read timer as a hairline under it (red when it costs
+ * you). It eases in, dropping 6 dp, so it lands with the card's pop.
+ */
+@Composable
+private fun CastLine(parts: List<Pair<String, Boolean>>, red: Boolean, timer: Float, modifier: Modifier, onTap: () -> Unit) {
+    val text = androidx.compose.ui.text.buildAnnotatedString {
+        for ((t, gold) in parts) if (gold) withStyle(androidx.compose.ui.text.SpanStyle(color = Palette.Gold, fontWeight = FontWeight.Bold)) { append(t) } else append(t)
+    }
+    val enter = remember { Animatable(if (Motion.still) 1f else 0f) }
+    LaunchedEffect(Unit) { if (!Motion.still) enter.animateTo(1f, tween(260, easing = FastOutSlowInEasing)) }
+    val hair = if (red) Color(0x99E0533F) else Color(0x73E6B450)
+    val band = Brush.horizontalGradient(0f to Color.Transparent, .18f to Color(0xEB08090F), .82f to Color(0xEB08090F), 1f to Color.Transparent)
+    // It steps left off the CPU's card while that is held large at the right (a phone's pop is most of the height): only its
+    // faded ends (its side padding) may lie over the card, never the words.
+    val anchors = LocalAnchors.current
+    val popping = LocalTravel.current?.travel?.leg == dev.cardstashy.nativeplay.match.Director.Leg.POP
+    var at by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+    Box(modifier.widthIn(max = 620.dp).onGloballyPositioned { at = it.boundsInRoot() }.graphicsLayer {
+            alpha = enter.value; translationY = -6.dp.toPx() * (1f - enter.value)
+            anchors?.version?.intValue
+            val card = if (popping) anchors?.rects?.get("travelcard") else null
+            if (card != null && !at.isEmpty && card.top < at.bottom && card.bottom > at.top) {
+                val words = at.right - 40.dp.toPx()
+                if (words > card.left - 8.dp.toPx()) translationX = -minOf(words - card.left + 8.dp.toPx(), (at.left - 8.dp.toPx()).coerceAtLeast(0f))
+            }
+        }
+        .anchorRect("castline").semantics { contentDescription = parts.joinToString("") { it.first } }
+        .clickable(onClick = onTap).background(band).drawBehind {
+            val k = 1.dp.toPx()
+            val line = Brush.horizontalGradient(0f to Color.Transparent, .18f to hair, .82f to hair, 1f to Color.Transparent)
+            drawRect(line, size = Size(size.width, k)); drawRect(line, topLeft = Offset(0f, size.height - k), size = Size(size.width, k))
+            // The read timer: a gold (red) hairline over the bottom one, running down.
+            drawRect(if (red) Palette.Red else Palette.Gold, topLeft = Offset(size.width * .18f, size.height - k * 1.5f), size = Size(size.width * .64f * timer, k * 1.5f))
+        }.padding(horizontal = 40.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
+        Text(text, style = androidx.compose.ui.text.TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Medium, fontSize = 15.sp, letterSpacing = .9.sp, color = Color(0xFFF3E7C6)),
+            textAlign = TextAlign.Center, maxLines = 2)
     }
 }
 

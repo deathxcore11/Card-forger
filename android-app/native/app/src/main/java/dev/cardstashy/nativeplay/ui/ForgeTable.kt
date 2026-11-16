@@ -3128,9 +3128,6 @@ internal data class Rel(val kind: String, val from: String, val to: String, val 
 /** 0.4.59 T6: what the arc points at while a target is being chosen: the legal target the finger pressed or the ring is on, whichever moved last. */
 internal object TableAim { var key by mutableStateOf<String?>(null) }
 
-/** The CPU's thread and rim (the colour its cast flight already uses, Battlefield.kt). */
-internal val ThreadCoral = Color(0xFFFF8A5C)
-
 /** The aim follows a press (seen before the tap's own handler) or the pad ring arriving on [key]. */
 internal fun Modifier.aimOn(key: String): Modifier = onFocusChanged { if (it.isFocused) TableAim.key = key }
     .pointerInput(key) { awaitPointerEventScope { while (true) { val e = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); if (e.changes.any { it.pressed && !it.previousPressed }) TableAim.key = key } } }
@@ -3252,12 +3249,18 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
     LaunchedEffect(aimed.keys) {
         for ((key, r) in aimed) { val w = whips[key] ?: continue; if (w.value >= 1f) continue
             launch { w.animateTo(1f, tween(200, easing = androidx.compose.animation.core.Easing { 1f - (1f - it) * (1f - it) * (1f - it) }))
-                fx?.aimLock(r.to, if (r.caster != null && r.caster != st.viewer) ThreadCoral else Color(0xFFF3D27E)) } }
+                fx?.aimLock(r.to, if (r.caster != null && r.caster != st.viewer) CpuRed else Color(0xFFF3D27E)) } }
     }
     if (rels.isEmpty()) return@with
     val flowing = !Motion.still && rels.any { it.kind != "target" }
     val flow = if (flowing) rememberInfiniteTransition(label = "flow").animateFloat(0f, 13f, infiniteRepeatable(tween(1400, easing = LinearEasing)), label = "dash") else remember { mutableFloatStateOf(0f) }
     var self by remember { mutableStateOf(Offset.Zero) }
+    // Better table scene 6: while the top spell is held large to be read (its pop), its target arcs leave that card, not the stack
+    // card under it; with reduce motion there is no pop and they stay on the stack card.
+    val travel = LocalTravel.current?.travel
+    val top = laneStack(st).firstOrNull()
+    val popping = travel != null && travel.leg == dev.cardstashy.nativeplay.match.Director.Leg.POP && fx?.reduced != true && top != null &&
+        ((travel.stackId != null && travel.stackId == top.id) || (travel.cardId != null && travel.cardId == top.source?.id))
     val blocking = st.inputType == "InputBlock" && st.prompt == null
     val colors = mapOf("attack" to Color(0xFFFF6A4A), "block" to Gold, "target" to Color(0xFFF3D27E))
     val glows = mapOf("attack" to Color(0xAAFF5A3A), "block" to Color(0xAAE8B95B), "target" to Color(0xAAF3D27E))
@@ -3269,7 +3272,7 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
         val k = 1.du.toPx()
         val found = mutableListOf<Pair<Offset, Rel>>()
         for (r in rels) {
-            val a = anchors.rects[r.from] ?: continue; val b = anchors.rects[r.to] ?: continue
+            val a = (if (r.from == "stackcard" && popping) anchors.rects["travelcard"] else null) ?: anchors.rects[r.from] ?: continue; val b = anchors.rects[r.to] ?: continue
             val ax = a.center.x - self.x; val ay = a.center.y - self.y; val bx = b.center.x - self.x; val by = b.center.y - self.y
             val len = kotlin.math.hypot(bx - ax, by - ay); if (len < 20 * k) continue
             val ux = (bx - ax) / len; val uy = (by - ay) / len
@@ -3280,10 +3283,11 @@ private fun Arrows(st: MatchState, live: Boolean, intents: TableIntents, d: Du) 
             // P6: how far a new target thread has whipped out (1 once it has locked).
             val whip = if (r.kind == "target" && !r.aim) whips["${r.caster}>${r.to}"]?.value ?: 1f else 1f
             val path = if (whip >= 1f) whole else Path().also { part -> androidx.compose.ui.graphics.PathMeasure().apply { setPath(whole, false); getSegment(0f, length * whip, part, true) } }
-            // A target thread is in its caster's colour: gold yours, coral the CPU's (glow rules; T6 arc).
+            // A target thread is in its caster's colour: gold yours, red the CPU's (better table scene 6: the red arc to the exact card;
+            // it was coral).
             val cpuThread = r.kind == "target" && r.caster != null && r.caster != st.viewer
-            val col = if (cpuThread) ThreadCoral else colors.getValue(r.kind)
-            val glow = if (cpuThread) ThreadCoral.copy(alpha = .67f) else glows.getValue(r.kind)
+            val col = if (cpuThread) CpuRed else colors.getValue(r.kind)
+            val glow = if (cpuThread) CpuRed.copy(alpha = .67f) else glows.getValue(r.kind)
             val heldLine = r.kind == "attack" && r.held
             // Better table scene 4: a block is a solid gold join (the preview's gold arc), a glint running along it.
             val joined = r.kind == "block"

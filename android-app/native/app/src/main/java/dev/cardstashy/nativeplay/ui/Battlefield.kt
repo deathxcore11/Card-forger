@@ -2353,6 +2353,38 @@ private fun DrawScope.pop(tm: androidx.compose.ui.text.TextMeasurer, text: Strin
 }
 
 /**
+ * Better table scene 6 ("the big card sits on top of your creatures"): where the CPU's popped card is held large. At [share] of the
+ * table's height against its right edge ([edge] in), centred, as M6 measured, when that covers none of [avoid] (the spell's targets);
+ * else the same size raised to the top; else a step smaller each time, down to [minShare] (the stack card's size as it stands, which
+ * is smaller while it steps aside for a creature); then the same lowered to the bottom; else, at that size, just left of a target.
+ * All [gap] clear of the targets and of the table's edges. When nothing clears, the place covering least. The card keeps the stack
+ * card's shape.
+ */
+internal fun popRect(stack: Rect, self: Rect, share: Float, minShare: Float, avoid: List<Rect>, edge: Float, gap: Float): Rect {
+    val aspect = stack.width / stack.height.coerceAtLeast(1f)
+    fun at(h: Float, right: Float, cy: Float): Rect {
+        val w = h * aspect; val lo = self.top + gap + h / 2; val hi = self.bottom - gap - h / 2
+        val y = if (lo <= hi) cy.coerceIn(lo, hi) else self.center.y
+        return Rect(right - w, y - h / 2, right, y + h / 2)
+    }
+    val keep = avoid.filter { !it.isEmpty }.map { it.inflate(gap) }
+    fun covered(r: Rect) = keep.sumOf { k -> r.intersect(k).let { if (it.width > 0f && it.height > 0f) (it.width * it.height).toDouble() else 0.0 } }
+    val right = self.right - edge
+    val tried = mutableListOf<Rect>()
+    val steps = 12
+    // Centred or raised first, a step smaller each time (the preview holds it high at the right edge); lowered only after that,
+    // since the bottom right is where your buttons are.
+    for (spots in listOf(listOf(self.center.y, self.top), listOf(self.bottom))) for (i in 0..steps) {
+        val h = self.height * (share + (minShare - share) * i / steps)
+        for (cy in spots) at(h, right, cy).let { tried += it; if (covered(it) == 0.0) return it }
+    }
+    val hMin = self.height * minShare
+    for (k in keep.sortedByDescending { it.left }) for (cy in listOf(k.center.y, self.top, self.bottom))
+        at(hMin, k.left, cy).takeIf { it.left >= self.left + gap }?.let { tried += it; if (covered(it) == 0.0) return it }
+    return tried.minByOrNull { covered(it) } ?: at(self.height * share, right, self.center.y)
+}
+
+/**
  * 0.4.59 T5, the cast travels: the card itself on its way. To the stack (440 ms, ease-out): from its place in your hand (on two
  * screens, in through the bottom edge of the top screen) or from the CPU's seat face down, turning face up, growing to the stack
  * size; the stack card stays clear until it arrives. To its slot or host (380 ms): from the stack, the whole card cropping to its
@@ -2403,9 +2435,12 @@ internal fun TravelCard() {
             val a = anchors.rects["stackcard"] ?: return null
             if (self.isEmpty) return a
             val dp = density.density
-            val h = self.height * (if (ZoneLayout.phone(self.width / dp, self.height / dp)) ZoneLayout.POP_PHONE else ZoneLayout.POP_BIG)
-            val w = h * a.width / a.height.coerceAtLeast(1f)
-            val to = Offset(self.right - w / 2 - 10f * dp, self.center.y)
+            val phone = ZoneLayout.phone(self.width / dp, self.height / dp)
+            // Better table scene 6: the pop never covers what the spell targets (its tile, its player's portrait): it rises, then
+            // shrinks toward the stack card's size, and only then stands beside the target.
+            val avoid = t.targets.mapNotNull { r -> anchors.rects[if (r.kind == "player") "orb${r.id}" else "c${r.id}"] }
+            val big = popRect(a, self, if (phone) ZoneLayout.POP_PHONE else ZoneLayout.POP_BIG, minOf(if (phone) ZoneLayout.STACK_PHONE else ZoneLayout.STACK_BIG, a.height / self.height.coerceAtLeast(1f)), avoid, 10f * dp, 8f * dp)
+            val w = big.width; val h = big.height; val to = big.center
             val e = dev.cardstashy.nativeplay.match.Director.popAt((p.floatValue * t.ms).toLong())
             val c = lerpO(a.center, to, e); val cw = a.width + (w - a.width) * e; val ch = a.height + (h - a.height) * e
             return Rect(c.x - cw / 2, c.y - ch / 2, c.x + cw / 2, c.y + ch / 2)

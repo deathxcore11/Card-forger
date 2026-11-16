@@ -197,6 +197,64 @@ class DirectorTest {
         assertTrue(land.beat != null && land.travel?.leg == Director.Leg.TO_GROUP && land.travel.toKey == "c71")
     }
 
+    /**
+     * Better table scene 6: a targeted CPU spell names its target on every cast, not "Targets a card" (Forge's refs carry no name),
+     * and says what it does in Forge's own stack words, or "→ <target>" when Forge gave none.
+     */
+    @Test fun cpuSpellNamesItsTargetAndWhatItDoes() {
+        val survivor = permanent(45, "Veteran Survivor", "Creature — Human Survivor")
+        val lash = permanent(90, "Flame Lash", "Instant", controller = cpu, zone = "Stack")
+        val bare = Ref("card", 45, null)
+        // A: the stack text Forge writes for a damage spell gives the design's words, the target's name in gold.
+        val st = board(listOf(survivor)).copy(activePlayer = cpu,
+            stack = listOf(dev.cardstashy.nativeplay.engine.StackItem(12, "Flame Lash (90) - Flame Lash deals 4 damage to Veteran Survivor (45).", lash, cpu, targets = listOf(bare))))
+        val cast = ev("cast", source = card(90, "Flame Lash"), targets = listOf(bare)).copy(stackId = 12)
+        val pop = Director.plan(st, listOf(cast), Director.ThinkClock { .5 }).first { it.travel?.leg == Director.Leg.POP }
+        assertEquals("CPU casts Flame Lash", pop.beat?.title)
+        assertEquals("4 damage to Veteran Survivor", pop.beat?.detail)
+        assertEquals(listOf("Veteran Survivor"), pop.beat?.marks)
+        assertEquals(listOf(bare), pop.travel?.targets)
+        assertEquals(listOf("CPU · " to false, "Flame Lash" to true, " · " to false, "4 damage to " to false, "Veteran Survivor" to true),
+            dev.cardstashy.nativeplay.ui.castCaption(pop.beat!!))
+        // B: no stack text: the name from the board, with no effect words made up.
+        val noText = Director.castWords(st.copy(stack = emptyList()), null, cast)!!
+        assertEquals("→ Veteran Survivor", noText.detail)
+        assertEquals(listOf("CPU · " to false, "Flame Lash" to true, " " to false, "→ " to false, "Veteran Survivor" to true),
+            dev.cardstashy.nativeplay.ui.castCaption(pop.beat!!.copy(detail = noText.detail)))
+        // C: the target already died in the same poll: its name from the board before.
+        val gone = board(emptyList()).copy(activePlayer = cpu)
+        assertEquals("→ Veteran Survivor", Director.castWords(gone, st.copy(stack = emptyList()), cast)!!.detail)
+        // D: the real Murder text (cause-murder.jsonl) and a player named by Forge's seat name.
+        val lions = permanent(33, "Savannah Lions", "Creature — Cat")
+        val murderSt = board(listOf(lions)).copy(stack = listOf(dev.cardstashy.nativeplay.engine.StackItem(50, "Murder (8) - Destroy Savannah Lions (33).", null, cpu)))
+        assertEquals("Destroy Savannah Lions", Director.castWords(murderSt, null, ev("cast", source = card(8, "Murder"), targets = listOf(Ref("card", 33, null))).copy(stackId = 50))!!.detail)
+        val meName = duel.players.first { it.id == me }.name
+        val boltSt = board(emptyList()).copy(stack = listOf(dev.cardstashy.nativeplay.engine.StackItem(51, "Lightning Bolt (9) - Lightning Bolt deals 3 damage to $meName.", null, cpu)))
+        assertEquals("3 damage to you", Director.castWords(boltSt, null, ev("cast", source = card(9, "Lightning Bolt"), targets = listOf(Ref("player", me, null))).copy(stackId = 51))!!.detail)
+        // E: a long clause is not squeezed into the line: the arrow and the name instead.
+        val longSt = board(listOf(survivor)).copy(stack = listOf(dev.cardstashy.nativeplay.engine.StackItem(52,
+            "Big Spell (91) - Big Spell deals 4 damage to Veteran Survivor (45) and each other creature with flying its controller controls.", null, cpu)))
+        assertEquals("→ Veteran Survivor", Director.castWords(longSt, null, ev("cast", source = card(91, "Big Spell"), targets = listOf(bare)).copy(stackId = 52))!!.detail)
+        // An untargeted CPU spell keeps "CPU casts X" with no words added.
+        assertEquals(null, Director.castWords(st, null, ev("cast", source = card(90, "Flame Lash"))))
+        assertEquals(null, dev.cardstashy.nativeplay.ui.castCaption(pop.beat!!.copy(detail = null)))
+    }
+
+    /** Scene 6: the CPU's pop is held at M6's size when it covers nothing, and rises or shrinks off a target it would cover. */
+    @Test fun thePopNeverCoversItsTarget() {
+        val self = androidx.compose.ui.geometry.Rect(0f, 0f, 884f, 796f)
+        val stack = androidx.compose.ui.geometry.Rect(680f, 230f, 868f, 492f)
+        val free = dev.cardstashy.nativeplay.ui.popRect(stack, self, .64f, .43f, emptyList(), 10f, 8f)
+        assertEquals(.64f * 796f, free.height, .5f); assertEquals(874f, free.right, .5f); assertEquals(398f, free.center.y, .5f)
+        for (target in listOf(androidx.compose.ui.geometry.Rect(560f, 330f, 690f, 500f), androidx.compose.ui.geometry.Rect(700f, 200f, 840f, 400f),
+            androidx.compose.ui.geometry.Rect(720f, 120f, 860f, 700f))) {
+            val r = dev.cardstashy.nativeplay.ui.popRect(stack, self, .64f, .43f, listOf(target), 10f, 8f)
+            assertTrue("$r covers $target", !r.overlaps(target))
+            assertTrue("$r stays whole on the screen", r.left >= 0f && r.top >= 0f && r.right <= 884f && r.bottom <= 796f)
+            assertTrue("never smaller than the stack card's share: $r", r.height >= .43f * 796f - .5f)
+        }
+    }
+
     /** Every event in a real match log becomes a step or is on the silent list; no unknown type. */
     @Test fun coverage() {
         for (n in listOf("duel", "pod")) {
