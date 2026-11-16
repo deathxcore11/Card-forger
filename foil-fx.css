@@ -124,3 +124,7 @@
 .pack-wrapper.pack-3d:not(.tearing):not(.pack-ghost) .pack-body{animation-name:pack-float-3d}
 @keyframes pack-float-3d{50%{transform:translateY(-8px)}}
 .pack-ghost.pack-3d .pack-wrap-art{clip-path:none}
+/* A flat-only set's real photo (a cardboard box) as the 2D pack: the drawn wrapper, crimps and sheen step aside. */
+.pack-photo-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+.pack-wrapper.pack-photo .pack-wrap-art,.pack-wrapper.pack-photo .pack-crimp,.pack-wrapper.pack-photo .pack-sheen{display:none}
+.pack-ghost.pack-photo .pack-photo-img{clip-path:inset(8.5% 0 0 0)}

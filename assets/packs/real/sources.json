@@ -1275,13 +1275,13 @@
 "name": "Modern Masters 2015",
 "product": "draft",
 "year": "2015",
-"src": "server",
-"file": null,
-"w": 174,
-"h": 245,
-"native": 245,
+"src": "owner",
+"file": "mm2.png",
+"w": 375,
+"h": 553,
+"native": 553,
 "rot": false,
-"aspect": 0.71
+"aspect": 0.678
 },
 "mm3": {
 "name": "Modern Masters 2017",

@@ -5,7 +5,13 @@
 // that sits in the pack's body, under the seam and the flash.
 const REAL=new Set("10e 2ed 2x2 2xm 3ed 4ed 5dn 5ed 6ed 7ed 8ed 9ed a25 acr aer afr akh ala all apc arb arn atq avr bbd blb bng bok bro chk chr clb clu cmm cmr cn2 cns con csp dbl dft dgm dis dka dmr dmu dom drk dsk dst ecl eld ema emn eoe eve exo fdn fem fin fra frf fut gpt grn gtc hml hob hou ice iko ima inr inv isd jou jud khm kld ktk lci lea leb leg lgn lrw ltr m10 m11 m12 m13 m14 m15 m19 m20 m21 mat mb2 mbc mbs mh1 mh2 mh3 mid mir mkm mm2 mm3 mma mmq mom mor mrd msh nem neo nph ody ogw one ons otj pcy plc pls rav ren rin rix rna roe rtr rvr scg shm snc soi sok som sos spm sth stx sum tdm thb ths tla tmp tmt tor tsp tsr uds ugl ulg uma unf unh usg ust vis vow war woe wth wwk xln zen znr".split(' '));
 const SEAL=.085;
-export function pack3dCode(game,set={}){const c=String(set.code||set.id||'').toLowerCase();return game==='mtg'&&REAL.has(c)?c:'';}
+// Sets whose real pack is not a foil wrapper (Modern Masters 2015 came in a cardboard box): the photo shows flat, never on the
+// foil model with its crimps and tearing strip (Randall 16 Nov chose the flat photo and the 2D opener).
+const FLAT=new Set(['mm2']);
+/** The set whose real pack photo the site carries (its tiles and its pack wear it), or ''. */
+export function realPhotoCode(game,set={}){const c=String(set.code||set.id||'').toLowerCase();return game==='mtg'&&REAL.has(c)?c:'';}
+/** The set that opens as the 3D pack: a real photo of a foil wrapper. */
+export function pack3dCode(game,set={}){const c=realPhotoCode(game,set);return FLAT.has(c)?'':c;}
 let meshP=null;
 const loadMesh=()=>meshP||=fetch('./assets/packs/pack3d-mesh.bin').then(r=>{if(!r.ok)throw Error('pack mesh '+r.status);return r.arrayBuffer();}).then(parse);
 // pack3d-mesh.bin: "PK3D", version 1, six floats (height, tear line, x and y bounds), then four groups (body front, body back,

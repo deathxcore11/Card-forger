@@ -21,7 +21,7 @@ const PACK_CUES=['PACK-004','PACK-005','PACK-003','PACK-019','PACK-020',...Objec
 const packSoundOn=()=>{const a=audioSettings();return a.on!==false&&a.app!==false;};
 import {catchLight} from './foil-fx.js';
 import {packArtSources,packTemplateArt} from './pack-wrappers.js';
-import {pack3dCode,mountPack3D} from './pack3d.js';
+import {pack3dCode,realPhotoCode,mountPack3D} from './pack3d.js';
 import {tiltCoordinates,motionTiltOn} from './mobile-tilt.js';
 // A discovery sampler. No collation, print-run odds, purchases or ownership are implied.
 export function sampleSetCards(cards,count=10,random=packRandom){
@@ -320,6 +320,10 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  document.body.append(dialog);dialog.tabIndex=-1;dialog.showModal();dialog.focus({preventScroll:true});
  // Every Magic set with a real wrapper photo opens as the 3D pack (Randall 15 Nov). While it loads the pack's place stays empty,
  // so the 2D pack never shows first and swaps; if the browser has no WebGL or the photo fails, the 2D pack comes back.
+ // A flat-only set (a cardboard box) shows its real photo as the 2D pack, so it looks like its tile.
+ {const flat=realPhotoCode(game,set),w=dialog.querySelector('.pack-wrapper');if(flat&&!pack3dCode(game,set)&&w){const img=new Image();img.className='pack-photo-img';img.alt='';img.decoding='async';
+  img.onload=()=>{w.style.aspectRatio=String(img.naturalWidth/img.naturalHeight);};img.onerror=()=>{w.classList.remove('pack-photo');img.remove();};img.src=`./assets/packs/real/${flat}.webp`;
+  w.classList.add('pack-photo');w.querySelector('.pack-body')?.prepend(img);}}
  let p3d=null;{const code=pack3dCode(game,set),w=dialog.querySelector('.pack-wrapper');if(code&&w&&globalThis.WebGLRenderingContext){w.classList.add('pack-3d','pack-3d-wait');
   const back2d=()=>{p3d=null;w.classList.remove('pack-3d','pack-3d-wait');w.style.removeProperty('aspect-ratio');};
   mountPack3D(w.querySelector('.pack-body'),code,{still:reduce()}).then(c=>{if(!c)return back2d();if(disposed)return c.dispose();
@@ -431,7 +435,7 @@ export function openPackPreview({game,set,cards,complete=false,featured=null,hyd
  const open=()=>{if(opening||disposed||!dialog.querySelector('.pack-content').hidden)return;opening=true;const w=dialog.querySelector('.pack-wrapper');
   const done=()=>{opening=false;const from=w.getBoundingClientRect(),motion=!reduce();
    // The torn pack stays where it was while the cards fly out of its open top, then sinks away.
-   let ghost=null;if(motion){ghost=w.cloneNode(true);ghost.className='pack-wrapper pack-ghost'+(p3d?' pack-3d':'');ghost.removeAttribute('data-pack');ghost.setAttribute('aria-hidden','true');ghost.tabIndex=-1;
+   let ghost=null;if(motion){ghost=w.cloneNode(true);ghost.className='pack-wrapper pack-ghost'+(p3d?' pack-3d':'')+(w.classList.contains('pack-photo')?' pack-photo':'');ghost.removeAttribute('data-pack');ghost.setAttribute('aria-hidden','true');ghost.tabIndex=-1;
     Object.assign(ghost.style,{position:'fixed',left:from.left+'px',top:from.top+'px',width:from.width+'px',height:from.height+'px',margin:'0'});dialog.append(ghost);
     // The 3D pack itself moves into the ghost (a cloned canvas would be blank), its strip gone; it goes home when the ghost does.
     if(p3d){ghost.querySelector('.pack-3d-canvas')?.remove();p3d.moveTo(ghost.querySelector('.pack-body'));}}

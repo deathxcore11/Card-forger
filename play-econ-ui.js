@@ -15,7 +15,7 @@ import {deedsScreenMarkup} from './play-deeds-ui.js';
 import {BENCH, emptyBench, benchKeeps, benchSorted, benchChips, benchCount, benchCurve, benchByMana, allColors, roleTags, manaLabel} from './bench-filter.js';
 import {labelIcon} from './icons.js';
 import {secretLairImage, secretLairOfferPrice} from './play-secret-lair.js';
-import {pack3dCode} from './pack3d.js';
+import {realPhotoCode} from './pack3d.js';
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const n = v => Number(v || 0).toLocaleString('en-US');
 const ART = 'https://cards.scryfall.io/art_crop/front/';
@@ -86,7 +86,7 @@ export function boosterMarkup({code = '', name = '', facts = null, big = false, 
   const f = facts?.set?.(code) || {}, label = name || f.name || code.toUpperCase(), icon = f.icon || setIconUrl(code);
   // Wherever the site carries the set's real wrapper photo (the one the 3D opener wears), the pack on the page is that photo
   // (Randall 16 Nov: "the pack grid doesn't follow the new packs"); the drawn wrapper below comes back if the photo fails.
-  const real = pack3dCode('mtg', {code});
+  const real = realPhotoCode('mtg', {code});
   const photo = real ? `<img class="pe-booster-photo" src="./assets/packs/real/${esc(real)}.webp" alt="" loading="lazy" decoding="async" onerror="this.parentNode.classList.remove('pe-booster--real');this.remove()">` : '';
   return `<span class="pe-booster${real ? ' pe-booster--real' : ''}${big ? ' pe-booster--big' : ''}${mini ? ' pe-booster--mini' : ''}${collector ? ' pe-booster--collector' : ''}" aria-hidden="true"${f.art ? ` style="--art:url('${esc(f.art)}')"` : ''}><span class="pe-booster-art"></span><span class="pe-booster-band"><span class="pe-booster-icon" style="--icon:url('${esc(icon)}')"></span><b>${esc(label)}</b><small>${collector ? 'Collector booster' : 'Play booster'}</small></span><span class="pe-booster-sheen"></span>${photo}</span>`;
 }

@@ -12,4 +12,9 @@ for (const code of ['4ed', '2xm', '3ed', '5dn']) {
 }
 assert.doesNotMatch(boosterMarkup({code: 'zzz'}), /pe-booster--real|pe-booster-photo/, 'a set without a photo keeps the drawn wrapper');
 assert.match(boosterMarkup({code: '4ed', collector: true}), /pe-booster--real[^"]*pe-booster--collector/, 'a collector tile keeps its glow class');
+const {pack3dCode, realPhotoCode} = await import('./pack3d.js');
+assert.match(boosterMarkup({code: 'mm2'}), /pe-booster--real/, 'Modern Masters 2015 tile is its real box photo');
+assert.equal(realPhotoCode('mtg', {code: 'mm2'}), 'mm2');
+assert.equal(pack3dCode('mtg', {code: 'mm2'}), '', 'the cardboard box never goes on the foil model');
+assert.equal(pack3dCode('mtg', {code: 'fra'}), 'fra');
 console.log('PASS: pack tiles wear the real wrapper photo wherever the opener does.');
