@@ -212,7 +212,7 @@ export async function prepareMtgDeck(args,x) {
     const alternatives=[...new Map(alternativeCards.filter(c=>c&&buildCatalog[cardKey(c.name)]&&isLegal(c,f)&&functionalIn(c,f)&&fitsDeck(c,colors,f.commander)&&!present.has(cardKey(c.name))&&(basis==='owned'?own(c.name)>0:cap===Infinity||basis!=='total'&&own(c.name)>0||quote(c)!==null&&quote(c)<=cap)&&!/\bLand\b/.test(c.type_line||'')).map(c=>[cardKey(c.name),c])).values()].sort((a,b)=>scoreCard(b,tags,tribes,{size:f.size,goal})-scoreCard(a,tags,tribes,{size:f.size,goal})||a.name.localeCompare(b.name)).slice(0,2);
     // A discovery anchor creates an alternative, not a user-required card. It
     // is never persisted as an instruction and can lose to the original list.
-    for(const c of alternatives.slice(0,2-alternativeDrafts.length))alternativeDrafts.push(decorate(buildDeck({...options,base:[...base,{name:c.name,qty:1}],budget:cap})));
+    for(const c of alternatives.slice(0,2-alternativeDrafts.length))alternativeDrafts.push(decorate(buildDeck({...options,base,anchors:[c.name],budget:cap})));
    }
    return drafts;
   });
