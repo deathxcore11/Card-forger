@@ -61,4 +61,44 @@ class MulliganLinesTest {
         assertEquals(MullDeck("Mono-White Auras", "Standard Brawl", 59), mullDeckOf(input, "Mono-White Auras"))
         assertNull("no name, no tile", mullDeckOf(input, null))
     }
+
+    // ---- Better table scene 11: Keep 7, Mulligan to 6, and what the CPU kept (from Forge's own events) ----
+
+    private fun mull(seq: Long, player: Int) = dev.cardstashy.nativeplay.engine.GameEvent(seq, "mulligan", 0, null, player, null, null, null, emptyList(), emptyList(), emptyList(),
+        null, null, null, null, null, null)
+    private fun at(hand: Int, cpuHand: Int, vararg mulls: Pair<Long, Int>) = withHand(hand).let { st ->
+        st.copy(events = mulls.map { (q, p) -> mull(q, p) }, players = st.players.map { if (it.id != st.viewer) it.copy(handCount = cpuHand) else it }) }
+    private val me get() = opening.viewer
+    private val cpu get() = opening.cpu.id
+
+    @Test fun keepCarriesTheHandAndMulliganTheHandItLeaves() {
+        assertEquals("Keep 7", keepLabel(withHand(7))); assertEquals("to 6", mullTo(withHand(7)))
+        assertEquals("Keep 5", keepLabel(withHand(5))); assertEquals("to 4", mullTo(withHand(5)))
+        // While Forge asks for the bottom its own word stands, and there is no Mulligan.
+        val ask = withHand(7, "InputLondonMulligan", "Return 1 card(s) to the bottom of your library").let { it.copy(buttons = it.buttons.copy(ok = "OK")) }
+        assertEquals("OK", keepLabel(ask)); assertNull(mullTo(ask))
+    }
+
+    /** The real engine's sequences (MulliganProbe, 16 Nov, Modern, the CPU going first): rev 2, rev 16, rev 35. */
+    @Test fun cpuGoesFirstItKeptOnlyWhenItTookFewerMulligansThanItsTurns() {
+        // It kept its 7 before your first question (no event from it).
+        assertEquals(7, cpuKept(at(7, 7), youFirst = false))
+        assertEquals("CPU kept 7", cpuKeptLine(at(7, 7), youFirst = false))
+        // It took a mulligan this round (hand 6 already on the bottom): not kept yet.
+        assertNull(cpuKept(at(7, 6, 33L to cpu), youFirst = false))
+        // Round 2: you took one, it took two: still deciding.
+        assertNull(cpuKept(at(6, 5, 33L to cpu, 50L to me, 67L to cpu), youFirst = false))
+        // Round 3: it took two, you took two: it kept 5.
+        assertEquals(5, cpuKept(at(5, 5, 33L to cpu, 50L to me, 67L to cpu, 84L to me), youFirst = false))
+    }
+
+    /** You go first (MulliganProbe, Modern): the CPU decides after you, so nothing is said until its decision is in. */
+    @Test fun youGoFirstNothingIsSaidUntilTheCpuHasDecided() {
+        assertNull("it has not decided yet", cpuKept(at(7, 7), youFirst = true))
+        assertNull("both took one: its second decision comes after yours", cpuKept(at(6, 6, 33L to me, 50L to cpu), youFirst = true))
+        assertEquals("you took two, it took one: it kept 6", 6, cpuKept(at(5, 6, 33L to me, 50L to cpu, 67L to me), youFirst = true))
+        // Not at Forge's bottom question, and never in a pod.
+        assertNull(cpuKept(at(7, 7).copy(inputType = "InputLondonMulligan"), youFirst = false))
+        assertNull(cpuKept(at(7, 7).let { it.copy(players = it.players + it.cpu.copy(id = 9)) }, youFirst = false))
+    }
 }

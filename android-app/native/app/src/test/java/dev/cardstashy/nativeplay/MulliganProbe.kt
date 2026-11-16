@@ -20,8 +20,10 @@ class MulliganProbe {
 
     @Test fun whatForgeSaysAtTheOpeningHand() = run("Modern")
     @Test fun whatForgeSaysInCommander() = run("Commander")
+    /** Better table scene 11: the CPU goes first. What Forge says about the CPU's keep (its hand count and the "mulligan" events). */
+    @Test fun whatTheCpuKeptWhenItGoesFirst() = run("Modern", "second")
 
-    private fun run(format: String) {
+    private fun run(format: String, first: String = "first") {
         val repo = File(System.getProperty("repoRoot")); val root = System.getProperty("engineRoot").orEmpty()
         assumeTrue(root.isNotEmpty() && File(root).isDirectory)
         System.setProperty("user.home", Files.createTempDirectory("forge-home").toString()); System.setProperty("proof.rulesData", File(repo, "forge-rules/app").absolutePath)
@@ -29,8 +31,8 @@ class MulliganProbe {
         val hero = deck("Plains" to 40, "Glory Seeker" to 4, "Savannah Lions" to 4, "Suntail Hawk" to 4, "Elite Vanguard" to 4, "Eager Cadet" to 4)
         val cpu = deck("Plains" to 40, "Glory Seeker" to 4, "Savannah Lions" to 4, "Suntail Hawk" to 4, "Elite Vanguard" to 4, "Eager Cadet" to 4)
         val cmd = deck("Isamaru, Hound of Konda" to 1, "Plains" to 99).apply { addProperty("commander", "Isamaru, Hound of Konda") }
-        val s = LocalEngine.start(forgeInput(format, if (format == "Commander") cmd else hero, if (format == "Commander") cmd.deepCopy() else cpu, "Easy", startingPlayer = "first", quick = false), 7L)
-        println("FORMAT $format")
+        val s = LocalEngine.start(forgeInput(format, if (format == "Commander") cmd else hero, if (format == "Commander") cmd.deepCopy() else cpu, "Easy", startingPlayer = first, quick = false), 7L)
+        println("FORMAT $format starting=$first")
         fun state(): MatchState { while (true) { MatchState.parse(s.call("GET", "/state", null).body())?.let { return it }; Thread.sleep(40) } }
         fun act(st: MatchState, op: String, id: Int? = null) = s.call("POST", "/action", JsonObject().apply { addProperty("revision", st.revision); addProperty("op", op); id?.let { addProperty("id", it) } }.toString())
         var mulls = 0; var lastRev = -1L; val until = System.currentTimeMillis() + 120_000
@@ -42,6 +44,10 @@ class MulliganProbe {
             println("MULL $format rev=${st.revision} turn=${st.turn} isMulligan=${st.isMulligan} input=${st.inputType} hand=${st.me.hand.size} lib=${st.me.libraryCount} " +
                 "btn=${st.buttons.ok}/${st.buttons.okEnabled}|${st.buttons.cancel}/${st.buttons.cancelEnabled} sel=${st.selection.cards.size} min=${st.selection.min} max=${st.selection.max} " +
                 "prompt=${st.prompt?.method} msg=<<${st.message.replace("\n", " / ")}>> handIds=${st.me.hand.map { it.id }} chosen=${st.selection.chosenCards} actionable=${st.selection.actionable}")
+            // Better table scene 11: the CPU's side at this moment, and every "mulligan" event Forge has sent (all fields, raw).
+            com.google.gson.JsonParser.parseString(s.call("GET", "/state", null).body()).asJsonObject.let { o ->
+                println("CPU $format active=${st.activePlayer} viewer=${st.viewer} cpuHand=${st.cpu.handCount} cpuLib=${st.cpu.libraryCount} " +
+                    "kept=${dev.cardstashy.nativeplay.ui.cpuKeptLine(st, first == "first")} mullEvents=${o.getAsJsonObject("events")?.getAsJsonArray("items")?.filter { it.isJsonObject && it.asJsonObject.get("type")?.asString == "mulligan" }}") }
             if (st.inputType == "InputLondonMulligan") com.google.gson.JsonParser.parseString(s.call("GET", "/state", null).body()).asJsonObject.let { o ->
                 println("RAW selection=${o.get("selection")} prompt=${o.get("prompt")} keys=${o.keySet()}") }
             if (!st.isMulligan) break

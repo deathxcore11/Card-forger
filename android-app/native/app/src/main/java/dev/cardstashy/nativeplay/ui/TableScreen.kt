@@ -70,6 +70,12 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.unit.em
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.geometry.Size
@@ -262,9 +268,10 @@ private fun Loading() {
 // ---- The opening hand: nothing else is drawn before the keep ----
 
 /**
- * The opening hand (table-feel spec 1, Randall 4 Nov 18:18Z): no side panel. The hand fans across the felt, the seats keep
- * their corners, a small glass pill says who goes first, three pips and a caption count the mulligans, and the table's own
- * pair sits bottom right: Mulligan (dark glass) and Keep (the gold main button) with the decision's clock running round it.
+ * The opening hand (table-feel spec 1, Randall 4 Nov 18:18Z; better table scene 11, 16 Nov). The table dims under it (its seats keep
+ * their corners there); who goes first is the title, in gold, with what the CPU kept under it once Forge says so, and the mulligan
+ * pips. The seven cards fan large across the screen. Mulligan (dark glass, "to 6" under it) and Keep 7 (the gold main button with the
+ * decision's clock) stand side by side under the hand. A held "View table" (top right, or the controller's Y held) hides it all.
  */
 @Composable
 internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel: () -> Unit, onCard: (Int) -> Unit, onDeal: () -> Unit, onHold: (Card) -> Unit,
@@ -282,62 +289,140 @@ internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel:
     val yours = live && st.waitingOnMe
     val youFirst = Regex("(?i)\\byou (are|go|will go)( going)? first").containsMatchIn(st.message) ||
         !Regex("(?i)going first|goes first").containsMatchIn(st.message) && st.activePlayer == st.viewer
-    // Cue map: the coin lands as the pill comes in (QP-010 you / QP-011 CPU), Keep QP-013, Mulligan QP-014, a card to the bottom QP-015.
+    val kept = cpuKeptLine(st, youFirst)
+    val keep = keepLabel(st)
+    // Better table scene 11: "View table", held. Not while cards go to the bottom: then every tap is a pick.
+    val peek = rememberTablePeek()
+    LaunchedEffect(choosing) { if (choosing) peek.held = false }
+    // Cue map: the coin lands as the title comes in (QP-010 you / QP-011 CPU), Keep QP-013, Mulligan QP-014, a card to the bottom QP-015.
     val cue = LocalTableCue.current
     LaunchedEffect(youFirst) { cue?.invoke(if (youFirst) "QP-010" else "QP-011", .8f, 1f) }
-    // A controller's X is the gold Keep (its words and its tap) while it is yours to press.
-    PadScreen(PadActs(x = if (yours && st.buttons.okEnabled) PadAct(st.buttons.ok ?: "Keep") { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() } else null))
-    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0x59000000))) {
+    // A controller's X is the gold Keep (its words and its tap) while it is yours to press; Y held shows the table.
+    PadScreen(PadActs(x = if (yours && st.buttons.okEnabled) PadAct(keep) { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() } else null,
+        yHold = if (choosing) null else { held -> peek.held = held }))
+    val ctx = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    val calm = Motion.still || remember { Playmats.reduced(ctx) }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
         val W = maxWidth; val H = maxHeight
         val d = Du(chromeU(W, H))
         with(d) {
-            Medallion(st.cpu, mine = false, pickable = false, picked = false, modifier = Modifier.offset(x = W - 132.du, y = 26.du), d = d) {}
+            // The table under the hand: the two seats in their corners, dimmed with it (View table shows them clear). The CPU's
+            // sits top left, so the top right is View table's.
+            Medallion(st.cpu, mine = false, pickable = false, picked = false, modifier = Modifier.offset(x = 80.du, y = 26.du), d = d) {}
             Medallion(st.me, mine = true, pickable = false, picked = false, modifier = Modifier.offset(x = 80.du, y = H - 78.du), d = d) {}
-            // Who goes first: one glass pill with a coin, centred above the hand.
-            Row(Modifier.align(Alignment.TopCenter).padding(top = 20.du).clip(RoundedCornerShape(999.dp)).background(Color(0xD90C0D12)).border(1.dp, Color(0x33F2D496), RoundedCornerShape(999.dp))
-                .padding(horizontal = 16.du, vertical = 8.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.du)) {
-                androidx.compose.foundation.Canvas(Modifier.size(18.du)) {
-                    drawCircle(Brush.verticalGradient(listOf(Color(0xFFF7DA97), Color(0xFFC4903A))))
-                    drawCircle(Color(0xFF8A6424), radius = size.minDimension * .34f, style = androidx.compose.ui.graphics.drawscope.Stroke(1.2f * density))
+            Box(Modifier.fillMaxSize().peekHides(peek).background(MULL_DIMMER)) {
+                // Sizes: the cards take 17 % of the width (held by the height on a phone); the pair stands at 84 % of the height,
+                // or higher when its line would leave the screen.
+                val cardW = minOf(W * .17f, H * .46f / 1.4f)
+                val pairTop = minOf(H * .84f, H - 48.du - 30.du)
+                val titleSp = minOf(W.value * .034f, H.value * .062f).coerceIn(20f, 32f)
+                // Who goes first, the title: it settles in from above (a spring, 0 to 1); Motion.still and reduced motion stand still.
+                val enter = remember(youFirst) { Animatable(if (calm) 1f else 0f) }
+                LaunchedEffect(youFirst) { if (!calm) enter.animateTo(1f, spring(dampingRatio = .78f, stiffness = 170f)) }
+                val short = H < 480.dp
+                Column(Modifier.align(Alignment.TopCenter).padding(top = if (short) H * .035f else H * .055f).graphicsLayer {
+                        val q = enter.value; alpha = q.coerceIn(0f, 1f); translationY = (1f - q) * -18.du.toPx(); val s = 1.06f - .06f * q; scaleX = s; scaleY = s },
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.du)) {
+                        MullFlourish(false, Modifier.size(54.du, 12.du))
+                        Text(if (youFirst) "You go first" else "CPU goes first", Modifier.anchorRect("mull.title"),
+                            style = androidx.compose.ui.text.TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = titleSp.sp,
+                                letterSpacing = .1.em, color = MULL_GOLD, shadow = androidx.compose.ui.graphics.Shadow(Color(0x99C4903A), Offset(0f, 0f), 18f)), maxLines = 1)
+                        MullFlourish(true, Modifier.size(54.du, 12.du))
+                    }
+                    // Under the title: what the CPU kept, then three pips (7, 6, 5), the gold one the hand you are on. A short screen (a
+                    // phone) puts the pips beside the line so the hand keeps its size.
+                    val keptLine: @Composable () -> Unit = {
+                        if (kept != null && !choosing) Text(buildAnnotatedString {
+                                withStyle(androidx.compose.ui.text.SpanStyle(color = CpuRed.copy(alpha = .95f), fontWeight = FontWeight.Bold)) { append("CPU") }
+                                append(kept.removePrefix("CPU"))
+                            }, Modifier.anchorRect("mull.kept"), style = sans(sp(14f), FontWeight.SemiBold, Color(0xFFB9B1A0)), maxLines = 1)
+                    }
+                    val pips: @Composable () -> Unit = {
+                        Row(Modifier.anchorRect("mull.pips"), horizontalArrangement = Arrangement.spacedBy(9.du), verticalAlignment = Alignment.CenterVertically) {
+                            repeat(3) { i -> val on = i == mulls.coerceAtMost(2)
+                                Box(Modifier.size(if (on) 8.du else 6.du).drawBehind {
+                                    if (on) drawCircle(MULL_GOLD.copy(alpha = .35f), radius = size.minDimension)
+                                }.clip(CircleShape).background(if (on) MULL_GOLD else Color(0x40F3E9D2))) }
+                        }
+                    }
+                    if (short) Row(Modifier.padding(top = 1.du), horizontalArrangement = Arrangement.spacedBy(14.du), verticalAlignment = Alignment.CenterVertically) { keptLine(); pips() }
+                    else { Box(Modifier.padding(top = 2.du)) { keptLine() }; Box(Modifier.padding(top = 8.du)) { pips() } }
                 }
-                Text(if (youFirst) "You go first" else "CPU goes first", style = sans(sp(15f), FontWeight.SemiBold, Color(0xFFF3E9D2)))
-            }
-            // The hand, full width on the felt; nothing is drawn over it.
-            val cardW = minOf((W - 64.dp) / 6.2f, H * .5f / 1.4f)
-            Box(Modifier.fillMaxSize().padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
-                HandFan(st.me.hand, cardW, Modifier.fillMaxWidth().offset(y = (-8).du), angleDeg = 2.5f, dealIn = true,
-                    markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (pickable(card)) Mark.PICKABLE else Mark.NONE },
-                    onTap = { card -> if (pickable(card)) { if (choosing) cue?.invoke("QP-015", .8f, 1f); onCard(card.id) } else onHold(card) },
-                    onHold = onHold, onDeal = onDeal, pop = 1.2f, onCarry = { id -> if (id != null) ringed = id })
-            }
-            // Three pips (7, 6, 5) and the caption; while putting cards on the bottom, Forge's own line instead.
-            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 22.du), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.du)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.du)) {
-                    repeat(3) { i -> Box(Modifier.size(9.du).clip(CircleShape).background(if (i == mulls.coerceAtMost(2)) Color(0xFFE8B95B) else Color(0x40FFFFFF))) }
+                // The hand, large across the felt: seven cards step about 12.6 % of the width, on a shallow arc.
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    HandFan(st.me.hand, cardW, Modifier.width(W * .926f).offset(y = -(H * .025f)).anchorRect("mull.fan"), angleDeg = 3.2f, dealIn = true, arc = H * .0053f,
+                        markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (pickable(card)) Mark.PICKABLE else Mark.NONE },
+                        onTap = { card -> if (pickable(card)) { if (choosing) cue?.invoke("QP-015", .8f, 1f); onCard(card.id) } else onHold(card) },
+                        onHold = onHold, onDeal = onDeal, pop = 1.2f, onCarry = { id -> if (id != null) ringed = id })
                 }
-                if (!DualScreen.active) Text(lines.caption, Modifier.anchorRect("mull.caption"),
+                // Two screens: Keep and Mulligan live on the bottom screen with the card under the ring (MulliganBottom); the top is the hand.
+                if (DualScreen.active) BottomScreen { MulliganBottom(st, lines, st.me.hand.firstOrNull { it.id == ringed } ?: st.me.hand.firstOrNull(), deck, yours, choosing, youFirst,
+                    peek = peek, kept = kept,
+                    onKeep = { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }, onMull = { if (!choosing) cue?.invoke("QP-014", 1f, 1f); onCancel() }) }
+                else if (yours) Box(Modifier.fillMaxWidth().padding(top = pairTop)) {
+                    val minW = maxOf(W * .17f, 128.du)
+                    val mull = if (choosing) null else st.buttons.cancel?.takeIf { st.buttons.cancelEnabled }
+                    // The pair splits either side of the middle; alone (while cards go to the bottom) the gold button stands in the middle.
+                    if (mull != null) Row(Modifier.align(Alignment.TopEnd).padding(end = W * .52f), horizontalArrangement = Arrangement.spacedBy(12.du), verticalAlignment = Alignment.CenterVertically) {
+                        // The turn clock's ring is on Keep (GoldPill); its last-10 count stands before the pair, never on Mulligan.
+                        TurnCount(d.u)
+                        MullGlass(mull, mullTo(st), Modifier.height(48.du).widthIn(min = minW).anchorRect("mull"), d) { cue?.invoke("QP-014", 1f, 1f); onCancel() }
+                    }
+                    CompositionLocalProvider(LocalTurnCountOutside provides (mull != null)) {
+                        GoldPill(keep, st.buttons.okEnabled, Modifier.align(if (mull != null) Alignment.TopStart else Alignment.TopCenter)
+                            .padding(start = if (mull != null) W * .52f else 0.dp).widthIn(min = minW).height(48.du).anchorRect("gold"), d, height = 48.du, press = null) {
+                            if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }
+                    }
+                    // T9: one line under the pair says what Mulligan does, with Forge's numbers; while cards go to the bottom, Forge's own line.
+                    val under = if (choosing) lines.caption else if (mull != null) lines.mullLine else null
+                    under?.let { Text(it, Modifier.align(Alignment.TopCenter).padding(top = 48.du + 8.du).anchorRect(if (choosing) "mull.caption" else "mull.line"),
+                        style = sans(sp(12.5f), FontWeight.Medium, Color(0xFFCFC6B2)), maxLines = 1) }
+                }
+                // Not yours to answer (the CPU is deciding): Forge's line where the pair would stand.
+                else if (choosing) Text(lines.caption, Modifier.align(Alignment.TopCenter).padding(top = pairTop + 14.du).anchorRect("mull.caption"),
                     style = sans(sp(14f), FontWeight.Medium, Color(0xFFE6DCC6)), textAlign = TextAlign.Center)
             }
-            // Two screens: Keep and Mulligan live on the bottom screen with the card under the ring (MulliganBottom); the top is the hand.
-            if (DualScreen.active) BottomScreen { MulliganBottom(st, lines, st.me.hand.firstOrNull { it.id == ringed } ?: st.me.hand.firstOrNull(), deck, yours, choosing, youFirst,
-                onKeep = { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }, onMull = { if (!choosing) cue?.invoke("QP-014", 1f, 1f); onCancel() }) }
-            else if (yours) Column(Modifier.align(Alignment.BottomEnd).padding(end = 28.du, bottom = 12.du), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(5.du)) {
-              Row(horizontalArrangement = Arrangement.spacedBy(14.du), verticalAlignment = Alignment.CenterVertically) {
-                // The turn clock's ring is on Keep (GoldPill); its last-10 count stands first in the row, never on Mulligan beside it.
-                TurnCount(d.u)
-                CompositionLocalProvider(LocalTurnCountOutside provides true) {
-                if (!choosing) st.buttons.cancel?.takeIf { st.buttons.cancelEnabled }?.let { label ->
-                    Box(Modifier.height(48.du).widthIn(min = 128.du).clip(RoundedCornerShape(999.dp)).background(Color(0xE60C0D12)).border(1.dp, Color(0x26FFFFFF), RoundedCornerShape(999.dp))
-                        .clickable { cue?.invoke("QP-014", 1f, 1f); onCancel() }.padding(horizontal = 22.du).anchorRect("mull"), contentAlignment = Alignment.Center) {
-                        Text(label, style = sans(sp(16f), FontWeight.Bold, Color(0xFFF3E9D2)), maxLines = 1)
-                    }
-                }
-                GoldPill(st.buttons.ok ?: "Keep", st.buttons.okEnabled, Modifier.height(48.du).anchorRect("gold"), d, press = null) { if (!choosing) cue?.invoke("QP-013", 1f, 1f); onOk() }
-                }
-              }
-              // T9: one line under Mulligan says what it does, with Forge's numbers (one line, under the pair, clear of the caption).
-              if (!choosing && st.buttons.cancelEnabled) lines.mullLine?.let { Text(it, Modifier.anchorRect("mull.line"), style = sans(sp(12f), FontWeight.Medium, Color(0xFFCFC6B2)), maxLines = 1) }
-            }
+            if (!DualScreen.active && !choosing) PeekTablePill(peek, d, Modifier.align(Alignment.TopEnd).padding(top = H * .03f, end = W * .02f))
+        }
+    }
+}
+
+/** Scene 11's dimmer: the preview's opening dimmer, rgba(6, 7, 13, .62), lighter than the views' [TableDimmer] so the felt reads. */
+private val MULL_DIMMER = Color(0x9E06070D)
+private val MULL_GOLD = Color(0xFFE8B95B)
+
+/** A gold hairline that fades in toward the title, ending in a small diamond beside it ([right]: the right-hand one, mirrored). */
+@Composable
+private fun MullFlourish(right: Boolean, modifier: Modifier) = androidx.compose.foundation.Canvas(modifier) {
+    val cy = size.height / 2; val r = size.height * .3f
+    val tip = if (right) r else size.width - r
+    val far = if (right) size.width else 0f
+    drawLine(Brush.horizontalGradient(if (right) listOf(MULL_GOLD, Color.Transparent) else listOf(Color.Transparent, MULL_GOLD), startX = minOf(tip, far), endX = maxOf(tip, far)),
+        Offset(far, cy), Offset(tip, cy), strokeWidth = 1.dp.toPx())
+    val p = androidx.compose.ui.graphics.Path().apply { moveTo(tip - r, cy); lineTo(tip, cy - r); lineTo(tip + r, cy); lineTo(tip, cy + r); close() }
+    drawPath(p, MULL_GOLD)
+}
+
+/**
+ * Mulligan: the dark glass pill (#161A27, a #3A4260 hairline), Forge's word with the hand it leaves under it ("to 6"). A press dips it
+ * (96 %, 90 ms) and lets it back.
+ */
+@Composable
+private fun MullGlass(label: String, sub: String?, modifier: Modifier, d: Du, onClick: () -> Unit) = with(d) {
+    val src = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val down by src.collectIsPressedAsState()
+    val k by animateFloatAsState(if (down && !Motion.still) .96f else 1f, tween(90), label = "mullDip")
+    val shape = RoundedCornerShape(999.dp)
+    Box(modifier.graphicsLayer { scaleX = k; scaleY = k }
+        .drawBehind { drawRoundRect(Color(0x73000000), topLeft = Offset(0f, 6.du.toPx()), size = size, cornerRadius = CornerRadius(size.height / 2)) }
+        .clip(shape).background(Brush.verticalGradient(listOf(Color(0xFF1E2333), Color(0xFF161A27), Color(0xFF11141E))))
+        .drawWithContent { drawContent(); drawLine(Color(0x26FFFFFF), Offset(size.height / 2, 1.dp.toPx()), Offset(size.width - size.height / 2, 1.dp.toPx()), 1.dp.toPx()) }
+        .border(1.dp, Color(0xFF3A4260), shape)
+        .clickable(interactionSource = src, indication = null, onClick = onClick).padding(horizontal = 22.du), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label, style = sans(sp(15f), FontWeight.Bold, Color(0xFFF3E9D2)).copy(lineHeight = sp(17f)), maxLines = 1)
+            sub?.let { Text(it, Modifier.anchorRect("mull.to"), style = sans(sp(11f), FontWeight.Medium, Color(0xFFF3E9D2).copy(alpha = .8f)).copy(letterSpacing = .04.em, lineHeight = sp(13f)), maxLines = 1) }
         }
     }
 }

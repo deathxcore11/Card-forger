@@ -69,12 +69,46 @@ internal fun mulliganLines(st: MatchState): MullLines {
 }
 
 /**
+ * Better table scene 11: the gold button at the keep question carries the hand it keeps ("Keep 7", Forge's own word and your hand's
+ * count); anything else Forge says there (its "OK" while it asks for the bottom) stands as it is.
+ */
+internal fun keepLabel(st: MatchState): String {
+    val ok = st.buttons.ok ?: "Keep"
+    return if (st.inputType == "InputConfirmMulligan" && ok.equals("Keep", ignoreCase = true) && st.me.hand.isNotEmpty()) "$ok ${st.me.hand.size}" else ok
+}
+
+/** Better table scene 11: the hand a mulligan leaves you ("to 6": Forge draws 7 and you put one more on the bottom each time). */
+internal fun mullTo(st: MatchState): String? =
+    st.me.hand.size.takeIf { st.inputType == "InputConfirmMulligan" && it > 1 }?.let { "to ${it - 1}" }
+
+/**
+ * Better table scene 11: what the CPU kept, only once Forge's state says it has kept. Seen on the real engine (MulliganProbe, 16 Nov):
+ * Forge asks in rounds, in turn order, and sends a "mulligan" event (its player) each time a player takes one; nothing is sent for a
+ * keep. So at your keep question the CPU has decided as many rounds as you have mulliganed, one more when it goes first, and it has
+ * kept when it took fewer mulligans than that. Its hand is Forge's count. Null when it has not decided yet, or in a pod.
+ */
+internal fun cpuKept(st: MatchState, youFirst: Boolean): Int? {
+    if (st.inputType != "InputConfirmMulligan" || st.players.size != 2) return null
+    val cpu = st.players.firstOrNull { it.id != st.viewer } ?: return null
+    val mulls = st.events.filter { it.type == "mulligan" }
+    val mine = mulls.count { it.player == st.viewer }
+    val theirs = mulls.count { it.player == cpu.id }
+    val decided = mine + if (youFirst) 0 else 1
+    return cpu.handCount.takeIf { decided > 0 && theirs < decided }
+}
+
+/** The line under who goes first: "CPU kept 7", else none. */
+internal fun cpuKeptLine(st: MatchState, youFirst: Boolean): String? = cpuKept(st, youFirst)?.let { "CPU kept $it" }
+
+/**
  * 0.4.59 T9, two screens: the opening hand's bottom screen, no logo. Left, the card under the ring read in full (the T7 panel);
  * right, three glass tiles (who plays first, this hand counted, your deck), then Keep (gold) and Mulligan with its line. The seven
  * cards stay on the top screen, where Left and Right walk the ring.
  */
 @Composable
 internal fun MulliganBottom(st: MatchState, lines: MullLines, ringed: Card?, deck: MullDeck?, yours: Boolean, choosing: Boolean, youFirst: Boolean,
+                            /** Better table scene 11: the held "View table" (it hides the hand on the top screen), and what the CPU kept. */
+                            peek: TablePeek? = null, kept: String? = null,
                             onKeep: () -> Unit, onMull: () -> Unit) {
     val hand = st.me.hand
     Row(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF15171D), Color(0xFF0B0C10)))).padding(14.dp),
@@ -83,18 +117,19 @@ internal fun MulliganBottom(st: MatchState, lines: MullLines, ringed: Card?, dec
             ringed?.let { ReadingPanel(Reading("In your opening hand", it, null, Reading.Tone.NONE), Modifier.fillMaxSize().anchorRect("m.read")) }
         }
         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Tile("Who plays first", if (youFirst) "You go first" else "CPU goes first", null, Modifier.anchorRect("m.first"))
+            Tile("Who plays first", if (youFirst) "You go first" else "CPU goes first", kept, Modifier.anchorRect("m.first"))
             val lands = hand.count { it.isLand }
             Tile("This hand", "${hand.size} cards", "$lands ${if (lands == 1) "land" else "lands"} · ${hand.size - lands} ${if (hand.size - lands == 1) "spell" else "spells"}", Modifier.anchorRect("m.hand"))
             deck?.let { Tile("Your deck", it.name, "${it.format} · ${it.count} cards", Modifier.anchorRect("m.deck")) }
             Box(Modifier.weight(1f))
             Text(lines.caption, Modifier.fillMaxWidth(), style = small(12.5f, Color(0xFFE6DCC6), FontWeight.Medium), textAlign = TextAlign.Center, maxLines = 2)
+            if (peek != null && !choosing) PeekTablePill(peek, Du(1f), Modifier.align(Alignment.CenterHorizontally))
             if (yours) {
                 val shape = RoundedCornerShape(999.dp)
                 Box(Modifier.fillMaxWidth().height(46.dp).clip(shape).background(if (st.buttons.okEnabled) Brush.verticalGradient(listOf(Color(0xFFF3D27E), Color(0xFFC4903A)))
                     else Brush.verticalGradient(listOf(Color(0x33FFFFFF), Color(0x22FFFFFF)))).clickable(enabled = st.buttons.okEnabled, onClick = onKeep).anchorRect("m.keep"),
                     contentAlignment = Alignment.Center) {
-                    Text(st.buttons.ok ?: "Keep", style = small(16f, Color(0xFF1B1408), FontWeight.ExtraBold))
+                    Text(keepLabel(st), style = small(16f, Color(0xFF1B1408), FontWeight.ExtraBold))
                 }
                 if (!choosing) st.buttons.cancel?.takeIf { st.buttons.cancelEnabled }?.let { label ->
                     Box(Modifier.fillMaxWidth().height(42.dp).clip(shape).background(Color(0xE60C0D12)).border(1.dp, Color(0x26FFFFFF), shape).clickable(onClick = onMull).anchorRect("m.mull"),

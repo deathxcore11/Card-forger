@@ -74,7 +74,8 @@ class TableLookT9ShotTest {
         val r = anchors.rects
         val dm = RuntimeEnvironment.getApplication().resources.displayMetrics
         val half = dm.heightPixels / 2f
-        val keys = listOf("m.read", "m.first", "m.hand", "m.deck", "m.keep", "m.mull", "m.line")
+        // Better table scene 11: the held View table is on the bottom screen too, above Keep.
+        val keys = listOf("m.read", "m.first", "m.hand", "m.deck", "peektable", "m.keep", "m.mull", "m.line")
         for (k in keys) { val x = r[k]; assertNotNull("bottom: $k", x); assertTrue("$k on the bottom screen: $x", x!!.top >= half - 1f && x.bottom <= dm.heightPixels + 1f) }
         fun apart(a: Rect, b: Rect) = a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top
         for (i in keys.indices) for (j in i + 1 until keys.size) assertTrue("${keys[i]} ${r[keys[i]]} meets ${keys[j]} ${r[keys[j]]}", apart(r.getValue(keys[i]), r.getValue(keys[j])))
@@ -110,7 +111,9 @@ class TableLookT9ShotTest {
         val dm = RuntimeEnvironment.getApplication().resources.displayMetrics
         fun apart(a: Rect, b: Rect) = a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top
         val line = r["mull.line"]; assertNotNull("$size: the line", line)
-        for (k in listOf("gold", "mull", "mull.caption")) assertTrue("$size: line $line meets $k ${r[k]}", apart(line!!, r.getValue(k)))
+        // Better table scene 11: at the keep question the caption is gone (Mulligan says "to 6" and Keep says 7 itself).
+        assertTrue("$size: no caption at the keep question", r["mull.caption"] == null)
+        for (k in listOf("gold", "mull")) assertTrue("$size: line $line meets $k ${r[k]}", apart(line!!, r.getValue(k)))
         assertTrue("$size: under Mulligan", line!!.top >= r.getValue("mull").bottom)
         assertTrue("$size: on screen $line", line.bottom <= dm.heightPixels + 1f && line.right <= dm.widthPixels + 1f && line.left >= 0f)
         assertTrue("$size: Mulligan and Keep side by side", kotlin.math.abs(r.getValue("mull").center.y - r.getValue("gold").center.y) < 4f)
