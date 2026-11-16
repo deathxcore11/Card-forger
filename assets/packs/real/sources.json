@@ -747,13 +747,13 @@
 "name": "Future Sight",
 "product": "draft",
 "year": "2007",
-"src": "server",
-"file": null,
-"w": 200,
-"h": 349,
-"native": 349,
+"src": "owner",
+"file": "fut-t.png",
+"w": 268,
+"h": 492,
+"native": 492,
 "rot": false,
-"aspect": 0.573
+"aspect": 0.545
 },
 "gpt": {
 "name": "Guildpact",
