@@ -12,7 +12,7 @@ export function slimCard(c = {}) {
   const out = {};
   for (const k of CARD_KEYS) if (c[k] !== undefined) out[k] = c[k];
   if (out.image_uris) out.image_uris = {normal: out.image_uris.normal, art_crop: out.image_uris.art_crop};
-  if (out.card_faces) out.card_faces = out.card_faces.map(f => ({name: f.name, type_line: f.type_line, mana_cost: f.mana_cost, oracle_text: f.oracle_text, oracle_id: f.oracle_id, ...(f.image_uris ? {image_uris: {normal: f.image_uris.normal, art_crop: f.image_uris.art_crop}} : {})}));
+  if (out.card_faces) out.card_faces = out.card_faces.map(f => ({name: f.name, type_line: f.type_line, mana_cost: f.mana_cost, ...(Array.isArray(f.colors) ? {colors: f.colors} : {}), oracle_text: f.oracle_text, oracle_id: f.oracle_id, ...(f.image_uris ? {image_uris: {normal: f.image_uris.normal, art_crop: f.image_uris.art_crop}} : {})}));
   return out;
 }
 export function cardFact(c = {}) {

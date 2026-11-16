@@ -60,4 +60,33 @@ for(const mutate of [s=>s.collection.push({name:'Changed',qty:1}),s=>s.decks[0].
 assert.equal(closes,0);assert(calls.every(c=>c.rerender===false&&c.enrich===false&&c.recordDeckWork===false&&c.observeValue===false));
 const n=calls.length;await actions.deckView({dataset:{game:'mtg',mode:'unknown'}});await actions.deckView({dataset:{game:'other',mode:'stacks'}});assert.equal(calls.length,n);
 S.state.settings.displayModes.mtg.deck='obsolete';assert.equal(deckViewFor('mtg'),'gallery');
+// Cards tab: the mana curve (spells only) sits on top; each bar filters the list; By mana value puts Lands after the spells.
+{
+  const mk=(name,type,cmc)=>({id:'syn-'+cmc+type.length,name,type_line:type,oracle_text:'',cmc,prices:{usd:'1'},image_uris:{normal:'https://example.com/'+cmc+'.jpg'},legalities:{standard:'legal'},finishes:['nonfoil']});
+  for(const c of [mk('Synthetic one drop','Creature — Elf',1),mk('Synthetic three drop','Sorcery',3),mk('Synthetic big spell','Sorcery',8),mk('Synthetic land','Land',0)])S.catalog[c.name.toLowerCase()]=c;
+  const curveDeck={id:'curve',name:'Curve',format:'Standard',cards:[{name:'Synthetic one drop',qty:4},{name:'Synthetic three drop',qty:2},{name:'Synthetic big spell',qty:1},{name:'Synthetic land',qty:20}],side:[],versions:[]};
+  S.state.decks=[curveDeck];S.state.activeDeck='curve';S.ui.deckId='curve';S.ui.deckTab='cards';S.ui.q.deck='';S.ui.deckFilter='all';S.ui.deckMana=[];S.ui.deckSort='type';
+  const page=deckPage();
+  assert.equal((page.match(/data-act="deckMana"/g)||[]).length,8,'eight curve bars on the Cards tab');
+  assert.ok(page.indexOf('class="deck-curve"')<page.indexOf('class="deck-toolbar"'),'the curve sits above the toolbar');
+  assert.match(page,/aria-label="Mana value 1, 4 cards"/);assert.match(page,/aria-label="Mana value 7\+, 1 card"/);assert.match(page,/aria-label="Mana value 0, 0 cards"/,'lands are not on the curve');
+  S.ui.deckSort='mv';
+  const mv=deckList(curveDeck),groups=[...mv.matchAll(/<summary><span>([^<]+) <em>/g)].map(m=>m[1]);
+  assert.deepEqual(groups,['Mana value 1','Mana value 3','Mana value 7+','Lands'],'By mana value: spells, then Lands');
+  S.ui.deckMana=[3];
+  const picked=deckList(curveDeck);
+  assert.ok(picked.includes('Synthetic three drop')&&!picked.includes('Synthetic one drop')&&!picked.includes('Synthetic land'),'a bar filters the list to its mana value');
+  assert.match(deckPage(),/data-act="deckMana" data-mv="3" aria-pressed="true"/);
+  S.ui.deckMana=[7];assert.ok(deckList(curveDeck).includes('Synthetic big spell'),'7+ holds 7 and up');
+  assert.ok(deckList(curveDeck,{readOnly:true}).includes('Synthetic one drop'),'read-only previews ignore the curve filter');
+  // The commander is not on the curve (engineProfile), so a bar does not list it either.
+  const lead={...mk('Synthetic leader','Legendary Creature — Elf',3),legalities:{commander:'legal'},color_identity:['G'],colors:['G']};S.catalog[lead.name.toLowerCase()]=lead;
+  const cmdDeck={id:'cmd',name:'Cmd',format:'Commander',commander:lead.name,cards:[{name:lead.name,qty:1},{name:'Synthetic three drop',qty:2},{name:'Synthetic land',qty:30}],side:[],versions:[]};
+  S.state.decks=[cmdDeck];S.state.activeDeck='cmd';S.ui.deckId='cmd';S.ui.deckMana=[];S.ui.deckSort='type';
+  assert.match(deckPage(),/aria-label="Mana value 3, 2 cards"/);
+  S.ui.deckMana=[3];
+  const cmdList=deckList(cmdDeck);
+  assert.ok(cmdList.includes('Synthetic three drop')&&!cmdList.includes('Synthetic leader'),'the mana value 3 bar lists what it counts, not the commander');
+  S.ui.deckMana=[];S.ui.deckSort='type';
+}
 console.log('PASS: main/side quantities and size remain separate, whole-list purchases remain intact, four shared preferences preserve source context and ownership without rerendering, and collection views remain independent.');
