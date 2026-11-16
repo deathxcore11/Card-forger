@@ -40,6 +40,8 @@ export const S = {
     collLimit: 120,
     deckFilter: "all",
     deckSort: "type",
+    deckMana: [],
+    deckFiltersFor: null,
     deckGrid: false,
     db: {
       term: "",

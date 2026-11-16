@@ -178,11 +178,12 @@ import {createAchievementToasts,doneSteps,newlyEarned} from "./play-achievement-
 import {createPresence,presenceShared,rememberPresence} from "./play-presence.js";
 import {matchCounters,questRows,playDay,achievementRows,achievementTitles} from "./play-achievements.js";
 import {saveTitle,wornTitle} from "./play-titles.js";
-import {econScreenMarkup,shelfMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles,setPlayDeckCovers} from "./play-econ-ui.js";
+import {econScreenMarkup,shelfMarkup,ECON_VIEWS,purseMarkup,cardImageByName,head as econHead,craftPlan,packGoals,setPlayStyles,setPlayDeckCovers,playSetRows} from "./play-econ-ui.js";
 setPlayDeckCovers(()=>S.state?.settings?.playDeckCovers);
 import {rewardFlight} from "./reward-flight.js";
 import {createNameFacts,createCraftRarity,clusterArchetypes,finderArchetypes,rankFinderLists,finderRow,trunkDeck,finderMarkup,finderDeckMarkup,FINDER_FORMATS,FINDER_SORTS,FINDER_FILTERS} from "./play-deck-finder.js";
 import {createCardFacts,slimCard} from "./play-econ-cards.js";
+import {emptyBench,benchToggle,benchQuery,benchColorQuery,BENCH_SORT_KEYS} from "./bench-filter.js";
 import {deckEmblem} from "./play-deck-emblem.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,preconFace,PLAY_FORMATS,deckRules,copyCap,isBasicLand} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
@@ -1078,8 +1079,14 @@ function parseHash() {
       ui.decksTab = "mine";
       return true;
     }
-    if (id !== ui.deckId) {
+    // The list's search and curve picks belong to the deck they were made on (deckFiltersFor), not to ui.deckId, which a
+    // deck tile's menu sets ahead of opening that deck.
+    if (id !== ui.deckFiltersFor) {
       ui.q.deck = "";
+      ui.deckMana = [];
+      ui.deckFiltersFor = id;
+    }
+    if (id !== ui.deckId) {
       ui.hand = null;
       ui.versions = { a: null, b: "current" };
     }
@@ -1771,7 +1778,10 @@ function achWatch(){const snap=playEcon.snapshot(),s=snap.state;if(s===achState)
 const playEcon=createPlayEcon({getAccessToken:cloudAccessToken,onChange:()=>{achWatch();setPlayStyles(playEcon.snapshot().state?.styles||[]);syncPlayChrome();if(S.ui.view==='play')playRepaint();else if(S.ui.lens==='play'&&S.ui.view==='set')render();}});
 // The Trunk sort sticks until the player picks another (default: Recently added).
 function savedEconSort(){try{return localStorage.getItem('cardstashy-play-sort')||'';}catch{return '';}}
-let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()},econSeen=null;
+// The deck builder's own filters (bench-filter.js): the bar's colours, the Filters panel, its Sort (kept on this device) and the list's sort.
+function savedBenchSort(){try{const v=localStorage.getItem('cardstashy-play-bench-sort')||'mv';return BENCH_SORT_KEYS.has(v)?v:'mv';}catch{return 'mv';}}
+const freshBench=()=>({colors:[],filter:emptyBench(savedBenchSort()),open:false,deckSort:'type'});
+let econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort(),bench:freshBench()},econSeen=null;
 const econFacts=createCardFacts({onChange:()=>{if(S.ui.view==='play'&&ECON_VIEWS.has(playView))playRepaint();}});
 // Read the wallet once per signed-in account per visit to Play; a new account starts clean.
 // Rich presence (play-presence.js): what accepted friends see. A match line comes from the open table.
@@ -1781,7 +1791,7 @@ function presenceMatch(){try{if(!playerMatRoot)return null;const s=playerMatHost
  return {kind:setup?.playStyle==='practice'?'practice':'quick',format:setup?.match?.format||'',turn};}catch{return null;}}
 const presence=createPresence({read:()=>({view:S.ui.view,playView,match:presenceMatch()}),send:(action,payload)=>presenceRequest(action,payload),enabled:()=>!!cloudInfo()?.user?.id&&presenceShared()});
 C.setPresence=t=>{if(!rememberPresence(t.checked)){t.checked=!t.checked;return toast('Could not save that setting.');}void presence.setShare(t.checked);toast(t.checked?'Friends can see what you’re playing.':'Friends no longer see what you’re playing.');};
-const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(id){presence.start();if(!presenceShared())void presenceRequest('hide');}if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
+const econWake=()=>{const id=cloudInfo()?.user?.id||null;if(id===econSeen)return;if(id){presence.start();if(!presenceShared())void presenceRequest('hide');}if(econSeen!==null)playEcon.clear();econSeen=id;econUi={query:'',cardQuery:'',rarity:'',press:null,check:null,sort:savedEconSort(),bench:freshBench()};playView=ECON_VIEWS.has(playView)?'home':playView;if(id)setTimeout(()=>playEcon.refresh().then(()=>playEcon.login()).then(l=>{if(l?.fresh)toast(`Day ${l.stamp} stamped on your log-in calendar.`);}),0);};
 const econFocus=()=>requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));
 A.playEconView=t=>{const v=t.dataset.econView;if(!ECON_VIEWS.has(v))return;playView=v;if(t.dataset.econTab)econUi.deedTab=t.dataset.econTab;if(v==='decks')loadPreconIndex();playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});if(v==='shop'&&t.dataset.econFocus==='press')requestAnimationFrame(()=>document.querySelector('.pe-forge')?.scrollIntoView({block:'center',behavior:'smooth'}));else econFocus();};
 // Secret Lair (play-secret-lair.js): this week's bundle, and the rare art styles rewards unlock.
@@ -1825,7 +1835,7 @@ A.playEconRarity=t=>{econUi.rarity=t.dataset.econRarity||'';refreshPlayMenu();};
 I.playEconSetQuery=t=>{econUi.setQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetQuery"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
 A.playEconSetFormat=t=>{econUi.setFormat=t.dataset.value||'';refreshPlayMenu();};
 I.playEconSetSearch=t=>{econUi.shopFocus='';econUi.query=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconSetSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
-I.playEconCardSearch=t=>{econUi.cardQuery=t.value;refreshPlayMenu();const f=document.querySelector('[data-input="playEconCardSearch"]');f?.focus({preventScroll:true});try{f.setSelectionRange(t.value.length,t.value.length);}catch{}};
+I.playEconCardSearch=t=>{econUi.cardQuery=t.value;refreshPlayMenu();};
 // Opening: the server rolls the pack, then the pack opener plays it (the Play variant: no prices).
 // A holo pull says it can be foil, so the reveal shows it in the app's foil finish.
 const econPick=c=>({id:c.id,oracle_id:c.oracle_id,name:c.name,rarity:c.rarity,set:c.set,collector_number:c.number,image_uris:{normal:c.image,art_crop:c.art},finishes:c.foil?['nonfoil','foil']:['nonfoil'],...(c.foil?{packFoil:true}:{}),...(c.slot?{packSlot:c.slot}:{})});
@@ -1892,6 +1902,23 @@ C.playEconType=t=>{econUi.type=t.value||'';refreshPlayMenu();};
 A.playEconSet=t=>{const code=t.dataset.econSet||'';if(t.dataset.econFilter){econUi.set=code;return refreshPlayMenu();}econUi.set='';if(code)return go('#set/'+encodeURIComponent(code)+'/play');refreshPlayMenu();};
 C.playEconSetPick=t=>{econUi.set=t.value||'';refreshPlayMenu();};
 C.playEconSort=t=>{econUi.sort=t.value||'';try{localStorage.setItem('cardstashy-play-sort',econUi.sort);}catch{}refreshPlayMenu();};
+// The deck builder's bar, chips, Filters panel, curve and list sort (bench-filter.js). Escape closes the panel (keydown below).
+const benchUi=()=>econUi.bench||(econUi.bench=freshBench());
+const benchNarrow=()=>matchMedia('(max-width:900px)').matches;
+A.benchColor=t=>{const b=benchUi(),k=t.dataset.color;if(!k)return;b.colors=b.colors.includes(k)?b.colors.filter(x=>x!==k):[...b.colors,k];refreshPlayMenu();};
+A.benchFilters=()=>{const b=benchUi();b.open=!b.open;refreshPlayMenu();requestAnimationFrame(()=>document.querySelector(b.open?'.pe-bench-close':'.pe-bench-open')?.focus({preventScroll:true}));};
+A.benchPick=t=>{const b=benchUi();b.filter=benchToggle(b.filter,t.dataset.field,t.dataset.value);refreshPlayMenu();};
+// A chip's × takes the chip away: focus goes to the chip that took its place (or the one before it), else Filters.
+const benchChipFocus=at=>{const chips=[...document.querySelectorAll('.pe-bench-chips .fchip')];(chips[at]||chips[at-1]||document.querySelector('.pe-bench-open'))?.focus({preventScroll:true});};
+A.benchChip=t=>{const b=benchUi(),at=[...document.querySelectorAll('.pe-bench-chips .fchip')].indexOf(t);b.filter=benchToggle(b.filter,t.dataset.field,t.dataset.value);refreshPlayMenu();if(!t.isConnected||document.activeElement===document.body)benchChipFocus(Math.max(0,at));};
+C.benchSet=t=>{const b=benchUi();b.filter={...b.filter,set:t.value||''};refreshPlayMenu();};
+A.benchSort=t=>{const b=benchUi(),v=t.dataset.value;if(!BENCH_SORT_KEYS.has(v))return;b.filter={...b.filter,sort:v};try{localStorage.setItem('cardstashy-play-bench-sort',v);}catch{}refreshPlayMenu();};
+// The chips' Reset keeps the colours (they show on the bar); the panel's clears them too.
+A.benchReset=t=>{const b=benchUi();if(!t?.dataset?.keepColors)b.colors=[];b.filter=emptyBench(b.filter.sort);refreshPlayMenu();if(document.activeElement===document.body)document.querySelector('.pe-bench-open')?.focus({preventScroll:true});};
+A.benchCurve=t=>{const b=benchUi(),v=Number(t.dataset.mv);if(!Number.isInteger(v))return;const on=!b.filter.mana.includes(v);b.filter=benchToggle(b.filter,'mana',v);refreshPlayMenu();
+ // Stacked (the deck above the pool): a bar turned on brings the pool into view when it is below the screen.
+ if(on&&benchNarrow())requestAnimationFrame(()=>{const pool=document.querySelector('.pe-build-pool');if(pool&&pool.getBoundingClientRect().top>innerHeight*.6)pool.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});});};
+A.benchDeckSort=t=>{benchUi().deckSort=t.dataset.value==='mana'?'mana':'type';refreshPlayMenu();};
 // The Play lens (play-progression.md): the app's own set page and card sheet read the Play collection
 // and Play decks instead of prices. Read-only; every change still goes through the Play server.
 // Signed out or still loading, the lens still holds the wall: no prices, nothing owned yet.
@@ -1932,7 +1959,7 @@ A.playCardGet=t=>{closeSheet();playView='shop';const code=t.dataset.code||'',sol
  go('#play');setTimeout(()=>{const el=document.querySelector(sold?`.pe-pack--focus`:'.pe-press');el?.scrollIntoView({block:'center',behavior:'smooth'});},350);};
 // Stamp an unowned card straight from its Play card view: 1 seal of its rarity, or the holo for 1 + 2.
 A.playCardStamp=async t=>{const holo=t.dataset.holo==='1';try{const out=await playEcon.craft(t.dataset.econCard,holo);haptic('success');toast(`${out.card.name}${holo?' (holo)':''} is in your Trunk.`);refreshSheet?.();}catch{}};
-A.playEconEditDeck=t=>{const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({...c,qty:c.qty|0})),side:(d.cards||[]).filter(c=>c.board)}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
+A.playEconEditDeck=t=>{benchUi().open=false;const d=(playEcon.snapshot().state?.decks||[]).find(x=>x.id===t.dataset.econDeck);econUi.edit=d?{id:d.id,name:d.name,format:d.format||'Standard',cards:(d.cards||[]).filter(c=>!c.board).map(c=>({...c,qty:c.qty|0})),side:(d.cards||[]).filter(c=>c.board)}:{id:null,name:'',format:'Standard',cards:[]};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
 // Play "Build a deck" (Untapped-style finder): the Trunk build plus meta lists,
 // ranked by how much the player owns; missing cards greyed with seal costs.
 const finderFacts=createNameFacts({onChange:()=>{if(S.ui.view!=='play')return;if(playView==='finder')finderRefresh();else if(playView==='deck'||playView==='finderDeck'||playView==='decks')refreshPlayMenu();}});
@@ -1953,7 +1980,7 @@ let shelfSetList=null,shelfSetLoad=null,shelfIO=null,shelfBusy=0;const shelfQueu
 function shelfSets(){if(shelfSetList)return Promise.resolve(shelfSetList);return shelfSetLoad||=fetch('https://api.scryfall.com/sets',{headers:{Accept:'application/json'}}).then(r=>r.ok?r.json():Promise.reject(Error()))
  .then(b=>{const today=new Date().toISOString().slice(0,10);shelfSetList=(b.data||[]).filter(x=>SHELF_KINDS.has(x.set_type)&&!x.digital&&!x.parent_set_code&&x.released_at&&x.released_at<=today&&x.card_count>0)
   .sort((a,c)=>c.released_at.localeCompare(a.released_at)).map(x=>({code:x.code,name:x.name,released:x.released_at}));return shelfSetList;}).catch(()=>{shelfSetLoad=null;return null;});}
-function shelfQueries(){const saved={cardQuery:econUi.cardQuery,color:econUi.color,type:econUi.type,rarity:econUi.rarity};econUi.cardQuery='';const base=poolQuery();Object.assign(econUi,{color:'',type:'',rarity:''});
+function shelfQueries(){const saved={cardQuery:econUi.cardQuery,bench:benchUi()};econUi.cardQuery='';const base=poolQuery();econUi.bench={...saved.bench,colors:[],filter:emptyBench(saved.bench.filter.sort)};
  const id=new Set();let known=0;
  for(const c of econUi.edit?.cards||[]){if(isBasicLand(c.name))continue;const f=finderFacts.get(c.name)||econFacts.card((playEcon.snapshot().state?.cards||[]).find(x=>x.n===c.name)?.o)?.card;if(!f?.color_identity)continue;known++;f.color_identity.forEach(k=>id.add(k));}
  const fit=poolQuery()+' -t:land'+(known?' id<='+(['W','U','B','R','G'].filter(k=>id.has(k)).join('').toLowerCase()||'c'):'');Object.assign(econUi,saved);return {base,fit};}
@@ -1992,25 +2019,28 @@ function pumpShelves(){while(shelfBusy<2&&shelfQueue.length){const [Sh,k]=shelfQ
 function patchShelf(Sh,k){const el=document.querySelector(`[data-shelf="${CSS.escape(k)}"]`),html=el&&shelfMarkup(Sh,k);if(html==null)return refreshPlayMenu();
  const left=el.querySelector('[data-shelf-row]')?.scrollLeft||0;el.outerHTML=html;const row=document.querySelector(`[data-shelf-row="${CSS.escape(k)}"]`);if(row)row.scrollLeft=left;observeShelves();}
 A.playShelfAll=t=>{const Sh=econUi.shelves,k=t?.dataset?.shelf;if(!Sh||!k)return;Sh.open.add(k);patchShelf(Sh,k);};
-const POOL_COLORS={W:'w',U:'u',B:'b',R:'r',G:'g',C:'c'};
-const POOL_TYPES={Creatures:'creature',Planeswalkers:'planeswalker',Instants:'instant',Sorceries:'sorcery',Artifacts:'artifact',Enchantments:'enchantment',Battles:'battle',Lands:'land'};
 function poolQuery(){const f=(econUi.edit?.format||'Standard').toLowerCase(),q=[`legal:${f}`,'game:paper'];const name=(econUi.cardQuery||'').trim().replace(/["\\]/g,'');if(name)q.push(`name:"${name}"`);
- if(econUi.color)q.push(econUi.color==='C'?'c:c':`c:${POOL_COLORS[econUi.color]||''}`);if(econUi.type&&POOL_TYPES[econUi.type])q.push('t:'+POOL_TYPES[econUi.type]);if(econUi.rarity)q.push('r:'+econUi.rarity);
+ // The bar's colours and the Filters panel's picks Scryfall can search (mana value, type, rarity, set); Does and copies are read on the page.
+ const b=benchUi(),cq=benchColorQuery(b.colors);if(cq)q.push(cq);q.push(...benchQuery(b.filter));
  const lead=deckRules(econUi.edit?.format).commander?(econUi.edit.cards||[]).map(c=>finderFacts.get(c.name)||econFacts.card((playEcon.snapshot().state?.cards||[]).find(x=>x.n===c.name)?.o)?.card).find(c=>/Legendary/.test(c?.type_line||'')&&/Creature/.test(c?.type_line||'')):null;
  if(lead?.color_identity)q.push('id<='+(lead.color_identity.join('').toLowerCase()||'c'));return q.join(' ');}
-const poolKey=()=>poolQuery()+'|'+(econUi.sort||'');
+const poolKey=()=>poolQuery()+'|'+benchUi().filter.sort;
+// The panel's Sort as Scryfall's order (Most copies has none: the page sorts it).
+const POOL_ORDER={mv:['cmc','asc'],name:['name','asc'],rarity:['rarity','desc'],new:['released','desc'],copies:['edhrec','auto']};
 async function loadPool(more=false){const P=econUi.pool;if(!P||P.mode!=='all')return;const key=poolKey();if(P.busy&&P.key===key&&!more)return;const t=++P.ticket;P.busy=true;P.error='';if(!more){P.key=key;P.cards=[];P.page=1;}refreshPlayMenu();
- try{const order=econUi.sort==='name'?'name':econUi.sort==='mv'?'cmc':'edhrec';const r=await fetch(`https://api.scryfall.com/cards/search?${new URLSearchParams({q:poolQuery(),order,unique:'cards',page:String(P.page)})}`,{headers:{Accept:'application/json'}});const body=await r.json().catch(()=>null);if(t!==P.ticket)return;
+ try{const [order,dir]=POOL_ORDER[benchUi().filter.sort]||POOL_ORDER.mv;const r=await fetch(`https://api.scryfall.com/cards/search?${new URLSearchParams({q:poolQuery(),order,dir,unique:'cards',page:String(P.page)})}`,{headers:{Accept:'application/json'}});const body=await r.json().catch(()=>null);if(t!==P.ticket)return;
   if(r.status===404||body?.code==='not_found'){P.more=false;}else if(!r.ok||!body)throw Error();else{const add=(body.data||[]).map(slimCard);add.forEach(c=>finderFacts.put(c));P.cards=[...P.cards,...add];P.more=!!body.has_more;P.page+=1;}}
  catch{if(t===P.ticket)P.error='Check your connection and try again.';}finally{if(t===P.ticket){P.busy=false;refreshPlayMenu();}}}
-A.playEconPool=t=>{const mode=t.dataset.id==='all'?'all':'mine';econUi.pool={...(econUi.pool||{cards:[],ticket:0}),mode};econUi.set='';refreshPlayMenu();};
+// The panel's Set stays when the other pool has it too.
+A.playEconPool=t=>{const mode=t.dataset.id==='all'?'all':'mine';econUi.pool={...(econUi.pool||{cards:[],ticket:0}),mode};const b=benchUi(),code=b.filter.set;
+ if(code){const list=mode==='mine'?playSetRows(playEcon.snapshot().state,econFacts).map(x=>x.code):shelfSetList?.map(x=>x.code);if(list&&!list.includes(code))b.filter={...b.filter,set:''};}refreshPlayMenu();};
 A.playEconPoolMore=()=>loadPool(true);
 // A missing card's pack: the same Merchant jump as the card view's "Get it at the Merchant".
 A.playGetPack=t=>A.playCardGet(t);
 // Empty slots (a Trunk build that ran out of owned cards): fill them with the format's most-played
 // cards in the deck's colours, one copy each; cards you don't own land greyed, ready to craft.
 A.playFillSlots=async()=>{const e=econUi.edit;if(!e||econUi.filling)return;const size=deckRules(e.format).size,have=(e.cards||[]).reduce((t,c)=>t+c.qty,0),need=size-have;if(need<1)return;
- econUi.filling=true;refreshPlayMenu();const saved={cardQuery:econUi.cardQuery,color:econUi.color,type:econUi.type,rarity:econUi.rarity};Object.assign(econUi,{cardQuery:'',color:'',type:'',rarity:''});const q=poolQuery();Object.assign(econUi,saved);
+ econUi.filling=true;refreshPlayMenu();const saved={cardQuery:econUi.cardQuery,bench:benchUi()};econUi.cardQuery='';econUi.bench={...saved.bench,colors:[],filter:emptyBench(saved.bench.filter.sort)};const q=poolQuery();Object.assign(econUi,saved);
  try{const inDeck=new Set((e.cards||[]).map(c=>key(c.name)));let added=0;
   for(let page=1;page<=3&&added<need;page++){const r=await fetch(`https://api.scryfall.com/cards/search?${new URLSearchParams({q:q+' -t:land',order:'edhrec',unique:'cards',page:String(page)})}`,{headers:{Accept:'application/json'}});const body=r.ok?await r.json().catch(()=>null):null;if(!body?.data)break;
    for(const c of body.data.map(slimCard)){if(added>=need)break;if(inDeck.has(key(c.name)))continue;finderFacts.put(c);inDeck.add(key(c.name));e.cards.push({name:c.name,qty:1});added++;}if(!body.has_more)break;}
@@ -2107,7 +2137,7 @@ A.playFinderUse=t=>{const key=t.dataset.finderKey,s=playEcon.snapshot().state;le
  // A variant opens the same way: built in full on tap.
  if(!row&&finderUi.lists.get(key))row=finderRow(finderUi.lists.get(key),{owned:ownedByName(s?.cards||[]),cardOf:n=>finderFacts.get(n),seals:finderSeals(s),rarityOf:n=>craftRarity.rarity(n)});if(!row)return;row.list.cards.forEach(r=>{const f=finderFacts.get(r.name);if(f)finderFacts.put(f);});
  const cards=[];for(const r of row.list.cards){const c=cards.find(x=>x.name===r.name);if(c)c.qty+=r.qty|0||1;else cards.push({name:r.name,qty:r.qty|0||1});}
- econUi.edit={id:null,name:row.name.slice(0,80),format:row.format,cards,dirty:true};econUi.pool={mode:row.complete?'mine':'all',cards:[],ticket:0};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
+ econUi.edit={id:null,name:row.name.slice(0,80),format:row.format,cards,dirty:true};benchUi().open=false;econUi.pool={mode:row.complete?'mine':'all',cards:[],ticket:0};playView='deck';refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playDeckTitle')?.focus?.({preventScroll:true}));};
 A.playEconStep=t=>{const e=econUi.edit;if(!e)return;const name=t.dataset.econCard;e.cards=stepDeckCard(e.cards,name,Number(t.dataset.econStep)||0,new Map([[name,4]]),e.format);e.dirty=true;refreshPlayMenu();if(t.closest?.('#sheet'))refreshSheet?.();};
 I.playEconDeckName=t=>{if(econUi.edit){econUi.edit.name=t.value;econUi.edit.dirty=true;}};
 C.playEconDeckFormat=t=>{if(econUi.edit){econUi.edit.format=t.value;econUi.edit.dirty=true;refreshPlayMenu();}};
@@ -2132,7 +2162,11 @@ A.playCloseInspect=()=>{if(!playInspectOpen)return;playInspectOpen=false;refresh
 // The playmat sheet opens with the chosen mat in view.
 document.addEventListener('toggle',e=>{if(e.target.matches?.('.pl-mat[open]'))e.target.querySelector('.pl-mat-opt[aria-pressed="true"]')?.scrollIntoView({block:'nearest'});},true);
 document.addEventListener('click',e=>{for(const d of document.querySelectorAll('.pl-format[open]'))if(!d.contains(e.target))d.open=false;});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const d of document.querySelectorAll('.pl-format[open]'))d.open=false;if(e.key==='Escape'&&playInspectOpen&&S.ui.view==='play'){e.preventDefault();A.playCloseInspect();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.ui.view==='play'&&playView==='deck'&&econUi.bench?.open&&!document.getElementById('sheet')?.open){e.preventDefault();A.benchFilters();return;}
+ // The Filters sheet (900px and below) keeps Tab inside it, so focus never lands on the locked page behind the scrim.
+ if(e.key==='Tab'&&S.ui.view==='play'&&playView==='deck'&&econUi.bench?.open&&benchNarrow()&&!document.getElementById('sheet')?.open){const panel=document.querySelector('.pe-bench-panel');
+  const list=panel?[...panel.querySelectorAll('button,select,input,[tabindex]:not([tabindex="-1"])')].filter(n=>!n.disabled&&n.getClientRects().length):[];
+  if(list.length){const first=list[0],last=list[list.length-1],at=document.activeElement;if(!panel.contains(at)){e.preventDefault();first.focus({preventScroll:true});}else if(e.shiftKey&&at===first){e.preventDefault();last.focus({preventScroll:true});}else if(!e.shiftKey&&at===last){e.preventDefault();first.focus({preventScroll:true});}}}if(e.key==='Escape')for(const d of document.querySelectorAll('.pl-format[open]'))d.open=false;if(e.key==='Escape'&&playInspectOpen&&S.ui.view==='play'){e.preventDefault();A.playCloseInspect();}});
 A.playStyle=t=>{quickSequence++;quickStatus={busy:false,error:null};cancelPlayBuilds();const social=t.dataset.playStyle==='social';
  if(social&&!FRIEND_FORMATS.includes(playSetup.snapshot().match.format))playSetup.configure({format:'Commander'});
  if(!social&&friendRoom?.seat==='host'&&friendRoom.status==='open')void A.playFriendCancel();if(!social&&friendRoom?.seat==='guest'){friendRoom=null;forgetFriendInvite();}if(!social&&friendRoom?.target)friendRoom=null;
@@ -2681,7 +2715,19 @@ function renderPlayPage() {
   if(playView==='home'){const st=playEcon.snapshot().state;econFacts.wantSets([...storyHomeAct().packSets,...(st?.packs||[]).map(p=>p.set),...(st?.shop||[]).slice(0,6).map(x=>x.code),...(st?.cards||[]).flatMap(c=>c.s||[])]);}
   return playMenuMarkup(state,{lockedDecks:locked,econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
+// A Play redraw (a tap, a key, cards or facts arriving) keeps the field or button you were on: the same control is found again in
+// the new markup (the bar's colour and the panel's copy apart) and gets focus and the caret back, so typing and Tab go on.
+const PLAY_FOCUS_KEYS=['input','change','act','color','field','value','mv','econCard','econStep','econView','shelf','playOption','playValue'];
+const playFocusIn=(el,root)=>{const d=el.dataset||{},attrs=PLAY_FOCUS_KEYS.filter(k=>d[k]!==undefined);if(!attrs.length)return null;
+  const sel=el.tagName.toLowerCase()+attrs.map(k=>`[data-${k.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}="${CSS.escape(d[k])}"]`).join(''),panel=!!el.closest('.pe-bench-panel');
+  const same=[...root.querySelectorAll(sel)].filter(n=>!!n.closest('.pe-bench-panel')===panel);return {sel,panel,at:Math.max(0,same.indexOf(el))};};
+const playFocusCapture=()=>{const el=document.activeElement,root=$('#content');if(!el||el===document.body||!root?.contains(el))return null;
+  const key=playFocusIn(el,root);if(!key)return null;let start=null,end=null;try{if(typeof el.selectionStart==='number'){start=el.selectionStart;end=el.selectionEnd;}}catch{}return {...key,start,end};};
+const playFocusRestore=f=>{if(!f)return;const now=document.activeElement;if(now&&now!==document.body&&now.isConnected)return;
+  const same=[...($('#content')?.querySelectorAll(f.sel)||[])].filter(n=>!!n.closest('.pe-bench-panel')===f.panel),el=same[f.at]||same[0];if(!el||el.disabled)return;
+  el.focus({preventScroll:true});if(f.start!=null)try{el.setSelectionRange(f.start,f.end);}catch{}};
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
+  const focus=playFocusCapture();
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]),rows=[...document.querySelectorAll('[data-shelf-row]')].map(n=>[n.dataset.shelfRow,n.scrollLeft]);
   const importOpen=document.getElementById('playImportDisclosure')?.open;
   render();
@@ -2690,6 +2736,7 @@ const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   for(const [key,left]of rows){const node=document.querySelector(`[data-shelf-row="${CSS.escape(key)}"]`);if(node)node.scrollLeft=left;}
   const disclosure=document.getElementById('playImportDisclosure');if(disclosure&&importOpen!==undefined)disclosure.open=importOpen;
   if(disclosure)document.querySelector('.play-paste-pill')?.setAttribute('aria-expanded',String(disclosure.open));
+  playFocusRestore(focus);
 }};
 function focusNextPlaySelection(){const state=playSetup.snapshot();const target=state.match.mode==='cpu'&&state.playStyle!=='quick'&&state.selected&&!state.opponent?document.querySelector('[data-act="playInspectSeat"][data-play-seat="opponent"]'):document.getElementById('playSelectedTitle');target?.focus({preventScroll:true});
  // On a phone the sticky Play bar would cover the CPU seat that is up next, so bring it to the middle.
@@ -6480,6 +6527,16 @@ A.deckAddToggle = (t) => {
 };
 C.deckFilter = (t) => {
   S.ui.deckFilter = t.value;
+  $("#deckList").innerHTML = V.deckList();
+  syncDeckViewers();
+};
+// The Cards tab's curve: each bar toggles a mana value filter on the list, in place like the search.
+A.deckMana = (t) => {
+  const v = Number(t.dataset.mv);
+  if (!Number.isInteger(v)) return;
+  const now = S.ui.deckMana || [];
+  S.ui.deckMana = now.includes(v) ? now.filter((x) => x !== v) : [...now, v];
+  for (const b of $$(".deck-curve-bar")) { const on = S.ui.deckMana.includes(Number(b.dataset.mv)); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }
   $("#deckList").innerHTML = V.deckList();
   syncDeckViewers();
 };

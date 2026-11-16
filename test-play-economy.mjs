@@ -300,6 +300,52 @@ for (const f of ['storage.js', 'cloud.js', 'store.js', 'binders.js', 'sync-merge
   const coll = collectionMarkup(snap, {tab: 'sets', facts});
   assert.ok(coll.includes('set-progress-track') && coll.includes('Reality Fracture'));
   for (const html of [builder, coll, collectionMarkup(snap, {facts})]) assert.ok(!/\$\s?\d|usd|price/i.test(html), 'no prices in Play');
+  // The builder's own bar, chips, Filters panel, curve and list sort (bench-filter.js); the Trunk keeps its filterBar.
+  const {emptyBench} = await import('./bench-filter.js');
+  const elfCard = {oracle_id: 'o1', name: 'Llanowar Elves', type_line: 'Creature — Elf Druid', mana_cost: '{G}', cmc: 1, oracle_text: '{T}: Add {G}.', colors: ['G'], color_identity: ['G'], rarity: 'common', set: 'fra', released_at: '2026-10-02'};
+  const shockCard = {oracle_id: 'o2', name: 'Shock', type_line: 'Instant', mana_cost: '{R}', cmc: 1, oracle_text: 'Shock deals 2 damage to any target.', colors: ['R'], color_identity: ['R'], rarity: 'common', set: 'stk', released_at: '2026-12-04'};
+  const benchFacts = {card: o => ({o1: cardFact(elfCard), o2: cardFact(shockCard)})[o] || null, set: facts.set};
+  const bench = (o = {}) => ({colors: [], open: false, deckSort: 'type', ...o, filter: {...emptyBench(), ...(o.filter || {})}});
+  const edit = {name: 'Elves', format: 'Standard', cards: [{name: 'Llanowar Elves', qty: 4}, {name: 'Forest', qty: 20}]};
+  const build = (o, extra = {}) => deckBuilderMarkup(snap, {facts: benchFacts, edit, bench: bench(o), ...extra});
+  const at = (html, s) => html.indexOf(s);
+  const plain = build();
+  assert.equal((plain.match(/data-act="benchColor"/g) || []).length, 7, 'seven colour buttons on the bar');
+  assert.ok(plain.includes('data-act="benchFilters"') && !plain.includes('filters-count') && !plain.includes('peBenchPanel" role'), 'Filters closed, no badge');
+  assert.ok(!plain.includes('data-act="playEconRarity"') && !plain.includes('data-change="playEconType"'), 'the builder no longer uses the Trunk bar');
+  assert.equal((plain.match(/data-act="benchCurve"/g) || []).length, 8, 'eight curve bars');
+  assert.ok(plain.includes('aria-label="Mana value 1, 4 cards"') && plain.includes('aria-label="Mana value 0, 0 cards"'), 'the curve counts spells, not lands');
+  const two = build({filter: {mana: [1], rarity: ['common']}});
+  assert.ok(/filters-count">2/.test(two), 'the badge counts the picks');
+  assert.ok(/data-act="benchChip" data-field="mana" data-value="1"[^>]*>.*?Mana 1/.test(two) && /data-act="benchChip" data-field="rarity" data-value="common"/.test(two), 'a chip for each pick');
+  assert.ok(/data-act="benchCurve" data-mv="1" aria-pressed="true"/.test(two), 'the curve shows the mana value picked');
+  const open = build({open: true, filter: {mana: [1]}});
+  assert.ok(open.includes('id="peBenchPanel"') && open.includes('Show 2 cards') && open.includes('data-filters="1"') && open.includes('data-act="benchReset"'), 'the panel, with its live count');
+  assert.ok(/data-act="benchPick" data-field="mana" data-value="1" aria-pressed="true"/.test(open) && open.includes('data-change="benchSet"'));
+  assert.ok(build({open: true, filter: {types: ['Land']}}).includes('Show 0 cards') && build({open: true, filter: {types: ['Instant']}}).includes('Show 1 card'));
+  assert.ok(build({open: true}, {pool: {mode: 'all', cards: []}, shelves: {sets: [], cards: {}}}).includes('>Show cards<'), 'All cards a shelf at a time has no one number');
+  const byMana = build({deckSort: 'mana'});
+  assert.ok(at(byMana, '>Mana value 1 <') > 0 && at(byMana, '>Mana value 1 <') < at(byMana, '>Lands <'), 'Mana value groups, then Lands');
+  assert.ok(at(plain, '>Creatures <') < at(plain, '>Lands <') && !plain.includes('>Mana value 1 <'));
+  assert.ok(at(build({filter: {sort: 'new'}}), 'Add Shock to the deck') < at(build({filter: {sort: 'new'}}), 'Add Llanowar Elves to the deck'), 'Your cards: newest first');
+  assert.ok(at(build({filter: {sort: 'name'}}), 'Add Llanowar Elves to the deck') < at(build({filter: {sort: 'name'}}), 'Add Shock to the deck'), 'Your cards: by name');
+  const ramp = build({filter: {does: ['ramp']}});
+  assert.ok(ramp.includes('Add Llanowar Elves to the deck') && !ramp.includes('Add Shock to the deck'), 'Does keeps tagged cards only');
+  assert.ok(!build({filter: {does: ['ramp']}}, {facts}).includes('to the deck"'), 'a card with no facts yet waits outside Does');
+  const red = build({colors: ['R']});
+  assert.ok(red.includes('Add Shock to the deck') && !red.includes('Add Llanowar Elves to the deck') && /data-color="R" aria-pressed="true"/.test(red), 'colours filter the pool');
+  assert.ok(!build({filter: {set: 'stk'}}).includes('Add Llanowar Elves to the deck') && build({filter: {notInDeck: true}}).includes('Add Shock to the deck') && !build({filter: {notInDeck: true}}).includes('Add Llanowar Elves to the deck'));
+  // All cards a shelf at a time: each shelf follows the Sort too (Mana value keeps the shelf's own order, as native).
+  const shelfAll = (sort, extra = {}) => build({filter: {sort}}, {pool: {mode: 'all', cards: []}, shelves: {sets: [{code: 'stk', name: 'Set K', released: '2026-12-04'}], cards: {stk: {list: [shockCard, elfCard], at: 0, more: false}}}, ...extra});
+  const shelfOf = sort => shelfAll(sort).split('data-shelf="stk"')[1] || '';
+  assert.ok(at(shelfOf('name'), 'Open Llanowar Elves') > 0 && at(shelfOf('name'), 'Open Llanowar Elves') < at(shelfOf('name'), 'Open Shock'), 'a shelf sorted by name');
+  assert.ok(at(shelfOf('mv'), 'Open Shock') > 0 && at(shelfOf('mv'), 'Open Shock') < at(shelfOf('mv'), 'Open Llanowar Elves'), 'Mana value keeps the shelf order');
+  // "Show N cards" agrees with the list: no number while every card is looked through, N+ when Scryfall has more.
+  const allPool = pool => build({open: true}, {pool: {mode: 'all', ...pool}, cardQuery: 'e'});
+  assert.ok(allPool({cards: [elfCard], busy: true}).includes('>Show cards<'), 'no number while the pool loads');
+  assert.ok(allPool({cards: [elfCard, shockCard], more: true}).includes('>Show 2+ cards<'), 'N+ when there are more pages');
+  assert.ok(allPool({cards: [elfCard, shockCard], more: false}).includes('>Show 2 cards<'));
+  for (const html of [plain, two, open, byMana, ramp, shelfAll('name')]) assert.ok(!/\$\s?\d|usd|price/i.test(html), 'no prices in the builder or its panel');
 }
 console.log('play economy ok');
 
