@@ -132,10 +132,10 @@ export function foilAnalyzer(workerUrl,local){
  return (key,read,options={})=>{
   if(cache.has(key))return cache.get(key);
   const job=(async()=>{
-   const {W,H,data}=read(),run=()=>{const r=local(data,W,H,options);return {W,H,mask:r.mask,relief:r.relief};};
+   const {W,H,data}=read(),run=()=>{const r=local(data,W,H,options);return {W,H,mask:r.mask,relief:r.relief,box:r.box,star:r.star};};
    const w=get();if(!w)return run();
    return new Promise((resolve,reject)=>{const id=++seq,copy=data.slice().buffer;
-    pending.set(id,{resolve:m=>resolve({W,H,mask:new Uint8ClampedArray(m.mask),relief:new Uint8ClampedArray(m.relief)}),reject,retry:()=>{try{resolve(run());}catch(e){reject(e);}}});
+    pending.set(id,{resolve:m=>resolve({W,H,mask:new Uint8ClampedArray(m.mask),relief:new Uint8ClampedArray(m.relief),box:m.box,star:m.star}),reject,retry:()=>{try{resolve(run());}catch(e){reject(e);}}});
     w.postMessage({id,width:W,height:H,pixels:copy,...options},[copy]);});
   })();
   job.catch(()=>cache.delete(key));
