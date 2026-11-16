@@ -62,4 +62,20 @@ for (const anchor of ['Gastal Blockbuster', 'Aetherjacket', 'Fanatical Firebrand
  const strays = read(deck).spells.filter(r => r.qty === 1 && !/\bLegendary\b/.test(r.card.type_line)).map(r => r.name);
  assert.deepEqual(strays, [], 'no stray one-of beside ' + anchor);
 }
+// The Plan row of Build a deck (approved by Randall 16 Nov): the player may name the plan, and the sheet shows the numbers the builder holds.
+{
+ const { buildPlanTargets, planShape } = await import('./builder.js');
+ assert.deepEqual(buildPlanTargets({ plan: 'auto', seed: card(fx.seed) }), { threats: '20+', removal: '6–10', sweepers: '0' });
+ assert.deepEqual(buildPlanTargets({ plan: 'aggro', seed: card(fx.seed) }), { threats: '24+', removal: '6–8', sweepers: '0' });
+ assert.deepEqual(buildPlanTargets({ plan: 'control', seed: card(fx.seed) }), { threats: '8+', removal: '12+', sweepers: '3' });
+ assert.equal(buildPlanTargets({ plan: 'auto', seed: card('Abrade') }), null, 'Auto holds no numbers for a build-around that does not attack');
+ assert.deepEqual(buildPlanTargets({ size: 100, commander: true }), { lands: '38', ramp: '10', draw: '12', removal: '10', sweepers: '3' });
+ assert.equal(planShape('auto', [card(fx.seed)], 'control').board, false, 'a control request in words still wins over Auto');
+ const aggro = read(buildDeck({ ...options, plan: 'aggro' })), mid = read(buildDeck({ ...options, plan: 'midrange' })), control = read(buildDeck({ ...options, plan: 'control' }));
+ assert.ok(aggro.total === 60 && aggro.threats >= 24 && aggro.removalSpells >= 6 && aggro.removalSpells <= 8 && !aggro.sweepers.length, 'aggro: ' + aggro.threats + ' threats, ' + aggro.removalSpells + ' removal, ' + aggro.sweepers);
+ assert.ok(mid.total === 60 && mid.threats >= 20 && mid.removalSpells >= 6 && mid.removalSpells <= 10 && !mid.sweepers.length, 'midrange');
+ assert.ok(control.total === 60 && control.removalSpells >= 12 && control.removalSpells <= 16 && control.sweepers.length >= 1 && control.creatures <= 12, 'control: ' + control.removalSpells + ' removal, ' + control.creatures + ' creatures, ' + control.sweepers);
+ const avg = d => d.spells.reduce((n, r) => n + r.qty * (Number(r.card.cmc) || 0), 0) / d.spells.reduce((n, r) => n + r.qty, 0);
+ assert.ok(avg(aggro) <= avg(mid) + 1e-9, 'aggro is not the slower deck');
+}
 console.log('random build shape: the reported Rubble Rouser pool builds a creature deck with no self-sweeper and no stray one-of');
