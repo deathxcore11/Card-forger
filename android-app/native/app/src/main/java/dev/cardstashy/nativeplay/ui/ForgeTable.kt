@@ -1205,8 +1205,8 @@ fun ForgeBoard(
             val castCancel = padAsking && st.buttons.cancelEnabled
             // The stops of the target walk: target cards (theirs, then yours), target players, then the Cancel pill when it is shown.
             val targetStops = {
-                val sel = st.selection
-                val on = sel.targetCards.mapNotNull { TableZones.theirs[it] } + sel.targetCards.mapNotNull { TableZones.mine[it] } +
+                val sel = st.selection; val ids = targetWalk(sel)
+                val on = ids.mapNotNull { TableZones.theirs[it] } + ids.mapNotNull { TableZones.mine[it] } +
                     sel.players.filter { it in sel.targetPlayers }.sortedBy { it == st.viewer }.mapNotNull { TableZones.orbs[it] }
                 // A spell on the stack (a counter) or a card off the table has no stop here: no walk, so the d-pad can still reach it
                 // instead of sitting on Cancel.
@@ -1241,8 +1241,8 @@ fun ForgeBoard(
                 val sel = st.selection
                 when {
                     !live || st.prompt != null -> null
-                    st.inputType == "InputSelectTargets" -> sel.targetCards.firstNotNullOfOrNull { TableZones.theirs[it] }
-                        ?: sel.targetCards.firstNotNullOfOrNull { TableZones.mine[it] }
+                    st.inputType == "InputSelectTargets" -> targetWalk(sel).let { ids -> ids.firstNotNullOfOrNull { TableZones.theirs[it] }
+                        ?: ids.firstNotNullOfOrNull { TableZones.mine[it] } }
                         // Only a player who is a target: an orb that is not one cannot take the ring (live 0.4.57).
                         ?: sel.players.filter { it in sel.targetPlayers }.sortedBy { it == st.viewer }.firstNotNullOfOrNull { TableZones.orbs[it] }
                     st.inputType?.startsWith("InputPayMana") == true -> sel.actionable.ifEmpty { sel.cards }.firstNotNullOfOrNull { TableZones.mine[it] }
@@ -1275,7 +1275,7 @@ fun ForgeBoard(
                     if (TablePad.held || (PadPrompts.anyFocus && !TableZones.ringIn)) return@snap false
                     val a = handAnchors ?: return@snap false
                     val sel = st.selection
-                    val stops = sel.targetCards.mapNotNull { id -> (TableZones.theirs[id] ?: TableZones.mine[id])?.let { r -> cardRect(a.rects, "c$id")?.let { r to it } } } +
+                    val stops = targetWalk(sel).mapNotNull { id -> (TableZones.theirs[id] ?: TableZones.mine[id])?.let { r -> cardRect(a.rects, "c$id")?.let { r to it } } } +
                         sel.players.filter { it in sel.targetPlayers }.mapNotNull { id -> TableZones.orbs[id]?.let { r -> a.rects["orb$id"]?.let { r to it } } }
                     val from = stops.firstOrNull { it.first === TablePad.last }?.second?.center ?: a.rects["hand"]?.center ?: return@snap false
                     TableZones.nearest(from, dir, stops.filter { it.first !== TablePad.last })?.let { TableZones.snapTo(it) } ?: false
@@ -1635,6 +1635,15 @@ internal fun attachedPicks(st: MatchState?, live: Boolean, attached: List<Card>)
     return attached.map { it.id }.filter { (it in sel.cards || it in sel.targetCards) && it !in sel.chosenCards }.toSet()
 }
 
+/**
+ * The cards the controller's target walk stops on while Forge asks for targets (the d-pad and shoulders, RT's ask jump, the stick
+ * snap): selection.targets, then the cards it offers in selection.cards not yet chosen. Review of the Disenchant fix: the real engine
+ * offers an aura on a creature in selection.cards with selection.targets empty (AuraTargetProbe), so a walk over targets alone never
+ * reached Weakness's edge.
+ */
+internal fun targetWalk(sel: dev.cardstashy.nativeplay.engine.Selection): List<Int> =
+    (sel.targetCards + sel.cards.filter { it !in sel.chosenCards }).toList()
+
 /** Better table scene 5: each pile's aura lead in a creature row ([TableGeometry.lead]; 0 for a pile of more than one card). */
 internal fun auraLeads(cards: List<Card>, split: Int, markOf: (Card) -> Mark, tapOf: (Card) -> (() -> Unit)?, lookup: (Int) -> Card?): List<Float> =
     pilesOf(cards, split, markOf, tapOf).map { p -> if (p.size == 1) TableGeometry.lead(aurasOn(p[0], lookup).size) else 0f }
@@ -1647,7 +1656,7 @@ internal fun auraLeads(cards: List<Card>, split: Int, markOf: (Card) -> Mark, ta
  * effects. An aura that has just arrived slides out from under the tile. The anchors ("aura<id>") are each edge's box at rest.
  *
  * Randall 15 Nov (Disenchant could not pick Weakness): an edge is a tap target of its own. An aura the question offers ([markOf]
- * gives it the mark a tile would wear) slides further out and up, wears that tile's ring and glow, and one tap does what a tap on
+ * gives it the mark a tile would wear) lifts (up, never further out), wears that tile's ring and glow, and one tap does what a tap on
  * its tile would ([tapOf]: the pick). Any other edge opens its card ([onInspect]); a long press always does. The hit area is the
  * part of the edge left of the tile (never the tile itself), at least [TextFloors.TOUCH] tall. An offered edge takes the
  * controller's ring with the tiles (TableZones) and points the aim arc at itself.
@@ -1667,11 +1676,14 @@ private fun AuraEdges(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?,
     // The mark each edge wears (the one its tile would), and whether the question offers it.
     val marks = shown.map { markOf(it) }
     val offered = marks.map { it in EDGE_PICK }
-    // An offered edge slides further out and lifts (each further one spreads a little more), animated unless the table is still.
+    // An offered edge lifts, animated unless the table is still. Only up (review of the Disenchant fix): an edge slid further out
+    // reached past its pile's lead onto the neighbour pile's tile, and an inner one slid past the outer one and covered it, so a
+    // tap meant for the neighbour or the outer aura picked the wrong card. Each edge keeps its rest x: the edges never cross and
+    // every one stays inside the lead TableGeometry reserves.
     val lifts = shown.mapIndexed { i, a -> key(a.id) { animateFloatAsState(if (offered[i]) 1f else 0f, if (calm) androidx.compose.animation.core.snap() else tween(220, easing = FastOutSlowInEasing), label = "auraLift").value } }
     // Where each edge lies at rest: left of the tile by its peek, a little dropped, a little turned.
     fun spot(i: Int): Triple<Dp, Dp, Float> { val k = lifts[i]
-        return Triple(-w * (TableGeometry.PEEK + TableGeometry.PEEK_STEP * i + (EDGE_LIFT_X + EDGE_SPREAD * i) * k), h * TableGeometry.EDGE_TOP - h * EDGE_LIFT_Y * k, -3f - 2f * i) }
+        return Triple(-w * (TableGeometry.PEEK + TableGeometry.PEEK_STEP * i), h * TableGeometry.EDGE_TOP - h * EDGE_LIFT_Y * k, -3f - 2f * i) }
     val ew = w * TableGeometry.EDGE_W; val eh = h * TableGeometry.EDGE_H
     Box(modifier.size(w, h).graphicsLayer { rotationZ = turn; attackLayer(card.tapped, stepUp, mineSide, advance?.toPx() ?: (12f * u * density)) }) {
         // The anchors: each edge at rest, read before any effect moves it (as the tile's own "c<id>" is).
@@ -1744,9 +1756,7 @@ private fun AuraEdges(card: Card, auras: List<Card>, w: Dp, h: Dp, advance: Dp?,
 internal const val AURA_SLIDE_MS = 360
 /** The marks that make an aura's edge an offered pick (it slides out, wears the ring, a tap picks it). */
 private val EDGE_PICK = setOf(Mark.PICKED, Mark.TARGET, Mark.DISCARD, Mark.PICKABLE)
-/** How much further (of the tile's width) an offered edge slides out, how much more each further one spreads, and how far it lifts (of the height). */
-internal const val EDGE_LIFT_X = .1f
-internal const val EDGE_SPREAD = .06f
+/** How far (of the tile's height) an offered edge lifts. It never moves out: see AuraEdges. */
 internal const val EDGE_LIFT_Y = .07f
 
 /**
