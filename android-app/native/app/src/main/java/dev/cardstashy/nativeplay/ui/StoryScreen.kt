@@ -283,21 +283,18 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
             val pos = open.indexOfFirst { it["id"].asString == key }.coerceAtLeast(0)
             // Everything after the current battle (later rows, the tease) when it fits; otherwise just the row after it.
             val all = open.size - 1 + (if (tease != null) 1 else 0)
-            val size = info.visibleItemsInfo.associate { it.index to it.size }
+            // Real sizes: the rows above from the first layout, then the current battle and what follows after scrolling to it.
+            val size = info.visibleItemsInfo.associate { it.index to it.size }.toMutableMap()
             val room = info.viewportEndOffset - info.viewportStartOffset - info.beforeContentPadding - info.afterContentPadding
-            val guess = size.values.maxOrNull() ?: 0
-            fun from(last: Int) = (0..pos).firstOrNull { i -> (i..last).sumOf { size[it] ?: guess } + info.mainAxisItemSpacing * (last - i) <= room }
-            var last = all; var start: Int = from(all) ?: -1
-            if (start < 0) { last = minOf(pos + 1, all); start = from(last) ?: pos }
-            // Measure again after each move: step down a row until the last of them ends inside the list.
-            while (true) {
-                if (start > 0) listState.scrollToItem(start)
-                androidx.compose.runtime.withFrameNanos { }
-                val now2 = listState.layoutInfo
-                val end = now2.visibleItemsInfo.firstOrNull { it.index == last }?.let { it.offset + it.size }
-                if (start >= pos || (end != null && end <= now2.viewportEndOffset - now2.afterContentPadding)) break
-                start++
+            if (pos > 0) {
+                listState.scrollToItem(pos); androidx.compose.runtime.withFrameNanos { }
+                listState.layoutInfo.visibleItemsInfo.forEach { size[it.index] = it.size }
             }
+            val guess = size.values.maxOrNull() ?: 0
+            // The smallest start (the most rows above) from which the rows through the last one fit (review of 5e49c052).
+            fun from(last: Int) = (0..pos).firstOrNull { i -> (i..last).sumOf { size[it] ?: guess } + info.mainAxisItemSpacing * (last - i) <= room }
+            val start = from(all) ?: from(minOf(pos + 1, all)) ?: pos
+            listState.scrollToItem(start); androidx.compose.runtime.withFrameNanos { }
             // At the end of the list the scroll clamps and the top lands mid-row: add the missing room below and scroll again.
             if (start > 0) {
                 val gap = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == start }?.offset ?: 0
