@@ -289,10 +289,11 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
                     ActHead(a, won, stars, theirWins, onBack, Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = top + 14.dp, bottom = 10.dp), wide = false)
                 }
             }
-            item("purse") { Box(Modifier.padding(horizontal = 16.dp)) { purse() } }
             if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp, horizontal = 16.dp)) }
             open.forEach { b -> item(b["id"].asString) { Box(Modifier.padding(horizontal = 16.dp)) { row(b) } } }
             tease?.let { item("tease") { Box(Modifier.padding(horizontal = 16.dp)) { SecretTease(it) } } }
+            // The purse sits under the battles on a phone, so three won rows and the open battle fit on one screen.
+            item("purse") { Box(Modifier.padding(horizontal = 16.dp).padding(top = 4.dp)) { purse() } }
         }
     }
     }
@@ -341,10 +342,10 @@ private fun JsonObject.s(k: String): String? = get(k)?.takeIf { it.isJsonPrimiti
 @Composable
 private fun Pill(text: String, gold: Boolean, desc: String = text, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val sh = RoundedCornerShape(999.dp)
-    Box(modifier.heightIn(min = 44.dp).then(Modifier.widthIn(max = 124.dp)).clip(sh)
+    Box(modifier.heightIn(min = 44.dp).then(Modifier.widthIn(max = 112.dp)).clip(sh)
         .then(if (gold) Modifier.background(Brush.verticalGradient(0f to Color(0xFFF6D88C), .6f to Color(0xFFD9A94E), 1f to Color(0xFFB8893A))) else Modifier.border(1.dp, Color(0x8CD6AD64), sh))
-        .clickable(onClick = onClick).semantics { contentDescription = desc }.padding(horizontal = 14.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
-        Text(text, style = storyText(13f, FontWeight.Bold, if (gold) Color(0xFF1A1408) else Color(0xFFF2CF7E)).copy(lineHeight = 15.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center), maxLines = 2)
+        .clickable(onClick = onClick).semantics { contentDescription = desc }.padding(horizontal = 12.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
+        Text(text, style = storyText(12.5f, FontWeight.Bold, if (gold) Color(0xFF1A1408) else Color(0xFFF2CF7E)).copy(lineHeight = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center), maxLines = 2)
     }
 }
 

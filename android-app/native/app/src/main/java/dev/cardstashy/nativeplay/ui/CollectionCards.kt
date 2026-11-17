@@ -543,7 +543,16 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
 /** Phone: the value over the card count at the left (it opens Value), refresh beside it, the view buttons, Select and ⋯ at the right. */
 @Composable
 private fun PhoneValueLine(m: CollectionCardsModel, act: CollectionCardsActions, tab: String, showValue: Boolean) {
-    Row(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 8.dp).heightIn(min = 48.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    // The banner art you pinned (or one of your cards) stays as a slim strip behind this line, as the title card's art was.
+    val art = heroPainter(m.banner?.let(homeArt))
+    val sh = RoundedCornerShape(14.dp)
+    Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 8.dp).then(if (art != null) Modifier.clip(sh).border(1.dp, GlassLine, sh) else Modifier)) {
+    if (art != null) {
+        Image(art, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop, alignment = androidx.compose.ui.BiasAlignment(0f, -.4f))
+        Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to Color(0xF007080B), .55f to Color(0xC707080B), 1f to Color(0x8C07080B))))
+    }
+    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).then(if (art != null) Modifier.padding(horizontal = 10.dp, vertical = 4.dp) else Modifier),
+        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (showValue && m.summary.isNotEmpty()) {
             val money = m.summary.firstOrNull { it.bold }
             val rest = m.summary.filter { it !== money }.joinToString("") { it.t }.replace(Regex("\\s+"), " ").trim().removePrefix("·").trim()
@@ -556,6 +565,7 @@ private fun PhoneValueLine(m: CollectionCardsModel, act: CollectionCardsActions,
         }
         Spacer(Modifier.weight(1f))
         HeroActions(m, act, false, Modifier, tab)
+    }
     }
 }
 
