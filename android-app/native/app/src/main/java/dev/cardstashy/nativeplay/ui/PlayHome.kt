@@ -368,11 +368,16 @@ private suspend fun softArt(ctx: android.content.Context, art: String): ImageBit
             (dev.cardstashy.nativeplay.art.CardArt.loader.execute(req) as? coil3.request.SuccessResult)?.image?.toBitmap() ?: return@withContext null
         }
     }
+    softOf(src)
+}
+
+/** The small blurred copy itself (96 px wide, three box passes): cheap enough to make on the spot for art already in memory. */
+private fun softOf(src: android.graphics.Bitmap): ImageBitmap {
     val w = 96; val h = maxOf(1, (src.height * w / maxOf(1, src.width)))
     val small = android.graphics.Bitmap.createScaledBitmap(src.copy(android.graphics.Bitmap.Config.ARGB_8888, false), w, h, true)
     val px = IntArray(w * h); small.getPixels(px, 0, w, 0, 0, w, h)
     repeat(3) { boxBlur(px, w, h, 5) }
-    android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888).asImageBitmap()
+    return android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888).asImageBitmap()
 }
 
 private fun boxBlur(px: IntArray, w: Int, h: Int, r: Int) {
@@ -1742,8 +1747,10 @@ private val bleedDim = ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(.66f, 0f
 @Composable
 private fun PageBleed(url: String?) {
     val ctx = LocalContext.current
+    // Art already in memory (a decoded picture) is blurred on the spot, so the bleed is there on the first frame.
+    val ready = remember(url) { if (url == null || HomeTest.noPictures) null else Aura.cachedSoft(url) ?: (homeArt(url) as? ImageBitmap)?.let { softOf(it.asAndroidBitmap()).also { b -> Aura.keepSoft(url, b) } } }
     val soft = if (url == null || HomeTest.noPictures) null
-        else produceState(Aura.cachedSoft(url), url) { value = Aura.cachedSoft(url) ?: softArt(ctx, url)?.also { Aura.keepSoft(url, it) } }.value
+        else produceState(ready, url) { value = ready ?: Aura.cachedSoft(url) ?: softArt(ctx, url)?.also { Aura.keepSoft(url, it) } }.value
     Box(Modifier.fillMaxSize()) {
         // The warm glow shows while the art loads, or if it never does.
         Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color(0xFF2A2318), Site.Bg), radius = 1400f)))

@@ -286,6 +286,11 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
             val li = listState.layoutInfo
             val shown = { k: Any? -> li.visibleItemsInfo.firstOrNull { it.key == k }?.let { it.offset + it.size <= li.viewportEndOffset - li.afterContentPadding } == true }
             if (pos > 0 && !(shown(key) && (nextKey == null || shown(nextKey)))) listState.scrollToItem(pos)
+            else {
+                // A row cut in half at the top edge: scroll on past it, so the edge lands between rows.
+                val cut = li.visibleItemsInfo.firstOrNull { it.offset < 0 && it.offset + it.size > 0 && it.key != key }
+                if (cut != null) listState.scrollBy((cut.offset + cut.size).toFloat() + li.mainAxisItemSpacing)
+            }
         }
     }
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
