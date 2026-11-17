@@ -40,6 +40,17 @@ object Trunk {
 
     data class Filter(val query: String = "", val rarity: String = "", val color: String = "", val type: String = "", val set: String = "")
 
+    /** Polish brief 3: a Filters-sheet pick shown as a chip, with the filter and sort that taking it off leaves. */
+    data class Chip(val label: String, val filter: Filter, val sort: String)
+
+    /** The chips for the sheet's picks (type, rarity, set, sort); colour has its own buttons and the name its own field. */
+    fun chips(f: Filter, sort: String, setName: (String) -> String): List<Chip> = buildList {
+        if (f.type.isNotEmpty()) add(Chip(f.type, f.copy(type = ""), sort))
+        if (f.rarity.isNotEmpty()) add(Chip(RARITIES.firstOrNull { it.first == f.rarity }?.second ?: f.rarity, f.copy(rarity = ""), sort))
+        if (f.set.isNotEmpty()) add(Chip(setName(f.set), f.copy(set = ""), sort))
+        if (sort.isNotEmpty()) add(Chip(SORTS.firstOrNull { it.first == sort }?.second ?: sort, f, ""))
+    }
+
     fun filter(cards: List<Card>, facts: (String) -> CardFacts.Fact?, f: Filter): List<Card> {
         val q = f.query.trim().lowercase()
         return cards.filter { c ->

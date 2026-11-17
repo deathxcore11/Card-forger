@@ -3,6 +3,9 @@
 package dev.cardstashy.nativeplay.ui
 
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -97,6 +100,7 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
     val prefs = remember { context.getSharedPreferences("play", android.content.Context.MODE_PRIVATE) }
     var tab by rememberSaveable { mutableStateOf(if (startSet != null) "sets" else "cards") }
     var filter by remember { mutableStateOf(Trunk.Filter()) }
+    var filtersOpen by remember { mutableStateOf(false) }
     var sort by remember { mutableStateOf(prefs.getString("trunkSort", "") ?: "") }
     var setQuery by rememberSaveable { mutableStateOf(startSet ?: "") }
     var setFormat by rememberSaveable { mutableStateOf("") }
@@ -138,26 +142,24 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
             LazyVerticalGrid(cols, Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).gridPinch(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // head('Collection', snapshot): the purse sits under the title, as on every Play screen.
-                        PlayHead("Collection", "Play", onBack) { if (!DualScreen.active) dev.cardstashy.nativeplay.play.PlayMath.purse(state)?.let { PurseRow(it, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(state, it.xp)) } }
+                    Column(Modifier.padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        val purse = @Composable { if (!DualScreen.active) dev.cardstashy.nativeplay.play.PlayMath.purse(state)?.let { PurseRow(it, level = dev.cardstashy.nativeplay.play.PlayMath.mastery(state, it.xp)) } }
                         // Sets moved to the Shop (Randall 3 Nov 20:00Z), and came back as a switch here (8 Nov: "I can't find a way" to look at sets).
-                        BenchSwitch(listOf("cards" to "Cards", "sets" to "Sets"), tab) { tab = it }
+                        val switch = @Composable { BenchSwitch(listOf("cards" to "Cards", "sets" to "Sets"), tab) { tab = it } }
+                        // Polish brief 3: the page is the Trunk; upright, the Cards / Sets switch sits in the title row so the cards start higher.
+                        if (sidewaysScreen()) { PlayHead("Trunk", "Play", onBack, purse); switch() }
+                        else { PageHeader("Trunk", "Play", onBack = onBack, trailing = switch); purse() }
+                        // One item with the head, so the cards start one row gap higher.
+                        if (tab == "cards") TrunkBar(filter, sort, sets, if (DualScreen.active) null else matched.size, all.size, filtersOpen, { filtersOpen = it }, { filter = it }) { sort = it; prefs.edit().putString("trunkSort", it).apply() }
                     }
                 }
                 if (tab == "cards") {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        FilterBar(filter, sort, sets, { filter = it }) { sort = it; prefs.edit().putString("trunkSort", it).apply() }
-                    }
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        if (!DualScreen.active) Text("${"%,d".format(matched.size)} of ${"%,d".format(all.size)} cards", style = small)
-                    }
                     if (shown.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                         Empty(if (all.isNotEmpty()) "No cards match" else "Your binder is empty", if (all.isNotEmpty()) "Try another name, colour or type." else "Open a pack to start your Play collection.")
                     }
                     items(shown, key = { it.o + if (it.holo) ":h" else "" }) { c ->
                         val print = c.pid?.let { prints[it] } ?: facts[c.o]?.card
-                        Box(Modifier.dualLens(lens, "card:" + c.o + if (c.holo) ":h" else "")) { Tile(c, print, facts[c.o], data, onHold = { img, set -> onHold(CardHold(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil"), img, set, c.holo)) }) { onCard(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil")) } }
+                        Box(Modifier.dualLens(lens, "card:" + c.o + if (c.holo) ":h" else "").testTag("trunkcard")) { Tile(c, print, facts[c.o], data, onHold = { img, set -> onHold(CardHold(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil"), img, set, c.holo)) }) { onCard(CardPick(c.n, c.o, c.pid ?: print?.get("id")?.asString, if (c.holo) "foil" else "nonfoil")) } }
                     }
                 } else {
                     // Thor, live 0.4.59 (Randall 11 Nov: "the sets tab ... is super slow"): every set was drawn at once inside one grid
@@ -172,6 +174,10 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
             }
         }
         Box(Modifier.align(Alignment.BottomCenter)) { nav() }
+        if (filtersOpen && tab == "cards") {
+            androidx.activity.compose.BackHandler { filtersOpen = false }
+            TrunkFilterSheet(filter, sort, sets, matched.size, { filtersOpen = false }, { filter = it }) { sort = it; prefs.edit().putString("trunkSort", it).apply() }
+        }
     }
 }
 
@@ -293,36 +299,75 @@ fun Select(label: String, options: List<Pair<String, String>>, on: String, modif
     }
 }
 
+/**
+ * Polish brief 3: the Trunk's one filter bar, the deck editor's (DeckBench): Find a card and Filters with its count, the colour
+ * buttons under it, then the sheet's picks as chips with an x and the live card count at the right. Type, rarity, set and sort
+ * are in the Filters sheet; every one of them still filters as before (Trunk.Filter, Trunk.sort).
+ */
 @Composable
-internal fun FilterBar(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, onFilter: (Trunk.Filter) -> Unit, onSort: (String) -> Unit) {
+internal fun TrunkBar(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, matched: Int?, total: Int, open: Boolean, onOpen: (Boolean) -> Unit,
+                      onFilter: (Trunk.Filter) -> Unit, onSort: (String) -> Unit) {
+    val chips = Trunk.chips(f, sort) { code -> sets.firstOrNull { it.code == code }?.name ?: code.uppercase() }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SearchField(f.query, "Card name") { onFilter(f.copy(query = it)) }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            // .pe-color-tabs: 44 px round buttons, 6 px apart.
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Trunk.COLORS.forEach { (k, _) ->
-                    val on = f.color == k
-                    Box(Modifier.size(44.dp).clip(CircleShape).background(if (on) Color(0x26E8B95B) else Color.Transparent)
-                        .border(1.dp, if (on) Site.Gold else Site.Line, CircleShape).clickable { onFilter(f.copy(color = if (on) "" else k)) }, contentAlignment = Alignment.Center) {
-                        Symbol(k, 24.dp, Modifier.alpha(if (f.color.isEmpty() || on) 1f else .55f))
-                    }
-                }
-            }
-            Select("All types", listOf("" to "All types") + Trunk.TYPES.map { it to it }, f.type) { onFilter(f.copy(type = it)) }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f)) { SearchField(f.query, "Find a card") { onFilter(f.copy(query = it)) } }
+            FiltersPill(chips.size, open) { onOpen(!open) }
         }
-        // .pe-rarity-tabs: 44 px pills, 14 px sides, DM Sans 700 13 px; the chosen one gold. The site wraps them; here they stay on one
-        // row that scrolls sideways, so "Mythic" is never left alone on a second row at phone width (family T10, Randall's recording 10 Nov).
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Trunk.RARITIES.forEach { (k, l) -> val on = f.rarity == k
-                Box(Modifier.height(44.dp).clip(CircleShape).background(if (on) Color(0x29E8B95B) else Color.Transparent).border(1.dp, if (on) Site.Gold else Site.Line, CircleShape)
-                    .clickable { onFilter(f.copy(rarity = k)) }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-                    Text(l, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (on) Color(0xFFF6E4BB) else Site.Text))
-                }
-            }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Trunk.COLORS.forEach { (k, _) -> val on = f.color == k; PipButton(k, on) { onFilter(f.copy(color = if (on) "" else k)) } }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Select("Sort", Trunk.SORTS, sort) { onSort(it) }
-            if (sets.size >= 2) Select("Every set", listOf("" to "Every set") + sets.map { it.code to "${it.name} (${it.code.uppercase()})" }, f.set, Modifier.weight(1f, fill = false)) { onFilter(f.copy(set = it)) }
+        if (chips.isNotEmpty() || matched != null) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f)) {
+                if (chips.isNotEmpty()) TakeOffChips(chips.map { c -> c.label to { onFilter(c.filter); onSort(c.sort) } }) { onFilter(Trunk.Filter(query = f.query, color = f.color)); onSort("") }
+            }
+            if (matched != null) Text(if (matched == total) "${"%,d".format(total)} cards" else "${"%,d".format(matched)} of ${"%,d".format(total)}", style = small, maxLines = 1)
+        }
+    }
+}
+
+/** The Trunk's Filters sheet: Type, Rarity, Set and Sort, one tap each; Reset and "Show N cards". */
+@Composable
+private fun TrunkFilterSheet(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, shown: Int, onClose: () -> Unit, onFilter: (Trunk.Filter) -> Unit, onSort: (String) -> Unit) {
+    PadScreen(PadActs(b = "Close", x = PadAct(if (shown == 1) "Show 1 card" else "Show $shown cards", onClose)))
+    var allSets by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize().background(Color(0x99000000)).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onClose)) {
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().widthIn(max = 640.dp).fillMaxHeight(.86f).windowInsetsPadding(WindowInsets.navigationBars)
+            .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Color(0xFF10131A)).border(1.dp, Color(0x33E5C47E), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+            .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}
+            .padding(start = 18.dp, end = 14.dp, top = 10.dp, bottom = 10.dp).testTag("trunkFilters"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Filters", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Ink), modifier = Modifier.weight(1f))
+                Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onClose).semantics { contentDescription = "Close filters" }, contentAlignment = Alignment.Center) {
+                    Text("×", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, color = Ink)) }
+            }
+            val label = @Composable { t: String -> Text(t.uppercase(), style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, letterSpacing = 1.1.sp, color = Site.Gold)) }
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { label("Type")
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        (listOf("" to "All types") + Trunk.TYPES.map { it to it }).forEach { (k, w) -> val on = f.type == k
+                            Opt(on, radio = true, onClick = { onFilter(f.copy(type = k)) }) { OptText(w, on) } } } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { label("Rarity")
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Trunk.RARITIES.forEach { (k, w) -> val on = f.rarity == k
+                            Opt(on, radio = true, onClick = { onFilter(f.copy(rarity = k)) }) { OptText(w, on) } } } }
+                if (sets.size >= 2) Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { label("Set")
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Opt(f.set.isEmpty(), radio = true, onClick = { onFilter(f.copy(set = "")) }) { OptText("Every set", f.set.isEmpty()) }
+                        val list = if (allSets) sets else sets.take(6).let { s -> if (f.set.isNotEmpty() && s.none { it.code == f.set }) s + sets.filter { it.code == f.set } else s }
+                        list.forEach { r -> val on = f.set == r.code
+                            Opt(on, radio = true, onClick = { onFilter(f.copy(set = if (on) "" else r.code)) }) { OptText("${r.name} (${r.code.uppercase()})", on) } }
+                        if (sets.size > 6) Opt(false, onClick = { allSets = !allSets }) { OptText(if (allSets) "Fewer" else "More", false) }
+                    } }
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { label("Sort")
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Trunk.SORTS.forEach { (k, w) -> val on = sort == k; Opt(on, radio = true, onClick = { onSort(k) }) { OptText(w, on) } } } }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.height(48.dp).clip(RoundedCornerShape(13.dp)).border(1.dp, Site.Line, RoundedCornerShape(13.dp)).clickable { onFilter(Trunk.Filter(query = f.query, color = f.color)); onSort("") }
+                    .padding(horizontal = 18.dp), contentAlignment = Alignment.Center) { Text("Reset", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Ink)) }
+                Box(Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(13.dp)).background(Brush.verticalGradient(listOf(Color(0xFFF6D88C), Color(0xFFD9A94E)))).clickable(onClick = onClose),
+                    contentAlignment = Alignment.Center) { Text(if (shown == 1) "Show 1 card" else "Show ${"%,d".format(shown)} cards", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Color(0xFF1A1408))) }
+            }
         }
     }
 }

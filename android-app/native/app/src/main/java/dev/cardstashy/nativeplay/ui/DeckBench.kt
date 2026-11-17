@@ -1158,7 +1158,7 @@ private fun ColourPip(k: String, size: Dp) {
 }
 
 @Composable
-private fun PipButton(k: String, on: Boolean, onClick: () -> Unit) = Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onClick)
+internal fun PipButton(k: String, on: Boolean, onClick: () -> Unit) = Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onClick)
     .semantics { contentDescription = "Show ${BenchFilters.COLOR_NAMES[k]?.lowercase()}"; role = Role.Checkbox; selected = on }, contentAlignment = Alignment.Center) {
     Box(Modifier.size(24.dp).then(if (on) Modifier.shadow(6.dp, CircleShape, ambientColor = Color.White, spotColor = Color.White).border(2.dp, Color.White, CircleShape) else Modifier)
         .alpha(if (on) 1f else .38f)) { ColourPip(k, 24.dp) }
@@ -1166,10 +1166,14 @@ private fun PipButton(k: String, on: Boolean, onClick: () -> Unit) = Box(Modifie
 
 /** The bar's Filters button: the sliders, the word, and how many panel picks are on. */
 @Composable
-private fun FiltersButton(ui: BenchUi) {
-    val n = ui.filter.count; val on = ui.filters || n > 0
-    Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Color(0x1AE5C47E) else Color(0x0DFFFFFF))
-        .border(1.dp, if (on) Color(0x99E5C47E) else B.Line, RoundedCornerShape(12.dp)).clickable { ui.peek = null; ui.setPick = false; ui.filters = !ui.filters }
+private fun FiltersButton(ui: BenchUi) = FiltersPill(ui.filter.count, ui.filters) { ui.peek = null; ui.setPick = false; ui.filters = !ui.filters }
+
+/** The Filters button itself, shared with the Trunk's bar (polish brief 3): [n] picks on, [open] while its panel shows. */
+@Composable
+internal fun FiltersPill(n: Int, open: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val on = open || n > 0
+    Row(modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Color(0x1AE5C47E) else Color(0x0DFFFFFF))
+        .border(1.dp, if (on) Color(0x99E5C47E) else B.Line, RoundedCornerShape(12.dp)).clickable(onClick = onClick)
         .semantics { role = Role.Button; contentDescription = if (n > 0) "Filters, $n on" else "Filters" }.padding(horizontal = 11.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         SiteIcon(BENCH_ICONS["filters"], 17.dp, if (on) B.Gold else B.Fg)
@@ -1186,9 +1190,16 @@ private fun FilterChips(ui: BenchUi, sets: List<Pair<String, String>>, onFilter:
     val names = sets.toMap()
     val chips = ui.filter.chips { code -> names[code] ?: code.uppercase() }
     if (chips.isEmpty()) return
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 10.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically,
+    TakeOffChips(chips.map { (label, without) -> label to { ui.filter = without; onFilter() } }, Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp)) {
+        ui.filter = BenchFilter(sort = ui.filter.sort); onFilter() }
+}
+
+/** Applied filters as gold chips (× takes one off), then Reset. Shared with the Trunk's bar (polish brief 3). */
+@Composable
+internal fun TakeOffChips(chips: List<Pair<String, () -> Unit>>, modifier: Modifier = Modifier, onReset: () -> Unit) {
+    Row(modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        for ((label, without) in chips) Box(Modifier.heightIn(min = 44.dp).clickable { ui.filter = without; onFilter() }.semantics { role = Role.Button; contentDescription = "Take off $label" },
+        for ((label, off) in chips) Box(Modifier.heightIn(min = 44.dp).clickable(onClick = off).semantics { role = Role.Button; contentDescription = "Take off $label" },
             contentAlignment = Alignment.Center) {
             Row(Modifier.height(30.dp).clip(RoundedCornerShape(99.dp)).background(Color(0x1FE5C47E)).border(1.dp, Color(0x80E5C47E), RoundedCornerShape(99.dp)).padding(start = 11.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1196,14 +1207,14 @@ private fun FilterChips(ui: BenchUi, sets: List<Pair<String, String>>, onFilter:
                 Text("×", style = f(14f, 800, B.Gold, line = 15f))
             }
         }
-        Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).clickable { ui.filter = BenchFilter(sort = ui.filter.sort); onFilter() }.semantics { role = Role.Button }
+        Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).clickable(onClick = onReset).semantics { role = Role.Button }
             .padding(horizontal = 8.dp), contentAlignment = Alignment.Center) { Text("Reset", style = f(12f, 700, B.Mute), maxLines = 1, softWrap = false) }
     }
 }
 
 /** One option in the panel: a pill (words) or a round button (a number, a colour). Gold when on. */
 @Composable
-private fun Opt(on: Boolean, desc: String? = null, round: Boolean = false, radio: Boolean = false, onClick: () -> Unit, content: @Composable () -> Unit) {
+internal fun Opt(on: Boolean, desc: String? = null, round: Boolean = false, radio: Boolean = false, onClick: () -> Unit, content: @Composable () -> Unit) {
     val shape = if (round) CircleShape else RoundedCornerShape(12.dp)
     Box(Modifier.heightIn(min = 44.dp).then(if (round) Modifier.width(44.dp) else Modifier).clip(shape).background(if (on) Color(0x24E5C47E) else Color(0x0DFFFFFF))
         .border(1.dp, if (on) Color(0xB3E5C47E) else B.Line, shape).clickable(onClick = onClick)
@@ -1211,7 +1222,7 @@ private fun Opt(on: Boolean, desc: String? = null, round: Boolean = false, radio
         .padding(horizontal = if (round) 0.dp else 13.dp), contentAlignment = Alignment.Center) { content() }
 }
 @Composable
-private fun OptText(s: String, on: Boolean) = Text(s, style = f(13f, 700, if (on) B.Gold else B.Fg), maxLines = 1, softWrap = false)
+internal fun OptText(s: String, on: Boolean) = Text(s, style = f(13f, 700, if (on) B.Gold else B.Fg), maxLines = 1, softWrap = false)
 
 /** The sets the browser's cards come from (code to name), newest first, for the panel's Set and the chips. */
 private fun benchSets(tiles: List<BenchTile>, shelves: List<BenchShelf>?): List<Pair<String, String>> {
