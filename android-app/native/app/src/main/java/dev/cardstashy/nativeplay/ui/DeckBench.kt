@@ -380,7 +380,7 @@ private fun tintOf(colors: List<String>): Tint {
 // ---------------------------------------------------------------- drag (template drag(): hold 280 ms, lift, drop on the other side)
 
 /** The card being dragged, tracked by the Bench's root so it survives the list it came from scrolling or shrinking. */
-private class Drag {
+internal class Drag {
     var name by mutableStateOf<String?>(null)
     var from by mutableStateOf("")
     var image = ""
@@ -394,7 +394,9 @@ private class Drag {
     /** The hero: a card dropped there becomes the deck art. */
     var hero = Rect.Zero
     var origin = Offset.Zero
-    val zone: String? get() = if (name == null) null else if (hero.contains(pos)) "hero" else if (deck.contains(pos)) "deck" else if (grid.contains(pos)) "coll" else null
+    /** How far above the finger the lifted card's middle is drawn (px); the hero takes the card where the player sees it. */
+    var cardLift = 0f
+    val zone: String? get() = if (name == null) null else if (hero.contains(pos) || hero.contains(pos - Offset(0f, cardLift))) "hero" else if (deck.contains(pos)) "deck" else if (grid.contains(pos)) "coll" else null
 }
 
 /**
@@ -433,6 +435,8 @@ private fun Modifier.benchCard(drag: Drag, name: String, image: String, from: St
 fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composable RowScope.() -> Unit)?, browserSwitch: (@Composable () -> Unit)?,
               tabBody: @Composable (String) -> Unit, onFilter: () -> Unit = {}) {
     val drag = remember { Drag() }
+    // The lifted card is drawn 100 dp up from the finger and 134 tall: its middle sits 33 dp above the finger.
+    drag.cardLift = with(LocalDensity.current) { 33.dp.toPx() }
     val haptic = LocalHapticFeedback.current
     fun pop(name: String) { ui.pop = name; ui.popAt = System.nanoTime() }
     fun drop() {
