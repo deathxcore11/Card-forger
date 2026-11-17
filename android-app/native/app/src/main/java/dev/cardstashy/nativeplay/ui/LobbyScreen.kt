@@ -1152,6 +1152,7 @@ private fun DeckBar(m: LobbyModel, signedIn: Boolean, status: String, wide: Bool
             }
         }
     }
+    // Quick Play always meets the Normal CPU (the match start sends "Medium"), so only Practice shows the level.
     val level = @Composable {
         Row(Modifier.clip(RoundedCornerShape(999.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(999.dp)).padding(3.dp)) {
             listOf("Easy", "Medium", "Hard").forEach { lv -> val on = m.difficulty == lv
@@ -1178,9 +1179,9 @@ private fun DeckBar(m: LobbyModel, signedIn: Boolean, status: String, wide: Bool
         .padding(horizontal = 12.dp, vertical = 10.dp).testTag("deckBar"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (status.isNotEmpty()) Text(status, style = sans(13f, color = SoftInk), modifier = Modifier.padding(horizontal = 4.dp))
         if (wide) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            seats(Modifier.weight(1f)); level(); inspect(Modifier.width(110.dp)); play(Modifier.width(240.dp))
+            seats(Modifier.weight(1f)); if (!m.quick) level(); inspect(Modifier.width(110.dp)); play(Modifier.width(240.dp))
         } else {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { seats(Modifier.weight(1f)); level() }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { seats(Modifier.weight(1f)); if (!m.quick) level() }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { inspect(Modifier.width(104.dp)); play(Modifier.weight(1f)) }
         }
     }
