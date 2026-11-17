@@ -268,6 +268,7 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
     }
     // When the act opens, the battle you are on is scrolled fully into view (review of 736cbc54).
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val twoPanes = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 600
     LaunchedEffect(currentId, data != null) {
         val key = currentId ?: return@LaunchedEffect
         androidx.compose.runtime.snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > 0 }
@@ -276,6 +277,17 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
         val item = info.visibleItemsInfo.firstOrNull { it.key == key }
         if (item == null) { val pos = open.indexOfFirst { it["id"].asString == key }.coerceAtLeast(0); listState.scrollToItem(pos + if (info.visibleItemsInfo.firstOrNull()?.key == "head") 1 else 0) }
         else { val over = item.offset + item.size - info.viewportEndOffset; if (over > 0) listState.scrollBy(over.toFloat()) }
+        // Two panes (the header is beside the list): the row after it (the tease) comes into view too, while the card stays whole.
+        if (twoPanes) {
+            androidx.compose.runtime.withFrameNanos { }
+            val li = listState.layoutInfo; val vis = li.visibleItemsInfo
+            val at = vis.indexOfFirst { it.key == key }
+            val cur = vis.getOrNull(at); val next = vis.getOrNull(at + 1)?.takeIf { it.key == "tease" || it.key.toString().startsWith("a") }
+            if (cur != null) {
+                val want = ((next ?: cur).let { it.offset + it.size } - li.viewportEndOffset).coerceAtMost(cur.offset - li.viewportStartOffset)
+                if (want > 0) listState.scrollBy(want.toFloat())
+            }
+        }
     }
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
     val wide = maxWidth >= 600.dp
