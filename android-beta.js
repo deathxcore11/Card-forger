@@ -4,7 +4,7 @@ import {RELEASE} from './release-record.js';
 export const ANDROID_BETA = RELEASE.android;
 // The native Play test build (separate package, installs beside the app). Each new native APK only changes
 // href and bytes here; Settings and /downloads read its version from the file name, so they follow on their own.
-export const ANDROID_NATIVE_TEST = { href: '/downloads/cardstashy-native-test-0.4.93.apk', bytes: 115486398, versionCode: 122, sha256: '03168160c0ed27ab4e73dda31fa670ef4846064004cec7d88c2ac629b8330b83' };
+export const ANDROID_NATIVE_TEST = { href: '/downloads/cardstashy-native-test-0.4.94.apk', bytes: 115461822, versionCode: 123, sha256: 'd767884a5848fca0e04cc4d23b1d04db581908d75c58b743e33ade650b2d8d69' };
 export const nativeTestInfo = (record = ANDROID_NATIVE_TEST) => ({ href: record.href, bytes: record.bytes,
   ...(record.versionCode ? { versionCode: record.versionCode } : {}), ...(record.sha256 ? { sha256: record.sha256 } : {}),
   version: (record.href.match(/cardstashy-native-test-(\d+\.\d+\.\d+)\.apk$/) || [])[1] || '' });
