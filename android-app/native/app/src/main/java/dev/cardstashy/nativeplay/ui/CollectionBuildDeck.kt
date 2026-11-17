@@ -498,6 +498,53 @@ private fun CheckRow(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
 
 // ---------------------------------------------------------------- deckResultMarkup
 
+// .deck-unpriced-tag: "N unpriced" by the price, in the warning amber.
+@Composable
+private fun UnpricedTag(text: String) {
+    Text(text, Modifier.border(1.dp, BWarn.copy(alpha = .45f), RoundedCornerShape(999.dp)).padding(horizontal = 7.dp, vertical = 1.dp).semantics { contentDescription = text },
+        style = cssType(11f, 600, 15f, BWarn), maxLines = 1)
+}
+
+// .deck-build-info: a rounded line (headline · change) with a gold i; open, it lists the blocks, each with its own "What changed".
+@Composable
+private fun FlowInfo(info: JsonObject) {
+    var open by remember(info) { mutableStateOf(false) }
+    val gold = Site.Gold
+    val shape = RoundedCornerShape(12.dp)
+    val line = info.s("headline") + info.s("change").takeIf { it.isNotEmpty() }?.let { " · $it" }.orEmpty()
+    Column(Modifier.fillMaxWidth().padding(top = 14.dp).clip(shape).background(BSurface).border(1.dp, BLine, shape)) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable { open = !open }
+            .semantics { role = Role.Button; contentDescription = line; stateDescription = if (open) "Expanded" else "Collapsed" }
+            .padding(start = 14.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(androidx.compose.ui.text.buildAnnotatedString {
+                pushStyle(androidx.compose.ui.text.SpanStyle(color = BInk, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)); append(info.s("headline")); pop()
+                info.s("change").takeIf { it.isNotEmpty() }?.let { append(" · $it") }
+            }, Modifier.weight(1f), style = cssType(14f, 400, 18.9f, BMute))
+            Box(Modifier.size(28.dp).clip(androidx.compose.foundation.shape.CircleShape).background(if (open) gold else Color.Transparent)
+                .border(1.dp, gold, androidx.compose.foundation.shape.CircleShape), contentAlignment = Alignment.Center) {
+                Text("i", style = cssType(13f, 700, 16f, if (open) Site.GoldInk else gold))
+            }
+        }
+        if (open) Column(Modifier.fillMaxWidth().drawBehind { drawRect(BLine, size = Size(size.width, 1.dp.toPx())) }.padding(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            info.objs("blocks").forEach { b ->
+                var more by remember(b) { mutableStateOf(false) }
+                Column(Modifier.fillMaxWidth().padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (b.s("head").isNotEmpty()) Text(b.s("head"), style = cssType(13f, 700, 18.85f, BInk))
+                    b.strs("lines").forEach { Text(it, style = cssType(13f, 400, 18.85f, BMute)) }
+                    b.o("changes")?.let { c ->
+                        Text(c.s("label").ifEmpty { "What changed" }, Modifier.heightIn(min = 44.dp).clickable { more = !more }
+                            .semantics { role = Role.Button; stateDescription = if (more) "Expanded" else "Collapsed" }.padding(vertical = 12.dp),
+                            style = cssType(13f, 400, 18.85f, gold))
+                        if (more) c.strs("lines").forEach { Text(it, style = cssType(12.5f, 400, 18.125f, BFoot)) }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildText: String, rebuildStatus: String,
@@ -514,7 +561,8 @@ private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildText: Stri
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(0.dp)) {
         DsHero(h.s("art").ifBlank { null }, emptyList(), "", eyebrow, h.s("title"), h.strs("line").joinToString("\n"),
             h.objs("stats").map { DeckStat(it.s("value"), it.s("label"), false, false, "", "") }, h.get("owned")?.takeIf { it.isJsonPrimitive }?.asFloat,
-            wide = vw >= 700.dp, screen = vw, reduced = reduced, back = DsHeroButton(null, "Back", "←", onBack), more = null, onStat = {}, review = {})
+            wide = vw >= 700.dp, screen = vw, reduced = reduced, back = DsHeroButton(null, "Back", "←", onBack), more = null, onStat = {}, review = {},
+            statMore = { i -> h.objs("stats").getOrNull(i)?.s("unpriced")?.takeIf { it.isNotEmpty() }?.let { UnpricedTag(it) } })
         // .ds-lead: the caveats a player reads before saving.
         val lead = m.objs("lead")
         if (lead.isNotEmpty()) Column(Modifier.fillMaxWidth().padding(top = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -527,6 +575,8 @@ private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildText: Stri
                 }
             }
         }
+        // .deck-build-info: one line above Save; the gold i opens what the old blocks said (Randall 17 Nov: "make it very easy to read").
+        m.o("info")?.let { FlowInfo(it) }
         // .ds-actions: Save deck (gold) across; then Plan and Power, then the budget field with Rebuild (Randall 16 Nov: "Budget is
         // not a pill, you can enter it").
         val save = m.o("save") ?: JsonObject()

@@ -21,6 +21,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.unit.dp
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -98,6 +100,17 @@ class CollectionBuildDeckControlsShotTest {
         assertTrue("no pills", !seen("LOWER BUDGET"))
         assertTrue("Group and Tap", seen("GROUP") && seen("TAP"))
         shot("result")
+        // One build line above Save; the gold i opens the blocks, each block's "What changed" opens its list. Unpriced count by the price.
+        assertTrue("unpriced tag", seen("2 unpriced"))
+        assertTrue("closed", !seen("Best of 18 lists checked."))
+        rule.onNodeWithContentDescription("Midrange · Strong power · 4 cards changed").performScrollTo().performClick(); settle(5)
+        assertTrue("blocks", seen("Cards updated") && seen("Best of 18 lists checked.") && seen("How it was built") && seen("Builder pick. Not tournament-tested."))
+        assertTrue("changes closed", !seen("Arcane Signet (main): 1 → 0"))
+        rule.onNodeWithText("What changed").performScrollTo().performClick(); settle(5)
+        assertTrue("changes", seen("Arcane Signet (main): 1 → 0") && seen("Mind Stone (main): 0 → 1"))
+        rule.onNodeWithText("What changed").assertHeightIsAtLeast(44.dp)
+        shot("info")
+        rule.onNodeWithContentDescription("Midrange · Strong power · 4 cards changed").performScrollTo().performClick(); settle(5)
         rule.onNodeWithContentDescription("Budget (\$)").performScrollTo().performTextInput("40"); settle(5)
         rule.onNodeWithText("Rebuild").performScrollTo().performClick(); settle(20)
         val adj = fake.args[fake.calls.lastIndexOf("flowAdjust")]

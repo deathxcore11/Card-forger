@@ -60,9 +60,15 @@ export function resultModel(id, item, deckResultMarkup) {
     hero: {art: art?.getAttribute('src') || '', badge: text(brow?.querySelector('.ds-badge')), format: text([...(brow?.querySelectorAll('.chip') || [])].find(c => !c.classList.contains('ds-badge'))),
       legality: (() => { const b = brow?.querySelector('.review-badge'); return b ? {text: text(b), level: ['bad', 'warn', 'ok'].find(c => b.classList.contains(c)) || 'warn'} : null; })(),
       title: text(hero?.querySelector('h1')), line: (hero?.querySelector('.ds-line')?.innerHTML || '').split(/<br\s*\/?>/i).map(h => text(draw(h))).filter(Boolean),
-      stats: [...(hero?.querySelectorAll('.ds-stat') || [])].map(s => ({value: text(s.querySelector('b')), label: text(s.querySelector('span'))})),
+      stats: [...(hero?.querySelectorAll('.ds-stat') || [])].map(s => ({value: text(s.querySelector('b')), label: text(s.querySelector(':scope > span:not([data-flow-unpriced])')), unpriced: text(s.querySelector('[data-flow-unpriced]'))})),
       owned: bar ? (parseFloat(bar.style?.width || (bar.getAttribute('style') || '').match(/width\s*:\s*([\d.]+)/)?.[1]) || 0) / 100 : null},
-    lead: lead ? [...lead.children].map(el => { const b = el.querySelector(':scope > b'); return {head: text(b), text: b ? [...el.children].filter(k => k !== b).map(text).filter(Boolean).join('\n') || text(el) : text(el), warn: /\bwarn/.test(el.className)}; }).filter(x => x.text || x.head) : [],
+    // The one tappable build line above Save (deck-experience.js infoLine): headline, change count, then blocks; kept out of lead.
+    info: (() => { const d = q('[data-flow-info]'); if (!d) return null; const line = d.querySelector('.deck-build-line'), head = text(line?.querySelector('b'));
+      return {headline: head, change: text(line).slice(head.length).replace(/^\s*·\s*/, ''),
+        blocks: [...d.querySelectorAll('.deck-info-block')].map(sec => { const more = sec.querySelector(':scope > details');
+          return {head: text(sec.querySelector(':scope > b')), lines: [...sec.querySelectorAll(':scope > p')].map(text).filter(Boolean),
+            changes: more ? {label: text(more.querySelector('summary')), lines: [...more.querySelectorAll('p')].map(text).filter(Boolean)} : null}; }).filter(b => b.head || b.lines.length)}; })(),
+    lead: lead ? [...lead.children].filter(el => !el.matches('[data-flow-info]')).map(el => { const b = el.querySelector(':scope > b'); return {head: text(b), text: b ? [...el.children].filter(k => k !== b).map(text).filter(Boolean).join('\n') || text(el) : text(el), warn: /\bwarn/.test(el.className)}; }).filter(x => x.text || x.head) : [],
     save: (() => { const b = q('[data-act="flowSave"]'); return {label: text(b), disabled: !!b?.disabled}; })(),
     rebuild: {summary: text(q('.ds-rebuild summary')), label: text(q('.deck-budget-rebuild label')), placeholder: q('[data-flow-budget]')?.getAttribute('placeholder') || '', button: text(q('[data-act="flowAdjust"]'))},
     // Plan and Power on the built deck (A.flowRetune): the one the build used lit; a tap rebuilds with another.
