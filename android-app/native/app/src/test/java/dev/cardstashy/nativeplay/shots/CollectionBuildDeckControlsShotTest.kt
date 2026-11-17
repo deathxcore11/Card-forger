@@ -93,8 +93,8 @@ class CollectionBuildDeckControlsShotTest {
         assertEquals("bracket", pick.get("field").asString); assertEquals("2", pick.get("value").asString)
         rule.onNodeWithText("Generate deck").performScrollTo().performClick(); settle(30)
         // The result: Lower budget, Group, Tap.
-        assertTrue("Lower budget", seen("Lower budget") && seen("\$16"))
-        assertTrue("Group and Tap", seen("Group") && seen("Tap"))
+        assertTrue("Lower budget", seen("LOWER BUDGET") && seen("\$16"))
+        assertTrue("Group and Tap", seen("GROUP") && seen("TAP"))
         shot("result")
         rule.onNodeWithText("\$11").performScrollTo().performClick(); settle(20)
         val adj = fake.args[fake.calls.lastIndexOf("flowAdjust")]

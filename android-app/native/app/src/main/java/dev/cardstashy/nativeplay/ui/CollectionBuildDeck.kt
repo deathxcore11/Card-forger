@@ -58,6 +58,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -545,13 +546,13 @@ private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildOpen: Bool
             if (rebuildStatus.isNotEmpty()) Text(rebuildStatus, Modifier.semantics { contentDescription = rebuildStatus }, style = cssType(13f, 400, 18.85f, BMute))
         }
         // Plan and Power on the built deck: the one used lit; a tap rebuilds with another.
-        m.objs("retune").forEach { g -> FlowRow(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-            Text(g.s("label"), Modifier.padding(end = 4.dp), style = cssType(13f, 600, 18.85f, BMute))
-            g.objs("items").forEach { i -> FlowChip(i.s("label"), i.b("on")) { if (!i.b("on")) onRetune(g.s("field"), i.s("value")) } }
+        m.objs("retune").forEach { g -> Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            FlowLabel(g.s("label"), Modifier.width(FLOW_LABEL_W))
+            Box(Modifier.weight(1f)) { FlowSeg(g.objs("items"), g.s("label")) { onRetune(g.s("field"), it) } }
         } }
         // .deck-budget-quick: Lower budget and its amounts.
         m.o("quick")?.let { q -> FlowRow(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-            Text(q.s("label"), Modifier.padding(end = 4.dp), style = cssType(13f, 600, 18.85f, BMute))
+            FlowLabel(q.s("label"), Modifier.padding(end = 4.dp))
             q.objs("items").forEach { i -> FlowChip(i.s("label"), false) { onQuick(i.s("value")) } }
         } }
         // p.foot: how the list was made.
@@ -559,9 +560,9 @@ private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildOpen: Bool
         // The loop and mechanic details.
         m.objs("extras").forEach { d -> Disclosure(d) }
         // Group (Type, Job) and Tap (Open, Lock, Swap); Rebuild unlocked once a card is locked; the Swap panel.
-        m.objs("switches").forEach { sw -> Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(sw.s("label"), style = cssType(13f, 400, 18.85f, BMute))
-            Box(Modifier.weight(1f)) { FlowSeg(sw.objs("items"), sw.s("label")) { onSwitch(sw.s("act"), it) } }
+        m.objs("switches").forEach { sw -> Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            FlowLabel(sw.s("label"), Modifier.width(FLOW_LABEL_W))
+            Box(Modifier.widthIn(max = 260.dp).weight(1f, fill = false)) { FlowSeg(sw.objs("items"), sw.s("label")) { onSwitch(sw.s("act"), it) } }
         } }
         m.s("unlocked").takeIf { it.isNotEmpty() }?.let { DeckGhost(it, Modifier.fillMaxWidth().padding(top = 10.dp), minHeight = 44.dp, onClick = onUnlocked) }
         m.o("swap")?.let { FlowSwap(it, onSwapTake, onSwapKeep) }
@@ -761,11 +762,11 @@ private fun FlowSeg(items: List<JsonObject>, label: String, onPick: (String) -> 
         items.forEach { i ->
             val on = i.b("on")
             Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(9.dp))
-                .then(if (on) Modifier.background(Color(0x24FFFFFF)).border(1.dp, Site.Gold.copy(alpha = .45f), RoundedCornerShape(9.dp)) else Modifier)
+                .then(if (on) Modifier.background(Color(0x24FFFFFF)).border(1.dp, Site.Gold.copy(alpha = .35f), RoundedCornerShape(9.dp)) else Modifier)
                 .clickable { if (!on) onPick(i.s("value")) }
                 .semantics { role = Role.RadioButton; stateDescription = if (on) "Selected" else ""; contentDescription = i.s("aria").ifBlank { i.s("label") } },
                 contentAlignment = Alignment.Center) {
-                Text(i.s("label"), maxLines = 1, style = cssType(13.5f, 700, 19f, if (on) BInk else BMute))
+                Text(i.s("label"), maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = cssType(13.5f, 700, 19f, if (on) BInk else BMute))
             }
         }
     }
@@ -775,8 +776,8 @@ private fun FlowSeg(items: List<JsonObject>, label: String, onPick: (String) -> 
 @Composable
 private fun FlowChip(label: String, on: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(22.dp)
-    Box(Modifier.heightIn(min = 44.dp).clip(shape).background(if (on) Color(0x24FFFFFF) else BSurface2).border(1.dp, if (on) Site.Gold.copy(alpha = .45f) else BLine, shape)
-        .clickable(onClick = onClick).semantics { role = Role.Button }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.heightIn(min = 44.dp).widthIn(min = 56.dp).clip(shape).background(if (on) Color(0x24FFFFFF) else BSurface2).border(1.dp, if (on) Site.Gold.copy(alpha = .35f) else BLine, shape)
+        .clickable(onClick = onClick).semantics { role = Role.Button; if (on) stateDescription = "Selected" }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
         Text(label, maxLines = 1, style = cssType(14f, 700, 20f, BInk))
     }
 }
@@ -816,9 +817,12 @@ private fun FlowChoices(c: JsonObject, onPick: (String, String) -> Unit, onCheck
 @Composable
 private fun FlowSwap(sw: JsonObject, onTake: (Int) -> Unit, onKeep: () -> Unit) {
     val shape = RoundedCornerShape(14.dp)
-    Column(Modifier.fillMaxWidth().padding(top = 12.dp).clip(shape).background(BSurface).border(1.dp, BLine, shape).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    // A card tapped far down the list opens this panel above it: bring it into view (Thor's 540 top screen too).
+    val seen = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    LaunchedEffect(sw.s("name")) { runCatching { seen.bringIntoView() } }
+    Column(Modifier.fillMaxWidth().padding(top = 12.dp).then(Modifier.bringIntoViewRequester(seen)).clip(shape).background(BSurface).border(1.dp, BLine, shape).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(sw.s("label"), style = cssType(13f, 400, 18.85f, BMute))
+            FlowLabel(sw.s("label"))
             Text(sw.s("name"), Modifier.weight(1f), style = cssType(14f, 700, 20f))
             Text(sw.s("job"), Modifier.clip(RoundedCornerShape(6.dp)).background(BSurface2).padding(horizontal = 6.dp), style = cssType(11f, 600, 16f, BMute))
         }
@@ -827,13 +831,13 @@ private fun FlowSwap(sw: JsonObject, onTake: (Int) -> Unit, onKeep: () -> Unit) 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 val p = heroPainter(homeArt(o.s("thumb")))
                 Box(Modifier.width(48.dp).aspectRatio(63f / 88f).clip(RoundedCornerShape(5.dp)).background(BSurface2)) {
-                    if (p != null) Image(p, o.s("name"), Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    if (p != null) Image(p, o.s("name"), Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(o.s("name"), style = cssType(14f, 700, 20f))
                     Text(o.s("detail"), style = cssType(12.5f, 400, 18f, BMute))
                 }
-                DeckGold(o.s("action"), minHeight = 44.dp, pad = 14.dp, onClick = { onTake(o.get("index")?.asInt ?: 0) })
+                DeckGhost(o.s("action"), minHeight = 44.dp, pad = 14.dp, onClick = { onTake(o.get("index")?.asInt ?: 0) })
             }
         }
         if (options.isEmpty()) Text(sw.s("empty"), style = cssType(13f, 400, 18.85f, BMute))
@@ -841,3 +845,10 @@ private fun FlowSwap(sw: JsonObject, onTake: (Int) -> Unit, onKeep: () -> Unit) 
         DeckGhost(sw.s("keep"), Modifier.fillMaxWidth(), minHeight = 44.dp, onClick = onKeep)
     }
 }
+
+private val FLOW_LABEL_W = 64.dp
+
+/** The row labels (Plan, Power, Lower budget, Group, Tap, Swap): 12 / 700, upper case, muted, as the site's. */
+@Composable
+private fun FlowLabel(text: String, modifier: Modifier = Modifier) =
+    Text(text.uppercase(), modifier, maxLines = 1, style = cssType(12f, 700, 16f, BMute).copy(letterSpacing = androidx.compose.ui.unit.TextUnit(.04f, androidx.compose.ui.unit.TextUnitType.Em)))

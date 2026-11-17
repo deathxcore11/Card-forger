@@ -396,7 +396,7 @@ internal class Drag {
     var origin = Offset.Zero
     /** How far above the finger the lifted card's middle is drawn (px); the hero takes the card where the player sees it. */
     var cardLift = 0f
-    val zone: String? get() = if (name == null) null else if (hero.contains(pos) || hero.contains(pos - Offset(0f, cardLift))) "hero" else if (deck.contains(pos)) "deck" else if (grid.contains(pos)) "coll" else null
+    val zone: String? get() = if (name == null) null else if (hero.contains(pos) || (hero.contains(pos - Offset(0f, cardLift)) && !deck.contains(pos))) "hero" else if (deck.contains(pos)) "deck" else if (grid.contains(pos)) "coll" else null
 }
 
 /**
