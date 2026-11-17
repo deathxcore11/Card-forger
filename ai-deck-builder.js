@@ -2,8 +2,9 @@
 // unsaved until the player reviews the exact list and uses the normal save action.
 import { forgeOptions } from './deck-forge.js';
 import { metaPrior } from './deck-meta-prior.js';
+import { buildSideboard } from './deck-sideboard.js';
 import { buildDeck, themeQuery, themeQueries, fitsColors, fitsDeck, requestedIntent, inspectMtgTheme, scoreCard } from './builder.js';
-import { cardKey, cardPrice, sumQty, validateDeck } from './core.js';
+import { cardKey, cardPrice, sumQty, validateDeck, effectiveCopyLimit } from './core.js';
 import { formatOf, canLead, legalityIn, verifyLeader } from './formats.js';
 import { normalizeDeckGoal, goalDescription } from './ai-deck-goal.js';
 import { commanderTheme, tribeEvidence, tribalSupport, themeSupport, fitsTypeRestrictions, readCreatureTypeRestrictions, CREATURE_THEMES } from './planner.js';
@@ -96,6 +97,8 @@ export async function prepareMtgDeck(args,x) {
   }
  }
  const requiredCards=await batches(requiredNames,resolve),excludedCards=await batches(excludedNames,resolve);
+ // Cards the player locked in a built deck ("Rebuild unlocked"): kept at the copies they had. Lands are counted afresh.
+ const lockedRows=(Array.isArray(args.locked_cards)?args.locked_cards:[]).filter(r=>r&&typeof r.name==='string'&&Number.isInteger(r.qty)&&r.qty>0).slice(0,40),lockedCards=await batches(lockedRows.map(r=>clean(r.name)),resolve);
  const suggested=await batches((args.candidate_cards || []).map(clean),resolve);
  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
  if(suggested.some(c=>!c))warnings.push('Some suggested alternatives could not be verified and were not added to the candidate pool.');
@@ -188,18 +191,20 @@ export async function prepareMtgDeck(args,x) {
  // Tournament prior (deck-meta-prior.js): the cards current lists in this format play, loaded so the builder can choose them.
  const prior=metaPrior(typeof args.metaLists==='function'?await args.metaLists():args.metaLists);
  if(prior.size&&active()){
-  const wanted=[...prior.top(150),...prior.lands(40)].filter(n=>!catalog[cardKey(n)]&&!x.meta?.(n));
-  for(const n of [...prior.top(150),...prior.lands(40)]){const c=x.meta?.(n);if(c&&!catalog[cardKey(c.name)])remember(c);}
+  const wantSide=args.sideboard===true&&f.sideboard>0&&!f.commander?prior.sideTop(60):[];
+  const wanted=[...prior.top(150),...prior.lands(40),...wantSide].filter(n=>!catalog[cardKey(n)]&&!x.meta?.(n));
+  for(const n of [...prior.top(150),...prior.lands(40),...wantSide]){const c=x.meta?.(n);if(c&&!catalog[cardKey(c.name)])remember(c);}
   for(let i=0;i<wanted.length&&active();i+=75)try{
    const r=await x.api('/cards/collection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiers:wanted.slice(i,i+75).map(name=>({name:name.split(' // ')[0]}))})});
    for(const c of r?.data||[])remember(c);
   }catch{}
  }
  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
- const own=n=>available(x,n),required=[...new Map([seed,...requiredCards].filter(c=>c&&cardKey(c.name)!==cardKey(lead?.name)).map(c=>[cardKey(c.name),{name:c.name,qty:1}])).values()];
+ const own=n=>available(x,n),locked=lockedRows.map((r,i)=>({c:lockedCards[i],qty:r.qty})).filter(({c})=>c&&!/\bLand\b/.test(String(c.type_line||'').split(' // ')[0])&&isLegal(c,f)&&functionalIn(c,f)&&!excludedKeys.has(cardKey(c.name))).map(({c,qty})=>[cardKey(c.name),{name:c.name,qty:Math.min(qty,effectiveCopyLimit(c,f))}]);
+ const required=[...new Map([...[seed,...requiredCards].filter(c=>c&&cardKey(c.name)!==cardKey(lead?.name)).map(c=>[cardKey(c.name),{name:c.name,qty:1}]),...locked.filter(([k])=>k!==cardKey(lead?.name))]).values()];
  if(args.flow&&args.preferOwned!==false)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&available(x,c.name)>0&&!catalog[cardKey(c.name)]&&isLegal(c,f)&&fitsDeck(c,colors,f.commander))remember(c);
  const buildCatalog=Object.fromEntries(Object.entries(catalog).filter(([,c])=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)));
- const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),...forgeOptions(args.forge),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,prior:prior.size?c=>prior.weight(c.name):null,base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
+ const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),...forgeOptions(args.forge),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,prior:prior.size?c=>prior.weight(c.name):null,plan:['aggro','midrange','control'].includes(args.plan)?args.plan:'auto',base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});
  const alternativeDrafts=[];
  const candidates=loopPackages.flatMap(pkg=>{
   const base=[...new Map([...required,...(pkg?pkg.cards.filter(name=>cardKey(name)!==cardKey(lead?.name)).map(name=>({name,qty:1})):[])].map(r=>[cardKey(r.name),r])).values()];
@@ -212,7 +217,7 @@ export async function prepareMtgDeck(args,x) {
     const alternatives=[...new Map(alternativeCards.filter(c=>c&&buildCatalog[cardKey(c.name)]&&isLegal(c,f)&&functionalIn(c,f)&&fitsDeck(c,colors,f.commander)&&!present.has(cardKey(c.name))&&(basis==='owned'?own(c.name)>0:cap===Infinity||basis!=='total'&&own(c.name)>0||quote(c)!==null&&quote(c)<=cap)&&!/\bLand\b/.test(c.type_line||'')).map(c=>[cardKey(c.name),c])).values()].sort((a,b)=>scoreCard(b,tags,tribes,{size:f.size,goal})-scoreCard(a,tags,tribes,{size:f.size,goal})||a.name.localeCompare(b.name)).slice(0,2);
     // A discovery anchor creates an alternative, not a user-required card. It
     // is never persisted as an instruction and can lose to the original list.
-    for(const c of alternatives.slice(0,2-alternativeDrafts.length))alternativeDrafts.push(decorate(buildDeck({...options,base:[...base,{name:c.name,qty:1}],budget:cap})));
+    for(const c of alternatives.slice(0,2-alternativeDrafts.length))alternativeDrafts.push(decorate(buildDeck({...options,base,anchors:[c.name],budget:cap})));
    }
    return drafts;
   });
@@ -221,6 +226,17 @@ export async function prepareMtgDeck(args,x) {
  candidates.push(...alternativeDrafts);
  const finish=draft=>{
  const candidateWarnings=[...warnings];
+ // Sideboard (deck-sideboard.js): asked for on the Build a deck sheet, built only where current lists show what players sideboard,
+ // and only with what the budget has left after the main deck. An empty result is said, never padded.
+ if(args.sideboard===true&&f.sideboard>0&&!f.commander&&draft.total===f.size){
+  const mainCost=deckPriceCoverage(draft.cards,catalog,own,quote),used=basis==='total'?mainCost.totalEstimate:mainCost.purchaseEstimate,inMain=new Map(draft.cards.map(r=>[cardKey(r.name),r.qty]));
+  const cost=(c,n)=>{const free=basis==='total'?0:Math.max(0,own(c.name)-(inMain.get(cardKey(c.name))||0)),buy=Math.max(0,n-free),p=quote(c);return basis==='owned'?(buy?Infinity:0):!buy?0:p===null?Infinity:buy*p;};
+  const side=buildSideboard({rows:draft.cards,catalog,colors:draft.colors||colors,prior,size:f.sideboard,copyLimit:c=>effectiveCopyLimit(c,f),isLegal:c=>isLegal(c,f)&&functionalIn(c,f)&&!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args),cost,budget:limit===Infinity&&basis!=='owned'?Infinity:used===null?0:Math.max(0,limit-used)});
+  draft={...draft,side};
+  const got=side.reduce((n,r)=>n+r.qty,0);
+  if(!prior.size)candidateWarnings.push('No sideboard was built: no current tournament lists are loaded for this format.');
+  else if(got<f.sideboard)candidateWarnings.push(`The sideboard holds ${got} of ${f.sideboard} cards: that is all the loaded lists, your colours and your budget allow.`);
+ }
  const pricing=deckPriceCoverage(draft.cards,catalog,own,quote),validation=validateDeck(draft,catalog,[],[]),issues=[...validation.issues];
  if(f.id==='oathbreaker')issues.push({kind:'unverified',text:'Oathbreaker requires a signature spell. This draft path has not selected or checked that special command-zone requirement.'});
  for(const row of draft.cards){const c=catalog[cardKey(row.name)];if(c&&!Array.isArray(c.color_identity))issues.push({kind:'unverified',text:`${row.name}: color identity data is missing.`});}

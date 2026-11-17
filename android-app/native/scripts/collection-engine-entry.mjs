@@ -3001,6 +3001,18 @@ const writeActs = {
     const format = formatOf(d.format).name, name = String(d.name || '').trim(), budget = Math.max(0, Number(d.budget) || 0), strategy = d.strategy, boxAppearance_ = boxAppearance({color: d.color, image: d.image});
     await edit((x) => ({ ...x, name: name || x.name, budget, strategy, format, boxAppearance: boxAppearance_, commander: hasCommander(format) ? x.commander : "" }), { msg: "Saved." });
   },
+  // app.js saveDeckCover (deck art by drag and drop, Randall 16 Nov): the card dropped on a deck's header is its cover, in all 3 games.
+  async deckArt(d) {
+    const image = String(d.image || '');
+    if (!/^(https:\/\/|img\/)/.test(image)) { toasts.push({text: 'This card has no artwork to use.', undo: false}); return; }
+    const pick = {...(d.game && d.game !== 'mtg' && d.id ? {id: String(d.id)} : {}), name: String(d.name || '').slice(0, 200), image: image.slice(0, 500)};
+    await commit((s) => {
+      const list = !d.game || d.game === 'mtg' ? s.decks : s.tcg?.[d.game]?.decks;
+      const x = list?.find((y) => String(y.id) === String(d.deck));
+      if (!x) throw Error('This deck is no longer available.');
+      x.coverCard = pick;
+    }, {msg: `${pick.name} is the deck art.`, enrich: false, observeValue: false});
+  },
   // app.js C.deckLock: More deck tools' Assembled.
   async deckLock(d) { const on = d.checked === true || d.checked === 'true'; await editDeckOf(deckOf(d.deck)?.id)((x) => ({ ...x, locked: on }), { msg: on ? "Copies reserved for this deck." : "Reservation released." }); },
   // app.js A.snapshot: Save a version, named as the player said ([d].label; the app asks askText's question first).

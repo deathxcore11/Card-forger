@@ -215,6 +215,8 @@ class CollectionDeckActions(
     val back: () -> Unit = {},
     /** data-act on the page (deckMenu, deckReview, deckPlayCpu, deckShare, deckAddToggle, acquire, deckCopy, gameNight, deckExport, formatSearch …) with its data-id. */
     val act: (act: String, id: String) -> Unit = { _, _ -> },
+    /** A card dropped on the deck's header: its art is the deck art (the engine's deckArt, app.js saveDeckCover). */
+    val cover: (name: String, image: String, id: String) -> Unit = { _, _, _ -> },
     /** data-act="deckTab" data-id: the deck's other tabs. */
     val tab: (String) -> Unit = {},
     val search: (String) -> Unit = {},

@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dev.cardstashy.nativeplay.play.LandStyles
 import dev.cardstashy.nativeplay.play.CardFacts
 import dev.cardstashy.nativeplay.play.DeckEdit
 import dev.cardstashy.nativeplay.play.Decks
@@ -85,6 +86,14 @@ class EditorUi {
     /** Kept for the callers that open a saved deck as its list (the Bench always shows the Trunk under the deck). */
     var adding by mutableStateOf(true)
     var mode by mutableStateOf("mine")
+    /** The Lands view (LandPicker.kt): the land shown, its order, the style tapped, how many show, a craft or pick on its way. */
+    var landType by mutableStateOf("Forest")
+    var landSort by mutableStateOf("recent")
+    var landFocus by mutableStateOf("")
+    var landLimit by mutableStateOf(60)
+    var landBusy by mutableStateOf(false)
+    /** Styles picked for this deck by land (they win over a precon row's own printing on save). */
+    var lands by mutableStateOf<Map<String, String>>(emptyMap())
     var sort by mutableStateOf("")
     var pool by mutableStateOf<List<JsonObject>>(emptyList())
     var poolBusy by mutableStateOf(false)
@@ -201,10 +210,58 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val bracket = read?.get("bracket")?.takeIf { it.isJsonPrimitive }?.asInt
     val cardRoles = read?.get("cards") as? JsonObject
 
+    // ---- land styles (LandStyles.kt): owned looks per land, the one each land uses in this deck, New until looked at
+    LaunchedEffect(Unit) { LandStyles.init(context); LandStyles.load() }
+    val landData by LandStyles.data.collectAsState()
+    val landError by LandStyles.error.collectAsState()
+    val landSeen by LandStyles.seen.collectAsState()
+    val styleRows = remember(state) { (state.get("styles") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList() }
+    LaunchedEffect(styleRows, landData) { if (landData != null) LandStyles.initSeen(styleRows) }
+    val landOwned = remember(landData, styleRows, state) { landData?.let { d -> LandStyles.owned(d, styleRows, (state.get("cards") as? JsonArray)?.mapNotNull { it as? JsonObject } ?: emptyList()) } ?: emptyMap() }
+    val landChosen = remember(styleRows) { LandStyles.chosen(styleRows) }
+    val landGot = remember(styleRows) { LandStyles.got(styleRows) }
+    fun landNew(id: String) = landSeen?.let { seen -> id in landGot && id !in seen } ?: false
+    fun landInUse(type: String): String = landData?.let { d -> LandStyles.inDeck(type, ui.lands[type] ?: e.cards.firstOrNull { it.name == type }?.extra?.str("id"), landOwned, landChosen, d.starter) } ?: ""
+    fun openLands(type: String) { if (LandStyles.isType(type)) ui.landType = type; ui.landFocus = ""; ui.landLimit = 60; ui.mode = "lands"; b.peek = null }
+    // On save every basic row carries its style's printing (a match shows only that art). A row with a decklist printing (a precon's
+    // set and number) keeps it until a style is picked for that land in this deck.
+    fun landRows(ed: DeckEdit.Edit): DeckEdit.Edit = if (landData == null) ed else ed.copy(cards = ed.cards.map { l ->
+        if (!LandStyles.isType(l.name)) return@map l
+        val x = l.extra
+        if (x != null && x.str("set").isNotEmpty() && (x.str("number").isNotEmpty() || x.str("collector_number").isNotEmpty()) && x.str("id").isEmpty() && ui.lands[l.name] == null) return@map l
+        val id = landInUse(l.name); if (id.isEmpty()) l else l.copy(extra = (x?.deepCopy() ?: JsonObject()).apply { addProperty("id", id) }) })
+    val landActs = LandActs(
+        type = { t -> if (t != ui.landType) { ui.landType = t; ui.landFocus = ""; ui.landLimit = 60 } },
+        sort = { ui.landSort = it },
+        focus = { id -> ui.landFocus = id; LandStyles.see(id) },
+        use = { id -> val st = landData?.byId?.get(id)
+            if (st != null) { ui.lands = ui.lands + (st.type to id)
+                ui.edit = ui.edit.copy(cards = ui.edit.cards.map { l -> if (l.name == st.type) l.copy(extra = (l.extra?.deepCopy() ?: JsonObject()).apply { addProperty("id", id) }) else l }, dirty = true)
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.SegmentTick) } },
+        craft = { id -> if (!ui.landBusy) { ui.landBusy = true
+            scope.launch { val st = landData?.byId?.get(id)
+                runCatching { Progress.landCraft(id) }.onSuccess { LandStyles.see(id); haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.Confirm)
+                    toast(if (st != null) "${st.setName} ${st.type} unlocked." else "Land style unlocked.") }
+                    .onFailure { f -> toast(when ((f as? Progress.Failure)?.code) { "no_seal" -> "Not enough seals."; "have_style" -> "Already yours."; else -> "That didn't go through. Try again." }) }
+                ui.landBusy = false } } },
+        all = { val type = ui.landType; val id = landInUse(type)
+            if (id.isNotEmpty() && !ui.landBusy) { ui.landBusy = true
+                scope.launch { val st = landData?.byId?.get(id)
+                    runCatching { Progress.landStyle(id, true) }.onSuccess {
+                        ui.lands = ui.lands + (type to id)
+                        ui.edit = ui.edit.copy(cards = ui.edit.cards.map { l -> if (l.name == type) l.copy(extra = (l.extra?.deepCopy() ?: JsonObject()).apply { addProperty("id", id) }) else l })
+                        toast("All your decks use ${if (st != null) st.setName + " " else ""}$type.") }
+                        .onFailure { toast("That didn't go through. Try again.") }
+                    ui.landBusy = false } } },
+        more = { ui.landLimit += 60 },
+        // Duals: back to Your cards with only lands showing, so two-colour lands are added from the same place.
+        duals = { b.filter = b.filter.copy(types = setOf("Land")); ui.mode = "mine" },
+    )
+
     val actions = Actions(
         save = {
             if (ui.edit.cards.isNotEmpty() && !ui.busy) { ui.busy = true
-                scope.launch { runCatching { Progress.saveDeck(DeckEdit.saveBody(ui.edit)) }.onSuccess { d -> (d as? JsonObject)?.get("id")?.asString?.let { ui.edit = ui.edit.copy(id = it) }
+                scope.launch { runCatching { Progress.saveDeck(DeckEdit.saveBody(landRows(ui.edit))) }.onSuccess { d -> (d as? JsonObject)?.get("id")?.asString?.let { ui.edit = ui.edit.copy(id = it) }
                     ui.edit = ui.edit.copy(dirty = false); toast("Saved to your Play decks.") }; ui.busy = false } }
         },
         craftAll = {
@@ -294,7 +351,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         stats = listOf(BenchStat("${nums.count}/${nums.size}", "cards", warn = !nums.ok), BenchStat("${nums.count - plan.missing}/${nums.count}", "unlocked")),
         power = power?.let { "${it.roundToInt()}" }, tier = if (e.format == "Commander" && bracket != null) PowerTier.bracketLabel(bracket) else PowerTier.powerTier(power),
         roles = (read?.get("roles") as? JsonArray)?.mapNotNull { (it as? JsonArray)?.takeIf { r -> r.size() >= 2 && r[0].isJsonPrimitive && r[1].isJsonPrimitive }?.let { r -> r[0].asString to r[1].asInt } } ?: emptyList(),
-        groups = groups, basics = BASICS.map { it to named(it, "art_crop") }, browserTitle = "Trunk", tiles = tiles,
+        groups = groups, basics = BASICS.map { t -> t to (landInUse(t).ifEmpty { null }?.let { LandStyles.image(it, "art_crop") } ?: named(t, "art_crop")) }, browserTitle = "Trunk", tiles = tiles,
         browserNote = if (ui.mode == "all") (if (ui.poolBusy) "Looking through every card…" else if (ui.poolError.isNotEmpty()) ui.poolError else null)
             else if (trunk.isEmpty()) "No cards yet. Open packs, or look through All cards and craft them with seals." else null,
         footLead = buildAnnotatedString { if (plan.missing > 0) { withStyle(SpanStyle(color = Site.Text, fontWeight = FontWeight.Bold)) { append("${plan.missing}") }; append(" to craft") }
@@ -305,8 +362,18 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         tabs = listOf("cards" to "Cards", "engine" to "Power", "rules" to "Rules"), powerTab = "engine",
         shelves = if (ui.mode != "all") null else if (shelves.ready) shelves.shelves(::poolTile, { n -> countIn(n) > 0 }, "For this deck", "Most played in your colours", stamp = e.cards) else emptyList(),
         shelvesGen = shelves.gen,
+        landPicker = if (ui.mode != "lands") null else ({ LandPicker(LandPick(ui.landType, ui.landSort, ui.landFocus, ui.landLimit, ui.landBusy, landData?.list, landError, landOwned,
+            landInUse(ui.landType), listOf("c", "u").associateWith { k -> (state.get("wallet") as? JsonObject)?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0 },
+            state.get("config") as? JsonObject, ::landNew), landActs) }),
+        landNew = landGot.filter { (id, _) -> landNew(id) }.values.toSet(),
     )
     val benchActions = BenchActions(back = onBack, save = actions.save, step = actions.step, craft = actions.craftCopies, open = actions.open, more = actions.hold,
+        // Drop a card on the hero: its art is this deck's art (saved decks; app.js playDropArt).
+        cover = { name -> val id = ui.edit.id
+            if (id == null) toast("Deck not saved.") else { val image = fact(name)?.a?.ifBlank { null } ?: named(name, "art_crop")
+                scope.launch { val err = Workspace.setPlayDeckCover(context, id, JsonObject().apply { addProperty("name", name.take(200)); addProperty("image", image.take(500)) })
+                    toast(err ?: "$name is the deck art.") } } },
+        landHold = { t -> openLands(t) },
         menu = listOf(BenchMenuItem("Rename deck") { ui.sheet = "rename" }, BenchMenuItem("Change format") { ui.sheet = "format" },
             BenchMenuItem("Copy list", actions.copy), BenchMenuItem("Copy to My decks", toApp)), shelf = { k -> shelves.load(k) }, shelfMore = { k -> shelves.more(k) })
 
@@ -317,7 +384,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 if (nums.count < nums.size) BenchPill(if (ui.filling) "Finding cards…" else "Fill ${nums.size - nums.count} empty slot${if (nums.size - nums.count > 1) "s" else ""}", enabled = !ui.filling, onClick = actions.fill)
                 for (g in goals) BenchPill("${g.code.uppercase()} packs", count = g.miss, desc = "${g.name}: ${g.miss} missing") { actions.pack(g.code) }
             }) else null,
-            browserSwitch = { BenchSwitch(listOf("mine" to "Your cards", "all" to "All cards"), ui.mode) { ui.mode = it } },
+            browserSwitch = { BenchSwitch(listOf("mine" to "Your cards", "all" to "All cards", "lands" to "Lands"), ui.mode) { if (it == "lands") openLands(ui.landType) else ui.mode = it } },
             tabBody = { tab -> PlayDeckTab(tab, ui.edit) })
         when (ui.sheet) {
             "rename" -> EditSheet("Rename deck", { ui.sheet = null }) {
@@ -431,7 +498,7 @@ private fun PlayDeckHold(ui: EditorUi, name: String, image: String, set: String,
             else ContextAction(SiteIcons.Paint, "Deck cover", "Show this art on $deck") {
                 if (!image.startsWith("https://")) { toast("This card has no artwork to use."); return@ContextAction }
                 scope.launch { val err = Workspace.setPlayDeckCover(context, id, JsonObject().apply { addProperty("name", name.take(200)); addProperty("image", image.take(500)) })
-                    onClose(); toast(err ?: "$name is the cover of $deck.") } },
+                    onClose(); toast(err ?: "$name is the deck art.") } },
             ContextAction(SiteIcons.Paint, "Use artwork as…", "Avatar or profile header") { onArt() })).filter { it.isNotEmpty() }, onClose)
 }
 

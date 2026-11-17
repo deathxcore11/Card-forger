@@ -224,11 +224,27 @@ object Progress {
      */
     suspend fun open(id: String): JsonObject {
         val body = JsonObject().apply { addProperty("id", id); addProperty("tz", tz) }
-        return try { run("open:$id", "open", body, timeoutMs = 60000) } catch (e: Failure) {
+        return try { run("open:$id", "open", body, timeoutMs = 60000, extra = ::landsFrom) } catch (e: Failure) {
             if (e.code !in setOf("offline", "cards_unavailable", "http_502", "http_503", "http_504", "http_500")) { reportOpen(id, e); throw e }
             kotlinx.coroutines.delay(1500)
-            try { run("open:$id", "open", body, timeoutMs = 60000) } catch (again: Failure) { reportOpen(id, again); throw again }
+            try { run("open:$id", "open", body, timeoutMs = 60000, extra = ::landsFrom) } catch (again: Failure) { reportOpen(id, again); throw again }
         }
+    }
+    /** Land styles a pack unlocked (out.landStyles) join the styles, newest first, as play_styles lists them (play-econ-client.js open). */
+    private fun landsFrom(out: JsonObject): JsonObject? {
+        val ids = (out.get("landStyles") as? JsonArray)?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString } ?: return null
+        val had = (_state.value?.get("styles") as? JsonArray) ?: JsonArray()
+        val have = had.mapNotNull { (it as? JsonObject)?.get("id")?.takeIf { e -> e.isJsonPrimitive }?.asString }.toSet()
+        val pack = out.get("pack") as? JsonObject
+        val byId = (pack?.get("contents") as? JsonArray)?.mapNotNull { it as? JsonObject }?.associateBy { it.get("id")?.takeIf { e -> e.isJsonPrimitive }?.asString ?: "" } ?: emptyMap()
+        val fresh = ids.filter { it !in have }
+        if (fresh.isEmpty()) return null
+        val packId = pack?.get("id")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+        return JsonObject().apply { add("styles", JsonArray().apply {
+            fresh.forEach { id -> val c = byId[id]; add(JsonObject().apply { addProperty("id", id); addProperty("o", c?.get("oracle_id")?.takeIf { it.isJsonPrimitive }?.asString ?: "")
+                addProperty("n", c?.get("name")?.takeIf { it.isJsonPrimitive }?.asString ?: ""); addProperty("i", ""); addProperty("on", false); addProperty("src", "landopen:$packId") }) }
+            had.forEach { add(it) }
+        }) }
     }
     /** E5a: a pack that would not open goes into the auto report with the server's own answer. */
     private fun reportOpen(id: String, e: Failure) {
@@ -244,6 +260,11 @@ object Progress {
     suspend fun secretLairCard(id: String, week: String?) = run("sloffer:$id", "sloffer", JsonObject().apply { addProperty("id", id); addProperty("pay", "coins"); week?.let { addProperty("week", it) }; addProperty("tz", tz) }) { out ->
         JsonObject().apply { out.get("styles")?.let { add("styles", it) }; out.get("secretLairStore")?.let { add("secretLairStore", it) } } }
     suspend fun precon(file: String, format: String) = run("precon", "precon", JsonObject().apply { addProperty("file", file); addProperty("format", format) })
+    /** Land styles (LandStyles.kt): craft one for its seal; pick one as the account's default for its land ([all]: every saved deck too). */
+    suspend fun landCraft(id: String) = run("landcraft:$id", "landcraft", JsonObject().apply { addProperty("id", id) }) { out ->
+        JsonObject().apply { out.get("styles")?.let { add("styles", it) } } }
+    suspend fun landStyle(id: String, all: Boolean) = run("landstyle:$id", "landstyle", JsonObject().apply { addProperty("id", id); addProperty("all", all) }) { out ->
+        JsonObject().apply { out.get("styles")?.let { add("styles", it) } } }
     suspend fun holo(oracle: String) = run("holo", "holo", JsonObject().apply { addProperty("oracle", oracle) })
     suspend fun craft(id: String, holo: Boolean = false) = run("craft", "craft", JsonObject().apply { addProperty("id", id); addProperty("holo", holo) })
     suspend fun claim(kind: String, id: String, step: Int?) = run("claim:$kind:$id:${step ?: ""}", "claim",

@@ -75,10 +75,15 @@ console.log('PASS: shared generated-deck presentation and branded progress for a
 // the quality of a strategic package. These are different claims to the player.
 const combo={requested:true,status:'verified',requirement:'infinite-mana',issues:[],packages:[{id:'fixture-basalt',label:'Basalt Monolith + Forsaken Monument',status:'verified',cards:['Basalt Monolith','Forsaken Monument'],prerequisites:['Both pieces are on the battlefield.','Pay their casting costs before starting.'],steps:['Tap Basalt Monolith for four colorless mana.','Pay three colorless mana to untap Basalt <Monolith>.','Repeat with one more colorless mana each time.'],netResources:{C:1},startupMana:0,output:'colorless',limitations:['This makes colorless mana, not red mana.','An opponent can interrupt the loop. It is not an automatic win.'],sources:[{title:'Official rules',url:'https://magic.wizards.com/en/rules'},{title:'Unsafe script',url:'javascript:alert(1)'},{title:'Lookalike domain',url:'https://magic.wizards.com.example.invalid/'}]}],missing:[],scope:'Checks this list and the recognized setup; does not simulate a game.'};
 const strategy={status:'partial',goal:'strongest',groups:[{tribe:'goblin',members:{libraryCopies:24,commanderCopies:1,creatureShare:.8},producers:{libraryCopies:4,commanderCopies:1},payoffs:{libraryCopies:2,commanderCopies:0},resources:{libraryCopies:1,commanderCopies:0},coverage:{library:99,supportCopies:12,providerCopies:4,seen:11,supportAccess:.76,providerAccess:.39},missing:['More independent token producers are needed.']}],issues:[],notes:[],limitations:['Natural access is not a win probability.'],competitive:'unverified'};
-const strategicResult={...result,requestSatisfied:false,request:{...result.request,game:'mtg',colors:['R'],creatureTypesOnly:['goblin'],excludedSubtypes:['elf'],requireLoop:'infinite-mana'},plan:{...result.plan,combo,strategy}};
+const strategicResult={...result,requestSatisfied:false,closingPlanOnly:false,request:{...result.request,game:'mtg',colors:['R'],creatureTypesOnly:['goblin'],excludedSubtypes:['elf'],requireLoop:'infinite-mana'},plan:{...result.plan,combo,strategy}};
 let planMarkup=deckResultMarkup(strategicResult,'strategy');
 for(const expected of ['Mono-red identity','Goblin creature cards only','No Elf creature cards','Noncreature support is allowed; token types may differ.','Some request checks remain unmet or unverified.','Tribal plan partly established','Competitive performance is unverified.','Infinite colorless mana','Requires the listed battlefield setup; not an automatic win.','How the mana loop works','Net per repetition:','+1 colorless mana','Floating mana needed after deploying the pieces: 0. Casting costs are separate.','76% to recognized support','39% to a recognized provider','first 11 library cards','More independent token producers are needed.'])assert(planMarkup.includes(expected),expected);
 assert(planMarkup.indexOf('Tribal plan partly established')<planMarkup.indexOf('data-act="flowSave"'),'partial strategy remains visible before the Save action');
+// Seen 16 Nov in every Random build: "Checks unmet" although nothing the player asked for had failed. When the only open
+// point is that the app cannot prove how the deck closes a game, the badge reads "Draft"; a failed request still reads "Checks unmet".
+{const closing={...result,requestSatisfied:false,closingPlanOnly:true,plan:{...result.plan,finalSupport:{status:'unverified',issues:[],notes:[]}}},shown=deckResultMarkup(closing,'closing');
+ assert(!shown.includes('Checks unmet')&&!shown.includes('Some request checks remain unmet'),'an unproven closing plan alone is not an unmet check');assert(/review-badge warn">Draft</.test(shown),'it reads Draft');
+ const failed=deckResultMarkup({...closing,closingPlanOnly:false},'failed');assert(failed.includes('Checks unmet')&&failed.includes('Some request checks remain unmet'),'a failed request still says so');}
 assert(planMarkup.indexOf('Pay their casting costs before starting.')<planMarkup.indexOf('Repeat these steps'),'setup precedes the repeatable steps');
 assert.match(planMarkup,/Basalt &lt;Monolith&gt;/);assert.doesNotMatch(planMarkup,/Basalt <Monolith>|javascript:|example\.invalid|Infinite red mana|win rate:|winner/i);
 assert.match(planMarkup,/href="https:\/\/magic\.wizards\.com\/en\/rules"[^>]*rel="noopener noreferrer"/);
@@ -121,3 +126,62 @@ let unsafeMarkup=renderMechanic(commanderRows,unsafeMechanics,{commander:drana.n
 for(const url of ['http://mtg.wiki/page/Bloodlust','https://magic.wizards.com.example.invalid/','https://mtg.wiki.example.invalid/','https://person@mtg.wiki/page/Bloodlust','https://mtg.wiki:444/page/Bloodlust']){unsafeGroup.rule.source={url,title:'Rejected source <card>'};unsafeMarkup=renderMechanic(commanderRows,unsafeMechanics,{commander:drana.name});assert.doesNotMatch(unsafeMarkup,/Rejected source|example\.invalid|person@|:444/);}
 const notRequestedMarkup=renderMechanic(commanderRows,{status:'not-requested',groups:[]});assert.doesNotMatch(notRequestedMarkup,/data-flow-mechanic-status|deck-mechanic-checks/,'ordinary deck results gain no empty mechanic section');
 console.log('PASS: actual partial Bloodlust coverage, conditional Drana/first-strike setup, distinct Bloodthirst damage prerequisites, command-zone draw exclusion, safe community/official sources and escaped mechanic evidence.');
+
+// Build a deck sheet (approved mock 16 Nov): Plan, Power, Sideboard and "This build" for 60-card formats; Bracket for Commander.
+{const {deckBuildChoices,lowerBudgets,bracketPower}=await import('./deck-experience.js');
+ const threat={name:'Fixture bear',type_line:'Creature — Bear',power:'2',toughness:'2',oracle_text:'',cmc:2};
+ const std=deckBuildChoices({game:'mtg',format:'Standard',seedCard:threat},pipeline.formats);
+ for(const id of ['auto','aggro','midrange','control'])assert(std.includes(`data-field="plan" data-value="${id}"`),'Plan offers '+id);
+ for(const id of ['casual','focused','strong','max'])assert(std.includes(`data-field="power" data-value="${id}"`),'Power offers '+id);
+ assert(/class="on" aria-pressed="true" data-act="flowPick" data-field="plan" data-value="auto"/.test(std)&&/class="on" aria-pressed="true" data-act="flowPick" data-field="power" data-value="casual"/.test(std),'Auto and Casual are on by default');
+ assert(/data-flow-field="sideboard" checked/.test(std)&&/<b>20\+<\/b><span>Threats<\/span>/.test(std)&&/<b>6–10<\/b><span>Removal<\/span>/.test(std)&&/<b>0<\/b><span>Sweepers<\/span>/.test(std)&&/<b>15<\/b><span>Sideboard<\/span>/.test(std),'This build shows the numbers the builder holds');
+ assert(!/data-field="bracket"/.test(std),'no bracket outside Commander');
+ const control=deckBuildChoices({game:'mtg',format:'Standard',seedCard:threat,plan:'control',sideboard:false},pipeline.formats);
+ assert(/<b>8\+<\/b><span>Threats<\/span>/.test(control)&&!/<span>Sideboard<\/span>/.test(control)&&!/data-flow-field="sideboard" checked/.test(control),'Control numbers, and a sideboard switched off shows none');
+ const edh=deckBuildChoices({game:'mtg',format:'Commander',bracket:4},pipeline.formats);
+ assert(/4 · Optimized/.test(edh)&&/aria-label="Bracket 5, cEDH"/.test(edh)&&!/data-field="plan"|data-flow-field="sideboard"/.test(edh)&&/<b>38<\/b><span>Lands<\/span>/.test(edh),'Commander shows Bracket and its own numbers');
+ assert.deepEqual([1,2,3,4,5].map(bracketPower),['casual','casual','focused','strong','max']);
+ assert.equal(deckBuildChoices({game:'ygo',format:'tcg'},pipeline.formats),'','other games are unchanged');
+ assert(deckSetupMarkup({request:{game:'mtg',format:'Standard',seedCard:threat}},pipeline.formats).includes('deck-build-choices'),'the sheet carries the rows');
+ // One-tap lower budgets sit under the current estimate, in round dollars; a deck too cheap to cut offers none.
+ assert.deepEqual(lowerBudgets(82.05),[60,40,20]);assert.deepEqual(lowerBudgets(19.97),[15,10,5]);assert.deepEqual(lowerBudgets(3),[]);assert.deepEqual(lowerBudgets(null),[]);
+ const priced={...result,pricing:{...result.pricing,estimate:82.05,unpriced:0},request:{...result.request,game:'mtg',budget:null,closest:false},delta:null,budgetStatus:'not-requested'};
+ const shown=deckResultMarkup(priced,'quick');assert(/data-act="flowAdjust" data-result="quick" data-budget="20"/.test(shown),'the built deck offers a lower budget in one tap');
+ assert(/data-act="flowGroup" data-result="quick" data-group="job"/.test(shown),'and grouping by job');
+ // Group by job: the main deck is split by what each card does.
+ const jobs=deckResultMarkup({...priced,rows:[{name:'Fixture bear',qty:4,zone:'main',card:threat,price:1},{name:'Island',qty:20,zone:'main',card:land,price:.1},{name:'Fixture bear side',qty:2,zone:'side',card:threat,price:1}]},'jobs',{group:'job'});
+ assert(/<h3>Threats <span>4<\/span>/.test(jobs)&&/<h3>Lands <span>20<\/span>/.test(jobs)&&/<h3>Sideboard <span>2<\/span>/.test(jobs)&&!/<h3>Main deck/.test(jobs),'job headings with counts');
+ assert(/data-deck-zone="side"[^>]*data-act="flowCard"/.test(jobs),'sideboard cards open on a tap like main-deck cards');
+ // A budget no complete deck fits: the closest deck is shown and says so; no lower-budget buttons under the floor.
+ const over=deckResultMarkup({...priced,pricing:{...priced.pricing,estimate:4.68},request:{...priced.request,budget:2,budgetMode:'target',closest:true},delta:2.68,budgetStatus:'outside-target',requestSatisfied:false,closingPlanOnly:false},'closest');
+ assert(/No complete deck fits \$2\.00\. Closest found: \$4\.68\./.test(over)&&!/data-budget=/.test(over)&&/Checks unmet/.test(over),'the closest deck is labelled as over the budget');
+ // "Closest" ranks lists over the budget by price, cheapest first.
+ const mk=(estimate,power)=>({deck:{cards:[]},rows:[],check:{complete:true,legal:true,issues:[]},plan:{issues:[],notes:[],setupBurden:0},pricing:{estimate,subtotal:estimate,unpriced:0,copies:60,ownedCopies:0},power});
+ const req=normalizeDeckRequest({game:'mtg',format:'Standard',seed:'x',budget:2,budgetMode:'target',closest:true},pipeline.formats);
+ assert.deepEqual(req.constructionBudgets,[2,4,10,Infinity],'the closest search tries wider budgets step by step');
+ const picked=chooseDeck([mk(19.97,{score:9}),mk(4.68,{score:1})],req);assert(picked.ok&&picked.pricing.estimate===4.68,'the cheapest complete list over the budget is the closest: '+JSON.stringify(picked.pricing||picked.message));
+}
+
+// Lock and swap one card (approved mock 16 Nov). Tap chooses what a tap on a card does: Open, Lock or Swap.
+{const base=await pipeline.build({...request,budget:''});assert(base.ok,base.message);
+ const shown=deckResultMarkup({...base,request:{...base.request,game:'mtg'}},'tap');
+ for(const tap of ['open','lock','swap'])assert(shown.includes(`data-act="flowTap" data-result="tap" data-tap="${tap}"`),'Tap offers '+tap);
+ assert(!/flowRebuildUnlocked|deck-lock-tag|data-flow-swap/.test(shown),'nothing locked, nothing to rebuild around');
+ const {cardJob}=await import('./builder.js'),spell=base.rows.find(r=>r.zone==='main'&&cardJob(r.card)==='Support'&&r.name!==base.deck.commander&&r.name!==anchor.name);
+ const locked=deckResultMarkup(base,'lock',{tap:'lock',locked:['main:'+spell.name]});
+ assert(/data-flow-locked/.test(locked)&&/deck-lock-tag">Locked</.test(locked)&&/Rebuild unlocked · 1 locked/.test(locked),'a locked card is marked and Rebuild unlocked appears');
+ // Swap options do the same job, are not already in the deck, and stay in the deck's colours.
+ const options=pipeline.swapOptions(base,spell.name),held=new Set(base.rows.map(r=>r.name));
+ assert(options.length>0&&options.length<=4,'up to four swap options: '+options.length);
+ for(const o of options){assert.equal(cardJob(o.card),cardJob(spell.card),o.card.name+' does the same job');assert(!held.has(o.card.name),o.card.name+' is not already in the deck');assert(typeof o.price==='number');}
+ assert.deepEqual(pipeline.swapOptions(base,'Island'),[],'a land is not swapped here');
+ const panel=deckResultMarkup(base,'swap',{tap:'swap',swap:{name:spell.name,zone:'main',qty:spell.qty,job:cardJob(spell.card),options}});
+ assert(/data-flow-swap/.test(panel)&&panel.includes(`data-act="flowSwapTake" data-result="swap" data-option="0"`)&&panel.includes('Keep '+spell.name),'the swap panel lists the options and a way to keep the card');
+ // Taking one swaps every copy and rechecks the whole list like any built deck.
+ const swapped=pipeline.applySwap(base,spell.name,'main',options[0].card);
+ assert(swapped.ok,swapped.message);assert(!swapped.rows.some(r=>r.name===spell.name)&&swapped.rows.find(r=>r.name===options[0].card.name)?.qty===spell.qty,'every copy was swapped');
+ assert.equal(swapped.rows.reduce((n,r)=>n+r.qty,0),100,'the deck is still complete');assert(pipeline.recheck(swapped),'and still passes its checks');
+ // Under a strict budget an option that would break the cap is not offered.
+ const tight=pipeline.swapOptions({...base,request:{...base.request,budget:base.pricing.estimate,budgetMode:'cap'}},spell.name);
+ assert(tight.every(o=>o.price<=cardPrice(spell.card)+1e-9),'no option pushes a capped deck over its budget');
+}

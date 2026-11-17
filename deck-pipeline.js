@@ -6,11 +6,12 @@ import { constructDeck, inspectDeckPlan, priceDeck, chooseDeck, withinBudgetCap 
 import { prepareMtgDeck } from './ai-deck-builder.js';
 import { FORMATS, formatOf } from './formats.js';
 import { cardKey, validateDeck } from './core.js';
+import { cardJob } from './builder.js';
 import { refineCandidates, towardDeck } from './deck-optimizer.js';
 import { mtgPower } from './power.js';
 import { shapeFaults } from './deck-needs.js';
 import { bracketEstimate } from './extras.js';
-import { META_PRIOR_FORMATS } from './deck-meta-prior.js';
+import { META_PRIOR_FORMATS, metaPrior } from './deck-meta-prior.js';
 
 // A refinement pass treats candidate objects as immutable: towardDeck clones
 // each change and refineCandidates adds scored copies. Keep this cache inside
@@ -189,12 +190,33 @@ export function createDeckPipeline(x) {
   const a=assess(d,result.request),plan=inspectDeckPlan(result.request,a.rows,d);
   return {...a,deck:d,plan,pricing:priceDeck(a.rows,result.request.budgetBasis)};
  };
+ // Swap one card: cards from the loaded pool that do the same job, are legal, fit the deck's colours and, under a strict
+ // budget, do not push the deck over it. Cards current tournament lists play come first, then the nearest mana value.
+ const swapOptions=(result,name,zone='main',count=4)=>{
+  if(result?.request?.game!=='mtg')return [];
+  const request=result.request,f=formatOf(request.format),out=x.meta(name),land=c=>/\bLand\b/.test(String(c?.type_line||'').split(' // ')[0]);if(!out||land(out))return [];
+  const rows=zone==='side'?result.deck.side||[]:result.deck.cards||[],row=rows.find(r=>cardKey(r.name)===cardKey(name));if(!row)return [];
+  const job=cardJob(out),held=new Set([...(result.deck.cards||[]),...(result.deck.side||[])].map(r=>cardKey(r.name))),colors=new Set((result.deck.cards||[]).flatMap(r=>x.meta(r.name)?.color_identity||[]));
+  const banned=new Set((request.excluded_cards||[]).map(n=>cardKey(n))),lists=(request.format==='Standard'&&x.referenceMetaState?x.referenceMetaState():metaState('mtg:'+request.format))?.data?.decks,prior=metaPrior(lists||[]);
+  const price=c=>{const p=x.priceOf(c.name);return typeof p==='number'&&Number.isFinite(p)?p:null;},was=price(out),estimate=result.pricing?.estimate,capped=request.budgetMode==='cap'&&request.budget!==null&&Number.isFinite(estimate)&&was!==null;
+  const lead=cardKey(result.deck.commander||'');
+  return Object.values(x.S.catalog).filter(c=>c?.name&&!land(c)&&!held.has(cardKey(c.name))&&cardKey(c.name)!==lead&&!banned.has(cardKey(c.name))&&['legal','restricted'].includes(c.legalities?.[f.legality])&&(c.color_identity||[]).every(k=>colors.has(k))&&cardJob(c)===job&&price(c)!==null&&(!capped||estimate+(price(c)-was)*row.qty<=request.budget+1e-6))
+   .map(c=>({card:c,price:price(c),owned:x.inv?.(c.name)?.available??0,lists:prior.size?prior.weight(c.name):0,gap:Math.abs((Number(c.cmc)||0)-(Number(out.cmc)||0))}))
+   .sort((a,b)=>b.lists-a.lists||a.gap-b.gap||a.card.name.localeCompare(b.card.name)).slice(0,count);
+ };
+ // Every copy of one card becomes the chosen card, then the whole list is checked again like any built deck.
+ const applySwap=(result,name,zone,card)=>{
+  const rows=zone==='side'?result.deck.side||[]:result.deck.cards||[],row=rows.find(r=>cardKey(r.name)===cardKey(name));if(!row)throw Error('That card is not in this deck.');
+  let current=result,trial=null;for(let i=0;i<row.qty;i++){trial=trialSwap(current,{name,zone},card);current={...current,deck:trial.deck};}
+  const chosen=chooseDeck([trial],result.request);
+  return chosen.ok?{...result,...chosen,rebuild:null}:chosen;
+ };
  const improve=(result,proposals)=>{
   const original=assess(result.deck,result.request),plan=inspectDeckPlan(result.request,original.rows,result.deck);
   const candidates=[{...original,deck:result.deck,plan,pricing:priceDeck(original.rows,result.request.budgetBasis)}];for(const proposal of proposals.slice(0,5))try{candidates.push(trialSwap(result,proposal.out,proposal.card));}catch{}
   return chooseDeck(candidates,result.request);
  };
- return {formats,resolveSeed,assess,trialSwap,improve,themes:game=>game==='ygo'?T.SOURCES.ygo.archetypeNames():Promise.resolve([]),build:(input,options)=>constructDeck(input,adapter,options),recheck(result){
+ return {formats,resolveSeed,assess,trialSwap,improve,swapOptions,applySwap,themes:game=>game==='ygo'?T.SOURCES.ygo.archetypeNames():Promise.resolve([]),build:(input,options)=>constructDeck(input,adapter,options),recheck(result){
   if(!result?.ok)return false;const a=assess(result.deck,result.request),plan=inspectDeckPlan(result.request,a.rows,result.deck);
   const pricing=priceDeck(a.rows,result.request.budgetBasis);
   return a.check.complete&&a.check.legal&&!plan.issues.length&&(!result.request.ownedOnly||pricing.ownedCopies===pricing.copies)&&withinBudgetCap(pricing.estimate,result.request);

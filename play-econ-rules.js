@@ -37,9 +37,10 @@ export function cardDelta(c = {}) {
 export const holoCost = (config = {}) => Math.max(1, config?.holoSeals ?? 2);
 
 // Seals earned for the Nth pack opened (Arena's wildcard track): every 3rd an uncommon, and so on.
+// Common seals every 2nd pack (Randall 16 Nov: nothing else gives them); a live config without c gets 2.
 export function sealTrackBonus(config = {}, nth) {
-  const t = config.sealTrack || {}, out = {};
-  for (const k of ['u', 'r', 'm']) if (t[k] > 0 && nth > 0 && nth % t[k] === 0) out[k] = 1;
+  const t = {c: 2, ...(config.sealTrack || {})}, out = {};
+  for (const k of ['c', 'u', 'r', 'm']) if (t[k] > 0 && nth > 0 && nth % t[k] === 0) out[k] = 1;
   return out;
 }
 

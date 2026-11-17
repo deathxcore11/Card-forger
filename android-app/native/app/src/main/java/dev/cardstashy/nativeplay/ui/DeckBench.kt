@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package dev.cardstashy.nativeplay.ui
 
@@ -16,6 +16,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.horizontalScroll
@@ -199,6 +200,10 @@ class BenchModel(
     val cardBack: String = "mtg",
     /** Bumped each time the shelves start over (a filter, or the deck's colours): every shelf on screen asks again. */
     val shelvesGen: Int = 0,
+    /** Land styles (Play): drawn where the card browser was while the Lands view is on (LandPicker.kt), else null. */
+    val landPicker: (@Composable () -> Unit)? = null,
+    /** Basics with a style just got and not looked at yet: a gold dot on their tile. */
+    val landNew: Set<String> = emptySet(),
 )
 class BenchMenuItem(val label: String, val onClick: () -> Unit)
 class BenchActions(
@@ -230,6 +235,10 @@ class BenchActions(
     val shelfMore: suspend (String) -> Unit = {},
     /** A tab the Bench draws itself (Collection's Versions and the like open the website): the controller's LB/RB step only through these. */
     val drawn: (String) -> Boolean = { true },
+    /** A card dropped on the hero becomes the deck art (Randall 16 Nov, preview https://claude.ai/artifact/SrnADaNrwV3cddvFRAw49s); null: no deck to set art on. */
+    val cover: ((String) -> Unit)? = null,
+    /** A basic held under the deck: open its land styles (Play). */
+    val landHold: ((String) -> Unit)? = null,
 )
 
 /** Where the Bench is: tab, deck view, find and filters, the card in the big view. Kept by the caller so Back keeps your place. */
@@ -382,8 +391,10 @@ private class Drag {
     /** Root-relative boxes of the deck dock and the browser grid. */
     var deck = Rect.Zero
     var grid = Rect.Zero
+    /** The hero: a card dropped there becomes the deck art. */
+    var hero = Rect.Zero
     var origin = Offset.Zero
-    val zone: String? get() = if (name == null) null else if (deck.contains(pos)) "deck" else if (grid.contains(pos)) "coll" else null
+    val zone: String? get() = if (name == null) null else if (hero.contains(pos)) "hero" else if (deck.contains(pos)) "deck" else if (grid.contains(pos)) "coll" else null
 }
 
 /**
@@ -428,6 +439,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
         val name = drag.name ?: return; val zone = drag.zone; val from = drag.from; val moved = drag.moved
         drag.name = null; drag.pointer = null
         if (!moved) { ui.peek = name; return }
+        if (zone == "hero") { a.cover?.let { c -> c(name); haptic.performHapticFeedback(HapticFeedbackType.Confirm) }; return }
         if (from == "coll" && zone == "deck") { a.step(name, 1); pop(name) } else if (from == "deck" && zone == "coll") { a.step(name, -1); pop(name) }
     }
     androidx.activity.compose.BackHandler(enabled = ui.peek != null) { ui.peek = null }
@@ -487,10 +499,10 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
             // Another tab (War Chest, Power, Rules, Versions) opens in the big side, where the collection was; the deck stays beside it.
             // Filters (tablet, unfolded, Portal): the panel takes the browser's place and the deck stays beside it.
             Box(Modifier.weight(1f).fillMaxHeight()) { if (ui.tab == "cards") { if (ui.filters && magic && !DualScreen.active) FilterPanel(m, ui, count, sets, "side", onFilter)
-                else Browser(m, ui, a, drag, browserSwitch, cols = if (land) 0 else -1, lift, onFilter, shown, shelves, sets) } else tabBody(ui.tab) }
+                else m.landPicker?.let { lp -> LandPane(browserSwitch, lp) } ?: Browser(m, ui, a, drag, browserSwitch, cols = if (land) 0 else -1, lift, onFilter, shown, shelves, sets) } else tabBody(ui.tab) }
             Column(Modifier.fillMaxWidth(if (wide) .37f else .43f).fillMaxHeight().background(Color(0x33000000)).drawBehind {
                 drawLine(B.Line, Offset(0f, 0f), Offset(0f, size.height), 1.dp.toPx()) }) {
-                Hero(m, a, compact = land, ui = ui)
+                Hero(m, a, compact = land, ui = ui, drag = drag)
                 // Phone landscape: the four views sit at the end of the icon tabs; wider, under the list in the footer.
                 Tabs(m.tabs, ui, iconsOnly = land, a.tab, trailing = if (land && ui.tab == "cards") ({ ViewSwitch(ui, bare = true) }) else null)
                 Dock(m, ui, a, drag, actionRow, split = true, Modifier.weight(1f), lift, compact = land, onFilter = onFilter)
@@ -501,7 +513,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
             // form while the list is scrolled and opens again at the top.
             val big = LocalDensity.current.fontScale >= 1.2f
             val scrolled by remember(ui) { androidx.compose.runtime.derivedStateOf { ui.deckGrid.firstVisibleItemIndex > 0 || ui.deckGrid.firstVisibleItemScrollOffset > 0 } }
-            Hero(m, a, compact = big && scrolled, ui = ui)
+            Hero(m, a, compact = big && scrolled, ui = ui, drag = drag)
             Tabs(m.tabs, ui, iconsOnly = false, a.tab)
             if (ui.tab == "cards") {
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
@@ -515,7 +527,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
                     Column(Modifier.fillMaxSize()) {
                         Dock(m, ui, a, drag, actionRow, split = false, Modifier.height(room * share), lift, onFilter = onFilter)
                         SplitGrip(ui, room, onGrip = { gripping = it })
-                        Box(Modifier.weight(1f).fillMaxWidth()) { Browser(m, ui, a, drag, browserSwitch, cols = 3, lift, onFilter, shown, shelves, sets) }
+                        Box(Modifier.weight(1f).fillMaxWidth()) { m.landPicker?.let { lp -> LandPane(browserSwitch, lp) } ?: Browser(m, ui, a, drag, browserSwitch, cols = 3, lift, onFilter, shown, shelves, sets) }
                     }
                 }
                 Footer(m, ui, split = false, views = false)
@@ -575,12 +587,16 @@ private fun SplitGrip(ui: BenchUi, room: androidx.compose.ui.unit.Dp, onGrip: (B
 // ---------------------------------------------------------------- hero (the deck page hero, compact)
 
 @Composable
-private fun Hero(m: BenchModel, a: BenchActions, compact: Boolean, ui: BenchUi) {
+private fun Hero(m: BenchModel, a: BenchActions, compact: Boolean, ui: BenchUi, drag: Drag? = null) {
     val shape = RoundedCornerShape(18.dp)
+    // Deck art by drag: while a card is held the hero shows it takes one; over it, the line goes solid gold.
+    val can = drag != null && a.cover != null && drag.name != null
+    val over = can && drag?.zone == "hero"
     val art = heroPainter(m.heroArt?.let(homeArt))
     val breathe = if (Motion.still) 1f else rememberInfiniteTransition(label = "breathe").animateFloat(1f, 1.035f, infiniteRepeatable(tween(20_000), RepeatMode.Reverse), label = "b").value
     Box(Modifier.padding(start = if (compact) 8.dp else 10.dp, end = if (compact) 8.dp else 10.dp, top = 6.dp).fillMaxWidth()
-        .shadow(14.dp, shape, spotColor = Color.Black).clip(shape).background(B.Panel).border(1.dp, Color(0x47E5C47E), shape)) {
+        .then(if (drag != null) Modifier.onGloballyPositioned { drag.hero = it.boundsInRoot().translate(-drag.origin) } else Modifier)
+        .shadow(14.dp, shape, spotColor = Color.Black).clip(shape).background(B.Panel).border(if (over) 2.dp else 1.dp, if (over) B.Gold else Color(0x47E5C47E), shape)) {
         if (art != null) Image(art, null, Modifier.matchParentSize().scale(1.08f * breathe), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.4f))
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x260A0B0F), .78f to Color(0xE00A0B0F))))
         Column(Modifier.fillMaxWidth().padding(start = if (compact) 10.dp else 12.dp, end = if (compact) 10.dp else 12.dp, top = if (compact) 6.dp else 8.dp, bottom = if (compact) 8.dp else 10.dp),
@@ -619,7 +635,20 @@ private fun Hero(m: BenchModel, a: BenchActions, compact: Boolean, ui: BenchUi) 
                 PowerBadge(m, m.powerTab?.let { k -> { ui.peek = null; if (a.tab?.invoke(k) != false) ui.tab = k } })
             }
         }
+        if (can) Box(Modifier.matchParentSize().background(Color(0x99000000)).drawBehind {
+            if (!over) drawRoundRect(B.Gold.copy(alpha = .6f), style = Stroke(2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))), cornerRadius = CornerRadius(18.dp.toPx()))
+            else drawRect(Brush.radialGradient(listOf(Color(0x40E5C47E), Color.Transparent), radius = size.maxDimension * .7f))
+        }, contentAlignment = Alignment.BottomCenter) {
+            Text("Deck art", style = f(14f, 800, B.Gold), modifier = Modifier.padding(bottom = 12.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xD90A0B0F)).padding(horizontal = 14.dp, vertical = 6.dp))
+        }
     }
+}
+
+/** The Lands view: the Your cards / All cards / Lands switch on top, the land styles under it, where the card browser was. */
+@Composable
+private fun LandPane(switch: (@Composable () -> Unit)?, picker: @Composable () -> Unit) = Column(Modifier.fillMaxSize()) {
+    if (switch != null) Box(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 8.dp)) { switch() }
+    Box(Modifier.weight(1f).fillMaxWidth()) { picker() }
 }
 
 @Composable
@@ -810,12 +839,12 @@ private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, ac
                     else -> Strip(m, r, ui, a, drag, lift)
                 }
             }
-            if (g.name == "Lands" && m.basics.isNotEmpty()) item(key = "basics", span = { GridItemSpan(maxLineSpan) }) { Basics(m.basics, ui, a) }
+            if (g.name == "Lands" && m.basics.isNotEmpty()) item(key = "basics", span = { GridItemSpan(maxLineSpan) }) { Basics(m.basics, ui, a, m.landNew) }
         }
         main.forEach { group(it) }
         if (!lands && m.basics.isNotEmpty() && main.isNotEmpty()) {
             item(key = "g:Lands", span = { GridItemSpan(maxLineSpan) }) { GroupHead("Lands", 0) }
-            item(key = "basics", span = { GridItemSpan(maxLineSpan) }) { Basics(m.basics, ui, a) }
+            item(key = "basics", span = { GridItemSpan(maxLineSpan) }) { Basics(m.basics, ui, a, m.landNew) }
         }
         side.forEach { group(it) }
         m.listNote?.let { n -> item(key = "note", span = { GridItemSpan(maxLineSpan) }) { Text(n, style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)) } }
@@ -948,17 +977,24 @@ private fun DetailRow(m: BenchModel, r: BenchRow, ui: BenchUi, a: BenchActions, 
     }
 }
 
-/** .basics: the five basics as art tiles under Lands, free and unlimited; a tap adds one. */
+/** .basics: the five basics as art tiles under Lands, free and unlimited; a tap adds one, a hold opens its land styles (Play). */
 @Composable
-private fun Basics(basics: List<Pair<String, String>>, ui: BenchUi, a: BenchActions) = Row(Modifier.fillMaxWidth().padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+private fun Basics(basics: List<Pair<String, String>>, ui: BenchUi, a: BenchActions, fresh: Set<String> = emptySet()) = Row(Modifier.fillMaxWidth().padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    val haptic = LocalHapticFeedback.current
     for ((name, art) in basics) {
         val p = heroPainter(art.let(homeArt))
+        val add = { a.step(name, 1); ui.pop = name; ui.popAt = System.nanoTime() }
+        val hold = a.landHold
         Box(Modifier.weight(1f).height(44.dp).scale(popScale(ui, name)).clip(RoundedCornerShape(9.dp)).border(1.dp, B.Line, RoundedCornerShape(9.dp)).background(B.Panel)
-            .clickable { a.step(name, 1); ui.pop = name; ui.popAt = System.nanoTime() }.semantics { contentDescription = "Add a $name"; role = Role.Button }) {
+            .then(if (hold == null) Modifier.clickable { add() } else Modifier.combinedClickable(onLongClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); hold(name) }, onClick = add))
+            // Controller: A adds one, Y opens its styles.
+            .then(if (hold != null) Modifier.padActs(PadActs(a = "Add one", y = PadAct("Styles") { hold(name) })) else Modifier)
+            .semantics { contentDescription = "Add a $name"; role = Role.Button }) {
             if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = StripCrop, alignment = BiasAlignment(0f, -.56f))
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(.3f to Color.Transparent, 1f to Color(0x99000000))))
             Text(name, style = f(11f, 800, Color.White).copy(shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 3f)), maxLines = 1, softWrap = false,
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp))
+            if (name in fresh) Box(Modifier.align(Alignment.TopEnd).padding(5.dp).size(8.dp).clip(CircleShape).background(B.Gold).semantics { contentDescription = "New style" })
         }
     }
 }

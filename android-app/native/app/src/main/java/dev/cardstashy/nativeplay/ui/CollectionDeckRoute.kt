@@ -355,6 +355,7 @@ fun CollectionDeckRoute(deckId: String, onPlay: () -> Unit, onProfile: () -> Uni
             qty = { n, d -> write("deckQty", "name" to n, "delta" to d.toString()) },
             swap = { o, i -> write("deckEmbSwap", "out" to o, "in" to i) },
             addCard = { n, done -> write("deckAdd", "name" to n, done = done) },
+            cover = { n, img, id -> write("deckArt", "game" to game.id, "name" to n, "image" to img, "id" to id) },
         )
     }
     val top: @Composable (tabs: (@Composable () -> Unit)?) -> Unit = { tabs ->

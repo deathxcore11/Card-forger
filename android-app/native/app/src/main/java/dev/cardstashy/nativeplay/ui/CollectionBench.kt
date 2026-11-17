@@ -204,6 +204,8 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
     // The page's Practice (A.deckPlayCpu) where Play has Save: each change here already saves.
     val practice = m.actions.firstOrNull { it.act == "deckPlayCpu" }
     val actions = BenchActions(back = act.back, save = practice?.let { p -> { act.act(p.act, p.id) } }, saveLabel = practice?.label?.ifBlank { null } ?: "Practice",
+        // A card dropped on the hero: its art crop is the deck art.
+        cover = { k -> model.groups.flatMap { it.rows }.firstOrNull { it.key == k && !it.fixed }?.let { r -> act.cover(r.name, r.art.ifBlank { r.image }, "") } },
         step = { n, d -> if (d > 0 && !inList(n)) act.addCard(n) {} else if (inList(n)) act.qty(n, d) },
         craft = { _, _ -> }, open = act.card, more = null, menu = emptyList(), menuOpen = { act.act("deckMenu", "") }, tab = tab, drawn = drawn, chip = { k -> act.act(k, m.id) },
         findMore = { q -> act.addCard(q) {} }, heroActions = heroButtons, shelf = { k -> shelves.load(k) }, shelfMore = { k -> shelves.more(k) })
@@ -372,6 +374,8 @@ private fun TcgBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act:
     val primary = m.actions.firstOrNull { it.shown && it.primary }
     fun rows(key: String) = cards.filter { keyOf(it) == key }
     val actions = BenchActions(back = act.back, save = primary?.let { p -> { act.act(p.act, p.id) } }, saveLabel = primary?.label?.ifBlank { null } ?: "War Chest",
+        // A card dropped on the hero: its picture is the deck art (tcg.js keeps the card's id with it).
+        cover = { k -> model.groups.flatMap { it.rows }.firstOrNull { it.key == k && !it.fixed }?.let { r -> act.cover(r.name, r.image.ifBlank { r.art }, k.removePrefix("side:")) } },
         step = { k, d ->
             val r = rows(k).lastOrNull()
             if (r != null) act.tcgQty(r, d) else if (d > 0 && !k.startsWith("side:")) act.foundAdd(k)
