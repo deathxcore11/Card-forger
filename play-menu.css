@@ -1805,19 +1805,19 @@ button.pl-bar-vs{cursor:pointer}
 .pl-home--hand>.pe-row .pe-tile-art,.pl-home--hand>.pe-row .pe-tile-line{display:none}
 .pl-home--hand>.pe-row .pe-tile-name{position:static;font-family:inherit;font-size:13px;font-weight:700;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-home--hand>.pe-row .pe-badge{top:-6px;right:-4px}
-.pl-hand-bleed{position:fixed;inset:-48px;z-index:-1;background-size:cover;background-position:50% 30%;filter:blur(28px) brightness(.62) saturate(1.2);pointer-events:none}
+.pl-hand-bleed{position:fixed;inset:-48px;z-index:-1;background-size:cover;background-position:50% 30%;filter:blur(28px) brightness(.5) saturate(1.2);pointer-events:none}
 .pl-home--hand::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(8,10,14,.5) 0%,rgba(13,16,22,.1) 30%,rgba(13,16,22,.55) 72%,var(--bg) 96%)}
 [data-theme="light"] .pl-hand-bleed,[data-theme="light"] .pl-home--hand::before{display:none}
 .pl-hand-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 0 4px}
 .pl-hand-title{min-width:0;display:grid;gap:4px}
-.pl-hand-title .eyebrow{margin:0;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#F2CF7E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-hand-title .eyebrow{margin:0;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#F2CF7E;text-shadow:0 1px 8px #000c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-hand-title h2{margin:0;font:700 25px/30px Cinzel,Georgia,serif;color:#F4EFE6;text-shadow:0 2px 12px #000b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-theme="light"] .pl-hand-title h2{color:var(--text);text-shadow:none}[data-theme="light"] .pl-hand-title .eyebrow{color:var(--gold)}
 .pl-hand-change.btn{flex:none;min-height:44px;border-radius:999px;background:rgba(13,16,22,.55);border:1px solid rgba(214,173,100,.5);color:#F4EFE6}
 .pl-hand{--w:clamp(176px,min(258px,calc((100dvh - 500px)*.68),64vw),258px);display:flex;align-items:center;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
   margin-inline:-16px;padding:6px calc(50% - var(--w)/2 + 16px)}
 .pl-hand::-webkit-scrollbar{display:none}
-.pl-hand-card{position:relative;flex:none;width:var(--w);aspect-ratio:258/380;border-radius:24px;overflow:hidden;scroll-snap-align:center;background:#161921;border:1px solid rgba(255,255,255,.2);transform:scale(.74);opacity:.75;transition:transform .25s ease,opacity .25s ease}
+.pl-hand-card{position:relative;flex:none;width:var(--w);aspect-ratio:258/380;border-radius:24px;overflow:hidden;scroll-snap-align:center;background:linear-gradient(180deg,var(--tint,#2A2F3A),#161921 65%,#101218);border:1px solid rgba(255,255,255,.2);transform:scale(.74);opacity:.75;transition:transform .25s ease,opacity .25s ease}
 .pl-hand-card.is-on{transform:none;opacity:1;border:1.5px solid #F2CF7E;box-shadow:0 24px 48px rgba(0,0,0,.6),0 0 28px rgba(232,185,91,.22)}
 .pl-hand-art{position:absolute;inset:0;background-size:cover;background-repeat:no-repeat}
 .pl-hand-art--trim{inset:-8%}
@@ -1852,9 +1852,10 @@ button.pl-bar-vs{cursor:pointer}
 .is-weekly .pl-quest-steps i.on{background:#9FD0F0}
 .pl-quest-reward{position:absolute;z-index:1;top:8px;right:16px;min-height:30px;display:flex;align-items:center;pointer-events:auto}
 .pl-quest-reward .pd-claim{min-height:36px}
+.pl-hand-card[data-stage-mode=quick]{--tint:#5A4320}.pl-hand-card[data-stage-mode=practice]{--tint:#24493A}.pl-hand-card[data-stage-mode=social]{--tint:#23395E}.pl-hand-card[data-stage-mode=story]{--tint:#5A2626}.pl-hand-card[data-stage-mode=planeswalk]{--tint:#3E2C5C}
 @media(min-width:600px){
   .pl-hand{container-type:inline-size;overflow:visible;scroll-snap-type:none;margin:0;padding:6px 0;justify-content:center;align-items:flex-end;gap:14px}
-  .pl-hand-card{--cw:min(250px,calc((100cqw - 56px)/4),calc((100dvh - 450px)*.66));width:calc(var(--cw)*.75);aspect-ratio:.66;transform:none;opacity:1;border-radius:18px}
+  .pl-hand-card{--cw:min(250px,calc((100cqw - 56px)/4.4),calc((100dvh - 450px)*.66));width:calc(var(--cw)*.85);aspect-ratio:.66;transform:none;opacity:1;border-radius:18px}
   .pl-hand-card.is-on{width:var(--cw);border-radius:22px}
   .pl-hand-card:not(.is-on) .pl-hand-copy b{font-size:15px;line-height:18px}
   /* Five in a row leaves the chosen card too narrow for its name beside Play: the name and line sit above it. */
