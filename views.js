@@ -1218,7 +1218,8 @@ export function deckPage() {
     menu:`<button class="ds-menu" data-act="deckMenu" aria-label="Deck options for ${esc(d.name)}" title="Rename, format, deck box, delete">⋯</button>`,
     badge:"My deck",
     format:`<span class="chip dark" title="${esc(sizeLabel(fm))}${fm.note ? " · " + esc(fm.note) : ""}">Magic · ${esc(fm.name)}</span>${fm.commander ? colorDots(meta(d.commander)) : ""}${d.locked ? '<span class="chip dark">Assembled</span>' : ""}`,
-    legality:reviewBadge(d),
+    // Brief 4: the incomplete-draft note is a tag beside "to review"; a tap shows the details under it.
+    legality:reviewBadge(d) + (mainCopies < target ? (() => { const warns = (d.buildDiagnostics?.warnings || []).slice(0, 2); return warns.length ? `<details class="ds-note-tag warn"><summary>Incomplete draft</summary><div class="ds-note-pop"><p class="small"><b>Incomplete draft: ${target - mainCopies} slots remain</b></p>${warns.map(w => `<p class="small">${esc(w)}</p>`).join("")}</div></details>` : `<span class="ds-note-tag warn" title="Incomplete draft: ${target - mainCopies} slots remain">Incomplete draft</span>`; })() : ""),
     line:fm.commander ? `<span class="deck-hero-commander">${esc(d.commander || "No commander yet")}</span>` : "",
     stats:[
       {value:`${mainCopies}/${target}`,label:"cards"+(sideCopies ? ` · ${sideCopies} sideboard` : ""),tone:countOk ? "" : "warn"},
@@ -1231,7 +1232,6 @@ export function deckPage() {
       {html:`<button class="btn ds-primary deck-play-cpu cs-plate" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled><span class="cs-plate-label">Practice</span></button>`},
       {label:"War Chest",attrs:'data-act="deckTab" data-id="playtest"'},
       {label:"Share",attrs:'data-act="deckShare"'}]})}
-  ${mainCopies < target ? (() => { const warns = (d.buildDiagnostics?.warnings || []).slice(0, 2); return warns.length ? `<details class="ds-note-tag warn"><summary>Incomplete draft: ${target - mainCopies} slots remain</summary>${warns.map(w => `<p class="small">${esc(w)}</p>`).join("")}</details>` : `<p class="ds-note-tag warn">Incomplete draft: ${target - mainCopies} slots remain</p>`; })() : ""}
   <nav class="tabs" role="tablist">${tabs.map(([id, l, icon]) => `<button role="tab" aria-selected="${tab === id}" class="${tab === id ? "on" : ""}" data-act="deckTab" data-id="${id}">${labelIcon(icon)}${l}</button>`).join("")}</nav>
   ${fm.commander && !canLead(meta(d.commander), fm) && tab !== "engine" ? `<button class="note warn block-note" data-act="deckTab" data-id="engine">⚠ No ${fm.commander === "planeswalker" ? "Oathbreaker" : "commander"} set — tap to choose one so colors and synergy are checked.</button>` : ""}
   <div class="deck-body" data-tab="${tab}">${{ rules: ()=>interactiveRules("mtg", {format:d.format}), cards: (d, t) => deckCards(d, t, p.curve), engine: deckEngine, matchups: deckMatchups, upgrade: deckUpgrade, versions: deckVersions, playtest: (d) => warChestMarkup({deck:{id:d.id,name:d.name},resume:chestResume("mtg")}) + `<section class="wc-draw" id="chestDraw"><h3>Draw a hand</h3>${deckPlaytest(d)}</section>`, shop: deckShop }[tab](d, t)}</div>`;

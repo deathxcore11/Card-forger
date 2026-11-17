@@ -1775,7 +1775,7 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 .pe-build-row.pe-land-pop{animation:pe-land-pop .26s ease-out}
 @media (prefers-reduced-motion:reduce){.pe-build-row--land{transition:none}.pe-build-row.pe-land-pop{animation:none}}
 /* 0.4.95 Quick Play and Practice: decks first, one bar fixed at the bottom with your deck, the CPU and Play. */
-.pl-deckbar{flex-wrap:nowrap;position:sticky;bottom:calc(var(--nav-h,0px) + env(safe-area-inset-bottom) + 8px);z-index:20;flex-direction:column;align-items:stretch;gap:10px;padding:10px 12px;border-color:color-mix(in srgb,var(--gold) 35%,var(--line));margin-top:12px}
+.pl-deckbar{flex-wrap:nowrap;position:sticky;bottom:calc(var(--nav-h,0px) + env(safe-area-inset-bottom));z-index:20;flex-direction:column;align-items:stretch;gap:10px;padding:10px 12px;border-color:color-mix(in srgb,var(--gold) 35%,var(--line));margin-top:12px}
 .pl-deckbar{min-width:0;max-width:100%;box-sizing:border-box}.pl-deckbar .pl-bar-row{display:flex;align-items:center;gap:10px;min-width:0}.pl-bar-level .pl-cpu-levels{min-width:0}
 .pl-deckbar .pl-bar-seats{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
 .pl-bar-you{display:flex;align-items:center;gap:10px;min-width:0;min-height:44px;background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;cursor:default}
@@ -1844,3 +1844,17 @@ button.pl-bar-vs{cursor:pointer}
 .pe-trunkbar .pe-color-tabs{display:flex;gap:6px;flex-wrap:wrap}
 .pe-collection .pe-count{text-align:right}
 @media(max-width:700px){.pl-head-tools{flex-wrap:wrap;min-width:0;max-width:100%}.pl-head-tools .pl-invite{flex:1 1 auto}}
+/* 0.4.95 lobby head: one search button; Quick Play's count line carries Open Decks; Practice's Invite sits with Paste and Open Decks. */
+.pl-search-btn{display:grid;place-items:center;width:44px;height:44px;flex:none;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 70%,transparent);color:var(--text);cursor:pointer}
+.pl-search-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.pl-search-btn[aria-expanded=true]{border-color:var(--gold);color:var(--gold)}
+.play-result-count{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pl-count-open{min-height:44px;color:var(--gold);font-weight:800}
+.pl-invite-pill svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;margin-right:6px;vertical-align:-3px}
+.play-library-actions{display:flex;flex-wrap:wrap;gap:8px}
+.pl-lobby:not([data-play-mode=friends]) .play-library-head .page-head{margin-bottom:6px}
+.pl-lobby[data-play-mode=quick] .play-library-head .page-head{display:none}
+.pl-lobby[data-play-mode=quick] .play-library-head{padding-top:0;padding-bottom:0;border-bottom:0}
+.play-library-actions .btn.small{padding-inline:12px;min-height:44px}
+@media(max-width:700px){.pl-deckbar{border-radius:18px 18px 0 0;margin-inline:-4px}}
+.play-library-actions .pl-invite-pill{width:44px;padding:0;display:inline-grid;place-items:center}.play-library-actions .pl-invite-pill svg{margin:0;width:20px;height:20px}
