@@ -181,11 +181,11 @@ const val FORGE_ART_NAME = "Great Furnace"
 var homeArt: (String) -> Any? = { it }
 
 @Composable
-internal fun Art(url: String?, modifier: Modifier, align: Alignment = Alignment.Center, scale: ContentScale = ContentScale.Crop, filter: ColorFilter = artFilter) {
-    if (HomeTest.noPictures) { Box(modifier.background(Color(0xFF121318))); return }
+internal fun Art(url: String?, modifier: Modifier, align: Alignment = Alignment.Center, scale: ContentScale = ContentScale.Crop, filter: ColorFilter = artFilter, placeholder: Boolean = true) {
+    if (HomeTest.noPictures) { if (placeholder) Box(modifier.background(Color(0xFF121318))); return }
     val p: Painter? = heroPainter(url?.let(homeArt))
     if (p != null) androidx.compose.foundation.Image(p, null, modifier, alignment = align, contentScale = scale, colorFilter = filter)
-    else Box(modifier.background(Color(0xFF121318)))
+    else if (placeholder) Box(modifier.background(Color(0xFF121318)))
 }
 
 private val artFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.12f) })
@@ -1702,7 +1702,7 @@ private fun Stage(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Purse, 
 private fun StageArt(url: String?, modifier: Modifier) = Box(modifier) {
     // The warm glow is always under the cover, so the stage still shows while the art loads or when it fails to.
     Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color(0xFF2A2318), Site.Bg), radius = 900f)))
-    if (url != null) Art(url, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
+    if (url != null) Art(url, Modifier.matchParentSize(), BiasAlignment(0f, -.4f), placeholder = false)
     Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0xC70C0C0E), .26f to Color(0x400C0C0E), .5f to Color(0x1A0C0C0E), .84f to Site.Bg.copy(alpha = .86f), 1f to Site.Bg)))
 }
 
