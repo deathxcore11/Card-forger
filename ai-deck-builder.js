@@ -182,8 +182,11 @@ export async function prepareMtgDeck(args,x) {
  await batches(basicNames,async name => {
   const current = await resolve(name);
   if (!active()) return;
+  // One more try after a short wait when the lookup fails: Scryfall's default basic printing has no price, so a single busy answer
+  // left every basic unpriced (Randall, 17 Nov, deck 6: "22 copies are unpriced" were its 22 Swamps).
+  const cheapest=async()=>{try{return await findCheapestPrinting(name,{api:x.api,reference:current,format:f.legality,basicOnly:true});}catch(e){if(e?.name==='AbortError'||!active())throw e;await new Promise(r=>setTimeout(r,x.basicRetryMs??1200));return findCheapestPrinting(name,{api:x.api,reference:current,format:f.legality,basicOnly:true});}};
   try {
-   const { card } = await findCheapestPrinting(name,{api:x.api,reference:current,format:f.legality,basicOnly:true});
+   const { card } = await cheapest();
    if(active() && card && (!current || cardPrice(current)===null || cardPrice(card)<cardPrice(current) || !isLegal(current,f))) remember(card);
   } catch { warnings.push('Some basic-land printing lookups were unavailable; only existing verified card data and known quotes were used.'); }
  });
