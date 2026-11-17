@@ -449,7 +449,8 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
     fun drop() {
         val name = drag.name ?: return; val zone = drag.zone; val from = drag.from; val moved = drag.moved
         drag.name = null; drag.pointer = null
-        if (!moved) { val lr = a.landRow; if (lr != null && name.startsWith("land:")) lr(name) else ui.peek = name; return }
+        // A deck land row let go unmoved opens its styles; a picker tile let go unmoved stays put (its tap focuses it).
+        if (!moved) { val lr = a.landRow; if (name.startsWith("land:")) { if (lr != null && from == "deck") lr(name) } else ui.peek = name; return }
         if (zone == "hero") { a.cover?.let { c -> c(name); haptic.performHapticFeedback(HapticFeedbackType.Confirm) }; return }
         if (from == "coll" && zone == "deck") { a.step(name, 1); pop(name) } else if (from == "deck" && zone == "coll") { a.step(name, -1); pop(name) }
     }
@@ -885,7 +886,9 @@ private fun Strip(m: BenchModel, r: BenchRow, ui: BenchUi, a: BenchActions, drag
     val dragging = !r.fixed && drag.name == r.key && drag.from == "deck"
     val chip = r.short > 0 && m.play && r.seal.isNotEmpty()
     val held = m.landHeld != null && m.landHeld == r.key
-    DeckStripRow(r, Modifier.scale(popScale(ui, r.key)).alpha(if (dragging) .35f else 1f).then(if (held) Modifier.clip(RoundedCornerShape(10.dp)).background(Color(0x29E5C47E)).border(2.dp, B.Gold, RoundedCornerShape(10.dp)) else Modifier),
+    // The held row eases in (.16 s), as on the site; still motion snaps.
+    val lit by animateFloatAsState(if (held) 1f else 0f, if (Motion.still) snap() else tween(160), label = "held")
+    DeckStripRow(r, Modifier.scale(popScale(ui, r.key)).alpha(if (dragging) .35f else 1f).then(if (lit > 0f) Modifier.clip(RoundedCornerShape(10.dp)).background(Color(0x29E5C47E).copy(alpha = .16f * lit)).border(2.dp, B.Gold.copy(alpha = lit), RoundedCornerShape(10.dp)) else Modifier),
         Modifier.benchCard(drag, r.key, r.image, "deck", lift, lifts = !r.fixed) { if (r.fixed) a.open(r.key) else ui.peek = r.key }.rowPad(m, r, ui, a),
         endFlush = chip) { if (chip) SealChip(r) { a.craft(r.key, r.short) } else if (r.emb.isNotEmpty()) EmbRow(r.emb)
             else if (r.key.startsWith("land:") && r.set.isNotEmpty()) LandSetChip("${r.set.uppercase()} ${r.number}") else ManaCost(r.cost, 15.dp) }

@@ -14,6 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -64,7 +66,7 @@ private val Gold = Color(0xFFE5C47E)
 @Composable
 fun LandPicker(p: LandPick, a: LandActs, tileMod: ((key: String, image: String) -> Modifier)? = null) {
     val type = p.type
-    val list = p.list?.filter { it.type == type }?.let { LandStyles.sorted(it, p.owned, p.sort, p.inUse) }
+    val list = remember(p.list, type, p.owned, p.sort, p.inUse) { p.list?.filter { it.type == type }?.let { LandStyles.sorted(it, p.owned, p.sort, p.inUse) } }
     val held = p.held
     val focus = list?.let { l -> l.firstOrNull { it.id == p.focus } ?: l.firstOrNull { it.id == (held?.id ?: p.inUse) } ?: l.firstOrNull() }
     val cols = GridCells.Adaptive(104.dp)
@@ -165,8 +167,9 @@ private fun Tile(s: LandStyles.Style, owned: Boolean, use: Boolean, focus: Boole
         Box(Modifier.fillMaxWidth().aspectRatio(63f / 88f).clip(shape).background(Brush.verticalGradient(listOf(Color(0xFF1B1F2A), Color(0xFF12151C))))
             .border(if (focus || use) 2.dp else 1.dp, if (focus) Color.White else if (use) Gold else Color(0x17FFFFFF), shape)) {
             if (art != null) Image(art, null, Modifier.fillMaxSize().alpha(if (owned) 1f else .55f), contentScale = ContentScale.Crop, colorFilter = if (owned) null else GREY)
-            if (count > 0) Text("×$count", style = lt(11f, FontWeight.ExtraBold, Color(0xFF1A1405)), modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
-                .clip(RoundedCornerShape(7.dp)).background(Gold).padding(horizontal = 6.dp))
+            // The deck's count chip (DeckBench's DeckCard): dark glass, white figures; gold stays for what you press.
+            if (count > 0) Text("×$count", style = lt(11f, FontWeight.ExtraBold, Color.White).copy(textAlign = TextAlign.Center), modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
+                .clip(RoundedCornerShape(7.dp)).background(Color(0xE8141820)).border(1.dp, Color(0x60FFFFFF), RoundedCornerShape(7.dp)).heightIn(min = 20.dp).widthIn(min = 24.dp).padding(horizontal = 6.dp, vertical = 2.dp))
             if (fresh) Text("New", style = lt(10.5f, FontWeight.ExtraBold, Color(0xFF1A1405)), modifier = Modifier.align(Alignment.TopStart).padding(4.dp)
                 .clip(RoundedCornerShape(6.dp)).background(Color(0xFFECEAE4)).padding(horizontal = 5.dp))
             Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xD9000000)))).padding(5.dp),

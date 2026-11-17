@@ -35,7 +35,8 @@ object LandStyles {
         val c = ((config?.get("landStyles") as? JsonObject)?.get("craft") as? JsonObject)?.get(kind)?.takeIf { it.isJsonPrimitive }?.asString
         return c ?: if (kind == "f") "u" else "c"
     }
-    fun image(id: String, size: String = "normal") = if (Regex("^[0-9a-f-]{36}$").matches(id)) "https://cards.scryfall.io/$size/front/${id[0]}/${id[1]}/$id.jpg" else ""
+    private val ID = Regex("^[0-9a-f-]{36}$")
+    fun image(id: String, size: String = "normal") = if (ID.matches(id)) "https://cards.scryfall.io/$size/front/${id[0]}/${id[1]}/$id.jpg" else ""
 
     fun parse(o: JsonObject): Data {
         val sets = (o.get("sets") as? JsonObject)?.entrySet()?.associate { it.key to it.value.asString } ?: emptyMap()

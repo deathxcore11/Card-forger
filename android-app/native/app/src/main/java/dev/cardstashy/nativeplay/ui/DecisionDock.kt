@@ -665,10 +665,13 @@ internal fun namePanelBox(w: Float, h: Float, dual: Boolean, k: Float, ime: Floa
 private fun NamePanel(ctx: DockCtx, content: @Composable () -> Unit) = with(ctx.d) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val ime = androidx.compose.foundation.layout.WindowInsets.ime.getBottom(density) / density.density
-    val box = namePanelBox(ctx.W.value, ctx.H.value, DualScreen.active, u, ime)
+    val box = remember(ctx.W, ctx.H, DualScreen.active, u, ime) { namePanelBox(ctx.W.value, ctx.H.value, DualScreen.active, u, ime) }
     val shape = RoundedCornerShape(18.du)
+    // cs-hud-pop, as CardDialog: from opacity 0, 6 px up, scale .98 (.26 s).
+    val a = remember(ctx.p.id) { Animatable(if (Motion.still) 1f else 0f) }
+    LaunchedEffect(ctx.p.id) { if (!Motion.still) a.animateTo(1f, tween(260, easing = CubicBezierEasing(.2f, .8f, .2f, 1f))) }
     Box(Modifier.offset(x = box.x.dp, y = box.y.dp).width(box.w.dp).height(box.h.dp)) {
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().dockFocus(ctx).heightIn(max = box.h.dp)
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().graphicsLayer { alpha = a.value; translationY = (1 - a.value) * -6.du.toPx(); val s = .98f + .02f * a.value; scaleX = s; scaleY = s }.dockFocus(ctx).heightIn(max = box.h.dp)
             .dockFrame(this@with, shape, 40f, 14f).verticalScroll(rememberScrollState()).padding(horizontal = 14.du, vertical = 12.du),
             verticalArrangement = Arrangement.spacedBy(6.du), horizontalAlignment = Alignment.Start) {
             searchSource(ctx.st).takeIf { it.isNotEmpty() }?.let {
@@ -687,7 +690,7 @@ private fun NameDialog(ctx: DockCtx) = with(ctx.d) {
     val names by androidx.compose.runtime.produceState(emptyList<String>()) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { dev.cardstashy.nativeplay.engine.CardNames.all(context) }.getOrDefault(emptyList()) } }
     val hits = remember(names, typed) { dev.cardstashy.nativeplay.engine.CardNames.suggest(names, typed) }
-    val exact = names.firstOrNull { it.equals(typed.trim(), ignoreCase = true) }
+    val exact = remember(names, typed) { names.firstOrNull { it.equals(typed.trim(), ignoreCase = true) } }
     val confirm: () -> Unit = { exact?.let { ctx.replies.text?.invoke(p.id, it) } }
     val field = Modifier.heightIn(min = 44.du).clip(RoundedCornerShape(8.du)).background(Color(0xCC1F232B))
         .border(1.dp, Color(0x59EDC980), RoundedCornerShape(8.du))
@@ -695,7 +698,7 @@ private fun NameDialog(ctx: DockCtx) = with(ctx.d) {
     // The box and Confirm side by side, so both stay in sight while the names below scroll.
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.du)) {
         Box(field.weight(1f).padding(horizontal = 10.du, vertical = 8.du), contentAlignment = Alignment.CenterStart) {
-            if (typed.isEmpty()) Text("Type two letters or more", style = ts(12.5f, 16f, color = Color(0xFF8C93A0)))
+            if (typed.isEmpty()) Text("Card name", style = ts(12.5f, 16f, color = Color(0xFF8C93A0)))
             BasicTextField(typed, { v -> typed = v.take(200) }, enabled = !ctx.busy, singleLine = true, textStyle = ts(13f, 16.9f),
                 cursorBrush = SolidColor(Color(0xFFEDF0E8)),
                 keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
@@ -706,7 +709,7 @@ private fun NameDialog(ctx: DockCtx) = with(ctx.d) {
     }
     hits.forEach { n ->
         val on = n.equals(typed.trim(), ignoreCase = true)
-        DockButton(n, !ctx.busy, this@with, Modifier.fillMaxWidth(), look = if (on) Look.PRESSED else Look.PLAIN, align = TextAlign.Start, height = 36f, size = 13f) { typed = n }
+        DockButton(n, !ctx.busy, this@with, Modifier.fillMaxWidth(), look = if (on) Look.PRESSED else Look.PLAIN, align = TextAlign.Start, height = 44f, size = 13f) { typed = n }
     }
     PadScreen(PadActs(x = if (!ctx.busy && exact != null) PadAct("Confirm") { confirm() } else null))
 }

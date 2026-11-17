@@ -1726,7 +1726,7 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 .pe-basic{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
 .pe-basic-dot{position:absolute;top:5px;right:5px;width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold)}
 .pe-lp-types{display:flex;flex-wrap:wrap;gap:6px}
-.pe-lp-types button{min-height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-weight:700;cursor:pointer}
+.pe-lp-types button{min-height:44px;padding:0 12px;border-radius:18px;border:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-weight:700;cursor:pointer}
 .pe-lp-types button.on{border-color:var(--gold);background:rgba(229,196,126,.14);color:var(--gold)}
 .pe-lp-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .pe-lp-cap{font:700 13px/1.2 Cinzel,Georgia,serif;letter-spacing:.04em;color:#e9d6a7}
@@ -1737,7 +1737,7 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 .pe-lp-what{flex:1;min-width:150px;display:flex;flex-wrap:wrap;gap:0 6px;align-items:baseline}
 .pe-lp-what b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pe-lp-what span{color:var(--muted)}.pe-lp-what span:last-child{flex-basis:100%;font-size:12px}
-.pe-lp-bar .btn{min-height:40px;display:inline-flex;align-items:center;gap:6px}
+.pe-lp-bar .btn{min-height:44px;display:inline-flex;align-items:center;gap:6px}
 .pe-lp-use{color:var(--gold);font-weight:800}
 .pe-lp-how{color:var(--muted);font-size:12px}
 .pe-lp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:12px 10px}
@@ -1766,5 +1766,11 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 .pe-lp-held b{flex:1;min-width:0;font-size:13px;font-weight:800}
 .pe-lp-held b span{display:block;font-size:11.5px;font-weight:700;color:var(--muted)}
 .pe-lp-held .btn{min-height:44px}
-.pe-lp-count{position:absolute;top:6px;right:6px;min-width:24px;height:20px;padding:0 6px;border-radius:7px;background:var(--gold);color:#1A1405;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.pe-lp-count{position:absolute;top:6px;right:6px;min-width:24px;height:20px;padding:0 6px;border-radius:7px;border:1px solid #ffffff60;background:#141820e8;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
 .pe-lp-tile[data-drag-land]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+/* 0.4.93 polish: the held row eases in; a land style dropped on the deck pops its row. */
+.pe-build-row--land{transition:background-color .16s,box-shadow .16s}
+@keyframes pe-land-pop{0%{transform:scale(1)}40%{transform:scale(1.035);box-shadow:0 0 0 2px rgba(229,196,126,.55)}100%{transform:scale(1)}}
+.pe-build-row.pe-land-pop{animation:pe-land-pop .26s ease-out}
+@media (prefers-reduced-motion:reduce){.pe-build-row--land{transition:none}.pe-build-row.pe-land-pop{animation:none}}
