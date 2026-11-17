@@ -51,7 +51,8 @@ class PlayStageTest {
     @Test fun swipingToAModeChangesWhatPlayStarts() {
         val log = mutableListOf<String>()
         home(HomeDeck("d1", "Mono-White Auras", "Standard", 60, null), log)
-        rule.onNodeWithTag("hand").performTouchInput { swipeLeft() }; rule.waitForIdle()
+        // A thumb drag of about half a card, as a person swipes (a full-width 200 ms fling drags past the next card before it lets go).
+        rule.onNodeWithTag("hand").performTouchInput { swipeLeft(startX = centerX + width * .2f, endX = centerX - width * .2f, durationMillis = 300) }; rule.waitForIdle()
         rule.onNodeWithContentDescription("Practice").assertIsSelected()
         rule.onNodeWithContentDescription("Play, Practice").performClick()
         rule.onNodeWithContentDescription("Change deck").performClick()

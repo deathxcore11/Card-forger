@@ -1798,7 +1798,7 @@ private fun HandPager(d: PlayHomeData, story: PlayRules.Act?, mode: String, onMo
             val (key, name) = StageModes.ALL[page]
             val off = { kotlin.math.abs((pager.currentPage - page) + pager.currentPageOffsetFraction).coerceAtMost(1f) }
             HandCard(key, name, art(key), StageModes.line(key, d.story.won, story?.battles ?: 0, d.story.done), key == mode, big = true,
-                Modifier.fillMaxSize().graphicsLayer { val o = off(); val k = 1f - .26f * o; scaleX = k; scaleY = k; alpha = 1f - .25f * o }, { onMode(key) }) { play(key) }
+                Modifier.fillMaxSize().graphicsLayer { val o = off(); val k = 1f - .26f * o; scaleX = k; scaleY = k; alpha = 1f - .25f * o }, onChoose = { onMode(key) }) { play(key) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             StageModes.ALL.forEachIndexed { i, _ -> val on = i == pager.currentPage
@@ -1819,7 +1819,7 @@ private fun HandRow(d: PlayHomeData, story: PlayRules.Act?, mode: String, onMode
         if (pads) PadKey("LB", Modifier.align(Alignment.CenterVertically))
         StageModes.ALL.forEach { (key, name) -> val on = key == mode
             HandCard(key, name, art(key), StageModes.line(key, d.story.won, story?.battles ?: 0, d.story.done), on, big = on,
-                Modifier.width(if (on) cw else cw * small).height(if (on) ch else ch * small), { onMode(key) }) { play(key) }
+                Modifier.width(if (on) cw else cw * small).height(if (on) ch else ch * small), row = true, onChoose = { onMode(key) }) { play(key) }
         }
         if (pads) PadKey("RB", Modifier.align(Alignment.CenterVertically))
     }
@@ -1831,7 +1831,7 @@ private fun PadKey(k: String, modifier: Modifier) = Text(k, style = TextStyle(fo
 
 /** One mode as a tall art card. The chosen one is ringed gold and carries the live line and the round gold Play (Hand brief 4). */
 @Composable
-private fun HandCard(key: String, name: String, art: String?, line: String, on: Boolean, big: Boolean, modifier: Modifier, onChoose: () -> Unit, onPlay: () -> Unit) {
+private fun HandCard(key: String, name: String, art: String?, line: String, on: Boolean, big: Boolean, modifier: Modifier, row: Boolean = false, onChoose: () -> Unit, onPlay: () -> Unit) {
     val sh = RoundedCornerShape(if (big) 24.dp else 18.dp)
     Box(modifier.then(if (on) Modifier.testShadow(24.dp, sh, spotColor = Color(0x52E8B95B)) else Modifier).clip(sh).background(Color(0xFF161921))
         .border(if (on) 1.5.dp else 1.dp, if (on) Color(0xFFF2CF7E) else Color(0x33FFFFFF), sh)
@@ -1839,7 +1839,7 @@ private fun HandCard(key: String, name: String, art: String?, line: String, on: 
         Art(art, Modifier.matchParentSize().let { if (key == "planeswalk") it.scale(1.16f) else it }, if (key == "story") BiasAlignment(0f, -.4f) else MODE_FOCUS[key] ?: Alignment.Center)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(.46f to Color(0x000D1016), 1f to Color(0xF00D1016))))
         // The big card keeps its name beside the disc; a card in the row puts it above the disc, so "Quick Play" stays whole.
-        Column(Modifier.align(Alignment.BottomStart).padding(start = if (big) 16.dp else 12.dp, bottom = if (on && !big) 78.dp else 18.dp, end = if (on && big) 84.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Column(Modifier.align(Alignment.BottomStart).padding(start = if (big) 16.dp else 12.dp, bottom = if (on && row) 78.dp else 18.dp, end = if (on && !row) 84.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (big) 22.sp else 15.sp, lineHeight = if (big) 26.sp else 18.sp, color = P.Ink, shadow = P.shadow),
                 maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
             if (on) Text(line, style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = Color(0xFFDDD8CC)), maxLines = 1, overflow = TextOverflow.Ellipsis)
