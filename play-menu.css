@@ -1791,33 +1791,83 @@ button.pl-bar-vs{cursor:pointer}
 .pl-deckbar .pl-status{width:100%}.pl-deckbar .pl-status[data-empty]{display:none}
 @media(min-width:701px){.pl-deckbar{flex-direction:row;align-items:center;width:auto;text-align:left}.pl-deckbar .pl-bar-row:first-of-type{flex:1}.pl-deckbar .pl-bar-actions .pl-start.btn{flex:none;min-width:240px;order:0}.pl-deckbar .pl-cpu-level{order:0}}
 /* 0.4.95 Play stage: the deck's cover melting into the page, five mode tiles, one gold Play. */
-.pl-home--stage{display:grid;gap:14px}
-.pl-stage{position:relative;isolation:isolate;min-height:clamp(180px,27vh,320px);border-radius:20px;overflow:hidden;display:flex;align-items:flex-end}
-.pl-stage-art{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:50% 35%}
-.pl-stage-art>*{width:100%;height:100%;object-fit:cover;display:block}
-.pl-stage-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,transparent 30%,color-mix(in srgb,var(--bg) 70%,transparent) 70%,var(--bg))}
-.pl-stage-copy{padding:16px 18px;min-width:0;display:grid;gap:4px;justify-items:start}
-.pl-stage-copy .eyebrow{text-shadow:0 1px 3px #000c,0 0 10px #000a;margin:0;font-size:10px;letter-spacing:.3em;font-weight:700;text-transform:uppercase;color:var(--gold)}
-.pl-stage-copy h2{text-shadow:0 1px 3px #000c;margin:0;font:700 clamp(22px,2.6vw,32px)/1.1 Cinzel,Georgia,serif;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pl-stage-line{margin:0;font-size:13px;color:var(--muted)}
-.pl-stage-change{margin-top:6px;min-height:44px}
-.pl-stage-modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-.pl-stage-mode{position:relative;display:grid;grid-template-rows:auto auto;gap:6px;padding:0 0 8px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--surface) 82%,transparent);color:inherit;font:inherit;cursor:pointer;overflow:hidden;min-height:44px;text-align:center}
-.pl-stage-mode.is-on{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 55%,transparent)}
-.pl-stage-mode-art{display:block;aspect-ratio:4/3;background-size:cover;background-position:50% 40%;overflow:hidden}
-.pl-stage-mode-art>*{width:100%;height:100%;object-fit:cover;display:block}
-.pl-stage-mode-name{font-size:10.5px;font-weight:800;line-height:1.15;padding:0 2px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pl-stage-mode.is-on .pl-stage-mode-name{color:var(--text)}
-.pl-stage-mode-sub{font-size:10.5px;color:var(--muted);margin-top:-4px}
-.pl-stage-mode .pe-badge{position:absolute;top:4px;right:4px}
-.pl-stage-mode:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.pl-stage-play.btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:64px;width:100%;text-decoration:none}
-.pl-stage-play small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
+/* 0.4.96 Hand home (play-home-hand-brief.md): the chosen mode's art behind the page, the mode as the header, a hand of tall
+   mode cards with a round gold Play on the chosen one, and one quest card that turns through the daily and weekly quests. */
+.pl-home--hand{position:relative;display:flex;flex-direction:column;gap:12px;isolation:isolate}
+.pl-home--hand>.pl-home-head{display:flex;align-items:center;gap:10px;width:100%;max-width:640px;margin-inline:auto}
+.pl-home--hand>.pl-home-head>div:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pl-home--hand>.pl-home-head>:not(:first-child){margin:0}
+.pl-home--hand>.pl-home-head>:last-child{flex:1;min-width:0;order:1}
+.pl-home--hand>.pl-home-head>:nth-child(2){order:2;flex:none}
+/* The doors stay (the site has no Play tab bar to reach Decks and Collection), as one short row of names under the quests. */
+.pl-home--hand>.pe-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%;max-width:560px;margin-inline:auto}
+.pl-home--hand>.pe-row .pe-tile{min-height:44px;height:auto;padding:8px 6px;aspect-ratio:auto;display:flex;align-items:center;justify-content:center;position:relative}
+.pl-home--hand>.pe-row .pe-tile-art,.pl-home--hand>.pe-row .pe-tile-line{display:none}
+.pl-home--hand>.pe-row .pe-tile-name{position:static;font-family:inherit;font-size:13px;font-weight:700;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-home--hand>.pe-row .pe-badge{top:-6px;right:-4px}
+.pl-hand-bleed{position:fixed;inset:-48px;z-index:-1;background-size:cover;background-position:50% 30%;filter:blur(28px) brightness(.62) saturate(1.2);pointer-events:none}
+.pl-home--hand::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(8,10,14,.5) 0%,rgba(13,16,22,.1) 30%,rgba(13,16,22,.55) 72%,var(--bg) 96%)}
+[data-theme="light"] .pl-hand-bleed,[data-theme="light"] .pl-home--hand::before{display:none}
+.pl-hand-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 0 4px}
+.pl-hand-title{min-width:0;display:grid;gap:4px}
+.pl-hand-title .eyebrow{margin:0;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#F2CF7E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-hand-title h2{margin:0;font:700 25px/30px Cinzel,Georgia,serif;color:#F4EFE6;text-shadow:0 2px 12px #000b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-theme="light"] .pl-hand-title h2{color:var(--text);text-shadow:none}[data-theme="light"] .pl-hand-title .eyebrow{color:var(--gold)}
+.pl-hand-change.btn{flex:none;min-height:44px;border-radius:999px;background:rgba(13,16,22,.55);border:1px solid rgba(214,173,100,.5);color:#F4EFE6}
+.pl-hand{--w:clamp(176px,min(258px,calc((100dvh - 500px)*.68),64vw),258px);display:flex;align-items:center;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
+  margin-inline:-16px;padding:6px calc(50% - var(--w)/2 + 16px)}
+.pl-hand::-webkit-scrollbar{display:none}
+.pl-hand-card{position:relative;flex:none;width:var(--w);aspect-ratio:258/380;border-radius:24px;overflow:hidden;scroll-snap-align:center;background:#161921;border:1px solid rgba(255,255,255,.2);transform:scale(.74);opacity:.75;transition:transform .25s ease,opacity .25s ease}
+.pl-hand-card.is-on{transform:none;opacity:1;border:1.5px solid #F2CF7E;box-shadow:0 24px 48px rgba(0,0,0,.6),0 0 28px rgba(232,185,91,.22)}
+.pl-hand-art{position:absolute;inset:0;background-size:cover;background-repeat:no-repeat}
+.pl-hand-art--trim{inset:-8%}
+.pl-hand-shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 46%,rgba(13,16,22,.94))}
+.pl-hand-pick{position:absolute;inset:0;width:100%;border:0;background:none;cursor:pointer;border-radius:inherit}
+.pl-hand-pick:focus-visible{outline:2px solid var(--gold);outline-offset:-4px}
+.pl-hand-copy{position:absolute;left:16px;right:84px;bottom:18px;display:grid;gap:3px;pointer-events:none}
+.pl-hand-card:not(.is-on) .pl-hand-copy{right:10px}
+.pl-hand-copy b{font:700 22px/26px Cinzel,Georgia,serif;color:#F4EFE6;text-shadow:0 2px 10px #000c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-hand-copy small{font-size:14px;color:#DDD8CC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-hand-play{position:absolute;right:14px;bottom:14px;width:60px;height:60px;padding:0;border:0;border-radius:999px;display:grid;place-items:center;background:linear-gradient(180deg,#F6D88C,#D9A94E 60%,#B8893A);box-shadow:0 8px 20px #0008,inset 0 1px 0 #fff8;cursor:pointer}
+.pl-hand-play svg{width:20px;height:22px;margin-left:4px;fill:#1A1408}
+.pl-hand-play:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.pl-hand-card .pe-badge{position:absolute;top:10px;right:10px}
+.pl-hand-marks{display:flex;justify-content:center;gap:6px}
+.pl-hand-marks i{width:5px;height:5px;border-radius:999px;background:rgba(255,255,255,.4)}
+.pl-hand-marks i.on{width:18px;background:#F2CF7E}
+.pl-quest-card{position:relative;display:grid;gap:6px;width:100%;max-width:560px;margin-inline:auto;box-sizing:border-box;padding:2px 16px 14px;border-radius:22px;background:rgba(22,25,33,.92);border:1px solid rgba(255,255,255,.12);color:#F4EFE6}
+.pl-quest-open{position:absolute;inset:0;width:100%;border:0;background:none;border-radius:inherit;cursor:pointer}
+.pl-quest-tabs{position:relative;z-index:1;display:flex;gap:18px;padding-right:150px;pointer-events:none}
+.pl-quest-tab{pointer-events:auto;min-height:44px;padding:0;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:#C8CCD6;font-family:inherit;font-size:13px;font-weight:600;line-height:1;letter-spacing:.06em;white-space:nowrap;cursor:pointer}
+.pl-quest-tab--daily[aria-pressed="true"]{color:#F2CF7E;border-bottom-color:#F2CF7E;font-weight:700}
+.pl-quest-tab--weekly[aria-pressed="true"]{color:#9FD0F0;border-bottom-color:#9FD0F0;font-weight:700}
+.pl-quest-slide{display:grid;gap:6px;pointer-events:none}
+.pl-quest-slide[hidden]{display:none}
+.pl-quest-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:16px;font-weight:600}
+.pl-quest-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-quest-count{flex:none;font-size:14px;font-weight:400;color:#C8CCD6}
+.pl-quest-steps{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:6px}
+.pl-quest-steps i{height:6px;border-radius:999px;background:rgba(255,255,255,.14)}
+.pl-quest-steps i.on{background:linear-gradient(90deg,#C99A45,#F2CF7E)}
+.is-weekly .pl-quest-steps i.on{background:#9FD0F0}
+.pl-quest-reward{position:absolute;z-index:1;top:8px;right:16px;min-height:30px;display:flex;align-items:center;pointer-events:auto}
+.pl-quest-reward .pd-claim{min-height:36px}
+@media(min-width:600px){
+  .pl-hand{container-type:inline-size;overflow:visible;scroll-snap-type:none;margin:0;padding:6px 0;justify-content:center;align-items:flex-end;gap:14px}
+  .pl-hand-card{--cw:min(250px,calc((100cqw - 56px)/4),calc((100dvh - 450px)*.66));width:calc(var(--cw)*.75);aspect-ratio:.66;transform:none;opacity:1;border-radius:18px}
+  .pl-hand-card.is-on{width:var(--cw);border-radius:22px}
+  .pl-hand-card:not(.is-on) .pl-hand-copy b{font-size:15px;line-height:18px}
+  /* Five in a row leaves the chosen card too narrow for its name beside Play: the name and line sit above it. */
+  .pl-hand-card.is-on .pl-hand-copy{right:12px;bottom:78px}.pl-hand-card.is-on .pl-hand-copy b{font-size:20px;line-height:24px}
+  .pl-hand-card.is-on .pl-hand-play{width:52px;height:52px;right:12px;bottom:12px}
+  .pl-hand-marks{display:none}
+  .pl-hand-title h2{font-size:30px;line-height:36px}
+  .pl-hand-head{width:100%;max-width:1000px;margin-inline:auto;box-sizing:border-box}
+}
 .pd-today--line{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--surface) 82%,transparent)}
 .pd-today--line .pd-quests{flex:1;min-width:0;margin:0;padding:0;list-style:none}
 .pd-today--line .pd-quest{border:0;padding:0;background:none}
 .pd-today--line>.link{flex:none;min-height:44px}
-@media(min-width:901px){.pl-home--stage{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:start}.pl-home--stage>.pl-home-head{grid-column:1/-1}.pl-stage{grid-column:1;grid-row:2/span 3;min-height:420px}.pl-stage-modes,.pl-stage-play,.pd-today--line,.pl-home--stage>.pe-row{grid-column:2}.pl-stage-modes{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .pl-bar-level .pl-cpu-levels{width:100%}.pl-bar-level .pl-cpu-level{display:flex;width:100%;box-sizing:border-box}.pl-bar-level .pl-cpu-level button{flex:1;min-width:0;padding-inline:6px}
 .pl-bar-level .pl-cpu-levels{align-items:stretch;flex:1;min-width:0}
 .pl-deckbar>*{flex:none}.pl-lobby .pl-deckbar #playMatchStatus{order:-1;flex-basis:auto}

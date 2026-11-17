@@ -196,6 +196,7 @@ import {createLessonCoach,isLessonBattle,lessonsOff,lessonSetup,STACK_HOST_LIVE,
 import {storyHomeMarkup,storyActMarkup,storyBattleMarkup,playScene,createStoryBubbles,starsRow,rewardText} from "./story-ui.js";
 import {storyDeedsEarned} from "./story-deeds.js";
 import { initCloud, pauseLocalConflict, communityRequest, presenceRequest, tableInviteRequest, cloudAccessToken, cloudInfo, realtimeClient, isEmptyWorkspace, statusLabel, scheduleSync, signInGoogle, signInEmail, signInPassword, createAccount, requestPasswordReset, finishPasswordReset, signOut, detachDeviceSync, saveProfile, resolvePending, syncNow, resendConfirmation, deleteAccount } from "./cloud.js";
+import { afterHandRender, jump as questJump } from "./play-hand.js";
 import { withSnapshot, collectionValue, recordValuePoint, cardSig, engineProfile, swapImpact, lotPrice } from "./insights.js";
 
 /* =========================================================
@@ -1216,6 +1217,7 @@ function render() {
   $("#content").innerHTML = (g !== "mtg" && tcgViews[ui.view] ? tcgViews[ui.view] : views[ui.view] || V.home)();
   reuseLoadedArt($("#content"),loadedArt);
   deckBoxTransitions.afterRender();
+  if(g==="mtg"&&ui.view==="play")afterHandRender(mode=>A.playStageMode({dataset:{stageMode:mode}}));
   syncDesktopPlayEntries(g);
   // A deck page's Practice button opens the Practice table, so the server engine warms while the page is open.
   if(g==="mtg"&&document.querySelector('[data-act="deckPlayCpu"]:not([hidden]):not(:disabled)'))warmForgeEngine(playSetup.snapshot());
@@ -1758,6 +1760,7 @@ let playView='home',playInspectOpen=false,playStageMode='quick',playSearchOpen=f
 A.playToggleSearch=()=>{playSearchOpen=!playSearchOpen;refreshPlayMenu();if(playSearchOpen)requestAnimationFrame(()=>document.getElementById('playDeckSearch')?.focus?.());};
 // The Play stage: a mode tile only changes what the gold Play opens.
 A.playStageMode=t=>{playStageMode=t.dataset.stageMode||'quick';refreshPlayMenu();};
+A.playQuestTab=t=>questJump(t.dataset.questKind||'daily');
 A.playOpenMode=t=>{if(t.dataset.playStyle==='quick'&&t.dataset.playDirect==='true')return quickStartNow(t);if(t.dataset.playStyle==='social'&&challenges[0]&&!letter)showLetter(challenges[0]);playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
 // Quick Play with a deck already chosen goes straight into the match against a matched CPU (Randall,
 // 1 Nov): no second pick on the setup screen. If the match can't open (sign-in, screen, a deck the engine

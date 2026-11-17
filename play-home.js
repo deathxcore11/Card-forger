@@ -4,7 +4,7 @@
 // Play's wall: no prices, and nothing here reads the real collection.
 import {boosterMarkup, playSetRows, econNoticeMarkup, cardImageByName, coinIcon, purseMarkup, levelMarkup, forgeMarkup, stuffRowMarkup} from './play-econ-ui.js';
 import {purse} from './play-econ-client.js';
-import {todayPanel, deedsPanel, todayLine} from './play-deeds-ui.js';
+import {todayPanel, deedsPanel, todayLine, questCard} from './play-deeds-ui.js';
 import {deckRules, isBasicLand} from './play-econ-rules.js';
 import {setRowContent} from './set-list-ui.js';
 import {STORY_ACTS as ACTS, SET_NAMES} from './story-acts.js';
@@ -39,10 +39,11 @@ export function playHomeMarkup({econ = null, facts = null, signedIn = false, mod
   if (!p) return `<section class="play-menu play-menu--forge pl-home pe-home" aria-labelledby="playTitle">${head}${modesHtml}${storyHeader(act, facts, story)}${econNoticeMarkup(econ, {signedIn})}</section>`;
   // 0.4.95 stage: the deck, five modes, one Play. Packs, Forge, Decks, Collection and Merchant leave the page;
   // the purse opens the Merchant, the Forge and Packs, and the row under Today opens all four.
-  if (stageHtml) return `<section class="play-menu play-menu--forge pl-home pe-home pl-home--stage" aria-labelledby="playTitle">
+  // 0.4.96 Hand: the chosen mode's art behind the page, the purse, the mode as the header, the hand of mode cards, the quest card.
+  if (stageHtml) return `<section class="play-menu play-menu--forge pl-home pe-home pl-home--stage pl-home--hand" aria-labelledby="playTitle">
     ${head}
     ${stageHtml}
-    ${todayLine(econ)}
+    ${questCard(econ)}
     ${stuffRowMarkup(econ)}
   </section>`;
   // Packs: one wrapper per set, with how many are waiting.
