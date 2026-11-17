@@ -460,13 +460,17 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
         item(key = "head") {
             Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 16.dp else 10.dp)) {
                 if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 12.dp))
-                Hero(m, act, wide, tab)
+                // Phones (story-act-and-collection brief B): no title card. Its view buttons, Select and ⋯ ride on the value line,
+                // so the first cards start about 170 dp higher; the other tabs keep ⋯ at the right of their line.
+                if (wide) Hero(m, act, wide, tab)
                 CollTabs(if (tab == "cards") m.tabs else m.tabs.map { CollTab(it.key, it.label, it.key == tab, it.icon) }, act.tab)
+                if (!wide && (body != null || m.emptyTitle != null)) Row(Modifier.fillMaxWidth().padding(top = 8.dp)) { Spacer(Modifier.weight(1f)); HeroActions(m, act, false, Modifier, tab) }
                 if (body != null) Unit
                 else if (m.emptyTitle != null) Empty(m, act)
                 else {
                     // Two screens: the summary lives in the bottom screen's case (V10), never twice.
-                    if (DualScreen.active) Unit else if (m.game != CardGame.MTG) ValueLine(m, act) else Summary(m.summary)
+                    if (!wide) PhoneValueLine(m, act, tab, showValue = !DualScreen.active)
+                    else if (DualScreen.active) Unit else if (m.game != CardGame.MTG) ValueLine(m, act) else Summary(m.summary)
                     Tools(m, act, wide, query)
                 }
             }
@@ -533,6 +537,25 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
         SelectTray(t, act, Modifier.align(Alignment.BottomCenter).padding(horizontal = gutter).padding(bottom = if (screen <= 700.dp && !sidewaysScreen()) 36.dp else 18.dp)
             .onSizeChanged { trayH = with(d) { it.height.toDp() } })
     }
+    }
+}
+
+/** Phone: the value over the card count at the left (it opens Value), refresh beside it, the view buttons, Select and ⋯ at the right. */
+@Composable
+private fun PhoneValueLine(m: CollectionCardsModel, act: CollectionCardsActions, tab: String, showValue: Boolean) {
+    Row(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 8.dp).heightIn(min = 48.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (showValue && m.summary.isNotEmpty()) {
+            val money = m.summary.firstOrNull { it.bold }
+            val rest = m.summary.filter { it !== money }.joinToString("") { it.t }.replace(Regex("\\s+"), " ").trim().removePrefix("·").trim()
+            Column(Modifier.weight(1f, fill = false).clickable { act.tab("value") }.semantics { contentDescription = "See collection value" }) {
+                money?.let { Text(it.t.trim(), style = sans(24f, 800, Ink, lh = 1.1f, ls = -.4f), maxLines = 1) }
+                if (rest.isNotBlank()) Text(rest, maxLines = 2, overflow = TextOverflow.Ellipsis, style = sans(12.5f, 500, Mute))
+            }
+            if (m.refresh != null) Box(Modifier.size(44.dp).clip(CircleShape).background(GlassFill).border(1.dp, GlassLine, CircleShape).clickable(onClick = act.refresh)
+                .semantics { contentDescription = m.refreshLabel }, contentAlignment = Alignment.Center) { SiteIcon(m.refresh, 20.dp, Ink) }
+        }
+        Spacer(Modifier.weight(1f))
+        HeroActions(m, act, false, Modifier, tab)
     }
 }
 

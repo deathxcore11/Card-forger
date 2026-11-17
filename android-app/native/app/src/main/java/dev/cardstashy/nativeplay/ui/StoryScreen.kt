@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -98,20 +99,20 @@ private fun StarIcon(on: Boolean, size: Dp = 17.dp) {
 }
 
 @Composable
-internal fun StarsRow(rec: Set<String>?) {
+internal fun StarsRow(rec: Set<String>?, size: Dp = 17.dp) {
     val slots = listOf("loaner", "loaner", "loaner", "own", "villain")
     val have = StoryLogic.STAR_KEYS.sumOf { if (rec?.contains(it) == true) StoryLogic.STAR_VALUE.getValue(it) else 0 }
     Row(Modifier.semantics { contentDescription = "$have of 5 stars" }, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         // Three loaner stars light together, then your own deck's, then the villain side's (story-ui.js STAR_SLOTS).
-        slots.forEachIndexed { i, k -> StarIcon(rec?.contains(k) == true) }
+        slots.forEachIndexed { i, k -> StarIcon(rec?.contains(k) == true, size) }
     }
 }
 
 /** Battles won of 8, a ring with the count. */
 @Composable
-private fun Ring(done: Int, total: Int) {
-    Box(Modifier.size(52.dp).semantics { contentDescription = "$done of $total battles won" }, contentAlignment = Alignment.Center) {
-        Box(Modifier.size(52.dp).drawBehind {
+private fun Ring(done: Int, total: Int, ring: Dp = 52.dp) {
+    Box(Modifier.size(ring).semantics { contentDescription = "$done of $total battles won" }, contentAlignment = Alignment.Center) {
+        Box(Modifier.size(ring).drawBehind {
             val s = 3.dp.toPx(); val r = Size(size.width - s, size.height - s)
             drawArc(Color(0x24FFFFFF), 0f, 360f, false, Offset(s / 2, s / 2), r, style = Stroke(s))
             drawArc(storyGold, -90f, 360f * done / total, false, Offset(s / 2, s / 2), r, style = Stroke(s, cap = StrokeCap.Round))
@@ -224,7 +225,8 @@ private fun Book() {
 
 /** One act: its banner and the battles reached so far (cleared, the current one, then one tease; the secret row only when open). */
 @Composable
-fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, onBack: () -> Unit, onBattle: (String) -> Unit, purse: @Composable () -> Unit = {}, wallet: @Composable () -> Unit = purse) {
+fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, onBack: () -> Unit, onBattle: (String) -> Unit, purse: @Composable () -> Unit = {}, wallet: @Composable () -> Unit = purse,
+                 setNames: Map<String, String> = emptyMap(), onPlayAs: (String) -> Unit = onBattle) {
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val now = StoryLogic.currentBattle(p, a.act)
     val battles = data?.getAsJsonArray("battles")?.map { it.asJsonObject }.orEmpty()
@@ -244,40 +246,192 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
         val cta = currentId?.let { id -> CaseButton("X", if (StoryLogic.battleCleared(p, id)) "Replay" else "Duel", gold = true) { onBattle(id) } }
         StoryBottom(a, data, p, lens.key?.takeIf { it in shownIds }, true, cta, onBattle, wallet)
     }
-    val banner = @Composable { m: Modifier ->
-            val shape = RoundedCornerShape(24.dp)
-            Box(m.clip(shape).border(1.dp, Color(0x38D6AD64), shape)) {
-                StoryPic(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.36f))
-                Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x100C0C0E), 1f to Color(0xF00C0C0E))))
-                Row(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { Symbols(a.sets); Text(a.years, style = storyText(14f, FontWeight.Medium, Color(0xFFD6DBE2))) }
-                    Ring(won, 8)
-                }
+    // Second take (specs/story-act-and-collection-brief.md): what each battle offers now. Won battles are short rows with their
+    // side's prize and "Play as"; the battle you are on is an open card with both decks, what's new and the prize.
+    val ctx = LocalContext.current
+    val lessons = remember { dev.cardstashy.nativeplay.play.StoryLessons.load(ctx).map }
+    val stars = StoryLogic.actStars(p, a.act)
+    val theirWins = battles.count { it["secret"]?.asBoolean != true && "villain" in (p.battles[it["id"].asString] ?: emptySet()) }
+    val row: @Composable (JsonObject) -> Unit = { b ->
+        val id = b["id"].asString; val slot = b["slot"].asInt; val secret = b["secret"]?.asBoolean == true
+        Box(Modifier.dualLens(lens, "battle:$id")) {
+            when {
+                secret || slot > now -> BattleRow(b, cast, p, now) { onBattle(id) }
+                slot == now -> NowCard(b, cast, p, setNames, lessons) { onBattle(id) }
+                else -> WonRow(b, cast, p, setNames, { onBattle(id) }) { onPlayAs(id) }
             }
+        }
     }
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
-    // Sideways: the act's title and picture on the left, its battles scrolling on the right.
-    if (sideways()) Row(Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = top + 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        Column(Modifier.weight(.42f).fillMaxHeight().padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            PageHeader(a.name, "Story · Act ${a.act}", onBack = onBack)
-            banner(Modifier.fillMaxWidth().weight(1f))
+    val wide = maxWidth >= 600.dp
+    // Wide (Fold open, tablet, sideways, the Thor's top): the act's art and header on the left, its battles on the right.
+    if (wide) Row(Modifier.fillMaxSize()) {
+        Box(Modifier.weight(.42f).fillMaxHeight()) {
+            StoryPic(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.36f))
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0xB8080A0E), .35f to Color(0x4D0D1016), .78f to Color(0xCC0D1016), 1f to Color(0xFF0D1016))))
+            Box(Modifier.matchParentSize().background(Brush.horizontalGradient(.7f to Color(0x000D1016), 1f to Site.Bg)))
+            ActHead(a, won, stars, theirWins, onBack, Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 16.dp), wide = true)
         }
-        LazyColumn(Modifier.weight(.58f).fillMaxHeight(), contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(Modifier.weight(.58f).fillMaxHeight(), contentPadding = PaddingValues(start = 8.dp, end = 16.dp, top = top + 12.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item("purse") { purse() }
             if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp)) }
-            open.forEach { b -> item(b["id"].asString) { Box(Modifier.dualLens(lens, "battle:" + b["id"].asString)) { BattleRow(b, cast, p, now) { onBattle(b["id"].asString) } } } }
+            open.forEach { b -> item(b["id"].asString) { row(b) } }
             tease?.let { item("tease") { SecretTease(it) } }
         }
-    } else
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item("head") { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { PageHeader(a.name, "Story · Act ${a.act}", onBack = onBack); purse() } }
-        item("banner") { banner(Modifier.fillMaxWidth().heightIn(min = 170.dp)) }
-        if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp)) }
-        open.forEach { b ->
-            item(b["id"].asString) { Box(Modifier.dualLens(lens, "battle:" + b["id"].asString)) { BattleRow(b, cast, p, now) { onBattle(b["id"].asString) } } }
+    } else Box(Modifier.fillMaxSize()) {
+        // Phone: the act's art bleeds behind a short header, then the rows.
+        val bleed = top + 214.dp
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item("head") {
+                Box(Modifier.fillMaxWidth().height(bleed)) {
+                    StoryPic(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
+                    Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0xB8080A0E), .42f to Color(0x4D0D1016), .8f to Color(0xCC0D1016), 1f to Color(0xFF0D1016))))
+                    ActHead(a, won, stars, theirWins, onBack, Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = top + 14.dp, bottom = 10.dp), wide = false)
+                }
+            }
+            item("purse") { Box(Modifier.padding(horizontal = 16.dp)) { purse() } }
+            if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp, horizontal = 16.dp)) }
+            open.forEach { b -> item(b["id"].asString) { Box(Modifier.padding(horizontal = 16.dp)) { row(b) } } }
+            tease?.let { item("tease") { Box(Modifier.padding(horizontal = 16.dp)) { SecretTease(it) } } }
         }
-        tease?.let { item("tease") { SecretTease(it) } }
     }
+    }
+}
+
+/** The act's header over its art: back, "STORY · ACT n", the act name, the years and set marks, stars and their side's wins, the won ring. */
+@Composable
+private fun ActHead(a: PlayRules.Act, won: Int, stars: Int, theirs: Int, onBack: () -> Unit, modifier: Modifier, wide: Boolean) {
+    Column(modifier, verticalArrangement = Arrangement.SpaceBetween) {
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
+            Box(Modifier.size(44.dp).clip(CircleShape).background(Color(0x9E0D1016)).border(1.dp, Color(0x4DD6AD64), CircleShape)
+                .clickable(onClick = onBack).semantics { contentDescription = "Back" }, contentAlignment = Alignment.Center) { Icon(SiteIcons.Back, 20.dp, Color(0xFFF4EFE6)) }
+            Column(Modifier.weight(1f).padding(top = 2.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("STORY · ACT ${a.act}", style = storyText(11f, FontWeight.ExtraBold, Color(0xFFF2CF7E), 2.4f))
+                Text(a.name, style = storyCinzel(if (wide) 26f else 24f, Color(0xFFF6EEDB)).copy(shadow = androidx.compose.ui.graphics.Shadow(Color(0xB3000000), Offset(0f, 2f), 10f)))
+            }
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(a.years, style = storyText(14f, FontWeight.SemiBold, Color(0xFFF4EFE6)))
+                    Symbols(a.sets)
+                }
+                Text(androidx.compose.ui.text.buildAnnotatedString {
+                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFFE8B95B))); append("★ "); pop()
+                    append("$stars of ${StoryLogic.MAX_STARS * 8} · their side won $theirs of 8")
+                }, style = storyText(13f, FontWeight.SemiBold, Color(0xFFDDD8CC)))
+            }
+            Ring(won, 8, 48.dp)
+        }
+    }
+}
+
+private val PIPS = mapOf('W' to (Color(0xFFF3EBD3) to "white"), 'U' to (Color(0xFF6FA8DC) to "blue"), 'B' to (Color(0xFF8B7C99) to "black"), 'R' to (Color(0xFFE0705A) to "red"), 'G' to (Color(0xFF6BB77B) to "green"))
+
+/** A deck's colours as small dots, named for a screen reader. */
+@Composable
+private fun ColourPips(colors: String?) = Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+    colors.orEmpty().uppercase().forEach { c -> PIPS[c]?.let { (col, name) ->
+        Box(Modifier.size(11.dp).clip(CircleShape).background(col).border(1.dp, Color(0x66000000), CircleShape).semantics { contentDescription = name }) } }
+}
+
+private fun JsonObject.o(k: String): JsonObject? = get(k)?.takeIf { it.isJsonObject }?.asJsonObject
+private fun JsonObject.s(k: String): String? = get(k)?.takeIf { it.isJsonPrimitive }?.asString
+
+@Composable
+private fun Pill(text: String, gold: Boolean, desc: String = text, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val sh = RoundedCornerShape(999.dp)
+    Box(modifier.heightIn(min = 44.dp).then(Modifier.widthIn(max = 124.dp)).clip(sh)
+        .then(if (gold) Modifier.background(Brush.verticalGradient(0f to Color(0xFFF6D88C), .6f to Color(0xFFD9A94E), 1f to Color(0xFFB8893A))) else Modifier.border(1.dp, Color(0x8CD6AD64), sh))
+        .clickable(onClick = onClick).semantics { contentDescription = desc }.padding(horizontal = 14.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
+        Text(text, style = storyText(13f, FontWeight.Bold, if (gold) Color(0xFF1A1408) else Color(0xFFF2CF7E)).copy(lineHeight = 15.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center), maxLines = 2)
+    }
+}
+
+@Composable
+private fun KindLine(b: JsonObject, big: Boolean) = Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Text((if (b["slot"].asInt == 8) "Boss" else b.s("kind").orEmpty()).uppercase(), style = storyText(if (big) 11f else 10.5f, FontWeight.ExtraBold, Color(0xFFF2CF7E), 1.6f), maxLines = 1)
+    Text(b.s("difficulty").orEmpty().uppercase(), style = storyText(if (big) 11f else 10.5f, FontWeight.Bold, Color(0xFFAEB3BE), .8f), maxLines = 1)
+}
+
+/** A won battle, one short row: face, kind, stars, title (never cut), then their side's prize and "Play as", or "Both sides won" and Replay. */
+@Composable
+private fun WonRow(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, setNames: Map<String, String>, onOpen: () -> Unit, onPlayAs: () -> Unit) {
+    val id = b["id"].asString; val rec = p.battles[id] ?: emptySet()
+    val theirsWon = "villain" in rec
+    val rw = b.o("reward"); val vCard = rw?.o("villain")?.o("card") != null
+    val villain = cast?.o(b.o("villain")?.s("who") ?: "")
+    val face = villain?.o("portrait")
+    val shape = RoundedCornerShape(16.dp)
+    Row(Modifier.fillMaxWidth().heightIn(min = 76.dp).clip(shape).background(Color(0xE6161921)).border(1.dp, Color(0x14FFFFFF), shape)
+        .clickable(onClick = onOpen).padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        val fs = RoundedCornerShape(10.dp)
+        StoryPic(face?.s("crop"), Modifier.size(48.dp).clip(fs).border(1.dp, Color(0x80D6AD64), fs), storyFocus(face?.s("focus")))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { KindLine(b, false); StarsRow(rec, 13.dp) }
+            Text(b.s("title").orEmpty(), style = storyCinzel(14f, Color(0xFFF6EEDB)).copy(lineHeight = 18.sp))
+            Text(androidx.compose.ui.text.buildAnnotatedString {
+                if (theirsWon) append("Both sides won")
+                else if (vCard) { pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFFF2CF7E), fontWeight = FontWeight.Bold)); append("Their side: "); pop()
+                    append(StoryLogic.rewardText(rw?.o("villain"), b.s("rewardSet").orEmpty(), setNames)) }
+                else append("Won")
+            }, style = storyText(12f, FontWeight.SemiBold, Color(0xFFAEB3BE)).copy(lineHeight = 16.sp))
+        }
+        if (!theirsWon && vCard) { val n = villain?.s("name") ?: "their side"; Pill("Play as\n$n", true, "Play as $n", onClick = onPlayAs) }
+        else Pill("Replay", false, onClick = onOpen)
+    }
+}
+
+/** The battle you are on: an open gold-edged card with the blurb in full, both decks, what's new, the prize and Duel. */
+@Composable
+private fun NowCard(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, setNames: Map<String, String>, lessons: Map<String, String>, onOpen: () -> Unit) {
+    val id = b["id"].asString; val slot = b["slot"].asInt; val rec = p.battles[id] ?: emptySet()
+    val hero = b.o("hero"); val vil = b.o("villain")
+    val villain = cast?.o(vil?.s("who") ?: ""); val face = villain?.o("portrait")
+    val heroWho = hero?.s("who"); val heroName = if (heroWho != null && heroWho != "you") cast?.o(heroWho)?.s("name") else null
+    val rw = b.o("reward"); val set = b.s("rewardSet").orEmpty()
+    val teaches = b.getAsJsonArray("teaches")?.mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }?.filter { it in lessons }.orEmpty()
+    val collector = if (slot >= 8) " + a Collector pack" else ""
+    val shape = RoundedCornerShape(18.dp)
+    Column(Modifier.fillMaxWidth().testShadow(14.dp, shape).clip(shape).background(Brush.verticalGradient(0f to Color(0xEB2A2212), .55f to Color(0xF0161921)))
+        .border(1.5.dp, Color(0xFFD6AD64), shape).clickable(onClick = onOpen).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            val fs = RoundedCornerShape(14.dp)
+            StoryPic(face?.s("crop"), Modifier.size(64.dp).clip(fs).border(1.5.dp, Color(0xFFD6AD64), fs), storyFocus(face?.s("focus")))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { KindLine(b, true); StarsRow(rec, 13.dp) }
+                Text(b.s("title").orEmpty(), style = storyCinzel(18f, Color(0xFFF6EEDB)).copy(lineHeight = 22.sp))
+            }
+        }
+        Text(b.s("blurb").orEmpty(), style = storyText(13.5f, FontWeight.Medium, Color(0xFFD3D6DE)).copy(lineHeight = 19.sp))
+        Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Side(if (heroName != null) "YOU PLAY AS ${heroName.uppercase()}" else "YOU PLAY", hero?.o("deck")?.s("name").orEmpty(), hero?.o("deck")?.s("colors"), Modifier.weight(1f).fillMaxHeight())
+            Side("AGAINST", vil?.o("deck")?.s("name").orEmpty(), vil?.o("deck")?.s("colors"), Modifier.weight(1f).fillMaxHeight())
+        }
+        if (teaches.isNotEmpty()) androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("NEW", style = storyText(10f, FontWeight.ExtraBold, Color(0xFF9FD0F0), 1.6f), modifier = Modifier.align(Alignment.CenterVertically))
+            teaches.forEach { t -> Text(t, style = storyText(12f, FontWeight.SemiBold, Color(0xFFCFE6F7)), modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(Color(0x1F9FD0F0))
+                .border(1.dp, Color(0x669FD0F0), RoundedCornerShape(999.dp)).padding(horizontal = 9.dp, vertical = 4.dp)) }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("WIN", style = storyText(10f, FontWeight.ExtraBold, Color(0xFFF2CF7E), 1.6f))
+                Text(StoryLogic.rewardText(rw?.o("hero"), set, setNames) + collector, style = storyText(13f, FontWeight.SemiBold, Color(0xFFF4EFE6)).copy(lineHeight = 17.sp))
+                if (rw?.o("villain")?.o("card") != null) Text("Then their side: " + StoryLogic.rewardText(rw.o("villain"), set, setNames), style = storyText(12f, FontWeight.SemiBold, Color(0xFFAEB3BE)).copy(lineHeight = 16.sp))
+            }
+            Box(Modifier.size(width = 112.dp, height = 48.dp).clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(0f to Color(0xFFF6D88C), .6f to Color(0xFFD9A94E), 1f to Color(0xFFB8893A)))
+                .clickable(onClick = onOpen).semantics { contentDescription = "Duel" }, contentAlignment = Alignment.Center) { Text("Duel", style = storyText(16f, FontWeight.Bold, Color(0xFF1A1408))) }
+        }
+    }
+}
+
+@Composable
+private fun Side(label: String, deck: String, colors: String?, modifier: Modifier) {
+    val sh = RoundedCornerShape(12.dp)
+    Column(modifier.clip(sh).background(Color(0x990D1016)).border(1.dp, Color(0x14FFFFFF), sh).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, style = storyText(10f, FontWeight.ExtraBold, Color(0xFFF2CF7E), 1.6f))
+        Text(deck, style = storyText(13f, FontWeight.SemiBold, Color(0xFFF4EFE6)).copy(lineHeight = 17.sp))
+        ColourPips(colors)
     }
 }
 
@@ -353,7 +507,7 @@ fun StoryRoute(startAct: Int? = null, onBack: () -> Unit, onDuel: (dev.cardstash
         page = if (lastAct > 1 || open > 1) { d -> val n = (open + d).coerceIn(1, lastAct); if (n != open && rules.acts.any { it.act == n }) { act = n; battle = null; duel = StoryDuelUi() } } else null,
         pageLabel = "Act"))
     val b = battle?.let { id -> data?.getAsJsonArray("battles")?.map { it.asJsonObject }?.firstOrNull { it["id"].asString == id } }
-    if (b == null) { StoryActPage(meta, data, p, { act = null }, { battle = it; duel = StoryDuelUi() }, purse, wallet); return }
+    if (b == null) { StoryActPage(meta, data, p, { act = null }, { battle = it; duel = StoryDuelUi() }, purse, wallet, rules.setNames) { battle = it; duel = StoryDuelUi(seat = "villain") }; return }
     // The act's card pool gates your own decks (story-client.js loadActPool); null while it loads.
     val pool by androidx.compose.runtime.produceState<Set<String>?>(null, open) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching {

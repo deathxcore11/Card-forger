@@ -272,7 +272,7 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
 }
 
 /** Test variant B draws no shadows either. */
-private fun Modifier.testShadow(elevation: Dp, shape: androidx.compose.ui.graphics.Shape, clip: Boolean = elevation > 0.dp, ambientColor: Color = androidx.compose.ui.graphics.DefaultShadowColor, spotColor: Color = androidx.compose.ui.graphics.DefaultShadowColor): Modifier =
+internal fun Modifier.testShadow(elevation: Dp, shape: androidx.compose.ui.graphics.Shape, clip: Boolean = elevation > 0.dp, ambientColor: Color = androidx.compose.ui.graphics.DefaultShadowColor, spotColor: Color = androidx.compose.ui.graphics.DefaultShadowColor): Modifier =
     if (HomeTest.noPictures) this else shadow(elevation, shape, clip, ambientColor, spotColor)
 
 /** Counts each section's compositions, layouts and draws for the freeze report, so a stuck or looping section names itself. */
