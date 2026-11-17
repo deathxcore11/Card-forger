@@ -11,7 +11,7 @@ import zlib from 'node:zlib';
 import { S } from './store.js';
 import { cardKey } from './core.js';
 import { buildDeck } from './builder.js';
-import { mtgPower, shownPower, calibrateConstructedPower, POWER_CALIBRATION, powerPanel } from './power.js';
+import { mtgPower, shownPower, calibrateConstructedPower, POWER_CALIBRATION, UNPROVEN_CAP, powerPanel } from './power.js';
 import { BUILD_CAP } from './deckpower.js';
 import { metaState } from './meta.js';
 import { metaPrior } from './deck-meta-prior.js';
@@ -23,9 +23,12 @@ const prior = metaPrior(fx.decks);
 
 // The calibration itself.
 assert.equal(calibrateConstructedPower(null), null, 'no model score: no power');
-assert.equal(calibrateConstructedPower(53, 1), BUILD_CAP, 'a real tournament list (model median 53, every card played) reads at the top of the unproven band');
-assert.ok(calibrateConstructedPower(100, 1) <= BUILD_CAP, 'a list with no results of its own never passes the cap');
-assert.ok(BUILD_CAP < 72, 'and the cap sits below every list proven by results (72 to 100)');
+assert.equal(calibrateConstructedPower(53, 1), BUILD_CAP, 'a real tournament list (model median 53, every card played) reads 70');
+// Randall, 17 Nov (decision card "Choose how high a built deck's power number can go": "Let Max builds reach 85").
+assert.equal(UNPROVEN_CAP, 85);
+assert.equal(calibrateConstructedPower(100, 1), UNPROVEN_CAP, 'a list with no results of its own never passes 85');
+assert.ok(calibrateConstructedPower(63, 0.85) > BUILD_CAP, 'a strong list of played cards reads above 70: ' + calibrateConstructedPower(63, 0.85));
+assert.ok(calibrateConstructedPower(49, 0.47) < 62, 'deck 6 as it was built (model 49, 47% played) stays near 59: ' + calibrateConstructedPower(49, 0.47));
 for (let m = 0; m < 100; m += 7) {
  assert.ok(calibrateConstructedPower(m + 7, 0.5) >= calibrateConstructedPower(m, 0.5), 'a better model score never lowers power');
  assert.ok(calibrateConstructedPower(m, 0.9) >= calibrateConstructedPower(m, 0.3), 'more cards that real lists play never lowers power');
@@ -51,7 +54,7 @@ for (const [seed, colors] of [['Monoist Sentry', ['B']], ['Rubble Rouser', ['R']
  assert.equal(p.from, 'rogue', label + 'not a known tournament list');
  assert.equal(shownPower(p), p.score, label + 'one number everywhere');
  assert.equal(p.score, Math.min(calibrateConstructedPower(p.modelScore, p.ctx.played), p.caps?.[0]?.max ?? 100), label + 'the shown power is the calibrated model score');
- assert.ok(p.score <= BUILD_CAP, label + 'stays under the cap for lists with no results');
+ assert.ok(p.score <= UNPROVEN_CAP, label + 'stays under the cap for lists with no results');
  shown[seed + power] = { power: p.score, model: p.modelScore, played: p.ctx.played };
 }
 // The reported build: Monoist Sentry at Strong read 57 (50 on this pool). It now reads in the sixties.
@@ -75,7 +78,7 @@ assert.ok(shown['Rubble Rouserstrong'].power - shown['Rubble Rousercasual'].powe
 // The Power page says where the number comes from.
 {
  const html = powerPanel(score(build('Monoist Sentry', ['B'], 'strong'), 'panel'));
- assert.match(html, /re-anchored by \+17/); assert.match(html, /stops at 70/);
+ assert.match(html, /re-anchored by \+17/); assert.match(html, /stops at 85/);
 }
-assert.equal(POWER_CALIBRATION.cap, BUILD_CAP);
+assert.equal(POWER_CALIBRATION.cap, UNPROVEN_CAP);
 console.log('power calibration: ' + Object.entries(shown).map(([k, v]) => k + ' ' + v.model + '→' + v.power).join(', '));
