@@ -275,7 +275,7 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
         val info = listState.layoutInfo
         val item = info.visibleItemsInfo.firstOrNull { it.key == key }
         if (item == null) { val pos = open.indexOfFirst { it["id"].asString == key }.coerceAtLeast(0); listState.scrollToItem(pos + if (info.visibleItemsInfo.firstOrNull()?.key == "head") 1 else 0) }
-        else { val over = item.offset + item.size - (info.viewportEndOffset - info.afterContentPadding); if (over > 0) listState.scrollBy(over.toFloat() + 8f) }
+        else { val over = item.offset + item.size - info.viewportEndOffset; if (over > 0) listState.scrollBy(over.toFloat()) }
     }
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
     val wide = maxWidth >= 600.dp
@@ -296,8 +296,8 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
         }
     } else Box(Modifier.fillMaxSize()) {
         // Phone: the act's art bleeds behind a short header, then the rows.
-        val bleed = top + 176.dp
-        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val bleed = top + 160.dp
+        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             item("head") {
                 Box(Modifier.fillMaxWidth().height(bleed)) {
                     StoryPic(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
@@ -380,8 +380,8 @@ private fun WonRow(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, set
     val villain = cast?.o(b.o("villain")?.s("who") ?: "")
     val face = villain?.o("portrait")
     val shape = RoundedCornerShape(16.dp)
-    Row(Modifier.fillMaxWidth().heightIn(min = if (compact) 60.dp else 76.dp).clip(shape).background(Color(0xE6161921)).border(1.dp, Color(0x14FFFFFF), shape)
-        .clickable(onClick = onOpen).padding(if (compact) 8.dp else 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(Modifier.fillMaxWidth().heightIn(min = if (compact) 60.dp else 72.dp).clip(shape).background(Color(0xE6161921)).border(1.dp, Color(0x14FFFFFF), shape)
+        .clickable(onClick = onOpen).padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         val fs = RoundedCornerShape(10.dp)
         StoryPic(face?.s("crop"), Modifier.size(if (compact) 44.dp else 48.dp).clip(fs).border(1.dp, Color(0x80D6AD64), fs), storyFocus(face?.s("focus")))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 3.dp)) {
@@ -395,8 +395,8 @@ private fun WonRow(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, set
                 else append("Won")
             }, style = storyText(12f, FontWeight.SemiBold, Color(0xFFAEB3BE)).copy(lineHeight = 16.sp))
         }
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            StarsRow(rec, 13.dp)
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            StarsRow(rec, 12.dp)
             if (!theirsWon && vCard) { val n = villain?.s("name") ?: "their side"; Pill("Play as\n$n", true, "Play as $n", onClick = onPlayAs) }
             else Pill("Replay", false, onClick = onOpen)
         }
@@ -415,8 +415,8 @@ private fun NowCard(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, se
     val collector = if (slot >= 8) " + a Collector pack" else ""
     val shape = RoundedCornerShape(18.dp)
     Column(Modifier.fillMaxWidth().testShadow(14.dp, shape).clip(shape).background(Brush.verticalGradient(0f to Color(0xEB2A2212), .55f to Color(0xF0161921)))
-        .border(1.5.dp, Color(0xFFD6AD64), shape).clickable(onClick = onOpen).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        val duel = @Composable { Box(Modifier.size(width = 112.dp, height = 48.dp).clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(0f to Color(0xFFF6D88C), .6f to Color(0xFFD9A94E), 1f to Color(0xFFB8893A)))
+        .border(1.5.dp, Color(0xFFD6AD64), shape).clickable(onClick = onOpen).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        val duel = @Composable { Box(Modifier.size(width = if (strip > 0) 112.dp else 92.dp, height = 48.dp).clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(0f to Color(0xFFF6D88C), .6f to Color(0xFFD9A94E), 1f to Color(0xFFB8893A)))
             .clickable(onClick = onOpen).semantics { contentDescription = "Duel" }, contentAlignment = Alignment.Center) { Text("Duel", style = storyText(16f, FontWeight.Bold, Color(0xFF1A1408))) } }
         val you = if (heroName != null) "YOU PLAY AS ${heroName.uppercase()}" else "YOU PLAY"
         val winText = StoryLogic.rewardText(rw?.o("hero"), set, setNames) + collector
