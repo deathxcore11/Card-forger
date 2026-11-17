@@ -42,7 +42,7 @@ class StoryActShotTest {
     @get:Rule val rule = createComposeRule()
     private val art = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art/story")
     private val rules get() = PlayRules.load(RuntimeEnvironment.getApplication())
-    private val data get() = JsonParser.parseString(javaClass.classLoader!!.getResource("story/act-1.json")!!.readText()).asJsonObject
+    private val data get() = JsonParser.parseString(File("src/main/assets/story/act-1.json").readText()).asJsonObject
     private fun refs(vararg r: String) = StoryLogic.fromRefs(r.toList())
     /** Three won: the first with both sides, the next two with their side still open. */
     private val three get() = refs("story:a1b1:loaner", "story:a1b1:villain", "story:a1b2:loaner", "story:a1b3:loaner")
@@ -81,7 +81,7 @@ class StoryActPagesShotTest {
     init { dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication()) }
     private val art = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art/story")
     private val rules get() = PlayRules.load(RuntimeEnvironment.getApplication())
-    private val data get() = JsonParser.parseString(javaClass.classLoader!!.getResource("story/act-1.json")!!.readText()).asJsonObject
+    private val data get() = JsonParser.parseString(File("src/main/assets/story/act-1.json").readText()).asJsonObject
     private fun refs(vararg r: String) = StoryLogic.fromRefs(r.toList())
     private val three get() = refs("story:a1b1:loaner", "story:a1b1:villain", "story:a1b2:loaner", "story:a1b3:loaner")
     private fun pics() { StoryTest.art = { url -> art.resolve(java.security.MessageDigest.getInstance("SHA-1").digest(url.toByteArray()).joinToString("") { "%02x".format(it) } + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } } }
@@ -89,6 +89,15 @@ class StoryActPagesShotTest {
     private fun shot(name: String, q: String, c: @androidx.compose.runtime.Composable () -> Unit) {
         RuntimeEnvironment.setQualifiers(q)
         captureRoboImage(File(System.getProperty("shotsDir"), "story-act-$name.png").path) { Box(Modifier.fillMaxSize()) { c() } }
+    }
+
+    /** Stand-in art (a test card picture) for every story picture, so the header bleed and its scrim can be judged when real art is not cached. */
+    @Test fun standinArt() {
+        val bmp = BitmapFactory.decodeFile(File("src/test/resources/foil/torrential-gearhulk-kld-67-large.jpg").path)?.asImageBitmap() ?: return
+        StoryTest.art = { _ -> bmp }
+        val d = data; val r = rules
+        shot("standin-phone-390x844", "w390dp-h844dp-xxhdpi") { StoryActPage(r.acts[0], d, three, {}, {}, setNames = r.setNames) }
+        shot("standin-tablet-1280x800", "w1280dp-h800dp-mdpi") { StoryActPage(r.acts[0], d, three, {}, {}, setNames = r.setNames) }
     }
 
     @Test fun actPages() {

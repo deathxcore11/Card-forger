@@ -459,7 +459,7 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
         }
         item(key = "head") {
             Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 16.dp else 4.dp)) {
-                if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 6.dp))
+                if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 2.dp))
                 // Phones (story-act-and-collection brief B): no title card. Its view buttons, Select and ⋯ ride on the value line,
                 // so the first cards start about 170 dp higher; the other tabs keep ⋯ at the right of their line.
                 if (wide) Hero(m, act, wide, tab)
@@ -551,20 +551,20 @@ private fun PhoneValueLine(m: CollectionCardsModel, act: CollectionCardsActions,
         Image(art, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop, alignment = androidx.compose.ui.BiasAlignment(0f, -.4f))
         Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to Color(0xF007080B), .55f to Color(0xC707080B), 1f to Color(0x8C07080B))))
     }
-    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).then(if (art != null) Modifier.padding(horizontal = 10.dp, vertical = 4.dp) else Modifier),
-        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    val money = m.summary.firstOrNull { it.bold && it.t.trimStart().startsWith('$') } ?: m.summary.firstOrNull { it.bold }
+    val rest = m.summary.filter { it !== money }.joinToString("") { it.t }.replace(Regex("\\s+"), " ").replace(Regex("(\\s*·\\s*)+"), " · ").trim().removePrefix("·").removeSuffix("·").trim()
+    Column(Modifier.fillMaxWidth().then(if (art != null) Modifier.padding(horizontal = 10.dp, vertical = 4.dp) else Modifier)) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (showValue && m.summary.isNotEmpty()) {
-            val money = m.summary.firstOrNull { it.bold }
-            val rest = m.summary.filter { it !== money }.joinToString("") { it.t }.replace(Regex("\\s+"), " ").trim().removePrefix("·").trim()
-            Column(Modifier.weight(1f, fill = false).clickable { act.tab("value") }.semantics { contentDescription = "See collection value" }) {
-                money?.let { Text(it.t.trim(), style = sans(24f, 800, Ink, lh = 1.1f, ls = -.4f), maxLines = 1) }
-                if (rest.isNotBlank()) Text(rest, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(12f, 500, Mute))
-            }
+            money?.let { Text(it.t.trim(), Modifier.clickable { act.tab("value") }.semantics { contentDescription = "See collection value" }, style = sans(24f, 800, Ink, lh = 1.1f, ls = -.4f), maxLines = 1) }
             if (m.refresh != null) Box(Modifier.size(44.dp).clip(CircleShape).background(GlassFill).border(1.dp, GlassLine, CircleShape).clickable(onClick = act.refresh)
                 .semantics { contentDescription = m.refreshLabel }, contentAlignment = Alignment.Center) { SiteIcon(m.refresh, 20.dp, Ink) }
         }
         Spacer(Modifier.weight(1f))
         HeroActions(m, act, false, Modifier, tab)
+    }
+    // The counts get the line's whole width under it, so nothing is cut.
+    if (showValue && rest.isNotBlank()) Text(rest, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(12f, 500, Mute))
     }
     }
 }

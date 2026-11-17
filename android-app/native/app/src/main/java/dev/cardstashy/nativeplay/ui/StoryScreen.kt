@@ -55,6 +55,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.flow.first
+import androidx.compose.foundation.gestures.scrollBy
 import com.google.gson.JsonObject
 import dev.cardstashy.nativeplay.account.Http
 import dev.cardstashy.nativeplay.play.PlayMath
@@ -252,18 +254,32 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
     val lessons = remember { dev.cardstashy.nativeplay.play.StoryLessons.load(ctx).map }
     val stars = StoryLogic.actStars(p, a.act)
     val theirWins = battles.count { it["secret"]?.asBoolean != true && "villain" in (p.battles[it["id"].asString] ?: emptySet()) }
-    val row: @Composable (JsonObject) -> Unit = { b ->
+    // strip: 0 a phone (two deck boxes, chips, Win and Duel), 1 the Thor's top (Duel up top, three boxes, chips under),
+    // 2 a tablet (Duel up top, four boxes in one strip).
+    val row: @Composable (JsonObject, Int) -> Unit = { b, strip ->
         val id = b["id"].asString; val slot = b["slot"].asInt; val secret = b["secret"]?.asBoolean == true
         Box(Modifier.dualLens(lens, "battle:$id")) {
             when {
                 secret || slot > now -> BattleRow(b, cast, p, now) { onBattle(id) }
-                slot == now -> NowCard(b, cast, p, setNames, lessons) { onBattle(id) }
-                else -> WonRow(b, cast, p, setNames, { onBattle(id) }) { onPlayAs(id) }
+                slot == now -> NowCard(b, cast, p, setNames, lessons, strip) { onBattle(id) }
+                else -> WonRow(b, cast, p, setNames, strip > 0, { onBattle(id) }) { onPlayAs(id) }
             }
         }
     }
+    // When the act opens, the battle you are on is scrolled fully into view (review of 736cbc54).
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    LaunchedEffect(currentId, data != null) {
+        val key = currentId ?: return@LaunchedEffect
+        androidx.compose.runtime.snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > 0 }
+        androidx.compose.runtime.withFrameNanos { }
+        val info = listState.layoutInfo
+        val item = info.visibleItemsInfo.firstOrNull { it.key == key }
+        if (item == null) { val pos = open.indexOfFirst { it["id"].asString == key }.coerceAtLeast(0); listState.scrollToItem(pos + if (info.visibleItemsInfo.firstOrNull()?.key == "head") 1 else 0) }
+        else { val over = item.offset + item.size - (info.viewportEndOffset - info.afterContentPadding); if (over > 0) listState.scrollBy(over.toFloat() + 8f) }
+    }
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
     val wide = maxWidth >= 600.dp
+    val strip = if (maxWidth * .58f >= 700.dp) 2 else 1
     // Wide (Fold open, tablet, sideways, the Thor's top): the act's art and header on the left, its battles on the right.
     if (wide) Row(Modifier.fillMaxSize()) {
         Box(Modifier.weight(.42f).fillMaxHeight()) {
@@ -272,16 +288,16 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
             Box(Modifier.matchParentSize().background(Brush.horizontalGradient(.7f to Color(0x000D1016), 1f to Site.Bg)))
             ActHead(a, won, stars, theirWins, onBack, Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 16.dp), wide = true)
         }
-        LazyColumn(Modifier.weight(.58f).fillMaxHeight(), contentPadding = PaddingValues(start = 8.dp, end = 16.dp, top = top + 12.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            item("purse") { purse() }
+        LazyColumn(Modifier.weight(.58f).fillMaxHeight(), state = listState, contentPadding = PaddingValues(start = 8.dp, end = 16.dp, top = top + 12.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp)) }
-            open.forEach { b -> item(b["id"].asString) { row(b) } }
+            open.forEach { b -> item(b["id"].asString) { row(b, strip) } }
             tease?.let { item("tease") { SecretTease(it) } }
+            item("purse") { Box(Modifier.padding(top = 4.dp)) { purse() } }
         }
     } else Box(Modifier.fillMaxSize()) {
         // Phone: the act's art bleeds behind a short header, then the rows.
         val bleed = top + 176.dp
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item("head") {
                 Box(Modifier.fillMaxWidth().height(bleed)) {
                     StoryPic(a.art, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
@@ -290,7 +306,7 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
                 }
             }
             if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp, horizontal = 16.dp)) }
-            open.forEach { b -> item(b["id"].asString) { Box(Modifier.padding(horizontal = 16.dp)) { row(b) } } }
+            open.forEach { b -> item(b["id"].asString) { Box(Modifier.padding(horizontal = 16.dp)) { row(b, 0) } } }
             tease?.let { item("tease") { Box(Modifier.padding(horizontal = 16.dp)) { SecretTease(it) } } }
             // The purse sits under the battles on a phone, so three won rows and the open battle fit on one screen.
             item("purse") { Box(Modifier.padding(horizontal = 16.dp).padding(top = 4.dp)) { purse() } }
@@ -357,19 +373,20 @@ private fun KindLine(b: JsonObject, big: Boolean, modifier: Modifier = Modifier)
 
 /** A won battle, one short row: face, kind, stars, title (never cut), then their side's prize and "Play as", or "Both sides won" and Replay. */
 @Composable
-private fun WonRow(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, setNames: Map<String, String>, onOpen: () -> Unit, onPlayAs: () -> Unit) {
+private fun WonRow(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, setNames: Map<String, String>, compact: Boolean, onOpen: () -> Unit, onPlayAs: () -> Unit) {
     val id = b["id"].asString; val rec = p.battles[id] ?: emptySet()
     val theirsWon = "villain" in rec
     val rw = b.o("reward"); val vCard = rw?.o("villain")?.o("card") != null
     val villain = cast?.o(b.o("villain")?.s("who") ?: "")
     val face = villain?.o("portrait")
     val shape = RoundedCornerShape(16.dp)
-    Row(Modifier.fillMaxWidth().heightIn(min = 76.dp).clip(shape).background(Color(0xE6161921)).border(1.dp, Color(0x14FFFFFF), shape)
-        .clickable(onClick = onOpen).padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(Modifier.fillMaxWidth().heightIn(min = if (compact) 60.dp else 76.dp).clip(shape).background(Color(0xE6161921)).border(1.dp, Color(0x14FFFFFF), shape)
+        .clickable(onClick = onOpen).padding(if (compact) 8.dp else 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         val fs = RoundedCornerShape(10.dp)
-        StoryPic(face?.s("crop"), Modifier.size(48.dp).clip(fs).border(1.dp, Color(0x80D6AD64), fs), storyFocus(face?.s("focus")))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { KindLine(b, false, Modifier.weight(1f)); StarsRow(rec, 13.dp) }
+        StoryPic(face?.s("crop"), Modifier.size(if (compact) 44.dp else 48.dp).clip(fs).border(1.dp, Color(0x80D6AD64), fs), storyFocus(face?.s("focus")))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 3.dp)) {
+            // The kind and difficulty get the whole line; the stars sit over the button (review: "NOR…" at 100 %).
+            KindLine(b, false)
             Text(b.s("title").orEmpty(), style = storyCinzel(14f, Color(0xFFF6EEDB)).copy(lineHeight = 18.sp))
             Text(androidx.compose.ui.text.buildAnnotatedString {
                 if (theirsWon) append("Both sides won")
@@ -378,14 +395,17 @@ private fun WonRow(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, set
                 else append("Won")
             }, style = storyText(12f, FontWeight.SemiBold, Color(0xFFAEB3BE)).copy(lineHeight = 16.sp))
         }
-        if (!theirsWon && vCard) { val n = villain?.s("name") ?: "their side"; Pill("Play as\n$n", true, "Play as $n", onClick = onPlayAs) }
-        else Pill("Replay", false, onClick = onOpen)
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            StarsRow(rec, 13.dp)
+            if (!theirsWon && vCard) { val n = villain?.s("name") ?: "their side"; Pill("Play as\n$n", true, "Play as $n", onClick = onPlayAs) }
+            else Pill("Replay", false, onClick = onOpen)
+        }
     }
 }
 
 /** The battle you are on: an open gold-edged card with the blurb in full, both decks, what's new, the prize and Duel. */
 @Composable
-private fun NowCard(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, setNames: Map<String, String>, lessons: Map<String, String>, onOpen: () -> Unit) {
+private fun NowCard(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, setNames: Map<String, String>, lessons: Map<String, String>, strip: Int, onOpen: () -> Unit) {
     val id = b["id"].asString; val slot = b["slot"].asInt; val rec = p.battles[id] ?: emptySet()
     val hero = b.o("hero"); val vil = b.o("villain")
     val villain = cast?.o(vil?.s("who") ?: ""); val face = villain?.o("portrait")
@@ -396,33 +416,61 @@ private fun NowCard(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, se
     val shape = RoundedCornerShape(18.dp)
     Column(Modifier.fillMaxWidth().testShadow(14.dp, shape).clip(shape).background(Brush.verticalGradient(0f to Color(0xEB2A2212), .55f to Color(0xF0161921)))
         .border(1.5.dp, Color(0xFFD6AD64), shape).clickable(onClick = onOpen).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            val fs = RoundedCornerShape(14.dp)
-            StoryPic(face?.s("crop"), Modifier.size(64.dp).clip(fs).border(1.5.dp, Color(0xFFD6AD64), fs), storyFocus(face?.s("focus")))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { KindLine(b, true, Modifier.weight(1f)); StarsRow(rec, 13.dp) }
-                Text(b.s("title").orEmpty(), style = storyCinzel(18f, Color(0xFFF6EEDB)).copy(lineHeight = 22.sp))
-            }
-        }
-        Text(b.s("blurb").orEmpty(), style = storyText(13.5f, FontWeight.Medium, Color(0xFFD3D6DE)).copy(lineHeight = 19.sp))
-        Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Side(if (heroName != null) "YOU PLAY AS ${heroName.uppercase()}" else "YOU PLAY", hero?.o("deck")?.s("name").orEmpty(), hero?.o("deck")?.s("colors"), Modifier.weight(1f).fillMaxHeight())
-            Side("AGAINST", vil?.o("deck")?.s("name").orEmpty(), vil?.o("deck")?.s("colors"), Modifier.weight(1f).fillMaxHeight())
-        }
-        if (teaches.isNotEmpty()) androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        val duel = @Composable { Box(Modifier.size(width = 112.dp, height = 48.dp).clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(0f to Color(0xFFF6D88C), .6f to Color(0xFFD9A94E), 1f to Color(0xFFB8893A)))
+            .clickable(onClick = onOpen).semantics { contentDescription = "Duel" }, contentAlignment = Alignment.Center) { Text("Duel", style = storyText(16f, FontWeight.Bold, Color(0xFF1A1408))) } }
+        val you = if (heroName != null) "YOU PLAY AS ${heroName.uppercase()}" else "YOU PLAY"
+        val winText = StoryLogic.rewardText(rw?.o("hero"), set, setNames) + collector
+        val then = if (rw?.o("villain")?.o("card") != null) "Then their side: " + StoryLogic.rewardText(rw.o("villain"), set, setNames) else null
+        val chips = @Composable { if (teaches.isNotEmpty()) androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("NEW", style = storyText(10f, FontWeight.ExtraBold, Color(0xFF9FD0F0), 1.6f), modifier = Modifier.align(Alignment.CenterVertically))
             teaches.forEach { t -> Text(t, style = storyText(12f, FontWeight.SemiBold, Color(0xFFCFE6F7)), modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(Color(0x1F9FD0F0))
                 .border(1.dp, Color(0x669FD0F0), RoundedCornerShape(999.dp)).padding(horizontal = 9.dp, vertical = 4.dp)) }
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("WIN", style = storyText(10f, FontWeight.ExtraBold, Color(0xFFF2CF7E), 1.6f))
-                Text(StoryLogic.rewardText(rw?.o("hero"), set, setNames) + collector, style = storyText(13f, FontWeight.SemiBold, Color(0xFFF4EFE6)).copy(lineHeight = 17.sp))
-                if (rw?.o("villain")?.o("card") != null) Text("Then their side: " + StoryLogic.rewardText(rw.o("villain"), set, setNames), style = storyText(12f, FontWeight.SemiBold, Color(0xFFAEB3BE)).copy(lineHeight = 16.sp))
+        } }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            val fs = RoundedCornerShape(14.dp)
+            StoryPic(face?.s("crop"), Modifier.size(if (strip > 0) 56.dp else 64.dp).clip(fs).border(1.5.dp, Color(0xFFD6AD64), fs), storyFocus(face?.s("focus")))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                if (strip > 0) KindLine(b, true) else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { KindLine(b, true, Modifier.weight(1f)); StarsRow(rec, 13.dp) }
+                Text(b.s("title").orEmpty(), style = storyCinzel(18f, Color(0xFFF6EEDB)).copy(lineHeight = 22.sp))
             }
-            Box(Modifier.size(width = 112.dp, height = 48.dp).clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(0f to Color(0xFFF6D88C), .6f to Color(0xFFD9A94E), 1f to Color(0xFFB8893A)))
-                .clickable(onClick = onOpen).semantics { contentDescription = "Duel" }, contentAlignment = Alignment.Center) { Text("Duel", style = storyText(16f, FontWeight.Bold, Color(0xFF1A1408))) }
+            // Wide: Duel in the card's first row, the stars over it.
+            if (strip > 0) Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) { StarsRow(rec, 13.dp); duel() }
         }
+        Text(b.s("blurb").orEmpty(), style = storyText(13.5f, FontWeight.Medium, Color(0xFFD3D6DE)).copy(lineHeight = 19.sp))
+        if (strip > 0) {
+            Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Side(you, hero?.o("deck")?.s("name").orEmpty(), hero?.o("deck")?.s("colors"), Modifier.weight(1f).fillMaxHeight())
+                Side("AGAINST", vil?.o("deck")?.s("name").orEmpty(), vil?.o("deck")?.s("colors"), Modifier.weight(1f).fillMaxHeight())
+                if (strip == 2 && teaches.isNotEmpty()) Box(Modifier.weight(1f).fillMaxHeight()) { Box3("NEW", teaches.joinToString(" · "), null, Color(0xFF9FD0F0)) }
+                Box(Modifier.weight(1.2f).fillMaxHeight()) { Box3("WIN", winText, then, Color(0xFFF2CF7E)) }
+            }
+            if (strip == 1) chips()
+        } else {
+            Row(Modifier.fillMaxWidth().height(androidx.compose.foundation.layout.IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Side(you, hero?.o("deck")?.s("name").orEmpty(), hero?.o("deck")?.s("colors"), Modifier.weight(1f).fillMaxHeight())
+                Side("AGAINST", vil?.o("deck")?.s("name").orEmpty(), vil?.o("deck")?.s("colors"), Modifier.weight(1f).fillMaxHeight())
+            }
+            chips()
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("WIN", style = storyText(10f, FontWeight.ExtraBold, Color(0xFFF2CF7E), 1.6f))
+                    Text(winText, style = storyText(13f, FontWeight.SemiBold, Color(0xFFF4EFE6)).copy(lineHeight = 17.sp))
+                    then?.let { Text(it, style = storyText(12f, FontWeight.SemiBold, Color(0xFFAEB3BE)).copy(lineHeight = 16.sp)) }
+                }
+                duel()
+            }
+        }
+    }
+}
+
+/** One box of the wide strip: its label, its words, an optional second line. */
+@Composable
+private fun Box3(label: String, text: String, sub: String?, tint: Color) {
+    val sh = RoundedCornerShape(12.dp)
+    Column(Modifier.fillMaxSize().clip(sh).background(Color(0x990D1016)).border(1.dp, Color(0x14FFFFFF), sh).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, style = storyText(10f, FontWeight.ExtraBold, tint, 1.6f))
+        Text(text, style = storyText(13f, FontWeight.SemiBold, Color(0xFFF4EFE6)).copy(lineHeight = 17.sp))
+        sub?.let { Text(it, style = storyText(11.5f, FontWeight.SemiBold, Color(0xFFAEB3BE)).copy(lineHeight = 15.sp)) }
     }
 }
 
