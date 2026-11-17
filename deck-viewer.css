@@ -410,3 +410,9 @@ details.ds-note-tag{border-radius:14px}details.ds-note-tag>summary{cursor:pointe
  .deck-hero~nav.tabs,.ds-head~nav.tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:4px}
  .deck-hero~nav.tabs>button,.ds-head~nav.tabs>button{flex:1 0 auto;min-height:44px;padding-inline:10px;font-size:13px}
 }
+.ds-hero .ds-note-tag{margin:0;position:relative;text-shadow:none;min-height:34px;display:inline-flex;align-items:center}
+.ds-hero details.ds-note-tag{border-radius:999px}.ds-hero details.ds-note-tag>summary{list-style:none}.ds-hero details.ds-note-tag>summary::-webkit-details-marker{display:none}
+.ds-note-pop{position:absolute;left:0;top:calc(100% + 6px);z-index:20;width:min(320px,80vw);padding:10px 12px;border:1px solid color-mix(in srgb,var(--warn,#e0a24a) 45%,var(--line));border-radius:12px;background:var(--surface,#14161c);box-shadow:0 14px 40px #0009}
+.ds-note-pop p{margin:0 0 4px;color:var(--text);font-weight:400}
+@media(max-width:700px){.ds-actions .ds-primary.btn{padding-inline:10px}.ds-actions .ds-primary .cs-plate-label{gap:8px;letter-spacing:.06em}}
+.ds-hero .ds-note-tag{width:max-content;max-width:100%;flex:none}@media(max-width:700px){.ds-actions .ds-primary.btn{padding-inline:14px}}
