@@ -91,7 +91,7 @@ const ASSETS = [
   "./game-tab-ygo.png",
   "./game-tab-ptcg.jpg",
   "./ai-ask-loop.js",
-  "./ai-deck-builder.js",
+  "./ai-deck-builder.js", "./deck-sideboard.js",
   "./meta-curation.js",
   "./set-browser.js",
   "./set-release-metadata.js",
