@@ -60,22 +60,28 @@ assert(at(12,100,3)>120&&at(60,60,3)<20,'Drawn lines found, flat paper has none'
 for(const ch of ['r','b','a'])assert.match(MTG_FOIL_FRAGMENT,new RegExp(`cov=mk\\.${ch};`),'ink '+ch+' coverage comes from its own mask');
 assert.match(MTG_FOIL_FRAGMENT,/if\(mode>1\.5&&\(mode<2\.5\|\|\(mode>3\.5&&mode<5\.5\)\)\)cov\*=1\.-text;/,'ink-selective coverage (gold, paper, lines) stays out of the rules box');
 assert.match(MTG_FOIL_FRAGMENT,/vec3 outC=mix\(base,shoulder\(lit\),c\);/,'Zero coverage keeps the source pixel under the foil');
-// The recipe numbers the owner approved with the first foil (mock-up v1), kept as they were shown to him. Later retunes changed
-// these as well as the shader and made the foil look fake to him, so every number must match. Three known differences:
-// step-and-compleat is pattern 22 here (the app's facet foil is 21); the approved shader draws 21 and 22 the same way.
-// Vault Boy and Premium Deck Series cards are an ordinary foil (Vault Boy is a card style, and no source shows the From the Vault
-// bar on Premium Deck Series), so they carry the approved traditional numbers.
-{const A=JSON.parse(await (await import('node:fs/promises')).readFile(new URL('./test-fixtures/finish-effects/mtg-foil-first-approved-recipes.json',import.meta.url),'utf8'));
- const want=k=>k==='mtg-compleat'?{...A[k],pat:22}:k==='mtg-vaultboy'||k==='mtg-pds'?A['mtg-traditional']:A[k];
- assert.deepEqual(Object.keys(MTG_FOIL_RECIPES).sort(),Object.keys(A).sort(),'the same foil types as the approved first foil');
- for(const k of Object.keys(A)){const r=MTG_FOIL_RECIPES[k],got={};for(const n of Object.keys(A[k]))got[n]=r[n]||0;assert.deepEqual(got,want(k),k+' keeps the approved first foil\'s numbers');}}
+// The recipe numbers the owner approved on the Foil Test Bench (16 Nov 2026, look "Blended", "love it ship it"), kept as they
+// were shown to him, row by row. Four recipes had no row on the bench (borderless etched outside the Mystical Archive, scroll,
+// Vault Boy, set emblem) and keep their earlier numbers.
+{const A=JSON.parse(await (await import('node:fs/promises')).readFile(new URL('./test-fixtures/finish-effects/mtg-foil-blended-approved-recipes.json',import.meta.url),'utf8'));
+ assert.deepEqual(Object.keys(MTG_FOIL_RECIPES).filter(k=>!A[k]).sort(),['mtg-emblem','mtg-etched-full','mtg-scroll','mtg-vaultboy'],'every other foil type was on the bench');
+ for(const [k,{recipe}] of Object.entries(A)){const r=MTG_FOIL_RECIPES[k],got={};for(const n of Object.keys(recipe))got[n]=r[n]||0;assert.deepEqual(got,recipe,k+' keeps the numbers approved on the bench');}}
 // Textured foil keeps the art and text readable: gentle relief and half the printed art left visible.
-{const t=MTG_FOIL_RECIPES['mtg-textured'];assert(t.relief<=.4,'textured relief stays gentle');assert(t.keep>=.4,'textured foil keeps the printed art visible');}
+{const t=MTG_FOIL_RECIPES['mtg-textured'];assert(t.relief<=.4,'textured relief stays gentle');assert(t.keep>=.3,'textured foil keeps the printed art visible');}
 // Foil index additions: masterpieces, ampersand, silver screen, scroll, Vault Boy, Premium Deck Series,
 // unknown set-specific '...foil' promo types, and the M15 holo stamp on modern rares and mythics.
 {const R=await import('./mtg-foil-recipes.js');
- assert.equal(mtgFoilEffect({set_type:'masterpiece',set:'kld'}),'mtg-masterpiece');assert.equal(mtgFoilEffect({set:'pd2'}),'mtg-pds');
- for(const [p,e] of [['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['scroll','mtg-traditional'],['vaultboy','mtg-traditional'],['chocobotrackfoil','mtg-traditional'],['textured','mtg-textured']])assert.equal(mtgFoilEffect({promo_types:[p]}),e,p);
+ assert.equal(mtgFoilEffect({set_type:'masterpiece',set:'mps'}),'mtg-masterpiece');
+ // Regression (16 Nov 2026): Scryfall files 1,014 bonus-sheet cards under set type masterpiece; only Expeditions, Inventions and
+ // Invocations are Masterpieces. Swords to Plowshares STA 10 and SPG 54, Rhystic Study WOT 25 are ordinary foils.
+ for(const set of ['sta','spg','wot','soa','mul'])assert.equal(mtgFoilEffect({set_type:'masterpiece',set,frame:'2015'}),'mtg-traditional',set+' is not a Masterpiece');
+ assert.equal(mtgFoilEffect({set_type:'masterpiece',set:'brr',frame:'1997',released_at:'2022-11-18'}),'mtg-retro','BRR retro artifacts are retro frame foils');
+ // Regression (16 Nov 2026, the owner's video of Fierce Empath and Brainstorm): old border 1999-2003 is foil on the frame only.
+ assert.equal(MTG_FOIL_RECIPES['mtg-oldborder'].cover,7);assert.equal(mtgFoilEffect({frame:'1997',released_at:'2001-06-04'}),'mtg-oldborder');
+ // Modern reprints in the old frame (Eternal Witness P30A, his video): frame and rules box foil, picture plain.
+ assert.equal(mtgFoilEffect({frame:'1997',released_at:'2022-01-28',set:'p30a'}),'mtg-retro');assert.equal(MTG_FOIL_RECIPES['mtg-retro'].cover,1);
+ assert.equal(mtgFoilEffect({set:'sta',frame:'2015',border_color:'borderless'},'etched'),'mtg-etched-archive','Mystical Archive etched: gold panels');assert.equal(mtgFoilEffect({set:'pd2'}),'mtg-pds');
+ for(const [p,e] of [['ampersand','mtg-ampersand'],['silverscreen','mtg-silverscreen'],['scroll','mtg-traditional'],['vaultboy','mtg-traditional'],['chocobotrackfoil','mtg-chocobo'],['textured','mtg-textured']])assert.equal(mtgFoilEffect({promo_types:[p]}),e,p);
  assert.equal(mtgFoilEffect({promo_types:['boosterfun']}),'mtg-traditional','non-foil promo types keep traditional');
  assert(R.mtgHoloStamp({frame:'2015',rarity:'mythic'}));assert(!R.mtgHoloStamp({frame:'2015',rarity:'common'}));assert(!R.mtgHoloStamp({frame:'2003',rarity:'rare'}));
  for(const k of ['mtg-masterpiece','mtg-ampersand','mtg-silverscreen','mtg-scroll','mtg-vaultboy','mtg-pds','mtg-emblem'])assert(MTG_FOIL_RECIPES[k],k);}
@@ -88,10 +94,10 @@ assert.match(MTG_FOIL_FRAGMENT,/vec3 outC=mix\(base,shoulder\(lit\),c\);/,'Zero 
   assert(src.length<MTG_FOIL_TEMPLATE.length*.75,k+' compiles only part of the template');
   if(keys.has(key))assert.equal(keys.get(key),src,'one key, one shader');keys.set(key,src);}
  assert.doesNotMatch(mtgFoilFragment(MTG_FOIL_RECIPES['mtg-traditional']),/voro\(q\*|u_emblem|shootingStar/,'a traditional foil carries no other type\'s pattern');
- assert.match(mtgFoilFragment(MTG_FOIL_RECIPES['mtg-oldborder']),/shootingStar\(uv\)/,'old-border keeps its shooting star');
+ assert.match(mtgFoilFragment(MTG_FOIL_RECIPES['mtg-oldborder']),/shootingStar\(uv,/,'old-border keeps its shooting star');
  assert.throws(()=>composeFoil('#if PAT==1\nx',{PAT:1}),/#if without #endif/);assert.throws(()=>composeFoil('#endif',{}),/without #if/);assert.throws(()=>composeFoil('#if pat\n#endif',{}),/bad condition/);
  assert.equal(composeFoil('a\n#if X==2\nb\n#elif X>2&&Y\nc\n#else\nd\n#endif\ne',{X:3,Y:1}),'a\nc\ne');assert.equal(composeFoil('#if X\n#if Y\nb\n#else\nc\n#endif\n#else\nd\n#endif',{X:0,Y:1}),'d');
- // 21 is the native app's facet foil and stamp value 2 its oval stamp: the web numbers must not collide.
- assert(!Object.values(MTG_PATTERN).includes(21));assert.equal(MTG_PATTERN.compleat,22);
+ // 21 is facet foil (the app's, now the site's too); step-and-compleat stays 22.
+ assert.equal(MTG_PATTERN.facet,21);assert.equal(MTG_PATTERN.compleat,22);
 }
 console.log('PASS: Magic foil router picks each printing\'s treatment from Scryfall data (old border, FTV, textured, surge, galaxy, oil slick, compleat, gilded, neon, serialized, fracture, raised); recipes, frames, finish wiring and ink analysis verified.');
