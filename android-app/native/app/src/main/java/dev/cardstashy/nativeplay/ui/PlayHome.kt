@@ -1700,8 +1700,9 @@ private fun Stage(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Purse, 
 /** The deck's cover across the top, melting into the page. */
 @Composable
 private fun StageArt(url: String?, modifier: Modifier) = Box(modifier) {
+    // The warm glow is always under the cover, so the stage still shows while the art loads or when it fails to.
+    Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color(0xFF2A2318), Site.Bg), radius = 900f)))
     if (url != null) Art(url, Modifier.matchParentSize(), BiasAlignment(0f, -.4f))
-    else Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color(0xFF2A2318), Site.Bg), radius = 900f)))
     Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0xC70C0C0E), .26f to Color(0x400C0C0E), .5f to Color(0x1A0C0C0E), .84f to Site.Bg.copy(alpha = .86f), 1f to Site.Bg)))
 }
 
