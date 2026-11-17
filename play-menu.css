@@ -1821,7 +1821,7 @@ button.pl-bar-vs{cursor:pointer}
 .pl-hand-card.is-on{transform:none;opacity:1;border:1.5px solid #F2CF7E;box-shadow:0 24px 48px rgba(0,0,0,.6),0 0 28px rgba(232,185,91,.22)}
 .pl-hand-art{position:absolute;inset:0;background-size:cover;background-repeat:no-repeat}
 .pl-hand-art--trim{inset:-8%}
-.pl-hand-shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 46%,rgba(13,16,22,.94))}
+.pl-hand-shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(13,16,22,.69) 70%,rgba(13,16,22,.95))}
 .pl-hand-pick{position:absolute;inset:0;width:100%;border:0;background:none;cursor:pointer;border-radius:inherit}
 .pl-hand-pick:focus-visible{outline:2px solid var(--gold);outline-offset:-4px}
 .pl-hand-copy{position:absolute;left:16px;right:84px;bottom:18px;display:grid;gap:3px;pointer-events:none}
@@ -1861,6 +1861,7 @@ button.pl-bar-vs{cursor:pointer}
   /* Five in a row leaves the chosen card too narrow for its name beside Play: the name and line sit above it. */
   .pl-hand-card.is-on .pl-hand-copy{right:12px;bottom:78px}.pl-hand-card.is-on .pl-hand-copy b{font-size:20px;line-height:24px}
   .pl-hand-card.is-on .pl-hand-play{width:52px;height:52px;right:12px;bottom:12px}
+  .pl-hand-shade{background:linear-gradient(180deg,transparent 22%,rgba(13,16,22,.75) 55%,rgba(13,16,22,.96))}
   .pl-hand-marks{display:none}
   .pl-hand-title h2{font-size:30px;line-height:36px}
   .pl-hand-head{width:100%;max-width:1000px;margin-inline:auto;box-sizing:border-box}
