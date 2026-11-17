@@ -1289,23 +1289,28 @@ private fun DenCase(d: PlayHomeData, act: PlayHomeActions, level: PlayMath.Level
         }
         // Hand brief 6: the daily and the weekly side by side, and the deck with Change deck (the classic home keeps today's list).
         if (HomeTest.classic) { CaseLabel("Today"); Quests(d, act) } else DenQuests(d, act)
-        if (groups.isNotEmpty()) {
-            CaseLabel("Packs waiting")
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState())) {
-                groups.entries.take(8).forEach { (code, list) ->
-                    Box(Modifier.width(64.dp).clickable { act.openPack(list.first()["id"].str() ?: "") }) {
-                        Booster(code, null, Modifier.fillMaxWidth(), mini = true)
-                        Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(24.dp).clip(CircleShape).background(P.Gold), contentAlignment = Alignment.Center) {
-                            Text("${list.size}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = P.CtaInk)) }
+        // Packs waiting and Seals share one row, so the den shows both above the fold on the Thor's bottom screen.
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (groups.isNotEmpty()) Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CaseLabel("Packs waiting")
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(top = 6.dp, end = 6.dp)) {
+                    groups.entries.take(8).forEach { (code, list) ->
+                        Box(Modifier.width(64.dp).clickable { act.openPack(list.first()["id"].str() ?: "") }) {
+                            Booster(code, null, Modifier.fillMaxWidth(), mini = true)
+                            Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(24.dp).clip(CircleShape).background(P.Gold), contentAlignment = Alignment.Center) {
+                                Text("${list.size}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = P.CtaInk)) }
+                        }
                     }
                 }
             }
-        }
-        CaseLabel("Seals")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (k2 in listOf("c", "u", "r", "m")) Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0x66000000)).border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(12.dp))
-                .padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(SiteIcons.Seals.getValue(k2), 20.dp); Num(w.get("seal_$k2").int() ?: 0, 15)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CaseLabel("Seals")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (k2 in listOf("c", "u", "r", "m")) Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0x66000000)).border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Icon(SiteIcons.Seals.getValue(k2), 20.dp); Num(w.get("seal_$k2").int() ?: 0, 15)
+                    }
+                }
             }
         }
     }
@@ -1761,8 +1766,10 @@ private fun HandHeader(d: PlayHomeData, story: PlayRules.Act?, mode: String, wid
     }
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(eyebrow, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = if (wide) 12.sp else 11.sp, letterSpacing = .18.em, color = Color(0xFFF2CF7E)), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (wide) 30.sp else 25.sp, lineHeight = if (wide) 36.sp else 30.sp, color = P.Ink, shadow = P.shadow),
+            Text(eyebrow, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = if (wide) 12.sp else 11.sp, letterSpacing = if (wide) .18.em else .12.em, color = Color(0xFFF2CF7E)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // Phones: a long deck name steps down a size before it is cut ("Mono-White Auras" whole at 374 dp).
+            val ts = if (wide) 30 else when { title.length <= 13 -> 25; title.length <= 17 -> 21; else -> 19 }
+            Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = ts.sp, lineHeight = (ts + 5).sp, color = P.Ink, shadow = P.shadow),
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         if (change) {
@@ -1785,6 +1792,8 @@ private fun HandPager(d: PlayHomeData, story: PlayRules.Act?, mode: String, onMo
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
         androidx.compose.foundation.pager.HorizontalPager(pager, Modifier.fillMaxWidth().height(cardH).testTag("hand"),
             contentPadding = PaddingValues(horizontal = ((w - cardW) / 2).coerceAtLeast(0.dp)), pageSize = androidx.compose.foundation.pager.PageSize.Fixed(cardW), pageSpacing = 20.dp,
+            // One swipe moves one mode, however hard the fling (it overshot to Friends/Story before).
+            flingBehavior = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(pager, pagerSnapDistance = androidx.compose.foundation.pager.PagerSnapDistance.atMost(1)),
             verticalAlignment = Alignment.CenterVertically) { page ->
             val (key, name) = StageModes.ALL[page]
             val off = { kotlin.math.abs((pager.currentPage - page) + pager.currentPageOffsetFraction).coerceAtMost(1f) }
@@ -1829,7 +1838,8 @@ private fun HandCard(key: String, name: String, art: String?, line: String, on: 
         .selectableTile(on, onChoose).semantics { contentDescription = name }) {
         Art(art, Modifier.matchParentSize().let { if (key == "planeswalk") it.scale(1.16f) else it }, if (key == "story") BiasAlignment(0f, -.4f) else MODE_FOCUS[key] ?: Alignment.Center)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(.46f to Color(0x000D1016), 1f to Color(0xF00D1016))))
-        Column(Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 18.dp, end = if (on) 84.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        // The big card keeps its name beside the disc; a card in the row puts it above the disc, so "Quick Play" stays whole.
+        Column(Modifier.align(Alignment.BottomStart).padding(start = if (big) 16.dp else 12.dp, bottom = if (on && !big) 78.dp else 18.dp, end = if (on && big) 84.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (big) 22.sp else 15.sp, lineHeight = if (big) 26.sp else 18.sp, color = P.Ink, shadow = P.shadow),
                 maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
             if (on) Text(line, style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = Color(0xFFDDD8CC)), maxLines = 1, overflow = TextOverflow.Ellipsis)
