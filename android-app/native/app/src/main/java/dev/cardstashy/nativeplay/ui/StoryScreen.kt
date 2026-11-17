@@ -274,24 +274,22 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
         androidx.compose.runtime.snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > 0 }
         androidx.compose.runtime.withFrameNanos { }
         val info = listState.layoutInfo
+        if (twoPanes) {
+            // Two panes (the header sits beside the list): start the list at the first row from which the current battle and the
+            // row after it (the tease) both fit, so the top edge lands between rows and nothing is cut (reviews of a4f09acb, 613e7632).
+            val pos = open.indexOfFirst { it["id"].asString == key }.coerceAtLeast(0)
+            val last = if (pos + 1 < open.size || tease != null) pos + 1 else pos
+            val size = info.visibleItemsInfo.associate { it.index to it.size }
+            val room = info.viewportEndOffset - info.viewportStartOffset - info.beforeContentPadding - info.afterContentPadding
+            val guess = size.values.minOrNull() ?: 0
+            var start = pos
+            for (i in 0..pos) { val total = (i..last).sumOf { size[it] ?: guess } + info.mainAxisItemSpacing * (last - i); if (total <= room) { start = i; break } }
+            if (start > 0) listState.scrollToItem(start)
+            return@LaunchedEffect
+        }
         val item = info.visibleItemsInfo.firstOrNull { it.key == key }
         if (item == null) { val pos = open.indexOfFirst { it["id"].asString == key }.coerceAtLeast(0); listState.scrollToItem(pos + if (info.visibleItemsInfo.firstOrNull()?.key == "head") 1 else 0) }
         else { val over = item.offset + item.size - info.viewportEndOffset; if (over > 0) listState.scrollBy(over.toFloat()) }
-        // Two panes (the header sits beside the list): the current battle goes to the top of the list, so the whole card and the
-        // tease row under it show; the won rows above are a scroll away (review of a4f09acb on the Thor).
-        if (twoPanes) {
-            val pos = open.indexOfFirst { it["id"].asString == key }
-            val nextKey: Any? = open.getOrNull(pos + 1)?.get("id")?.asString ?: if (tease != null) "tease" else null
-            androidx.compose.runtime.withFrameNanos { }
-            val li = listState.layoutInfo
-            val shown = { k: Any? -> li.visibleItemsInfo.firstOrNull { it.key == k }?.let { it.offset + it.size <= li.viewportEndOffset - li.afterContentPadding } == true }
-            if (pos > 0 && !(shown(key) && (nextKey == null || shown(nextKey)))) listState.scrollToItem(pos)
-            else {
-                // A row cut in half at the top edge: scroll on past it, so the edge lands between rows.
-                val cut = li.visibleItemsInfo.firstOrNull { it.offset < 0 && it.offset + it.size > 0 && it.key != key }
-                if (cut != null) listState.scrollBy((cut.offset + cut.size).toFloat() + li.mainAxisItemSpacing)
-            }
-        }
     }
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
     val wide = maxWidth >= 600.dp

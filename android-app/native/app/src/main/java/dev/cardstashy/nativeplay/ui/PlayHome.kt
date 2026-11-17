@@ -376,7 +376,8 @@ private fun softOf(src: android.graphics.Bitmap): ImageBitmap {
     val w = 96; val h = maxOf(1, (src.height * w / maxOf(1, src.width)))
     val small = android.graphics.Bitmap.createScaledBitmap(src.copy(android.graphics.Bitmap.Config.ARGB_8888, false), w, h, true)
     val px = IntArray(w * h); small.getPixels(px, 0, w, 0, 0, w, h)
-    repeat(3) { boxBlur(px, w, h, 5) }
+    // Two lighter passes: the art still reads as art behind the header (review: a glow of colour, not the picture).
+    repeat(2) { boxBlur(px, w, h, 3) }
     return android.graphics.Bitmap.createBitmap(px, w, h, android.graphics.Bitmap.Config.ARGB_8888).asImageBitmap()
 }
 
@@ -1741,7 +1742,7 @@ private fun Stage(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Purse, 
     }
 }
 
-private val bleedDim = ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(.66f, 0f, 0f, 0f, 0f, 0f, .66f, 0f, 0f, 0f, 0f, 0f, .66f, 0f, 0f, 0f, 0f, 0f, 1f, 0f)))
+private val bleedDim = ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(.8f, 0f, 0f, 0f, 0f, 0f, .8f, 0f, 0f, 0f, 0f, 0f, .8f, 0f, 0f, 0f, 0f, 0f, 1f, 0f)))
 
 /** The chosen mode's art across the whole page, blurred and dimmed, under the bar and the purse, fading into the page (Hand brief 1). */
 @Composable
@@ -1758,7 +1759,7 @@ private fun PageBleed(url: String?) {
             if (b != null) androidx.compose.foundation.Image(b, null, Modifier.fillMaxSize().graphicsLayer { scaleX = 1.12f; scaleY = 1.12f },
                 contentScale = ContentScale.Crop, colorFilter = bleedDim, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
         }
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x80080A0E), .3f to Color(0x1A0D1016), .72f to Color(0x8C0D1016), .94f to Site.Bg, 1f to Site.Bg)))
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x73080A0E), .32f to Color(0x0D0D1016), .7f to Color(0x8C0D1016), .92f to Site.Bg, 1f to Site.Bg)))
     }
 }
 
