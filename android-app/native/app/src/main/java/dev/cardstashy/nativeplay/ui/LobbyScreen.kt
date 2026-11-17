@@ -733,7 +733,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                 source == "yours" -> {
                     if (!quickOnly && pasteShown(m)) full { PasteImport(m, ::importPaste, ::useImport) { cardPick = CardPick(it, "", null, "nonfoil") } }
                     val fmtWord = if (quickOnly) m.pickFormat?.let { "$it " } ?: "" else "${m.format} "
-                    full { CountLine("${visible.size} of ${inFormat.size} ${fmtWord}decks", if (quickOnly) onOpenDecks else null) }
+                    full { CountLine((if (quickOnly) "" else (if (m.browseSeat == "player") "Your deck · " else "CPU deck · ")) + "${visible.size} of ${inFormat.size} ${fmtWord}decks", if (quickOnly) onOpenDecks else null) }
                     if (visible.isEmpty()) full { Empty(if (m.query.isNotBlank()) "No matching decks" else if (quickOnly) QuickPick.empty(m.pickFormat) else "No ${m.format} decks yet",
                         if (quickOnly) "Build a Play deck, or open packs and the Merchant for cards." else "Paste a list or explore the other sources above.") }
                     else if (quickOnly) itemsIndexed(visible, key = { _, d -> "d:" + d.id }) { i, d -> QuickTile(d.id, d.name, d.format, d.count, deckColors(d.commander, d.raw), quickRaw(d), chosen(d), d.id in locked,
@@ -1016,13 +1016,9 @@ private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, friend: F
 private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpenDecks: () -> Unit, quickCounts: Map<String, Int> = emptyMap(),
                         chipFocus: List<FocusRequester> = emptyList(), onChipDown: (Int) -> Unit = {}, searchFocus: FocusRequester? = null,
                         onChipFocus: (Int, Boolean) -> Unit = { _, _ -> }, searchShown: Boolean = true, onFormat: () -> Unit = {}, onFriends: (() -> Unit)? = null) {
-    val seatName = when (m.browseSeat) { "player" -> "Your deck"; else -> "CPU deck" }
-    Column(Modifier.fillMaxWidth().padding(top = if (m.quick) 0.dp else 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Quick Play: the bottom bar names your deck, so the list needs no seat line or tools row (Open Decks sits by the count).
-        if (!m.quick) Row(verticalAlignment = Alignment.Bottom) {
-            Text(seatName, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, letterSpacing = (-.36).sp, color = Site.Text))
-            Text(" · ${if (m.quick) m.player?.format ?: QuickPick.chipLabel(m.pickFormat) else m.format}", style = sans(13f, FontWeight.SemiBold, Muted))
-        }
+        // Practice (0.4.95 audit): no seat heading either; the count line names the seat and the bar underlines it.
         if (!m.quick) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (source == "yours" && signedIn) {
                 val open = pasteShown(m)
@@ -1139,6 +1135,16 @@ private fun DeckBar(m: LobbyModel, signedIn: Boolean, status: String, wide: Bool
     PadScreen(PadActs(x = if (ready) PadAct(label, onStart) else null))
     val inspectSeat = if (practice) m.inspected else "player"
     val canInspect = m.seat(inspectSeat) != null
+    // Quick Play always meets the Normal CPU (the match start sends "Medium"), so only Practice shows the level.
+    val level = @Composable { tight: Boolean ->
+        Row(Modifier.clip(RoundedCornerShape(999.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(999.dp)).padding(if (tight) 2.dp else 3.dp)) {
+            listOf("Easy", "Medium", "Hard").forEach { lv -> val on = m.difficulty == lv
+                Box(Modifier.height(if (tight) 40.dp else 44.dp).clip(RoundedCornerShape(999.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(999.dp)) else Modifier)
+                    .clickable { m.difficulty = lv; m.quickMatch = null }.semantics { contentDescription = "CPU ${CPU_LABELS.getValue(lv)}" }.padding(horizontal = if (tight) 8.dp else 10.dp), contentAlignment = Alignment.Center) {
+                    Text(CPU_LABELS.getValue(lv), style = sans(if (tight) 12.5f else 13f, if (on) FontWeight.Bold else FontWeight.SemiBold, if (on) Gold else Muted), maxLines = 1, softWrap = false) }
+            }
+        }
+    }
     val seats = @Composable { mod: Modifier ->
         Row(mod, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val art = you?.raw?.let(::coverOf); val thumb = RoundedCornerShape(10.dp)
@@ -1150,18 +1156,12 @@ private fun DeckBar(m: LobbyModel, signedIn: Boolean, status: String, wide: Bool
                     modifier = Modifier.then(if (practice) Modifier.heightIn(min = 44.dp).clickable { m.inspected = "player" }.wrapContentHeight(Alignment.CenterVertically) else Modifier).then(if (youOn) Modifier.drawBehind {
                         drawLine(Gold, Offset(0f, size.height), Offset(size.width, size.height), 1.5.dp.toPx()) } else Modifier))
                 if (m.quick) Text("against a random ${m.format} deck", style = sans(12f, color = SoftInk), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                else Text("vs " + (cpu?.name ?: "CPU deck"), style = sans(12.5f, FontWeight.SemiBold, if (cpuOn) Gold else SoftInk), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.heightIn(min = 44.dp).clickable { m.inspected = "opponent" }.semantics { contentDescription = "CPU deck, ${cpu?.name ?: "not chosen"}" }.wrapContentHeight(Alignment.CenterVertically))
-            }
-        }
-    }
-    // Quick Play always meets the Normal CPU (the match start sends "Medium"), so only Practice shows the level.
-    val level = @Composable {
-        Row(Modifier.clip(RoundedCornerShape(999.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(999.dp)).padding(3.dp)) {
-            listOf("Easy", "Medium", "Hard").forEach { lv -> val on = m.difficulty == lv
-                Box(Modifier.height(44.dp).clip(RoundedCornerShape(999.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(999.dp)) else Modifier)
-                    .clickable { m.difficulty = lv; m.quickMatch = null }.semantics { contentDescription = "CPU ${CPU_LABELS.getValue(lv)}" }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
-                    Text(CPU_LABELS.getValue(lv), style = sans(13f, if (on) FontWeight.Bold else FontWeight.SemiBold, if (on) Gold else Muted)) }
+                else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("vs " + (cpu?.name ?: "CPU deck"), style = sans(12.5f, FontWeight.SemiBold, if (cpuOn) Gold else SoftInk), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f).heightIn(min = 44.dp).clickable { m.inspected = "opponent" }.semantics { contentDescription = "CPU deck, ${cpu?.name ?: "not chosen"}" }.wrapContentHeight(Alignment.CenterVertically))
+                    // Phones (0.4.95 audit): the level shares this line, so Practice's bar is as short as Quick Play's.
+                    if (!wide) level(true)
+                }
             }
         }
     }
@@ -1183,10 +1183,9 @@ private fun DeckBar(m: LobbyModel, signedIn: Boolean, status: String, wide: Bool
         .padding(horizontal = 12.dp, vertical = 10.dp).testTag("deckBar"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (status.isNotEmpty()) Text(status, style = sans(13f, color = SoftInk), modifier = Modifier.padding(horizontal = 4.dp))
         if (wide) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            seats(Modifier.weight(1f)); if (!m.quick) level(); inspect(Modifier.width(110.dp)); play(Modifier.width(240.dp))
+            seats(Modifier.weight(1f)); if (!m.quick) level(false); inspect(Modifier.width(110.dp)); play(Modifier.width(240.dp))
         } else {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { seats(Modifier.weight(1f)) }
-            if (!m.quick) level()
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { inspect(Modifier.width(104.dp)); play(Modifier.weight(1f)) }
         }
     }

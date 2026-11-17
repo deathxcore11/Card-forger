@@ -150,9 +150,11 @@ class ShotTest {
             dev.cardstashy.nativeplay.play.SetFacts.seed(JsonParser.parseString(f.readText()).asJsonObject.entrySet().associate { (k, v) -> val o = v.asJsonObject
                 k to dev.cardstashy.nativeplay.play.SetFacts.Set(o["name"].asString, o["icon"].asString, o["released"].asString, o["total"]?.asInt, o["art"].asString) })
         }
+        // Polish brief 1: upright, Play home is one screen (the stage fills the window), so it is shot in a window the size of the
+        // screen, not the tall whole-page window (that stretched the stage to thousands of dp).
         for ((w, h) in listOf(390 to 844, 884 to 1104)) for (s in listOf(1f, 1.3f)) {
             if (w > 390 && s > 1f) continue
-            tall("play-home", w, h, s) { Home() }
+            shot("play-home-${w}x${h}-screen", w, h, s) { Home() }
         }
         // Sideways phone or handheld: the screen as held, then the whole page in that layout.
         dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true

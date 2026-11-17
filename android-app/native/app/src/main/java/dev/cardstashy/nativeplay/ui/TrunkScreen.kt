@@ -333,7 +333,10 @@ internal fun TrunkBar(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, m
 private fun TrunkFilterSheet(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, shown: Int, onClose: () -> Unit, onFilter: (Trunk.Filter) -> Unit, onSort: (String) -> Unit) {
     PadScreen(PadActs(b = "Close", x = PadAct(if (shown == 1) "Show 1 card" else "Show $shown cards", onClose)))
     var allSets by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxSize().background(Color(0x99000000)).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onClose)) {
+    // The scrim is the sheet's sibling, not its parent (0.4.95: a tap on a pick inside the sheet also reached the scrim's click and
+    // closed it), so a touch on the sheet never reaches Close.
+    Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().background(Color(0x99000000)).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onClose))
         Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().widthIn(max = 640.dp).fillMaxHeight(.86f).windowInsetsPadding(WindowInsets.navigationBars)
             .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Color(0xFF10131A)).border(1.dp, Color(0x33E5C47E), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
             .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}

@@ -1242,7 +1242,7 @@ internal fun TakeOffChips(chips: List<Pair<String, () -> Unit>>, modifier: Modif
 @Composable
 internal fun Opt(on: Boolean, desc: String? = null, round: Boolean = false, radio: Boolean = false, onClick: () -> Unit, content: @Composable () -> Unit) {
     val shape = if (round) CircleShape else RoundedCornerShape(12.dp)
-    Box(Modifier.heightIn(min = 44.dp).then(if (round) Modifier.width(44.dp) else Modifier).clip(shape).background(if (on) Color(0x24E5C47E) else Color(0x0DFFFFFF))
+    Box(Modifier.heightIn(min = 44.dp).then(if (round) Modifier.width(44.dp) else Modifier.widthIn(min = 44.dp)).clip(shape).background(if (on) Color(0x24E5C47E) else Color(0x0DFFFFFF))
         .border(1.dp, if (on) Color(0xB3E5C47E) else B.Line, shape).clickable(onClick = onClick)
         .semantics { if (desc != null) contentDescription = desc; role = if (radio) Role.RadioButton else Role.Checkbox; selected = on }
         .padding(horizontal = if (round) 0.dp else 13.dp), contentAlignment = Alignment.Center) { content() }
