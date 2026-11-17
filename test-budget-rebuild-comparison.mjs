@@ -28,7 +28,7 @@ assert(results[1].rebuild.changes.length>0);assert.equal(results[1].rebuild.oldB
 assert(results[1].rebuild.priceDelta>0);assert(results[1].deck.cards.some(r=>r.name.includes('premium')),'stronger card only available in expanded functional discovery is considered');
 assert(results.every(r=>!r.deck.cards.some(c=>c.name===unknown.name)),'unknown quotes never pass a finite cap');
 assert(results.every(r=>!r.deck.cards.some(c=>c.name===weak.name)),'higher dollar value alone never wins');
-assert(results[2].rebuild.sameList);assert.match(results[2].rebuild.reason,/bounded search/);assert.match(deckResultMarkup(results[2],'same'),/Same card quantities/);assert.doesNotMatch(deckResultMarkup(results[2],'same'),/already optimal|best possible/i);
+assert(results[2].rebuild.sameList);assert.match(results[2].rebuild.reason,/bounded search/);assert.match(deckResultMarkup(results[2],'same'),/Same list kept/);assert.doesNotMatch(deckResultMarkup(results[2],'same'),/already optimal|best possible/i);
 assert.equal(results[3].request.budget,8);assert(results[3].pricing.estimate<=8);assert(!results[3].rebuild.sameList,'overcap previous list cannot survive lower cap');
 assert(report.runs.every(r=>r.queries.length<=10),'two extra lanes, bounded one-page discovery');
 assert(queries.every(q=>q.order!=='edhrec'),'Standard discovery never ranks by Commander popularity');
@@ -55,4 +55,4 @@ console.log('PASS: actual rebuild handler cancellation and workspace staleness p
 
 const changedCommander=rebuildComparison({...results[0],deck:{...results[0].deck,commander:'New commander'}},[],{...results[0].request,previousDeck:{...results[0].deck,commander:'Old commander'}});
 assert.equal(changedCommander.sameList,false);assert.equal(changedCommander.commanderChanged,true);assert.equal(changedCommander.changes.length,0);assert.match(changedCommander.reason,/commander changed; the card quantities are unchanged/i);
-const commanderMarkup=deckResultMarkup({...results[0],rebuild:changedCommander},'commander-change');assert.match(commanderMarkup,/Commander changed/);assert.doesNotMatch(commanderMarkup,/Updated card quantities/);
+const commanderMarkup=deckResultMarkup({...results[0],rebuild:changedCommander},'commander-change');assert.match(commanderMarkup,/Commander changed/);assert.doesNotMatch(commanderMarkup,/Cards updated/);
