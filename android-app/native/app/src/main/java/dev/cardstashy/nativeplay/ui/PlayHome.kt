@@ -197,17 +197,19 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
     val purse = PlayMath.purse(s) ?: return
     val level = PlayMath.mastery(s, purse.xp)
     val lens = rememberLens()
-    BottomScreen { PlayHomeBottom(d, act, lens, purse, level) }
+    // Hand brief 6: on two screens the tab bar sits under the den, and the top keeps the header and the hand.
+    val handTwo = DualScreen.active && !HomeTest.classic && HomeTest.forceShort != true
+    BottomScreen { if (handTwo) Column(Modifier.fillMaxSize()) { Box(Modifier.weight(1f).fillMaxWidth()) { PlayHomeBottom(d, act, lens, purse, level) }; nav() } else PlayHomeBottom(d, act, lens, purse, level) }
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         if (!HomeTest.noPictures) { if (AppSettings.glass || AppSettings.theme == "aura") Ambient(d.ambient); LaunchedEffect(d.ambient) { Aura.remember(d.ambient) } }
         Column(Modifier.fillMaxSize()) {
             var dash by remember { mutableStateOf(false) }
             // The upright home's chosen mode (polish brief 1): what Play starts. Quick Play until another tile is chosen.
-            var mode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("quick") }
+            var mode by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(HomeTest.startMode ?: "quick") }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val wide = maxWidth >= 600.dp; val duo = maxWidth >= 840.dp // pe-home-duo pairs at 960 css px; the Fold's inner screen (884 dp) pairs too, as on the site
                 // Held sideways (a phone or a handheld): the game dashboard.
-                val short = HomeTest.forceShort ?: (wide && maxHeight < 500.dp)
+                val short = HomeTest.forceShort ?: (wide && maxHeight < 500.dp && !handTwo)
                 androidx.compose.runtime.SideEffect { dash = short }
                 if (short) Dashboard(d, act, purse, level, 64.dp + statusTop(), maxHeight, lens) else if (!HomeTest.classic) Stage(d, act, purse, level, mode, { mode = it }, 64.dp + statusTop()) else
                 LazyColumn(Modifier.fillMaxSize().testTag("playHome"), contentPadding = PaddingValues(top = (if (short) 64.dp else 72.dp) + statusTop(), bottom = 28.dp, start = 16.dp, end = 16.dp),
@@ -242,19 +244,25 @@ fun PlayHome(d: PlayHomeData, top: @Composable () -> Unit, act: PlayHomeActions 
                     if (g >= 4 && ((s.get("shop") as? JsonArray)?.size() ?: 0) > 0) item("shop") { Probe("shop") { Merchant(s, act) } }
                 }
                 // The site's sticky glass top bar.
-                Box(Modifier.fillMaxWidth().background(Rule.Color.Bar).drawBehind { // light: settings-theme.css .topbar
+                // Hand brief 1: upright, the art runs behind the bar; a short scrim keeps it readable (as Collection home's).
+                val bleed = !dash && !HomeTest.classic && AppSettings.theme != "light"
+                Box(Modifier.fillMaxWidth().then(if (bleed) Modifier.background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .45f), Color.Transparent)))
+                    else Modifier.background(Rule.Color.Bar).drawBehind { // light: settings-theme.css .topbar
                     drawLine(Brush.horizontalGradient(listOf(Color.Transparent, Color(0x80D6AD64), Color.Transparent)), Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx())
-                }.statusBarsPadding()) {
+                }).statusBarsPadding()) {
                     top()
                     // The dashboard's purse rides in the bar between the brand and the avatar.
                     if (dash && !DualScreen.active) Box(Modifier.align(Alignment.Center).padding(start = 248.dp, end = 64.dp).widthIn(max = 560.dp).fillMaxWidth()) { PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") }) }
                 }
             }
-            if (!dash) nav()
+            if (!dash && !handTwo) nav()
             // Controller: X = Quick Play's Play. Sideways the nav bar is hidden, so RB goes on to Trunk as its next tab would (Home is the first).
             // Upright, LB/RB step the mode row (polish brief 1).
             val step = { k: Int -> mode = StageModes.step(mode, k) }
-            PadScreen(PadActs(x = PadAct("Quick Play") { act.mode("quick") }, tabs = if (dash) ({ k: Int -> if (k > 0) act.view("collection") }) else if (!HomeTest.classic) step else null,
+            val hand = !dash && !HomeTest.classic
+            // Hand brief 4: X presses the chosen card's Play, Y is Change deck.
+            PadScreen(PadActs(x = if (hand) PadAct("Play") { StageModes.play(mode, d.deck, act) } else PadAct("Quick Play") { act.mode("quick") },
+                y = if (hand) PadAct("Change deck") { act.mode("quick") } else null, tabs = if (dash) ({ k: Int -> if (k > 0) act.view("collection") }) else if (!HomeTest.classic) step else null,
                 tabsLabel = if (dash || HomeTest.classic) "Tabs" else "Mode", root = true))
         }
     }
@@ -1279,8 +1287,8 @@ private fun DenCase(d: PlayHomeData, act: PlayHomeActions, level: PlayMath.Level
             Bar(level.into.toFloat() / level.need.coerceAtLeast(1))
             Text("%,d / %,d XP to level %d".format(level.into, level.need, level.level + 1), style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = P.Muted))
         }
-        CaseLabel("Today")
-        Quests(d, act)
+        // Hand brief 6: the daily and the weekly side by side, and the deck with Change deck (the classic home keeps today's list).
+        if (HomeTest.classic) { CaseLabel("Today"); Quests(d, act) } else DenQuests(d, act)
         if (groups.isNotEmpty()) {
             CaseLabel("Packs waiting")
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState())) {
@@ -1669,119 +1677,264 @@ internal object StageModes {
 
     /** LB/RB: the next or previous mode, stopping at the ends. */
     fun step(mode: String, k: Int): String { val i = ALL.indexOfFirst { it.first == mode }; return ALL[(i + k).coerceIn(0, ALL.lastIndex)].first }
+
+    /** The one short live line under the mode's name on its card (Hand brief 4); the words are the mode cards' own. */
+    fun line(mode: String, won: Int, battles: Int, done: Boolean): String = when (mode) {
+        "quick" -> "Matched CPU"
+        "practice" -> "Any two decks"
+        "social" -> "Against a friend"
+        "story" -> if (done) "All $battles battles won" else "Battle ${minOf(won + 1, battles)} of $battles"
+        else -> "Take down Sorin"
+    }
+
+    fun index(mode: String) = ALL.indexOfFirst { it.first == mode }.coerceAtLeast(0)
+}
+
+/** The quest card's turn (Hand brief 5): the daily quests not yet claimed, then the weekly ones not yet done. PlayMath.quests, no new data. */
+internal object QuestTurn {
+    data class Item(val weekly: Boolean, val row: PlayMath.QuestRow)
+    fun items(q: PlayMath.Quests, only: Boolean? = null): List<Item> =
+        (q.daily.filter { !it.claimed }.map { Item(false, it) } + q.weekly.filter { !it.done }.map { Item(true, it) }).filter { only == null || it.weekly == only }
+    fun first(items: List<Item>, weekly: Boolean) = items.indexOfFirst { it.weekly == weekly }
 }
 
 /**
- * Play home upright, on one screen: the deck last worked on as the stage, the purse, the mode row, today's first quest and one
- * gold Play. Every section that left the page has its own door (Shop: packs, Forge, sets; Decks; Trunk; Trophies).
+ * Play home upright, "Hand" (0.4.96; specs/play-home-hand-brief.md, Randall 17 Nov 22:15Z): the chosen mode's art bleeds behind the
+ * whole page; the purse; a header that is the mode (your deck, the Story act, the plane); the modes as a hand of tall art cards with
+ * Play on the chosen one; the quest card turning through the daily and weekly quests. On two screens the top keeps the header and the
+ * hand, and the den below shows the purse, both quests and the deck.
  */
 @Composable
 private fun Stage(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Purse, level: PlayMath.Level, mode: String, onMode: (String) -> Unit, top: Dp) {
-    BoxWithConstraints(Modifier.fillMaxSize().testTag("playStage")) {
-        val h = maxHeight
-        StageArt(d.deck?.cover, Modifier.fillMaxWidth().height(h * .6f))
-        Column(Modifier.fillMaxSize().then(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()))) {
-            Column(Modifier.fillMaxWidth().heightIn(min = h).padding(top = top + 4.dp, bottom = 12.dp), horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween) {
-                Box(Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(horizontal = 16.dp)) {
-                    PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") }, level = level)
-                }
-                Column(Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(top = 24.dp, start = 16.dp, end = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    StageDeck(d.deck) { act.mode("quick") }
-                    ModeRow(d, mode, onMode)
-                    TodayRow(d, act)
-                    StagePlay(mode) { StageModes.play(mode, d.deck, act) }
-                }
-            }
-        }
-    }
-}
-
-/** The deck's cover across the top, melting into the page. */
-@Composable
-private fun StageArt(url: String?, modifier: Modifier) = Box(modifier) {
-    // The warm glow is always under the cover, so the stage still shows while the art loads or when it fails to.
-    Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color(0xFF2A2318), Site.Bg), radius = 900f)))
-    if (url != null) Art(url, Modifier.matchParentSize(), BiasAlignment(0f, -.4f), placeholder = false)
-    Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0xC70C0C0E), .26f to Color(0x400C0C0E), .5f to Color(0x1A0C0C0E), .84f to Site.Bg.copy(alpha = .86f), 1f to Site.Bg)))
-}
-
-@Composable
-private fun StageDeck(deck: HomeDeck?, onChange: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("YOUR DECK", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .18.em, color = P.GoldSoft))
-        Text(deck?.name ?: "No deck yet", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 34.sp, color = P.Ink, shadow = P.shadow),
-            maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(deck?.let { listOf(it.format, "${it.count} cards").filter { s -> s.isNotBlank() }.joinToString(" · ") } ?: "",
-                style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = Color(0xFFD9D4C8)), modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val sh = CircleShape
-            Text(if (deck != null) "Change deck" else "Pick a deck", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = P.Ink),
-                modifier = Modifier.heightIn(min = 44.dp).clip(sh).background(Color(0x990C0C0E)).border(1.dp, Color(0x80D6AD64), sh)
-                    .clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onChange).padding(horizontal = 16.dp, vertical = 12.dp))
-        }
-    }
-}
-
-/** Five equal tiles; the chosen one in the gold ring. A tap chooses what Play starts. */
-@Composable
-private fun ModeRow(d: PlayHomeData, mode: String, onMode: (String) -> Unit) {
     val story = d.rules.acts.firstOrNull { it.act == d.story.act } ?: d.rules.acts.firstOrNull()
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StageModes.ALL.forEach { (key, name) ->
-            val on = key == mode; val sh = RoundedCornerShape(14.dp)
-            Box(Modifier.weight(1f).height(92.dp).clip(sh).background(Color(0xFF121318))
-                .border(if (on) 1.5.dp else 1.dp, if (on) Color(0xFFF2CF7E) else Color(0x24FFFFFF), sh)
-                .selectableTile(on) { onMode(key) }.semantics { contentDescription = name }) {
-                Art(if (key == "story") story?.art else MODE_ART[key], Modifier.matchParentSize().then(Modifier.alpha(if (on) 1f else .75f)).let { if (key == "planeswalk") it.scale(1.16f) else it },
-                    if (key == "story") BiasAlignment(0f, -.4f) else MODE_FOCUS[key] ?: Alignment.Center)
-                Box(Modifier.matchParentSize().background(Brush.verticalGradient(.3f to Color(0x000C0C0E), 1f to Color(0xEB0C0C0E))))
-                Text(name, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = (-0.1).sp, color = if (on) P.Ink else Color(0xFFD9D4C8), textAlign = TextAlign.Center),
-                    maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 2.dp, vertical = 8.dp))
+    val art = { key: String -> if (key == "story") story?.art else MODE_ART[key] }
+    val play = { key: String -> StageModes.play(key, d.deck, act) }
+    BoxWithConstraints(Modifier.fillMaxSize().testTag("playStage")) {
+        val wide = maxWidth >= 600.dp
+        val dual = DualScreen.active
+        PageBleed(art(mode))
+        Column(Modifier.fillMaxSize().padding(top = top + 6.dp, bottom = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (!dual) Box(Modifier.widthIn(max = 640.dp).fillMaxWidth().padding(horizontal = 16.dp)) {
+                PurseRow(purse, onCoins = { act.view("shop") }, onSeals = { act.view("forge") }, onPacks = { act.view("packs") }, level = level)
+            }
+            HandHeader(d, story, mode, wide, act, Modifier.widthIn(max = if (wide) 1000.dp else 560.dp).fillMaxWidth()
+                .padding(start = if (wide) 40.dp else 20.dp, end = if (wide) 40.dp else 16.dp, top = if (dual) 6.dp else 16.dp))
+            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(vertical = 10.dp)) {
+                if (wide) HandRow(d, story, mode, onMode, art, play, maxWidth, maxHeight, dual)
+                else HandPager(d, story, mode, onMode, art, play, maxWidth, maxHeight)
+            }
+            if (!dual) QuestCard(d, act, Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(horizontal = 16.dp))
+        }
+    }
+}
+
+private val bleedDim = ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(.66f, 0f, 0f, 0f, 0f, 0f, .66f, 0f, 0f, 0f, 0f, 0f, .66f, 0f, 0f, 0f, 0f, 0f, 1f, 0f)))
+
+/** The chosen mode's art across the whole page, blurred and dimmed, under the bar and the purse, fading into the page (Hand brief 1). */
+@Composable
+private fun PageBleed(url: String?) {
+    val ctx = LocalContext.current
+    val soft = if (url == null || HomeTest.noPictures) null
+        else produceState(Aura.cachedSoft(url), url) { value = Aura.cachedSoft(url) ?: softArt(ctx, url)?.also { Aura.keepSoft(url, it) } }.value
+    Box(Modifier.fillMaxSize()) {
+        // The warm glow shows while the art loads, or if it never does.
+        Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color(0xFF2A2318), Site.Bg), radius = 1400f)))
+        androidx.compose.animation.Crossfade(soft, Modifier.fillMaxSize(), animationSpec = androidx.compose.animation.core.tween(if (Motion.still) 0 else 420), label = "bleed") { b ->
+            if (b != null) androidx.compose.foundation.Image(b, null, Modifier.fillMaxSize().graphicsLayer { scaleX = 1.12f; scaleY = 1.12f },
+                contentScale = ContentScale.Crop, colorFilter = bleedDim, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
+        }
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x80080A0E), .3f to Color(0x1A0D1016), .72f to Color(0x8C0D1016), .94f to Site.Bg, 1f to Site.Bg)))
+    }
+}
+
+/** The header is the mode (Hand brief 2): your deck with Change, the Story act, or the plane. */
+@Composable
+private fun HandHeader(d: PlayHomeData, story: PlayRules.Act?, mode: String, wide: Boolean, act: PlayHomeActions, modifier: Modifier) {
+    val deck = d.deck
+    val eyebrow: String; val title: String; val change: Boolean
+    when (mode) {
+        "story" -> { eyebrow = story?.let { a -> "STORY · ACT ${a.act} · " + if (d.story.done) "ALL ${a.battles} WON" else "${d.story.won} OF ${a.battles} WON" } ?: "STORY"
+            title = story?.name ?: "Story"; change = false }
+        "planeswalk" -> { eyebrow = "PLANESWALK"; title = "Innistrad"; change = false }
+        else -> { eyebrow = deck?.let { listOf("YOUR DECK", it.format.uppercase(), if (it.count > 0) "${it.count}" else "").filter { s -> s.isNotBlank() }.joinToString(" · ") } ?: "YOUR DECK"
+            title = deck?.name ?: "No deck yet"; change = true }
+    }
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(eyebrow, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = if (wide) 12.sp else 11.sp, letterSpacing = .18.em, color = Color(0xFFF2CF7E)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (wide) 30.sp else 25.sp, lineHeight = if (wide) 36.sp else 30.sp, color = P.Ink, shadow = P.shadow),
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (change) {
+            val sh = CircleShape
+            Text(if (deck != null) "Change" else "Pick a deck", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = P.Ink),
+                modifier = Modifier.heightIn(min = 44.dp).clip(sh).background(Color(0x8C0D1016)).border(1.dp, Color(0x80D6AD64), sh)
+                    .clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.mode("quick") }
+                    .semantics { contentDescription = if (deck != null) "Change deck" else "Pick a deck" }.padding(horizontal = 16.dp).wrapContentHeight(Alignment.CenterVertically))
+        }
+    }
+}
+
+/** Phone and Fold shut: one large card in the middle, its neighbours peeking, five marks under it; swipe or LB/RB to move (Hand brief 3). */
+@Composable
+private fun HandPager(d: PlayHomeData, story: PlayRules.Act?, mode: String, onMode: (String) -> Unit, art: (String) -> String?, play: (String) -> Unit, w: Dp, h: Dp) {
+    val cardH = (h - 18.dp).coerceIn(180.dp, 380.dp); val cardW = cardH * (258f / 380f)
+    val pager = androidx.compose.foundation.pager.rememberPagerState(StageModes.index(mode)) { StageModes.ALL.size }
+    LaunchedEffect(pager) { androidx.compose.runtime.snapshotFlow { pager.settledPage }.collect { onMode(StageModes.ALL[it].first) } }
+    LaunchedEffect(mode) { val i = StageModes.index(mode); if (i != pager.currentPage && !pager.isScrollInProgress) { if (Motion.still) pager.scrollToPage(i) else pager.animateScrollToPage(i) } }
+    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
+        androidx.compose.foundation.pager.HorizontalPager(pager, Modifier.fillMaxWidth().height(cardH).testTag("hand"),
+            contentPadding = PaddingValues(horizontal = ((w - cardW) / 2).coerceAtLeast(0.dp)), pageSize = androidx.compose.foundation.pager.PageSize.Fixed(cardW), pageSpacing = 20.dp,
+            verticalAlignment = Alignment.CenterVertically) { page ->
+            val (key, name) = StageModes.ALL[page]
+            val off = { kotlin.math.abs((pager.currentPage - page) + pager.currentPageOffsetFraction).coerceAtMost(1f) }
+            HandCard(key, name, art(key), StageModes.line(key, d.story.won, story?.battles ?: 0, d.story.done), key == mode, big = true,
+                Modifier.fillMaxSize().graphicsLayer { val o = off(); val k = 1f - .26f * o; scaleX = k; scaleY = k; alpha = 1f - .25f * o }, { onMode(key) }) { play(key) }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            StageModes.ALL.forEachIndexed { i, _ -> val on = i == pager.currentPage
+                Box(Modifier.size(width = if (on) 18.dp else 5.dp, height = 5.dp).clip(CircleShape).background(if (on) Color(0xFFF2CF7E) else Color(0x66FFFFFF))) }
+        }
+    }
+}
+
+/** Fold open, tablet, Thor top: all five in one row, the chosen one larger and ringed gold (Hand brief 3). */
+@Composable
+private fun HandRow(d: PlayHomeData, story: PlayRules.Act?, mode: String, onMode: (String) -> Unit, art: (String) -> String?, play: (String) -> Unit, w: Dp, h: Dp, pads: Boolean) {
+    val gap = 14.dp; val small = .75f; val ratio = .66f
+    val side = if (pads) (40.dp + gap) * 2 else 0.dp
+    var ch = minOf(h, 400.dp); var cw = ch * ratio
+    val room = w - 48.dp - side - gap * 4
+    if (cw * (1f + 4 * small) > room) { val k = room / (cw * (1f + 4 * small)); ch *= k; cw *= k }
+    Row(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally), verticalAlignment = Alignment.Bottom) {
+        if (pads) PadKey("LB", Modifier.align(Alignment.CenterVertically))
+        StageModes.ALL.forEach { (key, name) -> val on = key == mode
+            HandCard(key, name, art(key), StageModes.line(key, d.story.won, story?.battles ?: 0, d.story.done), on, big = on,
+                Modifier.width(if (on) cw else cw * small).height(if (on) ch else ch * small), { onMode(key) }) { play(key) }
+        }
+        if (pads) PadKey("RB", Modifier.align(Alignment.CenterVertically))
+    }
+}
+
+@Composable
+private fun PadKey(k: String, modifier: Modifier) = Text(k, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = P.Ink),
+    modifier = modifier.clip(RoundedCornerShape(6.dp)).background(Color(0x990D1016)).border(1.dp, Color(0x66FFFFFF), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp))
+
+/** One mode as a tall art card. The chosen one is ringed gold and carries the live line and the round gold Play (Hand brief 4). */
+@Composable
+private fun HandCard(key: String, name: String, art: String?, line: String, on: Boolean, big: Boolean, modifier: Modifier, onChoose: () -> Unit, onPlay: () -> Unit) {
+    val sh = RoundedCornerShape(if (big) 24.dp else 18.dp)
+    Box(modifier.then(if (on) Modifier.testShadow(24.dp, sh, spotColor = Color(0x52E8B95B)) else Modifier).clip(sh).background(Color(0xFF161921))
+        .border(if (on) 1.5.dp else 1.dp, if (on) Color(0xFFF2CF7E) else Color(0x33FFFFFF), sh)
+        .selectableTile(on, onChoose).semantics { contentDescription = name }) {
+        Art(art, Modifier.matchParentSize().let { if (key == "planeswalk") it.scale(1.16f) else it }, if (key == "story") BiasAlignment(0f, -.4f) else MODE_FOCUS[key] ?: Alignment.Center)
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(.46f to Color(0x000D1016), 1f to Color(0xF00D1016))))
+        Column(Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 18.dp, end = if (on) 84.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (big) 22.sp else 15.sp, lineHeight = if (big) 26.sp else 18.sp, color = P.Ink, shadow = P.shadow),
+                maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+            if (on) Text(line, style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = Color(0xFFDDD8CC)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (on) PlayDisc(name, if (big) 60.dp else 52.dp, Modifier.align(Alignment.BottomEnd).padding(14.dp), onPlay)
+    }
+}
+
+/** The round gold Play on the chosen card: a play glyph, no words (Hand brief 4). X presses it. */
+@Composable
+private fun PlayDisc(name: String, disc: Dp, modifier: Modifier, onClick: () -> Unit) {
+    Box(modifier.size(disc).testShadow(10.dp, CircleShape).clip(CircleShape)
+        .background(Brush.verticalGradient(0f to Color(0xFFF6D88C), .6f to Color(0xFFD9A94E), 1f to Color(0xFFB8893A)))
+        .clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick).semantics { contentDescription = "Play, $name" },
+        contentAlignment = Alignment.Center) {
+        androidx.compose.foundation.Canvas(Modifier.size(disc * .36f).offset(x = disc * .03f)) {
+            drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(size.width * .08f, 0f); lineTo(size.width, size.height / 2); lineTo(size.width * .08f, size.height); close() }, Color(0xFF1A1408))
+        }
+    }
+}
+
+/**
+ * The quest card (Hand brief 5): "Daily x/3" and "Weekly x/n" tabs, the quest, a bar cut into its steps and the count; the daily reward
+ * or its Claim as today. It turns on its own through the unfinished daily quests, then the weekly ones. A tab jumps to it; the card opens
+ * Quests. [only]: one kind, held still (the two-screen den shows the daily and the weekly side by side).
+ */
+@Composable
+private fun QuestCard(d: PlayHomeData, act: PlayHomeActions, modifier: Modifier, only: Boolean? = null) {
+    val s = d.state
+    val q = remember(d.rules, s, d.day, d.user) { PlayMath.quests(d.rules, s, d.day, d.user) }
+    val items = remember(q, only) { QuestTurn.items(q, only) }
+    var at by remember(items) { androidx.compose.runtime.mutableIntStateOf(if (HomeTest.weeklyFirst) QuestTurn.first(items, true).coerceAtLeast(0) else 0) }
+    val ctx = LocalContext.current
+    val still = Motion.still || remember { Playmats.reduced(ctx) }
+    if (!still && only == null && items.size > 1) LaunchedEffect(items) { while (true) { kotlinx.coroutines.delay(5000); at = (at + 1) % items.size } }
+    val item = items.getOrNull(at.coerceIn(0, maxOf(0, items.lastIndex)))
+    val weekly = item?.weekly ?: (only == true)
+    val gold = Color(0xFFF2CF7E); val blue = Color(0xFF9FD0F0)
+    val accent = if (weekly) blue else gold
+    val sh = RoundedCornerShape(22.dp)
+    Column(modifier.clip(sh).background(Color(0xEB161921)).border(1.dp, if (only != null) accent.copy(alpha = .3f) else Color(0x1FFFFFFF), sh)
+        .clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.view("quests") }.testTag("questCard")
+        .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                val dTab = "Daily ${q.daily.count { it.done }}/${q.daily.size}"; val wTab = "Weekly ${q.weekly.count { it.done }}/${q.weekly.size}"
+                if (only != true) QuestTab(dTab, !weekly, gold, only == null) { QuestTurn.first(items, false).takeIf { it >= 0 }?.let { at = it } }
+                if (only != false && q.weekly.isNotEmpty()) QuestTab(wTab, weekly, blue, only == null) { QuestTurn.first(items, true).takeIf { it >= 0 }?.let { at = it } }
+            }
+            if (item != null && !item.weekly) {
+                if (item.row.done) GoldCta("Claim") { act.claim("daily", item.row.quest.id) } else Rewards(PlayMath.questReward(item.row.quest, s.get("config") as? JsonObject), ink = P.Ink)
             }
         }
+        if (item != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(item.row.quest.label, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = P.Ink), modifier = Modifier.weight(1f).padding(end = 8.dp),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${item.row.have} / ${item.row.quest.need}", style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = Color(0xFFC8CCD6)))
+            }
+            Steps(item.row.have, item.row.quest.need, accent, gold = !item.weekly)
+        } else Text(if (only == true) "Every weekly quest done" else "All done for today", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = P.Ink),
+            modifier = Modifier.padding(vertical = 6.dp))
+    }
+}
+
+@Composable
+private fun QuestTab(label: String, on: Boolean, accent: Color, tappable: Boolean, onClick: () -> Unit) {
+    Text(label, style = TextStyle(fontFamily = P.Sans, fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, fontSize = 13.sp, letterSpacing = .06.em, color = if (on) accent else Color(0xFFC8CCD6)),
+        modifier = Modifier.heightIn(min = 44.dp).then(if (tappable) Modifier.clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick) else Modifier)
+            .semantics { selected = on }
+            .drawBehind { if (on && tappable) drawLine(accent, Offset(0f, size.height - 1.dp.toPx()), Offset(size.width, size.height - 1.dp.toPx()), 2.dp.toPx()) }
+            .wrapContentHeight(Alignment.CenterVertically))
+}
+
+/** A bar cut into the quest's steps (one per step up to 12; past that, one bar). */
+@Composable
+private fun Steps(have: Int, need: Int, accent: Color, gold: Boolean) {
+    val fill = if (gold) Brush.horizontalGradient(listOf(Color(0xFFC99A45), Color(0xFFF2CF7E))) else androidx.compose.ui.graphics.SolidColor(accent)
+    if (need in 1..12) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(if (need > 5) 5.dp else 6.dp)) {
+        repeat(need) { i -> Box(Modifier.weight(1f).height(6.dp).clip(CircleShape).then(if (i < have) Modifier.background(fill) else Modifier.background(Color(0x24FFFFFF)))) }
+    } else Box(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(Color(0x24FFFFFF))) {
+        Box(Modifier.fillMaxWidth((have.toFloat() / need.coerceAtLeast(1)).coerceIn(0f, 1f)).fillMaxHeight().background(fill))
+    }
+}
+
+/** Two screens, the den: today's daily and this week's weekly quest side by side, and the deck with Change deck (Hand brief 6). */
+@Composable
+private fun DenQuests(d: PlayHomeData, act: PlayHomeActions) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        QuestCard(d, act, Modifier.weight(1f), only = false)
+        QuestCard(d, act, Modifier.weight(1f), only = true)
+    }
+    val deck = d.deck; val sh = RoundedCornerShape(18.dp)
+    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(sh).background(Color(0xFF161921)).border(1.dp, Color(0x24FFFFFF), sh)
+        .clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.mode("quick") }.padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Box(Modifier.size(width = 64.dp, height = 48.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF121318))) {
+            if (deck?.cover != null) Art(deck.cover, Modifier.matchParentSize(), BiasAlignment(0f, -.4f)) }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(deck?.name ?: "No deck yet", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = P.Ink), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (deck != null) Text(listOf(deck.format, "${deck.count} cards").filter { it.isNotBlank() }.joinToString(" · "), style = TextStyle(fontFamily = P.Sans, fontSize = 13.sp, color = Color(0xFFC8CCD6)), maxLines = 1)
+        }
+        Text(if (deck != null) "Change deck" else "Pick a deck", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFF2CF7E)))
     }
 }
 
 private fun Modifier.selectableTile(on: Boolean, onClick: () -> Unit) =
     this.semantics { selected = on }.clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick)
-
-/** Today: the first quest not yet claimed, its reward (or Claim) and bar; "Quests" opens them all. */
-@Composable
-private fun TodayRow(d: PlayHomeData, act: PlayHomeActions) {
-    val s = d.state
-    val q = remember(d.rules, s, d.day, d.user) { PlayMath.quests(d.rules, s, d.day, d.user) }
-    val r = q.daily.firstOrNull { !it.claimed }
-    val sh = RoundedCornerShape(16.dp)
-    Column(Modifier.fillMaxWidth().clip(sh).background(Color(0xF015161B)).border(1.dp, Color(0x1AFFFFFF), sh).padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("TODAY · ${q.daily.count { it.claimed }} / ${q.daily.size}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, letterSpacing = .16.em, color = Color(0xFFA9A9B4)),
-                modifier = Modifier.weight(1f))
-            Text("Quests", style = P.link.copy(fontSize = 13.sp), modifier = Modifier.heightIn(min = 44.dp).clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.view("quests") }
-                .padding(horizontal = 6.dp).wrapContentHeight(Alignment.CenterVertically))
-        }
-        if (r != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(r.quest.label, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = P.Ink), modifier = Modifier.weight(1f).padding(end = 8.dp),
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (r.done) GoldCta("Claim") { act.claim("daily", r.quest.id) } else Rewards(PlayMath.questReward(r.quest, s.get("config") as? JsonObject), ink = P.Ink)
-            }
-            if (!r.done) Bar(r.have.toFloat() / r.quest.need, thin = true)
-        } else Text("All done for today", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = P.Ink))
-    }
-}
-
-/** The one gold Play, the chosen mode's name under the word. */
-@Composable
-private fun StagePlay(mode: String, onClick: () -> Unit) {
-    val sh = RoundedCornerShape(18.dp)
-    val name = StageModes.name(mode)
-    Column(Modifier.fillMaxWidth().heightIn(min = 76.dp).testShadow(14.dp, sh, spotColor = Color(0x52E8B95B)).clip(sh)
-        .background(Brush.verticalGradient(0f to Color(0xFFF6D88C), .55f to Color(0xFFD9A94E), 1f to Color(0xFFB8893A)))
-        .clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick).semantics { contentDescription = "Play, $name" }.padding(vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text("PLAY", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 26.sp, letterSpacing = .08.em, color = P.CtaInk))
-        Text(name, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF3A2C0E)))
-    }
-}

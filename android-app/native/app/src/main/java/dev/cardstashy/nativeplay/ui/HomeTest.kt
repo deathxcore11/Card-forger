@@ -33,6 +33,9 @@ import androidx.compose.ui.unit.sp
 object HomeTest {
     /** Screenshots only: draw the short (sideways phone) layout on a tall test page so the whole scroll shows. */
     var forceShort: Boolean? = null
+    /** Screenshots only: the Hand home's first chosen mode, and its quest card starting on the weekly quest. */
+    var startMode: String? = null
+    var weeklyFirst = false
     val variants = listOf("C1", "C2")
     /** Highest group allowed in this build; raise by one per proven step. */
     private const val PROVEN = 1

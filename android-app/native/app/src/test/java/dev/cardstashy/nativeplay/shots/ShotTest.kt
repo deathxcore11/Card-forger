@@ -152,10 +152,23 @@ class ShotTest {
         }
         // Polish brief 1: upright, Play home is one screen (the stage fills the window), so it is shot in a window the size of the
         // screen, not the tall whole-page window (that stretched the stage to thousands of dp).
-        for ((w, h) in listOf(390 to 844, 884 to 1104)) for (s in listOf(1f, 1.3f)) {
-            if (w > 390 && s > 1f) continue
-            shot("play-home-${w}x${h}-screen", w, h, s) { Home() }
-        }
+        // Hand brief (0.4.96): phone, Fold shut, Fold open, tablet, each at its true screen size; the Fold shut again with Story chosen
+        // and the weekly quest showing; the phone at 130 % text.
+        for ((w, h) in listOf(390 to 844, 374 to 832, 841 to 701, 884 to 1104, 1280 to 800)) shot("play-home-${w}x${h}-screen", w, h, 1f) { Home() }
+        shot("play-home-390x844-screen", 390, 844, 1.3f) { Home() }
+        dev.cardstashy.nativeplay.ui.HomeTest.startMode = "story"; dev.cardstashy.nativeplay.ui.HomeTest.weeklyFirst = true
+        try { shot("play-home-story-weekly", 374, 832, 1f) { Home() } }
+        finally { dev.cardstashy.nativeplay.ui.HomeTest.startMode = null; dev.cardstashy.nativeplay.ui.HomeTest.weeklyFirst = false }
+        // Thor: the top screen (header and hand) and the bottom (the den with both quests, the deck and the tab bar).
+        dev.cardstashy.nativeplay.ui.DualScreen.pretend(dev.cardstashy.nativeplay.ui.DualScreen.Panel(2, "Built-in Screen", 1240, 1080, 60f))
+        try {
+            RuntimeEnvironment.setQualifiers("w960dp-h540dp-land-xhdpi")
+            captureRoboImage(File(System.getProperty("shotsDir"), "play-home-thor-top-960x540.png").path) { androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) { Home() } }
+            RuntimeEnvironment.setQualifiers("w620dp-h540dp-xhdpi")
+            settled(File(System.getProperty("shotsDir"), "play-home-thor-bottom-620x540.png").path) {
+                androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) { androidx.compose.foundation.layout.Box(Modifier.size(1.dp)) { Home() }; dev.cardstashy.nativeplay.ui.BottomRoot() }
+            }
+        } finally { dev.cardstashy.nativeplay.ui.DualScreen.pretend(null) }
         // Sideways phone or handheld: the screen as held, then the whole page in that layout.
         dev.cardstashy.nativeplay.ui.HomeTest.forceShort = true
         try { shot("play-home-844x390-screen", 844, 390, 1f) { Home() }; tall("play-home", 844, 390, 1f) { Home() } }
