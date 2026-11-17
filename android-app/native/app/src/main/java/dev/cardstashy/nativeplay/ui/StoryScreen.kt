@@ -268,23 +268,32 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
     }
     // When the act opens, the battle you are on is scrolled fully into view (review of 736cbc54).
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-    val twoPanes = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 600
     LaunchedEffect(currentId, data != null) {
         val key = currentId ?: return@LaunchedEffect
         androidx.compose.runtime.snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > 0 }
         androidx.compose.runtime.withFrameNanos { }
         val info = listState.layoutInfo
-        if (twoPanes) {
+        // Which list is showing is read from the list itself (the phone list starts with its "head" item): LocalConfiguration
+        // can lag the window in a capture, which left the Thor's top on the phone path (picture review of b9e921b6).
+        if (info.visibleItemsInfo.none { it.key == "head" }) {
             // Two panes (the header sits beside the list): start the list at the first row from which the current battle and the
             // row after it (the tease) both fit, so the top edge lands between rows and nothing is cut (reviews of a4f09acb, 613e7632).
             val pos = open.indexOfFirst { it["id"].asString == key }.coerceAtLeast(0)
             val last = if (pos + 1 < open.size || tease != null) pos + 1 else pos
             val size = info.visibleItemsInfo.associate { it.index to it.size }
             val room = info.viewportEndOffset - info.viewportStartOffset - info.beforeContentPadding - info.afterContentPadding
-            val guess = size.values.minOrNull() ?: 0
+            val guess = size.values.maxOrNull() ?: 0
             var start = pos
             for (i in 0..pos) { val total = (i..last).sumOf { size[it] ?: guess } + info.mainAxisItemSpacing * (last - i); if (total <= room) { start = i; break } }
-            if (start > 0) listState.scrollToItem(start)
+            // Measure again after each move: step down a row until the last of them ends inside the list.
+            while (true) {
+                if (start > 0) listState.scrollToItem(start)
+                androidx.compose.runtime.withFrameNanos { }
+                val now2 = listState.layoutInfo
+                val end = now2.visibleItemsInfo.firstOrNull { it.index == last }?.let { it.offset + it.size }
+                if (start >= pos || (end != null && end <= now2.viewportEndOffset - now2.afterContentPadding)) break
+                start++
+            }
             return@LaunchedEffect
         }
         val item = info.visibleItemsInfo.firstOrNull { it.key == key }
