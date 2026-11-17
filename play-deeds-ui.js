@@ -97,7 +97,7 @@ export function deedsScreenMarkup(snapshot, ui = {}, user = '') {
       <section class="pe-import pd-summary" aria-labelledby="pdSumTitle"><h2 id="pdSumTitle">Hall of Deeds</h2><div class="pd-score">${shield}<span><b>${n(t.points.earned)}</b><small>achievement points of ${n(t.points.total)}</small></span></div>
         <div class="pd-total"><span class="pd-total-num"><b>${n(t.earned)}</b> / ${n(t.total)} earned</span>${bar(t.total ? t.earned / t.total : 0)}</div>
         <button class="pd-title-btn" data-act="playEconTitles" aria-haspopup="dialog"><span>Title</span><em>${esc(worn || 'None')}</em></button>
-        <p class="pd-week">${t.ready ? `${t.ready} ready to claim. Look for the gold edge.` : 'Every count comes from real matches, log-ins, packs, the Merchant and your Trunk. Practice deeds are for honour only.'}</p></section>
+        <p class="pd-week">${t.ready ? `${t.ready} ready to claim` : ''}</p></section>
       <section class="pe-import pd-questbook" aria-labelledby="pdQuestTitle"><h2 id="pdQuestTitle">Quests</h2><h3 class="pd-sub">Today</h3><ul class="pd-quests">${q.daily.map(x => questLine(x, s.config, busy)).join('')}</ul>
         <h3 class="pd-sub">This week</h3><ul class="pd-quests">${q.weekly.map(x => questLine({...x, weekly: true}, s.config, busy)).join('')}</ul>${weekAll}</section>
     </div>

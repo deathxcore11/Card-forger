@@ -112,6 +112,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import kotlin.math.roundToInt
 
 /*
@@ -536,9 +538,17 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
                     var gripping by remember { mutableStateOf(false) }
                     val target = if (drag.name != null && drag.from == "coll" && zone == "deck") maxOf(.66f, ui.split) else if (drag.name != null && drag.from == "deck" && zone == "coll") minOf(.18f, ui.split) else ui.split
                     val share by animateFloatAsState(target, if (gripping || Motion.still) snap() else tween(280, easing = FOCUS_EASE), label = "focus")
+                    // Polish ride (deck view mock-up): while the pool is scrolled, the dock folds to the deck's name, count and curve so
+                    // three rows of cards show; back at the top of the pool (or a tap on the strip, or a card dragged) it opens again.
+                    val browsing by remember(ui) { androidx.compose.runtime.derivedStateOf { ui.tileGrid.firstVisibleItemIndex > 0 || ui.shelfList.firstVisibleItemIndex > 0 } }
+                    val fold = browsing && drag.name == null && !gripping && m.colorFilter
+                    val foldScope = androidx.compose.runtime.rememberCoroutineScope()
                     Column(Modifier.fillMaxSize()) {
-                        Dock(m, ui, a, drag, actionRow, split = false, Modifier.height(room * share), lift, onFilter = onFilter)
-                        SplitGrip(ui, room, onGrip = { gripping = it })
+                        if (fold) FoldedDock(m, ui, a, onFilter) { foldScope.launch { ui.tileGrid.scrollToItem(0); ui.shelfList.scrollToItem(0) } }
+                        else {
+                            Dock(m, ui, a, drag, actionRow, split = false, Modifier.height(room * share), lift, onFilter = onFilter)
+                            SplitGrip(ui, room, onGrip = { gripping = it })
+                        }
                         Box(Modifier.weight(1f).fillMaxWidth()) { m.landPicker?.let { lp -> LandPane(browserSwitch) { lp { k, img -> Modifier.benchCard(drag, k, img, "coll", lift) {} } } } ?: Browser(m, ui, a, drag, browserSwitch, cols = 3, lift, onFilter, shown, shelves, sets) }
                     }
                 }
@@ -783,6 +793,22 @@ private fun Dock(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, action
             val w = maxWidth - 16.dp
             DeckBody(m, ui, a, drag, actionRow, split, w, lift, if (split) null else curveRow)
         }
+    }
+}
+
+/** The phone's folded dock: the deck's name, its count and its curve on one strip; a tap opens the dock again. */
+@Composable
+private fun FoldedDock(m: BenchModel, ui: BenchUi, a: BenchActions, onFilter: () -> Unit, onOpen: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    val count = m.stats.firstOrNull()
+    Row(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 6.dp, bottom = 4.dp).clip(shape).background(B.Glass).border(1.dp, B.Line, shape)
+        .clickable(onClick = onOpen).semantics { role = Role.Button; contentDescription = "Open the deck, ${m.title}" }.padding(start = 12.dp, end = 6.dp, top = 4.dp, bottom = 4.dp)
+        .testTag("dockFolded"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.widthIn(max = 150.dp)) {
+            Text(m.title, style = cinzel(14f, B.Fg), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            count?.let { Text("${it.value} ${it.label}", style = f(12f, 700, if (it.warn) B.Coral else B.Mute), maxLines = 1, softWrap = false) }
+        }
+        CurveBar(m, ui, 44.dp, Modifier.weight(1f), onFilter = onFilter, toCards = { if (a.tab?.invoke("cards") != false) ui.tab = "cards" })
     }
 }
 

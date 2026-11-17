@@ -260,6 +260,22 @@ class DeckBenchShotTest {
     }
 
     @Test fun phone() = run("390x844", 24, 24, 1f, gestures = true)
+
+    /** Polish ride (deck view mock-up): browsing the pool folds the dock to name, count and curve; three rows of cards show; a tap opens it. */
+    @Test fun phoneDockFoldsWhileBrowsing() {
+        val (state, ui) = setUp()
+        rule.setContent { DeckEditor(state, ui, {}, {}, {}, {}) }
+        settle(40)
+        rule.onNode(hasContentDescription("Cards to add")).performScrollToIndex(9); settle(10)
+        shot("390x844-dock-folded")
+        assertTrue("the dock folded", rule.onAllNodes(androidx.compose.ui.test.hasTestTag("dockFolded")).fetchSemanticsNodes().isNotEmpty())
+        val grid = rule.onNode(hasContentDescription("Cards to add")).fetchSemanticsNode().boundsInRoot
+        val rows = rule.onNode(hasContentDescription("Cards to add")).fetchSemanticsNode().children.map { it.boundsInRoot }
+            .filter { it.top >= grid.top - 1f && it.bottom <= grid.bottom + 1f }.map { it.top.toInt() }.distinct()
+        assertTrue("${rows.size} whole rows of pool cards, want 3", rows.size >= 3)
+        rule.onNode(androidx.compose.ui.test.hasTestTag("dockFolded")).performClick(); settle(10)
+        assertTrue("a tap opens the dock", rule.onAllNodes(hasContentDescription("Deck list")).fetchSemanticsNodes().isNotEmpty())
+    }
     @Test fun phoneShelves() = run("390x844", 24, 24, 1f, gestures = false, shelves = true)
     @Test fun phoneShelvesBigText() = run("390x844-130", 24, 24, 1.3f, gestures = false, shelves = true)
     @Config(qualifiers = "w954dp-h860dp-xxhdpi")

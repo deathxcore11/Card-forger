@@ -122,7 +122,7 @@ export function secretLairShelf(snapshot) {
   const btn = sl.bought ? '<span class="pe-sl-done">In your Trunk</span>'
     : `<button class="pe-buy" data-act="playEconSecretLair" data-econ-week="${esc(sl.week)}" ${coins < sl.price || snapshot.busy ? 'disabled' : ''} aria-label="Buy this Secret Lair for ${n(sl.price)} coins">${coinIcon('pe-coin--sm')}<b>${n(sl.price)}</b></button>`;
   return `<section class="pe-shelf pe-sl" aria-labelledby="peSlTitle"><div class="pe-sl-head"><h2 id="peSlTitle">This week's Secret Lair</h2><span class="pe-sl-left">${esc(left)}</span></div>
-    <p class="pe-sl-sub"><b>${esc(sl.title)}</b>${sl.by ? ` · ${esc(sl.by)}` : ''}. Each card comes into your Trunk and unlocks its Secret Lair art for your copies.</p>
+    <p class="pe-sl-sub"><b>${esc(sl.title)}</b>${sl.by ? ` · ${esc(sl.by)}` : ''}</p>
     <ul class="pe-sl-cards" data-audit-scroll>${sl.cards.map((c, i) => `<li style="--i:${i}"><button class="pe-sl-card" data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}${owned.has(c.o) ? ', in your Trunk' : ''}"><img src="${esc(secretLairImage(c.id))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>${owned.has(c.o) ? '<span class="pe-sl-have" aria-hidden="true">Owned</span>' : ''}</li>`).join('')}</ul>
     <div class="pe-sl-foot">${btn}</div></section>`;
 }

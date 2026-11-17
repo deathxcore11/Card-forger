@@ -186,8 +186,7 @@ fun AchievementsRoute(onBack: () -> Unit, startTab: String? = null, nav: @Compos
                         Text("%,d".format(earned), style = cinzel.copy(fontSize = 28.sp)); Text("/ %,d earned".format(total), style = t(16f, FontWeight.SemiBold, if (light) Site.Muted else Color(0xFFB9BFC9)), modifier = Modifier.padding(bottom = 3.dp))
                     }
                     Bar(if (total > 0) earned.toFloat() / total else 0f)
-                    Text(if (ready > 0) "$ready ready to claim. Look for the gold edge."
-                        else "Every count comes from real matches, log-ins, packs, the Merchant and your Trunk. Practice deeds are for honour only.", style = t(14f, color = Site.Muted))
+                    if (ready > 0) Text("$ready ready to claim", style = t(14f, color = Site.Muted))
                 }
             }
             if (quests != null) item("quests") {
@@ -384,8 +383,7 @@ internal fun HallCase(state: JsonObject?, rows: List<JsonObject>, earned: Int, t
     ShowcaseCase("Play · Hall of Deeds", "%,d of %,d earned".format(earned, total),
         trailing = { state?.let { s -> PlayMath.purse(s)?.let { PurseRow(it, level = PlayMath.mastery(s, it.xp)) } } }, buttons = emptyList()) {
         Bar(if (total > 0) earned.toFloat() / total else 0f)
-        Text(if (ready > 0) "$ready ready to claim. Look for the gold edge." else "Every count comes from real matches, log-ins, packs, the Merchant and your Trunk. Practice deeds are for honour only.",
-            style = t(15f, color = Site.Muted))
+        if (ready > 0) Text("$ready ready to claim", style = t(15f, color = Site.Muted))
         if (near.isNotEmpty()) {
             CaseLabel("Closest to earning")
             near.forEach { (r, st, f) ->

@@ -330,7 +330,7 @@ private fun SecretLairShowcase(s: JsonObject, store: JsonObject, busy: Boolean, 
                     modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(Color(0x33000000)).border(1.dp, Color(0x40C9B2FF), RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 5.dp))
             }
             Text("This week's cards", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 27.sp, lineHeight = 31.sp, color = Cream))
-            Text("${offers.size} Secret Lair cards, each in its own art. ${if (onSale > 0) "$onSale on sale. " else ""}Coins only.",
+            Text("${offers.size} cards${if (onSale > 0) " · $onSale on sale" else ""}",
                 style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.Medium, fontSize = 13.5.sp, lineHeight = 19.sp, color = Color(0xFFCFC6E2)))
         }
         val row = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -471,7 +471,7 @@ private fun ShelfPack(code: String, name: String, row: Trunk.SetRow?, price: Int
 private fun PreconAisle(precons: List<Decks.PreconEntry>?, byFormat: Map<String, List<String>>, pre: PreconPrerelease?, needOf: (Decks.PreconEntry) -> PreconNeed?, onOpen: (Decks.PreconEntry) -> Unit) {
     var format by rememberSaveable { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        AisleHead("Precons", "Whole decks for coins. You only pay for the cards you don't have yet.")
+        AisleHead("Precons", null)
         if (precons == null) { Text("Opening the deck boxes…", style = small); return@Column }
         val shown = if (byFormat.isNotEmpty()) {
             // While a pre-release is on, its Commander shelf leads the row and opens first.
