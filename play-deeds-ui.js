@@ -47,6 +47,24 @@ export function todayLine(econ, user = '') {
   return `<section class="pd-today pd-today--line" aria-label="Today"><ul class="pd-quests">${first ? questLine(first, s.config, !!econ.busy) : '<li class="pd-quest is-claimed"><div class="pd-quest-copy"><span class="pd-quest-name"><span>Every quest claimed</span></span></div></li>'}</ul><button class="link small" data-act="playEconView" data-econ-view="deeds">Quests</button></section>`;
 }
 
+// 0.4.96 Hand home: one quest card. Daily and Weekly tabs with their counts, the quest, a bar cut into its steps, its reward
+// (or Claim). It turns through the unclaimed daily quests and then the weekly ones (app.js steps it); a tab jumps to it,
+// the card opens Quests.
+export function questCard(econ, user = '') {
+  const s = econ?.state; if (!s) return '';
+  const q = questRows(ctxOf(s, user)), busy = !!econ.busy;
+  const items = [...q.daily.filter(x => !x.claimed).map(x => ({...x, weekly: false})), ...q.weekly.filter(x => !x.claimed).map(x => ({...x, weekly: true}))];
+  const steps = (x) => x.need <= 12 ? `<span class="pl-quest-steps" style="--n:${x.need}" aria-hidden="true">${Array.from({length: x.need}, (_, i) => `<i${i < x.have ? ' class="on"' : ''}></i>`).join('')}</span>` : bar(x.have / x.need, 'thin');
+  const slide = (x, i) => `<div class="pl-quest-slide${i === 0 ? ' is-on' : ''}${x.weekly ? ' is-weekly' : ''}" data-quest-kind="${x.weekly ? 'weekly' : 'daily'}"${i ? ' hidden' : ''}>
+    <div class="pl-quest-row"><span class="pl-quest-label">${esc(x.label)}</span><span class="pl-quest-count">${n(x.have)} / ${n(x.need)}</span></div>${steps(x)}
+    <span class="pl-quest-reward">${x.done ? `<button class="btn pd-claim" data-act="playEconClaim" data-econ-kind="${x.weekly ? 'weekly' : 'daily'}" data-econ-id="${esc(x.id)}" ${busy ? 'disabled' : ''} aria-label="Claim: ${esc(x.label)}">Claim</button>` : rewardIcons(questReward(x, s.config))}</span></div>`;
+  const first = items[0]?.weekly ? 'weekly' : 'daily';
+  const tab = (kind, label) => `<button class="pl-quest-tab pl-quest-tab--${kind}" data-act="playQuestTab" data-quest-kind="${kind}" aria-pressed="${kind === first}">${label}</button>`;
+  return `<section class="pl-quest-card" aria-label="Quests"><button class="pl-quest-open" data-act="playEconView" data-econ-view="deeds" aria-label="Open Quests"></button>
+    <div class="pl-quest-tabs">${tab('daily', `Daily ${q.daily.filter(x => x.done).length}/${q.daily.length}`)}${q.weekly.length ? tab('weekly', `Weekly ${q.weekly.filter(x => x.done).length}/${q.weekly.length}`) : ''}</div>
+    ${items.length ? items.map(slide).join('') : '<div class="pl-quest-slide is-on"><div class="pl-quest-row"><span class="pl-quest-label">All done for today</span></div></div>'}</section>`;
+}
+
 // The home's "Today": the log-in calendar (7 stamps), today's quests and this week's.
 export function todayPanel(econ, user = '') {
   const s = econ?.state; if (!s) return '';
