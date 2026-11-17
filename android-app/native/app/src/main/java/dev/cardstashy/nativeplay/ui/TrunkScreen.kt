@@ -136,7 +136,10 @@ fun TrunkScreen(state: JsonObject, onBack: () -> Unit, onCard: (CardPick) -> Uni
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         Backdrop() // #ambient: the shared art (glass on, or Aura)
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val cols = cardGridCells(maxWidth - 32.dp) // Settings > Card size
+            // Settings > Card size. Brief 3 (0.4.95): on a phone the Trunk runs one size smaller, so the default shows
+            // three across and six cards before scrolling; Large shows two. Wider screens follow the setting as before.
+            val cols = if (maxWidth < 600.dp) androidx.compose.foundation.lazy.grid.GridCells.Fixed(if (AppSettings.gridSize == "large") 2 else 3)
+                else cardGridCells(maxWidth - 32.dp)
             // .pe-coll-list: 18 px between rows, 14 px between columns.
             // Nothing scrolls under the status bar (project rule 4): the grid itself stops below it, as Decks and the Shop do.
             LazyVerticalGrid(cols, Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).gridPinch(), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),

@@ -726,7 +726,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                 LibraryHead(m, source, signedIn, onOpenDecks, if (quickOnly) quickCounts() else emptyMap(),
                     chipFocus, onChipDown = { c -> QuickPick.fromChips(c, cols, quickCount())?.let { ringTile(it) } }, searchFocus = searchFocus,
                     onChipFocus = { c, on -> if (on) focusedChip = c else if (focusedChip == c) focusedChip = -1 }, searchShown = searchOpen || m.query.isNotEmpty(),
-                    onFormat = { quickFormatOpen = true })
+                    onFormat = { quickFormatOpen = true }, onFriends = if (!m.quick && !m.social) onFriends else null)
             }
             when {
                 source == "yours" && !signedIn -> full { Empty("Your decks, ready for the table", "Sign in above to choose your saved lists.") }
@@ -863,11 +863,6 @@ private fun Head(m: LobbyModel, onBack: () -> Unit, onFriends: () -> Unit, onSea
                 androidx.compose.foundation.Image(SiteIcons.Chevron, null, Modifier.size(18.dp), colorFilter = ColorFilter.tint(Site.Text))
             }
             PlaymatPicker(Modifier.weight(1f)) // playmatPickerMarkup, Practice only (.pl-head-tools .pl-mat{flex:1})
-            if (!m.quick && !m.social) Row(Modifier.height(44.dp).pill(Color(0xB30D0F14), Color(0xFF766647)).clickable(onClick = onFriends).padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                androidx.compose.foundation.Image(SiteIcons.Friends, null, Modifier.size(18.dp), colorFilter = ColorFilter.tint(Color(0xFFF6E4BB)))
-                Text("Invite a friend", style = sans(14f, FontWeight.Bold, Color(0xFFF6E4BB)))
-            }
         }
     }
 }
@@ -1020,7 +1015,7 @@ private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, friend: F
 @Composable
 private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpenDecks: () -> Unit, quickCounts: Map<String, Int> = emptyMap(),
                         chipFocus: List<FocusRequester> = emptyList(), onChipDown: (Int) -> Unit = {}, searchFocus: FocusRequester? = null,
-                        onChipFocus: (Int, Boolean) -> Unit = { _, _ -> }, searchShown: Boolean = true, onFormat: () -> Unit = {}) {
+                        onChipFocus: (Int, Boolean) -> Unit = { _, _ -> }, searchShown: Boolean = true, onFormat: () -> Unit = {}, onFriends: (() -> Unit)? = null) {
     val seatName = when (m.browseSeat) { "player" -> "Your deck"; else -> "CPU deck" }
     Column(Modifier.fillMaxWidth().padding(top = if (m.quick) 0.dp else 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Quick Play: the bottom bar names your deck, so the list needs no seat line or tools row (Open Decks sits by the count).
@@ -1041,11 +1036,18 @@ private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpen
                             moveTo(9 * k, 12 * k); lineTo(15 * k, 12 * k); moveTo(9 * k, 16 * k); lineTo(13 * k, 16 * k) }
                         drawPath(path, Gold, style = Stroke(1.8f * k, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
                     }
-                    Text("Paste a deck list", style = sans(13.5f, FontWeight.Bold, Site.Text))
+                    Text("Paste list", style = sans(13.5f, FontWeight.Bold, Site.Text), maxLines = 1)
                 }
             }
             Box(Modifier.height(44.dp).pill(Site.Surface2, Line).clickable(onClick = onOpenDecks).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                Text("Open Decks", style = sans(13.5f, FontWeight.Bold, Site.Text)) }
+                Text("Open Decks", style = sans(13.5f, FontWeight.Bold, Site.Text), maxLines = 1) }
+            // Practice: Invite a friend joins Paste and Open Decks on one row (0.4.95), so the decks start higher.
+            if (onFriends != null) Row(Modifier.height(44.dp).pill(Color(0xB30D0F14), Color(0xFF766647)).clickable(onClick = onFriends)
+                .semantics { contentDescription = "Invite a friend" }.padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                androidx.compose.foundation.Image(SiteIcons.Friends, null, Modifier.size(16.dp), colorFilter = ColorFilter.tint(Color(0xFFF6E4BB)))
+                Text("Invite", style = sans(13.5f, FontWeight.Bold, Color(0xFFF6E4BB)), maxLines = 1)
+            }
         }
         if (m.quick) {
             // Polish brief 2: one filter line, the source tabs (with their counts) and ONE format picker.

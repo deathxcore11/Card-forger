@@ -312,6 +312,7 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
     val sited = (m.tabs.firstOrNull { it.on }?.key ?: "cards") != "cards"
     var findText by remember(m.id) { mutableStateOf(m.find?.value.orEmpty()) }
     var issuesOpen by remember(m.id) { mutableStateOf(false) }
+    var noteOpen by remember(m.id) { mutableStateOf(false) }
     val issuesSeen = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val review: (DeckEyebrow) -> Unit = { e ->
@@ -334,12 +335,13 @@ private fun DeckPage(m: CollectionDeckModel, top: @Composable (tabs: (@Composabl
             }
             return@LazyColumn
         }
-        item(key = "hero") { Box(Modifier.padding(horizontal = gutter).padding(top = 4.dp)) { Hero(m, act, wide, screen, reduced, review) } }
+        item(key = "hero") { Box(Modifier.padding(horizontal = gutter).padding(top = 4.dp)) {
+            Hero(m, act, wide, screen, reduced, review, noteTag = if (wide) null else m.note?.let { n -> { NoteChip(n, noteOpen) { noteOpen = !noteOpen } } }) } }
         item(key = "head") {
             // Block margins collapse as on the site: .ds-actions 14, .note 10, nav.tabs 12, .deck-toolbar 14 / 12 (the groups' 12 meets its 12).
             val blocks = buildList<Triple<Dp, Dp, @Composable () -> Unit>> {
                 if (m.actions.any { it.shown && it.label.isNotBlank() }) add(Triple(14.dp, 14.dp) { Actions(m, act, wide) })
-                m.note?.let { add(Triple(10.dp, 10.dp) { if (wide) NoteWarn(it, m.noteLines) else NoteTag(it, m.noteLines) }) }
+                m.note?.let { if (wide || noteOpen) add(Triple(10.dp, 10.dp) { NoteWarn(it, m.noteLines) }) }
                 if (m.tabs.isNotEmpty()) add(Triple(12.dp, 12.dp) { if (wide) DeckTabs(m.tabs, screen, act.tab) else PhoneTabs(m.tabs, act.tab) })
                 m.commanderNote?.let { add(Triple(10.dp, 10.dp) { NoteWarn("⚠ $it", emptyList(), Modifier.clickable { act.tab("upgrade") }) }) }
                 if (sited) Unit
@@ -582,10 +584,11 @@ private fun DeckPanelBox(p: DeckPanel, act: CollectionDeckActions) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boolean, screen: Dp, reduced: Boolean, review: (DeckEyebrow) -> Unit) =
+private fun Hero(m: CollectionDeckModel, act: CollectionDeckActions, wide: Boolean, screen: Dp, reduced: Boolean, review: (DeckEyebrow) -> Unit,
+                 noteTag: (@Composable () -> Unit)? = null) =
     DsHero(m.art, m.artSources, m.artCrop, m.eyebrow, m.title, m.line, m.stats, m.owned, wide, screen, reduced,
         back = DsHeroButton(m.glyphs["back"], "Back to decks", onClick = act.back), more = DsHeroButton(m.glyphs["more"], m.menuLabel) { act.act(m.menuAct, m.id) },
-        onStat = { s -> if (s.act == "deckTab") act.tab(s.id) else if (s.act.isNotBlank()) act.act(s.act, s.id) }, review = review, compact = !wide)
+        onStat = { s -> if (s.act == "deckTab") act.tab(s.id) else if (s.act.isNotBlank()) act.act(s.act, s.id) }, review = review, compact = !wide, noteTag = noteTag)
 
 /** One of the hero's corner buttons: its glyph (the site's icon, or [text] when it draws a character), its name, its tap. */
 internal class DsHeroButton(val icon: SiteSvg?, val label: String, val text: String = "", val onClick: () -> Unit)
@@ -601,7 +604,9 @@ internal fun DsHero(art: String?, artSources: List<String>, artCrop: String, eye
                     /** What a stat carries after its word (.ds-stat's more: the sheet's Retry prices link), by the stat's place. */
                     statMore: @Composable (Int) -> Unit = {},
                     /** Polish brief 4 (the deck page on a phone): a 236 dp header; the tags ride between ← and ⋯, the review tag at the stats' end. */
-                    compact: Boolean = false) {
+                    compact: Boolean = false,
+                    /** Brief 4: the incomplete-draft tag rides beside the review tag at the stats' end. */
+                    noteTag: (@Composable () -> Unit)? = null) {
     val shape = RoundedCornerShape(18.dp)
     // --ds-h: clamp(300px, 34vw, 380px); a phone (under 700) 300.
     val h = if (compact) 236.dp else if (screen < 700.dp) 300.dp else (screen.value * .34f).coerceIn(300f, 380f).dp
@@ -681,7 +686,9 @@ internal fun DsHero(art: String?, artSources: List<String>, artCrop: String, eye
                         HeroStat(s) { onStat(s) }
                         statMore(i)
                     }
-                    reviewTag?.let { e -> Spacer(Modifier.weight(1f)); chip(e) }
+                    if (reviewTag != null || noteTag != null) Spacer(Modifier.weight(1f))
+                    noteTag?.invoke()
+                    reviewTag?.let { e -> chip(e) }
                 }
                 owned?.let { o ->
                     Box(Modifier.fillMaxWidth().height(3.dp).background(Color(0x14FFFFFF))) {
@@ -910,15 +917,13 @@ private fun Toolbar(m: CollectionDeckModel, act: CollectionDeckActions, wide: Bo
 
 /** Polish brief 4, a phone: the "Incomplete draft…" note as one amber tag (its first sentence); a tap opens the whole note. */
 @Composable
-private fun NoteTag(text: String, lines: List<String>) {
-    var open by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        val shape = RoundedCornerShape(999.dp)
-        Row(Modifier.heightIn(min = 44.dp).clickable { open = !open }.semantics { role = Role.Button; stateDescription = if (open) "Expanded" else "Collapsed" }, verticalAlignment = Alignment.CenterVertically) {
-            Text(text.substringBefore(". ").removeSuffix(".").take(58), maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(12.5f, 700, Color(0xFFF6DBA2)),
-                modifier = Modifier.clip(shape).background(Color(0x1FF2C66D)).border(1.dp, Color(0x80F2C66D), shape).padding(horizontal = 12.dp, vertical = 5.dp))
-        }
-        if (open) NoteWarn(text, lines)
+private fun NoteChip(text: String, open: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(999.dp)
+    // The note's first sentence as a tag in the header; a tap shows the whole note under the actions.
+    Box(Modifier.heightIn(min = 44.dp).clickable(onClick = onClick).semantics { role = Role.Button; stateDescription = if (open) "Expanded" else "Collapsed" },
+        contentAlignment = Alignment.Center) {
+        Text(text.substringBefore(". ").substringBefore(":").removeSuffix(".").take(40), maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(12.5f, 700, Color(0xFFF6DBA2)),
+            modifier = Modifier.clip(shape).background(Color(0x1FF2C66D)).border(1.dp, Color(0x80F2C66D), shape).padding(horizontal = 12.dp, vertical = 5.dp))
     }
 }
 
