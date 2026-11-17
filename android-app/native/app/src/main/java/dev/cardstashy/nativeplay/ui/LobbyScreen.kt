@@ -23,6 +23,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -1053,7 +1054,7 @@ private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpen
                     QUICK_SOURCES.forEach { (k, label) -> val on = source == k
                         Box(tab.height(44.dp).clip(RoundedCornerShape(10.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(10.dp)) else Modifier)
                             .clickable { m.source = k; m.query = "" }.testTag("qsrc:$k").padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
-                            Text(label + (quickCounts[k]?.let { " $it" } ?: ""), style = sans(13f, color = if (on) Site.Text else Muted), maxLines = 1, softWrap = false) }
+                            Text(label + (quickCounts[k]?.let { " $it" } ?: ""), style = sans(13f, color = if (on) Site.Text else Muted), maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     }
                 }
                 // The pad reaches it with Up from the top row of decks; Left and Right step the format, Down goes back to the decks, A opens the list.
@@ -1144,11 +1145,11 @@ private fun DeckBar(m: LobbyModel, signedIn: Boolean, status: String, wide: Bool
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 val youOn = practice && m.inspected == "player"; val cpuOn = practice && m.inspected == "opponent"
                 Text(you?.name ?: "Your deck", style = sans(15f, FontWeight.Bold, if (you != null) Site.Text else Muted), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.then(if (practice) Modifier.clickable { m.inspected = "player" } else Modifier).then(if (youOn) Modifier.drawBehind {
+                    modifier = Modifier.then(if (practice) Modifier.heightIn(min = 44.dp).clickable { m.inspected = "player" }.wrapContentHeight(Alignment.CenterVertically) else Modifier).then(if (youOn) Modifier.drawBehind {
                         drawLine(Gold, Offset(0f, size.height), Offset(size.width, size.height), 1.5.dp.toPx()) } else Modifier))
                 if (m.quick) Text("against a random ${m.format} deck", style = sans(12f, color = SoftInk), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 else Text("vs " + (cpu?.name ?: "CPU deck"), style = sans(12.5f, FontWeight.SemiBold, if (cpuOn) Gold else SoftInk), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.heightIn(min = 24.dp).clickable { m.inspected = "opponent" }.semantics { contentDescription = "CPU deck, ${cpu?.name ?: "not chosen"}" })
+                    modifier = Modifier.heightIn(min = 44.dp).clickable { m.inspected = "opponent" }.semantics { contentDescription = "CPU deck, ${cpu?.name ?: "not chosen"}" }.wrapContentHeight(Alignment.CenterVertically))
             }
         }
     }
@@ -1172,7 +1173,8 @@ private fun DeckBar(m: LobbyModel, signedIn: Boolean, status: String, wide: Bool
         Box(mod.height(56.dp).then(if (ready) Modifier else Modifier.alpha(.6f)).clip(shape)
             .background(if (ready) GoldPlate else Brush.verticalGradient(listOf(Color(0xFF1B1A16), Color(0xFF121113))))
             .border(1.dp, Color(0xFF5A3B12), shape).clickable(enabled = ready, onClick = onStart), contentAlignment = Alignment.Center) {
-            Text(label, style = cinzel(17f, if (ready) Color(0xFF2A1906) else Color(0xFFBFAF92), 1.2f, 18f), maxLines = 1)
+            androidx.compose.foundation.text.BasicText(label, style = cinzel(17f, if (ready) Color(0xFF2A1906) else Color(0xFFBFAF92), 1.2f, 18f), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = 17.sp, stepSize = 0.5.sp))
         }
     }
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Rule.Color.Bar).border(1.dp, Color(0x59D6AD64), RoundedCornerShape(18.dp))
@@ -1181,7 +1183,8 @@ private fun DeckBar(m: LobbyModel, signedIn: Boolean, status: String, wide: Bool
         if (wide) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             seats(Modifier.weight(1f)); if (!m.quick) level(); inspect(Modifier.width(110.dp)); play(Modifier.width(240.dp))
         } else {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { seats(Modifier.weight(1f)); if (!m.quick) level() }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { seats(Modifier.weight(1f)) }
+            if (!m.quick) level()
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { inspect(Modifier.width(104.dp)); play(Modifier.weight(1f)) }
         }
     }

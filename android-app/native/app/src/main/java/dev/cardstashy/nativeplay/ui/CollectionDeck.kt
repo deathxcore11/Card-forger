@@ -779,7 +779,7 @@ private fun PracticePlate(label: String, modifier: Modifier, pad: Dp = 30.dp, on
         .clickable(onClick = onClick).semantics { role = Role.Button }.padding(horizontal = pad),
         horizontalArrangement = Arrangement.spacedBy(if (pad < 30.dp) 8.dp else 12.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
         Diamond(); Text(label, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 15.sp, lineHeight = 15.sp, letterSpacing = 1.5.sp, color = Plate,
-            shadow = Shadow(Color(0x99FBE9BD), Offset(0f, 1f), 0f))); Diamond()
+            shadow = Shadow(Color(0x99FBE9BD), Offset(0f, 1f), 0f)), maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis); Diamond()
     }
 }
 
@@ -953,7 +953,7 @@ private fun PhoneToolbar(m: CollectionDeckModel, act: CollectionDeckActions, que
         DeckSearchField(query, m.searchPlaceholder, act.search, Modifier.weight(1f))
         val shown = m.chips.firstOrNull { it.on }?.label
         val words = listOfNotNull(shown, m.group?.current?.label).joinToString(" · ")
-        if (m.chips.isNotEmpty() || m.group != null) Row(Modifier.height(44.dp).widthIn(max = 150.dp).clip(square).background(GlassFill).border(1.dp, GoldC.copy(alpha = .5f), square)
+        if (m.chips.isNotEmpty() || m.group != null) Row(Modifier.height(44.dp).widthIn(max = 120.dp).clip(square).background(GlassFill).border(1.dp, GoldC.copy(alpha = .5f), square)
             .clickable { showOpen = true }.semantics { role = Role.Button; contentDescription = "Show and group, $words" }.padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(words, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(13f, 700, Ink), modifier = Modifier.weight(1f, fill = false))

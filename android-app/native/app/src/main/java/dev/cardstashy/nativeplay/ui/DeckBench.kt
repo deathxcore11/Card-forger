@@ -1248,7 +1248,7 @@ internal fun Opt(on: Boolean, desc: String? = null, round: Boolean = false, radi
         .padding(horizontal = if (round) 0.dp else 13.dp), contentAlignment = Alignment.Center) { content() }
 }
 @Composable
-internal fun OptText(s: String, on: Boolean) = Text(s, style = f(13f, 700, if (on) B.Gold else B.Fg), maxLines = 1, softWrap = false)
+internal fun OptText(s: String, on: Boolean) = Text(s, style = f(13f, 700, if (on) B.Gold else B.Fg), maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
 
 /** The sets the browser's cards come from (code to name), newest first, for the panel's Set and the chips. */
 private fun benchSets(tiles: List<BenchTile>, shelves: List<BenchShelf>?): List<Pair<String, String>> {

@@ -18,7 +18,7 @@ class StagePlayTest {
     }
     @Test fun shouldersStepAndStopAtTheEnds() {
         assertEquals("practice", StageModes.step("quick", 1)); assertEquals("quick", StageModes.step("quick", -1))
-        assertEquals("planeswalk", StageModes.step("planeswalk", 1)); assertEquals("Friend", StageModes.name("social"))
+        assertEquals("planeswalk", StageModes.step("planeswalk", 1)); assertEquals("Friends", StageModes.name("social"))
     }
     @Test fun fiveModesQuickFirst() {
         assertEquals(listOf("quick", "practice", "social", "story", "planeswalk"), StageModes.ALL.map { it.first })

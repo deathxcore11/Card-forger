@@ -1656,7 +1656,7 @@ private fun SignInCard(onSignIn: () -> Unit) {
 /** The upright home's modes and what its gold Play does. Its own object so plain JVM tests can load it without Compose. */
 internal object StageModes {
     /** Key, name. The keys are [PlayHomeActions.mode]'s; "story" opens Story. */
-    val ALL = listOf("quick" to "Quick Play", "practice" to "Practice", "social" to "Friend", "story" to "Story", "planeswalk" to "Planeswalk")
+    val ALL = listOf("quick" to "Quick Play", "practice" to "Practice", "social" to "Friends", "story" to "Story", "planeswalk" to "Planeswalk")
 
     fun name(mode: String) = ALL.firstOrNull { it.first == mode }?.second ?: "Quick Play"
 
@@ -1735,7 +1735,7 @@ private fun ModeRow(d: PlayHomeData, mode: String, onMode: (String) -> Unit) {
                 Art(if (key == "story") story?.art else MODE_ART[key], Modifier.matchParentSize().then(Modifier.alpha(if (on) 1f else .75f)).let { if (key == "planeswalk") it.scale(1.16f) else it },
                     if (key == "story") BiasAlignment(0f, -.4f) else MODE_FOCUS[key] ?: Alignment.Center)
                 Box(Modifier.matchParentSize().background(Brush.verticalGradient(.3f to Color(0x000C0C0E), 1f to Color(0xEB0C0C0E))))
-                Text(name, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = if (on) P.Ink else Color(0xFFD9D4C8), textAlign = TextAlign.Center),
+                Text(name, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = (-0.1).sp, color = if (on) P.Ink else Color(0xFFD9D4C8), textAlign = TextAlign.Center),
                     maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 2.dp, vertical = 8.dp))
             }
         }
