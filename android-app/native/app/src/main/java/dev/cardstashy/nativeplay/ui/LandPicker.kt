@@ -136,7 +136,7 @@ fun LandPicker(p: LandPick, a: LandActs, tileMod: ((key: String, image: String) 
                 // Only on the main style: "this style" is then the one the button sets.
                 if (held == null && focus.id == p.inUse) Box(Modifier.heightIn(min = 44.dp).alpha(if (can) 1f else .5f).clip(RoundedCornerShape(12.dp)).background(Color(0x40000000)).border(1.dp, Color(0x17FFFFFF), RoundedCornerShape(12.dp))
                     .clickable(enabled = can, onClick = a.all).semantics { role = Role.Button }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-                    Text("Use this style in all my decks", style = lt(12.5f, FontWeight.Bold))
+                    Text("Main in all my decks", style = lt(12.5f, FontWeight.Bold))
                 }
             }
         }

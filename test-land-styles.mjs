@@ -102,8 +102,12 @@ assert.equal(pickSpecialLand(list, new Map(list.map(s => [s.id, {}]))), null);
   const used = await call('landstyle', {id: reg.id, all: true});
   assert.equal(used.status, 200);
   assert.ok(styles.find(s => s.id === reg.id).on, 'the account default');
-  assert.equal(decks[0].cards.find(r => r.name === 'Forest').id, reg.id, 'every deck\'s Forests switch');
+  // Main in all my decks (Randall 17 Nov: nothing switches automatically): no row changes style; a deck that plays the style gets it first.
+  assert.equal(decks[0].cards.find(r => r.name === 'Forest').id, undefined, 'no deck\'s Forests switch');
   assert.equal(decks[0].cards.find(r => r.name === 'Llanowar Elves').id, undefined);
+  decks = [{...decks[0], cards: [{name: 'Forest', qty: 10, id: 'other'}, {name: 'Llanowar Elves', qty: 4}, {name: 'Forest', qty: 6, id: reg.id}]}];
+  assert.equal((await call('landstyle', {id: reg.id, all: true})).status, 200);
+  assert.deepEqual(decks[0].cards.filter(r => r.name === 'Forest').map(r => [r.id, r.qty]), [[reg.id, 6], ['other', 10]], 'the style becomes the main row; both rows keep their style');
   await call('deck', {id: decks[0].id, name: 'Mine', format: 'Standard', cards: [{name: 'Forest', qty: 16, id: reg.id}, {name: 'Llanowar Elves', qty: 4, id: 'nope'}]});
   assert.equal(calls.filter(c => c[0] === 'play_save_deck').at(-1)[1].p_cards[0].id, reg.id, 'saving a deck keeps the land style');
   assert.equal(calls.filter(c => c[0] === 'play_save_deck').at(-1)[1].p_cards[1].id, undefined, 'bad ids are dropped');

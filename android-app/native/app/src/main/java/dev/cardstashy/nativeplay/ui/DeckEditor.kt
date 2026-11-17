@@ -280,9 +280,10 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
             if (id.isNotEmpty() && !ui.landBusy) { ui.landBusy = true
                 scope.launch { val st = landData?.byId?.get(id)
                     runCatching { Progress.landStyle(id, true) }.onSuccess {
-                        ui.lands = ui.lands + (type to id)
-                        ui.edit = ui.edit.copy(cards = LandStyles.join(ui.edit.cards.map { l -> if (l.name == type) l.copy(extra = (l.extra?.deepCopy() ?: JsonObject()).apply { addProperty("id", id) }) else l }))
-                        toast("All your decks use ${if (st != null) st.setName + " " else ""}$type.") }
+                        // Main in all my decks (Randall 17 Nov: nothing switches automatically): only the main changes, no row's style.
+                        val pinned = ownLandRows(ui.edit.cards, type); ui.lands = ui.lands + (type to id)
+                        ui.edit = ui.edit.copy(cards = LandStyles.mainFirst(pinned, type, id), dirty = true)
+                        toast("Main $type in all your decks${if (st != null) ": ${st.set.uppercase()} ${st.num}" else ""}") }
                         .onFailure { toast("That didn't go through. Try again.") }
                     ui.landBusy = false } } },
         more = { ui.landLimit += 60 },
