@@ -277,16 +277,15 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
         val item = info.visibleItemsInfo.firstOrNull { it.key == key }
         if (item == null) { val pos = open.indexOfFirst { it["id"].asString == key }.coerceAtLeast(0); listState.scrollToItem(pos + if (info.visibleItemsInfo.firstOrNull()?.key == "head") 1 else 0) }
         else { val over = item.offset + item.size - info.viewportEndOffset; if (over > 0) listState.scrollBy(over.toFloat()) }
-        // Two panes (the header is beside the list): the row after it (the tease) comes into view too, while the card stays whole.
+        // Two panes (the header sits beside the list): the current battle goes to the top of the list, so the whole card and the
+        // tease row under it show; the won rows above are a scroll away (review of a4f09acb on the Thor).
         if (twoPanes) {
+            val pos = open.indexOfFirst { it["id"].asString == key }
+            val nextKey: Any? = open.getOrNull(pos + 1)?.get("id")?.asString ?: if (tease != null) "tease" else null
             androidx.compose.runtime.withFrameNanos { }
-            val li = listState.layoutInfo; val vis = li.visibleItemsInfo
-            val at = vis.indexOfFirst { it.key == key }
-            val cur = vis.getOrNull(at); val next = vis.getOrNull(at + 1)?.takeIf { it.key == "tease" || it.key.toString().startsWith("a") }
-            if (cur != null) {
-                val want = ((next ?: cur).let { it.offset + it.size } - li.viewportEndOffset).coerceAtMost(cur.offset - li.viewportStartOffset)
-                if (want > 0) listState.scrollBy(want.toFloat())
-            }
+            val li = listState.layoutInfo
+            val shown = { k: Any? -> li.visibleItemsInfo.firstOrNull { it.key == k }?.let { it.offset + it.size <= li.viewportEndOffset - li.afterContentPadding } == true }
+            if (pos > 0 && !(shown(key) && (nextKey == null || shown(nextKey)))) listState.scrollToItem(pos)
         }
     }
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Site.Bg)) {
