@@ -111,3 +111,9 @@ console.log('random build shape: the reported Rubble Rouser pool builds a creatu
  const { cardJob } = await import('./builder.js');
  assert.equal(cardJob(card('Rubble Rouser')), 'Threats'); assert.equal(cardJob(card('Burst Lightning')), 'Removal'); assert.equal(cardJob(card('Mountain') || { type_line: 'Basic Land — Mountain' }), 'Lands');
 }
+// "Rebuild unlocked": locked cards come back at the copies they had (ai-deck-builder.js passes them as base rows).
+{
+ const deck = buildDeck({ ...options, base: [{ name: fx.seed, qty: 4 }, { name: 'Burst Lightning', qty: 4 }, { name: 'Fear of Missing Out', qty: 3 }], variation: 'varied', forgeSeed: 'LOCK22' }), qty = n => deck.cards.find(r => r.name === n)?.qty;
+ assert.equal(qty(fx.seed), 4); assert.equal(qty('Burst Lightning'), 4); assert.ok(qty('Fear of Missing Out') >= 3, 'a locked card keeps at least its copies');
+ assert.equal(deck.cards.reduce((n, r) => n + r.qty, 0), 60);
+}
