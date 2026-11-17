@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -53,7 +54,7 @@ class CollectionBuildDeckControlsShotTest {
         override suspend fun call(name: String, a: JsonObject): RandomBuild.Flow {
             calls += name; args += a
             fun withExtra(swap: Boolean, tap: String) = result.deepCopy().apply {
-                add("quick", extra.get("quick")); add("unlocked", extra.get("unlocked")); add("retune", extra.get("retune"))
+                add("unlocked", extra.get("unlocked")); add("retune", extra.get("retune"))
                 val sw = extra.getAsJsonArray("switches").deepCopy()
                 sw.forEach { s -> if (s.asJsonObject.get("act").asString == "flowTap") s.asJsonObject.getAsJsonArray("items").forEach { i -> i.asJsonObject.addProperty("on", i.asJsonObject.get("value").asString == tap) } }
                 add("switches", sw); if (swap) add("swap", extra.get("swap"))
@@ -92,13 +93,15 @@ class CollectionBuildDeckControlsShotTest {
         val pick = fake.args[fake.calls.lastIndexOf("flowPick")]
         assertEquals("bracket", pick.get("field").asString); assertEquals("2", pick.get("value").asString)
         rule.onNodeWithText("Generate deck").performScrollTo().performClick(); settle(30)
-        // The result: Lower budget, Group, Tap.
-        assertTrue("Lower budget", seen("LOWER BUDGET") && seen("\$16"))
+        // Budget is a field beside Rebuild, not pills.
+        assertTrue("budget label", seen("BUDGET"))
+        assertTrue("no pills", !seen("LOWER BUDGET"))
         assertTrue("Group and Tap", seen("GROUP") && seen("TAP"))
         shot("result")
-        rule.onNodeWithText("\$11").performScrollTo().performClick(); settle(20)
+        rule.onNodeWithContentDescription("Budget (\$)").performScrollTo().performTextInput("40"); settle(5)
+        rule.onNodeWithText("Rebuild").performScrollTo().performClick(); settle(20)
         val adj = fake.args[fake.calls.lastIndexOf("flowAdjust")]
-        assertEquals("11", adj.get("budget").asString); assertTrue("a chip rebuilds as a cap", adj.get("quick").asBoolean)
+        assertEquals("40", adj.get("budget").asString)
         // Plan and Power on the built deck: the used one lit; Control rebuilds with plan control.
         assertTrue("Plan and Power chips", seen("Midrange") && seen("Strong"))
         rule.onNodeWithText("Control").performScrollTo().performClick(); settle(20)

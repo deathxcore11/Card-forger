@@ -60,7 +60,7 @@ try{
    const exactId=await result.getAttribute('data-flow-result');await result.locator('[data-act="flowCard"]').first().click();await page.locator('#sheet .cs-card').waitFor();await page.locator('#sheet [data-act="sheetHistoryBack"]').click();await result.waitFor();assert.equal(await result.getAttribute('data-flow-result'),exactId,'card Back retains the exact result after all view switches');
 
    assert.equal(await result.locator('[data-flow-budget]').inputValue(),'','budget rebuild begins blank');
-   assert.match(await result.locator('[data-act="flowAdjust"]').innerText(),/Rebuild with budget/);
+   assert.match(await result.locator('[data-act="flowAdjust"]').innerText(),/^Rebuild$/);
    const order=await result.evaluate(n=>{const ai=n.querySelector('[data-act="flowCoach"]'),cards=n.querySelector('.deck-flow-cards');return {before:!!(ai.compareDocumentPosition(cards)&Node.DOCUMENT_POSITION_FOLLOWING),logo:!!ai.querySelector('.stashy-logo')};});assert.deepEqual(order,{before:true,logo:true});
    await page.locator('#sheetBody').evaluate(n=>n.scrollTop=0);if(width===390)await page.screenshot({path:`test-results/deck-built-header-${width}${suffix}.png`,fullPage:false,animations:'allow'});
    await result.locator('[data-act="flowAdjust"]').click();assert.match(await result.locator('[data-flow-status]').innerText(),/Enter a dollar budget/);assert.equal(await page.locator('.build-overlay').count(),0,'blank budget does not silently remove the cap');

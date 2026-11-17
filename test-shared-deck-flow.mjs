@@ -64,7 +64,7 @@ for(const game of ['mtg','ygo','ptcg']){
  const html=deckResultMarkup({...result,request:{...result.request,game}},'presentation');
  assert.match(html,/class="deck-hero ds-hero"/);assert.match(html,/<h1>/);
  assert.match(html,/list compact deck-compact-list/);assert.match(html,/mini-row art-row deck-compact-row/);
- assert.doesNotMatch(html,/deck-flow-row|Tournament-backed/);assert.match(html,/data-flow-budget[^>]*value=""/);assert.match(html,/Rebuild with budget/);
+ assert.doesNotMatch(html,/deck-flow-row|Tournament-backed/);assert.match(html,/data-flow-budget[^>]*value=""/);assert.match(html,/data-act="flowAdjust"[^>]*>Rebuild</);
  const busy=deckSetupMarkup({request:{...request,game},busy:true,status:'Checking the selected cards…'},pipeline.formats);
  assert.match(busy,/Your deck is being built/);assert.match(busy,/brand-loading/);assert.match(busy,/flowCancelBuild/);
  assert.doesNotMatch(busy,/data-flow-field/,'in-progress setup exposes cancellation, not editable stale inputs');
@@ -146,7 +146,7 @@ console.log('PASS: actual partial Bloodlust coverage, conditional Drana/first-st
  // One-tap lower budgets sit under the current estimate, in round dollars; a deck too cheap to cut offers none.
  assert.deepEqual(lowerBudgets(82.05),[60,40,20]);assert.deepEqual(lowerBudgets(19.97),[15,10,5]);assert.deepEqual(lowerBudgets(3),[]);assert.deepEqual(lowerBudgets(null),[]);
  const priced={...result,pricing:{...result.pricing,estimate:82.05,unpriced:0},request:{...result.request,game:'mtg',budget:null,closest:false},delta:null,budgetStatus:'not-requested'};
- const shown=deckResultMarkup(priced,'quick');assert(/data-act="flowAdjust" data-result="quick" data-budget="20"/.test(shown),'the built deck offers a lower budget in one tap');
+ const shown=deckResultMarkup(priced,'quick');assert(!/data-budget=|deck-budget-quick/.test(shown),'no budget pills (Randall 16 Nov: "Budget is not a pill, you can enter it")');assert(/class="deck-budget-rebuild deck-budget-inline"><label class="field">Budget \(\$\)<input data-flow-budget[^>]*placeholder="e\.g\. 60"/.test(shown),'the budget field is on the built deck, a lower amount as its hint');assert(/data-act="flowAdjust" data-result="quick">Rebuild<\/button>/.test(shown),'beside Rebuild');
  assert(/data-act="flowGroup" data-result="quick" data-group="job"/.test(shown),'and grouping by job');
  // Group by job: the main deck is split by what each card does.
  const jobs=deckResultMarkup({...priced,rows:[{name:'Fixture bear',qty:4,zone:'main',card:threat,price:1},{name:'Island',qty:20,zone:'main',card:land,price:.1},{name:'Fixture bear side',qty:2,zone:'side',card:threat,price:1}]},'jobs',{group:'job'});

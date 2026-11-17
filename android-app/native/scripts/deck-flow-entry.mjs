@@ -122,7 +122,7 @@ flowCalls.flowAdjust = async a => {
   const item = results.get(a.id); if (!item) throw Error('Your account or collection changed. Rebuild before opening this deck.');
   const budget = customBudget(a.budget);
   const me = ++current; status = 'Finding cards for your updated budget…';
-  const result = await deckPipeline.build({...item.result.request, budget, budgetMode: a.quick ? 'cap' : item.result.request.budgetMode, closest: false, previousDeck: item.result.deck, previousBudget: item.result.request.budget, previousEstimate: item.result.pricing.estimate},
+  const result = await deckPipeline.build({...item.result.request, budget, closest: false, previousDeck: item.result.deck, previousBudget: item.result.request.budget, previousEstimate: item.result.pricing.estimate},
     {current: live(me), onStatus: m => { if (me === current) status = String(m); }});
   if (me !== current) return {cancelled: true};
   status = '';

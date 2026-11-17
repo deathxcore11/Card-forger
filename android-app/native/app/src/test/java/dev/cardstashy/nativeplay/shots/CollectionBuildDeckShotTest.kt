@@ -112,9 +112,9 @@ class CollectionBuildDeckShotTest {
         assertEquals("saved once", 1, saved.size)
         assertTrue("the button says so", seen("Saved to My decks"))
         // Rebuild with a budget that isn't one: customBudget's message, nothing built.
-        rule.onNodeWithText("Rebuild").performClick(); settle(5)
-        rule.onNodeWithContentDescription("Budget ($)").performTextInput("abc"); settle(5)
-        rule.onNodeWithText("Rebuild with budget").performClick(); settle(10)
+        // The budget field sits on the result, beside Rebuild (no pills, nothing to open first).
+        rule.onNodeWithContentDescription("Budget ($)").performScrollTo().performTextInput("abc"); settle(5)
+        rule.onNodeWithText("Rebuild").performClick(); settle(10)
         assertTrue("budget message", seen("Enter a dollar budget"))
         // Detailed list: the rows with their pills and prices.
         rule.onNodeWithContentDescription("Detailed list").performScrollTo().performClick(); settle(10)

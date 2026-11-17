@@ -240,6 +240,8 @@ button.ds-stat b{display:inline-grid;place-items:center;min-width:30px;padding:1
 .ds-rebuild>summary{list-style:none}
 .ds-rebuild>summary::-webkit-details-marker{display:none}
 .ds-rebuild[open]>.deck-budget-rebuild{flex:1 0 100%;order:9}
+.ds-actions>.deck-budget-inline{flex:1 0 100%;padding:12px 0 0;border:0}
+@media(max-width:420px){.ds-actions>.deck-budget-inline{grid-template-columns:minmax(0,1fr) auto}.ds-actions>.deck-budget-inline>.btn{width:auto}}
 .ds-versions .seg{width:100%}
 .ds-versions .seg>button{flex:1 1 0}
 @media(max-width:699px){

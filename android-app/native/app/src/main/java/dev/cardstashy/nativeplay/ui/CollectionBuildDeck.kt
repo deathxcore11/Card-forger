@@ -150,7 +150,6 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
     var seedOpen by remember { mutableStateOf(false) }
     var prefsOpen by remember { mutableStateOf(false) }
     // The result's Rebuild: open, the amount, its status line.
-    var rebuildOpen by remember { mutableStateOf(false) }
     var rebuildText by remember { mutableStateOf("") }
     var rebuildStatus by remember { mutableStateOf("") }
     var saving by remember { mutableStateOf(false) }
@@ -211,13 +210,13 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
             when {
                 a.error != null -> setupOf(r, a.error, true)?.let { showSetup(it) }
                 m == null || m.b("cancelled") -> {}
-                m.b("ok") -> { result = m.o("model"); rebuildOpen = false; rebuildText = ""; rebuildStatus = "" }
+                m.b("ok") -> { result = m.o("model"); rebuildText = ""; rebuildStatus = "" }
                 else -> showSetup(m.o("setup"))
             }
         }
     }
     // A.flowAdjust: the amount checked first (customBudget's message under the field), then the rebuild over the result.
-    fun rebuild(amount: String = rebuildText, quick: Boolean = false) {
+    fun rebuild(amount: String = rebuildText) {
         val id = result?.s("id") ?: return
         scope.launch {
             val check = engine.call("flowBudget", obj("budget" to amount))
@@ -225,15 +224,15 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
             val me = ++token[0]
             busy = BuildBusy("Your deck is being built", "Your updated deck will open here when it’s ready.", "Finding cards for your updated budget…", inSheet = false,
                 cancelled = { rebuildStatus = "Rebuild cancelled. Your deck is unchanged." })
-            val a = engine.call("flowAdjust", obj("id" to id, "budget" to amount, "quick" to quick))
+            val a = engine.call("flowAdjust", obj("id" to id, "budget" to amount))
             if (me != token[0]) return@launch
             busy = null
             val m = a.obj
             when {
-                a.error != null -> { rebuildStatus = a.error; rebuildOpen = true }
+                a.error != null -> { rebuildStatus = a.error }
                 m == null || m.b("cancelled") -> {}
-                m.b("ok") -> { result = m.o("model"); rebuildOpen = false; rebuildText = ""; rebuildStatus = "" }
-                else -> { rebuildStatus = m.s("message"); rebuildOpen = true }
+                m.b("ok") -> { result = m.o("model"); rebuildText = ""; rebuildStatus = "" }
+                else -> { rebuildStatus = m.s("message") }
             }
         }
     }
@@ -249,10 +248,10 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
             busy = null
             val m = a.obj
             when {
-                a.error != null -> { rebuildStatus = a.error; rebuildOpen = true }
+                a.error != null -> { rebuildStatus = a.error }
                 m == null || m.b("cancelled") -> {}
                 m.b("ok") -> { result = m.o("model"); rebuildStatus = "" }
-                else -> { rebuildStatus = m.s("message"); rebuildOpen = true }
+                else -> { rebuildStatus = m.s("message") }
             }
         }
     }
@@ -339,10 +338,10 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
                 val b = busy
                 when {
                     b != null && b.inSheet -> BuildPop(b, live, Modifier.padding(vertical = 24.dp)) { cancel() }
-                    res != null -> FlowResult(res, vw, saving, rebuildOpen, rebuildText, rebuildStatus,
-                        onBack = onClose, onSave = { saveDeck() }, onRebuildToggle = { rebuildOpen = !rebuildOpen }, onRebuildText = { rebuildText = it; rebuildStatus = "" },
+                    res != null -> FlowResult(res, vw, saving, rebuildText, rebuildStatus,
+                        onBack = onClose, onSave = { saveDeck() }, onRebuildText = { rebuildText = it; rebuildStatus = "" },
                         onRebuild = { rebuild() }, onEdit = { res.o("request")?.let { opened(it) } }, onExport = { export() },
-                        onQuick = { rebuild(it, true) }, onSwitch = { act, v -> step(act, (if (act == "flowGroup") "group" else "tap") to v) },
+                        onSwitch = { act, v -> step(act, (if (act == "flowGroup") "group" else "tap") to v) },
                         onUnlocked = { rebuildUnlocked() }, onRetune = { f, v -> retune(f, v) }, onSwapTake = { step("flowSwapTake", "option" to it) }, onSwapKeep = { step("flowSwapKeep") },
                         onCard = { r -> cardTap(r) })
                     setup != null -> FlowSetup(setup!!, vw, seedText, seedOpen, budgetText, prefsOpen,
@@ -501,9 +500,9 @@ private fun CheckRow(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildOpen: Boolean, rebuildText: String, rebuildStatus: String,
-                       onBack: () -> Unit, onSave: () -> Unit, onRebuildToggle: () -> Unit, onRebuildText: (String) -> Unit, onRebuild: () -> Unit,
-                       onEdit: () -> Unit, onExport: () -> Unit, onQuick: (String) -> Unit, onSwitch: (String, String) -> Unit, onUnlocked: () -> Unit, onRetune: (String, String) -> Unit,
+private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildText: String, rebuildStatus: String,
+                       onBack: () -> Unit, onSave: () -> Unit, onRebuildText: (String) -> Unit, onRebuild: () -> Unit,
+                       onEdit: () -> Unit, onExport: () -> Unit, onSwitch: (String, String) -> Unit, onUnlocked: () -> Unit, onRetune: (String, String) -> Unit,
                        onSwapTake: (Int) -> Unit, onSwapKeep: () -> Unit, onCard: (DeckLine) -> Unit) {
     val h = m.o("hero") ?: JsonObject()
     val reduced = Motion.still
@@ -528,33 +527,30 @@ private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildOpen: Bool
                 }
             }
         }
-        // .ds-actions: Save deck (gold), Rebuild (ghost; open, the budget form on its own line below).
+        // .ds-actions: Save deck (gold) across; then Plan and Power, then the budget field with Rebuild (Randall 16 Nov: "Budget is
+        // not a pill, you can enter it").
         val save = m.o("save") ?: JsonObject()
         val rb = m.o("rebuild") ?: JsonObject()
         // Controller: X is the gold Save deck while it can save.
         if (!save.b("disabled") && !saving && save.s("label").isNotBlank()) PadScreen(PadActs(x = PadAct(save.s("label"), onSave)))
-        Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            val off = save.b("disabled") || saving
-            Box(Modifier.weight(1f).alpha(if (off) .55f else 1f)) {
-                DeckGold(if (saving) "Saving…" else save.s("label"), Modifier.fillMaxWidth(), minHeight = 46.dp, pad = 10.dp, onClick = { if (!off) onSave() })
-            }
-            DeckGhost(rb.s("summary"), Modifier.weight(1f), minHeight = 46.dp, pad = 10.dp, onClick = onRebuildToggle)
-        }
-        if (rebuildOpen) Column(Modifier.fillMaxWidth().padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            FormLabeled(rb.s("label"), Modifier.fillMaxWidth()) { FormInput(rebuildText, onRebuildText, SHEET_IN_LABEL, rb.s("placeholder"), desc = rb.s("label"), keyboard = KeyboardType.Decimal, onGo = onRebuild) }
-            DeckGhost(rb.s("button"), Modifier.fillMaxWidth(), minHeight = 44.dp, onClick = onRebuild)
-            if (rebuildStatus.isNotEmpty()) Text(rebuildStatus, Modifier.semantics { contentDescription = rebuildStatus }, style = cssType(13f, 400, 18.85f, BMute))
+        val off = save.b("disabled") || saving
+        Box(Modifier.fillMaxWidth().padding(top = 14.dp).alpha(if (off) .55f else 1f)) {
+            DeckGold(if (saving) "Saving…" else save.s("label"), Modifier.fillMaxWidth(), minHeight = 46.dp, pad = 10.dp, onClick = { if (!off) onSave() })
         }
         // Plan and Power on the built deck: the one used lit; a tap rebuilds with another.
         m.objs("retune").forEach { g -> Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             FlowLabel(g.s("label"), Modifier.width(FLOW_LABEL_W))
             Box(Modifier.weight(1f)) { FlowSeg(g.objs("items"), g.s("label")) { onRetune(g.s("field"), it) } }
         } }
-        // .deck-budget-quick: Lower budget and its amounts.
-        m.o("quick")?.let { q -> FlowRow(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-            FlowLabel(q.s("label"), Modifier.padding(end = 4.dp))
-            q.objs("items").forEach { i -> FlowChip(i.s("label"), false) { onQuick(i.s("value")) } }
-        } }
+        // .deck-budget-inline: Budget ($), the amount, Rebuild; its message under it.
+        if (rb.s("button").isNotEmpty()) {
+            Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                FlowLabel(rb.s("label"), Modifier.width(FLOW_LABEL_W))
+                Box(Modifier.weight(1f)) { FormInput(rebuildText, onRebuildText, SHEET_IN_LABEL, rb.s("placeholder"), desc = rb.s("label"), keyboard = KeyboardType.Decimal, onGo = onRebuild) }
+                DeckGhost(rb.s("button"), minHeight = 44.dp, pad = 16.dp, onClick = onRebuild)
+            }
+            if (rebuildStatus.isNotEmpty()) Text(rebuildStatus, Modifier.padding(top = 6.dp, start = FLOW_LABEL_W + 10.dp).semantics { contentDescription = rebuildStatus }, style = cssType(13f, 400, 18.85f, BWarn))
+        }
         // p.foot: how the list was made.
         m.s("construction").takeIf { it.isNotEmpty() }?.let { Text(it, Modifier.padding(top = 14.dp), style = cssType(12.5f, 400, 18.125f, BFoot)) }
         // The loop and mechanic details.
@@ -772,16 +768,6 @@ private fun FlowSeg(items: List<JsonObject>, label: String, onPick: (String) -> 
     }
 }
 
-/** .chip.pick: a small rounded button (Lower budget's amounts). */
-@Composable
-private fun FlowChip(label: String, on: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(22.dp)
-    Box(Modifier.heightIn(min = 44.dp).widthIn(min = 56.dp).clip(shape).background(if (on) Color(0x24FFFFFF) else BSurface2).border(1.dp, if (on) Site.Gold.copy(alpha = .35f) else BLine, shape)
-        .clickable(onClick = onClick).semantics { role = Role.Button; if (on) stateDescription = "Selected" }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-        Text(label, maxLines = 1, style = cssType(14f, 700, 20f, BInk))
-    }
-}
-
 /** .deck-build-choices: the Bracket (or Plan and Power) rows with the chosen name, the Sideboard switch, and "This build": names and values only. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -846,7 +832,7 @@ private fun FlowSwap(sw: JsonObject, onTake: (Int) -> Unit, onKeep: () -> Unit) 
     }
 }
 
-private val FLOW_LABEL_W = 64.dp
+private val FLOW_LABEL_W = 84.dp
 
 /** The row labels (Plan, Power, Lower budget, Group, Tap, Swap): 12 / 700, upper case, muted, as the site's. */
 @Composable
