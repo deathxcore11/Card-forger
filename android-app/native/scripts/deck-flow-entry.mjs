@@ -110,10 +110,13 @@ flowCalls.flowRandom = async a => {
 // A.flowGenerate: the build with its live status; a finished deck is registered and read back as the result page.
 flowCalls.flowGenerate = async a => {
   const me = ++current; status = 'Finding a coherent plan…';
-  const result = await deckPipeline.build(a.request, {current: live(me), onStatus: m => { if (me === current) status = String(m); }});
+  // The site's read() sends every field the sheet shows, the Sideboard switch with it (on unless the player turned it off); the app
+  // sends only what was touched, so an untouched switch means on here too (deck 6, 17 Nov: built with no sideboard).
+  const request = {...a.request, sideboard: a.request?.sideboard !== false};
+  const result = await deckPipeline.build(request, {current: live(me), onStatus: m => { if (me === current) status = String(m); }});
   if (me !== current) return {cancelled: true};
   status = '';
-  return result.ok ? {ok: true, model: resultModel(register(result))} : {ok: false, message: result.message, setup: setupModel(a.request, result.message, true)};
+  return result.ok ? {ok: true, model: resultModel(register(result))} : {ok: false, message: result.message, setup: setupModel(request, result.message, true)};
 };
 // A.flowAdjust's first step: customBudget's check of the amount typed, before anything builds (its message when it fails).
 flowCalls.flowBudget = a => { customBudget(a.budget); return true; };
