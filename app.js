@@ -2616,6 +2616,8 @@ A.storyOpenAct=t=>{const n=Number(t?.dataset?.storyAct||storyUi.act);if(!STORY_A
 A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyUi.listSide='mine';storyUi.listOpen=false;storyGo('storyBattle');storyWantArt();storyWarm();
  // The boss runs on the host: start warming it while the player reads the setup (story-mode-acts.md A1).
  if(storyBattle()?.host)void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});};
+// Story act page "Play as": the battle page with their side already chosen (story-act-and-collection brief A2).
+A.storyPlayAs=t=>{A.storyOpenBattle(t);storyUi.seat='villain';refreshPlayMenu();};
 A.storySeat=t=>{storyUi.seat=t.dataset.storySeat==='villain'?'villain':'hero';storyUi.deck='loaner';storyUi.listOpen=false;storyUi.listSide='mine';refreshPlayMenu();};
 A.storyDeckPick=t=>{const id=t.dataset.storyDeck||'loaner';storyUi.listOpen=storyUi.deck===id?!storyUi.listOpen:true;storyUi.deck=id;storyUi.listSide='mine';if(storyUi.listOpen)storyWantArt();refreshPlayMenu();};
 A.storyListSide=t=>{storyUi.listSide=t.dataset.storyList==='theirs'?'theirs':'mine';storyWantArt();refreshPlayMenu();};

@@ -356,6 +356,11 @@ body[data-view="scan"] #content>.context-guide{margin:12px 14px 0}
 .page-head.page-hero .head-actions{align-self:flex-start}
 :root[data-theme="light"] .page-head.page-hero h1{color:#fff}
 @media(max-width:600px){.page-head.page-hero{min-height:140px;padding:16px;border-radius:18px}}
+/* Phones (story-act-and-collection brief B): no Collection title card. The banner art stays as a slim strip behind the view
+   buttons, Select and the menu, so the cards start much higher; the title stays for screen readers. */
+@media(max-width:599px){.page-head.page-hero{min-height:0;padding:6px 8px;border-radius:14px;align-items:center;justify-content:flex-end;box-shadow:none;margin-bottom:0}
+  .page-head.page-hero h1{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .page-head.page-hero .head-actions{align-self:center}}
 
 /* Search empty state (art pass): a fan of today's cards from your collection. */
 /* The fan is spread by --fan-step and clipped sideways, so its outer cards can never push the

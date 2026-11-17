@@ -227,3 +227,57 @@
 .play-match-card.st-glow{outline:3px solid #f1d27a!important;outline-offset:2px;box-shadow:0 0 22px 6px #f1d27acc!important;animation:st-glow-pulse 2.4s ease-in-out infinite}
 @keyframes st-glow-pulse{50%{outline-color:#f1d27a80;box-shadow:0 0 12px 3px #f1d27a80}}
 @media (prefers-reduced-motion:reduce){.play-match-card.st-glow{animation:none}.st-whisper{transition:none}}
+
+/* Story act page, second take (story-act-and-collection brief A): art behind a short header, short won rows, the open current battle. */
+.st-act2{display:grid;gap:12px}
+.st-act-head{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:space-between;gap:12px;min-height:186px;margin:-12px -16px 0;padding:14px 16px 8px}
+.st-act-art{position:absolute;inset:0;z-index:-2;background:#121318 50% 30%/cover no-repeat}
+.st-act-head::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,#080a0eb8 0%,#0d10164d 42%,#0d1016cc 80%,var(--bg) 100%)}
+.st-act-top{display:flex;gap:14px;align-items:flex-start}
+.st-act-top .pl-back{background:#0d10169e;border-color:#d6ad644d;color:#f4efe6;backdrop-filter:blur(14px)}
+.st-act-name{min-width:0;display:grid;gap:4px}
+.st-act-name .eyebrow{margin:0;font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#f2cf7e}
+.st-act-name h1{margin:0;font:700 24px/28px Cinzel,Georgia,serif;color:#f6eedb;text-shadow:0 2px 10px #000b}
+.st-act-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.st-act-facts{display:grid;gap:4px;min-width:0}
+.st-act-years{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:#f4efe6}
+.st-act-stars{font-size:13px;font-weight:600;color:#ddd8cc}.st-act-stars b{color:#e8b95b}
+.st-act-purse:empty{display:none}.st-act-purse{margin-top:12px}
+.st-battles2{gap:8px}
+.st-won,.st-now{position:relative;list-style:none}
+.st-won{display:flex;align-items:center;gap:10px;min-height:76px;padding:10px;border-radius:16px;background:#161921e6;border:1px solid #ffffff14;color:#f4efe6}
+.st-won-open{position:absolute;inset:0;border:0;background:none;border-radius:inherit;cursor:pointer}
+.st-won-open:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.st-won .st-battle-face{width:48px;height:48px;flex:none;border-radius:10px;border-width:1px;box-shadow:none}
+.st-won-copy{flex:1 1 0;min-width:0;display:grid;gap:3px;pointer-events:none}
+.st-won-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.st-won-top .st-battle-kind{font-size:10.5px;letter-spacing:.15em;white-space:nowrap}
+.st-won-top .st-stars svg{width:13px;height:13px}
+.st-won-title{font:700 14px/18px Cinzel,Georgia,serif;color:#f6eedb;overflow-wrap:anywhere}
+.st-won-state{font-size:12px;line-height:16px;font-weight:600;color:#aeb3be}.st-won-state b{color:#f2cf7e}
+.st-won-act{position:relative;flex:none;min-height:44px;max-width:112px;padding:4px 12px;border-radius:999px;border:1px solid #d6ad648c;background:transparent;color:#f2cf7e;font:700 12.5px/14px 'DM Sans',system-ui,sans-serif;text-align:center;cursor:pointer}
+.st-won-act--gold{border:0;background:linear-gradient(180deg,#f6d88c,#d9a94e 60%,#b8893a);color:#1a1408}
+.st-now{display:grid;gap:8px;padding:12px 14px;border-radius:18px;background:linear-gradient(180deg,#2a2212eb,#161921f0 55%);border:1.5px solid #d6ad64;box-shadow:0 10px 28px #0007;color:#f4efe6}
+.st-now>*:not(.st-won-open){position:relative;pointer-events:none}.st-now button.st-now-duel{pointer-events:auto}
+.st-now-top{display:flex;gap:12px;align-items:center}
+.st-now .st-battle-face{width:64px;height:64px;flex:none;border-color:#d6ad64}
+.st-now-title{font:700 18px/22px Cinzel,Georgia,serif;color:#f6eedb;overflow-wrap:anywhere}
+.st-now-blurb{font-size:13.5px;line-height:19px;font-weight:500;color:#d3d6de}
+.st-now-sides{display:flex;gap:8px;align-items:stretch}
+.st-now-side{flex:1 1 0;min-width:0;display:grid;gap:2px;align-content:start;padding:8px 10px;border-radius:12px;background:#0d101699;border:1px solid #ffffff14}
+.st-now-side small,.st-now-win small,.st-now-new small{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#f2cf7e}
+.st-now-side b,.st-now-win b{font-size:13px;line-height:17px;font-weight:600;color:#f4efe6}
+.st-pips{display:flex;gap:4px;margin-top:2px}.st-pip{width:11px;height:11px;border-radius:50%;border:1px solid #0006}
+.st-pip--w{background:#f3ebd3}.st-pip--u{background:#6fa8dc}.st-pip--b{background:#8b7c99}.st-pip--r{background:#e0705a}.st-pip--g{background:#6bb77b}
+.st-now-new{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.st-now-new small{color:#9fd0f0}
+.st-now-chip{padding:4px 9px;border-radius:999px;background:#9fd0f01f;border:1px solid #9fd0f066;color:#cfe6f7;font-size:12px;font-weight:600}
+.st-now-foot{display:flex;gap:12px;align-items:center}
+.st-now-win{flex:1 1 0;min-width:0;display:grid;gap:2px}.st-now-win span{font-size:12px;line-height:16px;font-weight:600;color:#aeb3be}
+.st-now-duel{min-height:48px;width:112px;font-size:16px}
+@media(min-width:600px){
+  .st-act2{grid-template-columns:42% minmax(0,1fr);align-items:start;gap:0 16px}
+  .st-act-head{position:sticky;top:0;margin:0;min-height:calc(100dvh - 120px);border-radius:22px;overflow:hidden;padding:18px}
+  .st-act-head::before{background:linear-gradient(180deg,#080a0eb8 0%,#0d10164d 35%,#0d1016cc 78%,#0d1016 100%)}
+  .st-act-name h1{font-size:26px;line-height:31px}
+  .st-won{min-height:62px}
+}

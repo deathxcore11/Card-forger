@@ -47,24 +47,57 @@ const secretTease = (data, progress, act, counters) => {
   if (st.won < 4 && !st.keys) return '';
   return `<p class="st-secret-tease" role="note">A secret battle waits in this act. Win all 8 battles with the Story decks (${st.won} of 8) and earn its ${st.keysNeeded} key feats (${st.keys} of ${st.keysNeeded}). Key feats are marked in Achievements.</p>`;
 };
+// Second take (specs/story-act-and-collection-brief.md): what each battle offers now. Won battles are short rows with their
+// side's prize and "Play as"; the battle you are on is an open card with both decks, what's new and the prize.
+const PIPS = {W: 'white', U: 'blue', B: 'black', R: 'red', G: 'green'};
+const pips = c => `<span class="st-pips">${[...String(c || '').toUpperCase()].filter(x => PIPS[x]).map(x => `<i class="st-pip st-pip--${x.toLowerCase()}" role="img" aria-label="${PIPS[x]}"></i>`).join('')}</span>`;
 export function storyActMarkup({act, data, progress, econ}) {
   const counters = econ?.state?.counters || {};
   const meta = STORY_ACTS.find(a => a.act === act), now = currentBattle(progress, act), boss = b => b.slot >= 8;
   const cleared = data.battles.filter(b => !b.secret && battleCleared(progress, b.id)).length;
+  const theirWins = data.battles.filter(b => !b.secret && progress.battles?.[b.id]?.villain).length;
   const villainFace = b => data.cast[b.villain.who]?.portrait;
+  const kind = b => `<span class="st-battle-kind">${b.slot === 8 ? 'Boss' : esc(b.kind)} <i>${esc(b.difficulty)}</i></span>`;
+  const won = b => {
+    const rec = progress.battles?.[b.id] || {}, rw = b.reward || {}, open = !rec.villain && rw.villain?.card, vName = data.cast[b.villain.who]?.name || 'their side';
+    const state = rec.villain ? 'Both sides won' : open ? `<b>Their side:</b> ${rewardText(rw.villain, b.rewardSet)}` : 'Won';
+    return `<li class="st-won"><button class="st-won-open" data-act="storyOpenBattle" data-story-battle="${esc(b.id)}" aria-label="${esc(b.kind)}: ${esc(b.title)}. ${battleStars(rec)} of 5 stars"></button>
+      <span class="st-battle-face" style="${faceStyle(villainFace(b))}" aria-hidden="true"></span>
+      <span class="st-won-copy"><span class="st-won-top">${kind(b)}${starsRow(rec)}</span><span class="st-won-title">${esc(b.title)}</span><span class="st-won-state">${state}</span></span>
+      ${open ? `<button class="st-won-act st-won-act--gold" data-act="storyPlayAs" data-story-battle="${esc(b.id)}" aria-label="Play as ${esc(vName)}">Play as<br>${esc(vName)}</button>`
+        : `<button class="st-won-act" data-act="storyOpenBattle" data-story-battle="${esc(b.id)}">Replay</button>`}</li>`;
+  };
+  const nowCard = b => {
+    const rec = progress.battles?.[b.id] || {}, rw = b.reward || {}, who = b.hero.who, heroName = who && who !== 'you' ? data.cast[who]?.name : '';
+    const teaches = (b.teaches || []).filter(t => LESSONS[t]);
+    const collector = b.slot >= 8 ? ' + a Collector pack' : '';
+    const side = (label, deck) => `<span class="st-now-side"><small>${esc(label)}</small><b>${esc(deck?.name || '')}</b>${pips(deck?.colors)}</span>`;
+    return `<li class="st-now${boss(b) ? ' st-now--boss' : ''}"><button class="st-won-open" data-act="storyOpenBattle" data-story-battle="${esc(b.id)}" aria-label="${esc(b.kind)}: ${esc(b.title)}. Not won yet"></button>
+      <span class="st-now-top"><span class="st-battle-face" style="${faceStyle(villainFace(b))}" aria-hidden="true"></span><span class="st-won-copy"><span class="st-won-top">${kind(b)}${starsRow(rec)}</span><span class="st-now-title">${esc(b.title)}</span></span></span>
+      <span class="st-now-blurb">${esc(b.blurb)}</span>
+      <span class="st-now-sides">${side(heroName ? `You play as ${heroName}` : 'You play', b.hero.deck)}${side('Against', b.villain.deck)}</span>
+      ${teaches.length ? `<span class="st-now-new"><small>New</small>${teaches.map(t => `<span class="st-now-chip">${esc(t)}</span>`).join('')}</span>` : ''}
+      <span class="st-now-foot"><span class="st-now-win"><small>Win</small><b>${rewardText(rw.hero, b.rewardSet)}${collector}</b>${rw.villain?.card ? `<span>Then their side: ${rewardText(rw.villain, b.rewardSet)}</span>` : ''}</span>
+      <button class="pl-mode-cta st-now-duel" data-act="storyOpenBattle" data-story-battle="${esc(b.id)}">Duel</button></span></li>`;
+  };
   const row = b => {
     const rec = progress.battles?.[b.id], done = battleCleared(progress, b.id), here = b.slot === now, tease = b.slot === now + 1;
     if (tease) return `<li class="st-battle st-battle--tease" aria-hidden="true"><span class="st-battle-face" style="${faceStyle(villainFace(b))}"></span><span class="st-battle-copy"><span class="st-battle-kind">${esc(b.kind)}</span><span class="st-battle-title">${esc(b.title)}</span></span></li>`;
+    if (!b.secret && here) return nowCard(b);
+    if (!b.secret && b.slot < now) return won(b);
     return `<li><button class="st-battle${here ? ' st-battle--here' : ''}${boss(b) ? ' st-battle--boss' : ''}${b.secret ? ' st-battle--secret' : ''}" data-act="storyOpenBattle" data-story-battle="${esc(b.id)}" aria-label="${esc(b.kind)}: ${esc(b.title)}. ${done ? battleStars(rec) + ' of 5 stars' : 'Not won yet'}">
       <span class="st-battle-face" style="${faceStyle(villainFace(b))}" aria-hidden="true"></span>
       <span class="st-battle-copy"><span class="st-battle-kind">${b.slot === 8 ? 'Boss' : esc(b.kind)} <i>${esc(b.difficulty)}</i></span><span class="st-battle-title">${esc(b.title)}</span><span class="st-battle-blurb">${esc(b.blurb)}</span></span>
       <span class="st-battle-side">${starsRow(rec)}<span class="pl-mode-cta">${done ? 'Replay' : 'Duel'}</span></span></button></li>`;
   };
-  return `<section class="play-menu st-screen st-act" aria-labelledby="playTitle">${head(meta.title, econ, 'Story · Act ' + act, 'storyHome', 'Back to Story')}
-    <header class="st-banner"><span class="st-banner-art" style="background-image:url(${esc(meta.art.crop)})" aria-hidden="true"></span>
-      <span class="st-banner-copy">${symbols(meta)}<span class="st-banner-years">${esc(meta.years)}</span></span>${ring(cleared, 8, cleared + ' of 8 battles won')}</header>
-    <ol class="st-battles">${data.battles.filter(b => b.secret ? secretOpen(progress, act, counters) : b.slot <= now + 1).map(row).join('')}</ol>
-    ${secretTease(data, progress, act, counters)}
+  return `<section class="play-menu st-screen st-act st-act2" aria-labelledby="playTitle">
+    <header class="st-act-head"><span class="st-act-art" style="background-image:url(${esc(meta.art.crop)})" aria-hidden="true"></span>
+      <span class="st-act-top">${back('storyHome', 'Back to Story')}<span class="st-act-name"><p class="eyebrow">Story · Act ${act}</p><h1 id="playTitle" tabindex="-1">${esc(meta.title)}</h1></span></span>
+      <span class="st-act-foot"><span class="st-act-facts"><span class="st-act-years">${esc(meta.years)} ${symbols(meta)}</span><span class="st-act-stars"><b aria-hidden="true">★</b> ${actStars(progress, act)} of 40 · their side won ${theirWins} of 8</span></span>${ring(cleared, 8, cleared + ' of 8 battles won')}</span>
+    </header>
+    <div class="st-act-list">
+    <ol class="st-battles st-battles2">${data.battles.filter(b => b.secret ? secretOpen(progress, act, counters) : b.slot <= now + 1).map(row).join('')}</ol>
+    ${secretTease(data, progress, act, counters)}<div class="st-act-purse">${purseMarkup(econ)}</div></div>
   </section>`;
 }
 
