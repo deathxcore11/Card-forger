@@ -17,6 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import java.io.File
+import dev.cardstashy.nativeplay.progressStateText
 
 /** Polish brief 1 on the parity fixture, upright phone: the stage shows the deck, the mode row picks, Play starts the chosen mode. */
 @RunWith(RobolectricTestRunner::class)
@@ -25,11 +26,9 @@ class PlayStageTest {
     @get:Rule val rule = createComposeRule()
 
     private fun home(deck: HomeDeck?, log: MutableList<String>) {
-        val f = File("/mnt/project-files/design/native/parity/fixtures/progress-state.json")
-        assumeTrue(f.exists())
-        dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication())
+                dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication())
         Motion.still = true
-        val state = JsonParser.parseString(f.readText()).asJsonObject
+        val state = JsonParser.parseString(progressStateText()).asJsonObject
         val rules = PlayRules(JsonParser.parseString(javaClass.classLoader!!.getResource("play-rules.json")!!.readText()).asJsonObject)
         val act = PlayHomeActions(mode = { log += "mode:$it" }, story = { log += "story" }, play = { log += "play:$it" })
         rule.setContent { PlayHome(PlayHomeData(state, rules, PlayMath.StoryHome(1, 0, false), "2026-11-03", deck = deck), top = {}, act = act, nav = {}) }

@@ -31,6 +31,7 @@ class CollectionDeckFoldTest {
     @Test fun cardsAboveTheFold() {
         val fx = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art/home/collection-deck-gallery.json")
         assumeTrue("write the fixtures first (CollectionEngineTest.deckModel)", fx.exists())
+        dev.cardstashy.nativeplay.art.CardArt.init(org.robolectric.RuntimeEnvironment.getApplication())
         dev.cardstashy.nativeplay.ui.Motion.still = true
         val m = CollectionDeckModel.parse(JsonParser.parseString(fx.readText()).asJsonObject)
         rule.setContent { CollectionDeck(m, top = { }, nav = { }) }

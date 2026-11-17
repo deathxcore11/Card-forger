@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.google.gson.JsonParser
 import dev.cardstashy.nativeplay.account.Account
@@ -55,8 +56,14 @@ class TcgCollectionShotTest {
         rule.setContent { CollectionCardsRoute(onPlay = {}, onProfile = {}, onHome = {}, web = { _, _ -> }) }
         rule.waitUntil(60_000) { rule.onAllNodesWithText(card).fetchSemanticsNodes().isNotEmpty() }
         settle()
-        for (w in words) assertTrue("$w shows", rule.onAllNodesWithText(w, substring = true).fetchSemanticsNodes().isNotEmpty())
+        // 0.4.95 phone bar: set, kind and rarity live in the Filters sheet, so open it for those words.
+        val inSheet = words.filter { it.startsWith("All ") }
+        for (w in words - inSheet.toSet()) assertTrue("$w shows", rule.onAllNodesWithText(w, substring = true).fetchSemanticsNodes().isNotEmpty())
         shot("cards-${g.id}")
+        if (inSheet.isNotEmpty()) {
+            rule.onNode(androidx.compose.ui.test.hasContentDescription("Filters", substring = true)).performClick(); settle()
+            for (w in inSheet) assertTrue("$w shows in Filters", rule.onAllNodesWithText(w, substring = true).fetchSemanticsNodes().isNotEmpty())
+        }
     }
     private fun decks(g: CardGame, deck: String, words: List<String>) {
         setUp(g)

@@ -37,7 +37,7 @@ class HomeScrollTest {
     /** The server's /api/progress/achievements payload (play-achievements.js achievementsPayload, 106 of 107 with unit null). */
     @Test(timeout = 120000) @Config(qualifiers = "w411dp-h960dp-xxhdpi") fun deedsFromServer() {
         dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication())
-        val state = JsonParser.parseString(File("/mnt/project-files/design/native/parity/fixtures/progress-state.json").readText()).asJsonObject
+        val state = JsonParser.parseString(progressStateText()).asJsonObject
         val rules = PlayRules(JsonParser.parseString(javaClass.classLoader!!.getResource("play-rules.json")!!.readText()).asJsonObject)
         val deeds = JsonParser.parseString(javaClass.classLoader!!.getResource("deeds-payload.json")!!.readText()).asJsonObject
         rule.setContent { PlayHome(PlayHomeData(state, rules, PlayMath.StoryHome(1, 0, false), "2026-11-03", "", null, deeds), top = {}, nav = {}) }
@@ -66,8 +66,7 @@ class HomeScrollTest {
 
     private fun run(label: String) {
         dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication())
-        val fixture = File("/mnt/project-files/design/native/parity/fixtures/progress-state.json")
-        val state = JsonParser.parseString(fixture.readText()).asJsonObject
+        val state = JsonParser.parseString(progressStateText()).asJsonObject
         val rules = PlayRules(JsonParser.parseString(javaClass.classLoader!!.getResource("play-rules.json")!!.readText()).asJsonObject)
         inflate(state)
         println("[$label] fixture cards=${state.getAsJsonArray("cards")?.size()} packs=${state.getAsJsonArray("packs")?.size()} shop=${state.getAsJsonArray("shop")?.size()} decks=${state.getAsJsonArray("decks")?.size()}")

@@ -77,7 +77,7 @@ class CollectionValueShotTest {
         RuntimeEnvironment.setQualifiers("w390dp-h1400dp-xxhdpi")
         var opened = ""
         rule.setContent { CollectionCardsRoute(onPlay = {}, onProfile = {}, onHome = {}, web = { u, p -> opened = "$u $p" }) }
-        rule.waitUntil(60_000) { rule.onAllNodesWithText("Value").fetchSemanticsNodes().isNotEmpty() && rule.onAllNodesWithText("All sets").fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(60_000) { rule.onAllNodesWithText("Value").fetchSemanticsNodes().isNotEmpty() && rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Filters", substring = true)).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("Value").performClick()
         rule.waitUntil(60_000) { rule.onAllNodesWithText("Your collection value", substring = true, ignoreCase = true).fetchSemanticsNodes().isNotEmpty() }
         repeat(10) { Thread.sleep(200); rule.mainClock.advanceTimeBy(200); rule.waitForIdle() }
@@ -92,7 +92,7 @@ class CollectionValueShotTest {
         // Back to Cards, natively.
         rule.onNode(hasScrollAction()).performScrollToNode(hasText("Cards"))
         rule.onNodeWithText("Cards").performClick()
-        rule.waitUntil(30_000) { rule.onAllNodesWithText("All sets").fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(30_000) { rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Filters", substring = true)).fetchSemanticsNodes().isNotEmpty() }
     }
 
     @Test fun pokemonValue() = tcgValue(CardGame.PTCG, listOf("Most valuable", "By type", "Price alerts", "Charizard ex"))

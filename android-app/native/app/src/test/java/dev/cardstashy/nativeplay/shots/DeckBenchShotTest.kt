@@ -240,6 +240,9 @@ class DeckBenchShotTest {
             assertEquals("dropped on the deck, Counterspell goes in", 1, ui.edit.cards.filter { it.name == "Counterspell" }.sumOf { it.qty })
 
             // A tap on a deck card: the big view with its stepper and craft button (Sephiroth isn't owned yet).
+            // On an upright phone the dock folds while the pool is scrolled (0.4.95); a tap on it brings the deck back.
+            if (rule.onAllNodes(androidx.compose.ui.test.hasTestTag("dockFolded")).fetchSemanticsNodes().isNotEmpty()) {
+                rule.onNode(androidx.compose.ui.test.hasTestTag("dockFolded")).performClick(); settle() }
             list.performScrollToNode(hasContentDescription("1 Sephiroth, Planet's Heir")); settle()
             rule.onNode(hasContentDescription("1 Sephiroth, Planet's Heir")).performTouchInput { click() }; settle()
             shot("$tag-peek"); audit(found)

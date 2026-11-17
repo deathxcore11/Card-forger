@@ -40,7 +40,10 @@ class TrunkBarTest {
         val tiles = rule.onAllNodes(hasTestTag("trunkcard")).fetchSemanticsNodes().map { it.boundsInRoot }
         val top = tiles.minOf { it.top }
         assertTrue("first card row at ${top}px, want the top third of $h", top < h / 3f)
-        assertTrue("${tiles.count { it.bottom <= h }} whole cards before scrolling, want 6", tiles.count { it.top >= 0f && it.bottom <= h } >= 6)
+        // Brief 3: six cards in view before scrolling. At the default Card size (two across) that is two whole rows and the
+        // top of the third; Settings > Card size Small (three across) shows six whole.
+        assertTrue("${tiles.count { it.top < h }} cards in view before scrolling, want 6", tiles.count { it.top >= 0f && it.top < h } >= 6)
+        assertTrue("${tiles.count { it.bottom <= h }} whole cards, want 4", tiles.count { it.top >= 0f && it.bottom <= h } >= 4)
         rule.onNodeWithText("30 cards").assertExists()
         // Rarity now lives in the Filters sheet: pick Rare, the chip and the count follow; its x takes it off.
         rule.onNodeWithContentDescription("Filters").performClick(); rule.waitForIdle()
