@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -160,7 +161,8 @@ fun DecisionDock(st: MatchState, live: Boolean, intents: TableIntents, onInspect
         when {
             zone != null -> ZoneSearchDialog(ctx, zone, draft)                                                       // :257-307
             !p.supportedExact || (p.method == "order" && !p.ordered) -> SideDock(ctx) { DeadEnd(ctx) }  // :309
-            p.nameCount != null && ctx.replies.text != null -> SideDock(ctx) { NameDialog(ctx) }
+            // Randall 17 Nov (Petrified Hamlet): the name box sat under the hand, unreadable. It is a framed panel above the hand now.
+            p.nameCount != null && ctx.replies.text != null -> NamePanel(ctx) { NameDialog(ctx) }
             optionalCosts -> SideDock(ctx) { OptionalCosts(ctx, draft) }                                             // :310-326
             p.method in AMOUNT_METHODS && amountSpec(p) != null -> AssignDialog(ctx)                                 // :318-341
             p.method in setOf("confirm", "showConfirmDialog") -> SideDock(ctx) { ConfirmChoice(ctx) }                // :342-346
@@ -638,7 +640,44 @@ private fun InputDialog(ctx: DockCtx) = with(ctx.d) {
     DockButton("Confirm", !ctx.busy, this, if (p.options.isEmpty()) Modifier.padFirst(ctx) else Modifier) { confirm() }
 }
 
-// ---- Name a card (Kai Winn, Pithing Needle): type, pick one of the names offered, Confirm ----
+// ---- Name a card (Kai Winn, Pithing Needle, Petrified Hamlet): type, pick one of the names offered, Confirm ----
+
+/** Forge's "Choose a land card card name." (its type words already end in "card") reads "Choose a land card name." */
+internal fun nameAsk(message: String): String =
+    plainText(message).replace(Regex("\\b(cards?) card\\b", RegexOption.IGNORE_CASE), "$1").ifBlank { "Choose a card name" }
+
+/**
+ * Where the name panel stands: its box in dp inside a [w] × [h] table (dual: the top screen), above the hand tray (on the dual
+ * top, above the hand's chip) and above the keyboard ([ime] dp tall), never under the right strip's chrome. [k] is the chrome scale.
+ */
+internal fun namePanelBox(w: Float, h: Float, dual: Boolean, k: Float, ime: Float = 0f): ZoneLayout.Box {
+    val z = ZoneLayout.of(w, h, dual = dual, k = k)
+    val floor = minOf((z.handTray ?: z.handChip)?.y ?: z.window.bottom, h - ime) - 8f * k
+    val top = z.window.y + 8f * k
+    val pw = minOf(320f * k, z.board.w - 16f * k)
+    // The board's right end (where the dock always stood), clear of the right strip.
+    val x = z.board.right - 8f * k - pw
+    return ZoneLayout.Box(x, top, pw, (floor - top).coerceAtLeast(0f))
+}
+
+/** The name panel's room ([namePanelBox]): its content stands at the foot of that room, in the search picker's frame. */
+@Composable
+private fun NamePanel(ctx: DockCtx, content: @Composable () -> Unit) = with(ctx.d) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val ime = androidx.compose.foundation.layout.WindowInsets.ime.getBottom(density) / density.density
+    val box = namePanelBox(ctx.W.value, ctx.H.value, DualScreen.active, u, ime)
+    val shape = RoundedCornerShape(18.du)
+    Box(Modifier.offset(x = box.x.dp, y = box.y.dp).width(box.w.dp).height(box.h.dp)) {
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().dockFocus(ctx).heightIn(max = box.h.dp)
+            .dockFrame(this@with, shape, 40f, 14f).verticalScroll(rememberScrollState()).padding(horizontal = 14.du, vertical = 12.du),
+            verticalArrangement = Arrangement.spacedBy(6.du), horizontalAlignment = Alignment.Start) {
+            searchSource(ctx.st).takeIf { it.isNotEmpty() }?.let {
+                Text(it, style = ts(14f, 16.1f, FontWeight.Bold, TITLE_INK, Type.Cinzel, .28f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            content()
+        }
+    }
+}
 
 @Composable
 private fun NameDialog(ctx: DockCtx) = with(ctx.d) {
@@ -649,24 +688,27 @@ private fun NameDialog(ctx: DockCtx) = with(ctx.d) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { dev.cardstashy.nativeplay.engine.CardNames.all(context) }.getOrDefault(emptyList()) } }
     val hits = remember(names, typed) { dev.cardstashy.nativeplay.engine.CardNames.suggest(names, typed) }
     val exact = names.firstOrNull { it.equals(typed.trim(), ignoreCase = true) }
-    val field = Modifier.fillMaxWidth().heightIn(min = 44.du).clip(RoundedCornerShape(6.du)).background(Color(0x851F232B))
-        .border(1.dp, Color(0x31EDC980), RoundedCornerShape(6.du))
-    Column {
-        Text(p.message.ifBlank { "Choose a card name" }, style = ts(12.5f, 17.5f, FontWeight.SemiBold, Color(0xFF9AA2B1)))
-        Spacer(Modifier.height(6.du))
-        BasicTextField(typed, { v -> typed = v.take(200) }, enabled = !ctx.busy, singleLine = true, textStyle = ts(12f, 15.6f),
-            cursorBrush = SolidColor(Color(0xFFEDF0E8)),
-            modifier = field.padFirst(ctx).padding(8.du).semantics { contentDescription = "Card name" })
-        if (typed.trim().length < 2) Text("Type two letters or more", style = ts(11f, 14f, color = Color(0xFF9AA2B1)), modifier = Modifier.padding(top = 4.du))
-        hits.forEach { n ->
-            val on = n.equals(typed.trim(), ignoreCase = true)
-            Spacer(Modifier.height(4.du))
-            DockButton(n, !ctx.busy, this@with, Modifier.fillMaxWidth(), look = if (on) Look.PRESSED else Look.PLAIN, align = TextAlign.Start, height = 36f) { typed = n }
-        }
-    }
     val confirm: () -> Unit = { exact?.let { ctx.replies.text?.invoke(p.id, it) } }
+    val field = Modifier.heightIn(min = 44.du).clip(RoundedCornerShape(8.du)).background(Color(0xCC1F232B))
+        .border(1.dp, Color(0x59EDC980), RoundedCornerShape(8.du))
+    Text(nameAsk(p.message), style = ts(13f, 18f, FontWeight.SemiBold, Color(0xFFDCD3BF)))
+    // The box and Confirm side by side, so both stay in sight while the names below scroll.
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.du)) {
+        Box(field.weight(1f).padding(horizontal = 10.du, vertical = 8.du), contentAlignment = Alignment.CenterStart) {
+            if (typed.isEmpty()) Text("Type two letters or more", style = ts(12.5f, 16f, color = Color(0xFF8C93A0)))
+            BasicTextField(typed, { v -> typed = v.take(200) }, enabled = !ctx.busy, singleLine = true, textStyle = ts(13f, 16.9f),
+                cursorBrush = SolidColor(Color(0xFFEDF0E8)),
+                keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { confirm() }),
+                modifier = Modifier.fillMaxWidth().padFirst(ctx).semantics { contentDescription = "Card name" })
+        }
+        DockButton("Confirm", !ctx.busy && exact != null, this@with, look = Look.SEARCH_GOLD, weight = FontWeight.Bold) { confirm() }
+    }
+    hits.forEach { n ->
+        val on = n.equals(typed.trim(), ignoreCase = true)
+        DockButton(n, !ctx.busy, this@with, Modifier.fillMaxWidth(), look = if (on) Look.PRESSED else Look.PLAIN, align = TextAlign.Start, height = 36f, size = 13f) { typed = n }
+    }
     PadScreen(PadActs(x = if (!ctx.busy && exact != null) PadAct("Confirm") { confirm() } else null))
-    DockButton("Confirm", !ctx.busy && exact != null, this) { confirm() }
 }
 
 // ---- A reveal (native-panel.mjs:354-359) ----
