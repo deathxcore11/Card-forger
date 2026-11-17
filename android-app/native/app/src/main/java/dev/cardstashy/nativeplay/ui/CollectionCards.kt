@@ -99,6 +99,10 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -708,17 +712,73 @@ private fun Tools(m: CollectionCardsModel, act: CollectionCardsActions, wide: Bo
         m.direction?.let { Pick(it, act.direction, Modifier.padding(start = 6.dp).width(112.dp), big = true, stretch = true) }
         Search(query, m.searchPlaceholder, act.search, Modifier.padding(start = 8.dp).weight(1f))
         m.filter?.let { Pick(it, act.filter, Modifier.padding(start = 8.dp).width(152.dp), big = false, stretch = true) }
-    } else Column(Modifier.fillMaxWidth().padding(bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            m.sort?.let { Pick(it, act.sort, Modifier.weight(1f), big = true, stretch = true) }
-            m.direction?.let { Pick(it, act.direction, Modifier, big = true) }
+    } else {
+        // Polish brief 3 (second part): the Trunk's bar on a phone. Find and Filters on one line; sort, direction, the filter and the
+        // game's pills are in the Filters sheet; what is on shows as chips with an x. Every pick still goes to the same action.
+        var open by remember { mutableStateOf(false) }
+        val picks = CollBar.picks(m)
+        val on = CollBar.applied(picks)
+        Column(Modifier.fillMaxWidth().padding(bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Search(query, m.searchPlaceholder, act.search, Modifier.weight(1f))
+                if (picks.isNotEmpty()) FiltersPill(on.size, open) { open = !open }
+            }
+            if (on.isNotEmpty()) TakeOffChips(on.map { sel -> (sel.current?.label ?: sel.label) to { CollBar.send(sel, sel.options.first().value, m, act) } }, Modifier.fillMaxWidth()) {
+                on.forEach { sel -> CollBar.send(sel, sel.options.first().value, m, act) } }
         }
-        Search(query, m.searchPlaceholder, act.search, Modifier.fillMaxWidth())
-        Row { m.filter?.let { Pick(it, act.filter, Modifier, big = false) } }
+        if (open) CollFilterSheet(picks, m, act) { open = false }
+        return
     }
     // .filter-pills (Yu-Gi-Oh! and Pokémon): set, kind, rarity and owned or wishlist, 8 apart, scrolling sideways.
     if (m.filters.isNotEmpty()) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         for (f in m.filters) Pick(f, { v -> act.pick(f.name, v) }, Modifier.widthIn(max = 260.dp), big = false)
+    }
+}
+
+/** The phone's Collection bar: which selects go in the Filters sheet, which are on (not their first option), and where a pick goes. */
+internal object CollBar {
+    fun picks(m: CollectionCardsModel): List<CollSelect> = listOfNotNull(m.sort, m.direction, m.filter) + m.filters
+    /** On: the filter and the game's pills away from their first option (sort and direction are an order, not a filter). */
+    fun applied(picks: List<CollSelect>): List<CollSelect> = picks.filter { it.options.size > 1 && it.current != null && it.current != it.options.first() }
+        .filterNot { it.name == "sort" || it.name == "direction" }
+    fun send(sel: CollSelect, value: String, m: CollectionCardsModel, act: CollectionCardsActions) = when {
+        sel === m.sort -> act.sort(value)
+        sel === m.direction -> act.direction(value)
+        sel === m.filter -> act.filter(value)
+        else -> act.pick(sel.name, value)
+    }
+}
+
+/** The phone's Filters sheet for the Collection: each select's options as pills, one tap each; Done closes it. */
+@Composable
+private fun CollFilterSheet(picks: List<CollSelect>, m: CollectionCardsModel, act: CollectionCardsActions, onClose: () -> Unit) {
+    PadScreen(PadActs(b = "Close", x = PadAct("Done", onClose)))
+    androidx.activity.compose.BackHandler(onBack = onClose)
+    androidx.compose.ui.window.Popup(onDismissRequest = onClose, properties = androidx.compose.ui.window.PopupProperties(focusable = true)) {
+        Box(Modifier.fillMaxSize().background(Color(0x99000000)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClose)) {
+            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(.8f).windowInsetsPadding(WindowInsets.navigationBars)
+                .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Color(0xFF10131A)).border(1.dp, Color(0x33E5C47E), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}.padding(start = 18.dp, end = 14.dp, top = 10.dp, bottom = 10.dp).testTag("collFilters"),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Filters", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Ink), modifier = Modifier.weight(1f))
+                    Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onClose).semantics { contentDescription = "Close filters" }, contentAlignment = Alignment.Center) {
+                        Text("×", style = sans(24f, 600, Ink)) }
+                }
+                Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    for (sel in picks) Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(sel.label.uppercase(), style = sans(11f, 800, GoldC, ls = 1.1f))
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            for (o in sel.options) { val now = o === sel.current
+                                Opt(now, radio = true, onClick = { if (!now) CollBar.send(sel, o.value, m, act) }) { OptText(o.label, now) } }
+                        }
+                    }
+                }
+                Box(Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(13.dp)).background(Brush.verticalGradient(listOf(Color(0xFFF6D88C), Color(0xFFD9A94E)))).clickable(onClick = onClose),
+                    contentAlignment = Alignment.Center) { Text("Done", style = sans(15f, 800, Color(0xFF1A1408))) }
+            }
+        }
     }
 }
 
