@@ -279,12 +279,14 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
             // Two panes (the header sits beside the list): start the list at the first row from which the current battle and the
             // row after it (the tease) both fit, so the top edge lands between rows and nothing is cut (reviews of a4f09acb, 613e7632).
             val pos = open.indexOfFirst { it["id"].asString == key }.coerceAtLeast(0)
-            val last = if (pos + 1 < open.size || tease != null) pos + 1 else pos
+            // Everything after the current battle (later rows, the tease) when it fits; otherwise just the row after it.
+            val all = open.size - 1 + (if (tease != null) 1 else 0)
             val size = info.visibleItemsInfo.associate { it.index to it.size }
             val room = info.viewportEndOffset - info.viewportStartOffset - info.beforeContentPadding - info.afterContentPadding
             val guess = size.values.maxOrNull() ?: 0
-            var start = pos
-            for (i in 0..pos) { val total = (i..last).sumOf { size[it] ?: guess } + info.mainAxisItemSpacing * (last - i); if (total <= room) { start = i; break } }
+            fun from(last: Int) = (0..pos).firstOrNull { i -> (i..last).sumOf { size[it] ?: guess } + info.mainAxisItemSpacing * (last - i) <= room }
+            var last = all; var start: Int = from(all) ?: -1
+            if (start < 0) { last = minOf(pos + 1, all); start = from(last) ?: pos }
             // Measure again after each move: step down a row until the last of them ends inside the list.
             while (true) {
                 if (start > 0) listState.scrollToItem(start)
@@ -311,7 +313,8 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
             Box(Modifier.matchParentSize().background(Brush.horizontalGradient(.7f to Color(0x000D1016), 1f to Site.Bg)))
             ActHead(a, won, stars, theirWins, onBack, Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = top + 12.dp, bottom = 16.dp), wide = true)
         }
-        LazyColumn(Modifier.weight(.58f).fillMaxHeight(), state = listState, contentPadding = PaddingValues(start = 8.dp, end = 16.dp, top = top + 12.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // The top gap is outside the list (not content padding), so the row above the first one never peeks in above it (review of c694f37e).
+        LazyColumn(Modifier.weight(.58f).fillMaxHeight().padding(top = top + 12.dp), state = listState, contentPadding = PaddingValues(start = 8.dp, end = 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (data == null) item("loading") { Text("Opening the act…", style = Site.Body, modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp)) }
             open.forEach { b -> item(b["id"].asString) { row(b, strip) } }
             tease?.let { item("tease") { SecretTease(it) } }
