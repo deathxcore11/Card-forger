@@ -67,7 +67,7 @@ class CardNamesTest {
     /** The baked list (scripts/bake-card-types.mjs): every seed name has its types, Petrified Hamlet's lands among them. */
     @Test fun theTypeListCoversTheSeed() {
         val root = System.getProperty("repoRoot")
-        val types = File(root, "android-app/native/app/src/main/assets/forge-rules-seed/card-types.json").reader().use { CardNames.readTypes(JsonReader(it)) }
+        val types = File(root, "android-app/native/data/card-types.json").reader().use { CardNames.readTypes(JsonReader(it)) }
         assertEquals("L", types["Petrified Hamlet"]); assertEquals("L", types["Mutavault"]); assertEquals("I", types["Fire"]); assertEquals("CL", types["Dryad Arbor"])
         val names = File(root, "android-app/native/app/src/main/assets/forge-rules-seed/cards.json").reader().use { CardNames.faces(CardNames.keys(JsonReader(it))) }
         val missing = names.filter { it !in types }
