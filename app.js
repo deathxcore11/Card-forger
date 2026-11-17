@@ -1753,7 +1753,9 @@ const cancelPlayBuilds=()=>{for(const builder of Object.values(playBuilders))bui
 let quickStatus={busy:false,error:null},quickSequence=0;
 A.playPlaymat=t=>{setPlaymatChoice(t.dataset.playmat);refreshPlayMenu();document.querySelector('.pl-mat>summary')?.focus({preventScroll:true});};
 // Play home picks the mode; Quick Play and Practice then share one lobby. Inspect is a sheet over it.
-let playView='home',playInspectOpen=false;
+let playView='home',playInspectOpen=false,playStageMode='quick';
+// The Play stage: a mode tile only changes what the gold Play opens.
+A.playStageMode=t=>{playStageMode=t.dataset.stageMode||'quick';refreshPlayMenu();};
 A.playOpenMode=t=>{if(t.dataset.playStyle==='quick'&&t.dataset.playDirect==='true')return quickStartNow(t);if(t.dataset.playStyle==='social'&&challenges[0]&&!letter)showLetter(challenges[0]);playView='lobby';playInspectOpen=false;A.playStyle(t);scrollTo({top:0});document.getElementById('playTitle')?.focus?.({preventScroll:true});};
 // Quick Play with a deck already chosen goes straight into the match against a matched CPU (Randall,
 // 1 Nov): no second pick on the setup screen. If the match can't open (sign-in, screen, a deck the engine
@@ -1903,6 +1905,10 @@ A.playEconDeleteDeck=async t=>{if(!confirm('Delete this Play deck?'))return;try{
 A.playEconCollTab=t=>{econUi.tab=t.dataset.id==='sets'?'sets':'cards';refreshPlayMenu();};
 A.playEconColor=t=>{const k=t.dataset.econColor||'';econUi.color=econUi.color===k?'':k;refreshPlayMenu();};
 C.playEconType=t=>{econUi.type=t.value||'';refreshPlayMenu();};
+// Trunk bar: a chip's x clears that one filter; Reset clears type, rarity, set and sort. The sheet stays open while you set it.
+A.playEconClearFilter=t=>{const k=t.dataset.econKey;if(k==='all'){econUi.type='';econUi.rarity='';econUi.set='';econUi.sort='';try{localStorage.removeItem('cardstashy-play-sort');}catch{}}else if(['type','rarity','set'].includes(k))econUi[k]='';else if(k==='sort'){econUi.sort='';try{localStorage.removeItem('cardstashy-play-sort');}catch{}}refreshPlayMenu();};
+A.playEconCloseFilters=()=>{econUi.filtersOpen=false;refreshPlayMenu();};
+document.addEventListener('toggle',e=>{if(e.target?.classList?.contains('pe-filter-sheet'))econUi.filtersOpen=e.target.open;},true);
 A.playEconSet=t=>{const code=t.dataset.econSet||'';if(t.dataset.econFilter){econUi.set=code;return refreshPlayMenu();}econUi.set='';if(code)return go('#set/'+encodeURIComponent(code)+'/play');refreshPlayMenu();};
 C.playEconSetPick=t=>{econUi.set=t.value||'';refreshPlayMenu();};
 C.playEconSort=t=>{econUi.sort=t.value||'';try{localStorage.setItem('cardstashy-play-sort',econUi.sort);}catch{}refreshPlayMenu();};
@@ -2786,7 +2792,7 @@ function renderPlayPage() {
   if(state.match.mode==='cpu')warmForgeEngine(state);
   if(!playUpdateChecked){playUpdateChecked=true;queueMicrotask(updatePlayWhileIdle);}
   if(playView==='home'){const st=playEcon.snapshot().state;econFacts.wantSets([...storyHomeAct().packSets,...(st?.packs||[]).map(p=>p.set),...(st?.shop||[]).slice(0,6).map(x=>x.code),...(st?.cards||[]).flatMap(c=>c.s||[])]);}
-  return playMenuMarkup(state,{lockedDecks:locked,econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
+  return playMenuMarkup(state,{lockedDecks:locked,econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,stageMode:playStageMode,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
 // A Play redraw (a tap, a key, cards or facts arriving) keeps the field or button you were on: the same control is found again in
 // the new markup (the bar's colour and the panel's copy apart) and gets focus and the caret back, so typing and Tab go on.

@@ -122,7 +122,7 @@ export function secretLairShelf(snapshot) {
   const btn = sl.bought ? '<span class="pe-sl-done">In your Trunk</span>'
     : `<button class="pe-buy" data-act="playEconSecretLair" data-econ-week="${esc(sl.week)}" ${coins < sl.price || snapshot.busy ? 'disabled' : ''} aria-label="Buy this Secret Lair for ${n(sl.price)} coins">${coinIcon('pe-coin--sm')}<b>${n(sl.price)}</b></button>`;
   return `<section class="pe-shelf pe-sl" aria-labelledby="peSlTitle"><div class="pe-sl-head"><h2 id="peSlTitle">This week's Secret Lair</h2><span class="pe-sl-left">${esc(left)}</span></div>
-    <p class="pe-sl-sub"><b>${esc(sl.title)}</b>${sl.by ? ` · ${esc(sl.by)}` : ''}. Each card comes into your Trunk and unlocks its Secret Lair art for your copies.</p>
+    <p class="pe-sl-sub"><b>${esc(sl.title)}</b>${sl.by ? ` · ${esc(sl.by)}` : ''}</p>
     <ul class="pe-sl-cards" data-audit-scroll>${sl.cards.map((c, i) => `<li style="--i:${i}"><button class="pe-sl-card" data-act="card" data-name="${esc(c.n)}" data-play-card="1" aria-label="Open ${esc(c.n)}${owned.has(c.o) ? ', in your Trunk' : ''}"><img src="${esc(secretLairImage(c.id))}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>${owned.has(c.o) ? '<span class="pe-sl-have" aria-hidden="true">Owned</span>' : ''}</li>`).join('')}</ul>
     <div class="pe-sl-foot">${btn}</div></section>`;
 }
@@ -226,14 +226,24 @@ export function filterPlayCards(cards = [], facts = null, {query = '', rarity = 
   });
 }
 
-function filterBar(ui = {}, {sets = []} = {}) {
+// 0.4.95 Trunk bar: Find a card and Filters (with how many are on) on one line, the colours under it.
+// Type, rarity, set and sort live in the Filters sheet; what is on shows as chips with an x, and the count sits at the right.
+function filterBar(ui = {}, {sets = [], shown = 0} = {}) {
   const setName = code => sets.find(x => x.code === code)?.name || code.toUpperCase();
-  return `<div class="pe-tools pe-filters"><label class="pe-search"><span>Find a card</span><input type="search" data-input="playEconCardSearch" value="${esc(ui.cardQuery || '')}" maxlength="80" placeholder="Card name"></label>
+  const sortName = PLAY_SORTS.find(([k]) => k === (ui.sort || ''))?.[1] || '';
+  const chips = [ui.type && ['type', ui.type], ui.rarity && ['rarity', ui.rarity[0].toUpperCase() + ui.rarity.slice(1)], ui.set && ['set', setName(ui.set)], ui.sort && ['sort', sortName]].filter(Boolean);
+  const on = chips.length;
+  return `<div class="pe-tools pe-filters pe-trunkbar"><div class="pe-trunkbar-row"><label class="pe-search"><span class="sr-only">Find a card</span><input type="search" data-input="playEconCardSearch" value="${esc(ui.cardQuery || '')}" maxlength="80" placeholder="Find a card"></label>
+    <details class="pe-filter-sheet"${ui.filtersOpen ? ' open' : ''}><summary class="pe-filters-pill${on ? ' is-on' : ''}" aria-label="Filters${on ? ', ' + on + ' on' : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span>Filters</span>${on ? `<b>${on}</b>` : ''}</summary>
+      <div class="pe-filter-body" role="group" aria-label="Filters">
+        <p class="pe-filter-h">Type</p><select class="pe-type" data-change="playEconType" aria-label="Card type"><option value="">All types</option>${TYPES.map(t => `<option${ui.type === t ? ' selected' : ''}>${t}</option>`).join('')}</select>
+        <p class="pe-filter-h">Rarity</p><div class="pe-rarity-tabs" role="group" aria-label="Rarity">${[['', 'All'], ['common', 'Common'], ['uncommon', 'Uncommon'], ['rare', 'Rare'], ['mythic', 'Mythic']].map(([k, l]) => `<button data-act="playEconRarity" data-econ-rarity="${k}" aria-pressed="${(ui.rarity || '') === k}">${l}</button>`).join('')}</div>
+        ${sets.length >= 2 ? `<p class="pe-filter-h">Set</p>${setSelect(ui, sets)}` : ''}
+        <p class="pe-filter-h">Sort</p><select class="pe-sort" data-change="playEconSort" aria-label="Sort cards">${PLAY_SORTS.map(([k, l]) => `<option value="${k}"${(ui.sort || '') === k ? ' selected' : ''}>${l}</option>`).join('')}</select>
+        <div class="pe-filter-foot"><button class="btn ghost small" data-act="playEconClearFilter" data-econ-key="all">Reset</button><button class="btn small pe-filter-done" data-act="playEconCloseFilters">Show ${n(shown)} cards</button></div>
+      </div></details></div>
     <div class="pe-color-tabs" role="group" aria-label="Colour">${COLORS.map(([k, l]) => `<button class="pe-mana pe-mana--${k}" data-act="playEconColor" data-econ-color="${k}" aria-pressed="${ui.color === k}" aria-label="${l}" title="${l}"><img class="pe-mana-sym" src="${symbolUrl(k)}" alt="" aria-hidden="true" loading="lazy" decoding="async"></button>`).join('')}</div>
-    <select class="pe-type" data-change="playEconType" aria-label="Card type"><option value="">All types</option>${TYPES.map(t => `<option${ui.type === t ? ' selected' : ''}>${t}</option>`).join('')}</select>
-    <div class="pe-rarity-tabs" role="group" aria-label="Rarity">${[['', 'All'], ['common', 'Common'], ['uncommon', 'Uncommon'], ['rare', 'Rare'], ['mythic', 'Mythic']].map(([k, l]) => `<button data-act="playEconRarity" data-econ-rarity="${k}" aria-pressed="${(ui.rarity || '') === k}">${l}</button>`).join('')}</div>
-    <select class="pe-sort" data-change="playEconSort" aria-label="Sort cards">${PLAY_SORTS.map(([k, l]) => `<option value="${k}"${(ui.sort || '') === k ? ' selected' : ''}>${l}</option>`).join('')}</select>
-    ${setSelect(ui, sets)}</div>`;
+    ${on ? `<div class="pe-chips" role="group" aria-label="Filters on">${chips.map(([k, l]) => `<button class="pe-chip" data-act="playEconClearFilter" data-econ-key="${k}" aria-label="Remove ${esc(l)}">${esc(l)}<span aria-hidden="true">×</span></button>`).join('')}</div>` : ''}</div>`;
 }
 
 // One menu for the set filter, grouped by release year, so a big binder never grows a wall of chips.
@@ -297,10 +307,10 @@ export function collectionMarkup(snapshot, ui = {}) {
   const cards = (state.cards || []).slice().sort((a, b) => a.n.localeCompare(b.n)), sets = playSetRows(state, facts);
   const body = tab === 'sets' ? playSetsTab(state, facts, ui)
     : (() => { const shown = sortPlayCards(filterPlayCards(cards, facts, {query: ui.cardQuery, rarity: ui.rarity, color: ui.color, type: ui.type, set: ui.set}), facts, ui.sort, sets);
-      return `${filterBar(ui, {sets})}<p class="pe-count" role="status">${n(shown.length)} of ${n(cards.length)} cards</p>
+      return `${filterBar(ui, {sets, shown: shown.length})}<p class="pe-count" role="status">${n(shown.length)} of ${n(cards.length)} cards</p>
       ${shown.length ? `<div class="view-gallery pe-coll-view"><div class="list display-list deal pe-coll-list">${holoSplit(shown).slice(0, 300).map((c, i) => playCardTile(c, facts, i)).join('')}</div></div>`
         : `<div class="pe-empty"><h2>${cards.length ? 'No cards match' : 'Your binder is empty'}</h2><p>${cards.length ? 'Try another name, colour or type.' : 'Open a pack to start your Play collection.'}</p></div>`}`; })();
-  return `<section class="play-menu pe-screen pe-collection" aria-labelledby="playTitle">${head('Collection', snapshot)}
+  return `<section class="play-menu pe-screen pe-collection" aria-labelledby="playTitle">${head('Trunk', snapshot)}
     ${segmented('playEconCollTab', tab, [['cards', 'Cards', 'cardStack'], ['sets', 'Sets', 'binder']])}
     ${body}
     ${statusLine(snapshot)}</section>`;

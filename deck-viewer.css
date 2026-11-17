@@ -396,3 +396,17 @@ body .deck-body[data-tab="engine"] { columns: auto; }
 .deck-art-ready{transform:scale(1.04);filter:drop-shadow(0 0 10px color-mix(in srgb,var(--gold,#E5C47E) 55%,transparent));transition:transform .12s,filter .12s}
 .deck-art-lift{opacity:.35}
 @media(prefers-reduced-motion:reduce){.deck-art-drop,.deck-art-ready,.deck-art-ghost.deck-art-land,.pe-drag-ghost.deck-art-land{transition:none}}
+/* 0.4.95 deck page on phones: cards above the fold. A 236 px header, the three actions on one row,
+   the incomplete-draft note as a tag (tap for the details), all five tabs on one line. */
+.ds-note-tag{display:inline-block;margin:10px 0 0;padding:6px 12px;border:1px solid color-mix(in srgb,var(--warn,#e0a24a) 45%,transparent);border-radius:999px;background:color-mix(in srgb,var(--warn,#e0a24a) 10%,transparent);color:var(--warn,#e0a24a);font-size:12.5px;font-weight:700}
+details.ds-note-tag{border-radius:14px}details.ds-note-tag>summary{cursor:pointer;min-height:24px}details.ds-note-tag>p{color:var(--text);font-weight:400;margin:6px 0 0}
+@media(max-width:700px){
+ .ds-hero{--ds-h:236px}
+ .ds-hero .hero-body h1{font-size:24px}
+ .ds-actions{flex-wrap:nowrap}
+ .ds-actions .ds-primary{flex-basis:0;min-width:0}
+ .ds-actions .btn{min-height:44px}
+ .ds-head+.ds-note-tag,.ds-note-tag{margin-top:8px}
+ .deck-hero~nav.tabs,.ds-head~nav.tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:4px}
+ .deck-hero~nav.tabs>button,.ds-head~nav.tabs>button{flex:1 0 auto;min-height:44px;padding-inline:10px;font-size:13px}
+}
