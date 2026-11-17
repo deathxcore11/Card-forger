@@ -31,7 +31,7 @@ const ghoti=JSON.parse(fs.readFileSync('tests/fixtures/deck-construction/ghoti-i
 const failure=chooseDeck([{deck:{},check:{complete:false,legal:true,issues:[`Required build-around ${ghoti.requiredCard} is missing.`]},plan:{issues:[]},pricing:{}}],normalizeDeckRequest({game:'ygo',format:'tcg',budget:100},pipeline.formats));
 assert.equal(failure.ok,false);assert.match(failure.message,/missing/);assert.doesNotMatch(deckResultMarkup(failure,'bad'),/data-act="flowSave"|Buy|Hard to play/);
 // Unknown prices still allow a complete checked list, without a false budget fit.
-land.prices.usd=null;result=await pipeline.build({...request,budget:''});assert(result.ok,result.message);assert.equal(result.pricing.estimate,null);assert(result.pricing.unpriced>0);assert.equal(result.budgetStatus,'unverified');assert.match(deckResultMarkup(result,'unknown'),/data-flow-unpriced>\d+ unpriced<\/span>/,'the unpriced count sits by the price');assert.match(deckResultMarkup(result,'unknown'),/no price yet, so the real total is higher/);
+land.prices.usd=null;result=await pipeline.build({...request,budget:''});assert(result.ok,result.message);assert.equal(result.pricing.estimate,null);assert(result.pricing.unpriced>0);assert.equal(result.budgetStatus,'unverified');assert.match(deckResultMarkup(result,'unknown'),/data-flow-unpriced>\d+ unpriced<\/span>/,'the unpriced count sits by the price');assert.match(deckResultMarkup(result,'unknown'),/No price yet, so the real total is higher/);
 land.prices.usd='.10';
 let live=true;const pending=constructDeck(request,{formats:pipeline.formats,construct:async()=>{live=false;return [];}},{current:()=>live});await assert.rejects(pending,e=>e.name==='AbortError');
 // Chat keeps a compact receipt and opens the exact checked result in the shared
@@ -207,13 +207,13 @@ console.log('PASS: actual partial Bloodlust coverage, conditional Drana/first-st
  const six={...result,rows,rebuild,deck:{...result.deck,constructionBasis:'heuristic',referenceAdaptation:null},pricing:{...result.pricing,copies:60,ownedCopies:0,estimate:null,subtotal:70,unpriced:22},request:{...result.request,game:'mtg',format:'Standard',formatName:'Standard',budget:null,seedCard:bear,plan:'midrange',power:'max'},delta:null,budgetStatus:'unverified'};
  const html=deckResultMarkup(six,'six'),save=html.indexOf('data-act="flowSave"'),info=html.indexOf('data-flow-info');
  assert(info>0&&info<save,'the info line sits above Save');
- assert.match(html,/<summary aria-label="Build details"><span class="deck-build-line"><b>Midrange · Max power<\/b> · 28 cards changed<\/span>/);
+ assert.match(html,/<summary><span class="deck-build-line"><b>Midrange · Max power<\/b> · 28 cards changed<\/span>/);
  assert.match(html,/<b>\$70\+<\/b><span>Known subtotal · whole deck<\/span><span class="tag deck-unpriced-tag" data-flow-unpriced>22 unpriced<\/span>/);
  for(const old of [/unbounded \/ unknown/,/Compared \d+ distinct lists/,/bounded heuristic search/,/bounded search/,/copies are unpriced/,/do not certify/])assert.doesNotMatch(html.slice(0,html.indexOf('deck-result-checks')),old,'the old solver wording is gone: '+old);
  // Nothing is lost: what changed, the price note and how it was built are all inside the panel.
  const panel=html.slice(info,save);
- assert.match(panel,/Cards updated/);assert.match(panel,/28 cards in, 28 out\. The price change is unknown \(whole deck\)\./);assert.match(panel,/ranked first among the 2 lists we checked/);assert.match(panel,/Fixture bear \(main\): 10 → 38/);
- assert.match(panel,/22 cards have no price yet, so the real total is higher\./);assert.match(panel,/Picked by the deck builder from current cards\. It hasn’t been proven in tournaments\./);
+ assert.match(panel,/Cards updated/);assert.match(panel,/28 cards in, 28 out\. Price change unknown \(whole deck\)\./);assert.match(panel,/Best of 2 lists checked/);assert.match(panel,/Fixture bear \(main\): 10 → 38/);
+ assert.match(panel,/No price yet, so the real total is higher\./);assert.match(panel,/Builder pick\. Not tournament-tested\./);
  assert.doesNotMatch(html.slice(0,save),/class="note"/,'no text block sits between the header and Save');
  // A first build has no change to report, and a priced deck has no badge.
  const fresh=deckResultMarkup({...six,rebuild:null,pricing:{...six.pricing,estimate:70,unpriced:0}},'fresh');

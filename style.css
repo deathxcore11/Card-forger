@@ -5780,5 +5780,5 @@ body[data-game="ygo"] .card-grid .tile-chrome { aspect-ratio: 59 / 86; }
 .deck-info-block{display:grid;gap:4px;padding-top:10px}
 .deck-info-block>b{font-size:13px;color:var(--text)}
 .deck-info-block p{margin:0;font-size:13px;line-height:1.45;color:var(--muted)}
-.deck-info-block details summary{font-size:13px;color:var(--gold);cursor:pointer;min-height:32px;display:flex;align-items:center}
+.deck-info-block details{margin:0}.deck-info-block details summary{font-size:13px;color:var(--gold);cursor:pointer;min-height:44px;display:flex;align-items:center}
 .deck-unpriced-tag{margin-left:6px;color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent);font-size:11px;white-space:nowrap}
