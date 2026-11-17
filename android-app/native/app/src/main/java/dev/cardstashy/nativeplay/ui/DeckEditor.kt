@@ -78,6 +78,8 @@ import kotlinx.coroutines.launch
 class EditorUi {
     var edit by mutableStateOf(DeckEdit.Edit(null, "", "Standard", emptyList()))
     var busy by mutableStateOf(false)
+    /** Deck art dropped on an unsaved deck's header: kept (name, art) and saved with the deck. */
+    var pendingCover by mutableStateOf<Pair<String, String>?>(null)
     var crafting by mutableStateOf(false)
     var armed by mutableStateOf(false)
     var filling by mutableStateOf(false)
@@ -262,7 +264,11 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         save = {
             if (ui.edit.cards.isNotEmpty() && !ui.busy) { ui.busy = true
                 scope.launch { runCatching { Progress.saveDeck(DeckEdit.saveBody(landRows(ui.edit))) }.onSuccess { d -> (d as? JsonObject)?.get("id")?.asString?.let { ui.edit = ui.edit.copy(id = it) }
-                    ui.edit = ui.edit.copy(dirty = false); toast("Saved to your Play decks.") }; ui.busy = false } }
+                    ui.edit = ui.edit.copy(dirty = false)
+                    val pend = ui.pendingCover; val sid = ui.edit.id
+                    if (pend != null && sid != null) { val err = Workspace.setPlayDeckCover(context, sid, JsonObject().apply { addProperty("name", pend.first.take(200)); addProperty("image", pend.second.take(500)) })
+                        if (err == null) ui.pendingCover = null }
+                    toast("Saved to your Play decks.") }; ui.busy = false } }
         },
         craftAll = {
             if (!ui.crafting) {
@@ -347,7 +353,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val wallet = plan.have
     val model = BenchModel(
         play = true, modeChip = "Play deck", formatChip = "Magic · ${e.format}", title = e.name.ifBlank { "New Play deck" },
-        heroArt = Workspace.playDeckCovers.collectAsState().value.let { Workspace.pickedCover(e.id) } ?: fact(e.cards.firstOrNull { !Decks.isBasicLand(it.name) }?.name ?: "")?.a,
+        heroArt = ui.pendingCover?.second?.takeIf { e.id == null } ?: Workspace.playDeckCovers.collectAsState().value.let { Workspace.pickedCover(e.id) } ?: fact(e.cards.firstOrNull { !Decks.isBasicLand(it.name) }?.name ?: "")?.a,
         stats = listOf(BenchStat("${nums.count}/${nums.size}", "cards", warn = !nums.ok), BenchStat("${nums.count - plan.missing}/${nums.count}", "unlocked")),
         power = power?.let { "${it.roundToInt()}" }, tier = if (e.format == "Commander" && bracket != null) PowerTier.bracketLabel(bracket) else PowerTier.powerTier(power),
         roles = (read?.get("roles") as? JsonArray)?.mapNotNull { (it as? JsonArray)?.takeIf { r -> r.size() >= 2 && r[0].isJsonPrimitive && r[1].isJsonPrimitive }?.let { r -> r[0].asString to r[1].asInt } } ?: emptyList(),
@@ -370,7 +376,8 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val benchActions = BenchActions(back = onBack, save = actions.save, step = actions.step, craft = actions.craftCopies, open = actions.open, more = actions.hold,
         // Drop a card on the hero: its art is this deck's art (saved decks; app.js playDropArt).
         cover = { name -> val id = ui.edit.id
-            if (id == null) toast("Deck not saved.") else { val image = fact(name)?.a?.ifBlank { null } ?: named(name, "art_crop")
+            val image = fact(name)?.a?.ifBlank { null } ?: named(name, "art_crop")
+            if (id == null) { ui.pendingCover = name to image; toast("$name is the deck art. It is saved with the deck.") } else {
                 scope.launch { val err = Workspace.setPlayDeckCover(context, id, JsonObject().apply { addProperty("name", name.take(200)); addProperty("image", image.take(500)) })
                     toast(err ?: "$name is the deck art.") } } },
         landHold = { t -> openLands(t) },

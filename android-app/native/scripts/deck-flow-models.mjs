@@ -34,11 +34,23 @@ export function setupModel(request, status, error, deckSetupMarkup, formats, the
       coversLabel: text(q('select[data-flow-field="budgetBasis"]')?.closest('label')).replace(/Whole deck.*$/, '').trim(),
       checks: qa('label.check').map(l => ({field: l.querySelector('input')?.dataset.flowField || '', label: text(l), on: !!l.querySelector('input')?.checked})),
       foot: text(q('.settings-disclosure .foot'))},
+    // deckBuildChoices (Magic): the Bracket or Plan and Power rows, the Sideboard switch, "This build" (names and values only).
+    choices: (() => {
+      const box = q('.deck-build-choices'); if (!box) return null;
+      const picks = [...box.querySelectorAll('.deck-pick')].filter(el => el.querySelector('.seg')).map(el => {
+        const note = el.querySelector('.deck-pick-value'), title = el.querySelector('.field-title');
+        return {title: text(title).replace(text(note), '').trim(), note: text(note), field: el.querySelector('button')?.getAttribute('data-field') || '',
+          items: [...el.querySelectorAll('.seg button')].map(b => ({value: b.getAttribute('data-value') || '', label: text(b), aria: b.getAttribute('aria-label') || '', on: b.getAttribute('aria-pressed') === 'true' || b.classList.contains('on')}))};
+      });
+      const side = box.querySelector('.deck-side-switch'), targets = box.querySelector('[data-flow-targets]');
+      return {picks, side: side ? {field: 'sideboard', label: text(side).replace(text(side.querySelector('b')), '').trim(), count: text(side.querySelector('b')), on: !!side.querySelector('input')?.checked} : null,
+        title: text(targets?.closest('.deck-pick')?.querySelector('.field-title')), targets: targets ? [...targets.querySelectorAll('div')].map(d => ({value: text(d.querySelector('b')), label: text(d.querySelector('span'))})) : []};
+    })(),
     generate: text(q('[data-act="flowGenerate"]')), status: text(q('[role="status"]')), error};
 }
 
 export function resultModel(id, item, deckResultMarkup) {
-  const r = item.result, host = draw(deckResultMarkup(r, id, {saved: item.saved}));
+  const r = item.result, host = draw(deckResultMarkup(r, id, {saved: item.saved, group: item.group || 'type', tap: item.tap || 'open', locked: [...(item.locked || [])], swap: item.swap || null}));
   const q = s => host.querySelector(s), qa = s => [...host.querySelectorAll(s)];
   const hero = q('.ds-hero'), art = hero?.querySelector('img.hero-art'), brow = hero?.querySelector('.deck-hero-eyebrow');
   const bar = hero?.querySelector('.ds-bar i'), lead = q('.ds-lead');
@@ -53,12 +65,21 @@ export function resultModel(id, item, deckResultMarkup) {
     lead: lead ? [...lead.children].map(el => { const b = el.querySelector(':scope > b'); return {head: text(b), text: b ? [...el.children].filter(k => k !== b).map(text).filter(Boolean).join('\n') || text(el) : text(el), warn: /\bwarn/.test(el.className)}; }).filter(x => x.text || x.head) : [],
     save: (() => { const b = q('[data-act="flowSave"]'); return {label: text(b), disabled: !!b?.disabled}; })(),
     rebuild: {summary: text(q('.ds-rebuild summary')), label: text(q('.deck-budget-rebuild label')), placeholder: q('[data-flow-budget]')?.getAttribute('placeholder') || '', button: text(q('[data-act="flowAdjust"]'))},
+    // Lower budget chips; the Group and Tap switches; Rebuild unlocked; the Swap panel (Magic).
+    quick: (() => { const g = q('.deck-budget-quick'); return g ? {label: text(g.querySelector('span')), items: [...g.querySelectorAll('button')].map(b => ({value: b.getAttribute('data-budget') || '', label: text(b)}))} : null; })(),
+    switches: qa('.deck-group-switch').map(g => { const first = g.querySelector('button'); const key = first?.getAttribute('data-act') || '';
+      return {label: text(g.querySelector('span')), act: key, items: [...g.querySelectorAll('.seg button')].map(b => ({value: b.getAttribute('data-group') || b.getAttribute('data-tap') || '', label: text(b), on: b.getAttribute('aria-pressed') === 'true' || b.classList.contains('on')}))}; }),
+    unlocked: text(q('[data-act="flowRebuildUnlocked"]')),
+    swap: (() => { const sw = q('[data-flow-swap]'); if (!sw) return null; const head = sw.querySelector('.deck-swap-head');
+      return {label: text(head?.querySelector('span')), name: text(head?.querySelector('b')), job: text(head?.querySelector('.tag')),
+        options: [...sw.querySelectorAll('.deck-swap-row')].map((row, i) => ({index: i, name: text(row.querySelector('b')), detail: text(row.querySelector('.small')), thumb: row.querySelector('img.row-thumb')?.getAttribute('src') || '', action: text(row.querySelector('button'))})),
+        empty: text([...sw.querySelectorAll(':scope > p')].find(p => !p.hasAttribute('data-flow-swap-status'))), message: text(sw.querySelector('[data-flow-swap-status]')), keep: text(sw.querySelector('[data-act="flowSwapKeep"]'))}; })(),
     construction: text([...(article?.children || [])].find(el => el.matches('p.foot'))),
     extras: [...(article?.children || [])].filter(el => el.tagName === 'DETAILS' && !el.classList.contains('deck-result-checks')).map(details),
     zones: qa('.deck-flow-cards section').map(sec => ({title: text(sec.querySelector('h3')).replace(/\s*\d+$/, ''), count: text(sec.querySelector('h3 span')),
       rows: [...sec.querySelectorAll('.deck-compact-row')].map(b => { const i = Number(b.dataset.row), row = r.rows[i], c = row?.card;
         return {index: i, qty: Number(b.dataset.flowQty) || row?.qty || 1, name: b.dataset.flowName || row?.name || '', zone: row?.zone || 'main',
-          category: b.dataset.deckCategory || '', thumb: b.querySelector('img.row-thumb')?.getAttribute('src') || '',
+          category: b.dataset.deckCategory || '', locked: b.hasAttribute('data-flow-locked'), thumb: b.querySelector('img.row-thumb')?.getAttribute('src') || '',
           image: c?.image_uris?.normal || c?.card_faces?.[0]?.image_uris?.normal || (r.request.game !== 'mtg' ? c?.image || b.querySelector('img.row-thumb')?.getAttribute('src') || '' : '') || '',
           id: r.request.game !== 'mtg' ? String(row?.id || row?.cardId || c?.id || '') : '',
           // app.js deckExperience card(): Pokémon opens on the row's variant, Yu-Gi-Oh! on its printing and edition.

@@ -216,23 +216,69 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
         }
     }
     // A.flowAdjust: the amount checked first (customBudget's message under the field), then the rebuild over the result.
-    fun rebuild() {
-        val id = result?.s("id") ?: return; val amount = rebuildText
+    fun rebuild(amount: String = rebuildText, quick: Boolean = false) {
+        val id = result?.s("id") ?: return
         scope.launch {
             val check = engine.call("flowBudget", obj("budget" to amount))
             if (check.error != null) { rebuildStatus = check.error; return@launch }
             val me = ++token[0]
             busy = BuildBusy("Your deck is being built", "Your updated deck will open here when it’s ready.", "Finding cards for your updated budget…", inSheet = false,
                 cancelled = { rebuildStatus = "Rebuild cancelled. Your deck is unchanged." })
-            val a = engine.call("flowAdjust", obj("id" to id, "budget" to amount))
+            val a = engine.call("flowAdjust", obj("id" to id, "budget" to amount, "quick" to quick))
             if (me != token[0]) return@launch
             busy = null
             val m = a.obj
             when {
-                a.error != null -> rebuildStatus = a.error
+                a.error != null -> { rebuildStatus = a.error; rebuildOpen = true }
                 m == null || m.b("cancelled") -> {}
                 m.b("ok") -> { result = m.o("model"); rebuildOpen = false; rebuildText = ""; rebuildStatus = "" }
-                else -> rebuildStatus = m.s("message")
+                else -> { rebuildStatus = m.s("message"); rebuildOpen = true }
+            }
+        }
+    }
+    // A.flowRebuildUnlocked: a new build around the locked cards, over the result (the same pop-up as a budget rebuild).
+    fun rebuildUnlocked() {
+        val id = result?.s("id") ?: return
+        val me = ++token[0]
+        busy = BuildBusy("Your deck is being built", "Your updated deck will open here when it’s ready.", "Finding cards around your locked cards…", inSheet = false,
+            cancelled = { rebuildStatus = "Rebuild cancelled. Your deck is unchanged." })
+        scope.launch {
+            val a = engine.call("flowRebuildUnlocked", obj("id" to id))
+            if (me != token[0]) return@launch
+            busy = null
+            val m = a.obj
+            when {
+                a.error != null -> { rebuildStatus = a.error; rebuildOpen = true }
+                m == null || m.b("cancelled") -> {}
+                m.b("ok") -> { result = m.o("model"); rebuildStatus = "" }
+                else -> { rebuildStatus = m.s("message"); rebuildOpen = true }
+            }
+        }
+    }
+    // The result's switches (Group, Tap) and the Swap panel: the page again with the switch moved.
+    fun step(name: String, vararg kv: Pair<String, Any?>) {
+        val id = result?.s("id") ?: return
+        scope.launch {
+            val a = engine.call(name, obj("id" to id, *kv))
+            if (a.error != null) { CollectionWrites.show(a.error); return@launch }
+            a.obj?.let { result = it }
+        }
+    }
+    // A.flowCard: in Lock or Swap a card locks or opens its Swap panel; in Open (and for lands and the commander) it opens as usual.
+    fun cardTap(r: DeckLine) {
+        val res = result ?: return
+        val tap = res.objs("switches").firstOrNull { it.s("act") == "flowTap" }?.objs("items")?.firstOrNull { it.b("on") }?.s("value") ?: "open"
+        val openIt = { cards = cards + if (game == "mtg") CardOpen(r.name, page = "https://cardstashy.com/#decks", tile = "")
+            else CardOpen(r.name, page = "https://cardstashy.com/#decks", tile = "", game = game, id = r.id, setVariant = r.setVariant, printing = r.printing, edition = r.edition) }
+        if (game != "mtg" || tap == "open") { openIt(); return }
+        scope.launch {
+            val a = engine.call("flowCardTap", obj("id" to res.s("id"), "row" to r.index))
+            val m = a.obj
+            when {
+                a.error != null -> CollectionWrites.show(a.error)
+                m == null -> {}
+                m.b("open") -> openIt()
+                else -> m.o("model")?.let { result = it }
             }
         }
     }
@@ -292,12 +338,14 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
                     res != null -> FlowResult(res, vw, saving, rebuildOpen, rebuildText, rebuildStatus,
                         onBack = onClose, onSave = { saveDeck() }, onRebuildToggle = { rebuildOpen = !rebuildOpen }, onRebuildText = { rebuildText = it; rebuildStatus = "" },
                         onRebuild = { rebuild() }, onEdit = { res.o("request")?.let { opened(it) } }, onExport = { export() },
-                        onCard = { r -> cards = cards + if (game == "mtg") CardOpen(r.name, page = "https://cardstashy.com/#decks", tile = "")
-                            else CardOpen(r.name, page = "https://cardstashy.com/#decks", tile = "", game = game, id = r.id, setVariant = r.setVariant, printing = r.printing, edition = r.edition) })
+                        onQuick = { rebuild(it, true) }, onSwitch = { act, v -> step(act, (if (act == "flowGroup") "group" else "tap") to v) },
+                        onUnlocked = { rebuildUnlocked() }, onSwapTake = { step("flowSwapTake", "option" to it) }, onSwapKeep = { step("flowSwapKeep") },
+                        onCard = { r -> cardTap(r) })
                     setup != null -> FlowSetup(setup!!, vw, seedText, seedOpen, budgetText, prefsOpen,
                         onSeedOpen = { seedOpen = !seedOpen }, onSeed = { seedText = it }, onRandom = { random() },
                         onAnyFormat = { change { addProperty("commanderLock", false) } },
                         onField = { k, v -> change { addProperty(k, v) } }, onCheck = { k, v -> change { addProperty(k, v) } },
+                        onPick = { f, v -> scope.launch { engine.call("flowPick", obj("request" to read(), "field" to f, "value" to v)).obj?.let { m -> setup = m } } },
                         onBudget = { budgetText = it; change { } }, onPrefs = { prefsOpen = !prefsOpen }, onGenerate = { generate() })
                     else -> BuildPop(BuildBusy("Build a deck", "", "Getting started…", {}, true), "", Modifier.padding(vertical = 24.dp), null)
                 }
@@ -342,7 +390,7 @@ private fun BuildPop(b: BuildBusy, live: String, modifier: Modifier, onCancel: (
 @Composable
 private fun FlowSetup(m: JsonObject, vw: Dp, seedText: String, seedOpen: Boolean, budgetText: String, prefsOpen: Boolean,
                       onSeedOpen: () -> Unit, onSeed: (String) -> Unit, onRandom: () -> Unit, onAnyFormat: () -> Unit,
-                      onField: (String, String) -> Unit, onCheck: (String, Boolean) -> Unit, onBudget: (String) -> Unit, onPrefs: () -> Unit, onGenerate: () -> Unit) {
+                      onField: (String, String) -> Unit, onCheck: (String, Boolean) -> Unit, onPick: (String, String) -> Unit, onBudget: (String) -> Unit, onPrefs: () -> Unit, onGenerate: () -> Unit) {
     val seed = m.o("seed") ?: JsonObject()
     val small = vw <= 600.dp
     // Controller: X is the sheet's gold Generate deck.
@@ -396,6 +444,8 @@ private fun FlowSetup(m: JsonObject, vw: Dp, seedText: String, seedOpen: Boolean
                 bud.s("note").takeIf { it.isNotEmpty() }?.let { Text(it, style = cssType(12f, 400, 18f, BMute)) }
             }
         }
+        // deckBuildChoices: Bracket or Plan, Power, Sideboard and "This build" (Magic).
+        m.o("choices")?.let { FlowChoices(it, onPick, onCheck) }
         // details.settings-disclosure: Preferences.
         val p = m.o("prefs") ?: JsonObject()
         FormMore(p.s("title"), prefsOpen, onPrefs) {
@@ -449,7 +499,8 @@ private fun CheckRow(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
 @Composable
 private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildOpen: Boolean, rebuildText: String, rebuildStatus: String,
                        onBack: () -> Unit, onSave: () -> Unit, onRebuildToggle: () -> Unit, onRebuildText: (String) -> Unit, onRebuild: () -> Unit,
-                       onEdit: () -> Unit, onExport: () -> Unit, onCard: (DeckLine) -> Unit) {
+                       onEdit: () -> Unit, onExport: () -> Unit, onQuick: (String) -> Unit, onSwitch: (String, String) -> Unit, onUnlocked: () -> Unit,
+                       onSwapTake: (Int) -> Unit, onSwapKeep: () -> Unit, onCard: (DeckLine) -> Unit) {
     val h = m.o("hero") ?: JsonObject()
     val reduced = Motion.still
     val eyebrow = buildList {
@@ -490,10 +541,22 @@ private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildOpen: Bool
             DeckGhost(rb.s("button"), Modifier.fillMaxWidth(), minHeight = 44.dp, onClick = onRebuild)
             if (rebuildStatus.isNotEmpty()) Text(rebuildStatus, Modifier.semantics { contentDescription = rebuildStatus }, style = cssType(13f, 400, 18.85f, BMute))
         }
+        // .deck-budget-quick: Lower budget and its amounts.
+        m.o("quick")?.let { q -> FlowRow(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+            Text(q.s("label"), Modifier.padding(end = 4.dp), style = cssType(13f, 600, 18.85f, BMute))
+            q.objs("items").forEach { i -> FlowChip(i.s("label"), false) { onQuick(i.s("value")) } }
+        } }
         // p.foot: how the list was made.
         m.s("construction").takeIf { it.isNotEmpty() }?.let { Text(it, Modifier.padding(top = 14.dp), style = cssType(12.5f, 400, 18.125f, BFoot)) }
         // The loop and mechanic details.
         m.objs("extras").forEach { d -> Disclosure(d) }
+        // Group (Type, Job) and Tap (Open, Lock, Swap); Rebuild unlocked once a card is locked; the Swap panel.
+        m.objs("switches").forEach { sw -> Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(sw.s("label"), style = cssType(13f, 400, 18.85f, BMute))
+            Box(Modifier.weight(1f)) { FlowSeg(sw.objs("items"), sw.s("label")) { onSwitch(sw.s("act"), it) } }
+        } }
+        m.s("unlocked").takeIf { it.isNotEmpty() }?.let { DeckGhost(it, Modifier.fillMaxWidth().padding(top = 10.dp), minHeight = 44.dp, onClick = onUnlocked) }
+        m.o("swap")?.let { FlowSwap(it, onSwapTake, onSwapKeep) }
         // deckViewer: the cards in the player's deck view (the same setting as a deck's page).
         FlowCards(m.objs("zones"), vw, onCard)
         // .sheet-actions: Edit choices, Export list.
@@ -519,7 +582,9 @@ private fun Disclosure(d: JsonObject) {
 /** One card row (.deck-compact-row) as the model has it. */
 internal class DeckLine(val index: Int, val qty: Int, val name: String, val category: String, val thumb: String, val image: String, val pills: List<String>, val price: String,
     /** Yu-Gi-Oh! / Pokémon (app.js deckExperience card()): the card's id and the printing the row chose (tcg.js A.tCard's dataset). */
-    val id: String = "", val setVariant: String = "", val printing: String = "", val edition: String = "")
+    val id: String = "", val setVariant: String = "", val printing: String = "", val edition: String = "",
+    /** Lock mode: the card the player locked (the rebuild keeps it). */
+    val locked: Boolean = false)
 
 /**
  * deckViewer over the result's sections ("Main deck 100", "Sideboard 15"): Stacks (type piles of six), Art grid (the cards with
@@ -538,7 +603,7 @@ private fun FlowCards(zones: List<JsonObject>, vw: Dp, onCard: (DeckLine) -> Uni
     }
     val inner = vw - 32.dp
     for (z in zones) {
-        val rows = z.objs("rows").map { r -> DeckLine(r.get("index")?.asInt ?: 0, r.get("qty")?.asInt ?: 1, r.s("name"), r.s("category"), r.s("thumb"), r.s("image"), r.strs("pills"), r.s("price"), r.s("id"), r.s("setVariant"), r.s("printing"), r.s("edition")) }
+        val rows = z.objs("rows").map { r -> DeckLine(r.get("index")?.asInt ?: 0, r.get("qty")?.asInt ?: 1, r.s("name"), r.s("category"), r.s("thumb"), r.s("image"), r.strs("pills"), r.s("price"), r.s("id"), r.s("setVariant"), r.s("printing"), r.s("edition"), r.b("locked"))}
         // .deck-flow-cards h3: the section and its count (muted), 16 / 700, 18 above.
         Row(Modifier.padding(top = 18.dp, bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(z.s("title"), style = cssType(16f, 700, 22f)); Text(z.s("count"), style = cssType(16f, 700, 22f, BMute))
@@ -582,7 +647,7 @@ private fun FlowViewSwitch(mode: String, onView: (String) -> Unit) {
 @Composable
 private fun CardPic(r: DeckLine, modifier: Modifier) {
     val p = heroPainter(homeArt(r.image.ifBlank { r.thumb }))
-    Box(modifier.aspectRatio(63f / 88f).clip(RoundedCornerShape(8.dp)).background(BSurface2)) {
+    Box(modifier.aspectRatio(63f / 88f).clip(RoundedCornerShape(8.dp)).background(BSurface2).then(if (r.locked) Modifier.border(2.dp, Site.Gold, RoundedCornerShape(8.dp)) else Modifier)) {
         if (p != null) Image(p, r.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
     }
 }
@@ -620,6 +685,7 @@ private fun NamesRow(r: DeckLine, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable(onClick = onClick).drawBehind { drawRect(BLine, Offset(0f, size.height - 1f), Size(size.width, 1f)) }.padding(10.dp),
         verticalAlignment = Alignment.CenterVertically) {
         Text("${r.qty}× ${r.name}", Modifier.weight(1f), style = cssType(14f, 700, 20f))
+        if (r.locked) Text("Locked", style = cssType(12f, 700, 16f, Site.Gold))
     }
 }
 
@@ -672,5 +738,98 @@ private fun FlowStacks(rows: List<DeckLine>, inner: Dp, onCard: (DeckLine) -> Un
                 }
             }
         }
+    }
+}
+
+
+// ---------------------------------------------------------------- deckBuildChoices, switches, chips, Swap
+
+/** .seg: a row of names in a plate, the chosen one lit; 44 tall. */
+@Composable
+private fun FlowSeg(items: List<JsonObject>, label: String, onPick: (String) -> Unit) {
+    val shape = RoundedCornerShape(12.dp)
+    Row(Modifier.fillMaxWidth().clip(shape).background(BSurface).border(1.dp, BLine, shape).padding(3.dp).semantics { contentDescription = label },
+        horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        items.forEach { i ->
+            val on = i.b("on")
+            Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(9.dp))
+                .then(if (on) Modifier.background(Color(0x24FFFFFF)).border(1.dp, Site.Gold.copy(alpha = .45f), RoundedCornerShape(9.dp)) else Modifier)
+                .clickable { if (!on) onPick(i.s("value")) }
+                .semantics { role = Role.RadioButton; stateDescription = if (on) "Selected" else ""; contentDescription = i.s("aria").ifBlank { i.s("label") } },
+                contentAlignment = Alignment.Center) {
+                Text(i.s("label"), maxLines = 1, style = cssType(13.5f, 700, 19f, if (on) BInk else BMute))
+            }
+        }
+    }
+}
+
+/** .chip.pick: a small rounded button (Lower budget's amounts). */
+@Composable
+private fun FlowChip(label: String, on: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(22.dp)
+    Box(Modifier.heightIn(min = 44.dp).clip(shape).background(if (on) Color(0x24FFFFFF) else BSurface2).border(1.dp, if (on) Site.Gold.copy(alpha = .45f) else BLine, shape)
+        .clickable(onClick = onClick).semantics { role = Role.Button }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+        Text(label, maxLines = 1, style = cssType(14f, 700, 20f, BInk))
+    }
+}
+
+/** .deck-build-choices: the Bracket (or Plan and Power) rows with the chosen name, the Sideboard switch, and "This build": names and values only. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FlowChoices(c: JsonObject, onPick: (String, String) -> Unit, onCheck: (String, Boolean) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        c.objs("picks").forEach { p ->
+            Column(Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(p.s("title"), style = SHEET_LABEL)
+                    p.s("note").takeIf { it.isNotEmpty() }?.let { Text(it, style = cssType(12.5f, 700, 18.125f, Site.Gold)) }
+                }
+                FlowSeg(p.objs("items"), p.s("title")) { onPick(p.s("field"), it) }
+            }
+        }
+        c.o("side")?.let { s -> CheckRow(s.s("label") + " " + s.s("count"), s.b("on")) { onCheck(s.s("field"), it) } }
+        val targets = c.objs("targets")
+        if (targets.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(c.s("title"), style = SHEET_LABEL)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                targets.forEach { t ->
+                    Column(Modifier.clip(RoundedCornerShape(10.dp)).background(BSurface2).border(1.dp, BLine, RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 6.dp)
+                        .semantics(mergeDescendants = true) { contentDescription = t.s("label") + " " + t.s("value") }, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(t.s("value"), style = cssType(15f, 700, 20f, BInk))
+                        Text(t.s("label"), style = cssType(11.5f, 500, 16f, BMute))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** .deck-swap: the card, the loaded pool's options with Swap, why not, and Keep. */
+@Composable
+private fun FlowSwap(sw: JsonObject, onTake: (Int) -> Unit, onKeep: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.fillMaxWidth().padding(top = 12.dp).clip(shape).background(BSurface).border(1.dp, BLine, shape).padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(sw.s("label"), style = cssType(13f, 400, 18.85f, BMute))
+            Text(sw.s("name"), Modifier.weight(1f), style = cssType(14f, 700, 20f))
+            Text(sw.s("job"), Modifier.clip(RoundedCornerShape(6.dp)).background(BSurface2).padding(horizontal = 6.dp), style = cssType(11f, 600, 16f, BMute))
+        }
+        val options = sw.objs("options")
+        options.forEach { o ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                val p = heroPainter(homeArt(o.s("thumb")))
+                Box(Modifier.width(48.dp).aspectRatio(63f / 88f).clip(RoundedCornerShape(5.dp)).background(BSurface2)) {
+                    if (p != null) Image(p, o.s("name"), Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(o.s("name"), style = cssType(14f, 700, 20f))
+                    Text(o.s("detail"), style = cssType(12.5f, 400, 18f, BMute))
+                }
+                DeckGold(o.s("action"), minHeight = 44.dp, pad = 14.dp, onClick = { onTake(o.get("index")?.asInt ?: 0) })
+            }
+        }
+        if (options.isEmpty()) Text(sw.s("empty"), style = cssType(13f, 400, 18.85f, BMute))
+        sw.s("message").takeIf { it.isNotEmpty() }?.let { Text(it, Modifier.semantics { contentDescription = it }, style = cssType(13f, 400, 18.85f, BWarn)) }
+        DeckGhost(sw.s("keep"), Modifier.fillMaxWidth(), minHeight = 44.dp, onClick = onKeep)
     }
 }
