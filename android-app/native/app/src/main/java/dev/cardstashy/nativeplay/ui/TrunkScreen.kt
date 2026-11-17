@@ -367,7 +367,7 @@ internal fun TrunkFilterSheet(f: Trunk.Filter, sort: String, sets: List<Trunk.Se
                         Opt(f.set.isEmpty(), radio = true, onClick = { onFilter(f.copy(set = "")) }) { OptText("Every set", f.set.isEmpty()) }
                         val list = if (allSets) sets else sets.take(6).let { s -> if (f.set.isNotEmpty() && s.none { it.code == f.set }) s + sets.filter { it.code == f.set } else s }
                         list.forEach { r -> val on = f.set == r.code
-                            Opt(on, radio = true, onClick = { onFilter(f.copy(set = if (on) "" else r.code)) }) { OptText("${r.name} (${r.code.uppercase()})", on) } }
+                            Opt(on, radio = true, onClick = { onFilter(f.copy(set = if (on) "" else r.code)) }) { OptText(if (r.name.equals(r.code, ignoreCase = true)) r.code.uppercase() else "${r.name} (${r.code.uppercase()})", on) } }
                         if (sets.size > 6) Opt(false, onClick = { allSets = !allSets }) { OptText(if (allSets) "Fewer" else "More", false) }
                     } }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { label("Sort")
