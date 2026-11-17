@@ -10,7 +10,7 @@ test('Practice offers Easy, Normal and Hard; Quick Play always plays the Normal 
  const html=playMenuMarkup(setup.snapshot(),{engine:'forge',matchReleaseReady:true});
  assert.doesNotMatch(html,/id="playDifficulty"|Experimental beta|Medium CPU|Easy CPU|Hard CPU|CPU piloting/);
  assert.match(html,/aria-label="CPU difficulty"/);assert.match(html,/data-play-value="Medium" aria-pressed="true">Normal</);
- assert.match(html,/Practice/);assert.match(html,/@Randall/);const home=playMenuMarkup(setup.snapshot(),{engine:'forge',matchReleaseReady:true,view:'home'});assert.match(home,/Quick Play/);assert.match(home,/Practice/);assert.match(home,/Planeswalk/);
+ assert.match(html,/Practice/);assert.match(html,/data-testid="deckBar"/);const home=playMenuMarkup(setup.snapshot(),{engine:'forge',matchReleaseReady:true,view:'home'});assert.match(home,/Quick Play/);assert.match(home,/Practice/);assert.match(home,/Planeswalk/);
  setup.setPlayStyle('quick');assert.doesNotMatch(playMenuMarkup(setup.snapshot(),{engine:'forge',matchReleaseReady:true}),/data-play-option="difficulty"/);
  assert.deepEqual(readCpuOptions({engine:'forge'}),['Easy','Medium','Hard']);
  assert.deepEqual(forgeCpuPolicy(),{difficulty:'Medium',difficultyPolicyVersion:'forge-heuristic-medium-beta-v1',label:'CPU'});

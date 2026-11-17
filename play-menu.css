@@ -1774,3 +1774,72 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 @keyframes pe-land-pop{0%{transform:scale(1)}40%{transform:scale(1.035);box-shadow:0 0 0 2px rgba(229,196,126,.55)}100%{transform:scale(1)}}
 .pe-build-row.pe-land-pop{animation:pe-land-pop .26s ease-out}
 @media (prefers-reduced-motion:reduce){.pe-build-row--land{transition:none}.pe-build-row.pe-land-pop{animation:none}}
+/* 0.4.95 Quick Play and Practice: decks first, one bar fixed at the bottom with your deck, the CPU and Play. */
+.pl-deckbar{flex-wrap:nowrap;position:sticky;bottom:calc(var(--nav-h,0px) + env(safe-area-inset-bottom) + 8px);z-index:20;flex-direction:column;align-items:stretch;gap:10px;padding:10px 12px;border-color:color-mix(in srgb,var(--gold) 35%,var(--line));margin-top:12px}
+.pl-deckbar{min-width:0;max-width:100%;box-sizing:border-box}.pl-deckbar .pl-bar-row{display:flex;align-items:center;gap:10px;min-width:0}.pl-bar-level .pl-cpu-levels{min-width:0}
+.pl-deckbar .pl-bar-seats{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.pl-bar-you{display:flex;align-items:center;gap:10px;min-width:0;min-height:44px;background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;cursor:default}
+button.pl-bar-you{cursor:pointer}
+.pl-bar-thumb{flex:none;width:52px;height:38px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#14120e}
+.pl-bar-thumb>*{width:100%;height:100%;object-fit:cover;display:block}
+.pl-bar-name{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pl-bar-you.is-on .pl-bar-name,.pl-bar-vs.is-on{color:var(--gold)}
+.pl-bar-vs{font-size:12.5px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:62px;background:none;border:0;text-align:left;font-family:inherit;min-height:24px}
+button.pl-bar-vs{cursor:pointer}
+.pl-deckbar .pl-bar-actions .pl-start.btn{flex:1;min-width:0}
+.pl-bar-inspect.btn{flex:none;width:104px;min-height:50px}
+.pl-deckbar .pl-status{width:100%}.pl-deckbar .pl-status[data-empty]{display:none}
+@media(min-width:701px){.pl-deckbar{flex-direction:row;align-items:center;width:auto;text-align:left}.pl-deckbar .pl-bar-row:first-of-type{flex:1}.pl-deckbar .pl-bar-actions .pl-start.btn{flex:none;min-width:240px;order:0}.pl-deckbar .pl-cpu-level{order:0}}
+/* 0.4.95 Play stage: the deck's cover melting into the page, five mode tiles, one gold Play. */
+.pl-home--stage{display:grid;gap:14px}
+.pl-stage{position:relative;isolation:isolate;min-height:clamp(180px,27vh,320px);border-radius:20px;overflow:hidden;display:flex;align-items:flex-end}
+.pl-stage-art{position:absolute;inset:0;z-index:-2;background-size:cover;background-position:50% 35%}
+.pl-stage-art>*{width:100%;height:100%;object-fit:cover;display:block}
+.pl-stage-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,transparent 30%,color-mix(in srgb,var(--bg) 70%,transparent) 70%,var(--bg))}
+.pl-stage-copy{padding:16px 18px;min-width:0;display:grid;gap:4px;justify-items:start}
+.pl-stage-copy .eyebrow{margin:0;font-size:10px;letter-spacing:.3em;font-weight:700;text-transform:uppercase;color:var(--gold)}
+.pl-stage-copy h2{margin:0;font:700 clamp(22px,2.6vw,32px)/1.1 Cinzel,Georgia,serif;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-stage-line{margin:0;font-size:13px;color:var(--muted)}
+.pl-stage-change{margin-top:6px;min-height:44px}
+.pl-stage-modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.pl-stage-mode{position:relative;display:grid;grid-template-rows:auto auto;gap:6px;padding:0 0 8px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--surface) 82%,transparent);color:inherit;font:inherit;cursor:pointer;overflow:hidden;min-height:44px;text-align:center}
+.pl-stage-mode.is-on{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 55%,transparent)}
+.pl-stage-mode-art{display:block;aspect-ratio:4/3;background-size:cover;background-position:50% 40%;overflow:hidden}
+.pl-stage-mode-art>*{width:100%;height:100%;object-fit:cover;display:block}
+.pl-stage-mode-name{font-size:10.5px;font-weight:800;line-height:1.15;padding:0 2px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-stage-mode.is-on .pl-stage-mode-name{color:var(--gold)}
+.pl-stage-mode-sub{font-size:10.5px;color:var(--muted);margin-top:-4px}
+.pl-stage-mode .pe-badge{position:absolute;top:4px;right:4px}
+.pl-stage-mode:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.pl-stage-play.btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:64px;width:100%;text-decoration:none}
+.pl-stage-play small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
+.pd-today--line{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--surface) 82%,transparent)}
+.pd-today--line .pd-quests{flex:1;min-width:0;margin:0;padding:0;list-style:none}
+.pd-today--line .pd-quest{border:0;padding:0;background:none}
+.pd-today--line>.link{flex:none;min-height:44px}
+@media(min-width:901px){.pl-home--stage{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:start}.pl-home--stage>.pl-home-head{grid-column:1/-1}.pl-stage{grid-column:1;grid-row:2/span 3;min-height:420px}.pl-stage-modes,.pl-stage-play,.pd-today--line,.pl-home--stage>.pe-row{grid-column:2}.pl-stage-modes{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pl-bar-level .pl-cpu-levels{width:100%}.pl-bar-level .pl-cpu-level{display:flex;width:100%;box-sizing:border-box}.pl-bar-level .pl-cpu-level button{flex:1;min-width:0;padding-inline:6px}
+.pl-bar-level .pl-cpu-levels{align-items:stretch;flex:1;min-width:0}
+.pl-deckbar>*{flex:none}.pl-lobby .pl-deckbar #playMatchStatus{order:-1;flex-basis:auto}
+/* 0.4.95 Trunk bar: search and Filters on one line, colours under it, chips for what is on. */
+.pe-trunkbar{display:grid;gap:8px}
+.pe-trunkbar-row{display:flex;align-items:center;gap:8px;min-width:0}
+.pe-trunkbar-row .pe-search{flex:1;min-width:0;position:relative}
+.pe-trunkbar-row .pe-search input{width:100%;min-height:44px}
+.pe-filter-sheet{position:relative;flex:none}
+.pe-filters-pill{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--surface) 82%,transparent);font-weight:800;font-size:14px;cursor:pointer;list-style:none}
+.pe-filters-pill::-webkit-details-marker{display:none}
+.pe-filters-pill svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.pe-filters-pill.is-on{border-color:var(--gold);color:var(--gold)}
+.pe-filters-pill b{display:grid;place-items:center;min-width:20px;height:20px;border-radius:999px;background:var(--gold);color:#2a1906;font-size:12px}
+.pe-filter-body{position:absolute;right:0;top:calc(100% + 8px);z-index:30;width:min(340px,calc(100vw - 32px));display:grid;gap:8px;padding:14px;border:1px solid color-mix(in srgb,var(--gold) 30%,var(--line));border-radius:16px;background:var(--surface);box-shadow:0 18px 50px #0008}
+.pe-filter-body select{width:100%;min-height:44px}
+.pe-filter-h{margin:4px 0 0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--muted)}
+.pe-filter-body .pe-rarity-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.pe-filter-body .pe-rarity-tabs button{min-height:44px}
+.pe-filter-foot{display:flex;gap:8px;margin-top:6px}.pe-filter-foot .btn{flex:1;min-height:44px}
+.pe-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pe-chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px 0 12px;border:1px solid color-mix(in srgb,var(--gold) 40%,var(--line));border-radius:999px;background:color-mix(in srgb,var(--gold) 10%,transparent);color:var(--text);font:700 12.5px inherit;cursor:pointer}
+.pe-chip span{color:var(--gold);font-size:15px;line-height:1}
+.pe-trunkbar .pe-color-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.pe-collection .pe-count{text-align:right}
