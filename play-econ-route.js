@@ -10,7 +10,7 @@ import {rewardSet, setFormats} from './play-econ-sets.js';
 import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconQuote, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
 import {RETIRED_STARTER_NAMES} from './play-starter-deck.js';
 import {weeklySecretLairOffers, secretLairOfferPrice, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
-import {landStyleList, ownedLandStyles, landSlotPlan, pickSpecialLand, landSpecialOdds, landCraftSeal, landStyleRow, landStyleImage, isLandType, joinLandRows} from './land-styles.js';
+import {landStyleList, ownedLandStyles, landSlotPlan, pickSpecialLand, landSpecialOdds, landCraftSeal, landStyleRow, landStyleImage, isLandType, joinLandRows, mainLandFirst} from './land-styles.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned, keyFeatsMissing} from './story-deeds.js';
 import {rerollUsed, weeklyRerollUsed, ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
@@ -553,8 +553,9 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       return json({counters: await counters.read(), state: await state(), styles: (await looks())?.styles || [], landStyle: st.id});
     }
     if (path === 'landstyle') {
-      // Sets a land type's account default to an owned style; with all: true every saved Play deck's lands of
-      // that type switch to it too ("Use this style in all my decks").
+      // Sets a land type's account default to an owned style; with all: true it becomes the main style of every saved
+      // Play deck that already plays it ("Main in all my decks"): that row goes first. No row changes style (Randall
+      // 17 Nov: nothing switches automatically).
       const land = await landOwned();
       if (!land) return fail('not_ready', 503);
       const st = land.lands.list.find(x => x.id === body.id);
@@ -565,8 +566,9 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       const out = await rpc(env, 'play_pick_style', {p_user: uid, p_oracle: oracle, p_print: st.id}, fetcher).catch(() => null);
       if (body.all === true) {
         for (const d of (await state()).decks || []) {
-          if (!(d.cards || []).some(r => r.name === st.type && r.id !== st.id)) continue;
-          await rpc(env, 'play_save_deck', {p_user: uid, p_id: d.id, p_name: d.name, p_format: d.format || '', p_cards: joinLandRows(d.cards.map(r => r.name === st.type ? {...r, id: st.id} : r)), p_delete: false}, fetcher).catch(() => null);
+          const rows = d.cards || [], first = rows.find(r => r.name === st.type);
+          if (!first || first.id === st.id || !rows.some(r => r.name === st.type && r.id === st.id)) continue;
+          await rpc(env, 'play_save_deck', {p_user: uid, p_id: d.id, p_name: d.name, p_format: d.format || '', p_cards: joinLandRows(mainLandFirst(rows, st.type, st.id)), p_delete: false}, fetcher).catch(() => null);
         }
       }
       return json({styles: out?.styles || (await looks())?.styles || [], state: await state()});

@@ -457,7 +457,7 @@ function landPicker(lp, wallet, landUse, deck = [], landOf = c => c.id || '') {
     ${held ? `<div class="pe-lp-held" role="status">${hs ? `<img src="${esc(landStyleImage(hs.id, 'art_crop'))}" alt="">` : ''}<b>Changing ${held.qty} ${type}<span>${hs ? `${esc(hs.set.toUpperCase())} ${esc(hs.num)}` : ''}</span></b><button class="btn ghost" data-act="playLandHeldDone">Done</button></div>` : ''}
     ${segmented('playLandSort', lp.sort || 'recent', LAND_SORTS)}
     ${focus ? `<div class="pe-lp-bar"><div class="pe-lp-what"><b>${esc(focus.setName)}</b> <span>#${esc(focus.num)}</span><span>${LAND_KINDS[focus.kind]} · ${esc(focus.artist)}</span></div>${act}</div>` : ''}
-    ${held || !focus || focus.id !== use ? '' : `<button class="btn ghost pe-lp-all" data-act="playLandAll"${owned.has(use) ? '' : ' disabled'}>Use this style in all my decks</button>`}
+    ${held || !focus || focus.id !== use ? '' : `<button class="btn ghost pe-lp-all" data-act="playLandAll"${owned.has(use) ? '' : ' disabled'}>Main in all my decks</button>`}
     <div class="pe-lp-grid">${shown.map(tile).join('')}</div>
     ${list.length > shown.length ? `<button class="btn ghost pe-pool-more" data-act="playLandMore">More styles (${n(list.length - shown.length)})</button>` : ''}`;
 }
