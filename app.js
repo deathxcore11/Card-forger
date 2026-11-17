@@ -188,7 +188,7 @@ import {createCardFacts,slimCard} from "./play-econ-cards.js";
 import {emptyBench,benchToggle,benchQuery,benchColorQuery,BENCH_SORT_KEYS} from "./bench-filter.js";
 import {deckEmblem} from "./play-deck-emblem.js";
 import {landStyleList,deckLandStyle,isLandType,LAND_TYPES} from "./land-styles.js";
-import {attachDeckArtDrag,edgeScroller,heroAt,heroCue,LIFT_MS} from "./deck-art-drag.js";
+import {attachDeckArtDrag,edgeScroller,ghostFor,heroAt,heroCue,LIFT_MS,placeGhost,releaseGhost} from "./deck-art-drag.js";
 import {stepDeckCard,ownedByName,deckShortfall,legalFormats,mtgjsonDeckRows,preconFace,PLAY_FORMATS,deckRules,copyCap,isBasicLand} from "./play-econ-rules.js";
 import {STORY_ACTS} from "./story-acts.js";
 import {createStoryProgress,loadAct,loadActPool,ownDeckFits,battleCleared,currentAct,currentBattle,actCleared} from "./story-client.js";
@@ -2065,24 +2065,24 @@ A.playCraftAll=async()=>{const e=econUi.edit;if(!e||econUi.crafting)return;if(!e
 // (deck-art-drag.js). Touch: hold a moment (LIFT_MS) and the card lifts and goes any way; a quick swipe scrolls.
 (()=>{let drag=null;const zone=()=>document.querySelector('[data-drop-deck]');const edge=edgeScroller((x,y)=>{if(drag?.ghost)heroCue(document,true,!!heroAt(x,y));});
  addEventListener('pointerdown',e=>{const el=e.target.closest?.('.pe-pool-card[data-drag-card],.pe-build-row[data-drag-card]');if(!el||e.button>0||e.target.closest('.pe-pool-add,.pe-step,.pe-craft,button:not(.pe-pool-open):not(.pe-build-open)'))return;
-  const d={el,name:el.dataset.dragCard,x:e.clientX,y:e.clientY,id:e.pointerId,ghost:null,lifted:false};drag=d;if(e.pointerType!=='mouse')d.timer=setTimeout(()=>{if(drag===d&&!d.ghost)d.lifted=true;},LIFT_MS);},{passive:true});
+  const d={el,name:el.dataset.dragCard,x:e.clientX,y:e.clientY,id:e.pointerId,ghost:null,lifted:false};drag=d;if(e.pointerType!=='mouse')d.timer=setTimeout(()=>{if(drag===d&&!d.ghost){d.lifted=true;el.classList.add('deck-art-ready');}},LIFT_MS);},{passive:true});
  addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
-  if(!drag.ghost){if(Math.hypot(dx,dy)<10)return;if(!drag.lifted&&e.pointerType==='touch'&&Math.abs(dy)>Math.abs(dx)*1.2){clearTimeout(drag.timer);drag=null;return;}
+  if(!drag.ghost){if(Math.hypot(dx,dy)<10)return;if(!drag.lifted&&e.pointerType==='touch'&&Math.abs(dy)>Math.abs(dx)*1.2){clearTimeout(drag.timer);drag.el.classList.remove('deck-art-ready');drag=null;return;}
    // A shelf's row scrolls sideways under a finger: a sideways swipe there is the row's, not a drag.
    if(!drag.lifted&&e.pointerType==='touch'&&drag.el.closest('[data-shelf-row]')&&Math.abs(dx)>=Math.abs(dy)){clearTimeout(drag.timer);drag=null;return;}
-   const img=drag.el.querySelector('img');const g=document.createElement('img');g.src=img?.src||cardImageByName(drag.name);g.className='pe-drag-ghost';g.alt='';document.body.append(g);drag.ghost=g;drag.el.classList.add('pe-dragging');heroCue(document,!!econUi.edit);}
-  drag.ghost.style.transform=`translate(${e.clientX-45}px,${e.clientY-63}px) rotate(${Math.max(-8,Math.min(8,dx/30))}deg)`;const hero=!!heroAt(e.clientX,e.clientY);heroCue(document,!!econUi.edit,hero);edge.at(e.clientX,e.clientY);
+   const g=ghostFor(drag.el,document,'pe-drag-ghost');document.body.append(g);drag.ghost=g;drag.el.classList.remove('deck-art-ready');drag.el.classList.add('pe-dragging');heroCue(document,!!econUi.edit);}
+  placeGhost(drag.ghost,e.clientX,e.clientY,dx);const hero=!!heroAt(e.clientX,e.clientY);heroCue(document,!!econUi.edit,hero);edge.at(e.clientX,e.clientY);
   const z=zone(),r=z?.getBoundingClientRect();z?.classList.toggle('pe-drop-on',!hero&&!!r&&e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom);});
  addEventListener('touchmove',e=>{if(drag?.ghost)e.preventDefault();},{passive:false});
- const end=e=>{if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;edge.stop();clearTimeout(d.timer);if(!d.ghost)return;d.ghost.remove();d.el.classList.remove('pe-dragging');const z=zone();const on=z?.classList.contains('pe-drop-on');z?.classList.remove('pe-drop-on');
-  const hero=!!heroAt(e.clientX,e.clientY);heroCue(document,false);
+ const end=e=>{if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;edge.stop();clearTimeout(d.timer);d.el.classList.remove('deck-art-ready');if(!d.ghost)return;d.el.classList.remove('pe-dragging');const z=zone();const on=z?.classList.contains('pe-drop-on');z?.classList.remove('pe-drop-on');
+  const hero=e.type==='pointerup'&&!!heroAt(e.clientX,e.clientY);releaseGhost(d.ghost,hero?document.querySelector('.deck-hero'):null);heroCue(document,false);
   const swallow=ev=>{ev.stopPropagation();ev.preventDefault();};addEventListener('click',swallow,{capture:true,once:true});setTimeout(()=>removeEventListener('click',swallow,{capture:true}),0);
   if(e.type!=='pointerup')return;
   if(hero)return void safely(playDropArt(d.el,d.name));
   if(on&&d.el.matches('.pe-pool-card'))A.playEconStep({dataset:{econCard:d.name,econStep:'1'}});};
  addEventListener('pointerup',end);addEventListener('pointercancel',end);})();
 // A Play deck's art from a dropped card: its art crop, kept in settings like the hold menu's "Use as deck cover".
-async function playDropArt(el,name){const e=econUi.edit;if(!e)return;if(!e.id)return toast('Save the deck first, then drop a card for its art.');
+async function playDropArt(el,name){const e=econUi.edit;if(!e)return;if(!e.id)return toast('Deck not saved.');
  const oracle=el.dataset.oracle||el.querySelector('[data-oracle]')?.dataset.oracle,full=oracle?econFacts.card(oracle)?.card:null,card=full||{name};
  const image=bannerImage('mtg',full)||cardImageByName(name,'art_crop'),ref={game:'mtg',card,play:true},target=deckCoverTarget(ref);if(!target)return;
  await saveDeckCover(ref,target,image,{undo:`${name} is the deck art.`});haptic('success');}
@@ -2943,7 +2943,7 @@ function playHoldMenu(el){
  return true;
 }
 A.playHoldOpen=t=>A.card(t);
-A.playHoldCover=async()=>{const ref=quickCard;if(!ref?.play)return;const target=deckCoverTarget(ref);if(!target)return closeSheet();if(!/^https:\/\//.test(String(ref.coverImage||'')))return toast('This card has no artwork to use.');await saveDeckCover(ref,target,ref.coverImage);closeSheet();toast(`${ref.card.name} is the cover of ${target.name}.`);};
+A.playHoldCover=async()=>{const ref=quickCard;if(!ref?.play)return;const target=deckCoverTarget(ref);if(!target)return closeSheet();if(!/^https:\/\//.test(String(ref.coverImage||'')))return toast('This card has no artwork to use.');await saveDeckCover(ref,target,ref.coverImage);closeSheet();toast(`${ref.card.name} is the deck art.`);};
 A.playHoldCoverReset=async()=>{const ref=quickCard;if(!ref?.play)return;const target=deckCoverTarget(ref);if(!target)return closeSheet();await saveDeckCover(ref,target,null);closeSheet();toast(`${target.name} uses its automatic cover again.`);};
 async function cardQuickMenu(t) {
   t?.closest?.("dialog.zoom")?.querySelector('[data-z="close"]')?.click();
@@ -4927,6 +4927,8 @@ const deckCoverTarget=ref=>{
  if(ref.game!=='mtg'&&S.ui.view==='tdeck'&&T.game()===ref.game){const d=T.gs(ref.game).decks.find(x=>x.id===S.ui.tdeckId);return d?{kind:'tcg',id:d.id,name:d.name,set:!!d.coverCard}:null;}
  return null;};
 async function saveDeckCover(ref,target,image,{undo=''}={}){
+ // Load the new art first so the header swaps to a ready picture, never a blank one.
+ if(image&&typeof Image!=='undefined')try{const im=new Image();im.src=image;await Promise.race([im.decode(),new Promise(r=>setTimeout(r,1500))]);}catch{}
  const pick=image?{...(target.kind==='tcg'?{id:String(ref.card.id)}:{}),name:String(ref.card.name||'').slice(0,200),image:String(image).slice(0,500)}:null;
  await commit(st=>{
   if(target.kind==='play'){const next={...(st.settings.playDeckCovers||{})};if(pick)next[target.id]=pick;else delete next[target.id];st.settings.playDeckCovers=next;return;}
@@ -4939,10 +4941,10 @@ attachDeckArtDrag({canDrop:()=>(S.ui.view==='deck'||S.ui.view==='tdeck')&&docume
  skip:el=>!!el.closest('.pe-builder,.pe-screen'),
  onDrop:el=>safely((async()=>{const ref=await resolveActionCard(el);if(!ref)return;const target=deckCoverTarget(ref),image=bannerImage(ref.game,ref.card);
   if(!target)return;if(!/^(https:\/\/|img\/)/.test(String(image||'')))return toast('This card has no artwork to use.');
-  await saveDeckCover(ref,target,image,{undo:`${ref.card.name} is the deck art.`});})())});
+  await saveDeckCover(ref,target,image,{undo:`${ref.card.name} is the deck art.`});haptic('success');})())});
 A.quickArtwork=()=>{if(!quickCard)return;const ref=quickCard,pinned=!ref.play&&S.state.settings.collectionBanner?.[ref.game],canPin=!ref.play&&!!bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card)),coverTarget=deckCoverTarget(ref),coverImage=bannerImage(ref.game,ref.card),canCover=!!coverTarget&&/^(https:\/\/|img\/)/.test(String(coverImage||''));openSheet(`<div class="sheet-head"><h2>Use artwork as…</h2><button class="icon" data-act="closeSheet">✕</button></div><div class="actions"><button class="btn" data-act="quickArtworkAvatar">Avatar</button><button class="btn ghost" data-act="quickArtworkHeader">Profile header</button>${canCover?'<button class="btn ghost" data-act="quickArtworkDeckCover">Deck cover</button>':''}${canPin?'<button class="btn ghost" data-act="quickArtworkBanner">Collection banner</button>':''}</div>${coverTarget?.set?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkDeckCoverReset">Use the automatic deck cover again</button></p>':''}${pinned?'<p class="artwork-banner-reset"><button class="link" data-act="quickArtworkBannerRotate">Change the banner every hour again</button></p>':''}`,{type:"artwork-actions"});A.quickArtworkAvatar=()=>profilePicker.open({card:ref.card,game:ref.game});A.quickArtworkHeader=()=>headerPicker.open({card:ref.card,game:ref.game});
  A.quickArtworkBanner=async()=>{const pin=bannerPin(ref.game,ref.card,bannerImage(ref.game,ref.card));if(!pin)return toast('This card has no artwork to use.');await commit(st=>{st.settings.collectionBanner={...(st.settings.collectionBanner||{}),[ref.game]:pin};},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast(`${ref.card.name} is your Collection banner.`);};
- A.quickArtworkDeckCover=async()=>{if(!canCover)return;await saveDeckCover(ref,coverTarget,coverImage);closeSheet();toast(`${ref.card.name} is the cover of ${coverTarget.name}.`);};
+ A.quickArtworkDeckCover=async()=>{if(!canCover)return;await saveDeckCover(ref,coverTarget,coverImage);closeSheet();toast(`${ref.card.name} is the deck art.`);};
  A.quickArtworkDeckCoverReset=async()=>{if(!coverTarget)return;await saveDeckCover(ref,coverTarget,null);closeSheet();toast(`${coverTarget.name} uses its automatic cover again.`);};
  A.quickArtworkBannerRotate=async()=>{await commit(st=>{const next={...(st.settings.collectionBanner||{})};delete next[ref.game];st.settings.collectionBanner=next;},{enrich:false,recordDeckWork:false,observeValue:false});closeSheet();toast('The Collection banner changes every hour again.');};};
 A.cardProfileHeader=async t=>{

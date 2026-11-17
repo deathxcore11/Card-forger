@@ -27,4 +27,11 @@ assert.ok(win.scrolled > up, 'holding near the bottom scrolls down');
 edge.stop(); const at = win.scrolled; run(3);
 assert.equal(win.scrolled, at, 'stop ends the scroll');
 assert.ok(LIFT_MS >= 150 && LIFT_MS <= 400, 'touch lift is a short hold');
+
+{
+  const src = (await import('node:fs')).readFileSync(new URL('./deck-art-drag.js', import.meta.url), 'utf8');
+  const menu = (await import('node:fs')).readFileSync(new URL('./card-actions.js', import.meta.url), 'utf8');
+  assert.equal(src.match(/HOLD_MS = (\d+)/)[1], menu.match(/HOLD_MS = (\d+)/)[1], 'drag gives way to the hold menu at the same moment');
+  assert.ok(LIFT_MS < Number(menu.match(/HOLD_MS = (\d+)/)[1]));
+}
 console.log('deck art drag ok');
