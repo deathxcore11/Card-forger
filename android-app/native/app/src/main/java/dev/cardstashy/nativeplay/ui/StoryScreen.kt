@@ -280,7 +280,7 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
         }
     } else Box(Modifier.fillMaxSize()) {
         // Phone: the act's art bleeds behind a short header, then the rows.
-        val bleed = top + 214.dp
+        val bleed = top + 176.dp
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item("head") {
                 Box(Modifier.fillMaxWidth().height(bleed)) {
@@ -342,17 +342,17 @@ private fun JsonObject.s(k: String): String? = get(k)?.takeIf { it.isJsonPrimiti
 @Composable
 private fun Pill(text: String, gold: Boolean, desc: String = text, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val sh = RoundedCornerShape(999.dp)
-    Box(modifier.heightIn(min = 44.dp).then(Modifier.widthIn(max = 112.dp)).clip(sh)
+    Box(modifier.heightIn(min = 44.dp).then(Modifier.widthIn(max = 120.dp)).clip(sh)
         .then(if (gold) Modifier.background(Brush.verticalGradient(0f to Color(0xFFF6D88C), .6f to Color(0xFFD9A94E), 1f to Color(0xFFB8893A))) else Modifier.border(1.dp, Color(0x8CD6AD64), sh))
         .clickable(onClick = onClick).semantics { contentDescription = desc }.padding(horizontal = 12.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
-        Text(text, style = storyText(12.5f, FontWeight.Bold, if (gold) Color(0xFF1A1408) else Color(0xFFF2CF7E)).copy(lineHeight = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center), maxLines = 2)
+        Text(text, style = storyText(12.5f, FontWeight.Bold, if (gold) Color(0xFF1A1408) else Color(0xFFF2CF7E)).copy(lineHeight = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center), maxLines = 3)
     }
 }
 
 @Composable
-private fun KindLine(b: JsonObject, big: Boolean) = Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-    Text((if (b["slot"].asInt == 8) "Boss" else b.s("kind").orEmpty()).uppercase(), style = storyText(if (big) 11f else 10.5f, FontWeight.ExtraBold, Color(0xFFF2CF7E), 1.6f), maxLines = 1)
-    Text(b.s("difficulty").orEmpty().uppercase(), style = storyText(if (big) 11f else 10.5f, FontWeight.Bold, Color(0xFFAEB3BE), .8f), maxLines = 1)
+private fun KindLine(b: JsonObject, big: Boolean, modifier: Modifier = Modifier) = Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Text((if (b["slot"].asInt == 8) "Boss" else b.s("kind").orEmpty()).uppercase(), style = storyText(if (big) 11f else 10.5f, FontWeight.ExtraBold, Color(0xFFF2CF7E), 1.6f), maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+    Text(b.s("difficulty").orEmpty().uppercase(), style = storyText(if (big) 11f else 10.5f, FontWeight.Bold, Color(0xFFAEB3BE), .8f), maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
 }
 
 /** A won battle, one short row: face, kind, stars, title (never cut), then their side's prize and "Play as", or "Both sides won" and Replay. */
@@ -369,7 +369,7 @@ private fun WonRow(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, set
         val fs = RoundedCornerShape(10.dp)
         StoryPic(face?.s("crop"), Modifier.size(48.dp).clip(fs).border(1.dp, Color(0x80D6AD64), fs), storyFocus(face?.s("focus")))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { KindLine(b, false); StarsRow(rec, 13.dp) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { KindLine(b, false, Modifier.weight(1f)); StarsRow(rec, 13.dp) }
             Text(b.s("title").orEmpty(), style = storyCinzel(14f, Color(0xFFF6EEDB)).copy(lineHeight = 18.sp))
             Text(androidx.compose.ui.text.buildAnnotatedString {
                 if (theirsWon) append("Both sides won")
@@ -400,7 +400,7 @@ private fun NowCard(b: JsonObject, cast: JsonObject?, p: StoryLogic.Progress, se
             val fs = RoundedCornerShape(14.dp)
             StoryPic(face?.s("crop"), Modifier.size(64.dp).clip(fs).border(1.5.dp, Color(0xFFD6AD64), fs), storyFocus(face?.s("focus")))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { KindLine(b, true); StarsRow(rec, 13.dp) }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { KindLine(b, true, Modifier.weight(1f)); StarsRow(rec, 13.dp) }
                 Text(b.s("title").orEmpty(), style = storyCinzel(18f, Color(0xFFF6EEDB)).copy(lineHeight = 22.sp))
             }
         }

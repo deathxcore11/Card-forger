@@ -458,8 +458,8 @@ private fun CardsPage(m: CollectionCardsModel, top: @Composable (tabs: (@Composa
             }
         }
         item(key = "head") {
-            Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 16.dp else 10.dp)) {
-                if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 12.dp))
+            Column(Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = if (wide) 16.dp else 4.dp)) {
+                if (!wide) GameTabs(m.game, act.game, compact = true, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 280.dp).padding(bottom = 6.dp))
                 // Phones (story-act-and-collection brief B): no title card. Its view buttons, Select and ⋯ ride on the value line,
                 // so the first cards start about 170 dp higher; the other tabs keep ⋯ at the right of their line.
                 if (wide) Hero(m, act, wide, tab)
@@ -546,12 +546,12 @@ private fun PhoneValueLine(m: CollectionCardsModel, act: CollectionCardsActions,
     // The banner art you pinned (or one of your cards) stays as a slim strip behind this line, as the title card's art was.
     val art = heroPainter(m.banner?.let(homeArt))
     val sh = RoundedCornerShape(14.dp)
-    Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 8.dp).then(if (art != null) Modifier.clip(sh).border(1.dp, GlassLine, sh) else Modifier)) {
+    Box(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp).then(if (art != null) Modifier.clip(sh).border(1.dp, GlassLine, sh) else Modifier)) {
     if (art != null) {
         Image(art, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop, alignment = androidx.compose.ui.BiasAlignment(0f, -.4f))
         Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to Color(0xF007080B), .55f to Color(0xC707080B), 1f to Color(0x8C07080B))))
     }
-    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).then(if (art != null) Modifier.padding(horizontal = 10.dp, vertical = 4.dp) else Modifier),
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).then(if (art != null) Modifier.padding(horizontal = 10.dp, vertical = 4.dp) else Modifier),
         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (showValue && m.summary.isNotEmpty()) {
             val money = m.summary.firstOrNull { it.bold }

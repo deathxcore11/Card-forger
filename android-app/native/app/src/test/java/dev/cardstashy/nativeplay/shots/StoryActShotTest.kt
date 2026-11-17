@@ -72,6 +72,19 @@ class StoryActShotTest {
         rule.onAllNodes(androidx.compose.ui.test.hasText("Replay")).onFirst().performScrollTo().performClick()
         assertEquals("villain", seat)
     }
+}
+
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [35], qualifiers = "w390dp-h844dp-xxhdpi")
+class StoryActPagesShotTest {
+    init { dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication()) }
+    private val art = File(System.getProperty("shotsDir")!!).parentFile.resolve("app/build/shot-art/story")
+    private val rules get() = PlayRules.load(RuntimeEnvironment.getApplication())
+    private val data get() = JsonParser.parseString(javaClass.classLoader!!.getResource("story/act-1.json")!!.readText()).asJsonObject
+    private fun refs(vararg r: String) = StoryLogic.fromRefs(r.toList())
+    private val three get() = refs("story:a1b1:loaner", "story:a1b1:villain", "story:a1b2:loaner", "story:a1b3:loaner")
+    private fun pics() { StoryTest.art = { url -> art.resolve(java.security.MessageDigest.getInstance("SHA-1").digest(url.toByteArray()).joinToString("") { "%02x".format(it) } + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } } }
 
     private fun shot(name: String, q: String, c: @androidx.compose.runtime.Composable () -> Unit) {
         RuntimeEnvironment.setQualifiers(q)
