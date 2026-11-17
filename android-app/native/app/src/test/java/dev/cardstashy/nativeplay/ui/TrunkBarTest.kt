@@ -1,6 +1,12 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -46,9 +52,13 @@ class TrunkBarTest {
         assertTrue("${tiles.count { it.bottom <= h }} whole cards, want 4", tiles.count { it.top >= 0f && it.bottom <= h } >= 4)
         rule.onNodeWithText("30 cards").assertExists()
         // Rarity now lives in the Filters sheet: pick Rare, the chip and the count follow; its x takes it off.
-        rule.onNodeWithContentDescription("Filters").performClick(); rule.waitForIdle()
-        rule.onNodeWithText("Rare").performClick(); rule.waitForIdle()
-        rule.onNodeWithText("Show 10 cards").performClick(); rule.waitForIdle()
+        rule.onNode(hasContentDescription("Filters") and hasClickAction()).performClick(); rule.waitForIdle()
+        rule.onNode(hasTestTag("trunkFilters")).assertExists("the Filters sheet did not open")
+        val inSheet = { m: androidx.compose.ui.test.SemanticsMatcher -> m and hasAnyAncestor(hasTestTag("trunkFilters")) }
+        rule.onNode(inSheet(hasText("Rare") and hasClickAction())).performScrollTo().performClick(); rule.waitForIdle()
+        rule.onNode(hasTestTag("trunkFilters")).assertExists("tapping Rare closed the Filters sheet")
+        rule.onNode(inSheet(hasText("Rare") and hasClickAction())).assertIsSelected()
+        rule.onNode(inSheet(hasText("Show 10 cards") and hasClickAction())).performClick(); rule.waitForIdle()
         rule.onNodeWithContentDescription("Filters, 1 on").assertExists()
         rule.onNodeWithText("10 of 30").assertExists()
         rule.onNodeWithContentDescription("Take off Rare").performClick(); rule.waitForIdle()
