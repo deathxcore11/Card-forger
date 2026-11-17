@@ -333,11 +333,17 @@ internal fun TrunkBar(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, m
 private fun TrunkFilterSheet(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, shown: Int, onClose: () -> Unit, onFilter: (Trunk.Filter) -> Unit, onSort: (String) -> Unit) {
     PadScreen(PadActs(b = "Close", x = PadAct(if (shown == 1) "Show 1 card" else "Show $shown cards", onClose)))
     var allSets by remember { mutableStateOf(false) }
-    // The scrim is the sheet's sibling, not its parent (0.4.95: a tap on a pick inside the sheet also reached the scrim's click and
-    // closed it), so a touch on the sheet never reaches Close.
-    Box(Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize().background(Color(0x99000000)).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onClose))
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().widthIn(max = 640.dp).fillMaxHeight(.86f).windowInsetsPadding(WindowInsets.navigationBars)
+    // 0.4.95: a tap on a pick inside the sheet reached the scrim's Close (with the scrim as the sheet's parent, and again as an
+    // overlapping sibling). The scrim is now only the area around the sheet, so the two never overlap and a tap on the sheet
+    // can only reach the sheet.
+    val scrim = Modifier.background(Color(0x99000000)).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onClose)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+      val sheetW = minOf(maxWidth, 640.dp); val sides = maxWidth > sheetW
+      Column(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxWidth().weight(.14f).then(scrim))
+        Row(Modifier.fillMaxWidth().weight(.86f)) {
+        if (sides) Box(Modifier.weight(1f).fillMaxHeight().then(scrim))
+        Column(Modifier.width(sheetW).fillMaxHeight().background(Color(0x99000000)).windowInsetsPadding(WindowInsets.navigationBars)
             .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Color(0xFF10131A)).border(1.dp, Color(0x33E5C47E), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
             .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}
             .padding(start = 18.dp, end = 14.dp, top = 10.dp, bottom = 10.dp).testTag("trunkFilters"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -375,6 +381,9 @@ private fun TrunkFilterSheet(f: Trunk.Filter, sort: String, sets: List<Trunk.Set
                     contentAlignment = Alignment.Center) { Text(if (shown == 1) "Show 1 card" else "Show ${"%,d".format(shown)} cards", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Color(0xFF1A1408))) }
             }
         }
+        if (sides) Box(Modifier.weight(1f).fillMaxHeight().then(scrim))
+        }
+      }
     }
 }
 
