@@ -5761,3 +5761,9 @@ body[data-game="ygo"] .card-grid .tile-chrome { aspect-ratio: 59 / 86; }
 .deck-budget-quick{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1 1 100%}.deck-budget-quick>span,.deck-group-switch>span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 .deck-budget-quick .chip{min-height:44px;min-width:56px;font-variant-numeric:tabular-nums}
 .deck-group-switch{display:flex;align-items:center;gap:10px;margin:10px 0 0}.deck-group-switch .seg{margin:0;flex:0 1 220px}.deck-group-switch .seg button{min-height:40px}
+/* Built deck: Tap Open / Lock / Swap, locked cards, the swap panel. */
+.deck-lock-tag{background:var(--gold);color:var(--gold-ink);border-color:var(--gold);font-weight:800}
+[data-flow-locked]{outline:2px solid var(--gold);outline-offset:-2px}
+.deck-swap{display:grid;gap:8px;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.deck-swap-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.deck-swap-head>span:first-child{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.deck-swap-row{display:flex;align-items:center;gap:10px;min-height:56px}.deck-swap-row .deck-compact-copy{flex:1;min-width:0;display:grid;gap:2px}.deck-swap-row .btn{min-height:44px}

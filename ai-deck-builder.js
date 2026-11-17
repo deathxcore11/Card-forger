@@ -97,6 +97,8 @@ export async function prepareMtgDeck(args,x) {
   }
  }
  const requiredCards=await batches(requiredNames,resolve),excludedCards=await batches(excludedNames,resolve);
+ // Cards the player locked in a built deck ("Rebuild unlocked"): kept at the copies they had. Lands are counted afresh.
+ const lockedRows=(Array.isArray(args.locked_cards)?args.locked_cards:[]).filter(r=>r&&typeof r.name==='string'&&Number.isInteger(r.qty)&&r.qty>0).slice(0,40),lockedCards=await batches(lockedRows.map(r=>clean(r.name)),resolve);
  const suggested=await batches((args.candidate_cards || []).map(clean),resolve);
  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
  if(suggested.some(c=>!c))warnings.push('Some suggested alternatives could not be verified and were not added to the candidate pool.');
@@ -198,7 +200,8 @@ export async function prepareMtgDeck(args,x) {
   }catch{}
  }
  if(!active())return {cancelled:true,note:'The question was closed or replaced. Nothing was saved.'};
- const own=n=>available(x,n),required=[...new Map([seed,...requiredCards].filter(c=>c&&cardKey(c.name)!==cardKey(lead?.name)).map(c=>[cardKey(c.name),{name:c.name,qty:1}])).values()];
+ const own=n=>available(x,n),locked=lockedRows.map((r,i)=>({c:lockedCards[i],qty:r.qty})).filter(({c})=>c&&!/\bLand\b/.test(String(c.type_line||'').split(' // ')[0])&&isLegal(c,f)&&functionalIn(c,f)&&!excludedKeys.has(cardKey(c.name))).map(({c,qty})=>[cardKey(c.name),{name:c.name,qty:Math.min(qty,effectiveCopyLimit(c,f))}]);
+ const required=[...new Map([...[seed,...requiredCards].filter(c=>c&&cardKey(c.name)!==cardKey(lead?.name)).map(c=>[cardKey(c.name),{name:c.name,qty:1}]),...locked.filter(([k])=>k!==cardKey(lead?.name))]).values()];
  if(args.flow&&args.preferOwned!==false)for(const c of Object.values(x.S?.catalog||{}))if(c?.name&&available(x,c.name)>0&&!catalog[cardKey(c.name)]&&isLegal(c,f)&&fitsDeck(c,colors,f.commander))remember(c);
  const buildCatalog=Object.fromEntries(Object.entries(catalog).filter(([,c])=>!excludedKeys.has(cardKey(c.name))&&fitsTypeRestrictions(c,args)));
  const options=({format:f.name,seeds:[seed],commander:lead,easy:args.easy===true,preferred:args.preferOwned===true?c=>own(c.name):()=>0,requestedStyle:style,goal,creatureTypesOnly:args.creatureTypesOnly,excludedSubtypes:args.excludedSubtypes,suggestedCards:suggested.filter(Boolean).map(c=>c.name),...forgeOptions(args.forge),excludedCards:excludedCards.map(c=>c.name),catalog:buildCatalog,prior:prior.size?c=>prior.weight(c.name):null,plan:['aggro','midrange','control'].includes(args.plan)?args.plan:'auto',base:required,colors:colors.length?colors:['C'],available:basis==='total'?()=>0:own,price:quote,budget:limit});

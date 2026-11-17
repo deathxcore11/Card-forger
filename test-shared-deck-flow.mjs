@@ -161,3 +161,27 @@ console.log('PASS: actual partial Bloodlust coverage, conditional Drana/first-st
  assert.deepEqual(req.constructionBudgets,[2,4,10,Infinity],'the closest search tries wider budgets step by step');
  const picked=chooseDeck([mk(19.97,{score:9}),mk(4.68,{score:1})],req);assert(picked.ok&&picked.pricing.estimate===4.68,'the cheapest complete list over the budget is the closest: '+JSON.stringify(picked.pricing||picked.message));
 }
+
+// Lock and swap one card (approved mock 16 Nov). Tap chooses what a tap on a card does: Open, Lock or Swap.
+{const base=await pipeline.build({...request,budget:''});assert(base.ok,base.message);
+ const shown=deckResultMarkup({...base,request:{...base.request,game:'mtg'}},'tap');
+ for(const tap of ['open','lock','swap'])assert(shown.includes(`data-act="flowTap" data-result="tap" data-tap="${tap}"`),'Tap offers '+tap);
+ assert(!/flowRebuildUnlocked|deck-lock-tag|data-flow-swap/.test(shown),'nothing locked, nothing to rebuild around');
+ const {cardJob}=await import('./builder.js'),spell=base.rows.find(r=>r.zone==='main'&&cardJob(r.card)==='Support'&&r.name!==base.deck.commander&&r.name!==anchor.name);
+ const locked=deckResultMarkup(base,'lock',{tap:'lock',locked:['main:'+spell.name]});
+ assert(/data-flow-locked/.test(locked)&&/deck-lock-tag">Locked</.test(locked)&&/Rebuild unlocked · 1 locked/.test(locked),'a locked card is marked and Rebuild unlocked appears');
+ // Swap options do the same job, are not already in the deck, and stay in the deck's colours.
+ const options=pipeline.swapOptions(base,spell.name),held=new Set(base.rows.map(r=>r.name));
+ assert(options.length>0&&options.length<=4,'up to four swap options: '+options.length);
+ for(const o of options){assert.equal(cardJob(o.card),cardJob(spell.card),o.card.name+' does the same job');assert(!held.has(o.card.name),o.card.name+' is not already in the deck');assert(typeof o.price==='number');}
+ assert.deepEqual(pipeline.swapOptions(base,'Island'),[],'a land is not swapped here');
+ const panel=deckResultMarkup(base,'swap',{tap:'swap',swap:{name:spell.name,zone:'main',qty:spell.qty,job:cardJob(spell.card),options}});
+ assert(/data-flow-swap/.test(panel)&&panel.includes(`data-act="flowSwapTake" data-result="swap" data-option="0"`)&&panel.includes('Keep '+spell.name),'the swap panel lists the options and a way to keep the card');
+ // Taking one swaps every copy and rechecks the whole list like any built deck.
+ const swapped=pipeline.applySwap(base,spell.name,'main',options[0].card);
+ assert(swapped.ok,swapped.message);assert(!swapped.rows.some(r=>r.name===spell.name)&&swapped.rows.find(r=>r.name===options[0].card.name)?.qty===spell.qty,'every copy was swapped');
+ assert.equal(swapped.rows.reduce((n,r)=>n+r.qty,0),100,'the deck is still complete');assert(pipeline.recheck(swapped),'and still passes its checks');
+ // Under a strict budget an option that would break the cap is not offered.
+ const tight=pipeline.swapOptions({...base,request:{...base.request,budget:base.pricing.estimate,budgetMode:'cap'}},spell.name);
+ assert(tight.every(o=>o.price<=cardPrice(spell.card)+1e-9),'no option pushes a capped deck over its budget');
+}
