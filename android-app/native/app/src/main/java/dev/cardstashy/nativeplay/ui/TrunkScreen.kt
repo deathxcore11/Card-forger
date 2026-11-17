@@ -330,7 +330,7 @@ internal fun TrunkBar(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, m
 
 /** The Trunk's Filters sheet: Type, Rarity, Set and Sort, one tap each; Reset and "Show N cards". */
 @Composable
-private fun TrunkFilterSheet(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, shown: Int, onClose: () -> Unit, onFilter: (Trunk.Filter) -> Unit, onSort: (String) -> Unit) {
+internal fun TrunkFilterSheet(f: Trunk.Filter, sort: String, sets: List<Trunk.SetRow>, shown: Int, onClose: () -> Unit, onFilter: (Trunk.Filter) -> Unit, onSort: (String) -> Unit) {
     PadScreen(PadActs(b = "Close", x = PadAct(if (shown == 1) "Show 1 card" else "Show $shown cards", onClose)))
     var allSets by remember { mutableStateOf(false) }
     // 0.4.95: a tap on a pick inside the sheet reached the scrim's Close (with the scrim as the sheet's parent, and again as an
