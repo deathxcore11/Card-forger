@@ -2206,7 +2206,9 @@ A.playLandDuals=()=>{const b=benchUi();b.filter={...b.filter,types:['Land']};eco
   hold={el,x:e.clientX,y:e.clientY,timer:setTimeout(()=>{if(!hold)return;hold.fired=true;haptic('tap');const swallow=ev=>{ev.stopPropagation();ev.preventDefault();};addEventListener('click',swallow,{capture:true,once:true});setTimeout(()=>removeEventListener('click',swallow,{capture:true}),600);el.dataset.landRow?holdLandRow(el.dataset.landRow,el.dataset.landId):openLands(el.dataset.landHold);},450)};},{passive:true});
  addEventListener('pointermove',e=>{if(hold&&Math.hypot(e.clientX-hold.x,e.clientY-hold.y)>10){clearTimeout(hold.timer);hold=null;}},{passive:true});
  const stop=()=>{if(hold){clearTimeout(hold.timer);hold=null;}};addEventListener('pointerup',stop);addEventListener('pointercancel',stop);
- addEventListener('contextmenu',e=>{if(e.target.closest?.('[data-land-hold],[data-land-row]'))e.preventDefault();});})();
+ addEventListener('contextmenu',e=>{if(e.target.closest?.('[data-land-hold],[data-land-row]'))e.preventDefault();});
+ // Keyboard: the menu key (or Shift+F10) on a land row opens its styles, as holding it does.
+ addEventListener('keydown',e=>{if(e.key!=='ContextMenu'&&!(e.shiftKey&&e.key==='F10'))return;const el=e.target.closest?.('[data-land-row]');if(!el)return;e.preventDefault();holdLandRow(el.dataset.landRow,el.dataset.landId);});})();
 I.playEconDeckName=t=>{if(econUi.edit){econUi.edit.name=t.value;econUi.edit.dirty=true;}};
 C.playEconDeckFormat=t=>{if(econUi.edit){econUi.edit.format=t.value;econUi.edit.dirty=true;refreshPlayMenu();}};
 A.playEconToApp=async()=>{const e=econUi.edit;if(!e?.cards?.length)return;const commit=scopedCommit();const lead=e.format==='Commander'?e.cards.find(c=>c.qty===1&&/Legendary/.test(finderFacts.get(c.name)?.type_line||econFacts.card((playEcon.snapshot().state?.cards||[]).find(x=>x.n===c.name)?.o)?.t||'')):null;

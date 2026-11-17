@@ -446,7 +446,7 @@ function landPicker(lp, wallet, landUse, deck = [], landOf = c => c.id || '') {
   const locked = f => f.kind === 's' ? '<span class="pe-lp-how">Found in packs</span>' : `<button class="btn primary" data-act="playLandCraft" data-id="${f.id}"${have(seal(f)) < 1 || lp.busy ? ' disabled' : ''}>${sealIcon(seal(f))}Craft</button>`;
   let act = '';
   if (focus && held) act = !owned.has(focus.id) ? locked(focus) : focus.id === heldId ? `<span class="pe-lp-use">These ${held.qty}</span>` : `<button class="btn primary" data-act="playLandRestyle" data-id="${focus.id}">Change these ${held.qty}</button>`;
-  else if (focus) act = !owned.has(focus.id) ? locked(focus) : `${focus.id === use ? '<span class="pe-lp-use">Main</span>' : `<button class="btn primary" data-act="playLandUse" data-id="${focus.id}">Set as main</button>`}<button class="btn ghost" data-act="playLandAdd" data-id="${focus.id}">Add one</button>`;
+  else if (focus) act = !owned.has(focus.id) ? locked(focus) : `<span class="pe-lp-acts">${focus.id === use ? '<span class="pe-lp-use">Main</span>' : `<button class="btn primary" data-act="playLandUse" data-id="${focus.id}">Set as main</button>`}<button class="btn ghost" data-act="playLandAdd" data-id="${focus.id}">Add one</button></span>`;
   const tile = s => { const own = owned.has(s.id), k = counts.get(s.id) || 0;
     return `<button class="pe-lp-tile${s.id === use ? ' pe-lp-tile--use' : ''}${own ? '' : ' pe-lp-tile--lock'}${focus && s.id === focus.id ? ' pe-lp-tile--focus' : ''}" data-act="playLandFocus" data-id="${s.id}"${own ? ` data-drag-card="${type}" data-drag-land="${s.id}"` : ''} aria-label="${esc(s.setName)} ${type}, ${s.id === use ? 'main' : own ? 'owned' : 'locked'}${k ? `, ${k} in deck` : ''}" aria-pressed="${!!(focus && s.id === focus.id)}">
     <img src="${esc(landStyleImage(s.id))}" alt="" loading="lazy" decoding="async" draggable="false">${own ? '' : '<span class="pe-lp-lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>'}${k ? `<span class="pe-lp-count">×${k}</span>` : lp.isNew?.(s.id) ? '<span class="pe-lp-new">New</span>' : ''}
@@ -457,7 +457,7 @@ function landPicker(lp, wallet, landUse, deck = [], landOf = c => c.id || '') {
     ${held ? `<div class="pe-lp-held" role="status">${hs ? `<img src="${esc(landStyleImage(hs.id, 'art_crop'))}" alt="">` : ''}<b>Changing ${held.qty} ${type}<span>${hs ? `${esc(hs.set.toUpperCase())} ${esc(hs.num)}` : ''}</span></b><button class="btn ghost" data-act="playLandHeldDone">Done</button></div>` : ''}
     ${segmented('playLandSort', lp.sort || 'recent', LAND_SORTS)}
     ${focus ? `<div class="pe-lp-bar"><div class="pe-lp-what"><b>${esc(focus.setName)}</b> <span>#${esc(focus.num)}</span><span>${LAND_KINDS[focus.kind]} · ${esc(focus.artist)}</span></div>${act}</div>` : ''}
-    ${held ? '' : `<button class="btn ghost pe-lp-all" data-act="playLandAll"${owned.has(use) ? '' : ' disabled'}>Use this style in all my decks</button>`}
+    ${held || !focus || focus.id !== use ? '' : `<button class="btn ghost pe-lp-all" data-act="playLandAll"${owned.has(use) ? '' : ' disabled'}>Use this style in all my decks</button>`}
     <div class="pe-lp-grid">${shown.map(tile).join('')}</div>
     ${list.length > shown.length ? `<button class="btn ghost pe-pool-more" data-act="playLandMore">More styles (${n(list.length - shown.length)})</button>` : ''}`;
 }
