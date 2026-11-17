@@ -156,6 +156,16 @@ class ShotTest {
         // and the weekly quest showing; the phone at 130 % text.
         for ((w, h) in listOf(390 to 844, 374 to 832, 841 to 701, 884 to 1104, 1280 to 800)) shot("play-home-${w}x${h}-screen", w, h, 1f) { Home() }
         shot("play-home-390x844-screen", 390, 844, 1.3f) { Home() }
+        // Stand-in art (a test card picture for every mode) so the bleed, the scrim and the card art can be judged when the real
+        // mode art is not in shot-art/home. Named "standin" so nobody mistakes it for the real art.
+        File("src/test/resources/foil/torrential-gearhulk-kld-67-large.jpg").takeIf { it.exists() }?.let { f ->
+            val bmp = BitmapFactory.decodeFile(f.path)?.asImageBitmap()
+            if (bmp != null) {
+                dev.cardstashy.nativeplay.ui.homeArt = { u -> homeArt(u) ?: bmp }
+                try { shot("play-home-standin-art-390x844-screen", 390, 844, 1f) { Home() }; shot("play-home-standin-art-841x701-screen", 841, 701, 1f) { Home() } }
+                finally { dev.cardstashy.nativeplay.ui.homeArt = ::homeArt }
+            }
+        }
         dev.cardstashy.nativeplay.ui.HomeTest.startMode = "story"; dev.cardstashy.nativeplay.ui.HomeTest.weeklyFirst = true
         try { shot("play-home-story-weekly", 374, 832, 1f) { Home() } }
         finally { dev.cardstashy.nativeplay.ui.HomeTest.startMode = null; dev.cardstashy.nativeplay.ui.HomeTest.weeklyFirst = false }

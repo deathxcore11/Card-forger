@@ -168,6 +168,9 @@ private object P {
     val shadow = Shadow(Color(0xCC000000), Offset(0f, 4f), 28f)
 }
 
+/** Each mode's tint, under its art: what a card shows offline or while the art loads. */
+private val MODE_TINT = mapOf("quick" to Color(0xFF5A4320), "practice" to Color(0xFF24493A), "social" to Color(0xFF23395E), "story" to Color(0xFF5A2626), "planeswalk" to Color(0xFF3E2C5C))
+
 private val MODE_ART = mapOf(
     "social" to "https://cards.scryfall.io/art_crop/front/5/a/5a7241f5-4d69-47fe-b037-95037008184c.jpg?1783934878",
     "quick" to "https://cards.scryfall.io/art_crop/front/4/1/4101e3fe-b0e7-4f0f-b9ac-9b61a4d628b3.jpg?1783912843",
@@ -1289,27 +1292,27 @@ private fun DenCase(d: PlayHomeData, act: PlayHomeActions, level: PlayMath.Level
         }
         // Hand brief 6: the daily and the weekly side by side, and the deck with Change deck (the classic home keeps today's list).
         if (HomeTest.classic) { CaseLabel("Today"); Quests(d, act) } else DenQuests(d, act)
-        // Packs waiting and Seals share one row, so the den shows both above the fold on the Thor's bottom screen.
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            if (groups.isNotEmpty()) Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Packs waiting and Seals share one short row (labels inline, small pack covers), so on the Thor's bottom screen the den ends
+        // on a whole row above the buttons instead of cutting a row of tall covers in half (review of 2bf25b7a).
+        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (groups.isNotEmpty()) {
                 CaseLabel("Packs waiting")
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(top = 6.dp, end = 6.dp)) {
+                Row(Modifier.weight(1f).horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(top = 6.dp, end = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     groups.entries.take(8).forEach { (code, list) ->
-                        Box(Modifier.width(64.dp).clickable { act.openPack(list.first()["id"].str() ?: "") }) {
+                        Box(Modifier.width(26.dp).clickable { act.openPack(list.first()["id"].str() ?: "") }) {
                             Booster(code, null, Modifier.fillMaxWidth(), mini = true)
-                            Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(24.dp).clip(CircleShape).background(P.Gold), contentAlignment = Alignment.Center) {
-                                Text("${list.size}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = P.CtaInk)) }
+                            Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(18.dp).clip(CircleShape).background(P.Gold), contentAlignment = Alignment.Center) {
+                                Text("${list.size}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 10.sp, color = P.CtaInk)) }
                         }
                     }
                 }
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                CaseLabel("Seals")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (k2 in listOf("c", "u", "r", "m")) Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0x66000000)).border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(SiteIcons.Seals.getValue(k2), 20.dp); Num(w.get("seal_$k2").int() ?: 0, 15)
-                    }
+            } else Spacer(Modifier.weight(1f))
+            CaseLabel("Seals")
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (k2 in listOf("c", "u", "r", "m")) Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0x66000000)).border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Icon(SiteIcons.Seals.getValue(k2), 18.dp); Num(w.get("seal_$k2").int() ?: 0, 14)
                 }
             }
         }
@@ -1768,9 +1771,10 @@ private fun HandHeader(d: PlayHomeData, story: PlayRules.Act?, mode: String, wid
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(eyebrow, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = if (wide) 12.sp else 11.sp, letterSpacing = if (wide) .18.em else .12.em, color = Color(0xFFF2CF7E)), maxLines = 1, overflow = TextOverflow.Ellipsis)
             // Phones: a long deck name steps down a size before it is cut ("Mono-White Auras" whole at 374 dp).
-            val ts = if (wide) 30 else when { title.length <= 13 -> 25; title.length <= 17 -> 21; else -> 19 }
+            val big = LocalDensity.current.fontScale > 1.1f
+            val ts = if (wide) 30 else when { title.length <= 13 -> 25; title.length <= 17 -> 21; else -> 19 } - (if (big) 3 else 0)
             Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = ts.sp, lineHeight = (ts + 5).sp, color = P.Ink, shadow = P.shadow),
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                maxLines = if (big && !wide) 2 else 1, overflow = TextOverflow.Ellipsis)
         }
         if (change) {
             val sh = CircleShape
@@ -1791,14 +1795,14 @@ private fun HandPager(d: PlayHomeData, story: PlayRules.Act?, mode: String, onMo
     LaunchedEffect(mode) { val i = StageModes.index(mode); if (i != pager.currentPage && !pager.isScrollInProgress) { if (Motion.still) pager.scrollToPage(i) else pager.animateScrollToPage(i) } }
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
         androidx.compose.foundation.pager.HorizontalPager(pager, Modifier.fillMaxWidth().height(cardH).testTag("hand"),
-            contentPadding = PaddingValues(horizontal = ((w - cardW) / 2).coerceAtLeast(0.dp)), pageSize = androidx.compose.foundation.pager.PageSize.Fixed(cardW), pageSpacing = 20.dp,
+            contentPadding = PaddingValues(horizontal = ((w - cardW) / 2).coerceAtLeast(0.dp)), pageSize = androidx.compose.foundation.pager.PageSize.Fixed(cardW), pageSpacing = 6.dp,
             // One swipe moves one mode, however hard the fling (it overshot to Friends/Story before).
             flingBehavior = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(pager, pagerSnapDistance = androidx.compose.foundation.pager.PagerSnapDistance.atMost(1)),
             verticalAlignment = Alignment.CenterVertically) { page ->
             val (key, name) = StageModes.ALL[page]
             val off = { kotlin.math.abs((pager.currentPage - page) + pager.currentPageOffsetFraction).coerceAtMost(1f) }
             HandCard(key, name, art(key), StageModes.line(key, d.story.won, story?.battles ?: 0, d.story.done), key == mode, big = true,
-                Modifier.fillMaxSize().graphicsLayer { val o = off(); val k = 1f - .26f * o; scaleX = k; scaleY = k; alpha = 1f - .25f * o }, onChoose = { onMode(key) }) { play(key) }
+                Modifier.fillMaxSize().graphicsLayer { val o = off(); val k = 1f - .16f * o; scaleX = k; scaleY = k; alpha = 1f - .25f * o }, onChoose = { onMode(key) }) { play(key) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             StageModes.ALL.forEachIndexed { i, _ -> val on = i == pager.currentPage
@@ -1810,11 +1814,12 @@ private fun HandPager(d: PlayHomeData, story: PlayRules.Act?, mode: String, onMo
 /** Fold open, tablet, Thor top: all five in one row, the chosen one larger and ringed gold (Hand brief 3). */
 @Composable
 private fun HandRow(d: PlayHomeData, story: PlayRules.Act?, mode: String, onMode: (String) -> Unit, art: (String) -> String?, play: (String) -> Unit, w: Dp, h: Dp, pads: Boolean) {
-    val gap = 14.dp; val small = .75f; val ratio = .66f
+    // The others stand at 85 % of the chosen card; when the width runs out first the cards grow taller (down to a 0.55 ratio)
+    // so the row fills the height under the header instead of leaving a band (review of 2bf25b7a).
+    val gap = 14.dp; val small = .85f
     val side = if (pads) (40.dp + gap) * 2 else 0.dp
-    var ch = minOf(h, 400.dp); var cw = ch * ratio
     val room = w - 48.dp - side - gap * 4
-    if (cw * (1f + 4 * small) > room) { val k = room / (cw * (1f + 4 * small)); ch *= k; cw *= k }
+    val cw = minOf(minOf(h, 460.dp) * .66f, room / (1f + 4 * small)); val ch = minOf(h, 460.dp, cw / .55f)
     Row(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally), verticalAlignment = Alignment.Bottom) {
         if (pads) PadKey("LB", Modifier.align(Alignment.CenterVertically))
         StageModes.ALL.forEach { (key, name) -> val on = key == mode
@@ -1833,10 +1838,13 @@ private fun PadKey(k: String, modifier: Modifier) = Text(k, style = TextStyle(fo
 @Composable
 private fun HandCard(key: String, name: String, art: String?, line: String, on: Boolean, big: Boolean, modifier: Modifier, row: Boolean = false, onChoose: () -> Unit, onPlay: () -> Unit) {
     val sh = RoundedCornerShape(if (big) 24.dp else 18.dp)
-    Box(modifier.then(if (on) Modifier.testShadow(24.dp, sh, spotColor = Color(0x52E8B95B)) else Modifier).clip(sh).background(Color(0xFF161921))
+    // No art yet (offline or loading): the mode's own tint, not a flat black card.
+    val tint = MODE_TINT[key] ?: Color(0xFF2A2F3A)
+    Box(modifier.then(if (on) Modifier.testShadow(24.dp, sh, spotColor = Color(0x52E8B95B)) else Modifier).clip(sh)
+        .background(Brush.linearGradient(0f to tint, .65f to Color(0xFF161921), 1f to Color(0xFF101218), start = androidx.compose.ui.geometry.Offset.Zero, end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)))
         .border(if (on) 1.5.dp else 1.dp, if (on) Color(0xFFF2CF7E) else Color(0x33FFFFFF), sh)
         .selectableTile(on, onChoose).semantics { contentDescription = name }) {
-        Art(art, Modifier.matchParentSize().let { if (key == "planeswalk") it.scale(1.16f) else it }, if (key == "story") BiasAlignment(0f, -.4f) else MODE_FOCUS[key] ?: Alignment.Center)
+        Art(art, Modifier.matchParentSize().let { if (key == "planeswalk") it.scale(1.16f) else it }, if (key == "story") BiasAlignment(0f, -.4f) else MODE_FOCUS[key] ?: Alignment.Center, placeholder = false)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(.46f to Color(0x000D1016), 1f to Color(0xF00D1016))))
         // The big card keeps its name beside the disc; a card in the row puts it above the disc, so "Quick Play" stays whole.
         Column(Modifier.align(Alignment.BottomStart).padding(start = if (big) 16.dp else 12.dp, bottom = if (on && row) 78.dp else 18.dp, end = if (on && !row) 84.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
