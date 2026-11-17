@@ -5750,3 +5750,14 @@ body[data-game="ygo"] .card-grid .tile-chrome { aspect-ratio: 59 / 86; }
 .air-odd b{flex:none;min-width:58px;font-size:1.15rem;font-variant-numeric:tabular-nums}.air-odd.good b{color:var(--good,#5fd08a)}.air-odd.warn b{color:var(--warn,#e2b657)}
 .air-odd span{min-width:0;line-height:1.35}.air-odd small{display:block;opacity:.7;font-size:.8rem}
 .air-field .air-lead{margin-bottom:4px}.ai-dialog-head .judge-mark{flex:none}
+
+/* Build a deck: Plan, Power, Bracket, Sideboard, This build. Deck result: lower budget and group by job. */
+.deck-build-choices{display:grid;gap:2px;margin-top:4px}
+.deck-pick .seg{margin:6px 0 0}.deck-pick .seg button{min-height:44px}
+.deck-pick-value{color:var(--gold);font-weight:800;float:right}
+.deck-side-switch{min-height:44px;align-items:center}.deck-side-switch b{margin-left:4px}
+.deck-build-targets{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:6px;margin-top:6px;padding:10px 6px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.deck-build-targets>div{display:grid;justify-items:center;gap:2px;min-width:0}.deck-build-targets b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}.deck-build-targets span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.deck-budget-quick{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1 1 100%}.deck-budget-quick>span,.deck-group-switch>span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.deck-budget-quick .chip{min-height:44px;min-width:56px;font-variant-numeric:tabular-nums}
+.deck-group-switch{display:flex;align-items:center;gap:10px;margin:10px 0 0}.deck-group-switch .seg{margin:0;flex:0 1 220px}.deck-group-switch .seg button{min-height:40px}

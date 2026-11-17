@@ -195,6 +195,33 @@ export function candidateRampWeight(c) {
     return Math.min(1,(1+output)/Math.max(1,setup))*(e.status === "conditional"?.7:1);
   }));
 }
+// The plan of a 60-card deck and the numbers the builder holds it to. From 131 Magic Online Standard lists (16 Nov 2026):
+// decks with sixteen or more creatures play about 24 of them, about 6 removal spells (13 at most) and no main-deck
+// sweeper; decks with under twelve play about 14 answers and 3 or 4 sweepers. Auto reads the plan from the build-around:
+// a card that attacks gets the creature shape; anything else keeps the general quotas.
+const PLAN_SHAPES = Object.freeze({
+  aggro: { id: "aggro", board: true, threats: 24, removalMin: 6, removal: 8 },
+  midrange: { id: "midrange", board: true, threats: 20, removalMin: 6, removal: 10 },
+  control: { id: "control", board: false, threats: 8, removalMin: 12, removal: 16 },
+});
+// The job a card does in a built deck, by the same tests the builder uses: the deck view groups by it.
+export const cardJob = (c) => /\bLand\b/.test(typeText(c).split(" // ")[0]) ? "Lands" : isThreat(c) ? "Threats" : forgeRoles(c).some((r) => r === "interaction" || r === "wipe") ? "Removal" : "Support";
+export const DECK_PLANS = Object.freeze(["auto", "aggro", "midrange", "control"]);
+export function planShape(plan, seeds = [], style = "") {
+  if (PLAN_SHAPES[plan]) return PLAN_SHAPES[plan];
+  const asked = playStylesIn(style);
+  if (asked.includes("control") || asked.includes("removal")) return { id: "auto", board: false };
+  return seeds.some((c) => c && isThreat(c)) ? { ...PLAN_SHAPES.midrange, id: "auto" } : { id: "auto", board: false };
+}
+// What the Build a deck sheet shows before a build ("This build"): the same numbers the builder enforces, or null when it holds none.
+export function buildPlanTargets({ plan = "auto", seed = null, size = 60, commander = false, style = "" } = {}) {
+  if (commander && size >= 100) { const t = forgeTargets({ size, commander: true }); return { lands: String(t.lands), ramp: String(t.ramp), draw: String(t.draw), removal: String(t.interaction), sweepers: String(t.wipe.target) }; }
+  if (size >= 100) return null;
+  const shape = planShape(plan, seed ? [seed] : [], style);
+  if (shape.board) return { threats: shape.threats + "+", removal: shape.removalMin + "–" + shape.removal, sweepers: "0" };
+  if (shape.id === "control") { const t = forgeTargets({ size }); return { threats: shape.threats + "+", removal: (t.interaction + 4) + "+", sweepers: String(t.wipe.target + 1) }; }
+  return null;
+}
 // How well a candidate fits the seed and a working deck. Higher is better.
 export function scoreCard(c, seedTags, seedSubs, { free = 0, size = 60, tokenKinds, goal = "strongest" } = {}) {
   const e = engineRoles(c),
@@ -230,7 +257,7 @@ export function buildDeck(opts) {
   const second = buildDeckOnce({ ...opts, landCount: wanted });
   return second.open <= first.open ? second : first;
 }
-function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes, power = null, variation = "tight", forgeSeed = "", landCount = null, prior = null, anchors = [] }) {
+function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () => 0, price = (c) => null, budget = Infinity, colors = null, commander = null, completionFirst = false, easy = false, preferred = () => 0, requestedStyle = "", goal = "strongest", suggestedCards = [], excludedCards = [], creatureTypesOnly, excludedSubtypes, power = null, variation = "tight", forgeSeed = "", landCount = null, prior = null, anchors = [], plan = "auto" }) {
   const f = formatOf(format);
   if (f.id === "limited") throw Error("Limited decks come from the cards you open — build those by hand.");
   if ((!Number.isFinite(budget) && budget!==Infinity) || budget < 0) throw Error("Enter a budget of $0 or more.");
@@ -254,8 +281,10 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
   // The two shapes real 60-card lists take (131 Magic Online Standard lists, 16 Nov 2026): a deck with sixteen or more
   // creatures plays about 24 of them, about 6 removal spells (13 at most) and no main-deck sweeper; a deck with under
   // twelve plays 3 or 4 sweepers. A build-around that attacks gets the creature shape, unless the request asks for control.
-  const board = size < 100 && seeds.some((c) => isThreat(c)) && !playStylesIn(requestedStyle).some((k) => k === "control" || k === "removal"),
-    BOARD = { threats: 20, removalMin: 6, removal: 10 },
+  // The player may name the plan (Build a deck, Plan row); Auto reads it from the build-around. Numbers: buildPlanTargets below.
+  const shape = size < 100 ? planShape(plan, seeds, requestedStyle) : { id: "auto", board: false },
+    board = shape.board, control = shape.id === "control",
+    BOARD = shape,
     removalSpell = (c) => forgeRoles(c).includes("interaction") && !isThreat(c);
   let spent = 0,
     unknown = 0;
@@ -375,7 +404,7 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
   for (const name of anchors) { const hit = scored.find((x) => cardKey(x.c.name) === cardKey(name)); if (hit && !keptKeys.has(cardKey(name))) hit.s += 400; }
   const removalIn = () => [...rows.values()].reduce((n, r) => { const c = catalog[cardKey(r.name)]; return n + (c && !isLand(c) && removalSpell(c) ? r.qty : 0); }, 0),
     // Copies of a removal spell a creature deck still has room for.
-    removalRoom = (c) => board && removalSpell(c) && !keptKeys.has(cardKey(c.name)) ? Math.max(0, BOARD.removal - removalIn()) : Infinity;
+    removalRoom = (c) => (board || control) && removalSpell(c) && !keptKeys.has(cardKey(c.name)) ? Math.max(0, BOARD.removal - removalIn()) : Infinity;
   scored.sort((a, b) => b.s - a.s || a.c.name.localeCompare(b.c.name));
   // What a filler slot really costs: the average of the cheapest cards available here.
   const cheapPrices = pool.map((c) => (available(c.name) ? 0 : unitCost(c))).filter((p) => p !== null).sort((a, b) => a - b).slice(0, 24),
@@ -432,8 +461,9 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
   if(completionFirst){
     // Keep each requested build-around, then buy the cheapest next legal copy.
     // Ownership is recalculated per copy, so one free copy is not treated as a free playset.
-    for(const seed of seeds){const c=pool.find(c=>cardKey(c.name)===cardKey(seed.name));if(!c||qtyOf(c)||nonland()>=spellTarget)continue;
-      const extra=costFor(c,0,1);if(canAfford(extra)){put(c,1,'Your build-around card');}}
+    for(const seed of seeds){const c=pool.find(c=>cardKey(c.name)===cardKey(seed.name));if(!c||nonland()>=spellTarget)continue;
+      // A build-around is played at its full copy count while the budget allows: one copy is not a deck built around it.
+      const want=wantCopies(c,true);while(qtyOf(c)<want&&nonland()<spellTarget&&canAfford(costFor(c,qtyOf(c),qtyOf(c)+1)))put(c,1,'Your build-around card');}
     while(nonland()<spellTarget){
       const choices=scored.filter(x=>qtyOf(x.c)<wantCopies(x.c,keptKeys.has(cardKey(x.c.name)))).map(x=>({...x,extra:costFor(x.c,qtyOf(x.c),qtyOf(x.c)+1)})).filter(x=>canAfford(x.extra)).sort((a,b)=>a.extra-b.extra||b.s-a.s);
       const next=choices[0];if(!next)break;put(next.c,1,stock(next.c.name)>qtyOf(next.c)?'you own it':next.extra===Infinity?'Unpriced candidate; cost unverified':'Budget completion');
@@ -446,7 +476,7 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     // A card that fills a short quota rises; one that overfills a role sinks.
     const counts=new Map(),bump=(k,n)=>counts.set(k,(counts.get(k)||0)+n);
     for(const row of rows.values()){const card=catalog[cardKey(row.name)];if(!card||cardKey(row.name)===cardKey(lead?.name))continue;for(const role of forgeRoles(card))bump(role,row.qty);for(const h of hooks)if(h.match(card))bump('hook:'+h.id,row.qty);}
-    const targets=playStyleTargets({ramp:size<100&&topEnd>=6?Math.max(forgeT.ramp,8):forgeT.ramp,draw:forgeT.draw,interaction:forgeT.interaction,wipe:board?0:forgeT.wipe.target,wincon:forgeT.wincon},requestedStyle);
+    const targets=playStyleTargets({ramp:size<100&&topEnd>=6?Math.max(forgeT.ramp,8):forgeT.ramp,draw:forgeT.draw,interaction:forgeT.interaction,wipe:board?0:forgeT.wipe.target,wincon:forgeT.wincon},requestedStyle+(control&&!playStylesIn(requestedStyle).includes("control")?" control":""));
     const supportCopies=[...rows.values()].filter(r=>supports(catalog[cardKey(r.name)]||{})).reduce((n,r)=>n+r.qty,0);
     const roleBonus=r=>{const have=counts.get(r)||0,t=targets[r];if(!t&&r!=='wipe')return 0;if(have<t)return r==='ramp'&&size<100&&topEnd>=6?14:8;if(r==='wipe')return have>=forgeT.wipe.max?-8:0;if(r==='draw')return 0;return -3;};
     // Open needs of cards already in the list pull their providers up; a card whose own need is still open waits.
@@ -460,7 +490,7 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     const removalNow=board?removalIn():0;
     // In a creature deck a card is paid for its best job once: three half-jobs do not outrank the format's real removal (seen 16 Nov: Case of the Burning Masks ahead of Torch the Tower).
     const roleSum=b=>board?Math.max(0,...b)+Math.min(0,...b):b.reduce((n,v)=>n+v,0);
-    const adaptive=x=>x.s+needAdj(x)+sweepAdj(x)+(threats<(board?BOARD.threats:12)&&isThreat(x.c)?8:0)+(board&&removalNow<BOARD.removalMin&&removalSpell(x.c)?6+8*(prior?Number(prior(x.c))||0:0):0)+(x.plan&&supportCopies<Math.ceil(spellTarget*.35)?6:0)+roleSum(x.roles.map(roleBonus))+hooks.reduce((n,h)=>n+(h.min&&x.hookIds.includes(h.id)&&(counts.get('hook:'+h.id)||0)<h.min?5:0),0);
+    const adaptive=x=>x.s+needAdj(x)+sweepAdj(x)+(threats<(board?BOARD.threats:control?8:12)&&isThreat(x.c)?8:0)-(shape.id==="aggro"?Math.max(0,(Number(x.c.cmc)||0)-3)*2:0)+(board&&removalNow<BOARD.removalMin&&removalSpell(x.c)?6+8*(prior?Number(prior(x.c))||0:0):0)+(x.plan&&supportCopies<Math.ceil(spellTarget*.35)?6:0)+roleSum(x.roles.map(roleBonus))+hooks.reduce((n,h)=>n+(h.min&&x.hookIds.includes(h.id)&&(counts.get('hook:'+h.id)||0)<h.min?5:0),0);
     remaining.sort((a,b)=>adaptive(b)-adaptive(a)||a.c.name.localeCompare(b.c.name));
     const {c}=remaining.shift();
     const left = spellTarget - nonland();
@@ -602,7 +632,7 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     open = Math.max(0, size - total);
   if(total>size)throw Error("Generated deck exceeds its target; no version was applied.");
   if(open && !completionFirst){
-    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards,...restrictions,power,variation,forgeSeed,landCount,prior,anchors});
+    const economical=buildDeck({format,seeds,base,catalog,available,price,budget,colors,commander,completionFirst:true,easy,preferred,requestedStyle,goal,suggestedCards,excludedCards,...restrictions,power,variation,forgeSeed,landCount,prior,anchors,plan});
     const seedKept=seeds.every(seed=>isLand(seed)||economical.cards.some(r=>cardKey(r.name)===cardKey(seed.name)));
     if(seedKept && economical.open<open)return economical;
   }

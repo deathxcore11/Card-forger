@@ -62,4 +62,52 @@ for (const anchor of ['Gastal Blockbuster', 'Aetherjacket', 'Fanatical Firebrand
  const strays = read(deck).spells.filter(r => r.qty === 1 && !/\bLegendary\b/.test(r.card.type_line)).map(r => r.name);
  assert.deepEqual(strays, [], 'no stray one-of beside ' + anchor);
 }
+// The Plan row of Build a deck (approved by Randall 16 Nov): the player may name the plan, and the sheet shows the numbers the builder holds.
+{
+ const { buildPlanTargets, planShape } = await import('./builder.js');
+ assert.deepEqual(buildPlanTargets({ plan: 'auto', seed: card(fx.seed) }), { threats: '20+', removal: '6–10', sweepers: '0' });
+ assert.deepEqual(buildPlanTargets({ plan: 'aggro', seed: card(fx.seed) }), { threats: '24+', removal: '6–8', sweepers: '0' });
+ assert.deepEqual(buildPlanTargets({ plan: 'control', seed: card(fx.seed) }), { threats: '8+', removal: '12+', sweepers: '3' });
+ assert.equal(buildPlanTargets({ plan: 'auto', seed: card('Abrade') }), null, 'Auto holds no numbers for a build-around that does not attack');
+ assert.deepEqual(buildPlanTargets({ size: 100, commander: true }), { lands: '38', ramp: '10', draw: '12', removal: '10', sweepers: '3' });
+ assert.equal(planShape('auto', [card(fx.seed)], 'control').board, false, 'a control request in words still wins over Auto');
+ const aggro = read(buildDeck({ ...options, plan: 'aggro' })), mid = read(buildDeck({ ...options, plan: 'midrange' })), control = read(buildDeck({ ...options, plan: 'control' }));
+ assert.ok(aggro.total === 60 && aggro.threats >= 24 && aggro.removalSpells >= 6 && aggro.removalSpells <= 8 && !aggro.sweepers.length, 'aggro: ' + aggro.threats + ' threats, ' + aggro.removalSpells + ' removal, ' + aggro.sweepers);
+ assert.ok(mid.total === 60 && mid.threats >= 20 && mid.removalSpells >= 6 && mid.removalSpells <= 10 && !mid.sweepers.length, 'midrange');
+ assert.ok(control.total === 60 && control.removalSpells >= 12 && control.removalSpells <= 16 && control.sweepers.length >= 1 && control.creatures <= 12, 'control: ' + control.removalSpells + ' removal, ' + control.creatures + ' creatures, ' + control.sweepers);
+ const avg = d => d.spells.reduce((n, r) => n + r.qty * (Number(r.card.cmc) || 0), 0) / d.spells.reduce((n, r) => n + r.qty, 0);
+ assert.ok(avg(aggro) <= avg(mid) + 1e-9, 'aggro is not the slower deck');
+}
+// The sideboard (approved 16 Nov): fifteen cards current lists sideboard, castable in the deck's colours, inside the copy limit
+// with the main deck, and never past the budget. With nothing known or nothing affordable it stays empty and says so.
+{
+ const { buildSideboard } = await import('./deck-sideboard.js');
+ const deck = buildDeck(options), base = { rows: deck.cards, catalog, colors: ['R'], prior, copyLimit: () => 4, isLegal: c => c.legalities?.standard === 'legal', cost: (c, n) => (Number(c.prices?.usd) || Infinity) * n };
+ const side = buildSideboard(base), total = side.reduce((n, r) => n + r.qty, 0);
+ assert.equal(total, 15, 'fifteen sideboard cards: ' + side.map(r => r.qty + ' ' + r.name).join(', '));
+ assert.ok(side.some(r => r.name === 'Fire Magic'), 'Fire Magic belongs in the sideboard (25 lists sideboard it, 11 play it main)');
+ for (const r of side) { const c = card(r.name), main = deck.cards.find(m => m.name === r.name)?.qty || 0;
+  assert.ok(c && !isLand(c) && (c.color_identity || []).every(k => k === 'R'), r.name + ' is castable in mono-red');
+  assert.ok(r.qty >= 1 && r.qty + main <= 4, r.name + ' stays inside four copies with the main deck');
+  assert.ok(prior.sideLists(r.name) >= 1, r.name + ' is in a real sideboard'); }
+ assert.ok(!side.some(r => r.name === 'Engineered Explosives'), 'a colour-counting card is idle in one colour');
+ assert.deepEqual(buildSideboard({ ...base, budget: 0 }), [], 'no money left: no sideboard, not a padded one');
+ const cheap = buildSideboard({ ...base, budget: 2 });
+ assert.ok(cheap.reduce((n, r) => n + base.cost(card(r.name), r.qty), 0) <= 2 + 1e-6, 'the sideboard never passes the budget');
+ assert.deepEqual(buildSideboard({ ...base, prior: metaPrior([]) }), [], 'no lists, no sideboard');
+}
 console.log('random build shape: the reported Rubble Rouser pool builds a creature deck with no self-sweeper and no stray one-of');
+
+// Seen 16 Nov on a $20 rebuild of the Rubble Rouser deck: the cheapest-first build kept ONE Rubble Rouser (a $0.20 card)
+// and that list was shown. A build-around is played at its full copy count whenever the budget allows.
+{
+ const cheap = buildDeck({ ...options, budget: 20, completionFirst: true }), d = read(cheap);
+ assert.equal(d.total, 60, 'the $20 cheapest-first build is complete');
+ assert.equal(d.rows.find(r => r.name === fx.seed)?.qty, 4, 'four Rubble Rouser in the $20 cheapest-first build, not one');
+ assert.ok(d.rows.reduce((n, r) => n + (Number(r.card?.prices?.usd) || 0) * r.qty, 0) <= 20 + 1e-6, 'and it stays inside $20');
+}
+// The deck view groups by job with the builder's own tests.
+{
+ const { cardJob } = await import('./builder.js');
+ assert.equal(cardJob(card('Rubble Rouser')), 'Threats'); assert.equal(cardJob(card('Burst Lightning')), 'Removal'); assert.equal(cardJob(card('Mountain') || { type_line: 'Basic Land — Mountain' }), 'Lands');
+}
