@@ -1,6 +1,6 @@
 import {deckViewer,deckCardAttrs,syncDeckViewers,deckShell} from './deck-viewer.js';
 import {exportDeckText} from './core.js';
-import {PLAY_STYLES,playStylesIn,buildPlanTargets,cardJob} from './builder.js';
+import {PLAY_STYLES,playStylesIn,buildPlanTargets,cardJob,planShape} from './builder.js';
 import {DECK_POLICY} from './deck-construction.js';
 import {esc,usd,referencePrintingPills,bar,customBudget} from './ui.js';
 import {buildOverlay} from './build-overlay.js';
@@ -136,6 +136,10 @@ export function deckResultMarkup(result,id,{coach='',saved=false,saving=false,gr
  const seg=(label,act,key,items,value)=>`<div class="deck-group-switch"><span>${label}</span><div class="seg" role="group" aria-label="${label}">${items.map(([v,name])=>`<button type="button" class="${v===value?'on':''}" aria-pressed="${v===value}" data-act="${act}" data-result="${esc(id)}" data-${key}="${v}">${name}</button>`).join('')}</div></div>`;
  const tapSwitch=request.game==='mtg'?seg('Tap','flowTap','tap',[['open','Open'],['lock','Lock'],['swap','Swap']],['lock','swap'].includes(tap)?tap:'open')+(locked.length?`<button class="btn ghost block" data-act="flowRebuildUnlocked" data-result="${esc(id)}">Rebuild unlocked · ${locked.length} locked</button>`:''):'';
  const swapPanel=swap?`<section class="deck-swap" data-flow-swap><div class="deck-swap-head"><span>Swap</span><b>${swap.qty}× ${esc(swap.name)}</b><span class="tag">${esc(swap.job)}</span></div>${swap.options.length?swap.options.map((o,i)=>`<div class="deck-swap-row">${artOf(o.card)?`<img class="row-thumb" src="${esc(artOf(o.card))}" alt="" loading="lazy">`:'<span class="row-thumb img-missing" aria-hidden="true"></span>'}<span class="deck-compact-copy"><b>${esc(o.card.name)}</b><span class="small muted">${[o.card.power!=null&&o.card.toughness!=null?o.card.power+'/'+o.card.toughness:'',usd(o.price),o.owned+' owned'].filter(Boolean).join(' · ')}</span></span><button class="btn small" data-act="flowSwapTake" data-result="${esc(id)}" data-option="${i}">Swap</button></div>`).join(''):'<p class="small muted">No card in the loaded pool does this job in your colours and budget.</p>'}<p class="small warn-text" role="status" data-flow-swap-status>${esc(swap.message||'')}</p><button class="btn ghost block" data-act="flowSwapKeep" data-result="${esc(id)}">Keep ${esc(swap.name)}</button></section>`:'';
+ // Plan and Power on the built deck: the plan the builder used is lit, and one tap rebuilds with another.
+ const sixty=request.game==='mtg'&&request.format!=='Commander'&&rows.filter(r=>r.zone==='main').reduce((n,r)=>n+r.qty,0)===60,usedPlan=sixty?(s=>s.id==='auto'?(s.board?'midrange':''):s.id)(planShape(request.plan||'auto',[request.seedCard||cover].filter(Boolean),request.theme||'')):'',usedPower=request.forge?.power||request.power||'';
+ const chips=(label,field,items,value)=>`<div class="deck-budget-quick" role="group" aria-label="${label}"><span>${label}</span>${items.map(([v,name])=>`<button class="chip pick${v===value?' on':''}" aria-pressed="${v===value}" data-act="flowRetune" data-result="${esc(id)}" data-field="${field}" data-value="${v}">${name}</button>`).join('')}</div>`;
+ const retune=request.game==='mtg'&&!request.ownedOnly?(sixty?chips('Plan','plan',PLANS.slice(1),usedPlan):'')+(request.format!=='Commander'?chips('Power','power',POWERS,usedPower):''):'';
  const plan=`<p class="small">Built around ${esc(name)}${request.theme?' · requested theme: '+esc(request.theme):''}. ${request.easy?'Ranked to prefer fewer setup requirements. ':''}${request.game==='ptcg'&&result.plan.attackers?.length?'Attack with '+result.plan.attackers.map(c=>esc(c.name)+(c.evolveFrom?' (evolves from '+esc(c.evolveFrom)+')':'')).join(', ')+'. The selected Energy supports at least one attack on each. ':''}Card interactions and performance still need playtesting.</p>`;
  // Caveats sit between the header and Save, so a player reads them before saving.
  const lead=`  ${requestRestrictions(request)}
@@ -161,6 +165,7 @@ export function deckResultMarkup(result,id,{coach='',saved=false,saving=false,gr
    actions:[
     {label:saved?'Saved to My decks':saving?'Saving…':'Save deck',primary:true,attrs:`data-act="flowSave" data-result="${esc(id)}"`,disabled:saved||saving},
     {html:coach},
+    {html:retune},
     {html:quick.length?`<div class="deck-budget-quick" role="group" aria-label="Lower budget"><span>Lower budget</span>${quick.map(n=>`<button class="chip pick" data-act="flowAdjust" data-result="${esc(id)}" data-budget="${n}">${usd(n,0)}</button>`).join('')}</div>`:''},
     {html:`<details class="ds-rebuild"><summary class="btn ghost">Rebuild</summary><div class="deck-budget-rebuild"><label class="field">Budget ($)<input data-flow-budget type="number" min="0" max="100000" step="0.01" inputmode="decimal" value="" placeholder="Enter amount" required></label><button class="btn ghost" data-act="flowAdjust" data-result="${esc(id)}">Rebuild with budget</button><p class="small" role="status" data-flow-status></p></div></details>`}]})}
   ${result.deck.constructionBasis?`<p class="foot">Construction: ${result.deck.constructionBasis==='reference'?(result.deck.referenceQualifiedForBuild===true?'resolved current source-list candidate':'preserved previous source-based list · source not requalified for this build'):'bounded heuristic search'}${result.deck.referenceAdaptation?` · ${esc(result.deck.referenceAdaptation.kind)}`:''}. Source results do not certify this deck’s performance.</p>`:''}
@@ -233,6 +238,15 @@ export function createDeckExperience(x){
   let updated;try{updated=pipeline.applySwap(item.result,swap.name,swap.zone,option.card);}catch(e){updated={ok:false,message:e.message};}
   if(!updated.ok){item.swap={...swap,message:updated.message||'That swap does not pass the deck checks. Your deck is unchanged.'};return repaint(button,item,'[data-flow-swap] button');}
   const root=button.closest('[data-flow-result]'),id=register(updated,item.scope),next=carry(id,item);next.locked.delete(swap.zone+':'+swap.name);root.outerHTML=markup(id);syncDeckViewers(x.root?.());x.root().querySelector(`[data-flow-name="${CSS.escape(option.card.name)}"]`)?.focus?.();};
+ A.flowRetune=async button=>{const item=get(button),root=button.closest('[data-flow-result]'),r=item.result,{field,value}=button.dataset;if(!['plan','power'].includes(field)||button.classList.contains('on'))return;
+  const token=++sequence;button.disabled=true;const overlay=document.createElement('div');overlay.innerHTML=buildOverlay('Rebuilding your deck…',{title:'Your deck is being built',note:'Your updated deck will open here when it’s ready.',cancelAct:'flowCancelBuild'});root.append(overlay);overlay.querySelector('button')?.focus();
+  cancelBuild=()=>{sequence++;overlay.remove();button.disabled=false;button.focus();};
+  try{await afterPaint();if(sequence!==token||!root.isConnected)return;
+   const result=await build({...r.request,closest:false,...(field==='plan'?{plan:value}:{power:value,forge:r.request.forge?{...r.request.forge,power:value}:undefined}),previousDeck:r.deck,previousBudget:r.request.budget,previousEstimate:r.pricing.estimate},{current:()=>sequence===token&&item.scope()&&root.isConnected,onStatus:m=>{if(sequence===token&&overlay.isConnected)overlay.querySelector('[role="status"]').textContent=m;}});
+   if(sequence!==token||!root.isConnected||!item.scope())return;
+   if(result.ok){const id=register(result,item.scope),next=carry(id,item);next.locked=new Set();root.outerHTML=markup(id);syncDeckViewers(x.root?.());}
+   else{const status=root.querySelector('[data-flow-status]');if(status){status.textContent=result.message;const d=status.closest?.('details');if(d)d.open=true;}}
+  }finally{overlay.remove();if(sequence===token)button.disabled=false;}};
  A.flowRebuildUnlocked=async button=>{const item=get(button),root=button.closest('[data-flow-result]'),r=item.result,locked=[...(item.locked||[])].map(k=>{const [zone,...rest]=k.split(':');return r.rows.find(row=>row.zone===zone&&row.name===rest.join(':'));}).filter(row=>row&&row.zone==='main');
   const token=++sequence;button.disabled=true;const overlay=document.createElement('div');overlay.innerHTML=buildOverlay('Rebuilding around your locked cards…',{title:'Your deck is being built',note:'Your updated deck will open here when it’s ready.',cancelAct:'flowCancelBuild'});root.append(overlay);overlay.querySelector('button')?.focus();
   cancelBuild=()=>{sequence++;overlay.remove();button.disabled=false;button.focus();};
