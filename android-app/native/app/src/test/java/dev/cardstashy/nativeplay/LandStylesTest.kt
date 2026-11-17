@@ -54,4 +54,27 @@ class LandStylesTest {
     @Test fun gotShowsNewOnlyForPacksAndCrafts() {
         assertEquals(styles.filter { it["src"].asString.startsWith("land") }.map { it["id"].asString }.toSet(), LandStyles.got(styles).keys)
     }
+
+    // Mixed styles in one deck (Randall 17 Nov): the same cases as test-land-styles.mjs.
+    private fun line(n: String, q: Int, id: String = "") = dev.cardstashy.nativeplay.play.DeckEdit.Line(n, q, if (id.isEmpty()) null else JsonObject().apply { addProperty("id", id) })
+    private fun shape(c: List<dev.cardstashy.nativeplay.play.DeckEdit.Line>) = c.map { Triple(it.name, LandStyles.rowId(it), it.qty) }
+
+    @Test fun mixedRows() {
+        var rows = LandStyles.addRow(listOf(line("Forest", 16, "a"), line("Plains", 8)), "Forest", "b")
+        assertEquals(listOf(Triple("Forest", "a", 16), Triple("Plains", "", 8), Triple("Forest", "b", 1)), shape(rows))
+        rows = LandStyles.stepRow(rows, "Forest", "b", 1); assertEquals(2, rows.first { LandStyles.rowId(it) == "b" }.qty)
+        assertEquals(16, rows.first { LandStyles.rowId(it) == "a" }.qty)
+        rows = LandStyles.stepRow(LandStyles.stepRow(rows, "Forest", "b", -1), "Forest", "b", -1); assertTrue(rows.none { LandStyles.rowId(it) == "b" })
+        rows = LandStyles.addRow(rows, "Forest", "c", 3)
+        assertEquals(listOf(3, 16, 8), LandStyles.mainFirst(rows, "Forest", "c").map { it.qty })
+        assertEquals(listOf(Triple("Forest", "d", 16), Triple("Plains", "", 8), Triple("Forest", "c", 3)), shape(LandStyles.restyle(rows, "Forest", "a", "d")))
+        assertEquals(listOf(Triple("Plains", "", 8), Triple("Forest", "c", 19)), shape(LandStyles.restyle(rows, "Forest", "a", "c")))
+        val pre = dev.cardstashy.nativeplay.play.DeckEdit.Line("Plains", 7, JsonObject().apply { addProperty("set", "fdn"); addProperty("number", "273") })
+        assertTrue(LandStyles.precon(pre))
+        val re = LandStyles.restyle(listOf(pre), "Plains", "", "e").single()
+        assertEquals("e", LandStyles.rowId(re)); assertTrue(re.extra!!.get("set") == null)
+        assertEquals(listOf(5, 1, 1), LandStyles.join(listOf(line("Forest", 2, "a"), line("Elf", 1, "x"), line("Elf", 1, "x"), line("Forest", 3, "a"))).map { it.qty })
+        assertEquals("Forest" to "", LandStyles.parseKey(LandStyles.key("Forest", "")))
+        assertEquals(null, LandStyles.parseKey("Llanowar Elves"))
+    }
 }

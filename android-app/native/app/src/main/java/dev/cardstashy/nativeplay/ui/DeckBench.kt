@@ -201,7 +201,9 @@ class BenchModel(
     /** Bumped each time the shelves start over (a filter, or the deck's colours): every shelf on screen asks again. */
     val shelvesGen: Int = 0,
     /** Land styles (Play): drawn where the card browser was while the Lands view is on (LandPicker.kt), else null. */
-    val landPicker: (@Composable () -> Unit)? = null,
+    val landPicker: (@Composable (tileMod: (key: String, image: String) -> Modifier) -> Unit)? = null,
+    /** The deck land row being restyled (its key, LandStyles.key): lit gold in the list while the picker is on it. */
+    val landHeld: String? = null,
     /** Basics with a style just got and not looked at yet: a gold dot on their tile. */
     val landNew: Set<String> = emptySet(),
 )
@@ -239,6 +241,8 @@ class BenchActions(
     val cover: ((String) -> Unit)? = null,
     /** A basic held under the deck: open its land styles (Play). */
     val landHold: ((String) -> Unit)? = null,
+    /** A land row (key "land:…") held and let go without moving: open the Lands tab on that row (mixed land styles, Randall 17 Nov). */
+    val landRow: ((String) -> Unit)? = null,
 )
 
 /** Where the Bench is: tab, deck view, find and filters, the card in the big view. Kept by the caller so Back keeps your place. */
@@ -307,7 +311,10 @@ private fun cardPad(m: BenchModel, key: String, ref: String, name: String, qty: 
     val room = known ?: remember(m.tiles, m.basics, ref, name, qty) { val tile = m.tiles.firstOrNull { it.key == ref }
         tile?.room ?: if (tile?.basic == true || m.basics.any { it.first == name }) Int.MAX_VALUE else (4 - qty) }
     fun step(d: Int) { a.step(key, d); ui.pop = key; ui.popAt = System.nanoTime() }
-    val acts = PadActs(a = if (room > 0) "Add one" else null, x = if (qty > 0) PadAct("Take one out") { step(-1) } else null, y = PadAct("Inspect") { ui.peek = key },
+    // A land row's Y opens its styles (mixed land styles), as holding it does.
+    val styles = a.landRow?.takeIf { key.startsWith("land:") }
+    val acts = PadActs(a = if (room > 0) "Add one" else null, x = if (qty > 0) PadAct("Take one out") { step(-1) } else null,
+        y = if (styles != null) PadAct("Styles") { styles(key) } else PadAct("Inspect") { ui.peek = key },
         // One word per action (Play and Collection family, T5): Y is Inspect (the card big, the bench's Peek) as everywhere else; the card page is on Select.
         menu = PadAct("Card page") { a.open(key) })
     val onA: () -> Unit = { if (room > 0) step(1) else ui.peek = key }
@@ -442,7 +449,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
     fun drop() {
         val name = drag.name ?: return; val zone = drag.zone; val from = drag.from; val moved = drag.moved
         drag.name = null; drag.pointer = null
-        if (!moved) { ui.peek = name; return }
+        if (!moved) { val lr = a.landRow; if (lr != null && name.startsWith("land:")) lr(name) else ui.peek = name; return }
         if (zone == "hero") { a.cover?.let { c -> c(name); haptic.performHapticFeedback(HapticFeedbackType.Confirm) }; return }
         if (from == "coll" && zone == "deck") { a.step(name, 1); pop(name) } else if (from == "deck" && zone == "coll") { a.step(name, -1); pop(name) }
     }
@@ -503,7 +510,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
             // Another tab (War Chest, Power, Rules, Versions) opens in the big side, where the collection was; the deck stays beside it.
             // Filters (tablet, unfolded, Portal): the panel takes the browser's place and the deck stays beside it.
             Box(Modifier.weight(1f).fillMaxHeight()) { if (ui.tab == "cards") { if (ui.filters && magic && !DualScreen.active) FilterPanel(m, ui, count, sets, "side", onFilter)
-                else m.landPicker?.let { lp -> LandPane(browserSwitch, lp) } ?: Browser(m, ui, a, drag, browserSwitch, cols = if (land) 0 else -1, lift, onFilter, shown, shelves, sets) } else tabBody(ui.tab) }
+                else m.landPicker?.let { lp -> LandPane(browserSwitch) { lp { k, img -> Modifier.benchCard(drag, k, img, "coll", lift) {} } } } ?: Browser(m, ui, a, drag, browserSwitch, cols = if (land) 0 else -1, lift, onFilter, shown, shelves, sets) } else tabBody(ui.tab) }
             Column(Modifier.fillMaxWidth(if (wide) .37f else .43f).fillMaxHeight().background(Color(0x33000000)).drawBehind {
                 drawLine(B.Line, Offset(0f, 0f), Offset(0f, size.height), 1.dp.toPx()) }) {
                 Hero(m, a, compact = land, ui = ui, drag = drag)
@@ -531,7 +538,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
                     Column(Modifier.fillMaxSize()) {
                         Dock(m, ui, a, drag, actionRow, split = false, Modifier.height(room * share), lift, onFilter = onFilter)
                         SplitGrip(ui, room, onGrip = { gripping = it })
-                        Box(Modifier.weight(1f).fillMaxWidth()) { m.landPicker?.let { lp -> LandPane(browserSwitch, lp) } ?: Browser(m, ui, a, drag, browserSwitch, cols = 3, lift, onFilter, shown, shelves, sets) }
+                        Box(Modifier.weight(1f).fillMaxWidth()) { m.landPicker?.let { lp -> LandPane(browserSwitch) { lp { k, img -> Modifier.benchCard(drag, k, img, "coll", lift) {} } } } ?: Browser(m, ui, a, drag, browserSwitch, cols = 3, lift, onFilter, shown, shelves, sets) }
                     }
                 }
                 Footer(m, ui, split = false, views = false)
@@ -647,6 +654,11 @@ private fun Hero(m: BenchModel, a: BenchActions, compact: Boolean, ui: BenchUi, 
         }
     }
 }
+
+/** A land row's style in the deck list (mixed land styles): its set and number, in place of a mana cost. */
+@Composable
+private fun LandSetChip(label: String) = Text(label, style = f(11f, 800, B.Mute), maxLines = 1, softWrap = false,
+    modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(Color(0x73000000)).border(1.dp, B.Line, RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 1.dp))
 
 /** The Lands view: the Your cards / All cards / Lands switch on top, the land styles under it, where the card browser was. */
 @Composable
@@ -872,9 +884,11 @@ private fun popScale(ui: BenchUi, name: String): Float {
 private fun Strip(m: BenchModel, r: BenchRow, ui: BenchUi, a: BenchActions, drag: Drag, lift: () -> Unit) {
     val dragging = !r.fixed && drag.name == r.key && drag.from == "deck"
     val chip = r.short > 0 && m.play && r.seal.isNotEmpty()
-    DeckStripRow(r, Modifier.scale(popScale(ui, r.key)).alpha(if (dragging) .35f else 1f),
+    val held = m.landHeld != null && m.landHeld == r.key
+    DeckStripRow(r, Modifier.scale(popScale(ui, r.key)).alpha(if (dragging) .35f else 1f).then(if (held) Modifier.clip(RoundedCornerShape(10.dp)).background(Color(0x29E5C47E)).border(2.dp, B.Gold, RoundedCornerShape(10.dp)) else Modifier),
         Modifier.benchCard(drag, r.key, r.image, "deck", lift, lifts = !r.fixed) { if (r.fixed) a.open(r.key) else ui.peek = r.key }.rowPad(m, r, ui, a),
-        endFlush = chip) { if (chip) SealChip(r) { a.craft(r.key, r.short) } else if (r.emb.isNotEmpty()) EmbRow(r.emb) else ManaCost(r.cost, 15.dp) }
+        endFlush = chip) { if (chip) SealChip(r) { a.craft(r.key, r.short) } else if (r.emb.isNotEmpty()) EmbRow(r.emb)
+            else if (r.key.startsWith("land:") && r.set.isNotEmpty()) LandSetChip("${r.set.uppercase()} ${r.number}") else ManaCost(r.cost, 15.dp) }
 }
 
 /**

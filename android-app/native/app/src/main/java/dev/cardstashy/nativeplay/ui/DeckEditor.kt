@@ -96,6 +96,8 @@ class EditorUi {
     var landBusy by mutableStateOf(false)
     /** Styles picked for this deck by land (they win over a precon row's own printing on save). */
     var lands by mutableStateOf<Map<String, String>>(emptyMap())
+    /** The deck land row being restyled from the Lands tab (its land and printing, "" for none), if any. */
+    var landHeld by mutableStateOf<Pair<String, String>?>(null)
     var sort by mutableStateOf("")
     var pool by mutableStateOf<List<JsonObject>>(emptyList())
     var poolBusy by mutableStateOf(false)
@@ -224,22 +226,50 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val landGot = remember(styleRows) { LandStyles.got(styleRows) }
     fun landNew(id: String) = landSeen?.let { seen -> id in landGot && id !in seen } ?: false
     fun landInUse(type: String): String = landData?.let { d -> LandStyles.inDeck(type, ui.lands[type] ?: e.cards.firstOrNull { it.name == type }?.extra?.str("id"), landOwned, landChosen, d.starter) } ?: ""
-    fun openLands(type: String) { if (LandStyles.isType(type)) ui.landType = type; ui.landFocus = ""; ui.landLimit = 60; ui.mode = "lands"; b.peek = null }
-    // On save every basic row carries its style's printing (a match shows only that art). A row with a decklist printing (a precon's
-    // set and number) keeps it until a style is picked for that land in this deck.
-    fun landRows(ed: DeckEdit.Edit): DeckEdit.Edit = if (landData == null) ed else ed.copy(cards = ed.cards.map { l ->
+    fun openLands(type: String) { if (LandStyles.isType(type)) ui.landType = type; ui.landFocus = ""; ui.landLimit = 60; ui.mode = "lands"; ui.landHeld = null; b.peek = null }
+    // A land row's own style (mixed land styles, Randall 17 Nov, preview https://claude.ai/artifact/EzrgZVY4D9Qb8Y1rPkDyQ5): its printing when
+    // unlocked, else the deck's main style; a precon row (its set and number) keeps its own until a style is picked for that land.
+    fun landOf(l: DeckEdit.Line): String { val id = LandStyles.rowId(l)
+        return if (id.isNotEmpty() && id in landOwned) id else if (id.isEmpty() && LandStyles.precon(l) && ui.lands[l.name] == null) "" else landInUse(l.name) }
+    // On save every basic row carries its own style's printing (a match shows each copy's art); rows of one style join.
+    fun landRows(ed: DeckEdit.Edit): DeckEdit.Edit = if (landData == null) ed else ed.copy(cards = LandStyles.join(ed.cards.map { l ->
         if (!LandStyles.isType(l.name)) return@map l
-        val x = l.extra
-        if (x != null && x.str("set").isNotEmpty() && (x.str("number").isNotEmpty() || x.str("collector_number").isNotEmpty()) && x.str("id").isEmpty() && ui.lands[l.name] == null) return@map l
-        val id = landInUse(l.name); if (id.isEmpty()) l else l.copy(extra = (x?.deepCopy() ?: JsonObject()).apply { addProperty("id", id) }) })
+        val id = landOf(l); if (id.isEmpty()) l else l.copy(extra = (l.extra?.deepCopy() ?: JsonObject()).apply { addProperty("id", id) }) }))
+    // Rows of a land with no printing take the main style first, so a tap on the land bar and a drop of that style meet in one row.
+    fun ownLandRows(cards: List<DeckEdit.Line>, type: String): List<DeckEdit.Line> { val main = landInUse(type); if (main.isEmpty()) return cards
+        return LandStyles.join(cards.map { l -> if (l.name == type && LandStyles.rowId(l).isEmpty() && !LandStyles.precon(l)) l.copy(extra = (l.extra?.deepCopy() ?: JsonObject()).apply { addProperty("id", main) }) else l }) }
+    fun addLand(id: String, quiet: Boolean = false) { val st = landData?.byId?.get(id) ?: return
+        ui.edit = ui.edit.copy(cards = LandStyles.addRow(ownLandRows(ui.edit.cards, st.type), st.type, id), dirty = true)
+        b.pop = LandStyles.key(st.type, id); b.popAt = System.nanoTime()
+        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.SegmentTick)
+        if (!quiet) toast("+1 ${st.type}, ${st.set.uppercase()} ${st.num}") }
+    // A step by name or by a land row's key: a land row steps alone; a basic by name (the land bar, the hold menu) adds its main style.
+    fun stepAny(key: String, step: Int) {
+        val lk = LandStyles.parseKey(key)
+        when {
+            lk != null -> { ui.edit = ui.edit.copy(cards = LandStyles.stepRow(ui.edit.cards, lk.first, lk.second, step), dirty = true)
+                if (ui.landHeld == lk && ui.edit.cards.none { it.name == lk.first && LandStyles.rowId(it) == lk.second }) ui.landHeld = null }
+            step > 0 && LandStyles.isType(key) && landInUse(key).isNotEmpty() -> addLand(landInUse(key), quiet = true)
+            else -> stepCard(key, step)
+        }
+    }
+    fun nameOf(key: String) = LandStyles.parseKey(key)?.first ?: key
     val landActs = LandActs(
         type = { t -> if (t != ui.landType) { ui.landType = t; ui.landFocus = ""; ui.landLimit = 60 } },
         sort = { ui.landSort = it },
         focus = { id -> ui.landFocus = id; LandStyles.see(id) },
+        // Set as main: only the land bar's style (and its row first, so the saved deck opens with it). Nothing else switches.
         use = { id -> val st = landData?.byId?.get(id)
             if (st != null) { ui.lands = ui.lands + (st.type to id)
-                ui.edit = ui.edit.copy(cards = ui.edit.cards.map { l -> if (l.name == st.type) l.copy(extra = (l.extra?.deepCopy() ?: JsonObject()).apply { addProperty("id", id) }) else l }, dirty = true)
-                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.SegmentTick) } },
+                ui.edit = ui.edit.copy(cards = LandStyles.mainFirst(ui.edit.cards, st.type, id), dirty = true)
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.SegmentTick)
+                toast("Main ${st.type}: ${st.set.uppercase()} ${st.num}") } },
+        add = { id -> addLand(id) },
+        restyle = { id -> val h = ui.landHeld; val st = landData?.byId?.get(id)
+            if (h != null && st != null) { val n = ui.edit.cards.firstOrNull { it.name == h.first && LandStyles.rowId(it) == h.second }?.qty ?: 0
+                ui.edit = ui.edit.copy(cards = LandStyles.restyle(ui.edit.cards, h.first, h.second, id), dirty = true); ui.landHeld = null; ui.landFocus = id
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.Confirm); toast("$n ${st.type} now ${st.set.uppercase()} ${st.num}") } },
+        done = { ui.landHeld = null },
         craft = { id -> if (!ui.landBusy) { ui.landBusy = true
             scope.launch { val st = landData?.byId?.get(id)
                 runCatching { Progress.landCraft(id) }.onSuccess { LandStyles.see(id); haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.Confirm)
@@ -251,7 +281,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 scope.launch { val st = landData?.byId?.get(id)
                     runCatching { Progress.landStyle(id, true) }.onSuccess {
                         ui.lands = ui.lands + (type to id)
-                        ui.edit = ui.edit.copy(cards = ui.edit.cards.map { l -> if (l.name == type) l.copy(extra = (l.extra?.deepCopy() ?: JsonObject()).apply { addProperty("id", id) }) else l })
+                        ui.edit = ui.edit.copy(cards = LandStyles.join(ui.edit.cards.map { l -> if (l.name == type) l.copy(extra = (l.extra?.deepCopy() ?: JsonObject()).apply { addProperty("id", id) }) else l }))
                         toast("All your decks use ${if (st != null) st.setName + " " else ""}$type.") }
                         .onFailure { toast("That didn't go through. Try again.") }
                     ui.landBusy = false } } },
@@ -300,11 +330,11 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 } }
         },
         copy = { clipboard.setText(AnnotatedString(DeckEdit.copyList(ui.edit))); toast("Decklist copied.") },
-        step = ::stepCard,
-        open = { name -> onCard(CardPick(name, byName[name]?.o ?: fact(name)?.o ?: "", byName[name]?.pid ?: idOf(name).ifBlank { null }, "nonfoil")) },
+        step = ::stepAny,
+        open = { key -> val name = nameOf(key); onCard(CardPick(name, byName[name]?.o ?: fact(name)?.o ?: "", byName[name]?.pid ?: idOf(name).ifBlank { null }, "nonfoil")) },
         pack = onPack,
         // app.js playHoldMenu: Play's card actions (open it, its pack, its set, deck cover, artwork).
-        hold = { name -> haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); ui.holdName = name },
+        hold = { key -> haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); ui.holdName = nameOf(key) },
     )
     // app.js A.playEconToApp: the list as a new deck in My decks (Commander: its legendary single as commander).
     val toApp: () -> Unit = {
@@ -329,6 +359,10 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val inDeck = remember(e.cards) { HashMap<String, Int>().apply { e.cards.forEach { c -> merge(c.name, c.qty, Int::plus); val front = c.name.split(" // ")[0]; if (front != c.name) merge(front, c.qty, Int::plus) } } }
     fun countIn(n: String) = inDeck[n] ?: inDeck[n.split(" // ")[0]] ?: 0
     val groups = DeckEdit.groups(e.cards) { fact(it) }.map { (g, rows) -> BenchGroup(g, rows.map { l -> val fx = fact(l.name); val pr = planOf[l.name]; val card = fx?.card
+        // A basic is a row per style (mixed land styles): keyed by its land and printing, drawn in its own style's art.
+        if (landData != null && LandStyles.isType(l.name)) { val id = landOf(l); val st = landData?.byId?.get(id)
+            return@map BenchRow(l.name, l.qty, 0, "", if (id.isEmpty()) named(l.name, "art_crop") else LandStyles.image(id, "art_crop"), if (id.isEmpty()) named(l.name, "normal") else LandStyles.image(id),
+                "", emptyList(), st?.set ?: "", st?.num ?: "", "", key = LandStyles.key(l.name, LandStyles.rowId(l)), ref = l.name) }
         BenchRow(l.name, l.qty, pr?.miss ?: 0, pr?.seal ?: "", fx?.a?.ifBlank { null } ?: named(l.name, "art_crop"), byName[l.name]?.pimage ?: fx?.i?.ifBlank { null } ?: named(l.name, "normal"),
             fx?.mc ?: "", colorsOf(card), card.str("set"), card.str("collector_number"), card.str("rarity"),
             (cardRoles?.get(l.name) as? JsonArray)?.mapNotNull { it.takeIf { r -> r.isJsonPrimitive }?.asString } ?: emptyList(), cmc = fx?.m ?: -1.0) }) }
@@ -368,19 +402,27 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         tabs = listOf("cards" to "Cards", "engine" to "Power", "rules" to "Rules"), powerTab = "engine",
         shelves = if (ui.mode != "all") null else if (shelves.ready) shelves.shelves(::poolTile, { n -> countIn(n) > 0 }, "For this deck", "Most played in your colours", stamp = e.cards) else emptyList(),
         shelvesGen = shelves.gen,
-        landPicker = if (ui.mode != "lands") null else ({ LandPicker(LandPick(ui.landType, ui.landSort, ui.landFocus, ui.landLimit, ui.landBusy, landData?.list, landError, landOwned,
+        landPicker = if (ui.mode != "lands") null else ({ tileMod ->
+            val counts = HashMap<String, Int>().apply { for (l in e.cards) if (l.name == ui.landType) landOf(l).takeIf { it.isNotEmpty() }?.let { merge(it, l.qty, Int::plus) } }
+            val held = ui.landHeld?.takeIf { it.first == ui.landType }?.let { h -> e.cards.firstOrNull { it.name == h.first && LandStyles.rowId(it) == h.second } }?.let { LandHeld(landOf(it), it.qty) }
+            LandPicker(LandPick(ui.landType, ui.landSort, ui.landFocus, ui.landLimit, ui.landBusy, landData?.list, landError, landOwned,
             landInUse(ui.landType), listOf("c", "u").associateWith { k -> (state.get("wallet") as? JsonObject)?.get("seal_$k")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0 },
-            state.get("config") as? JsonObject, ::landNew), landActs) }),
+            state.get("config") as? JsonObject, ::landNew, counts, held), landActs, tileMod) }),
+        landHeld = if (ui.mode == "lands") ui.landHeld?.let { LandStyles.key(it.first, it.second) } else null,
         landNew = landGot.filter { (id, _) -> landNew(id) }.values.toSet(),
     )
     val benchActions = BenchActions(back = onBack, save = actions.save, step = actions.step, craft = actions.craftCopies, open = actions.open, more = actions.hold,
         // Drop a card on the hero: its art is this deck's art (saved decks; app.js playDropArt).
-        cover = { name -> val id = ui.edit.id
-            val image = fact(name)?.a?.ifBlank { null } ?: named(name, "art_crop")
+        cover = { key -> val id = ui.edit.id; val name = nameOf(key); val land = LandStyles.parseKey(key)?.second?.takeIf { it.isNotEmpty() }
+            val image = land?.let { LandStyles.image(it, "art_crop") } ?: fact(name)?.a?.ifBlank { null } ?: named(name, "art_crop")
             if (id == null) { ui.pendingCover = name to image; toast("$name is the deck art. It is saved with the deck.") } else {
                 scope.launch { val err = Workspace.setPlayDeckCover(context, id, JsonObject().apply { addProperty("name", name.take(200)); addProperty("image", image.take(500)) })
                     toast(err ?: "$name is the deck art.") } } },
         landHold = { t -> openLands(t) },
+        // Hold a land row in the deck and let go: the Lands tab opens on it, lit gold; a style picked there changes only that row.
+        landRow = { key -> LandStyles.parseKey(key)?.let { (t, id) -> openLands(t); ui.landHeld = t to id
+            val row = ui.edit.cards.firstOrNull { it.name == t && LandStyles.rowId(it) == id }; ui.landFocus = row?.let { landOf(it) } ?: ""
+            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress) } },
         menu = listOf(BenchMenuItem("Rename deck") { ui.sheet = "rename" }, BenchMenuItem("Change format") { ui.sheet = "format" },
             BenchMenuItem("Copy list", actions.copy), BenchMenuItem("Copy to My decks", toApp)), shelf = { k -> shelves.load(k) }, shelfMore = { k -> shelves.more(k) })
 
@@ -410,7 +452,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
             val set = f?.card?.get("set")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
             PlayDeckHold(ui, name, art, set, owned[name] ?: owned[name.split(" // ")[0]] ?: 0, toast,
                 onOpen = { tab -> ui.holdName = null; onCardTab(CardPick(name, byName[name]?.o ?: f?.o ?: "", byName[name]?.pid ?: idOf(name).ifBlank { null }, "nonfoil"), tab) },
-                onStep = { k -> stepCard(name, k); toast(if (k > 0) "Added to ${ui.edit.name.ifBlank { "your deck" }}." else "Taken out of ${ui.edit.name.ifBlank { "your deck" }}.") },
+                onStep = { k -> stepAny(name, k); toast(if (k > 0) "Added to ${ui.edit.name.ifBlank { "your deck" }}." else "Taken out of ${ui.edit.name.ifBlank { "your deck" }}.") },
                 onPack = { code -> ui.holdName = null; onPack(code) },
                 onArt = { ui.holdName = null; ArtPick.open("avatar", ArtPick.Card("mtg", f?.card?.get("id")?.asString ?: name, name, set.uppercase(), art, art)) },
                 onClose = { ui.holdName = null }) }

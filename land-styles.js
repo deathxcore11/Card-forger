@@ -75,3 +75,46 @@ export function deckLandStyle(type, rowId, owned, chosen = {}, starter = {}) {
   if (chosen[type] && owned.has(chosen[type])) return chosen[type];
   return starter[type] || '';
 }
+
+// Mixed styles in one deck (Randall 17 Nov, preview https://claude.ai/artifact/EzrgZVY4D9Qb8Y1rPkDyQ5): each style of a land is
+// its own deck row. The land bar's style is the deck's main one; a style dragged in or added lands as its own row; holding a row
+// and picking a style changes only that row. Nothing switches the other rows. Rows match on name and printing ('' for none).
+const sameLandRow = (r, type, id) => r.name === type && (r.id || '') === (id || '');
+export function addLandRow(rows = [], type, id = '', n = 1) {
+  const out = rows.map(r => ({...r})), row = out.find(r => sameLandRow(r, type, id));
+  if (row) row.qty += n; else out.push({name: type, qty: n, ...(id ? {id} : {})});
+  return out;
+}
+export function stepLandRow(rows = [], type, id = '', step = 1) {
+  if (step > 0) return addLandRow(rows, type, id, step);
+  const out = rows.map(r => ({...r})), row = out.find(r => sameLandRow(r, type, id));
+  if (row) row.qty += step;
+  return out.filter(r => r.qty > 0);
+}
+// One row to another style. A row already in that style takes its copies (the two join); a precon row's set and number go,
+// since the picked style is now its printing.
+export function restyleLandRow(rows = [], type, from = '', to = '') {
+  if (!to || (from || '') === to) return rows.map(r => ({...r}));
+  const out = rows.map(r => ({...r})), row = out.find(r => sameLandRow(r, type, from));
+  if (!row) return out;
+  const other = out.find(r => r !== row && sameLandRow(r, type, to));
+  if (other) { other.qty += row.qty; return out.filter(r => r !== row); }
+  delete row.set; delete row.number; delete row.collector_number;
+  row.id = to;
+  return out;
+}
+// The main style's row first among that land's rows, so a saved deck opens with the same main style (deckLandStyle reads the first).
+export function mainLandFirst(rows = [], type, id) {
+  const i = rows.findIndex(r => sameLandRow(r, type, id)), j = rows.findIndex(r => r.name === type);
+  if (i < 0 || j < 0 || i === j) return rows.map(r => ({...r}));
+  const out = rows.map(r => ({...r})), [row] = out.splice(i, 1);
+  out.splice(j, 0, row);
+  return out;
+}
+// Rows of the same land and printing as one row (after a save gives id-less rows the main style).
+export function joinLandRows(rows = []) {
+  const out = [];
+  for (const r of rows) { const same = isLandType(r.name) && r.id ? out.find(x => x.name === r.name && x.id === r.id && !x.board === !r.board) : null;
+    if (same) same.qty += r.qty; else out.push({...r}); }
+  return out;
+}

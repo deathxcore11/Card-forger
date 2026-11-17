@@ -2,7 +2,7 @@
 // on the real baked files (data/land-styles.json, data/mtg-boosters/dmu.json + its baked cards).
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {landStyleList, ownedLandStyles, sortLandStyles, landSlotPlan, pickSpecialLand, landCraftSeal, deckLandStyle, LAND_TYPES} from './land-styles.js';
+import {landStyleList, ownedLandStyles, sortLandStyles, landSlotPlan, pickSpecialLand, landCraftSeal, deckLandStyle, LAND_TYPES, addLandRow, stepLandRow, restyleLandRow, mainLandFirst, joinLandRows} from './land-styles.js';
 import {drawMtgBooster, bakedBoosterCard} from './mtg-boosters.js';
 import {progressRoute} from './play-econ-route.js';
 
@@ -107,5 +107,24 @@ assert.equal(pickSpecialLand(list, new Map(list.map(s => [s.id, {}]))), null);
   await call('deck', {id: decks[0].id, name: 'Mine', format: 'Standard', cards: [{name: 'Forest', qty: 16, id: reg.id}, {name: 'Llanowar Elves', qty: 4, id: 'nope'}]});
   assert.equal(calls.filter(c => c[0] === 'play_save_deck').at(-1)[1].p_cards[0].id, reg.id, 'saving a deck keeps the land style');
   assert.equal(calls.filter(c => c[0] === 'play_save_deck').at(-1)[1].p_cards[1].id, undefined, 'bad ids are dropped');
+}
+// Mixed styles in one deck (Randall 17 Nov): each style its own row; the bar's style first; restyling one row leaves the others.
+{
+  let rows = [{name: 'Forest', qty: 16, id: 'a'}, {name: 'Plains', qty: 8}];
+  rows = addLandRow(rows, 'Forest', 'b');
+  assert.deepEqual(rows.map(r => [r.name, r.id || '', r.qty]), [['Forest', 'a', 16], ['Plains', '', 8], ['Forest', 'b', 1]], 'a dragged style is its own row');
+  rows = stepLandRow(rows, 'Forest', 'b', 1); assert.equal(rows.find(r => r.id === 'b').qty, 2, '+ steps that row only');
+  assert.equal(rows.find(r => r.id === 'a').qty, 16);
+  rows = stepLandRow(stepLandRow(rows, 'Forest', 'b', -1), 'Forest', 'b', -1); assert.ok(!rows.some(r => r.id === 'b'), 'the row goes at 0');
+  rows = addLandRow(rows, 'Forest', 'c', 3);
+  assert.equal(mainLandFirst(rows, 'Forest', 'c')[0].id, 'c', 'the main style leads its land');
+  assert.deepEqual(mainLandFirst(rows, 'Forest', 'c').map(r => r.qty), [3, 16, 8], 'nothing else changes');
+  const re = restyleLandRow(rows, 'Forest', 'a', 'd');
+  assert.deepEqual(re.map(r => [r.id || '', r.qty]), [['d', 16], ['', 8], ['c', 3]], 'only the held row changes');
+  assert.deepEqual(restyleLandRow(rows, 'Forest', 'a', 'c').map(r => [r.id || '', r.qty]), [['', 8], ['c', 19]], 'into a style already in the deck: they join');
+  const precon = restyleLandRow([{name: 'Plains', qty: 7, set: 'fdn', number: '273'}], 'Plains', '', 'e');
+  assert.deepEqual(precon, [{name: 'Plains', qty: 7, id: 'e'}], 'a precon row takes the picked style');
+  assert.deepEqual(joinLandRows([{name: 'Forest', qty: 2, id: 'a'}, {name: 'Elf', qty: 1, id: 'x'}, {name: 'Elf', qty: 1, id: 'x'}, {name: 'Forest', qty: 3, id: 'a'}]).map(r => [r.name, r.qty]),
+    [['Forest', 5], ['Elf', 1], ['Elf', 1]], 'same land and style join; other cards are left alone');
 }
 console.log('land styles ok');

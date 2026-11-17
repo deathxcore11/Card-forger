@@ -94,6 +94,51 @@ object LandStyles {
     fun got(styles: List<JsonObject>): Map<String, String> =
         styles.filter { isType(it.s("n")) && Regex("^land(open|craft)").containsMatchIn(it.s("src")) }.associate { it.s("id") to it.s("n") }
 
+    // ---- mixed styles in one deck (Randall 17 Nov, preview https://claude.ai/artifact/EzrgZVY4D9Qb8Y1rPkDyQ5): land-styles.js addLandRow and
+    // the rest. Each style of a land is its own deck row; the land bar's style is the deck's main one; picking a style for a held row
+    // changes only that row. Rows match on name and printing ("" for none).
+
+    /** A land row's key on the Bench ("land:Forest:<id>"), so a step, a drop or a hold reaches that one row. */
+    fun key(type: String, id: String) = "land:$type:$id"
+    fun parseKey(k: String): Pair<String, String>? = if (!k.startsWith("land:")) null else k.removePrefix("land:").split(':', limit = 2).takeIf { it.size == 2 && isType(it[0]) }?.let { it[0] to it[1] }
+    fun rowId(l: DeckEdit.Line) = l.extra?.s("id") ?: ""
+    /** A precon row: its decklist's set and number, no style picked yet. */
+    fun precon(l: DeckEdit.Line): Boolean { val x = l.extra ?: return false
+        return rowId(l).isEmpty() && x.s("set").isNotEmpty() && (x.s("number").isNotEmpty() || x.s("collector_number").isNotEmpty()) }
+    private fun same(l: DeckEdit.Line, type: String, id: String) = l.name == type && rowId(l) == id
+    fun addRow(cards: List<DeckEdit.Line>, type: String, id: String, n: Int = 1): List<DeckEdit.Line> {
+        val i = cards.indexOfFirst { same(it, type, id) }
+        return if (i >= 0) cards.mapIndexed { j, l -> if (j == i) l.copy(qty = l.qty + n) else l }
+        else cards + DeckEdit.Line(type, n, if (id.isEmpty()) null else JsonObject().apply { addProperty("id", id) })
+    }
+    fun stepRow(cards: List<DeckEdit.Line>, type: String, id: String, step: Int): List<DeckEdit.Line> {
+        if (step > 0) return addRow(cards, type, id, step)
+        val i = cards.indexOfFirst { same(it, type, id) }
+        return if (i < 0) cards else cards.mapIndexed { j, l -> if (j == i) l.copy(qty = l.qty + step) else l }.filter { it.qty > 0 }
+    }
+    /** One row to another style; a row already in that style takes its copies (the two join); a precon row's set and number go. */
+    fun restyle(cards: List<DeckEdit.Line>, type: String, from: String, to: String): List<DeckEdit.Line> {
+        if (to.isEmpty() || from == to) return cards
+        val i = cards.indexOfFirst { same(it, type, from) }; if (i < 0) return cards
+        val j = cards.indexOfFirst { same(it, type, to) }
+        if (j >= 0) return cards.mapIndexedNotNull { k, l -> when (k) { i -> null; j -> l.copy(qty = l.qty + cards[i].qty); else -> l } }
+        val x = (cards[i].extra?.deepCopy() ?: JsonObject()).apply { remove("set"); remove("number"); remove("collector_number"); addProperty("id", to) }
+        return cards.mapIndexed { k, l -> if (k == i) l.copy(extra = x) else l }
+    }
+    /** The main style's row first among that land's rows, so the saved deck opens with the same main style ([inDeck] reads the first). */
+    fun mainFirst(cards: List<DeckEdit.Line>, type: String, id: String): List<DeckEdit.Line> {
+        val i = cards.indexOfFirst { same(it, type, id) }; val j = cards.indexOfFirst { it.name == type }
+        if (i < 0 || j < 0 || i == j) return cards
+        val out = cards.toMutableList(); val row = out.removeAt(i); out.add(j, row); return out
+    }
+    /** Rows of the same land and style as one. */
+    fun join(cards: List<DeckEdit.Line>): List<DeckEdit.Line> {
+        val out = ArrayList<DeckEdit.Line>()
+        for (l in cards) { val id = rowId(l); val k = if (isType(l.name) && id.isNotEmpty()) out.indexOfFirst { same(it, l.name, id) } else -1
+            if (k >= 0) out[k] = out[k].copy(qty = out[k].qty + l.qty) else out += l }
+        return out
+    }
+
     // ---- loading, kept on the device
 
     private val _data = MutableStateFlow<Data?>(null); val data: StateFlow<Data?> = _data

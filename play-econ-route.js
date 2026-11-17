@@ -10,7 +10,7 @@ import {rewardSet, setFormats} from './play-econ-sets.js';
 import {isBasicLand, starterGrant, sealTrackBonus, packContentsRow, cardDelta, RARITY_SEAL, FORGE_STEPS, forgeRatio, holoCost, preconQuote, mtgjsonCardDelta, mtgjsonDeckRows, deckShortfall, ownedByName, isCollectorPack, collectorOdds, collectorPicks, collectorSource, godPackOdds} from './play-econ-rules.js';
 import {RETIRED_STARTER_NAMES} from './play-starter-deck.js';
 import {weeklySecretLairOffers, secretLairOfferPrice, weeklySecretLair, secretLairPrice, secretLairLabel, secretLairRef, secretLairCardDelta, secretLairStyle, pickSecretLairStyle} from './play-secret-lair.js';
-import {landStyleList, ownedLandStyles, landSlotPlan, pickSpecialLand, landSpecialOdds, landCraftSeal, landStyleRow, landStyleImage, isLandType} from './land-styles.js';
+import {landStyleList, ownedLandStyles, landSlotPlan, pickSpecialLand, landSpecialOdds, landCraftSeal, landStyleRow, landStyleImage, isLandType, joinLandRows} from './land-styles.js';
 import {STORY_DEEDS, STORY_ACT_DEEDS, storyDeedsEarned, keyFeatsMissing} from './story-deeds.js';
 import {rerollUsed, weeklyRerollUsed, ACHIEVEMENTS, achievementRows, achievementReward, achievementRef, questRows, questReward, loginStamp, rewardDelta, matchCounters, playDay, playWeek, achievementsPayload} from './play-achievements.js';
 
@@ -566,7 +566,7 @@ export async function progressRoute(request, env, {verifyBearer, fetcher = fetch
       if (body.all === true) {
         for (const d of (await state()).decks || []) {
           if (!(d.cards || []).some(r => r.name === st.type && r.id !== st.id)) continue;
-          await rpc(env, 'play_save_deck', {p_user: uid, p_id: d.id, p_name: d.name, p_format: d.format || '', p_cards: d.cards.map(r => r.name === st.type ? {...r, id: st.id} : r), p_delete: false}, fetcher).catch(() => null);
+          await rpc(env, 'play_save_deck', {p_user: uid, p_id: d.id, p_name: d.name, p_format: d.format || '', p_cards: joinLandRows(d.cards.map(r => r.name === st.type ? {...r, id: st.id} : r)), p_delete: false}, fetcher).catch(() => null);
         }
       }
       return json({styles: out?.styles || (await looks())?.styles || [], state: await state()});
