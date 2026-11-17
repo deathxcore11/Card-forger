@@ -1858,3 +1858,9 @@ button.pl-bar-vs{cursor:pointer}
 .play-library-actions .btn.small{padding-inline:12px;min-height:44px}
 @media(max-width:700px){.pl-deckbar{border-radius:18px 18px 0 0;margin-inline:-4px}}
 .play-library-actions .pl-invite-pill{width:44px;padding:0;display:inline-grid;place-items:center}.play-library-actions .pl-invite-pill svg{margin:0;width:20px;height:20px}
+/* 0.4.95 Trunk on a phone (brief 3): one card size smaller, as in the app; the default shows three across, Large two. */
+@media(max-width:599px){
+ :root:not([data-grid-size=large]) .pe-coll-view .pe-coll-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 8px}
+ :root[data-grid-size=large] .pe-coll-view .pe-coll-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+ :root:not([data-grid-size=large]) .pe-coll-view .pe-lot .lot-name{font-size:12px}
+}

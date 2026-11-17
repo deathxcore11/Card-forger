@@ -416,3 +416,33 @@ details.ds-note-tag{border-radius:14px}details.ds-note-tag>summary{cursor:pointe
 .ds-note-pop p{margin:0 0 4px;color:var(--text);font-weight:400}
 @media(max-width:700px){.ds-actions .ds-primary.btn{padding-inline:10px}.ds-actions .ds-primary .cs-plate-label{gap:8px;letter-spacing:.06em}}
 .ds-hero .ds-note-tag{width:max-content;max-width:100%;flex:none}@media(max-width:700px){.ds-actions .ds-primary.btn{padding-inline:14px}}
+/* 0.4.95 deck page Cards tab on phones (brief 4): a low curve, then one control line (search, group, add) and one
+   line of show chips with the deck view at its end, so a row of cards starts above the fold. Every control stays. */
+@media(max-width:700px){
+ .deck-body[data-tab=cards] .deck-curve{height:56px;margin-top:10px;max-width:none}
+ .deck-body[data-tab=cards] .deck-curve-bar em{font-size:10px}
+ .deck-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin:10px 0 8px}
+ .deck-toolbar>input[type=search]{grid-column:1;min-width:0;min-height:44px}
+ .deck-toolbar>.deck-group{grid-column:2;max-width:120px;min-height:44px}
+ .deck-toolbar>.deck-add-toggle{grid-column:3;min-height:44px;padding-inline:12px;white-space:nowrap}
+ .deck-toolbar>.deck-chips{grid-column:1/3;display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;min-width:0}
+ .deck-toolbar>.deck-chips .deck-chip{flex:none;min-height:40px;padding-inline:12px}
+ .deck-toolbar>.deck-view-toolbar{grid-column:3;justify-self:end;margin:0}
+ .deck-toolbar>.deck-view-toolbar>.small{display:none}
+ .deck-toolbar .deck-view-switch button{width:38px;min-height:40px;padding:0}
+}
+@media(max-width:700px){
+ .deck-toolbar>input[type=search],.deck-toolbar>.deck-group,.deck-toolbar>.deck-add-toggle{grid-row:1}
+ .deck-toolbar>.deck-chips,.deck-toolbar>.deck-view-toolbar{grid-row:2}
+ .deck-toolbar>.deck-add-toggle{width:auto}
+ .deck-toolbar .deck-view-switch{padding:2px;gap:0}
+ .deck-toolbar .deck-view-switch button{width:34px}
+}
+@media(max-width:700px){.deck-toolbar>.deck-chips{grid-column:1}.deck-toolbar>.deck-view-toolbar{grid-column:2/4}}
+@media(max-width:700px){.deck-body[data-tab=cards] details.group>.list.display-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}}
+@media(max-width:700px){.deck-body[data-tab=cards] .deck-curve{height:40px;margin-top:4px}.deck-body[data-tab=cards] .deck-curve-bar{min-height:36px}.deck-body[data-tab=cards]{margin-top:0;padding-top:0}.deck-hero~nav.tabs,.ds-head~nav.tabs{margin-bottom:4px}.deck-body[data-tab=cards] details.group>summary{margin-top:4px;padding-block:4px}}
+@media(max-width:700px){.deck-body[data-tab=cards] .lot.deck-row .lot-info{display:none}.deck-body[data-tab=cards]{display:flex;flex-direction:column}.deck-body[data-tab=cards]>*{min-width:0}.deck-body[data-tab=cards]>.deck-curve{order:9;margin-top:14px}}
+@media(max-width:700px){.deck-body[data-tab=cards] .deck-toolbar{margin:4px 0 2px;row-gap:6px}.deck-body[data-tab=cards] details.group>summary{min-height:32px;padding-block:0;margin-top:0}.deck-body[data-tab=cards] .deck-viewer{margin-top:0}}
+@media(max-width:700px){.ds-head{margin-top:10px}.deck-hero~nav.tabs,.ds-head~nav.tabs{margin-top:10px}}
+@media(max-width:700px){.deck-body[data-tab=cards] .lot.deck-row .lot-side{margin-top:2px}.deck-body[data-tab=cards] details.group{margin-bottom:0}.ds-hero .deck-hero-id{gap:4px}}
+@media(max-width:700px){.deck-body[data-tab=cards] .deck-viewer{gap:2px;row-gap:2px}.deck-body[data-tab=cards] details.group>.list{padding-bottom:0;margin-bottom:0}.deck-body[data-tab=cards] details.group+details.group{margin-top:0}}
