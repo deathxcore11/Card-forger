@@ -1690,11 +1690,11 @@ internal object StageModes {
     fun index(mode: String) = ALL.indexOfFirst { it.first == mode }.coerceAtLeast(0)
 }
 
-/** The quest card's turn (Hand brief 5): the daily quests not yet claimed, then the weekly ones not yet done. PlayMath.quests, no new data. */
+/** The quest card's turn (Hand brief 5): the daily quests not yet claimed, then the weekly ones. PlayMath.quests, no new data. */
 internal object QuestTurn {
     data class Item(val weekly: Boolean, val row: PlayMath.QuestRow)
     fun items(q: PlayMath.Quests, only: Boolean? = null): List<Item> =
-        (q.daily.filter { !it.claimed }.map { Item(false, it) } + q.weekly.filter { !it.done }.map { Item(true, it) }).filter { only == null || it.weekly == only }
+        (q.daily.filter { !it.claimed }.map { Item(false, it) } + q.weekly.filter { !it.claimed }.map { Item(true, it) }).filter { only == null || it.weekly == only }
     fun first(items: List<Item>, weekly: Boolean) = items.indexOfFirst { it.weekly == weekly }
 }
 
@@ -1879,8 +1879,9 @@ private fun QuestCard(d: PlayHomeData, act: PlayHomeActions, modifier: Modifier,
                 if (only != true) QuestTab(dTab, !weekly, gold, only == null) { QuestTurn.first(items, false).takeIf { it >= 0 }?.let { at = it } }
                 if (only != false && q.weekly.isNotEmpty()) QuestTab(wTab, weekly, blue, only == null) { QuestTurn.first(items, true).takeIf { it >= 0 }?.let { at = it } }
             }
-            if (item != null && !item.weekly) {
-                if (item.row.done) GoldCta("Claim") { act.claim("daily", item.row.quest.id) } else Rewards(PlayMath.questReward(item.row.quest, s.get("config") as? JsonObject), ink = P.Ink)
+            // The reward the rules give for this quest (dailies and weeklies alike), or its Claim once done.
+            if (item != null) {
+                if (item.row.done) GoldCta("Claim") { act.claim(if (item.weekly) "weekly" else "daily", item.row.quest.id) } else Rewards(PlayMath.questReward(item.row.quest, s.get("config") as? JsonObject), ink = P.Ink)
             }
         }
         if (item != null) {
@@ -1890,7 +1891,7 @@ private fun QuestCard(d: PlayHomeData, act: PlayHomeActions, modifier: Modifier,
                 Text("${item.row.have} / ${item.row.quest.need}", style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = Color(0xFFC8CCD6)))
             }
             Steps(item.row.have, item.row.quest.need, accent, gold = !item.weekly)
-        } else Text(if (only == true) "Every weekly quest done" else "All done for today", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = P.Ink),
+        } else Text(if (only == true) "Every weekly quest claimed" else "All done for today", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = P.Ink),
             modifier = Modifier.padding(vertical = 6.dp))
     }
 }
