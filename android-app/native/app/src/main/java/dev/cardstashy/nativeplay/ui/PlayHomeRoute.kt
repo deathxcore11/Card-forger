@@ -31,7 +31,7 @@ internal const val SITE_PLAY = "https://cardstashy.com/#play"
  * them. Signed out, the old home with its sign-in panel. Pages not ported yet open the site's own.
  */
 @Composable
-fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuickPlay() }, onCollection: () -> Unit, onSignIn: () -> Unit, onWeb: (String) -> Unit, onTrunk: () -> Unit = {}, onDecks: () -> Unit = {}, onStory: () -> Unit = {}, onAchievements: (String?) -> Unit = {}, onShop: (tab: String, set: String?) -> Unit = { _, _ -> }) {
+fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuickPlay() }, onCollection: () -> Unit, onSignIn: () -> Unit, onWeb: (String) -> Unit, onTrunk: () -> Unit = {}, onDecks: () -> Unit = {}, onStory: () -> Unit = {}, onAchievements: (String?) -> Unit = {}, onShop: (tab: String, set: String?) -> Unit = { _, _ -> }, onQuickWith: (String) -> Unit = { onLobby("quick") }) {
     val session by Account.session.collectAsState()
     val profile by Account.profile.collectAsState()
     val state by Progress.state.collectAsState()
@@ -74,6 +74,16 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
         // L1: with no picture, or a theme that does not draw it, the opening screen has nothing more to wait for here.
         if (value == null || !(AppSettings.glass || AppSettings.theme == "aura")) HomeStart.picture.value = true
     }
+    // The upright home's stage (polish brief 1): the deck last worked on, as the opening screen's fan picks it.
+    val facts by dev.cardstashy.nativeplay.play.CardFacts.cards.collectAsState()
+    val workspace by androidx.compose.runtime.produceState<JsonObject?>(null, session?.userId) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { dev.cardstashy.nativeplay.account.Decks.fullCopy(context)?.let { com.google.gson.JsonParser.parseString(it).asJsonObject } }.getOrNull() }
+    }
+    val lastDeck = androidx.compose.runtime.remember(workspace) { Opening.lastDeck(workspace) }
+    LaunchedEffect(lastDeck) { lastDeck?.let { d -> dev.cardstashy.nativeplay.play.CardFacts.wantNames(listOfNotNull(d.get("commander")?.takeIf { it.isJsonPrimitive }?.asString) +
+        ((d.get("cards") as? JsonArray)?.take(12)?.mapNotNull { (it as? JsonObject)?.get("name")?.takeIf { n -> n.isJsonPrimitive }?.asString }.orEmpty())) } }
+    val homeDeck = androidx.compose.runtime.remember(lastDeck, facts) { lastDeck?.let { homeDeckOf(it) } }
     var opener by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<PackResult?>(null) }
     val s = state
     // E6a: how long Play Home took from opening to its first drawn frame with the binder in hand (one log line per open).
@@ -117,11 +127,12 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
         // A deck tile (and the Thor's Open deck) opens that deck on Play Decks.
         deck = { id -> DecksOpen.ask.value = DecksAsk.Deck(id); onDecks() },
         set = { onShop("sets", it) },
+        play = { onQuickWith(it) },
     )
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
     // .pack-dialog::backdrop: #05060be6 over a 16 px blur of the page.
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().then(if (opener != null) Modifier.blur(16.dp) else Modifier)) {
-    PlayHome(PlayHomeData(s, rules, story, PlayMath.playDay(tz), session?.userId ?: "", ambient, deeds),
+    PlayHome(PlayHomeData(s, rules, story, PlayMath.playDay(tz), session?.userId ?: "", ambient, deeds, homeDeck),
         top = { TopBarItems(Mode.PLAY, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onCollection, onProfile = onSignIn) },
         act = act,
         nav = { PlayNav(PlayTab.HOME, { t -> when (t) { PlayTab.HOME -> {}; PlayTab.TRUNK -> onTrunk(); PlayTab.DECKS -> onDecks(); PlayTab.TROPHIES -> onAchievements(null); PlayTab.SHOP -> onShop("sets", null) } }) })

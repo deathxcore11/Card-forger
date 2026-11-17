@@ -415,7 +415,8 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(warmUser) { dev.cardstashy.nativeplay.play.RandomBuild.warm(lobbies.values.firstOrNull()?.format ?: "Commander", warmUser) }
             dev.cardstashy.nativeplay.ui.PlayHomeRoute(
                 onQuickPlay = { go(Screen.Decks) }, onLobby = { if (LOBBY_LIVE) go(Screen.Lobby(it)) else go(Screen.Decks) }, onCollection = { go(Screen.Collection) },
-                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) }, onAchievements = { go(Screen.Achievements(it)) }, onStory = { go(Screen.Story()) }, onShop = { t, set -> go(Screen.Shop(t, set)) })
+                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) }, onAchievements = { go(Screen.Achievements(it)) }, onStory = { go(Screen.Story()) }, onShop = { t, set -> go(Screen.Shop(t, set)) },
+                onQuickWith = { id -> if (LOBBY_LIVE) { lobbies.getOrPut("quick") { dev.cardstashy.nativeplay.ui.LobbyModel("quick") }.quickWith(id); go(Screen.Lobby("quick")) } else go(Screen.Decks) })
         }
         Screen.Trunk -> {
             LaunchedEffect(Unit) { activity.inGame(false) }

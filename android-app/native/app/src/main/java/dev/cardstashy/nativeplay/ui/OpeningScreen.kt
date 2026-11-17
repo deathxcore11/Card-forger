@@ -101,17 +101,19 @@ object Opening {
      * homeDeckActivity.mtg row whose deck is still there), else the first deck with cards; its first [max] different names that are
      * not basic lands. Empty when there is no deck. Never a network call.
      */
-    fun lastDeckNames(workspace: JsonObject?, max: Int = 5): List<String> {
+    /** The deck last worked on: the newest in the account's home activity, else the first deck with cards. */
+    fun lastDeck(workspace: JsonObject?): JsonObject? {
         val decks = (workspace?.get("decks") as? com.google.gson.JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty()
         fun id(d: JsonObject) = d.get("id")?.takeIf { it.isJsonPrimitive }?.asString
         val history = ((workspace?.get("homeDeckActivity") as? JsonObject)?.get("mtg") as? com.google.gson.JsonArray)
             ?.mapNotNull { it as? JsonObject }?.mapNotNull { r -> val i = r.get("id")?.takeIf { it.isJsonPrimitive }?.asString; val at = r.get("at")?.takeIf { it.isJsonPrimitive }?.asString
                 if (i != null && at != null) i to at else null }?.sortedByDescending { it.second }.orEmpty()
-        fun names(d: JsonObject) = (d.get("cards") as? com.google.gson.JsonArray)?.mapNotNull { (it as? JsonObject)?.get("name")?.takeIf { n -> n.isJsonPrimitive }?.asString }
-            ?.filter { it.isNotBlank() && it !in BASICS }?.distinct().orEmpty()
-        val deck = history.firstNotNullOfOrNull { (i, _) -> decks.firstOrNull { id(it) == i } } ?: decks.firstOrNull { names(it).isNotEmpty() }
-        return deck?.let { names(it).take(max) }.orEmpty()
+        return history.firstNotNullOfOrNull { (i, _) -> decks.firstOrNull { id(it) == i } } ?: decks.firstOrNull { names(it).isNotEmpty() }
     }
+    private fun names(d: JsonObject) = (d.get("cards") as? com.google.gson.JsonArray)?.mapNotNull { (it as? JsonObject)?.get("name")?.takeIf { n -> n.isJsonPrimitive }?.asString }
+        ?.filter { it.isNotBlank() && it !in BASICS }?.distinct().orEmpty()
+    fun lastDeckNames(workspace: JsonObject?, max: Int = 5): List<String> = lastDeck(workspace)?.let { names(it).take(max) }.orEmpty()
+
 
     private val BASICS = setOf("Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes",
         "Snow-Covered Plains", "Snow-Covered Island", "Snow-Covered Swamp", "Snow-Covered Mountain", "Snow-Covered Forest")

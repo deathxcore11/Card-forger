@@ -136,7 +136,8 @@ class ShotTest {
         val state = JsonParser.parseString(fixture.readText()).asJsonObject
         val rules = dev.cardstashy.nativeplay.play.PlayRules(JsonParser.parseString(javaClass.classLoader!!.getResource("play-rules.json")!!.readText()).asJsonObject)
         val top = @Composable { TopBarItems(Mode.PLAY, null, "Randall", unread = true, onSwitch = {}, onProfile = {}) }
-        dev.cardstashy.nativeplay.ui.PlayHome(dev.cardstashy.nativeplay.ui.PlayHomeData(state, rules, dev.cardstashy.nativeplay.play.PlayMath.StoryHome(1, 0, false), "2026-11-03", ambient = AMBIENT),
+        dev.cardstashy.nativeplay.ui.PlayHome(dev.cardstashy.nativeplay.ui.PlayHomeData(state, rules, dev.cardstashy.nativeplay.play.PlayMath.StoryHome(1, 0, false), "2026-11-03", ambient = AMBIENT,
+            deck = dev.cardstashy.nativeplay.ui.HomeDeck("shot", "Mono-White Auras", "Standard", 60, AMBIENT)),
             top = top, nav = { PlayNav(null, {}) })
     }
 

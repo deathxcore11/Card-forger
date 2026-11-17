@@ -211,6 +211,12 @@ class LobbyModel(style: String) {
         quickBusy = false; quickError = null; quickMatch = null
         inspectOpen = false; pendingDeck = deckId
     }
+    /** Play home's Play (polish brief 1): this deck into Quick Play at once; if it can't play, the lobby stays open on it. */
+    var autoStart by mutableStateOf(false)
+    fun quickWith(deckId: String) {
+        style = "quick"; quickBusy = false; quickError = null; quickMatch = null
+        inspectOpen = false; pendingDeck = deckId; autoStart = true
+    }
     /** updateDraft: any change retires the previous preview. */
     fun updateDraft(name: String = draftName, text: String = draftText) {
         if (name != draftName || text != draftText) { draftName = name; draftText = text; importTicket++; candidate = null; importBusy = false; importStatus = "idle"; error = null; warnings = emptyList(); unresolved = emptyList() }
@@ -333,7 +339,9 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         val id = model.pendingDeck ?: return@LaunchedEffect
         val d = decks.firstOrNull { it.id == id } ?: return@LaunchedEffect
         model.pendingDeck = null
-        if (d.format != model.format) { model.error = "Choose a ${model.format} deck. Other formats remain available in Decks."; return@LaunchedEffect }
+        // Quick Play plays the deck's own format (pickFormat All), so a deck from Play home seats whatever its format.
+        if (model.quick && d.format != model.format && d.format in LIVE_FORMATS) model.configureFormat(d.format)
+        if (d.format != model.format) { model.autoStart = false; model.error = "Choose a ${model.format} deck. Other formats remain available in Decks."; return@LaunchedEffect }
         model.put("player", SeatDeck(d.raw.deepCopy().apply { if (!has("id")) addProperty("id", d.id); addProperty("format", d.format) }, "saved"))
         model.inspected = "player"; model.error = null
     }
@@ -544,6 +552,8 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), cpu.raw, m.difficulty, quick = false))
     }
 
+    // Play home's Play: once its deck is seated, press Play for it (start() keeps today's checks and messages).
+    LaunchedEffect(m.player, m.autoStart) { if (m.autoStart && m.player != null) { m.autoStart = false; start() } }
     // 0.4.59 T8b, two screens: the 5 by 5 grid is on the bottom screen, which cannot take focus, so its ring is an index walked here
     // (QuickPick.nextOnPage), the chips are walked by Left and Right once Up reaches them, and LT/RT turn the page of 25.
     val dualQuick = quickOnly && DualScreen.active
@@ -1768,4 +1778,10 @@ private fun TopTile(label: String, modifier: Modifier, content: @Composable () -
     Column(modifier.clip(shape).background(Color(0xC7121620)).border(1.dp, Color(0x61E3C070), shape).padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label.uppercase(), style = sans(10f, FontWeight.ExtraBold, Gold, spacing = 1.4f)); content()
     }
+}
+
+/** Play home's stage deck (polish brief 1): the lobby's own cover rule, so the home and Quick Play show the same art. */
+internal fun homeDeckOf(raw: JsonObject): HomeDeck {
+    val d = SeatDeck(raw, "saved")
+    return HomeDeck(d.id, d.name, d.format, d.count + (if (d.commander.isNotBlank()) 1 else 0).let { if (d.commander.isNotBlank() && rowNames(raw).contains(d.commander)) 0 else it }, coverOf(raw))
 }

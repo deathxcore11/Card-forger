@@ -47,6 +47,8 @@ object HomeTest {
     /** How many groups below Story show: 0 = none (C1, D1-D4 show only their one piece) … 4 = all. */
     /** JVM tests still compose every section, set aside or not. */
     internal var allForTests = false
+    /** Tests of the old scrolling home (HomeScrollTest): the upright page as it was before polish brief 1. */
+    internal var classic = false
     val groups get() = if (allForTests) 4 else minOf(PROVEN, when (variant) { "C1", "D1", "D2", "D3", "D4" -> 0; "C2" -> 1; "C3" -> 2; "C4" -> 3; else -> 4 })
     /** D1 the 7-day calendar as it is, D2 the calendar in plain rows, D3 the daily quests only, D4 Achievements only. */
     val piece get() = variant.takeIf { it.startsWith("D") }

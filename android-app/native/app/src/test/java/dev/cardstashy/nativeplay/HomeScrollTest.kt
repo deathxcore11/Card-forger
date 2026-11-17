@@ -26,7 +26,7 @@ import java.io.File
 @Config(sdk = [35])
 class HomeScrollTest {
     @get:Rule val rule = createComposeRule()
-    init { dev.cardstashy.nativeplay.ui.HomeTest.allForTests = true }
+    init { dev.cardstashy.nativeplay.ui.HomeTest.allForTests = true; dev.cardstashy.nativeplay.ui.HomeTest.classic = true }
 
     @Test @Config(qualifiers = "w868dp-h964dp-xxhdpi") fun inner() = run("inner")
     @Test @Config(qualifiers = "w390dp-h860dp-xxhdpi") fun cover() = run("cover")
