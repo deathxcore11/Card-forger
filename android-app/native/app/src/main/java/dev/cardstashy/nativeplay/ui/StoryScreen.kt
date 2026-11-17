@@ -268,6 +268,8 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
     }
     // When the act opens, the battle you are on is scrolled fully into view (review of 736cbc54).
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    // Two panes: room after the last item, just enough that the list can rest with a whole row at its top (review of ceb91b17).
+    var tail by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
     LaunchedEffect(currentId, data != null) {
         val key = currentId ?: return@LaunchedEffect
         androidx.compose.runtime.snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > 0 }
@@ -296,6 +298,11 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
                 if (start >= pos || (end != null && end <= now2.viewportEndOffset - now2.afterContentPadding)) break
                 start++
             }
+            // At the end of the list the scroll clamps and the top lands mid-row: add the missing room below and scroll again.
+            if (start > 0) {
+                val gap = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == start }?.offset ?: 0
+                if (gap > 0) { tail = gap; androidx.compose.runtime.withFrameNanos { }; listState.scrollToItem(start) }
+            }
             return@LaunchedEffect
         }
         val item = info.visibleItemsInfo.firstOrNull { it.key == key }
@@ -319,6 +326,7 @@ fun StoryActPage(a: PlayRules.Act, data: JsonObject?, p: StoryLogic.Progress, on
             open.forEach { b -> item(b["id"].asString) { row(b, strip) } }
             tease?.let { item("tease") { SecretTease(it) } }
             item("purse") { Box(Modifier.padding(top = 4.dp)) { purse() } }
+            if (tail > 0) item("tail") { androidx.compose.foundation.layout.Spacer(Modifier.height(with(androidx.compose.ui.platform.LocalDensity.current) { tail.toDp() })) }
         }
     } else Box(Modifier.fillMaxSize()) {
         // Phone: the act's art bleeds behind a short header, then the rows.
