@@ -344,7 +344,7 @@ internal fun TrunkFilterSheet(f: Trunk.Filter, sort: String, sets: List<Trunk.Se
         Row(Modifier.fillMaxWidth().weight(.86f)) {
         if (sides) Box(Modifier.weight(1f).fillMaxHeight().then(scrim))
         Column(Modifier.width(sheetW).fillMaxHeight().background(Color(0x99000000)).windowInsetsPadding(WindowInsets.navigationBars)
-            .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Color(0xFF10131A)).border(1.dp, Color(0x33E5C47E), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+            .background(Color(0xFF10131A), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).border(1.dp, Color(0x33E5C47E), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
             .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}
             .padding(start = 18.dp, end = 14.dp, top = 10.dp, bottom = 10.dp).testTag("trunkFilters"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

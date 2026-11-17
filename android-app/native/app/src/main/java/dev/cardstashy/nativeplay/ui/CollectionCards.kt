@@ -757,7 +757,7 @@ private fun CollFilterSheet(picks: List<CollSelect>, m: CollectionCardsModel, ac
     androidx.compose.ui.window.Popup(onDismissRequest = onClose, properties = androidx.compose.ui.window.PopupProperties(focusable = true)) {
         Box(Modifier.fillMaxSize().background(Color(0x99000000)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClose)) {
             Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(.8f).windowInsetsPadding(WindowInsets.navigationBars)
-                .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Color(0xFF10131A)).border(1.dp, Color(0x33E5C47E), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+                .background(Color(0xFF10131A), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).border(1.dp, Color(0x33E5C47E), RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}.padding(start = 18.dp, end = 14.dp, top = 10.dp, bottom = 10.dp).testTag("collFilters"),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
