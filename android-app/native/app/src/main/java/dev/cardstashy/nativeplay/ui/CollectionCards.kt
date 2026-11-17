@@ -558,7 +558,7 @@ private fun PhoneValueLine(m: CollectionCardsModel, act: CollectionCardsActions,
             val rest = m.summary.filter { it !== money }.joinToString("") { it.t }.replace(Regex("\\s+"), " ").trim().removePrefix("·").trim()
             Column(Modifier.weight(1f, fill = false).clickable { act.tab("value") }.semantics { contentDescription = "See collection value" }) {
                 money?.let { Text(it.t.trim(), style = sans(24f, 800, Ink, lh = 1.1f, ls = -.4f), maxLines = 1) }
-                if (rest.isNotBlank()) Text(rest, maxLines = 2, overflow = TextOverflow.Ellipsis, style = sans(12.5f, 500, Mute))
+                if (rest.isNotBlank()) Text(rest, maxLines = 1, overflow = TextOverflow.Ellipsis, style = sans(12f, 500, Mute))
             }
             if (m.refresh != null) Box(Modifier.size(44.dp).clip(CircleShape).background(GlassFill).border(1.dp, GlassLine, CircleShape).clickable(onClick = act.refresh)
                 .semantics { contentDescription = m.refreshLabel }, contentAlignment = Alignment.Center) { SiteIcon(m.refresh, 20.dp, Ink) }
