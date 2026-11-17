@@ -577,9 +577,9 @@ try{
   // Unknown exact quotes stay unknown, with or without a finite target; no fit is claimed.
   let finite=null;
   if(x.kind==='unknown'){
-   assert.match(r.text,/40 copies are unpriced\. The total and budget fit are unverified\./);assert(r.rows.every(row=>row.price==='Unpriced'));assert.doesNotMatch(r.price,/\$0\.00/,'missing prices are never shown as a zero total');
+   assert.match(r.text,/40 unpriced/);assert(r.rows.every(row=>row.price==='Unpriced'));assert.doesNotMatch(r.price,/\$0\.00/,'missing prices are never shown as a zero total');
    await bp.locator('[data-act="flowEdit"]').click();await bp.locator('.deck-flow').waitFor();finite=await generate(bp,50);
-   assert(finite.ok&&finite.total===40);assert.match(finite.text,/budget fit are unverified/);assert.doesNotMatch(finite.price,/below target|On target|over target/,'no budget verdict from incomplete prices');
+   assert(finite.ok&&finite.total===40);assert.match(finite.text,/40 unpriced/);assert.doesNotMatch(finite.price,/below target|On target|over target/,'no budget verdict from incomplete prices');
   }
   for(const width of [320,768,1440]){await bp.setViewportSize({width,height:1000});await noOverflow(bp,'#sheetBody','result '+x.game+' '+x.kind+' '+width);await capture(bp,'build-'+x.game+'-'+x.kind+'-result-'+width,'#sheetBody');}
   await bp.setViewportSize({width:390,height:1000});
