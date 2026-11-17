@@ -126,3 +126,38 @@ let unsafeMarkup=renderMechanic(commanderRows,unsafeMechanics,{commander:drana.n
 for(const url of ['http://mtg.wiki/page/Bloodlust','https://magic.wizards.com.example.invalid/','https://mtg.wiki.example.invalid/','https://person@mtg.wiki/page/Bloodlust','https://mtg.wiki:444/page/Bloodlust']){unsafeGroup.rule.source={url,title:'Rejected source <card>'};unsafeMarkup=renderMechanic(commanderRows,unsafeMechanics,{commander:drana.name});assert.doesNotMatch(unsafeMarkup,/Rejected source|example\.invalid|person@|:444/);}
 const notRequestedMarkup=renderMechanic(commanderRows,{status:'not-requested',groups:[]});assert.doesNotMatch(notRequestedMarkup,/data-flow-mechanic-status|deck-mechanic-checks/,'ordinary deck results gain no empty mechanic section');
 console.log('PASS: actual partial Bloodlust coverage, conditional Drana/first-strike setup, distinct Bloodthirst damage prerequisites, command-zone draw exclusion, safe community/official sources and escaped mechanic evidence.');
+
+// Build a deck sheet (approved mock 16 Nov): Plan, Power, Sideboard and "This build" for 60-card formats; Bracket for Commander.
+{const {deckBuildChoices,lowerBudgets,bracketPower}=await import('./deck-experience.js');
+ const threat={name:'Fixture bear',type_line:'Creature — Bear',power:'2',toughness:'2',oracle_text:'',cmc:2};
+ const std=deckBuildChoices({game:'mtg',format:'Standard',seedCard:threat},pipeline.formats);
+ for(const id of ['auto','aggro','midrange','control'])assert(std.includes(`data-field="plan" data-value="${id}"`),'Plan offers '+id);
+ for(const id of ['casual','focused','strong','max'])assert(std.includes(`data-field="power" data-value="${id}"`),'Power offers '+id);
+ assert(/class="on" aria-pressed="true" data-act="flowPick" data-field="plan" data-value="auto"/.test(std)&&/class="on" aria-pressed="true" data-act="flowPick" data-field="power" data-value="casual"/.test(std),'Auto and Casual are on by default');
+ assert(/data-flow-field="sideboard" checked/.test(std)&&/<b>20\+<\/b><span>Threats<\/span>/.test(std)&&/<b>6–10<\/b><span>Removal<\/span>/.test(std)&&/<b>0<\/b><span>Sweepers<\/span>/.test(std)&&/<b>15<\/b><span>Sideboard<\/span>/.test(std),'This build shows the numbers the builder holds');
+ assert(!/data-field="bracket"/.test(std),'no bracket outside Commander');
+ const control=deckBuildChoices({game:'mtg',format:'Standard',seedCard:threat,plan:'control',sideboard:false},pipeline.formats);
+ assert(/<b>8\+<\/b><span>Threats<\/span>/.test(control)&&!/<span>Sideboard<\/span>/.test(control)&&!/data-flow-field="sideboard" checked/.test(control),'Control numbers, and a sideboard switched off shows none');
+ const edh=deckBuildChoices({game:'mtg',format:'Commander',bracket:4},pipeline.formats);
+ assert(/4 · Optimized/.test(edh)&&/aria-label="Bracket 5, cEDH"/.test(edh)&&!/data-field="plan"|data-flow-field="sideboard"/.test(edh)&&/<b>38<\/b><span>Lands<\/span>/.test(edh),'Commander shows Bracket and its own numbers');
+ assert.deepEqual([1,2,3,4,5].map(bracketPower),['casual','casual','focused','strong','max']);
+ assert.equal(deckBuildChoices({game:'ygo',format:'tcg'},pipeline.formats),'','other games are unchanged');
+ assert(deckSetupMarkup({request:{game:'mtg',format:'Standard',seedCard:threat}},pipeline.formats).includes('deck-build-choices'),'the sheet carries the rows');
+ // One-tap lower budgets sit under the current estimate, in round dollars; a deck too cheap to cut offers none.
+ assert.deepEqual(lowerBudgets(82.05),[60,40,20]);assert.deepEqual(lowerBudgets(19.97),[15,10,5]);assert.deepEqual(lowerBudgets(3),[]);assert.deepEqual(lowerBudgets(null),[]);
+ const priced={...result,pricing:{...result.pricing,estimate:82.05,unpriced:0},request:{...result.request,game:'mtg',budget:null,closest:false},delta:null,budgetStatus:'not-requested'};
+ const shown=deckResultMarkup(priced,'quick');assert(/data-act="flowAdjust" data-result="quick" data-budget="20"/.test(shown),'the built deck offers a lower budget in one tap');
+ assert(/data-act="flowGroup" data-result="quick" data-group="job"/.test(shown),'and grouping by job');
+ // Group by job: the main deck is split by what each card does.
+ const jobs=deckResultMarkup({...priced,rows:[{name:'Fixture bear',qty:4,zone:'main',card:threat,price:1},{name:'Island',qty:20,zone:'main',card:land,price:.1},{name:'Fixture bear side',qty:2,zone:'side',card:threat,price:1}]},'jobs',{group:'job'});
+ assert(/<h3>Threats <span>4<\/span>/.test(jobs)&&/<h3>Lands <span>20<\/span>/.test(jobs)&&/<h3>Sideboard <span>2<\/span>/.test(jobs)&&!/<h3>Main deck/.test(jobs),'job headings with counts');
+ assert(/data-deck-zone="side"[^>]*data-act="flowCard"/.test(jobs),'sideboard cards open on a tap like main-deck cards');
+ // A budget no complete deck fits: the closest deck is shown and says so; no lower-budget buttons under the floor.
+ const over=deckResultMarkup({...priced,pricing:{...priced.pricing,estimate:4.68},request:{...priced.request,budget:2,budgetMode:'target',closest:true},delta:2.68,budgetStatus:'outside-target',requestSatisfied:false,closingPlanOnly:false},'closest');
+ assert(/No complete deck fits \$2\.00\. Closest found: \$4\.68\./.test(over)&&!/data-budget=/.test(over)&&/Checks unmet/.test(over),'the closest deck is labelled as over the budget');
+ // "Closest" ranks lists over the budget by price, cheapest first.
+ const mk=(estimate,power)=>({deck:{cards:[]},rows:[],check:{complete:true,legal:true,issues:[]},plan:{issues:[],notes:[],setupBurden:0},pricing:{estimate,subtotal:estimate,unpriced:0,copies:60,ownedCopies:0},power});
+ const req=normalizeDeckRequest({game:'mtg',format:'Standard',seed:'x',budget:2,budgetMode:'target',closest:true},pipeline.formats);
+ assert.deepEqual(req.constructionBudgets,[2,4,10,Infinity],'the closest search tries wider budgets step by step');
+ const picked=chooseDeck([mk(19.97,{score:9}),mk(4.68,{score:1})],req);assert(picked.ok&&picked.pricing.estimate===4.68,'the cheapest complete list over the budget is the closest: '+JSON.stringify(picked.pricing||picked.message));
+}

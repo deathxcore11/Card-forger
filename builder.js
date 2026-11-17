@@ -204,6 +204,8 @@ const PLAN_SHAPES = Object.freeze({
   midrange: { id: "midrange", board: true, threats: 20, removalMin: 6, removal: 10 },
   control: { id: "control", board: false, threats: 8, removalMin: 12, removal: 16 },
 });
+// The job a card does in a built deck, by the same tests the builder uses: the deck view groups by it.
+export const cardJob = (c) => /\bLand\b/.test(typeText(c).split(" // ")[0]) ? "Lands" : isThreat(c) ? "Threats" : forgeRoles(c).some((r) => r === "interaction" || r === "wipe") ? "Removal" : "Support";
 export const DECK_PLANS = Object.freeze(["auto", "aggro", "midrange", "control"]);
 export function planShape(plan, seeds = [], style = "") {
   if (PLAN_SHAPES[plan]) return PLAN_SHAPES[plan];
@@ -459,8 +461,9 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
   if(completionFirst){
     // Keep each requested build-around, then buy the cheapest next legal copy.
     // Ownership is recalculated per copy, so one free copy is not treated as a free playset.
-    for(const seed of seeds){const c=pool.find(c=>cardKey(c.name)===cardKey(seed.name));if(!c||qtyOf(c)||nonland()>=spellTarget)continue;
-      const extra=costFor(c,0,1);if(canAfford(extra)){put(c,1,'Your build-around card');}}
+    for(const seed of seeds){const c=pool.find(c=>cardKey(c.name)===cardKey(seed.name));if(!c||nonland()>=spellTarget)continue;
+      // A build-around is played at its full copy count while the budget allows: one copy is not a deck built around it.
+      const want=wantCopies(c,true);while(qtyOf(c)<want&&nonland()<spellTarget&&canAfford(costFor(c,qtyOf(c),qtyOf(c)+1)))put(c,1,'Your build-around card');}
     while(nonland()<spellTarget){
       const choices=scored.filter(x=>qtyOf(x.c)<wantCopies(x.c,keptKeys.has(cardKey(x.c.name)))).map(x=>({...x,extra:costFor(x.c,qtyOf(x.c),qtyOf(x.c)+1)})).filter(x=>canAfford(x.extra)).sort((a,b)=>a.extra-b.extra||b.s-a.s);
       const next=choices[0];if(!next)break;put(next.c,1,stock(next.c.name)>qtyOf(next.c)?'you own it':next.extra===Infinity?'Unpriced candidate; cost unverified':'Budget completion');

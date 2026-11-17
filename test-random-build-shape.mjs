@@ -97,3 +97,17 @@ for (const anchor of ['Gastal Blockbuster', 'Aetherjacket', 'Fanatical Firebrand
  assert.deepEqual(buildSideboard({ ...base, prior: metaPrior([]) }), [], 'no lists, no sideboard');
 }
 console.log('random build shape: the reported Rubble Rouser pool builds a creature deck with no self-sweeper and no stray one-of');
+
+// Seen 16 Nov on a $20 rebuild of the Rubble Rouser deck: the cheapest-first build kept ONE Rubble Rouser (a $0.20 card)
+// and that list was shown. A build-around is played at its full copy count whenever the budget allows.
+{
+ const cheap = buildDeck({ ...options, budget: 20, completionFirst: true }), d = read(cheap);
+ assert.equal(d.total, 60, 'the $20 cheapest-first build is complete');
+ assert.equal(d.rows.find(r => r.name === fx.seed)?.qty, 4, 'four Rubble Rouser in the $20 cheapest-first build, not one');
+ assert.ok(d.rows.reduce((n, r) => n + (Number(r.card?.prices?.usd) || 0) * r.qty, 0) <= 20 + 1e-6, 'and it stays inside $20');
+}
+// The deck view groups by job with the builder's own tests.
+{
+ const { cardJob } = await import('./builder.js');
+ assert.equal(cardJob(card('Rubble Rouser')), 'Threats'); assert.equal(cardJob(card('Burst Lightning')), 'Removal'); assert.equal(cardJob(card('Mountain') || { type_line: 'Basic Land — Mountain' }), 'Lands');
+}

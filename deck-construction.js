@@ -47,7 +47,7 @@ export function normalizeDeckRequest(input={},formats={}) {
   ownedOnly,budgetMode,preferOwned:input.preferOwned??input.goal!=='strongest',easy:input.easy===true||/easy to play|beginner|simple/i.test(input.style||''),
   randomSeed:Number.isFinite(input.randomSeed)?input.randomSeed:Math.floor(Math.random()*0x7fffffff),
   // An exclusive cap ("under $20") builds toward one cent below it.
-  allowance,budgetBoundary,constructionBudgets:ownedOnly?[0]:target===null?[Infinity]:budgetMode==='cap'?[budgetBoundary==='exclusive'?Math.max(0,cents(target-.01)):target]:[...new Set([target,target+allowance,Infinity])]};
+  allowance,budgetBoundary,constructionBudgets:ownedOnly?[0]:target===null?[Infinity]:budgetMode==='cap'?[budgetBoundary==='exclusive'?Math.max(0,cents(target-.01)):target]:input.closest===true?[...new Set([target,cents(target*2),cents(target*5),Infinity])]:[...new Set([target,target+allowance,Infinity])]};
 }
 // One cap test for every entry point. Unknown prices never pass a cap.
 export function withinBudgetCap(estimate,request) {
@@ -226,7 +226,8 @@ export function chooseDeck(candidates,request) {
  const strategyClass=c=>({supported:0,'not-requested':0,partial:1,unverified:2,insufficient:3}[c.plan.theme?.status]??0);
  const referencePrior=c=>request.game==='mtg'&&request.format==='Standard'&&(!request.goal||request.goal==='strongest')&&!request.easy&&!String(request.theme||request.style||'').trim()&&c.deck.referenceQualifiedForBuild===true&&c.deck.constructionBasis==='reference'&&c.deck.referenceAdaptation?.sameList&&!c.deck.referenceAdaptation.modeMismatch?1:0;
  const supportClass=c=>c.plan.finalSupport?.status==='unverified'?1:c.plan.finalSupport?.status==='known-incomplete'?2:0;
- valid.sort((a,b)=>budgetClass(a)-budgetClass(b)||strategyClass(a)-strategyClass(b)||supportClass(a)-supportClass(b)||(request.easy?a.plan.setupBurden-b.plan.setupBurden:0)||(budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||(request.preferOwned?b.pricing.ownedCopies/b.pricing.copies-a.pricing.ownedCopies/a.pricing.copies:0)||referencePrior(b)-referencePrior(a)||comparePower(b.power,a.power)||a.pricing.unpriced-b.pricing.unpriced||a.pricing.subtotal-b.pricing.subtotal);
+ // "Closest" (the cap fits no complete deck): among lists over the budget, the cheapest one is the answer.
+ valid.sort((a,b)=>budgetClass(a)-budgetClass(b)||(request.closest===true&&budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||strategyClass(a)-strategyClass(b)||supportClass(a)-supportClass(b)||(request.easy?a.plan.setupBurden-b.plan.setupBurden:0)||(budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||(request.preferOwned?b.pricing.ownedCopies/b.pricing.copies-a.pricing.ownedCopies/a.pricing.copies:0)||referencePrior(b)-referencePrior(a)||comparePower(b.power,a.power)||a.pricing.unpriced-b.pricing.unpriced||a.pricing.subtotal-b.pricing.subtotal);
  const winner=valid[0];
  if(!winner){
   const nearest=[...candidates].sort((a,b)=>Number(b.check.complete)-Number(a.check.complete)||a.plan.issues.length-b.plan.issues.length)[0];
