@@ -98,8 +98,8 @@ class QuickPickShotTest {
         val m = LobbyModel("quick").apply { format = "Standard" }
         rule.setContent { LobbyScreen(m, {}, {}, {}, {}, {}, online = false) }
         rule.waitForIdle()
-        // The decks start under the head and seats: scroll so the first row is at the top, as the ring's entry does (LIB_HEAD + 2).
-        rule.onAllNodes(androidx.compose.ui.test.hasScrollToIndexAction()).onFirst().performScrollToIndex(4)
+        // Scroll so the first row is at the top, as the ring's entry does (head, filter line, count line, then the decks).
+        rule.onAllNodes(androidx.compose.ui.test.hasScrollToIndexAction()).onFirst().performScrollToIndex(3)
         rule.waitForIdle()
         rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "quickpick-$size.png").path)
         fun tag(n: androidx.compose.ui.semantics.SemanticsNode) = n.config.getOrNull(SemanticsProperties.TestTag)
@@ -127,6 +127,28 @@ class QuickPickShotTest {
                 assertTrue("$size: ${tag(n)} is cut (lines ${r.lineCount}, ends ${r.getLineEnd(r.lineCount - 1, visibleEnd = true)} of ${text.trimEnd().length}, w ${r.didOverflowWidth} h ${r.didOverflowHeight})",
                     r.lineCount <= 2 && r.getLineEnd(r.lineCount - 1, visibleEnd = true) >= text.trimEnd().length) }
         }
+    }
+
+    /**
+     * Polish brief 2 (Randall 17 Nov), done looks like: four decks visible on 390x844 before any scroll, the format chosen in one
+     * place, Play visible, no paragraph.
+     */
+    @Test @Config(qualifiers = "w390dp-h844dp-xxhdpi") fun phoneUprightOpensOnDecks() {
+        setup()
+        val m = LobbyModel("quick").apply { format = "Standard" }
+        rule.setContent { LobbyScreen(m, {}, {}, {}, {}, {}, online = false) }
+        rule.waitForIdle()
+        rule.onRoot().captureRoboImage(File(System.getProperty("shotsDir"), "quickpick-open-390x844.png").path)
+        fun tag(n: androidx.compose.ui.semantics.SemanticsNode) = n.config.getOrNull(SemanticsProperties.TestTag)
+        val tiles = rule.onAllNodes(SemanticsMatcher("tile") { tag(it)?.startsWith("deck:") == true }, useUnmergedTree = true).fetchSemanticsNodes()
+        val bar = rule.onAllNodes(androidx.compose.ui.test.hasTestTag("deckBar")).fetchSemanticsNodes().single().boundsInRoot
+        val whole = tiles.filter { it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= bar.top }
+        assertTrue("${whole.size} whole decks above the bar before scrolling, want 4", whole.size >= 4)
+        val h = RuntimeEnvironment.getApplication().resources.displayMetrics.heightPixels
+        assertTrue("the bar sits at the bottom ($bar, screen $h)", bar.bottom <= h + 1f && bar.bottom > h - 120f)
+        assertEquals("one format picker", 1, rule.onAllNodes(SemanticsMatcher("fmt") { tag(it)?.startsWith("qfmt:") == true }, useUnmergedTree = true).fetchSemanticsNodes().size)
+        assertEquals("no paragraph", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("Quick Play needs every card", substring = true)).fetchSemanticsNodes().size)
+        rule.onAllNodes(androidx.compose.ui.test.hasText("Pick your deck")).onFirst().assertExists()
     }
 
     @Test @Config(qualifiers = "w844dp-h390dp-land-xxhdpi") fun phone() = shoot("phone-844x390", 5, rows = 2)

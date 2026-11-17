@@ -97,6 +97,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -576,6 +578,12 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     val ringAt = dualRing.coerceIn(0, maxOf(0, quickDecks.size - 1))
     var cardPick by remember { mutableStateOf<CardPick?>(null) }
     val searchFocus = remember { FocusRequester() }
+    /** Polish brief 2: the deck search opens from the head's search button (or Y); a search in use stays open. */
+    var searchOpen by remember { mutableStateOf(false) }
+    /** Quick Play's one format picker (All or a live format), a sheet from the filter line. */
+    var quickFormatOpen by remember { mutableStateOf(false) }
+    /** The lobby's first item after the head: Friends keep their seats (item 1), so the deck list starts one further down. */
+    val libHead = if (m.social) 2 else 1
     val grid = rememberLazyGridState()
     // Controller: LB/RB step through the deck sources (Mine, Precons, Community, Meta, Random) like their tabs; Quick Play has none.
     // Quick Play (specs/dual-screen-native.md): LB/RB step the format, X finds the match once your deck is in. Practice: LT/RT the CPU level.
@@ -590,11 +598,11 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
             // Y8: a waiting room's link goes out with X (copy) and Y (share); B leaves the room.
             else (m.room as? LobbyModel.Room.Waiting)?.takeIf { m.social && m.target == null }?.let { r -> PadAct("Copy link") { friend.copy(r.invite) } },
         // 0.4.59 T8: Quick Play's search is on Y, never on the d-pad's path.
-        y = if (dualQuick) null else if (m.quick) PadAct("Search") { scope.launch { grid.scrollToItem(LIB_HEAD); androidx.compose.runtime.withFrameNanos { }; runCatching { searchFocus.requestFocus() } } } else (m.room as? LobbyModel.Room.Waiting)?.takeIf { m.social && m.target == null }?.let { r -> PadAct("Share") { friend.share(r.invite) } }))
+        y = if (dualQuick) null else if (m.quick) PadAct("Search") { scope.launch { searchOpen = true; grid.scrollToItem(libHead); androidx.compose.runtime.withFrameNanos { }; runCatching { searchFocus.requestFocus() } } } else (m.room as? LobbyModel.Room.Waiting)?.takeIf { m.social && m.target == null }?.let { r -> PadAct("Share") { friend.share(r.invite) } }))
     // Dual screen: your deck on the left, the CPU on the right; with a friend, the room and its link.
     if (dualQuick) BottomScreen { QuickPickBottom(m, source, quickDecks, ringAt, dualOnChips, quickCounts(), onRing = { i -> dualOnChips = false; dualRing = i }) }
     else if (!m.social) BottomScreen { LobbyBottom(m) } else BottomScreen { FriendBottom(m, friend) }
-    BackHandler(cardPick == null && (m.inspectOpen || m.formatOpen)) { m.inspectOpen = false; m.formatOpen = false }
+    BackHandler(cardPick == null && (m.inspectOpen || m.formatOpen || quickFormatOpen)) { m.inspectOpen = false; m.formatOpen = false; quickFormatOpen = false }
     BackHandler(m.social && m.room is LobbyModel.Room.Waiting) { cancelRoom() }
     // Live 0.4.57 on the Thor (fault list 2): the lobby had no first stop, so the first d-pad press went to Compose's own search
     // (the head's Back) and the decks were out of reach. Now a d-pad press or A with nothing ringed scrolls to your first deck and
@@ -605,15 +613,15 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     val tileFocus = remember { HashMap<Int, FocusRequester>() }
     fun tileReq(i: Int) = if (i == 0) firstDeck else tileFocus.getOrPut(i) { FocusRequester() }
     val chipFocus = remember { List(QuickPick.chips(LIVE_FORMATS).size) { FocusRequester() } }
-    fun ringTile(i: Int) { scope.launch { grid.scrollToItem(LIB_HEAD + 2 + i); androidx.compose.runtime.withFrameNanos { }; runCatching { tileReq(i).requestFocus() } } }
+    fun ringTile(i: Int) { scope.launch { grid.scrollToItem(libHead + 2 + i); androidx.compose.runtime.withFrameNanos { }; runCatching { tileReq(i).requestFocus() } } }
     fun quickCount() = if (source == "yours") visible.size else quickEntries.size
     var focusedTile by remember { mutableStateOf(-1) }
     var focusedChip by remember { mutableStateOf(-1) }
     fun steer(i: Int, dir: QuickPick.Dir, cols: Int): Boolean {
         when (val to = QuickPick.next(i, dir, cols, quickCount())) {
             is QuickPick.Stop.Deck -> ringTile(to.i)
-            QuickPick.Stop.Chips -> { val c = QuickPick.chips(LIVE_FORMATS).indexOf(m.pickFormat).coerceAtLeast(0)
-                scope.launch { grid.scrollToItem(LIB_HEAD); androidx.compose.runtime.withFrameNanos { }; runCatching { chipFocus[c].requestFocus() } } }
+            QuickPick.Stop.Chips -> {
+                scope.launch { grid.scrollToItem(libHead); androidx.compose.runtime.withFrameNanos { }; runCatching { chipFocus[0].requestFocus() } } }
             null -> {}
         }
         return true
@@ -651,7 +659,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
             // Two screens: the ring is the bottom grid's own; the top screen's Play button holds the pad so A plays the ringed deck.
             if (dualQuick) runCatching { dualPlay.requestFocus() }
             // Not composed yet at the top of the page: scroll it in first, then ring it on the next frame.
-            else scope.launch { grid.scrollToItem(LIB_HEAD + 2); androidx.compose.runtime.withFrameNanos { }; runCatching { firstDeck.requestFocus() } }; true }
+            else scope.launch { grid.scrollToItem(libHead + 2); androidx.compose.runtime.withFrameNanos { }; runCatching { firstDeck.requestFocus() } }; true }
         PadPrompts.entry = e; onDispose { if (PadPrompts.entry === e) PadPrompts.entry = null }
     }
     // The ring's deck row goes to the top, so its ring is never resting under the pinned Play bar.
@@ -685,6 +693,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         // 0.4.59 T8: Quick Play's grid has 5 columns on phones and the Fold, 6 on a tablet; Practice keeps its two.
         val cols = if (quickOnly) QuickPick.columns(maxWidth.value, DualScreen.active) else 2
         colsNow.intValue = cols
+        val wideBar = maxWidth >= 600.dp
         // A short screen (a phone on its side, 390 dp) shows two rows of tiles: the art is a wider band there.
         val artRatio = if (maxHeight < 500.dp) 2.4f else 1.25f
         Backdrop() // #ambient: the shared art (glass on, or Aura)
@@ -695,9 +704,9 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
             .onGloballyPositioned { gridAt.value = it.positionInRoot() }
             .drawWithContent { pageLayer.record { this@drawWithContent.drawContent() }; drawLayer(pageLayer) }
             .drawBehind {
-                val info = grid.layoutInfo; val head = info.visibleItemsInfo.firstOrNull { it.index == LIB_HEAD }
+                val info = grid.layoutInfo; val head = info.visibleItemsInfo.firstOrNull { it.index == libHead }
                 val first = info.visibleItemsInfo.firstOrNull() ?: return@drawBehind
-                if (first.index > LIB_HEAD || head != null) {
+                if (first.index > libHead || head != null) {
                     val top = if (head != null) head.offset.y.toFloat() - info.viewportStartOffset - 18.dp.toPx() else -40.dp.toPx()
                     // The last item is the start bar's resting slot (outside the panel); the panel ends at the item before it.
                     val last = info.visibleItemsInfo.lastOrNull { it.index < info.totalItemsCount - 1 } ?: return@drawBehind
@@ -708,19 +717,22 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                 }
             },
             contentPadding = PaddingValues(start = 35.dp, end = 35.dp, top = 18.dp, bottom = 18.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            full { Box(Modifier.outset(19.dp)) { Head(m, onBack, onFriends) } }
-            full { Box(Modifier.outset(19.dp)) { Arena(m, friend, onFocusDecks = { scope.launch { grid.animateScrollToItem(LIB_HEAD) } }) } }
+            full { Box(Modifier.outset(19.dp)) { Head(m, onBack, onFriends, onSearch = { searchOpen = !searchOpen || m.query.isNotEmpty()
+                if (searchOpen) scope.launch { grid.scrollToItem(libHead); androidx.compose.runtime.withFrameNanos { }; runCatching { searchFocus.requestFocus() } } }) } }
+            // Polish brief 2: Quick Play and Practice open on the decks; the seats live in the bottom bar. Friends keep the seats and room.
+            if (m.social) full { Box(Modifier.outset(19.dp)) { Arena(m, friend, onFocusDecks = { scope.launch { grid.animateScrollToItem(libHead) } }) } }
             full {
                 LibraryHead(m, source, signedIn, onOpenDecks, if (quickOnly) quickCounts() else emptyMap(),
-                    chipFocus, onChipDown = { c -> QuickPick.fromChips(c, cols, quickCount())?.let { ringTile(it) } }, searchFocus = if (quickOnly) searchFocus else null,
-                    onChipFocus = { c, on -> if (on) focusedChip = c else if (focusedChip == c) focusedChip = -1 })
+                    chipFocus, onChipDown = { c -> QuickPick.fromChips(c, cols, quickCount())?.let { ringTile(it) } }, searchFocus = searchFocus,
+                    onChipFocus = { c, on -> if (on) focusedChip = c else if (focusedChip == c) focusedChip = -1 }, searchShown = searchOpen || m.query.isNotEmpty(),
+                    onFormat = { quickFormatOpen = true })
             }
             when {
                 source == "yours" && !signedIn -> full { Empty("Your decks, ready for the table", "Sign in above to choose your saved lists.") }
                 source == "yours" -> {
                     if (!quickOnly && pasteShown(m)) full { PasteImport(m, ::importPaste, ::useImport) { cardPick = CardPick(it, "", null, "nonfoil") } }
                     val fmtWord = if (quickOnly) m.pickFormat?.let { "$it " } ?: "" else "${m.format} "
-                    full { Text("${visible.size} of ${inFormat.size} ${fmtWord}decks", style = sans(13f, color = Muted), modifier = Modifier.padding(horizontal = 3.dp)) }
+                    full { CountLine("${visible.size} of ${inFormat.size} ${fmtWord}decks", if (quickOnly) onOpenDecks else null) }
                     if (visible.isEmpty()) full { Empty(if (m.query.isNotBlank()) "No matching decks" else if (quickOnly) QuickPick.empty(m.pickFormat) else "No ${m.format} decks yet",
                         if (quickOnly) "Build a Play deck, or open packs and the Merchant for cards." else "Paste a list or explore the other sources above.") }
                     else if (quickOnly) itemsIndexed(visible, key = { _, d -> "d:" + d.id }) { i, d -> QuickTile(d.id, d.name, d.format, d.count, deckColors(d.commander, d.raw), quickRaw(d), chosen(d), d.id in locked,
@@ -729,7 +741,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                 }
                 // 0.4.59 T8: Quick Play's Precons and Meta as the same tiles; a list missing cards from your Trunk is greyed.
                 quickOnly -> {
-                    full { Text("${quickEntries.size} ${m.pickFormat?.let { "$it " } ?: ""}decks", style = sans(13f, color = Muted), modifier = Modifier.padding(horizontal = 3.dp)) }
+                    full { CountLine("${quickEntries.size} ${m.pickFormat?.let { "$it " } ?: ""}decks", onOpenDecks) }
                     if (quickEntries.isEmpty()) full { Empty(QuickPick.empty(m.pickFormat), sources.statuses.values.firstOrNull { it.busy }?.message ?: "Try another format or source.") }
                     else itemsIndexed(quickEntries, key = { _, e -> "s:" + e.key }) { i, e -> val raw = e.deck; val f = raw.get("format")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
                         val commander = raw.get("commander")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
@@ -758,7 +770,7 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                 val info = grid.layoutInfo
                 val slot = info.visibleItemsInfo.firstOrNull { it.key == "startbar" }
                 val restY = slot?.let { it.offset.y - info.viewportStartOffset + gap } ?: Int.MAX_VALUE
-                androidx.compose.ui.unit.IntOffset(0, minOf(restY, info.viewportSize.height - barH).coerceAtLeast(0)) }.padding(horizontal = 16.dp).fillMaxWidth()
+                androidx.compose.ui.unit.IntOffset(0, (if (m.social) minOf(restY, info.viewportSize.height - barH) else info.viewportSize.height - barH).coerceAtLeast(0)) }.padding(horizontal = 16.dp).fillMaxWidth()
                 .then(Modifier.onSizeChanged { sz -> barH = sz.height })) {
                 // ::before: a short fade above the pinned bar so the panel reads as sliding under a dock.
                 Box(Modifier.matchParentSize().drawBehind {
@@ -774,10 +786,11 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                         val d = gridAt.value - barAt.value
                         translate(d.x, d.y) { drawLayer(blurLayer) }
                     }
-                }) { StartBar(m, signedIn, statusText(m), friend) { start() } }
+                }) { if (m.social) StartBar(m, signedIn, statusText(m), friend) { start() } else DeckBar(m, signedIn, statusText(m), wide = wideBar) { start() } }
             }
         }
         if (m.formatOpen) FormatSheet(m)
+        if (quickFormatOpen) QuickFormatSheet(m) { quickFormatOpen = false }
         if (m.inspectOpen) Inspector(m, onRemove = { m.put(m.inspected, null); m.inspectOpen = false },
             onSave = { d -> scope.launch { try { PlayDeckSaver.save(context, d); toast("Deck saved to Your decks.") } catch (e: Exception) { toast(e.message ?: "Couldn’t save the deck.") } } },
             onOpenSaved = { id -> onOpenSaved(id) }, onCard = { cardPick = CardPick(it, "", null, "nonfoil") })
@@ -785,7 +798,6 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     }
 }
 
-private const val LIB_HEAD = 2
 /** Lay a child out wider than its slot by [by] on each side (the head and seats span the page, past the panel's inset). */
 private fun Modifier.outset(by: Dp) = layout { m, c -> val px = by.roundToPx()
     val p = m.measure(c.copy(minWidth = c.minWidth + 2 * px, maxWidth = c.maxWidth + 2 * px)); layout(c.maxWidth, p.height) { p.place(-px, 0) } }
@@ -830,23 +842,26 @@ private fun emptyText(source: String, format: String) = when (source) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Head(m: LobbyModel, onBack: () -> Unit, onFriends: () -> Unit) {
+private fun Head(m: LobbyModel, onBack: () -> Unit, onFriends: () -> Unit, onSearch: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.size(44.dp).clip(CircleShape).background(Site.Surface.copy(alpha = .7f)).border(1.dp, Line, CircleShape).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
                 androidx.compose.foundation.Image(SiteIcons.Back, "Back to Play", Modifier.size(22.dp), colorFilter = ColorFilter.tint(Site.Text)) }
-            Column {
+            Column(Modifier.weight(1f)) {
                 Text("PLAY", style = sans(11f, FontWeight.Bold, Gold, 3.3f, 16f))
                 Text(if (m.quick) "Quick Play" else if (m.social) "Friends" else "Practice", style = if (lightMode) cinzel(24f, Site.Text, .48f, 25.2f) else cinzel(24f, spacing = .48f, line = 25.2f).copy(brush = Brush.verticalGradient(0.3f to Color(0xFFF8F0DC), 1f to Color(0xFFD6AD64))))
             }
+            Box(Modifier.size(44.dp).clip(CircleShape).background(Site.Surface.copy(alpha = .7f)).border(1.dp, Line, CircleShape).clickable(onClick = onSearch), contentAlignment = Alignment.Center) {
+                androidx.compose.foundation.Image(SiteIcons.Search, "Search decks", Modifier.size(20.dp), colorFilter = ColorFilter.tint(Site.Text)) }
         }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Quick Play's one format picker is on the filter line (polish brief 2); Practice and Friends keep theirs here.
+        if (!m.quick) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.height(44.dp).pill(Site.Surface.copy(alpha = .8f), Color(0xFF6C5F45)).clickable { m.formatOpen = true }.padding(start = 16.dp, end = 14.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(m.format, style = sans(14f, FontWeight.Bold, Site.Text))
                 androidx.compose.foundation.Image(SiteIcons.Chevron, null, Modifier.size(18.dp), colorFilter = ColorFilter.tint(Site.Text))
             }
-            if (!m.quick) PlaymatPicker(Modifier.weight(1f)) // playmatPickerMarkup, Practice only (.pl-head-tools .pl-mat{flex:1})
+            PlaymatPicker(Modifier.weight(1f)) // playmatPickerMarkup, Practice only (.pl-head-tools .pl-mat{flex:1})
             if (!m.quick && !m.social) Row(Modifier.height(44.dp).pill(Color(0xB30D0F14), Color(0xFF766647)).clickable(onClick = onFriends).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 androidx.compose.foundation.Image(SiteIcons.Friends, null, Modifier.size(18.dp), colorFilter = ColorFilter.tint(Color(0xFFF6E4BB)))
@@ -1004,15 +1019,16 @@ private fun StartBar(m: LobbyModel, signedIn: Boolean, status: String, friend: F
 @Composable
 private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpenDecks: () -> Unit, quickCounts: Map<String, Int> = emptyMap(),
                         chipFocus: List<FocusRequester> = emptyList(), onChipDown: (Int) -> Unit = {}, searchFocus: FocusRequester? = null,
-                        onChipFocus: (Int, Boolean) -> Unit = { _, _ -> }) {
+                        onChipFocus: (Int, Boolean) -> Unit = { _, _ -> }, searchShown: Boolean = true, onFormat: () -> Unit = {}) {
     val seatName = when (m.browseSeat) { "player" -> "Your deck"; else -> "CPU deck" }
-    Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.Bottom) {
+    Column(Modifier.fillMaxWidth().padding(top = if (m.quick) 0.dp else 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Quick Play: the bottom bar names your deck, so the list needs no seat line or tools row (Open Decks sits by the count).
+        if (!m.quick) Row(verticalAlignment = Alignment.Bottom) {
             Text(seatName, style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, letterSpacing = (-.36).sp, color = Site.Text))
             Text(" · ${if (m.quick) m.player?.format ?: QuickPick.chipLabel(m.pickFormat) else m.format}", style = sans(13f, FontWeight.SemiBold, Muted))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (source == "yours" && signedIn && !m.quick) {
+        if (!m.quick) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (source == "yours" && signedIn) {
                 val open = pasteShown(m)
                 Row(Modifier.height(44.dp).pill(if (open) Gold.copy(alpha = .16f) else Site.Surface2, if (open) Gold else PasteEdge)
                     .clickable { m.pasteOpen = !open }.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -1031,23 +1047,31 @@ private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpen
                 Text("Open Decks", style = sans(13.5f, FontWeight.Bold, Site.Text)) }
         }
         if (m.quick) {
-            Text(TableDecks.QUICK_INTRO, style = sans(13f, color = Muted, line = 19.5f))
-            // 0.4.59 T8: three source tabs with their counts (Yours first), then one sideways row of format chips, All first.
-            TabsRow(QUICK_SOURCES.size, Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(14.dp)).padding(3.dp)) { tab ->
-                QUICK_SOURCES.forEach { (k, label) -> val on = source == k
-                    Box(tab.height(44.dp).clip(RoundedCornerShape(10.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(10.dp)) else Modifier)
-                        .clickable { m.source = k; m.query = "" }.testTag("qsrc:$k").padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
-                        Text(label + (quickCounts[k]?.let { " $it" } ?: ""), style = sans(13f, color = if (on) Site.Text else Muted), maxLines = 1, softWrap = false) }
+            // Polish brief 2: one filter line, the source tabs (with their counts) and ONE format picker.
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TabsRow(QUICK_SOURCES.size, Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(14.dp)).padding(3.dp)) { tab ->
+                    QUICK_SOURCES.forEach { (k, label) -> val on = source == k
+                        Box(tab.height(44.dp).clip(RoundedCornerShape(10.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(10.dp)) else Modifier)
+                            .clickable { m.source = k; m.query = "" }.testTag("qsrc:$k").padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
+                            Text(label + (quickCounts[k]?.let { " $it" } ?: ""), style = sans(13f, color = if (on) Site.Text else Muted), maxLines = 1, softWrap = false) }
+                    }
                 }
-            }
-            val chips = QuickPick.chips(LIVE_FORMATS)
-            androidx.compose.foundation.lazy.LazyRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(chips.size) { i -> val f = chips[i]; val on = m.pickFormat == f
-                    Box(Modifier.height(38.dp).pill(if (on) Gold.copy(alpha = .16f) else Site.Surface2, if (on) Gold else Line)
-                        .then(chipFocus.getOrNull(i)?.let { Modifier.focusRequester(it) } ?: Modifier).onFocusChanged { onChipFocus(i, it.isFocused) }
-                        .onPreviewKeyEvent { e -> if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && e.key == androidx.compose.ui.input.key.Key.DirectionDown) { onChipDown(i); true } else false }
-                        .clickable { m.pickFormat = f }.testTag("qfmt:${QuickPick.chipLabel(f)}").padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-                        Text(QuickPick.chipLabel(f), style = sans(13f, FontWeight.Bold, if (on) Site.Text else Muted), maxLines = 1, softWrap = false) }
+                // The pad reaches it with Up from the top row of decks; Left and Right step the format, Down goes back to the decks, A opens the list.
+                val chips = QuickPick.chips(LIVE_FORMATS); val at = chips.indexOf(m.pickFormat).coerceAtLeast(0)
+                Row(Modifier.height(52.dp).clip(RoundedCornerShape(14.dp)).background(Site.Surface2).border(1.dp, if (m.pickFormat != null) Gold else Line, RoundedCornerShape(14.dp))
+                    .then(chipFocus.firstOrNull()?.let { Modifier.focusRequester(it) } ?: Modifier).onFocusChanged { onChipFocus(at, it.isFocused) }
+                    .onPreviewKeyEvent { e ->
+                        if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                        when (e.key) {
+                            androidx.compose.ui.input.key.Key.DirectionDown -> { onChipDown(at); true }
+                            androidx.compose.ui.input.key.Key.DirectionLeft -> { QuickPick.chipStep(chips.size, at, QuickPick.Dir.LEFT)?.let { m.pickFormat = chips[it] }; true }
+                            androidx.compose.ui.input.key.Key.DirectionRight -> { QuickPick.chipStep(chips.size, at, QuickPick.Dir.RIGHT)?.let { m.pickFormat = chips[it] }; true }
+                            else -> false
+                        } }
+                    .clickable(onClick = onFormat).semantics { contentDescription = "Format, ${QuickPick.chipLabel(m.pickFormat)}" }.testTag("qfmt:${QuickPick.chipLabel(m.pickFormat)}")
+                    .padding(start = 12.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(m.pickFormat ?: "All formats", style = sans(13.5f, FontWeight.Bold, Site.Text), maxLines = 1, softWrap = false)
+                    androidx.compose.foundation.Image(SiteIcons.Chevron, null, Modifier.size(16.dp), colorFilter = ColorFilter.tint(Gold))
                 }
             }
         }
@@ -1058,13 +1082,106 @@ private fun LibraryHead(m: LobbyModel, source: String, signedIn: Boolean, onOpen
                     Text(if (k == "yours") "Mine" else label, style = sans(13f, color = if (on) Site.Text else Muted), maxLines = 1, softWrap = false) }
             }
         }
-        if (source != "random") Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Search ${SOURCES.first { it.first == source }.second.lowercase()}", style = sans(12f, color = Muted))
+        if (source != "random" && searchShown) Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Box(Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(11.dp)).background(Site.Surface).border(1.dp, Line, RoundedCornerShape(11.dp)).padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
                 if (m.query.isEmpty()) Text("Deck name or commander", style = sans(15f, color = Muted.copy(alpha = .7f)))
                 BasicTextField(m.query, { if (it.length <= 160) m.query = it }, singleLine = true, textStyle = sans(15f), cursorBrush = SolidColor(Gold),
-                    modifier = Modifier.fillMaxWidth().then(searchFocus?.let { Modifier.focusRequester(it) } ?: Modifier))
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search ${SOURCES.first { it.first == source }.second.lowercase()}" }
+                        .then(searchFocus?.let { Modifier.focusRequester(it) } ?: Modifier))
             }
+        }
+    }
+}
+
+/** The deck count, and Open Decks beside it in Quick Play (polish brief 2: one line, not a tools row). */
+@Composable
+private fun CountLine(text: String, onOpenDecks: (() -> Unit)?) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(text, style = sans(13f, color = Muted), modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (onOpenDecks != null) Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(999.dp)).clickable(onClick = onOpenDecks).padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+            Text("Open Decks", style = sans(13.5f, FontWeight.Bold, Gold)) }
+    }
+}
+
+/** Quick Play's format list: All, then the formats the lobby plays (the chips it replaces, same order). */
+@Composable
+private fun QuickFormatSheet(m: LobbyModel, onClose: () -> Unit) {
+    PadScreen(PadActs(b = "Close", opaque = true))
+    Box(Modifier.fillMaxSize().background(Color(0x99000000)).tap(onClose), contentAlignment = Alignment.BottomCenter) {
+        Column(Modifier.fillMaxWidth().widthIn(max = 560.dp).clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)).background(Site.Surface).border(1.dp, Line, RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+            .tap { }.windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Format", style = sans(12f, FontWeight.Bold, Muted, 1f))
+            QuickPick.chips(LIVE_FORMATS).chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                pair.forEach { f -> val on = m.pickFormat == f
+                    Box(Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Picked else SolidColor(Site.Surface2))
+                        .border(1.dp, if (on) Color(0x66D8B76C) else Line, RoundedCornerShape(12.dp)).clickable { m.pickFormat = f; onClose() }.padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.CenterStart) { Text(f ?: "All formats", style = sans(14f, FontWeight.Bold, if (on) Gold else Site.Text)) }
+                }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
+            } }
+        }
+    }
+}
+
+/**
+ * Polish brief 2: Quick Play and Practice's fixed bottom bar. Your deck (thumb and name) and who it plays (Quick Play: a random
+ * deck of the format; Practice: the CPU deck, tap to choose it), the CPU level, Inspect and the gold Play in its usual words.
+ * On a wide screen it is one row.
+ */
+@Composable
+private fun DeckBar(m: LobbyModel, signedIn: Boolean, status: String, wide: Boolean, onStart: () -> Unit) {
+    val you = m.player; val cpu = m.opponent; val practice = !m.quick
+    val label = if (!signedIn) "Sign in to play" else if (m.quickBusy) "Finding a CPU deck…" else if (you == null) "Pick your deck" else if (practice && cpu == null) "Pick the CPU deck" else "Play vs CPU"
+    val ready = !signedIn || (!m.quickBusy && you != null && (m.quick || cpu != null))
+    PadScreen(PadActs(x = if (ready) PadAct(label, onStart) else null))
+    val inspectSeat = if (practice) m.inspected else "player"
+    val canInspect = m.seat(inspectSeat) != null
+    val seats = @Composable { mod: Modifier ->
+        Row(mod, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val art = you?.raw?.let(::coverOf); val thumb = RoundedCornerShape(10.dp)
+            Box(Modifier.size(52.dp).clip(thumb).background(Site.Surface2).border(1.dp, if (you != null) Gold else Line, thumb)) {
+                if (art != null) Pic(art, Modifier.matchParentSize(), contentScale = ContentScale.Crop) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                val youOn = practice && m.inspected == "player"; val cpuOn = practice && m.inspected == "opponent"
+                Text(you?.name ?: "Your deck", style = sans(15f, FontWeight.Bold, if (you != null) Site.Text else Muted), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.then(if (practice) Modifier.clickable { m.inspected = "player" } else Modifier).then(if (youOn) Modifier.drawBehind {
+                        drawLine(Gold, Offset(0f, size.height), Offset(size.width, size.height), 1.5.dp.toPx()) } else Modifier))
+                if (m.quick) Text("against a random ${m.format} deck", style = sans(12f, color = SoftInk), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                else Text("vs " + (cpu?.name ?: "CPU deck"), style = sans(12.5f, FontWeight.SemiBold, if (cpuOn) Gold else SoftInk), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.heightIn(min = 24.dp).clickable { m.inspected = "opponent" }.semantics { contentDescription = "CPU deck, ${cpu?.name ?: "not chosen"}" })
+            }
+        }
+    }
+    val level = @Composable {
+        Row(Modifier.clip(RoundedCornerShape(999.dp)).background(TabsFill).border(1.dp, Line, RoundedCornerShape(999.dp)).padding(3.dp)) {
+            listOf("Easy", "Medium", "Hard").forEach { lv -> val on = m.difficulty == lv
+                Box(Modifier.height(44.dp).clip(RoundedCornerShape(999.dp)).then(if (on) Modifier.background(Picked).border(1.dp, Color(0x66D8B76C), RoundedCornerShape(999.dp)) else Modifier)
+                    .clickable { m.difficulty = lv; m.quickMatch = null }.semantics { contentDescription = "CPU ${CPU_LABELS.getValue(lv)}" }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+                    Text(CPU_LABELS.getValue(lv), style = sans(13f, if (on) FontWeight.Bold else FontWeight.SemiBold, if (on) Gold else Muted)) }
+            }
+        }
+    }
+    val inspect = @Composable { mod: Modifier ->
+        Box(mod.height(56.dp).then(if (canInspect) Modifier else Modifier.alpha(.5f)).clip(RoundedCornerShape(14.dp)).border(1.dp, Color(0x80D6AD64), RoundedCornerShape(14.dp))
+            .clickable(enabled = canInspect) { m.inspected = inspectSeat; m.inspectOpen = true }, contentAlignment = Alignment.Center) {
+            Text("Inspect", style = sans(15f, FontWeight.Bold, Site.Text)) }
+    }
+    val play = @Composable { mod: Modifier ->
+        val shape = RoundedCornerShape(14.dp)
+        Box(mod.height(56.dp).then(if (ready) Modifier else Modifier.alpha(.6f)).clip(shape)
+            .background(if (ready) GoldPlate else Brush.verticalGradient(listOf(Color(0xFF1B1A16), Color(0xFF121113))))
+            .border(1.dp, Color(0xFF5A3B12), shape).clickable(enabled = ready, onClick = onStart), contentAlignment = Alignment.Center) {
+            Text(label, style = cinzel(17f, if (ready) Color(0xFF2A1906) else Color(0xFFBFAF92), 1.2f, 18f), maxLines = 1)
+        }
+    }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Rule.Color.Bar).border(1.dp, Color(0x59D6AD64), RoundedCornerShape(18.dp))
+        .padding(horizontal = 12.dp, vertical = 10.dp).testTag("deckBar"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (status.isNotEmpty()) Text(status, style = sans(13f, color = SoftInk), modifier = Modifier.padding(horizontal = 4.dp))
+        if (wide) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            seats(Modifier.weight(1f)); level(); inspect(Modifier.width(110.dp)); play(Modifier.width(240.dp))
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { seats(Modifier.weight(1f)); level() }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { inspect(Modifier.width(104.dp)); play(Modifier.weight(1f)) }
         }
     }
 }
