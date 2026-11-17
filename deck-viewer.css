@@ -446,3 +446,4 @@ details.ds-note-tag{border-radius:14px}details.ds-note-tag>summary{cursor:pointe
 @media(max-width:700px){.ds-head{margin-top:10px}.deck-hero~nav.tabs,.ds-head~nav.tabs{margin-top:10px}}
 @media(max-width:700px){.deck-body[data-tab=cards] .lot.deck-row .lot-side{margin-top:2px}.deck-body[data-tab=cards] details.group{margin-bottom:0}.ds-hero .deck-hero-id{gap:4px}}
 @media(max-width:700px){.deck-body[data-tab=cards] .deck-viewer{gap:2px;row-gap:2px}.deck-body[data-tab=cards] details.group>.list{padding-bottom:0;margin-bottom:0}.deck-body[data-tab=cards] details.group+details.group{margin-top:0}}
+@media(max-width:700px){.deck-hero~nav.tabs>button,.ds-head~nav.tabs>button{flex:1 1 auto;padding-inline:6px;font-size:13px;min-width:0}.deck-hero~nav.tabs>button svg,.ds-head~nav.tabs>button svg,.deck-hero~nav.tabs>button .ico,.ds-head~nav.tabs>button .ico{display:none}}
