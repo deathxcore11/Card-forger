@@ -654,11 +654,14 @@ internal fun namePanelBox(w: Float, h: Float, dual: Boolean, k: Float, ime: Floa
     val z = ZoneLayout.of(w, h, dual = dual, k = k)
     val floor = minOf((z.handTray ?: z.handChip)?.y ?: z.window.bottom, h - ime) - 8f * k
     val top = z.window.y + 8f * k
-    val pw = minOf(320f * k, z.board.w - 16f * k)
+    val pw = minOf(460f * k * nameScale(h / k), z.board.w - 16f * k)
     // The board's right end (where the dock always stood), clear of the right strip.
     val x = z.board.right - 8f * k - pw
     return ZoneLayout.Box(x, top, pw, (floor - top).coerceAtLeast(0f))
 }
+
+/** On a tall screen the name panel and its cards grow with it (1 at the phone's 390, at most 1.6). */
+internal fun nameScale(heightU: Float): Float = (heightU / 390f).coerceIn(1f, 1.6f)
 
 /** The name panel's room ([namePanelBox]): its content stands at the foot of that room, in the search picker's frame. */
 @Composable
@@ -682,6 +685,43 @@ private fun NamePanel(ctx: DockCtx, content: @Composable () -> Unit) = with(ctx.
     }
 }
 
+/** One name offered on the table (whole card tile): [count] copies seen there; [ability] when it has an ability the source would stop. */
+internal data class NameTile(val name: String, val count: Int, val ability: Boolean)
+internal data class NameGroup(val label: String, val tiles: List<NameTile>)
+
+/** A card's own activated ability that makes no mana ("{1}: Mutavault becomes…", "Channel — {3}{U}, Discard this card: …"). */
+internal fun hasNonManaAbility(text: String): Boolean = text.replace(Regex("\\([^)]*\\)"), "").lines().any { line ->
+    val i = line.indexOf(':'); i > 0 && !line.substring(i + 1).trim().startsWith("Add ", ignoreCase = true) }
+
+/** The source stops activated abilities of the chosen name (Petrified Hamlet, Pithing Needle, Phyrexian Revoker). */
+internal fun stopsAbilities(st: MatchState): Boolean {
+    val text = st.stack.firstOrNull()?.source?.text.orEmpty() + "\n" + st.stack.firstOrNull()?.text.orEmpty()
+    return Regex("activated abilities of sources with the chosen name", RegexOption.IGNORE_CASE).containsMatchIn(text)
+}
+
+/**
+ * Randall 17 Nov ("can it be contextual… how would a card like that act"): the names worth naming are on the table. Every
+ * opponent's battlefield first (abilities the source stops first), then their graveyard and exile, then yours; only cards
+ * the ask allows ([want], by the card's own type line), never a hidden card or a token, each name once with its count.
+ */
+internal fun nameGroups(st: MatchState, want: dev.cardstashy.nativeplay.engine.CardNames.Want?): List<NameGroup> {
+    val stops = stopsAbilities(st)
+    fun tiles(cards: List<Card>): List<NameTile> = cards.filter { !it.hidden && !it.token && it.name.isNotEmpty() && (want?.fits(dev.cardstashy.nativeplay.engine.CardNames.letters(it.type)) ?: true) }
+        .groupBy { it.name }.map { (n, cs) -> NameTile(n, cs.size, stops && hasNonManaAbility(cs.first().text)) }
+        .sortedWith(compareBy({ !it.ability }, { -it.count }, { it.name }))
+    val out = ArrayList<NameGroup>()
+    val others = st.players.filter { !it.isViewer }
+    for (o in others) {
+        val who = if (others.size == 1) "CPU" else MatchState.tidy(o.name).uppercase()
+        tiles(o.battlefield).takeIf { it.isNotEmpty() }?.let { out += NameGroup("$who BATTLEFIELD", it) }
+        tiles(o.graveyard).takeIf { it.isNotEmpty() }?.let { out += NameGroup("$who GRAVEYARD", it) }
+        tiles(o.exile).takeIf { it.isNotEmpty() }?.let { out += NameGroup("$who EXILE", it) }
+    }
+    val me = st.players.firstOrNull { it.isViewer }
+    if (me != null) tiles(me.battlefield + me.hand + me.graveyard + me.exile).takeIf { it.isNotEmpty() }?.let { out += NameGroup("YOURS", it) }
+    return out
+}
+
 @Composable
 private fun NameDialog(ctx: DockCtx) = with(ctx.d) {
     val p = ctx.p
@@ -689,29 +729,64 @@ private fun NameDialog(ctx: DockCtx) = with(ctx.d) {
     var typed by remember(ctx.st.revision, p.id) { mutableStateOf("") }
     val names by androidx.compose.runtime.produceState(emptyList<String>()) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { dev.cardstashy.nativeplay.engine.CardNames.all(context) }.getOrDefault(emptyList()) } }
-    val hits = remember(names, typed) { dev.cardstashy.nativeplay.engine.CardNames.suggest(names, typed) }
-    val exact = remember(names, typed) { names.firstOrNull { it.equals(typed.trim(), ignoreCase = true) } }
+    val types by androidx.compose.runtime.produceState(emptyMap<String, String>()) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { dev.cardstashy.nativeplay.engine.CardNames.types(context) }.getOrDefault(emptyMap()) } }
+    val want = remember(p.message) { dev.cardstashy.nativeplay.engine.CardNames.want(p.message) }
+    val groups = remember(ctx.st.revision, p.id) { nameGroups(ctx.st, want) }
+    val fits: (String) -> Boolean = { n -> want?.fits(types[n]) ?: true }
+    val hits = remember(names, types, typed) { dev.cardstashy.nativeplay.engine.CardNames.suggest(names, typed, fits = fits) }
+    val q = typed.trim()
+    // Remembered: the name list is every card, and the panel redraws each frame while the keyboard slides in.
+    val exact = remember(groups, names, types, want, q) { groups.flatMap { it.tiles }.firstOrNull { it.name.equals(q, ignoreCase = true) }?.name
+        ?: names.firstOrNull { it.equals(q, ignoreCase = true) }?.takeIf(fits) }
     val confirm: () -> Unit = { exact?.let { ctx.replies.text?.invoke(p.id, it) } }
     val field = Modifier.heightIn(min = 44.du).clip(RoundedCornerShape(8.du)).background(Color(0xCC1F232B))
         .border(1.dp, Color(0x59EDC980), RoundedCornerShape(8.du))
     Text(nameAsk(p.message), style = ts(13f, 18f, FontWeight.SemiBold, Color(0xFFDCD3BF)))
+    // The cards on the table that fit, as whole cards: one tap names it.
+    if (groups.isNotEmpty()) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 6.du), horizontalArrangement = Arrangement.spacedBy(14.du)) {
+        groups.forEachIndexed { gi, g ->
+            Column(verticalArrangement = Arrangement.spacedBy(5.du)) {
+                Text(g.label, style = ts(10.5f, 13f, FontWeight.Bold, Color(0xFFA79F8D), spacing = 1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.du)) {
+                    g.tiles.forEachIndexed { ti, t -> NameTileView(t, t.name.equals(q, ignoreCase = true), !ctx.busy, this@with, nameScale(ctx.hu),
+                        if (gi == 0 && ti == 0) Modifier.padFirst(ctx) else Modifier) { typed = t.name } }
+                }
+            }
+        }
+    }
     // The box and Confirm side by side, so both stay in sight while the names below scroll.
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.du)) {
         Box(field.weight(1f).padding(horizontal = 10.du, vertical = 8.du), contentAlignment = Alignment.CenterStart) {
-            if (typed.isEmpty()) Text("Card name", style = ts(12.5f, 16f, color = Color(0xFF8C93A0)))
+            if (typed.isEmpty()) Text(if (groups.isEmpty()) "Card name" else "Another name", style = ts(12.5f, 16f, color = Color(0xFF8C93A0)), maxLines = 1, overflow = TextOverflow.Ellipsis)
             BasicTextField(typed, { v -> typed = v.take(200) }, enabled = !ctx.busy, singleLine = true, textStyle = ts(13f, 16.9f),
                 cursorBrush = SolidColor(Color(0xFFEDF0E8)),
                 keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { confirm() }),
-                modifier = Modifier.fillMaxWidth().padFirst(ctx).semantics { contentDescription = "Card name" })
+                modifier = Modifier.fillMaxWidth().then(if (groups.isEmpty()) Modifier.padFirst(ctx) else Modifier).semantics { contentDescription = "Card name" })
         }
         DockButton("Confirm", !ctx.busy && exact != null, this@with, look = Look.SEARCH_GOLD, weight = FontWeight.Bold) { confirm() }
     }
-    hits.forEach { n ->
-        val on = n.equals(typed.trim(), ignoreCase = true)
-        DockButton(n, !ctx.busy, this@with, Modifier.fillMaxWidth(), look = if (on) Look.PRESSED else Look.PLAIN, align = TextAlign.Start, height = 44f, size = 13f) { typed = n }
+    if (exact == null) hits.forEach { n ->
+        DockButton(n, !ctx.busy, this@with, Modifier.fillMaxWidth(), align = TextAlign.Start, height = 44f, size = 13f) { typed = n }
     }
     PadScreen(PadActs(x = if (!ctx.busy && exact != null) PadAct("Confirm") { confirm() } else null))
+}
+
+/** A name on the table as its whole card (58 × 81), gold-ringed when picked; "Ability" when the source would stop one of its abilities. */
+@Composable
+private fun NameTileView(t: NameTile, on: Boolean, enabled: Boolean, d: DockU, scale: Float, modifier: Modifier, onClick: () -> Unit) = with(d) {
+    val shape = RoundedCornerShape(5.du)
+    Box(modifier.padding(top = 6.du, end = 4.du).semantics { contentDescription = t.name + (if (t.count > 1) ", ${t.count}" else ""); selected = on }) {
+        CardImage(t.name, Modifier.width((58f * scale).du).height((81f * scale).du)
+            .graphicsLayer { translationY = if (on) -2f * d.u * density else 0f }
+            .boxShadow(if (on) Color(0x8CE8B95B) else Color(0x80000000), if (on) 14.du else 6.du, 0.du, radius = 5.du)
+            .clip(shape).border(if (on) 2.dp else 1.dp, if (on) Color(0xFFF2D18E) else Color(0x66D6AD64), shape).tap(enabled, onClick), contentScale = ContentScale.Crop)
+        if (t.ability) Text("Ability", style = ts(8.5f, 11f, FontWeight.Bold, Color(0xFF241605)), modifier = Modifier.align(Alignment.TopEnd).offset(x = 4.du, y = (-6).du)
+            .clip(RoundedCornerShape(999.dp)).background(Brush.verticalGradient(listOf(Color(0xFFF7DA97), Color(0xFFC4903A)))).padding(horizontal = 6.du, vertical = 1.du))
+        if (t.count > 1) Text("×${t.count}", style = ts(9f, 12f, FontWeight.Bold, Color(0xFFF2D18E)), modifier = Modifier.align(Alignment.BottomEnd).padding(end = 3.du, bottom = 4.du)
+            .clip(RoundedCornerShape(999.dp)).background(Color(0xFF1B1C20)).border(1.dp, Color(0xFFC99A4B), RoundedCornerShape(999.dp)).padding(horizontal = 5.du))
+    }
 }
 
 // ---- A reveal (native-panel.mjs:354-359) ----

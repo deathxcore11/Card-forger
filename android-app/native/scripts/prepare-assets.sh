@@ -22,6 +22,8 @@ tar -xzf "$ENGINE_TGZ" -C "$T"
 cp "$T"/android/libs/*.jar "$HERE/engine-libs/"
 cp "$T"/android/assets/forge-engine/pack.zip "$T"/android/assets/forge-engine/pack.version "$A/forge-engine/"
 cp "$REPO"/forge-rules/app/{manifest.json,cards.json,official-format-facts.json} "$A/forge-rules-seed/"
+# Each face's card types for "name a card" prompts (scripts/bake-card-types.mjs, from Scryfall's Oracle list).
+cp "$HERE/data/card-types.json" "$A/forge-rules-seed/"
 for f in playmat-charcoal-table.webp playmat-charcoal-table-glow.webp turn-you.webp turn-cpu.webp result-win.webp result-loss.webp result-draw.webp; do cp "$REPO/assets/play/$f" "$A/play/"; done
 cp "$REPO/art-packs/planeswalk-codex/Existing_Project_Art/chandra.jpg" "$A/play/planeswalk-tile.jpg" 2>/dev/null || cp "$REPO/assets/planeswalk-tile.jpg" "$A/play/planeswalk-tile.jpg"
 # The sound ids play-table-audio.js uses at the table.

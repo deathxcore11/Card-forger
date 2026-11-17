@@ -74,6 +74,20 @@ class NamePromptShotTest {
         }
     }
 
+    /** The names on the table come first: the CPU's lands whose abilities Hamlet stops, then its other lands, its graveyard, yours. */
+    @Test fun theTableOffersItsLands() {
+        val st = MatchState.parse(javaClass.classLoader!!.getResource("table/snap-dock-name.json")!!.readText())!!
+        val g = dev.cardstashy.nativeplay.ui.nameGroups(st, dev.cardstashy.nativeplay.engine.CardNames.want(st.prompt!!.message))
+        assertEquals(listOf("CPU BATTLEFIELD", "CPU GRAVEYARD", "YOURS"), g.map { it.label })
+        assertEquals(listOf("Mutavault", "Otawara, Soaring City", "Island"), g[0].tiles.map { it.name })
+        assertEquals(listOf(true, true, false), g[0].tiles.map { it.ability }); assertEquals(3, g[0].tiles[2].count)
+        assertEquals(listOf("Field of Ruin"), g[1].tiles.map { it.name })
+        assertTrue("no creature or spell is offered", g.flatMap { it.tiles }.none { it.name in setOf("Grizzly Bears", "Counterspell", "Lightning Bolt", "Sol Ring") })
+        assertEquals(listOf("Forest", "Mountain", "Petrified Hamlet"), g[2].tiles.map { it.name })
+        assertFalse(dev.cardstashy.nativeplay.ui.hasNonManaAbility("({T}: Add {G}.)"))
+        assertFalse(dev.cardstashy.nativeplay.ui.hasNonManaAbility("{T}: Add {C}."))
+    }
+
     @Test fun shots() {
         dev.cardstashy.nativeplay.ui.Motion.still = true
         CardImageTest.art = { name, crop -> art.resolve(key(name, crop) + ".jpg").takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
