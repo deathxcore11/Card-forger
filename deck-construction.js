@@ -226,8 +226,12 @@ export function chooseDeck(candidates,request) {
  const strategyClass=c=>({supported:0,'not-requested':0,partial:1,unverified:2,insufficient:3}[c.plan.theme?.status]??0);
  const referencePrior=c=>request.game==='mtg'&&request.format==='Standard'&&(!request.goal||request.goal==='strongest')&&!request.easy&&!String(request.theme||request.style||'').trim()&&c.deck.referenceQualifiedForBuild===true&&c.deck.constructionBasis==='reference'&&c.deck.referenceAdaptation?.sameList&&!c.deck.referenceAdaptation.modeMismatch?1:0;
  const supportClass=c=>c.plan.finalSupport?.status==='unverified'?1:c.plan.finalSupport?.status==='known-incomplete'?2:0;
+ // A Plan or Power change on a built deck asks for the strongest list for the new choice, so power decides before the closing-plan
+ // class. Seen 17 Nov (Randall, deck 6): a Casual build switched to Max kept its Casual cards at 63 while lists reading 70 were found,
+ // because the old list's closing plan was classed "supported" and theirs "unverified".
+ const retunePower=(a,b)=>request.retune===true?comparePower(b.power,a.power):0;
  // "Closest" (the cap fits no complete deck): among lists over the budget, the cheapest one is the answer.
- valid.sort((a,b)=>budgetClass(a)-budgetClass(b)||(request.closest===true&&budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||strategyClass(a)-strategyClass(b)||supportClass(a)-supportClass(b)||(request.easy?a.plan.setupBurden-b.plan.setupBurden:0)||(budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||(request.preferOwned?b.pricing.ownedCopies/b.pricing.copies-a.pricing.ownedCopies/a.pricing.copies:0)||referencePrior(b)-referencePrior(a)||comparePower(b.power,a.power)||a.pricing.unpriced-b.pricing.unpriced||a.pricing.subtotal-b.pricing.subtotal);
+ valid.sort((a,b)=>budgetClass(a)-budgetClass(b)||(request.closest===true&&budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||strategyClass(a)-strategyClass(b)||retunePower(a,b)||supportClass(a)-supportClass(b)||(request.easy?a.plan.setupBurden-b.plan.setupBurden:0)||(budgetClass(a)===3?a.pricing.estimate-b.pricing.estimate:0)||(request.preferOwned?b.pricing.ownedCopies/b.pricing.copies-a.pricing.ownedCopies/a.pricing.copies:0)||referencePrior(b)-referencePrior(a)||comparePower(b.power,a.power)||a.pricing.unpriced-b.pricing.unpriced||a.pricing.subtotal-b.pricing.subtotal);
  const winner=valid[0];
  if(!winner){
   const nearest=[...candidates].sort((a,b)=>Number(b.check.complete)-Number(a.check.complete)||a.plan.issues.length-b.plan.issues.length)[0];

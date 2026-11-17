@@ -69,7 +69,7 @@ flowCalls.flowRetune = async a => {
   const item = itemOf(a.id), r = item.result;
   if (!['plan', 'power'].includes(a.field)) return {cancelled: true};
   const me = ++current; status = 'Rebuilding your deck…';
-  const result = await deckPipeline.build({...r.request, closest: false, ...(a.field === 'plan' ? {plan: a.value} : {power: a.value, forge: r.request.forge ? {...r.request.forge, power: a.value} : undefined}),
+  const result = await deckPipeline.build({...r.request, closest: false, retune: true, ...(a.field === 'plan' ? {plan: a.value} : {power: a.value, forge: r.request.forge ? {...r.request.forge, power: a.value} : undefined}),
     previousDeck: r.deck, previousBudget: r.request.budget, previousEstimate: r.pricing.estimate}, {current: live(me), onStatus: m => { if (me === current) status = String(m); }});
   if (me !== current) return {cancelled: true};
   status = '';
@@ -83,7 +83,7 @@ flowCalls.flowRebuildUnlocked = async a => {
   const locked = [...item.locked].map(k => { const [zone, ...rest] = k.split(':'); return r.rows.find(row => row.zone === zone && row.name === rest.join(':')); }).filter(row => row && row.zone === 'main');
   const me = ++current; status = 'Finding cards around your locked cards…';
   const seed = Array.from({length: 6}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
-  const result = await deckPipeline.build({...r.request, closest: false, locked_cards: locked.map(row => ({name: row.name, qty: row.qty})),
+  const result = await deckPipeline.build({...r.request, closest: false, retune: false, locked_cards: locked.map(row => ({name: row.name, qty: row.qty})),
     forge: {...(r.request.forge || {}), power: r.request.forge?.power || r.request.power, variation: 'varied', seed}, previousDeck: r.deck, previousBudget: r.request.budget, previousEstimate: r.pricing.estimate},
     {current: live(me), onStatus: m => { if (me === current) status = String(m); }});
   if (me !== current) return {cancelled: true};
@@ -125,7 +125,7 @@ flowCalls.flowAdjust = async a => {
   const item = results.get(a.id); if (!item) throw Error('Your account or collection changed. Rebuild before opening this deck.');
   const budget = customBudget(a.budget);
   const me = ++current; status = 'Finding cards for your updated budget…';
-  const result = await deckPipeline.build({...item.result.request, budget, closest: false, previousDeck: item.result.deck, previousBudget: item.result.request.budget, previousEstimate: item.result.pricing.estimate},
+  const result = await deckPipeline.build({...item.result.request, budget, closest: false, retune: false, previousDeck: item.result.deck, previousBudget: item.result.request.budget, previousEstimate: item.result.pricing.estimate},
     {current: live(me), onStatus: m => { if (me === current) status = String(m); }});
   if (me !== current) return {cancelled: true};
   status = '';
