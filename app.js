@@ -2612,7 +2612,7 @@ function storyNeedAct(n,pool=true){
 }
 const storyGo=view=>{playView=view;playInspectOpen=false;refreshPlayMenu();scrollTo({top:0});requestAnimationFrame(()=>document.getElementById('playTitle')?.focus?.({preventScroll:true}));};
 A.storyHome=()=>{storyProgress.wake();for(const a of STORY_ACTS)storyNeedAct(a.act,false);storyGo('story');};
-A.storyOpenAct=t=>{const n=Number(t?.dataset?.storyAct||storyUi.act);if(!STORY_ACTS.some(a=>a.act===n))return;storyUi.act=n;storyNeedAct(n);storyGo('storyAct');};
+A.storyOpenAct=t=>{const n=Number(t?.dataset?.storyAct||storyUi.act);if(!STORY_ACTS.some(a=>a.act===n))return;storyUi.act=n;storyNeedAct(n);storyGo('storyAct');setTimeout(()=>document.querySelector('.st-now')?.scrollIntoView({block:'nearest'}),120);};
 A.storyOpenBattle=t=>{storyUi.battle=t.dataset.storyBattle;storyUi.seat='hero';storyUi.deck='loaner';storyUi.listSide='mine';storyUi.listOpen=false;storyGo('storyBattle');storyWantArt();storyWarm();
  // The boss runs on the host: start warming it while the player reads the setup (story-mode-acts.md A1).
  if(storyBattle()?.host)void import('./play-forge-host-client.js').then(m=>m.warmForgeHost({getAccessToken:cloudAccessToken})).catch(()=>{});};
