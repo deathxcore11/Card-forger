@@ -205,13 +205,29 @@ const PLAN_SHAPES = Object.freeze({
   control: { id: "control", board: false, threats: 8, removalMin: 12, removal: 16 },
 });
 // The job a card does in a built deck, by the same tests the builder uses: the deck view groups by it.
+// A spell whose job is to counter a spell. Creature decks do not main-deck them (3 of 89 real creature lists play four or more).
+export const isCounterspell = (c) => !/\bCreature\b/.test(typeText(c).split(" // ")[0]) && /\bcounter target\b[^.]*\bspell\b/i.test(rulesText(c));
+// A card that hands itself to the opponent ("that player gains control of Kain"): a trap unless the player asked for it.
+export const givesItselfAway = (c) => { const short = String(c?.name || "").split(" // ")[0].split(",")[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); return new RegExp("\\b(?:that player|an opponent|target opponent|defending player) gains control of (?:this creature|this permanent|this artifact|" + short + ")\\b", "i").test(rulesText(c)); };
 export const cardJob = (c) => /\bLand\b/.test(typeText(c).split(" // ")[0]) ? "Lands" : isThreat(c) ? "Threats" : forgeRoles(c).some((r) => r === "interaction" || r === "wipe") ? "Removal" : "Support";
+// How much "current tournament lists play this" counts, by the Power dial: Strong and Max mean real staples first.
+// A control deck's creatures are a few finishers: real control lists average 1.3 creatures beside 7 counterspells and 4 planeswalkers.
+const CONTROL_CREATURES = 10;
+const PRIOR_WEIGHT = (power) => power === "max" ? 20 : power === "strong" ? 14 : power === "focused" ? 8 : 6;
 export const DECK_PLANS = Object.freeze(["auto", "aggro", "midrange", "control"]);
 export function planShape(plan, seeds = [], style = "") {
   if (PLAN_SHAPES[plan]) return PLAN_SHAPES[plan];
   const asked = playStylesIn(style);
-  if (asked.includes("control") || asked.includes("removal")) return { id: "auto", board: false };
-  return seeds.some((c) => c && isThreat(c)) ? { ...PLAN_SHAPES.midrange, id: "auto" } : { id: "auto", board: false };
+  if (asked.includes("control") || asked.includes("removal")) return PLAN_SHAPES.control;
+  const lead = seeds.find(Boolean);
+  if (!lead) return { id: "auto", board: false };
+  // Auto always commits to a plan (seen 16 Nov: a 4/1 defender build-around got no plan and twenty removal spells).
+  // Real Standard lists are one of two decks: creature decks (about 23 creatures, half a counterspell) or control
+  // (about 1 creature, 7 counterspells, 4 planeswalkers). A planeswalker or an answer/draw spell leads a control deck;
+  // every other card, a wall or an engine piece included, gets the creature deck's numbers.
+  const front = typeText(lead).split(" // ")[0], roles = forgeRoles(lead);
+  if (/\bPlaneswalker\b/.test(front) || (/\b(?:Instant|Sorcery)\b/.test(front) && (isCounterspell(lead) || roles.some((r) => r === "interaction" || r === "wipe" || r === "draw")))) return PLAN_SHAPES.control;
+  return { ...PLAN_SHAPES.midrange, id: "auto" };
 }
 // What the Build a deck sheet shows before a build ("This build"): the same numbers the builder enforces, or null when it holds none.
 export function buildPlanTargets({ plan = "auto", seed = null, size = 60, commander = false, style = "" } = {}) {
@@ -365,7 +381,7 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
 
   const pool = [...new Map(Object.values(catalog).filter((c) => c?.name && !isLand(c) && isLegal(c) && fitsDeck(c, deckColors, f.commander)).map((c) => [cardKey(c.name), c])).values()],
     supports=c=>seedSubs.some(t=>tribalSupport(c,t))||themeSupport(c,{roles:seedTags,tokenKinds:intent.tokenKinds}).length>0,
-    scored = pool.map((c) => ({ c, plan:supports(c), forge:forgeScore(c, hooks, { leader: forgeLead, power }), s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) - (mtgSelfConflicts([...seeds,...(lead?[lead]:[]),c]).length?24:0) + needBoost(c) + conditionBoost(c) + (prior && goal !== "weak" ? (Number(prior(c)) || 0) * (power === 'strong' || power === 'max' ? 8 : 6) : 0) }));
+    scored = pool.map((c) => ({ c, plan:supports(c), forge:forgeScore(c, hooks, { leader: forgeLead, power }), s: -(easy?setupBurden('mtg',c)*3:0) + scoreCard(c, seedTags, seedSubs, { free: available(c.name) || preferred(c), size, tokenKinds:intent.tokenKinds, goal }) + goalCardPreference(c,goal,{suggested:suggestedCards.some(name=>cardKey(name)===cardKey(c.name))}) + (styleFit(c,intent.requested)?(goal === "theme"?16:8):0) - (mtgSelfConflicts([...seeds,...(lead?[lead]:[]),c]).length?24:0) + needBoost(c) + conditionBoost(c) + (prior && goal !== "weak" ? ((w) => w > 0 ? w * PRIOR_WEIGHT(power) : -(power === 'max' ? 12 : power === 'strong' ? 6 : 0))(Number(prior(c)) || 0) : 0) }));
   for (const x of scored) { x.s += x.forge.score + forgeNoise(forgeSeed, x.c.name, variation); x.roles = forgeRoles(x.c); x.hookIds = x.forge.fit.hooks; }
   // Needs (deck-needs.js): a card whose need the whole legal pool cannot meet is never a candidate
   // (Pirate's Cutlass with no Pirates to find); a colour fixer in a deck of one colour or none sinks.
@@ -380,6 +396,8 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     if (keptKeys.has(key)) continue;
     // A creature deck plays no sweeper in its main deck, least of all one that kills its own side (seen 16 Nov: four Fire Magic beside sixteen small creatures).
     if (board && (x.needs.some(need => need.max) || x.roles.includes("wipe"))) { scored.splice(i, 1); continue; }
+    // Nor a counterspell: creature decks tap out on their own turn. And no deck takes a card that hands itself to the opponent.
+    if ((board && isCounterspell(x.c)) || givesItselfAway(x.c)) { scored.splice(i, 1); continue; }
     if (idleFixer(x.c, deckColors)) { scored.splice(i, 1); continue; }
     if (!x.needs.length) continue;
     const reachable = need => pool.reduce((n, c) => n + (provides(need, key, c) ? maxCopies(c) : 0), 0) >= need.min(size);
@@ -487,10 +505,10 @@ function buildDeckOnce({ format, seeds = [], base = [], catalog, available = () 
     const needAdj=x=>openNeeds.reduce((n,o)=>n+(provides(o.need,o.owner,x.c)?(o.kept?10:5):0),0)-(x.needs?.length&&!keptKeys.has(cardKey(x.c.name))&&x.needs.some(need=>providersIn(need,cardKey(x.c.name))<need.min(size))?3:0);
     // A 60-card list needs ways to win: until twelve cards can attack or make attackers, those rise.
     const threats=size<100?deckRows().reduce((n,r)=>n+(isThreat(r.card)?r.qty:0),0):Infinity;
-    const removalNow=board?removalIn():0;
+    const removalNow=board||control?removalIn():0,creaturesNow=control?deckRows().reduce((n,r)=>n+(/\bCreature\b/.test(typeText(r.card).split(' // ')[0])?r.qty:0),0):0;
     // In a creature deck a card is paid for its best job once: three half-jobs do not outrank the format's real removal (seen 16 Nov: Case of the Burning Masks ahead of Torch the Tower).
     const roleSum=b=>board?Math.max(0,...b)+Math.min(0,...b):b.reduce((n,v)=>n+v,0);
-    const adaptive=x=>x.s+needAdj(x)+sweepAdj(x)+(threats<(board?BOARD.threats:control?8:12)&&isThreat(x.c)?8:0)-(shape.id==="aggro"?Math.max(0,(Number(x.c.cmc)||0)-3)*2:0)+(board&&removalNow<BOARD.removalMin&&removalSpell(x.c)?6+8*(prior?Number(prior(x.c))||0:0):0)+(x.plan&&supportCopies<Math.ceil(spellTarget*.35)?6:0)+roleSum(x.roles.map(roleBonus))+hooks.reduce((n,h)=>n+(h.min&&x.hookIds.includes(h.id)&&(counts.get('hook:'+h.id)||0)<h.min?5:0),0);
+    const adaptive=x=>x.s+needAdj(x)+sweepAdj(x)+(threats<(board?BOARD.threats:control?8:12)&&isThreat(x.c)?8:0)-(shape.id==="aggro"?Math.max(0,(Number(x.c.cmc)||0)-3)*2:0)-(control&&creaturesNow>=CONTROL_CREATURES&&!keptKeys.has(cardKey(x.c.name))&&/\bCreature\b/.test(typeText(x.c).split(' // ')[0])?20:0)+((board||control)&&removalNow<BOARD.removalMin&&removalSpell(x.c)?6+8*(prior?Number(prior(x.c))||0:0):0)+(x.plan&&supportCopies<Math.ceil(spellTarget*.35)?6:0)+roleSum(x.roles.map(roleBonus))+hooks.reduce((n,h)=>n+(h.min&&x.hookIds.includes(h.id)&&(counts.get('hook:'+h.id)||0)<h.min?5:0),0);
     remaining.sort((a,b)=>adaptive(b)-adaptive(a)||a.c.name.localeCompare(b.c.name));
     const {c}=remaining.shift();
     const left = spellTarget - nonland();

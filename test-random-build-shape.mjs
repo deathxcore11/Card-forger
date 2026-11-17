@@ -68,7 +68,8 @@ for (const anchor of ['Gastal Blockbuster', 'Aetherjacket', 'Fanatical Firebrand
  assert.deepEqual(buildPlanTargets({ plan: 'auto', seed: card(fx.seed) }), { threats: '20+', removal: '6–10', sweepers: '0' });
  assert.deepEqual(buildPlanTargets({ plan: 'aggro', seed: card(fx.seed) }), { threats: '24+', removal: '6–8', sweepers: '0' });
  assert.deepEqual(buildPlanTargets({ plan: 'control', seed: card(fx.seed) }), { threats: '8+', removal: '12+', sweepers: '3' });
- assert.equal(buildPlanTargets({ plan: 'auto', seed: card('Abrade') }), null, 'Auto holds no numbers for a build-around that does not attack');
+ assert.equal(buildPlanTargets({ plan: 'auto', seed: null }), null, 'no card chosen yet: no numbers');
+ assert.deepEqual(buildPlanTargets({ plan: 'auto', seed: card('Abrade') }), buildPlanTargets({ plan: 'control' }), 'Auto reads an answer spell as a control build-around');
  assert.deepEqual(buildPlanTargets({ size: 100, commander: true }), { lands: '38', ramp: '10', draw: '12', removal: '10', sweepers: '3' });
  assert.equal(planShape('auto', [card(fx.seed)], 'control').board, false, 'a control request in words still wins over Auto');
  const aggro = read(buildDeck({ ...options, plan: 'aggro' })), mid = read(buildDeck({ ...options, plan: 'midrange' })), control = read(buildDeck({ ...options, plan: 'control' }));
@@ -116,4 +117,50 @@ console.log('random build shape: the reported Rubble Rouser pool builds a creatu
  const deck = buildDeck({ ...options, base: [{ name: fx.seed, qty: 4 }, { name: 'Burst Lightning', qty: 4 }, { name: 'Fear of Missing Out', qty: 3 }], variation: 'varied', forgeSeed: 'LOCK22' }), qty = n => deck.cards.find(r => r.name === n)?.qty;
  assert.equal(qty(fx.seed), 4); assert.equal(qty('Burst Lightning'), 4); assert.ok(qty('Fear of Missing Out') >= 3, 'a locked card keeps at least its copies');
  assert.equal(deck.cards.reduce((n, r) => n + r.qty, 0), 60);
+}
+
+// Seen 16 Nov 2026 by Randall on the released builder (three more Standard Random builds):
+//  - Monoist Sentry (a 4/1 defender), Plan Auto, Power Strong: twenty removal spells and almost nothing that wins,
+//    with Kain, Traitorous Dragoon, who hands himself to the opponent. A defender is not a "threat", so Auto held no plan.
+//  - Drogskol Reaver: nineteen creatures beside seven counterspells. Real creature lists average half a counterspell.
+//  - A planeswalker build-around (The Theorist, Jace Beleren) built 22 creatures; the 33 real lists that play it are control.
+// The fixture is the card pool the site loaded for each of those builds; the lists are the same 131.
+{
+ const { planShape, isCounterspell, givesItselfAway } = await import('./builder.js');
+ const fx2 = JSON.parse(zlib.gunzipSync(fs.readFileSync(new URL('./test-fixtures/random-build-pools-2026-11-17.json.gz', import.meta.url))));
+ const pool = Object.fromEntries(fx2.cards.map(c => [cardKey(c.name), c])), get = n => pool[cardKey(n)];
+ const build = (seed, colors, more = {}) => buildDeck({ format: 'Standard', seeds: [get(seed)], base: [{ name: seed, qty: 1 }], catalog: pool, colors, price: c => Number(c?.prices?.usd) || null, prior: c => prior.weight(c.name), ...more });
+ const shape = deck => { const rows = deck.cards.map(r => ({ ...r, card: get(r.name) })).filter(r => !isLand(r.card)), sum = f => rows.filter(r => f(r.card)).reduce((n, r) => n + r.qty, 0);
+  return { rows, creatures: sum(c => /\bCreature\b/.test(c.type_line.split(' // ')[0])), threats: sum(isThreat), removal: sum(c => forgeRoles(c).includes('interaction') && !isThreat(c)), counters: sum(isCounterspell), total: deck.cards.reduce((n, r) => n + r.qty, 0) }; };
+ // Card facts, checked on Scryfall.
+ assert.equal(get('Monoist Sentry').power, '4'); assert.match(get('Monoist Sentry').oracle_text, /Defender/);
+ assert.equal(isThreat(get('Monoist Sentry')), false, 'a defender does not attack');
+ assert.equal(givesItselfAway(get('Kain, Traitorous Dragoon')), true, 'Kain hands himself to the opponent');
+ assert.equal(givesItselfAway(get('Bitter Triumph')), false);
+ for (const n of ['Countersculpt', 'Three Steps Ahead', 'Spell Snare']) assert.equal(isCounterspell(get(n)), true, n + ' counters a spell');
+ assert.equal(isCounterspell(get('Erode')), false);
+ // Auto always commits to a plan.
+ assert.equal(planShape('auto', [get('Monoist Sentry')]).board, true, 'a wall build-around gets the creature deck numbers');
+ assert.equal(planShape('auto', [get('Drogskol Reaver')]).board, true);
+ assert.equal(planShape('auto', [get('The Theorist, Jace Beleren')]).id, 'control', 'a planeswalker leads a control deck');
+ assert.equal(planShape('auto', [get('Countersculpt')]).id, 'control', 'so does a counterspell');
+ // Monoist Sentry, every Power setting: a creature deck, not a removal pile, and no Kain.
+ for (const power of [null, 'casual', 'strong', 'max']) {
+  const deck = build('Monoist Sentry', ['B'], { power }), d = shape(deck), label = 'Monoist Sentry at ' + power + ': ';
+  assert.equal(d.total, 60, label + 'sixty cards'); assert.equal(d.rows.find(r => r.name === 'Monoist Sentry')?.qty, 4, label + 'four copies of the build-around');
+  assert.ok(d.threats >= 20, label + d.threats + ' threats'); assert.ok(d.removal <= 10 && d.removal >= 4, label + d.removal + ' removal spells');
+  assert.ok(!d.rows.some(r => r.name === 'Kain, Traitorous Dragoon'), label + 'no card that hands itself to the opponent');
+ }
+ // Power Strong and Max mean cards real lists play: fewer cards no current list plays than at Casual.
+ { const unplayed = power => shape(build('Monoist Sentry', ['B'], { power })).rows.filter(r => r.name !== 'Monoist Sentry' && prior.weight(r.name) === 0).reduce((n, r) => n + r.qty, 0);
+  assert.ok(unplayed('max') <= unplayed('casual'), 'Max plays no more unplayed cards than Casual: ' + unplayed('max') + ' vs ' + unplayed('casual'));
+  assert.ok(unplayed('max') <= 4, 'at Max at most one playset of cards no real list plays: ' + unplayed('max')); }
+ // Drogskol Reaver: a creature deck with no main-deck counterspell.
+ { const d = shape(build('Drogskol Reaver', ['W', 'U'], { power: 'casual' }));
+  assert.equal(d.total, 60); assert.equal(d.counters, 0, 'a creature deck main-decks no counterspell: ' + d.rows.filter(r => isCounterspell(r.card)).map(r => r.qty + ' ' + r.name));
+  assert.ok(d.threats >= 20, d.threats + ' threats'); }
+ // The Theorist, Jace Beleren: a control deck. Few creatures, counterspells and answers in numbers.
+ { const d = shape(build('The Theorist, Jace Beleren', ['U'], { power: 'casual' }));
+  assert.equal(d.total, 60); assert.ok(d.creatures <= 12, d.creatures + ' creatures in a control deck; real control lists average 1.3');
+  assert.ok(d.removal >= 12, d.removal + ' answers; real control lists play 14'); assert.ok(d.counters >= 4, d.counters + ' counterspells; real control lists average 7.5'); }
 }

@@ -185,3 +185,17 @@ console.log('PASS: actual partial Bloodlust coverage, conditional Drana/first-st
  const tight=pipeline.swapOptions({...base,request:{...base.request,budget:base.pricing.estimate,budgetMode:'cap'}},spell.name);
  assert(tight.every(o=>o.price<=cardPrice(spell.card)+1e-9),'no option pushes a capped deck over its budget');
 }
+
+// Plan and Power on the built deck (Randall, 16 Nov: "Strong" gave 57 power and he had to go back to change it).
+{const bear={name:'Fixture bear',type_line:'Creature — Bear',power:'2',toughness:'2',oracle_text:'',cmc:2},rows=[{name:'Fixture bear',qty:36,zone:'main',card:bear,price:1},{name:'Island',qty:24,zone:'main',card:land,price:.1}];
+ const built={...result,rows,pricing:{...result.pricing,estimate:40,unpriced:0},request:{...result.request,game:'mtg',format:'Standard',formatName:'Standard',budget:null,seedCard:bear,plan:'auto',power:'strong'},delta:null,budgetStatus:'not-requested'};
+ const shown=deckResultMarkup(built,'tune');
+ assert(/class="chip pick on" aria-pressed="true" data-act="flowRetune" data-result="tune" data-field="plan" data-value="midrange"/.test(shown),'the plan Auto used is lit');
+ assert(/class="chip pick on" aria-pressed="true" data-act="flowRetune" data-result="tune" data-field="power" data-value="strong"/.test(shown),'the power used is lit');
+ for(const v of ['aggro','control'])assert(shown.includes(`data-field="plan" data-value="${v}"`));for(const v of ['casual','focused','max'])assert(shown.includes(`data-field="power" data-value="${v}"`));
+ assert(!/flowRetune/.test(deckResultMarkup({...built,request:{...built.request,format:'Commander'}},'edh')),'Commander keeps its Bracket on the sheet');
+ // The sheet shows numbers for every chosen card now: a wall gets the creature deck's, a planeswalker the control deck's.
+ const {deckBuildChoices}=await import('./deck-experience.js'),wall={name:'Fixture wall',type_line:'Artifact Creature — Wall',power:'4',toughness:'1',oracle_text:'Defender',cmc:1},walker={name:'Fixture walker',type_line:'Legendary Planeswalker — Jace',oracle_text:'+1: Draw a card.',cmc:4};
+ assert(/<b>20\+<\/b><span>Threats<\/span>/.test(deckBuildChoices({game:'mtg',format:'Standard',seedCard:wall},pipeline.formats)),'a defender build-around shows the creature deck numbers');
+ assert(/<b>8\+<\/b><span>Threats<\/span>/.test(deckBuildChoices({game:'mtg',format:'Standard',seedCard:walker},pipeline.formats)),'a planeswalker build-around shows the control numbers');
+}
