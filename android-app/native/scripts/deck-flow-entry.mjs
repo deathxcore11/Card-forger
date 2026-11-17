@@ -64,6 +64,19 @@ flowCalls.flowSwapTake = a => {
   const id = register(updated); carry(id, item); results.get(id).locked.delete(swap.zone + ':' + swap.name);
   return resultModel(id);
 };
+// A.flowRetune: the deck again with another Plan or Power, from the previous deck (locks cleared, as the site does).
+flowCalls.flowRetune = async a => {
+  const item = itemOf(a.id), r = item.result;
+  if (!['plan', 'power'].includes(a.field)) return {cancelled: true};
+  const me = ++current; status = 'Rebuilding your deck…';
+  const result = await deckPipeline.build({...r.request, closest: false, ...(a.field === 'plan' ? {plan: a.value} : {power: a.value, forge: r.request.forge ? {...r.request.forge, power: a.value} : undefined}),
+    previousDeck: r.deck, previousBudget: r.request.budget, previousEstimate: r.pricing.estimate}, {current: live(me), onStatus: m => { if (me === current) status = String(m); }});
+  if (me !== current) return {cancelled: true};
+  status = '';
+  if (!result.ok) return {ok: false, message: result.message};
+  const id = register(result); carry(id, item); results.get(id).locked = new Set();
+  return {ok: true, model: resultModel(id)};
+};
 // A.flowRebuildUnlocked: a build around the locked cards (a fresh variation), over the result.
 flowCalls.flowRebuildUnlocked = async a => {
   const item = itemOf(a.id), r = item.result;

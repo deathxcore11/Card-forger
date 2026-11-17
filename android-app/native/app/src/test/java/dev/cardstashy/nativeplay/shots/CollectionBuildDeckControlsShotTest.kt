@@ -53,7 +53,7 @@ class CollectionBuildDeckControlsShotTest {
         override suspend fun call(name: String, a: JsonObject): RandomBuild.Flow {
             calls += name; args += a
             fun withExtra(swap: Boolean, tap: String) = result.deepCopy().apply {
-                add("quick", extra.get("quick")); add("unlocked", extra.get("unlocked"))
+                add("quick", extra.get("quick")); add("unlocked", extra.get("unlocked")); add("retune", extra.get("retune"))
                 val sw = extra.getAsJsonArray("switches").deepCopy()
                 sw.forEach { s -> if (s.asJsonObject.get("act").asString == "flowTap") s.asJsonObject.getAsJsonArray("items").forEach { i -> i.asJsonObject.addProperty("on", i.asJsonObject.get("value").asString == tap) } }
                 add("switches", sw); if (swap) add("swap", extra.get("swap"))
@@ -71,6 +71,7 @@ class CollectionBuildDeckControlsShotTest {
                 "flowCardTap" -> RandomBuild.Flow(JsonObject().apply { addProperty("open", false); add("model", withExtra(true, "swap")) }, null)
                 "flowSwapKeep" -> RandomBuild.Flow(withExtra(false, "swap"), null)
                 "flowBudget" -> RandomBuild.Flow(com.google.gson.JsonPrimitive(true), null)
+                "flowRetune" -> RandomBuild.Flow(JsonObject().apply { addProperty("ok", true); add("model", withExtra(false, "open")) }, null)
                 "flowAdjust" -> RandomBuild.Flow(JsonObject().apply { addProperty("ok", true); add("model", withExtra(false, "open")) }, null)
                 else -> RandomBuild.Flow(null, "unknown $name")
             }
@@ -98,6 +99,11 @@ class CollectionBuildDeckControlsShotTest {
         rule.onNodeWithText("\$11").performScrollTo().performClick(); settle(20)
         val adj = fake.args[fake.calls.lastIndexOf("flowAdjust")]
         assertEquals("11", adj.get("budget").asString); assertTrue("a chip rebuilds as a cap", adj.get("quick").asBoolean)
+        // Plan and Power on the built deck: the used one lit; Control rebuilds with plan control.
+        assertTrue("Plan and Power chips", seen("Midrange") && seen("Strong"))
+        rule.onNodeWithText("Control").performScrollTo().performClick(); settle(20)
+        val tune = fake.args[fake.calls.lastIndexOf("flowRetune")]
+        assertEquals("plan", tune.get("field").asString); assertEquals("control", tune.get("value").asString)
         // Swap mode: the panel with its options.
         rule.onNodeWithContentDescription("Swap").performScrollTo().performClick(); settle(20)
         assertEquals("flowTap", fake.calls.last()); assertEquals("swap", fake.args.last().get("tap").asString)

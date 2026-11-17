@@ -66,7 +66,10 @@ export function resultModel(id, item, deckResultMarkup) {
     save: (() => { const b = q('[data-act="flowSave"]'); return {label: text(b), disabled: !!b?.disabled}; })(),
     rebuild: {summary: text(q('.ds-rebuild summary')), label: text(q('.deck-budget-rebuild label')), placeholder: q('[data-flow-budget]')?.getAttribute('placeholder') || '', button: text(q('[data-act="flowAdjust"]'))},
     // Lower budget chips; the Group and Tap switches; Rebuild unlocked; the Swap panel (Magic).
-    quick: (() => { const g = q('.deck-budget-quick'); return g ? {label: text(g.querySelector('span')), items: [...g.querySelectorAll('button')].map(b => ({value: b.getAttribute('data-budget') || '', label: text(b)}))} : null; })(),
+    quick: (() => { const g = q('.deck-budget-quick[aria-label="Lower budget"]'); return g ? {label: text(g.querySelector('span')), items: [...g.querySelectorAll('button')].map(b => ({value: b.getAttribute('data-budget') || '', label: text(b)}))} : null; })(),
+    // Plan and Power on the built deck (A.flowRetune): the one the build used lit; a tap rebuilds with another.
+    retune: qa('.deck-budget-quick').filter(g => g.querySelector('[data-act="flowRetune"]')).map(g => ({label: text(g.querySelector('span')), field: g.querySelector('button')?.getAttribute('data-field') || '',
+      items: [...g.querySelectorAll('button')].map(b => ({value: b.getAttribute('data-value') || '', label: text(b), on: b.getAttribute('aria-pressed') === 'true'}))})),
     switches: qa('.deck-group-switch').map(g => { const first = g.querySelector('button'); const key = first?.getAttribute('data-act') || '';
       return {label: text(g.querySelector('span')), act: key, items: [...g.querySelectorAll('.seg button')].map(b => ({value: b.getAttribute('data-group') || b.getAttribute('data-tap') || '', label: text(b), on: b.getAttribute('aria-pressed') === 'true' || b.classList.contains('on')}))}; }),
     unlocked: text(q('[data-act="flowRebuildUnlocked"]')),

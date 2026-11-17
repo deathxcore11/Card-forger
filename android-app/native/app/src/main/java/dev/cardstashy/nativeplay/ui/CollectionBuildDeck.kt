@@ -237,13 +237,13 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
         }
     }
     // A.flowRebuildUnlocked: a new build around the locked cards, over the result (the same pop-up as a budget rebuild).
-    fun rebuildUnlocked() {
+    fun rebuildBy(name: String, first: String, vararg kv: Pair<String, Any?>) {
         val id = result?.s("id") ?: return
         val me = ++token[0]
-        busy = BuildBusy("Your deck is being built", "Your updated deck will open here when it’s ready.", "Finding cards around your locked cards…", inSheet = false,
+        busy = BuildBusy("Your deck is being built", "Your updated deck will open here when it’s ready.", first, inSheet = false,
             cancelled = { rebuildStatus = "Rebuild cancelled. Your deck is unchanged." })
         scope.launch {
-            val a = engine.call("flowRebuildUnlocked", obj("id" to id))
+            val a = engine.call(name, obj("id" to id, *kv))
             if (me != token[0]) return@launch
             busy = null
             val m = a.obj
@@ -255,6 +255,9 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
             }
         }
     }
+    fun rebuildUnlocked() = rebuildBy("flowRebuildUnlocked", "Finding cards around your locked cards…")
+    // A.flowRetune: another Plan or Power, rebuilt from this deck.
+    fun retune(field: String, value: String) = rebuildBy("flowRetune", "Rebuilding your deck…", "field" to field, "value" to value)
     // The result's switches (Group, Tap) and the Swap panel: the page again with the switch moved.
     fun step(name: String, vararg kv: Pair<String, Any?>) {
         val id = result?.s("id") ?: return
@@ -339,7 +342,7 @@ internal fun CollectionBuildDeckSheet(open: CollectionWrites.BuildOpen, backdrop
                         onBack = onClose, onSave = { saveDeck() }, onRebuildToggle = { rebuildOpen = !rebuildOpen }, onRebuildText = { rebuildText = it; rebuildStatus = "" },
                         onRebuild = { rebuild() }, onEdit = { res.o("request")?.let { opened(it) } }, onExport = { export() },
                         onQuick = { rebuild(it, true) }, onSwitch = { act, v -> step(act, (if (act == "flowGroup") "group" else "tap") to v) },
-                        onUnlocked = { rebuildUnlocked() }, onSwapTake = { step("flowSwapTake", "option" to it) }, onSwapKeep = { step("flowSwapKeep") },
+                        onUnlocked = { rebuildUnlocked() }, onRetune = { f, v -> retune(f, v) }, onSwapTake = { step("flowSwapTake", "option" to it) }, onSwapKeep = { step("flowSwapKeep") },
                         onCard = { r -> cardTap(r) })
                     setup != null -> FlowSetup(setup!!, vw, seedText, seedOpen, budgetText, prefsOpen,
                         onSeedOpen = { seedOpen = !seedOpen }, onSeed = { seedText = it }, onRandom = { random() },
@@ -499,7 +502,7 @@ private fun CheckRow(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
 @Composable
 private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildOpen: Boolean, rebuildText: String, rebuildStatus: String,
                        onBack: () -> Unit, onSave: () -> Unit, onRebuildToggle: () -> Unit, onRebuildText: (String) -> Unit, onRebuild: () -> Unit,
-                       onEdit: () -> Unit, onExport: () -> Unit, onQuick: (String) -> Unit, onSwitch: (String, String) -> Unit, onUnlocked: () -> Unit,
+                       onEdit: () -> Unit, onExport: () -> Unit, onQuick: (String) -> Unit, onSwitch: (String, String) -> Unit, onUnlocked: () -> Unit, onRetune: (String, String) -> Unit,
                        onSwapTake: (Int) -> Unit, onSwapKeep: () -> Unit, onCard: (DeckLine) -> Unit) {
     val h = m.o("hero") ?: JsonObject()
     val reduced = Motion.still
@@ -541,6 +544,11 @@ private fun FlowResult(m: JsonObject, vw: Dp, saving: Boolean, rebuildOpen: Bool
             DeckGhost(rb.s("button"), Modifier.fillMaxWidth(), minHeight = 44.dp, onClick = onRebuild)
             if (rebuildStatus.isNotEmpty()) Text(rebuildStatus, Modifier.semantics { contentDescription = rebuildStatus }, style = cssType(13f, 400, 18.85f, BMute))
         }
+        // Plan and Power on the built deck: the one used lit; a tap rebuilds with another.
+        m.objs("retune").forEach { g -> FlowRow(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+            Text(g.s("label"), Modifier.padding(end = 4.dp), style = cssType(13f, 600, 18.85f, BMute))
+            g.objs("items").forEach { i -> FlowChip(i.s("label"), i.b("on")) { if (!i.b("on")) onRetune(g.s("field"), i.s("value")) } }
+        } }
         // .deck-budget-quick: Lower budget and its amounts.
         m.o("quick")?.let { q -> FlowRow(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
             Text(q.s("label"), Modifier.padding(end = 4.dp), style = cssType(13f, 600, 18.85f, BMute))
