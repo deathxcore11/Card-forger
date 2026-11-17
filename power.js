@@ -123,8 +123,11 @@ const powerRows=rows=>(rows||[]).map(r=>[cardKey(r.name),r.qty]).sort((a,b)=>a[0
 // once matched to their results: one label, two scales, and every deck outside the known lists landed near 50
 // whatever it was built from. The model score is re-anchored so a real tournament list reads at the top of the
 // unproven band, and the share of the list's cards that current tournament lists play counts beside it. A list
-// without tournament results of its own still stops at BUILD_CAP, below every proven list.
-export const POWER_CALIBRATION = Object.freeze({ anchor: 17, modelWeight: 0.6, playedFloor: 30, playedSpan: 40, cap: BUILD_CAP });
+// without tournament results of its own stops at UNPROVEN_CAP. That stop was 70 (BUILD_CAP), below every proven list, until
+// Randall chose "Let Max builds reach 85" (17 Nov 2026): a built list of played cards with a strong model score can now read
+// above 70, so it can show higher than some lists with real results. A real tournament list scored by the model alone still reads 70.
+export const UNPROVEN_CAP = 85;
+export const POWER_CALIBRATION = Object.freeze({ anchor: 17, modelWeight: 0.6, playedFloor: 30, playedSpan: 40, cap: UNPROVEN_CAP });
 export function calibrateConstructedPower(model, played = null) {
   if (model == null) return null;
   const C = POWER_CALIBRATION, share = played == null || !Number.isFinite(played) ? 0.5 : Math.max(0, Math.min(1, played));
