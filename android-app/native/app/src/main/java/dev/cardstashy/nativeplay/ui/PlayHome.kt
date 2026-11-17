@@ -1297,10 +1297,10 @@ private fun DenCase(d: PlayHomeData, act: PlayHomeActions, level: PlayMath.Level
         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (groups.isNotEmpty()) {
                 CaseLabel("Packs waiting")
-                Row(Modifier.weight(1f).horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(top = 6.dp, end = 6.dp),
+                Row(Modifier.weight(1f).horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(top = 5.dp, end = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     groups.entries.take(8).forEach { (code, list) ->
-                        Box(Modifier.width(26.dp).clickable { act.openPack(list.first()["id"].str() ?: "") }) {
+                        Box(Modifier.width(22.dp).clickable { act.openPack(list.first()["id"].str() ?: "") }) {
                             Booster(code, null, Modifier.fillMaxWidth(), mini = true)
                             Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(18.dp).clip(CircleShape).background(P.Gold), contentAlignment = Alignment.Center) {
                                 Text("${list.size}", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.ExtraBold, fontSize = 10.sp, color = P.CtaInk)) }
@@ -1845,7 +1845,9 @@ private fun HandCard(key: String, name: String, art: String?, line: String, on: 
         .border(if (on) 1.5.dp else 1.dp, if (on) Color(0xFFF2CF7E) else Color(0x33FFFFFF), sh)
         .selectableTile(on, onChoose).semantics { contentDescription = name }) {
         Art(art, Modifier.matchParentSize().let { if (key == "planeswalk") it.scale(1.16f) else it }, if (key == "story") BiasAlignment(0f, -.4f) else MODE_FOCUS[key] ?: Alignment.Center, placeholder = false)
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(.46f to Color(0x000D1016), 1f to Color(0xF00D1016))))
+        // The scrim reaches higher on cards in the row, where the name and line sit above Play (review: "Matched CPU" over busy art).
+        Box(Modifier.matchParentSize().background(if (row) Brush.verticalGradient(.22f to Color(0x000D1016), .55f to Color(0xC00D1016), 1f to Color(0xF50D1016))
+            else Brush.verticalGradient(.40f to Color(0x000D1016), .70f to Color(0xB00D1016), 1f to Color(0xF20D1016))))
         // The big card keeps its name beside the disc; a card in the row puts it above the disc, so "Quick Play" stays whole.
         Column(Modifier.align(Alignment.BottomStart).padding(start = if (big) 16.dp else 12.dp, bottom = if (on && row) 78.dp else 18.dp, end = if (on && !row) 84.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (big) 22.sp else 15.sp, lineHeight = if (big) 26.sp else 18.sp, color = P.Ink, shadow = P.shadow),
@@ -1942,10 +1944,10 @@ private fun DenQuests(d: PlayHomeData, act: PlayHomeActions) {
         QuestCard(d, act, Modifier.weight(1f), only = true)
     }
     val deck = d.deck; val sh = RoundedCornerShape(18.dp)
-    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(sh).background(Color(0xFF161921)).border(1.dp, Color(0x24FFFFFF), sh)
-        .clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.mode("quick") }.padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(sh).background(Color(0xFF161921)).border(1.dp, Color(0x24FFFFFF), sh)
+        .clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.mode("quick") }.padding(start = 8.dp, end = 16.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Box(Modifier.size(width = 64.dp, height = 48.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFF121318))) {
+        Box(Modifier.size(width = 56.dp, height = 40.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF121318))) {
             if (deck?.cover != null) Art(deck.cover, Modifier.matchParentSize(), BiasAlignment(0f, -.4f)) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(deck?.name ?: "No deck yet", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = P.Ink), maxLines = 1, overflow = TextOverflow.Ellipsis)
