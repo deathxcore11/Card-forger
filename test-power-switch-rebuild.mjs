@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import zlib from 'node:zlib';
-import { S, blank } from './store.js';
+import { S, blank, priceOf } from './store.js';
 import * as T from './tcg.js';
 import { cardKey, cardPrice } from './core.js';
 import { createDeckPipeline } from './deck-pipeline.js';
@@ -32,7 +32,7 @@ const api = async (path, options = {}) => {
  return hit.card ? known.get(cardKey(hit.card)) : { ...hit, data: hit.data.map(n => known.get(cardKey(n))).filter(Boolean) };
 };
 const resolve = async name => { const c = known.get(cardKey(name)) || null; if (c) S.catalog[cardKey(c.name)] = c; return c; };
-const x = { S, T, tcgCtx: {}, api, resolve, resolveNames: async names => { for (const n of names) await resolve(n); }, cacheCard: c => (S.catalog[cardKey(c.name)] = c), meta: n => S.catalog[cardKey(n)] || null, priceOf: n => cardPrice(S.catalog[cardKey(n)]), inv: () => ({ owned: 0, available: 0 }) };
+const x = { S, T, tcgCtx: {}, api, resolve, resolveNames: async names => { for (const n of names) await resolve(n); }, cacheCard: c => (S.catalog[cardKey(c.name)] = c), meta: n => S.catalog[cardKey(n)] || null, priceOf, inv: () => ({ owned: 0, available: 0 }) };
 const pipeline = createDeckPipeline(x), prior = metaPrior(lists);
 let s = 20261117; const random = Math.random; Math.random = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 const spells = r => r.rows.filter(q => q.zone === 'main' && !/\bLand\b/.test(q.card?.type_line || ''));
@@ -58,4 +58,27 @@ const { chooseDeck, normalizeDeckRequest } = await import('./deck-construction.j
  const req = extra => normalizeDeckRequest({ game: 'mtg', format: 'Standard', ...extra }, pipeline.formats), pair = [cand(63, 'supported-conditional'), cand(70, 'unverified')];
  assert.equal(shownPower(chooseDeck(pair, req({ retune: true })).power), 70, 'a Plan or Power change takes the stronger list');
  assert.equal(shownPower(chooseDeck(pair, req({})).power), 63, 'any other build keeps the old order');
+}
+
+// Same day, same deck: "22 copies are unpriced" were its 22 Swamps, and the app's build had no tournament lists to lean on.
+const { deckResultMarkup } = await import('./deck-experience.js');
+{
+ // Scryfall's default Swamp has no price; the cheapest-printing search prices it. One busy answer must not leave it unpriced.
+ const priced = known.get(cardKey('Swamp')); assert.ok(cardPrice(priced) !== null, 'the recorded Swamp is priced');
+ S.catalog = {}; let failed = 0;
+ const y = { ...x, basicRetryMs: 5, resolve: async name => { if (cardKey(name) === cardKey('Swamp') && !S.catalog[cardKey('Swamp')]) return (S.catalog[cardKey('Swamp')] = { ...priced, id: 'default-printing', prices: { usd: null } }); return x.resolve(name); },
+  // The recorded run itself got "too many requests" for this search, the very failure that leaves basics unpriced.
+  api: async (path, options) => { if (!/unique%3Aprints.*t%3Abasic/.test(path)) return api(path, options); if (!failed++) throw Object.assign(Error('busy'), { status: 429 }); return { object: 'list', has_more: false, data: [{ ...priced, games: ['paper'] }] }; } };
+ const r = await createDeckPipeline(y).build({ game: 'mtg', format: 'Standard', seed: fx.seed, budget: null, budgetMode: 'cap', preferOwned: true, sideboard: true, power: 'max' });
+ assert.ok(r.ok, r.message); assert.equal(failed > 0, true, 'the basic lookup was asked');
+ assert.equal(r.pricing.unpriced, 0, 'Swamps are priced after one failed lookup (' + r.pricing.unpriced + ' copies unpriced)');
+ assert.doesNotMatch(deckResultMarkup(r, 'priced'), /data-flow-no-lists/, 'with the lists loaded the deck carries no warning');
+}
+{
+ // No tournament lists arrive: the deck still builds, and the screen says it was built without them.
+ S.catalog = {};
+ const y = { ...x, referenceMetaState: () => ({ data: null, at: 0 }), loadReferenceMeta: async () => null, referenceRefreshTimeoutMs: 20, metaPriorTimeoutMs: 20 };
+ const r = await createDeckPipeline(y).build({ game: 'mtg', format: 'Standard', seed: fx.seed, budget: null, budgetMode: 'cap', preferOwned: true, sideboard: true, power: 'max' });
+ assert.ok(r.ok, r.message); assert.equal(r.deck.metaPriorMissing, true, 'the deck knows it had no lists');
+ assert.match(deckResultMarkup(r, 'nolists'), /data-flow-no-lists>Tournament lists did not load\./);
 }

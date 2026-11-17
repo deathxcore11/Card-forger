@@ -146,6 +146,7 @@ export function deckResultMarkup(result,id,{coach='',saved=false,saving=false,gr
   ${request.budget!==null?`<p class="small ${result.delta>0?'warn-text':'muted'}">${request.budgetMode==='cap'?'Cap':'Target'} ${usd(request.budget)}${delta?' · '+delta:''}</p>`:''}
   ${rebuildSummary(result.rebuild)}
   ${unmet&&!closest?'<p class="evidence small warn-text">Some request checks remain unmet or unverified. Review the details before saving.</p>':''}
+  ${result.deck.metaPriorMissing?'<p class="note warn" data-flow-no-lists>Tournament lists did not load. This deck was built without them. Rebuild to try again.</p>':''}
   ${pricing.unpriced?`<p class="note warn">${pricing.unpriced} copies are unpriced. The total and budget fit are unverified.</p>`:''}
   ${closest?`<p class="note warn" data-flow-closest>No complete deck fits ${usd(request.budget)}. Closest found: ${usd(pricing.estimate)}.</p>`:result.budgetStatus==='outside-target'?'<p class="note warn">This complete candidate exceeds the allowed overage. The loaded pool did not produce a checked list near your target.</p>':''}
   ${prerequisiteSummary(result.plan.theme)}${strategySummary(result.plan.strategy)}${mechanic.summary}${loop.summary}`;
