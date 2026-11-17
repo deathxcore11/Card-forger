@@ -5767,3 +5767,18 @@ body[data-game="ygo"] .card-grid .tile-chrome { aspect-ratio: 59 / 86; }
 .deck-swap{display:grid;gap:8px;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
 .deck-swap-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.deck-swap-head>span:first-child{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 .deck-swap-row{display:flex;align-items:center;gap:10px;min-height:56px}.deck-swap-row .deck-compact-copy{flex:1;min-width:0;display:grid;gap:2px}.deck-swap-row .btn{min-height:44px}
+/* Built deck: one info line above Save; the details open on a tap. */
+.deck-build-info{flex:1 1 100%;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.deck-build-info>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:6px 8px 6px 14px;cursor:pointer;list-style:none;font-size:14px;line-height:1.35;color:var(--muted)}
+.deck-build-info>summary::-webkit-details-marker{display:none}
+.deck-build-info>summary b{color:var(--text);font-weight:700}
+.deck-build-line{min-width:0}
+.deck-info-dot{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);font-size:13px;font-weight:700;font-style:normal}
+.deck-build-info[open] .deck-info-dot{background:var(--gold);color:var(--gold-ink)}
+.deck-build-info>summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:12px}
+.deck-info-body{display:grid;gap:12px;padding:4px 14px 14px;border-top:1px solid var(--line)}
+.deck-info-block{display:grid;gap:4px;padding-top:10px}
+.deck-info-block>b{font-size:13px;color:var(--text)}
+.deck-info-block p{margin:0;font-size:13px;line-height:1.45;color:var(--muted)}
+.deck-info-block details summary{font-size:13px;color:var(--gold);cursor:pointer;min-height:32px;display:flex;align-items:center}
+.deck-unpriced-tag{margin-left:6px;color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent);font-size:11px;white-space:nowrap}

@@ -80,5 +80,5 @@ const { deckResultMarkup } = await import('./deck-experience.js');
  const y = { ...x, referenceMetaState: () => ({ data: null, at: 0 }), loadReferenceMeta: async () => null, referenceRefreshTimeoutMs: 20, metaPriorTimeoutMs: 20 };
  const r = await createDeckPipeline(y).build({ game: 'mtg', format: 'Standard', seed: fx.seed, budget: null, budgetMode: 'cap', preferOwned: true, sideboard: true, power: 'max' });
  assert.ok(r.ok, r.message); assert.equal(r.deck.metaPriorMissing, true, 'the deck knows it had no lists');
- assert.match(deckResultMarkup(r, 'nolists'), /data-flow-no-lists>Tournament lists did not load\./);
+ assert.match(deckResultMarkup(r, 'nolists'), /data-flow-no-lists>Tournament lists didn’t load,/);
 }
