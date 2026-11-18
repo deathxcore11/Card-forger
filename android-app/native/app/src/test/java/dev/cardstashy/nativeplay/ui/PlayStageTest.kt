@@ -87,6 +87,7 @@ class PlayStageTest {
  * card read "Quick Pl…". Every mode name in the wide row must lay out whole, with no ellipsis.
  */
 @RunWith(RobolectricTestRunner::class)
+@org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE) // real text measuring; legacy mode gives a name 10 px
 @Config(sdk = [35], qualifiers = "w750dp-h833dp-420dpi")
 class PlayHandFoldOpenTest {
     @get:Rule val rule = createComposeRule()
@@ -103,7 +104,11 @@ class PlayHandFoldOpenTest {
             val out = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
             node.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(out)
             val r = out.single()
-            assertEquals("$name is cut", false, r.hasVisualOverflow || (0 until r.lineCount).any { r.isLineEllipsized(it) })
+            // No ellipsis, every line inside the box, and a line may only break between words ("PLANESWAL / K" is a cut too).
+            val ellipsis = (0 until r.lineCount).any { r.isLineEllipsized(it) }
+            val wide = (0 until r.lineCount).any { r.getLineRight(it) > r.size.width + .5f }
+            val midWord = (0 until r.lineCount - 1).any { val e = r.getLineEnd(it); e in 1 until name.length && name[e - 1] != ' ' && name[e] != ' ' }
+            assertEquals("$name is cut", false, ellipsis || wide || midWord)
         }
     }
 }

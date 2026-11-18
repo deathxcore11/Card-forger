@@ -1829,9 +1829,9 @@ private fun HandRow(d: PlayHomeData, story: PlayRules.Act?, mode: String, onMode
     val room = w - 48.dp - side - gap * 4
     val cw = minOf(minOf(h, 460.dp) * .66f, room / (1f + 4 * small))
     // The chosen card takes at least the width its name needs ("Quick Pl…" on Randall's Fold open, 750 dp wide, 18 Nov); the
-    // others share what is left. Cards grow taller (down to a 0.5 ratio) into any band left under the header.
+    // others share what is left. Cards grow taller (down to a 0.42 ratio) into any band left under the header.
     val wOn = maxOf(cw, minOf(176.dp, room * .4f)); val wOff = minOf(cw * small, (room - wOn) / 4)
-    val ch = minOf(h, 460.dp, wOn / .5f)
+    val ch = minOf(h, 460.dp, wOn / .42f)
     Row(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally), verticalAlignment = Alignment.Bottom) {
         if (pads) PadKey("LB", Modifier.align(Alignment.CenterVertically))
         StageModes.ALL.forEach { (key, name) -> val on = key == mode
@@ -1863,12 +1863,25 @@ private fun HandCard(key: String, name: String, art: String?, line: String, on: 
         // The big card keeps its name beside the disc; a card in the row puts it above the disc, so "Quick Play" stays whole.
         Column(Modifier.align(Alignment.BottomStart).padding(start = if (big) 16.dp else 12.dp, bottom = if (on && row) 78.dp else 18.dp, end = if (on && !row) 84.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             // The name is never cut (Fold open, 18 Nov): smaller on the chosen card in the row, and a second line before an ellipsis.
-            Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (big && row) 19.sp else if (big) 22.sp else 15.sp, lineHeight = if (big && row) 23.sp else if (big) 26.sp else 18.sp, color = P.Ink, shadow = P.shadow),
-                maxLines = 2, overflow = TextOverflow.Ellipsis)
+            FitName(name, TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (big && row) 19.sp else if (big) 22.sp else 15.sp, lineHeight = if (big && row) 23.sp else if (big) 26.sp else 18.sp, color = P.Ink, shadow = P.shadow))
             if (on) Text(line, style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = Color(0xFFDDD8CC)), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         if (on) PlayDisc(name, if (big) 60.dp else 52.dp, Modifier.align(Alignment.BottomEnd).padding(14.dp), onPlay)
     }
+}
+
+/**
+ * A mode name that is never cut (Fold open, 18 Nov): it may wrap between words, and when its longest word is wider than the
+ * card it steps down in size until that word fits ("PLANESWAL / K" on a narrow card in the row).
+ */
+@Composable
+private fun FitName(name: String, style: TextStyle) = BoxWithConstraints {
+    val tm = androidx.compose.ui.text.rememberTextMeasurer()
+    val room = constraints.maxWidth
+    val word = remember(name, style, room) { name.split(' ').maxOf { tm.measure(it, style, softWrap = false, maxLines = 1).size.width } }
+    val fit = if (word <= room || word == 0) style else { val k = room / word.toFloat() * .96f
+        style.copy(fontSize = style.fontSize * k, lineHeight = style.lineHeight * k) }
+    Text(name, style = fit, maxLines = 2, overflow = TextOverflow.Ellipsis)
 }
 
 /** The round gold Play on the chosen card: a play glyph, no words (Hand brief 4). X presses it. */
