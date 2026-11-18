@@ -84,7 +84,7 @@ import {
 } from "./insights.js";
 import { bracketEstimate, manaBase, manaBaseExplanation, isOut, deckReview, explainSwap, podSpeed } from "./extras.js";
 // Commander chips say the official bracket, as the real game does; other formats keep the meta Tier.
-const deckBracket = (d) => { if (d?.format !== "Commander") return null; try { const b = bracketEstimate(d, S.catalog)?.bracket; return Number.isInteger(b) ? b : null; } catch { return null; } };
+const deckBracket = (d) => { if (String(d?.format || "").toLowerCase() !== "commander") return null; try { const b = bracketEstimate(d, S.catalog)?.bracket; return Number.isInteger(b) ? b : null; } catch { return null; } };
 import { buildability, rankBuildable } from "./share.js";
 import { formatsFor } from "./builder.js";
 import { gameBinders, gameSwitch, homeHero, homeToday, heroFor, quickTiles, randomTools, draftPath, nextCard, startHidden, savedSearches } from "./tcg.js";
@@ -1223,7 +1223,7 @@ export function deckPage() {
       {value:`${t.covered}/${t.copies}`,label:"owned"},
       // An incomplete draft has empty slots, so a purchase total would mislead.
       mainCopies < target ? {value:`${target - mainCopies}`,label:"open slots",tone:"warn"} : {value:usd(t.pricedGap, 0)+(t.unpriced ? "+" : ""),label:t.unpriced ? "to finish · some unpriced" : "to finish"},
-      {value:power ?? "—",label:power == null ? "power unavailable" : "power",attrs:'data-act="deckTab" data-id="engine"'}],
+      {value:power ?? "—",label:power == null ? "power unavailable" : "power",attrs:`data-act="deckTab" data-id="engine"${deckBracket(d) != null ? ` data-bracket="${deckBracket(d)}"` : ""}`}],
     owned:t.copies ? t.covered / t.copies : 0,
     actions:[
       {html:`<button class="btn ds-primary deck-play-cpu cs-plate" data-act="deckPlayCpu" data-id="${esc(d.id)}" data-desktop-play-entry="practice" hidden disabled><span class="cs-plate-label">Practice</span></button>`},

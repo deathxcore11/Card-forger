@@ -208,8 +208,12 @@ class BenchModel(
     val landHeld: String? = null,
     /** Basics with a style just got and not looked at yet: a gold dot on their tile. */
     val landNew: Set<String> = emptySet(),
+    /** Play: the seals the missing cards need, by rarity (c, u, r, m); the footer shows them beside what you have. */
+    val need: Map<String, Int>? = null,
 )
 class BenchMenuItem(val label: String, val onClick: () -> Unit)
+/** Play's Craft all beside Save (deck screen redraw, Randall 18 Nov): its word in the web's four states, and whether it can be pressed. */
+class BenchCraft(val label: String, val enabled: Boolean, val onClick: () -> Unit)
 class BenchActions(
     /** Save: Play's (null in Collection, where each change saves as it is made). */
     val back: () -> Unit, val save: (() -> Unit)?, val step: (String, Int) -> Unit, val craft: (String, Int) -> Unit,
@@ -245,6 +249,8 @@ class BenchActions(
     val landHold: ((String) -> Unit)? = null,
     /** A land row (key "land:…") held and let go without moving: open the Lands tab on that row (mixed land styles, Randall 17 Nov). */
     val landRow: ((String) -> Unit)? = null,
+    /** Play: Craft all, drawn as the quiet button beside the gold one; null when nothing is missing. */
+    val craftAll: BenchCraft? = null,
 )
 
 /** Where the Bench is: tab, deck view, find and filters, the card in the big view. Kept by the caller so Back keeps your place. */
@@ -336,7 +342,7 @@ private fun Modifier.benchRing(ui: BenchUi, card: FocusCard): Modifier = if (!Du
 /** The case's buttons are the pad's own on this card: A first (what A does here), then X when there is one. */
 private fun caseOf(name: String, image: String, inDeck: Int, acts: PadActs, onA: () -> Unit) =
     FocusCard(name, image, owned = if (inDeck > 0) "$inDeck in the deck" else null, actions = listOfNotNull(PadAct(acts.a ?: "Inspect", onA), acts.x))
-const val SPLIT_EVEN = .40f
+const val SPLIT_EVEN = .42f
 const val SPLIT_MIN = .12f
 const val SPLIT_MAX = .80f
 
@@ -370,6 +376,7 @@ internal val BENCH_ICONS = mapOf(
     "gallery" to ic(r(4f, 4f, 6.5f, 6.5f, 1.5f), r(13.5f, 4f, 6.5f, 6.5f, 1.5f), r(4f, 13.5f, 6.5f, 6.5f, 1.5f), r(13.5f, 13.5f, 6.5f, 6.5f, 1.5f)),
     "list" to ic(p("M9 6h11M9 12h11M9 18h11"), c(4.5f, 6f, 1.2f), c(4.5f, 12f, 1.2f), c(4.5f, 18f, 1.2f)),
     "detail" to ic(r(3f, 4f, 6f, 6f, 1f), r(3f, 14f, 6f, 6f, 1f), p("M12 5h9M12 9h6M12 15h9M12 19h6")),
+    "find" to ic(c(11f, 11f, 6.5f), p("M20 20l-4.2-4.2")),
     "filters" to ic(p("M4 7h10M18 7h2M4 17h4M12 17h8"), c(16f, 7f, 2f), c(10f, 17f, 2f)),
 )
 /** The site's tab keys (views.js deckPage: engine = Power, playtest = War Chest; tcg.js: insights = Power) to the Bench's icons. */
@@ -518,9 +525,9 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
                 drawLine(B.Line, Offset(0f, 0f), Offset(0f, size.height), 1.dp.toPx()) }) {
                 Hero(m, a, compact = land, ui = ui, drag = drag)
                 // Phone landscape: the four views sit at the end of the icon tabs; wider, under the list in the footer.
-                Tabs(m.tabs, ui, iconsOnly = land, a.tab, trailing = if (land && ui.tab == "cards") ({ ViewSwitch(ui, bare = true) }) else null)
+                Tabs(m.tabs, ui, iconsOnly = land, a.tab, trailing = if (land && ui.tab == "cards") ({ ViewSwitch(ui, bare = true) }) else if (!land && m.chips.isNotEmpty()) ({ for (c in m.chips) ActChip(c, a); Spacer(Modifier.width(8.dp)) }) else null)
                 Dock(m, ui, a, drag, actionRow, split = true, Modifier.weight(1f), lift, compact = land, onFilter = onFilter)
-                Footer(m, ui, split = true, views = !land)
+                Footer(m, ui, split = true, views = false, actionRow = if (land || !m.play) null else actionRow)
             }
         } else Column(Modifier.fillMaxSize().then(bars)) {
             // At large text the tall hero leaves the deck list a row and a half (fix list C8): it folds to its one-line
@@ -528,7 +535,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
             val big = LocalDensity.current.fontScale >= 1.2f
             val scrolled by remember(ui) { androidx.compose.runtime.derivedStateOf { ui.deckGrid.firstVisibleItemIndex > 0 || ui.deckGrid.firstVisibleItemScrollOffset > 0 } }
             Hero(m, a, compact = big && scrolled, ui = ui, drag = drag)
-            Tabs(m.tabs, ui, iconsOnly = false, a.tab)
+            Tabs(m.tabs, ui, iconsOnly = false, a.tab, trailing = if (m.chips.isEmpty()) null else ({ for (c in m.chips) ActChip(c, a); Spacer(Modifier.width(8.dp)) }))
             if (ui.tab == "cards") {
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                     val room = maxHeight
@@ -552,7 +559,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
                         Box(Modifier.weight(1f).fillMaxWidth()) { m.landPicker?.let { lp -> LandPane(browserSwitch) { lp { k, img -> Modifier.benchCard(drag, k, img, "coll", lift) {} } } } ?: Browser(m, ui, a, drag, browserSwitch, cols = 3, lift, onFilter, shown, shelves, sets) }
                     }
                 }
-                Footer(m, ui, split = false, views = false)
+                Footer(m, ui, split = false, views = false, actionRow = if (m.play) actionRow else null)
             } else Box(Modifier.weight(1f).fillMaxWidth()) { tabBody(ui.tab) }
         }
         // The lifted card (.ghost): tilted, a gold glow, under the finger.
@@ -620,29 +627,48 @@ private fun Hero(m: BenchModel, a: BenchActions, compact: Boolean, ui: BenchUi, 
         .then(if (drag != null) Modifier.onGloballyPositioned { drag.hero = it.boundsInRoot().translate(-drag.origin) } else Modifier)
         .shadow(14.dp, shape, spotColor = Color.Black).clip(shape).background(B.Panel).border(if (over) 2.dp else 1.dp, if (over) B.Gold else Color(0x47E5C47E), shape)) {
         if (art != null) Image(art, null, Modifier.matchParentSize().scale(1.08f * breathe), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, -.4f))
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x260A0B0F), .78f to Color(0xE00A0B0F))))
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(if (compact) 0x260A0B0F else 0x660A0B0F), .78f to Color(0xE00A0B0F))))
         Column(Modifier.fillMaxWidth().padding(start = if (compact) 10.dp else 12.dp, end = if (compact) 10.dp else 12.dp, top = if (compact) 6.dp else 8.dp, bottom = if (compact) 8.dp else 10.dp),
             verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 5.dp)) {
+            if (!compact) {
+                // Deck screen redraw (Randall 18 Nov): what the deck is as one small line over its name (a tag, never a gold pill that
+                // reads as a button), the numbers in one box, then one row of buttons with the gold one first.
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Square("←", "Back", a.back)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        Text(buildAnnotatedString {
+                            withStyle(SpanStyle(color = B.Gold)) { append(m.modeChip) }
+                            if (m.modeChip.isNotBlank() && m.formatChip.isNotBlank()) append("  ·  ")
+                            append(m.formatChip) }, style = f(11f, 800, Color(0xFFE2E2DC), line = 14f, track = .04f).copy(shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 6f)))
+                        Text(m.title, style = cinzel(18f, Color(0xFFFBF3DC)).copy(shadow = androidx.compose.ui.graphics.Shadow(Color(0xCC000000), Offset(0f, 1f), 8f)))
+                    }
+                    MenuButton(a.menu, a.menuOpen, ui)
+                }
+                StatBox(m, a, ui)
+                val craft = a.craftAll
+                if (a.save != null || craft != null || a.heroActions.isNotEmpty()) {
+                    // Large text: the buttons keep their own widths and wrap, so no word is cut.
+                    if (LocalDensity.current.fontScale >= 1.2f) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        a.save?.let { SaveButton(m, it, a.saveLabel) }
+                        craft?.let { HeroGhost(it.label, it.onClick, gold = true, enabled = it.enabled) }
+                        for (h in a.heroActions) HeroGhost(h.label, h.onClick)
+                    } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        a.save?.let { SaveButton(m, it, a.saveLabel, Modifier.weight(1.25f)) }
+                        craft?.let { HeroGhost(it.label, it.onClick, Modifier.weight(1f), gold = true, enabled = it.enabled) }
+                        for (h in a.heroActions) HeroGhost(h.label, h.onClick, Modifier.weight(1f))
+                    }
+                }
+            } else {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Square("←", "Back", a.back)
-                // The chips wrap to a second line before either is cut (large text on a narrow phone).
-                if (!compact) FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
-                    itemVerticalAlignment = Alignment.CenterVertically) {
-                    Text(m.modeChip, style = f(12f, 700, B.GoldInk), maxLines = 1, softWrap = false, modifier = Modifier.clip(RoundedCornerShape(99.dp)).background(B.GoldBtn).padding(horizontal = 10.dp, vertical = 4.dp))
-                    Text(m.formatChip, style = f(12f, 700, Color(0xFFEEEEEE)), maxLines = 1, softWrap = false,
-                        modifier = Modifier.clip(RoundedCornerShape(99.dp)).background(Color(0x9908090C)).border(1.dp, Color(0x2EFFFFFF), RoundedCornerShape(99.dp)).padding(horizontal = 10.dp, vertical = 4.dp))
-                    for (c in m.chips) ActChip(c, a)
-                } else Text(m.title, style = cinzel(16f, Color(0xFFFBF3DC)), modifier = Modifier.weight(1f))
+                Text(m.title, style = cinzel(16f, Color(0xFFFBF3DC)), modifier = Modifier.weight(1f))
                 // Phone landscape: Save beside the menu, so the numbers below keep one line.
-                if (compact && a.save != null) SaveButton(m, a.save, a.saveLabel)
+                if (a.save != null) SaveButton(m, a.save, a.saveLabel)
                 MenuButton(a.menu, a.menuOpen, ui)
             }
-            if (!compact) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(m.title, style = cinzel(19f, Color(0xFFFBF3DC)), modifier = Modifier.weight(1f))
-                a.save?.let { SaveButton(m, it, a.saveLabel) }
-            }
             // .ds-actions' other buttons (War Chest, Share): ghost glass beside the gold one's line, under the title.
-            if (a.heroActions.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (a.heroActions.isNotEmpty() || a.craftAll != null) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                a.craftAll?.let { HeroGhost(it.label, it.onClick, gold = true, enabled = it.enabled) }
                 for (h in a.heroActions) HeroGhost(h.label, h.onClick)
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -653,8 +679,9 @@ private fun Hero(m: BenchModel, a: BenchActions, compact: Boolean, ui: BenchUi, 
                     }, style = f(11f, 600), modifier = Modifier.alignByBaseline())
                 }
                 // Phone landscape: the review count sits by Power, so the title keeps the top row's width.
-                if (compact) for (c in m.chips) ActChip(c, a)
+                for (c in m.chips) ActChip(c, a)
                 PowerBadge(m, m.powerTab?.let { k -> { ui.peek = null; if (a.tab?.invoke(k) != false) ui.tab = k } })
+            }
             }
         }
         if (can) Box(Modifier.matchParentSize().background(Color(0x99000000)).drawBehind {
@@ -684,23 +711,47 @@ private fun Square(label: String, desc: String, onClick: () -> Unit) = Box(Modif
     Text(label, style = f(if (label == "⋯") 18f else 20f, 800, B.Fg))
 }
 
+/** The hero's numbers in one box, each centred in its own cell: the deck's stats, then Power. A cell with a long word gets more of the width, so no word breaks. */
 @Composable
-private fun SaveButton(m: BenchModel, save: () -> Unit, label: String) {
-    val shape = RoundedCornerShape(13.dp)
-    Box(Modifier.heightIn(min = 44.dp).shadow(if (m.canSave) 8.dp else 0.dp, shape, spotColor = Color(0xB3E5C47E)).clip(shape)
+private fun StatBox(m: BenchModel, a: BenchActions, ui: BenchUi) {
+    val shape = RoundedCornerShape(14.dp)
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).clip(shape).background(Color(0x9908090C)).border(1.dp, B.Line, shape)) {
+        var n = 0
+        for (st in m.stats) StatCell(st.value, st.label, if (st.warn) B.Coral else B.Fg, n++ > 0)
+        StatCell(m.power ?: "—", m.powerLabel + if (m.tier.isNotEmpty()) " · ${m.tier}" else "", B.Gold, n > 0,
+            m.powerTab?.let { k -> { ui.peek = null; if (a.tab?.invoke(k) != false) ui.tab = k } })
+    }
+}
+
+@Composable
+private fun RowScope.StatCell(value: String, label: String, color: Color, divider: Boolean, onClick: (() -> Unit)? = null) =
+    Column(Modifier.weight(maxOf(1f, (label.split(' ').maxOfOrNull { it.length } ?: 0) / 8f)).fillMaxHeight().heightIn(min = 48.dp).then(if (onClick != null) Modifier.clickable(onClick = onClick).semantics { role = Role.Button } else Modifier)
+        .drawBehind { if (divider) drawLine(B.Line, Offset(0f, size.height * .2f), Offset(0f, size.height * .8f), 1.dp.toPx()) }.padding(horizontal = 4.dp, vertical = 5.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        val i = value.indexOf('/')
+        Text(buildAnnotatedString { append(if (i > 0) value.take(i) else value)
+            if (i > 0) withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFB9B9B2))) { append(value.drop(i)) } },
+            style = f(17f, 800, color, line = 20f).copy(fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
+        if (label.isNotEmpty()) Text(label.uppercase(), style = f(11f, 700, Color(0xFFC8C8C0), line = 13f, track = .03f), textAlign = TextAlign.Center)
+    }
+
+@Composable
+private fun SaveButton(m: BenchModel, save: () -> Unit, label: String, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(99.dp)
+    Box(modifier.heightIn(min = 44.dp).shadow(if (m.canSave) 8.dp else 0.dp, shape, spotColor = Color(0xB3E5C47E)).clip(shape)
         .background(if (m.canSave) B.GoldBtn else SolidColor(Color(0x33E5C47E))).clickable(enabled = m.canSave && !m.busy, onClick = save)
-        .semantics { role = Role.Button }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-        Text(if (m.busy) "Saving…" else label, style = f(14f, 800, if (m.canSave) B.GoldInk else B.Mute), maxLines = 1, softWrap = false)
+        .semantics { role = Role.Button }.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+        Text(if (m.busy) "Saving…" else label, style = f(15f, 800, if (m.canSave) B.GoldInk else B.Mute), maxLines = 1, softWrap = false)
     }
 }
 
 /** A hero's ghost button (.btn.ghost on the deck hero): glass over the art, the gold line round it, 44 tall. */
 @Composable
-private fun HeroGhost(label: String, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(13.dp)
-    Box(Modifier.heightIn(min = 44.dp).clip(shape).background(Color(0x8C08090C)).border(1.dp, Color(0x59E5C47E), shape).clickable(onClick = onClick)
-        .semantics { role = Role.Button }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
-        Text(label, style = f(14f, 700, B.Fg), maxLines = 1, softWrap = false)
+private fun HeroGhost(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, gold: Boolean = false, enabled: Boolean = true) {
+    val shape = RoundedCornerShape(99.dp)
+    Box(modifier.heightIn(min = 44.dp).clip(shape).background(Color(0x8C08090C)).border(1.dp, Color(0x59E5C47E), shape).clickable(enabled = enabled, onClick = onClick)
+        .semantics { role = Role.Button }.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+        Text(label, style = f(15f, 700, if (!enabled) B.Mute else if (gold) B.Gold else B.Fg), maxLines = 1, softWrap = false)
     }
 }
 
@@ -742,7 +793,9 @@ private fun MenuButton(items: List<BenchMenuItem>, sheet: (() -> Unit)?, ui: Ben
 private fun Tabs(tabs: List<Pair<String, String>>, ui: BenchUi, iconsOnly: Boolean, pick: ((String) -> Boolean)?, trailing: (@Composable () -> Unit)? = null) =
     Row(Modifier.fillMaxWidth().padding(top = if (iconsOnly) 0.dp else 4.dp).drawBehind { drawLine(B.Line, Offset(0f, size.height - .5f), Offset(size.width, size.height - .5f), 1.dp.toPx()) },
         verticalAlignment = Alignment.CenterVertically) {
-    Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()).padding(start = 8.dp, end = 8.dp, top = 2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    // With something at the row's end (the review count), the tabs fade out toward it instead of being cut.
+    Row(Modifier.weight(1f).then(if (trailing != null && !iconsOnly) Modifier.graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }.drawWithFade() else Modifier)
+        .horizontalScroll(rememberScrollState()).padding(start = 8.dp, end = if (trailing != null && !iconsOnly) 26.dp else 8.dp, top = 2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         for ((k, label) in tabs) {
             val on = ui.tab == k
             Row(Modifier.heightIn(min = 44.dp).then(if (iconsOnly) Modifier.width(44.dp) else Modifier).clickable { ui.peek = null; if (pick?.invoke(k) != false) ui.tab = k }
@@ -777,23 +830,50 @@ private fun Dock(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, action
         val curveRow: (@Composable () -> Unit)? = if (!m.colorFilter) null else ({
             Row(Modifier.fillMaxWidth().padding(start = if (split) 10.dp else 2.dp, end = if (split) 6.dp else 0.dp, top = if (split) 6.dp else 2.dp, bottom = 2.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                CurveBar(m, ui, if (compact) 44.dp else if (split) 60.dp else 50.dp, Modifier.weight(1f), onFilter = onFilter, toCards = { if (a.tab?.invoke("cards") != false) ui.tab = "cards" })
+                CurveBar(m, ui, if (compact) 44.dp else if (split) 60.dp else 50.dp, Modifier.weight(1f), lit = if (DualScreen.active) DualScreen.focus?.name?.let { on -> m.groups.flatMap { it.rows }.firstOrNull { it.name == on }?.let(::rowMana) } else null, onFilter = onFilter, toCards = { if (a.tab?.invoke("cards") != false) ui.tab = "cards" })
                 DeckSortSeg(ui)
             }
         })
-        if (split) curveRow?.invoke()
-        if (!split) Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(9.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                for ((role, n) in m.roles) Text(buildAnnotatedString { append("$role "); withStyle(SpanStyle(color = B.Fg, fontWeight = FontWeight.Bold)) { append("$n") } },
-                    style = f(12f, 500, B.Mute), maxLines = 1, softWrap = false)
-            }
-            ViewSwitch(ui)
-        }
+        // Deck screen redraw (Randall 18 Nov): the curve and the role counts are one band at the top of the list, and the list's
+        // order and its four views share one row that stays put while the cards scroll. Phone landscape keeps its short form.
+        if (compact) curveRow?.invoke()
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
             val w = maxWidth - 16.dp
-            DeckBody(m, ui, a, drag, actionRow, split, w, lift, if (split) null else curveRow)
+            DeckBody(m, ui, a, drag, if (compact || !m.play) actionRow else null, split, w, lift, toolsLast = !compact && !m.play,
+                band = if (compact || (!m.colorFilter && m.roles.isEmpty())) null else ({ InsightBand(m, ui, onFilter) { if (a.tab?.invoke("cards") != false) ui.tab = "cards" } }),
+                controls = if (compact) null else ({ ListControls(m, ui) }))
         }
     }
+}
+
+/** The deck at a glance: its mana curve (a tap on a bar filters the browser) and, beside it, what its cards do. */
+@Composable
+private fun InsightBand(m: BenchModel, ui: BenchUi, onFilter: () -> Unit, toCards: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Row(Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp).height(IntrinsicSize.Min).clip(shape).background(Color(0x0AFFFFFF)).border(1.dp, B.Line, shape)
+        .padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (m.colorFilter) CurveBar(m, ui, 52.dp, Modifier.weight(1f), onFilter = onFilter, toCards = toCards)
+        if (m.roles.isNotEmpty()) {
+            if (m.colorFilter) Box(Modifier.width(1.dp).fillMaxHeight().background(B.Line))
+            Column((if (m.colorFilter) Modifier.width((124 * LocalDensity.current.fontScale).dp) else Modifier.weight(1f)), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                for (pair in m.roles.chunked(2)) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for ((role, n) in pair) Column(Modifier.weight(1f)) {
+                        Text(role, style = f(11f, 600, B.Mute, line = 13f), maxLines = 1, softWrap = false)
+                        Text("$n", style = f(15f, 800, B.Fg, line = 17f).copy(fontFeatureSettings = "tnum"), maxLines = 1, softWrap = false)
+                    }
+                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+/** The list's own controls on one row: its order (Type / Mana, Magic) on the left, its four views on the right. */
+@Composable
+private fun ListControls(m: BenchModel, ui: BenchUi) = Row(Modifier.fillMaxWidth().background(Color(0xFF171A23)).padding(vertical = 1.dp), verticalAlignment = Alignment.CenterVertically) {
+    if (m.colorFilter) DeckSortSeg(ui)
+    Spacer(Modifier.weight(1f))
+    ViewSwitch(ui)
 }
 
 /** The phone's folded dock: the deck's name, its count and its curve on one strip; a tap opens the dock again. */
@@ -828,7 +908,7 @@ private fun ViewSwitch(ui: BenchUi, bare: Boolean = false) {
 /** The dock's list: the action row, then the deck grouped by type in the chosen view. */
 @Composable
 private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, actionRow: (@Composable RowScope.() -> Unit)?, split: Boolean, w: Dp, lift: () -> Unit,
-                     curveRow: (@Composable () -> Unit)? = null) {
+                     band: (@Composable () -> Unit)? = null, controls: (@Composable () -> Unit)? = null, toolsLast: Boolean = false) {
     // The list's order (Type / Mana in the deck header): by mana value regroups the spells; Lands and a sideboard stay as they are.
     val groups = remember(m.groups, ui.deckSort, m.colorFilter) { if (ui.deckSort == "mana" && m.colorFilter) benchByMana(m.groups) else m.groups }
     val cols = when (ui.view) {
@@ -838,8 +918,9 @@ private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, ac
         else -> 1
     }
     val head: LazyGridScope.() -> Unit = {
-        if (curveRow != null) item(key = "curve", span = { GridItemSpan(maxLineSpan) }) { curveRow() }
-        if (actionRow != null) item(key = "actions", span = { GridItemSpan(maxLineSpan) }) {
+        if (band != null) item(key = "curve", span = { GridItemSpan(maxLineSpan) }) { band() }
+        if (controls != null) stickyHeader(key = "controls") { controls() }
+        if (actionRow != null && !toolsLast) item(key = "actions", span = { GridItemSpan(maxLineSpan) }) {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 2.dp, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically) { actionRow() }
         }
@@ -849,7 +930,8 @@ private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, ac
     }
     if (ui.view == "stacks") {
         Column(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
-            curveRow?.invoke()
+            band?.invoke()
+            controls?.invoke()
             if (actionRow != null) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 2.dp, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically) { actionRow() }
             val pw = if (split && w > 300.dp) 120.dp else if (split) 92.dp else 96.dp
@@ -890,6 +972,11 @@ private fun DeckBody(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, ac
             item(key = "basics", span = { GridItemSpan(maxLineSpan) }) { Basics(m.basics, ui, a, m.landNew) }
         }
         side.forEach { group(it) }
+        // Collection (deck screen redraw): the page's own tools (Find cards, its swaps) follow the cards, so the list opens on the deck.
+        if (actionRow != null && toolsLast) item(key = "actions", span = { GridItemSpan(maxLineSpan) }) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically) { actionRow() }
+        }
         m.listNote?.let { n -> item(key = "note", span = { GridItemSpan(maxLineSpan) }) { Text(n, style = f(12f, 600, B.Mute), modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)) } }
     }
 }
@@ -926,26 +1013,27 @@ private fun Strip(m: BenchModel, r: BenchRow, ui: BenchUi, a: BenchActions, drag
  * [outer] goes on before the row's shape (scale, fade), [inner] after it (taps, drags).
  */
 @Composable
-internal fun DeckStripRow(r: BenchRow, outer: Modifier = Modifier, inner: Modifier = Modifier, endFlush: Boolean = false,
-                          end: @Composable () -> Unit = { if (r.emb.isNotEmpty()) EmbRow(r.emb) else ManaCost(r.cost, 15.dp) }) {
+internal fun DeckStripRow(r: BenchRow, outer: Modifier = Modifier, inner: Modifier = Modifier, endFlush: Boolean = false, big: Boolean = false, qty: String? = null,
+                          end: @Composable () -> Unit = { if (r.emb.isNotEmpty()) EmbRow(r.emb) else ManaCost(r.cost, if (big) 19.dp else 15.dp) }) {
+    val tall = if (big) 52.dp else 44.dp
     val shape = RoundedCornerShape(10.dp)
     val t = tintOf(r.colors)
     val art = heroPainter(r.art.let(homeArt))
-    Row(outer.fillMaxWidth().heightIn(min = 44.dp).clip(shape).background(Color(0xFF141720))
+    Row(outer.fillMaxWidth().heightIn(min = tall).clip(shape).background(Color(0xFF141720))
         .border(1.dp, if (r.short > 0) Color(0x80FF7A6A) else t.edge, shape)
         .then(inner).semantics { contentDescription = "${r.qty} ${r.name}" }, verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.weight(1f).heightIn(min = 44.dp)) {
+        Box(Modifier.weight(1f).heightIn(min = tall)) {
             if (art != null) Image(art, null, Modifier.matchParentSize().alpha(.95f), contentScale = StripCrop, alignment = BiasAlignment(.24f, -.66f))
             Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to t.a, .52f to t.b, 1f to Color(0x4D0E1016)))
                 .background(Brush.verticalGradient(0f to Color(0x14FFFFFF), .45f to Color.Transparent)))
             val short = r.short > 0
-            Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(start = 3.dp, end = if (endFlush) 0.dp else 7.dp), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                Box(Modifier.widthIn(min = 30.dp).height(34.dp).clip(RoundedCornerShape(8.dp)).background(Color(0x73000000))
+            Row(Modifier.fillMaxWidth().heightIn(min = tall).padding(start = if (big) 6.dp else 3.dp, end = if (endFlush) 0.dp else if (big) 12.dp else 7.dp), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(if (big) 12.dp else 7.dp)) {
+                Box(Modifier.widthIn(min = if (big) 40.dp else 30.dp).height(if (big) 40.dp else 34.dp).clip(RoundedCornerShape(8.dp)).background(Color(0x73000000))
                     .border(1.dp, if (short) Color(0x80FF7A6A) else Color(0x4DE5C47E), RoundedCornerShape(8.dp)).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
-                    Text("${r.qty}×", style = f(13f, 800, if (short) B.Coral else B.Gold), maxLines = 1, softWrap = false)
+                    Text(qty ?: "${r.qty}×", style = f(if (big) 15f else 13f, 800, if (short) B.Coral else B.Gold), maxLines = 1, softWrap = false)
                 }
-                FitName(r.name, Modifier.weight(1f).padding(vertical = 3.dp))
+                FitName(r.name, Modifier.weight(1f).padding(vertical = 3.dp), if (big) 17f else 12f)
                 end()
             }
         }
@@ -972,14 +1060,14 @@ private fun SealChip(r: BenchRow, onCraft: () -> Unit) = Box(Modifier.sizeIn(min
  * steps down toward 11 sp so the word stays whole.
  */
 @Composable
-private fun FitName(name: String, modifier: Modifier) = BoxWithConstraints(modifier) {
+private fun FitName(name: String, modifier: Modifier, top: Float = 12f) = BoxWithConstraints(modifier) {
     val measurer = rememberTextMeasurer()
-    val base = f(12f, 700, B.Fg, line = 14.2f).copy(shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 2f))
+    val base = f(top, 700, B.Fg, line = top * 1.18f).copy(shadow = androidx.compose.ui.graphics.Shadow(Color.Black, Offset(0f, 1f), 2f))
     val room = constraints.maxWidth
     val size = remember(name, room, base) {
         val longest = name.split(' ').maxByOrNull { it.length } ?: name
-        var sp = 12f
-        while (sp > 11f && measurer.measure(longest, base.copy(fontSize = sp.sp), maxLines = 1, softWrap = false).size.width > room) sp -= .25f
+        var sp = top
+        while (sp > top - 1f && measurer.measure(longest, base.copy(fontSize = sp.sp), maxLines = 1, softWrap = false).size.width > room) sp -= .25f
         sp
     }
     Text(name, style = base.copy(fontSize = size.sp, lineHeight = (size * 1.18f).sp))
@@ -1089,20 +1177,29 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
         val pips: @Composable () -> Unit = { for (k in BenchFilters.COLORS) { val on = k in ui.colors; PipButton(k, on) { ui.colors = if (on) ui.colors - k else ui.colors + k; onFilter() } } }
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val twoRows = m.colorFilter && cols != 3 && maxWidth < 940.dp
+            val phoneBar = m.colorFilter && cols == 3 && maxWidth < 600.dp
             // Magic on a phone held upright (the approved phone board): Find and Filters, then the seven colours across, then the switch.
             // Once the cards are scrolled, the colours and the switch fold away (as the hero does) so the cards get the room; back at
             // the top they open again. Find and Filters stay.
-            if (m.colorFilter && cols == 3 && maxWidth < 600.dp) Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp).animateContentSize()) {
+            // Deck screen redraw (Randall 18 Nov): one bar. Find is a button (it opens the field in the switch's place), then the
+            // Your cards / All cards switch, then Filters; the seven colours across under it. The shelf's name and count sit on the
+            // first section's line. Once the cards are scrolled the colours fold away and the bar stays.
+            if (phoneBar) Column(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp).animateContentSize()) {
                 val folded by remember(ui) { androidx.compose.runtime.derivedStateOf { ui.tileGrid.firstVisibleItemIndex > 0 || ui.shelfList.firstVisibleItemIndex > 0 } }
+                var finding by remember { mutableStateOf(false) }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.weight(1f)) { FindBox(ui, onFilter, fill = true) }
-                    FiltersButton(ui)
+                    if (finding || ui.find.isNotEmpty()) {
+                        Box(Modifier.weight(1f)) { FindBox(ui, onFilter, fill = true, auto = finding) }
+                        BarSquare(null, "✕", "Close the search") { ui.find = ""; finding = false; onFilter() }
+                    } else {
+                        BarSquare("find", "", "Find a card") { finding = true }
+                        Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) { switch?.invoke() }
+                    }
+                    FiltersPill(ui.filter.count, ui.filters, short = true) { ui.peek = null; ui.setPick = false; ui.filters = !ui.filters }
                 }
                 if (!folded) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { pips() }
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        switch?.invoke(); setButton(); title()
-                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) { setButton() }
                 }
             }
             // Wider (and Yu-Gi-Oh!, Pokémon): one scrolling row, fading out at the right edge; Magic's Filters stays pinned at its end
@@ -1150,8 +1247,8 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
                 if (secs.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(m.browserNote ?: "No cards match", style = f(11f, 700, B.Gold, track = .1f).copy(fontSize = 11.sp), modifier = Modifier.padding(top = 8.dp, start = 2.dp))
                 }
-                for (s in secs) {
-                    item(key = "s:" + s.label, span = { GridItemSpan(maxLineSpan) }) { SectionHead(s.label) }
+                for ((si, s) in secs.withIndex()) {
+                    item(key = "s:" + s.label, span = { GridItemSpan(maxLineSpan) }) { SectionHead(s.label, if (si == 0 && n == 3 && m.colorFilter) "${m.browserTitle}  ${shown.size}" else null) }
                     itemsIndexed(s.tiles, key = { i, t -> "t:${s.label}:$i:${t.key}" }) { _, t -> Tile(m, t, ui, a, drag, lift) }
                 }
                 // The deck page's own add by name, for a card the collection doesn't have (app.js deckAdd; tcg.js A.tDeckFind).
@@ -1196,14 +1293,14 @@ private fun FiltersButton(ui: BenchUi) = FiltersPill(ui.filter.count, ui.filters
 
 /** The Filters button itself, shared with the Trunk's bar (polish brief 3): [n] picks on, [open] while its panel shows. */
 @Composable
-internal fun FiltersPill(n: Int, open: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+internal fun FiltersPill(n: Int, open: Boolean, modifier: Modifier = Modifier, short: Boolean = false, onClick: () -> Unit) {
     val on = open || n > 0
-    Row(modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Color(0x1AE5C47E) else Color(0x0DFFFFFF))
+    Row(modifier.heightIn(min = 44.dp).widthIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Color(0x1AE5C47E) else Color(0x0DFFFFFF))
         .border(1.dp, if (on) Color(0x99E5C47E) else B.Line, RoundedCornerShape(12.dp)).clickable(onClick = onClick)
         .semantics { role = Role.Button; contentDescription = if (n > 0) "Filters, $n on" else "Filters" }.padding(horizontal = 11.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
         SiteIcon(BENCH_ICONS["filters"], 17.dp, if (on) B.Gold else B.Fg)
-        Text("Filters", style = f(12f, 700, if (on) B.Gold else B.Fg), maxLines = 1, softWrap = false)
+        if (!short) Text("Filters", style = f(12f, 700, if (on) B.Gold else B.Fg), maxLines = 1, softWrap = false)
         if (n > 0) Box(Modifier.defaultMinSize(minWidth = 18.dp).height(18.dp).clip(RoundedCornerShape(99.dp)).background(B.GoldBtn).padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
             Text("$n", style = f(11f, 800, B.GoldInk, line = 12f), maxLines = 1, softWrap = false)
         }
@@ -1314,7 +1411,7 @@ private fun FilterPanel(m: BenchModel, ui: BenchUi, shown: Int?, sets: List<Pair
                 } }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                HeroGhost("Reset") { ui.colors = emptySet(); put(BenchFilter(sort = fl.sort)) }
+                HeroGhost("Reset", { ui.colors = emptySet(); put(BenchFilter(sort = fl.sort)) })
                 val shape = RoundedCornerShape(13.dp)
                 Box(Modifier.weight(1f).heightIn(min = 48.dp).shadow(8.dp, shape, spotColor = Color(0xB3E5C47E)).clip(shape).background(B.GoldBtn).clickable { ui.filters = false }
                     .semantics { role = Role.Button }, contentAlignment = Alignment.Center) {
@@ -1366,7 +1463,7 @@ private fun CurveBar(m: BenchModel, ui: BenchUi, height: Dp, modifier: Modifier 
 @Composable
 private fun DeckSortSeg(ui: BenchUi) = Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0x40000000)).border(1.dp, B.Line, RoundedCornerShape(12.dp)).padding(2.dp)) {
     for ((k, w) in listOf("type" to "Type", "mana" to "Mana")) { val on = ui.deckSort == k
-        Box(Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(9.dp)).then(if (on) Modifier.background(Color(0x29E5C47E)) else Modifier).clickable { ui.deckSort = k }
+        Box(Modifier.heightIn(min = 44.dp).widthIn(min = 44.dp).clip(RoundedCornerShape(9.dp)).then(if (on) Modifier.background(Color(0x29E5C47E)) else Modifier).clickable { ui.deckSort = k }
             .semantics { role = Role.RadioButton; selected = on; contentDescription = "Sort the deck by ${w.lowercase()}" }.padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
             Text(w, style = f(12f, 700, if (on) B.Gold else B.Mute), maxLines = 1, softWrap = false)
         }
@@ -1591,12 +1688,20 @@ private fun Modifier.drawWithFade() = this.drawWithContent {
 }
 
 @Composable
-private fun FindBox(ui: BenchUi, onFilter: () -> Unit, fill: Boolean = false) {
+private fun BarSquare(icon: String?, label: String, desc: String, onClick: () -> Unit) = Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x0FFFFFFF))
+    .border(1.dp, B.Line, RoundedCornerShape(12.dp)).clickable(onClick = onClick).semantics { contentDescription = desc; role = Role.Button }, contentAlignment = Alignment.Center) {
+    if (icon != null) SiteIcon(BENCH_ICONS[icon], 18.dp, B.Fg) else Text(label, style = f(16f, 800, B.Fg))
+}
+
+@Composable
+private fun FindBox(ui: BenchUi, onFilter: () -> Unit, fill: Boolean = false, auto: Boolean = false) {
     var focused by remember { mutableStateOf(false) }
+    val ask = remember { FocusRequester() }
+    LaunchedEffect(auto) { if (auto) runCatching { ask.requestFocus() } }
     val w by animateFloatAsState(if (focused || ui.find.isNotEmpty()) 170f else 118f, tween(200), label = "find")
     BasicTextField(ui.find, { ui.find = it.take(60); onFilter() }, singleLine = true, textStyle = f(13f, 600), cursorBrush = SolidColor(B.Gold),
         modifier = (if (fill) Modifier.fillMaxWidth() else Modifier.width(w.dp)).height(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x0FFFFFFF))
-            .border(1.dp, if (focused) B.Gold else B.Line, RoundedCornerShape(12.dp)).onFocusChanged { focused = it.isFocused }.semantics { contentDescription = "Find a card" },
+            .border(1.dp, if (focused) B.Gold else B.Line, RoundedCornerShape(12.dp)).focusRequester(ask).onFocusChanged { focused = it.isFocused }.semantics { contentDescription = "Find a card" },
         decorationBox = { field -> Box(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
             if (ui.find.isEmpty()) Text("Find a card", style = f(13f, 600, B.Mute), maxLines = 1, softWrap = false)
             field()
@@ -1604,10 +1709,12 @@ private fun FindBox(ui: BenchUi, onFilter: () -> Unit, fill: Boolean = false) {
 }
 
 @Composable
-private fun SectionHead(label: String) = Row(Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically,
+private fun SectionHead(label: String, trailing: String? = null) = Row(Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-    Text(label.uppercase(), style = f(11f, 700, B.Gold, track = .1f), maxLines = 1, softWrap = false)
-    Box(Modifier.weight(1f).height(1.dp).background(Brush.horizontalGradient(listOf(B.Line, Color.Transparent))))
+    Text(label.uppercase(), style = f(11f, 700, if (trailing != null) B.Mute else B.Gold, track = .1f), maxLines = 1, softWrap = false)
+    Box(Modifier.weight(1f).height(1.dp).background(if (trailing != null) SolidColor(B.Line) else Brush.horizontalGradient(listOf(B.Line, Color.Transparent))))
+    // The shelf's own name and how many cards it shows (Trunk in Play, Collection in Collection), at the line's end.
+    if (trailing != null) Text(trailing.uppercase(), style = f(11f, 800, B.Gold, track = .1f), maxLines = 1, softWrap = false)
 }
 
 /**
@@ -1696,15 +1803,20 @@ private fun Rail(keys: List<String>, starts: Map<String, Int>, grid: LazyGridSta
 // ---------------------------------------------------------------- footer
 
 @Composable
-private fun Footer(m: BenchModel, ui: BenchUi, split: Boolean, views: Boolean) = FlowRow(Modifier.fillMaxWidth().heightIn(min = 36.dp).background(Color(0xD90A0B0F))
-    .drawBehind { drawLine(B.Line, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) }.padding(start = 12.dp, end = if (split) 4.dp else 12.dp),
+private fun Footer(m: BenchModel, ui: BenchUi, split: Boolean, views: Boolean, actionRow: (@Composable RowScope.() -> Unit)? = null) = FlowRow(Modifier.fillMaxWidth().heightIn(min = 36.dp).background(Color(0xD90A0B0F))
+    .drawBehind { drawLine(B.Line, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) }.padding(start = 12.dp, end = 12.dp),
     horizontalArrangement = Arrangement.spacedBy(10.dp), itemVerticalAlignment = Alignment.CenterVertically) {
     // The message, the seals, then (split) the four views; on a narrow deck column the views drop to their own line, at the right.
     Text(m.footLead, style = f(12f, 600, B.Mute), maxLines = 1, softWrap = false, modifier = Modifier.heightIn(min = 36.dp).wrapContentHeight())
+    // What the deck still needs lives here (deck screen redraw): the page's own fill and pack buttons beside the count they answer.
+    if (actionRow != null) Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { actionRow() }
     Box(Modifier.weight(1f).heightIn(min = 36.dp), contentAlignment = Alignment.CenterEnd) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             m.wallet?.let { w -> for (k in listOf("c", "u", "r", "m")) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                SealMini(k, 18.dp); Text("${w[k] ?: 0}", style = f(12f, 700, B.Fg), maxLines = 1, softWrap = false) } }
+                val have = w[k] ?: 0; val need = m.need?.get(k) ?: 0
+                SealMini(k, 18.dp); Text(buildAnnotatedString { withStyle(SpanStyle(color = if (need > have) B.Coral else B.Fg)) { append("$have") }
+                    if (need > 0) withStyle(SpanStyle(color = B.Mute, fontWeight = FontWeight.SemiBold)) { append("/$need") } }, style = f(12f, 700, B.Fg), maxLines = 1, softWrap = false,
+                    modifier = if (need > 0) Modifier.semantics { contentDescription = "$need needed, $have owned" } else Modifier) } }
             m.footRight?.let { Text(it, style = f(12f, 600, B.Mute), maxLines = 1, softWrap = false) }
         }
     }
@@ -1785,41 +1897,34 @@ private fun EmbRow(emb: List<TcgEmb>) = Row(Modifier.clip(RoundedCornerShape(99.
  */
 @Composable
 private fun BenchBottom(m: BenchModel, ui: BenchUi, onFilter: () -> Unit = {}, toCards: () -> Unit = {}) {
-    // The ring on a card (U10): that card's case, its buttons the ones the pad does on it. No ring: the deck's summary below.
+    // The ring on a card (U10): that card's case, its buttons the ones the pad does on it. No ring: the deck's list below.
     ui.ring?.let { FocusedCardView(it); return }
     val on = DualScreen.focus?.name
-    Row(Modifier.fillMaxSize().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(m.title, style = cinzel(17f, B.Gold), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text(m.formatChip, style = f(12f, 700, B.Mute))
-            m.stats.take(3).forEach { st -> Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = if (st.warn) B.Coral else B.Fg)) { append(st.value) }; append("  " + st.label) }, style = f(13f, 600, B.Mute)) }
-            m.power?.let { p -> Text(buildAnnotatedString { withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = B.Gold)) { append(p) }; append("  power" + if (m.tier.isNotBlank()) " · ${m.tier}" else "") }, style = f(13f, 600, B.Mute)) }
-            // The deck's curve, 0 to 7+ (the deck header's on every size): the bar the ring's card would add to glows, and a tap on a
-            // bar filters the cards on the top screen to that mana value.
-            if (m.colorFilter && m.groups.isNotEmpty()) {
-                val lit = m.groups.flatMap { it.rows }.firstOrNull { it.name == on }?.let(::rowMana)
-                CurveBar(m, ui, 96.dp, Modifier.fillMaxWidth(), lit = lit, onFilter = onFilter, toCards = toCards)
-            }
-        }
-        val groups = remember(m.groups, ui.deckSort, m.colorFilter) { if (ui.deckSort == "mana" && m.colorFilter) benchByMana(m.groups) else m.groups }
-        Column(Modifier.weight(1.2f).fillMaxHeight()) {
-        if (m.colorFilter) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { DeckSortSeg(ui) }
-        androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    // Deck screen redraw (Randall 18 Nov: on the real Thor this list was "so tiny it's hard to maneuver"): the bottom screen is the
+    // deck's list and nothing else, in full-width rows a thumb can hit. The deck's name, numbers and curve are on the top screen,
+    // so nothing shows twice. A tap on a row opens its big view on the top screen.
+    val groups = remember(m.groups, ui.deckSort, m.colorFilter) { if (ui.deckSort == "mana" && m.colorFilter) benchByMana(m.groups) else m.groups }
+    Column(Modifier.fillMaxSize().padding(start = 12.dp, end = 12.dp, top = 8.dp)) {
+        if (m.colorFilter) Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) { DeckSortSeg(ui) }
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f).fillMaxWidth().semantics { contentDescription = "Deck list, bottom screen" }, verticalArrangement = Arrangement.spacedBy(6.dp),
+            contentPadding = PaddingValues(bottom = 8.dp)) {
             val inDeck = groups.any { g -> g.rows.any { it.name == on } }
             if (on != null && !inDeck) item(key = "new") { BottomRow("0 → 1", on, true) }
+            if (groups.isEmpty() && on == null) item(key = "empty") { Text("No cards yet.", style = f(15f, 600, B.Mute), modifier = Modifier.padding(vertical = 12.dp)) }
             for (g in groups) {
-                item(key = "g:" + g.name) { Text("${g.name.uppercase()}  ${g.rows.sumOf { it.qty }}", style = f(11f, 800, B.Gold, track = .1f), modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)) }
-                items(g.rows.size, key = { "r:${g.name}:" + g.rows[it].key }) { i -> val r = g.rows[i]; val lit = r.name == on
-                    BottomRow(if (lit) "${r.qty} → ${r.qty + 1}" else "${r.qty}", r.name, lit) }
+                item(key = "g:" + g.name) { Text(buildAnnotatedString { append(g.name.uppercase()); withStyle(SpanStyle(color = B.Mute)) { append("  ${g.rows.sumOf { it.qty }}") } },
+                    style = f(12f, 800, B.Gold, track = .1f), modifier = Modifier.padding(top = 6.dp)) }
+                items(g.rows.size, key = { "r:${g.name}:$it:" + g.rows[it].key }) { i -> val r = g.rows[i]; val lit = r.name == on
+                    DeckStripRow(r, if (lit) Modifier.border(2.dp, B.Gold, RoundedCornerShape(10.dp)) else Modifier, Modifier.clickable { ui.peek = r.key }, big = true,
+                        qty = if (lit) "${r.qty} → ${r.qty + 1}" else null) }
             }
-        }
         }
     }
 }
 
 @Composable
-private fun BottomRow(qty: String, name: String, lit: Boolean) = Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(if (lit) Color(0x29E5C47E) else Color.Transparent)
-    .padding(horizontal = 6.dp, vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-    Text(qty, style = f(12f, 800, if (lit) B.Gold else B.Mute), modifier = Modifier.widthIn(min = 22.dp))
-    Text(name, style = f(13f, if (lit) 800 else 600, if (lit) B.Gold else B.Fg), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+private fun BottomRow(qty: String, name: String, lit: Boolean) = Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(10.dp)).background(if (lit) Color(0x29E5C47E) else Color.Transparent)
+    .border(1.dp, if (lit) B.Gold else B.Line, RoundedCornerShape(10.dp)).padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Text(qty, style = f(15f, 800, if (lit) B.Gold else B.Mute), maxLines = 1, softWrap = false)
+    Text(name, style = f(17f, if (lit) 800 else 600, if (lit) B.Gold else B.Fg))
 }

@@ -216,6 +216,7 @@ class DeckBenchShotTest {
             // Hold a deck card 400 ms, carry it down over the browser: the dock eases down to its small share. (The deck's curve is
             // the list's first row on a phone since the deck view redesign, so the list scrolls to the card first.)
             list.performScrollToNode(hasContentDescription("4 Undercity Dire Rat")); settle()
+            clearOfBar("4 Undercity Dire Rat", ui)
             val rat = rule.onNode(hasContentDescription("4 Undercity Dire Rat")).fetchSemanticsNode().boundsInRoot
             val grid = rule.onNode(hasContentDescription("Cards to add")).fetchSemanticsNode().boundsInRoot
             val before = ui.edit.cards.filter { it.name == "Undercity Dire Rat" }.sumOf { it.qty }
@@ -244,6 +245,8 @@ class DeckBenchShotTest {
             if (rule.onAllNodes(androidx.compose.ui.test.hasTestTag("dockFolded")).fetchSemanticsNodes().isNotEmpty()) {
                 rule.onNode(androidx.compose.ui.test.hasTestTag("dockFolded")).performClick(); settle() }
             list.performScrollToNode(hasContentDescription("1 Sephiroth, Planet's Heir")); settle()
+            // The list's control row stays at its top (deck screen redraw): bring the row out from under it before the tap.
+            clearOfBar("1 Sephiroth, Planet's Heir", ui)
             rule.onNode(hasContentDescription("1 Sephiroth, Planet's Heir")).performTouchInput { click() }; settle()
             shot("$tag-peek"); audit(found)
             rule.onNode(hasContentDescription("Sephiroth, Planet's Heir, open the card")).fetchSemanticsNode()
@@ -260,6 +263,15 @@ class DeckBenchShotTest {
             appendLine("Under 11 sp: " + found.small.joinToString(" | ").ifEmpty { "none" })
             appendLine("Targets under 44 dp: " + found.tight.joinToString(" | ").ifEmpty { "none" })
         })
+    }
+
+    /** The deck list's control row stays at its top (deck screen redraw): a row scrolled to under it comes down clear of it. */
+    private fun clearOfBar(desc: String, ui: EditorUi) {
+        val d = rule.activity.resources.displayMetrics.density
+        val list = rule.onNode(hasScrollToIndexAction() and hasContentDescription("Deck list")).fetchSemanticsNode().boundsInRoot
+        val row = rule.onNode(hasContentDescription(desc)).fetchSemanticsNode().boundsInRoot
+        val under = (list.top + 60 * d) - row.top
+        if (under > 0) { rule.runOnUiThread { kotlinx.coroutines.runBlocking { ui.bench.deckGrid.scroll { scrollBy(-under) } } }; settle(4) }
     }
 
     @Test fun phone() = run("390x844", 24, 24, 1f, gestures = true)

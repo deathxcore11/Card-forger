@@ -114,7 +114,7 @@ class DeckStacks(val groups: List<DeckStack>, val piles: Int)
 /** A type group (Magic) or a zone (Yu-Gi-Oh!, Pokémon: its heading, "16 · 60", and "Empty." when it has no cards). */
 class DeckGroup(val name: String, val count: String, val cards: List<DeckCard>, val stacks: DeckStacks, val none: String = "")
 class DeckEyebrow(val kind: String, val label: String, val title: String, val badge: Boolean, val level: String, val icon: SiteSvg?, val dots: List<Pair<String, String>>, val act: String = "")
-class DeckStat(val value: String, val label: String, val warn: Boolean, val button: Boolean, val act: String, val id: String)
+class DeckStat(val value: String, val label: String, val warn: Boolean, val button: Boolean, val act: String, val id: String, val bracket: String = "")
 class DeckPageAction(val label: String, val act: String, val id: String, val primary: Boolean, val plate: Boolean, val shown: Boolean)
 class DeckChip(val id: String, val label: String, val count: String, val on: Boolean)
 class DeckSwap(val out: String, val into: String, val icon: SiteSvg?, val button: String, val why: String, val outKey: String = "", val inKey: String = "")
@@ -184,7 +184,7 @@ class CollectionDeckModel(val game: CardGame, val id: String, val format: String
             return CollectionDeckModel(CardGame.of(j.s("game")), j.s("id"), j.s("format"), j.s("view").ifBlank { "gallery" }, missing?.s("title"), missing?.s("text") ?: "",
                 h?.o("art")?.s("src")?.ifBlank { null }, h?.o("menu")?.s("label") ?: "",
                 h?.objs("eyebrow").orEmpty().map { DeckEyebrow(it.s("kind"), it.s("label"), it.s("title"), it.b("badge"), it.s("level"), svg(it.o("icon")), it.objs("dots").map { d -> d.s("src") to d.s("alt") }, it.s("act")) },
-                h?.s("title") ?: "", h?.s("line") ?: "", h?.objs("stats").orEmpty().map { DeckStat(it.s("value"), it.s("label"), it.b("warn"), it.b("button"), it.s("act"), it.s("id")) },
+                h?.s("title") ?: "", h?.s("line") ?: "", h?.objs("stats").orEmpty().map { DeckStat(it.s("value"), it.s("label"), it.b("warn"), it.b("button"), it.s("act"), it.s("id"), it.s("bracket")) },
                 h?.get("owned")?.takeIf { it.isJsonPrimitive }?.asFloat,
                 j.objs("actions").map { DeckPageAction(it.s("label"), it.s("act"), it.s("id"), it.b("primary"), it.b("plate"), it.b("shown")) },
                 note?.s("text"), note?.strs("lines").orEmpty(),

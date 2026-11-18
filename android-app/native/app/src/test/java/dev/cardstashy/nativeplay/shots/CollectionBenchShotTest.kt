@@ -133,6 +133,8 @@ class CollectionBenchShotTest {
             assertEquals(listOf(outside), adds)
             // The sideboard sits under the deck, its cards open the card page; the review chip is the page's (A.deckReview).
             // The deck list now opens with the mana curve (deck view redesign): scroll on to the sideboard's own row, not just its heading.
+            // On an upright phone the dock folds while the pool is scrolled; a tap on it brings the deck back (as DeckBenchShotTest does).
+            if (rule.onAllNodes(androidx.compose.ui.test.hasTestTag("dockFolded")).fetchSemanticsNodes().isNotEmpty()) { rule.onNode(androidx.compose.ui.test.hasTestTag("dockFolded")).performClick(); settle() }
             rule.onNode(hasScrollToIndexAction() and hasContentDescription("Deck list")).performScrollToNode(hasText("SIDEBOARD", substring = true)); settle()
             rule.onNode(hasScrollToIndexAction() and hasContentDescription("Deck list")).performScrollToNode(hasContentDescription("2 Counterspell")); settle(); shot("$tag-side"); audit(found)
             rule.onNode(hasContentDescription("2 Counterspell") and hasAnyAncestor(hasContentDescription("Deck list"))).let { n ->

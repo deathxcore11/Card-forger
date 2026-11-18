@@ -190,7 +190,7 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
         BenchMenuItem(b.label) { if (b.act == "deckTab") { if (tab(b.id)) ui.tab = b.id } else act.act(b.act, b.id) } }
     val model = heroModel(m, powerStat).let { h -> BenchModel(
         play = false, modeChip = h.modeChip, formatChip = h.formatChip.ifBlank { "Magic · ${m.format}" }, title = m.title, heroArt = m.art,
-        stats = h.stats, power = h.power, tier = PowerTier.powerTier(h.power?.toDoubleOrNull()), roles = m.roles,
+        stats = h.stats, power = h.power, tier = deckTier(m.format, powerStat, h.power), roles = m.roles,
         groups = groups, basics = BASIC_NAMES.map { it to namedArt(it) }, browserTitle = if (mode == "all") "All cards" else "Collection", tiles = if (mode == "all") allTiles else tiles,
         browserNote = if (mode == "all") (if (allBusy && all.isEmpty()) "Looking through every card…" else allError.ifEmpty { null })
             else if (pool == null) "Opening your collection…" else if (pool.size() == 0) "No cards in your collection yet." else null,
@@ -217,6 +217,11 @@ fun CollectionBench(m: CollectionDeckModel, pool: JsonArray?, ui: BenchUi, act: 
 
 /** The hero's parts as the page has them: its chips, its stats but Power, and Power as the badge (the stat's button opens its tab). */
 private class Hero(val modeChip: String, val formatChip: String, val stats: List<BenchStat>, val power: String?, val powerLabel: String, val powerTab: String?)
+/** The deck page's tier word: a Commander deck says its Bracket (the page's power stat carries it), every other deck the meta Tier. */
+internal fun deckTier(format: String, powerStat: DeckStat?, power: String?): String =
+    (if (format.equals("Commander", ignoreCase = true)) powerStat?.bracket?.toIntOrNull()?.let { PowerTier.bracketLabel(it) } else null)?.takeIf { it.isNotBlank() }
+        ?: PowerTier.powerTier(power?.toDoubleOrNull())
+
 private fun heroModel(m: CollectionDeckModel, powerStat: DeckStat?) = Hero(
     m.eyebrow.firstOrNull { it.kind == "chip" && it.badge }?.label ?: "My deck",
     m.eyebrow.firstOrNull { it.kind == "chip" && !it.badge }?.label.orEmpty(),

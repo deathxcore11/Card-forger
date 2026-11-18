@@ -424,6 +424,19 @@ class CollectionEngineTest {
         File(out, "collection-bench-pool.json").writeText(pool.toString())
     }
 
+    /** A Commander deck's page says its Bracket, not the Tier word (a Chishiro-style Commander deck read "Casual"); other formats keep the Tier. */
+    @Test fun commanderDeckPageCarriesItsBracket() = runBlocking {
+        assumeTrue(bundle.isFile)
+        CollectionEngine.initFrom(bundle)
+        fourDecks()
+        suspend fun powerStat(id: String) = CollectionEngine.deck("mtg", id)["hero"].asJsonObject["stats"].asJsonArray.map { it.asJsonObject }.first { it["act"].asString == "deckTab" }
+        val cmd = powerStat("d1")
+        val b = cmd["bracket"]?.asString.orEmpty()
+        assertTrue("Commander deck's power stat carries a bracket 1-5, was '$b'", b.toIntOrNull() in 1..5)
+        assertEquals("Bracket $b", dev.cardstashy.nativeplay.ui.deckTier("Commander", dev.cardstashy.nativeplay.ui.DeckStat(cmd["value"].asString, cmd["label"].asString, false, true, "deckTab", "engine", b), cmd["value"].asString))
+        assertEquals("", powerStat("d2")["bracket"]?.asString.orEmpty())
+    }
+
     /** views.js cardSheet through the bundle in the app's own runtime: the page opens from what the catalog has, and its tabs and controls run. */
     @Test fun cardModel() = runBlocking {
         assumeTrue(bundle.isFile)

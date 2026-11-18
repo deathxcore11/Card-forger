@@ -397,7 +397,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
             else if (trunk.isEmpty()) "No cards yet. Open packs, or look through All cards and craft them with seals." else null,
         footLead = buildAnnotatedString { if (plan.missing > 0) { withStyle(SpanStyle(color = Site.Text, fontWeight = FontWeight.Bold)) { append("${plan.missing}") }; append(" to craft") }
             else withStyle(SpanStyle(color = Site.Text, fontWeight = FontWeight.Bold)) { append(if (nums.count > 0) "Ready to play" else "Empty deck") } },
-        wallet = wallet, footRight = null, busy = ui.busy, canSave = nums.count > 0,
+        wallet = wallet, footRight = null, busy = ui.busy, canSave = nums.count > 0, need = plan.need.takeIf { plan.missing > 0 },
         // Play's tabs: Cards, Power and Rules. Power is Play-safe (Randall's card 6 Nov 18:53Z): no Upgrades, no prices. War Chest reads
         // the Collection, and Play never does.
         tabs = listOf("cards" to "Cards", "engine" to "Power", "rules" to "Rules"), powerTab = "engine",
@@ -413,6 +413,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         landNew = landGot.filter { (id, _) -> landNew(id) }.values.toSet(),
     )
     val benchActions = BenchActions(back = onBack, save = actions.save, step = actions.step, craft = actions.craftCopies, open = actions.open, more = actions.hold,
+        craftAll = if (plan.missing > 0) BenchCraft(craftWord(plan, ui), plan.craftable > 0 && !ui.crafting, actions.craftAll) else null,
         // Drop a card on the hero: its art is this deck's art (saved decks; app.js playDropArt).
         cover = { key -> val id = ui.edit.id; val name = nameOf(key); val land = LandStyles.parseKey(key)?.second?.takeIf { it.isNotEmpty() }
             val image = land?.let { LandStyles.image(it, "art_crop") } ?: fact(name)?.a?.ifBlank { null } ?: named(name, "art_crop")
@@ -429,8 +430,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
 
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, b, benchActions,
-            actionRow = if (plan.missing > 0 || nums.count < nums.size || goals.isNotEmpty()) ({
-                if (plan.missing > 0) CraftBar(plan, ui, actions.craftAll)
+            actionRow = if (nums.count < nums.size || goals.isNotEmpty()) ({
                 if (nums.count < nums.size) BenchPill(if (ui.filling) "Finding cards…" else "Fill ${nums.size - nums.count} empty slot${if (nums.size - nums.count > 1) "s" else ""}", enabled = !ui.filling, onClick = actions.fill)
                 for (g in goals) BenchPill("${g.code.uppercase()} packs", count = g.miss, desc = "${g.name}: ${g.miss} missing") { actions.pack(g.code) }
             }) else null,
@@ -460,24 +460,9 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     }
 }
 
-/** .craftbar: the seals the missing cards need (short ones in coral), then Craft all with the web's four states. */
-@Composable
-private fun CraftBar(plan: DeckEdit.Plan, ui: EditorUi, onCraft: () -> Unit) {
-    Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0x14E5C47E)).border(1.dp, Color(0x4DE5C47E), RoundedCornerShape(12.dp)).padding(start = 10.dp, end = 5.dp, top = 5.dp, bottom = 5.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            for (k in listOf("c", "u", "r", "m")) { val need = plan.need[k] ?: 0; if (need == 0) continue
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.semantics { contentDescription = "$need needed, ${plan.have[k] ?: 0} owned" }) {
-                    SealMini(k, 18.dp); Text("$need", style = t(13f, FontWeight.ExtraBold, if (need > (plan.have[k] ?: 0)) Color(0xFFFF7A6A) else Ink), maxLines = 1, softWrap = false) } }
-        }
-        val on = plan.craftable > 0 && !ui.crafting
-        Box(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).background(if (on) Brush.verticalGradient(listOf(Color(0xFFF0D9A0), Color(0xFFB8924A))) else SolidColor(Color(0x26E5C47E)))
-            .clickable(enabled = on, onClick = onCraft).semantics { role = Role.Button }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-            Text(if (ui.crafting) "Crafting…" else if (ui.armed) "Craft ${plan.craftable} now" else if (plan.craftable < plan.missing) "Craft ${plan.craftable} of ${plan.missing}" else "Craft all",
-                style = t(13f, FontWeight.ExtraBold, if (on) Color(0xFF1A1405) else Site.Muted), maxLines = 1, softWrap = false)
-        }
-    }
-}
+/** Craft all's word in the web's four states (.craftbar); the seals it needs show in the Bench's footer beside what you have. */
+private fun craftWord(plan: DeckEdit.Plan, ui: EditorUi) = if (ui.crafting) "Crafting…" else if (ui.armed) "Craft ${plan.craftable} now"
+    else if (plan.craftable < plan.missing) "Craft ${plan.craftable} of ${plan.missing}" else "Craft all"
 
 /** .fill / .goal: a glass pill in the action row (a gold count when it has one). */
 @Composable
