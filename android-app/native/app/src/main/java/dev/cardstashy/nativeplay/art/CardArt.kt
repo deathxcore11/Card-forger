@@ -247,7 +247,9 @@ object CardArt {
         }
     }
 
-    private fun images(card: JsonObject): Pair<String, String?>? {
+    /** Live 0.4.57 (fault 16): Scryfall's "placeholder" picture is a grey silhouette; it never counts as art, so the name is asked again and the frame shows meanwhile. */
+    internal fun images(card: JsonObject): Pair<String, String?>? {
+        if (card.get("image_status")?.takeIf { !it.isJsonNull }?.asString == "placeholder") return null
         val uris = card.getAsJsonObject("image_uris") ?: card.getAsJsonArray("card_faces")?.firstOrNull()?.asJsonObject?.getAsJsonObject("image_uris") ?: return null
         val normal = uris.get("normal")?.asString ?: uris.get("large")?.asString ?: return null
         return normal to uris.get("art_crop")?.asString
