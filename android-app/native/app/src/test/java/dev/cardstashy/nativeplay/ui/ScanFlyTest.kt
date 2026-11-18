@@ -27,7 +27,7 @@ class ScanFlyTest {
     @Test fun aScanSaveStartsOneFlight() {
         Motion.still = false; Fly.off = false; Fly.reduced = false; Fly.flights.clear()
         rule.mainClock.autoAdvance = false
-        rule.setContent { Column { Box(Modifier.size(100.dp, 140.dp).flySource { Box(it) }); Box(Modifier.size(24.dp).flyTarget(Fly.SAVE_MARK)) } }
+        rule.setContent { Box { Column { Box(Modifier.size(100.dp, 140.dp).flySource { Box(it) }); Box(Modifier.size(24.dp).flyTarget(Fly.SAVE_MARK)) }; FlyLayer() } }
         rule.mainClock.advanceTimeByFrame()
         Fly.added("Added 3 · Collection")
         shadowOf(android.os.Looper.getMainLooper()).idle()
