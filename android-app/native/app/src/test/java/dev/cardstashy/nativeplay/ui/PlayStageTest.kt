@@ -41,7 +41,7 @@ class PlayStageTest {
     @Test fun playStartsQuickPlayWithTheShownDeck() {
         val log = mutableListOf<String>()
         home(HomeDeck("d1", "Mono-White Auras", "Standard", 60, null), log)
-        rule.onNodeWithText("Mono-White Auras").assertExists()
+        rule.onNodeWithText("Mono-White Auras", substring = true).assertExists()
         rule.onNodeWithText("YOUR DECK · STANDARD · 60").assertExists()
         rule.onNodeWithContentDescription("Quick Play").assertIsSelected()
         rule.onNodeWithContentDescription("Play, Quick Play").performClick()
@@ -74,7 +74,7 @@ class PlayStageTest {
     @Test fun noDeckOpensQuickPlay() {
         val log = mutableListOf<String>()
         home(null, log)
-        rule.onNodeWithText("Pick a deck").assertExists()
+        rule.onNodeWithText("Pick a deck", substring = true).assertExists()
         rule.onNodeWithContentDescription("Play, Quick Play").performClick()
         assertEquals(listOf("mode:quick"), log)
     }

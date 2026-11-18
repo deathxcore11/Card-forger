@@ -81,6 +81,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.selected
@@ -1786,18 +1787,28 @@ private fun HandHeader(d: PlayHomeData, story: PlayRules.Act?, mode: String, wid
     val tap = if (!change) Modifier else Modifier.clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.mode(mode) }
         .semantics { contentDescription = if (deck != null) "Change deck, ${deck.name}" else "Pick a deck" }
     Row(modifier.then(tap).heightIn(min = if (change) 48.dp else 0.dp).padding(end = if (change) 4.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(eyebrow, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = if (wide) 12.sp else 11.sp, letterSpacing = if (wide) .18.em else .12.em, color = Color(0xFFF2CF7E)), maxLines = 1, overflow = TextOverflow.Ellipsis)
             // Phones: a long deck name steps down a size before it is cut ("Mono-White Auras" whole at 374 dp).
             val big = LocalDensity.current.fontScale > 1.1f
             val ts = if (wide) 30 else when { title.length <= 13 -> 25; title.length <= 17 -> 21; else -> 19 } - (if (big) 3 else 0)
-            Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = ts.sp, lineHeight = (ts + 5).sp, color = P.Ink, shadow = P.shadow),
-                maxLines = if (big && !wide) 2 else 1, overflow = TextOverflow.Ellipsis)
+            // The chevron rides the name's last line, 8 dp after its last word (review of b47850f7: a "›" glyph read as a quote mark).
+            val dens = LocalDensity.current
+            val chev = androidx.compose.foundation.text.InlineTextContent(androidx.compose.ui.text.Placeholder(with(dens) { 24.dp.toSp() }, with(dens) { 16.dp.toSp() },
+                androidx.compose.ui.text.PlaceholderVerticalAlign.TextCenter)) { Chevron(Modifier.padding(start = 8.dp).size(16.dp)) }
+            val text = androidx.compose.ui.text.buildAnnotatedString { append(title); if (change) appendInlineContent("chev", "›") }
+            Text(text, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = ts.sp, lineHeight = (ts + 5).sp, color = P.Ink, shadow = P.shadow),
+                maxLines = if (big && !wide) 2 else 1, overflow = TextOverflow.Ellipsis, inlineContent = mapOf("chev" to chev))
         }
-        // The chevron says the name opens something; it sits beside the name, not at the far edge.
-        if (change) Text("›", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = if (wide) 30.sp else 26.sp, color = Color(0xFFF2CF7E), shadow = P.shadow),
-            modifier = Modifier.padding(start = 8.dp, top = 12.dp).then(androidx.compose.ui.Modifier.clearAndSetSemantics { }))
     }
+}
+
+/** A small gold chevron (a 16 dp right-pointing stroke), so the deck name reads as something to tap. */
+@Composable
+private fun Chevron(modifier: Modifier) = androidx.compose.foundation.Canvas(modifier.clearAndSetSemantics { }) {
+    val k = size.minDimension
+    val p = androidx.compose.ui.graphics.Path().apply { moveTo(k * .36f, k * .18f); lineTo(k * .68f, k * .5f); lineTo(k * .36f, k * .82f) }
+    drawPath(p, Color(0xFFF2CF7E), style = androidx.compose.ui.graphics.drawscope.Stroke(k * .15f, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
 }
 
 /** Phone and Fold shut: one large card in the middle, its neighbours peeking, five marks under it; swipe or LB/RB to move (Hand brief 3). */

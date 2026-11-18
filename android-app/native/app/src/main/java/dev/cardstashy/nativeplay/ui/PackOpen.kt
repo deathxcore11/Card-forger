@@ -534,7 +534,9 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                     onRevealAll = ::revealAll,
                     onNext = if (onNext != null) ::next else null, busy = busy, drift = { drift.value }, slots = slots, bar = bar)
             }
-            if (!DualScreen.active) Text(status, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = gold, textAlign = TextAlign.Center))
+            // Once the finish bar is up, the plain "n of n revealed" would repeat it; God pack, Collector, errors and the end stay.
+            val shownStatus = if (allOpen && pack.shop == null && status.endsWith("revealed")) "" else status
+            if (!DualScreen.active) Text(shownStatus, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = gold, textAlign = TextAlign.Center))
         }
         // buy.js buyOnTcgplayer: the pack's list goes to the clipboard, then the ask: Open TCGplayer (Mass Entry) or Done.
         if (shopAsk) pack.shop?.let { sh ->
@@ -983,9 +985,11 @@ internal fun PackFinishBar(count: Int, bits: String, badge: Int) {
     Row(Modifier.widthIn(max = 420.dp).fillMaxWidth().graphicsLayer { alpha = a.value; translationY = (1f - a.value) * 16.dp.toPx() }
         .clip(shape).background(Color(0x12FFFFFF)).border(1.dp, gold.copy(alpha = .22f), shape).padding(horizontal = 12.dp, vertical = 8.dp)
         .semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.size(40.dp).flyTarget(PACK_MARK, gold), contentAlignment = Alignment.Center) {
-            Icon(SiteIcons.Trunk, 26.dp, gold)
-            if (badge > 0) Text("$badge", Modifier.align(Alignment.TopEnd).clip(RoundedCornerShape(9.dp)).background(gold).padding(horizontal = 5.dp),
+        // The landing spot: a 40 dp rounded box edged in gold (the preview), so the pop, glow and ring have somewhere to land.
+        Box(Modifier.size(40.dp)) {
+            Box(Modifier.fillMaxSize().flyTarget(PACK_MARK, gold).clip(RoundedCornerShape(12.dp)).background(gold.copy(alpha = .12f))
+                .border(1.dp, gold.copy(alpha = .6f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(SiteIcons.Trunk, 24.dp, gold) }
+            if (badge > 0) Text("$badge", Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = (-8).dp).clip(RoundedCornerShape(9.dp)).background(gold).padding(horizontal = 5.dp),
                 style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, lineHeight = 16.sp, color = Color(0xFF14110A)))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
