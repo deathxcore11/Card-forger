@@ -110,6 +110,22 @@ object Opening {
                 if (i != null && at != null) i to at else null }?.sortedByDescending { it.second }.orEmpty()
         return history.firstNotNullOfOrNull { (i, _) -> decks.firstOrNull { id(it) == i } } ?: decks.firstOrNull { names(it).isNotEmpty() }
     }
+    /**
+     * Play home's Quick Play deck (Randall's recording 18 Nov: Play offered "Imported Deck", the lobby refused it as missing Trunk
+     * cards). The deck last worked on when Quick Play accepts it (every card in the Trunk, a format it plays: TableDecks' lock and
+     * the lobby's LIVE_FORMATS), else the newest one it accepts in the same order, else none ("Pick a deck").
+     */
+    fun quickDeck(workspace: JsonObject?, state: JsonObject?): JsonObject? {
+        val ok = dev.cardstashy.nativeplay.play.TableDecks.list(state, dev.cardstashy.nativeplay.account.Decks.parse(workspace), { "" }, emptyList())
+            .filter { it.unlocked && it.format in LIVE_FORMATS }.map { it.id }.toSet()
+        val decks = (workspace?.get("decks") as? com.google.gson.JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty()
+        fun id(d: JsonObject) = d.get("id")?.takeIf { it.isJsonPrimitive }?.asString
+        val history = ((workspace?.get("homeDeckActivity") as? JsonObject)?.get("mtg") as? com.google.gson.JsonArray)
+            ?.mapNotNull { it as? JsonObject }?.mapNotNull { r -> val i = r.get("id")?.takeIf { it.isJsonPrimitive }?.asString; val at = r.get("at")?.takeIf { it.isJsonPrimitive }?.asString
+                if (i != null && at != null) i to at else null }?.sortedByDescending { it.second }?.map { it.first }.orEmpty()
+        val order = (history.mapNotNull { i -> decks.firstOrNull { id(it) == i } } + decks).distinct()
+        return order.firstOrNull { id(it) in ok }
+    }
     private fun names(d: JsonObject) = (d.get("cards") as? com.google.gson.JsonArray)?.mapNotNull { (it as? JsonObject)?.get("name")?.takeIf { n -> n.isJsonPrimitive }?.asString }
         ?.filter { it.isNotBlank() && it !in BASICS }?.distinct().orEmpty()
     fun lastDeckNames(workspace: JsonObject?, max: Int = 5): List<String> = lastDeck(workspace)?.let { names(it).take(max) }.orEmpty()

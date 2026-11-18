@@ -84,6 +84,8 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     LaunchedEffect(lastDeck) { lastDeck?.let { d -> dev.cardstashy.nativeplay.play.CardFacts.wantNames(listOfNotNull(d.get("commander")?.takeIf { it.isJsonPrimitive }?.asString) +
         ((d.get("cards") as? JsonArray)?.take(12)?.mapNotNull { (it as? JsonObject)?.get("name")?.takeIf { n -> n.isJsonPrimitive }?.asString }.orEmpty())) } }
     val homeDeck = androidx.compose.runtime.remember(lastDeck, facts) { lastDeck?.let { homeDeckOf(it) } }
+    // Quick Play's deck on Play home: one the lobby accepts (Randall's recording 18 Nov), so one press of Play starts the match.
+    val quickDeck = androidx.compose.runtime.remember(workspace, state, facts) { Opening.quickDeck(workspace, state)?.let { homeDeckOf(it) } }
     var opener by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<PackResult?>(null) }
     val s = state
     // E6a: how long Play Home took from opening to its first drawn frame with the binder in hand (one log line per open).
@@ -132,7 +134,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
     // .pack-dialog::backdrop: #05060be6 over a 16 px blur of the page.
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().then(if (opener != null) Modifier.blur(16.dp) else Modifier)) {
-    PlayHome(PlayHomeData(s, rules, story, PlayMath.playDay(tz), session?.userId ?: "", ambient, deeds, homeDeck),
+    PlayHome(PlayHomeData(s, rules, story, PlayMath.playDay(tz), session?.userId ?: "", ambient, deeds, quickDeck, lastDeck = homeDeck),
         top = { TopBarItems(Mode.PLAY, profile?.avatarUrl, profile?.name, unread = false, onSwitch = onCollection, onProfile = onSignIn) },
         act = act,
         nav = { PlayNav(PlayTab.HOME, { t -> when (t) { PlayTab.HOME -> {}; PlayTab.TRUNK -> onTrunk(); PlayTab.DECKS -> onDecks(); PlayTab.TROPHIES -> onAchievements(null); PlayTab.SHOP -> onShop("sets", null) } }) })

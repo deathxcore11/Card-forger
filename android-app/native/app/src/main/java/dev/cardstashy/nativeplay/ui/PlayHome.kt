@@ -126,6 +126,8 @@ data class PlayHomeData(
     val deeds: JsonObject? = null,
     /** The deck last worked on (the opening screen's fan deck), shown on the upright home's stage; null with no decks. */
     val deck: HomeDeck? = null,
+    /** The deck last worked on, shown in the header for Practice and Friends, which take any deck; Quick Play shows [deck], one it accepts. */
+    val lastDeck: HomeDeck? = deck,
 )
 
 /** The upright home's deck (polish brief 1, Randall 17 Nov): its id, name, format, card count and cover art. */
@@ -1766,7 +1768,7 @@ private fun PageBleed(url: String?) {
 /** The header is the mode (Hand brief 2): your deck with Change, the Story act, or the plane. */
 @Composable
 private fun HandHeader(d: PlayHomeData, story: PlayRules.Act?, mode: String, wide: Boolean, act: PlayHomeActions, modifier: Modifier) {
-    val deck = d.deck
+    val deck = if (mode == "quick") d.deck else d.lastDeck
     val eyebrow: String; val title: String; val change: Boolean
     when (mode) {
         "story" -> { eyebrow = story?.let { a -> "STORY · ACT ${a.act} · " + if (d.story.done) "ALL ${a.battles} WON" else "${d.story.won} OF ${a.battles} WON" } ?: "STORY"
