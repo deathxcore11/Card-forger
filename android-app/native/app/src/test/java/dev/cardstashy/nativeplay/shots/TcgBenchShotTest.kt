@@ -178,7 +178,8 @@ class TcgBenchShotTest {
             assertTrue("the Rules review opens", shows("Rules review"))
             shot("${g.id}-$tag-review")
             rule.onAllNodesWithText("Rules review", substring = true).onFirst().performClick(); settle()
-            // The page's price tools sit in the action row.
+            // The page's price tools sit at the end of the deck list (deck screen redraw, 18 Nov).
+            rule.onNode(hasScrollToIndexAction() and hasContentDescription("Deck list")).performScrollToNode(hasText("Cheapest printings", substring = true)); settle()
             assertTrue("the price tools show", shows("Cheapest printings"))
         }
         File(shots, "tbench-${g.id}-$tag.txt").writeText(buildString {

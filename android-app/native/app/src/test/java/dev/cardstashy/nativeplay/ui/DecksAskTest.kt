@@ -37,7 +37,7 @@ class DecksAskTest {
         settle()
         assertEquals(null, DecksOpen.ask.value)
         assertTrue(rule.onAllNodesWithText("Sunlit Auras").fetchSemanticsNodes().isNotEmpty())
-        rule.onNodeWithText("Play deck").assertExists()
+        rule.onNodeWithText("Play deck", substring = true).assertExists()   // the tag line: "Play deck · Magic · Standard"
     }
 
     @Test fun buildADeckOpensTheFinder() {

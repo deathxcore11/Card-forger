@@ -1197,10 +1197,9 @@ private fun Browser(m: BenchModel, ui: BenchUi, a: BenchActions, drag: Drag, swi
                     }
                     FiltersPill(ui.filter.count, ui.filters, short = true) { ui.peek = null; ui.setPick = false; ui.filters = !ui.filters }
                 }
-                if (!folded) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { pips() }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) { setButton() }
-                }
+                if (!folded) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { pips() }
+                // The Set button stays when the colours fold: scrolled down the shelves is where a set gets picked.
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) { setButton() }
             }
             // Wider (and Yu-Gi-Oh!, Pokémon): one scrolling row, fading out at the right edge; Magic's Filters stays pinned at its end
             // so it never scrolls out of reach (the Thor's and the Portal's 960-wide screens).
