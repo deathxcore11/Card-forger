@@ -154,7 +154,8 @@ class ShotTest {
         // screen, not the tall whole-page window (that stretched the stage to thousands of dp).
         // Hand brief (0.4.96): phone, Fold shut, Fold open, tablet, each at its true screen size; the Fold shut again with Story chosen
         // and the weekly quest showing; the phone at 130 % text.
-        for ((w, h) in listOf(390 to 844, 374 to 832, 841 to 701, 884 to 1104, 1280 to 800)) shot("play-home-${w}x${h}-screen", w, h, 1f) { Home() }
+        // 750x833: Randall's Fold open from his 18 Nov recording ("Quick Pl…" was cut there).
+        for ((w, h) in listOf(390 to 844, 374 to 832, 750 to 833, 841 to 701, 884 to 1104, 1280 to 800)) shot("play-home-${w}x${h}-screen", w, h, 1f) { Home() }
         shot("play-home-390x844-screen", 390, 844, 1.3f) { Home() }
         // Stand-in art (a test card picture for every mode) so the bleed, the scrim and the card art can be judged when the real
         // mode art is not in shot-art/home. Named "standin" so nobody mistakes it for the real art.
@@ -162,7 +163,7 @@ class ShotTest {
             val bmp = BitmapFactory.decodeFile(f.path)?.asImageBitmap()
             if (bmp != null) {
                 dev.cardstashy.nativeplay.ui.homeArt = { u -> homeArt(u) ?: bmp }
-                try { shot("play-home-standin-art-390x844-screen", 390, 844, 1f) { Home() }; shot("play-home-standin-art-841x701-screen", 841, 701, 1f) { Home() } }
+                try { shot("play-home-standin-art-390x844-screen", 390, 844, 1f) { Home() }; shot("play-home-standin-art-841x701-screen", 841, 701, 1f) { Home() }; shot("play-home-standin-art-750x833-screen", 750, 833, 1f) { Home() } }
                 finally { dev.cardstashy.nativeplay.ui.homeArt = ::homeArt }
             }
         }

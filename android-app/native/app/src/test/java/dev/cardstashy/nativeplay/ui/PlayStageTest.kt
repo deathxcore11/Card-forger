@@ -81,3 +81,29 @@ class PlayStageTest {
         rule.onNodeWithText(wk.row.quest.label).assertExists()
     }
 }
+
+/**
+ * Randall's Fold open (screen recording 18 Nov, 1080x1200 px at 2.625 density over 1968x2184 is about 750x833 dp): the chosen
+ * card read "Quick Pl…". Every mode name in the wide row must lay out whole, with no ellipsis.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], qualifiers = "w750dp-h833dp-420dpi")
+class PlayHandFoldOpenTest {
+    @get:Rule val rule = createComposeRule()
+
+    @Test fun modeNamesAreNeverCut() {
+        dev.cardstashy.nativeplay.art.CardArt.init(RuntimeEnvironment.getApplication())
+        Motion.still = true
+        val state = JsonParser.parseString(progressStateText()).asJsonObject
+        val rules = PlayRules(JsonParser.parseString(javaClass.classLoader!!.getResource("play-rules.json")!!.readText()).asJsonObject)
+        rule.setContent { PlayHome(PlayHomeData(state, rules, PlayMath.StoryHome(1, 0, false), "2026-11-03", deck = HomeDeck("d1", "Imported deck", "Standard", 60, null)), top = {}, act = PlayHomeActions(), nav = {}) }
+        rule.waitForIdle()
+        for (name in listOf("Quick Play", "Practice", "Friends", "Story", "Planeswalk")) {
+            val node = rule.onNodeWithText(name, useUnmergedTree = true).fetchSemanticsNode()
+            val out = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            node.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(out)
+            val r = out.single()
+            assertEquals("$name is cut", false, r.hasVisualOverflow || (0 until r.lineCount).any { r.isLineEllipsized(it) })
+        }
+    }
+}

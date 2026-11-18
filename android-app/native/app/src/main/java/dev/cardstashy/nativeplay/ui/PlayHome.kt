@@ -1827,12 +1827,16 @@ private fun HandRow(d: PlayHomeData, story: PlayRules.Act?, mode: String, onMode
     val gap = 14.dp; val small = .85f
     val side = if (pads) (40.dp + gap) * 2 else 0.dp
     val room = w - 48.dp - side - gap * 4
-    val cw = minOf(minOf(h, 460.dp) * .66f, room / (1f + 4 * small)); val ch = minOf(h, 460.dp, cw / .55f)
+    val cw = minOf(minOf(h, 460.dp) * .66f, room / (1f + 4 * small))
+    // The chosen card takes at least the width its name needs ("Quick Pl…" on Randall's Fold open, 750 dp wide, 18 Nov); the
+    // others share what is left. Cards grow taller (down to a 0.5 ratio) into any band left under the header.
+    val wOn = maxOf(cw, minOf(176.dp, room * .4f)); val wOff = minOf(cw * small, (room - wOn) / 4)
+    val ch = minOf(h, 460.dp, wOn / .5f)
     Row(Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally), verticalAlignment = Alignment.Bottom) {
         if (pads) PadKey("LB", Modifier.align(Alignment.CenterVertically))
         StageModes.ALL.forEach { (key, name) -> val on = key == mode
             HandCard(key, name, art(key), StageModes.line(key, d.story.won, story?.battles ?: 0, d.story.done), on, big = on,
-                Modifier.width(if (on) cw else cw * small).height(if (on) ch else ch * small), row = true, onChoose = { onMode(key) }) { play(key) }
+                Modifier.width(if (on) wOn else wOff).height(if (on) ch else ch * small), row = true, onChoose = { onMode(key) }) { play(key) }
         }
         if (pads) PadKey("RB", Modifier.align(Alignment.CenterVertically))
     }
@@ -1858,8 +1862,9 @@ private fun HandCard(key: String, name: String, art: String?, line: String, on: 
             else Brush.verticalGradient(.40f to Color(0x000D1016), .70f to Color(0xB00D1016), 1f to Color(0xF20D1016))))
         // The big card keeps its name beside the disc; a card in the row puts it above the disc, so "Quick Play" stays whole.
         Column(Modifier.align(Alignment.BottomStart).padding(start = if (big) 16.dp else 12.dp, bottom = if (on && row) 78.dp else 18.dp, end = if (on && !row) 84.dp else 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (big) 22.sp else 15.sp, lineHeight = if (big) 26.sp else 18.sp, color = P.Ink, shadow = P.shadow),
-                maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+            // The name is never cut (Fold open, 18 Nov): smaller on the chosen card in the row, and a second line before an ellipsis.
+            Text(name, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = if (big && row) 19.sp else if (big) 22.sp else 15.sp, lineHeight = if (big && row) 23.sp else if (big) 26.sp else 18.sp, color = P.Ink, shadow = P.shadow),
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (on) Text(line, style = TextStyle(fontFamily = P.Sans, fontSize = 14.sp, color = Color(0xFFDDD8CC)), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         if (on) PlayDisc(name, if (big) 60.dp else 52.dp, Modifier.align(Alignment.BottomEnd).padding(14.dp), onPlay)
