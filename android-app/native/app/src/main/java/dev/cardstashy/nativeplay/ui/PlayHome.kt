@@ -80,6 +80,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.selected
@@ -1765,7 +1766,11 @@ private fun PageBleed(url: String?) {
     }
 }
 
-/** The header is the mode (Hand brief 2): your deck with Change, the Story act, or the plane. */
+/**
+ * The header is the mode (Hand brief 2): your deck, the Story act, or the plane. The deck block is the tap target that the Change
+ * button was (Randall 18 Nov, "Tap the deck name to change"): it opens the mode in focus without starting, with a chevron after
+ * the name. Play is unchanged; controller Y and the Thor den's Change deck stay.
+ */
 @Composable
 private fun HandHeader(d: PlayHomeData, story: PlayRules.Act?, mode: String, wide: Boolean, act: PlayHomeActions, modifier: Modifier) {
     val deck = if (mode == "quick") d.deck else d.lastDeck
@@ -1775,10 +1780,13 @@ private fun HandHeader(d: PlayHomeData, story: PlayRules.Act?, mode: String, wid
             title = story?.name ?: "Story"; change = false }
         "planeswalk" -> { eyebrow = "PLANESWALK"; title = "Innistrad"; change = false }
         else -> { eyebrow = deck?.let { listOf("YOUR DECK", it.format.uppercase(), if (it.count > 0) "${it.count}" else "").filter { s -> s.isNotBlank() }.joinToString(" · ") } ?: "YOUR DECK"
-            title = deck?.name ?: "No deck yet"; change = true }
+            title = deck?.name ?: "Pick a deck"; change = true }
     }
-    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+    val sh = RoundedCornerShape(14.dp)
+    val tap = if (!change) Modifier else Modifier.clip(sh).clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.mode(mode) }
+        .semantics { contentDescription = if (deck != null) "Change deck, ${deck.name}" else "Pick a deck" }
+    Row(modifier.then(tap).heightIn(min = if (change) 48.dp else 0.dp).padding(end = if (change) 4.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(eyebrow, style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = if (wide) 12.sp else 11.sp, letterSpacing = if (wide) .18.em else .12.em, color = Color(0xFFF2CF7E)), maxLines = 1, overflow = TextOverflow.Ellipsis)
             // Phones: a long deck name steps down a size before it is cut ("Mono-White Auras" whole at 374 dp).
             val big = LocalDensity.current.fontScale > 1.1f
@@ -1786,13 +1794,9 @@ private fun HandHeader(d: PlayHomeData, story: PlayRules.Act?, mode: String, wid
             Text(title, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = ts.sp, lineHeight = (ts + 5).sp, color = P.Ink, shadow = P.shadow),
                 maxLines = if (big && !wide) 2 else 1, overflow = TextOverflow.Ellipsis)
         }
-        if (change) {
-            val sh = CircleShape
-            Text(if (deck != null) "Change" else "Pick a deck", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = P.Ink),
-                modifier = Modifier.heightIn(min = 44.dp).clip(sh).background(Color(0x8C0D1016)).border(1.dp, Color(0x80D6AD64), sh)
-                    .clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.mode("quick") }
-                    .semantics { contentDescription = if (deck != null) "Change deck" else "Pick a deck" }.padding(horizontal = 16.dp).wrapContentHeight(Alignment.CenterVertically))
-        }
+        // The chevron says the name opens something; it sits beside the name, not at the far edge.
+        if (change) Text("›", style = TextStyle(fontFamily = P.Sans, fontWeight = FontWeight.Bold, fontSize = if (wide) 30.sp else 26.sp, color = Color(0xFFF2CF7E), shadow = P.shadow),
+            modifier = Modifier.padding(start = 8.dp, top = 12.dp).then(androidx.compose.ui.Modifier.clearAndSetSemantics { }))
     }
 }
 
