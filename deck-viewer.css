@@ -447,3 +447,36 @@ details.ds-note-tag{border-radius:14px}details.ds-note-tag>summary{cursor:pointe
 @media(max-width:700px){.deck-body[data-tab=cards] .lot.deck-row .lot-side{margin-top:2px}.deck-body[data-tab=cards] details.group{margin-bottom:0}.ds-hero .deck-hero-id{gap:4px}}
 @media(max-width:700px){.deck-body[data-tab=cards] .deck-viewer{gap:2px;row-gap:2px}.deck-body[data-tab=cards] details.group>.list{padding-bottom:0;margin-bottom:0}.deck-body[data-tab=cards] details.group+details.group{margin-top:0}}
 @media(max-width:700px){.deck-hero~nav.tabs>button,.ds-head~nav.tabs>button{flex:1 1 auto;padding-inline:6px;font-size:13px;min-width:0}.deck-hero~nav.tabs>button svg,.ds-head~nav.tabs>button svg,.deck-hero~nav.tabs>button .ico,.ds-head~nav.tabs>button .ico{display:none}}
+/* Deck screen redraw (Randall 18 Nov 2026): the deck page you build on, Play decks and My decks, in all three games. Same order as
+   the app: a short header over the deck art (back, one quiet tag line, the name, the menu), one box of numbers, one button row with
+   one gold button. Nothing is removed: only order, grouping and size. The markup is unchanged (the app reads it). */
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]){--ds-h:0px;min-height:0}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .hero-body{grid-template-columns:44px minmax(0,1fr) auto;grid-template-rows:auto auto;gap:12px;min-height:0;padding-top:14px}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-nav{display:contents}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-nav>:first-child{grid-column:1;grid-row:1}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-nav>:last-child{grid-column:3;grid-row:1}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .deck-hero-id{grid-column:2;grid-row:1;align-self:center;gap:2px}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-foot{grid-column:1/-1}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .hero-body h1{font-size:clamp(22px,2.4vw,30px)}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .deck-hero-eyebrow{gap:2px 0}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .deck-hero-eyebrow .chip{padding:0;border:0;background:none;font-size:12px;font-weight:700;letter-spacing:.04em;color:#e6e9f0}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .deck-hero-eyebrow .chip.ds-badge{color:var(--gold)}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .deck-hero-eyebrow .chip+.chip::before{content:"·";margin:0 7px;color:#aab0bd}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .deck-hero-eyebrow .review-badge{margin-left:10px}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-foot::before{display:none}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-stats{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:0;align-items:stretch;max-width:720px;margin:0 18px 16px;padding:0;border:1px solid #ffffff24;border-radius:14px;background:#0b0e15c7;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-stat{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:56px;padding:10px 6px;text-align:center}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-stat+.ds-stat{border-left:1px solid #ffffff1a}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-stat b{font-size:18px}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-stat span{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;line-height:1.25;color:#cfd4de}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-stat:last-child:not(:first-child){margin-left:0}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) button.ds-stat b{min-width:0;padding:0;border:0;background:none}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"])+.ds-head .ds-actions{flex-wrap:nowrap;max-width:620px}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"])+.ds-head .ds-actions>.btn,.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"])+.ds-head .ds-actions .deck-coach-action>.btn{min-height:48px;border-radius:999px;font-size:15px;flex:1 1 0;min-width:0}
+.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"])+.ds-head .ds-actions>.ds-primary{flex:1.25 1 0;min-width:0}
+@media(max-width:699px){
+ .ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-stats{margin:0 14px 12px}
+ .ds-hero:is([data-deck-source="play"],[data-deck-source="mine"])+.ds-head .ds-actions>.ds-primary{flex-basis:0}
+}
+@media(max-width:520px){.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-stat{padding:10px 3px}.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .ds-stat span{letter-spacing:.02em}}
+@media(max-width:520px){.ds-hero:is([data-deck-source="play"],[data-deck-source="mine"]) .deck-hero-eyebrow .review-badge{margin-left:0}}
