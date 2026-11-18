@@ -386,26 +386,30 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
   const shown = shelfMode || (mode === 'all' && ui.pool?.busy) ? null : tiles.length, shownMore = mode === 'all' && !shelfMode && !!ui.pool?.more;
   const curve = benchCurve(spells.map(c => ({qty: c.qty, cmc: factOf(c.name).m})));
   const basics = LAND_TYPES;
-  const craftAll = plan.missing ? `<div class="pe-craft-all-bar"><span class="pe-craft-need" aria-label="Missing ${plan.missing} cards">${SEALS.filter(s => plan.need[s.key]).map(s => `<span class="pe-cost${plan.need[s.key] > plan.have[s.key] ? ' pe-cost--short' : ''}" title="${plan.need[s.key]} ${s.label}${plan.need[s.key] > 1 ? 's' : ''} needed, ${plan.have[s.key]} owned">${sealIcon(s.key)}${plan.need[s.key]}</span>`).join('')}</span><button class="pe-stamp pe-craft-all" data-act="playCraftAll" ${!plan.craftable || snapshot.busy || ui.crafting ? 'disabled' : ''}>${ui.crafting ? 'Crafting…' : ui.craftArmed ? `Craft ${plan.craftable} now` : plan.craftable < plan.missing ? `Craft ${plan.craftable} of ${plan.missing}` : 'Craft all'}</button></div>` : '';
+  // Deck screen redraw (Randall 18 Nov): one button row under the deck's numbers, gold Save and a quiet Craft all, as in the app.
+  // The seals the deck still needs stay in the deck panel as its last line.
+  const craftLabel = ui.crafting ? 'Crafting…' : ui.craftArmed ? `Craft ${plan.craftable} now` : plan.craftable < plan.missing ? `Craft ${plan.craftable} of ${plan.missing}` : 'Craft all';
+  const craftAll = plan.missing ? `<div class="pe-craft-all-bar"><b class="pe-need-n">${plan.missing} to craft</b><span class="pe-craft-need" aria-label="Missing ${plan.missing} cards">${SEALS.filter(s => plan.need[s.key]).map(s => `<span class="pe-cost${plan.need[s.key] > plan.have[s.key] ? ' pe-cost--short' : ''}" title="${plan.need[s.key]} ${s.label}${plan.need[s.key] > 1 ? 's' : ''} needed, ${plan.have[s.key]} owned">${sealIcon(s.key)}${plan.have[s.key]}/${plan.need[s.key]}</span>`).join('')}</span></div>` : '';
   return `<section class="play-menu pe-screen pe-builder-screen" aria-labelledby="playDeckTitle">
     ${deckShell({game: 'mtg', source: 'play', art, title: edit.name || 'New Play deck',
       back: `<button class="icon light" data-act="playEconView" data-econ-view="decks" aria-label="Back to Play decks">←</button>`,
-      badge: 'Play deck', format: `<span class="chip dark">${esc(edit.format || 'Standard')}</span>`,
+      badge: 'Play deck', format: `<span class="chip dark">Magic</span><span class="chip dark">${esc(edit.format || 'Standard')}</span>`,
       stats: [{value: `${count}/${rules.size}`, label: 'cards', tone: ok ? '' : 'warn'}, ...(plan.missing ? [{value: plan.missing, label: 'to craft', tone: 'warn'}] : []), {value: creatures, label: 'creatures'}, {value: lands, label: 'lands'}, {value: avg, label: 'average mana value'}],
-      actions: [{label: edit.busy ? 'Saving…' : 'Save deck', primary: true, attrs: 'data-act="playEconSaveEdit"', disabled: !!edit.busy || !count}]}).replace('<h1>', '<h1 id="playDeckTitle" tabindex="-1">')}
+      actions: [{label: edit.busy ? 'Saving…' : 'Save', primary: true, attrs: 'data-act="playEconSaveEdit"', disabled: !!edit.busy || !count},
+        plan.missing ? {html: `<button type="button" class="btn ghost pe-craft-all" data-act="playCraftAll" ${!plan.craftable || snapshot.busy || ui.crafting ? 'disabled' : ''}>${craftLabel}</button>`} : null]}).replace('<h1>', '<h1 id="playDeckTitle" tabindex="-1">')}
     <div class="pe-builder">
       <section class="pe-build-deck" aria-label="Your deck" data-drop-deck="1">
         <div class="pe-build-meta"><input name="name" data-input="playEconDeckName" maxlength="80" value="${esc(edit.name || '')}" placeholder="Deck name" aria-label="Deck name"><select data-change="playEconDeckFormat" aria-label="Format">${PLAY_FORMATS.map(f => `<option${(edit.format || 'Standard') === f ? ' selected' : ''}>${f}</option>`).join('')}</select></div>
         ${benchCurveMarkup(curve, bf.mana, deckSort)}
-        ${craftAll}
-        ${count < rules.size ? `<button class="btn pe-fill" data-act="playFillSlots" ${ui.filling ? 'disabled' : ''}>${ui.filling ? 'Finding cards…' : `Fill ${rules.size - count} empty slot${rules.size - count > 1 ? 's' : ''}`}</button>` : ''}
-        ${packGoals(plan, slimOf, facts)}
-        ${count ? `<div class="pe-build-tools"><button class="btn ghost" data-act="playEconCopyList">Copy list</button><button class="btn ghost" data-act="playEconToApp">Copy to My decks</button></div>` : ''}
         ${deck.length ? deckGroups(order.filter(g => groups.has(g)).map(g => ({name: g, rows: groups.get(g).sort((a, b) => (factOf(a.name)?.m ?? 99) - (factOf(b.name)?.m ?? 99) || a.name.localeCompare(b.name))})), deckSort, name => factOf(name)?.m ?? null)
           .map(g => `<h3 class="pe-build-group">${esc(g.name)} <span>${g.rows.reduce((t, c) => t + c.qty, 0)}</span></h3><ul class="pe-build-list">${g.rows.map(row).join('')}</ul>`).join('')
           : '<p class="pe-build-empty">Drag cards here, or tap one to see it.</p>'}
         <div class="pe-basics" role="group" aria-label="Basic lands, free and unlimited. Hold one for its styles.">${basics.map(b => { const id = landUse(b), q = inDeck(b), fresh = lp.fresh?.(b);
           return `<button class="pe-basic${mode === 'lands' && lp.type === b ? ' on' : ''}${fresh ? ' pe-basic--new' : ''}" data-act="playLandBar" data-econ-card="${b}" data-land-hold="${b}" aria-label="Add a ${b}${q ? `, ${q} in deck` : ''}. Hold for styles"><span style="background-image:url(${esc(id ? landStyleImage(id, 'art_crop') : cardImageByName(b, 'art_crop'))})" aria-hidden="true"></span><b>${b}</b>${q ? `<i>${q}</i>` : ''}${fresh ? '<em class="pe-basic-dot" aria-hidden="true"></em>' : ''}</button>`; }).join('')}</div>
+        <div class="pe-build-needs">${craftAll}
+        ${count < rules.size ? `<button class="btn ghost pe-fill" data-act="playFillSlots" ${ui.filling ? 'disabled' : ''}>${ui.filling ? 'Finding cards…' : `Fill ${rules.size - count} empty slot${rules.size - count > 1 ? 's' : ''}`}</button>` : ''}
+        ${packGoals(plan, slimOf, facts)}
+        ${count ? `<div class="pe-build-tools"><button class="btn ghost" data-act="playEconCopyList">Copy list</button><button class="btn ghost" data-act="playEconToApp">Copy to My decks</button></div>` : ''}</div>
       </section>
       <section class="pe-build-pool" aria-label="Card pool"${bench.open ? ' data-filters="1"' : ''}>
         ${segmented('playEconPool', mode, [['mine', 'Your cards', 'cardStack'], ['all', 'All cards', 'search'], ['lands', 'Lands']])}

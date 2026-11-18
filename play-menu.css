@@ -1774,3 +1774,14 @@ body.practice-table-open .ach-toast{top:calc(env(safe-area-inset-top,0px) + 12px
 @keyframes pe-land-pop{0%{transform:scale(1)}40%{transform:scale(1.035);box-shadow:0 0 0 2px rgba(229,196,126,.55)}100%{transform:scale(1)}}
 .pe-build-row.pe-land-pop{animation:pe-land-pop .26s ease-out}
 @media (prefers-reduced-motion:reduce){.pe-build-row--land{transition:none}.pe-build-row.pe-land-pop{animation:none}}
+/* Deck screen redraw (Randall 18 Nov 2026), the website's Play deck page: the header, numbers and button row are in deck-viewer.css
+   (shared with My decks). Here: the quiet Craft all beside Save, what the deck still needs as the deck shelf's last lines, and on
+   a phone or Fold two shelves as in the app. */
+.pe-builder-screen .ds-head{margin:0}
+.pe-builder-screen .ds-actions .pe-craft-all{margin:0;color:var(--gold);border-color:color-mix(in srgb,var(--gold) 55%,transparent);background:#0b0e15c7}
+.pe-builder-screen .ds-actions .pe-craft-all:disabled{opacity:.5}
+.pe-build-needs{display:grid;gap:8px;margin-top:4px;padding-top:10px;border-top:1px solid var(--line)}
+.pe-build-needs:empty{display:none}
+.pe-build-needs .pe-craft-all-bar{justify-content:flex-start;padding:6px 10px}
+.pe-need-n{font:700 13px/1.2 'DM Sans',system-ui,sans-serif;color:#f6eedb}
+@media(max-width:900px){.pe-builder-screen .pe-build-deck{max-height:46dvh;overflow:auto;overscroll-behavior:contain}}
