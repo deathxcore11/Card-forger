@@ -546,7 +546,8 @@ private fun ScanTile(t: SiteNode, ui: SiteUi, selecting: Boolean) {
         verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(Modifier.fillMaxWidth().aspectRatio(5f / 7f).then(if (picked) Modifier.border(3.dp, Site.Gold, sh) else Modifier).clip(sh).background(Site.Surface2)
             .alpha(if (selecting && !picked) .78f else 1f)) {
-            scanPic(art?.find { it.tag == "img" })?.let { androidx.compose.foundation.Image(it, null, Modifier.fillMaxSize().alpha(if (dim) .6f else 1f), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
+            scanPic(art?.find { it.tag == "img" })?.let { androidx.compose.foundation.Image(it, null, Modifier.fillMaxSize().alpha(if (dim) .6f else 1f)
+                .flySource { f -> androidx.compose.foundation.Image(it, null, f, contentScale = androidx.compose.ui.layout.ContentScale.Crop) }, contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
             if (warn) Box(Modifier.fillMaxSize().border(2.dp, Warn, sh))
             art?.elements?.firstOrNull { it.has("scan-tile-state") }?.let { st ->
                 val m = Modifier.align(Alignment.TopEnd).padding(8.dp)

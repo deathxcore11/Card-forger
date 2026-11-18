@@ -517,7 +517,7 @@ fun PlayNav(active: PlayTab?, onSelect: (PlayTab) -> Unit, modifier: Modifier = 
                     val s by animateFloatAsState(if (pressed) .92f else 1f, Site.spring(), label = "press")
                     Column(Modifier.weight(weights[k]).fillMaxSize().clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring) { onSelect(tab) }.semantics { contentDescription = tab.label }.padding(top = 14.dp),
                         horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(Modifier.size(56.dp, 32.dp).scale(s), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(56.dp, 32.dp).then(if (tab == PlayTab.TRUNK) Modifier.flyTarget("trunk") else Modifier).scale(s), contentAlignment = Alignment.Center) {
                             Icon(icons[k], 24.dp, if (on) Site.Gold else Site.Muted)
                         }
                         Spacer(Modifier.height(4.dp))

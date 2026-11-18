@@ -210,6 +210,8 @@ private fun SiteToast(t: CollectionWrites.Toast, onUndo: () -> Unit, onGone: () 
                 drawPath(part, Color(0xFF1F9D62), style = st)
             }
             Text(t.text, Modifier.weight(1f, fill = false), style = type(14f, 600, 20.3f, if (ok) Color(0xFFE8FFF0) else TEXT))
+            // Pack finish brief C: with no bottom bar on screen, an added card lands on this small Trunk mark.
+            if (Regex("^Added\\b").containsMatchIn(t.text)) Box(Modifier.size(24.dp).flyTarget(Fly.SAVE_MARK, Site.Gold), contentAlignment = Alignment.Center) { Icon(SiteIcons.Trunk, 18.dp, Site.Gold) }
             if (t.undo) Box(Modifier.defaultMinSize(minWidth = 60.dp, minHeight = 40.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x0AFFFFFF))
                 .clickable(onClick = onUndo).padding(horizontal = 12.dp, vertical = 6.dp), contentAlignment = Alignment.Center) {
                 Text("Undo", style = type(14f, 700, 20.3f, Site.Gold), textAlign = TextAlign.Center)

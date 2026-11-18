@@ -198,6 +198,8 @@ class MainActivity : ComponentActivity() {
                 }
                 dev.cardstashy.nativeplay.ui.AchievementToastHost(page)
                 dev.cardstashy.nativeplay.ui.CollectionWritesHost(page)
+                // Pack finish brief A: cards flying into the Trunk tab, a pack's finish bar or the save bar, over everything.
+                dev.cardstashy.nativeplay.ui.FlyLayer()
                 UpdateHost(this@MainActivity)
                 dev.cardstashy.nativeplay.ui.TopScreenHost()
                 dev.cardstashy.nativeplay.ui.PlayInspectHost()

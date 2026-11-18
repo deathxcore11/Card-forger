@@ -856,6 +856,7 @@ private fun ArtStack(m: CollectionCardModel, o: CardOverview, act: CollectionCar
             TierFrame(o.tier, w, cardH, frameW) {
                 val mod = Modifier.fillMaxSize().cardLean(lean, foil = look?.recipe != null || worn != null, lamp = worn != null, shape = RoundedCornerShape(6.dp))
                     .pointerInput(Unit) { detectTapGestures(onLongPress = {}) { onZoom() } }.padCardTap(padSource, padPic) { zoomNow() }.semantics { contentDescription = "Enlarge ${m.name}" }
+                    .flySource { f -> FlyPicture(o.image, f) }
                 if (!tcg) CardPicture(o.image, shines, tilt, mod, shape = RoundedCornerShape(6.dp))
                 else firstOf(o.sources.ifEmpty { listOf(o.image) }).let { p -> if (p != null) CardFace(p, null, tilt, mod, RoundedCornerShape(6.dp), finish = worn)
                     else Box(mod.clip(RoundedCornerShape(6.dp)).background(Surface2)) }

@@ -503,6 +503,8 @@ internal object CollectionWrites {
             // app.js commit: a removal buzzes twice, anything else gets the success beat; something kept also chimes.
             val removed = Regex("^(−|-|Removed|Deleted|Cleared|Undid)").containsMatchIn(text)
             if (writes > 0) feel.value = Feel(if (removed) "warn" else "success", !removed && Regex("^(Added|Saved|Moved|Cards added|Deck (saved|imported|updated))\\b").containsMatchIn(text))
+            // app.js commit: an added card flies into the Trunk tab (or the save bar) from where it was (pack finish brief C).
+            if (writes > 0 && Regex("^Added\\b").containsMatchIn(text)) Fly.added(text)
         }
         if (writes > 0) _written.value++
         return writes > 0

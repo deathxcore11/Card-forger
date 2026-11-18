@@ -1,5 +1,7 @@
 package dev.cardstashy.nativeplay.ui
 
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.geometry.Rect
 import android.content.Context
 import android.graphics.BlurMaskFilter
 import android.media.AudioAttributes
@@ -196,7 +198,9 @@ class PackResult(val set: String, val name: String, val pulls: List<Pull>, val n
                  /** The set page's Open Pack simulator (not Play): its Shop list. */
                  val shop: PackShop? = null,
                  /** The simulator's game, and a Yu-Gi-Oh! or Pokémon pack's looks. */
-                 val game: CardGame = CardGame.MTG, val look: PackLook? = null)
+                 val game: CardGame = CardGame.MTG, val look: PackLook? = null,
+                 /** What the pack gave besides its cards ("+1 rare seal · +40 coins from extra copies"), for the finish bar. */
+                 val bits: String = "")
 
 /** Collection.packModel(): the simulator's pack, drawn by the site's own code (pack-preview.js / mtg-boosters.js). */
 fun simPack(j: JsonObject): PackResult {
@@ -243,7 +247,7 @@ fun packResult(out: JsonObject, name: String): PackResult {
     }.joinToString(" · ")
     val note = listOf(lead, "Added to your Play collection.", bits).filter { it.isNotBlank() }.joinToString(" ")
     val done = when { god -> "God pack! Every card is a holo rare or mythic."; collector -> if (surprise) "Collector pack surprise! Every card is holo." else "Collector pack: every card is holo."; else -> "" }
-    return PackResult(p.s("set"), name, pulls, note, done)
+    return PackResult(p.s("set"), name, pulls, note, done, bits = bits)
 }
 
 /** The pack sounds (PACK-0xx, the site's files) and the two switches the pack header carries, kept on the phone. */
@@ -337,6 +341,10 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     // a tap while it is still sealed by the wait tears it the instant the cards arrive.
     var tearQueued by remember { mutableStateOf(false) }
     LaunchedEffect(first) { if (pack.note == LOADING && first.note != LOADING) pack = first }
+    // Pack finish brief B: where each card of the row sits (window px), the pack whose finish bar is up, and its badge's start.
+    val slots = remember { PackSlots() }
+    var barPack by remember { mutableStateOf<PackResult?>(null) }
+    var badgeFrom by remember { mutableIntStateOf(0) }
     val n = pack.pulls.size
     val allOpen = n > 0 && revealed.size == n
     fun feel(kind: String) = Feel.perform(view, kind)
@@ -401,6 +409,11 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
         val ask = onNext ?: return
         if (busy) return
         busy = true
+        // The row flies into the finish bar's Trunk mark, one card every 85 ms, while the next pack loads (it does not wait).
+        if (allOpen && pack.shop == null) {
+            barPack = pack; badgeFrom = Fly.landed(PACK_MARK)
+            pack.pulls.zip(slots.rects).take(Fly.MAX).forEachIndexed { i, (p, r) -> Fly.send(r, PACK_MARK, i * Fly.GAP_MS) { m -> PullFace(p, m) } }
+        }
         scope.launch {
             val nx = runCatching { ask() }.getOrElse { status = it.message ?: "Could not open the next pack."; null }
             busy = false
@@ -408,6 +421,13 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
             Feel.cancel(context)
             pack = nx; revealed.clear(); focus = 0; charging = null; status = ""; stage = PackStage.SEALED; tiltHint = false
         }
+    }
+
+    // Close (X, B, back): a real pack's cards fly into the Trunk tab once the pack screen has gone (app.js econLand); no tab, no flight.
+    fun close() {
+        Feel.cancel(context)
+        if (stage == PackStage.DEALT && pack.shop == null) pack.pulls.zip(slots.rects).take(Fly.MAX).forEachIndexed { i, (p, r) -> Fly.send(r, "trunk", 160 + i * Fly.GAP_MS) { m -> PullFace(p, m) } }
+        onClose()
     }
 
     // Controller: the pack owns the pad (opaque). X = the button under the cards (Reveal all, then Open the next pack); B closes.
@@ -432,7 +452,8 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     BottomScreen {
         androidx.compose.runtime.CompositionLocalProvider(LocalPackResult provides pack, LocalPackGold provides pack.look?.let { pack.game.gold }) {
             PackBinderCase(pack, revealed, focus, dealt, allOpen, busy, onShow = { i -> if (dealt) { val d = i - focus; if (d != 0) { show(i); slide = if (d > 0) slide.coerceAtLeast(0) + 1 else slide.coerceAtMost(0) - 1 } } },
-                onRevealAll = ::revealAll, onNext = if (onNext != null) ::next else null)
+                onRevealAll = ::revealAll, onNext = if (onNext != null) ::next else null,
+                bar = if (allOpen && pack.shop == null) ({ PackFinishBar(pack.pulls.size, pack.bits, 0) }) else null)
         }
     }
     val cardFocus = remember { androidx.compose.ui.focus.FocusRequester() }
@@ -449,7 +470,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
     // shrinks the pack under the finger, so the Play home shows through before it lets go.
     BackHandler(enabled = inspecting != null) { inspecting = null }
     PredictiveBackHandler(enabled = inspecting == null) { progress ->
-        try { progress.collect { backPull = it.progress }; Feel.cancel(context); onClose() } catch (e: CancellationException) { backPull = 0f; throw e }
+        try { progress.collect { backPull = it.progress }; close() } catch (e: CancellationException) { backPull = 0f; throw e }
     }
 
     androidx.compose.runtime.CompositionLocalProvider(LocalPackResult provides pack, LocalPackGold provides pack.look?.let { pack.game.gold }, LocalPackCardFocus provides cardFocus) {
@@ -487,9 +508,14 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                 }
                 RoundTool(if (sound) "Mute pack sounds" else "Turn pack sounds on", pressed = !sound, onClick = { PackSfx.toggle(context); sound = PackSfx.on; if (sound) PackSfx.play("PACK-014", .5f) }) { SoundGlyph(sound) }
                 RoundTool(if (tiltOn) "Tilt on" else "Tilt off", pressed = tiltOn, hint = tiltHint && !tiltOn, onClick = { PackSfx.toggleTilt(context); tiltOn = PackSfx.tilt; tiltHint = false }) { TiltGlyph(tiltOn) }
-                RoundTool("Close pack", onClick = { Feel.cancel(context); onClose() }) { CloseGlyph() }
+                RoundTool("Close pack", onClick = { close() }) { CloseGlyph() }
             }
+            // The finish bar: this pack's once every card is up; after "Open the next pack", the last pack's until its row has landed.
+            val inFlight = (Fly.pending[PACK_MARK] ?: 0) > 0
+            val barOf = if (allOpen && pack.shop == null) pack else barPack?.takeIf { inFlight }
+            val bar: (@Composable () -> Unit)? = barOf?.let { b -> { PackFinishBar(b.pulls.size, b.bits, if (b === barPack) Fly.landed(PACK_MARK) - badgeFrom else 0) } }
             Box(Modifier.weight(1f).fillMaxWidth()) {
+                if ((stage == PackStage.SEALED || stage == PackStage.TEARING) && bar != null) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp).zIndex(5f)) { bar() }
                 if (stage == PackStage.SEALED || stage == PackStage.TEARING) Sealed(pack, stage == PackStage.TEARING, ::tear, loading = pack.note == LOADING, eager = tearQueued, drift = drift, tiltOn = tiltOn)
                 else Dealt(pack, stage, revealed, focus, charging, moment, momentLevel, flipping, slide, flung, allOpen, tiltOn && inspecting == null,
                     onLanded = { if (stage == PackStage.DEALING) stage = PackStage.DEALT },
@@ -506,7 +532,7 @@ fun PackOpening(first: PackResult, onNext: (suspend () -> PackResult?)?, onClose
                     onSwipe = ::swipe,
                     onFlungDone = { flung = null },
                     onRevealAll = ::revealAll,
-                    onNext = if (onNext != null) ::next else null, busy = busy, drift = { drift.value })
+                    onNext = if (onNext != null) ::next else null, busy = busy, drift = { drift.value }, slots = slots, bar = bar)
             }
             if (!DualScreen.active) Text(status, Modifier.fillMaxWidth().heightIn(min = 16.dp).padding(top = 2.dp), style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 11.5.sp, lineHeight = 17.sp, color = gold, textAlign = TextAlign.Center))
         }
@@ -781,7 +807,8 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
                   flung: Pair<Pull, Int>?, allOpen: Boolean, tilt: Boolean,
                   onLanded: () -> Unit, onDealt: (Int, Boolean) -> Unit, onShow: (Int, Boolean) -> Unit, onReveal: (Int) -> Unit, onFocusTap: () -> Unit,
                   onHold: (Int) -> Unit, onSwipe: (Int) -> Unit, onFlungDone: () -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?, busy: Boolean, drift: () -> Offset = { Offset.Zero }, onShop: () -> Unit = {},
-                  onWish: (() -> Unit)? = null, wished: Boolean = false, wishing: Boolean = false) = BoxWithConstraints(Modifier.fillMaxSize()) {
+                  onWish: (() -> Unit)? = null, wished: Boolean = false, wishing: Boolean = false,
+                  slots: PackSlots = PackSlots(), bar: (@Composable () -> Unit)? = null) = BoxWithConstraints(Modifier.fillMaxSize()) {
     val n = pack.pulls.size
     val bodyW = maxWidth; val bodyH = maxHeight
     val density = LocalDensity.current
@@ -825,7 +852,8 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
         Focus(pack, focus, focus in revealed, charging == focus, moment, momentLevel, flipping, slide, flung, tilt, rise.value, stage == PackStage.DEALING && deal.value < 1f,
             onTap = onFocusTap, onHold = { onHold(focus) }, onSwipe = onSwipe, onFlungDone = onFlungDone)
     }
-    @Composable fun hand() = Box(Modifier.onGloballyPositioned { handOrigin = it.positionInRoot() - bodyRoot; handSpanW = with(density) { it.size.width.toDp() } }) {
+    @Composable fun hand() = Box(Modifier.onGloballyPositioned { handOrigin = it.positionInRoot() - bodyRoot; handSpanW = with(density) { it.size.width.toDp() }
+        slots.place(it.boundsInWindow(), n, with(density) { handW.toPx() }, with(density) { (handW * (88f / 63f)).toPx() }, with(density) { 6.dp.toPx() }, with(density) { (handH - 4.dp).toPx() }) }) {
         // The hand: cards overlap left to right so each name corner shows; the one in focus rises.
         Hand(pack, revealed, focus, handW, handH, landed = { i -> cardT(i) >= 1f }, bestGlow = { i -> i in best && i in landedAt && stage == PackStage.DEALING },
             onShow = { onShow(it, true) }, onTap = { onShow(it, false); onReveal(it) }, onHold = onHold)
@@ -836,6 +864,7 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
         Column(Modifier.fillMaxWidth().padding(top = 2.dp).onGloballyPositioned { actionsH = it.size.height }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if (!allOpen) PillButton("Reveal all", ghost = true, onClick = onRevealAll)
             else {
+                bar?.invoke()
                 if (pack.shop != null) PackTools(onShop, onWish, wished, wishing)
                 if (onNext != null) PillButton(if (busy) "Opening…" else if (pack.shop != null) "Open a new pack" else "Open the next pack", ghost = false, wide = true, onClick = onNext)
             }
@@ -923,6 +952,46 @@ private fun Dealt(pack: PackResult, stage: PackStage, revealed: List<Int>, focus
                 translationX = x; translationY = y; rotationZ = rot; scaleX = sc; scaleY = sc
                 if (tip != 0f) { cameraDistance = 10f * this.density; rotationX = tip }
             }.glow(Color(0xFFD9CCFF), .35f, .03f, .03f, .1f, 9.dp).clip(RoundedCornerShape(6.dp))) { MagicBack(Modifier.fillMaxSize()) }
+        }
+    }
+}
+
+internal const val PACK_MARK = "packmark"
+
+/** Where each card of the pack's row sits on screen (window px), as the deal lays them out: the flights leave from here. */
+class PackSlots {
+    var rects: List<Rect> = emptyList(); private set
+    fun place(row: Rect, n: Int, w: Float, h: Float, inset: Float, bottom: Float) {
+        if (n <= 0 || row.width <= 0f) { rects = emptyList(); return }
+        val span = row.width - 2 * inset - w
+        rects = List(n) { i -> val x = row.left + inset + if (n <= 1) span / 2 else span * (i.toFloat() / (n - 1)); val y = row.top + bottom - h
+            Rect(x, y, x + w, y + h) }
+    }
+}
+
+/**
+ * The pack's finish line (pack finish brief B1): the Trunk mark, "<n> cards added to your Trunk" and what else the pack gave (the
+ * seal and coin bits the app built for screen readers only). It slides in over 350 ms; the mark is where the row lands, its badge
+ * counting the cards in.
+ */
+@Composable
+internal fun PackFinishBar(count: Int, bits: String, badge: Int) {
+    val shape = RoundedCornerShape(16.dp)
+    val a = remember { Animatable(if (Motion.still) 1f else 0f) }
+    LaunchedEffect(Unit) { a.animateTo(1f, tween(350, easing = Fly.OUT)) }
+    val gold = packGold()
+    Row(Modifier.widthIn(max = 420.dp).fillMaxWidth().graphicsLayer { alpha = a.value; translationY = (1f - a.value) * 16.dp.toPx() }
+        .clip(shape).background(Color(0x12FFFFFF)).border(1.dp, gold.copy(alpha = .22f), shape).padding(horizontal = 12.dp, vertical = 8.dp)
+        .semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(Modifier.size(40.dp).flyTarget(PACK_MARK, gold), contentAlignment = Alignment.Center) {
+            Icon(SiteIcons.Trunk, 26.dp, gold)
+            if (badge > 0) Text("$badge", Modifier.align(Alignment.TopEnd).clip(RoundedCornerShape(9.dp)).background(gold).padding(horizontal = 5.dp),
+                style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, lineHeight = 16.sp, color = Color(0xFF14110A)))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(if (count == 1) "1 card added to your Trunk" else "$count cards added to your Trunk",
+                style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, lineHeight = 18.sp, color = Site.Text))
+            if (bits.isNotBlank()) Text(bits, style = TextStyle(fontFamily = Site.Body.fontFamily, fontSize = 12.sp, lineHeight = 16.sp, color = gold))
         }
     }
 }
@@ -1394,7 +1463,7 @@ private fun TcgRarityPill(rarity: String, finish: String, rx: PackRx, game: Card
 /** The pack on a handheld's bottom screen: its cards in one horizontal spread, face down until turned, the card on top lifted and ringed. */
 @Composable
 internal fun PackBinderCase(pack: PackResult, revealed: List<Int>, focus: Int, dealt: Boolean, allOpen: Boolean, busy: Boolean,
-                           onShow: (Int) -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?) {
+                           onShow: (Int) -> Unit, onRevealAll: () -> Unit, onNext: (() -> Unit)?, bar: (@Composable () -> Unit)? = null) {
     val n = pack.pulls.size
     val buttons = when {
         !dealt -> emptyList()
@@ -1404,7 +1473,9 @@ internal fun PackBinderCase(pack: PackResult, revealed: List<Int>, focus: Int, d
     }
     ShowcaseCase(if (!dealt) "Pack · Sealed" else "Pack · ${revealed.size} of $n turned", pack.name, buttons = buttons, scroll = false) {
         if (!dealt) { Text("Tear it open on the top screen. Its cards land here in a spread.", style = TextStyle(fontFamily = Type.Sans, fontSize = 15.sp, lineHeight = 21.sp, color = Color(0xFFE4DFD3))); return@ShowcaseCase }
-        PackSpread(pack, revealed, focus, onShow)
+        // Two screens: the finish bar sits with the spread and its button (pack finish brief B5).
+        if (bar != null) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { bar(); Box(Modifier.weight(1f)) { PackSpread(pack, revealed, focus, onShow) } }
+        else PackSpread(pack, revealed, focus, onShow)
     }
 }
 
