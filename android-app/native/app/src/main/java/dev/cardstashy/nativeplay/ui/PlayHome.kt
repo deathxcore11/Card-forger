@@ -1782,8 +1782,8 @@ private fun HandHeader(d: PlayHomeData, story: PlayRules.Act?, mode: String, wid
         else -> { eyebrow = deck?.let { listOf("YOUR DECK", it.format.uppercase(), if (it.count > 0) "${it.count}" else "").filter { s -> s.isNotBlank() }.joinToString(" · ") } ?: "YOUR DECK"
             title = deck?.name ?: "Pick a deck"; change = true }
     }
-    val sh = RoundedCornerShape(14.dp)
-    val tap = if (!change) Modifier else Modifier.clip(sh).clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.mode(mode) }
+    // No clip: a rounded clip cut the first letter of the eyebrow (picture review of b8b66c66).
+    val tap = if (!change) Modifier else Modifier.clickable(MutableInteractionSource(), dev.cardstashy.nativeplay.ui.PadFocus.Ring) { act.mode(mode) }
         .semantics { contentDescription = if (deck != null) "Change deck, ${deck.name}" else "Pick a deck" }
     Row(modifier.then(tap).heightIn(min = if (change) 48.dp else 0.dp).padding(end = if (change) 4.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(3.dp)) {
