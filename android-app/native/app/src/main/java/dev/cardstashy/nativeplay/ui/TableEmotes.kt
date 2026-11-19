@@ -44,11 +44,14 @@ object TableEmotes {
 
     /** mount(): once per match, when the match stage opens, the CPU says hello after 1.8 s (unless muted). */
     fun start(scope: CoroutineScope) {
-        destroy(); this.scope = scope; greeted = false
+        // Live 0.4.98 (Randall's 19 Nov recording): the table hands over an effect's scope, whose work ends once the hello has left;
+        // a bubble said after that never got its timer, so "Thinking…" stayed for the rest of the match. The emotes keep their own
+        // job, on the table's dispatcher and clock, until destroy().
+        destroy(); this.scope = CoroutineScope(scope.coroutineContext.minusKey(Job) + kotlinx.coroutines.SupervisorJob()); greeted = false
         if (!greeted) { greeted = true; if (!muted) later(1800) { say("cpu", "Good luck, have fun.") } }
     }
 
-    fun destroy() { jobs.forEach { it.cancel() }; jobs.clear(); you = null; cpu = null; menuOpen = false; scope = null }
+    fun destroy() { jobs.forEach { it.cancel() }; jobs.clear(); scope?.coroutineContext?.get(Job)?.cancel(); you = null; cpu = null; menuOpen = false; scope = null }
 
     fun say(who: String, text: String) {
         val b = Bubble(who, text, ++serial)
