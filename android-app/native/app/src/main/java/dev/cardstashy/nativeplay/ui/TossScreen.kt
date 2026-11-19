@@ -44,13 +44,13 @@ import dev.cardstashy.nativeplay.art.CardImage
 import kotlin.math.abs
 
 /**
- * play-forge-pregame.js reveal: one calm full-screen moment before the opening hand. A two-faced coin (your profile
+ * play-forge-pregame.js reveal: one calm full-screen moment before the opening hand. A two-faced coin (your deck's
  * picture, the opponent deck's art) is tossed for 1.5 s and rests on the side Forge already committed. It never
  * decides anything. The whole toss is always seen (Randall, 1 Nov): it starts once this screen is painted and ends
  * only after the result has been on screen 1.3 s.
  */
 @Composable
-fun TossScreen(toss: MatchController.Toss, cpu: Plate?, onDone: () -> Unit) {
+fun TossScreen(toss: MatchController.Toss, cpu: Plate?, onDone: () -> Unit, you: Plate? = null) {
     val context = LocalContext.current
     val reduced = remember { Playmats.reduced(context) }
     val profile by Account.profile.collectAsState()
@@ -82,7 +82,14 @@ fun TossScreen(toss: MatchController.Toss, cpu: Plate?, onDone: () -> Unit) {
                 val flipped = abs(((spin.value % 360f) + 360f) % 360f - 180f) < 90f // the far face shows between 90° and 270°
                 Box(Modifier.fillMaxSize().graphicsLayer { rotationX = spin.value; cameraDistance = 14f * density }) {
                     Box(Modifier.fillMaxSize().graphicsLayer { if (flipped) rotationX = 180f }) {
-                        if (!flipped) Face(Color(0xFFE3BB6A), "YOU") { ProfileAvatar(profile, coin - 52.dp, ring = false) }
+                        // Randall, 19 Nov: one deck, one picture. The YOU side shows your deck's picture from the deck list (the profile picture only
+                        // when the deck has none).
+                        if (!flipped) Face(Color(0xFFE3BB6A), "YOU") {
+                            val cover = you?.cover
+                            if (cover != null) coil3.compose.AsyncImage(model = cover, contentDescription = null, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader,
+                                modifier = Modifier.size(coin - 52.dp).clip(CircleShape), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                            else if (you?.face != null) CardImage(you.face, Modifier.size(coin - 52.dp).clip(CircleShape), crop = true)
+                            else ProfileAvatar(profile, coin - 52.dp, ring = false) }
                         else Face(Color(0xFFD89A57), opponent.uppercase().take(10)) { CardImage(cpu?.face, Modifier.size(coin - 52.dp).clip(CircleShape), crop = true) }
                     }
                 }

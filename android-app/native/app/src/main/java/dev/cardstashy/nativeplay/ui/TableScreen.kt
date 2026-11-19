@@ -215,7 +215,7 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
             val sizes = Sizes(sidebar = if (maxWidth >= 1000.dp) 280.dp else 168.dp, field = 46.dp * k, land = 36.dp * k, hand = 60.dp * k, back = 20.dp * k)
             val st = shown
             when {
-                stage == Stage.TOSS -> { val t = controller.toss.collectAsState().value; if (t != null) TossScreen(t, cpuPlate, onDone = { controller.tossFinished() }) else Loading() }
+                stage == Stage.TOSS -> { val t = controller.toss.collectAsState().value; if (t != null) TossScreen(t, cpuPlate, onDone = { controller.tossFinished() }, you = youPlate) else Loading() }
                 st == null || stage == Stage.STARTING -> Loading()
                 // The keep is a decision with the same clock as the table's: the ring on Keep (the site's ok key), from LocalMatchClock.
                 stage == Stage.MULLIGAN -> CompositionLocalProvider(LocalMatchClock provides controller.clock.collectAsState().value) {
