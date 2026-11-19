@@ -162,10 +162,11 @@ private fun PlateView(p: Plate, modifier: Modifier) {
     // Randall's 19 Nov recording (item 5): the CPU's plate faded in as an empty dark box and its art came 0.2 s later, because the
     // plate waited for the download, not for its own picture. It now waits until its picture is on screen.
     val context = androidx.compose.ui.platform.LocalContext.current
-    var fetched by remember(p.face) { mutableStateOf(p.face == null) }
-    var painted by remember(p.face) { mutableStateOf(p.face == null) }
-    var timedOut by remember(p.face) { mutableStateOf(false) }
-    LaunchedEffect(p.face) {
+    var fetched by remember(p.face, p.cover) { mutableStateOf(p.face == null || p.cover != null) }
+    var painted by remember(p.face, p.cover) { mutableStateOf(p.face == null && p.cover == null) }
+    var timedOut by remember(p.face, p.cover) { mutableStateOf(false) }
+    LaunchedEffect(p.face, p.cover) {
+        if (p.cover != null) { kotlinx.coroutines.delay(4000); timedOut = true; return@LaunchedEffect }
         val face = p.face ?: return@LaunchedEffect
         kotlinx.coroutines.withTimeoutOrNull(4000) {
             var url = dev.cardstashy.nativeplay.art.CardArt.url(face, crop = true)
@@ -175,11 +176,14 @@ private fun PlateView(p: Plate, modifier: Modifier) {
         fetched = true
         kotlinx.coroutines.delay(1500); timedOut = true
     }
-    val ready = p.face == null || (fetched && painted) || timedOut
+    val ready = (p.face == null && p.cover == null) || (fetched && painted) || timedOut
     val show by androidx.compose.animation.core.animateFloatAsState(if (ready) 1f else 0f, tween(260), label = "plate")
     Box(modifier.aspectRatio(1.35f).graphicsLayer { alpha = show }.clip(shape).border(1.5.dp, Palette.Gold, shape).background(Palette.PanelBottom)) {
         // Drawn only once its lookup is done, so the picture it reports is the real one, not the stand-in plate.
-        if (fetched) CardImage(p.face, Modifier.fillMaxSize(), crop = true, onShown = { painted = true })
+        if (p.cover != null) coil3.compose.AsyncImage(model = p.cover, contentDescription = null, imageLoader = dev.cardstashy.nativeplay.art.CardArt.loader,
+            modifier = Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            onState = { if (it is coil3.compose.AsyncImagePainter.State.Success || it is coil3.compose.AsyncImagePainter.State.Error) painted = true })
+        else if (fetched) CardImage(p.face, Modifier.fillMaxSize(), crop = true, onShown = { painted = true })
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 1f to Color(0xEE0A0A0C))))
         Column(Modifier.align(Alignment.BottomStart).padding(14.dp)) {
             Text(p.who, style = Type.Label.copy(color = Palette.Gold)); Text(p.name, style = Type.Title, maxLines = 2)

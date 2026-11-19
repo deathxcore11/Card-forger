@@ -611,7 +611,7 @@ private fun MatchFlow(activity: MainActivity, pick: Pick, onHome: () -> Unit, on
     val sceneOn = scene != null && setup !is QuickPlay.Setup.Unknown && setup !is QuickPlay.Setup.Failed
     Box {
     when (val s = setup) {
-        null -> VersusScreen(Plate(pick.name, "You", pick.face), null)
+        null -> VersusScreen(Plate(pick.name, "You", pick.face, cover = (pick as? dev.cardstashy.nativeplay.match.Pick.Table)?.cover), null)
         is QuickPlay.Setup.Unknown -> { LaunchedEffect(Unit) { activity.inGame(false) }; Problem("Forge doesn’t know ${if (s.names.size == 1) "this card" else "these ${s.names.size} cards"} yet",
             s.names.joinToString("\n") + "\n\nThis deck can’t be played until they’re added to the rules. Pick another deck for now.", onDecks) }
         is QuickPlay.Setup.Failed -> { LaunchedEffect(Unit) { activity.inGame(false) }; Problem("Couldn’t start the match", s.reason, onDecks) }

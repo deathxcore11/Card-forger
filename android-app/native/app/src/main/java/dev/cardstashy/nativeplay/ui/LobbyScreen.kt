@@ -551,16 +551,16 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                         val pre = quickPre?.takeIf { it.first === you && it.second == m.format to m.difficulty }?.third
                         val r = pre?.await() ?: chooseQuick(you, m.format, m.difficulty)
                         m.quickMatch = r; m.opponent = SeatDeck(r.deck, "quick")
-                        onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), r.deck, "Medium", quick = true, matchup = r.line))
+                        onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), r.deck, "Medium", quick = true, matchup = r.line, cover = coverOf(you.raw)))
                     } catch (e: QuickOpponent.NoOpponent) { m.quickError = e.message } catch (e: Exception) { m.quickError = e.message ?: "Couldn’t find a CPU deck." }
                     finally { m.quickBusy = false }
                 }
                 return
             }
-            onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), m.quickMatch!!.deck, "Medium", quick = true, matchup = m.quickMatch!!.line)); return
+            onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), m.quickMatch!!.deck, "Medium", quick = true, matchup = m.quickMatch!!.line, cover = coverOf(you.raw))); return
         }
         val cpu = m.opponent ?: run { toast("Choose both Practice decks first."); return }
-        onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), cpu.raw, m.difficulty, quick = false))
+        onStart(Pick.Table(you.raw, you.name, m.format, factName(you.raw), cpu.raw, m.difficulty, quick = false, cover = coverOf(you.raw)))
     }
 
     // Play home's Play: once its deck is seated, press Play for it (start() keeps today's checks and messages).
