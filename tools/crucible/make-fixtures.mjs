@@ -23,7 +23,7 @@ function duelSetup(n) {
   const r = Rng.fromSeed(1000 + n);
   const kit = makeKit(db, r, KITS[n % 3]);
   const rival = makeRival(db, r, { floor: n % 3, tier: ['regular', 'cursed', 'champion', 'guardian'][n % 4], theme: THEMES[n % THEMES.length] });
-  const relics = sortRelics(r.shuffle(Object.keys(RELICS)).slice(0, n % 7));
+  const relics = sortRelics(r.shuffle(Object.keys(RELICS).filter(id => RELICS[id].kind !== 'F')).slice(0, n % 7));
   const twist = [null, 'fog', 'narrow', 'storm', 'locked'][n % 5];
   return { seed: 5000 + n, decks: [kit.deck, rival.deck], seats: [{ relics, homeField: kit.homeField, underCap: 12, secondWind: relics.includes('second_wind') }, {}], twist };
 }

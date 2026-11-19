@@ -41,7 +41,7 @@ for (let n = 1; n <= DUELS; n++) {
   const r = Rng.fromSeed(n * 7919);
   const deck = () => Array.from({ length: 36 + r.int(5) }, () => { const e = { id: r.pick(all) }; if (r.chance(1, 6)) e.t = 1; if (r.chance(1, 4)) e.e = r.pick(ENCHANTS); if (r.chance(1, 10)) e.b = 1; return e; });
   const rel = () => sortRelics(r.shuffle(relicIds.slice()).slice(0, r.int(10)));
-  const s = newDuel(db, { seed: n, decks: [deck(), deck()], twist: r.pick(TWISTS), seats: [{ relics: rel(), secondWind: r.chance(1, 2), underCap: r.int(20), handSize: 4 + r.int(3), firstTurnHand: r.chance(1, 4) ? 6 : 0, homeField: r.pick([...db.fieldOf.keys()]) }, { relics: rel(), law: r.pick(LAWS), ace: r.pick(all.filter(id => db.isMonster(id))) }] });
+  const s = newDuel(db, { seed: n, decks: [deck(), deck()], twist: r.pick(TWISTS), seats: [{ forger: r.pick([null, 'tarn', 'scrapper', 'veil', 'storm']), relics: rel(), secondWind: r.chance(1, 2), underCap: r.int(20), handSize: 4 + r.int(3), firstTurnHand: r.chance(1, 4) ? 6 : 0, homeField: r.pick([...db.fieldOf.keys()]) }, { relics: rel(), law: r.pick(LAWS), ace: r.pick(all.filter(id => db.isMonster(id))) }] });
   let guard = 0;
   while (s.winner === null) {
     const la = legalActions(s, db, { maxChain: 2 });
@@ -89,7 +89,7 @@ function randomRunAction(run, r) {
 let refused = 0, runActions = 0, over = { won: 0, lost: 0 };
 for (let n = 1; n <= RUNS; n++) {
   const r = Rng.fromSeed(n * 104729);
-  const run = newRun(db, { seed: n, heat: r.int(4) });
+  const run = newRun(db, { seed: n, heat: r.int(4), forger: r.pick([null, 'tarn', 'scrapper', 'veil', 'storm']), locked: r.chance(1, 2) ? ['tomb_bell', 'glass_idol', 'living_furnace', 'signature'] : null });
   let guard = 0;
   while (run.phase !== 'over') {
     const a = randomRunAction(run, r);

@@ -297,7 +297,7 @@ test('enchants: piercing, twin, drain, bulwark, venom, ambusher, echo, herald, w
 // ---------- relics ----------
 function withRelics(ids, setup) { const s = blank({ seats: [{ relics: sortRelics(ids), underCap: 20, secondWind: ids.includes('second_wind') }, {}] }); s.hand = [[], []]; s.turn = 3; s.active = 0; if (setup) setup(s); return s; }
 test('every relic states a finite limit and belongs to a family', () => {
-  for (const [id, r] of Object.entries(RELICS)) { assert.ok(r.name && r.text && r.family && 'CGM'.includes(r.kind), id); }
+  for (const [id, r] of Object.entries(RELICS)) { assert.ok(r.name && r.text && r.family && 'CGMF'.includes(r.kind), id); }
   const plain = Object.values(RELICS).filter(r => r.family === 'plain').length;
   assert.ok(plain * 4 <= Object.keys(RELICS).length, 'at most one relic in four is a plain stat bonus');
 });

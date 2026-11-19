@@ -7,6 +7,7 @@ import { roleOf, weightOf, meldPair } from './cards.mjs';
 import { newDuel, applyMut, viewFor, clone } from './duel.mjs';
 import { chooseAction } from './ai.mjs';
 import { RELICS, MASTERWORKS, sortRelics } from './relics.mjs';
+import { FORGERS } from './forgers.mjs';
 
 export const ENCHANTS = ['piercing', 'twin', 'drain', 'bulwark', 'venom', 'soaring', 'herald', 'catalyst', 'ambusher', 'warden', 'kindred', 'echo'];
 
@@ -92,7 +93,27 @@ export function makeKit(db, rng, kit) {
     guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(L.fuel));
     if (deck.length === 40 && deckWeight(db, deck) <= cfg.kitWeight) return { deck, rejected: tries, homeField: deck.find(e => roleOf(db, e.id) === 'field')?.id || null };
   }
-  throw new Error('kit generator could not fit the weight limit');
+  // Heavy themes (few low-Level monsters) can miss the limit 200 times. Build once more and
+  // swap the heaviest monsters for the lightest weak ones until it fits.
+  const deck = [], count = new Map();
+  const add = c => { const n = count.get(c.id) || 0; if (n >= cfg.maxCopies) return false; count.set(c.id, n + 1); deck.push({ id: c.id }); return true; };
+  let guard = 0;
+  while (deck.length < q.monsters && guard++ < 2000) add(rng.chance(3, 4) ? rng.pick(themed) : rng.pick(anyWeak));
+  const f = fields.length ? fields : L.field;
+  guard = 0; while (deck.length < q.monsters + q.field && guard++ < 500) add(rng.pick(f));
+  guard = 0; while (deck.length < q.monsters + q.field + q.equip && guard++ < 500) add(rng.pick(L.equip));
+  const tagged = L.spell.concat(L.trap).filter(c => { const t = db.tagOf.get(c.id); return t.fx !== 'destroyAll' && t.fx !== 'revive'; });
+  guard = 0; while (deck.length < q.monsters + q.field + q.equip + q.tagged && guard++ < 500) add(rng.pick(tagged));
+  guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(L.fuel));
+  const light = anyWeak.filter(c => c.level <= 2);
+  guard = 0;
+  while (deckWeight(db, deck) > cfg.kitWeight && guard++ < 400) {
+    let hi = -1; deck.forEach((e, i) => { if (db.isMonster(e.id) && (hi < 0 || db.byId.get(e.id).level > db.byId.get(deck[hi].id).level)) hi = i; });
+    const c = rng.pick(light); if ((count.get(c.id) || 0) >= cfg.maxCopies) continue;
+    count.set(deck[hi].id, count.get(deck[hi].id) - 1); count.set(c.id, (count.get(c.id) || 0) + 1); deck[hi] = { id: c.id };
+  }
+  if (deck.length !== 40 || deckWeight(db, deck) > cfg.kitWeight) throw new Error('kit generator could not fit the weight limit');
+  return { deck, rejected: 200, homeField: deck.find(e => roleOf(db, e.id) === 'field')?.id || null };
 }
 
 export function makeRival(db, rng, { floor, tier, theme, boss = null, heat = 0 }) {
@@ -160,7 +181,8 @@ const BOUNTIES = [
 ];
 
 // ---------- run state ----------
-export function newRun(db, { seed, heat = 0 } = {}) {
+// forger: a key of FORGERS (optional). locked: relic ids this profile has not unlocked yet (optional).
+export function newRun(db, { seed, heat = 0, forger = null, locked = null } = {}) {
   DB = db;
   const cfg = db.config, rng = Rng.fromSeed(seed);
   const run = {
@@ -172,12 +194,14 @@ export function newRun(db, { seed, heat = 0 } = {}) {
     codex: [], log: [], result: null,
     stats: { duels: 0, wins: 0, losses: 0, bossWins: 0, ranks: {}, turns: 0, melds: 0, fizzles: 0, capHits: 0, relicFires: {}, familiesInDuel: 0, doors: {}, bounties: 0, deckouts: 0, firstWins: 0, firstGames: 0, kitRejects: 0, byTier: {}, comebacks: 0, closeWins: 0, leadChanges: 0, trailedWins: 0, traps: 0, defWins: 0, lpLostInWins: 0, chains: {}, singles: 0, long: 0, reasons: {} },
   };
+  if (forger) { if (!FORGERS[forger]) throw new Error('no such Forger'); run.forger = forger; }
+  if (locked && locked.length) run.locked = locked.slice();
   run.offer = dealKits(db, rng, run);
   run.rng = rng.s;
   return run;
 }
 function dealKits(db, rng, run) {
-  return KITS.map(k => { const d = makeKit(db, rng, k); run.stats.kitRejects += d.rejected; return { kit: k.id, name: k.name, deck: d.deck, homeField: d.homeField }; });
+  return (run.forger ? FORGERS[run.forger].kits : KITS).map(k => { const d = makeKit(db, rng, k); run.stats.kitRejects += d.rejected; return { kit: k.id, name: k.name, deck: d.deck, homeField: d.homeField }; });
 }
 
 export const weightCap = (db, run) => db.config.weightCaps[0] + run.capBonus + (run.charms.includes('heavy_pack') ? 10 : 0) - (run.charms.includes('heavy_crown') ? 10 : 0);
@@ -189,6 +213,7 @@ function relicOffer(run, rng, kind, n) {
   const own = ownedRelics(run);
   // parts already fused into a Masterwork do not come back
   for (const m of run.masterworks) for (const p of RELICS[m].parts) own.add(p);
+  for (const id of run.locked || []) own.add(id);
   // Heavy Crown lowers the cap by 10, so it is only offered to a deck that already fits under it.
   const crownOk = DB ? deckWeight(DB, run.deck) <= weightCap(DB, run) - 10 : true;
   const ids = Object.keys(RELICS).filter(id => RELICS[id].kind === kind && !own.has(id) && !(id === 'second_wind' && run.secondWindUsed) && !(id === 'heavy_crown' && !crownOk));
@@ -257,7 +282,7 @@ function describe(db, run, d) {
 export function possibleMasterworks(run) {
   if (run.masterworks.length >= 2) return [];
   const own = ownedRelics(run);
-  return MASTERWORKS.filter(m => m.parts.every(p => own.has(p))).map(m => m.id);
+  return MASTERWORKS.filter(m => m.parts.every(p => own.has(p)) && !(run.locked || []).includes(m.id)).map(m => m.id);
 }
 
 function startDuel(db, run, rng, door, onStep) {
@@ -265,9 +290,10 @@ function startDuel(db, run, rng, door, onStep) {
   const rival = makeRival(db, rng, { floor: run.floor, tier: door.tier, theme: door.theme != null ? THEMES[door.theme] : null, boss, heat: run.heat });
   const cap = weightCap(db, run);
   const relics = relicList(run);
+  if (run.forger) relics.unshift(FORGERS[run.forger].rule);
   const bounty = rng.pick(BOUNTIES);
   const seats = [
-    { relics, handSize: (relics.includes('deep_pockets') ? 6 : db.config.hand) - (rival.law === 'tyranny' ? 1 : 0), firstTurnHand: run.sparks === 1 ? 6 : 0, homeField: run.homeField, underCap: cap - deckWeight(db, run.deck), secondWind: relics.includes('second_wind') && !run.secondWindUsed, sparks: run.sparks },
+    { relics, handSize: (relics.includes('deep_pockets') ? 6 : db.config.hand) - (rival.law === 'tyranny' ? 1 : 0), firstTurnHand: run.sparks === 1 ? 6 : 0, homeField: run.homeField, underCap: cap - deckWeight(db, run.deck), secondWind: relics.includes('second_wind') && !run.secondWindUsed, sparks: run.sparks, forger: run.forger || null },
     { law: rival.law, ace: rival.ace, relics: door.tier === 'champion' ? ['whetstone'] : [] },
   ];
   run.rival = { name: rival.name, tier: rival.tier, ai: rival.ai, law: rival.law, lawText: rival.lawText, drops: rival.drops, ace: rival.ace, bounty: bounty.id, bountyText: bounty.text, twist: door.twist || null };

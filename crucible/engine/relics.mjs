@@ -39,10 +39,16 @@ export const RELICS = {
   home_ground: { name: 'Home Ground', kind: 'C', family: 'core', text: "You start each duel with your kit's Field Spell as the terrain." },
   deep_pockets: { name: 'Deep Pockets', kind: 'C', family: 'core', text: 'Your hand refills to six.' },
   second_wind: { name: 'Second Wind', kind: 'C', family: 'core', text: 'The first time you would lose a duel, go to 1000 Life Points and keep playing. Once a run.' },
+
+  // Forger rules. Kind F: carried only by that Forger, never offered.
+  f_tarn: { name: "Tarn's Fire", kind: 'F', family: 'forger', text: 'Your first meld each duel gets +100 ATK this duel.' },
+  f_scrapper: { name: "Scrapper's Luck", kind: 'F', family: 'forger', text: 'Each fizzle pays 5 Embers after the duel, up to four a duel. The first fizzle each duel also makes your next refill draw one extra card.' },
+  f_veil: { name: 'Quiet Hands', kind: 'F', family: 'forger', text: 'Once a turn, setting a Trap does not use your play.' },
+  f_storm: { name: 'Home Sky', kind: 'F', family: 'forger', text: "You start each duel with your kit's Field Spell as the terrain, and your first monster it favours each duel gets +300 DEF this duel." },
 };
 
 export const MASTERWORKS = Object.entries(RELICS).filter(([, r]) => r.kind === 'M').map(([id, r]) => ({ id, parts: r.parts }));
-const ORDER = { C: 0, G: 1, M: 2 };
+const ORDER = { F: -1, C: 0, G: 1, M: 2 };
 // Resolution order: charms, then Gifts, then Masterworks, each in the order they were gained.
 export function sortRelics(ids) { return ids.map((id, i) => [id, i]).sort((a, b) => ORDER[RELICS[a[0]].kind] - ORDER[RELICS[b[0]].kind] || a[1] - b[1]).map(x => x[0]); }
 
@@ -79,6 +85,8 @@ export function fire(s, db, ev, seat, hook, ctx) {
     switch (hook + ':' + id) {
       case 'duelStart:iron_rations': s.lp[seat] += 500; note(s, ev, seat, id); break;
       case 'duelStart:home_ground': if (st.homeField && !s.terrain) { s.terrain = { id: st.homeField, owner: seat }; note(s, ev, seat, id); } break;
+      case 'duelStart:f_storm': if (st.homeField && !s.terrain) { s.terrain = { id: st.homeField, owner: seat }; note(s, ev, seat, id); } break;
+      case 'fizzle:f_scrapper': if ((rs.fScrap || 0) < 4) { rs.fScrap = (rs.fScrap || 0) + 1; s.stats[seat].embers += 5; if (rs.fScrap === 1) st.extraDraw = 1; note(s, ev, seat, id); } break;
       case 'duelStart:balanced_scales': rs.scales = st.underCap >= 10 ? 1 : 0; break;
 
       case 'fieldPlayed:forge_heart': if (!rs.forgeHeart) { rs.forgeHeart = 1; rs.nextMeld.push({ a: 300, d: 300, id }); note(s, ev, seat, id, { armed: true }); } break;
@@ -120,7 +128,9 @@ function placed(s, db, ev, seat, id, ctx, rs, st, B, r) {
     if (id === 'precise_work') B(m, 300, 0, id);
     if (id === 'signature') { m.sig = 1; B(m, 300, 300, id); }
   }
+  if (id === 'f_storm' && ctx.fresh && ctx.favoured && !rs.fStorm) { rs.fStorm = 1; B(m, 0, 300, id); }
   if (!ctx.melded) return;
+  if (id === 'f_tarn' && !rs.fTarn) { rs.fTarn = 1; B(m, 100, 0, id); }
   // "next meld" bonuses armed earlier by this relic
   for (const x of rs.nextMeld) if (x.id === id && !x.used) { x.used = 1; B(m, x.a, x.d, id); }
   if (id === 'kindling' && ctx.fire && !rs.kindling) { rs.kindling = 1; B(m, 300, 300, id); }

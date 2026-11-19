@@ -9,7 +9,7 @@ import { newRun } from '../../crucible/engine/run.mjs';
 import { playRun } from '../../crucible/engine/policy.mjs';
 
 function one(db, seed, opts) {
-  const run = playRun(db, newRun(db, { seed, heat: opts.heat }), opts);
+  const run = playRun(db, newRun(db, { seed, heat: opts.heat, forger: opts.forger || null }), opts);
   const S = run.stats;
   return {
     seed, won: run.result.won ? 1 : 0, floor: run.result.won ? 3 : run.floor, chamber: run.chamber, bossWins: S.bossWins,
@@ -31,7 +31,7 @@ if (!isMainThread) {
   const args = process.argv.slice(2);
   const arg = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };
   const runs = +arg('--runs', 500), seed0 = +arg('--seed', 1);
-  const opts = { family: arg('--family', 'neutral'), level: +arg('--level', 2), heat: +arg('--heat', 0) };
+  const opts = { family: arg('--family', 'neutral'), level: +arg('--level', 2), heat: +arg('--heat', 0), forger: arg('--forger', null) };
   const threads = Math.min(+arg('--threads', os.cpus().length), runs);
   const seeds = Array.from({ length: runs }, (_, i) => seed0 + i);
   const chunks = Array.from({ length: threads }, (_, t) => seeds.filter((_, i) => i % threads === t));

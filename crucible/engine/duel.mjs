@@ -25,6 +25,7 @@ export function newDuel(db, { seed, decks, seats = [{}, {}], first = null, twist
       relics: (seats[i].relics || []).slice(), law: seats[i].law || null, homeField: seats[i].homeField || null,
       underCap: seats[i].underCap || 0, secondWind: !!seats[i].secondWind, sparks: seats[i].sparks || 3,
       ace: seats[i].ace || null, rs: { nextMeld: [] }, extraDraw: 0,
+      ...(seats[i].forger ? { forger: seats[i].forger } : {}),
     })),
     stats: [blankStats(), blankStats()],
   };
@@ -441,6 +442,7 @@ export function legalActions(s, db, { maxChain = 2 } = {}) {
       }
     }
     if (has(s, seat, 'clean_draw') && !s.seat[seat].rs.cleanDraw && s.deck[seat].length) for (let i = 0; i < hand.length; i++) out.push({ t: 'cleanDraw', hand: i });
+    for (const p of powerActions(s, db, seat)) out.push(p);
   }
   s.mon[seat].forEach((m, z) => {
     if (!m) return;
@@ -519,6 +521,7 @@ export function applyMut(s, a, db, ev = []) {
       noteRelic(s, ev, seat, 'clean_draw');
       break;
     }
+    case 'power': doPower(s, db, ev, seat, a); break;
     case 'attack': {
       const X = s.mon[seat][a.from];
       if (!attackAllowed(s) || !canAttackWith(s, seat, X)) throw new Error('that monster cannot attack');
@@ -542,6 +545,35 @@ export function applyMut(s, a, db, ev = []) {
     default: throw new Error('unknown action ' + a.t);
   }
   return ev;
+}
+
+// A Forger's power: once a duel, before the play. It never uses the play.
+export function powerActions(s, db, seat) {
+  const st = s.seat[seat], f = st.forger, out = [];
+  if (!f || st.rs.power || s.played || s.attacked || s.pending || s.winner !== null) return out;
+  if (f === 'tarn') out.push({ t: 'power' });
+  else if (f === 'scrapper') { if (s.deck[seat].length >= 2) for (let i = 0; i < s.hand[seat].length; i++) out.push({ t: 'power', hand: i }); }
+  else if (f === 'veil') s.mon[seat].forEach((m, z) => { if (m && !m.veil) out.push({ t: 'power', zone: z }); });
+  else if (f === 'storm') { if (st.homeField && !(s.terrain && (s.terrain.lock || s.terrain.id === st.homeField))) out.push({ t: 'power' }); }
+  return out;
+}
+function doPower(s, db, ev, seat, a) {
+  const st = s.seat[seat], f = st.forger;
+  if (!powerActions(s, db, seat).some(p => (p.hand ?? null) === (a.hand ?? null) && (p.zone ?? null) === (a.zone ?? null))) throw new Error('that power cannot be used now');
+  st.rs.power = 1; ev.push({ e: 'power', seat, forger: f });
+  if (f === 'tarn') st.rs.nextMeld.push({ a: 200, d: 0, id: 'f_tarn' });
+  else if (f === 'scrapper') {
+    const c = s.hand[seat][a.hand]; s.hand[seat].splice(a.hand, 1);
+    const e = { id: c.id }; if (c.t) e.t = 1; if (c.e) e.e = c.e; if (c.b) e.b = 1;
+    s.deck[seat].unshift(e); draw(s, db, ev, seat, 2);
+  } else if (f === 'veil') { const m = s.mon[seat][a.zone]; m.veil = true; m.pos = 'd'; m.moved = true; ev.push({ e: 'pos', seat, zone: a.zone, pos: 'd', veiled: true }); }
+  else if (f === 'storm') {
+    const prev = s.terrain;
+    if (prev && prev.law) s.terrain = { id: st.homeField, owner: seat, temp: 2, back: prev };
+    else if (prev && prev.temp != null) s.terrain = { id: st.homeField, owner: seat, temp: 2, back: prev.back };
+    else s.terrain = { id: st.homeField, owner: seat };
+    ev.push({ e: 'terrain', seat, id: st.homeField });
+  }
 }
 
 function noteRelic(s, ev, seat, id) { const f = s.stats[seat].relicFires; f[id] = (f[id] || 0) + 1; ev.push({ e: 'relic', seat, id }); }
@@ -583,7 +615,7 @@ function doPlay(s, db, ev, seat, a) {
     if (a.veiled && a.pos === 'a' && !(s.twist === 'fog' || st.law === 'mist')) { st.rs.hollow = 1; noteRelic(s, ev, seat, 'hollow_mask'); }
     ev.push({ e: 'summon', seat, zone: z, id: m.veil ? null : m.id, pos: m.pos, veiled: m.veil, melded: !!plan.melded });
     if (plan.melded) { stt.melds++; stt.longestChain = Math.max(stt.longestChain, plan.len); stt.chains[plan.len] = (stt.chains[plan.len] || 0) + 1; } else stt.singles++;
-    fire(s, db, ev, seat, 'placed', { mon: m, zone: z, melded: !!plan.melded, len: plan.len, fire: c.attr === 'FIRE', bound: !!m.b, fresh: !plan.onTable });
+    fire(s, db, ev, seat, 'placed', { mon: m, zone: z, melded: !!plan.melded, len: plan.len, fire: c.attr === 'FIRE', bound: !!m.b, fresh: !plan.onTable, favoured: !!(s.terrain && terrainFavours(db, s.terrain.id, m.id)) });
     if (m.e === 'herald' && !plan.onTable) draw(s, db, ev, seat, 1);
     return;
   }
@@ -609,6 +641,7 @@ function doPlay(s, db, ev, seat, a) {
     const z = s.traps[seat].findIndex(t => !t);
     s.traps[seat][z] = { u: s.uid++, id: f.id };
     ev.push({ e: 'set', seat, zone: z });
+    if (has(s, seat, 'f_veil') && st.rs.veilTurn !== s.turn) { st.rs.veilTurn = s.turn; s.played = false; noteRelic(s, ev, seat, 'f_veil'); }
   }
 }
 
@@ -660,6 +693,7 @@ export function viewFor(s, db, seat) {
     gy: [s.gy[0].slice(), s.gy[1].slice()],
     mon: [null, null], traps: [null, null],
     pending: s.pending ? { ...s.pending, options: s.active === seat ? undefined : s.pending.options.slice() } : null,
+    forger: s.seat[seat].forger, homeField: s.seat[seat].homeField,
     relics: s.seat[seat].relics.slice(), rs: clone(s.seat[seat].rs), rivalLaw: s.seat[r].law, law: s.seat[seat].law,
   };
   v.mon[seat] = s.mon[seat].map(m => m ? { ...m, ea: effAtk(s, db, seat, m), ed: effDef(s, db, seat, m) } : null);

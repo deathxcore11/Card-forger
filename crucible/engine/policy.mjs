@@ -93,6 +93,21 @@ function anvilAction(db, run, fam) {
   return { t: 'leave' };
 }
 
+// When a simulated player uses its Forger's once-a-duel power. Works from the view only.
+function forgerPower(db, v, planned) {
+  if (!v.forger || v.rs.power || v.played || v.attacked || v.pending || v.active !== v.me) return null;
+  const me = v.me, r = 1 - me;
+  if (v.forger === 'tarn') return planned && planned.t === 'play' && planned.hand.length >= 2 ? { t: 'power' } : null;
+  if (v.forger === 'scrapper') { if (v.deckCount[me] < 2 || !v.hand.length || v.turn < 2) return null; return { t: 'power', hand: bestIdx(v.hand, c => -cardValue(db, c)) }; }
+  if (v.forger === 'storm') return v.homeField && !(v.terrain && (v.terrain.lock || v.terrain.id === v.homeField)) ? { t: 'power' } : null;
+  if (v.forger === 'veil') {
+    const top = Math.max(0, ...v.mon[r].filter(m => m && !m.veil).map(m => m.ea));
+    const z = v.mon[me].findIndex(m => m && !m.veil && m.pos === 'a' && m.ea < top && m.ed >= m.ea + 300);
+    return z >= 0 ? { t: 'power', zone: z } : null;
+  }
+  return null;
+}
+
 // Chooses the next run action. `level` is the duel skill of the simulated player (0..2).
 export function policyAction(db, run, { family = 'neutral', level = 2 } = {}) {
   const fam = FAMILIES[family];
@@ -100,7 +115,12 @@ export function policyAction(db, run, { family = 'neutral', level = 2 } = {}) {
     case 'kit': { const i = fam.kit ? run.offer.findIndex(k => k.kit === fam.kit) : Number(BigInt(run.seed) % 3n); return { t: 'kit', i: i < 0 ? 0 : i }; }
     case 'charm': return { t: 'pick', i: bestIdx(run.offer.options, id => relicScore(fam, id)) };
     case 'chamber': { const sw = nextSwap(db, run); if (sw) return sw; const ok = run.doors.map((d, i) => (d.type === 'boss' && run.seals < 2) ? -1e9 : doorScore(db, run, d, fam) - i * 0.01); return { t: 'door', i: bestIdx(ok, v => v) }; }
-    case 'duel': { const a = chooseAction(db, viewFor(run.duel, db, 0), level, fam.duel); return { t: 'duel', action: a || { t: 'end' } }; }
+    case 'duel': {
+      const v = viewFor(run.duel, db, 0);
+      const a = chooseAction(db, v, level, fam.duel);
+      const p = level >= 1 ? forgerPower(db, v, a) : null;
+      return { t: 'duel', action: p || a || { t: 'end' } };
+    }
     case 'reward': {
       const o = run.offer;
       if (o.kind === 'card') return { t: 'pick', i: bestIdx(o.options, e => cardValue(db, e)) };
