@@ -779,8 +779,12 @@ object Director {
         val held = after.copy(players = after.players.map { p -> p.copy(battlefield = p.battlefield.filter { it.id !in tokens }.map { c ->
             if (c.id !in changed) c
             else was[c.id]?.let { o -> c.copy(power = o.power, toughness = o.toughness, counters = o.counters) }
-                // New since the last board: take back only the counters Forge said were added.
-                ?: c.copy(counters = c.counters.mapValues { (k, v) -> v - added[c.id].orEmpty().filter { it.counter == k }.sumOf { it.delta } }.filterValues { it > 0 })
+                // New since the last board: take back only the counters Forge said were added, and what +1/+1 and -1/-1 counters
+                // added to its numbers (Randall's 19 Nov recording, item 24: Cosmogrand Zenith landed reading 3/5 before the trigger
+                // that gave it the counter was shown).
+                ?: added[c.id].orEmpty().let { a -> val up = a.filter { it.counter == "P1P1" }.sumOf { it.delta } - a.filter { it.counter == "M1M1" }.sumOf { it.delta }
+                    c.copy(power = c.power?.minus(up), toughness = c.toughness?.minus(up),
+                        counters = c.counters.mapValues { (k, v) -> v - a.filter { it.counter == k }.sumOf { it.delta } }.filterValues { it > 0 }) }
         }) })
         // EVERY RESULT NAMES ITS CAUSE: a card a result took off the battlefield, or put onto it, stays where the last board had
         // it until that result's beat, so it leaves (or comes back) under its plate and not before its cause is shown.

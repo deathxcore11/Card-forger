@@ -261,4 +261,18 @@ class TriggerResultTest {
         assertNull(Director.passWaitFor(7, mapOf(7 to 4900L), emptyList(), 5000, 200))
         assertEquals(200L, Director.passWaitFor(null, emptyMap(), emptyList(), 5000, 200))
     }
+
+    /**
+     * Recording 19 Nov (item 24): Cosmogrand Zenith entered and The Naked Time's effect put a +1/+1 counter on it in the same poll.
+     * Its tile landed reading 3/5 before the trigger was shown. Until the result's beat it reads its printed 2/4, with no counter.
+     */
+    @Test fun aCardThatEnteredThisPollWaitsForItsCounter() {
+        val before = base.copy(stack = emptyList())
+        val zenith = pt(base.me.battlefield.first { it.isCreature }.copy(id = 777, name = "Cosmogrand Zenith"), 3, 5, mapOf("P1P1" to 1))
+        val after = board(before, listOf(zenith))
+        val r = Director.Resolution(seq = 9, stackId = 15, sourceId = 122, sourceName = "The Naked Time", controller = base.cpu.id, trigger = true,
+            fizzled = false, text = null, targets = emptyList(), counters = listOf(Director.CounterChange(777, "Cosmogrand Zenith", "P1P1", 1)))
+        val shown = Director.beforeResults(after, before, listOf(r)).players.flatMap { it.battlefield }.first { it.id == 777 }
+        assertEquals("2/4 until the trigger's beat", "2/4", "${shown.power}/${shown.toughness}"); assertTrue(shown.counters.isEmpty())
+    }
 }
