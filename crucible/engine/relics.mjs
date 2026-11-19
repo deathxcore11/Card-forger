@@ -59,6 +59,7 @@ export const LAB = {
   thorn_veil: { name: 'Thorn Veil', kind: 'G', family: 'shadow', text: 'At the end of your turn the rival loses 150 Life Points for each of your veiled monsters, up to three.' },
   shield_oath: { name: 'Shield Oath', kind: 'G', family: 'shadow', text: 'When your defending monster survives an attack it becomes a Guard: while it stays in defense the rival must attack it first. Each time a Guard survives, up to four times a duel, your next meld gets +300 ATK this duel.' },
   deep_shade: { name: 'Deep Shade', kind: 'G', family: 'shadow', text: 'Your veiled monster in defense has +600 DEF in the first battle that reveals it.' },
+  long_watch: { name: 'Long Watch', kind: 'G', family: 'shadow', text: 'At the start of your turn, if you hold a veiled monster, your next meld gets +300 ATK this duel. Up to five times a duel.' },
   cold_lantern: { name: 'Cold Lantern', kind: 'G', family: 'shadow', text: 'Each time an attack reveals your veiled monster and it survives, the rival loses 300 Life Points. Up to four times a duel.' },
 };
 const info = id => RELICS[id] || LAB[id];
@@ -142,6 +143,7 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'returned:second_burial': if (rs.burialTurn !== s.turn) { rs.burialTurn = s.turn; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
       case 'endTurn:thorn_veil': { const n = Math.min(3, s.mon[seat].filter(m => m && m.veil).length); if (n) { note(s, ev, seat, id, { n }); hurt(s, ev, r, (db.config.thornLp || 150) * n); } } break;
       case 'survived:shield_oath': { const was = ctx.mon.guard; ctx.mon.guard = 1; if (!was) note(s, ev, seat, id, { guard: true }); else if ((rs.oath || 0) < 4) { rs.oath = (rs.oath || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } } break;
+      case 'turnStart:long_watch': if ((rs.watch || 0) < 5 && s.mon[seat].some(m => m && m.veil)) { rs.watch = (rs.watch || 0) + 1; rs.nextMeld.push({ a: db.config.watchAtk || 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
       case 'survived:cold_lantern': if (ctx.wasVeiled && (rs.lantern || 0) < 4) { rs.lantern = (rs.lantern || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); } break;
     }
     if (hook === 'placed') placed(s, db, ev, seat, id, ctx, rs, st, B, r);
