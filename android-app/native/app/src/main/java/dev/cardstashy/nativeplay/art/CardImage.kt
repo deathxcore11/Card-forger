@@ -28,16 +28,21 @@ import dev.cardstashy.nativeplay.ui.AssetImage
  */
 @Composable
 fun CardImage(name: String?, modifier: Modifier = Modifier, crop: Boolean = false, contentScale: ContentScale = ContentScale.Crop,
-              shape: Shape? = null, fallback: (@Composable () -> Unit)? = null) {
+              shape: Shape? = null,
+              /** Called once the picture (or the name plate that stands in for it) is on screen. */
+              onShown: (() -> Unit)? = null,
+              fallback: (@Composable () -> Unit)? = null) {
     // No picture (yet, or ever): the card's own frame with its name and rules (TableFacts), never an empty panel.
     val fallback: @Composable () -> Unit = fallback ?: { dev.cardstashy.nativeplay.ui.CardFrame(name, TableFacts.of(name), Modifier.fillMaxSize(), crop) }
+    if (onShown != null) { val url = remember(name, crop) { name?.let { CardArt.url(it, crop) } }
+        if (name == null || url == null || CardImageTest.art != null) LaunchedEffect(name) { onShown() } }
     if (name == null) { Box(modifier) { fallback() }; return }
     CardImageTest.art?.invoke(name, crop)?.let { b -> androidx.compose.foundation.Image(b, null, if (shape != null) modifier.clip(shape) else modifier, contentScale = contentScale); return }
     val context = LocalContext.current
     val v by CardArt.version.collectAsState()
     // A printing pinned by the match (Story's era art) wins over the bundled demo picture.
     val asset = remember(name, crop, v) { if (CardArt.pinned(name)) null else DemoDecks.load(context).image(name, crop) }
-    if (asset != null) { AssetImage(asset, modifier, maxWidth = if (crop) 900 else 488, contentScale = contentScale, shape = shape); return }
+    if (asset != null) { if (onShown != null) LaunchedEffect(asset) { onShown() }; AssetImage(asset, modifier, maxWidth = if (crop) 900 else 488, contentScale = contentScale, shape = shape); return }
     val url = remember(name, crop, v) { CardArt.url(name, crop) }
     // No picture on record (its lookup failed while the match loaded): look it up again; the plate shows meanwhile.
     if (url == null) { LaunchedEffect(name) { CardArt.missAtShow(name); CardArt.want(name) }; Box(modifier) { fallback() }; return }
@@ -50,7 +55,7 @@ fun CardImage(name: String?, modifier: Modifier = Modifier, crop: Boolean = fals
     Box(m) {
         if (failed) fallback()
         AsyncImage(model = request, contentDescription = null, imageLoader = CardArt.loader, modifier = Modifier.fillMaxSize(), contentScale = contentScale,
-            onState = { when (it) { is AsyncImagePainter.State.Error -> failed = true; is AsyncImagePainter.State.Success -> failed = false; else -> {} } })
+            onState = { when (it) { is AsyncImagePainter.State.Error -> { failed = true; onShown?.invoke() }; is AsyncImagePainter.State.Success -> { failed = false; onShown?.invoke() }; else -> {} } })
     }
 }
 

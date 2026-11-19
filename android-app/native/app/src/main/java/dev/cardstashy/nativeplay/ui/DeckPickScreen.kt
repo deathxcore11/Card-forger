@@ -159,8 +159,12 @@ fun VersusScreen(you: Plate, cpu: Plate?, intro: Boolean = true, preparing: Bool
 private fun PlateView(p: Plate, modifier: Modifier) {
     val shape = RoundedCornerShape(16.dp)
     // Spec 12a: no plate until its cover is decoded (looked up first if it has to be), 4 s at most; then it fades in, never empty.
+    // Randall's 19 Nov recording (item 5): the CPU's plate faded in as an empty dark box and its art came 0.2 s later, because the
+    // plate waited for the download, not for its own picture. It now waits until its picture is on screen.
     val context = androidx.compose.ui.platform.LocalContext.current
-    var ready by remember(p.face) { mutableStateOf(p.face == null) }
+    var fetched by remember(p.face) { mutableStateOf(p.face == null) }
+    var painted by remember(p.face) { mutableStateOf(p.face == null) }
+    var timedOut by remember(p.face) { mutableStateOf(false) }
     LaunchedEffect(p.face) {
         val face = p.face ?: return@LaunchedEffect
         kotlinx.coroutines.withTimeoutOrNull(4000) {
@@ -168,11 +172,14 @@ private fun PlateView(p: Plate, modifier: Modifier) {
             if (url == null) { dev.cardstashy.nativeplay.art.CardArt.resolve(listOf(face to com.google.gson.JsonObject().apply { addProperty("name", face) })); url = dev.cardstashy.nativeplay.art.CardArt.url(face, crop = true) }
             if (url != null) dev.cardstashy.nativeplay.art.CardArt.loader.execute(dev.cardstashy.nativeplay.art.CardArt.request(context, url, true))
         }
-        ready = true
+        fetched = true
+        kotlinx.coroutines.delay(1500); timedOut = true
     }
+    val ready = p.face == null || (fetched && painted) || timedOut
     val show by androidx.compose.animation.core.animateFloatAsState(if (ready) 1f else 0f, tween(260), label = "plate")
     Box(modifier.aspectRatio(1.35f).graphicsLayer { alpha = show }.clip(shape).border(1.5.dp, Palette.Gold, shape).background(Palette.PanelBottom)) {
-        CardImage(p.face, Modifier.fillMaxSize(), crop = true)
+        // Drawn only once its lookup is done, so the picture it reports is the real one, not the stand-in plate.
+        if (fetched) CardImage(p.face, Modifier.fillMaxSize(), crop = true, onShown = { painted = true })
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 1f to Color(0xEE0A0A0C))))
         Column(Modifier.align(Alignment.BottomStart).padding(14.dp)) {
             Text(p.who, style = Type.Label.copy(color = Palette.Gold)); Text(p.name, style = Type.Title, maxLines = 2)

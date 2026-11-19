@@ -416,10 +416,16 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         if (!m.quick || !signedIn || !online) return@LaunchedEffect
         delay(600)
         val format = m.format
+        // Randall's 19 Nov recording (item 1): "Finding a CPU deck…" for 7.9 s or more. Which step is the wait is not known yet;
+        // these lines time each one (adb logcat -s QuickWait) before anything is changed.
+        val t0 = android.os.SystemClock.elapsedRealtime()
         quickSources(format)
+        val t1 = android.os.SystemClock.elapsedRealtime()
         val pool = listOfNotNull(m.player?.raw) + quickPool(format).filter { it.get("format")?.takeIf { f -> f.isJsonPrimitive }?.asString == format }
         // Each deck is serialized and hashed for its key: not on the main thread.
         withContext(Dispatchers.Default) { QuickPower.warm(format, pool) }
+        val t2 = android.os.SystemClock.elapsedRealtime()
+        runCatching { android.util.Log.i("QuickWait", "sources ${t1 - t0}ms, power for ${pool.size} decks ${t2 - t1}ms") }
         // T1 (Thor run 10 Nov: "Finding a CPU deck…" 15 s, then 15 s of art): the CPU deck is chosen as soon as yours is, and its
         // pictures start loading here, so Play opens the matchup at once. Kept hidden until the match, as before.
         val you = m.player ?: return@LaunchedEffect
@@ -427,7 +433,9 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
         val level = m.difficulty
         val job = scope.async { runCatching { chooseQuick(you, format, level) }.getOrNull() }
         quickPre = Triple(you, format to level, job)
-        val r = job.await() ?: return@LaunchedEffect
+        val r = job.await()
+        runCatching { android.util.Log.i("QuickWait", "CPU deck chosen ${android.os.SystemClock.elapsedRealtime() - t2}ms after power (found=${r != null})") }
+        if (r == null) return@LaunchedEffect
         if (m.player === you && m.format == format && m.difficulty == level && m.quickMatch == null) {
             m.quickMatch = r; dev.cardstashy.nativeplay.match.QuickPlay.warmDeck(context, r.deck, 1)
         }
