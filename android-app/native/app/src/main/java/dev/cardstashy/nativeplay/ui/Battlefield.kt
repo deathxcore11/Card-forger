@@ -2612,11 +2612,16 @@ internal fun TravelCard() {
             .anchorRect("travelcard")
             .semantics { contentDescription = "$name on its way" }
             .clip(shape).background(Color(0xFF141418)).border(2.dp, rim, shape)) {
-            // Into a tile the whole card gives way to its art as it shrinks.
-            val crop = !fromHand && !pop
+            // Into a tile the whole card gives way to its art as it shrinks. A land played from the hand too (Randall's 19 Nov
+            // recording, item 12: it flew as a tiny whole card and snapped into its tile); a cast going up to the stack stays whole.
+            val crop = flightCrops(t.leg)
             CardImage(name, Modifier.fillMaxSize().graphicsLayer { if (crop) alpha = 1f - smooth(.35f, .9f, p.floatValue) }, crop = false)
             if (crop) CardImage(name, Modifier.fillMaxSize().graphicsLayer { alpha = smooth(.35f, .9f, p.floatValue) }, crop = true)
             if (!t.mine && fromHand) Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (p.floatValue < .3f) 1f else 0f }) { CardBack(Modifier.fillMaxSize()) }
         }
     }
 }
+
+/** Whether a travelling card gives way to its art crop as it flies (every leg into a tile, a land from the hand too; not up to the stack or the pop). */
+internal fun flightCrops(leg: dev.cardstashy.nativeplay.match.Director.Leg) =
+    leg != dev.cardstashy.nativeplay.match.Director.Leg.TO_STACK && leg != dev.cardstashy.nativeplay.match.Director.Leg.POP
