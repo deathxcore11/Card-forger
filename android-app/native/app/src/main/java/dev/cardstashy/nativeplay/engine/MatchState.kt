@@ -207,7 +207,7 @@ data class MatchState(
                 players = players,
                 // The source first, so a flavor name it brings is known when its text is read.
                 stack = o.arr("stack").map { e -> val s = e.asJsonObject; val src = s.obj("source")?.let { parseCard(it) }
-                    StackItem(s.int("id") ?: 0, tidy((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "").trim()), src, s.int("activatingPlayer") ?: -1, s.bool("ability") == true, s.bool("yielded") == true, refsOf(s, "targets")) },
+                    StackItem(s.int("id") ?: 0, tidy(engineRefs((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "")).trim()), src, s.int("activatingPlayer") ?: -1, s.bool("ability") == true, s.bool("yielded") == true, refsOf(s, "targets")) },
                 buttons = Buttons(b?.str("ok"), b?.str("cancel"), b?.bool("okEnabled") == true, b?.bool("cancelEnabled") == true),
                 inputType = o.str("inputType"), selection = selection, prompt = o.obj("prompt")?.let { parsePrompt(it) }?.let { p -> p.copy(message = tidy(p.message), options = p.options.map { it.copy(label = tidy(it.label)) }) },
                 busy = o.bool("busy") == true, message = tidy(o.str("message") ?: ""),
@@ -228,6 +228,14 @@ data class MatchState(
          * so only Forge's own "Forge AI" label and the grammar around the two names need fixing. A card
          * name is only ever read as its deck row's name ([shownIn]); a seat is never renamed by a card.
          */
+        /**
+         * Forge's card references in a stack item's words (Randall's 19 Nov recordings): "(Targeting: [[Stock Up (111)]])" reads
+         * "(Targeting: Stock Up)", and a note that is only a reference ("tapped. ([Forest (72)])") goes.
+         */
+        fun engineRefs(text: String): String = text
+            .replace(Regex("\\s*\\((?:\\[{1,2}[^\\[\\]]*\\(\\d+\\)\\]{1,2}(?:,\\s*)?)+\\)"), "")
+            .replace(Regex("\\[{1,2}([^\\[\\]]*?)\\s*\\(\\d+\\)\\]{1,2}"), "$1")
+
         fun tidy(text: String): String = text
             .replace(Regex("Forge AI(\\s*[—–-]\\s*CPU)?"), "CPU")
             // Z1 (Randall 10 Nov): the engine's own seat name for you ("CardStashy", its PLAYER_NAME) never shows; you are You.
