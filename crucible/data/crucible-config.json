@@ -1,0 +1,81 @@
+{
+  "lp": 8000,
+  "hand": 5,
+  "handMax": 6,
+  "monsterZones": 5,
+  "trapZones": 5,
+  "wheelBonus": 500,
+  "terrainBonus": 500,
+  "equipBonus": 500,
+  "fuelBonus": 300,
+  "temperBonus": 300,
+  "relicCap": 1500,
+  "maxTurns": 200,
+  "weightCaps": [
+    120,
+    140,
+    160
+  ],
+  "bossCapBonus": 20,
+  "kitWeight": 110,
+  "maxBinds": 4,
+  "maxCopies": 3,
+  "sparks": 3,
+  "floors": 3,
+  "chambers": 6,
+  "charmSlots": 5,
+  "maxMasterworks": 2,
+  "weights": {
+    "field": 2,
+    "equip": 2,
+    "tagged": 3,
+    "fuel": 1
+  },
+  "kit": {
+    "monsters": 28,
+    "field": 3,
+    "equip": 4,
+    "tagged": 3,
+    "fuel": 2,
+    "maxLevel": 4,
+    "maxAtk": 1500
+  },
+  "rank": {
+    "start": 50,
+    "S": 106,
+    "A": 95,
+    "B": 83,
+    "C": 68
+  },
+  "embers": {
+    "S": 40,
+    "A": 30,
+    "B": 20,
+    "C": 12,
+    "D": 12,
+    "cursedBonus": 15,
+    "bountyBonus": 10,
+    "start": 30
+  },
+  "prices": {
+    "temper": 30,
+    "enchant": 45,
+    "bind": 35,
+    "masterwork": 40,
+    "card": 25,
+    "charm": 55,
+    "scrap": 15,
+    "sanctumCap": 5
+  },
+  "xp": {
+    "duel": 10,
+    "bounty": 5,
+    "champion": 10,
+    "boss": 15,
+    "newMeld": 2,
+    "perLevel": 20
+  },
+  "poolCutoff": "2004-03-07",
+  "aiChainCost": 150,
+  "drawPerTurn": 2
+}

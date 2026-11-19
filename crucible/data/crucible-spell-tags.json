@@ -1,0 +1,52 @@
+{
+  "_note": "Hand-kept by the design thread. Maps Spell and Trap names to one of twelve Lost Memories effects. These are our own effects, not the printed card text. Anything absent is fuel. Names are resolved to passcodes against the pool at load; a name missing from the pool is skipped.",
+  "spells": {
+    "Sparks": ["burn", 200], "Raimei": ["burn", 300], "Thunder Crash": ["burn", 300], "Hinotama": ["burn", 500], "Final Flame": ["burn", 600],
+    "Ookazi": ["burn", 800], "Dragon's Gunfire": ["burn", 800], "Poison of the Old Man": ["burn", 800], "Tremendous Fire": ["burn", 1000],
+    "Blue Medicine": ["heal", 400], "Red Medicine": ["heal", 500], "Goblin's Secret Remedy": ["heal", 600], "Soul of the Pure": ["heal", 800],
+    "Dian Keto the Cure Master": ["heal", 1000], "Rain of Mercy": ["heal", 1000], "Emergency Provisions": ["heal", 1000],
+    "Fissure": ["destroy", 0], "Smashing Ground": ["destroy", 0], "Tribute to the Doomed": ["destroy", 0], "Offerings to the Doomed": ["destroy", 0],
+    "Thousand Knives": ["destroy", 0], "Dark Core": ["destroy", 0], "Nobleman of Crossout": ["destroy", 0],
+    "Raigeki": ["destroyAll", 0], "Dark Hole": ["destroyAll", 1], "Chaos End": ["destroyAll", 1], "Final Destiny": ["destroyAll", 1],
+    "Dimensionhole": ["bounce", 0], "Giant Trunade": ["bounce", 0],
+    "Banner of Courage": ["pump", 200], "Graceful Dice": ["pump", 300], "Rush Recklessly": ["pump", 700], "The Reliable Guardian": ["pump", 700], "Limiter Removal": ["pump", 1000],
+    "Riryoku": ["weaken", 800], "Share the Pain": ["weaken", 500], "Curse of Fiend": ["weaken", 500],
+    "Upstart Goblin": ["draw", 1], "Reload": ["draw", 1], "Pot of Greed": ["draw", 2], "Graceful Charity": ["draw", 2],
+    "Dark-Piercing Light": ["flip", 0], "Senri Eye": ["flip", 0], "Ancient Telescope": ["flip", 0], "Book of Taiyou": ["flip", 0],
+    "The Dark Door": ["freeze", 1], "Messenger of Peace": ["freeze", 1], "Cold Wave": ["freeze", 1], "Swords of Revealing Light": ["freeze", 2],
+    "Stop Defense": ["position", 0], "Block Attack": ["position", 0], "Book of Moon": ["position", 0], "Stumbling": ["position", 0],
+    "Monster Reborn": ["revive", 0], "Book of Life": ["revive", 0], "The Shallow Grave": ["revive", 0], "The Warrior Returning Alive": ["revive", 0]
+  },
+  "traps": {
+    "Trap Hole": ["destroy", 0], "Sakuretsu Armor": ["destroy", 0], "Bottomless Trap Hole": ["destroy", 0], "Acid Trap Hole": ["destroy", 0],
+    "House of Adhesive Tape": ["destroy", 0], "Raigeki Break": ["destroy", 0], "Michizure": ["destroy", 0], "Ring of Destruction": ["destroy", 0],
+    "Mirror Force": ["destroyAll", 0], "Dark Mirror Force": ["destroyAll", 0],
+    "Compulsory Evacuation Device": ["bounce", 0], "Dramatic Rescue": ["bounce", 0],
+    "Castle Walls": ["pump", 500], "Reinforcements": ["pump", 500], "Blast with Chain": ["pump", 500], "Metalmorph": ["pump", 300],
+    "Mirror Wall": ["weaken", 800], "Mask of Weakness": ["weaken", 700], "Adhesion Trap Hole": ["weaken", 800], "Curse of Aging": ["weaken", 500], "Snake Fang": ["weaken", 500],
+    "Negate Attack": ["freeze", 0], "Waboku": ["freeze", 0], "Spellbinding Circle": ["freeze", 0], "Thunder of Ruler": ["freeze", 0], "Gravity Bind": ["freeze", 1], "Shadow Spell": ["freeze", 1],
+    "Magic Cylinder": ["burn", -1], "Just Desserts": ["burn", 1000], "Secret Barrel": ["burn", 800], "Minor Goblin Official": ["burn", 500], "Attack and Receive": ["burn", 700],
+    "Numinous Healer": ["heal", 1000], "Gift of The Mystical Elf": ["heal", 900], "Solemn Wishes": ["heal", 500], "Enchanted Javelin": ["heal", -1],
+    "Jar of Greed": ["draw", 1], "Reckless Greed": ["draw", 2],
+    "Windstorm of Etaqua": ["position", 0], "Zero Gravity": ["position", 0], "Earthshaker": ["position", 0],
+    "The Eye of Truth": ["flip", 0], "Rope of Life": ["revive", 0]
+  },
+  "fields": {
+    "Forest": { "types": ["Insect", "Beast", "Plant", "Beast-Warrior"] },
+    "Mountain": { "types": ["Dragon", "Winged Beast", "Thunder"] },
+    "Sogen": { "types": ["Warrior", "Beast-Warrior"] },
+    "Umi": { "types": ["Fish", "Sea Serpent", "Thunder", "Aqua"] },
+    "Wasteland": { "types": ["Dinosaur", "Zombie", "Rock"] },
+    "Yami": { "types": ["Fiend", "Spellcaster"] },
+    "Necrovalley": { "types": ["Spellcaster", "Zombie"] },
+    "Pandemonium": { "types": ["Fiend"] },
+    "Chorus of Sanctuary": { "types": ["Fairy"] },
+    "Molten Destruction": { "attr": "FIRE" },
+    "Gaia Power": { "attr": "EARTH" },
+    "Rising Air Current": { "attr": "WIND" },
+    "Luminous Spark": { "attr": "LIGHT" },
+    "Umiiruka": { "attr": "WATER" },
+    "A Legendary Ocean": { "attr": "WATER" },
+    "Mystic Plasma Zone": { "attr": "DARK" }
+  }
+}

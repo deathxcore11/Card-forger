@@ -1,0 +1,9 @@
+crucible fuzz: {
+  duels: 6000,
+  actions: 294941,
+  reasons: { lp: 5973, deckout: 27 },
+  runs: 600,
+  runActions: 58236,
+  refused: 1671,
+  over: { won: 0, lost: 600 }
+}
