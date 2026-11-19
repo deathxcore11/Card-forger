@@ -364,7 +364,7 @@ function finishDuel(db, run, rng, ev) {
   let embers = cfg.embers[rk.rank] + st.embers + (tier === 'cursed' ? cfg.embers.cursedBonus : 0) + (bountyMet ? cfg.embers.bountyBonus : 0) + (run.charms.includes('ember_purse') ? 8 : 0);
   run.embers += embers;
   run.xp += cfg.xp.duel + (bountyMet ? cfg.xp.bounty : 0) + (tier === 'champion' ? cfg.xp.champion : 0) + (tier === 'boss' ? cfg.xp.boss : 0);
-  while (run.xp >= (run.level + 1) * cfg.xp.perLevel) { run.level++; run.giftsQueued++; }
+  while (run.xp >= (run.level + 1) * cfg.xp.perLevel * (cfg.giftXpScale || 1)) { run.level++; run.giftsQueued++; }
   if (tier !== 'boss') run.seals++;
   summary.rank = rk; summary.embers = embers; summary.bountyMet = bountyMet;
   ev.push({ e: 'duelWon', rank: rk.rank, style: rk.style, embers });
