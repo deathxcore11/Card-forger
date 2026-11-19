@@ -240,12 +240,15 @@ internal object TableGeometry {
      */
     fun width(h: Float, rows: List<Pair<List<Int>, Float>>, gap: Float, lanes: List<Boolean> = rows.map { false },
               /** Better table scene 5: each row's per-pile aura leads (empty: none). */
-              leads: List<List<Float>> = rows.map { emptyList() }): Float {
+              leads: List<List<Float>> = rows.map { emptyList() },
+              /** Each row's tapped piles with an upright one after them: each takes [tapRoom] beside it. */
+              turns: List<Int> = rows.map { 0 }): Float {
         var w = h * ASPECT
         rows.forEachIndexed { i, (piles, room) ->
             if (piles.isEmpty()) return@forEachIndexed
             val edges = piles.sumOf { minOf(it, PILE_EDGES) - 1 }
-            val fits = (room - gap * (piles.size - 1)) / (piles.size + STEP * edges + (if (lanes[i]) LANE else 0f) + leads.getOrElse(i) { emptyList() }.take(piles.size).sum())
+            val t = turns.getOrElse(i) { 0 }
+            val fits = (room - gap * (piles.size - 1) - t * h * TURN_H) / (piles.size + STEP * edges + (if (lanes[i]) LANE else 0f) + leads.getOrElse(i) { emptyList() }.take(piles.size).sum() + t * TURN_W)
             w = minOf(w, fits)
         }
         return w.coerceIn(h * CROP_MIN, h * ASPECT)
@@ -259,12 +262,14 @@ internal object TableGeometry {
     fun tiles(rows: Rows, room: Float, backRoom: Float, cpuFront: List<Int>, myFront: List<Int>, cpuBack: List<Int>, myBack: List<Int>,
               cpuLane: Boolean = false, myLane: Boolean = false, myBackRoom: Float = backRoom, k: Float = 1f,
               /** Better table scene 5: the creature rows' per-pile aura leads ([lead]). */
-              cpuLeads: List<Float> = emptyList(), myLeads: List<Float> = emptyList()): Tiles {
+              cpuLeads: List<Float> = emptyList(), myLeads: List<Float> = emptyList(),
+              /** The creature rows' tapped-then-upright pairs ([tapRoom]). */
+              cpuTurns: Int = 0, myTurns: Int = 0): Tiles {
         val front = rows.cpuFront.height; val back = rows.cpuBack.height
         val fg = gap(maxOf(cpuFront.size, myFront.size), k)
         val bg = gap(maxOf(cpuBack.size, myBack.size), k)
         // A creature tile is never squeezed under the brief's 59 (times the chrome scale): its name stays whole on three lines.
-        val fw = width(front, listOf(cpuFront to room, myFront to room), fg, leads = listOf(cpuLeads, myLeads)).coerceAtLeast(minOf(FRONT_W_MIN * k, front * ASPECT))
+        val fw = width(front, listOf(cpuFront to room, myFront to room), fg, leads = listOf(cpuLeads, myLeads), turns = listOf(cpuTurns, myTurns)).coerceAtLeast(minOf(FRONT_W_MIN * k, front * ASPECT))
         val bw = width(back, listOf(cpuBack to backRoom, myBack to myBackRoom), bg, listOf(cpuLane, myLane))
         return Tiles(front, back, fw, bw)
     }
@@ -276,6 +281,18 @@ internal object TableGeometry {
     data class RowLay(val xs: List<Float>, val fan: Float, val total: Float, val visible: Float?)
 
     /**
+     * A tapped tile is turned 20° about its middle. Between pile i and the next: how much further apart they must stand so the turn
+     * covers nothing the upright layout showed. Tapped then upright: the tapped tile's name (its top-left corner) swings right under
+     * the next pile. Upright then tapped: the tapped tile's top-left corner swings away and its bottom-left corner swings left by
+     * less than the P/T stands from the edge it keeps to, so nothing more is needed. Two tapped turn together.
+     */
+    fun tapRoom(w: Float, h: Float, tapped: List<Boolean>): List<Float> =
+        (0 until tapped.size - 1).map { i -> if (tapped[i] && !tapped[i + 1]) w * TURN_W + h * TURN_H else 0f }
+
+    /** A 20° turn swings a tile's top-left corner right by w·(1 - cos 20°)/2 + h·sin 20°/2. */
+    private const val TURN_W = (1f - .9397f) / 2; private const val TURN_H = .342f / 2
+
+    /**
      * 0.4.60 Z2: a row of [piles] tiles [w] wide and [h] tall in [room]. A pile fans as wide as there is room (T2, [fanStep]); then
      * the gaps close (the lane's gap too); past that the piles overlap from the right like a fan, every pile by the same amount,
      * each later pile over the one before. The height never changes. [laneAt] is the first pile of a back row's second lane (-1: none).
@@ -284,7 +301,9 @@ internal object TableGeometry {
                /** Mobile table M13: the piles from this one on (the permanents that are neither land nor creature) stand at the row's right end, the mirror of the lands; -1: none do. */
                rightFrom: Int = -1,
                /** Better table scene 5: each pile's aura lead ([lead], a share of [w]): the pile is that much wider and its tile stands that far in. */
-               leads: List<Float> = emptyList()): RowLay {
+               leads: List<Float> = emptyList(),
+               /** Each pile is tapped (its tile turned 20°): the piles beside it stand apart so neither covers the other's name or P/T ([tapRoom]). */
+               tapped: List<Boolean> = emptyList()): RowLay {
         if (piles.isEmpty()) return RowLay(emptyList(), 0f, 0f, null)
         val n = piles.size
         val lane = laneAt in 1 until n
@@ -300,9 +319,26 @@ internal object TableGeometry {
         // (Each xs is the pile's tile, its lead's edges to its left.)
         for (i in 0 until n) { if (i == laneAt && lane) x += lg; xs += x + w * leads.getOrElse(i) { 0f }; x += pw[i] + g }
         // M13: with room to spare, the loose permanents move to the right end (a crowded row stays as it was).
+        if (tapped.size == n && tapped.any { it }) return spreadTapped(w, h, room, n, g, x - g, xs, fan, visible, tapped)
         val slack = room - (x - g)
         if (rightFrom in 0 until n && visible == null && slack > 0f) { for (i in rightFrom until n) xs[i] = xs[i] + slack; return RowLay(xs, fan, room, visible) }
         return RowLay(xs, fan, x - g, visible)
+    }
+
+    /**
+     * The tapped piles' extra room ([tapRoom], per gap between piles), from the row's spare room ([width] narrows the tiles for it
+     * first). A row already at its narrowest has none to spare and stays as it was: lending it from the other piles only cut their names.
+     */
+    private fun spreadTapped(w: Float, h: Float, room: Float, n: Int, g: Float, total: Float, xs: MutableList<Float>,
+                             fan: Float, visible: Float?, tapped: List<Boolean>): RowLay {
+        val want = tapRoom(w, h, tapped)
+        val sum = want.sum()
+        val spare = (room - total).coerceAtLeast(0f)
+        if (sum <= 0f || spare <= 0f) return RowLay(xs, fan, total, visible)
+        val got = minOf(1f, spare / sum)
+        var shift = 0f
+        for (i in 1 until n) { shift += want[i - 1] * got; xs[i] = xs[i] + shift }
+        return RowLay(xs, fan, total + shift, visible)
     }
 
     /**

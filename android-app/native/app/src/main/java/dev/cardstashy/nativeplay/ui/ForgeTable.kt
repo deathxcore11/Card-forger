@@ -644,8 +644,11 @@ fun ForgeBoard(
                 // Better table scene 5: a creature wearing auras is laid out wider by its aura edges (TableGeometry.lead).
                 val lookupNow: (Int) -> Card? = { st.card(it) }
                 val cpuFrontLeads = auraLeads(others(cpu.battlefield), 0, ::markOf, ::tapOf, lookupNow); val myFrontLeads = auraLeads(myFront, myFrontSplit, ::markOf, ::tapOf, lookupNow)
+                // A creature row's tapped tiles take room beside them (TableGeometry.tapRoom): the tiles narrow for it before they overlap.
+                fun turns(cs: List<Card>, split: Int) = pilesOf(cs, split, ::markOf, ::tapOf).map { it.last().tapped }.let { t -> t.zipWithNext().count { (a, b) -> a && !b } }
                 val tiles = TableGeometry.tiles(rowsG, room.value, backRoom.value, cpuFrontPiles, myFrontPiles, cpuBackPiles, myBackPiles,
-                    twoLanes(cpu), twoLanes(me), myBackRoom.value, k = u, cpuLeads = cpuFrontLeads, myLeads = myFrontLeads)
+                    twoLanes(cpu), twoLanes(me), myBackRoom.value, k = u, cpuLeads = cpuFrontLeads, myLeads = myFrontLeads,
+                    cpuTurns = turns(others(cpu.battlefield), 0), myTurns = turns(myFront, myFrontSplit))
                 val frontGap = TableGeometry.gap(maxOf(cpuFrontPiles.size, myFrontPiles.size), u).dp
                 val backGap = TableGeometry.gap(maxOf(cpuBackPiles.size, myBackPiles.size), u).dp
                 val fw = tiles.frontW.dp; val bw = tiles.backW.dp; val bh = tiles.back.dp
@@ -1462,7 +1465,9 @@ private fun PermanentRow(cards: List<Card>, land: Boolean, split: Int = 0, cx: D
     val lay = TableGeometry.layRow(w.value, h.value, room.value, piles.map { it.size }, land, laneAt,
         // A land narrower than a finger (a phone's CPU lands): its neighbour stands a touch target away while the row has the room.
         (gap ?: (w * TableGeometry.GAP)).let { if (land && tile != null) maxOf(it, TextFloors.TOUCH.dp - w) else it }.value,
-        rightFrom = if (!looseRight || !land) -1 else if (split == 0) 0 else laneAt, leads = leads)
+        rightFrom = if (!looseRight || !land) -1 else if (split == 0) 0 else laneAt, leads = leads,
+        // A creature row's sideways (tapped) tiles get room so they never cover a neighbour's name or P/T (Randall, 19 Nov).
+        tapped = if (land) emptyList() else piles.map { it.last().tapped })
     val step = w * lay.fan
     val rise = if (tile != null) 0.dp else if (piece != null) 6.dp else 6.du
     val total = lay.total.dp
