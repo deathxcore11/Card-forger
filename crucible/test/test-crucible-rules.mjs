@@ -492,7 +492,7 @@ test('profile: every run pays Memories, unlocks come from feats, the Vault takes
 });
 
 test('lab relics: never in a normal run; switched on, Tomb Ledger chains into Grave Call and Second Burial inside the limits', () => {
-  for (const id of Object.keys(LAB)) { assert.ok(!RELICS[id], id + ' stays out of the offered relics'); assert.match(LAB[id].text, /once|first|up to/i, id + ' states a limit'); }
+  for (const id of Object.keys(LAB)) { assert.ok(!RELICS[id], id + ' stays out of the offered relics'); assert.match(LAB[id].text, /once|first|up to|ends when/i, id + ' states a limit'); }
   const plain = playRun(db, newRun(db, { seed: 5 }), { level: 2 });
   for (const id of Object.keys(LAB)) assert.ok(!plain.stats.relicFires[id], id + ' never fires in a normal run');
   const lab = { ...db, config: { ...db.config, testRelics: ['tomb_ledger', 'grave_call', 'second_burial'] }, _pair: new Map() };

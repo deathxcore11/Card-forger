@@ -52,16 +52,19 @@ export const RELICS = {
 // They use the chained hooks (ingredients, mark, returned, endTurn): one relic's effect can
 // raise a hook that another relic answers, inside the limits in fire().
 export const LAB = {
-  tomb_ledger: { name: 'Tomb Ledger', kind: 'G', family: 'tomb', text: 'Once a turn, when a meld sends two or more of your monsters to the graveyard, gain a Tomb mark.' },
-  grave_call: { name: 'Grave Call', kind: 'G', family: 'tomb', text: 'The first time each turn you gain a Tomb mark, return your best monster with 1500 ATK or less from the graveyard to your hand.' },
+  tomb_ledger: { name: 'Tomb Ledger', kind: 'G', family: 'tomb', text: 'Once a turn, when a meld sends two or more of your monsters to the graveyard, gain a Tomb mark. Each of your first five marks a duel gives 200 Life Points.' },
+  grave_call: { name: 'Grave Call', kind: 'G', family: 'tomb', text: 'The first time each turn you gain a Tomb mark, return your best monster with 1500 ATK or less from the graveyard to your hand. Without marks, it does this once a duel when a meld sends three or more monsters to the graveyard.' },
   second_burial: { name: 'Second Burial', kind: 'G', family: 'tomb', text: 'Once a turn, when a monster returns from your graveyard to your hand, your next meld gets +300 ATK this duel.' },
   returning_tomb: { name: 'The Returning Tomb', kind: 'M', family: 'tomb', text: 'Once a duel, on your third Tomb mark, return the strongest monster in your graveyard to your hand.' },
   thorn_veil: { name: 'Thorn Veil', kind: 'G', family: 'shadow', text: 'At the end of your turn the rival loses 150 Life Points for each of your veiled monsters, up to three.' },
+  shield_oath: { name: 'Shield Oath', kind: 'G', family: 'shadow', text: 'When your defending monster survives an attack it becomes a Guard: while it stays in defense the rival must attack it first. Each time a Guard survives, up to four times a duel, your next meld gets +300 ATK this duel.' },
+  deep_shade: { name: 'Deep Shade', kind: 'G', family: 'shadow', text: 'Your veiled monster in defense has +600 DEF in the first battle that reveals it.' },
   cold_lantern: { name: 'Cold Lantern', kind: 'G', family: 'shadow', text: 'Each time an attack reveals your veiled monster and it survives, the rival loses 300 Life Points. Up to four times a duel.' },
 };
 const info = id => RELICS[id] || LAB[id];
 export const CHAIN_DEPTH = 4, CHAIN_TURN = 12;
 
+export const relicInfo = info;
 export const MASTERWORKS = Object.entries(RELICS).filter(([, r]) => r.kind === 'M').map(([id, r]) => ({ id, parts: r.parts }));
 const ORDER = { F: -1, C: 0, G: 1, M: 2 };
 // Resolution order: charms, then Gifts, then Masterworks, each in the order they were gained.
@@ -132,11 +135,13 @@ export function fire(s, db, ev, seat, hook, ctx) {
     }
     if (s.winner !== null) return;
     switch (hook + ':' + id) {
-      case 'ingredients:tomb_ledger': if (ctx.n >= 2 && rs.ledgerTurn !== s.turn) { rs.ledgerTurn = s.turn; rs.marks = (rs.marks || 0) + 1; note(s, ev, seat, id, { marks: rs.marks }); raise('mark', { marks: rs.marks }); } break;
+      case 'ingredients:tomb_ledger': if (ctx.n >= 2 && rs.ledgerTurn !== s.turn) { rs.ledgerTurn = s.turn; rs.marks = (rs.marks || 0) + 1; note(s, ev, seat, id, { marks: rs.marks }); if (rs.marks <= 5) { s.lp[seat] += 200; ev.push({ e: 'lp', seat, d: 200, src: 'relic' }); } raise('mark', { marks: rs.marks }); } break;
+      case 'ingredients:grave_call': if (ctx.n >= 3 && !rs.callSolo && rs.callTurn !== s.turn && !list.includes('tomb_ledger') && fromGrave(1500)) { rs.callSolo = 1; rs.callTurn = s.turn; note(s, ev, seat, id); raise('returned', {}); } break;
       case 'mark:grave_call': if (rs.callTurn !== s.turn && fromGrave(1500)) { rs.callTurn = s.turn; note(s, ev, seat, id); raise('returned', {}); } break;
       case 'mark:returning_tomb': if (ctx.marks >= 3 && !rs.retTomb && fromGrave(99999)) { rs.retTomb = 1; note(s, ev, seat, id); raise('returned', {}); } break;
       case 'returned:second_burial': if (rs.burialTurn !== s.turn) { rs.burialTurn = s.turn; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
       case 'endTurn:thorn_veil': { const n = Math.min(3, s.mon[seat].filter(m => m && m.veil).length); if (n) { note(s, ev, seat, id, { n }); hurt(s, ev, r, (db.config.thornLp || 150) * n); } } break;
+      case 'survived:shield_oath': { const was = ctx.mon.guard; ctx.mon.guard = 1; if (!was) note(s, ev, seat, id, { guard: true }); else if ((rs.oath || 0) < 4) { rs.oath = (rs.oath || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } } break;
       case 'survived:cold_lantern': if (ctx.wasVeiled && (rs.lantern || 0) < 4) { rs.lantern = (rs.lantern || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); } break;
     }
     if (hook === 'placed') placed(s, db, ev, seat, id, ctx, rs, st, B, r);

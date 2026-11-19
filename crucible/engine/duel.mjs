@@ -26,6 +26,7 @@ export function newDuel(db, { seed, decks, seats = [{}, {}], first = null, twist
       underCap: seats[i].underCap || 0, secondWind: !!seats[i].secondWind, sparks: seats[i].sparks || 3,
       ace: seats[i].ace || null, rs: { nextMeld: [] }, extraDraw: 0,
       ...(seats[i].forger ? { forger: seats[i].forger } : {}),
+      ...(seats[i].noFree ? { noFree: 1 } : {}),
     })),
     stats: [blankStats(), blankStats()],
   };
@@ -245,10 +246,13 @@ export function spellLegal(s, db, seat, id) {
   }
 }
 
+// Sim-only counters (config trackFx): what each side actually used. Off in normal play so states stay identical.
+function track(s, db, seat, k) { if (!db.config.trackFx) return; const f = s.stats[seat].fx || (s.stats[seat].fx = {}); f[k] = (f[k] || 0) + 1; }
+
 function castSpell(s, db, ev, seat, id, target) {
   const tag = db.tagOf.get(id), r = other(seat);
   ev.push({ e: 'spell', seat, id, fx: tag.fx });
-  s.stats[seat].spells++;
+  s.stats[seat].spells++; track(s, db, seat, tag.fx);
   const pickRival = () => (target != null && s.mon[r][target]) ? target : (strongest(s, db, r, { faceUpOnly: true }) >= 0 ? strongest(s, db, r, { faceUpOnly: true }) : strongest(s, db, r));
   switch (tag.fx) {
     case 'burn': loseLp(s, db, ev, r, tag.n, 'spell'); break;
@@ -304,7 +308,7 @@ function springTrap(s, db, ev, defSeat, ti, az, dz) {
   const t = s.traps[defSeat][ti]; s.traps[defSeat][ti] = null; s.gy[defSeat].push(t.id);
   const tag = db.tagOf.get(t.id), atkSeat = other(defSeat);
   ev.push({ e: 'trap', seat: defSeat, id: t.id, fx: tag.fx });
-  s.stats[defSeat].spells++; s.stats[defSeat].trapsSprung++;
+  s.stats[defSeat].spells++; s.stats[defSeat].trapsSprung++; track(s, db, defSeat, 'trap:' + tag.fx);
   const X = s.mon[atkSeat][az];
   switch (tag.fx) {
     case 'destroy': destroyMon(s, db, ev, atkSeat, az, 'trap'); return !!s.mon[atkSeat][az];
@@ -367,6 +371,8 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
     T.veil = false; wasVeiled = true;
     ev.push({ e: 'reveal', seat: defSeat, zone: dz, id: T.id });
     if (T.e === 'ambusher') ambush = 800;
+    if (T.pos === 'd' && has(s, defSeat, 'deep_shade')) ambush += db.config.shadeDef || 600;
+    if (db.config.veilGuard && T.pos === 'd') ambush += db.config.veilGuard; // lever under test: a veiled wall braces for the attack that reveals it
   }
   const f = forecast(s, db, atkSeat, X, defSeat, T, { ambush });
   ev.push({ e: 'battle', atkSeat, az, dz, a: f.a, d: f.d, direct: f.direct, edgeA: f.edgeA, edgeD: f.edgeD });
@@ -410,7 +416,7 @@ export function targetsFor(s, db, seat, az) {
   s.mon[r].forEach((m, z) => { if (m) rivals.push(z); });
   if (!rivals.length) return (db.config.directPerTurn && (s.directs || 0) >= db.config.directPerTurn) ? [] : [-1];
   let list = rivals;
-  const wardens = rivals.filter(z => { const m = s.mon[r][z]; return m.e === 'warden' && m.pos === 'd' && !m.veil; });
+  const wardens = rivals.filter(z => { const m = s.mon[r][z]; return (m.e === 'warden' || m.guard) && m.pos === 'd' && !m.veil; });
   if (wardens.length) list = wardens;
   if (X.e !== 'soaring') list = list.filter(z => { const m = s.mon[r][z]; return !(m.e === 'soaring' && !m.veil); });
   return list;
@@ -615,7 +621,7 @@ function doPlay(s, db, ev, seat, a) {
     s.mon[seat][z] = m;
     if (a.veiled && a.pos === 'a' && !(s.twist === 'fog' || st.law === 'mist')) { st.rs.hollow = 1; noteRelic(s, ev, seat, 'hollow_mask'); }
     ev.push({ e: 'summon', seat, zone: z, id: m.veil ? null : m.id, pos: m.pos, veiled: m.veil, melded: !!plan.melded });
-    if (plan.melded) { stt.melds++; stt.longestChain = Math.max(stt.longestChain, plan.len); stt.chains[plan.len] = (stt.chains[plan.len] || 0) + 1; } else stt.singles++;
+    if (plan.melded) { stt.melds++; stt.longestChain = Math.max(stt.longestChain, plan.len); stt.chains[plan.len] = (stt.chains[plan.len] || 0) + 1; } else { stt.singles++; track(s, db, seat, m.veil ? 'loneVeiled' : 'loneFaceUp'); }
     fire(s, db, ev, seat, 'placed', { mon: m, zone: z, melded: !!plan.melded, len: plan.len, fire: c.attr === 'FIRE', bound: !!m.b, fresh: !plan.onTable, favoured: !!(s.terrain && terrainFavours(db, s.terrain.id, m.id)) });
     if (buried) fire(s, db, ev, seat, 'ingredients', { n: buried });
     if (m.e === 'herald' && !plan.onTable) draw(s, db, ev, seat, 1);
@@ -635,11 +641,11 @@ function doPlay(s, db, ev, seat, a) {
     else s.terrain = { id: f.id, owner: seat };
     s.gy[seat].push(f.id);
     ev.push({ e: 'terrain', seat, id: f.id });
-    fire(s, db, ev, seat, 'fieldPlayed', {});
+    fire(s, db, ev, seat, 'fieldPlayed', {}); track(s, db, seat, 'field');
   } else if (role === 'equip') {
     const z = (a.target != null && s.mon[seat][a.target]) ? a.target : strongest(s, db, seat);
     const m = s.mon[seat][z];
-    m.ba = (m.ba || 0) + db.config.equipBonus; m.bd = (m.bd || 0) + db.config.equipBonus; m.eq = (m.eq || 0) + 1;
+    m.ba = (m.ba || 0) + db.config.equipBonus; m.bd = (m.bd || 0) + db.config.equipBonus; m.eq = (m.eq || 0) + 1; track(s, db, seat, 'equip');
     s.gy[seat].push(f.id);
     ev.push({ e: 'equip', seat, zone: z, id: f.id });
   } else if (role === 'spell') {
@@ -652,7 +658,7 @@ function doPlay(s, db, ev, seat, a) {
     if (has(s, seat, 'f_veil') && st.rs.veilTurn !== s.turn) { st.rs.veilTurn = s.turn; s.played = false; noteRelic(s, ev, seat, 'f_veil'); }
   }
   // Lever under test: the first Spell, Field, Equip or Trap played on its own each turn does not use the play.
-  if (db.config.freeCast && idxs.length === 1 && a.onto == null && s.played && st.rs.freeTurn !== s.turn && s.winner === null) { st.rs.freeTurn = s.turn; s.played = false; ev.push({ e: 'free', seat }); }
+  if (db.config.freeCast && !st.noFree && idxs.length === 1 && a.onto == null && s.played && st.rs.freeTurn !== s.turn && s.winner === null) { st.rs.freeTurn = s.turn; s.played = false; ev.push({ e: 'free', seat }); }
 }
 
 export const SOLO = { Zombie: 'Return a monster of 1500 ATK or less from your graveyard to your hand.', Fairy: 'Gain 400 Life Points.', Machine: 'Your next meld gets +300 ATK and DEF.', Spellcaster: 'Draw a card.' };
@@ -719,7 +725,7 @@ export function viewFor(s, db, seat) {
     gy: [s.gy[0].slice(), s.gy[1].slice()],
     mon: [null, null], traps: [null, null],
     pending: s.pending ? { ...s.pending, options: s.active === seat ? undefined : s.pending.options.slice() } : null,
-    forger: s.seat[seat].forger, homeField: s.seat[seat].homeField,
+    noFree: s.seat[seat].noFree, forger: s.seat[seat].forger, homeField: s.seat[seat].homeField,
     relics: s.seat[seat].relics.slice(), rs: clone(s.seat[seat].rs), rivalLaw: s.seat[r].law, law: s.seat[seat].law,
   };
   v.mon[seat] = s.mon[seat].map(m => m ? { ...m, ea: effAtk(s, db, seat, m), ed: effDef(s, db, seat, m) } : null);

@@ -6,7 +6,8 @@ import { Rng } from './rng.mjs';
 import { roleOf, weightOf, meldPair } from './cards.mjs';
 import { newDuel, applyMut, viewFor, clone } from './duel.mjs';
 import { chooseAction } from './ai.mjs';
-import { RELICS, MASTERWORKS, sortRelics } from './relics.mjs';
+import { RELICS as BASE_RELICS, LAB, MASTERWORKS, sortRelics } from './relics.mjs';
+const RELICS = { ...BASE_RELICS, ...LAB };
 import { FORGERS } from './forgers.mjs';
 
 export const ENCHANTS = ['piercing', 'twin', 'drain', 'bulwark', 'venom', 'soaring', 'herald', 'catalyst', 'ambusher', 'warden', 'kindred', 'echo'];
@@ -120,6 +121,7 @@ export function makeRival(db, rng, { floor, tier, theme, boss = null, heat = 0 }
   const L = poolLists(db);
   const band = BANDS[tier][floor].slice();
   band[0] += heat * 40; band[1] += heat * 60;
+  if (db.config.rivalBand) { band[1] = Math.max(band[0] + 200, band[1] + db.config.rivalBand); }
   const types = boss ? boss.types : theme.types;
   let mons = L.monsters.filter(c => types.includes(c.type) && c.atk >= band[0] && c.atk <= band[1]);
   if (mons.length < 8) mons = mons.concat(L.monsters.filter(c => c.atk >= band[0] && c.atk <= band[1]));
@@ -216,7 +218,8 @@ function relicOffer(run, rng, kind, n) {
   for (const id of run.locked || []) own.add(id);
   // Heavy Crown lowers the cap by 10, so it is only offered to a deck that already fits under it.
   const crownOk = DB ? deckWeight(DB, run.deck) <= weightCap(DB, run) - 10 : true;
-  const ids = Object.keys(RELICS).filter(id => RELICS[id].kind === kind && !own.has(id) && !(id === 'second_wind' && run.secondWindUsed) && !(id === 'heavy_crown' && !crownOk));
+  const lab = DB && DB.config.labPool || [];
+  const ids = Object.keys(RELICS).filter(id => (!LAB[id] || lab.includes(id)) && RELICS[id].kind === kind && !own.has(id) && !(id === 'second_wind' && run.secondWindUsed) && !(id === 'heavy_crown' && !crownOk));
   rng.shuffle(ids);
   return ids.slice(0, n);
 }
@@ -295,7 +298,7 @@ function startDuel(db, run, rng, door, onStep) {
   const bounty = rng.pick(BOUNTIES);
   const seats = [
     { relics, handSize: (relics.includes('deep_pockets') ? 6 : db.config.hand) - (rival.law === 'tyranny' ? 1 : 0), firstTurnHand: run.sparks === 1 ? 6 : 0, homeField: run.homeField, underCap: cap - deckWeight(db, run.deck), secondWind: relics.includes('second_wind') && !run.secondWindUsed, sparks: run.sparks, forger: run.forger || null },
-    { law: rival.law, ace: rival.ace, relics: door.tier === 'champion' ? ['whetstone'] : [] },
+    { law: rival.law, ace: rival.ace, relics: door.tier === 'champion' ? ['whetstone'] : [], ...(db.config.freeCastRival === 'none' || (db.config.freeCastRival === 'elite' && door.tier === 'regular') || (db.config.freeCastRival === 'boss' && door.tier !== 'boss') ? { noFree: 1 } : {}) },
   ];
   run.rival = { name: rival.name, tier: rival.tier, ai: rival.ai, law: rival.law, lawText: rival.lawText, drops: rival.drops, ace: rival.ace, bounty: bounty.id, bountyText: bounty.text, twist: door.twist || null };
   run.duel = newDuel(db, { seed: rng.u32(), decks: [run.deck, rival.deck], seats, twist: door.twist || null });
@@ -334,6 +337,7 @@ function finishDuel(db, run, rng, ev) {
   for (const [k, v] of Object.entries(st.chains)) S.chains[k] = (S.chains[k] || 0) + v;
   S.leadChanges += st.leadChanges || 0;
   S.traps += st.trapsSprung + d.stats[1].trapsSprung; S.defWins += st.defWins + d.stats[1].defWins;
+  if (st.fx || d.stats[1].fx) { S.fx = S.fx || [{}, {}]; for (const i of [0, 1]) for (const [k, v] of Object.entries(d.stats[i].fx || {})) S.fx[i][k] = (S.fx[i][k] || 0) + v; }
   S.singles += st.singles; if (d.turn > 30) S.long++;
   S.reasons[d.reason + (won ? 'W' : 'L')] = (S.reasons[d.reason + (won ? 'W' : 'L')] || 0) + 1;
   for (const [k, v] of Object.entries(st.relicFires)) S.relicFires[k] = (S.relicFires[k] || 0) + v;

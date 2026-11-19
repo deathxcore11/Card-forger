@@ -217,7 +217,7 @@ function legalTargets(db, view, X) {
   view.mon[r].forEach((m, z) => { if (m) out.push(z); });
   if (!out.length) return (db.config.directPerTurn && (view.directs || 0) >= db.config.directPerTurn) ? [] : [-1];
   let list = out;
-  const wardens = out.filter(z => { const m = view.mon[r][z]; return !m.veil && m.e === 'warden' && m.pos === 'd'; });
+  const wardens = out.filter(z => { const m = view.mon[r][z]; return !m.veil && (m.e === 'warden' || m.guard) && m.pos === 'd'; });
   if (wardens.length) list = wardens;
   if (X.e !== 'soaring') list = list.filter(z => { const m = view.mon[r][z]; return !(m.e === 'soaring' && !m.veil); });
   return list;
@@ -275,7 +275,7 @@ export function chooseAction(db, view, level = 1, policy = {}) {
       const mons = view.hand.filter(c => db.isMonster(c.id)).length;
       if (mons === 0 && view.hand.length) return { t: 'cleanDraw', hand: 0 };
     }
-    if (db.config.freeCast && level >= 1 && view.rs.freeTurn !== view.turn) { const f = bestPlay(db, view, level, { ...policy, freeOnly: true }); if (f && f.score > 60) return f.action; }
+    if (db.config.freeCast && !view.noFree && level >= 1 && view.rs.freeTurn !== view.turn) { const f = bestPlay(db, view, level, { ...policy, freeOnly: true }); if (f && f.score > 60) return f.action; }
     const p = bestPlay(db, view, level, policy);
     if (p && p.score > (level === 0 ? -1e9 : -50)) return p.action;
     if (!p && view.hand.length >= db.config.hand && !view.mon[me].some(Boolean)) {

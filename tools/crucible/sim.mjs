@@ -16,7 +16,7 @@ function one(db, seed, opts) {
     duels: S.duels, wins: S.wins, turns: S.turns, melds: S.melds, fizzles: S.fizzles, capDuels: S.capHits,
     firstWins: S.firstWins, deckouts: S.deckouts, twoFam: S.familiesInDuel, bounties: S.bounties, kitRejects: S.kitRejects,
     sparks: run.sparks, embers: run.embers, binds: run.binds, level: run.level,
-    relics: [...run.charms, ...run.gifts, ...run.masterworks], ranks: S.ranks, fires: S.relicFires, doors: S.doors, byTier: S.byTier, comebacks: S.comebacks, leadChanges: S.leadChanges, trailedWins: S.trailedWins, closeWins: S.closeWins, traps: S.traps, defWins: S.defWins, lpLost: S.lpLostInWins, chains: S.chains, singles: S.singles, long: S.long, reasons: S.reasons, gifts: run.gifts.length + run.masterworks.length, points: S.points || [], bountyBy: S.bountyBy || {}, deckSize: run.deck.length,
+    relics: [...run.charms, ...run.gifts, ...run.masterworks], ranks: S.ranks, fires: S.relicFires, doors: S.doors, byTier: S.byTier, fx: S.fx || null, comebacks: S.comebacks, leadChanges: S.leadChanges, trailedWins: S.trailedWins, closeWins: S.closeWins, traps: S.traps, defWins: S.defWins, lpLost: S.lpLostInWins, chains: S.chains, singles: S.singles, long: S.long, reasons: S.reasons, gifts: run.gifts.length + run.masterworks.length, points: S.points || [], bountyBy: S.bountyBy || {}, deckSize: run.deck.length,
   };
 }
 
@@ -78,6 +78,7 @@ if (!isMainThread) {
     winPctByTierFloor: Object.fromEntries(Object.entries(byTier).sort().map(([k, v]) => [k, pct(v[1], v[0]) + '% of ' + v[0] + ', LP lost in a win ' + Math.round(v[2] / Math.max(1, v[1])) + ', came from behind ' + pct(v[3], v[1]) + '%, turns ' + Math.round(10 * v[4] / v[0]) / 10])),
     plays: { single: sum(r => r.singles), ...chains }, longDuelPct: pct(sum(r => r.long), duels), giftsPerRun: Math.round(10 * sum(r => r.gifts) / ok.length) / 10,
     diedOn: { floor1: pct(ok.filter(r => !r.won && r.floor === 0).length, ok.length), floor2: pct(ok.filter(r => !r.won && r.floor === 1).length, ok.length), floor3: pct(ok.filter(r => !r.won && r.floor === 2).length, ok.length) },
+    usedPerDuel: (() => { const o = [{}, {}]; for (const r of ok) if (r.fx) for (const i of [0, 1]) for (const [k, v] of Object.entries(r.fx[i])) o[i][k] = (o[i][k] || 0) + v; const f = x => Object.fromEntries(Object.entries(x).sort().map(([k, v]) => [k, Math.round(100 * v / duels) / 100])); return { you: f(o[0]), rival: f(o[1]) }; })(),
     kitRejectsPerRun: Math.round(100 * sum(r => r.kitRejects) / ok.length) / 100,
     relicShareOfWinningBuilds: Object.fromEntries(Object.entries(relicWin).map(([k, v]) => [k, pct(v, wins)]).sort((a, b) => b[1] - a[1])),
     relicHeld: relicIn, relicFires: fires,

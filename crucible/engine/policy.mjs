@@ -4,7 +4,7 @@
 import { roleOf, meldPair } from './cards.mjs';
 import { viewFor } from './duel.mjs';
 import { chooseAction } from './ai.mjs';
-import { RELICS } from './relics.mjs';
+import { relicInfo } from './relics.mjs';
 import { runApply, cardValue, entryWeight, deckWeight, weightCap, possibleMasterworks } from './run.mjs';
 
 export const FAMILIES = {
@@ -14,12 +14,13 @@ export const FAMILIES = {
   single: { kit: null, duel: { maxChain: 1 }, likes: [] },
   furnace: { kit: 'dragons_warriors', duel: { fieldBonus: 220, fireBonus: 220, meldBonus: 80 }, likes: ['furnace'] },
   shadow: { kit: 'spellcasters_fiends', duel: { veilBonus: 220, trapBonus: 220 }, likes: ['shadow'], trades: ['broken_anvil', 'glass_idol'] },
+  tomb: { kit: null, duel: {}, likes: ['tomb'] },
   lean: { kit: 'beasts_plants', duel: { boundBonus: 400 }, likes: ['lean'], trades: ['heavy_crown'] },
   storm: { kit: null, duel: { maxChain: 4, chainBonus: 60 }, likes: ['storm'], trades: ['tinder_vow'] },
 };
 
 function relicScore(fam, id) {
-  const r = RELICS[id];
+  const r = relicInfo(id);
   if (fam.likes.includes(r.family)) return 100;
   if (r.family === 'trade') return (fam.trades || []).includes(id) ? 70 : -50;
   if (r.family === 'core') return 60;

@@ -14,9 +14,14 @@ import { SCENES } from './story.mjs';
 const D = window.CRUCIBLE_DATA;
 const db = buildDb(D.pool, D.tags, D.config);
 // Lab rules: experiments under test. Off unless switched on at the home screen.
-const LABS = { free: 'Free cast: your first Spell, Field or Trap played alone each turn does not use your play. Lone face-up Zombie, Fairy, Machine and Spellcaster monsters use an arrival ability.', tomb: 'Tomb relics: you carry Tomb Ledger, Grave Call and Second Burial. Melds mark the Tomb, marks return a small monster from the graveyard, and returns power your next meld.' };
+const LABS = {
+  free: 'Free cast: your first Spell, Field or Trap played alone each turn does not use your play. Rivals get it too.',
+  solo: 'Lone arrivals: a Zombie, Fairy, Machine or Spellcaster played alone and face up uses an arrival ability.',
+  tomb: 'Tomb Gifts can be found: Tomb Ledger, Grave Call and Second Burial join the Forge Gifts a run can offer.',
+  tombStart: 'Start with the Tomb set: carry all three Tomb relics from the first duel. A strong demonstration, not a fair run.',
+};
 let labs = {};
-function setLabs(v) { labs = v || {}; db.config.freeCast = labs.free ? 1 : 0; db.config.soloArrival = labs.free ? 1 : 0; db.config.testRelics = labs.tomb ? ['tomb_ledger', 'grave_call', 'second_burial'] : null; }
+function setLabs(v) { labs = v || {}; const T = ['tomb_ledger', 'grave_call', 'second_burial']; db.config.freeCast = labs.free ? 1 : 0; db.config.soloArrival = labs.solo ? 1 : 0; db.config.labPool = labs.tomb ? T : null; db.config.testRelics = labs.tombStart ? T : null; }
 const $ = s => document.querySelector(s);
 const app = $('#app');
 const SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
@@ -24,7 +29,7 @@ const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } cat
 
 const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false };
 const P = Object.assign(newProfile(), store.get(PROFILE) || {});
-setLabs(store.get('lostmemories.labs.v1'));
+setLabs(store.get('lostmemories.labs.v2'));
 for (const k of P.codex) G.known.add(k);
 const saveP = () => store.set(PROFILE, P);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -366,7 +371,7 @@ app.addEventListener('click', ev => {
     case 'new': G.screen = 'forger'; if (!P.forgers.includes(G.pickForger)) G.pickForger = 'tarn'; G.pickHeat = Math.min(G.pickHeat, maxHeat(P)); render(); break;
     case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; } render(); break;
     case 'screen': G.screen = x; render(); break;
-    case 'lab': setLabs({ ...labs, [x]: !labs[x] }); store.set('lostmemories.labs.v1', labs); render(); break;
+    case 'lab': setLabs({ ...labs, [x]: !labs[x] }); store.set('lostmemories.labs.v2', labs); render(); break;
     case 'forger': G.pickForger = x; render(); break;
     case 'heat': G.pickHeat = n; render(); break;
     case 'descend': store.del(SAVE); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, locked: lockedRelics(P) }); G.log = []; G.overlay = null; queueStory('intro'); render(); break;
