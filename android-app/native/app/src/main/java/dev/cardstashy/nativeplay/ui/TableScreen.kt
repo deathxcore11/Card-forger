@@ -363,7 +363,7 @@ internal fun Mulligan(st: MatchState, live: Boolean, onOk: () -> Unit, onCancel:
                 }
                 // The hand, large across the felt: seven cards step about 12.6 % of the width, on a shallow arc.
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    HandFan(st.me.hand, cardW, Modifier.width(W * .926f).offset(y = -(H * .025f)).anchorRect("mull.fan"), angleDeg = 3.2f, dealIn = true, arc = H * .0053f,
+                    HandFan(keepHand(st.me.hand), cardW, Modifier.width(W * .926f).offset(y = -(H * .025f)).anchorRect("mull.fan"), angleDeg = 3.2f, dealIn = true, arc = H * .0053f,
                         markOf = { card -> if (card.id in st.selection.chosenCards) Mark.PICKED else if (pickable(card)) Mark.PICKABLE else Mark.NONE },
                         onTap = { card -> if (pickable(card)) { if (choosing) cue?.invoke("QP-015", .8f, 1f); onCard(card.id) } else onHold(card) },
                         onHold = onHold, onDeal = onDeal, pop = 1.2f, onCarry = { id -> if (id != null) ringed = id })
@@ -1288,3 +1288,9 @@ private fun FitCard(modifier: Modifier, inner: Modifier = Modifier, content: @Co
     }
 }
 
+
+/**
+ * The opening hand in the order the table will hold it (lands first, then mana value). Randall's 19 Nov recording (item 8): the
+ * Keep screen showed Forge's order (Archive, Get Lost, Day of Judgment…) and the table another (Archive, Floodfarm Verge, Get Lost…).
+ */
+internal fun keepHand(hand: List<dev.cardstashy.nativeplay.engine.Card>) = orderedHand(hand, emptyList())
