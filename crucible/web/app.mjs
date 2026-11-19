@@ -2,7 +2,8 @@
 // The duel is drawn only from viewFor(seat 0), so this page cannot show hidden cards.
 import { buildDb, roleOf, weightOf } from '../engine/cards.mjs';
 import { legalActions, playVariants, planChain, viewFor, forecast } from '../engine/duel.mjs';
-import { RELICS } from '../engine/relics.mjs';
+import { RELICS as BASE_RELICS, LAB } from '../engine/relics.mjs';
+const RELICS = { ...BASE_RELICS, ...LAB };
 import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES } from '../engine/run.mjs';
 import { meldPair } from '../engine/cards.mjs';
 import { powerActions } from '../engine/duel.mjs';
@@ -12,6 +13,10 @@ import { SCENES } from './story.mjs';
 
 const D = window.CRUCIBLE_DATA;
 const db = buildDb(D.pool, D.tags, D.config);
+// Lab rules: experiments under test. Off unless switched on at the home screen.
+const LABS = { free: 'Free cast: your first Spell, Field or Trap played alone each turn does not use your play. Lone face-up Zombie, Fairy, Machine and Spellcaster monsters use an arrival ability.', tomb: 'Tomb relics: you carry Tomb Ledger, Grave Call and Second Burial. Melds mark the Tomb, marks return a small monster from the graveyard, and returns power your next meld.' };
+let labs = {};
+function setLabs(v) { labs = v || {}; db.config.freeCast = labs.free ? 1 : 0; db.config.soloArrival = labs.free ? 1 : 0; db.config.testRelics = labs.tomb ? ['tomb_ledger', 'grave_call', 'second_burial'] : null; }
 const $ = s => document.querySelector(s);
 const app = $('#app');
 const SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
@@ -19,6 +24,7 @@ const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } cat
 
 const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false };
 const P = Object.assign(newProfile(), store.get(PROFILE) || {});
+setLabs(store.get('lostmemories.labs.v1'));
 for (const k of P.codex) G.known.add(k);
 const saveP = () => store.set(PROFILE, P);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -108,6 +114,9 @@ function logLine(e, v) {
     case 'trap': t = `${who(e.seat)} sprang ${n(e.id)}.`; break;
     case 'terrain': t = `Terrain is now ${n(e.id)}.`; break;
     case 'relic': t = e.seat === 0 ? `${RELICS[e.id].name}${e.a || e.d ? ` +${e.a || 0}/+${e.d || 0}` : ''}.` : null; break;
+    case 'free': t = e.seat === 0 ? 'Free cast: you still have your play.' : 'Rival free cast.'; break;
+    case 'solo': t = `${who(e.seat)}: ${e.type} arrival${e.paid ? ' paid off: +300 / +300' : ''}.`; break;
+    case 'return': t = `${who(e.seat)} took ${n(e.id)} back from the graveyard.`; break;
     case 'cap': t = `Relic bonus cap reached: +${e.cap} / +${e.cap}.`; break;
     case 'meld': t = e.kind === 'fizzle' ? `Fizzle: ${n(e.lost)} is lost.` : null; break;
     case 'set': t = `${who(e.seat)} set a card.`; break;
@@ -202,6 +211,7 @@ function screenHome() {
   const saved = store.get(SAVE);
   return `<div class="hall home"><div class="title"><small>CARDSTASHY</small><h1>LOST MEMORIES</h1><p>Test build of the real rules engine. Three floors, six chambers each, three Sparks.</p>
     <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button></div>
+    <div class="labs glass"><b>Lab rules</b> <small>experiments, off by default</small>${Object.keys(LABS).map(k => `<button class="lab ${labs[k] ? 'on' : ''}" data-a="lab:${k}"><i>${labs[k] ? 'ON' : 'OFF'}</i><span>${LABS[k]}</span></button>`).join('')}</div>
     <p class="fine">Not final art. Seen only in a test browser so far.</p></div></div>`;
 }
 function summary(deck) {
@@ -356,6 +366,7 @@ app.addEventListener('click', ev => {
     case 'new': G.screen = 'forger'; if (!P.forgers.includes(G.pickForger)) G.pickForger = 'tarn'; G.pickHeat = Math.min(G.pickHeat, maxHeat(P)); render(); break;
     case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; } render(); break;
     case 'screen': G.screen = x; render(); break;
+    case 'lab': setLabs({ ...labs, [x]: !labs[x] }); store.set('lostmemories.labs.v1', labs); render(); break;
     case 'forger': G.pickForger = x; render(); break;
     case 'heat': G.pickHeat = n; render(); break;
     case 'descend': store.del(SAVE); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, locked: lockedRelics(P) }); G.log = []; G.overlay = null; queueStory('intro'); render(); break;

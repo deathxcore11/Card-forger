@@ -47,23 +47,38 @@ export const RELICS = {
   f_storm: { name: 'Home Sky', kind: 'F', family: 'forger', text: "You start each duel with your kit's Field Spell as the terrain, and your first monster it favours each duel gets +300 DEF this duel." },
 };
 
+// Lab relics: experiments that are never offered in a run. They are added to the player's
+// relics only through the config list `testRelics`, so normal runs and fixtures never see them.
+// They use the chained hooks (ingredients, mark, returned, endTurn): one relic's effect can
+// raise a hook that another relic answers, inside the limits in fire().
+export const LAB = {
+  tomb_ledger: { name: 'Tomb Ledger', kind: 'G', family: 'tomb', text: 'Once a turn, when a meld sends two or more of your monsters to the graveyard, gain a Tomb mark.' },
+  grave_call: { name: 'Grave Call', kind: 'G', family: 'tomb', text: 'The first time each turn you gain a Tomb mark, return your best monster with 1500 ATK or less from the graveyard to your hand.' },
+  second_burial: { name: 'Second Burial', kind: 'G', family: 'tomb', text: 'Once a turn, when a monster returns from your graveyard to your hand, your next meld gets +300 ATK this duel.' },
+  returning_tomb: { name: 'The Returning Tomb', kind: 'M', family: 'tomb', text: 'Once a duel, on your third Tomb mark, return the strongest monster in your graveyard to your hand.' },
+  thorn_veil: { name: 'Thorn Veil', kind: 'G', family: 'shadow', text: 'At the end of your turn the rival loses 150 Life Points for each of your veiled monsters, up to three.' },
+  cold_lantern: { name: 'Cold Lantern', kind: 'G', family: 'shadow', text: 'Each time an attack reveals your veiled monster and it survives, the rival loses 300 Life Points. Up to four times a duel.' },
+};
+const info = id => RELICS[id] || LAB[id];
+export const CHAIN_DEPTH = 4, CHAIN_TURN = 12;
+
 export const MASTERWORKS = Object.entries(RELICS).filter(([, r]) => r.kind === 'M').map(([id, r]) => ({ id, parts: r.parts }));
 const ORDER = { F: -1, C: 0, G: 1, M: 2 };
 // Resolution order: charms, then Gifts, then Masterworks, each in the order they were gained.
-export function sortRelics(ids) { return ids.map((id, i) => [id, i]).sort((a, b) => ORDER[RELICS[a[0]].kind] - ORDER[RELICS[b[0]].kind] || a[1] - b[1]).map(x => x[0]); }
+export function sortRelics(ids) { return ids.map((id, i) => [id, i]).sort((a, b) => ORDER[info(a[0]).kind] - ORDER[info(b[0]).kind] || a[1] - b[1]).map(x => x[0]); }
 
 export const has = (s, seat, id) => s.seat[seat].relics.includes(id);
 
 function note(s, ev, seat, id, extra) {
   const st = s.stats[seat];
   st.relicFires[id] = (st.relicFires[id] || 0) + 1;
-  const fam = RELICS[id].family; st.relicFamilies[fam] = 1;
+  const fam = info(id).family; st.relicFamilies[fam] = 1;
   ev.push({ e: 'relic', seat, id, ...extra });
 }
 
 // Adds a relic bonus to a monster, holding the per-monster ceiling. Masterworks sit outside it.
 export function relicBonus(s, db, ev, seat, m, atk, def, id) {
-  const cap = db.config.relicCap, outside = RELICS[id].kind === 'M';
+  const cap = db.config.relicCap, outside = info(id).kind === 'M';
   let a = atk, d = def, clipped = false;
   if (!outside) {
     if (a > 0) { const room = cap - (m.ra || 0); if (a > room) { a = Math.max(0, room); clipped = true; } m.ra = (m.ra || 0) + a; }
@@ -76,11 +91,26 @@ export function relicBonus(s, db, ev, seat, m, atk, def, id) {
   if (id !== 'ashen_echo' && m.meld && (a > 0 || d > 0) && has(s, seat, 'ashen_echo') && !rs.ashen) { rs.ashen = 1; relicBonus(s, db, ev, seat, m, 300, 0, 'ashen_echo'); }
 }
 
+let depth = 0;
 export function fire(s, db, ev, seat, hook, ctx) {
   const st = s.seat[seat], rs = st.rs, r = 1 - seat;
   const list = st.relics;
   if (!list.length) return;
   const B = (m, a, d, id) => relicBonus(s, db, ev, seat, m, a, d, id);
+  // A relic may raise another hook. Two hard limits stop any loop: nesting depth, and raises per turn.
+  const raise = (h, c) => {
+    if (depth >= CHAIN_DEPTH) return;
+    if (rs.chainTurn !== s.turn) { rs.chainTurn = s.turn; rs.chainN = 0; }
+    if (rs.chainN >= CHAIN_TURN) return;
+    rs.chainN++; s.stats[seat].chained = (s.stats[seat].chained || 0) + 1;
+    depth++; try { fire(s, db, ev, seat, h, c); } finally { depth--; }
+  };
+  const fromGrave = (maxAtk) => {
+    if (s.hand[seat].length >= db.config.handMax) return false;
+    let bi = -1; s.gy[seat].forEach((g, i) => { if (db.isMonster(g) && db.byId.get(g).atk <= maxAtk && (bi < 0 || db.cmp(db.byId.get(g), db.byId.get(s.gy[seat][bi])) > 0)) bi = i; });
+    if (bi < 0) return false;
+    const g = s.gy[seat].splice(bi, 1)[0]; s.hand[seat].push({ u: s.uid++, id: g }); ev.push({ e: 'return', seat, id: g }); return true;
+  };
   for (const id of list) {
     switch (hook + ':' + id) {
       case 'duelStart:iron_rations': s.lp[seat] += 500; note(s, ev, seat, id); break;
@@ -99,6 +129,15 @@ export function fire(s, db, ev, seat, hook, ctx) {
 
       case 'veiledRevealed:tomb_bell': if (!rs.tomb) { rs.tomb = 1; s.lp[seat] += 300; note(s, ev, seat, id); ev.push({ e: 'lp', seat, d: 300, src: 'relic' }); } break;
       case 'veiledRevealed:glass_idol': if ((rs.idol || 0) < 3) { rs.idol = (rs.idol || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); } break;
+    }
+    if (s.winner !== null) return;
+    switch (hook + ':' + id) {
+      case 'ingredients:tomb_ledger': if (ctx.n >= 2 && rs.ledgerTurn !== s.turn) { rs.ledgerTurn = s.turn; rs.marks = (rs.marks || 0) + 1; note(s, ev, seat, id, { marks: rs.marks }); raise('mark', { marks: rs.marks }); } break;
+      case 'mark:grave_call': if (rs.callTurn !== s.turn && fromGrave(1500)) { rs.callTurn = s.turn; note(s, ev, seat, id); raise('returned', {}); } break;
+      case 'mark:returning_tomb': if (ctx.marks >= 3 && !rs.retTomb && fromGrave(99999)) { rs.retTomb = 1; note(s, ev, seat, id); raise('returned', {}); } break;
+      case 'returned:second_burial': if (rs.burialTurn !== s.turn) { rs.burialTurn = s.turn; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
+      case 'endTurn:thorn_veil': { const n = Math.min(3, s.mon[seat].filter(m => m && m.veil).length); if (n) { note(s, ev, seat, id, { n }); hurt(s, ev, r, (db.config.thornLp || 150) * n); } } break;
+      case 'survived:cold_lantern': if (ctx.wasVeiled && (rs.lantern || 0) < 4) { rs.lantern = (rs.lantern || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); } break;
     }
     if (hook === 'placed') placed(s, db, ev, seat, id, ctx, rs, st, B, r);
   }

@@ -291,6 +291,7 @@ function startDuel(db, run, rng, door, onStep) {
   const cap = weightCap(db, run);
   const relics = relicList(run);
   if (run.forger) relics.unshift(FORGERS[run.forger].rule);
+  if (db.config.testRelics) for (const id of db.config.testRelics) if (!relics.includes(id)) relics.push(id);
   const bounty = rng.pick(BOUNTIES);
   const seats = [
     { relics, handSize: (relics.includes('deep_pockets') ? 6 : db.config.hand) - (rival.law === 'tyranny' ? 1 : 0), firstTurnHand: run.sparks === 1 ? 6 : 0, homeField: run.homeField, underCap: cap - deckWeight(db, run.deck), secondWind: relics.includes('second_wind') && !run.secondWindUsed, sparks: run.sparks, forger: run.forger || null },

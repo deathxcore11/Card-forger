@@ -115,6 +115,13 @@ export function bestPlay(db, view, level, policy = {}) {
         if (plan.melded) v += (policy.meldBonus || 0) + (plan.len >= 3 ? (policy.chainBonus || 0) : 0);
         if (plan.melded && db.config.longMeldRest && plan.len >= db.config.longMeldRest) v -= pos === 'a' ? 500 : 0;
         if (veiled && pos === 'd') v += policy.veilBonus || 0;
+        if (single && !veiled && db.config.soloArrival && level >= 1) {
+          const ty = db.byId.get(inst.id).type;
+          if (ty === 'Zombie' && hand.length - 1 < db.config.handMax) { let b = 0; for (const g of view.gy[me]) if (db.isMonster(g) && db.byId.get(g).atk <= 1500) b = Math.max(b, db.byId.get(g).atk); if (b) v += 150 + b * 0.25; }
+          else if (ty === 'Fairy') v += view.lp[me] < 4000 ? 300 : 110;
+          else if (ty === 'Machine') v += 260;
+          else if (ty === 'Spellcaster' && view.deckCount[me] > 0) v += 320;
+        }
         if (plan.melded && db.byId.get(plan.final.id).attr === 'FIRE') v += policy.fireBonus || 0;
         if (plan.final.b) v += policy.boundBonus || 0;
         const action = { t: 'play', hand: idxs.slice(), onto: onto ?? null, pos };
@@ -169,6 +176,7 @@ export function bestPlay(db, view, level, policy = {}) {
   };
 
   const n = hand.length;
+  if (policy.freeOnly) { for (let i = 0; i < n; i++) if (!db.isMonster(hand[i].id)) evalChain([i], null); return best; }
   const maxLen = Math.min(db.config.maxChain || 9, level === 0 ? 1 : level === 1 ? 2 : (policy.maxChain || 4));
   for (let i = 0; i < n; i++) {
     evalChain([i], null);
@@ -267,6 +275,7 @@ export function chooseAction(db, view, level = 1, policy = {}) {
       const mons = view.hand.filter(c => db.isMonster(c.id)).length;
       if (mons === 0 && view.hand.length) return { t: 'cleanDraw', hand: 0 };
     }
+    if (db.config.freeCast && level >= 1 && view.rs.freeTurn !== view.turn) { const f = bestPlay(db, view, level, { ...policy, freeOnly: true }); if (f && f.score > 60) return f.action; }
     const p = bestPlay(db, view, level, policy);
     if (p && p.score > (level === 0 ? -1e9 : -50)) return p.action;
     if (!p && view.hand.length >= db.config.hand && !view.mon[me].some(Boolean)) {

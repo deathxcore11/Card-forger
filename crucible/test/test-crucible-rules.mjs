@@ -5,7 +5,7 @@ import { loadDb, meldPair, meldTriple, weightOf, wheelEdge, roleOf } from '../en
 import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, effDef, forecast, canonical, clone } from '../engine/duel.mjs';
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
-import { RELICS, sortRelics } from '../engine/relics.mjs';
+import { RELICS, LAB, CHAIN_TURN, sortRelics } from '../engine/relics.mjs';
 import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
@@ -489,6 +489,18 @@ test('profile: every run pays Memories, unlocks come from feats, the Vault takes
   let won = null; for (let seed = 1; seed < 60 && !won; seed++) { const r = playRun(db, newRun(db, { seed }), { level: 2 }); if (r.result.won) won = r; }
   const q = newProfile(); const w = applyRun(q, won);
   assert.equal(q.heatCleared, 0); assert.equal(maxHeat(q), 1); assert.ok(w.unlocks.some(u => u.kind === 'heat')); assert.ok(q.forgers.includes('storm') && q.forgers.includes('veil'));
+});
+
+test('lab relics: never in a normal run; switched on, Tomb Ledger chains into Grave Call and Second Burial inside the limits', () => {
+  for (const id of Object.keys(LAB)) { assert.ok(!RELICS[id], id + ' stays out of the offered relics'); assert.match(LAB[id].text, /once|first|up to/i, id + ' states a limit'); }
+  const plain = playRun(db, newRun(db, { seed: 5 }), { level: 2 });
+  for (const id of Object.keys(LAB)) assert.ok(!plain.stats.relicFires[id], id + ' never fires in a normal run');
+  const lab = { ...db, config: { ...db.config, testRelics: ['tomb_ledger', 'grave_call', 'second_burial'] }, _pair: new Map() };
+  const r = playRun(lab, newRun(lab, { seed: 5 }), { level: 2 });
+  const f = r.stats.relicFires;
+  assert.ok(f.tomb_ledger > 0 && f.grave_call > 0 && f.second_burial > 0, 'the three Tomb relics answer each other');
+  assert.ok(f.grave_call <= f.tomb_ledger && f.second_burial <= 2 * f.grave_call, 'each link fires at most once per link before it (Second Burial is counted when armed and when paid)');
+  assert.ok(f.tomb_ledger <= r.stats.turns && CHAIN_TURN >= 3, 'the Ledger marks at most once a turn');
 });
 
 console.log('crucible rules:', passed, 'tests passed');

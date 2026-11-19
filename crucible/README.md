@@ -79,3 +79,18 @@ Kotlin engine for the app, the app screens, the full story (the page has first-p
 only), real Heat rules, secrets, the reward route, balanced Forger numbers (Tarn clears 65%
 in the simulator against about 42% with no Forger), and a CPU that only knows the melds a
 new player would know.
+
+## Levers and lab relics under test (all off by default)
+
+Set through `CRUCIBLE_CFG`, or the "Lab rules" switches on the playable page's home screen.
+
+- `freeCast`: the first Spell, Field or Trap played alone each turn does not use the play.
+- `soloArrival`: a lone face-up Zombie, Fairy, Machine or Spellcaster uses a Type arrival.
+- `testRelics`: a list of lab relic ids (`LAB` in `engine/relics.mjs`) the player carries in every duel.
+  Lab relics are never offered in a run. They use chained hooks (`ingredients`, `mark`, `returned`,
+  `endTurn`): one relic may raise a hook another answers, at most 4 deep and 12 raises a turn.
+- `thornLp`: Life Points per veiled monster for Thorn Veil (default 150).
+
+Measured over 3000 expert runs (19 Nov 2026): baseline clear 41.8%; freeCast 19.6% with wins from
+behind on Life Points up from 6% to 20% and Traps sprung 0.11 to 0.78 a duel; Tomb Ledger + Grave
+Call 53.1%, with Second Burial 67.4%; Thorn Veil and Cold Lantern on the shadow brain 27.0% to 27.8%.

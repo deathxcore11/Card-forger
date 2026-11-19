@@ -601,6 +601,7 @@ function doPlay(s, db, ev, seat, a) {
   for (const stp of plan.steps) ev.push({ e: 'meld', seat, ...stp });
   for (let k = 0; k < plan.fizzles; k++) fire(s, db, ev, seat, 'fizzle', {});
   for (const p of plan.pairs) stt.newMelds.push(p);
+  const buried = plan.melded ? plan.gy.filter(id => db.isMonster(id)).length : 0;
   const f = plan.final;
   if (plan.isMonster) {
     let z = plan.onTable ? a.onto : (ontoM && plan.tableLost ? a.onto : (a.zone != null && !s.mon[seat][a.zone] ? a.zone : freeZone(s, seat)));
@@ -616,9 +617,16 @@ function doPlay(s, db, ev, seat, a) {
     ev.push({ e: 'summon', seat, zone: z, id: m.veil ? null : m.id, pos: m.pos, veiled: m.veil, melded: !!plan.melded });
     if (plan.melded) { stt.melds++; stt.longestChain = Math.max(stt.longestChain, plan.len); stt.chains[plan.len] = (stt.chains[plan.len] || 0) + 1; } else stt.singles++;
     fire(s, db, ev, seat, 'placed', { mon: m, zone: z, melded: !!plan.melded, len: plan.len, fire: c.attr === 'FIRE', bound: !!m.b, fresh: !plan.onTable, favoured: !!(s.terrain && terrainFavours(db, s.terrain.id, m.id)) });
+    if (buried) fire(s, db, ev, seat, 'ingredients', { n: buried });
     if (m.e === 'herald' && !plan.onTable) draw(s, db, ev, seat, 1);
+    // Lever under test: a monster played alone and face up uses its Type's arrival; a melded monster after a Machine arrival is armed.
+    if (db.config.soloArrival) {
+      if (plan.melded && st.rs.soloArm) { st.rs.soloArm = 0; m.ba = (m.ba || 0) + 300; m.bd = (m.bd || 0) + 300; ev.push({ e: 'solo', seat, type: 'Machine', zone: z, paid: true }); }
+      if (!plan.melded && !plan.onTable && !m.veil) soloArrival(s, db, ev, seat, c);
+    }
     return;
   }
+  if (buried) fire(s, db, ev, seat, 'ingredients', { n: buried });
   const role = roleOf(db, f.id);
   if (role === 'field') {
     const prev = s.terrain;
@@ -643,10 +651,28 @@ function doPlay(s, db, ev, seat, a) {
     ev.push({ e: 'set', seat, zone: z });
     if (has(s, seat, 'f_veil') && st.rs.veilTurn !== s.turn) { st.rs.veilTurn = s.turn; s.played = false; noteRelic(s, ev, seat, 'f_veil'); }
   }
+  // Lever under test: the first Spell, Field, Equip or Trap played on its own each turn does not use the play.
+  if (db.config.freeCast && idxs.length === 1 && a.onto == null && s.played && st.rs.freeTurn !== s.turn && s.winner === null) { st.rs.freeTurn = s.turn; s.played = false; ev.push({ e: 'free', seat }); }
+}
+
+export const SOLO = { Zombie: 'Return a monster of 1500 ATK or less from your graveyard to your hand.', Fairy: 'Gain 400 Life Points.', Machine: 'Your next meld gets +300 ATK and DEF.', Spellcaster: 'Draw a card.' };
+function soloArrival(s, db, ev, seat, c) {
+  const st = s.seat[seat];
+  if (!SOLO[c.type]) return;
+  if (c.type === 'Zombie') {
+    let bi = -1; s.gy[seat].forEach((id, i) => { if (db.isMonster(id) && card(db, id).atk <= 1500 && (bi < 0 || db.cmp(card(db, id), card(db, s.gy[seat][bi])) > 0)) bi = i; });
+    if (bi < 0 || s.hand[seat].length >= db.config.handMax) return;
+    const id = s.gy[seat].splice(bi, 1)[0]; s.hand[seat].push({ u: s.uid++, id });
+  } else if (c.type === 'Fairy') gainLp(s, ev, seat, 400, 'solo');
+  else if (c.type === 'Machine') st.rs.soloArm = 1;
+  else if (c.type === 'Spellcaster') { if (!s.deck[seat].length) return; draw(s, db, ev, seat, 1); }
+  ev.push({ e: 'solo', seat, type: c.type });
 }
 
 function endTurn(s, db, ev) {
   const seat = s.active;
+  fire(s, db, ev, seat, 'endTurn', {});
+  if (s.winner !== null) return;
   for (const m of s.mon[seat]) if (m) { m.att = 0; m.moved = false; if (m.lock === 2) delete m.lock; }
   if (s.frozen[seat] > 0) s.frozen[seat]--;
   if (s.terrain && s.terrain.temp != null && s.terrain.owner === seat) {
