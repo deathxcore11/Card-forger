@@ -39,7 +39,7 @@ const path = require('path');
         continue;
       }
       if (st.phase === 'reward') { await shot('reward-' + st.kind); if (!(await click('.pick button:not([disabled])'))) await click('[data-a="skip"]'); continue; }
-      if (st.phase === 'anvil') { await shot('anvil'); await click('[data-a^="anvilpick:"]'); if (!(await click('[data-a^="mw:"]:not([disabled])')) && !(await click('[data-a="temper"]:not([disabled])'))) await click('[data-a="leave"]'); continue; }
+      if (st.phase === 'anvil') { await shot('anvil'); if (step % 4 === 3) { await click('[data-a="leave"]'); continue; } await click('[data-a^="anvilpick:"]'); if (!(await click('[data-a^="mw:"]:not([disabled])')) && !(await click('[data-a="temper"]:not([disabled])'))) await click('[data-a="leave"]'); continue; }
       if (st.phase === 'bazaar') { await shot('bazaar'); if (!(await click('[data-a^="buy:"]:not([disabled])')) || step % 3 === 0) await click('[data-a="leave"]'); continue; }
       if (inDuel) {
         if (st.pending && st.active === 1) { await shot('trap-prompt'); await click(step % 2 ? '[data-a="respond:0"]' : '[data-a^="respond:"]'); continue; }
@@ -66,6 +66,7 @@ const path = require('path');
         await shot('duel'); await click('[data-a="end"]'); continue;
       }
       stuck++; if (stuck > 20) { errors.push('stuck in ' + st.phase); break; }
+      if (step === 5999) errors.push('step limit: ' + JSON.stringify(st) + ' ' + (await page.evaluate(() => [...document.querySelectorAll('[data-a]')].filter(e => e.tagName === 'BUTTON').map(e => e.dataset.a + (e.disabled ? '(off)' : '')).join(' | ') + ' toast=' + window.LM.G.toast)));
     }
   }
   console.log(JSON.stringify({ runs, duels, wins, clicks, moved, stuck, errors: errors.length }));

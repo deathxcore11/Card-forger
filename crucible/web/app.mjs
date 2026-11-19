@@ -21,6 +21,14 @@ const pic = id => { const i = IDX.get(id); if (i == null || !D.sheets) return ''
 const ATTR = { DARK: '#7a4bd6', LIGHT: '#e8c95a', FIRE: '#e0562f', WATER: '#3d8fe0', EARTH: '#9a7a45', WIND: '#4fb87a', DIVINE: '#d9d9d9' };
 const FX_TEXT = { burn: n => n < 0 ? 'The attacker\'s ATK hits its owner. The attack stops.' : `Rival loses ${n} Life Points.`, heal: n => n < 0 ? 'Gain Life Points equal to the attacker\'s ATK.' : `Gain ${n} Life Points.`, destroy: () => 'Destroy one rival monster.', destroyAll: n => n === 1 ? 'Destroy every monster on both sides.' : 'Destroy every rival monster.', bounce: () => 'Return one rival monster to its hand.', pump: n => `One of your monsters gets +${n} ATK and DEF this duel.`, weaken: n => `One rival monster gets -${n} ATK and DEF this duel.`, draw: n => `Draw ${n}.`, flip: () => 'Turn every veiled rival monster face up.', freeze: n => n ? `Rival monsters cannot attack for ${n} of their turns.` : 'The attack stops and the rival cannot attack again this turn.', position: () => 'Turn one rival monster to its other position.', revive: () => 'Return your strongest monster from the graveyard.' };
 
+const FX_SHORT = { burn: n => n < 0 ? 'Turns the attack back on its owner' : `Rival loses ${n} LP`, heal: n => n < 0 ? 'Gain LP equal to the attacker' : `Gain ${n} LP`, destroy: () => 'Destroy 1 rival monster', destroyAll: n => n === 1 ? 'Destroy all monsters' : 'Destroy all rival monsters', bounce: () => 'Return 1 rival monster to hand', pump: n => `Your monster +${n}`, weaken: n => `Rival monster -${n}`, draw: n => `Draw ${n}`, flip: () => 'Reveal veiled rivals', freeze: n => n ? `Rivals cannot attack, ${n} turns` : 'Stops the attack', position: () => 'Turn 1 rival monster', revive: () => 'Revive your strongest' };
+function shortText(id) {
+  const role = roleOf(db, id);
+  if (role === 'field') { const f = db.fieldOf.get(id); return '+500 ' + (f.attr ? f.attr : [...f.types].join(', ')); }
+  if (role === 'equip') return 'Your monster +500';
+  if (role === 'spell' || role === 'trap') { const t = db.tagOf.get(id); return (role === 'trap' ? 'On attack: ' : '') + FX_SHORT[t.fx](t.n); }
+  return 'Meld fuel +300';
+}
 function rulesText(id) {
   const c = card(id), role = roleOf(db, id);
   if (role === 'monster') return 'Fights with its printed ATK and DEF. Printed effects are not used in Lost Memories.';
@@ -42,7 +50,7 @@ function face(inst, o = {}) {
   return `<div class="c ${role} ${inst.pos === 'd' ? 'def' : ''} ${inst.veil ? 'myveil' : ''} ${foil} ${o.cls || ''}" ${o.attrs || ''} data-id="${inst.id}">
     <div class="art" style="--attr:${mon ? ATTR[c.attr] : '#444'}"><span class="ph">${mon ? esc(c.type) : role.toUpperCase()}</span>${pic(inst.id)}</div>
     <div class="nm">${esc(c.name)}</div>
-    ${mon ? `<div class="meta"><i style="background:${ATTR[c.attr]}"></i>${esc(c.attr)} · Lv ${c.level}</div><div class="st ${up ? 'up' : ''} ${down ? 'down' : ''}">${a}<b>/</b>${d}</div>` : `<div class="meta">${role === 'fuel' ? 'Fuel' : role[0].toUpperCase() + role.slice(1)}</div>`}
+    ${mon ? `<div class="meta"><i style="background:${ATTR[c.attr]}"></i>${esc(c.attr)} · Lv ${c.level}</div><div class="st ${up ? 'up' : ''} ${down ? 'down' : ''}">${a}<b>/</b>${d}</div>` : `<div class="meta kind">${role === 'fuel' ? 'Fuel' : role[0].toUpperCase() + role.slice(1)}</div><div class="tx">${esc(shortText(inst.id))}</div>`}
     ${inst.e ? `<div class="en">${inst.e}</div>` : ''}${inst.veil ? '<div class="vl">VEILED</div>' : ''}${o.badge ? `<div class="bd">${o.badge}</div>` : ''}
   </div>`;
 }
@@ -101,6 +109,21 @@ function logLine(e, v) {
   if (t) { G.log.push(t); if (G.log.length > 40) G.log.shift(); }
 }
 
+// ---------- fit ----------
+// The stage is drawn at 1600 wide and 900 to 1200 tall, then scaled as one piece, so text never
+// drops under a phone's smallest font size and a squarer screen (an unfolded phone) gets a taller table.
+const FIT = { k: 1, h: 900 };
+function fit() {
+  const vw = innerWidth, vh = innerHeight;
+  FIT.h = Math.round(Math.max(900, Math.min(1200, 1600 * vh / vw)));
+  FIT.k = Math.min(vw / 1600, vh / FIT.h);
+  app.style.height = FIT.h + 'px';
+  app.style.transform = `translate(-50%,-50%) scale(${FIT.k})`;
+  app.style.setProperty('--E', (FIT.h - 900) + 'px');
+  app.style.setProperty('--s', FIT.h / 900);
+}
+addEventListener('resize', fit); fit();
+
 // ---------- motion ----------
 const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
 function zoneEl(seat, z) { return document.querySelector(`[data-zone="${seat}:${z}"]`); }
@@ -113,14 +136,14 @@ function animate(evs, ghosts) {
   if (RM) return;
   for (const g of ghosts) {
     const w = document.createElement('div'); w.className = 'ghost'; w.innerHTML = g.html;
-    Object.assign(w.style, { left: g.r.left + 'px', top: g.r.top + 'px', width: g.r.width + 'px', height: g.r.height + 'px', fontSize: g.fs });
+    Object.assign(w.style, { left: g.r.left + 'px', top: g.r.top + 'px', width: g.r.width / FIT.k + 'px', height: g.r.height / FIT.k + 'px', fontSize: g.fs, transform: `scale(${FIT.k})`, transformOrigin: '0 0' });
     document.body.appendChild(w);
     w.animate(g.kind === 'destroyed' ? [{ opacity: 1, filter: 'brightness(1)' }, { opacity: 1, filter: 'brightness(2.2) sepia(1) saturate(4) hue-rotate(-20deg)', offset: .35 }, { opacity: 0, transform: 'scale(.82) translateY(10%)', filter: 'brightness(.3)' }] : [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-40%) scale(.8)' }], { duration: 480, easing: 'ease-in' }).onfinish = () => w.remove();
   }
   for (const e of evs) {
     if (e.e === 'summon') { const c = zoneEl(e.seat, e.zone)?.querySelector('.c'); if (c) c.animate([{ transform: `translateY(${e.seat === 0 ? 60 : -60}%) scale(1.25)`, opacity: 0 }, { transform: 'scale(1.08)', opacity: 1, filter: 'brightness(1.7)', offset: .7 }, { transform: 'none', filter: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
-    if (e.e === 'attack') { const a = zoneEl(e.seat, e.from)?.querySelector('.c'); const t = e.to >= 0 ? zoneEl(1 - e.seat, e.to) : $(e.seat === 0 ? '#rivalLp' : '#myLp'); if (a && t) { const ra = a.getBoundingClientRect(), rt = t.getBoundingClientRect(); const dx = (rt.left + rt.width / 2) - (ra.left + ra.width / 2), dy = (rt.top + rt.height / 2) - (ra.top + ra.height / 2); a.animate([{ transform: 'none' }, { transform: `translate(${dx * .08 * -1}px,${dy * -.08}px) scale(1.06)`, offset: .25 }, { transform: `translate(${dx * .8}px,${dy * .8}px) scale(1.12)`, offset: .55 }, { transform: 'none' }], { duration: 460, easing: 'cubic-bezier(.5,0,.2,1)' }); a.style.zIndex = 5; setTimeout(() => (a.style.zIndex = ''), 470); } }
-    if (e.e === 'lp') { const el = $(e.seat === 0 ? '#myLp' : '#rivalLp'); if (el) { el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)', color: e.d < 0 ? '#ff6b5a' : '#7be08d', offset: .3 }, { transform: 'scale(1)' }], { duration: 500 }); const f = document.createElement('span'); f.className = 'float ' + (e.d < 0 ? 'neg' : 'pos'); f.textContent = (e.d > 0 ? '+' : '') + e.d; el.appendChild(f); setTimeout(() => f.remove(), 900); } if (e.d <= -1500) { app.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-.5%,.4%)' }, { transform: 'translate(.5%,-.3%)' }, { transform: 'none' }], { duration: 240 }); } }
+    if (e.e === 'attack') { const a = zoneEl(e.seat, e.from)?.querySelector('.c'); const t = e.to >= 0 ? zoneEl(1 - e.seat, e.to) : $(e.seat === 0 ? '#rivalLp' : '#myLp'); if (a && t) { const ra = a.getBoundingClientRect(), rt = t.getBoundingClientRect(); const dx = ((rt.left + rt.width / 2) - (ra.left + ra.width / 2)) / FIT.k, dy = ((rt.top + rt.height / 2) - (ra.top + ra.height / 2)) / FIT.k; a.animate([{ transform: 'none' }, { transform: `translate(${dx * .08 * -1}px,${dy * -.08}px) scale(1.06)`, offset: .25 }, { transform: `translate(${dx * .8}px,${dy * .8}px) scale(1.12)`, offset: .55 }, { transform: 'none' }], { duration: 460, easing: 'cubic-bezier(.5,0,.2,1)' }); a.style.zIndex = 5; setTimeout(() => (a.style.zIndex = ''), 470); } }
+    if (e.e === 'lp') { const el = $(e.seat === 0 ? '#myLp' : '#rivalLp'); if (el) { el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)', color: e.d < 0 ? '#ff6b5a' : '#7be08d', offset: .3 }, { transform: 'scale(1)' }], { duration: 500 }); const f = document.createElement('span'); f.className = 'float ' + (e.d < 0 ? 'neg' : 'pos'); f.textContent = (e.d > 0 ? '+' : '') + e.d; el.appendChild(f); setTimeout(() => f.remove(), 900); } if (e.d <= -1500) { (document.querySelector('.duel') || app).animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-.5%,.4%)' }, { transform: 'translate(.5%,-.3%)' }, { transform: 'none' }], { duration: 240 }); } }
     if (e.e === 'relic' && e.seat === 0) { const b = $('#relicFlash'); if (b) { b.textContent = RELICS[e.id].name + (e.a || e.d ? ` +${e.a || 0}/+${e.d || 0}` : ''); b.animate([{ opacity: 0, transform: 'translateY(40%)' }, { opacity: 1, transform: 'none', offset: .2 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: 1100 }); } }
     if (e.e === 'terrain') { const t = $('#terrain'); if (t) t.animate([{ filter: 'brightness(2.4)' }, { filter: 'none' }], { duration: 500 }); }
     if (e.e === 'draw' && e.seat === 0) { const cs = [...document.querySelectorAll('.hand .hs .c')].slice(-e.n); cs.forEach((c, i) => c.animate([{ transform: 'translate(120%,-40%) rotate(8deg) scale(.6)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 300, delay: i * 70, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' })); }
@@ -195,7 +218,7 @@ function screenDuel() {
     const vars = playVariants(live, db, 0, G.sel, G.onto);
     const chain = ids.map(id => `<span class="chip">${esc(card(id).name)}</span>`).join('<b>→</b>');
     const res = ids.length < 2 ? '' : `<b>=</b><span class="chip res">${allKnown ? esc(card(plan.final.id).name) + (plan.fizzles ? ` (${plan.fizzles} fizzle)` : '') : '? unknown meld'}</span>`;
-    tray = `<div class="chain">${chain}${res}</div>`;
+    tray = `<div class="chain">${chain}${res}</div>` + cards.filter((c, i) => !db.isMonster(c.id) || cards.length === 1).slice(0, 3).map(c => `<div class="what"><b>${esc(card(c.id).name)}</b> ${esc(rulesText(c.id))}</div>`).join('');
     if (!vars.length) tray += '<span class="fine bad">That cannot be played right now.</span>';
     const lab = x => x.pos === 'a' ? (x.veiled ? 'Veiled attack' : 'Attack position') : x.pos === 'd' ? (x.veiled ? 'Veiled defense' : 'Defense position') : 'Play';
     buttons = vars.map(x => `<button class="gold" data-a="play:${x.pos || ''}:${x.veiled ? 1 : 0}">${lab(x)}</button>`).join('') + '<button data-a="undo">Undo</button>';
@@ -231,14 +254,14 @@ function screenAnvil() {
   const r = G.run, o = r.offer, P = db.config.prices, e = G.pickDeck != null ? r.deck[G.pickDeck] : null, e2 = G.pickTrunk != null ? r.deck[G.pickTrunk] : null;
   return `<div class="hall"><div class="panel glass wide"><h2>Anvil</h2><p>One working, then you move on. Tap a deck card (tap a second for a Bind).</p>
     <div class="row">${o.masterworks.map(id => `<button class="gold" data-a="mw:${id}" ${r.embers < P.masterwork ? 'disabled' : ''}>Forge ${esc(RELICS[id].name)} (${P.masterwork})</button>`).join('')}
-      <button data-a="temper" ${!e || r.embers < P.temper ? 'disabled' : ''}>Temper +300 (${P.temper})</button>
-      ${o.enchants.map(x => `<button data-a="enchant:${x}" ${!e || r.embers < P.enchant ? 'disabled' : ''}>Enchant: ${x} (${P.enchant})</button>`).join('')}
+      <button data-a="temper" ${!e || !db.isMonster(e.id) || e.t || r.embers < P.temper ? 'disabled' : ''}>Temper +300 (${P.temper})</button>
+      ${o.enchants.map(x => `<button data-a="enchant:${x}" ${!e || !db.isMonster(e.id) || e.e || r.embers < P.enchant ? 'disabled' : ''}>Enchant: ${x} (${P.enchant})</button>`).join('')}
       <button data-a="bind" ${!e || !e2 || r.embers < P.bind ? 'disabled' : ''}>Bind the two (${P.bind})</button><button data-a="leave">Leave</button></div>
     <div class="grid">${r.deck.map((c, i) => [c, i]).sort((a, b) => cardValue(db, b[0]) - cardValue(db, a[0])).map(([c, i]) => face(c, { cls: 'small ' + (G.pickDeck === i ? 'sel' : G.pickTrunk === i ? 'sel2' : ''), attrs: `data-a="anvilpick:${i}"` })).join('')}</div></div></div>`;
 }
 function screenBazaar() {
   const r = G.run, o = r.offer;
-  return `<div class="hall"><div class="panel glass wide"><h2>Bazaar</h2><p>You have ${r.embers} Embers.</p><div class="picks">${o.items.map((it, i) => `<div class="pick glass ${it.sold ? 'sold' : ''}">${it.kind === 'card' ? (it.sealed ? '<div class="c back"><img decoding="sync" src="art/cardback.webp" alt=""></div>' : face(it.entry, { attrs: `data-a="inspect:${it.entry.id}"` })) : it.kind === 'charm' ? relicRow(it.id) : '<div><b>The Scrapper</b><br>Removes one trunk card. Tap a trunk card below first.</div>'}<button class="gold" data-a="buy:${i}" ${it.sold || r.embers < it.price ? 'disabled' : ''}>${it.sold ? 'Sold' : it.price + ' Embers'}</button></div>`).join('')}</div>
+  return `<div class="hall"><div class="panel glass wide"><h2>Bazaar</h2><p>You have ${r.embers} Embers.</p><div class="picks">${o.items.map((it, i) => `<div class="pick glass ${it.sold ? 'sold' : ''}">${it.kind === 'card' ? (it.sealed ? '<div class="c back"><img decoding="sync" src="art/cardback.webp" alt=""></div>' : face(it.entry, { attrs: `data-a="inspect:${it.entry.id}"` })) : it.kind === 'charm' ? relicRow(it.id) : '<div><b>The Scrapper</b><br>Removes one trunk card. Tap a trunk card below first.</div>'}<button class="gold" data-a="buy:${i}" ${it.sold || r.embers < it.price || (it.kind === 'charm' && r.charms.length >= db.config.charmSlots) || (it.kind === 'scrap' && G.pickTrunk == null) ? 'disabled' : ''}>${it.sold ? 'Sold' : it.kind === 'charm' && r.charms.length >= db.config.charmSlots ? 'Charm slots full' : it.price + ' Embers'}</button></div>`).join('')}</div>
     ${o.merchant === 'scrapper' ? `<div class="grid">${deckList(r.trunk, 'trunkpick', G.pickTrunk)}</div>` : ''}<div class="row"><button data-a="leave">Leave</button></div></div></div>`;
 }
 function screenOver() {
