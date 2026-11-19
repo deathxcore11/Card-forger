@@ -645,9 +645,11 @@ private fun TableSide(st: MatchState, c: MatchController, beat: Beat?, live: Boo
         // spell-mode back-out acts on the step after a prompt.
         if (beat == null) BoxWithConstraints(Modifier.fillMaxSize()) { DecisionDock(st, live, c.intents, onInspect, chromeU(maxWidth, maxHeight), replies = c.dockReplies) }
         // Gaps list 1 (15 Nov): a one-card scry shows its card (Top and Bottom alone sat 10 s with nothing to read).
+        // Explains itself E4: a one-card surveil is the same view (Library and Graveyard alone showed no card).
         if (beat == null && live && st.waitingOnMe) ScryOne.of(st)?.let { name ->
+            val kind = ScryOne.kind(st) ?: ScryKind.SCRY
             BoxWithConstraints(Modifier.fillMaxSize()) { ScryOneView(st, name, live, Du(chromeU(maxWidth, maxHeight)),
-                onTop = { c.intents.ok(); c.intents.told(ScryOne.result(ScryOne.TOP)) }, onBottom = { c.intents.cancel(); c.intents.told(ScryOne.result(ScryOne.BOTTOM)) }) } }
+                onTop = { c.intents.ok(); c.intents.told(ScryOne.result(ScryOne.TOP, kind)) }, onBottom = { c.intents.cancel(); c.intents.told(ScryOne.result(ScryOne.BOTTOM, kind)) }) } }
     }
 }
 

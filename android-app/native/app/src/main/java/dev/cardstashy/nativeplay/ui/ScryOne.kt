@@ -74,13 +74,34 @@ import kotlin.math.roundToInt
 object ScryOne {
     private val ASK = Regex("^Put (.+) on the top or bottom of your library\\?$")
 
-    /** The card a one-card scry is about, or null when this is not that question. */
-    fun of(st: MatchState): String? {
+    /**
+     * Explains itself E4: Forge's one-card surveil, seen in an engine run on 11 Nov (builder/surveil-prompt-brief.md): the same plain
+     * InputConfirm, "Put <card> on the top of library or graveyard?", Library as its OK and Graveyard as its cancel. It showed two
+     * buttons and no card.
+     */
+    private val ASK_SURVEIL = Regex("^Put (.+) on the top of (?:your )?library or (?:your )?graveyard\\?$")
+
+    /** Which question this is, or null when it is neither a one-card scry nor a one-card surveil. */
+    fun kind(st: MatchState): ScryKind? {
         val input = st.inputType ?: return null
         if (st.prompt != null || !input.startsWith("InputConfirm") || input == "InputConfirmMulligan") return null
-        if (!st.buttons.ok.equals("Top", true) || !st.buttons.cancel.equals("Bottom", true)) return null
-        return st.message.lines().map { it.trim() }.firstNotNullOfOrNull { ASK.find(it)?.groupValues?.get(1) }
+        return when {
+            st.buttons.ok.equals("Top", true) && st.buttons.cancel.equals("Bottom", true) -> ScryKind.SCRY
+            st.buttons.ok.equals("Library", true) && st.buttons.cancel.equals("Graveyard", true) -> ScryKind.SURVEIL
+            else -> null
+        }
     }
+
+    /** The card a one-card scry or surveil is about, or null when this is not that question. */
+    fun of(st: MatchState): String? {
+        val ask = when (kind(st)) { ScryKind.SCRY -> ASK; ScryKind.SURVEIL -> ASK_SURVEIL; null -> return null }
+        return st.message.lines().map { it.trim() }.firstNotNullOfOrNull { ask.find(it)?.groupValues?.get(1) }
+    }
+
+    /** The zone the card leaves the top for: the bottom of your deck (scry) or your graveyard (surveil). */
+    fun awayWord(kind: ScryKind) = if (kind == ScryKind.SURVEIL) "Graveyard" else "Bottom"
+    /** The line under the title. */
+    fun subtitle(kind: ScryKind) = if (kind == ScryKind.SURVEIL) "Top of your deck or your graveyard" else "Top or bottom of your deck"
 
     /** What asked: your own spell or trigger on top of the stack (the Sorcerer Role's attack trigger), when the table knows it. */
     fun trigger(st: MatchState): StackItem? = st.stack.firstOrNull()?.takeIf { it.controller == st.viewer }
@@ -93,7 +114,7 @@ object ScryOne {
     /** What Done answers for a [place]: true = Top (Forge's OK). Done alone keeps the card on top, as the brief's row does. */
     fun keepsOnTop(place: Int) = place != BOTTOM
     /** The bubble Done leaves on the table ("Scry: 0 top, 1 bottom"). */
-    fun result(place: Int) = if (keepsOnTop(place)) ScryArrange.resultFor(ScryKind.SCRY, 1, 0) else ScryArrange.resultFor(ScryKind.SCRY, 0, 1)
+    fun result(place: Int, kind: ScryKind = ScryKind.SCRY) = if (keepsOnTop(place)) ScryArrange.resultFor(kind, 1, 0) else ScryArrange.resultFor(kind, 0, 1)
 }
 
 private val ScryGold = Color(0xFFE8B95B)
@@ -110,6 +131,9 @@ private val ScryDim = Color(0xFF9AA2B1)
  */
 @Composable
 internal fun ScryOneView(st: MatchState, name: String, live: Boolean, d: Du, onTop: () -> Unit, onBottom: () -> Unit) = with(d) {
+    // Explains itself E4: a one-card surveil is the same view with its own words (the Graveyard zone on the left).
+    val kind = remember(name) { ScryOne.kind(st) ?: ScryKind.SCRY }
+    val away = ScryOne.awayWord(kind)
     var place by remember(name) { mutableIntStateOf(ScryOne.MIDDLE) }
     var answered by remember(name) { mutableStateOf(false) }
     val peek = rememberTablePeek()
@@ -118,7 +142,7 @@ internal fun ScryOneView(st: MatchState, name: String, live: Boolean, d: Du, onT
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { TableCover.peek = false } }
     val done = { if (live && !answered) { answered = true; if (ScryOne.keepsOnTop(place)) onTop() else onBottom() } }
     PadScreen(PadActs(x = if (live) PadAct("Done") { done() } else null, yHold = { peek.held = it },
-        tabs = { dir -> place = if (dir < 0) ScryOne.BOTTOM else ScryOne.TOP }, tabsLabel = "Bottom / Top"))
+        tabs = { dir -> place = if (dir < 0) ScryOne.BOTTOM else ScryOne.TOP }, tabsLabel = "$away / Top"))
     val reduced = Motion.still || LocalContext.current.applicationContext.let { c -> remember { Playmats.reduced(c) } }
     // The view comes in: the dimmer settles, the card rises off the deck and opens (420 ms, brief L6), the zones follow.
     val enter = remember(name) { Animatable(if (reduced) 1f else 0f) }
@@ -148,14 +172,14 @@ internal fun ScryOneView(st: MatchState, name: String, live: Boolean, d: Du, onT
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = enter.value.coerceIn(0f, 1f) }.background(TableDimmer).pointerInput(Unit) { detectTapGestures { } })
             // Title block.
             Column(Modifier.align(Alignment.TopCenter).padding(top = H * .04f).graphicsLayer { alpha = enter.value }, horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Scry 1", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(28f), letterSpacing = .1.em,
+                Text("${kind.word} 1", style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(28f), letterSpacing = .1.em,
                     brush = Brush.verticalGradient(listOf(Color(0xFFFFF0C8), Color(0xFFE8B95B), Color(0xFFB98D3A))), shadow = Shadow(Color(0x99000000), Offset(0f, 3f), 10f)), maxLines = 1)
                 Box(Modifier.padding(top = 3.du).width(150.du).height(1.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, ScryGold.copy(alpha = .7f), Color.Transparent))))
-                Text("Top or bottom of your deck", style = sans(sp(13f), FontWeight.SemiBold, ScryDim), maxLines = 1, modifier = Modifier.padding(top = 4.du))
+                Text(ScryOne.subtitle(kind), style = sans(sp(13f), FontWeight.SemiBold, ScryDim), maxLines = 1, modifier = Modifier.padding(top = 4.du))
             }
             // The two zones.
             for (side in listOf(ScryOne.BOTTOM, ScryOne.TOP)) {
-                val word = if (side == ScryOne.BOTTOM) "Bottom" else "Top"
+                val word = if (side == ScryOne.BOTTOM) away else "Top"
                 val lit by animateFloatAsState(if (hover == side) 1f else 0f, if (reduced) snap() else tween(180), label = "zone")
                 Box(Modifier.align(Alignment.Center).offset(x = zoneDx * side, y = cy).size(zoneW, zoneH)
                     .graphicsLayer { alpha = enter.value; val s = .96f + .04f * enter.value; scaleX = s; scaleY = s }
@@ -171,7 +195,8 @@ internal fun ScryOneView(st: MatchState, name: String, live: Boolean, d: Du, onT
                         drawRoundRect(ScryGold.copy(alpha = .55f + .4f * lit), cornerRadius = r,
                             style = Stroke(w, pathEffect = if (lit > .5f) null else PathEffect.dashPathEffect(floatArrayOf(7.du.toPx(), 5.du.toPx()))))
                     }, contentAlignment = Alignment.BottomCenter) {
-                    Text(word.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(15f), letterSpacing = .2.em,
+                    // "GRAVEYARD" is longer than "BOTTOM": it is set a little tighter so it never cuts in the zone.
+                    Text(word.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(if (word.length > 6) 13f else 15f), letterSpacing = if (word.length > 6) .08.em else .2.em,
                         color = ScryGold.copy(alpha = .8f + .2f * lit)), maxLines = 1, modifier = Modifier.height(labelH).padding(top = 4.du))
                 }
             }
