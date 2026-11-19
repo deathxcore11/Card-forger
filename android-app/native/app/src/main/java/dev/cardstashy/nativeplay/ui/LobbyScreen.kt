@@ -357,6 +357,8 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     // Quick Play (0.4.59 T8): every deck of the chip's format, or of every format under All; Practice: the lobby's format.
     val inFormat = if (quickOnly) decks.filter { m.pickFormat == null || it.format == m.pickFormat } else decks.filter { it.format == m.format }
     val visible = inFormat.filter { d -> listOf(d.name, d.commander).any { it.lowercase().contains(m.query.lowercase().trim()) } }
+        // Randall, 19 Nov: in Quick Play the decks he can play come first; the grey "Missing cards" ones go to the end (order kept).
+        .let { l -> if (quickOnly) quickPlayableFirst(l) { it.id in locked } else l }
     val browserSelected = m.seat(m.browseSeat)
     fun chosen(d: TableDecks.Deck) = browserSelected?.source == "saved" && browserSelected.id == d.id
 
@@ -1915,3 +1917,6 @@ internal fun homeDeckOf(raw: JsonObject): HomeDeck {
     val d = SeatDeck(raw, "saved")
     return HomeDeck(d.id, d.name, d.format, d.count + (if (d.commander.isNotBlank()) 1 else 0).let { if (d.commander.isNotBlank() && rowNames(raw).contains(d.commander)) 0 else it }, coverOf(raw))
 }
+
+/** Quick Play's own decks with the playable ones first and the "Missing cards" ones after, each group in its own order. */
+internal fun <T> quickPlayableFirst(decks: List<T>, locked: (T) -> Boolean): List<T> = decks.filterNot(locked) + decks.filter(locked)
