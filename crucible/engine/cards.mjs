@@ -1,12 +1,11 @@
 // Card database for Lost Memories (codename crucible). Everything here is derived from
 // crucible-pool.json (generated from the app's Yu-Gi-Oh card source) and the hand-kept
 // tag table. No stats are typed in code.
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const DATA = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../data');
-const readJson = f => JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8'));
+// Node-only file loading is looked up at call time so this module also bundles for the browser.
+function readJson(f) {
+  const fs = process.getBuiltinModule('node:fs'), path = process.getBuiltinModule('node:path'), url = process.getBuiltinModule('node:url');
+  return JSON.parse(fs.readFileSync(path.join(path.dirname(url.fileURLToPath(import.meta.url)), '../data', f), 'utf8'));
+}
 
 export const WHEEL = { WATER: 'FIRE', FIRE: 'WIND', WIND: 'EARTH', EARTH: 'WATER' };
 export const EFFECTS = ['burn', 'heal', 'destroy', 'destroyAll', 'bounce', 'pump', 'weaken', 'draw', 'flip', 'freeze', 'position', 'revive'];

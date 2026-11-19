@@ -1,0 +1,327 @@
+// Lost Memories playable test page (codename crucible). Runs the real engine in the browser.
+// The duel is drawn only from viewFor(seat 0), so this page cannot show hidden cards.
+import { buildDb, roleOf, weightOf } from '../engine/cards.mjs';
+import { legalActions, playVariants, planChain, viewFor, forecast } from '../engine/duel.mjs';
+import { RELICS } from '../engine/relics.mjs';
+import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES } from '../engine/run.mjs';
+
+const D = window.CRUCIBLE_DATA;
+const db = buildDb(D.pool, D.tags, D.config);
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1';
+const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private window */ } }, del(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } } };
+
+const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, pickDeck: null, pickTrunk: null, log: [], fast: false };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const card = id => db.byId.get(id);
+// Card pictures come from sprite sheets of 100 (10 by 10), in pool order, so nothing is hot-linked.
+const IDX = new Map(D.pool.cards.map((c, i) => [c.id, i]));
+const pic = id => { const i = IDX.get(id); if (i == null || !D.sheets) return ''; const k = i % 100; return `<span class="pic" style="background-image:url(${D.sheets}${Math.floor(i / 100)}.webp);background-position:${(k % 10) * 100 / 9}% ${Math.floor(k / 10) * 100 / 9}%"></span>`; };
+const ATTR = { DARK: '#7a4bd6', LIGHT: '#e8c95a', FIRE: '#e0562f', WATER: '#3d8fe0', EARTH: '#9a7a45', WIND: '#4fb87a', DIVINE: '#d9d9d9' };
+const FX_TEXT = { burn: n => n < 0 ? 'The attacker\'s ATK hits its owner. The attack stops.' : `Rival loses ${n} Life Points.`, heal: n => n < 0 ? 'Gain Life Points equal to the attacker\'s ATK.' : `Gain ${n} Life Points.`, destroy: () => 'Destroy one rival monster.', destroyAll: n => n === 1 ? 'Destroy every monster on both sides.' : 'Destroy every rival monster.', bounce: () => 'Return one rival monster to its hand.', pump: n => `One of your monsters gets +${n} ATK and DEF this duel.`, weaken: n => `One rival monster gets -${n} ATK and DEF this duel.`, draw: n => `Draw ${n}.`, flip: () => 'Turn every veiled rival monster face up.', freeze: n => n ? `Rival monsters cannot attack for ${n} of their turns.` : 'The attack stops and the rival cannot attack again this turn.', position: () => 'Turn one rival monster to its other position.', revive: () => 'Return your strongest monster from the graveyard.' };
+
+function rulesText(id) {
+  const c = card(id), role = roleOf(db, id);
+  if (role === 'monster') return 'Fights with its printed ATK and DEF. Printed effects are not used in Lost Memories.';
+  if (role === 'field') { const f = db.fieldOf.get(id); return 'Terrain: ' + (f.attr ? f.attr + ' monsters' : [...f.types].join(', ')) + ' get +500 ATK and DEF. Both sides.'; }
+  if (role === 'equip') return 'Attach to one of your monsters: +500 ATK and DEF this duel.';
+  if (role === 'spell') { const t = db.tagOf.get(id); return 'Spell: ' + FX_TEXT[t.fx](t.n); }
+  if (role === 'trap') { const t = db.tagOf.get(id); return 'Trap, set face down. Springs when the rival attacks: ' + FX_TEXT[t.fx](t.n); }
+  return 'Fuel: meld it into any monster for +300 ATK and DEF. It cannot be played alone.';
+}
+
+// ---------- card drawing ----------
+function face(inst, o = {}) {
+  if (!inst) return '';
+  if (inst.veil && !inst.id) return `<div class="c back ${inst.pos === 'd' ? 'def' : ''}" ${o.attrs || ''}><img decoding="sync" src="art/cardback.webp" alt="Veiled card"></div>`;
+  const c = card(inst.id), role = roleOf(db, inst.id), mon = role === 'monster';
+  const a = inst.ea ?? (c.atk + (inst.t ? 300 : 0) + (inst.ba || 0)), d = inst.ed ?? (c.def + (inst.t ? 300 : 0) + (inst.bd || 0));
+  const up = mon && (a > c.atk || d > c.def), down = mon && (a < c.atk);
+  const foil = inst.b ? 'ghost' : inst.t && inst.e ? 'secret' : inst.e ? 'ultra' : inst.t ? 'super' : '';
+  return `<div class="c ${role} ${inst.pos === 'd' ? 'def' : ''} ${inst.veil ? 'myveil' : ''} ${foil} ${o.cls || ''}" ${o.attrs || ''} data-id="${inst.id}">
+    <div class="art" style="--attr:${mon ? ATTR[c.attr] : '#444'}"><span class="ph">${mon ? esc(c.type) : role.toUpperCase()}</span>${pic(inst.id)}</div>
+    <div class="nm">${esc(c.name)}</div>
+    ${mon ? `<div class="meta"><i style="background:${ATTR[c.attr]}"></i>${esc(c.attr)} · Lv ${c.level}</div><div class="st ${up ? 'up' : ''} ${down ? 'down' : ''}">${a}<b>/</b>${d}</div>` : `<div class="meta">${role === 'fuel' ? 'Fuel' : role[0].toUpperCase() + role.slice(1)}</div>`}
+    ${inst.e ? `<div class="en">${inst.e}</div>` : ''}${inst.veil ? '<div class="vl">VEILED</div>' : ''}${o.badge ? `<div class="bd">${o.badge}</div>` : ''}
+  </div>`;
+}
+const ART = new Set(D.art || []);
+const relicImg = id => { const f = (RELICS[id].kind === 'M' ? 'masterwork' : 'relic') + '-' + id.replace(/_/g, '-'); return ART.has(f) ? `<img class="ri" decoding="sync" src="art/${f}.webp" alt="">` : '<span class="ri gem"></span>'; };
+const relicRow = (id, extra = '') => `<div class="relic">${relicImg(id)}<div><b>${esc(RELICS[id].name)}</b> <small>${{ C: 'Charm', G: 'Gift', M: 'Masterwork' }[RELICS[id].kind]}</small><br>${esc(RELICS[id].text)}${extra}</div></div>`;
+
+// ---------- run plumbing ----------
+function act(a) {
+  const run = G.run; if (!run || G.playing) return;
+  const frames = [];
+  const wasDuel = run.phase === 'duel' || (run.phase === 'chamber' && a.t === 'door');
+  try {
+    runApply(run, a, db, { onStep: evs => { if (run.duel) frames.push({ view: JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))), evs, rival: info(run) }); } });
+  } catch (e) { toast(e.message); render(); return; }
+  G.sel = []; G.onto = null; G.attacker = null;
+  if (run.codex) { for (const k of run.codex) G.known.add(k); store.set(KNOWN, [...G.known]); }
+  if (run.phase === 'over') store.del(SAVE); else store.set(SAVE, run);
+  if (wasDuel && frames.length) { G.frames = frames; if (!run.duel && run.lastDuel) G.overlay = { kind: 'duelEnd', sum: run.lastDuel, rival: G.lastRival }; playFrames(); }
+  else render();
+}
+const info = run => (G.lastRival = run.rival ? { name: run.rival.name, tier: run.rival.tier, lawText: run.rival.lawText, bountyText: run.rival.bountyText, twist: run.rival.twist } : G.lastRival);
+function toast(m) { G.toast = m; clearTimeout(toast.t); toast.t = setTimeout(() => { G.toast = ''; const t = $('#toast'); if (t) t.textContent = ''; }, 2600); }
+
+async function playFrames() {
+  G.playing = true;
+  while (G.frames.length) {
+    const f = G.frames.shift();
+    const ghosts = snapshotGhosts(f.evs);
+    G.shown = f; render();
+    animate(f.evs, ghosts);
+    for (const e of f.evs) logLine(e, f.view);
+    const heavy = f.evs.some(e => ['battle', 'summon', 'spell', 'trap', 'terrain', 'meld', 'equip', 'set', 'destroyed'].includes(e.e));
+    await new Promise(r => setTimeout(r, G.fast ? 60 : heavy ? 620 : 140));
+  }
+  G.playing = false; G.shown = null; render();
+}
+function logLine(e, v) {
+  const who = s => s === 0 ? 'You' : 'Rival';
+  const n = id => id ? card(id).name : 'a veiled card';
+  let t = null;
+  switch (e.e) {
+    case 'summon': t = `${who(e.seat)} played ${n(e.id)}${e.melded ? ' (meld)' : ''}.`; break;
+    case 'battle': t = e.direct ? `Direct attack for ${e.a}.` : `Battle: ${e.a} against ${e.d}${e.edgeA || e.edgeD ? ' (Attribute edge)' : ''}.`; break;
+    case 'destroyed': t = `${n(e.id)} was destroyed.`; break;
+    case 'spell': t = `${who(e.seat)} cast ${n(e.id)}.`; break;
+    case 'trap': t = `${who(e.seat)} sprang ${n(e.id)}.`; break;
+    case 'terrain': t = `Terrain is now ${n(e.id)}.`; break;
+    case 'relic': t = e.seat === 0 ? `${RELICS[e.id].name}${e.a || e.d ? ` +${e.a || 0}/+${e.d || 0}` : ''}.` : null; break;
+    case 'cap': t = `Relic bonus cap reached: +${e.cap} / +${e.cap}.`; break;
+    case 'meld': t = e.kind === 'fizzle' ? `Fizzle: ${n(e.lost)} is lost.` : null; break;
+    case 'set': t = `${who(e.seat)} set a card.`; break;
+    case 'turn': t = `Turn ${e.turn}: ${who(e.seat)}.`; break;
+    case 'lp': t = null; break;
+  }
+  if (t) { G.log.push(t); if (G.log.length > 40) G.log.shift(); }
+}
+
+// ---------- motion ----------
+const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
+function zoneEl(seat, z) { return document.querySelector(`[data-zone="${seat}:${z}"]`); }
+function snapshotGhosts(evs) {
+  const out = [];
+  for (const e of evs) if (e.e === 'destroyed' || e.e === 'bounce') { const el = zoneEl(e.seat, e.zone); const c = el && el.querySelector('.c'); if (c) { const r = c.getBoundingClientRect(); out.push({ html: c.outerHTML, r, fs: getComputedStyle(c).fontSize, kind: e.e }); } }
+  return out;
+}
+function animate(evs, ghosts) {
+  if (RM) return;
+  for (const g of ghosts) {
+    const w = document.createElement('div'); w.className = 'ghost'; w.innerHTML = g.html;
+    Object.assign(w.style, { left: g.r.left + 'px', top: g.r.top + 'px', width: g.r.width + 'px', height: g.r.height + 'px', fontSize: g.fs });
+    document.body.appendChild(w);
+    w.animate(g.kind === 'destroyed' ? [{ opacity: 1, filter: 'brightness(1)' }, { opacity: 1, filter: 'brightness(2.2) sepia(1) saturate(4) hue-rotate(-20deg)', offset: .35 }, { opacity: 0, transform: 'scale(.82) translateY(10%)', filter: 'brightness(.3)' }] : [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-40%) scale(.8)' }], { duration: 480, easing: 'ease-in' }).onfinish = () => w.remove();
+  }
+  for (const e of evs) {
+    if (e.e === 'summon') { const c = zoneEl(e.seat, e.zone)?.querySelector('.c'); if (c) c.animate([{ transform: `translateY(${e.seat === 0 ? 60 : -60}%) scale(1.25)`, opacity: 0 }, { transform: 'scale(1.08)', opacity: 1, filter: 'brightness(1.7)', offset: .7 }, { transform: 'none', filter: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
+    if (e.e === 'attack') { const a = zoneEl(e.seat, e.from)?.querySelector('.c'); const t = e.to >= 0 ? zoneEl(1 - e.seat, e.to) : $(e.seat === 0 ? '#rivalLp' : '#myLp'); if (a && t) { const ra = a.getBoundingClientRect(), rt = t.getBoundingClientRect(); const dx = (rt.left + rt.width / 2) - (ra.left + ra.width / 2), dy = (rt.top + rt.height / 2) - (ra.top + ra.height / 2); a.animate([{ transform: 'none' }, { transform: `translate(${dx * .08 * -1}px,${dy * -.08}px) scale(1.06)`, offset: .25 }, { transform: `translate(${dx * .8}px,${dy * .8}px) scale(1.12)`, offset: .55 }, { transform: 'none' }], { duration: 460, easing: 'cubic-bezier(.5,0,.2,1)' }); a.style.zIndex = 5; setTimeout(() => (a.style.zIndex = ''), 470); } }
+    if (e.e === 'lp') { const el = $(e.seat === 0 ? '#myLp' : '#rivalLp'); if (el) { el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)', color: e.d < 0 ? '#ff6b5a' : '#7be08d', offset: .3 }, { transform: 'scale(1)' }], { duration: 500 }); const f = document.createElement('span'); f.className = 'float ' + (e.d < 0 ? 'neg' : 'pos'); f.textContent = (e.d > 0 ? '+' : '') + e.d; el.appendChild(f); setTimeout(() => f.remove(), 900); } if (e.d <= -1500) { app.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-.5%,.4%)' }, { transform: 'translate(.5%,-.3%)' }, { transform: 'none' }], { duration: 240 }); } }
+    if (e.e === 'relic' && e.seat === 0) { const b = $('#relicFlash'); if (b) { b.textContent = RELICS[e.id].name + (e.a || e.d ? ` +${e.a || 0}/+${e.d || 0}` : ''); b.animate([{ opacity: 0, transform: 'translateY(40%)' }, { opacity: 1, transform: 'none', offset: .2 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: 1100 }); } }
+    if (e.e === 'terrain') { const t = $('#terrain'); if (t) t.animate([{ filter: 'brightness(2.4)' }, { filter: 'none' }], { duration: 500 }); }
+    if (e.e === 'draw' && e.seat === 0) { const cs = [...document.querySelectorAll('.hand .hs .c')].slice(-e.n); cs.forEach((c, i) => c.animate([{ transform: 'translate(120%,-40%) rotate(8deg) scale(.6)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 300, delay: i * 70, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' })); }
+  }
+}
+
+// ---------- screens ----------
+function hud() {
+  const r = G.run; if (!r || r.phase === 'kit') return '';
+  const cap = weightCap(db, r), w = deckWeight(db, r.deck);
+  const sparks = '◆'.repeat(Math.max(0, r.sparks)) + '◇'.repeat(Math.max(0, db.config.sparks - r.sparks));
+  return `<div class="hud glass"><span>Floor ${r.floor + 1} · Chamber ${Math.min(r.chamber + 1, 6)}</span><span class="sp" title="Sparks">${sparks}</span><span>Embers <b>${r.embers}</b></span><span>Seals <b>${Math.min(2, r.seals)}/2</b></span><span>Weight <b>${w}/${cap}</b></span><span>Forge Lv <b>${r.level}</b></span>
+    <button data-a="tab:deck">Deck</button><button data-a="tab:relics">Relics (${relicList(r).length})</button><button data-a="tab:help">Rules</button><button data-a="quit">Abandon</button></div>`;
+}
+
+function screenHome() {
+  const saved = store.get(SAVE);
+  return `<div class="hall home"><div class="title"><small>CARDSTASHY</small><h1>LOST MEMORIES</h1><p>Test build of the real rules engine. Three floors, six chambers each, three Sparks.</p>
+    <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved ? '' : 'gold'}" data-a="new">New run</button><button data-a="tab:help">How to play</button></div>
+    <p class="fine">Not final art. Seen only in a test browser so far.</p></div></div>`;
+}
+function summary(deck) {
+  const mons = deck.filter(e => db.isMonster(e.id)).map(e => card(e.id));
+  const types = {}; mons.forEach(c => types[c.type] = (types[c.type] || 0) + 1);
+  const top = Object.entries(types).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t, n]) => `${n} ${t}`).join(', ');
+  return `${mons.length} monsters (${top}), average ATK ${Math.round(mons.reduce((n, c) => n + c.atk, 0) / mons.length)}, weight ${deckWeight(db, deck)}`;
+}
+function screenKit() {
+  const r = G.run;
+  return `<div class="hall"><div class="panel glass wide"><h2>Pick a starter kit</h2><div class="kits">${r.offer.map((k, i) => `<div class="kit glass"><h3>${esc(k.name)}</h3><p>${summary(k.deck)}</p><div class="mini">${k.deck.slice().sort((a, b) => cardValue(db, b) - cardValue(db, a)).slice(0, 5).map(e => face(e, { attrs: `data-a="inspect:${e.id}"` })).join('')}</div><button class="gold" data-a="kit:${i}">Take this kit</button></div>`).join('')}</div>
+    <div class="row">${r.redeal ? '<button data-a="redeal">Deal again (once)</button>' : '<span class="fine">Re-deal used.</span>'}</div></div></div>`;
+}
+function pickList(title, items, sub = '') { return `<div class="hall"><div class="panel glass wide"><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}<div class="picks">${items.join('')}</div></div></div>`; }
+function screenCharm() { return pickList('Pick one charm', G.run.offer.options.map((id, i) => `<div class="pick glass">${relicRow(id)}<button class="gold" data-a="pick:${i}">Take</button></div>`), 'A charm changes a rule for the whole run.'); }
+
+const DOOR_ART = { duel: 'duel', cursed: 'cursed', champion: 'champion', guardian: 'guardian', anvil: 'anvil', bazaar: 'bazaar', sanctum: 'sanctum', omen: 'omen', treasure: 'treasure', boss: 'boss', mystery: 'omen' };
+function screenChamber() {
+  const r = G.run, boss = BOSSES[r.floor][r.bossOrder[r.floor]];
+  return `<div class="hall doorsHall">${r.lastNote ? `<div class="note glass">${esc(r.lastNote)}</div>` : ''}<div class="bossline glass">Guardian of this floor: <b>${esc(boss.name)}</b>${r.chamber >= 2 ? '. ' + esc(boss.lawText) : '. Its Law shows from chamber 3.'}</div>
+    <div class="doors">${r.doors.map((d, i) => { const locked = d.type === 'boss' && r.seals < 2; return `<button class="door t-${d.type}" data-a="door:${i}" ${locked ? 'disabled' : ''}><img decoding="sync" src="art/door-${DOOR_ART[d.type]}.webp" alt=""><div class="dtxt glass"><b>${esc(d.name)}</b><span class="k">${d.know === 'known' ? 'Known' : d.know === 'partial' ? 'Partly hidden' : 'Mysterious'}</span><span><i>Cost</i> ${esc(d.cost)}</span><span><i>Reward</i> ${esc(d.reward)}</span>${d.law ? `<span><i>Law</i> ${esc(d.law)}</span>` : ''}${(d.tags || []).map(t => `<em>${esc(t)}</em>`).join('')}</div></button>`; }).join('')}</div></div>`;
+}
+
+function screenDuel() {
+  const live = G.run.duel, f = G.shown;
+  const v = f ? f.view : live ? viewFor(live, db, 0) : null;
+  if (!v) return '';
+  const rv = f ? f.rival : info(G.run);
+  const myTurn = !G.playing && live && !live.pending && live.active === 0;
+  const pend = !G.playing && live && live.pending && live.active === 1;
+  const la = myTurn ? legalActions(live, db, { maxChain: 1 }) : [];
+  const canAtk = new Map(); la.filter(a => a.t === 'attack').forEach(a => { if (!canAtk.has(a.from)) canAtk.set(a.from, []); canAtk.get(a.from).push(a.to); });
+  const canPos = new Set(la.filter(a => a.t === 'pos').map(a => a.zone));
+  const canPlay = myTurn && !live.played && !live.attacked;
+  const targets = G.attacker != null ? (canAtk.get(G.attacker) || []) : [];
+  const fc = z => { const X = live.mon[0][G.attacker], T = z >= 0 ? v.mon[1][z] : null; if (z < 0) return `Direct: ${v.mon[0][G.attacker].ea} to Life Points`; if (T.veil) return '?'; const q = forecast(live, db, 0, X, 1, live.mon[1][z]); return `${q.a} v ${q.d}${q.edgeA ? ' ▲' : ''}${q.edgeD ? ' ▼' : ''}: ${q.killT ? 'destroys it' : q.killX ? 'you lose yours' : 'no kill'}${q.dmgDef ? `, ${q.dmgDef} dmg` : ''}${q.dmgAtk ? `, you take ${q.dmgAtk}` : ''}`; };
+  const row = (seat) => v.mon[seat].map((m, z) => {
+    let cls = 'slot', attrs = `data-zone="${seat}:${z}"`, tip = '';
+    if (seat === 0 && m && myTurn) { if (canAtk.has(z)) cls += ' ready'; attrs += ` data-a="mine:${z}"`; if (G.attacker === z) cls += ' picked'; if (G.onto === z) cls += ' onto'; }
+    if (seat === 1 && m && targets.includes(z)) { cls += ' target'; attrs += ` data-a="hit:${z}"`; tip = `<div class="fc">${fc(z)}</div>`; }
+    else if (m) attrs += ` data-a="inspectz:${seat}:${z}"`;
+    return `<div class="${cls}" ${attrs}>${m ? face(m) : ''}${tip}</div>`;
+  }).join('');
+  const shut = v.mon[0].length < 5 ? '<div class="slot closed"></div>' : ''; // Narrow Pass: the outer zones stay drawn, sealed, so the table never changes shape
+  const traps = seat => v.traps[seat].map(t => `<div class="tslot">${t ? (seat === 0 ? face(t, { cls: 'tiny', attrs: `data-a="inspect:${t.id}"` }) : '<div class="c back tiny"><img decoding="sync" src="art/cardback.webp" alt="Set card"></div>') : ''}</div>`).join('');
+  // meld tray
+  let tray = '<span class="fine">Tap hand cards in order. One card plays it. Two or more meld left to right.</span>', buttons = '';
+  if (canPlay && G.sel.length) {
+    const cards = G.sel.map(i => live.hand[0][i]); const ontoM = G.onto != null ? live.mon[0][G.onto] : null;
+    const plan = planChain(db, cards, ontoM, { tinder: v.relics.includes('tinder_vow'), steady: v.relics.includes('steady_hand') && !v.rs.steady });
+    const ids = (ontoM ? [ontoM.id] : []).concat(cards.map(c => c.id));
+    let allKnown = true; for (let i = 0; i + 1 < ids.length; i++) { const k = ids[i] < ids[i + 1] ? ids[i] + '+' + ids[i + 1] : ids[i + 1] + '+' + ids[i]; const bothMon = db.isMonster(ids[i]) && db.isMonster(ids[i + 1]); if (bothMon && !G.known.has(k)) allKnown = false; }
+    const vars = playVariants(live, db, 0, G.sel, G.onto);
+    const chain = ids.map(id => `<span class="chip">${esc(card(id).name)}</span>`).join('<b>→</b>');
+    const res = ids.length < 2 ? '' : `<b>=</b><span class="chip res">${allKnown ? esc(card(plan.final.id).name) + (plan.fizzles ? ` (${plan.fizzles} fizzle)` : '') : '? unknown meld'}</span>`;
+    tray = `<div class="chain">${chain}${res}</div>`;
+    if (!vars.length) tray += '<span class="fine bad">That cannot be played right now.</span>';
+    const lab = x => x.pos === 'a' ? (x.veiled ? 'Veiled attack' : 'Attack position') : x.pos === 'd' ? (x.veiled ? 'Veiled defense' : 'Defense position') : 'Play';
+    buttons = vars.map(x => `<button class="gold" data-a="play:${x.pos || ''}:${x.veiled ? 1 : 0}">${lab(x)}</button>`).join('') + '<button data-a="undo">Undo</button>';
+    if (G.sel.length === 1) buttons += '<button data-a="scrap">Scrap card</button>';
+  } else if (G.attacker != null) {
+    tray = `<span>Pick a target${targets.length ? '' : ' (none legal)'}.</span>`;
+    buttons = (targets.includes(-1) ? `<button class="gold" data-a="hit:-1">Direct attack (${v.mon[0][G.attacker].ea})</button>` : '') + (canPos.has(G.attacker) ? '<button data-a="pos">Change position</button>' : '') + '<button data-a="undo">Cancel</button>';
+  } else if (G.onto != null) { tray = '<span>Now tap hand cards to meld onto it.</span>'; buttons = '<button data-a="undo">Cancel</button>'; }
+  const hand = [0, 1, 2, 3, 4, 5].map(i => { const c = v.hand[i]; const k = G.sel.indexOf(i); return `<div class="hs">${c ? face(c, { cls: (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: `data-a="hand:${i}"`, badge: k >= 0 ? k + 1 : '' }) : ''}</div>`; }).join('');
+  const terr = v.terrain ? `Terrain: <b>${esc(card(v.terrain.id).name)}</b>${v.terrain.temp != null ? ` (holds ${v.terrain.temp} more of your turns)` : ''}${v.terrain.lock ? ' (locked)' : ''}` : 'No terrain';
+  const prompt = pend ? `<div class="modal"><div class="glass panel"><h3>The rival attacks${live.pending.to >= 0 ? ' ' + esc(card(live.mon[0][live.pending.to].id).name) : ' you directly'}</h3><p>Spring a Trap?</p><div class="picks">${live.pending.options.map(i => `<div class="pick glass">${face(live.traps[0][i], { cls: 'tiny' })}<div>${esc(rulesText(live.traps[0][i].id))}</div><button class="gold" data-a="respond:${i}">Spring it</button></div>`).join('')}</div><div class="row"><button data-a="respond:-1">Let the attack through</button></div></div></div>` : '';
+  return `<div class="duel ${v.twist || ''}"><div class="side top"><div class="who glass"><b id="rivalLp" class="lp">${v.lp[1]}</b><span>${esc(rv.name)}</span><small>Hand ${v.rivalHand} · Deck ${v.deckCount[1]}</small></div>
+      <div class="rules glass"><b>This duel</b>${rv.lawText ? `<span>${esc(rv.lawText)}</span>` : ''}${rv.twist ? `<span>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</span>` : ''}<span>Bounty: ${esc(rv.bountyText || '')}</span></div></div>
+    <div class="board"><div class="trow">${traps(1)}</div><div class="mrow">${shut}${row(1)}${shut}</div><div id="terrain" class="terrain">${terr}</div><div class="mrow">${shut}${row(0)}${shut}</div><div class="trow">${traps(0)}</div><div id="relicFlash" class="relicFlash"></div></div>
+    <div class="side bot"><div class="who glass"><b id="myLp" class="lp">${v.lp[0]}</b><span>You</span><small>Deck ${v.deckCount[0]} · Turn ${v.turn}</small></div>
+      <div class="logbox glass">${G.log.slice(-5).map(esc).join('<br>')}</div></div>
+    <div class="tray"><div class="hand">${hand}</div><div class="actions glass"><div class="trayline">${G.playing ? '<span>…</span>' : myTurn ? tray : pend ? '<span>Answer the attack.</span>' : '<span>Rival is thinking.</span>'}</div><div class="row">${buttons}${myTurn && !G.sel.length && G.attacker == null ? `<button class="gold" data-a="end">${v.turn === 1 || (!canAtk.size) ? 'End turn' : 'End turn'}</button>` : ''}${v.relics.includes('clean_draw') && !v.rs.cleanDraw && canPlay && G.sel.length === 1 ? '<button data-a="clean">Clean Draw this card</button>' : ''}<button data-a="speed">${G.fast ? 'Speed: fast' : 'Speed: normal'}</button></div></div></div>${prompt}</div>`;
+}
+
+function screenReward() {
+  const r = G.run, o = r.offer;
+  if (o.kind === 'card') return pickList('Pick a card', o.options.map((e, i) => `<div class="pick glass">${face(e, { attrs: `data-a="inspect:${e.id}"` })}<div>${esc(rulesText(e.id))}<br><small>Weight ${weightOf(db, e.id)}</small></div><button class="gold" data-a="pick:${i}">Take</button></div>`).concat('<div class="row"><button data-a="skip">Take nothing</button></div>'), 'It goes to your trunk. Swap it into the deck from the Deck button.');
+  if (o.kind === 'gift') return pickList('Forge Level up: pick a Gift', o.options.map((id, i) => `<div class="pick glass">${relicRow(id)}<button class="gold" data-a="pick:${i}">Take</button></div>`));
+  if (o.kind === 'charm') return pickList('Pick a charm', o.options.map((id, i) => `<div class="pick glass">${relicRow(id)}<button class="gold" data-a="pick:${i}">Take</button></div>`).concat('<div class="row"><button data-a="skip">Take nothing</button></div>'), `Charm slots ${r.charms.length}/${db.config.charmSlots}.`);
+  if (o.kind === 'guardian') return pickList('Guardian Reward', o.options.map((g, i) => `<div class="pick glass">${g.kind === 'card' ? face(g.entry) : g.kind === 'masterwork' ? relicRow(g.id) : '<div class="col">' + g.ids.map(id => relicRow(id)).join('') + '</div>'}<div><b>${esc(g.text)}</b></div><button class="gold" data-a="pick:${i}">Choose</button></div>`), 'One of three kinds of power. The weight cap rises by 20.');
+  if (o.kind === 'treasure') return pickList('Treasure', o.options.map((g, i) => `<div class="pick glass">${g.kind === 'card' ? face(g.entry) : relicRow(g.id)}<button class="gold" data-a="pick:${i}">Take</button></div>`));
+  if (o.kind === 'sanctum') return pickList('Sanctum', [`<div class="pick glass"><div><b>Take back one Spark</b><br>${r.sparks >= db.config.sparks ? 'Your Sparks are full.' : ''}</div><button class="gold" data-a="pick:0" ${r.sparks >= db.config.sparks ? 'disabled' : ''}>Take</button></div>`, `<div class="pick glass"><div><b>Raise your weight cap by 5</b></div><button class="gold" data-a="pick:1">Take</button></div>`]);
+  if (o.kind === 'omen') return pickList('Omen', [`<div class="pick glass">${o.seen ? face(o.card) : '<div class="c back"><img decoding="sync" src="art/cardback.webp" alt=""></div>'}<div>${esc(o.text)}<br><small>Trunk cards: ${r.trunk.length}. Your two weakest trunk cards are taken.</small></div><div class="col"><button class="gold" data-a="pick:0" ${r.trunk.length < 2 ? 'disabled' : ''}>Give two trunk cards</button><button data-a="pick:1" ${o.seen || r.embers < 30 ? 'disabled' : ''}>Pay 30 Embers to see it</button><button data-a="skip">Leave</button></div></div>`]);
+  return '';
+}
+function deckList(list, key, picked) { return list.map((e, i) => [e, i]).sort((a, b) => cardValue(db, b[0]) - cardValue(db, a[0])).map(([e, i]) => face(e, { cls: 'small ' + (picked === i ? 'sel' : ''), attrs: `data-a="${key}:${i}"` })).join(''); }
+function screenAnvil() {
+  const r = G.run, o = r.offer, P = db.config.prices, e = G.pickDeck != null ? r.deck[G.pickDeck] : null, e2 = G.pickTrunk != null ? r.deck[G.pickTrunk] : null;
+  return `<div class="hall"><div class="panel glass wide"><h2>Anvil</h2><p>One working, then you move on. Tap a deck card (tap a second for a Bind).</p>
+    <div class="row">${o.masterworks.map(id => `<button class="gold" data-a="mw:${id}" ${r.embers < P.masterwork ? 'disabled' : ''}>Forge ${esc(RELICS[id].name)} (${P.masterwork})</button>`).join('')}
+      <button data-a="temper" ${!e || r.embers < P.temper ? 'disabled' : ''}>Temper +300 (${P.temper})</button>
+      ${o.enchants.map(x => `<button data-a="enchant:${x}" ${!e || r.embers < P.enchant ? 'disabled' : ''}>Enchant: ${x} (${P.enchant})</button>`).join('')}
+      <button data-a="bind" ${!e || !e2 || r.embers < P.bind ? 'disabled' : ''}>Bind the two (${P.bind})</button><button data-a="leave">Leave</button></div>
+    <div class="grid">${r.deck.map((c, i) => [c, i]).sort((a, b) => cardValue(db, b[0]) - cardValue(db, a[0])).map(([c, i]) => face(c, { cls: 'small ' + (G.pickDeck === i ? 'sel' : G.pickTrunk === i ? 'sel2' : ''), attrs: `data-a="anvilpick:${i}"` })).join('')}</div></div></div>`;
+}
+function screenBazaar() {
+  const r = G.run, o = r.offer;
+  return `<div class="hall"><div class="panel glass wide"><h2>Bazaar</h2><p>You have ${r.embers} Embers.</p><div class="picks">${o.items.map((it, i) => `<div class="pick glass ${it.sold ? 'sold' : ''}">${it.kind === 'card' ? (it.sealed ? '<div class="c back"><img decoding="sync" src="art/cardback.webp" alt=""></div>' : face(it.entry, { attrs: `data-a="inspect:${it.entry.id}"` })) : it.kind === 'charm' ? relicRow(it.id) : '<div><b>The Scrapper</b><br>Removes one trunk card. Tap a trunk card below first.</div>'}<button class="gold" data-a="buy:${i}" ${it.sold || r.embers < it.price ? 'disabled' : ''}>${it.sold ? 'Sold' : it.price + ' Embers'}</button></div>`).join('')}</div>
+    ${o.merchant === 'scrapper' ? `<div class="grid">${deckList(r.trunk, 'trunkpick', G.pickTrunk)}</div>` : ''}<div class="row"><button data-a="leave">Leave</button></div></div></div>`;
+}
+function screenOver() {
+  const r = G.run, S = r.stats;
+  return `<div class="hall home"><div class="title"><h1>${r.result.won ? 'THE PYRAMID IS CLEARED' : 'THE RUN ENDS'}</h1><p>${r.result.won ? 'All three guardians fell.' : `You fell on floor ${r.floor + 1}, chamber ${Math.min(6, r.chamber + 1)}.`}</p>
+    <p>Duels ${S.duels} · Wins ${S.wins} · Melds ${S.melds} · Guardians beaten ${S.bossWins} · Ranks ${Object.entries(S.ranks).map(([k, v]) => k + '×' + v).join(' ')}</p><div class="row"><button class="gold" data-a="new">New run</button></div></div></div>`;
+}
+function tabPanel() {
+  const r = G.run;
+  if (G.tab === 'help') return `<div class="modal"><div class="glass panel wide"><h2>How a duel works</h2><ul><li>Each turn: draw toward five cards (two a turn at most), play one card or one meld, then attack.</li><li>Meld: tap two or more hand cards in order. They combine left to right into one monster. Tap one of your table monsters first to meld onto it.</li><li>Attack position fights with ATK. Defense uses DEF and protects your Life Points. Veiled is face down in defense.</li><li>WATER beats FIRE beats WIND beats EARTH beats WATER. LIGHT and DARK beat each other when attacking. The edge is +500 for that battle.</li><li>Field Spells set the terrain (+500 for its Types). Equips give +500. Traps wait face down for an attack. Other cards are fuel: +300 in a meld.</li><li>Play comes before attacks. A monster that attacked or just arrived cannot change position.</li><li>Lose a duel and you lose a Spark. The boss door needs two seals, one from each duel you win on the floor.</li></ul><div class="row"><button class="gold" data-a="tab:">Close</button></div></div></div>`;
+  if (!r) return '';
+  if (G.tab === 'relics') return `<div class="modal"><div class="glass panel wide"><h2>Your relics</h2>${relicList(r).map(id => relicRow(id)).join('') || '<p>None yet.</p>'}${possibleMasterworks(r).map(id => `<p class="fine">Masterwork ready at an Anvil: ${esc(RELICS[id].name)}.</p>`).join('')}<div class="row"><button class="gold" data-a="tab:">Close</button></div></div></div>`;
+  if (G.tab === 'deck') return `<div class="modal"><div class="glass panel wide"><h2>Deck ${r.deck.length} cards · weight ${deckWeight(db, r.deck)}/${weightCap(db, r)}</h2><p>${r.phase === 'chamber' ? 'Tap a deck card, then a trunk card, to swap them.' : 'You can swap cards between duels, in a chamber.'}</p><div class="grid">${deckList(r.deck, 'deckpick', G.pickDeck)}</div><h3>Trunk ${r.trunk.length}</h3><div class="grid">${deckList(r.trunk, 'trunkpick', G.pickTrunk) || '<span class="fine">Empty.</span>'}</div><div class="row"><button class="gold" data-a="tab:">Close</button></div></div></div>`;
+  return '';
+}
+function overlay() {
+  const o = G.overlay; if (!o || G.playing) return '';
+  if (o.kind === 'duelEnd') { const s = o.sum; return `<div class="modal"><div class="glass panel"><h2>${s.won ? 'Victory' : 'Defeat'}</h2><p>${esc(o.rival ? o.rival.name : '')} · ${s.turns} turns${s.reason === 'deckout' ? ' · a deck ran out' : ''}</p>${s.won ? `<div class="rankbig">${s.rank.rank}</div><table>${s.rank.lines.filter(l => l[1]).map(l => `<tr><td>${esc(l[0])}</td><td>${l[1] > 0 ? '+' : ''}${l[1]}</td></tr>`).join('')}<tr><td><b>Total</b></td><td><b>${s.rank.points}</b></td></tr></table><p>Style: ${s.rank.style === 'craft' ? 'Craft' : 'Fury'} · Embers +${s.embers}${s.bountyMet ? ' · Bounty met' : ''}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>`}<div class="row"><button class="gold" data-a="closeov">Continue</button></div></div></div>`; }
+  return '';
+}
+function inspectPanel() {
+  if (!G.inspect) return '';
+  const c = card(G.inspect.id);
+  return `<div class="modal" data-a="closeinspect"><div class="glass panel insp">${face(G.inspect, { cls: 'big' })}<div><h3>${esc(c.name)}</h3>${db.isMonster(c.id) ? `<p>${esc(c.type)} · ${esc(c.attr)} · Level ${c.level}<br>ATK ${c.atk} · DEF ${c.def}${G.inspect.ea != null ? `<br>Now ${G.inspect.ea} / ${G.inspect.ed}` : ''}</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p>Enchant: ${G.inspect.e}</p>` : ''}<p class="fine">Weight ${weightOf(db, c.id)}. Tap anywhere to close.</p></div></div></div>`;
+}
+
+function render() {
+  const r = G.run; let body;
+  if (!r) body = screenHome();
+  else if (G.shown || r.phase === 'duel') body = screenDuel();
+  else body = { kit: screenKit, charm: screenCharm, chamber: screenChamber, reward: screenReward, anvil: screenAnvil, bazaar: screenBazaar, over: screenOver }[r.phase]();
+  app.innerHTML = `${G.shown || (r && r.phase === 'duel') ? '' : hud()}${body}${tabPanel()}${overlay()}${inspectPanel()}<div id="toast" class="toast">${esc(G.toast)}</div>`;
+  app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home';
+}
+
+// ---------- input ----------
+app.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-a]'); if (!el || el.disabled) return;
+  const [verb, x, y] = el.dataset.a.split(':'); const r = G.run, n = x === undefined || x === '' ? null : +x;
+  const duel = a => act({ t: 'duel', action: a });
+  switch (verb) {
+    case 'new': store.del(SAVE); G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6) }); G.log = []; G.overlay = null; render(); break;
+    case 'resume': G.run = store.get(SAVE); render(); break;
+    case 'quit': if (el.dataset.sure) { store.del(SAVE); G.run = null; render(); } else { el.dataset.sure = 1; el.textContent = 'Tap again to abandon'; } break;
+    case 'kit': act({ t: 'kit', i: n }); break;
+    case 'redeal': act({ t: 'redeal' }); break;
+    case 'pick': act({ t: 'pick', i: n }); break;
+    case 'skip': act({ t: 'skip' }); break;
+    case 'door': G.log = []; act({ t: 'door', i: n }); break;
+    case 'leave': G.pickDeck = G.pickTrunk = null; act({ t: 'leave' }); break;
+    case 'tab': G.tab = x || null; G.pickDeck = G.pickTrunk = null; render(); break;
+    case 'deckpick': G.pickDeck = n; trySwap(); break;
+    case 'trunkpick': G.pickTrunk = n; trySwap(); break;
+    case 'anvilpick': if (G.pickDeck == null || G.pickDeck === n) G.pickDeck = G.pickDeck === n ? null : n; else G.pickTrunk = G.pickTrunk === n ? null : n; render(); break;
+    case 'temper': { const d = G.pickDeck; G.pickDeck = G.pickTrunk = null; act({ t: 'anvil', kind: 'temper', deck: d }); break; }
+    case 'enchant': { const d = G.pickDeck; G.pickDeck = G.pickTrunk = null; act({ t: 'anvil', kind: 'enchant', deck: d, enchant: x }); break; }
+    case 'bind': { const a = G.pickDeck, b = G.pickTrunk; G.pickDeck = G.pickTrunk = null; act({ t: 'anvil', kind: 'bind', a, b }); break; }
+    case 'mw': act({ t: 'anvil', kind: 'masterwork', id: x }); break;
+    case 'buy': { const t = G.pickTrunk; G.pickTrunk = null; act({ t: 'buy', i: n, trunk: t ?? 0 }); break; }
+    case 'inspect': G.inspect = { id: n }; render(); break;
+    case 'inspectz': { const v = viewFor(r.duel, db, 0); const m = v.mon[n][+y]; if (m && m.id) { G.inspect = m; render(); } break; }
+    case 'closeinspect': G.inspect = null; render(); break;
+    case 'closeov': G.overlay = null; render(); break;
+    case 'speed': G.fast = !G.fast; render(); break;
+    // duel
+    case 'hand': { if (G.playing || !r.duel || r.duel.active !== 0 || r.duel.pending) break; if (r.duel.played || r.duel.attacked) { G.inspect = r.duel.hand[0][n]; render(); break; } G.attacker = null; const k = G.sel.indexOf(n); if (k >= 0) G.sel.splice(k, 1); else G.sel.push(n); render(); break; }
+    case 'mine': { if (G.sel.length) { toast('Finish or undo your card pick first.'); break; } if (G.attacker === n) { G.attacker = null; G.onto = n; } else if (G.onto === n) { G.onto = null; G.inspect = viewFor(r.duel, db, 0).mon[0][n]; } else { G.attacker = n; G.onto = null; } render(); break; }
+    case 'hit': duel({ t: 'attack', from: G.attacker, to: n }); break;
+    case 'pos': duel({ t: 'pos', zone: G.attacker }); break;
+    case 'undo': G.sel = []; G.attacker = null; G.onto = null; render(); break;
+    case 'play': { const a = { t: 'play', hand: G.sel.slice(), onto: G.onto }; if (x) a.pos = x; if (y === '1') a.veiled = true; duel(a); break; }
+    case 'scrap': duel({ t: 'discard', hand: G.sel[0] }); break;
+    case 'clean': duel({ t: 'cleanDraw', hand: G.sel[0] }); break;
+    case 'end': duel({ t: 'end' }); break;
+    case 'respond': duel({ t: 'respond', trap: n }); break;
+  }
+});
+function trySwap() {
+  const r = G.run;
+  if (r.phase === 'chamber' && G.pickDeck != null && G.pickTrunk != null) { const a = { t: 'swap', deck: G.pickDeck, trunk: G.pickTrunk }; G.pickDeck = G.pickTrunk = null; act(a); G.tab = 'deck'; render(); }
+  else render();
+}
+for (const f of D.art || []) { const im = new Image(); im.src = 'art/' + f + '.webp'; (window.__keep = window.__keep || []).push(im); } // keep pictures warm so a redraw never flashes
+for (let i = 0; D.sheets && i < Math.ceil(D.pool.cards.length / 100); i++) { const im = new Image(); im.src = D.sheets + i + '.webp'; window.__keep.push(im); }
+window.LM = { G, db, act, render }; // for tests
+render();

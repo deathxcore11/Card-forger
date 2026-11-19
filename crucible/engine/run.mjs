@@ -260,7 +260,7 @@ export function possibleMasterworks(run) {
   return MASTERWORKS.filter(m => m.parts.every(p => own.has(p))).map(m => m.id);
 }
 
-function startDuel(db, run, rng, door) {
+function startDuel(db, run, rng, door, onStep) {
   const boss = door.type === 'boss' ? BOSSES[run.floor][run.bossOrder[run.floor]] : null;
   const rival = makeRival(db, rng, { floor: run.floor, tier: door.tier, theme: door.theme != null ? THEMES[door.theme] : null, boss, heat: run.heat });
   const cap = weightCap(db, run);
@@ -273,17 +273,18 @@ function startDuel(db, run, rng, door) {
   run.rival = { name: rival.name, tier: rival.tier, ai: rival.ai, law: rival.law, lawText: rival.lawText, drops: rival.drops, ace: rival.ace, bounty: bounty.id, bountyText: bounty.text, twist: door.twist || null };
   run.duel = newDuel(db, { seed: rng.u32(), decks: [run.deck, rival.deck], seats, twist: door.twist || null });
   run.phase = 'duel';
-  advanceRival(db, run);
+  if (onStep) onStep([{ e: 'duelStart' }]);
+  advanceRival(db, run, onStep);
 }
 
 // Play the rival's moves until it is the player's turn to decide something.
-function advanceRival(db, run) {
+function advanceRival(db, run, onStep) {
   const d = run.duel; let guard = 0;
   while (d.winner === null && guard++ < 400) {
     const rivalToAct = d.pending ? d.active === 0 : d.active === 1;
     if (!rivalToAct) break;
     const a = chooseAction(db, viewFor(d, db, 1), run.rival.ai, { maxChain: 3 });
-    try { applyMut(d, a || { t: 'end' }, db); } catch (e) { e.message += ' | rival action ' + JSON.stringify(a) + ' hand ' + JSON.stringify(d.hand[1].map(c => db.byId.get(c.id).name)) + ' twist ' + d.twist + ' law ' + d.seat[1].law; throw e; }
+    try { const evs = applyMut(d, a || { t: 'end' }, db); if (onStep) onStep(evs); } catch (e) { e.message += ' | rival action ' + JSON.stringify(a) + ' hand ' + JSON.stringify(d.hand[1].map(c => db.byId.get(c.id).name)) + ' twist ' + d.twist + ' law ' + d.seat[1].law; throw e; }
   }
 }
 
@@ -404,7 +405,7 @@ function validDeck(db, run, deck) {
   return null;
 }
 
-export function runApply(run, a, db) {
+export function runApply(run, a, db, opts = {}) {
   DB = db;
   const ev = [];
   const rng = new Rng(run.rng);
@@ -435,7 +436,7 @@ export function runApply(run, a, db) {
       if (door.type === 'boss' && run.seals < 2) fail('the boss door needs two seals');
       run.door = door; run.stats.doors[door.type] = (run.stats.doors[door.type] || 0) + 1;
       ev.push({ e: 'door', type: door.type });
-      if (door.tier) { startDuel(db, run, rng, door); if (run.duel.winner !== null) finishDuel(db, run, rng, ev); break; }
+      if (door.tier) { startDuel(db, run, rng, door, opts.onStep); if (run.duel.winner !== null) finishDuel(db, run, rng, ev); break; }
       switch (door.type) {
         case 'anvil': run.phase = 'anvil'; run.offer = { kind: 'anvil', masterworks: possibleMasterworks(run), enchants: rng.shuffle(ENCHANTS.slice()).slice(0, 3) }; break;
         case 'bazaar': run.phase = 'bazaar'; run.offer = { kind: 'bazaar', merchant: door.merchant, items: bazaarStock(db, run, rng, door.merchant) }; break;
@@ -451,8 +452,8 @@ export function runApply(run, a, db) {
       const d = run.duel;
       const mine = d.pending ? d.active === 1 : d.active === 0;
       if (!mine) fail('not your move');
-      for (const e of applyMut(d, a.action, db)) ev.push(e);
-      advanceRival(db, run);
+      { const mine = applyMut(d, a.action, db); for (const e of mine) ev.push(e); if (opts.onStep) opts.onStep(mine); }
+      advanceRival(db, run, opts.onStep);
       if (d.winner !== null) finishDuel(db, run, rng, ev);
       break;
     }
