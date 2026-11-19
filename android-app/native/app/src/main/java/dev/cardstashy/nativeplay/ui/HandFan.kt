@@ -177,7 +177,11 @@ fun HandFan(
         val shares = floatArrayOf(.6f, .35f, .15f)
 
         val pxStart = with(density) { start.toPx() }; val pxStep = with(density) { step.toPx() }
-        fun indexAt(x: Float): Int = if (n <= 1 || pxStep <= 0f) 0 else floor((x - pxStart) / pxStep).toInt().coerceIn(0, n - 1)
+        // Live 0.4.98 (Randall's 19 Nov recording, 0:37): the touch handling below was restarted whenever the hand changed size or
+        // place, so a card lifted as the turn's draw arrived was never let go: it hung over the table with its ring, unplayed, and
+        // the hand stayed dipped. The handling now lives as long as the hand does and reads the hand's shape as it is now.
+        val shape by androidx.compose.runtime.rememberUpdatedState(Triple(n, pxStart, pxStep))
+        fun indexAt(x: Float): Int { val (n, pxStart, pxStep) = shape; return if (n <= 1 || pxStep <= 0f) 0 else floor((x - pxStart) / pxStep).toInt().coerceIn(0, n - 1) }
         // Arriving cards (a deal, a draw) come in one per 70 ms along the arc from the library side.
         // T6: a card coming back from the stack (Cancel) is not dealt in: it waits unseen in its place while it flies there.
         val backId = LocalTravel.current?.travel?.takeIf { it.leg == dev.cardstashy.nativeplay.match.Director.Leg.BACK }?.cardId
@@ -209,7 +213,7 @@ fun HandFan(
             } else tapCb(card)
         }
 
-        Box(Modifier.fillMaxWidth().height(cardH + 8.dp).pointerInput(n, pxStart, pxStep) {
+        Box(Modifier.fillMaxWidth().height(cardH + 8.dp).pointerInput(Unit) {
             val slop = viewConfiguration.touchSlop
             val playLine = with(density) { 70.dp.toPx() }
             val stretch = with(density) { 24.dp.toPx() }
@@ -259,8 +263,8 @@ fun HandFan(
                     }
                     if (reorderCb != null && card != null && (moving != null || abs(d.x) > slop * 1.5f && abs(d.x) > abs(d.y))) {
                         if (moving == null) { moving = card.id; moveTo = idx; focus = null; haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
-                        moveX = pxStart + pxStep * idx + (ch.position.x - down.position.x)
-                        val next = indexAt(moveX + pxStep / 2)
+                        moveX = shape.second + shape.third * idx + (ch.position.x - down.position.x)
+                        val next = indexAt(moveX + shape.third / 2)
                         if (next != moveTo) { moveTo = next; haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) }
                         swept = true; continue
                     }

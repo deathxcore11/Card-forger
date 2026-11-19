@@ -226,6 +226,12 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         ?.getAsJsonObject("setup")?.get("noMulligan")?.asBoolean == true }.getOrDefault(false)
     /** You have answered the opening hand (keep, or the cards to bottom). Until then no later snapshot is shown, in every mode. */
     @Volatile private var answeredMulligan = keepsOpeningHand
+    /**
+     * Randall's 19 Nov recording (0.4.98, Quick Play, CPU first): the table opened with the CPU's Mountain already down and no play
+     * shown. A Keep's send used to draw the newest board itself when it came back, past the opening and the director. While this
+     * is set, only the pacing loop draws.
+     */
+    @Volatile private var keepInFlight = false
     private val snapshots = Channel<MatchState>(Channel.UNLIMITED)
     /** Your opening hand's names as soon as Forge deals it (read off the polled board, before the table shows it): the art gate waits for these. */
     private val _firstHand = MutableStateFlow<List<String>?>(null); val firstHand: StateFlow<List<String>?> = _firstHand
@@ -433,6 +439,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 }
                 _stage.value = Stage.MULLIGAN; lastSeq = st.events.maxOfOrNull { it.seq } ?: lastSeq
                 cpuHandAtKeep = st.cpu.handCount
+                keepInFlight = false
                 show(st); continue
             }
             if (!gatePassed) {
@@ -457,6 +464,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             // waits on the held ones (a CPU think, the turn banner, a CPU action's caption), one at a time.
             fresh.forEach { if (it.type == "trigger") it.stackId?.let(triggerIds::add) }
             val before = _shown.value
+            keepInFlight = false
             val steps = Director.plan(st, fresh, if (remote == null) thinkClock else null, before = before, triggerIds = triggerIds, held = _held.value).filter { it.held }
             TableLog.line("plan rev=${st.revision} fresh=${fresh.size} [${fresh.joinToString(",") { it.type }}] steps=${steps.size} shown=${_shown.value?.revision} queue=${queue.get()}")
             if (steps.isEmpty()) { show(st) } else {
@@ -678,7 +686,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         // same turn with nothing new (no stack, no question), it is passed again for you. Anything else you press clears it.
         if (!autoAnswering) { carries = 0; passSeq = st.events.maxOfOrNull { it.seq } ?: 0L }
         if (!autoAnswering) passFrom = if (op == "ok" && st.inputType == "InputPassPriority" && st.prompt == null && st.stack.isEmpty() && st.activePlayer == st.viewer) st.turn to st.phase else null
-        if (st.isMulligan) answeredMulligan = true
+        if (st.isMulligan) { answeredMulligan = true; keepInFlight = true; TableLog.line("keep answered op=$op input=${st.inputType} rev=${st.revision}") }
         _sending.value = true; _live.value = false; sendingAt = SystemClock.elapsedRealtime()
         scope.launch(Dispatchers.IO) {
             val body = JsonObject().apply { addProperty("revision", st.revision); addProperty("op", op); fill() }
@@ -702,7 +710,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                 if (l != null && (l.revision > st.revision || (!l.busy && l.revision == st.revision && SystemClock.elapsedRealtime() > until - 3500))) break
                 delay(30)
             }
-            withContext(Dispatchers.Main) { _sending.value = false; _shown.value?.let { if (queued <= 0) show(latest ?: it) } }
+            withContext(Dispatchers.Main) { _sending.value = false; _shown.value?.let { if (queued <= 0 && !keepInFlight) show(latest ?: it) } }
         }
     }
 
