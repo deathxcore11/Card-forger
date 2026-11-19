@@ -148,7 +148,7 @@ data class MatchState(
     val me get() = players.first { it.id == viewer }
     val cpu get() = players.first { it.id != viewer }
     val finished get() = status == "finished"
-    fun card(id: Int): Card? = players.firstNotNullOfOrNull { p -> (p.battlefield + p.hand + p.graveyard + p.exile).firstOrNull { it.id == id } }
+    fun card(id: Int): Card? = players.firstNotNullOfOrNull { p -> (p.battlefield + p.hand + p.graveyard + p.exile + p.command).firstOrNull { it.id == id } }
         ?: stack.firstOrNull { it.source?.id == id }?.source
 
     /** The opening-hand decision: keep/mulligan, or picking cards to put on the bottom after a mulligan. */
@@ -166,6 +166,13 @@ data class MatchState(
          */
         @Volatile var shownName: (String) -> String = { it }
         @Volatile var shownIn: (String) -> String = { it }
+
+        /**
+         * Randall's 19 Nov recording (fault J): Forge names an effect card "The Naked Time (116)'s Effect", its own card number
+         * inside. The player sees the card it came from, "The Naked Time", which also finds its picture.
+         */
+        private val EFFECT = Regex("^(.+?)\\s*\\(\\d+\\)'s Effect$")
+        fun plainName(name: String): String = EFFECT.find(name.trim())?.groupValues?.get(1)?.trim() ?: name
 
         fun parse(json: String): MatchState? {
             val o = JsonParser.parseString(json).asJsonObject
@@ -255,7 +262,7 @@ data class MatchState(
             id = c.int("id") ?: 0, zone = c.str("zone") ?: "", owner = c.int("owner") ?: -1, controller = c.int("controller") ?: -1,
             hidden = c.bool("hidden") != false,
             // A token is never a deck row: its name stays as Forge sends it.
-            name = (c.str("name") ?: "").let { if (c.bool("hidden") == false && c.bool("token") != true) shownName(it) else shownIn(it) }, type = c.str("type") ?: "", manaCost = c.str("manaCost")?.takeIf { it != "no cost" } ?: "",
+            name = plainName(c.str("name") ?: "").let { if (c.bool("hidden") == false && c.bool("token") != true) shownName(it) else shownIn(it) }, type = c.str("type") ?: "", manaCost = c.str("manaCost")?.takeIf { it != "no cost" } ?: "",
             text = tidy((c.str("text") ?: "").replace("\r", "")), power = c.int("power"), toughness = c.int("toughness"),
             tapped = c.bool("tapped") == true, attacking = c.bool("attacking") == true, blocking = c.bool("blocking") == true,
             damage = c.int("damage") ?: 0, summoningSick = c.bool("summoningSick") == true, token = c.bool("token") == true,
@@ -318,7 +325,7 @@ data class MatchState(
             return if (c.bool("hidden") == false && c.str("name") != null) c.int("id") else null
         }
 
-        private fun ref(e: JsonElement?): Ref? = e?.takeIf { it.isJsonObject }?.asJsonObject?.let { Ref(it.str("kind") ?: "", it.int("id") ?: -1, it.str("name")?.let(shownIn)) }
+        private fun ref(e: JsonElement?): Ref? = e?.takeIf { it.isJsonObject }?.asJsonObject?.let { Ref(it.str("kind") ?: "", it.int("id") ?: -1, it.str("name")?.let(::plainName)?.let(shownIn)) }
 
         private fun parseEvent(e: JsonObject) = GameEvent(
             seq = e.get("seq")?.asLong ?: 0, type = e.str("type") ?: "", turn = e.int("turn") ?: 0, phase = e.str("phase"), player = e.int("player"),

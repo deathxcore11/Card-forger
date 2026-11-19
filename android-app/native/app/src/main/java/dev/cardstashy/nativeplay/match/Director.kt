@@ -128,7 +128,7 @@ object Director {
             fun pile(m: Move) = if (m.player == viewer) "your graveyard" else "the CPU's graveyard"
             val out = ArrayList<Line>()
             val fellOff = moves.filter { it.went == Went.FELL_OFF }
-            if (!(follow && fellOff.size == moves.size)) said(viewer)?.let { out += Line(sourceId, sourceName ?: "A trigger", controller == viewer, (if (count > 1) "×$count: " else "") + it, seq * 8, sourceName != null) }
+            if (!(follow && fellOff.size == moves.size)) said(viewer)?.let { out += Line(sourceId, sourceName?.let(MatchState::plainName) ?: "A trigger", controller == viewer, (if (count > 1) "×$count: " else "") + it, seq * 8, sourceName != null) }
             // One Aura: its own row. Several off the same permanent: one row, the permanent's, so they do not push the cause off a short list.
             for ((host, l) in fellOff.groupBy { it.hostId }) out += l.first().let { f ->
                 if (l.size == 1) Line(f.cardId, f.cardName ?: "An Aura", f.player == viewer, "fell off and went to ${pile(f)}", seq * 8 + out.size + 1, f.cardName != null)
@@ -196,7 +196,7 @@ object Director {
         /** The one trail line ("Optimistic Scavenger: +1/+1 counter on Grizzly Bears"), or null when it changed nothing shown. */
         fun line(viewer: Int): String? {
             val text = said(viewer) ?: return null
-            return (sourceName ?: "A trigger") + (if (count > 1) " ×$count" else "") + ": " + text
+            return (sourceName?.let(MatchState::plainName) ?: "A trigger") + (if (count > 1) " ×$count" else "") + ": " + text
         }
     }
 
@@ -805,6 +805,21 @@ object Director {
     /** A trigger's own words when Forge never showed its stack item: the source's lines that start "When", "Whenever" or "At". */
     fun triggerText(text: String?): String =
         text.orEmpty().lines().map { it.trim() }.filter { Regex("^(When|Whenever|At) ", RegexOption.IGNORE_CASE).containsMatchIn(it) }.joinToString("\n")
+
+    /**
+     * The words for a trigger Forge put up and resolved inside one poll (no snapshot showed its item). Randall's 19 Nov recording
+     * (fault D): a Saga's chapter has no "When/Whenever/At" line, so its card showed only the numeral; it now takes the chapter's own
+     * line from the card ("II — Whenever a creature…"), by the lore Forge has just raised (a Saga already sacrificed after its last
+     * chapter has no lore left: its last chapter).
+     */
+    fun triggerItemText(src: dev.cardstashy.nativeplay.engine.Card?): String {
+        val text = src?.text.orEmpty()
+        if (src != null && src.type.contains("Saga")) {
+            val n = dev.cardstashy.nativeplay.ui.SagaMarks.lore(src).takeIf { it > 0 } ?: dev.cardstashy.nativeplay.ui.SagaMarks.chapters(text)
+            dev.cardstashy.nativeplay.ui.SagaMarks.chapterLine(text, n)?.let { return it }
+        }
+        return triggerText(text)
+    }
 
     private fun zoneStep(e: GameEvent, me: Int): Step? {
         val id = e.card?.id; val from = e.from.orEmpty(); val to = e.to.orEmpty()

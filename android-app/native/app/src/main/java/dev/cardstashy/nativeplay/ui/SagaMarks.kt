@@ -70,6 +70,10 @@ internal object SagaMarks {
         return lines ?: AFTER.find(text)?.let { roman(it.groupValues[1]) } ?: 3
     }
 
+    /** The rules line for chapter [n] ("II — Whenever a creature…"), from a line that names it alone or with others ("I, II — …"). */
+    fun chapterLine(text: String, n: Int): String? = text.lines().map { it.trim() }.firstOrNull { l ->
+        LINE.find(l)?.groupValues?.get(1)?.split(',')?.mapNotNull { roman(it.trim()) }?.contains(n) == true }
+
     // Forge's stack text for a chapter: "History of Benalia — I, II — Create…", "(II) — …", "Chapter II — …".
     private val STACK = Regex("(?:^|\\u2014\\s*|Chapter\\s+)\\(?([IVX]+(?:\\s*,\\s*[IVX]+)*)\\)?\\s*[\\u2014\\u2013-]")
     /**

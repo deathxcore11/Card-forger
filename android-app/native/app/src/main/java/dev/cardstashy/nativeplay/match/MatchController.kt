@@ -556,7 +556,7 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
                                 val id = t.stackId ?: -(++momentKey).toInt()
                                 // Whose it is: Forge's word, else the source's controller, else the side the director read (never -1, which reads as the CPU's).
                                 val ctl = t.controller?.takeIf { it >= 0 } ?: src?.controller?.takeIf { it >= 0 } ?: if (t.yours) st.viewer else st.cpu.id
-                                held.add(0, dev.cardstashy.nativeplay.engine.StackItem(id, r?.text ?: Director.triggerText(src?.text), src, ctl,
+                                held.add(0, dev.cardstashy.nativeplay.engine.StackItem(id, r?.text?.takeIf { it.isNotBlank() } ?: Director.triggerItemText(src), src, ctl,
                                     ability = true, targets = t.targets, trigger = true))
                                 shownId = id
                             }
