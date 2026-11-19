@@ -37,6 +37,7 @@ import androidx.compose.ui.zIndex
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -84,6 +85,7 @@ fun HandFan(
     shaded: (Card) -> Boolean = { false },
     /** forge-table.mjs data-forge-blocked: why a card can't be played, shown on it while lifted ("Not enough mana"). */
     blockedOf: (Card) -> String? = { null },
+    shortOf: (Card) -> Affordability.ManaShort? = { null },
     /** A controller: where the ring goes when A plays the last card in the hand (the table's gold button). */
     padEmpty: (() -> Unit)? = null,
     /** Two screens: A on a card that is not the lifted one only lifts it ([onTap]); A on the lifted card plays it. */
@@ -379,13 +381,10 @@ fun HandFan(
                         if (isLift && flatLift) Box(Modifier.matchParentSize().border(3.dp, Color(0xFF5CC8FF), RoundedCornerShape(cardW * (6f / 66f)))
                             .padding(3.dp).border(1.5.dp, Color.White.copy(alpha = .85f), RoundedCornerShape(cardW * (5f / 66f))).anchorRect("b.lift"))
                         // .play-match-card[data-forge-blocked]::after: bottom 8, #140d0be8, #ff9a7a77 hairline, #ffd4c6 700 11px.
-                        if (isLift) blockedOf(card)?.let { why ->
-                            androidx.compose.material3.Text(why, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                style = androidx.compose.ui.text.TextStyle(fontFamily = Type.Sans, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontSize = (cardW.value * 11f / 66f).sp, color = Color(0xFFFFD4C6)),
-                                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = cardW * (8f / 66f)).widthIn(max = cardW * .92f)
-                                    .clip(RoundedCornerShape(999.dp)).background(Color(0xE8140D0B)).border(1.dp, Color(0x77FF9A7A), RoundedCornerShape(999.dp))
-                                    .padding(horizontal = cardW * (8f / 66f), vertical = cardW * (3f / 66f)))
-                        }
+                        // Explains itself E1: one plate on the lifted card, the cost as single pips (the part your open mana covers lit)
+                        // over the reason, which may take two lines so it is never cut ("Only in your main phase"). It sits on the art, under the
+                        // name: the rules text stays readable, and a hand tucked low on the CPU's turn does not push it off the screen.
+                        if (isLift) blockedOf(card)?.let { why -> WhyPlate(why, shortOf(card), cardW, Modifier.align(Alignment.TopCenter).padding(top = cardW * (17f / 66f))) }
                     }
                 }
             }
@@ -430,3 +429,35 @@ internal val HOLD_ICE = Color(0xFF5CC8FF); internal val HOLD_GOLD = Color(0xFFF3
  * eased toward that so a jitter of the finger does not flick it. [was] is the lean before; [dpPerMs] the sideways speed.
  */
 internal fun holdLean(was: Float, dpPerMs: Float): Float = (was * .6f + (dpPerMs * 15f).coerceIn(-HOLD_LEAN_MAX, HOLD_LEAN_MAX) * .4f).coerceIn(-HOLD_LEAN_MAX, HOLD_LEAN_MAX)
+
+/** Explains itself E1: why a lifted hand card can't be used. .play-match-card[data-forge-blocked]::after colours: #140d0be8, #ff9a7a77 hairline, #ffd4c6. */
+@Composable
+internal fun WhyPlate(why: String, short: Affordability.ManaShort?, cardW: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(cardW * (9f / 66f))
+    androidx.compose.foundation.layout.Column(modifier.widthIn(max = cardW * .96f).clip(shape).background(Color(0xE8140D0B)).border(1.dp, Color(0x77FF9A7A), shape)
+        .padding(horizontal = cardW * (5f / 66f), vertical = cardW * (3f / 66f)), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(cardW * (2.5f / 66f))) {
+        short?.let { ManaShortPips(it, cardW) }
+        val size = cardW.value * 8f / 66f
+        androidx.compose.material3.Text(why, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            style = androidx.compose.ui.text.TextStyle(fontFamily = Type.Sans, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontSize = size.sp, lineHeight = (size * 1.15f).sp, color = Color(0xFFFFD4C6)))
+    }
+}
+
+/** [short]'s cost as single pips: covered ones filled in their colour, missing ones a dashed coral ring. */
+@Composable
+internal fun ManaShortPips(short: Affordability.ManaShort, cardW: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+    val n = short.pips.size; val pip = minOf(cardW * (8f / 66f), cardW * .7f / n); val gap = pip * .22f
+    androidx.compose.foundation.Canvas(modifier.width(pip * n + gap * (n - 1)).height(pip)) {
+        val d = pip.toPx(); val step = d + gap.toPx()
+        short.pips.forEachIndexed { i, p ->
+            val c = Offset(step * i + d / 2, d / 2)
+            if (p.paid) drawCircle(pipColor(p.symbol), d / 2, c)
+            else drawCircle(Color(0xFFFF9A7A), d / 2 - d / 12, c, style = androidx.compose.ui.graphics.drawscope.Stroke(d / 8, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(d / 3.2f, d / 5))))
+        }
+    }
+}
+
+internal fun pipColor(symbol: String): Color = when (symbol.uppercase()) {
+    "W" -> Color(0xFFF3ECD0); "U" -> Color(0xFF9FD3F2); "B" -> Color(0xFFB7ADB4); "R" -> Color(0xFFF2A58C); "G" -> Color(0xFFA9D6B0); else -> Color(0xFFC9C4BC)
+}

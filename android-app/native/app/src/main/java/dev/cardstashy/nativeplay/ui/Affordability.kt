@@ -88,6 +88,55 @@ object Affordability {
         return !walk(0, floating)
     }
 
+    /** Explains itself E1: one mana of a cost as a pip: its colour ("W", "U", "B", "R", "G", "C") or "1" for one generic mana, and whether your open mana covers it. */
+    data class Pip(val symbol: String, val paid: Boolean)
+    /** Explains itself E1: a hand card's printed cost as pips, the part your open mana covers lit; [missing] is how many are not. */
+    data class ManaShort(val pips: List<Pip>) { val missing: Int get() = pips.count { !it.paid } }
+
+    /**
+     * Explains itself E1 ("2 mana short"): how much of [card]'s printed cost your untapped sources and floating mana can cover at
+     * best. The same reader as [provenUnaffordable] and the same doubts: null whenever that reader cannot follow the card or the
+     * table (a cost that bends, a hidden card, a source it cannot read), when the cost can be paid, or when it is over 10 mana
+     * (the row would not fit the card). Coloured mana is covered first where it can be, then generic.
+     */
+    /** Your untapped permanents that make mana: what wears the payment light while a card that is [manaShort] is lifted. */
+    fun openSources(st: MatchState): Set<Int> = st.me.battlefield.filter { !it.tapped && !it.hidden && manaSources(it, false)?.isNotEmpty() == true }.map { it.id }.toSet()
+
+    fun manaShort(card: Card, st: MatchState, pool: Map<String, Int>): ManaShort? {
+        if (card.hidden || card.zone != "Hand" || card.has("Land") || costBends(card)) return null
+        val symbols = Regex("\\{[^}]+\\}").findAll(card.manaCost).map { it.value.drop(1).dropLast(1) }.toList()
+        if (symbols.isEmpty() || !symbols.all { MANA_SYMBOL.matches(it) }) return null
+        val generic = symbols.filter { Regex("\\d").containsMatchIn(it) }.sumOf { it.toInt() }; val colored = symbols.filter { !Regex("\\d").containsMatchIn(it) }
+        if (generic + colored.size > 10) return null
+        val all = surface(st)
+        val table = all.filter { it.zone == "Battlefield" || it.zone == "Command" }
+        if (table.any { it.hidden || TABLE_BENDERS.containsMatchIn(it.text) }) return null
+        if (all.any { it.zone == "Hand" && it.controller == st.viewer && it.id != card.id && Regex("from your hand[^.]*:\\s*add|:\\s*add[^.]*\\bfrom your hand", RegexOption.IGNORE_CASE).containsMatchIn(it.text) }) return null
+        val floating = pool.flatMap { (c, n) -> List(maxOf(0, n)) { listOf(c.uppercase()) } }
+        val sources = ArrayList<List<List<List<String>>>>()
+        for (c in table) { if (c.controller != st.viewer || c.zone != "Battlefield") continue; val o = manaSources(c, c.tapped) ?: landCeiling(c) ?: return null; if (o.isNotEmpty()) sources += o }
+        if (sources.size > 14 || sources.fold(1L) { a, o -> a * o.size } > 4096) return null
+        // The best cover over every way of tapping: most mana covered, and among those the most coloured pips.
+        var best: Pair<BooleanArray, Int>? = null
+        fun score(c: BooleanArray, g: Int) = (c.count { it } + g) * 100 + c.count { it }
+        fun cover(tokens: List<List<String>>) {
+            val used = BooleanArray(tokens.size); val got = BooleanArray(colored.size)
+            fun fit(i: Int) {
+                if (i == colored.size) { val g = minOf(generic, tokens.size - used.count { it }); val b = best
+                    if (b == null || score(got, g) > score(b.first, b.second)) best = got.copyOf() to g
+                    return }
+                for (k in tokens.indices) if (!used[k] && colored[i] in tokens[k]) { used[k] = true; got[i] = true; fit(i + 1); used[k] = false; got[i] = false }
+                fit(i + 1)
+            }
+            fit(0)
+        }
+        fun walk(i: Int, tokens: List<List<String>>) { if (i == sources.size) cover(tokens) else sources[i].forEach { opt -> walk(i + 1, tokens + opt) } }
+        walk(0, floating)
+        val (got, g) = best ?: return null
+        val pips = colored.mapIndexed { i, c -> Pip(c, got[i]) } + List(generic) { Pip("1", it < g) }
+        return ManaShort(pips).takeIf { it.missing > 0 }
+    }
+
     private fun costText(v: String?) = v?.trim()?.takeIf { Regex("^(\\{[^{}\\s]{1,8}\\})+$").matches(it) }
 
     /** nativePayment(): while Forge asks for mana, is the rest short (Auto refused, or nothing to tap and nothing floating)? */
@@ -122,6 +171,7 @@ object Affordability {
 
 /** forge-table.mjs shortCasts: a spell whose payment Forge couldn't finish stays dark until your mana changes (a land, a new turn, floating mana). */
 class ShortCasts {
+    companion object { const val NOT_ENOUGH = "Not enough mana" }
     private val short = HashMap<Int, String>(); private var sig = ""
 
     /** Returns the "Not enough mana" ids: actionable hand cards Forge or the reader says you can't pay for. */
@@ -137,7 +187,7 @@ class ShortCasts {
             val card = all.firstOrNull { it.id == id } ?: continue
             if (card.controller != st.viewer) continue
             val a = st.selection.affordability[id]
-            if (a == "unavailable" || id in short || a != "available" && Affordability.provenUnaffordable(card, st, st.me.mana)) out[id] = "Not enough mana"
+            if (a == "unavailable" || id in short || a != "available" && Affordability.provenUnaffordable(card, st, st.me.mana)) out[id] = NOT_ENOUGH
         }
         return out
     }
@@ -158,6 +208,47 @@ class ShortCasts {
                 // Forge's own auto-pay planned the sources for it (tapPreview): that is Forge saying it can be paid, so it stays lit.
                 // Forge's own "unavailable" always stays dark: a plan beside it may be partial, and stopsFor never stops for it.
                 (st.selection.affordability[id] == "unavailable" || st.selection.tapPlans[id]?.sources.isNullOrEmpty()) && (st.card(id) ?: st.players.flatMap { it.command }.firstOrNull { it.id == id })?.controller == st.viewer
+        }
+    }
+}
+
+/**
+ * Explains itself E1 (specs/explains-itself-briefs.md, approved 19 Nov): why a hand card that does not glow cannot be used now, said
+ * on the card when it is lifted. Only what the card's own type and the turn make certain; anything else says nothing.
+ */
+object WhyNot {
+    const val YOUR_TURN = "Only on your turn"
+    const val MAIN_PHASE = "Only in your main phase"
+    /** A tap on your own creature while Forge asks for attackers, and it cannot attack. */
+    const val ARRIVED = "Arrived this turn · attacks next turn"
+    const val TAPPED = "Tapped"
+    fun short(n: Int) = "$n mana short"
+
+    /**
+     * The timing reason for a hand card Forge does not offer: it is not an instant and has no flash, and it is the CPU's turn
+     * ([YOUR_TURN]) or your turn outside a main phase ([MAIN_PHASE]). Null for a card Forge lists (it has its own light or its own
+     * reason), a land (the state holds no land-play count), a card with flash anywhere in its words, and every case not named here.
+     */
+    fun timing(card: Card, st: MatchState): String? {
+        if (card.hidden || card.zone != "Hand" || card.controller != st.viewer || card.id in st.selection.actionable) return null
+        // Only while the table is in plain play: a question (a discard, a target, a mulligan) has its own words.
+        if (st.prompt != null || card.id in st.selection.cards || st.inputType !in setOf(null, "InputLockUI", "InputPassPriority", "InputAttack", "InputBlock")) return null
+        if (Regex("\\b(Land|Instant)\\b").containsMatchIn(card.type)) return null
+        if (Regex("\\bflash\\b", RegexOption.IGNORE_CASE).containsMatchIn(card.text) || card.keywords.any { it.contains("flash", ignoreCase = true) }) return null
+        val active = st.activePlayer ?: return null
+        if (active != st.viewer) return YOUR_TURN
+        val phase = st.phase ?: return null
+        return if (phase != "MAIN1" && phase != "MAIN2") MAIN_PHASE else null
+    }
+
+    /** Your creature tapped on while attackers are asked for and Forge does not offer it: the fact on the card that says why, or null. */
+    fun attack(card: Card, st: MatchState): String? {
+        if (st.inputType != "InputAttack" || card.zone != "Battlefield" || card.controller != st.viewer || !card.isCreature) return null
+        if (card.attacking || card.id in st.selection.cards) return null
+        return when {
+            card.tapped -> TAPPED
+            card.summoningSick && card.keywords.none { it.contains("haste", ignoreCase = true) } -> ARRIVED
+            else -> null
         }
     }
 }

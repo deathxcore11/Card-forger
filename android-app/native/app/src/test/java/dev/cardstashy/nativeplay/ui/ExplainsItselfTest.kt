@@ -47,4 +47,50 @@ class ExplainsItselfTest {
         // A scry stays a scry, and another yes/no is neither.
         assertNull(ScryOne.of(surveil.copy(buttons = Buttons("Yes", "No", true, true))))
     }
+
+    // ---- E1: a card you can't use says why ----
+    private val me = base.me
+    private fun mine(hand: List<dev.cardstashy.nativeplay.engine.Card>? = null, field: List<dev.cardstashy.nativeplay.engine.Card>? = null, st: MatchState = base) =
+        st.copy(players = st.players.map { if (it.id == st.viewer) it.copy(hand = hand ?: it.hand, battlefield = field ?: it.battlefield, mana = it.mana.mapValues { 0 }) else it })
+    private val mountains = me.battlefield.filter { it.name == "Mountain" }.map { it.copy(tapped = false) }
+    private val serra = me.hand.first { it.name == "Monastery Swiftspear" }.copy(id = 990, name = "Serra Angel", type = "Creature — Angel", manaCost = "{3}{W}{W}",
+        text = "Flying, vigilance", keywords = listOf("Flying", "Vigilance"), power = 4, toughness = 4)
+
+    /** E1.1: a 5-cost card with three lands: three pips lit, two missing, "2 mana short"; the three lands wear the payment light. */
+    @Test fun fiveCostWithThreeLandsIsTwoShort() {
+        val st = mine(hand = listOf(serra), field = mountains)
+        val short = Affordability.manaShort(serra, st, st.me.mana)!!
+        assertEquals(5, short.pips.size); assertEquals(3, short.pips.count { it.paid }); assertEquals(2, short.missing)
+        assertEquals("the red lands pay the plain part, never the white", listOf("W", "W"), short.pips.filter { !it.paid }.map { it.symbol })
+        assertEquals("2 mana short", WhyNot.short(short.missing))
+        assertEquals(mountains.map { it.id }.toSet(), Affordability.openSources(st))
+        // Enough lands: nothing to say. A source the reader cannot count: nothing to say either (the old line stays).
+        assertNull(Affordability.manaShort(serra.copy(manaCost = "{2}{R}"), st, st.me.mana))
+    }
+
+    /** E1.2: on the CPU's turn a sorcery or a creature Forge does not offer says "Only on your turn"; an instant or a flash card says nothing. */
+    @Test fun timingReasonOnlyWhenTheCardTypeCanNeverAllowIt() {
+        val theirs = base.copy(activePlayer = cpu, priorityPlayer = cpu, inputType = null, selection = base.selection.copy(actionable = emptySet()))
+        val sorcery = me.hand.first { it.name == "Skewer the Critics" }; val bolt = me.hand.first { it.name == "Lightning Bolt" }; val land = me.hand.first { it.name == "Forest" }
+        assertEquals(WhyNot.YOUR_TURN, WhyNot.timing(sorcery, theirs))
+        assertEquals("Only on your turn", WhyNot.timing(serra.copy(zone = "Hand"), theirs))
+        assertNull("an instant could be cast now", WhyNot.timing(bolt, theirs))
+        assertNull("flash", WhyNot.timing(serra.copy(text = "Flash\nFlying"), theirs))
+        assertNull("a land has no reason the state can prove", WhyNot.timing(land, theirs))
+        // Your turn, combat: main phase only. Your main phase: no timing reason. A card Forge offers: never.
+        assertEquals(WhyNot.MAIN_PHASE, WhyNot.timing(sorcery, theirs.copy(activePlayer = base.viewer, phase = "COMBAT_DECLARE_ATTACKERS")))
+        assertNull(WhyNot.timing(sorcery, theirs.copy(activePlayer = base.viewer, phase = "MAIN1")))
+        assertNull(WhyNot.timing(sorcery, base.copy(activePlayer = cpu)))
+    }
+
+    /** E1.3: while Forge asks for attackers, your creature that arrived this turn (no haste) or is tapped has a reason; one that can attack has none. */
+    @Test fun creatureThatCannotAttackSaysWhy() {
+        val bears = me.battlefield.first { it.name == "Grizzly Bears" }; val guide = me.battlefield.first { it.name == "Goblin Guide" }
+        val atk = base.copy(inputType = "InputAttack", phase = "COMBAT_DECLARE_ATTACKERS", selection = base.selection.copy(actionable = emptySet()))
+        assertEquals(WhyNot.ARRIVED, WhyNot.attack(bears.copy(summoningSick = true), atk))
+        assertEquals(WhyNot.TAPPED, WhyNot.attack(bears.copy(tapped = true), atk))
+        assertNull("haste", WhyNot.attack(guide.copy(summoningSick = true), atk))
+        assertNull("it can attack", WhyNot.attack(bears, atk))
+        assertNull("not while Forge asks something else", WhyNot.attack(bears.copy(summoningSick = true), base))
+    }
 }

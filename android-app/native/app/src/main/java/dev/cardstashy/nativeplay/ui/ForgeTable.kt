@@ -494,8 +494,11 @@ fun ForgeBoard(
             // Rule 7 / I4: a hand card the bridge's pay plan dims says why when lifted. One that costs life or a sacrifice stays lit
             // and shows that cost when lifted; the gold button, A or a slide up then casts it.
             fun costly(card: Card) = Glow.costly(st, live, card, blocked, quiet)
-            fun dimWhy(card: Card): String? = if (!live) null else blocked[card.id]
-                ?: card.id.takeIf { card.zone == "Hand" && card.id in st.selection.actionable && !Glow.asking(st) && (Glow.planSaysNo(st, it) || costly(card)) }?.let { Glow.costOf(st, it) }
+            // Explains itself E1: the reader states the split when it can ("2 mana short" with pips); a card Forge does not offer
+            // for its timing says that. No reason known, no words.
+            fun shortOf(card: Card): Affordability.ManaShort? = if (!live || blocked[card.id] != ShortCasts.NOT_ENOUGH) null else Affordability.manaShort(card, st, st.me.mana)
+            fun dimWhy(card: Card): String? = if (!live) WhyNot.timing(card, st) else shortOf(card)?.let { WhyNot.short(it.missing) } ?: blocked[card.id]
+                ?: WhyNot.timing(card, st) ?: card.id.takeIf { card.zone == "Hand" && card.id in st.selection.actionable && !Glow.asking(st) && (Glow.planSaysNo(st, it) || costly(card)) }?.let { Glow.costOf(st, it) }
             // A costly card is lit but asks first: a drag or A from rest lifts it (its cost shows), the next one casts.
             fun castable(card: Card) = markOf(card) == Mark.PLAYABLE && (!costly(card) || card.id == selectedHand)
             // Explains itself E2: the CPU's spell or ability waits and you hold an answer; the rest of the hand steps back.
@@ -507,7 +510,7 @@ fun ForgeBoard(
             var liftLive by remember { mutableStateOf(true) }
             LaunchedEffect(selectedHand) { liftLive = selectedHand != null }
             val carriedId = (carried ?: selectedHand?.takeIf { liftLive })?.takeIf { id -> me.hand.any { it.id == id } }
-            val payLight = carriedId?.let { id -> me.hand.firstOrNull { it.id == id } }?.let { Glow.payment(st, live, it, blocked, quiet) }
+            val payLight = carriedId?.let { id -> me.hand.firstOrNull { it.id == id } }?.let { c -> Glow.payment(st, live, c, blocked, quiet).ifEmpty { if (shortOf(c) != null) Affordability.openSources(st) else emptySet() } }
                 // G6 review (glow-rules.md: "the payment light shows what it would tap"): the open ability's sources.
                 ?: abilityOpen?.let { id -> st.card(id) }?.let { Glow.abilityPayment(st, live, it, blocked, quiet) } ?: emptySet()
             fun blockTap(card: Card): (() -> Unit)? = when {
@@ -534,7 +537,9 @@ fun ForgeBoard(
             fun tapOf(card: Card): (() -> Unit)? = if (blockingNow) blockTap(card)
                 else if (live && card.zone == "Battlefield" && markOf(card) == Mark.USABLE) ({ (onAbility ?: onInspect)(card) })
                 else if (live && (card.id in st.selection.cards || card.id in st.selection.targetCards || (card.id in st.selection.actionable && card.id !in blocked) || card.id in st.selection.chosenCards ||
-                ((st.inputType == "InputAttack" || st.inputType == "InputBlock") && card.controller == st.viewer && (card.attacking || card.blocking)))) ({ intents.card(card.id) }) else null
+                ((st.inputType == "InputAttack" || st.inputType == "InputBlock") && card.controller == st.viewer && (card.attacking || card.blocking)))) ({ intents.card(card.id) })
+                // Explains itself E1: your creature that cannot attack says why on itself.
+                else if (live) WhyNot.attack(card, st)?.let { why -> { TileTags.post(card.id, why) } } else null
 
             // 0.4.59 T3: the open sheet (a pile or a graveyard), kept as a key so it reads the table as it is.
             var open by remember { mutableStateOf<Open?>(null) }
@@ -904,7 +909,7 @@ fun ForgeBoard(
                     canPlay = { card -> castable(card) },
                     shaded = { card -> responseWindow && markOf(card) != Mark.PLAYABLE },
                     onCarry = { carried = it },
-                    blockedOf = { card -> dimWhy(card) },
+                    blockedOf = { card -> dimWhy(card) }, shortOf = { card -> shortOf(card) },
                     // Two screens: a controller's A on a fan card lifts it, A again plays or casts it (W11); the hint says which.
                     padLift = DualScreen.active,
                     padA = { card -> if (live && discardAsk && card.id in st.selection.cards) (if (card.id == selectedHand) "Discard" else "Pick") else null },
