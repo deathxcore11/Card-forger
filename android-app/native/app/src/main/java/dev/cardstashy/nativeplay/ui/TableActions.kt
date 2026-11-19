@@ -39,6 +39,8 @@ internal object TableActions {
 
     /** The menu's Yield line: Forge's yield on the ability on top of the stack (never a spell: the bridge refuses it). */
     const val YIELD = "yield"
+    /** The gold button through the cleanup discard (its sub-line names the picked card). */
+    const val DISCARD = "Discard"
 
     /** The three-dot menu: Yield while an ability is on top of the stack, whoever's turn or priority it is. */
     fun menu(st: MatchState, live: Boolean): List<Item> {
@@ -59,11 +61,13 @@ internal object TableActions {
         // W10: your main phase 1, nothing on the stack and no creature able to attack: the step that follows is the end of the turn.
         // Gaps list 3 (15 Nov): from your second main phase too, with one button and no "To end step" beside it.
         val endTurnGold = selected == null && !discarding && (noAttackersLeft(st) || main2EndTurn(st))
-        val ok = if (selected != null) (if (discarding) "Discard ${selected.name}" else if (selected.isLand) "Play land" else "Cast")
-            else if (discarding && !st.buttons.okEnabled) "Choose a card to discard" else if (endTurnGold) "End turn" else okLabel(st).let { if (it == RESOLVING && resolveLate) "Resolve" else it }
+        // Randall's 19 Nov recording (item 20): "Choose a card t…" and "Discard Day o…" were cut on the Fold's cover screen. The
+        // button says Discard; the card he picked is its smaller second line, and with none picked the line above the hand asks.
+        val ok = if (selected != null) (if (discarding) DISCARD else if (selected.isLand) "Play land" else "Cast")
+            else if (discarding && !st.buttons.okEnabled) DISCARD else if (endTurnGold) "End turn" else okLabel(st).let { if (it == RESOLVING && resolveLate) "Resolve" else it }
                 // Better table scene 9: your first main's way on is "Attack" (to combat) while a creature can still attack.
                 .let { if (it == SHORT_STEP["MAIN1"] && st.inputType == "InputPassPriority" && st.phase == "MAIN1" && st.activePlayer == st.viewer && canAttackNow(st)) ATTACK_STEP else it }
-        val sub = if (selected != null || discarding) null else goldSub(st, ok, endTurnGold)
+        val sub = if (discarding) selected?.name else if (selected != null) null else goldSub(st, ok, endTurnGold)
         // End turn takes the gold spot on W10's turn (it presses Forge's cancel); the quiet one keeps the way on to combat.
         val second = if (selected != null) null else if (endTurnGold) okLabel(st).takeIf { !main2EndTurn(st) } else cancelLabel(st)
         // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.

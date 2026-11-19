@@ -1067,8 +1067,8 @@ fun ForgeBoard(
                 val pickedDiscard = discardingNow && selected != null
                 // W10: your main phase 1, nothing on the stack and no creature able to attack: the step that follows is the end of the turn.
                 val endTurnGold = selected == null && !discardingNow && (noAttackersLeft(st) || main2EndTurn(st))
-                val ok = if (selected != null) (if (discardingNow) "Discard ${selected.name}" else if (selected.isLand) "Play land" else "Cast")
-                    else if (discardingNow && !st.buttons.okEnabled) "Choose a card to discard" else if (endTurnGold) "End turn" else okLabel(st)
+                val ok = if (selected != null) (if (discardingNow) TableActions.DISCARD else if (selected.isLand) "Play land" else "Cast")
+                    else if (discardingNow && !st.buttons.okEnabled) TableActions.DISCARD else if (endTurnGold) "End turn" else okLabel(st)
                 // End turn takes the gold spot (it presses Forge's cancel); the quiet one keeps the way on to combat.
                 val second = if (selected != null) null else if (endTurnGold) okLabel(st).takeIf { !main2EndTurn(st) } else cancelLabel(st)
                 // A declaration Forge would refuse (a must-attack creature left out) is not offered as a live button.

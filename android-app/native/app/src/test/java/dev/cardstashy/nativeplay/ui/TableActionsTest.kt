@@ -70,9 +70,11 @@ class TableActionsTest {
         assertEquals(Press.PLAY, gold(st(), bolt).gold?.press)
         assertEquals("Play land", gold(st(), forest).gold?.label)
         val discard = st("InputSelectCardsFromList", okOn = false) { it.copy(selection = it.selection.copy(min = 0, max = 1)) }
-        assertEquals("Discard Lightning Bolt", gold(discard, bolt, discarding = true).gold?.label)
+        // Recording 19 Nov item 20: "Discard Day o…" and "Choose a card t…" were cut. The card's name is the second line.
+        assertEquals("Discard", gold(discard, bolt, discarding = true).gold?.label)
+        assertEquals("Lightning Bolt", gold(discard, bolt, discarding = true).gold?.sub)
         val choose = gold(discard, null, discarding = true).gold!!
-        assertEquals("Choose a card to discard", choose.label)
+        assertEquals("Discard", choose.label); assertEquals(null, choose.sub)
         assertFalse("with no card picked it only asks", choose.enabled)
     }
 

@@ -294,4 +294,17 @@ class GapsShotTest {
         assertEquals(0, rule.onAllNodesWithText(NO_MANA_SKIPPED).fetchSemanticsNodes().size)
         assertTrue(TileTags.shown.isEmpty())
     }
+
+    /**
+     * Recording 19 Nov (item 20), Fold cover screen 1080 x 1200 px: the cleanup discard's gold button read "Choose a card t…". It says
+     * Discard, whole; the line above the hand asks for the card.
+     */
+    private fun discardAsk() = base.copy(inputType = "InputSelectCardsFromList", phase = "CLEANUP", activePlayer = base.viewer, priorityPlayer = base.viewer, stack = emptyList(),
+        message = "Select 1 card to discard to bring your hand down to the maximum of 7 cards", buttons = Buttons("OK", null, false, false),
+        selection = base.selection.copy(cards = base.me.hand.map { it.id }.toSet(), min = 0, max = 1))
+    @Config(qualifiers = "w411dp-h457dp-xxhdpi") @Test fun discardWordsWholeOnTheCover() {
+        shot(discardAsk(), "discard-cover")
+        whole("Discard"); inside("gold")
+    }
+    @Test fun discardWordsWholeFold() { shot(discardAsk(), "discard-fold"); whole("Discard") }
 }
