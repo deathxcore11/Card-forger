@@ -106,7 +106,8 @@ export function makeRival(db, rng, { floor, tier, theme, boss = null, heat = 0 }
   const add = c => { const n = count.get(c.id) || 0; if (n >= 3) return false; count.set(c.id, n + 1); deck.push({ id: c.id }); return true; };
   let ace = null;
   if (boss) { ace = db.byName.get(boss.ace); for (let k = 0; k < 3; k++) add(ace); }
-  const nMon = boss ? 30 : 29;
+  const extra = db.config.rivalExtraTagged || 0;
+  const nMon = (boss ? 30 : 29) - extra;
   let guard = 0; while (deck.length < nMon && guard++ < 3000) add(rng.pick(mons));
   const fields = L.field.filter(c => { const f = db.fieldOf.get(c.id); return f.types && types.some(t => f.types.has(t)); });
   guard = 0; while (deck.length < nMon + 2 && guard++ < 200) add(rng.pick(fields.length ? fields : L.field));
@@ -169,7 +170,7 @@ export function newRun(db, { seed, heat = 0 } = {}) {
     kit: null, homeField: null, redeal: 1, doors: null, offer: null, duel: null, rival: null, door: null,
     bossOrder: BOSSES.map(pair => rng.int(pair.length)), secondWindUsed: false,
     codex: [], log: [], result: null,
-    stats: { duels: 0, wins: 0, losses: 0, bossWins: 0, ranks: {}, turns: 0, melds: 0, fizzles: 0, capHits: 0, relicFires: {}, familiesInDuel: 0, doors: {}, bounties: 0, deckouts: 0, firstWins: 0, firstGames: 0, kitRejects: 0, byTier: {}, chains: {}, singles: 0, long: 0, reasons: {} },
+    stats: { duels: 0, wins: 0, losses: 0, bossWins: 0, ranks: {}, turns: 0, melds: 0, fizzles: 0, capHits: 0, relicFires: {}, familiesInDuel: 0, doors: {}, bounties: 0, deckouts: 0, firstWins: 0, firstGames: 0, kitRejects: 0, byTier: {}, comebacks: 0, closeWins: 0, leadChanges: 0, trailedWins: 0, traps: 0, defWins: 0, lpLostInWins: 0, chains: {}, singles: 0, long: 0, reasons: {} },
   };
   run.offer = dealKits(db, rng, run);
   run.rng = rng.s;
@@ -301,8 +302,10 @@ function finishDuel(db, run, rng, ev) {
   S.duels++; S.turns += d.turn; S.melds += st.melds; S.fizzles += st.fizzles; S.capHits += st.capHits ? 1 : 0;
   S.firstGames++; if (d.winner === d.first) S.firstWins++;
   if (d.reason === 'deckout') S.deckouts++;
-  { const k = run.rival.tier + (run.floor + 1); const b = S.byTier[k] || (S.byTier[k] = [0, 0]); b[0]++; if (won) b[1]++; }
+  { const k = run.rival.tier + (run.floor + 1); const b = S.byTier[k] || (S.byTier[k] = [0, 0, 0, 0, 0]); b[0]++; if (won) { b[1]++; b[2] += db.config.lp - Math.min(db.config.lp, d.lp[0]); if (st.wasBehind) b[3]++; } b[4] += d.turn; }
   for (const [k, v] of Object.entries(st.chains)) S.chains[k] = (S.chains[k] || 0) + v;
+  S.leadChanges += st.leadChanges || 0;
+  S.traps += st.trapsSprung + d.stats[1].trapsSprung; S.defWins += st.defWins + d.stats[1].defWins;
   S.singles += st.singles; if (d.turn > 30) S.long++;
   S.reasons[d.reason + (won ? 'W' : 'L')] = (S.reasons[d.reason + (won ? 'W' : 'L')] || 0) + 1;
   for (const [k, v] of Object.entries(st.relicFires)) S.relicFires[k] = (S.relicFires[k] || 0) + v;
@@ -320,7 +323,7 @@ function finishDuel(db, run, rng, ev) {
     if (tier === 'boss') { run.phase = 'chamber'; run.doors = [bossDoor(run)]; return; }
     descend(db, run, rng); return;
   }
-  S.wins++;
+  S.wins++; if (st.trailed) S.trailedWins++; if (st.wasBehind) S.comebacks++; if (d.lp[0] < 4000) S.closeWins++; S.lpLostInWins += Math.max(0, db.config.lp - d.lp[0]);
   const rk = rankDuel(db, d, 0);
   const bounty = BOUNTIES.find(b => b.id === run.rival.bounty);
   const bountyMet = bounty.test(st, d);

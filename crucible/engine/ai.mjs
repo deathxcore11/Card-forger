@@ -207,7 +207,7 @@ function attackGain(db, view, X, T, level, rb) {
 function legalTargets(db, view, X) {
   const r = 1 - view.me, out = [];
   view.mon[r].forEach((m, z) => { if (m) out.push(z); });
-  if (!out.length) return [-1];
+  if (!out.length) return (db.config.directPerTurn && (view.directs || 0) >= db.config.directPerTurn) ? [] : [-1];
   let list = out;
   const wardens = out.filter(z => { const m = view.mon[r][z]; return !m.veil && m.e === 'warden' && m.pos === 'd'; });
   if (wardens.length) list = wardens;

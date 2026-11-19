@@ -76,7 +76,8 @@ function refill(s, db, ev, seat, opening) {
   target = Math.min(target, db.config.handMax);
   let need = target - s.hand[seat].length;
   if (need <= 0) return true;
-  if (!opening && db.config.drawPerTurn) need = Math.min(need, db.config.drawPerTurn);
+  const empty = db.config.emptyBoardRefill && !s.mon[seat].some(Boolean);
+  if (!opening && db.config.drawPerTurn && !empty) need = Math.min(need, db.config.drawPerTurn);
   if (s.deck[seat].length < need) {
     draw(s, db, ev, seat, s.deck[seat].length);
     finish(s, ev, other(seat), 'deckout');
@@ -370,6 +371,7 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
   ev.push({ e: 'battle', atkSeat, az, dz, a: f.a, d: f.d, direct: f.direct, edgeA: f.edgeA, edgeD: f.edgeD });
   if (wasVeiled) fire(s, db, ev, defSeat, 'veiledRevealed', { mon: T, zone: dz });
   if (f.direct) {
+    s.directs = (s.directs || 0) + 1;
     loseLp(s, db, ev, defSeat, f.dmgDef, 'direct');
     s.stats[atkSeat].directHits++;
     if (f.dmgDef >= 1500) s.stats[atkSeat].bigHits++;
@@ -405,7 +407,7 @@ export function targetsFor(s, db, seat, az) {
   const r = other(seat), X = s.mon[seat][az];
   const rivals = [];
   s.mon[r].forEach((m, z) => { if (m) rivals.push(z); });
-  if (!rivals.length) return [-1];
+  if (!rivals.length) return (db.config.directPerTurn && (s.directs || 0) >= db.config.directPerTurn) ? [] : [-1];
   let list = rivals;
   const wardens = rivals.filter(z => { const m = s.mon[r][z]; return m.e === 'warden' && m.pos === 'd' && !m.veil; });
   if (wardens.length) list = wardens;
@@ -618,7 +620,13 @@ function endTurn(s, db, ev) {
     s.terrain.temp--;
     if (s.terrain.temp <= 0) { s.terrain = s.terrain.back; ev.push({ e: 'terrain', seat: s.terrain.owner, id: s.terrain.id, law: true }); }
   }
-  s.played = false; s.attacked = false; s.noAttack = false;
+  s.played = false; s.attacked = false; s.noAttack = false; s.directs = 0;
+  if (s.lp[0] !== s.lp[1]) s.stats[s.lp[0] < s.lp[1] ? 0 : 1].wasBehind = 1;
+  { // who holds the strongest monster: counts how often the table lead changes hands
+    const top = p => s.mon[p].reduce((v, m) => m ? Math.max(v, m.pos === 'a' ? effAtk(s, db, p, m) : effDef(s, db, p, m)) : v, 0);
+    const a = top(0), b = top(1), lead = a === b ? -1 : a > b ? 0 : 1;
+    if (lead >= 0) { if (s.lead != null && s.lead !== lead) { s.stats[0].leadChanges = (s.stats[0].leadChanges || 0) + 1; } s.stats[1 - lead].trailed = 1; s.lead = lead; }
+  }
   if (s.turn >= db.config.maxTurns) { finish(s, ev, s.lp[0] === s.lp[1] ? other(s.first) : (s.lp[0] > s.lp[1] ? 0 : 1), 'turns'); return; }
   s.turn++;
   s.active = other(seat);
@@ -645,7 +653,7 @@ export function viewFor(s, db, seat) {
   const r = other(seat);
   const mine = z => s.mon[seat][z];
   const v = {
-    turn: s.turn, active: s.active, first: s.first, me: seat, played: s.played, attacked: s.attacked, noAttack: s.noAttack,
+    turn: s.turn, active: s.active, directs: s.directs || 0, first: s.first, me: seat, played: s.played, attacked: s.attacked, noAttack: s.noAttack,
     lp: s.lp.slice(), frozen: s.frozen.slice(), winner: s.winner, twist: s.twist, zones: s.zones,
     terrain: s.terrain ? { id: s.terrain.id, owner: s.terrain.owner, law: !!s.terrain.law, lock: !!s.terrain.lock, temp: s.terrain.temp ?? null } : null,
     hand: s.hand[seat].map(c => ({ ...c })), deckCount: [s.deck[0].length, s.deck[1].length], rivalHand: s.hand[r].length,

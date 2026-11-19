@@ -16,7 +16,7 @@ function one(db, seed, opts) {
     duels: S.duels, wins: S.wins, turns: S.turns, melds: S.melds, fizzles: S.fizzles, capDuels: S.capHits,
     firstWins: S.firstWins, deckouts: S.deckouts, twoFam: S.familiesInDuel, bounties: S.bounties, kitRejects: S.kitRejects,
     sparks: run.sparks, embers: run.embers, binds: run.binds, level: run.level,
-    relics: [...run.charms, ...run.gifts, ...run.masterworks], ranks: S.ranks, fires: S.relicFires, doors: S.doors, byTier: S.byTier, chains: S.chains, singles: S.singles, long: S.long, reasons: S.reasons, gifts: run.gifts.length + run.masterworks.length, points: S.points || [], bountyBy: S.bountyBy || {}, deckSize: run.deck.length,
+    relics: [...run.charms, ...run.gifts, ...run.masterworks], ranks: S.ranks, fires: S.relicFires, doors: S.doors, byTier: S.byTier, comebacks: S.comebacks, leadChanges: S.leadChanges, trailedWins: S.trailedWins, closeWins: S.closeWins, traps: S.traps, defWins: S.defWins, lpLost: S.lpLostInWins, chains: S.chains, singles: S.singles, long: S.long, reasons: S.reasons, gifts: run.gifts.length + run.masterworks.length, points: S.points || [], bountyBy: S.bountyBy || {}, deckSize: run.deck.length,
   };
 }
 
@@ -49,7 +49,7 @@ if (!isMainThread) {
     for (const [k, v] of Object.entries(r.fires)) fires[k] = (fires[k] || 0) + v;
     for (const [k, v] of Object.entries(r.ranks)) ranks[k] = (ranks[k] || 0) + v;
     for (const [k, v] of Object.entries(r.doors)) doors[k] = (doors[k] || 0) + v;
-    for (const [k, v] of Object.entries(r.byTier)) { const b = byTier[k] || (byTier[k] = [0, 0]); b[0] += v[0]; b[1] += v[1]; }
+    for (const [k, v] of Object.entries(r.byTier)) { const b = byTier[k] || (byTier[k] = [0, 0, 0, 0, 0]); for (let i = 0; i < 5; i++) b[i] += v[i] || 0; }
     for (const [k, v] of Object.entries(r.chains)) chains[k] = (chains[k] || 0) + v;
     for (const [k, v] of Object.entries(r.reasons)) reasons[k] = (reasons[k] || 0) + v;
   }
@@ -71,9 +71,11 @@ if (!isMainThread) {
     twoFamilyDuelPct: pct(sum(r => r.twoFam), duels),
     bountyPct: pct(sum(r => r.bounties), duelWins),
     sRankPctOfWins: pct(ranks.S || 0, duelWins),
+    leadChangesPerDuel: Math.round(100 * sum(r => r.leadChanges) / duels) / 100, wonAfterTrailingOnBoardPct: pct(sum(r => r.trailedWins), duelWins),
+    comebackPctOfWins: pct(sum(r => r.comebacks), duelWins), closeWinPct: pct(sum(r => r.closeWins), duelWins), avgLpLostInWins: Math.round(sum(r => r.lpLost) / duelWins), trapsPerDuel: Math.round(100 * sum(r => r.traps) / duels) / 100, defenderWinsPerDuel: Math.round(100 * sum(r => r.defWins) / duels) / 100,
     ranks, doors, reasons, pointPercentiles: (() => { const p = ok.flatMap(r => r.points).sort((a, b) => a - b); const q = x => p[Math.floor(x * (p.length - 1))]; return { p5: q(.05), p25: q(.25), p50: q(.5), p60: q(.6), p75: q(.75), p88: q(.88), p95: q(.95) }; })(),
     bounties: (() => { const o = {}; for (const r of ok) for (const [k, v] of Object.entries(r.bountyBy)) { o[k] = o[k] || [0, 0]; o[k][0] += v[0]; o[k][1] += v[1]; } return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, pct(v[1], v[0])])); })(),
-    winPctByTierFloor: Object.fromEntries(Object.entries(byTier).sort().map(([k, v]) => [k, pct(v[1], v[0]) + '% of ' + v[0]])),
+    winPctByTierFloor: Object.fromEntries(Object.entries(byTier).sort().map(([k, v]) => [k, pct(v[1], v[0]) + '% of ' + v[0] + ', LP lost in a win ' + Math.round(v[2] / Math.max(1, v[1])) + ', came from behind ' + pct(v[3], v[1]) + '%, turns ' + Math.round(10 * v[4] / v[0]) / 10])),
     plays: { single: sum(r => r.singles), ...chains }, longDuelPct: pct(sum(r => r.long), duels), giftsPerRun: Math.round(10 * sum(r => r.gifts) / ok.length) / 10,
     diedOn: { floor1: pct(ok.filter(r => !r.won && r.floor === 0).length, ok.length), floor2: pct(ok.filter(r => !r.won && r.floor === 1).length, ok.length), floor3: pct(ok.filter(r => !r.won && r.floor === 2).length, ok.length) },
     kitRejectsPerRun: Math.round(100 * sum(r => r.kitRejects) / ok.length) / 100,
