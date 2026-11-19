@@ -605,6 +605,16 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         }
     }
 
+    /**
+     * The CPU's reveal, shown as its own beat and then answered for you. The beat always comes down, answered or cut short (Randall's
+     * 19 Nov recording, 4:31 PM: it was never cleared, so "CPU reveals" stayed over the table, the buttons stayed dim and the match
+     * stood still on his turn).
+     */
+    internal suspend fun revealBeat(b: Beat, ms: Long, answer: () -> Unit) {
+        _beat.value = b
+        try { hold(ms); answer() } finally { if (_beat.value === b) _beat.value = null }
+    }
+
     private suspend fun beat(b: Beat, ms: Long) {
         _beat.value = b.copy(durationMs = ms)
         _log.value = (_log.value + b.title).takeLast(60)
@@ -810,9 +820,9 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
             Log.i(TAG, "reveal acknowledged for you: ${p.method} \"${p.message.take(160)}\" options=${p.options.map { it.label }}")
             autoJob = scope.launch(Dispatchers.Main) {
                 val first = p.options.firstOrNull()
-                _beat.value = Beat(Beat.Kind.ACTION, "CPU reveals", first?.cardId, first?.label, p.options.drop(1).joinToString(", ") { it.label }.ifBlank { null }, durationMs = ACTION_MS)
-                hold(ACTION_MS)
-                if (latest?.prompt?.id == p.id) { autoAnswering = true; try { reply(p.id, indexes = emptyList()) } finally { autoAnswering = false } }
+                revealBeat(Beat(Beat.Kind.ACTION, "CPU reveals", first?.cardId, first?.label, p.options.drop(1).joinToString(", ") { it.label }.ifBlank { null }, durationMs = ACTION_MS), ACTION_MS) {
+                    if (latest?.prompt?.id == p.id) { autoAnswering = true; try { reply(p.id, indexes = emptyList()) } finally { autoAnswering = false } }
+                }
             }
             return
         }
