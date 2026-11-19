@@ -315,12 +315,7 @@ class MainActivity : ComponentActivity() {
         dev.cardstashy.nativeplay.art.ThumbStore.paused = on // the table gets the network and CPU
         dev.cardstashy.nativeplay.play.RandomBuild.paused = on // background random decks wait (app.js playRandomQueue idle())
         val sideways = on || (play && resources.configuration.smallestScreenWidthDp < 600)  // play = Planeswalk on a phone
-        // Randall's 19 Nov recordings on the open Fold (1080 x 1200, a little taller than wide): locked sideways, Android shrank the
-        // table into 1080 x 974 with black bars above and below. A nearly square big screen keeps the game unlocked: it already
-        // fills the screen as it stands. Phones and other screens stay locked sideways.
-        val cfg = resources.configuration
-        val nearSquare = nearSquareScreen(cfg.smallestScreenWidthDp, cfg.screenWidthDp, cfg.screenHeightDp)
-        requestedOrientation = if (sideways && !nearSquare) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_FULL_USER
+        requestedOrientation = if (sideways) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_FULL_USER
         val c = WindowCompat.getInsetsController(window, window.decorView)
         if (sideways) { c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE; c.hide(WindowInsetsCompat.Type.systemBars()) }
         else c.show(WindowInsetsCompat.Type.systemBars())
@@ -791,7 +786,3 @@ private fun Problem(title: String, text: String, onBack: () -> Unit) {
         }
     }
 }
-
-/** A big screen (smallest width 600 dp or more) whose long side is under 1.3 times its short side: the open Fold. Not a phone, not the Thor. */
-internal fun nearSquareScreen(smallestDp: Int, wDp: Int, hDp: Int): Boolean =
-    smallestDp >= 600 && maxOf(wDp, hDp).toFloat() / minOf(wDp, hDp).coerceAtLeast(1) < 1.3f
