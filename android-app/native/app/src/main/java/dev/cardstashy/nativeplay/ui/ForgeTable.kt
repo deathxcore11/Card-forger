@@ -199,6 +199,8 @@ internal val SHORT_STEP = mapOf("UPKEEP" to "To draw", "DRAW" to "To main", "MAI
 internal const val RESOLVE_LATE_MS = 2500L
 /** M3: the gold button's words while your own spell or trigger resolves by itself. It is not a press. */
 internal const val RESOLVING = "Resolving…"
+/** Explains itself E2 (table-info I7, approved 10 Nov): the gold button while the CPU's spell or ability waits and you could answer it. */
+internal const val LET_IT_RESOLVE = "Let it resolve"
 /** native-panel.mjs nativeActionLabel with the hosted short step ("To combat"). */
 internal fun okLabel(st: MatchState): String {
     val raw = st.buttons.ok ?: "OK"
@@ -207,7 +209,10 @@ internal fun okLabel(st: MatchState): String {
     return when {
         st.inputType == "InputPassPriority" -> when {
             // Mobile table M3: your own spell or trigger resolves by itself; the button says so and offers no press.
-            st.stack.isNotEmpty() -> if (st.stack.first().controller != st.viewer) "No response"
+            // Explains itself E2: the CPU's item on top. Nothing you hold can answer it: the table passes for you, so the button
+            // is not a press ("Resolving…", as for your own). With an answer in hand it reads "Let it resolve" (table-info I7).
+            st.stack.isNotEmpty() -> if (st.stack.first().controller != st.viewer)
+                (if (dev.cardstashy.nativeplay.match.AutoPass.cpuItemPasses(st, Glow.stopsFor(st))) RESOLVING else LET_IT_RESOLVE)
                 else if (dev.cardstashy.nativeplay.match.AutoPass.resolvesItself(st, AppSettings.stopToRespond)) RESOLVING else "Resolve"
             st.players.none { p -> p.battlefield.any { it.attacking } } && st.phase in setOf("COMBAT_DECLARE_ATTACKERS", "COMBAT_DECLARE_BLOCKERS", "COMBAT_FIRST_STRIKE_DAMAGE", "COMBAT_DAMAGE") ->
                 if (st.activePlayer == st.viewer) "To main 2" else "Pass"
@@ -223,6 +228,9 @@ internal fun okLabel(st: MatchState): String {
         else -> raw
     }
 }
+/** Explains itself E2: a response window: the CPU's item on top, your priority, and something you hold could answer ([stops]). */
+internal fun respondsNow(st: MatchState, stops: List<Int>): Boolean = st.prompt == null && st.inputType == "InputPassPriority" &&
+    st.priorityPlayer == st.viewer && st.stack.firstOrNull()?.let { it.controller != st.viewer } == true && stops.isNotEmpty()
 /** W10: your main phase 1, an empty stack, and none of your creatures can attack (all tapped or summoning sick): Forge's cancel is End turn. */
 internal fun noAttackersLeft(st: MatchState): Boolean = st.inputType == "InputPassPriority" && st.phase == "MAIN1" && st.activePlayer == st.viewer && st.stack.isEmpty() &&
     st.buttons.cancelEnabled && st.buttons.cancel?.trim().equals("end turn", true) && !canAttackNow(st)
@@ -490,6 +498,8 @@ fun ForgeBoard(
                 ?: card.id.takeIf { card.zone == "Hand" && card.id in st.selection.actionable && !Glow.asking(st) && (Glow.planSaysNo(st, it) || costly(card)) }?.let { Glow.costOf(st, it) }
             // A costly card is lit but asks first: a drag or A from rest lifts it (its cost shows), the next one casts.
             fun castable(card: Card) = markOf(card) == Mark.PLAYABLE && (!costly(card) || card.id == selectedHand)
+            // Explains itself E2: the CPU's spell or ability waits and you hold an answer; the rest of the hand steps back.
+            val responseWindow = live && respondsNow(st, Glow.stopsFor(st, shortCasts))
             // The hand card being dragged or under the finger or the controller's ring (HandFan reports it): its payment sources light.
             var carried by remember { mutableStateOf<Int?>(null) }
             // A card lifted by a tap is carried too, from the first frame. On two screens a lift outlives the ring (TableScreen keeps it),
@@ -892,6 +902,7 @@ fun ForgeBoard(
                     gap = trayHand?.gap?.dp ?: 4.dp, arc = if (trayHand != null) ZoneLayout.HAND_ARC.dp else 2.dp, pop = trayHand?.pop, liftRise = trayHand?.rise?.dp,
                     markOf = ::markOf,
                     canPlay = { card -> castable(card) },
+                    shaded = { card -> responseWindow && markOf(card) != Mark.PLAYABLE },
                     onCarry = { carried = it },
                     blockedOf = { card -> dimWhy(card) },
                     // Two screens: a controller's A on a fan card lifts it, A again plays or casts it (W11); the hint says which.
@@ -1087,7 +1098,9 @@ fun ForgeBoard(
                 // 0.4.60 Z6: the corner's words and presses (TableActions: the same branches as before, unit tested in TableActionsTest).
                 // M3: your own spell or trigger resolves by itself and the button offers no press. If the table has still not
                 // passed 2.5 s on (it never leaves you without a way on), the press comes back as "Resolve".
-                val resolving = live && dev.cardstashy.nativeplay.match.AutoPass.resolvesItself(st, AppSettings.stopToRespond)
+                // Explains itself E2: the same for the CPU's item when nothing you hold can answer it.
+                val resolving = live && (dev.cardstashy.nativeplay.match.AutoPass.resolvesItself(st, AppSettings.stopToRespond) ||
+                    dev.cardstashy.nativeplay.match.AutoPass.cpuItemPasses(st, Glow.stopsFor(st, shortCasts)))
                 var resolveLate by remember { mutableStateOf(false) }
                 LaunchedEffect(st.revision, st.stack.firstOrNull()?.id, resolving) { resolveLate = false; if (resolving) { delay(RESOLVE_LATE_MS); resolveLate = true } }
                 val corner = TableActions.of(st, live, selected, tucked, discardingNow, resolveLate)
@@ -3849,7 +3862,9 @@ internal fun askLine(st: MatchState): String? {
     val topName = (top?.source?.name ?: top?.text?.split(Regex("\\s+[\\u2014-]\\s+"))?.firstOrNull() ?: "").replace(Regex("\\s*\\(\\d+\\)"), "").trim()
     return when {
         input == "InputBlock" -> "Choose blockers"
-        input == "InputPassPriority" && cpuTop && topName.isNotEmpty() && st.priorityPlayer == st.viewer -> "Respond to $topName?"
+        // Explains itself E2: never a question the table answers itself. It asks only when something you hold could answer.
+        input == "InputPassPriority" && cpuTop && topName.isNotEmpty() && st.priorityPlayer == st.viewer &&
+            !dev.cardstashy.nativeplay.match.AutoPass.cpuItemPasses(st, Glow.stopsFor(st)) -> "Respond to $topName?"
         else -> null
     }
 }

@@ -37,10 +37,10 @@ class ResolveItselfTest {
         assertFalse(AutoPass.resolvesItself(st, stopToRespond = true))
         assertFalse(AutoPass.resolvesItself(st.copy(controlMode = "full"), false))
         assertFalse(AutoPass.resolvesItself(st.copy(phaseStops = mapOf("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}" to true)), false))
-        // The CPU's spell on top is a real question: "No response", a press.
+        // The CPU's spell on top is a real question: "Let it resolve", a press (Explains itself E2; it read "No response").
         val cpu = st.copy(stack = st.stack.map { it.copy(controller = st.cpu.id) })
         assertFalse(AutoPass.resolvesItself(cpu, false))
-        TableActions.of(cpu, true, null, false, false).gold!!.let { assertEquals("No response", it.label); assertTrue(it.enabled) }
+        TableActions.of(cpu, true, null, false, false).gold!!.let { assertEquals("Let it resolve", it.label); assertTrue(it.enabled) }
         // A hand card lifted to cast in response keeps its Cast press.
         val card = st.me.hand.first()
         TableActions.of(st, true, card, false, false).gold!!.let { assertTrue(it.enabled); assertEquals(Press.PLAY, it.press) }

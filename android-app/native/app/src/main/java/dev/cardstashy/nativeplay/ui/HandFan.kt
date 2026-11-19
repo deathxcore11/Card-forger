@@ -77,6 +77,11 @@ fun HandFan(
     onDeal: () -> Unit = {},
     pop: Float? = null,
     onReorder: ((List<Int>) -> Unit)? = null,
+    /**
+     * Explains itself E2 (table-info I1.3): in a response window the cards that cannot answer step back under a shade ([RESPONSE_SHADE]),
+     * so the ones that can are the bright ones. A shade, never see-through (BB10). A lifted or carried card is always shown plain.
+     */
+    shaded: (Card) -> Boolean = { false },
     /** forge-table.mjs data-forge-blocked: why a card can't be played, shown on it while lifted ("Not enough mana"). */
     blockedOf: (Card) -> String? = { null },
     /** A controller: where the ring goes when A plays the last card in the hand (the table's gold button). */
@@ -363,6 +368,7 @@ fun HandFan(
                         .onFocusChanged { if (it.isFocused) focus = card.id else if (focus == card.id && dragging == null) focus = null }
                         .padActs(padHere).matchPadTap(padSource, padFocus) { current.firstOrNull { it.id == card.id }?.let { padPress(it) } }) {
                         CardFace(card, cardW, cardH, mark = markOf(card))
+                        if (!isDrag && !isLift && shaded(card)) Box(Modifier.matchParentSize().clip(RoundedCornerShape(cardW * (5f / 66f))).background(RESPONSE_SHADE))
                         // P7: the carried card's ring. Ice blue in the hand; over the table (it would be played) gold, with one pulse.
                         if (isDrag && !flatLift) { val col by androidx.compose.animation.animateColorAsState(if (over) HOLD_GOLD else HOLD_ICE, tween(120), label = "holdRing")
                             Box(Modifier.matchParentSize().drawBehind { val rad = androidx.compose.ui.geometry.CornerRadius(cardW.toPx() * (6f / 66f))
@@ -411,6 +417,8 @@ private fun rememberSpring(target: Float, from: Float?, delayMs: Long, bounceUp:
 internal const val HOLD_GROW_MS = 140; internal const val HOLD_DROP_MS = 180; internal const val HOLD_BACK_MS = 280
 /** How much of the other cards still shows while one is carried. */
 internal const val HOLD_DIM = .55f
+/** Explains itself E2: the shade over a hand card that cannot answer in a response window (it reads at about 40 % of its brightness). */
+internal val RESPONSE_SHADE = Color(0x99000000)
 /** S1, drop refused: the card shakes once, two swings over [REFUSE_MS], [REFUSE_DP] to each side at first and dying away. */
 internal const val REFUSE_MS = 160; internal const val REFUSE_DP = 7f
 /** The shake at [q] (0..1) of its time: -1..1, two full swings, back at rest at the end. */

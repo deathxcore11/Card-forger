@@ -53,6 +53,19 @@ object AutoPass {
         return st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") != true
     }
 
+    /**
+     * Explains itself E2 (Randall's 19 Nov recording, 2:37: "Respond to Ba Sing Se?" flashed three times while he held a creature
+     * and a sorcery): the CPU's spell or ability is on top, it is your priority, and the table will pass for you, because nothing
+     * you hold stops it ([stops]: Glow.stopsFor, the cards that glow, the same answer the pass itself uses in MatchController.decide),
+     * you are not in Full Control and you set no phase stop here. The table then asks nothing and offers no press.
+     */
+    fun cpuItemPasses(st: MatchState, stops: List<Int>): Boolean {
+        if (st.prompt != null || st.inputType != "InputPassPriority" || st.priorityPlayer != st.viewer) return false
+        val top = st.stack.firstOrNull() ?: return false
+        if (top.controller == st.viewer || st.controlMode == "full" || stops.isNotEmpty()) return false
+        return st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") != true
+    }
+
     fun basis(shown: MatchState, forge: MatchState?): MatchState? {
         if (forge == null || forge.revision != shown.revision) return null
         if (shown.stack.map { it.id } != forge.stack.map { it.id }) return null

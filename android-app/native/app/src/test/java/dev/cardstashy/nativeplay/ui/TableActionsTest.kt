@@ -33,11 +33,11 @@ class TableActionsTest {
 
     @Test fun everyOkLabelReachesTheGoldButton() {
         val states = buildList {
-            // Priority: Resolving… and Resolve, No response, To main 2, Pass, every short step, Pass priority.
+            // Priority: Resolving… and Resolve, Let it resolve, To main 2, Pass, every short step, Pass priority.
             // Mobile table M3: your own spell resolves by itself ("Resolving…", ResolveItselfTest); the Resolve press is Full Control's.
             add(RESOLVING to st { it.copy(stack = listOf(spell)) })
             add("Resolve" to st { it.copy(stack = listOf(spell), controlMode = "full") })
-            add("No response" to st { it.copy(stack = listOf(spell.copy(controller = cpu))) })
+            add("Let it resolve" to st { it.copy(stack = listOf(spell.copy(controller = cpu))) })
             add("To main 2" to st(phase = "COMBAT_DECLARE_ATTACKERS"))
             add("Pass" to st(phase = "COMBAT_DECLARE_BLOCKERS", active = cpu))
             for ((phase, word) in listOf("UPKEEP" to "To draw", "DRAW" to "To main")) add(word to st(phase = phase))
