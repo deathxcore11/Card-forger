@@ -51,6 +51,7 @@ and the bug is not closed.
 | 2026-11-19 | app 0.4.98 | Recording 19 Nov (item 8): the Keep screen and the table showed the opening hand in different orders. | No test compared the two. | KeepHandOrderTest |
 | 2026-11-19 | app 0.4.98 | Recording 19 Nov (item 5): the CPU's versus plate faded in as an empty box before its art. | Image decode timing can't be reproduced on a desktop run. | owed (device: watch the versus beat) |
 | 2026-11-19 | app 0.4.98 | Recording 19 Nov (C): the CPU's Mountain was already down in the table's first frame after Keep. | Cause not proven: KeepThenCpuTest passes on old code too. A guard now stops Keep's send from drawing past the opening. | owed (device recording with the "keep answered" log line) |
+| 2026-11-19 | app 0.4.99 | Recording 19 Nov 3:41 PM: after Keep the table showed Keep and Mulligan in its corner for 4.6 s while the first beats played. | The table was never drawn on the last opening-hand board in a test. | GapsShotTest.noKeepButtonsOnTheTable (fails on old code) |
 
 The three rows dated 2026-11-13 were written from the project's report of that night, not from
 a re-run. The thread that owns each area confirms the cause when it writes the test.

@@ -307,4 +307,11 @@ class GapsShotTest {
         whole("Discard"); inside("gold")
     }
     @Test fun discardWordsWholeFold() { shot(discardAsk(), "discard-fold"); whole("Discard") }
+
+    /** Recording 19 Nov of 0.4.99 (0:13): after Keep the table showed the opening hand's Keep and Mulligan in its corner. */
+    @Test fun noKeepButtonsOnTheTable() {
+        shot(base.copy(turn = 0, status = "running", inputType = "InputConfirmMulligan", stack = emptyList(), buttons = Buttons("Keep", "Mulligan", true, true)), "table-after-keep")
+        assertEquals("no Keep on the table", 0, rule.onAllNodesWithText("Keep", substring = true).fetchSemanticsNodes().size)
+        assertEquals("no Mulligan on the table", 0, rule.onAllNodesWithText("Mulligan", substring = true).fetchSemanticsNodes().size)
+    }
 }

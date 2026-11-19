@@ -1058,7 +1058,9 @@ fun ForgeBoard(
             // The visible Cancel pill is the last stop of the target walk (live 0.4.57), so it can take the ring.
             val cancelFocus = remember { FocusRequester() }
             Box(Modifier.fillMaxSize().then(coverM)) {
-            if (st.prompt == null && st.waitingOnMe) {
+            // Randall's 19 Nov recording of 0.4.99 (0:11.7 to 0:16.3): the table opens on the last opening-hand board while its
+            // first beats play, and that board's Keep and Mulligan stood in the corner for 4.6 s after he had kept. No buttons then.
+            if (st.prompt == null && st.waitingOnMe && !st.isMulligan) {
                 // The cleanup discard (U1): a lifted card goes, so its button says Discard, never Play or Cast.
                 val discardingNow = dev.cardstashy.nativeplay.match.TurnClock.discardCount(st) != null
                 // A lift the hand chip keeps on two screens may not be playable now (U8): the gold button offers it only when it is.
