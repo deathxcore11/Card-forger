@@ -340,9 +340,11 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
   for (const c of deck) { const g = isBasicLand(c.name) ? 'Lands' : cardGroup(factOf(c.name)); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(c); }
   const order = ['Creatures', 'Planeswalkers', 'Instants', 'Sorceries', 'Artifacts', 'Enchantments', 'Battles', 'Cards', 'Lands'];
   const lands = groups.get('Lands')?.reduce((t, c) => t + c.qty, 0) || 0, creatures = groups.get('Creatures')?.reduce((t, c) => t + c.qty, 0) || 0;
+  // Card facts arrive after the list does; until every spell has one the count says so instead of reading 0.
+  const factsPending = deck.some(c => !isBasicLand(c.name) && !factOf(c.name)?.t);
   const spells = deck.filter(c => !isBasicLand(c.name) && factOf(c.name) && cardGroup(factOf(c.name)) !== 'Lands');
   const mvCount = spells.reduce((t, c) => t + c.qty, 0), avg = mvCount ? (spells.reduce((t, c) => t + c.qty * factOf(c.name).m, 0) / mvCount).toFixed(1) : '—';
-  const lead = deck.find(c => !isBasicLand(c.name)), art = pickedCover(edit.id) || (lead ? (factOf(lead.name)?.a || cardImageByName(lead.name, 'art_crop')) : ART + 'f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg');
+  const lead = deck.find(c => !isBasicLand(c.name) && factOf(c.name)?.a) || deck.find(c => !isBasicLand(c.name)), art = pickedCover(edit.id) || (lead ? (factOf(lead.name)?.a || cardImageByName(lead.name, 'art_crop')) : ART + 'f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg');
   const ok = rules.exact ? count === rules.size : count >= rules.size;
   // Missing copies bill at the cheapest rarity the card was printed at (ui.craftRarity), and Craft
   // stamps that printing (ui.craftId), so the seal on the button is the seal the server takes.
@@ -404,7 +406,7 @@ export function deckBuilderMarkup(snapshot, ui = {}) {
     ${deckShell({game: 'mtg', source: 'play', art, title: edit.name || 'New Play deck',
       back: `<button class="icon light" data-act="playEconView" data-econ-view="decks" aria-label="Back to Play decks">←</button>`,
       badge: 'Play deck', format: `<span class="chip dark">Magic</span><span class="chip dark">${esc(edit.format || 'Standard')}</span>`,
-      stats: [{value: `${count}/${rules.size}`, label: 'cards', tone: ok ? '' : 'warn'}, ...(plan.missing ? [{value: plan.missing, label: 'to craft', tone: 'warn'}] : []), {value: creatures, label: 'creatures'}, {value: lands, label: 'lands'}, {value: avg, label: 'average mana value'}],
+      stats: [{value: `${count}/${rules.size}`, label: 'cards', tone: ok ? '' : 'warn'}, ...(plan.missing ? [{value: plan.missing, label: 'to craft', tone: 'warn'}] : []), {value: factsPending ? '—' : creatures, label: 'creatures'}, {value: lands, label: 'lands'}, {value: avg, label: 'average mana value'}],
       actions: [{label: edit.busy ? 'Saving…' : 'Save', primary: true, attrs: 'data-act="playEconSaveEdit"', disabled: !!edit.busy || !count},
         plan.missing ? {html: `<button type="button" class="btn ghost pe-craft-all" data-act="playCraftAll" ${!plan.craftable || snapshot.busy || ui.crafting ? 'disabled' : ''}>${craftLabel}</button>`} : null]}).replace('<h1>', '<h1 id="playDeckTitle" tabindex="-1">')}
     <div class="pe-builder">

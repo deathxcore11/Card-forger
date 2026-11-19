@@ -2798,6 +2798,7 @@ function renderPlayPage() {
   const inspected=state.playStyle!=='quick'&&state.match.mode==='cpu'?playSeatDeck(state,state.inspectedSeat):state.selected;
   if(state.match.mode==='cpu')warmForgeEngine(state);
   if(!playUpdateChecked){playUpdateChecked=true;queueMicrotask(updatePlayWhileIdle);}
+  if(playView==='home')queueMicrotask(autoPickPlayDeck);
   if(playView==='home'){const st=playEcon.snapshot().state;econFacts.wantSets([...storyHomeAct().packSets,...(st?.packs||[]).map(p=>p.set),...(st?.shop||[]).slice(0,6).map(x=>x.code),...(st?.cards||[]).flatMap(c=>c.s||[])]);}
   return playMenuMarkup(state,{lockedDecks:locked,econ:playEcon.snapshot(),story:storyHomeProgress(),friendRoom:friendRoomView(),challengeCount:challenges.length,canShare:typeof navigator.share==='function',view:playView,inspectOpen:playInspectOpen,stageMode:playStageMode,searchOpen:playSearchOpen,econFacts,engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase',sourceEntries:sources,sourceArt,cpuDifficulties:readCpuOptions({engine:FORGE_PLAY_TEST_ENABLED?'forge':'phase'}),quickStatus,sourceStatus:currentPlaySources().statuses[state.browse.source+':'+state.match.format]||{},savedCopy:savedPlayCopy(inspected),savePending:playSaver.isSaving(inspected),matchReleaseReady:PLAY_MATCH_RELEASE_READY,avatarMarkup:profileAvatar(p.avatarArt,{display_name:p.displayName,username:p.username,avatar_url:p.avatarUrl}),deckTiles:tiles,deckPreview:playDeckPreview(inspected),importPreview:playDeckPreview(state.reviewDeck),selectedArt:V.deckArtwork(inspected),matchupArt:{player:V.deckArtwork(state.selected),opponent:V.deckArtwork(state.opponent),cpu3:state.podDecks?.cpu3?V.deckArtwork(state.podDecks.cpu3):'',cpu4:state.podDecks?.cpu4?V.deckArtwork(state.podDecks.cpu4):''}});
 }
@@ -2812,6 +2813,16 @@ const playFocusCapture=()=>{const el=document.activeElement,root=$('#content');i
 const playFocusRestore=f=>{if(!f)return;const now=document.activeElement;if(now&&now!==document.body&&now.isConnected)return;
   const same=[...($('#content')?.querySelectorAll(f.sel)||[])].filter(n=>!!n.closest('.pe-bench-panel')===f.panel),el=same[f.at]||same[0];if(!el||el.disabled)return;
   el.focus({preventScroll:true});if(f.start!=null)try{el.setSelectionRange(f.start,f.end);}catch{}};
+// Play home opens with a deck chosen, as Arena does: the one you played last, else the first ready deck of the match format. It runs
+// once per account and format, so choosing "Change" never gets undone.
+let playDeckAutoKey='';
+const PLAY_LAST_DECK_KEY='cardstashy.play.lastDeck';
+function autoPickPlayDeck(){const s=playSetup.snapshot();if(playView!=='home'||s.selected||!s.profile.signedIn||s.match.mode!=='cpu'||s.playStyle!=='quick')return;
+  const key=[s.profile.ownerId,s.match.format].join('|');if(playDeckAutoKey===key)return;playDeckAutoKey=key;
+  let last='';try{last=localStorage.getItem(PLAY_LAST_DECK_KEY)||'';}catch{/* this device only */}
+  const locked=playLockedDecks(),ready=s.decks.filter(d=>d.valid&&d.format===s.match.format&&!locked.has(d.id)&&!locked.has(String(d.id)));
+  const pick=ready.find(d=>String(d.id)===last)||ready[0];if(!pick)return;
+  playSetup.selectDeck(pick.id,'player');refreshPlayMenu();}
 const refreshPlayMenu=()=>{if(S.ui.view==='play'&&T.game()==='mtg'){
   const focus=playFocusCapture();
   const scrolls=[...document.querySelectorAll('[data-play-scroll]')].map(n=>[n.dataset.playScroll,n.scrollTop]),rows=[...document.querySelectorAll('[data-shelf-row]')].map(n=>[n.dataset.shelfRow,n.scrollLeft]);
@@ -2828,7 +2839,7 @@ function focusNextPlaySelection(){const state=playSetup.snapshot();const target=
  // On a phone the sticky Play bar would cover the CPU seat that is up next, so bring it to the middle.
  if(target?.dataset.playSeat==='opponent'&&matchMedia('(max-width:700px)').matches)target.closest('.pl-seat')?.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
 // In Practice, once your deck is in, the next pick goes to the CPU's seat (it used to replace yours).
-A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;if(before.playStyle==='quick'&&before.match.mode==='cpu'&&playLockedDecks().has(t.dataset.playDeck))return toast('Some of its cards aren\'t in your Trunk yet. Practice can use it.');playSetup.selectDeck(t.dataset.playDeck,seat);const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat==='player'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
+A.playSelectDeck=t=>{cancelPlayBuilds();const before=playSetup.snapshot(),seat=before.playStyle==='quick'?'player':before.inspectedSeat;if(before.playStyle==='quick'&&before.match.mode==='cpu'&&playLockedDecks().has(t.dataset.playDeck))return toast('Some of its cards aren\'t in your Trunk yet. Practice can use it.');playSetup.selectDeck(t.dataset.playDeck,seat);if(seat==='player')try{localStorage.setItem(PLAY_LAST_DECK_KEY,String(t.dataset.playDeck));}catch{/* this device only */}const after=playSetup.snapshot();if(after.playStyle!=='quick'&&after.match.mode==='cpu'&&seat==='player'&&after.selected&&!after.opponent)playSetup.inspectSeat('opponent');refreshPlayMenu();focusNextPlaySelection();};
 A.playInspectSeat=t=>{playSetup.inspectSeat(t.dataset.playSeat);refreshPlayMenu();};
 A.playClearSelection=()=>{cancelPlayBuilds();playSetup.clearSelection(playSetup.snapshot().inspectedSeat);refreshPlayMenu();};
 // Practice from a deck page: the Practice lobby with this saved deck in its own format.
