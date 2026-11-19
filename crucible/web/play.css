@@ -113,5 +113,24 @@ body > .ghost { position: fixed; z-index: 60; pointer-events: none; display: fle
 .rankbig { font-size: 7em; font-family: 'Cinzel', Georgia, serif; color: var(--gold); text-align: center; line-height: 1; text-shadow: 0 0 .3em rgba(233, 196, 106, .6); animation: stamp .45s cubic-bezier(.2, 1.4, .3, 1); }
 @keyframes stamp { from { transform: scale(2.4); opacity: 0; } to { transform: none; opacity: 1; } }
 table { font-size: 1.2em; margin: .5em auto; border-collapse: collapse; } td { padding: .15em 1em; } td:last-child { text-align: right; color: var(--gold); }
-.toast { position: absolute; left: 50%; bottom: 19.4em; transform: translateX(-50%); z-index: 35; font-size: 1.25em; background: rgba(0, 0, 0, .85); border-radius: .5em; padding: .3em .9em; color: #ffd9a8; } .toast:empty { display: none; }
+.toast { pointer-events: none; position: absolute; left: 50%; bottom: 19.4em; transform: translateX(-50%); z-index: 35; font-size: 1.25em; background: rgba(0, 0, 0, .85); border-radius: .5em; padding: .3em .9em; color: #ffd9a8; } .toast:empty { display: none; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* screens around a run */
+.chars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1em; margin-top: .8em; }
+.ch { padding: .9em; display: flex; flex-direction: column; gap: .45em; cursor: pointer; } .ch img, .ch .q { width: 100%; aspect-ratio: 1; border-radius: .6em; object-fit: cover; border: 1px solid var(--line); }
+.ch .q { display: flex; align-items: center; justify-content: center; font-size: 5em; color: var(--dim); background: rgba(0, 0, 0, .5); font-family: 'Cinzel', Georgia, serif; }
+.ch b { font-family: 'Cinzel', Georgia, serif; color: var(--gold); font-size: 1.3em; } .ch span { font-size: 1.02em; } .ch i { font-style: normal; color: #ffb37a; font-size: .85em; text-transform: uppercase; letter-spacing: .1em; }
+.ch.locked { opacity: .55; cursor: default; } .ch.on { border-color: var(--gold); box-shadow: 0 0 2em rgba(233, 196, 106, .45); }
+button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482a, #6d2413); border-color: #ffb37a; color: #fff; font-weight: 700; }
+.frule { border-top: 1px solid var(--line); padding-top: .4em; margin-top: auto; color: var(--dim); } .rules .frule b { font-size: 1em; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6em; margin-top: .8em; } .box { padding: 1.3em 1.6em; }
+.tally { margin: 0; width: 100%; } .tally td { padding: .3em 1.6em .3em 0; } .bigm { font-size: 3.4em; color: var(--gold); font-family: 'Cinzel', Georgia, serif; }
+.unlock { padding: 1.2em 1.7em; margin-top: 1em; border-color: var(--gold); box-shadow: 0 0 2em rgba(233, 196, 106, .35); animation: stamp .45s cubic-bezier(.2, 1.4, .3, 1); } .unlock div { font-size: 1.25em; } .unlock b { color: var(--gold); }
+.vgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em; margin-top: .8em; } .tile { padding: 1em; display: flex; flex-direction: column; gap: .5em; } .tile .ri { align-self: center; width: 6em; height: 6em; } .tile b { font-size: 1.25em; color: var(--gold); font-family: 'Cinzel', Georgia, serif; } .tile span { font-size: 1.05em; flex: 1; } .tile.own { opacity: .6; } .tile small { text-transform: uppercase; letter-spacing: .12em; font-size: .85em; }
+.mgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .8em; } .mrec { display: flex; align-items: center; gap: .7em; padding: .7em 1em; justify-content: center; } .mrec > b { font-size: 2em; color: var(--gold); }
+.story { position: absolute; inset: 0; z-index: 38; background: rgba(0, 0, 0, .72); cursor: pointer; }
+.story .port { position: absolute; left: 5em; bottom: 19em; width: 24em; height: 24em; border-radius: 1em; border: 2px solid var(--gold); object-fit: cover; box-shadow: 0 0 3em rgba(233, 196, 106, .35); }
+.story .say { position: absolute; left: 5em; right: 5em; bottom: 4em; min-height: 13em; padding: 1.4em 2em; } .story .say p { font-size: 1.75em; line-height: 1.4; }
+.story .go { position: absolute; right: 1.4em; bottom: 1em; color: var(--gold); font-size: 1.2em; animation: blink 1.2s infinite; } @keyframes blink { 50% { opacity: .3; } }
+.story .skip { position: absolute; right: 5em; top: 3em; }

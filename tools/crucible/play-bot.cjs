@@ -8,7 +8,7 @@ const path = require('path');
   const runs = +(runsArg || 1);
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: +(W || 1280), height: +(H || 720) } });
-  const errors = [], seen = new Set(); let moved = 0, clicks = 0, duels = 0, wins = 0, stuck = 0;
+  const errors = [], seen = new Set(); let moved = 0, clicks = 0, duels = 0, wins = 0, stuck = 0, powers = 0;
   page.on('pageerror', e => errors.push('pageerror ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('console ' + m.text()); });
   page.on('requestfailed', r => errors.push('request ' + r.url().slice(-60)));
@@ -19,17 +19,25 @@ const path = require('path');
   const rects = () => page.evaluate(() => { const o = document.querySelector('#app').getBoundingClientRect(); return [...document.querySelectorAll('.hs,.slot,.tslot,.who,.board,.tray,.actions')].map(e => { const r = e.getBoundingClientRect(); return [r.left - o.left, r.top - o.top, r.width, r.height].map(x => Math.round(x)).join(','); }).join('|'); });
   let base = null, lastPhase = '';
   for (let run = 0; run < runs; run++) {
-    await page.evaluate(() => localStorage.clear()); await page.reload();
-    await shot('home'); await click('[data-a="new"]');
+    if (run === 0) { await page.evaluate(() => localStorage.clear()); await page.reload(); }
+    await shot('home'); await click('[data-a="new"]'); await shot('forger');
+    const owned = await page.locator('.ch[data-a^="forger:"]').count(); if (owned > 1) { await page.locator('.ch[data-a^="forger:"]').nth(run % owned).click({ force: true }); clicks++; }
+    if (!(await click('[data-a="descend"]'))) errors.push('could not start run ' + run + ': ' + (await page.evaluate(() => JSON.stringify({ screen: window.LM.G.screen, phase: window.LM.G.run && window.LM.G.run.phase, story: !!window.LM.G.story, ov: !!window.LM.G.overlay, tab: window.LM.G.tab, insp: !!window.LM.G.inspect, btns: [...document.querySelectorAll('button')].map(b => b.dataset.a).join(' ') }))));
     for (let step = 0; step < 6000; step++) {
-      const st = await page.evaluate(() => { const G = window.LM.G, r = G.run; return r ? { phase: r.phase, playing: G.playing, tab: G.tab, ov: !!G.overlay, insp: !!G.inspect, duel: !!r.duel, active: r.duel && r.duel.active, pending: r.duel && !!r.duel.pending, played: r.duel && r.duel.played, attacked: r.duel && r.duel.attacked, hand: r.duel ? r.duel.hand[0].length : 0, won: r.result && r.result.won, floor: r.floor, kind: r.offer && r.offer.kind } : null; });
+      const st = await page.evaluate(() => { const G = window.LM.G, r = G.run; return r ? { story: G.story && !G.overlay ? G.story.id : null, phase: r.phase, playing: G.playing, tab: G.tab, ov: !!G.overlay, insp: !!G.inspect, duel: !!r.duel, active: r.duel && r.duel.active, pending: r.duel && !!r.duel.pending, played: r.duel && r.duel.played, attacked: r.duel && r.duel.attacked, hand: r.duel ? r.duel.hand[0].length : 0, won: r.result && r.result.won, floor: r.floor, kind: r.offer && r.offer.kind } : null; });
       if (!st) break;
       if (st.playing) { await page.waitForTimeout(40); continue; }
+      if (st.story) { await shot('story-' + st.story.replace(':', '-')); await click(step % 2 ? '[data-a="storyskip"]' : '[data-a="storynext"]'); continue; }
       const inDuel = st.phase === 'duel';
       if (inDuel) { const now = await rects(); if (lastPhase !== 'duel') { base = now; duels++; } else if (now !== base) { moved++; if (moved < 4) console.log('MOVED\n' + base + '\n' + now); base = now; } }
       lastPhase = st.phase;
       if (st.ov) { await shot(st.phase === 'over' ? 'duel-lost' : 'duel-end'); await click('[data-a="closeov"]'); continue; }
-      if (st.phase === 'over') { await shot('over'); if (st.won) wins++; console.log('run', run, st.won ? 'CLEARED' : 'ended on floor ' + (st.floor + 1), 'clicks', clicks); break; }
+      if (st.phase === 'over') {
+        await shot('over'); if (st.won) wins++; console.log('run', run, st.won ? 'CLEARED' : 'ended on floor ' + (st.floor + 1), 'clicks', clicks);
+        await click('[data-a="screen:vault"]'); await shot('vault'); await click('[data-a^="vbuy:"]:not([disabled])'); await click('[data-a="home"]');
+        await click('[data-a="screen:codex"]'); await shot('codex'); await click('[data-a="home"]'); await click('[data-a="home"]');
+        break;
+      }
       if (st.phase === 'kit') { await shot('kit'); await click('[data-a="kit:' + (run % 3) + '"]'); continue; }
       if (st.phase === 'charm') { await shot('charm'); await click('[data-a^="pick:"]'); continue; }
       if (st.phase === 'chamber') {
@@ -46,6 +54,8 @@ const path = require('path');
         if (st.active !== 0) { await page.waitForTimeout(40); continue; }
         if (!(await page.evaluate(() => window.LM.G.fast)) && duels > 2) await click('[data-a="speed"]');
         if (!st.played && !st.attacked && st.hand) {
+          if (await click('[data-a^="power"]:not([disabled])')) { powers++; await shot('power'); continue; }
+          if (step % 5 === 0 && await has('[data-a="power:hand"]')) { await click('[data-a="hand:0"]'); if (await click('[data-a^="power"]:not([disabled])')) { powers++; continue; } await click('[data-a="undo"]'); }
           let done = false;
           for (let n = Math.min(4, st.hand); n >= 1 && !done; n--) {
             for (let i = 0; i < n; i++) await click('[data-a="hand:' + i + '"]');
@@ -69,7 +79,7 @@ const path = require('path');
       if (step === 5999) errors.push('step limit: ' + JSON.stringify(st) + ' ' + (await page.evaluate(() => [...document.querySelectorAll('[data-a]')].filter(e => e.tagName === 'BUTTON').map(e => e.dataset.a + (e.disabled ? '(off)' : '')).join(' | ') + ' toast=' + window.LM.G.toast)));
     }
   }
-  console.log(JSON.stringify({ runs, duels, wins, clicks, moved, stuck, errors: errors.length }));
+  console.log(JSON.stringify({ runs, duels, wins, clicks, powers, moved, stuck, errors: errors.length, profile: await page.evaluate(() => JSON.parse(localStorage.getItem('lostmemories.profile.v1') || 'null')) }).slice(0, 600));
   for (const e of errors.slice(0, 8)) console.log(e);
   await browser.close();
   process.exit(errors.length || moved ? 1 : 0);

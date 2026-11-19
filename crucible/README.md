@@ -12,7 +12,7 @@ machine". Nothing in this folder has been played by a person or seen on a device
 ```
 node tools/crucible/build-pool.mjs --fetch --count     # pool size at three cut-offs
 node tools/crucible/build-pool.mjs --fetch             # writes crucible/data/crucible-pool.json
-node crucible/test/test-crucible-rules.mjs             # 40 rule tests
+node crucible/test/test-crucible-rules.mjs             # 45 rule tests
 node crucible/test/test-crucible-fuzz.mjs 6000 600     # random play with invariants
 node tools/crucible/make-fixtures.mjs --check          # replay golden fixtures hash for hash
 node tools/crucible/sim.mjs --runs 10000 --level 2 --family neutral
@@ -36,6 +36,9 @@ to try a config value without editing the file.
 | `engine/ai.mjs` | CPU players. They receive only `viewFor(seat)`. |
 | `engine/run.mjs` | The descent: kits, doors, rivals, bosses, rank, drops, Anvil, Bazaar. |
 | `engine/policy.mjs` | Scripted players for the simulator. |
+| `engine/forgers.mjs` | The playable characters: a rule, a once-a-duel power and three kits each. Sim flag `--forger tarn`. |
+| `engine/meta.mjs` | What stays between runs: Memories, Codex, Forger feats, Heat, the Memory Vault. |
+| `web/` | The playable test page (`app.mjs`, `play.css`, `story.mjs`). Build with `tools/crucible/build-web.mjs`, test with `tools/crucible/play-bot.cjs`. Art is not in this repository. |
 | `fixtures/` | 50 duels and 10 runs: seed, actions, and a state hash after every action. |
 
 ## Readings taken where the design bible was silent or unclear
@@ -72,6 +75,7 @@ overrule any of them.
 
 ## Not built yet
 
-Kotlin engine for the app, every screen, the story acts, account-level progress (Codex
-across runs, Vault, level, unlocks), secrets, the reward route, and a CPU that only knows
-the melds a new player would know.
+Kotlin engine for the app, the app screens, the full story (the page has first-pass scenes
+only), real Heat rules, secrets, the reward route, balanced Forger numbers (Tarn clears 65%
+in the simulator against about 42% with no Forger), and a CPU that only knows the melds a
+new player would know.

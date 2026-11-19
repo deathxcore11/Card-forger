@@ -8,6 +8,8 @@ import { Rng } from '../engine/rng.mjs';
 import { RELICS, sortRelics } from '../engine/relics.mjs';
 import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
+import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
+import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT } from '../engine/meta.mjs';
 
 const db = loadDb();
 const C = n => { const c = db.byName.get(n); assert.ok(c, 'card in pool: ' + n); return c; };
@@ -435,6 +437,58 @@ test('Heavy Crown is never offered to a deck it would push over the cap (found b
       if (run.phase === 'chamber') assert.ok(deckWeight(db, run.deck) <= weightCap(db, run), 'deck over the cap, seed ' + seed);
     }
   }
+});
+
+test('Forgers: each deals its own three kits, carries its rule, and uses its power once a duel', () => {
+  for (const f of FORGER_IDS) {
+    const run = newRun(db, { seed: 4242, forger: f });
+    assert.deepEqual(run.offer.map(k => k.kit), FORGERS[f].kits.map(k => k.id));
+    for (const k of run.offer) assert.ok(k.deck.length === 40 && deckWeight(db, k.deck) <= db.config.kitWeight, f + ' kit over weight');
+    runApply(run, { t: 'kit', i: 0 }, db); runApply(run, { t: 'pick', i: 0 }, db);
+    const d = run.doors.findIndex(x => x.type === 'duel' || x.tier); runApply(run, { t: 'door', i: d < 0 ? 0 : d }, db);
+    if (run.phase !== 'duel') continue;
+    assert.equal(run.duel.seat[0].forger, f); assert.equal(run.duel.seat[0].relics[0], FORGERS[f].rule);
+    let guard = 0;
+    while (run.phase === 'duel' && guard++ < 400) {
+      const acts = legalActions(run.duel, db).filter(a => a.t === 'power');
+      if (run.duel.active === 0 && !run.duel.pending && acts.length) {
+        runApply(run, { t: 'duel', action: acts[0] }, db);
+        assert.equal(run.duel ? run.duel.seat[0].rs.power : 1, 1);
+        if (run.duel) { assert.equal(legalActions(run.duel, db).filter(a => a.t === 'power').length, 0, 'power offered twice'); assert.throws(() => runApply(run, { t: 'duel', action: acts[0] }, db)); }
+        break;
+      }
+      runApply(run, policyAction(db, run, { level: 0 }), db);
+    }
+  }
+});
+
+test('a run without a Forger never sees a power or a Forger relic', () => {
+  const run = playRun(db, newRun(db, { seed: 9 }), { level: 2 });
+  assert.equal(run.forger, undefined);
+  for (const id of Object.keys(run.stats.relicFires)) assert.notEqual(RELICS[id].kind, 'F');
+});
+
+test('locked relics are never offered and locked Masterworks cannot be forged', () => {
+  const locked = VAULT.map(v => v.id);
+  for (let seed = 1; seed <= 25; seed++) {
+    const run = playRun(db, newRun(db, { seed, locked }), { level: 2 });
+    for (const id of [...run.charms, ...run.gifts, ...run.masterworks]) assert.ok(!locked.includes(id), id + ' was locked, seed ' + seed);
+  }
+});
+
+test('profile: every run pays Memories, unlocks come from feats, the Vault takes Memories', () => {
+  const p = newProfile();
+  assert.equal(maxHeat(p), 0); assert.deepEqual(p.forgers, ['tarn']);
+  const run = playRun(db, newRun(db, { seed: 5, forger: 'tarn', locked: lockedRelics(p) }), { level: 0 }); // a beginner: it loses
+  const pre = scoreRun(p, run);
+  const got = applyRun(p, run);
+  assert.equal(got.total, pre.total); assert.ok(got.total > 0, 'a lost run still pays'); assert.equal(p.memories, got.total);
+  assert.ok(p.forgers.includes('scrapper'), 'finishing a run unlocks the Scrapper');
+  assert.throws(() => buy(newProfile(), 'tomb_bell'), /not enough/);
+  p.memories = 100; buy(p, 'tomb_bell'); assert.equal(p.memories, 80); assert.ok(!lockedRelics(p).includes('tomb_bell')); assert.throws(() => buy(p, 'tomb_bell'), /already/);
+  let won = null; for (let seed = 1; seed < 60 && !won; seed++) { const r = playRun(db, newRun(db, { seed }), { level: 2 }); if (r.result.won) won = r; }
+  const q = newProfile(); const w = applyRun(q, won);
+  assert.equal(q.heatCleared, 0); assert.equal(maxHeat(q), 1); assert.ok(w.unlocks.some(u => u.kind === 'heat')); assert.ok(q.forgers.includes('storm') && q.forgers.includes('veil'));
 });
 
 console.log('crucible rules:', passed, 'tests passed');

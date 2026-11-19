@@ -4,15 +4,23 @@ import { buildDb, roleOf, weightOf } from '../engine/cards.mjs';
 import { legalActions, playVariants, planChain, viewFor, forecast } from '../engine/duel.mjs';
 import { RELICS } from '../engine/relics.mjs';
 import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES } from '../engine/run.mjs';
+import { meldPair } from '../engine/cards.mjs';
+import { powerActions } from '../engine/duel.mjs';
+import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
+import { newProfile, applyRun, buy, lockedRelics, maxHeat, VAULT, FORGER_FEATS } from '../engine/meta.mjs';
+import { SCENES } from './story.mjs';
 
 const D = window.CRUCIBLE_DATA;
 const db = buildDb(D.pool, D.tags, D.config);
 const $ = s => document.querySelector(s);
 const app = $('#app');
-const SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1';
+const SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
 const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private window */ } }, del(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } } };
 
-const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, pickDeck: null, pickTrunk: null, log: [], fast: false };
+const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false };
+const P = Object.assign(newProfile(), store.get(PROFILE) || {});
+for (const k of P.codex) G.known.add(k);
+const saveP = () => store.set(PROFILE, P);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const card = id => db.byId.get(id);
 // Card pictures come from sprite sheets of 100 (10 by 10), in pool order, so nothing is hot-linked.
@@ -68,7 +76,7 @@ function act(a) {
   } catch (e) { toast(e.message); render(); return; }
   G.sel = []; G.onto = null; G.attacker = null;
   if (run.codex) { for (const k of run.codex) G.known.add(k); store.set(KNOWN, [...G.known]); }
-  if (run.phase === 'over') store.del(SAVE); else store.set(SAVE, run);
+  if (run.phase === 'over') { store.del(SAVE); if (!G.results) { G.results = applyRun(P, run); saveP(); queueStory(run.result.won ? 'cleared' : 'fell'); } } else store.set(SAVE, run);
   if (wasDuel && frames.length) { G.frames = frames; if (!run.duel && run.lastDuel) G.overlay = { kind: 'duelEnd', sum: run.lastDuel, rival: G.lastRival }; playFrames(); }
   else render();
 }
@@ -104,6 +112,7 @@ function logLine(e, v) {
     case 'meld': t = e.kind === 'fizzle' ? `Fizzle: ${n(e.lost)} is lost.` : null; break;
     case 'set': t = `${who(e.seat)} set a card.`; break;
     case 'turn': t = `Turn ${e.turn}: ${who(e.seat)}.`; break;
+    case 'power': t = `${who(e.seat)} used ${FORGERS[e.forger].power}.`; break;
     case 'lp': t = null; break;
   }
   if (t) { G.log.push(t); if (G.log.length > 40) G.log.shift(); }
@@ -150,6 +159,36 @@ function animate(evs, ghosts) {
   }
 }
 
+// ---------- story ----------
+function queueStory(id, then) {
+  if (!SCENES[id] || P.seen.includes(id)) { if (then) then(); return; }
+  P.seen.push(id); saveP(); G.story = { id, i: 0, then: then || null };
+}
+function storyPanel() {
+  const st = G.story; if (!st || G.playing || G.overlay) return '';
+  const sc = SCENES[st.id];
+  return `<div class="story" data-a="storynext">${sc.face && ART.has(sc.face) ? `<img class="port" src="art/${sc.face}.webp" alt="">` : ''}<div class="say glass">${sc.who ? `<h3>${esc(sc.who)}</h3>` : ''}<p>${esc(sc.lines[st.i])}</p><span class="go">Tap to continue ▸</span></div><button class="skip" data-a="storyskip">Skip</button></div>`;
+}
+
+// ---------- screens around a run ----------
+function screenForger() {
+  const heatMax = maxHeat(P);
+  const cardOf = id => { const f = FORGERS[id], own = P.forgers.includes(id), on = G.pickForger === id, face = 'face-' + (id === 'tarn' ? 'tarn' : id);
+    return `<div class="ch glass ${own ? '' : 'locked'} ${on ? 'on' : ''}" ${own ? `data-a="forger:${id}"` : ''}>${own && ART.has(face) ? `<img src="art/${face}.webp" alt="">` : `<div class="q">${own ? esc(f.name.replace('The ', '')[0]) : '?'}</div>`}<b>${esc(f.name)}</b><i>${esc(f.tag)}</i>${own ? `<span><u>Rule:</u> ${esc(RELICS[f.rule].text)}</span><span><u>${esc(f.power)}:</u> ${esc(f.powerText)}</span>` : `<span>Unlock: ${esc(FORGER_FEATS[id].text)}</span>`}</div>`; };
+  return `<div class="hall"><div class="panel glass wide"><h2>Choose your Forger</h2><div class="chars">${FORGER_IDS.map(cardOf).join('')}<div class="ch glass locked"><div class="q">?</div><b>The Last One</b><i>Hidden</i><span>Not in this build yet.</span></div></div>
+    <div class="row"><span class="fine">Heat</span>${Array.from({ length: 6 }, (_, h) => `<button class="${G.pickHeat === h ? 'gold' : ''}" data-a="heat:${h}" ${h > heatMax ? 'disabled' : ''}>${h}</button>`).join('')}<span class="fine">${G.pickHeat ? `Rivals are stronger. Memories +${G.pickHeat * 20}%.` : heatMax ? '' : 'Clear the pyramid to unlock Heat 1.'}</span></div>
+    <div class="row"><button class="gold big" data-a="descend">Descend as ${esc(FORGERS[G.pickForger].name)}</button><button data-a="home">Back</button></div></div></div>`;
+}
+function screenVault() {
+  return `<div class="hall"><div class="panel glass wide"><h2>Memory Vault · ${P.memories} Memories</h2><p>Spend Memories to widen what a run can offer. Nothing here makes you stronger at the start.</p><div class="vgrid">${VAULT.map(v => { const own = P.bought.includes(v.id), r = RELICS[v.id]; return `<div class="tile glass ${own ? 'own' : ''}"><small>${r.kind === 'M' ? 'Masterwork' : 'Charm'}</small>${relicImg(v.id)}<b>${esc(r.name)}</b><span>${esc(r.text)}</span><button class="gold" data-a="vbuy:${v.id}" ${own || P.memories < v.price ? 'disabled' : ''}>${own ? 'Owned' : v.price + ' Memories'}</button></div>`; }).join('')}</div><div class="row"><button class="gold" data-a="home">Back</button></div></div></div>`;
+}
+function screenCodex() {
+  const keys = [...G.known].reverse();
+  const rows = keys.slice(0, 80).map(k => { const [a, b] = k.split('+').map(Number); if (!card(a) || !card(b)) return ''; const r = meldPair(db, a, b); if (!r.id) return ''; return `<div class="mrec glass">${face({ id: a }, { cls: 'small' })}<b>+</b>${face({ id: b }, { cls: 'small' })}<b>=</b>${face({ id: r.id }, { cls: 'small' })}</div>`; }).join('');
+  return `<div class="hall"><div class="panel glass wide"><h2>Codex · ${keys.length} melds found</h2><p>A meld you have found shows its result before you play it, in every run after.${keys.length > 80 ? ' Showing the newest 80.' : ''}</p><div class="mgrid">${rows || '<p class="fine">Nothing yet. Meld two monsters to write the first page.</p>'}</div>
+    <h3 style="margin-top:1em">Record</h3><p>Runs ${P.runs} · Clears ${P.clears} · Duels won ${P.duelWins} · Guardians beaten ${P.bossWins} · Memories earned ${P.earned}</p><div class="row"><button class="gold" data-a="home">Back</button></div></div></div>`;
+}
+
 // ---------- screens ----------
 function hud() {
   const r = G.run; if (!r || r.phase === 'kit') return '';
@@ -162,7 +201,7 @@ function hud() {
 function screenHome() {
   const saved = store.get(SAVE);
   return `<div class="hall home"><div class="title"><small>CARDSTASHY</small><h1>LOST MEMORIES</h1><p>Test build of the real rules engine. Three floors, six chambers each, three Sparks.</p>
-    <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved ? '' : 'gold'}" data-a="new">New run</button><button data-a="tab:help">How to play</button></div>
+    <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button></div>
     <p class="fine">Not final art. Seen only in a test browser so far.</p></div></div>`;
 }
 function summary(deck) {
@@ -228,14 +267,21 @@ function screenDuel() {
     buttons = (targets.includes(-1) ? `<button class="gold" data-a="hit:-1">Direct attack (${v.mon[0][G.attacker].ea})</button>` : '') + (canPos.has(G.attacker) ? '<button data-a="pos">Change position</button>' : '') + '<button data-a="undo">Cancel</button>';
   } else if (G.onto != null) { tray = '<span>Now tap hand cards to meld onto it.</span>'; buttons = '<button data-a="undo">Cancel</button>'; }
   const hand = [0, 1, 2, 3, 4, 5].map(i => { const c = v.hand[i]; const k = G.sel.indexOf(i); return `<div class="hs">${c ? face(c, { cls: (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: `data-a="hand:${i}"`, badge: k >= 0 ? k + 1 : '' }) : ''}</div>`; }).join('');
+  let powerBtn = '';
+  if (myTurn && v.forger && !v.rs.power) {
+    const F = FORGERS[v.forger], pa = powerActions(live, db, 0);
+    const ok = F.needs === 'hand' ? G.sel.length === 1 && pa.some(p => p.hand === G.sel[0]) : F.needs === 'zone' ? G.attacker != null && pa.some(p => p.zone === G.attacker) : pa.length > 0 && !G.sel.length;
+    const hint = F.needs === 'hand' ? ' (pick one hand card)' : F.needs === 'zone' ? ' (pick your monster)' : '';
+    powerBtn = `<button class="pow" data-a="power:${F.needs || ''}" ${ok ? '' : 'disabled'} title="${esc(F.powerText)}">${esc(F.power)}${ok ? '' : hint}</button>`;
+  }
   const terr = v.terrain ? `Terrain: <b>${esc(card(v.terrain.id).name)}</b>${v.terrain.temp != null ? ` (holds ${v.terrain.temp} more of your turns)` : ''}${v.terrain.lock ? ' (locked)' : ''}` : 'No terrain';
   const prompt = pend ? `<div class="modal"><div class="glass panel"><h3>The rival attacks${live.pending.to >= 0 ? ' ' + esc(card(live.mon[0][live.pending.to].id).name) : ' you directly'}</h3><p>Spring a Trap?</p><div class="picks">${live.pending.options.map(i => `<div class="pick glass">${face(live.traps[0][i], { cls: 'tiny' })}<div>${esc(rulesText(live.traps[0][i].id))}</div><button class="gold" data-a="respond:${i}">Spring it</button></div>`).join('')}</div><div class="row"><button data-a="respond:-1">Let the attack through</button></div></div></div>` : '';
   return `<div class="duel ${v.twist || ''}"><div class="side top"><div class="who glass"><b id="rivalLp" class="lp">${v.lp[1]}</b><span>${esc(rv.name)}</span><small>Hand ${v.rivalHand} · Deck ${v.deckCount[1]}</small></div>
-      <div class="rules glass"><b>This duel</b>${rv.lawText ? `<span>${esc(rv.lawText)}</span>` : ''}${rv.twist ? `<span>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</span>` : ''}<span>Bounty: ${esc(rv.bountyText || '')}</span></div></div>
+      <div class="rules glass"><b>This duel</b>${rv.lawText ? `<span>${esc(rv.lawText)}</span>` : ''}${rv.twist ? `<span>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</span>` : ''}<span>Bounty: ${esc(rv.bountyText || '')}</span>${v.forger ? `<span class="frule"><b>${esc(FORGERS[v.forger].name)}</b> ${esc(RELICS[FORGERS[v.forger].rule].text)} ${esc(FORGERS[v.forger].power)}: ${v.rs.power ? 'used.' : esc(FORGERS[v.forger].powerText)}</span>` : ''}</div></div>
     <div class="board"><div class="trow">${traps(1)}</div><div class="mrow">${shut}${row(1)}${shut}</div><div id="terrain" class="terrain">${terr}</div><div class="mrow">${shut}${row(0)}${shut}</div><div class="trow">${traps(0)}</div><div id="relicFlash" class="relicFlash"></div></div>
     <div class="side bot"><div class="who glass"><b id="myLp" class="lp">${v.lp[0]}</b><span>You</span><small>Deck ${v.deckCount[0]} · Turn ${v.turn}</small></div>
       <div class="logbox glass">${G.log.slice(-5).map(esc).join('<br>')}</div></div>
-    <div class="tray"><div class="hand">${hand}</div><div class="actions glass"><div class="trayline">${G.playing ? '<span>…</span>' : myTurn ? tray : pend ? '<span>Answer the attack.</span>' : '<span>Rival is thinking.</span>'}</div><div class="row">${buttons}${myTurn && !G.sel.length && G.attacker == null ? `<button class="gold" data-a="end">${v.turn === 1 || (!canAtk.size) ? 'End turn' : 'End turn'}</button>` : ''}${v.relics.includes('clean_draw') && !v.rs.cleanDraw && canPlay && G.sel.length === 1 ? '<button data-a="clean">Clean Draw this card</button>' : ''}<button data-a="speed">${G.fast ? 'Speed: fast' : 'Speed: normal'}</button></div></div></div>${prompt}</div>`;
+    <div class="tray"><div class="hand">${hand}</div><div class="actions glass"><div class="trayline">${G.playing ? '<span>…</span>' : myTurn ? tray : pend ? '<span>Answer the attack.</span>' : '<span>Rival is thinking.</span>'}</div><div class="row">${buttons}${myTurn && !G.sel.length && G.attacker == null ? `<button class="gold" data-a="end">${v.turn === 1 || (!canAtk.size) ? 'End turn' : 'End turn'}</button>` : ''}${v.relics.includes('clean_draw') && !v.rs.cleanDraw && canPlay && G.sel.length === 1 ? '<button data-a="clean">Clean Draw this card</button>' : ''}${powerBtn}<button data-a="speed">${G.fast ? 'Speed: fast' : 'Speed: normal'}</button></div></div></div>${prompt}</div>`;
 }
 
 function screenReward() {
@@ -265,9 +311,12 @@ function screenBazaar() {
     ${o.merchant === 'scrapper' ? `<div class="grid">${deckList(r.trunk, 'trunkpick', G.pickTrunk)}</div>` : ''}<div class="row"><button data-a="leave">Leave</button></div></div></div>`;
 }
 function screenOver() {
-  const r = G.run, S = r.stats;
-  return `<div class="hall home"><div class="title"><h1>${r.result.won ? 'THE PYRAMID IS CLEARED' : 'THE RUN ENDS'}</h1><p>${r.result.won ? 'All three guardians fell.' : `You fell on floor ${r.floor + 1}, chamber ${Math.min(6, r.chamber + 1)}.`}</p>
-    <p>Duels ${S.duels} · Wins ${S.wins} · Melds ${S.melds} · Guardians beaten ${S.bossWins} · Ranks ${Object.entries(S.ranks).map(([k, v]) => k + '×' + v).join(' ')}</p><div class="row"><button class="gold" data-a="new">New run</button></div></div></div>`;
+  const r = G.run, S = r.stats, R = G.results;
+  return `<div class="hall"><div class="panel glass wide"><h2>${r.result.won ? 'The pyramid is cleared' : `The run ends · Floor ${r.floor + 1}, Chamber ${Math.min(6, r.chamber + 1)}`}</h2>
+    <div class="cols"><div class="box glass"><h3>This run</h3><table class="tally"><tr><td>Forger</td><td>${esc(r.forger ? FORGERS[r.forger].name : 'None')}</td></tr><tr><td>Duels won</td><td>${S.wins} of ${S.duels}</td></tr><tr><td>Guardians beaten</td><td>${S.bossWins}</td></tr><tr><td>Melds</td><td>${S.melds}</td></tr><tr><td>Ranks</td><td>${Object.entries(S.ranks).map(([k, v]) => k + '×' + v).join(' ') || 'None'}</td></tr></table></div>
+    <div class="box glass"><h3>Memories earned</h3>${R ? `<table class="tally">${R.lines.map(l => `<tr><td>${esc(l[0])}</td><td>+${l[1]}</td></tr>`).join('')}</table><div class="bigm">+${R.total} Memories</div>` : '<p class="fine">Already banked.</p>'}</div></div>
+    ${R ? R.unlocks.map(u => `<div class="unlock glass"><div><b>Unlocked: ${esc(u.name)}</b><br>${esc(u.text)}</div></div>`).join('') : ''}
+    <div class="row"><button class="gold" data-a="new">New run</button><button data-a="screen:codex">Codex</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="home">Home</button></div></div></div>`;
 }
 function tabPanel() {
   const r = G.run;
@@ -290,10 +339,11 @@ function inspectPanel() {
 
 function render() {
   const r = G.run; let body;
-  if (!r) body = screenHome();
+  if (G.screen) body = { forger: screenForger, vault: screenVault, codex: screenCodex }[G.screen]();
+  else if (!r) body = screenHome();
   else if (G.shown || r.phase === 'duel') body = screenDuel();
   else body = { kit: screenKit, charm: screenCharm, chamber: screenChamber, reward: screenReward, anvil: screenAnvil, bazaar: screenBazaar, over: screenOver }[r.phase]();
-  app.innerHTML = `${G.shown || (r && r.phase === 'duel') ? '' : hud()}${body}${tabPanel()}${overlay()}${inspectPanel()}<div id="toast" class="toast">${esc(G.toast)}</div>`;
+  app.innerHTML = `${G.screen || G.shown || (r && (r.phase === 'duel' || r.phase === 'over')) ? '' : hud()}${body}${tabPanel()}${overlay()}${inspectPanel()}${storyPanel()}<div id="toast" class="toast">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home';
 }
 
@@ -303,14 +353,23 @@ app.addEventListener('click', ev => {
   const [verb, x, y] = el.dataset.a.split(':'); const r = G.run, n = x === undefined || x === '' ? null : +x;
   const duel = a => act({ t: 'duel', action: a });
   switch (verb) {
-    case 'new': store.del(SAVE); G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6) }); G.log = []; G.overlay = null; render(); break;
+    case 'new': G.screen = 'forger'; if (!P.forgers.includes(G.pickForger)) G.pickForger = 'tarn'; G.pickHeat = Math.min(G.pickHeat, maxHeat(P)); render(); break;
+    case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; } render(); break;
+    case 'screen': G.screen = x; render(); break;
+    case 'forger': G.pickForger = x; render(); break;
+    case 'heat': G.pickHeat = n; render(); break;
+    case 'descend': store.del(SAVE); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, locked: lockedRelics(P) }); G.log = []; G.overlay = null; queueStory('intro'); render(); break;
+    case 'vbuy': try { const b = buy(P, x); saveP(); toast(b.name + ' can now appear in your runs.'); } catch (e) { toast(e.message); } render(); break;
+    case 'storynext': { const st = G.story; if (!st) break; if (++st.i >= SCENES[st.id].lines.length) { G.story = null; if (st.then) { st.then(); break; } } render(); break; }
+    case 'storyskip': { const st = G.story; G.story = null; if (st && st.then) { st.then(); break; } render(); break; }
+    case 'power': { const a = { t: 'power' }; if (x === 'hand') a.hand = G.sel[0]; if (x === 'zone') a.zone = G.attacker; duel(a); break; }
     case 'resume': G.run = store.get(SAVE); render(); break;
     case 'quit': if (el.dataset.sure) { store.del(SAVE); G.run = null; render(); } else { el.dataset.sure = 1; el.textContent = 'Tap again to abandon'; } break;
     case 'kit': act({ t: 'kit', i: n }); break;
     case 'redeal': act({ t: 'redeal' }); break;
     case 'pick': act({ t: 'pick', i: n }); break;
     case 'skip': act({ t: 'skip' }); break;
-    case 'door': G.log = []; act({ t: 'door', i: n }); break;
+    case 'door': { G.log = []; const d = r.doors[n]; const go = () => act({ t: 'door', i: n }); if (d && d.type === 'boss' && r.seals >= 2) { queueStory('boss:' + BOSSES[r.floor][r.bossOrder[r.floor]].id, go); if (G.story) render(); } else go(); break; }
     case 'leave': G.pickDeck = G.pickTrunk = null; act({ t: 'leave' }); break;
     case 'tab': G.tab = x || null; G.pickDeck = G.pickTrunk = null; render(); break;
     case 'deckpick': G.pickDeck = n; trySwap(); break;
