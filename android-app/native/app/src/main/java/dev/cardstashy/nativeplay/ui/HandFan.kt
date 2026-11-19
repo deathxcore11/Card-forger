@@ -387,13 +387,20 @@ fun HandFan(
     }
 }
 
+/** What is left of a dealt card's wait at [now] (ms): it starts at [startAt] however often its target moved before then. */
+internal fun dealWait(startAt: Long, now: Long): Long = (startAt - now).coerceAtLeast(0)
+
 /** A value that springs (stiffness 600, damping 0.8) to each new target; an arriving card starts at [from] after [delayMs]. */
 @Composable
 private fun rememberSpring(target: Float, from: Float?, delayMs: Long, bounceUp: Boolean = false): Float {
     val a = remember { Animatable(from ?: target) }
-    var first by remember { mutableStateOf(true) }
+    // Randall's 19 Nov recording (item 7): on the Keep screen card 4 landed before card 3. A new target while a card still waited
+    // for its turn (the fan settling as the deal went on) restarted this wait and skipped what was left of it, so that card jumped
+    // ahead. The card now waits until its own start time, however often its target moves.
+    val startAt = remember { System.nanoTime() / 1_000_000 + delayMs }
     LaunchedEffect(target) {
-        if (first) { first = false; if (delayMs > 0) delay(delayMs) }
+        val wait = dealWait(startAt, System.nanoTime() / 1_000_000)
+        if (wait > 0) delay(wait)
         if (bounceUp && target > a.value) a.animateTo(target, tween(HOLD_GROW_MS, easing = androidx.compose.animation.core.Easing { backOut(it) }))
         else a.animateTo(target, spring(dampingRatio = .8f, stiffness = 600f))
     }
