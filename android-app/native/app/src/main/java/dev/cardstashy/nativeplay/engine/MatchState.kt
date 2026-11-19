@@ -39,7 +39,9 @@ data class CommanderDamage(val from: Int, val commander: String, val damage: Int
 
 data class StackItem(val id: Int, val text: String, val source: Card?, val controller: Int, val ability: Boolean = false, val yielded: Boolean = false, val targets: List<Ref> = emptyList(),
     /** Forge put this item on the stack as a triggered ability (a "trigger" event named its stackId); set by the controller, not the snapshot. */
-    val trigger: Boolean = false)
+    val trigger: Boolean = false,
+    /** The cards Forge's bracketed note in the item's words named ("([Forest (72)])"), kept when [MatchState.engineRefs] takes the note out of the words. */
+    val noted: List<Ref> = emptyList())
 data class Buttons(val ok: String?, val cancel: String?, val okEnabled: Boolean, val cancelEnabled: Boolean)
 data class Selection(
     val cards: Set<Int>, val players: Set<Int>, val chosenCards: Set<Int>, val chosenPlayers: Set<Int>,
@@ -207,7 +209,7 @@ data class MatchState(
                 players = players,
                 // The source first, so a flavor name it brings is known when its text is read.
                 stack = o.arr("stack").map { e -> val s = e.asJsonObject; val src = s.obj("source")?.let { parseCard(it) }
-                    StackItem(s.int("id") ?: 0, tidy(engineRefs((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "")).trim()), src, s.int("activatingPlayer") ?: -1, s.bool("ability") == true, s.bool("yielded") == true, refsOf(s, "targets")) },
+                    StackItem(s.int("id") ?: 0, tidy(engineRefs((s.str("text") ?: "").replace(Regex("\\s*\\[Phase: [^\\]]*\\]"), "")).trim()), src, s.int("activatingPlayer") ?: -1, s.bool("ability") == true, s.bool("yielded") == true, refsOf(s, "targets"), noted = notedRefs(s.str("text") ?: "")) },
                 buttons = Buttons(b?.str("ok"), b?.str("cancel"), b?.bool("okEnabled") == true, b?.bool("cancelEnabled") == true),
                 inputType = o.str("inputType"), selection = selection, prompt = o.obj("prompt")?.let { parsePrompt(it) }?.let { p -> p.copy(message = tidy(p.message), options = p.options.map { it.copy(label = tidy(it.label)) }) },
                 busy = o.bool("busy") == true, message = tidy(o.str("message") ?: ""),
@@ -232,6 +234,9 @@ data class MatchState(
          * Forge's card references in a stack item's words (Randall's 19 Nov recordings): "(Targeting: [[Stock Up (111)]])" reads
          * "(Targeting: Stock Up)", and a note that is only a reference ("tapped. ([Forest (72)])") goes.
          */
+        /** The cards those references name, in order, for the stack reader's "about" row. */
+        fun notedRefs(text: String): List<Ref> = Regex("\\[{1,2}([^\\[\\]]*?)\\s*\\((\\d+)\\)\\]{1,2}").findAll(text).map { Ref("card", it.groupValues[2].toInt(), it.groupValues[1].trim()) }.toList()
+
         fun engineRefs(text: String): String = text
             .replace(Regex("\\s*\\((?:\\[{1,2}[^\\[\\]]*\\(\\d+\\)\\]{1,2}(?:,\\s*)?)+\\)"), "")
             .replace(Regex("\\[{1,2}([^\\[\\]]*?)\\s*\\(\\d+\\)\\]{1,2}"), "$1")

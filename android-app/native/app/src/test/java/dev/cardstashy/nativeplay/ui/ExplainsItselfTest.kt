@@ -93,4 +93,31 @@ class ExplainsItselfTest {
         assertNull("it can attack", WhyNot.attack(bears, atk))
         assertNull("not while Forge asks something else", WhyNot.attack(bears.copy(summoningSick = true), base))
     }
+
+    // ---- E3: any item on the stack can be read ----
+    /** The 19 Nov recording, 2:37: Ba Sing Se's trigger ended "([Forest (72)])". The note never shows; the card it named is kept for the About row. */
+    @Test fun stackWordsNeverShowEngineNotesAndTheNamedCardIsKept() {
+        val raw = "Ba Sing Se \u2014 When it dies or is exiled, return it to the battlefield tapped. ([Forest (72)])"
+        val shown = MatchState.engineRefs(raw)
+        assertTrue(shown, !Regex("\\(\\[|\\(\\d+\\)").containsMatchIn(shown))
+        assertEquals(listOf(dev.cardstashy.nativeplay.engine.Ref("card", 72, "Forest")), MatchState.notedRefs(raw))
+        assertEquals(listOf(111), MatchState.notedRefs("Counterspell (Targeting: [[Stock Up (111)]])").map { it.id })
+    }
+
+    @Test fun readerSaysWhoseWhenAndOnlyItsOwnWords() {
+        val grave = base.players.first { it.id == cpu }.graveyard.first()
+        val mineItem = StackItem(901, "Goblin Guide \u2014 Whenever this creature attacks, defending player reveals the top card of their library.", me.battlefield.first { it.name == "Goblin Guide" }, base.viewer, ability = true, trigger = true)
+        val theirs = cpuTrigger.stack[0].copy(noted = listOf(dev.cardstashy.nativeplay.engine.Ref("card", grave.id, grave.name)))
+        val st = base.copy(stack = listOf(mineItem, theirs))
+        assertEquals("Your trigger", StackRead.whose(mineItem, st)); assertEquals("Happens next", StackRead.order(mineItem, st))
+        assertEquals("CPU's trigger", StackRead.whose(theirs, st)); assertEquals("Happens 2nd", StackRead.order(theirs, st))
+        assertEquals("When it dies or is exiled, return it to the battlefield tapped.", StackRead.words(theirs))
+        // About: the card the note named, with where it is. A card the table cannot find is not shown.
+        assertEquals(listOf(grave.name to "In the CPU's graveyard"), StackRead.about(theirs, st).map { it.card.name to it.where })
+        assertTrue(StackRead.about(theirs.copy(noted = listOf(dev.cardstashy.nativeplay.engine.Ref("card", 99999, "Forest"))), st).isEmpty())
+        // Up and down walk the stack and stop at its ends; an item that left the stack is no longer open.
+        StackRead.open = 901; StackRead.step(st, 1); assertEquals(900, StackRead.open); StackRead.step(st, 1); assertEquals(900, StackRead.open)
+        StackRead.step(st, -1); assertEquals(901, StackRead.open)
+        assertNull(StackRead.item(base)); StackRead.open = null
+    }
 }

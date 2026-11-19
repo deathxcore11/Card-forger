@@ -1367,6 +1367,8 @@ fun ForgeBoard(
             TravelCard()
             // Arrows: attackers to what they attack, blockers to their attacker, your spell to its targets, the top of the stack to its own.
             Arrows(st, live, intents, d)
+            // Explains itself E3: a stack item open for reading, over the board and the hand.
+            StackReader(st, d, onInspect)
             if (blockingNow) DragLine(blockDrag, d)
             overlay?.invoke(W)
             // T3, one screen: the sheet over the lower 56 % of the table (on two screens it is on the bottom screen, above).
@@ -2900,7 +2902,7 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
             StackCard(st, s, 1, Modifier.offset(x = 44.du - (stepX ?: 12.du) * depth, y = 34.du - stepY * depth)
                 // Dimmed with a shade, not see-through (BB10: at 60 % alpha the words of the cards behind showed through each title).
                 .then(if (pick != null && s.id in st.selection.stackTargets) Modifier else Modifier.drawWithContent { drawContent(); drawRoundRect(Color(0x66000000), cornerRadius = CornerRadius(7.du.toPx())) })
-                .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("stack${s.id}", it.boundsInRoot()) } else Modifier), d, onInspect, small = true, pick = pick)
+                .then(if (anchors != null) Modifier.onGloballyPositioned { anchors.putRect("stack${s.id}", it.boundsInRoot()) } else Modifier), d, onInspect, small = true, pick = pick, onRead = { StackRead.open = it })
         }
         val (top, n) = shown.first()
         // Match director (cast row): a CPU spell is the card itself, out of the CPU's hand with a lift, turning face up, onto the stack
@@ -2946,7 +2948,7 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
                     val k = .86f + .14f * q; scaleX = k; scaleY = k; alpha = .6f + .4f * q
                 }
             }) {
-            StackCard(st, top, n, Modifier, d, onInspect, pick = pick)
+            StackCard(st, top, n, Modifier, d, onInspect, pick = pick, onRead = { StackRead.open = it })
             // Face down for the first half of the turn-over.
             if (flyFrom != null && fly.value < .5f) Box(Modifier.matchParentSize().clip(RoundedCornerShape(6.du))) { CardBack(Modifier.fillMaxSize()) }
         }
@@ -2976,7 +2978,7 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
                 val src = s.source
                 Row(Modifier.fillMaxWidth().anchorRect("stackrow${s.id}").clip(RoundedCornerShape(7.du))
                     .border(1.dp, if (target) Color(0xFFFF9D5C) else Color.Transparent, RoundedCornerShape(7.du))
-                    .clickable(enabled = target || src != null) { if (target) pick!!(s.id) else src?.let(onInspect) }
+                    .clickable { if (target) pick!!(s.id) else StackRead.open = s.id }
                     .padding(horizontal = 6.du, vertical = 4.du), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.du)) {
                     Box(Modifier.size(6.du).clip(CircleShape).background(if (mine) Gold else CpuRed))
                     Text((src?.name ?: stackSourceName(s.text) ?: "Ability") + if (n > 1) " ×$n" else "", style = sans(sp(11f), FontWeight.SemiBold, Color(0xFFF3E7C6)),
@@ -2991,14 +2993,16 @@ private fun StackFan(st: MatchState, modifier: Modifier, d: Du, onInspect: (Card
 @Composable
 private fun StackArc(st: MatchState, d: Du) = with(d) {
     val anchors = LocalAnchors.current ?: return@with
-    val top = st.stack.firstOrNull() ?: return@with
+    // Explains itself E3: while an item is open for reading the arc and the source's rim are that item's.
+    val read = StackRead.item(st)
+    val top = read ?: st.stack.firstOrNull() ?: return@with
     val srcId = top.source?.id ?: return@with
     if (st.players.none { p -> p.battlefield.any { it.id == srcId } }) return@with
     val dash = if (Motion.still) remember { mutableFloatStateOf(0f) } else rememberInfiniteTransition(label = "arc").animateFloat(0f, 1f, infiniteRepeatable(tween(1200, easing = LinearEasing)), label = "dash")
     var self by remember { mutableStateOf(Offset.Zero) }
     Canvas(Modifier.fillMaxSize().onGloballyPositioned { self = it.boundsInRoot().topLeft }) {
         anchors.version.intValue
-        val a = anchors.map["stacktop"] ?: return@Canvas; val b = anchors.map["c$srcId"] ?: return@Canvas
+        val a = read?.let { anchors.rects["stack${it.id}"] }?.let { r -> Offset(r.left, r.top + r.height * .3f) } ?: anchors.map["stacktop"] ?: return@Canvas; val b = anchors.map["c$srcId"] ?: return@Canvas
         val from = a - self; val to = b - self
         val path = Path().apply { moveTo(from.x, from.y); quadraticTo((from.x + to.x) / 2, minOf(from.y, to.y) - 60.du.toPx(), to.x, to.y) }
         // glow-rules "who is doing what to whom": the arc and the source's rim in the caster's colour (gold you, coral CPU).
@@ -3011,7 +3015,9 @@ private fun StackArc(st: MatchState, d: Du) = with(d) {
 
 /** One stack item as a card: a spell shows its card; a triggered or activated ability shows the source's art, its kind and its text. */
 @Composable
-internal fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, small: Boolean = false, pick: ((Int) -> Unit)? = null) = with(d) {
+internal fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier, d: Du, onInspect: (Card) -> Unit, small: Boolean = false, pick: ((Int) -> Unit)? = null,
+                       /** Explains itself E3: a tap opens the item for reading beside the stack (the card page is one more tap there). */
+                       onRead: ((Int) -> Unit)? = null) = with(d) {
     val mine = s.controller == st.viewer
     // A stack item Forge offers as a target wears the target role (#ff9d5c) and takes the tap.
     val target = pick != null && s.id in st.selection.stackTargets
@@ -3033,7 +3039,7 @@ internal fun StackCard(st: MatchState, s: StackItem, n: Int, modifier: Modifier,
             }
             else drawRoundRect(rim.copy(alpha = .35f), topLeft = Offset(-6.du.toPx(), -6.du.toPx()), size = Size(size.width + 12.du.toPx(), size.height + 12.du.toPx()), cornerRadius = CornerRadius(12.du.toPx()))
         }.clip(shape).border(2.dp, rim, shape).background(Color(0xFF1A1714))
-            .clickable(enabled = target || src != null) { if (target) pick!!(s.id) else src?.let(onInspect) }) {
+            .clickable(enabled = target || src != null || onRead != null) { if (target) pick!!(s.id) else if (onRead != null) onRead(s.id) else src?.let(onInspect) }) {
             if (!ability && src != null) CardImage(src.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             else Column(Modifier.fillMaxSize().padding(4.du)) {
                 Text((name ?: "Ability"), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(9.5f), color = Color(0xFFF3E7C6)), maxLines = if (small) 1 else 2, overflow = TextOverflow.Ellipsis)
