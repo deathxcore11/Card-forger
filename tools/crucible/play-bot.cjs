@@ -20,7 +20,7 @@ const path = require('path');
   let base = null, lastPhase = '';
   for (let run = 0; run < runs; run++) {
     if (run === 0) { await page.evaluate(() => localStorage.clear()); await page.reload(); }
-    if (run === 0 && process.env.LABS) { for (const b of await page.locator('[data-a^="lab:"]').all()) { await b.click({ force: true }); clicks++; } await shot('home-labs'); }
+    if (run === 0 && process.env.LABS) { for (const k of process.env.LABS.split(',')) await click('[data-a="lab:' + k + '"]'); await shot('home-labs'); }
     await shot('home'); await click('[data-a="new"]'); await shot('forger');
     const owned = await page.locator('.ch[data-a^="forger:"]').count(); if (owned > 1) { await page.locator('.ch[data-a^="forger:"]').nth(run % owned).click({ force: true }); clicks++; }
     if (!(await click('[data-a="descend"]'))) errors.push('could not start run ' + run + ': ' + (await page.evaluate(() => JSON.stringify({ screen: window.LM.G.screen, phase: window.LM.G.run && window.LM.G.run.phase, story: !!window.LM.G.story, ov: !!window.LM.G.overlay, tab: window.LM.G.tab, insp: !!window.LM.G.inspect, btns: [...document.querySelectorAll('button')].map(b => b.dataset.a).join(' ') }))));

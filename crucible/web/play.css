@@ -156,3 +156,6 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 .cxgrid { display: grid; grid-template-columns: repeat(10, 1fr); gap: .7em .5em; margin-top: .8em; } .cxt { display: flex; flex-direction: column; align-items: center; gap: .2em; cursor: pointer; } .cxt small { font-size: .9em; text-align: center; }
 .c.unk { display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .55); border: 1px dashed var(--line); } .c.unk span { font-size: 4em; color: var(--dim); font-family: 'Cinzel', Georgia, serif; }
 .cxpage { display: flex; gap: 2em; align-items: flex-start; max-width: 74em; } .cxpage > div:last-child { flex: 1; } .cxpage .c { flex: none; } .recs { font-size: 1.1em; line-height: 2; }
+.relicFlash.rivalf { top: .6em; color: #ff8d7a; text-shadow: 0 0 .5em #000, 0 0 1em #7a1f12; } .rules .rstyle { color: #ffb37a; } .dtxt .tell { color: #ffb37a; } .dtxt .tell i { color: #ff8d7a; }
+.labs { max-width: 86em; } .labgrid { display: grid; grid-template-columns: 1fr 1fr; gap: .5em; } .labgrid .lab { font-size: .98em; padding: .5em .8em; }
+.title .labs small { letter-spacing: 0; font-size: 1em; color: var(--dim); }

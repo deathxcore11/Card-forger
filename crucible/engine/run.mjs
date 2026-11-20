@@ -23,6 +23,19 @@ export const THEMES = [
   { id: 'ember', name: 'the Cinder Monk', types: ['Pyro', 'Thunder', 'Dinosaur', 'Reptile'] },
   { id: 'blade', name: 'the Oathblade', types: ['Warrior'] },
 ];
+// Rival styles (lever rivalStyles): from the second floor a themed rival carries one or two of the
+// player's own relics and plays toward them, so the player meets a build before owning it.
+// tell: shown on the door. text: shown when the duel starts. Bosses and Floor 1 rivals have none.
+export const STYLES = {
+  drake: { style: 'Brawler', relics: ['whetstone'], policy: { meldBonus: 60 }, tell: 'Her first monster hits harder than it should.', text: 'Brawler: her first monster each duel gets +200 ATK.' },
+  school: { style: 'Trapkeeper', relics: ['f_veil'], policy: { trapBonus: 260 }, tell: 'He always seems to have a card set.', text: 'Trapkeeper: once a turn, setting a Trap does not use his play.' },
+  engine: { style: 'Meldwright', relics: ['copper_loop'], policy: { chainBonus: 60 }, tell: 'His melds run three cards long.', text: 'Meldwright: his melds of three or more cards get +300 ATK and DEF, twice a duel.' },
+  grave: { style: 'Gravekeeper', relics: ['tomb_ledger', 'grave_call'], policy: { meldBonus: 60 }, tell: 'Her fallen monsters do not stay buried.', text: 'Gravekeeper: a meld that buries two of her monsters arms her next meld (+200 ATK) and returns a monster of 1500 ATK or less to her hand.' },
+  wild: { style: 'Swarm Caller', relics: [], hand: 6, policy: {}, tell: 'He holds more cards than you.', text: 'Swarm Caller: his hand refills to six.' },
+  tide: { style: 'Terrain Master', relics: ['home_ground', 'forge_heart'], home: true, policy: { fieldBonus: 220 }, tell: 'The duel starts on her ground.', text: 'Terrain Master: the duel starts on her terrain, and after she plays a Field Spell her next meld gets +300 ATK and DEF.' },
+  ember: { style: 'Stormhand', relics: ['storm_needle'], policy: { chainBonus: 60 }, tell: 'His long melds burn.', text: 'Stormhand: each of his melds of three or more cards costs you 300 Life Points, three times a duel.' },
+  blade: { style: 'Wall', relics: ['gravecloth', 'shield_oath'], policy: { veilBonus: 400 }, tell: 'A defender that holds becomes a wall.', text: 'Wall: a defender of his that survives an attack gets +300 DEF once, and becomes a Guard you must attack first.' },
+};
 export const KITS = [
   { id: 'dragons_warriors', name: 'Dragons and Warriors', types: ['Dragon', 'Warrior'] },
   { id: 'spellcasters_fiends', name: 'Spellcasters and Fiends', types: ['Spellcaster', 'Fiend'] },
@@ -294,6 +307,7 @@ function describe(db, run, d) {
   if (d.know === 'partial') d.hidden = 'One detail is hidden.';
   // Tags are worked out from the real deck, never guessed.
   d.tags = [];
+  { const st = styleOf(db, run.floor, d); if (st) { d.style = st.style; d.tell = st.tell; } }
   if (d.tier && d.theme != null) {
     const fam = THEMES[d.theme];
     const have = run.deck.filter(e => db.isMonster(e.id) && fam.types.includes(db.byId.get(e.id).type)).length;
@@ -301,6 +315,8 @@ function describe(db, run, d) {
   }
   if (d.type === 'anvil') { const [a] = possibleMasterworks(run); if (a) d.tags.push('Masterwork ready: ' + RELICS[a].name); }
 }
+
+const styleOf = (db, floor, d) => db.config.rivalStyles && d.tier && d.tier !== 'boss' && d.theme != null && (floor >= 1 || d.tier === 'champion' || d.tier === 'guardian') ? STYLES[THEMES[d.theme].id] : null;
 
 export function possibleMasterworks(run) {
   if (run.masterworks.length >= 2) return [];
@@ -315,12 +331,13 @@ function startDuel(db, run, rng, door, onStep) {
   const relics = relicList(run);
   if (run.forger) relics.unshift(FORGERS[run.forger].rule);
   if (db.config.testRelics) for (const id of db.config.testRelics) if (!relics.includes(id)) relics.push(id);
+  const style = styleOf(db, run.floor, door) || null;
   const bounty = rng.pick(BOUNTIES);
   const seats = [
     { relics, handSize: (relics.includes('deep_pockets') ? 6 : db.config.hand) - (rival.law === 'tyranny' ? 1 : 0), firstTurnHand: run.sparks === 1 ? 6 : 0, homeField: run.homeField, underCap: cap - deckWeight(db, run.deck), secondWind: relics.includes('second_wind') && !run.secondWindUsed, sparks: run.sparks, forger: run.forger || null, ...(run.feat ? { track: 1 } : {}) },
-    { law: rival.law, ace: rival.ace, relics: door.tier === 'champion' ? ['whetstone'] : [], ...(db.config.freeCastRival === 'none' || (db.config.freeCastRival === 'elite' && door.tier === 'regular') || (db.config.freeCastRival === 'boss' && door.tier !== 'boss') ? { noFree: 1 } : {}) },
+    { law: rival.law, ace: rival.ace, relics: style ? style.relics.slice() : door.tier === 'champion' ? ['whetstone'] : [], ...(style && style.hand ? { handSize: style.hand } : {}), ...(style && style.home ? { homeField: (rival.deck.find(e => roleOf(db, e.id) === 'field') || {}).id || null } : {}), ...(db.config.freeCastRival === 'none' || (db.config.freeCastRival === 'elite' && door.tier === 'regular') || (db.config.freeCastRival === 'boss' && door.tier !== 'boss') ? { noFree: 1 } : {}) },
   ];
-  run.rival = { name: rival.name, tier: rival.tier, ai: rival.ai, law: rival.law, lawText: rival.lawText, drops: rival.drops, ace: rival.ace, bounty: bounty.id, bountyText: bounty.text, twist: door.twist || null };
+  run.rival = { name: rival.name, tier: rival.tier, ai: rival.ai, law: rival.law, lawText: rival.lawText, drops: rival.drops, ace: rival.ace, bounty: bounty.id, bountyText: bounty.text, twist: door.twist || null, ...(style ? { style: style.style, styleText: style.text, theme: THEMES[door.theme].id } : {}) };
   run.duel = newDuel(db, { seed: rng.u32(), decks: [run.deck, rival.deck], seats, twist: door.twist || null });
   run.phase = 'duel';
   if (onStep) onStep([{ e: 'duelStart' }]);
@@ -333,7 +350,7 @@ function advanceRival(db, run, onStep) {
   while (d.winner === null && guard++ < 400) {
     const rivalToAct = d.pending ? d.active === 0 : d.active === 1;
     if (!rivalToAct) break;
-    const a = chooseAction(db, viewFor(d, db, 1), run.rival.ai, { maxChain: 3 });
+    const a = chooseAction(db, viewFor(d, db, 1), run.rival.ai, run.rival.theme ? { maxChain: 3, ...STYLES[run.rival.theme].policy } : { maxChain: 3 });
     try { const evs = applyMut(d, a || { t: 'end' }, db); if (onStep) onStep(evs); } catch (e) { e.message += ' | rival action ' + JSON.stringify(a) + ' hand ' + JSON.stringify(d.hand[1].map(c => db.byId.get(c.id).name)) + ' twist ' + d.twist + ' law ' + d.seat[1].law; throw e; }
   }
 }
@@ -353,6 +370,8 @@ function finishDuel(db, run, rng, ev) {
   S.duels++; S.turns += d.turn; S.melds += st.melds; S.fizzles += st.fizzles; S.capHits += st.capHits ? 1 : 0;
   S.firstGames++; if (d.winner === d.first) S.firstWins++;
   if (d.reason === 'deckout') S.deckouts++;
+  if (cfg.trackFx && run.rival.style) { const k = 'style ' + run.rival.style + ' f' + (run.floor + 1); const b = S.byTier[k] || (S.byTier[k] = [0, 0, 0, 0, 0]); b[0]++; if (won) { b[1]++; b[2] += cfg.lp - Math.min(cfg.lp, d.lp[0]); if (st.wasBehind) b[3]++; } b[4] += d.turn; }
+  else if (cfg.trackFx && run.rival.tier !== 'boss' && run.door && run.door.theme != null && run.floor >= 1) { const k = 'plain ' + STYLES[THEMES[run.door.theme].id].style + ' f' + (run.floor + 1); const b = S.byTier[k] || (S.byTier[k] = [0, 0, 0, 0, 0]); b[0]++; if (won) { b[1]++; b[2] += cfg.lp - Math.min(cfg.lp, d.lp[0]); if (st.wasBehind) b[3]++; } b[4] += d.turn; }
   if (cfg.trackFx && run.rival.tier === 'boss') { const b = S.byTier[run.rival.name] || (S.byTier[run.rival.name] = [0, 0, 0, 0, 0]); b[0]++; if (won) { b[1]++; b[2] += cfg.lp - Math.min(cfg.lp, d.lp[0]); if (st.wasBehind) b[3]++; } b[4] += d.turn; }
   { const k = run.rival.tier + (run.floor + 1); const b = S.byTier[k] || (S.byTier[k] = [0, 0, 0, 0, 0]); b[0]++; if (won) { b[1]++; b[2] += db.config.lp - Math.min(db.config.lp, d.lp[0]); if (st.wasBehind) b[3]++; } b[4] += d.turn; }
   for (const [k, v] of Object.entries(st.chains)) S.chains[k] = (S.chains[k] || 0) + v;

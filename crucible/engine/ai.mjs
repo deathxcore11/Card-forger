@@ -176,7 +176,7 @@ export function bestPlay(db, view, level, policy = {}) {
   };
 
   const n = hand.length;
-  if (policy.freeOnly) { for (let i = 0; i < n; i++) if (!db.isMonster(hand[i].id)) evalChain([i], null); return best; }
+  if (policy.freeOnly) { for (let i = 0; i < n; i++) if (!db.isMonster(hand[i].id) && (db.config.freeCast !== 'trap' || roleOf(db, hand[i].id) === 'trap')) evalChain([i], null); return best; }
   const maxLen = Math.min(db.config.maxChain || 9, level === 0 ? 1 : level === 1 ? 2 : (policy.maxChain || 4));
   for (let i = 0; i < n; i++) {
     evalChain([i], null);

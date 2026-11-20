@@ -665,7 +665,7 @@ function doPlay(s, db, ev, seat, a) {
     if (has(s, seat, 'f_veil') && st.rs.veilTurn !== s.turn) { st.rs.veilTurn = s.turn; s.played = false; noteRelic(s, ev, seat, 'f_veil'); }
   }
   // Lever under test: the first Spell, Field, Equip or Trap played on its own each turn does not use the play.
-  if (db.config.freeCast && !st.noFree && idxs.length === 1 && a.onto == null && s.played && st.rs.freeTurn !== s.turn && s.winner === null) { st.rs.freeTurn = s.turn; s.played = false; ev.push({ e: 'free', seat }); }
+  if (db.config.freeCast && (db.config.freeCast !== 'trap' || role === 'trap') && !st.noFree && idxs.length === 1 && a.onto == null && s.played && st.rs.freeTurn !== s.turn && s.winner === null) { st.rs.freeTurn = s.turn; s.played = false; ev.push({ e: 'free', seat }); }
 }
 
 export const SOLO = { Zombie: 'Return a monster of 1500 ATK or less from your graveyard to your hand.', Fairy: 'Gain 400 Life Points.', Machine: 'Your next meld gets +300 ATK and DEF.', Spellcaster: 'Draw a card.' };
