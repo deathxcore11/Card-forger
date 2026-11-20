@@ -218,7 +218,9 @@ class Bb0457ShotTest {
         Pad.used()
         val t = state("targets").copy(controlMode = "smart", autoPay = true)
         // The CPU's spell on the stack while you hold priority: the top's line reads "Respond to <name>?" (askLine).
+        // Explains itself E2: the line shows only while the table really stops; here your own stop on this step holds it.
         fun respond(name: String) = t.copy(inputType = "InputPassPriority", message = "", priorityPlayer = t.viewer,
+            phaseStops = mapOf("${if (t.activePlayer == t.viewer) "you" else "opponent"}:${t.phase}" to true),
             stack = t.stack.take(1).map { it.copy(text = "$name — Counter target spell.", source = it.source?.copy(name = name)) })
         val long = respond("Sorin, Grim Nemesis of the Ancient Vampire Court")
         val longer = respond("Sorin, Grim Nemesis of the Ancient Vampire Court and Its Heirs")

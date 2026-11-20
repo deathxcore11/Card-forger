@@ -133,7 +133,8 @@ object Affordability {
         fun walk(i: Int, tokens: List<List<String>>) { if (i == sources.size) cover(tokens) else sources[i].forEach { opt -> walk(i + 1, tokens + opt) } }
         walk(0, floating)
         val (got, g) = best ?: return null
-        val pips = colored.mapIndexed { i, c -> Pip(c, got[i]) } + List(generic) { Pip("1", it < g) }
+        // In the order the cost is printed: the plain part first, then the coloured pips.
+        val pips = List(generic) { Pip("1", it < g) } + colored.mapIndexed { i, c -> Pip(c, got[i]) }
         return ManaShort(pips).takeIf { it.missing > 0 }
     }
 
@@ -220,9 +221,12 @@ object WhyNot {
     const val YOUR_TURN = "Only on your turn"
     const val MAIN_PHASE = "Only in your main phase"
     /** A tap on your own creature while Forge asks for attackers, and it cannot attack. */
-    const val ARRIVED = "Arrived this turn · attacks next turn"
+    const val ARRIVED = "Attacks next turn"
     const val TAPPED = "Tapped"
     fun short(n: Int) = "$n mana short"
+    private val FAST_TYPE = Regex("\\b(Land|Instant)\\b"); private val FLASH = Regex("\\bflash\\b", RegexOption.IGNORE_CASE)
+    /** How long a lift that only says a timing reason stays up (brief E1.4). */
+    const val SHOWN_MS = 2500L
 
     /**
      * The timing reason for a hand card Forge does not offer: it is not an instant and has no flash, and it is the CPU's turn
@@ -233,8 +237,8 @@ object WhyNot {
         if (card.hidden || card.zone != "Hand" || card.controller != st.viewer || card.id in st.selection.actionable) return null
         // Only while the table is in plain play: a question (a discard, a target, a mulligan) has its own words.
         if (st.prompt != null || card.id in st.selection.cards || st.inputType !in setOf(null, "InputLockUI", "InputPassPriority", "InputAttack", "InputBlock")) return null
-        if (Regex("\\b(Land|Instant)\\b").containsMatchIn(card.type)) return null
-        if (Regex("\\bflash\\b", RegexOption.IGNORE_CASE).containsMatchIn(card.text) || card.keywords.any { it.contains("flash", ignoreCase = true) }) return null
+        if (FAST_TYPE.containsMatchIn(card.type)) return null
+        if (FLASH.containsMatchIn(card.text) || card.keywords.any { it.contains("flash", ignoreCase = true) }) return null
         val active = st.activePlayer ?: return null
         if (active != st.viewer) return YOUR_TURN
         val phase = st.phase ?: return null

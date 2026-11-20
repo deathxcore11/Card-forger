@@ -169,8 +169,15 @@ fun TableScreen(controller: MatchController, onHome: () -> Unit, onRematch: () -
         val s = shown
         val keep = if (DualScreen.active) s?.me?.hand?.any { it.id == selectedHand } == true
             else s?.selection?.actionable?.contains(selectedHand) == true || (dev.cardstashy.nativeplay.match.TurnClock.discardCount(s) != null && s?.selection?.cards?.contains(selectedHand) == true)
+                // Explains itself E1: a card lifted to say "Only on your turn" stays up long enough to be read (the timer below drops it).
+                || s?.me?.hand?.firstOrNull { it.id == selectedHand }?.let { WhyNot.timing(it, s) } != null
         if (!keep) selectedHand = null
     }
+    LaunchedEffect(selectedHand) {
+        val s = shown; val c = s?.me?.hand?.firstOrNull { it.id == selectedHand } ?: return@LaunchedEffect
+        if (!DualScreen.active && WhyNot.timing(c, s) != null) { kotlinx.coroutines.delay(WhyNot.SHOWN_MS); selectedHand = null }
+    }
+    LaunchedEffect(StackRead.open != null) { controller.hold(dev.cardstashy.nativeplay.match.MatchController.STACK_READ, StackRead.open != null) }
 
     // On two screens the card shows below while play goes on above: the clock keeps running (test4: it froze at 90 and 30).
     LaunchedEffect(inspect != null) { controller.hold("inspect", inspect != null && !DualScreen.active) }

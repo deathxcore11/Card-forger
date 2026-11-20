@@ -33,6 +33,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -109,6 +112,17 @@ object StackRead {
         }
     }
 
+    /**
+     * Where the reader stands: [at] (beside the stack card) unless it would lie on [source], the item's own card on the table. Then
+     * the first of these that fits on the screen: under the source, over it, left of it. No room anywhere: [at].
+     */
+    fun place(at: IntOffset, panel: IntSize, root: IntSize, source: androidx.compose.ui.geometry.Rect?, gap: Int, edge: Int): IntOffset {
+        fun hits(o: IntOffset) = source != null && o.x < source.right && o.x + panel.width > source.left && o.y < source.bottom && o.y + panel.height > source.top
+        if (source == null || !hits(at)) return at
+        val tries = listOf(IntOffset(at.x, source.bottom.toInt() + gap), IntOffset(at.x, source.top.toInt() - gap - panel.height), IntOffset(source.left.toInt() - gap - panel.width, at.y))
+        return tries.firstOrNull { it.x >= edge && it.y >= edge && it.x + panel.width <= root.width - edge && it.y + panel.height <= root.height - edge && !hits(it) } ?: at
+    }
+
     /** The next item up (-1, towards the top) or down (+1) from the open one; the ends stay. */
     fun step(st: MatchState, by: Int) { val i = st.stack.indexOfFirst { it.id == open }; if (i >= 0) open = st.stack[(i + by).coerceIn(0, st.stack.lastIndex)].id }
 }
@@ -122,8 +136,12 @@ internal fun StackReader(st: MatchState, d: Du, onInspect: (Card) -> Unit) = wit
     // The item resolved or the match moved on: the reader goes with it.
     if (s == null) { if (StackRead.open != null) androidx.compose.runtime.SideEffect { StackRead.open = null }; return@with }
     val anchors = LocalAnchors.current
+    // A press on the reader starts its wait again (a press only: a scroll's moves would restart it every frame).
     var touches by remember { mutableIntStateOf(0) }
     LaunchedEffect(s.id, touches) { delay(StackRead.IDLE_MS); StackRead.open = null }
+    // F1/F4: it grows in over 140 ms (no motion: it is simply there).
+    val grow = remember { androidx.compose.animation.core.Animatable(if (Motion.still) 1f else 0f) }
+    LaunchedEffect(Unit) { if (!Motion.still) grow.animateTo(1f, androidx.compose.animation.core.tween(140, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
     androidx.activity.compose.BackHandler(true) { StackRead.open = null }
     val mine = s.controller == st.viewer
     val tone = if (mine) ReadGold else CpuRed
@@ -137,7 +155,12 @@ internal fun StackReader(st: MatchState, d: Du, onInspect: (Card) -> Unit) = wit
     LaunchedEffect(s.id, pad) { if (pad) runCatching { focus.requestFocus() } }
     Box(Modifier.fillMaxSize().onSizeChanged { root = it }.onGloballyPositioned { self = it.boundsInRoot().topLeft }
         // I1 c: the rest of the board steps back 30 %; a tap anywhere on it puts the item back.
-        .background(Color(0x4D000000)).clickable(remember { MutableInteractionSource() }, null) { StackRead.open = null }.anchorRect("stackreaddim")) {
+        // A tap on another stack card (or its row in the folded list) goes straight to that item: one tap each to walk the stack.
+        .drawBehind { drawRect(Color(0x4D000000), alpha = grow.value) }
+        .pointerInput(st.stack.map { it.id }) { detectTapGestures { at ->
+            val p = at + self
+            StackRead.open = st.stack.firstOrNull { i -> i.id != s.id && (anchors?.rects?.get("stack${i.id}")?.contains(p) == true || anchors?.rects?.get("stackrow${i.id}")?.contains(p) == true) }?.id
+        } }.anchorRect("stackreaddim")) {
         val shape = RoundedCornerShape(10.du)
         Column(Modifier.offset {
             anchors?.version?.intValue
@@ -146,8 +169,11 @@ internal fun StackReader(st: MatchState, d: Du, onInspect: (Card) -> Unit) = wit
             val gap = 10.du.roundToPx(); val edge = 8.du.roundToPx()
             val x = ((card?.left ?: root.width.toFloat()) - self.x).toInt() - gap - panel.width
             val y = ((card?.top ?: 0f) - self.y).toInt()
-            IntOffset(x.coerceIn(edge, maxOf(edge, root.width - panel.width - edge)), y.coerceIn(edge, maxOf(edge, root.height - panel.height - edge)))
-        }.width(206.du).onSizeChanged { panel = it }.anchorRect("stackread").clip(shape).background(Color(0xF7141210)).border(2.dp, tone, shape)
+            val at = IntOffset(x.coerceIn(edge, maxOf(edge, root.width - panel.width - edge)), y.coerceIn(edge, maxOf(edge, root.height - panel.height - edge)))
+            // U4: it does not lie on its own source, the card the arc points at, when there is room beside or past it.
+            val source = src?.let { anchors?.rects?.get("c${it.id}") }?.translate(-self.x, -self.y)
+            StackRead.place(at, panel, root, source, gap, edge)
+        }.graphicsLayer { alpha = grow.value; val k = .94f + .06f * grow.value; scaleX = k; scaleY = k; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(1f, .2f) }.width(206.du).onSizeChanged { panel = it }.anchorRect("stackread").clip(shape).background(Color(0xFF141210)).border(2.dp, tone, shape)
             .focusRequester(focus).focusable()
             .onPreviewKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -158,7 +184,7 @@ internal fun StackReader(st: MatchState, d: Du, onInspect: (Card) -> Unit) = wit
                     else -> false
                 }
             }
-            .pointerInput(Unit) { awaitPointerEventScope { while (true) { awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial); touches++ } } }
+            .pointerInput(Unit) { awaitPointerEventScope { while (true) { if (awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial).type == androidx.compose.ui.input.pointer.PointerEventType.Press) touches++ } } }
             .clickable(remember { MutableInteractionSource() }, null) { }
             .semantics { contentDescription = "$name, ${StackRead.whose(s, st)}" }.padding(10.du), verticalArrangement = Arrangement.spacedBy(7.du)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.du)) {

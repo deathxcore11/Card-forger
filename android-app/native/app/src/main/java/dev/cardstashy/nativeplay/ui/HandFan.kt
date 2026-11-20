@@ -370,7 +370,8 @@ fun HandFan(
                         .onFocusChanged { if (it.isFocused) focus = card.id else if (focus == card.id && dragging == null) focus = null }
                         .padActs(padHere).matchPadTap(padSource, padFocus) { current.firstOrNull { it.id == card.id }?.let { padPress(it) } }) {
                         CardFace(card, cardW, cardH, mark = markOf(card))
-                        if (!isDrag && !isLift && shaded(card)) Box(Modifier.matchParentSize().clip(RoundedCornerShape(cardW * (5f / 66f))).background(RESPONSE_SHADE))
+                        val shade by androidx.compose.animation.core.animateFloatAsState(if (!isDrag && !isLift && shaded(card)) 1f else 0f, if (Motion.still) androidx.compose.animation.core.snap() else androidx.compose.animation.core.tween(160), label = "shade")
+                        if (shade > 0f) Box(Modifier.matchParentSize().graphicsLayer { alpha = shade }.clip(RoundedCornerShape(cardW * (5f / 66f))).background(RESPONSE_SHADE))
                         // P7: the carried card's ring. Ice blue in the hand; over the table (it would be played) gold, with one pulse.
                         if (isDrag && !flatLift) { val col by androidx.compose.animation.animateColorAsState(if (over) HOLD_GOLD else HOLD_ICE, tween(120), label = "holdRing")
                             Box(Modifier.matchParentSize().drawBehind { val rad = androidx.compose.ui.geometry.CornerRadius(cardW.toPx() * (6f / 66f))
@@ -434,7 +435,7 @@ internal fun holdLean(was: Float, dpPerMs: Float): Float = (was * .6f + (dpPerMs
 @Composable
 internal fun WhyPlate(why: String, short: Affordability.ManaShort?, cardW: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(cardW * (9f / 66f))
-    androidx.compose.foundation.layout.Column(modifier.widthIn(max = cardW * .96f).clip(shape).background(Color(0xE8140D0B)).border(1.dp, Color(0x77FF9A7A), shape)
+    androidx.compose.foundation.layout.Column(modifier.widthIn(max = cardW * .9f).clip(shape).background(Color(0xE8140D0B)).border(1.dp, Color(0x77FF9A7A), shape)
         .padding(horizontal = cardW * (5f / 66f), vertical = cardW * (3f / 66f)), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(cardW * (2.5f / 66f))) {
         short?.let { ManaShortPips(it, cardW) }

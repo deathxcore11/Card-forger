@@ -60,7 +60,7 @@ object AutoPass {
      * you are not in Full Control and you set no phase stop here. The table then asks nothing and offers no press.
      */
     fun cpuItemPasses(st: MatchState, stops: List<Int>): Boolean {
-        if (st.prompt != null || st.inputType != "InputPassPriority" || st.priorityPlayer != st.viewer) return false
+        if (st.prompt != null || st.inputType != "InputPassPriority" || st.priorityPlayer != st.viewer || !st.buttons.okEnabled) return false
         val top = st.stack.firstOrNull() ?: return false
         if (top.controller == st.viewer || st.controlMode == "full" || stops.isNotEmpty()) return false
         return st.phaseStops?.containsKey("${if (st.activePlayer == st.viewer) "you" else "opponent"}:${st.phase}") != true

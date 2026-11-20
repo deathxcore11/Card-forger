@@ -496,13 +496,15 @@ fun ForgeBoard(
             fun costly(card: Card) = Glow.costly(st, live, card, blocked, quiet)
             // Explains itself E1: the reader states the split when it can ("2 mana short" with pips); a card Forge does not offer
             // for its timing says that. No reason known, no words.
-            fun shortOf(card: Card): Affordability.ManaShort? = if (!live || blocked[card.id] != ShortCasts.NOT_ENOUGH) null else Affordability.manaShort(card, st, st.me.mana)
+            val shortMemo = remember(st) { HashMap<Int, Affordability.ManaShort?>() }
+            fun shortOf(card: Card): Affordability.ManaShort? = if (!live || blocked[card.id] != ShortCasts.NOT_ENOUGH) null else (if (card.id in shortMemo) shortMemo[card.id] else Affordability.manaShort(card, st, st.me.mana).also { shortMemo[card.id] = it })
             fun dimWhy(card: Card): String? = if (!live) WhyNot.timing(card, st) else shortOf(card)?.let { WhyNot.short(it.missing) } ?: blocked[card.id]
                 ?: WhyNot.timing(card, st) ?: card.id.takeIf { card.zone == "Hand" && card.id in st.selection.actionable && !Glow.asking(st) && (Glow.planSaysNo(st, it) || costly(card)) }?.let { Glow.costOf(st, it) }
             // A costly card is lit but asks first: a drag or A from rest lifts it (its cost shows), the next one casts.
             fun castable(card: Card) = markOf(card) == Mark.PLAYABLE && (!costly(card) || card.id == selectedHand)
             // Explains itself E2: the CPU's spell or ability waits and you hold an answer; the rest of the hand steps back.
-            val responseWindow = live && respondsNow(st, Glow.stopsFor(st, shortCasts))
+            val stopsNow = remember(st) { Glow.stopsFor(st, shortCasts) }
+            val responseWindow = live && respondsNow(st, stopsNow)
             // The hand card being dragged or under the finger or the controller's ring (HandFan reports it): its payment sources light.
             var carried by remember { mutableStateOf<Int?>(null) }
             // A card lifted by a tap is carried too, from the first frame. On two screens a lift outlives the ring (TableScreen keeps it),
@@ -1105,7 +1107,7 @@ fun ForgeBoard(
                 // passed 2.5 s on (it never leaves you without a way on), the press comes back as "Resolve".
                 // Explains itself E2: the same for the CPU's item when nothing you hold can answer it.
                 val resolving = live && (dev.cardstashy.nativeplay.match.AutoPass.resolvesItself(st, AppSettings.stopToRespond) ||
-                    dev.cardstashy.nativeplay.match.AutoPass.cpuItemPasses(st, Glow.stopsFor(st, shortCasts)))
+                    dev.cardstashy.nativeplay.match.AutoPass.cpuItemPasses(st, stopsNow))
                 var resolveLate by remember { mutableStateOf(false) }
                 LaunchedEffect(st.revision, st.stack.firstOrNull()?.id, resolving) { resolveLate = false; if (resolving) { delay(RESOLVE_LATE_MS); resolveLate = true } }
                 val corner = TableActions.of(st, live, selected, tucked, discardingNow, resolveLate)

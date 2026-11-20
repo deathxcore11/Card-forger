@@ -50,6 +50,8 @@ const val NO_RESULT = "This match hit a choice the app cannot play yet. It will 
 
 class MatchController(private val scope: CoroutineScope, val input: String, private val remote: (() -> EngineSession)? = null) {
     companion object {
+        /** The hold a stack item open for reading puts on the clock and the auto-pass (ui/StackReader.kt). */
+        const val STACK_READ = "stackread"
         const val LAND_MS = 900L; const val ACTION_MS = 2400L; const val AFFECTS_MS = 3600L
         const val ACTION_FLOOR_MS = 1500L; const val AFFECTS_FLOOR_MS = 2400L
         const val GAP_MS = 250L; const val BACKLOG = 3; const val STEP_GAP_MS = 120L
@@ -878,6 +880,8 @@ class MatchController(private val scope: CoroutineScope, val input: String, priv
         wait = w
         autoJob = scope.launch(Dispatchers.Main) {
             delay(wait)
+            // Explains itself E3: a stack item open for reading is not passed away under the reader (the clock holds too).
+            while (STACK_READ in holds) delay(100)
             if (_live.value && latest?.revision == st.revision) { autoAnswering = true; try { if (op == "cancel") cancel() else ok() } finally { autoAnswering = false } }
         }
     }

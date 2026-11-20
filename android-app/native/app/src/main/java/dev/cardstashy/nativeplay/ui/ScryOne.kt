@@ -195,8 +195,8 @@ internal fun ScryOneView(st: MatchState, name: String, live: Boolean, d: Du, onT
                         drawRoundRect(ScryGold.copy(alpha = .55f + .4f * lit), cornerRadius = r,
                             style = Stroke(w, pathEffect = if (lit > .5f) null else PathEffect.dashPathEffect(floatArrayOf(7.du.toPx(), 5.du.toPx()))))
                     }, contentAlignment = Alignment.BottomCenter) {
-                    // "GRAVEYARD" is longer than "BOTTOM": it is set a little tighter so it never cuts in the zone.
-                    Text(word.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(if (word.length > 6) 13f else 15f), letterSpacing = if (word.length > 6) .08.em else .2.em,
+                    // "GRAVEYARD" is longer than "BOTTOM": a surveil sets both zone words a little tighter, so it never cuts and the two match.
+                    Text(word.uppercase(), style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = sp(if (away.length > 6) 13f else 15f), letterSpacing = if (away.length > 6) .08.em else .2.em,
                         color = ScryGold.copy(alpha = .8f + .2f * lit)), maxLines = 1, modifier = Modifier.height(labelH).padding(top = 4.du))
                 }
             }
