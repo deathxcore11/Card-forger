@@ -3,7 +3,7 @@
 //   runApply(run, action, db) -> events[]   (mutates run; use runStep for the pure form)
 // The duel inside a run lives in run.duel and is advanced through { t:'duel', action }.
 import { Rng } from './rng.mjs';
-import { roleOf, weightOf, meldPair } from './cards.mjs';
+import { roleOf, weightOf, meldPair, codexKey } from './cards.mjs';
 import { newDuel, applyMut, viewFor, clone, effAtk } from './duel.mjs';
 import { chooseAction } from './ai.mjs';
 import { RELICS as BASE_RELICS, LAB, MASTERWORKS, sortRelics } from './relics.mjs';
@@ -454,7 +454,7 @@ function finishDuel(db, run, rng, ev) {
   for (const [k, v] of Object.entries(st.relicFires)) S.relicFires[k] = (S.relicFires[k] || 0) + v;
   if (Object.keys(st.relicFamilies).filter(f => !['plain', 'core', 'trade'].includes(f)).length >= 2) S.familiesInDuel++;
   if (d.seat[0].rs.secondWind) run.secondWindUsed = true;
-  for (const p of st.newMelds) { const k = p[0] < p[1] ? p[0] + '+' + p[1] : p[1] + '+' + p[0]; if (!run.codex.includes(k)) { run.codex.push(k); run.xp += cfg.xp.newMeld; } }
+  for (const p of st.newMelds) { const k = codexKey(db, p[0], p[1], p[4]); if (!run.codex.includes(k)) { run.codex.push(k); run.xp += cfg.xp.newMeld; } }
   if (run.feat) {
     const F = run.feat, gy = d.gy[0].filter(id => db.isMonster(id)).length;
     for (const [k, v] of Object.entries(st.chains)) if (+k >= 4) F.long4 += v;
@@ -661,7 +661,7 @@ export function runApply(run, a, db, opts = {}) {
         if (run.binds >= cfg.maxBinds) fail('no Binds left');
         const x = run.deck[a.a], y = run.deck[a.b]; if (!x || !y || a.a === a.b) fail('pick two deck cards');
         const r = meldPair(db, x.id, y.id); if (r.kind !== 'printed' && r.kind !== 'cross') fail('those two do not meld into a monster');
-        const k = x.id < y.id ? x.id + '+' + y.id : y.id + '+' + x.id; if (!run.codex.includes(k)) fail('that meld is not in your Codex yet');
+        if (!run.codex.includes(codexKey(db, x.id, y.id))) fail('that meld is not in your Codex yet');
         if (run.embers < P.bind) fail('not enough Embers');
         const deck = run.deck.filter((_, i) => i !== a.a && i !== a.b); deck.push({ id: r.id, b: 1, halves: [x.id, y.id] });
         run.binds++; const bad = validDeck(db, run, deck); if (bad) { run.binds--; fail(bad); }

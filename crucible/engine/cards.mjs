@@ -49,7 +49,12 @@ export function buildDb(pool, tags, config) {
     const old = recipes.get(k);
     if (!old || cmp(byId.get(old), c) > 0) recipes.set(k, c.id);
   }
-  const db = { config, pool, byId, byName, tagOf, fieldOf, ladders, recipes, missingTags: missing, cmp, _pair: new Map() };
+  // Two printed fusions may name the same two materials (Super Robolady and Super Roboyarou). Then the monster the
+  // meld starts with decides: each is made by its materials in the order printed on the card. first>second -> id.
+  const ordered = new Map(), shared = new Map();
+  for (const c of pool.cards) if (c.kind === 'fusion' && c.materials && c.materials.length === 2) { const k = c.materials.slice().sort((a, b) => a - b).join('+'); shared.set(k, (shared.get(k) || []).concat(c)); }
+  for (const l of shared.values()) if (l.length > 1) for (const c of l) { const k = c.materials[0] + '>' + c.materials[1], old = ordered.get(k); if (old == null || cmp(byId.get(old), c) > 0) ordered.set(k, c.id); }
+  const db = { config, pool, byId, byName, tagOf, fieldOf, ladders, recipes, ordered, missingTags: missing, cmp, _pair: new Map() };
   db.isMonster = id => { const k = byId.get(id).kind; return k === 'monster' || k === 'fusion'; };
   db.weight = id => weightOf(db, id);
   return db;
@@ -107,7 +112,7 @@ export function meldPairRaw(db, a, b) {
   const ma = db.isMonster(a), mb = db.isMonster(b);
   if (ma && mb) {
     const k = a < b ? a + '+' + b : b + '+' + a;
-    const f = db.recipes.get(k);
+    const f = db.ordered.get(a + '>' + b) ?? db.recipes.get(k);
     if (f) return { kind: 'printed', id: f };
     const floor = Math.max(A.atk, B.atk);
     const x = crossOne(db, A.type, B.attr, floor);
@@ -121,6 +126,21 @@ export function meldPairRaw(db, a, b) {
     return { kind: other.kind === 'equip' ? 'equip' : 'fuel', mon: ma ? 0 : 1 };
   }
   return { kind: 'fizzle' };
+}
+
+// The Codex key of one successful meld step: the ingredient ids joined by '+', smaller first. A three-material fusion
+// writes all three. A pair that two printed fusions share is written in the order it was played, since the order
+// decides which of the two it makes.
+export function codexKey(db, a, b, c) {
+  if (c != null) return [a, b, c].sort((x, y) => x - y).join('+');
+  return db.ordered.has(a + '>' + b) || a < b ? a + '+' + b : b + '+' + a;
+}
+// What a Codex key makes: { kind, id, mats } or null.
+export function codexResult(db, key) {
+  const mats = String(key).split('+').map(Number);
+  if (mats.length < 2 || mats.length > 3 || mats.some(id => !db.byId.has(id))) return null;
+  const r = mats.length === 3 ? meldTriple(db, mats[0], mats[1], mats[2]) : meldPair(db, mats[0], mats[1]);
+  return r && r.id ? { kind: r.kind, id: r.id, mats } : null;
 }
 
 // Three-material printed fusion, if a, b, c (in any order) are exactly its materials.

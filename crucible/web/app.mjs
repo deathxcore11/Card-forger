@@ -5,7 +5,7 @@ import { legalActions, playVariants, planChain, viewFor, forecast } from '../eng
 import { RELICS as BASE_RELICS, LAB, TUNED_TEXT, relicText } from '../engine/relics.mjs';
 const RELICS = { ...BASE_RELICS, ...LAB }; // the page's own copy: an item's words follow the rules in force (see setLabs)
 import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw, ENCHANT_TEXT } from '../engine/run.mjs';
-import { meldPair } from '../engine/cards.mjs';
+import { meldPair, codexKey, codexResult } from '../engine/cards.mjs';
 import { powerActions } from '../engine/duel.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, buy, maxHeat, VAULT, FORGER_FEATS, featList, runOptions, openKits, nextKit, forgerStats, VAULT_ENCHANTS, KIT_GOALS, START_ENCHANTS } from '../engine/meta.mjs';
@@ -214,25 +214,28 @@ function codexIndex() {
   for (let i = 0; i < mons.length; i++) for (let j = i; j < mons.length; j++) { const r = meldPairRaw(db, mons[i].id, mons[j].id); if (r.id && !res.has(r.id)) res.set(r.id, { id: r.id, kind: r.kind }); }
   for (const [k, id] of db.recipes) if (!res.has(id)) res.set(id, { id, kind: 'printed' });
   for (const [k, id] of db.recipes) res.get(id).mats = k.split('+').map(Number);
+  // two printed fusions that share their materials: each has its own page, and the order of the two decides
+  for (const [k, id] of db.ordered) { if (!res.has(id)) res.set(id, { id, kind: 'printed' }); const R = res.get(id); R.mats = k.split('>').map(Number); R.first = R.mats[0]; R.twin = db.ordered.get(R.mats[1] + '>' + R.mats[0]); }
   for (const R of res.values()) if (R.kind === 'cross') { const c = card(R.id), l = db.ladders.get(c.type + '|' + c.attr), i = l.indexOf(c); R.lo = i > 0 ? l[i - 1].atk : 0; }
   const list = [...res.values()].sort((x, y) => card(x.id).type.localeCompare(card(y.id).type) || card(x.id).atk - card(y.id).atk);
   return (CX = { res, list, types: [...new Set(list.map(R => card(R.id).type))].sort() });
 }
 function codexFound() {
   const found = new Map();
-  for (const k of G.known) { const [a, b] = k.split('+').map(Number); if (!card(a) || !card(b)) continue; const r = meldPair(db, a, b); if (!r.id) continue; if (!found.has(r.id)) found.set(r.id, []); found.get(r.id).push([a, b]); }
+  for (const k of G.known) { const r = codexResult(db, k); if (!r) continue; if (!found.has(r.id)) found.set(r.id, []); found.get(r.id).push(r.mats); }
   return found;
 }
 function whyLine(R) {
   const c = card(R.id);
-  if (R.kind === 'printed') return `A printed fusion. Only its ${R.mats.length === 3 ? 'three' : 'two'} named materials make it, in any order.`;
+  if (R.kind === 'printed' && R.first) return `A printed fusion. Only its two named materials make it, and the meld must start with ${card(R.first).name}.${R.twin ? ` Start with the other one and the same two make ${card(R.twin).name}.` : ''}`;
+  if (R.kind === 'printed') return `A printed fusion. Only its ${R.mats.length === 3 ? 'three' : 'two'} named materials make it, in any order.${R.mats.length === 3 ? ' All three go into one meld, one after another.' : ''}`;
   return `${c.type} Type + ${c.attr} Attribute. A meld takes the Type of one monster and the Attribute of the other, and makes the weakest ${c.attr} ${c.type} with more ATK than both. This is that monster when your stronger ingredient has ${R.lo} to ${c.atk - 1} ATK. If the pair can also make something weaker the other way round, the weaker one is made.`;
 }
 function codexPage(found) {
   const X = codexIndex(), R = X.res.get(G.cx.open); if (!R) return '';
   const c = card(R.id), recs = found.get(R.id) || [], known = recs.length > 0;
   const hint = R.kind === 'printed' ? `A printed fusion of ${R.mats.map(m => 'a ' + card(m).type).join(' and ')}.` : `A ${c.attr} ${c.type}. Some ${c.type} melded with some ${c.attr} monster makes it. Which ones is for you to find.`;
-  return `<div class="modal" data-a="cxclose"><div class="glass panel cxpage">${known ? face({ id: R.id }, { cls: 'big' }) : '<div class="c big unk"><span>?</span></div>'}<div><h3>${known ? esc(c.name) : 'Not found yet'}</h3><p>${known ? `${esc(c.type)} · ${esc(c.attr)} · Level ${c.level} · ATK ${c.atk} · DEF ${c.def}` : esc(hint)}</p>${known ? `<p><b>Why:</b> ${esc(whyLine(R))}</p><p><b>Use it again:</b> ${R.kind === 'printed' ? 'the same named materials always make it.' : `any ${esc(c.type)} with any ${esc(c.attr)} monster in that ATK range makes it, so cheap cards work as well as good ones.`}</p><h3>Recipes you have found (${recs.length})</h3><div class="recs">${recs.slice(0, 8).map(([a, b]) => `<span class="chip">${esc(card(a).name)}</span><b>+</b><span class="chip">${esc(card(b).name)}</span>`).join('<br>')}${recs.length > 8 ? `<br><span class="fine">and ${recs.length - 8} more</span>` : ''}</div>` : ''}<p class="fine">Tap anywhere to close.</p></div></div></div>`;
+  return `<div class="modal" data-a="cxclose"><div class="glass panel cxpage">${known ? face({ id: R.id }, { cls: 'big' }) : '<div class="c big unk"><span>?</span></div>'}<div><h3>${known ? esc(c.name) : 'Not found yet'}</h3><p>${known ? `${esc(c.type)} · ${esc(c.attr)} · Level ${c.level} · ATK ${c.atk} · DEF ${c.def}` : esc(hint)}</p>${known ? `<p><b>Why:</b> ${esc(whyLine(R))}</p><p><b>Use it again:</b> ${R.kind === 'printed' ? (R.first ? 'the same two materials make it when the meld starts with ' + esc(card(R.first).name) + '.' : 'the same named materials always make it.') : `any ${esc(c.type)} with any ${esc(c.attr)} monster in that ATK range makes it, so cheap cards work as well as good ones.`}</p><h3>Recipes you have found (${recs.length})</h3><div class="recs">${recs.slice(0, 8).map(ids => ids.map(x => `<span class="chip">${esc(card(x).name)}</span>`).join('<b>+</b>')).join('<br>')}${recs.length > 8 ? `<br><span class="fine">and ${recs.length - 8} more</span>` : ''}</div>` : ''}<p class="fine">Tap anywhere to close.</p></div></div></div>`;
 }
 function screenCodex() {
   const X = codexIndex(), found = codexFound(), v = G.cx;
@@ -318,7 +321,8 @@ function screenDuel() {
     const cards = G.sel.map(i => live.hand[0][i]); const ontoM = G.onto != null ? live.mon[0][G.onto] : null;
     const plan = planChain(db, cards, ontoM, { tinder: v.relics.includes('tinder_vow'), steady: v.relics.includes('steady_hand') && !v.rs.steady });
     const ids = (ontoM ? [ontoM.id] : []).concat(cards.map(c => c.id));
-    let allKnown = true; for (let i = 0; i + 1 < ids.length; i++) { const k = ids[i] < ids[i + 1] ? ids[i] + '+' + ids[i + 1] : ids[i + 1] + '+' + ids[i]; const bothMon = db.isMonster(ids[i]) && db.isMonster(ids[i + 1]); if (bothMon && !G.known.has(k)) allKnown = false; }
+    // the result is shown only when every step that puts two monsters together is already in the Codex
+    const allKnown = plan.tried.every(t => G.known.has(codexKey(db, t[0], t[1], t[2])));
     const vars = playVariants(live, db, 0, G.sel, G.onto);
     const chain = ids.map(id => `<span class="chip">${esc(card(id).name)}</span>`).join('<b>→</b>');
     const res = ids.length < 2 ? '' : `<b>=</b><span class="chip res">${allKnown ? esc(card(plan.final.id).name) + (plan.fizzles ? ` (${plan.fizzles} fizzle)` : '') : '? unknown meld'}</span>`;

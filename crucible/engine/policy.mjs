@@ -1,7 +1,7 @@
 // Scripted players for the headless simulator. A policy plays a whole run by choosing
 // run actions; in a duel it asks the same no-peek AI the rivals use, with weights for
 // the build family it is trying to assemble.
-import { roleOf, meldPair } from './cards.mjs';
+import { roleOf, meldPair, codexKey } from './cards.mjs';
 import { viewFor } from './duel.mjs';
 import { chooseAction } from './ai.mjs';
 import { relicInfo } from './relics.mjs';
@@ -85,7 +85,7 @@ function anvilAction(db, run, fam) {
     for (let i = 0; i < run.deck.length; i++) for (let j = i + 1; j < run.deck.length; j++) {
       const x = run.deck[i], y = run.deck[j];
       if (x.b || y.b || !db.isMonster(x.id) || !db.isMonster(y.id)) continue;
-      const k = x.id < y.id ? x.id + '+' + y.id : y.id + '+' + x.id; if (!run.codex.includes(k)) continue;
+      if (!run.codex.includes(codexKey(db, x.id, y.id))) continue;
       const r = meldPair(db, x.id, y.id); if (r.kind !== 'printed' && r.kind !== 'cross') continue;
       if (run.deck.filter(e => e.id === r.id).length >= db.config.maxCopies) continue; // a fourth copy is not a legal deck
       const atk = db.byId.get(r.id).atk; if (!best || atk > best.atk) best = { atk, a: i, b: j };

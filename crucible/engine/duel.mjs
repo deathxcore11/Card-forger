@@ -153,11 +153,13 @@ function destroyMon(s, db, ev, seat, z, why) {
 // ---------- meld chains ----------
 // Pure plan of what a chain of cards makes. `cards` are instances ({id,t,e,b}), in order.
 // `onto` is a table monster instance or null. Returns
-// { final:{inst, isMonster, fromTable}, gy:[ids], steps:[{kind,a,b,id}], fizzles, successes, len, pairs:[[a,b,result,kind]] }
+// { final:{inst, isMonster, fromTable}, gy:[ids], steps:[{kind,a,b,id}], fizzles, successes, len, pairs:[[a,b,result,kind,c?]] }
+// pairs: each successful meld step (c is the third material of a three-material fusion). tried: every step that put
+// two monsters together, fizzles included, as [a, b, c?]: what a preview needs to know before it may show the result.
 export function planChain(db, cards, onto, opts = {}) {
   const fuel = opts.tinder ? 500 : db.config.fuelBonus;
   const equipB = db.config.equipBonus;
-  const gy = [], steps = [], pairs = [];
+  const gy = [], steps = [], pairs = [], tried = [];
   let fizzles = 0, successes = 0, run = 1, steadyUsed = false, returned = null, forged = false;
   let cur = onto ? { inst: { ...onto }, table: true, raw: true } : { inst: { ...cards[0] }, table: false, raw: true };
   let i = onto ? 0 : 1;
@@ -170,7 +172,7 @@ export function planChain(db, cards, onto, opts = {}) {
       const t3 = meldTriple(db, cur.inst.id, B.id, cards[i + 1].id);
       if (t3) {
         gy.push(cur.inst.id, B.id, cards[i + 1].id);
-        pairs.push([cur.inst.id, B.id, t3.id, 'printed']);
+        pairs.push([cur.inst.id, B.id, t3.id, 'printed', cards[i + 1].id]); tried.push([cur.inst.id, B.id, cards[i + 1].id]);
         cur = { inst: carry(cur.inst, t3.id), table: cur.table, raw: false };
         steps.push({ kind: 'printed', id: t3.id, three: true });
         successes += 2; run += 2; i++; forged = true;
@@ -182,6 +184,7 @@ export function planChain(db, cards, onto, opts = {}) {
     if (db.config.oneForgePerChain && forged && (r.kind === 'printed' || r.kind === 'cross' || r.kind === 'fizzle') && db.isMonster(cur.inst.id) && db.isMonster(B.id)) r = { kind: 'fuel', mon: 0 };
     if (r.kind === 'equip' && opts.tinder) r = { kind: 'fuel', mon: r.mon };
     if (r.kind === 'fizzle' && cur.table && cur.inst.e === 'catalyst' && aMon) r = { kind: 'fuel', mon: 0, forced: true };
+    if (r.kind === 'printed' || r.kind === 'cross' || r.kind === 'fizzle') tried.push([cur.inst.id, B.id]);
     if (r.kind === 'printed' || r.kind === 'cross') {
       gy.push(cur.inst.id, B.id);
       pairs.push([cur.inst.id, B.id, r.id, r.kind]);
@@ -207,7 +210,7 @@ export function planChain(db, cards, onto, opts = {}) {
       run = 1;
     }
   }
-  return { final: cur.inst, isMonster: db.isMonster(cur.inst.id), onTable: cur.table, tableLost, gy, steps, fizzles, successes, len: run, melded: run > 1, pairs, returned, steadyUsed };
+  return { final: cur.inst, isMonster: db.isMonster(cur.inst.id), onTable: cur.table, tableLost, gy, steps, fizzles, successes, len: run, melded: run > 1, pairs, tried, returned, steadyUsed };
 }
 function carry(from, id) {
   const o = { id };

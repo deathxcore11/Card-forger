@@ -1,7 +1,7 @@
 // Rule tests for Lost Memories (codename crucible). Run: node crucible/test/test-crucible-rules.mjs
 // Card stats are read from the pool by name; nothing here types an ATK or DEF.
 import assert from 'node:assert/strict';
-import { loadDb, meldPair, meldTriple, weightOf, wheelEdge, roleOf, EFFECTS } from '../engine/cards.mjs';
+import { loadDb, meldPair, meldTriple, weightOf, wheelEdge, roleOf, EFFECTS, codexKey, codexResult } from '../engine/cards.mjs';
 import { rulesText, FX_TEXT, TRAP_TEXT } from '../web/text.mjs';
 import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, effDef, forecast, canonical, clone } from '../engine/duel.mjs';
 import { chooseAction } from '../engine/ai.mjs';
@@ -532,6 +532,52 @@ test('long road: kits open by duels won, Heat stays shared with a record per For
   assert.throws(() => buy(newProfile(), 'ench:herald'), /not enough/);
   q.memories = 60; const b = buy(q, 'ench:herald'); assert.equal(b.name, 'Herald'); assert.equal(q.memories, 10); assert.ok(openEnchants(q).includes('herald')); assert.throws(() => buy(q, 'ench:herald'), /already/);
   for (const f of FEATS_LONG) { assert.ok(LAB[f.gift] || RELICS[f.gift], f.gift + ' exists'); assert.ok(f.text.includes(String(f.goal))); }
+});
+
+// Reported 20 Nov 2026 (crucible/reports/regression-log.md): the Codex wrote XYZ-Dragon Cannon as its first two materials, which
+// read back as XY-Dragon Cannon; and Super Roboyarou could not be made at all because it shares its materials.
+test('Codex: a three-card fusion is written with all three cards; two fusions that share materials can both be made', () => {
+  const [x, y, z] = ['X-Head Cannon', 'Y-Dragon Head', 'Z-Metal Tank'].map(n => C(n).id), xyz = C('XYZ-Dragon Cannon').id;
+  for (const order of [[x, y, z], [z, y, x], [y, z, x], [z, x, y]]) {
+    const plan = planChain(db, order.map((id, u) => ({ u, id })), null, {});
+    assert.equal(plan.final.id, xyz); assert.equal(plan.pairs.length, 1); assert.deepEqual(plan.tried, [order]);
+    const key = codexKey(db, plan.pairs[0][0], plan.pairs[0][1], plan.pairs[0][4]);
+    assert.equal(key.split('+').length, 3, 'all three materials are written');
+    assert.deepEqual(codexResult(db, key), { kind: 'printed', id: xyz, mats: [x, y, z].sort((a, b) => a - b) });
+  }
+  assert.equal(codexResult(db, codexKey(db, x, y)).id, C('XY-Dragon Cannon').id, 'the two-card fusion keeps its own page');
+  // through a real run: meld the three in a duel, finish the duel, save and reopen
+  const run = newRun(db, { seed: 12 }); runApply(run, { t: 'kit', i: 0 }, db);
+  for (let n = 0; n < 500 && !(run.phase === 'duel' && run.duel.active === 0 && !run.duel.pending && !run.duel.played); n++) runApply(run, policyAction(db, run, { level: 2 }), db);
+  assert.equal(run.phase, 'duel'); run.duel.hand[0] = [x, y, z].map((id, i) => ({ u: 9000 + i, id }));
+  runApply(run, { t: 'duel', action: { t: 'play', hand: [0, 1, 2], onto: null, pos: 'a' } }, db);
+  assert.ok(run.duel.mon[0].some(m => m && m.id === xyz), 'XYZ-Dragon Cannon is on the table');
+  for (let n = 0; n < 5000 && run.phase === 'duel'; n++) runApply(run, policyAction(db, run, { level: 2 }), db);
+  const back = JSON.parse(JSON.stringify(run)), key3 = [x, y, z].sort((a, b) => a - b).join('+');
+  assert.ok(back.codex.includes(key3), 'the Codex holds the three-card recipe after the duel and after a save');
+  assert.ok(!back.codex.includes(codexKey(db, x, y)), 'and not the two-card recipe that was never made');
+  assert.equal(codexResult(db, back.codex.find(k => k === key3)).id, xyz);
+  // Super Robolady and Super Roboyarou name the same two materials: the one the meld starts with decides
+  const lady = C('Robolady').id, yarou = C('Roboyarou').id, sLady = C('Super Robolady').id, sYarou = C('Super Roboyarou').id;
+  assert.equal(meldPair(db, lady, yarou).id, sLady); assert.equal(meldPair(db, yarou, lady).id, sYarou);
+  assert.equal(db.byId.get(sLady).materials[0], lady); assert.equal(db.byId.get(sYarou).materials[0], yarou);
+  const kl = codexKey(db, lady, yarou), ky = codexKey(db, yarou, lady);
+  assert.notEqual(kl, ky); assert.equal(codexResult(db, kl).id, sLady); assert.equal(codexResult(db, ky).id, sYarou);
+  assert.equal(planChain(db, [{ u: 1, id: yarou }, { u: 2, id: lady }], null, {}).final.id, sYarou);
+  // every other pair is still written smaller id first, whichever way it was played, and makes the same thing both ways
+  const a = C('Flame Manipulator').id, b = C('Masaki the Legendary Swordsman').id;
+  assert.equal(codexKey(db, a, b), codexKey(db, b, a)); assert.equal(meldPair(db, a, b).id, meldPair(db, b, a).id); assert.equal(db.ordered.size, 2);
+  // every printed fusion that has materials can be made from them, and its Codex key reads back as itself
+  for (const c of db.pool.cards) if (c.kind === 'fusion' && c.materials) {
+    const r = c.materials.length === 3 ? meldTriple(db, ...c.materials) : meldPair(db, c.materials[0], c.materials[1]);
+    assert.equal(r && r.id, c.id, c.name + ' is made by its printed materials');
+    assert.equal(codexResult(db, codexKey(db, ...c.materials)).id, c.id, c.name + ' reads back from the Codex');
+  }
+  // Bind follows the same order rule
+  const br = newRun(db, { seed: 3 }); runApply(br, { t: 'kit', i: 0 }, db); while (br.phase !== 'chamber') runApply(br, policyAction(db, br, { level: 2 }), db);
+  br.phase = 'anvil'; br.offer = { kind: 'anvil', masterworks: [], enchants: [] }; br.embers = 999; br.deck[0] = { id: yarou }; br.deck[1] = { id: lady }; br.codex.push(ky);
+  assert.throws(() => runApply(br, { t: 'anvil', kind: 'bind', a: 1, b: 0 }, db), /not in your Codex/, 'the other order is a different meld');
+  runApply(br, { t: 'anvil', kind: 'bind', a: 0, b: 1 }, db); assert.ok(br.deck.some(e => e.id === sYarou && e.b));
 });
 
 test('lab relics: never in a normal run; switched on, Tomb Ledger chains into Grave Call and Second Burial inside the limits', () => {
