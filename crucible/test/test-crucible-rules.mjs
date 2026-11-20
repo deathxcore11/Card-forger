@@ -1,7 +1,8 @@
 // Rule tests for Lost Memories (codename crucible). Run: node crucible/test/test-crucible-rules.mjs
 // Card stats are read from the pool by name; nothing here types an ATK or DEF.
 import assert from 'node:assert/strict';
-import { loadDb, meldPair, meldTriple, weightOf, wheelEdge, roleOf, EFFECTS, codexKey, codexResult } from '../engine/cards.mjs';
+import { readFileSync } from 'node:fs';
+import { loadDb, meldPair, meldTriple, weightOf, wheelEdge, roleOf, EFFECTS, codexKey, codexResult, codexKnows, codexUpgrade } from '../engine/cards.mjs';
 import { rulesText, FX_TEXT, TRAP_TEXT } from '../web/text.mjs';
 import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, effDef, forecast, canonical, clone } from '../engine/duel.mjs';
 import { chooseAction } from '../engine/ai.mjs';
@@ -578,6 +579,53 @@ test('Codex: a three-card fusion is written with all three cards; two fusions th
   br.phase = 'anvil'; br.offer = { kind: 'anvil', masterworks: [], enchants: [] }; br.embers = 999; br.deck[0] = { id: yarou }; br.deck[1] = { id: lady }; br.codex.push(ky);
   assert.throws(() => runApply(br, { t: 'anvil', kind: 'bind', a: 1, b: 0 }, db), /not in your Codex/, 'the other order is a different meld');
   runApply(br, { t: 'anvil', kind: 'bind', a: 0, b: 1 }, db); assert.ok(br.deck.some(e => e.id === sYarou && e.b));
+});
+
+// Reported 20 Nov 2026 (crucible/reports/regression-log.md): after the Robo fix, a Codex saved by the build before it
+// read its Robo entry as Super Roboyarou, though that build had made Super Robolady.
+test('Codex: a save from the build before the fusion fix still means what it meant', () => {
+  const old = JSON.parse(readFileSync(new URL('../fixtures/old-save-v21.json', import.meta.url), 'utf8'));
+  const lady = C('Robolady').id, yarou = C('Roboyarou').id, sLady = C('Super Robolady').id, sYarou = C('Super Roboyarou').id;
+  const oldRobo = '38916461+92421852', oldXyz = '64500000+65622692';
+  assert.ok(old.known.includes(oldRobo) && old.profile.codex.includes(oldRobo) && old.run.codex.includes(oldRobo), 'the old save holds the Robo pair, smaller id first');
+  assert.ok(old.known.includes(oldXyz), 'and its three-card fusion as two cards');
+  // read as written: the old entry is Super Robolady, the only thing that build could make from the pair
+  const r = codexResult(db, oldRobo); assert.equal(r.id, sLady); assert.deepEqual(r.mats, [lady, yarou]); assert.ok(r.old);
+  assert.equal(codexResult(db, lady + '+' + yarou).id, sLady, 'either way round, an entry without an order is the old result');
+  // new entries carry their order and are a different format, so the two can never be confused
+  assert.equal(codexKey(db, lady, yarou), lady + '>' + yarou); assert.equal(codexKey(db, yarou, lady), yarou + '>' + lady);
+  assert.equal(codexResult(db, lady + '>' + yarou).id, sLady); assert.equal(codexResult(db, yarou + '>' + lady).id, sYarou);
+  assert.equal(codexKey(db, C('Flame Manipulator').id, C('Masaki the Legendary Swordsman').id).includes('>'), false, 'every other pair keeps the old format');
+  // the old entry counts as knowing Super Robolady and not Super Roboyarou
+  const has = k => old.known.includes(k);
+  assert.ok(codexKnows(db, has, lady, yarou)); assert.ok(!codexKnows(db, has, yarou, lady));
+  // every key of the old save still reads, and all but the Robo one read as before
+  for (const k of old.known) assert.ok(codexResult(db, k), 'old key still reads: ' + k);
+  // upgrade on load: nothing dropped, the Robo entry becomes the ordered Super Robolady entry, the rest is untouched, and doing it twice changes nothing
+  const up = codexUpgrade(db, old.known);
+  assert.equal(up.length, old.known.length); assert.ok(up.includes(lady + '>' + yarou) && !up.includes(oldRobo));
+  assert.deepEqual(up.filter(k => !k.includes('>')), old.known.filter(k => k !== oldRobo)); assert.deepEqual(codexUpgrade(db, up), up);
+  assert.deepEqual(new Set(up.map(k => codexResult(db, k).id)), new Set(old.known.map(k => k === oldRobo ? sLady : codexResult(db, k).id)));
+  // the old three-card entry cannot be told from a real two-card discovery: it stays, and XYZ is simply not found yet
+  assert.equal(codexResult(db, oldXyz).id, C('YZ-Tank Dragon').id); assert.ok(!up.some(k => codexResult(db, k).id === C('XYZ-Dragon Cannon').id));
+  // the old run carries on in today's engine, and making Super Robolady again is not paid as a new discovery
+  const run = JSON.parse(JSON.stringify(old.run)); run.codex = codexUpgrade(db, run.codex);
+  for (let n = 0; n < 3000 && !(run.phase === 'duel' && run.duel.active === 0 && !run.duel.pending && !run.duel.played && run.duel.mon[0].filter(Boolean).length < 4); n++) runApply(run, policyAction(db, run, { level: 2 }), db);
+  assert.equal(run.phase, 'duel', 'the old run plays on');
+  const raw = JSON.parse(JSON.stringify(old.run)); // the same thing without the upgrade step: the engine itself must cope
+  for (const [R, first, second, want, fresh] of [[run, lady, yarou, sLady, false], [run, yarou, lady, sYarou, true]]) {
+    for (let n = 0; n < 3000 && !(R.phase === 'duel' && R.duel.active === 0 && !R.duel.pending && !R.duel.played && R.duel.mon[0].filter(Boolean).length < 4); n++) runApply(R, policyAction(db, R, { level: 2 }), db);
+    const before = R.codex.length; R.duel.hand[0] = [{ u: 9100 + R.duel.turn, id: first }, { u: 9200 + R.duel.turn, id: second }];
+    runApply(R, { t: 'duel', action: { t: 'play', hand: [0, 1], onto: null, pos: 'a' } }, db);
+    assert.ok(R.duel.mon[0].some(m => m && m.id === want));
+    for (let n = 0; n < 5000 && R.phase === 'duel'; n++) runApply(R, policyAction(db, R, { level: 2 }), db);
+    assert.equal(R.codex.includes(first + '>' + second), true); if (!fresh) assert.equal(R.codex.filter(k => codexResult(db, k).id === sLady).length, 1, 'no second entry for a result already known');
+    if (R.phase === 'over') break;
+  }
+  { const before = raw.codex.slice(); for (let n = 0; n < 3000 && !(raw.phase === 'duel' && raw.duel.active === 0 && !raw.duel.pending && !raw.duel.played && raw.duel.mon[0].filter(Boolean).length < 4); n++) runApply(raw, policyAction(db, raw, { level: 2 }), db);
+    raw.duel.hand[0] = [{ u: 9300, id: lady }, { u: 9301, id: yarou }]; runApply(raw, { t: 'duel', action: { t: 'play', hand: [0, 1], onto: null, pos: 'a' } }, db);
+    for (let n = 0; n < 5000 && raw.phase === 'duel'; n++) runApply(raw, policyAction(db, raw, { level: 2 }), db);
+    assert.ok(before.includes(oldRobo) && !raw.codex.includes(lady + '>' + yarou), 'an old entry left as it was still counts as knowing Super Robolady'); }
 });
 
 test('lab relics: never in a normal run; switched on, Tomb Ledger chains into Grave Call and Second Burial inside the limits', () => {

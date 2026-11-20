@@ -128,19 +128,43 @@ export function meldPairRaw(db, a, b) {
   return { kind: 'fizzle' };
 }
 
-// The Codex key of one successful meld step: the ingredient ids joined by '+', smaller first. A three-material fusion
-// writes all three. A pair that two printed fusions share is written in the order it was played, since the order
-// decides which of the two it makes.
+// The Codex key of one successful meld step.
+//   "a+b"    two ingredients, smaller id first: the pair makes the same thing whichever way it is played.
+//   "a+b+c"  the three materials of a three-material fusion, smallest first.
+//   "a>b"    a pair that two printed fusions share, in the order played: a first, then b. The order decides the result.
+// Builds before 20 November 2026 wrote every pair as "a+b" and made one fixed result for a shared pair, so an old
+// "a+b" key of a shared pair still means that result (see codexResult), and an old three-material fusion was written
+// as its first two cards only: that key reads as the two-card result and the three-card one has to be found again.
+const pairKey = (a, b) => a < b ? a + '+' + b : b + '+' + a;
+const sharedPair = (db, a, b) => db.ordered.has(a + '>' + b) || db.ordered.has(b + '>' + a);
 export function codexKey(db, a, b, c) {
   if (c != null) return [a, b, c].sort((x, y) => x - y).join('+');
-  return db.ordered.has(a + '>' + b) || a < b ? a + '+' + b : b + '+' + a;
+  return db.ordered.has(a + '>' + b) ? a + '>' + b : pairKey(a, b);
 }
-// What a Codex key makes: { kind, id, mats } or null.
+// What a Codex key makes: { kind, id, mats } or null. mats are in the order to play them when the order matters.
 export function codexResult(db, key) {
-  const mats = String(key).split('+').map(Number);
-  if (mats.length < 2 || mats.length > 3 || mats.some(id => !db.byId.has(id))) return null;
+  const ord = String(key).includes('>'), mats = String(key).split(ord ? '>' : '+').map(Number);
+  if (mats.length < 2 || mats.length > (ord ? 2 : 3) || mats.some(id => !db.byId.has(id))) return null;
+  if (!ord && mats.length === 2 && sharedPair(db, mats[0], mats[1])) { // an entry from before the order mattered
+    const id = db.recipes.get(pairKey(mats[0], mats[1]));
+    return { kind: 'printed', id, mats: db.byId.get(id).materials.slice(), old: true };
+  }
   const r = mats.length === 3 ? meldTriple(db, mats[0], mats[1], mats[2]) : meldPair(db, mats[0], mats[1]);
   return r && r.id ? { kind: r.kind, id: r.id, mats } : null;
+}
+// Is this meld step already in the Codex? has(key) answers for one key. An old entry of a shared pair counts for the
+// one result every earlier build made from it, and for no other.
+export function codexKnows(db, has, a, b, c) {
+  if (has(codexKey(db, a, b, c))) return true;
+  if (c != null || !sharedPair(db, a, b)) return false;
+  return (has(a + '+' + b) || has(b + '+' + a)) && meldPair(db, a, b).id === db.recipes.get(pairKey(a, b));
+}
+// Rewrites a saved list of Codex keys into today's format. Nothing is dropped; an old entry of a shared pair becomes
+// the ordered entry of the result it stood for.
+export function codexUpgrade(db, keys) {
+  const out = [];
+  for (const k of keys || []) { const r = codexResult(db, k); const n = r && r.old ? r.mats[0] + '>' + r.mats[1] : k; if (!out.includes(n)) out.push(n); }
+  return out;
 }
 
 // Three-material printed fusion, if a, b, c (in any order) are exactly its materials.

@@ -5,7 +5,7 @@ import { legalActions, playVariants, planChain, viewFor, forecast } from '../eng
 import { RELICS as BASE_RELICS, LAB, TUNED_TEXT, relicText } from '../engine/relics.mjs';
 const RELICS = { ...BASE_RELICS, ...LAB }; // the page's own copy: an item's words follow the rules in force (see setLabs)
 import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw, ENCHANT_TEXT } from '../engine/run.mjs';
-import { meldPair, codexKey, codexResult } from '../engine/cards.mjs';
+import { codexResult, codexKnows, codexUpgrade } from '../engine/cards.mjs';
 import { powerActions } from '../engine/duel.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, buy, maxHeat, VAULT, FORGER_FEATS, featList, runOptions, openKits, nextKit, forgerStats, VAULT_ENCHANTS, KIT_GOALS, START_ENCHANTS } from '../engine/meta.mjs';
@@ -42,7 +42,8 @@ const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } cat
 const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
 const P = Object.assign(newProfile(), store.get(PROFILE) || {});
 { const st = store.get(LABKEY); pref = st ? { heat: true, kits: true, ...st } : { ...LAB_DEFAULTS }; setLabs(pref); }
-for (const k of P.codex) G.known.add(k);
+// Saves from before 20 November 2026 wrote a shared pair (the two Robo fusions) without its order: bring them up to date once.
+{ const pc = codexUpgrade(db, P.codex), kn = codexUpgrade(db, [...G.known].concat(pc)); if (pc.join() !== P.codex.join()) { P.codex = pc; store.set(PROFILE, P); } if (kn.join() !== [...G.known].join()) store.set(KNOWN, kn); G.known = new Set(kn); }
 const saveP = () => store.set(PROFILE, P);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const card = id => db.byId.get(id);
@@ -322,7 +323,7 @@ function screenDuel() {
     const plan = planChain(db, cards, ontoM, { tinder: v.relics.includes('tinder_vow'), steady: v.relics.includes('steady_hand') && !v.rs.steady });
     const ids = (ontoM ? [ontoM.id] : []).concat(cards.map(c => c.id));
     // the result is shown only when every step that puts two monsters together is already in the Codex
-    const allKnown = plan.tried.every(t => G.known.has(codexKey(db, t[0], t[1], t[2])));
+    const allKnown = plan.tried.every(t => codexKnows(db, k => G.known.has(k), t[0], t[1], t[2]));
     const vars = playVariants(live, db, 0, G.sel, G.onto);
     const chain = ids.map(id => `<span class="chip">${esc(card(id).name)}</span>`).join('<b>→</b>');
     const res = ids.length < 2 ? '' : `<b>=</b><span class="chip res">${allKnown ? esc(card(plan.final.id).name) + (plan.fizzles ? ` (${plan.fizzles} fizzle)` : '') : '? unknown meld'}</span>`;
@@ -449,7 +450,7 @@ app.addEventListener('click', ev => {
     case 'storynext': { const st = G.story; if (!st) break; if (++st.i >= SCENES[st.id].lines.length) { G.story = null; if (st.then) { st.then(); break; } } render(); break; }
     case 'storyskip': { const st = G.story; G.story = null; if (st && st.then) { st.then(); break; } render(); break; }
     case 'power': { const a = { t: 'power' }; if (x === 'hand') a.hand = G.sel[0]; if (x === 'zone') a.zone = G.attacker; duel(a); break; }
-    case 'resume': setLabs(store.get(RUNLABS) || pref); G.run = store.get(SAVE); render(); break;
+    case 'resume': setLabs(store.get(RUNLABS) || pref); G.run = store.get(SAVE); if (G.run && G.run.codex) G.run.codex = codexUpgrade(db, G.run.codex); render(); break;
     case 'quit': if (el.dataset.sure) { store.del(SAVE); G.run = null; setLabs(pref); render(); } else { el.dataset.sure = 1; el.textContent = 'Tap again to abandon'; } break;
     case 'kit': act({ t: 'kit', i: n }); break;
     case 'redeal': act({ t: 'redeal' }); break;
