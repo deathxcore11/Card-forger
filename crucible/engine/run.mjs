@@ -328,7 +328,9 @@ function bossDoor(run) {
   return { type: 'boss', tier: 'boss', know: 'known', boss: b.id, name: b.name, cost: 'A Spark if you lose. You face it again.', reward: 'Guardian Reward, +20 weight cap, the way down.', law: lawTextFor(DB, run, b), needsSeals: 2 };
 }
 export const bossLaw = (db, run) => lawTextFor(db, run, BOSSES[run.floor][run.bossOrder[run.floor]]);
-const lawTextFor = (db, run, b) => b.lawText + (db && heatAt(db, run, 8) ? ' Hard Law: ' + STRONG_LAW[b.law] : '') + (db && heatAt(db, run, 3) ? ' Provisioned: +500 Life Points, first monster +200 ATK.' : '');
+// The Law as written for this run: the last Law names the turn its ace really arrives on (config endTurns).
+const TURN_WORD = { 3: 'third', 4: 'fourth', 5: 'fifth', 6: 'sixth', 7: 'seventh', 8: 'eighth' };
+const lawTextFor = (db, run, b) => { const t = (db && db.config.endTurns && TURN_WORD[db.config.endTurns] ? b.lawText.replace('fourth turn', TURN_WORD[db.config.endTurns] + ' turn') : b.lawText) + (db && heatAt(db, run, 8) ? ' Hard Law: ' + STRONG_LAW[b.law] : '') + (db && heatAt(db, run, 3) ? ' Provisioned: +500 Life Points, first monster +200 ATK.' : ''); return t; };
 function describe(db, run, d) {
   const TW = { fog: 'Fog: every monster arrives veiled.', narrow: 'Narrow Pass: three monster zones a side.', storm: 'Storm Front: the terrain changes every third turn.', locked: 'Locked terrain: the terrain cannot be replaced.' };
   switch (d.type) {

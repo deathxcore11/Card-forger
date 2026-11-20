@@ -11,6 +11,7 @@ import { RELICS, LAB, sortRelics } from '../engine/relics.mjs';
 import { newRun, runApply, ENCHANTS, deckWeight, weightCap, KITS } from '../engine/run.mjs';
 import { FORGERS } from '../engine/forgers.mjs';
 import { policyAction } from '../engine/policy.mjs';
+import { newProfile, applyRun, buy, lockedRelics, maxHeat, VAULT, FEATS } from '../engine/meta.mjs';
 
 const read = f => JSON.parse(readFileSync(new URL('../data/' + f, import.meta.url), 'utf8'));
 const POOL = read('crucible-pool.json'), TAGS = read('crucible-spell-tags.json'), BASE = read('crucible-config.json');
@@ -162,15 +163,18 @@ function runFuzz(name, cfg) {
   for (let n = SEED0; n < SEED0 + RUNS; n++) {
     const r = Rng.fromSeed(n * 104729 + name.length);
     // a kit forced now and then, so every kit is played under the levers
-    const db = r.chance(1, 3) ? buildDb(POOL, TAGS, { ...BASE, ...cfg, testKit: r.pick(KIT_IDS) }) : DBS[name];
+    let db = r.chance(1, 3) ? buildDb(POOL, TAGS, { ...BASE, ...cfg, testKit: r.pick(KIT_IDS) }) : DBS[name];
+    // one run in five changes its rules part-way, as an old saved run does when the Lab switches are changed before Continue
+    const swapAt = r.chance(1, 5) ? 5 + r.int(400) : -1, swapTo = r.pick(Object.keys(SETS));
     const heat = r.int(11), forger = r.pick(FORGER_IDS), fam = r.pick(['neutral', 'storm', 'tomb', 'shadow', 'furnace']);
     // three kinds of player: all random, a strong player who slips now and then, and a strong player throughout
     const kind = r.pick(['chaos', 'slips', 'slips', 'expert']), slip = kind === 'chaos' ? 100 : kind === 'slips' ? 4 : 0;
     const opts = { seed: n, heat, forger, locked: r.chance(1, 3) ? ['tomb_bell', 'glass_idol', 'living_furnace', 'signature'] : null, track: r.chance(2, 3), featured: r.chance(1, 2) ? r.shuffle(LABPOOL.slice()).slice(0, 2) : null };
     let run = newRun(db, opts);
-    const tag = name + ' run seed ' + n + ' heat ' + heat + ' forger ' + forger + ' ' + kind + ' ' + fam + (db.config.testKit ? ' kit ' + db.config.testKit : '');
+    const tag = name + ' run seed ' + n + ' heat ' + heat + ' forger ' + forger + ' ' + kind + ' ' + fam + (db.config.testKit ? ' kit ' + db.config.testKit : '') + (swapAt >= 0 ? ' rules change to ' + swapTo + ' at step ' + swapAt : '');
     let guard = 0;
     while (run.phase !== 'over') {
+      if (guard === swapAt) db = DBS[swapTo];
       let a;
       try { a = r.int(100) < slip ? chaosAction(db, run, r) : policyAction(db, run, { family: fam, level: 2 }); } catch (e) { throw new Error('player model threw, ' + tag + ' phase ' + run.phase + ' :: ' + e.stack); }
       assert.ok(a, 'no action offered, ' + tag + ' phase ' + run.phase);
@@ -210,9 +214,38 @@ function runFuzz(name, cfg) {
     assert.ok(run.result && typeof run.result.won === 'boolean', 'no result, ' + tag);
     over[run.result.won ? 'won' : 'lost']++; floors[Math.min(2, run.floor)]++; if (run.result.won) heats[heat] = (heats[heat] || 0) + 1;
     // the same seed and the same choices give the same run
-    if (kind === 'expert' && n % 5 === 0) { const twin = newRun(db, opts); let g = 0; while (twin.phase !== 'over' && g++ < 400000) runApply(twin, policyAction(db, twin, { family: fam, level: 2 }), db); assert.equal(JSON.stringify(twin.result), JSON.stringify(run.result), 'saved and unsaved runs ended differently, ' + tag); }
+    if (kind === 'expert' && n % 5 === 0 && swapAt < 0) { const twin = newRun(db, opts); let g = 0; while (twin.phase !== 'over' && g++ < 400000) runApply(twin, policyAction(db, twin, { family: fam, level: 2 }), db); assert.equal(JSON.stringify(twin.result), JSON.stringify(run.result), 'saved and unsaved runs ended differently, ' + tag); }
   }
   return { acts, refused, wildRefused, over, floors, wonAtHeat: heats };
+}
+
+// Profiles: many runs banked one after another, with Vault purchases between them.
+function profileFuzz(db, count, runsEach) {
+  let banked = 0, bought = 0, topHeat = 0;
+  for (let n = 1; n <= count; n++) {
+    const r = Rng.fromSeed(n * 31337 + SEED0), p = newProfile();
+    for (let k = 0; k < runsEach; k++) {
+      const heat = r.int(maxHeat(p) + 1), forger = r.pick(p.forgers), featured = (p.fresh || []).slice();
+      const run = newRun(db, { seed: n * 1000 + k + SEED0, heat, forger, locked: lockedRelics(p), featured, track: true });
+      const fam = r.pick(['neutral', 'storm', 'tomb', 'shadow', 'furnace']); let g = 0;
+      while (run.phase !== 'over') {
+        if (run.phase === 'reward' && run.offer.fresh) { assert.ok(p.fresh.includes(run.offer.fresh), 'a Gift marked NEW that is not new'); p.fresh = p.fresh.filter(x => x !== run.offer.fresh); }
+        for (const id of run.gifts.concat(run.charms, run.masterworks)) assert.ok(!lockedRelics(p).includes(id) || run.masterworks.includes(id), 'a locked relic was gained: ' + id);
+        runApply(run, policyAction(db, run, { family: fam, level: r.chance(1, 4) ? 0 : 2 }), db); assert.ok(++g < 400000);
+      }
+      const before = JSON.parse(JSON.stringify(p)), got = applyRun(p, run); banked++;
+      assert.ok(Number.isInteger(p.memories) && p.memories >= before.memories && got.total >= 0, 'Memories went wrong');
+      assert.equal(p.memories - before.memories, got.total); assert.equal(got.lines.reduce((x, l) => x + l[1], 0), got.total, 'the lines do not add up to the total');
+      for (const key of ['forgers', 'bought', 'codex', 'featsDone']) assert.equal(new Set(p[key]).size, p[key].length, key + ' holds something twice');
+      assert.ok(p.heatCleared <= 10 && maxHeat(p) <= 10 && p.heatCleared >= before.heatCleared);
+      for (const f of FEATS) assert.ok((p.feats[f.id] || 0) <= f.goal && (p.feats[f.id] || 0) >= (before.feats[f.id] || 0), 'feat count went wrong');
+      for (const u of got.unlocks) assert.ok(u.name && u.text, 'an unlock with no name or text');
+      assert.throws(() => applyRun(p, newRun(db, { seed: 1 })), /not over/);
+      for (const v of r.shuffle(VAULT.slice())) { if (p.memories >= v.price && !p.bought.includes(v.id) && r.chance(1, 2)) { buy(p, v.id); bought++; assert.ok(p.memories >= 0); assert.throws(() => buy(p, v.id), /already/); } else if (p.memories < v.price && !p.bought.includes(v.id)) assert.throws(() => buy(p, v.id), /not enough/); }
+      topHeat = Math.max(topHeat, p.heatCleared);
+    }
+  }
+  return { profiles: count, banked, bought, topHeat };
 }
 
 const DBS = {};
@@ -224,5 +257,6 @@ for (const name of only) {
   totals[name] = { duel: d, run: rr };
   console.log(name, JSON.stringify(totals[name]));
 }
+if (+process.env.PROFILES !== 0) console.log('profiles', JSON.stringify(profileFuzz(DBS.page, +process.env.PROFILES || 6, 25)));
 if (Object.keys(dirty).length) console.log('refused actions that changed the run:', dirty);
 console.log('crucible lever fuzz: no faults in', only.length, 'sets,', DUELS, 'duels and', RUNS, 'runs each, from seed', SEED0);

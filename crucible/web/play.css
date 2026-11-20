@@ -79,8 +79,8 @@ button:disabled { opacity: .38; cursor: default; filter: grayscale(.6); box-shad
 .lp { position: relative; font-size: 3.1em; font-family: 'Trebuchet MS', Verdana, sans-serif; color: #fff; line-height: 1.1; display: inline-block; transform-origin: left center; }
 .top .who { top: calc(1em + var(--E, 0px) * .5); } .bot .who { top: calc(28.6em + var(--E, 0px) * .5); }
 .rules, .logbox { position: absolute; right: 1em; width: 17.5em; padding: .7em 1em; overflow: hidden; }
-.rules { top: calc(1em + var(--E, 0px) * .5); height: 17em; display: flex; flex-direction: column; gap: .4em; } .rules b { color: var(--gold); font-size: 1.2em; } .rules span { font-size: 1.05em; }
-.logbox { top: calc(19em + var(--E, 0px) * .5); height: 17.6em; font-size: 1em; display: flex; flex-direction: column; justify-content: flex-end; line-height: 1.5; color: var(--dim); } .logbox { font-size: 1.02em; }
+.rules { top: calc(1em + var(--E, 0px) * .5); height: 25.5em; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; display: flex; flex-direction: column; gap: .4em; } .rules b { color: var(--gold); font-size: 1.2em; } .rules span { font-size: 1.05em; }
+.logbox { top: calc(27.5em + var(--E, 0px) * .5); height: 9.1em; font-size: 1em; display: flex; flex-direction: column; justify-content: flex-end; line-height: 1.5; color: var(--dim); } .logbox { font-size: 1.02em; }
 .board { position: absolute; left: 18em; width: 62em; top: calc(.6em + var(--E, 0px) * .5); height: 36.4em; display: flex; flex-direction: column; align-items: center; gap: .35em; }
 .mrow { display: flex; gap: .7em; height: 11.7em; } .trow { display: flex; gap: .7em; height: 4.3em; }
 .slot { position: relative; width: 11.7em; height: 11.7em; border-radius: .7em; background: rgba(0, 0, 0, .34) url(art/zone-m.webp) center/7.6em 10.7em no-repeat; border: 1px solid rgba(233, 196, 106, .16); display: flex; align-items: center; justify-content: center; }
@@ -123,7 +123,7 @@ table { font-size: 1.2em; margin: .5em auto; border-collapse: collapse; } td { p
 .ch b { font-family: 'Cinzel', Georgia, serif; color: var(--gold); font-size: 1.3em; } .ch span { font-size: 1.02em; } .ch i { font-style: normal; color: #ffb37a; font-size: .85em; text-transform: uppercase; letter-spacing: .1em; }
 .ch.locked { opacity: .55; cursor: default; } .ch.on { border-color: var(--gold); box-shadow: 0 0 2em rgba(233, 196, 106, .45); }
 button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482a, #6d2413); border-color: #ffb37a; color: #fff; font-weight: 700; }
-.frule { border-top: 1px solid var(--line); padding-top: .4em; margin-top: auto; color: var(--dim); } .rules .frule b { font-size: 1em; }
+.frule { border-top: 1px solid var(--line); padding-top: .4em; margin-top: auto; color: var(--dim); } .rules .frule { font-size: .95em; line-height: 1.3; } .rules .frule b { font-size: 1em; }
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6em; margin-top: .8em; } .box { padding: 1.3em 1.6em; }
 .tally { margin: 0; width: 100%; } .tally td { padding: .3em 1.6em .3em 0; } .bigm { font-size: 3.4em; color: var(--gold); font-family: 'Cinzel', Georgia, serif; }
 .unlock { pointer-events: none; padding: 1.2em 1.7em; margin-top: 1em; border-color: var(--gold); box-shadow: 0 0 2em rgba(233, 196, 106, .35); animation: stamp .45s cubic-bezier(.2, 1.4, .3, 1); } .unlock div { font-size: 1.25em; } .unlock b { color: var(--gold); }
@@ -168,3 +168,9 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 .heatchip { font-size: .85em; padding: .2em .7em; margin-left: .6em; }
 /* the Lab list scrolls inside its panel so the home screen never grows past the stage */
 .labgrid { max-height: 24.5em; overflow-y: auto; padding-right: .3em; }
+/* The home screen always fits: the title block is as tall as the screen at most, and the Lab list gives way and scrolls inside its panel. */
+.hall.home { justify-content: flex-start; overflow: hidden; }
+.hall.home > .title { margin: auto 0; max-height: 100%; min-height: 0; display: flex; flex-direction: column; align-items: center; }
+.hall.home > .title > * { flex: 0 0 auto; }
+.hall.home > .title > .labs { flex: 0 1 auto; min-height: 9em; align-self: stretch; }
+.hall.home .labgrid { flex: 0 1 auto; min-height: 0; }

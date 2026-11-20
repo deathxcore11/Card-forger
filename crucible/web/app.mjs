@@ -27,17 +27,18 @@ const LABS = {
   veilSet: 'Veilwalker, wider rule: once a turn, while she holds no veiled monster, she may also set one monster veiled in defense without using her play. In testing her current rule is worth nothing; this one is strong with Ambush Gifts.',
   tombStart: 'Start with the Tomb set: carry all three Tomb relics from the first duel. A strong demonstration, not a fair run.',
 };
-let labs = {};
+let labs = {}; // the rules in force now
+let pref = {}; // what the home switches say. A run in progress keeps the set it started with, so its rules never change part-way.
 const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tithe', 'deep_grave', 'last_rites', 'static_field', 'overcharge', 'chain_lightning', 'thorn_veil', 'long_watch', 'deep_shade', 'spite', 'false_floor', 'ossuary', 'grave_ward', 'grounding_rod', 'snare', 'banked_coals', 'cinder_fall', 'quench'];
 function setLabs(v) { labs = v || {}; const c = db.config; c.freeCast = labs.free ? 1 : labs.trap ? 'trap' : 0; c.freeCastRival = !labs.free && labs.trap ? 'boss' : null; c.rivalStyles = labs.styles ? 1 : 0; c.soloArrival = labs.solo ? 1 : 0; c.labPool = labs.five ? LAB_POOL : FEAT_GIFTS; c.leanOffers = labs.lean ? 1 : 0; c.giftRerolls = labs.lean ? 1 : 0; c.giftXpScale = labs.five ? 2 : 0; c.bossAces = labs.five ? 1 : 0; c.endTurns = labs.five ? 6 : 0; c.bossBand = labs.five ? [0, 0, -300] : null; c.rivalBand = labs.five ? [0, -200, -400] : 0; c.heatRules = labs.heat ? 1 : 0; c.kitTune = labs.kits ? 1 : 0; c.forgerTune = labs.veilSet ? { veilSet: 2 } : null; c.testRelics = labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null; }
 const $ = s => document.querySelector(s);
 const app = $('#app');
-const LABKEY = 'lostmemories.labs.v4', SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
+const LABKEY = 'lostmemories.labs.v4', RUNLABS = 'lostmemories.runlabs.v1', SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
 const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private window */ } }, del(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } } };
 
 const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
 const P = Object.assign(newProfile(), store.get(PROFILE) || {});
-{ const st = store.get(LABKEY); setLabs(st ? { heat: true, kits: true, ...st } : { five: true, lean: true, heat: true, kits: true }); }
+{ const st = store.get(LABKEY); pref = st ? { heat: true, kits: true, ...st } : { five: true, lean: true, heat: true, kits: true }; setLabs(pref); }
 for (const k of P.codex) G.known.add(k);
 const saveP = () => store.set(PROFILE, P);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -102,6 +103,8 @@ function act(a) {
   else render();
 }
 const info = run => (G.lastRival = run.rival ? { name: run.rival.name, tier: run.rival.tier, lawText: run.rival.lawText, bountyText: run.rival.bountyText, twist: run.rival.twist, style: run.rival.style, styleText: run.rival.styleText } : G.lastRival);
+// A Law is written for a hand of five. With Deep Pockets the hand is six, so Tyranny's numbers are one higher.
+const lawShown = t => G.run && G.run.charms.includes('deep_pockets') ? t.replace('refills to four', 'refills to five').replace('refills to three', 'refills to four') : t;
 function toast(m) { G.toast = m; clearTimeout(toast.t); toast.t = setTimeout(() => { G.toast = ''; const t = $('#toast'); if (t) t.textContent = ''; }, 2600); }
 
 async function playFrames() {
@@ -267,7 +270,7 @@ function screenHome() {
   const saved = store.get(SAVE);
   return `<div class="hall home"><div class="title"><small>CARDSTASHY</small><h1>LOST MEMORIES</h1><p>Test build of the real rules engine. Three floors, six chambers each, three Sparks.</p>
     <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:feats">Feats (${(P.featsDone || []).length}/${FEATS.length})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button></div>
-    <div class="labs glass"><b>Lab rules</b> <small>experiments. Five Gifts, Leaning offers, the Heat ladder and Even kits start on: they are the current test baseline.</small><div class="labgrid">${['five', 'lean', 'heat', 'allHeat', 'kits', 'veilSet', 'styles', 'trap', 'free', 'solo', 'tombStart'].map(k => `<button class="lab ${labs[k] ? 'on' : ''}" data-a="lab:${k}"><i>${labs[k] ? 'ON' : 'OFF'}</i><span>${LABS[k]}</span></button>`).join('')}</div></div>
+    <div class="labs glass"><b>Lab rules</b> <small>experiments. Five Gifts, Leaning offers, the Heat ladder and Even kits start on: they are the current test baseline.${saved && saved.phase !== 'over' ? ' Your run in progress keeps the rules it started with; changes here apply to the next run.' : ''}</small><div class="labgrid">${['five', 'lean', 'heat', 'allHeat', 'kits', 'veilSet', 'styles', 'trap', 'free', 'solo', 'tombStart'].map(k => `<button class="lab ${pref[k] ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] ? 'ON' : 'OFF'}</i><span>${LABS[k]}</span></button>`).join('')}</div></div>
     <p class="fine">Not final art. Seen only in a test browser so far.</p></div></div>`;
 }
 function summary(deck) {
@@ -291,7 +294,7 @@ const DOOR_ART = { duel: 'duel', cursed: 'cursed', champion: 'champion', guardia
 function screenChamber() {
   const r = G.run, boss = BOSSES[r.floor][r.bossOrder[r.floor]];
   return `<div class="hall doorsHall">${r.lastNote ? `<div class="note glass">${esc(r.lastNote)}</div>` : ''}<div class="bossline glass">Guardian of this floor: <b>${esc(boss.name)}</b>${r.chamber >= 2 ? '. ' + esc(bossLaw(db, r)) : '. Its Law shows from chamber 3.'}${db.config.heatRules && r.heat ? ` <button class="heatchip" data-a="heatinfo:${r.heat}">Heat ${r.heat} rules</button>` : ''}</div>
-    <div class="doors">${r.doors.map((d, i) => { const locked = d.type === 'boss' && r.seals < 2; return `<button class="door t-${d.type}" data-a="door:${i}" ${locked ? 'disabled' : ''}><img decoding="sync" src="art/door-${DOOR_ART[d.type]}.webp" alt=""><div class="dtxt glass"><b>${esc(d.name)}</b><span class="k">${d.know === 'known' ? 'Known' : d.know === 'partial' ? 'Partly hidden' : 'Mysterious'}</span><span><i>Cost</i> ${esc(d.cost)}</span><span><i>Reward</i> ${esc(d.reward)}</span>${d.law ? `<span><i>Law</i> ${esc(d.law)}</span>` : ''}${d.tell ? `<span class="tell"><i>${esc(d.style)}</i> ${esc(d.tell)}</span>` : ''}${(d.tags || []).map(t => `<em>${esc(t)}</em>`).join('')}</div></button>`; }).join('')}</div></div>`;
+    <div class="doors">${r.doors.map((d, i) => { const locked = d.type === 'boss' && r.seals < 2; return `<button class="door t-${d.type}" data-a="door:${i}" ${locked ? 'disabled' : ''}><img decoding="sync" src="art/door-${DOOR_ART[d.type]}.webp" alt=""><div class="dtxt glass"><b>${esc(d.name)}</b><span class="k">${d.know === 'known' ? 'Known' : d.know === 'partial' ? 'Partly hidden' : 'Mysterious'}</span><span><i>Cost</i> ${esc(d.cost)}</span><span><i>Reward</i> ${esc(d.reward)}</span>${d.law ? `<span><i>Law</i> ${esc(lawShown(d.law))}</span>` : ''}${d.tell ? `<span class="tell"><i>${esc(d.style)}</i> ${esc(d.tell)}</span>` : ''}${(d.tags || []).map(t => `<em>${esc(t)}</em>`).join('')}</div></button>`; }).join('')}</div></div>`;
 }
 
 function screenDuel() {
@@ -344,9 +347,11 @@ function screenDuel() {
     powerBtn = `<button class="pow" data-a="power:${F.needs || ''}" ${ok ? '' : 'disabled'} title="${esc(F.powerText)}">${esc(F.power)}${ok ? '' : hint}</button>`;
   }
   const terr = v.terrain ? `Terrain: <b>${esc(card(v.terrain.id).name)}</b>${v.terrain.temp != null ? ` (holds ${v.terrain.temp} more of your turns)` : ''}${v.terrain.lock ? ' (locked)' : ''}` : 'No terrain';
-  const prompt = pend ? `<div class="modal"><div class="glass panel"><h3>The rival attacks${live.pending.to >= 0 ? ' ' + esc(card(live.mon[0][live.pending.to].id).name) : ' you directly'}</h3><p>Spring a Trap?</p><div class="picks">${live.pending.options.map(i => `<div class="pick glass">${face(live.traps[0][i], { cls: 'tiny' })}<div>${esc(rulesText(live.traps[0][i].id))}</div><button class="gold" data-a="respond:${i}">Spring it</button></div>`).join('')}</div><div class="row"><button data-a="respond:-1">Let the attack through</button></div></div></div>` : '';
+  const pv = pend ? viewFor(live, db, 0) : null, pX = pend ? pv.mon[1][live.pending.from] : null, pT = pend && live.pending.to >= 0 ? pv.mon[0][live.pending.to] : null;
+  // The prompt covers the table, so it names the attacker, its target and both numbers.
+  const prompt = pend ? `<div class="modal"><div class="glass panel"><h3>${pX && !pX.veil ? esc(card(pX.id).name) + ' (' + pX.ea + ' ATK)' : 'A veiled monster'} attacks ${pT ? esc(card(pT.id).name) + ' (' + (pT.pos === 'd' ? pT.ed + ' DEF' : pT.ea + ' ATK') + (pT.veil ? ', veiled' : '') + ')' : 'you directly'}</h3><p>Spring a Trap?</p><div class="picks">${live.pending.options.map(i => `<div class="pick glass">${face(live.traps[0][i], { cls: 'tiny' })}<div><b>${esc(card(live.traps[0][i].id).name)}</b><br>${esc(rulesText(live.traps[0][i].id))}</div><button class="gold" data-a="respond:${i}">Spring it</button></div>`).join('')}</div><div class="row"><button data-a="respond:-1">Let the attack through</button></div></div></div>` : '';
   return `<div class="duel ${v.twist || ''}"><div class="side top"><div class="who glass"><b id="rivalLp" class="lp">${v.lp[1]}</b><span>${esc(rv.name)}</span><small>Hand ${v.rivalHand} · Deck ${v.deckCount[1]}</small></div>
-      <div class="rules glass"><b>This duel</b>${rv.styleText ? `<span class="rstyle">${esc(rv.styleText)}</span>` : ''}${rv.lawText ? `<span>${esc(db.config.endTurns === 6 ? rv.lawText.replace('fourth turn', 'sixth turn') : rv.lawText)}</span>` : ''}${rv.twist ? `<span>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</span>` : ''}<span>Bounty: ${esc(rv.bountyText || '')}</span>${v.forger ? `<span class="frule"><b>${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))} ${esc(FORGERS[v.forger].power)}: ${v.rs.power ? 'used.' : esc(FORGERS[v.forger].powerText)}</span>` : ''}</div></div>
+      <div class="rules glass"><b>This duel</b>${rv.styleText ? `<span class="rstyle">${esc(rv.styleText)}</span>` : ''}${rv.lawText ? `<span>${esc(lawShown(rv.lawText))}</span>` : ''}${rv.twist ? `<span>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</span>` : ''}<span>Bounty: ${esc(rv.bountyText || '')}</span>${v.forger ? `<span class="frule"><b>${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))} <br><b>${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'used this duel.' : esc(FORGERS[v.forger].powerText.replace(/^Once a duel, before you play: /, 'once a duel, before you play: '))}</span>` : ''}</div></div>
     <div class="board"><div class="trow">${traps(1)}</div><div class="mrow">${shut}${row(1)}${shut}</div><div id="terrain" class="terrain">${terr}</div><div class="mrow">${shut}${row(0)}${shut}</div><div class="trow">${traps(0)}</div><div id="relicFlash" class="relicFlash"></div><div id="rivalFlash" class="relicFlash rivalf"></div></div>
     <div class="side bot"><div class="who glass"><b id="myLp" class="lp">${v.lp[0]}</b><span>You</span><small>Deck ${v.deckCount[0]} · Turn ${v.turn}</small></div>
       <div class="logbox glass">${G.log.slice(-5).map(esc).join('<br>')}</div></div>
@@ -435,18 +440,18 @@ app.addEventListener('click', ev => {
   const duel = a => act({ t: 'duel', action: a });
   switch (verb) {
     case 'new': G.screen = 'forger'; if (!P.forgers.includes(G.pickForger)) G.pickForger = 'tarn'; G.pickHeat = Math.min(G.pickHeat, heatOpen()); render(); break;
-    case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; } render(); break;
+    case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; setLabs(pref); } render(); break;
     case 'screen': G.screen = x; render(); break;
-    case 'lab': setLabs({ ...labs, [x]: !labs[x] }); store.set(LABKEY, labs); render(); break;
+    case 'lab': pref = { ...pref, [x]: !pref[x] }; store.set(LABKEY, pref); setLabs(pref); render(); break;
     case 'forger': G.pickForger = x; render(); break;
     case 'heat': G.pickHeat = n; render(); break;
-    case 'descend': store.del(SAVE); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, locked: lockedRelics(P), featured: P.fresh || [], track: true }); G.log = []; G.overlay = null; queueStory('intro'); render(); break;
+    case 'descend': store.del(SAVE); setLabs(pref); store.set(RUNLABS, pref); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, locked: lockedRelics(P), featured: P.fresh || [], track: true }); G.log = []; G.overlay = null; queueStory('intro'); render(); break;
     case 'vbuy': try { const b = buy(P, x); saveP(); toast(b.name + ' can now appear in your runs.'); } catch (e) { toast(e.message); } render(); break;
     case 'storynext': { const st = G.story; if (!st) break; if (++st.i >= SCENES[st.id].lines.length) { G.story = null; if (st.then) { st.then(); break; } } render(); break; }
     case 'storyskip': { const st = G.story; G.story = null; if (st && st.then) { st.then(); break; } render(); break; }
     case 'power': { const a = { t: 'power' }; if (x === 'hand') a.hand = G.sel[0]; if (x === 'zone') a.zone = G.attacker; duel(a); break; }
-    case 'resume': G.run = store.get(SAVE); render(); break;
-    case 'quit': if (el.dataset.sure) { store.del(SAVE); G.run = null; render(); } else { el.dataset.sure = 1; el.textContent = 'Tap again to abandon'; } break;
+    case 'resume': setLabs(store.get(RUNLABS) || pref); G.run = store.get(SAVE); render(); break;
+    case 'quit': if (el.dataset.sure) { store.del(SAVE); G.run = null; setLabs(pref); render(); } else { el.dataset.sure = 1; el.textContent = 'Tap again to abandon'; } break;
     case 'kit': act({ t: 'kit', i: n }); break;
     case 'redeal': act({ t: 'redeal' }); break;
     case 'pick': act({ t: 'pick', i: n }); break;

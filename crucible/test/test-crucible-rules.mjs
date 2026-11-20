@@ -6,7 +6,7 @@ import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, eff
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, CHAIN_TURN, sortRelics } from '../engine/relics.mjs';
-import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE } from '../engine/run.mjs';
+import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS } from '../engine/meta.mjs';
@@ -709,6 +709,18 @@ test('a second newly unlocked Gift dealt by the re-deal keeps its NEW mark', () 
     assert.ok(!('freshShown' in run), 'nothing is left over to mark a later offer'); checked++;
   }
   assert.ok(checked >= 4, 'reached a Gift offer in ' + checked + ' runs');
+});
+
+test('the last Law names the turn its ace really arrives on', () => {
+  const at = { floor: 2, bossOrder: [0, 0, BOSSES[2].findIndex(b => b.law === 'end')], heat: 0, charms: [] };
+  assert.match(bossLaw(db, at), /fourth turn/);
+  const six = { ...db, config: { ...db.config, endTurns: 6 }, _pair: new Map() };
+  assert.match(bossLaw(six, at), /sixth turn/); assert.doesNotMatch(bossLaw(six, at), /fourth/);
+  // and the engine agrees: the ace comes on the rival's sixth turn, not before
+  const ace = C('Gate Guardian').id, s = newDuel(six, { seed: 3, decks: [filler(), filler()], first: 1, seats: [{}, { law: 'end', ace }] });
+  let came = 0;
+  for (let i = 0; i < 40 && !came && s.winner === null; i++) { const ev = applyMut(s, s.pending ? { t: 'respond', trap: -1 } : { t: 'end' }, six); if (s.mon[1].some(m => m && m.id === ace)) came = s.stats[1].turns; }
+  assert.equal(came, 6);
 });
 
 console.log('crucible rules:', passed, 'tests passed');
