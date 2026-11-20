@@ -371,12 +371,11 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
     T.veil = false; wasVeiled = true;
     ev.push({ e: 'reveal', seat: defSeat, zone: dz, id: T.id });
     if (T.e === 'ambusher') ambush = 800;
-    if (T.pos === 'd' && has(s, defSeat, 'deep_shade')) ambush += db.config.shadeDef || 600;
     if (db.config.veilGuard && T.pos === 'd') ambush += db.config.veilGuard; // lever under test: a veiled wall braces for the attack that reveals it
   }
   const f = forecast(s, db, atkSeat, X, defSeat, T, { ambush });
   ev.push({ e: 'battle', atkSeat, az, dz, a: f.a, d: f.d, direct: f.direct, edgeA: f.edgeA, edgeD: f.edgeD });
-  if (wasVeiled) fire(s, db, ev, defSeat, 'veiledRevealed', { mon: T, zone: dz });
+  if (wasVeiled) fire(s, db, ev, defSeat, 'veiledRevealed', { mon: T, zone: dz, attacker: X });
   if (f.direct) {
     s.directs = (s.directs || 0) + 1;
     loseLp(s, db, ev, defSeat, f.dmgDef, 'direct');
@@ -389,6 +388,7 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
   if (f.dmgAtk) loseLp(s, db, ev, atkSeat, f.dmgAtk, 'battle');
   let tGone = false, xGone = false;
   if (f.killT) tGone = destroyMon(s, db, ev, defSeat, dz, 'battle');
+  if (tGone && wasVeiled) fire(s, db, ev, defSeat, 'veiledFell', { id: T.id });
   if (f.killX) xGone = destroyMon(s, db, ev, atkSeat, az, 'battle');
   if (tGone && !xGone) {
     fire(s, db, ev, atkSeat, 'wonBattle', { mon: X, zone: az, edge: f.edgeA });

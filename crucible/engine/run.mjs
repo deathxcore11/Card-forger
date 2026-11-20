@@ -121,14 +121,14 @@ export function makeRival(db, rng, { floor, tier, theme, boss = null, heat = 0 }
   const L = poolLists(db);
   const band = BANDS[tier][floor].slice();
   band[0] += heat * 40; band[1] += heat * 60;
-  if (db.config.rivalBand) { band[1] = Math.max(band[0] + 200, band[1] + db.config.rivalBand); }
+  if (db.config.rivalBand) { const rb = Array.isArray(db.config.rivalBand) ? db.config.rivalBand[floor] || 0 : db.config.rivalBand; band[0] = Math.max(300, band[0] + Math.round(rb / 2)); band[1] = Math.max(band[0] + 200, band[1] + rb); }
   const types = boss ? boss.types : theme.types;
   let mons = L.monsters.filter(c => types.includes(c.type) && c.atk >= band[0] && c.atk <= band[1]);
   if (mons.length < 8) mons = mons.concat(L.monsters.filter(c => c.atk >= band[0] && c.atk <= band[1]));
   const deck = [], count = new Map();
   const add = c => { const n = count.get(c.id) || 0; if (n >= 3) return false; count.set(c.id, n + 1); deck.push({ id: c.id }); return true; };
   let ace = null;
-  if (boss) { ace = db.byName.get(boss.ace); for (let k = 0; k < 3; k++) add(ace); }
+  if (boss) { ace = db.byName.get(boss.ace); for (let k = 0; k < (db.config.bossAces || 3); k++) add(ace); }
   const extra = db.config.rivalExtraTagged || 0;
   const nMon = (boss ? 30 : 29) - extra;
   let guard = 0; while (deck.length < nMon && guard++ < 3000) add(rng.pick(mons));

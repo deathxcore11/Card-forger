@@ -52,14 +52,22 @@ export const RELICS = {
 // They use the chained hooks (ingredients, mark, returned, endTurn): one relic's effect can
 // raise a hook that another relic answers, inside the limits in fire().
 export const LAB = {
-  tomb_ledger: { name: 'Tomb Ledger', kind: 'G', family: 'tomb', text: 'Once a turn, when a meld sends two or more of your monsters to the graveyard, gain a Tomb mark. Each of your first five marks a duel gives 200 Life Points.' },
+  tomb_ledger: { name: 'Tomb Ledger', kind: 'G', family: 'tomb', text: 'Once a turn, when a meld sends two or more of your monsters to the graveyard, gain a Tomb mark. Each of your first five marks a duel gives your next meld +200 ATK this duel.' },
   grave_call: { name: 'Grave Call', kind: 'G', family: 'tomb', text: 'The first time each turn you gain a Tomb mark, return your best monster with 1500 ATK or less from the graveyard to your hand. Without marks, it does this once a duel when a meld sends three or more monsters to the graveyard.' },
   second_burial: { name: 'Second Burial', kind: 'G', family: 'tomb', text: 'Once a turn, when a monster returns from your graveyard to your hand, your next meld gets +300 ATK this duel.' },
   returning_tomb: { name: 'The Returning Tomb', kind: 'M', family: 'tomb', text: 'Once a duel, on your third Tomb mark, return the strongest monster in your graveyard to your hand.' },
-  thorn_veil: { name: 'Thorn Veil', kind: 'G', family: 'shadow', text: 'At the end of your turn the rival loses 150 Life Points for each of your veiled monsters, up to three.' },
+  thorn_veil: { name: 'Thorn Veil', kind: 'G', family: 'shadow', text: 'At the end of your turn the rival loses 200 Life Points for each of your veiled monsters, up to three.' },
   shield_oath: { name: 'Shield Oath', kind: 'G', family: 'shadow', text: 'When your defending monster survives an attack it becomes a Guard: while it stays in defense the rival must attack it first. Each time a Guard survives, up to four times a duel, your next meld gets +300 ATK this duel.' },
-  deep_shade: { name: 'Deep Shade', kind: 'G', family: 'shadow', text: 'Your veiled monster in defense has +600 DEF in the first battle that reveals it.' },
-  long_watch: { name: 'Long Watch', kind: 'G', family: 'shadow', text: 'At the start of your turn, if you hold a veiled monster, your next meld gets +300 ATK this duel. Up to five times a duel.' },
+  deep_shade: { name: 'Deep Shade', kind: 'G', family: 'shadow', text: 'When an attack reveals your veiled monster, your next meld gets +300 ATK this duel. Up to four times a duel.' },
+  long_watch: { name: 'Long Watch', kind: 'G', family: 'shadow', text: 'At the start of your turn, if you hold a veiled monster, your next meld gets +400 ATK this duel. Up to five times a duel.' },
+  bone_tithe: { name: 'Bone Tithe', kind: 'G', family: 'tomb', text: 'Each time you gain a Tomb mark, the rival loses 300 Life Points. Without Tomb Ledger, this happens the first time each turn a meld sends two or more of your monsters to the graveyard. Up to five times a duel.' },
+  deep_grave: { name: 'Deep Grave', kind: 'G', family: 'tomb', text: 'While your graveyard holds eight or more monsters, each meld you make gets +200 ATK this duel. Up to four times a duel.' },
+  last_rites: { name: 'Last Rites', kind: 'G', family: 'tomb', text: 'When a monster returns from your graveyard to your hand, gain 300 Life Points. Up to four times a duel.' },
+  static_field: { name: 'Static Field', kind: 'G', family: 'storm', text: "After your meld of three or more cards, the rival's strongest face-up monster loses 300 ATK this duel. Up to three times a duel." },
+  overcharge: { name: 'Overcharge', kind: 'G', family: 'storm', text: 'After your meld of four or more cards, your next meld gets +300 ATK this duel. Up to three times a duel.' },
+  chain_lightning: { name: 'Chain Lightning', kind: 'G', family: 'storm', text: 'Each time one of your relics makes the rival lose Life Points, the new meld that caused it, or else your strongest monster, gets +200 ATK this duel. Up to four times a duel.' },
+  spite: { name: 'Spite', kind: 'G', family: 'shadow', text: 'When an attack reveals your veiled monster, the attacker loses 400 ATK this duel. Up to four times a duel.' },
+  false_floor: { name: 'False Floor', kind: 'G', family: 'shadow', text: 'Once a turn, when your veiled monster is destroyed by the attack that reveals it, the rival cannot attack again this turn.' },
   cold_lantern: { name: 'Cold Lantern', kind: 'G', family: 'shadow', text: 'Each time an attack reveals your veiled monster and it survives, the rival loses 300 Life Points. Up to four times a duel.' },
 };
 const info = id => RELICS[id] || LAB[id];
@@ -109,6 +117,8 @@ export function fire(s, db, ev, seat, hook, ctx) {
     rs.chainN++; s.stats[seat].chained = (s.stats[seat].chained || 0) + 1;
     depth++; try { fire(s, db, ev, seat, h, c); } finally { depth--; }
   };
+  const shock = n => { hurt(s, ev, r, n); if (s.winner === null && list.includes('chain_lightning')) raise('shock', {}); };
+  const strongest = p => { let b = null; for (const m of s.mon[p]) if (m && !m.veil && (!b || db.byId.get(m.id).atk + (m.ba || 0) > db.byId.get(b.id).atk + (b.ba || 0))) b = m; return b; };
   const fromGrave = (maxAtk) => {
     if (s.hand[seat].length >= db.config.handMax) return false;
     let bi = -1; s.gy[seat].forEach((g, i) => { if (db.isMonster(g) && db.byId.get(g).atk <= maxAtk && (bi < 0 || db.cmp(db.byId.get(g), db.byId.get(s.gy[seat][bi])) > 0)) bi = i; });
@@ -136,18 +146,29 @@ export function fire(s, db, ev, seat, hook, ctx) {
     }
     if (s.winner !== null) return;
     switch (hook + ':' + id) {
-      case 'ingredients:tomb_ledger': if (ctx.n >= 2 && rs.ledgerTurn !== s.turn) { rs.ledgerTurn = s.turn; rs.marks = (rs.marks || 0) + 1; note(s, ev, seat, id, { marks: rs.marks }); if (rs.marks <= 5) { s.lp[seat] += 200; ev.push({ e: 'lp', seat, d: 200, src: 'relic' }); } raise('mark', { marks: rs.marks }); } break;
+      case 'ingredients:bone_tithe': if (!list.includes('tomb_ledger') && ctx.n >= 2 && rs.titheTurn !== s.turn && (rs.tithe || 0) < 5) { rs.titheTurn = s.turn; rs.tithe = (rs.tithe || 0) + 1; note(s, ev, seat, id); shock(300); } break;
+      case 'mark:bone_tithe': if ((rs.tithe || 0) < 5) { rs.tithe = (rs.tithe || 0) + 1; note(s, ev, seat, id); shock(300); } break;
+      case 'returned:last_rites': if ((rs.rites || 0) < 4) { rs.rites = (rs.rites || 0) + 1; s.lp[seat] += 300; note(s, ev, seat, id); ev.push({ e: 'lp', seat, d: 300, src: 'relic' }); } break;
+      case 'surge:static_field': { const m = (rs.staticN || 0) < 3 ? strongest(r) : null; if (m) { rs.staticN = (rs.staticN || 0) + 1; m.ba = (m.ba || 0) - 300; note(s, ev, seat, id, { u: m.u, a: -300 }); } } break;
+      case 'surge:overcharge': if (ctx.len >= 4 && (rs.overcharge || 0) < 3) { rs.overcharge = (rs.overcharge || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
+      case 'shock:chain_lightning': { const m = (rs.chainL || 0) < 4 ? strongest(seat) : null; if (m) { rs.chainL = (rs.chainL || 0) + 1; B(m, 200, 0, id); } } break;
+      case 'veiledRevealed:deep_shade': if ((rs.shade || 0) < 4) { rs.shade = (rs.shade || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
+      case 'veiledRevealed:spite': if ((rs.spite || 0) < 4 && ctx.attacker) { rs.spite = (rs.spite || 0) + 1; ctx.attacker.ba = (ctx.attacker.ba || 0) - 400; note(s, ev, seat, id, { u: ctx.attacker.u, a: -400 }); } break;
+      case 'veiledFell:false_floor': if (rs.floorTurn !== s.turn) { rs.floorTurn = s.turn; s.noAttack = true; note(s, ev, seat, id); } break;
+      case 'ingredients:tomb_ledger': if (ctx.n >= 2 && rs.ledgerTurn !== s.turn) { rs.ledgerTurn = s.turn; rs.marks = (rs.marks || 0) + 1; note(s, ev, seat, id, { marks: rs.marks }); if (rs.marks <= 5) rs.nextMeld.push({ a: 200, d: 0, id }); raise('mark', { marks: rs.marks }); } break;
       case 'ingredients:grave_call': if (ctx.n >= 3 && !rs.callSolo && rs.callTurn !== s.turn && !list.includes('tomb_ledger') && fromGrave(1500)) { rs.callSolo = 1; rs.callTurn = s.turn; note(s, ev, seat, id); raise('returned', {}); } break;
       case 'mark:grave_call': if (rs.callTurn !== s.turn && fromGrave(1500)) { rs.callTurn = s.turn; note(s, ev, seat, id); raise('returned', {}); } break;
       case 'mark:returning_tomb': if (ctx.marks >= 3 && !rs.retTomb && fromGrave(99999)) { rs.retTomb = 1; note(s, ev, seat, id); raise('returned', {}); } break;
       case 'returned:second_burial': if (rs.burialTurn !== s.turn) { rs.burialTurn = s.turn; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
-      case 'endTurn:thorn_veil': { const n = Math.min(3, s.mon[seat].filter(m => m && m.veil).length); if (n) { note(s, ev, seat, id, { n }); hurt(s, ev, r, (db.config.thornLp || 150) * n); } } break;
+      case 'endTurn:thorn_veil': { const n = Math.min(3, s.mon[seat].filter(m => m && m.veil).length); if (n) { note(s, ev, seat, id, { n }); shock((db.config.thornLp || 200) * n); } } break;
       case 'survived:shield_oath': { const was = ctx.mon.guard; ctx.mon.guard = 1; if (!was) note(s, ev, seat, id, { guard: true }); else if ((rs.oath || 0) < 4) { rs.oath = (rs.oath || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } } break;
-      case 'turnStart:long_watch': if ((rs.watch || 0) < 5 && s.mon[seat].some(m => m && m.veil)) { rs.watch = (rs.watch || 0) + 1; rs.nextMeld.push({ a: db.config.watchAtk || 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
+      case 'turnStart:long_watch': if ((rs.watch || 0) < 5 && s.mon[seat].some(m => m && m.veil)) { rs.watch = (rs.watch || 0) + 1; rs.nextMeld.push({ a: db.config.watchAtk || 400, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
       case 'survived:cold_lantern': if (ctx.wasVeiled && (rs.lantern || 0) < 4) { rs.lantern = (rs.lantern || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); } break;
     }
     if (hook === 'placed') placed(s, db, ev, seat, id, ctx, rs, st, B, r);
   }
+  if (hook === 'placed' && ctx.melded && list.includes('deep_grave') && (rs.deepG || 0) < 4 && s.gy[seat].filter(g => db.isMonster(g)).length >= 8) { rs.deepG = (rs.deepG || 0) + 1; B(ctx.mon, 200, 0, 'deep_grave'); }
+  if (hook === 'placed' && ctx.melded && ctx.len >= 3 && (list.includes('static_field') || list.includes('overcharge'))) raise('surge', { len: ctx.len });
   if (hook === 'placed' && ctx.melded) rs.nextMeld = rs.nextMeld.filter(x => !x.used);
   if (hook === 'placed' && ctx.fresh) rs.firstMon = 1;
   if (hook === 'placed' && ctx.bound && ctx.fresh) rs.boundPlayed = 1;
@@ -184,7 +205,7 @@ function placed(s, db, ev, seat, id, ctx, rs, st, B, r) {
   if (id === 'broken_anvil' && !rs.melded) { m.ba = (m.ba || 0) - 300; B(m, 0, 600, id); }
   if (ctx.len >= 3) {
     if (id === 'copper_loop' && (rs.copper || 0) < 2) { rs.copper = (rs.copper || 0) + 1; B(m, 300, 300, id); }
-    if (id === 'storm_needle' && (rs.needle || 0) < 3) { rs.needle = (rs.needle || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); }
+    if (id === 'storm_needle' && (rs.needle || 0) < 3) { rs.needle = (rs.needle || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); if (s.winner === null && st.relics.includes('chain_lightning') && (rs.chainL || 0) < 4) { const mm = ctx.mon; rs.chainL = (rs.chainL || 0) + 1; B(mm, 200, 0, 'chain_lightning'); } }
     if (id === 'spare_wire' && !rs.spare) { rs.spare = 1; st.extraDraw = 1; note(s, ev, seat, id); }
   }
   if (ctx.len >= 4 && id === 'patient_coil' && !rs.coil) { rs.coil = 1; B(m, 300, 300, id); }
