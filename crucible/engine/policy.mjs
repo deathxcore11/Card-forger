@@ -119,6 +119,8 @@ export function policyAction(db, run, { family = 'neutral', level = 2 } = {}) {
     case 'duel': {
       const v = viewFor(run.duel, db, 0);
       const a = chooseAction(db, v, level, fam.duel);
+      // Cracked Mask: before a meld, turn a veiled monster face up to arm it.
+      if (level >= 1 && a && a.t === 'play' && a.hand.length >= 2 && v.relics.includes('cracked_mask') && !v.rs.mask && !v.played && !v.pending) { const z = v.mon[v.me].findIndex(m => m && m.veil && !m.moved && !(m.att > 0)); if (z >= 0) return { t: 'duel', action: { t: 'pos', zone: z } }; }
       const p = level >= 1 ? forgerPower(db, v, a) : null;
       return { t: 'duel', action: p || a || { t: 'end' } };
     }

@@ -545,7 +545,7 @@ export function applyMut(s, a, db, ev = []) {
       const m = s.mon[seat][a.zone];
       if (!m || m.moved || m.att > 0) throw new Error('cannot change position');
       m.pos = m.pos === 'a' ? 'd' : 'a'; m.moved = true;
-      if (m.pos === 'a' && m.veil) m.veil = false;
+      if (m.pos === 'a' && m.veil) { m.veil = false; fire(s, db, ev, seat, 'selfReveal', { mon: m, zone: a.zone, attacker: null }); }
       if (m.pos === 'd') s.stats[seat].positionsToDef++;
       ev.push({ e: 'pos', seat, zone: a.zone, pos: m.pos });
       break;
@@ -570,11 +570,11 @@ function doPower(s, db, ev, seat, a) {
   const st = s.seat[seat], f = st.forger;
   if (!powerActions(s, db, seat).some(p => (p.hand ?? null) === (a.hand ?? null) && (p.zone ?? null) === (a.zone ?? null))) throw new Error('that power cannot be used now');
   st.rs.power = 1; ev.push({ e: 'power', seat, forger: f });
-  if (f === 'tarn') st.rs.nextMeld.push({ a: 200, d: 0, id: 'f_tarn' });
+  if (f === 'tarn') st.rs.nextMeld.push({ a: (db.config.forgerTune || {}).tarnStoke ?? 200, d: 0, id: 'f_tarn' });
   else if (f === 'scrapper') {
     const c = s.hand[seat][a.hand]; s.hand[seat].splice(a.hand, 1);
     const e = { id: c.id }; if (c.t) e.t = 1; if (c.e) e.e = c.e; if (c.b) e.b = 1;
-    s.deck[seat].unshift(e); draw(s, db, ev, seat, 2);
+    s.deck[seat].unshift(e); draw(s, db, ev, seat, (db.config.forgerTune || {}).scrapDraw ?? 2);
   } else if (f === 'veil') { const m = s.mon[seat][a.zone]; m.veil = true; m.pos = 'd'; m.moved = true; ev.push({ e: 'pos', seat, zone: a.zone, pos: 'd', veiled: true }); }
   else if (f === 'storm') {
     const prev = s.terrain;

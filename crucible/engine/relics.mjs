@@ -72,6 +72,7 @@ export const LAB = {
   chain_lightning: { name: 'Chain Lightning', kind: 'G', family: 'storm', text: 'Each time one of your relics makes the rival lose Life Points, the new meld that caused it, or else your strongest monster, gets +200 ATK this duel. Up to four times a duel.' },
   spite: { name: 'Spite', kind: 'G', family: 'shadow', text: 'When an attack reveals your veiled monster, the attacker loses 400 ATK this duel. Up to four times a duel.' },
   false_floor: { name: 'False Floor', kind: 'G', family: 'shadow', text: 'Once a turn, when your veiled monster is destroyed by the attack that reveals it, the rival cannot attack again this turn.' },
+  cracked_mask: { name: 'Cracked Mask', kind: 'G', family: 'shadow', text: 'Once a duel, when you turn your own veiled monster face up, your relics treat it as revealed by an attack, and your next meld gets +300 ATK this duel.' },
   cold_lantern: { name: 'Cold Lantern', kind: 'G', family: 'shadow', text: 'Each time an attack reveals your veiled monster and it survives, the rival loses 300 Life Points. Up to four times a duel.' },
 };
 const info = id => RELICS[id] || LAB[id];
@@ -158,6 +159,7 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'shock:chain_lightning': { const m = (rs.chainL || 0) < 4 ? strongest(seat) : null; if (m) { rs.chainL = (rs.chainL || 0) + 1; B(m, 200, 0, id); } } break;
       case 'veiledRevealed:deep_shade': if ((rs.shade || 0) < 4) { rs.shade = (rs.shade || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
       case 'veiledRevealed:spite': if ((rs.spite || 0) < 4 && ctx.attacker) { rs.spite = (rs.spite || 0) + 1; ctx.attacker.ba = (ctx.attacker.ba || 0) - 400; note(s, ev, seat, id, { u: ctx.attacker.u, a: -400 }); } break;
+      case 'selfReveal:cracked_mask': if (!rs.mask) { rs.mask = 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); raise('veiledRevealed', ctx); } break;
       case 'veiledFell:snare': if ((rs.snare || 0) < 2) { rs.snare = (rs.snare || 0) + 1; ctx.kill = true; note(s, ev, seat, id); } break;
       case 'veiledFell:false_floor': if (rs.floorTurn !== s.turn) { rs.floorTurn = s.turn; s.noAttack = true; note(s, ev, seat, id); } break;
       case 'ingredients:tomb_ledger': if (ctx.n >= 2 && rs.ledgerTurn !== s.turn) { rs.ledgerTurn = s.turn; rs.marks = (rs.marks || 0) + 1; note(s, ev, seat, id, { marks: rs.marks }); if (rs.marks <= 5) rs.nextMeld.push({ a: 200, d: 0, id }); raise('mark', { marks: rs.marks }); } break;
@@ -211,9 +213,9 @@ function placed(s, db, ev, seat, id, ctx, rs, st, B, r) {
   if (id === 'living_furnace' && ctx.fire && s.terrain && !rs.furnace) { rs.furnace = 1; m.keepT = 1; B(m, 600, 600, id); }
   if (id === 'broken_anvil' && !rs.melded) { m.ba = (m.ba || 0) - 300; B(m, 0, 600, id); }
   if (ctx.len >= 3) {
-    if (id === 'copper_loop' && (rs.copper || 0) < 2) { rs.copper = (rs.copper || 0) + 1; B(m, 300, 300, id); }
+    if (id === 'copper_loop' && (rs.copper || 0) < (db.config.stormTune ? 1 : 2)) { rs.copper = (rs.copper || 0) + 1; B(m, 300, 300, id); }
     if (id === 'storm_needle' && (rs.needle || 0) < 3) { rs.needle = (rs.needle || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); if (s.winner === null && st.relics.includes('chain_lightning') && (rs.chainL || 0) < 4) { const mm = ctx.mon; rs.chainL = (rs.chainL || 0) + 1; B(mm, 200, 0, 'chain_lightning'); } }
     if (id === 'spare_wire' && !rs.spare) { rs.spare = 1; st.extraDraw = 1; note(s, ev, seat, id); }
   }
-  if (ctx.len >= 4 && id === 'patient_coil' && !rs.coil) { rs.coil = 1; B(m, 300, 300, id); }
+  if (ctx.len >= 4 && id === 'patient_coil' && !rs.coil) { rs.coil = 1; const n = db.config.stormTune ? 200 : 300; B(m, n, n, id); }
 }

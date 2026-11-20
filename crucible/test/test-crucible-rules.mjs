@@ -6,7 +6,7 @@ import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, eff
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, CHAIN_TURN, sortRelics } from '../engine/relics.mjs';
-import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap } from '../engine/run.mjs';
+import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS } from '../engine/meta.mjs';
@@ -539,6 +539,37 @@ test('leaning offers and the re-deal: with a build piece held, a Gift offer alwa
     }
   }
   assert.ok(checked >= 6 && redealt >= 4, 'checked ' + checked + ' offers, ' + redealt + ' re-deals');
+});
+
+test('rival styles: off by default; on, a floor-two rival shows its tell, carries its relics and they fire for the rival', () => {
+  for (const th of THEMES) { const st = STYLES[th.id]; assert.ok(st && st.tell && st.text, th.id + ' has a style, a tell and a text'); for (const id of st.relics) assert.ok(RELICS[id] || LAB[id], id); }
+  const plain = playRun(db, newRun(db, { seed: 9 }), { level: 2 });
+  assert.ok(!plain.log.length && Object.keys(plain.stats.byTier).every(k => !k.startsWith('style')));
+  const lab = { ...db, config: { ...db.config, rivalStyles: 1, trackFx: 1 }, _pair: new Map() };
+  let tells = 0, styled = 0, fired = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const run = newRun(lab, { seed });
+    while (run.phase !== 'over') {
+      if (run.phase === 'chamber') for (const d of run.doors) { if (d.tell) { tells++; assert.ok(run.floor >= 1 || d.tier === 'champion' || d.tier === 'guardian', 'ordinary first-floor duels stay plain'); assert.equal(d.tell, STYLES[THEMES[d.theme].id].tell); } else if (d.tier && d.tier !== 'boss' && run.floor >= 1) assert.fail('a floor-two rival without a tell'); }
+      if (run.phase === 'duel' && run.rival.style) { styled++; assert.deepEqual(run.duel.seat[1].relics, STYLES[run.rival.theme].relics); for (const id of run.duel.seat[1].relics) fired += run.duel.stats[1].relicFires[id] || 0; }
+      runApply(run, policyAction(lab, run, { level: 2 }), lab);
+    }
+  }
+  assert.ok(tells > 20 && styled > 20 && fired > 20, `tells ${tells}, styled duel steps ${styled}, rival relic fires seen ${fired}`);
+});
+
+test('free Trap and Cracked Mask: only the Trap set is free; turning your own veiled monster up arms the next meld once', () => {
+  const lab = { ...db, config: { ...db.config, freeCast: 'trap' }, _pair: new Map() };
+  const trap = [...db.tagOf.keys()].find(id => db.byId.get(id).kind === 'trap'), spell = [...db.tagOf.entries()].find(([id, t]) => db.byId.get(id).kind === 'spell' && t.fx === 'heal')[0];
+  let s = blank(); s.hand[0].push({ u: uid++, id: trap }, { u: uid++, id: spell });
+  applyMut(s, { t: 'play', hand: [0], onto: null }, lab); assert.equal(s.played, false, 'the Trap set is free');
+  applyMut(s, { t: 'play', hand: [0], onto: null }, lab); assert.equal(s.played, true, 'the Spell uses the play');
+  s = blank(); s.hand[0].push({ u: uid++, id: spell }); applyMut(s, { t: 'play', hand: [0], onto: null }, lab); assert.equal(s.played, true, 'a Spell alone is not free under the Trap-only rule');
+  s = blank({ seats: [{ relics: ['cracked_mask', 'deep_shade'] }, {}] }); s.hand = [[], []]; s.turn = 3; s.active = 0;
+  put(s, 0, 0, mon('Mystical Elf', 'd', { veil: true })); put(s, 0, 1, mon('Mystical Elf', 'd', { veil: true }));
+  applyMut(s, { t: 'pos', zone: 0 }, db); assert.equal(s.mon[0][0].veil, false);
+  assert.deepEqual(s.seat[0].rs.nextMeld.map(x => x.id).sort(), ['cracked_mask', 'deep_shade'], 'the Mask arms, and Deep Shade answers the reveal');
+  applyMut(s, { t: 'pos', zone: 1 }, db); assert.equal(s.seat[0].rs.nextMeld.length, 2, 'once a duel');
 });
 
 console.log('crucible rules:', passed, 'tests passed');
