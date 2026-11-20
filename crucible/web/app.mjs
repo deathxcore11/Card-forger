@@ -17,12 +17,12 @@ const db = buildDb(D.pool, D.tags, D.config);
 const LABS = {
   free: 'Free cast: your first Spell, Field or Trap played alone each turn does not use your play. Rivals get it too.',
   solo: 'Lone arrivals: a Zombie, Fairy, Machine or Spellcaster played alone and face up uses an arrival ability.',
-  five: 'Five Gifts a run: Forge Gifts come half as often, 16 new Gifts for Storm, Tomb and Shadow join the pool, rivals on floors two and three are turned down to match, and the last boss sends its ace on turn six.',
+  five: 'Five Gifts a run: Forge Gifts come half as often, 18 new Gifts for Storm, Tomb and Shadow join the pool, rivals on floors two and three are turned down to match, and the final bosses are eased.',
   tombStart: 'Start with the Tomb set: carry all three Tomb relics from the first duel. A strong demonstration, not a fair run.',
 };
 let labs = {};
-const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tithe', 'deep_grave', 'last_rites', 'static_field', 'overcharge', 'chain_lightning', 'thorn_veil', 'long_watch', 'deep_shade', 'spite', 'false_floor', 'ossuary', 'grave_ward'];
-function setLabs(v) { labs = v || {}; const c = db.config; c.freeCast = labs.free ? 1 : 0; c.soloArrival = labs.solo ? 1 : 0; c.labPool = labs.five ? LAB_POOL : null; c.giftXpScale = labs.five ? 2 : 0; c.bossAces = labs.five ? 1 : 0; c.endTurns = labs.five ? 6 : 0; c.rivalBand = labs.five ? [0, -200, -400] : 0; c.testRelics = labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null; }
+const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tithe', 'deep_grave', 'last_rites', 'static_field', 'overcharge', 'chain_lightning', 'thorn_veil', 'long_watch', 'deep_shade', 'spite', 'false_floor', 'ossuary', 'grave_ward', 'grounding_rod', 'snare'];
+function setLabs(v) { labs = v || {}; const c = db.config; c.freeCast = labs.free ? 1 : 0; c.soloArrival = labs.solo ? 1 : 0; c.labPool = labs.five ? LAB_POOL : null; c.giftXpScale = labs.five ? 2 : 0; c.bossAces = labs.five ? 1 : 0; c.endTurns = labs.five ? 6 : 0; c.bossBand = labs.five ? [0, 0, -300] : null; c.rivalBand = labs.five ? [0, -200, -400] : 0; c.testRelics = labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null; }
 const $ = s => document.querySelector(s);
 const app = $('#app');
 const SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';

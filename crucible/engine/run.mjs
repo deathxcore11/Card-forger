@@ -121,6 +121,7 @@ export function makeRival(db, rng, { floor, tier, theme, boss = null, heat = 0 }
   const L = poolLists(db);
   const band = BANDS[tier][floor].slice();
   band[0] += heat * 40; band[1] += heat * 60;
+  if (boss && db.config.bossBand) { const bb = db.config.bossBand[floor] || 0; band[0] = Math.max(300, band[0] + Math.round(bb / 2)); band[1] = Math.max(band[0] + 200, band[1] + bb); }
   if (db.config.rivalBand) { const rb = Array.isArray(db.config.rivalBand) ? db.config.rivalBand[floor] || 0 : db.config.rivalBand; band[0] = Math.max(300, band[0] + Math.round(rb / 2)); band[1] = Math.max(band[0] + 200, band[1] + rb); }
   const types = boss ? boss.types : theme.types;
   let mons = L.monsters.filter(c => types.includes(c.type) && c.atk >= band[0] && c.atk <= band[1]);

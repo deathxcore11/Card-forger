@@ -388,7 +388,7 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
   if (f.dmgAtk) loseLp(s, db, ev, atkSeat, f.dmgAtk, 'battle');
   let tGone = false, xGone = false;
   if (f.killT) tGone = destroyMon(s, db, ev, defSeat, dz, 'battle');
-  if (tGone && wasVeiled) fire(s, db, ev, defSeat, 'veiledFell', { id: T.id });
+  if (tGone && wasVeiled) { const vf = { id: T.id }; fire(s, db, ev, defSeat, 'veiledFell', vf); if (vf.kill) f.killX = true; }
   if (f.killX) xGone = destroyMon(s, db, ev, atkSeat, az, 'battle');
   if (tGone && !xGone && has(s, defSeat, 'grave_ward')) { const c = {}; fire(s, db, ev, defSeat, 'fell', c); if (c.kill) xGone = destroyMon(s, db, ev, atkSeat, az, 'relic'); }
   if (tGone && !xGone) {
@@ -624,6 +624,10 @@ function doPlay(s, db, ev, seat, a) {
     ev.push({ e: 'summon', seat, zone: z, id: m.veil ? null : m.id, pos: m.pos, veiled: m.veil, melded: !!plan.melded });
     if (plan.melded) { stt.melds++; stt.longestChain = Math.max(stt.longestChain, plan.len); stt.chains[plan.len] = (stt.chains[plan.len] || 0) + 1; } else { stt.singles++; track(s, db, seat, m.veil ? 'loneVeiled' : 'loneFaceUp'); }
     fire(s, db, ev, seat, 'placed', { mon: m, zone: z, melded: !!plan.melded, len: plan.len, fire: c.attr === 'FIRE', bound: !!m.b, fresh: !plan.onTable, favoured: !!(s.terrain && terrainFavours(db, s.terrain.id, m.id)) });
+    if (plan.melded && plan.len >= 4 && has(s, seat, 'grounding_rod') && !st.rs.rod) { // lab Gift: a long meld strikes the rival's strongest face-up monster
+      const r = other(seat); let bz = -1; s.mon[r].forEach((x, i) => { if (x && !x.veil && (bz < 0 || effAtk(s, db, r, x) > effAtk(s, db, r, s.mon[r][bz]))) bz = i; });
+      if (bz >= 0) { st.rs.rod = 1; noteRelic(s, ev, seat, 'grounding_rod'); destroyMon(s, db, ev, r, bz, 'relic'); }
+    }
     if (buried) fire(s, db, ev, seat, 'ingredients', { n: buried });
     if (m.e === 'herald' && !plan.onTable) draw(s, db, ev, seat, 1);
     // Lever under test: a monster played alone and face up uses its Type's arrival; a melded monster after a Machine arrival is armed.

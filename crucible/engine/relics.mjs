@@ -65,6 +65,8 @@ export const LAB = {
   last_rites: { name: 'Last Rites', kind: 'G', family: 'tomb', text: 'When a monster returns from your graveyard to your hand, gain 300 Life Points. Up to four times a duel.' },
   ossuary: { name: 'Ossuary', kind: 'G', family: 'tomb', text: 'At the end of your turn, if your graveyard holds six or more monsters, the rival loses 100 Life Points for every two monsters in it, up to 800.' },
   grave_ward: { name: 'Grave Ward', kind: 'G', family: 'tomb', text: 'Once a turn, when a rival monster destroys yours in battle, remove the three weakest monsters in your graveyard from the duel to destroy that rival monster. Up to twice a duel.' },
+  grounding_rod: { name: 'Grounding Rod', kind: 'G', family: 'storm', text: "Once a duel, after your meld of four or more cards, destroy the rival's strongest face-up monster." },
+  snare: { name: 'Snare', kind: 'G', family: 'shadow', text: 'When an attack destroys your veiled monster, the attacker is destroyed too. Up to twice a duel.' },
   static_field: { name: 'Static Field', kind: 'G', family: 'storm', text: "After your meld of three or more cards, the rival's strongest face-up monster loses 300 ATK this duel. Up to three times a duel." },
   overcharge: { name: 'Overcharge', kind: 'G', family: 'storm', text: 'After your meld of four or more cards, your next meld gets +300 ATK this duel. Up to three times a duel.' },
   chain_lightning: { name: 'Chain Lightning', kind: 'G', family: 'storm', text: 'Each time one of your relics makes the rival lose Life Points, the new meld that caused it, or else your strongest monster, gets +200 ATK this duel. Up to four times a duel.' },
@@ -156,6 +158,7 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'shock:chain_lightning': { const m = (rs.chainL || 0) < 4 ? strongest(seat) : null; if (m) { rs.chainL = (rs.chainL || 0) + 1; B(m, 200, 0, id); } } break;
       case 'veiledRevealed:deep_shade': if ((rs.shade || 0) < 4) { rs.shade = (rs.shade || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
       case 'veiledRevealed:spite': if ((rs.spite || 0) < 4 && ctx.attacker) { rs.spite = (rs.spite || 0) + 1; ctx.attacker.ba = (ctx.attacker.ba || 0) - 400; note(s, ev, seat, id, { u: ctx.attacker.u, a: -400 }); } break;
+      case 'veiledFell:snare': if ((rs.snare || 0) < 2) { rs.snare = (rs.snare || 0) + 1; ctx.kill = true; note(s, ev, seat, id); } break;
       case 'veiledFell:false_floor': if (rs.floorTurn !== s.turn) { rs.floorTurn = s.turn; s.noAttack = true; note(s, ev, seat, id); } break;
       case 'ingredients:tomb_ledger': if (ctx.n >= 2 && rs.ledgerTurn !== s.turn) { rs.ledgerTurn = s.turn; rs.marks = (rs.marks || 0) + 1; note(s, ev, seat, id, { marks: rs.marks }); if (rs.marks <= 5) rs.nextMeld.push({ a: 200, d: 0, id }); raise('mark', { marks: rs.marks }); } break;
       case 'ingredients:grave_call': if (ctx.n >= 3 && !rs.callSolo && rs.callTurn !== s.turn && !list.includes('tomb_ledger') && fromGrave(1500)) { rs.callSolo = 1; rs.callTurn = s.turn; note(s, ev, seat, id); raise('returned', {}); } break;
