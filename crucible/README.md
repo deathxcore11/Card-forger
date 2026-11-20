@@ -12,7 +12,7 @@ machine". Nothing in this folder has been played by a person or seen on a device
 ```
 node tools/crucible/build-pool.mjs --fetch --count     # pool size at three cut-offs
 node tools/crucible/build-pool.mjs --fetch             # writes crucible/data/crucible-pool.json
-node crucible/test/test-crucible-rules.mjs             # 51 rule tests
+node crucible/test/test-crucible-rules.mjs             # 52 rule tests
 node crucible/test/test-crucible-fuzz.mjs 6000 600     # random play with invariants
 node tools/crucible/make-fixtures.mjs --check          # replay golden fixtures hash for hash
 node tools/crucible/sim.mjs --runs 10000 --level 2 --family neutral
@@ -95,6 +95,7 @@ Set through `CRUCIBLE_CFG`, or the "Lab rules" switches on the playable page's h
 - `giftRerolls`: how many times a run a Gift offer may be dealt again (action `{ t: 'reroll' }`).
 - `rivalStyles`: from the second floor a themed rival carries relics (`STYLES` in `engine/run.mjs`), shows a tell on its door and plays toward it.
 - `stormTune`: Patient Coil +200 / +200 and Copper Loop once a duel. `forgerTune`: `{ tarnStoke, scrapDraw }`.
+- Furnace lab Gifts `banked_coals`, `quench`, `cinder_fall` (knobs `coalsAtk`, `cinderLp`, `cinderAtk`) and the feat Master Smith (`bigWins`).
 - `heatRules`: the ten-level Heat ladder (`HEAT_RULES` in `engine/run.mjs`). Each Heat level adds one written rule and the old per-Heat stat scaling is switched off. `tools/crucible/profile-sim.mjs 100 30 2 1` plays profiles that climb it.
 - `newRun` options (not config): `track` keeps the feat counters in `run.feat`; `featured` lists newly unlocked Gifts to show once; `locked` hides relics.
 

@@ -17,7 +17,7 @@ const db = buildDb(D.pool, D.tags, D.config);
 const LABS = {
   free: 'Free cast: your first Spell, Field or Trap played alone each turn does not use your play. Rivals get it too.',
   solo: 'Lone arrivals: a Zombie, Fairy, Machine or Spellcaster played alone and face up uses an arrival ability.',
-  five: 'Five Gifts a run (the current test baseline): Forge Gifts come half as often, new Gifts for Storm, Tomb and Ambush join the pool, rivals on floors two and three are turned down to match, and the final bosses are eased.',
+  five: 'Five Gifts a run (the current test baseline): Forge Gifts come half as often, new Gifts for Storm, Tomb, Ambush and Furnace join the pool, rivals on floors two and three are turned down to match, and the final bosses are eased.',
   styles: 'Rivals with a style: from the second floor each rival carries a relic of the kind you can earn, shows a tell on its door, and plays toward it. Harder.',
   trap: 'Free Trap: setting your first Trap each turn does not use your play. Floor guardians get it too. (The wider free cast below overrides this.)',
   lean: 'Leaning offers: one of the three Gifts leans toward a build you already hold a piece of, and you may deal one Gift offer again each run.',
@@ -26,7 +26,7 @@ const LABS = {
   tombStart: 'Start with the Tomb set: carry all three Tomb relics from the first duel. A strong demonstration, not a fair run.',
 };
 let labs = {};
-const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tithe', 'deep_grave', 'last_rites', 'static_field', 'overcharge', 'chain_lightning', 'thorn_veil', 'long_watch', 'deep_shade', 'spite', 'false_floor', 'ossuary', 'grave_ward', 'grounding_rod', 'snare'];
+const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tithe', 'deep_grave', 'last_rites', 'static_field', 'overcharge', 'chain_lightning', 'thorn_veil', 'long_watch', 'deep_shade', 'spite', 'false_floor', 'ossuary', 'grave_ward', 'grounding_rod', 'snare', 'banked_coals', 'cinder_fall', 'quench'];
 function setLabs(v) { labs = v || {}; const c = db.config; c.freeCast = labs.free ? 1 : labs.trap ? 'trap' : 0; c.freeCastRival = !labs.free && labs.trap ? 'boss' : null; c.rivalStyles = labs.styles ? 1 : 0; c.soloArrival = labs.solo ? 1 : 0; c.labPool = labs.five ? LAB_POOL : FEAT_GIFTS; c.leanOffers = labs.lean ? 1 : 0; c.giftRerolls = labs.lean ? 1 : 0; c.giftXpScale = labs.five ? 2 : 0; c.bossAces = labs.five ? 1 : 0; c.endTurns = labs.five ? 6 : 0; c.bossBand = labs.five ? [0, 0, -300] : null; c.rivalBand = labs.five ? [0, -200, -400] : 0; c.heatRules = labs.heat ? 1 : 0; c.testRelics = labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null; }
 const $ = s => document.querySelector(s);
 const app = $('#app');

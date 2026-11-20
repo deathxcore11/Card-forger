@@ -4,7 +4,7 @@
 // The duel inside a run lives in run.duel and is advanced through { t:'duel', action }.
 import { Rng } from './rng.mjs';
 import { roleOf, weightOf, meldPair } from './cards.mjs';
-import { newDuel, applyMut, viewFor, clone } from './duel.mjs';
+import { newDuel, applyMut, viewFor, clone, effAtk } from './duel.mjs';
 import { chooseAction } from './ai.mjs';
 import { RELICS as BASE_RELICS, LAB, MASTERWORKS, sortRelics } from './relics.mjs';
 const RELICS = { ...BASE_RELICS, ...LAB };
@@ -236,7 +236,7 @@ export function newRun(db, { seed, heat = 0, forger = null, locked = null, featu
   if (forger) { if (!FORGERS[forger]) throw new Error('no such Forger'); run.forger = forger; }
   if (locked && locked.length) run.locked = locked.slice();
   if (featured && featured.length) run.featured = featured.slice();
-  if (track) run.feat = { long4: 0, gyWins: 0, baits: 0, bestGy: 0 };
+  if (track) run.feat = { long4: 0, gyWins: 0, baits: 0, bestGy: 0, bigWins: 0 };
   if (cfg.giftRerolls) run.rerolls = cfg.giftRerolls;
   run.offer = dealKits(db, rng, run);
   run.rng = rng.s;
@@ -420,6 +420,7 @@ function finishDuel(db, run, rng, ev) {
     F.baits += (st.reveals || 0) + st.trapsSprung;
     F.bestGy = Math.max(F.bestGy, gy);
     if (won && gy >= 8) F.gyWins++;
+    if (won && d.mon[0].some(m => m && !m.veil && effAtk(d, db, 0, m) >= 3000)) F.bigWins = (F.bigWins || 0) + 1;
   }
   const door = run.door, tier = run.rival.tier;
   const summary = { won, turns: d.turn, reason: d.reason, lp: d.lp.slice(), tier };

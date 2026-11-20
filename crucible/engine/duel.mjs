@@ -685,7 +685,7 @@ function soloArrival(s, db, ev, seat, c) {
 
 function endTurn(s, db, ev) {
   const seat = s.active;
-  fire(s, db, ev, seat, 'endTurn', {});
+  fire(s, db, ev, seat, 'endTurn', { eff: m => effAtk(s, db, seat, m) });
   if (s.winner !== null) return;
   for (const m of s.mon[seat]) if (m) { m.att = 0; m.moved = false; if (m.lock === 2) delete m.lock; }
   if (s.frozen[seat] > 0) s.frozen[seat]--;
@@ -717,7 +717,7 @@ function endTurn(s, db, ev) {
     if (z >= 0) { st.rs.endCame = 1; s.mon[now][z] = { u: s.uid++, id: st.ace, pos: 'a', veil: false, att: 0, moved: true, fix: db.config.endAtk || 5000 }; ev.push({ e: 'summon', seat: now, zone: z, id: st.ace, pos: 'a', law: true }); }
   }
   if (!refill(s, db, ev, now, false)) return;
-  fire(s, db, ev, now, 'turnStart', {});
+  fire(s, db, ev, now, 'turnStart', { eff: m => effAtk(s, db, now, m) });
 }
 
 // ---------- hidden information ----------

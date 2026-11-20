@@ -604,4 +604,22 @@ test('Heat ladder: off by default; on, every level adds its written rule and Hea
   assert.ok(road > 30 && hidden > 200 && crowned > 20 && hard > 20 && styled1 > 60 && gates > 3 && cleared > 0, `road ${road}, hidden ${hidden}, crowned ${crowned}, hard ${hard}, styled floor one ${styled1}, gates ${gates}, cleared ${cleared}`);
 });
 
+test('Furnace Gifts: Banked Coals grows the melded monster each turn, Cinder Fall burns behind a 2500 monster, Quench rewards its kills', () => {
+  const pass = s => { applyMut(s, { t: 'end' }, db); s.hand[1] = []; applyMut(s, { t: 'end' }, db); s.hand[0] = []; };
+  let s = blank({ seats: [{ relics: ['banked_coals'] }, {}] });
+  const big = put(s, 0, 0, mon('Mystical Elf', 'd', { meld: 1 })); put(s, 0, 1, mon('Summoned Skull', 'd'));
+  for (let i = 0; i < 6; i++) pass(s);
+  assert.equal(big.ba, 1200, 'four times, and only the melded monster'); assert.ok(!s.mon[0][1].ba);
+  s = blank({ seats: [{ relics: ['cinder_fall'] }, {}] }); put(s, 0, 0, mon('Mystical Elf', 'd'));
+  let lp = s.lp[1]; applyMut(s, { t: 'end' }, db); assert.equal(s.lp[1], lp, 'no monster of 2500 ATK is on the field yet');
+  s = blank({ seats: [{ relics: ['cinder_fall'] }, {}] }); put(s, 0, 0, mon('Summoned Skull', 'd'));
+  assert.ok(effAtk(s, db, 0, s.mon[0][0]) >= 2500); lp = s.lp[1];
+  for (let i = 0; i < 6; i++) pass(s);
+  assert.equal(s.lp[1], lp - 1600, '400 Life Points, four times a duel');
+  s = blank({ seats: [{ relics: ['quench'] }, {}] }); const k = put(s, 0, 0, mon('Summoned Skull', 'a', { meld: 1 })); put(s, 1, 0, mon('Mystical Elf', 'a'));
+  applyMut(s, { t: 'attack', from: 0, to: 0 }, db); assert.equal(k.ba, 200); assert.equal(k.bd, 200);
+  s = blank({ seats: [{ relics: ['quench'] }, {}] }); const plain = put(s, 0, 0, mon('Summoned Skull', 'a')); put(s, 1, 0, mon('Mystical Elf', 'a'));
+  applyMut(s, { t: 'attack', from: 0, to: 0 }, db); assert.ok(!plain.ba, 'a monster that was not melded gets nothing');
+});
+
 console.log('crucible rules:', passed, 'tests passed');

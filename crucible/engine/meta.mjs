@@ -27,6 +27,7 @@ export const FEATS = [
   { id: 'storm_hand', name: 'Storm Hand', build: 'Storm Chain', key: 'long4', goal: 12, gift: 'grounding_rod', text: 'Make 12 melds of four or more cards.', why: 'You keep building long melds, so the forge hands you a Storm payoff.' },
   { id: 'grave_tender', name: 'Grave Tender', build: 'Tomb Engine', key: 'gyWins', goal: 8, gift: 'grave_ward', text: 'Win 8 duels with eight or more of your monsters in the graveyard.', why: 'You win with a full graveyard, so the forge teaches you to spend it.' },
   { id: 'patient_trap', name: 'Patient Trap', build: 'Ambush', key: 'baits', goal: 12, gift: 'snare', text: 'Have rivals attack into your veiled monsters or Traps 12 times.', why: 'Rivals keep walking into what you set, so the forge makes it cost them.' },
+  { id: 'master_smith', name: 'Master Smith', build: 'Living Furnace', key: 'bigWins', goal: 8, gift: 'cinder_fall', text: 'Win 8 duels with a monster of 3,000 ATK or more on your side.', why: 'You win behind one great monster, so the forge makes its heat burn the rival.' },
 ];
 export const FEAT_GIFTS = FEATS.map(f => f.gift);
 

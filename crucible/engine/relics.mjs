@@ -72,6 +72,9 @@ export const LAB = {
   chain_lightning: { name: 'Chain Lightning', kind: 'G', family: 'storm', text: 'Each time one of your relics makes the rival lose Life Points, the new meld that caused it, or else your strongest monster, gets +200 ATK this duel. Up to four times a duel.' },
   spite: { name: 'Spite', kind: 'G', family: 'shadow', text: 'When an attack reveals your veiled monster, the attacker loses 400 ATK this duel. Up to four times a duel.' },
   false_floor: { name: 'False Floor', kind: 'G', family: 'shadow', text: 'Once a turn, when your veiled monster is destroyed by the attack that reveals it, the rival cannot attack again this turn.' },
+  banked_coals: { name: 'Banked Coals', kind: 'G', family: 'furnace', text: 'At the start of your turn, your strongest face-up melded monster gets +300 ATK this duel. Up to four times a duel.' },
+  cinder_fall: { name: 'Cinder Fall', kind: 'G', family: 'furnace', text: 'At the end of your turn, if you hold a face-up monster with 2500 ATK or more, the rival loses 400 Life Points. Up to four times a duel.' },
+  quench: { name: 'Quench', kind: 'G', family: 'furnace', text: 'When your melded monster destroys a rival monster in battle, it gets +200 ATK and DEF this duel. Up to four times a duel.' },
   cracked_mask: { name: 'Cracked Mask', kind: 'G', family: 'shadow', text: 'Once a duel, when you turn your own veiled monster face up, your relics treat it as revealed by an attack, and your next meld gets +300 ATK this duel.' },
   cold_lantern: { name: 'Cold Lantern', kind: 'G', family: 'shadow', text: 'Each time an attack reveals your veiled monster and it survives, the rival loses 300 Life Points. Up to four times a duel.' },
 };
@@ -172,6 +175,9 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'endTurn:thorn_veil': { const n = Math.min(3, s.mon[seat].filter(m => m && m.veil).length); if (n) { note(s, ev, seat, id, { n }); shock((db.config.thornLp || 200) * n); } } break;
       case 'survived:shield_oath': { const was = ctx.mon.guard; ctx.mon.guard = 1; if (!was) note(s, ev, seat, id, { guard: true }); else if ((rs.oath || 0) < 4) { rs.oath = (rs.oath || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } } break;
       case 'turnStart:long_watch': if ((rs.watch || 0) < 5 && s.mon[seat].some(m => m && m.veil)) { rs.watch = (rs.watch || 0) + 1; rs.nextMeld.push({ a: db.config.watchAtk || 400, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
+      case 'turnStart:banked_coals': { let m = null; if ((rs.coals || 0) < 4) for (const x of s.mon[seat]) if (x && x.meld && !x.veil && (!m || ctx.eff(x) > ctx.eff(m))) m = x; if (m) { rs.coals = (rs.coals || 0) + 1; B(m, db.config.coalsAtk || 300, 0, id); } } break;
+      case 'endTurn:cinder_fall': if ((rs.cinder || 0) < 4 && s.mon[seat].some(m => m && !m.veil && ctx.eff(m) >= (db.config.cinderAtk || 2500))) { rs.cinder = (rs.cinder || 0) + 1; note(s, ev, seat, id); shock(db.config.cinderLp || 400); } break;
+      case 'wonBattle:quench': if (ctx.mon.meld && (rs.quench || 0) < 4) { rs.quench = (rs.quench || 0) + 1; B(ctx.mon, 200, 200, id); } break;
       case 'survived:cold_lantern': if (ctx.wasVeiled && (rs.lantern || 0) < 4) { rs.lantern = (rs.lantern || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); } break;
     }
     if (hook === 'placed') placed(s, db, ev, seat, id, ctx, rs, st, B, r);
