@@ -7,10 +7,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { loadDb, roleOf, weightOf, meldPairRaw, WHEEL } from '../../crucible/engine/cards.mjs';
-import { RELICS as BASE, LAB } from '../../crucible/engine/relics.mjs';
+import { RELICS as BASE, LAB, relicText, TUNED_TEXT } from '../../crucible/engine/relics.mjs';
 import { FORGERS, FORGER_IDS } from '../../crucible/engine/forgers.mjs';
 import { VAULT, FEATS, FORGER_FEATS, MAX_HEAT } from '../../crucible/engine/meta.mjs';
-import { ENCHANTS, ENCHANT_TEXT, TWISTS, THEMES, STYLES, HEAT_RULES, STRONG_LAW, KIT_TUNE, KITS, BOSSES, BANDS, AI_LEVEL, BOUNTIES } from '../../crucible/engine/run.mjs';
+import { ENCHANTS, ENCHANT_TEXT, TWISTS, THEMES, STYLES, HEAT_RULES, STRONG_LAW, KIT_TUNE, KITS, BOSSES, BANDS, AI_LEVEL, BOUNTIES, styleFor } from '../../crucible/engine/run.mjs';
 import { SOLO } from '../../crucible/engine/duel.mjs';
 import { LAB_POOL, LAB_DEFAULTS, labConfig } from '../../crucible/web/labs.mjs';
 import { SCENES } from '../../crucible/web/story.mjs';
@@ -18,8 +18,10 @@ import { rulesText, FX_TEXT, TRAP_TEXT } from '../../crucible/web/text.mjs';
 
 const out = process.argv[2];
 if (!out) { console.error('usage: make-pack.mjs <out-dir>'); process.exit(1); }
-const db = loadDb(), cfg = db.config, RELICS = { ...BASE, ...LAB };
+const db = loadDb(), cfg = db.config, RAW = { ...BASE, ...LAB };
 const play = { ...cfg, ...labConfig(LAB_DEFAULTS) }; // the rules the playable starts with
+const pdb = { config: play };
+const RELICS = Object.fromEntries(Object.entries(RAW).map(([id, r]) => [id, { ...r, text: relicText(pdb, id) }])); // words as the playable starts
 const card = id => db.byId.get(id);
 const cards = db.pool.cards.slice().sort((a, b) => a.name < b.name ? -1 : 1);
 let commit = '';
@@ -137,7 +139,7 @@ table(['Door', 'Cost', 'Reward', 'Notes'], [
 p('Each door is labelled Known, Partly hidden or Mysterious. The fifth chamber offers a duel plus two of Anvil, Sanctum, Champion and Bazaar, so you can prepare for the guardian. A duel door shows a tag when the rival\'s cards fit your deck, and an Anvil door shows when a Masterwork is ready.');
 p('### 3.6 Rivals');
 p('Ordinary rivals come from eight families of our own. The cards in a rival\'s deck are drawn from the pool by Type and by an ATK band for the floor and tier. A rival deck is 40 cards: 29 monsters, 2 Field Spells, 3 Equip Spells and 6 Spells or Traps. Ordinary rivals on floor one carry no removal or revive cards. Board wipes appear only on floor three and in guardian decks. A guardian deck holds 30 monsters, its ace among them.');
-table(['Rival', 'Types', 'Style (when rival styles are on)', 'What the style does', 'Tell shown on the door'], THEMES.map(t => { const s = STYLES[t.id]; return [t.name, t.types.join(', '), s.style, s.text.replace(/^[^:]+: /, '').replace(/^./, x => x.toUpperCase()), s.tell]; }));
+table(['Rival', 'Types', 'Style (when rival styles are on)', 'What the style does', 'Tell shown on the door'], THEMES.map(t => { const s = styleFor(pdb, t.id); return [t.name, t.types.join(', '), s.style, s.text.replace(/^[^:]+: /, '').replace(/^./, x => x.toUpperCase()), s.tell]; }));
 p('Rival styles are a switch that is off by default. They also come on at Heat 5. With styles on, a rival from floor two carries one or two of the same relics a player can earn and plays toward them.');
 const band = (tier, fl) => { const b = BANDS[tier][fl].slice(); if (tier === 'boss' && play.bossBand) { const bb = play.bossBand[fl] || 0; b[0] = Math.max(300, b[0] + Math.round(bb / 2)); b[1] = Math.max(b[0] + 200, b[1] + bb); } if (play.rivalBand) { const rb = play.rivalBand[fl] || 0; b[0] = Math.max(300, b[0] + Math.round(rb / 2)); b[1] = Math.max(b[0] + 200, b[1] + rb); } return b.join(' to '); };
 const CPU = ['Novice', 'Adept', 'Master'], TIER = { regular: 'Duel', cursed: 'Cursed duel', champion: 'Champion', guardian: 'Elite', boss: 'Floor guardian' };
@@ -202,7 +204,7 @@ p('### 5.5 The Codex');
 
 p('## 6. The Lab switches on the home screen');
 p('The playable has a row of rule switches so experiments can be tried by hand. A run in progress keeps the switches it started with.');
-const LABTEXT = { five: 'Five Gifts a run. Gifts come half as often, the newer Storm, Tomb, Ambush and Furnace Gifts join the pool, rivals on floors two and three are eased to match, and the last guardians are eased.', lean: 'Leaning offers and one Gift re-deal a run.', heat: 'The ten-level Heat ladder.', kits: 'Even kits.', allHeat: 'Open every Heat level now, for testing.', veilSet: 'Veilwalker, wider rule: once a turn, while she holds no veiled monster, setting one monster veiled in defense does not use her play.', styles: 'Rivals with a style from floor two.', trap: 'Free Trap: your first Trap set each turn does not use your play. Floor guardians get it too.', free: 'Free cast: your first Spell, Field Spell or Trap played alone each turn does not use your play. Rivals get it too.', solo: 'Lone arrivals for Zombie, Fairy, Machine and Spellcaster monsters.', tombStart: 'Start with the three Tomb relics. A demonstration, not a fair run.' };
+const LABTEXT = { five: 'Five Gifts a run. Gifts come half as often, the newer Storm, Tomb, Ambush and Furnace Gifts join the pool, rivals on floors two and three are eased to match, and the last guardians are eased.', lean: 'Leaning offers and one Gift re-deal a run.', heat: 'The ten-level Heat ladder.', kits: 'Even kits.', items: 'Tuned items: Storm pieces ask for a meld of four cards, Copper Loop and Patient Coil give less, Grave Ward works once a duel. Section 4 shows the tuned wording. Off, the wording is: ' + Object.keys(TUNED_TEXT).map(id => RAW[id].name + ': ' + RAW[id].text).join(' '), allHeat: 'Open every Heat level now, for testing.', veilSet: 'Veilwalker, wider rule: once a turn, while she holds no veiled monster, setting one monster veiled in defense does not use her play.', styles: 'Rivals with a style from floor two.', trap: 'Free Trap: your first Trap set each turn does not use your play. Floor guardians get it too.', free: 'Free cast: your first Spell, Field Spell or Trap played alone each turn does not use your play. Rivals get it too.', solo: 'Lone arrivals for Zombie, Fairy, Machine and Spellcaster monsters.', tombStart: 'Start with the three Tomb relics. A demonstration, not a fair run.' };
 table(['Switch', 'Starts', 'What it does'], Object.keys(LABTEXT).map(k => [k, LAB_DEFAULTS[k] ? 'ON' : 'off', LABTEXT[k]]));
 
 p('## 7. Screens and layout');

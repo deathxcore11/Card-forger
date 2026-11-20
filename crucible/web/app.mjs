@@ -2,8 +2,8 @@
 // The duel is drawn only from viewFor(seat 0), so this page cannot show hidden cards.
 import { buildDb, roleOf, weightOf, meldPairRaw } from '../engine/cards.mjs';
 import { legalActions, playVariants, planChain, viewFor, forecast } from '../engine/duel.mjs';
-import { RELICS as BASE_RELICS, LAB } from '../engine/relics.mjs';
-const RELICS = { ...BASE_RELICS, ...LAB };
+import { RELICS as BASE_RELICS, LAB, TUNED_TEXT, relicText } from '../engine/relics.mjs';
+const RELICS = { ...BASE_RELICS, ...LAB }; // the page's own copy: an item's words follow the rules in force (see setLabs)
 import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw, ENCHANT_TEXT } from '../engine/run.mjs';
 import { meldPair } from '../engine/cards.mjs';
 import { powerActions } from '../engine/duel.mjs';
@@ -26,15 +26,16 @@ const LABS = {
   heat: 'Heat ladder: ten Heat levels. Each level adds one written rule you can read before you descend, and rivals no longer just get bigger numbers.',
   allHeat: 'Open every Heat level now. For testing only: normally each level opens when you clear the one below.',
   kits: 'Even kits: weak starter kits may hold stronger monsters and strong kits weaker ones, so the three kits of a Forger play about the same. Off, kits differ a lot, and the kit screen shows by how much.',
+  items: 'Tuned items: Storm pieces ask for a meld of four cards, not three, Copper Loop and Patient Coil give less, and Grave Ward works once a duel. Off, those three items decide most runs on their own in testing.',
   veilSet: 'Veilwalker, wider rule: once a turn, while she holds no veiled monster, she may also set one monster veiled in defense without using her play. In testing her current rule is worth nothing; this one is strong with Ambush Gifts.',
   tombStart: 'Start with the Tomb set: carry all three Tomb relics from the first duel. A strong demonstration, not a fair run.',
 };
 let labs = {}; // the rules in force now
 let pref = {}; // what the home switches say. A run in progress keeps the set it started with, so its rules never change part-way.
-function setLabs(v) { labs = v || {}; Object.assign(db.config, labConfig(labs)); }
+function setLabs(v) { labs = v || {}; Object.assign(db.config, labConfig(labs)); for (const id of Object.keys(TUNED_TEXT)) RELICS[id] = { ...(BASE_RELICS[id] || LAB[id]), text: relicText(db, id) }; }
 const $ = s => document.querySelector(s);
 const app = $('#app');
-const LABKEY = 'lostmemories.labs.v4', RUNLABS = 'lostmemories.runlabs.v1', SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
+const LABKEY = 'lostmemories.labs.v5', RUNLABS = 'lostmemories.runlabs.v1', SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
 const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private window */ } }, del(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } } };
 
 const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
@@ -254,7 +255,7 @@ function screenHome() {
   const saved = store.get(SAVE);
   return `<div class="hall home"><div class="title"><small>CARDSTASHY</small><h1>LOST MEMORIES</h1><p>Test build of the real rules engine. Three floors, six chambers each, three Sparks.</p>
     <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:feats">Feats (${(P.featsDone || []).length}/${FEATS.length})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button></div>
-    <div class="labs glass"><b>Lab rules</b> <small>experiments. Five Gifts, Leaning offers, the Heat ladder and Even kits start on: they are the current test baseline.${saved && saved.phase !== 'over' ? ' Your run in progress keeps the rules it started with; changes here apply to the next run.' : ''}</small><div class="labgrid">${['five', 'lean', 'heat', 'allHeat', 'kits', 'veilSet', 'styles', 'trap', 'free', 'solo', 'tombStart'].map(k => `<button class="lab ${pref[k] ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] ? 'ON' : 'OFF'}</i><span>${LABS[k]}</span></button>`).join('')}</div></div>
+    <div class="labs glass"><b>Lab rules</b> <small>experiments. Five Gifts, Leaning offers, the Heat ladder, Even kits and Tuned items start on: they are the current test baseline.${saved && saved.phase !== 'over' ? ' Your run in progress keeps the rules it started with; changes here apply to the next run.' : ''}</small><div class="labgrid">${['five', 'lean', 'heat', 'allHeat', 'kits', 'items', 'veilSet', 'styles', 'trap', 'free', 'solo', 'tombStart'].map(k => `<button class="lab ${pref[k] ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] ? 'ON' : 'OFF'}</i><span>${LABS[k]}</span></button>`).join('')}</div></div>
     <p class="fine">Not final art. Seen only in a test browser so far.</p></div></div>`;
 }
 function summary(deck) {
@@ -379,7 +380,7 @@ function screenBazaar() {
 function screenOver() {
   const r = G.run, S = r.stats, R = G.results;
   return `<div class="hall"><div class="panel glass wide scroll"><h2>${r.result.won ? 'The pyramid is cleared' : `The run ends · Floor ${r.floor + 1}, Chamber ${Math.min(6, r.chamber + 1)}`}</h2>
-    ${R ? R.unlocks.filter(u => u.kind !== 'heat' || u.id <= heatTop()).map(u => u.kind === 'heat' && labs.heat ? { ...u, name: `Heat ${u.id}, ${HEAT_RULES[u.id - 1].name}`, text: HEAT_RULES[u.id - 1].text + ' It pays more Memories.' } : u).map(u => u.kind === 'gift' ? `<div class="unlock glass gift">${relicImg(u.id)}<div><b>New Gift unlocked: ${esc(u.name)}</b> <small>${esc(u.feat)} complete</small><br>${esc(u.text)}<br><i>${esc(u.why)} It will be in the first Gift offer of your next run.</i></div></div>` : `<div class="unlock glass"><div><b>Unlocked: ${esc(u.name)}</b><br>${esc(u.text)}</div></div>`).join('') : ''}
+    ${R ? R.unlocks.filter(u => u.kind !== 'heat' || u.id <= heatTop()).map(u => u.kind === 'heat' && labs.heat ? { ...u, name: `Heat ${u.id}, ${HEAT_RULES[u.id - 1].name}`, text: HEAT_RULES[u.id - 1].text + ' It pays more Memories.' } : u).map(u => u.kind === 'gift' ? `<div class="unlock glass gift">${relicImg(u.id)}<div><b>New Gift unlocked: ${esc(u.name)}</b> <small>${esc(u.feat)} complete</small><br>${esc(RELICS[u.id].text)}<br><i>${esc(u.why)} It will be in the first Gift offer of your next run.</i></div></div>` : `<div class="unlock glass"><div><b>Unlocked: ${esc(u.name)}</b><br>${esc(u.text)}</div></div>`).join('') : ''}
     <div class="cols"><div class="box glass"><h3>This run</h3><table class="tally"><tr><td>Forger</td><td>${esc(r.forger ? FORGERS[r.forger].name : 'None')}</td></tr><tr><td>Duels won</td><td>${S.wins} of ${S.duels}</td></tr><tr><td>Guardians beaten</td><td>${S.bossWins}</td></tr><tr><td>Melds</td><td>${S.melds}</td></tr><tr><td>Ranks</td><td>${Object.entries(S.ranks).map(([k, v]) => k + '×' + v).join(' ') || 'None'}</td></tr></table></div>
     <div class="box glass"><h3>Memories earned</h3>${R ? `<table class="tally">${R.lines.map(l => `<tr><td>${esc(l[0])}</td><td>+${l[1]}</td></tr>`).join('')}</table><div class="bigm">+${R.total} Memories</div>` : '<p class="fine">Already banked.</p>'}</div></div>
     ${R && R.feats.length ? `<div class="box glass featbox"><h3>Feats</h3>${R.feats.map(featRow).join('')}<p class="fine">Feats count across runs, win or lose.</p></div>` : ''}

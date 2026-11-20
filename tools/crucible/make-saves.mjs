@@ -8,12 +8,12 @@ import { newRun, runApply } from '../../crucible/engine/run.mjs';
 import { policyAction } from '../../crucible/engine/policy.mjs';
 import { newProfile, lockedRelics, FEATS } from '../../crucible/engine/meta.mjs';
 import { FORGER_IDS } from '../../crucible/engine/forgers.mjs';
-import { labConfig } from '../../crucible/web/labs.mjs';
+import { labConfig, LAB_DEFAULTS } from '../../crucible/web/labs.mjs';
 
 const [out, labArg, seedArg] = process.argv.slice(2);
 if (!out) { console.error('usage: make-saves.mjs <out-dir> [labs] [seeds]'); process.exit(2); }
 const read = f => JSON.parse(readFileSync(new URL('../../crucible/data/' + f, import.meta.url), 'utf8'));
-const labs = Object.fromEntries((labArg || 'five,lean,heat,kits').split(',').filter(Boolean).map(k => [k, true]));
+const labs = Object.fromEntries((labArg || Object.keys(LAB_DEFAULTS).join(',')).split(',').filter(Boolean).map(k => [k, true]));
 const cfg = { ...read('crucible-config.json'), ...labConfig(labs) };
 const db = buildDb(read('crucible-pool.json'), read('crucible-spell-tags.json'), cfg);
 

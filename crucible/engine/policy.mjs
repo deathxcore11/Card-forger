@@ -17,6 +17,9 @@ export const FAMILIES = {
   tomb: { kit: null, duel: {}, likes: ['tomb'] },
   lean: { kit: 'beasts_plants', duel: { boundBonus: 400 }, likes: ['lean'], trades: ['heavy_crown'] },
   storm: { kit: null, duel: { maxChain: 4, chainBonus: 60 }, likes: ['storm'], trades: ['tinder_vow'] },
+  // The same neutral player that only prefers one build's pieces: separates what the pieces are worth from how a build's brain plays.
+  pick_storm: { kit: null, duel: {}, likes: ['storm'] }, pick_tomb: { kit: null, duel: {}, likes: ['tomb'] }, pick_shadow: { kit: null, duel: {}, likes: ['shadow'] },
+  pick_furnace: { kit: null, duel: {}, likes: ['furnace'] }, pick_lean: { kit: null, duel: {}, likes: ['lean'] },
 };
 
 function relicScore(fam, id) {

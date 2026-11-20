@@ -20,7 +20,8 @@ const FIVE = { giftXpScale: 2, labPool: LABPOOL, bossAces: 1, endTurns: 6, bossB
 const SETS = {
   plain: {},
   five: { ...FIVE, leanOffers: 1, giftRerolls: 1 },
-  page: { ...FIVE, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1 },
+  page: { ...FIVE, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1 },
+  pageStyles: { ...FIVE, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, rivalStyles: 1 },
   all: { ...FIVE, leanOffers: 1, giftRerolls: 2, heatRules: 1, kitTune: 1, rivalStyles: 1, freeCast: 'trap', freeCastRival: 'boss', soloArrival: 1, stormTune: 1, forgerTune: { tarnStoke: 100, scrapDraw: 1, veilSet: 2 }, trackFx: 1 },
   free: { ...FIVE, freeCast: 'all', soloArrival: 1, veilGuard: 1, rivalStyles: 1, heatRules: 1, forgerTune: { veilSet: 1 } },
   freeElite: { ...FIVE, freeCast: 'all', freeCastRival: 'elite', heatRules: 1, kitTune: 1, leanOffers: 1, forgerTune: { veilSet: 2, veilMinDef: 1 } },

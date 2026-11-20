@@ -79,6 +79,22 @@ export const LAB = {
   cold_lantern: { name: 'Cold Lantern', kind: 'G', family: 'shadow', text: 'Each time an attack reveals your veiled monster and it survives, the rival loses 300 Life Points. Up to four times a duel.' },
 };
 const info = id => RELICS[id] || LAB[id];
+// Tuned items (lever itemTune: 1). Alone, in the simulator, Copper Loop was worth 28 points of clear rate, Grave Ward 26 and
+// Patient Coil 23, against 9 to 14 for the next best items, and Storm pieces only asked for a three-card meld, which every
+// player makes every turn. Tuned: Storm pieces ask for four cards, the two big ones give less, Grave Ward works once a duel.
+// Measured 20 November 2026 (3,000 runs): a player who takes Storm pieces clears 50%, down from 64%, against 43% for no build.
+export const ITEM_TUNE = { stormTune: { len: 4, loopAtk: 200, loopDef: 0, coilAtk: 200, coilDef: 200 }, wardTune: { n: 1 } };
+export const TUNED_TEXT = {
+  copper_loop: 'A successful meld of four or more cards gives the result +200 ATK this duel. Up to twice a duel.',
+  storm_needle: 'After a successful meld of four or more cards, the rival loses 300 LP. Up to three times a duel.',
+  patient_coil: 'Once a duel, your first successful meld of four or more cards gets +200 ATK and DEF more.',
+  spare_wire: 'After a meld of four or more cards, your next refill draws one extra card. Once a duel.',
+  static_field: "After your meld of four or more cards, the rival's strongest face-up monster loses 300 ATK this duel. Up to three times a duel.",
+  grave_ward: 'Once a duel, when a rival monster destroys yours in battle, remove the three weakest monsters in your graveyard from the duel to destroy that rival monster.',
+};
+const tuneOf = (db, k) => db.config.itemTune ? ITEM_TUNE[k] : db.config[k];
+// The words for an item under the rules in force.
+export const relicText = (db, id) => (db && db.config.itemTune && TUNED_TEXT[id]) || info(id).text;
 export const CHAIN_DEPTH = 4, CHAIN_TURN = 12;
 
 export const relicInfo = info;
@@ -170,7 +186,7 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'mark:grave_call': if (rs.callTurn !== s.turn && fromGrave(1500)) { rs.callTurn = s.turn; note(s, ev, seat, id); raise('returned', {}); } break;
       case 'mark:returning_tomb': if (ctx.marks >= 3 && !rs.retTomb && fromGrave(99999)) { rs.retTomb = 1; note(s, ev, seat, id); raise('returned', {}); } break;
       case 'returned:second_burial': if (rs.burialTurn !== s.turn) { rs.burialTurn = s.turn; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
-      case 'fell:grave_ward': if (rs.wardTurn !== s.turn && (rs.wardN || 0) < 2) { const idx = []; s.gy[seat].forEach((g, i) => { if (db.isMonster(g)) idx.push(i); }); if (idx.length >= 3) { idx.sort((x, y) => db.cmp(db.byId.get(s.gy[seat][x]), db.byId.get(s.gy[seat][y])) || x - y); for (const i of idx.slice(0, 3).sort((x, y) => y - x)) s.gy[seat].splice(i, 1); rs.wardTurn = s.turn; rs.wardN = (rs.wardN || 0) + 1; ctx.kill = true; note(s, ev, seat, id); } } break;
+      case 'fell:grave_ward': if (rs.wardTurn !== s.turn && (rs.wardN || 0) < ((tuneOf(db, 'wardTune') || {}).n || 2)) { const need = (tuneOf(db, 'wardTune') || {}).cost || 3, idx = []; s.gy[seat].forEach((g, i) => { if (db.isMonster(g)) idx.push(i); }); if (idx.length >= need) { idx.sort((x, y) => db.cmp(db.byId.get(s.gy[seat][x]), db.byId.get(s.gy[seat][y])) || x - y); for (const i of idx.slice(0, need).sort((x, y) => y - x)) s.gy[seat].splice(i, 1); rs.wardTurn = s.turn; rs.wardN = (rs.wardN || 0) + 1; ctx.kill = true; note(s, ev, seat, id); } } break;
       case 'endTurn:ossuary': { const n = s.gy[seat].filter(g => db.isMonster(g)).length; if (n >= 6) { note(s, ev, seat, id, { n }); shock(Math.min(800, 100 * (n >> 1))); } } break;
       case 'endTurn:thorn_veil': { const n = Math.min(3, s.mon[seat].filter(m => m && m.veil).length); if (n) { note(s, ev, seat, id, { n }); shock((db.config.thornLp || 200) * n); } } break;
       case 'survived:shield_oath': { const was = ctx.mon.guard; ctx.mon.guard = 1; if (!was) note(s, ev, seat, id, { guard: true }); else if ((rs.oath || 0) < 4) { rs.oath = (rs.oath || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } } break;
@@ -183,7 +199,7 @@ export function fire(s, db, ev, seat, hook, ctx) {
     if (hook === 'placed') placed(s, db, ev, seat, id, ctx, rs, st, B, r);
   }
   if (hook === 'placed' && ctx.melded && list.includes('deep_grave') && (rs.deepG || 0) < 4 && s.gy[seat].filter(g => db.isMonster(g)).length >= 8) { rs.deepG = (rs.deepG || 0) + 1; B(ctx.mon, 200, 0, 'deep_grave'); }
-  if (hook === 'placed' && ctx.melded && ctx.len >= 3 && (list.includes('static_field') || list.includes('overcharge'))) raise('surge', { len: ctx.len });
+  if (hook === 'placed' && ctx.melded && ctx.len >= ((tuneOf(db, 'stormTune') || {}).len || 3) && (list.includes('static_field') || list.includes('overcharge'))) raise('surge', { len: ctx.len });
   if (hook === 'placed' && ctx.melded) rs.nextMeld = rs.nextMeld.filter(x => !x.used);
   if (hook === 'placed' && ctx.fresh) rs.firstMon = 1;
   if (hook === 'placed' && ctx.bound && ctx.fresh) rs.boundPlayed = 1;
@@ -218,10 +234,12 @@ function placed(s, db, ev, seat, id, ctx, rs, st, B, r) {
   if (id === 'kindling' && ctx.fire && !rs.kindling) { rs.kindling = 1; B(m, 300, 300, id); }
   if (id === 'living_furnace' && ctx.fire && s.terrain && !rs.furnace) { rs.furnace = 1; m.keepT = 1; B(m, 600, 600, id); }
   if (id === 'broken_anvil' && !rs.melded) { m.ba = (m.ba || 0) - 300; B(m, 0, 600, id); }
-  if (ctx.len >= 3) {
-    if (id === 'copper_loop' && (rs.copper || 0) < (db.config.stormTune ? 1 : 2)) { rs.copper = (rs.copper || 0) + 1; B(m, 300, 300, id); }
+  // stormTune (lever): 1 is the first trial (Loop once a duel, Coil +200 / +200); an object sets each number (len, loopLen, loopN, loopAtk, loopDef, coilLen, coilAtk, coilDef). itemTune: 1 uses ITEM_TUNE.
+  const ST = tuneOf(db, 'stormTune'), T = ST === 1 ? { loopN: 1, coilAtk: 200, coilDef: 200 } : ST || {};
+  if (id === 'copper_loop' && ctx.len >= (T.loopLen || T.len || 3) && (rs.copper || 0) < (T.loopN || 2)) { rs.copper = (rs.copper || 0) + 1; B(m, T.loopAtk ?? 300, T.loopDef ?? 300, id); }
+  if (ctx.len >= (T.len || 3)) {
     if (id === 'storm_needle' && (rs.needle || 0) < 3) { rs.needle = (rs.needle || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); if (s.winner === null && st.relics.includes('chain_lightning') && (rs.chainL || 0) < 4) { const mm = ctx.mon; rs.chainL = (rs.chainL || 0) + 1; B(mm, 200, 0, 'chain_lightning'); } }
     if (id === 'spare_wire' && !rs.spare) { rs.spare = 1; st.extraDraw = 1; note(s, ev, seat, id); }
   }
-  if (ctx.len >= 4 && id === 'patient_coil' && !rs.coil) { rs.coil = 1; const n = db.config.stormTune ? 200 : 300; B(m, n, n, id); }
+  if (ctx.len >= (T.coilLen || 4) && id === 'patient_coil' && !rs.coil) { rs.coil = 1; B(m, T.coilAtk ?? 300, T.coilDef ?? 300, id); }
 }

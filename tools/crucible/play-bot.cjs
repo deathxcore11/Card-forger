@@ -66,10 +66,10 @@ const path = require('path');
     if (run === 0) { await page.evaluate(() => localStorage.clear()); await page.reload(); }
     await audit('home');
     if (run === 0 && saved) {
-      await page.evaluate(v => { localStorage.setItem('lostmemories.run.v1', JSON.stringify(v.run)); if (v.labs) { localStorage.setItem('lostmemories.labs.v4', JSON.stringify(v.labs)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(v.labs)); } if (v.profile) localStorage.setItem('lostmemories.profile.v1', JSON.stringify(v.profile)); }, saved);
+      await page.evaluate(v => { localStorage.setItem('lostmemories.run.v1', JSON.stringify(v.run)); if (v.labs) { localStorage.setItem('lostmemories.labs.v5', JSON.stringify(v.labs)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(v.labs)); } if (v.profile) localStorage.setItem('lostmemories.profile.v1', JSON.stringify(v.profile)); }, saved);
       await page.reload();
       // Seen once in about 90 launches under load: the browser reloads before it has stored the injected game. Not the page's doing, so write it again.
-      if (!(await page.evaluate(() => !!localStorage.getItem('lostmemories.run.v1')))) { console.log('note: the injected game was not stored before the reload; written again'); await page.evaluate(v => { localStorage.setItem('lostmemories.run.v1', JSON.stringify(v.run)); if (v.labs) { localStorage.setItem('lostmemories.labs.v4', JSON.stringify(v.labs)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(v.labs)); } if (v.profile) localStorage.setItem('lostmemories.profile.v1', JSON.stringify(v.profile)); }, saved); await page.waitForTimeout(200); await page.reload(); }
+      if (!(await page.evaluate(() => !!localStorage.getItem('lostmemories.run.v1')))) { console.log('note: the injected game was not stored before the reload; written again'); await page.evaluate(v => { localStorage.setItem('lostmemories.run.v1', JSON.stringify(v.run)); if (v.labs) { localStorage.setItem('lostmemories.labs.v5', JSON.stringify(v.labs)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(v.labs)); } if (v.profile) localStorage.setItem('lostmemories.profile.v1', JSON.stringify(v.profile)); }, saved); await page.waitForTimeout(200); await page.reload(); }
       await shot('home-saved'); await audit('home with a saved run');
       if (!(await click('[data-a="resume"]'))) errors.push('no Continue button for the saved run');
     } else {

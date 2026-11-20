@@ -53,6 +53,12 @@ export const STYLES = {
   ember: { style: 'Stormhand', relics: ['storm_needle'], policy: { chainBonus: 60 }, tell: 'His long melds burn.', text: 'Stormhand: each of his melds of three or more cards costs you 300 Life Points, three times a duel.' },
   blade: { style: 'Wall', relics: ['thorn_veil', 'shield_oath'], policy: { veilBonus: 450 }, tell: 'His hidden monsters hurt while they wait.', text: 'Wall: at the end of his turn you lose 200 Life Points for each of his veiled monsters, up to three. A defender of his that survives an attack becomes a Guard you must attack first.' },
 };
+// With tuned items (lever itemTune) Storm pieces ask for a four-card meld, so the two rivals that carry one say so and reach for four.
+const STYLES_TUNED = {
+  engine: { ...STYLES.engine, policy: { chainBonus: 60, maxChain: 4 }, tell: 'His melds run four cards long.', text: 'Meldwright: his melds of four or more cards get +200 ATK, twice a duel.' },
+  ember: { ...STYLES.ember, policy: { chainBonus: 60, maxChain: 4 }, tell: 'His longest melds burn.', text: 'Stormhand: each of his melds of four or more cards costs you 300 Life Points, three times a duel.' },
+};
+export const styleFor = (db, id) => (db.config.itemTune && STYLES_TUNED[id]) || STYLES[id];
 // The Heat ladder (lever heatRules): each level adds one rule the player can read before the run.
 // Levels stack. With the lever off, Heat only makes rival monsters bigger, as before.
 export const HEAT_RULES = [
@@ -374,7 +380,7 @@ function describe(db, run, d) {
   if (d.type === 'anvil') { const [a] = possibleMasterworks(run); if (a) d.tags.push('Masterwork ready: ' + RELICS[a].name); }
 }
 
-const styleOf = (db, run, d) => (db.config.rivalStyles || heatAt(db, run, 5)) && d.tier && d.tier !== 'boss' && d.theme != null && (run.floor >= 1 || d.tier === 'champion' || d.tier === 'guardian' || heatAt(db, run, 5)) ? STYLES[THEMES[d.theme].id] : null;
+const styleOf = (db, run, d) => (db.config.rivalStyles || heatAt(db, run, 5)) && d.tier && d.tier !== 'boss' && d.theme != null && (run.floor >= 1 || d.tier === 'champion' || d.tier === 'guardian' || heatAt(db, run, 5)) ? styleFor(db, THEMES[d.theme].id) : null;
 
 export function possibleMasterworks(run) {
   if (run.masterworks.length >= 2) return [];
@@ -410,7 +416,7 @@ function advanceRival(db, run, onStep) {
   while (d.winner === null && guard++ < 400) {
     const rivalToAct = d.pending ? d.active === 0 : d.active === 1;
     if (!rivalToAct) break;
-    const a = chooseAction(db, viewFor(d, db, 1), run.rival.ai, run.rival.theme ? { maxChain: 3, ...STYLES[run.rival.theme].policy } : { maxChain: 3 });
+    const a = chooseAction(db, viewFor(d, db, 1), run.rival.ai, run.rival.theme ? { maxChain: 3, ...styleFor(db, run.rival.theme).policy } : { maxChain: 3 });
     try { const evs = applyMut(d, a || { t: 'end' }, db); if (onStep) onStep(evs); } catch (e) { e.message += ' | rival action ' + JSON.stringify(a) + ' hand ' + JSON.stringify(d.hand[1].map(c => db.byId.get(c.id).name)) + ' twist ' + d.twist + ' law ' + d.seat[1].law; throw e; }
   }
 }

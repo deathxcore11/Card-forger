@@ -6,8 +6,8 @@ import { rulesText, FX_TEXT, TRAP_TEXT } from '../web/text.mjs';
 import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, effDef, forecast, canonical, clone } from '../engine/duel.mjs';
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
-import { RELICS, LAB, CHAIN_TURN, sortRelics } from '../engine/relics.mjs';
-import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT } from '../engine/run.mjs';
+import { RELICS, LAB, CHAIN_TURN, sortRelics, fire, relicText, TUNED_TEXT } from '../engine/relics.mjs';
+import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS } from '../engine/meta.mjs';
@@ -740,6 +740,26 @@ test('every Enchant, effect and card has wording, and Trap wording matches the r
   assert.ok(s.pending, 'the Trap can answer');
   applyMut(s, { t: 'respond', trap: 0 }, db);
   assert.equal(s.mon[0][0], null); assert.ok(s.mon[0][1], 'the defender stays');
+});
+
+// Tuned items (lever itemTune): Storm pieces ask for four cards and give less, Grave Ward works once a duel, and the words say so.
+test('tuned items: Storm pieces need a four-card meld, Grave Ward once a duel, wording follows the rule', () => {
+  const tuned = { ...db, config: { ...db.config, itemTune: 1 }, _pair: new Map() };
+  const fuel = db.pool.cards.filter(c => roleOf(db, c.id) === 'fuel').slice(0, 3);
+  const meld = (d, n) => { const t = withRelics(['copper_loop', 'patient_coil']); give(t, 0, 'Mystical Elf'); for (let i = 0; i < n - 1; i++) t.hand[0].push({ u: uid++, id: fuel[i].id }); applyMut(t, { t: 'play', hand: Array.from({ length: n }, (_, i) => i), onto: null, pos: 'a' }, d); return t.mon[0].find(Boolean); };
+  const F = db.config.fuelBonus;
+  let r = meld(db, 3); assert.equal(r.ba, 2 * F + 300); assert.equal(r.bd, 2 * F + 300);         // as written: Loop on three cards
+  r = meld(tuned, 3); assert.equal(r.ba, 2 * F); assert.equal(r.bd, 2 * F);                       // tuned: three cards earn nothing
+  r = meld(tuned, 4); assert.equal(r.ba, 3 * F + 200 + 200); assert.equal(r.bd, 3 * F + 200);     // four cards: Loop +200 ATK, Coil +200 / +200
+  r = meld(db, 4); assert.equal(r.ba, 3 * F + 300 + 300); assert.equal(r.bd, 3 * F + 300 + 300);
+  // Grave Ward: twice a duel as written, once when tuned
+  const ward = d => { const t = withRelics(['grave_ward']); t.gy[0] = Array.from({ length: 9 }, () => C('Mystical Elf').id); let n = 0; for (const turn of [3, 5, 7]) { t.turn = turn; const c = {}; fire(t, d, [], 0, 'fell', c); if (c.kill) n++; } return n; };
+  assert.equal(ward(db), 2); assert.equal(ward(tuned), 1);
+  for (const id of Object.keys(TUNED_TEXT)) { assert.ok(RELICS[id] || LAB[id], id); assert.equal(relicText(tuned, id), TUNED_TEXT[id]); assert.equal(relicText(db, id), (RELICS[id] || LAB[id]).text); }
+  assert.match(relicText(tuned, 'copper_loop'), /four or more/); assert.match(relicText(tuned, 'grave_ward'), /^Once a duel/);
+  // the two rivals that carry a Storm piece say four, and reach for four
+  assert.match(styleFor(tuned, 'engine').text, /four or more/); assert.equal(styleFor(tuned, 'engine').policy.maxChain, 4); assert.match(styleFor(db, 'engine').text, /three or more/);
+  assert.equal(styleFor(tuned, 'drake'), STYLES.drake);
 });
 
 console.log('crucible rules:', passed, 'tests passed');

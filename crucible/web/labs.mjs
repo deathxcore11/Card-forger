@@ -3,7 +3,7 @@
 import { FEAT_GIFTS } from '../engine/meta.mjs';
 
 export const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tithe', 'deep_grave', 'last_rites', 'static_field', 'overcharge', 'chain_lightning', 'thorn_veil', 'long_watch', 'deep_shade', 'spite', 'false_floor', 'ossuary', 'grave_ward', 'grounding_rod', 'snare', 'banked_coals', 'cinder_fall', 'quench'];
-export const LAB_DEFAULTS = { five: true, lean: true, heat: true, kits: true };
+export const LAB_DEFAULTS = { five: true, lean: true, heat: true, kits: true, items: true };
 
 export function labConfig(labs) {
   return {
@@ -12,7 +12,7 @@ export function labConfig(labs) {
     labPool: labs.five ? LAB_POOL : FEAT_GIFTS, leanOffers: labs.lean ? 1 : 0, giftRerolls: labs.lean ? 1 : 0,
     giftXpScale: labs.five ? 2 : 0, bossAces: labs.five ? 1 : 0, endTurns: labs.five ? 6 : 0,
     bossBand: labs.five ? [0, 0, -300] : null, rivalBand: labs.five ? [0, -200, -400] : 0,
-    heatRules: labs.heat ? 1 : 0, kitTune: labs.kits ? 1 : 0, forgerTune: labs.veilSet ? { veilSet: 2 } : null,
+    heatRules: labs.heat ? 1 : 0, kitTune: labs.kits ? 1 : 0, itemTune: labs.items ? 1 : 0, forgerTune: labs.veilSet ? { veilSet: 2 } : null,
     testRelics: labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null,
   };
 }
