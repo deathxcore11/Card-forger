@@ -34,7 +34,7 @@ export const STYLES = {
   wild: { style: 'Swarm Caller', relics: [], hand: 6, policy: {}, tell: 'He holds more cards than you.', text: 'Swarm Caller: his hand refills to six.' },
   tide: { style: 'Terrain Master', relics: ['home_ground', 'forge_heart'], home: true, policy: { fieldBonus: 220 }, tell: 'The duel starts on her ground.', text: 'Terrain Master: the duel starts on her terrain, and after she plays a Field Spell her next meld gets +300 ATK and DEF.' },
   ember: { style: 'Stormhand', relics: ['storm_needle'], policy: { chainBonus: 60 }, tell: 'His long melds burn.', text: 'Stormhand: each of his melds of three or more cards costs you 300 Life Points, three times a duel.' },
-  blade: { style: 'Wall', relics: ['gravecloth', 'shield_oath'], policy: { veilBonus: 400 }, tell: 'A defender that holds becomes a wall.', text: 'Wall: a defender of his that survives an attack gets +300 DEF once, and becomes a Guard you must attack first.' },
+  blade: { style: 'Wall', relics: ['thorn_veil', 'shield_oath'], policy: { veilBonus: 450 }, tell: 'His hidden monsters hurt while they wait.', text: 'Wall: at the end of his turn you lose 200 Life Points for each of his veiled monsters, up to three. A defender of his that survives an attack becomes a Guard you must attack first.' },
 };
 export const KITS = [
   { id: 'dragons_warriors', name: 'Dragons and Warriors', types: ['Dragon', 'Warrior'] },

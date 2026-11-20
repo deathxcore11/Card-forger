@@ -115,6 +115,7 @@ export function bestPlay(db, view, level, policy = {}) {
         if (plan.melded) v += (policy.meldBonus || 0) + (plan.len >= 3 ? (policy.chainBonus || 0) : 0);
         if (plan.melded && db.config.longMeldRest && plan.len >= db.config.longMeldRest) v -= pos === 'a' ? 500 : 0;
         if (veiled && pos === 'd') v += policy.veilBonus || 0;
+        if (pos === 'd') v += policy.defBonus || 0;
         if (single && !veiled && db.config.soloArrival && level >= 1) {
           const ty = db.byId.get(inst.id).type;
           if (ty === 'Zombie' && hand.length - 1 < db.config.handMax) { let b = 0; for (const g of view.gy[me]) if (db.isMonster(g) && db.byId.get(g).atk <= 1500) b = Math.max(b, db.byId.get(g).atk); if (b) v += 150 + b * 0.25; }
