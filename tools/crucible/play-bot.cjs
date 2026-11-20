@@ -67,7 +67,10 @@ const path = require('path');
     await audit('home');
     if (run === 0 && saved) {
       await page.evaluate(v => { localStorage.setItem('lostmemories.run.v1', JSON.stringify(v.run)); if (v.labs) { localStorage.setItem('lostmemories.labs.v4', JSON.stringify(v.labs)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(v.labs)); } if (v.profile) localStorage.setItem('lostmemories.profile.v1', JSON.stringify(v.profile)); }, saved);
-      await page.reload(); await shot('home-saved'); await audit('home with a saved run');
+      await page.reload();
+      // Seen once in about 90 launches under load: the browser reloads before it has stored the injected game. Not the page's doing, so write it again.
+      if (!(await page.evaluate(() => !!localStorage.getItem('lostmemories.run.v1')))) { console.log('note: the injected game was not stored before the reload; written again'); await page.evaluate(v => { localStorage.setItem('lostmemories.run.v1', JSON.stringify(v.run)); if (v.labs) { localStorage.setItem('lostmemories.labs.v4', JSON.stringify(v.labs)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(v.labs)); } if (v.profile) localStorage.setItem('lostmemories.profile.v1', JSON.stringify(v.profile)); }, saved); await page.waitForTimeout(200); await page.reload(); }
+      await shot('home-saved'); await audit('home with a saved run');
       if (!(await click('[data-a="resume"]'))) errors.push('no Continue button for the saved run');
     } else {
     if (run === 0 && process.env.LABS) { for (const k of process.env.LABS.split(',')) await click('[data-a="lab:' + k + '"]'); await shot('home-labs'); }
@@ -86,12 +89,14 @@ const path = require('path');
         if (st.playing) { await page.waitForTimeout(40); k--; if (++dead > 800) { errors.push('animation never ended in ' + st.phase); break; } continue; }
         const where = st.screen || (st.ov ? 'overlay in ' + st.phase : st.tab ? 'tab ' + st.tab : st.phase + (st.kind ? ' ' + st.kind : ''));
         await noteToast(where); await audit(where);
-        const els = await page.evaluate(() => [...document.querySelectorAll('[data-a]')].map((e, i) => { const r = e.getBoundingClientRect(); return { i, a: e.dataset.a, ok: !e.disabled && r.width > 0 && r.height > 0 }; }).filter(x => x.ok && !/^(quit|lab|speed)/.test(x.a)));
-        if (!els.length) { errors.push('dead end: nothing to click in ' + where); break; }
-        // the topmost layer decides what a person could really press
-        const pick = els[rnd(els.length)];
-        const hit = await page.evaluate(i => { const e = document.querySelectorAll('[data-a]')[i]; if (!e) return null; const r = e.getBoundingClientRect(); const c = document.elementFromPoint(Math.min(innerWidth - 1, Math.max(0, r.left + r.width / 2)), Math.min(innerHeight - 1, Math.max(0, r.top + r.height / 2))); const t = c && c.closest('[data-a]'); if (!t) return null; t.click(); return t.dataset.a; }, pick.i);
-        if (hit) { clicks++; dead = 0; } else if (++dead > 60) { errors.push('nothing clickable is reachable in ' + where); break; }
+        // only what a person could really press: the control on top at its own centre
+        const hit = await page.evaluate(n => {
+          const all = [...document.querySelectorAll('[data-a]')].filter(e => { if (e.disabled || /^(quit|lab|speed)/.test(e.dataset.a)) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+          // start at a random one and take the first that is on top at its own centre, scrolling its list to it as a person would
+          for (let k = 0; k < all.length; k++) { const e = all[(n + k) % all.length]; e.scrollIntoView({ block: 'nearest' }); const r = e.getBoundingClientRect(); const c = document.elementFromPoint(Math.min(innerWidth - 1, Math.max(0, r.left + r.width / 2)), Math.min(innerHeight - 1, Math.max(0, r.top + r.height / 2))); if (c && c.closest('[data-a]') === e) { e.click(); return e.dataset.a; } }
+          return null;
+        }, rnd(1e6));
+        if (hit) { clicks++; dead = 0; } else { errors.push('dead end: nothing a person could press in ' + where + ' :: ' + (await page.evaluate(() => JSON.stringify({ story: !!window.LM.G.story, results: !!window.LM.G.results, shown: !!window.LM.G.shown, frames: window.LM.G.frames.length, a: [...document.querySelectorAll('[data-a]')].map(e => { const r = e.getBoundingClientRect(); const c = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e.dataset.a + (e.disabled ? '(off)' : '') + '<' + (c ? c.tagName + '.' + c.className : 'none') + '>'; }).slice(0, 12), html: document.querySelector('#app').innerHTML.length })))); if (shots) await page.screenshot({ path: path.join(shots, 'dead-end.png') }); break; }
         if (st.phase === 'over' && hit === 'home') break;
       }
       await noteToast('end'); continue;

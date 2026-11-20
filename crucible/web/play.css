@@ -97,7 +97,7 @@ button:disabled { opacity: .38; cursor: default; filter: grayscale(.6); box-shad
 .hs { width: 9.45em; height: 13.2em; border-radius: .6em; border: 1px dashed rgba(233, 196, 106, .18); background: rgba(0, 0, 0, .25); display: flex; align-items: center; justify-content: center; }
 .hs .c { font-size: 1.12em; }
 .actions { flex: 1; padding: .8em 1em; display: flex; flex-direction: column; justify-content: space-between; height: 15.6em; align-self: flex-end; overflow: hidden; }
-.trayline { font-size: 1.15em; min-height: 5em; } .actions .row { justify-content: flex-start; margin: 0; gap: .45em; } .actions button { font-size: 1.08em; padding: .45em .7em; }
+.trayline { font-size: 1.15em; flex: 1 1 5em; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; } .actions .row { flex: none; justify-content: flex-start; margin: 0; gap: .45em; } .actions button { font-size: 1.08em; padding: .45em .7em; }
 .what { font-size: .95em; margin-top: .3em; line-height: 1.25; } .what b { color: var(--gold); margin-right: .3em; }
 .chain { display: flex; flex-wrap: wrap; gap: .3em; align-items: center; } .chain b { color: var(--gold); }
 .chip { background: rgba(255, 255, 255, .1); border-radius: .4em; padding: .1em .5em; } .chip.res { background: var(--gold); color: #2a1a05; font-weight: 700; }
@@ -146,6 +146,8 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 
 /* feats, new Gift mark, Codex pages */
 .panel.scroll { max-height: 52em; overflow-y: auto; }
+/* The buttons of a long screen (the end of a run with several unlocks) stay in view while the rest scrolls. */
+.panel.scroll > .row:last-child { position: sticky; bottom: -1.6em; padding: .6em 0 .2em; background: linear-gradient(transparent, rgba(18, 14, 10, .95) 40%); z-index: 2; }
 .row.left { justify-content: flex-start; } .row.left button { font-size: 1em; padding: .35em .7em; } .row.left .ty { font-size: .9em; }
 .featbox { margin-top: 1em; } .feat { display: grid; grid-template-columns: 1fr 18em 9em; gap: 1.2em; align-items: center; padding: .5em 0; font-size: 1.15em; border-top: 1px solid var(--line); } .feat b { color: var(--gold); font-family: 'Cinzel', Georgia, serif; } .feat span { text-align: right; color: var(--gold); } .feat.done span { color: var(--good); }
 .bar { position: relative; height: .9em; border-radius: .5em; background: rgba(0, 0, 0, .6); border: 1px solid var(--line); overflow: hidden; } .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: #7a5a1e; } .bar u { position: absolute; top: 0; bottom: 0; background: var(--gold); animation: grow .9s ease-out; transform-origin: left; }

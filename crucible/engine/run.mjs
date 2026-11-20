@@ -39,7 +39,7 @@ export const STYLES = {
 // The Heat ladder (lever heatRules): each level adds one rule the player can read before the run.
 // Levels stack. With the lever off, Heat only makes rival monsters bigger, as before.
 export const HEAT_RULES = [
-  { n: 1, name: "Champions' Road", text: 'The third chamber of every floor holds only champions and a guardian.' },
+  { n: 1, name: "Champions' Road", text: 'The third chamber of every floor holds only champions and an elite rival.' },
   { n: 2, name: 'Cursed Halls', text: 'On floors two and three every ordinary duel is a cursed duel.' },
   { n: 3, name: 'Provisioned', text: 'Floor guardians start with 500 more Life Points and their first monster gets +200 ATK.' },
   { n: 4, name: 'Scarce Rest', text: 'Sanctum doors appear half as often.' },
