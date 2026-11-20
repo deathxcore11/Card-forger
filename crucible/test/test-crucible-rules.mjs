@@ -639,4 +639,23 @@ test('even kits: off by default; on, each kit keeps its types and holds monsters
   }
 });
 
+test('Veilwalker candidate rule: off by default; on, her first lone veiled set in defense each turn is free, a second is not', () => {
+  const elf = C('Mystical Elf').id, set = { t: 'play', hand: [0], onto: null, pos: 'd', veiled: true };
+  let s = blank({ seats: [{ relics: ['f_veil'], forger: 'veil' }, {}] }); s.hand[0].push({ u: uid++, id: elf });
+  applyMut(s, set, db); assert.equal(s.played, true, 'with the lever off a veiled set uses the play');
+  const lab = { ...db, config: { ...db.config, forgerTune: { veilSet: 1 } }, _pair: new Map() };
+  s = blank({ seats: [{ relics: ['f_veil'], forger: 'veil' }, {}] }); s.hand[0].push({ u: uid++, id: elf }, { u: uid++, id: elf });
+  applyMut(s, set, lab); assert.equal(s.played, false, 'the first veiled set is free'); assert.ok(s.mon[0].some(m => m && m.veil && m.pos === 'd'));
+  applyMut(s, set, lab); assert.equal(s.played, true, 'the second one uses the play');
+  s = blank({ seats: [{ relics: ['f_veil'], forger: 'veil' }, {}] }); s.hand[0].push({ u: uid++, id: elf });
+  applyMut(s, { t: 'play', hand: [0], onto: null, pos: 'd' }, lab); assert.equal(s.played, true, 'a face-up monster is not free');
+  s = blank({ seats: [{ relics: [] }, {}] }); s.hand[0].push({ u: uid++, id: elf });
+  applyMut(s, set, lab); assert.equal(s.played, true, 'only the Veilwalker has it');
+  const narrow = { ...db, config: { ...db.config, forgerTune: { veilSet: 2 } }, _pair: new Map() };
+  s = blank({ seats: [{ relics: ['f_veil'], forger: 'veil' }, {}] }); s.hand[0].push({ u: uid++, id: elf }); put(s, 0, 3, mon('Mystical Elf', 'd', { veil: true }));
+  applyMut(s, set, narrow); assert.equal(s.played, true, 'the narrow form is free only while she holds no veiled monster');
+  s = blank({ seats: [{ relics: ['f_veil'], forger: 'veil' }, {}] }); s.hand[0].push({ u: uid++, id: elf });
+  applyMut(s, set, narrow); assert.equal(s.played, false);
+});
+
 console.log('crucible rules:', passed, 'tests passed');

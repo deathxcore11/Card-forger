@@ -638,6 +638,8 @@ function doPlay(s, db, ev, seat, a) {
       if (plan.melded && st.rs.soloArm) { st.rs.soloArm = 0; m.ba = (m.ba || 0) + 300; m.bd = (m.bd || 0) + 300; ev.push({ e: 'solo', seat, type: 'Machine', zone: z, paid: true }); }
       if (!plan.melded && !plan.onTable && !m.veil) soloArrival(s, db, ev, seat, c);
     }
+    // Lever under test (forgerTune.veilSet): the Veilwalker's first lone monster set veiled in defense each turn does not use the play.
+    if (db.config.forgerTune && db.config.forgerTune.veilSet && !plan.melded && !plan.onTable && idxs.length === 1 && a.veiled && a.pos === 'd' && has(s, seat, 'f_veil') && st.rs.veilSetTurn !== s.turn && (db.config.forgerTune.veilSet !== 2 || s.mon[seat].filter(x => x && x.veil).length === 1) && s.winner === null) { st.rs.veilSetTurn = s.turn; s.played = false; noteRelic(s, ev, seat, 'f_veil'); }
     return;
   }
   if (buried) fire(s, db, ev, seat, 'ingredients', { n: buried });

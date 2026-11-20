@@ -166,3 +166,5 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 .heatlist { display: grid; gap: .5em; margin: .6em 0 1em; font-size: 1.2em; } .heatlist div { display: grid; grid-template-columns: 2em 1fr; align-items: baseline; }
 .heatlist i { font-style: normal; color: var(--gold, #e8c877); font-weight: 700; }
 .heatchip { font-size: .85em; padding: .2em .7em; margin-left: .6em; }
+/* the Lab list scrolls inside its panel so the home screen never grows past the stage */
+.labgrid { max-height: 24.5em; overflow-y: auto; padding-right: .3em; }
