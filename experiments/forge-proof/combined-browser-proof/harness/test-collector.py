@@ -3,7 +3,7 @@
 import importlib.util,json,pathlib,subprocess,tempfile,unittest
 HERE=pathlib.Path(__file__).resolve().parent
 spec=importlib.util.spec_from_file_location('artifact_test',HERE/'test-artifacts.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
-S='1163de2e3c78b250d9cbb0805b422139f71877d4581b468524fb96d900a5c608';M='564475da577fc8e91e7e243d0557a460b98efd89e1d4e9437b832d9598c2b8e7'
+S='1163de2e3c78b250d9cbb0805b422139f71877d4581b468524fb96d900a5c608';M='3a00b5e91cddf14ec47bd1d4139b24ee9a343e0568ac511bdc7bbc14f14316c2'
 class Collector(unittest.TestCase):
  def run_fixture(self,alter=lambda image,probe:None,preflight_ok=True,source_stage='complete',cleanup_parts=None):
   with tempfile.TemporaryDirectory(prefix='combined-collector-test-') as tmp:
@@ -17,9 +17,9 @@ class Collector(unittest.TestCase):
     (p/'summary.json').write_text(json.dumps(d));(p/'lifecycle.json').write_text(json.dumps(m.lifecycle(n)))
     for png in ['setup.png','opening.png','resolved.png','complete.png']+(['terminal.png'] if n==2 else []):(p/png).write_bytes(m.PNG)
    common={'scope':'LOCAL_TEST_NOT_DEPLOYABLE','deployable':False,'registryPublication':False,'result':'passed','ociManifestDigest':'sha256:'+'2'*64,'rawState':m.CANARY,'token':m.CANARY}
-   image={**common,'schema':'cardstashy.local-oci-build-summary.v1','contextManifestSHA256':'d95d56f37612a9aa539836d6d051885e37b034fb5f679b798ff45f6b70d8fbfa','buildImage':'maven:3.9.11-eclipse-temurin-21@sha256:463a1849665463254b2dd56e3a5b316f1596bc93d0571065c06ea05bb48ab8f4','runtimeImage':'eclipse-temurin:21-jre-jammy@sha256:8ecbec1f32912979c15b86aaf98f7082a77d318a7f92af3d9fe2c0fd2723df10','imageId':'sha256:'+'1'*64,'nativeSourceSHA256':S,'nativeManifestSHA256':M}
+   image={**common,'schema':'cardstashy.local-oci-build-summary.v1','contextManifestSHA256':'86396582b50bd87b82fea57cd5bf1af88fd55fab5208815b3796914fdddd0c8a','buildImage':'maven:3.9.11-eclipse-temurin-21@sha256:463a1849665463254b2dd56e3a5b316f1596bc93d0571065c06ea05bb48ab8f4','runtimeImage':'eclipse-temurin:21-jre-jammy@sha256:8ecbec1f32912979c15b86aaf98f7082a77d318a7f92af3d9fe2c0fd2723df10','imageId':'sha256:'+'1'*64,'nativeSourceSHA256':S,'nativeManifestSHA256':M}
    probe={**common,'schema':'cardstashy.local-oci-probe-summary.v1','sameImageId':image['imageId'],'sourceSHA256':S,'nativeManifestSHA256':M,'policyVersion':'forge-heuristic-medium-beta-v1','buildCompilerVersion':'javac 21.0.9','runtimeJavaVersion':'21.0.9+10',**{k:'3'*64 for k in ['nativeBuildAttestationSha256','runtimeClassSetSha256','aiPatchsetSha256','selectedProfileSHA256','rulesManifestSHA256','humanDigest','opponentDigest']},**{k:True for k in ['exactRosterVerified','cpuRulesRuntimeVerified','privacyGatePassed','registeredRosterVerified','nativeRosterVerified']},'cleanup':{'confirmed':True,'privateInputRemoved':True,'removed':True,'forced':False,'starts':1,'destroys':1,'exitCode':0,'status':'exited','oomKilled':False,'rawEnv':m.CANARY}}
-   probe.update(runtimeClassSetSha256='e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80',aiPatchsetSha256='cd14c95185c4bfd44e90a809a6095f2027f23d102c1cf04464533ca545a0a4b1',selectedProfileSHA256='d77ec318868fcdb8fe1dce8d8c2df336fe26d54e13b51f7aab13d259bdf70330',rulesManifestSHA256='22bfb46444027dd7f19de9350c8ca10d261090569004bd0d97ed81d42d674fce')
+   probe.update(runtimeClassSetSha256='e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80',aiPatchsetSha256='cd14c95185c4bfd44e90a809a6095f2027f23d102c1cf04464533ca545a0a4b1',selectedProfileSHA256='d77ec318868fcdb8fe1dce8d8c2df336fe26d54e13b51f7aab13d259bdf70330',rulesManifestSHA256='fdee8c6e80f1405e6c987918a0674f9872f574e6524cf0b64402439fe76a8bd5')
    probe.update(humanPriorityRuntimeVerified=True,humanPrioritySourceSha256='23b9220fb5fe8646ab3784a2e19c6c43d968dabed719bc8c59c88f00cc26350c',humanPriorityClassesSha256='61ad2c7b314ce2d091f96f1fb89dfffc1e7c6634058a019e49978904b660570e',humanPriorityBuildSha256='8'*64)
    alter(image,probe)
    (imageDir/'image-summary.json').write_text(json.dumps(image));(imageDir/'probe-summary.json').write_text(json.dumps(probe))

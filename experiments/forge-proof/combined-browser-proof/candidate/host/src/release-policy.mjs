@@ -9,11 +9,11 @@ export const CPU_POLICIES = Object.freeze({
   'forge-heuristic-hard-beta-v2': Object.freeze({ profile: 'CardStashyHardBetaV2', profileSha256: '09bdcc6003785a0abf08fde556c963d22a697b5309e5011dc6f39fefba97e63d', monteCarlo: true }),
 });
 export const EXPECTED_RULES = Object.freeze({
-  version: 'rules-20261117-scryfall20261117-native-e5a0f815',
-  manifestSha256: '22bfb46444027dd7f19de9350c8ca10d261090569004bd0d97ed81d42d674fce',
+  version: 'rules-20261120-scryfall20261120-native-e5a0f815',
+  manifestSha256: 'fdee8c6e80f1405e6c987918a0674f9872f574e6524cf0b64402439fe76a8bd5',
   indexSha256: '166ea484540ea749bdfb68bbbc91adc3f733e6a075e3d28e14a86836c10f1a5a',
-  sourceSha256: '51305ae67913463acc864af6f896fe28ade7a3f5c3cd43e0484c5c1d3b15b31e',
-  sourceUpdatedAt: '2026-11-17T10:02:01.401+00:00', asOfDate: '2026-11-17', validUntilExclusive: '2026-11-24',
+  sourceSha256: '383d271230261563804a98d83ca6a5023dff5e219c1776566f07a0702204d556',
+  sourceUpdatedAt: '2026-11-20T10:02:03.416+00:00', asOfDate: '2026-11-20', validUntilExclusive: '2026-11-27',
 });
 const sha = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value) && !/^0+$/.test(value);
 const fail = code => { throw Error(code); };
