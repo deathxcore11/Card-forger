@@ -333,6 +333,7 @@ function finishDuel(db, run, rng, ev) {
   S.duels++; S.turns += d.turn; S.melds += st.melds; S.fizzles += st.fizzles; S.capHits += st.capHits ? 1 : 0;
   S.firstGames++; if (d.winner === d.first) S.firstWins++;
   if (d.reason === 'deckout') S.deckouts++;
+  if (cfg.trackFx && run.rival.tier === 'boss') { const b = S.byTier[run.rival.name] || (S.byTier[run.rival.name] = [0, 0, 0, 0, 0]); b[0]++; if (won) { b[1]++; b[2] += cfg.lp - Math.min(cfg.lp, d.lp[0]); if (st.wasBehind) b[3]++; } b[4] += d.turn; }
   { const k = run.rival.tier + (run.floor + 1); const b = S.byTier[k] || (S.byTier[k] = [0, 0, 0, 0, 0]); b[0]++; if (won) { b[1]++; b[2] += db.config.lp - Math.min(db.config.lp, d.lp[0]); if (st.wasBehind) b[3]++; } b[4] += d.turn; }
   for (const [k, v] of Object.entries(st.chains)) S.chains[k] = (S.chains[k] || 0) + v;
   S.leadChanges += st.leadChanges || 0;

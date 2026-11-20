@@ -390,6 +390,7 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
   if (f.killT) tGone = destroyMon(s, db, ev, defSeat, dz, 'battle');
   if (tGone && wasVeiled) fire(s, db, ev, defSeat, 'veiledFell', { id: T.id });
   if (f.killX) xGone = destroyMon(s, db, ev, atkSeat, az, 'battle');
+  if (tGone && !xGone && has(s, defSeat, 'grave_ward')) { const c = {}; fire(s, db, ev, defSeat, 'fell', c); if (c.kill) xGone = destroyMon(s, db, ev, atkSeat, az, 'relic'); }
   if (tGone && !xGone) {
     fire(s, db, ev, atkSeat, 'wonBattle', { mon: X, zone: az, edge: f.edgeA });
     if (s.seat[atkSeat].law === 'bloodprice') gainLp(s, ev, atkSeat, 500, 'law');
@@ -704,9 +705,9 @@ function endTurn(s, db, ev) {
     s.terrain = { id, owner: now, storm: true }; ev.push({ e: 'terrain', seat: now, id, storm: true });
   }
   const st = s.seat[now];
-  if (st.law === 'end' && st.ace && s.stats[now].turns >= 4 && !st.rs.endCame) {
+  if (st.law === 'end' && st.ace && s.stats[now].turns >= (db.config.endTurns || 4) && !st.rs.endCame) {
     const z = freeZone(s, now);
-    if (z >= 0) { st.rs.endCame = 1; s.mon[now][z] = { u: s.uid++, id: st.ace, pos: 'a', veil: false, att: 0, moved: true, fix: 5000 }; ev.push({ e: 'summon', seat: now, zone: z, id: st.ace, pos: 'a', law: true }); }
+    if (z >= 0) { st.rs.endCame = 1; s.mon[now][z] = { u: s.uid++, id: st.ace, pos: 'a', veil: false, att: 0, moved: true, fix: db.config.endAtk || 5000 }; ev.push({ e: 'summon', seat: now, zone: z, id: st.ace, pos: 'a', law: true }); }
   }
   if (!refill(s, db, ev, now, false)) return;
   fire(s, db, ev, now, 'turnStart', {});
