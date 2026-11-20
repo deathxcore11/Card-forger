@@ -4,7 +4,7 @@ import { buildDb, roleOf, weightOf, meldPairRaw } from '../engine/cards.mjs';
 import { legalActions, playVariants, planChain, viewFor, forecast } from '../engine/duel.mjs';
 import { RELICS as BASE_RELICS, LAB } from '../engine/relics.mjs';
 const RELICS = { ...BASE_RELICS, ...LAB };
-import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES } from '../engine/run.mjs';
+import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw } from '../engine/run.mjs';
 import { meldPair } from '../engine/cards.mjs';
 import { powerActions } from '../engine/duel.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
@@ -21,11 +21,13 @@ const LABS = {
   styles: 'Rivals with a style: from the second floor each rival carries a relic of the kind you can earn, shows a tell on its door, and plays toward it. Harder.',
   trap: 'Free Trap: setting your first Trap each turn does not use your play. Floor guardians get it too. (The wider free cast below overrides this.)',
   lean: 'Leaning offers: one of the three Gifts leans toward a build you already hold a piece of, and you may deal one Gift offer again each run.',
+  heat: 'Heat ladder: ten Heat levels. Each level adds one written rule you can read before you descend, and rivals no longer just get bigger numbers.',
+  allHeat: 'Open every Heat level now. For testing only: normally each level opens when you clear the one below.',
   tombStart: 'Start with the Tomb set: carry all three Tomb relics from the first duel. A strong demonstration, not a fair run.',
 };
 let labs = {};
 const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tithe', 'deep_grave', 'last_rites', 'static_field', 'overcharge', 'chain_lightning', 'thorn_veil', 'long_watch', 'deep_shade', 'spite', 'false_floor', 'ossuary', 'grave_ward', 'grounding_rod', 'snare'];
-function setLabs(v) { labs = v || {}; const c = db.config; c.freeCast = labs.free ? 1 : labs.trap ? 'trap' : 0; c.freeCastRival = !labs.free && labs.trap ? 'boss' : null; c.rivalStyles = labs.styles ? 1 : 0; c.soloArrival = labs.solo ? 1 : 0; c.labPool = labs.five ? LAB_POOL : FEAT_GIFTS; c.leanOffers = labs.lean ? 1 : 0; c.giftRerolls = labs.lean ? 1 : 0; c.giftXpScale = labs.five ? 2 : 0; c.bossAces = labs.five ? 1 : 0; c.endTurns = labs.five ? 6 : 0; c.bossBand = labs.five ? [0, 0, -300] : null; c.rivalBand = labs.five ? [0, -200, -400] : 0; c.testRelics = labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null; }
+function setLabs(v) { labs = v || {}; const c = db.config; c.freeCast = labs.free ? 1 : labs.trap ? 'trap' : 0; c.freeCastRival = !labs.free && labs.trap ? 'boss' : null; c.rivalStyles = labs.styles ? 1 : 0; c.soloArrival = labs.solo ? 1 : 0; c.labPool = labs.five ? LAB_POOL : FEAT_GIFTS; c.leanOffers = labs.lean ? 1 : 0; c.giftRerolls = labs.lean ? 1 : 0; c.giftXpScale = labs.five ? 2 : 0; c.bossAces = labs.five ? 1 : 0; c.endTurns = labs.five ? 6 : 0; c.bossBand = labs.five ? [0, 0, -300] : null; c.rivalBand = labs.five ? [0, -200, -400] : 0; c.heatRules = labs.heat ? 1 : 0; c.testRelics = labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null; }
 const $ = s => document.querySelector(s);
 const app = $('#app');
 const LABKEY = 'lostmemories.labs.v4', SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
@@ -33,7 +35,7 @@ const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } cat
 
 const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
 const P = Object.assign(newProfile(), store.get(PROFILE) || {});
-setLabs(store.get(LABKEY) || { five: true, lean: true });
+{ const st = store.get(LABKEY); setLabs(st ? { heat: true, ...st } : { five: true, lean: true, heat: true }); }
 for (const k of P.codex) G.known.add(k);
 const saveP = () => store.set(PROFILE, P);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -192,13 +194,16 @@ function storyPanel() {
 
 // ---------- screens around a run ----------
 function screenForger() {
-  const heatMax = maxHeat(P);
+  const top = heatTop(), heatMax = heatOpen(), hr = labs.heat ? HEAT_RULES.filter(x => x.n <= G.pickHeat) : [];
   const cardOf = id => { const f = FORGERS[id], own = P.forgers.includes(id), on = G.pickForger === id, face = 'face-' + (id === 'tarn' ? 'tarn' : id);
     return `<div class="ch glass ${own ? '' : 'locked'} ${on ? 'on' : ''}" ${own ? `data-a="forger:${id}"` : ''}>${own && ART.has(face) ? `<img src="art/${face}.webp" alt="">` : `<div class="q">${own ? esc(f.name.replace('The ', '')[0]) : '?'}</div>`}<b>${esc(f.name)}</b><i>${esc(f.tag)}</i>${own ? `<span><u>Rule:</u> ${esc(RELICS[f.rule].text)}</span><span><u>${esc(f.power)}:</u> ${esc(f.powerText)}</span>` : `<span>Unlock: ${esc(FORGER_FEATS[id].text)}</span>`}</div>`; };
   return `<div class="hall"><div class="panel glass wide"><h2>Choose your Forger</h2><div class="chars">${FORGER_IDS.map(cardOf).join('')}<div class="ch glass locked"><div class="q">?</div><b>The Last One</b><i>Hidden</i><span>Not in this build yet.</span></div></div>
-    <div class="row"><span class="fine">Heat</span>${Array.from({ length: 6 }, (_, h) => `<button class="${G.pickHeat === h ? 'gold' : ''}" data-a="heat:${h}" ${h > heatMax ? 'disabled' : ''}>${h}</button>`).join('')}<span class="fine">${G.pickHeat ? `Rivals are stronger. Memories +${G.pickHeat * 20}%.` : heatMax ? '' : 'Clear the pyramid to unlock Heat 1.'}</span></div>
+    <div class="row"><span class="fine">Heat</span>${Array.from({ length: top + 1 }, (_, h) => `<button class="${G.pickHeat === h ? 'gold' : ''}" data-a="heat:${h}" ${h > heatMax ? 'disabled' : ''}>${h}</button>`).join('')}<span class="fine">${G.pickHeat ? `${labs.heat ? '' : 'Rivals are stronger. '}Memories +${G.pickHeat * 20}%.` : heatMax ? '' : 'Clear the pyramid to unlock Heat 1.'}</span></div>
+    ${hr.length ? `<div class="heatbox glass"><span class="new"><b>Heat ${G.pickHeat}: ${esc(hr[hr.length - 1].name)}.</b> ${esc(hr[hr.length - 1].text)}</span>${hr.length > 1 ? `<span class="fine">Still in force: ${hr.slice(0, -1).map(x => esc(x.name)).join(', ')}.</span><button data-a="heatinfo:${G.pickHeat}">Read all ${hr.length} rules</button>` : ''}</div>` : labs.heat && heatMax ? '<div class="heatbox glass"><span class="fine">Each Heat level adds one rule. Pick a level to read it.</span></div>' : ''}
     <div class="row"><button class="gold big" data-a="descend">Descend as ${esc(FORGERS[G.pickForger].name)}</button><button data-a="home">Back</button></div></div></div>`;
 }
+const heatTop = () => labs.heat ? HEAT_RULES.length : 5;
+const heatOpen = () => labs.allHeat ? heatTop() : Math.min(maxHeat(P), heatTop());
 function screenVault() {
   return `<div class="hall"><div class="panel glass wide"><h2>Memory Vault · ${P.memories} Memories</h2><p>Spend Memories to widen what a run can offer. Nothing here makes you stronger at the start.</p><div class="vgrid">${VAULT.map(v => { const own = P.bought.includes(v.id), r = RELICS[v.id]; return `<div class="tile glass ${own ? 'own' : ''}"><small>${r.kind === 'M' ? 'Masterwork' : 'Charm'}</small>${relicImg(v.id)}<b>${esc(r.name)}</b><span>${esc(r.text)}</span><button class="gold" data-a="vbuy:${v.id}" ${own || P.memories < v.price ? 'disabled' : ''}>${own ? 'Owned' : v.price + ' Memories'}</button></div>`; }).join('')}</div><div class="row"><button class="gold" data-a="home">Back</button></div></div></div>`;
 }
@@ -257,7 +262,7 @@ function screenHome() {
   const saved = store.get(SAVE);
   return `<div class="hall home"><div class="title"><small>CARDSTASHY</small><h1>LOST MEMORIES</h1><p>Test build of the real rules engine. Three floors, six chambers each, three Sparks.</p>
     <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:feats">Feats (${(P.featsDone || []).length}/${FEATS.length})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button></div>
-    <div class="labs glass"><b>Lab rules</b> <small>experiments. The first two are on: they are the current test baseline.</small><div class="labgrid">${['five', 'lean', 'styles', 'trap', 'free', 'solo', 'tombStart'].map(k => `<button class="lab ${labs[k] ? 'on' : ''}" data-a="lab:${k}"><i>${labs[k] ? 'ON' : 'OFF'}</i><span>${LABS[k]}</span></button>`).join('')}</div></div>
+    <div class="labs glass"><b>Lab rules</b> <small>experiments. Five Gifts, Leaning offers and the Heat ladder start on: they are the current test baseline.</small><div class="labgrid">${['five', 'lean', 'styles', 'trap', 'heat', 'allHeat', 'free', 'solo', 'tombStart'].map(k => `<button class="lab ${labs[k] ? 'on' : ''}" data-a="lab:${k}"><i>${labs[k] ? 'ON' : 'OFF'}</i><span>${LABS[k]}</span></button>`).join('')}</div></div>
     <p class="fine">Not final art. Seen only in a test browser so far.</p></div></div>`;
 }
 function summary(deck) {
@@ -277,7 +282,7 @@ function screenCharm() { return pickList('Pick one charm', G.run.offer.options.m
 const DOOR_ART = { duel: 'duel', cursed: 'cursed', champion: 'champion', guardian: 'guardian', anvil: 'anvil', bazaar: 'bazaar', sanctum: 'sanctum', omen: 'omen', treasure: 'treasure', boss: 'boss', mystery: 'omen' };
 function screenChamber() {
   const r = G.run, boss = BOSSES[r.floor][r.bossOrder[r.floor]];
-  return `<div class="hall doorsHall">${r.lastNote ? `<div class="note glass">${esc(r.lastNote)}</div>` : ''}<div class="bossline glass">Guardian of this floor: <b>${esc(boss.name)}</b>${r.chamber >= 2 ? '. ' + esc(boss.lawText) : '. Its Law shows from chamber 3.'}</div>
+  return `<div class="hall doorsHall">${r.lastNote ? `<div class="note glass">${esc(r.lastNote)}</div>` : ''}<div class="bossline glass">Guardian of this floor: <b>${esc(boss.name)}</b>${r.chamber >= 2 ? '. ' + esc(bossLaw(db, r)) : '. Its Law shows from chamber 3.'}${db.config.heatRules && r.heat ? ` <button class="heatchip" data-a="heatinfo:${r.heat}">Heat ${r.heat} rules</button>` : ''}</div>
     <div class="doors">${r.doors.map((d, i) => { const locked = d.type === 'boss' && r.seals < 2; return `<button class="door t-${d.type}" data-a="door:${i}" ${locked ? 'disabled' : ''}><img decoding="sync" src="art/door-${DOOR_ART[d.type]}.webp" alt=""><div class="dtxt glass"><b>${esc(d.name)}</b><span class="k">${d.know === 'known' ? 'Known' : d.know === 'partial' ? 'Partly hidden' : 'Mysterious'}</span><span><i>Cost</i> ${esc(d.cost)}</span><span><i>Reward</i> ${esc(d.reward)}</span>${d.law ? `<span><i>Law</i> ${esc(d.law)}</span>` : ''}${d.tell ? `<span class="tell"><i>${esc(d.style)}</i> ${esc(d.tell)}</span>` : ''}${(d.tags || []).map(t => `<em>${esc(t)}</em>`).join('')}</div></button>`; }).join('')}</div></div>`;
 }
 
@@ -373,7 +378,7 @@ function screenBazaar() {
 function screenOver() {
   const r = G.run, S = r.stats, R = G.results;
   return `<div class="hall"><div class="panel glass wide scroll"><h2>${r.result.won ? 'The pyramid is cleared' : `The run ends · Floor ${r.floor + 1}, Chamber ${Math.min(6, r.chamber + 1)}`}</h2>
-    ${R ? R.unlocks.map(u => u.kind === 'gift' ? `<div class="unlock glass gift">${relicImg(u.id)}<div><b>New Gift unlocked: ${esc(u.name)}</b> <small>${esc(u.feat)} complete</small><br>${esc(u.text)}<br><i>${esc(u.why)} It will be in the first Gift offer of your next run.</i></div></div>` : `<div class="unlock glass"><div><b>Unlocked: ${esc(u.name)}</b><br>${esc(u.text)}</div></div>`).join('') : ''}
+    ${R ? R.unlocks.filter(u => u.kind !== 'heat' || u.id <= heatTop()).map(u => u.kind === 'heat' && labs.heat ? { ...u, name: `Heat ${u.id}, ${HEAT_RULES[u.id - 1].name}`, text: HEAT_RULES[u.id - 1].text + ' It pays more Memories.' } : u).map(u => u.kind === 'gift' ? `<div class="unlock glass gift">${relicImg(u.id)}<div><b>New Gift unlocked: ${esc(u.name)}</b> <small>${esc(u.feat)} complete</small><br>${esc(u.text)}<br><i>${esc(u.why)} It will be in the first Gift offer of your next run.</i></div></div>` : `<div class="unlock glass"><div><b>Unlocked: ${esc(u.name)}</b><br>${esc(u.text)}</div></div>`).join('') : ''}
     <div class="cols"><div class="box glass"><h3>This run</h3><table class="tally"><tr><td>Forger</td><td>${esc(r.forger ? FORGERS[r.forger].name : 'None')}</td></tr><tr><td>Duels won</td><td>${S.wins} of ${S.duels}</td></tr><tr><td>Guardians beaten</td><td>${S.bossWins}</td></tr><tr><td>Melds</td><td>${S.melds}</td></tr><tr><td>Ranks</td><td>${Object.entries(S.ranks).map(([k, v]) => k + '×' + v).join(' ') || 'None'}</td></tr></table></div>
     <div class="box glass"><h3>Memories earned</h3>${R ? `<table class="tally">${R.lines.map(l => `<tr><td>${esc(l[0])}</td><td>+${l[1]}</td></tr>`).join('')}</table><div class="bigm">+${R.total} Memories</div>` : '<p class="fine">Already banked.</p>'}</div></div>
     ${R && R.feats.length ? `<div class="box glass featbox"><h3>Feats</h3>${R.feats.map(featRow).join('')}<p class="fine">Feats count across runs, win or lose.</p></div>` : ''}
@@ -396,6 +401,7 @@ function tabPanel() {
 function overlay() {
   const o = G.overlay; if (!o || G.playing) return '';
   if (o.kind === 'duelEnd') { const s = o.sum; return `<div class="modal"><div class="glass panel"><h2>${s.won ? 'Victory' : 'Defeat'}</h2><p>${esc(o.rival ? o.rival.name : '')} · ${s.turns} turns${s.reason === 'deckout' ? ' · a deck ran out' : ''}</p>${s.won ? `<div class="rankbig">${s.rank.rank}</div><table>${s.rank.lines.filter(l => l[1]).map(l => `<tr><td>${esc(l[0])}</td><td>${l[1] > 0 ? '+' : ''}${l[1]}</td></tr>`).join('')}<tr><td><b>Total</b></td><td><b>${s.rank.points}</b></td></tr></table><p>Style: ${s.rank.style === 'craft' ? 'Craft' : 'Fury'} · Embers +${s.embers}${s.bountyMet ? ' · Bounty met' : ''}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>`}<div class="row"><button class="gold" data-a="closeov">Continue</button></div></div></div>`; }
+  if (o.kind === 'heat') return `<div class="modal"><div class="glass panel"><h2>Heat ${o.n}</h2><p>Every rule below is in force on this descent.</p><div class="heatlist">${HEAT_RULES.filter(x => x.n <= o.n).map(x => `<div><i>${x.n}</i><span><b>${esc(x.name)}.</b> ${esc(x.text)}</span></div>`).join('')}</div><div class="row"><button class="gold" data-a="closeov">Close</button></div></div></div>`;
   return '';
 }
 function inspectPanel() {
@@ -420,7 +426,7 @@ app.addEventListener('click', ev => {
   const [verb, x, y] = el.dataset.a.split(':'); const r = G.run, n = x === undefined || x === '' ? null : +x;
   const duel = a => act({ t: 'duel', action: a });
   switch (verb) {
-    case 'new': G.screen = 'forger'; if (!P.forgers.includes(G.pickForger)) G.pickForger = 'tarn'; G.pickHeat = Math.min(G.pickHeat, maxHeat(P)); render(); break;
+    case 'new': G.screen = 'forger'; if (!P.forgers.includes(G.pickForger)) G.pickForger = 'tarn'; G.pickHeat = Math.min(G.pickHeat, heatOpen()); render(); break;
     case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; } render(); break;
     case 'screen': G.screen = x; render(); break;
     case 'lab': setLabs({ ...labs, [x]: !labs[x] }); store.set(LABKEY, labs); render(); break;
@@ -457,6 +463,7 @@ app.addEventListener('click', ev => {
     case 'inspectz': { const v = viewFor(r.duel, db, 0); const m = v.mon[n][+y]; if (m && m.id) { G.inspect = m; render(); } break; }
     case 'closeinspect': G.inspect = null; render(); break;
     case 'closeov': G.overlay = null; render(); break;
+    case 'heatinfo': G.overlay = { kind: 'heat', n }; render(); break;
     case 'speed': G.fast = !G.fast; render(); break;
     // duel
     case 'hand': { if (G.playing || !r.duel || r.duel.active !== 0 || r.duel.pending) break; if (r.duel.played || r.duel.attacked) { G.inspect = r.duel.hand[0][n]; render(); break; } G.attacker = null; const k = G.sel.indexOf(n); if (k >= 0) G.sel.splice(k, 1); else G.sel.push(n); render(); break; }

@@ -6,7 +6,7 @@ import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, eff
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, CHAIN_TURN, sortRelics } from '../engine/relics.mjs';
-import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES } from '../engine/run.mjs';
+import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS } from '../engine/meta.mjs';
@@ -570,6 +570,38 @@ test('free Trap and Cracked Mask: only the Trap set is free; turning your own ve
   applyMut(s, { t: 'pos', zone: 0 }, db); assert.equal(s.mon[0][0].veil, false);
   assert.deepEqual(s.seat[0].rs.nextMeld.map(x => x.id).sort(), ['cracked_mask', 'deep_shade'], 'the Mask arms, and Deep Shade answers the reveal');
   applyMut(s, { t: 'pos', zone: 1 }, db); assert.equal(s.seat[0].rs.nextMeld.length, 2, 'once a duel');
+});
+
+test('Heat ladder: off by default; on, every level adds its written rule and Heat 10 ends at the second gate', () => {
+  assert.equal(HEAT_RULES.length, 10); assert.deepEqual(HEAT_RULES.map(x => x.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  const plain = newRun(db, { seed: 5, heat: 10 }); assert.equal(plain.sparks, db.config.sparks, 'with the lever off Heat changes no rule');
+  const lab = { ...db, config: { ...db.config, heatRules: 1 }, _pair: new Map() };
+  assert.equal(newRun(lab, { seed: 5, heat: 6 }).sparks, db.config.sparks); assert.equal(newRun(lab, { seed: 5, heat: 7 }).sparks, db.config.sparks - 1);
+  let road = 0, hidden = 0, crowned = 0, hard = 0, gates = 0, cleared = 0, styled1 = 0;
+  for (let seed = 1; seed <= 60; seed++) {
+    const run = newRun(lab, { seed, heat: 10, forger: 'tarn' });
+    let last = null;
+    while (run.phase !== 'over') {
+      if (run.phase === 'chamber' && run.doors !== last) {
+        last = run.doors;
+        if (run.doors.length === 3) { assert.equal(run.doors.filter(d => d.reward === 'Hidden until you enter.').length, 1, 'Dim Halls hides one reward'); hidden++; }
+        if (run.chamber === 2 && run.doors.length === 3 && run.doors.every(d => d.tier === 'champion' || d.tier === 'guardian')) road++;
+        if (run.floor >= 1) assert.ok(run.doors.every(d => d.tier !== 'regular'), 'Cursed Halls: no ordinary duel on floors two and three');
+        if (run.secondGate) { assert.equal(run.doors.length, 1); assert.equal(run.doors[0].type, 'boss'); }
+      }
+      const was = run.phase;
+      runApply(run, policyAction(lab, run, { level: 2 }), lab);
+      if (was !== 'duel' && run.phase === 'duel') {
+        const seat = run.duel.seat[1];
+        if (run.rival.tier === 'champion') { assert.ok(seat.relics.includes('heavy_crown')); crowned++; }
+        if (run.rival.tier === 'boss') { assert.ok(seat.strong && seat.relics.includes('whetstone') && seat.relics.includes('iron_rations')); assert.ok(run.rival.lawText.includes('Hard Law')); hard++; }
+        else if (run.floor === 0 && run.rival.style) styled1++;
+      }
+    }
+    if (run.secondGate) gates++;
+    if (run.result.won) { cleared++; assert.ok(run.secondGate, 'a Heat 10 clear goes through the second gate'); }
+  }
+  assert.ok(road > 30 && hidden > 200 && crowned > 20 && hard > 20 && styled1 > 60 && gates > 3 && cleared > 0, `road ${road}, hidden ${hidden}, crowned ${crowned}, hard ${hard}, styled floor one ${styled1}, gates ${gates}, cleared ${cleared}`);
 });
 
 console.log('crucible rules:', passed, 'tests passed');

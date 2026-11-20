@@ -36,6 +36,27 @@ export const STYLES = {
   ember: { style: 'Stormhand', relics: ['storm_needle'], policy: { chainBonus: 60 }, tell: 'His long melds burn.', text: 'Stormhand: each of his melds of three or more cards costs you 300 Life Points, three times a duel.' },
   blade: { style: 'Wall', relics: ['thorn_veil', 'shield_oath'], policy: { veilBonus: 450 }, tell: 'His hidden monsters hurt while they wait.', text: 'Wall: at the end of his turn you lose 200 Life Points for each of his veiled monsters, up to three. A defender of his that survives an attack becomes a Guard you must attack first.' },
 };
+// The Heat ladder (lever heatRules): each level adds one rule the player can read before the run.
+// Levels stack. With the lever off, Heat only makes rival monsters bigger, as before.
+export const HEAT_RULES = [
+  { n: 1, name: "Champions' Road", text: 'The third chamber of every floor holds only champions and a guardian.' },
+  { n: 2, name: 'Cursed Halls', text: 'On floors two and three every ordinary duel is a cursed duel.' },
+  { n: 3, name: 'Provisioned', text: 'Floor guardians start with 500 more Life Points and their first monster gets +200 ATK.' },
+  { n: 4, name: 'Scarce Rest', text: 'Sanctum doors appear half as often.' },
+  { n: 5, name: 'Seasoned Rivals', text: 'Every rival fights in its style from the first floor, with the relics that go with it.' },
+  { n: 6, name: 'Dim Halls', text: 'One door in each chamber hides its reward.' },
+  { n: 7, name: 'Thin Flame', text: 'You start with two Sparks, not three.' },
+  { n: 8, name: 'Hard Law', text: 'Floor guardians use the hard form of their Law.' },
+  { n: 9, name: 'Crowned Champions', text: "A champion's first monster gets +400 ATK. Beating a champion pays 15 more Embers." },
+  { n: 10, name: 'The Second Gate', text: 'After the last guardian falls, the other guardian of the third floor is waiting.' },
+];
+export const STRONG_LAW = {
+  scorched: 'A Field Spell you play holds for one of your turns, not two.', stonewall: 'Her defenders that survive an attack get +300 DEF once and become Guards you must attack first.',
+  bloodprice: 'He gains 800 Life Points, not 500.', mist: 'At the end of his turn you lose 200 Life Points for each of his veiled monsters, up to three.',
+  tyranny: 'Your hand refills to three.', end: 'His ace arrives one turn earlier.',
+};
+const STRONG_RELICS = { stonewall: ['gravecloth', 'shield_oath'], mist: ['thorn_veil'] };
+const heatAt = (db, run, n) => !!db.config.heatRules && (run.heat || 0) >= n;
 export const KITS = [
   { id: 'dragons_warriors', name: 'Dragons and Warriors', types: ['Dragon', 'Warrior'] },
   { id: 'spellcasters_fiends', name: 'Spellcasters and Fiends', types: ['Spellcaster', 'Fiend'] },
@@ -133,7 +154,7 @@ export function makeKit(db, rng, kit) {
 export function makeRival(db, rng, { floor, tier, theme, boss = null, heat = 0 }) {
   const L = poolLists(db);
   const band = BANDS[tier][floor].slice();
-  band[0] += heat * 40; band[1] += heat * 60;
+  if (!db.config.heatRules) { band[0] += heat * 40; band[1] += heat * 60; } // the Heat ladder adds rules, not bigger numbers
   if (boss && db.config.bossBand) { const bb = db.config.bossBand[floor] || 0; band[0] = Math.max(300, band[0] + Math.round(bb / 2)); band[1] = Math.max(band[0] + 200, band[1] + bb); }
   if (db.config.rivalBand) { const rb = Array.isArray(db.config.rivalBand) ? db.config.rivalBand[floor] || 0 : db.config.rivalBand; band[0] = Math.max(300, band[0] + Math.round(rb / 2)); band[1] = Math.max(band[0] + 200, band[1] + rb); }
   const types = boss ? boss.types : theme.types;
@@ -162,7 +183,7 @@ export function makeRival(db, rng, { floor, tier, theme, boss = null, heat = 0 }
   for (const f of db.pool.cards) if (f.kind === 'fusion' && f.materials && f.atk <= band[1] + 600) for (const m of f.materials) if (types.includes(db.byId.get(m).type)) craft.push(m);
   const common = deck.filter(e => db.isMonster(e.id)).map(e => e.id);
   return {
-    name: boss ? boss.name : theme.name, tier, floor, deck, ai: Math.min(2, AI_LEVEL[tier][floor] + (heat >= 4 ? 1 : 0)),
+    name: boss ? boss.name : theme.name, tier, floor, deck, ai: Math.min(2, AI_LEVEL[tier][floor] + (heat >= 4 && !db.config.heatRules ? 1 : 0)),
     law: boss ? boss.law : null, lawText: boss ? boss.lawText : null, ace: ace ? ace.id : null,
     drops: { common, fury: fury.length ? fury : common, craft: craft.length ? craft : common }, bossId: boss ? boss.id : null,
   };
@@ -205,7 +226,7 @@ export function newRun(db, { seed, heat = 0, forger = null, locked = null, featu
   const cfg = db.config, rng = Rng.fromSeed(seed);
   const run = {
     v: 1, seed: String(seed), rng: null, heat, phase: 'kit', floor: 0, chamber: 0, seals: 0,
-    sparks: cfg.sparks, embers: cfg.embers.start, xp: 0, level: 0, giftsQueued: 0,
+    sparks: cfg.sparks - (cfg.heatRules && heat >= 7 ? 1 : 0), embers: cfg.embers.start, xp: 0, level: 0, giftsQueued: 0,
     deck: [], trunk: [], charms: [], gifts: [], masterworks: [], binds: 0, capBonus: 0,
     kit: null, homeField: null, redeal: 1, doors: null, offer: null, duel: null, rival: null, door: null,
     bossOrder: BOSSES.map(pair => rng.int(pair.length)), secondWindUsed: false,
@@ -262,10 +283,13 @@ function genDoors(db, run, rng) {
   const needSeals = Math.max(0, 2 - run.seals);
   if (ch === cfg.chambers - 1 && !needSeals) return [bossDoor(run)];
   const left = cfg.chambers - 1 - ch; // chambers before the boss, including this one
-  const mkDuel = tier => ({ type: tier === 'regular' ? 'duel' : tier, tier, theme: rng.int(THEMES.length), twist: tier === 'cursed' ? rng.pick(['fog', 'narrow', 'storm', 'locked']) : null, know: 'known' });
+  const mkDuel = t0 => { const tier = t0 === 'regular' && fl >= 1 && heatAt(db, run, 2) ? 'cursed' : t0; return mkDuel0(tier); };
+  const mkDuel0 = tier => ({ type: tier === 'regular' ? 'duel' : tier, tier, theme: rng.int(THEMES.length), twist: tier === 'cursed' ? rng.pick(['fog', 'narrow', 'storm', 'locked']) : null, know: 'known' });
   const doors = [];
   if (needSeals >= left || ch === cfg.chambers - 1) { // a seal short with no room left: all duels, and the boss chamber waits
     for (let i = 0; i < 3; i++) doors.push(mkDuel(i === 0 ? 'regular' : rng.pick(['regular', 'cursed'])));
+  } else if (ch === 2 && heatAt(db, run, 1)) {
+    doors.push(mkDuel('champion'), mkDuel('guardian'), mkDuel('champion'));
   } else {
     doors.push(mkDuel(rng.chance(1, 4) ? 'cursed' : 'regular'));
     const pool = ch === cfg.chambers - 2
@@ -277,6 +301,7 @@ function genDoors(db, run, rng) {
       if (used.has(t) && !['duel', 'cursed'].includes(t)) continue;
       if (t === 'treasure' && !rng.chance(1, 3)) continue;
       if (t === 'guardian' && ch < 2) continue;
+      if (t === 'sanctum' && heatAt(db, run, 4) && !rng.chance(1, 2)) continue;
       used.add(t);
       if (['duel', 'cursed', 'champion', 'guardian'].includes(t)) doors.push(mkDuel(t === 'duel' ? 'regular' : t));
       else doors.push({ type: t, know: t === 'mystery' ? 'mystery' : rng.chance(1, 4) ? 'partial' : 'known', merchant: t === 'bazaar' ? rng.pick(['cards', 'charms', 'scrapper', 'shadow']) : null });
@@ -284,12 +309,15 @@ function genDoors(db, run, rng) {
     rng.shuffle(doors);
   }
   for (const d of doors) describe(db, run, d);
+  if (heatAt(db, run, 6) && doors.length === 3) { const d = doors[rng.int(3)]; d.reward = 'Hidden until you enter.'; d.know = 'partial'; d.hidden = 'Its reward is hidden.'; }
   return doors;
 }
 function bossDoor(run) {
   const b = BOSSES[run.floor][run.bossOrder[run.floor]];
-  return { type: 'boss', tier: 'boss', know: 'known', boss: b.id, name: b.name, cost: 'A Spark if you lose. You face it again.', reward: 'Guardian Reward, +20 weight cap, the way down.', law: b.lawText, needsSeals: 2 };
+  return { type: 'boss', tier: 'boss', know: 'known', boss: b.id, name: b.name, cost: 'A Spark if you lose. You face it again.', reward: 'Guardian Reward, +20 weight cap, the way down.', law: lawTextFor(DB, run, b), needsSeals: 2 };
 }
+export const bossLaw = (db, run) => lawTextFor(db, run, BOSSES[run.floor][run.bossOrder[run.floor]]);
+const lawTextFor = (db, run, b) => b.lawText + (db && heatAt(db, run, 8) ? ' Hard Law: ' + STRONG_LAW[b.law] : '') + (db && heatAt(db, run, 3) ? ' Provisioned: +500 Life Points, first monster +200 ATK.' : '');
 function describe(db, run, d) {
   const TW = { fog: 'Fog: every monster arrives veiled.', narrow: 'Narrow Pass: three monster zones a side.', storm: 'Storm Front: the terrain changes every third turn.', locked: 'Locked terrain: the terrain cannot be replaced.' };
   switch (d.type) {
@@ -307,7 +335,7 @@ function describe(db, run, d) {
   if (d.know === 'partial') d.hidden = 'One detail is hidden.';
   // Tags are worked out from the real deck, never guessed.
   d.tags = [];
-  { const st = styleOf(db, run.floor, d); if (st) { d.style = st.style; d.tell = st.tell; } }
+  { const st = styleOf(db, run, d); if (st) { d.style = st.style; d.tell = st.tell; } }
   if (d.tier && d.theme != null) {
     const fam = THEMES[d.theme];
     const have = run.deck.filter(e => db.isMonster(e.id) && fam.types.includes(db.byId.get(e.id).type)).length;
@@ -316,7 +344,7 @@ function describe(db, run, d) {
   if (d.type === 'anvil') { const [a] = possibleMasterworks(run); if (a) d.tags.push('Masterwork ready: ' + RELICS[a].name); }
 }
 
-const styleOf = (db, floor, d) => db.config.rivalStyles && d.tier && d.tier !== 'boss' && d.theme != null && (floor >= 1 || d.tier === 'champion' || d.tier === 'guardian') ? STYLES[THEMES[d.theme].id] : null;
+const styleOf = (db, run, d) => (db.config.rivalStyles || heatAt(db, run, 5)) && d.tier && d.tier !== 'boss' && d.theme != null && (run.floor >= 1 || d.tier === 'champion' || d.tier === 'guardian' || heatAt(db, run, 5)) ? STYLES[THEMES[d.theme].id] : null;
 
 export function possibleMasterworks(run) {
   if (run.masterworks.length >= 2) return [];
@@ -331,13 +359,15 @@ function startDuel(db, run, rng, door, onStep) {
   const relics = relicList(run);
   if (run.forger) relics.unshift(FORGERS[run.forger].rule);
   if (db.config.testRelics) for (const id of db.config.testRelics) if (!relics.includes(id)) relics.push(id);
-  const style = styleOf(db, run.floor, door) || null;
+  const style = styleOf(db, run, door) || null;
+  const strong = !!boss && heatAt(db, run, 8);
+  const rr = (style ? style.relics.slice() : door.tier === 'champion' ? ['whetstone'] : []).concat(door.tier === 'champion' && heatAt(db, run, 9) ? ['heavy_crown'] : [], boss && heatAt(db, run, 3) ? ['whetstone', 'iron_rations'] : [], strong ? STRONG_RELICS[boss.law] || [] : []);
   const bounty = rng.pick(BOUNTIES);
   const seats = [
-    { relics, handSize: (relics.includes('deep_pockets') ? 6 : db.config.hand) - (rival.law === 'tyranny' ? 1 : 0), firstTurnHand: run.sparks === 1 ? 6 : 0, homeField: run.homeField, underCap: cap - deckWeight(db, run.deck), secondWind: relics.includes('second_wind') && !run.secondWindUsed, sparks: run.sparks, forger: run.forger || null, ...(run.feat ? { track: 1 } : {}) },
-    { law: rival.law, ace: rival.ace, relics: style ? style.relics.slice() : door.tier === 'champion' ? ['whetstone'] : [], ...(style && style.hand ? { handSize: style.hand } : {}), ...(style && style.home ? { homeField: (rival.deck.find(e => roleOf(db, e.id) === 'field') || {}).id || null } : {}), ...(db.config.freeCastRival === 'none' || (db.config.freeCastRival === 'elite' && door.tier === 'regular') || (db.config.freeCastRival === 'boss' && door.tier !== 'boss') ? { noFree: 1 } : {}) },
+    { relics, handSize: (relics.includes('deep_pockets') ? 6 : db.config.hand) - (rival.law === 'tyranny' ? (strong ? 2 : 1) : 0), firstTurnHand: run.sparks === 1 ? 6 : 0, homeField: run.homeField, underCap: cap - deckWeight(db, run.deck), secondWind: relics.includes('second_wind') && !run.secondWindUsed, sparks: run.sparks, forger: run.forger || null, ...(run.feat ? { track: 1 } : {}) },
+    { law: rival.law, ace: rival.ace, relics: [...new Set(rr)], ...(strong ? { strong: 1 } : {}), ...(style && style.hand ? { handSize: style.hand } : {}), ...(style && style.home ? { homeField: (rival.deck.find(e => roleOf(db, e.id) === 'field') || {}).id || null } : {}), ...(db.config.freeCastRival === 'none' || (db.config.freeCastRival === 'elite' && door.tier === 'regular') || (db.config.freeCastRival === 'boss' && door.tier !== 'boss') ? { noFree: 1 } : {}) },
   ];
-  run.rival = { name: rival.name, tier: rival.tier, ai: rival.ai, law: rival.law, lawText: rival.lawText, drops: rival.drops, ace: rival.ace, bounty: bounty.id, bountyText: bounty.text, twist: door.twist || null, ...(style ? { style: style.style, styleText: style.text, theme: THEMES[door.theme].id } : {}) };
+  run.rival = { name: rival.name, tier: rival.tier, ai: rival.ai, law: rival.law, lawText: boss ? lawTextFor(db, run, boss) : rival.lawText, drops: rival.drops, ace: rival.ace, bounty: bounty.id, bountyText: bounty.text, twist: door.twist || null, ...(style ? { style: style.style, styleText: style.text, theme: THEMES[door.theme].id } : {}) };
   run.duel = newDuel(db, { seed: rng.u32(), decks: [run.deck, rival.deck], seats, twist: door.twist || null });
   run.phase = 'duel';
   if (onStep) onStep([{ e: 'duelStart' }]);
@@ -408,7 +438,7 @@ function finishDuel(db, run, rng, ev) {
   const bountyMet = bounty.test(st, d);
   if (bountyMet) { rk.points += 10; rk.lines.push(['Bounty', 10]); rk.rank = rankLetter(cfg.rank, rk.points); S.bounties++; }
   S.ranks[rk.rank] = (S.ranks[rk.rank] || 0) + 1; (S.points || (S.points = [])).push(rk.points); (S.bountyBy || (S.bountyBy = {}))[bounty.id] = [((S.bountyBy[bounty.id] || [0, 0])[0]) + 1, ((S.bountyBy[bounty.id] || [0, 0])[1]) + (bountyMet ? 1 : 0)];
-  let embers = cfg.embers[rk.rank] + st.embers + (tier === 'cursed' ? cfg.embers.cursedBonus : 0) + (bountyMet ? cfg.embers.bountyBonus : 0) + (run.charms.includes('ember_purse') ? 8 : 0);
+  let embers = cfg.embers[rk.rank] + st.embers + (tier === 'cursed' ? cfg.embers.cursedBonus : 0) + (tier === 'champion' && heatAt(db, run, 9) ? 15 : 0) + (bountyMet ? cfg.embers.bountyBonus : 0) + (run.charms.includes('ember_purse') ? 8 : 0);
   run.embers += embers;
   run.xp += cfg.xp.duel + (bountyMet ? cfg.xp.bounty : 0) + (tier === 'champion' ? cfg.xp.champion : 0) + (tier === 'boss' ? cfg.xp.boss : 0);
   while (run.xp >= (run.level + 1) * cfg.xp.perLevel * (cfg.giftXpScale || 1)) { run.level++; run.giftsQueued++; }
@@ -449,6 +479,7 @@ function nextReward(db, run, rng) {
   run.offer = null; run.queue = null;
   if (run.door && run.door.type === 'boss' && run.lastDuel && run.lastDuel.won) {
     run.capBonus += db.config.bossCapBonus;
+    if (run.floor === db.config.floors - 1 && heatAt(db, run, 10) && !run.secondGate) { run.secondGate = 1; run.bossOrder[run.floor] = 1 - run.bossOrder[run.floor]; run.lastNote = 'The Second Gate opens. The other guardian of this floor is waiting.'; run.door = null; run.doors = [bossDoor(run)]; run.phase = 'chamber'; return; }
     if (run.floor === db.config.floors - 1) { run.phase = 'over'; run.result = { won: true, floor: run.floor }; return; }
     run.floor++; run.chamber = 0; run.seals = 0; run.door = null;
     run.doors = genDoors(db, run, rng); run.phase = 'chamber'; return;

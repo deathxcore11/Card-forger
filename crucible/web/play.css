@@ -159,3 +159,10 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 .relicFlash.rivalf { top: .6em; color: #ff8d7a; text-shadow: 0 0 .5em #000, 0 0 1em #7a1f12; } .rules .rstyle { color: #ffb37a; } .dtxt .tell { color: #ffb37a; } .dtxt .tell i { color: #ff8d7a; }
 .labs { max-width: 86em; } .labgrid { display: grid; grid-template-columns: 1fr 1fr; gap: .5em; } .labgrid .lab { font-size: .98em; padding: .5em .8em; }
 .title .labs small { letter-spacing: 0; font-size: 1em; color: var(--dim); }
+
+/* Heat ladder */
+.heatbox { display: flex; flex-wrap: wrap; align-items: center; gap: .4em 1em; padding: .6em 1em; margin: .2em 0 .6em; font-size: 1.15em; }
+.heatbox .new { flex: 1 1 100%; } .heatbox .new b { color: var(--gold, #e8c877); } .heatbox button { font-size: .95em; padding: .3em .8em; }
+.heatlist { display: grid; gap: .5em; margin: .6em 0 1em; font-size: 1.2em; } .heatlist div { display: grid; grid-template-columns: 2em 1fr; align-items: baseline; }
+.heatlist i { font-style: normal; color: var(--gold, #e8c877); font-weight: 700; }
+.heatchip { font-size: .85em; padding: .2em .7em; margin-left: .6em; }

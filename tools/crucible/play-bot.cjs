@@ -22,6 +22,7 @@ const path = require('path');
     if (run === 0) { await page.evaluate(() => localStorage.clear()); await page.reload(); }
     if (run === 0 && process.env.LABS) { for (const k of process.env.LABS.split(',')) await click('[data-a="lab:' + k + '"]'); await shot('home-labs'); }
     await shot('home'); await click('[data-a="new"]'); await shot('forger');
+    if (process.env.HEAT) { if (!(await click('[data-a="heat:' + process.env.HEAT + '"]:not([disabled])'))) errors.push('Heat ' + process.env.HEAT + ' is not open'); await shot('forger-heat'); if (await click('[data-a^="heatinfo:"]')) { await shot('heat-rules'); await click('[data-a="closeov"]'); } }
     const owned = await page.locator('.ch[data-a^="forger:"]').count(); if (owned > 1) { await page.locator('.ch[data-a^="forger:"]').nth(run % owned).click({ force: true }); clicks++; }
     if (!(await click('[data-a="descend"]'))) errors.push('could not start run ' + run + ': ' + (await page.evaluate(() => JSON.stringify({ screen: window.LM.G.screen, phase: window.LM.G.run && window.LM.G.run.phase, story: !!window.LM.G.story, ov: !!window.LM.G.overlay, tab: window.LM.G.tab, insp: !!window.LM.G.inspect, btns: [...document.querySelectorAll('button')].map(b => b.dataset.a).join(' ') }))));
     for (let step = 0; step < 6000; step++) {

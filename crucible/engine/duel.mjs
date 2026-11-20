@@ -28,6 +28,7 @@ export function newDuel(db, { seed, decks, seats = [{}, {}], first = null, twist
       ...(seats[i].forger ? { forger: seats[i].forger } : {}),
       ...(seats[i].noFree ? { noFree: 1 } : {}),
       ...(seats[i].track ? { track: 1 } : {}),
+      ...(seats[i].strong ? { strong: 1 } : {}),
     })),
     stats: [blankStats(), blankStats()],
   };
@@ -395,9 +396,9 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
   if (tGone && !xGone && has(s, defSeat, 'grave_ward')) { const c = {}; fire(s, db, ev, defSeat, 'fell', c); if (c.kill) xGone = destroyMon(s, db, ev, atkSeat, az, 'relic'); }
   if (tGone && !xGone) {
     fire(s, db, ev, atkSeat, 'wonBattle', { mon: X, zone: az, edge: f.edgeA });
-    if (s.seat[atkSeat].law === 'bloodprice') gainLp(s, ev, atkSeat, 500, 'law');
+    if (s.seat[atkSeat].law === 'bloodprice') gainLp(s, ev, atkSeat, s.seat[atkSeat].strong ? 800 : 500, 'law');
   }
-  if (xGone && !tGone && s.seat[defSeat].law === 'bloodprice') gainLp(s, ev, defSeat, 500, 'law');
+  if (xGone && !tGone && s.seat[defSeat].law === 'bloodprice') gainLp(s, ev, defSeat, s.seat[defSeat].strong ? 800 : 500, 'law');
   if (!tGone && T.pos === 'd') {
     if (f.a < f.d) s.stats[defSeat].defWins++;
     fire(s, db, ev, defSeat, 'survived', { mon: T, zone: dz, attacker: X, wasVeiled });
@@ -578,7 +579,7 @@ function doPower(s, db, ev, seat, a) {
   } else if (f === 'veil') { const m = s.mon[seat][a.zone]; m.veil = true; m.pos = 'd'; m.moved = true; ev.push({ e: 'pos', seat, zone: a.zone, pos: 'd', veiled: true }); }
   else if (f === 'storm') {
     const prev = s.terrain;
-    if (prev && prev.law) s.terrain = { id: st.homeField, owner: seat, temp: 2, back: prev };
+    if (prev && prev.law) s.terrain = { id: st.homeField, owner: seat, temp: s.seat[prev.owner].strong ? 1 : 2, back: prev };
     else if (prev && prev.temp != null) s.terrain = { id: st.homeField, owner: seat, temp: 2, back: prev.back };
     else s.terrain = { id: st.homeField, owner: seat };
     ev.push({ e: 'terrain', seat, id: st.homeField });
@@ -643,7 +644,7 @@ function doPlay(s, db, ev, seat, a) {
   const role = roleOf(db, f.id);
   if (role === 'field') {
     const prev = s.terrain;
-    if (prev && prev.law) s.terrain = { id: f.id, owner: seat, temp: 2, back: prev };
+    if (prev && prev.law) s.terrain = { id: f.id, owner: seat, temp: s.seat[prev.owner].strong ? 1 : 2, back: prev };
     else if (prev && prev.temp != null) s.terrain = { id: f.id, owner: seat, temp: 2, back: prev.back };
     else s.terrain = { id: f.id, owner: seat };
     s.gy[seat].push(f.id);
@@ -711,7 +712,7 @@ function endTurn(s, db, ev) {
     s.terrain = { id, owner: now, storm: true }; ev.push({ e: 'terrain', seat: now, id, storm: true });
   }
   const st = s.seat[now];
-  if (st.law === 'end' && st.ace && s.stats[now].turns >= (db.config.endTurns || 4) && !st.rs.endCame) {
+  if (st.law === 'end' && st.ace && s.stats[now].turns >= (db.config.endTurns || 4) - (st.strong ? 1 : 0) && !st.rs.endCame) {
     const z = freeZone(s, now);
     if (z >= 0) { st.rs.endCame = 1; s.mon[now][z] = { u: s.uid++, id: st.ace, pos: 'a', veil: false, att: 0, moved: true, fix: db.config.endAtk || 5000 }; ev.push({ e: 'summon', seat: now, zone: z, id: st.ace, pos: 'a', law: true }); }
   }

@@ -6,7 +6,7 @@ import { RELICS as BASE, LAB } from './relics.mjs';
 const RELICS = { ...BASE, ...LAB };
 import { FORGERS } from './forgers.mjs';
 
-export const MAX_HEAT = 5;
+export const MAX_HEAT = 10;
 // Relics a new profile cannot be offered until bought in the Vault.
 export const VAULT = [
   { id: 'tomb_bell', price: 20 }, { id: 'glass_idol', price: 20 }, { id: 'tinder_vow', price: 20 },
