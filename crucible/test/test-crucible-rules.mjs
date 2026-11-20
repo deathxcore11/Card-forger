@@ -10,7 +10,7 @@ import { RELICS, LAB, CHAIN_TURN, sortRelics, fire, relicText, TUNED_TEXT } from
 import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
-import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS } from '../engine/meta.mjs';
+import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS, FEATS_LONG, LONG_GIFTS, KIT_GOALS, START_ENCHANTS, VAULT_ENCHANTS, openKits, nextKit, openEnchants, runOptions, featList } from '../engine/meta.mjs';
 
 const db = loadDb();
 const C = n => { const c = db.byName.get(n); assert.ok(c, 'card in pool: ' + n); return c; };
@@ -490,6 +490,47 @@ test('profile: every run pays Memories, unlocks come from feats, the Vault takes
   let won = null; for (let seed = 1; seed < 60 && !won; seed++) { const r = playRun(db, newRun(db, { seed }), { level: 2 }); if (r.result.won) won = r; }
   const q = newProfile(); const w = applyRun(q, won);
   assert.equal(q.heatCleared, 0); assert.equal(maxHeat(q), 1); assert.ok(w.unlocks.some(u => u.kind === 'heat')); assert.ok(q.forgers.includes('storm') && q.forgers.includes('veil'));
+});
+
+test('long road: kits open by duels won, Heat is per Forger, Enchants are bought, three more feats; off, nothing changes', () => {
+  const p = newProfile();
+  // off: the same options as before, and a run made with every kit and Enchant open is the ordinary run
+  assert.deepEqual(Object.keys(runOptions(p, 'tarn', false)).sort(), ['featured', 'locked', 'track']);
+  const plain = newRun(db, { seed: 31, forger: 'tarn' }), full = newRun(db, { seed: 31, forger: 'tarn', kits: FORGERS.tarn.kits.map(k => k.id), enchants: ENCHANTS });
+  assert.deepEqual(full.offer, plain.offer); assert.deepEqual(full.rng, plain.rng);
+  // on: one kit to start, dealt three ways
+  assert.deepEqual(openKits(p, 'tarn'), ['dragons_warriors']); assert.equal(nextKit(p, 'tarn').goal, KIT_GOALS[1]);
+  const o = runOptions(p, 'tarn', true), first = newRun(db, { seed: 31, forger: 'tarn', ...o });
+  assert.deepEqual(first.offer.map(k => k.kit), ['dragons_warriors', 'dragons_warriors', 'dragons_warriors']);
+  assert.notDeepEqual(first.offer[0].deck, first.offer[1].deck, 'three different decks of the one kit');
+  for (const g of LONG_GIFTS) assert.ok(o.locked.includes(g) && !lockedRelics(p).includes(g), g + ' is locked only on the long road');
+  assert.deepEqual(o.enchants, START_ENCHANTS); assert.equal(START_ENCHANTS.length + VAULT_ENCHANTS.length, ENCHANTS.length);
+  // an Anvil offers only open Enchants, and uses the dice exactly as an ordinary Anvil does
+  let seen = 0;
+  for (let seed = 1; seed < 40 && seen < 3; seed++) {
+    const a = newRun(db, { seed, forger: 'tarn' }), b = newRun(db, { seed, forger: 'tarn', enchants: START_ENCHANTS });
+    for (let n = 0; n < 4000 && a.phase !== 'over' && a.phase !== 'anvil'; n++) { const act = policyAction(db, a, { level: 2 }); runApply(a, act, db); runApply(b, clone(act), db); }
+    if (a.phase !== 'anvil') continue; seen++;
+    assert.deepEqual(b.rng, a.rng); assert.ok(b.offer.enchants.length >= 1 && b.offer.enchants.every(e => START_ENCHANTS.includes(e)));
+    { const keep = a.offer.enchants.filter(e => START_ENCHANTS.includes(e)); assert.deepEqual(b.offer.enchants.slice(0, keep.length), keep); }
+    const shut = a.offer.enchants.find(e => !START_ENCHANTS.includes(e)), di = b.deck.findIndex(e => db.isMonster(e.id) && !e.e);
+    if (shut) assert.throws(() => runApply(b, { t: 'anvil', kind: 'enchant', deck: di, enchant: shut }, db), /not offered/);
+  }
+  assert.ok(seen >= 1, 'reached an Anvil');
+  // banking: duel wins open kits, a clear opens that Forger's next Heat only
+  const run = playRun(db, newRun(db, { seed: 5, ...o, forger: 'tarn' }), { level: 2 }), got = applyRun(p, run, { long: true });
+  assert.equal(p.byForger.tarn.runs, 1); assert.equal(p.byForger.tarn.wins, run.stats.wins);
+  assert.equal(got.unlocks.filter(u => u.kind === 'kit').length, openKits(p, 'tarn').length - 1);
+  assert.equal(got.feats.length, featList(true).length);
+  p.byForger.tarn.wins = KIT_GOALS[2]; assert.equal(openKits(p, 'tarn').length, 3); assert.equal(nextKit(p, 'tarn'), null);
+  let won = null; for (let seed = 1; seed < 60 && !won; seed++) { const r = playRun(db, newRun(db, { seed, forger: 'tarn' }), { level: 2 }); if (r.result.won) won = r; }
+  const q = newProfile(), w = applyRun(q, won, { long: true });
+  assert.equal(maxHeat(q, 'tarn', true), 1); assert.equal(maxHeat(q, 'storm', true), 0); assert.equal(maxHeat(q), 1);
+  assert.ok(w.unlocks.some(u => u.kind === 'heat' && u.forger === 'tarn')); assert.equal(w.unlocks.filter(u => u.kind === 'heat').length, 1);
+  // Enchants in the Vault
+  assert.throws(() => buy(newProfile(), 'ench:herald'), /not enough/);
+  q.memories = 60; const b = buy(q, 'ench:herald'); assert.equal(b.name, 'Herald'); assert.equal(q.memories, 10); assert.ok(openEnchants(q).includes('herald')); assert.throws(() => buy(q, 'ench:herald'), /already/);
+  for (const f of FEATS_LONG) { assert.ok(LAB[f.gift] || RELICS[f.gift], f.gift + ' exists'); assert.ok(f.text.includes(String(f.goal))); }
 });
 
 test('lab relics: never in a normal run; switched on, Tomb Ledger chains into Grave Call and Second Burial inside the limits', () => {

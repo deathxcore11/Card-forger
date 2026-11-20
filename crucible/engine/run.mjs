@@ -252,8 +252,9 @@ export const BOUNTIES = [
 // ---------- run state ----------
 // forger: a key of FORGERS (optional). locked: relic ids this profile has not unlocked yet (optional).
 // featured: Gift ids to show once each in this run's first Gift offers (a newly unlocked Gift).
-// track: keep the feat counters in run.feat. Both are optional and leave an ordinary run unchanged.
-export function newRun(db, { seed, heat = 0, forger = null, locked = null, featured = null, track = false } = {}) {
+// track: keep the feat counters in run.feat. kits: the kit ids this profile has open (the kit offer deals only those).
+// enchants: the Enchants this profile has open (an Anvil offers only those). All optional; an ordinary run is unchanged.
+export function newRun(db, { seed, heat = 0, forger = null, locked = null, featured = null, track = false, kits = null, enchants = null } = {}) {
   DB = db;
   const cfg = db.config, rng = Rng.fromSeed(seed);
   const run = {
@@ -269,6 +270,8 @@ export function newRun(db, { seed, heat = 0, forger = null, locked = null, featu
   if (locked && locked.length) run.locked = locked.slice();
   if (featured && featured.length) run.featured = featured.slice();
   if (track) run.feat = { long4: 0, gyWins: 0, baits: 0, bestGy: 0, bigWins: 0 };
+  if (kits && kits.length) run.kitsOpen = kits.slice();
+  if (enchants && enchants.length) run.enchOpen = enchants.slice();
   if (cfg.giftRerolls) run.rerolls = cfg.giftRerolls;
   run.offer = dealKits(db, rng, run);
   run.rng = rng.s;
@@ -277,7 +280,9 @@ export function newRun(db, { seed, heat = 0, forger = null, locked = null, featu
 function dealKits(db, rng, run) {
   // testKit (lever): offer one named kit three times, whoever the Forger is, to measure a kit on its own.
   const one = db.config.testKit ? [...KITS, ...Object.values(FORGERS).flatMap(f => f.kits)].find(k => k.id === db.config.testKit) : null;
-  return (one ? [one, one, one] : run.forger ? FORGERS[run.forger].kits : KITS).map(k => { const d = makeKit(db, rng, k); run.stats.kitRejects += d.rejected; return { kit: k.id, name: k.name, deck: d.deck, homeField: d.homeField }; });
+  const all = one ? [one, one, one] : run.forger ? FORGERS[run.forger].kits : KITS, open = run.kitsOpen ? all.filter(k => run.kitsOpen.includes(k.id)) : all;
+  // with some kits still locked the open ones are dealt three times over: three different decks of the kits the player has
+  return (open.length && open.length < all.length ? [0, 1, 2].map(i => open[i % open.length]) : all).map(k => { const d = makeKit(db, rng, k); run.stats.kitRejects += d.rejected; return { kit: k.id, name: k.name, deck: d.deck, homeField: d.homeField }; });
 }
 
 export const weightCap = (db, run) => db.config.weightCaps[0] + run.capBonus + (run.charms.includes('heavy_pack') ? 10 : 0) - (run.charms.includes('heavy_crown') ? 10 : 0);
@@ -457,6 +462,9 @@ function finishDuel(db, run, rng, ev) {
     F.bestGy = Math.max(F.bestGy, gy);
     if (won && gy >= 8) F.gyWins++;
     if (won && d.mon[0].some(m => m && !m.veil && effAtk(d, db, 0, m) >= 3000)) F.bigWins = (F.bigWins || 0) + 1;
+    F.walls = (F.walls || 0) + st.defWins;
+    if (won && d.mon[0].some(m => m && m.veil)) F.veilWins = (F.veilWins || 0) + 1;
+    if (won && st.wasBehind) F.comebacks = (F.comebacks || 0) + 1;
   }
   const door = run.door, tier = run.rival.tier;
   const summary = { won, turns: d.turn, reason: d.reason, lp: d.lp.slice(), tier };
@@ -587,7 +595,7 @@ export function runApply(run, a, db, opts = {}) {
       ev.push({ e: 'door', type: door.type });
       if (door.tier) { startDuel(db, run, rng, door, opts.onStep); if (run.duel.winner !== null) finishDuel(db, run, rng, ev); break; }
       switch (door.type) {
-        case 'anvil': run.phase = 'anvil'; run.offer = { kind: 'anvil', masterworks: possibleMasterworks(run), enchants: rng.shuffle(ENCHANTS.slice()).slice(0, 3) }; break;
+        case 'anvil': run.phase = 'anvil'; run.offer = { kind: 'anvil', masterworks: possibleMasterworks(run), enchants: rng.shuffle(ENCHANTS.slice()).filter(e => !run.enchOpen || run.enchOpen.includes(e)).slice(0, 3) }; break;
         case 'bazaar': run.phase = 'bazaar'; run.offer = { kind: 'bazaar', merchant: door.merchant, items: bazaarStock(db, run, rng, door.merchant) }; break;
         case 'sanctum': run.phase = 'reward'; run.queue = []; run.offer = { kind: 'sanctum', options: ['spark', 'cap'] }; break;
         case 'omen': { const strong = rng.pick(poolLists(db).monsters.filter(m => m.atk >= BANDS.guardian[run.floor][0] + 300 && m.atk <= BANDS.guardian[run.floor][1] + 300)); run.phase = 'reward'; run.queue = []; run.offer = { kind: 'omen', card: { id: strong.id }, seen: false, text: 'The altar takes two trunk cards for one stronger card unseen, or 30 Embers to see it first. You may leave.' }; break; }

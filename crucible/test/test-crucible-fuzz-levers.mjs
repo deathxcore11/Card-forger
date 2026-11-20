@@ -11,7 +11,7 @@ import { RELICS, LAB, sortRelics } from '../engine/relics.mjs';
 import { newRun, runApply, ENCHANTS, deckWeight, weightCap, KITS } from '../engine/run.mjs';
 import { FORGERS } from '../engine/forgers.mjs';
 import { policyAction } from '../engine/policy.mjs';
-import { newProfile, applyRun, buy, lockedRelics, maxHeat, VAULT, FEATS } from '../engine/meta.mjs';
+import { newProfile, applyRun, buy, lockedRelics, maxHeat, VAULT, VAULT_ENCHANTS, LONG_GIFTS, featList, runOptions, openKits, openEnchants } from '../engine/meta.mjs';
 
 const read = f => JSON.parse(readFileSync(new URL('../data/' + f, import.meta.url), 'utf8'));
 const POOL = read('crucible-pool.json'), TAGS = read('crucible-spell-tags.json'), BASE = read('crucible-config.json');
@@ -220,33 +220,42 @@ function runFuzz(name, cfg) {
   return { acts, refused, wildRefused, over, floors, wonAtHeat: heats };
 }
 
-// Profiles: many runs banked one after another, with Vault purchases between them.
-function profileFuzz(db, count, runsEach) {
-  let banked = 0, bought = 0, topHeat = 0;
+// Profiles: many runs banked one after another, with Vault purchases between them. Every second profile walks the long road.
+function profileFuzz(db0, count, runsEach) {
+  let banked = 0, bought = 0, topHeat = 0, kits = 0;
+  const dbLong = { ...db0, config: { ...db0.config, labPool: (db0.config.labPool || []).concat(LONG_GIFTS) }, _pair: new Map() };
   for (let n = 1; n <= count; n++) {
-    const r = Rng.fromSeed(n * 31337 + SEED0), p = newProfile();
+    const r = Rng.fromSeed(n * 31337 + SEED0), p = newProfile(), long = n % 2 === 0, db = long ? dbLong : db0;
+    const SHOP = VAULT.map(v => ({ ...v, key: v.id })).concat(long ? VAULT_ENCHANTS : []);
     for (let k = 0; k < runsEach; k++) {
-      const heat = r.int(maxHeat(p) + 1), forger = r.pick(p.forgers), featured = (p.fresh || []).slice();
-      const run = newRun(db, { seed: n * 1000 + k + SEED0, heat, forger, locked: lockedRelics(p), featured, track: true });
+      const forger = r.pick(p.forgers), heat = r.int(maxHeat(p, forger, long) + 1), featured = (p.fresh || []).slice();
+      const run = newRun(db, { seed: n * 1000 + k + SEED0, heat, forger, ...runOptions(p, forger, long), featured });
+      if (long) { const open = openKits(p, forger); assert.ok(open.length >= 1 && run.offer.length === 3 && run.offer.every(o => open.includes(o.kit)), 'a locked kit was dealt'); if (open.length === 3) assert.equal(new Set(run.offer.map(o => o.kit)).size, 3); }
       const fam = r.pick(['neutral', 'storm', 'tomb', 'shadow', 'furnace']); let g = 0;
       while (run.phase !== 'over') {
         if (run.phase === 'reward' && run.offer.fresh) { assert.ok(p.fresh.includes(run.offer.fresh), 'a Gift marked NEW that is not new'); p.fresh = p.fresh.filter(x => x !== run.offer.fresh); }
-        for (const id of run.gifts.concat(run.charms, run.masterworks)) assert.ok(!lockedRelics(p).includes(id) || run.masterworks.includes(id), 'a locked relic was gained: ' + id);
+        for (const id of run.gifts.concat(run.charms, run.masterworks)) assert.ok(!lockedRelics(p, long).includes(id) || run.masterworks.includes(id), 'a locked relic was gained: ' + id);
+        if (long && run.phase === 'anvil') assert.ok(run.offer.enchants.every(e => openEnchants(p).includes(e)), 'a locked Enchant was offered');
+        if (long && run.phase === 'kit') assert.ok(run.offer.every(o => openKits(p, forger).includes(o.kit)), 'a locked kit was dealt again');
         runApply(run, policyAction(db, run, { family: fam, level: r.chance(1, 4) ? 0 : 2 }), db); assert.ok(++g < 400000);
       }
-      const before = JSON.parse(JSON.stringify(p)), got = applyRun(p, run); banked++;
+      const before = JSON.parse(JSON.stringify(p)), got = applyRun(p, run, { long }); banked++; kits += got.unlocks.filter(u => u.kind === 'kit').length;
+      assert.equal(p.byForger[forger].runs, ((before.byForger || {})[forger] || { runs: 0 }).runs + 1); assert.ok(maxHeat(p, forger, long) <= 10 && openKits(p, forger).length <= 3);
+      for (const u of got.unlocks) if (u.kind === 'kit') assert.ok(long && openKits(p, forger).includes(u.id), 'a kit unlock that is not open');
+      if (!long) assert.ok(!got.unlocks.some(u => u.kind === 'kit' || u.forger), 'long road unlocks with the switch off');
       assert.ok(Number.isInteger(p.memories) && p.memories >= before.memories && got.total >= 0, 'Memories went wrong');
       assert.equal(p.memories - before.memories, got.total); assert.equal(got.lines.reduce((x, l) => x + l[1], 0), got.total, 'the lines do not add up to the total');
       for (const key of ['forgers', 'bought', 'codex', 'featsDone']) assert.equal(new Set(p[key]).size, p[key].length, key + ' holds something twice');
       assert.ok(p.heatCleared <= 10 && maxHeat(p) <= 10 && p.heatCleared >= before.heatCleared);
-      for (const f of FEATS) assert.ok((p.feats[f.id] || 0) <= f.goal && (p.feats[f.id] || 0) >= (before.feats[f.id] || 0), 'feat count went wrong');
+      for (const f of featList(long)) assert.ok((p.feats[f.id] || 0) <= f.goal && (p.feats[f.id] || 0) >= (before.feats[f.id] || 0), 'feat count went wrong');
       for (const u of got.unlocks) assert.ok(u.name && u.text, 'an unlock with no name or text');
       assert.throws(() => applyRun(p, newRun(db, { seed: 1 })), /not over/);
-      for (const v of r.shuffle(VAULT.slice())) { if (p.memories >= v.price && !p.bought.includes(v.id) && r.chance(1, 2)) { buy(p, v.id); bought++; assert.ok(p.memories >= 0); assert.throws(() => buy(p, v.id), /already/); } else if (p.memories < v.price && !p.bought.includes(v.id)) assert.throws(() => buy(p, v.id), /not enough/); }
+      for (const v of r.shuffle(SHOP.slice())) { if (p.memories >= v.price && !p.bought.includes(v.key) && r.chance(1, 2)) { buy(p, v.key); bought++; assert.ok(p.memories >= 0); assert.throws(() => buy(p, v.key), /already/); } else if (p.memories < v.price && !p.bought.includes(v.key)) assert.throws(() => buy(p, v.key), /not enough/); }
+      assert.equal(openEnchants(p).length, 6 + p.bought.filter(b => b.startsWith('ench:')).length);
       topHeat = Math.max(topHeat, p.heatCleared);
     }
   }
-  return { profiles: count, banked, bought, topHeat };
+  return { profiles: count, banked, bought, topHeat, kitsOpened: kits };
 }
 
 const DBS = {};

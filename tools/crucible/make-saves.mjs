@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { buildDb } from '../../crucible/engine/cards.mjs';
 import { newRun, runApply } from '../../crucible/engine/run.mjs';
 import { policyAction } from '../../crucible/engine/policy.mjs';
-import { newProfile, lockedRelics, FEATS } from '../../crucible/engine/meta.mjs';
+import { newProfile, runOptions, featList, KIT_GOALS } from '../../crucible/engine/meta.mjs';
 import { FORGER_IDS } from '../../crucible/engine/forgers.mjs';
 import { labConfig, LAB_DEFAULTS } from '../../crucible/web/labs.mjs';
 
@@ -18,14 +18,16 @@ const cfg = { ...read('crucible-config.json'), ...labConfig(labs) };
 const db = buildDb(read('crucible-pool.json'), read('crucible-spell-tags.json'), cfg);
 
 // A profile that has seen most of the game: every Forger, Heat open to the top, feats one step from done.
-const profile = { ...newProfile(), memories: 120, earned: 400, runs: 30, clears: 9, duelWins: 200, bossWins: 20, bestFloor: 2, heatCleared: 9, forgers: FORGER_IDS.slice(), feats: Object.fromEntries(FEATS.map(f => [f.id, f.goal - 1])), fresh: [] };
+const profile = { ...newProfile(), memories: 120, earned: 400, runs: 30, clears: 9, duelWins: 200, bossWins: 20, bestFloor: 2, heatCleared: 9, forgers: FORGER_IDS.slice(), feats: Object.fromEntries(featList(!!labs.long).map(f => [f.id, f.goal - 1])), fresh: [],
+  // long road: one Forger a duel short of each kit, one with every kit, one with nothing yet
+  byForger: { tarn: { runs: 3, wins: KIT_GOALS[1] - 1, clears: 0, heat: -1 }, scrapper: { runs: 8, wins: KIT_GOALS[2] - 1, clears: 1, heat: 0 }, veil: { runs: 12, wins: KIT_GOALS[2] + 5, clears: 6, heat: 9 } } };
 mkdirSync(out, { recursive: true });
 const done = new Set(); let n = 0;
 const keep = (key, run) => { if (done.has(key)) return; done.add(key); writeFileSync(out + '/' + key + '.json', JSON.stringify({ run, labs, profile })); n++; };
 const seeds = +(seedArg || 40);
 for (let seed = 1; seed <= seeds; seed++) {
   const forger = FORGER_IDS[seed % FORGER_IDS.length], heat = seed % 3 === 0 ? 10 : seed % 3 === 1 ? 0 : 5;
-  const run = newRun(db, { seed, heat, forger, locked: lockedRelics(profile), featured: seed % 4 === 0 ? ['snare'] : [], track: true });
+  const run = newRun(db, { seed, heat, forger, ...runOptions(profile, forger, !!labs.long), featured: seed % 4 === 0 ? ['snare'] : [] });
   let guard = 0;
   while (run.phase !== 'over' && guard++ < 200000) {
     const d = run.duel, h = 'h' + heat;

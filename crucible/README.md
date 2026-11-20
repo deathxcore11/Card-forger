@@ -12,7 +12,7 @@ machine". Nothing in this folder has been played by a person or seen on a device
 ```
 node tools/crucible/build-pool.mjs --fetch --count     # pool size at three cut-offs
 node tools/crucible/build-pool.mjs --fetch             # writes crucible/data/crucible-pool.json
-node crucible/test/test-crucible-rules.mjs             # 61 rule tests
+node crucible/test/test-crucible-rules.mjs             # 62 rule tests
 node crucible/test/test-crucible-fuzz.mjs 6000 600     # random play with invariants
 node crucible/test/test-crucible-fuzz-levers.mjs 1000 200 1   # the same with every Lab lever on, Heat 0-10, wild actions, rule changes mid-run, profiles
 node tools/crucible/make-saves.mjs <dir>               # saved games for every kind of screen (floors 1-3, Heat 0/5/10)
@@ -103,6 +103,8 @@ Set through `CRUCIBLE_CFG`, or the "Lab rules" switches on the playable page's h
 - `kitTune`: 1 uses `KIT_TUNE` (per-kit cap on the strongest starting monster) to even out the starter kits; an object overrides per kit. `testKit`: offer one named kit three times, to measure a kit on its own.
 - `heatRules`: the ten-level Heat ladder (`HEAT_RULES` in `engine/run.mjs`). Each Heat level adds one written rule and the old per-Heat stat scaling is switched off. `tools/crucible/profile-sim.mjs 100 30 2 1` plays profiles that climb it.
 - `newRun` options (not config): `track` keeps the feat counters in `run.feat`; `featured` lists newly unlocked Gifts to show once; `locked` hides relics.
+
+The long road (page switch "Long road", off by default): `runOptions(profile, forger, long)` gives `newRun` the open kits and Enchants (`kits`, `enchants` options), `applyRun(p, run, { long })` banks kit and per-Forger Heat unlocks, `maxHeat(p, forger, long)`, `FEATS_LONG`, `VAULT_ENCHANTS` (bought with `buy(p, 'ench:<id>')`). `profile-sim.mjs [profiles] [runs] [level] [climb] [long] [buyAll]` measures it.
 
 Progress between runs lives in `engine/meta.mjs`: Memories, the Codex, Forger unlocks, and `FEATS`
 (three build feats that count across runs and each unlock one Gift). See `reports/lab-2026-11-20.md`.

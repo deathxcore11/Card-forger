@@ -178,3 +178,4 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 .hall.home .labgrid { flex: 0 1 auto; min-height: 0; }
 
 .ench { display: flex; flex-direction: column; gap: .15em; font-size: 1.08em; margin: .5em 0 .2em; color: var(--dim); } .ench b { color: var(--gold); }
+.ch .road { color: var(--gold); font-size: .92em; } .vh { margin: 1.2em 0 .2em; } .vgrid.vench .tile { padding: .8em; }
