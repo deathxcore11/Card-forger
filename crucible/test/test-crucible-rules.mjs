@@ -6,7 +6,7 @@ import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, eff
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, CHAIN_TURN, sortRelics } from '../engine/relics.mjs';
-import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES } from '../engine/run.mjs';
+import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS } from '../engine/meta.mjs';
@@ -620,6 +620,23 @@ test('Furnace Gifts: Banked Coals grows the melded monster each turn, Cinder Fal
   applyMut(s, { t: 'attack', from: 0, to: 0 }, db); assert.equal(k.ba, 200); assert.equal(k.bd, 200);
   s = blank({ seats: [{ relics: ['quench'] }, {}] }); const plain = put(s, 0, 0, mon('Summoned Skull', 'a')); put(s, 1, 0, mon('Mystical Elf', 'a'));
   applyMut(s, { t: 'attack', from: 0, to: 0 }, db); assert.ok(!plain.ba, 'a monster that was not melded gets nothing');
+});
+
+test('even kits: off by default; on, each kit keeps its types and holds monsters up to its own cap', () => {
+  const top = deck => Math.max(...deck.filter(e => db.isMonster(e.id)).map(e => db.byId.get(e.id).atk));
+  const lab = { ...db, config: { ...db.config, kitTune: 1 }, _pair: new Map() };
+  const all = [...KITS, ...FORGER_IDS.flatMap(f => FORGERS[f].kits)];
+  for (const k of all) {
+    let hi = 0;
+    for (let seed = 1; seed <= 12; seed++) {
+      const plain = makeKit(db, Rng.fromSeed(seed), k); assert.ok(top(plain.deck) <= db.config.kit.maxAtk, k.id + ' is unchanged with the lever off');
+      const kit = makeKit(lab, Rng.fromSeed(seed), k); assert.equal(kit.deck.length, 40);
+      const cap = (KIT_TUNE[k.id] || db.config.kit).maxAtk; assert.ok(top(kit.deck) <= cap, k.id + ' stays under its cap of ' + cap);
+      assert.ok(deckWeight(lab, kit.deck) <= ((KIT_TUNE[k.id] || {}).weight || db.config.kitWeight));
+      hi = Math.max(hi, top(kit.deck));
+    }
+    if (KIT_TUNE[k.id] && KIT_TUNE[k.id].maxAtk > db.config.kit.maxAtk) assert.ok(hi > db.config.kit.maxAtk, k.id + ' can hold a stronger monster than before');
+  }
 });
 
 console.log('crucible rules:', passed, 'tests passed');

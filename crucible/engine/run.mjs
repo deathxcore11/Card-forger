@@ -57,6 +57,14 @@ export const STRONG_LAW = {
 };
 const STRONG_RELICS = { stonewall: ['gravecloth', 'shield_oath'], mist: ['thorn_veil'] };
 const heatAt = (db, run, n) => !!db.config.heatRules && (run.heat || 0) >= n;
+// Even kits (lever kitTune: 1). Kits are 28 weak monsters of two or three types, and how strong a kit plays depends on how
+// high its own cards climb in a three or four card meld. Left alone the kits clear from 14% to 62% with no Forger. These
+// caps on the strongest monster a kit may hold bring them to 40-50%. Tuned by simulation on 20 November 2026.
+export const KIT_TUNE = {
+  fire_scale: { maxAtk: 1200 }, stone_gears: { maxAtk: 1425 }, lantern_choir: { maxAtk: 1350 }, high_wind: { maxAtk: 1400 },
+  beasts_plants: { maxAtk: 1650 }, dragons_warriors: { maxAtk: 1600 }, swarm: { maxAtk: 1700 }, grave_court: { maxAtk: 1800 },
+  blades_claws: { maxAtk: 1800 }, tide: { maxAtk: 2000, weight: 118 },
+};
 export const KITS = [
   { id: 'dragons_warriors', name: 'Dragons and Warriors', types: ['Dragon', 'Warrior'] },
   { id: 'spellcasters_fiends', name: 'Spellcasters and Fiends', types: ['Spellcaster', 'Fiend'] },
@@ -111,10 +119,11 @@ function poolLists(db) {
 
 // A starter kit: 40 weak cards inside fixed quotas, checked against the kit weight limit.
 export function makeKit(db, rng, kit) {
-  const cfg = db.config, q = cfg.kit, L = poolLists(db);
-  const themed = L.monsters.filter(c => kit.types.includes(c.type) && c.level <= q.maxLevel && c.atk <= q.maxAtk);
+  // kitTune (lever): per-kit overrides of the kit quotas, to bring unequal kits closer. 1 uses KIT_TUNE; an object is used as given.
+  const cfg = db.config, tune = cfg.kitTune === 1 ? KIT_TUNE : cfg.kitTune, q = tune && tune[kit.id] ? { ...cfg.kit, ...tune[kit.id] } : cfg.kit, L = poolLists(db);
+  const themed = L.monsters.filter(c => (q.types || kit.types).includes(c.type) && c.level <= q.maxLevel && c.atk <= q.maxAtk);
   const anyWeak = L.monsters.filter(c => c.level <= q.maxLevel && c.atk <= q.maxAtk);
-  const fields = L.field.filter(c => { const f = db.fieldOf.get(c.id); return f.types && kit.types.some(t => f.types.has(t)); });
+  const fields = L.field.filter(c => { const f = db.fieldOf.get(c.id); return f.types && (q.types || kit.types).some(t => f.types.has(t)); });
   for (let tries = 0; tries < 200; tries++) {
     const deck = [], count = new Map();
     const add = c => { const n = count.get(c.id) || 0; if (n >= cfg.maxCopies) return false; count.set(c.id, n + 1); deck.push({ id: c.id }); return true; };
@@ -126,7 +135,7 @@ export function makeKit(db, rng, kit) {
     const tagged = L.spell.concat(L.trap).filter(c => { const t = db.tagOf.get(c.id); return t.fx !== 'destroyAll' && t.fx !== 'revive'; });
     guard = 0; while (deck.length < q.monsters + q.field + q.equip + q.tagged && guard++ < 500) add(rng.pick(tagged));
     guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(L.fuel));
-    if (deck.length === 40 && deckWeight(db, deck) <= cfg.kitWeight) return { deck, rejected: tries, homeField: deck.find(e => roleOf(db, e.id) === 'field')?.id || null };
+    if (deck.length === 40 && deckWeight(db, deck) <= (q.weight || cfg.kitWeight)) return { deck, rejected: tries, homeField: deck.find(e => roleOf(db, e.id) === 'field')?.id || null };
   }
   // Heavy themes (few low-Level monsters) can miss the limit 200 times. Build once more and
   // swap the heaviest monsters for the lightest weak ones until it fits.
@@ -142,12 +151,12 @@ export function makeKit(db, rng, kit) {
   guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(L.fuel));
   const light = anyWeak.filter(c => c.level <= 2);
   guard = 0;
-  while (deckWeight(db, deck) > cfg.kitWeight && guard++ < 400) {
+  while (deckWeight(db, deck) > (q.weight || cfg.kitWeight) && guard++ < 400) {
     let hi = -1; deck.forEach((e, i) => { if (db.isMonster(e.id) && (hi < 0 || db.byId.get(e.id).level > db.byId.get(deck[hi].id).level)) hi = i; });
     const c = rng.pick(light); if ((count.get(c.id) || 0) >= cfg.maxCopies) continue;
     count.set(deck[hi].id, count.get(deck[hi].id) - 1); count.set(c.id, (count.get(c.id) || 0) + 1); deck[hi] = { id: c.id };
   }
-  if (deck.length !== 40 || deckWeight(db, deck) > cfg.kitWeight) throw new Error('kit generator could not fit the weight limit');
+  if (deck.length !== 40 || deckWeight(db, deck) > (q.weight || cfg.kitWeight)) throw new Error('kit generator could not fit the weight limit');
   return { deck, rejected: 200, homeField: deck.find(e => roleOf(db, e.id) === 'field')?.id || null };
 }
 
@@ -243,7 +252,9 @@ export function newRun(db, { seed, heat = 0, forger = null, locked = null, featu
   return run;
 }
 function dealKits(db, rng, run) {
-  return (run.forger ? FORGERS[run.forger].kits : KITS).map(k => { const d = makeKit(db, rng, k); run.stats.kitRejects += d.rejected; return { kit: k.id, name: k.name, deck: d.deck, homeField: d.homeField }; });
+  // testKit (lever): offer one named kit three times, whoever the Forger is, to measure a kit on its own.
+  const one = db.config.testKit ? [...KITS, ...Object.values(FORGERS).flatMap(f => f.kits)].find(k => k.id === db.config.testKit) : null;
+  return (one ? [one, one, one] : run.forger ? FORGERS[run.forger].kits : KITS).map(k => { const d = makeKit(db, rng, k); run.stats.kitRejects += d.rejected; return { kit: k.id, name: k.name, deck: d.deck, homeField: d.homeField }; });
 }
 
 export const weightCap = (db, run) => db.config.weightCaps[0] + run.capBonus + (run.charms.includes('heavy_pack') ? 10 : 0) - (run.charms.includes('heavy_crown') ? 10 : 0);
