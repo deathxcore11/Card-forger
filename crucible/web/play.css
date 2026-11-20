@@ -176,3 +176,5 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 .hall.home > .title > * { flex: 0 0 auto; }
 .hall.home > .title > .labs { flex: 0 1 auto; min-height: 9em; align-self: stretch; }
 .hall.home .labgrid { flex: 0 1 auto; min-height: 0; }
+
+.ench { display: flex; flex-direction: column; gap: .15em; font-size: 1.08em; margin: .5em 0 .2em; color: var(--dim); } .ench b { color: var(--gold); }

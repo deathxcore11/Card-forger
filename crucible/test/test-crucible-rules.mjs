@@ -1,12 +1,13 @@
 // Rule tests for Lost Memories (codename crucible). Run: node crucible/test/test-crucible-rules.mjs
 // Card stats are read from the pool by name; nothing here types an ATK or DEF.
 import assert from 'node:assert/strict';
-import { loadDb, meldPair, meldTriple, weightOf, wheelEdge, roleOf } from '../engine/cards.mjs';
+import { loadDb, meldPair, meldTriple, weightOf, wheelEdge, roleOf, EFFECTS } from '../engine/cards.mjs';
+import { rulesText, FX_TEXT, TRAP_TEXT } from '../web/text.mjs';
 import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, effDef, forecast, canonical, clone } from '../engine/duel.mjs';
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, CHAIN_TURN, sortRelics } from '../engine/relics.mjs';
-import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw } from '../engine/run.mjs';
+import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS } from '../engine/meta.mjs';
@@ -721,6 +722,24 @@ test('the last Law names the turn its ace really arrives on', () => {
   let came = 0;
   for (let i = 0; i < 40 && !came && s.winner === null; i++) { const ev = applyMut(s, s.pending ? { t: 'respond', trap: -1 } : { t: 'end' }, six); if (s.mon[1].some(m => m && m.id === ace)) came = s.stats[1].turns; }
   assert.equal(came, 6);
+});
+
+// What the player reads must cover every Enchant, every effect and every card, and a Trap's words must match what it does.
+test('every Enchant, effect and card has wording, and Trap wording matches the rule', () => {
+  for (const e of ENCHANTS) assert.ok(ENCHANT_TEXT[e] && ENCHANT_TEXT[e].length > 10, 'Enchant wording: ' + e);
+  assert.equal(Object.keys(ENCHANT_TEXT).length, ENCHANTS.length);
+  for (const fx of EFFECTS) { assert.equal(typeof FX_TEXT[fx], 'function', fx); assert.equal(typeof TRAP_TEXT[fx], 'function', fx); }
+  for (const c of db.pool.cards) assert.ok(rulesText(db, c.id).length > 10, c.name);
+  // Mirror Force leaves a rival monster in defense alone, and its wording says so
+  assert.match(rulesText(db, C('Mirror Force').id), /in attack position/);
+  const s = blank({ seats: [{}, {}] });
+  s.mon[0][0] = { u: 901, id: C('La Jinn the Mystical Genie of the Lamp').id, pos: 'a', veil: false, att: 0, moved: false };
+  s.mon[0][1] = { u: 902, id: C('Mystical Elf').id, pos: 'd', veil: false, att: 0, moved: false };
+  s.traps[1][0] = { u: 903, id: C('Mirror Force').id };
+  applyMut(s, { t: 'attack', from: 0, to: -1 }, db);
+  assert.ok(s.pending, 'the Trap can answer');
+  applyMut(s, { t: 'respond', trap: 0 }, db);
+  assert.equal(s.mon[0][0], null); assert.ok(s.mon[0][1], 'the defender stays');
 });
 
 console.log('crucible rules:', passed, 'tests passed');

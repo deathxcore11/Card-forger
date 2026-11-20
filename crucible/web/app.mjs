@@ -4,13 +4,14 @@ import { buildDb, roleOf, weightOf, meldPairRaw } from '../engine/cards.mjs';
 import { legalActions, playVariants, planChain, viewFor, forecast } from '../engine/duel.mjs';
 import { RELICS as BASE_RELICS, LAB } from '../engine/relics.mjs';
 const RELICS = { ...BASE_RELICS, ...LAB };
-import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw } from '../engine/run.mjs';
+import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw, ENCHANT_TEXT } from '../engine/run.mjs';
 import { meldPair } from '../engine/cards.mjs';
 import { powerActions } from '../engine/duel.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, buy, lockedRelics, maxHeat, VAULT, FORGER_FEATS, FEATS } from '../engine/meta.mjs';
 import { SCENES } from './story.mjs';
 import { LAB_DEFAULTS, labConfig } from './labs.mjs';
+import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
 
 const D = window.CRUCIBLE_DATA;
 const db = buildDb(D.pool, D.tags, D.config);
@@ -43,29 +44,12 @@ for (const k of P.codex) G.known.add(k);
 const saveP = () => store.set(PROFILE, P);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const card = id => db.byId.get(id);
+const cap = x => x[0].toUpperCase() + x.slice(1);
 // Card pictures come from sprite sheets of 100 (10 by 10), in pool order, so nothing is hot-linked.
 const IDX = new Map(D.pool.cards.map((c, i) => [c.id, i]));
 const pic = id => { const i = IDX.get(id); if (i == null || !D.sheets) return ''; const k = i % 100; return `<span class="pic" style="background-image:url(${D.sheets}${Math.floor(i / 100)}.webp);background-position:${(k % 10) * 100 / 9}% ${Math.floor(k / 10) * 100 / 9}%"></span>`; };
 const ATTR = { DARK: '#7a4bd6', LIGHT: '#e8c95a', FIRE: '#e0562f', WATER: '#3d8fe0', EARTH: '#9a7a45', WIND: '#4fb87a', DIVINE: '#d9d9d9' };
-const FX_TEXT = { burn: n => n < 0 ? 'The attacker\'s ATK hits its owner. The attack stops.' : `Rival loses ${n} Life Points.`, heal: n => n < 0 ? 'Gain Life Points equal to the attacker\'s ATK.' : `Gain ${n} Life Points.`, destroy: () => 'Destroy one rival monster.', destroyAll: n => n === 1 ? 'Destroy every monster on both sides.' : 'Destroy every rival monster.', bounce: () => 'Return one rival monster to its hand.', pump: n => `One of your monsters gets +${n} ATK and DEF this duel.`, weaken: n => `One rival monster gets -${n} ATK and DEF this duel.`, draw: n => `Draw ${n}.`, flip: () => 'Turn every veiled rival monster face up.', freeze: n => n ? `Rival monsters cannot attack for ${n} of their turns.` : 'The attack stops and the rival cannot attack again this turn.', position: () => 'Turn one rival monster to its other position.', revive: () => 'Return your strongest monster from the graveyard.' };
-
-const FX_SHORT = { burn: n => n < 0 ? 'Turns the attack back on its owner' : `Rival loses ${n} LP`, heal: n => n < 0 ? 'Gain LP equal to the attacker' : `Gain ${n} LP`, destroy: () => 'Destroy 1 rival monster', destroyAll: n => n === 1 ? 'Destroy all monsters' : 'Destroy all rival monsters', bounce: () => 'Return 1 rival monster to hand', pump: n => `Your monster +${n}`, weaken: n => `Rival monster -${n}`, draw: n => `Draw ${n}`, flip: () => 'Reveal veiled rivals', freeze: n => n ? `Rivals cannot attack, ${n} turns` : 'Stops the attack', position: () => 'Turn 1 rival monster', revive: () => 'Revive your strongest' };
-function shortText(id) {
-  const role = roleOf(db, id);
-  if (role === 'field') { const f = db.fieldOf.get(id); return '+500 ' + (f.attr ? f.attr : [...f.types].join(', ')); }
-  if (role === 'equip') return 'Your monster +500';
-  if (role === 'spell' || role === 'trap') { const t = db.tagOf.get(id); return (role === 'trap' ? 'On attack: ' : '') + FX_SHORT[t.fx](t.n); }
-  return 'Meld fuel +300';
-}
-function rulesText(id) {
-  const c = card(id), role = roleOf(db, id);
-  if (role === 'monster') return 'Fights with its printed ATK and DEF. Printed effects are not used in Lost Memories.';
-  if (role === 'field') { const f = db.fieldOf.get(id); return 'Terrain: ' + (f.attr ? f.attr + ' monsters' : [...f.types].join(', ')) + ' get +500 ATK and DEF. Both sides.'; }
-  if (role === 'equip') return 'Attach to one of your monsters: +500 ATK and DEF this duel.';
-  if (role === 'spell') { const t = db.tagOf.get(id); return 'Spell: ' + FX_TEXT[t.fx](t.n); }
-  if (role === 'trap') { const t = db.tagOf.get(id); return 'Trap, set face down. Springs when the rival attacks: ' + FX_TEXT[t.fx](t.n); }
-  return 'Fuel: meld it into any monster for +300 ATK and DEF. It cannot be played alone.';
-}
+const shortText = id => shortTextOf(db, id), rulesText = id => rulesTextOf(db, id);
 
 // ---------- card drawing ----------
 function face(inst, o = {}) {
@@ -382,8 +366,9 @@ function screenAnvil() {
   return `<div class="hall"><div class="panel glass wide"><h2>Anvil</h2><p>One working, then you move on. Tap a deck card (tap a second for a Bind).</p>
     <div class="row">${o.masterworks.map(id => `<button class="gold" data-a="mw:${id}" ${r.embers < P.masterwork ? 'disabled' : ''}>Forge ${esc(RELICS[id].name)} (${P.masterwork})</button>`).join('')}
       <button data-a="temper" ${!e || !db.isMonster(e.id) || e.t || r.embers < P.temper ? 'disabled' : ''}>Temper +300 (${P.temper})</button>
-      ${o.enchants.map(x => `<button data-a="enchant:${x}" ${!e || !db.isMonster(e.id) || e.e || r.embers < P.enchant ? 'disabled' : ''}>Enchant: ${x} (${P.enchant})</button>`).join('')}
+      ${o.enchants.map(x => `<button data-a="enchant:${x}" ${!e || !db.isMonster(e.id) || e.e || r.embers < P.enchant ? 'disabled' : ''} title="${esc(ENCHANT_TEXT[x])}">Enchant: ${cap(x)} (${P.enchant})</button>`).join('')}
       <button data-a="bind" ${!e || !e2 || r.embers < P.bind ? 'disabled' : ''}>Bind the two (${P.bind})</button><button data-a="leave">Leave</button></div>
+    <div class="ench">${o.enchants.map(x => `<span><b>${cap(x)}:</b> ${esc(ENCHANT_TEXT[x])}</span>`).join('')}</div>
     <div class="grid">${r.deck.map((c, i) => [c, i]).sort((a, b) => cardValue(db, b[0]) - cardValue(db, a[0])).map(([c, i]) => face(c, { cls: 'small ' + (G.pickDeck === i ? 'sel' : G.pickTrunk === i ? 'sel2' : ''), attrs: `data-a="anvilpick:${i}"` })).join('')}</div></div></div>`;
 }
 function screenBazaar() {
@@ -423,7 +408,7 @@ function overlay() {
 function inspectPanel() {
   if (!G.inspect) return '';
   const c = card(G.inspect.id);
-  return `<div class="modal" data-a="closeinspect"><div class="glass panel insp">${face(G.inspect, { cls: 'big' })}<div><h3>${esc(c.name)}</h3>${db.isMonster(c.id) ? `<p>${esc(c.type)} · ${esc(c.attr)} · Level ${c.level}<br>ATK ${c.atk} · DEF ${c.def}${G.inspect.ea != null ? `<br>Now ${G.inspect.ea} / ${G.inspect.ed}` : ''}</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p>Enchant: ${G.inspect.e}</p>` : ''}<p class="fine">Weight ${weightOf(db, c.id)}. Tap anywhere to close.</p></div></div></div>`;
+  return `<div class="modal" data-a="closeinspect"><div class="glass panel insp">${face(G.inspect, { cls: 'big' })}<div><h3>${esc(c.name)}</h3>${db.isMonster(c.id) ? `<p>${esc(c.type)} · ${esc(c.attr)} · Level ${c.level}<br>ATK ${c.atk} · DEF ${c.def}${G.inspect.ea != null ? `<br>Now ${G.inspect.ea} / ${G.inspect.ed}` : ''}</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p><b>Enchant, ${cap(G.inspect.e)}:</b> ${esc(ENCHANT_TEXT[G.inspect.e])}</p>` : ''}<p class="fine">Weight ${weightOf(db, c.id)}. Tap anywhere to close.</p></div></div></div>`;
 }
 
 function render() {

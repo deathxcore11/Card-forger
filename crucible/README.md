@@ -12,13 +12,14 @@ machine". Nothing in this folder has been played by a person or seen on a device
 ```
 node tools/crucible/build-pool.mjs --fetch --count     # pool size at three cut-offs
 node tools/crucible/build-pool.mjs --fetch             # writes crucible/data/crucible-pool.json
-node crucible/test/test-crucible-rules.mjs             # 59 rule tests
+node crucible/test/test-crucible-rules.mjs             # 60 rule tests
 node crucible/test/test-crucible-fuzz.mjs 6000 600     # random play with invariants
 node crucible/test/test-crucible-fuzz-levers.mjs 1000 200 1   # the same with every Lab lever on, Heat 0-10, wild actions, rule changes mid-run, profiles
 node tools/crucible/make-saves.mjs <dir>               # saved games for every kind of screen (floors 1-3, Heat 0/5/10)
 SAVE=<dir>/x.json RELOAD=37 node tools/crucible/play-bot.cjs <index.html> 1 <shots> 1280 720   # click bot from a saved game, with layout and message checks
 node tools/crucible/make-fixtures.mjs --check          # replay golden fixtures hash for hash
 node tools/crucible/sim.mjs --runs 10000 --level 2 --family neutral
+node tools/crucible/make-pack.mjs <dir>                # the full game pack: rules, screens, items, numbers, and every card as a CSV
 ```
 
 `--level` is the simulated player's skill (0 Novice, 1 Adept, 2 Master). `--family` is
@@ -41,7 +42,7 @@ to try a config value without editing the file.
 | `engine/policy.mjs` | Scripted players for the simulator. |
 | `engine/forgers.mjs` | The playable characters: a rule, a once-a-duel power and three kits each. Sim flag `--forger tarn`. |
 | `engine/meta.mjs` | What stays between runs: Memories, Codex, Forger feats, Heat, the Memory Vault. |
-| `web/` | The playable test page (`app.mjs`, `play.css`, `story.mjs`). Build with `tools/crucible/build-web.mjs`, test with `tools/crucible/play-bot.cjs`. Art is not in this repository. |
+| `web/` | The playable test page (`app.mjs`, `play.css`, `story.mjs`, `labs.mjs` for the Lab switches, `text.mjs` for what a card does in words). Build with `tools/crucible/build-web.mjs`, test with `tools/crucible/play-bot.cjs`. Art is not in this repository. |
 | `fixtures/` | 50 duels and 10 runs: seed, actions, and a state hash after every action. |
 
 ## Readings taken where the design bible was silent or unclear

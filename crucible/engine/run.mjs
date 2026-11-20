@@ -11,6 +11,23 @@ const RELICS = { ...BASE_RELICS, ...LAB };
 import { FORGERS } from './forgers.mjs';
 
 export const ENCHANTS = ['piercing', 'twin', 'drain', 'bulwark', 'venom', 'soaring', 'herald', 'catalyst', 'ambusher', 'warden', 'kindred', 'echo'];
+// What each Enchant does, as the player reads it. The rules themselves are in duel.mjs.
+export const ENCHANT_TEXT = {
+  piercing: 'When it destroys a monster in defense, the rival loses the difference in Life Points.',
+  twin: 'It may attack twice a turn.',
+  drain: 'When its attack makes the rival lose Life Points, you gain that many.',
+  bulwark: 'The first time it would be destroyed, it stays on the table.',
+  venom: 'Any monster it battles is destroyed, whatever the numbers.',
+  soaring: 'While it is face up, only a Soaring monster can attack it.',
+  herald: 'When you play it from your hand, draw a card.',
+  catalyst: 'While it is on the table, a meld onto it that would fizzle gives it +300 ATK and DEF instead.',
+  ambusher: 'When an attack reveals it, it gets +800 for that battle.',
+  warden: 'While it is face up in defense, the rival must attack it first.',
+  kindred: 'It gets +200 ATK and DEF for each other monster of its Type on your side.',
+  echo: 'The first time it is destroyed each duel, it returns to your hand.',
+};
+// Cursed duels carry one twist.
+export const TWISTS = { fog: 'Fog: every monster arrives veiled.', narrow: 'Narrow Pass: three monster zones a side.', storm: 'Storm Front: the terrain changes every third turn.', locked: 'Locked terrain: the terrain cannot be replaced.' };
 
 // Rival families. Names are ours; the cards inside come from the pool by Type.
 export const THEMES = [
@@ -79,14 +96,14 @@ export const BOSSES = [
    { id: 'last_gate', name: 'The Last Gate', ace: 'Gate Guardian', law: 'end', types: ['Warrior', 'Fiend'], lawText: 'The end: on his fourth turn his ace arrives at 5000 ATK. Win first, or hold an answer.' }],
 ];
 // ATK bands for rival monsters: [min, max] by floor (0..2) and tier.
-const BANDS = {
+export const BANDS = {
   regular: [[500, 1400], [1000, 1900], [1400, 2400]],
   cursed: [[600, 1500], [1100, 2000], [1500, 2500]],
   champion: [[900, 1700], [1300, 2200], [1700, 2700]],
   guardian: [[1000, 1800], [1400, 2300], [1800, 2800]],
   boss: [[1000, 1800], [1500, 2400], [1900, 3000]],
 };
-const AI_LEVEL = { regular: [0, 1, 2], cursed: [1, 1, 2], champion: [1, 2, 2], guardian: [1, 2, 2], boss: [1, 2, 2] };
+export const AI_LEVEL = { regular: [0, 1, 2], cursed: [1, 1, 2], champion: [1, 2, 2], guardian: [1, 2, 2], boss: [1, 2, 2] };
 const SPELL_VALUE = { destroy: 1500, destroyAll: 2200, bounce: 900, draw: 500, flip: 200, freeze: 900, position: 500, revive: 1400 };
 
 export function cardValue(db, e) {
@@ -216,7 +233,7 @@ export function rankDuel(db, duel, seat = 0) {
   return { points, rank: rankLetter(cfg, points), style: craft > fury ? 'craft' : 'fury', lines };
 }
 
-const BOUNTIES = [
+export const BOUNTIES = [
   { id: 'four_melds', text: 'Win with four melds', test: st => st.melds >= 4 },
   { id: 'untouched', text: 'Win with 7000 Life Points or more', test: (st, d) => d.lp[0] >= 7000 },
   { id: 'fast', text: 'Win in four of your turns or fewer', test: st => st.turns <= 4 },
@@ -332,7 +349,7 @@ export const bossLaw = (db, run) => lawTextFor(db, run, BOSSES[run.floor][run.bo
 const TURN_WORD = { 3: 'third', 4: 'fourth', 5: 'fifth', 6: 'sixth', 7: 'seventh', 8: 'eighth' };
 const lawTextFor = (db, run, b) => { const t = (db && db.config.endTurns && TURN_WORD[db.config.endTurns] ? b.lawText.replace('fourth turn', TURN_WORD[db.config.endTurns] + ' turn') : b.lawText) + (db && heatAt(db, run, 8) ? ' Hard Law: ' + STRONG_LAW[b.law] : '') + (db && heatAt(db, run, 3) ? ' Provisioned: +500 Life Points, first monster +200 ATK.' : ''); return t; };
 function describe(db, run, d) {
-  const TW = { fog: 'Fog: every monster arrives veiled.', narrow: 'Narrow Pass: three monster zones a side.', storm: 'Storm Front: the terrain changes every third turn.', locked: 'Locked terrain: the terrain cannot be replaced.' };
+  const TW = TWISTS;
   switch (d.type) {
     case 'duel': d.name = 'Duel: ' + THEMES[d.theme].name; d.cost = 'A Spark if you lose.'; d.reward = 'Pick 1 of 3 cards, Embers, breaks a seal.'; break;
     case 'cursed': d.name = 'Cursed duel: ' + THEMES[d.theme].name; d.cost = 'A Spark if you lose. ' + TW[d.twist]; d.reward = 'Pick 1 of 3 cards, extra Embers, breaks a seal.'; break;

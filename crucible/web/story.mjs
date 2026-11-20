@@ -11,7 +11,7 @@ export const SCENES = {
   'boss:bone_collector': { who: 'The Bone Collector', lines: ['Every monster of yours that breaks, I keep a piece. It keeps me standing.'] },
   'boss:veiled_magus': { who: 'The Veiled Magus', lines: ['You will not see what I play. You did not see what you lost, either.'] },
   'boss:white_tyrant': { who: 'The White Tyrant', lines: ['Smaller hands. Smaller hopes. That is my law down here.'] },
-  'boss:last_gate': { who: 'The Last Gate', lines: ['Four turns. Then what waits behind me arrives, and nothing you forged will matter.'] },
+  'boss:last_gate': { who: 'The Last Gate', lines: ['You have a few turns. Then what waits behind me arrives, and nothing you forged will matter.'] },
   cleared: { who: '', lines: [
     'The last door opens on a forge that is still warm. On the anvil lies a hammer exactly like yours.',
     'A memory returns: heat on your face, and someone beside the fire saying your name. You almost hear it.',
