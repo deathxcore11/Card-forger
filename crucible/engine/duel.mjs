@@ -394,9 +394,10 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
   if (f.dmgAtk) loseLp(s, db, ev, atkSeat, f.dmgAtk, 'battle');
   let tGone = false, xGone = false;
   if (f.killT) tGone = destroyMon(s, db, ev, defSeat, dz, 'battle');
-  if (tGone && wasVeiled) { const vf = { id: T.id }; fire(s, db, ev, defSeat, 'veiledFell', vf); if (vf.kill) f.killX = true; }
-  if (f.killX) xGone = destroyMon(s, db, ev, atkSeat, az, 'battle');
-  if (tGone && !xGone && has(s, defSeat, 'grave_ward')) { const c = {}; fire(s, db, ev, defSeat, 'fell', c); if (c.kill) xGone = destroyMon(s, db, ev, atkSeat, az, 'relic'); }
+  let snared = false;
+  if (tGone && wasVeiled) { const vf = { id: T.id }; fire(s, db, ev, defSeat, 'veiledFell', vf); if (vf.kill) { snared = !f.killX; f.killX = true; } }
+  if (f.killX) { xGone = destroyMon(s, db, ev, atkSeat, az, 'battle'); if (snared && xGone) struck(s, db, ev, defSeat); }
+  if (tGone && !xGone && has(s, defSeat, 'grave_ward')) { const c = {}; fire(s, db, ev, defSeat, 'fell', c); if (c.kill) { xGone = destroyMon(s, db, ev, atkSeat, az, 'relic'); if (xGone) struck(s, db, ev, defSeat); } }
   if (tGone && !xGone) {
     fire(s, db, ev, atkSeat, 'wonBattle', { mon: X, zone: az, edge: f.edgeA });
     if (s.seat[atkSeat].law === 'bloodprice') gainLp(s, ev, atkSeat, s.seat[atkSeat].strong ? 800 : 500, 'law');
@@ -408,6 +409,9 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
   }
   if (xGone && !tGone && T.pos === 'a') fire(s, db, ev, defSeat, 'wonBattle', { mon: T, zone: dz, edge: f.edgeD });
 }
+
+// Linked relic Spoils: one of this seat's relics destroyed a rival monster.
+function struck(s, db, ev, seat) { if (s.winner === null && has(s, seat, 'spoils')) fire(s, db, ev, seat, 'struck', {}); }
 
 function canAttackWith(s, seat, m) {
   if (!m || m.pos !== 'a') return false;
@@ -474,6 +478,8 @@ export function playVariants(s, db, seat, idxs, onto) {
   if (onto != null && !ontoM) return [];
   const plan = planChain(db, cards, ontoM, { tinder: has(s, seat, 'tinder_vow'), steady: has(s, seat, 'steady_hand') && !st.rs.steady });
   const base = { t: 'play', hand: idxs.slice(), onto: onto ?? null };
+  // Lever freeCast 'lone': after the free support card, the turn's play is one card on its own, not a meld.
+  if (st.rs.loneTurn === s.turn && (idxs.length > 1 || plan.melded)) return [];
   if (plan.isMonster) {
     const zoneOk = plan.onTable || plan.tableLost || freeZone(s, seat) >= 0;
     if (!zoneOk) return [];
@@ -631,10 +637,12 @@ function doPlay(s, db, ev, seat, a) {
     if (a.veiled && a.pos === 'a' && !(s.twist === 'fog' || st.law === 'mist')) { st.rs.hollow = 1; noteRelic(s, ev, seat, 'hollow_mask'); }
     ev.push({ e: 'summon', seat, zone: z, id: m.veil ? null : m.id, pos: m.pos, veiled: m.veil, melded: !!plan.melded });
     if (plan.melded) { stt.melds++; stt.longestChain = Math.max(stt.longestChain, plan.len); stt.chains[plan.len] = (stt.chains[plan.len] || 0) + 1; } else { stt.singles++; track(s, db, seat, m.veil ? 'loneVeiled' : 'loneFaceUp'); }
-    fire(s, db, ev, seat, 'placed', { mon: m, zone: z, melded: !!plan.melded, len: plan.len, fire: c.attr === 'FIRE', bound: !!m.b, fresh: !plan.onTable, favoured: !!(s.terrain && terrainFavours(db, s.terrain.id, m.id)) });
-    if (plan.melded && plan.len >= 4 && has(s, seat, 'grounding_rod') && !st.rs.rod) { // lab Gift: a long meld strikes the rival's strongest face-up monster
+    const pc = { mon: m, zone: z, melded: !!plan.melded, len: plan.len, fire: c.attr === 'FIRE', bound: !!m.b, fresh: !plan.onTable, favoured: !!(s.terrain && terrainFavours(db, s.terrain.id, m.id)) };
+    fire(s, db, ev, seat, 'placed', pc); // a linked relic may make the meld count as one card longer (pc.len)
+    if (!plan.melded && !plan.onTable && s.winner === null && has(s, seat, 'outrider')) fire(s, db, ev, seat, 'lone', { mon: m });
+    if (plan.melded && pc.len >= 4 && has(s, seat, 'grounding_rod') && !st.rs.rod) { // lab Gift: a long meld strikes the rival's strongest face-up monster
       const r = other(seat); let bz = -1; s.mon[r].forEach((x, i) => { if (x && !x.veil && (bz < 0 || effAtk(s, db, r, x) > effAtk(s, db, r, s.mon[r][bz]))) bz = i; });
-      if (bz >= 0) { st.rs.rod = 1; noteRelic(s, ev, seat, 'grounding_rod'); destroyMon(s, db, ev, r, bz, 'relic'); }
+      if (bz >= 0) { st.rs.rod = 1; noteRelic(s, ev, seat, 'grounding_rod'); if (destroyMon(s, db, ev, r, bz, 'relic')) struck(s, db, ev, seat); }
     }
     if (buried) fire(s, db, ev, seat, 'ingredients', { n: buried });
     if (m.e === 'herald' && !plan.onTable) draw(s, db, ev, seat, 1);
@@ -673,7 +681,7 @@ function doPlay(s, db, ev, seat, a) {
     if (has(s, seat, 'f_veil') && st.rs.veilTurn !== s.turn) { st.rs.veilTurn = s.turn; s.played = false; noteRelic(s, ev, seat, 'f_veil'); }
   }
   // Lever under test: the first Spell, Field, Equip or Trap played on its own each turn does not use the play.
-  if (db.config.freeCast && (db.config.freeCast !== 'trap' || role === 'trap') && !st.noFree && idxs.length === 1 && a.onto == null && s.played && st.rs.freeTurn !== s.turn && s.winner === null) { st.rs.freeTurn = s.turn; s.played = false; ev.push({ e: 'free', seat }); }
+  if (db.config.freeCast && (db.config.freeCast !== 'trap' || role === 'trap') && !st.noFree && idxs.length === 1 && a.onto == null && s.played && st.rs.freeTurn !== s.turn && s.winner === null) { st.rs.freeTurn = s.turn; s.played = false; if (db.config.freeCast === 'lone') { st.rs.loneTurn = s.turn; track(s, db, seat, 'loneCast'); ev.push({ e: 'free', seat, lone: 1 }); } else ev.push({ e: 'free', seat }); }
 }
 
 export const SOLO = { Zombie: 'Return a monster of 1500 ATK or less from your graveyard to your hand.', Fairy: 'Gain 400 Life Points.', Machine: 'Your next meld gets +300 ATK and DEF.', Spellcaster: 'Draw a card.' };

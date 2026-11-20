@@ -298,14 +298,24 @@ function relicOffer(run, rng, kind, n) {
   // Heavy Crown lowers the cap by 10, so it is only offered to a deck that already fits under it.
   const crownOk = DB ? deckWeight(DB, run.deck) <= weightCap(DB, run) - 10 : true;
   const lab = DB && DB.config.labPool || [];
-  const ids = Object.keys(RELICS).filter(id => (!LAB[id] || lab.includes(id)) && RELICS[id].kind === kind && !own.has(id) && !(id === 'second_wind' && run.secondWindUsed) && !(id === 'heavy_crown' && !crownOk));
+  // A linked relic that needs a partner is only offered once the player holds one (so it is never a dead pick).
+  const held0 = ownedRelics(run), ready = id => !RELICS[id].needs || RELICS[id].needs.some(x => held0.has(x));
+  const ids = Object.keys(RELICS).filter(id => (!LAB[id] || lab.includes(id) && ready(id)) && RELICS[id].kind === kind && !own.has(id) && !(id === 'second_wind' && run.secondWindUsed) && !(id === 'heavy_crown' && !crownOk));
   rng.shuffle(ids);
   let out = ids.slice(0, n);
   if (kind === 'G' && DB) {
     // Lever: one of the three leans toward a build the player already holds a piece of.
     if (DB.config.leanOffers) {
       const held = new Set([...ownedRelics(run)].filter(id => RELICS[id]).map(id => RELICS[id].family).filter(f => BUILD_FAMILIES.includes(f)));
-      if (held.size && !out.some(id => held.has(RELICS[id].family))) { const lean = ids.find(id => held.has(RELICS[id].family)); if (lean) out[rng.int(Math.max(1, out.length))] = lean; }
+      // A linked relic leans toward both of its builds.
+      const fits = id => held.has(RELICS[id].family) || (RELICS[id].link && held.has(RELICS[id].link));
+      if (held.size && !out.some(fits)) { const lean = ids.find(fits); if (lean) out[rng.int(Math.max(1, out.length))] = lean; }
+      // Lever leanOffers: 2. Once two held relics share a build, a second option fits too, so an engine can be finished in five Gifts.
+      if (DB.config.leanOffers >= 2 && out.length >= 3) {
+        const n = {}; for (const id of ownedRelics(run)) if (RELICS[id]) for (const f of new Set([RELICS[id].family, RELICS[id].link])) if (BUILD_FAMILIES.includes(f)) n[f] = (n[f] || 0) + 1;
+        const deep = new Set(Object.keys(n).filter(f => n[f] >= 2)), fits2 = id => deep.has(RELICS[id].family) || deep.has(RELICS[id].link);
+        if (deep.size && out.filter(fits2).length < 2) { const more = ids.find(id => fits2(id) && !out.includes(id)); const at = out.findIndex(id => !fits2(id)); if (more && at >= 0) out[at] = more; }
+      }
     }
     // A newly unlocked Gift is shown once, in the first Gift offer it can join.
     if (run.featured && run.featured.length) {

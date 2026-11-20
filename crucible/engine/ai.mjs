@@ -178,8 +178,11 @@ export function bestPlay(db, view, level, policy = {}) {
 
   const n = hand.length;
   if (policy.freeOnly) { for (let i = 0; i < n; i++) if (!db.isMonster(hand[i].id) && (db.config.freeCast !== 'trap' || roleOf(db, hand[i].id) === 'trap')) evalChain([i], null); return best; }
-  const maxLen = Math.min(db.config.maxChain || 9, level === 0 ? 1 : level === 1 ? 2 : (policy.maxChain || 4));
+  const lone = policy.loneAfter != null || view.rs.loneTurn === view.turn;
+  const maxLen = lone ? 1 : Math.min(db.config.maxChain || 9, level === 0 ? 1 : level === 1 ? 2 : (policy.maxChain || 4));
   for (let i = 0; i < n; i++) {
+    if (i === policy.loneAfter) continue;
+    if (policy.loneAfter != null && !db.isMonster(hand[i].id)) continue;
     evalChain([i], null);
     if (maxLen < 2) continue;
     myMons.forEach((m, z) => { if (m && !m.veil) evalChain([i], z); });
@@ -276,7 +279,13 @@ export function chooseAction(db, view, level = 1, policy = {}) {
       const mons = view.hand.filter(c => db.isMonster(c.id)).length;
       if (mons === 0 && view.hand.length) return { t: 'cleanDraw', hand: 0 };
     }
-    if (db.config.freeCast && !view.noFree && level >= 1 && view.rs.freeTurn !== view.turn) { const f = bestPlay(db, view, level, { ...policy, freeOnly: true }); if (f && f.score > 60) return f.action; }
+    if (db.config.freeCast === 'lone') {
+      // The free support card costs the turn's meld: take it when the card plus the best lone play beats the best meld.
+      if (!view.noFree && level >= 1 && view.rs.freeTurn !== view.turn) {
+        const f = bestPlay(db, view, level, { ...policy, freeOnly: true });
+        if (f && f.score > 60) { const p = bestPlay(db, view, level, policy), q = bestPlay(db, view, level, { ...policy, loneAfter: f.action.hand[0] }); if (!p || f.score + (q ? Math.max(q.score, 0) : 0) > p.score + (db.config.loneEdge || 0)) return f.action; }
+      }
+    } else if (db.config.freeCast && !view.noFree && level >= 1 && view.rs.freeTurn !== view.turn) { const f = bestPlay(db, view, level, { ...policy, freeOnly: true }); if (f && f.score > 60) return f.action; }
     const p = bestPlay(db, view, level, policy);
     if (level >= 1 && db.config.forgerTune && db.config.forgerTune.veilSet && view.relics.includes('f_veil') && view.rs.veilSetTurn !== view.turn && view.mon[me].filter(m => !m).length >= 2 && (db.config.forgerTune.veilSet !== 2 || !view.mon[me].some(m => m && m.veil))) {
       // the Veilwalker's free veiled set: wall up with the best defender the main play does not need

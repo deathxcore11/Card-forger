@@ -12,7 +12,7 @@ machine". Nothing in this folder has been played by a person or seen on a device
 ```
 node tools/crucible/build-pool.mjs --fetch --count     # pool size at three cut-offs
 node tools/crucible/build-pool.mjs --fetch             # writes crucible/data/crucible-pool.json
-node crucible/test/test-crucible-rules.mjs             # 64 rule tests
+node crucible/test/test-crucible-rules.mjs             # 73 rule tests
 node crucible/test/test-crucible-fuzz.mjs 6000 600     # random play with invariants
 node crucible/test/test-crucible-fuzz-levers.mjs 1000 200 1   # the same with every Lab lever on, Heat 0-10, wild actions, rule changes mid-run, profiles
 node tools/crucible/make-saves.mjs <dir>               # saved games for every kind of screen (floors 1-3, Heat 0/5/10)
@@ -95,7 +95,10 @@ Set through `CRUCIBLE_CFG`, or the "Lab rules" switches on the playable page's h
   `endTurn`): one relic may raise a hook another answers, at most 4 deep and 12 raises a turn.
 - `thornLp`: Life Points per veiled monster for Thorn Veil (default 150).
 - `freeCast: "trap"`: only the first Trap set each turn is free. `freeCastRival` (`none`, `elite`, `boss`) says which rivals share it.
-- `leanOffers`: one of the three Gifts offered comes from a build family the player already holds a piece of.
+- `leanOffers`: one of the three Gifts offered comes from a build family the player already holds a piece of. `leanOffers: 2`: once two held relics share a build, a second option fits it too.
+- `freeCast: "lone"` (Support turn): once a turn a Spell, Trap, Field or Equip played alone is free, and no meld may be made that turn.
+- Linked relics: the seven Gifts in `LINK_GIFTS` (`engine/relics.mjs`) join two builds; they reach a run only through `labPool` (the page's `links` switch). `relicLinks(id)` lists what a relic sets off and what sets it off.
+- Simulator players `engine_tomb`, `engine_pyre`, `engine_veil` (`engine/policy.mjs`) aim for one engine and re-deal for it.
 - `giftRerolls`: how many times a run a Gift offer may be dealt again (action `{ t: 'reroll' }`).
 - `rivalStyles`: from the second floor a themed rival carries relics (`STYLES` in `engine/run.mjs`), shows a tell on its door and plays toward it.
 - `stormTune`: 1 is the first try (Patient Coil +200 / +200 and Copper Loop once a duel); an object `{ len, loopLen, loopN, loopAtk, loopDef, coilLen, coilAtk, coilDef }` sets the meld length Storm pieces ask for and what Copper Loop and Patient Coil give. `wardTune`: `{ n, cost }` for Grave Ward (uses a duel, graveyard cost). `itemTune`: 1 applies `ITEM_TUNE` in `engine/relics.mjs` (Storm pieces ask for four cards, Loop +200 ATK twice, Coil +200 / +200, Grave Ward once a duel) and `STYLES_TUNED` for the two rival styles that carry those pieces; wording through `relicText(db, id)` and `styleFor(db, id)`. The page's "Tuned items" switch, on by default. Sim-only families `pick_storm`, `pick_tomb`, `pick_shadow`, `pick_furnace`, `pick_lean` (`engine/policy.mjs`) keep the neutral play style and only prefer one family's Gifts. `forgerTune`: `{ tarnStoke, scrapDraw, veilSet }` (`veilSet` 1: the Veilwalker's first lone veiled set in defense each turn is free; 2: only while she holds no veiled monster).

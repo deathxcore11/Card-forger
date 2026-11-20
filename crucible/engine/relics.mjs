@@ -77,7 +77,26 @@ export const LAB = {
   quench: { name: 'Quench', kind: 'G', family: 'furnace', text: 'When your melded monster destroys a rival monster in battle, it gets +200 ATK and DEF this duel. Up to four times a duel.' },
   cracked_mask: { name: 'Cracked Mask', kind: 'G', family: 'shadow', text: 'Once a duel, when you turn your own veiled monster face up, your relics treat it as revealed by an attack, and your next meld gets +300 ATK this duel.' },
   cold_lantern: { name: 'Cold Lantern', kind: 'G', family: 'shadow', text: 'Each time an attack reveals your veiled monster and it survives, the rival loses 300 Life Points. Up to four times a duel.' },
+  // Linked relics (lever links: 1). Each listens to one build and pays into another, so two builds in one run can set each
+  // other off. `link` is the build the payoff feeds; `needs` lists the relics one of which must be held before it is offered.
+  blood_price: { name: 'Blood Price', kind: 'G', family: 'tomb', link: 'storm', needs: ['tomb_bell', 'last_rites'], text: 'Each time one of your relics gains you Life Points, the rival loses as many. Up to four times a duel.' },
+  pyre_mark: { name: 'Pyre Mark', kind: 'G', family: 'furnace', link: 'tomb', text: 'Once a turn, when your melded monster destroys a rival monster in battle, gain a Tomb mark and your next meld gets +200 ATK this duel. Up to four times a duel.' },
+  bone_bellows: { name: 'Bone Bellows', kind: 'G', family: 'tomb', link: 'furnace', needs: ['tomb_ledger', 'pyre_mark'], text: 'Each time you gain a Tomb mark, your strongest face-up melded monster gets +200 ATK this duel. Up to four times a duel.' },
+  charged_bones: { name: 'Charged Bones', kind: 'G', family: 'tomb', link: 'storm', needs: ['grave_call'], text: 'When a monster returns from your graveyard to your hand, your next meld counts as one card longer for your relics. Up to three times a duel.' },
+  thunderclap: { name: 'Thunderclap', kind: 'G', family: 'storm', link: 'shadow', text: 'Once a turn, after your meld of three or more cards while you hold a veiled monster, the rival loses 200 Life Points and your relics treat that monster as revealed by an attack. It stays veiled. Up to three times a duel.' },
+  spoils: { name: 'Spoils', kind: 'G', family: 'shadow', link: 'storm', needs: ['snare', 'grave_ward', 'grounding_rod'], text: 'Each time one of your relics destroys a rival monster, the rival loses 400 Life Points and your next refill draws one extra card. Up to three times a duel.' },
+  outrider: { name: 'Outrider', kind: 'G', family: 'lean', link: 'storm', text: 'When you play a monster on its own, your next meld gets +200 ATK this duel and counts as one card longer for your relics. Up to three times a duel.' },
 };
+export const LINK_GIFTS = Object.keys(LAB).filter(id => LAB[id].link);
+// Which relic sets off which. GIVES: what a relic's effect gives out. TAKES: what a relic answers. Read by the page for
+// the "Sets off" line on a Gift, so a player can see an engine before choosing; the rules themselves are in fire() below.
+const GIVES = { mark: ['tomb_ledger', 'pyre_mark'], returned: ['grave_call', 'returning_tomb'], heal: ['tomb_bell', 'last_rites'], shock: ['glass_idol', 'bone_tithe', 'ossuary', 'thorn_veil', 'cinder_fall', 'cold_lantern', 'storm_needle', 'blood_price', 'thunderclap', 'spoils'], reveal: ['cracked_mask', 'thunderclap'], struck: ['snare', 'grave_ward', 'grounding_rod'], longer: ['charged_bones', 'outrider'] };
+const TAKES = { mark: ['bone_tithe', 'grave_call', 'returning_tomb', 'bone_bellows'], returned: ['second_burial', 'last_rites', 'charged_bones'], heal: ['blood_price'], shock: ['chain_lightning'], reveal: ['tomb_bell', 'glass_idol', 'deep_shade', 'spite'], struck: ['spoils'], longer: ['copper_loop', 'storm_needle', 'patient_coil', 'spare_wire', 'static_field', 'overcharge', 'grounding_rod'] };
+export function relicLinks(id) {
+  const sets = new Set(), by = new Set();
+  for (const k of Object.keys(GIVES)) { if (GIVES[k].includes(id)) for (const x of TAKES[k]) if (x !== id) sets.add(x); if (TAKES[k].includes(id)) for (const x of GIVES[k]) if (x !== id) by.add(x); }
+  return { sets: [...sets], by: [...by] };
+}
 const info = id => RELICS[id] || LAB[id];
 // Tuned items (lever itemTune: 1). Alone, in the simulator, Copper Loop was worth 28 points of clear rate, Grave Ward 26 and
 // Patient Coil 23, against 9 to 14 for the next best items, and Storm pieces only asked for a three-card meld, which every
@@ -105,10 +124,20 @@ export function sortRelics(ids) { return ids.map((id, i) => [id, i]).sort((a, b)
 
 export const has = (s, seat, id) => s.seat[seat].relics.includes(id);
 
+// Sim-only (config trackFx): how many relic effects one action set off, and whether two build families took part.
+let TRACK = false, BURST = null;
+const BUILDS = ['furnace', 'shadow', 'lean', 'storm', 'tomb'];
+function burst(s, ev, seat, fam) {
+  if (!BURST || BURST.ev !== ev || BURST.seat !== seat) BURST = { ev, seat, n: 0, fams: new Set() };
+  const f = s.stats[seat].fx || (s.stats[seat].fx = {}), b = BURST; b.n++;
+  if (b.n === 3) f.burst3 = (f.burst3 || 0) + 1; if (b.n === 5) f.burst5 = (f.burst5 || 0) + 1; if (b.n === 7) f.burst7 = (f.burst7 || 0) + 1;
+  if (BUILDS.includes(fam) && !b.fams.has(fam)) { b.fams.add(fam); if (b.fams.size === 2) f.crossBurst = (f.crossBurst || 0) + 1; if (b.fams.size === 3) f.crossBurst3 = (f.crossBurst3 || 0) + 1; }
+}
 function note(s, ev, seat, id, extra) {
   const st = s.stats[seat];
   st.relicFires[id] = (st.relicFires[id] || 0) + 1;
   const fam = info(id).family; st.relicFamilies[fam] = 1;
+  if (TRACK) burst(s, ev, seat, fam);
   ev.push({ e: 'relic', seat, id, ...extra });
 }
 
@@ -132,6 +161,7 @@ export function fire(s, db, ev, seat, hook, ctx) {
   const st = s.seat[seat], rs = st.rs, r = 1 - seat;
   const list = st.relics;
   if (!list.length) return;
+  TRACK = !!db.config.trackFx;
   const B = (m, a, d, id) => relicBonus(s, db, ev, seat, m, a, d, id);
   // A relic may raise another hook. Two hard limits stop any loop: nesting depth, and raises per turn.
   const raise = (h, c) => {
@@ -139,9 +169,14 @@ export function fire(s, db, ev, seat, hook, ctx) {
     if (rs.chainTurn !== s.turn) { rs.chainTurn = s.turn; rs.chainN = 0; }
     if (rs.chainN >= CHAIN_TURN) return;
     rs.chainN++; s.stats[seat].chained = (s.stats[seat].chained || 0) + 1;
+    if (TRACK) { const f = s.stats[seat].fx || (s.stats[seat].fx = {}); f.chainRaise = (f.chainRaise || 0) + 1; }
     depth++; try { fire(s, db, ev, seat, h, c); } finally { depth--; }
   };
   const shock = n => { hurt(s, ev, r, n); if (s.winner === null && list.includes('chain_lightning')) raise('shock', {}); };
+  const mark = () => { rs.marks = (rs.marks || 0) + 1; if (list.includes('tomb_ledger') && rs.marks <= 5) rs.nextMeld.push({ a: 200, d: 0, id: 'tomb_ledger' }); raise('mark', { marks: rs.marks }); };
+  const healed = n => { if (s.winner === null && list.includes('blood_price')) raise('healed', { n }); };
+  // A linked relic made this meld count as one card longer (at most one more).
+  if (hook === 'placed' && ctx.melded && rs.lenPlus) { const by = rs.lenPlus; rs.lenPlus = 0; ctx.len += 1; note(s, ev, seat, by, { longer: ctx.len }); }
   const strongest = p => { let b = null; for (const m of s.mon[p]) if (m && !m.veil && (!b || db.byId.get(m.id).atk + (m.ba || 0) > db.byId.get(b.id).atk + (b.ba || 0))) b = m; return b; };
   const fromGrave = (maxAtk) => {
     if (s.hand[seat].length >= db.config.handMax) return false;
@@ -165,14 +200,14 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'survived:patient_hunter': if (rs.hunterTurn !== s.turn) { rs.hunterTurn = s.turn; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
       case 'survived:unseen_hand': if (ctx.wasVeiled && (rs.unseen || 0) < 3) { rs.unseen = (rs.unseen || 0) + 1; rs.nextMeld.push({ a: 500, d: 0, id }); if (ctx.attacker) ctx.attacker.lock = 1; note(s, ev, seat, id, { armed: true }); } break;
 
-      case 'veiledRevealed:tomb_bell': if (!rs.tomb) { rs.tomb = 1; s.lp[seat] += 300; note(s, ev, seat, id); ev.push({ e: 'lp', seat, d: 300, src: 'relic' }); } break;
+      case 'veiledRevealed:tomb_bell': if (!rs.tomb) { rs.tomb = 1; s.lp[seat] += 300; note(s, ev, seat, id); ev.push({ e: 'lp', seat, d: 300, src: 'relic' }); healed(300); } break;
       case 'veiledRevealed:glass_idol': if ((rs.idol || 0) < 3) { rs.idol = (rs.idol || 0) + 1; note(s, ev, seat, id); shock(300); } break;
     }
     if (s.winner !== null) return;
     switch (hook + ':' + id) {
       case 'ingredients:bone_tithe': if (!list.includes('tomb_ledger') && ctx.n >= 2 && rs.titheTurn !== s.turn && (rs.tithe || 0) < 5) { rs.titheTurn = s.turn; rs.tithe = (rs.tithe || 0) + 1; note(s, ev, seat, id); shock(300); } break;
       case 'mark:bone_tithe': if ((rs.tithe || 0) < 5) { rs.tithe = (rs.tithe || 0) + 1; note(s, ev, seat, id); shock(300); } break;
-      case 'returned:last_rites': if ((rs.rites || 0) < 4) { rs.rites = (rs.rites || 0) + 1; s.lp[seat] += 300; note(s, ev, seat, id); ev.push({ e: 'lp', seat, d: 300, src: 'relic' }); } break;
+      case 'returned:last_rites': if ((rs.rites || 0) < 4) { rs.rites = (rs.rites || 0) + 1; s.lp[seat] += 300; note(s, ev, seat, id); ev.push({ e: 'lp', seat, d: 300, src: 'relic' }); healed(300); } break;
       case 'surge:static_field': { const m = (rs.staticN || 0) < 3 ? strongest(r) : null; if (m) { rs.staticN = (rs.staticN || 0) + 1; m.ba = (m.ba || 0) - 300; note(s, ev, seat, id, { u: m.u, a: -300 }); } } break;
       case 'surge:overcharge': if (ctx.len >= 4 && (rs.overcharge || 0) < 3) { rs.overcharge = (rs.overcharge || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
       case 'shock:chain_lightning': { const m = (rs.chainL || 0) < 4 ? strongest(seat) : null; if (m) { rs.chainL = (rs.chainL || 0) + 1; B(m, 200, 0, id); } } break;
@@ -194,12 +229,20 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'turnStart:banked_coals': { let m = null; if ((rs.coals || 0) < 4) for (const x of s.mon[seat]) if (x && x.meld && !x.veil && (!m || ctx.eff(x) > ctx.eff(m))) m = x; if (m) { rs.coals = (rs.coals || 0) + 1; B(m, db.config.coalsAtk || 300, 0, id); } } break;
       case 'endTurn:cinder_fall': if ((rs.cinder || 0) < 4 && s.mon[seat].some(m => m && !m.veil && ctx.eff(m) >= (db.config.cinderAtk || 2500))) { rs.cinder = (rs.cinder || 0) + 1; note(s, ev, seat, id); shock(db.config.cinderLp || 400); } break;
       case 'wonBattle:quench': if (ctx.mon.meld && (rs.quench || 0) < 4) { rs.quench = (rs.quench || 0) + 1; B(ctx.mon, 200, 200, id); } break;
+      case 'healed:blood_price': if ((rs.blood || 0) < 4) { rs.blood = (rs.blood || 0) + 1; note(s, ev, seat, id); shock(ctx.n); } break;
+      case 'wonBattle:pyre_mark': if (ctx.mon.meld && rs.pyreTurn !== s.turn && (rs.pyre || 0) < 4) { rs.pyreTurn = s.turn; rs.pyre = (rs.pyre || 0) + 1; rs.nextMeld.push({ a: 200, d: 0, id }); note(s, ev, seat, id, { armed: true, marks: (rs.marks || 0) + 1 }); mark(); } break;
+      case 'mark:bone_bellows': { let m = null; if ((rs.bellows || 0) < 4) for (const x of s.mon[seat]) if (x && x.meld && !x.veil && (!m || db.byId.get(x.id).atk + (x.ba || 0) > db.byId.get(m.id).atk + (m.ba || 0))) m = x; if (m) { rs.bellows = (rs.bellows || 0) + 1; B(m, 200, 0, id); } } break;
+      case 'returned:charged_bones': if ((rs.charged || 0) < 3) { rs.charged = (rs.charged || 0) + 1; rs.lenPlus = id; note(s, ev, seat, id, { armed: true }); } break;
+      case 'clap:thunderclap': { const z = rs.clapTurn !== s.turn && (rs.clap || 0) < 3 ? s.mon[seat].findIndex(m => m && m.veil) : -1; if (z >= 0) { rs.clapTurn = s.turn; rs.clap = (rs.clap || 0) + 1; note(s, ev, seat, id, { zone: z }); shock(200); if (s.winner === null) raise('veiledRevealed', { mon: s.mon[seat][z], zone: z, attacker: null, flash: true }); } } break;
+      case 'struck:spoils': if ((rs.spoils || 0) < 3) { rs.spoils = (rs.spoils || 0) + 1; st.extraDraw = 1; note(s, ev, seat, id); shock(400); } break;
+      case 'lone:outrider': if ((rs.outrider || 0) < 3) { rs.outrider = (rs.outrider || 0) + 1; rs.lenPlus = id; rs.nextMeld.push({ a: 200, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
       case 'survived:cold_lantern': if (ctx.wasVeiled && (rs.lantern || 0) < 4) { rs.lantern = (rs.lantern || 0) + 1; note(s, ev, seat, id); shock(300); } break;
     }
     if (hook === 'placed') placed(s, db, ev, seat, id, ctx, rs, st, B, r);
   }
   if (hook === 'placed' && ctx.melded && list.includes('deep_grave') && (rs.deepG || 0) < 4 && s.gy[seat].filter(g => db.isMonster(g)).length >= 8) { rs.deepG = (rs.deepG || 0) + 1; B(ctx.mon, 200, 0, 'deep_grave'); }
   if (hook === 'placed' && ctx.melded && ctx.len >= ((tuneOf(db, 'stormTune') || {}).len || 3) && (list.includes('static_field') || list.includes('overcharge'))) raise('surge', { len: ctx.len });
+  if (hook === 'placed' && ctx.melded && ctx.len >= 3 && list.includes('thunderclap')) raise('clap', {});
   if (hook === 'placed' && ctx.melded) rs.nextMeld = rs.nextMeld.filter(x => !x.used);
   if (hook === 'placed' && ctx.fresh) rs.firstMon = 1;
   if (hook === 'placed' && ctx.bound && ctx.fresh) rs.boundPlayed = 1;

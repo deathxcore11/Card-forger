@@ -26,6 +26,8 @@ const SETS = {
   free: { ...FIVE, freeCast: 'all', soloArrival: 1, veilGuard: 1, rivalStyles: 1, heatRules: 1, forgerTune: { veilSet: 1 } },
   freeElite: { ...FIVE, freeCast: 'all', freeCastRival: 'elite', heatRules: 1, kitTune: 1, leanOffers: 1, forgerTune: { veilSet: 2, veilMinDef: 1 } },
   bible: { drawPerTurn: 0, heatRules: 1, rivalStyles: 1, labPool: LABPOOL },
+  depth: { ...FIVE, leanOffers: 2, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, freeCast: 'lone', freeCastRival: 'boss' },
+  loneAll: { ...FIVE, leanOffers: 2, freeCast: 'lone', rivalStyles: 1, soloArrival: 1, forgerTune: { veilSet: 2 }, trackFx: 1 },
 };
 const DUELS = +process.argv[2] || 300, RUNS = +process.argv[3] || 60, SEED0 = +process.argv[4] || 1;
 const relicIds = [...Object.keys(RELICS), ...Object.keys(LAB)];

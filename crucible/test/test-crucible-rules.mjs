@@ -7,9 +7,10 @@ import { rulesText, FX_TEXT, TRAP_TEXT } from '../web/text.mjs';
 import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, effDef, forecast, canonical, clone } from '../engine/duel.mjs';
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
-import { RELICS, LAB, CHAIN_TURN, sortRelics, fire, relicText, TUNED_TEXT } from '../engine/relics.mjs';
+import { RELICS, LAB, LINK_GIFTS, relicLinks, CHAIN_TURN, sortRelics, fire, relicText, TUNED_TEXT } from '../engine/relics.mjs';
 import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
+import { labConfig, LAB_DEFAULTS } from '../web/labs.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS, FEATS_LONG, LONG_GIFTS, KIT_GOALS, START_ENCHANTS, VAULT_ENCHANTS, openKits, nextKit, openEnchants, runOptions, featList } from '../engine/meta.mjs';
 
@@ -669,7 +670,7 @@ test('leaning offers and the re-deal: with a build piece held, a Gift offer alwa
     while (run.phase !== 'over') {
       if (run.phase === 'reward' && run.offer.kind === 'gift') {
         const fam = id => (RELICS[id] || LAB[id]).family, held = new Set([...run.charms, ...run.gifts].map(fam).filter(f => ['furnace', 'shadow', 'lean', 'storm', 'tomb'].includes(f)));
-        if (held.size) { checked++; assert.ok(run.offer.options.some(id => held.has(fam(id))), 'seed ' + seed + ': no option leans toward ' + [...held]); }
+        if (held.size) { checked++; assert.ok(run.offer.options.some(id => held.has(fam(id)) || held.has((LAB[id] || {}).link)), 'seed ' + seed + ': no option leans toward ' + [...held]); }
         if (run.rerolls) { const was = run.offer.options.slice(); runApply(run, { t: 'reroll' }, lab); redealt++; assert.equal(run.rerolls, 0); for (const id of run.offer.options) assert.ok(!was.includes(id), 'a re-deal shows three other Gifts'); assert.throws(() => runApply(run, { t: 'reroll' }, lab), /no re-deal/); continue; }
       }
       runApply(run, policyAction(lab, run, { level: 2, family: 'tomb' }), lab);
@@ -896,6 +897,135 @@ test('tuned items: Storm pieces need a four-card meld, Grave Ward once a duel, w
   // the two rivals that carry a Storm piece say four, and reach for four
   assert.match(styleFor(tuned, 'engine').text, /four or more/); assert.equal(styleFor(tuned, 'engine').policy.maxChain, 4); assert.match(styleFor(db, 'engine').text, /three or more/);
   assert.equal(styleFor(tuned, 'drake'), STYLES.drake);
+});
+
+// Linked relics (lever links, 20 November 2026): each listens to one build and pays into another.
+// A third card that takes Flame Swordsman one step further, so three cards make one clean meld.
+const THIRD = (() => { const fm = C('Flame Manipulator').id, ma = C('Masaki the Legendary Swordsman').id; for (const c of db.byId.values()) { if (c.kind !== 'monster' || c.id === fm || c.id === ma) continue; const p = planChain(db, [{ id: fm }, { id: ma }, { id: c.id }], null); if (p.melded && p.len === 3 && !p.fizzles && p.isMonster && p.gy.filter(id => db.isMonster(id)).length >= 2) return c.name; } throw new Error('no three-card chain from Flame Swordsman'); })();
+const linked = (ids, cfg) => { const d = cfg ? { ...db, config: { ...db.config, ...cfg }, _pair: new Map() } : db; const s = blank({ seats: [{ relics: sortRelics(ids) }, {}] }); s.hand = [[], []]; s.turn = 3; s.active = 0; return [s, d]; };
+const fired = (ev, id) => ev.filter(e => e.e === 'relic' && e.id === id).length;
+
+test('linked relics: Blood Price turns a relic heal into rival damage, and Chain Lightning answers it', () => {
+  const [s] = linked(['tomb_ledger', 'grave_call', 'last_rites', 'blood_price', 'chain_lightning']);
+  s.gy[0].push(C('Mystical Elf').id); give(s, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman');
+  const me = s.lp[0], them = s.lp[1];
+  const ev = applyMut(s, { t: 'play', hand: [0, 1], onto: null, pos: 'a' }, db);
+  for (const id of ['tomb_ledger', 'grave_call', 'last_rites', 'blood_price', 'chain_lightning']) assert.ok(fired(ev, id) >= 1, id + ' took part in the chain');
+  assert.equal(s.lp[0], me + 300, 'Last Rites healed'); assert.equal(s.lp[1], them - 300, 'Blood Price took as much from the rival');
+  assert.equal(s.mon[0].find(Boolean).ba, 200, 'Chain Lightning gave the new meld +200');
+  assert.equal(s.hand[0].length, 1, 'Grave Call returned a monster');
+  // without a heal relic it does nothing
+  const [t] = linked(['blood_price']); give(t, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman'); const lp = t.lp[1];
+  assert.equal(fired(applyMut(t, { t: 'play', hand: [0, 1], onto: null, pos: 'a' }, db), 'blood_price'), 0); assert.equal(t.lp[1], lp);
+});
+
+test('linked relics: Pyre Mark makes a battle win a Tomb mark, and Bone Bellows feeds the mark back to the melded monster', () => {
+  const [s] = linked(['pyre_mark', 'bone_bellows', 'bone_tithe']);
+  const sw = put(s, 0, 0, mon('Flame Swordsman', 'a', { meld: 1 })), sw2 = put(s, 0, 1, mon('Flame Swordsman', 'a', { meld: 1 }));
+  put(s, 1, 0, mon('Mystical Elf', 'a')); put(s, 1, 1, mon('Mystical Elf', 'a')); const lp = s.lp[1];
+  let ev = applyMut(s, { t: 'attack', from: 0, to: 0 }, db);
+  assert.equal(s.seat[0].rs.marks, 1, 'a mark without burying anything'); assert.equal(fired(ev, 'pyre_mark'), 1); assert.equal(fired(ev, 'bone_bellows'), 1);
+  assert.equal((sw.ba || 0) + (sw2.ba || 0), 200, 'Bone Bellows: +200 on a melded monster');
+  assert.ok(s.seat[0].rs.nextMeld.some(x => x.id === 'pyre_mark'), 'the next meld is armed');
+  assert.ok(ev.some(e => e.e === 'relic' && e.id === 'bone_tithe'), 'Bone Tithe answers the mark');
+  ev = applyMut(s, { t: 'attack', from: 1, to: 1 }, db);
+  assert.equal(fired(ev, 'pyre_mark'), 0, 'once a turn'); assert.equal(s.seat[0].rs.marks, 1);
+  // a monster that was not melded earns no mark
+  const [t] = linked(['pyre_mark']); put(t, 0, 0, mon('Summoned Skull', 'a')); put(t, 1, 0, mon('Mystical Elf', 'a'));
+  assert.equal(fired(applyMut(t, { t: 'attack', from: 0, to: 0 }, db), 'pyre_mark'), 0);
+});
+
+test('linked relics: Charged Bones makes the next meld one card longer for Storm pieces, once per return', () => {
+  const tuned = { itemTune: 1 };
+  const go = ids => { const [s, d] = linked(ids, tuned); s.gy[0].push(C('Mystical Elf').id); give(s, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman');
+    applyMut(s, { t: 'play', hand: [0, 1], onto: null, pos: 'a' }, d); s.played = false; s.turn += 2; s.hand[0] = []; give(s, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman', THIRD);
+    const lp = s.lp[1], ev = applyMut(s, { t: 'play', hand: [0, 1, 2], onto: null, pos: 'a' }, d); return { s, ev, lost: lp - s.lp[1] }; };
+  const a = go(['tomb_ledger', 'grave_call', 'charged_bones', 'storm_needle']);
+  assert.equal(fired(a.ev, 'storm_needle'), 1, 'a three-card meld counted as four'); assert.equal(a.lost, 300);
+  assert.ok(a.ev.some(e => e.e === 'relic' && e.id === 'charged_bones' && e.longer === 4), 'the page is told the meld counted as four');
+  const b = go(['tomb_ledger', 'grave_call', 'storm_needle']);
+  assert.equal(fired(b.ev, 'storm_needle'), 0, 'without Charged Bones three cards are three cards'); assert.equal(b.lost, 0);
+});
+
+test('linked relics: Thunderclap shows a veiled monster to the relics without turning it over', () => {
+  const [s] = linked(['thunderclap', 'tomb_bell', 'deep_shade', 'blood_price']);
+  const v = put(s, 0, 4, mon('Mystical Elf', 'd', { veil: true })); give(s, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman', THIRD);
+  const me = s.lp[0], them = s.lp[1];
+  const ev = applyMut(s, { t: 'play', hand: [0, 1, 2], onto: null, pos: 'a' }, db);
+  assert.equal(v.veil, true, 'it stays veiled'); assert.equal(fired(ev, 'thunderclap'), 1);
+  assert.equal(s.lp[0], me + 300, 'Tomb Bell rang'); assert.equal(s.lp[1], them - 200 - 300, 'Thunderclap 200, then Blood Price 300');
+  assert.ok(s.seat[0].rs.nextMeld.some(x => x.id === 'deep_shade'), 'Deep Shade arms the next meld');
+  const [t] = linked(['thunderclap']); give(t, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman', THIRD); const lp = t.lp[1];
+  assert.equal(fired(applyMut(t, { t: 'play', hand: [0, 1, 2], onto: null, pos: 'a' }, db), 'thunderclap'), 0, 'no veiled monster, no Thunderclap'); assert.equal(t.lp[1], lp);
+});
+
+test('linked relics: Spoils pays when a relic, not a battle, destroys a rival monster', () => {
+  const [s] = linked(['snare', 'spoils']);
+  put(s, 0, 0, mon('Mystical Elf', 'd', { veil: true })); put(s, 1, 0, mon('Summoned Skull', 'a')); s.active = 1; const lp = s.lp[1];
+  const ev = applyMut(s, { t: 'attack', from: 0, to: 0 }, db);
+  assert.equal(s.mon[1][0], null, 'Snare took the attacker'); assert.equal(fired(ev, 'spoils'), 1); assert.equal(s.lp[1], lp - 400); assert.equal(s.seat[0].extraDraw, 1);
+  // a plain battle kill is not a relic kill
+  const [t] = linked(['spoils']); put(t, 0, 0, mon('Summoned Skull', 'a')); put(t, 1, 0, mon('Mystical Elf', 'a')); const lp2 = t.lp[1];
+  assert.equal(fired(applyMut(t, { t: 'attack', from: 0, to: 0 }, db), 'spoils'), 0);
+});
+
+test('linked relics: Outrider rewards a monster played on its own with a longer, stronger next meld', () => {
+  const [s] = linked(['outrider', 'grounding_rod']);
+  give(s, 0, 'Mystical Elf'); put(s, 1, 0, mon('Summoned Skull', 'a'));
+  let ev = applyMut(s, { t: 'play', hand: [0], onto: null, pos: 'd', veiled: true }, db);
+  assert.equal(fired(ev, 'outrider'), 1); assert.equal(s.seat[0].rs.lenPlus, 'outrider');
+  s.played = false; s.turn += 2; give(s, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman', THIRD);
+  ev = applyMut(s, { t: 'play', hand: [0, 1, 2], onto: null, pos: 'a' }, db);
+  assert.equal(s.mon[1][0], null, 'Grounding Rod fired on a three-card meld that counted as four');
+  const m = s.mon[0].find(x => x && x.meld); assert.equal(m.ba, 200, 'and the meld got +200'); assert.equal(s.seat[0].rs.lenPlus, 0, 'the extra card is spent');
+  // a meld does not arm it
+  const [t] = linked(['outrider']); give(t, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman');
+  assert.equal(fired(applyMut(t, { t: 'play', hand: [0, 1], onto: null, pos: 'a' }, db), 'outrider'), 0);
+});
+
+test('linked relics: off by default; a link that needs a partner is never offered without one', () => {
+  assert.ok(LINK_GIFTS.length >= 7 && LINK_GIFTS.every(id => LAB[id].link && !RELICS[id]));
+  assert.ok(!labConfig(LAB_DEFAULTS).labPool.some(id => LINK_GIFTS.includes(id)), 'not in the pool with the default switches');
+  assert.ok(LINK_GIFTS.every(id => labConfig({ ...LAB_DEFAULTS, links: true }).labPool.includes(id)));
+  const lab = { ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, links: true }) }, _pair: new Map() };
+  let seen = 0, withNeeds = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const run = newRun(lab, { seed });
+    while (run.phase !== 'over') {
+      if (run.phase === 'reward' && run.offer.kind === 'gift') for (const id of run.offer.options) if (LAB[id] && LAB[id].link) { seen++; if (LAB[id].needs) { withNeeds++; assert.ok(LAB[id].needs.some(x => [...run.charms, ...run.gifts, ...run.masterworks].includes(x)), 'seed ' + seed + ': ' + id + ' offered with no partner held'); } }
+      runApply(run, policyAction(lab, run, { level: 2, family: seed % 2 ? 'pick_tomb' : 'pick_shadow' }), lab);
+    }
+  }
+  assert.ok(seen >= 10 && withNeeds >= 2, 'links were offered (' + seen + ', ' + withNeeds + ' with a partner)');
+});
+
+test('the Sets off line: every relic it names exists, and it agrees both ways', () => {
+  const all = { ...RELICS, ...LAB };
+  for (const id of Object.keys(all)) { const L = relicLinks(id); for (const x of [...L.sets, ...L.by]) assert.ok(all[x], id + ' names ' + x); for (const x of L.sets) assert.ok(relicLinks(x).by.includes(id), id + ' sets off ' + x + ', so ' + x + ' is set off by ' + id); }
+  assert.ok(relicLinks('blood_price').sets.includes('chain_lightning') && relicLinks('blood_price').by.includes('last_rites'));
+  assert.ok(relicLinks('outrider').sets.includes('grounding_rod') && relicLinks('pyre_mark').sets.includes('bone_bellows'));
+  assert.deepEqual(relicLinks('whetstone'), { sets: [], by: [] });
+});
+
+test('Support turn (lever freeCast lone): a support card alone is free, and that turn takes one card on its own, not a meld', () => {
+  assert.equal(labConfig(LAB_DEFAULTS).freeCast, 0); assert.equal(labConfig({ ...LAB_DEFAULTS, lone: true }).freeCast, 'lone'); assert.equal(labConfig({ ...LAB_DEFAULTS, lone: true }).freeCastRival, 'boss');
+  const lab = { ...db, config: { ...db.config, freeCast: 'lone' }, _pair: new Map() };
+  const spell = [...db.tagOf.entries()].find(([id, t]) => db.byId.get(id).kind === 'spell' && t.fx === 'heal')[0], trap = [...db.tagOf.keys()].find(id => db.byId.get(id).kind === 'trap');
+  let s = blank(); s.hand[0].push({ u: uid++, id: spell }); give(s, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman');
+  const ev = applyMut(s, { t: 'play', hand: [0], onto: null }, lab);
+  assert.equal(s.played, false, 'the Spell was free'); assert.ok(ev.some(e => e.e === 'free' && e.lone));
+  assert.throws(() => applyMut(clone(s), { t: 'play', hand: [0, 1], onto: null, pos: 'a' }, lab), /not legal/, 'no meld after the free card');
+  assert.ok(!legalActions(s, lab, { maxChain: 4 }).some(a => a.t === 'play' && a.hand.length > 1), 'and no meld is offered');
+  applyMut(s, { t: 'play', hand: [0], onto: null, pos: 'a' }, lab); assert.equal(s.played, true, 'one monster on its own is the play'); assert.equal(s.mon[0].filter(Boolean).length, 1);
+  // next turn melds are back
+  s.played = false; s.attacked = false; s.turn += 2; s.hand[0] = []; give(s, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman');
+  applyMut(s, { t: 'play', hand: [0, 1], onto: null, pos: 'a' }, lab); assert.ok(s.mon[0].some(m => m && m.id === C('Flame Swordsman').id));
+  // a meld first uses the play, so a Spell after it is not on offer; a Trap alone is free like a Spell; only one free card a turn
+  s = blank(); s.hand[0].push({ u: uid++, id: trap }, { u: uid++, id: spell }); give(s, 0, 'Mystical Elf');
+  applyMut(s, { t: 'play', hand: [0], onto: null }, lab); assert.equal(s.played, false, 'the Trap set was free');
+  applyMut(s, { t: 'play', hand: [0], onto: null }, lab); assert.equal(s.played, true, 'the second support card uses the play');
+  // the same hand under the base rules: the Spell uses the play
+  s = blank(); s.hand[0].push({ u: uid++, id: spell }); applyMut(s, { t: 'play', hand: [0], onto: null }, db); assert.equal(s.played, true);
 });
 
 console.log('crucible rules:', passed, 'tests passed');

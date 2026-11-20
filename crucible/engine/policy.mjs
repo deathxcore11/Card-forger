@@ -20,11 +20,18 @@ export const FAMILIES = {
   // The same neutral player that only prefers one build's pieces: separates what the pieces are worth from how a build's brain plays.
   pick_storm: { kit: null, duel: {}, likes: ['storm'] }, pick_tomb: { kit: null, duel: {}, likes: ['tomb'] }, pick_shadow: { kit: null, duel: {}, likes: ['shadow'] },
   pick_furnace: { kit: null, duel: {}, likes: ['furnace'] }, pick_lean: { kit: null, duel: {}, likes: ['lean'] },
+  // A player who aims for one engine: takes its pieces in this order whenever they are offered, then pieces of its build.
+  engine_tomb: { kit: null, duel: {}, likes: ['tomb'], want: ['tomb_ledger', 'grave_call', 'last_rites', 'blood_price', 'chain_lightning', 'bone_tithe', 'charged_bones', 'second_burial', 'bone_bellows'] },
+  engine_pyre: { kit: null, duel: {}, likes: ['furnace'], want: ['pyre_mark', 'bone_bellows', 'bone_tithe', 'grave_call', 'quench', 'chain_lightning', 'banked_coals', 'last_rites', 'blood_price'] },
+  engine_veil: { kit: null, duel: {}, likes: ['shadow'], want: ['glass_idol', 'deep_shade', 'tomb_bell', 'thunderclap', 'blood_price', 'chain_lightning', 'snare', 'spoils', 'cold_lantern'] },
 };
 
-function relicScore(fam, id) {
+function relicScore(fam, id, run) {
   const r = relicInfo(id);
+  if (fam.want && fam.want.includes(id)) return 200 - fam.want.indexOf(id);
   if (fam.likes.includes(r.family)) return 100;
+  // A linked relic is worth taking when the player holds pieces of either build it joins.
+  if (r.link) { if (fam.likes.includes(r.link)) return 90; const own = run ? [...run.charms, ...run.gifts, ...run.masterworks].map(x => relicInfo(x)).filter(Boolean) : []; return 30 + 25 * Math.min(2, own.filter(o => o.family === r.family || o.family === r.link).length); }
   if (r.family === 'trade') return (fam.trades || []).includes(id) ? 70 : -50;
   if (r.family === 'core') return 60;
   if (r.family === 'plain') return 40;
@@ -131,7 +138,8 @@ export function policyAction(db, run, { family = 'neutral', level = 2 } = {}) {
     case 'reward': {
       const o = run.offer;
       if (o.kind === 'card') return { t: 'pick', i: bestIdx(o.options, e => cardValue(db, e)) };
-      if (o.kind === 'gift' || o.kind === 'charm') { const i = bestIdx(o.options, id => relicScore(fam, id)); return relicScore(fam, o.options[i]) < 0 ? { t: 'skip' } : { t: 'pick', i }; }
+      if (fam.want && o.kind === 'gift' && run.rerolls > 0 && !o.options.some(id => fam.want.includes(id))) return { t: 'reroll' };
+      if (o.kind === 'gift' || o.kind === 'charm') { const i = bestIdx(o.options, id => relicScore(fam, id, run)); return relicScore(fam, o.options[i], run) < 0 ? { t: 'skip' } : { t: 'pick', i }; }
       if (o.kind === 'guardian') { const order = ['masterwork', 'charmPick', 'card']; return { t: 'pick', i: bestIdx(o.options, g => -order.indexOf(g.kind)) }; }
       if (o.kind === 'treasure') return { t: 'pick', i: bestIdx(o.options, g => g.kind === 'charm' ? relicScore(fam, g.id) * 30 : cardValue(db, g.entry)) };
       if (o.kind === 'sanctum') return { t: 'pick', i: run.sparks < db.config.sparks ? 0 : 1 };
