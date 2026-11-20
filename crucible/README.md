@@ -90,6 +90,15 @@ Set through `CRUCIBLE_CFG`, or the "Lab rules" switches on the playable page's h
   Lab relics are never offered in a run. They use chained hooks (`ingredients`, `mark`, `returned`,
   `endTurn`): one relic may raise a hook another answers, at most 4 deep and 12 raises a turn.
 - `thornLp`: Life Points per veiled monster for Thorn Veil (default 150).
+- `freeCast: "trap"`: only the first Trap set each turn is free. `freeCastRival` (`none`, `elite`, `boss`) says which rivals share it.
+- `leanOffers`: one of the three Gifts offered comes from a build family the player already holds a piece of.
+- `giftRerolls`: how many times a run a Gift offer may be dealt again (action `{ t: 'reroll' }`).
+- `rivalStyles`: from the second floor a themed rival carries relics (`STYLES` in `engine/run.mjs`), shows a tell on its door and plays toward it.
+- `stormTune`: Patient Coil +200 / +200 and Copper Loop once a duel. `forgerTune`: `{ tarnStoke, scrapDraw }`.
+- `newRun` options (not config): `track` keeps the feat counters in `run.feat`; `featured` lists newly unlocked Gifts to show once; `locked` hides relics.
+
+Progress between runs lives in `engine/meta.mjs`: Memories, the Codex, Forger unlocks, and `FEATS`
+(three build feats that count across runs and each unlock one Gift). See `reports/lab-2026-11-20.md`.
 
 Measured over 3000 expert runs (19 Nov 2026): baseline clear 41.8%; freeCast 19.6% with wins from
 behind on Life Points up from 6% to 20% and Traps sprung 0.11 to 0.78 a duel; Tomb Ledger + Grave
