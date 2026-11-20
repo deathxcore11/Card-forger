@@ -84,6 +84,7 @@ function anvilAction(db, run, fam) {
       if (x.b || y.b || !db.isMonster(x.id) || !db.isMonster(y.id)) continue;
       const k = x.id < y.id ? x.id + '+' + y.id : y.id + '+' + x.id; if (!run.codex.includes(k)) continue;
       const r = meldPair(db, x.id, y.id); if (r.kind !== 'printed' && r.kind !== 'cross') continue;
+      if (run.deck.filter(e => e.id === r.id).length >= db.config.maxCopies) continue; // a fourth copy is not a legal deck
       const atk = db.byId.get(r.id).atk; if (!best || atk > best.atk) best = { atk, a: i, b: j };
     }
     if (best && best.atk >= 1700) return { t: 'anvil', kind: 'bind', a: best.a, b: best.b };
