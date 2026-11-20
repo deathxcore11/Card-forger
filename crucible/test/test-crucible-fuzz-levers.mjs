@@ -228,7 +228,7 @@ function profileFuzz(db0, count, runsEach) {
     const r = Rng.fromSeed(n * 31337 + SEED0), p = newProfile(), long = n % 2 === 0, db = long ? dbLong : db0;
     const SHOP = VAULT.map(v => ({ ...v, key: v.id })).concat(long ? VAULT_ENCHANTS : []);
     for (let k = 0; k < runsEach; k++) {
-      const forger = r.pick(p.forgers), heat = r.int(maxHeat(p, forger, long) + 1), featured = (p.fresh || []).slice();
+      const forger = r.pick(p.forgers), heat = r.int(maxHeat(p) + 1), featured = (p.fresh || []).slice();
       const run = newRun(db, { seed: n * 1000 + k + SEED0, heat, forger, ...runOptions(p, forger, long), featured });
       if (long) { const open = openKits(p, forger); assert.ok(open.length >= 1 && run.offer.length === 3 && run.offer.every(o => open.includes(o.kit)), 'a locked kit was dealt'); if (open.length === 3) assert.equal(new Set(run.offer.map(o => o.kit)).size, 3); }
       const fam = r.pick(['neutral', 'storm', 'tomb', 'shadow', 'furnace']); let g = 0;
@@ -240,9 +240,10 @@ function profileFuzz(db0, count, runsEach) {
         runApply(run, policyAction(db, run, { family: fam, level: r.chance(1, 4) ? 0 : 2 }), db); assert.ok(++g < 400000);
       }
       const before = JSON.parse(JSON.stringify(p)), got = applyRun(p, run, { long }); banked++; kits += got.unlocks.filter(u => u.kind === 'kit').length;
-      assert.equal(p.byForger[forger].runs, ((before.byForger || {})[forger] || { runs: 0 }).runs + 1); assert.ok(maxHeat(p, forger, long) <= 10 && openKits(p, forger).length <= 3);
+      assert.equal(p.byForger[forger].runs, ((before.byForger || {})[forger] || { runs: 0 }).runs + 1); assert.ok(p.byForger[forger].heat <= p.heatCleared && openKits(p, forger).length <= 3, 'a Forger record above the shared Heat');
       for (const u of got.unlocks) if (u.kind === 'kit') assert.ok(long && openKits(p, forger).includes(u.id), 'a kit unlock that is not open');
-      if (!long) assert.ok(!got.unlocks.some(u => u.kind === 'kit' || u.forger), 'long road unlocks with the switch off');
+      if (!long) assert.ok(!got.unlocks.some(u => u.kind === 'kit' || u.kind === 'record' || u.forger), 'long road unlocks with the switch off');
+      for (const u of got.unlocks) if (u.kind === 'record') assert.equal(p.byForger[u.forger].heat, u.id);
       assert.ok(Number.isInteger(p.memories) && p.memories >= before.memories && got.total >= 0, 'Memories went wrong');
       assert.equal(p.memories - before.memories, got.total); assert.equal(got.lines.reduce((x, l) => x + l[1], 0), got.total, 'the lines do not add up to the total');
       for (const key of ['forgers', 'bought', 'codex', 'featsDone']) assert.equal(new Set(p[key]).size, p[key].length, key + ' holds something twice');

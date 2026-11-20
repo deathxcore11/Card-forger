@@ -1,7 +1,7 @@
 // Plays one profile through many runs with the scripted player and prints what each run unlocked.
 //   CRUCIBLE_CFG='{...}' node tools/crucible/profile-sim.mjs [profiles] [runs] [level] [climb] [long] [buyAll]
 // climb 1: each run is played at the highest Heat the profile has open (use with the heatRules lever).
-// long 1: the long road of engine/meta.mjs (kits, Enchants, per-Forger Heat, three more feats). Put its three Gifts in labPool.
+// long 1: the long road of engine/meta.mjs (kits, Enchants, per-Forger Heat records, three more feats). Put its three Gifts in labPool.
 // buyAll 1: after each run buy everything affordable, cheapest first (a person); 0 buys one thing a run.
 import { loadDb } from '../../crucible/engine/cards.mjs';
 import { newRun } from '../../crucible/engine/run.mjs';
@@ -17,16 +17,16 @@ for (let p = 0; p < profiles; p++) {
   const P = newProfile(); let gotFirst = false, gotAll = false;
   for (let r = 0; r < runs; r++) {
     const forger = P.forgers[(p + r) % P.forgers.length];
-    const run = playRun(db, newRun(db, { seed: 100000 + p * 100 + r, heat: climb ? maxHeat(P, forger, !!long) : 0, forger, ...runOptions(P, forger, !!long) }), { level });
+    const run = playRun(db, newRun(db, { seed: 100000 + p * 100 + r, heat: climb ? maxHeat(P) : 0, forger, ...runOptions(P, forger, !!long) }), { level });
     P.fresh = P.fresh.filter(id => !run.gifts.includes(id)); // seen in an offer or not, it is no longer new after one run
     const got = applyRun(P, run, { long: !!long });
-    let fresh = got.unlocks.length;
+    let fresh = got.unlocks.filter(u => u.kind !== 'record').length; // a Forger's new best is a record, not something new to use
     for (;;) { const item = SHOP.find(v => !P.bought.includes(v.key) && v.price <= P.memories); if (!item) break; buy(P, item.key); fresh++; const kd = item.id === item.key ? 'vault' : 'enchant'; kinds[r][kd] = (kinds[r][kd] || 0) + 1; if (!buyAll) break; }
     for (const f of got.feats) if (f.done) (feat[f.id] = feat[f.id] || []).push(r + 1);
     if (fresh) lastNew[p] = r + 1;
     for (const u of got.unlocks) kinds[r][u.kind] = (kinds[r][u.kind] || 0) + 1;
     if (fresh) newIn[r]++; mem[r] += got.total; if (run.result.won) clears[r]++;
-    heatAfter[r] += long ? P.forgers.reduce((n, f) => n + maxHeat(P, f, true), 0) / P.forgers.length : maxHeat(P);
+    heatAfter[r] += maxHeat(P);
     if (!gotFirst && P.featsDone.length) { gotFirst = true; firstGift += r + 1; }
     if (!gotAll && P.featsDone.length === NF) { gotAll = true; allGifts += r + 1; nAll++; }
   }

@@ -492,7 +492,7 @@ test('profile: every run pays Memories, unlocks come from feats, the Vault takes
   assert.equal(q.heatCleared, 0); assert.equal(maxHeat(q), 1); assert.ok(w.unlocks.some(u => u.kind === 'heat')); assert.ok(q.forgers.includes('storm') && q.forgers.includes('veil'));
 });
 
-test('long road: kits open by duels won, Heat is per Forger, Enchants are bought, three more feats; off, nothing changes', () => {
+test('long road: kits open by duels won, Heat stays shared with a record per Forger, Enchants are bought, three more feats; off, nothing changes', () => {
   const p = newProfile();
   // off: the same options as before, and a run made with every kit and Enchant open is the ordinary run
   assert.deepEqual(Object.keys(runOptions(p, 'tarn', false)).sort(), ['featured', 'locked', 'track']);
@@ -517,7 +517,7 @@ test('long road: kits open by duels won, Heat is per Forger, Enchants are bought
     if (shut) assert.throws(() => runApply(b, { t: 'anvil', kind: 'enchant', deck: di, enchant: shut }, db), /not offered/);
   }
   assert.ok(seen >= 1, 'reached an Anvil');
-  // banking: duel wins open kits, a clear opens that Forger's next Heat only
+  // banking: duel wins open kits; a clear opens the next Heat for everyone and sets that Forger's own record
   const run = playRun(db, newRun(db, { seed: 5, ...o, forger: 'tarn' }), { level: 2 }), got = applyRun(p, run, { long: true });
   assert.equal(p.byForger.tarn.runs, 1); assert.equal(p.byForger.tarn.wins, run.stats.wins);
   assert.equal(got.unlocks.filter(u => u.kind === 'kit').length, openKits(p, 'tarn').length - 1);
@@ -525,8 +525,9 @@ test('long road: kits open by duels won, Heat is per Forger, Enchants are bought
   p.byForger.tarn.wins = KIT_GOALS[2]; assert.equal(openKits(p, 'tarn').length, 3); assert.equal(nextKit(p, 'tarn'), null);
   let won = null; for (let seed = 1; seed < 60 && !won; seed++) { const r = playRun(db, newRun(db, { seed, forger: 'tarn' }), { level: 2 }); if (r.result.won) won = r; }
   const q = newProfile(), w = applyRun(q, won, { long: true });
-  assert.equal(maxHeat(q, 'tarn', true), 1); assert.equal(maxHeat(q, 'storm', true), 0); assert.equal(maxHeat(q), 1);
-  assert.ok(w.unlocks.some(u => u.kind === 'heat' && u.forger === 'tarn')); assert.equal(w.unlocks.filter(u => u.kind === 'heat').length, 1);
+  assert.equal(maxHeat(q), 1); assert.equal(q.byForger.tarn.heat, 0); assert.equal(q.byForger.storm, undefined);
+  assert.equal(w.unlocks.filter(u => u.kind === 'heat' && !u.forger).length, 1); assert.equal(w.unlocks.filter(u => u.kind === 'record' && u.forger === 'tarn' && u.id === 0).length, 1);
+  { const q2 = newProfile(), w2 = applyRun(q2, won); assert.ok(!w2.unlocks.some(u => u.kind === 'record'), 'records are announced only on the long road'); assert.equal(q2.byForger.tarn.heat, 0); }
   // Enchants in the Vault
   assert.throws(() => buy(newProfile(), 'ench:herald'), /not enough/);
   q.memories = 60; const b = buy(q, 'ench:herald'); assert.equal(b.name, 'Herald'); assert.equal(q.memories, 10); assert.ok(openEnchants(q).includes('herald')); assert.throws(() => buy(q, 'ench:herald'), /already/);

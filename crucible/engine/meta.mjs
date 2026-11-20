@@ -33,7 +33,8 @@ export const FEAT_GIFTS = FEATS.map(f => f.gift);
 
 // ---------- the long road (optional; every function below takes long = true to use it) ----------
 // More to earn once the first Vault is empty, all of it variety and none of it a stronger start: each Forger opens
-// its second and third kit by winning duels, climbs Heat on its own ladder, six of the twelve Enchants are bought
+// its second and third kit by winning duels, keeps its own record of the highest Heat it has cleared (Heat itself
+// stays shared: clearing a level opens the next one for every Forger), six of the twelve Enchants are bought
 // in the Vault, and three more feats each unlock one more Gift.
 export const KIT_GOALS = [0, 10, 30];          // duels won as that Forger before its first, second and third kit are open
 export const START_ENCHANTS = ['piercing', 'twin', 'drain', 'bulwark', 'venom', 'soaring'];
@@ -59,8 +60,8 @@ export function newProfile() {
   return { v: 1, memories: 0, earned: 0, runs: 0, clears: 0, duelWins: 0, bossWins: 0, bestFloor: 0, heatCleared: -1, forgers: ['tarn'], bought: [], codex: [], seen: [], feats: {}, featsDone: [], fresh: [] };
 }
 export const lockedRelics = (p, long) => VAULT.map(v => v.id).filter(id => !p.bought.includes(id)).concat(featList(long).filter(f => !(p.featsDone || []).includes(f.id)).map(f => f.gift));
-// The highest Heat a run may start at. On the long road each Forger climbs its own ladder.
-export const maxHeat = (p, forger, long) => Math.min(MAX_HEAT, (long && forger ? forgerRow(p, forger).heat : p.heatCleared) + 1);
+// The highest Heat a run may start at. Heat is shared by every Forger; byForger keeps each Forger's own best clear.
+export const maxHeat = p => Math.min(MAX_HEAT, p.heatCleared + 1);
 
 // What a finished run pays. Does not change the profile.
 export function scoreRun(p, run) {
@@ -96,8 +97,8 @@ export function applyRun(p, run, { long = false } = {}) {
   if (run.result.won) {
     p.clears++; const h = run.heat || 0;
     const mine = fr && h > fr.heat; if (fr) { fr.clears++; if (mine) fr.heat = h; }
-    if (h > p.heatCleared) { p.heatCleared = h; if (!long && h < MAX_HEAT) unlocks.push({ kind: 'heat', id: h + 1, name: 'Heat ' + (h + 1), text: 'A harder descent that pays more Memories.' }); }
-    if (long && mine && h < MAX_HEAT) unlocks.push({ kind: 'heat', id: h + 1, forger: run.forger, name: 'Heat ' + (h + 1) + ' for ' + FORGERS[run.forger].name, text: 'A harder descent that pays more Memories.' });
+    if (h > p.heatCleared) { p.heatCleared = h; if (h < MAX_HEAT) unlocks.push({ kind: 'heat', id: h + 1, name: 'Heat ' + (h + 1), text: 'A harder descent that pays more Memories.' }); }
+    if (long && mine) unlocks.push({ kind: 'record', id: h, forger: run.forger, name: FORGERS[run.forger].name + (h ? ', Heat ' + h + ' cleared' : ', first clear'), text: 'A new best for this Forger.' });
   }
   if (long && run.forger) FORGERS[run.forger].kits.forEach((k, i) => { if (i >= kitsBefore && fr.wins >= KIT_GOALS[i]) unlocks.push({ kind: 'kit', id: k.id, forger: run.forger, name: k.name, text: 'A new starter kit for ' + FORGERS[run.forger].name + '.' }); });
   // feats: progress is banked win or lose

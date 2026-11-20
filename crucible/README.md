@@ -104,7 +104,7 @@ Set through `CRUCIBLE_CFG`, or the "Lab rules" switches on the playable page's h
 - `heatRules`: the ten-level Heat ladder (`HEAT_RULES` in `engine/run.mjs`). Each Heat level adds one written rule and the old per-Heat stat scaling is switched off. `tools/crucible/profile-sim.mjs 100 30 2 1` plays profiles that climb it.
 - `newRun` options (not config): `track` keeps the feat counters in `run.feat`; `featured` lists newly unlocked Gifts to show once; `locked` hides relics.
 
-The long road (page switch "Long road", off by default): `runOptions(profile, forger, long)` gives `newRun` the open kits and Enchants (`kits`, `enchants` options), `applyRun(p, run, { long })` banks kit and per-Forger Heat unlocks, `maxHeat(p, forger, long)`, `FEATS_LONG`, `VAULT_ENCHANTS` (bought with `buy(p, 'ench:<id>')`). `profile-sim.mjs [profiles] [runs] [level] [climb] [long] [buyAll]` measures it.
+The long road (page switch "Long road", off by default): `runOptions(profile, forger, long)` gives `newRun` the open kits and Enchants (`kits`, `enchants` options), `applyRun(p, run, { long })` banks kit unlocks and per-Forger Heat records (Heat itself stays shared: `maxHeat(p)`), `FEATS_LONG`, `VAULT_ENCHANTS` (bought with `buy(p, 'ench:<id>')`). `profile-sim.mjs [profiles] [runs] [level] [climb] [long] [buyAll]` measures it.
 
 Progress between runs lives in `engine/meta.mjs`: Memories, the Codex, Forger unlocks, and `FEATS`
 (three build feats that count across runs and each unlock one Gift). See `reports/lab-2026-11-20.md`.
