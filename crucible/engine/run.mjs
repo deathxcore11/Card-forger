@@ -185,7 +185,9 @@ const BOUNTIES = [
 
 // ---------- run state ----------
 // forger: a key of FORGERS (optional). locked: relic ids this profile has not unlocked yet (optional).
-export function newRun(db, { seed, heat = 0, forger = null, locked = null } = {}) {
+// featured: Gift ids to show once each in this run's first Gift offers (a newly unlocked Gift).
+// track: keep the feat counters in run.feat. Both are optional and leave an ordinary run unchanged.
+export function newRun(db, { seed, heat = 0, forger = null, locked = null, featured = null, track = false } = {}) {
   DB = db;
   const cfg = db.config, rng = Rng.fromSeed(seed);
   const run = {
@@ -199,6 +201,9 @@ export function newRun(db, { seed, heat = 0, forger = null, locked = null } = {}
   };
   if (forger) { if (!FORGERS[forger]) throw new Error('no such Forger'); run.forger = forger; }
   if (locked && locked.length) run.locked = locked.slice();
+  if (featured && featured.length) run.featured = featured.slice();
+  if (track) run.feat = { long4: 0, gyWins: 0, baits: 0, bestGy: 0 };
+  if (cfg.giftRerolls) run.rerolls = cfg.giftRerolls;
   run.offer = dealKits(db, rng, run);
   run.rng = rng.s;
   return run;
@@ -222,8 +227,22 @@ function relicOffer(run, rng, kind, n) {
   const lab = DB && DB.config.labPool || [];
   const ids = Object.keys(RELICS).filter(id => (!LAB[id] || lab.includes(id)) && RELICS[id].kind === kind && !own.has(id) && !(id === 'second_wind' && run.secondWindUsed) && !(id === 'heavy_crown' && !crownOk));
   rng.shuffle(ids);
-  return ids.slice(0, n);
+  let out = ids.slice(0, n);
+  if (kind === 'G' && DB) {
+    // Lever: one of the three leans toward a build the player already holds a piece of.
+    if (DB.config.leanOffers) {
+      const held = new Set([...ownedRelics(run)].filter(id => RELICS[id]).map(id => RELICS[id].family).filter(f => BUILD_FAMILIES.includes(f)));
+      if (held.size && !out.some(id => held.has(RELICS[id].family))) { const lean = ids.find(id => held.has(RELICS[id].family)); if (lean) out[rng.int(Math.max(1, out.length))] = lean; }
+    }
+    // A newly unlocked Gift is shown once, in the first Gift offer it can join.
+    if (run.featured && run.featured.length) {
+      const f = run.featured.find(id => ids.includes(id));
+      if (f) { run.featured = run.featured.filter(x => x !== f); if (!out.includes(f)) out[0] = f; run.freshShown = f; }
+    }
+  }
+  return out;
 }
+export const BUILD_FAMILIES = ['furnace', 'shadow', 'lean', 'storm', 'tomb'];
 
 function genDoors(db, run, rng) {
   const cfg = db.config, ch = run.chamber, fl = run.floor;
@@ -298,7 +317,7 @@ function startDuel(db, run, rng, door, onStep) {
   if (db.config.testRelics) for (const id of db.config.testRelics) if (!relics.includes(id)) relics.push(id);
   const bounty = rng.pick(BOUNTIES);
   const seats = [
-    { relics, handSize: (relics.includes('deep_pockets') ? 6 : db.config.hand) - (rival.law === 'tyranny' ? 1 : 0), firstTurnHand: run.sparks === 1 ? 6 : 0, homeField: run.homeField, underCap: cap - deckWeight(db, run.deck), secondWind: relics.includes('second_wind') && !run.secondWindUsed, sparks: run.sparks, forger: run.forger || null },
+    { relics, handSize: (relics.includes('deep_pockets') ? 6 : db.config.hand) - (rival.law === 'tyranny' ? 1 : 0), firstTurnHand: run.sparks === 1 ? 6 : 0, homeField: run.homeField, underCap: cap - deckWeight(db, run.deck), secondWind: relics.includes('second_wind') && !run.secondWindUsed, sparks: run.sparks, forger: run.forger || null, ...(run.feat ? { track: 1 } : {}) },
     { law: rival.law, ace: rival.ace, relics: door.tier === 'champion' ? ['whetstone'] : [], ...(db.config.freeCastRival === 'none' || (db.config.freeCastRival === 'elite' && door.tier === 'regular') || (db.config.freeCastRival === 'boss' && door.tier !== 'boss') ? { noFree: 1 } : {}) },
   ];
   run.rival = { name: rival.name, tier: rival.tier, ai: rival.ai, law: rival.law, lawText: rival.lawText, drops: rival.drops, ace: rival.ace, bounty: bounty.id, bountyText: bounty.text, twist: door.twist || null };
@@ -346,6 +365,13 @@ function finishDuel(db, run, rng, ev) {
   if (Object.keys(st.relicFamilies).filter(f => !['plain', 'core', 'trade'].includes(f)).length >= 2) S.familiesInDuel++;
   if (d.seat[0].rs.secondWind) run.secondWindUsed = true;
   for (const p of st.newMelds) { const k = p[0] < p[1] ? p[0] + '+' + p[1] : p[1] + '+' + p[0]; if (!run.codex.includes(k)) { run.codex.push(k); run.xp += cfg.xp.newMeld; } }
+  if (run.feat) {
+    const F = run.feat, gy = d.gy[0].filter(id => db.isMonster(id)).length;
+    for (const [k, v] of Object.entries(st.chains)) if (+k >= 4) F.long4 += v;
+    F.baits += (st.reveals || 0) + st.trapsSprung;
+    F.bestGy = Math.max(F.bestGy, gy);
+    if (won && gy >= 8) F.gyWins++;
+  }
   const door = run.door, tier = run.rival.tier;
   const summary = { won, turns: d.turn, reason: d.reason, lp: d.lp.slice(), tier };
   run.lastDuel = summary;
@@ -397,7 +423,7 @@ function finishDuel(db, run, rng, ev) {
 function nextReward(db, run, rng) {
   while (run.queue && run.queue.length) {
     const o = run.queue.shift();
-    if (o.lazy) { o.options = relicOffer(run, rng, 'G', 3); delete o.lazy; if (!o.options.length) continue; }
+    if (o.lazy) { o.options = relicOffer(run, rng, 'G', 3); delete o.lazy; if (run.freshShown) { o.fresh = run.freshShown; delete run.freshShown; } if (!o.options.length) continue; }
     if (o.kind === 'charm') { o.options = o.options.filter(id => !run.charms.includes(id)); if (!o.options.length || run.charms.length >= db.config.charmSlots) continue; }
     run.offer = o; run.phase = 'reward'; return;
   }
@@ -493,6 +519,14 @@ export function runApply(run, a, db, opts = {}) {
     case 'reward': {
       const o = run.offer;
       if (a.t === 'skip') { nextReward(db, run, rng); break; }
+      if (a.t === 'reroll') { // lever giftRerolls: deal a Gift offer again, without the Gifts just shown where the pool allows
+        if (o.kind !== 'gift' || !run.rerolls) fail('no re-deal left');
+        const seen = o.options.slice(); run.locked = (run.locked || []).concat(seen);
+        const fresh = relicOffer(run, rng, 'G', 3);
+        run.locked = run.locked.slice(0, run.locked.length - seen.length); if (!run.locked.length) delete run.locked;
+        if (fresh.length < 3) fail('nothing else to offer');
+        run.rerolls--; o.options = fresh; delete o.fresh; break;
+      }
       if (a.t !== 'pick') fail('pick or skip');
       if (o.kind === 'card') { if (!o.options[a.i]) fail('no such card'); addCard(db, run, o.options[a.i]); }
       else if (o.kind === 'gift') { if (!o.options[a.i]) fail('no such gift'); run.gifts.push(o.options[a.i]); }

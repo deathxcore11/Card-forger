@@ -27,6 +27,7 @@ export function newDuel(db, { seed, decks, seats = [{}, {}], first = null, twist
       ace: seats[i].ace || null, rs: { nextMeld: [] }, extraDraw: 0,
       ...(seats[i].forger ? { forger: seats[i].forger } : {}),
       ...(seats[i].noFree ? { noFree: 1 } : {}),
+      ...(seats[i].track ? { track: 1 } : {}),
     })),
     stats: [blankStats(), blankStats()],
   };
@@ -375,6 +376,7 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
   }
   const f = forecast(s, db, atkSeat, X, defSeat, T, { ambush });
   ev.push({ e: 'battle', atkSeat, az, dz, a: f.a, d: f.d, direct: f.direct, edgeA: f.edgeA, edgeD: f.edgeD });
+  if (wasVeiled && s.seat[defSeat].track) s.stats[defSeat].reveals = (s.stats[defSeat].reveals || 0) + 1;
   if (wasVeiled) fire(s, db, ev, defSeat, 'veiledRevealed', { mon: T, zone: dz, attacker: X });
   if (f.direct) {
     s.directs = (s.directs || 0) + 1;

@@ -1,14 +1,14 @@
 // Lost Memories playable test page (codename crucible). Runs the real engine in the browser.
 // The duel is drawn only from viewFor(seat 0), so this page cannot show hidden cards.
-import { buildDb, roleOf, weightOf } from '../engine/cards.mjs';
+import { buildDb, roleOf, weightOf, meldPairRaw } from '../engine/cards.mjs';
 import { legalActions, playVariants, planChain, viewFor, forecast } from '../engine/duel.mjs';
 import { RELICS as BASE_RELICS, LAB } from '../engine/relics.mjs';
 const RELICS = { ...BASE_RELICS, ...LAB };
-import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES } from '../engine/run.mjs';
+import { newRun, runApply, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES } from '../engine/run.mjs';
 import { meldPair } from '../engine/cards.mjs';
 import { powerActions } from '../engine/duel.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
-import { newProfile, applyRun, buy, lockedRelics, maxHeat, VAULT, FORGER_FEATS } from '../engine/meta.mjs';
+import { newProfile, applyRun, buy, lockedRelics, maxHeat, VAULT, FORGER_FEATS, FEATS, FEAT_GIFTS } from '../engine/meta.mjs';
 import { SCENES } from './story.mjs';
 
 const D = window.CRUCIBLE_DATA;
@@ -17,20 +17,21 @@ const db = buildDb(D.pool, D.tags, D.config);
 const LABS = {
   free: 'Free cast: your first Spell, Field or Trap played alone each turn does not use your play. Rivals get it too.',
   solo: 'Lone arrivals: a Zombie, Fairy, Machine or Spellcaster played alone and face up uses an arrival ability.',
-  five: 'Five Gifts a run: Forge Gifts come half as often, 18 new Gifts for Storm, Tomb and Shadow join the pool, rivals on floors two and three are turned down to match, and the final bosses are eased.',
+  five: 'Five Gifts a run (the current test baseline): Forge Gifts come half as often, new Gifts for Storm, Tomb and Ambush join the pool, rivals on floors two and three are turned down to match, and the final bosses are eased.',
+  lean: 'Leaning offers: one of the three Gifts leans toward a build you already hold a piece of, and you may deal one Gift offer again each run.',
   tombStart: 'Start with the Tomb set: carry all three Tomb relics from the first duel. A strong demonstration, not a fair run.',
 };
 let labs = {};
 const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tithe', 'deep_grave', 'last_rites', 'static_field', 'overcharge', 'chain_lightning', 'thorn_veil', 'long_watch', 'deep_shade', 'spite', 'false_floor', 'ossuary', 'grave_ward', 'grounding_rod', 'snare'];
-function setLabs(v) { labs = v || {}; const c = db.config; c.freeCast = labs.free ? 1 : 0; c.soloArrival = labs.solo ? 1 : 0; c.labPool = labs.five ? LAB_POOL : null; c.giftXpScale = labs.five ? 2 : 0; c.bossAces = labs.five ? 1 : 0; c.endTurns = labs.five ? 6 : 0; c.bossBand = labs.five ? [0, 0, -300] : null; c.rivalBand = labs.five ? [0, -200, -400] : 0; c.testRelics = labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null; }
+function setLabs(v) { labs = v || {}; const c = db.config; c.freeCast = labs.free ? 1 : 0; c.soloArrival = labs.solo ? 1 : 0; c.labPool = labs.five ? LAB_POOL : FEAT_GIFTS; c.leanOffers = labs.lean ? 1 : 0; c.giftRerolls = labs.lean ? 1 : 0; c.giftXpScale = labs.five ? 2 : 0; c.bossAces = labs.five ? 1 : 0; c.endTurns = labs.five ? 6 : 0; c.bossBand = labs.five ? [0, 0, -300] : null; c.rivalBand = labs.five ? [0, -200, -400] : 0; c.testRelics = labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null; }
 const $ = s => document.querySelector(s);
 const app = $('#app');
-const SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
+const LABKEY = 'lostmemories.labs.v4', SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
 const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private window */ } }, del(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } } };
 
-const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false };
+const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
 const P = Object.assign(newProfile(), store.get(PROFILE) || {});
-setLabs(store.get('lostmemories.labs.v3'));
+setLabs(store.get(LABKEY) || { five: true, lean: true });
 for (const k of P.codex) G.known.add(k);
 const saveP = () => store.set(PROFILE, P);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -76,6 +77,7 @@ function face(inst, o = {}) {
 }
 const ART = new Set(D.art || []);
 const relicImg = id => { const f = (RELICS[id].kind === 'M' ? 'masterwork' : 'relic') + '-' + id.replace(/_/g, '-'); return ART.has(f) ? `<img class="ri" decoding="sync" src="art/${f}.webp" alt="">` : '<span class="ri gem"></span>'; };
+const FAMILY_NAME = { furnace: 'Furnace', shadow: 'Ambush', lean: 'Lean Deck', storm: 'Storm', tomb: 'Tomb' };
 const relicRow = (id, extra = '') => `<div class="relic">${relicImg(id)}<div><b>${esc(RELICS[id].name)}</b> <small>${{ C: 'Charm', G: 'Gift', M: 'Masterwork' }[RELICS[id].kind]}</small><br>${esc(RELICS[id].text)}${extra}</div></div>`;
 
 // ---------- run plumbing ----------
@@ -88,6 +90,7 @@ function act(a) {
   } catch (e) { toast(e.message); render(); return; }
   G.sel = []; G.onto = null; G.attacker = null;
   if (run.codex) { for (const k of run.codex) G.known.add(k); store.set(KNOWN, [...G.known]); }
+  if (run.offer && run.offer.fresh && (P.fresh || []).includes(run.offer.fresh)) { P.fresh = P.fresh.filter(x => x !== run.offer.fresh); saveP(); }
   if (run.phase === 'over') { store.del(SAVE); if (!G.results) { G.results = applyRun(P, run); saveP(); queueStory(run.result.won ? 'cleared' : 'fell'); } } else store.set(SAVE, run);
   if (wasDuel && frames.length) { G.frames = frames; if (!run.duel && run.lastDuel) G.overlay = { kind: 'duelEnd', sum: run.lastDuel, rival: G.lastRival }; playFrames(); }
   else render();
@@ -106,7 +109,7 @@ async function playFrames() {
     const heavy = f.evs.some(e => ['battle', 'summon', 'spell', 'trap', 'terrain', 'meld', 'equip', 'set', 'destroyed'].includes(e.e));
     await new Promise(r => setTimeout(r, G.fast ? 60 : heavy ? 620 : 140));
   }
-  G.playing = false; G.shown = null; render();
+  G.playing = false; G.shown = null; for (const g of document.querySelectorAll('body > .ghost')) g.remove(); render();
 }
 function logLine(e, v) {
   const who = s => s === 0 ? 'You' : 'Rival';
@@ -197,11 +200,46 @@ function screenForger() {
 function screenVault() {
   return `<div class="hall"><div class="panel glass wide"><h2>Memory Vault · ${P.memories} Memories</h2><p>Spend Memories to widen what a run can offer. Nothing here makes you stronger at the start.</p><div class="vgrid">${VAULT.map(v => { const own = P.bought.includes(v.id), r = RELICS[v.id]; return `<div class="tile glass ${own ? 'own' : ''}"><small>${r.kind === 'M' ? 'Masterwork' : 'Charm'}</small>${relicImg(v.id)}<b>${esc(r.name)}</b><span>${esc(r.text)}</span><button class="gold" data-a="vbuy:${v.id}" ${own || P.memories < v.price ? 'disabled' : ''}>${own ? 'Owned' : v.price + ' Memories'}</button></div>`; }).join('')}</div><div class="row"><button class="gold" data-a="home">Back</button></div></div></div>`;
 }
+// The Codex is a book of results. Every result that any two monsters can make has a page; the
+// page says why the rule makes it, and lists the recipes this player has found for it.
+let CX = null;
+function codexIndex() {
+  if (CX) return CX;
+  const mons = D.pool.cards.filter(c => c.kind === 'monster' || c.kind === 'fusion');
+  const res = new Map();
+  for (let i = 0; i < mons.length; i++) for (let j = i; j < mons.length; j++) { const r = meldPairRaw(db, mons[i].id, mons[j].id); if (r.id && !res.has(r.id)) res.set(r.id, { id: r.id, kind: r.kind }); }
+  for (const [k, id] of db.recipes) if (!res.has(id)) res.set(id, { id, kind: 'printed' });
+  for (const [k, id] of db.recipes) res.get(id).mats = k.split('+').map(Number);
+  for (const R of res.values()) if (R.kind === 'cross') { const c = card(R.id), l = db.ladders.get(c.type + '|' + c.attr), i = l.indexOf(c); R.lo = i > 0 ? l[i - 1].atk : 0; }
+  const list = [...res.values()].sort((x, y) => card(x.id).type.localeCompare(card(y.id).type) || card(x.id).atk - card(y.id).atk);
+  return (CX = { res, list, types: [...new Set(list.map(R => card(R.id).type))].sort() });
+}
+function codexFound() {
+  const found = new Map();
+  for (const k of G.known) { const [a, b] = k.split('+').map(Number); if (!card(a) || !card(b)) continue; const r = meldPair(db, a, b); if (!r.id) continue; if (!found.has(r.id)) found.set(r.id, []); found.get(r.id).push([a, b]); }
+  return found;
+}
+function whyLine(R) {
+  const c = card(R.id);
+  if (R.kind === 'printed') return `A printed fusion. Only its ${R.mats.length === 3 ? 'three' : 'two'} named materials make it, in any order.`;
+  return `${c.type} Type + ${c.attr} Attribute. A meld takes the Type of one monster and the Attribute of the other, and makes the weakest ${c.attr} ${c.type} with more ATK than both. This is that monster when your stronger ingredient has ${R.lo} to ${c.atk - 1} ATK. If the pair can also make something weaker the other way round, the weaker one is made.`;
+}
+function codexPage(found) {
+  const X = codexIndex(), R = X.res.get(G.cx.open); if (!R) return '';
+  const c = card(R.id), recs = found.get(R.id) || [], known = recs.length > 0;
+  const hint = R.kind === 'printed' ? `A printed fusion of ${R.mats.map(m => 'a ' + card(m).type).join(' and ')}.` : `A ${c.attr} ${c.type}. Some ${c.type} melded with some ${c.attr} monster makes it. Which ones is for you to find.`;
+  return `<div class="modal" data-a="cxclose"><div class="glass panel cxpage">${known ? face({ id: R.id }, { cls: 'big' }) : '<div class="c big unk"><span>?</span></div>'}<div><h3>${known ? esc(c.name) : 'Not found yet'}</h3><p>${known ? `${esc(c.type)} · ${esc(c.attr)} · Level ${c.level} · ATK ${c.atk} · DEF ${c.def}` : esc(hint)}</p>${known ? `<p><b>Why:</b> ${esc(whyLine(R))}</p><p><b>Use it again:</b> ${R.kind === 'printed' ? 'the same named materials always make it.' : `any ${esc(c.type)} with any ${esc(c.attr)} monster in that ATK range makes it, so cheap cards work as well as good ones.`}</p><h3>Recipes you have found (${recs.length})</h3><div class="recs">${recs.slice(0, 8).map(([a, b]) => `<span class="chip">${esc(card(a).name)}</span><b>+</b><span class="chip">${esc(card(b).name)}</span>`).join('<br>')}${recs.length > 8 ? `<br><span class="fine">and ${recs.length - 8} more</span>` : ''}</div>` : ''}<p class="fine">Tap anywhere to close.</p></div></div></div>`;
+}
 function screenCodex() {
-  const keys = [...G.known].reverse();
-  const rows = keys.slice(0, 80).map(k => { const [a, b] = k.split('+').map(Number); if (!card(a) || !card(b)) return ''; const r = meldPair(db, a, b); if (!r.id) return ''; return `<div class="mrec glass">${face({ id: a }, { cls: 'small' })}<b>+</b>${face({ id: b }, { cls: 'small' })}<b>=</b>${face({ id: r.id }, { cls: 'small' })}</div>`; }).join('');
-  return `<div class="hall"><div class="panel glass wide"><h2>Codex · ${keys.length} melds found</h2><p>A meld you have found shows its result before you play it, in every run after.${keys.length > 80 ? ' Showing the newest 80.' : ''}</p><div class="mgrid">${rows || '<p class="fine">Nothing yet. Meld two monsters to write the first page.</p>'}</div>
-    <h3 style="margin-top:1em">Record</h3><p>Runs ${P.runs} · Clears ${P.clears} · Duels won ${P.duelWins} · Guardians beaten ${P.bossWins} · Memories earned ${P.earned}</p><div class="row"><button class="gold" data-a="home">Back</button></div></div></div>`;
+  const X = codexIndex(), found = codexFound(), v = G.cx;
+  let list = X.list.filter(R => (v.view === 'all' || found.has(R.id)) && (!v.type || card(R.id).type === v.type));
+  const total = list.length; list = list.slice(0, 120);
+  const byType = t => X.list.filter(R => card(R.id).type === t);
+  const tiles = list.map(R => { const c = card(R.id); return found.has(R.id) ? `<div class="cxt" data-a="cxopen:${R.id}">${face({ id: R.id }, { cls: 'small' })}<small>${found.get(R.id).length} recipe${found.get(R.id).length > 1 ? 's' : ''}</small></div>` : `<div class="cxt unk" data-a="cxopen:${R.id}"><div class="c small unk"><span>?</span></div><small>${R.kind === 'printed' ? 'Printed fusion' : esc(c.type) + ' · ' + esc(c.attr)}</small></div>`; }).join('');
+  return `<div class="hall"><div class="panel glass wide scroll"><h2>Codex · ${found.size} of ${X.list.length} results found</h2><p>Every monster a meld can make has a page here. A page you have found shows why the meld works, so you can make it again from other cards. ${G.known.size} recipes written.</p>
+    <div class="row left"><button class="${v.view === 'found' ? 'gold' : ''}" data-a="cxview:found">Found</button><button class="${v.view === 'all' ? 'gold' : ''}" data-a="cxview:all">All pages</button>${X.types.map(t => `<button class="ty ${v.type === t ? 'gold' : ''}" data-a="cxtype:${t}">${esc(t)} ${byType(t).filter(R => found.has(R.id)).length}/${byType(t).length}</button>`).join('')}</div>
+    <div class="cxgrid">${tiles || '<p class="fine">Nothing here yet. Meld two monsters in a duel to write the first page.</p>'}</div>${total > 120 ? `<p class="fine">Showing 120 of ${total}. Pick a Type to narrow it.</p>` : ''}
+    <h3 style="margin-top:1em">Record</h3><p>Runs ${P.runs} · Clears ${P.clears} · Duels won ${P.duelWins} · Guardians beaten ${P.bossWins} · Memories earned ${P.earned}</p><div class="row"><button class="gold" data-a="home">Back</button></div></div>${G.cx.open != null ? codexPage(found) : ''}</div>`;
 }
 
 // ---------- screens ----------
@@ -216,7 +254,7 @@ function hud() {
 function screenHome() {
   const saved = store.get(SAVE);
   return `<div class="hall home"><div class="title"><small>CARDSTASHY</small><h1>LOST MEMORIES</h1><p>Test build of the real rules engine. Three floors, six chambers each, three Sparks.</p>
-    <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button></div>
+    <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:feats">Feats (${(P.featsDone || []).length}/${FEATS.length})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button></div>
     <div class="labs glass"><b>Lab rules</b> <small>experiments, off by default</small>${Object.keys(LABS).map(k => `<button class="lab ${labs[k] ? 'on' : ''}" data-a="lab:${k}"><i>${labs[k] ? 'ON' : 'OFF'}</i><span>${LABS[k]}</span></button>`).join('')}</div>
     <p class="fine">Not final art. Seen only in a test browser so far.</p></div></div>`;
 }
@@ -303,7 +341,11 @@ function screenDuel() {
 function screenReward() {
   const r = G.run, o = r.offer;
   if (o.kind === 'card') return pickList('Pick a card', o.options.map((e, i) => `<div class="pick glass">${face(e, { attrs: `data-a="inspect:${e.id}"` })}<div>${esc(rulesText(e.id))}<br><small>Weight ${weightOf(db, e.id)}</small></div><button class="gold" data-a="pick:${i}">Take</button></div>`).concat('<div class="row"><button data-a="skip">Take nothing</button></div>'), 'It goes to your trunk. Swap it into the deck from the Deck button.');
-  if (o.kind === 'gift') return pickList('Forge Level up: pick a Gift', o.options.map((id, i) => `<div class="pick glass">${relicRow(id)}<button class="gold" data-a="pick:${i}">Take</button></div>`));
+  if (o.kind === 'gift') {
+    const held = new Set(relicList(r).map(id => RELICS[id].family).filter(f => BUILD_FAMILIES.includes(f)));
+    const tag = id => (o.fresh === id ? `<br><em class="newtag">NEW</em> You unlocked this with ${esc((FEATS.find(f => f.gift === id) || {}).name || 'a feat')}.` : '') + (held.has(RELICS[id].family) ? `<br><em class="fits">Fits your ${esc(FAMILY_NAME[RELICS[id].family])} pieces</em>` : '');
+    return pickList('Forge Level up: pick a Gift', o.options.map((id, i) => `<div class="pick glass ${o.fresh === id ? 'fresh' : ''}">${relicRow(id, tag(id))}<button class="gold" data-a="pick:${i}">Take</button></div>`).concat(r.rerolls ? `<div class="row"><button data-a="reroll">Deal these three again (${r.rerolls} left this run)</button></div>` : ''), 'A Gift lasts the whole run. ' + (held.size ? 'You hold ' + [...held].map(f => FAMILY_NAME[f]).join(' and ') + ' pieces.' : 'Your first build piece decides what the forge leans toward.'));
+  }
   if (o.kind === 'charm') return pickList('Pick a charm', o.options.map((id, i) => `<div class="pick glass">${relicRow(id)}<button class="gold" data-a="pick:${i}">Take</button></div>`).concat('<div class="row"><button data-a="skip">Take nothing</button></div>'), `Charm slots ${r.charms.length}/${db.config.charmSlots}.`);
   if (o.kind === 'guardian') return pickList('Guardian Reward', o.options.map((g, i) => `<div class="pick glass">${g.kind === 'card' ? face(g.entry) : g.kind === 'masterwork' ? relicRow(g.id) : '<div class="col">' + g.ids.map(id => relicRow(id)).join('') + '</div>'}<div><b>${esc(g.text)}</b></div><button class="gold" data-a="pick:${i}">Choose</button></div>`), 'One of three kinds of power. The weight cap rises by 20.');
   if (o.kind === 'treasure') return pickList('Treasure', o.options.map((g, i) => `<div class="pick glass">${g.kind === 'card' ? face(g.entry) : relicRow(g.id)}<button class="gold" data-a="pick:${i}">Take</button></div>`));
@@ -331,8 +373,15 @@ function screenOver() {
   return `<div class="hall"><div class="panel glass wide"><h2>${r.result.won ? 'The pyramid is cleared' : `The run ends · Floor ${r.floor + 1}, Chamber ${Math.min(6, r.chamber + 1)}`}</h2>
     <div class="cols"><div class="box glass"><h3>This run</h3><table class="tally"><tr><td>Forger</td><td>${esc(r.forger ? FORGERS[r.forger].name : 'None')}</td></tr><tr><td>Duels won</td><td>${S.wins} of ${S.duels}</td></tr><tr><td>Guardians beaten</td><td>${S.bossWins}</td></tr><tr><td>Melds</td><td>${S.melds}</td></tr><tr><td>Ranks</td><td>${Object.entries(S.ranks).map(([k, v]) => k + '×' + v).join(' ') || 'None'}</td></tr></table></div>
     <div class="box glass"><h3>Memories earned</h3>${R ? `<table class="tally">${R.lines.map(l => `<tr><td>${esc(l[0])}</td><td>+${l[1]}</td></tr>`).join('')}</table><div class="bigm">+${R.total} Memories</div>` : '<p class="fine">Already banked.</p>'}</div></div>
-    ${R ? R.unlocks.map(u => `<div class="unlock glass"><div><b>Unlocked: ${esc(u.name)}</b><br>${esc(u.text)}</div></div>`).join('') : ''}
-    <div class="row"><button class="gold" data-a="new">New run</button><button data-a="screen:codex">Codex</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="home">Home</button></div></div></div>`;
+    ${R && R.feats.length ? `<div class="box glass featbox"><h3>Feats</h3>${R.feats.map(featRow).join('')}<p class="fine">Feats count across runs, win or lose.</p></div>` : ''}
+    ${R ? R.unlocks.map(u => u.kind === 'gift' ? `<div class="unlock glass gift">${relicImg(u.id)}<div><b>New Gift unlocked: ${esc(u.name)}</b> <small>${esc(u.feat)} complete</small><br>${esc(u.text)}<br><i>${esc(u.why)} It will be in the first Gift offer of your next run.</i></div></div>` : `<div class="unlock glass"><div><b>Unlocked: ${esc(u.name)}</b><br>${esc(u.text)}</div></div>`).join('') : ''}
+    <div class="row"><button class="gold" data-a="new">New run</button><button data-a="screen:codex">Codex</button><button data-a="screen:feats">Feats</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="home">Home</button></div></div></div>`;
+}
+const featRow = f => `<div class="feat ${f.done ? 'done' : ''}"><div><b>${esc(f.name)}</b> <small>${esc(f.build)}</small><br>${esc(f.text)}</div><div class="bar"><i style="width:${Math.round(100 * f.after / f.goal)}%"></i><u style="left:${Math.round(100 * f.before / f.goal)}%;width:${Math.round(100 * (f.after - f.before) / f.goal)}%"></u></div><span>${f.done ? 'Complete' : f.after + ' / ' + f.goal}${f.gain && !f.done ? ' (+' + f.gain + ')' : ''}</span></div>`;
+function screenFeats() {
+  const rows = FEATS.map(f => { const done = (P.featsDone || []).includes(f.id), n = done ? f.goal : (P.feats || {})[f.id] || 0; return featRow({ ...f, before: n, after: n, gain: 0, done }) + `<div class="featgift ${done ? '' : 'lockedg'}">${relicImg(f.gift)}<div><b>${esc(RELICS[f.gift].name)}</b> <small>${done ? 'Unlocked Gift' : 'Gift, locked'}</small><br>${esc(RELICS[f.gift].text)}</div></div>`; }).join('');
+  const forg = FORGER_IDS.filter(id => id !== 'tarn').map(id => `<div class="feat ${P.forgers.includes(id) ? 'done' : ''}"><div><b>${esc(FORGERS[id].name)}</b> <small>Forger</small><br>${esc(FORGER_FEATS[id].text)}</div><span>${P.forgers.includes(id) ? 'Unlocked' : 'Locked'}</span></div>`).join('');
+  return `<div class="hall"><div class="panel glass wide scroll"><h2>Feats</h2><p>Each feat follows a way of playing and adds one Gift to what the forge can offer. Progress counts across runs, win or lose.</p>${rows}<h3 style="margin-top:1em">Forgers</h3>${forg}<div class="row"><button class="gold" data-a="home">Back</button></div></div></div>`;
 }
 function tabPanel() {
   const r = G.run;
@@ -355,7 +404,7 @@ function inspectPanel() {
 
 function render() {
   const r = G.run; let body;
-  if (G.screen) body = { forger: screenForger, vault: screenVault, codex: screenCodex }[G.screen]();
+  if (G.screen) body = { forger: screenForger, vault: screenVault, codex: screenCodex, feats: screenFeats }[G.screen]();
   else if (!r) body = screenHome();
   else if (G.shown || r.phase === 'duel') body = screenDuel();
   else body = { kit: screenKit, charm: screenCharm, chamber: screenChamber, reward: screenReward, anvil: screenAnvil, bazaar: screenBazaar, over: screenOver }[r.phase]();
@@ -372,10 +421,10 @@ app.addEventListener('click', ev => {
     case 'new': G.screen = 'forger'; if (!P.forgers.includes(G.pickForger)) G.pickForger = 'tarn'; G.pickHeat = Math.min(G.pickHeat, maxHeat(P)); render(); break;
     case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; } render(); break;
     case 'screen': G.screen = x; render(); break;
-    case 'lab': setLabs({ ...labs, [x]: !labs[x] }); store.set('lostmemories.labs.v3', labs); render(); break;
+    case 'lab': setLabs({ ...labs, [x]: !labs[x] }); store.set(LABKEY, labs); render(); break;
     case 'forger': G.pickForger = x; render(); break;
     case 'heat': G.pickHeat = n; render(); break;
-    case 'descend': store.del(SAVE); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, locked: lockedRelics(P) }); G.log = []; G.overlay = null; queueStory('intro'); render(); break;
+    case 'descend': store.del(SAVE); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, locked: lockedRelics(P), featured: P.fresh || [], track: true }); G.log = []; G.overlay = null; queueStory('intro'); render(); break;
     case 'vbuy': try { const b = buy(P, x); saveP(); toast(b.name + ' can now appear in your runs.'); } catch (e) { toast(e.message); } render(); break;
     case 'storynext': { const st = G.story; if (!st) break; if (++st.i >= SCENES[st.id].lines.length) { G.story = null; if (st.then) { st.then(); break; } } render(); break; }
     case 'storyskip': { const st = G.story; G.story = null; if (st && st.then) { st.then(); break; } render(); break; }
@@ -386,6 +435,11 @@ app.addEventListener('click', ev => {
     case 'redeal': act({ t: 'redeal' }); break;
     case 'pick': act({ t: 'pick', i: n }); break;
     case 'skip': act({ t: 'skip' }); break;
+    case 'reroll': act({ t: 'reroll' }); break;
+    case 'cxview': G.cx.view = x; G.cx.type = null; render(); break;
+    case 'cxtype': G.cx.type = G.cx.type === x ? null : x; render(); break;
+    case 'cxopen': G.cx.open = n; render(); break;
+    case 'cxclose': G.cx.open = null; render(); break;
     case 'door': { G.log = []; const d = r.doors[n]; const go = () => act({ t: 'door', i: n }); if (d && d.type === 'boss' && r.seals >= 2) { queueStory('boss:' + BOSSES[r.floor][r.bossOrder[r.floor]].id, go); if (G.story) render(); } else go(); break; }
     case 'leave': G.pickDeck = G.pickTrunk = null; act({ t: 'leave' }); break;
     case 'tab': G.tab = x || null; G.pickDeck = G.pickTrunk = null; render(); break;

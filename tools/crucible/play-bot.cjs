@@ -8,7 +8,7 @@ const path = require('path');
   const runs = +(runsArg || 1);
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: +(W || 1280), height: +(H || 720) } });
-  const errors = [], seen = new Set(); let moved = 0, clicks = 0, duels = 0, wins = 0, stuck = 0, powers = 0;
+  const errors = [], seen = new Set(); let moved = 0, clicks = 0, duels = 0, wins = 0, stuck = 0, powers = 0, fresh = 0, rerolls = 0;
   page.on('pageerror', e => errors.push('pageerror ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('console ' + m.text()); });
   page.on('requestfailed', r => errors.push('request ' + r.url().slice(-60)));
@@ -34,9 +34,10 @@ const path = require('path');
       lastPhase = st.phase;
       if (st.ov) { await shot(st.phase === 'over' ? 'duel-lost' : 'duel-end'); await click('[data-a="closeov"]'); continue; }
       if (st.phase === 'over') {
-        await shot('over'); if (st.won) wins++; console.log('run', run, st.won ? 'CLEARED' : 'ended on floor ' + (st.floor + 1), 'clicks', clicks);
+        await shot('over'); if (await has('.unlock.gift')) await shot('over-gift-unlocked'); if (st.won) wins++; console.log('run', run, st.won ? 'CLEARED' : 'ended on floor ' + (st.floor + 1), 'clicks', clicks);
         await click('[data-a="screen:vault"]'); await shot('vault'); await click('[data-a^="vbuy:"]:not([disabled])'); await click('[data-a="home"]');
-        await click('[data-a="screen:codex"]'); await shot('codex'); await click('[data-a="home"]'); await click('[data-a="home"]');
+        await click('[data-a="screen:codex"]'); await shot('codex'); if (await click('.cxt:not(.unk)')) { await shot('codex-page'); await click('[data-a="cxclose"]'); } await click('[data-a="cxview:all"]'); await shot('codex-all'); if (await click('.cxt.unk')) { await shot('codex-unfound'); await click('[data-a="cxclose"]'); } await click('[data-a^="cxtype:"]'); await shot('codex-type'); await click('[data-a="home"]');
+        await click('[data-a="screen:feats"]'); await shot('feats-' + run); await click('[data-a="home"]'); await click('[data-a="home"]');
         break;
       }
       if (st.phase === 'kit') { await shot('kit'); await click('[data-a="kit:' + (run % 3) + '"]'); continue; }
@@ -47,7 +48,7 @@ const path = require('path');
         if (!(await click('.door:not([disabled])'))) stuck++;
         continue;
       }
-      if (st.phase === 'reward') { await shot('reward-' + st.kind); if (!(await click('.pick button:not([disabled])'))) await click('[data-a="skip"]'); continue; }
+      if (st.phase === 'reward') { await shot('reward-' + st.kind); if (st.kind === 'gift' && await has('.pick.fresh')) { await shot('reward-gift-new'); fresh++; } if (st.kind === 'gift' && step % 2 && await click('[data-a="reroll"]')) { rerolls++; await shot('reward-gift-redeal'); continue; } if (!(await click('.pick button:not([disabled])'))) await click('[data-a="skip"]'); continue; }
       if (st.phase === 'anvil') { await shot('anvil'); if (step % 4 === 3) { await click('[data-a="leave"]'); continue; } await click('[data-a^="anvilpick:"]'); if (!(await click('[data-a^="mw:"]:not([disabled])')) && !(await click('[data-a="temper"]:not([disabled])'))) await click('[data-a="leave"]'); continue; }
       if (st.phase === 'bazaar') { await shot('bazaar'); if (!(await click('[data-a^="buy:"]:not([disabled])')) || step % 3 === 0) await click('[data-a="leave"]'); continue; }
       if (inDuel) {
@@ -80,7 +81,7 @@ const path = require('path');
       if (step === 5999) errors.push('step limit: ' + JSON.stringify(st) + ' ' + (await page.evaluate(() => [...document.querySelectorAll('[data-a]')].filter(e => e.tagName === 'BUTTON').map(e => e.dataset.a + (e.disabled ? '(off)' : '')).join(' | ') + ' toast=' + window.LM.G.toast)));
     }
   }
-  console.log(JSON.stringify({ runs, duels, wins, clicks, powers, moved, stuck, errors: errors.length, profile: await page.evaluate(() => JSON.parse(localStorage.getItem('lostmemories.profile.v1') || 'null')) }).slice(0, 600));
+  console.log(JSON.stringify({ runs, duels, wins, clicks, powers, fresh, rerolls, moved, stuck, errors: errors.length, profile: await page.evaluate(() => JSON.parse(localStorage.getItem('lostmemories.profile.v1') || 'null')) }).slice(0, 900));
   for (const e of errors.slice(0, 8)) console.log(e);
   await browser.close();
   process.exit(errors.length || moved ? 1 : 0);

@@ -6,17 +6,18 @@ import os from 'node:os';
 import fs from 'node:fs';
 import { loadDb } from '../../crucible/engine/cards.mjs';
 import { newRun } from '../../crucible/engine/run.mjs';
-import { playRun } from '../../crucible/engine/policy.mjs';
+import { playRun, FAMILIES } from '../../crucible/engine/policy.mjs';
+import { relicInfo } from '../../crucible/engine/relics.mjs';
 
 function one(db, seed, opts) {
-  const run = playRun(db, newRun(db, { seed, heat: opts.heat, forger: opts.forger || null }), opts);
+  const run = playRun(db, newRun(db, { seed, heat: opts.heat, forger: opts.forger || null, track: true, locked: opts.locked || null }), opts);
   const S = run.stats;
   return {
     seed, won: run.result.won ? 1 : 0, floor: run.result.won ? 3 : run.floor, chamber: run.chamber, bossWins: S.bossWins,
     duels: S.duels, wins: S.wins, turns: S.turns, melds: S.melds, fizzles: S.fizzles, capDuels: S.capHits,
     firstWins: S.firstWins, deckouts: S.deckouts, twoFam: S.familiesInDuel, bounties: S.bounties, kitRejects: S.kitRejects,
     sparks: run.sparks, embers: run.embers, binds: run.binds, level: run.level,
-    relics: [...run.charms, ...run.gifts, ...run.masterworks], ranks: S.ranks, fires: S.relicFires, doors: S.doors, byTier: S.byTier, fx: S.fx || null, comebacks: S.comebacks, leadChanges: S.leadChanges, trailedWins: S.trailedWins, closeWins: S.closeWins, traps: S.traps, defWins: S.defWins, lpLost: S.lpLostInWins, chains: S.chains, singles: S.singles, long: S.long, reasons: S.reasons, gifts: run.gifts.length + run.masterworks.length, points: S.points || [], bountyBy: S.bountyBy || {}, deckSize: run.deck.length,
+    relics: [...run.charms, ...run.gifts, ...run.masterworks], ranks: S.ranks, fires: S.relicFires, doors: S.doors, byTier: S.byTier, fx: S.fx || null, comebacks: S.comebacks, leadChanges: S.leadChanges, trailedWins: S.trailedWins, closeWins: S.closeWins, traps: S.traps, defWins: S.defWins, lpLost: S.lpLostInWins, chains: S.chains, singles: S.singles, long: S.long, reasons: S.reasons, gifts: run.gifts.length + run.masterworks.length, points: S.points || [], bountyBy: S.bountyBy || {}, deckSize: run.deck.length, feat: run.feat, famGifts: run.gifts.filter(id => (FAMILIES[opts.family].likes || []).includes(relicInfo(id).family)).length,
   };
 }
 
@@ -31,7 +32,7 @@ if (!isMainThread) {
   const args = process.argv.slice(2);
   const arg = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };
   const runs = +arg('--runs', 500), seed0 = +arg('--seed', 1);
-  const opts = { family: arg('--family', 'neutral'), level: +arg('--level', 2), heat: +arg('--heat', 0), forger: arg('--forger', null) };
+  const opts = { family: arg('--family', 'neutral'), level: +arg('--level', 2), heat: +arg('--heat', 0), forger: arg('--forger', null), locked: arg('--locked', null) ? arg('--locked').split(',') : null };
   const threads = Math.min(+arg('--threads', os.cpus().length), runs);
   const seeds = Array.from({ length: runs }, (_, i) => seed0 + i);
   const chunks = Array.from({ length: threads }, (_, t) => seeds.filter((_, i) => i % threads === t));
@@ -79,6 +80,8 @@ if (!isMainThread) {
     plays: { single: sum(r => r.singles), ...chains }, longDuelPct: pct(sum(r => r.long), duels), giftsPerRun: Math.round(10 * sum(r => r.gifts) / ok.length) / 10,
     diedOn: { floor1: pct(ok.filter(r => !r.won && r.floor === 0).length, ok.length), floor2: pct(ok.filter(r => !r.won && r.floor === 1).length, ok.length), floor3: pct(ok.filter(r => !r.won && r.floor === 2).length, ok.length) },
     usedPerDuel: (() => { const o = [{}, {}]; for (const r of ok) if (r.fx) for (const i of [0, 1]) for (const [k, v] of Object.entries(r.fx[i])) o[i][k] = (o[i][k] || 0) + v; const f = x => Object.fromEntries(Object.entries(x).sort().map(([k, v]) => [k, Math.round(100 * v / duels) / 100])); return { you: f(o[0]), rival: f(o[1]) }; })(),
+    feats: (() => { const q = (f, x) => { const p = ok.map(f).sort((a, b) => a - b); return p[Math.floor(x * (p.length - 1))]; }; const o = {}; for (const k of ['long4', 'gyWins', 'baits', 'bestGy']) o[k] = [.1, .25, .5, .75, .9].map(x => q(r => r.feat[k], x)).join(' / ') + ' mean ' + Math.round(100 * sum(r => r.feat[k]) / ok.length) / 100; return o; })(),
+    familyGifts: (() => { const g = ok.filter(r => r.gifts >= 4); const d = {}; for (const r of g) d[r.famGifts] = (d[r.famGifts] || 0) + 1; return { runsWith4Gifts: g.length, liked: Object.fromEntries(Object.entries(d).map(([k, v]) => [k, pct(v, g.length)])), mean: Math.round(100 * g.reduce((n, r) => n + r.famGifts, 0) / Math.max(1, g.length)) / 100 }; })(),
     kitRejectsPerRun: Math.round(100 * sum(r => r.kitRejects) / ok.length) / 100,
     relicShareOfWinningBuilds: Object.fromEntries(Object.entries(relicWin).map(([k, v]) => [k, pct(v, wins)]).sort((a, b) => b[1] - a[1])),
     relicHeld: relicIn, relicFires: fires,

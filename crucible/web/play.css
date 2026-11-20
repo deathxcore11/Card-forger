@@ -143,3 +143,16 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 .lab i { font-style: normal; font-weight: 700; min-width: 2.6em; text-align: center; opacity: .6; }
 .lab.on { border-color: var(--gold, #d9b25f); }
 .lab.on i { color: var(--gold, #d9b25f); opacity: 1; }
+
+/* feats, new Gift mark, Codex pages */
+.panel.scroll { max-height: 52em; overflow-y: auto; }
+.row.left { justify-content: flex-start; } .row.left button { font-size: 1em; padding: .35em .7em; } .row.left .ty { font-size: .9em; }
+.featbox { margin-top: 1em; } .feat { display: grid; grid-template-columns: 1fr 18em 9em; gap: 1.2em; align-items: center; padding: .5em 0; font-size: 1.15em; border-top: 1px solid var(--line); } .feat b { color: var(--gold); font-family: 'Cinzel', Georgia, serif; } .feat span { text-align: right; color: var(--gold); } .feat.done span { color: var(--good); }
+.bar { position: relative; height: .9em; border-radius: .5em; background: rgba(0, 0, 0, .6); border: 1px solid var(--line); overflow: hidden; } .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: #7a5a1e; } .bar u { position: absolute; top: 0; bottom: 0; background: var(--gold); animation: grow .9s ease-out; transform-origin: left; }
+@keyframes grow { from { transform: scaleX(0); } }
+.featgift { display: flex; gap: 1em; align-items: center; font-size: 1.1em; padding: .2em 0 .9em 2em; } .featgift.lockedg { opacity: .55; } .featgift .ri { width: 3.4em; height: 3.4em; }
+.unlock.gift { display: flex; gap: 1.2em; align-items: center; } .unlock.gift .ri { width: 5.5em; height: 5.5em; flex: none; } .unlock i { color: var(--dim); }
+.pick.fresh { border-color: var(--gold); box-shadow: 0 0 1.4em rgba(233, 196, 106, .4); } em.newtag { font-style: normal; background: var(--gold); color: #2a1a05; font-weight: 700; padding: .05em .5em; border-radius: .3em; margin-right: .4em; } em.fits { font-style: normal; color: #ffb37a; }
+.cxgrid { display: grid; grid-template-columns: repeat(10, 1fr); gap: .7em .5em; margin-top: .8em; } .cxt { display: flex; flex-direction: column; align-items: center; gap: .2em; cursor: pointer; } .cxt small { font-size: .9em; text-align: center; }
+.c.unk { display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .55); border: 1px dashed var(--line); } .c.unk span { font-size: 4em; color: var(--dim); font-family: 'Cinzel', Georgia, serif; }
+.cxpage { display: flex; gap: 2em; align-items: flex-start; max-width: 74em; } .cxpage > div:last-child { flex: 1; } .cxpage .c { flex: none; } .recs { font-size: 1.1em; line-height: 2; }

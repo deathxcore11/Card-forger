@@ -9,7 +9,7 @@ import { RELICS, LAB, CHAIN_TURN, sortRelics } from '../engine/relics.mjs';
 import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
-import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT } from '../engine/meta.mjs';
+import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS } from '../engine/meta.mjs';
 
 const db = loadDb();
 const C = n => { const c = db.byName.get(n); assert.ok(c, 'card in pool: ' + n); return c; };
@@ -501,6 +501,44 @@ test('lab relics: never in a normal run; switched on, Tomb Ledger chains into Gr
   assert.ok(f.tomb_ledger > 0 && f.grave_call > 0 && f.second_burial > 0, 'the three Tomb relics answer each other');
   assert.ok(f.grave_call <= f.tomb_ledger && f.second_burial <= 2 * f.grave_call, 'each link fires at most once per link before it (Second Burial is counted when armed and when paid)');
   assert.ok(f.tomb_ledger <= r.stats.turns && CHAIN_TURN >= 3, 'the Ledger marks at most once a turn');
+});
+
+test('feats: counted across runs win or lose, each unlocks one Gift, and the new Gift is shown once in the next run', () => {
+  const lab = { ...db, config: { ...db.config, labPool: FEAT_GIFTS, giftXpScale: 2 }, _pair: new Map() };
+  const p = newProfile();
+  for (const g of FEAT_GIFTS) { assert.ok(LAB[g], g + ' exists'); assert.ok(lockedRelics(p).includes(g), g + ' starts locked'); }
+  const plain = newRun(db, { seed: 3 }); assert.ok(!('feat' in plain) && !('featured' in plain) && !('rerolls' in plain), 'an ordinary run carries no feat fields');
+  let unlocked = null, runs = 0;
+  for (let seed = 1; seed < 12 && !unlocked; seed++) {
+    const run = playRun(lab, newRun(lab, { seed, locked: lockedRelics(p), track: true }), { level: 2 });
+    for (const g of lockedRelics(p)) assert.ok(!run.gifts.includes(g), 'a locked Gift is never offered');
+    const before = { ...p.feats }; const got = applyRun(p, run); runs++;
+    for (const f of got.feats) { assert.equal(f.before, before[f.id] || 0); assert.ok(f.after >= f.before && f.after <= f.goal); }
+    unlocked = got.unlocks.find(u => u.kind === 'gift') || null;
+  }
+  assert.ok(unlocked, 'an expert player completes a build feat within a few runs'); assert.ok(runs <= 4, 'took ' + runs + ' runs');
+  assert.ok(p.fresh.includes(unlocked.id) && !lockedRelics(p).includes(unlocked.id));
+  // next run: the first Gift offer holds the new Gift, marked, exactly once
+  let seen = 0, offers = 0; const nFresh = p.fresh.length; const run = newRun(lab, { seed: 77, locked: lockedRelics(p), featured: p.fresh, track: true });
+  while (run.phase !== 'over') { if (run.phase === 'reward' && run.offer.kind === 'gift') { offers++; if (run.offer.fresh) { seen++; assert.equal(offers, seen, 'new Gifts come in the first offers, one each'); assert.ok(run.offer.options.includes(run.offer.fresh)); } } runApply(run, policyAction(lab, run, { level: 2 }), lab); }
+  assert.ok(offers > 0, 'the run reached a Gift offer'); assert.equal(seen, Math.min(offers, nFresh));
+});
+
+test('leaning offers and the re-deal: with a build piece held, a Gift offer always holds a piece of that build while one is left', () => {
+  const lab = { ...db, config: { ...db.config, labPool: Object.keys(LAB).filter(id => LAB[id].kind === 'G'), giftXpScale: 2, leanOffers: 1, giftRerolls: 1 }, _pair: new Map() };
+  let checked = 0, redealt = 0;
+  for (let seed = 1; seed <= 6; seed++) {
+    const run = newRun(lab, { seed }); assert.equal(run.rerolls, 1);
+    while (run.phase !== 'over') {
+      if (run.phase === 'reward' && run.offer.kind === 'gift') {
+        const fam = id => (RELICS[id] || LAB[id]).family, held = new Set([...run.charms, ...run.gifts].map(fam).filter(f => ['furnace', 'shadow', 'lean', 'storm', 'tomb'].includes(f)));
+        if (held.size) { checked++; assert.ok(run.offer.options.some(id => held.has(fam(id))), 'seed ' + seed + ': no option leans toward ' + [...held]); }
+        if (run.rerolls) { const was = run.offer.options.slice(); runApply(run, { t: 'reroll' }, lab); redealt++; assert.equal(run.rerolls, 0); for (const id of run.offer.options) assert.ok(!was.includes(id), 'a re-deal shows three other Gifts'); assert.throws(() => runApply(run, { t: 'reroll' }, lab), /no re-deal/); continue; }
+      }
+      runApply(run, policyAction(lab, run, { level: 2, family: 'tomb' }), lab);
+    }
+  }
+  assert.ok(checked >= 6 && redealt >= 4, 'checked ' + checked + ' offers, ' + redealt + ' re-deals');
 });
 
 console.log('crucible rules:', passed, 'tests passed');

@@ -102,7 +102,7 @@ export function meldPair(db, a, b) {
   return r;
 }
 
-function meldPairRaw(db, a, b) {
+export function meldPairRaw(db, a, b) {
   const A = db.byId.get(a), B = db.byId.get(b);
   const ma = db.isMonster(a), mb = db.isMonster(b);
   if (ma && mb) {
