@@ -503,9 +503,11 @@ export function applyMut(s, a, db, ev = []) {
   const seat = s.active;
   if (s.pending) {
     if (a.t !== 'respond') throw new Error('a trap answer is pending');
-    const p = s.pending; s.pending = null;
+    const p = s.pending;
+    if (a.trap >= 0 && !p.options.includes(a.trap)) throw new Error('that trap cannot answer');
+    s.pending = null;
     let go = true;
-    if (a.trap >= 0) { if (!p.options.includes(a.trap)) throw new Error('that trap cannot answer'); go = springTrap(s, db, ev, other(seat), a.trap, p.from, p.to); }
+    if (a.trap >= 0) { go = springTrap(s, db, ev, other(seat), a.trap, p.from, p.to); }
     if (go && s.winner === null && s.mon[seat][p.from]) {
       // a pump or revive may have changed nothing about the target zone; a destroyed target is handled inside
       resolveBattle(s, db, ev, seat, p.from, p.to);

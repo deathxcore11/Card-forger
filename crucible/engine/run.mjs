@@ -532,6 +532,9 @@ export function runApply(run, a, db, opts = {}) {
   const rng = new Rng(run.rng);
   const cfg = db.config;
   const fail = m => { throw new Error(m); };
+  // Anything that is not a plain action with whole-number positions is refused before it can touch the run.
+  if (!a || typeof a !== 'object') fail('no action given');
+  for (const k of ['i', 'deck', 'trunk', 'a', 'b']) if (a[k] !== undefined && !(Number.isInteger(a[k]) && a[k] >= 0)) fail('no such choice');
   switch (run.phase) {
     case 'kit':
       if (a.t === 'redeal') { if (!run.redeal) fail('no re-deal left'); run.redeal = 0; run.offer = dealKits(db, rng, run); break; }
@@ -570,6 +573,7 @@ export function runApply(run, a, db, opts = {}) {
     }
     case 'duel': {
       if (a.t !== 'duel') fail('a duel is in progress');
+      if (!a.action || typeof a.action !== 'object') fail('no move given');
       const d = run.duel;
       const mine = d.pending ? d.active === 1 : d.active === 0;
       if (!mine) fail('not your move');
@@ -584,10 +588,14 @@ export function runApply(run, a, db, opts = {}) {
       if (a.t === 'reroll') { // lever giftRerolls: deal a Gift offer again, without the Gifts just shown where the pool allows
         if (o.kind !== 'gift' || !run.rerolls) fail('no re-deal left');
         const seen = o.options.slice(); run.locked = (run.locked || []).concat(seen);
+        const keep = run.featured ? run.featured.slice() : null;
         const fresh = relicOffer(run, rng, 'G', 3);
         run.locked = run.locked.slice(0, run.locked.length - seen.length); if (!run.locked.length) delete run.locked;
-        if (fresh.length < 3) fail('nothing else to offer');
-        run.rerolls--; o.options = fresh; delete o.fresh; break;
+        // a refusal leaves no trace, and a second newly unlocked Gift dealt here keeps its NEW mark
+        if (fresh.length < 3) { if (keep) run.featured = keep; delete run.freshShown; fail('nothing else to offer'); }
+        run.rerolls--; o.options = fresh; delete o.fresh;
+        if (run.freshShown) { o.fresh = run.freshShown; delete run.freshShown; }
+        break;
       }
       if (a.t !== 'pick') fail('pick or skip');
       if (o.kind === 'card') { if (!o.options[a.i]) fail('no such card'); addCard(db, run, o.options[a.i]); }

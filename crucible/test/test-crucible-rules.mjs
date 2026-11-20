@@ -658,4 +658,57 @@ test('Veilwalker candidate rule: off by default; on, her first lone veiled set i
   applyMut(s, set, narrow); assert.equal(s.played, false);
 });
 
+// Faults found by the break-it pass of 20 November 2026. Each test fails on the code as it was.
+test('Chain Lightning answers every relic that takes Life Points, Glass Idol included', () => {
+  const s = blank({ seats: [{ relics: ['glass_idol', 'chain_lightning'] }, {}] });
+  put(s, 0, 0, mon('Mystical Elf', 'd', { veil: true })); const skull = put(s, 0, 1, mon('Summoned Skull', 'a'));
+  put(s, 1, 0, mon('Mystical Elf', 'a')); s.active = 1; const lp = s.lp[1];
+  const ev = applyMut(s, { t: 'attack', from: 0, to: 0 }, db);
+  assert.ok(ev.some(e => e.e === 'relic' && e.id === 'glass_idol'), 'Glass Idol fired');
+  assert.ok(s.lp[1] <= lp - 300); assert.equal(skull.ba, 200, 'the strongest monster gets Chain Lightning');
+});
+
+test('Second Wind is announced when a relic, not a battle, would have ended the duel', () => {
+  const s = blank({ seats: [{ secondWind: true }, { relics: ['cinder_fall'] }] });
+  put(s, 1, 0, mon('Summoned Skull', 'd')); s.active = 1; s.lp[0] = 200;
+  const ev = applyMut(s, { t: 'end' }, db);
+  assert.equal(s.winner, null); assert.equal(s.lp[0], 1000);
+  assert.ok(ev.some(e => e.e === 'relic' && e.id === 'second_wind' && e.seat === 0), 'the page is told Second Wind was used');
+});
+
+test('a refused Trap answer leaves the prompt standing, and a refused run action leaves the run untouched', () => {
+  const s = blank(); give(s, 0, 'Trap Hole');
+  applyMut(s, { t: 'play', hand: [0], onto: null }, db); applyMut(s, { t: 'end' }, db);
+  s.hand[1] = []; put(s, 1, 0, mon('Summoned Skull')); put(s, 0, 0, mon('Mystical Elf'));
+  applyMut(s, { t: 'attack', from: 0, to: 0 }, db);
+  const before = canonical(s), wrong = [0, 1, 2, 3, 4].find(z => !s.pending.options.includes(z));
+  assert.throws(() => applyMut(s, { t: 'respond', trap: wrong }, db), /cannot answer/);
+  assert.equal(canonical(s), before, 'the attack still waits for an answer');
+  applyMut(s, { t: 'respond', trap: s.pending.options[0] }, db); assert.equal(s.mon[1][0], null);
+  const run = newRun(db, { seed: 5 });
+  while (run.phase !== 'duel') runApply(run, policyAction(db, run, { level: 2 }), db);
+  const snap = JSON.stringify(run);
+  for (const bad of [null, 'end', { t: 'duel' }, { t: 'duel', action: 7 }, { t: 'door', i: 'length' }, { t: 'pick', i: -1 }, { t: 'pick', i: 1.5 }, { t: 'swap', deck: '0', trunk: 0 }]) {
+    assert.throws(() => runApply(run, bad, db), e => e instanceof Error && !(e instanceof TypeError), 'a clean refusal for ' + JSON.stringify(bad));
+    assert.equal(JSON.stringify(run), snap);
+  }
+});
+
+test('a second newly unlocked Gift dealt by the re-deal keeps its NEW mark', () => {
+  const pool = Object.keys(LAB).filter(id => LAB[id].kind === 'G');
+  const lab = { ...db, config: { ...db.config, labPool: pool, giftXpScale: 2, giftRerolls: 1 }, _pair: new Map() };
+  let checked = 0;
+  for (let seed = 1; seed <= 8; seed++) {
+    const run = newRun(lab, { seed, featured: ['snare', 'cinder_fall'], track: true });
+    while (run.phase !== 'over' && !(run.phase === 'reward' && run.offer.kind === 'gift')) runApply(run, policyAction(lab, run, { level: 2 }), lab);
+    if (run.phase === 'over') continue;
+    const first = run.offer.fresh; assert.ok(first && run.offer.options.includes(first));
+    if (['snare', 'cinder_fall'].every(id => run.offer.options.includes(id))) continue; // both dealt at once: the second keeps its mark for a later offer
+    runApply(run, { t: 'reroll' }, lab);
+    assert.ok(run.offer.fresh && run.offer.fresh !== first && run.offer.options.includes(run.offer.fresh), 'the other new Gift is dealt and marked');
+    assert.ok(!('freshShown' in run), 'nothing is left over to mark a later offer'); checked++;
+  }
+  assert.ok(checked >= 4, 'reached a Gift offer in ' + checked + ' runs');
+});
+
 console.log('crucible rules:', passed, 'tests passed');

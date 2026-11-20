@@ -70,7 +70,7 @@ export const LAB = {
   static_field: { name: 'Static Field', kind: 'G', family: 'storm', text: "After your meld of three or more cards, the rival's strongest face-up monster loses 300 ATK this duel. Up to three times a duel." },
   overcharge: { name: 'Overcharge', kind: 'G', family: 'storm', text: 'After your meld of four or more cards, your next meld gets +300 ATK this duel. Up to three times a duel.' },
   chain_lightning: { name: 'Chain Lightning', kind: 'G', family: 'storm', text: 'Each time one of your relics makes the rival lose Life Points, the new meld that caused it, or else your strongest monster, gets +200 ATK this duel. Up to four times a duel.' },
-  spite: { name: 'Spite', kind: 'G', family: 'shadow', text: 'When an attack reveals your veiled monster, the attacker loses 400 ATK this duel. Up to four times a duel.' },
+  spite: { name: 'Spite', kind: 'G', family: 'shadow', text: 'After the battle in which an attack reveals your veiled monster, the attacker loses 400 ATK for the rest of the duel. Up to four times a duel.' },
   false_floor: { name: 'False Floor', kind: 'G', family: 'shadow', text: 'Once a turn, when your veiled monster is destroyed by the attack that reveals it, the rival cannot attack again this turn.' },
   banked_coals: { name: 'Banked Coals', kind: 'G', family: 'furnace', text: 'At the start of your turn, your strongest face-up melded monster gets +300 ATK this duel. Up to four times a duel.' },
   cinder_fall: { name: 'Cinder Fall', kind: 'G', family: 'furnace', text: 'At the end of your turn, if you hold a face-up monster with 2500 ATK or more, the rival loses 400 Life Points. Up to four times a duel.' },
@@ -150,7 +150,7 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'survived:unseen_hand': if (ctx.wasVeiled && (rs.unseen || 0) < 3) { rs.unseen = (rs.unseen || 0) + 1; rs.nextMeld.push({ a: 500, d: 0, id }); if (ctx.attacker) ctx.attacker.lock = 1; note(s, ev, seat, id, { armed: true }); } break;
 
       case 'veiledRevealed:tomb_bell': if (!rs.tomb) { rs.tomb = 1; s.lp[seat] += 300; note(s, ev, seat, id); ev.push({ e: 'lp', seat, d: 300, src: 'relic' }); } break;
-      case 'veiledRevealed:glass_idol': if ((rs.idol || 0) < 3) { rs.idol = (rs.idol || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); } break;
+      case 'veiledRevealed:glass_idol': if ((rs.idol || 0) < 3) { rs.idol = (rs.idol || 0) + 1; note(s, ev, seat, id); shock(300); } break;
     }
     if (s.winner !== null) return;
     switch (hook + ':' + id) {
@@ -178,7 +178,7 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'turnStart:banked_coals': { let m = null; if ((rs.coals || 0) < 4) for (const x of s.mon[seat]) if (x && x.meld && !x.veil && (!m || ctx.eff(x) > ctx.eff(m))) m = x; if (m) { rs.coals = (rs.coals || 0) + 1; B(m, db.config.coalsAtk || 300, 0, id); } } break;
       case 'endTurn:cinder_fall': if ((rs.cinder || 0) < 4 && s.mon[seat].some(m => m && !m.veil && ctx.eff(m) >= (db.config.cinderAtk || 2500))) { rs.cinder = (rs.cinder || 0) + 1; note(s, ev, seat, id); shock(db.config.cinderLp || 400); } break;
       case 'wonBattle:quench': if (ctx.mon.meld && (rs.quench || 0) < 4) { rs.quench = (rs.quench || 0) + 1; B(ctx.mon, 200, 200, id); } break;
-      case 'survived:cold_lantern': if (ctx.wasVeiled && (rs.lantern || 0) < 4) { rs.lantern = (rs.lantern || 0) + 1; note(s, ev, seat, id); hurt(s, ev, r, 300); } break;
+      case 'survived:cold_lantern': if (ctx.wasVeiled && (rs.lantern || 0) < 4) { rs.lantern = (rs.lantern || 0) + 1; note(s, ev, seat, id); shock(300); } break;
     }
     if (hook === 'placed') placed(s, db, ev, seat, id, ctx, rs, st, B, r);
   }
@@ -194,7 +194,7 @@ function hurt(s, ev, seat, n) {
   s.lp[seat] -= n; s.stats[1 - seat].damageDealt += n; ev.push({ e: 'lp', seat, d: -n, src: 'relic' });
   if (s.lp[seat] <= 0 && s.winner === null) {
     const st = s.seat[seat];
-    if (st.secondWind && !st.rs.secondWind) { st.rs.secondWind = 1; s.lp[seat] = 1000; return; }
+    if (st.secondWind && !st.rs.secondWind) { st.rs.secondWind = 1; s.lp[seat] = 1000; ev.push({ e: 'relic', seat, id: 'second_wind' }); return; }
     s.lp[seat] = 0; s.winner = 1 - seat; s.reason = 'lp'; s.pending = null; ev.push({ e: 'end', winner: s.winner, reason: 'lp' });
   }
 }
