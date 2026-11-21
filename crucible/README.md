@@ -19,7 +19,7 @@ node crucible/test/test-crucible-events.mjs 6000        # random play; every cha
 node crucible/test/test-crucible-caps.mjs 1500 1        # random CPU duels; no relic may fire more often than its own text says
 node tools/crucible/page-checks.cjs <built index.html> <duel save> [w h]   # a browser taps the built page: Spell targets, forecast, card page, sound cue order (16 checks)
 node tools/crucible/lesson-checks.cjs <built index.html> <duel save> [w h]   # the first lessons, the loss summary and guardian counsel (23 checks)
-node tools/crucible/save-checks.cjs <built index.html> <saves dir> [w h]   # a browser taps the built page: saved runs, failed saves, leaving a run, the Winnower, two tabs, damaged saves, a store that comes back empty (87 checks)
+node tools/crucible/save-checks.cjs <built index.html> <saves dir> [w h]   # a browser taps the built page: saved runs, failed saves, leaving a run, the Winnower, two tabs, damaged saves, a store that comes back empty, the Lab switches (94 checks)
 node tools/crucible/phone-checks.cjs <built index.html> <saves dir> [w h]   # a phone held sideways: least text sizes, button heights, nothing off the stage, the table does not move, a rules box that needs scrolling says so (56 checks at 915 x 412)
 node tools/crucible/phone-shots.cjs <built index.html> <saves dir> <out dir> [w h]   # a picture of every screen at one size, and a note of anything outside the stage
 node tools/crucible/make-saves.mjs <dir>               # saved games for every kind of screen (floors 1-3, Heat 0/5/10)
