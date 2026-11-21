@@ -5,7 +5,7 @@ import { roleOf, meldPair, codexKnows } from './cards.mjs';
 import { viewFor } from './duel.mjs';
 import { chooseAction } from './ai.mjs';
 import { relicInfo } from './relics.mjs';
-import { runApply, cardValue, entryWeight, deckWeight, weightCap, possibleMasterworks } from './run.mjs';
+import { runApply, cardValue, entryWeight, deckWeight, weightCap, possibleMasterworks, MIN_DECK } from './run.mjs';
 
 export const FAMILIES = {
   neutral: { kit: null, duel: {}, likes: [] },
@@ -157,6 +157,8 @@ export function policyAction(db, run, { family = 'neutral', level = 2 } = {}) {
         return -1e9;
       });
       if (i >= 0) { const it = o.items[i]; if (!it.sold && it.price <= run.embers) { const v = it.kind === 'card' ? cardValue(db, it.entry) - worst - 350 : it.kind === 'charm' && run.charms.length < db.config.charmSlots ? relicScore(fam, it.id) : -1; if (v > 0) return { t: 'buy', i }; } }
+      // Sim-only (config simCut): let the Winnower cut the weakest loose card, to measure what a thinner deck is worth.
+      if (db.config.simCut) { const si = o.items.findIndex(it => it.kind === 'scrap' && !it.sold && it.price <= run.embers); if (si >= 0 && run.deck.length > MIN_DECK) { const di = bestIdx(run.deck, e => e.b ? -1e9 : -cardValue(db, e)); if (di >= 0 && !run.deck[di].b) return { t: 'buy', i: si, deck: di }; } }
       return { t: 'leave' };
     }
   }

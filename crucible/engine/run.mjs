@@ -254,7 +254,7 @@ export const BOUNTIES = [
 // featured: Gift ids to show once each in this run's first Gift offers (a newly unlocked Gift).
 // track: keep the feat counters in run.feat. kits: the kit ids this profile has open (the kit offer deals only those).
 // enchants: the Enchants this profile has open (an Anvil offers only those). All optional; an ordinary run is unchanged.
-export function newRun(db, { seed, heat = 0, forger = null, locked = null, featured = null, track = false, kits = null, enchants = null } = {}) {
+export function newRun(db, { seed, heat = 0, forger = null, locked = null, featured = null, track = false, kits = null, enchants = null, uid = null } = {}) {
   DB = db;
   const cfg = db.config, rng = Rng.fromSeed(seed);
   const run = {
@@ -267,6 +267,7 @@ export function newRun(db, { seed, heat = 0, forger = null, locked = null, featu
     stats: { duels: 0, wins: 0, losses: 0, bossWins: 0, ranks: {}, turns: 0, melds: 0, fizzles: 0, capHits: 0, relicFires: {}, familiesInDuel: 0, doors: {}, bounties: 0, deckouts: 0, firstWins: 0, firstGames: 0, kitRejects: 0, byTier: {}, comebacks: 0, closeWins: 0, leadChanges: 0, trailedWins: 0, traps: 0, defWins: 0, lpLostInWins: 0, chains: {}, singles: 0, long: 0, reasons: {} },
   };
   if (forger) { if (!FORGERS[forger]) throw new Error('no such Forger'); run.forger = forger; }
+  if (uid) run.uid = String(uid); // the page's name for this run: a profile banks a named run once only (meta.mjs applyRun)
   if (locked && locked.length) run.locked = locked.slice();
   if (featured && featured.length) run.featured = featured.slice();
   if (track) run.feat = { long4: 0, gyWins: 0, baits: 0, bestGy: 0, bigWins: 0 };
@@ -377,7 +378,7 @@ function describe(db, run, d) {
     case 'champion': d.name = 'Champion: ' + THEMES[d.theme].name; d.cost = 'A Spark if you lose. A much harder fight.'; d.reward = 'Cards, a charm, breaks a seal.'; break;
     case 'guardian': d.name = 'Guardian: ' + THEMES[d.theme].name; d.cost = 'A Spark if you lose. The hardest duel short of the boss.'; d.reward = 'A stronger card, breaks a seal.'; break;
     case 'anvil': d.name = 'Anvil'; d.cost = 'Embers.'; d.reward = 'Temper, enchant, bind or forge a Masterwork.'; break;
-    case 'bazaar': d.name = 'Bazaar'; d.cost = 'Embers.'; d.reward = { cards: 'Cards for sale.', charms: 'Charms for sale.', scrapper: 'The Scrapper removes cards.', shadow: 'One known item and one sealed item at half price.' }[d.merchant]; break;
+    case 'bazaar': d.name = 'Bazaar'; d.cost = 'Embers.'; d.reward = { cards: 'Cards for sale.', charms: 'Charms for sale.', scrapper: 'The Winnower cuts cards out of your deck.', shadow: 'One known item and one sealed item at half price.' }[d.merchant]; break;
     case 'sanctum': d.name = 'Sanctum'; d.cost = 'Nothing.'; d.reward = 'Take back one Spark, or raise your weight cap by 5.'; break;
     case 'omen': d.name = 'Omen'; d.cost = 'A stated trade. You can always leave.'; d.reward = 'One stronger card for two trunk cards.'; break;
     case 'treasure': d.name = 'Treasure'; d.cost = 'Nothing.'; d.reward = 'A free pick of one from three.'; break;
@@ -560,9 +561,12 @@ function bazaarStock(db, run, rng, merchant) {
   return items;
 }
 
+// The smallest deck a run may hold. Binds take it from 40 to 36 at most; the Winnower may cut it further, to here.
+export const MIN_DECK = 34;
 function validDeck(db, run, deck) {
   const cfg = db.config;
-  if (deck.length !== 40 - run.binds) return 'deck must be ' + (40 - run.binds) + ' cards';
+  const size = 40 - run.binds - (run.cuts || 0);
+  if (deck.length !== size) return 'deck must be ' + size + ' cards';
   const count = new Map();
   for (const e of deck) { const n = (count.get(e.id) || 0) + 1; if (n > cfg.maxCopies) return 'more than three copies'; count.set(e.id, n); }
   if (deckWeight(db, deck) > weightCap(db, run)) return 'over the weight cap';
@@ -578,6 +582,14 @@ export function runApply(run, a, db, opts = {}) {
   // Anything that is not a plain action with whole-number positions is refused before it can touch the run.
   if (!a || typeof a !== 'object') fail('no action given');
   for (const k of ['i', 'deck', 'trunk', 'a', 'b']) if (a[k] !== undefined && !(Number.isInteger(a[k]) && a[k] >= 0)) fail('no such choice');
+  // Leaving the pyramid ends the run as a loss, from any screen. What was earned so far is banked like any other
+  // lost run; a duel in progress is not counted as fought.
+  if (a.t === 'abandon') {
+    if (run.phase === 'over') fail('the run is over');
+    run.phase = 'over'; run.result = { won: false, floor: run.floor, chamber: run.chamber, reason: 'abandoned' };
+    run.duel = null; run.offer = null; run.doors = null;
+    run.rng = rng.s; return ev;
+  }
   switch (run.phase) {
     case 'kit':
       if (a.t === 'redeal') { if (!run.redeal) fail('no re-deal left'); run.redeal = 0; run.offer = dealKits(db, rng, run); break; }
@@ -688,7 +700,12 @@ export function runApply(run, a, db, opts = {}) {
       if (run.embers < it.price) fail('not enough Embers');
       if (it.kind === 'card') { addCard(db, run, it.entry); it.sold = true; }
       else if (it.kind === 'charm') { if (run.charms.length >= cfg.charmSlots) fail('charm slots full'); run.charms.push(it.id); it.sold = true; }
-      else if (it.kind === 'scrap') { const e = run.trunk[a.trunk]; if (!e) fail('pick a trunk card to scrap'); run.trunk.splice(a.trunk, 1); if (--it.uses <= 0) it.sold = true; }
+      else if (it.kind === 'scrap') { // the Winnower cuts a card out of the deck for the rest of the run: fewer cards, so the good ones come round sooner
+        const e = run.deck[a.deck]; if (a.deck === undefined || !e) fail('pick a deck card to cut');
+        if (e.b) fail('a bound meld cannot be cut');
+        if (run.deck.length <= MIN_DECK) fail('a deck cannot go below ' + MIN_DECK + ' cards');
+        run.deck = run.deck.filter((_, i) => i !== a.deck); run.cuts = (run.cuts || 0) + 1; if (--it.uses <= 0) it.sold = true;
+      }
       run.embers -= it.price;
       break;
     }

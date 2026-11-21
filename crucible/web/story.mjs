@@ -18,4 +18,5 @@ export const SCENES = {
     'The pyramid seals behind you. It will be different next time. So will you.',
   ] },
   fell: { who: '', lines: ['The last Spark goes out. The pyramid forgets you, but your Codex does not.'] },
+  left: { who: '', lines: ['You climb back toward the light. The pyramid keeps its doors, and you keep what you learned.'] },
 };

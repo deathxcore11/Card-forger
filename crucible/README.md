@@ -12,12 +12,13 @@ machine". Nothing in this folder has been played by a person or seen on a device
 ```
 node tools/crucible/build-pool.mjs --fetch --count     # pool size at three cut-offs
 node tools/crucible/build-pool.mjs --fetch             # writes crucible/data/crucible-pool.json
-node crucible/test/test-crucible-rules.mjs             # 86 rule tests
+node crucible/test/test-crucible-rules.mjs             # 89 rule tests
 node crucible/test/test-crucible-fuzz.mjs 6000 600     # random play with invariants
 node crucible/test/test-crucible-fuzz-levers.mjs 1000 200 1   # the same with every Lab lever on, Heat 0-10, wild actions, rule changes mid-run, profiles
 node crucible/test/test-crucible-events.mjs 6000        # random play; every change in the state must have an event the page can show
 node crucible/test/test-crucible-caps.mjs 1500 1        # random CPU duels; no relic may fire more often than its own text says
 node tools/crucible/page-checks.cjs <built index.html> <duel save> [w h]   # a browser taps the built page: Spell targets, forecast, card page
+node tools/crucible/save-checks.cjs <built index.html> <saves dir> [w h]   # a browser taps the built page: saved runs, failed saves, leaving a run, the Winnower (48 checks)
 node tools/crucible/make-saves.mjs <dir>               # saved games for every kind of screen (floors 1-3, Heat 0/5/10)
 SAVE=<dir>/x.json RELOAD=37 node tools/crucible/play-bot.cjs <index.html> 1 <shots> 1280 720   # click bot from a saved game, with layout and message checks
 node tools/crucible/make-fixtures.mjs --check          # replay golden fixtures hash for hash

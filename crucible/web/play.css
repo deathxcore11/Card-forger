@@ -183,3 +183,8 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 #turn { position: fixed; inset: 0; z-index: 999; display: grid; place-items: center; background: rgba(14, 9, 5, .95); color: #f3e6c8; font: 18px/1.45 Georgia, 'Times New Roman', serif; text-align: center; padding: 24px; }
 #turn b { display: block; font-size: 24px; color: #e9c46a; margin-bottom: 10px; } #turn p { margin: 0 0 22px; }
 #turn button { font: inherit; padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(233, 196, 106, .6); background: rgba(40, 28, 14, .9); color: #f3e6c8; }
+/* saving: a write that failed is never silent */
+.savebar { position: absolute; left: 0; right: 0; top: 0; z-index: 60; background: #6b1d14; color: #ffe9d2; padding: .6em 1em; font-size: 1.15em; text-align: center; border-bottom: .12em solid #e0a35a; }
+.savebar button { margin-left: .8em; font-size: 1em; }
+.notice { max-width: 46em; margin: .6em auto; padding: .6em 1em; color: #ffd9a8; border: .08em solid #b98a4a; border-radius: .5em; }
+.leave { max-width: 40em; } .leave p { font-size: 1.2em; line-height: 1.4; }

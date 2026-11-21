@@ -81,14 +81,20 @@ export function scoreRun(p, run) {
   const heat = Math.round(base * 0.2 * (run.heat || 0));
   add('Heat ' + (run.heat || 0), heat);
   // Every run pays: a run that earned less than this is topped up to it.
-  if (base + heat < MIN_PAY) add('For making the descent', MIN_PAY - base - heat);
-  return { lines, total: Math.max(MIN_PAY, base + heat), fresh, floor };
+  // (A run abandoned before a single duel was fought made no descent: otherwise starting and leaving would mint Memories.)
+  const none = run.result && run.result.reason === 'abandoned' && !S.duels;
+  if (base + heat < MIN_PAY && !none) add('For making the descent', MIN_PAY - base - heat);
+  return { lines, total: none ? base + heat : Math.max(MIN_PAY, base + heat), fresh, floor };
 }
 
 // Banks a finished run into the profile and returns what it paid and what it unlocked.
 export function applyRun(p, run, { long = false } = {}) {
   if (run.phase !== 'over') throw new Error('the run is not over');
+  // A run the page has named is banked once only, however often this is called: a second tap, a reload, or a save
+  // that was written twice must never pay twice. The profile remembers the last 40 names.
+  if (run.uid && (p.banked || []).includes(run.uid)) return { lines: [], total: 0, fresh: [], floor: run.floor, unlocks: [], feats: [], already: true };
   const r = scoreRun(p, run);
+  if (run.uid) p.banked = (p.banked || []).concat(run.uid).slice(-40);
   const kitsBefore = run.forger ? openKits(p, run.forger).length : 0;
   p.memories += r.total; p.earned += r.total; p.runs++;
   p.duelWins += run.stats.wins; p.bossWins += run.stats.bossWins; p.bestFloor = Math.max(p.bestFloor, r.floor);

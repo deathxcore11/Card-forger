@@ -8,7 +8,7 @@ import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, eff
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, LINK_GIFTS, relicLinks, CHAIN_TURN, sortRelics, fire, relicText, TUNED_TEXT } from '../engine/relics.mjs';
-import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
+import { newRun, runApply, MIN_DECK, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { labConfig, LAB_DEFAULTS } from '../web/labs.mjs';
 import { aimFor } from '../web/aim.mjs';
@@ -1200,6 +1200,62 @@ test('a relic\'s extra card at the start of a turn is drawn if the deck holds it
     applyMut(s, { t: 'end' }, db);
     assert.equal(s.winner, wins, `deck ${deck}, extra ${extra}`); if (wins === null) assert.equal(s.hand[1].length, 4 + Math.min(deck, 1 + extra), `deck ${deck}, extra ${extra}: cards drawn`);
   }
+});
+
+// ---------- progress is never lost and never paid twice ----------
+const playTo = (seed, stop, opts = {}) => { const run = newRun(db, { seed, track: true, ...opts }); let n = 0; while (run.phase !== 'over' && !stop(run) && n++ < 4000) runApply(run, policyAction(db, run, { level: 2 }), db); return run; };
+
+test('leaving the pyramid ends the run as a loss and banks what it earned, once', () => {
+  const run = playTo(4242, r => r.stats.wins >= 3 && r.phase === 'chamber', { uid: 'run-a' }); assert.ok(run.stats.wins >= 3, 'three duels won');
+  const wins = run.stats.wins, p = newProfile();
+  assert.throws(() => applyRun(p, run), /not over/);
+  runApply(run, { t: 'abandon' }, db);
+  assert.equal(run.phase, 'over'); assert.equal(run.result.won, false); assert.equal(run.result.reason, 'abandoned');
+  assert.throws(() => runApply(run, { t: 'abandon' }, db), /over/, 'a second tap is refused');
+  const r1 = applyRun(p, run); assert.ok(r1.total >= wins, 'pays at least the duels won: ' + r1.total); assert.equal(p.memories, r1.total); assert.equal(p.duelWins, wins); assert.equal(p.runs, 1);
+  const snap = JSON.stringify(p), r2 = applyRun(p, run);
+  assert.equal(r2.already, true); assert.equal(r2.total, 0); assert.equal(JSON.stringify(p), snap, 'banking the same run again changes nothing');
+  // ... also after the profile and the run have been through storage (a reload)
+  const p2 = JSON.parse(snap), run2 = JSON.parse(JSON.stringify(run)); applyRun(p2, run2); assert.equal(JSON.stringify(p2), snap);
+  // a different run still banks
+  const other = playTo(77, r => r.stats.duels >= 1 && r.phase === 'chamber', { uid: 'run-b' }); runApply(other, { t: 'abandon' }, db); assert.ok(applyRun(p, other).total >= 5); assert.equal(p.runs, 2);
+  assert.ok(p.banked.includes('run-a') && p.banked.includes('run-b'));
+});
+
+test('leaving works from every screen, and a run left before any duel pays nothing', () => {
+  const seen = new Set();
+  for (const seed of [1, 2, 3, 4, 5, 6]) for (const stopAt of [0, 1, 3, 7, 15, 40, 90, 200]) {
+    const run = newRun(db, { seed, track: true, uid: 's' + seed + '-' + stopAt }); let n = 0;
+    while (run.phase !== 'over' && n < stopAt) { runApply(run, policyAction(db, run, { level: 2 }), db); n++; }
+    if (run.phase === 'over') continue;
+    seen.add(run.phase); const duels = run.stats.duels;
+    runApply(run, { t: 'abandon' }, db); JSON.parse(JSON.stringify(run));
+    const p = newProfile(), r = applyRun(p, run);
+    if (!duels) assert.equal(r.total - Math.min(20, r.fresh.length), 0, 'no descent, no pay (phase ' + [...seen].pop() + ')'); else assert.ok(r.total >= 5);
+  }
+  for (const ph of ['kit', 'charm', 'chamber', 'duel']) assert.ok(seen.has(ph), 'left from the ' + ph + ' screen');
+  // starting and leaving over and over mints nothing
+  const p = newProfile(); for (let i = 0; i < 30; i++) { const run = newRun(db, { seed: 900 + i, uid: 'farm' + i }); runApply(run, { t: 'abandon' }, db); applyRun(p, run); } assert.equal(p.memories, 0);
+});
+
+test('the Winnower cuts a card out of the deck, within stated limits', () => {
+  const run = playTo(31, r => r.phase === 'chamber' && r.stats.wins >= 1); assert.equal(run.phase, 'chamber');
+  run.phase = 'bazaar'; run.offer = { kind: 'bazaar', merchant: 'scrapper', items: [{ kind: 'scrap', price: 15, uses: 3 }] }; run.embers = 200;
+  const before = run.deck.slice(), trunk = run.trunk.length, w = deckWeight(db, run.deck);
+  assert.throws(() => runApply(run, { t: 'buy', i: 0 }, db), /pick a deck card/); assert.throws(() => runApply(run, { t: 'buy', i: 0, deck: 99 }, db), /pick a deck card/);
+  runApply(run, { t: 'buy', i: 0, deck: 5 }, db);
+  assert.equal(run.deck.length, 39); assert.equal(run.cuts, 1); assert.equal(run.embers, 185); assert.equal(run.trunk.length, trunk, 'the trunk is untouched');
+  assert.deepEqual(run.deck, before.filter((_, i) => i !== 5), 'exactly that card left the deck'); assert.ok(deckWeight(db, run.deck) <= w);
+  run.deck[0].b = 1; assert.throws(() => runApply(run, { t: 'buy', i: 0, deck: 0 }, db), /bound meld cannot be cut/); delete run.deck[0].b;
+  runApply(run, { t: 'buy', i: 0, deck: 0 }, db); runApply(run, { t: 'buy', i: 0, deck: 0 }, db);
+  assert.equal(run.deck.length, 37); assert.equal(run.offer.items[0].sold, true, 'three cuts a visit');
+  assert.throws(() => runApply(run, { t: 'buy', i: 0, deck: 0 }, db), /nothing to buy/);
+  // the smaller deck is a legal deck from here on: swaps still work, and the duel starts with it
+  run.offer.items[0] = { kind: 'scrap', price: 15, uses: 9 }; while (run.deck.length > MIN_DECK) runApply(run, { t: 'buy', i: 0, deck: 0 }, db);
+  assert.equal(run.deck.length, MIN_DECK); assert.throws(() => runApply(run, { t: 'buy', i: 0, deck: 0 }, db), /cannot go below 34/);
+  const saved = JSON.parse(JSON.stringify(run)); runApply(saved, { t: 'leave' }, db); assert.equal(saved.phase, 'chamber');
+  if (saved.trunk.length) { let ok = 0; for (let d = 0; d < saved.deck.length && !ok; d++) { try { runApply(saved, { t: 'swap', deck: d, trunk: 0 }, db); ok = 1; } catch (e) { assert.doesNotMatch(e.message, /deck must be/); } } }
+  let n = 0; while (saved.phase !== 'over' && n++ < 4000) runApply(saved, policyAction(db, saved, { level: 2 }), db); assert.equal(saved.phase, 'over', 'the run plays to its end with a 34-card deck');
 });
 
 console.log('crucible rules:', passed, 'tests passed');

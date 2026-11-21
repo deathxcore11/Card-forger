@@ -8,7 +8,7 @@ import { buildDb, roleOf } from '../engine/cards.mjs';
 import { newDuel, applyMut, legalActions, viewFor, clone, canonical, effAtk, effDef } from '../engine/duel.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, sortRelics } from '../engine/relics.mjs';
-import { newRun, runApply, ENCHANTS, deckWeight, weightCap, KITS } from '../engine/run.mjs';
+import { newRun, runApply, MIN_DECK, ENCHANTS, deckWeight, weightCap, KITS } from '../engine/run.mjs';
 import { FORGERS } from '../engine/forgers.mjs';
 import { policyAction } from '../engine/policy.mjs';
 import { newProfile, applyRun, buy, lockedRelics, maxHeat, VAULT, VAULT_ENCHANTS, LONG_GIFTS, featList, runOptions, openKits, openEnchants } from '../engine/meta.mjs';
@@ -22,11 +22,11 @@ const SETS = {
   five: { ...FIVE, leanOffers: 1, giftRerolls: 1 },
   page: { ...FIVE, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1 },
   pageStyles: { ...FIVE, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, rivalStyles: 1 },
-  all: { ...FIVE, leanOffers: 1, giftRerolls: 2, heatRules: 1, kitTune: 1, rivalStyles: 1, freeCast: 'trap', freeCastRival: 'boss', soloArrival: 1, stormTune: 1, forgerTune: { tarnStoke: 100, scrapDraw: 1, veilSet: 2 }, trackFx: 1 },
+  all: { ...FIVE, simCut: 1, leanOffers: 1, giftRerolls: 2, heatRules: 1, kitTune: 1, rivalStyles: 1, freeCast: 'trap', freeCastRival: 'boss', soloArrival: 1, stormTune: 1, forgerTune: { tarnStoke: 100, scrapDraw: 1, veilSet: 2 }, trackFx: 1 },
   free: { ...FIVE, freeCast: 'all', soloArrival: 1, veilGuard: 1, rivalStyles: 1, heatRules: 1, forgerTune: { veilSet: 1 } },
   freeElite: { ...FIVE, freeCast: 'all', freeCastRival: 'elite', heatRules: 1, kitTune: 1, leanOffers: 1, forgerTune: { veilSet: 2, veilMinDef: 1 } },
   bible: { drawPerTurn: 0, heatRules: 1, rivalStyles: 1, labPool: LABPOOL },
-  depth: { ...FIVE, leanOffers: 2, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, freeCast: 'lone', freeCastRival: 'boss' },
+  depth: { ...FIVE, simCut: 1, leanOffers: 2, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, freeCast: 'lone', freeCastRival: 'boss' },
   loneAll: { ...FIVE, leanOffers: 2, freeCast: 'lone', rivalStyles: 1, soloArrival: 1, forgerTune: { veilSet: 2 }, trackFx: 1 },
 };
 const DUELS = +process.argv[2] || 300, RUNS = +process.argv[3] || 60, SEED0 = +process.argv[4] || 1;
@@ -128,7 +128,9 @@ function duelFuzz(name, db) {
 let wildRefused = 0;
 function wildRun(run, r) {
   const n = () => r.int(46) - 3, i = () => r.int(7) - 1;
-  switch (r.int(14)) {
+  switch (r.int(16)) {
+    case 14: return { t: 'buy', i: i(), deck: n() };
+    case 15: return { t: r.pick(['abandon', 'abandon', 'Abandon', 'quit']), i: i() };
     case 0: return { t: 'kit', i: i() };
     case 1: return { t: 'redeal' };
     case 2: return { t: 'pick', i: i() };
@@ -206,7 +208,9 @@ function runFuzz(name, cfg) {
       assert.ok(run.charms.length <= db.config.charmSlots && run.masterworks.length <= db.config.maxMasterworks && run.binds <= db.config.maxBinds, tag + ' over a limit');
       assert.equal(new Set(run.gifts).size, run.gifts.length, 'the same Gift twice, ' + tag);
       assert.equal(new Set(run.charms).size, run.charms.length, 'the same Charm twice, ' + tag);
-      if (run.kit) assert.equal(run.deck.length, 40 - run.binds, 'deck size, ' + tag);
+      if (run.kit) { assert.equal(run.deck.length, 40 - run.binds - (run.cuts || 0), 'deck size, ' + tag); assert.ok(run.deck.length >= MIN_DECK, 'deck under the floor, ' + tag); }
+      // leaving the pyramid from here: always possible, always a finished run a fresh profile can bank, once
+      if (guard % 53 === 0) { const c = JSON.parse(snap); c.uid = 'fz'; runApply(c, { t: 'abandon' }, db); assert.equal(c.phase, 'over', 'abandon did not end the run, ' + tag); const fp = newProfile(), pay = applyRun(fp, c); assert.ok(pay.total >= 0 && fp.memories === pay.total && fp.runs === 1, 'abandon bank, ' + tag); const again = applyRun(fp, c); assert.ok(again.already && fp.runs === 1 && fp.memories === pay.total, 'banked twice, ' + tag); }
       if (run.phase === 'chamber') { assert.ok(deckWeight(db, run.deck) <= weightCap(db, run), 'deck over the cap, ' + tag); assert.ok(run.doors.length > 0, 'no doors, ' + tag); }
       if (run.phase === 'reward') { const o = run.offer; assert.ok(o, 'reward with no offer, ' + tag); if (o.options) { assert.ok(o.options.length > 0, 'empty offer, ' + tag); for (const x of o.options) assert.ok(x !== undefined && x !== null, 'hole in an offer, ' + tag); } if (o.kind === 'gift') { assert.equal(new Set(o.options).size, o.options.length, 'the same Gift twice in one offer, ' + tag); for (const id of o.options) assert.ok(!run.gifts.includes(id), 'offered a Gift already held, ' + tag); } }
       for (const e of run.deck.concat(run.trunk)) assert.ok(db.byId.has(e.id), 'unknown card in the deck, ' + tag);
