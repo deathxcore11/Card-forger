@@ -47,7 +47,7 @@ function setLabs(v) { labs = v || {}; Object.assign(db.config, labConfig(labs));
 const $ = s => document.querySelector(s);
 const app = $('#app');
 const labKeys = () => LAB_ORDER.filter(k => LABS[k]).concat(Object.keys(LABS).filter(k => !LAB_ORDER.includes(k)));
-const LABKEY = 'lostmemories.labs.v5', RUNLABS = 'lostmemories.runlabs.v1', SAVE = 'lostmemories.run.v1', REV = 'lostmemories.runrev.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
+const LABKEY = 'lostmemories.labs.v5', RUNLABS = 'lostmemories.runlabs.v1', SAVE = 'lostmemories.run.v1', REV = 'lostmemories.runrev.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1', UNSAVED = SAVE + '.unsaved';
 // Everything kept between visits goes through here. A write that fails is never swallowed: it is remembered in
 // store.failed (key to the value that was not stored) and the page shows a bar until a retry gets it stored.
 // Stored text that can no longer be read is copied aside under "<key>.unreadable" before anything overwrites it.
@@ -60,7 +60,8 @@ const store = {
   },
   set(k, v) { if (lostStore) return false; try { localStorage.setItem(k, JSON.stringify(v)); store.failed.delete(k); markStore(); return true; } catch { store.failed.set(k, v); return false; } },
   del(k) { if (lostStore) return false; store.failed.delete(k); try { localStorage.removeItem(k); return true; } catch { return false; } },
-  retry() { for (const [k, v] of [...store.failed]) store.set(k, v); return store.failed.size === 0; },
+  // The list of cards seen only ever grows, so a waiting copy of it is joined to what is stored now (another tab may have added to it).
+  retry(only) { for (const [k, v] of [...store.failed]) if (!only || only(k)) store.set(k, k === KNOWN ? [...new Set([...(store.get(KNOWN) || []), ...v])] : v); return store.failed.size === 0; },
 };
 // A browser can, rarely, hand a page an empty store for one load although everything it saved is still there. Seen in the
 // headless test browser under load: six keys before a reload, none after it, all six again after the next reload.
@@ -104,11 +105,24 @@ const nameRun = run => { if (run && !run.uid) run.uid = 'r' + run.seed; return r
 // A tab that is behind stops with a notice (overlay 'moved') and changes nothing.
 const uidOf = s => s ? s.uid || 'r' + s.seed : null;
 const revOf = run => { const v = store.get(REV); return v && typeof v === 'object' && v.uid === uidOf(run) && Number.isFinite(v.n) ? v.n : 0; };
+// Which stored run this is and how many times it has been written: '' when no run is stored.
+const storedAt = () => { const s = store.get(SAVE); if (!s) return ''; const v = store.get(REV); return uidOf(s) + '#' + (v && typeof v === 'object' && v.uid === uidOf(s) && Number.isFinite(v.n) ? v.n : 0); };
+const unsavedRun = () => store.failed.has(SAVE) || store.failed.has(REV);
 const holds = run => {
-  if (store.failed.has(SAVE) || store.failed.has(REV)) return true; // this tab's own write is still waiting to be stored
+  // A write of this tab's own is still waiting to be stored. The run is this tab's to carry on only while the stored run
+  // is exactly as this tab last saw it (G.at). If another tab ended it or began a new run meanwhile, this tab is behind,
+  // and neither its next move nor "Try again" may write over what that tab stored (reported 21 November 2026).
+  if (unsavedRun()) return storedAt() === G.at;
   const s = store.get(SAVE); return !!s && uidOf(s) === uidOf(run) && revOf(run) === (G.rev || 0);
 };
-const writeRun = run => { G.rev = (G.rev || 0) + 1; store.set(REV, { uid: uidOf(run), n: G.rev }); return store.set(SAVE, run); };
+// The run is written first and its counter after it, so a write that fails leaves the stored run and its counter as they were.
+const writeRun = run => {
+  if (unsavedRun() && storedAt() !== G.at) return false;
+  G.rev = (G.rev || 0) + 1; const rev = { uid: uidOf(run), n: G.rev };
+  if (!store.set(SAVE, run)) { store.failed.set(REV, rev); return false; }
+  if (!store.set(REV, rev)) return false;
+  G.at = storedAt(); return true;
+};
 const storedIs = run => { if (store.failed.has(SAVE)) return true; const s = store.get(SAVE); return !s || uidOf(s) === uidOf(run); }; // nothing stored, or this very run
 // Banks a finished run exactly once. The profile is written first and the saved run is removed only after that
 // write is known to be stored, so a full or blocked store can lose nothing and can pay nothing twice. A stored run
@@ -574,7 +588,7 @@ const worth = run => scoreRun(P, { ...run, result: { won: false, reason: 'abando
 function overlay() {
   const o = G.overlay; if (!o || G.playing) return '';
   if (o.kind === 'duelEnd') { const s = o.sum; return `<div class="modal"><div class="glass panel"><h2>${s.won ? 'Victory' : 'Defeat'}</h2><p>${esc(o.rival ? o.rival.name : '')} · ${s.turns} turns${s.reason === 'deckout' ? ' · a deck ran out' : ''}</p>${s.won ? `<div class="rankbig">${s.rank.rank}</div><table>${s.rank.lines.filter(l => l[1]).map(l => `<tr><td>${esc(l[0])}</td><td>${l[1] > 0 ? '+' : ''}${l[1]}</td></tr>`).join('')}<tr><td><b>Total</b></td><td><b>${s.rank.points}</b></td></tr></table><p>Style: ${s.rank.style === 'craft' ? 'Craft' : 'Fury'} · Embers +${s.embers}${s.bountyMet ? ' · Bounty met' : ''}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>${(o.why || []).length ? `<div class="why"><b>What happened</b><ul>${o.why.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>` : ''}`}<div class="row"><button class="gold" data-a="closeov">Continue</button></div></div></div>`; }
-  if (o.kind === 'moved') return `<div class="modal"><div class="glass panel leave moved"><h2>This run moved on</h2><p>The run was carried on in another tab or window, so what this tab shows is behind it. Nothing can be done to the run from here, and nothing was lost.</p><div class="row"><button class="gold" data-a="leavetab">Back to the start</button></div></div></div>`;
+  if (o.kind === 'moved') return `<div class="modal"><div class="glass panel leave moved"><h2>This run moved on</h2><p>${o.asked ? 'The run that question was about was ended or carried on in another tab or window after the question was shown. Nothing was changed from here, and nothing was lost.' : o.unsaved ? 'This tab could not save its last moves, and meanwhile the run was ended or carried on in another tab or window. The saved game was left as that tab wrote it. What this tab had not saved cannot be carried on. ' + (store.failed.has(UNSAVED) ? 'This device has not stored a copy of it yet: tap Try again at the top of the screen.' : 'A copy of it was kept on this device.') : 'The run was carried on in another tab or window, so what this tab shows is behind it. Nothing can be done to the run from here, and nothing was lost.'}</p><div class="row"><button class="gold" data-a="leavetab">Back to the start</button></div></div></div>`;
   if (o.kind === 'leave') { const run = o.saved || G.run, w = worth(run), S = run.stats;
     return `<div class="modal"><div class="glass panel leave"><h2>${o.saved ? 'You have a run in progress' : 'Leave the pyramid?'}</h2>
       <p>${o.saved ? `${esc(run.forger ? FORGERS[run.forger].name : 'No Forger')}, Floor ${run.floor + 1}, Chamber ${Math.min(6, run.chamber + 1)}. Starting a new run ends that one.` : 'Leaving ends this run as a loss. It cannot be continued afterwards.'}</p>
@@ -591,7 +605,16 @@ function inspectPanel() {
 
 // Reports a fault the page recovered from without stopping the page: the checks and the click bot count page errors.
 function later(e) { try { (window.LM.faults = window.LM.faults || []).push(String(e && e.stack || e)); } catch { /* start-up: LM is not there yet */ } setTimeout(() => { throw new Error('recovered: ' + (e && e.message)); }); }
-function movedOn() { G.sel = []; G.onto = G.attacker = G.aim = G.inspect = null; G.tab = null; G.overlay = { kind: 'moved' }; render(); }
+function movedOn() {
+  let unsaved = !!(G.overlay && G.overlay.kind === 'moved' && G.overlay.unsaved);
+  if (unsavedRun()) { // this tab's waiting write must never be stored now: keep a copy aside and stop offering to save it
+    const mine = store.failed.get(SAVE); store.failed.delete(SAVE); store.failed.delete(REV); store.failed.delete(RUNLABS); unsaved = true; // the switch set belongs to that run too
+    if (mine) store.set(UNSAVED, mine); // if the device still cannot store, the copy waits with the bar and Try again
+  }
+  store.retry(k => k !== PROFILE); // what else waits (the cards seen, the copy) is stored if the device can; the profile has its own care under Try again
+  G.sel = []; G.onto = G.attacker = G.aim = G.inspect = null; G.tab = null; G.rev = -1; G.at = null; // from here this tab never counts as holding the stored run, whatever number the other tab reaches
+  G.overlay = { kind: 'moved', unsaved }; render();
+}
 // A run that cannot be shown or cannot take a move must never leave a dead page. The page goes back to the start.
 // The stored run is set aside only when it could not even be shown after Continue, or failed a move twice running;
 // otherwise it stays stored as it was.
@@ -617,7 +640,7 @@ function draw() {
   else if (G.shown || r.phase === 'duel') body = screenDuel();
   else body = { kit: screenKit, charm: screenCharm, chamber: screenChamber, reward: screenReward, anvil: screenAnvil, bazaar: screenBazaar, over: screenOver }[r.phase]();
   const rulesAt = ($('.rules') || {}).scrollTop || 0; // the duel rules box keeps its place when the screen is drawn again
-  app.innerHTML = `${G.screen || G.shown || (r && (r.phase === 'duel' || r.phase === 'over')) ? '' : hud()}${body}${tabPanel()}${overlay()}${inspectPanel()}${storyPanel()}${store.failed.size ? `<div class="savebar"><b>Not saved.</b> This device would not store your progress (its storage is full or blocked). You can keep playing, but closing this page now would lose ${store.failed.has(PROFILE) ? 'what you have earned' : 'this run'}. <button data-a="resave">Try again</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
+  app.innerHTML = `${G.screen || G.shown || (r && (r.phase === 'duel' || r.phase === 'over')) ? '' : hud()}${body}${tabPanel()}${overlay()}${inspectPanel()}${storyPanel()}${store.failed.size ? `<div class="savebar"><b>Not saved.</b> This device would not store your progress (its storage is full or blocked). You can keep playing, but closing this page now would lose ${store.failed.has(PROFILE) ? 'what you have earned' : unsavedRun() ? 'this run' : store.failed.has(UNSAVED) ? 'the copy of the run this tab could not save' : store.failed.has(KNOWN) ? 'the list of cards you have seen' : 'your settings'}. <button data-a="resave">Try again</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home';
   { const rb = $('.rules'); if (rb) { rb.scrollTop = rulesAt; moreBelow(rb); } const tl = $('.trayline'); if (tl) moreBelow(tl); }
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
@@ -637,7 +660,7 @@ function tapped(ev) {
   cue('ui:' + verb, { x, y }, el);
   const duel = a => act({ t: 'duel', action: a });
   switch (verb) {
-    case 'new': { const s = !r || r.phase === 'over' ? liveSave() : null; if (s) { G.overlay = { kind: 'leave', saved: nameRun(s) }; render(); break; } }
+    case 'new': { const s = !r || r.phase === 'over' ? liveSave() : null; if (s) { G.overlay = { kind: 'leave', saved: nameRun(s), at: storedAt() }; render(); break; } }
       // falls through to the Forger screen when no run is waiting
       G.overlay = null; G.screen = 'forger'; if (!P.forgers.includes(G.pickForger)) G.pickForger = 'tarn'; G.pickHeat = Math.min(G.pickHeat, heatOpen()); render(); break;
     case 'loadagain': location.reload(); break;
@@ -648,23 +671,35 @@ function tapped(ev) {
     case 'lab': pref = { ...pref, [x]: !pref[x] }; store.set(LABKEY, pref); setLabs(pref); render(); break;
     case 'forger': G.pickForger = x; G.pickHeat = Math.min(G.pickHeat, heatOpen()); render(); break;
     case 'heat': G.pickHeat = n; render(); break;
-    case 'resave': if (store.retry()) { if (r && r.phase === 'over' && storedIs(r)) { store.del(SAVE); store.del(REV); } toast('Saved.'); } else toast('Still not saved. Keep this page open.'); render(); break;
+    case 'resave': {
+      if (unsavedRun() && storedAt() !== G.at) { // another tab changed the stored run while this tab could not save
+        if (r && r.phase === 'over') { store.failed.delete(SAVE); store.failed.delete(REV); } // a finished run: only its banking is still owed, below
+        else { movedOn(); break; }
+      }
+      if (store.failed.has(PROFILE)) { const raw = rawP(); if (raw != null && raw !== pRaw) { // another tab stored the profile since: keep theirs, and bank this tab's finished run on top of it if it is not banked there
+        store.failed.delete(PROFILE); syncP(); if (r && r.phase === 'over') { try { G.results = bank(r, !!labs.long) || G.results; } catch (e) { later(e); } } } }
+      if (store.retry()) { if (r && r.phase === 'over' && storedIs(r)) { store.del(SAVE); store.del(REV); } else if (r && r.phase !== 'over' && G.at !== null) G.at = storedAt(); toast('Saved.'); } else toast('Still not saved. Keep this page open.'); render(); break;
+    }
     case 'bankold': case 'abandon': {
       // End the run as a loss and bank it once. "bankold" does it to the run waiting on disk, "abandon" to the run being played.
-      const run = verb === 'bankold' ? nameRun(liveSave()) : r; G.overlay = null; // the waiting run is read again here: another tab may have moved it on since the question was shown
+      // "bankold" answers a question about one stored run as it stood when the question was shown. If another tab has
+      // ended that run, carried it on, or begun a new one since, the answer is about a run that is no longer there:
+      // nothing is ended and the page says so (reported 21 November 2026: it ended the newer run).
+      if (verb === 'bankold') { const o = G.overlay; if (!o || o.kind !== 'leave' || !o.saved || storedAt() !== o.at) { G.overlay = { kind: 'moved', asked: true }; render(); break; } }
+      const run = verb === 'bankold' ? nameRun(liveSave()) : r; G.overlay = null;
       if (!run || run.phase === 'over' || G.playing) { render(); break; }
-      if (verb === 'bankold') { setLabs(store.get(RUNLABS) || pref); G.run = run; G.rev = revOf(run); }
+      if (verb === 'bankold') { setLabs(store.get(RUNLABS) || pref); G.run = run; G.rev = revOf(run); G.at = storedAt(); }
       G.sel = []; G.onto = G.attacker = G.aim = G.shown = G.inspect = null; G.tab = null; G.results = null; G.banked = false; G.screen = null;
       act({ t: 'abandon' }); break;
     }
-    case 'descend': { const s = liveSave(); if (s) { try { runApply(nameRun(s), { t: 'abandon' }, db); const res = bank(s, !!((store.get(RUNLABS) || pref).long)); if (res) toast(`Your earlier run was banked: +${res.total} Memories.`); } catch { /* a run that cannot be ended is left for Continue */ } } }
+    case 'descend': { const s = liveSave(); if (s) { G.screen = null; G.overlay = { kind: 'leave', saved: nameRun(s), at: storedAt() }; render(); break; } } // a run is stored that this screen did not know of (another tab began it): ask, never end it unasked
       if (store.failed.has(PROFILE)) { toast('Your progress is not saved yet. Tap Try again first.'); render(); break; }
-      G.banked = false; setLabs(pref); store.set(RUNLABS, pref); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, ...runOptions(P, G.pickForger, !!labs.long), uid: Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36) }); G.log = []; G.overlay = null; G.rev = 0; writeRun(G.run); queueStory('intro'); render(); break;
+      G.banked = false; setLabs(pref); store.set(RUNLABS, pref); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, ...runOptions(P, G.pickForger, !!labs.long), uid: Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36) }); G.log = []; G.overlay = null; G.rev = 0; G.at = storedAt(); writeRun(G.run); queueStory('intro'); render(); break;
     case 'vbuy': try { const b = buy(P, y ? x + ':' + y : x); saveP(); toast(b.name + (y ? ' can now be offered at an Anvil.' : ' can now appear in your runs.')); } catch (e) { toast(e.message); } render(); break;
     case 'storynext': { const st = G.story; if (!st) break; if (++st.i >= SCENES[st.id].lines.length) { G.story = null; if (st.then) { st.then(); break; } } render(); break; }
     case 'storyskip': { const st = G.story; G.story = null; if (st && st.then) { st.then(); break; } render(); break; }
     case 'power': { const a = { t: 'power' }; if (x === 'hand') a.hand = G.sel[0]; if (x === 'zone') a.zone = G.attacker; duel(a); break; }
-    case 'resume': G.overlay = null; G.screen = null; G.banked = false; G.results = null; setLabs(store.get(RUNLABS) || pref); G.run = nameRun(liveSave()); G.rev = revOf(G.run); G.fresh = true; if (!G.run) { G.fresh = false; G.notice = 'Your run in progress could not be read and cannot be continued. A copy was kept on this device.'; render(); break; } if (G.run && G.run.codex) G.run.codex = codexUpgrade(db, G.run.codex); render(); break;
+    case 'resume': G.overlay = null; G.screen = null; G.banked = false; G.results = null; setLabs(store.get(RUNLABS) || pref); G.run = nameRun(liveSave()); G.rev = revOf(G.run); G.at = storedAt(); G.fresh = true; if (!G.run) { G.fresh = false; G.notice = 'Your run in progress could not be read and cannot be continued. A copy was kept on this device.'; render(); break; } if (G.run && G.run.codex) G.run.codex = codexUpgrade(db, G.run.codex); render(); break;
     case 'quit': G.overlay = { kind: 'leave' }; render(); break;
     case 'kit': act({ t: 'kit', i: n }); break;
     case 'redeal': act({ t: 'redeal' }); break;
@@ -709,7 +744,7 @@ function tapped(ev) {
   }
 }
 // Another tab stored something: take in its profile, and stop this tab's run if the stored run is no longer the one shown here.
-addEventListener('storage', ev => { try { if (ev.key !== null && ![SAVE, REV, PROFILE].includes(ev.key)) return; syncP(); if (G.playing) return; const r = G.run; if (r && r.phase !== 'over' && !holds(r)) G.overlay = { kind: 'moved' }; render(); } catch (e) { recover(e, false); } });
+addEventListener('storage', ev => { try { if (ev.key !== null && ![SAVE, REV, PROFILE].includes(ev.key)) return; syncP(); if (G.playing) return; const r = G.run; if (r && r.phase !== 'over' && !holds(r)) { movedOn(); return; } render(); } catch (e) { recover(e, false); } });
 function trySwap() {
   const r = G.run;
   if (r.phase === 'chamber' && G.pickDeck != null && G.pickTrunk != null) { const a = { t: 'swap', deck: G.pickDeck, trunk: G.pickTrunk }; G.pickDeck = G.pickTrunk = null; act(a); G.tab = 'deck'; render(); }
@@ -717,5 +752,5 @@ function trySwap() {
 }
 for (const f of D.art || []) { const im = new Image(); im.src = 'art/' + f + '.webp'; (window.__keep = window.__keep || []).push(im); } // keep pictures warm so a redraw never flashes
 for (let i = 0; D.sheets && i < Math.ceil(D.pool.cards.length / 100); i++) { const im = new Image(); im.src = D.sheets + i + '.webp'; (window.__keep = window.__keep || []).push(im); }
-window.LM = { G, P, db, act, render, labKeys, labWords: () => Object.keys(LABS) }; // for tests
+window.LM = { G, P, db, act, render, labKeys, labWords: () => Object.keys(LABS), unsaved: () => [...store.failed.keys()] }; // for tests
 render();

@@ -13,7 +13,7 @@ import { policyAction, playRun } from '../engine/policy.mjs';
 import { labConfig, LAB_DEFAULTS, LAB_ORDER, DEPTH_SET, EQUIP_KINDS } from '../web/labs.mjs';
 import { aimFor } from '../web/aim.mjs';
 import { runFault, okRun, okProfile, PHASES } from '../web/saves.mjs';
-import { lessonFor, learnFrom, lessonText, learnedAll, newNote, noteFrames, whyLost } from '../web/coach.mjs';
+import { lessonFor, enoughAlone, learnFrom, lessonText, learnedAll, newNote, noteFrames, whyLost } from '../web/coach.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS, FEATS_LONG, LONG_GIFTS, KIT_GOALS, START_ENCHANTS, VAULT_ENCHANTS, openKits, nextKit, openEnchants, runOptions, featList } from '../engine/meta.mjs';
 
@@ -1288,9 +1288,8 @@ test("a guardian's own offset turns down that guardian only", () => {
 
 test('a first lesson points at a play that does what the lesson says', () => {
   const seen = { meld: 0, fuel: 0, single: 0 };
-  for (let seed = 1; seed <= 60; seed++) for (const forger of FORGER_IDS.slice(0, 2)) {
-    const run = playTo(seed, r => r.phase === 'duel', { forger }); if (run.phase !== 'duel') continue;
-    const d = run.duel, hand = d.hand[0], atk = i => db.byId.get(hand[i].id).atk;
+  const checkAt = d => {
+    const hand = d.hand[0], atk = i => db.byId.get(hand[i].id).atk;
     const best = Math.max(0, ...hand.map((c, i) => db.isMonster(c.id) ? atk(i) : 0));
     for (const tips of [{}, { meld: 1 }, { meld: 1, fuel: 1 }, learnedAll()]) {
       const L = lessonFor(db, d, tips); if (!L) continue; seen[L.kind]++;
@@ -1300,13 +1299,35 @@ test('a first lesson points at a play that does what the lesson says', () => {
       if (L.kind === 'meld') { assert.equal(p.fizzles, 0); assert.ok(p.melded && db.byId.get(p.final.id).atk > best, 'the meld beats every single card'); assert.ok(!t.includes(db.byId.get(p.final.id).name), 'the lesson does not say what the meld makes'); }
       if (L.kind === 'fuel') { assert.equal(p.steps[0].kind, 'fuel'); assert.equal(roleOf(db, hand[L.cards[1]].id), 'fuel'); assert.equal(db.config.fuelBonus, 300, 'the lesson says +300'); }
       if (L.kind === 'single') { assert.equal(L.cards.length, 1); assert.equal(atk(L.cards[0]), best);
-        for (let i = 0; i < hand.length; i++) for (let j = 0; j < hand.length; j++) if (i !== j && db.isMonster(hand[i].id) && db.isMonster(hand[j].id)) { const q = planChain(db, [hand[i], hand[j]], null); assert.ok(q.fizzles || db.byId.get(q.final.id).atk <= best, 'no two-monster meld was better'); } }
+        // what the lesson says, checked the long way: the rival shows every monster it has, and this card alone beats each
+        const theirs = d.mon[1].filter(Boolean); assert.ok(theirs.length > 0 && theirs.every(m => !m.veil), 'the rival has monsters and shows them all'); assert.ok(/already beats every monster the rival has on the table/.test(t));
+        for (const m of theirs) { const f = forecast(d, db, 0, { id: hand[L.cards[0]].id, pos: 'a' }, 1, m); assert.ok(f.killT && !f.killX, 'the card named does not beat ' + db.byId.get(m.id).name); } }
       // the play the lesson names is legal now
       const legal = legalActions(d, db, { maxChain: 2 }).filter(a => a.t === 'play').some(a => JSON.stringify(a.hand) === JSON.stringify(L.cards)); assert.ok(legal, 'the engine allows the play: ' + L.kind);
     }
     assert.equal(lessonFor(db, d, learnedAll()), null);
+  };
+  for (let seed = 1; seed <= 60; seed++) for (const forger of FORGER_IDS.slice(0, 2)) {
+    const run = playTo(seed, r => r.phase === 'duel', { forger }); if (run.phase !== 'duel') continue;
+    checkAt(run.duel);
+    // later in the same duel, each time the play is the player's to make
+    for (let n = 0, turns = 0; n < 60 && turns < 4 && run.phase === 'duel'; n++) { runApply(run, policyAction(db, run, { level: 2 }), db); const d = run.duel; if (run.phase === 'duel' && d && d.active === 0 && !d.played && !d.pending && d.winner == null && d.mon[1].some(Boolean)) { turns++; checkAt(d); } }
   }
-  assert.ok(seen.meld > 20 && seen.fuel > 5 && seen.single > 2, 'each lesson came up: ' + JSON.stringify(seen));
+  assert.ok(seen.meld > 20 && seen.fuel > 5 && seen.single > 5, 'each lesson came up: ' + JSON.stringify(seen));
+  // Reported 21 November 2026: Blue-Eyes White Dragon and Dragon Treasure in one hand, and the lesson said nothing in the
+  // hand could make more than Blue-Eyes. Dragon Treasure adds to it, so the lesson may not say that. It may still say
+  // to play Blue-Eyes alone when that is enough to beat what the rival shows, which is true.
+  { const id = n => [...db.byId.values()].find(c => c.name === n).id, weak = [...db.byId.values()].filter(c => db.isMonster(c.id) && c.type === 'Dragon' && c.atk < 1000).slice(0, 2);
+    const base = playTo(3, r => r.phase === 'duel').duel;
+    for (const cfg of [labConfig(LAB_DEFAULTS), labConfig({ ...LAB_DEFAULTS, equips: true })]) { const lab = { ...db, config: { ...db.config, ...cfg }, _pair: new Map() };
+      const hand = [{ id: id('Blue-Eyes White Dragon') }, { id: id('Dragon Treasure') }, { id: weak[0].id }, { id: weak[1].id }];
+      const withEquip = planChain(lab, [hand[0], hand[1]], null); assert.equal(withEquip.fizzles, 0); assert.equal(withEquip.final.ba, cfg.equipKinds ? 800 : 500, 'Dragon Treasure does add to Blue-Eyes');
+      const empty = { ...base, hand: [hand, []], mon: [base.mon[0].map(() => null), base.mon[1].map(() => null)], terrain: null };
+      assert.equal(lessonFor(lab, empty, { meld: 1, fuel: 1 }), null, 'no rival monster: nothing true to say about playing it alone');
+      const facing = { ...empty, mon: [empty.mon[0], empty.mon[1].map((_, z) => z === 0 ? { u: 999, id: weak[0].id, pos: 'a', veil: false, att: 0, moved: false } : null)] };
+      const L = lessonFor(lab, facing, { meld: 1, fuel: 1 }); assert.deepEqual(L, { kind: 'single', cards: [0] }); assert.ok(enoughAlone(lab, facing, hand[0].id));
+      const text = lessonText('single', ['Blue-Eyes White Dragon'])[1]; assert.ok(!/Nothing in this hand|melds into more/.test(text), 'the false sentence is gone'); assert.ok(/already beats every monster the rival has on the table/.test(text));
+      const veiled = { ...facing, mon: [facing.mon[0], facing.mon[1].map(m => m && { ...m, veil: true })] }; assert.equal(lessonFor(lab, veiled, { meld: 1, fuel: 1 }), null, 'a veiled rival monster: the lesson cannot know, so it says nothing'); } }
   const tips = {}; assert.equal(learnFrom(tips, [{ e: 'meld', seat: 1, kind: 'cross' }, { e: 'meld', seat: 0, kind: 'fizzle' }]), false); assert.deepEqual(tips, {});
   assert.equal(learnFrom(tips, [{ e: 'meld', seat: 0, kind: 'cross' }, { e: 'meld', seat: 0, kind: 'fuel' }]), true); assert.deepEqual(tips, { meld: 1, fuel: 1 });
 });

@@ -59,10 +59,17 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
   check('fuel added +300 ATK and DEF, as the lesson said', f.id === pair[0].id && f.st.includes(`${pair[0].atk + 300}/${pair[0].def + 300}`), f);
   check('the fuel lesson is learned', f.tips && f.tips.fuel === 1, f.tips);
 
-  // 3. the single lesson: a hand whose monsters fizzle together
+  // 3. the single lesson: one card that already beats every monster the rival shows. (Until 21 November 2026 it said
+  //    nothing in the hand could make more than the strongest monster, which an Equip or fuel in the hand made false.)
+  const strong = dud[0].atk >= dud[1].atk ? dud[0] : dud[1];
+  const prey = [...db.byId.values()].filter(c => db.isMonster(c.id) && c.attr === strong.attr && c.atk <= strong.atk - 400 && c.atk >= 100).sort((x, y) => y.atk - x.atk)[0];
+  const equip = [...db.byId.values()].find(c => !db.isMonster(c.id) && c.name === 'Dragon Treasure') || null;
   await start([dud[0], dud[1]], { runs: 0, tips: { meld: 1, fuel: 1 } });
-  L = await lesson(); const strong = dud[0].atk >= dud[1].atk ? dud[0] : dud[1];
-  check('with nothing to meld, the lesson is to play the strongest alone', L.text && L.text.includes('Third lesson') && L.pips.length === 1 && db.byName.get(L.pips[0][1]).atk === Math.max(dud[0].atk, dud[1].atk), L);
+  check('with no rival monster on the table there is no third lesson to give', (await lesson()).text === null, await lesson());
+  await start([dud[0], dud[1]].concat(equip ? [equip] : []), { runs: 0, tips: { meld: 1, fuel: 1 } }, d => { d.mon[1][0] = { u: uid++, id: prey.id, pos: 'a', veil: false, att: 0, moved: false }; });
+  L = await lesson();
+  check('against a weaker monster, the lesson is to play the strongest alone', L.text && L.text.includes('Third lesson') && L.pips.length === 1 && db.byName.get(L.pips[0][1]).atk === Math.max(dud[0].atk, dud[1].atk), L);
+  check('and it says only what is true: this card beats what the rival shows', L.text && /already beats every monster the rival has on the table/.test(L.text) && !/Nothing in this hand/.test(L.text) && strong.atk > prey.atk, L.text);
   await page.locator('.hs .c', { has: page.locator('.nm', { hasText: L.pips[0][1] }) }).first().click({ force: true }); await page.waitForTimeout(300); await tap('[data-a^="play:"]'); await settle();
   check('the single lesson is learned by doing it', await page.evaluate(() => (window.LM.P.tips || {}).single === 1));
   check('with all three learned no lesson shows', (await lesson()).text === null && (await lesson()).pips.length === 0);

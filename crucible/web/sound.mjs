@@ -34,11 +34,25 @@ function apply() {
   bus.master.gain.setTargetAtTime(S.muted ? 0 : S.master, t, .03);
   bus.sfx.gain.setTargetAtTime(S.sfx, t, .03); bus.music.gain.setTargetAtTime(S.music, t, .05); bus.amb.gain.setTargetAtTime(S.amb, t, .05);
 }
+// The list of sounds. A request that fails is not remembered as "no sounds" (reported 21 November 2026: one failed
+// request muted the whole session): the next cue asks again, one request at a time and no sooner than four seconds on.
+let manTry = 0, manWait = null, manFailed = false;
 async function manifest() {
   if (MAN) return MAN;
   if (BASE.protocol === 'file:') return (MAN = {}); // a page opened from a file cannot fetch: stay silent instead of logging an error for every sound
-  try { MAN = (await (await fetch(new URL('manifest.json', BASE))).json()).sounds; } catch { MAN = {}; }
-  return MAN;
+  if (manWait) return manWait;
+  if (manTry && performance.now() - manTry < 4000) return {};
+  manTry = performance.now();
+  manWait = (async () => {
+    try {
+      const r = await fetch(new URL('manifest.json', BASE)); if (!r.ok) throw new Error('no list of sounds');
+      const m = (await r.json()).sounds; if (!m || typeof m !== 'object') throw new Error('no list of sounds');
+      MAN = m;
+      if (manFailed) setTimeout(() => { for (const k of ['amb', 'music']) if (wanted[k] && !beds[k]) bed(k, wanted[k]); }); // the music and ambience this screen asked for while the list was missing
+      return MAN;
+    } catch { manFailed = true; return {}; } finally { manWait = null; }
+  })();
+  return manWait;
 }
 const _fetchAB = async u => { const r = await fetch(u); if (!r.ok) throw new Error('no such sound file'); return r.arrayBuffer(); }; // a missing file is skipped, not decoded
 async function loadAB(id) {
@@ -72,8 +86,9 @@ function play(id, o = {}) {
 const pick = (base, n) => { const i = ((rot.get(base) || 0) + 1) % n; rot.set(base, i); return `${base}_${'abcde'[i]}`; };
 
 // ---------- beds: ambience and music, one of each at a time, crossfaded ----------
-const beds = { amb: null, music: null };
+const beds = { amb: null, music: null }, wanted = { amb: null, music: null };
 async function bed(kind, id, fade = 1.5) {
+  wanted[kind] = id || null;
   const cur = beds[kind];
   if ((cur && cur.id) === id) return;
   if (cur) { const g = cur.g; try { g.gain.setTargetAtTime(0, AC.currentTime, fade / 4); setTimeout(() => { try { cur.s.stop(); g.disconnect(); } catch { } if (kind === 'music') buf.delete(cur.id); }, fade * 1500); } catch { } }
@@ -82,7 +97,7 @@ async function bed(kind, id, fade = 1.5) {
   const b = await loadAB(id);
   if (!b) { if (beds[kind] && beds[kind].id === id && !beds[kind].s) beds[kind] = null; return; }   // failed load: free the slot so the next visit retries
   if (beds[kind]?.id !== id) return;
-  const m = MAN[id] || {}; const s = AC.createBufferSource(); s.buffer = b; s.loop = true;
+  const m = (MAN || {})[id] || {}; const s = AC.createBufferSource(); s.buffer = b; s.loop = true;
   if (m.loop) { s.loopStart = m.loop[0]; s.loopEnd = Math.min(m.loop[1], b.duration); }
   const g = AC.createGain(); g.gain.value = 0; s.connect(g); g.connect(bus[kind]); s.start();
   g.gain.setTargetAtTime(1, AC.currentTime, fade / 4);
@@ -231,7 +246,7 @@ let warmed = false;
 function unlock() {
   if (!ctx()) return;
   if (AC.state !== 'running' && !S.muted && !document.hidden) AC.resume().catch(() => { });
-  if (!warmed) { warmed = true; manifest().then(() => CORE.forEach((id, i) => setTimeout(() => loadAB(id), i * 30))); }
+  if (!warmed) manifest().then(() => { if (MAN && !warmed) { warmed = true; CORE.forEach((id, i) => setTimeout(() => loadAB(id), i * 30)); } }); // warmed only once the list of sounds has loaded
 }
 addEventListener('pointerdown', unlock, { capture: true, passive: true });
 addEventListener('keydown', unlock, { capture: true });
@@ -258,6 +273,7 @@ const api = {
   cue: (n, d, c) => { try { cue(n, d, c); } catch (e) { /* audio must never break the game */ } },
   panel, play: id => play(id, { minGap: 0 }), log,
   get settings() { return { ...S }; },
+  get ready() { return !!MAN; }, // the list of sounds has loaded (for checks)
   set(k, v) { if (k in DEF) { S[k] = v; save(); apply(); } },
   get beds() { return { amb: beds.amb && beds.amb.s ? beds.amb.id : null, music: beds.music && beds.music.s ? beds.music.id : null, loop: beds.music && beds.music.s ? [beds.music.s.loopStart, beds.music.s.loopEnd] : null, state: AC && AC.state }; },
   stopBeds() { bed('amb', null); bed('music', null); },

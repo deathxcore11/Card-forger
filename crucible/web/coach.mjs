@@ -1,7 +1,7 @@
 // First lessons and "what happened" lines for Lost Memories. Pure functions over engine state, so Node tests
 // can call them. Nothing here changes a rule: a lesson only points at a play the engine already allows, and it
 // never shows what a meld makes (the Codex rule stands: a result shows only once the player has found it).
-import { planChain } from '../engine/duel.mjs';
+import { planChain, forecast } from '../engine/duel.mjs';
 import { roleOf } from '../engine/cards.mjs';
 
 export const LESSONS = ['meld', 'fuel', 'single'];
@@ -14,6 +14,7 @@ export function lessonFor(db, duel, tips = {}) {
   const mons = [], fuel = [];
   hand.forEach((c, i) => { if (!c) return; if (db.isMonster(c.id)) mons.push(i); else if (roleOf(db, c.id) === 'fuel') fuel.push(i); });
   if (!mons.length) return null;
+  if (duel.mon && !duel.mon[0].some(m => !m)) return null; // every lesson is a play from the hand to an empty zone: with the table full there is none to teach
   const strongest = mons.reduce((a, b) => (atk(b) > atk(a) ? b : a));
   // the best two-monster meld that does not fizzle and beats every single card in the hand
   let best = null;
@@ -29,8 +30,19 @@ export function lessonFor(db, duel, tips = {}) {
     const p = planChain(db, [hand[strongest], hand[fuel[0]]], null);
     if (p.steps.length === 1 && p.steps[0].kind === 'fuel') return { kind: 'fuel', cards: [strongest, fuel[0]] };
   }
-  if (!tips.single && !best) return { kind: 'single', cards: [strongest] };
+  // The third lesson. It used to say that nothing in the hand made more than the strongest monster, after looking only
+  // at pairs of monsters; an Equip or fuel in the hand made that false (reported 21 November 2026: Blue-Eyes with Dragon
+  // Treasure). Almost every hand holds something that adds, so the lesson now says the true thing it was for: this one
+  // card already beats every monster the rival shows, so the rest of the hand can be kept.
+  if (!tips.single && enoughAlone(db, duel, hand[strongest].id)) return { kind: 'single', cards: [strongest] };
   return null;
+}
+// True when the rival has at least one monster, shows them all, and this card played alone in attack would destroy each
+// of them in battle and survive it (terrain, Equips on their side and the attribute wheel counted, as the forecast does).
+export function enoughAlone(db, duel, id) {
+  const theirs = (duel.mon && duel.mon[1] || []).filter(Boolean);
+  if (!theirs.length || theirs.some(m => m.veil)) return false;
+  return theirs.every(m => { const f = forecast(duel, db, 0, { id, pos: 'a' }, 1, m); return f.killT && !f.killX; });
 }
 
 // What the player's own events teach: a real meld, a fuel step. `single` is marked by the page when the player
@@ -47,7 +59,7 @@ export function learnFrom(tips, evs) {
 export function lessonText(kind, names) {
   if (kind === 'meld') return ['First lesson: melding', `Tap ${names[0]}, then ${names[1]}, then Play. Two monsters become one, and these two make something stronger than either. What it is, you find out by doing it.`];
   if (kind === 'fuel') return ['Second lesson: fuel', `${names[1]} does nothing on its own, but melded onto a monster it adds +300 ATK and DEF. Tap ${names[0]}, then ${names[1]}, then Play.`];
-  return ['Third lesson: one card is sometimes right', `Nothing in this hand melds into more than ${names[0]} already is. Play it alone and keep the rest: your hand refills up to two cards a turn, and a bigger meld may come.`];
+  return ['Third lesson: one card can be enough', `${names[0]} alone already beats every monster the rival has on the table. Play it alone and keep the rest: your hand refills up to two cards a turn, and the cards you keep can make a bigger meld when you need one.`];
 }
 
 // ---- what happened in a lost duel ----

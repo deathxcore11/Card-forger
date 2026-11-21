@@ -57,7 +57,11 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
   await open(chamber);
   await page.evaluate(() => { window.LM.G.screen = 'forger'; window.LM.render(); }); await tap('[data-a="descend"]');
   p = await ls(K.profile); r = await ls(K.run);
-  check('Descend never drops a waiting run: it is banked first', p.memories > P0.memories && p.runs === P0.runs + 1 && r && r.phase === 'kit', [p.memories, p.runs, r && r.phase]);
+  // Until 21 November 2026 Descend ended and banked the waiting run without asking. With two tabs that ends a run the
+  // other tab is playing, so it asks the same question as New run, and changes nothing until it is answered.
+  check('Descend never drops or ends a waiting run: it asks first', (await has('[data-a="bankold"]')) && (await has('.leave [data-a="resume"]')) && p.memories === P0.memories && p.runs === P0.runs && JSON.stringify(r) === JSON.stringify(chamber.run), [p.memories, p.runs, r && r.phase]);
+  await tap('[data-a="bankold"]'); await story(); p = await ls(K.profile);
+  check('and the answer "Bank it and start a new run" banks it once', p.memories > P0.memories && p.runs === P0.runs + 1 && !(await ls(K.run)), [p.memories, p.runs]);
 
   // 3. Reported: Abandon asked for a second tap, said nothing about what is lost, and banked nothing.
   await open(chamber); await resume(); await tap('[data-a="quit"]');
@@ -135,6 +139,7 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
   // 7. Reported 21 November 2026 (review of Version 27): the same saved run open in two tabs. Tab 1 banks it and starts
   // a new run; tab 2, still showing the old run, abandons it; the new run was deleted. Two pages of one browser
   // profile share storage, as two tabs do.
+  const UID0 = chamber.run.uid || 'r' + chamber.run.seed; // a run saved before runs had names is named after its seed
   const two = async o => { await open(o); const a = page, b = await a.context().newPage(); b.on('pageerror', e => errors.push(e.message)); await b.goto(url); await b.waitForTimeout(350); return [a, b]; };
   const on = async (pg, f) => { const keep = page; page = pg; try { return await f(); } finally { page = keep; } };
   const moved = () => text('.leave, .notice');
@@ -143,7 +148,7 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     await on(a, resume); await on(b, resume);
     await on(a, async () => { await tap('[data-a="quit"]'); await tap('.leave [data-a="abandon"]'); await story(); await tap('[data-a="home"]'); await tap('[data-a="new"]'); await tap('[data-a="descend"]'); await story(); });
     const fresh = await ls(K.run), pA = await ls(K.profile);
-    check('tab 1 banked the old run and began a new one', fresh && fresh.phase === 'kit' && fresh.uid !== chamber.run.uid && pA.runs === P0.runs + 1, [fresh && fresh.phase, pA.runs]);
+    check('tab 1 banked the old run and began a new one', fresh && fresh.phase === 'kit' && fresh.uid !== UID0 && pA.runs === P0.runs + 1, [fresh && fresh.phase, pA.runs]);
     await on(b, async () => { await tap('[data-a="quit"]'); await tap('.leave [data-a="abandon"]'); await story(); });
     let now = await ls(K.run), pB = await ls(K.profile);
     check('abandoning the old run in tab 2 leaves the new run alone', !!now && now.uid === fresh.uid && now.phase === 'kit', now && [now.uid, now.phase]);
@@ -229,6 +234,69 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     check('Start without it opens the game on the empty store', !(await has('[data-a="loadagain"]')) && (await has('[data-a="new"]')) && !(await has('[data-a="resume"]')));
     await page.reload(); await page.waitForTimeout(350);
     check('and the notice does not come back', !(await has('[data-a="loadagain"]')) && (await has('[data-a="new"]'))); }
+
+  // 9. Reported 21 November 2026 (review of the updated build): two more ways an older tab could end or write over a
+  // newer run. (a) The question "You have a run in progress" stays open in tab 1 while tab 2 banks that run and begins
+  // a new one; "Bank it and start a new run" in tab 1 then ended the new run. (b) A write fails in tab 1, tab 2 begins a
+  // new run, and Try again (or the next move) in tab 1 wrote the old run over the new one.
+  const startNew = async () => { await tap('[data-a="new"]'); await tap('[data-a="bankold"]'); await story(); await tap('[data-a="home"]'); await tap('[data-a="new"]'); await tap('[data-a="descend"]'); await story(); };
+  {
+    const [a, b] = await two(chamber);
+    await on(a, async () => { await tap('[data-a="new"]'); });
+    check('tab 1 is asked about the run in progress', await on(a, () => has('[data-a="bankold"]')));
+    await on(b, startNew);
+    const fresh = await ls(K.run), p1 = await ls(K.profile);
+    check('tab 2 banked that run and began a new one', fresh && fresh.phase === 'kit' && fresh.uid !== UID0 && p1.runs === P0.runs + 1, [fresh && fresh.phase, p1.runs]);
+    await on(a, async () => { await tap('[data-a="bankold"]'); await story(); });
+    let now = await ls(K.run), p2 = await ls(K.profile);
+    check('the old question in tab 1 does not end the new run', !!now && now.uid === fresh.uid && now.phase === 'kit', now && [now.uid, now.phase]);
+    check('and banks nothing', p2.runs === P0.runs + 1 && p2.memories === p1.memories && p2.banked.length === 1, [p2.runs, p2.memories, p1.memories]);
+    check('tab 1 says the run moved on', /moved on/i.test(await on(a, moved)), await on(a, moved));
+  }
+  { // the same question, and the same run carried on in the other tab: the numbers the question showed are old
+    const [a, b] = await two(chamber);
+    await on(a, async () => { await tap('[data-a="new"]'); });
+    await on(b, async () => { await resume(); await page.evaluate(() => window.LM.act({ t: 'door', i: [...document.querySelectorAll('.doors [data-a^="door:"]')].findIndex(x => !x.disabled) })); await page.waitForTimeout(500); });
+    const carried = await ls(K.run);
+    await on(a, async () => { await tap('[data-a="bankold"]'); await story(); });
+    const now = await ls(K.run), p2 = await ls(K.profile);
+    check('a question about a run that was carried on elsewhere ends nothing', !!now && (now.uid || 'r' + now.seed) === UID0 && now.phase === carried.phase && now.phase !== 'over' && p2.runs === P0.runs && (p2.banked || []).length === (P0.banked || []).length, [now && now.phase, carried.phase, p2.runs]);
+    check('and tab 1 says the run moved on', /moved on/i.test(await on(a, moved)), await on(a, moved));
+  }
+  for (const how of ['Try again', 'the next move']) {
+    const [a, b] = await two(chamber);
+    await on(a, async () => { await resume(); await breakStore(); await page.evaluate(() => window.LM.act({ t: 'door', i: [...document.querySelectorAll('.doors [data-a^="door:"]')].findIndex(x => !x.disabled) })); await page.waitForTimeout(500);
+      if (how !== 'Try again') await page.evaluate(() => window.addEventListener('storage', e => e.stopImmediatePropagation(), true)); }); // a tab that never hears of the other tab's writes (asleep in the background)
+    const mine = await on(a, () => page.evaluate(() => JSON.stringify(window.LM.G.run)));
+    check('tab 1 could not save and says so (' + how + ')', await on(a, () => has('.savebar')));
+    await on(b, startNew);
+    const fresh = await ls(K.run), p1 = await ls(K.profile);
+    check('tab 2 began a new run meanwhile', fresh && fresh.phase === 'kit' && fresh.uid !== UID0, fresh && fresh.phase);
+    await on(a, async () => { await mendStore(); if (how === 'Try again') await tap('[data-a="resave"]'); else { await page.evaluate(() => { try { const d = [...document.querySelectorAll('[data-a]')].find(x => /^(door|pick|kit|skip|end)/.test(x.dataset.a) && !x.disabled); if (d) d.click(); } catch (e) { } }); await page.waitForTimeout(500); } });
+    const now = await ls(K.run), p2 = await ls(K.profile);
+    check(how + ' in tab 1 does not write the old run over the new one', !!now && now.uid === fresh.uid && now.phase === 'kit', now && [now.uid, now.phase]);
+    check('and the profile is as tab 2 left it', p2.runs === p1.runs && p2.memories === p1.memories && p2.banked.length === p1.banked.length, [p2.runs, p1.runs]);
+    check('tab 1 says the run moved on and no longer offers to save it', /moved on/i.test(await on(a, moved)) && /could not save its last moves/.test(await on(a, moved)) && !(await on(a, () => has('.savebar'))), [await on(a, moved), await on(a, () => page.evaluate(() => window.LM.unsaved && window.LM.unsaved()))]);
+    check('and a copy of what tab 1 could not save is kept on the device', /A copy of it was kept/.test(await on(a, moved)) && JSON.stringify(await ls(K.run + '.unsaved')) === mine, Object.keys((await ls(K.run + '.unsaved')) || {}).length);
+  }
+  { // the same with a run that tab 1 finished but could not bank: tab 2 banks the stored run and begins a new one
+    const [a, b] = await two(chamber);
+    await on(a, async () => { await resume(); await breakStore(); await tap('[data-a="quit"]'); await tap('.leave [data-a="abandon"]'); await story(); });
+    check('tab 1 ended its run and could not store that', await on(a, () => has('.savebar')) && (await ls(K.run)).phase === 'chamber' && (await ls(K.profile)).runs === P0.runs);
+    await on(b, startNew);
+    const fresh = await ls(K.run), p1 = await ls(K.profile);
+    await on(a, async () => { await mendStore(); await tap('[data-a="resave"]'); });
+    const now = await ls(K.run), p2 = await ls(K.profile);
+    check('Try again on a finished run does not write it over the new run', !!now && now.uid === fresh.uid && now.phase === 'kit', now && [now.uid, now.phase]);
+    check('and the old run is banked once, with nothing tab 2 stored undone', p2.runs === P0.runs + 1 && p2.banked.filter(u => u === UID0).length === 1 && p2.memories >= p1.memories && !(await on(a, () => has('.savebar'))), [p2.runs, p2.memories, p1.memories, p2.banked, await on(a, () => page.evaluate(() => window.LM.unsaved && window.LM.unsaved()))]);
+  }
+  { // one tab only: a failed write followed by Try again still stores the run, as before
+    await open(chamber); await resume(); await breakStore();
+    await page.evaluate(() => window.LM.act({ t: 'door', i: [...document.querySelectorAll('.doors [data-a^="door:"]')].findIndex(x => !x.disabled) })); await page.waitForTimeout(500);
+    const inMem = await page.evaluate(() => JSON.stringify(window.LM.G.run));
+    await mendStore(); await tap('[data-a="resave"]');
+    check('with no other tab, Try again stores the run this tab holds', JSON.stringify(await ls(K.run)) === inMem && !(await has('.savebar')) && !/moved on/i.test(await moved()));
+  }
 
   // The Lab switches (regression log, 21 November 2026): Versions 30 and 31 had the rules of Equips that differ and Two
   // builds a run but no switch for them on the home screen, because the screen drew a list of its own.
