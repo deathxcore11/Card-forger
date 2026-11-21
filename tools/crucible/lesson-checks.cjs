@@ -102,4 +102,4 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
   check('no page errors', errors.length === 0, errors);
   console.log(`lesson checks at ${W}x${H}: ${passed} passed, ${failed} failed`);
   await browser.close(); process.exit(failed ? 1 : 0);
-})();
+})().catch(e => { console.error('lesson checks stopped before the end: ' + (e && e.message)); process.exit(3); }); // twice seen while the click bot was loading the same machine; this names the step next time
