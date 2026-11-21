@@ -1434,18 +1434,20 @@ test('Two builds a run: off by default; on, a run names two big builds and the s
   // a newly unlocked Gift's build is always carried
   for (let seed = 1; seed <= 12; seed++) assert.ok(newRun(lab, { seed, featured: ['snare'] }).builds.includes(LAB.snare.family));
 });
-test('Two builds a run: no Gift offer holds a Gift of a build the run does not carry, over whole runs', () => {
+test('Two builds a run: no Gift or charm of a build the run does not carry is offered, over whole runs', () => {
   const lab = { ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, builds: true, links: true }) }, _pair: new Map() };
-  let offers = 0, gifts = 0;
+  let offers = 0, gifts = 0, charms = 0;
   for (let seed = 1; seed <= 6; seed++) {
     const run = newRun(lab, { seed, heat: 0 }); const carried = run.builds.slice();
     for (let step = 0; step < 100000 && run.phase !== 'over'; step++) {
-      if (run.phase === 'reward' && run.offer && run.offer.kind === 'gift') { offers++; for (const id of run.offer.options) { const r = RELICS[id] || LAB[id]; gifts++; assert.ok(!BIG_BUILDS.includes(r.family) || carried.includes(r.family) || (r.link && carried.includes(r.link)), `seed ${seed}: ${r.name} (${r.family}) offered in a run that carries ${carried.join(' and ')}`); } assert.ok(run.offer.options.length >= 2, 'an offer still has choices'); }
+      const o = run.offer, relicIds = !o ? [] : (o.kind === 'gift' || o.kind === 'charm') ? o.options : run.phase === 'bazaar' && o.items ? o.items.filter(it => it.kind === 'charm').map(it => it.id) : [];
+      if (o && o.kind === 'gift') { offers++; assert.ok(o.options.length >= 2, 'an offer still has choices'); }
+      for (const id of relicIds) { const r = RELICS[id] || LAB[id]; gifts++; if (r.kind === 'C') charms++; assert.ok(!BIG_BUILDS.includes(r.family) || carried.includes(r.family) || (r.link && carried.includes(r.link)), `seed ${seed}: ${r.name} (${r.family}) offered in a run that carries ${carried.join(' and ')}`); }
       runApply(run, policyAction(lab, run, { family: 'engine_run', level: 2 }), lab);
     }
     assert.deepEqual(run.builds, carried);
   }
-  assert.ok(offers >= 12 && gifts >= 36, `looked at ${offers} offers`);
+  assert.ok(offers >= 12 && gifts >= 36 && charms >= 12, `looked at ${offers} Gift offers and ${charms} charms`);
 });
 
 console.log('crucible rules:', passed, 'tests passed');

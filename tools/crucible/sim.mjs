@@ -6,7 +6,7 @@ import os from 'node:os';
 import fs from 'node:fs';
 import { loadDb } from '../../crucible/engine/cards.mjs';
 import { newRun } from '../../crucible/engine/run.mjs';
-import { playRun, FAMILIES } from '../../crucible/engine/policy.mjs';
+import { playRun, FAMILIES, familyOf } from '../../crucible/engine/policy.mjs';
 import { relicInfo } from '../../crucible/engine/relics.mjs';
 
 function one(db, seed, opts) {
@@ -17,7 +17,7 @@ function one(db, seed, opts) {
     duels: S.duels, wins: S.wins, turns: S.turns, melds: S.melds, fizzles: S.fizzles, capDuels: S.capHits,
     firstWins: S.firstWins, deckouts: S.deckouts, twoFam: S.familiesInDuel, bounties: S.bounties, kitRejects: S.kitRejects,
     sparks: run.sparks, embers: run.embers, binds: run.binds, level: run.level,
-    relics: [...run.charms, ...run.gifts, ...run.masterworks], ranks: S.ranks, fires: S.relicFires, doors: S.doors, byTier: S.byTier, fx: S.fx || null, comebacks: S.comebacks, leadChanges: S.leadChanges, trailedWins: S.trailedWins, closeWins: S.closeWins, traps: S.traps, defWins: S.defWins, lpLost: S.lpLostInWins, chains: S.chains, singles: S.singles, long: S.long, reasons: S.reasons, gifts: run.gifts.length + run.masterworks.length, points: S.points || [], bountyBy: S.bountyBy || {}, deckSize: run.deck.length, feat: run.feat, famGifts: run.gifts.filter(id => (FAMILIES[opts.family].likes || []).includes(relicInfo(id).family)).length,
+    relics: [...run.charms, ...run.gifts, ...run.masterworks], ranks: S.ranks, fires: S.relicFires, doors: S.doors, byTier: S.byTier, fx: S.fx || null, comebacks: S.comebacks, leadChanges: S.leadChanges, trailedWins: S.trailedWins, closeWins: S.closeWins, traps: S.traps, defWins: S.defWins, lpLost: S.lpLostInWins, chains: S.chains, singles: S.singles, long: S.long, reasons: S.reasons, gifts: run.gifts.length + run.masterworks.length, points: S.points || [], bountyBy: S.bountyBy || {}, deckSize: run.deck.length, feat: run.feat, famGifts: run.gifts.filter(id => (familyOf(run, opts.family).likes || []).includes(relicInfo(id).family)).length,
   };
 }
 

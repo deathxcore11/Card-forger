@@ -127,9 +127,10 @@ function engineFor(run) {
   if (run.builds) { const b = run.builds.find(x => byBuild[x]); return b ? byBuild[b] : 'storm'; }
   return ['engine_tomb', 'engine_pyre', 'engine_veil'][Number(BigInt(run.seed) % 3n)];
 }
+export const familyOf = (run, family) => family === 'engine_run' ? FAMILIES[engineFor(run)] : FAMILIES[family];
 // Chooses the next run action. `level` is the duel skill of the simulated player (0..2).
 export function policyAction(db, run, { family = 'neutral', level = 2 } = {}) {
-  const fam = family === 'engine_run' ? FAMILIES[engineFor(run)] : FAMILIES[family];
+  const fam = familyOf(run, family);
   switch (run.phase) {
     case 'kit': { const i = fam.kit ? run.offer.findIndex(k => k.kit === fam.kit) : Number(BigInt(run.seed) % 3n); return { t: 'kit', i: i < 0 ? 0 : i }; }
     case 'charm': return { t: 'pick', i: bestIdx(run.offer.options, id => relicScore(fam, id)) };

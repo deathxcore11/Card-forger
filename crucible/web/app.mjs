@@ -4,7 +4,7 @@ import { buildDb, roleOf, weightOf, meldPairRaw } from '../engine/cards.mjs';
 import { legalActions, playVariants, planChain, viewFor, forecast } from '../engine/duel.mjs';
 import { RELICS as BASE_RELICS, LAB, TUNED_TEXT, relicText, relicLinks } from '../engine/relics.mjs';
 const RELICS = { ...BASE_RELICS, ...LAB }; // the page's own copy: an item's words follow the rules in force (see setLabs)
-import { newRun, runApply, MIN_DECK, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw, ENCHANT_TEXT } from '../engine/run.mjs';
+import { newRun, runApply, MIN_DECK, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw, ENCHANT_TEXT, carries } from '../engine/run.mjs';
 import { codexResult, codexKnows, codexUpgrade } from '../engine/cards.mjs';
 import { powerActions } from '../engine/duel.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
@@ -322,7 +322,7 @@ function storyPanel() {
 // ---------- screens around a run ----------
 // What a relic sets off and what sets it off, for the pieces the player holds or could still be offered.
 function linkLine(id, r) {
-  const mine = new Set(relicList(r)), pool = x => mine.has(x) || !LAB[x] || (db.config.labPool || []).includes(x);
+  const mine = new Set(relicList(r)), pool = x => mine.has(x) || (!LAB[x] || (db.config.labPool || []).includes(x)) && carries(r, x); // a piece this run does not carry cannot be offered, so it is not named
   const names = ids => ids.filter(pool).sort((a, b) => mine.has(b) - mine.has(a)).map(x => mine.has(x) ? `<b class="heldp">${esc(RELICS[x].name)} (held)</b>` : esc(RELICS[x].name)).join(', ');
   const L = relicLinks(id), s = names(L.sets), b = names(L.by);
   return (s ? `<br><small class="sets">Sets off: ${s}</small>` : '') + (b ? `<br><small class="sets">Set off by: ${b}</small>` : '');

@@ -314,8 +314,8 @@ function relicOffer(run, rng, kind, n) {
   const lab = DB && DB.config.labPool || [];
   // A linked relic that needs a partner is only offered once the player holds one (so it is never a dead pick).
   const held0 = ownedRelics(run), ready = id => !RELICS[id].needs || RELICS[id].needs.some(x => held0.has(x));
-  // Lever runBuilds: a Gift of a big build this run does not carry is not offered (a linked Gift counts for either of its builds).
-  const inRun = id => kind !== 'G' || !run.builds || !BIG_BUILDS.includes(RELICS[id].family) || run.builds.includes(RELICS[id].family) || (RELICS[id].link && run.builds.includes(RELICS[id].link));
+  // Lever runBuilds: a Gift or a charm of a big build this run does not carry is not offered.
+  const inRun = id => carries(run, id);
   const ids = Object.keys(RELICS).filter(id => (!LAB[id] || lab.includes(id) && ready(id)) && RELICS[id].kind === kind && !own.has(id) && inRun(id) && !(id === 'second_wind' && run.secondWindUsed) && !(id === 'heavy_crown' && !crownOk));
   rng.shuffle(ids);
   let out = ids.slice(0, n);
@@ -343,6 +343,8 @@ function relicOffer(run, rng, kind, n) {
 }
 export const BUILD_FAMILIES = ['furnace', 'shadow', 'lean', 'storm', 'tomb'];
 export const BIG_BUILDS = ['furnace', 'shadow', 'storm', 'tomb']; // the builds with enough Gifts to make an engine; Lean Deck and the plain Gifts are in every run
+// Does this run carry the relic's build? Always yes without the lever runBuilds. A linked relic counts for either of its builds.
+export const carries = (run, id) => !run.builds || !BIG_BUILDS.includes(RELICS[id].family) || run.builds.includes(RELICS[id].family) || !!(RELICS[id].link && run.builds.includes(RELICS[id].link));
 
 function genDoors(db, run, rng) {
   const cfg = db.config, ch = run.chamber, fl = run.floor;
