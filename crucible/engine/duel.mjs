@@ -64,7 +64,7 @@ function draw(s, db, ev, seat, n) {
   for (let k = 0; k < n; k++) {
     if (s.hand[seat].length >= db.config.handMax) break;
     const e = s.deck[seat].pop();
-    if (!e) return -1;
+    if (!e) break; // a draw effect takes what the deck holds; only the start-of-turn draw (refill) can lose the duel
     s.hand[seat].push({ u: s.uid++, ...e });
     got++;
   }
@@ -76,18 +76,19 @@ function refill(s, db, ev, seat, opening) {
   const st = s.seat[seat];
   let target = st.handSize;
   if (opening && st.firstTurnHand) target = Math.max(target, st.firstTurnHand);
-  if (st.extraDraw) { target = Math.max(target, s.hand[seat].length) + st.extraDraw; st.extraDraw = 0; }
-  target = Math.min(target, db.config.handMax);
-  let need = target - s.hand[seat].length;
-  if (need <= 0) return true;
   const empty = db.config.emptyBoardRefill && !s.mon[seat].some(Boolean);
-  if (!opening && db.config.drawPerTurn && !empty) need = Math.min(need, db.config.drawPerTurn);
-  if (s.deck[seat].length < need) {
+  const count = t => { let n = Math.min(t, db.config.handMax) - s.hand[seat].length; if (n > 0 && !opening && db.config.drawPerTurn && !empty) n = Math.min(n, db.config.drawPerTurn); return Math.max(0, n); };
+  // The cards the turn itself calls for must be there, or the duel is lost. A relic's extra card is a gift: it is
+  // drawn if the deck holds it and never loses the duel.
+  const must = count(target);
+  let need = must;
+  if (st.extraDraw) { need = count(Math.max(target, s.hand[seat].length) + st.extraDraw); st.extraDraw = 0; }
+  if (s.deck[seat].length < must) {
     draw(s, db, ev, seat, s.deck[seat].length);
     finish(s, ev, other(seat), 'deckout');
     return false;
   }
-  draw(s, db, ev, seat, need);
+  if (need > 0) draw(s, db, ev, seat, need);
   return true;
 }
 
@@ -129,6 +130,8 @@ export function effDef(s, db, seat, m) {
 }
 function kin(s, db, seat, m) { const t = card(db, m.id).type; let n = 0; for (const o of s.mon[seat]) if (o && o !== m && card(db, o.id).type === t) n++; return n; }
 
+// A card as it sits in a hand or a deck: its name and what the Anvil did to it. x marks an Echo already used this duel.
+const entryOf = c => { const e = { id: c.id }; if (c.t) e.t = 1; if (c.e) e.e = c.e; if (c.b) e.b = 1; if (c.x) e.x = 1; return e; };
 function toGrave(s, seat, inst) { s.gy[seat].push(inst.id); }
 
 // Remove a monster from the table because it was destroyed. Returns true if it left.
@@ -140,9 +143,9 @@ function destroyMon(s, db, ev, seat, z, why) {
   s.stats[other(seat)].destroyed++;
   ev.push({ e: 'destroyed', seat, zone: z, id: m.id, why });
   const rs = s.seat[seat].rs;
-  const entry = { id: m.id }; if (m.t) entry.t = 1; if (m.e) entry.e = m.e; if (m.b) entry.b = 1;
-  if (m.e === 'echo' && !m.token && !(rs.echo || (rs.echo = {}))[m.u0 || m.u]) {
-    rs.echo[m.u0 || m.u] = 1;
+  const entry = entryOf(m);
+  if (m.e === 'echo' && !m.x) { // Echo works once a duel for each card: the card carries the mark (x) wherever it goes next
+    entry.x = 1;
     if (s.hand[seat].length < db.config.handMax) { s.hand[seat].push({ u: s.uid++, ...entry }); ev.push({ e: 'enchant', seat, id: 'echo' }); return true; }
   }
   if (m.sig && !rs.sigBack) { rs.sigBack = 1; s.deck[seat].unshift(entry); ev.push({ e: 'relic', seat, id: 'signature', note: 'returns to the bottom of the deck' }); return true; }
@@ -274,14 +277,14 @@ function castSpell(s, db, ev, seat, id, target) {
     case 'draw': draw(s, db, ev, seat, tag.n); break;
     case 'flip': s.mon[r].forEach((m, z) => { if (m && m.veil) { m.veil = false; ev.push({ e: 'reveal', seat: r, zone: z, id: m.id }); } }); break;
     case 'freeze': s.frozen[r] = Math.max(s.frozen[r], tag.n); ev.push({ e: 'freeze', seat: r, turns: tag.n }); break;
-    case 'position': { const z = pickRival(); const m = s.mon[r][z]; m.pos = m.pos === 'a' ? 'd' : 'a'; if (m.veil) { m.veil = false; } ev.push({ e: 'pos', seat: r, zone: z, pos: m.pos }); break; }
+    case 'position': { const z = pickRival(); const m = s.mon[r][z]; m.pos = m.pos === 'a' ? 'd' : 'a'; if (m.veil) { m.veil = false; ev.push({ e: 'reveal', seat: r, zone: z, id: m.id }); } ev.push({ e: 'pos', seat: r, zone: z, pos: m.pos }); break; }
     case 'revive': revive(s, db, ev, seat, 'a'); break;
   }
 }
 function bounce(s, db, ev, seat, z) {
   const m = s.mon[seat][z]; if (!m) return;
   s.mon[seat][z] = null;
-  const entry = { id: m.id }; if (m.t) entry.t = 1; if (m.e) entry.e = m.e; if (m.b) entry.b = 1;
+  const entry = entryOf(m);
   if (s.hand[seat].length < db.config.handMax) s.hand[seat].push({ u: s.uid++, ...entry }); else s.deck[seat].unshift(entry);
   ev.push({ e: 'bounce', seat, zone: z, id: m.id });
 }
@@ -315,6 +318,7 @@ function springTrap(s, db, ev, defSeat, ti, az, dz) {
   const tag = db.tagOf.get(t.id), atkSeat = other(defSeat);
   ev.push({ e: 'trap', seat: defSeat, id: t.id, fx: tag.fx });
   s.stats[defSeat].spells++; s.stats[defSeat].trapsSprung++; track(s, db, defSeat, 'trap:' + tag.fx);
+  if (s.seat[defSeat].track) s.stats[defSeat].baits = (s.stats[defSeat].baits || 0) + 1; // feat Patient Trap counts attacks, not events
   const X = s.mon[atkSeat][az];
   switch (tag.fx) {
     case 'destroy': destroyMon(s, db, ev, atkSeat, az, 'trap'); return !!s.mon[atkSeat][az];
@@ -354,7 +358,7 @@ export function forecast(s, db, atkSeat, X, defSeat, T, { ambush = 0 } = {}) {
       out.killT = !lawD; out.killX = !lawA; if (lawA && lawD) { out.killT = out.killX = true; }
     }
   } else {
-    if (a > d) { out.killT = true; if (X.e === 'piercing') out.dmgDef = a - d; }
+    if (a > d) { out.killT = true; if (X.e === 'piercing' && !(T.e === 'bulwark' && !T.bulwarkUsed)) out.dmgDef = a - d; } // Piercing pays only when the defender is destroyed
     else if (a < d) out.dmgAtk = d - a;
   }
   if (X.e === 'venom' && !out.killT) out.killT = true;
@@ -362,7 +366,7 @@ export function forecast(s, db, atkSeat, X, defSeat, T, { ambush = 0 } = {}) {
   return out;
 }
 
-function resolveBattle(s, db, ev, atkSeat, az, dz) {
+function resolveBattle(s, db, ev, atkSeat, az, dz, sprung = false) {
   const defSeat = other(atkSeat);
   const X = s.mon[atkSeat][az];
   if (!X) return;
@@ -381,7 +385,7 @@ function resolveBattle(s, db, ev, atkSeat, az, dz) {
   }
   const f = forecast(s, db, atkSeat, X, defSeat, T, { ambush });
   ev.push({ e: 'battle', atkSeat, az, dz, a: f.a, d: f.d, direct: f.direct, edgeA: f.edgeA, edgeD: f.edgeD });
-  if (wasVeiled && s.seat[defSeat].track) s.stats[defSeat].reveals = (s.stats[defSeat].reveals || 0) + 1;
+  if (wasVeiled && s.seat[defSeat].track) { s.stats[defSeat].reveals = (s.stats[defSeat].reveals || 0) + 1; if (!sprung) s.stats[defSeat].baits = (s.stats[defSeat].baits || 0) + 1; }
   if (wasVeiled) fire(s, db, ev, defSeat, 'veiledRevealed', { mon: T, zone: dz, attacker: X });
   if (f.direct) {
     s.directs = (s.directs || 0) + 1;
@@ -520,7 +524,7 @@ export function applyMut(s, a, db, ev = []) {
     if (a.trap >= 0) { go = springTrap(s, db, ev, other(seat), a.trap, p.from, p.to); }
     if (go && s.winner === null && s.mon[seat][p.from]) {
       // a pump or revive may have changed nothing about the target zone; a destroyed target is handled inside
-      resolveBattle(s, db, ev, seat, p.from, p.to);
+      resolveBattle(s, db, ev, seat, p.from, p.to, a.trap >= 0);
     } else if (s.mon[seat][p.from]) { s.mon[seat][p.from].att = (s.mon[seat][p.from].att || 0) + 1; s.attacked = true; }
     else s.attacked = true;
     return ev;
@@ -538,7 +542,7 @@ export function applyMut(s, a, db, ev = []) {
       if (s.played || s.attacked || !has(s, seat, 'clean_draw') || st.rs.cleanDraw || !s.deck[seat].length) throw new Error('clean draw not available');
       const c = s.hand[seat][a.hand]; if (!c) throw new Error('no such card');
       st.rs.cleanDraw = 1; s.hand[seat].splice(a.hand, 1);
-      const e = { id: c.id }; if (c.t) e.t = 1; if (c.e) e.e = c.e; if (c.b) e.b = 1;
+      const e = entryOf(c);
       const top = s.deck[seat].pop(); s.deck[seat].unshift(e); s.hand[seat].push({ u: s.uid++, ...top });
       noteRelic(s, ev, seat, 'clean_draw');
       break;
@@ -586,7 +590,7 @@ function doPower(s, db, ev, seat, a) {
   if (f === 'tarn') st.rs.nextMeld.push({ a: (db.config.forgerTune || {}).tarnStoke ?? 200, d: 0, id: 'f_tarn' });
   else if (f === 'scrapper') {
     const c = s.hand[seat][a.hand]; s.hand[seat].splice(a.hand, 1);
-    const e = { id: c.id }; if (c.t) e.t = 1; if (c.e) e.e = c.e; if (c.b) e.b = 1;
+    const e = entryOf(c);
     s.deck[seat].unshift(e); draw(s, db, ev, seat, (db.config.forgerTune || {}).scrapDraw ?? 2);
   } else if (f === 'veil') { const m = s.mon[seat][a.zone]; m.veil = true; m.pos = 'd'; m.moved = true; ev.push({ e: 'pos', seat, zone: a.zone, pos: 'd', veiled: true }); }
   else if (f === 'storm') {
@@ -614,7 +618,7 @@ function doPlay(s, db, ev, seat, a) {
   const plan = planChain(db, cards, ontoM, { tinder: has(s, seat, 'tinder_vow'), steady });
   // remove the cards from hand (highest index first)
   for (const i of idxs.slice().sort((x, y) => y - x)) hand.splice(i, 1);
-  if (plan.steadyUsed) { st.rs.steady = 1; hand.push({ u: s.uid++, id: plan.returned.id, ...(plan.returned.t ? { t: 1 } : {}), ...(plan.returned.e ? { e: plan.returned.e } : {}), ...(plan.returned.b ? { b: 1 } : {}) }); noteRelic(s, ev, seat, 'steady_hand'); }
+  if (plan.steadyUsed) { st.rs.steady = 1; hand.push({ u: s.uid++, ...entryOf(plan.returned) }); noteRelic(s, ev, seat, 'steady_hand'); }
   for (const id of plan.gy) s.gy[seat].push(id);
   if (ontoM && (plan.tableLost || plan.onTable)) s.mon[seat][a.onto] = null;
   s.played = true;
@@ -629,7 +633,7 @@ function doPlay(s, db, ev, seat, a) {
     let z = plan.onTable ? a.onto : (ontoM && plan.tableLost ? a.onto : (a.zone != null && !s.mon[seat][a.zone] ? a.zone : freeZone(s, seat)));
     const c = card(db, f.id);
     const m = { u: f.u || s.uid++, id: f.id, pos: a.pos, veil: !!a.veiled, att: 0, moved: true };
-    if (f.t) m.t = 1; if (f.e) m.e = f.e; if (f.b) m.b = 1;
+    if (f.t) m.t = 1; if (f.e) m.e = f.e; if (f.b) m.b = 1; if (f.x) m.x = 1;
     if (f.ba) m.ba = f.ba; if (f.bd) m.bd = f.bd; if (f.ra) m.ra = f.ra; if (f.rd) m.rd = f.rd; if (f.eq) m.eq = f.eq;
     if (plan.melded) m.meld = 1;
     if (plan.melded && db.config.longMeldRest && plan.len >= db.config.longMeldRest) m.att = 9;

@@ -11,6 +11,7 @@ import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, buy, maxHeat, VAULT, FORGER_FEATS, featList, runOptions, openKits, nextKit, forgerStats, VAULT_ENCHANTS, KIT_GOALS, START_ENCHANTS } from '../engine/meta.mjs';
 import { SCENES } from './story.mjs';
 import { LAB_DEFAULTS, labConfig } from './labs.mjs';
+import { aimFor } from './aim.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
 
 const D = window.CRUCIBLE_DATA;
@@ -41,7 +42,7 @@ const app = $('#app');
 const LABKEY = 'lostmemories.labs.v5', RUNLABS = 'lostmemories.runlabs.v1', SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
 const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private window */ } }, del(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } } };
 
-const G = { run: null, sel: [], onto: null, attacker: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
+const G = { run: null, sel: [], onto: null, attacker: null, aim: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
 const P = Object.assign(newProfile(), store.get(PROFILE) || {});
 { const st = store.get(LABKEY); pref = st ? { heat: true, kits: true, ...st } : { ...LAB_DEFAULTS }; setLabs(pref); }
 // Saves from before 20 November 2026 wrote a shared pair (the two Robo fusions) without its order: bring them up to date once.
@@ -85,7 +86,7 @@ function act(a) {
   try {
     runApply(run, a, db, { onStep: evs => { if (run.duel) frames.push({ view: JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))), evs, rival: info(run) }); } });
   } catch (e) { toast(e.message); render(); return; }
-  G.sel = []; G.onto = null; G.attacker = null;
+  G.sel = []; G.onto = null; G.attacker = null; G.aim = null;
   if (run.codex) { for (const k of run.codex) G.known.add(k); store.set(KNOWN, [...G.known]); }
   if (run.offer && run.offer.fresh && (P.fresh || []).includes(run.offer.fresh)) { P.fresh = P.fresh.filter(x => x !== run.offer.fresh); saveP(); }
   if (run.phase === 'over') { store.del(SAVE); if (!G.results) { G.results = applyRun(P, run, { long: !!labs.long }); saveP(); queueStory(run.result.won ? 'cleared' : 'fell'); } } else store.set(SAVE, run);
@@ -326,9 +327,15 @@ function screenDuel() {
   const canPos = new Set(la.filter(a => a.t === 'pos').map(a => a.zone));
   const canPlay = myTurn && !live.played && !live.attacked;
   const targets = G.attacker != null ? (canAtk.get(G.attacker) || []) : [];
-  const fc = z => { const X = live.mon[0][G.attacker], T = z >= 0 ? v.mon[1][z] : null; if (z < 0) return `Direct: ${v.mon[0][G.attacker].ea} to Life Points`; if (T.veil) return '?'; const q = forecast(live, db, 0, X, 1, live.mon[1][z]); return `${q.a} v ${q.d}${q.edgeA ? ' ▲' : ''}${q.edgeD ? ' ▼' : ''}: ${q.killT ? 'destroys it' : q.killX ? 'you lose yours' : 'no kill'}${q.dmgDef ? `, ${q.dmgDef} dmg` : ''}${q.dmgAtk ? `, you take ${q.dmgAtk}` : ''}`; };
+  const holds = m => m.e === 'bulwark' && !m.bulwarkUsed;
+  const fate = (q, X, T) => { const t = q.killT ? (holds(T) ? 'its Bulwark holds' : 'destroys it') : '', x = q.killX ? (holds(X) ? 'your Bulwark holds' : 'you lose yours') : ''; return t && x ? t + ', ' + x : t || x || 'no kill'; };
+  const fc = z => { const X = live.mon[0][G.attacker], T = z >= 0 ? v.mon[1][z] : null; if (z < 0) return `Direct: ${v.mon[0][G.attacker].ea} to Life Points`; if (T.veil) return '?'; const q = forecast(live, db, 0, X, 1, live.mon[1][z]); return `${q.a} v ${q.d}${q.edgeA ? ' ▲' : ''}${q.edgeD ? ' ▼' : ''}: ${fate(q, X, live.mon[1][z])}${q.dmgDef ? `, ${q.dmgDef} dmg` : ''}${q.dmgAtk ? `, you take ${q.dmgAtk}` : ''}`; };
+  // A Spell or Equip picked on its own may be aimed: its legal targets light up and a tap chooses one.
+  const aim = canPlay && G.sel.length === 1 && G.onto == null && live.hand[0][G.sel[0]] ? aimFor(db, live, live.hand[0][G.sel[0]].id) : null;
+  const aimed = aim && G.aim != null && aim.zones.includes(G.aim) ? G.aim : null;
   const row = (seat) => v.mon[seat].map((m, z) => {
     let cls = 'slot', attrs = `data-zone="${seat}:${z}"`, tip = '';
+    if (aim && aim.side === seat && m) { cls += ' target' + (aimed === z ? ' picked' : ''); attrs += ` data-a="aim:${z}"`; return `<div class="${cls}" ${attrs}>${face(m)}</div>`; }
     if (seat === 0 && m && myTurn) { if (canAtk.has(z)) cls += ' ready'; attrs += ` data-a="mine:${z}"`; if (G.attacker === z) cls += ' picked'; if (G.onto === z) cls += ' onto'; }
     if (seat === 1 && m && targets.includes(z)) { cls += ' target'; attrs += ` data-a="hit:${z}"`; tip = `<div class="fc">${fc(z)}</div>`; }
     else if (m) attrs += ` data-a="inspectz:${seat}:${z}"`;
@@ -350,7 +357,9 @@ function screenDuel() {
     tray = `<div class="chain">${chain}${res}</div>` + cards.filter((c, i) => !db.isMonster(c.id) || cards.length === 1).slice(0, 3).map(c => `<div class="what"><b>${esc(card(c.id).name)}</b> ${esc(rulesText(c.id))}</div>`).join('');
     const loneNow = live.seat[0].rs.loneTurn === live.turn, freeNow = db.config.freeCast === 'lone' && !live.seat[0].noFree && live.seat[0].rs.freeTurn !== live.turn && G.sel.length === 1 && G.onto == null;
     if (!vars.length) tray += `<span class="fine bad">${loneNow && (G.sel.length > 1 || G.onto != null) ? 'You played a free support card this turn, so you cannot meld. Play one card on its own.' : 'That cannot be played right now.'}</span>`;
-    const lab = x => x.pos === 'a' ? (x.veiled ? 'Veiled attack' : 'Attack position') : x.pos === 'd' ? (x.veiled ? 'Veiled defense' : 'Defense position') : freeNow ? 'Play free (no meld this turn)' : 'Play';
+    const aimM = aimed != null ? v.mon[aim.side][aimed] : null, aimName = aimM ? (aimM.id ? card(aimM.id).name : 'the veiled monster') : '';
+    if (aim && vars.length) tray += `<span class="fine">${aimM ? 'Target: ' + esc(aimName) + '. Tap it again to let the card choose.' : `Tap ${aim.side ? 'a rival monster' : 'one of your monsters'} to choose the target. With no choice it takes the strongest${aim.side ? ' face-up' : ''} one.`}</span>`;
+    const lab = x => x.pos === 'a' ? (x.veiled ? 'Veiled attack' : 'Attack position') : x.pos === 'd' ? (x.veiled ? 'Veiled defense' : 'Defense position') : (freeNow ? 'Play free' : 'Play') + (aimM ? ' on ' + esc(aimName) : '') + (freeNow ? ' (no meld this turn)' : '');
     buttons = vars.map(x => `<button class="gold" data-a="play:${x.pos || ''}:${x.veiled ? 1 : 0}">${lab(x)}</button>`).join('') + '<button data-a="undo">Undo</button>';
     if (G.sel.length === 1) buttons += '<button data-a="scrap">Scrap card</button>';
   } else if (G.attacker != null) {
@@ -441,7 +450,7 @@ function overlay() {
 function inspectPanel() {
   if (!G.inspect) return '';
   const c = card(G.inspect.id);
-  return `<div class="modal" data-a="closeinspect"><div class="glass panel insp">${face(G.inspect, { cls: 'big' })}<div><h3>${esc(c.name)}</h3>${db.isMonster(c.id) ? `<p>${esc(c.type)} · ${esc(c.attr)} · Level ${c.level}<br>ATK ${c.atk} · DEF ${c.def}${G.inspect.ea != null ? `<br>Now ${G.inspect.ea} / ${G.inspect.ed}` : ''}</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p><b>Enchant, ${cap(G.inspect.e)}:</b> ${esc(ENCHANT_TEXT[G.inspect.e])}</p>` : ''}<p class="fine">Weight ${weightOf(db, c.id)}. Tap anywhere to close.</p></div></div></div>`;
+  return `<div class="modal" data-a="closeinspect"><div class="glass panel insp">${face(G.inspect, { cls: 'big' })}<div><h3>${esc(c.name)}</h3>${db.isMonster(c.id) ? `<p>${esc(c.type)} · ${esc(c.attr)} · Level ${c.level}<br>ATK ${c.atk} · DEF ${c.def}${G.inspect.ea != null ? `<br>Now ${G.inspect.ea} / ${G.inspect.ed}` : ''}</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p><b>Enchant, ${cap(G.inspect.e)}:</b> ${esc(ENCHANT_TEXT[G.inspect.e])}${G.inspect.bulwarkUsed || G.inspect.x ? ' <i>Used this duel.</i>' : ''}</p>` : ''}<p class="fine">Weight ${weightOf(db, c.id)}. Tap anywhere to close.</p></div></div></div>`;
 }
 
 function render() {
@@ -500,12 +509,13 @@ app.addEventListener('click', ev => {
     case 'heatinfo': G.overlay = { kind: 'heat', n }; render(); break;
     case 'speed': G.fast = !G.fast; render(); break;
     // duel
-    case 'hand': { if (G.playing || !r.duel || r.duel.active !== 0 || r.duel.pending) break; if (r.duel.played || r.duel.attacked) { G.inspect = r.duel.hand[0][n]; render(); break; } G.attacker = null; const k = G.sel.indexOf(n); if (k >= 0) G.sel.splice(k, 1); else G.sel.push(n); render(); break; }
+    case 'hand': { if (G.playing || !r.duel || r.duel.active !== 0 || r.duel.pending) break; if (r.duel.played || r.duel.attacked) { G.inspect = r.duel.hand[0][n]; render(); break; } G.attacker = null; G.aim = null; const k = G.sel.indexOf(n); if (k >= 0) G.sel.splice(k, 1); else G.sel.push(n); render(); break; }
     case 'mine': { if (G.sel.length) { toast('Finish or undo your card pick first.'); break; } if (G.attacker === n) { G.attacker = null; G.onto = n; } else if (G.onto === n) { G.onto = null; G.inspect = viewFor(r.duel, db, 0).mon[0][n]; } else { G.attacker = n; G.onto = null; } render(); break; }
     case 'hit': duel({ t: 'attack', from: G.attacker, to: n }); break;
     case 'pos': duel({ t: 'pos', zone: G.attacker }); break;
-    case 'undo': G.sel = []; G.attacker = null; G.onto = null; render(); break;
-    case 'play': { const a = { t: 'play', hand: G.sel.slice(), onto: G.onto }; if (x) a.pos = x; if (y === '1') a.veiled = true; duel(a); break; }
+    case 'undo': G.sel = []; G.attacker = null; G.onto = null; G.aim = null; render(); break;
+    case 'aim': G.aim = G.aim === n ? null : n; render(); break;
+    case 'play': { const a = { t: 'play', hand: G.sel.slice(), onto: G.onto }; if (x) a.pos = x; if (y === '1') a.veiled = true; if (G.aim != null && G.sel.length === 1 && G.onto == null) a.target = G.aim; duel(a); break; }
     case 'scrap': duel({ t: 'discard', hand: G.sel[0] }); break;
     case 'clean': duel({ t: 'cleanDraw', hand: G.sel[0] }); break;
     case 'end': duel({ t: 'end' }); break;

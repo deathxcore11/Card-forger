@@ -19,12 +19,12 @@ export const ENCHANT_TEXT = {
   bulwark: 'The first time it would be destroyed, it stays on the table.',
   venom: 'Any monster it battles is destroyed, whatever the numbers.',
   soaring: 'While it is face up, only a Soaring monster can attack it.',
-  herald: 'When you play it from your hand, draw a card.',
+  herald: 'When you play it from your hand, draw a card if your deck holds one.',
   catalyst: 'While it is on the table, a meld onto it that would fizzle gives it +300 ATK and DEF instead.',
   ambusher: 'When an attack reveals it, it gets +800 for that battle.',
   warden: 'While it is face up in defense, the rival must attack it first.',
   kindred: 'It gets +200 ATK and DEF for each other monster of its Type on your side.',
-  echo: 'The first time it is destroyed each duel, it returns to your hand.',
+  echo: 'The first time it is destroyed each duel, it returns to your hand if your hand has room.',
 };
 // Cursed duels carry one twist.
 export const TWISTS = { fog: 'Fog: every monster arrives veiled.', narrow: 'Narrow Pass: three monster zones a side.', storm: 'Storm Front: the terrain changes every third turn.', locked: 'Locked terrain: the terrain cannot be replaced.' };
@@ -468,7 +468,7 @@ function finishDuel(db, run, rng, ev) {
   if (run.feat) {
     const F = run.feat, gy = d.gy[0].filter(id => db.isMonster(id)).length;
     for (const [k, v] of Object.entries(st.chains)) if (+k >= 4) F.long4 += v;
-    F.baits += (st.reveals || 0) + st.trapsSprung;
+    F.baits += st.baits != null ? st.baits : (st.reveals || 0) + st.trapsSprung; // a duel begun before baits were counted per attack keeps the old count
     F.bestGy = Math.max(F.bestGy, gy);
     if (won && gy >= 8) F.gyWins++;
     if (won && d.mon[0].some(m => m && !m.veil && effAtk(d, db, 0, m) >= 3000)) F.bigWins = (F.bigWins || 0) + 1;

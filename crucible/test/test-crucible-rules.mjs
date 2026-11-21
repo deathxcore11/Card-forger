@@ -11,6 +11,7 @@ import { RELICS, LAB, LINK_GIFTS, relicLinks, CHAIN_TURN, sortRelics, fire, reli
 import { newRun, runApply, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { labConfig, LAB_DEFAULTS } from '../web/labs.mjs';
+import { aimFor } from '../web/aim.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS, FEATS_LONG, LONG_GIFTS, KIT_GOALS, START_ENCHANTS, VAULT_ENCHANTS, openKits, nextKit, openEnchants, runOptions, featList } from '../engine/meta.mjs';
 
@@ -1088,6 +1089,117 @@ test('every run pays Memories, even one lost at once with nothing found', () => 
   // a run that earned more is paid what it earned, with no extra line
   const won = newRun(db, { seed: 6 }); won.phase = 'over'; won.result = { won: false }; won.stats.wins = 9; const s2 = scoreRun(newProfile(), won);
   assert.equal(s2.total, 9); assert.equal(s2.lines.length, 1);
+});
+
+// Faults from the second independent test report (21 November 2026). Each test fails on the code as it was.
+test('a draw effect takes what the deck holds and shows it; only the start-of-turn draw can lose the duel', () => {
+  const two = [...db.tagOf.entries()].find(([id, t]) => db.byId.get(id).kind === 'spell' && t.fx === 'draw' && t.n >= 2); assert.ok(two, 'a Spell that draws two');
+  let s = blank(); s.deck[0] = [{ id: C('Mystical Elf').id }]; s.hand[0].push({ u: uid++, id: two[0] });
+  let ev = applyMut(s, { t: 'play', hand: [0], onto: null }, db);
+  assert.equal(s.winner, null, 'the duel goes on'); assert.equal(s.hand[0].length, 1); assert.equal(s.deck[0].length, 0);
+  assert.deepEqual(ev.filter(e => e.e === 'draw').map(e => e.n), [1], 'the one card drawn is shown as a draw');
+  // Herald with an empty deck: nothing to draw, nothing breaks
+  s = blank(); s.deck[0] = []; s.hand[0].push({ u: uid++, id: C('Mystical Elf').id, e: 'herald' });
+  ev = applyMut(s, { t: 'play', hand: [0], onto: null, pos: 'a' }, db); assert.equal(s.winner, null); assert.equal(ev.filter(e => e.e === 'draw').length, 0);
+  // the start-of-turn draw is the one that must be made
+  s = blank(); s.deck[1] = []; s.hand[1] = []; applyMut(s, { t: 'end' }, db);
+  assert.equal(s.winner, 0); assert.equal(s.reason, 'deckout');
+  assert.match(FX_TEXT.draw(2), /as many as your deck holds/); assert.match(ENCHANT_TEXT.herald, /if your deck holds one/);
+});
+
+test('a Spell or Equip played alone goes to the monster the player chose', () => {
+  const fx = k => [...db.tagOf.entries()].find(([id, t]) => db.byId.get(id).kind === 'spell' && t.fx === k)[0];
+  let s = blank(); const weak = put(s, 1, 0, mon('Mystical Elf', 'a')), strong = put(s, 1, 1, mon('Summoned Skull', 'a')); s.hand[0].push({ u: uid++, id: fx('destroy') });
+  applyMut(s, { t: 'play', hand: [0], onto: null, target: 0 }, db); assert.equal(s.mon[1][0], null, 'the chosen, weaker monster'); assert.ok(s.mon[1][1]);
+  s = blank(); put(s, 1, 0, mon('Mystical Elf', 'a')); put(s, 1, 1, mon('Summoned Skull', 'a')); s.hand[0].push({ u: uid++, id: fx('destroy') });
+  applyMut(s, { t: 'play', hand: [0], onto: null }, db); assert.equal(s.mon[1][1], null, 'with no choice, the strongest face-up monster');
+  s = blank(); const a = put(s, 0, 0, mon('Mystical Elf', 'd')), b = put(s, 0, 1, mon('Summoned Skull', 'a')); s.hand[0].push({ u: uid++, id: fx('pump') });
+  applyMut(s, { t: 'play', hand: [0], onto: null, target: 0 }, db); assert.ok(a.ba > 0, 'the chosen monster is boosted'); assert.equal(b.ba || 0, 0);
+  // the page offers exactly these choices (web/aim.mjs)
+  s = blank(); put(s, 1, 0, mon('Mystical Elf', 'a')); put(s, 1, 3, mon('Summoned Skull', 'd', { veil: true })); put(s, 0, 2, mon('Mystical Elf', 'a'));
+  assert.deepEqual(aimFor(db, s, fx('destroy')), { side: 1, zones: [0, 3] }); assert.deepEqual(aimFor(db, s, fx('pump')), { side: 0, zones: [2] });
+  assert.equal(aimFor(db, s, fx('heal')), null); assert.equal(aimFor(db, s, C('Mystical Elf').id), null);
+  const eq = [...db.byId.values()].find(c => roleOf(db, c.id) === 'equip'); assert.deepEqual(aimFor(db, s, eq.id), { side: 0, zones: [2] });
+});
+
+test('one attack is one step toward Patient Trap, even when it springs a Trap and reveals a veiled monster', () => {
+  const trap = [...db.tagOf.entries()].find(([id, t]) => db.byId.get(id).kind === 'trap' && t.fx === 'weaken')[0];
+  const s = blank({ seats: [{ track: 1 }, {}] }); s.hand = [[], []]; s.turn = 3; s.active = 1;
+  put(s, 0, 0, mon('Mystical Elf', 'd', { veil: true })); put(s, 0, 1, mon('Mystical Elf', 'd', { veil: true })); s.traps[0][0] = { u: uid++, id: trap };
+  put(s, 1, 0, mon('Summoned Skull', 'a')); put(s, 1, 1, mon('Summoned Skull', 'a'));
+  applyMut(s, { t: 'attack', from: 0, to: 0 }, db); assert.ok(s.pending, 'the Trap may answer'); applyMut(s, { t: 'respond', trap: 0 }, db);
+  assert.equal(s.stats[0].trapsSprung, 1); assert.equal(s.stats[0].reveals, 1); assert.equal(s.stats[0].baits, 1, 'one attack, one bait');
+  applyMut(s, { t: 'attack', from: 1, to: 1 }, db); assert.equal(s.stats[0].baits, 2, 'a second attack into a veiled monster is a second bait');
+});
+
+test('Piercing takes Life Points only when it destroys the defender: Bulwark stops both', () => {
+  const s = blank(); const wall = put(s, 1, 0, mon('Mystical Elf', 'd', { e: 'bulwark' })); put(s, 0, 0, mon('Summoned Skull', 'a', { e: 'piercing' })); put(s, 0, 1, mon('Summoned Skull', 'a', { e: 'piercing' }));
+  const lp = s.lp[1], q = forecast(s, db, 0, s.mon[0][0], 1, wall); assert.equal(q.dmgDef, 0, 'the forecast shows no damage');
+  applyMut(s, { t: 'attack', from: 0, to: 0 }, db); assert.ok(s.mon[1][0], 'Bulwark held'); assert.equal(s.lp[1], lp, 'so nothing was destroyed and no Life Points are lost');
+  const q2 = forecast(s, db, 0, s.mon[0][1], 1, wall); assert.equal(q2.dmgDef, q2.a - q2.d); assert.ok(q2.dmgDef > 0);
+  applyMut(s, { t: 'attack', from: 1, to: 0 }, db); assert.equal(s.mon[1][0], null); assert.equal(s.lp[1], lp - q2.dmgDef, 'the second attack destroys it and pierces');
+});
+
+test('a full hand: a returned monster goes under the deck, and Echo has no room to come back', () => {
+  const fx = [...db.tagOf.entries()].find(([id, t]) => db.byId.get(id).kind === 'spell' && t.fx === 'bounce')[0];
+  let s = blank(); s.hand[1] = []; give(s, 1, ...Array(db.config.handMax).fill('Mystical Elf')); put(s, 1, 0, mon('Summoned Skull', 'a')); s.hand[0].push({ u: uid++, id: fx });
+  const n = s.deck[1].length; applyMut(s, { t: 'play', hand: [s.hand[0].length - 1], onto: null }, db);
+  assert.equal(s.mon[1][0], null); assert.equal(s.hand[1].length, db.config.handMax, 'the hand stays at its limit'); assert.equal(s.deck[1].length, n + 1); assert.equal(s.deck[1][0].id, C('Summoned Skull').id, 'under the deck');
+  assert.match(FX_TEXT.bounce(), /under its deck if that hand is full/); assert.match(TRAP_TEXT.bounce(), /under its deck if that hand is full/);
+  s = blank(); s.hand[1] = []; give(s, 1, ...Array(db.config.handMax - 1).fill('Mystical Elf')); put(s, 1, 0, mon('Summoned Skull', 'a')); s.hand[0].push({ u: uid++, id: fx });
+  applyMut(s, { t: 'play', hand: [s.hand[0].length - 1], onto: null }, db); assert.equal(s.hand[1].length, db.config.handMax, 'with room it goes to the hand');
+  // Echo
+  s = blank(); s.hand[1] = []; give(s, 1, ...Array(db.config.handMax).fill('Mystical Elf')); put(s, 1, 0, mon('Mystical Elf', 'a', { e: 'echo' })); put(s, 0, 0, mon('Summoned Skull', 'a'));
+  s.turn = 3; applyMut(s, { t: 'attack', from: 0, to: 0 }, db); assert.equal(s.mon[1][0], null); assert.equal(s.hand[1].length, db.config.handMax); assert.equal(s.gy[1].length, 1, 'no room: it goes to the graveyard');
+  s = blank(); s.hand[1] = []; put(s, 1, 0, mon('Mystical Elf', 'a', { e: 'echo' })); put(s, 0, 0, mon('Summoned Skull', 'a'));
+  s.turn = 3; applyMut(s, { t: 'attack', from: 0, to: 0 }, db); assert.equal(s.hand[1].length, 1, 'with room it comes back'); assert.equal(s.hand[1][0].e, 'echo');
+  assert.match(ENCHANT_TEXT.echo, /if your hand has room/);
+});
+
+test('Echo brings a card back once a duel, not every time it is destroyed', () => {
+  const s = blank(); s.hand = [[], []]; s.turn = 3; s.active = 1; put(s, 0, 0, mon('Mystical Elf', 'a', { e: 'echo' })); put(s, 1, 0, mon('Summoned Skull', 'a'));
+  applyMut(s, { t: 'attack', from: 0, to: 0 }, db); assert.equal(s.hand[0].length, 1, 'the first time it returns'); applyMut(s, { t: 'end' }, db);
+  applyMut(s, { t: 'play', hand: [s.hand[0].findIndex(h => h.e === 'echo')], onto: null, pos: 'a' }, db); applyMut(s, { t: 'end' }, db);
+  const z = s.mon[0].findIndex(m => m && m.e === 'echo'), gy = s.gy[0].length; applyMut(s, { t: 'attack', from: 0, to: z }, db);
+  assert.equal(s.hand[0].filter(h => h.e === 'echo').length, 0, 'the second time it does not'); assert.equal(s.gy[0].length, gy + 1, 'it goes to the graveyard');
+});
+
+test('every pair of Enchants in battle does what the two texts say, in every position', () => {
+  const E = [null, ...ENCHANTS]; let n = 0;
+  for (const xe of E) for (const te of E) for (const pos of ['a', 'd']) for (const veil of pos === 'd' ? [false, true] : [false]) for (const [xn, tn] of [['Summoned Skull', 'Mystical Elf'], ['Mystical Elf', 'Summoned Skull'], ['Mystical Elf', 'Mystical Elf']]) {
+    if (te === 'soaring' && xe !== 'soaring' && !veil) continue; // cannot be attacked at all (its own test)
+    const s = blank(); s.hand = [[], []]; s.turn = 3;
+    const X = put(s, 0, 0, mon(xn, 'a', xe ? { e: xe } : {})), T = put(s, 1, 0, mon(tn, pos, { veil, ...(te ? { e: te } : {}) }));
+    const q = forecast(s, db, 0, X, 1, T, { ambush: veil && te === 'ambusher' ? 800 : 0 }), a = q.a, d = q.d, lp = s.lp.slice(), tag = `${xe} ${xn} into ${te} ${tn} ${pos}${veil ? ' veiled' : ''} (${a} v ${d})`;
+    if (veil && te === 'ambusher') assert.equal(d, forecast(s, db, 0, X, 1, T).d + 800, tag + ': Ambusher adds 800');
+    applyMut(s, { t: 'attack', from: 0, to: 0 }, db); n++;
+    const wantT = xe === 'venom' || a > d || (pos === 'a' && a === d), wantX = te === 'venom' || (pos === 'a' && a <= d);
+    const tLeft = !s.mon[1][0], xLeft = !s.mon[0][0];
+    assert.equal(tLeft, wantT && te !== 'bulwark', tag + ': defender ' + (wantT ? 'falls unless Bulwark holds' : 'stays'));
+    assert.equal(xLeft, wantX && xe !== 'bulwark', tag + ': attacker ' + (wantX ? 'falls unless Bulwark holds' : 'stays'));
+    const lostT = pos === 'a' ? Math.max(0, a - d) : (xe === 'piercing' && tLeft && a > d ? a - d : 0), lostX = Math.max(0, d - a);
+    assert.equal(lp[1] - s.lp[1], lostT, tag + ': Life Points the defender loses');
+    assert.equal(s.lp[0] - lp[0], (xe === 'drain' ? lostT : 0) - lostX, tag + ': Life Points the attacker loses or drains');
+    if (te === 'echo' && tLeft) { assert.equal(s.hand[1].length, 1, tag + ': Echo returns'); assert.equal(s.hand[1][0].x, 1); } else assert.equal(s.hand[1].length, 0, tag);
+    if (xe === 'echo' && xLeft) assert.equal(s.hand[0].length, 1, tag + ': Echo returns'); else assert.equal(s.hand[0].length, 0, tag);
+    assert.equal(s.gy[1].length, tLeft && te !== 'echo' ? 1 : 0, tag); assert.equal(s.gy[0].length, xLeft && xe !== 'echo' ? 1 : 0, tag);
+  }
+  assert.ok(n > 900, 'battles checked: ' + n);
+});
+
+test('a Spell that turns a veiled monster shows it being revealed', () => {
+  const fx = [...db.tagOf.entries()].find(([id, t]) => db.byId.get(id).kind === 'spell' && t.fx === 'position')[0];
+  const s = blank(); put(s, 1, 0, mon('Mystical Elf', 'd', { veil: true })); s.hand[0].push({ u: uid++, id: fx });
+  const ev = applyMut(s, { t: 'play', hand: [s.hand[0].length - 1], onto: null, target: 0 }, db);
+  assert.equal(s.mon[1][0].veil, false); assert.equal(s.mon[1][0].pos, 'a'); assert.equal(ev.filter(e => e.e === 'reveal' && e.seat === 1 && e.zone === 0).length, 1);
+});
+
+test('a relic\'s extra card at the start of a turn is drawn if the deck holds it and never loses the duel', () => {
+  for (const [deck, extra, wins] of [[1, 1, null], [1, 0, null], [0, 1, 0], [0, 0, 0], [2, 1, null]]) {
+    const s = blank(); s.hand[1] = []; give(s, 1, 'Mystical Elf', 'Mystical Elf', 'Mystical Elf', 'Mystical Elf'); s.deck[1] = Array.from({ length: deck }, () => ({ id: C('Mystical Elf').id })); s.seat[1].extraDraw = extra;
+    applyMut(s, { t: 'end' }, db);
+    assert.equal(s.winner, wins, `deck ${deck}, extra ${extra}`); if (wins === null) assert.equal(s.hand[1].length, 4 + Math.min(deck, 1 + extra), `deck ${deck}, extra ${extra}: cards drawn`);
+  }
 });
 
 console.log('crucible rules:', passed, 'tests passed');

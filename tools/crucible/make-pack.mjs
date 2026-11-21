@@ -72,7 +72,7 @@ p('## 2. Duel rules');
 p('### 2.1 Set-up');
 L.push(`- Each side starts with ${cfg.lp} Life Points and a deck of 40 cards (36 to 40 for you if you have bound melds).`, `- There are ${cfg.monsterZones} monster zones and ${cfg.trapZones} Trap zones a side. The table never changes shape.`, `- Each side draws ${cfg.hand} cards. Who goes first is random. Nobody may attack on the very first turn of the duel.`, `- A hand never holds more than ${cfg.handMax} cards.`, '- On your last Spark your opening hand is six cards.', '');
 p('### 2.2 A turn');
-L.push(`1. **Draw.** At the start of your turn you draw up to a hand of ${cfg.hand}, but at most ${play.drawPerTurn} cards a turn. If you must draw and your deck does not hold enough cards, you lose.`, '2. **One play.** You may make one play: one card on its own, or one meld chain, or scrap one hand card to the graveyard. A Forger power and position changes do not use the play.', '3. **Attacks.** Then each of your monsters in attack position may attack once. Once you attack you can no longer play a card that turn.', '4. **End turn.**', '');
+L.push(`1. **Draw.** At the start of your turn you draw up to a hand of ${cfg.hand}, but at most ${play.drawPerTurn} cards a turn. If your deck does not hold the cards this draw calls for, you lose. This is the only draw that can lose the duel: a card that says to draw takes what the deck holds and no more.`, '2. **One play.** You may make one play: one card on its own, or one meld chain, or scrap one hand card to the graveyard. A Forger power and position changes do not use the play.', '3. **Attacks.** Then each of your monsters in attack position may attack once. Once you attack you can no longer play a card that turn.', '4. **End turn.**', '');
 p('A monster may change position once a turn, but not on the turn it arrived and not after it attacked. Turning a veiled monster to attack turns it face up.');
 p('### 2.3 The seven kinds of card');
 table(['Kind', 'How many', 'What it does'], [
@@ -97,9 +97,9 @@ p('### 2.7 Terrain');
 p(`One terrain is shared by both sides. Monsters it favours get +${cfg.terrainBonus} ATK and DEF while it lasts. The ${count('field')} Field Spells:`);
 table(['Field Spell', 'Favours'], by('field').map(c => { const f = db.fieldOf.get(c.id); return [c.name, f.attr ? 'every ' + f.attr + ' monster' : [...f.types].join(', ')]; }));
 p('### 2.8 How a duel ends');
-L.push('- A side at 0 Life Points loses.', '- A side that cannot draw the cards it must draw loses.', `- At turn ${cfg.maxTurns} the side with more Life Points wins.`, '');
+L.push('- A side at 0 Life Points loses.', '- A side that cannot make its start-of-turn draw loses. A draw from a Spell, Trap, Enchant or relic never does.', `- At turn ${cfg.maxTurns} the side with more Life Points wins. If they are level, the side that went second wins.`, '');
 p('### 2.9 The twelve Spell and Trap effects');
-p('Spells and Traps do not use their printed text. Each named card is mapped by a hand-kept table to one of twelve effects. A Spell aimed at a rival monster picks the strongest face-up one unless you choose.');
+p('Spells and Traps do not use their printed text. Each named card is mapped by a hand-kept table to one of twelve effects. A Spell aimed at a monster may be aimed by hand: pick the Spell (or an Equip) on its own, then tap the monster it is for. If you do not choose, a Spell aimed at a rival picks their strongest face-up monster (a veiled one only if nothing is face up), and a Spell or Equip for your own side picks your strongest monster.');
 const fxRows = [];
 for (const fx of Object.keys(FX_TEXT)) {
   const sp = by('spell').filter(c => db.tagOf.get(c.id).fx === fx), tr = by('trap').filter(c => db.tagOf.get(c.id).fx === fx);
@@ -109,6 +109,8 @@ for (const fx of Object.keys(FX_TEXT)) {
 }
 table(['Effect', 'Spells', 'As a Spell', 'Traps', 'As a Trap (answers one attack)'], fxRows);
 
+p('Three things the short texts leave out:');
+L.push('- **The graveyard holds names only.** A monster returned from the graveyard, to the table or to a hand, comes back as printed: without its Temper, Enchant, Equips or any bonus it had. A monster returned from the table to a hand (by a Spell, a Trap or the Echo Enchant) keeps its Temper and Enchant and loses what it gained on the table.', '- **A Trap never changes what an attack is aimed at.** A monster returned to the table by a Trap during a direct attack does not block that attack.', `- **The hand limit always holds.** A draw effect stops at ${cfg.handMax} cards in hand, and a monster returned to a full hand goes under its owner's deck instead.`, '');
 p('## 3. The run');
 p('### 3.1 Shape of a run');
 L.push('1. Pick a Forger and a Heat level.', `2. Pick one of three starter kits (you may deal the three again once). Then pick one of three Charms.`, `3. Go down ${cfg.floors} floors of ${cfg.chambers} chambers. In each chamber pick one of three doors. After a door you move to the next chamber.`, '4. Chamber six is the guardian\'s chamber. Its door needs two seals. Every duel you win on the floor that is not the guardian breaks one seal. If you reach chamber six short of seals you get three duel doors until you have both.', `5. Beat the guardian to take a Guardian Reward, raise your weight cap by ${cfg.bossCapBonus} and go down. Beat the third guardian to clear the pyramid.`, '6. Lose a duel and you lose a Spark. An ordinary door then seals and you move on with no reward. A guardian must be faced again. At no Sparks the run ends.', '');
