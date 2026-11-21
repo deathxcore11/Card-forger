@@ -120,9 +120,16 @@ function forgerPower(db, v, planned) {
   return null;
 }
 
+// The engine a player aims for when it follows what the run carries (family 'engine_run'): the first of the run's builds
+// that has an engine list, or by the run's seed when the run names no builds, so the two cases can be compared.
+function engineFor(run) {
+  const byBuild = { tomb: 'engine_tomb', furnace: 'engine_pyre', shadow: 'engine_veil' };
+  if (run.builds) { const b = run.builds.find(x => byBuild[x]); return b ? byBuild[b] : 'storm'; }
+  return ['engine_tomb', 'engine_pyre', 'engine_veil'][Number(BigInt(run.seed) % 3n)];
+}
 // Chooses the next run action. `level` is the duel skill of the simulated player (0..2).
 export function policyAction(db, run, { family = 'neutral', level = 2 } = {}) {
-  const fam = FAMILIES[family];
+  const fam = family === 'engine_run' ? FAMILIES[engineFor(run)] : FAMILIES[family];
   switch (run.phase) {
     case 'kit': { const i = fam.kit ? run.offer.findIndex(k => k.kit === fam.kit) : Number(BigInt(run.seed) % 3n); return { t: 'kit', i: i < 0 ? 0 : i }; }
     case 'charm': return { t: 'pick', i: bestIdx(run.offer.options, id => relicScore(fam, id)) };

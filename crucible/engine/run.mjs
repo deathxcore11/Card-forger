@@ -279,6 +279,14 @@ export function newRun(db, { seed, heat = 0, forger = null, locked = null, featu
   if (kits && kits.length) run.kitsOpen = kits.slice();
   if (enchants && enchants.length) run.enchOpen = enchants.slice();
   if (cfg.giftRerolls) run.rerolls = cfg.giftRerolls;
+  // Lever runBuilds (a number): this run's Gift offers come from that many of the four big builds, so the pieces of one
+  // build meet more often. A newly unlocked Gift's build is always one of them. Drawn from its own stream, so the same
+  // seed deals the same kits, doors and rivals with the lever on or off.
+  if (cfg.runBuilds) {
+    const r2 = Rng.fromSeed(Number((BigInt(Math.trunc(Number(seed)) || 0) * 2654435761n + 97n) % 2147483647n)), order = BIG_BUILDS.slice(); r2.shuffle(order);
+    const first = (run.featured || []).map(id => RELICS[id] && RELICS[id].family).filter(f => BIG_BUILDS.includes(f));
+    run.builds = [...new Set([...first, ...order])].slice(0, Math.max(1, Math.min(BIG_BUILDS.length, cfg.runBuilds)));
+  }
   run.offer = dealKits(db, rng, run);
   run.rng = rng.s;
   return run;
@@ -306,7 +314,9 @@ function relicOffer(run, rng, kind, n) {
   const lab = DB && DB.config.labPool || [];
   // A linked relic that needs a partner is only offered once the player holds one (so it is never a dead pick).
   const held0 = ownedRelics(run), ready = id => !RELICS[id].needs || RELICS[id].needs.some(x => held0.has(x));
-  const ids = Object.keys(RELICS).filter(id => (!LAB[id] || lab.includes(id) && ready(id)) && RELICS[id].kind === kind && !own.has(id) && !(id === 'second_wind' && run.secondWindUsed) && !(id === 'heavy_crown' && !crownOk));
+  // Lever runBuilds: a Gift of a big build this run does not carry is not offered (a linked Gift counts for either of its builds).
+  const inRun = id => kind !== 'G' || !run.builds || !BIG_BUILDS.includes(RELICS[id].family) || run.builds.includes(RELICS[id].family) || (RELICS[id].link && run.builds.includes(RELICS[id].link));
+  const ids = Object.keys(RELICS).filter(id => (!LAB[id] || lab.includes(id) && ready(id)) && RELICS[id].kind === kind && !own.has(id) && inRun(id) && !(id === 'second_wind' && run.secondWindUsed) && !(id === 'heavy_crown' && !crownOk));
   rng.shuffle(ids);
   let out = ids.slice(0, n);
   if (kind === 'G' && DB) {
@@ -332,6 +342,7 @@ function relicOffer(run, rng, kind, n) {
   return out;
 }
 export const BUILD_FAMILIES = ['furnace', 'shadow', 'lean', 'storm', 'tomb'];
+export const BIG_BUILDS = ['furnace', 'shadow', 'storm', 'tomb']; // the builds with enough Gifts to make an engine; Lean Deck and the plain Gifts are in every run
 
 function genDoors(db, run, rng) {
   const cfg = db.config, ch = run.chamber, fl = run.floor;

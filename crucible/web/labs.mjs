@@ -18,6 +18,7 @@ export function labConfig(labs) {
     bossBandBy: labs.five ? { kiln_warden: -350 } : null, giftFirstXp: labs.early ? 10 : 0,
     heatRules: labs.heat ? 1 : 0, kitTune: labs.kits ? 1 : 0, itemTune: labs.items ? 1 : 0, forgerTune: labs.veilSet ? { veilSet: 2 } : null,
     equipKinds: labs.equips ? EQUIP_KINDS : null,
+    runBuilds: labs.builds ? 2 : 0,
     testRelics: labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null,
   };
 }

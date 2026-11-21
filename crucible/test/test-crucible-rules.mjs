@@ -8,7 +8,7 @@ import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, eff
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, LINK_GIFTS, relicLinks, CHAIN_TURN, sortRelics, fire, relicText, TUNED_TEXT } from '../engine/relics.mjs';
-import { newRun, runApply, MIN_DECK, makeRival, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
+import { BIG_BUILDS, newRun, runApply, MIN_DECK, makeRival, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { labConfig, LAB_DEFAULTS, EQUIP_KINDS } from '../web/labs.mjs';
 import { aimFor } from '../web/aim.mjs';
@@ -1416,6 +1416,36 @@ test('Equips that differ: each card says what it does, and a kit is not dealt an
     const { deck } = makeKit(lab, Rng.fromSeed(seed), kit); const mons = deck.filter(e => db.isMonster(e.id));
     for (const e of deck) { const q = db.equipOf.get(e.id); if (!q || q.shape) continue; assert.ok(mons.some(m => equipFits(db, e.id, m.id)), `${kit.id}: ${db.byId.get(e.id).name} fits a monster of the kit`); }
   }
+});
+
+// ---------- Two builds a run (lever runBuilds, Lab switch `builds`) ----------
+test('Two builds a run: off by default; on, a run names two big builds and the same seed deals the same kits', () => {
+  assert.equal(labConfig(LAB_DEFAULTS).runBuilds, 0); assert.equal(labConfig({ builds: true }).runBuilds, 2);
+  const lab = { ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, builds: true }) }, _pair: new Map() }, base = { ...db, config: { ...db.config, ...labConfig(LAB_DEFAULTS) }, _pair: new Map() };
+  const seen = new Set();
+  for (let seed = 1; seed <= 40; seed++) {
+    const a = newRun(lab, { seed }), b = newRun(base, { seed });
+    assert.equal(b.builds, undefined); assert.equal(a.builds.length, 2); assert.ok(a.builds.every(f => BIG_BUILDS.includes(f))); assert.notEqual(a.builds[0], a.builds[1]);
+    assert.deepEqual(a.offer, b.offer, 'the kits on offer do not depend on the lever'); assert.deepEqual(a.bossOrder, b.bossOrder);
+    assert.deepEqual(newRun(lab, { seed }).builds, a.builds, 'the same seed names the same builds');
+    seen.add(a.builds.slice().sort().join('+'));
+  }
+  assert.ok(seen.size >= 5, 'forty seeds reach most of the six pairs: ' + [...seen].join(' '));
+  // a newly unlocked Gift's build is always carried
+  for (let seed = 1; seed <= 12; seed++) assert.ok(newRun(lab, { seed, featured: ['snare'] }).builds.includes(LAB.snare.family));
+});
+test('Two builds a run: no Gift offer holds a Gift of a build the run does not carry, over whole runs', () => {
+  const lab = { ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, builds: true, links: true }) }, _pair: new Map() };
+  let offers = 0, gifts = 0;
+  for (let seed = 1; seed <= 6; seed++) {
+    const run = newRun(lab, { seed, heat: 0 }); const carried = run.builds.slice();
+    for (let step = 0; step < 100000 && run.phase !== 'over'; step++) {
+      if (run.phase === 'reward' && run.offer && run.offer.kind === 'gift') { offers++; for (const id of run.offer.options) { const r = RELICS[id] || LAB[id]; gifts++; assert.ok(!BIG_BUILDS.includes(r.family) || carried.includes(r.family) || (r.link && carried.includes(r.link)), `seed ${seed}: ${r.name} (${r.family}) offered in a run that carries ${carried.join(' and ')}`); } assert.ok(run.offer.options.length >= 2, 'an offer still has choices'); }
+      runApply(run, policyAction(lab, run, { family: 'engine_run', level: 2 }), lab);
+    }
+    assert.deepEqual(run.builds, carried);
+  }
+  assert.ok(offers >= 12 && gifts >= 36, `looked at ${offers} offers`);
 });
 
 console.log('crucible rules:', passed, 'tests passed');
