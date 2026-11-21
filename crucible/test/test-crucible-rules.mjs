@@ -10,7 +10,7 @@ import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, LINK_GIFTS, relicLinks, CHAIN_TURN, sortRelics, fire, relicText, TUNED_TEXT } from '../engine/relics.mjs';
 import { BIG_BUILDS, newRun, runApply, MIN_DECK, makeRival, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
-import { labConfig, LAB_DEFAULTS, EQUIP_KINDS } from '../web/labs.mjs';
+import { labConfig, LAB_DEFAULTS, LAB_ORDER, DEPTH_SET, EQUIP_KINDS } from '../web/labs.mjs';
 import { aimFor } from '../web/aim.mjs';
 import { runFault, okRun, okProfile, PHASES } from '../web/saves.mjs';
 import { lessonFor, learnFrom, lessonText, learnedAll, newNote, noteFrames, whyLost } from '../web/coach.mjs';
@@ -1433,6 +1433,29 @@ test('Two builds a run: off by default; on, a run names two big builds and the s
   assert.ok(seen.size >= 5, 'forty seeds reach most of the six pairs: ' + [...seen].join(' '));
   // a newly unlocked Gift's build is always carried
   for (let seed = 1; seed <= 12; seed++) assert.ok(newRun(lab, { seed, featured: ['snare'] }).builds.includes(LAB.snare.family));
+});
+// ---------- Traps in every kit (lever kitTraps, with the Free Trap switch) and the depth set ----------
+test('Free Trap: every starter kit then holds at least two Traps, still 40 cards inside its weight, and never a wipe or a revive', () => {
+  assert.equal(labConfig(LAB_DEFAULTS).kitTraps, 0); assert.equal(labConfig({ ...LAB_DEFAULTS, trap: true }).kitTraps, 2); assert.equal(labConfig({ ...LAB_DEFAULTS, trap: true }).freeCast, 'trap');
+  const lab = { ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, trap: true }) }, _pair: new Map() }, base = { ...db, config: { ...db.config, ...labConfig(LAB_DEFAULTS) }, _pair: new Map() };
+  let least = 9, plain = 0, kits = 0;
+  for (const forger of [null, ...FORGER_IDS]) for (let seed = 1; seed <= 25; seed++) {
+    const run = newRun(lab, { seed, forger });
+    for (const k of run.offer) { const traps = k.deck.filter(e => roleOf(lab, e.id) === 'trap'); least = Math.min(least, traps.length); kits++;
+      assert.equal(k.deck.length, 40); assert.ok(traps.every(e => !['destroyAll', 'revive'].includes(lab.tagOf.get(e.id).fx)), 'a kit Trap is never a wipe or a revive'); }
+    for (const k of newRun(base, { seed, forger }).offer) plain += k.deck.filter(e => roleOf(base, e.id) === 'trap').length;
+    runApply(run, { t: 'kit', i: seed % 3 }, lab); assert.ok(deckWeight(lab, run.deck) <= weightCap(lab, run), 'the kit taken is inside the weight limit');
+  }
+  assert.ok(least >= 2, 'fewest Traps in a kit: ' + least); assert.ok(plain / kits < 2, 'without the switch a kit holds fewer than two Traps on average: ' + (plain / kits).toFixed(2));
+});
+test('The depth set is Equips that differ, Two builds a run and Free Trap, and every switch has a place on the home screen', () => {
+  const c = labConfig({ ...LAB_DEFAULTS, depth: true });
+  assert.deepEqual(DEPTH_SET, ['equips', 'builds', 'trap']); assert.deepEqual(c.equipKinds, EQUIP_KINDS); assert.equal(c.runBuilds, 2); assert.equal(c.freeCast, 'trap'); assert.equal(c.freeCastRival, 'boss'); assert.equal(c.kitTraps, 2);
+  const each = labConfig({ ...LAB_DEFAULTS, equips: true, builds: true, trap: true }); assert.deepEqual(c, each, 'the depth set is the three switches, nothing else');
+  assert.equal(labConfig({ ...LAB_DEFAULTS, depth: true, free: true }).freeCast, 1, 'Free cast still overrides the free set');
+  const src = readFileSync(new URL('../web/app.mjs', import.meta.url), 'utf8'), words = [...src.slice(src.indexOf('const LABS = {'), src.indexOf('};', src.indexOf('const LABS = {'))).matchAll(/^  (\w+): '/gm)].map(m => m[1]);
+  assert.ok(words.length >= 19, 'switches with words: ' + words.length);
+  for (const k of words) assert.ok(LAB_ORDER.includes(k), 'the switch ' + k + ' has no place in LAB_ORDER'); for (const k of LAB_ORDER) assert.ok(words.includes(k), 'LAB_ORDER names a switch with no words: ' + k);
 });
 test('Two builds a run: the Veilwalker always carries Ambush, and a Forger or a new Gift never loses its build', () => {
   const lab = { ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, builds: true }) }, _pair: new Map() };

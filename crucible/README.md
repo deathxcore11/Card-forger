@@ -12,7 +12,7 @@ machine". Nothing in this folder has been played by a person or seen on a device
 ```
 node tools/crucible/build-pool.mjs --fetch --count     # pool size at three cut-offs
 node tools/crucible/build-pool.mjs --fetch             # writes crucible/data/crucible-pool.json
-node crucible/test/test-crucible-rules.mjs             # 101 rule tests
+node crucible/test/test-crucible-rules.mjs             # 103 rule tests
 node crucible/test/test-crucible-fuzz.mjs 6000 600     # random play with invariants
 node crucible/test/test-crucible-fuzz-levers.mjs 1000 200 1   # the same with every Lab lever on, Heat 0-10, wild actions, rule changes mid-run, profiles
 node crucible/test/test-crucible-events.mjs 6000        # random play; every change in the state must have an event the page can show
@@ -112,6 +112,7 @@ Set through `CRUCIBLE_CFG`, or the "Lab rules" switches on the playable page's h
 - Furnace lab Gifts `banked_coals`, `quench`, `cinder_fall` (knobs `coalsAtk`, `cinderLp`, `cinderAtk`) and the feat Master Smith (`bigWins`).
 - `kitTune`: 1 uses `KIT_TUNE` (per-kit cap on the strongest starting monster) to even out the starter kits; an object overrides per kit. `testKit`: offer one named kit three times, to measure a kit on its own.
 - `equipKinds`: Equips that differ (`EQUIP_KINDS` in `web/labs.mjs`; which Equip is which is the hand-kept table `equips` in `data/crucible-spell-tags.json`, our own effects). `equipAdd` and `equipFits` in `engine/cards.mjs`. Kits and rivals are not dealt a fitted Equip that fits under a quarter of their monsters.
+- `kitTraps`: so many of a kit's three effect cards are Traps. The page sets 2 with the Free Trap switch (`freeCast: 'trap'`). The home screen draws its switches from `LAB_ORDER` in `web/labs.mjs`; the switch `depth` stands for the three in `DEPTH_SET`.
 - `runBuilds`: 2 makes each run carry the Gifts and charms of two of `BIG_BUILDS` (`run.builds`, drawn on its own stream; `carries(run, id)` in `engine/run.mjs`). A Forger's `build` (the Veilwalker's is `shadow`) and a newly unlocked Gift's build are always carried. The simulator player `--family engine_run` commits to one build of the run.
 - `heatRules`: the ten-level Heat ladder (`HEAT_RULES` in `engine/run.mjs`). Each Heat level adds one written rule and the old per-Heat stat scaling is switched off. `tools/crucible/profile-sim.mjs 100 30 2 1` plays profiles that climb it.
 - `newRun` options (not config): `track` keeps the feat counters in `run.feat`; `featured` lists newly unlocked Gifts to show once; `locked` hides relics.

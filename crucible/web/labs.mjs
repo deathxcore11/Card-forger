@@ -8,7 +8,14 @@ export const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tit
 export const EQUIP_KINDS = { fit: 800, off: 300, edge: [800, 0], ward: [0, 1000] };
 export const LAB_DEFAULTS = { five: true, lean: true, heat: true, kits: true, items: true };
 
-export function labConfig(labs) {
+// The order the home screen shows the switches in. A switch with words in the page but no place here is shown last,
+// so a new switch can never be left off the screen (Equips that differ and Two builds a run were, in Versions 30 and 31).
+export const LAB_ORDER = ['depth', 'equips', 'builds', 'trap', 'five', 'lean', 'heat', 'allHeat', 'kits', 'items', 'early', 'long', 'links', 'lone', 'veilSet', 'styles', 'free', 'solo', 'tombStart'];
+// The depth set (switch `depth`): the three strategy pieces measured together.
+export const DEPTH_SET = ['equips', 'builds', 'trap'];
+
+export function labConfig(labs0) {
+  const labs = labs0.depth ? { ...labs0, ...Object.fromEntries(DEPTH_SET.map(k => [k, true])) } : labs0;
   return {
     freeCast: labs.free ? 1 : labs.lone ? 'lone' : labs.trap ? 'trap' : 0, freeCastRival: !labs.free && (labs.lone || labs.trap) ? 'boss' : null,
     rivalStyles: labs.styles ? 1 : 0, soloArrival: labs.solo ? 1 : 0,
@@ -19,6 +26,7 @@ export function labConfig(labs) {
     heatRules: labs.heat ? 1 : 0, kitTune: labs.kits ? 1 : 0, itemTune: labs.items ? 1 : 0, forgerTune: labs.veilSet ? { veilSet: 2 } : null,
     equipKinds: labs.equips ? EQUIP_KINDS : null,
     runBuilds: labs.builds ? 2 : 0,
+    kitTraps: labs.trap ? 2 : 0, // Free Trap also puts two Traps in every kit: with about one Trap a kit the free set was used once in two duels
     testRelics: labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null,
   };
 }

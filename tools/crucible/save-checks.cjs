@@ -230,6 +230,26 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     await page.reload(); await page.waitForTimeout(350);
     check('and the notice does not come back', !(await has('[data-a="loadagain"]')) && (await has('[data-a="new"]'))); }
 
+  // The Lab switches (regression log, 21 November 2026): Versions 30 and 31 had the rules of Equips that differ and Two
+  // builds a run but no switch for them on the home screen, because the screen drew a list of its own.
+  { await open(null);
+    const words = await page.evaluate(() => window.LM.labWords ? window.LM.labWords() : []), missing = [];
+    for (const k of words) if (!(await has(`[data-a="lab:${k}"]`))) missing.push(k);
+    check('every Lab switch the page has words for is on the home screen', words.length >= 19 && !missing.length, { words: words.length, missing });
+    await tap('[data-a="lab:builds"]');
+    check('a tap turns Two builds a run on, and it is kept', (await has('[data-a="lab:builds"].on')) && (await ls(K.labs)).builds === true);
+    await page.reload(); await page.waitForTimeout(350);
+    check('and it is still on after a reload', await has('[data-a="lab:builds"].on'));
+    await tap('[data-a="new"]'); await tap('[data-a="descend"]'); await story();
+    check('a run started with it on names its two builds on the kit screen', /This descent carries/.test(await text('.veins')) && (await page.evaluate(() => (window.LM.G.run.builds || []).length)) === 2, await text('.veins'));
+    await open(null); await tap('[data-a="lab:depth"]');
+    const c = await page.evaluate(() => { const c = window.LM.db.config; return { eq: !!c.equipKinds, builds: c.runBuilds, free: c.freeCast, traps: c.kitTraps }; });
+    check('the depth set turns on Equips that differ, Two builds a run and Free Trap', c.eq && c.builds === 2 && c.free === 'trap' && c.traps === 2, c);
+    check('and shows those three switches as on', (await has('[data-a="lab:equips"].on')) && (await has('[data-a="lab:builds"].on')) && (await has('[data-a="lab:trap"].on')));
+    await tap('[data-a="lab:depth"]');
+    const d = await page.evaluate(() => { const c = window.LM.db.config; return { eq: !!c.equipKinds, builds: c.runBuilds, free: c.freeCast, traps: c.kitTraps }; });
+    check('turning the depth set off turns them off again', !d.eq && !d.builds && !d.free && !d.traps && !(await has('[data-a="lab:equips"].on')), d); }
+
   check('no page errors anywhere', errors.length === 0, errors);
   console.log(`save checks at ${W}x${H}: ${passed} passed, ${failed} failed`);
   await browser.close(); process.exit(failed ? 1 : 0);

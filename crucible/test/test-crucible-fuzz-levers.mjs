@@ -30,6 +30,7 @@ const SETS = {
   loneAll: { ...FIVE, leanOffers: 2, freeCast: 'lone', rivalStyles: 1, soloArrival: 1, forgerTune: { veilSet: 2 }, trackFx: 1 },
   equips: { ...FIVE, bossBandBy: { kiln_warden: -350 }, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, equipKinds: { fit: 800, off: 300, edge: [800, 0], ward: [0, 1000] }, trackFx: 1 }, // the page defaults with Equips that differ
   builds: { ...FIVE, bossBandBy: { kiln_warden: -350 }, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, runBuilds: 2, equipKinds: { fit: 800, off: 300, edge: [800, 0], ward: [0, 1000] }, trackFx: 1 }, // the page defaults with Two builds a run and Equips that differ
+  depth: { ...FIVE, bossBandBy: { kiln_warden: -350 }, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, runBuilds: 2, equipKinds: { fit: 800, off: 300, edge: [800, 0], ward: [0, 1000] }, freeCast: 'trap', freeCastRival: 'boss', kitTraps: 2, trackFx: 1 }, // the page defaults with the depth set
   buildsLinks: { ...FIVE, simCut: 1, leanOffers: 2, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, runBuilds: 2, rivalStyles: 1 }, // Two builds a run with harder leaning
 };
 const DUELS = +process.argv[2] || 300, RUNS = +process.argv[3] || 60, SEED0 = +process.argv[4] || 1;
