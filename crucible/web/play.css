@@ -319,3 +319,4 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 #app.phone .duel.look2 .board::before { inset: -.5em -.8em -.5em; border-radius: .9em; }
 #app.phone .duel.look2 .who .backs { height: 2em; margin-top: .3em; } #app.phone .duel.look2 .who .backs u { width: 1.4em; height: 1.95em; }
 #app.phone .duel.look2 .who .pface { width: 3.4em; height: 3.4em; }
+.oddnote { margin-top: .4em; } .oddnote b { color: var(--gold); }

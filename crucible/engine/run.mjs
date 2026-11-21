@@ -581,7 +581,20 @@ function bazaarStock(db, run, rng, merchant) {
   if (merchant === 'charms') for (const id of relicOffer(run, rng, 'C', 3)) items.push({ kind: 'charm', id, price: half(P.charm) });
   if (merchant === 'scrapper') items.push({ kind: 'scrap', price: half(P.scrap), uses: 3 });
   if (merchant === 'shadow') { const a = cardItem(); items.push(a); const b = cardItem(); b.sealed = true; b.price = Math.ceil(b.price / 2); items.push(b); }
+  // Lever bazaarOdd (a price in Embers): every Bazaar also shows one Gift from outside the run's builds. With the lever
+  // runBuilds that is a big build this run does not carry; without it, a big build the player holds no piece of. It is
+  // bought with Embers and is a Gift beyond the run's count, so a build that is not working can turn, and one that is
+  // can find a strange pairing. Drawn last, so the rest of the stock is the same with and without the lever.
+  if (db.config.bazaarOdd) { const id = oddGift(db, run, rng); if (id) items.push({ kind: 'gift', id, odd: true, price: half(db.config.bazaarOdd) }); }
   return items;
+}
+
+function oddGift(db, run, rng) {
+  const own = ownedRelics(run); for (const m of run.masterworks) for (const p of RELICS[m].parts) own.add(p); for (const id of run.locked || []) own.add(id);
+  const lab = db.config.labPool || [], held = new Set([...ownedRelics(run)].filter(id => RELICS[id]).flatMap(id => [RELICS[id].family, RELICS[id].link]));
+  const off = id => run.builds ? !carries(run, id) : !held.has(RELICS[id].family) && !(RELICS[id].link && held.has(RELICS[id].link));
+  const ids = Object.keys(RELICS).filter(id => RELICS[id].kind === 'G' && BIG_BUILDS.includes(RELICS[id].family) && !own.has(id) && (!LAB[id] || lab.includes(id)) && !RELICS[id].needs && off(id));
+  return ids.length ? rng.pick(ids) : null;
 }
 
 // The smallest deck a run may hold. Binds take it from 40 to 36 at most; the Winnower may cut it further, to here.
@@ -723,6 +736,7 @@ export function runApply(run, a, db, opts = {}) {
       if (run.embers < it.price) fail('not enough Embers');
       if (it.kind === 'card') { addCard(db, run, it.entry); it.sold = true; }
       else if (it.kind === 'charm') { if (run.charms.length >= cfg.charmSlots) fail('charm slots full'); run.charms.push(it.id); it.sold = true; }
+      else if (it.kind === 'gift') { run.gifts.push(it.id); it.sold = true; } // lever bazaarOdd: a Gift from outside the run's builds
       else if (it.kind === 'scrap') { // the Winnower cuts a card out of the deck for the rest of the run: fewer cards, so the good ones come round sooner
         const e = run.deck[a.deck]; if (a.deck === undefined || !e) fail('pick a deck card to cut');
         if (e.b) fail('a bound meld cannot be cut');

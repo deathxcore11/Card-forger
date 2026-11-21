@@ -1469,6 +1469,37 @@ test('Free Trap: every starter kit then holds at least two Traps, still 40 cards
   }
   assert.ok(least >= 2, 'fewest Traps in a kit: ' + least); assert.ok(plain / kits < 2, 'without the switch a kit holds fewer than two Traps on average: ' + (plain / kits).toFixed(2));
 });
+// ---------- Odd Gift at the Bazaar (lever bazaarOdd, Lab switch `odd`, off) ----------
+test('Odd Gift at the Bazaar: every Bazaar then sells one marked Gift from outside the run, bought with Embers beyond the Gift count, and nothing changes without the lever', () => {
+  assert.equal(labConfig(LAB_DEFAULTS).bazaarOdd, 0); assert.equal(labConfig({ ...LAB_DEFAULTS, odd: true }).bazaarOdd, 70);
+  const mk = labs => ({ ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, ...labs }) }, _pair: new Map() });
+  const reach = (d, seed, forger) => { const run = newRun(d, { seed, forger, track: true }); let n = 0; while (run.phase !== 'over' && run.phase !== 'bazaar' && n++ < 4000) runApply(run, policyAction(d, run, { level: 2 }), d); return run; };
+  for (const [labs, two] of [[{ odd: true, builds: true }, true], [{ odd: true }, false]]) {
+    const d = mk(labs); let seen = 0, bought = 0, none = 0;
+    for (let seed = 1; seed <= 60 && seen < 12; seed++) {
+      const run = reach(d, seed, [null, ...FORGER_IDS][seed % 5]); if (run.phase !== 'bazaar') continue; seen++;
+      const odd = run.offer.items.filter(it => it.kind === 'gift'), ALL = { ...RELICS, ...LAB };
+      if (!two && !odd.length) { // without Two builds a run there is nothing to sell once the player holds a piece of all four big builds
+        const held = new Set([...run.gifts, ...run.charms, ...run.masterworks].flatMap(id => [ALL[id].family, ALL[id].link])); assert.ok(BIG_BUILDS.every(f => held.has(f)), 'no odd Gift only when every big build is held'); none++; continue; }
+      assert.equal(odd.length, 1, 'one odd Gift at each Bazaar');
+      const it = odd[0], R = { ...RELICS, ...LAB }[it.id]; assert.ok(it.odd && it.price === (run.charms.includes('miser') ? 35 : 70)); assert.equal(R.kind, 'G'); assert.ok(BIG_BUILDS.includes(R.family), 'it belongs to a big build');
+      assert.ok(![...run.gifts, ...run.charms, ...run.masterworks].includes(it.id), 'never one already held');
+      if (two) { assert.ok(!run.builds.includes(R.family) && !(R.link && run.builds.includes(R.link)), 'its build is not one the run carries: ' + it.id + ' in ' + run.builds); }
+      else { const held = new Set([...run.gifts, ...run.charms, ...run.masterworks].flatMap(id => [({ ...RELICS, ...LAB })[id].family, ({ ...RELICS, ...LAB })[id].link])); assert.ok(!held.has(R.family), 'the player holds no piece of its build'); }
+      // without the lever the same seed has the same stock, less the odd Gift
+      const plain = reach(mk({ ...labs, odd: false }), seed, [null, ...FORGER_IDS][seed % 5]);
+      assert.deepEqual(plain.offer.items, run.offer.items.filter(x => x.kind !== 'gift'), 'the rest of the stock is the same without the lever');
+      const i = run.offer.items.indexOf(it), gifts = run.gifts.length;
+      run.embers = it.price - 1; assert.throws(() => runApply(run, { t: 'buy', i }, d), /not enough Embers/);
+      run.embers = it.price + 5; runApply(run, { t: 'buy', i }, d); bought++;
+      assert.equal(run.embers, 5); assert.equal(run.gifts.length, gifts + 1); assert.ok(run.gifts.includes(it.id)); assert.ok(run.offer.items[i].sold);
+      assert.throws(() => runApply(run, { t: 'buy', i }, d), /nothing to buy there/);
+      assert.equal(runFault(d, JSON.parse(JSON.stringify(run))), '', 'the page still takes the run as a save');
+      let n = 0; while (run.phase !== 'over' && n++ < 4000) runApply(run, policyAction(d, run, { level: 2 }), d); assert.equal(run.phase, 'over', 'the run plays on to its end with the odd Gift held');
+    }
+    assert.ok(seen >= 8 && bought === seen - none && bought >= 6 && (!two || !none), 'Bazaars reached: ' + seen + ', bought at ' + bought);
+  }
+});
 test('The depth set is Equips that differ, Two builds a run and Free Trap, and every switch has a place on the home screen', () => {
   const c = labConfig({ ...LAB_DEFAULTS, depth: true });
   assert.deepEqual(DEPTH_SET, ['equips', 'builds', 'trap']); assert.deepEqual(c.equipKinds, EQUIP_KINDS); assert.equal(c.runBuilds, 2); assert.equal(c.freeCast, 'trap'); assert.equal(c.freeCastRival, 'boss'); assert.equal(c.kitTraps, 2);

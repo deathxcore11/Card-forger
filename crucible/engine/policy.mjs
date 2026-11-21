@@ -157,14 +157,17 @@ export function policyAction(db, run, { family = 'neutral', level = 2 } = {}) {
     case 'anvil': return anvilAction(db, run, fam);
     case 'bazaar': {
       const o = run.offer;
+      // Sim-only (config simOdd): always take the odd Gift when it can be paid for, to measure what holding one is worth.
+      if (db.config.simOdd) { const gi = o.items.findIndex(it => it.kind === 'gift' && !it.sold && it.price <= run.embers); if (gi >= 0) return { t: 'buy', i: gi }; }
       const worst = Math.min(...run.deck.map(e => cardValue(db, e)));
       const i = bestIdx(o.items, it => {
         if (it.sold || it.price > run.embers) return -1e9;
         if (it.kind === 'card') return cardValue(db, it.entry) - worst - 350;
         if (it.kind === 'charm') return run.charms.length < db.config.charmSlots ? relicScore(fam, it.id) * 5 : -1e9;
+        if (it.kind === 'gift') return relicScore(fam, it.id, run) * 5;
         return -1e9;
       });
-      if (i >= 0) { const it = o.items[i]; if (!it.sold && it.price <= run.embers) { const v = it.kind === 'card' ? cardValue(db, it.entry) - worst - 350 : it.kind === 'charm' && run.charms.length < db.config.charmSlots ? relicScore(fam, it.id) : -1; if (v > 0) return { t: 'buy', i }; } }
+      if (i >= 0) { const it = o.items[i]; if (!it.sold && it.price <= run.embers) { const v = it.kind === 'card' ? cardValue(db, it.entry) - worst - 350 : it.kind === 'charm' && run.charms.length < db.config.charmSlots ? relicScore(fam, it.id) : it.kind === 'gift' ? relicScore(fam, it.id, run) : -1; if (v > 0) return { t: 'buy', i }; } }
       // Sim-only (config simCut): let the Winnower cut the weakest loose card, to measure what a thinner deck is worth.
       if (db.config.simCut) { const si = o.items.findIndex(it => it.kind === 'scrap' && !it.sold && it.price <= run.embers); if (si >= 0 && run.deck.length > MIN_DECK) { const di = bestIdx(run.deck, e => e.b ? -1e9 : -cardValue(db, e)); if (di >= 0 && !run.deck[di].b) return { t: 'buy', i: si, deck: di }; } }
       return { t: 'leave' };

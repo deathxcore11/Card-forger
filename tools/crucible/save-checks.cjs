@@ -318,6 +318,23 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     const d = await page.evaluate(() => { const c = window.LM.db.config; return { eq: !!c.equipKinds, builds: c.runBuilds, free: c.freeCast, traps: c.kitTraps }; });
     check('turning the depth set off turns them off again', !d.eq && !d.builds && !d.free && !d.traps && !(await has('[data-a="lab:equips"].on')), d); }
 
+  // Odd Gift at the Bazaar (Lab switch "odd", 21 November 2026). The switch is tapped on the home screen; the stall is
+  // checked on saved games the engine made with the switch on (ODDSAVES=<dir from make-saves.mjs <dir> ...,builds,odd>).
+  { await open(null); await tap('[data-a="lab:odd"]');
+    check('the Odd Gift switch is on the home screen and sets its price', (await has('[data-a="lab:odd"].on')) && (await page.evaluate(() => window.LM.db.config.bazaarOdd)) === 70);
+    await tap('[data-a="lab:odd"]'); check('and off again', (await page.evaluate(() => window.LM.db.config.bazaarOdd)) === 0);
+    const od = process.env.ODDSAVES, all = od ? fs.readdirSync(od).filter(n => /^bazaar-/.test(n)).map(n => JSON.parse(fs.readFileSync(path.join(od, n), 'utf8'))).filter(o => o.run.offer.items.some(it => it.kind === 'gift')) : [];
+    const rich = all.find(o => o.run.embers >= o.run.offer.items.find(it => it.kind === 'gift').price), poor = all.find(o => o.run.embers < o.run.offer.items.find(it => it.kind === 'gift').price);
+    check('saved Bazaars with the odd Gift were given to the checks (ODDSAVES), one that can pay and one that cannot', !!rich && !!poor, { given: all.length });
+    if (rich) { const it = rich.run.offer.items.find(x => x.kind === 'gift'), i = rich.run.offer.items.indexOf(it); await open(rich); await resume();
+      check('the stall shows the odd Gift, marked as from outside this descent', (await has('.k-gift')) && /From outside this descent/.test(await text('.k-gift')) && /does not count toward your Gifts/.test(await text('.k-gift')), await text('.k-gift'));
+      await tap(`[data-a="buy:${i}"]`); const r = await ls(K.run);
+      check('a tap buys it: the Gift is held, the Embers are paid, the stall says Sold', r.gifts.includes(it.id) && r.embers === rich.run.embers - it.price && /Sold/.test(await text('.k-gift button')), [r.gifts, r.embers]);
+      await page.reload(); await page.waitForTimeout(350); await resume();
+      check('and it is still held after a reload, listed with the relics', (await ls(K.run)).gifts.includes(it.id) && (await page.evaluate(id => window.LM.G.run.gifts.includes(id), it.id))); }
+    if (poor) { const it = poor.run.offer.items.find(x => x.kind === 'gift'), i = poor.run.offer.items.indexOf(it); await open(poor); await resume();
+      check('with too few Embers the button is off and a tap buys nothing', (await page.evaluate(i => document.querySelector(`[data-a="buy:${i}"]`).disabled, i)) && !(await ls(K.run)).gifts.includes(it.id)); } }
+
   // New table look (Lab switch "table", a preview of 21 November 2026): display only, applies at once to a run in progress.
   { const duel = read(pickFile(/^duel-regular-f1-h0/)); await open(duel);
     const lay = () => page.evaluate(() => { const r = s => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null; }, vis = s => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== 'none'; };
