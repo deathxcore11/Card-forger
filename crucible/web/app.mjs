@@ -149,6 +149,14 @@ function fit() {
   app.style.transform = `translate(-50%,-50%) scale(${FIT.k})`;
   app.style.setProperty('--E', (FIT.h - 900) + 'px');
   app.style.setProperty('--s', FIT.h / 900);
+  turnNote(vw, vh);
+}
+// A phone held upright shrinks the whole table to a strip: say so, and let the player go on if they want.
+let uprightOk = false;
+function turnNote(vw, vh) {
+  let n = document.getElementById('turn'); const need = vh > vw && vw < 600 && !uprightOk;
+  if (need && !n) { n = document.createElement('div'); n.id = 'turn'; n.innerHTML = '<div><b>Turn your phone sideways</b><p>Lost Memories is laid out for a wide screen. Held upright, the table is too small to read.</p><button id="turnok">Play upright anyway</button></div>'; document.body.appendChild(n); n.querySelector('#turnok').onclick = () => { uprightOk = true; n.remove(); }; }
+  else if (!need && n) n.remove();
 }
 addEventListener('resize', fit); fit();
 
@@ -279,7 +287,10 @@ function summary(deck) {
   const mons = deck.filter(e => db.isMonster(e.id)).map(e => card(e.id));
   const types = {}; mons.forEach(c => types[c.type] = (types[c.type] || 0) + 1);
   const top = Object.entries(types).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t, n]) => `${n} ${t}`).join(', ');
-  return `${mons.length} monsters (${top}), average ATK ${Math.round(mons.reduce((n, c) => n + c.atk, 0) / mons.length)}, weight ${deckWeight(db, deck)}`;
+  // How many two-monster pairs in this kit meld at all: a kit whose halves do not mix is harder to learn.
+  let ok = 0, all = 0; for (const a of mons) for (const b of mons) if (a !== b) { all++; if (meldPairRaw(db, a.id, b.id).kind !== 'fizzle') ok++; }
+  const pct = all ? Math.round(100 * ok / all) : 100;
+  return `${mons.length} monsters (${top}), average ATK ${Math.round(mons.reduce((n, c) => n + c.atk, 0) / mons.length)}, weight ${deckWeight(db, deck)}. ${pct}% of its monster pairs meld${pct < 85 ? ': some of its monsters never meld with each other, so learn which before you chain' : ''}.`;
 }
 // Simulator clear rates by Forger and kit (Heat 0, 1,500 expert-CPU runs each, 20 November). A lab note, not a rule.
 const KIT_SIM_EVEN = { none: { spellcasters_fiends: 48, dragons_warriors: 44, beasts_plants: 46 }, tarn: { fire_scale: 67, dragons_warriors: 65, blades_claws: 71 }, scrapper: { stone_gears: 62, machines_thunder: 59, swarm: 65 }, veil: { lantern_choir: 48, spellcasters_fiends: 47, grave_court: 47 }, storm: { high_wind: 63, beasts_plants: 61, tide: 65 } };

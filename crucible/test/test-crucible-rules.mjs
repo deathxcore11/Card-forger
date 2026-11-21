@@ -2,7 +2,7 @@
 // Card stats are read from the pool by name; nothing here types an ATK or DEF.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { loadDb, meldPair, meldTriple, weightOf, wheelEdge, roleOf, EFFECTS, codexKey, codexResult, codexKnows, codexUpgrade } from '../engine/cards.mjs';
+import { loadDb, terrainFavours, meldPair, meldTriple, weightOf, wheelEdge, roleOf, EFFECTS, codexKey, codexResult, codexKnows, codexUpgrade } from '../engine/cards.mjs';
 import { rulesText, FX_TEXT, TRAP_TEXT } from '../web/text.mjs';
 import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, effDef, forecast, canonical, clone } from '../engine/duel.mjs';
 import { chooseAction } from '../engine/ai.mjs';
@@ -17,7 +17,7 @@ import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEAT
 const db = loadDb();
 const C = n => { const c = db.byName.get(n); assert.ok(c, 'card in pool: ' + n); return c; };
 let passed = 0;
-const test = (name, fn) => { try { fn(); passed++; } catch (e) { console.error('FAIL', name); throw e; } };
+const test = (name, fn) => { try { fn(); passed++; } catch (e) { console.error('FAIL', name); if (process.env.KEEP_GOING) { console.error('   ', e.message.split('\n')[0]); return; } throw e; } }; // KEEP_GOING=1 lists every failing test
 const filler = () => Array.from({ length: 40 }, () => ({ id: C('Mystical Elf').id }));
 
 // A blank duel with empty hands and tables, player 0 to move on turn 3 (so attacks are allowed).
@@ -1026,6 +1026,68 @@ test('Support turn (lever freeCast lone): a support card alone is free, and that
   applyMut(s, { t: 'play', hand: [0], onto: null }, lab); assert.equal(s.played, true, 'the second support card uses the play');
   // the same hand under the base rules: the Spell uses the play
   s = blank(); s.hand[0].push({ u: uid++, id: spell }); applyMut(s, { t: 'play', hand: [0], onto: null }, db); assert.equal(s.played, true);
+});
+
+// Faults from the independent test report of 20 November 2026 (late evening). Each test fails on the code as it was.
+test('a meld sends only the cards played to the graveyard, never the monster made half-way', () => {
+  const g = C('The 13th Grave').id;
+  const p = planChain(db, [{ id: g }, { id: g }, { id: g }], null);
+  assert.equal(p.len, 3); assert.equal(p.fizzles, 0); assert.deepEqual(p.gy, [g, g, g], 'three cards played, three in the graveyard');
+  const s = blank(); give(s, 0, 'The 13th Grave', 'The 13th Grave', 'The 13th Grave');
+  applyMut(s, { t: 'play', hand: [0, 1, 2], onto: null, pos: 'a' }, db);
+  assert.deepEqual(s.gy[0], [g, g, g]); assert.equal(s.mon[0].filter(Boolean).length, 1);
+  // four cards: four in the graveyard, whatever the steps were
+  for (const names of [['Flame Manipulator', 'Masaki the Legendary Swordsman', THIRD, 'Mystical Elf'], ['Mystical Elf', 'Flame Manipulator', 'Masaki the Legendary Swordsman', THIRD]]) {
+    const q = planChain(db, names.map(n => ({ id: C(n).id })), null), played = names.map(n => C(n).id);
+    for (const id of q.gy) assert.ok(played.includes(id), names.join(' + ') + ': ' + db.byId.get(id).name + ' was never played, yet it is in the graveyard');
+    assert.ok(q.gy.length <= played.length - (q.isMonster ? 1 : 0) + 1);
+  }
+  // a monster already on the table is a real card: melding onto it does send it to the graveyard
+  const t = blank(); put(t, 0, 0, mon('Flame Manipulator', 'a')); give(t, 0, 'Masaki the Legendary Swordsman');
+  applyMut(t, { t: 'play', hand: [0], onto: 0, pos: 'a' }, db);
+  assert.deepEqual(t.gy[0].slice().sort(), [C('Flame Manipulator').id, C('Masaki the Legendary Swordsman').id].sort());
+  // Steady Hand returns a card, so it does not turn a half-way monster into one
+  const fz = [...db.byId.values()].find(c => c.kind === 'monster' && (() => { const q = planChain(db, [{ id: C('Flame Manipulator').id }, { id: C('Masaki the Legendary Swordsman').id }, { id: c.id }], null, { steady: true }); return q.steps[1] && q.steps[1].kind === 'steady'; })());
+  assert.equal(fz, undefined, 'no chain hands a half-way monster back as a card');
+});
+
+test('Static Field hits the rival monster the table shows as strongest', () => {
+  // terrain lifts a weaker monster above a stronger one; the table shows the lifted number
+  const field = [...db.byId.values()].find(c => roleOf(db, c.id) === 'field'); assert.ok(field);
+  const fav = [...db.byId.values()].filter(c => c.kind === 'monster' && terrainFavours(db, field.id, c.id)), not = [...db.byId.values()].filter(c => c.kind === 'monster' && !terrainFavours(db, field.id, c.id));
+  const lo = fav.find(c => not.some(n => n.atk > c.atk && n.atk < c.atk + db.config.terrainBonus)), hi = not.find(n => n.atk > lo.atk && n.atk < lo.atk + db.config.terrainBonus);
+  const [s] = linked(['static_field']); s.terrain = { id: field.id, owner: 1 };
+  const a = put(s, 1, 0, mon(hi.name, 'a')), b = put(s, 1, 1, mon(lo.name, 'a'));
+  assert.ok(effAtk(s, db, 1, b) > effAtk(s, db, 1, a), 'the favoured monster shows more ATK');
+  give(s, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman', THIRD);
+  applyMut(s, { t: 'play', hand: [0, 1, 2], onto: null, pos: 'a' }, db);
+  assert.equal(b.ba, -300, 'Static Field hit the monster showing the most ATK'); assert.equal(a.ba || 0, 0);
+});
+
+test('Chain Lightning pays the new meld that caused the damage, or else the monster showing the most ATK', () => {
+  const field = [...db.byId.values()].find(c => roleOf(db, c.id) === 'field');
+  const fav = [...db.byId.values()].filter(c => c.kind === 'monster' && terrainFavours(db, field.id, c.id)), not = [...db.byId.values()].filter(c => c.kind === 'monster' && !terrainFavours(db, field.id, c.id));
+  const lo = fav.find(c => not.some(n => n.atk > c.atk && n.atk < c.atk + db.config.terrainBonus)), hi = not.find(n => n.atk > lo.atk && n.atk < lo.atk + db.config.terrainBonus);
+  const [t] = linked(['tomb_ledger', 'bone_tithe', 'chain_lightning']); const old = put(t, 0, 4, mon('Summoned Skull', 'a'));
+  give(t, 0, 'Flame Manipulator', 'Masaki the Legendary Swordsman'); const lp = t.lp[1];
+  applyMut(t, { t: 'play', hand: [0, 1], onto: null, pos: 'a' }, db);
+  const meld = t.mon[0].find(m => m && m.meld);
+  assert.equal(t.lp[1], lp - 300, 'Bone Tithe fired'); assert.equal(meld.ba, 200, 'the new meld gets Chain Lightning'); assert.equal(old.ba || 0, 0, 'not the older monster');
+  assert.equal(t.seat[0].rs.newMeld, undefined, 'nothing is left behind in the saved state');
+  // with no new meld (end of turn), it is the strongest monster the table shows
+  const [u] = linked(['thorn_veil', 'chain_lightning']); u.terrain = { id: field.id, owner: 0 };
+  const x = put(u, 0, 0, mon(hi.name, 'a')), y = put(u, 0, 1, mon(lo.name, 'a')); put(u, 0, 2, mon('Mystical Elf', 'd', { veil: true }));
+  applyMut(u, { t: 'end' }, db); assert.equal(y.ba, 200, 'the monster showing the most ATK'); assert.equal(x.ba || 0, 0);
+});
+
+test('every run pays Memories, even one lost at once with nothing found', () => {
+  const run = newRun(db, { seed: 5 }); run.phase = 'over'; run.result = { won: false }; // lost the first duel, nothing melded
+  const p = newProfile(), sc = scoreRun(p, run);
+  assert.ok(sc.total >= 5, 'a lost run paid ' + sc.total); assert.equal(sc.total, sc.lines.reduce((n, l) => n + l[1], 0), 'and the lines add up to it');
+  const before = p.memories; applyRun(p, run); assert.ok(p.memories >= before + 5);
+  // a run that earned more is paid what it earned, with no extra line
+  const won = newRun(db, { seed: 6 }); won.phase = 'over'; won.result = { won: false }; won.stats.wins = 9; const s2 = scoreRun(newProfile(), won);
+  assert.equal(s2.total, 9); assert.equal(s2.lines.length, 1);
 });
 
 console.log('crucible rules:', passed, 'tests passed');

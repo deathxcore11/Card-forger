@@ -64,6 +64,7 @@ export const lockedRelics = (p, long) => VAULT.map(v => v.id).filter(id => !p.bo
 export const maxHeat = p => Math.min(MAX_HEAT, p.heatCleared + 1);
 
 // What a finished run pays. Does not change the profile.
+export const MIN_PAY = 5;
 export function scoreRun(p, run) {
   const S = run.stats, lines = [];
   const add = (label, n) => { if (n > 0) lines.push([label, n]); };
@@ -79,7 +80,9 @@ export function scoreRun(p, run) {
   const base = lines.reduce((n, l) => n + l[1], 0);
   const heat = Math.round(base * 0.2 * (run.heat || 0));
   add('Heat ' + (run.heat || 0), heat);
-  return { lines, total: base + heat, fresh, floor };
+  // Every run pays: a run that earned less than this is topped up to it.
+  if (base + heat < MIN_PAY) add('For making the descent', MIN_PAY - base - heat);
+  return { lines, total: Math.max(MIN_PAY, base + heat), fresh, floor };
 }
 
 // Banks a finished run into the profile and returns what it paid and what it unlocked.

@@ -12,7 +12,7 @@ machine". Nothing in this folder has been played by a person or seen on a device
 ```
 node tools/crucible/build-pool.mjs --fetch --count     # pool size at three cut-offs
 node tools/crucible/build-pool.mjs --fetch             # writes crucible/data/crucible-pool.json
-node crucible/test/test-crucible-rules.mjs             # 73 rule tests
+node crucible/test/test-crucible-rules.mjs             # 77 rule tests
 node crucible/test/test-crucible-fuzz.mjs 6000 600     # random play with invariants
 node crucible/test/test-crucible-fuzz-levers.mjs 1000 200 1   # the same with every Lab lever on, Heat 0-10, wild actions, rule changes mid-run, profiles
 node tools/crucible/make-saves.mjs <dir>               # saved games for every kind of screen (floors 1-3, Heat 0/5/10)

@@ -1,6 +1,7 @@
 // Relics (charms, Forge Gifts, Masterworks) for Lost Memories. Text is what the player
 // reads; the handlers below are the rules. Every repeating effect has a finite count.
 // kind: C charm, G gift, M masterwork. family: build family or 'trade' / 'plain' / 'core'.
+import { effAtk } from './duel.mjs';
 export const RELICS = {
   forge_heart: { name: 'Forge Heart', kind: 'C', family: 'furnace', text: 'After you play a Field Spell, your next melded monster gets +300 ATK and DEF this duel. Once a duel.' },
   kindling: { name: 'Kindling', kind: 'G', family: 'furnace', text: 'Your first FIRE meld each duel gets +300 ATK and DEF this duel.' },
@@ -177,7 +178,8 @@ export function fire(s, db, ev, seat, hook, ctx) {
   const healed = n => { if (s.winner === null && list.includes('blood_price')) raise('healed', { n }); };
   // A linked relic made this meld count as one card longer (at most one more).
   if (hook === 'placed' && ctx.melded && rs.lenPlus) { const by = rs.lenPlus; rs.lenPlus = 0; ctx.len += 1; note(s, ev, seat, by, { longer: ctx.len }); }
-  const strongest = p => { let b = null; for (const m of s.mon[p]) if (m && !m.veil && (!b || db.byId.get(m.id).atk + (m.ba || 0) > db.byId.get(b.id).atk + (b.ba || 0))) b = m; return b; };
+  // "Strongest" is what the table shows: terrain, tempering and every bonus counted.
+  const strongest = p => { let b = null; for (const m of s.mon[p]) if (m && !m.veil && (!b || effAtk(s, db, p, m) > effAtk(s, db, p, b))) b = m; return b; };
   const fromGrave = (maxAtk) => {
     if (s.hand[seat].length >= db.config.handMax) return false;
     let bi = -1; s.gy[seat].forEach((g, i) => { if (db.isMonster(g) && db.byId.get(g).atk <= maxAtk && (bi < 0 || db.cmp(db.byId.get(g), db.byId.get(s.gy[seat][bi])) > 0)) bi = i; });
@@ -210,7 +212,7 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'returned:last_rites': if ((rs.rites || 0) < 4) { rs.rites = (rs.rites || 0) + 1; s.lp[seat] += 300; note(s, ev, seat, id); ev.push({ e: 'lp', seat, d: 300, src: 'relic' }); healed(300); } break;
       case 'surge:static_field': { const m = (rs.staticN || 0) < 3 ? strongest(r) : null; if (m) { rs.staticN = (rs.staticN || 0) + 1; m.ba = (m.ba || 0) - 300; note(s, ev, seat, id, { u: m.u, a: -300 }); } } break;
       case 'surge:overcharge': if (ctx.len >= 4 && (rs.overcharge || 0) < 3) { rs.overcharge = (rs.overcharge || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
-      case 'shock:chain_lightning': { const m = (rs.chainL || 0) < 4 ? strongest(seat) : null; if (m) { rs.chainL = (rs.chainL || 0) + 1; B(m, 200, 0, id); } } break;
+      case 'shock:chain_lightning': { const m = (rs.chainL || 0) < 4 ? (rs.newMeld != null && s.mon[seat].find(x => x && x.u === rs.newMeld && !x.veil)) || strongest(seat) : null; if (m) { rs.chainL = (rs.chainL || 0) + 1; B(m, 200, 0, id); } } break;
       case 'veiledRevealed:deep_shade': if ((rs.shade || 0) < 4) { rs.shade = (rs.shade || 0) + 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); } break;
       case 'veiledRevealed:spite': if ((rs.spite || 0) < 4 && ctx.attacker) { rs.spite = (rs.spite || 0) + 1; ctx.attacker.ba = (ctx.attacker.ba || 0) - 400; note(s, ev, seat, id, { u: ctx.attacker.u, a: -400 }); } break;
       case 'selfReveal:cracked_mask': if (!rs.mask) { rs.mask = 1; rs.nextMeld.push({ a: 300, d: 0, id }); note(s, ev, seat, id, { armed: true }); raise('veiledRevealed', ctx); } break;
@@ -231,7 +233,7 @@ export function fire(s, db, ev, seat, hook, ctx) {
       case 'wonBattle:quench': if (ctx.mon.meld && (rs.quench || 0) < 4) { rs.quench = (rs.quench || 0) + 1; B(ctx.mon, 200, 200, id); } break;
       case 'healed:blood_price': if ((rs.blood || 0) < 4) { rs.blood = (rs.blood || 0) + 1; note(s, ev, seat, id); shock(ctx.n); } break;
       case 'wonBattle:pyre_mark': if (ctx.mon.meld && rs.pyreTurn !== s.turn && (rs.pyre || 0) < 4) { rs.pyreTurn = s.turn; rs.pyre = (rs.pyre || 0) + 1; rs.nextMeld.push({ a: 200, d: 0, id }); note(s, ev, seat, id, { armed: true, marks: (rs.marks || 0) + 1 }); mark(); } break;
-      case 'mark:bone_bellows': { let m = null; if ((rs.bellows || 0) < 4) for (const x of s.mon[seat]) if (x && x.meld && !x.veil && (!m || db.byId.get(x.id).atk + (x.ba || 0) > db.byId.get(m.id).atk + (m.ba || 0))) m = x; if (m) { rs.bellows = (rs.bellows || 0) + 1; B(m, 200, 0, id); } } break;
+      case 'mark:bone_bellows': { let m = null; if ((rs.bellows || 0) < 4) for (const x of s.mon[seat]) if (x && x.meld && !x.veil && (!m || effAtk(s, db, seat, x) > effAtk(s, db, seat, m))) m = x; if (m) { rs.bellows = (rs.bellows || 0) + 1; B(m, 200, 0, id); } } break;
       case 'returned:charged_bones': if ((rs.charged || 0) < 3) { rs.charged = (rs.charged || 0) + 1; rs.lenPlus = id; note(s, ev, seat, id, { armed: true }); } break;
       case 'clap:thunderclap': { const z = rs.clapTurn !== s.turn && (rs.clap || 0) < 3 ? s.mon[seat].findIndex(m => m && m.veil) : -1; if (z >= 0) { rs.clapTurn = s.turn; rs.clap = (rs.clap || 0) + 1; note(s, ev, seat, id, { zone: z }); shock(200); if (s.winner === null) raise('veiledRevealed', { mon: s.mon[seat][z], zone: z, attacker: null, flash: true }); } } break;
       case 'struck:spoils': if ((rs.spoils || 0) < 3) { rs.spoils = (rs.spoils || 0) + 1; st.extraDraw = 1; note(s, ev, seat, id); shock(400); } break;

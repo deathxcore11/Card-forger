@@ -179,3 +179,7 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 
 .ench { display: flex; flex-direction: column; gap: .15em; font-size: 1.08em; margin: .5em 0 .2em; color: var(--dim); } .ench b { color: var(--gold); }
 .ch .road { color: var(--gold); font-size: .92em; } .vh { margin: 1.2em 0 .2em; } .vgrid.vench .tile { padding: .8em; }
+
+#turn { position: fixed; inset: 0; z-index: 999; display: grid; place-items: center; background: rgba(14, 9, 5, .95); color: #f3e6c8; font: 18px/1.45 Georgia, 'Times New Roman', serif; text-align: center; padding: 24px; }
+#turn b { display: block; font-size: 24px; color: #e9c46a; margin-bottom: 10px; } #turn p { margin: 0 0 22px; }
+#turn button { font: inherit; padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(233, 196, 106, .6); background: rgba(40, 28, 14, .9); color: #f3e6c8; }

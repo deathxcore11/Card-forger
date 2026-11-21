@@ -173,7 +173,7 @@ export function planChain(db, cards, onto, opts = {}) {
       if (t3) {
         gy.push(cur.inst.id, B.id, cards[i + 1].id);
         pairs.push([cur.inst.id, B.id, t3.id, 'printed', cards[i + 1].id]); tried.push([cur.inst.id, B.id, cards[i + 1].id]);
-        cur = { inst: carry(cur.inst, t3.id), table: cur.table, raw: false };
+        cur = { inst: carry(cur.inst, t3.id), table: cur.table, raw: false, made: true };
         steps.push({ kind: 'printed', id: t3.id, three: true });
         successes += 2; run += 2; i++; forged = true;
         continue;
@@ -186,25 +186,26 @@ export function planChain(db, cards, onto, opts = {}) {
     if (r.kind === 'fizzle' && cur.table && cur.inst.e === 'catalyst' && aMon) r = { kind: 'fuel', mon: 0, forced: true };
     if (r.kind === 'printed' || r.kind === 'cross' || r.kind === 'fizzle') tried.push([cur.inst.id, B.id]);
     if (r.kind === 'printed' || r.kind === 'cross') {
-      gy.push(cur.inst.id, B.id);
+      if (!cur.made) gy.push(cur.inst.id); // a monster made earlier in this chain was never a card: only cards played go to the graveyard
+      gy.push(B.id);
       pairs.push([cur.inst.id, B.id, r.id, r.kind]);
-      cur = { inst: carry(cur.inst, r.id), table: cur.table, raw: false };
+      cur = { inst: carry(cur.inst, r.id), table: cur.table, raw: false, made: true };
       steps.push({ kind: r.kind, id: r.id }); successes++; run++; forged = true;
     } else if (r.kind === 'equip' || r.kind === 'fuel') {
       const add = r.kind === 'equip' ? equipB : fuel;
       const monInst = r.mon === 0 ? cur.inst : { ...B };
       const spent = r.mon === 0 ? B : cur.inst;
-      gy.push(spent.id);
+      if (!(spent === cur.inst && cur.made)) gy.push(spent.id);
       const table = r.mon === 0 ? cur.table : false;
       if (r.mon !== 0 && cur.table) tableLost = true;
       monInst.ba = (monInst.ba || 0) + add; monInst.bd = (monInst.bd || 0) + add;
       if (r.kind === 'equip') monInst.eq = (monInst.eq || 0) + 1;
-      cur = { inst: monInst, table, raw: cur.raw && r.mon === 0 };
+      cur = { inst: monInst, table, raw: cur.raw && r.mon === 0, made: r.mon === 0 && !!cur.made };
       steps.push({ kind: r.kind, id: monInst.id }); successes++; run++;
     } else {
       // fizzle: A is lost, B carries on
-      if (opts.steady && !steadyUsed && !cur.table) { steadyUsed = true; returned = cur.inst; steps.push({ kind: 'steady' }); }
-      else { gy.push(cur.inst.id); fizzles++; steps.push({ kind: 'fizzle', lost: cur.inst.id }); }
+      if (opts.steady && !steadyUsed && !cur.table && !cur.made) { steadyUsed = true; returned = cur.inst; steps.push({ kind: 'steady' }); }
+      else { if (!cur.made) gy.push(cur.inst.id); fizzles++; steps.push({ kind: 'fizzle', lost: cur.inst.id }); }
       if (cur.table) tableLost = true;
       cur = { inst: { ...B }, table: false, raw: true };
       run = 1;
@@ -637,6 +638,7 @@ function doPlay(s, db, ev, seat, a) {
     if (a.veiled && a.pos === 'a' && !(s.twist === 'fog' || st.law === 'mist')) { st.rs.hollow = 1; noteRelic(s, ev, seat, 'hollow_mask'); }
     ev.push({ e: 'summon', seat, zone: z, id: m.veil ? null : m.id, pos: m.pos, veiled: m.veil, melded: !!plan.melded });
     if (plan.melded) { stt.melds++; stt.longestChain = Math.max(stt.longestChain, plan.len); stt.chains[plan.len] = (stt.chains[plan.len] || 0) + 1; } else { stt.singles++; track(s, db, seat, m.veil ? 'loneVeiled' : 'loneFaceUp'); }
+    if (plan.melded) st.rs.newMeld = m.u; // Chain Lightning: "the new meld that caused it"
     const pc = { mon: m, zone: z, melded: !!plan.melded, len: plan.len, fire: c.attr === 'FIRE', bound: !!m.b, fresh: !plan.onTable, favoured: !!(s.terrain && terrainFavours(db, s.terrain.id, m.id)) };
     fire(s, db, ev, seat, 'placed', pc); // a linked relic may make the meld count as one card longer (pc.len)
     if (!plan.melded && !plan.onTable && s.winner === null && has(s, seat, 'outrider')) fire(s, db, ev, seat, 'lone', { mon: m });
@@ -645,6 +647,7 @@ function doPlay(s, db, ev, seat, a) {
       if (bz >= 0) { st.rs.rod = 1; noteRelic(s, ev, seat, 'grounding_rod'); if (destroyMon(s, db, ev, r, bz, 'relic')) struck(s, db, ev, seat); }
     }
     if (buried) fire(s, db, ev, seat, 'ingredients', { n: buried });
+    delete st.rs.newMeld;
     if (m.e === 'herald' && !plan.onTable) draw(s, db, ev, seat, 1);
     // Lever under test: a monster played alone and face up uses its Type's arrival; a melded monster after a Machine arrival is armed.
     if (db.config.soloArrival) {
