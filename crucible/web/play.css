@@ -198,3 +198,7 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 .why li { margin: .25em 0; line-height: 1.35; }
 .door .counsel { color: #e9d9a8; }
 .door .counsel i { color: var(--gold); }
+.soundslot { display: flex; flex-direction: column; gap: .7em; min-width: 22em; margin: .4em 0 .8em; font-size: 1.1em; }
+.soundslot .lm-audio-panel { display: flex; flex-direction: column; gap: .7em; }
+.soundslot input[type=range] { accent-color: var(--gold); height: 1.6em; }
+.soundslot input[type=checkbox] { width: 1.3em; height: 1.3em; accent-color: var(--gold); }

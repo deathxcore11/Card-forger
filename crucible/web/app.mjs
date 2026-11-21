@@ -13,6 +13,8 @@ import { SCENES } from './story.mjs';
 import { LAB_DEFAULTS, labConfig } from './labs.mjs';
 import { aimFor } from './aim.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
+import './sound.mjs';
+import { runFault, okProfile } from './saves.mjs'; // sets window.LMAudio; the cue() hook below is all the page knows about sound
 import { lessonFor, learnFrom, lessonText, learnedAll, newNote, noteFrames, whyLost, lawAnswer } from './coach.mjs';
 
 const D = window.CRUCIBLE_DATA;
@@ -41,7 +43,7 @@ let pref = {}; // what the home switches say. A run in progress keeps the set it
 function setLabs(v) { labs = v || {}; Object.assign(db.config, labConfig(labs)); for (const id of Object.keys(TUNED_TEXT)) RELICS[id] = { ...(BASE_RELICS[id] || LAB[id]), text: relicText(db, id) }; }
 const $ = s => document.querySelector(s);
 const app = $('#app');
-const LABKEY = 'lostmemories.labs.v5', RUNLABS = 'lostmemories.runlabs.v1', SAVE = 'lostmemories.run.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
+const LABKEY = 'lostmemories.labs.v5', RUNLABS = 'lostmemories.runlabs.v1', SAVE = 'lostmemories.run.v1', REV = 'lostmemories.runrev.v1', KNOWN = 'lostmemories.codex.v1', PROFILE = 'lostmemories.profile.v1';
 // Everything kept between visits goes through here. A write that fails is never swallowed: it is remembered in
 // store.failed (key to the value that was not stored) and the page shows a bar until a retry gets it stored.
 // Stored text that can no longer be read is copied aside under "<key>.unreadable" before anything overwrites it.
@@ -58,30 +60,59 @@ const store = {
 };
 
 const G = { run: null, sel: [], onto: null, attacker: null, aim: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
-const P = Object.assign(newProfile(), (() => { const s = store.get(PROFILE); if (s == null) return {}; if (typeof s === 'object' && !Array.isArray(s) && Number.isFinite(s.memories) && Array.isArray(s.codex) && Array.isArray(s.forgers) && Array.isArray(s.bought)) return s; store.unreadable.add(PROFILE); try { localStorage.setItem(PROFILE + '.unreadable', JSON.stringify(s)); } catch { /* the copy could not be kept */ } return {}; })());
+const P = Object.assign(newProfile(), (() => { const s = store.get(PROFILE); if (s == null) return {}; if (okProfile(s)) return s; store.unreadable.add(PROFILE); try { localStorage.setItem(PROFILE + '.unreadable', JSON.stringify(s)); } catch { /* the copy could not be kept */ } return {}; })());
 { const st = store.get(LABKEY); pref = st ? { heat: true, kits: true, ...st } : { ...LAB_DEFAULTS }; setLabs(pref); }
 // Saves from before 20 November 2026 wrote a shared pair (the two Robo fusions) without its order: bring them up to date once.
 { const pc = codexUpgrade(db, P.codex), kn = codexUpgrade(db, [...G.known].concat(pc)); if (pc.join() !== P.codex.join()) { P.codex = pc; store.set(PROFILE, P); } if (kn.join() !== [...G.known].join()) store.set(KNOWN, kn); G.known = new Set(kn); }
-const saveP = () => store.set(PROFILE, P);
+// Two tabs of this page share one store. Each keeps its own copy of the profile in P, so before a tab changes P it
+// takes in whatever another tab stored since (syncP), and a tab's write never undoes what another tab banked.
+const rawP = () => { try { return localStorage.getItem(PROFILE); } catch { return null; } };
+const setP = o => { for (const k of Object.keys(P)) delete P[k]; Object.assign(P, newProfile(), o); };
+let pRaw = rawP(); // the profile text this tab last read or wrote
+const saveP = () => { const ok = store.set(PROFILE, P); if (ok) pRaw = rawP(); return ok; };
+function syncP() {
+  if (store.failed.has(PROFILE)) return; // this tab holds progress that is not stored yet: it is the newer one
+  const raw = rawP(); if (raw == null || raw === pRaw) return;
+  let o = null; try { o = JSON.parse(raw); } catch { return; }
+  if (okProfile(o)) { setP(o); pRaw = raw; }
+}
 // First lessons: a profile that has finished a few runs already knows them. "Show the first lessons again" on the Rules page resets this.
 const tips = () => P.tips || (P.tips = P.runs > 2 ? learnedAll() : {});
-// A stored run is used only if it has the shape of a run; anything else is set aside like text that cannot be read.
-const okRun = s => !!s && typeof s === 'object' && typeof s.phase === 'string' && Array.isArray(s.deck) && !!s.stats && typeof s.stats === 'object' && (s.phase === 'over' ? !!s.result : true);
-function readRun() { const s = store.get(SAVE); if (s == null || okRun(s)) return s; store.unreadable.add(SAVE); try { localStorage.setItem(SAVE + '.unreadable', JSON.stringify(s)); localStorage.removeItem(SAVE); } catch { /* the copy could not be kept */ } return null; }
+// A stored run is used only if it is a run this page can play (saves.mjs); anything else is set aside like text that
+// cannot be read: copied to "<key>.unreadable", removed, never played and never banked.
+const okRun = s => runFault(db, s) === '';
+function setAside(s) { store.unreadable.add(SAVE); try { localStorage.setItem(SAVE + '.unreadable', JSON.stringify(s)); localStorage.removeItem(SAVE); localStorage.removeItem(REV); } catch { /* the copy could not be kept */ } }
+function readRun() { const s = store.get(SAVE); if (s == null || okRun(s)) return s; setAside(s); return null; }
 const liveSave = () => { const s = readRun(); return s && s.phase !== 'over' ? s : null; };
 const nameRun = run => { if (run && !run.uid) run.uid = 'r' + run.seed; return run; }; // runs begun before 21 November 2026 had no name
+// The same run can be open in two tabs. REV counts the writes of the stored run and says which run they were, so a
+// tab can tell, before it writes over the stored run or removes it, that the stored run is still the one it shows.
+// A tab that is behind stops with a notice (overlay 'moved') and changes nothing.
+const uidOf = s => s ? s.uid || 'r' + s.seed : null;
+const revOf = run => { const v = store.get(REV); return v && typeof v === 'object' && v.uid === uidOf(run) && Number.isFinite(v.n) ? v.n : 0; };
+const holds = run => {
+  if (store.failed.has(SAVE) || store.failed.has(REV)) return true; // this tab's own write is still waiting to be stored
+  const s = store.get(SAVE); return !!s && uidOf(s) === uidOf(run) && revOf(run) === (G.rev || 0);
+};
+const writeRun = run => { G.rev = (G.rev || 0) + 1; store.set(REV, { uid: uidOf(run), n: G.rev }); return store.set(SAVE, run); };
+const storedIs = run => { if (store.failed.has(SAVE)) return true; const s = store.get(SAVE); return !s || uidOf(s) === uidOf(run); }; // nothing stored, or this very run
 // Banks a finished run exactly once. The profile is written first and the saved run is removed only after that
-// write is known to be stored, so a full or blocked store can lose nothing and can pay nothing twice.
+// write is known to be stored, so a full or blocked store can lose nothing and can pay nothing twice. A stored run
+// that is not this run (another tab began it) is never removed or written over.
 function bank(run, long) {
-  const res = applyRun(P, nameRun(run), { long });
-  if (saveP()) store.del(SAVE); else store.set(SAVE, run);
+  syncP();
+  const before = JSON.stringify(P); let res;
+  try { res = applyRun(P, nameRun(run), { long }); } catch (e) { setP(JSON.parse(before)); throw e; } // a run that cannot be banked leaves the profile as it was
+  const same = storedIs(run);
+  if (saveP()) { if (same) { store.del(SAVE); store.del(REV); } } else if (same) store.set(SAVE, run);
+  if (!res.already && ((res.unlocks || []).length || (res.feats || []).length)) cueShown('unlock', { big: (res.unlocks || []).length > 0 });
   return res.already ? null : res;
 }
 if (store.unreadable.has(PROFILE)) G.notice = 'Your saved progress could not be read, so this is a fresh start. A copy of the old data was kept on this device.';
 // A finished run still on disk means the page closed before the run was banked (or before the bank was stored): bank it now, once.
 { const s = readRun();
   if (store.unreadable.has(SAVE)) G.notice = (G.notice ? G.notice + ' ' : '') + 'Your run in progress could not be read and cannot be continued. A copy was kept on this device.';
-  else if (s && s.phase === 'over') { const res = bank(s, !!((store.get(RUNLABS) || pref).long)); if (res && res.total) G.notice = `A finished run was waiting. It is banked now: +${res.total} Memories.`; } }
+  else if (s && s.phase === 'over') { try { const res = bank(s, !!((store.get(RUNLABS) || pref).long)); if (res && res.total) G.notice = `A finished run was waiting. It is banked now: +${res.total} Memories.`; } catch (e) { setAside(s); G.notice = 'A finished run on this device could not be read, so it was not banked. A copy was kept on this device.'; later(e); } } }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const card = id => db.byId.get(id);
 const cap = x => x[0].toUpperCase() + x.slice(1);
@@ -115,19 +146,25 @@ const relicRow = (id, extra = '') => `<div class="relic">${relicImg(id)}<div><b>
 // ---------- run plumbing ----------
 function act(a) {
   const run = G.run; if (!run || G.playing) return;
+  syncP();
+  if (run.phase !== 'over' && !holds(run)) { movedOn(); return; }
   const frames = [];
   const wasDuel = run.phase === 'duel' || (run.phase === 'chamber' && a.t === 'door');
   const bossId = run.door && run.door.type === 'boss' ? run.door.boss : run.phase === 'chamber' && a.t === 'door' && run.doors[a.i] && run.doors[a.i].type === 'boss' ? run.doors[a.i].boss : null;
+  const cx0 = run.codex ? run.codex.length : 0;
   let rev;
   try {
     rev = runApply(run, a, db, { onStep: evs => { if (run.duel) frames.push({ view: JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))), evs, rival: info(run) }); } });
-  } catch (e) { cue('refused', { action: a.t }); toast(e.message); render(); return; }
+  } catch (e) { if (e && e.constructor !== Error) { recover(e, true); return; } cue('refused', { action: a.t }); toast(e.message); render(); return; } // the engine refuses a move with a plain Error; anything else means the run itself is damaged
+  G.faulty = null;
+  holding = wasDuel && frames.length > 0; // released by playFrames when the last frame has been shown
   if (bossId && (rev || []).some(e => e.e === 'duelWon') && !(P.beaten || []).includes(bossId)) { P.beaten = (P.beaten || []).concat(bossId); saveP(); } // counsel on a guardian's door stops once it has been beaten
-  for (const e of rev || []) if (['door', 'duelStart', 'duelWon', 'duelLost', 'boss', 'kit', 'mystery'].includes(e.e)) cue('run:' + e.e, e); // duel events are cued as they are shown
+  if (run.codex && run.codex.length > cx0) cueShown('codex:new', { n: run.codex.length - cx0 });
+  for (const e of rev || []) if (['door', 'duelStart', 'duelWon', 'duelLost', 'boss', 'kit', 'mystery'].includes(e.e)) (e.e === 'duelWon' || e.e === 'duelLost' ? cueShown : cue)('run:' + e.e, e); // duel events are cued as they are shown; the result waits for the last of them
   G.sel = []; G.onto = null; G.attacker = null; G.aim = null;
   if (run.codex) { for (const k of run.codex) G.known.add(k); store.set(KNOWN, [...G.known]); }
   if (run.offer && run.offer.fresh && (P.fresh || []).includes(run.offer.fresh)) { P.fresh = P.fresh.filter(x => x !== run.offer.fresh); saveP(); }
-  if (run.phase === 'over') { if (!G.banked) { G.banked = true; G.results = bank(run, !!labs.long); cue('run:over', { won: !!run.result.won, reason: run.result.reason || null, floor: run.floor }); queueStory(run.result.won ? 'cleared' : run.result.reason === 'abandoned' ? 'left' : 'fell'); } } else store.set(SAVE, run);
+  if (run.phase === 'over') { if (!G.banked) { G.banked = true; G.results = bank(run, !!labs.long); cueShown('run:over', { won: !!run.result.won, reason: run.result.reason || null, floor: run.floor }); queueStory(run.result.won ? 'cleared' : run.result.reason === 'abandoned' ? 'left' : 'fell'); } } else writeRun(run);
   if (wasDuel && frames.length) {
     if (a.t === 'door' || !G.note) G.note = newNote(a.t !== 'door'); // a note begun part-way (after a reload) is partial
     noteFrames(G.note, frames);
@@ -140,9 +177,16 @@ const info = run => (G.lastRival = run.rival ? { name: run.rival.name, tier: run
 const lawShown = t => G.run && G.run.charms.includes('deep_pockets') ? t.replace('refills to four', 'refills to five').replace('refills to three', 'refills to four') : t;
 // Sound hook. The page plays no sound itself: an audio module that sets window.LMAudio = { cue(name, data) } hears every
 // event as the page shows it. Names: 'ui:<button verb>', 'duel:<engine event>', 'run:<run event>', 'run:over',
-// 'duel:frame' (all the events shown together, in order), 'screen:<screen>', 'story:<scene id>', 'toast', 'refused'.
+// 'duel:frame' (all the events shown together, in order), 'screen:<screen>', 'story:<scene id>', 'codex:new', 'unlock', 'toast', 'refused'.
 // The third argument is the duel view for duel cues and the tapped element for ui cues. A cue that throws never reaches the game.
 function cue(name, data, ctx) { try { const A = window.LMAudio; if (A && typeof A.cue === 'function') A.cue(name, data || {}, ctx); } catch (e) { /* sound never breaks play */ } }
+// The sound of an outcome waits for its picture. A move that ends a duel is worked out at once, but the last hit and
+// the Life Points falling are shown afterwards, frame by frame. So cues that announce a result (duel won or lost, the
+// run over, a new meld in the Codex, an unlock, a story scene) are held while frames are still to be shown and are
+// sent when the last frame has been shown, at any speed. Reported 21 November 2026: the fanfare could start before the last hit.
+const held = []; let holding = false;
+function cueShown(name, data) { if (holding) held.push([name, data]); else cue(name, data); }
+function releaseCues() { holding = false; for (const [n, d] of held.splice(0)) cue(n, d); }
 function toast(m) { cue('toast', { text: m }); G.toast = m; clearTimeout(toast.t); toast.t = setTimeout(() => { G.toast = ''; const t = $('#toast'); if (t) t.textContent = ''; }, 2600); }
 
 async function playFrames() {
@@ -157,6 +201,7 @@ async function playFrames() {
     await new Promise(r => setTimeout(r, G.fast ? 60 : heavy ? 620 : 140));
   }
   G.playing = false; G.shown = null; for (const g of document.querySelectorAll('body > .ghost')) g.remove(); render();
+  releaseCues(); // the result is on screen now
 }
 // The size of a relic's change, for the log and the flash: " +300/+0", or " -400 ATK" when a relic weakens a monster.
 const bonusText = e => e.longer ? ` (the meld counts as ${e.longer} cards)` : !(e.a || e.d) ? '' : e.a < 0 && !e.d ? ` ${e.a} ATK` : ` ${e.a < 0 ? '' : '+'}${e.a || 0}/${e.d < 0 ? '' : '+'}${e.d || 0}`;
@@ -237,7 +282,7 @@ function animate(evs, ghosts) {
 // ---------- story ----------
 function queueStory(id, then) {
   if (!SCENES[id] || P.seen.includes(id)) { if (then) then(); return; }
-  P.seen.push(id); saveP(); G.story = { id, i: 0, then: then || null }; cue('story:' + id, {});
+  P.seen.push(id); saveP(); G.story = { id, i: 0, then: then || null }; cueShown('story:' + id, {});
 }
 function storyPanel() {
   const st = G.story; if (!st || G.playing || G.overlay) return '';
@@ -321,13 +366,13 @@ function hud() {
   const cap = weightCap(db, r), w = deckWeight(db, r.deck);
   const sparks = '◆'.repeat(Math.max(0, r.sparks)) + '◇'.repeat(Math.max(0, db.config.sparks - r.sparks));
   return `<div class="hud glass"><span>Floor ${r.floor + 1} · Chamber ${Math.min(r.chamber + 1, 6)}</span><span class="sp" title="Sparks">${sparks}</span><span>Embers <b>${r.embers}</b></span><span>Seals <b>${Math.min(2, r.seals)}/2</b></span><span>Weight <b>${w}/${cap}</b></span><span>Forge Lv <b>${r.level}</b></span>
-    <button data-a="tab:deck">Deck</button><button data-a="tab:relics">Relics (${relicList(r).length})</button><button data-a="tab:help">Rules</button><button data-a="quit">Abandon</button></div>`;
+    <button data-a="tab:deck">Deck</button><button data-a="tab:relics">Relics (${relicList(r).length})</button><button data-a="tab:help">Rules</button><button data-a="tab:sound">Sound</button><button data-a="quit">Abandon</button></div>`;
 }
 
 function screenHome() {
   const saved = liveSave();
   return `<div class="hall home"><div class="title"><small>CARDSTASHY</small><h1>LOST MEMORIES</h1><p>Test build of the real rules engine. Three floors, six chambers each, three Sparks.</p>${G.notice ? `<p class="notice glass">${esc(G.notice)}</p>` : ''}
-    <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:feats">Feats (${(P.featsDone || []).length}/${featList(!!labs.long).length})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button></div>
+    <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:feats">Feats (${(P.featsDone || []).length}/${featList(!!labs.long).length})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button><button data-a="tab:sound">Sound</button></div>
     <div class="labs glass"><b>Lab rules</b> <small>experiments. Five Gifts, Leaning offers, the Heat ladder, Even kits and Tuned items start on: they are the current test baseline.${saved && saved.phase !== 'over' ? ' Your run in progress keeps the rules it started with; changes here apply to the next run.' : ''}</small><div class="labgrid">${['five', 'lean', 'heat', 'allHeat', 'kits', 'items', 'long', 'links', 'lone', 'veilSet', 'styles', 'trap', 'free', 'solo', 'tombStart'].map(k => `<button class="lab ${pref[k] ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] ? 'ON' : 'OFF'}</i><span>${LABS[k]}</span></button>`).join('')}</div></div>
     <p class="fine">Not final art. Seen only in a test browser so far.</p></div></div>`;
 }
@@ -434,7 +479,7 @@ function screenDuel() {
     <div class="board"><div class="trow">${traps(1)}</div><div class="mrow">${shut}${row(1)}${shut}</div><div id="terrain" class="terrain">${terr}</div><div class="mrow">${shut}${row(0)}${shut}</div><div class="trow">${traps(0)}</div><div id="relicFlash" class="relicFlash"></div><div id="rivalFlash" class="relicFlash rivalf"></div></div>
     <div class="side bot"><div class="who glass"><b id="myLp" class="lp">${v.lp[0]}</b><span>You</span><small>Deck ${v.deckCount[0]} · Turn ${v.turn}</small></div>
       <div class="logbox glass">${G.log.slice(-5).map(esc).join('<br>')}</div></div>
-    <div class="tray"><div class="hand">${hand}</div><div class="actions glass"><div class="trayline">${G.playing ? '<span>…</span>' : myTurn ? tray : pend ? '<span>Answer the attack.</span>' : '<span>Rival is thinking.</span>'}</div><div class="row">${buttons}${myTurn && !G.sel.length && G.attacker == null ? `<button class="gold" data-a="end">${v.turn === 1 || (!canAtk.size) ? 'End turn' : 'End turn'}</button>` : ''}${v.relics.includes('clean_draw') && !v.rs.cleanDraw && canPlay && G.sel.length === 1 ? '<button data-a="clean">Clean Draw this card</button>' : ''}${powerBtn}<button data-a="speed">${G.fast ? 'Speed: fast' : 'Speed: normal'}</button></div></div></div>${prompt}</div>`;
+    <div class="tray"><div class="hand">${hand}</div><div class="actions glass"><div class="trayline">${G.playing ? '<span>…</span>' : myTurn ? tray : pend ? '<span>Answer the attack.</span>' : '<span>Rival is thinking.</span>'}</div><div class="row">${buttons}${myTurn && !G.sel.length && G.attacker == null ? `<button class="gold" data-a="end">${v.turn === 1 || (!canAtk.size) ? 'End turn' : 'End turn'}</button>` : ''}${v.relics.includes('clean_draw') && !v.rs.cleanDraw && canPlay && G.sel.length === 1 ? '<button data-a="clean">Clean Draw this card</button>' : ''}${powerBtn}<button data-a="speed">${G.fast ? 'Speed: fast' : 'Speed: normal'}</button><button data-a="tab:sound">Sound</button></div></div></div>${prompt}</div>`;
 }
 
 function screenReward() {
@@ -487,6 +532,7 @@ function screenFeats() {
 function tabPanel() {
   const r = G.run;
   if (G.tab === 'help') return `<div class="modal"><div class="glass panel wide"><h2>How a duel works</h2><ul><li>Each turn: draw toward five cards (two a turn at most), play one card or one meld, then attack.</li><li>Meld: tap two or more hand cards in order. They combine left to right into one monster. Tap one of your table monsters first to meld onto it.</li><li>Attack position fights with ATK. Defense uses DEF and protects your Life Points. Veiled is face down in defense.</li><li>WATER beats FIRE beats WIND beats EARTH beats WATER. LIGHT and DARK beat each other when attacking. The edge is +500 for that battle.</li><li>Field Spells set the terrain (+500 for its Types). Equips give +500. Traps wait face down for an attack. Other cards are fuel: +300 in a meld.</li><li>Play comes before attacks. A monster that attacked or just arrived cannot change position.</li><li>Lose a duel and you lose a Spark. The boss door needs two seals, one from each duel you win on the floor.</li></ul><div class="row"><button class="gold" data-a="tab:">Close</button><button data-a="relearn">Show the first lessons again</button></div></div></div>`;
+  if (G.tab === 'sound') return `<div class="modal"><div class="glass panel"><h2>Sound</h2><div id="soundslot" class="soundslot"></div><p class="fine">Draft sounds: made by machine and not yet listened to by anyone. Say which ones are wrong.</p><div class="row"><button class="gold" data-a="tab:">Close</button></div></div></div>`;
   if (!r) return '';
   if (G.tab === 'relics') return `<div class="modal"><div class="glass panel wide"><h2>Your relics</h2>${relicList(r).map(id => relicRow(id)).join('') || '<p>None yet.</p>'}${possibleMasterworks(r).map(id => `<p class="fine">Masterwork ready at an Anvil: ${esc(RELICS[id].name)}.</p>`).join('')}<div class="row"><button class="gold" data-a="tab:">Close</button></div></div></div>`;
   if (G.tab === 'deck') return `<div class="modal"><div class="glass panel wide"><h2>Deck ${r.deck.length} cards · weight ${deckWeight(db, r.deck)}/${weightCap(db, r)}</h2><p>${r.phase === 'chamber' ? 'Tap a deck card, then a trunk card, to swap them.' : 'You can swap cards between duels, in a chamber.'}</p><div class="grid">${deckList(r.deck, 'deckpick', G.pickDeck)}</div><h3>Trunk ${r.trunk.length}</h3><div class="grid">${deckList(r.trunk, 'trunkpick', G.pickTrunk) || '<span class="fine">Empty.</span>'}</div><div class="row"><button class="gold" data-a="tab:">Close</button></div></div></div>`;
@@ -497,6 +543,7 @@ const worth = run => scoreRun(P, { ...run, result: { won: false, reason: 'abando
 function overlay() {
   const o = G.overlay; if (!o || G.playing) return '';
   if (o.kind === 'duelEnd') { const s = o.sum; return `<div class="modal"><div class="glass panel"><h2>${s.won ? 'Victory' : 'Defeat'}</h2><p>${esc(o.rival ? o.rival.name : '')} · ${s.turns} turns${s.reason === 'deckout' ? ' · a deck ran out' : ''}</p>${s.won ? `<div class="rankbig">${s.rank.rank}</div><table>${s.rank.lines.filter(l => l[1]).map(l => `<tr><td>${esc(l[0])}</td><td>${l[1] > 0 ? '+' : ''}${l[1]}</td></tr>`).join('')}<tr><td><b>Total</b></td><td><b>${s.rank.points}</b></td></tr></table><p>Style: ${s.rank.style === 'craft' ? 'Craft' : 'Fury'} · Embers +${s.embers}${s.bountyMet ? ' · Bounty met' : ''}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>${(o.why || []).length ? `<div class="why"><b>What happened</b><ul>${o.why.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>` : ''}`}<div class="row"><button class="gold" data-a="closeov">Continue</button></div></div></div>`; }
+  if (o.kind === 'moved') return `<div class="modal"><div class="glass panel leave moved"><h2>This run moved on</h2><p>The run was carried on in another tab or window, so what this tab shows is behind it. Nothing can be done to the run from here, and nothing was lost.</p><div class="row"><button class="gold" data-a="leavetab">Back to the start</button></div></div></div>`;
   if (o.kind === 'leave') { const run = o.saved || G.run, w = worth(run), S = run.stats;
     return `<div class="modal"><div class="glass panel leave"><h2>${o.saved ? 'You have a run in progress' : 'Leave the pyramid?'}</h2>
       <p>${o.saved ? `${esc(run.forger ? FORGERS[run.forger].name : 'No Forger')}, Floor ${run.floor + 1}, Chamber ${Math.min(6, run.chamber + 1)}. Starting a new run ends that one.` : 'Leaving ends this run as a loss. It cannot be continued afterwards.'}</p>
@@ -511,7 +558,23 @@ function inspectPanel() {
   return `<div class="modal" data-a="closeinspect"><div class="glass panel insp">${face(G.inspect, { cls: 'big' })}<div><h3>${esc(c.name)}</h3>${db.isMonster(c.id) ? `<p>${esc(c.type)} · ${esc(c.attr)} · Level ${c.level}<br>ATK ${c.atk} · DEF ${c.def}${G.inspect.ea != null ? `<br>Now ${G.inspect.ea} / ${G.inspect.ed}` : ''}</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p><b>Enchant, ${cap(G.inspect.e)}:</b> ${esc(ENCHANT_TEXT[G.inspect.e])}${G.inspect.bulwarkUsed || G.inspect.x ? ' <i>Used this duel.</i>' : ''}</p>` : ''}<p class="fine">Weight ${weightOf(db, c.id)}. Tap anywhere to close.</p></div></div></div>`;
 }
 
-function render() {
+// Reports a fault the page recovered from without stopping the page: the checks and the click bot count page errors.
+function later(e) { try { (window.LM.faults = window.LM.faults || []).push(String(e && e.stack || e)); } catch { /* start-up: LM is not there yet */ } setTimeout(() => { throw new Error('recovered: ' + (e && e.message)); }); }
+function movedOn() { G.sel = []; G.onto = G.attacker = G.aim = G.inspect = null; G.tab = null; G.overlay = { kind: 'moved' }; render(); }
+// A run that cannot be shown or cannot take a move must never leave a dead page. The page goes back to the start.
+// The stored run is set aside only when it could not even be shown after Continue, or failed a move twice running;
+// otherwise it stays stored as it was.
+function recover(e, moving) {
+  const r = G.run, drop = !!r && r.phase !== 'over' && (G.fresh || (moving && G.faulty === uidOf(r)));
+  if (r && moving) G.faulty = uidOf(r);
+  Object.assign(G, { run: null, sel: [], onto: null, attacker: null, aim: null, frames: [], playing: false, shown: null, inspect: null, overlay: null, tab: null, screen: null, story: null, results: null, banked: false, fresh: false }); held.length = 0; holding = false;
+  if (drop) { const s = store.get(SAVE); if (s && uidOf(s) === uidOf(r)) setAside(s); G.notice = 'Your run in progress could not be read and cannot be continued. A copy was kept on this device.'; }
+  else G.notice = 'Something went wrong on that screen, so you are back at the start.' + (r && r.phase !== 'over' ? ' Your run is saved as it was before.' : '');
+  setLabs(pref); later(e);
+  try { draw(); } catch (e2) { app.innerHTML = `<div class="hall home"><div class="title"><h1>LOST MEMORIES</h1><p class="notice glass">${esc(G.notice)} Reload this page to go on.</p></div></div>`; later(e2); }
+}
+function render() { try { draw(); G.fresh = false; } catch (e) { recover(e, false); } }
+function draw() {
   const r = G.run; let body;
   if (G.screen) body = { forger: screenForger, vault: screenVault, codex: screenCodex, feats: screenFeats }[G.screen]();
   else if (!r) body = screenHome();
@@ -519,12 +582,15 @@ function render() {
   else body = { kit: screenKit, charm: screenCharm, chamber: screenChamber, reward: screenReward, anvil: screenAnvil, bazaar: screenBazaar, over: screenOver }[r.phase]();
   app.innerHTML = `${G.screen || G.shown || (r && (r.phase === 'duel' || r.phase === 'over')) ? '' : hud()}${body}${tabPanel()}${overlay()}${inspectPanel()}${storyPanel()}${store.failed.size ? `<div class="savebar"><b>Not saved.</b> This device would not store your progress (its storage is full or blocked). You can keep playing, but closing this page now would lose ${store.failed.has(PROFILE) ? 'what you have earned' : 'this run'}. <button data-a="resave">Try again</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home';
+  { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
   const scr = G.screen || app.dataset.phase; if (scr !== render.scr) { render.scr = scr; cue('screen:' + scr, r ? { floor: r.floor, chamber: r.chamber, rival: r.rival ? r.rival.name : null, tier: r.rival ? r.rival.tier : null } : {}); }
 }
 
 // ---------- input ----------
-app.addEventListener('click', ev => {
+app.addEventListener('click', ev => { try { tapped(ev); } catch (e) { recover(e, false); } });
+function tapped(ev) {
   const el = ev.target.closest('[data-a]'); if (!el || el.disabled) return;
+  syncP();
   const [verb, x, y] = el.dataset.a.split(':'); const r = G.run, n = x === undefined || x === '' ? null : +x;
   cue('ui:' + verb, { x, y }, el);
   const duel = a => act({ t: 'duel', action: a });
@@ -532,28 +598,29 @@ app.addEventListener('click', ev => {
     case 'new': { const s = !r || r.phase === 'over' ? liveSave() : null; if (s) { G.overlay = { kind: 'leave', saved: nameRun(s) }; render(); break; } }
       // falls through to the Forger screen when no run is waiting
       G.overlay = null; G.screen = 'forger'; if (!P.forgers.includes(G.pickForger)) G.pickForger = 'tarn'; G.pickHeat = Math.min(G.pickHeat, heatOpen()); render(); break;
+    case 'leavetab': Object.assign(G, { run: null, overlay: null, screen: null, shown: null, frames: [], results: null, banked: false, story: null }); setLabs(pref); render(); break;
     case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; G.banked = false; setLabs(pref); } render(); break;
     case 'screen': G.screen = x; render(); break;
     case 'lab': pref = { ...pref, [x]: !pref[x] }; store.set(LABKEY, pref); setLabs(pref); render(); break;
     case 'forger': G.pickForger = x; G.pickHeat = Math.min(G.pickHeat, heatOpen()); render(); break;
     case 'heat': G.pickHeat = n; render(); break;
-    case 'resave': if (store.retry()) { if (r && r.phase === 'over') store.del(SAVE); toast('Saved.'); } else toast('Still not saved. Keep this page open.'); render(); break;
+    case 'resave': if (store.retry()) { if (r && r.phase === 'over' && storedIs(r)) { store.del(SAVE); store.del(REV); } toast('Saved.'); } else toast('Still not saved. Keep this page open.'); render(); break;
     case 'bankold': case 'abandon': {
       // End the run as a loss and bank it once. "bankold" does it to the run waiting on disk, "abandon" to the run being played.
-      const run = verb === 'bankold' ? G.overlay && G.overlay.saved : r; G.overlay = null;
+      const run = verb === 'bankold' ? nameRun(liveSave()) : r; G.overlay = null; // the waiting run is read again here: another tab may have moved it on since the question was shown
       if (!run || run.phase === 'over' || G.playing) { render(); break; }
-      if (verb === 'bankold') { setLabs(store.get(RUNLABS) || pref); G.run = run; }
+      if (verb === 'bankold') { setLabs(store.get(RUNLABS) || pref); G.run = run; G.rev = revOf(run); }
       G.sel = []; G.onto = G.attacker = G.aim = G.shown = G.inspect = null; G.tab = null; G.results = null; G.banked = false; G.screen = null;
       act({ t: 'abandon' }); break;
     }
     case 'descend': { const s = liveSave(); if (s) { try { runApply(nameRun(s), { t: 'abandon' }, db); const res = bank(s, !!((store.get(RUNLABS) || pref).long)); if (res) toast(`Your earlier run was banked: +${res.total} Memories.`); } catch { /* a run that cannot be ended is left for Continue */ } } }
       if (store.failed.has(PROFILE)) { toast('Your progress is not saved yet. Tap Try again first.'); render(); break; }
-      G.banked = false; setLabs(pref); store.set(RUNLABS, pref); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, ...runOptions(P, G.pickForger, !!labs.long), uid: Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36) }); G.log = []; G.overlay = null; store.set(SAVE, G.run); queueStory('intro'); render(); break;
+      G.banked = false; setLabs(pref); store.set(RUNLABS, pref); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, ...runOptions(P, G.pickForger, !!labs.long), uid: Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36) }); G.log = []; G.overlay = null; G.rev = 0; writeRun(G.run); queueStory('intro'); render(); break;
     case 'vbuy': try { const b = buy(P, y ? x + ':' + y : x); saveP(); toast(b.name + (y ? ' can now be offered at an Anvil.' : ' can now appear in your runs.')); } catch (e) { toast(e.message); } render(); break;
     case 'storynext': { const st = G.story; if (!st) break; if (++st.i >= SCENES[st.id].lines.length) { G.story = null; if (st.then) { st.then(); break; } } render(); break; }
     case 'storyskip': { const st = G.story; G.story = null; if (st && st.then) { st.then(); break; } render(); break; }
     case 'power': { const a = { t: 'power' }; if (x === 'hand') a.hand = G.sel[0]; if (x === 'zone') a.zone = G.attacker; duel(a); break; }
-    case 'resume': G.overlay = null; G.screen = null; G.banked = false; G.results = null; setLabs(store.get(RUNLABS) || pref); G.run = nameRun(liveSave()); if (!G.run) { G.notice = 'Your run in progress could not be read and cannot be continued. A copy was kept on this device.'; render(); break; } if (G.run && G.run.codex) G.run.codex = codexUpgrade(db, G.run.codex); render(); break;
+    case 'resume': G.overlay = null; G.screen = null; G.banked = false; G.results = null; setLabs(store.get(RUNLABS) || pref); G.run = nameRun(liveSave()); G.rev = revOf(G.run); G.fresh = true; if (!G.run) { G.fresh = false; G.notice = 'Your run in progress could not be read and cannot be continued. A copy was kept on this device.'; render(); break; } if (G.run && G.run.codex) G.run.codex = codexUpgrade(db, G.run.codex); render(); break;
     case 'quit': G.overlay = { kind: 'leave' }; render(); break;
     case 'kit': act({ t: 'kit', i: n }); break;
     case 'redeal': act({ t: 'redeal' }); break;
@@ -596,7 +663,9 @@ app.addEventListener('click', ev => {
     case 'end': duel({ t: 'end' }); break;
     case 'respond': duel({ t: 'respond', trap: n }); break;
   }
-});
+}
+// Another tab stored something: take in its profile, and stop this tab's run if the stored run is no longer the one shown here.
+addEventListener('storage', ev => { try { if (ev.key !== null && ![SAVE, REV, PROFILE].includes(ev.key)) return; syncP(); if (G.playing) return; const r = G.run; if (r && r.phase !== 'over' && !holds(r)) G.overlay = { kind: 'moved' }; render(); } catch (e) { recover(e, false); } });
 function trySwap() {
   const r = G.run;
   if (r.phase === 'chamber' && G.pickDeck != null && G.pickTrunk != null) { const a = { t: 'swap', deck: G.pickDeck, trunk: G.pickTrunk }; G.pickDeck = G.pickTrunk = null; act(a); G.tab = 'deck'; render(); }

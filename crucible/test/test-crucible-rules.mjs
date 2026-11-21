@@ -12,6 +12,7 @@ import { newRun, runApply, MIN_DECK, makeRival, rankDuel, rankLetter, makeKit, K
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { labConfig, LAB_DEFAULTS } from '../web/labs.mjs';
 import { aimFor } from '../web/aim.mjs';
+import { runFault, okRun, okProfile, PHASES } from '../web/saves.mjs';
 import { lessonFor, learnFrom, lessonText, learnedAll, newNote, noteFrames, whyLost } from '../web/coach.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS, FEATS_LONG, LONG_GIFTS, KIT_GOALS, START_ENCHANTS, VAULT_ENCHANTS, openKits, nextKit, openEnchants, runOptions, featList } from '../engine/meta.mjs';
@@ -1324,6 +1325,42 @@ test('a lost duel says what happened from what was shown', () => {
   assert.deepEqual(whyLost(newNote(true), { reason: 'lp' }, { law: 'stonewall' }), ['Her monsters win ties. Attack only when your number is higher, not equal.']);
   assert.deepEqual(whyLost(newNote(true), { reason: 'lp' }, {}), []);
   for (const pair of BOSSES) for (const b of pair) assert.equal(whyLost(newNote(true), {}, { law: b.law }).length, 1, 'every guardian Law has its line: ' + b.law);
+});
+
+test('the page takes every state of a real run as a save, and no damaged one', () => {
+  // every state a run passes through, after a round trip through JSON as the page stores it, at several heats and skill levels
+  const seen = new Set();
+  for (const [seed, heat, level, forger] of [[11, 0, 2, 'tarn'], [12, 0, 0, 'scrapper'], [13, 5, 2, 'veil'], [14, 10, 2, 'storm'], [15, 0, 1, undefined], [16, 3, 2, 'tarn']]) {
+    const run = newRun(db, { seed, heat, forger }); let guard = 0;
+    for (;;) {
+      const s = JSON.parse(JSON.stringify(run)); seen.add(s.phase);
+      assert.equal(runFault(db, s), '', `seed ${seed} step ${guard} phase ${s.phase}`);
+      if (run.phase === 'over') break;
+      runApply(run, policyAction(db, run, { level }), db); assert.ok(++guard < 200000);
+    }
+    const left = newRun(db, { seed: seed + 100, heat, forger }); runApply(left, { t: 'abandon' }, db); assert.equal(runFault(db, JSON.parse(JSON.stringify(left))), '', 'a run left at once');
+  }
+  assert.deepEqual([...seen].sort(), PHASES.slice().sort(), 'every phase was seen');
+  // the two saves the review of Version 27 reported, and their relatives: valid JSON, not a run
+  const base = () => { const r = newRun(db, { seed: 21, forger: 'tarn' }); while (r.phase !== 'chamber') runApply(r, policyAction(db, r, { level: 2 }), db); return JSON.parse(JSON.stringify(r)); };
+  const bad = edit => { const r = base(); const out = edit(r); return runFault(db, out === undefined ? r : out); };
+  assert.equal(bad(r => { r.phase = 'limbo'; }), 'unknown phase');
+  assert.equal(bad(r => { r.phase = 'over'; r.result = {}; }), 'no result');
+  assert.equal(bad(r => { r.phase = 'over'; r.result = { won: false }; }), 'no reason for the loss');
+  assert.notEqual(bad(() => ({ phase: 'over', deck: [], stats: {}, result: { won: true } })), '');
+  assert.equal(bad(r => { r.phase = 'over'; r.result = { won: true, floor: 2 }; r.stats = {}; }), 'the tallies are missing');
+  assert.equal(bad(r => { r.doors = null; }), 'no doors');
+  assert.equal(bad(r => { r.doors[0].type = 'trapdoor'; }), 'a door to no known room');
+  assert.equal(bad(r => { r.phase = 'duel'; }), 'no duel');
+  assert.equal(bad(r => { r.phase = 'reward'; r.offer = null; }), 'nothing on offer');
+  assert.equal(bad(r => { r.deck[3] = { id: 'no-such-card' }; }), 'the deck holds something that is not a card');
+  assert.equal(bad(r => { r.embers = null; }), 'embers is not a number'); // JSON turns NaN into null
+  assert.equal(bad(r => { r.floor = 7; }), 'no such floor');
+  for (const junk of [null, 7, 'run', [], {}]) assert.equal(okRun(db, junk), false);
+  // a field this build does not know is let through: a newer build's save still opens
+  assert.equal(bad(r => { r.somethingNew = { a: 1 }; }), '');
+  // a finished run that is refused is never banked: applyRun is reached only through the page, which checks first; and the profile check holds
+  assert.ok(okProfile(JSON.parse(JSON.stringify(newProfile())))); for (const junk of [null, [], {}, { memories: 'lots' }]) assert.equal(okProfile(junk), false);
 });
 
 console.log('crucible rules:', passed, 'tests passed');

@@ -132,6 +132,86 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
   await tap('[data-a="leave"]'); r = await ls(K.run);
   check('the run goes on with the smaller deck', r.phase === 'chamber' && r.deck.length === before - 1 && errors.length === 0, errors);
 
+  // 7. Reported 21 November 2026 (review of Version 27): the same saved run open in two tabs. Tab 1 banks it and starts
+  // a new run; tab 2, still showing the old run, abandons it; the new run was deleted. Two pages of one browser
+  // profile share storage, as two tabs do.
+  const two = async o => { await open(o); const a = page, b = await a.context().newPage(); b.on('pageerror', e => errors.push(e.message)); await b.goto(url); await b.waitForTimeout(350); return [a, b]; };
+  const on = async (pg, f) => { const keep = page; page = pg; try { return await f(); } finally { page = keep; } };
+  const moved = () => text('.leave, .notice');
+  {
+    const [a, b] = await two(chamber);
+    await on(a, resume); await on(b, resume);
+    await on(a, async () => { await tap('[data-a="quit"]'); await tap('.leave [data-a="abandon"]'); await story(); await tap('[data-a="home"]'); await tap('[data-a="new"]'); await tap('[data-a="descend"]'); await story(); });
+    const fresh = await ls(K.run), pA = await ls(K.profile);
+    check('tab 1 banked the old run and began a new one', fresh && fresh.phase === 'kit' && fresh.uid !== chamber.run.uid && pA.runs === P0.runs + 1, [fresh && fresh.phase, pA.runs]);
+    await on(b, async () => { await tap('[data-a="quit"]'); await tap('.leave [data-a="abandon"]'); await story(); });
+    let now = await ls(K.run), pB = await ls(K.profile);
+    check('abandoning the old run in tab 2 leaves the new run alone', !!now && now.uid === fresh.uid && now.phase === 'kit', now && [now.uid, now.phase]);
+    check('and pays nothing more', pB.runs === P0.runs + 1 && pB.memories === pA.memories && pB.banked.length === 1, [pB.runs, pB.memories, pA.memories]);
+    check('tab 2 says the run moved on elsewhere', /another tab or window/.test(await on(b, moved)), await on(b, moved));
+    check('and tab 2 can pick up the current run from there', await on(b, async () => { await tap('[data-a="leavetab"]'); return has('[data-a="resume"]'); }));
+  }
+  {
+    // the same thing by an ordinary move: tab 2 opens a door of the old run, which used to overwrite the new run
+    const [a, b] = await two(chamber);
+    await on(a, resume); await on(b, resume);
+    await on(a, async () => { await tap('[data-a="quit"]'); await tap('.leave [data-a="abandon"]'); await story(); await tap('[data-a="home"]'); await tap('[data-a="new"]'); await tap('[data-a="descend"]'); await story(); });
+    const fresh = await ls(K.run);
+    await on(b, async () => { await tap('.door'); await page.waitForTimeout(500); await story(); });
+    const now = await ls(K.run);
+    check('a move in the old tab never overwrites the new run', !!now && fresh && now.uid === fresh.uid && now.phase === 'kit', now && [now.uid, now.phase]);
+    check('the old tab says why nothing happened', /another tab or window/.test(await on(b, moved)), await on(b, moved));
+  }
+  {
+    // one run played from two tabs: only the tab that holds the newest step may go on
+    const [a, b] = await two(bazaar);
+    await on(a, resume); await on(b, resume);
+    await on(a, async () => { await tap('[data-a="leave"]'); });
+    const step = await ls(K.run);
+    check('tab 1 moved the run on', step.phase === 'chamber', step.phase);
+    await on(b, async () => { await tap('[data-a="leave"]'); await tap('[data-a="buy:0"]'); });
+    check('tab 2, a step behind, changes nothing', JSON.stringify(await ls(K.run)) === JSON.stringify(step) && /another tab or window/.test(await on(b, moved)), await on(b, moved));
+    await on(a, async () => { await tap('[data-a="quit"]'); await tap('.leave [data-a="abandon"]'); await story(); });
+    const pA = await ls(K.profile);
+    // tab 2 is on the home screen with the profile it read before tab 1 banked: a profile write there must not undo the bank
+    await on(b, async () => { await tap('[data-a="leavetab"]'); await page.evaluate(() => { window.LM.G.tab = 'help'; window.LM.render(); }); await tap('[data-a="relearn"]'); });
+    const pB = await ls(K.profile);
+    check('a profile write from the other tab keeps what tab 1 banked', pB.memories === pA.memories && pB.runs === pA.runs && pB.banked.length === pA.banked.length && pA.runs === bazaar.profile.runs + 1, [pA.memories, pB.memories, pA.runs, pB.runs]);
+  }
+
+  // 8. Reported 21 November 2026 (review of Version 27): stored runs that are valid JSON but not a playable run.
+  // An unknown phase still offered Continue and crashed when chosen; an incomplete finished run crashed at start-up.
+  const damaged = async (name, edit, { cont } = {}) => {
+    const o = JSON.parse(JSON.stringify(chamber)); edit(o.run, o); const n0 = errors.length;
+    await open(o); const offered = await has('[data-a="resume"]'); if (offered) { await resume(); await tap('.door'); await page.waitForTimeout(300); }
+    const alive = await page.evaluate(() => !!document.querySelector('#app [data-a]')), note = await text('.notice');
+    if (cont) check(name + ': still plays', errors.length === n0 && alive && offered, errors.slice(n0));
+    else check(name + ': set aside with a notice, no crash', errors.length === n0 && alive && /could not be read/.test(note) && (await ls(K.run)) === null && !!(await ls(K.run + '.unreadable')) && !(await has('[data-a="resume"]')), [errors.slice(n0), note]);
+    check(name + ': the profile is untouched', (await ls(K.profile)).memories === P0.memories && (await ls(K.profile)).runs === P0.runs);
+  };
+  await damaged('an unknown phase', r => { r.phase = 'limbo'; });
+  await damaged('a finished run with an empty result', r => { r.phase = 'over'; r.result = {}; });
+  await damaged('a finished run that is only a stub', (r, o) => { o.run = { phase: 'over', deck: [], stats: {}, result: { won: true } }; });
+  await damaged('a finished run with no stats inside', r => { r.phase = 'over'; r.result = { won: false, floor: 0, chamber: 2, reason: 'sparks' }; r.stats = {}; });
+  await damaged('a chamber with no doors', r => { r.doors = null; });
+  await damaged('a duel phase with no duel', r => { r.phase = 'duel'; r.duel = null; });
+  await damaged('a reward phase with no offer', r => { r.phase = 'reward'; r.offer = null; });
+  await damaged('a deck of things that are not cards', r => { r.deck = r.deck.map(() => ({ id: 'no-such-card' })); });
+  await damaged('a door that names no known room', r => { r.doors[0].type = 'trapdoor'; });
+  await damaged('a run with fields this build does not know', r => { r.somethingNew = { a: 1 }; }, { cont: true });
+
+  // Damage the shape check cannot see is caught when the run is shown or moved: the page goes back to the start, says
+  // so, and reports the fault (as a page error that begins "recovered:") instead of stopping.
+  const hidden = async (o, steps) => { const n0 = errors.length; await open(o); const out = await steps(); await page.waitForTimeout(150); const mine = errors.splice(n0); return { out, mine, alive: await page.evaluate(() => !!document.querySelector('#app [data-a="new"]')), note: await text('.notice') }; };
+  { const o = JSON.parse(JSON.stringify(chamber)); o.run.charms = ['no-such-charm']; o.run.gifts = [7];
+    const h = await hidden(o, resume);
+    check('a run that cannot be shown after Continue is set aside, and the page lives', h.alive && /could not be read/.test(h.note) && (await ls(K.run)) === null && !!(await ls(K.run + '.unreadable')) && h.mine.length >= 1 && h.mine.every(m => /^recovered: /.test(m)), h); }
+  { const o = JSON.parse(JSON.stringify(chamber)); o.run.stats.doors = null; o.run.stats.byTier = null;
+    const h = await hidden(o, async () => { await resume(); await tap('.door.t-boss'); await story(); await page.waitForTimeout(300); });
+    check('a run that fails a move goes back to the start and stays stored', h.alive && /Something went wrong/.test(h.note) && /saved as it was/.test(h.note) && ((await ls(K.run)) || {}).phase === 'chamber' && h.mine.length === 1 && /^recovered: /.test(h.mine[0]), h);
+    const n0 = errors.length; await resume(); await tap('.door.t-boss'); await story(); await page.waitForTimeout(450); errors.splice(n0);
+    check('failing the same move twice sets the run aside', /could not be read/.test(await text('.notice')) && (await ls(K.run)) === null && !!(await ls(K.run + '.unreadable')) && (await ls(K.profile)).memories === P0.memories, await text('.notice')); }
+
   check('no page errors anywhere', errors.length === 0, errors);
   console.log(`save checks at ${W}x${H}: ${passed} passed, ${failed} failed`);
   await browser.close(); process.exit(failed ? 1 : 0);

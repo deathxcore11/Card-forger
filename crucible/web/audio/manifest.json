@@ -1,0 +1,1300 @@
+{
+ "version": 1,
+ "formats": [
+  "ogg",
+  "mp3"
+ ],
+ "sounds": {
+  "amb_bazaar": {
+   "file": "amb/amb_bazaar",
+   "group": "Ambience",
+   "event": "Bazaar",
+   "desc": "Warm murmur of air, wind chimes in the Lost Memories scale, cloth, a few coins",
+   "status": "draft",
+   "dur": 24.0,
+   "loop": [
+    0,
+    24.0
+   ],
+   "kb": 469.9
+  },
+  "amb_chamber": {
+   "file": "amb/amb_chamber",
+   "group": "Ambience",
+   "event": "Pyramid chamber / door hall",
+   "desc": "Low wind, sand trickles, distant settling stone, a faint D drone",
+   "status": "draft",
+   "dur": 24.0,
+   "loop": [
+    0,
+    24.0
+   ],
+   "kb": 469.9
+  },
+  "amb_furnace": {
+   "file": "amb/amb_furnace",
+   "group": "Ambience",
+   "event": "Anvil (furnace room)",
+   "desc": "Fire roar and crackle, slow bellows breaths, a far hammer now and then",
+   "status": "draft",
+   "dur": 24.0,
+   "loop": [
+    0,
+    24.0
+   ],
+   "kb": 469.9
+  },
+  "amb_guardian": {
+   "file": "amb/amb_guardian",
+   "group": "Ambience",
+   "event": "Guardian chamber (boss duel)",
+   "desc": "Deep heartbeat throb at 50 bpm, sub rumble, dark pad, distant chains",
+   "status": "draft",
+   "dur": 24.0,
+   "loop": [
+    0,
+    24.0
+   ],
+   "kb": 469.9
+  },
+  "amb_omen": {
+   "file": "amb/amb_omen",
+   "group": "Ambience",
+   "event": "Omen / mystery room",
+   "desc": "Whistling wind that drifts in pitch, reversed glass swells, a low tritone",
+   "status": "draft",
+   "dur": 24.0,
+   "loop": [
+    0,
+    24.0
+   ],
+   "kb": 469.9
+  },
+  "amb_sanctum": {
+   "file": "amb/amb_sanctum",
+   "group": "Ambience",
+   "event": "Sanctum",
+   "desc": "Soft warm major pad, airy hush, slow drips",
+   "status": "draft",
+   "dur": 24.0,
+   "loop": [
+    0,
+    24.0
+   ],
+   "kb": 469.9
+  },
+  "anvil_bind": {
+   "file": "sfx/anvil_bind",
+   "group": "Anvil",
+   "event": "Bind two cards at the Anvil",
+   "desc": "Hammer, chains drawn tight, a locking chord",
+   "status": "draft",
+   "dur": 2.497,
+   "kb": 35.0
+  },
+  "anvil_enchant": {
+   "file": "sfx/anvil_enchant",
+   "group": "Anvil",
+   "event": "Enchant a card",
+   "desc": "One blow, then a rising violet shimmer",
+   "status": "draft",
+   "dur": 2.174,
+   "kb": 30.8
+  },
+  "anvil_masterwork": {
+   "file": "sfx/anvil_masterwork",
+   "group": "Relics",
+   "event": "A Masterwork is forged",
+   "desc": "Three ringing blows climbing, then a great golden chord",
+   "status": "draft",
+   "dur": 4.273,
+   "kb": 59.3
+  },
+  "anvil_temper": {
+   "file": "sfx/anvil_temper",
+   "group": "Anvil",
+   "event": "Temper a card",
+   "desc": "Two hammer blows on the anvil, a quench hiss",
+   "status": "draft",
+   "dur": 1.664,
+   "kb": 23.6
+  },
+  "attack_direct": {
+   "file": "sfx/attack_direct",
+   "group": "Duels",
+   "event": "Direct attack to Life Points",
+   "desc": "Heavy hit that rings in your chest, a dark bell after",
+   "status": "draft",
+   "dur": 1.461,
+   "kb": 20.8
+  },
+  "attack_hit_a": {
+   "file": "sfx/attack_hit_a",
+   "group": "Duels",
+   "event": "Attack hits (variant A; A light, B medium, C heavy by damage)",
+   "desc": "Stone-cracking impact, weight grows A to C",
+   "status": "draft",
+   "dur": 0.547,
+   "kb": 8.3
+  },
+  "attack_hit_b": {
+   "file": "sfx/attack_hit_b",
+   "group": "Duels",
+   "event": "Attack hits (variant B; A light, B medium, C heavy by damage)",
+   "desc": "Stone-cracking impact, weight grows A to C",
+   "status": "draft",
+   "dur": 0.813,
+   "kb": 12.2
+  },
+  "attack_hit_c": {
+   "file": "sfx/attack_hit_c",
+   "group": "Duels",
+   "event": "Attack hits (variant C; A light, B medium, C heavy by damage)",
+   "desc": "Stone-cracking impact, weight grows A to C",
+   "status": "draft",
+   "dur": 0.992,
+   "kb": 14.3
+  },
+  "attack_start": {
+   "file": "sfx/attack_start",
+   "group": "Duels",
+   "event": "Attack declared",
+   "desc": "Tense rising whoosh with a scraping edge",
+   "status": "draft",
+   "dur": 0.552,
+   "kb": 8.6
+  },
+  "boss_bone_collector": {
+   "file": "sfx/boss_bone_collector",
+   "group": "Guardians",
+   "event": "The Bone Collector arrives",
+   "desc": "Dry bone rattle, tritone bells, cold breath",
+   "status": "draft",
+   "dur": 4.328,
+   "kb": 60.0
+  },
+  "boss_kiln_warden": {
+   "file": "sfx/boss_kiln_warden",
+   "group": "Guardians",
+   "event": "The Kiln Warden arrives",
+   "desc": "Furnace roar, iron doors, molten low brass",
+   "status": "draft",
+   "dur": 4.311,
+   "kb": 60.0
+  },
+  "boss_last_gate": {
+   "file": "sfx/boss_last_gate",
+   "group": "Guardians",
+   "event": "The Last Gate arrives",
+   "desc": "Three colossal gate blows, chains, the full motif in low brass",
+   "status": "draft",
+   "dur": 5.945,
+   "kb": 82.2
+  },
+  "boss_stone_sentinel": {
+   "file": "sfx/boss_stone_sentinel",
+   "group": "Guardians",
+   "event": "The Stone Sentinel arrives",
+   "desc": "Massive stone footfalls, grinding, unshakable chord",
+   "status": "draft",
+   "dur": 4.233,
+   "kb": 59.0
+  },
+  "boss_veiled_magus": {
+   "file": "sfx/boss_veiled_magus",
+   "group": "Guardians",
+   "event": "The Veiled Magus arrives",
+   "desc": "Veil sweeps, mist, a glassy unanswered phrase",
+   "status": "draft",
+   "dur": 4.14,
+   "kb": 57.5
+  },
+  "boss_white_tyrant": {
+   "file": "sfx/boss_white_tyrant",
+   "group": "Guardians",
+   "event": "The White Tyrant arrives",
+   "desc": "Rushing wings, a towering bright-but-cruel major chord",
+   "status": "draft",
+   "dur": 4.314,
+   "kb": 60.0
+  },
+  "card_deselect": {
+   "file": "sfx/card_deselect",
+   "group": "Cards",
+   "event": "Deselect a card",
+   "desc": "Card settles back, lower tap",
+   "status": "draft",
+   "dur": 0.245,
+   "kb": 4.3
+  },
+  "card_draw_a": {
+   "file": "sfx/card_draw_a",
+   "group": "Cards",
+   "event": "Draw a card (variant A)",
+   "desc": "Paper slides off the deck",
+   "status": "draft",
+   "dur": 0.33,
+   "kb": 5.4
+  },
+  "card_draw_b": {
+   "file": "sfx/card_draw_b",
+   "group": "Cards",
+   "event": "Draw a card (variant B)",
+   "desc": "Paper slides off the deck",
+   "status": "draft",
+   "dur": 0.333,
+   "kb": 5.4
+  },
+  "card_draw_c": {
+   "file": "sfx/card_draw_c",
+   "group": "Cards",
+   "event": "Draw a card (variant C)",
+   "desc": "Paper slides off the deck",
+   "status": "draft",
+   "dur": 0.324,
+   "kb": 5.4
+  },
+  "card_flip": {
+   "file": "sfx/card_flip",
+   "group": "Cards",
+   "event": "Turn a card over / change position",
+   "desc": "Quick flick and turn",
+   "status": "draft",
+   "dur": 0.33,
+   "kb": 5.4
+  },
+  "card_place_a": {
+   "file": "sfx/card_place_a",
+   "group": "Cards",
+   "event": "Place a card on the table (variant A)",
+   "desc": "Firm card slap on stone",
+   "status": "draft",
+   "dur": 0.354,
+   "kb": 5.8
+  },
+  "card_place_b": {
+   "file": "sfx/card_place_b",
+   "group": "Cards",
+   "event": "Place a card on the table (variant B)",
+   "desc": "Firm card slap on stone",
+   "status": "draft",
+   "dur": 0.317,
+   "kb": 5.4
+  },
+  "card_place_c": {
+   "file": "sfx/card_place_c",
+   "group": "Cards",
+   "event": "Place a card on the table (variant C)",
+   "desc": "Firm card slap on stone",
+   "status": "draft",
+   "dur": 0.32,
+   "kb": 5.4
+  },
+  "card_reveal": {
+   "file": "sfx/card_reveal",
+   "group": "Cards",
+   "event": "A veiled monster is revealed",
+   "desc": "Veil lifts: air swell into a revealing chime",
+   "status": "draft",
+   "dur": 1.592,
+   "kb": 22.5
+  },
+  "card_select_a": {
+   "file": "sfx/card_select_a",
+   "group": "Cards",
+   "event": "Select a card (variant A)",
+   "desc": "Card lifts with a small tuned tap; pick the variant by how many are selected",
+   "status": "draft",
+   "dur": 0.234,
+   "kb": 4.0
+  },
+  "card_select_b": {
+   "file": "sfx/card_select_b",
+   "group": "Cards",
+   "event": "Select a card (variant B)",
+   "desc": "Card lifts with a small tuned tap; pick the variant by how many are selected",
+   "status": "draft",
+   "dur": 0.264,
+   "kb": 4.7
+  },
+  "card_select_c": {
+   "file": "sfx/card_select_c",
+   "group": "Cards",
+   "event": "Select a card (variant C)",
+   "desc": "Card lifts with a small tuned tap; pick the variant by how many are selected",
+   "status": "draft",
+   "dur": 0.266,
+   "kb": 4.7
+  },
+  "card_set": {
+   "file": "sfx/card_set",
+   "group": "Cards",
+   "event": "Set a card face down (veiled monster or Trap; same sound for both, so nothing leaks)",
+   "desc": "Softer, flatter face-down slap",
+   "status": "draft",
+   "dur": 0.328,
+   "kb": 5.4
+  },
+  "card_shuffle": {
+   "file": "sfx/card_shuffle",
+   "group": "Cards",
+   "event": "Shuffle the deck",
+   "desc": "Two riffles and a square-up tap",
+   "status": "draft",
+   "dur": 1.305,
+   "kb": 18.6
+  },
+  "chamber_enter": {
+   "file": "sfx/chamber_enter",
+   "group": "Doors",
+   "event": "Enter a chamber",
+   "desc": "Two footsteps echo into a large stone room",
+   "status": "draft",
+   "dur": 2.208,
+   "kb": 31.1
+  },
+  "charm_gain": {
+   "file": "sfx/charm_gain",
+   "group": "Relics",
+   "event": "Gain a Charm",
+   "desc": "Small amulet: cloth, then a bright tuned bead",
+   "status": "draft",
+   "dur": 1.485,
+   "kb": 21.1
+  },
+  "codex_discover": {
+   "file": "sfx/codex_discover",
+   "group": "Rewards",
+   "event": "New Codex entry",
+   "desc": "Quill scratch and a soft chime, recorded in the book",
+   "status": "draft",
+   "dur": 1.666,
+   "kb": 23.6
+  },
+  "combo_ready": {
+   "file": "sfx/combo_ready",
+   "group": "Relics",
+   "event": "An important combination comes together",
+   "desc": "Several gold locks click in order, then open",
+   "status": "draft",
+   "dur": 2.511,
+   "kb": 35.4
+  },
+  "deck_out": {
+   "file": "sfx/deck_out",
+   "group": "Duels",
+   "event": "Deck-out (nothing left to draw)",
+   "desc": "An empty draw: paper whisper into hollow air, then a low toll",
+   "status": "draft",
+   "dur": 3.433,
+   "kb": 47.9
+  },
+  "defend_block": {
+   "file": "sfx/defend_block",
+   "group": "Duels",
+   "event": "Defender holds (attack blocked, no loss)",
+   "desc": "Clang of stone shield, a short ring",
+   "status": "draft",
+   "dur": 0.609,
+   "kb": 9.3
+  },
+  "door_anvil": {
+   "file": "sfx/door_anvil",
+   "group": "Doors",
+   "event": "Anvil door chosen (accent)",
+   "desc": "One far-off hammer ring",
+   "status": "draft",
+   "dur": 1.265,
+   "kb": 18.3
+  },
+  "door_bazaar": {
+   "file": "sfx/door_bazaar",
+   "group": "Doors",
+   "event": "Bazaar door chosen (accent)",
+   "desc": "A jingle of coins and a little wind chime",
+   "status": "draft",
+   "dur": 1.565,
+   "kb": 22.2
+  },
+  "door_boss": {
+   "file": "sfx/door_boss",
+   "group": "Doors",
+   "event": "Floor guardian (boss) door chosen (accent)",
+   "desc": "Deep gong, the floor trembles, low choir tone",
+   "status": "draft",
+   "dur": 4.098,
+   "kb": 56.8
+  },
+  "door_champion": {
+   "file": "sfx/door_champion",
+   "group": "Doors",
+   "event": "Champion door chosen (accent)",
+   "desc": "Bronze horn-like call, proud and sure",
+   "status": "draft",
+   "dur": 1.542,
+   "kb": 22.2
+  },
+  "door_cursed": {
+   "file": "sfx/door_cursed",
+   "group": "Doors",
+   "event": "Cursed duel door chosen (accent)",
+   "desc": "Wrong-sounding bell, tritone shadow, whisper of wind",
+   "status": "draft",
+   "dur": 2.293,
+   "kb": 32.2
+  },
+  "door_duel": {
+   "file": "sfx/door_duel",
+   "group": "Doors",
+   "event": "Duel door chosen (accent)",
+   "desc": "Crossed blades ring once",
+   "status": "draft",
+   "dur": 0.7,
+   "kb": 10.4
+  },
+  "door_guardian": {
+   "file": "sfx/door_guardian",
+   "group": "Doors",
+   "event": "Guardian (elite) door chosen (accent)",
+   "desc": "Two heavy drums and a low minor horn",
+   "status": "draft",
+   "dur": 1.814,
+   "kb": 25.8
+  },
+  "door_hover": {
+   "file": "sfx/door_hover",
+   "group": "Doors",
+   "event": "Point at / choose a door",
+   "desc": "Hand on stone, faint sand fall",
+   "status": "draft",
+   "dur": 0.562,
+   "kb": 8.6
+  },
+  "door_omen": {
+   "file": "sfx/door_omen",
+   "group": "Doors",
+   "event": "Omen door chosen (accent)",
+   "desc": "Hollow reversed shimmer, a question mark",
+   "status": "draft",
+   "dur": 2.422,
+   "kb": 34.0
+  },
+  "door_open": {
+   "file": "sfx/door_open",
+   "group": "Doors",
+   "event": "Stone door opens (plays under every door accent)",
+   "desc": "Heavy slab grinds aside, stops with a thud",
+   "status": "draft",
+   "dur": 2.046,
+   "kb": 29.0
+  },
+  "door_sanctum": {
+   "file": "sfx/door_sanctum",
+   "group": "Doors",
+   "event": "Sanctum door chosen (accent)",
+   "desc": "Soft warm chord, like held breath released",
+   "status": "draft",
+   "dur": 2.632,
+   "kb": 36.8
+  },
+  "door_sealed": {
+   "file": "sfx/door_sealed",
+   "group": "Doors",
+   "event": "Sealed / locked door",
+   "desc": "Push meets stone, chains jolt, nothing gives",
+   "status": "draft",
+   "dur": 0.772,
+   "kb": 11.5
+  },
+  "door_treasure": {
+   "file": "sfx/door_treasure",
+   "group": "Doors",
+   "event": "Treasure door chosen (accent)",
+   "desc": "Chest lid creaks, a sparkle of gold",
+   "status": "draft",
+   "dur": 1.782,
+   "kb": 25.4
+  },
+  "duel_lose": {
+   "file": "sfx/duel_lose",
+   "group": "Duels",
+   "event": "Duel lost",
+   "desc": "The motif sinks and stops on a hollow low note",
+   "status": "draft",
+   "dur": 4.253,
+   "kb": 59.0
+  },
+  "duel_start": {
+   "file": "sfx/duel_start",
+   "group": "Duels",
+   "event": "A duel begins",
+   "desc": "Stone gong, a drum, two low brass-like notes",
+   "status": "draft",
+   "dur": 3.15,
+   "kb": 44.0
+  },
+  "duel_win": {
+   "file": "sfx/duel_win",
+   "group": "Duels",
+   "event": "Duel won",
+   "desc": "Short victory stinger: motif resolved upward to the bright major",
+   "status": "draft",
+   "dur": 3.076,
+   "kb": 42.9
+  },
+  "embers_gain": {
+   "file": "sfx/embers_gain",
+   "group": "Rewards",
+   "event": "Embers gained",
+   "desc": "Warm coin clinks with an ember crackle",
+   "status": "draft",
+   "dur": 0.588,
+   "kb": 9.0
+  },
+  "embers_spend": {
+   "file": "sfx/embers_spend",
+   "group": "Rewards",
+   "event": "Embers spent",
+   "desc": "Coins poured onto stone, settling",
+   "status": "draft",
+   "dur": 0.568,
+   "kb": 8.6
+  },
+  "enchant_trigger": {
+   "file": "sfx/enchant_trigger",
+   "group": "Duels",
+   "event": "An Enchant triggers in a duel (Bulwark, Echo)",
+   "desc": "Violet glint with a soft ward",
+   "status": "draft",
+   "dur": 0.992,
+   "kb": 14.3
+  },
+  "equip_attach": {
+   "file": "sfx/equip_attach",
+   "group": "Cards",
+   "event": "Equip attaches to a monster",
+   "desc": "Metal buckle clicks home, small ring",
+   "status": "draft",
+   "dur": 0.934,
+   "kb": 13.6
+  },
+  "field_play": {
+   "file": "sfx/field_play",
+   "group": "Cards",
+   "event": "Play a Field Spell / terrain changes",
+   "desc": "The ground shifts: sub rumble swell, stone, then a wide chord",
+   "status": "draft",
+   "dur": 2.483,
+   "kb": 35.0
+  },
+  "free_cast": {
+   "file": "sfx/free_cast",
+   "group": "Duels",
+   "event": "Free cast (the play is kept)",
+   "desc": "Light coin flip ping",
+   "status": "draft",
+   "dur": 0.681,
+   "kb": 10.4
+  },
+  "freeze": {
+   "file": "sfx/freeze",
+   "group": "Duels",
+   "event": "Attack frozen / attacks stopped",
+   "desc": "Cold crackle of crystal",
+   "status": "draft",
+   "dur": 1.102,
+   "kb": 16.1
+  },
+  "gift_choose": {
+   "file": "sfx/gift_choose",
+   "group": "Rewards",
+   "event": "Choose a Gift",
+   "desc": "Firm gold seal pressed into wax",
+   "status": "draft",
+   "dur": 1.461,
+   "kb": 20.8
+  },
+  "gift_gain": {
+   "file": "sfx/gift_gain",
+   "group": "Relics",
+   "event": "Receive a Gift",
+   "desc": "Lid lifts, warm pad, the motif's last two notes in bells",
+   "status": "draft",
+   "dur": 2.461,
+   "kb": 34.7
+  },
+  "graveyard_return": {
+   "file": "sfx/graveyard_return",
+   "group": "Duels",
+   "event": "A card is taken back from the graveyard",
+   "desc": "Sand sifts, a card slides out",
+   "status": "draft",
+   "dur": 0.774,
+   "kb": 11.5
+  },
+  "guardian_reward": {
+   "file": "sfx/guardian_reward",
+   "group": "Rewards",
+   "event": "Guardian reward",
+   "desc": "Heavy chest, then a long shower of gold",
+   "status": "draft",
+   "dur": 3.268,
+   "kb": 45.8
+  },
+  "insufficient_funds": {
+   "file": "sfx/insufficient_funds",
+   "group": "Rewards",
+   "event": "Not enough Embers",
+   "desc": "Empty purse: a lone coin, then a soft dull knock",
+   "status": "draft",
+   "dur": 0.49,
+   "kb": 7.5
+  },
+  "level_up": {
+   "file": "sfx/level_up",
+   "group": "Rewards",
+   "event": "Level up / rank up",
+   "desc": "Climbing arpeggio that lands on the bright major",
+   "status": "draft",
+   "dur": 2.186,
+   "kb": 30.8
+  },
+  "lp_gain": {
+   "file": "sfx/lp_gain",
+   "group": "Duels",
+   "event": "Life Points gained",
+   "desc": "Warm rising notes, a breath of light",
+   "status": "draft",
+   "dur": 1.147,
+   "kb": 16.5
+  },
+  "lp_loss_large": {
+   "file": "sfx/lp_loss_large",
+   "group": "Duels",
+   "event": "Large Life Point loss",
+   "desc": "Longer roll down that ends on a low thud",
+   "status": "draft",
+   "dur": 0.812,
+   "kb": 12.2
+  },
+  "lp_loss_small": {
+   "file": "sfx/lp_loss_small",
+   "group": "Duels",
+   "event": "Small Life Point loss",
+   "desc": "Counter ticks down: quick descending wooden notes",
+   "status": "draft",
+   "dur": 0.426,
+   "kb": 6.8
+  },
+  "lp_low_warning": {
+   "file": "sfx/lp_low_warning",
+   "group": "Duels",
+   "event": "Your Life Points fall low (play once, not looped)",
+   "desc": "Two slow low heartbeats under a thin dissonant tone",
+   "status": "draft",
+   "dur": 1.833,
+   "kb": 26.1
+  },
+  "meld_discover": {
+   "file": "sfx/meld_discover",
+   "group": "Melding",
+   "event": "Discover a new meld (first time)",
+   "desc": "Revelation: low hush, then the motif answered an octave up",
+   "status": "draft",
+   "dur": 3.667,
+   "kb": 51.1
+  },
+  "meld_fizzle": {
+   "file": "sfx/meld_fizzle",
+   "group": "Melding",
+   "event": "Meld fizzles (a card is lost)",
+   "desc": "Gold tone sags and crumbles to sand. Disappointing, not punishing",
+   "status": "draft",
+   "dur": 1.147,
+   "kb": 16.5
+  },
+  "meld_fuel": {
+   "file": "sfx/meld_fuel",
+   "group": "Melding",
+   "event": "A card burns as fuel into the meld",
+   "desc": "Ember flare, a small rising whoosh",
+   "status": "draft",
+   "dur": 1.059,
+   "kb": 15.4
+  },
+  "meld_power": {
+   "file": "sfx/meld_power",
+   "group": "Melding",
+   "event": "Especially powerful meld (Fusion recipe / big ATK jump)",
+   "desc": "Earth-shaking fuse with a sustained brass-like chord",
+   "status": "draft",
+   "dur": 4.113,
+   "kb": 57.2
+  },
+  "meld_stage_1": {
+   "file": "sfx/meld_stage_1",
+   "group": "Melding",
+   "event": "Build a meld: card 1 added",
+   "desc": "Each added card climbs the Lost Memories chord, so a longer meld audibly builds",
+   "status": "draft",
+   "dur": 1.158,
+   "kb": 16.8
+  },
+  "meld_stage_2": {
+   "file": "sfx/meld_stage_2",
+   "group": "Melding",
+   "event": "Build a meld: card 2 added",
+   "desc": "Each added card climbs the Lost Memories chord, so a longer meld audibly builds",
+   "status": "draft",
+   "dur": 1.186,
+   "kb": 17.2
+  },
+  "meld_stage_3": {
+   "file": "sfx/meld_stage_3",
+   "group": "Melding",
+   "event": "Build a meld: card 3 added",
+   "desc": "Each added card climbs the Lost Memories chord, so a longer meld audibly builds",
+   "status": "draft",
+   "dur": 1.217,
+   "kb": 17.5
+  },
+  "meld_stage_4": {
+   "file": "sfx/meld_stage_4",
+   "group": "Melding",
+   "event": "Build a meld: card 4 added",
+   "desc": "Each added card climbs the Lost Memories chord, so a longer meld audibly builds",
+   "status": "draft",
+   "dur": 1.224,
+   "kb": 17.5
+  },
+  "meld_steady": {
+   "file": "sfx/meld_steady",
+   "group": "Melding",
+   "event": "Steady saves a card from fizzling",
+   "desc": "The sag catches itself: a short rescuing lift",
+   "status": "draft",
+   "dur": 1.163,
+   "kb": 16.8
+  },
+  "meld_success_2": {
+   "file": "sfx/meld_success_2",
+   "group": "Melding",
+   "event": "Successful two-card meld",
+   "desc": "Cards fuse: soft whoosh, stone thump, gold triad",
+   "status": "draft",
+   "dur": 2.332,
+   "kb": 32.9
+  },
+  "meld_success_3": {
+   "file": "sfx/meld_success_3",
+   "group": "Melding",
+   "event": "Successful three-card meld",
+   "desc": "Bigger fuse, the motif's four notes ring out",
+   "status": "draft",
+   "dur": 2.984,
+   "kb": 41.8
+  },
+  "meld_success_4": {
+   "file": "sfx/meld_success_4",
+   "group": "Melding",
+   "event": "Four or more card meld",
+   "desc": "Full chord climb plus a falling glass shower",
+   "status": "draft",
+   "dur": 3.556,
+   "kb": 49.7
+  },
+  "monster_appear": {
+   "file": "sfx/monster_appear",
+   "group": "Duels",
+   "event": "A monster appears",
+   "desc": "A rush of air, the card lands, low gold ring",
+   "status": "draft",
+   "dur": 1.844,
+   "kb": 26.1
+  },
+  "monster_appear_meld": {
+   "file": "sfx/monster_appear_meld",
+   "group": "Duels",
+   "event": "A melded monster appears",
+   "desc": "Same arrival with a glass sparkle on top",
+   "status": "draft",
+   "dur": 1.818,
+   "kb": 25.8
+  },
+  "monster_bounce": {
+   "file": "sfx/monster_bounce",
+   "group": "Duels",
+   "event": "A monster returns to the hand",
+   "desc": "Reverse whoosh and a light pop",
+   "status": "draft",
+   "dur": 0.699,
+   "kb": 10.4
+  },
+  "monster_destroyed_a": {
+   "file": "sfx/monster_destroyed_a",
+   "group": "Duels",
+   "event": "A monster is destroyed (variant A)",
+   "desc": "Card shatters to sandstone dust",
+   "status": "draft",
+   "dur": 1.285,
+   "kb": 18.6
+  },
+  "monster_destroyed_b": {
+   "file": "sfx/monster_destroyed_b",
+   "group": "Duels",
+   "event": "A monster is destroyed (variant B)",
+   "desc": "Sister crumble, different grain",
+   "status": "draft",
+   "dur": 1.31,
+   "kb": 19.0
+  },
+  "monster_revive": {
+   "file": "sfx/monster_revive",
+   "group": "Duels",
+   "event": "A monster returns from the graveyard",
+   "desc": "Earth parts, a hollow ascending tone",
+   "status": "draft",
+   "dur": 1.916,
+   "kb": 27.2
+  },
+  "mus_duel": {
+   "file": "mus/mus_duel",
+   "group": "Music",
+   "event": "Ordinary duels (loop)",
+   "desc": "Cards on Stone. Staccato strings and frame drums; low horns state the motif, the flute tune waits for the second pass so it wears well. 108 BPM, about 71 s.",
+   "status": "draft",
+   "dur": 73.111,
+   "loop": [
+    1.0,
+    72.111104
+   ],
+   "kb": 1715.1
+  },
+  "mus_explore": {
+   "file": "mus/mus_explore",
+   "group": "Music",
+   "event": "Chambers, door halls, rewards (exploration loop)",
+   "desc": "The Descent. Ocarina carries the D-F-E-A motif over harp, low drone, hang drum and a far choir. 72 BPM, about 107 s.",
+   "status": "draft",
+   "dur": 108.667,
+   "loop": [
+    1.0,
+    107.666667
+   ],
+   "kb": 2548.2
+  },
+  "mus_guardian": {
+   "file": "mus/mus_guardian",
+   "group": "Music",
+   "event": "Guardian / boss duels (loop)",
+   "desc": "The Seal Breaks. The motif slowed in low brass over a Phrygian E-flat, tolling bells, tremolo strings, male choir. 92 BPM, about 83 s.",
+   "status": "draft",
+   "dur": 85.478,
+   "loop": [
+    1.0,
+    84.478271
+   ],
+   "kb": 2004.8
+  },
+  "mus_quiet": {
+   "file": "mus/mus_quiet",
+   "group": "Music",
+   "event": "Sanctum, Bazaar and menus (loop)",
+   "desc": "Sanctum Lantern. The motif turned to D major on flute and celesta in 3/4, harp and soft strings. 66 BPM, about 65 s.",
+   "status": "draft",
+   "dur": 67.455,
+   "loop": [
+    1.0,
+    66.454542
+   ],
+   "kb": 1582.4
+  },
+  "mystery_event": {
+   "file": "sfx/mystery_event",
+   "group": "Rewards",
+   "event": "Omen / mystery result revealed",
+   "desc": "Turning sand-glass, a reveal tone",
+   "status": "draft",
+   "dur": 2.182,
+   "kb": 30.8
+  },
+  "power_landfall": {
+   "file": "sfx/power_landfall",
+   "group": "Forgers",
+   "event": "The Stormcaller's Landfall",
+   "desc": "Distant thunder rolls in and the ground answers",
+   "status": "draft",
+   "dur": 2.382,
+   "kb": 33.6
+  },
+  "power_salvage": {
+   "file": "sfx/power_salvage",
+   "group": "Forgers",
+   "event": "The Scrapper's Salvage",
+   "desc": "Scrap metal rattle, gears turn, two cards snap out",
+   "status": "draft",
+   "dur": 1.131,
+   "kb": 16.5
+  },
+  "power_shroud": {
+   "file": "sfx/power_shroud",
+   "group": "Forgers",
+   "event": "The Veilwalker's Shroud",
+   "desc": "Cloth draws closed, breath, a hushed low choir tone",
+   "status": "draft",
+   "dur": 2.258,
+   "kb": 31.8
+  },
+  "power_stoke": {
+   "file": "sfx/power_stoke",
+   "group": "Forgers",
+   "event": "Tarn's Stoke",
+   "desc": "Bellows breath into a roaring ember flare",
+   "status": "draft",
+   "dur": 2.093,
+   "kb": 29.7
+  },
+  "purchase": {
+   "file": "sfx/purchase",
+   "group": "Rewards",
+   "event": "Purchase complete",
+   "desc": "Coins plus a merchant's two-note seal",
+   "status": "draft",
+   "dur": 1.372,
+   "kb": 19.7
+  },
+  "relic_cap": {
+   "file": "sfx/relic_cap",
+   "group": "Relics",
+   "event": "Relic bonus cap reached",
+   "desc": "Muted lid: a chime stopped short",
+   "status": "draft",
+   "dur": 0.419,
+   "kb": 6.8
+  },
+  "relic_chain_end": {
+   "file": "sfx/relic_chain_end",
+   "group": "Relics",
+   "event": "End of a chain of 3+ relics",
+   "desc": "Resolving shimmer that closes the climb",
+   "status": "draft",
+   "dur": 1.802,
+   "kb": 25.8
+  },
+  "relic_trigger_1": {
+   "file": "sfx/relic_trigger_1",
+   "group": "Relics",
+   "event": "Relic triggers, step 1 of a chain",
+   "desc": "Short gold-glass chime. A chain plays steps 1, 2, 3... so it climbs instead of piling up",
+   "status": "draft",
+   "dur": 1.022,
+   "kb": 15.0
+  },
+  "relic_trigger_2": {
+   "file": "sfx/relic_trigger_2",
+   "group": "Relics",
+   "event": "Relic triggers, step 2 of a chain",
+   "desc": "Short gold-glass chime. A chain plays steps 1, 2, 3... so it climbs instead of piling up",
+   "status": "draft",
+   "dur": 0.974,
+   "kb": 14.3
+  },
+  "relic_trigger_3": {
+   "file": "sfx/relic_trigger_3",
+   "group": "Relics",
+   "event": "Relic triggers, step 3 of a chain",
+   "desc": "Short gold-glass chime. A chain plays steps 1, 2, 3... so it climbs instead of piling up",
+   "status": "draft",
+   "dur": 0.989,
+   "kb": 14.3
+  },
+  "relic_trigger_4": {
+   "file": "sfx/relic_trigger_4",
+   "group": "Relics",
+   "event": "Relic triggers, step 4 of a chain",
+   "desc": "Short gold-glass chime. A chain plays steps 1, 2, 3... so it climbs instead of piling up",
+   "status": "draft",
+   "dur": 0.972,
+   "kb": 14.3
+  },
+  "relic_trigger_5": {
+   "file": "sfx/relic_trigger_5",
+   "group": "Relics",
+   "event": "Relic triggers, step 5 of a chain",
+   "desc": "Short gold-glass chime. A chain plays steps 1, 2, 3... so it climbs instead of piling up",
+   "status": "draft",
+   "dur": 1.043,
+   "kb": 15.0
+  },
+  "rival_action": {
+   "file": "sfx/rival_action",
+   "group": "Duels",
+   "event": "Rival takes an action (cue before their play)",
+   "desc": "Muted low wooden knock, a heads-up",
+   "status": "draft",
+   "dur": 0.566,
+   "kb": 8.6
+  },
+  "run_summary": {
+   "file": "sfx/run_summary",
+   "group": "Rewards",
+   "event": "Run summary screen",
+   "desc": "Slow, reflective motif on one bell over a soft low pad",
+   "status": "draft",
+   "dur": 4.441,
+   "kb": 61.8
+  },
+  "second_wind": {
+   "file": "sfx/second_wind",
+   "group": "Relics",
+   "event": "Second Wind saves you at 1000 LP",
+   "desc": "Sharp inhale, a heartbeat, then a rising chord",
+   "status": "draft",
+   "dur": 2.807,
+   "kb": 39.3
+  },
+  "solo_bonus": {
+   "file": "sfx/solo_bonus",
+   "group": "Duels",
+   "event": "Type arrival bonus paid off",
+   "desc": "Small three-note gold turn",
+   "status": "draft",
+   "dur": 1.047,
+   "kb": 15.4
+  },
+  "spark_gain": {
+   "file": "sfx/spark_gain",
+   "group": "Rewards",
+   "event": "Gain or restore a Spark",
+   "desc": "A tiny flame catches and glows",
+   "status": "draft",
+   "dur": 1.43,
+   "kb": 20.4
+  },
+  "spark_lost": {
+   "file": "sfx/spark_lost",
+   "group": "Rewards",
+   "event": "A Spark is lost (duel lost)",
+   "desc": "A flame snuffed: soft hiss, falling tone",
+   "status": "draft",
+   "dur": 1.021,
+   "kb": 15.0
+  },
+  "spell_cast": {
+   "file": "sfx/spell_cast",
+   "group": "Cards",
+   "event": "Play a Spell",
+   "desc": "Rising breath of air into an open fifth in glass",
+   "status": "draft",
+   "dur": 2.02,
+   "kb": 28.6
+  },
+  "stat_down": {
+   "file": "sfx/stat_down",
+   "group": "Duels",
+   "event": "A monster is weakened",
+   "desc": "Falling dull pair",
+   "status": "draft",
+   "dur": 0.751,
+   "kb": 11.1
+  },
+  "stat_up": {
+   "file": "sfx/stat_up",
+   "group": "Duels",
+   "event": "A monster grows stronger",
+   "desc": "Quick rising glass pair",
+   "status": "draft",
+   "dur": 0.769,
+   "kb": 11.5
+  },
+  "trap_spring": {
+   "file": "sfx/trap_spring",
+   "group": "Cards",
+   "event": "A Trap springs",
+   "desc": "Iron latch snaps, chain rattles taut",
+   "status": "draft",
+   "dur": 0.972,
+   "kb": 14.3
+  },
+  "turn_player": {
+   "file": "sfx/turn_player",
+   "group": "Duels",
+   "event": "Your turn begins",
+   "desc": "Bright open fifth, short",
+   "status": "draft",
+   "dur": 1.141,
+   "kb": 16.5
+  },
+  "turn_rival": {
+   "file": "sfx/turn_rival",
+   "group": "Duels",
+   "event": "Rival's turn begins",
+   "desc": "Low, darker minor second, clearly not yours",
+   "status": "draft",
+   "dur": 1.276,
+   "kb": 18.3
+  },
+  "ui_back": {
+   "file": "sfx/ui_back",
+   "group": "Interface",
+   "event": "Back / cancel",
+   "desc": "The confirm reversed: a gentle falling fourth, muted",
+   "status": "draft",
+   "dur": 0.745,
+   "kb": 11.1
+  },
+  "ui_close": {
+   "file": "sfx/ui_close",
+   "group": "Interface",
+   "event": "Close a panel",
+   "desc": "Short stone slab settling",
+   "status": "draft",
+   "dur": 0.409,
+   "kb": 6.5
+  },
+  "ui_codex_open": {
+   "file": "sfx/ui_codex_open",
+   "group": "Interface",
+   "event": "Open the Codex",
+   "desc": "Heavy book cover, pages, a hushed low tone",
+   "status": "draft",
+   "dur": 1.309,
+   "kb": 19.0
+  },
+  "ui_confirm": {
+   "file": "sfx/ui_confirm",
+   "group": "Interface",
+   "event": "Confirm / accept",
+   "desc": "Two warm gold notes, rising a fourth",
+   "status": "draft",
+   "dur": 1.147,
+   "kb": 16.5
+  },
+  "ui_deck_open": {
+   "file": "sfx/ui_deck_open",
+   "group": "Interface",
+   "event": "Open the deck view",
+   "desc": "A quick riffle of old cards",
+   "status": "draft",
+   "dur": 0.459,
+   "kb": 7.2
+  },
+  "ui_forger_select": {
+   "file": "sfx/ui_forger_select",
+   "group": "Interface",
+   "event": "Highlight a Forger",
+   "desc": "Low struck gong plate with the motif's first note",
+   "status": "draft",
+   "dur": 1.973,
+   "kb": 27.9
+  },
+  "ui_invalid": {
+   "file": "sfx/ui_invalid",
+   "group": "Interface",
+   "event": "Invalid action",
+   "desc": "Dull double knock on stone, no harsh buzzer",
+   "status": "draft",
+   "dur": 0.374,
+   "kb": 6.1
+  },
+  "ui_kit_select": {
+   "file": "sfx/ui_kit_select",
+   "group": "Interface",
+   "event": "Choose a starter kit",
+   "desc": "Cards fanned out plus a firm gold seal",
+   "status": "draft",
+   "dur": 1.499,
+   "kb": 21.5
+  },
+  "ui_move_a": {
+   "file": "sfx/ui_move_a",
+   "group": "Interface",
+   "event": "Move selection (variant A)",
+   "desc": "Soft sandstone tick with a wooden ping",
+   "status": "draft",
+   "dur": 0.3,
+   "kb": 5.0
+  },
+  "ui_move_b": {
+   "file": "sfx/ui_move_b",
+   "group": "Interface",
+   "event": "Move selection (variant B)",
+   "desc": "Sister tick, a step lower, alternate with A",
+   "status": "draft",
+   "dur": 0.281,
+   "kb": 4.7
+  },
+  "ui_panel_close": {
+   "file": "sfx/ui_panel_close",
+   "group": "Interface",
+   "event": "Close a larger panel",
+   "desc": "The lid returns, ends in a soft thud",
+   "status": "draft",
+   "dur": 0.631,
+   "kb": 9.7
+  },
+  "ui_panel_open": {
+   "file": "sfx/ui_panel_open",
+   "group": "Interface",
+   "event": "Open a panel",
+   "desc": "Stone lid slides, a glint of gold at the end",
+   "status": "draft",
+   "dur": 0.912,
+   "kb": 13.3
+  },
+  "ui_progress": {
+   "file": "sfx/ui_progress",
+   "group": "Interface",
+   "event": "Progress notification",
+   "desc": "One small gold pip with a shimmer",
+   "status": "draft",
+   "dur": 1.058,
+   "kb": 15.4
+  },
+  "ui_relics_open": {
+   "file": "sfx/ui_relics_open",
+   "group": "Interface",
+   "event": "Open relics",
+   "desc": "Small cloth bag, then three glass chimes",
+   "status": "draft",
+   "dur": 1.288,
+   "kb": 18.6
+  },
+  "ui_rules_open": {
+   "file": "sfx/ui_rules_open",
+   "group": "Interface",
+   "event": "Open the rules",
+   "desc": "Parchment page turn",
+   "status": "draft",
+   "dur": 0.473,
+   "kb": 7.5
+  },
+  "ui_toast": {
+   "file": "sfx/ui_toast",
+   "group": "Interface",
+   "event": "Info message",
+   "desc": "Soft single wooden note",
+   "status": "draft",
+   "dur": 0.45,
+   "kb": 7.2
+  },
+  "ui_unlock": {
+   "file": "sfx/ui_unlock",
+   "group": "Interface",
+   "event": "Unlock notification",
+   "desc": "The full motif in gold bells, rising, with a warm bed",
+   "status": "draft",
+   "dur": 2.828,
+   "kb": 39.7
+  },
+  "unlock_big": {
+   "file": "sfx/unlock_big",
+   "group": "Rewards",
+   "event": "Unlock a Forger, kit, relic or Heat level",
+   "desc": "The full motif, then resolved to major: a door to something new",
+   "status": "draft",
+   "dur": 2.828,
+   "kb": 39.7
+  }
+ }
+}

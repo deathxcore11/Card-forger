@@ -52,6 +52,18 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
   await start({}, { 0: { ...mon(ids.weak, 'a'), e: 'bulwark', bulwarkUsed: 1 } }, []);
   await tap('[data-zone="1:0"]'); const ins = await page.locator('.insp').count() ? await page.locator('.insp').first().innerText() : '';
   check('a used Enchant is marked as used on the card page', /Used this duel/.test(ins), ins.slice(0, 200));
+  // Reported 21 November 2026 (review of the first sound pass): the win or lose sound was sent when the move was worked
+  // out, before the last hit and the Life Points falling had been shown. Every outcome cue must come after the last frame.
+  for (const fast of [false, true]) {
+    await start({}, { 0: mon(ids.strong) }, [ids.weak], d => { d.lp[0] = 100; d.turn = Math.max(d.turn, 3); d.frozen = [0, 0]; d.noAttack = false; });
+    await page.evaluate(fast => { const L = window.LM; L.G.fast = fast; window.__cues = []; window.LMAudio = { cue: (n, d) => window.__cues.push({ n, playing: !!L.G.playing, left: L.G.frames.length, t: Math.round(performance.now()) }) }; }, fast);
+    for (let i = 0; i < 12; i++) { if (await page.evaluate(() => !window.LM.G.run || !window.LM.G.run.duel)) break; if (await page.locator('[data-a="respond:-1"]').count()) await tap('[data-a="respond:-1"]'); else await tap('[data-a="end"]'); for (let k = 0; k < 60 && await page.evaluate(() => window.LM.G.playing); k++) await page.waitForTimeout(120); }
+    await page.waitForTimeout(300);
+    const cues = await page.evaluate(() => window.__cues), outcome = cues.filter(c => /^run:(duelWon|duelLost|over)$|^story:|^unlock$|^codex:new$/.test(c.n)), lastFrame = cues.map(c => c.n).lastIndexOf('duel:frame'), lost = cues.findIndex(c => c.n === 'run:duelLost');
+    check(`the duel was lost and its result cue was sent (${fast ? 'fast' : 'normal speed'})`, lost >= 0, cues.map(c => c.n).slice(-12));
+    check(`every outcome cue comes after the last frame is shown (${fast ? 'fast' : 'normal speed'})`, lost > lastFrame && outcome.length > 0 && outcome.every(c => !c.playing && c.left === 0), outcome);
+    check(`the last hit is heard before the result (${fast ? 'fast' : 'normal speed'})`, (() => { const hit = cues.map(c => c.n).lastIndexOf('duel:lp'); return hit >= 0 && hit < lost; })(), cues.map(c => c.n).slice(-12));
+  }
   check('no page errors', errors.length === 0, errors);
   console.log(`page checks at ${W}x${H}: ${passed} passed, ${failed} failed`);
   await browser.close(); process.exit(failed ? 1 : 0);
