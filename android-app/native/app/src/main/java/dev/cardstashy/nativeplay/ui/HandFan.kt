@@ -106,6 +106,8 @@ fun HandFan(
      * the left, the buttons on the right). A full hand tilts less, so its first card never lies over the square. Unbounded: as drawn.
      */
     tiltRoom: Dp = Dp.Infinity,
+    /** The player's hand patch: a slide along the hand ended on [Card] (not a tap, not a carry). The table lifts that card, so no old lift is left behind. */
+    onSweepEnd: (Card) -> Unit = {},
 ) {
     val cardH = cardW * 1.4f
     val haptic = LocalHapticFeedback.current
@@ -146,12 +148,17 @@ fun HandFan(
     val holdCb by rememberUpdatedState(onHold); val canPlayCb by rememberUpdatedState(canPlay)
     val dealCb by rememberUpdatedState(onDeal); val reorderCb by rememberUpdatedState(onReorder)
     val padEmptyCb by rememberUpdatedState(padEmpty)
+    val sweepEndCb by rememberUpdatedState(onSweepEnd); val raisedNow by rememberUpdatedState(raised)
     // Each hand card's FocusRequester, so the controller's ring can step to the neighbour of a card A just played.
     val padFocusers = remember { HashMap<Int, FocusRequester>() }
     // Sideways drag (Randall 3 Nov, approved): the card lifts and follows the finger; its neighbours slide to open a gap.
     var moving by remember { mutableStateOf<Int?>(null) }      // card id being moved sideways
     var moveTo by remember { mutableStateOf(0) }               // the slot it would drop into
     var moveX by remember { mutableStateOf(0f) }               // its left edge, px
+    // The player's hand patch (Randall's 21 Nov recording): a card lifted by an earlier tap ([raised]) came back up the moment a slide
+    // along the hand ended, so one card hung high while the finger had left another. After a slide that ends on a different card the
+    // old lift is ignored until the table lifts something new.
+    var ignoreRaised by remember { mutableStateOf<Int?>(null) }
     val seen = remember { HashSet<Int>() }
     var shownOnce by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shownOnce = true }
@@ -179,7 +186,7 @@ fun HandFan(
         val tilt = if (tiltRoom == Dp.Infinity || mid <= 0f) angleDeg
             else minOf(angleDeg, Math.toDegrees(kotlin.math.asin(((start + tiltRoom) / cardH).coerceIn(0f, 1f).toDouble())).toFloat() / mid)
         val focusIndex = slots.indexOfFirst { it.id == focus }.takeIf { it >= 0 }
-        val lift = focusIndex ?: slots.indexOfFirst { it.id == raised }.takeIf { it >= 0 }
+        val lift = focusIndex ?: slots.indexOfFirst { it.id == raised && it.id != ignoreRaised }.takeIf { it >= 0 }
         val popW = cardW * (popScale - 1f)
         val shares = floatArrayOf(.6f, .35f, .15f)
 
@@ -231,12 +238,14 @@ fun HandFan(
                 var idx = indexAt(down.position.x)
                 focus = hand.getOrNull(idx)?.id
                 var swept = false
+                val downAt = down.uptimeMillis
+                var grabbed = false
                 val moved = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
                     var result: Boolean? = null
                     while (result == null) {
                         val ev = awaitPointerEvent(); val ch = ev.changes.firstOrNull { it.id == down.id }
                         if (ch == null || !ch.pressed) { ch?.consume(); result = false }
-                        else if ((ch.position - down.position).getDistance() > slop) result = true
+                        else if ((ch.position - down.position).getDistance() > slop) { result = true; grabbed = ch.uptimeMillis - downAt >= REORDER_HOLD_MS }
                     }
                     result
                 }
@@ -264,11 +273,12 @@ fun HandFan(
                         scope.launch { drag.snapTo(v) }; continue
                     }
                     val card = hand.getOrNull(idx)
-                    if (card != null && d.y < -slop * 1.5f && abs(d.y) > abs(d.x) * 1.2f) {
+                    val move = handMove(d.x, d.y, slop, grabbed, swept, reorderCb != null)
+                    if (card != null && move == HandMove.CARRY) {
                         stretching = !canPlayCb(card); scope.launch { drag.snapTo(Offset.Zero) }; dragging = card.id; putBack = null; anchor = ch.position
                         cueCb?.invoke("card_lift", 1f, 1f); continue
                     }
-                    if (reorderCb != null && card != null && (moving != null || abs(d.x) > slop * 1.5f && abs(d.x) > abs(d.y))) {
+                    if (card != null && (moving != null || move == HandMove.REORDER)) {
                         if (moving == null) { moving = card.id; moveTo = idx; focus = null; haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
                         moveX = shape.second + shape.third * idx + (ch.position.x - down.position.x)
                         val next = indexAt(moveX + shape.third / 2)
@@ -307,6 +317,7 @@ fun HandFan(
                     focus = null
                 } else {
                     if (!swept) hand.getOrNull(idx)?.let(tapCb)
+                    else hand.getOrNull(idx)?.let { end -> if (end.id != raisedNow) ignoreRaised = raisedNow; sweepEndCb(end) }
                     focus = null
                 }
             }
@@ -391,6 +402,24 @@ fun HandFan(
             }
         }
     }
+}
+
+/** What a finger does along the hand. */
+internal enum class HandMove { SWEEP, REORDER, CARRY }
+/** The finger must rest this long on a card before it moves for the move to count as picking the card up to reorder it. */
+internal const val REORDER_HOLD_MS = 180L
+
+/**
+ * The player's hand patch. A finger sliding along the hand scrubs it (the lift follows the finger). Before, any sideways move of 1.5 slops
+ * took the card in the finger and dragged it to reorder the hand, and the slightest upward drift took it to play it: the hand felt grabby.
+ * Now a sideways move reorders only when the finger rested on the card first ([grabbed]), and once a slide has begun ([swept]) a card is
+ * carried up only by a clearly upward move (3.5 slops, twice as far up as across).
+ */
+internal fun handMove(dx: Float, dy: Float, slop: Float, grabbed: Boolean, swept: Boolean, canReorder: Boolean): HandMove {
+    val up = if (swept) 3.5f else 1.5f; val dominance = if (swept) 2f else 1.2f
+    if (dy < -slop * up && abs(dy) > abs(dx) * dominance) return HandMove.CARRY
+    if (canReorder && grabbed && abs(dx) > slop * 1.5f && abs(dx) > abs(dy)) return HandMove.REORDER
+    return HandMove.SWEEP
 }
 
 /** What is left of a dealt card's wait at [now] (ms): it starts at [startAt] however often its target moved before then. */

@@ -929,6 +929,9 @@ fun ForgeBoard(
                         }
                     },
                     onPlay = { card -> onSelectHand(null); intents.card(card.id) },
+                    // The player's hand patch: a slide that ends on a card lifts that card (when it can be used or says why), so the lift is
+                    // always under the last finger and no earlier tap's lift is left hanging.
+                    onSweepEnd = { card -> if (!discardAsk) onSelectHand(card.id.takeIf { markOf(card) == Mark.PLAYABLE || dimWhy(card) != null }) },
                     onHold = onInspect, onReorder = { ids -> onHandOrder(ids) },
                     padEmpty = { runCatching { goldFocus.requestFocus() }.onFailure { runCatching { menuFocus.requestFocus() } } })
             }
