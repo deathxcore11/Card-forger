@@ -1469,6 +1469,33 @@ test('Free Trap: every starter kit then holds at least two Traps, still 40 cards
   }
   assert.ok(least >= 2, 'fewest Traps in a kit: ' + least); assert.ok(plain / kits < 2, 'without the switch a kit holds fewer than two Traps on average: ' + (plain / kits).toFixed(2));
 });
+// ---------- Lone watch (lever loneWatch, off): the duel condition behind the first secret, not yet used by the game ----------
+test('Lone watch: with the lever a duel remembers the most monsters each side has had at once; a player who keeps one monster is counted as one; nothing is written without the lever', () => {
+  assert.ok(!db.config.loneWatch, 'the lever starts off');
+  const on = { ...db, config: { ...db.config, loneWatch: 1 }, _pair: new Map() };
+  let duels = 0, loneWins = 0, crowded = 0, plain = 0;
+  for (const [d, seeds] of [[on, [1, 2, 3, 4, 5, 6, 7, 8]], [db, [1, 2]]]) for (const seed of seeds) {
+    const run = newRun(d, { seed, track: true }); let n = 0, cur = null, seen = [0, 0], lone = false;
+    while (run.phase !== 'over' && n++ < 8000) {
+      let a = policyAction(d, run, { level: 2 });
+      const duel = run.phase === 'duel' ? run.duel : null;
+      if (duel && duel !== cur) { cur = duel; seen = [0, 0]; lone = d === on && seed % 2 === 1 && run.rival.tier === 'boss'; }
+      if (duel && lone && a.t === 'duel') { const c = chooseAction(d, viewFor(duel, d, 0), 2, { lone: true }); a = { t: 'duel', action: c || { t: 'end' } }; }
+      runApply(run, a, d);
+      if (!duel) continue;
+      for (const seat of [0, 1]) {
+        seen[seat] = Math.max(seen[seat], duel.mon[seat].filter(Boolean).length);
+        if (d === db) { assert.ok(!('most' in duel.stats[seat]), 'nothing is written without the lever'); continue; }
+        const most = duel.stats[seat].most || 0; assert.ok(most >= seen[seat] && most <= 5, 'seed ' + seed + ': most ' + most + ' against ' + seen[seat] + ' seen');
+      }
+      if (duel.winner !== null && duel === cur) { cur = null; if (d === db) { plain++; continue; } duels++; const most = duel.stats[0].most || 0;
+        if (lone) { assert.ok(most <= 1, 'a player who keeps one monster never has two, seed ' + seed); if (duel.winner === 0) loneWins++; } else if (most >= 3) crowded++; }
+    }
+  }
+  assert.ok(duels > 60 && plain > 10 && crowded > 20, 'duels ' + duels + ' plain ' + plain + ' crowded ' + crowded);
+  assert.ok(loneWins >= 1, 'the lone player beat a floor guardian at least once in these runs');
+});
+
 // ---------- Odd Gift at the Bazaar (lever bazaarOdd, Lab switch `odd`, off) ----------
 test('Odd Gift at the Bazaar: every Bazaar then sells one marked Gift from outside the run, bought with Embers beyond the Gift count, and nothing changes without the lever', () => {
   assert.equal(labConfig(LAB_DEFAULTS).bazaarOdd, 0); assert.equal(labConfig({ ...LAB_DEFAULTS, odd: true }).bazaarOdd, 70);

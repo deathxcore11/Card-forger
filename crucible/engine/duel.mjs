@@ -287,11 +287,14 @@ function bounce(s, db, ev, seat, z) {
   if (s.hand[seat].length < db.config.handMax) s.hand[seat].push({ u: s.uid++, ...entry }); else s.deck[seat].unshift(entry);
   ev.push({ e: 'bounce', seat, zone: z, id: m.id });
 }
+// Lever loneWatch (off): remembers the most monsters a seat has had on its side at once this duel, for a duel
+// condition (a guardian beaten with one monster). Nothing is written with the lever off, so old duels replay as before.
+function mostNote(s, db, seat) { if (!db.config.loneWatch) return; const n = s.mon[seat].filter(Boolean).length, st = s.stats[seat]; if (n > (st.most || 0)) st.most = n; }
 function revive(s, db, ev, seat, pos) {
   const gi = bestInGrave(s, db, seat), z = freeZone(s, seat);
   if (gi < 0 || z < 0) return;
   const id = s.gy[seat].splice(gi, 1)[0];
-  s.mon[seat][z] = { u: s.uid++, id, pos, veil: false, att: 0, moved: true };
+  s.mon[seat][z] = { u: s.uid++, id, pos, veil: false, att: 0, moved: true }; mostNote(s, db, seat);
   ev.push({ e: 'revive', seat, zone: z, id });
 }
 
@@ -637,7 +640,7 @@ function doPlay(s, db, ev, seat, a) {
     if (plan.melded) m.meld = 1;
     if (plan.melded && db.config.longMeldRest && plan.len >= db.config.longMeldRest) m.att = 9;
     if (ontoM && plan.onTable) { m.pos = a.pos; m.veil = false; if (ontoM.bulwarkUsed) m.bulwarkUsed = 1; if (ontoM.keepT) m.keepT = 1; if (ontoM.sig) m.sig = 1; if (!plan.melded) m.att = ontoM.att || 0; }
-    s.mon[seat][z] = m;
+    s.mon[seat][z] = m; mostNote(s, db, seat);
     if (a.veiled && a.pos === 'a' && !(s.twist === 'fog' || st.law === 'mist')) { st.rs.hollow = 1; noteRelic(s, ev, seat, 'hollow_mask'); }
     ev.push({ e: 'summon', seat, zone: z, id: m.veil ? null : m.id, pos: m.pos, veiled: m.veil, melded: !!plan.melded });
     if (plan.melded) { stt.melds++; stt.longestChain = Math.max(stt.longestChain, plan.len); stt.chains[plan.len] = (stt.chains[plan.len] || 0) + 1; } else { stt.singles++; track(s, db, seat, m.veil ? 'loneVeiled' : 'loneFaceUp'); }

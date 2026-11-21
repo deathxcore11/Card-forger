@@ -293,7 +293,7 @@ export function chooseAction(db, view, level = 1, policy = {}) {
       }
     } else if (db.config.freeCast && !view.noFree && level >= 1 && view.rs.freeTurn !== view.turn) { const f = bestPlay(db, view, level, { ...policy, freeOnly: true }); if (f && f.score > 60) return f.action; }
     const p = bestPlay(db, view, level, policy);
-    if (level >= 1 && db.config.forgerTune && db.config.forgerTune.veilSet && view.relics.includes('f_veil') && view.rs.veilSetTurn !== view.turn && view.mon[me].filter(m => !m).length >= 2 && (db.config.forgerTune.veilSet !== 2 || !view.mon[me].some(m => m && m.veil))) {
+    if (level >= 1 && !(policy.lone && view.mon[me].some(Boolean)) && db.config.forgerTune && db.config.forgerTune.veilSet && view.relics.includes('f_veil') && view.rs.veilSetTurn !== view.turn && view.mon[me].filter(m => !m).length >= 2 && (db.config.forgerTune.veilSet !== 2 || !view.mon[me].some(m => m && m.veil))) {
       // the Veilwalker's free veiled set: wall up with the best defender the main play does not need
       const used = new Set(p && p.action.t === 'play' ? p.action.hand : []); let bi = -1;
       view.hand.forEach((c, i) => { if (!used.has(i) && db.isMonster(c.id) && (bi < 0 || db.byId.get(c.id).def > db.byId.get(view.hand[bi].id).def)) bi = i; });
