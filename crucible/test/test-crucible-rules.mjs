@@ -1564,7 +1564,7 @@ test('The Last One as a Forger: three kits of one strong carrier, Equips and Tra
     for (const k of run.offer) {
       const roles = k.deck.map(e => roleOf(db, e.id)), mons = k.deck.filter(e => db.isMonster(e.id)).map(e => db.byId.get(e.id));
       assert.ok(k.deck.length === 40 && deckWeight(db, k.deck) <= db.config.kitWeight, k.kit + ' over weight');
-      assert.ok(roles.filter(x => x === 'equip').length >= 8 && roles.filter(x => x === 'trap').length >= 3, k.kit + ' holds its tools: ' + roles.filter(x => x === 'equip').length + ' Equips, ' + roles.filter(x => x === 'trap').length + ' Traps');
+      assert.ok(roles.filter(x => x === 'equip').length >= 5 && roles.filter(x => x === 'trap').length >= 3, k.kit + ' holds its tools: ' + roles.filter(x => x === 'equip').length + ' Equips, ' + roles.filter(x => x === 'trap').length + ' Traps');
       const strong = mons.filter(c => c.atk > db.config.kit.maxAtk); assert.ok(strong.length >= 1 && strong.length <= 3 && strong.every(c => c.atk <= db.config.kit.maxAtk + 300 && c.level <= db.config.kit.maxLevel), k.kit + ' carriers');
     }
   }

@@ -44,9 +44,9 @@ export const FORGERS = {
     name: 'The Last One', tag: 'One monster and what it carries', rule: 'f_last', power: 'The Quiet Door', needs: 'lone', hidden: true,
     powerText: 'Once a duel, before you play, with exactly one monster on your side: it gets +400 ATK and +400 DEF this duel.',
     kits: [
-      { id: 'lone_blade', name: 'The Lone Blade', types: ['Warrior'], q: { monsters: 22, field: 2, equip: 9, tagged: 5, traps: 3, carriers: 3 } },
-      { id: 'last_candle', name: 'The Last Candle', types: ['Spellcaster', 'Fairy'], q: { monsters: 22, field: 2, equip: 9, tagged: 5, traps: 3, carriers: 3 } },
-      { id: 'iron_vigil', name: 'The Iron Vigil', types: ['Machine', 'Rock'], q: { monsters: 22, field: 2, equip: 9, tagged: 5, traps: 3, carriers: 3 } },
+      { id: 'lone_blade', name: 'The Lone Blade', types: ['Warrior'], q: { monsters: 28, field: 2, equip: 5, tagged: 5, traps: 3, carriers: 1 } },
+      { id: 'last_candle', name: 'The Last Candle', types: ['Spellcaster', 'Fairy'], q: { monsters: 28, field: 2, equip: 5, tagged: 5, traps: 3, carriers: 1 } },
+      { id: 'iron_vigil', name: 'The Iron Vigil', types: ['Machine', 'Rock'], q: { monsters: 28, field: 2, equip: 5, tagged: 5, traps: 3, carriers: 1 } },
     ],
   },
 };
