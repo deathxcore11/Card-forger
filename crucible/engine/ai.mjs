@@ -1,7 +1,7 @@
 // Lost Memories CPU players. Every function here takes a VIEW (duel.viewFor), never the
 // full state, so the CPU cannot see veiled cards, set traps, hands or deck order.
 // Levels: 0 Novice, 1 Adept, 2 Master. `policy` lets the simulator play a build family.
-import { roleOf, wheelEdge, terrainFavours } from './cards.mjs';
+import { roleOf, wheelEdge, terrainFavours, equipAdd } from './cards.mjs';
 import { planChain } from './duel.mjs';
 
 const TRAP_ORDER = ['destroy', 'destroyAll', 'bounce', 'freeze', 'position', 'weaken', 'pump', 'burn', 'heal', 'draw', 'flip', 'revive'];
@@ -149,6 +149,11 @@ export function bestPlay(db, view, level, policy = {}) {
       if (level === 0) v = 50;
     } else if (role === 'equip') {
       if (tinder || myCount === 0) return;
+      if (db.config.equipKinds) { // Equips that differ: played alone it goes on the strongest monster, so it is worth what it adds there
+        let top = null; for (const m of myMons) if (m && (!top || (m.veil ? 0 : m.ea) > (top.veil ? 0 : top.ea))) top = m;
+        const [aa, ad] = equipAdd(db, id, top.id);
+        v = 330 * (aa + ad * 0.6) / 800 + (myBest <= rb.ra && myBest + aa > rb.ra ? 300 + rb.ra / 2 : 0);
+      } else
       v = 330 + (myBest <= rb.ra && myBest + 500 > rb.ra ? 300 + rb.ra / 2 : 0);
     } else if (role === 'trap') {
       if (!view.traps[me].some(t => !t)) return;

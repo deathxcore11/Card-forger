@@ -147,6 +147,8 @@ export function makeKit(db, rng, kit) {
   const themed = L.monsters.filter(c => (q.types || kit.types).includes(c.type) && c.level <= q.maxLevel && c.atk <= q.maxAtk);
   const anyWeak = L.monsters.filter(c => c.level <= q.maxLevel && c.atk <= q.maxAtk);
   const fields = L.field.filter(c => { const f = db.fieldOf.get(c.id); return f.types && (q.types || kit.types).some(t => f.types.has(t)); });
+  // Equips that differ (lever equipKinds): a kit is not dealt an Equip that fits fewer than a quarter of its own monsters.
+  const equips = cfg.equipKinds ? L.equip.filter(c => { const e = db.equipOf.get(c.id); return !e || e.shape || themed.filter(m => e.attr ? m.attr === e.attr : e.types.has(m.type)).length * 4 >= themed.length; }) : L.equip;
   for (let tries = 0; tries < 200; tries++) {
     const deck = [], count = new Map();
     const add = c => { const n = count.get(c.id) || 0; if (n >= cfg.maxCopies) return false; count.set(c.id, n + 1); deck.push({ id: c.id }); return true; };
@@ -154,7 +156,7 @@ export function makeKit(db, rng, kit) {
     while (deck.length < q.monsters && guard++ < 2000) add(rng.chance(3, 4) ? rng.pick(themed) : rng.pick(anyWeak));
     const f = fields.length ? fields : L.field;
     guard = 0; while (deck.length < q.monsters + q.field && guard++ < 500) add(rng.pick(f));
-    guard = 0; while (deck.length < q.monsters + q.field + q.equip && guard++ < 500) add(rng.pick(L.equip));
+    guard = 0; while (deck.length < q.monsters + q.field + q.equip && guard++ < 500) add(rng.pick(equips));
     const tagged = L.spell.concat(L.trap).filter(c => { const t = db.tagOf.get(c.id); return t.fx !== 'destroyAll' && t.fx !== 'revive'; });
     guard = 0; while (deck.length < q.monsters + q.field + q.equip + q.tagged && guard++ < 500) add(rng.pick(tagged));
     guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(L.fuel));
@@ -168,7 +170,7 @@ export function makeKit(db, rng, kit) {
   while (deck.length < q.monsters && guard++ < 2000) add(rng.chance(3, 4) ? rng.pick(themed) : rng.pick(anyWeak));
   const f = fields.length ? fields : L.field;
   guard = 0; while (deck.length < q.monsters + q.field && guard++ < 500) add(rng.pick(f));
-  guard = 0; while (deck.length < q.monsters + q.field + q.equip && guard++ < 500) add(rng.pick(L.equip));
+  guard = 0; while (deck.length < q.monsters + q.field + q.equip && guard++ < 500) add(rng.pick(equips));
   const tagged = L.spell.concat(L.trap).filter(c => { const t = db.tagOf.get(c.id); return t.fx !== 'destroyAll' && t.fx !== 'revive'; });
   guard = 0; while (deck.length < q.monsters + q.field + q.equip + q.tagged && guard++ < 500) add(rng.pick(tagged));
   guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(L.fuel));

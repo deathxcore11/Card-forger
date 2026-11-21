@@ -4,6 +4,8 @@ import { FEAT_GIFTS, LONG_GIFTS } from '../engine/meta.mjs';
 import { LINK_GIFTS } from '../engine/relics.mjs';
 
 export const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tithe', 'deep_grave', 'last_rites', 'static_field', 'overcharge', 'chain_lightning', 'thorn_veil', 'long_watch', 'deep_shade', 'spite', 'false_floor', 'ossuary', 'grave_ward', 'grounding_rod', 'snare', 'banked_coals', 'cinder_fall', 'quench'];
+// Equips that differ (switch `equips`): what a fitted Equip adds on and off its kind, and the two shapes, as [ATK, DEF].
+export const EQUIP_KINDS = { fit: 800, off: 300, edge: [800, 0], ward: [0, 1000] };
 export const LAB_DEFAULTS = { five: true, lean: true, heat: true, kits: true, items: true };
 
 export function labConfig(labs) {
@@ -15,6 +17,7 @@ export function labConfig(labs) {
     bossBand: labs.five ? [0, 0, -300] : null, rivalBand: labs.five ? [0, -200, -400] : 0,
     bossBandBy: labs.five ? { kiln_warden: -350 } : null, giftFirstXp: labs.early ? 10 : 0,
     heatRules: labs.heat ? 1 : 0, kitTune: labs.kits ? 1 : 0, itemTune: labs.items ? 1 : 0, forgerTune: labs.veilSet ? { veilSet: 2 } : null,
+    equipKinds: labs.equips ? EQUIP_KINDS : null,
     testRelics: labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null,
   };
 }

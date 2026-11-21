@@ -2,7 +2,7 @@
 //   apply(state, action, db) -> { state, events }
 // Integers only, no clocks, no I/O. All randomness comes from the PCG32 state in state.rng.
 import { Rng } from './rng.mjs';
-import { roleOf, meldPair, meldTriple, terrainFavours, wheelEdge } from './cards.mjs';
+import { roleOf, meldPair, meldTriple, terrainFavours, wheelEdge, equipAdd, equipFits } from './cards.mjs';
 import { fire, relicBonus, has } from './relics.mjs';
 
 export const clone = s => JSON.parse(JSON.stringify(s));
@@ -161,7 +161,6 @@ function destroyMon(s, db, ev, seat, z, why) {
 // two monsters together, fizzles included, as [a, b, c?]: what a preview needs to know before it may show the result.
 export function planChain(db, cards, onto, opts = {}) {
   const fuel = opts.tinder ? 500 : db.config.fuelBonus;
-  const equipB = db.config.equipBonus;
   const gy = [], steps = [], pairs = [], tried = [];
   let fizzles = 0, successes = 0, run = 1, steadyUsed = false, returned = null, forged = false;
   let cur = onto ? { inst: { ...onto }, table: true, raw: true } : { inst: { ...cards[0] }, table: false, raw: true };
@@ -195,13 +194,13 @@ export function planChain(db, cards, onto, opts = {}) {
       cur = { inst: carry(cur.inst, r.id), table: cur.table, raw: false, made: true };
       steps.push({ kind: r.kind, id: r.id }); successes++; run++; forged = true;
     } else if (r.kind === 'equip' || r.kind === 'fuel') {
-      const add = r.kind === 'equip' ? equipB : fuel;
       const monInst = r.mon === 0 ? cur.inst : { ...B };
       const spent = r.mon === 0 ? B : cur.inst;
+      const [addA, addD] = r.kind === 'equip' ? equipAdd(db, spent.id, monInst.id) : [fuel, fuel];
       if (!(spent === cur.inst && cur.made)) gy.push(spent.id);
       const table = r.mon === 0 ? cur.table : false;
       if (r.mon !== 0 && cur.table) tableLost = true;
-      monInst.ba = (monInst.ba || 0) + add; monInst.bd = (monInst.bd || 0) + add;
+      monInst.ba = (monInst.ba || 0) + addA; monInst.bd = (monInst.bd || 0) + addD;
       if (r.kind === 'equip') monInst.eq = (monInst.eq || 0) + 1;
       cur = { inst: monInst, table, raw: cur.raw && r.mon === 0, made: r.mon === 0 && !!cur.made };
       steps.push({ kind: r.kind, id: monInst.id }); successes++; run++;
@@ -675,7 +674,8 @@ function doPlay(s, db, ev, seat, a) {
   } else if (role === 'equip') {
     const z = (a.target != null && s.mon[seat][a.target]) ? a.target : strongest(s, db, seat);
     const m = s.mon[seat][z];
-    m.ba = (m.ba || 0) + db.config.equipBonus; m.bd = (m.bd || 0) + db.config.equipBonus; m.eq = (m.eq || 0) + 1; track(s, db, seat, 'equip');
+    const [addA, addD] = equipAdd(db, f.id, m.id);
+    m.ba = (m.ba || 0) + addA; m.bd = (m.bd || 0) + addD; m.eq = (m.eq || 0) + 1; track(s, db, seat, 'equip'); if (db.config.equipKinds && equipFits(db, f.id, m.id)) track(s, db, seat, 'equipFit');
     s.gy[seat].push(f.id);
     ev.push({ e: 'equip', seat, zone: z, id: f.id });
   } else if (role === 'spell') {

@@ -2,15 +2,15 @@
 // Card stats are read from the pool by name; nothing here types an ATK or DEF.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { loadDb, terrainFavours, meldPair, meldTriple, weightOf, wheelEdge, roleOf, EFFECTS, codexKey, codexResult, codexKnows, codexUpgrade } from '../engine/cards.mjs';
-import { rulesText, FX_TEXT, TRAP_TEXT } from '../web/text.mjs';
+import { loadDb, equipAdd, equipFits, terrainFavours, meldPair, meldTriple, weightOf, wheelEdge, roleOf, EFFECTS, codexKey, codexResult, codexKnows, codexUpgrade } from '../engine/cards.mjs';
+import { rulesText, shortText, FX_TEXT, TRAP_TEXT } from '../web/text.mjs';
 import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, effDef, forecast, canonical, clone } from '../engine/duel.mjs';
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, LINK_GIFTS, relicLinks, CHAIN_TURN, sortRelics, fire, relicText, TUNED_TEXT } from '../engine/relics.mjs';
 import { newRun, runApply, MIN_DECK, makeRival, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
-import { labConfig, LAB_DEFAULTS } from '../web/labs.mjs';
+import { labConfig, LAB_DEFAULTS, EQUIP_KINDS } from '../web/labs.mjs';
 import { aimFor } from '../web/aim.mjs';
 import { runFault, okRun, okProfile, PHASES } from '../web/saves.mjs';
 import { lessonFor, learnFrom, lessonText, learnedAll, newNote, noteFrames, whyLost } from '../web/coach.mjs';
@@ -1361,6 +1361,61 @@ test('the page takes every state of a real run as a save, and no damaged one', (
   assert.equal(bad(r => { r.somethingNew = { a: 1 }; }), '');
   // a finished run that is refused is never banked: applyRun is reached only through the page, which checks first; and the profile check holds
   assert.ok(okProfile(JSON.parse(JSON.stringify(newProfile())))); for (const junk of [null, [], {}, { memories: 'lots' }]) assert.equal(okProfile(junk), false);
+});
+
+// ---------- Equips that differ (lever equipKinds, Lab switch `equips`) ----------
+test('Equips that differ: off, every Equip adds 500 to both; every name in the hand-kept table is an Equip in the pool', () => {
+  assert.deepEqual(db.missingTags, []); assert.ok(db.equipOf.size >= 40);
+  for (const c of db.pool.cards) if (c.kind === 'equip') assert.deepEqual(equipAdd(db, c.id, C('Mystical Elf').id), [db.config.equipBonus, db.config.equipBonus]);
+  assert.equal(labConfig({}).equipKinds, null); assert.equal(labConfig(LAB_DEFAULTS).equipKinds, null, 'the switch starts off');
+  assert.equal(labConfig({ equips: true }).equipKinds, EQUIP_KINDS);
+});
+test('Equips that differ: a fitted Equip adds more to its own kind and less to any other, played alone or in a meld', () => {
+  const lab = { ...db, config: { ...db.config, equipKinds: EQUIP_KINDS }, _pair: new Map() }, K = EQUIP_KINDS;
+  const sword = C('Legendary Sword'), spear = C('Burning Spear'), axe = C('Axe of Despair'), armor = C('Raregold Armor');
+  const warrior = db.pool.cards.find(c => c.kind === 'monster' && c.type === 'Warrior' && c.attr !== 'FIRE'), other = db.pool.cards.find(c => c.kind === 'monster' && c.type !== 'Warrior' && c.attr !== 'FIRE'), fire = db.pool.cards.find(c => c.kind === 'monster' && c.attr === 'FIRE' && c.type !== 'Warrior');
+  const plain = db.pool.cards.find(c => c.kind === 'equip' && !db.equipOf.has(c.id)); assert.ok(plain, 'some Equips stay plain');
+  assert.deepEqual(equipAdd(lab, sword.id, warrior.id), [K.fit, K.fit]); assert.deepEqual(equipAdd(lab, sword.id, other.id), [K.off, K.off]);
+  assert.deepEqual(equipAdd(lab, spear.id, fire.id), [K.fit, K.fit]); assert.deepEqual(equipAdd(lab, spear.id, other.id), [K.off, K.off]);
+  assert.deepEqual(equipAdd(lab, axe.id, other.id), K.edge); assert.deepEqual(equipAdd(lab, armor.id, other.id), K.ward);
+  assert.deepEqual(equipAdd(lab, plain.id, other.id), [db.config.equipBonus, db.config.equipBonus]);
+  assert.ok(K.fit > db.config.equipBonus && K.off < db.config.equipBonus && K.off >= db.config.fuelBonus, 'off its kind a fitted Equip is no worse than fuel');
+  // in a meld
+  let p = planChain(lab, [{ id: warrior.id }, { id: sword.id }], null); assert.equal(p.final.ba, K.fit); assert.equal(p.final.bd, K.fit);
+  p = planChain(lab, [{ id: sword.id }, { id: other.id }], null); assert.equal(p.final.id, other.id); assert.equal(p.final.ba, K.off);
+  p = planChain(lab, [{ id: other.id }, { id: axe.id }], null); assert.equal(p.final.ba, K.edge[0]); assert.equal(p.final.bd || 0, K.edge[1]);
+  p = planChain(lab, [{ id: other.id }, { id: armor.id }], null); assert.equal(p.final.ba || 0, K.ward[0]); assert.equal(p.final.bd, K.ward[1]);
+  // played alone, onto the monster the player chose
+  const s = blank(); const a = put(s, 0, 0, mon(warrior.name)), b = put(s, 0, 1, mon(other.name)); give(s, 0, 'Legendary Sword');
+  applyMut(s, { t: 'play', hand: [0], onto: null, target: 0 }, lab); assert.equal(a.ba, K.fit); assert.equal(a.bd, K.fit); assert.equal(a.eq, 1); assert.equal(b.ba || 0, 0);
+  const s2 = blank(); const c2 = put(s2, 0, 0, mon(other.name)); give(s2, 0, 'Legendary Sword');
+  applyMut(s2, { t: 'play', hand: [0], onto: null, target: 0 }, lab); assert.equal(c2.ba, K.off);
+  // the same play with the lever off
+  const s3 = blank(); const c3 = put(s3, 0, 0, mon(warrior.name)); give(s3, 0, 'Legendary Sword');
+  applyMut(s3, { t: 'play', hand: [0], onto: null, target: 0 }, db); assert.equal(c3.ba, db.config.equipBonus); assert.equal(c3.bd, db.config.equipBonus);
+});
+test('Equips that differ: a fitted Equip is judged when it is attached, so the order of a meld matters', () => {
+  const lab = { ...db, config: { ...db.config, equipKinds: EQUIP_KINDS }, _pair: new Map() }, K = EQUIP_KINDS;
+  // a monster that is not a Dragon melds into one: attach Dragon Treasure to it before the meld, and to the Dragon after
+  const dt = C('Dragon Treasure'); let found = null;
+  const mons = db.pool.cards.filter(c => c.kind === 'monster' && c.type !== 'Dragon'), all = db.pool.cards.filter(c => c.kind === 'monster');
+  for (const x of mons) { for (const y of all) { if (x.id === y.id) continue; const r = meldPair(db, x.id, y.id); if ((r.kind === 'cross' || r.kind === 'printed') && db.byId.get(r.id).type === 'Dragon') { found = [x, y]; break; } } if (found) break; }
+  assert.ok(found, 'a pair that makes a Dragon');
+  const late = planChain(lab, [{ id: found[0].id }, { id: found[1].id }, { id: dt.id }], null), early = planChain(lab, [{ id: found[0].id }, { id: dt.id }, { id: found[1].id }], null);
+  assert.equal(db.byId.get(late.final.id).type, 'Dragon'); assert.equal(late.final.ba, K.fit, 'attached to the Dragon the meld made');
+  assert.equal(early.final.id, late.final.id); assert.equal(early.final.ba, K.off, 'attached before the meld, to a monster that was not a Dragon');
+});
+test('Equips that differ: each card says what it does, and a kit is not dealt an Equip that fits none of it', () => {
+  const lab = { ...db, config: { ...db.config, equipKinds: EQUIP_KINDS }, _pair: new Map() }, K = EQUIP_KINDS;
+  assert.equal(shortText(db, C('Legendary Sword').id), 'Your monster +500'); assert.match(rulesText(db, C('Legendary Sword').id), /\+500 ATK and DEF this duel/);
+  assert.equal(shortText(lab, C('Legendary Sword').id), `Warrior +${K.fit}, others +${K.off}`); assert.match(rulesText(lab, C('Legendary Sword').id), /on a Warrior, \+300 on any other/);
+  assert.match(rulesText(lab, C('Burning Spear').id), /a FIRE monster/); assert.match(rulesText(lab, C('Laser Cannon Armor').id), /an Insect/);
+  assert.equal(shortText(lab, C('Axe of Despair').id), 'Your monster +800 ATK'); assert.equal(shortText(lab, C('Raregold Armor').id), 'Your monster +1000 DEF');
+  for (const c of db.pool.cards) if (c.kind === 'equip') { assert.ok(shortText(lab, c.id).length <= 34, 'short enough for a card: ' + shortText(lab, c.id)); assert.ok(!/undefined|NaN/.test(rulesText(lab, c.id) + shortText(lab, c.id))); }
+  for (const kit of KITS) for (let seed = 1; seed <= 6; seed++) {
+    const { deck } = makeKit(lab, Rng.fromSeed(seed), kit); const mons = deck.filter(e => db.isMonster(e.id));
+    for (const e of deck) { const q = db.equipOf.get(e.id); if (!q || q.shape) continue; assert.ok(mons.some(m => equipFits(db, e.id, m.id)), `${kit.id}: ${db.byId.get(e.id).name} fits a monster of the kit`); }
+  }
 });
 
 console.log('crucible rules:', passed, 'tests passed');

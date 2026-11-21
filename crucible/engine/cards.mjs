@@ -30,6 +30,14 @@ export function buildDb(pool, tags, config) {
     if (!c || c.kind !== 'field') { missing.push(name); continue; }
     fieldOf.set(c.id, { types: f.types ? new Set(f.types) : null, attr: f.attr || null });
   }
+  // Equips that differ (used only with the lever equipKinds): id -> {types?:Set, attr?, shape?}.
+  const equipOf = new Map();
+  for (const [name, f] of Object.entries(tags.equips || {})) {
+    const c = byName.get(name);
+    if (!c || c.kind !== 'equip') { missing.push(name); continue; }
+    if (f.shape && f.shape !== 'edge' && f.shape !== 'ward') throw new Error('unknown Equip shape ' + f.shape + ' on ' + name);
+    equipOf.set(c.id, { types: f.types ? new Set(f.types) : null, attr: f.attr || null, shape: f.shape || null });
+  }
   // Cross-meld ladders: Type|Attribute -> monsters sorted weakest first. Fusion Monsters
   // are trophies reached only by their printed recipe, so they are not on the ladders.
   const ladders = new Map();
@@ -54,7 +62,7 @@ export function buildDb(pool, tags, config) {
   const ordered = new Map(), shared = new Map();
   for (const c of pool.cards) if (c.kind === 'fusion' && c.materials && c.materials.length === 2) { const k = c.materials.slice().sort((a, b) => a - b).join('+'); shared.set(k, (shared.get(k) || []).concat(c)); }
   for (const l of shared.values()) if (l.length > 1) for (const c of l) { const k = c.materials[0] + '>' + c.materials[1], old = ordered.get(k); if (old == null || cmp(byId.get(old), c) > 0) ordered.set(k, c.id); }
-  const db = { config, pool, byId, byName, tagOf, fieldOf, ladders, recipes, ordered, missingTags: missing, cmp, _pair: new Map() };
+  const db = { config, pool, byId, byName, tagOf, fieldOf, equipOf, ladders, recipes, ordered, missingTags: missing, cmp, _pair: new Map() };
   db.isMonster = id => { const k = byId.get(id).kind; return k === 'monster' || k === 'fusion'; };
   db.weight = id => weightOf(db, id);
   return db;
@@ -74,6 +82,21 @@ export function roleOf(db, id) {
   if (c.kind === 'equip') return 'equip';
   if (db.tagOf.has(id)) return c.kind; // 'spell' | 'trap'
   return 'fuel';
+}
+
+// What an Equip adds to the monster it is put on, as [ATK, DEF]. Every Equip adds equipBonus to both, unless the lever
+// equipKinds is on: { fit, off, edge: [atk, def], ward: [atk, def] }. Then an Equip that names a Type or an Attribute adds
+// `fit` to a monster of that kind and `off` to any other, an edge or ward Equip adds its own pair, and the rest stay plain.
+export function equipAdd(db, equipId, monId) {
+  const b = db.config.equipBonus, k = db.config.equipKinds, e = k ? db.equipOf.get(equipId) : null;
+  if (!e) return [b, b];
+  if (e.shape) return k[e.shape];
+  const n = equipFits(db, equipId, monId) ? k.fit : k.off;
+  return [n, n];
+}
+export function equipFits(db, equipId, monId) {
+  const e = db.equipOf.get(equipId), m = db.byId.get(monId);
+  return !!e && !e.shape && (e.attr ? m.attr === e.attr : e.types.has(m.type));
 }
 
 export function weightOf(db, id) {

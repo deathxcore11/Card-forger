@@ -62,7 +62,20 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
   r = await look('.lab'); atLeast('Lab switches', r, 9.5); fits('home', r);
   check('no Lab switch is shorter than its words', await page.evaluate(() => [...document.querySelectorAll('.lab')].every(e => e.scrollHeight <= e.clientHeight + 1)));
 
-  // 5. a wide screen keeps the wide stage
+  // 5. a duel rules box with more text than it can show says so, keeps its place when the screen is drawn again, and
+  //    a tap puts away the last message so it cannot lie over the screen the tap opens
+  const long = pick(/^duel-cursed-f2-h10/) || pick(/^duel-.*h10/);
+  if (!long) check('rules box: a Heat 10 duel to look at', false); else { await load(long);
+    const rules = () => page.evaluate(() => { const e = document.querySelector('.rules'); return { over: e.scrollHeight > e.clientHeight + 2, more: e.classList.contains('more'), at: Math.round(e.scrollTop), cue: getComputedStyle(e, '::after').content }; });
+    r = await rules(); check('a rules box that needs scrolling says more is below', r.over && r.more && /more below/.test(r.cue), r);
+    await page.evaluate(() => { document.querySelector('.rules').scrollTop = 20; }); await page.waitForTimeout(150);
+    await page.evaluate(() => { window.LM.G.toast = 'A message'; window.LM.render(); }); await tap('.hs .c');
+    r = await rules(); check('the rules box keeps its place when a card is picked', r.at === 20, r);
+    check('a tap puts away the last message', await page.evaluate(() => document.querySelector('#toast').textContent === ''));
+    await page.evaluate(() => { const e = document.querySelector('.rules'); e.scrollTop = e.scrollHeight; }); await page.waitForTimeout(150);
+    r = await rules(); check('scrolled to its end the rules box stops saying so', !r.more, r); }
+
+  // 6. a wide screen keeps the wide stage
   const wide = await browser.newPage({ viewport: { width: 1280, height: 720 } }); await wide.goto(url); await wide.waitForTimeout(300);
   check('a 1280 x 720 screen keeps the wide stage', await wide.evaluate(() => !document.querySelector('#app').classList.contains('phone') && document.querySelector('#app').offsetWidth === 1600)); await wide.close();
 

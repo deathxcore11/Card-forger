@@ -80,6 +80,8 @@ button:disabled { opacity: .38; cursor: default; filter: grayscale(.6); box-shad
 .top .who { top: calc(1em + var(--E, 0px) * .5); } .bot .who { top: calc(28.6em + var(--E, 0px) * .5); }
 .rules, .logbox { position: absolute; right: 1em; width: 17.5em; padding: .7em 1em; overflow: hidden; }
 .rules { top: calc(1em + var(--E, 0px) * .5); height: 25.5em; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; display: flex; flex-direction: column; gap: .4em; } .rules b { color: var(--gold); font-size: 1.2em; } .rules span { font-size: 1.05em; }
+.rules.more::after { content: '\25BE  more below'; flex: none; position: sticky; bottom: -.7em; margin: -1.2em -1em -.7em; padding: 1.3em 0 .25em; text-align: center; font-size: 1em; color: var(--gold); background: linear-gradient(rgba(24, 16, 12, 0), rgba(24, 16, 12, .96) 55%); pointer-events: none; }
+.trayline.more::after { content: '\25BE'; display: block; position: sticky; bottom: 0; height: 0; line-height: 0; text-align: right; transform: translateY(-.55em); font-size: 1.3em; color: var(--gold); pointer-events: none; }
 .logbox { top: calc(27.5em + var(--E, 0px) * .5); height: 9.1em; font-size: 1em; display: flex; flex-direction: column; justify-content: flex-end; line-height: 1.5; color: var(--dim); } .logbox { font-size: 1.02em; }
 .board { position: absolute; left: 18em; width: 62em; top: calc(.6em + var(--E, 0px) * .5); height: 36.4em; display: flex; flex-direction: column; align-items: center; gap: .35em; }
 .mrow { display: flex; gap: .7em; height: 11.7em; } .trow { display: flex; gap: .7em; height: 4.3em; }
@@ -237,6 +239,7 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 #app.phone .top .who { top: calc(.3em + var(--X, 0px) * .25); } #app.phone .bot .who { top: calc(17em + var(--X, 0px) * .25); }
 #app.phone .rules, #app.phone .logbox { right: .6em; width: 25.2em; padding: .5em .8em; }
 #app.phone .rules { top: calc(.3em + var(--X, 0px) * .25); height: 16.6em; } #app.phone .rules span { font-size: 1.1em; }
+#app.phone .rules.more::after { bottom: -.5em; margin: -1.2em -.8em -.5em; font-size: 1.1em; }
 #app.phone .logbox { top: calc(17.4em + var(--X, 0px) * .25); height: 7.7em; font-size: 1.05em; line-height: 1.4; }
 #app.phone .board { left: 14.2em; width: 49.5em; top: calc(.3em + var(--X, 0px) * .25); height: 24.8em; gap: .2em; }
 #app.phone .mrow { gap: .5em; height: 8.6em; } #app.phone .trow { gap: .5em; height: 2.6em; }
