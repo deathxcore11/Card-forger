@@ -13,6 +13,7 @@ export function labConfig(labs) {
     labPool: (labs.five ? LAB_POOL : FEAT_GIFTS).concat(labs.long ? LONG_GIFTS : []).concat(labs.links ? LINK_GIFTS : []), leanOffers: labs.lean ? (labs.links ? 2 : 1) : 0, giftRerolls: labs.lean ? 1 : 0,
     giftXpScale: labs.five ? 2 : 0, bossAces: labs.five ? 1 : 0, endTurns: labs.five ? 6 : 0,
     bossBand: labs.five ? [0, 0, -300] : null, rivalBand: labs.five ? [0, -200, -400] : 0,
+    bossBandBy: labs.five ? { kiln_warden: -350 } : null, giftFirstXp: labs.early ? 10 : 0,
     heatRules: labs.heat ? 1 : 0, kitTune: labs.kits ? 1 : 0, itemTune: labs.items ? 1 : 0, forgerTune: labs.veilSet ? { veilSet: 2 } : null,
     testRelics: labs.tombStart ? ['tomb_ledger', 'grave_call', 'second_burial'] : null,
   };

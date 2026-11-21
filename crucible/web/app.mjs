@@ -13,6 +13,7 @@ import { SCENES } from './story.mjs';
 import { LAB_DEFAULTS, labConfig } from './labs.mjs';
 import { aimFor } from './aim.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
+import { lessonFor, learnFrom, lessonText, learnedAll, newNote, noteFrames, whyLost, lawAnswer } from './coach.mjs';
 
 const D = window.CRUCIBLE_DATA;
 const db = buildDb(D.pool, D.tags, D.config);
@@ -20,7 +21,8 @@ const db = buildDb(D.pool, D.tags, D.config);
 const LABS = {
   free: 'Free cast: your first Spell, Field or Trap played alone each turn does not use your play. Rivals get it too.',
   solo: 'Lone arrivals: a Zombie, Fairy, Machine or Spellcaster played alone and face up uses an arrival ability.',
-  five: 'Five Gifts a run (the current test baseline): Forge Gifts come half as often, new Gifts for Storm, Tomb, Ambush and Furnace join the pool, rivals on floors two and three are turned down to match, and the final bosses are eased.',
+  five: 'Five Gifts a run (the current test baseline): Forge Gifts come half as often, new Gifts for Storm, Tomb, Ambush and Furnace join the pool, rivals on floors two and three are turned down to match, the final bosses are eased, and the Kiln Warden is turned down to match the Stone Sentinel.',
+  early: 'Early first Gift: your first Forge Gift comes after your first duel won, not your third or fourth. The later Gifts stay where they were. In testing this did not help a weak CPU player past the first guardian and gave a strong one about three points.',
   styles: 'Rivals with a style: from the second floor each rival carries a relic of the kind you can earn, shows a tell on its door, and plays toward it. Harder.',
   trap: 'Free Trap: setting your first Trap each turn does not use your play. Floor guardians get it too. (The wider free cast below overrides this.)',
   lean: 'Leaning offers: one of the three Gifts leans toward a build you already hold a piece of, and you may deal one Gift offer again each run.',
@@ -61,6 +63,8 @@ const P = Object.assign(newProfile(), (() => { const s = store.get(PROFILE); if 
 // Saves from before 20 November 2026 wrote a shared pair (the two Robo fusions) without its order: bring them up to date once.
 { const pc = codexUpgrade(db, P.codex), kn = codexUpgrade(db, [...G.known].concat(pc)); if (pc.join() !== P.codex.join()) { P.codex = pc; store.set(PROFILE, P); } if (kn.join() !== [...G.known].join()) store.set(KNOWN, kn); G.known = new Set(kn); }
 const saveP = () => store.set(PROFILE, P);
+// First lessons: a profile that has finished a few runs already knows them. "Show the first lessons again" on the Rules page resets this.
+const tips = () => P.tips || (P.tips = P.runs > 2 ? learnedAll() : {});
 // A stored run is used only if it has the shape of a run; anything else is set aside like text that cannot be read.
 const okRun = s => !!s && typeof s === 'object' && typeof s.phase === 'string' && Array.isArray(s.deck) && !!s.stats && typeof s.stats === 'object' && (s.phase === 'over' ? !!s.result : true);
 function readRun() { const s = store.get(SAVE); if (s == null || okRun(s)) return s; store.unreadable.add(SAVE); try { localStorage.setItem(SAVE + '.unreadable', JSON.stringify(s)); localStorage.removeItem(SAVE); } catch { /* the copy could not be kept */ } return null; }
@@ -100,7 +104,7 @@ function face(inst, o = {}) {
     <div class="art" style="--attr:${mon ? ATTR[c.attr] : '#444'}"><span class="ph">${mon ? esc(c.type) : role.toUpperCase()}</span>${pic(inst.id)}</div>
     <div class="nm">${esc(c.name)}</div>
     ${mon ? `<div class="meta"><i style="background:${ATTR[c.attr]}"></i>${esc(c.attr)} · Lv ${c.level}</div><div class="st ${up ? 'up' : ''} ${down ? 'down' : ''}">${a}<b>/</b>${d}</div>` : `<div class="meta kind">${role === 'fuel' ? 'Fuel' : role[0].toUpperCase() + role.slice(1)}</div><div class="tx">${esc(shortText(inst.id))}</div>`}
-    ${inst.e ? `<div class="en">${inst.e}</div>` : ''}${inst.veil ? '<div class="vl">VEILED</div>' : ''}${o.badge ? `<div class="bd">${o.badge}</div>` : ''}
+    ${inst.e ? `<div class="en">${inst.e}</div>` : ''}${inst.veil ? '<div class="vl">VEILED</div>' : ''}${o.badge ? `<div class="bd">${o.badge}</div>` : o.pip ? `<div class="pip">${o.pip}</div>` : ''}
   </div>`;
 }
 const ART = new Set(D.art || []);
@@ -113,19 +117,25 @@ function act(a) {
   const run = G.run; if (!run || G.playing) return;
   const frames = [];
   const wasDuel = run.phase === 'duel' || (run.phase === 'chamber' && a.t === 'door');
+  const bossId = run.door && run.door.type === 'boss' ? run.door.boss : run.phase === 'chamber' && a.t === 'door' && run.doors[a.i] && run.doors[a.i].type === 'boss' ? run.doors[a.i].boss : null;
   let rev;
   try {
     rev = runApply(run, a, db, { onStep: evs => { if (run.duel) frames.push({ view: JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))), evs, rival: info(run) }); } });
   } catch (e) { cue('refused', { action: a.t }); toast(e.message); render(); return; }
+  if (bossId && (rev || []).some(e => e.e === 'duelWon') && !(P.beaten || []).includes(bossId)) { P.beaten = (P.beaten || []).concat(bossId); saveP(); } // counsel on a guardian's door stops once it has been beaten
   for (const e of rev || []) if (['door', 'duelStart', 'duelWon', 'duelLost', 'boss', 'kit', 'mystery'].includes(e.e)) cue('run:' + e.e, e); // duel events are cued as they are shown
   G.sel = []; G.onto = null; G.attacker = null; G.aim = null;
   if (run.codex) { for (const k of run.codex) G.known.add(k); store.set(KNOWN, [...G.known]); }
   if (run.offer && run.offer.fresh && (P.fresh || []).includes(run.offer.fresh)) { P.fresh = P.fresh.filter(x => x !== run.offer.fresh); saveP(); }
   if (run.phase === 'over') { if (!G.banked) { G.banked = true; G.results = bank(run, !!labs.long); cue('run:over', { won: !!run.result.won, reason: run.result.reason || null, floor: run.floor }); queueStory(run.result.won ? 'cleared' : run.result.reason === 'abandoned' ? 'left' : 'fell'); } } else store.set(SAVE, run);
-  if (wasDuel && frames.length) { G.frames = frames; if (!run.duel && run.lastDuel) G.overlay = { kind: 'duelEnd', sum: run.lastDuel, rival: G.lastRival }; playFrames(); }
+  if (wasDuel && frames.length) {
+    if (a.t === 'door' || !G.note) G.note = newNote(a.t !== 'door'); // a note begun part-way (after a reload) is partial
+    noteFrames(G.note, frames);
+    if (learnFrom(tips(), frames.flatMap(f => f.evs))) saveP();
+    G.frames = frames; if (!run.duel && run.lastDuel) { G.overlay = { kind: 'duelEnd', sum: run.lastDuel, rival: G.lastRival, why: run.lastDuel.won ? [] : whyLost(G.note, run.lastDuel, G.lastRival || {}) }; G.note = null; } playFrames(); }
   else render();
 }
-const info = run => (G.lastRival = run.rival ? { name: run.rival.name, tier: run.rival.tier, lawText: run.rival.lawText, bountyText: run.rival.bountyText, twist: run.rival.twist, style: run.rival.style, styleText: run.rival.styleText } : G.lastRival);
+const info = run => (G.lastRival = run.rival ? { name: run.rival.name, tier: run.rival.tier, law: run.rival.law || null, lawText: run.rival.lawText, bountyText: run.rival.bountyText, twist: run.rival.twist, style: run.rival.style, styleText: run.rival.styleText } : G.lastRival);
 // A Law is written for a hand of five. With Deep Pockets the hand is six, so Tyranny's numbers are one higher.
 const lawShown = t => G.run && G.run.charms.includes('deep_pockets') ? t.replace('refills to four', 'refills to five').replace('refills to three', 'refills to four') : t;
 // Sound hook. The page plays no sound itself: an audio module that sets window.LMAudio = { cue(name, data) } hears every
@@ -349,7 +359,7 @@ const DOOR_ART = { duel: 'duel', cursed: 'cursed', champion: 'champion', guardia
 function screenChamber() {
   const r = G.run, boss = BOSSES[r.floor][r.bossOrder[r.floor]];
   return `<div class="hall doorsHall">${r.lastNote ? `<div class="note glass">${esc(r.lastNote)}</div>` : ''}<div class="bossline glass">Guardian of this floor: <b>${esc(boss.name)}</b>${r.chamber >= 2 ? '. ' + esc(bossLaw(db, r)) : '. Its Law shows from chamber 3.'}${db.config.heatRules && r.heat ? ` <button class="heatchip" data-a="heatinfo:${r.heat}">Heat ${r.heat} rules</button>` : ''}</div>
-    <div class="doors">${r.doors.map((d, i) => { const locked = d.type === 'boss' && r.seals < 2; return `<button class="door t-${d.type}" data-a="door:${i}" ${locked ? 'disabled' : ''}><img decoding="sync" src="art/door-${DOOR_ART[d.type]}.webp" alt=""><div class="dtxt glass"><b>${esc(doorName(d))}</b><span class="k">${d.know === 'known' ? 'Known' : d.know === 'partial' ? 'Partly hidden' : 'Mysterious'}</span><span><i>Cost</i> ${esc(d.cost)}</span><span><i>Reward</i> ${esc(d.reward)}</span>${d.law ? `<span><i>Law</i> ${esc(lawShown(d.law))}</span>` : ''}${d.tell ? `<span class="tell"><i>${esc(d.style)}</i> ${esc(d.tell)}</span>` : ''}${(d.tags || []).map(t => `<em>${esc(t)}</em>`).join('')}</div></button>`; }).join('')}</div></div>`;
+    <div class="doors">${r.doors.map((d, i) => { const locked = d.type === 'boss' && r.seals < 2; return `<button class="door t-${d.type}" data-a="door:${i}" ${locked ? 'disabled' : ''}><img decoding="sync" src="art/door-${DOOR_ART[d.type]}.webp" alt=""><div class="dtxt glass"><b>${esc(doorName(d))}</b><span class="k">${d.know === 'known' ? 'Known' : d.know === 'partial' ? 'Partly hidden' : 'Mysterious'}</span><span><i>Cost</i> ${esc(d.cost)}</span><span><i>Reward</i> ${esc(d.reward)}</span>${d.law ? `<span><i>Law</i> ${esc(lawShown(d.law))}</span>` : ''}${d.type === 'boss' && !(P.beaten || []).includes(d.boss) && lawAnswer(boss.law) ? `<span class="counsel"><i>Counsel</i> ${esc(lawAnswer(boss.law))}</span>` : ''}${d.tell ? `<span class="tell"><i>${esc(d.style)}</i> ${esc(d.tell)}</span>` : ''}${(d.tags || []).map(t => `<em>${esc(t)}</em>`).join('')}</div></button>`; }).join('')}</div></div>`;
 }
 
 function screenDuel() {
@@ -380,6 +390,9 @@ function screenDuel() {
   }).join('');
   const shut = v.mon[0].length < 5 ? '<div class="slot closed"></div>' : ''; // Narrow Pass: the outer zones stay drawn, sealed, so the table never changes shape
   const traps = seat => v.traps[seat].map(t => `<div class="tslot">${t ? (seat === 0 ? face(t, { cls: 'tiny', attrs: `data-a="inspect:${t.id}"` }) : '<div class="c back tiny"><img decoding="sync" src="art/cardback.webp" alt="Set card"></div>') : ''}</div>`).join('');
+  // first lessons: one line in the tray and a numbered pip on the cards it names
+  const T = tips(), lesson = canPlay && G.attacker == null && G.onto == null && live.seat[0].rs.loneTurn !== live.turn && !(T.meld && T.fuel && T.single) ? lessonFor(db, live, T) : null;
+  G.lesson = lesson ? lesson.kind : null;
   // meld tray
   let tray = canPlay && live.seat[0].rs.loneTurn === live.turn ? '<span class="fine">Support turn: your support card was free. Play one card on its own. No meld this turn.</span>' : db.config.freeCast === 'lone' ? '<span class="fine">Tap hand cards in order. One card plays it. Two or more meld left to right. Once a turn, a Spell, Trap, Field or Equip on its own is free if you do not meld.</span>' : '<span class="fine">Tap hand cards in order. One card plays it. Two or more meld left to right.</span>', buttons = '';
   if (canPlay && G.sel.length) {
@@ -403,7 +416,8 @@ function screenDuel() {
     tray = `<span>Pick a target${targets.length ? '' : ' (none legal)'}.</span>`;
     buttons = (targets.includes(-1) ? `<button class="gold" data-a="hit:-1">Direct attack (${v.mon[0][G.attacker].ea})</button>` : '') + (canPos.has(G.attacker) ? '<button data-a="pos">Change position</button>' : '') + '<button data-a="undo">Cancel</button>';
   } else if (G.onto != null) { tray = '<span>Now tap hand cards to meld onto it.</span>'; buttons = '<button data-a="undo">Cancel</button>'; }
-  const hand = [0, 1, 2, 3, 4, 5].map(i => { const c = v.hand[i]; const k = G.sel.indexOf(i); return `<div class="hs">${c ? face(c, { cls: (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: `data-a="hand:${i}"`, badge: k >= 0 ? k + 1 : '' }) : ''}</div>`; }).join('');
+  else if (lesson) { const [h, t] = lessonText(lesson.kind, lesson.cards.map(i => card(live.hand[0][i].id).name)); tray = `<span class="lesson"><b>${esc(h)}.</b> ${esc(t)}</span>`; buttons = '<button data-a="tipsoff">No more lessons</button>'; }
+  const hand = [0, 1, 2, 3, 4, 5].map(i => { const c = v.hand[i]; const k = G.sel.indexOf(i); const lp = lesson ? lesson.cards.indexOf(i) : -1; return `<div class="hs">${c ? face(c, { cls: (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: `data-a="hand:${i}"`, badge: k >= 0 ? k + 1 : '', pip: lp >= 0 ? lp + 1 : '' }) : ''}</div>`; }).join('');
   let powerBtn = '';
   if (myTurn && v.forger && !v.rs.power) {
     const F = FORGERS[v.forger], pa = powerActions(live, db, 0);
@@ -472,7 +486,7 @@ function screenFeats() {
 }
 function tabPanel() {
   const r = G.run;
-  if (G.tab === 'help') return `<div class="modal"><div class="glass panel wide"><h2>How a duel works</h2><ul><li>Each turn: draw toward five cards (two a turn at most), play one card or one meld, then attack.</li><li>Meld: tap two or more hand cards in order. They combine left to right into one monster. Tap one of your table monsters first to meld onto it.</li><li>Attack position fights with ATK. Defense uses DEF and protects your Life Points. Veiled is face down in defense.</li><li>WATER beats FIRE beats WIND beats EARTH beats WATER. LIGHT and DARK beat each other when attacking. The edge is +500 for that battle.</li><li>Field Spells set the terrain (+500 for its Types). Equips give +500. Traps wait face down for an attack. Other cards are fuel: +300 in a meld.</li><li>Play comes before attacks. A monster that attacked or just arrived cannot change position.</li><li>Lose a duel and you lose a Spark. The boss door needs two seals, one from each duel you win on the floor.</li></ul><div class="row"><button class="gold" data-a="tab:">Close</button></div></div></div>`;
+  if (G.tab === 'help') return `<div class="modal"><div class="glass panel wide"><h2>How a duel works</h2><ul><li>Each turn: draw toward five cards (two a turn at most), play one card or one meld, then attack.</li><li>Meld: tap two or more hand cards in order. They combine left to right into one monster. Tap one of your table monsters first to meld onto it.</li><li>Attack position fights with ATK. Defense uses DEF and protects your Life Points. Veiled is face down in defense.</li><li>WATER beats FIRE beats WIND beats EARTH beats WATER. LIGHT and DARK beat each other when attacking. The edge is +500 for that battle.</li><li>Field Spells set the terrain (+500 for its Types). Equips give +500. Traps wait face down for an attack. Other cards are fuel: +300 in a meld.</li><li>Play comes before attacks. A monster that attacked or just arrived cannot change position.</li><li>Lose a duel and you lose a Spark. The boss door needs two seals, one from each duel you win on the floor.</li></ul><div class="row"><button class="gold" data-a="tab:">Close</button><button data-a="relearn">Show the first lessons again</button></div></div></div>`;
   if (!r) return '';
   if (G.tab === 'relics') return `<div class="modal"><div class="glass panel wide"><h2>Your relics</h2>${relicList(r).map(id => relicRow(id)).join('') || '<p>None yet.</p>'}${possibleMasterworks(r).map(id => `<p class="fine">Masterwork ready at an Anvil: ${esc(RELICS[id].name)}.</p>`).join('')}<div class="row"><button class="gold" data-a="tab:">Close</button></div></div></div>`;
   if (G.tab === 'deck') return `<div class="modal"><div class="glass panel wide"><h2>Deck ${r.deck.length} cards · weight ${deckWeight(db, r.deck)}/${weightCap(db, r)}</h2><p>${r.phase === 'chamber' ? 'Tap a deck card, then a trunk card, to swap them.' : 'You can swap cards between duels, in a chamber.'}</p><div class="grid">${deckList(r.deck, 'deckpick', G.pickDeck)}</div><h3>Trunk ${r.trunk.length}</h3><div class="grid">${deckList(r.trunk, 'trunkpick', G.pickTrunk) || '<span class="fine">Empty.</span>'}</div><div class="row"><button class="gold" data-a="tab:">Close</button></div></div></div>`;
@@ -482,7 +496,7 @@ function tabPanel() {
 const worth = run => scoreRun(P, { ...run, result: { won: false, reason: 'abandoned' } });
 function overlay() {
   const o = G.overlay; if (!o || G.playing) return '';
-  if (o.kind === 'duelEnd') { const s = o.sum; return `<div class="modal"><div class="glass panel"><h2>${s.won ? 'Victory' : 'Defeat'}</h2><p>${esc(o.rival ? o.rival.name : '')} · ${s.turns} turns${s.reason === 'deckout' ? ' · a deck ran out' : ''}</p>${s.won ? `<div class="rankbig">${s.rank.rank}</div><table>${s.rank.lines.filter(l => l[1]).map(l => `<tr><td>${esc(l[0])}</td><td>${l[1] > 0 ? '+' : ''}${l[1]}</td></tr>`).join('')}<tr><td><b>Total</b></td><td><b>${s.rank.points}</b></td></tr></table><p>Style: ${s.rank.style === 'craft' ? 'Craft' : 'Fury'} · Embers +${s.embers}${s.bountyMet ? ' · Bounty met' : ''}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>`}<div class="row"><button class="gold" data-a="closeov">Continue</button></div></div></div>`; }
+  if (o.kind === 'duelEnd') { const s = o.sum; return `<div class="modal"><div class="glass panel"><h2>${s.won ? 'Victory' : 'Defeat'}</h2><p>${esc(o.rival ? o.rival.name : '')} · ${s.turns} turns${s.reason === 'deckout' ? ' · a deck ran out' : ''}</p>${s.won ? `<div class="rankbig">${s.rank.rank}</div><table>${s.rank.lines.filter(l => l[1]).map(l => `<tr><td>${esc(l[0])}</td><td>${l[1] > 0 ? '+' : ''}${l[1]}</td></tr>`).join('')}<tr><td><b>Total</b></td><td><b>${s.rank.points}</b></td></tr></table><p>Style: ${s.rank.style === 'craft' ? 'Craft' : 'Fury'} · Embers +${s.embers}${s.bountyMet ? ' · Bounty met' : ''}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>${(o.why || []).length ? `<div class="why"><b>What happened</b><ul>${o.why.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>` : ''}`}<div class="row"><button class="gold" data-a="closeov">Continue</button></div></div></div>`; }
   if (o.kind === 'leave') { const run = o.saved || G.run, w = worth(run), S = run.stats;
     return `<div class="modal"><div class="glass panel leave"><h2>${o.saved ? 'You have a run in progress' : 'Leave the pyramid?'}</h2>
       <p>${o.saved ? `${esc(run.forger ? FORGERS[run.forger].name : 'No Forger')}, Floor ${run.floor + 1}, Chamber ${Math.min(6, run.chamber + 1)}. Starting a new run ends that one.` : 'Leaving ends this run as a loss. It cannot be continued afterwards.'}</p>
@@ -573,8 +587,10 @@ app.addEventListener('click', ev => {
     case 'hit': duel({ t: 'attack', from: G.attacker, to: n }); break;
     case 'pos': duel({ t: 'pos', zone: G.attacker }); break;
     case 'undo': G.sel = []; G.attacker = null; G.onto = null; G.aim = null; render(); break;
+    case 'tipsoff': P.tips = learnedAll(); saveP(); render(); break;
+    case 'relearn': P.tips = {}; saveP(); G.tab = null; toast('The first lessons will show again in your next duel.'); render(); break;
     case 'aim': G.aim = G.aim === n ? null : n; render(); break;
-    case 'play': { const a = { t: 'play', hand: G.sel.slice(), onto: G.onto }; if (x) a.pos = x; if (y === '1') a.veiled = true; if (G.aim != null && G.sel.length === 1 && G.onto == null) a.target = G.aim; duel(a); break; }
+    case 'play': { if (G.lesson === 'single' && G.sel.length === 1 && G.onto == null) { tips().single = 1; saveP(); } const a = { t: 'play', hand: G.sel.slice(), onto: G.onto }; if (x) a.pos = x; if (y === '1') a.veiled = true; if (G.aim != null && G.sel.length === 1 && G.onto == null) a.target = G.aim; duel(a); break; }
     case 'scrap': duel({ t: 'discard', hand: G.sel[0] }); break;
     case 'clean': duel({ t: 'cleanDraw', hand: G.sel[0] }); break;
     case 'end': duel({ t: 'end' }); break;

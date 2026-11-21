@@ -20,13 +20,13 @@ const FIVE = { giftXpScale: 2, labPool: LABPOOL, bossAces: 1, endTurns: 6, bossB
 const SETS = {
   plain: {},
   five: { ...FIVE, leanOffers: 1, giftRerolls: 1 },
-  page: { ...FIVE, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1 },
+  page: { ...FIVE, bossBandBy: { kiln_warden: -350 }, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1 },
   pageStyles: { ...FIVE, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, rivalStyles: 1 },
-  all: { ...FIVE, simCut: 1, leanOffers: 1, giftRerolls: 2, heatRules: 1, kitTune: 1, rivalStyles: 1, freeCast: 'trap', freeCastRival: 'boss', soloArrival: 1, stormTune: 1, forgerTune: { tarnStoke: 100, scrapDraw: 1, veilSet: 2 }, trackFx: 1 },
+  all: { ...FIVE, simCut: 1, giftFirstXp: 10, bossBandBy: { kiln_warden: -350, last_gate: -200 }, leanOffers: 1, giftRerolls: 2, heatRules: 1, kitTune: 1, rivalStyles: 1, freeCast: 'trap', freeCastRival: 'boss', soloArrival: 1, stormTune: 1, forgerTune: { tarnStoke: 100, scrapDraw: 1, veilSet: 2 }, trackFx: 1 },
   free: { ...FIVE, freeCast: 'all', soloArrival: 1, veilGuard: 1, rivalStyles: 1, heatRules: 1, forgerTune: { veilSet: 1 } },
   freeElite: { ...FIVE, freeCast: 'all', freeCastRival: 'elite', heatRules: 1, kitTune: 1, leanOffers: 1, forgerTune: { veilSet: 2, veilMinDef: 1 } },
   bible: { drawPerTurn: 0, heatRules: 1, rivalStyles: 1, labPool: LABPOOL },
-  depth: { ...FIVE, simCut: 1, leanOffers: 2, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, freeCast: 'lone', freeCastRival: 'boss' },
+  depth: { ...FIVE, simCut: 1, giftFirstXp: 10, leanOffers: 2, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, freeCast: 'lone', freeCastRival: 'boss' },
   loneAll: { ...FIVE, leanOffers: 2, freeCast: 'lone', rivalStyles: 1, soloArrival: 1, forgerTune: { veilSet: 2 }, trackFx: 1 },
 };
 const DUELS = +process.argv[2] || 300, RUNS = +process.argv[3] || 60, SEED0 = +process.argv[4] || 1;

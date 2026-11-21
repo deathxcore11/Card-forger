@@ -8,10 +8,11 @@ import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, eff
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, LINK_GIFTS, relicLinks, CHAIN_TURN, sortRelics, fire, relicText, TUNED_TEXT } from '../engine/relics.mjs';
-import { newRun, runApply, MIN_DECK, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
+import { newRun, runApply, MIN_DECK, makeRival, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { labConfig, LAB_DEFAULTS } from '../web/labs.mjs';
 import { aimFor } from '../web/aim.mjs';
+import { lessonFor, learnFrom, lessonText, learnedAll, newNote, noteFrames, whyLost } from '../web/coach.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS, FEATS_LONG, LONG_GIFTS, KIT_GOALS, START_ENCHANTS, VAULT_ENCHANTS, openKits, nextKit, openEnchants, runOptions, featList } from '../engine/meta.mjs';
 
@@ -1256,6 +1257,73 @@ test('the Winnower cuts a card out of the deck, within stated limits', () => {
   const saved = JSON.parse(JSON.stringify(run)); runApply(saved, { t: 'leave' }, db); assert.equal(saved.phase, 'chamber');
   if (saved.trunk.length) { let ok = 0; for (let d = 0; d < saved.deck.length && !ok; d++) { try { runApply(saved, { t: 'swap', deck: d, trunk: 0 }, db); ok = 1; } catch (e) { assert.doesNotMatch(e.message, /deck must be/); } } }
   let n = 0; while (saved.phase !== 'over' && n++ < 4000) runApply(saved, policyAction(db, saved, { level: 2 }), db); assert.equal(saved.phase, 'over', 'the run plays to its end with a 34-card deck');
+});
+
+test('the early first Gift comes after the first duel won, and the later Gifts stay where they were', () => {
+  const lab = cfg => ({ ...db, config: { ...db.config, giftXpScale: 2, ...cfg }, _pair: new Map() });
+  const gifts = (d, seed) => { const run = newRun(d, { seed, track: true }); const at = []; let n = 0, seen = 0;
+    // a Gift level is a threshold on experience, checked when a duel is won: 40, 80, 120 and so on. Only the first one moves.
+    const need = xp => { let l = 0; while (xp >= (l + 1) * 40) l++; return l; };
+    while (run.phase !== 'over' && n++ < 4000) { runApply(run, policyAction(d, run, { level: 2 }), d); if (run.level > seen) { seen = run.level; at.push(run.stats.wins); assert.equal(run.level, Math.max(need(run.xp), d.config.giftFirstXp ? 1 : 0), 'Gift levels follow the thresholds'); } }
+    return { at }; };
+  let early = 0, checked = 0;
+  for (const seed of [11, 12, 13, 14, 15, 16]) {
+    const a = gifts(lab({}), seed), b = gifts(lab({ giftFirstXp: 10 }), seed);
+    if (!b.at.length) continue; checked++;
+    assert.equal(b.at[0], 1, 'the first Gift follows the first duel won');
+    if (a.at.length) { assert.ok(a.at[0] > 1, 'without the lever it takes more than one win'); early++; }
+  }
+  assert.ok(checked >= 4 && early >= 3);
+});
+
+test("a guardian's own offset turns down that guardian only", () => {
+  const lab = { ...db, config: { ...db.config, bossBandBy: { kiln_warden: -350 } }, _pair: new Map() };
+  const top = (d, boss) => { let m = 0; for (let seed = 1; seed <= 12; seed++) { const r = makeRival(d, new Rng(seed), { floor: 0, tier: 'boss', theme: null, boss }); for (const e of r.deck) if (d.isMonster(e.id) && d.byId.get(e.id).name !== boss.ace) m = Math.max(m, d.byId.get(e.id).atk); } return m; };
+  const [kiln, stone] = BOSSES[0];
+  assert.ok(top(lab, kiln) <= top(db, kiln) - 300, 'the Kiln Warden holds weaker monsters');
+  assert.equal(top(lab, stone), top(db, stone), 'the Stone Sentinel is untouched');
+  assert.deepEqual(labConfig(LAB_DEFAULTS).bossBandBy, { kiln_warden: -350 }, 'the playable levels the pair by default');
+});
+
+test('a first lesson points at a play that does what the lesson says', () => {
+  const seen = { meld: 0, fuel: 0, single: 0 };
+  for (let seed = 1; seed <= 60; seed++) for (const forger of FORGER_IDS.slice(0, 2)) {
+    const run = playTo(seed, r => r.phase === 'duel', { forger }); if (run.phase !== 'duel') continue;
+    const d = run.duel, hand = d.hand[0], atk = i => db.byId.get(hand[i].id).atk;
+    const best = Math.max(0, ...hand.map((c, i) => db.isMonster(c.id) ? atk(i) : 0));
+    for (const tips of [{}, { meld: 1 }, { meld: 1, fuel: 1 }, learnedAll()]) {
+      const L = lessonFor(db, d, tips); if (!L) continue; seen[L.kind]++;
+      assert.ok(!tips[L.kind], 'a learned lesson is not shown again');
+      const p = planChain(db, L.cards.map(i => hand[i]), null);
+      const [h, t] = lessonText(L.kind, L.cards.map(i => db.byId.get(hand[i].id).name)); assert.ok(h && t.includes(db.byId.get(hand[L.cards[0]].id).name));
+      if (L.kind === 'meld') { assert.equal(p.fizzles, 0); assert.ok(p.melded && db.byId.get(p.final.id).atk > best, 'the meld beats every single card'); assert.ok(!t.includes(db.byId.get(p.final.id).name), 'the lesson does not say what the meld makes'); }
+      if (L.kind === 'fuel') { assert.equal(p.steps[0].kind, 'fuel'); assert.equal(roleOf(db, hand[L.cards[1]].id), 'fuel'); assert.equal(db.config.fuelBonus, 300, 'the lesson says +300'); }
+      if (L.kind === 'single') { assert.equal(L.cards.length, 1); assert.equal(atk(L.cards[0]), best);
+        for (let i = 0; i < hand.length; i++) for (let j = 0; j < hand.length; j++) if (i !== j && db.isMonster(hand[i].id) && db.isMonster(hand[j].id)) { const q = planChain(db, [hand[i], hand[j]], null); assert.ok(q.fizzles || db.byId.get(q.final.id).atk <= best, 'no two-monster meld was better'); } }
+      // the play the lesson names is legal now
+      const legal = legalActions(d, db, { maxChain: 2 }).filter(a => a.t === 'play').some(a => JSON.stringify(a.hand) === JSON.stringify(L.cards)); assert.ok(legal, 'the engine allows the play: ' + L.kind);
+    }
+    assert.equal(lessonFor(db, d, learnedAll()), null);
+  }
+  assert.ok(seen.meld > 20 && seen.fuel > 5 && seen.single > 2, 'each lesson came up: ' + JSON.stringify(seen));
+  const tips = {}; assert.equal(learnFrom(tips, [{ e: 'meld', seat: 1, kind: 'cross' }, { e: 'meld', seat: 0, kind: 'fizzle' }]), false); assert.deepEqual(tips, {});
+  assert.equal(learnFrom(tips, [{ e: 'meld', seat: 0, kind: 'cross' }, { e: 'meld', seat: 0, kind: 'fuel' }]), true); assert.deepEqual(tips, { meld: 1, fuel: 1 });
+});
+
+test('a lost duel says what happened from what was shown', () => {
+  const view = (mine, theirs) => ({ mon: [mine.map(ea => ea ? { ea } : null), theirs.map(ea => ea === 'v' ? { veil: true } : ea ? { ea } : null)] });
+  const n = noteFrames(newNote(false), [
+    { view: view([1400, 0], [2300, 'v']), evs: [{ e: 'summon', seat: 0, melded: false }, { e: 'battle', atkSeat: 1, direct: true }, { e: 'lp', seat: 0, d: -2300 }] },
+    { view: view([1500], [2600]), evs: [{ e: 'meld', seat: 0, kind: 'fizzle' }, { e: 'meld', seat: 0, kind: 'fizzle' }, { e: 'battle', atkSeat: 1, direct: true }, { e: 'battle', atkSeat: 0, direct: true }] },
+  ]);
+  assert.deepEqual({ a: n.myBest, b: n.rivalBest, m: n.melds, f: n.fizzles, s: n.singles, d: n.directHits, l: n.lost }, { a: 1500, b: 2600, m: 0, f: 2, s: 1, d: 2, l: 2300 });
+  const why = whyLost(n, { reason: 'lp' }, { law: 'scorched' });
+  assert.equal(why.length, 3); assert.match(why[0], /2600 ATK. Yours reached 1500/); assert.match(why[1], /did not meld/);
+  assert.match(whyLost(n, { reason: 'deckout' }, {})[0], /deck ran out/);
+  // a note begun part-way through a duel does not compare whole-duel numbers; the Law line still shows
+  assert.deepEqual(whyLost(newNote(true), { reason: 'lp' }, { law: 'stonewall' }), ['Her monsters win ties. Attack only when your number is higher, not equal.']);
+  assert.deepEqual(whyLost(newNote(true), { reason: 'lp' }, {}), []);
+  for (const pair of BOSSES) for (const b of pair) assert.equal(whyLost(newNote(true), {}, { law: b.law }).length, 1, 'every guardian Law has its line: ' + b.law);
 });
 
 console.log('crucible rules:', passed, 'tests passed');

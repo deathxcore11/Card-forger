@@ -188,6 +188,7 @@ export function makeRival(db, rng, { floor, tier, theme, boss = null, heat = 0 }
   const band = BANDS[tier][floor].slice();
   if (!db.config.heatRules) { band[0] += heat * 40; band[1] += heat * 60; } // the Heat ladder adds rules, not bigger numbers
   if (boss && db.config.bossBand) { const bb = db.config.bossBand[floor] || 0; band[0] = Math.max(300, band[0] + Math.round(bb / 2)); band[1] = Math.max(band[0] + 200, band[1] + bb); }
+  if (boss && db.config.bossBandBy && db.config.bossBandBy[boss.id]) { const bb = db.config.bossBandBy[boss.id]; band[0] = Math.max(300, band[0] + Math.round(bb / 2)); band[1] = Math.max(band[0] + 200, band[1] + bb); } // one guardian's own offset, to level a pair
   if (db.config.rivalBand) { const rb = Array.isArray(db.config.rivalBand) ? db.config.rivalBand[floor] || 0 : db.config.rivalBand; band[0] = Math.max(300, band[0] + Math.round(rb / 2)); band[1] = Math.max(band[0] + 200, band[1] + rb); }
   const types = boss ? boss.types : theme.types;
   let mons = L.monsters.filter(c => types.includes(c.type) && c.atk >= band[0] && c.atk <= band[1]);
@@ -497,7 +498,10 @@ function finishDuel(db, run, rng, ev) {
   let embers = cfg.embers[rk.rank] + st.embers + (tier === 'cursed' ? cfg.embers.cursedBonus : 0) + (tier === 'champion' && heatAt(db, run, 9) ? 15 : 0) + (bountyMet ? cfg.embers.bountyBonus : 0) + (run.charms.includes('ember_purse') ? 8 : 0);
   run.embers += embers;
   run.xp += cfg.xp.duel + (bountyMet ? cfg.xp.bounty : 0) + (tier === 'champion' ? cfg.xp.champion : 0) + (tier === 'boss' ? cfg.xp.boss : 0);
-  while (run.xp >= (run.level + 1) * cfg.xp.perLevel * (cfg.giftXpScale || 1)) { run.level++; run.giftsQueued++; }
+  // Lever giftFirstXp: the first Gift comes at that much Forge experience (10 = the first duel won); the later ones stay
+  // where they were, so a full run still holds the same number of Gifts.
+  const giftAt = l => l === 0 && cfg.giftFirstXp ? Math.min(cfg.giftFirstXp, cfg.xp.perLevel * (cfg.giftXpScale || 1)) : (l + 1) * cfg.xp.perLevel * (cfg.giftXpScale || 1);
+  while (run.xp >= giftAt(run.level)) { run.level++; run.giftsQueued++; }
   if (tier !== 'boss') run.seals++;
   summary.rank = rk; summary.embers = embers; summary.bountyMet = bountyMet;
   ev.push({ e: 'duelWon', rank: rk.rank, style: rk.style, embers });

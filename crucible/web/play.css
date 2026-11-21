@@ -188,3 +188,13 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 .savebar button { margin-left: .8em; font-size: 1em; }
 .notice { max-width: 46em; margin: .6em auto; padding: .6em 1em; color: #ffd9a8; border: .08em solid #b98a4a; border-radius: .5em; }
 .leave { max-width: 40em; } .leave p { font-size: 1.2em; line-height: 1.4; }
+
+/* first lessons and the loss summary */
+.c .pip { position: absolute; left: .3em; top: .3em; width: 1.5em; height: 1.5em; border-radius: 50%; border: .12em solid var(--gold); background: #1b1420; color: var(--gold); font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 1em; }
+.lesson { display: block; line-height: 1.35; }
+.lesson b { color: var(--gold); }
+.why { text-align: left; margin: .6em 0 0; padding: .6em .8em; border-radius: .5em; background: rgba(0, 0, 0, .28); }
+.why ul { margin: .3em 0 0; padding-left: 1.1em; }
+.why li { margin: .25em 0; line-height: 1.35; }
+.door .counsel { color: #e9d9a8; }
+.door .counsel i { color: var(--gold); }
