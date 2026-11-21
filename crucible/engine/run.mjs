@@ -204,7 +204,9 @@ export function makeRival(db, rng, { floor, tier, theme, boss = null, heat = 0 }
   let guard = 0; while (deck.length < nMon && guard++ < 3000) add(rng.pick(mons));
   const fields = L.field.filter(c => { const f = db.fieldOf.get(c.id); return f.types && types.some(t => f.types.has(t)); });
   guard = 0; while (deck.length < nMon + 2 && guard++ < 200) add(rng.pick(fields.length ? fields : L.field));
-  guard = 0; while (deck.length < nMon + 5 && guard++ < 200) add(rng.pick(L.equip));
+  // Equips that differ (lever equipKinds): like a starter kit, a rival is not dealt an Equip that fits fewer than a quarter of its monsters.
+  const equips = db.config.equipKinds ? L.equip.filter(c => { const e = db.equipOf.get(c.id); return !e || e.shape || mons.filter(m => e.attr ? m.attr === e.attr : e.types.has(m.type)).length * 4 >= mons.length; }) : L.equip;
+  guard = 0; while (deck.length < nMon + 5 && guard++ < 200) add(rng.pick(equips));
   const strong = tier === 'regular' ? floor >= 1 : true;
   const tagged = L.spell.concat(L.trap).filter(c => { const t = db.tagOf.get(c.id); if (t.fx === 'destroyAll') return floor >= 2 || tier === 'boss'; if (t.fx === 'destroy' || t.fx === 'revive') return strong; return true; });
   guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(tagged));
