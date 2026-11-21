@@ -12,7 +12,8 @@ const path = require('path');
   const runs = +(runsArg || 1);
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: +(W || 1280), height: +(H || 720) } });
-  const errors = [], seen = new Set(); let moved = 0, clicks = 0, duels = 0, wins = 0, stuck = 0, powers = 0, fresh = 0, rerolls = 0;
+  const errors = [], seen = new Set(); let glitches = 0; // glitches: the browser handed the page an empty store for one load (the page says so and loads again)
+  let moved = 0, clicks = 0, duels = 0, wins = 0, stuck = 0, powers = 0, fresh = 0, rerolls = 0;
   page.on('pageerror', e => errors.push('pageerror ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('console ' + m.text()); });
   page.on('requestfailed', r => errors.push('request ' + r.url().slice(-60)));
@@ -107,10 +108,11 @@ const path = require('path');
       await noteToast(st.phase);
       if (!st.playing) await audit(st.story ? 'story' : st.ov ? 'overlay in ' + st.phase : st.tab ? 'tab ' + st.tab : st.phase + (st.kind ? ' ' + st.kind : ''));
       if (process.env.RELOAD && !st.playing && !st.story && st.phase !== 'over' && step && step % +process.env.RELOAD === 0) {
-        const before = await page.evaluate(() => JSON.stringify(window.LM.G.run)), disk = await page.evaluate(() => localStorage.getItem('lostmemories.run.v1'));
+        const before = await page.evaluate(() => JSON.stringify(window.LM.G.run)), disk = await page.evaluate(() => localStorage.getItem('lostmemories.run.v1')); const diskKeys = await page.evaluate(() => Object.keys(localStorage).join(','));
         if (disk) {
           if (disk !== before) errors.push('the saved game is behind the screen in ' + st.phase);
-          await page.reload(); if (!(await click('[data-a="resume"]'))) { errors.push('no Continue after reload in ' + st.phase); break; }
+          await page.reload(); for (let k = 0; k < 3 && await page.locator('[data-a="loadagain"]').count(); k++) { glitches++; if ((await page.evaluate(() => localStorage.length)) !== 0) errors.push('the page wrote to a store it had found empty'); await page.locator('[data-a="loadagain"]').click(); await page.waitForLoadState('load'); await page.waitForTimeout(150); }
+          if (!(await click('[data-a="resume"]'))) { errors.push('no Continue after reload in ' + st.phase + ': ' + await page.evaluate(() => JSON.stringify({ keys: Object.keys(localStorage), run: (localStorage.getItem('lostmemories.run.v1') || '').length, shows: (document.querySelector('#app') || document.body).innerText.slice(0, 120) })).catch(e => 'page not readable, ' + e.message) + ' | before the reload the store held ' + diskKeys + ' | one second later ' + await page.waitForTimeout(1000).then(() => page.evaluate(() => Object.keys(localStorage).length + ' keys')) + ' | after one more reload ' + await page.reload().then(() => page.evaluate(() => Object.keys(localStorage).length + ' keys'))); break; }
           const after = await page.evaluate(() => JSON.stringify(window.LM.G.run)); if (after !== before) errors.push('the run changed across a reload in ' + st.phase);
           reloads++; lastPhase = ''; continue;
         }
@@ -172,6 +174,7 @@ const path = require('path');
   if (Object.keys(toasts).length) console.log('MESSAGES SHOWN\n  ' + Object.entries(toasts).map(([k, n]) => n + 'x ' + k).join('\n  '));
   if (Object.keys(layout).length) console.log('LAYOUT\n  ' + Object.entries(layout).sort((a, b) => b[1] - a[1]).slice(0, 40).map(([k, n]) => n + 'x ' + k).join('\n  '));
   console.log(JSON.stringify({ runs, duels, wins, clicks, powers, fresh, rerolls, reloads, moved, stuck, errors: errors.length, profile: await page.evaluate(() => JSON.parse(localStorage.getItem('lostmemories.profile.v1') || 'null')) }).slice(0, 900));
+  if (glitches) console.log('note: the browser came back with an empty store ' + glitches + ' time(s); the page said so, wrote nothing and loaded again');
   for (const e of errors.slice(0, 8)) console.log(e);
   await browser.close();
   process.exit(errors.length || moved ? 1 : 0);

@@ -55,10 +55,20 @@ const store = {
     if (raw == null) return null;
     try { return JSON.parse(raw); } catch { store.unreadable.add(k); try { localStorage.setItem(k + '.unreadable', raw); localStorage.removeItem(k); } catch { /* the copy could not be kept */ } return null; }
   },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); store.failed.delete(k); return true; } catch { store.failed.set(k, v); return false; } },
-  del(k) { store.failed.delete(k); try { localStorage.removeItem(k); return true; } catch { return false; } },
+  set(k, v) { if (lostStore) return false; try { localStorage.setItem(k, JSON.stringify(v)); store.failed.delete(k); markStore(); return true; } catch { store.failed.set(k, v); return false; } },
+  del(k) { if (lostStore) return false; store.failed.delete(k); try { localStorage.removeItem(k); return true; } catch { return false; } },
   retry() { for (const [k, v] of [...store.failed]) store.set(k, v); return store.failed.size === 0; },
 };
+// A browser can, rarely, hand a page an empty store for one load although everything it saved is still there. Seen in the
+// headless test browser under load: six keys before a reload, none after it, all six again after the next reload.
+// A page that believed the empty store would begin a new profile and, at its first save, write it over the real one.
+// So this tab remembers (in sessionStorage, which a reload keeps) that the store held something. If the store then
+// comes back with nothing at all in it, the page says so, offers to load again, and writes nothing until the player chooses.
+const HAD = 'lostmemories.had';
+const storeSize = () => { try { return localStorage.length; } catch { return -1; } };
+let lostStore = storeSize() === 0 && (() => { try { return sessionStorage.getItem(HAD) === '1'; } catch { return false; } })();
+const markStore = () => { try { if (storeSize() > 0) sessionStorage.setItem(HAD, '1'); } catch { /* no session store, so no guard */ } };
+markStore();
 
 const G = { run: null, sel: [], onto: null, attacker: null, aim: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
 const P = Object.assign(newProfile(), (() => { const s = store.get(PROFILE); if (s == null) return {}; if (okProfile(s)) return s; store.unreadable.add(PROFILE); try { localStorage.setItem(PROFILE + '.unreadable', JSON.stringify(s)); } catch { /* the copy could not be kept */ } return {}; })());
@@ -593,6 +603,11 @@ function recover(e, moving) {
 }
 function render() { try { draw(); G.fresh = false; } catch (e) { recover(e, false); } }
 function draw() {
+  if (lostStore) { // the store came back empty in a tab that had progress: nothing is drawn but the notice, and nothing is written
+    app.dataset.phase = 'home';
+    app.innerHTML = '<div class="modal"><div class="glass panel leave moved"><h2>Your saved progress did not load</h2><p>This browser handed the game an empty store just now, though this tab held your progress a moment ago. That can happen when a device is busy. Nothing has been changed, and what you saved should still be there.</p><div class="row"><button class="gold" data-a="loadagain">Load the page again</button><button data-a="startempty">Start without it</button></div><p><small>Start without it only if you cleared this site\'s data yourself.</small></p></div></div>';
+    return;
+  }
   const r = G.run; let body;
   if (G.screen) body = { forger: screenForger, vault: screenVault, codex: screenCodex, feats: screenFeats }[G.screen]();
   else if (!r) body = screenHome();
@@ -622,6 +637,8 @@ function tapped(ev) {
     case 'new': { const s = !r || r.phase === 'over' ? liveSave() : null; if (s) { G.overlay = { kind: 'leave', saved: nameRun(s) }; render(); break; } }
       // falls through to the Forger screen when no run is waiting
       G.overlay = null; G.screen = 'forger'; if (!P.forgers.includes(G.pickForger)) G.pickForger = 'tarn'; G.pickHeat = Math.min(G.pickHeat, heatOpen()); render(); break;
+    case 'loadagain': location.reload(); break;
+    case 'startempty': lostStore = false; try { sessionStorage.removeItem(HAD); } catch { /* nothing to forget */ } render(); break;
     case 'leavetab': Object.assign(G, { run: null, overlay: null, screen: null, shown: null, frames: [], results: null, banked: false, story: null }); setLabs(pref); render(); break;
     case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; G.banked = false; setLabs(pref); } render(); break;
     case 'screen': G.screen = x; render(); break;

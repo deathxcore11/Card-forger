@@ -212,6 +212,24 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     const n0 = errors.length; await resume(); await tap('.door.t-boss'); await story(); await page.waitForTimeout(450); errors.splice(n0);
     check('failing the same move twice sets the run aside', /could not be read/.test(await text('.notice')) && (await ls(K.run)) === null && !!(await ls(K.run + '.unreadable')) && (await ls(K.profile)).memories === P0.memories, await text('.notice')); }
 
+  // The browser hands the page an empty store for one load although the saved data is still there (seen in the headless
+  // test browser under load, 21 November 2026: six keys before a reload, none after it, six after the next). The page
+  // must say so and write nothing, so the real profile cannot be written over by a new one.
+  { await open(chamber); // the page has loaded with a saved run and a profile, so this tab knows the store held something
+    const kept = await page.evaluate(() => { const o = {}; for (const k of Object.keys(localStorage)) o[k] = localStorage.getItem(k); localStorage.clear(); return o; }); // stand in for the browser: the store reads empty
+    await page.reload(); await page.waitForTimeout(350);
+    check('an empty store in a tab that had progress: the page says the progress did not load', /did not load/.test(await text('.panel h2')) && !(await has('[data-a="new"]')) && !(await has('[data-a="resume"]')), await text('#app'));
+    check('and it writes nothing while it says so', (await page.evaluate(() => localStorage.length)) === 0);
+    await page.evaluate(o => { for (const [k, v] of Object.entries(o)) localStorage.setItem(k, v); }, kept); // the browser has the store back
+    await tap('[data-a="loadagain"]'); await page.waitForTimeout(450);
+    check('loading again finds the saved run and the profile as they were', (await has('[data-a="resume"]')) && (await page.evaluate(k => localStorage.getItem(k), K.run)) === kept[K.run] && (await ls(K.profile)).memories === chamber.profile.memories, { resume: await has('[data-a="resume"]') });
+    await open(null);
+    check('a first visit, with an empty store and nothing remembered, starts as usual', !(await has('[data-a="loadagain"]')) && (await has('[data-a="new"]')));
+    await open(chamber); await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(350); await tap('[data-a="startempty"]');
+    check('Start without it opens the game on the empty store', !(await has('[data-a="loadagain"]')) && (await has('[data-a="new"]')) && !(await has('[data-a="resume"]')));
+    await page.reload(); await page.waitForTimeout(350);
+    check('and the notice does not come back', !(await has('[data-a="loadagain"]')) && (await has('[data-a="new"]'))); }
+
   check('no page errors anywhere', errors.length === 0, errors);
   console.log(`save checks at ${W}x${H}: ${passed} passed, ${failed} failed`);
   await browser.close(); process.exit(failed ? 1 : 0);
