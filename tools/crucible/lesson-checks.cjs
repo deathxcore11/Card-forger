@@ -55,8 +55,9 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
   check('the fuel lesson follows', L.text && L.text.includes('Second lesson') && L.text.includes(fuel.name) && L.pips.length === 2 && L.pips[0][1] === pair[0].name && L.pips[1][1] === fuel.name, L);
   for (const [, name] of L.pips) await page.locator('.hs .c', { has: page.locator('.nm', { hasText: name }) }).first().click({ force: true });
   await page.waitForTimeout(300); await tap('[data-a^="play:"]'); await settle();
-  const f = await page.evaluate(() => { const d = window.LM.G.run.duel, m = d.mon[0].find(Boolean), v = document.querySelector('.side:not(.top) .slot .st') || document.querySelector('.slot .st'); return { id: m && m.id, st: [...document.querySelectorAll('[data-zone^="0:"] .st')].map(x => x.textContent), tips: window.LM.P.tips }; });
-  check('fuel added +300 ATK and DEF, as the lesson said', f.id === pair[0].id && f.st.includes(`${pair[0].atk + 300}/${pair[0].def + 300}`), f);
+  const f = await page.evaluate(() => { const d = window.LM.G.run.duel, m = d.mon[0].find(Boolean), v = document.querySelector('.side:not(.top) .slot .st') || document.querySelector('.slot .st'); return { id: m && m.id, ba: m && m.ba, bd: m && m.bd, terrain: !!d.terrain, st: [...document.querySelectorAll('[data-zone^="0:"] .st')].map(x => x.textContent), tips: window.LM.P.tips }; });
+  // The fuel bonus is read from the monster itself; the numbers on the card also carry a terrain, when the duel has one.
+  check('fuel added +300 ATK and DEF, as the lesson said', f.id === pair[0].id && f.ba === 300 && f.bd === 300 && (f.terrain || f.st.includes(`${pair[0].atk + 300}/${pair[0].def + 300}`)), f);
   check('the fuel lesson is learned', f.tips && f.tips.fuel === 1, f.tips);
 
   // 3. the single lesson: one card that already beats every monster the rival shows. (Until 21 November 2026 it said
