@@ -9,7 +9,7 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
   const browser = await chromium.launch(); const page = await browser.newPage({ viewport: { width: +W, height: +H }, deviceScaleFactor: 2 });
   page.on('pageerror', e => console.log('page error:', e.message));
   const load = async f => { const o = f ? JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) : null; await page.goto(url);
-    await page.evaluate(o => { localStorage.clear(); if (o) { localStorage.setItem('lostmemories.profile.v1', JSON.stringify(o.profile)); localStorage.setItem('lostmemories.run.v1', JSON.stringify(o.run)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(o.labs)); localStorage.setItem('lostmemories.labs.v5', JSON.stringify(o.labs)); } }, o);
+    await page.evaluate(o => { localStorage.clear(); sessionStorage.clear(); if (o) { localStorage.setItem('lostmemories.profile.v1', JSON.stringify(o.profile)); localStorage.setItem('lostmemories.run.v1', JSON.stringify(o.run)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(o.labs)); localStorage.setItem('lostmemories.labs.v5', JSON.stringify(o.labs)); } }, o);
     await page.reload(); await page.waitForTimeout(500); };
   const tap = async sel => { const l = page.locator(sel).first(); if (!(await l.count())) return false; await l.click({ force: true, timeout: 2000 }).catch(() => {}); await page.waitForTimeout(350); return true; };
   const skip = async () => { for (let i = 0; i < 4; i++) if (!(await tap('[data-a="storyskip"]'))) break; };

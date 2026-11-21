@@ -58,7 +58,7 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
   check('the three cards on offer stand side by side', await page.evaluate(() => { const p = [...document.querySelectorAll('.picks > .pick')].map(e => e.getBoundingClientRect()); return p.length >= 2 && p.every(b => Math.abs(b.top - p[0].top) < 2) && p[p.length - 1].bottom <= document.querySelector('#app').getBoundingClientRect().bottom; }));
 
   // 4. the home screen: no Lab switch is squeezed shorter than its words
-  await page.goto(url); await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(400);
+  await page.goto(url); await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); }); // a first visit: the tab remembers nothing either await page.reload(); await page.waitForTimeout(400);
   r = await look('.lab'); atLeast('Lab switches', r, 9.5); fits('home', r);
   check('no Lab switch is shorter than its words', await page.evaluate(() => [...document.querySelectorAll('.lab')].every(e => e.scrollHeight <= e.clientHeight + 1)));
 

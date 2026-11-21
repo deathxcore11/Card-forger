@@ -64,7 +64,7 @@ const path = require('path');
   const noteToast = async where => { const t = await page.evaluate(() => window.LM.G.toast); if (t && t !== lastToast) { const k = where + ': ' + t; toasts[k] = (toasts[k] || 0) + 1; } lastToast = t; };
   const saved = process.env.SAVE ? JSON.parse(require('fs').readFileSync(process.env.SAVE, 'utf8')) : null;
   for (let run = 0; run < runs; run++) {
-    if (run === 0) { await page.evaluate(() => localStorage.clear()); await page.reload(); }
+    if (run === 0) { await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); }); await page.reload(); }
     await audit('home');
     if (run === 0 && saved) {
       await page.evaluate(v => { localStorage.setItem('lostmemories.run.v1', JSON.stringify(v.run)); if (v.labs) { localStorage.setItem('lostmemories.labs.v5', JSON.stringify(v.labs)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(v.labs)); } if (v.profile) localStorage.setItem('lostmemories.profile.v1', JSON.stringify(v.profile)); }, saved);
