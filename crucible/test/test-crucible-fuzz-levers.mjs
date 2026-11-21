@@ -34,10 +34,12 @@ const SETS = {
   buildsLinks: { ...FIVE, simCut: 1, leanOffers: 2, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, runBuilds: 2, rivalStyles: 1 }, // Two builds a run with harder leaning
 };
 SETS.odd = { ...SETS.depth, bazaarOdd: 70 };
-SETS.lone = { ...SETS.depth, loneWatch: 1 }; // the depth set with the odd Gift at the Bazaar
+SETS.lone = { ...SETS.depth, loneWatch: 1 };
+SETS.secret = { ...SETS.depth, loneWatch: 1, secretLast: 1 }; // the first secret: on odd seeds the player keeps one monster at guardians, so the hidden door and duel are reached // the depth set with the odd Gift at the Bazaar
 const DUELS = +process.argv[2] || 300, RUNS = +process.argv[3] || 60, SEED0 = +process.argv[4] || 1;
 const relicIds = [...Object.keys(RELICS), ...Object.keys(LAB)];
-const LAWS = [null, 'scorched', 'stonewall', 'bloodprice', 'mist', 'tyranny', 'end'];
+const db0lone = (name, n) => SETS[name] && SETS[name].secretLast && n % 2 ? 'boss' : null;
+const LAWS = [null, 'scorched', 'stonewall', 'bloodprice', 'mist', 'tyranny', 'end', 'alone'];
 const TWISTS = [null, 'fog', 'narrow', 'storm', 'locked'];
 const FORGER_IDS = [null, ...Object.keys(FORGERS)];
 const KIT_IDS = [...KITS, ...Object.values(FORGERS).flatMap(f => f.kits)].map(k => k.id);
@@ -178,6 +180,7 @@ function runFuzz(name, cfg) {
     // one run in five changes its rules part-way, as an old saved run does when the Lab switches are changed before Continue
     const swapAt = r.chance(1, 5) ? 5 + r.int(400) : -1, swapTo = r.pick(Object.keys(SETS));
     const heat = r.int(11), forger = r.pick(FORGER_IDS), fam = r.pick(['neutral', 'storm', 'tomb', 'shadow', 'furnace']);
+    const lone = db0lone(name, n);
     // three kinds of player: all random, a strong player who slips now and then, and a strong player throughout
     const kind = r.pick(['chaos', 'slips', 'slips', 'expert']), slip = kind === 'chaos' ? 100 : kind === 'slips' ? 4 : 0;
     const opts = { seed: n, heat, forger, locked: r.chance(1, 3) ? ['tomb_bell', 'glass_idol', 'living_furnace', 'signature'] : null, track: r.chance(2, 3), featured: r.chance(1, 2) ? r.shuffle(LABPOOL.slice()).slice(0, 2) : null };
@@ -187,7 +190,7 @@ function runFuzz(name, cfg) {
     while (run.phase !== 'over') {
       if (guard === swapAt) db = DBS[swapTo];
       let a;
-      try { a = r.int(100) < slip ? chaosAction(db, run, r) : policyAction(db, run, { family: fam, level: 2 }); } catch (e) { throw new Error('player model threw, ' + tag + ' phase ' + run.phase + ' :: ' + e.stack); }
+      try { a = r.int(100) < slip ? chaosAction(db, run, r) : policyAction(db, run, { family: fam, level: 2, lone }); } catch (e) { throw new Error('player model threw, ' + tag + ' phase ' + run.phase + ' :: ' + e.stack); }
       assert.ok(a, 'no action offered, ' + tag + ' phase ' + run.phase);
       const snap = JSON.stringify(run);
       // wild actions on a copy: any action in any phase is either accepted or refused without a trace
@@ -227,7 +230,7 @@ function runFuzz(name, cfg) {
     assert.ok(run.result && typeof run.result.won === 'boolean', 'no result, ' + tag);
     over[run.result.won ? 'won' : 'lost']++; floors[Math.min(2, run.floor)]++; if (run.result.won) heats[heat] = (heats[heat] || 0) + 1;
     // the same seed and the same choices give the same run
-    if (kind === 'expert' && n % 5 === 0 && swapAt < 0) { const twin = newRun(db, opts); let g = 0; while (twin.phase !== 'over' && g++ < 400000) runApply(twin, policyAction(db, twin, { family: fam, level: 2 }), db); assert.equal(JSON.stringify(twin.result), JSON.stringify(run.result), 'saved and unsaved runs ended differently, ' + tag); }
+    if (kind === 'expert' && n % 5 === 0 && swapAt < 0) { const twin = newRun(db, opts); let g = 0; while (twin.phase !== 'over' && g++ < 400000) runApply(twin, policyAction(db, twin, { family: fam, level: 2, lone }), db); assert.equal(JSON.stringify(twin.result), JSON.stringify(run.result), 'saved and unsaved runs ended differently, ' + tag); }
   }
   return { acts, refused, wildRefused, over, floors, wonAtHeat: heats };
 }

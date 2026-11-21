@@ -360,6 +360,57 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     await tap('[data-a="quit"]'); await page.reload(); await page.waitForTimeout(350); const home = await room();
     check('the home screen keeps the first room', home.room === '' && home.bg.includes('hall-doors.webp'), home); }
 
+  // The first secret (Lab switch "secret", 21 November 2026): the switch, the locked fifth Forger, the chamber of two doors,
+  // the hidden duel, the way on, the Rumours box and a guardian's memory, on saved games the engine made with the switch on
+  // (SECRETSAVES=<dir from make-saves.mjs <dir> ...,depth,secret>). Every one is reached by taps a person can make.
+  { await open(null);
+    const cfg = () => page.evaluate(() => ({ s: window.LM.db.config.secretLast, w: window.LM.db.config.loneWatch }));
+    await tap('[data-a="new"]');
+    check('with the switch off the fifth Forger slot is locked and says it is not in this build', /Not in this build yet/.test(await text('.ch.locked:has-text("The Last One")')), await text('.ch.locked:has-text("The Last One")'));
+    await open(null); await tap('[data-a="lab:secret"]'); let c = await cfg();
+    check('the Rumours switch is on the home screen and turns the secret and its watch on', (await has('[data-a="lab:secret"].on')) && c.s === 1 && c.w === 1, c);
+    await tap('[data-a="new"]');
+    check('with it on the locked slot gives the hint and no name of the condition', /Nobody says how/.test(await text('.ch.locked:has-text("The Last One")')) && !/one monster/i.test(await text('.ch.locked:has-text("The Last One")')), await text('.ch.locked:has-text("The Last One")'));
+    await open(null); await tap('[data-a="lab:secret"]'); await tap('[data-a="lab:secret"]'); c = await cfg();
+    check('and off again', c.s === 0 && c.w === 0 && !(await has('[data-a="lab:secret"].on')), c);
+    const sd = process.env.SECRETSAVES, sv = f => sd && fs.existsSync(path.join(sd, f)) ? JSON.parse(fs.readFileSync(path.join(sd, f), 'utf8')) : null;
+    const door = sv('chamber-secret-door-f1.json'), win = sv('boss-win-move-f1.json');
+    check('saved games with the secret were given to the checks (SECRETSAVES): the chamber of two doors and a guardian one move from falling', !!door && !!win, { sd });
+    if (door) {
+      await open(door); await resume();
+      const doors = await page.locator('.doors .door').allInnerTexts();
+      check('the chamber shows exactly two doors, the hidden one first, and no guardian line', doors.length === 2 && /A door that was not there/.test(doors[0]) && /The way on|The way out/.test(doors[1]) && (await has('.doors.pair')) && !(await has('.bossline')), doors);
+      await tap('[data-a="door:0"]');
+      check('the hidden door: The Last One speaks first', /The Last One/.test(await text('.story h3')) && /door that was not there/.test(await text('.story p')), await text('.story'));
+      await story(); await page.waitForTimeout(300);
+      const rv = await page.evaluate(() => { const r = window.LM.G.run; return { phase: r.phase, tier: r.rival && r.rival.tier, name: r.rival && r.rival.name }; });
+      check('then the hidden duel starts against The Last One', rv.phase === 'duel' && rv.tier === 'secret' && rv.name === 'The Last One', rv);
+      check('and the rules box shows its Law', /Alone:/.test(await text('.rules')), await text('.rules'));
+      check('the stored run is the hidden duel', (await ls(K.run)).phase === 'duel' && (await ls(K.run)).rival.tier === 'secret');
+      await open(door); await resume(); const fl0 = door.run.floor;
+      await tap('[data-a="door:1"]'); await story();
+      const on = await page.evaluate(() => { const r = window.LM.G.run; return { phase: r.phase, floor: r.floor, secret: (r.doors || []).some(d => d.type === 'secret'), gate: !!r.secondGate }; });
+      check('the way on goes on as the run would have, and the hidden door is gone', !on.secret && (on.floor > fl0 || on.gate || on.phase === 'over' || on.phase === 'reward'), on);
+      await open(door); await tap('[data-a="screen:codex"]');
+      check('the Codex opens with the Rumours box and says what the player came close to', (await has('.rumours')) && /memories heard/.test(await text('.rumours')), await text('.rumours'));
+    }
+    if (win) {
+      await open(win); await resume();
+      const name = win.run.rival.name.replace(/^The /, '');
+      await page.evaluate(m => window.LM.act(m), win.move);
+      for (let i = 0; i < 40 && !(await has('[data-a="closeov"]')); i++) await page.waitForTimeout(250);
+      check('the guardian duel ends with the result panel first', await has('[data-a="closeov"]'));
+      await tap('[data-a="closeov"]'); for (let i = 0; i < 8 && !(await has('.story')); i++) await page.waitForTimeout(250);
+      check('when a guardian falls with the switch on, it leaves a memory', new RegExp('memory, as the ' + name + ' falls', 'i').test(await text('.story h3')), await text('.story'));
+      const seen = (await ls(K.profile)).seen || [];
+      check('the memory is kept in the profile', seen.some(s => /^memory:/.test(s)), seen);
+      await story(); await tap('[data-a="quit"]'); await page.reload(); await page.waitForTimeout(350); await tap('[data-a="screen:codex"]');
+      check('and the Codex Rumours box lists it after a reload', new RegExp(name).test(await text('.rumours')) && /1 of \d+ memories heard/.test(await text('.rumours')), await text('.rumours'));
+      const off = JSON.parse(JSON.stringify(win)); off.labs.secret = false; await open(off); await resume();
+      await page.evaluate(m => window.LM.act(m), win.move); for (let i = 0; i < 12; i++) await page.waitForTimeout(250);
+      check('with the switch off the same win leaves no memory', !((await ls(K.profile)).seen || []).some(s => /^memory:/.test(s)) && !/memory, as/i.test(await text('.story h3')), await text('.story h3'));
+    } }
+
   check('no page errors anywhere', errors.length === 0, errors);
   console.log(`save checks at ${W}x${H}: ${passed} passed, ${failed} failed`);
   await browser.close(); process.exit(failed ? 1 : 0);

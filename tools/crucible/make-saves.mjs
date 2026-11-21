@@ -42,7 +42,11 @@ for (let seed = 1; seed <= seeds; seed++) {
     if (run.phase === 'duel' && d.pending) keep(key, JSON.parse(JSON.stringify(run)));
     else if (run.phase !== 'duel' || (d.active === 0 && d.turn >= 3)) keep(key, JSON.parse(JSON.stringify(run)));
     const before = JSON.stringify(run);
-    runApply(run, policyAction(db, run, { level: 2, family: ['neutral', 'storm', 'tomb', 'shadow', 'furnace'][seed % 5], lone: labs.secret ? (forger === 'last' ? 'last' : seed % 2 ? 'boss' : null) : null }), db);
+    const move = policyAction(db, run, { level: 2, family: ['neutral', 'storm', 'tomb', 'shadow', 'furnace'][seed % 5], lone: labs.secret ? (forger === 'last' ? 'last' : seed % 2 ? 'boss' : null) : null });
+    const bossDuel = labs.secret && run.phase === 'duel' && run.rival.tier === 'boss' && run.duel.active === 0 && !run.duel.pending, wins0 = run.stats.wins;
+    runApply(run, move, db);
+    // with the first secret on: the last move of a guardian duel the player wins, and the move itself, so a check can make it with a tap
+    if (bossDuel && run.stats.wins > wins0 && !done.has('boss-win-move-f' + (run.floor + 1))) { const o = JSON.parse(before); done.add('boss-win-move-f' + (o.floor + 1)); writeFileSync(out + '/boss-win-move-f' + (o.floor + 1) + '.json', JSON.stringify({ run: o, labs, profile, move })); n++; }
     if (run.phase === 'over') keep((run.result.won ? 'last-move-win-' : 'last-move-loss-f' + (run.floor + 1) + '-') + 'h' + heat + (JSON.parse(before).secondGate ? '-second-gate' : ''), JSON.parse(before));
   }
 }
