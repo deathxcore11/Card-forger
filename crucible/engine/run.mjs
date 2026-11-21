@@ -158,6 +158,7 @@ export function makeKit(db, rng, kit) {
     guard = 0; while (deck.length < q.monsters + q.field && guard++ < 500) add(rng.pick(f));
     guard = 0; while (deck.length < q.monsters + q.field + q.equip && guard++ < 500) add(rng.pick(equips));
     const tagged = L.spell.concat(L.trap).filter(c => { const t = db.tagOf.get(c.id); return t.fx !== 'destroyAll' && t.fx !== 'revive'; });
+    if (cfg.kitTraps) { const traps = tagged.filter(c => roleOf(db, c.id) === 'trap'), n0 = deck.length; guard = 0; while (traps.length && deck.length < n0 + Math.min(cfg.kitTraps, q.tagged) && guard++ < 200) add(rng.pick(traps)); } // lever kitTraps: so many of a kit's effect cards are Traps
     guard = 0; while (deck.length < q.monsters + q.field + q.equip + q.tagged && guard++ < 500) add(rng.pick(tagged));
     guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(L.fuel));
     if (deck.length === 40 && deckWeight(db, deck) <= (q.weight || cfg.kitWeight)) return { deck, rejected: tries, homeField: deck.find(e => roleOf(db, e.id) === 'field')?.id || null };
@@ -172,6 +173,7 @@ export function makeKit(db, rng, kit) {
   guard = 0; while (deck.length < q.monsters + q.field && guard++ < 500) add(rng.pick(f));
   guard = 0; while (deck.length < q.monsters + q.field + q.equip && guard++ < 500) add(rng.pick(equips));
   const tagged = L.spell.concat(L.trap).filter(c => { const t = db.tagOf.get(c.id); return t.fx !== 'destroyAll' && t.fx !== 'revive'; });
+  if (cfg.kitTraps) { const traps = tagged.filter(c => roleOf(db, c.id) === 'trap'), n0 = deck.length; guard = 0; while (traps.length && deck.length < n0 + Math.min(cfg.kitTraps, q.tagged) && guard++ < 200) add(rng.pick(traps)); } // lever kitTraps: so many of a kit's effect cards are Traps
   guard = 0; while (deck.length < q.monsters + q.field + q.equip + q.tagged && guard++ < 500) add(rng.pick(tagged));
   guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(L.fuel));
   const light = anyWeak.filter(c => c.level <= 2);
