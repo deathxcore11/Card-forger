@@ -167,6 +167,8 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 .title .labs small { letter-spacing: 0; font-size: 1em; color: var(--dim); }
 
 /* Heat ladder */
+.rumours { padding: .7em 1em; margin: .2em 0 .8em; } .rumours h3 { margin: 0 0 .3em; font-size: 1.1em; } .rumours p { margin: .25em 0; font-size: 1.05em; } .rumours p b { color: var(--gold); margin-right: .4em; } .rumours .near { color: #ffb37a; font-style: italic; }
+.doors.pair .door:nth-child(2) { grid-column: 3; } .door.t-secret .dtxt b { color: #d9c7ff; } .door.t-secret img { filter: saturate(.55) brightness(.82); }
 .heatbox { display: flex; flex-wrap: wrap; align-items: center; gap: .4em 1em; padding: .6em 1em; margin: .2em 0 .6em; font-size: 1.15em; }
 .heatbox .new { flex: 1 1 100%; } .heatbox .new b { color: var(--gold, #e8c877); } .heatbox button { font-size: .95em; padding: .3em .8em; }
 .heatlist { display: grid; gap: .5em; margin: .6em 0 1em; font-size: 1.2em; } .heatlist div { display: grid; grid-template-columns: 2em 1fr; align-items: baseline; }

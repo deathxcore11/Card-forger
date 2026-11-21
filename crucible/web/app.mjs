@@ -7,9 +7,9 @@ const RELICS = { ...BASE_RELICS, ...LAB }; // the page's own copy: an item's wor
 import { newRun, runApply, MIN_DECK, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw, ENCHANT_TEXT, carries } from '../engine/run.mjs';
 import { codexResult, codexKnows, codexUpgrade } from '../engine/cards.mjs';
 import { powerActions } from '../engine/duel.mjs';
-import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
+import { FORGERS, FORGER_IDS, HIDDEN_FORGERS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, maxHeat, VAULT, FORGER_FEATS, featList, runOptions, openKits, nextKit, forgerStats, VAULT_ENCHANTS, KIT_GOALS, START_ENCHANTS } from '../engine/meta.mjs';
-import { SCENES } from './story.mjs';
+import { SCENES, RUMOURS } from './story.mjs';
 import { LAB_DEFAULTS, LAB_ORDER, DEPTH_SET, labConfig } from './labs.mjs';
 import { aimFor } from './aim.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
@@ -182,7 +182,7 @@ function act(a) {
   const frames = [];
   const wasDuel = run.phase === 'duel' || (run.phase === 'chamber' && a.t === 'door');
   const bossId = run.door && run.door.type === 'boss' ? run.door.boss : run.phase === 'chamber' && a.t === 'door' && run.doors[a.i] && run.doors[a.i].type === 'boss' ? run.doors[a.i].boss : null;
-  const cx0 = run.codex ? run.codex.length : 0;
+  const cx0 = run.codex ? run.codex.length : 0, hidden = (run.phase === 'duel' && run.rival && run.rival.tier === 'secret') || (run.phase === 'chamber' && a.t === 'door' && run.doors[a.i] && run.doors[a.i].type === 'secret');
   let rev;
   try {
     rev = runApply(run, a, db, { onStep: evs => { if (run.duel) frames.push({ view: JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))), evs, rival: info(run) }); } });
@@ -195,6 +195,9 @@ function act(a) {
   G.sel = []; G.onto = null; G.attacker = null; G.aim = null;
   if (run.codex) { for (const k of run.codex) G.known.add(k); store.set(KNOWN, [...G.known]); }
   if (run.offer && run.offer.fresh && (P.fresh || []).includes(run.offer.fresh)) { P.fresh = P.fresh.filter(x => x !== run.offer.fresh); saveP(); }
+  // The first secret: a fallen guardian leaves a memory (the clue), and The Last One has a line for either end of the hidden duel.
+  if (db.config.secretLast && bossId && (rev || []).some(e => e.e === 'duelWon')) queueStory('memory:' + bossId);
+  if (hidden && (rev || []).some(e => e.e === 'duelWon' || e.e === 'duelLost')) queueStory((rev || []).some(e => e.e === 'duelWon') ? 'secret:won' : 'secret:lost');
   if (run.phase === 'over') { if (!G.banked) { G.banked = true; G.results = bank(run, !!labs.long); cueShown('run:over', { won: !!run.result.won, reason: run.result.reason || null, floor: run.floor }); queueStory(run.result.won ? 'cleared' : run.result.reason === 'abandoned' ? 'left' : 'fell'); } } else writeRun(run);
   if (wasDuel && frames.length) {
     if (a.t === 'door' || !G.note) G.note = newNote(a.t !== 'door'); // a note begun part-way (after a reload) is partial
@@ -330,8 +333,10 @@ function animate(evs, ghosts) {
 // ---------- story ----------
 function queueStory(id, then) {
   if (!SCENES[id] || P.seen.includes(id)) { if (then) then(); return; }
+  if (G.story) { (G.storyQ = G.storyQ || []).push(id); return; } // one scene at a time: a memory and the end of a run can fall on the same tap
   P.seen.push(id); saveP(); G.story = { id, i: 0, then: then || null }; cueShown('story:' + id, {});
 }
+function nextStory() { while (!G.story && G.storyQ && G.storyQ.length) queueStory(G.storyQ.shift()); }
 function storyPanel() {
   const st = G.story; if (!st || G.playing || G.overlay) return '';
   const sc = SCENES[st.id];
@@ -349,9 +354,9 @@ function linkLine(id, r) {
 const ruleText = id => RELICS[id].text + (id === 'f_veil' && labs.veilSet ? ' Also once a turn, while you hold no veiled monster, setting one monster veiled in defense does not use your play.' : '');
 function screenForger() {
   const top = heatTop(), heatMax = heatOpen(), hr = labs.heat ? HEAT_RULES.filter(x => x.n <= G.pickHeat) : [];
-  const cardOf = id => { const f = FORGERS[id], own = P.forgers.includes(id), on = G.pickForger === id, face = 'face-' + (id === 'tarn' ? 'tarn' : id);
+  const cardOf = id => { const f = FORGERS[id], own = P.forgers.includes(id), on = G.pickForger === id, face = 'face-' + (id === 'last' ? 'last-one' : id);
     return `<div class="ch glass ${own ? '' : 'locked'} ${on ? 'on' : ''}" ${own ? `data-a="forger:${id}"` : ''}>${own && ART.has(face) ? `<img src="art/${face}.webp" alt="">` : `<div class="q">${own ? esc(f.name.replace('The ', '')[0]) : '?'}</div>`}<b>${esc(f.name)}</b><i>${esc(f.tag)}</i>${own ? `<span><u>Rule:</u> ${esc(ruleText(f.rule))}</span><span><u>${esc(f.power)}:</u> ${esc(f.powerText)}</span>${labs.long ? `<span class="road">${roadLine(id)}</span>` : ''}` : `<span>Unlock: ${esc(FORGER_FEATS[id].text)}</span>`}</div>`; };
-  return `<div class="hall"><div class="panel glass wide"><h2>Choose your Forger</h2><div class="chars">${FORGER_IDS.map(cardOf).join('')}<div class="ch glass locked"><div class="q">?</div><b>The Last One</b><i>Hidden</i><span>Not in this build yet.</span></div></div>
+  return `<div class="hall"><div class="panel glass wide"><h2>Choose your Forger</h2><div class="chars">${FORGER_IDS.map(cardOf).join('')}${P.forgers.includes('last') ? cardOf('last') : `<div class="ch glass locked"><div class="q">?</div><b>The Last One</b><i>Hidden</i><span>${labs.secret ? 'Nobody says how. The guardians remember things as they fall, and the Codex keeps what they say.' : 'Not in this build yet.'}</span></div>`}</div>
     <div class="row"><span class="fine">Heat</span>${Array.from({ length: top + 1 }, (_, h) => `<button class="${G.pickHeat === h ? 'gold' : ''}" data-a="heat:${h}" ${h > heatMax ? 'disabled' : ''}>${h}</button>`).join('')}<span class="fine">${G.pickHeat ? `${labs.heat ? '' : 'Rivals are stronger. '}Memories +${G.pickHeat * 20}%.` : heatMax ? '' : 'Clear the pyramid to unlock Heat 1.'}</span></div>
     ${hr.length ? `<div class="heatbox glass"><span class="new"><b>Heat ${G.pickHeat}: ${esc(hr[hr.length - 1].name)}.</b> ${esc(hr[hr.length - 1].text)}</span>${hr.length > 1 ? `<span class="fine">Still in force: ${hr.slice(0, -1).map(x => esc(x.name)).join(', ')}.</span><button data-a="heatinfo:${G.pickHeat}">Read all ${hr.length} rules</button>` : ''}</div>` : labs.heat && heatMax ? '<div class="heatbox glass"><span class="fine">Each Heat level adds one rule. Pick a level to read it.</span></div>' : ''}
     <div class="row"><button class="gold big" data-a="descend">Descend as ${esc(FORGERS[G.pickForger].name)}</button><button data-a="home">Back</button></div></div></div>`;
@@ -396,13 +401,21 @@ function codexPage(found) {
   const hint = R.kind === 'printed' ? `A printed fusion of ${R.mats.map(m => 'a ' + card(m).type).join(' and ')}.` : `A ${c.attr} ${c.type}. Some ${c.type} melded with some ${c.attr} monster makes it. Which ones is for you to find.`;
   return `<div class="modal" data-a="cxclose"><div class="glass panel cxpage">${known ? face({ id: R.id }, { cls: 'big' }) : '<div class="c big unk"><span>?</span></div>'}<div><h3>${known ? esc(c.name) : 'Not found yet'}</h3><p>${known ? `${esc(c.type)} · ${esc(c.attr)} · Level ${c.level} · ATK ${c.atk} · DEF ${c.def}` : esc(hint)}</p>${known ? `<p><b>Why:</b> ${esc(whyLine(R))}</p><p><b>Use it again:</b> ${R.kind === 'printed' ? (R.first ? 'the same two materials make it when the meld starts with ' + esc(card(R.first).name) + '.' : 'the same named materials always make it.') : `any ${esc(c.type)} with any ${esc(c.attr)} monster in that ATK range makes it, so cheap cards work as well as good ones.`}</p><h3>Recipes you have found (${recs.length})</h3><div class="recs">${recs.slice(0, 8).map(ids => ids.map(x => `<span class="chip">${esc(card(x).name)}</span>`).join('<b>+</b>')).join('<br>')}${recs.length > 8 ? `<br><span class="fine">and ${recs.length - 8} more</span>` : ''}</div>` : ''}<p class="fine">Tap anywhere to close.</p></div></div></div>`;
 }
+// Rumours: what the guardians let slip as they fell, kept word for word, and what the player has since found out. Shown
+// once the first memory has been heard (or while the switch is on, so a player knows the page exists).
+function rumours() {
+  const heard = BOSSES.flat().filter(b => P.seen.includes('memory:' + b.id)), sc = (G.run && G.run.secret) || {};
+  const near = P.loneNear || sc.near, met = P.loneMet || sc.met, won = P.forgers.includes('last') || sc.won;
+  if (!heard.length && !near && !met && !won && !labs.secret) return '';
+  return `<div class="rumours glass"><h3>Rumours · ${heard.length} of ${BOSSES.flat().length} memories heard</h3>${heard.length ? heard.map(b => `<p><b>${esc(b.name)}</b> ${esc(SCENES['memory:' + b.id].lines[0])}</p>`).join('') : '<p class="fine">Nothing yet. A guardian remembers something as it falls.</p>'}${near && !met ? `<p class="near">${esc(RUMOURS.near)}</p>` : ''}${met ? `<p class="near">${esc(RUMOURS.met)}</p>` : ''}${won ? `<p class="near"><b>The Last One.</b> ${esc(RUMOURS.won)}</p>` : ''}</div>`;
+}
 function screenCodex() {
   const X = codexIndex(), found = codexFound(), v = G.cx;
   let list = X.list.filter(R => (v.view === 'all' || found.has(R.id)) && (!v.type || card(R.id).type === v.type));
   const total = list.length; list = list.slice(0, 120);
   const byType = t => X.list.filter(R => card(R.id).type === t);
   const tiles = list.map(R => { const c = card(R.id); return found.has(R.id) ? `<div class="cxt" data-a="cxopen:${R.id}">${face({ id: R.id }, { cls: 'small' })}<small>${found.get(R.id).length} recipe${found.get(R.id).length > 1 ? 's' : ''}</small></div>` : `<div class="cxt unk" data-a="cxopen:${R.id}"><div class="c small unk"><span>?</span></div><small>${R.kind === 'printed' ? 'Printed fusion' : esc(c.type) + ' · ' + esc(c.attr)}</small></div>`; }).join('');
-  return `<div class="hall"><div class="panel glass wide scroll"><h2>Codex · ${found.size} of ${X.list.length} results found</h2><p>Every monster a meld can make has a page here. A page you have found shows why the meld works, so you can make it again from other cards. ${G.known.size} recipes written.</p>
+  return `<div class="hall"><div class="panel glass wide scroll"><h2>Codex · ${found.size} of ${X.list.length} results found</h2><p>Every monster a meld can make has a page here. A page you have found shows why the meld works, so you can make it again from other cards. ${G.known.size} recipes written.</p>${rumours()}
     <div class="row left"><button class="${v.view === 'found' ? 'gold' : ''}" data-a="cxview:found">Found</button><button class="${v.view === 'all' ? 'gold' : ''}" data-a="cxview:all">All pages</button>${X.types.map(t => `<button class="ty ${v.type === t ? 'gold' : ''}" data-a="cxtype:${t}">${esc(t)} ${byType(t).filter(R => found.has(R.id)).length}/${byType(t).length}</button>`).join('')}</div>
     <div class="cxgrid">${tiles || '<p class="fine">Nothing here yet. Meld two monsters in a duel to write the first page.</p>'}</div>${total > 120 ? `<p class="fine">Showing 120 of ${total}. Pick a Type to narrow it.</p>` : ''}
     <h3 style="margin-top:1em">Record</h3><p>Runs ${P.runs} · Clears ${P.clears} · Duels won ${P.duelWins} · Guardians beaten ${P.bossWins} · Memories earned ${P.earned}</p><div class="row"><button class="gold" data-a="home">Back</button></div></div>${G.cx.open != null ? codexPage(found) : ''}</div>`;
@@ -448,11 +461,11 @@ function screenCharm() { return pickList('Pick one charm', G.run.offer.options.m
 // "Guardian" means the guardian of a floor everywhere else (the Guardian Reward, Guardians beaten, the Veilwalker's feat), so the
 // hard rival behind an ordinary door is shown as an Elite. The engine keeps its own word, which is part of the recorded fixtures.
 const doorName = d => d.tier === 'guardian' ? d.name.replace(/^Guardian: /, 'Elite: ') : d.name;
-const DOOR_ART = { duel: 'duel', cursed: 'cursed', champion: 'champion', guardian: 'guardian', anvil: 'anvil', bazaar: 'bazaar', sanctum: 'sanctum', omen: 'omen', treasure: 'treasure', boss: 'boss', mystery: 'omen' };
+const DOOR_ART = { duel: 'duel', cursed: 'cursed', champion: 'champion', guardian: 'guardian', anvil: 'anvil', bazaar: 'bazaar', sanctum: 'sanctum', omen: 'omen', treasure: 'treasure', boss: 'boss', mystery: 'omen', secret: 'duel-sealed', onward: 'duel-open' };
 function screenChamber() {
   const r = G.run, boss = BOSSES[r.floor][r.bossOrder[r.floor]];
-  return `<div class="hall doorsHall">${r.lastNote ? `<div class="note glass">${esc(r.lastNote)}</div>` : ''}<div class="bossline glass">Guardian of this floor: <b>${esc(boss.name)}</b>${r.chamber >= 2 ? '. ' + esc(bossLaw(db, r)) : '. Its Law shows from chamber 3.'}${db.config.heatRules && r.heat ? ` <button class="heatchip" data-a="heatinfo:${r.heat}">Heat ${r.heat} rules</button>` : ''}</div>
-    <div class="doors">${r.doors.map((d, i) => { const locked = d.type === 'boss' && r.seals < 2; return `<button class="door t-${d.type}" data-a="door:${i}" ${locked ? 'disabled' : ''}><img decoding="sync" src="art/door-${DOOR_ART[d.type]}.webp" alt=""><div class="dtxt glass"><b>${esc(doorName(d))}</b><span class="k">${d.know === 'known' ? 'Known' : d.know === 'partial' ? 'Partly hidden' : 'Mysterious'}</span><span><i>Cost</i> ${esc(d.cost)}</span><span><i>Reward</i> ${esc(d.reward)}</span>${d.law ? `<span><i>Law</i> ${esc(lawShown(d.law))}</span>` : ''}${d.type === 'boss' && !(P.beaten || []).includes(d.boss) && lawAnswer(boss.law) ? `<span class="counsel"><i>Counsel</i> ${esc(lawAnswer(boss.law))}</span>` : ''}${d.tell ? `<span class="tell"><i>${esc(d.style)}</i> ${esc(d.tell)}</span>` : ''}${(d.tags || []).map(t => `<em>${esc(t)}</em>`).join('')}</div></button>`; }).join('')}</div></div>`;
+  return `<div class="hall doorsHall">${r.lastNote ? `<div class="note glass">${esc(r.lastNote)}</div>` : ''}${r.doors.some(d => d.type === 'secret') ? '' : `<div class="bossline glass">Guardian of this floor: <b>${esc(boss.name)}</b>${r.chamber >= 2 ? '. ' + esc(bossLaw(db, r)) : '. Its Law shows from chamber 3.'}${db.config.heatRules && r.heat ? ` <button class="heatchip" data-a="heatinfo:${r.heat}">Heat ${r.heat} rules</button>` : ''}</div>`}
+    <div class="doors${r.doors.length === 2 ? ' pair' : ''}">${r.doors.map((d, i) => { const locked = d.type === 'boss' && r.seals < 2; return `<button class="door t-${d.type}" data-a="door:${i}" ${locked ? 'disabled' : ''}><img decoding="sync" src="art/door-${DOOR_ART[d.type]}.webp" alt=""><div class="dtxt glass"><b>${esc(doorName(d))}</b><span class="k">${d.know === 'known' ? 'Known' : d.know === 'partial' ? 'Partly hidden' : 'Mysterious'}</span><span><i>Cost</i> ${esc(d.cost)}</span><span><i>Reward</i> ${esc(d.reward)}</span>${d.law ? `<span><i>Law</i> ${esc(lawShown(d.law))}</span>` : ''}${d.type === 'boss' && !(P.beaten || []).includes(d.boss) && lawAnswer(boss.law) ? `<span class="counsel"><i>Counsel</i> ${esc(lawAnswer(boss.law))}</span>` : ''}${d.tell ? `<span class="tell"><i>${esc(d.style)}</i> ${esc(d.tell)}</span>` : ''}${(d.tags || []).map(t => `<em>${esc(t)}</em>`).join('')}</div></button>`; }).join('')}</div></div>`;
 }
 
 function screenDuel() {
@@ -515,15 +528,15 @@ function screenDuel() {
   if (myTurn && v.forger && !v.rs.power) {
     const F = FORGERS[v.forger], pa = powerActions(live, db, 0);
     const ok = F.needs === 'hand' ? G.sel.length === 1 && pa.some(p => p.hand === G.sel[0]) : F.needs === 'zone' ? G.attacker != null && pa.some(p => p.zone === G.attacker) : pa.length > 0 && !G.sel.length;
-    const hint = F.needs === 'hand' ? ' (pick one hand card)' : F.needs === 'zone' ? ' (pick your monster)' : '';
+    const hint = F.needs === 'hand' ? ' (pick one hand card)' : F.needs === 'zone' ? ' (pick your monster)' : F.needs === 'lone' ? ' (with exactly one monster)' : '';
     powerBtn = `<button class="pow" data-a="power:${F.needs || ''}" ${ok ? '' : 'disabled'} title="${esc(F.powerText)}">${esc(F.power)}${ok ? '' : hint}</button>`;
   }
   const terr = v.terrain ? `Terrain: <b>${esc(card(v.terrain.id).name)}</b>${v.terrain.temp != null ? ` (holds ${v.terrain.temp} more of your turns)` : ''}${v.terrain.lock ? ' (locked)' : ''}` : 'No terrain';
   const pv = pend ? viewFor(live, db, 0) : null, pX = pend ? pv.mon[1][live.pending.from] : null, pT = pend && live.pending.to >= 0 ? pv.mon[0][live.pending.to] : null;
   // The prompt covers the table, so it names the attacker, its target and both numbers.
   const prompt = pend ? `<div class="modal"><div class="glass panel"><h3>${pX && !pX.veil ? esc(card(pX.id).name) + ' (' + pX.ea + ' ATK)' : 'A veiled monster'} attacks ${pT ? esc(card(pT.id).name) + ' (' + (pT.pos === 'd' ? pT.ed + ' DEF' : pT.ea + ' ATK') + (pT.veil ? ', veiled' : '') + ')' : 'you directly'}</h3><p>Spring a Trap?</p><div class="picks">${live.pending.options.map(i => `<div class="pick glass">${face(live.traps[0][i], { cls: 'tiny' })}<div><b>${esc(card(live.traps[0][i].id).name)}</b><br>${esc(rulesText(live.traps[0][i].id))}</div><button class="gold" data-a="respond:${i}">Spring it</button></div>`).join('')}</div><div class="row"><button data-a="respond:-1">Let the attack through</button></div></div></div>` : '';
-  const bar = n => `<i class="lpbar"><i style="width:${Math.max(0, Math.min(100, Math.round(n / 80)))}%"></i></i>`, myFace = v.forger && ART.has('face-' + v.forger) ? `<img class="pface" decoding="sync" src="art/face-${v.forger}.webp" alt="">` : '',
-    rf = rv.tier === 'boss' ? 'face-' + String(rv.name || '').toLowerCase().replace(/^the /, '').replace(/[^a-z]+/g, '-') : '', rivalFace = rf && ART.has(rf) ? `<img class="pface" decoding="sync" src="art/${rf}.webp" alt="">` : ''; // a guardian's portrait, when the art folder has one
+  const bar = n => `<i class="lpbar"><i style="width:${Math.max(0, Math.min(100, Math.round(n / 80)))}%"></i></i>`, ff = v.forger ? 'face-' + (v.forger === 'last' ? 'last-one' : v.forger) : '', myFace = ff && ART.has(ff) ? `<img class="pface" decoding="sync" src="art/${ff}.webp" alt="">` : '',
+    rf = rv.tier === 'secret' ? 'face-last-one' : rv.tier === 'boss' ? 'face-' + String(rv.name || '').toLowerCase().replace(/^the /, '').replace(/[^a-z]+/g, '-') : '', rivalFace = rf && ART.has(rf) ? `<img class="pface" decoding="sync" src="art/${rf}.webp" alt="">` : ''; // a guardian's portrait, when the art folder has one
   return `<div class="duel ${v.twist || ''}${pref.table ? ' look2' : ''}"><div class="side top"><div class="who glass">${rivalFace}<b id="rivalLp" class="lp">${v.lp[1]}</b>${bar(v.lp[1])}<span>${esc(rv.name)}</span><small>Hand ${v.rivalHand} · Deck ${v.deckCount[1]}</small><i class="backs">${'<u></u>'.repeat(Math.min(v.rivalHand, 7))}</i></div>
       <div class="rules glass"><b>This duel</b>${rv.styleText ? `<span class="rstyle">${esc(rv.styleText)}</span>` : ''}${rv.lawText ? `<span>${esc(lawShown(rv.lawText))}</span>` : ''}${rv.twist ? `<span>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</span>` : ''}<span>Bounty: ${esc(rv.bountyText || '')}</span>${v.forger ? `<span class="frule"><b>${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))} <br><b>${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'used this duel.' : esc(FORGERS[v.forger].powerText.replace(/^Once a duel, before you play: /, 'once a duel, before you play: '))}</span>` : ''}</div></div>
     <div class="board"><div class="trow">${traps(1)}</div><div class="mrow">${shut}${row(1)}${shut}</div><div id="terrain" class="terrain">${terr}</div><div class="mrow">${shut}${row(0)}${shut}</div><div class="trow">${traps(0)}</div><div id="relicFlash" class="relicFlash"></div><div id="rivalFlash" class="relicFlash rivalf"></div></div>
@@ -573,10 +586,10 @@ function screenOver() {
     <div class="row"><button class="gold" data-a="new">New run</button><button data-a="screen:codex">Codex</button><button data-a="screen:feats">Feats</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="home">Home</button></div></div></div>`;
 }
 const featRow = f => `<div class="feat ${f.done ? 'done' : ''}"><div><b>${esc(f.name)}</b> <small>${esc(f.build)}</small><br>${esc(f.text)}</div><div class="bar"><i style="width:${Math.round(100 * f.after / f.goal)}%"></i><u style="left:${Math.round(100 * f.before / f.goal)}%;width:${Math.round(100 * (f.after - f.before) / f.goal)}%"></u></div><span>${f.done ? 'Complete' : f.after + ' / ' + f.goal}${f.gain && !f.done ? ' (+' + f.gain + ')' : ''}</span></div>`;
-const kitRows = () => FORGER_IDS.filter(id => P.forgers.includes(id)).map(id => FORGERS[id].kits.map((k, i) => { const w = forgerStats(P, id).wins, g = KIT_GOALS[i], n = Math.min(w, g), done = w >= g; return i ? `<div class="feat ${done ? 'done' : ''}"><div><b>${esc(k.name)}</b> <small>${esc(FORGERS[id].name)}</small><br>Win ${g} duels as ${esc(FORGERS[id].name)}.</div><div class="bar"><i style="width:${Math.round(100 * n / g)}%"></i></div><span>${done ? 'Open' : n + ' / ' + g}</span></div>` : ''; }).join('')).join('');
+const kitRows = () => FORGER_IDS.concat(HIDDEN_FORGERS).filter(id => P.forgers.includes(id)).map(id => FORGERS[id].kits.map((k, i) => { const w = forgerStats(P, id).wins, g = KIT_GOALS[i], n = Math.min(w, g), done = w >= g; return i ? `<div class="feat ${done ? 'done' : ''}"><div><b>${esc(k.name)}</b> <small>${esc(FORGERS[id].name)}</small><br>Win ${g} duels as ${esc(FORGERS[id].name)}.</div><div class="bar"><i style="width:${Math.round(100 * n / g)}%"></i></div><span>${done ? 'Open' : n + ' / ' + g}</span></div>` : ''; }).join('')).join('');
 function screenFeats() {
   const rows = featList(!!labs.long).map(f => { const done = (P.featsDone || []).includes(f.id), n = done ? f.goal : (P.feats || {})[f.id] || 0; return featRow({ ...f, before: n, after: n, gain: 0, done }) + `<div class="featgift ${done ? '' : 'lockedg'}">${relicImg(f.gift)}<div><b>${esc(RELICS[f.gift].name)}</b> <small>${done ? 'Unlocked Gift' : 'Gift, locked'}</small><br>${esc(RELICS[f.gift].text)}</div></div>`; }).join('');
-  const forg = FORGER_IDS.filter(id => id !== 'tarn').map(id => `<div class="feat ${P.forgers.includes(id) ? 'done' : ''}"><div><b>${esc(FORGERS[id].name)}</b> <small>Forger</small><br>${esc(FORGER_FEATS[id].text)}</div><span>${P.forgers.includes(id) ? 'Unlocked' : 'Locked'}</span></div>`).join('');
+  const forg = FORGER_IDS.concat(HIDDEN_FORGERS.filter(id => P.forgers.includes(id))).filter(id => id !== 'tarn').map(id => `<div class="feat ${P.forgers.includes(id) ? 'done' : ''}"><div><b>${esc(FORGERS[id].name)}</b> <small>Forger</small><br>${esc(FORGER_FEATS[id].text)}</div><span>${P.forgers.includes(id) ? 'Unlocked' : 'Locked'}</span></div>`).join('');
   return `<div class="hall"><div class="panel glass wide scroll"><h2>Feats</h2><p>Each feat follows a way of playing and adds one Gift to what the forge can offer. Progress counts across runs, win or lose.</p>${rows}<h3 style="margin-top:1em">Forgers</h3>${forg}${labs.long ? `<h3 style="margin-top:1em">Starter kits</h3>${kitRows()}` : ''}<div class="row"><button class="gold" data-a="home">Back</button></div></div></div>`;
 }
 function tabPanel() {
@@ -702,8 +715,8 @@ function tapped(ev) {
       if (store.failed.has(PROFILE)) { toast('Your progress is not saved yet. Tap Try again first.'); render(); break; }
       G.banked = false; setLabs(pref); store.set(RUNLABS, pref); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, ...runOptions(P, G.pickForger, !!labs.long), uid: Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36) }); G.log = []; G.overlay = null; G.rev = 0; G.at = storedAt(); writeRun(G.run); queueStory('intro'); render(); break;
     case 'vbuy': try { const b = buy(P, y ? x + ':' + y : x); saveP(); toast(b.name + (y ? ' can now be offered at an Anvil.' : ' can now appear in your runs.')); } catch (e) { toast(e.message); } render(); break;
-    case 'storynext': { const st = G.story; if (!st) break; if (++st.i >= SCENES[st.id].lines.length) { G.story = null; if (st.then) { st.then(); break; } } render(); break; }
-    case 'storyskip': { const st = G.story; G.story = null; if (st && st.then) { st.then(); break; } render(); break; }
+    case 'storynext': { const st = G.story; if (!st) break; if (++st.i >= SCENES[st.id].lines.length) { G.story = null; if (st.then) { st.then(); break; } nextStory(); } render(); break; }
+    case 'storyskip': { const st = G.story; G.story = null; if (st && st.then) { st.then(); break; } nextStory(); render(); break; }
     case 'power': { const a = { t: 'power' }; if (x === 'hand') a.hand = G.sel[0]; if (x === 'zone') a.zone = G.attacker; duel(a); break; }
     case 'resume': G.overlay = null; G.screen = null; G.banked = false; G.results = null; setLabs(store.get(RUNLABS) || pref); G.run = nameRun(liveSave()); G.rev = revOf(G.run); G.at = storedAt(); G.fresh = true; if (!G.run) { G.fresh = false; G.notice = 'Your run in progress could not be read and cannot be continued. A copy was kept on this device.'; render(); break; } if (G.run && G.run.codex) G.run.codex = codexUpgrade(db, G.run.codex); render(); break;
     case 'quit': G.overlay = { kind: 'leave' }; render(); break;
@@ -716,7 +729,7 @@ function tapped(ev) {
     case 'cxtype': G.cx.type = G.cx.type === x ? null : x; render(); break;
     case 'cxopen': G.cx.open = n; render(); break;
     case 'cxclose': G.cx.open = null; render(); break;
-    case 'door': { G.log = []; const d = r.doors[n]; const go = () => act({ t: 'door', i: n }); if (d && d.type === 'boss' && r.seals >= 2) { queueStory('boss:' + BOSSES[r.floor][r.bossOrder[r.floor]].id, go); if (G.story) render(); } else go(); break; }
+    case 'door': { G.log = []; const d = r.doors[n]; const go = () => act({ t: 'door', i: n }); if (d && d.type === 'boss' && r.seals >= 2) { queueStory('boss:' + BOSSES[r.floor][r.bossOrder[r.floor]].id, go); if (G.story) render(); } else if (d && d.type === 'secret') { queueStory('secret:door', go); if (G.story) render(); } else go(); break; }
     case 'leave': G.pickDeck = G.pickTrunk = null; act({ t: 'leave' }); break;
     case 'tab': G.tab = x || null; G.pickDeck = G.pickTrunk = null; render(); break;
     case 'deckpick': G.pickDeck = n; trySwap(); break;

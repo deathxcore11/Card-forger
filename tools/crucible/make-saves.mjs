@@ -7,7 +7,7 @@ import { buildDb } from '../../crucible/engine/cards.mjs';
 import { newRun, runApply } from '../../crucible/engine/run.mjs';
 import { policyAction } from '../../crucible/engine/policy.mjs';
 import { newProfile, runOptions, featList, KIT_GOALS } from '../../crucible/engine/meta.mjs';
-import { FORGER_IDS } from '../../crucible/engine/forgers.mjs';
+import { FORGER_IDS as SHOWN } from '../../crucible/engine/forgers.mjs';
 import { labConfig, LAB_DEFAULTS } from '../../crucible/web/labs.mjs';
 
 const [out, labArg, seedArg] = process.argv.slice(2);
@@ -17,6 +17,9 @@ const labs = Object.fromEntries((labArg || Object.keys(LAB_DEFAULTS).join(',')).
 const cfg = { ...read('crucible-config.json'), ...labConfig(labs) };
 const db = buildDb(read('crucible-pool.json'), read('crucible-spell-tags.json'), cfg);
 
+// With the first secret on (labs `secret`), the hidden Forger is played too, and on odd seeds the player keeps one monster
+// at guardians, so the set holds the chamber of two doors and the hidden duel.
+const FORGER_IDS = labs.secret ? [...SHOWN, 'last'] : SHOWN;
 // A profile that has seen most of the game: every Forger, Heat open to the top, feats one step from done.
 const profile = { ...newProfile(), memories: 120, earned: 400, runs: 30, clears: 9, duelWins: 200, bossWins: 20, bestFloor: 2, heatCleared: 9, forgers: FORGER_IDS.slice(), feats: Object.fromEntries(featList(!!labs.long).map(f => [f.id, f.goal - 1])), fresh: [],
   // long road: one Forger a duel short of each kit, one with every kit, one with nothing yet
@@ -34,11 +37,12 @@ for (let seed = 1; seed <= seeds; seed++) {
     let key = run.phase + (run.offer && run.offer.kind && run.phase === 'reward' ? '-' + run.offer.kind : '') + '-f' + (run.floor + 1);
     if (run.phase === 'duel') key = 'duel-' + (run.rival.tier || 'x') + '-f' + (run.floor + 1) + (d.pending ? '-trap-prompt' : '') + '-' + h;
     if (run.phase === 'chamber' && run.doors.some(x => x.type === 'boss')) key = 'chamber-boss-door-f' + (run.floor + 1) + '-' + h;
+    if (run.phase === 'chamber' && run.doors.some(x => x.type === 'secret')) key = 'chamber-secret-door-f' + (run.floor + 1);
     if (run.secondGate) key += '-second-gate';
     if (run.phase === 'duel' && d.pending) keep(key, JSON.parse(JSON.stringify(run)));
     else if (run.phase !== 'duel' || (d.active === 0 && d.turn >= 3)) keep(key, JSON.parse(JSON.stringify(run)));
     const before = JSON.stringify(run);
-    runApply(run, policyAction(db, run, { level: 2, family: ['neutral', 'storm', 'tomb', 'shadow', 'furnace'][seed % 5] }), db);
+    runApply(run, policyAction(db, run, { level: 2, family: ['neutral', 'storm', 'tomb', 'shadow', 'furnace'][seed % 5], lone: labs.secret ? (forger === 'last' ? 'last' : seed % 2 ? 'boss' : null) : null }), db);
     if (run.phase === 'over') keep((run.result.won ? 'last-move-win-' : 'last-move-loss-f' + (run.floor + 1) + '-') + 'h' + heat + (JSON.parse(before).secondGate ? '-second-gate' : ''), JSON.parse(before));
   }
 }
