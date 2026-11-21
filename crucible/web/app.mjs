@@ -234,8 +234,25 @@ function logLine(e, v) {
 // The stage is drawn at 1600 wide and 900 to 1200 tall, then scaled as one piece, so text never
 // drops under a phone's smallest font size and a squarer screen (an unfolded phone) gets a taller table.
 const FIT = { k: 1, h: 900 };
+// A phone held sideways gets its own stage. The wide stage is 100 by 56 em; shrunk to a phone it draws text 6 to 8 px
+// tall. The phone stage is 90 em wide and as tall as the screen allows (40 em on a 915 x 412 screen), so one em is
+// about 10 px there, and every screen is laid out again for that shape under "#app.phone" in play.css.
+// It is used when the wide stage would be shrunk below 0.72 (a window under 1152 px wide) on a screen at least 1.6 wide to 1 tall.
+const PHONE_W = 1440, PHONE_MIN = 640, PHONE_MAX = 900;
 function fit() {
   const vw = innerWidth, vh = innerHeight;
+  const phone = vw > vh && vw / 1600 < 0.72 && vw / vh >= 1.6;
+  app.classList.toggle('phone', phone); FIT.phone = phone;
+  if (phone) {
+    FIT.h = Math.round(Math.max(PHONE_MIN, Math.min(PHONE_MAX, PHONE_W * vh / vw)));
+    FIT.k = Math.min(vw / PHONE_W, vh / FIT.h);
+    app.style.width = PHONE_W + 'px'; app.style.height = FIT.h + 'px';
+    app.style.transform = `translate(-50%,-50%) scale(${FIT.k})`;
+    app.style.setProperty('--E', '0px'); app.style.setProperty('--s', 1);
+    app.style.setProperty('--X', (FIT.h - PHONE_MIN) + 'px'); // height beyond the shortest phone stage; the duel table and the tray share it
+    turnNote(vw, vh); return;
+  }
+  app.style.width = ''; app.style.setProperty('--X', '0px');
   FIT.h = Math.round(Math.max(900, Math.min(1200, 1600 * vh / vw)));
   FIT.k = Math.min(vw / 1600, vh / FIT.h);
   app.style.height = FIT.h + 'px';
@@ -287,7 +304,7 @@ function queueStory(id, then) {
 function storyPanel() {
   const st = G.story; if (!st || G.playing || G.overlay) return '';
   const sc = SCENES[st.id];
-  return `<div class="story" data-a="storynext">${sc.face && ART.has(sc.face) ? `<img class="port" src="art/${sc.face}.webp" alt="">` : ''}<div class="say glass">${sc.who ? `<h3>${esc(sc.who)}</h3>` : ''}<p>${esc(sc.lines[st.i])}</p><span class="go">Tap to continue ▸</span></div><button class="skip" data-a="storyskip">Skip</button></div>`;
+  return `<div class="story${sc.face && ART.has(sc.face) ? ' faced' : ''}" data-a="storynext">${sc.face && ART.has(sc.face) ? `<img class="port" src="art/${sc.face}.webp" alt="">` : ''}<div class="say glass">${sc.who ? `<h3>${esc(sc.who)}</h3>` : ''}<p>${esc(sc.lines[st.i])}</p><span class="go">Tap to continue ▸</span></div><button class="skip" data-a="storyskip">Skip</button></div>`;
 }
 
 // ---------- screens around a run ----------
@@ -394,7 +411,7 @@ function screenKit() {
     ${labs.long && r.forger && nextKit(P, r.forger) ? (nk => `<p class="fine">Long road: these are the kits ${esc(FORGERS[r.forger].name)} has open, dealt three ways. ${esc(nk.name)} opens at ${nk.goal} duels won as ${esc(FORGERS[r.forger].name)} (${Math.min(nk.wins, nk.goal)}/${nk.goal}).</p>`)(nextKit(P, r.forger)) : ''}
     <div class="row">${r.redeal ? '<button data-a="redeal">Deal again (once)</button>' : '<span class="fine">Re-deal used.</span>'}</div></div></div>`;
 }
-function pickList(title, items, sub = '') { return `<div class="hall"><div class="panel glass wide"><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}<div class="picks">${items.join('')}</div></div></div>`; }
+function pickList(title, items, sub = '', cls = '') { return `<div class="hall"><div class="panel glass wide"><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}<div class="picks ${cls}">${items.join('')}</div></div></div>`; } // cls "cols": on a phone the choices stand side by side
 function screenCharm() { return pickList('Pick one charm', G.run.offer.options.map((id, i) => `<div class="pick glass">${relicRow(id)}<button class="gold" data-a="pick:${i}">Take</button></div>`), 'A charm changes a rule for the whole run.'); }
 
 // "Guardian" means the guardian of a floor everywhere else (the Guardian Reward, Guardians beaten, the Veilwalker's feat), so the
@@ -484,15 +501,15 @@ function screenDuel() {
 
 function screenReward() {
   const r = G.run, o = r.offer;
-  if (o.kind === 'card') return pickList('Pick a card', o.options.map((e, i) => `<div class="pick glass">${face(e, { attrs: `data-a="inspect:${e.id}"` })}<div>${esc(rulesText(e.id))}<br><small>Weight ${weightOf(db, e.id)}</small></div><button class="gold" data-a="pick:${i}">Take</button></div>`).concat('<div class="row"><button data-a="skip">Take nothing</button></div>'), 'It goes to your trunk. Swap it into the deck from the Deck button.');
+  if (o.kind === 'card') return pickList('Pick a card', o.options.map((e, i) => `<div class="pick glass">${face(e, { attrs: `data-a="inspect:${e.id}"` })}<div>${esc(rulesText(e.id))}<br><small>Weight ${weightOf(db, e.id)}</small></div><button class="gold" data-a="pick:${i}">Take</button></div>`).concat('<div class="row"><button data-a="skip">Take nothing</button></div>'), 'It goes to your trunk. Swap it into the deck from the Deck button.', 'cols');
   if (o.kind === 'gift') {
     const held = new Set(relicList(r).map(id => RELICS[id].family).filter(f => BUILD_FAMILIES.includes(f)));
     const tag = id => (o.fresh === id ? `<br><em class="newtag">NEW</em> You unlocked this with ${esc((featList(true).find(f => f.gift === id) || {}).name || 'a feat')}.` : '') + (RELICS[id].link && (held.has(RELICS[id].family) || held.has(RELICS[id].link)) ? `<br><em class="fits">Links ${esc(FAMILY_NAME[RELICS[id].family])} to ${esc(FAMILY_NAME[RELICS[id].link])}</em>` : held.has(RELICS[id].family) ? `<br><em class="fits">Fits your ${esc(FAMILY_NAME[RELICS[id].family])} pieces</em>` : '') + linkLine(id, r);
     return pickList('Forge Level up: pick a Gift', o.options.map((id, i) => `<div class="pick glass ${o.fresh === id ? 'fresh' : ''}">${relicRow(id, tag(id))}<button class="gold" data-a="pick:${i}">Take</button></div>`).concat(r.rerolls ? `<div class="row"><button data-a="reroll">Deal these three again (${r.rerolls} left this run)</button></div>` : ''), 'A Gift lasts the whole run. ' + (held.size ? 'You hold ' + [...held].map(f => FAMILY_NAME[f]).join(' and ') + ' pieces.' : 'Your first build piece decides what the forge leans toward.'));
   }
   if (o.kind === 'charm') return pickList('Pick a charm', o.options.map((id, i) => `<div class="pick glass">${relicRow(id)}<button class="gold" data-a="pick:${i}">Take</button></div>`).concat('<div class="row"><button data-a="skip">Take nothing</button></div>'), `Charm slots ${r.charms.length}/${db.config.charmSlots}.`);
-  if (o.kind === 'guardian') return pickList('Guardian Reward', o.options.map((g, i) => `<div class="pick glass">${g.kind === 'card' ? face(g.entry) : g.kind === 'masterwork' ? relicRow(g.id) : '<div class="col">' + g.ids.map(id => relicRow(id)).join('') + '</div>'}<div><b>${esc(g.text)}</b></div><button class="gold" data-a="pick:${i}">Choose</button></div>`), 'One of three kinds of power. The weight cap rises by 20.');
-  if (o.kind === 'treasure') return pickList('Treasure', o.options.map((g, i) => `<div class="pick glass">${g.kind === 'card' ? face(g.entry) : relicRow(g.id)}<button class="gold" data-a="pick:${i}">Take</button></div>`));
+  if (o.kind === 'guardian') return pickList('Guardian Reward', o.options.map((g, i) => `<div class="pick glass">${g.kind === 'card' ? face(g.entry) : g.kind === 'masterwork' ? relicRow(g.id) : '<div class="col">' + g.ids.map(id => relicRow(id)).join('') + '</div>'}<div><b>${esc(g.text)}</b></div><button class="gold" data-a="pick:${i}">Choose</button></div>`), 'One of three kinds of power. The weight cap rises by 20.', 'cols');
+  if (o.kind === 'treasure') return pickList('Treasure', o.options.map((g, i) => `<div class="pick glass">${g.kind === 'card' ? face(g.entry) : relicRow(g.id)}<button class="gold" data-a="pick:${i}">Take</button></div>`), '', 'cols');
   if (o.kind === 'sanctum') return pickList('Sanctum', [`<div class="pick glass"><div><b>Take back one Spark</b><br>${r.sparks >= db.config.sparks ? 'Your Sparks are full.' : ''}</div><button class="gold" data-a="pick:0" ${r.sparks >= db.config.sparks ? 'disabled' : ''}>Take</button></div>`, `<div class="pick glass"><div><b>Raise your weight cap by 5</b></div><button class="gold" data-a="pick:1">Take</button></div>`]);
   if (o.kind === 'omen') return pickList('Omen', [`<div class="pick glass">${o.seen ? face(o.card) : '<div class="c back"><img decoding="sync" src="art/cardback.webp" alt=""></div>'}<div>${esc(o.text)}<br><small>Trunk cards: ${r.trunk.length}. Your two weakest trunk cards are taken.</small></div><div class="col"><button class="gold" data-a="pick:0" ${r.trunk.length < 2 ? 'disabled' : ''}>Give two trunk cards</button><button data-a="pick:1" ${o.seen || r.embers < 30 ? 'disabled' : ''}>Pay 30 Embers to see it</button><button data-a="skip">Leave</button></div></div>`]);
   return '';
@@ -510,7 +527,7 @@ function screenAnvil() {
 }
 function screenBazaar() {
   const r = G.run, o = r.offer;
-  return `<div class="hall"><div class="panel glass wide"><h2>Bazaar</h2><p>You have ${r.embers} Embers.</p><div class="picks">${o.items.map((it, i) => `<div class="pick glass ${it.sold ? 'sold' : ''}">${it.kind === 'card' ? (it.sealed ? '<div class="c back"><img decoding="sync" src="art/cardback.webp" alt=""></div>' : face(it.entry, { attrs: `data-a="inspect:${it.entry.id}"` })) : it.kind === 'charm' ? relicRow(it.id) : `<div><b>The Winnower</b><br>Cuts one card out of your deck for the rest of the run, so the cards you want come round sooner. Tap a deck card below first. ${it.uses} cut${it.uses === 1 ? '' : 's'} left here. Your deck is ${r.deck.length} cards and cannot go below ${MIN_DECK}. A bound meld cannot be cut.</div>`}<button class="gold" data-a="buy:${i}" ${it.sold || r.embers < it.price || (it.kind === 'charm' && r.charms.length >= db.config.charmSlots) || (it.kind === 'scrap' && (G.pickDeck == null || !r.deck[G.pickDeck] || r.deck[G.pickDeck].b || r.deck.length <= MIN_DECK)) ? 'disabled' : ''}>${it.sold ? 'Sold' : it.kind === 'charm' && r.charms.length >= db.config.charmSlots ? 'Charm slots full' : (it.kind === 'scrap' && G.pickDeck != null && r.deck[G.pickDeck] ? 'Cut ' + card(r.deck[G.pickDeck].id).name + ': ' : '') + it.price + ' Embers'}</button></div>`).join('')}</div>
+  return `<div class="hall"><div class="panel glass wide"><h2>Bazaar</h2><p>You have ${r.embers} Embers.</p><div class="picks shop">${o.items.map((it, i) => `<div class="pick glass k-${it.kind} ${it.sold ? 'sold' : ''}">${it.kind === 'card' ? (it.sealed ? '<div class="c back"><img decoding="sync" src="art/cardback.webp" alt=""></div>' : face(it.entry, { attrs: `data-a="inspect:${it.entry.id}"` })) : it.kind === 'charm' ? relicRow(it.id) : `<div><b>The Winnower</b><br>Cuts one card out of your deck for the rest of the run, so the cards you want come round sooner. Tap a deck card below first. ${it.uses} cut${it.uses === 1 ? '' : 's'} left here. Your deck is ${r.deck.length} cards and cannot go below ${MIN_DECK}. A bound meld cannot be cut.</div>`}<button class="gold" data-a="buy:${i}" ${it.sold || r.embers < it.price || (it.kind === 'charm' && r.charms.length >= db.config.charmSlots) || (it.kind === 'scrap' && (G.pickDeck == null || !r.deck[G.pickDeck] || r.deck[G.pickDeck].b || r.deck.length <= MIN_DECK)) ? 'disabled' : ''}>${it.sold ? 'Sold' : it.kind === 'charm' && r.charms.length >= db.config.charmSlots ? 'Charm slots full' : (it.kind === 'scrap' && G.pickDeck != null && r.deck[G.pickDeck] ? 'Cut ' + card(r.deck[G.pickDeck].id).name + ': ' : '') + it.price + ' Embers'}</button></div>`).join('')}</div>
     ${o.merchant === 'scrapper' ? `<h3>Your deck, weakest first</h3><div class="grid">${r.deck.map((e, i) => [e, i]).sort((a, b) => cardValue(db, a[0]) - cardValue(db, b[0])).map(([e, i]) => face(e, { cls: 'small ' + (G.pickDeck === i ? 'sel' : ''), attrs: `data-a="deckpick:${i}"` })).join('')}</div>` : ''}<div class="row"><button data-a="leave">Leave</button></div></div></div>`;
 }
 function screenOver() {
