@@ -27,7 +27,9 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
     const btn = [...app.querySelectorAll('button')].filter(shown).filter(b => !b.closest('.door') && !b.classList.contains('door') && !b.classList.contains('lab')).map(b => +b.getBoundingClientRect().height.toFixed(1));
     const out = [...app.querySelectorAll('button, .c, .pick, .panel, .who, .rules, .logbox, .board, .tray, .dtxt, .hud')].filter(shown).filter(e => { const p = e.closest('.panel, .hall'); const r = e.getBoundingClientRect(); if (e.closest('.hall') && !e.matches('.hud')) { const h = e.closest('.hall').getBoundingClientRect(); if (r.bottom > h.bottom + 1 || r.top < h.top - 1) return false; } return r.left < A.left - 1 || r.right > A.right + 1 || r.top < A.top - 1 || r.bottom > A.bottom + 1; }).map(e => e.className.toString().slice(0, 30));
     return { phone: app.classList.contains('phone'), n: els.length, least: px.length ? Math.min(...px) : null, button: btn.length ? Math.min(...btn) : null, out, scale: +k.toFixed(3) }; }, sel);
-  const atLeast = (name, r, px) => check(`${name}: at least ${px} px (${(px * f).toFixed(1)} here)`, r.n > 0 && r.least >= px * f - 0.05, { found: r.n, least: r.least });
+  const show = !!process.env.SHOW; // SHOW=1 prints every measure, for the report
+  const atLeast = (name, r, px) => { if (show) console.log(`  ${name}: ${r.least} px (least allowed ${(px * f).toFixed(1)}), buttons from ${r.button} px`); return atLeastCheck(name, r, px); };
+  const atLeastCheck = (name, r, px) => check(`${name}: at least ${px} px (${(px * f).toFixed(1)} here)`, r.n > 0 && r.least >= px * f - 0.05, { found: r.n, least: r.least });
   const fits = (name, r) => { check(`${name}: nothing outside the stage`, r.out.length === 0, r.out.slice(0, 5)); check(`${name}: every button at least 30 px tall (${(30 * f).toFixed(1)} here)`, r.button === null || r.button >= 30 * f - 0.05, r.button); };
 
   // 1. the duel: the hand, the numbers on the table, the panel, and that the table does not move
