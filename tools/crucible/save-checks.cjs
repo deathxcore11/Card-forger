@@ -351,6 +351,15 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     const before = JSON.stringify(await ls(K.run)); await page.reload(); await page.waitForTimeout(350);
     check('the switch changes nothing in the saved run', JSON.stringify(await ls(K.run)) === before && (await page.evaluate(() => JSON.stringify(window.LM.db.config))) === (await page.evaluate(() => { const c = window.LM.db.config; return JSON.stringify(c); }))); }
 
+  // Rooms by floor (21 November 2026): floors two and three show their own room behind the doors and the duel when the
+  // build holds the pictures, floor one and the home screen stay as they were, and a build without the pictures changes nothing.
+  { const src = fs.readFileSync(html, 'utf8'), room = () => page.evaluate(() => { const a = document.querySelector('#app'); return { room: a.dataset.room || '', bg: getComputedStyle(a).backgroundImage }; });
+    for (const fl of [1, 2, 3]) for (const [kind, re] of [['doors', new RegExp('^chamber-f' + fl)], ['duel', new RegExp('^duel-regular-f' + fl + '-h0')]]) {
+      await open(read(pickFile(re))); await resume(); const got = await room(), file = 'hall-' + kind + '-' + fl, held = fl > 1 && src.includes('"' + file + '"');
+      check(`floor ${fl}, ${kind}: ${held ? 'its own room is shown' : 'the first room is shown'}`, held ? got.room === String(fl) && got.bg.includes(file + '.webp') : got.room === '' && got.bg.includes(kind === 'duel' ? 'hall-duel.webp' : 'hall-doors.webp'), got); }
+    await tap('[data-a="quit"]'); await page.reload(); await page.waitForTimeout(350); const home = await room();
+    check('the home screen keeps the first room', home.room === '' && home.bg.includes('hall-doors.webp'), home); }
+
   check('no page errors anywhere', errors.length === 0, errors);
   console.log(`save checks at ${W}x${H}: ${passed} passed, ${failed} failed`);
   await browser.close(); process.exit(failed ? 1 : 0);

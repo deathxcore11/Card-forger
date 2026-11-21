@@ -5,6 +5,8 @@
 html, body { margin: 0; height: 100%; background: #070504; color: var(--ink); font-family: Georgia, 'Times New Roman', serif; overflow: hidden; }
 #app { position: absolute; left: 50%; top: 50%; width: 1600px; height: 900px; font-size: 16px; transform-origin: 50% 50%; overflow: hidden; background: #0d0a07 url(art/hall-doors.webp) center/cover; user-select: none; -webkit-user-select: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 #app[data-phase=duel] { background-image: url(art/hall-duel.webp); }
+#app[data-room="2"] { background-image: url(art/hall-doors-2.webp); } #app[data-room="2"][data-phase=duel] { background-image: url(art/hall-duel-2.webp); }
+#app[data-room="3"] { background-image: url(art/hall-doors-3.webp); } #app[data-room="3"][data-phase=duel] { background-image: url(art/hall-duel-3.webp); }
 #app::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .09) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; z-index: 40; }
 h1, h2, h3 { font-family: 'Cinzel', Georgia, serif; letter-spacing: .08em; margin: 0 0 .5em; color: var(--gold); font-weight: 700; }
 h1 { font-size: 5.4em; text-shadow: 0 .05em 0 #3a2508, 0 0 .5em rgba(233, 196, 106, .45); }
