@@ -73,10 +73,24 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
     val tablePick = words is BottomWords.Ask && handTucked(st, live, anyScreen = true)
     val parts = if (tablePick) askParts(st) else null
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        // The player's hand patch (Thor, approved mock-up 21 Nov): the rail is one fixed height and holds the question or the discard's line
+        // between its chips, so nothing that comes or goes pushes the hand or the panel below.
+        Row(Modifier.fillMaxWidth().height(BOTTOM_RAIL), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             ZoneChip("Hand ${hand.size}", shown == "hand") { zone = "hand" }
-            // The clock's line ("Time's up. Choose a card to discard.") beside the hand it is about (V13); the top screen leaves it out.
-            if (afk != null) Text(afk, Modifier.weight(1f), style = small(13f, Rule.Color.Coral, FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                // The clock's line ("Time's up. Choose a card to discard.") beside the hand it is about (V13); the top screen leaves it out.
+                if (afk != null) Text(afk, style = small(13f, Rule.Color.Coral, FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                else if (shown == "hand") when (words) {
+                    // Tidy rules (preview v9): the asking card's name is a small orange eyebrow, the question one centred Cinzel line under it.
+                    is BottomWords.Ask -> if (parts != null) Column(Modifier.fillMaxWidth().anchorRect("b.question"), horizontalAlignment = Alignment.CenterHorizontally) {
+                            parts.name?.let { n -> Text(n.uppercase(), style = small(11f, Color(0xFFFF9D5C), FontWeight.ExtraBold).copy(letterSpacing = 1.4.sp), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                            Text(parts.question, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = railQuestionSp(parts.question).sp, color = Site.Text, textAlign = androidx.compose.ui.text.style.TextAlign.Center), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        else Text(words.text, style = small(15f, Site.Gold, FontWeight.ExtraBold), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    is BottomWords.Line -> Text(words.text, style = small(13f, Site.Muted), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    is BottomWords.Words -> {}
+                }
+            }
             if (stackUp) ZoneChip("Stack ${st.stack.size}", shown == "stack") { zone = "stack" }
             // Life totals and the gold button stay on the top screen only (each fact in one place, Randall's rule).
         }
@@ -84,31 +98,17 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
             val h = maxHeight
             if (shown == "stack") StackView(st, gold, onInspect) { zone = "hand" }
             else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // A question (or the discard's line) is the bottom's top strip; the card it is about is read in the panel below.
-                when (words) {
-                    // Tidy rules (preview v9): the asking card's name is a small orange eyebrow, the question one centred Cinzel line under
-                    // it; never side by side, never cut.
-                    is BottomWords.Ask -> if (parts != null) Column(Modifier.fillMaxWidth().anchorRect("b.question"), horizontalAlignment = Alignment.CenterHorizontally) {
-                            parts.name?.let { n -> Text(n.uppercase(), style = small(11f, Color(0xFFFF9D5C), FontWeight.ExtraBold).copy(letterSpacing = 1.4.sp), maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                            Text(parts.question, style = TextStyle(fontFamily = Type.Cinzel, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Site.Text, textAlign = androidx.compose.ui.text.style.TextAlign.Center))
-                        }
-                        else Text(words.text, style = small(15f, Site.Gold, FontWeight.ExtraBold))
-                    is BottomWords.Line -> Text(words.text, style = small(13f, Site.Muted))
-                    is BottomWords.Words -> {}
-                }
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
                     // As big as the room allows: the height, then the width shared by the cards with a generous overlap. The size eases as
                     // cards come and go, so the fan breathes instead of jumping.
                     val n = hand.size.coerceAtLeast(1)
                     // HandFan sets each card 2*t*t dp lower toward the ends and tilts it about its foot, below its own box (U15: the right-hand
                     // cards touched the hint bar). Keep that sag plus a margin clear, so every card stays whole above the bar.
-                    val mid = (n - 1) / 2f
-                    val sag = 2.dp * (mid * mid) + 8.dp
-                    val sagA by androidx.compose.animation.core.animateDpAsState(sag, androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 220f), label = "sag")
+                    // The player's hand patch (Thor): the sag is one fixed number (HandFan caps the arc to [BOTTOM_SAG]), so the card size
+                    // never depends on how many cards are held.
+                    val sagA = BOTTOM_SAG
                     // 0.4.59 T7: a lifted card does not grow here (the cards are already full size); it rises [BOTTOM_LIFT] with a thicker ring.
-                    val byH = (maxHeight - BOTTOM_LIFT - 8.dp - sag) / 1.4f
-                    val byW = maxWidth / (1f + (n - 1) * .46f)
-                    val target = minOf(minOf(byH, byW), 190.dp).coerceAtLeast(56.dp)
+                    val target = bottomCardW(maxHeight, maxWidth, n)
                     val cardW by androidx.compose.animation.core.animateDpAsState(target, androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 220f), label = "fan")
                     if (hand.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(bottom = 4.dp + sagA).then(if (tablePick) Modifier.askDim() else Modifier).anchorRect("b.hand")) {
                         fan(cardW)
@@ -123,7 +123,7 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
                 val boxes = reading?.card?.takeIf { it.zone == "Battlefield" }?.let { keywordBoxes(it) }.orEmpty()
                 // The hand only dims while it asks, so the answers may take half the room: four buttons and Cancel, whole, no scrolling.
                 // G5: with keyword boxes the panel may take most of the screen (the fan sizes itself to what is left, as in the preview).
-                Row(Modifier.fillMaxWidth().heightIn(max = h * if (answers.isNotEmpty()) .5f else if (boxes.isNotEmpty()) .62f else .42f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth().height(h * BOTTOM_PANEL_SHARE), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     reading?.let { r ->
                         ReadingPanel(r, Modifier.weight(1f).anchorRect("b.read"), boxes)
                     }
@@ -184,6 +184,23 @@ internal data class Reading(val tag: String, val card: Card, val status: String?
 
 /** 0.4.59 T7: how high a lifted card stands on the bottom screen (it does not grow there). */
 internal val BOTTOM_LIFT = 6.dp
+/** The player's hand patch: the bottom screen's bands never change size. The reading panel is always this share of the room (what it
+ *  holds scrolls inside it), the hand takes the rest, and the arc's total drop is [BOTTOM_SAG] whatever the hand holds. */
+internal const val BOTTOM_PANEL_SHARE = .5f
+internal val BOTTOM_SAG = 18.dp
+/**
+ * The hand's card width on the bottom screen in a hand band of [bandH] x [bandW] holding [n] cards. It depends on the band's height
+ * only: more cards overlap more (HandFan steps down to a quarter card); only a hand too big to fit at that overlap shrinks its cards.
+ */
+internal fun bottomCardW(bandH: Dp, bandW: Dp, n: Int): Dp {
+    val byH = (bandH - BOTTOM_LIFT - 8.dp - BOTTOM_SAG) / 1.4f
+    val byW = bandW / (1f + (n.coerceAtLeast(1) - 1) * .25f)
+    return minOf(minOf(byH, byW), 190.dp).coerceAtLeast(56.dp)
+}
+/** The bottom screen's top rail (chips, the question or the discard's line). */
+internal val BOTTOM_RAIL = 44.dp
+/** The rail's question in one line: 16 sp, 14 sp past 28 letters, 12.5 sp past 38 (then cut with …). */
+internal fun railQuestionSp(q: String): Float = if (q.length > 38) 12.5f else if (q.length > 28) 14f else 16f
 
 /**
  * 0.4.59 T7, the bottom screen always reads the right card, in this order: the asking card, the top stack item, the lifted hand card,

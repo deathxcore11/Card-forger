@@ -337,7 +337,7 @@ fun HandFan(
                     // A popped card keeps its whole scaled rect inside the fan (never over the sidebar).
                     val edge = if (isLift) popW / 2 else 0.dp
                     val x = if (card.id == moving) with(density) { moveX.toDp() } else (start + step * i + shift).coerceIn(edge, (width - cardW - edge).coerceAtLeast(edge))
-                    val y = if (isLift || card.id == moving) -rise else arc * (t * t)
+                    val y = if (isLift || card.id == moving) -rise else (if (flatLift) minOf(arc, (BOTTOM_SAG - 8.dp) / maxOf(mid * mid, 1f)) else arc) * (t * t)
                     val newIndex = arriving.indexOf(card.id)
                     val delayMs = if (newIndex >= 0) (dealOrder++) * 70L else 0L
                     val fromX = if (newIndex >= 0) with(density) { (width + cardW).toPx() } else null
