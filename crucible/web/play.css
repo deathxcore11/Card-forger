@@ -210,7 +210,11 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 #app.phone h1 { font-size: 3.4em; margin-bottom: .2em; } #app.phone h2 { font-size: 1.7em; } #app.phone h3 { font-size: 1.35em; }
 #app.phone p { font-size: 1.25em; margin: .2em 0 .5em; }
 #app.phone button { padding: .55em .9em; min-height: 3.2rem; } /* a finger's height: 3.2 stage em, 32 px on a 915 px wide screen (1 rem is 1 stage em) */
-#app.phone .door, #app.phone .lab { min-height: 0; }
+#app.phone .door { min-height: 0; }
+/* a Lab switch keeps the height of its words (a set least height would let the list squeeze it); the empty first piece holds a one-line switch at a finger's height */
+#app.phone .lab { min-height: auto; } #app.phone .lab::before { content: ''; width: 0; height: calc(3.2rem - 1.1em); margin-right: -.9em; flex: none; }
+/* the Not saved bar stays thin so it hides as little of the table as it can; Skip sits below where it would be */
+#app.phone .savebar { padding: .2em 1em; font-size: 1.1em; } #app.phone .savebar button { min-height: 2.7rem; padding: .3em .9em; }
 #app.phone .hall { padding: 4.7em 1.2em .8em; } #app.phone > .hall:first-child { padding-top: .8em; } /* no bar above it */
 #app.phone .hall.home { padding-top: .8em; }
 #app.phone .title .row button { font-size: 1.3em; }
@@ -264,7 +268,7 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 /* story, run screens */
 #app.phone .story .port { left: 2em; bottom: 2em; width: 17em; height: 17em; }
 #app.phone .story .say { left: 2em; right: 2em; bottom: 2em; min-height: 17em; padding: 1em 1.4em; } #app.phone .story.faced .say { left: 21em; } #app.phone .story .say p { font-size: 1.5em; }
-#app.phone .story .skip { right: 2em; top: 1.2em; }
+#app.phone .story .skip { right: 2em; top: 4.2em; }
 #app.phone .chars { gap: .6em; margin-top: .4em; } #app.phone .ch { padding: .6em; gap: .3em; }
 #app.phone .ch img, #app.phone .ch .q { aspect-ratio: 2 / 1; object-position: 50% 22%; } #app.phone .ch .q { font-size: 3em; }
 #app.phone .ch span { font-size: 1.05em; line-height: 1.25; }

@@ -55,7 +55,12 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
   await load(pick(/^reward-card/));
   check('the three cards on offer stand side by side', await page.evaluate(() => { const p = [...document.querySelectorAll('.picks > .pick')].map(e => e.getBoundingClientRect()); return p.length >= 2 && p.every(b => Math.abs(b.top - p[0].top) < 2) && p[p.length - 1].bottom <= document.querySelector('#app').getBoundingClientRect().bottom; }));
 
-  // 4. a wide screen keeps the wide stage
+  // 4. the home screen: no Lab switch is squeezed shorter than its words
+  await page.goto(url); await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(400);
+  r = await look('.lab'); atLeast('Lab switches', r, 9.5); fits('home', r);
+  check('no Lab switch is shorter than its words', await page.evaluate(() => [...document.querySelectorAll('.lab')].every(e => e.scrollHeight <= e.clientHeight + 1)));
+
+  // 5. a wide screen keeps the wide stage
   const wide = await browser.newPage({ viewport: { width: 1280, height: 720 } }); await wide.goto(url); await wide.waitForTimeout(300);
   check('a 1280 x 720 screen keeps the wide stage', await wide.evaluate(() => !document.querySelector('#app').classList.contains('phone') && document.querySelector('#app').offsetWidth === 1600)); await wide.close();
 
