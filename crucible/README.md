@@ -20,7 +20,7 @@ node crucible/test/test-crucible-caps.mjs 1500 1        # random CPU duels; no r
 node tools/crucible/page-checks.cjs <built index.html> <duel save> [w h]   # a browser taps the built page: Spell targets, forecast, card page, sound cue order (16 checks)
 node tools/crucible/lesson-checks.cjs <built index.html> <duel save> [w h]   # the first lessons, the loss summary and guardian counsel (23 checks)
 node tools/crucible/save-checks.cjs <built index.html> <saves dir> [w h]   # a browser taps the built page: saved runs, failed saves, leaving a run, the Winnower, two tabs, damaged saves (81 checks)
-node tools/crucible/phone-checks.cjs <built index.html> <saves dir> [w h]   # a phone held sideways: least text sizes, button heights, nothing off the stage, the table does not move (52 checks at 915 x 412)
+node tools/crucible/phone-checks.cjs <built index.html> <saves dir> [w h]   # a phone held sideways: least text sizes, button heights, nothing off the stage, the table does not move, a rules box that needs scrolling says so (56 checks at 915 x 412)
 node tools/crucible/phone-shots.cjs <built index.html> <saves dir> <out dir> [w h]   # a picture of every screen at one size, and a note of anything outside the stage
 node tools/crucible/make-saves.mjs <dir>               # saved games for every kind of screen (floors 1-3, Heat 0/5/10)
 SAVE=<dir>/x.json RELOAD=37 node tools/crucible/play-bot.cjs <index.html> 1 <shots> 1280 720   # click bot from a saved game, with layout and message checks
