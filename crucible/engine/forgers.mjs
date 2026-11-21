@@ -21,7 +21,7 @@ export const FORGERS = {
     ],
   },
   veil: {
-    name: 'The Veilwalker', tag: 'Veiled monsters and Traps', rule: 'f_veil', power: 'Shroud', needs: 'zone',
+    name: 'The Veilwalker', tag: 'Veiled monsters and Traps', rule: 'f_veil', power: 'Shroud', needs: 'zone', build: 'shadow',
     powerText: 'Once a duel, before you play: turn one of your face-up monsters veiled, in defense.',
     kits: [
       { id: 'spellcasters_fiends', name: 'Spellcasters and Fiends', types: ['Spellcaster', 'Fiend'] },

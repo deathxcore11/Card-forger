@@ -1434,6 +1434,17 @@ test('Two builds a run: off by default; on, a run names two big builds and the s
   // a newly unlocked Gift's build is always carried
   for (let seed = 1; seed <= 12; seed++) assert.ok(newRun(lab, { seed, featured: ['snare'] }).builds.includes(LAB.snare.family));
 });
+test('Two builds a run: the Veilwalker always carries Ambush, and a Forger or a new Gift never loses its build', () => {
+  const lab = { ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, builds: true }) }, _pair: new Map() };
+  assert.equal(FORGERS.veil.build, 'shadow');
+  for (let seed = 1; seed <= 30; seed++) {
+    const v = newRun(lab, { seed, forger: 'veil' }); assert.equal(v.builds.length, 2); assert.equal(v.builds[0], 'shadow');
+    assert.equal(newRun(lab, { seed, forger: 'tarn' }).builds.length, 2); assert.deepEqual(newRun(lab, { seed, forger: 'tarn' }).builds.slice().sort(), newRun(lab, { seed }).builds.slice().sort(), 'a Forger with no build of their own changes nothing');
+    // two newly unlocked Gifts of two other builds: the run carries three, so each new Gift can still be shown
+    const two = Object.keys(RELICS).concat(Object.keys(LAB)), of = f => two.find(id => ((RELICS[id] || LAB[id]).family === f) && (RELICS[id] || LAB[id]).kind === 'G');
+    const w = newRun(lab, { seed, forger: 'veil', featured: [of('storm'), of('tomb')] }); assert.deepEqual(w.builds.slice().sort(), ['shadow', 'storm', 'tomb']);
+  }
+});
 test('Two builds a run: no Gift or charm of a build the run does not carry is offered, over whole runs', () => {
   const lab = { ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, builds: true, links: true }) }, _pair: new Map() };
   let offers = 0, gifts = 0, charms = 0;

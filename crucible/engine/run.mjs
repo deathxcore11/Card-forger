@@ -280,12 +280,12 @@ export function newRun(db, { seed, heat = 0, forger = null, locked = null, featu
   if (enchants && enchants.length) run.enchOpen = enchants.slice();
   if (cfg.giftRerolls) run.rerolls = cfg.giftRerolls;
   // Lever runBuilds (a number): this run's Gift offers come from that many of the four big builds, so the pieces of one
-  // build meet more often. A newly unlocked Gift's build is always one of them. Drawn from its own stream, so the same
+  // build meet more often. A Forger's own build (the Veilwalker's is Ambush) comes first, then a newly unlocked Gift's. Drawn from its own stream, so the same
   // seed deals the same kits, doors and rivals with the lever on or off.
   if (cfg.runBuilds) {
     const r2 = Rng.fromSeed(Number((BigInt(Math.trunc(Number(seed)) || 0) * 2654435761n + 97n) % 2147483647n)), order = BIG_BUILDS.slice(); r2.shuffle(order);
-    const first = (run.featured || []).map(id => RELICS[id] && RELICS[id].family).filter(f => BIG_BUILDS.includes(f));
-    run.builds = [...new Set([...first, ...order])].slice(0, Math.max(1, Math.min(BIG_BUILDS.length, cfg.runBuilds)));
+    const first = [forger && FORGERS[forger] && FORGERS[forger].build, ...(run.featured || []).map(id => RELICS[id] && RELICS[id].family)].filter(f => BIG_BUILDS.includes(f));
+    run.builds = [...new Set([...first, ...order])].slice(0, Math.max(new Set(first).size, 1, Math.min(BIG_BUILDS.length, cfg.runBuilds))); // a Forger's or a new Gift's build is never dropped, so a rare run carries three
   }
   run.offer = dealKits(db, rng, run);
   run.rng = rng.s;
