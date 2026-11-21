@@ -45,6 +45,7 @@ export const RELICS = {
   f_tarn: { name: "Tarn's Fire", kind: 'F', family: 'forger', text: 'Your first meld each duel gets +100 ATK this duel.' },
   f_scrapper: { name: "Scrapper's Luck", kind: 'F', family: 'forger', text: 'Each fizzle pays 5 Embers after the duel, up to four a duel. The first fizzle each duel also makes your next refill draw one extra card.' },
   f_veil: { name: 'Quiet Hands', kind: 'F', family: 'forger', text: 'Once a turn, setting a Trap does not use your play.' },
+  f_last: { name: 'Sole Remembrance', kind: 'F', family: 'forger', text: 'Once a turn, while you have exactly one monster on your side, an Equip played on it does not use your play.' },
   f_storm: { name: 'Home Sky', kind: 'F', family: 'forger', text: "You start each duel with your kit's Field Spell as the terrain, and your first monster it favours each duel gets +300 DEF this duel." },
 };
 

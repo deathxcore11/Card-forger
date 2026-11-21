@@ -38,5 +38,17 @@ export const FORGERS = {
       { id: 'beasts_plants', name: 'Beasts and Plants', types: ['Beast', 'Plant', 'Beast-Warrior', 'Insect'] },
     ],
   },
+  // Hidden: the prize of the first secret (lever secretLast, run.mjs). Not on the Forger screen until earned, and no
+  // list of Forgers names it. Name, rule and power names are from the Story thread (21 November 2026).
+  last: {
+    name: 'The Last One', tag: 'One monster and what it carries', rule: 'f_last', power: 'The Quiet Door', needs: 'lone', hidden: true,
+    powerText: 'Once a duel, before you play, with exactly one monster on your side: it gets +400 ATK and +400 DEF this duel.',
+    kits: [
+      { id: 'lone_blade', name: 'The Lone Blade', types: ['Warrior'], q: { monsters: 22, field: 2, equip: 9, tagged: 5, traps: 3, carriers: 3 } },
+      { id: 'last_candle', name: 'The Last Candle', types: ['Spellcaster', 'Fairy'], q: { monsters: 22, field: 2, equip: 9, tagged: 5, traps: 3, carriers: 3 } },
+      { id: 'iron_vigil', name: 'The Iron Vigil', types: ['Machine', 'Rock'], q: { monsters: 22, field: 2, equip: 9, tagged: 5, traps: 3, carriers: 3 } },
+    ],
+  },
 };
-export const FORGER_IDS = Object.keys(FORGERS);
+export const FORGER_IDS = Object.keys(FORGERS).filter(id => !FORGERS[id].hidden); // the four a player sees from the start
+export const HIDDEN_FORGERS = Object.keys(FORGERS).filter(id => FORGERS[id].hidden);

@@ -143,7 +143,9 @@ function poolLists(db) {
 // A starter kit: 40 weak cards inside fixed quotas, checked against the kit weight limit.
 export function makeKit(db, rng, kit) {
   // kitTune (lever): per-kit overrides of the kit quotas, to bring unequal kits closer. 1 uses KIT_TUNE; an object is used as given.
-  const cfg = db.config, tune = cfg.kitTune === 1 ? KIT_TUNE : cfg.kitTune, q = tune && tune[kit.id] ? { ...cfg.kit, ...tune[kit.id] } : cfg.kit, L = poolLists(db);
+  // kit.q: a kit's own quotas (the hidden Forger's kits hold fewer monsters, more Equips and Traps, and a few stronger monsters to carry them).
+  const cfg = db.config, tune = cfg.kitTune === 1 ? KIT_TUNE : cfg.kitTune, base = kit.q ? { ...cfg.kit, ...kit.q } : cfg.kit, q = tune && tune[kit.id] ? { ...base, ...tune[kit.id] } : base, L = poolLists(db);
+  const carriers = q.carriers ? L.monsters.filter(c => (q.types || kit.types).includes(c.type) && c.level <= q.maxLevel && c.atk > q.maxAtk && c.atk <= q.maxAtk + (q.carrierAtk || 300)) : [], nTraps = Math.max(cfg.kitTraps || 0, q.traps || 0);
   const themed = L.monsters.filter(c => (q.types || kit.types).includes(c.type) && c.level <= q.maxLevel && c.atk <= q.maxAtk);
   const anyWeak = L.monsters.filter(c => c.level <= q.maxLevel && c.atk <= q.maxAtk);
   const fields = L.field.filter(c => { const f = db.fieldOf.get(c.id); return f.types && (q.types || kit.types).some(t => f.types.has(t)); });
@@ -153,12 +155,13 @@ export function makeKit(db, rng, kit) {
     const deck = [], count = new Map();
     const add = c => { const n = count.get(c.id) || 0; if (n >= cfg.maxCopies) return false; count.set(c.id, n + 1); deck.push({ id: c.id }); return true; };
     let guard = 0;
-    while (deck.length < q.monsters && guard++ < 2000) add(rng.chance(3, 4) ? rng.pick(themed) : rng.pick(anyWeak));
+    while (carriers.length && deck.length < q.carriers && guard++ < 200) add(rng.pick(carriers));
+    guard = 0; while (deck.length < q.monsters && guard++ < 2000) add(rng.chance(3, 4) ? rng.pick(themed) : rng.pick(anyWeak));
     const f = fields.length ? fields : L.field;
     guard = 0; while (deck.length < q.monsters + q.field && guard++ < 500) add(rng.pick(f));
     guard = 0; while (deck.length < q.monsters + q.field + q.equip && guard++ < 500) add(rng.pick(equips));
     const tagged = L.spell.concat(L.trap).filter(c => { const t = db.tagOf.get(c.id); return t.fx !== 'destroyAll' && t.fx !== 'revive'; });
-    if (cfg.kitTraps) { const traps = tagged.filter(c => roleOf(db, c.id) === 'trap'), n0 = deck.length; guard = 0; while (traps.length && deck.length < n0 + Math.min(cfg.kitTraps, q.tagged) && guard++ < 200) add(rng.pick(traps)); } // lever kitTraps: so many of a kit's effect cards are Traps
+    if (nTraps) { const traps = tagged.filter(c => roleOf(db, c.id) === 'trap'), n0 = deck.length; guard = 0; while (traps.length && deck.length < n0 + Math.min(nTraps, q.tagged) && guard++ < 200) add(rng.pick(traps)); } // lever kitTraps: so many of a kit's effect cards are Traps
     guard = 0; while (deck.length < q.monsters + q.field + q.equip + q.tagged && guard++ < 500) add(rng.pick(tagged));
     guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(L.fuel));
     if (deck.length === 40 && deckWeight(db, deck) <= (q.weight || cfg.kitWeight)) return { deck, rejected: tries, homeField: deck.find(e => roleOf(db, e.id) === 'field')?.id || null };
@@ -168,12 +171,13 @@ export function makeKit(db, rng, kit) {
   const deck = [], count = new Map();
   const add = c => { const n = count.get(c.id) || 0; if (n >= cfg.maxCopies) return false; count.set(c.id, n + 1); deck.push({ id: c.id }); return true; };
   let guard = 0;
-  while (deck.length < q.monsters && guard++ < 2000) add(rng.chance(3, 4) ? rng.pick(themed) : rng.pick(anyWeak));
+  while (carriers.length && deck.length < q.carriers && guard++ < 200) add(rng.pick(carriers));
+  guard = 0; while (deck.length < q.monsters && guard++ < 2000) add(rng.chance(3, 4) ? rng.pick(themed) : rng.pick(anyWeak));
   const f = fields.length ? fields : L.field;
   guard = 0; while (deck.length < q.monsters + q.field && guard++ < 500) add(rng.pick(f));
   guard = 0; while (deck.length < q.monsters + q.field + q.equip && guard++ < 500) add(rng.pick(equips));
   const tagged = L.spell.concat(L.trap).filter(c => { const t = db.tagOf.get(c.id); return t.fx !== 'destroyAll' && t.fx !== 'revive'; });
-  if (cfg.kitTraps) { const traps = tagged.filter(c => roleOf(db, c.id) === 'trap'), n0 = deck.length; guard = 0; while (traps.length && deck.length < n0 + Math.min(cfg.kitTraps, q.tagged) && guard++ < 200) add(rng.pick(traps)); } // lever kitTraps: so many of a kit's effect cards are Traps
+  if (nTraps) { const traps = tagged.filter(c => roleOf(db, c.id) === 'trap'), n0 = deck.length; guard = 0; while (traps.length && deck.length < n0 + Math.min(nTraps, q.tagged) && guard++ < 200) add(rng.pick(traps)); } // lever kitTraps: so many of a kit's effect cards are Traps
   guard = 0; while (deck.length < q.monsters + q.field + q.equip + q.tagged && guard++ < 500) add(rng.pick(tagged));
   guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(L.fuel));
   const light = anyWeak.filter(c => c.level <= 2);
@@ -227,6 +231,35 @@ export function makeRival(db, rng, { floor, tier, theme, boss = null, heat = 0 }
     drops: { common, fury: fury.length ? fury : common, craft: craft.length ? craft : common }, bossId: boss ? boss.id : null,
   };
 }
+
+// ---------- the first secret (lever secretLast, off) ----------
+// Beat a floor guardian never having more than one monster on your side (duel.mjs counts it under lever loneWatch) and,
+// once a run, a chamber with two doors follows the guardian's reward: a door that was not there, and the way on. Behind
+// the first waits The Last One, who keeps one monster and carries it with Equips and Traps. Winning marks the run
+// (run.secret.won) and the profile then opens the hidden Forger (meta.mjs). With the lever off none of this is reached
+// and nothing is written, so old runs replay as before.
+export const LAST_ONE = { name: 'The Last One', law: 'alone', lawText: 'Alone: The Last One keeps one monster and carries it with Equips. When it destroys a monster in defense, you lose the difference in Life Points.' };
+export function makeLastOne(db, rng, floor) {
+  const L = poolLists(db), hi = BANDS.boss[floor][1], lo = hi - 500;
+  const mons = L.monsters.filter(c => c.atk >= lo && c.atk <= hi);
+  const deck = [], count = new Map();
+  const add = c => { const n = count.get(c.id) || 0; if (n >= 3) return false; count.set(c.id, n + 1); deck.push({ id: c.id }); return true; };
+  let guard = 0; while (deck.length < 14 && guard++ < 2000) add(rng.pick(mons));
+  const equips = db.config.equipKinds ? L.equip.filter(c => { const e = db.equipOf.get(c.id); return !e || e.shape || deck.filter(m => e.attr ? db.byId.get(m.id).attr === e.attr : e.types.has(db.byId.get(m.id).type)).length * 4 >= deck.length; }) : L.equip;
+  guard = 0; while (deck.length < 26 && guard++ < 500) add(rng.pick(equips.length ? equips : L.equip));
+  const traps = L.trap.filter(c => db.tagOf.get(c.id).fx !== 'destroyAll');
+  guard = 0; while (deck.length < 36 && guard++ < 500) add(rng.pick(traps));
+  const spells = L.spell.filter(c => { const t = db.tagOf.get(c.id); return t.fx !== 'destroyAll' && t.fx !== 'revive'; });
+  guard = 0; while (deck.length < 40 && guard++ < 500) add(rng.pick(spells));
+  while (deck.length < 40) deck.push({ id: rng.pick(L.fuel).id });
+  const common = deck.filter(e => db.isMonster(e.id)).map(e => e.id), ace = common.slice().sort((a, b) => db.byId.get(b).atk - db.byId.get(a).atk)[0];
+  const tools = deck.filter(e => ['equip', 'trap'].includes(roleOf(db, e.id))).map(e => e.id);
+  return { name: LAST_ONE.name, tier: 'secret', floor, deck, ai: 2, law: db.config.lastLaw === 0 ? null : LAST_ONE.law, lawText: LAST_ONE.lawText, ace, drops: { common, fury: tools, craft: tools }, bossId: null };
+}
+const secretDoors = run => [
+  { type: 'secret', tier: 'secret', know: 'mystery', name: 'A door that was not there', cost: 'A Spark if you lose. It will not open twice.', reward: 'Unknown.', tags: [] },
+  { type: 'onward', know: 'known', name: run.floor === DB.config.floors - 1 && !(heatAt(DB, run, 10) && !run.secondGate) ? 'The way out' : 'The way on', cost: 'Nothing.', reward: 'The descent goes on as it would have. The other door will be gone.', tags: [] },
+];
 
 // ---------- rank ----------
 export const rankLetter = (cfg, points) => points >= cfg.S ? 'S' : points >= cfg.A ? 'A' : points >= cfg.B ? 'B' : points >= cfg.C ? 'C' : 'D';
@@ -426,14 +459,15 @@ export function possibleMasterworks(run) {
 
 function startDuel(db, run, rng, door, onStep) {
   const boss = door.type === 'boss' ? BOSSES[run.floor][run.bossOrder[run.floor]] : null;
-  const rival = makeRival(db, rng, { floor: run.floor, tier: door.tier, theme: door.theme != null ? THEMES[door.theme] : null, boss, heat: run.heat });
+  const secret = door.type === 'secret';
+  const rival = secret ? makeLastOne(db, rng, run.floor) : makeRival(db, rng, { floor: run.floor, tier: door.tier, theme: door.theme != null ? THEMES[door.theme] : null, boss, heat: run.heat });
   const cap = weightCap(db, run);
   const relics = relicList(run);
   if (run.forger) relics.unshift(FORGERS[run.forger].rule);
   if (db.config.testRelics) for (const id of db.config.testRelics) if (!relics.includes(id)) relics.push(id);
   const style = styleOf(db, run, door) || null;
   const strong = !!boss && heatAt(db, run, 8);
-  const rr = (style ? style.relics.slice() : door.tier === 'champion' ? ['whetstone'] : []).concat(door.tier === 'champion' && heatAt(db, run, 9) ? ['heavy_crown'] : [], boss && heatAt(db, run, 3) ? ['whetstone', 'iron_rations'] : [], strong ? STRONG_RELICS[boss.law] || [] : []);
+  const rr = (style ? style.relics.slice() : door.tier === 'champion' ? ['whetstone'] : []).concat(door.tier === 'champion' && heatAt(db, run, 9) ? ['heavy_crown'] : [], boss && heatAt(db, run, 3) ? ['whetstone', 'iron_rations'] : [], strong ? STRONG_RELICS[boss.law] || [] : [], secret ? ['f_last', 'f_veil'] : []);
   const bounty = rng.pick(BOUNTIES);
   const seats = [
     { relics, handSize: (relics.includes('deep_pockets') ? 6 : db.config.hand) - (rival.law === 'tyranny' ? (strong ? 2 : 1) : 0), firstTurnHand: run.sparks === 1 ? 6 : 0, homeField: run.homeField, underCap: cap - deckWeight(db, run.deck), secondWind: relics.includes('second_wind') && !run.secondWindUsed, sparks: run.sparks, forger: run.forger || null, ...(run.feat ? { track: 1 } : {}) },
@@ -452,7 +486,7 @@ function advanceRival(db, run, onStep) {
   while (d.winner === null && guard++ < 400) {
     const rivalToAct = d.pending ? d.active === 0 : d.active === 1;
     if (!rivalToAct) break;
-    const a = chooseAction(db, viewFor(d, db, 1), run.rival.ai, run.rival.theme ? { maxChain: 3, ...styleFor(db, run.rival.theme).policy } : { maxChain: 3 });
+    const a = chooseAction(db, viewFor(d, db, 1), run.rival.ai, run.rival.tier === 'secret' ? { maxChain: 3, lone: true, trapBonus: 260 } : run.rival.theme ? { maxChain: 3, ...styleFor(db, run.rival.theme).policy } : { maxChain: 3 });
     try { const evs = applyMut(d, a || { t: 'end' }, db); if (onStep) onStep(evs); } catch (e) { e.message += ' | rival action ' + JSON.stringify(a) + ' hand ' + JSON.stringify(d.hand[1].map(c => db.byId.get(c.id).name)) + ' twist ' + d.twist + ' law ' + d.seat[1].law; throw e; }
   }
 }
@@ -501,11 +535,12 @@ function finishDuel(db, run, rng, ev) {
   const summary = { won, turns: d.turn, reason: d.reason, lp: d.lp.slice(), tier };
   run.lastDuel = summary;
   if (!won) {
-    S.losses++; run.sparks--;
+    S.losses++; run.sparks--; if (tier === 'secret') run.secret.lost = 1;
     ev.push({ e: 'duelLost', sparks: run.sparks });
     run.duel = null;
     if (run.sparks <= 0) { run.phase = 'over'; run.result = { won: false, floor: run.floor, chamber: run.chamber, reason: 'sparks' }; return; }
     if (tier === 'boss') { run.phase = 'chamber'; run.doors = [bossDoor(run)]; return; }
+    if (tier === 'secret') { run.lastNote = 'The door is wall again.'; afterBoss(db, run, rng); return; }
     descend(db, run, rng); return;
   }
   S.wins++; if (st.trailed) S.trailedWins++; if (st.wasBehind) S.comebacks++; if (d.lp[0] < 4000) S.closeWins++; S.lpLostInWins += Math.max(0, db.config.lp - d.lp[0]);
@@ -521,7 +556,7 @@ function finishDuel(db, run, rng, ev) {
   // where they were, so a full run still holds the same number of Gifts.
   const giftAt = l => l === 0 && cfg.giftFirstXp ? Math.min(cfg.giftFirstXp, cfg.xp.perLevel * (cfg.giftXpScale || 1)) : (l + 1) * cfg.xp.perLevel * (cfg.giftXpScale || 1);
   while (run.xp >= giftAt(run.level)) { run.level++; run.giftsQueued++; }
-  if (tier !== 'boss') run.seals++;
+  if (tier !== 'boss' && tier !== 'secret') run.seals++;
   summary.rank = rk; summary.embers = embers; summary.bountyMet = bountyMet;
   ev.push({ e: 'duelWon', rank: rk.rank, style: rk.style, embers });
   run.duel = null;
@@ -529,8 +564,14 @@ function finishDuel(db, run, rng, ev) {
   const list = rk.rank === 'S' || rk.rank === 'A' ? drops[rk.style] : drops.common;
   const n = rk.rank === 'C' || rk.rank === 'D' ? 2 : 3;
   const queue = [];
-  if (tier === 'boss') {
+  if (tier === 'secret') {
+    run.secret.won = 1;
+    const pool = [run.rival.ace, ...new Set(run.rival.drops.fury)];
+    queue.push({ kind: 'card', options: pickThree(db, rng, pool, 3, true) });
+  } else if (tier === 'boss') {
     S.bossWins++;
+    // The first secret: the most monsters the player had at once in this guardian duel (duel.mjs, lever loneWatch).
+    if (cfg.secretLast) { const most = st.most || 0, sc = run.secret || (run.secret = {}); if (most <= 2) sc.near = 1; if (most <= 1 && !sc.met) { sc.met = 1; sc.due = 1; } }
     const opts = [{ kind: 'card', entry: { id: run.rival.ace }, text: 'Legendary card' }];
     const mw = possibleMasterworks(run);
     if (mw.length) opts.push({ kind: 'masterwork', id: mw[0], text: 'Forge ' + RELICS[mw[0]].name });
@@ -558,12 +599,18 @@ function nextReward(db, run, rng) {
   run.offer = null; run.queue = null;
   if (run.door && run.door.type === 'boss' && run.lastDuel && run.lastDuel.won) {
     run.capBonus += db.config.bossCapBonus;
-    if (run.floor === db.config.floors - 1 && heatAt(db, run, 10) && !run.secondGate) { run.secondGate = 1; run.bossOrder[run.floor] = 1 - run.bossOrder[run.floor]; run.lastNote = 'The Second Gate opens. The other guardian of this floor is waiting.'; run.door = null; run.doors = [bossDoor(run)]; run.phase = 'chamber'; return; }
-    if (run.floor === db.config.floors - 1) { run.phase = 'over'; run.result = { won: true, floor: run.floor }; return; }
-    run.floor++; run.chamber = 0; run.seals = 0; run.door = null;
-    run.doors = genDoors(db, run, rng); run.phase = 'chamber'; return;
+    if (run.secret && run.secret.due) { delete run.secret.due; run.lastNote = 'Where there was only wall, a door stands.'; run.door = null; run.doors = secretDoors(run); run.phase = 'chamber'; return; }
+    afterBoss(db, run, rng); return;
   }
+  if (run.door && run.door.type === 'secret') { afterBoss(db, run, rng); return; }
   descend(db, run, rng);
+}
+// What follows a fallen guardian once its reward is taken: the Second Gate, the end of the run, or the next floor.
+function afterBoss(db, run, rng) {
+  if (run.floor === db.config.floors - 1 && heatAt(db, run, 10) && !run.secondGate) { run.secondGate = 1; run.bossOrder[run.floor] = 1 - run.bossOrder[run.floor]; run.lastNote = 'The Second Gate opens. The other guardian of this floor is waiting.'; run.door = null; run.doors = [bossDoor(run)]; run.phase = 'chamber'; return; }
+  if (run.floor === db.config.floors - 1) { run.phase = 'over'; run.result = { won: true, floor: run.floor }; return; }
+  run.floor++; run.chamber = 0; run.seals = 0; run.door = null;
+  run.doors = genDoors(db, run, rng); run.phase = 'chamber';
 }
 function descend(db, run, rng) {
   if (run.chamber < db.config.chambers - 1) run.chamber++;
@@ -650,9 +697,11 @@ export function runApply(run, a, db, opts = {}) {
       const door = run.doors[a.i];
       if (door.type === 'boss' && run.seals < 2) fail('the boss door needs two seals');
       run.door = door; run.stats.doors[door.type] = (run.stats.doors[door.type] || 0) + 1;
+      if (run.secret) delete run.lastNote; // the line about the door that was not there is said once
       ev.push({ e: 'door', type: door.type });
       if (door.tier) { startDuel(db, run, rng, door, opts.onStep); if (run.duel.winner !== null) finishDuel(db, run, rng, ev); break; }
       switch (door.type) {
+        case 'onward': afterBoss(db, run, rng); break;
         case 'anvil': run.phase = 'anvil'; run.offer = { kind: 'anvil', masterworks: possibleMasterworks(run), enchants: rng.shuffle(ENCHANTS.slice()).filter(e => !run.enchOpen || run.enchOpen.includes(e)).slice(0, 3) }; break;
         case 'bazaar': run.phase = 'bazaar'; run.offer = { kind: 'bazaar', merchant: door.merchant, items: bazaarStock(db, run, rng, door.merchant) }; break;
         case 'sanctum': run.phase = 'reward'; run.queue = []; run.offer = { kind: 'sanctum', options: ['spark', 'cap'] }; break;

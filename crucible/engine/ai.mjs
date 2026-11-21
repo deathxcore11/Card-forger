@@ -98,6 +98,7 @@ export function bestPlay(db, view, level, policy = {}) {
     let cost = (used - 1) * (policy.chainCost ?? db.config.aiChainCost ?? 110) + plan.fizzles * 450;
     if (ontoM && plan.tableLost) cost += ontoM.ea;
     if (plan.isMonster) {
+      if (policy.equipOnly && !(used === 1 && plan.onTable && roleOf(db, cards[0].id) === 'equip')) return;
       if (!(plan.onTable || plan.tableLost || free)) return;
       if (policy.lone && myCount >= 1 && !(plan.onTable || plan.tableLost)) return; // sim-only: a player who keeps one monster on its side (measures a lone-card duel condition)
       const lift = relicLift(db, view, plan, false);
@@ -134,6 +135,7 @@ export function bestPlay(db, view, level, policy = {}) {
     }
     // the chain ends on a Spell, Trap, Field or Equip that is then played
     const id = plan.final.id, role = roleOf(db, id);
+    if (policy.equipOnly && (role !== 'equip' || idxs.length !== 1)) return;
     let v = null;
     const r = 1 - me;
     if (role === 'field') {
@@ -280,6 +282,8 @@ export function chooseAction(db, view, level = 1, policy = {}) {
   if (view.pending) return view.active === me ? null : answerTrap(db, view, level);
   if (view.active !== me) return null;
   if (!view.played && !view.attacked) {
+    // Sole Remembrance (the hidden Forger's rule): alone, the first Equip of the turn is free, so it goes on before the play.
+    if (level >= 1 && view.relics.includes('f_last') && view.rs.lastTurn !== view.turn && view.mon[me].filter(Boolean).length === 1) { const f = bestPlay(db, view, level, { ...policy, equipOnly: true }); if (f && f.score > 0) return f.action; }
     if (level >= 1 && view.relics.includes('clean_draw') && !view.rs.cleanDraw && view.deckCount[me] > 0) {
       // swap away a card that can do nothing on its own when the hand has no monster
       const mons = view.hand.filter(c => db.isMonster(c.id)).length;

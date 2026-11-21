@@ -19,6 +19,7 @@ export const FORGER_FEATS = {
   scrapper: { text: 'Finish one run, win or lose.', test: p => p.runs >= 1 },
   veil: { text: 'Beat a floor guardian.', test: p => p.bossWins >= 1 },
   storm: { text: 'Reach the third floor.', test: p => p.bestFloor >= 2 },
+  last: { text: 'Hidden.', test: p => (p.lastOne || 0) >= 1 }, // the first secret: beat The Last One behind the door that was not there (run.mjs)
 };
 
 // Build feats: counted across runs from run.feat, so a lost run still moves them. Each one
@@ -121,6 +122,8 @@ export function applyRun(p, run, { long = false } = {}) {
     feats.push({ id: f.id, name: f.name, build: f.build, text: f.text, before, after, gain: after - before, goal: f.goal, done });
     if (done) { p.featsDone.push(f.id); p.fresh.push(f.gift); unlocks.push({ kind: 'gift', id: f.gift, feat: f.name, name: RELICS[f.gift].name, text: RELICS[f.gift].text, why: f.why }); }
   }
+  // the first secret: what the run found is kept whether it was won or lost
+  if (run.secret) { if (run.secret.near) p.loneNear = 1; if (run.secret.met) p.loneMet = 1; if (run.secret.won) p.lastOne = (p.lastOne || 0) + 1; }
   for (const id of Object.keys(FORGER_FEATS)) if (!p.forgers.includes(id) && FORGER_FEATS[id].test(p)) { p.forgers.push(id); unlocks.push({ kind: 'forger', id, name: FORGERS[id].name, text: FORGERS[id].tag + '. ' + FORGERS[id].powerText }); }
   return { ...r, unlocks, feats };
 }

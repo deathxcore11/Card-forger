@@ -360,7 +360,7 @@ export function forecast(s, db, atkSeat, X, defSeat, T, { ambush = 0 } = {}) {
       out.killT = !lawD; out.killX = !lawA; if (lawA && lawD) { out.killT = out.killX = true; }
     }
   } else {
-    if (a > d) { out.killT = true; if (X.e === 'piercing' && !(T.e === 'bulwark' && !T.bulwarkUsed)) out.dmgDef = a - d; } // Piercing pays only when the defender is destroyed
+    if (a > d) { out.killT = true; if ((X.e === 'piercing' || s.seat[atkSeat].law === 'alone') && !(T.e === 'bulwark' && !T.bulwarkUsed)) out.dmgDef = a - d; } // Piercing pays only when the defender is destroyed
     else if (a < d) out.dmgAtk = d - a;
   }
   if (X.e === 'venom' && !out.killT) out.killT = true;
@@ -583,6 +583,7 @@ export function powerActions(s, db, seat) {
   else if (f === 'scrapper') { if (s.deck[seat].length >= 2) for (let i = 0; i < s.hand[seat].length; i++) out.push({ t: 'power', hand: i }); }
   else if (f === 'veil') s.mon[seat].forEach((m, z) => { if (m && !m.veil) out.push({ t: 'power', zone: z }); });
   else if (f === 'storm') { if (st.homeField && !(s.terrain && (s.terrain.lock || s.terrain.id === st.homeField))) out.push({ t: 'power' }); }
+  else if (f === 'last') { if (s.mon[seat].filter(Boolean).length === 1) out.push({ t: 'power' }); }
   return out;
 }
 function doPower(s, db, ev, seat, a) {
@@ -601,7 +602,7 @@ function doPower(s, db, ev, seat, a) {
     else if (prev && prev.temp != null) s.terrain = { id: st.homeField, owner: seat, temp: 2, back: prev.back };
     else s.terrain = { id: st.homeField, owner: seat };
     ev.push({ e: 'terrain', seat, id: st.homeField });
-  }
+  } else if (f === 'last') { const m = s.mon[seat].find(Boolean), add = (db.config.forgerTune || {}).lastDoor ?? 400; m.ba = (m.ba || 0) + add; m.bd = (m.bd || 0) + add; ev.push({ e: 'stat', seat, zone: s.mon[seat].indexOf(m), a: add, d: add }); }
 }
 
 function noteRelic(s, ev, seat, id) { const f = s.stats[seat].relicFires; f[id] = (f[id] || 0) + 1; ev.push({ e: 'relic', seat, id }); }
@@ -660,6 +661,8 @@ function doPlay(s, db, ev, seat, a) {
       if (plan.melded && st.rs.soloArm) { st.rs.soloArm = 0; m.ba = (m.ba || 0) + 300; m.bd = (m.bd || 0) + 300; ev.push({ e: 'solo', seat, type: 'Machine', zone: z, paid: true }); }
       if (!plan.melded && !plan.onTable && !m.veil) soloArrival(s, db, ev, seat, c);
     }
+    // Sole Remembrance (the hidden Forger's rule): alone, one Equip a turn joined to the monster on the table does not use the play.
+    if (plan.onTable && idxs.length === 1 && plan.steps.length === 1 && plan.steps[0].kind === 'equip' && has(s, seat, 'f_last') && st.rs.lastTurn !== s.turn && s.mon[seat].filter(Boolean).length === 1 && s.winner === null) { st.rs.lastTurn = s.turn; s.played = false; noteRelic(s, ev, seat, 'f_last'); }
     // Lever under test (forgerTune.veilSet): the Veilwalker's first lone monster set veiled in defense each turn does not use the play.
     if (db.config.forgerTune && db.config.forgerTune.veilSet && !plan.melded && !plan.onTable && idxs.length === 1 && a.veiled && a.pos === 'd' && has(s, seat, 'f_veil') && st.rs.veilSetTurn !== s.turn && (db.config.forgerTune.veilSet !== 2 || s.mon[seat].filter(x => x && x.veil).length === 1) && s.winner === null) { st.rs.veilSetTurn = s.turn; s.played = false; noteRelic(s, ev, seat, 'f_veil'); }
     return;
@@ -681,6 +684,7 @@ function doPlay(s, db, ev, seat, a) {
     m.ba = (m.ba || 0) + addA; m.bd = (m.bd || 0) + addD; m.eq = (m.eq || 0) + 1; track(s, db, seat, 'equip'); if (db.config.equipKinds && equipFits(db, f.id, m.id)) track(s, db, seat, 'equipFit');
     s.gy[seat].push(f.id);
     ev.push({ e: 'equip', seat, zone: z, id: f.id });
+    if (idxs.length === 1 && has(s, seat, 'f_last') && st.rs.lastTurn !== s.turn && s.mon[seat].filter(Boolean).length === 1) { st.rs.lastTurn = s.turn; s.played = false; noteRelic(s, ev, seat, 'f_last'); }
   } else if (role === 'spell') {
     s.gy[seat].push(f.id);
     castSpell(s, db, ev, seat, f.id, a.target);

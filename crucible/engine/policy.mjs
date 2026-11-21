@@ -80,6 +80,8 @@ function doorScore(db, run, d, fam) {
     case 'omen': return run.trunk.length >= 2 ? 52 : 6;
     case 'treasure': return 92;
     case 'mystery': return 30;
+    case 'secret': return 500; // the test player always opens the door that was not there
+    case 'onward': return 100;
   }
   return 0;
 }
@@ -112,6 +114,7 @@ function forgerPower(db, v, planned) {
   if (v.forger === 'tarn') return planned && planned.t === 'play' && planned.hand.length >= 2 ? { t: 'power' } : null;
   if (v.forger === 'scrapper') { if (v.deckCount[me] < 2 || !v.hand.length || v.turn < 2) return null; return { t: 'power', hand: bestIdx(v.hand, c => -cardValue(db, c)) }; }
   if (v.forger === 'storm') return v.homeField && !(v.terrain && (v.terrain.lock || v.terrain.id === v.homeField)) ? { t: 'power' } : null;
+  if (v.forger === 'last') { const mine = v.mon[me].filter(Boolean); return mine.length === 1 && !mine[0].veil ? { t: 'power' } : null; }
   if (v.forger === 'veil') {
     const top = Math.max(0, ...v.mon[r].filter(m => m && !m.veil).map(m => m.ea));
     const z = v.mon[me].findIndex(m => m && !m.veil && m.pos === 'a' && m.ea < top && m.ed >= m.ea + 300);
@@ -129,7 +132,9 @@ function engineFor(run) {
 }
 export const familyOf = (run, family) => family === 'engine_run' ? FAMILIES[engineFor(run)] : FAMILIES[family];
 // Chooses the next run action. `level` is the duel skill of the simulated player (0..2).
-export function policyAction(db, run, { family = 'neutral', level = 2 } = {}) {
+// lone: 'boss' keeps one monster in guardian duels (a player hunting the first secret), 'all' in every duel, 'last'
+// in every duel when the Forger is The Last One. The default player never does.
+export function policyAction(db, run, { family = 'neutral', level = 2, lone = null } = {}) {
   const fam = familyOf(run, family);
   switch (run.phase) {
     case 'kit': { const i = fam.kit ? run.offer.findIndex(k => k.kit === fam.kit) : Number(BigInt(run.seed) % 3n); return { t: 'kit', i: i < 0 ? 0 : i }; }
@@ -137,7 +142,8 @@ export function policyAction(db, run, { family = 'neutral', level = 2 } = {}) {
     case 'chamber': { const sw = nextSwap(db, run); if (sw) return sw; const ok = run.doors.map((d, i) => (d.type === 'boss' && run.seals < 2) ? -1e9 : doorScore(db, run, d, fam) - i * 0.01); return { t: 'door', i: bestIdx(ok, v => v) }; }
     case 'duel': {
       const v = viewFor(run.duel, db, 0);
-      const a = chooseAction(db, v, level, fam.duel);
+      const alone = lone === 'all' || (lone === 'boss' && run.rival.tier === 'boss') || (lone === 'last' && run.forger === 'last');
+      const a = chooseAction(db, v, level, alone ? { ...fam.duel, lone: true } : fam.duel);
       // Cracked Mask: before a meld, turn a veiled monster face up to arm it.
       if (level >= 1 && a && a.t === 'play' && a.hand.length >= 2 && v.relics.includes('cracked_mask') && !v.rs.mask && !v.played && !v.pending) { const z = v.mon[v.me].findIndex(m => m && m.veil && !m.moved && !(m.att > 0)); if (z >= 0) return { t: 'duel', action: { t: 'pos', zone: z } }; }
       const p = level >= 1 ? forgerPower(db, v, a) : null;

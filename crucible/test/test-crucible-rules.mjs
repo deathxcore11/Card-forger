@@ -1496,6 +1496,109 @@ test('Lone watch: with the lever a duel remembers the most monsters each side ha
   assert.ok(loneWins >= 1, 'the lone player beat a floor guardian at least once in these runs');
 });
 
+// ---------- The first secret (lever secretLast, Lab switch `secret`, off): the door that was not there, The Last One ----------
+const SECRET_DB = { ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, secret: true }) }, _pair: new Map() };
+test('The first secret: the switch turns on the lone watch and the secret together, and both start off', () => {
+  const off = labConfig(LAB_DEFAULTS), on = labConfig({ ...LAB_DEFAULTS, secret: true });
+  assert.ok(!off.secretLast && !off.loneWatch); assert.ok(on.secretLast && on.loneWatch);
+  assert.ok(!FORGER_IDS.includes('last') && FORGERS.last.hidden, 'the hidden Forger is on no list of Forgers');
+});
+test('The first secret: a guardian beaten with one monster opens a chamber of two doors, once a run; the way on leads where the run was going; every state is a run the page can store', () => {
+  const d = SECRET_DB; let opened = 0, onward = 0, duels = 0, won = 0, lost = 0;
+  const step = (run, lone) => runApply(run, policyAction(d, run, { level: 2, lone }), d);
+  for (let seed = 1; seed <= 14; seed++) {
+    const run = newRun(d, { seed, track: true }); let n = 0, chambers = 0, most = 9;
+    while (run.phase !== 'over' && n++ < 9000) {
+      assert.equal(runFault(d, run), '', 'seed ' + seed + ' step ' + n);
+      const duel = run.phase === 'duel' ? run.duel : null, boss = duel && run.rival.tier === 'boss';
+      if (run.phase === 'chamber' && run.doors.some(x => x.type === 'secret')) {
+        chambers++; opened++;
+        assert.equal(most, 1, 'the door opens only after a guardian fell to one monster, seed ' + seed);
+        assert.deepEqual(run.doors.map(x => x.type), ['secret', 'onward']); assert.ok(run.secret.met && !run.secret.due && /door/.test(run.lastNote));
+        // the way on: the same floor, chamber and doors the run would have had without the detour (the detour draws nothing)
+        const a = clone(run), b = clone(run); delete b.secret.met; runApply(a, { t: 'door', i: 1 }, d); onward++;
+        assert.ok(a.phase === 'over' ? a.result.won : a.phase === 'chamber' && !a.doors.some(x => x.type === 'secret' || x.type === 'onward'), 'the way on goes on');
+        assert.ok(!a.lastNote || /Second Gate/.test(a.lastNote), 'the line about the door is said once');
+        if (a.phase === 'chamber' && !a.secondGate) { assert.equal(a.floor, run.floor + 1); assert.equal(a.chamber, 0); assert.equal(a.seals, 0); }
+        // the door itself: a duel against The Last One, who never has two monsters and strikes through defense
+        const sparks = run.sparks, fl = run.floor; runApply(run, { t: 'door', i: 0 }, d);
+        assert.equal(run.rival.tier, 'secret'); assert.equal(run.rival.name, 'The Last One'); assert.equal(run.duel.seat[1].law, 'alone'); assert.ok(run.duel.seat[1].relics.includes('f_last'));
+        const hid = run.duel; let m = 0;
+        while (run.phase === 'duel' && m++ < 2000) { step(run, null); assert.ok(hid.mon[1].filter(Boolean).length <= 1, 'The Last One keeps one monster'); }
+        duels++;
+        if (hid.winner === 0) { won++; assert.equal(run.secret.won, 1); assert.equal(run.sparks, sparks); assert.equal(run.phase, 'reward'); assert.equal(run.offer.kind, 'card'); assert.equal(run.offer.options.length, 3); }
+        else { lost++; assert.equal(run.secret.lost, 1); assert.equal(run.sparks, sparks - 1); assert.ok(run.phase === 'over' || (run.phase === 'chamber' && !run.doors.some(x => x.type === 'secret')), 'a lost hidden duel never returns to the door'); if (run.phase === 'chamber' && !run.secondGate) assert.equal(run.floor, fl + 1); }
+        continue;
+      }
+      step(run, 'boss');
+      if (boss && duel.winner !== null) most = duel.winner === 0 ? duel.stats[0].most || 0 : 9;
+    }
+    assert.ok(chambers <= 1, 'once a run, seed ' + seed);
+  }
+  assert.ok(opened >= 6 && won >= 1 && lost >= 1, JSON.stringify({ opened, onward, duels, won, lost }));
+});
+test('The first secret: without the switch nothing is written and no door appears, however the player plays; with it, the usual player is told when two were one too many', () => {
+  for (let seed = 1; seed <= 5; seed++) {
+    const run = newRun(db, { seed, track: true }); let n = 0;
+    while (run.phase !== 'over' && n++ < 9000) { runApply(run, policyAction(db, run, { level: 2, lone: 'boss' }), db); assert.ok(!run.secret && !(run.doors || []).some(x => x.type === 'secret')); }
+  }
+  let near = 0, met = 0;
+  for (let seed = 1; seed <= 24; seed++) {
+    const run = newRun(SECRET_DB, { seed, track: true }); let n = 0;
+    while (run.phase !== 'over' && n++ < 9000) runApply(run, policyAction(SECRET_DB, run, { level: 2 }), SECRET_DB);
+    if (run.secret && run.secret.near) near++; if (run.secret && run.secret.met) met++;
+  }
+  assert.equal(met, 0, 'the usual player never meets the condition in these runs'); assert.ok(near >= 1, 'but comes close in some: ' + near);
+});
+test('The first secret: beating The Last One opens the hidden Forger in the profile, and a run that only came close or lost opens nothing', () => {
+  const over = secret => { const run = newRun(SECRET_DB, { seed: 5, track: true }); run.phase = 'over'; run.result = { won: false, floor: 0, chamber: 2, reason: 'sparks' }; run.stats.duels = 3; if (secret) run.secret = secret; return run; };
+  let p = newProfile(); let r = applyRun(p, over({ near: 1 })); assert.ok(!p.forgers.includes('last') && p.loneNear === 1 && !p.loneMet && !r.unlocks.some(u => u.id === 'last'));
+  r = applyRun(p, over({ near: 1, met: 1, lost: 1 })); assert.ok(!p.forgers.includes('last') && p.loneMet === 1);
+  r = applyRun(p, over({ near: 1, met: 1, won: 1 })); assert.ok(p.forgers.includes('last') && p.lastOne === 1); assert.ok(r.unlocks.some(u => u.kind === 'forger' && u.id === 'last' && u.name === 'The Last One'));
+  r = applyRun(p, over({ near: 1, met: 1, won: 1 })); assert.ok(!r.unlocks.some(u => u.id === 'last'), 'unlocked once'); assert.equal(p.forgers.filter(f => f === 'last').length, 1);
+  p = newProfile(); applyRun(p, over(null)); assert.ok(!('loneNear' in p) && !('lastOne' in p), 'a run without the secret writes nothing new to the profile');
+});
+test('The Last One as a Forger: three kits of one strong carrier, Equips and Traps within the weight limit; Sole Remembrance frees one Equip a turn only while one monster stands; The Quiet Door needs exactly one monster', () => {
+  for (let seed = 1; seed <= 12; seed++) {
+    const run = newRun(db, { seed, forger: 'last' }); assert.equal(run.offer.length, 3);
+    for (const k of run.offer) {
+      const roles = k.deck.map(e => roleOf(db, e.id)), mons = k.deck.filter(e => db.isMonster(e.id)).map(e => db.byId.get(e.id));
+      assert.ok(k.deck.length === 40 && deckWeight(db, k.deck) <= db.config.kitWeight, k.kit + ' over weight');
+      assert.ok(roles.filter(x => x === 'equip').length >= 8 && roles.filter(x => x === 'trap').length >= 3, k.kit + ' holds its tools: ' + roles.filter(x => x === 'equip').length + ' Equips, ' + roles.filter(x => x === 'trap').length + ' Traps');
+      const strong = mons.filter(c => c.atk > db.config.kit.maxAtk); assert.ok(strong.length >= 1 && strong.length <= 3 && strong.every(c => c.atk <= db.config.kit.maxAtk + 300 && c.level <= db.config.kit.maxLevel), k.kit + ' carriers');
+    }
+  }
+  const eq = db.pool.cards.find(c => roleOf(db, c.id) === 'equip').id, seats = [{ relics: ['f_last'], forger: 'last' }, {}];
+  const equip = { t: 'play', hand: [0], onto: null }, hand = s => { s.hand[0].push({ u: uid++, id: eq }, { u: uid++, id: eq }, { u: uid++, id: eq }); };
+  let s = blank({ seats }); put(s, 0, 2, mon('Mystical Elf')); hand(s); const a0 = effAtk(s, db, 0, s.mon[0][2]);
+  applyMut(s, { ...equip, target: 2 }, db); assert.equal(s.played, false, 'alone, the first Equip of the turn is free'); assert.ok(effAtk(s, db, 0, s.mon[0][2]) > a0 || effDef(s, db, 0, s.mon[0][2]) > 0);
+  applyMut(s, { ...equip, target: 2 }, db); assert.equal(s.played, true, 'the second one uses the play');
+  s = blank({ seats }); put(s, 0, 2, mon('Mystical Elf')); hand(s);
+  applyMut(s, { t: 'play', hand: [0], onto: 2, pos: 'a' }, db); assert.equal(s.played, false, 'joined to the monster on the table, it is free as well');
+  applyMut(s, { t: 'play', hand: [0], onto: 2, pos: 'a' }, db); assert.equal(s.played, true);
+  s = blank({ seats }); put(s, 0, 1, mon('Mystical Elf')); put(s, 0, 2, mon('Mystical Elf')); hand(s);
+  applyMut(s, { ...equip, target: 2 }, db); assert.equal(s.played, true, 'with two monsters an Equip uses the play');
+  s = blank({ seats: [{ relics: [] }, {}] }); put(s, 0, 2, mon('Mystical Elf')); hand(s);
+  applyMut(s, { ...equip, target: 2 }, db); assert.equal(s.played, true, 'without the rule an Equip uses the play');
+  // the power
+  s = blank({ seats }); assert.equal(legalActions(s, db).filter(a => a.t === 'power').length, 0, 'no monster, no power');
+  put(s, 0, 1, mon('Mystical Elf')); put(s, 0, 2, mon('Mystical Elf')); assert.equal(legalActions(s, db).filter(a => a.t === 'power').length, 0, 'two monsters, no power');
+  s.mon[0][1] = null; const m = s.mon[0][2], before = [effAtk(s, db, 0, m), effDef(s, db, 0, m)];
+  assert.equal(legalActions(s, db).filter(a => a.t === 'power').length, 1); applyMut(s, { t: 'power' }, db);
+  assert.deepEqual([effAtk(s, db, 0, m), effDef(s, db, 0, m)], [before[0] + 400, before[1] + 400]); assert.equal(s.played, false, 'the power does not use the play');
+  assert.equal(legalActions(s, db).filter(a => a.t === 'power').length, 0, 'once a duel');
+  // a whole run as The Last One, played the lone way, ends without a fault
+  for (const seed of [3, 4]) { const run = newRun(db, { seed, forger: 'last', track: true }); let n = 0; while (run.phase !== 'over' && n++ < 9000) { runApply(run, policyAction(db, run, { level: 2, lone: 'last' }), db); assert.equal(runFault(db, run), ''); } assert.equal(run.phase, 'over'); }
+});
+test('The Last One strikes through defense: its Law makes a destroyed defender cost the difference, and no other rival has it', () => {
+  const big = C('Blue-Eyes White Dragon'), elf = C('Mystical Elf');
+  for (const [law, pays] of [['alone', true], [null, false]]) {
+    const s = blank({ seats: [{}, law ? { law } : {}] }); s.active = 1; put(s, 1, 2, mon('Blue-Eyes White Dragon')); put(s, 0, 2, mon('Mystical Elf', 'd'));
+    const lp = s.lp[0]; applyMut(s, { t: 'attack', from: 2, to: 2 }, db);
+    assert.equal(s.mon[0][2], null); assert.equal(lp - s.lp[0], pays ? big.atk - elf.def : 0, 'law ' + law);
+  }
+});
+
 // ---------- Odd Gift at the Bazaar (lever bazaarOdd, Lab switch `odd`, off) ----------
 test('Odd Gift at the Bazaar: every Bazaar then sells one marked Gift from outside the run, bought with Embers beyond the Gift count, and nothing changes without the lever', () => {
   assert.equal(labConfig(LAB_DEFAULTS).bazaarOdd, 0); assert.equal(labConfig({ ...LAB_DEFAULTS, odd: true }).bazaarOdd, 70);

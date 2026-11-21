@@ -7,7 +7,7 @@ const num = Number.isFinite;
 const obj = x => !!x && typeof x === 'object' && !Array.isArray(x);
 
 export const PHASES = ['kit', 'charm', 'chamber', 'duel', 'reward', 'anvil', 'bazaar', 'over'];
-export const DOOR_TYPES = ['duel', 'cursed', 'champion', 'guardian', 'boss', 'anvil', 'bazaar', 'sanctum', 'omen', 'treasure', 'mystery'];
+export const DOOR_TYPES = ['duel', 'cursed', 'champion', 'guardian', 'boss', 'anvil', 'bazaar', 'sanctum', 'omen', 'treasure', 'mystery', 'secret', 'onward'];
 
 export const okProfile = s => obj(s) && num(s.memories) && Array.isArray(s.codex) && Array.isArray(s.forgers) && Array.isArray(s.bought);
 
