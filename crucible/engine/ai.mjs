@@ -99,6 +99,7 @@ export function bestPlay(db, view, level, policy = {}) {
     if (ontoM && plan.tableLost) cost += ontoM.ea;
     if (plan.isMonster) {
       if (!(plan.onTable || plan.tableLost || free)) return;
+      if (policy.lone && myCount >= 1 && !(plan.onTable || plan.tableLost)) return; // sim-only: a player who keeps one monster on its side (measures a lone-card duel condition)
       const lift = relicLift(db, view, plan, false);
       const inst = { ...plan.final, ba: (plan.final.ba || 0) + lift[0], bd: (plan.final.bd || 0) + lift[1] };
       const prior = ontoM && plan.onTable ? ontoM.ea : 0;
