@@ -74,7 +74,7 @@ const path = require('path');
       await shot('home-saved'); await audit('home with a saved run');
       if (!(await click('[data-a="resume"]'))) errors.push('no Continue button for the saved run');
     } else {
-    if (run === 0 && process.env.LABS) { for (const k of process.env.LABS.split(',')) await click('[data-a="lab:' + k + '"]'); await shot('home-labs'); }
+    if (run === 0 && process.env.LABS) { for (const k of process.env.LABS.split(',')) { if (!(await click('[data-a="lab:' + k + '"]'))) errors.push('no Lab switch on the home screen for ' + k); else if (!(await has('[data-a="lab:' + k + '"].on'))) errors.push('the Lab switch ' + k + ' did not turn on'); } await shot('home-labs'); }
     await shot('home'); await click('[data-a="new"]'); await shot('forger');
     if (process.env.HEAT) { if (!(await click('[data-a="heat:' + process.env.HEAT + '"]:not([disabled])'))) errors.push('Heat ' + process.env.HEAT + ' is not open'); await shot('forger-heat'); if (await click('[data-a^="heatinfo:"]')) { await shot('heat-rules'); await click('[data-a="closeov"]'); } }
     const owned = await page.locator('.ch[data-a^="forger:"]').count(); if (owned > 1) { await page.locator('.ch[data-a^="forger:"]').nth(run % owned).click({ force: true }); clicks++; }
