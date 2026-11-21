@@ -318,6 +318,22 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     const d = await page.evaluate(() => { const c = window.LM.db.config; return { eq: !!c.equipKinds, builds: c.runBuilds, free: c.freeCast, traps: c.kitTraps }; });
     check('turning the depth set off turns them off again', !d.eq && !d.builds && !d.free && !d.traps && !(await has('[data-a="lab:equips"].on')), d); }
 
+  // New table look (Lab switch "table", a preview of 21 November 2026): display only, applies at once to a run in progress.
+  { const duel = read(pickFile(/^duel-regular-f1-h0/)); await open(duel);
+    const lay = () => page.evaluate(() => { const r = s => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null; }, vis = s => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== 'none'; };
+      const who = r('.top .who'), rules = r('.rules'), tray = r('.hand'), slots = [...document.querySelectorAll('.board .slot')].map(e => e.getBoundingClientRect());
+      return { look: !!document.querySelector('.duel.look2'), bar: vis('.who .lpbar'), backs: vis('.who .backs') ? document.querySelectorAll('.top .who .backs u').length : -1, hand: +((document.querySelector('.top .who small') || {}).textContent || '').replace(/^Hand (\d+).*/, '$1'),
+        clear: slots.length >= 6 && slots.every(b => b.left >= who.right - 1 && b.right <= rules.left + 1 && b.top >= -1 && b.bottom <= tray.top + 1), n: slots.length }; });
+    await resume(); const off = await lay();
+    check('without the switch the duel table is drawn as before', !off.look && !off.bar && off.backs === -1 && off.clear, off);
+    await tap('[data-a="quit"]'); await page.reload(); await page.waitForTimeout(350);
+    await tap('[data-a="lab:table"]'); check('the New table look switch is on the home screen and turns on', (await has('[data-a="lab:table"].on')) && (await ls(K.labs)).table === true);
+    await resume(); const on1 = await lay();
+    check('with it on, a run already in progress shows the tilted board, life bars and the rival hand as card backs', on1.look && on1.bar && on1.backs === Math.min(on1.hand, 7), on1);
+    check('and every zone of the tilted board stays clear of the side panels and the hand', on1.clear, on1);
+    const before = JSON.stringify(await ls(K.run)); await page.reload(); await page.waitForTimeout(350);
+    check('the switch changes nothing in the saved run', JSON.stringify(await ls(K.run)) === before && (await page.evaluate(() => JSON.stringify(window.LM.db.config))) === (await page.evaluate(() => { const c = window.LM.db.config; return JSON.stringify(c); }))); }
+
   check('no page errors anywhere', errors.length === 0, errors);
   console.log(`save checks at ${W}x${H}: ${passed} passed, ${failed} failed`);
   await browser.close(); process.exit(failed ? 1 : 0);

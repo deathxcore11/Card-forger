@@ -293,3 +293,29 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 #app.phone .cxgrid { grid-template-columns: repeat(9, 1fr); } #app.phone .cxgrid > p { grid-column: 1 / -1; }
 #app.phone .insp { gap: 1.4em; } #app.phone .c.big { font-size: 2em; }
 #app.phone .rankbig { font-size: 4.5em; }
+
+/* ---- New table look (Lab switch "table", a preview): a tilted stone board, life bars, the rival's hand as card backs. Display only. ---- */
+.lpbar, .backs, .pface { display: none; }
+.duel.look2::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 62% 58% at 50% 40%, rgba(255, 190, 110, .10), rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, .62) 100%); }
+.duel.look2 .board { transform: perspective(64em) rotateX(15deg); transform-origin: 50% 100%; }
+.duel.look2 .who, .duel.look2 .rules, .duel.look2 .logbox { z-index: 2; }
+.duel.look2 .board::before { content: ''; position: absolute; inset: -.9em -1.3em -.9em; z-index: -1; border-radius: 1.3em; background: linear-gradient(rgba(34, 20, 8, .30), rgba(14, 8, 4, .52)), url(art/sand.webp) center/26em; border: .16em solid rgba(233, 196, 106, .55); box-shadow: 0 1.6em 3.2em rgba(0, 0, 0, .75), inset 0 0 0 .45em rgba(20, 12, 6, .55), inset 0 0 0 .55em rgba(233, 196, 106, .22), inset 0 0 4em rgba(0, 0, 0, .6); }
+.duel.look2 .slot { background-color: rgba(10, 6, 3, .38); border-color: rgba(233, 196, 106, .3); box-shadow: inset 0 0 1.2em rgba(0, 0, 0, .6); }
+.duel.look2 .slot .c { box-shadow: 0 .7em 1em rgba(0, 0, 0, .65); }
+.duel.look2 .slot.ready .c { box-shadow: 0 0 0 .14em #4aa8ff, 0 0 .9em rgba(74, 168, 255, .6), 0 .7em 1em rgba(0, 0, 0, .65); }
+.duel.look2 .tslot { background: linear-gradient(rgba(10, 6, 3, .62), rgba(10, 6, 3, .62)), url(art/zone-st.webp) center/auto 86% no-repeat; border: 1px solid rgba(233, 196, 106, .2); }
+.duel.look2 .terrain { background: linear-gradient(90deg, transparent, rgba(233, 196, 106, .16) 20%, rgba(0, 0, 0, .6) 50%, rgba(233, 196, 106, .16) 80%, transparent); border-top: 1px solid rgba(233, 196, 106, .35); border-bottom: 1px solid rgba(233, 196, 106, .35); color: var(--ink); }
+.duel.look2 .who { background: linear-gradient(160deg, rgba(60, 40, 20, .55), rgba(12, 8, 5, .78)); border-color: rgba(233, 196, 106, .55); }
+.duel.look2 .who .lpbar { display: block; height: .5em; margin: .25em 0 .45em; border-radius: .3em; background: rgba(0, 0, 0, .6); border: 1px solid rgba(233, 196, 106, .4); overflow: hidden; }
+.duel.look2 .who .lpbar i { display: block; height: 100%; background: linear-gradient(90deg, #b8862f, #f4d47c); transition: width .5s ease; }
+.duel.look2 .top .who .lpbar i { background: linear-gradient(90deg, #8f2a1c, #ff7a5a); }
+.duel.look2 .who .backs { display: flex; gap: .22em; margin-top: .45em; height: 2.5em; }
+.duel.look2 .who .backs u { width: 1.75em; height: 2.45em; border-radius: .2em; background: url(art/cardback.webp) center/cover; border: 1px solid rgba(233, 196, 106, .5); box-shadow: 0 .15em .3em rgba(0, 0, 0, .6); }
+.duel.look2 .who .pface { display: block; position: absolute; right: .5em; top: .5em; width: 4.2em; height: 4.2em; object-fit: cover; object-position: 50% 18%; border-radius: 50%; border: .14em solid rgba(233, 196, 106, .7); box-shadow: 0 .2em .6em rgba(0, 0, 0, .7); }
+.duel.look2 .logbox:empty { display: none; }
+.duel.look2 .actions { background: linear-gradient(160deg, rgba(60, 40, 20, .5), rgba(12, 8, 5, .8)); border-color: rgba(233, 196, 106, .5); }
+.duel.look2 .hs { border-style: solid; border-color: rgba(233, 196, 106, .22); background: rgba(10, 6, 3, .45); box-shadow: inset 0 0 1em rgba(0, 0, 0, .6); }
+#app.phone .duel.look2 .board { transform: perspective(52em) rotateX(12deg); }
+#app.phone .duel.look2 .board::before { inset: -.5em -.8em -.5em; border-radius: .9em; }
+#app.phone .duel.look2 .who .backs { height: 2em; margin-top: .3em; } #app.phone .duel.look2 .who .backs u { width: 1.4em; height: 1.95em; }
+#app.phone .duel.look2 .who .pface { width: 3.4em; height: 3.4em; }

@@ -10,7 +10,7 @@ export const LAB_DEFAULTS = { five: true, lean: true, heat: true, kits: true, it
 
 // The order the home screen shows the switches in. A switch with words in the page but no place here is shown last,
 // so a new switch can never be left off the screen (Equips that differ and Two builds a run were, in Versions 30 and 31).
-export const LAB_ORDER = ['depth', 'equips', 'builds', 'trap', 'five', 'lean', 'heat', 'allHeat', 'kits', 'items', 'early', 'long', 'links', 'lone', 'veilSet', 'styles', 'free', 'solo', 'tombStart'];
+export const LAB_ORDER = ['depth', 'equips', 'builds', 'trap', 'five', 'lean', 'heat', 'allHeat', 'kits', 'items', 'early', 'long', 'links', 'lone', 'veilSet', 'styles', 'free', 'solo', 'tombStart', 'table'];
 // The depth set (switch `depth`): the three strategy pieces measured together.
 export const DEPTH_SET = ['equips', 'builds', 'trap'];
 
