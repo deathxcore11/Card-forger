@@ -28,6 +28,7 @@ const SETS = {
   bible: { drawPerTurn: 0, heatRules: 1, rivalStyles: 1, labPool: LABPOOL },
   depth: { ...FIVE, simCut: 1, giftFirstXp: 10, leanOffers: 2, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, freeCast: 'lone', freeCastRival: 'boss' },
   loneAll: { ...FIVE, leanOffers: 2, freeCast: 'lone', rivalStyles: 1, soloArrival: 1, forgerTune: { veilSet: 2 }, trackFx: 1 },
+  equips: { ...FIVE, bossBandBy: { kiln_warden: -350 }, leanOffers: 1, giftRerolls: 1, heatRules: 1, kitTune: 1, itemTune: 1, equipKinds: { fit: 800, off: 300, edge: [800, 0], ward: [0, 1000] }, trackFx: 1 }, // the page defaults with Equips that differ
 };
 const DUELS = +process.argv[2] || 300, RUNS = +process.argv[3] || 60, SEED0 = +process.argv[4] || 1;
 const relicIds = [...Object.keys(RELICS), ...Object.keys(LAB)];
