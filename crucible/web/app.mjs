@@ -1586,7 +1586,8 @@ function setMats() {
 function drawConsole(screen) {
   app.classList.add('ps'); app.classList.remove('phone', 'era'); document.body.classList.add('ps'); fitConsole(app); setMats(); // the frame's size first: the screen is laid out for it
   const r = G.run;
-  app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
+  // the save bar and a short message take the text bar's place and width in this frame (the bar: 40 pixels at its foot, between the pillars)
+  app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar" style="width:${F.W - 192}px"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast" style="top:${F.H - 40}px;width:${F.W - 192}px">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home'; app.dataset.room = '';
   if (document.getElementById('prop')) { propTextures(); propPaint(); }
   if (document.getElementById('forge')) { propTextures(); convertSheets(40); forgePaint(); }
@@ -1769,7 +1770,7 @@ function tapped(ev) {
     case 'speed': G.fast = !G.fast; render(); break;
     // duel
     case 'hand': { if (G.playing || !r.duel || r.duel.active !== 0 || r.duel.pending) break; if (r.duel.played || r.duel.attacked) { G.inspect = r.duel.hand[0][n]; render(); break; } G.attacker = null; G.aim = null; const k = G.sel.indexOf(n); if (k >= 0) G.sel.splice(k, 1); else G.sel.push(n); render(); break; }
-    case 'mine': { if (G.sel.length) { toast('Finish or undo your card pick first.'); break; } if (G.attacker === n) { G.attacker = null; G.onto = n; } else if (G.onto === n) { G.onto = null; if (r.duel) G.inspect = viewFor(r.duel, db, 0).mon[0][n]; } else { G.attacker = n; G.onto = null; } render(); break; }
+    case 'mine': { if (G.sel.length) { toast('Finish or undo your card pick first.'); render(); break; } if (G.attacker === n) { G.attacker = null; G.onto = n; } else if (G.onto === n) { G.onto = null; if (r.duel) G.inspect = viewFor(r.duel, db, 0).mon[0][n]; } else { G.attacker = n; G.onto = null; } render(); break; }
     case 'hit': duel({ t: 'attack', from: G.attacker, to: n }); break;
     case 'pos': duel({ t: 'pos', zone: G.attacker }); break;
     case 'undo': G.sel = []; G.attacker = null; G.onto = null; G.aim = null; render(); break;

@@ -208,9 +208,9 @@ body.ps { background: #000; }
 #app.ps .soundslot input[type=checkbox]:checked { background: var(--gl); box-shadow: inset 0 0 0 2px var(--sh) !important; }
 
 /* the page refuses a move, a save failed, a short message */
-#app.ps .savebar { position: absolute; left: 96px; top: 0; width: 320px; z-index: 50; padding: 4px 6px; background: var(--rust); color: var(--ink); font: 8px/10px 'LM Label', monospace; animation: pslit 2s steps(1) infinite; }
+#app.ps .savebar { position: absolute; left: 96px; top: 0; z-index: 50; padding: 4px 6px; background: var(--rust); color: var(--ink); font: 8px/10px 'LM Label', monospace; animation: pslit 2s steps(1) infinite; }
 #app.ps .savebar button { font: 8px/8px 'LM Label', monospace; margin-left: 6px; }
-#app.ps .toast { position: absolute; left: 96px; top: 200px; right: auto; bottom: auto; transform: none; width: 320px; height: 40px; font-size: 16px; line-height: 16px; border-radius: 0; box-shadow: none; z-index: 48; padding: 4px 6px; background: repeating-conic-gradient(var(--plum) 0 25%, #26101a 0 50%) 0 0 / 2px 2px; border: 1px solid var(--gold); color: var(--ink); pointer-events: none; overflow: hidden; }
+#app.ps .toast { position: absolute; left: 96px; right: auto; bottom: auto; transform: none; height: 40px; font-size: 16px; line-height: 16px; border-radius: 0; box-shadow: none; z-index: 48; padding: 4px 6px; background: repeating-conic-gradient(var(--plum) 0 25%, #26101a 0 50%) 0 0 / 2px 2px; border: 1px solid var(--gold); color: var(--ink); pointer-events: none; overflow: hidden; }
 #app.ps .toast:empty { display: none; }
 
 #app.ps .float { position: absolute; left: 0; top: -10px; font: 8px/8px 'LM Label', monospace; color: #f08a72; pointer-events: none; animation: psfloat .9s steps(6) forwards; margin: 0; white-space: nowrap; }
