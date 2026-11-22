@@ -96,43 +96,41 @@ internal fun MatchBottom(st: MatchState, hand: List<Card>, lifted: Card?, gold: 
         }
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val h = maxHeight
-            if (shown == "stack") StackView(st, gold, onInspect) { zone = "hand" }
-            else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // The Thor desk (approved mock-up, 21 Nov): the stage on top always shows a real card with its art (the hand card under the
+            // ring, or what is on the stack), the hand lies under it. Both bands keep their size in every state.
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val answers = if (shown == "hand" && tablePick && st.inputType == "InputSelectTargets") bottomAnswers(st) else emptyList()
+                val reading = if (shown == "hand") bottomReading(st, live, hand, lifted, carried, ask, canPlay, why, ringed) else null
+                val boxes = reading?.card?.let { keywordBoxes(it) }.orEmpty()
+                val stageH = h * BOTTOM_PANEL_SHARE
+                Box(Modifier.fillMaxWidth().height(stageH)) {
+                    if (shown == "stack") DeskStack(st, hand, canPlay, gold?.run?.let { run -> { StackGold(gold.label, run) } }, onInspect)
+                    else Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        reading?.let { r ->
+                            // The whole card, large, in a light of its tone; the glass panel beside it reads it.
+                            DeskCard(r.card.name, r.card.id, stageH, deskReadingGlow(r.tone), Modifier.anchorRect("b.card"), onTap = { onInspect(r.card) })
+                            ReadingPanel(r, Modifier.weight(1f).fillMaxHeight().anchorRect("b.read"), boxes)
+                        }
+                        if (answers.isNotEmpty() || (tablePick && onCancel != null)) AnswerList(answers, onAnswer, if (tablePick) onCancel else null, Modifier.weight(.8f).anchorRect("b.answers"))
+                    }
+                }
                 BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
-                    // As big as the room allows: the height, then the width shared by the cards with a generous overlap. The size eases as
-                    // cards come and go, so the fan breathes instead of jumping.
-                    val n = hand.size.coerceAtLeast(1)
-                    // HandFan sets each card 2*t*t dp lower toward the ends and tilts it about its foot, below its own box (U15: the right-hand
-                    // cards touched the hint bar). Keep that sag plus a margin clear, so every card stays whole above the bar.
-                    // The player's hand patch (Thor): the sag is one fixed number (HandFan caps the arc to [BOTTOM_SAG]), so the card size
-                    // never depends on how many cards are held.
-                    val sagA = BOTTOM_SAG
-                    // 0.4.59 T7: a lifted card does not grow here (the cards are already full size); it rises [BOTTOM_LIFT] with a thicker ring.
-                    val target = bottomCardW(maxHeight, maxWidth, n)
+                    // The player's hand patch (Thor): one fixed sag (HandFan caps the arc to [BOTTOM_SAG]) and one card size whatever the
+                    // hand holds. 0.4.59 T7: a lifted card does not grow here; it rises [BOTTOM_LIFT] with a thicker ring.
+                    val target = bottomCardW(maxHeight, maxWidth, hand.size.coerceAtLeast(1))
                     val cardW by androidx.compose.animation.core.animateDpAsState(target, androidx.compose.animation.core.spring(dampingRatio = .9f, stiffness = 220f), label = "fan")
-                    if (hand.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(bottom = 4.dp + sagA).then(if (tablePick) Modifier.askDim() else Modifier).anchorRect("b.hand")) {
+                    if (hand.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(bottom = 4.dp + BOTTOM_SAG).then(if (tablePick) Modifier.askDim() else Modifier).anchorRect("b.hand")) {
                         fan(cardW)
                         if (tablePick) Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } })
                     }
-                }
-                // 0.4.59 T7: under the hand, one glass panel reads the card that matters now (bottomReading).
-                // While you pick on the table the reading sits left and the answers right ("Answer here or on the table").
-                val answers = if (tablePick && st.inputType == "InputSelectTargets") bottomAnswers(st) else emptyList()
-                val reading = bottomReading(st, live, hand, lifted, carried, ask, canPlay, why, ringed)
-                // 0.4.60 G5: a card on the battlefield is read with its keyword boxes (G4's), which take the panel's spare room.
-                val boxes = reading?.card?.takeIf { it.zone == "Battlefield" }?.let { keywordBoxes(it) }.orEmpty()
-                // The hand only dims while it asks, so the answers may take half the room: four buttons and Cancel, whole, no scrolling.
-                // G5: with keyword boxes the panel may take most of the screen (the fan sizes itself to what is left, as in the preview).
-                Row(Modifier.fillMaxWidth().height(h * BOTTOM_PANEL_SHARE), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    reading?.let { r ->
-                        ReadingPanel(r, Modifier.weight(1f).anchorRect("b.read"), boxes)
-                    }
-                    if (answers.isNotEmpty() || (tablePick && onCancel != null)) AnswerList(answers, onAnswer, if (tablePick) onCancel else null, Modifier.weight(.8f).anchorRect("b.answers"))
                 }
             }
         }
     }
 }
+
+/** The light behind the stage's card: gold when you can play it, the question's orange while it asks, ice otherwise. */
+internal fun deskReadingGlow(tone: Reading.Tone): Color = when (tone) { Reading.Tone.OK -> DESK_GOLD; Reading.Tone.ASK -> Color(0xFFFF9D4D); else -> DESK_ICE }
 
 /** One legal target the bottom screen offers as a button: a card (with its art) or a player. Tapping it is tapping that target on top. */
 internal data class Answer(val card: Card?, val player: Int?, val label: String, val pt: String?, val chosen: Boolean)
@@ -186,7 +184,7 @@ internal data class Reading(val tag: String, val card: Card, val status: String?
 internal val BOTTOM_LIFT = 6.dp
 /** The player's hand patch: the bottom screen's bands never change size. The reading panel is always this share of the room (what it
  *  holds scrolls inside it), the hand takes the rest, and the arc's total drop is [BOTTOM_SAG] whatever the hand holds. */
-internal const val BOTTOM_PANEL_SHARE = .5f
+internal const val BOTTOM_PANEL_SHARE = .56f
 internal val BOTTOM_SAG = 18.dp
 /**
  * The hand's card width on the bottom screen in a hand band of [bandH] x [bandW] holding [n] cards. It depends on the band's height
@@ -246,10 +244,8 @@ internal fun ReadingPanel(r: Reading, modifier: Modifier, boxes: List<KeywordBox
         Text(c.type + if (c.power != null && c.toughness != null) "  ·  ${c.power}/${c.toughness}" else "", style = small(12f, Site.Muted, FontWeight.Bold))
         // {1}{W} and {T} draw as their symbols, as on the card page (SymText), never as raw braces.
         if (c.text.isNotBlank()) SymText(c.text, TextStyle(fontFamily = Site.Manrope, fontSize = 13.5f.sp, lineHeight = 19.sp, color = Color(0xFFE4E7EA)))
-        r.status?.let { line ->
-            val col = when (r.tone) { Reading.Tone.ASK -> Color(0xFFFF9D4D); Reading.Tone.STACK -> Site.Gold; Reading.Tone.NO -> Color(0xFFFF6A4A); else -> Color(0xFF5CC8FF) }
-            Text(line, Modifier.anchorRect("b.status"), style = small(12.5f, col, FontWeight.ExtraBold))
-        }
+        // One ribbon says whether you can play it (gold), cannot yet (steel) or what it waits for; the table's own words.
+        r.status?.let { line -> DeskRibbon(line, r.tone, Modifier.padding(top = 2.dp).anchorRect("b.status")) }
         // 0.4.60 G5: the card's keyword boxes (G4's: the tile's icon, Forge's name, the KEYWORD_HINTS sentence), two to a row.
         if (boxes.isNotEmpty()) KeywordBoxes(c, boxes, Modifier.fillMaxWidth().padding(top = 4.dp), prefix = "b.read", columns = 2, fill = Color(0x0DFFFFFF))
     }
@@ -289,40 +285,12 @@ internal fun bottomWords(st: MatchState, live: Boolean, hand: List<Card>, lifted
     return hand.firstOrNull()?.let { BottomWords.Words(it) } ?: BottomWords.Line("Your hand is empty.")
 }
 
+/** The table's gold button while the stack is on the desk (X on a controller); the bar under it does not say "X Resolve" a second time. */
 @Composable
-private fun StackView(st: MatchState, gold: PadAct?, onInspect: (Card) -> Unit, onRespond: () -> Unit) {
-    // The gold button below prints its own X, so the bar under it does not say "X Resolve" a second time.
+private fun StackGold(label: String, run: () -> Unit) {
     val owner = remember { Any() }
-    val goldShown = gold?.run != null
-    androidx.compose.runtime.DisposableEffect(owner, goldShown) {
-        if (goldShown) DualScreen.shownKeys[owner] = setOf("X")
-        onDispose { DualScreen.shownKeys.remove(owner) }
-    }
-    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Column(Modifier.weight(1.25f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            // Newest first, as it will resolve: the top item large, the older ones stepped behind it.
-            st.stack.asReversed().forEachIndexed { i, s ->
-                val top = i == 0
-                val shape = RoundedCornerShape(12.dp)
-                Column(Modifier.fillMaxWidth().alpha(if (top) 1f else .72f).clip(shape).background(if (top) Color(0x24E8B95B) else Color(0x0DFFFFFF))
-                    .border(1.dp, if (top) Color(0x99E8B95B) else Color(0x1FFFFFFF), shape)
-                    .then(if (s.source != null) Modifier.clickable { onInspect(s.source) } else Modifier).padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(s.source?.name ?: if (s.ability) "Ability" else "Spell", style = TextStyle(fontFamily = Site.Manrope, fontWeight = FontWeight.ExtraBold, fontSize = if (top) 16.sp else 13.sp, color = Site.Text),
-                        maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    // X13: the words wrap to as many lines as the row can have (the list scrolls), never one line with an ellipsis.
-                    Text(s.text, style = small(if (top) 13f else 12f, Color(0xFFE4E7EA)), maxLines = if (top) 10 else 6, overflow = TextOverflow.Ellipsis)
-                    val who = if (s.controller == st.viewer) "Yours" else "Opponent's"
-                    val targets = s.targets.mapNotNull { r -> r.name ?: (if (r.kind == "player") st.players.firstOrNull { it.id == r.id }?.let { if (it.isViewer) "you" else it.name } else st.card(r.id)?.name) }
-                    Text(who + if (targets.isNotEmpty()) " · targets ${targets.joinToString(", ")}" else "", style = small(11.5f, if (targets.isNotEmpty() && top) Color(0xFFFF8A74) else Site.Muted))
-                }
-            }
-        }
-        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.Bottom)) {
-            Text(if (st.waitingOnMe) "Your priority" else "Waiting", style = small(12f, if (st.waitingOnMe) Site.Gold else Site.Muted))
-            GlassButton("Respond", st.waitingOnMe, onRespond)
-            gold?.run?.let { GoldButton(gold.label, it) }
-        }
-    }
+    androidx.compose.runtime.DisposableEffect(owner) { DualScreen.shownKeys[owner] = setOf("X"); onDispose { DualScreen.shownKeys.remove(owner) } }
+    GoldButton(label, run)
 }
 
 @Composable

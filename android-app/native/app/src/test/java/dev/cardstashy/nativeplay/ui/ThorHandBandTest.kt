@@ -16,7 +16,7 @@ class ThorHandBandTest {
     }
 
     @Test fun theReadingPanelIsOneFixedShareWhateverItReads() {
-        assertEquals(.5f, BOTTOM_PANEL_SHARE)
+        assertEquals(.56f, BOTTOM_PANEL_SHARE)
         assertEquals(44.dp, BOTTOM_RAIL)
     }
 

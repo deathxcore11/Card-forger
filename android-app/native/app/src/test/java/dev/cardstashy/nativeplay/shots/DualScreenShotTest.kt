@@ -62,12 +62,22 @@ class DualScreenShotTest {
             RuntimeEnvironment.setQualifiers(q)
             captureRoboImage(shot("bottom-hand-$size")) {
                 Box(Modifier.fillMaxSize().background(bg)) {
-                    MatchBottom(main, hand, hand.getOrNull(1), PadAct("Pass") {}, { w -> HandFan(hand, w, Modifier.fillMaxWidth(), raised = hand.getOrNull(1)?.id, angleDeg = 1.2f) }, {})
+                    MatchBottom(main, hand, hand.getOrNull(1), PadAct("Pass") {}, { w -> HandFan(hand, w, Modifier.fillMaxWidth(), raised = hand.getOrNull(1)?.id, angleDeg = 1.2f, flatLift = true) }, {})
                 }
             }
             captureRoboImage(shot("bottom-stack-$size")) {
                 Box(Modifier.fillMaxSize().background(bg)) {
-                    MatchBottom(crowded, crowded.me.hand, null, PadAct("Resolve") {}, { w -> HandFan(crowded.me.hand, w, Modifier.fillMaxWidth()) }, {})
+                    MatchBottom(crowded, crowded.me.hand, null, PadAct("Resolve") {}, { w -> HandFan(crowded.me.hand, w, Modifier.fillMaxWidth(), angleDeg = 1.2f, flatLift = true) }, {})
+                }
+            }
+            // The Thor desk showstopper: the CPU's spell arrives as its own card, aimed at one of your creatures; one card in hand can answer.
+            val bolt = (main.me.hand + main.cpu.hand + main.cpu.battlefield).firstOrNull { it.name == "Lightning Bolt" } ?: hand.first()
+            val victim = main.me.battlefield.first { !it.isLand }
+            val spell = main.copy(stack = listOf(dev.cardstashy.nativeplay.engine.StackItem(id = 901, text = "Lightning Bolt (${bolt.id}) - Lightning Bolt deals 3 damage to ${victim.name} (${victim.id}).",
+                source = bolt, controller = main.players.first { !it.isViewer }.id, targets = listOf(dev.cardstashy.nativeplay.engine.Ref("card", victim.id, victim.name)))))
+            captureRoboImage(shot("bottom-spell-$size")) {
+                Box(Modifier.fillMaxSize().background(bg)) {
+                    MatchBottom(spell, hand, null, null, { w -> HandFan(hand, w, Modifier.fillMaxWidth(), angleDeg = 1.2f, flatLift = true) }, {}, canPlay = { it.id == hand.getOrNull(2)?.id })
                 }
             }
             captureRoboImage(shot("bottom-inspect-$size")) {
