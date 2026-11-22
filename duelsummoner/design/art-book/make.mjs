@@ -47,8 +47,8 @@ const meshySteps = (a, tris, pic, glb, textPrompt, plain = true) => ({ text: [
   `2. Upload the picture you just made (${pic}).`,
   `3. Settings: polygons about ${tris.toLocaleString('en')} (pick the lowest setting at or above that; I trim the rest), topology "Triangle", symmetry ${symOf(a)}${a.view === 'biped' ? ', pose "A-pose"' : ''}.`,
   `4. Generate. Pick the result that matches the picture best from every side. Check the back: no holes, no extra limbs, no melted face.`,
-  plain ? `5. Download as GLB twice. First WITH texture: name it ${glb.replace('.glb', '')}. Then WITHOUT texture (plain): name it ${glb.replace('.glb', '-plain')}. Meshy adds .glb itself.` : `5. Download as GLB WITH texture. Name it ${glb.replace('.glb', '')} (Meshy adds .glb itself). No plain copy is needed for this one, because the skeleton copy comes next.`,
-].join('\n'), alt: textPrompt, names: plain ? [glb.replace('.glb', ''), glb.replace('.glb', '-plain')] : undefined });
+  plain ? `5. Download as GLB twice. First the PLAIN model, before texturing: name it ${glb.replace('.glb', '-plain')}. Then texture it and download again WITH texture: name it ${glb.replace('.glb', '')}. Meshy adds .glb itself.` : `5. Download as GLB WITH texture. Name it ${glb.replace('.glb', '')} (Meshy adds .glb itself). No plain copy is needed for this one, because the skeleton copy comes next.`,
+].join('\n'), alt: textPrompt, names: plain ? [glb.replace('.glb', '-plain'), glb.replace('.glb', '')] : undefined });
 const RIG_CLIPS = { person: 'Idle, Walking, Running', enemy: 'Idle, Walking (zombie or slow), Running', boss: 'Idle, Walking (heavy)' };
 const rigSteps = (a, glb) => [
   `1. In Meshy, open the model you just made and choose "Rig" (or "Animate").`,
