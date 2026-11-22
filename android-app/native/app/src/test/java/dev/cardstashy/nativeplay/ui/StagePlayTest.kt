@@ -13,15 +13,15 @@ class StagePlayTest {
     @Test fun quickWithNoDeckOpensQuickPlay() { StageModes.play("quick", null, act); assertEquals(listOf("mode:quick"), log) }
     @Test fun storyOpensStory() { StageModes.play("story", deck, act); assertEquals(listOf("story"), log) }
     @Test fun otherModesOpenTheirScreens() {
-        for (m in listOf("practice", "social", "planeswalk")) StageModes.play(m, deck, act)
-        assertEquals(listOf("mode:practice", "mode:social", "mode:planeswalk"), log)
+        for (m in listOf("practice", "social", "adventures")) StageModes.play(m, deck, act)
+        assertEquals(listOf("mode:practice", "mode:social", "mode:adventures"), log)
     }
     @Test fun shouldersStepAndStopAtTheEnds() {
         assertEquals("practice", StageModes.step("quick", 1)); assertEquals("quick", StageModes.step("quick", -1))
-        assertEquals("planeswalk", StageModes.step("planeswalk", 1)); assertEquals("Friends", StageModes.name("social"))
+        assertEquals("adventures", StageModes.step("adventures", 1)); assertEquals("Friends", StageModes.name("social"))
     }
     @Test fun fiveModesQuickFirst() {
-        assertEquals(listOf("quick", "practice", "social", "story", "planeswalk"), StageModes.ALL.map { it.first })
+        assertEquals(listOf("quick", "practice", "social", "story", "adventures"), StageModes.ALL.map { it.first })
     }
 
     private fun row(id: String, need: Int, have: Int, claimed: Boolean = false, level: String = "easy") =
