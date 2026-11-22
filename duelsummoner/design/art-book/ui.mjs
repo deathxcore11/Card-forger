@@ -156,6 +156,9 @@ export const EFFECTS = [
   FX('FX28', 'Seal crack', 'fx-seal-crack', 6, 'Sealed Chest opening', 'a 6-frame round violet seal plate cracking in more lines each frame until it bursts.'),
   FX('FX29', 'Sand splash', 'fx-sand-splash', 8, 'falling into the gold sand, Abyss Hand', 'an 8-frame splash of gold sand rising in a crown shape and falling back.'),
   FX('FX30', 'Respawn blink', 'fx-blink', 6, 'after a fall', 'a 6-frame vertical violet ring sweeping up a figure outline then vanishing.'),
+  FX('FX31', 'Ley Thread', 'fx-ley-thread', 8, 'thin ribbons of light that drift through the air toward the stage gate, so the player can follow them; crimson, turned gold in code after the gate boss dies', 'an 8-frame long thin horizontal ribbon of light, bright in the middle and fading to nothing at both ends, wavering slightly like a streak of wind, drawn in white so the game can colour it.'),
+  FX('FX32', 'Chest light pillar', 'fx-chest-pillar', 8, 'rises out of a Trophy Chest so it shows from far away; coloured by rarity in code', 'an 8-frame tall narrow column of soft light, wider at the base, with small square sparkles rising inside it, drawn in white so the game can colour it.'),
+  FX('FX33', 'Ace arrival ring', 'fx-ace-ring', 6, 'on the ground where an Ace (elite) enemy appears', 'a 6-frame gold ring seen from above that snaps outward from a point with four small star points on it, then fades.'),
 ];
 
 // ---------------------------------------------------------------- HUD and menu pieces
