@@ -15,7 +15,7 @@ Checked 22 Nov 2026, 6:10 PM ET: duelist-kael-anim.glb, 2,312 triangles, 44-bone
 | Dash (stand-in) | Run_Jump_and_Roll |
 | Defeat | dying_backwards (falling_down and Shot_and_Fall_Backward are spares) |
 
-These are not needed and can be deleted to keep the file small: Lie_Back_Leg_Swing, Fall_from_Bar, Quad_Jump_Left, Walk_Backward_with_Sword_inplace, Jump_and_Grab_Wall, Jump_with_Arms_and_Legs_Open. Fall1 is a skydiving pose, so it doesn't work for a short fall.
+These are not needed and can be deleted to keep the file small: Lie_Back_Leg_Swing, Fall_from_Bar, Walk_Backward_with_Sword_inplace, Jump_and_Grab_Wall. Keep Quad_Jump_Left and Jump_with_Arms_and_Legs_Open for now: the game uses them as stand-ins until strafe_left and air_jump are made. Fall1 is a skydiving pose, so it doesn't work for a short fall.
 
 ## How to make each one
 
