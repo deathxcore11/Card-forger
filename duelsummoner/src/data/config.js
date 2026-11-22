@@ -4,6 +4,9 @@ export const CFG = {
   player: {
     hp: 100, speed: 9, radius: 0.6, height: 1.7, stepUp: 0.55,
     jumpHeight: 2.2,                                   // metres, apex above the take-off point
+    coyote: 0.1,                                       // seconds after walking off a ledge that a jump still counts as a ground jump
+    jumpBuffer: 0.12,                                  // seconds a jump press is remembered before landing, so it fires the moment the feet touch
+    jumpCut: 0.5,                                      // letting go of jump on the way up multiplies the rise speed by this (a short tap is a short hop)
     groundAccel: 16, airAccel: 3,                      // how fast velocity follows input (1/s)
     dashDist: 4, dashTime: 0.15, dashCd: 1.1,          // no damage taken while dashing
     slide: { minStart: 6.5, keepMin: 3.2, max: 22, friction: 2.2, downhill: 34, turn: 1.8, probe: 1.2 }

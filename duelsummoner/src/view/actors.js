@@ -255,7 +255,9 @@ export class Actors {
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);
       lean.rotation.x += (want - lean.rotation.x) * Math.min(1, dt * 12);
       if (!p.grounded) this._pvy = p.vy;
-      if (p.grounded && !this._pg && this._pvy < -5) { ud.squash = 0.16; fx.burst(px, py + 0.1, pz, 8, 0xd8c08a, 2.2, 1.2, 0.22, 0.5, 6); }
+      if (p.grounded && !this._pg && this._pvy < -5) { ud.squash = 0.16; fx.burst(px, py + 0.1, pz, 8, 0xd8c08a, 2.2, 1.2, 0.22, 0.5, 6); if (this._pvy < -9) { fx.shake(Math.min(0.22, -this._pvy * 0.012)); fx.ring(px, py + 0.05, pz, 2.4, 0xd8c08a, 0.3); fx.burst(px, py + 0.1, pz, 14, 0xd8c08a, 3.2, 1.6, 0.3, 0.6, 8); } }       // a heavy landing kicks the camera and throws a ring of dust
+      if (p.dashT > 0 && !this._pd) { fx.shake(0.07); fx.ring(px, py + 0.05, pz, 1.6, 0x9fe8ff, 0.2); }       // dash start
+      this._pd = p.dashT > 0;
       this._pg = p.grounded;
       if (ud.squash > 0) { ud.squash = Math.max(0, ud.squash - dt); const k = ud.squash / 0.16 * 0.28; lean.scale.set(1 + k * 0.5, 1 - k, 1 + k * 0.5); } else if (lean.scale.y !== 1) lean.scale.set(1, 1, 1);
       if (p.dashT > 0) for (let k = 0; k < 2; k++) fx.spark(px + (Math.random() - 0.5) * 0.4, py + 0.4 + Math.random() * 1.0, pz + (Math.random() - 0.5) * 0.4, 0, 0.3, 0, 0x9fe8ff, 0.4, 0.3);

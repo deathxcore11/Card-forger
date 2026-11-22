@@ -69,9 +69,13 @@ export function updatePlayer(g, dt, cmd) {
   if (p.grounded) {
     if (h > p.y || p.y - h <= 0.5) p.y = h; else p.grounded = false;
   }
-  if (p.grounded) p.airUsed = 0;
-  if (cmd.jump && p.grounded) { p.vy = jumpV; p.grounded = false; p.sliding = false; }
-  else if (cmd.jump && !p.jumpWas && !p.grounded && (p.airUsed || 0) < g.mods.airJumps) { p.vy = jumpV; p.airUsed = (p.airUsed || 0) + 1; }
+  if (p.grounded) { p.airUsed = 0; p.coyote = C.coyote; } else p.coyote = Math.max(0, (p.coyote || 0) - dt);
+  const press = !!cmd.jump && !p.jumpWas;
+  p.jumpBuf = press ? C.jumpBuffer : Math.max(0, (p.jumpBuf || 0) - dt);
+  if ((cmd.jump && p.grounded) || (p.jumpBuf > 0 && (p.grounded || p.coyote > 0))) { p.vy = jumpV; p.grounded = false; p.sliding = false; p.coyote = 0; p.jumpBuf = 0; p.canCut = true; }
+  else if (press && !p.grounded && (p.airUsed || 0) < g.mods.airJumps) { p.vy = jumpV; p.airUsed = (p.airUsed || 0) + 1; p.canCut = true; }
+  if (!cmd.jump && p.canCut && p.vy > 0) { p.vy *= C.jumpCut; p.canCut = false; }                 // variable jump height
+  if (p.vy <= 0) p.canCut = false;
   p.jumpWas = !!cmd.jump;
   if (!p.grounded) {
     p.y += p.vy * dt - 0.5 * CFG.gravity * dt * dt; p.vy -= CFG.gravity * dt;   // exact for constant gravity
