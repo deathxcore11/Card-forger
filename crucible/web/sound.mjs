@@ -6,6 +6,10 @@
 //  - Files load on first use (a small core set is warmed after the first tap); one music track is decoded at a time.
 //  - Its own settings (master, effects, music, ambience, mute) under its own storage key; nothing else in CardStashy is touched.
 //  - Any missing or broken file is skipped silently; the game never waits on audio.
+// 1998 studio direction (22 Nov 2026): rooms hum (a bed per room, floors two and three lower and emptier); Life Points count with
+// a soft tick per 100; the duel theme's drum stem fades in only when the duel is close; two seconds of near silence come before
+// a guardian speaks or the hidden door appears; and a danger tell (stone being scraped smooth) rises with the fog, which the page
+// works out from Heat and lost Sparks.
 const KEY = 'lm-audio-v1';
 const BASE = new URL('audio/', document.baseURI); // the page is one bundled script, so import.meta.url is not there to use
 const DEF = { master: 0.8, sfx: 0.9, music: 0.55, amb: 0.5, muted: false };
@@ -25,6 +29,8 @@ function ctx() {
   const g = n => { const x = AC.createGain(); x.connect(n); return x; };
   const comp = AC.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 4; comp.attack.value = .003; comp.release.value = .15; comp.connect(AC.destination);
   bus.master = g(comp); bus.sfx = g(bus.master); bus.music = g(bus.master); bus.amb = g(bus.master);
+  bus.duck = g(bus.master); bus.music.disconnect(); bus.amb.disconnect(); bus.music.connect(bus.duck); bus.amb.connect(bus.duck); // beds pass through one duck for the silences
+  bus.tell = g(bus.amb); bus.tell.gain.value = 0;
   apply();
   const a = new Audio(); EXT = a.canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'mp3'; // the batch ships .ogg and .mp3
   return AC;
@@ -61,8 +67,9 @@ async function loadAB(id) {
   const p = (async () => {
     try {
       const m = (await manifest())[id]; if (!m || !ctx()) return null;
-      const data = await _fetchAB(new URL(`${m.file}.${EXT}`, BASE));
-      const b = await new Promise((ok, no) => { const pr = AC.decodeAudioData(data, ok, no); if (pr && pr.catch) pr.catch(no); }).catch(() => null); // decodeAudioData also returns a promise: left alone, a broken file is an unhandled rejection on the page
+      const dec = data => new Promise((ok, no) => { const pr = AC.decodeAudioData(data, ok, no); if (pr && pr.catch) pr.catch(no); }).catch(() => null); // decodeAudioData also returns a promise: left alone, a broken file is an unhandled rejection on the page
+      let b = await _fetchAB(new URL(`${m.file}.${EXT}`, BASE)).then(dec).catch(() => null);
+      if (!b && EXT !== 'mp3') b = await _fetchAB(new URL(`${m.file}.mp3`, BASE)).then(dec).catch(() => null);   // every sound also ships as .mp3: one bad .ogg (or a filter that blocks it) costs nothing
       if (b) buf.set(id, b); return b;
     } catch { return null; } finally { loading.delete(id); }
   })();
@@ -76,52 +83,92 @@ function play(id, o = {}) {
   if (now - (last.get(id) || 0) < gap) return; last.set(id, now);
   log.push({ t: Math.round(now), id }); if (log.length > 200) log.shift();
   loadAB(id).then(b => {
-    if (!b || voices >= MAXV) return;
+    if (!b || (!o.free && voices >= MAXV)) return;   // free: tiny scheduled ticks that must not use up the voice budget
     const s = AC.createBufferSource(); s.buffer = b; if (o.rate) s.playbackRate.value = o.rate;
     const g = AC.createGain(); g.gain.value = o.gain ?? 1; s.connect(g); g.connect(o.bus || bus.sfx);
-    voices++; s.onended = () => { voices--; g.disconnect(); };
+    if (!o.free) voices++; s.onended = () => { if (!o.free) voices--; g.disconnect(); };
     s.start(AC.currentTime + (o.delay || 0) / 1000);
   });
 }
 const pick = (base, n) => { const i = ((rot.get(base) || 0) + 1) % n; rot.set(base, i); return `${base}_${'abcde'[i]}`; };
 
 // ---------- beds: ambience and music, one of each at a time, crossfaded ----------
-const beds = { amb: null, music: null }, wanted = { amb: null, music: null };
-async function bed(kind, id, fade = 1.5) {
-  wanted[kind] = id || null;
-  const cur = beds[kind];
-  if ((cur && cur.id) === id) return;
-  if (cur) { const g = cur.g; try { g.gain.setTargetAtTime(0, AC.currentTime, fade / 4); setTimeout(() => { try { cur.s.stop(); g.disconnect(); } catch { } if (kind === 'music') buf.delete(cur.id); }, fade * 1500); } catch { } }
-  beds[kind] = id ? { id } : null;
-  if (!id || !ctx()) return;
-  const b = await loadAB(id);
-  if (!b) { if (beds[kind] && beds[kind].id === id && !beds[kind].s) beds[kind] = null; return; }   // failed load: free the slot so the next visit retries
-  if (beds[kind]?.id !== id) return;
+// A bed may carry a layer that runs in lockstep (the duel theme's drum stem): both start at the same instant with the same loop
+// points, and the layer's own gain is turned up only when the duel is close.
+const LAYER = { mus_duel: 'mus_duel_drums' };
+const beds = { amb: null, music: null, tell: null }, wanted = { amb: null, music: null, tell: null };
+function source(id, b, out, at) {
   const m = (MAN || {})[id] || {}; const s = AC.createBufferSource(); s.buffer = b; s.loop = true;
   if (m.loop) { s.loopStart = m.loop[0]; s.loopEnd = Math.min(m.loop[1], b.duration); }
-  const g = AC.createGain(); g.gain.value = 0; s.connect(g); g.connect(bus[kind]); s.start();
-  g.gain.setTargetAtTime(1, AC.currentTime, fade / 4);
-  beds[kind] = { id, s, g };
+  const g = AC.createGain(); g.gain.value = 0; s.connect(g); g.connect(out); s.start(at, m.loop ? m.loop[0] : 0); return { s, g };
+}
+async function bed(kind, id, fade = 1.5, level = 1) {
+  wanted[kind] = id || null;
+  const cur = beds[kind];
+  if ((cur && cur.id) === id) { if (cur && cur.g && cur.level !== level) { cur.level = level; cur.g.gain.setTargetAtTime(level, AC.currentTime, fade / 3); } return; }
+  if (cur) {
+    const parts = [cur, cur.layer].filter(x => x && x.g);
+    for (const x of parts) { try { x.g.gain.setTargetAtTime(0, AC.currentTime, fade / 4); } catch { } }
+    setTimeout(() => { for (const x of parts) { try { x.s.stop(); x.g.disconnect(); } catch { } } if (kind === 'music') { buf.delete(cur.id); if (cur.layer) buf.delete(cur.layer.id); } }, fade * 1500);
+  }
+  beds[kind] = id ? { id } : null;
+  if (!id || !ctx()) return;
+  const lid = kind === 'music' ? LAYER[id] : null;
+  const [b, lb] = await Promise.all([loadAB(id), lid ? loadAB(lid) : null]);
+  if (!b) { if (beds[kind] && beds[kind].id === id && !beds[kind].s) beds[kind] = null; return; }   // failed load: free the slot so the next visit retries
+  if (beds[kind]?.id !== id) return;
+  const at = AC.currentTime + .05, main = source(id, b, kind === 'tell' ? bus.tell : bus[kind], at);
+  main.g.gain.setTargetAtTime(level, at, fade / 4);
+  const it = { id, ...main, level };
+  if (lb) { it.layer = { id: lid, ...source(lid, lb, bus.music, at) }; if (st.close) it.layer.g.gain.setTargetAtTime(DRUMS, at, 1); }
+  beds[kind] = it;
+}
+// The close-duel drums. "Close" means someone is within one good hit of losing: 2000 Life Points or less on either side.
+const DRUMS = .85;
+function closeness(view) {
+  const lp = view && view.lp; if (!lp) return;
+  const close = Math.min(lp[0], lp[1]) <= 2000 && Math.min(lp[0], lp[1]) > 0;
+  if (close === st.close) return; st.close = close;
+  const L = beds.music && beds.music.layer; if (L && L.g) L.g.gain.setTargetAtTime(close ? DRUMS : 0, AC.currentTime, close ? 1.2 : 2.5);
+}
+// Silence as a tool: everything under the effects falls to a whisper, then the moment plays, then the room comes back.
+function hush(then, ms = 2000) {
+  if (!ctx()) return then();
+  const t = AC.currentTime; bus.duck.gain.cancelScheduledValues(t); bus.duck.gain.setTargetAtTime(.04, t, .12);
+  setTimeout(() => { then(); const u = AC.currentTime; bus.duck.gain.setTargetAtTime(1, u + 2.5, 1.2); }, ms);
+}
+// The danger tell: stone being scraped smooth, a record being wiped. It follows the page's fog (Heat and lost Sparks), never static.
+function tell(name, d) {
+  const runScreen = !['home', 'forger', 'vault', 'codex', 'feats', 'over'].includes(name);
+  let k = d && typeof d.fog === 'number' ? d.fog : d && typeof d.floor === 'number' ? d.floor * .25 : 0;
+  if (d && typeof d.sparks === 'number' && d.sparksMax) k = Math.max(k, (1 - d.sparks / d.sparksMax) * .8);
+  const lvl = runScreen && k > .15 ? Math.min(1, Math.pow((k - .15) / .85, 1.3)) * (name === 'duel' ? .6 : 1) : 0;
+  if (lvl > 0) bed('tell', 'tell_erase', 3); if (AC && bus.tell) bus.tell.gain.setTargetAtTime(lvl, AC.currentTime, 2.5);
+  if (!lvl && beds.tell) setTimeout(() => { if (bus.tell && bus.tell.gain.value < .01) bed('tell', null, 1); }, 8000);
 }
 
 // ---------- state the cues need ----------
-const st = { screen: null, lastDoor: null, lowWarned: false, pending: null, lastVerb: null, tier: null, music: {} };
+const st = { screen: null, lastDoor: null, lowWarned: false, pending: null, lastVerb: null, tier: null, music: {}, close: false, fast: false, floor: 0 };
 // Music per screen: filled with draft themes as they are finished (see manifest). Missing ids simply stay silent.
 const MUSIC = { chamber: 'mus_explore', reward: 'mus_explore', charm: 'mus_explore', kit: 'mus_explore', duel: 'mus_duel', boss: 'mus_guardian', bazaar: 'mus_quiet', sanctum: 'mus_quiet', home: 'mus_quiet', forger: 'mus_quiet', vault: 'mus_quiet', codex: 'mus_quiet', feats: 'mus_quiet', over: null, anvil: null };
 const AMB = { chamber: 'amb_chamber', reward: 'amb_chamber', charm: 'amb_chamber', kit: 'amb_chamber', anvil: 'amb_furnace', bazaar: 'amb_bazaar', duel: null, boss: 'amb_guardian' };
 function scene(name, data) {
-  st.screen = name; st.tier = data && data.tier;
+  st.screen = name; st.tier = data && data.tier; st.floor = data && typeof data.floor === 'number' ? data.floor : st.floor;
   let k = name;
-  if (name === 'duel' && st.tier === 'boss') k = 'boss';
+  if (name === 'duel' && (st.tier === 'boss' || st.tier === 'secret')) k = 'boss';
   if (name === 'reward' && (st.lastDoor === 'sanctum')) k = 'sanctum';
   let amb = AMB[k] ?? null;
+  if (amb === 'amb_chamber' && st.floor >= 1) amb = st.floor >= 2 ? 'amb_chamber_f3' : 'amb_chamber_f2';   // floors two and three: lower and emptier
   if (name === 'reward' && (st.lastDoor === 'omen' || st.lastDoor === 'mystery')) amb = 'amb_omen';
   if (k === 'sanctum') amb = 'amb_sanctum';
-  bed('amb', amb); bed('music', MUSIC[k] ?? null, 2.5);
+  if (name !== 'duel') { st.close = false; }
+  const deep = MUSIC[k] === 'mus_explore' ? [1, .8, .62][Math.min(2, st.floor)] : 1;   // the halls' music thins out as you go down
+  bed('amb', amb); bed('music', MUSIC[k] ?? null, 2.5, deep); tell(name, data);
 }
 
 // ---------- duel frames: melds and relic chains, sequenced ----------
-function frame({ evs = [], fast = false } = {}) {
+function frame({ evs = [], fast = false } = {}, view) {
+  st.fast = !!fast; closeness(view);
   const melds = evs.filter(e => e.e === 'meld' && (e.kind === 'printed' || e.kind === 'cross'));
   if (melds.length) {
     const big = melds.some(e => e.three) || melds.length >= 3;
@@ -156,8 +203,12 @@ function duelEv(t, e, view) {
     case 'destroyed': return play(pick('monster_destroyed', 2), { delay: 120 });
     case 'bounce': return play('monster_bounce');
     case 'lp': {
+      // Life Points count about 1,000 a second with a soft tick each 100 (studio doc); fast mode keeps a short burst.
+      closeness(view);
+      const n = Math.min(st.fast ? 8 : 40, Math.max(1, Math.round(Math.abs(e.d) / 100))), step = st.fast ? 40 : 100;
+      for (let i = 0; i < n; i++) play('lp_tick', { delay: 120 + i * step, gain: (me ? .9 : .55) * (1 - i / (n * 2.5)), rate: 1 + (i % 3) * .015, minGap: 0, free: true });
       if (e.d > 0) return play('lp_gain', { delay: 80 });
-      play(Math.abs(e.d) >= 1000 ? 'lp_loss_large' : 'lp_loss_small', { delay: 160 });
+      if (Math.abs(e.d) >= 1000) play('lp_loss_large', { delay: 100 });
       const lp = view && view.lp ? view.lp[0] : null;
       if (me && lp != null && lp > 0 && lp <= 1500 && !st.lowWarned) { st.lowWarned = true; play('lp_low_warning', { delay: 700 }); }
       return;
@@ -194,7 +245,7 @@ function runEv(t, e = {}) {
       const acc = { duel: 'door_duel', cursed: 'door_cursed', champion: 'door_champion', guardian: 'door_guardian', anvil: 'door_anvil', bazaar: 'door_bazaar', sanctum: 'door_sanctum', omen: 'door_omen', mystery: 'door_omen', treasure: 'door_treasure', boss: 'door_boss' }[e.type];
       if (acc) play(acc, { delay: 250 }); play('chamber_enter', { delay: 1300 }); return;
     }
-    case 'duelStart': st.lowWarned = false; return play('duel_start');
+    case 'duelStart': st.lowWarned = false; st.close = false; return play('duel_start');
     case 'duelWon': bed('music', null, 1); play('duel_win'); if (e.embers) play('embers_gain', { delay: 1600 }); return;
     case 'duelLost': bed('music', null, 1); play('duel_lose'); play('spark_lost', { delay: 1900 }); return;
     case 'mystery': return play('mystery_event');
@@ -221,14 +272,16 @@ const BOSS = { kiln_warden: 1, stone_sentinel: 1, bone_collector: 1, veiled_magu
 function cue(name, data, el) {
   if (typeof name !== 'string') return;
   const i = name.indexOf(':'); const ns = i < 0 ? name : name.slice(0, i), t = i < 0 ? '' : name.slice(i + 1);
-  if (ns === 'duel') return t === 'frame' ? frame(data) : duelEv(t, data || {}, el);
+  if (ns === 'duel') return t === 'frame' ? frame(data, el) : duelEv(t, data || {}, el);
   if (ns === 'run') return runEv(t, data || {});
   if (ns === 'ui') { st.lastVerb = t; const u = UI[t]; if (u === null) return; return typeof u === 'function' ? u() : play(u || 'ui_move_a'); }
   if (ns === 'screen') { if (SCREEN_ONCE[t]) play(SCREEN_ONCE[t]); return scene(t, data); }
   if (ns === 'story') {
-    if (t.startsWith('boss:') && BOSS[t.slice(5)]) return play('boss_' + t.slice(5));
+    if (t.startsWith('boss:') && BOSS[t.slice(5)]) return hush(() => play('boss_' + t.slice(5), { minGap: 0 }));   // two seconds of near silence first
+    if (t === 'secret:door') return hush(() => play('door_omen', { minGap: 0 }));                                  // the hidden door appears out of silence
+    if (t.startsWith('memory:')) return play('unlock_big', { delay: 300 });                                         // a guardian's memory: the motif returns
     if (t === 'intro') return play('chamber_enter');
-    if (t === 'cleared') return play('guardian_reward');
+    if (t === 'cleared' || t === 'secret:won') return play('guardian_reward');
     return;
   }
   if (name === 'codex:new') return play('codex_discover', { delay: 500, minGap: 800 });
@@ -241,7 +294,7 @@ function cue(name, data, el) {
 }
 
 // ---------- unlock, background and interruption ----------
-const CORE = ['ui_move_a', 'ui_move_b', 'ui_confirm', 'ui_back', 'card_select_a', 'card_select_b', 'card_select_c', 'card_draw_a', 'card_draw_b', 'card_draw_c', 'card_place_a', 'card_set', 'attack_start', 'attack_hit_a', 'attack_hit_b', 'lp_loss_small', 'relic_trigger_1', 'relic_trigger_2', 'relic_trigger_3', 'door_open', 'monster_appear'];
+const CORE = ['ui_move_a', 'ui_move_b', 'ui_confirm', 'ui_back', 'card_select_a', 'card_select_b', 'card_select_c', 'card_draw_a', 'card_draw_b', 'card_draw_c', 'card_place_a', 'card_set', 'attack_start', 'attack_hit_a', 'attack_hit_b', 'lp_tick', 'lp_loss_small', 'relic_trigger_1', 'relic_trigger_2', 'relic_trigger_3', 'door_open', 'monster_appear'];
 let warmed = false;
 function unlock() {
   if (!ctx()) return;
@@ -275,8 +328,12 @@ const api = {
   get settings() { return { ...S }; },
   get ready() { return !!MAN; }, // the list of sounds has loaded (for checks)
   set(k, v) { if (k in DEF) { S[k] = v; save(); apply(); } },
-  get beds() { return { amb: beds.amb && beds.amb.s ? beds.amb.id : null, music: beds.music && beds.music.s ? beds.music.id : null, loop: beds.music && beds.music.s ? [beds.music.s.loopStart, beds.music.s.loopEnd] : null, state: AC && AC.state }; },
-  stopBeds() { bed('amb', null); bed('music', null); },
+  get beds() {
+    const mu = beds.music && beds.music.s ? beds.music : null, ly = mu && mu.layer;
+    return { amb: beds.amb && beds.amb.s ? beds.amb.id : null, music: mu ? mu.id : null, loop: mu ? [mu.s.loopStart, mu.s.loopEnd] : null, state: AC && AC.state,
+      drums: ly ? +ly.g.gain.value.toFixed(2) : null, close: st.close, tell: beds.tell && beds.tell.s && bus.tell ? +bus.tell.gain.value.toFixed(2) : 0, duck: bus.duck ? +bus.duck.gain.value.toFixed(2) : null };
+  },
+  stopBeds() { bed('amb', null); bed('music', null); bed('tell', null); },
 };
 window.LMAudio = api;
 export default api;

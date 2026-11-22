@@ -1,6 +1,20 @@
-# Lost Memories audio, batch 1
+# Lost Memories audio
 
-Drop-in for `crucible/web/`: `sound.mjs` plus this `audio/` folder. `sound.mjs` sets `window.LMAudio = { cue(name, data, ctx) }`, the hook Version 27 calls. Nothing else in the page needs to change except the one import.
+Drop-in for `crucible/web/`: `sound.mjs` plus this `audio/` folder. `sound.mjs` sets `window.LMAudio = { cue(name, data, ctx) }`, the hook the page calls. Nothing else in the page needs to change except the one import.
+
+## The 1998 studio set (22 Nov 2026)
+
+This follows the "Sound direction" in *Lost Memories: Studio Direction, 1998*. File ids are unchanged, so every cue still finds its sound. New ids are added on top.
+
+- **Rewritten (91 effects):** the interface is physical (stone slide to move, iron latch to confirm, muted thud to cancel, paper for slips). A hit is a low thump with a metal ring. A meld is a rising tone into a furnace breath, a fizzle is falling ash, and a Trap is a lock snapping. Rewards are a single warm candle instead of sparkle. Guardians are struck iron and bowed metal.
+- **New ids:**
+  - `lp_tick`: one soft tick per 100 Life Points, counted at about 1,000 a second, or a short burst in fast mode.
+  - `amb_chamber_f2` and `amb_chamber_f3`: the halls on floors two and three, chosen from `data.floor`.
+  - `tell_erase`: the danger tell, stone scraped smooth. It loops under the room, and its level follows `data.fog` (or lost Sparks). It is silent on menu screens and lower in duels.
+  - `mus_duel_drums`: the close-duel drum stem. It starts in lockstep with `mus_duel` and fades in while either side is at 2,000 Life Points or less.
+- **Music:** Forgetting (halls), Ledger of Hours (duels), The Keeper (guardian, boss and hidden duels), Candle (Sanctum, Bazaar, menus). The stingers One Candle (win), Gone Cold (loss), A Memory Returns (big unlock, guardian memories) and The Ledger Closes (run summary) are written for old piano and tape-worn electric guitar, with bowed metal and tape wow synthesized on top. The halls' music plays at 80% on floor two and 62% on floor three.
+- **Silence:** `story:boss:<id>` and `story:secret:door` drop the music and rooms to near silence for two seconds, then play the arrival, then bring the room back.
+- **Robustness:** if an `.ogg` fails to load or decode, the module tries the `.mp3` of the same sound.
 
 ## What is here
 

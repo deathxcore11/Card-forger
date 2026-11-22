@@ -53,6 +53,25 @@ const { chromium } = require('playwright'); const fs = require('fs'), path = req
     check('with nothing failing, the list is asked for once and music plays', asked === 1 && (await page.evaluate(() => window.LMAudio.ready)) === true && (await page.evaluate(() => window.LMAudio.beds.music)) === 'mus_quiet', asked);
     await page.close();
   }
+  { // the 1998 studio set (merged 22 November 2026): the page's screen cue carries floor, fog and Sparks, and the sound follows them
+    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } }); const errors = []; page.on('pageerror', e => errors.push(e.message));
+    const set = Object.fromEntries(['ui_move_a', 'mus_quiet', 'mus_explore', 'mus_duel', 'mus_duel_drums', 'amb_chamber', 'amb_chamber_f2', 'amb_chamber_f3', 'tell_erase', 'lp_tick', 'door_omen'].map(k => [k, { file: k }]));
+    await page.route('**/audio/**', route => /manifest\.json/.test(route.request().url()) ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sounds: set }) }) : route.fulfill({ status: 200, contentType: 'audio/wav', body: wav }));
+    await page.goto(url); await page.waitForTimeout(400); await page.mouse.click(8, 8); await page.waitForTimeout(500);
+    const beds = () => page.evaluate(() => window.LMAudio.beds);
+    await page.evaluate(() => window.LMAudio.cue('screen:chamber', { floor: 2, chamber: 1, fog: .9, heat: 9, sparks: 1, sparksMax: 3 })); await page.waitForTimeout(1800);
+    let b = await beds();
+    check('a hall on floor three has its own room sound, and a thick fog brings up the danger tell', b.amb === 'amb_chamber_f3' && b.music === 'mus_explore' && b.tell > .1, b);
+    await page.evaluate(() => window.LMAudio.cue('screen:duel', { floor: 0, chamber: 2, tier: 'regular', fog: 0, heat: 0, sparks: 3, sparksMax: 3 })); await page.waitForTimeout(1200);
+    b = await beds(); check('a duel plays its theme with the drum layer silent while nobody is close to losing', b.music === 'mus_duel' && b.close === false && (b.drums ?? 1) < .05, b);
+    await page.evaluate(() => window.LMAudio.cue('duel:lp', { e: 'lp', seat: 0, d: -6500 }, { lp: [1500, 8000] })); await page.waitForTimeout(1600);
+    b = await beds(); check('once either side is at 2000 Life Points or less, the drums come in', b.close === true && b.drums > .3, b);
+    await page.evaluate(() => window.LMAudio.cue('story:secret:door', {})); await page.waitForTimeout(700);
+    b = await beds(); check('the hidden door arrives out of near silence', b.duck !== null && b.duck < .3, b);
+    await page.evaluate(() => { window.LMAudio.cue('screen:home', {}); window.LMAudio.cue('screen:home', {}); }); await page.waitForTimeout(400);
+    check('none of it raises an error on the page (one did in the batch as sent: a screen with no room sound and none playing)', !errors.length, errors);
+    await page.close();
+  }
   await browser.close(); server.close();
   console.log(`sound checks: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
 })();
