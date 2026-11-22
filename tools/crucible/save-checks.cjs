@@ -415,7 +415,7 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
   // the player has nothing picked, until that guardian has been beaten once; the hidden duel always shows it.
   { const boss = read(pickFile(/^duel-boss-f1-h0/)), id = boss.run.door && boss.run.door.boss;
     const fresh = JSON.parse(JSON.stringify(boss)); fresh.profile.beaten = []; await open(fresh); await resume();
-    check('a guardian not yet beaten: the duel tray gives its counsel', /Counsel\./.test(await text('.trayline')), await text('.trayline'));
+    check('a guardian not yet beaten: the duel tray gives its counsel under its own words, which stay (review, 21 November)', /Counsel\./.test(await text('.trayline')) && /Tap hand cards in order/.test(await text('.trayline')), await text('.trayline'));
     await tap('.hs .c'); check('picking a card puts the play in its place', !/Counsel\./.test(await text('.trayline')), await text('.trayline'));
     const done = JSON.parse(JSON.stringify(boss)); done.profile.beaten = [id]; await open(done); await resume();
     check('once that guardian has been beaten, no counsel', !!id && !/Counsel\./.test(await text('.trayline')), { id, tray: await text('.trayline') });

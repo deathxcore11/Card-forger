@@ -524,7 +524,7 @@ function screenDuel() {
     buttons = (targets.includes(-1) ? `<button class="gold" data-a="hit:-1">Direct attack (${v.mon[0][G.attacker].ea})</button>` : '') + (canPos.has(G.attacker) ? '<button data-a="pos">Change position</button>' : '') + '<button data-a="undo">Cancel</button>';
   } else if (G.onto != null) { tray = '<span>Now tap hand cards to meld onto it.</span>'; buttons = '<button data-a="undo">Cancel</button>'; }
   else if (lesson) { const [h, t] = lessonText(lesson.kind, lesson.cards.map(i => card(live.hand[0][i].id).name)); tray = `<span class="lesson"><b>${esc(h)}.</b> ${esc(t)}</span>`; buttons = '<button data-a="tipsoff">No more lessons</button>'; }
-  else if (counsel()) tray = `<span class="fine counsel"><b>Counsel.</b> ${esc(counsel())}</span>`; // a guardian's Law, taught in the duel itself until that guardian has been beaten once
+  else if (counsel()) tray += `<span class="fine counsel"><b>Counsel.</b> ${esc(counsel())}</span>`; // a guardian's Law, taught in the duel itself until that guardian has been beaten once, under the tray's own words (a rule notice there must stay)
   const hand = [0, 1, 2, 3, 4, 5].map(i => { const c = v.hand[i]; const k = G.sel.indexOf(i); const lp = lesson ? lesson.cards.indexOf(i) : -1; return `<div class="hs">${c ? face(c, { cls: (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: `data-a="hand:${i}"`, badge: k >= 0 ? k + 1 : '', pip: lp >= 0 ? lp + 1 : '' }) : ''}</div>`; }).join('');
   let powerBtn = '';
   if (myTurn && v.forger && !v.rs.power) {

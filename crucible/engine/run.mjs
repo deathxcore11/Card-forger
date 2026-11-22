@@ -571,7 +571,7 @@ function finishDuel(db, run, rng, ev) {
   } else if (tier === 'boss') {
     S.bossWins++;
     // The first secret: the most monsters the player had at once in this guardian duel (duel.mjs, lever loneWatch).
-    if (cfg.secretLast) { const most = st.most || 0, sc = run.secret || (run.secret = {}); if (most <= 2) sc.near = 1; if (most <= 1 && !sc.met) { sc.met = 1; sc.due = 1; } }
+    if (cfg.secretLast && cfg.loneWatch) { const most = st.most || 0, sc = run.secret || (run.secret = {}); if (most <= 2) sc.near = 1; if (most <= 1 && !sc.met) { sc.met = 1; sc.due = 1; } }
     const opts = [{ kind: 'card', entry: { id: run.rival.ace }, text: 'Legendary card' }];
     const mw = possibleMasterworks(run);
     if (mw.length) opts.push({ kind: 'masterwork', id: mw[0], text: 'Forge ' + RELICS[mw[0]].name });

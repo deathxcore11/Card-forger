@@ -98,7 +98,7 @@ export function bestPlay(db, view, level, policy = {}) {
     let cost = (used - 1) * (policy.chainCost ?? db.config.aiChainCost ?? 110) + plan.fizzles * 450;
     if (ontoM && plan.tableLost) cost += ontoM.ea;
     if (plan.isMonster) {
-      if (policy.equipOnly && !(used === 1 && plan.onTable && roleOf(db, cards[0].id) === 'equip')) return;
+      if (policy.equipOnly && !(used === 1 && plan.onTable && roleOf(db, cards[0].id) === 'equip' && plan.steps.length === 1 && plan.steps[0].kind === 'equip')) return; // an Equip made fuel (Tinder Vow) is not free under Sole Remembrance
       if (!(plan.onTable || plan.tableLost || free)) return;
       if (policy.lone && myCount >= 1 && !(plan.onTable || plan.tableLost)) return; // sim-only: a player who keeps one monster on its side (measures a lone-card duel condition)
       const lift = relicLift(db, view, plan, false);

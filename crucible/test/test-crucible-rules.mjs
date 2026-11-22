@@ -1671,4 +1671,22 @@ test('every guardian Law, and The Last One\'s, has a line of counsel the page ca
   assert.ok(whyLost(null, { reason: 'lp' }, { law: 'alone' }).some(l => /defense/.test(l)), 'the loss summary after the hidden duel names its Law');
 });
 
+test('review of the first secret (21 November 2026): with the secret on but the watch off nothing is counted, so no door opens; an Equip that Tinder Vow turns into fuel is not taken as the free Equip of Sole Remembrance', () => {
+  const d = { ...db, config: { ...SECRET_DB.config, loneWatch: 0 }, _pair: new Map() };
+  let boss = 0, doors = 0;
+  for (let seed = 1; seed <= 12; seed++) { const run = newRun(d, { seed, track: true }); let n = 0;
+    while (run.phase !== 'over' && n++ < 9000) { if (run.phase === 'chamber' && run.doors.some(x => x.type === 'secret')) { doors++; runApply(run, { t: 'door', i: 1 }, d); continue; } runApply(run, policyAction(d, run, { level: 2 }), d); }
+    boss += run.stats.bossWins; }
+  assert.ok(boss >= 8 && doors === 0, `guardian wins ${boss}, secret chambers ${doors}`);
+  const eq = db.pool.cards.find(c => roleOf(db, c.id) === 'equip').id, elf = db.byName.get('Mystical Elf').id; let uid = 9000;
+  const setUp = relics => { const s = newDuel(db, { seed: 7, decks: [Array.from({ length: 40 }, () => ({ id: elf })), Array.from({ length: 40 }, () => ({ id: elf }))], first: 0, seats: [{ relics, forger: 'last' }, {}] });
+    s.hand = [[{ u: uid++, id: eq }, { u: uid++, id: elf }], []]; s.turn = 3; s.active = 0; s.mon = [[null, null, { u: uid++, id: elf, pos: 'a', veil: false, att: 0, moved: false }, null, null], [null, null, null, null, null]]; return s; };
+  const alone = setUp(['f_last']); applyMut(alone, chooseAction(db, viewFor(alone, db, 0), 2, {}), db);
+  assert.ok(!alone.played && alone.stats[0].relicFires.f_last, 'Sole Remembrance alone: the Equip goes on free');
+  // with Tinder Vow the Equip is fuel and never free, so Sole Remembrance must not change the choice: the usual search decides
+  const strip = a => JSON.stringify(a, (k, v) => k === 'u' ? undefined : v);
+  const both = setUp(['f_last', 'tinder_vow']), vow = setUp(['tinder_vow']);
+  assert.equal(strip(chooseAction(db, viewFor(both, db, 0), 2, {})), strip(chooseAction(db, viewFor(vow, db, 0), 2, {})), 'with Tinder Vow the free-Equip step was taken');
+});
+
 console.log('crucible rules:', passed, 'tests passed');
