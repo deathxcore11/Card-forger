@@ -1,4 +1,4 @@
-﻿// Flow field for ground enemies: a breadth-first walk outward from the duelist over 2 m cells.
+// Flow field for ground enemies: a breadth-first walk outward from the duelist over 2 m cells.
 // A step is allowed when the climb is gentle (ramps) and drops of any size are allowed (enemies jump off ledges).
 import { MAP } from '../data/map.js';
 import { CFG } from '../data/config.js';

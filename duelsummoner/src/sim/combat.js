@@ -1,4 +1,4 @@
-﻿// Damage, status effects, explosions, drops and the little pools the view draws (telegraphs, effects).
+// Damage, status effects, explosions, drops and the little pools the view draws (telegraphs, effects).
 import { K } from '../data/tuning.js';
 import { mightBracket, targetBracket } from './ledger.js';
 import { CFG } from '../data/config.js';

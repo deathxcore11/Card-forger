@@ -1,4 +1,4 @@
-﻿// Cards, levels, offers and Fusion rules. All numbers here; src/sim reads them by name.
+// Cards, levels, offers and Fusion rules. All numbers here; src/sim reads them by name.
 // Rules (owner, 22 Nov): monsters level 1 to 10 with three forms (levels 1, 5, 10); Fusion needs both named partners at level 10;
 // a Fusion is a new monster from level 1 with its own three forms; Spells and Traps level 1 to 5 and never fuse.
 export const XP = { base: 2.5, perLevel: 0.35, quad: 0.038 };         // xp to go from level L to L+1 = base + perLevel * L + quad * L * L
@@ -53,6 +53,7 @@ export function formOf(id, level) {
 
 // Spells: levels are stacks. "per" values are added per stack.
 export const SPELLS = {
+  'toll-of-ash': { name: 'Toll of Ash', rarity: 'rare', kind: 'spell', text: 'Every 5 s you pay 3% of your current Life Points (never below 1). +7% Might a level.', per: { dmgMult: 0.07, toll: 1 } },
   'kindling-rite': { name: 'Kindling Rite', rarity: 'rare', kind: 'spell', text: 'Fire burns +1 damage a second, and +1 s a stack.', per: { burnDps: 1, burnDur: 1 } },
   'deep-marks': { name: 'Deep Marks', rarity: 'rare', kind: 'spell', text: 'Marks last 3 s longer and add +10% damage taken a stack.', per: { markDur: 3, markBonus: 0.10 } },
   'swift-draw': { name: 'Swift Draw', rarity: 'common', kind: 'spell', text: 'Your card throw is 20% faster a stack.', per: { cardRate: 0.20 } },

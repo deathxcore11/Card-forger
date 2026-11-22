@@ -1,4 +1,4 @@
-﻿// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
+// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
 // telegraphs and effects, pickups. Positions are blended between the last two sim ticks so any refresh rate looks smooth.
 import { CFG } from '../data/config.js';
 import { KIND_LIST } from '../data/enemies.js';

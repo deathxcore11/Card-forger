@@ -1,11 +1,13 @@
 import { OATH_BY_ID } from '../data/progress.js';
-﻿// What the monsters on your field do each tick, plus Traps and one-shot Spells. Every number comes from data/cards.js.
+import { K } from '../data/tuning.js';
+import { CAP, capReady, capTake } from './caps.js';
+// What the monsters on your field do each tick, plus Traps and one-shot Spells. Every number comes from data/cards.js.
 import { CFG } from '../data/config.js';
 import { atan2, cos, pow, sin } from './dmath.js';
 import { MARKS, TRAPS, ONE_SHOTS, FIELD_RULES } from '../data/cards.js';
 import { heightAt } from './terrain.js';
 import { fireShot, fireLob, fireHoming, KIND_CARD, KIND_FIRE, splash } from './weapons.js';
-import { damageEnemy, addFx, addTele } from './combat.js';
+import { damageEnemy, addFx, addTele, explode } from './combat.js';
 import { def, param, damageOf } from './field.js';
 import { elemBits } from '../data/elements.js';
 
@@ -119,8 +121,21 @@ function attack(g, m, D, A) {
 }
 
 // ---- Traps ----
-export function onPlayerHurt(g) {
+// EV_HURT: every hurt-triggered effect (traps and the Thornbound Locket) from enemy hits and self-damage alike sits under one per-minute cap
+export function onPlayerHurt(g, self) {
+  let any = g.mods.locket > 0; if (!any) for (const s of g.field.spells) if (s && TRAPS[s.id] && TRAPS[s.id].trigger === 'hurt' && s.cd <= 0) { any = true; break; }
+  if (!any) return;
+  if (self && !capReady(g, CAP.HURT_SELF)) return;
+  if (!capTake(g, CAP.HURT_FIRE)) return;
+  if (self) capTake(g, CAP.HURT_SELF);
   for (const s of g.field.spells) if (s && TRAPS[s.id] && TRAPS[s.id].trigger === 'hurt' && s.cd <= 0) fireTrap(g, s);
+  if (g.mods.locket > 0) locketNova(g);
+}
+const copyEff = n => 1 + (K.copyCap - 1) * (n - 1) / ((n - 1) + K.copyK);        // n copies act as 1, 2, 2.5, 2.8 ... toward x4
+function locketNova(g) {
+  const guard = g.mods.armour * 4, base = K.locketPerGuard * Math.min(guard, K.locketGuardCap) * copyEff(g.mods.locket);
+  if (base <= 0) return;
+  g.curSrc = g.srcIndex('thornbound-locket'); explode(g, g.p.x, g.p.y, g.p.z, 4, 0, base, 0xd8b24a, 'Thornbound Locket'); g.curSrc = 0;
 }
 function fireTrap(g, s) {
   const T = TRAPS[s.id], p = g.p, e = g.en, lv = s.level - 1; g.curSrc = g.srcIndex(s.id);
@@ -163,6 +178,7 @@ export function updateTraps(g, dt) {
     if (g.storm.left <= 0) g.storm = null;
   }
 }
+
 
 
 

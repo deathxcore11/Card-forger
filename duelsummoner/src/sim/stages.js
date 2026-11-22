@@ -1,4 +1,4 @@
-﻿// The stage machine: a run is Stage 1, 2 and 3 (or one Quick Duel stage). Each stage has a clock, an elite and two timed bosses on a
+// The stage machine: a run is Stage 1, 2 and 3 (or one Quick Duel stage). Each stage has a clock, an elite and two timed bosses on a
 // timeline, a gate that wakes, a gate boss, then a Descent Circle to the next stage (Stage 3: the Final Altar). Pure and deterministic.
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
 import { RUN } from '../data/waves.js';

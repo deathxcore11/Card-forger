@@ -1,4 +1,4 @@
-﻿// Duelist movement: run, jump, dash (no damage while it lasts), slide (gains speed downhill).
+// Duelist movement: run, jump, dash (no damage while it lasts), slide (gains speed downhill).
 import { CFG } from '../data/config.js';
 import { atan2, cos, exp, sin } from './dmath.js';
 import { heightAt, moveXZ } from './terrain.js';

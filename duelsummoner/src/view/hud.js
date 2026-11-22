@@ -1,4 +1,4 @@
-﻿// The plain placeholder HUD (the real look is awaiting approval). Text and bar widths only change when values change.
+// The plain placeholder HUD (the real look is awaiting approval). Text and bar widths only change when values change.
 import { CFG } from '../data/config.js';
 import { clock } from '../core/util.js';
 import { MONSTERS, FUSIONS, SPELLS, TRAPS, FIELD_RULES, LEVELS, formOf } from '../data/cards.js';

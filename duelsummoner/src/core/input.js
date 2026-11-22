@@ -1,4 +1,4 @@
-﻿// Keyboard and mouse. Holds the camera yaw and pitch and turns keys into a movement command.
+// Keyboard and mouse. Holds the camera yaw and pitch and turns keys into a movement command.
 import { CFG } from '../data/config.js';
 import { clamp } from './util.js';
 

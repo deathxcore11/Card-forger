@@ -2,6 +2,7 @@
 // authored regions (data/encounters.js). Every spot is standable, flat, spaced out and has at least three ways off it.
 import { ENCOUNTERS as E } from '../data/encounters.js';
 import { cos, sin } from './dmath.js';
+import { K } from '../data/tuning.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { heightAt } from './terrain.js';
 import { dropPickup, addFx, PICK_COIN, PICK_XP, PICK_HEART } from './combat.js';
@@ -114,6 +115,10 @@ export function updateWorld(g, dt) {
     else { s.idle += dt; if (s.idle > S.leaveGrace && s.charge > 0) s.charge = Math.max(0, s.charge - S.decayPerSecond * dt); }
     if (s.charge >= S.hold) { s.done = true; g.event('banner', 'The shrine accepts your tribute.'); openBlessing(g, s); }
   }
+  if (g.mods.toll > 0) {                                                  // Toll of Ash: pay a share of current LP every few seconds, never below 1
+    g.tollT -= dt;
+    if (g.tollT <= 0) { g.tollT = K.tollEverySec; g.hurtPlayer(Math.max(1, Math.round(p.hp * K.tollPct)), false, 'Toll of Ash', 1); }
+  }
   if (g.mods.regen > 0 && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + g.mods.regen * dt);
   if (g.talismanCd > 0) g.talismanCd -= dt;
 }
@@ -173,3 +178,4 @@ export function useProp(g, hit) {
   else if (hit.type === 'broker') openShop(g);
   else if (hit.type === 'altar') openAltar(g, hit.obj);
 }
+

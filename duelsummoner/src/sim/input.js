@@ -1,4 +1,4 @@
-﻿// The sim's only input: one small quantised record per 1/60 s tick, so a run can be recorded to a tape and replayed bit for bit.
+// The sim's only input: one small quantised record per 1/60 s tick, so a run can be recorded to a tape and replayed bit for bit.
 //   mx: right  -127..127   mz: forward -127..127   (int8)
 //   yaw: camera yaw in 1024 steps of 0.35 degrees (0..1023 = 0..2pi; coarse on purpose so replays stay small)
 //   buttons: bit 1 jump, bit 2 dash, bit 4 slide, bit 8 use

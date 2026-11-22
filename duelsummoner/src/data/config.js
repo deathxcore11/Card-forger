@@ -1,4 +1,4 @@
-﻿// All tuning numbers for the simulation live here. Nothing in src/sim hard-codes a rule value.
+// All tuning numbers for the simulation live here. Nothing in src/sim hard-codes a rule value.
 export const CFG = {
   gravity: 28,
   player: {

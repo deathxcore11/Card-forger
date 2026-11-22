@@ -1,4 +1,4 @@
-﻿// Game-feel effects. View only: nothing here reads or changes the rules, everything is fed from the sim's event queue and from
+// Game-feel effects. View only: nothing here reads or changes the rules, everything is fed from the sim's event queue and from
 // state changes the view notices. Every pool is fixed size and allocated once (particles 4000, damage numbers 64, rings 48,
 // beams 4, flipping cards 12), so steady state allocates nothing per frame.
 const T = window.THREE;

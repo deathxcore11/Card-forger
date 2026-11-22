@@ -1,9 +1,11 @@
-﻿// The rules of a run. No drawing, no DOM: the view reads this state, tests and the run simulator drive it directly.
+// The rules of a run. No drawing, no DOM: the view reads this state, tests and the run simulator drive it directly.
 import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
 import { makeStreams } from './rng.js';
 import { hashHex } from './hash.js';
+import { makeCaps, refillCaps } from './caps.js';
+import { K } from '../data/tuning.js';
 import { SCORE } from '../data/tuning.js';
 import { OATH_BY_ID } from '../data/progress.js';
 import { initRun, updateStages, descentTick, finalChoice, xpScale } from './stages.js';
@@ -75,7 +77,7 @@ export class Game {
     this.flow.valid = false; this.evHead = this.evTail = 0;
     this.tickN = 0; this.levelUps = 0; this.trapsFired = 0; this.trapsSet = 0; this.maxMonsters = 0; this.gateOpenedAt = -1; this.godFusions = 0; this.secretFusions = 0;
     this.fusionIds = []; this.elementsUsed = 0; this.cardsPicked = []; this.fullForms = [];
-    this.upgHist = []; this.roleKills = { elite: 0, bossA: 0, bossB: 0, gate: 0, other: 0 }; this.callN = 0; this.endAt = -1; this.runs = this.runs || new Int32Array(6 * 4096); this.runN = 0;
+    this.caps = makeCaps(); this.tollT = K.tollEverySec; this.upgHist = []; this.roleKills = { elite: 0, bossA: 0, bossB: 0, gate: 0, other: 0 }; this.callN = 0; this.endAt = -1; this.runs = this.runs || new Int32Array(6 * 4096); this.runN = 0;
     this.srcNames = ['other']; this.curSrc = 0; this.dealtLog = {}; this.fusionGuard = null;
     this.chestsOpenedTotal = 0; this.stagesCleared = 0; this.stageFacts = []; this.swiftChips = 0; this.duelOn = false; this.stagePrompt = ''; this.bDown = false; this.gateDown = null; this.desc = null; this.circle = null; this.altar = null; this.heat = 1;
     initRun(this);                                                  // opts.mode: 'classic' (default, one 8:00 stage), 'run' (three stages) or 'quick' (Quick Duel)
@@ -188,6 +190,7 @@ export class Game {
     updateWorld(this, dt);
     { let mc = 0; for (let k = 0; k < 4; k++) if (this.field.monsters[k]) mc++; if (mc > this.maxMonsters) this.maxMonsters = mc; }
     tickPool(this.tele, dt); tickPool(this.fx, dt);
+    refillCaps(this, dt);
     if (this.grace > 0) this.grace -= dt;
     if (this.flash > 0) this.flash -= dt;
     this._interact(cmd);
@@ -239,16 +242,19 @@ export class Game {
     while (this.xpCur >= this.xpNeed) { this.xpCur -= this.xpNeed; this.level++; this.xpNeed = xpNeeded(this.level); this.pendingLevels++; this.levelUps++; this.emit('levelup', this.level); }
   }
 
-  hurtPlayer(n, big, src) {
-    this.emit('hurt', n, big ? 1 : 0, 0, src || null);
-    if (this.god || this.p.dashT > 0 || this.over) return false;
-    if (this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = 20; this.event('banner', 'The Paper Talisman blocks the hit.'); return false; }
-    n = Math.max(1, n - this.mods.armour);
-    this.p.hp = Math.max(0, this.p.hp - n);
+  // flags (SPEC section 6): 1 SELF (the player's own cost: 1 HP floor, never kills, no grace, no dodge or Ward), 2 PIERCE, 4 TRUE (ignores Guard)
+  hurtPlayer(n, big, src, flags) {
+    flags = flags | 0; const SELF = (flags & 1) !== 0;
+    this.emit('hurt', n, big ? 1 : 0, SELF ? 1 : 0, src || null);
+    if (this.god || this.over) return false;
+    if (!SELF && this.p.dashT > 0) return false;
+    if (!SELF && this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = 20; this.event('banner', 'The Paper Talisman blocks the hit.'); return false; }
+    if (!(flags & 5)) n = Math.max(1, n - this.mods.armour);
+    this.p.hp = SELF ? Math.max(Math.min(this.p.hp, 1), this.p.hp - n) : Math.max(0, this.p.hp - n);       // the 1 HP floor never raises LP already below 1
     src = src || 'unknown'; this.damageBy[src] = (this.damageBy[src] || 0) + n; this.lastSrc = src;
-    this.hitsTaken++; this.flash = 0.25; this.grace = CFG.enemy.grace;
-    onPlayerHurt(this);
-    if (this.p.hp <= 0) { this.over = true; this.killedBy = src; }
+    if (!SELF) { this.hitsTaken++; this.flash = 0.25; this.grace = CFG.enemy.grace; }
+    onPlayerHurt(this, SELF);
+    if (!SELF && this.p.hp <= 0) { this.over = true; this.killedBy = src; }
     return true;
   }
 

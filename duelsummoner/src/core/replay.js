@@ -1,4 +1,4 @@
-﻿// Replay records for verified leaderboards. The sim keeps every tick() input as run-length records [count, mx, mz, yaw, buttons, menu]
+// Replay records for verified leaderboards. The sim keeps every tick() input as run-length records [count, mx, mz, yaw, buttons, menu]
 // (Game.replayRaw). Here they are packed into bytes: each run is delta-coded against the one before and written as varints, and the
 // caller may deflate the result (a zlib stream; Node has zlib, browsers have CompressionStream). Pure: no platform access.
 const zig = n => (n << 1) ^ (n >> 31), unzig = u => (u >>> 1) ^ -(u & 1);

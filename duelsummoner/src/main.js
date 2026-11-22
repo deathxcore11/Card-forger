@@ -1,4 +1,4 @@
-﻿// Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
+// Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
 import { CFG } from './data/config.js';
 import { Game } from './sim/game.js';
 import { Input } from './core/input.js';

@@ -1,4 +1,4 @@
-﻿// The three-stage run (design/run-structure.md, draft v1). Everything the stage machine needs is data here, so the numbers can move
+// The three-stage run (design/run-structure.md, draft v1). Everything the stage machine needs is data here, so the numbers can move
 // without touching code. Times are seconds on the stage clock. DRAFT: the spec's numbers may still change.
 //
 // STAND-INS until the real bosses exist (the engine field says which existing fight plays the part):

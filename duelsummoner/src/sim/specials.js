@@ -1,4 +1,4 @@
-﻿// Elites and the boss: the Sealed Warden (4:00), the Twin Jackal Idols (6:00) and The Hollow Pharaoh (8:00 or the Royal Gate).
+// Elites and the boss: the Sealed Warden (4:00), the Twin Jackal Idols (6:00) and The Hollow Pharaoh (8:00 or the Royal Gate).
 import { CFG } from '../data/config.js';
 import { atan2, cos, sin } from './dmath.js';
 import { SPECIALS } from '../data/enemies.js';

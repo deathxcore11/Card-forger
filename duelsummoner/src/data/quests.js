@@ -29,9 +29,9 @@ const core = [
   q('noTrap', 'Spells/Traps', 'Bare Hands', 'Defeat a gate boss with no Trap set.', 'Radiant', 'best.bareBossKill', 1, { item: 'burning-deck' }),
   q('runs5', 'General', 'Regular', 'Finish 5 runs.', 'Plain', 'total.runs', 5, { item: 'jar-of-avarice' }),
   // more, to fill the tabs (placeholder rewards)
-  q('stage1', 'General', 'First Descent', 'Clear a stage.', 'Plain', 'total.stagesCleared', 1, { chips: 20 }),
+  q('stage1', 'General', 'First Descent', 'Clear a stage.', 'Plain', 'total.stagesCleared', 1, { card: 'toll-of-ash' }),
   q('stage3', 'General', 'The Whole Kingdom', 'Clear all three stages in one run.', 'Radiant', 'best.stagesCleared', 3, { chips: 150 }),
-  q('kills5000', 'General', 'Horde Breaker', 'Defeat 5,000 enemies in total.', 'Bright', 'total.kills', 5000, { chips: 60 }),
+  q('kills5000', 'General', 'Horde Breaker', 'Defeat 5,000 enemies in total.', 'Bright', 'total.kills', 5000, { item: 'thornbound-locket' }),
   q('runs20', 'General', 'Dedicated', 'Finish 20 runs.', 'Bright', 'total.runs', 20, { chips: 60 }),
   q('fullwyvern', 'Monsters', 'Grown Up', 'Take an Ember Wyvern to level 10.', 'Plain', 'key.dsfull:ember-wyvern', 1, { chips: 20 }),
   q('fullhatch', 'Monsters', 'Hot Stuff', 'Take a Cinder Hatchling to level 10.', 'Plain', 'key.dsfull:cinder-hatchling', 1, { chips: 20 }),

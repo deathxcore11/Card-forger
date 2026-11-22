@@ -1,4 +1,4 @@
-﻿// The wave table: spawn rate, enemy mix, Ram Golem timer, elites, the Last Audience ring, and the boss clock.
+// The wave table: spawn rate, enemy mix, Ram Golem timer, elites, the Last Audience ring, and the boss clock.
 import { RUN } from '../data/waves.js';
 import { cos, pow, sin } from './dmath.js';
 import { spawnEnemy, spawnRate, enemyCount, KIND_ID } from './enemies.js';

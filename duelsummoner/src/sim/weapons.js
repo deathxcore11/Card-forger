@@ -1,4 +1,4 @@
-﻿// Player-side projectiles (cards, fire lines, fireballs, homing bolts), enemy bolts, and pickups.
+// Player-side projectiles (cards, fire lines, fireballs, homing bolts), enemy bolts, and pickups.
 import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { heightAt, moveXZ } from './terrain.js';

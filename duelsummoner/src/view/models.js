@@ -1,4 +1,4 @@
-﻿// Loader for the owner's baked low-poly models (EWV1 / EWV2: flat colour per face, no texture). Everything is optional:
+// Loader for the owner's baked low-poly models (EWV1 / EWV2: flat colour per face, no texture). Everything is optional:
 // if a file is missing the game keeps its placeholder shape. Files live in assets/models/ and are kept out of the public repo.
 const T = window.THREE;
 

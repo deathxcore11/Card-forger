@@ -1,4 +1,4 @@
-﻿// Enemy numbers from the game bible. Edit here to rebalance; nothing in src/sim hard-codes a value.
+// Enemy numbers from the game bible. Edit here to rebalance; nothing in src/sim hard-codes a value.
 // Swarm kinds live in typed arrays (fast, 300 at once); elites and the boss are single objects (see SPECIALS).
 import { SCALE } from './scale.js';
 const R = k => SCALE.swarm[k].r;                                   // hit and contact radius come from the one SCALE table
