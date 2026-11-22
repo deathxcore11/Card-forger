@@ -288,6 +288,7 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 #app.phone .pick > .c { font-size: 1.05em; }
 /* card rewards, guardian rewards and treasure: the choices stand side by side, each a column */
 #app.phone .picks.abreast { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; } #app.phone .picks.abreast > .row { grid-column: 1 / -1; margin: 0; }
+#app.phone .picks.abreast.two { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* the Sanctum's two blessings share the row */
 #app.phone .picks.abreast > .pick { flex-direction: column; align-items: center; gap: .5em; padding: .7em .8em; } #app.phone .picks.abreast > .pick > div:not(.c) { font-size: 1.15em; text-align: center; flex: 1; }
 #app.phone .picks.abreast > .pick > div.relic, #app.phone .picks.abreast > .pick > div.col { text-align: left; font-size: 1.12em; } #app.phone .picks.abreast > .pick > div.col { flex: none; } #app.phone .picks.abreast .relic { font-size: 1em; gap: .7em; } #app.phone .picks.abreast .ri { width: 3.4em; height: 3.4em; }
 /* bazaar: cards in one row of four with the price under each; a charm or the Winnower takes a full row */

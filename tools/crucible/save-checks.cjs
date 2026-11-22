@@ -469,7 +469,8 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     const caps = await page.evaluate(() => [...document.querySelectorAll('#app.era .pick > .cap')].map(e => { const cs = getComputedStyle(e); return { bg: cs.backgroundImage === 'none' && /rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor), text: e.innerText.trim().length > 3, centre: cs.textAlign === 'center' }; }));
     check('Era look, guardian reward: each choice has a caption, set in the open and not on an empty paper slip', caps.length >= 2 && caps.every(c => c.bg && c.text && c.centre), caps);
     await open(era(/^reward-sanctum/)); await resume();
-    check('Era look, Sanctum: the room says what it is', /quiet room/i.test(await text('#app')), await text('.panel'));
+    const sr = await page.evaluate(() => { const r = window.LM.G.run, c = window.LM.db.config; return { s: r.sparks, full: r.sparks >= c.sparks }; }), st = await text('.panel');
+    check('Era look, Sanctum: the room says what it is, and each blessing says what it changes in the run\'s own numbers', /quiet room/i.test(st) && (sr.full ? /Sparks are full/.test(st) : st.includes(`Sparks ${sr.s} → ${sr.s + 1}`)) && /Cap (\d+) → (\d+)\. Your deck weighs \d+\./.test(st) && (([, a, b]) => +b - +a === 5)(st.match(/Cap (\d+) → (\d+)/)), { st, sr });
     const base = era(/^reward-card/); await open(base); await resume();
     const slips = await page.evaluate(() => { const db = window.LM.db, o = window.LM.G.run.offer.options; return [...document.querySelectorAll('.pick')].map((p, i) => { const id = o[i] && o[i].id, d = p.querySelector(':scope > div:not(.c)'); return { mon: db.isMonster(id), first: d ? d.innerText.split('\n')[0].trim() : '', type: db.isMonster(id) ? db.byId.get(id).type : null }; }); });
     check('Era look, card pick: every monster on offer names its Type first', slips.length === 3 && slips.every(x => !x.mon || x.first === x.type), slips);
