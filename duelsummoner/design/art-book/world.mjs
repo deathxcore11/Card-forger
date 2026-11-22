@@ -1,4 +1,4 @@
-// World assets: material swatches, stage scenery, landmarks and everything you can use in a run.
+﻿// World assets: material swatches, stage scenery, landmarks and everything you can use in a run.
 // P(code, name, file, triangles, height in metres, where it goes, subject, extra)
 const P = (code, name, file, tris, h, where, subj, x = {}) => ({ code, name, file, how: 'model', style: 'model', view: 'model', tris, h, where, subj, ...x });
 const S = (code, name, file, where, subj, x = {}) => ({ code, name, file, how: 'swatch', style: 'swatch', px: '1024 x 1024 made, 64 x 64 in game', where, subj, ...x });
@@ -79,7 +79,7 @@ export const DECALS = [
 ];
 
 export const STAGE1 = [
-  P('W101', 'Olive tree (big)', 'tree-olive-a', 260, 7.5, 'Surface Ruins everywhere; the main tree', 'a big old olive tree with a short thick twisting trunk that splits into four heavy branches reaching out to the front, back, left and right, each topped by a fat rounded cluster of leaves made of chunky faceted blobs, plus one cluster on top in the middle, so the crown is as deep as it is wide and round when seen from above. Leaves are light silvery sage green with pale yellow-green highlights; bark is warm light grey-brown.', { meshy: 'big stylized olive tree, thick twisted trunk splitting into four branches front back left right, chunky faceted leaf blobs, crown round from every side, light sage green leaves, light grey-brown bark' }),
+  P('W101', 'Olive tree (big)', 'tree-olive-a', 300, 7.5, 'Surface Ruins everywhere; the main tree', 'a big old olive tree with a short thick twisting trunk that splits into four heavy branches reaching out to the front, back, left and right, each topped by a fat rounded cluster of leaves made of chunky faceted blobs, plus one cluster on top in the middle, so the crown is as deep as it is wide and round when seen from above. Leaves are light silvery sage green with pale yellow-green highlights; bark is warm light grey-brown.', { meshy: 'big stylized olive tree, thick twisted trunk splitting into four branches front back left right, chunky faceted leaf blobs, crown round from every side, light sage green leaves, light grey-brown bark' }),
   P('W102', 'Olive tree (young)', 'tree-olive-b', 160, 4.5, 'Surface Ruins, mixed with W101', 'a young olive tree, one gently leaning trunk with a single fat lumpy crown of chunky faceted leaf blobs, round from every side. Leaves are light silvery sage green; bark is warm light grey-brown.'),
   P('W103', 'Date palm', 'tree-palm', 200, 8, 'near water and the Market of Tablets', 'a tall date palm with a segmented chunky trunk that curves slightly, eight broad flat fronds made of zigzag faceted blades, a cluster of round orange dates under the crown.'),
   P('W104', 'Leaning cypress', 'tree-cypress', 120, 9, 'along the King\'s Stair and colosseum rim', 'a tall narrow cypress like a dark green flame made of stacked faceted lumps, a thin brown trunk showing at the bottom, leaning a little.'),
@@ -198,3 +198,4 @@ export const INTERACT = [
   P('WX35', 'Lonely Lantern', 'relic-lantern', 120, 1.2, 'Lost Relic: light it and take no damage for a minute', 'a small bronze lantern on a short crooked post, four glass panes, an unlit wick inside, a ring handle on top.', { anim: 'flame flickers when lit (code)' }),
   P('WX36', 'Tribute Stone', 'relic-tribute-stone', 140, 1.4, 'Lost Relic: give it coins; it pays back after the gate boss dies', 'a squat rounded standing stone with a wide slot cut in the top and a shallow bowl carved in the front, worn smooth, a few coins set into its surface.', { anim: 'slot glows when fed, shakes and spills coins later (code)' }),
 ];
+
