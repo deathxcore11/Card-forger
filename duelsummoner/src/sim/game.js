@@ -5,6 +5,7 @@ import { SpatialGrid } from '../core/grid.js';
 import { makeStreams } from './rng.js';
 import { hashHex } from './hash.js';
 import { SCORE } from '../data/tuning.js';
+import { OATH_BY_ID } from '../data/progress.js';
 import { initRun, updateStages, descentTick, finalChoice, xpScale } from './stages.js';
 import { quantise, decode, emptyRecord, MENU_TAKE, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from './input.js';
 import { Flow } from './flow.js';
@@ -44,6 +45,7 @@ export class Game {
 
   reset(seed = this.seed, duelist) {
     this.seed = seed; this.streams = makeStreams(seed); this.rsp = () => this.streams.spawn.next(); this.rl = () => this.streams.loot.next(); this.rc = () => this.streams.combat.next(); this.rcos = () => this.streams.cosmetic.next(); this.duelist = duelist || this.duelist || 'kael';
+    this.oathList = (this.opts.oaths || []).filter(id => OATH_BY_ID[id]); this.oaths = {}; for (const id of this.oathList) this.oaths[id] = true;      // Oaths: run rules sworn before the run
     this.t = 0; this.kills = 0; this.xp = 0; this.level = 1; this.xpCur = 0; this.xpNeed = xpNeeded(1); this.pendingLevels = 0; this.coins = 0;
     this.over = false; this.ended = false; this.killedBy = null; this.damageBy = {}; this.lastSrc = null; this.won = false; this.otStep = -1; this.otAcc = 0; this.god = false; this.bossKilled = false; this.elitesKilled = 0; this.fusions = 0; this.winAt = 0;
     this.grace = 0; this.flash = 0; this.spawned = 0; this.spawnAcc = 0; this.hitsTaken = 0; this.alpha = 1; this.acc = 0;
@@ -66,7 +68,7 @@ export class Game {
     recompute(this);
     this._openingHand();
     this.world = buildWorld(this);                                  // opts.world === 'none': empty, for a generator to fill through placeObject
-    this.p.maxHp = this.cfgHp + this.mods.maxLp; this.p.hp = this.p.maxHp;
+    this.p.maxHp = this.oaths.glass ? 1 : this.cfgHp + this.mods.maxLp; this.p.hp = this.p.maxHp;
     this.en.alive.fill(0); this.shots.alive.fill(0); this.pick.alive.fill(0);
     this.tele.forEach(o => { o.on = false; }); this.fx.forEach(o => { o.on = false; }); this.eb.forEach(o => { o.on = false; }); this.btraps.forEach(o => { o.on = false; });
     this.grid.rebuild(this.en.max, this.en.x, this.en.z, this.en.alive);
@@ -129,14 +131,15 @@ export class Game {
   // The verifiable record of this run: how to rebuild it, the input, and what it should end as.
   replayRaw() {
     const o = this.opts;
-    return { v: 1, version: BUILD_VERSION_REPLAY, seed: this.seed, duelist: this.duelist, mode: this.mode, difficulty: this.difficulty, world: o.world === undefined ? null : o.world, offers: o.offers !== false, meta: o.meta || null,
+    return { v: 1, version: BUILD_VERSION_REPLAY, seed: this.seed, duelist: this.duelist, mode: this.mode, difficulty: this.difficulty, oaths: this.oathList.slice(), world: o.world === undefined ? null : o.world, offers: o.offers !== false, meta: o.meta || null,
       ticks: this.callN, runs: this.runs.slice(0, this.runN), ended: !!this.ended, endAt: this.ended ? this.endAt : -1, hash: hashHex(this), score: this.score() };
   }
   score() {
     const S = SCORE, R = this.roleKills;
     const sum = this.kills * S.kill + R.elite * S.elite + R.bossA * S.bossA + R.bossB * S.bossB + R.gate * S.gate + R.other * S.other + this.stagesCleared * S.stage +
       Math.floor(this.overtimeSeconds()) * S.overtimeSec + this.fusions * S.fusion + this.godFusions * S.god + this.secretFusions * S.secret;
-    return Math.floor(sum * Math.round(this.diff.score * 100) / 100);
+    let pct = Math.round(this.diff.score * 100); for (const id of this.oathList) pct += OATH_BY_ID[id].scorePct;     // each Oath adds to the score multiplier
+    return Math.floor(sum * pct / 100);
   }
   startTape() { this.tape = []; return this.tape; }
   // For tests, bots and tools: dt seconds as whole ticks of the same fixed step. cmd may be a record or a { f, r, yaw, jump, dash, slide, use } command.
@@ -147,7 +150,7 @@ export class Game {
   // For the browser: whole 1/60 s ticks from real time, at most 2 catch-up ticks (a longer stall is dropped, never simulated with a bigger dt).
   // The view only blends between the previous and current snapshot using the returned alpha.
   fixed(dt, rec) {
-    this.acc += dt;
+    this.acc += dt * (this.oaths.hasty ? 1.25 : 1);                          // Hasty Oath: the game runs 1.25x
     let ticks = 0;
     while (this.acc >= STEP && !this.over && !this.offer && ticks < 2) { this.tick(rec); this.acc -= STEP; ticks++; rec.buttons &= ~8; rec.menu = 0; }   // "use" is a one-tick press
     if (this.acc > STEP) this.acc = STEP;

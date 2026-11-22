@@ -14,6 +14,7 @@ export const isDashing = p => p.dashT > 0;
 // cmd: { f, r (-1..1), yaw, jump, dash, slide }. Forward is relative to the camera yaw, on the ground plane only.
 export function updatePlayer(g, dt, cmd) {
   const p = g.p, C = CFG.player, S = C.slide;
+  if (g.oaths.still) cmd.dash = false;                                   // Still Oath: no dash
   const fx = -sin(cmd.yaw), fz = -cos(cmd.yaw), rx = -fz, rz = fx;
   let mx = fx * cmd.f + rx * cmd.r, mz = fz * cmd.f + rz * cmd.r;
   const ml = Math.sqrt(mx * mx + mz * mz), hasInput = ml > 0.001, speed = C.speed * (1 + g.mods.move);

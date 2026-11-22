@@ -4,6 +4,7 @@ import { defaultMeta, deckMods, simMeta, buyUpgrade, upgradeCost, applyRun, rank
 import { Game } from '../src/sim/game.js';
 import { buildOffer } from '../src/sim/field.js';
 import { STARTER, QUESTS, DECK_BOX } from '../src/data/meta.js';
+import { QUEST_TABS, RARITIES } from '../src/data/quests.js';
 
 test('Deck Box: 12 upgrades, 5 ranks each, bought with Star Chips', () => {
   assert.equal(Object.keys(DECK_BOX).length, 12); for (const k of Object.keys(DECK_BOX)) assert.equal(DECK_BOX[k].cost.length, 5);
@@ -26,7 +27,7 @@ test('Card Library: locked cards and items never appear; a quest unlocks them', 
   const locked = new Set(['kindling-rite', 'deep-marks', 'pit-of-seals', 'storm-of-cards', 'second-wind']);
   for (let k = 0; k < 60; k++) for (const c of buildOffer(g)) assert.ok(!locked.has(c.id), c.id + ' is locked');
   const done = applyRun(m, { timeSurvived: 400, kills: 600, level: 16, fusions: 1, bossKills: 0, wardenKilled: true, overtimeSeconds: 0, trapsSet: 1, chestsOpened: 0, vasesBroken: 0 });
-  assert.deepEqual(done.map(q => q.id).sort(), ['fuse1', 'husks500', 'level15', 'survive6', 'warden'].sort());
+  assert.deepEqual(done.map(q => q.id).sort(), ['fuse1', 'husks500', 'level15', 'survive6', 'trapset', 'warden'].sort());
   for (const id of ['kindling-rite', 'deep-marks', 'pit-of-seals', 'storm-of-cards', 'hunters-mark']) assert.ok(m.unlockedCards.includes(id) || m.unlockedItems.includes(id), id);
   assert.ok(applyRun(m, { timeSurvived: 10, kills: 1, level: 1, fusions: 0, bossKills: 0 }).length === 0, 'a quest pays out once');
   const g2 = new Game(8, { meta: simMeta(m) }); g2.level = 2; let seen = false;
@@ -38,5 +39,10 @@ test('items are filtered by unlocks too (stone and broker)', () => {
   const m = defaultMeta(); for (let seed = 1; seed <= 20; seed++) { const g = new Game(seed, { meta: simMeta(m) }); for (const s of g.world.broker.stock) assert.ok(STARTER.items.includes(s.id), s.id + ' locked'); }
 });
 
-test('quests are data: every unlock exists', () => { assert.ok(QUESTS.length >= 10); for (const q of QUESTS) assert.ok(q.unlock.card || q.unlock.item); });
+test('quests are data: tab, rarity, goal, stat and a reward on every entry', () => {
+  assert.ok(QUESTS.length >= 40);
+  for (const q of QUESTS) { assert.ok(QUEST_TABS.includes(q.tab), q.id + ' tab'); assert.ok(RARITIES.includes(q.rarity), q.id + ' rarity'); assert.ok(q.goal > 0 && q.stat && q.reward, q.id); }
+  assert.equal(new Set(QUESTS.map(q => q.id)).size, QUESTS.length, 'ids are unique');
+  assert.ok(QUESTS.filter(q => q.reward.card || q.reward.item).length >= 11, 'the original eleven unlocks are kept');
+});
 

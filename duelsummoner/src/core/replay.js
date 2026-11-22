@@ -38,7 +38,7 @@ export function fromBase64(s) {
 
 // raw: Game.replayRaw(). deflate: optional (Uint8Array) => Uint8Array (sync) or Promise of it.
 export function packReplay(raw, deflate) {
-  const bytes = encodeRuns(raw.runs), done = d => ({ v: raw.v, version: raw.version, seed: raw.seed, duelist: raw.duelist, mode: raw.mode, difficulty: raw.difficulty, world: raw.world, offers: raw.offers, meta: raw.meta,
+  const bytes = encodeRuns(raw.runs), done = d => ({ v: raw.v, version: raw.version, seed: raw.seed, duelist: raw.duelist, mode: raw.mode, difficulty: raw.difficulty, oaths: raw.oaths, world: raw.world, offers: raw.offers, meta: raw.meta,
     ticks: raw.ticks, ended: raw.ended, endAt: raw.endAt, hash: raw.hash, score: raw.score, tape: { format: deflate ? 'rle-varint-deflate-b64' : 'rle-varint-b64', runs: raw.runs.length / 6, data: toBase64(d) } });
   const z = deflate ? deflate(bytes) : bytes;
   return z && typeof z.then === 'function' ? z.then(done) : done(z);

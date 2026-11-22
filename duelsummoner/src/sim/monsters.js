@@ -1,3 +1,4 @@
+import { OATH_BY_ID } from '../data/progress.js';
 ﻿// What the monsters on your field do each tick, plus Traps and one-shot Spells. Every number comes from data/cards.js.
 import { CFG } from '../data/config.js';
 import { atan2, cos, pow, sin } from './dmath.js';
@@ -28,6 +29,8 @@ export function updateMonsters(g, dt) {
   }
   // the duelist's own card throw
   g.cardT -= dt;
+  const peace = g.oaths.peace && (g.mode === 'classic' ? g.t : g.scTotal + g.sc) < OATH_BY_ID.peace.peaceSeconds;      // Peace Oath: no damage from you for the first 3 minutes
+  if (peace) g.cardT = 0.3;
   if (g.cardT <= 0) {
     const i = g.nearest(p.x, p.z, CFG.card.range), e = g.en;
     g.curSrc = g.srcIndex('card-throw');

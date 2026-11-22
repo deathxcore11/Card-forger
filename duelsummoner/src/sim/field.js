@@ -52,7 +52,7 @@ export function recompute(g) {
   }
   for (const m of f.monsters) if (m && m.id === 'astral-magus') M.markExplode = { radius: param(m, 'explodeRadius'), dmg: param(m, 'explodeDmg') };
   g.mods = M;
-  const maxHp = g.cfgHp + M.maxLp;
+  const maxHp = g.oaths && g.oaths.glass ? 1 : g.cfgHp + M.maxLp;                  // Glass Oath: 1 LP and it cannot be raised
   if (maxHp !== g.p.maxHp) g.p.maxHp = maxHp;
 }
 
