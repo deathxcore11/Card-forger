@@ -1801,7 +1801,7 @@ button.pl-bar-vs{cursor:pointer}
 .pl-home--hand>.pl-home-head>:nth-child(2){order:2;flex:none}
 /* The doors stay (the site has no Play tab bar to reach Decks and Collection), as one short row of names under the quests. */
 .pl-home--hand>.pe-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%;max-width:560px;margin-inline:auto}
-.pl-home--hand>.pe-row .pe-tile{min-height:44px;height:auto;padding:8px 6px;aspect-ratio:auto;display:flex;align-items:center;justify-content:center;position:relative}
+.pl-home--hand>.pe-row .pe-tile{min-height:44px;height:auto;padding:8px 6px;aspect-ratio:auto;display:flex;align-items:center;justify-content:center;position:relative;overflow:visible}
 .pl-home--hand>.pe-row .pe-tile-art,.pl-home--hand>.pe-row .pe-tile-line{display:none}
 .pl-home--hand>.pe-row .pe-tile-name{position:static;font-family:inherit;font-size:13px;font-weight:700;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-home--hand>.pe-row .pe-badge{top:-6px;right:-4px}

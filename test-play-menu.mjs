@@ -123,3 +123,12 @@ test('Play home shows the Hand layout before the purse has loaded, never the old
  const before=playMenuMarkup(base(),{view:'home',econ:{loading:true,state:null}});
  assert.match(before,/pl-home--hand/);assert.match(before,/class="pl-hand"/);assert.doesNotMatch(before,/class="pl-modes"|pe-story-art/);
 });
+
+// Regression 22 Nov: the gold pack-count badge on the Hand home's Packs button sat half outside the button and its top was cut
+// off, because the button clips its contents. The hand-home buttons must not clip (the art is hidden, the name ellipsizes itself).
+test('Hand home door buttons do not clip the pack-count badge',()=>{
+ const css=readFileSync(new URL('./play-menu.css',import.meta.url),'utf8');
+ const rule=css.split('\n').find(l=>l.startsWith('.pl-home--hand>.pe-row .pe-tile{'));
+ assert(rule,'rule exists');assert.match(rule,/overflow:visible/);
+ assert.match(css,/\.pl-home--hand>\.pe-row \.pe-badge\{top:-6px/);
+});
