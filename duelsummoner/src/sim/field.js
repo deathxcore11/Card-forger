@@ -10,7 +10,9 @@ import { ENCOUNTERS } from '../data/encounters.js';
 import { elemBits } from '../data/elements.js';
 const E_ALTAR = ENCOUNTERS.altar;
 
-export const xpNeeded = level => XP.base + XP.perLevel * level + (XP.quad || 0) * level * level;
+// the first levels come about every 30 s (the recordings), easing to the old curve by level 9 so Fusion timing is not pushed back
+const earlyMul = level => 1 + (XP.early || 0) * Math.max(0, (XP.earlyTo - level) / (XP.earlyTo - 1));
+export const xpNeeded = level => (XP.base + XP.perLevel * level + (XP.quad || 0) * level * level) * earlyMul(level);
 
 export function makeField(duelistId, rng) {
   const D = DUELISTS[duelistId] || DUELISTS.kael;

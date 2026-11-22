@@ -5,6 +5,7 @@ import { Input } from './core/input.js';
 import { clock } from './core/util.js';
 import { buildMapMesh } from './view/mapMesh.js';
 import { buildScenery } from './view/scenery.js';
+import { LeyThreads } from './view/threads.js';
 import { Actors } from './view/actors.js';
 import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
@@ -70,6 +71,7 @@ const host = createBrowserHost(canvas);
 const save = loadSave(host);
 const fx = new Fx(scene, save.settings);
 const actors = new Actors(scene, assets, fx);
+const threads = new LeyThreads(scene, 6);                               // crimson ribbons toward the Gate
 const props = new Props(scene);
 const chase = new ChaseCamera(camera);
 const input = host.input;
@@ -284,6 +286,7 @@ function frame(now) {
     chase.zoomTo = fx.rm_ ? 1 : 1 + Math.min(0.95, Math.max(0, (big - 4) / 11));
   }
   chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
+  threads.update(game.mode !== 'classic' && game.map ? game.map.gate : null, ip, MODE === 'play' ? dtReal : 0, camera, MODE === 'play' && game.boss.state === 'idle' && !game.offer);
   fx.applyShake(camera);
   if (fx.push > 0) { fx.push = Math.max(0, fx.push - dtReal); const u = 1 - fx.push / 2; camera.fov = 62 - 15 * Math.sin(Math.PI * Math.min(1, u)); camera.updateProjectionMatrix(); fovDirty = true; }
   else if (fovDirty) { camera.fov = 62; camera.updateProjectionMatrix(); fovDirty = false; }
@@ -312,7 +315,7 @@ requestAnimationFrame(frame);
 
 // Test hooks: read and drive the run without touching its rules.
 window.__ds = {
-  game, input, chase, touch, pickAndUse, cfg: CFG, camera, scene, actors, assets, prof,
+  game, input, chase, touch, pickAndUse, threads, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
   start: begin, begin, results, setMode, menus, fx, onEvent, save,
   pickDuelist, freeze: v => { frozen = !!v; },
