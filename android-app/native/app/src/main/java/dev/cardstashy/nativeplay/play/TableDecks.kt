@@ -80,12 +80,13 @@ object TableDecks {
     }
     }
 
+    private val LEGEND = Regex("Legendary.*(Creature|Planeswalker)")
     fun list(state: JsonObject?, workspace: List<UserDeck>, typeOf: (String) -> String, freeDecks: List<Deck> = free.value.orEmpty()): List<Deck> {
         val owned = Decks.ownedByName(state)
         val play = Trunk.decks(state).map { d ->
             val all = Decks.rows(d); val cards = all.filter { it.board != "side" }; val side = all.filter { it.board == "side" }
             val format = d.s("format").ifBlank { "Standard" }
-            val commander = if (format in SINGLETON) cards.firstOrNull { it.qty == 1 && Regex("Legendary.*(Creature|Planeswalker)").containsMatchIn(typeOf(it.name)) }?.name ?: "" else ""
+            val commander = if (format in SINGLETON) cards.firstOrNull { it.qty == 1 && LEGEND.containsMatchIn(typeOf(it.name)) }?.name ?: "" else ""
             val raw = JsonObject().apply {
                 addProperty("id", d.s("id")); addProperty("name", d.s("name").ifBlank { "Untitled deck" }); addProperty("format", format); addProperty("commander", commander)
                 add("cards", JsonArray().apply { cards.forEach { add(row(it)) } }); add("side", JsonArray().apply { side.forEach { add(row(it)) } })

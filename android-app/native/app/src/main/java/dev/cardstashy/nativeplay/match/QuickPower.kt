@@ -110,6 +110,11 @@ object QuickPower {
         return synchronized(lock) { known[k]?.takeIf { now - it.first < TTL }?.second }
     }
 
+    /** [d]'s key in [format], for a screen that keeps it: hashing a deck costs more than looking a key up ([peekKey]). */
+    fun keyOf(format: String, d: JsonObject): String = key(format, d)
+    /** [peek] by a key from [keyOf]. */
+    fun peekKey(k: String): QuickOpponent.Ctx? { val now = System.currentTimeMillis(); return synchronized(lock) { known[k]?.takeIf { now - it.first < TTL }?.second } }
+
     /** The lobby's background read of the Quick Play pool in [format]. */
     fun warm(format: String, decks: List<JsonObject>) { start(format, decks, urgent = false) }
 

@@ -46,6 +46,25 @@ object CardFacts {
     }
 
     fun card(oracle: String?): Fact? = oracle?.let { cards.value[it] }
+
+    /**
+     * A card's facts by its name or its front face's name: the first fact in [cards] that has it, as a scan of [cards] would find it.
+     * The index is built once per [cards] update, never per lookup (Thor, 22 Nov: Quick Play froze for up to a second at a time while
+     * every deck tile scanned every known card for each of its cards).
+     */
+    fun byName(name: String?): Fact? {
+        if (name.isNullOrBlank()) return null
+        val now = cards.value
+        val kept = nameIndex
+        val idx = if (kept != null && kept.first === now) kept.second else nameIndexOf(now).also { nameIndex = now to it }
+        return idx[name]
+    }
+    @Volatile private var nameIndex: Pair<Map<String, Fact>, Map<String, Fact>>? = null
+    internal fun nameIndexOf(facts: Map<String, Fact>): Map<String, Fact> {
+        val out = HashMap<String, Fact>(facts.size * 2)
+        for (f in facts.values) { val n = f.card.get("name")?.takeIf { it.isJsonPrimitive }?.asString ?: ""; out.putIfAbsent(n, f); out.putIfAbsent(n.substringBefore(" // "), f) }
+        return out
+    }
     fun print(id: String?): JsonObject? = id?.let { prints.value[it] }
 
     fun slim(c: JsonObject): JsonObject = JsonObject().also { out ->
@@ -81,8 +100,7 @@ object CardFacts {
     /** Cards known only by name (a pasted list, the All cards pool): Scryfall's collection by name, once a visit. */
     suspend fun wantNames(names: List<String>) = withContext(Dispatchers.IO) {
         lock.withLock {
-            val known = cards.value.values.flatMap { val n = it.card.get("name")?.asString ?: ""; listOf(n, n.split(" // ")[0]) }.toHashSet()
-            val need = names.distinct().filter { it.isNotBlank() && it !in known && tried.add("name:$it") }
+            val need = names.distinct().filter { it.isNotBlank() && byName(it) == null && tried.add("name:$it") }
             for (chunk in need.chunked(75)) {
                 val ids = JsonArray().apply { chunk.forEach { n -> add(JsonObject().apply { addProperty("name", n) }) } }
                 // Paced with every other collection call in the app (ScryfallGate), so this never crowds a match's art lookup.

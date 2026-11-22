@@ -285,8 +285,7 @@ private fun Modifier.tap(onClick: () -> Unit) = focusProperties { canFocus = fal
 private val Greyed = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f); timesAssign(ColorMatrix(floatArrayOf(.7f, 0f, 0f, 0f, 0f, 0f, .7f, 0f, 0f, 0f, 0f, 0f, .7f, 0f, 0f, 0f, 0f, 0f, 1f, 0f))) })
 
 /** meta(name): a card's facts by name, from what the app has fetched from Scryfall. */
-private fun factByName(name: String?): CardFacts.Fact? = name?.takeIf { it.isNotBlank() }?.let { n ->
-    CardFacts.cards.value.values.firstOrNull { val cn = it.card.get("name")?.asString ?: ""; cn == n || cn.substringBefore(" // ") == n } }
+private fun factByName(name: String?): CardFacts.Fact? = CardFacts.byName(name)
 
 private val BASIC = setOf("Forest", "Plains", "Island", "Mountain", "Swamp")
 private fun rowNames(raw: JsonObject) = raw.getAsJsonArray("cards")?.mapNotNull { (it as? JsonObject)?.get("name")?.takeIf { n -> n.isJsonPrimitive }?.asString } ?: emptyList()
@@ -334,6 +333,9 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     // loadFreePrecons once the wallet is there (playTableDecks: if(st.wallet)loadFreePrecons()).
     LaunchedEffect(state?.has("wallet") == true) { if (state?.has("wallet") == true && online) TableDecks.loadFree() }
     val decks = remember(state, workspace, facts, free) { TableDecks.list(state, workspace ?: emptyList(), typeOf, free.orEmpty()) }
+    val looks = remember { DeckLooks() }
+    fun lookOf(d: TableDecks.Deck) = looks.of("d:" + d.id, d.raw, facts, d.commander) { quickRaw(d) }
+    fun lookOf(e: LobbySources.Entry) = looks.of("s:" + e.key, e.deck, facts, e.deck.get("commander")?.takeIf { it.isJsonPrimitive }?.asString ?: "") { e.deck }
     val locked = remember(decks) { TableDecks.locked(decks) }
     /** The CPU deck the lobby is choosing ahead for (your deck, format to level). */
     var quickPre by remember { mutableStateOf<Triple<SeatDeck, Pair<String, String>, kotlinx.coroutines.Deferred<QuickOpponent.Result?>>?>(null) }
@@ -571,12 +573,13 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
     // (QuickPick.nextOnPage), the chips are walked by Left and Right once Up reaches them, and LT/RT turn the page of 25.
     val dualQuick = quickOnly && DualScreen.active
     val quickDecks: List<QuickDeck> = if (!quickOnly) emptyList() else if (source == "yours") visible.map { d ->
-        QuickDeck("d:" + d.id, d.name, d.format, d.count, deckColors(d.commander, d.raw), quickRaw(d), chosen(d), d.id in locked, coverOf(d.raw),
+        val look = lookOf(d)
+        QuickDeck("d:" + d.id, d.name, d.format, d.count, look.colors, look.seat, chosen(d), d.id in locked, look.cover,
             pick = { selectDeck(d) }, play = { selectDeck(d); if (m.player?.id == d.id) start() }) }
-    else quickEntries.map { e -> val raw = e.deck; val commander = raw.get("commander")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+    else quickEntries.map { e -> val raw = e.deck; val look = lookOf(e)
         QuickDeck("s:" + e.key, raw.get("name")?.asString ?: "Untitled deck", raw.get("format")?.takeIf { it.isJsonPrimitive }?.asString ?: "",
-            raw.getAsJsonArray("cards")?.sumOf { (it as? JsonObject)?.get("qty")?.takeIf { q -> q.isJsonPrimitive }?.asInt ?: 0 } ?: 0, deckColors(commander, raw), raw,
-            browserSelected?.id == raw.get("id")?.asString, !sourceReady(raw), coverOf(raw), pick = { pickSource(e) }, play = { pickSource(e); if (m.player?.id == raw.get("id")?.asString) start() }) }
+            raw.getAsJsonArray("cards")?.sumOf { (it as? JsonObject)?.get("qty")?.takeIf { q -> q.isJsonPrimitive }?.asInt ?: 0 } ?: 0, look.colors, raw,
+            browserSelected?.id == raw.get("id")?.asString, !sourceReady(raw), look.cover, pick = { pickSource(e) }, play = { pickSource(e); if (m.player?.id == raw.get("id")?.asString) start() }) }
     /** The source tabs' counts: your decks of the chip's format, and the Precons and Meta lists loaded for it. */
     fun quickCounts() = mapOf("yours" to decks.count { m.pickFormat == null || it.format == m.pickFormat },
         "precons" to (m.pickFormat?.let { listOf(it) } ?: LIVE_FORMATS).sumOf { sources.entries("precons", it).size },
@@ -746,8 +749,8 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                     full { CountLine((if (quickOnly) "" else (if (m.browseSeat == "player") "Your deck · " else "CPU deck · ")) + "${visible.size} of ${inFormat.size} ${fmtWord}decks", if (quickOnly) onOpenDecks else null) }
                     if (visible.isEmpty()) full { Empty(if (m.query.isNotBlank()) "No matching decks" else if (quickOnly) QuickPick.empty(m.pickFormat) else "No ${m.format} decks yet",
                         if (quickOnly) "Build a Play deck, or open packs and the Merchant for cards." else "Paste a list or explore the other sources above.") }
-                    else if (quickOnly) itemsIndexed(visible, key = { _, d -> "d:" + d.id }) { i, d -> QuickTile(d.id, d.name, d.format, d.count, deckColors(d.commander, d.raw), quickRaw(d), chosen(d), d.id in locked,
-                        tileReq(i), { ringed("d:" + d.id) }, { dir -> steer(i, dir, cols) }, onFocus = { on -> if (on) focusedTile = i else if (focusedTile == i) focusedTile = -1 }, artRatio = artRatio, onPlay = { selectDeck(d); if (m.player?.id == d.id) start() }) { selectDeck(d) } }
+                    else if (quickOnly) itemsIndexed(visible, key = { _, d -> "d:" + d.id }) { i, d -> val look = lookOf(d); QuickTile(d.id, d.name, d.format, d.count, look.colors, look.seat, chosen(d), d.id in locked,
+                        tileReq(i), { ringed("d:" + d.id) }, { dir -> steer(i, dir, cols) }, onFocus = { on -> if (on) focusedTile = i else if (focusedTile == i) focusedTile = -1 }, artRatio = artRatio, cover = look.cover, onPlay = { selectDeck(d); if (m.player?.id == d.id) start() }) { selectDeck(d) } }
                     else items(visible, key = { "d:" + it.id }) { d -> DeckChoice(d, chosen(d), quickOnly && d.id in locked, if (d === visible[0]) firstDeck else null, { ringed("d:" + d.id) }) { selectDeck(d) } }
                 }
                 // 0.4.59 T8: Quick Play's Precons and Meta as the same tiles; a list missing cards from your Trunk is greyed.
@@ -755,10 +758,10 @@ fun LobbyScreen(model: LobbyModel, onBack: () -> Unit, onStart: (Pick) -> Unit, 
                     full { CountLine("${quickEntries.size} ${m.pickFormat?.let { "$it " } ?: ""}decks", onOpenDecks) }
                     if (quickEntries.isEmpty()) full { Empty(QuickPick.empty(m.pickFormat), sources.statuses.values.firstOrNull { it.busy }?.message ?: "Try another format or source.") }
                     else itemsIndexed(quickEntries, key = { _, e -> "s:" + e.key }) { i, e -> val raw = e.deck; val f = raw.get("format")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
-                        val commander = raw.get("commander")?.takeIf { it.isJsonPrimitive }?.asString ?: ""
+                        val look = lookOf(e)
                         QuickTile("s:" + e.key, raw.get("name")?.asString ?: "Untitled deck", f, raw.getAsJsonArray("cards")?.sumOf { (it as? JsonObject)?.get("qty")?.takeIf { q -> q.isJsonPrimitive }?.asInt ?: 0 } ?: 0,
-                            deckColors(commander, raw), raw, browserSelected?.id == raw.get("id")?.asString, !sourceReady(raw), tileReq(i), { ringed("s:" + e.key) }, { dir -> steer(i, dir, cols) },
-                            onFocus = { on -> if (on) focusedTile = i else if (focusedTile == i) focusedTile = -1 }, artRatio = artRatio,
+                            look.colors, raw, browserSelected?.id == raw.get("id")?.asString, !sourceReady(raw), tileReq(i), { ringed("s:" + e.key) }, { dir -> steer(i, dir, cols) },
+                            onFocus = { on -> if (on) focusedTile = i else if (focusedTile == i) focusedTile = -1 }, artRatio = artRatio, cover = look.cover,
                             onPlay = { pickSource(e); if (m.player?.id == raw.get("id")?.asString) start() }) { pickSource(e) } }
                 }
                 source == "random" -> full { RandomPanel(m, build, signedIn, onBuild = { bracket, style, power -> buildSeat = m.browseSeat; RandomBuild.start(m.format, bracket, style, power, session?.userId) }, onSignIn = onSignIn) }
@@ -1204,6 +1207,26 @@ private fun DeckBar(m: LobbyModel, signedIn: Boolean, status: String, wide: Bool
 /** Quick Play's copy of a deck for its seat and its Power read: the same object selectDeck seats, so the read is the seat's. */
 private fun quickRaw(d: TableDecks.Deck): JsonObject = d.raw.deepCopy().apply { if (!has("id")) addProperty("id", d.id); addProperty("format", d.format) }
 
+/**
+ * Each Quick Play deck's seat copy, colour pips and cover, worked out once per deck and per card-facts update, not on every redraw.
+ * Thor, 22 Nov (adb, 0.4.104): opening Quick Play froze the screen six times in four seconds, 0.5 to 0.8 s each, while every tile
+ * deep-copied its deck and looked up each of its cards again on each redraw. The seat copy is kept while the deck is unchanged, so the
+ * tile's Power read (keyed on it) is not hashed again either.
+ */
+internal class DeckLooks {
+    class Look(val src: JsonObject, val facts: Any?, val seat: JsonObject, val colors: List<String>, val cover: String?)
+    private val kept = HashMap<String, Look>()
+    /** Builds made, for tests. */
+    var built = 0; private set
+    fun of(key: String, src: JsonObject, facts: Any?, commander: String, seat: () -> JsonObject): Look {
+        val old = kept[key]
+        if (old != null && old.facts === facts && (old.src === src || old.src == src)) return old
+        val same = old != null && (old.src === src || old.src == src)
+        built++
+        return Look(src, facts, if (same) old!!.seat else seat(), deckColors(commander, src), coverOf(src)).also { kept[key] = it }
+    }
+}
+
 /** The deck's colour pips: its commander's identity, else the colours of its cards (QuickPick.colors). */
 private fun deckColors(commander: String, raw: JsonObject): List<String> =
     QuickPick.colors(factByName(commander)?.k, rowNames(raw).filter { it !in BASIC }.mapNotNull { factByName(it)?.k })
@@ -1215,12 +1238,14 @@ private fun deckColors(commander: String, raw: JsonObject): List<String> =
  */
 @Composable
 private fun QuickTile(id: String, name: String, format: String, count: Int, colors: List<String>, raw: JsonObject, selected: Boolean, locked: Boolean,
-                      focus: FocusRequester, onRing: () -> Unit, onSteer: (QuickPick.Dir) -> Boolean, onFocus: (Boolean) -> Unit = {}, artRatio: Float = 1.25f, onPlay: () -> Unit, onClick: () -> Unit) {
+                      focus: FocusRequester, onRing: () -> Unit, onSteer: (QuickPick.Dir) -> Boolean, onFocus: (Boolean) -> Unit = {}, artRatio: Float = 1.25f,
+                      cover: String? = null, onPlay: () -> Unit, onClick: () -> Unit) {
     val shape = RoundedCornerShape(14.dp)
-    val cover = coverOf(raw)
     val filter = if (locked) Greyed else null
     val v by QuickPower.version.collectAsState()
-    val read = remember(raw, format, v) { if (format.isBlank()) null else QuickPower.peek(format, raw) }
+    // The deck's Power key (a hash of the whole list) once per deck; each new batch of reads only looks it up.
+    val powerKey = remember(raw, format) { if (format.isBlank()) null else QuickPower.keyOf(format, raw) }
+    val read = remember(powerKey, v) { powerKey?.let { QuickPower.peekKey(it) } }
     val power = read?.power?.let { "${kotlin.math.round(it).toInt()}" }
     val tier = if (format == "Commander" && read?.bracket != null) dev.cardstashy.nativeplay.match.PowerTier.bracketLabel(read.bracket) else dev.cardstashy.nativeplay.match.PowerTier.powerTier(read?.power)
     Column(Modifier.fillMaxWidth().then(if (selected) Modifier.border(2.dp, Gold, RoundedCornerShape(16.dp)).padding(3.dp) else Modifier)
