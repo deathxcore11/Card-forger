@@ -59,6 +59,9 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
 
   // 4. the home screen: no Lab switch is squeezed shorter than its words
   await page.goto(url); await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); }); // a first visit: the tab remembers nothing either await page.reload(); await page.waitForTimeout(400);
+  // With the Era look on the switches fold behind one "Lab switches" button on the title screen (22 November): the
+  // title screen must fit as it is, and the switches are measured once that button opens them.
+  if (await page.locator('[data-a="labsopen"]').count()) { r = await look('.home button'); fits('title screen', r); await tap('[data-a="labsopen"]'); }
   r = await look('.lab'); atLeast('Lab switches', r, 9.5); fits('home', r);
   check('no Lab switch is shorter than its words', await page.evaluate(() => [...document.querySelectorAll('.lab')].every(e => e.scrollHeight <= e.clientHeight + 1)));
 
