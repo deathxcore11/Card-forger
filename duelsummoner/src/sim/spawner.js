@@ -1,0 +1,61 @@
+﻿// The wave table: spawn rate, enemy mix, Ram Golem timer, elites, the Last Audience ring, and the boss clock.
+import { RUN } from '../data/waves.js';
+import { spawnEnemy, spawnRate, enemyCount } from './enemies.js';
+import { spawnWarden, spawnIdols, startBoss } from './specials.js';
+import { heightAt } from './terrain.js';
+
+export function mixFor(t) {
+  let row = RUN.mix[0];
+  for (const r of RUN.mix) if (t >= r.from) row = r;
+  return row.chance;
+}
+export function pickKind(g, t) {
+  const c = mixFor(t); let r = g.rng();
+  for (const k of ['scarab', 'seer', 'bloat', 'runner']) { const p = c[k]; if (!p) continue; if (r < p) return k; r -= p; }
+  return 'husk';
+}
+
+export function overtimeStep(t) { const O = RUN.overtime; return t < O.from ? -1 : Math.floor((t - O.from) / O.stepSeconds); }
+
+export function updateSpawner(g, dt) {
+  const t = g.t, f = g.flags, O = RUN.overtime, k = overtimeStep(t);
+  g.otStep = k;
+  g.dmgMul = (1 + RUN.enemyDamagePerMinute * t / 60) * (k >= 0 ? Math.pow(O.dmgGrowth, k + 1) : 1);
+  if (k >= 0) {                                                        // Overtime: hunters, stronger every step, no cap on the scaling
+    if (!f.overtime) { f.overtime = true; g.event('banner', 'OVERTIME. Hunters grow stronger every 30 seconds.'); }
+    g.otAcc = (g.otAcc || 0) + (O.baseRate + O.rateStep * k) * dt;
+    while (g.otAcc >= 1) { g.otAcc -= 1; if (enemyCount(g.en) < RUN.maxAlive) spawnEnemy(g, 'hunter'); }
+  }
+  if (g.boss.state === 'dead') return;
+  if (!f.warden && t >= RUN.elites.warden) { f.warden = true; spawnWarden(g); }
+  if (!f.idols && t >= RUN.elites.idols) { f.idols = true; spawnIdols(g); }
+  if (g.boss.state === 'idle' && t >= RUN.bossAt) startBoss(g, false);
+
+  if (t >= RUN.ring.from) {                                           // the Last Audience: a ring of Husks closes in
+    g.ringT -= dt;
+    if (g.ringT <= 0) {
+      g.ringT = RUN.ring.every;
+      g.event('banner', 'The Last Audience closes in.');
+      const n = RUN.ring.count, p = g.p;
+      for (let k = 0; k < n; k++) {
+        if (enemyCount(g.en) >= RUN.maxAlive) break;
+        const a = k / n * Math.PI * 2;
+        spawnEnemy(g, 'husk', { x: p.x + Math.cos(a) * RUN.ring.radius, z: p.z + Math.sin(a) * RUN.ring.radius });
+      }
+    }
+  }
+  if (t >= RUN.golem.from) {
+    g.golemT -= dt;
+    if (g.golemT <= 0) { g.golemT = RUN.golem.every; if (enemyCount(g.en) < RUN.maxAlive) spawnEnemy(g, 'golem'); }
+  }
+  g.spawnAcc += (g.boss.state === 'active' ? RUN.bossRate : spawnRate(t)) * dt;
+  if (g.spawnAcc >= 1) {
+    let live = enemyCount(g.en);
+    while (g.spawnAcc >= 1) {
+      g.spawnAcc -= 1;
+      if (live < RUN.maxAlive && spawnEnemy(g, pickKind(g, t))) live++;
+    }
+  }
+}
+export { heightAt };
+

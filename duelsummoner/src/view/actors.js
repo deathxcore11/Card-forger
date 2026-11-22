@@ -1,0 +1,375 @@
+﻿// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
+// telegraphs and effects, pickups. Positions are blended between the last two sim ticks so any refresh rate looks smooth.
+import { CFG } from '../data/config.js';
+import { KIND_LIST } from '../data/enemies.js';
+import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
+import { MAP } from '../data/map.js';
+
+const T = window.THREE;
+const lambert = (color, extra) => new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {}));
+const basic = (color, extra) => new T.MeshBasicMaterial(Object.assign({ color }, extra || {}));
+const lerp = (a, b, t) => a + (b - a) * t;
+const pl = (a, b, t) => (Math.abs(b - a) > 3 ? b : a + (b - a) * t);                // do not blend across a teleport
+const turnLerp = (a, b, t) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * t; };
+
+
+// Experience gem: a 6-sided crystal, prism body with a pointed 6-face tip and a flat chipped base (22 triangles, flat colours).
+function gemGeometry() {
+  const R = 0.5, yb = 0, ym = 0.55, yt = 1.05, n = 6, ring = (y, r, chip) => Array.from({ length: n }, (_, i) => { const a = i / n * Math.PI * 2 + 0.3, k = chip && i === 2 ? 0.7 : 1; return [Math.cos(a) * r * k, y, Math.sin(a) * r * k]; });
+  const base = ring(yb, R * 0.8, true), mid = ring(ym, R, false), tip = [0, yt, 0], pos = [], col = [];
+  const light = new T.Vector3(0.4, 0.8, 0.45).normalize(), dark = new T.Color(0x4a1a6e), midc = new T.Color(0x8e44b8), lit = new T.Color(0xd79af0);
+  const tri = (a, b, c) => {
+    const u = new T.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]), v = new T.Vector3(c[0] - a[0], c[1] - a[1], c[2] - a[2]), nrm = u.cross(v).normalize();
+    const cx = (a[0] + b[0] + c[0]) / 3, cz = (a[2] + b[2] + c[2]) / 3; if (nrm.x * cx + nrm.z * cz < 0 && Math.abs(nrm.y) < 0.99 && nrm.y > -0.99) nrm.negate();
+    const d = nrm.dot(light), colr = d > 0.55 ? lit : d > 0.05 ? midc : dark;
+    for (const p of [a, b, c]) { pos.push(p[0], p[1], p[2]); col.push(colr.r, colr.g, colr.b); }
+  };
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    tri(base[i], base[j], mid[j]); tri(base[i], mid[j], mid[i]);        // side
+    tri(mid[i], mid[j], tip);                                           // pointed tip
+  }
+  for (let i = 1; i < n - 1; i++) tri(base[0], base[i + 1], base[i]);   // flat base
+  const geo = new T.BufferGeometry();
+  geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
+  return geo;
+}
+function instanced(geo, material, max) {
+  const m = new T.InstancedMesh(geo, material, max);
+  m.frustumCulled = false; m.count = 0; m.instanceMatrix.setUsage(T.DynamicDrawUsage);
+  return m;
+}
+const flat = geo => { geo.rotateX(-Math.PI / 2); return geo; };
+
+function playerMesh() {
+  const g = new T.Group();
+  const robe = new T.Mesh(new T.CylinderGeometry(0.35, 0.65, 1.3, 6), lambert(0x3c2a66)); robe.position.y = 0.65;
+  const head = new T.Mesh(new T.BoxGeometry(0.45, 0.45, 0.45), lambert(0xe8c39a)); head.position.y = 1.55;
+  const disk = new T.Mesh(new T.BoxGeometry(0.9, 0.08, 0.35), lambert(0xd8b24a)); disk.position.set(-0.55, 1.0, 0.1);
+  g.add(robe, head, disk); g.userData.body = robe;
+  return g;
+}
+
+// ---- field monster meshes: the owner's models when loaded, simple original shapes otherwise ----
+function wingMesh(color, span) {
+  const wg = new T.BufferGeometry(), s = span;
+  wg.setAttribute('position', new T.Float32BufferAttribute([0, 0, 0.3, s, 0.3, -0.3, 0, 0, -0.5, 0, 0, 0.3, 0, 0, -0.5, -s, 0.3, -0.3], 3)); wg.computeVertexNormals();
+  return new T.Mesh(wg, lambert(color, { side: T.DoubleSide }));
+}
+function cone(r, h, color) { const m = new T.Mesh(new T.ConeGeometry(r, h, 5), lambert(color)); m.rotation.x = Math.PI / 2; return m; }
+
+const PLACEHOLDER = {
+  'ember-wyvern': () => { const g = new T.Group(); g.add(cone(0.4, 1.4, 0xd9502a), wingMesh(0xf0913a, 1.5)); return g; },
+  'cinder-hatchling': () => { const g = new T.Group(); const b = new T.Mesh(new T.IcosahedronGeometry(0.4, 0), lambert(0x3a3438)); b.position.y = 0.4; const c = cone(0.18, 0.5, 0xff7a20); c.position.set(0, 0.5, 0.4); g.add(b, c); return g; },
+  'rune-apprentice': () => { const g = new T.Group(); const b = new T.Mesh(new T.ConeGeometry(0.4, 1.2, 6), lambert(0x6a4aa8)); const h = new T.Mesh(new T.OctahedronGeometry(0.28, 0), lambert(0xe8c39a)); h.position.y = 0.8; g.add(b, h); return g; },
+  'sigil-familiar': () => { const g = new T.Group(); g.add(new T.Mesh(new T.OctahedronGeometry(0.4, 0), lambert(0xa57bff))); return g; },
+  'twinflare-tyrant': () => { const g = new T.Group(); g.add(cone(0.7, 2.2, 0xb02a1a), wingMesh(0xff7a20, 2.6)); return g; },
+  'astral-magus': () => { const g = new T.Group(); const b = new T.Mesh(new T.ConeGeometry(0.6, 1.8, 6), lambert(0x4a2a8a)); const o = new T.Mesh(new T.OctahedronGeometry(0.35, 0), basic(0xd8b0ff)); o.position.y = 1.2; g.add(b, o); return g; }
+};
+
+function modelGroup(model, targetSize, axis, glowColor) {
+  const g = new T.Group(), s = targetSize / model.size[axis];
+  const root = new T.Group(); root.scale.setScalar(s);
+  root.position.set(-(model.min[0] + model.max[0]) / 2 * s, -model.min[1] * s, -(model.min[2] + model.max[2]) / 2 * s);
+  const solid = new T.Mesh(model.solid, lambert(0xffffff, { vertexColors: true, side: T.DoubleSide }));
+  root.add(solid);
+  if (model.glow) { const glow = new T.Mesh(model.glow, basic(glowColor || 0xff7319, { side: T.DoubleSide })); root.add(glow); g.userData.glow = glow; }
+  g.add(root); g.userData.model = model; g.userData.scale = s; g.userData.root = root;
+  return g;
+}
+
+export class Actors {
+  constructor(scene, assets) {
+    this.scene = scene; this.assets = assets || {};
+    this.player = playerMesh(); scene.add(this.player);
+    this.d = new T.Object3D(); this.col = new T.Color(); this.white = new T.Color(0xffffff);
+    this._plain = new T.Color(1, 1, 1); this._blue = new T.Color(0.55, 0.75, 1.6); this._gold = new T.Color(1.6, 1.3, 0.5);
+    this.monsters = new Map(); this.specials = new Map(); this.chests = new Map();
+
+    // the swarm: one instanced mesh per kind (+ eyes for the ground swarmers)
+    this.kinds = KIND_LIST.map(K => {
+      const geo = K.id === 3 ? new T.BoxGeometry(1.1, 1.1, 1.1) : K.id === 4 ? new T.IcosahedronGeometry(0.8, 0) : new T.OctahedronGeometry(0.75, 0);
+      const body = instanced(geo, lambert(0xffffff), CFG.enemy.max);
+      body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.enemy.max * 3), 3);
+      const eye = K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xffe14a), CFG.enemy.max) : null;
+      scene.add(body); if (eye) scene.add(eye);
+      return { K, body, eye, base: new T.Color(K.color) };
+    });
+    this.marks = instanced(new T.OctahedronGeometry(0.22, 0), basic(0xc090ff), CFG.enemy.max); scene.add(this.marks);
+
+    this.cards = instanced(new T.BoxGeometry(0.5, 0.05, 0.7), basic(0xf3e3c2), CFG.card.max + 64);
+    this.fire = instanced(new T.OctahedronGeometry(0.3, 0), basic(0xffb040), CFG.card.max + 64);
+    this.lob = instanced(new T.IcosahedronGeometry(0.4, 0), basic(0xff6a20), 16);
+    this.bolts = instanced(new T.OctahedronGeometry(0.25, 0), basic(0xa57bff), 64);
+    this.bolt2 = instanced(new T.BoxGeometry(0.2, 0.2, 1.4), basic(0xe0e8ff), 48);
+    scene.add(this.cards, this.fire, this.lob, this.bolts, this.bolt2);
+    this.pk = [gemGeometry(), new T.CylinderGeometry(0.3, 0.3, 0.08, 10), new T.OctahedronGeometry(0.34, 0)].map((geo, i) => {
+      const m = i === 0 ? instanced(geo, lambert(0xffffff, { vertexColors: true, emissive: 0x2a1040 }), CFG.xp.max) : instanced(geo, basic([0x9f7bff, 0xf0c040, 0xff5a7a][i]), CFG.xp.max);
+      if (i === 0) m.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.xp.max * 3), 3);
+      if (i === 1) geo.rotateX(Math.PI / 2); scene.add(m); return m;
+    });
+    this.btrap = instanced(new T.BoxGeometry(1.2, 0.06, 1.7), basic(0x8a3ad8), 8); scene.add(this.btrap);
+
+    // telegraphs and effects (flat, drawn on the ground)
+    const ghost = c => basic(c, { transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide });
+    this.teleLine = instanced(new T.BoxGeometry(1, 0.05, 1), ghost(0xffffff), 64); this.teleLine.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
+    this.teleDisc = instanced(flat(new T.CircleGeometry(1, 28)), ghost(0xffffff), 128); this.teleDisc.instanceColor = new T.InstancedBufferAttribute(new Float32Array(128 * 3), 3);
+    this.fxRing = instanced(flat(new T.RingGeometry(0.82, 1, 28)), ghost(0xffffff), 64); this.fxRing.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
+    scene.add(this.teleLine, this.teleDisc, this.fxRing);
+    this.fans = new Map();                                       // one mesh per arc angle, made on demand
+    this.sand = null; this.sandR = -1;
+    this.puffs = [];
+  }
+
+  _fan(arc, max) {
+    let f = this.fans.get(arc);
+    if (!f) {
+      const geo = flat(new T.CircleGeometry(1, 20, Math.PI / 2 - arc * Math.PI / 360, arc * Math.PI / 180));
+      f = instanced(geo, basic(0xffffff, { transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide }), max || 16);
+      f.instanceColor = new T.InstancedBufferAttribute(new Float32Array((max || 16) * 3), 3); this.scene.add(f); this.fans.set(arc, f);
+    }
+    return f;
+  }
+
+  _monsterMesh(id, form) {
+    const A = this.assets;
+    let g;
+    if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, 2.2, 'x'); g.userData.fly = true; }
+    else if (id === 'cinder-hatchling' && A.hatchling) { g = modelGroup(A.hatchling, 0.9, 'y', 0xff7319); g.userData.walk = true; g.userData.puffs = true; }
+    else { g = PLACEHOLDER[id](); if (id === 'ember-wyvern' || id === 'twinflare-tyrant') g.userData.fly = true; if (id === 'cinder-hatchling') g.userData.walk = true; }
+    const D = MONSTERS[id] || FUSIONS[id]; g.userData.formIdx = form; g.scale.setScalar(D.forms[form].scale);      // young / grown / full form
+    this.scene.add(g); return g;
+  }
+
+  _specialMesh(sp) {
+    const g = new T.Group(), r = sp.radius;
+    if (sp.kind === 'warden') {
+      const body = new T.Mesh(new T.BoxGeometry(1.8, 2.6, 1.4), lambert(0x8a8278)); body.position.y = 1.3;
+      const head = new T.Mesh(new T.BoxGeometry(0.9, 0.8, 0.9), lambert(0xb9a98a)); head.position.y = 3.0;
+      const shield = new T.Mesh(new T.BoxGeometry(2.6, 3.0, 0.3), lambert(0xe0b765)); shield.position.set(0, 1.6, 1.0);
+      g.add(body, head, shield);
+    } else if (sp.kind === 'idol') {
+      const body = new T.Mesh(new T.OctahedronGeometry(0.95, 0), lambert(0xc9a04a)); body.position.y = 1.0; body.scale.set(0.8, 1.2, 1.4);
+      const e1 = cone(0.18, 0.7, 0x4a3a2a), e2 = cone(0.18, 0.7, 0x4a3a2a); e1.rotation.x = e2.rotation.x = 0; e1.position.set(-0.3, 2.1, 0.5); e2.position.set(0.3, 2.1, 0.5);
+      g.add(body, e1, e2);
+    } else {
+      const robe = new T.Mesh(new T.ConeGeometry(1.5, 4.2, 7), lambert(0x6a5a8a)); robe.position.y = 2.1;
+      const head = new T.Mesh(new T.BoxGeometry(0.9, 1.0, 0.9), lambert(0xd8c8a0)); head.position.y = 4.5;
+      const crown = new T.Mesh(new T.ConeGeometry(0.7, 0.9, 5), lambert(0xe8b84a)); crown.position.y = 5.3;
+      const blade = new T.Mesh(new T.BoxGeometry(0.2, 0.2, 4.2), lambert(0xe8e8f0)); blade.position.set(1.3, 2.6, 2.0);
+      g.add(robe, head, crown, blade);
+    }
+    g.userData.parts = g.children.slice();
+    this.scene.add(g); return g;
+  }
+
+  _chestMesh() {
+    const g = new T.Group();
+    const b = new T.Mesh(new T.BoxGeometry(1.6, 1.0, 1.1), lambert(0x7a5a3a)); b.position.y = 0.5;
+    const lid = new T.Mesh(new T.BoxGeometry(1.7, 0.4, 1.2), lambert(0x9a7a4a)); lid.position.y = 1.2;
+    const s1 = new T.Mesh(new T.OctahedronGeometry(0.25, 0), basic(0xe8c56a)), s2 = s1.clone(); s1.position.set(-0.45, 0.8, 0.62); s2.position.set(0.45, 0.8, 0.62);
+    g.add(b, lid, s1, s2); g.userData.seals = [s1, s2];
+    this.scene.add(g); return g;
+  }
+
+  update(g, a, cam, head) {
+    const d = this.d, p = g.p, e = g.en, t = g.t;
+    // hide anything standing between the camera and the duelist's head, or right at the camera
+    const sx = head.x - cam.x, sy = head.y - cam.y, sz = head.z - cam.z, sl2 = sx * sx + sy * sy + sz * sz || 1;
+    const blocked = (x, y, z, r) => {
+      const dx = x - cam.x, dy = y - cam.y, dz = z - cam.z; let u = (dx * sx + dy * sy + dz * sz) / sl2;
+      if (u < -0.02 || u > 0.97) return dx * dx + dy * dy + dz * dz < 3 * 3;
+      if (u > 0.84) return false;                                // enemies right at the duelist stay visible
+      u = Math.max(0, u); const qx = dx - sx * u, qy = dy - sy * u, qz = dz - sz * u;
+      return qx * qx + qy * qy + qz * qz < r * r;
+    };
+
+    // duelist
+    const px = pl(p.px, p.x, a), py = pl(p.py, p.y, a), pz = pl(p.pz, p.z, a);
+    this.player.position.set(px, py, pz); this.player.rotation.y = turnLerp(p.pface, p.face, a);
+    this.player.userData.body.scale.y = p.sliding ? 0.55 : 1; this.player.rotation.x = p.sliding ? -0.5 : 0;
+    this.player.visible = !(g.over && !g.won);
+
+    // monsters on the field
+    const live = new Set();
+    g.field.monsters.forEach((m, k) => {
+      if (!m) return; live.add(m);
+      let mesh = this.monsters.get(m); const form = formOf(m.id, m.level);
+      if (mesh && mesh.userData.formIdx !== form) { this.scene.remove(mesh); mesh = null; }          // crossing level 5 or 10 swaps the model
+      if (!mesh) { mesh = this._monsterMesh(m.id, form); this.monsters.set(m, mesh); }
+      const x = pl(m.px, m.x, a), z = pl(m.pz, m.z, a);
+      let y = pl(m.py, m.y, a);
+      const ud = mesh.userData;
+      if (ud.walk) y = heightGround(x, z) + Math.abs(Math.sin(t * 7 + k)) * 0.08;      // the Hatchling walks beside you
+      else y += 0;
+      mesh.position.set(x, y, z);
+      const tgt = g.faceOf[m.id];
+      const wantFace = tgt !== undefined && t - (g.faceT || 0) < 3 ? tgt : Math.atan2(p.x - x, p.z - z) + Math.PI;
+      mesh.rotation.y = turnLerp(mesh.rotation.y, wantFace, 0.2);
+      if (ud.fly) { mesh.rotation.z = Math.sin(t * 5 + k) * 0.18; mesh.rotation.x = Math.sin(t * 3.3 + k) * 0.08; mesh.position.y += Math.sin(t * 4 + k) * 0.08; }
+      if (ud.walk) mesh.rotation.z = Math.sin(t * 7 + k) * 0.06;
+      if (ud.glow) ud.glow.material.color.setRGB(1, 0.45, 0.1).multiplyScalar(0.7 + 0.3 * (0.5 + 0.5 * Math.sin(t * Math.PI * 2 / 1.6)));
+      if (ud.puffs) this._emitPuffs(mesh, m, g);
+    });
+    for (const [m, mesh] of this.monsters) if (!live.has(m)) { this.scene.remove(mesh); this.monsters.delete(m); }
+    this._updatePuffs(g.t, cam);
+
+    // swarm
+    const counts = this.kinds.map(() => 0), mc = { n: 0 };
+    for (let i = 0; i < e.max; i++) {
+      if (!e.alive[i]) continue;
+      const k = this.kinds[e.kind[i]], K = k.K, n = counts[e.kind[i]];
+      const x = pl(e.px[i], e.x[i], a), y = pl(e.py[i], e.y[i], a), z = pl(e.pz[i], e.z[i], a);
+      if (blocked(x, y + 0.9, z, 2.4)) continue;
+      const hit = e.flash[i] > 0, bob = K.fly ? Math.sin(t * 9 + i) * 0.08 : Math.abs(Math.sin(t * 7 + i)) * 0.15;
+      let sc = K.scale, pulse = 1;
+      if (K.id === 4 && e.st[i] === 1) pulse = 1 + 0.25 * Math.sin(t * 30);                        // Sand Bloat swelling before it bursts
+      const face = turnLerp(e.pface[i], e.face[i], a);
+      d.position.set(x, y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85) + bob, z); d.rotation.set(0, face, 0);
+      d.scale.set(sc[0] * pulse * (hit ? 1.2 : 1), sc[1] * pulse * (hit ? 0.85 : 1), sc[2] * pulse * (hit ? 1.2 : 1)); d.updateMatrix();
+      k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this.white : k.base);
+      if (k.eye) {
+        d.position.set(x + Math.sin(face) * 0.62 * sc[0], y + 1.05 + bob, z + Math.cos(face) * 0.62 * sc[0]); d.scale.set(1, 1, 1); d.updateMatrix(); k.eye.setMatrixAt(n, d.matrix);
+      }
+      counts[e.kind[i]]++;
+      if (e.mark[i] > 0) { d.position.set(x, y + 2.3 + Math.sin(t * 4) * 0.1, z); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1.4, 1); d.updateMatrix(); this.marks.setMatrixAt(mc.n++, d.matrix); }
+    }
+    this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; k.body.instanceColor.needsUpdate = true; if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
+    this.marks.count = mc.n; this.marks.instanceMatrix.needsUpdate = true;
+
+    // elites and the boss
+    const spLive = new Set();
+    for (const sp of g.sp) {
+      if (!sp.alive) continue; spLive.add(sp);
+      let mesh = this.specials.get(sp); if (!mesh) { mesh = this._specialMesh(sp); this.specials.set(sp, mesh); }
+      const x = pl(sp.px, sp.x, a), y = pl(sp.py, sp.y, a), z = pl(sp.pz, sp.z, a);
+      mesh.position.set(x, y, z); mesh.rotation.y = turnLerp(sp.pface, sp.face, a);
+      mesh.rotation.z = sp.dead ? Math.PI / 2 : 0; mesh.position.y = y + (sp.dead ? 0.8 : 0);
+      mesh.userData.parts.forEach(m => { if (m.material && m.material.color) m.material.emissive = sp.flash > 0 ? new T.Color(0x666666) : new T.Color(0x000000); });
+    }
+    for (const [sp, mesh] of this.specials) if (!spLive.has(sp)) { this.scene.remove(mesh); this.specials.delete(sp); }
+
+    // chests
+    const chLive = new Set();
+    for (const c of g.chests) { if (c.open) continue; chLive.add(c); let m = this.chests.get(c); if (!m) { m = this._chestMesh(); this.chests.set(c, m); } m.position.set(c.x, c.y, c.z); m.userData.seals.forEach((s, i) => { s.rotation.y = t * 2 + i; }); }
+    for (const [c, m] of this.chests) if (!chLive.has(c)) { this.scene.remove(m); this.chests.delete(c); }
+
+    // projectiles
+    const s = g.shots; let nc = 0, nf = 0, nl = 0;
+    for (let i = 0; i < s.max; i++) {
+      if (!s.alive[i]) continue;
+      d.position.set(pl(s.px[i], s.x[i], a), pl(s.py[i], s.y[i], a), pl(s.pz[i], s.z[i], a)); d.scale.set(1, 1, 1);
+      const k = s.kind[i];
+      if (k === 0) { d.rotation.set(0, Math.atan2(s.vx[i], s.vz[i]) + t * 14, 0); d.updateMatrix(); this.cards.setMatrixAt(nc++, d.matrix); }
+      else if (k === 2) { d.rotation.set(t * 5, t * 4, 0); d.updateMatrix(); this.lob.setMatrixAt(nl++, d.matrix); }
+      else { d.rotation.set(0, t * 12, 0); d.updateMatrix(); this.fire.setMatrixAt(nf++, d.matrix); }
+    }
+    this.cards.count = nc; this.fire.count = nf; this.lob.count = nl;
+    this.cards.instanceMatrix.needsUpdate = this.fire.instanceMatrix.needsUpdate = this.lob.instanceMatrix.needsUpdate = true;
+    let nb = 0;
+    for (const b of g.eb) { if (!b.on) continue; d.position.set(lerp(b.px, b.x, a), b.y, lerp(b.pz, b.z, a)); d.rotation.set(0, Math.atan2(b.vx, b.vz), 0); d.scale.set(1, 1, 1); d.updateMatrix(); this.bolt2.setMatrixAt(nb++, d.matrix); }
+    this.bolt2.count = nb; this.bolt2.instanceMatrix.needsUpdate = true;
+
+    // pickups
+    const m = g.pick, pc = [0, 0, 0];
+    for (let i = 0; i < m.max; i++) {
+      if (!m.alive[i]) continue; const kk = m.kind[i];
+      if (kk === 0) {                                          // crystal: tilted 20 degrees, one turn per 2.5 s, bobs 6 cm; size and tint by value
+        const v = m.val[i], sz = v >= 20 ? 0.5 : v >= 5 ? 0.35 : 0.25, col = v >= 20 ? this._gold : v >= 5 ? this._blue : this._plain;
+        d.position.set(m.x[i], m.y[i] + Math.sin(t * 3 + i) * 0.06, m.z[i]); d.rotation.set(0.35, t * Math.PI * 2 / 2.5 + i, 0); d.scale.setScalar(sz); d.updateMatrix();
+        this.pk[0].setMatrixAt(pc[0], d.matrix); this.pk[0].setColorAt(pc[0], col); pc[0]++; continue;
+      }
+      d.position.set(m.x[i], m.y[i] + Math.sin(t * 3 + i) * 0.1, m.z[i]); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1, 1); d.updateMatrix(); this.pk[kk].setMatrixAt(pc[kk]++, d.matrix);
+    }
+    this.pk.forEach((mm, i) => { mm.count = pc[i]; mm.instanceMatrix.needsUpdate = true; if (i === 0) mm.instanceColor.needsUpdate = true; });
+    let nt = 0; for (const tr of g.btraps) { if (!tr.on) continue; d.position.set(tr.x, tr.y + 0.05, tr.z); d.rotation.set(0, 0.2, 0); d.scale.set(1, 1, 1); d.updateMatrix(); this.btrap.setMatrixAt(nt++, d.matrix); }
+    this.btrap.count = nt; this.btrap.instanceMatrix.needsUpdate = true;
+
+    this._telegraphs(g);
+    this._sand(g);
+  }
+
+  _telegraphs(g) {
+    const d = this.d, col = this.col;
+    let nl = 0, nd = 0; const fanN = new Map();
+    for (const o of g.tele) {
+      if (!o.on) continue;
+      const f = Math.min(1, o.t / o.dur);
+      if (o.type === 0) {                                       // marked lane: a band that brightens
+        d.position.set(o.x + o.dx * o.len / 2, o.y + 0.08, o.z + o.dz * o.len / 2); d.rotation.set(0, Math.atan2(o.dx, o.dz), 0); d.scale.set(o.w, 1, o.len); d.updateMatrix();
+        this.teleLine.setMatrixAt(nl, d.matrix); this.teleLine.setColorAt(nl, col.setRGB(0.35 + 0.65 * f, 0.08, 0.05)); nl++;
+      } else if (o.type === 1) {                                // blast circle: outline, then fills
+        d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.1, o.z); d.scale.set(o.r, 1, o.r); d.updateMatrix(); this.teleDisc.setMatrixAt(nd, d.matrix); this.teleDisc.setColorAt(nd, col.setRGB(0.3, 0.05, 0.04)); nd++;
+        d.position.y = o.y + 0.12; d.scale.set(o.r * f, 1, o.r * f); d.updateMatrix(); this.teleDisc.setMatrixAt(nd, d.matrix); this.teleDisc.setColorAt(nd, col.setRGB(1, 0.25 + 0.2 * f, 0.1)); nd++;
+      } else {
+        const fan = this._fan(Math.round(o.arc)), n = fanN.get(fan) || 0;
+        d.position.set(o.x, o.y + 0.1, o.z); d.rotation.set(0, Math.atan2(o.dx, o.dz), 0); d.scale.set(o.r, 1, o.r); d.updateMatrix();
+        fan.setMatrixAt(n, d.matrix); fan.setColorAt(n, col.setRGB(0.35 + 0.65 * f, 0.1, 0.05)); fanN.set(fan, n + 1);
+      }
+    }
+    this.teleLine.count = nl; this.teleDisc.count = nd;
+    for (const mm of [this.teleLine, this.teleDisc]) { mm.instanceMatrix.needsUpdate = true; mm.instanceColor.needsUpdate = true; }
+    // effects: expanding rings and fading fans
+    let nr = 0;
+    for (const o of g.fx) {
+      if (!o.on) continue;
+      const f = Math.min(1, o.t / o.dur), fade = 1 - f;
+      if (o.type === 'ring') {
+        d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = o.r * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix();
+        this.fxRing.setMatrixAt(nr, d.matrix); this.fxRing.setColorAt(nr, col.setHex(o.color).multiplyScalar(0.4 + 0.6 * fade)); nr++;
+      } else {
+        const fan = this._fan(Math.round(o.arc)), n = fanN.get(fan) || 0;
+        d.position.set(o.x, o.y + 0.15, o.z); d.rotation.set(0, Math.atan2(o.dx, o.dz), 0); d.scale.set(o.r, 1, o.r); d.updateMatrix();
+        fan.setMatrixAt(n, d.matrix); fan.setColorAt(n, col.setHex(o.color).multiplyScalar(0.3 + 0.7 * fade)); fanN.set(fan, n + 1);
+      }
+    }
+    this.fxRing.count = nr; this.fxRing.instanceMatrix.needsUpdate = true; this.fxRing.instanceColor.needsUpdate = true;
+    for (const [fan, mesh] of this.fans) { mesh.count = fanN.get(mesh) || 0; mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }
+  }
+
+  _sand(g) {
+    const b = g.boss, on = b.state === 'active' && b.phase === 3 && b.sandR !== undefined;
+    if (!on) { if (this.sand) this.sand.visible = false; return; }
+    if (!this.sand) { this.sand = new T.Mesh(new T.RingGeometry(10, 33, 48), basic(0xe8b84a, { transparent: true, opacity: 0.55, side: T.DoubleSide, depthWrite: false })); this.sand.rotation.x = -Math.PI / 2; this.sand.position.y = 0.12; this.scene.add(this.sand); }
+    this.sand.visible = true;
+    if (Math.abs(b.sandR - this.sandR) > 0.4) { this.sandR = b.sandR; this.sand.geometry.dispose(); this.sand.geometry = new T.RingGeometry(b.sandR, 33, 48); }
+  }
+
+  // ---- Hatchling nose smoke: 2 nostrils, a puff every 0.35 s, 8 puffs each, half-transparent for the last 40% ----
+  _emitPuffs(mesh, m, g) {
+    const ud = mesh.userData; if (!this.assets.puff || !ud.model || !ud.model.nostrils.length) return;
+    m._puff = m._puff || { t: 0, pool: [], burst: 0 };
+    const S = m._puff, s = ud.scale;
+    S.t -= 1 / 60;
+    if (m.cd > (m._lastCd || 0) + 0.2) S.burst = 3;                // it just attacked
+    m._lastCd = m.cd;
+    const spawn = (nIdx) => {
+      let pf = S.pool.find(q => !q.on);
+      if (!pf) { if (S.pool.length >= 8) return; const sp = new T.Sprite(new T.SpriteMaterial({ map: this.assets.puff, color: 0xdddddd, transparent: true, depthWrite: false })); this.scene.add(sp); pf = { sp, on: false }; S.pool.push(pf); this.puffs.push(pf); }
+      const nos = ud.model.nostrils[nIdx], v = new T.Vector3(nos[0], nos[1], nos[2]).applyMatrix4(ud.root.matrixWorld);
+      Object.assign(pf, { on: true, born: g.t, x: v.x, y: v.y, z: v.z, side: nIdx === 0 ? -1 : 1, yaw: mesh.rotation.y, s });
+      pf.sp.visible = true;
+    };
+    if (S.t <= 0) { S.t = 0.35; spawn(0); spawn(1); }
+    if (S.burst > 0) { S.burst--; spawn(S.burst % 2); }
+  }
+  _updatePuffs(now) {
+    for (const pf of this.puffs) {
+      if (!pf.on) continue;
+      const u = (now - pf.born) / 1.4;
+      if (u >= 1) { pf.on = false; pf.sp.visible = false; continue; }
+      const s = pf.s, rise = 0.32 * s * u, drift = 0.1 * s * u, wob = Math.sin(u * 9 + pf.side) * 0.04 * s;
+      pf.sp.position.set(pf.x + Math.sin(pf.yaw) * drift + Math.cos(pf.yaw) * wob, pf.y + rise, pf.z + Math.cos(pf.yaw) * drift - Math.sin(pf.yaw) * wob);
+      const size = (0.05 + 0.11 * u) * s; pf.sp.scale.set(size, size, 1);
+      pf.sp.material.opacity = u < 0.6 ? 1 : 0.5;                // half-transparent blend, no smooth fade
+    }
+  }
+}
+
+import { heightAt } from '../sim/terrain.js';
+function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
+
+
+
+

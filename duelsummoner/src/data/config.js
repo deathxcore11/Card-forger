@@ -1,0 +1,27 @@
+// All tuning numbers for the simulation live here. Nothing in src/sim hard-codes a rule value.
+export const CFG = {
+  gravity: 28,
+  player: {
+    hp: 100, speed: 9, radius: 0.6, height: 1.7, stepUp: 0.55,
+    jumpHeight: 2.2,                                   // metres, apex above the take-off point
+    groundAccel: 16, airAccel: 3,                      // how fast velocity follows input (1/s)
+    dashDist: 4, dashTime: 0.15, dashCd: 1.1,          // no damage taken while dashing
+    slide: { minStart: 6.5, keepMin: 3.2, max: 22, friction: 2.2, downhill: 34, turn: 1.8, probe: 1.2 }
+  },
+  cam: {
+    back: 7, up: 3, shoulder: 1, headY: 1.55,          // 7 m behind, 3 m above, over the right shoulder
+    sens: 0.0025, pitchMin: -0.5, pitchMax: 0.75,      // pitch is added to the default arm angle
+    minDist: 1.4, margin: 0.35, floorGap: 0.6
+  },
+  enemy: {
+    max: 300, hp: 4, speed: 4.2, speedJitter: 0.18, radius: 0.7, reach: 1.45, vReach: 1.3,
+    damage: 8, attackCd: 0.9, grace: 0.25,             // 0.9 s per enemy, 0.25 s shared after any hit
+    stepUp: 0.55, separation: 1.3, relocateDist: 60, knock: 0.6,
+    directRange: 9
+  },
+  spawn: { min: 22, max: 30, rateStart: 1, rateEnd: 4, rampSeconds: 180, tries: 8 },
+  card: { cooldown: 0.8, damage: 2, speed: 32, life: 1.3, range: 34, hitRadius: 0.95, max: 48 },
+  wyvern: { range: 20, cooldown: 0.65, damage: 2, speed: 34, life: 1.2, hitRadius: 0.95 },
+  xp: { magnet: 5, pick: 1.3, perLevel: 8, max: 220 },
+  path: { cell: 2, window: 80, refresh: 0.25 }          // enemy flow field: 2 m cells, 160 m window
+};

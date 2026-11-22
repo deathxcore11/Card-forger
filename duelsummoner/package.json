@@ -1,0 +1,9 @@
+{
+  "name": "duelsummoner",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/",
+    "serve": "node serve.mjs"
+  }
+}

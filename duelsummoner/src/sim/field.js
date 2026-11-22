@@ -1,0 +1,204 @@
+﻿// The field: 4 Monster Zones and 4 shared Spell and Trap Zones, level-up offers, Redraw / Banish / Pass, and Fusion.
+import { MONSTERS, FUSIONS, SPELLS, ONE_SHOTS, TRAPS, DUELISTS, OFFER, LEVELS, FIELD_RULES, XP, formOf } from '../data/cards.js';
+import { addFx } from './combat.js';
+import { RECIPES, TIERS } from '../data/elements.js';
+import { ITEMS, BLESSINGS } from '../data/items.js';
+
+export const xpNeeded = level => XP.base + XP.perLevel * level + (XP.quad || 0) * level * level;
+
+export function makeField(duelistId) {
+  const D = DUELISTS[duelistId] || DUELISTS.kael;
+  const f = { duelist: duelistId, monsters: [null, null, null, null], spells: [null, null, null, null], redraws: OFFER.redraws, banishes: OFFER.banishes, banished: new Set(), picks: 0, firstFusionAt: -1 };
+  f.monsters[0] = newMonster(D.start, 1);
+  return f;
+}
+function newMonster(id, level) { return { id, level, cd: 0.3, ang: Math.random() * 6.28, x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0 }; }
+
+export const def = id => MONSTERS[id] || FUSIONS[id];
+export const isFused = id => !!FUSIONS[id];
+export const monsterMax = id => (isFused(id) ? LEVELS.fusedMax : LEVELS.monsterMax);
+export const trapOrSpell = id => SPELLS[id] || TRAPS[id];
+export function cardDef(id) { return MONSTERS[id] || FUSIONS[id] || SPELLS[id] || ONE_SHOTS[id] || TRAPS[id]; }
+
+// current value of one attack parameter at the monster's level (base plus level 3/6/8 extras)
+export function param(m, name) {
+  const D = def(m.id), base = D.attack[name] || 0; let v = base;
+  for (const lv of Object.keys(D.fx)) if (m.level >= +lv && D.fx[lv][name] !== undefined) v += D.fx[lv][name];
+  return v;
+}
+export const damageOf = m => param(m, 'dmg') * (1 + LEVELS.damagePerLevel * (m.level - 1));
+
+// ---- derived stats from spells ----
+export function recompute(g) {
+  const f = g.field, M = { burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0,
+    trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0 };
+  const addMods = mods => { for (const k of Object.keys(mods)) M[k] += mods[k]; };
+  for (const id of (g.items || [])) addMods(ITEMS[id].mods);
+  for (const id of (g.blessings || [])) addMods(BLESSINGS[id].mods);
+  for (const s of f.spells) {
+    if (!s || !SPELLS[s.id]) continue;
+    const P = SPELLS[s.id].per, n = s.level;
+    if (P.burnDps) { M.burnDps += P.burnDps; M.burnDur += P.burnDur * n; }
+    if (P.markDur) { M.markDur += P.markDur * n; M.markBonus += P.markBonus * n; }
+    if (P.cardRate) M.cardRate += P.cardRate * n;
+    if (P.move) { M.move += P.move * n; M.dash += P.dash * n; }
+    if (P.maxLp) M.maxLp += P.maxLp * n;
+    if (P.pickup) { M.pickup += P.pickup * n; M.xp += P.xp * n; }
+  }
+  for (const m of f.monsters) if (m && m.id === 'astral-magus') M.markExplode = { radius: param(m, 'explodeRadius'), dmg: param(m, 'explodeDmg') };
+  g.mods = M;
+  const maxHp = g.cfgHp + M.maxLp;
+  if (maxHp !== g.p.maxHp) g.p.maxHp = maxHp;
+}
+
+// ---- Fusion ----
+export function fusionsReady(g) {
+  const f = g.field, out = [];
+  for (const r of RECIPES) {                                         // generic table: any tier, any pair
+    const ma = f.monsters.find(m => m && m.id === r.a), mb = f.monsters.find(m => m && m.id === r.b);
+    if (ma && mb && ma.level >= FIELD_RULES.fusionLevel && mb.level >= FIELD_RULES.fusionLevel && !out.includes(r.result)) out.push(r.result);
+  }
+  return out;
+}
+export function doFusion(g, id) {
+  const r = RECIPES.find(x => x.result === id); if (!r) return false;
+  const f = g.field, ia = f.monsters.findIndex(m => m && m.id === r.a), ib = f.monsters.findIndex(m => m && m.id === r.b);
+  if (ia < 0 || ib < 0) return false;
+  f.monsters[Math.min(ia, ib)] = newMonster(id, TIERS[r.tier].startLevel); f.monsters[Math.max(ia, ib)] = null;      // takes one zone, frees the other
+  if (f.firstFusionAt < 0) f.firstFusionAt = g.t;
+  g.fusions++; recompute(g); g.event('banner', FUSIONS[id].name + ' is summoned!'); g.event('summon', id);
+  return true;
+}
+
+// ---- offers ----
+function rarityRoll(g) {
+  const O = OFFER.rarityOdds, ks = Object.keys(O); let t = 0; for (const k of ks) t += O[k];
+  let r = g.rng() * t, pick = 'common'; for (const k of ks) { r -= O[k]; if (r < 0) { pick = k; break; } }
+  if (g.mods.luck > 0 && g.rng() < g.mods.luck * 1.0) { const i = ks.indexOf(pick); pick = ks[Math.min(ks.length - 1, i + 1)]; }      // luck: sometimes one rarity step up
+  return pick;
+}
+const ORDER = ['common', 'rare', 'epic', 'legendary'];
+
+// every card the duelist can be offered right now
+export function candidates(g, minRarity) {
+  const f = g.field, c = [], free = f.monsters.some(m => !m), freeS = f.spells.some(s => !s);
+  const minI = minRarity ? ORDER.indexOf(minRarity) : 0;
+  const push = (id, kind, isNew, to) => { const d = cardDef(id); if (!f.banished.has(id) && ORDER.indexOf(d.rarity || 'common') >= minI) c.push({ id, kind, isNew, to, rarity: d.rarity || 'common' }); };
+  for (const id of Object.keys(MONSTERS)) {
+    const m = f.monsters.find(x => x && x.id === id);
+    if (m) { if (m.level < monsterMax(id)) push(id, 'monster', false, m.level + 1); }
+    else if (free && !f.monsters.some(x => x && FUSIONS[x.id] && FUSIONS[x.id].from.includes(id))) push(id, 'monster', true, 1);
+  }
+  for (const id of Object.keys(FUSIONS)) { const m = f.monsters.find(x => x && x.id === id); if (m && m.level < LEVELS.fusedMax) push(id, 'monster', false, m.level + 1); }
+  for (const id of Object.keys(SPELLS)) {
+    const s = f.spells.find(x => x && x.id === id);
+    if (s) { if (s.level < LEVELS.spellMax) push(id, 'spell', false, s.level + 1); } else if (freeS) push(id, 'spell', true, 1);
+  }
+  for (const id of Object.keys(TRAPS)) {
+    const s = f.spells.find(x => x && x.id === id);
+    if (s) { if (s.level < LEVELS.spellMax) push(id, 'trap', false, s.level + 1); } else if (freeS) push(id, 'trap', true, 1);
+  }
+  for (const id of Object.keys(ONE_SHOTS)) push(id, 'oneshot', true, 1);
+  return c;
+}
+
+export function buildOffer(g, minRarity) {
+  const f = g.field, D = DUELISTS[f.duelist] || DUELISTS.kael, pool = candidates(g, minRarity), out = [];
+  const take = c => { out.push(c); const i = pool.indexOf(c); if (i >= 0) pool.splice(i, 1); };
+  // forced cards: the partner monster by level 3, a Trap by level 4
+  if (g.level >= OFFER.secondMonsterByLevel && !f.monsters.some(m => m && (m.id === D.second || (FUSIONS[m.id] && FUSIONS[m.id].from.includes(D.second))))) {
+    const c = pool.find(x => x.id === D.second && x.isNew); if (c) take(c);
+  }
+  if (g.level >= OFFER.trapByLevel && !f.spells.some(s => s && TRAPS[s.id]) && out.length < OFFER.size) {
+    const c = pool.find(x => x.kind === 'trap' && x.isNew); if (c) take(c);
+  }
+  if (OFFER.guaranteeMonsterUpgrade && out.length < OFFER.size && !out.some(c => c.kind === 'monster' && !c.isNew)) {
+    const ups = pool.filter(x => x.kind === 'monster' && !x.isNew); if (ups.length) take(ups[Math.floor(g.rng() * ups.length)]);
+  }
+  while (out.length < OFFER.size && pool.length) {
+    const want = rarityRoll(g);
+    let tier = pool.filter(c => c.rarity === want);
+    if (!tier.length) for (let d = 1; d < 4 && !tier.length; d++) tier = pool.filter(c => c.rarity === ORDER[Math.max(0, ORDER.indexOf(want) - d)]) || [];
+    if (!tier.length) tier = pool;
+    take(tier[Math.floor(g.rng() * tier.length)]);
+  }
+  return out;
+}
+
+export function openLevelOffer(g) {
+  const cards = buildOffer(g);
+  if (!cards.length) { g.coins += OFFER.passCoins; g.pendingLevels--; g.event('banner', 'Nothing to offer. +' + OFFER.passCoins + ' coins.'); return; }
+  g.offer = { type: 'level', cards, leave: false };
+  g.event('offer', null);
+}
+export function openChest(g, chest) {
+  const ready = fusionsReady(g);
+  if (ready.length) { g.offer = { type: 'fusion', cards: ready.map(id => ({ id, kind: 'fusion', isNew: true, to: 1, rarity: 'epic' })), leave: true, chest }; }
+  else { const cards = buildOffer(g, OFFER.chestRarityFloor); if (!cards.length) { g.event('banner', 'The chest is empty of anything you can use.'); return; } g.offer = { type: 'chest', cards, leave: true, chest }; }
+  g.event('offer', null);
+}
+
+function applyCard(g, c) {
+  const f = g.field;
+  if (c.kind === 'fusion') { doFusion(g, c.id); return; }
+  if (c.kind === 'monster') {
+    const m = f.monsters.find(x => x && x.id === c.id);
+    if (m) { const before = formOf(m.id, m.level); m.level = c.to; evolve(g, m, before); } else { const i = f.monsters.findIndex(x => !x); if (i >= 0) { f.monsters[i] = newMonster(c.id, 1); g.event('summon', c.id); } }
+  } else if (c.kind === 'spell' || c.kind === 'trap') {
+    const s = f.spells.find(x => x && x.id === c.id);
+    if (s) s.level = c.to; else { const i = f.spells.findIndex(x => !x); if (i >= 0) f.spells[i] = { id: c.id, level: 1, cd: 0, rootFx: 0 }; }
+    if (c.id === 'heart-of-the-cards') g.p.hp = Math.min(g.cfgHp + g.mods.maxLp + SPELLS[c.id].per.maxLp, g.p.hp + SPELLS[c.id].healNow);
+  } else if (c.kind === 'oneshot') {
+    if (c.id === 'second-wind') g.p.hp = g.p.maxHp;
+    if (c.id === 'storm-of-cards') g.storm = { left: ONE_SHOTS['storm-of-cards'].cards, t: 0 };
+  }
+  f.picks++; recompute(g);
+}
+
+// crossing level 5 or 10 swaps the monster to its next form with a short summon flash
+function evolve(g, m, before) {
+  if (formOf(m.id, m.level) <= before) return;
+  addFx(g, { type: 'ring', x: m.x, y: m.y - 1, z: m.z, r: 3.5, dur: 0.6, color: 0xc090ff });
+  g.event('banner', def(m.id).name + ' evolves!'); g.event('summon', m.id);
+}
+
+export function addItem(g, id) { if (!g.items.includes(id)) g.items.push(id); recompute(g); g.event('banner', ITEMS[id].name + ': ' + ITEMS[id].text); }
+export function addBlessing(g, id) { g.blessings.push(id); recompute(g); if (BLESSINGS[id].heal) g.p.hp = Math.min(g.p.maxHp, g.p.hp + BLESSINGS[id].heal); g.event('banner', BLESSINGS[id].name + '. ' + BLESSINGS[id].text); }
+
+export function chooseCard(g, idx) {
+  const o = g.offer; if (!o || !o.cards[idx]) return false;
+  const c = o.cards[idx];
+  if (o.type === 'shop') {                                           // the Broker: pay Coins, the offer stays open so you can browse
+    if (c.sold || g.coins < c.price) return false;
+    g.coins -= c.price; c.sold = true; c.stockRef.sold = true; addItem(g, c.id); return true;
+  }
+  if (c.kind === 'item') addItem(g, c.id);
+  else if (c.kind === 'blessing') addBlessing(g, c.id);
+  else applyCard(g, c);
+  if (o.type === 'level') g.pendingLevels--;
+  if (o.source && o.type === 'item') o.source.used = true;
+  if (o.chest) o.chest.open = true;
+  g.offer = null; g.event('offer-closed', null);
+  return true;
+}
+export function redraw(g) {
+  const o = g.offer, f = g.field; if (!o || o.type === 'fusion' || f.redraws <= 0) return false;
+  f.redraws--; o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined)); return o.cards.length > 0;
+}
+export function banish(g, idx) {
+  const o = g.offer, f = g.field; if (!o || f.banishes <= 0 || !o.cards[idx] || o.type === 'fusion') return false;
+  f.banished.add(o.cards[idx].id); f.banishes--;
+  o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined)); return true;
+}
+export function pass(g) {
+  const o = g.offer; if (!o || o.type !== 'level') return false;
+  g.coins += OFFER.passCoins; g.pendingLevels--; g.offer = null; g.event('offer-closed', null); return true;
+}
+export function leaveChest(g) { const o = g.offer; if (!o || !o.leave) return false; g.offer = null; g.event('offer-closed', null); return true; }
+
+
+
+
+
+
+

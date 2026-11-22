@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -18,22 +18,42 @@
   #xpbar > i { background:var(--xp); width:0; }
   #topright { right:16px; top:14px; text-align:right; }
   #clock { font-size:24px; }
-  #zones { left:50%; bottom:14px; transform:translateX(-50%); display:flex; gap:8px; }
-  .zone { width:84px; height:56px; border:2px solid var(--line); background:#1b1220cc; font-size:11px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--dim); }
+  #zones { left:50%; bottom:14px; transform:translateX(-50%); display:grid; grid-template-columns:repeat(4, 96px); gap:6px; }
+  .zone { height:50px; border:2px solid var(--line); background:#1b1220cc; font-size:10px; line-height:1.25;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--dim); padding:0 2px; }
   .zone.full { border-color:var(--ink); color:var(--ink); }
   .zone b { font-size:10px; color:var(--dim); font-weight:normal; }
-  .zone.trap { border-style:dashed; margin-left:10px; }
+  .zone.st { border-style:dashed; }
+  .zone.st.full { border-style:solid; }
   #hint { left:50%; top:14px; transform:translateX(-50%); color:var(--dim); font-size:12px; text-align:center; }
+  #banner { left:50%; top:20%; transform:translateX(-50%); font-size:20px; color:var(--ink); text-align:center; opacity:0; transition:opacity .4s; max-width:70vw; }
+  #banner.on { opacity:1; }
+  #prompt { left:50%; bottom:150px; transform:translateX(-50%); color:#ffe08a; font-size:15px; text-align:center; }
+  #fusion { left:50%; bottom:132px; transform:translateX(-50%); color:#ff9de0; font-size:14px; text-align:center; display:none; }
+  #boss { left:50%; top:46px; transform:translateX(-50%); width:min(520px, 60vw); display:none; text-align:center; }
+  #boss .bar { height:16px; } #boss .bar > i { background:#b0338a; }
+  #stats { left:16px; top:104px; color:var(--dim); font-size:12px; line-height:1.5; }
   .screen { position:fixed; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column;
     background:#0d0810d9; text-align:center; padding:16px; gap:10px; }
   .screen.on { display:flex; }
   .screen h1 { margin:0; font-size:clamp(28px, 6vw, 52px); letter-spacing:4px; color:var(--ink); }
-  .screen p { margin:0; color:var(--dim); line-height:1.6; max-width:520px; }
+  .screen p { margin:0; color:var(--dim); line-height:1.6; max-width:560px; }
   .screen .stat { color:var(--ink); font-size:18px; }
   button { font:inherit; font-size:18px; letter-spacing:2px; color:var(--bg); background:var(--ink); border:0;
     padding:12px 28px; margin-top:10px; cursor:pointer; }
   button:hover, button:focus-visible { background:#fff; outline:2px solid var(--xp); }
+  button.small { font-size:13px; padding:6px 12px; margin:2px; }
+  button.sel { outline:3px solid var(--xp); }
+  #offerScreen { pointer-events:auto; }
+  #offerCards { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .card { width:200px; border:2px solid var(--line); background:var(--panel); padding:10px; text-align:left; font-size:13px; line-height:1.4; }
+  .card h3 { margin:0 0 4px; font-size:15px; letter-spacing:1px; }
+  .card .t { color:var(--dim); font-size:11px; }
+  .card.rare { border-color:#5b9bd5; } .card.epic { border-color:#a974e0; } .card.legendary { border-color:#e8b84a; }
+  .card.new h3::after { content:' NEW'; color:#8f6; font-size:10px; }
+  #offerBtns button { font-size:14px; padding:8px 16px; margin:4px; }
+  .rowBtn { display:flex; gap:6px; margin-top:8px; }
+  .rowBtn button { font-size:12px; padding:5px 8px; margin:0; flex:1; }
 </style>
 </head>
 <body>
@@ -41,7 +61,7 @@
 <div id="flash"></div>
 
 <div class="hud" id="topleft">
-  <div>HEALTH <span id="hpnum">100</span></div>
+  <div>HEALTH <span id="hpnum">100</span> / <span id="hpmax">100</span></div>
   <div class="bar" id="hpbar"><i></i></div>
   <div>XP <span id="xpnum">0</span></div>
   <div class="bar" id="xpbar"><i></i></div>
@@ -49,35 +69,50 @@
 <div class="hud" id="topright">
   <div id="clock">0:00</div>
   <div>DEFEATED <span id="kills">0</span></div>
+  <div>COINS <span id="coins">0</span></div>
 </div>
+<canvas class="hud" id="minimap" style="right:16px;top:100px;width:168px;height:168px;border:2px solid var(--ink);background:#000a;image-rendering:pixelated"></canvas>
 <div class="hud" id="hint"></div>
-<div class="hud" id="zones">
-  <div class="zone full" id="z1">Ember Wyvern<b>ZONE 1</b></div>
-  <div class="zone" id="z2">empty<b>ZONE 2</b></div>
-  <div class="zone" id="z3">empty<b>ZONE 3</b></div>
-  <div class="zone trap" id="zt">no trap<b>TRAP</b></div>
-</div>
+<div class="hud" id="banner"></div>
+<div class="hud" id="prompt"></div>
+<div class="hud" id="fusion"></div>
+<div class="hud" id="boss"><div id="bossname">THE HOLLOW PHARAOH</div><div class="bar"><i id="bossfill"></i></div></div>
+<div class="hud" id="debug" style="left:16px;top:140px;display:none"></div>
+<div class="hud" id="stats"></div>
+<div class="hud" id="zones"></div>
 
 <div class="screen on" id="startScreen">
   <h1>DUEL SUMMONER</h1>
-  <p>Test build 1: camera, combat and restart.<br>
-     WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash &middot; Esc pause</p>
+  <p>Test build 3: one full run, the Buried Kingdom.<br>
+     WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash &middot; Ctrl or C slide &middot; E use &middot; Esc pause<br>
+     Survive to 8:00, then defeat The Hollow Pharaoh (or enter the Royal Gate early from 6:00).</p>
+  <div><button class="small sel" id="pickKael">KAEL: Ember Wyvern</button><button class="small" id="pickMira">MIRA: Rune Apprentice</button></div>
   <button id="startBtn">START</button>
 </div>
 <div class="screen" id="pauseScreen">
   <h1>PAUSED</h1>
-  <p>WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash</p>
+  <p>WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash &middot; Ctrl or C slide &middot; E use</p>
   <button id="resumeBtn">RESUME</button>
+  <button id="endBtn" class="small">END RUN (cash out)</button>
+</div>
+<div class="screen" id="offerScreen">
+  <h1 id="offerTitle" style="font-size:28px">LEVEL UP</h1>
+  <p id="offerSub"></p>
+  <div id="offerCards"></div>
+  <div id="offerBtns"></div>
 </div>
 <div class="screen" id="deadScreen">
-  <h1>DEFEATED</h1>
-  <p class="stat">Time survived <span id="dTime">0:00</span></p>
-  <p class="stat">Enemies defeated <span id="dKills">0</span></p>
+  <h1 id="resTitle">DEFEATED</h1>
+  <p class="stat">Time <span id="dTime">0:00</span> &middot; Level <span id="dLevel">1</span></p>
+  <p class="stat">Enemies defeated <span id="dKills">0</span> &middot; Fusions <span id="dFusions">0</span></p>
+  <p class="stat">Overtime survived <span id="dOvertime">0:00</span></p>
+  <p class="stat">Star Chips earned <span id="dChips">0</span></p>
   <p>Best time <span id="dBest">0:00</span></p>
   <button id="restartBtn">RESTART</button>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="game.js"></script>
+<script src="vendor/three.min.js"></script>
+<script type="module" src="src/main.js"></script>
 </body>
 </html>
+
