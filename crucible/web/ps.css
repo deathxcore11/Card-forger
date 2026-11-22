@@ -226,7 +226,7 @@ body.ps { background: #000; }
 #app.ps .book { position: absolute; padding: 0; }
 #app.ps .book .sc p { margin: 0 0 4px; }
 #app.ps .brow { display: flex; gap: 6px; align-items: flex-start; padding: 4px 0; border-bottom: 1px solid var(--sh); }
-#app.ps .brow .bp { flex: none; width: 32px; } #app.ps .brow .bp img, #app.ps .brow .bp .coin { position: relative; display: block; }
+#app.ps .brow .bp { flex: none; width: 32px; } #app.ps .brow .bp > img, #app.ps .brow .bp > .coin { position: relative; display: block; } /* not the letter struck in a blank medal (.coin > img): it stays on the medal */
 #app.ps .brow .bt { flex: 1; min-width: 0; } #app.ps .brow .bt .lb { position: relative; display: block; margin-bottom: 2px; white-space: normal; }
 #app.ps .brow .bs { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 #app.ps .pq.in { position: relative; display: inline-block; margin: 0 4px 4px 0; width: auto; vertical-align: top; }

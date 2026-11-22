@@ -1425,11 +1425,15 @@ function psOmen() {
 }
 
 // ---- the books: the run's end, the Codex, Feats, the Memory Vault
-// One window over the title picture, its heading carved, its pages in a box that scrolls, its plaques along the foot.
+// The book stands in the reading room: the room is shown whole and undimmed, and the book's window, 416 pixels wide at
+// the most, stands in its middle, so the near shelves frame it on both sides (at 512 pixels wide only their inner edge
+// shows). Its heading is carved, its pages scroll in a box, its plaques lie along its foot.
 function psBook(title, body, foot, extra = '') {
-  const { W, H } = F, bgPic = CART.has('room-archive-book') ? 'room-archive-book' : 'key-title', bg = CART.has(bgPic) && D.cart && D.cart.title === 720 ? `<img class="bg" src="${cimg(bgPic)}" style="position:absolute;left:${(W - 720) >> 1}px;top:${(H - 480) >> 1}px" alt="">` : box(0, 0, W, H, 'st dk');
-  return `<div class="ti">${bg}<i class="dim0"></i><div class="wn book" style="left:8px;top:6px;width:${W - 16}px;height:${H - 12}px"><div class="ab" style="left:0;top:4px;width:${W - 16}px;display:flex;justify-content:center">${carveImg(title, 16, render)}</div>
-    <div class="ab sc" style="left:8px;top:26px;width:${W - 32}px;height:${H - 62}px">${body}</div><div class="ab" style="left:8px;top:${H - 32}px;width:${W - 32}px;height:16px">${foot}</div></div>${extra}</div>`;
+  const { W, H } = F, bw = Math.min(W - 16, 416), bx = (W - bw) >> 1, bgPic = CART.has('room-archive-book') ? 'room-archive-book' : 'key-title';
+  const bg = CART.has(bgPic) && D.cart && D.cart.title === 720 ? `<img class="bg" src="${cimg(bgPic)}" width="720" height="480" style="position:absolute;left:${(W - 720) >> 1}px;top:${(H - 480) >> 1}px" alt="">` : box(0, 0, W, H, 'st dk');
+  const c = carve(title, 16, render), head = c ? `<img class="ab" src="${c.url}" width="${c.w}" height="${c.h}" style="left:${(bw - c.w) >> 1}px;top:4px" alt="${esc(title)}">` : `<b class="ab lb g" style="left:8px;top:8px">${esc(title)}</b>`; // placed from its own width, so it starts on a whole pixel
+  return `<div class="ti">${bg}<div class="wn book" style="left:${bx}px;top:6px;width:${bw}px;height:${H - 12}px">${head}
+    <div class="ab sc" style="left:8px;top:26px;width:${bw - 16}px;height:${H - 66}px">${body}</div><div class="ab" style="left:8px;top:${H - 32}px;width:${bw - 16}px;height:16px">${foot}</div></div>${extra}</div>`;
 }
 const row = (pic, head, text, side = '') => `<div class="brow">${pic ? `<div class="bp">${pic}</div>` : ''}<div class="bt"><b class="lb g">${head}</b><p>${text}</p></div>${side ? `<div class="bs">${side}</div>` : ''}</div>`;
 const inl = (label, a, o = {}) => `<button class="pq in${o.lit ? ' lit' : ''}${o.on ? ' on' : ''}" ${a ? `data-a="${esc(a)}"` : ''}${o.off ? ' disabled' : ''}>${esc(label)}</button>`; // a plaque that sits in a line
@@ -1441,7 +1445,7 @@ function psOver() {
   const unl = R ? R.unlocks.filter(u => u.kind !== 'heat' || u.id <= heatTop()).map(u => u.kind === 'heat' && labs.heat ? { ...u, name: `Heat ${u.id}, ${HEAT_RULES[u.id - 1].name}`, text: HEAT_RULES[u.id - 1].text + ' It pays more Memories.' } : u)
     .map(u => u.kind === 'gift' ? row(medal(u.id, 32), `NEW GIFT: ${esc(u.name.toUpperCase())}`, `${esc(RELICS[u.id].text)} ${esc(u.why)} It will be in the first Gift offer of your next run.`) : row('', `${u.kind === 'record' ? 'NEW RECORD' : 'UNLOCKED'}: ${esc(String(u.name).toUpperCase())}`, esc(u.text))).join('') : '';
   const tally = `<p>Floor ${r.floor + 1}, chamber ${Math.min(6, r.chamber + 1)}. ${esc(r.forger ? FORGERS[r.forger].name : 'No Forger')}. Duels won ${S.wins} of ${S.duels}. Guardians beaten ${S.bossWins}. Melds ${S.melds}.${Object.keys(S.ranks).length ? ' Ranks ' + Object.entries(S.ranks).map(([k, v]) => k + ' x' + v).join(', ') + '.' : ''}</p>`;
-  const mem = R ? `<p>${R.lines.map(l => `${esc(l[0])} +${l[1]}`).join('. ')}.</p><p><b class="lb g">+${R.total} MEMORIES</b></p>` : '<p class="d">Already banked.</p>';
+  const mem = R ? `${R.lines.length ? `<p>${R.lines.map(l => `${esc(l[0])} +${l[1]}`).join('. ')}.</p>` : ''}<p><b class="lb g">+${R.total} MEMORIES</b></p>` : '<p class="d">Already banked.</p>';
   const feats = R && R.feats.length ? `<p><b class="lb g">FEATS</b></p>${R.feats.map(featPs).join('')}<p class="d">Feats count across runs, win or lose.</p>` : '';
   return psBook(head, unl + tally + mem + feats, inl('NEW RUN', 'new', { lit: true }) + inl('CODEX', 'screen:codex') + inl('FEATS', 'screen:feats') + inl(`VAULT ${P.memories}`, 'screen:vault') + inl('TITLE', 'home'));
 }
