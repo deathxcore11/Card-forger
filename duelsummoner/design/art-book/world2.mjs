@@ -99,18 +99,18 @@ export const MORE3 = [
 
 // ------------------------------------------------------------------ ambient life: small creatures that make a stage feel alive (they do not fight)
 export const AMBIENT = [
-  P('WA01', 'Butterfly', 'life-butterfly', 24, 0.2, 'Stage 1 meadows', 'a small butterfly with orange and black wings spread flat, thin body, two feelers; wings as separate parts.', { view: 'parts' }),
-  P('WA02', 'Songbird (perched)', 'life-bird', 40, 0.3, 'Stage 1 trees and walls', 'a round chubby bird with a short beak, blue back and cream belly, perched, one eye dot; head and wings separate.', { view: 'parts' }),
-  P('WA03', 'Rabbit', 'life-rabbit', 60, 0.5, 'Stage 1 meadows', 'a chunky rabbit sitting up with long ears, tan fur with a white tail, front paws held to its chest; ears separate.', { view: 'parts' }),
-  P('WA04', 'Lizard', 'life-lizard', 50, 0.3, 'Stage 1 rocks, Stage 3 sand', 'a flat green lizard with a long tail curved to one side, chunky legs spread, a pale stripe down its back.', { view: 'parts' }),
-  P('WA05', 'Beetle', 'life-beetle', 30, 0.2, 'everywhere on the ground', 'a round shiny beetle with a split shell in blue-black, six little legs, two short feelers.', { view: 'parts' }),
-  P('WA06', 'Frog', 'life-frog', 50, 0.3, 'water edges', 'a plump green frog sitting with its back legs folded, a pale belly, big eyes on top of its head.', { view: 'parts' }),
-  P('WA07', 'Dragonfly', 'life-dragonfly', 30, 0.2, 'water, Stage 1', 'a thin long dragonfly with four clear wings spread, a blue striped body; each wing separate.', { view: 'parts' }),
-  P('WA08', 'Bat', 'life-bat', 40, 0.4, 'Stage 2 ceilings', 'a small round bat with big ears and wide leathery wings spread, dark blue-grey fur, tiny pale fangs; wings separate.', { view: 'parts' }),
-  P('WA09', 'Rat', 'life-rat', 50, 0.3, 'Stage 2 floors', 'a chunky grey rat with a long thin pink tail, big round ears, small pink nose, whiskers as three thin shapes.', { view: 'parts' }),
-  P('WA10', 'Spider (small)', 'life-spider', 40, 0.3, 'Stage 2 webs', 'a round purple-black spider with eight stubby legs bent at two joints and two big shiny eyes, hanging from a thread.', { view: 'parts' }),
-  P('WA11', 'Glow moth', 'life-glowmoth', 24, 0.2, 'Stage 2 and Stage 3', 'a small round moth with soft fuzzy wings spread and a faintly glowing body, cyan in Stage 2, violet in Stage 3; wings separate.', { view: 'parts' }),
-  P('WA12', 'Sand crab', 'life-sandcrab', 50, 0.3, 'Stage 3 sand', 'a flat gold-brown crab with two raised claws and eyes on stalks, walking sideways.', { view: 'parts' }),
+  P('WA01', 'Butterfly', 'life-butterfly', 24, 0.2, 'Stage 1 meadows', 'a small butterfly with orange and black wings spread flat, thin body, two feelers.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'flutters in loops, lands on flowers, wings open and close' }),
+  P('WA02', 'Songbird (perched)', 'life-bird', 40, 0.3, 'Stage 1 trees and walls', 'a round chubby bird with a short beak, blue back and cream belly, perched, one eye dot.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'hops, pecks, turns its head, flies off when you come near' }),
+  P('WA03', 'Rabbit', 'life-rabbit', 60, 0.5, 'Stage 1 meadows', 'a chunky rabbit sitting up with long ears, tan fur with a white tail, front paws held to its chest.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'sits up, ears twitch, hops away from the fight' }),
+  P('WA04', 'Lizard', 'life-lizard', 50, 0.3, 'Stage 1 rocks, Stage 3 sand', 'a flat green lizard with a long tail curved to one side, chunky legs spread, a pale stripe down its back.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'darts, freezes, tail flicks' }),
+  P('WA05', 'Beetle', 'life-beetle', 30, 0.2, 'everywhere on the ground', 'a round shiny beetle with a split shell in blue-black, six little legs, two short feelers.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'trundles along, wing cases open for a short buzz' }),
+  P('WA06', 'Frog', 'life-frog', 50, 0.3, 'water edges', 'a plump green frog sitting with its back legs folded, a pale belly, big eyes on top of its head.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'sits, throat pulses, jumps' }),
+  P('WA07', 'Dragonfly', 'life-dragonfly', 30, 0.2, 'water, Stage 1', 'a thin long dragonfly with four clear wings spread, a blue striped body.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'hovers and darts, wings blur' }),
+  P('WA08', 'Bat', 'life-bat', 40, 0.4, 'Stage 2 ceilings', 'a small round bat with big ears and wide leathery wings spread, dark blue-grey fur, tiny pale fangs.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'hangs, then flaps in a loop' }),
+  P('WA09', 'Rat', 'life-rat', 50, 0.3, 'Stage 2 floors', 'a chunky grey rat with a long thin pink tail, big round ears, small pink nose, whiskers as three thin shapes.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'scurries, sniffs, sits up' }),
+  P('WA10', 'Spider (small)', 'life-spider', 40, 0.3, 'Stage 2 webs', 'a round purple-black spider with eight stubby legs bent at two joints and two big shiny eyes, hanging from a thread.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'creeps, legs ripple, drops on a thread' }),
+  P('WA11', 'Glow moth', 'life-glowmoth', 24, 0.2, 'Stage 2 and Stage 3', 'a small round moth with soft fuzzy wings spread and a faintly glowing body, cyan in Stage 2, violet in Stage 3.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'drifts slowly, wings beat, glows' }),
+  P('WA12', 'Sand crab', 'life-sandcrab', 50, 0.3, 'Stage 3 sand', 'a flat gold-brown crab with two raised claws and eyes on stalks, walking sideways.', { style: 'creature', view: 'beast', rig: 'parts', anim: 'walks sideways, claws snap' }),
 ];
 
 export const ALL_MORE = [...MORE1, ...MORE2, ...MORE3, ...AMBIENT];
