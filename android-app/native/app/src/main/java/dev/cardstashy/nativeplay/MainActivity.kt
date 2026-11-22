@@ -132,6 +132,8 @@ private sealed interface Screen {
     data class TrunkSet(val code: String) : Screen
     /** The Shop: sets and packs, your packs, the Forge; [set] opens one set's page. */
     data class Shop(val tab: String = "sets", val set: String? = null) : Screen
+    /** The Adventures hub: the games that plug into the registry (ui/Adventures.kt). */
+    data object Adventures : Screen
     /** A Play page not yet native: the site's own, in the web view (Planeswalk stays here for good). */
     data class Web(val url: String, val press: String? = null) : Screen
     data class Match(val pick: Pick) : Screen
@@ -417,7 +419,7 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(warmUser) { dev.cardstashy.nativeplay.play.RandomBuild.warm(lobbies.values.firstOrNull()?.format ?: "Commander", warmUser) }
             dev.cardstashy.nativeplay.ui.PlayHomeRoute(
                 onQuickPlay = { go(Screen.Decks) }, onLobby = { if (LOBBY_LIVE) go(Screen.Lobby(it)) else go(Screen.Decks) }, onCollection = { go(Screen.Collection) },
-                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) }, onAchievements = { go(Screen.Achievements(it)) }, onStory = { go(Screen.Story()) }, onShop = { t, set -> go(Screen.Shop(t, set)) },
+                onSignIn = { go(Screen.SignIn) }, onWeb = { go(Screen.Web(it)) }, onTrunk = { go(Screen.Trunk) }, onDecks = { go(Screen.PlayDecks) }, onAchievements = { go(Screen.Achievements(it)) }, onStory = { go(Screen.Story()) }, onAdventures = { go(Screen.Adventures) }, onShop = { t, set -> go(Screen.Shop(t, set)) },
                 onQuickWith = { id -> if (LOBBY_LIVE) { lobbies.getOrPut("quick") { dev.cardstashy.nativeplay.ui.LobbyModel("quick") }.quickWith(id); go(Screen.Lobby("quick")) } else go(Screen.Decks) })
         }
         Screen.Trunk -> {
@@ -557,6 +559,10 @@ private fun App(activity: MainActivity) {
             LaunchedEffect(Unit) { activity.inGame(false) }
             DeckPickScreen(onPick = { go(Screen.Match(it)) }, onBack = { back() },
                 onSignIn = { go(Screen.SignIn) })
+        }
+        Screen.Adventures -> {
+            LaunchedEffect(Unit) { activity.inGame(false) }
+            dev.cardstashy.nativeplay.ui.AdventuresRoute(onBack = { back() }, host = dev.cardstashy.nativeplay.ui.AdventureHost(web = { go(Screen.Web(it)) }))
         }
         is Screen.Story -> {
             LaunchedEffect(Unit) { activity.inGame(false) }
@@ -732,6 +738,7 @@ private fun presenceWhere(s: Screen): dev.cardstashy.nativeplay.play.Presence.Wh
     is Screen.Shop -> dev.cardstashy.nativeplay.play.Presence.Where("play", if (s.tab == "packs") "packs" else "shop")
     is Screen.Achievements -> dev.cardstashy.nativeplay.play.Presence.Where("play", "deeds")
     is Screen.Story -> dev.cardstashy.nativeplay.play.Presence.Where("play", "story")
+    Screen.Adventures -> dev.cardstashy.nativeplay.play.Presence.Where("play", "home")
     else -> dev.cardstashy.nativeplay.play.Presence.Where("app")
 }
 

@@ -173,14 +173,15 @@ private object P {
 }
 
 /** Each mode's tint, under its art: what a card shows offline or while the art loads. */
-private val MODE_TINT = mapOf("quick" to Color(0xFF5A4320), "practice" to Color(0xFF24493A), "social" to Color(0xFF23395E), "story" to Color(0xFF5A2626), "planeswalk" to Color(0xFF3E2C5C))
+private val MODE_TINT = mapOf("quick" to Color(0xFF5A4320), "practice" to Color(0xFF24493A), "social" to Color(0xFF23395E), "story" to Color(0xFF5A2626), "adventures" to Color(0xFF3E2C5C))
 
 private val MODE_ART = mapOf(
     "social" to "https://cards.scryfall.io/art_crop/front/5/a/5a7241f5-4d69-47fe-b037-95037008184c.jpg?1783934878",
     "quick" to "https://cards.scryfall.io/art_crop/front/4/1/4101e3fe-b0e7-4f0f-b9ac-9b61a4d628b3.jpg?1783912843",
-    "practice" to "https://cards.scryfall.io/art_crop/front/c/a/ca10e2b8-a317-4c98-a866-43bf274e82cb.jpg?1783931052",
-    "planeswalk" to "https://cards.scryfall.io/art_crop/front/a/8/a83ca3a1-82a9-4f47-b0b8-21687afd705b.jpg?1783931174")
-private val MODE_FOCUS = mapOf("social" to BiasAlignment(0f, -.3f), "quick" to BiasAlignment(.16f, -.2f), "practice" to BiasAlignment(.04f, -.1f), "planeswalk" to BiasAlignment(0f, -.76f))
+    "practice" to "https://cards.scryfall.io/art_crop/front/c/a/ca10e2b8-a317-4c98-a866-43bf274e82cb.jpg?1783931052")
+/** A mode's art. Adventures wears the picture of the first game that is ready (the registry, Adventures.kt), so a new game changes it with no edit here. */
+internal fun modeArt(key: String): String? = if (key == "adventures") Adventures.strip().firstOrNull()?.art else MODE_ART[key]
+private val MODE_FOCUS = mapOf("social" to BiasAlignment(0f, -.3f), "quick" to BiasAlignment(.16f, -.2f), "practice" to BiasAlignment(.04f, -.1f), "adventures" to BiasAlignment(0f, Adventures.strip().firstOrNull()?.artFocus ?: 0f))
 private const val BUILD_ART = "https://cards.scryfall.io/art_crop/front/f/d/fd99bce1-ce39-464b-8e61-2631eb3ed6f6.jpg"
 const val FORGE_ART_NAME = "Great Furnace"
 
@@ -468,7 +469,7 @@ private fun Modes(wide: Boolean, act: PlayHomeActions, row: Dp? = null, lens: Le
         Triple("social", "Multiplayer", "Your deck against a friend's.") to "Invite",
         Triple("quick", "Quick Play", "Your deck against a matched CPU.") to "Play",
         Triple("practice", "Practice", "Any two decks, head to head.") to "Set up",
-        Triple("planeswalk", "Planeswalk", "Climb Innistrad. Take down Sorin.") to "Open")
+        Triple("adventures", "Adventures", Adventures.copy()) to "Open")
     val rows = if (row != null) listOf(modes) else if (wide) modes.chunked(2) else modes.map { listOf(it) }
     Column(verticalArrangement = Arrangement.spacedBy(if (wide) 18.dp else 12.dp)) {
         rows.forEach { r -> Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -486,7 +487,7 @@ private fun ModeCard(key: String, name: String, copy: String, cta: String, wide:
     Box(modifier.scale(k).then(if (short != null) Modifier.height(short) else Modifier.heightIn(min = if (wide) 300.dp else 200.dp)).testShadow(22.dp, shape).clip(shape).background(Color(0xFF121318))
         .clickable(press, dev.cardstashy.nativeplay.ui.PadFocus.Ring, onClick = onClick).semantics { contentDescription = name }) {
         // Planeswalk's old scan is zoomed to trim its black frame (pl-mode-art--trim).
-        Art(MODE_ART[key], Modifier.matchParentSize().let { if (key == "planeswalk") it.scale(1.16f) else it }, MODE_FOCUS[key] ?: Alignment.Center)
+        Art(modeArt(key), Modifier.matchParentSize().let { if (key == "adventures") it.scale(1.16f) else it }, MODE_FOCUS[key] ?: Alignment.Center)
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color(0x000C0C0E), .34f to Color(0x000C0C0E), .66f to Color(0xB80C0C0E), 1f to Color(0xF20C0C0E))))
         Box(Modifier.matchParentSize().background(Brush.radialGradient(.55f to Color.Transparent, 1f to Color(0x8C0C0C0E))))
         Box(Modifier.matchParentSize().border(if (key == "quick") 1.5.dp else 1.dp, if (key == "quick") Brush.linearGradient(listOf(Color(0x40E8B95B), P.Gold, Color(0xFFFFF3D0), P.Gold, Color(0x40E8B95B))) else Brush.linearGradient(listOf(P.CardLine, P.CardLine)), shape))
@@ -1682,7 +1683,7 @@ private fun SignInCard(onSignIn: () -> Unit) {
 /** The upright home's modes and what its gold Play does. Its own object so plain JVM tests can load it without Compose. */
 internal object StageModes {
     /** Key, name. The keys are [PlayHomeActions.mode]'s; "story" opens Story. */
-    val ALL = listOf("quick" to "Quick Play", "practice" to "Practice", "social" to "Friends", "story" to "Story", "planeswalk" to "Planeswalk")
+    val ALL = listOf("quick" to "Quick Play", "practice" to "Practice", "social" to "Friends", "story" to "Story", "adventures" to "Adventures")
 
     fun name(mode: String) = ALL.firstOrNull { it.first == mode }?.second ?: "Quick Play"
 
@@ -1702,7 +1703,7 @@ internal object StageModes {
         "practice" -> "Any two decks"
         "social" -> "Against a friend"
         "story" -> if (done) "All $battles battles won" else "Battle ${minOf(won + 1, battles)} of $battles"
-        else -> "Take down Sorin"
+        else -> Adventures.line()
     }
 
     fun index(mode: String) = ALL.indexOfFirst { it.first == mode }.coerceAtLeast(0)
@@ -1725,7 +1726,7 @@ internal object QuestTurn {
 @Composable
 private fun Stage(d: PlayHomeData, act: PlayHomeActions, purse: PlayMath.Purse, level: PlayMath.Level, mode: String, onMode: (String) -> Unit, top: Dp) {
     val story = d.rules.acts.firstOrNull { it.act == d.story.act } ?: d.rules.acts.firstOrNull()
-    val art = { key: String -> if (key == "story") story?.art else MODE_ART[key] }
+    val art = { key: String -> if (key == "story") story?.art else modeArt(key) }
     val play = { key: String -> StageModes.play(key, d.deck, act) }
     BoxWithConstraints(Modifier.fillMaxSize().testTag("playStage")) {
         val wide = maxWidth >= 600.dp
