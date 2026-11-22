@@ -753,7 +753,7 @@ function bootScreen(p) {
 // ---- the crest as a struck coin that turns: on the loading screen, and beside the lit choice on the title as its
 // cursor. A 12-sided disc with a rim, the crest on both faces, drawn by the same renderer as the table. The crest
 // picture comes inside the page (D.cart.crest), so it turns before the picture pack has arrived.
-const COIN = { tex: null, asked: false };
+const COIN = { tex: null, asked: false, small: null };
 function coinTex() {
   if (COIN.asked || !(D.cart && D.cart.crest)) return COIN.tex; COIN.asked = true;
   const im = new Image(); im.onload = () => { try {
@@ -764,11 +764,25 @@ function coinTex() {
     x.drawImage(im, 8, 8, 48, 48); COIN.tex = R3.crunch(R3.texFrom(c, 64, 64)); } catch { /* a plain disc then */ } };
   im.src = D.cart.crest; return null;
 }
+// The cursor coin on the title is 16 pixels: the crest's wreath would be a smudge there, so its faces are struck plainer, a
+// bright rim round a dark field and the hammer in the middle, which read at that size as the crest does on the large coin.
+function coinTexSmall() {
+  if (COIN.small) return COIN.small;
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+    x.fillStyle = '#f0cc70'; x.beginPath(); x.arc(32, 32, 32, 0, Math.PI * 2); x.fill(); // the rim, bright gold
+    x.fillStyle = '#4a2a12'; x.beginPath(); x.arc(32, 32, 22, 0, Math.PI * 2); x.fill(); // the field, dark bronze
+    x.fillStyle = '#ffe8a8'; x.fillRect(18, 18, 28, 10); x.fillRect(28, 28, 8, 20); // the hammer: head and handle
+    COIN.small = R3.crunch(R3.texFrom(c, 64, 64));
+  } catch { COIN.small = null; }
+  return COIN.small;
+}
 function paintCoin(cv, a) {
   const w = cv.width, h = cv.height, view = R3.makeView(cv, w, h); view.px.fill(0);
-  const R = 100, T = 16, N = 12, ca = Math.cos(a), sa = Math.sin(a), t = coinTex();
+  const R = 100, T = 16, N = 12, ca = Math.cos(a), sa = Math.sin(a), t = w <= 24 ? coinTexSmall() : coinTex();
   const P = (x, y, z) => [x * ca + z * sa, y, -x * sa + z * ca], ring = i => { const q = i / N * Math.PI * 2; return [Math.cos(q) * R, Math.sin(q) * R]; };
-  const L = [-.4, .5, .77], lit = n => { const m = P(...n); return .5 + .65 * Math.max(0, m[0] * L[0] + m[1] * L[1] + m[2] * L[2]); };
+  const lo = w <= 24 ? .8 : .5; // the small coin is lit more evenly, so its rim stays bright beside the plaques as it turns
+  const L = [-.4, .5, .77], lit = n => { const m = P(...n); return lo + (1.15 - lo) * Math.max(0, m[0] * L[0] + m[1] * L[1] + m[2] * L[2]); };
   const uv = (x, y) => [(.5 + .5 * x / R) * 63, (.5 - .5 * y / R) * 63];
   for (let i = 0; i < N; i++) { const [x0, y0] = ring(i), [x1, y1] = ring(i + 1);
     const face = (z, back) => { const pts = back ? [[0, 0], [x1, y1], [x0, y0], [0, 0]] : [[0, 0], [x0, y0], [x1, y1], [0, 0]];
@@ -864,21 +878,55 @@ function titleLife(ox, oy) {
   const part = (cls, at, pin, more = '') => `<i class="${cls}" data-art="title" data-at="${at}" data-pin="${pin}" style="left:${ox + at[0] - pin[0]}px;top:${oy + at[1] - pin[1]}px;${more}"></i>`;
   return (D.cart.torches || []).map(([x, y, w, h, n], i) => CART.has(`torch-${i + 1}`) ? part('flm', [x, y], [0, 0], `width:${w}px;height:${h}px;background-image:url(${cimg(`torch-${i + 1}`)});--to:-${w * n}px;animation-timing-function:steps(${n});animation-delay:-${(i * .45).toFixed(2)}s" data-frames="${n}`) : '').join('');
 }
+// The title's right-hand column (the logo, its line, the menu with the turning crest beside it, the saved run) and the
+// picture behind it are laid out together, so that nothing of the column ever lies over a torch (each torch keeps a
+// two-pixel margin). The picture stands centred if it can; else it is moved, never so far that the left torch leaves the
+// frame; then the menu steps down below the right torch's foot, its line moves under the logo's right end, and the
+// plaques close up to two pixels apart. The cheapest arrangement that is clear wins. The saved run lies under the menu,
+// lined up with it, or, on a frame too short, beside its foot, clear of the crest's column.
+const TITLE_SUB = 'BENEATH ASTERHOLD', SLOT_H = 45;
+function titleLayout(W, H, items, has) {
+  const T = (D.cart && D.cart.title === 720 && D.cart.torches) || [], key = [W, H, items, has, T.length].join(); if (titleLayout.key === key) return titleLayout.v;
+  const dy = cy0(), cx = (W - 720) >> 1, cy = (H - 480) >> 1, mx = W - 148;
+  const hit = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
+  const xs = T.map(t => t[0]), xe = T.map(t => t[0] + t[2]), ys = T.map(t => t[1]), ye = T.map(t => t[1] + t[3]);
+  const oxLo = T.length ? Math.max(W - 720, 2 - Math.min(...xs)) : cx, oxHi = T.length ? Math.min(0, W - 2 - Math.max(...xe)) : cx;
+  const oyLo = T.length ? Math.max(H - 480, 2 - Math.min(...ys)) : cy, oyHi = T.length ? Math.min(0, H - 12 - Math.max(...ye)) : cy; // the foot line stays clear too
+  const subW = TITLE_SUB.length * 6;
+  let best = null;
+  for (const pitch of [20, 18]) for (const subR of [false, true]) for (const below of [false, true]) for (let oy = oyLo; oy <= oyHi; oy++) {
+    const mt = below ? Math.max(dy + 78, oy + Math.max(...ye, 0) + 3) : dy + 78, mh = items * pitch - (pitch - 16), mb = mt + mh;
+    if (mb > H - 4) continue;
+    const low = mb + 4 + SLOT_H <= H - 2, slot = has ? (low ? [mx, mb + 4, 136, SLOT_H] : [mx - 22 - 136, mb - SLOT_H, 136, SLOT_H]) : null;
+    const R = [[W - 160, dy + 6, 160, 60], [subR ? W - 8 - subW : W - 154, dy + 66, subW, 8], [mx - 19, mt, 155, mh]].concat(slot ? [slot] : []);
+    const cost0 = Math.abs(oy - cy) + (pitch === 18 ? 40 : 0) + (below ? 20 : 0) + (subR ? 10 : 0);
+    if (best && cost0 >= best.cost) continue;
+    for (let ox = oxLo; ox <= oxHi; ox++) {
+      const cost = cost0 + Math.abs(ox - cx); if (best && cost >= best.cost) continue;
+      if (T.some(([x, y, w, h]) => R.some(r => hit(r, [ox + x - 2, oy + y - 2, w + 4, h + 4])))) continue;
+      best = { cost, ox, oy, mx, mt, pitch, subX: R[1][0], slot, low };
+    }
+  }
+  if (!best) best = { cost: 0, ox: cx, oy: cy, mx, mt: dy + 78, pitch: 20, subX: W - 154, slot: has ? [W - 306, dy + 78 + items * 20 - 4 - SLOT_H, 136, SLOT_H] : null }; // no torches, or no room: the old place
+  titleLayout.key = key; titleLayout.v = best; return best;
+}
 function psHome() {
   const saved = liveSave(), has = saved && saved.phase !== 'over';
   const { W, H } = F, dy = cy0();
-  // The title picture is 720 x 480 (the whole painting at 15/32 of its size); the frame shows its middle. The older
-  // cut, 512 x 240, is the middle band at a third of the size, and gets no moving parts.
-  let pic = box(0, 0, W, H, 'st dk'), life = '';
-  if (CART.has('key-title') && D.cart && D.cart.title === 720) { const ox = (W - 720) >> 1, oy = (H - 480) >> 1; pic = `<img class="bg" data-pic="title" src="${cimg('key-title')}" width="720" height="480" style="left:${ox}px;top:${oy}px;width:720px;height:480px" alt="">`; life = titleLife(ox, oy); }
-  else if (CART.has('key-title')) { const ox = (W - 512) >> 1, oy = (H - 240) >> 1; pic = `<img class="bg" src="${cimg('key-title')}" width="512" height="240" style="left:${ox}px;top:${oy}px;width:512px;height:240px" alt="">`; }
   const items = [has && ['CONTINUE', 'resume'], ['NEW DESCENT', 'new'], [`CODEX ${G.known.size}`, 'screen:codex'], [`FEATS ${(P.featsDone || []).length}/${featList(!!labs.long).length}`, 'screen:feats'], [`MEMORY VAULT ${P.memories}`, 'screen:vault'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options']].filter(Boolean);
-  const mx = W - 148, menu = items.map(([t, a], i) => pq(mx, dy + 78 + i * 20, 136, t, a, { lit: i === 0 })).join('') + (coinTex() || (D.cart && D.cart.crest) ? `<canvas id="coin" class="ab" width="16" height="16" style="left:${mx - 19}px;top:${dy + 78}px;pointer-events:none"></canvas>` : ''); // the turning crest marks the lit choice
-  const sy = dy + 82 + items.length * 20, low = sy + 46 <= H - 2; // the saved run under the menu, or beside it when the frame is too short
-  const slot = has ? `<div class="wn runslot" style="left:${low ? W - 160 : W - 316}px;top:${low ? sy : dy + 78 + items.length * 20 - 46}px">${lb(0, 0, '', '')}<b class="lb g">${esc(saved.forger ? shortName(FORGERS[saved.forger].name) : 'NO FORGER')}</b><br><b class="lb">FLOOR ${saved.floor + 1} · CHAMBER ${Math.min(6, saved.chamber + 1)}</b><br><b class="lb">SPARKS ${saved.sparks} · EMBERS ${saved.embers}</b></div>` : '';
+  const L = titleLayout(W, H, items.length, !!has), { mx, mt, pitch } = L;
+  // The title picture is 720 x 480 (the whole painting at 15/32 of its size); the frame shows the part titleLayout
+  // chose. The older cut, 512 x 240, is the middle band at a third of the size, and gets no moving parts.
+  let pic = box(0, 0, W, H, 'st dk'), life = '';
+  if (CART.has('key-title') && D.cart && D.cart.title === 720) { const { ox, oy } = L; pic = `<img class="bg" data-pic="title" src="${cimg('key-title')}" width="720" height="480" style="left:${ox}px;top:${oy}px;width:720px;height:480px" alt="">`; life = titleLife(ox, oy); }
+  else if (CART.has('key-title')) { const ox = (W - 512) >> 1, oy = (H - 240) >> 1; pic = `<img class="bg" src="${cimg('key-title')}" width="512" height="240" style="left:${ox}px;top:${oy}px;width:512px;height:240px" alt="">`; }
+  if (render.scr !== 'home') G.tcur = 0; // the hammer starts on the first choice; while the title stays, it stays where the mouse or the keys put it
+  const cur = Math.max(0, Math.min(items.length - 1, G.tcur || 0));
+  const menu = items.map(([t, a], i) => pq(mx, mt + i * pitch, 136, t, a, { lit: i === cur, cls: 'tm' })).join('') + (coinTex() || (D.cart && D.cart.crest) ? `<canvas id="coin" class="ab" width="16" height="16" style="left:${mx - 19}px;top:${mt + cur * pitch}px;pointer-events:none"></canvas>` : ''); // the turning crest marks the lit choice
+  const slot = has && L.slot ? `<div class="wn runslot" style="left:${L.slot[0]}px;top:${L.slot[1]}px;width:${L.slot[2]}px;height:${L.slot[3]}px">${lb(6, 6, saved.forger ? shortName(FORGERS[saved.forger].name) : 'NO FORGER', 'g')}${lb(6, 18, `FLOOR ${saved.floor + 1} · CHAMBER ${Math.min(6, saved.chamber + 1)}`)}${lb(6, 30, `SPARKS ${saved.sparks}`)}${lbr(L.slot[2] - 6, 30, `EMBERS ${saved.embers}`)}</div>` : '';
   return `<div class="ti">${pic}${life}
     ${CART.has('key-logo') && D.cart.logo ? `<img class="ab" src="${cimg('key-logo')}" width="${D.cart.logo[0]}" height="${D.cart.logo[1]}" style="left:${W - 152}px;top:${dy + 6}px" alt="Lost Memories">` : `<div class="ab" style="left:${W - 160}px;top:${dy + 8}px;width:160px;display:flex;flex-direction:column;align-items:center;gap:0">${carveImg('LOST', 22, render)}${carveImg('MEMORIES', 22, render)}</div>`}
-    ${lb(W - 154, dy + 66, 'BENEATH ASTERHOLD', 'd')}${menu}${slot}
+    ${lb(L.subX, dy + 66, TITLE_SUB, 'd')}${menu}${slot}
     ${G.notice ? `<div class="wn" style="position:absolute;left:8px;top:8px;width:200px;padding:5px 6px">${esc(G.notice)}</div>` : ''}
     ${lb(8, H - 10, 'A CARDSTASHY GAME · FREE, NOT FOR SALE', 'd')}</div>`;
 }
@@ -1558,6 +1606,30 @@ function screenCue(era = false) {
 function moreBelow(el) { el.classList.toggle('more', el.scrollTop + el.clientHeight < el.scrollHeight - 2); }
 app.addEventListener('scroll', ev => { const t = ev.target; if (t && t.classList && (t.classList.contains('rules') || t.classList.contains('trayline'))) moreBelow(t); }, true);
 app.addEventListener('click', ev => { try { tapped(ev); } catch (e) { recover(e, false); } });
+// The hammer: one lit plaque on a console screen, and one in the window over it. A mouse moves it to the plaque it points
+// at (a finger does not: a tap simply takes the plaque), the arrow keys move it along the plaques in reading order, and
+// Enter or Space takes the one it is on. On the title the turning crest goes with it.
+function litLayer() { const ws = app.querySelectorAll('.mw'); return ws.length ? ws[ws.length - 1] : app.querySelector('.story') || app; }
+const litPlaques = layer => [...layer.querySelectorAll('.pq')].filter(b => !b.disabled && b.offsetWidth && (layer !== app || !b.closest('.mw, .story')));
+function litMove(b) {
+  const layer = b.closest('.mw') || b.closest('.story') || app;
+  for (const e of layer.querySelectorAll('.pq.lit')) if (e !== b && (layer !== app || !e.closest('.mw, .story'))) e.classList.remove('lit');
+  b.classList.add('lit');
+  if (b.classList.contains('tm')) { G.tcur = [...app.querySelectorAll('.pq.tm')].indexOf(b); const c = document.getElementById('coin'); if (c) c.style.top = b.style.top; }
+  const sc = b.closest('.sc'); if (sc) { const t = b.offsetTop, h = sc.clientHeight; if (t < sc.scrollTop) sc.scrollTop = t; else if (t + b.offsetHeight > sc.scrollTop + h) sc.scrollTop = t + b.offsetHeight - h; }
+}
+app.addEventListener('pointerover', ev => {
+  if (ev.pointerType !== 'mouse' || !app.classList.contains('ps')) return;
+  const b = ev.target.closest && ev.target.closest('.pq'); if (!b || b.disabled || b.classList.contains('lit') || !litPlaques(litLayer()).includes(b)) return;
+  litMove(b); if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#app button')) b.focus({ preventScroll: true }); // the keys then take this one
+});
+addEventListener('keydown', ev => {
+  if (!app.classList.contains('ps') || booting || ev.altKey || ev.ctrlKey || ev.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test((ev.target || {}).tagName || '')) return;
+  const k = ev.key, list = litPlaques(litLayer()); if (!list.length) return;
+  const at = list.findIndex(b => b.classList.contains('lit'));
+  if (/^Arrow(Up|Down|Left|Right)$/.test(k)) { ev.preventDefault(); const d = k === 'ArrowUp' || k === 'ArrowLeft' ? -1 : 1, b = list[at < 0 ? 0 : (at + d + list.length) % list.length]; litMove(b); b.focus({ preventScroll: true }); }
+  else if ((k === 'Enter' || k === ' ') && at >= 0 && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#app button'))) { ev.preventDefault(); list[at].click(); } // a focused plaque takes the key itself
+});
 function tapped(ev) {
   const el = ev.target.closest('[data-a]'); if (!el || el.disabled) return;
   G.toast = ''; // a tap puts away the last message, so it cannot lie over the screen the tap opens
