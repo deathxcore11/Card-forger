@@ -50,8 +50,18 @@ test('jump height is 2.2 m', () => {
   const g = new Game(1); noEnemies(g);
   let peak = 0;
   g.step(1 / 60, { ...idle, jump: true });
-  for (let i = 0; i < 80; i++) { g.step(1 / 60, idle); peak = Math.max(peak, g.p.y); }
+  for (let i = 0; i < 80; i++) { g.step(1 / 60, { ...idle, jump: true }); peak = Math.max(peak, g.p.y); }              // jump held: full height
   near(peak, 2.2, 0.08);
+});
+
+test('jump feel: a short tap is a short hop, a press just before landing still jumps, and a jump just after a ledge still counts', () => {
+  const run = (frames) => { const g = new Game(1); noEnemies(g); let peak = 0; for (const f of frames) { g.step(1 / 60, { ...idle, jump: !!f.j }); peak = Math.max(peak, g.p.y); } return { g, peak }; };
+  const tap = run([{ j: 1 }, ...Array(80).fill({})]).peak, full = run([...Array(81).fill({ j: 1 })]).peak; assert.ok(tap < full * 0.6 && tap > 0.3, 'tap ' + tap + ' full ' + full);
+  // coyote: just off a ledge (0.05 s left) a press is a ground jump; with no coyote time left it is not (no air jumps owned)
+  { const a = new Game(1); noEnemies(a); a.mods.airJumps = 0; a.p.grounded = false; a.p.y = 0.5; a.p.vy = 0; a.p.coyote = 0.05; a.step(1 / 60, { ...idle, jump: true }); assert.ok(a.p.vy > 5, 'coyote jump fired: vy ' + a.p.vy);
+    const c = new Game(1); noEnemies(c); c.mods.airJumps = 0; c.p.grounded = false; c.p.y = 0.5; c.p.vy = 0; c.p.coyote = 0; c.step(1 / 60, { ...idle, jump: true }); assert.ok(c.p.vy < 0, 'no coyote left: no jump'); }
+  // buffer: pressed 3 ticks before landing, then released; the duelist lifts off as he lands
+  { const g = new Game(1); noEnemies(g); g.mods.airJumps = 0; g.p.y = 0.12; g.p.grounded = false; g.p.vy = -3; let lifted = false; for (let i = 0; i < 12; i++) { g.step(1 / 60, { ...idle, jump: i === 0 }); if (i > 0 && g.p.vy > 5) lifted = true; } assert.ok(lifted, 'buffered jump fired on landing'); }
 });
 
 test('dash covers 4 m, has a 1.1 s cooldown and no damage while dashing', () => {

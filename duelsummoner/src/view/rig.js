@@ -161,6 +161,12 @@ export class DuelistRig {
     if (on && sp > 0.3) { const rs = lw.run / ((lw.walk + lw.run) || 1); this.ph = (this.ph + sp / (WALK_STRIDE + (RUN_STRIDE - WALK_STRIDE) * rs) * dt) % 1; }
     const wd = L.walkL.getClip().duration, rd = L.runL.getClip().duration; L.walkL.time = L.walkU.time = this.ph * wd; L.runL.time = L.runU.time = this.ph * rd;
   }
+  // an additive flinch (hurt, a small hit): laid on top of whatever is playing as the difference from the standing pose, so it never interrupts a run or a jump
+  overlay(name) {
+    const src = this.clips.get(name); if (!src) return false; if (!this._add) this._add = new Map();
+    let c = this._add.get(name); if (!c) { c = T.AnimationUtils.makeClipAdditive(src.clone(), 0, src, 30); this._add.set(name, c); }
+    const a = this.mixer.clipAction(c); a.blendMode = T.AdditiveAnimationBlendMode; a.reset(); a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = false; a.setEffectiveWeight(1); a.fadeIn(0.02).play(); return true;
+  }
   // one-shot actions the view triggers from sim events: hurt, level_up, summon, fusion, tribute, open_chest...
   once(name) { const a = this._play(name, { loop: false, fade: 0.08 }); if (a) { if (this.curAct && this.curAct !== a) this.curAct.fadeOut(0.08); this.curAct = a; this.cur = '@' + name; this.holdUntil = performance.now() + a.getClip().duration * 1000; } return !!a; }
 }
