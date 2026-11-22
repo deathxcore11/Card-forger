@@ -8,6 +8,14 @@ import { fire, relicBonus, has } from './relics.mjs';
 export const clone = s => JSON.parse(JSON.stringify(s));
 
 const blankStats = () => ({ melds: 0, fizzles: 0, spells: 0, bigHits: 0, defWins: 0, turns: 0, directHits: 0, positionsToDef: 0, longestChain: 0, relicFires: {}, chains: {}, singles: 0, capHits: 0, newMelds: [], embers: 0, damageDealt: 0, destroyed: 0, trapsSprung: 0, relicFamilies: {} });
+// Achievement counters (engine/achievements.mjs judges them) for a seat that tracks. They live in the duel state, so a
+// duel that is saved and reloaded keeps them, and a duel begun without them can never look like one where nothing
+// happened. lpLost: Life Points this seat lost. attacks: attacks it declared. grounds: Field Spells it played and
+// Landfalls it used. lawPaid: Life Points a Law gave its rival. aceDown: 5,000 ATK aces of a Law it destroyed.
+// edgeKills: monsters its attackers destroyed only because of the Attribute edge. fusions: real fusion steps (not
+// Equips, fuel or fizzles). longestFuse: the most cards in one play in which every card fused. relicFinish: 1 when
+// one of its relics took the rival's last Life Points. A seat that does not track gets none, so its duel hashes as before.
+const blankAch = () => ({ lpLost: 0, attacks: 0, grounds: 0, lawPaid: 0, aceDown: 0, edgeKills: 0, fusions: 0, longestFuse: 0, relicFinish: 0 });
 
 // deck entries: { id, t?:1 tempered, e?:'enchant', b?:1 bound }
 // seat options: { handSize, firstTurnHand, relics:[], law, twist, homeField, underCap, secondWind, lp, sparks, ai }
@@ -32,6 +40,7 @@ export function newDuel(db, { seed, decks, seats = [{}, {}], first = null, twist
     })),
     stats: [blankStats(), blankStats()],
   };
+  for (let i = 0; i < 2; i++) if (seats[i].track) s.stats[i].ach = blankAch();
   for (let i = 0; i < 2; i++) {
     s.deck[i] = decks[i].map(e => (typeof e === 'number' ? { id: e } : { ...e }));
     rng.shuffle(s.deck[i]);
@@ -102,6 +111,7 @@ function loseLp(s, db, ev, seat, n, src) {
   if (n <= 0 || s.winner !== null) return;
   s.lp[seat] -= n;
   s.stats[other(seat)].damageDealt += n;
+  if (s.stats[seat].ach) s.stats[seat].ach.lpLost += n;
   ev.push({ e: 'lp', seat, d: -n, src });
   if (s.lp[seat] <= 0) {
     const st = s.seat[seat];
@@ -111,6 +121,13 @@ function loseLp(s, db, ev, seat, n, src) {
   }
 }
 function gainLp(s, ev, seat, n, src) { if (n > 0 && s.winner === null) { s.lp[seat] += n; ev.push({ e: 'lp', seat, d: n, src }); } }
+// A Law that pays its owner Life Points (Blood price). The rival's counter keeps what it was paid.
+function lawGain(s, ev, seat, n) {
+  const before = s.lp[seat];
+  gainLp(s, ev, seat, n, 'law');
+  const A = s.stats[other(seat)].ach;
+  if (A && s.lp[seat] > before) A.lawPaid += s.lp[seat] - before;
+}
 
 export function effAtk(s, db, seat, m) {
   const c = card(db, m.id);
@@ -141,6 +158,8 @@ function destroyMon(s, db, ev, seat, z, why) {
   if (m.e === 'bulwark' && !m.bulwarkUsed) { m.bulwarkUsed = 1; ev.push({ e: 'enchant', seat, zone: z, id: 'bulwark' }); return false; }
   s.mon[seat][z] = null;
   s.stats[other(seat)].destroyed++;
+  // A Law's ace (it carries a fixed ATK) destroyed by its rival. A Spell its own side cast on its own turn does not count.
+  if (m.fix != null && s.stats[other(seat)].ach && !(why === 'spell' && s.active === seat)) s.stats[other(seat)].ach.aceDown++;
   ev.push({ e: 'destroyed', seat, zone: z, id: m.id, why });
   const rs = s.seat[seat].rs;
   const entry = entryOf(m);
@@ -401,15 +420,23 @@ function resolveBattle(s, db, ev, atkSeat, az, dz, sprung = false) {
   if (f.dmgAtk) loseLp(s, db, ev, atkSeat, f.dmgAtk, 'battle');
   let tGone = false, xGone = false;
   if (f.killT) tGone = destroyMon(s, db, ev, defSeat, dz, 'battle');
+  // The Attribute edge decided it: without the +500 the attacker would not have destroyed the target. A tie with a
+  // monster in attack position destroys it anyway (unless its side holds Stonewall), so there the edge must have
+  // turned a loss into a win; against a defender a tie destroys nothing, so the edge only had to break the tie. The
+  // attacker must have beaten the target (f.a > f.d): a tie that destroys both is a trade, not a win.
+  if (tGone && f.edgeA && X.e !== 'venom' && f.a > f.d && s.stats[atkSeat].ach) {
+    const bare = f.a - db.config.wheelBonus, tieKills = T.pos === 'a' && s.seat[defSeat].law !== 'stonewall';
+    if (tieKills ? bare < f.d : bare <= f.d) s.stats[atkSeat].ach.edgeKills++;
+  }
   let snared = false;
   if (tGone && wasVeiled) { const vf = { id: T.id }; fire(s, db, ev, defSeat, 'veiledFell', vf); if (vf.kill) { snared = !f.killX; f.killX = true; } }
   if (f.killX) { xGone = destroyMon(s, db, ev, atkSeat, az, 'battle'); if (snared && xGone) struck(s, db, ev, defSeat); }
   if (tGone && !xGone && has(s, defSeat, 'grave_ward')) { const c = {}; fire(s, db, ev, defSeat, 'fell', c); if (c.kill) { xGone = destroyMon(s, db, ev, atkSeat, az, 'relic'); if (xGone) struck(s, db, ev, defSeat); } }
   if (tGone && !xGone) {
     fire(s, db, ev, atkSeat, 'wonBattle', { mon: X, zone: az, edge: f.edgeA });
-    if (s.seat[atkSeat].law === 'bloodprice') gainLp(s, ev, atkSeat, s.seat[atkSeat].strong ? 800 : 500, 'law');
+    if (s.seat[atkSeat].law === 'bloodprice') lawGain(s, ev, atkSeat, s.seat[atkSeat].strong ? 800 : 500);
   }
-  if (xGone && !tGone && s.seat[defSeat].law === 'bloodprice') gainLp(s, ev, defSeat, s.seat[defSeat].strong ? 800 : 500, 'law');
+  if (xGone && !tGone && s.seat[defSeat].law === 'bloodprice') lawGain(s, ev, defSeat, s.seat[defSeat].strong ? 800 : 500);
   if (!tGone && T.pos === 'd') {
     if (f.a < f.d) s.stats[defSeat].defWins++;
     fire(s, db, ev, defSeat, 'survived', { mon: T, zone: dz, attacker: X, wasVeiled });
@@ -554,6 +581,7 @@ export function applyMut(s, a, db, ev = []) {
       const X = s.mon[seat][a.from];
       if (!attackAllowed(s) || !canAttackWith(s, seat, X)) throw new Error('that monster cannot attack');
       if (!targetsFor(s, db, seat, a.from).includes(a.to)) throw new Error('illegal target');
+      if (s.stats[seat].ach) s.stats[seat].ach.attacks++;
       ev.push({ e: 'attack', seat, from: a.from, to: a.to });
       const opts = trapOptions(s, db, other(seat), a.from, a.to);
       if (opts.length) { s.pending = { kind: 'trap', from: a.from, to: a.to, options: opts }; break; }
@@ -601,6 +629,7 @@ function doPower(s, db, ev, seat, a) {
     if (prev && prev.law) s.terrain = { id: st.homeField, owner: seat, temp: s.seat[prev.owner].strong ? 1 : 2, back: prev };
     else if (prev && prev.temp != null) s.terrain = { id: st.homeField, owner: seat, temp: 2, back: prev.back };
     else s.terrain = { id: st.homeField, owner: seat };
+    if (s.stats[seat].ach) s.stats[seat].ach.grounds++;
     ev.push({ e: 'terrain', seat, id: st.homeField });
   } else if (f === 'last') { const m = s.mon[seat].find(Boolean), add = (db.config.forgerTune || {}).lastDoor ?? 400; m.ba = (m.ba || 0) + add; m.bd = (m.bd || 0) + add; ev.push({ e: 'stat', seat, zone: s.mon[seat].indexOf(m), a: add, d: add }); }
 }
@@ -627,6 +656,12 @@ function doPlay(s, db, ev, seat, a) {
   s.played = true;
   const stt = s.stats[seat];
   stt.fizzles += plan.fizzles;
+  // Achievement counters: real fusions only, so an Equip or a fuel card can never make a meld look longer than it fused.
+  if (stt.ach) {
+    const fused = plan.steps.filter(x => x.kind === 'printed' || x.kind === 'cross').length;
+    stt.ach.fusions += fused;
+    if (fused && fused === plan.steps.length) stt.ach.longestFuse = Math.max(stt.ach.longestFuse, idxs.length + (ontoM ? 1 : 0));
+  }
   for (const stp of plan.steps) ev.push({ e: 'meld', seat, ...stp });
   for (let k = 0; k < plan.fizzles; k++) fire(s, db, ev, seat, 'fizzle', {});
   for (const p of plan.pairs) stt.newMelds.push(p);
@@ -675,6 +710,7 @@ function doPlay(s, db, ev, seat, a) {
     else if (prev && prev.temp != null) s.terrain = { id: f.id, owner: seat, temp: 2, back: prev.back };
     else s.terrain = { id: f.id, owner: seat };
     s.gy[seat].push(f.id);
+    if (stt.ach) stt.ach.grounds++;
     ev.push({ e: 'terrain', seat, id: f.id });
     fire(s, db, ev, seat, 'fieldPlayed', {}); track(s, db, seat, 'field');
   } else if (role === 'equip') {

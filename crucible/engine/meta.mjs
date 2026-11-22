@@ -123,8 +123,26 @@ export function applyRun(p, run, { long = false } = {}) {
     if (done) { p.featsDone.push(f.id); p.fresh.push(f.gift); unlocks.push({ kind: 'gift', id: f.gift, feat: f.name, name: RELICS[f.gift].name, text: RELICS[f.gift].text, why: f.why }); }
   }
   // the first secret: what the run found is kept whether it was won or lost
+  // doorFound (achievements.mjs, Where Wall Was): the door that was not there was shown. loneMet is set the moment the
+  // lone guardian falls, before its reward; the door is only dealt once that reward is taken (run.secret.due cleared),
+  // so a run left on the reward screen met the guardian but never saw the door. A profile banked before doorFound was
+  // kept has only loneMet, and its loneMet still stands for the door.
+  if (run.secret && run.secret.met) p.doorFound = (p.doorFound ?? (p.loneMet ? 1 : 0)) || (run.secret.due ? 0 : 1);
   if (run.secret) { if (run.secret.near) p.loneNear = 1; if (run.secret.met) p.loneMet = 1; if (run.secret.won) p.lastOne = (p.lastOne || 0) + 1; }
+  // Counts the achievements read (engine/achievements.mjs), kept whether the run was won or lost. A run begun with track
+  // carries run.ach; a tracked run saved before run.ach existed (run.feat only) counts what it can. An older profile
+  // without these fields reads them as zero. descents: runs that reached at least one duel (left part-way through it
+  // too). forged: Masterworks forged. beaten: the floor guardians ever beaten (the page also adds to it mid-run).
+  if (run.ach || run.feat) {
+    const A = run.ach || { beaten: [] };
+    if (A.reached || run.stats.duels >= 1) p.descents = (p.descents || 0) + 1;
+    p.forged = (p.forged || 0) + run.masterworks.length;
+    const beaten = (p.beaten || []).slice(); for (const id of A.beaten) if (!beaten.includes(id)) beaten.push(id);
+    p.beaten = beaten;
+  }
   for (const id of Object.keys(FORGER_FEATS)) if (!p.forgers.includes(id) && FORGER_FEATS[id].test(p)) { p.forgers.push(id); unlocks.push({ kind: 'forger', id, name: FORGERS[id].name, text: FORGERS[id].tag + '. ' + FORGERS[id].powerText }); }
+  // The run is marked as banked, so the achievements never count its numbers a second time, with or without a uid.
+  if (run.ach) run.ach.banked = 1;
   return { ...r, unlocks, feats };
 }
 

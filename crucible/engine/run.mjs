@@ -292,7 +292,7 @@ export const BOUNTIES = [
 // ---------- run state ----------
 // forger: a key of FORGERS (optional). locked: relic ids this profile has not unlocked yet (optional).
 // featured: Gift ids to show once each in this run's first Gift offers (a newly unlocked Gift).
-// track: keep the feat counters in run.feat. kits: the kit ids this profile has open (the kit offer deals only those).
+// track: keep the feat counters in run.feat and the achievement facts in run.ach. kits: the kit ids this profile has open (the kit offer deals only those).
 // enchants: the Enchants this profile has open (an Anvil offers only those). All optional; an ordinary run is unchanged.
 export function newRun(db, { seed, heat = 0, forger = null, locked = null, featured = null, track = false, kits = null, enchants = null, uid = null } = {}) {
   DB = db;
@@ -311,6 +311,9 @@ export function newRun(db, { seed, heat = 0, forger = null, locked = null, featu
   if (locked && locked.length) run.locked = locked.slice();
   if (featured && featured.length) run.featured = featured.slice();
   if (track) run.feat = { long4: 0, gyWins: 0, baits: 0, bestGy: 0, bigWins: 0 };
+  // Achievement facts (engine/achievements.mjs judges them): one entry per finished duel, the guardians beaten, Gifts
+  // taken and turned down, and flags set by choices (see achFacts and runApply). Only a run begun with track keeps them.
+  if (track) run.ach = { duels: [], beaten: [], gifts: 0, giftSkips: 0 };
   if (kits && kits.length) run.kitsOpen = kits.slice();
   if (enchants && enchants.length) run.enchOpen = enchants.slice();
   if (cfg.giftRerolls) run.rerolls = cfg.giftRerolls;
@@ -500,9 +503,34 @@ function pickThree(db, rng, list, n, wantRare) {
   return out.map(id => ({ id }));
 }
 
+// What the player did in the duel just finished, for the achievements (engine/achievements.mjs judges them). Read from
+// the duel's own state and from its counters (duel.mjs, a seat that tracks), so a duel saved and reloaded part-way
+// gives the same facts. c is 1 when the counters ran from the duel's first move; without it no row that needs
+// "nothing happened" (no Life Points lost, no attack, no fusion, nothing paid to a Law) may be earned from the duel.
+// w: won. tier and boss: the rival. reason: how it ended. rank: the letter, for a win. top: the highest ATK on the
+// player's side at the end. veiled: a veiled monster of the player's was still on the table. aceCame: the last Law's
+// ace reached the table. chain: the longest meld. printed: printed fusions made. fams: build families whose relics fired.
+// steady: Steady Hand turned a fizzle back into the hand (its own text calls that a fizzle; the duel does not count it
+// in stats.fizzles). Read from the duel's own state, so a duel begun without counters still tells it.
+function achFacts(db, run, d, won) {
+  const st = d.stats[0];
+  const f = {
+    w: won ? 1 : 0, tier: run.rival.tier, reason: d.reason,
+    top: d.mon[0].reduce((v, m) => m ? Math.max(v, effAtk(d, db, 0, m)) : v, 0), veiled: d.mon[0].some(m => m && m.veil) ? 1 : 0,
+    aceCame: d.seat[1].rs.endCame ? 1 : 0, defWins: st.defWins, chain: st.longestChain, traps: st.trapsSprung,
+    printed: st.newMelds.filter(p => p[3] === 'printed').length, fams: Object.keys(st.relicFamilies).filter(k => BUILD_FAMILIES.includes(k)).length,
+    steady: d.seat[0].rs.steady ? 1 : 0,
+  };
+  if (run.rival.tier === 'boss' && run.door && run.door.boss) f.boss = run.door.boss;
+  if (st.ach) Object.assign(f, st.ach, { c: 1 });
+  return f;
+}
+
 function finishDuel(db, run, rng, ev) {
   const d = run.duel, cfg = db.config, st = d.stats[0], S = run.stats;
   const won = d.winner === 0;
+  const af = run.ach ? achFacts(db, run, d, won) : null;
+  if (af) { run.ach.duels.push(af); if (won && af.boss && !run.ach.beaten.includes(af.boss)) run.ach.beaten.push(af.boss); }
   S.duels++; S.turns += d.turn; S.melds += st.melds; S.fizzles += st.fizzles; S.capHits += st.capHits ? 1 : 0;
   S.firstGames++; if (d.winner === d.first) S.firstWins++;
   if (d.reason === 'deckout') S.deckouts++;
@@ -548,6 +576,7 @@ function finishDuel(db, run, rng, ev) {
   const bounty = BOUNTIES.find(b => b.id === run.rival.bounty);
   const bountyMet = bounty.test(st, d);
   if (bountyMet) { rk.points += 10; rk.lines.push(['Bounty', 10]); rk.rank = rankLetter(cfg.rank, rk.points); S.bounties++; }
+  if (af) af.rank = rk.rank;
   S.ranks[rk.rank] = (S.ranks[rk.rank] || 0) + 1; (S.points || (S.points = [])).push(rk.points); (S.bountyBy || (S.bountyBy = {}))[bounty.id] = [((S.bountyBy[bounty.id] || [0, 0])[0]) + 1, ((S.bountyBy[bounty.id] || [0, 0])[1]) + (bountyMet ? 1 : 0)];
   let embers = cfg.embers[rk.rank] + st.embers + (tier === 'cursed' ? cfg.embers.cursedBonus : 0) + (tier === 'champion' && heatAt(db, run, 9) ? 15 : 0) + (bountyMet ? cfg.embers.bountyBonus : 0) + (run.charms.includes('ember_purse') ? 8 : 0);
   run.embers += embers;
@@ -696,10 +725,14 @@ export function runApply(run, a, db, opts = {}) {
       if (a.t !== 'door' || !run.doors[a.i]) fail('pick a door');
       const door = run.doors[a.i];
       if (door.type === 'boss' && run.seals < 2) fail('the boss door needs two seals');
+      // Achievement facts: through a guardian's door, or on past the door that was not there without opening it.
+      if (run.ach && door.type === 'boss') run.ach.bossDoor = 1;
+      if (run.ach && door.type === 'onward' && run.doors.some(x => x.type === 'secret')) run.ach.walkedPast = 1;
       run.door = door; run.stats.doors[door.type] = (run.stats.doors[door.type] || 0) + 1;
       if (run.secret) delete run.lastNote; // the line about the door that was not there is said once
       ev.push({ e: 'door', type: door.type });
-      if (door.tier) { startDuel(db, run, rng, door, opts.onStep); if (run.duel.winner !== null) finishDuel(db, run, rng, ev); break; }
+      // Achievement fact: the run reached a duel, so it is a descent even if it is left before the duel ends.
+      if (door.tier) { if (run.ach) run.ach.reached = 1; startDuel(db, run, rng, door, opts.onStep); if (run.duel.winner !== null) finishDuel(db, run, rng, ev); break; }
       switch (door.type) {
         case 'onward': afterBoss(db, run, rng); break;
         case 'anvil': run.phase = 'anvil'; run.offer = { kind: 'anvil', masterworks: possibleMasterworks(run), enchants: rng.shuffle(ENCHANTS.slice()).filter(e => !run.enchOpen || run.enchOpen.includes(e)).slice(0, 3) }; break;
@@ -724,6 +757,9 @@ export function runApply(run, a, db, opts = {}) {
     }
     case 'reward': {
       const o = run.offer;
+      // Achievement facts: a Gift turned down, and an Omen card paid to see and then left.
+      if (a.t === 'skip' && run.ach && o && o.kind === 'gift') run.ach.giftSkips++;
+      if (a.t === 'skip' && run.ach && o && o.kind === 'omen' && o.seen) run.ach.omenLook = 1;
       if (a.t === 'skip') { nextReward(db, run, rng); break; }
       if (a.t === 'reroll') { // lever giftRerolls: deal a Gift offer again, without the Gifts just shown where the pool allows
         if (o.kind !== 'gift' || !run.rerolls) fail('no re-deal left');
@@ -739,7 +775,7 @@ export function runApply(run, a, db, opts = {}) {
       }
       if (a.t !== 'pick') fail('pick or skip');
       if (o.kind === 'card') { if (!o.options[a.i]) fail('no such card'); addCard(db, run, o.options[a.i]); }
-      else if (o.kind === 'gift') { if (!o.options[a.i]) fail('no such gift'); run.gifts.push(o.options[a.i]); }
+      else if (o.kind === 'gift') { if (!o.options[a.i]) fail('no such gift'); run.gifts.push(o.options[a.i]); if (run.ach) run.ach.gifts++; }
       else if (o.kind === 'charm') { if (!o.options[a.i]) fail('no such charm'); if (run.charms.length >= cfg.charmSlots) fail('charm slots full'); run.charms.push(o.options[a.i]); }
       else if (o.kind === 'guardian') {
         const g = o.options[a.i]; if (!g) fail('no such reward');
@@ -747,7 +783,11 @@ export function runApply(run, a, db, opts = {}) {
         else if (g.kind === 'masterwork') forgeMasterwork(run, g.id);
         else if (g.kind === 'charmPick') { run.queue.unshift({ kind: 'charm', options: g.ids }); }
       } else if (o.kind === 'treasure') { const g = o.options[a.i]; if (!g) fail('no such item'); if (g.kind === 'card') addCard(db, run, g.entry); else run.charms.push(g.id); }
-      else if (o.kind === 'sanctum') { if (a.i === 0) { if (run.sparks >= cfg.sparks) fail('Sparks are full'); run.sparks++; } else run.capBonus += cfg.prices.sanctumCap; }
+      else if (o.kind === 'sanctum') {
+        if (a.i === 0) { if (run.sparks >= cfg.sparks) fail('Sparks are full'); run.sparks++; } else run.capBonus += cfg.prices.sanctumCap;
+        // Achievement fact: the cap taken over a Spark while the player is on the last Spark.
+        if (a.i !== 0 && run.sparks === 1 && run.ach) run.ach.capOnLast = 1;
+      }
       else if (o.kind === 'omen') {
         if (a.i === 1) { if (o.seen || run.embers < 30) fail('cannot pay to see'); run.embers -= 30; o.seen = true; break; }
         if (run.trunk.length < 2) fail('the altar needs two trunk cards');
@@ -785,7 +825,7 @@ export function runApply(run, a, db, opts = {}) {
       if (run.embers < it.price) fail('not enough Embers');
       if (it.kind === 'card') { addCard(db, run, it.entry); it.sold = true; }
       else if (it.kind === 'charm') { if (run.charms.length >= cfg.charmSlots) fail('charm slots full'); run.charms.push(it.id); it.sold = true; }
-      else if (it.kind === 'gift') { run.gifts.push(it.id); it.sold = true; } // lever bazaarOdd: a Gift from outside the run's builds
+      else if (it.kind === 'gift') { run.gifts.push(it.id); it.sold = true; if (run.ach) run.ach.gifts++; } // lever bazaarOdd: a Gift from outside the run's builds
       else if (it.kind === 'scrap') { // the Winnower cuts a card out of the deck for the rest of the run: fewer cards, so the good ones come round sooner
         const e = run.deck[a.deck]; if (a.deck === undefined || !e) fail('pick a deck card to cut');
         if (e.b) fail('a bound meld cannot be cut');
