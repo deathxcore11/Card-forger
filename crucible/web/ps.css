@@ -50,6 +50,18 @@ body.ps { background: #000; }
 #app.ps .pq:active:not(:disabled) { transform: translate(1px, 1px); }
 #app.ps .pq.on { color: var(--ink); background: var(--verd); }
 
+/* Randall's materials, once their pictures are in (setMats in app.mjs): 64 x 64 squares of 16 colours, repeated at their own
+   size, toned to the colours above so every word reads as it did. The dotted colours above stay for a page without them. */
+#app.ps.mats .st { background: var(--m-st) 0 0 / 64px 64px repeat; }
+#app.ps.mats .st.dk { background: var(--m-dk) 0 0 / 64px 64px repeat; }
+#app.ps.mats .wn, #app.ps.mats .toast { background: var(--m-wn) 0 0 / 64px 64px repeat; }
+#app.ps.mats .lg { background: var(--m-lg) 0 0 / 64px 64px repeat; }
+#app.ps.mats .pq, #app.ps.mats .dt { background: var(--m-pq) 0 0 / 64px 64px repeat; }
+#app.ps.mats .pq.lit { background: var(--m-lit) 0 0 / 64px 64px repeat; animation-name: psmlit; }
+@keyframes psmlit { 50% { background-image: var(--m-lit2); } }
+#app.ps.mats .pq:disabled, #app.ps.mats .pq.off { background: var(--m-off) 0 0 / 64px 64px repeat; color: #a08c80; border-color: #5a3d48 var(--sh) var(--sh) #5a3d48; } /* dark stone, its words greyed but still read */
+#app.ps.mats .pq.on { background: var(--m-on) 0 0 / 64px 64px repeat; }
+
 /* gauges, portraits, marks */
 #app.ps .ga { position: absolute; height: 7px; border: 1px solid var(--gold); background: var(--sh); box-shadow: 0 0 0 1px var(--dark); }
 #app.ps .ga > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--rust); }
@@ -139,6 +151,7 @@ body.ps { background: #000; }
 #app.ps .zh.onto { box-shadow: inset 0 0 0 1px var(--verd), inset 0 0 0 2px var(--ink); }
 #app.ps .atk { position: absolute; font: 8px/8px 'LM Label', monospace; color: var(--ink); background: var(--sh); padding: 1px 1px 0; pointer-events: none; }
 #app.ps .atk.up { color: var(--gl); } #app.ps .atk.down { color: #f08a72; } #app.ps .atk.def { color: #9fd0c0; }
+#app.ps .atk.two i { display: block; height: 8px; }
 #app.ps .hand .hs { position: absolute; top: 2px; width: 44px; height: 60px; }
 #app.ps .hand .hs.empty { border: 1px solid var(--dark); }
 #app.ps .backs { position: absolute; display: flex; gap: 2px; }

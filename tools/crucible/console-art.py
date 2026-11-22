@@ -110,6 +110,45 @@ def grade(im, warm):
 
 STORY_TOP = {'story-city': 0.04, 'story-oren': 0.45}  # keep the pyramid's top in the city; the man's head and the dropped tablet at the gate
 
+# Randall's materials sheet (ui-materials.png: three by three squares with dark lines between them). Each part of the frame
+# takes a square cut from inside one of his squares (clear of its carved edge), made to repeat without a seam, toned to
+# the colour that part already had so the words on it read as before, and cut to a 64 x 64 picture of 16 colours (U4).
+# name: (his square 1..9 reading across, left, top, side in his pixels inside that square, colour, spread)
+MATS = {
+    'st': (2, 40, 40, 256, (161, 120, 75), 9),     # the pillars: his carved brown stone, taken wide so its pits are grain
+    'dk': (3, 120, 130, 190, (116, 79, 57), 12),     # round the view: his dark stone, toned brown
+    'wn': (7, 20, 20, 140, (41, 17, 27), 6),       # every window and the text bar: his woven cloth, dark plum
+    'lg': (7, 20, 20, 140, (98, 59, 72), 10),      # the ledge: the same cloth, dusty
+    'pq': (9, 40, 40, 200, (161, 120, 75), 7),     # a plaque at rest, and the door's reading: his parchment, toned sandstone
+    'lit': (8, 40, 60, 190, (169, 90, 52), 15),    # the lit plaque: his red leather, toned ember, and a brighter turn of it
+    'lit2': (8, 40, 60, 190, (184, 104, 60), 15),
+    'off': (3, 120, 130, 190, (60, 36, 44), 7),      # a plaque that cannot be used: his dark stone, darker than the ledge
+    'on': (5, 40, 40, 200, (76, 138, 124), 12),    # a switch that is on: his verdigris
+}
+SHEET_AT = (0, 344, 686)  # where his three columns and rows start; each square is 338 wide
+
+
+def seamless(a):
+    """Make a square picture repeat without a seam: across first, then down. Near each edge it is faded into a copy
+    moved by half its width, whose edges meet the picture's own middle, so the last column runs on into the first."""
+    s = a.shape[0]; c = s // 2
+    t = np.abs(np.arange(s) - (s - 1) / 2) / c
+    m = np.clip((1 - t) * 3, 0, 1)
+    a = a * m[None, :, None] + np.roll(a, c, axis=1) * (1 - m[None, :, None])
+    return a * m[:, None, None] + np.roll(a, c, axis=0) * (1 - m[:, None, None])
+
+
+def materials(src, out, made):
+    sheet = Image.open(src).convert('RGB')
+    for name, (sq, x, y, side, col, spread) in MATS.items():
+        ox, oy = SHEET_AT[(sq - 1) % 3], SHEET_AT[(sq - 1) // 3]
+        part = sheet.crop((ox + x, oy + y, ox + x + side, oy + y + side)).resize((64, 64), Image.LANCZOS, reducing_gap=3.0)
+        a = seamless(np.asarray(part).astype(np.float32))
+        dev = a - a.reshape(-1, 3).mean(0)  # how far each dot is from the square's own colour, kept to the spread asked
+        a = np.array(col, np.float32) + dev * (spread / max(1.0, float(np.sqrt((dev ** 2).sum(-1).mean() / 3))))
+        im = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), 'RGB')
+        save(crunch(im, (64, 64), 16, amp=0.6), os.path.join(out, f'mat-{name}.png')); made.append(f'mat-{name}')
+
 
 def main():
     art = sys.argv[1]
@@ -206,6 +245,10 @@ def main():
         else:
             continue
         made.append(n)
+
+    # the frame's materials, from his sheet when the art folder holds it (a .png: the page itself never asks for it)
+    if os.path.exists(os.path.join(art, 'ui-materials.png')):
+        materials(os.path.join(art, 'ui-materials.png'), out, made)
 
     # blank medallions for items that have no picture yet: the game stamps the item's letter into the face
     for k in ('g', 'c', 'm'):

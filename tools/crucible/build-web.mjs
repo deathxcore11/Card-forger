@@ -35,6 +35,8 @@ if (data.cart) {
   data.cart.pack = { file, size: buf.length, at };
   console.log('packed', names.length, 'console pictures into', file, Math.round(buf.length / 1024) + ' KB');
 }
+// The crest, small, inside the page: the loading screen turns it as a coin before the picture pack has arrived.
+if (data.cart && fs.existsSync(path.join(out, 'art', 'c', 'key-crest-48.png'))) data.cart.crest = 'data:image/png;base64,' + fs.readFileSync(path.join(out, 'art', 'c', 'key-crest-48.png')).toString('base64');
 const safe = s => s.replace(/<\/(script)/gi, '<\\/$1');
 const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">

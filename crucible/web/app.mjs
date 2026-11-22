@@ -734,8 +734,48 @@ function loadPack(show) {
 // The wait, drawn the way a game of the day drew its own: black, and two words. It lies over the page, outside the
 // frame (the page is scaled), and over the old look's turn-your-phone note.
 function bootScreen(p) {
-  let b = document.getElementById('boot'); if (!b) { b = document.createElement('div'); b.id = 'boot'; document.body.appendChild(b); app.innerHTML = ''; }
-  b.innerHTML = `<b>NOW LOADING</b><i>${p == null ? '' : p + '%'}</i>`;
+  let b = document.getElementById('boot');
+  if (!b) { b = document.createElement('div'); b.id = 'boot'; document.body.appendChild(b); app.innerHTML = '';
+    const k = Math.max(1, Math.floor(Math.min(innerWidth, innerHeight) / 200)); // the coin at a whole number of screen pixels to each of its own
+    b.innerHTML = `<canvas id="bootcoin" width="64" height="64" style="width:${64 * k}px;height:${64 * k}px"></canvas><b>NOW LOADING</b><i></i>`; coinLoop(); }
+  b.querySelector('i').textContent = p == null ? '' : p + '%';
+}
+// ---- the crest as a struck coin that turns: on the loading screen, and beside the lit choice on the title as its
+// cursor. A 12-sided disc with a rim, the crest on both faces, drawn by the same renderer as the table. The crest
+// picture comes inside the page (D.cart.crest), so it turns before the picture pack has arrived.
+const COIN = { tex: null, asked: false };
+function coinTex() {
+  if (COIN.asked || !(D.cart && D.cart.crest)) return COIN.tex; COIN.asked = true;
+  const im = new Image(); im.onload = () => { try {
+    const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+    x.fillStyle = '#5c3d1c'; x.beginPath(); x.arc(32, 32, 31, 0, Math.PI * 2); x.fill(); // the struck bronze
+    x.strokeStyle = '#d6ad5c'; x.lineWidth = 3; x.beginPath(); x.arc(32, 32, 29, 0, Math.PI * 2); x.stroke();
+    x.strokeStyle = '#2a1a0c'; x.lineWidth = 1; x.beginPath(); x.arc(32, 32, 26.5, 0, Math.PI * 2); x.stroke();
+    x.drawImage(im, 8, 8, 48, 48); COIN.tex = R3.crunch(R3.texFrom(c, 64, 64)); } catch { /* a plain disc then */ } };
+  im.src = D.cart.crest; return null;
+}
+function paintCoin(cv, a) {
+  const w = cv.width, h = cv.height, view = R3.makeView(cv, w, h); view.px.fill(0);
+  const R = 100, T = 16, N = 12, ca = Math.cos(a), sa = Math.sin(a), t = coinTex();
+  const P = (x, y, z) => [x * ca + z * sa, y, -x * sa + z * ca], ring = i => { const q = i / N * Math.PI * 2; return [Math.cos(q) * R, Math.sin(q) * R]; };
+  const L = [-.4, .5, .77], lit = n => { const m = P(...n); return .5 + .65 * Math.max(0, m[0] * L[0] + m[1] * L[1] + m[2] * L[2]); };
+  const uv = (x, y) => [(.5 + .5 * x / R) * 63, (.5 - .5 * y / R) * 63];
+  for (let i = 0; i < N; i++) { const [x0, y0] = ring(i), [x1, y1] = ring(i + 1);
+    const face = (z, back) => { const pts = back ? [[0, 0], [x1, y1], [x0, y0], [0, 0]] : [[0, 0], [x0, y0], [x1, y1], [0, 0]];
+      // the back is the same crest seen from behind, so it reads the right way round once the coin has turned
+      R3.quad(view, { p: pts.map(([x, y]) => P(x, y, z)), uv: pts.map(([x, y]) => uv(back ? -x : x, y)), tex: t || undefined, col: t ? undefined : [120, 84, 40], shade: lit([0, 0, back ? -1 : 1]), cull: true }); };
+    face(T / 2, false); face(-T / 2, true);
+    const mx = (x0 + x1) / 2 / R, my = (y0 + y1) / 2 / R; // the rim, bright gold where the light catches it
+    R3.quad(view, { p: [P(x0, y0, T / 2), P(x0, y0, -T / 2), P(x1, y1, -T / 2), P(x1, y1, T / 2)], uv: [[0, 0], [0, 0], [0, 0], [0, 0]], col: [200, 158, 80], shade: lit([mx, my, 0]), cull: true }); }
+  R3.draw(view, R3.camera({ y: 0, z: 1000, pitch: 0, f: Math.round((h / 2 - 1) * 1000 / (R + T)), cx: w >> 1, cy: h >> 1 })); R3.present(view);
+}
+let coinRaf = 0;
+function coinLoop() {
+  cancelAnimationFrame(coinRaf);
+  const cs = ['bootcoin', 'coin'].map(id => document.getElementById(id)).filter(Boolean); if (!cs.length) return;
+  const t = Math.floor(performance.now() * .03) / .03, a = t / 2400 * Math.PI * 2; // a turn in 2.4 seconds, in thirtieths
+  for (const cv of cs) if (cv.dataset.t !== String(t)) { cv.dataset.t = t; paintCoin(cv, a); }
+  coinRaf = requestAnimationFrame(coinLoop);
 }
 function bootWait() { booting = true; bootScreen(); return loadPack(bootScreen).then(() => { const b = document.getElementById('boot'); if (b) b.remove(); booting = false; render(); }); }
 const faceName = id => 'face-' + (id === 'last' ? 'last-one' : id);
@@ -814,7 +854,7 @@ function psHome() {
   else { pic = box(0, 0, W, H, 'st dk'); at = (x, y) => [Math.round(x / 3), Math.round((y - 152) / 3)]; }
   const t1 = at(312, 455), t2 = at(1014, 455), fg = at(450, 440); // the two torches and the dark of the doorway, in the painting's own pixels
   const items = [has && ['CONTINUE', 'resume'], ['NEW DESCENT', 'new'], [`CODEX ${G.known.size}`, 'screen:codex'], [`FEATS ${(P.featsDone || []).length}/${featList(!!labs.long).length}`, 'screen:feats'], [`MEMORY VAULT ${P.memories}`, 'screen:vault'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options']].filter(Boolean);
-  const mx = W - 148, menu = items.map(([t, a], i) => pq(mx, dy + 78 + i * 20, 136, t, a, { lit: i === 0 })).join('');
+  const mx = W - 148, menu = items.map(([t, a], i) => pq(mx, dy + 78 + i * 20, 136, t, a, { lit: i === 0 })).join('') + (coinTex() || (D.cart && D.cart.crest) ? `<canvas id="coin" class="ab" width="16" height="16" style="left:${mx - 19}px;top:${dy + 78}px;pointer-events:none"></canvas>` : ''); // the turning crest marks the lit choice
   const sy = dy + 82 + items.length * 20, low = sy + 46 <= H - 2; // the saved run under the menu, or beside it when the frame is too short
   const slot = has ? `<div class="wn runslot" style="left:${low ? W - 160 : W - 316}px;top:${low ? sy : dy + 78 + items.length * 20 - 46}px">${lb(0, 0, '', '')}<b class="lb g">${esc(saved.forger ? shortName(FORGERS[saved.forger].name) : 'NO FORGER')}</b><br><b class="lb">FLOOR ${saved.floor + 1} · CHAMBER ${Math.min(6, saved.chamber + 1)}</b><br><b class="lb">SPARKS ${saved.sparks} · EMBERS ${saved.embers}</b></div>` : '';
   return `<div class="ti">${pic}${CART.has('key-title') ? `<img class="mist" src="${fogSprite(180, 72, .45)}" style="left:${fg[0] - 15}px;top:${fg[1] - 6}px" alt="">` : ''}<i class="tor" style="left:${t1[0]}px;top:${t1[1]}px"></i><i class="tor" style="left:${t2[0]}px;top:${t2[1]}px"></i>
@@ -1020,6 +1060,14 @@ function zoneBox(seat, zi, trap = false) {
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
   return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
 }
+// A table monster's two numbers, ATK then DEF: on one line inside your card's near edge, or stacked ATK over DEF (as on
+// a hand card) over a rival's card, where the far row is too tight for one line. The number its position uses is bright
+// (gold when raised above the printed number, red when lowered, sea-green for DEF in defense); the other is dim.
+function tableNums(m, x, y, stack) {
+  const c = m.id ? card(m.id) : null, d = m.pos === 'd', tone = (n, p) => !c ? '' : n > p ? 'g' : n < p ? 'r' : '';
+  const a = `<i class="${d ? 'd' : tone(m.ea, c && c.atk)}">${m.ea}</i>`, e = `<i class="${d ? tone(m.ed, c && c.def) || 'v' : 'd'}">${m.ed}</i>`;
+  return `<b class="atk${stack ? ' two' : ''}" style="left:${x}px;top:${y}px">${stack ? a + e : a + '<i class="d">/</i>' + e}</b>`;
+}
 // Short words for the plaques.
 const PLAY_WORDS = (x, free, aimM) => x.pos === 'a' ? (x.veiled ? 'VEILED ATK' : 'ATTACK POS') : x.pos === 'd' ? (x.veiled ? 'SET VEILED' : 'DEFENSE POS') : (free ? 'PLAY FREE' : aimM ? 'PLAY ON TARGET' : 'PLAY');
 function psDuel() {
@@ -1077,8 +1125,9 @@ function psDuel() {
     else if (seat === 1 && m && targets.includes(z)) { cls += ' target'; attrs += ` data-a="hit:${z}"`; mark = fc(z); }
     else if (m) attrs += ` data-a="inspectz:${seat}:${z}"`;
     hits += `<button class="${cls}" style="left:${bx.x}px;top:${bx.y}px;width:${bx.w}px;height:${bx.h}px" ${attrs} aria-label="${m ? (m.id ? esc(card(m.id).name) : 'Veiled monster') : 'Empty zone'}"></button>`;
-    if (m && seat === 0) hits += `<b class="atk${m.pos === 'd' ? ' def' : ''}" style="left:${bx.x + 2}px;top:${bx.y + bx.h - 9}px">${m.pos === 'd' ? m.ed : m.ea}</b>`;
-    if (m && seat === 1 && !m.veil && m.id) hits += `<b class="atk${m.pos === 'd' ? ' def' : ''}" style="left:${bx.x + 1}px;top:${bx.y - 9}px">${m.pos === 'd' ? m.ed : m.ea}</b>`;
+    // both numbers on every face-up monster (tableNums)
+    if (m && seat === 0) hits += tableNums(m, bx.x + 2, bx.y + bx.h - 9);
+    if (m && seat === 1 && !m.veil && m.id) hits += tableNums(m, bx.x + 1, Math.max(0, bx.y - 17), true);
     if (mark) hits += `<b class="atk ${mark === 'WINS' ? 'up' : mark === 'LOSES' ? 'down' : ''}" style="left:${bx.x}px;top:${bx.y + 2}px">${mark}</b>`;
   });
   v.traps[0].forEach((t, z) => { if (!t) return; const bx = zoneBox(0, z, true); hits += `<button class="zh" style="left:${bx.x}px;top:${bx.y}px;width:${bx.w}px;height:${bx.h}px" data-a="inspect:${t.id}" aria-label="${esc(card(t.id).name)}"></button>`; });
@@ -1194,6 +1243,96 @@ function psAnvil() {
   const bar = e ? `${card(e.id).name}${e.t ? ', tempered' : ''}${e.e ? ', enchanted' : ''}${e2 ? ' and ' + card(e2.id).name : ''}. ${works.filter(w => !w[2]).map(w => w[3]).join(' ') || 'Nothing here can be done to it with your Embers.'}` : `One working, then you move on. Tap a deck card (a second one for a Bind). ${works.map(w => w[3]).join(' ')}`;
   G.barText = bar;
   return frame({ left: psYou(r), right: roomRight(r), view: roomBack('room-forge') + deckGrid(r.deck, 'anvilpick', G.pickDeck, G.pickTrunk), ledge, bar });
+}
+// ---- the forge beat: after a working the card lies on the anvil and the hammer falls on it, in time with the working's
+// sound (its blows land at 0 and 320 ms for a temper, 0 for an enchant, 0 for a bind with the chains locking at 550,
+// and 0, 380 and 760 for a Masterwork; the sound starts 60 ms after the tap). Drawn at 30 frames a second, as the
+// console drew such a moment. A tap ends it early. The run has already moved on underneath; this only shows it.
+const FORGE_BEAT = { temper: { hits: [60, 380], ms: 1500 }, enchant: { hits: [60], ms: 1900 }, bind: { hits: [60], lock: 610, ms: 2000 }, masterwork: { hits: [60, 440, 820], roar: 1160, ms: 2600 } };
+function forgeWork(kind, idx, a, extra = {}) { // carry out the working; if the engine took it, show the beat
+  const r = G.run, ids = idx.map(i => r && r.deck[i] ? r.deck[i].id : null), inst = r && idx.length ? r.deck[idx[0]] : null; // the entry itself: a temper or an enchant changes it in place
+  act(a);
+  if (!r || G.run !== r || r.phase === 'anvil' || look === 'old' || !pmodel('anvil') || !pmodel('hammer')) return; // refused, or nothing to show it with
+  const made = kind === 'bind' && r.deck.length ? r.deck[r.deck.length - 1].id : null;
+  const nm = id => id != null ? card(id).name : 'the card';
+  const text = kind === 'temper' ? `${nm(ids[0])} is tempered: 300 more ATK and DEF for the rest of the run.`
+    : kind === 'enchant' ? `${nm(ids[0])} takes the ${cap(extra.enchant)} Enchant. ${ENCHANT_TEXT[extra.enchant] || ''}`
+    : kind === 'bind' ? `${nm(ids[0])} and ${nm(ids[1])} are bound into ${nm(made)}.`
+    : `${RELICS[extra.mw].name} is forged. ${RELICS[extra.mw].text}`;
+  G.forge = { kind, ids, made, inst: kind === 'bind' ? r.deck[r.deck.length - 1] : inst, mw: extra.mw || null, t0: performance.now(), text, word: { temper: 'TEMPERED', enchant: 'ENCHANTED: ' + String(extra.enchant || '').toUpperCase(), bind: 'BOUND', masterwork: 'FORGED' }[kind], cam: null };
+  render();
+}
+function psForge() {
+  const fb = G.forge, vs = viewSize(), r = G.run;
+  const rp = CART.has('room-forge') ? roomPic('room-forge', NICHE_Y + 34, true) : null; // the forge undimmed: the fire is lit for the working
+  const view = (rp ? `<img class="ab" src="${rp.src}" style="left:${rp.ox}px;top:${rp.oy}px" width="${rp.pw}" height="${rp.ph}" alt="">${rp.edge}` : '') + `<canvas id="forge" class="ab" style="left:0;top:0;pointer-events:none" width="${vs.w}" height="${vs.h}"></canvas><button class="ab" style="left:0;top:0;width:${vs.w}px;height:${vs.h}px;background:none;border:0" data-a="forgeskip" aria-label="Continue"></button>`;
+  const what = fb.kind === 'masterwork' ? `<i class="ab" style="left:8px;top:16px">${medal(fb.mw, 32)}</i>` + lb(48, 20, shortName(RELICS[fb.mw].name).toUpperCase(), 'g') : fb.inst ? psCard(fb.inst, 8, 2) + lb(60, 8, fitName(card(fb.inst.id).name.toUpperCase(), 30), 'g') : '';
+  return frame({ left: psYou(r), right: pq(4, yb(220), 88, 'CONTINUE', 'forgeskip', { lit: true }), view, ledge: what + lb(fb.kind === 'masterwork' ? 48 : 60, fb.kind === 'masterwork' ? 32 : 22, fb.word, 'd'), bar: esc(fb.text) });
+}
+let forgeRaf = 0;
+function forgePaint() {
+  cancelAnimationFrame(forgeRaf);
+  const fb = G.forge, cv = document.getElementById('forge'); if (!fb || !cv) return;
+  const B = FORGE_BEAT[fb.kind], t = performance.now() - fb.t0;
+  if (t >= B.ms) { G.forge = null; render(); return; }
+  forgeRaf = requestAnimationFrame(forgePaint);
+  const tf = Math.floor(t * .03) / .03; // whole thirtieths of a second
+  if (cv.dataset.tf === String(tf)) return; cv.dataset.tf = tf;
+  const A = pmodel('anvil'), Hm = pmodel('hammer'), w = cv.width, h = cv.height;
+  // the scene in metres, z up: the anvil at the middle turned a little toward you, the card on its face, the hammer
+  // held by its grip over the far end and swung about it
+  const yaw = -18 * Math.PI / 180, cy = Math.cos(yaw), sy = Math.sin(yaw);
+  const top = Math.max(...A.faces.flatMap(f => f.p.map(p => p[2]))) + .004, grip = .03;
+  const W = q => { const x = q[0] * cy - q[1] * sy, y = q[0] * sy + q[1] * cy; return [x * TS, q[2] * TS, -y * TS]; };
+  const G0 = [.6, 0, top + .225]; // the grip, so that at rest on the card the head's lower face meets it
+  const swingAt = tt => { const H = B.hits, i = H.findIndex(x => x >= tt);
+    if (i < 0) { const s = Math.min(1, (tt - H[H.length - 1] - 80) / 300); return s <= 0 ? 0 : 38 * s; } // after the last blow it is lifted away
+    if (tt >= H[i] - 60) return 60 * (H[i] - tt) / 60; // falling: 60 degrees in 60 ms
+    return i === 0 ? 60 : 60 * Math.min(1, Math.max(0, (tt - H[i - 1] - 40) / 160)); };
+  const hammerAt = deg => { const a = deg * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+    const rot = v => { const X = -v[2], Y = -v[1], Z = -v[0]; return [X * ca + Z * sa, Y, -X * sa + Z * ca]; }; // grip axis to the left, the head's long axis down; then the swing
+    return { pt: p => { const q = rot([p[0], p[1], p[2] - grip]); return [G0[0] + q[0], G0[1] + q[1], G0[2] + q[2]]; }, n: rot }; };
+  const cardW = .12, cardD = .17, cardAt = [0, 0, top];
+  const cardCorners = (turn = 0) => [[-cardW, cardD], [cardW, cardD], [cardW, -cardD], [-cardW, -cardD]].map(([x, y]) => { const c = Math.cos(turn), s = Math.sin(turn); return [cardAt[0] + x * c - y * s, cardAt[1] + x * s + y * c, top]; });
+  if (!fb.cam) { // one camera for the whole beat, fitted to the anvil and the hammer at both ends of its swing
+    const pts = [...A.faces.flatMap(f => f.p), ...[0, 60].flatMap(d => { const hm = hammerAt(d); return Hm.faces.flatMap(f => f.p.map(hm.pt)); })].map(W);
+    const cam = { y: 720, z: 900, pitch: Math.atan2(620, 900), f: 300, cx: 0, cy: 0 }; // looking down on the anvil's face, so the card on it reads
+    const box = c => { const P = R3.camera(c), s = pts.map(P).filter(Boolean), xs = s.map(p => p[0]), ys = s.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+    let b = box(cam); const k = Math.min(h * .86 / Math.max(1, b[3] - b[1]), w * .7 / Math.max(1, b[2] - b[0])); cam.f = Math.round(cam.f * k);
+    b = box(cam); cam.cx = Math.round(w / 2 - (b[0] + b[2]) / 2); cam.cy = Math.round(h - 6 - b[3]); fb.cam = cam;
+  }
+  const proj = R3.camera(fb.cam), view = R3.makeView(cv, w, h); view.px.fill(0);
+  const L = [-.35, .8, .5], ln = Math.hypot(...L), lit = n => { const q = W(n); return .45 + .55 * Math.max(0, (q[0] * L[0] + q[1] * L[1] + q[2] * L[2]) / TS / ln); };
+  const model = (M, name, pt, nr, bias) => { for (const f of M.faces) { const tx = TEX[`m-${name}-${f.t}`]; if (!tx || !f.uv) continue;
+    const c = f.p.map((p, i) => [W(pt(p)), [f.uv[i][0] * (tx.w - 1), f.uv[i][1] * (tx.h - 1)]]); if (c.length === 3) c.push(c[0]); c.reverse();
+    R3.quad(view, { p: c.map(x => x[0]), uv: c.map(x => x[1]), tex: tx, shade: lit(nr(f.n)), cull: true, bias }); } };
+  model(A, 'anvil', p => p, n => n, 0);
+  const ang = swingAt(tf), hm = hammerAt(ang); model(Hm, 'hammer', hm.pt, hm.n, -900);
+  const hit = B.hits.some(x => tf >= x && tf - x < 70), flash = hit ? 1.5 : 1;
+  const lay = (id, turn, bias) => { const t = id != null ? cardTex(id) : null, p = cardCorners(turn).map(W);
+    if (t) R3.quad(view, { p, uv: [[0, 0], [39, 0], [39, 39], [0, 39]], tex: t, shade: flash, bias });
+    else R3.quad(view, { p, uv: [[0, 0], [0, 0], [0, 0], [0, 0]], col: [168, 126, 79], shade: flash, bias }); };
+  if (fb.kind === 'masterwork') { const n = relicFile(fb.mw) + '-64', k = 'mw-' + fb.mw;
+    if (TEX[k] === undefined && CART.has(n)) { TEX[k] = null; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, 64, 64); }; im.src = cimg(n); }
+    const p = cardCorners().map(W), s = TEX[k]; if (s) R3.quad(view, { p, uv: [[0, 0], [63, 0], [63, 63], [0, 63]], tex: s, shade: flash, bias: -400 }); }
+  else if (fb.kind === 'bind' && tf >= B.lock) lay(fb.made, 0, -400); // the chains lock: one card where two lay
+  else { lay(fb.ids[0], 0, -400); if (fb.kind === 'bind') lay(fb.ids[1], Math.PI / 2, -450); }
+  R3.draw(view, proj);
+  // sparks off each blow, and what follows the last: steam for a temper, violet motes for an enchant, a ring of gold
+  // where a bind locks, the furnace's breath for a Masterwork. Single pixels in 15-bit colour, as the console drew them.
+  const at = proj(W([cardAt[0], cardAt[1], top])); if (!at) { R3.present(view); return; }
+  const dot = (x, y, rgb) => { x |= 0; y |= 0; if (x < 0 || y < 0 || x >= w || y >= h) return; view.px[y * w + x] = 0xff000000 | ((rgb[2] & 0xf8) << 16) | ((rgb[1] & 0xf8) << 8) | (rgb[0] & 0xf8); };
+  const rnd = i => { const s = Math.sin(i * 12.9898) * 43758.5453; return s - Math.floor(s); };
+  B.hits.forEach((x, j) => { const age = tf - x; if (age < 0 || age > 330) return;
+    for (let i = 0; i < 20; i++) { const a = Math.PI * (1.05 + .9 * rnd(j * 31 + i)), v = .12 + .16 * rnd(j * 17 + i * 3), g = .0004;
+      const sx = at[0] + Math.cos(a) * v * age, syy = at[1] + Math.sin(a) * v * age * .6 + g * age * age, c = age < 110 ? [255, 240, 170] : age < 220 ? [250, 170, 60] : [200, 80, 40];
+      dot(sx, syy, c); if (age < 200) { dot(sx + 1, syy, c); dot(sx - Math.cos(a) * 2, syy - Math.sin(a) * 1.2, [250, 170, 60]); } } });
+  const last = B.hits[B.hits.length - 1], after = tf - last;
+  if (fb.kind === 'temper' && after > 100) for (let i = 0; i < 18; i++) { const age = after - 100 - i * 30; if (age < 0 || age > 700) continue; const k = age / 700; dot(at[0] + (rnd(i) - .5) * 26 + Math.sin(age * .01 + i) * 3, at[1] - 4 - age * .05, k < .5 ? [215, 210, 200] : [140, 135, 130]); }
+  if (fb.kind === 'enchant' && after > 60) for (let i = 0; i < 22; i++) { const age = after - 60 - i * 40; if (age < 0 || age > 900) continue; dot(at[0] + (rnd(i * 7) - .5) * 30 + Math.sin(age * .012 + i) * 4, at[1] + 2 - age * .045, age < 450 ? [200, 150, 255] : [130, 80, 200]); }
+  if (fb.kind === 'bind' && tf >= B.lock && tf - B.lock < 450) { const k = (tf - B.lock) / 450, R = 6 + 26 * k; for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; dot(at[0] + Math.cos(a) * R, at[1] + Math.sin(a) * R * .45, k < .5 ? [255, 230, 140] : [220, 160, 70]); } }
+  if (fb.kind === 'masterwork' && tf >= B.roar) for (let i = 0; i < 40; i++) { const age = tf - B.roar - i * 18; if (age < 0 || age > 900) continue; dot(at[0] + (rnd(i * 5) - .5) * w * .5, h - 4 - age * (.08 + .05 * rnd(i)), age < 300 ? [255, 200, 90] : age < 600 ? [240, 120, 40] : [170, 60, 30]); }
+  R3.present(view);
 }
 function psBazaar() {
   const r = G.run, o = r.offer, slots = r.charms.length >= db.config.charmSlots;
@@ -1348,6 +1487,7 @@ function psScreen() {
   if (G.screen === 'forger') return psForger;
   if (G.screen) return { codex: psCodex, feats: psFeats, vault: psVault }[G.screen] || null;
   if (!r) return psHome;
+  if (G.forge) return psForge; // the hammer is still falling on the last working
   if (G.shown || r.phase === 'duel') return psDuel;
   if (r.phase === 'chamber') return psChamber;
   if (r.phase === 'kit') return psKit;
@@ -1359,12 +1499,23 @@ function psScreen() {
   if (r.phase === 'bazaar') return psBazaar;
   return null;
 }
+// Randall's materials (tools/crucible/console-art.py cuts them from his sheet): the pillars, the window surround, the ledge,
+// every window and every plaque take them once the pictures are in. Until then, or without them, the dotted colours stand.
+const MATS = ['st', 'dk', 'wn', 'lg', 'pq', 'lit', 'lit2', 'off', 'on'];
+let matsOn = false;
+function setMats() {
+  if (matsOn || !packDone || !MATS.every(n => CART.has('mat-' + n))) return;
+  matsOn = true; for (const n of MATS) app.style.setProperty('--m-' + n, `url("${cimg('mat-' + n)}")`);
+  app.classList.add('mats');
+}
 function drawConsole(screen) {
-  app.classList.add('ps'); app.classList.remove('phone', 'era'); document.body.classList.add('ps'); fitConsole(app); // the frame's size first: the screen is laid out for it
+  app.classList.add('ps'); app.classList.remove('phone', 'era'); document.body.classList.add('ps'); fitConsole(app); setMats(); // the frame's size first: the screen is laid out for it
   const r = G.run;
   app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home'; app.dataset.room = '';
   if (document.getElementById('prop')) { propTextures(); propPaint(); }
+  if (document.getElementById('forge')) { propTextures(); convertSheets(40); forgePaint(); }
+  if (document.getElementById('coin')) coinLoop();
   if (document.getElementById('tbl')) { psTextures(); convertSheets(40); psPaint(); }
   else convertSheets(40);
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
@@ -1457,10 +1608,11 @@ function tapped(ev) {
     case 'deckpick': G.pickDeck = n; trySwap(); break;
     case 'trunkpick': G.pickTrunk = n; trySwap(); break;
     case 'anvilpick': if (G.pickDeck == null || G.pickDeck === n) G.pickDeck = G.pickDeck === n ? null : n; else G.pickTrunk = G.pickTrunk === n ? null : n; render(); break;
-    case 'temper': { const d = G.pickDeck; G.pickDeck = G.pickTrunk = null; act({ t: 'anvil', kind: 'temper', deck: d }); break; }
-    case 'enchant': { const d = G.pickDeck; G.pickDeck = G.pickTrunk = null; act({ t: 'anvil', kind: 'enchant', deck: d, enchant: x }); break; }
-    case 'bind': { const a = G.pickDeck, b = G.pickTrunk; G.pickDeck = G.pickTrunk = null; act({ t: 'anvil', kind: 'bind', a, b }); break; }
-    case 'mw': act({ t: 'anvil', kind: 'masterwork', id: x }); break;
+    case 'temper': { const d = G.pickDeck; G.pickDeck = G.pickTrunk = null; forgeWork('temper', [d], { t: 'anvil', kind: 'temper', deck: d }); break; }
+    case 'enchant': { const d = G.pickDeck; G.pickDeck = G.pickTrunk = null; forgeWork('enchant', [d], { t: 'anvil', kind: 'enchant', deck: d, enchant: x }, { enchant: x }); break; }
+    case 'bind': { const a = G.pickDeck, b = G.pickTrunk; G.pickDeck = G.pickTrunk = null; forgeWork('bind', [a, b], { t: 'anvil', kind: 'bind', a, b }); break; }
+    case 'mw': forgeWork('masterwork', [], { t: 'anvil', kind: 'masterwork', id: x }, { mw: x }); break;
+    case 'forgeskip': G.forge = null; render(); break;
     case 'buy': { const d = G.pickDeck; G.pickDeck = G.pickTrunk = null; const it = r.offer && r.offer.items[n]; act(it && it.kind === 'scrap' ? { t: 'buy', i: n, deck: d ?? undefined } : { t: 'buy', i: n }); break; }
     case 'inspect': G.inspect = { id: n }; render(); break;
     case 'inspectz': { const v = G.shown ? G.shown.view : r && r.duel ? viewFor(r.duel, db, 0) : null; const m = v && v.mon[n] && v.mon[n][+y]; if (m && m.id) { G.inspect = m; render(); } break; } // the table as shown: while a move plays out the duel may already be over (found 22 November: tapping the rival's monster during its last attack sent the page back to the start)
