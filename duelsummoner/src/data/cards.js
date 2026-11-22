@@ -39,11 +39,11 @@ export const MONSTERS = {
 };
 export const FUSIONS = {
   'twinflare-tyrant': { name: 'Twinflare Tyrant', type: 'Dragon', elements: ['fire'], flame: true, from: ['ember-wyvern', 'cinder-hatchling'], forms: forms('twinflare-tyrant'),
-    text: '60 degree cone, 14 m, 8 damage. Starts stronger than a level 10 basic.',
-    attack: { kind: 'cone', dmg: 8, cd: 0.9, range: 14, arc: 60 }, fx: { 3: { range: 2 }, 6: { arc: 20 }, 10: { range: 3, arc: 20 } }, fxText: { 3: 'cone +2 m', 6: 'cone wider', 10: 'longest, widest cone' } },
+    text: '60 degree cone, 14 m, about 8 damage a hit at level 1. Starts stronger than a level 10 basic.',
+    attack: { kind: 'cone', dmg: 2.5, cd: 0.9, range: 14, arc: 60 }, fx: { 3: { range: 2 }, 6: { arc: 20 }, 10: { range: 3, arc: 20 } }, fxText: { 3: 'cone +2 m', 6: 'cone wider', 10: 'longest, widest cone' } },
   'astral-magus': { name: 'Astral Magus', type: 'Spellcaster', elements: ['lightning'], from: ['rune-apprentice', 'sigil-familiar'], forms: forms('astral-magus'),
     text: 'Marks 6. Marked enemies explode on defeat: 4 m, 8 damage.',
-    attack: { kind: 'mark', dmg: 3, cd: 1.0, marks: 6, range: 26, explodeRadius: 4, explodeDmg: 8 }, fx: { 3: { marks: 2 }, 6: { explodeDmg: 4 }, 10: { marks: 2, explodeRadius: 1 } }, fxText: { 3: 'marks +2', 6: 'bigger blasts', 10: 'marks +2, wider blasts' } }
+    attack: { kind: 'mark', dmg: 1, cd: 1.0, marks: 6, range: 26, explodeRadius: 4, explodeDmg: 8 }, fx: { 3: { marks: 2 }, 6: { explodeDmg: 4 }, 10: { marks: 2, explodeRadius: 1 } }, fxText: { 3: 'marks +2', 6: 'bigger blasts', 10: 'marks +2, wider blasts' } }
 };
 export function formOf(id, level) {
   const D = MONSTERS[id] || FUSIONS[id]; let f = 0;
@@ -85,6 +85,7 @@ export const TARGETS = {
   firstFusionSeconds: [225, 270],                                     // 3:45 to 4:30 with focused picks
   secondFusionShare: 0.15                                             // runs that reach a second Fusion: rare, under 15%
 };
+
 
 
 

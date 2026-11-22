@@ -3,6 +3,7 @@
 // beams 4, flipping cards 12), so steady state allocates nothing per frame.
 const T = window.THREE;
 
+const ELEM_COL = [null, '#ff9a3a', '#8fe8ff', '#9fd8ff', '#9be86a', '#c8f0d0', '#c9a46a', '#fff2a0', '#c08aff'];
 export const POOL = { particles: 4000, numbers: 64, rings: 48, beams: 4, cards: 12 };
 
 export class Fx {
@@ -90,13 +91,15 @@ export class Fx {
   cards(x, y, z, n) {
     for (let k = 0; k < n; k++) { const i = this.ch, j = i * 3; this.ch = (this.ch + 1) % this.C; this.cp[j] = x + (k - (n - 1) / 2) * 0.9; this.cp[j + 1] = y + 0.8; this.cp[j + 2] = z; this.cage[i] = -k * 0.12; this.clife[i] = 1.1; this.cspin[i] = 6 + k; }
   }
-  number(x, y, z, value) {
+  // flags from the sim's hit event: bit 0 crit, bits 1+ the element mask (fire 1, lightning 2, ice 4, poison 8, wind 16, earth 32, light 64, dark 128)
+  number(x, y, z, value, flags) {
     if (this.numBudget < 1) return; this.numBudget -= 1;
-    const big = value > this.avgDmg * 2.2 + 1; this.avgDmg += (value - this.avgDmg) * 0.05;
+    const big = flags === undefined || flags === null ? value > this.avgDmg * 2.2 + 1 : (flags & 1) === 1; this.avgDmg += (value - this.avgDmg) * 0.05;
+    const el = flags ? flags >> 1 : 0, col = ELEM_COL[el & 1 ? 1 : el & 2 ? 2 : el & 4 ? 3 : el & 8 ? 4 : el & 16 ? 5 : el & 32 ? 6 : el & 64 ? 7 : el & 128 ? 8 : 0];
     const i = this.nh, j = i * 3; this.nh = (this.nh + 1) % this.M;
     const ctx = this.nctx[i]; ctx.clearRect(0, 0, 128, 48); ctx.font = 'bold ' + (big ? 38 : 28) + 'px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const s = String(Math.max(1, Math.round(value)));
-    ctx.lineWidth = 6; ctx.strokeStyle = '#1a0a20'; ctx.strokeText(s, 64, 24); ctx.fillStyle = big ? '#ffd23a' : '#fff6e0'; ctx.fillText(s, 64, 24);
+    ctx.lineWidth = 6; ctx.strokeStyle = '#1a0a20'; ctx.strokeText(s, 64, 24); ctx.fillStyle = col || (big ? '#ffd23a' : '#fff6e0'); ctx.fillText(s, 64, 24);
     this.ntex[i].needsUpdate = true;
     this.nx[j] = x + (Math.random() - 0.5) * 0.8; this.nx[j + 1] = y; this.nx[j + 2] = z + (Math.random() - 0.5) * 0.8; this.nvx[i] = (Math.random() - 0.5) * 1.2; this.nage[i] = 0; this.nbig[i] = big ? 1 : 0;
     const sp = this.nsp[i]; sp.visible = true; sp.material.opacity = 1;

@@ -4,6 +4,8 @@ import { atan2, cos, sin } from './dmath.js';
 import { SPECIALS } from '../data/enemies.js';
 import { RUN } from '../data/waves.js';
 import { RUNSPEC } from '../data/stages.js';
+import { K } from '../data/tuning.js';
+import { mightBracket, targetBracket } from './ledger.js';
 import { FIELD_RULES } from '../data/cards.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { steerVec, walk, settle } from './steer.js';
@@ -57,9 +59,10 @@ export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
     const f = SPECIALS.warden.shieldHalfArc * DEG, tx = fromX - sp.x, tz = fromZ - sp.z, tl = Math.sqrt(tx * tx + tz * tz) || 1;
     if ((tx / tl) * sin(sp.face) + (tz / tl) * cos(sp.face) > cos(f)) { g.event('block', { x: sp.x, y: sp.y + 1.5, z: sp.z }); sp.flash = 0.05; return false; }
   }
-  let d = dmg * (1 + g.mods.dmgMult + g.mods.bossDmg);
-  if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
-  g.logDealt(d);
+  let d = dmg * mightBracket(g.mods.dmgMult) * targetBracket(g.mods.bossDmg);     // brackets 1 and 4 (Hunter feeds the target bracket)
+  let crit = 0;
+  if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) { d *= K.critBase; crit = 1; }
+  g.logDealt(d); g.emit('hit', d, sp.x, sp.z, crit | ((o.elem || 0) << 1));
   sp.hp -= d; sp.flash = 0.12;
   if (sp.hp > 0) return false;
   onDeath(g, sp);

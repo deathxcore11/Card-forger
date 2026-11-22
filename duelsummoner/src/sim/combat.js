@@ -1,4 +1,6 @@
 ﻿// Damage, status effects, explosions, drops and the little pools the view draws (telegraphs, effects).
+import { K } from '../data/tuning.js';
+import { mightBracket, targetBracket } from './ledger.js';
 import { CFG } from '../data/config.js';
 import { KIND_LIST, KINDS } from '../data/enemies.js';
 import { RUN } from '../data/waves.js';
@@ -24,12 +26,13 @@ export function damageEnemy(g, i, dmg, o) {
   const e = g.en; if (!e.alive[i]) return false;
   o = o || {};
   let d = dmg;
-  if (e.mark[i] > 0) d *= 1 + MARKS.bonus + g.mods.markBonus;
-  d *= 1 + g.mods.dmgMult;
-  if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
+  if (e.mark[i] > 0) d *= targetBracket(MARKS.bonus + g.mods.markBonus);          // bracket 4
+  d *= mightBracket(g.mods.dmgMult);                                              // bracket 1 (knee: stacking Might has a ceiling)
+  let crit = 0;
+  if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) { d *= K.critBase; crit = 1; }
   g.logDealt(d);
-  e.hp[i] -= d; e.flash[i] = 0.12; g.emit('hit', d, e.x[i], e.z[i]);
   const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0);
+  e.hp[i] -= d; e.flash[i] = 0.12; g.emit('hit', d, e.x[i], e.z[i], crit | (el << 1));       // flags for the view: bit 0 crit, bits 1+ element mask
   if (el & ELEMENTS.fire.bit) { e.burn[i] = ELEMENTS.fire.burn.dur + g.mods.burnDur; e.burnDps[i] = ELEMENTS.fire.burn.dps + g.mods.burnDps; }
   const chainAfter = (el & ELEMENTS.lightning.bit) && !o.noChain;
   if (o.kx !== undefined) {

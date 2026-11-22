@@ -152,7 +152,7 @@ function onEvent(type, a, b, c, data) {
   if (type === 'banner') showBanner(data);
   else if (type === 'offer') { setMode('offer'); showOffer(game, menu); }
   else if (type === 'levelup') { showBanner('Level ' + a); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
-  else if (type === 'hit') fx.number(b, 1.7, c, a);
+  else if (type === 'hit') fx.number(b, 1.7, c, a, data);
   else if (type === 'kill') fx.burst(b, 0.9, c, 6, KCOL[a] || 0xaaaaaa, 3.5, 4, 0.28, 0.55, 14);
   else if (type === 'pickup') fx.burst(ip.x, ip.y + 1.1, ip.z, 3, PCOL[a] || 0xffffff, 1.6, 2.5, 0.14, 0.35, 0);
   else if (type === 'hurt') fx.shake(b ? 0.55 : 0.28);

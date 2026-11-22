@@ -1,6 +1,7 @@
 ﻿// The field: 4 Monster Zones and 4 shared Spell and Trap Zones, level-up offers, Redraw / Banish / Pass, and Fusion.
 import { MONSTERS, FUSIONS, SPELLS, ONE_SHOTS, TRAPS, DUELISTS, OFFER, LEVELS, FIELD_RULES, XP, formOf } from '../data/cards.js';
 import { addFx } from './combat.js';
+import { monsterMul } from './ledger.js';
 import { RECIPES, TIERS } from '../data/elements.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { ENCOUNTERS } from '../data/encounters.js';
@@ -29,7 +30,7 @@ export function param(m, name) {
   for (const lv of Object.keys(D.fx)) if (m.level >= +lv && D.fx[lv][name] !== undefined) v += D.fx[lv][name];
   return v;
 }
-export const damageOf = m => param(m, 'dmg') * (1 + LEVELS.damagePerLevel * (m.level - 1));
+export const damageOf = m => param(m, 'dmg') * monsterMul(m.id, m.level);          // base x level x form x tier (the Ledger, section 8)
 
 // ---- derived stats from spells ----
 export function recompute(g) {
