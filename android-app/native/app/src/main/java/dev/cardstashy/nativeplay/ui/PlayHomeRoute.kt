@@ -31,7 +31,7 @@ internal const val SITE_PLAY = "https://cardstashy.com/#play"
  * them. Signed out, the old home with its sign-in panel. Pages not ported yet open the site's own.
  */
 @Composable
-fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuickPlay() }, onCollection: () -> Unit, onSignIn: () -> Unit, onWeb: (String) -> Unit, onTrunk: () -> Unit = {}, onDecks: () -> Unit = {}, onStory: () -> Unit = {}, onAchievements: (String?) -> Unit = {}, onShop: (tab: String, set: String?) -> Unit = { _, _ -> }, onQuickWith: (String) -> Unit = { onLobby("quick") }) {
+fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuickPlay() }, onCollection: () -> Unit, onSignIn: () -> Unit, onWeb: (String) -> Unit, onTrunk: () -> Unit = {}, onDecks: () -> Unit = {}, onStory: () -> Unit = {}, onAdventures: () -> Unit = {}, onAchievements: (String?) -> Unit = {}, onShop: (tab: String, set: String?) -> Unit = { _, _ -> }, onQuickWith: (String) -> Unit = { onLobby("quick") }) {
     val session by Account.session.collectAsState()
     val profile by Account.profile.collectAsState()
     val state by Progress.state.collectAsState()
@@ -110,7 +110,7 @@ fun PlayHomeRoute(onQuickPlay: () -> Unit, onLobby: (String) -> Unit = { onQuick
         runCatching { Progress.refresh(); Progress.refreshDeeds() }
     } }
     val act = PlayHomeActions(
-        mode = { when (it) { "quick", "practice", "social" -> onLobby(it); "planeswalk" -> onWeb("https://cardstashy.com/planeswalk.html"); else -> onWeb(SITE_PLAY) } },
+        mode = { when (it) { "quick", "practice", "social" -> onLobby(it); "adventures" -> onAdventures(); else -> onWeb(SITE_PLAY) } },
         story = { onStory() },
         view = { when (it) { "switch" -> onCollection(); "collection" -> onTrunk(); "decks" -> onDecks(); "deeds" -> onAchievements(null); "quests" -> onAchievements("quests"); "shop" -> onShop("sets", null); "packs" -> onShop("packs", null); "forge" -> onShop("forge", null)
             // Build a deck: the app's own finder on Play Decks (not the website).
