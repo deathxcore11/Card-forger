@@ -920,8 +920,10 @@ const propCanvas = (vs, items) => `<canvas id="prop" class="ab" style="left:0;to
 // itself, so the keepers sway with it.
 function keepers(r, rp, vs) {
   if (!pmodel('keeper') || !r.doors.some(d => d.type === 'boss')) return '';
-  const at = (x, yaw) => ['keeper', yaw, Math.round(x * rp.s), Math.round(190 * rp.s), Math.round(92 * rp.s), Math.round(44 * rp.s)];
-  const items = [at(24, 28), at(328, -28)].filter(([, , cx, by]) => rp.ox + cx >= 16 && rp.ox + cx <= vs.w - 16 && rp.oy + by <= vs.h + 8); // a keeper the view cuts off stays out
+  // On the floor in front of the steps; a view too short to show that floor puts them up on the steps, a little smaller.
+  const foot = Math.min(Math.round(190 * rp.s), vs.h - rp.oy - 2), k = .75 + .25 * foot / (190 * rp.s);
+  const at = (x, yaw) => ['keeper', yaw, Math.round(x * rp.s), foot, Math.round(92 * rp.s * k), Math.round(44 * rp.s * k)];
+  const items = [at(24, 28), at(328, -28)].filter(([, , cx, by, h]) => rp.ox + cx >= 0 && rp.ox + cx <= vs.w && rp.oy + by - h >= 0); // the view may cut one at the side
   return items.length ? propCanvas({ w: rp.pw, h: rp.ph }, items) : '';
 }
 let propLoading = false;
