@@ -3,6 +3,7 @@ import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
 import { makeStreams } from './rng.js';
+import { quantise, decode, emptyRecord, MENU_TAKE, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from './input.js';
 import { Flow } from './flow.js';
 import { makePlayer, updatePlayer } from './player.js';
 import { makeEnemies, updateEnemies, spawnEnemy, spawnRate, enemyCount } from './enemies.js';
@@ -15,6 +16,7 @@ import { makeField, recompute, xpNeeded, openLevelOffer, openChest, chooseCard, 
 import { MAP } from '../data/map.js';
 import { buildWorld, updateWorld, nearestProp, useProp } from './world.js';
 import { SPELLS } from '../data/cards.js';
+import { runResults } from './results.js';
 
 const STEP = 1 / 60;
 
@@ -30,7 +32,8 @@ export class Game {
     this.nearBuf2 = new Int32Array(64);
     this.tele = makeTele(64); this.fx = makeFx(48); this.eb = makeBolts(48);
     this.btraps = []; for (let i = 0; i < 8; i++) this.btraps.push({ on: false, x: 0, y: 0, z: 0, life: 0 });
-    this.events = [];
+    this.evType = new Array(256).fill(''); this.evData = new Array(256).fill(null); this.evA = new Float64Array(256); this.evB = new Float64Array(256); this.evC = new Float64Array(256); this.evT = new Float64Array(256); this.evHead = 0; this.evTail = 0;
+    this._cmd = {}; this._rec = emptyRecord(); this.tape = null;
     this.reset(seed, opts.duelist);
   }
 
@@ -62,10 +65,20 @@ export class Game {
     this.en.alive.fill(0); this.shots.alive.fill(0); this.pick.alive.fill(0);
     this.tele.forEach(o => { o.on = false; }); this.fx.forEach(o => { o.on = false; }); this.eb.forEach(o => { o.on = false; }); this.btraps.forEach(o => { o.on = false; });
     this.grid.rebuild(this.en.max, this.en.x, this.en.z, this.en.alive);
-    this.flow.valid = false; this.events.length = 0;
+    this.flow.valid = false; this.evHead = this.evTail = 0;
+    this.tickN = 0; this.levelUps = 0; this.trapsFired = 0; this.trapsSet = 0; this.maxMonsters = 0; this.gateOpenedAt = -1; this.godFusions = 0; this.secretFusions = 0;
+    this.fusionIds = []; this.elementsUsed = 0; this.cardsPicked = []; this.fullForms = [];
   }
 
-  event(type, data) { if (this.events.length < 64) this.events.push({ type, data, t: this.t }); }
+  // Sim to view only through this queue. Fixed size ring; if the view falls behind the oldest events are dropped, never the rules.
+  // emit(type, a, b, c) is for numeric events (hit, kill, pickup, levelup, hurt, bossphase, sound); event(type, text) carries UI text.
+  emit(type, a, b, c, d) {
+    const i = this.evHead & 255; this.evHead++; if (this.evHead - this.evTail > 256) this.evTail = this.evHead - 256;
+    this.evType[i] = type; this.evA[i] = a || 0; this.evB[i] = b || 0; this.evC[i] = c || 0; this.evData[i] = d === undefined ? null : d; this.evT[i] = this.t;
+  }
+  event(type, data) { this.emit(type, 0, 0, 0, data); }
+  // calls fn(type, a, b, c, data, t) for every queued event, oldest first, then empties the queue
+  drainEvents(fn) { while (this.evTail < this.evHead) { const i = this.evTail & 255; this.evTail++; fn(this.evType[i], this.evA[i], this.evB[i], this.evC[i], this.evData[i], this.evT[i]); } }
   enemyCount() { return enemyCount(this.en); }
   fireBolt(x, y, z, vx, vz, life, dmg, r, src) {
     for (const b of this.eb) if (!b.on) { Object.assign(b, { on: true, x, y, z, vx, vz, life, dmg, r, px: x, pz: z, src: src || 'Glass Seer bolt' }); return; }
@@ -74,17 +87,35 @@ export class Game {
   damageSpecial(sp, dmg, fx, fz, o) { return damageSpecial(this, sp, dmg, fx, fz, o); }
 
   // Advance by dt seconds in fixed sub-steps of at most 1/60 s. Paused while an offer is open.
-  step(dt, cmd) {
-    const n = Math.max(1, Math.ceil(dt / STEP - 1e-6)), h = dt / n;
-    for (let i = 0; i < n && !this.over && !this.offer; i++) this._tick(h, cmd);
+  // THE entry point: one fixed 1/60 s tick from one quantised input record. No variable time ever reaches the rules.
+  // While an offer (level-up, chest, Altar, shop, shrine) is open the world is frozen and the tick only reads rec.menu.
+  tick(rec) {
+    if (this.tape) this.tape.push([rec.mx, rec.mz, rec.yaw, rec.buttons, rec.menu]);
+    if (this.offer) { this._menu(rec.menu); return; }
+    if (this.over) return;
+    decode(rec, this._cmd); this._tick(STEP, this._cmd);
   }
-  // For the browser: whole 1/60 s ticks from real time. Returns the blend factor between the last two ticks.
-  fixed(dt, cmd) {
-    this.acc += Math.min(dt, 0.1);
+  _menu(code) {
+    if (!code) return;
+    if (code >= MENU_TAKE && code <= MENU_TAKE + 3) this.choose(code - MENU_TAKE);
+    else if (code === MENU_REDRAW) this.redraw(); else if (code === MENU_PASS) this.pass(); else if (code === MENU_LEAVE) this.leave();
+    else if (code > MENU_BANISH && code <= MENU_BANISH + 4) this.banish(code - MENU_BANISH - 1);
+  }
+  startTape() { this.tape = []; return this.tape; }
+  // For tests, bots and tools: dt seconds as whole ticks of the same fixed step. cmd may be a record or a { f, r, yaw, jump, dash, slide, use } command.
+  step(dt, cmd) {
+    const n = Math.max(1, Math.round(dt / STEP)), rec = quantise(cmd, this._rec);
+    for (let i = 0; i < n && !this.over && !this.offer; i++) { this.tick(rec); rec.menu = 0; }
+  }
+  // For the browser: whole 1/60 s ticks from real time, at most 2 catch-up ticks (a longer stall is dropped, never simulated with a bigger dt).
+  // The view only blends between the previous and current snapshot using the returned alpha.
+  fixed(dt, rec) {
+    this.acc += dt;
     let ticks = 0;
-    while (this.acc >= STEP && !this.over && !this.offer && ticks < 8) { this._tick(STEP, cmd); this.acc -= STEP; ticks++; cmd = Object.assign({}, cmd, { use: false }); }
+    while (this.acc >= STEP && !this.over && !this.offer && ticks < 2) { this.tick(rec); this.acc -= STEP; ticks++; rec.buttons &= ~8; rec.menu = 0; }   // "use" is a one-tick press
+    if (this.acc > STEP) this.acc = STEP;
     if (this.offer || this.over) this.acc = 0;
-    this.alpha = Math.min(1, this.acc / STEP);
+    this.alpha = this.acc / STEP;
     return this.alpha;
   }
 
@@ -98,7 +129,7 @@ export class Game {
   _tick(dt, cmd) {
     const e = this.en;
     this._snap();
-    this.t += dt;
+    this.t += dt; this.tickN++;
     this.grid.rebuild(e.max, e.x, e.z, e.alive);
     this.flowT -= dt;
     if (this.flowT <= 0 || !this.flow.valid) { this.flow.update(this.p.x, this.p.z); this.flowT = CFG.path.refresh; }
@@ -114,6 +145,7 @@ export class Game {
     updateBolts(this, dt);
     updatePickups(this, dt);
     updateWorld(this, dt);
+    { let mc = 0; for (let k = 0; k < 4; k++) if (this.field.monsters[k]) mc++; if (mc > this.maxMonsters) this.maxMonsters = mc; }
     tickPool(this.tele, dt); tickPool(this.fx, dt);
     if (this.grace > 0) this.grace -= dt;
     if (this.flash > 0) this.flash -= dt;
@@ -162,10 +194,11 @@ export class Game {
   addXp(n) {
     const v = n * (1 + this.mods.xp);
     this.xp += v; this.xpCur += v;
-    while (this.xpCur >= this.xpNeed) { this.xpCur -= this.xpNeed; this.level++; this.xpNeed = xpNeeded(this.level); this.pendingLevels++; this.event('levelup', this.level); }
+    while (this.xpCur >= this.xpNeed) { this.xpCur -= this.xpNeed; this.level++; this.xpNeed = xpNeeded(this.level); this.pendingLevels++; this.levelUps++; this.emit('levelup', this.level); }
   }
 
   hurtPlayer(n, big, src) {
+    this.emit('hurt', n, big ? 1 : 0, 0, src || null);
     if (this.god || this.p.dashT > 0 || this.over) return false;
     if (this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = 20; this.event('banner', 'The Paper Talisman blocks the hit.'); return false; }
     n = Math.max(1, n - this.mods.armour);
@@ -193,6 +226,7 @@ export class Game {
   }
   runStats() { return { time: this.t, kills: this.kills, level: this.level, fusions: this.fusions, bossKilled: this.bossKilled, wardenKilled: this.wardenKilled, overtime: this.overtimeSeconds(), trapSet: this.trapEver, chests: this.world.opened, vases: this.vasesBroken }; }
 
+  results(ctx) { return runResults(this, ctx); }
   overtimeSeconds() { return Math.max(0, this.t - RUN.overtime.from); }
   endRun() { if (!this.over) { this.over = true; this.ended = true; } }
 

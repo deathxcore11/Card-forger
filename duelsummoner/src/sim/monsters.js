@@ -117,7 +117,7 @@ export function onPlayerHurt(g) {
 }
 function fireTrap(g, s) {
   const T = TRAPS[s.id], p = g.p, e = g.en, lv = s.level - 1;
-  s.cd = T.recharge * pow(T.rechargePerLevel, lv) * (1 - g.mods.trapRecharge);
+  s.cd = T.recharge * pow(T.rechargePerLevel, lv) * (1 - g.mods.trapRecharge); g.trapsFired++; g.emit('sound', 3);
   const dmg = T.dmg * (1 + T.dmgPerLevel * lv);
   addFx(g, { type: 'ring', x: p.x, y: p.y, z: p.z, r: T.radius, dur: 0.5, color: s.id === 'gust-ward' ? 0xa0e0ff : 0xe8c56a });
   const c = g.grid.query(p.x, p.z, T.radius, buf);

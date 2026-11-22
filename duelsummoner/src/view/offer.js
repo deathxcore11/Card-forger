@@ -2,6 +2,7 @@
 import { OFFER, LEVELS } from '../data/cards.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { cardDef, monsterMax } from '../sim/field.js';
+import { MENU_TAKE, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from '../sim/input.js';
 
 const $ = id => document.getElementById(id);
 
@@ -30,7 +31,8 @@ const SUBS = {
   blessing: 'Choose a stat blessing for the rest of the run.'
 };
 
-export function showOffer(g, onChange) {
+// act(code) sends a menu choice into the sim as input on a tick (see src/sim/input.js); the UI never calls the rules directly.
+export function showOffer(g, act) {
   const o = g.offer; if (!o) return;
   const shop = o.type === 'shop', level = o.type === 'level', cardy = level || o.type === 'chest';
   $('offerTitle').textContent = TITLES[o.type] ? TITLES[o.type] + (shop ? '  (coins ' + g.coins + ')' : '') : 'LEVEL UP ' + g.level;
@@ -51,19 +53,18 @@ export function showOffer(g, onChange) {
   if (o.leave) btns.insertAdjacentHTML('beforeend', '<button data-act="leave">' + (shop ? 'LEAVE THE STALL' : 'LEAVE IT FOR LATER') + '</button>');
   $('offerScreen').onclick = e => {
     const t = e.target.closest('button'); if (!t || t.disabled) return;
-    if (t.dataset.pick !== undefined) g.choose(+t.dataset.pick);
-    else if (t.dataset.ban !== undefined) g.banish(+t.dataset.ban);
-    else if (t.dataset.act === 'redraw') g.redraw();
-    else if (t.dataset.act === 'pass') g.pass();
-    else if (t.dataset.act === 'leave') g.leave();
-    onChange();
+    if (t.dataset.pick !== undefined) act(MENU_TAKE + +t.dataset.pick);
+    else if (t.dataset.ban !== undefined) act(MENU_BANISH + 1 + +t.dataset.ban);
+    else if (t.dataset.act === 'redraw') act(MENU_REDRAW);
+    else if (t.dataset.act === 'pass') act(MENU_PASS);
+    else if (t.dataset.act === 'leave') act(MENU_LEAVE);
   };
 }
-export function offerKey(g, code) {                       // keyboard: 1 to 3 take or buy, R redraw, P pass, L leave
-  const o = g.offer; if (!o) return false;
-  if (/^Digit[1-4]$/.test(code)) { g.choose(+code.slice(5) - 1); return true; }
-  if (code === 'KeyR') return g.redraw();
-  if (code === 'KeyP') return g.pass();
-  if (code === 'KeyL') return g.leave();
+export function offerKey(g, code, act) {                // keyboard: 1 to 4 take or buy, R redraw, P pass, L leave
+  if (!g.offer) return false;
+  if (/^Digit[1-4]$/.test(code)) { act(MENU_TAKE + +code.slice(5) - 1); return true; }
+  if (code === 'KeyR') { act(MENU_REDRAW); return true; }
+  if (code === 'KeyP') { act(MENU_PASS); return true; }
+  if (code === 'KeyL') { act(MENU_LEAVE); return true; }
   return false;
 }

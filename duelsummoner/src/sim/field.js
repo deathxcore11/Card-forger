@@ -4,6 +4,7 @@ import { addFx } from './combat.js';
 import { RECIPES, TIERS } from '../data/elements.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { ENCOUNTERS } from '../data/encounters.js';
+import { elemBits } from '../data/elements.js';
 const E_ALTAR = ENCOUNTERS.altar;
 
 export const xpNeeded = level => XP.base + XP.perLevel * level + (XP.quad || 0) * level * level;
@@ -69,7 +70,7 @@ export function doFusion(g, id) {
   if (ia < 0 || ib < 0) return false;
   f.monsters[Math.min(ia, ib)] = newMonster(id, TIERS[r.tier].startLevel, g.rcos); f.monsters[Math.max(ia, ib)] = null;      // takes one zone, frees the other
   if (f.firstFusionAt < 0) f.firstFusionAt = g.t;
-  g.fusions++; recompute(g); g.event('banner', FUSIONS[id].name + ' is summoned!'); g.event('summon', id);
+  g.fusions++; g.fusionIds.push(id); recompute(g); g.event('banner', FUSIONS[id].name + ' is summoned!'); g.event('summon', id);
   return true;
 }
 
@@ -144,6 +145,8 @@ export function openChest(g, chest) {
 
 function applyCard(g, c) {
   const f = g.field;
+  if (c.kind !== 'fusion' && !g.cardsPicked.includes(c.id)) g.cardsPicked.push(c.id);
+  const D0 = MONSTERS[c.id] || FUSIONS[c.id]; if (D0 && D0.elements) g.elementsUsed |= elemBits(D0.elements);
   if (c.kind === 'fusion') { doFusion(g, c.id); return; }
   if (c.kind === 'monster') {
     const m = f.monsters.find(x => x && x.id === c.id);
@@ -155,7 +158,7 @@ function applyCard(g, c) {
     const s = f.spells.find(x => x && x.id === c.id);
     if (s) s.level = c.to; else {
       let i = f.spells.findIndex((x, k) => !x && f.bonusS[k] > 0); if (i < 0) i = f.spells.findIndex(x => !x);
-      if (i >= 0 && TRAPS[c.id]) g.trapEver = true;
+      if (i >= 0 && TRAPS[c.id]) { g.trapEver = true; g.trapsSet++; }
       if (i >= 0) { const start = Math.min(LEVELS.spellMax, 1 + f.bonusS[i]); f.bonusS[i] = 0; f.spells[i] = { id: c.id, level: start, cd: 0, rootFx: 0 }; }
     }
     if (c.id === 'heart-of-the-cards') g.p.hp = Math.min(g.cfgHp + g.mods.maxLp + SPELLS[c.id].per.maxLp, g.p.hp + SPELLS[c.id].healNow);
@@ -168,6 +171,7 @@ function applyCard(g, c) {
 
 // crossing level 5 or 10 swaps the monster to its next form with a short summon flash
 function evolve(g, m, before) {
+  if (formOf(m.id, m.level) === 2 && !g.fullForms.includes(m.id)) g.fullForms.push(m.id);          // reached its full form (unlock key dsfull:<monster>)
   if (formOf(m.id, m.level) <= before) return;
   addFx(g, { type: 'ring', x: m.x, y: m.y - 1, z: m.z, r: 3.5, dur: 0.6, color: 0xc090ff });
   g.event('banner', def(m.id).name + ' evolves!'); g.event('summon', m.id);

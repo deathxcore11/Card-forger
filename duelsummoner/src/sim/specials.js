@@ -31,7 +31,7 @@ export function startBoss(g, early) {
   if (g.boss.state !== 'idle') return false;                       // one shared state: only one Pharaoh ever spawns
   const S = SPECIALS.pharaoh, B = RUN.bossSpawn;
   const sp = make('pharaoh', S.name, S, B.x, heightAt(B.x, B.z), B.z); sp.hp = sp.maxHp = S.hp * g.hpMul; sp.cd = 3; sp.aux = 6;
-  g.sp.push(sp); g.boss = { state: 'active', early: !!early, t0: g.t, phase: 1, sandT: 0, summonT: S.summon.every, trapT: 2 };
+  g.sp.push(sp); g.gateOpenedAt = early ? g.t : -1; g.boss = { state: 'active', early: !!early, t0: g.t, phase: 1, sandT: 0, summonT: S.summon.every, trapT: 2 };
   g.event('banner', early ? 'You enter the Royal Gate early. The Hollow Pharaoh wakes.' : 'The Hollow Pharaoh wakes.');
   return true;
 }
@@ -140,7 +140,7 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
   const S = SPECIALS.pharaoh, b = g.boss, p = g.p, mul = g.dmgMul;
   const frac = sp.hp / sp.maxHp, phase = frac > S.phase2 ? 1 : frac > S.phase3 ? 2 : 3;
   if (phase !== b.phase) {
-    b.phase = phase;
+    b.phase = phase; g.emit('bossphase', phase);
     g.event('banner', phase === 2 ? 'Phase two: face-down traps cover the floor.' : 'Phase three: the sand rises.');
     addFx(g, { type: 'ring', x: sp.x, y: sp.y, z: sp.z, r: 12, dur: 0.8, color: 0xe8c56a });
   }

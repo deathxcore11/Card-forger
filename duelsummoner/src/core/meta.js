@@ -17,7 +17,7 @@ export function deckMods(meta) {
   return m;
 }
 // what the sim receives
-export function simMeta(meta) { return { mods: deckMods(meta), cards: meta.unlockedCards.slice(), items: meta.unlockedItems.slice() }; }
+export function simMeta(meta) { return { mods: deckMods(meta), cards: meta.unlockedCards.slice(), items: meta.unlockedItems.slice(), deck: Object.assign({}, meta.deck) }; }
 
 export function upgradeCost(meta, key) { const r = rankOf(meta, key); return r >= 5 ? null : DECK_BOX[key].cost[r]; }
 export function buyUpgrade(meta, chips, key) {                    // returns the new chip total, or null when it cannot be bought
@@ -25,9 +25,9 @@ export function buyUpgrade(meta, chips, key) {                    // returns the
   meta.deck[key] = rankOf(meta, key) + 1; return chips - c;
 }
 
-// stats: { time, kills, level, fusions, bossKilled, wardenKilled, overtime, trapSet, chests, vases }
+// results: the flat run report from the sim (src/sim/results.js)
 export function applyRun(meta, stats) {
-  const T = meta.totals; T.kills += stats.kills || 0; T.chests += stats.chests || 0; T.vases += stats.vases || 0; T.runs += 1;
+  const T = meta.totals; T.kills += stats.kills || 0; T.chests += stats.chestsOpened || 0; T.vases += stats.vasesBroken || 0; T.runs += 1;
   const done = [];
   for (const q of QUESTS) {
     if (meta.questsDone.includes(q.id) || !q.test(stats, T)) continue;

@@ -27,7 +27,7 @@ export function damageEnemy(g, i, dmg, o) {
   if (e.mark[i] > 0) d *= 1 + MARKS.bonus + g.mods.markBonus;
   d *= 1 + g.mods.dmgMult;
   if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
-  e.hp[i] -= d; e.flash[i] = 0.12;
+  e.hp[i] -= d; e.flash[i] = 0.12; g.emit('hit', d, e.x[i], e.z[i]);
   const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0);
   if (el & ELEMENTS.fire.bit) { e.burn[i] = ELEMENTS.fire.burn.dur + g.mods.burnDur; e.burnDps[i] = ELEMENTS.fire.burn.dps + g.mods.burnDps; }
   const chainAfter = (el & ELEMENTS.lightning.bit) && !o.noChain;
@@ -55,7 +55,7 @@ function chain(g, from, x, z, dmg) {
 
 export function killEnemy(g, i) {
   const e = g.en; if (!e.alive[i]) return;
-  e.alive[i] = 0; g.kills++;
+  e.alive[i] = 0; g.kills++; g.emit('kill', e.kind[i], e.x[i], e.z[i]);
   if (g.mods.bell && g.kills % 50 === 0) explode(g, e.x[i], e.y[i], e.z[i], 4, 0, 10, 0xc0c0ff);       // Graveyard Bell
   const x = e.x[i], y = e.y[i], z = e.z[i], K = KIND_LIST[e.kind[i]];
   dropPickup(g, PICK_XP, x, y, z);

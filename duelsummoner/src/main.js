@@ -12,7 +12,9 @@ import { showOffer, offerKey } from './view/offer.js';
 import { loadModel, loadPuffTexture } from './view/models.js';
 import { spawnEnemy } from './sim/enemies.js';
 import { Props } from './view/props.js';
+import { quantise, emptyRecord } from './sim/input.js';
 import { loadSave, recordRun, writeSave } from './core/save.js';
+import { createBrowserHost } from './core/host.js';
 import { simMeta, applyRun } from './core/meta.js';
 import { showDeckBox, showLibrary } from './view/metaui.js';
 import { QUESTS } from './data/meta.js';
@@ -50,11 +52,12 @@ const game = new Game(Date.now() & 0xffff, { duelist, world: withProps ? 'region
 const actors = new Actors(scene, assets);
 const props = new Props(scene);
 const chase = new ChaseCamera(camera);
-const input = new Input(canvas);
+const host = createBrowserHost(canvas);
+const input = host.input;
 const minimap = new Minimap($('minimap'));
 
 let MODE = 'start', last = 0, frozen = false;
-const save = loadSave();
+const save = loadSave(host);
 
 function lock() { if (canvas.requestPointerLock) { try { canvas.requestPointerLock(); } catch (e) {} } }
 function setMode(m) {
@@ -76,7 +79,7 @@ $('pickKael').addEventListener('click', () => pickDuelist('kael'));
 $('pickMira').addEventListener('click', () => pickDuelist('mira'));
 const showChips = () => { $('chipsLine').textContent = 'Star Chips ' + save.starChips; };
 showChips();
-$('deckBtn').addEventListener('click', () => showDeckBox(save, () => { writeSave(save); showChips(); }, showChips));
+$('deckBtn').addEventListener('click', () => showDeckBox(save, () => { writeSave(host, save); showChips(); }, showChips));
 $('libBtn').addEventListener('click', () => showLibrary(save, showChips));
 $('startBtn').addEventListener('click', begin);
 $('restartBtn').addEventListener('click', begin);
@@ -89,13 +92,16 @@ document.addEventListener('pointerlockchange', () => {
 });
 window.addEventListener('keydown', e => {
   if (e.code === 'Escape' && MODE === 'play' && !document.pointerLockElement) setMode('pause');
-  if (MODE === 'offer' && !e.repeat && offerKey(game, e.code)) afterOfferChange();
+  if (MODE === 'offer' && !e.repeat) offerKey(game, e.code, menu);
 });
 window.addEventListener('blur', () => { if (MODE === 'play') setMode('pause'); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && MODE === 'play') setMode('pause'); });
 
+// Menu choices enter the sim as input on a tick, like movement does.
+const idleRec = emptyRecord(), liveRec = emptyRecord();
+function menu(code) { idleRec.menu = code; game.tick(idleRec); idleRec.menu = 0; afterOfferChange(); }
 function afterOfferChange() {
-  if (game.offer) showOffer(game, afterOfferChange);       // redraw / banish: same screen, new cards
+  if (game.offer) showOffer(game, menu);                 // redraw / banish / shop buy: same screen, new cards
   else { setMode('play'); lock(); drawHud(game, true); }
 }
 let ended = false;
@@ -103,8 +109,8 @@ function results() {
   let info = { record: { bestTime: 0 }, newBest: false };
   let unlocked = [];
   if (!ended) {                                                          // saved once per run
-    ended = true; info = recordRun(save, duelist, { time: game.t, kills: game.kills, level: game.level, bossKilled: game.bossKilled, chips: game.starChips() });
-    unlocked = applyRun(save.meta, game.runStats()); writeSave(save);
+    ended = true; info = recordRun(host, save, duelist, { time: game.t, kills: game.kills, level: game.level, bossKilled: game.bossKilled, chips: game.starChips() });
+    const report = game.results({ runId: 'ds-' + game.seed + '-' + save.runs }); unlocked = applyRun(save.meta, report); writeSave(host, save); host.reportRun(report);
   }
   $('dQuests').textContent = unlocked.length ? 'Quest done: ' + unlocked.map(q => q.name + ' (unlocked ' + (q.unlock.card || q.unlock.item) + ')').join(', ') : '';
   $('resTitle').textContent = game.bossKilled ? 'VICTORY' : game.ended ? 'RUN ENDED' : 'DEFEATED';
@@ -116,14 +122,12 @@ function results() {
   $('dBreakdown').textContent = top ? 'Damage taken: ' + top : '';
   drawHud(game, true); setMode('dead');
 }
-function drainEvents() {
-  for (const ev of game.events) {
-    if (ev.type === 'banner') showBanner(ev.data);
-    else if (ev.type === 'offer') { setMode('offer'); showOffer(game, afterOfferChange); }
-    else if (ev.type === 'levelup') showBanner('Level ' + ev.data);
-  }
-  game.events.length = 0;
+function onEvent(type, a, b, c, data) {
+  if (type === 'banner') showBanner(data);
+  else if (type === 'offer') { setMode('offer'); showOffer(game, menu); }
+  else if (type === 'levelup') showBanner('Level ' + a);
 }
+function drainEvents() { game.drainEvents(onEvent); }
 
 const dbg = $('debug'), showDebug = /[?&]debug/.test(location.search);
 dbg.style.display = showDebug ? 'block' : 'none';
@@ -138,7 +142,7 @@ function frame(now) {
   if (MODE === 'play') {
     last = now;
     const s0 = performance.now();
-    if (dtReal > 0 && !frozen) alpha = game.fixed(dtReal, input.command());
+    if (dtReal > 0 && !frozen) alpha = game.fixed(dtReal, quantise(input.command(), liveRec));
     prof.sim = performance.now() - s0; stepMs += prof.sim;
     drainEvents();
     if (game.over && MODE === 'play') results();
