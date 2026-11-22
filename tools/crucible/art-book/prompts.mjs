@@ -252,11 +252,105 @@ Colours only: sandstone in three tones.
 
 ${BAN}`, 'Make this picture in ChatGPT, upload it to the picture-to-3D tool on your free credits, download the model as a GLB file and send it to me. Send the picture as well. One model is enough to decide.');
 
+// ---------------- Wave 6: making it good (22 November: what the game still shows as a word or a stand-in)
+add('T1', 6, 'Terrain grounds', 'pic', '1024 x 1024', '128 x 128 each, 256 colours', 'Laid over the duel table when a Field Spell sets the terrain. Today the terrain is only a word.', 'terrain-sheet.png',
+`Sixteen square ground surfaces in a 4 by 4 grid, for the top of a card game table.
+
+Each square is one patch of ground seen from exactly straight above, flat, like a floor texture. Nothing stands up out of it: no trees, no rocks bigger than a pebble, no horizon, no sky, no cast shadows. Each square must tile seamlessly with itself, left edge to right edge and top edge to bottom edge.
+Each one is shown at 128 by 128 pixels, so: big simple shapes, strong mid-tones, no fine detail, no thin lines.
+
+Style: a ground texture from a 1997 32-bit console game. Hand-painted, coarse grain, visible dither dots, a 256-colour look. Lit flat and even from above.
+Layout: sixteen squares on a flat pure black background, all the same size, four rows of four, a thin black gap between them, nothing touching the picture's edge. 1024 by 1024.
+
+Top row, left to right:
+1. forest floor: dark moss, fallen leaves and a few thin roots.
+2. mountain rock: grey broken slate with patches of old snow.
+3. open grassland: short wind-flattened grass in two greens with dry yellow streaks.
+4. shallow sea: clear green-blue water over pale sand ripples.
+Second row, left to right:
+5. wasteland: cracked dry red-brown earth with a few small bleached bones.
+6. darkness: near-black stone with faint violet mist lying in the cracks.
+7. tomb valley: pale sand with the flat tops of plain, uncarved sunken stone slabs showing through.
+8. a burning underworld: black rock with deep red glowing cracks.
+Third row, left to right:
+9. sanctuary: white marble tiles with thin gold lines between them.
+10. molten ground: a black crust with orange lava showing through the breaks.
+11. deep earth: dark rich soil with roots and a few small green crystals.
+12. high wind: pale sand blown into long curved ripples.
+Bottom row, left to right:
+13. bright light: pale gold stone with veins of white light running through it.
+14. deep water: dark blue water with white foam lines.
+15. ocean floor: deep blue sand with a few coral fans lying flat.
+16. strange energy: dark plum ground crossed by thin crackling violet lines.
+
+${BAN}`, 'The order matters: I cut the sheet square by square and each square belongs to one terrain. If one square comes out wrong, say which and I give you a prompt for that one alone.');
+
+add('C8', 6, 'Enchant marks', 'pic', '1536 x 1024', '16 x 16 each, 16 colours', 'On a card that carries an Enchant, at the Anvil, and on the card page. Today an Enchant is only a word.', 'enchant-marks.png',
+`Twelve small struck marks in a grid of four across and three down.
+
+Style: icons from a 1997 32-bit console dungeon game. Hand-painted pixel look with coarse dither grain, hard light from the upper left, a dark line round every shape.
+Each mark is a small square bronze tablet with bevelled edges and four tiny rivets, a flat near-black field, and ONE bold symbol in raised aged gold that fills most of the field.
+Each one is shown at 16 by 16 pixels, so: one big simple shape per mark, thick forms, no small details, no thin lines.
+Layout: twelve tablets on a flat pure black background, all the same size, evenly spaced, none touching, each seen exactly from the front. 1536 by 1024.
+
+Top row, left to right:
+1. a spear point bursting through the broken edge of a shield.
+2. two identical short blades side by side, both pointing up.
+3. a cup catching one red drop.
+4. a squat stone wall with one crack across it, still standing.
+Middle row, left to right:
+5. a curved fang with one green drop at its tip.
+6. a single spread wing.
+7. a short curved horn.
+8. a small round flask with one spark inside.
+Bottom row, left to right:
+9. a hand rising out of a dark slit in the ground.
+10. a tall rectangular shield planted upright.
+11. three small identical standing figures shoulder to shoulder.
+12. three rings rippling out from one point.
+
+${BAN}`);
+
+add('R15', 6, 'The reading room', 'pic', '1536 x 1024', '352 x 144, 256 colours', 'Behind the Codex, Feats and the Memory Vault. Today those books sit on the title picture.', 'room-archive.png',
+room(`The reading room where the pyramid's records are studied.
+Far wall, centre: a heavy stone lectern on one low step. On it lies one huge open book bound in stone boards, its pages blank and pale.
+Above the lectern a bronze lamp hangs low on a chain. It lights the pages and is the only light.
+Left and right walls: tall stone shelves of sealed clay tablets, fading up into darkness.
+On the floor beside the lectern, a few clay tablets stacked neatly.`, 'the floor in front of the lectern. A window of text sits over the lower middle later.'));
+
+add('D2', 6, 'The hidden door', 'pic', '1024 x 1024', '64 x 96 a leaf pair, 256 colours', 'The door that is not there, to The Last One. Today it borrows the sealed duel door.', 'door-hidden.png',
+`A stone doorway seen exactly straight on, filling the picture: a heavy stepped lintel across the top, a square pillar of big sandstone blocks either side, three wide steps in front, and two tall door leaves closed in the middle.
+This door was never meant to be found. The two leaves are perfectly plain grey-plum stone with no carving at all, only one hairline seam down the middle where they meet. The lintel and pillars are worn smooth, colder and greyer than the rest of the pyramid, with almost no gold.
+On the bottom step, to one side, a single short candle stub burns in a shallow dish. It is the only warm thing in the picture.
+
+Style: the same as a carved temple door from a 1997 32-bit console dungeon game. Hand-painted, coarse grain, visible dither dots, a 256-colour look, big flat stone blocks, hard light from the upper left.
+Background: pure black round the doorway.
+
+${BAN}`, 'Attach your door-sanctum picture from the folder to the chat and say "the same doorway, same size and framing" before this prompt, so it lines up with the other doors.');
+
+add('X6', 6, 'The stair down', 'pic', '1536 x 1024', '312 x 128, 256 colours', 'Between floors, under FLOOR TWO and FLOOR THREE.', 'story-stair.png',
+still('A narrow stone stair going straight down, away from the viewer, between two close walls of big sandstone blocks. One torch in a bronze bracket on the left wall lights the first ten steps; below them everything sinks into black. Very far down, a faint ember glow. A few clay tablet shards lie on the top steps. No people.'));
+
+// ---------------- Wave 7: memories (optional; the game is complete without them)
+const MEMORY = [
+  ['kiln-warden', 'The Kiln Warden', 'Inside a great round kiln of black brick, one single clay vessel stands alone on the floor, glowing faintly orange from the embers beneath it. The rest of the kiln is empty and dark.'],
+  ['stone-sentinel', 'The Stone Sentinel', 'A tall closed bronze gate, and in front of it one single standing stone, rough and plain, set upright on the floor. A long shadow from a low torch runs from the stone up the gate. Nothing else.'],
+  ['bone-collector', 'The Bone Collector', 'A low cavern lined with shelves heaped with bones, broken pots and rusted blades, piled to the roof. In the middle of the clear floor stands one small clean stone figure, alone, untouched by any of it, lit from above.'],
+  ['veiled-magus', 'The Veiled Magus', 'Row after row of tall hanging veils in plum and grey, one behind another, going back into the dark. The last veil is drawn aside on a small empty stone room with nothing in it.'],
+  ['white-tyrant', 'The White Tyrant', 'A pale stone throne on a high stepped dais, empty. Below it a crowd of plain hooded figures packs the hall, all facing the throne, faces hidden. At the far edge one small hooded figure stands apart from them, facing the other way.'],
+  ['last-gate', 'The Last Gate', 'A huge bronze gate standing open just wide enough for one person. Warm light pours through the narrow gap. One single line of footprints in the dust leads up to it.'],
+];
+for (const [k, n, scene] of MEMORY) add('X7-' + k, 7, `Memory: ${n}`, 'pic', '1536 x 1024', '312 x 128, 256 colours', `When ${n} falls and leaves its memory.`, `story-memory-${k}.png`, still(scene + ' No faces shown.'));
+add('X8', 7, 'One was enough', 'pic', '1536 x 1024', '312 x 128, 256 colours', 'When you beat The Last One.', 'story-last.png',
+still('A bare grey-plum stone room with nothing carved on any wall. On a single empty stone shelf, a shallow dish with one short candle stub, still burning, set down carefully. Behind it a plain stone door stands open on black. No people.'));
+
 export const HOW = { pic: 'Used as it is (2D)', build: 'I build the 3D from it', tool: 'Goes through the 3D tool' };
 export const WAVES = [
-  [1, 'First', 'The eight pictures that change the game the most: the title, the crest, the logo, The Last One, the duel table, two halls and the hammer.'],
-  [2, 'People and medallions', 'The eight rivals nobody has seen yet, and every missing relic in seven sheets.'],
-  [3, 'Rooms and the things in them', 'Six more rooms, five objects and one sheet of surfaces.'],
-  [4, 'Story pictures', 'Five paintings for the long story scenes. The game is complete without them; they make it richer.'],
-  [5, 'The 3D tool test', 'One statue. Optional. Only to find out whether the tool is worth using.'],
+  [1, 'First', 'Done. The eight pictures that change the game the most: the title, the crest, the logo, The Last One, the duel table, two halls and the hammer.'],
+  [2, 'People and medallions', 'Done but one. The eight rivals and every missing relic in seven sheets. Snare needs a redo with the single medallion prompt.'],
+  [3, 'Rooms and the things in them', 'Done. Six more rooms, five objects and one sheet of surfaces.'],
+  [4, 'Story pictures', 'Done. Five paintings for the long story scenes.'],
+  [5, 'The 3D tool test', 'Done. One statue.'],
+  [6, 'Making it good', 'New on 22 November: what the game still shows as a word or a stand-in. The terrain grounds and the Enchant marks change every duel; the reading room, the hidden door and the stair finish the places.'],
+  [7, 'Memories', 'Optional. A painting for each guardian\'s memory and one for beating The Last One. The game is complete without them; they make the secret land harder.'],
 ];

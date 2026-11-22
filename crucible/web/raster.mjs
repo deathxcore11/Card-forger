@@ -2,7 +2,7 @@
 // cards on it, the doors). What it does is what that machine did, and nothing more:
 //   - vertices are moved to whole screen pixels before a triangle is drawn (no sub-pixel precision), so edges snap;
 //   - textures are mapped in screen space (affine), so they swim a little as a shape turns;
-//   - there is no depth buffer: shapes are sorted far to near and drawn in that order;
+//   - there is no depth buffer: shapes are sorted far to near and drawn in that order; a shape facing away is skipped;
 //   - brightness is set per corner and blended across the triangle; distance fades to black;
 //   - every pixel is cut to 15-bit colour with the console's 4 x 4 dither table;
 //   - texels with no alpha are skipped (the console's transparent colour), nothing is half see-through.
@@ -45,6 +45,7 @@ export function draw(v, proj, fog = null) {
   const items = [];
   for (const q of v.list) {
     const s = q.p.map(proj); if (s.some(x => !x)) continue;
+    if (q.cull && (s[1][0] - s[0][0]) * (s[2][1] - s[0][1]) - (s[1][1] - s[0][1]) * (s[2][0] - s[0][0]) <= 0) continue; // facing away: not drawn (the console's own test)
     const sh = Array.isArray(q.shade) ? q.shade : [q.shade ?? 1, q.shade ?? 1, q.shade ?? 1, q.shade ?? 1];
     const k = s.map((x, i) => sh[i] * (fog ? fogAt(x[2], fog[0], fog[1]) : 1));
     items.push({ q, s, k, z: (s[0][2] + s[1][2] + s[2][2] + s[3][2]) / 4 + (q.bias || 0) });

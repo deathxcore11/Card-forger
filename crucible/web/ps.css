@@ -1,4 +1,4 @@
-/* Lost Memories, the console look. Everything below draws inside one 512 x 240 frame of whole pixels, enlarged by a
+/* Lost Memories, the console look. Everything below draws inside one frame of whole pixels (512 x 240 up to 640 x 480), enlarged by a
    whole number of device pixels (see fitConsole in ps.mjs). Rules of the look: no rounded corners, no blur, no soft
    shadows, no smooth gradients, no see-through glass. Shading is done the console's way, with a 2 x 2 dot pattern. */
 @font-face { font-family: 'LM Text'; src: url(art/fonts/dotgothic16-latin-400-normal.woff2) format('woff2'); font-display: block; }
@@ -55,7 +55,7 @@ body.ps { background: #000; }
 #app.ps .pf img { width: 64px; height: 64px; }
 #app.ps .pf.none { background: repeating-conic-gradient(var(--wine) 0 25%, #3a1620 0 50%) 0 0 / 2px 2px; }
 #app.ps .pf img.crest { position: absolute; left: 8px; top: 8px; width: 48px; height: 48px; }
-#app.ps .pf img.shade { filter: brightness(0); }
+#app.ps .pf.pflk::after { content: ''; position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; pointer-events: none; } /* a locked face: half its dots gone dark */
 #app.ps .spk { position: absolute; width: 8px; height: 10px; background: var(--ember); box-shadow: inset 0 3px 0 var(--gl), inset 2px 0 0 var(--sh), inset -2px 0 0 var(--sh); }
 #app.ps .spk.out { background: var(--dark); box-shadow: none; }
 #app.ps .seal { position: absolute; width: 10px; height: 10px; border: 1px solid var(--gold); background: var(--sh); }
@@ -70,12 +70,13 @@ body.ps { background: #000; }
 #app.ps .cd { position: absolute; width: 44px; height: 60px; border: 2px solid var(--sm); background: var(--sh); box-shadow: 0 0 0 1px var(--sh); cursor: pointer; padding: 0; overflow: hidden; color: var(--ink); text-align: left; }
 #app.ps .cd .art { position: absolute; left: 0; top: 0; width: 40px; height: 40px; background-color: var(--wine); background-repeat: no-repeat; }
 #app.ps .cd .n1, #app.ps .cd .n2 { position: absolute; left: 2px; font: 8px/8px 'LM Label', monospace; }
-#app.ps .cd .n1 { top: 42px; } #app.ps .cd .n2 { top: 50px; color: #c2b49c; }
+#app.ps .cd .n1 { top: 41px; } #app.ps .cd .n2 { top: 48px; color: #c2b49c; }
 #app.ps .cd.fusion { border-color: var(--dusty); } #app.ps .cd.spell, #app.ps .cd.field { border-color: var(--verd); } #app.ps .cd.trap { border-color: var(--rust); } #app.ps .cd.equip { border-color: var(--sd); } #app.ps .cd.fuel { border-color: #5a5048; }
 #app.ps .cd.up .n1 { color: var(--gl); } #app.ps .cd.down .n1 { color: #f08a72; }
 #app.ps .cd.back .art { height: 56px; background: repeating-conic-gradient(var(--wine) 0 25%, var(--rust) 0 50%) 0 0 / 4px 4px; border: 1px solid var(--gold); }
 #app.ps .cd.can { box-shadow: 0 0 0 1px var(--gl); }
-#app.ps .cd.sel { box-shadow: 0 0 0 1px var(--ink), 0 0 0 2px var(--ember); top: 0 !important; }
+#app.ps .cd.sel { box-shadow: 0 0 0 1px var(--ink), 0 0 0 2px var(--ember); } #app.ps .hand .cd.sel { top: 0 !important; }
+#app.ps .cd.sel2 { box-shadow: 0 0 0 1px var(--ink), 0 0 0 2px var(--verd); }
 #app.ps .cd .bd, #app.ps .cd .pp { position: absolute; right: 1px; top: 1px; min-width: 9px; height: 9px; padding: 1px 1px 0; background: var(--ember); color: var(--ink); font: 8px/8px 'LM Label', monospace; text-align: center; }
 #app.ps .cd .pp { background: var(--gl); color: var(--sh); animation: psbob 1s steps(2) infinite; }
 #app.ps .cd .en { position: absolute; right: 1px; top: 30px; width: 8px; height: 8px; background: var(--verd); }
@@ -89,7 +90,7 @@ body.ps { background: #000; }
 #app.ps .dim { position: absolute; inset: 0; z-index: 39; background: repeating-conic-gradient(rgba(0,0,0,1) 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
 
 /* title screen */
-#app.ps .ti > img.bg { position: absolute; left: 0; top: 0; width: 512px; height: 240px; }
+#app.ps .ti > img.bg { position: absolute; left: 0; top: 0; }
 #app.ps .ti .logo { position: absolute; left: 0; top: 10px; width: 512px; display: flex; flex-direction: column; align-items: center; }
 #app.ps .ti .logo canvas { image-rendering: pixelated; }
 #app.ps .ti .slot { position: absolute; left: 352px; width: 152px; padding: 5px 6px; }
@@ -105,12 +106,16 @@ body.ps { background: #000; }
 #app.ps .room > img { position: absolute; left: 0; top: 0; }
 #app.ps .dr { position: absolute; width: 62px; height: 68px; padding: 0; border: 0; background: #000; cursor: pointer; overflow: hidden; }
 #app.ps .dr img { width: 62px; height: 68px; }
+#app.ps .dr.l, #app.ps .dr.l img { width: 78px; height: 85px; }
+#app.ps .fade { position: absolute; left: 0; right: 0; height: 4px; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; pointer-events: none; }
+#app.ps .fade.d75 { background: repeating-conic-gradient(#000 0 75%, transparent 0 100%) 0 0 / 2px 2px; }
+#app.ps .mist { position: absolute; pointer-events: none; animation: psfog 9s steps(18) infinite alternate; }
 #app.ps .dr .fg { position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
-#app.ps .dr.k-mystery .fg::after { content: ''; position: absolute; inset: 0; background: repeating-conic-gradient(transparent 0 25%, #000 0 50%) 1px 0 / 2px 2px; opacity: .75; }
+#app.ps .dr.k-mystery .fg::after { content: ''; position: absolute; inset: 0; background: conic-gradient(transparent 0 25%, #000 0 50%, transparent 0 100%) 0 0 / 2px 2px; } /* one more dot in four: three in four dark */
 #app.ps .dr.k-known .fg { display: none; }
-#app.ps .dr.lock::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, #4a3024 0 5px, var(--dark) 5px 6px); opacity: .9; }
+#app.ps .dr.lock::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, #4a3024 0 5px, var(--dark) 5px 6px); opacity: .5; }
 #app.ps .dr .no { position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; background: var(--sh); color: var(--gl); font: 8px/10px 'LM Label', monospace; text-align: center; box-shadow: 0 0 0 1px var(--gold); }
-#app.ps .dr:not(.on)::before { content: ''; position: absolute; inset: 0; z-index: 1; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; opacity: .55; pointer-events: none; }
+#app.ps .dr:not(.on)::before { content: ''; position: absolute; inset: 0; z-index: 1; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; opacity: .5; pointer-events: none; }
 #app.ps .dr.on { box-shadow: 0 0 0 1px var(--gl), 0 0 0 2px var(--sh); overflow: visible; }
 #app.ps .dr .no { z-index: 2; }
 #app.ps .cur { position: absolute; width: 9px; height: 6px; background: var(--gl); clip-path: polygon(0 0, 100% 0, 50% 100%); box-shadow: none; animation: psbob .8s steps(2) infinite; pointer-events: none; }
@@ -118,7 +123,7 @@ body.ps { background: #000; }
 /* the door the cursor is on, read out on the ledge */
 #app.ps .dt { position: absolute; left: 4px; top: 4px; width: 238px; height: 56px; padding: 3px 4px 0; overflow: hidden; color: var(--sh);
   background: repeating-conic-gradient(var(--sm) 0 25%, #9a7347 0 50%) 0 0 / 2px 2px; border: 1px solid; border-color: var(--sl) var(--dark) var(--dark) var(--sl); }
-#app.ps .dt b { display: block; font: 8px/10px 'LM Label', monospace; color: var(--sh); white-space: nowrap; overflow: hidden; }
+#app.ps .dt > b { display: block; font: 8px/10px 'LM Label', monospace; color: var(--sh); white-space: nowrap; overflow: hidden; }
 #app.ps .dt p { font: 8px/9px 'LM Label', monospace; color: #3a2419; margin: 1px 0 0; max-height: 27px; overflow: hidden; }
 #app.ps .dt p i { color: var(--rust); background: none; } #app.ps .dt p i.lmg { color: #2f5f55; }
 
@@ -134,7 +139,7 @@ body.ps { background: #000; }
 #app.ps .hand .hs.empty { border: 1px solid var(--dark); }
 #app.ps .backs { position: absolute; display: flex; gap: 2px; }
 #app.ps .backs u { width: 7px; height: 10px; border: 1px solid var(--rust); background: var(--wine); }
-#app.ps .flash { position: absolute; left: 0; right: 0; top: 56px; text-align: center; color: var(--gl); pointer-events: none; opacity: 0; }
+#app.ps .flash { position: absolute; left: 0; right: 0; top: 56px; text-align: center; color: var(--gl); pointer-events: none; visibility: hidden; }
 
 /* a card read at full size */
 #app.ps .big { position: absolute; width: 104px; height: 152px; border: 2px solid var(--sm); background: var(--sh); box-shadow: 0 0 0 1px var(--dark); overflow: hidden; }
@@ -154,7 +159,7 @@ body.ps { background: #000; }
 #app.ps .rl div { font: 16px/16px 'LM Text', monospace; }
 #app.ps .rl div b { display: block; color: var(--gl); font: 8px/10px 'LM Label', monospace; }
 #app.ps .lab { display: grid; grid-template-columns: 28px 1fr; gap: 6px; align-items: start; width: 100%; margin: 0 0 4px; padding: 3px; border: 1px solid var(--dark); background: var(--sh); color: var(--ink); text-align: left; cursor: pointer; font: 16px/16px 'LM Text', monospace; }
-#app.ps .lab i { font: 8px/8px 'LM Label', monospace; color: #c2b49c; padding: 4px 0 0; }
+#app.ps .lab i { font: 8px/8px 'LM Label', monospace; color: #c2b49c; padding: 4px 0 0; opacity: 1; }
 #app.ps .lab.on i { color: var(--gl); }
 #app.ps .lab span { font: 16px/16px 'LM Text', monospace; }
 #app.ps .soundslot { font: 16px/16px 'LM Text', monospace; }
@@ -166,7 +171,41 @@ body.ps { background: #000; }
 #app.ps .toast { position: absolute; left: 96px; top: 200px; right: auto; bottom: auto; transform: none; width: 320px; height: 40px; font-size: 16px; line-height: 16px; border-radius: 0; box-shadow: none; z-index: 48; padding: 4px 6px; background: repeating-conic-gradient(var(--plum) 0 25%, #26101a 0 50%) 0 0 / 2px 2px; border: 1px solid var(--gold); color: var(--ink); pointer-events: none; overflow: hidden; }
 #app.ps .toast:empty { display: none; }
 
-#app.ps .float { position: absolute; left: 0; top: -10px; font: 8px/8px 'LM Label', monospace; color: #f08a72; pointer-events: none; animation: psfloat .9s steps(9) forwards; }
+#app.ps .float { position: absolute; left: 0; top: -10px; font: 8px/8px 'LM Label', monospace; color: #f08a72; pointer-events: none; animation: psfloat .9s steps(6) forwards; margin: 0; white-space: nowrap; }
 #app.ps .float.pos { color: #9fd0c0; }
-@keyframes psfloat { to { transform: translateY(-12px); opacity: 0; } }
+@keyframes psfloat { to { transform: translateY(-12px); } } /* in 9 whole-pixel steps (see .float); it is taken away at the end */
 @media (prefers-reduced-motion: reduce) { #app.ps *, #app.ps *::before, #app.ps *::after { animation: none !important; } }
+
+/* offerings on plinths */
+#app.ps .dim0 { position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; pointer-events: none; }
+#app.ps .pln { position: absolute; padding: 0; margin: 0; cursor: pointer; color: var(--ink); background: repeating-conic-gradient(#26101a 0 25%, transparent 0 50%) 0 0 / 2px 2px; /* mesh: the room shows through every other dot */ border: 1px solid var(--sh); box-shadow: inset 0 0 0 1px var(--dark); }
+#app.ps .pln.on { box-shadow: inset 0 0 0 1px var(--gl), 0 0 0 1px var(--sh); }
+#app.ps .pln:not(.on)::after { content: ''; position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; opacity: .5; pointer-events: none; }
+#app.ps .pln.off { cursor: default; }
+#app.ps .pln .pnm { position: absolute; left: 1px; right: 1px; background: #26101a; font: 8px/9px 'LM Label', monospace; color: var(--gl); text-align: center; white-space: nowrap; height: 9px; overflow: hidden; }
+#app.ps .pln .big2 { font: 16px/16px 'LM Text', monospace; color: var(--ink); text-align: center; }
+#app.ps .cd.l { width: 68px; height: 92px; cursor: inherit; }
+#app.ps .cd.l .art { width: 64px; height: 64px; }
+#app.ps .cd.l .n1 { top: 66px; } #app.ps .cd.l .n2 { top: 76px; }
+#app.ps .coin { position: absolute; display: block; color: var(--gl); font: 8px/8px 'LM Label', monospace; text-align: center; }
+#app.ps .coin > img { position: absolute; left: 0; top: 0; margin: 0; } #app.ps .coin > b { position: absolute; left: 0; right: 0; top: 40%; }
+#app.ps .sl .coin { left: -1px; top: -1px; } #app.ps .coin.s24 { width: 24px; height: 24px; }
+#app.ps .pln .coin, #app.ps .ab > .coin { position: relative; display: inline-block; }
+#app.ps .coin.s64 { width: 64px; height: 64px; } #app.ps .coin.s32 { width: 32px; height: 32px; }
+#app.ps .pf.s48 { width: 52px; height: 52px; } #app.ps .pf.s48 img { width: 48px; height: 48px; }
+#app.ps .pf.s96 { width: 100px; height: 100px; } #app.ps .pf.s96 img { width: 96px; height: 96px; }
+#app.ps .story > :not(.dim) { z-index: 40; } /* the painting, the face, the words and SKIP sit over the dimmed screen */
+#app.ps .pf .crest { pointer-events: none; }
+#app.ps .dgrid { padding: 4px; } #app.ps .dgrid .row2 { justify-content: center; }
+/* the books */
+#app.ps .book { position: absolute; padding: 0; }
+#app.ps .book .sc p { margin: 0 0 4px; }
+#app.ps .brow { display: flex; gap: 6px; align-items: flex-start; padding: 4px 0; border-bottom: 1px solid var(--sh); }
+#app.ps .brow .bp { flex: none; width: 32px; } #app.ps .brow .bp img, #app.ps .brow .bp .coin { position: relative; display: block; }
+#app.ps .brow .bt { flex: 1; min-width: 0; } #app.ps .brow .bt .lb { position: relative; display: block; margin-bottom: 2px; white-space: normal; }
+#app.ps .brow .bs { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+#app.ps .pq.in { position: relative; display: inline-block; margin: 0 4px 4px 0; width: auto; vertical-align: top; }
+#app.ps .ga.in { position: relative; display: block; } #app.ps .ga.in > u { position: absolute; top: 0; bottom: 0; background: var(--gl); }
+#app.ps .lb .d, #app.ps span.d, #app.ps p.d { color: #b39a7c; }
+#app.ps .cd.unk { background: var(--sh); border-color: var(--dark); } #app.ps .cd.unk .n1 { top: 24px; left: 18px; color: var(--sd); }
+#app.ps .big.unk { background: var(--sh); }

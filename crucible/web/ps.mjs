@@ -1,21 +1,28 @@
 // Lost Memories, the console look: the pieces every console screen is drawn from (see ps.css and the asset book).
-// The frame is 512 x 240 whole pixels. It is enlarged by a whole number of device pixels so every pixel stays square,
-// and on a phone held upright it is turned a quarter turn so it still fills the screen.
-export const W = 512, H = 240;
+// The frame is a screen of whole pixels: 512 x 240 at the least, as much as 640 x 480, the console's own range of
+// screen sizes. Each frame pixel is a whole number of device pixels, so every pixel stays square and sharp, and the
+// frame takes the shape of the screen it is on, so no band of black is left. On a phone held upright the frame is
+// turned a quarter turn. The pillars keep their size; the window, the view and the ledge take what is left.
+export const F = { W: 512, H: 240, n: 1, up: false };
 export const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+export const yb = y => y + F.H - 240; // a place measured from the bottom of the smallest frame
+export const xr = x => x + F.W - 512; // the same from its right edge
+export const cx0 = () => (F.W - 512) >> 1, cy0 = () => (F.H - 240) >> 1; // where the smallest frame would sit, centred
 
 export function fitConsole(app) {
   const dpr = window.devicePixelRatio || 1, vw = innerWidth, vh = innerHeight;
   const up = vh > vw * 1.15; // held upright: turn the frame
-  const aw = (up ? vh : vw) * dpr, ah = (up ? vw : vh) * dpr;
-  const n = Math.max(1, Math.floor(Math.min(aw / W, ah / H))); // whole device pixels per frame pixel
+  const aw = Math.floor((up ? vh : vw) * dpr + .01), ah = Math.floor((up ? vw : vh) * dpr + .01);
+  const n = Math.max(1, Math.min(Math.floor(aw / 512), Math.floor(ah / 240))); // whole device pixels per frame pixel
+  const W = Math.max(512, Math.min(640, Math.floor(aw / n))), H = Math.max(240, Math.min(480, Math.floor(ah / n)));
+  const changed = W !== F.W || H !== F.H; Object.assign(F, { W, H, n, up });
   const k = n / dpr; // the same in CSS pixels
   app.style.width = W + 'px'; app.style.height = H + 'px';
   app.style.transform = `translate(-50%,-50%) ${up ? 'rotate(90deg) ' : ''}scale(${k})`;
   // the transform puts the frame's centre on the page centre; nudge it onto whole device pixels
   const ox = ((vw * dpr - (up ? H : W) * n) / 2) % 1, oy = ((vh * dpr - (up ? W : H) * n) / 2) % 1;
   app.style.marginLeft = (-ox / dpr) + 'px'; app.style.marginTop = (-oy / dpr) + 'px';
-  return { k, n, up };
+  return { k, n, up, changed };
 }
 
 // A plaque (a button). a = the data-a verb; o.lit marks the one the hammer is on; o.off greys it.
@@ -29,13 +36,35 @@ export const lbr = (right, y, txt, cls = '') => lb(right - String(txt).length * 
 
 // The frame: two stone pillars, the window with the view inside it, the ledge, the text bar.
 export function frame({ left = '', right = '', view = '', ledge = '', bar = '', barMore = false, extra = '' }) {
-  return `<div class="fr">${box(0, 0, 96, 240, 'st pl')}${box(416, 0, 96, 240, 'st pl')}${box(96, 0, 320, 136, 'st dk')}
-    ${box(100, 4, 312, 128, 'vw', view)}${box(96, 136, 320, 64, 'lg ledge', ledge)}${box(96, 200, 320, 40, 'wn bar' + (barMore ? ' more' : ''), `<p>${bar}</p>`, barMore ? 'data-a="barmore"' : '')}
-    <div class="ab" style="left:0;top:0;width:96px;height:240px">${left}</div><div class="ab" style="left:416px;top:0;width:96px;height:240px">${right}</div>${extra}</div>`;
+  const { W, H } = F, ww = W - 192, ly = H - 104;
+  return `<div class="fr">${box(0, 0, 96, H, 'st pl')}${box(W - 96, 0, 96, H, 'st pl')}${box(96, 0, ww, ly, 'st dk')}
+    ${box(100, 4, ww - 8, ly - 8, 'vw', view)}${box(96, ly, ww, 64, 'lg ledge', ledge)}${box(96, H - 40, ww, 40, 'wn bar' + (barMore ? ' more' : ''), `<p>${bar}</p>`, barMore ? 'data-a="barmore"' : '')}
+    <div class="ab" style="left:0;top:0;width:96px;height:${H}px">${left}</div><div class="ab" style="left:${W - 96}px;top:0;width:96px;height:${H}px">${right}</div>${extra}</div>`;
+}
+// The view window's size in this frame, and the ledge's width.
+export const viewSize = () => ({ w: F.W - 200, h: F.H - 112 });
+export const ledgeW = () => F.W - 192;
+
+// A patch of fog or shadow: black, 1-bit, its density falling away toward the edges through the 4 x 4 dither table,
+// the way the console thinned a sprite without any see-through colour.
+const fogs = new Map(), B4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+export function fogSprite(w, h, dens = .6) {
+  const key = `${w}x${h}x${dens}`; if (fogs.has(key)) return fogs.get(key);
+  let url = '';
+  try {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'), id = x.createImageData(w, h), d = id.data;
+    for (let y = 0; y < h; y++) for (let i = 0; i < w; i++) {
+      const dx = (i + .5) / w * 2 - 1, dy = (y + .5) / h * 2 - 1, k = Math.max(0, 1 - Math.hypot(dx, dy)) ** .8 * dens;
+      if (k * 16 > B4[(y & 3) * 4 + (i & 3)] + .5) d[(y * w + i) * 4 + 3] = 255;
+    }
+    x.putImageData(id, 0, 0); url = c.toDataURL();
+  } catch { /* no canvas: no fog */ }
+  fogs.set(key, url); return url;
 }
 
 // A window over the frame, for questions, lists and pages. The frame behind it is dotted dark.
-export const win = (x, y, w, h, inner, cls = '') => `<div class="dim"></div><div class="wn mw ${cls}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px">${inner}</div>`;
+// Windows are laid out for the smallest frame and stand in the middle of a larger one.
+export const win = (x, y, w, h, inner, cls = '') => `<div class="dim"></div><div class="wn mw ${cls}" style="left:${x + cx0()}px;top:${y + cy0()}px;width:${w}px;height:${h}px">${inner}</div>`;
 
 // Carved capitals: a word drawn once into a small picture of whole pixels, in two golds and a shadow, from the
 // game's capital face. Kept as a picture so no edge is ever smoothed on screen.
