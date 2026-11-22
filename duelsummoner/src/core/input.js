@@ -23,12 +23,12 @@ export class Input {
   }
   // ArrowUp/Down also move. Ctrl or C slides (browsers keep Ctrl+W for themselves, so C is the safe key).
   command() {
-    const k = this.keys, use = this.use; this.use = false;
+    const k = this.keys, use = this.use, t = this.touch; this.use = false;
+    const f = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0), r = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0);
     return {
-      f: (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0),
-      r: (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0),
-      yaw: this.yaw, jump: !!k.Space, dash: !!(k.ShiftLeft || k.ShiftRight),
-      slide: !!(k.ControlLeft || k.ControlRight || k.KeyC), use, hold: !!k.KeyE
+      f: t && t.f ? t.f : f, r: t && t.r ? t.r : r,                                // touch stick is analogue; keys are -1, 0, 1
+      yaw: this.yaw, jump: !!k.Space || !!(t && t.jump), dash: !!(k.ShiftLeft || k.ShiftRight) || !!(t && t.dash),
+      slide: !!(k.ControlLeft || k.ControlRight || k.KeyC) || !!(t && t.slide), use, hold: !!k.KeyE || !!(t && t.use)
     };
   }
 }

@@ -90,7 +90,7 @@ export function drawHud(g, force) {
   $('boss').style.display = boss ? 'block' : 'none';
   if (boss) { $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%'; if ($('bossname').textContent !== boss.name) $('bossname').textContent = boss.name; }
   if (g.mode !== 'classic') drawStrip(g);
-  $('prompt').textContent = g.prompt;
+  $('prompt').textContent = document.body.classList.contains('touch') ? g.prompt.replace(/^E: /, 'Tap: ') : g.prompt;
   $('nextEvent').textContent = g.mode !== 'classic' ? nextEventRun(g) : nextEvent(g);
   const items = g.items.map(id => ITEMS[id].name).concat(g.blessings.map(id => BLESSINGS[id].name.replace('Blessing of ', '') + '+'));
   $('itemsList').textContent = items.length ? 'ITEMS: ' + items.join(', ') : '';

@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -47,7 +47,26 @@
   button:hover, button:focus-visible { background:#fff; outline:2px solid var(--xp); }
   button.small { font-size:13px; padding:6px 12px; margin:2px; }
   button.sel { outline:3px solid var(--xp); }
-  #offerScreen { pointer-events:auto; }
+  /* phones and handhelds: a compact HUD so the thumbs and the world keep the room */
+  @media (max-height:600px), (pointer:coarse) {
+    .hud { font-size:12px; letter-spacing:0; }
+    #topleft { left:8px; top:8px; width:min(210px,36vw); padding:4px 6px; font-size:12px; }
+    .bar { height:9px; margin:2px 0 4px; }
+    #topright { right:72px; top:8px; padding:4px 6px; }
+    #clock { font-size:18px; }
+    #minimap { width:92px !important; height:92px !important; right:8px !important; top:110px !important; }
+    #zones { grid-template-columns:repeat(4,78px); gap:3px; bottom:6px; }
+    .zone { height:36px; font-size:10px; line-height:1.1; }
+    .zone b { font-size:9px; }
+    #prompt { bottom:50px; font-size:15px; }
+    #fusion { bottom:84px; font-size:12px; }
+    #stats { left:8px; top:64px; font-size:11px; }
+    #hint { display:none; }
+    #boss { top:34px; width:min(360px,50vw); }
+    #banner { font-size:18px; }
+  }
+  /* touch: every button is at least 44 px tall, with no hover-only controls */
+  @media (pointer:coarse) { button, .tab { min-height:46px; min-width:46px; } button.small { padding:10px 14px; } .trk, .lbrow { padding:4px 0; } }  #offerScreen { pointer-events:auto; }
   #offerCards { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .card { width:200px; border:2px solid var(--line); background:var(--panel); padding:10px; text-align:left; font-size:13px; line-height:1.4; }
   .card h3 { margin:0 0 4px; font-size:15px; letter-spacing:1px; }

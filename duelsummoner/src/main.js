@@ -23,6 +23,8 @@ import { initMenus } from './view/menus.js';
 import { DIFF_CHIPS, DUELIST_INFO } from './data/progress.js';
 import { packReplay, deflateInBrowser } from './core/replay.js';
 import { boardUrl, sendAndFollow } from './core/board.js';
+import { TouchControls } from './core/touch.js';
+import { nearestProp } from './sim/world.js';
 import { DIFFICULTY } from './data/stages.js';
 import { KIND_LIST } from './data/enemies.js';
 
@@ -71,6 +73,7 @@ const input = host.input;
 const minimap = new Minimap($('minimap'));
 syncMap();
 
+let touch = null, autoWalk = null;                                        // tap-to-use: walk to a far chest, then open it
 let pendingUse = false, MODE = 'start', last = 0, frozen = false, holdT = 0, lastFusions = 0;
 
 // settings: reduce motion turns off shake, hit-stop, flashes, the boss zoom and the follow lag
@@ -92,7 +95,7 @@ function setMode(m) {
   MODE = m; input.enabled = m === 'play';
   for (const [id, mm] of [['startScreen', 'start'], ['pauseScreen', 'pause'], ['deadScreen', 'dead'], ['offerScreen', 'offer']]) $(id).classList.toggle('on', m === mm);
   if (m !== 'play' && document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
-  $('hint').textContent = m === 'play' && !document.pointerLockElement ? 'Click the map to look around' : '';
+  $('hint').textContent = m === 'play' && !document.pointerLockElement && !(touch && touch.isTouch) ? 'Click the map to look around' : ''; if (touch) touch.setEnabled(m === 'play');
   last = 0;
 }
 function begin(mode, sel) {
@@ -223,6 +226,26 @@ let lowShown = false, fpsFrames = 0, fpsT = 0, stepMs = 0;
 const perf = { frames: 0, t0: 0, worst: 0, lastNow: 0 };
 const head = { x: 0, y: 0, z: 0 }, ip = { x: 0, y: 0, z: 0 }, prof = { sim: 0, view: 0, render: 0 };
 
+// Touch: stick, look, buttons, pause, and tap-to-use. A tap picks the nearest usable thing within a thumb's width of the finger.
+touch = new TouchControls(input.raw || input, {
+  look: (dx, dy) => input.look(dx, dy), onManualMove: () => { autoWalk = null; },
+  onPause: () => { if (MODE === 'play') setMode('pause'); },
+  onTap: (x, y) => { if (MODE !== 'play' || game.offer) return; pickAndUse(x, y); }
+});
+const _v = new T.Vector3();
+function usables() {                                              // every world thing a duelist can press E on, as { x, y, z, near }
+  const out = [], p = game.p, R = 3.2, add = (o, y) => out.push({ x: o.x, y: (o.y || 0) + (y || 1), z: o.z, near: (o.x - p.x) ** 2 + (o.z - p.z) ** 2 < R * R });
+  for (const c of game.chests) if (!c.open) add(c, 1);
+  const W = game.world; if (W) { for (const c of W.cchests || []) if (!c.open) add(c, 1); for (const s of W.stones || []) if (!s.used) add(s, 1.2); if (W.broker) add(W.broker, 1.5); if (W.altar && !W.altar.used) add(W.altar, 1.2); }
+  return out;
+}
+export function pickAndUse(cx, cy) {
+  const w = innerWidth, h = innerHeight; let best = null, bd = 80 * 80;                                     // 80 px: about a fingertip and a half
+  for (const u of usables()) { _v.set(u.x, u.y, u.z).project(camera); if (_v.z > 1) continue; const sx = (_v.x * 0.5 + 0.5) * w, sy = (-_v.y * 0.5 + 0.5) * h, d = (sx - cx) ** 2 + (sy - cy) ** 2; if (d < bd) { bd = d; best = u; } }
+  if (!best) return false;
+  if (best.near) { pendingUse = true; autoWalk = null; } else autoWalk = { x: best.x, z: best.z, stop: 2.4, t0: performance.now() };
+  return true;
+}
 function frame(now) {
   requestAnimationFrame(frame); syncMap();
   const dtReal = last ? Math.min(0.1, (now - last) / 1000) : 0;
@@ -234,10 +257,17 @@ function frame(now) {
     if (holdT > 0) holdT -= dtReal;
     if (dtReal > 0 && !frozen && fx.stop <= 0 && holdT <= 0) {
       // a one-tick press (E) must survive frames that run no sim tick (above 60 fps most frames run none): latch it until a tick has consumed it
-      const cmd = input.command(); if (cmd.use) pendingUse = true; cmd.use = pendingUse; const t0 = game.tickN;
+      const cmd = input.command();
+      if (autoWalk) {                                                        // smart tap: steer to the thing you tapped, open it on arrival; any stick or key input cancels
+        const p = game.p, dx = autoWalk.x - p.x, dz = autoWalk.z - p.z, d = Math.hypot(dx, dz), sy = Math.sin(input.yaw), cy = Math.cos(input.yaw);
+        if (cmd.f || cmd.r || (performance.now() - autoWalk.t0) > 6000) autoWalk = null;
+        else if (d < autoWalk.stop) { cmd.use = true; autoWalk = null; }
+        else { const fx = -sy, fz = -cy, rx = -fz, rz = fx; cmd.f = (dx * fx + dz * fz) / d; cmd.r = (dx * rx + dz * rz) / d; }
+      }
+      if (cmd.use) pendingUse = true; cmd.use = pendingUse; const t0 = game.tickN;
       alpha = game.fixed(dtReal, quantise(cmd, liveRec)); if (game.tickN !== t0) pendingUse = false;
     }
-    bossIntro();
+    bossIntro(); touch.setUseVisible(!!game.prompt && !game.offer);
     prof.sim = performance.now() - s0; stepMs += prof.sim;
     drainEvents();
     if (game.over && MODE === 'play') results();
@@ -279,7 +309,7 @@ requestAnimationFrame(frame);
 
 // Test hooks: read and drive the run without touching its rules.
 window.__ds = {
-  game, input, chase, cfg: CFG, camera, scene, actors, assets, prof,
+  game, input, chase, touch, pickAndUse, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
   start: begin, begin, results, setMode, menus, fx, onEvent, save,
   pickDuelist, freeze: v => { frozen = !!v; },
