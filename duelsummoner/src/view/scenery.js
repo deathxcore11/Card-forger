@@ -112,5 +112,6 @@ export function buildScenery(map, stageIndex, models) {
     mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; mesh.frustumCulled = false; group.add(mesh);
   }
   group.userData.counts = kinds.map(k => k.list.length);
+  const fk = kinds.find(k => k.colored); group.userData.flowerSpots = fk ? fk.list.map(f => [f[0], f[1], f[2]]) : [];         // where the flowers are, for the butterflies
   return group;
 }

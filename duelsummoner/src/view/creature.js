@@ -16,7 +16,7 @@ export function classifyCreature(root) {
   const chainFrom = b => { const out = [b]; let cur = b; while (kids(cur).length === 1) { cur = kids(cur)[0]; out.push(cur); } return out; };      // down a single-child run
   // the first bone with several children is the hips
   let hips = top; while (kids(hips).length === 1) hips = kids(hips)[0];
-  const hp = pos(hips), parts = { top, hips, spine: [], neck: [], head: null, wingL: [], wingR: [], legL: [], legR: [], tail: [], armL: [], armR: [], other: [] };
+  const hp = pos(hips), parts = { top, hips, spine: [], neck: [], head: null, wingL: [], wingR: [], wingL2: [], wingR2: [], legL: [], legR: [], tail: [], armL: [], armR: [], other: [] };
   const spineBones = []; { let b = top; while (b !== hips) { spineBones.push(b); b = kids(b)[0]; } spineBones.push(hips); } parts.spine = spineBones;
   // measure the body: the widest the bones reach sideways sets what counts as "to the side"
   let reach = 0; for (const b of bones) reach = Math.max(reach, Math.abs(pos(b).x - hp.x)); const side = Math.max(0.08, reach * 0.12);
@@ -27,7 +27,8 @@ export function classifyCreature(root) {
     const ch = chainFrom(c), e = pos(ch[ch.length - 1]), last = ch[ch.length - 1], branches = kids(last).length > 1;
     if (branches) { chestChain = ch; continue; }                                    // runs up to the next branch: the spine to the chest
     const dx = e.x - hp.x, dy = e.y - hp.y, dz = e.z - hp.z;
-    if (Math.abs(dx) > side) parts['leg' + sideName(dx)] = ch;                                       // off to one side of the hips
+    if (Math.abs(dx) > reach * 0.6) { const k = 'wing' + sideName(dx); if (parts[k].length) parts[k + '2'] = ch; else parts[k] = ch; }        // reaching out as far as anything: a wing (a butterfly has a front and a hind wing on each side)
+    else if (Math.abs(dx) > side) parts['leg' + sideName(dx)] = ch;                                  // off to one side of the hips
     else if (Math.hypot(dx, dz) > reach * 0.1) parts.tail = ch;                                      // centred and trailing away
     else parts.other.push(ch);
   }
@@ -35,18 +36,18 @@ export function classifyCreature(root) {
     parts.spine.push(...chestChain); const chest = chestChain[chestChain.length - 1], cp = pos(chest);
     for (const c of kids(chest)) {
       const ch = chainFrom(c), e = pos(ch[ch.length - 1]), dx = e.x - cp.x, dy = e.y - cp.y;
-      if (Math.abs(dx) > side * 1.5) { const arm = dy < -Math.abs(dx) * 0.6; parts[(arm ? 'arm' : 'wing') + sideName(dx)] = ch; }
+      if (Math.abs(dx) > reach * 0.6) { const k = 'wing' + sideName(dx); if (parts[k].length) parts[k + '2'] = ch; else parts[k] = ch; }                  // reaches out as far as anything: a wing\n      else if (Math.abs(dx) > side * 1.5 && dy < -Math.abs(dx) * 0.6) parts['arm' + sideName(dx)] = ch;                                          // lateral and hanging down: an arm
       else { parts.head = ch[ch.length - 1]; parts.neck = ch.slice(0, -1); }
     }
   }
-  parts.chest = chestChain ? chestChain[chestChain.length - 1] : hips;
+  parts.chest = chestChain ? chestChain[chestChain.length - 1] : hips; parts.unit = Math.max(0.05, pos(parts.chest).distanceTo(hp));                // a body-length yardstick, for clips that must work at any size
   // facing: from the tail tip toward the head, on the ground plane; with no tail, from the hips toward the head
   const tailTip = parts.tail.length ? pos(parts.tail[parts.tail.length - 1]) : null, headP = parts.head ? pos(parts.head) : pos(parts.chest);
   let F = tailTip ? new T.Vector3(hp.x - tailTip.x, 0, hp.z - tailTip.z) : new T.Vector3(headP.x - hp.x, 0, headP.z - hp.z);
   if (F.lengthSq() < 1e-6) F.set(0, 0, 1); F.normalize();
   const U = new T.Vector3(0, 1, 0), R = new T.Vector3().crossVectors(U, F).normalize();
   parts.axes = { F, U, R, B: F.clone().negate(), D: U.clone().negate(), L: R.clone().negate() };
-  parts.count = { wingL: parts.wingL.length, wingR: parts.wingR.length, legL: parts.legL.length, legR: parts.legR.length, tail: parts.tail.length, neck: parts.neck.length, spine: parts.spine.length };
+  parts.count = { wingL2: parts.wingL2.length, wingR2: parts.wingR2.length, wingL: parts.wingL.length, wingR: parts.wingR.length, legL: parts.legL.length, legR: parts.legR.length, tail: parts.tail.length, neck: parts.neck.length, spine: parts.spine.length };
   return parts;
 }
 
@@ -141,6 +142,18 @@ export function creatureClips(built, parts) {
     const k = ease(Math.min(1, t / 1.0));
     c.hipsY(-0.35 * k); c.hipsFwd(0.05 * k); P.spine.forEach(b => c.rot(b, 'R', 14 * k)); P.neck.forEach(b => c.rot(b, 'R', 32 * k)); wings(c, () => -88 * k, 0, 0, 0); legsTucked(c, 40 * k); tailSway(c, 0, 0, 0); P.tail.forEach(b => c.rot(b, 'R', -6 * k));
   });
+  if (P.wingL.length && P.wingR.length) {                                              // anything with wings can also flutter and perch (butterflies, moths, small fliers)
+    const u = P.unit, W2 = (c, a, ph) => { for (const s of ['L', 'R']) { const ch = P['wing' + s + '2']; ch.forEach((b, i) => c.rot(b, 'F', sideSign[s] * (a(ph - 0.9 - i * 0.3) * (i === 0 ? 1 : 0.6)))); } };
+    mk('flutter', 0.36, (t, c) => {                                                    // a fast beat, front and hind wings a little apart, the body riding the beat and swaying
+      const ph = TAU * t / 0.36, a = p => 62 * sin(p) + 6; wings(c, a, 8, ph, 0.5); W2(c, a, ph); c.hipsY(0.14 * u * sin(ph - 0.4)); P.spine.forEach(b => c.rot(b, 'R', 6 * sin(ph + 1.0))); c.rot(P.head, 'R', 5 * sin(ph - 1.0));
+    });
+    mk('glide', 1.8, (t, c) => {                                                       // wings held up and shallow, one slow beat now and then
+      const ph = TAU * t / 1.8, a = p => 26 + 14 * sin(p); wings(c, a, 4, ph, 0.4); W2(c, a, ph); c.hipsY(0.05 * u * sin(ph - 0.5));
+    });
+    mk('perch', 3.0, (t, c) => {                                                       // resting: wings slowly lift and close, a tiny body breath
+      const ph = TAU * t / 3.0, a = p => 28 + 24 * sin(p); wings(c, a, 4, ph, 0.25); W2(c, a, ph); c.hipsY(0.01 * u * sin(ph * 2)); P.neck.forEach(b => c.rot(b, 'R', 2 * sin(ph)));
+    });
+  }
   return out;
 }
 
