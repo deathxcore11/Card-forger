@@ -86,6 +86,7 @@ const LAW_ANSWER = {
   mist: 'His monsters arrive veiled. Attack a veiled monster with your strongest, never with a weak one.',
   tyranny: 'Your hand is smaller here, so a long meld empties it. Shorter melds keep cards coming.',
   end: 'His ace arrives on a set turn. Count his turns: win before it, or keep a card that removes a monster.',
+  alone: 'A monster in defense does not keep your Life Points safe here: what it loses, you lose. Meet its one monster with a stronger one, or remove it.',
 };
 export const lawAnswer = law => LAW_ANSWER[law] || '';
 // Up to three short lines. `sum` is the duel summary (reason, turns), `rival` has name, tier and law.

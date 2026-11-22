@@ -8,12 +8,12 @@ import { newDuel, apply, applyMut, legalActions, viewFor, planChain, effAtk, eff
 import { chooseAction } from '../engine/ai.mjs';
 import { Rng } from '../engine/rng.mjs';
 import { RELICS, LAB, LINK_GIFTS, relicLinks, CHAIN_TURN, sortRelics, fire, relicText, TUNED_TEXT } from '../engine/relics.mjs';
-import { BIG_BUILDS, newRun, runApply, MIN_DECK, makeRival, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
+import { LAST_ONE, BIG_BUILDS, newRun, runApply, MIN_DECK, makeRival, rankDuel, rankLetter, makeKit, KITS, deckWeight, weightCap, STYLES, THEMES, HEAT_RULES, BOSSES, KIT_TUNE, bossLaw, ENCHANTS, ENCHANT_TEXT, styleFor } from '../engine/run.mjs';
 import { policyAction, playRun } from '../engine/policy.mjs';
 import { labConfig, LAB_DEFAULTS, LAB_ORDER, DEPTH_SET, EQUIP_KINDS } from '../web/labs.mjs';
 import { aimFor } from '../web/aim.mjs';
 import { runFault, okRun, okProfile, PHASES } from '../web/saves.mjs';
-import { lessonFor, enoughAlone, learnFrom, lessonText, learnedAll, newNote, noteFrames, whyLost } from '../web/coach.mjs';
+import { lessonFor, enoughAlone, learnFrom, lessonText, learnedAll, newNote, noteFrames, whyLost, lawAnswer } from '../web/coach.mjs';
 import { FORGERS, FORGER_IDS } from '../engine/forgers.mjs';
 import { newProfile, applyRun, scoreRun, buy, lockedRelics, maxHeat, VAULT, FEATS, FEAT_GIFTS, FEATS_LONG, LONG_GIFTS, KIT_GOALS, START_ENCHANTS, VAULT_ENCHANTS, openKits, nextKit, openEnchants, runOptions, featList } from '../engine/meta.mjs';
 
@@ -1664,6 +1664,11 @@ test('Two builds a run: no Gift or charm of a build the run does not carry is of
     assert.deepEqual(run.builds, carried);
   }
   assert.ok(offers >= 12 && gifts >= 36 && charms >= 12, `looked at ${offers} Gift offers and ${charms} charms`);
+});
+
+test('every guardian Law, and The Last One\'s, has a line of counsel the page can show in the door, the duel tray and the loss summary', () => {
+  for (const law of [...BOSSES.flat().map(b => b.law), LAST_ONE.law]) assert.ok(lawAnswer(law).length > 20, 'no counsel for the Law ' + law);
+  assert.ok(whyLost(null, { reason: 'lp' }, { law: 'alone' }).some(l => /defense/.test(l)), 'the loss summary after the hidden duel names its Law');
 });
 
 console.log('crucible rules:', passed, 'tests passed');

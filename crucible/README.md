@@ -12,14 +12,14 @@ machine". Nothing in this folder has been played by a person or seen on a device
 ```
 node tools/crucible/build-pool.mjs --fetch --count     # pool size at three cut-offs
 node tools/crucible/build-pool.mjs --fetch             # writes crucible/data/crucible-pool.json
-node crucible/test/test-crucible-rules.mjs             # 111 rule tests
+node crucible/test/test-crucible-rules.mjs             # 112 rule tests
 node crucible/test/test-crucible-fuzz.mjs 6000 600     # random play with invariants
 node crucible/test/test-crucible-fuzz-levers.mjs 1000 200 1   # the same with every Lab lever on, Heat 0-10, wild actions, rule changes mid-run, profiles
 node crucible/test/test-crucible-events.mjs 6000        # random play; every change in the state must have an event the page can show
 node crucible/test/test-crucible-caps.mjs 1500 1        # random CPU duels; no relic may fire more often than its own text says
 node tools/crucible/page-checks.cjs <built index.html> <duel save> [w h]   # a browser taps the built page: Spell targets, forecast, card page, sound cue order (16 checks)
 node tools/crucible/lesson-checks.cjs <built index.html> <duel save> [w h]   # the first lessons, the loss summary and guardian counsel (25 checks)
-node tools/crucible/save-checks.cjs <built index.html> <saves dir> [w h]   # a browser taps the built page: saved runs, failed saves, leaving a run, the Winnower, two tabs, damaged saves, a store that comes back empty, an old question or a failed save in one tab against a newer run from another, the Lab switches, the New table look switch, the odd Gift at the Bazaar, rooms by floor, the first secret (154 checks; give ODDSAVES=<dir of saves made with ...,builds,odd> and SECRETSAVES=<dir of saves made with ...,depth,secret>)
+node tools/crucible/save-checks.cjs <built index.html> <saves dir> [w h]   # a browser taps the built page: saved runs, failed saves, leaving a run, the Winnower, two tabs, damaged saves, a store that comes back empty, an old question or a failed save in one tab against a newer run from another, the Lab switches, the New table look switch, the odd Gift at the Bazaar, rooms by floor, the first secret, counsel in the guardian duel (158 checks; give ODDSAVES=<dir of saves made with ...,builds,odd> and SECRETSAVES=<dir of saves made with ...,depth,secret>)
 node tools/crucible/sound-checks.cjs <build folder>   # serves the build over http with a made-up list of sounds: a failed request for the list must not mute the session (16 checks)
 node tools/crucible/phone-checks.cjs <built index.html> <saves dir> [w h]   # a phone held sideways: least text sizes, button heights, nothing off the stage, the table does not move, a rules box that needs scrolling says so (56 checks at 915 x 412)
 node tools/crucible/phone-shots.cjs <built index.html> <saves dir> <out dir> [w h]   # a picture of every screen at one size, and a note of anything outside the stage

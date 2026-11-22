@@ -411,6 +411,17 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
       check('with the switch off the same win leaves no memory', !((await ls(K.profile)).seen || []).some(s => /^memory:/.test(s)) && !/memory, as/i.test(await text('.story h3')), await text('.story h3'));
     } }
 
+  // Counsel in the guardian duel (21 November 2026): the line a guardian's door gives is also shown in the duel tray while
+  // the player has nothing picked, until that guardian has been beaten once; the hidden duel always shows it.
+  { const boss = read(pickFile(/^duel-boss-f1-h0/)), id = boss.run.door && boss.run.door.boss;
+    const fresh = JSON.parse(JSON.stringify(boss)); fresh.profile.beaten = []; await open(fresh); await resume();
+    check('a guardian not yet beaten: the duel tray gives its counsel', /Counsel\./.test(await text('.trayline')), await text('.trayline'));
+    await tap('.hs .c'); check('picking a card puts the play in its place', !/Counsel\./.test(await text('.trayline')), await text('.trayline'));
+    const done = JSON.parse(JSON.stringify(boss)); done.profile.beaten = [id]; await open(done); await resume();
+    check('once that guardian has been beaten, no counsel', !!id && !/Counsel\./.test(await text('.trayline')), { id, tray: await text('.trayline') });
+    const sd = process.env.SECRETSAVES, hid = sd && fs.existsSync(path.join(sd, 'duel-secret-f1-h0.json')) ? JSON.parse(fs.readFileSync(path.join(sd, 'duel-secret-f1-h0.json'), 'utf8')) : null;
+    if (hid) { await open(hid); await resume(); check('the hidden duel gives counsel on its Law', /Counsel\..*defense/.test(await text('.trayline')), await text('.trayline')); } }
+
   check('no page errors anywhere', errors.length === 0, errors);
   console.log(`save checks at ${W}x${H}: ${passed} passed, ${failed} failed`);
   await browser.close(); process.exit(failed ? 1 : 0);

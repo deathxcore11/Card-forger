@@ -208,6 +208,7 @@ function act(a) {
 }
 const info = run => (G.lastRival = run.rival ? { name: run.rival.name, tier: run.rival.tier, law: run.rival.law || null, lawText: run.rival.lawText, bountyText: run.rival.bountyText, twist: run.rival.twist, style: run.rival.style, styleText: run.rival.styleText } : G.lastRival);
 // A Law is written for a hand of five. With Deep Pockets the hand is six, so Tyranny's numbers are one higher.
+const counsel = () => { const r = G.run, rv = r && r.phase === 'duel' && r.rival; if (!rv || !rv.law || !(rv.tier === 'boss' || rv.tier === 'secret')) return ''; if (rv.tier === 'boss' && r.door && (P.beaten || []).includes(r.door.boss)) return ''; return lawAnswer(rv.law); };
 const lawShown = t => G.run && G.run.charms.includes('deep_pockets') ? t.replace('refills to four', 'refills to five').replace('refills to three', 'refills to four') : t;
 // Sound hook. The page plays no sound itself: an audio module that sets window.LMAudio = { cue(name, data) } hears every
 // event as the page shows it. Names: 'ui:<button verb>', 'duel:<engine event>', 'run:<run event>', 'run:over',
@@ -523,6 +524,7 @@ function screenDuel() {
     buttons = (targets.includes(-1) ? `<button class="gold" data-a="hit:-1">Direct attack (${v.mon[0][G.attacker].ea})</button>` : '') + (canPos.has(G.attacker) ? '<button data-a="pos">Change position</button>' : '') + '<button data-a="undo">Cancel</button>';
   } else if (G.onto != null) { tray = '<span>Now tap hand cards to meld onto it.</span>'; buttons = '<button data-a="undo">Cancel</button>'; }
   else if (lesson) { const [h, t] = lessonText(lesson.kind, lesson.cards.map(i => card(live.hand[0][i].id).name)); tray = `<span class="lesson"><b>${esc(h)}.</b> ${esc(t)}</span>`; buttons = '<button data-a="tipsoff">No more lessons</button>'; }
+  else if (counsel()) tray = `<span class="fine counsel"><b>Counsel.</b> ${esc(counsel())}</span>`; // a guardian's Law, taught in the duel itself until that guardian has been beaten once
   const hand = [0, 1, 2, 3, 4, 5].map(i => { const c = v.hand[i]; const k = G.sel.indexOf(i); const lp = lesson ? lesson.cards.indexOf(i) : -1; return `<div class="hs">${c ? face(c, { cls: (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: `data-a="hand:${i}"`, badge: k >= 0 ? k + 1 : '', pip: lp >= 0 ? lp + 1 : '' }) : ''}</div>`; }).join('');
   let powerBtn = '';
   if (myTurn && v.forger && !v.rs.power) {
