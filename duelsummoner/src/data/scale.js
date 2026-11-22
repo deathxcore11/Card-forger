@@ -29,6 +29,8 @@ export const SCALE = {
   rangeCap: 1.6,             // slams, reach and blades grow with size, up to this factor
   shade: { h: M(1.8) },                                   // a Toll Shade: tall, hooded, with a bell
   // things the duelist reads from the camera: made larger than life
+  // ambient life, by widest dimension in metres (a butterfly is a little bigger than life so it reads from the camera)
+  ambient: { butterfly: 0.22 },
   chest: 1.5, pickup: 1.5, npc: DUELIST_H
 };
 

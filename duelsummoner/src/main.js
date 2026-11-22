@@ -28,6 +28,7 @@ import { boardUrl, sendAndFollow } from './core/board.js';
 import { TouchControls } from './core/touch.js';
 import { loadRig } from './view/rig.js';
 import { loadCreature } from './view/creature.js';
+import { Ambient } from './view/ambient.js';
 import { nearestProp } from './sim/world.js';
 import { DIFFICULTY } from './data/stages.js';
 import { KIND_LIST } from './data/enemies.js';
@@ -58,6 +59,7 @@ const assets = {
 };
 assets.kael = await loadRig('assets/models/duelist-kael-anim.glb', undefined, [{ url: 'assets/models/duelist-kael-anim-2.glb', seconds: { land_heavy: 0.9 } }]);         // the skinned, animated duelist; the robe stand-in is used when it is missing
 assets.wyvernPrep = await loadCreature('assets/models/mon-ember-wyvern-f1-rig.glb');       // the rigged Ember Wyvern, form 1
+assets.butterflyPrep = await loadCreature('assets/models/life-butterfly-rig.glb');         // ambient life: the rigged butterfly
 assets.mira = await loadRig('assets/models/duelist-mira-anim.glb', { retime: { land_light: 0.5, land_heavy: 0.9 } });
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
@@ -67,7 +69,7 @@ function syncMap() {                                                       // th
   if (mapMesh) { scene.remove(mapMesh); mapMesh.geometry.dispose(); }
   mapMesh = buildMapMesh(game.map); scene.add(mapMesh);
     if (sceneryGroup) { scene.remove(sceneryGroup); sceneryGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); }); sceneryGroup = null; }
-    if (!/[?&]scenery=0/.test(location.search)) { sceneryGroup = buildScenery(game.map, game.stage || 0, assets); scene.add(sceneryGroup); } minimap.setMap(game.map);
+    if (!/[?&]scenery=0/.test(location.search)) { sceneryGroup = buildScenery(game.map, game.stage || 0, assets); scene.add(sceneryGroup); ambient.setSpots(sceneryGroup.userData.flowerSpots, game.stage || 0, game.map.hash); } else ambient.clear(); minimap.setMap(game.map);
 }
 let duelist = 'kael';
 const withProps = /[?&]props/.test(location.search);       // map objects are placed by the coming map generator; ?props shows the region-placed test set
@@ -76,6 +78,7 @@ const host = createBrowserHost(canvas);
 const save = loadSave(host);
 const fx = new Fx(scene, save.settings);
 const actors = new Actors(scene, assets, fx);
+const ambient = new Ambient(scene, assets.butterflyPrep);
 const threads = new LeyThreads(scene, 6);                               // crimson ribbons toward the Gate
 const props = new Props(scene);
 const chase = new ChaseCamera(camera);
@@ -292,6 +295,7 @@ function frame(now) {
     chase.zoomTo = fx.rm_ ? 1 : 1 + Math.min(0.95, Math.max(0, (big - 4) / 11));
   }
   chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
+  if (MODE === 'play') ambient.update(dtReal, camera, game.en);
   threads.update(game.mode !== 'classic' && game.map ? game.map.gate : null, ip, MODE === 'play' ? dtReal : 0, camera, MODE === 'play' && game.boss.state === 'idle' && !game.offer);
   fx.applyShake(camera);
   if (fx.push > 0) { fx.push = Math.max(0, fx.push - dtReal); const u = 1 - fx.push / 2; camera.fov = 62 - 15 * Math.sin(Math.PI * Math.min(1, u)); camera.updateProjectionMatrix(); fovDirty = true; }
@@ -321,7 +325,7 @@ requestAnimationFrame(frame);
 
 // Test hooks: read and drive the run without touching its rules.
 window.__ds = {
-  game, input, chase, touch, pickAndUse, threads, cfg: CFG, camera, scene, actors, assets, prof,
+  game, input, chase, touch, pickAndUse, threads, ambient, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
   start: begin, begin, results, setMode, menus, fx, onEvent, save,
   pickDuelist, freeze: v => { frozen = !!v; },
