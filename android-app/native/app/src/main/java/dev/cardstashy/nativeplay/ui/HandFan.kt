@@ -404,6 +404,9 @@ fun HandFan(
     }
 }
 
+/** The table's lifted hand card after a slide along the hand ends: none (the lift lives only under the finger), except a discard's pick. */
+internal fun sweepEndLift(discardAsk: Boolean, lifted: Int?): Int? = if (discardAsk) lifted else null
+
 /** What a finger does along the hand. */
 internal enum class HandMove { SWEEP, REORDER, CARRY }
 /** The finger must rest this long on a card before it moves for the move to count as picking the card up to reorder it. */

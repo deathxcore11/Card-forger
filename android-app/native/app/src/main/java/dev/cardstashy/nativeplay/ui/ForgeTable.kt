@@ -929,9 +929,10 @@ fun ForgeBoard(
                         }
                     },
                     onPlay = { card -> onSelectHand(null); intents.card(card.id) },
-                    // The player's hand patch: a slide that ends on a card lifts that card (when it can be used or says why), so the lift is
-                    // always under the last finger and no earlier tap's lift is left hanging.
-                    onSweepEnd = { card -> if (!discardAsk) onSelectHand(card.id.takeIf { markOf(card) == Mark.PLAYABLE || dimWhy(card) != null }) },
+                    // The player's hand patch: when a slide along the hand ends, the hand settles with nothing lifted (Arena). 0.4.103 lifted
+                    // the card the slide ended on when it could be cast, and Randall's 21 Nov 7:19 PM recording shows it then stayed up after his
+                    // finger had left (Unsummon, 0:32-0:38). A discard keeps its pick.
+                    onSweepEnd = { card -> val keep = sweepEndLift(discardAsk, selectedHand); if (keep != selectedHand) onSelectHand(keep) },
                     onHold = onInspect, onReorder = { ids -> onHandOrder(ids) },
                     padEmpty = { runCatching { goldFocus.requestFocus() }.onFailure { runCatching { menuFocus.requestFocus() } } })
             }
