@@ -174,6 +174,7 @@ export class DuelistRig {
 // extras: [{ url, rename: { 'land_heavy': 'land_heavy' }, seconds: { land_heavy: 0.9 } }] - clips exported from Meshy one at a time, merged by bone name
 export async function loadRig(url, opts, extras = []) {
   try { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) return null; const built = await buildRig(await r.arrayBuffer(), opts);
+    if (opts && opts.retime) for (const [k, s] of Object.entries(opts.retime)) { const c = built.clips.get(k); if (c) retime(c, s); }        // Meshy's own clips can be too long for the game
     for (const ex of extras) { try { const rr = await fetch(ex.url, { cache: 'no-store' }); if (!rr.ok) continue; const g = parseGlb(await rr.arrayBuffer()); for (const [k, c] of readClips(g, cleanNames(g.json))) { if (ex.seconds && ex.seconds[k]) retime(c, ex.seconds[k]); built.clips.set(built.clips.has(k) && !ex.replace ? k + '_meshy' : k, c); } } catch (e) { /* optional */ } }
     return built; } catch (e) { console.error('rig load failed', e); return null; }
 }
