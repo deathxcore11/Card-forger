@@ -1,5 +1,6 @@
 ﻿// Duelist movement: run, jump, dash (no damage while it lasts), slide (gains speed downhill).
 import { CFG } from '../data/config.js';
+import { atan2, cos, exp, sin } from './dmath.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { breakVasesNear } from './world.js';
 
@@ -13,10 +14,10 @@ export const isDashing = p => p.dashT > 0;
 // cmd: { f, r (-1..1), yaw, jump, dash, slide }. Forward is relative to the camera yaw, on the ground plane only.
 export function updatePlayer(g, dt, cmd) {
   const p = g.p, C = CFG.player, S = C.slide;
-  const fx = -Math.sin(cmd.yaw), fz = -Math.cos(cmd.yaw), rx = -fz, rz = fx;
+  const fx = -sin(cmd.yaw), fz = -cos(cmd.yaw), rx = -fz, rz = fx;
   let mx = fx * cmd.f + rx * cmd.r, mz = fz * cmd.f + rz * cmd.r;
   const ml = Math.sqrt(mx * mx + mz * mz), hasInput = ml > 0.001, speed = C.speed * (1 + g.mods.move);
-  if (hasInput) { mx /= ml; mz /= ml; p.face = Math.atan2(mx, mz); }
+  if (hasInput) { mx /= ml; mz /= ml; p.face = atan2(mx, mz); }
 
   p.dashCd = Math.max(0, p.dashCd - dt);
   if (cmd.dash && p.dashCd <= 0 && p.dashT <= 0) {
@@ -38,10 +39,10 @@ export function updatePlayer(g, dt, cmd) {
     if (p.sliding) {
       let hx = p.vx / (hs || 1), hz = p.vz / (hs || 1);
       if (hasInput) {                                         // steer the slide gently toward the input
-        const a = Math.atan2(hx, hz), b = Math.atan2(mx, mz);
+        const a = atan2(hx, hz), b = atan2(mx, mz);
         let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
         const na = a + Math.max(-S.turn * dt, Math.min(S.turn * dt, d));
-        hx = Math.sin(na); hz = Math.cos(na);
+        hx = sin(na); hz = cos(na);
       }
       let dh = heightAt(p.x + hx * S.probe, p.z + hz * S.probe) - p.y;
       if (dh > 0.6) dh = 0;                                   // a wall, not a slope
@@ -49,9 +50,9 @@ export function updatePlayer(g, dt, cmd) {
       p.slideSpeed = Math.max(0, Math.min(S.max, p.slideSpeed + (-slope * S.downhill - S.friction) * dt));
       if (p.slideSpeed < S.keepMin) p.sliding = false;
       p.vx = hx * p.slideSpeed; p.vz = hz * p.slideSpeed;
-      p.face = Math.atan2(hx, hz);
+      p.face = atan2(hx, hz);
     } else {
-      const k = 1 - Math.exp(-dt * (p.grounded ? C.groundAccel : C.airAccel));
+      const k = 1 - exp(-dt * (p.grounded ? C.groundAccel : C.airAccel));
       p.vx += (mx * speed * (hasInput ? 1 : 0) - p.vx) * k;
       p.vz += (mz * speed * (hasInput ? 1 : 0) - p.vz) * k;
     }

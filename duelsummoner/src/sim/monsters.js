@@ -1,5 +1,6 @@
 ﻿// What the monsters on your field do each tick, plus Traps and one-shot Spells. Every number comes from data/cards.js.
 import { CFG } from '../data/config.js';
+import { atan2, cos, pow, sin } from './dmath.js';
 import { MARKS, TRAPS, ONE_SHOTS, FIELD_RULES } from '../data/cards.js';
 import { heightAt } from './terrain.js';
 import { fireShot, fireLob, fireHoming, KIND_CARD, KIND_FIRE, splash } from './weapons.js';
@@ -15,7 +16,7 @@ export function updateMonsters(g, dt) {
     const m = f.monsters[k]; if (!m) continue;
     m.px = m.x; m.py = m.y; m.pz = m.z;
     const a = (m.ang || 0) + g.t * 0.9 + k * 1.57, r = 2.1 + (k % 2) * 0.5;
-    const tx = p.x + Math.cos(a) * r, tz = p.z + Math.sin(a) * r, ty = p.y + 2.2 + Math.sin(g.t * 3 + k) * 0.2;
+    const tx = p.x + cos(a) * r, tz = p.z + sin(a) * r, ty = p.y + 2.2 + sin(g.t * 3 + k) * 0.2;
     if (!m.init) { m.x = tx; m.y = ty; m.z = tz; m.px = tx; m.py = ty; m.pz = tz; m.init = true; }
     const kk = Math.min(1, dt * 6); m.x += (tx - m.x) * kk; m.y += (ty - m.y) * kk; m.z += (tz - m.z) * kk;
     m.cd -= dt;
@@ -57,14 +58,14 @@ function attack(g, m, D, A) {
       const x = T.sp ? T.sp.x : e.x[T.e], y = T.sp ? T.sp.y + 1.2 : e.y[T.e] + 0.9, z = T.sp ? T.sp.z : e.z[T.e];
       const len = param(m, 'length');
       fireShot(g, KIND_FIRE, m.x, m.y - 0.6, m.z, x, y, z, A.speed, len / A.speed, dmg, { flame, pierce: param(m, 'pierce') });
-      g.faceOf[m.id] = Math.atan2(x - m.x, z - m.z); g.faceT = g.t; return true;
+      g.faceOf[m.id] = atan2(x - m.x, z - m.z); g.faceT = g.t; return true;
     }
     case 'lob': {
       const T = target(g, m, A.range); if (!T) return false;
       const n = param(m, 'count');
       for (let c = 0; c < n; c++) {
         let x = T.sp ? T.sp.x : e.x[T.e], z = T.sp ? T.sp.z : e.z[T.e];
-        if (c > 0) { const j = g.nearest(m.x + (g.rng() - 0.5) * 6, m.z + (g.rng() - 0.5) * 6, A.range); if (j >= 0) { x = e.x[j]; z = e.z[j]; } }
+        if (c > 0) { const j = g.nearest(m.x + (g.rc() - 0.5) * 6, m.z + (g.rc() - 0.5) * 6, A.range); if (j >= 0) { x = e.x[j]; z = e.z[j]; } }
         fireLob(g, m.x, m.y, m.z, x, z, A.flight, dmg, param(m, 'splash'), flame);
       }
       return true;
@@ -95,7 +96,7 @@ function attack(g, m, D, A) {
       const range = param(m, 'range'), arc = param(m, 'arc'), i = g.nearest(m.x, m.z, range);
       let tx, tz;
       if (i >= 0) { tx = e.x[i] - m.x; tz = e.z[i] - m.z; } else { const sp = nearestSpecial(g, m.x, m.z, range); if (!sp) return false; tx = sp.x - m.x; tz = sp.z - m.z; }
-      const l = Math.sqrt(tx * tx + tz * tz) || 1, fx = tx / l, fz = tz / l, cosA = Math.cos(arc / 2 * Math.PI / 180);
+      const l = Math.sqrt(tx * tx + tz * tz) || 1, fx = tx / l, fz = tz / l, cosA = cos(arc / 2 * Math.PI / 180);
       const c = g.grid.query(m.x, m.z, range, buf);
       for (let k = 0; k < c; k++) {
         const j = buf[k]; if (!e.alive[j]) continue;
@@ -116,7 +117,7 @@ export function onPlayerHurt(g) {
 }
 function fireTrap(g, s) {
   const T = TRAPS[s.id], p = g.p, e = g.en, lv = s.level - 1;
-  s.cd = T.recharge * Math.pow(T.rechargePerLevel, lv) * (1 - g.mods.trapRecharge);
+  s.cd = T.recharge * pow(T.rechargePerLevel, lv) * (1 - g.mods.trapRecharge);
   const dmg = T.dmg * (1 + T.dmgPerLevel * lv);
   addFx(g, { type: 'ring', x: p.x, y: p.y, z: p.z, r: T.radius, dur: 0.5, color: s.id === 'gust-ward' ? 0xa0e0ff : 0xe8c56a });
   const c = g.grid.query(p.x, p.z, T.radius, buf);
@@ -147,7 +148,7 @@ export function updateTraps(g, dt) {
     const due = Math.floor(S.cards * Math.min(1, g.storm.t / S.seconds)) - (S.cards - g.storm.left);
     for (let k = 0; k < due && g.storm.left > 0; k++) {
       g.storm.left--;
-      const a = g.rng() * Math.PI * 2, i = g.nearest(p.x + Math.cos(a) * 12, p.z + Math.sin(a) * 12, 40);
+      const a = g.rc() * Math.PI * 2, i = g.nearest(p.x + cos(a) * 12, p.z + sin(a) * 12, 40);
       if (i >= 0) { addFx(g, { type: 'ring', x: e.x[i], y: e.y[i], z: e.z[i], r: 1.2, dur: 0.25, color: 0xf3e3c2 }); damageEnemy(g, i, S.dmg, { noCrit: true }); }
     }
     if (g.storm.left <= 0) g.storm = null;

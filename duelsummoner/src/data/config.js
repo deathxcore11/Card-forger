@@ -1,4 +1,4 @@
-// All tuning numbers for the simulation live here. Nothing in src/sim hard-codes a rule value.
+﻿// All tuning numbers for the simulation live here. Nothing in src/sim hard-codes a rule value.
 export const CFG = {
   gravity: 28,
   player: {
@@ -23,5 +23,6 @@ export const CFG = {
   card: { cooldown: 0.8, damage: 2, speed: 32, life: 1.3, range: 34, hitRadius: 0.95, max: 48 },
   wyvern: { range: 20, cooldown: 0.65, damage: 2, speed: 34, life: 1.2, hitRadius: 0.95 },
   xp: { magnet: 5, pick: 1.3, perLevel: 8, max: 220 },
-  path: { cell: 2, window: 80, refresh: 0.25 }          // enemy flow field: 2 m cells, 160 m window
+  path: { cell: 2, span: 80, refresh: 0.25 }            // enemy flow field: 2 m cells, 80 cells (160 m) across
 };
+

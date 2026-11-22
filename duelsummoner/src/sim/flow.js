@@ -9,7 +9,7 @@ const MAX_CLIMB = 0.72, NEAR = 3, FAR = 32000;
 export class Flow {
   constructor() {
     this.cells = buildCells(CFG.path.cell);
-    this.W = CFG.path.window;
+    this.W = CFG.path.span;
     this.dist = new Int16Array(this.W * this.W);
     this.queue = new Int32Array(this.W * this.W);
     this.ox = 0; this.oz = 0; this.valid = false;
@@ -70,6 +70,7 @@ export class Flow {
   }
 }
 export { WALL };
+
 
 
 

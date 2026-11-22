@@ -1,5 +1,6 @@
 ﻿// Elites and the boss: the Sealed Warden (4:00), the Twin Jackal Idols (6:00) and The Hollow Pharaoh (8:00 or the Royal Gate).
 import { CFG } from '../data/config.js';
+import { atan2, cos, sin } from './dmath.js';
 import { SPECIALS } from '../data/enemies.js';
 import { RUN } from '../data/waves.js';
 import { FIELD_RULES } from '../data/cards.js';
@@ -40,10 +41,10 @@ export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
   o = o || {};
   if (sp.kind === 'warden' && !o.area) {                           // the shield blocks everything from the front
     const f = SPECIALS.warden.shieldHalfArc * DEG, tx = fromX - sp.x, tz = fromZ - sp.z, tl = Math.sqrt(tx * tx + tz * tz) || 1;
-    if ((tx / tl) * Math.sin(sp.face) + (tz / tl) * Math.cos(sp.face) > Math.cos(f)) { g.event('block', { x: sp.x, y: sp.y + 1.5, z: sp.z }); sp.flash = 0.05; return false; }
+    if ((tx / tl) * sin(sp.face) + (tz / tl) * cos(sp.face) > cos(f)) { g.event('block', { x: sp.x, y: sp.y + 1.5, z: sp.z }); sp.flash = 0.05; return false; }
   }
   let d = dmg * (1 + g.mods.dmgMult + g.mods.bossDmg);
-  if (!o.noCrit && g.rng() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
+  if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
   sp.hp -= d; sp.flash = 0.12;
   if (sp.hp > 0) return false;
   onDeath(g, sp);
@@ -99,7 +100,7 @@ export function updateSpecials(g, dt) {
         }
         continue;
       }
-      turn(sp, Math.atan2(dx, dz), S.turnRate, dt);
+      turn(sp, atan2(dx, dz), S.turnRate, dt);
       sp.cd -= dt;
       chase(g, sp, S.speed, dt);
       if (sp.cd <= 0 && d < S.slam.trigger) {
@@ -113,7 +114,7 @@ export function updateSpecials(g, dt) {
         if (sp.reviveT <= 0) { sp.dead = false; sp.hp = sp.maxHp * S.reviveHpFraction; g.event('banner', 'An idol rises again.'); }
         continue;
       }
-      chase(g, sp, S.speed, dt); sp.face = Math.atan2(dx, dz);
+      chase(g, sp, S.speed, dt); sp.face = atan2(dx, dz);
       sp.atk -= dt;
       if (d < S.reach && Math.abs(p.y - sp.y) < CFG.enemy.vReach && sp.atk <= 0 && g.grace <= 0 && !isDashing(p)) { sp.atk = CFG.enemy.attackCd; g.hurtPlayer(S.bite * mul, false, 'Twin Jackal Idol'); }
     } else if (sp.kind === 'pharaoh') updatePharaoh(g, sp, dt, dx, dz, d);
@@ -147,24 +148,24 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
     sp.stT -= dt;
     if (sp.stT <= 0) {
       sp.st = 0; sp.cd = S.blade.cooldown;
-      const fx = Math.sin(sp.face), fz = Math.cos(sp.face), l = d || 1, cos = (dx / l) * fx + (dz / l) * fz;
-      if (d < S.blade.range && cos > Math.cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true, 'The Hollow Pharaoh blade');
+      const fx = sin(sp.face), fz = cos(sp.face), l = d || 1, cos = (dx / l) * fx + (dz / l) * fz;
+      if (d < S.blade.range && cos > cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true, 'The Hollow Pharaoh blade');
       addFx(g, { type: 'fan', x: sp.x, y: sp.y, z: sp.z, r: S.blade.range, arc: S.blade.arcDeg, dx: fx, dz: fz, dur: 0.3, color: 0xffe0a0 });
     }
     return;
   }
-  turn(sp, Math.atan2(dx, dz), 2.5, dt);
+  turn(sp, atan2(dx, dz), 2.5, dt);
   sp.cd -= dt;
   chase(g, sp, S.speed, dt);
   if (sp.cd <= 0 && d < S.blade.range - 1) {
     sp.st = 1; sp.stT = S.blade.telegraph;
-    addTele(g.tele, { type: 2, x: sp.x, y: sp.y, z: sp.z, r: S.blade.range, arc: S.blade.arcDeg, dx: Math.sin(sp.face), dz: Math.cos(sp.face), dur: S.blade.telegraph });
+    addTele(g.tele, { type: 2, x: sp.x, y: sp.y, z: sp.z, r: S.blade.range, arc: S.blade.arcDeg, dx: sin(sp.face), dz: cos(sp.face), dur: S.blade.telegraph });
   }
   if (phase === 1) {
     b.summonT -= dt;
     if (b.summonT <= 0) {
       b.summonT = S.summon.every;
-      for (let k = 0; k < S.summon.count; k++) { const a = k / S.summon.count * 6.283; spawnEnemy(g, 'husk', { x: sp.x + Math.cos(a) * 6, z: sp.z + Math.sin(a) * 6 }); }
+      for (let k = 0; k < S.summon.count; k++) { const a = k / S.summon.count * 6.283; spawnEnemy(g, 'husk', { x: sp.x + cos(a) * 6, z: sp.z + sin(a) * 6 }); }
       g.event('banner', 'The Pharaoh summons Husks.');
     }
   }
@@ -174,7 +175,7 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
       b.trapT = S.traps.every;
       let placed = 0;
       for (let tries = 0; tries < 30 && placed < S.traps.count; tries++) {
-        const a = g.rng() * 6.283, r = 3 + g.rng() * S.traps.spread, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r, h = heightAt(x, z);
+        const a = g.rsp() * 6.283, r = 3 + g.rsp() * S.traps.spread, x = p.x + cos(a) * r, z = p.z + sin(a) * r, h = heightAt(x, z);
         if (h >= 50 || Math.abs(h - p.y) > 1) continue;
         let slot = g.btraps.find(t => !t.on); if (!slot || g.btraps.filter(t => t.on).length >= S.traps.max) break;
         Object.assign(slot, { on: true, x, y: h, z, life: S.traps.lifetime }); placed++;

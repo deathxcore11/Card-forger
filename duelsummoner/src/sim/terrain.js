@@ -1,5 +1,6 @@
 ﻿// Collision heightfield: the map primitives rasterised at 1 m. heightAt(x,z) is the standing height there.
 import { MAP, PRIMS } from '../data/map.js';
+import { atan2, cos, sin } from './dmath.js';
 
 export const WALL = 99;
 const HALF = MAP.half, N = HALF * 2;
@@ -14,7 +15,7 @@ function rasterise(p) {
   if (p.t === 'box') {
     if (p.rot) {                                          // bounding box of the rotated rectangle
       const cx = (p.x0 + p.x1) / 2, cz = (p.z0 + p.z1) / 2, hw = (p.x1 - p.x0) / 2, hd = (p.z1 - p.z0) / 2;
-      const c = Math.cos(p.rot * DEG), s = Math.sin(p.rot * DEG), ex = Math.abs(c) * hw + Math.abs(s) * hd, ez = Math.abs(s) * hw + Math.abs(c) * hd;
+      const c = cos(p.rot * DEG), s = sin(p.rot * DEG), ex = Math.abs(c) * hw + Math.abs(s) * hd, ez = Math.abs(s) * hw + Math.abs(c) * hd;
       x0 = cx - ex; x1 = cx + ex; z0 = cz - ez; z1 = cz + ez;
     } else { x0 = p.x0; x1 = p.x1; z0 = p.z0; z1 = p.z1; }
   } else if (p.t === 'ramp') {
@@ -35,7 +36,7 @@ export function primHeight(p, x, z) {
   switch (p.t) {
     case 'box': {
       if (p.rot) {
-        const cx = (p.x0 + p.x1) / 2, cz = (p.z0 + p.z1) / 2, c = Math.cos(-p.rot * DEG), s = Math.sin(-p.rot * DEG);
+        const cx = (p.x0 + p.x1) / 2, cz = (p.z0 + p.z1) / 2, c = cos(-p.rot * DEG), s = sin(-p.rot * DEG);
         const dx = x - cx, dz = z - cz, lx = dx * c - dz * s, lz = dx * s + dz * c;
         return Math.abs(lx) <= (p.x1 - p.x0) / 2 && Math.abs(lz) <= (p.z1 - p.z0) / 2 ? p.h : 0;
       }
@@ -51,7 +52,7 @@ export function primHeight(p, x, z) {
     case 'ring': {
       const dx = x - p.cx, dz = z - p.cz, r = Math.sqrt(dx * dx + dz * dz);
       if (r < p.r0 || r > p.r1) return 0;
-      let a = Math.atan2(dz, dx) / DEG; if (a < 0) a += 360;
+      let a = atan2(dz, dx) / DEG; if (a < 0) a += 360;
       return a >= p.a0 && a <= p.a1 ? p.h : 0;
     }
     default: {

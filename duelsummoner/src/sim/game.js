@@ -2,7 +2,7 @@
 import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
-import { makeRng } from '../core/util.js';
+import { makeStreams } from './rng.js';
 import { Flow } from './flow.js';
 import { makePlayer, updatePlayer } from './player.js';
 import { makeEnemies, updateEnemies, spawnEnemy, spawnRate, enemyCount } from './enemies.js';
@@ -35,7 +35,7 @@ export class Game {
   }
 
   reset(seed = this.seed, duelist) {
-    this.seed = seed; this.rng = makeRng(seed); this.duelist = duelist || this.duelist || 'kael';
+    this.seed = seed; this.streams = makeStreams(seed); this.rsp = () => this.streams.spawn.next(); this.rl = () => this.streams.loot.next(); this.rc = () => this.streams.combat.next(); this.rcos = () => this.streams.cosmetic.next(); this.duelist = duelist || this.duelist || 'kael';
     this.t = 0; this.kills = 0; this.xp = 0; this.level = 1; this.xpCur = 0; this.xpNeed = xpNeeded(1); this.pendingLevels = 0; this.coins = 0;
     this.over = false; this.ended = false; this.killedBy = null; this.damageBy = {}; this.lastSrc = null; this.won = false; this.otStep = -1; this.otAcc = 0; this.god = false; this.bossKilled = false; this.elitesKilled = 0; this.fusions = 0; this.winAt = 0;
     this.grace = 0; this.flash = 0; this.spawned = 0; this.spawnAcc = 0; this.hitsTaken = 0; this.alpha = 1; this.acc = 0;
@@ -52,7 +52,7 @@ export class Game {
     this.metaMods = meta ? meta.mods : {};
     this.unlockedCards = meta ? new Set(meta.cards) : null; this.unlockedItems = meta ? new Set(meta.items) : null;
     this.wardenKilled = false; this.trapEver = false;
-    this.field = makeField(this.duelist, this.rng);
+    this.field = makeField(this.duelist, this.rcos);
     this.field.redraws += this.metaMods.redraws || 0; this.field.banishes += this.metaMods.banishes || 0;
     if (this.metaMods.startLevel) this.field.monsters[0].level = Math.min(10, 1 + this.metaMods.startLevel);
     recompute(this);
@@ -188,7 +188,7 @@ export class Game {
   _openingHand() {
     const n = this.metaMods.openingHand || 0; if (!n) return;
     const ids = Object.keys(SPELLS).filter(id => !this.unlockedCards || this.unlockedCards.has(id));
-    for (let k = 0; k < n && ids.length; k++) { const id = ids.splice(Math.floor(this.rng() * ids.length), 1)[0], slot = this.field.spells.findIndex(x => !x); if (slot >= 0) this.field.spells[slot] = { id, level: 1, cd: 0, rootFx: 0 }; }
+    for (let k = 0; k < n && ids.length; k++) { const id = ids.splice(Math.floor(this.rl() * ids.length), 1)[0], slot = this.field.spells.findIndex(x => !x); if (slot >= 0) this.field.spells[slot] = { id, level: 1, cd: 0, rootFx: 0 }; }
     recompute(this);
   }
   runStats() { return { time: this.t, kills: this.kills, level: this.level, fusions: this.fusions, bossKilled: this.bossKilled, wardenKilled: this.wardenKilled, overtime: this.overtimeSeconds(), trapSet: this.trapEver, chests: this.world.opened, vases: this.vasesBroken }; }

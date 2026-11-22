@@ -67,7 +67,7 @@ export function doFusion(g, id) {
   const r = RECIPES.find(x => x.result === id); if (!r) return false;
   const f = g.field, ia = f.monsters.findIndex(m => m && m.id === r.a), ib = f.monsters.findIndex(m => m && m.id === r.b);
   if (ia < 0 || ib < 0) return false;
-  f.monsters[Math.min(ia, ib)] = newMonster(id, TIERS[r.tier].startLevel, g.rng); f.monsters[Math.max(ia, ib)] = null;      // takes one zone, frees the other
+  f.monsters[Math.min(ia, ib)] = newMonster(id, TIERS[r.tier].startLevel, g.rcos); f.monsters[Math.max(ia, ib)] = null;      // takes one zone, frees the other
   if (f.firstFusionAt < 0) f.firstFusionAt = g.t;
   g.fusions++; recompute(g); g.event('banner', FUSIONS[id].name + ' is summoned!'); g.event('summon', id);
   return true;
@@ -76,8 +76,8 @@ export function doFusion(g, id) {
 // ---- offers ----
 function rarityRoll(g) {
   const O = OFFER.rarityOdds, ks = Object.keys(O); let t = 0; for (const k of ks) t += O[k];
-  let r = g.rng() * t, pick = 'common'; for (const k of ks) { r -= O[k]; if (r < 0) { pick = k; break; } }
-  if (g.mods.luck > 0 && g.rng() < g.mods.luck * 1.0) { const i = ks.indexOf(pick); pick = ks[Math.min(ks.length - 1, i + 1)]; }      // luck: sometimes one rarity step up
+  let r = g.rl() * t, pick = 'common'; for (const k of ks) { r -= O[k]; if (r < 0) { pick = k; break; } }
+  if (g.mods.luck > 0 && g.rl() < g.mods.luck * 1.0) { const i = ks.indexOf(pick); pick = ks[Math.min(ks.length - 1, i + 1)]; }      // luck: sometimes one rarity step up
   return pick;
 }
 const ORDER = ['common', 'rare', 'epic', 'legendary'];
@@ -117,14 +117,14 @@ export function buildOffer(g, minRarity) {
     const c = pool.find(x => x.kind === 'trap' && x.isNew); if (c) take(c);
   }
   if (OFFER.guaranteeMonsterUpgrade && out.length < OFFER.size && !out.some(c => c.kind === 'monster' && !c.isNew)) {
-    const ups = pool.filter(x => x.kind === 'monster' && !x.isNew); if (ups.length) take(ups[Math.floor(g.rng() * ups.length)]);
+    const ups = pool.filter(x => x.kind === 'monster' && !x.isNew); if (ups.length) take(ups[Math.floor(g.rl() * ups.length)]);
   }
   while (out.length < OFFER.size && pool.length) {
     const want = rarityRoll(g);
     let tier = pool.filter(c => c.rarity === want);
     if (!tier.length) for (let d = 1; d < 4 && !tier.length; d++) tier = pool.filter(c => c.rarity === ORDER[Math.max(0, ORDER.indexOf(want) - d)]) || [];
     if (!tier.length) tier = pool;
-    take(tier[Math.floor(g.rng() * tier.length)]);
+    take(tier[Math.floor(g.rl() * tier.length)]);
   }
   return out;
 }
@@ -149,7 +149,7 @@ function applyCard(g, c) {
     const m = f.monsters.find(x => x && x.id === c.id);
     if (m) { const before = formOf(m.id, m.level); m.level = c.to; evolve(g, m, before); } else {
       let i = f.monsters.findIndex((x, k) => !x && f.bonusM[k] > 0); if (i < 0) i = f.monsters.findIndex(x => !x);
-      if (i >= 0) { const start = Math.min(monsterMax(c.id), 1 + f.bonusM[i]); f.bonusM[i] = 0; f.monsters[i] = newMonster(c.id, start, g.rng); g.event('summon', c.id); if (start > 1) g.event('banner', def(c.id).name + ' starts at level ' + start + ' (Tribute).'); }
+      if (i >= 0) { const start = Math.min(monsterMax(c.id), 1 + f.bonusM[i]); f.bonusM[i] = 0; f.monsters[i] = newMonster(c.id, start, g.rcos); g.event('summon', c.id); if (start > 1) g.event('banner', def(c.id).name + ' starts at level ' + start + ' (Tribute).'); }
     }
   } else if (c.kind === 'spell' || c.kind === 'trap') {
     const s = f.spells.find(x => x && x.id === c.id);

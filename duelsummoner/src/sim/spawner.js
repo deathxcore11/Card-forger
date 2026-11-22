@@ -1,5 +1,6 @@
 ﻿// The wave table: spawn rate, enemy mix, Ram Golem timer, elites, the Last Audience ring, and the boss clock.
 import { RUN } from '../data/waves.js';
+import { cos, pow, sin } from './dmath.js';
 import { spawnEnemy, spawnRate, enemyCount, KIND_ID } from './enemies.js';
 import { spawnWarden, spawnIdols, startBoss } from './specials.js';
 import { heightAt } from './terrain.js';
@@ -11,7 +12,7 @@ export function mixFor(t) {
 }
 function aliveOf(g, kind) { const id = KIND_ID[kind], e = g.en; let n = 0; for (let i = 0; i < e.max; i++) if (e.alive[i] && e.kind[i] === id) n++; return n; }
 export function pickKind(g, t) {
-  const c = mixFor(t); let r = g.rng();
+  const c = mixFor(t); let r = g.rsp();
   for (const k of ['scarab', 'seer', 'bloat', 'runner']) { const p = c[k]; if (!p) continue; if (r < p) return RUN.caps[k] && aliveOf(g, k) >= RUN.caps[k] ? 'husk' : k; r -= p; }
   return 'husk';
 }
@@ -21,7 +22,7 @@ export function overtimeStep(t) { const O = RUN.overtime; return t < O.from ? -1
 export function updateSpawner(g, dt) {
   const t = g.t, f = g.flags, O = RUN.overtime, k = overtimeStep(t);
   g.otStep = k;
-  g.dmgMul = (1 + RUN.enemyDamagePerMinute * Math.max(0, t - RUN.enemyDamageFrom) / 60) * (k >= 0 ? Math.pow(O.dmgGrowth, k + 1) : 1);
+  g.dmgMul = (1 + RUN.enemyDamagePerMinute * Math.max(0, t - RUN.enemyDamageFrom) / 60) * (k >= 0 ? pow(O.dmgGrowth, k + 1) : 1);
   if (k >= 0) {                                                        // Overtime: hunters, stronger every step, no cap on the scaling
     if (!f.overtime) { f.overtime = true; g.event('banner', 'OVERTIME. Hunters grow stronger every 30 seconds.'); }
     g.otAcc = (g.otAcc || 0) + (O.baseRate + O.rateStep * k) * dt;
@@ -41,7 +42,7 @@ export function updateSpawner(g, dt) {
       for (let k = 0; k < n; k++) {
         if (enemyCount(g.en) >= RUN.maxAlive) break;
         const a = k / n * Math.PI * 2;
-        spawnEnemy(g, 'husk', { x: p.x + Math.cos(a) * RUN.ring.radius, z: p.z + Math.sin(a) * RUN.ring.radius });
+        spawnEnemy(g, 'husk', { x: p.x + cos(a) * RUN.ring.radius, z: p.z + sin(a) * RUN.ring.radius });
       }
     }
   }

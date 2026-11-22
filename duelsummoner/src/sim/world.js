@@ -1,6 +1,7 @@
 // The map's life: breakable vases, Witness Stones, the Relic Broker, Shrines of Tribute and Card Chests, placed each run from
 // authored regions (data/encounters.js). Every spot is standable, flat, spaced out and has at least three ways off it.
 import { ENCOUNTERS as E } from '../data/encounters.js';
+import { cos, sin } from './dmath.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { heightAt } from './terrain.js';
 import { dropPickup, addFx, PICK_COIN, PICK_XP, PICK_HEART } from './combat.js';
@@ -10,7 +11,7 @@ const DEG = Math.PI / 180;
 
 function openSides(x, z, y) {                          // directions (of 8) with ground within 0.7 m of our height 4 m away
   let n = 0;
-  for (let k = 0; k < 8; k++) { const h = heightAt(x + Math.cos(k * Math.PI / 4) * 4, z + Math.sin(k * Math.PI / 4) * 4); if (h < 50 && Math.abs(h - y) < 0.7) n++; }
+  for (let k = 0; k < 8; k++) { const h = heightAt(x + cos(k * Math.PI / 4) * 4, z + sin(k * Math.PI / 4) * 4); if (h < 50 && Math.abs(h - y) < 0.7) n++; }
   return n;
 }
 function flatHere(x, z, y) {
@@ -19,8 +20,8 @@ function flatHere(x, z, y) {
 }
 export function pickSpot(g, regions, taken, apart, tries = 300, accept) {
   for (let t = 0; t < tries; t++) {
-    const R = regions[Math.floor(g.rng() * regions.length)], iv = R.deg[Math.floor(g.rng() * R.deg.length)];
-    const r = R.r[0] + g.rng() * (R.r[1] - R.r[0]), a = (iv[0] + g.rng() * (iv[1] - iv[0])) * DEG, x = r * Math.cos(a), z = r * Math.sin(a), h = heightAt(x, z);
+    const R = regions[Math.floor(g.rsp() * regions.length)], iv = R.deg[Math.floor(g.rsp() * R.deg.length)];
+    const r = R.r[0] + g.rsp() * (R.r[1] - R.r[0]), a = (iv[0] + g.rsp() * (iv[1] - iv[0])) * DEG, x = r * cos(a), z = r * sin(a), h = heightAt(x, z);
     if (h >= 50 || Math.abs(h - R.h) > 0.2 || !flatHere(x, z, h) || openSides(x, z, h) < 3) continue;
     if (taken.some(q => (q.x - x) ** 2 + (q.z - z) ** 2 < apart * apart)) continue;
     if (accept && !accept(x, z)) continue;
@@ -60,11 +61,11 @@ export function buildWorld(g) {
   const V = E.vases;
   for (let c = 0; c < V.clusters; c++) {
     const s = pickSpot(g, V.regions, taken, E.minSpacing); if (!s) continue; taken.push(s);
-    const n = V.perCluster[0] + Math.floor(g.rng() * (V.perCluster[1] - V.perCluster[0] + 1));
+    const n = V.perCluster[0] + Math.floor(g.rsp() * (V.perCluster[1] - V.perCluster[0] + 1));
     for (let k = 0; k < n; k++) {
-      const a = g.rng() * 6.283, r = k === 0 ? 0 : 0.9 + g.rng() * 1.2, x = s.x + Math.cos(a) * r, z = s.z + Math.sin(a) * r, h = heightAt(x, z);
+      const a = g.rsp() * 6.283, r = k === 0 ? 0 : 0.9 + g.rsp() * 1.2, x = s.x + cos(a) * r, z = s.z + sin(a) * r, h = heightAt(x, z);
       if (h >= 50 || Math.abs(h - s.y) > 0.2) continue;
-      W.vases.push({ x, y: h, z, alive: true, banded: g.rng() < V.bandedChance, hp: V.hp });
+      W.vases.push({ x, y: h, z, alive: true, banded: g.rsp() < V.bandedChance, hp: V.hp });
     }
   }
   return W;
@@ -74,7 +75,7 @@ function pickStock(g) {
   const ids = Object.keys(ITEMS).filter(id => !g.unlockedItems || g.unlockedItems.has(id)), W = E.broker.rarityWeights, out = [];
   const pool = ids.slice();
   while (out.length < E.broker.stock && pool.length) {
-    const tot = pool.reduce((a, id) => a + (W[ITEMS[id].rarity] || 1), 0); let r = g.rng() * tot, pick = pool[0];
+    const tot = pool.reduce((a, id) => a + (W[ITEMS[id].rarity] || 1), 0); let r = g.rl() * tot, pick = pool[0];
     for (const id of pool) { r -= W[ITEMS[id].rarity] || 1; if (r < 0) { pick = id; break; } }
     pool.splice(pool.indexOf(pick), 1); out.push({ id: pick, price: ITEMS[pick].price, sold: false });
   }
@@ -92,10 +93,10 @@ export function breakVase(g, v) {
   if (!v.alive) return; v.alive = false;
   const D = E.vases.drops, d = v.banded ? E.vases.banded : D;
   addFx(g, { type: 'ring', x: v.x, y: v.y, z: v.z, r: 1.2, dur: 0.3, color: v.banded ? 0xe8c56a : 0xc9965a });
-  const coins = D.coins[0] + Math.floor(g.rng() * (D.coins[1] - D.coins[0] + 1));
-  for (let i = 0; i < coins; i++) dropPickup(g, PICK_COIN, v.x + (g.rng() - 0.5), v.y, v.z + (g.rng() - 0.5));
+  const coins = D.coins[0] + Math.floor(g.rl() * (D.coins[1] - D.coins[0] + 1));
+  for (let i = 0; i < coins; i++) dropPickup(g, PICK_COIN, v.x + (g.rl() - 0.5), v.y, v.z + (g.rl() - 0.5));
   dropPickup(g, PICK_XP, v.x, v.y, v.z, v.banded ? d.xp : 1);
-  if (g.rng() < (v.banded ? d.heartChance : D.heartChance)) dropPickup(g, PICK_HEART, v.x, v.y, v.z + 0.6);
+  if (g.rl() < (v.banded ? d.heartChance : D.heartChance)) dropPickup(g, PICK_HEART, v.x, v.y, v.z + 0.6);
   g.vasesBroken++;
 }
 export function breakVasesNear(g, x, z, r) {
@@ -120,13 +121,13 @@ export function updateWorld(g, dt) {
 function itemCards(g, ids) { return ids.map(id => ({ id, kind: 'item', isNew: true, to: 1, rarity: ITEMS[id].rarity })); }
 function openBlessing(g, shrine) {
   const ids = Object.keys(BLESSINGS), pick = [];
-  while (pick.length < E.shrines.choices && ids.length) pick.push(ids.splice(Math.floor(g.rng() * ids.length), 1)[0]);
+  while (pick.length < E.shrines.choices && ids.length) pick.push(ids.splice(Math.floor(g.rl() * ids.length), 1)[0]);
   g.offer = { type: 'blessing', cards: pick.map(id => ({ id, kind: 'blessing', isNew: true, to: 1, rarity: 'rare' })), leave: false, source: shrine };
   g.event('offer', null);
 }
 function openStone(g, stone) {
   const owned = new Set(g.items), ids = Object.keys(ITEMS).filter(id => !owned.has(id) && ITEMS[id].rarity === 'common' && (!g.unlockedItems || g.unlockedItems.has(id))), pick = [];
-  while (pick.length < E.witnessStones.choices && ids.length) pick.push(ids.splice(Math.floor(g.rng() * ids.length), 1)[0]);
+  while (pick.length < E.witnessStones.choices && ids.length) pick.push(ids.splice(Math.floor(g.rl() * ids.length), 1)[0]);
   if (!pick.length) { g.event('banner', 'The stones have nothing left to offer you.'); return; }
   g.offer = { type: 'item', cards: itemCards(g, pick), leave: true, source: stone }; g.event('offer', null);
 }
@@ -141,7 +142,7 @@ function openAltar(g, altar) {
   f.monsters.forEach((m, i) => { if (m) cards.push({ kind: 'tribute', zone: 'monster', index: i, id: m.id, level: m.level, rarity: 'rare' }); });
   f.spells.forEach((s, i) => { if (s) cards.push({ kind: 'tribute', zone: 'spell', index: i, id: s.id, level: s.level, rarity: 'rare' }); });
   const unowned = candidates(g).filter(c => c.isNew && c.kind !== 'oneshot'), pick = [];
-  while (pick.length < E.altar.banishChoices && unowned.length) pick.push(unowned.splice(Math.floor(g.rng() * unowned.length), 1)[0]);
+  while (pick.length < E.altar.banishChoices && unowned.length) pick.push(unowned.splice(Math.floor(g.rl() * unowned.length), 1)[0]);
   for (const c of pick) cards.push({ kind: 'banish', id: c.id, rarity: c.rarity });
   if (!cards.length) { g.event('banner', 'The altar has nothing to take.'); return; }
   g.offer = { type: 'altar', cards, leave: true, source: altar }; g.event('offer', null);

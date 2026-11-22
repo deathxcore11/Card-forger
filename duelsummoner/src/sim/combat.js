@@ -26,7 +26,7 @@ export function damageEnemy(g, i, dmg, o) {
   let d = dmg;
   if (e.mark[i] > 0) d *= 1 + MARKS.bonus + g.mods.markBonus;
   d *= 1 + g.mods.dmgMult;
-  if (!o.noCrit && g.rng() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
+  if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
   e.hp[i] -= d; e.flash[i] = 0.12;
   const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0);
   if (el & ELEMENTS.fire.bit) { e.burn[i] = ELEMENTS.fire.burn.dur + g.mods.burnDur; e.burnDps[i] = ELEMENTS.fire.burn.dps + g.mods.burnDps; }
@@ -59,8 +59,8 @@ export function killEnemy(g, i) {
   if (g.mods.bell && g.kills % 50 === 0) explode(g, e.x[i], e.y[i], e.z[i], 4, 0, 10, 0xc0c0ff);       // Graveyard Bell
   const x = e.x[i], y = e.y[i], z = e.z[i], K = KIND_LIST[e.kind[i]];
   dropPickup(g, PICK_XP, x, y, z);
-  if (g.rng() < RUN.coinChance) dropPickup(g, PICK_COIN, x + 0.6, y, z);
-  if (g.rng() < RUN.heartChance) dropPickup(g, PICK_HEART, x - 0.6, y, z);
+  if (g.rl() < RUN.coinChance) dropPickup(g, PICK_COIN, x + 0.6, y, z);
+  if (g.rl() < RUN.heartChance) dropPickup(g, PICK_HEART, x - 0.6, y, z);
   if (K === KINDS.bloat) explode(g, x, y, z, K.blast.radius, K.blast.dmg * g.dmgMul, K.blast.dmg, 0xff9030, 'Sand Bloat');
   if (e.mark[i] > 0 && g.mods.markExplode) explode(g, x, y, z, g.mods.markExplode.radius, 0, g.mods.markExplode.dmg, 0xb070ff);
 }

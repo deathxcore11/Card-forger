@@ -1,5 +1,6 @@
 ﻿// Swarm enemies in flat typed arrays. Six kinds, each asking the player to move differently (see data/enemies.js).
 import { CFG } from '../data/config.js';
+import { atan2, cos, pow, sin } from './dmath.js';
 import { KINDS, KIND_LIST } from '../data/enemies.js';
 import { RUN } from '../data/waves.js';
 import { heightAt } from './terrain.js';
@@ -33,8 +34,8 @@ export function spawnRate(t) {
 function ringSpot(g, out) {
   const S = CFG.spawn, p = g.p;
   for (let k = 0; k < S.tries; k++) {
-    const a = g.rng() * Math.PI * 2, d = S.min + g.rng() * (S.max - S.min);
-    const x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d, h = heightAt(x, z);
+    const a = g.rsp() * Math.PI * 2, d = S.min + g.rsp() * (S.max - S.min);
+    const x = p.x + cos(a) * d, z = p.z + sin(a) * d, h = heightAt(x, z);
     if (h >= 50) continue;
     out.x = x; out.z = z; out.y = h; return true;
   }
@@ -60,8 +61,8 @@ export function spawnEnemy(g, kindName, at) {
   put(g, slot, spot.x, spot.y, spot.z, K.id);
   e.alive[slot] = 1; e.kind[slot] = K.id; e.st[slot] = 0; e.stT[slot] = K.id === SEER ? 1.2 : K.id === GOLEM ? 2 : 0;
   const ot = K === KINDS.hunter ? Math.max(0, g.otStep || 0) : 0, O = RUN.overtime;
-  e.hp[slot] = K.hp * g.hpMul * Math.pow(O.hpGrowth, ot); e.atk[slot] = 0.4; e.flash[slot] = 0; e.mark[slot] = 0; e.burn[slot] = 0; e.root[slot] = 0;
-  e.spd[slot] = K.speed * (1 + (g.rng() * 2 - 1) * CFG.enemy.speedJitter) * g.speedMul * Math.min(O.speedCap, Math.pow(O.speedGrowth, ot));
+  e.hp[slot] = K.hp * g.hpMul * pow(O.hpGrowth, ot); e.atk[slot] = 0.4; e.flash[slot] = 0; e.mark[slot] = 0; e.burn[slot] = 0; e.root[slot] = 0;
+  e.spd[slot] = K.speed * (1 + (g.rsp() * 2 - 1) * CFG.enemy.speedJitter) * g.speedMul * Math.min(O.speedCap, pow(O.speedGrowth, ot));
   e.dx[slot] = 0; e.dz[slot] = 0; e.face[slot] = e.pface[slot] = 0;
   g.spawned++;
   return true;
@@ -95,7 +96,7 @@ export function updateEnemies(g, dt) {
         const k = Math.min(1, dt * 10);
         e.dx[i] += (dx / d - e.dx[i]) * k; e.dz[i] += (dz / d - e.dz[i]) * k;
         o.x += e.dx[i] * spd * dt; o.z += e.dz[i] * spd * dt;
-        const ty = Math.max(p.y + K.hover + Math.sin(g.t * 3 + i) * 0.3, heightAt(o.x, o.z) + 0.6);
+        const ty = Math.max(p.y + K.hover + sin(g.t * 3 + i) * 0.3, heightAt(o.x, o.z) + 0.6);
         o.y += (ty - o.y) * Math.min(1, dt * 3);
         const r = Math.sqrt(o.x * o.x + o.z * o.z); if (r > MAP.boundaryR - 1) { o.x *= (MAP.boundaryR - 1) / r; o.z *= (MAP.boundaryR - 1) / r; }
         touching = d < K.reach && Math.abs(p.y + 0.9 - o.y) < 1.6;
@@ -179,7 +180,7 @@ export function updateEnemies(g, dt) {
     }
     e.x[i] = o.x; e.y[i] = o.y; e.z[i] = o.z; e.vy[i] = o.vy;
     if (kid !== GOLEM || e.st[i] !== 2) { e.dx[i] = o.dx; e.dz[i] = o.dz; }
-    if (e.st[i] !== 1 || kid === SEER || kid === GOLEM) e.face[i] = kid === GOLEM && e.st[i] === 2 ? Math.atan2(e.ax[i], e.az[i]) : Math.atan2(dx, dz);
+    if (e.st[i] !== 1 || kid === SEER || kid === GOLEM) e.face[i] = kid === GOLEM && e.st[i] === 2 ? atan2(e.ax[i], e.az[i]) : atan2(dx, dz);
 
     // touch damage: 0.9 s per enemy, plus the 0.25 s shared grace
     e.atk[i] -= dt; if (e.atk[i] < -1) e.atk[i] = -1;

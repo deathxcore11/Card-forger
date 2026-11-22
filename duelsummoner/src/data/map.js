@@ -6,14 +6,15 @@
 //   ring  {cx,cz,r0,r1,a0,a1,h,y0?}       annular sector, angles in degrees (0 = +x, 90 = +z)
 //   cyl   {x,z,r,h,y0?}                   round pillar
 // deco:true means visual only (no collision). c is the colour.
-export const MAP = { half: 200, boundaryR: 195, wallTop: 22 };
+import { sin, cos } from '../sim/dmath.js';
+export const MAP ={ half: 200, boundaryR: 195, wallTop: 22 };
 
 const P = [];
 const box = (x0, z0, x1, z1, h, c, o) => P.push(Object.assign({ t: 'box', x0, z0, x1, z1, h, c }, o));
 const ramp = (axis, a0, a1, b0, b1, h0, h1, c, o) => P.push(Object.assign({ t: 'ramp', axis, a0, a1, b0, b1, h0, h1, c }, o));
 const ring = (r0, r1, a0, a1, h, c, o) => P.push(Object.assign({ t: 'ring', cx: 0, cz: 0, r0, r1, a0, a1, h, c }, o));
 const cyl = (x, z, r, h, c, o) => P.push(Object.assign({ t: 'cyl', x, z, r, h, c }, o));
-const polar = (r, deg) => [r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
+const polar = (r, deg) => [r * cos(deg * 3.141592653589793 / 180), r * sin(deg * 3.141592653589793 / 180)];
 
 // ---------------- Sunken Colosseum (centre, round, start) ----------------
 export const COLOSSEUM = { floorR: 32, standsR: 52, outerR: 60, standsH: 4, roofH: 5.8,
@@ -115,6 +116,7 @@ export const DISTRICTS = [
   { id: 'spine', name: "Dragon's Spine", short: 'SPINE', shape: 'rect', x0: -100, z0: 108, x1: 95, z1: 168, color: '#e8e0c4' },
   { id: 'pyramid', name: "Pharaoh's Stair", short: 'STAIR', shape: 'rect', x0: -176, z0: -46, x1: -84, z1: 76, color: '#c9a050' }
 ];
+
 
 
 
