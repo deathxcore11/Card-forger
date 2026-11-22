@@ -132,7 +132,7 @@ export const ACH = [
   R('bone_and_veil', 'Bone and Veil', 'guardians', 'common', 'Beat both second-floor guardians, The Bone Collector and The Veiled Magus, over any number of runs.', { goal: 2, have: c => pairOf(1).filter(id => c.beaten.has(id)).length }),
   R('tyrant_and_gate', 'Tyrant and Gate', 'guardians', 'common', 'Beat both third-floor guardians, The White Tyrant and The Last Gate, over any number of runs.', { goal: 2, have: c => pairOf(2).filter(id => c.beaten.has(id)).length }),
   R('ground_that_lasts', 'Ground That Lasts', 'guardians', 'common', "Beat The Kiln Warden after laying ground of your own in that duel, with a Field Spell or the Stormcaller's Landfall.", { test: c => bossWin(c, 'kiln_warden', d => d.grounds >= 1) }),
-  R('stone_against_stone', 'Stone Against Stone', 'guardians', 'common', 'Beat The Stone Sentinel in a duel where one of your defenders beats one of her attackers.', { test: c => bossWin(c, 'stone_sentinel', d => d.defWins >= 1) }),
+  R('stone_against_stone', 'Stone Against Stone', 'guardians', 'uncommon', 'Beat The Stone Sentinel in a duel where one of your defenders beats one of her attackers.', { test: c => bossWin(c, 'stone_sentinel', d => d.defWins >= 1) }),
   R('veil_against_veil', 'Veil Against Veil', 'guardians', 'common', 'Beat The Veiled Magus with one of your own monsters still veiled on your side.', { test: c => bossWin(c, 'veiled_magus', d => !!d.veiled) }),
   R('four_is_enough', 'Four Is Enough', 'guardians', 'common', 'Beat The White Tyrant after making a meld of four or more cards in that duel.', { test: c => bossWin(c, 'white_tyrant', d => d.chain >= 4) }),
   R('nothing_to_collect', 'Nothing to Collect', 'guardians', 'uncommon', 'Beat The Bone Collector without his Blood price ever paying him a Life Point.', { test: c => bossWin(c, 'bone_collector', d => d.c === 1 && d.lawPaid === 0) }),
@@ -140,10 +140,10 @@ export const ACH = [
   R('an_answer_held', 'An Answer Held', 'guardians', 'feat', 'Beat The Last Gate after destroying the 5,000 ATK ace his Law brings through.', { test: c => bossWin(c, 'last_gate', d => d.aceDown >= 1) }),
   // The Codex
   R('ink_on_the_page', 'Ink on the Page', 'codex', 'xp', 'Write your first meld into the Codex.', { test: c => c.pages() >= 1 }),
-  R('margins_filling', 'Margins Filling', 'codex', 'xp', 'Find 25 pages in the Codex.', { goal: 25, have: c => c.pages() }),
+  R('margins_filling', 'Margins Filling', 'codex', 'xp', 'Find 50 pages in the Codex.', { goal: 50, have: c => c.pages() }),
   R('written_before_you', 'Written Before You', 'codex', 'common', 'Make a printed fusion, a meld that only its named materials can make.', { test: c => anyDuel(c, d => d.printed >= 1) || !!(c.live && c.live.newMelds.some(m => m[3] === 'printed')) }),
-  R('the_codex_grows', 'The Codex Grows', 'codex', 'common', 'Find 75 pages in the Codex.', { goal: 75, have: c => c.pages() }),
-  R('a_heavy_codex', 'A Heavy Codex', 'codex', 'uncommon', 'Find 150 pages in the Codex.', { goal: 150, have: c => c.pages() }),
+  R('the_codex_grows', 'The Codex Grows', 'codex', 'common', 'Find 150 pages in the Codex.', { goal: 150, have: c => c.pages() }),
+  R('a_heavy_codex', 'A Heavy Codex', 'codex', 'uncommon', 'Find 300 pages in the Codex.', { goal: 300, have: c => c.pages() }),
   R('fivefold_weld', 'Fivefold Weld', 'codex', 'uncommon', 'Make a single meld of five cards in which every card fuses.', { test: c => c.fuse() >= 5 }),
   R('every_seam_held', 'Every Seam Held', 'codex', 'feat', 'Clear the pyramid with at least 20 fusions and not one fizzle.', { test: c => c.won && !c.run.ach.late && c.run.stats.fizzles === 0 && !c.duels.some(d => d.steady) && sum(c.duels, d => d.fusions) >= 20 }),
   R('the_long_seam', 'The Long Seam', 'codex', 'hidden', 'Make a single meld of six or more cards in which every card fuses.', { hint: 'The seam ran longer than any hand should allow.', test: c => c.fuse() >= 6 }),
@@ -163,10 +163,10 @@ export const ACH = [
   R('the_elements_agree', 'The Elements Agree', 'duelcraft', 'xp', 'Destroy a monster in battle that your attacker beat only because of the +500 Attribute edge.', { test: c => anyDuel(c, d => d.edgeKills >= 1) || !!(c.live && c.live.ach && c.live.ach.edgeKills >= 1) }),
   R('the_forge_finishes', 'The Forge Finishes', 'duelcraft', 'xp', "Take a rival's last Life Points with damage from one of your relics.", { test: c => anyDuel(c, d => W(d) && d.relicFinish === 1) }),
   R('three_hearths', 'Three Hearths', 'duelcraft', 'common', 'Win a duel in which relics from three different builds all fire.', { test: c => anyDuel(c, d => W(d) && d.fams >= 3) }),
-  R('hall_of_teeth', 'Hall of Teeth', 'duelcraft', 'common', 'Win a duel after springing three of your own Traps in it.', { test: c => anyDuel(c, d => W(d) && d.traps >= 3) }),
-  R('not_a_mark', 'Not a Mark', 'duelcraft', 'feat', 'Beat a floor guardian without losing a single Life Point.', { test: c => anyDuel(c, d => W(d) && d.tier === 'boss' && d.c === 1 && d.lpLost === 0) }),
+  R('hall_of_teeth', 'Hall of Teeth', 'duelcraft', 'uncommon', 'Win a duel after springing three of your own Traps in it.', { test: c => anyDuel(c, d => W(d) && d.traps >= 3) }),
+  R('not_a_mark', 'Not a Mark', 'duelcraft', 'feat', 'Clear the pyramid without losing a single Life Point to any of its guardians.', { test: c => c.won && !c.run.ach.late && c.duels.some(d => d.tier === 'boss') && c.duels.every(d => d.tier !== 'boss' || (d.c === 1 && d.lpLost === 0)) }), // retuned 22 November 2026: one clean guardian came in four runs of five
   R('bare_iron', 'Bare Iron', 'duelcraft', 'feat', 'Beat a floor guardian without fusing two cards in that duel. Equips and failed tries are allowed.', { test: c => anyDuel(c, d => W(d) && d.tier === 'boss' && d.c === 1 && d.fusions === 0) }),
-  R('taller_than_the_gate', 'Taller Than the Gate', 'duelcraft', 'feat', 'Win a duel with a monster of 5,000 ATK or more on your side.', { test: c => anyDuel(c, d => W(d) && d.top >= 5000) }),
+  R('taller_than_the_gate', 'Taller Than the Gate', 'duelcraft', 'feat', 'Win a duel with a monster of 6,000 ATK or more on your side, a full thousand taller than The Last Gate\'s ace.', { test: c => anyDuel(c, d => W(d) && d.top >= 6000) }),
   R('the_well_runs_dry', 'The Well Runs Dry', 'duelcraft', 'hidden', "Win a duel because your rival's deck ran out of cards.", { hint: 'They reached for one more memory and found none.', test: c => anyDuel(c, d => W(d) && d.reason === 'deckout') }),
   R('they_came_to_you', 'They Came to You', 'duelcraft', 'hidden', 'Win a duel without declaring a single attack.', { hint: 'Your monsters never stepped forward, and still the duel was yours.', test: c => anyDuel(c, d => W(d) && d.c === 1 && d.attacks === 0) }),
   // Rumours. The first needs no switch; every other row here is earned only while the Rumours switch is on.
@@ -183,7 +183,7 @@ export const ACH = [
   // Metas: a title each, earned once every part is.
   R('all_six_keepers', 'All Six Keepers', 'meta', 'meta', 'Earn Kiln and Stone, Bone and Veil, and Tyrant and Gate.', { title: 'Witness to Six', parts: ['kiln_and_stone', 'bone_and_veil', 'tyrant_and_gate'] }),
   R('every_law_broken', 'Every Law Broken', 'meta', 'meta', 'Earn Ground That Lasts, Stone Against Stone, Nothing to Collect, Veil Against Veil, Four Is Enough and The Gate Stays Shut.', { title: 'the Unruled', parts: ['ground_that_lasts', 'stone_against_stone', 'nothing_to_collect', 'veil_against_veil', 'four_is_enough', 'the_gate_stays_shut'] }),
-  R('what_was_taken', 'What Was Taken', 'meta', 'meta', 'Earn all five Rumours achievements, the hidden ones too.', { needs: 'secret', title: 'the Remembered', parts: ['scratched_on_the_door', 'the_first_memory', 'where_wall_was', 'one_was_enough', 'the_keeper_leaves'] }),
+  R('what_was_taken', 'What Was Taken', 'meta', 'meta', 'Earn the first five Rumours achievements, the hidden ones too.', { needs: 'secret', title: 'the Remembered', parts: ['scratched_on_the_door', 'the_first_memory', 'where_wall_was', 'one_was_enough', 'the_keeper_leaves'] }),
   R('the_name_returns', 'The Name Returns', 'meta', 'meta', 'Earn Ten Coals Hotter, Four Hands, One Forge, Bare Shelves, A Heavy Codex, Every Seam Held and An Answer Held.', { title: 'the Named', parts: ['ten_coals_hotter', 'four_hands_one_forge', 'bare_shelves', 'a_heavy_codex', 'every_seam_held', 'an_answer_held'] }),
 ];
 for (const r of ACH) if (r.parts) r.goal = r.parts.length;

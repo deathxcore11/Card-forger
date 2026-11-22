@@ -141,7 +141,7 @@ test('the table: 68 rows, the approved tiers, ids, hints, metas and switch', () 
   assert.equal(new Set(ACH.map(r => r.id)).size, 68); assert.equal(new Set(ACH.map(r => r.name)).size, 68);
   for (const r of ACH) assert.match(r.id, /^[a-z]+(_[a-z]+)*$/, 'snake_case id ' + r.id);
   const tiers = {}; for (const r of ACH) tiers[r.tier] = (tiers[r.tier] || 0) + 1;
-  assert.deepEqual(tiers, { xp: 20, common: 15, uncommon: 9, feat: 9, hidden: 11, meta: 4 });
+  assert.deepEqual(tiers, { xp: 20, common: 13, uncommon: 11, feat: 9, hidden: 11, meta: 4 }); // Stone Against Stone and Hall of Teeth went up to uncommon in the retune of 22 November 2026
   const groups = {}; for (const r of ACH) groups[r.group] = (groups[r.group] || 0) + 1;
   assert.deepEqual(groups, { asterhold: 11, heat: 5, guardians: 11, codex: 8, forge: 10, duelcraft: 10, rumours: 9, meta: 4 });
   assert.deepEqual(ACH_GROUPS.map(g => g.id), Object.keys(groups));
@@ -168,10 +168,11 @@ test('an untracked run keeps no facts and earns nothing from the run', () => {
 });
 
 // ---------- guardian duels won clean, and the reload rules ----------
-test('a guardian beaten by one burn: Not a Mark, Bare Iron, They Came to You, Nothing to Collect, The First Memory', () => {
+test('a guardian beaten by one burn: Bare Iron, They Came to You, Nothing to Collect, The First Memory, and not yet Not a Mark', () => {
   const s = bossScene(SDB, 1, 'bone_collector', clean);
   winByBurn(s);
-  earned(s, ['not_a_mark', 'bare_iron', 'they_came_to_you', 'nothing_to_collect', 'the_first_memory', 'hammer_finds_its_weight', 'scratched_on_the_door', 'the_door_unsealed'], 'clean guardian');
+  earned(s, ['bare_iron', 'they_came_to_you', 'nothing_to_collect', 'the_first_memory', 'hammer_finds_its_weight', 'scratched_on_the_door', 'the_door_unsealed'], 'clean guardian');
+  notEarned(s, ['not_a_mark'], 'one guardian is not a clear');
   for (let k = 0; k < 3; k++) assert.deepEqual(s.check(), [], 'nothing is earned twice');
   once(s);
 });
@@ -192,7 +193,7 @@ test('a guardian duel reloaded part-way keeps what happened before the save', ()
   const r = s.run.duel; r.mon[1] = r.mon[1].map(() => null); r.lp[0] = db.config.lp;
   winByBurn(s);
   earned(s, ['hammer_finds_its_weight'], 'after reload');
-  notEarned(s, ['not_a_mark', 'bare_iron', 'they_came_to_you', 'nothing_to_collect'], 'after reload');
+  notEarned(s, ['bare_iron', 'they_came_to_you', 'nothing_to_collect'], 'after reload');
 });
 
 test('a duel saved before the counters existed can never pass for one where nothing happened', () => {
@@ -201,7 +202,30 @@ test('a duel saved before the counters existed can never pass for one where noth
   s.run = JSON.parse(JSON.stringify(s.run));
   winByBurn(s);
   earned(s, ['hammer_finds_its_weight', 'the_first_memory'], 'old duel');
-  notEarned(s, ['not_a_mark', 'bare_iron', 'they_came_to_you', 'nothing_to_collect'], 'old duel');
+  notEarned(s, ['bare_iron', 'they_came_to_you', 'nothing_to_collect'], 'old duel');
+});
+
+test('Not a Mark: a clear with every guardian duel won without a Life Point lost; one guardian that drew blood spoils it', () => {
+  const lastId = BOSSES[db.config.floors - 1][0].id;
+  // two guardians, both won by one burn before the rival could touch the player
+  { const s = bossScene(db, 1, 'bone_collector', clean); winByBurn(s); notEarned(s, ['not_a_mark'], 'first guardian');
+    enterBoss(s, db.config.floors - 1, lastId); for (let g = 0; g < 5 && !clean(s.run.duel); g++) endTurn(s);
+    assert.ok(clean(s.run.duel), 'the last guardian has not touched the player'); winByBurn(s);
+    for (let g = 0; g < 20 && s.run.phase === 'reward'; g++) s.act({ t: 'pick', i: 0 });
+    assert.equal(s.run.phase, 'over'); assert.ok(s.run.result.won);
+    const bosses = s.run.ach.duels.filter(d => d.tier === 'boss');
+    assert.deepEqual(bosses.map(d => [d.w, d.c, d.lpLost]), [[1, 1, 0], [1, 1, 0]]);
+    earned(s, ['not_a_mark'], 'clean clear'); }
+  // the same, but the player's own monster runs into the last guardian's stronger one first
+  { const s = bossScene(db, 1, 'bone_collector', clean); winByBurn(s);
+    enterBoss(s, db.config.floors - 1, lastId); toMine(s);
+    let d = s.run.duel; if (d.turn === 1 || d.attacked) { endTurn(s); d = s.run.duel; }
+    d.mon[0] = d.mon[0].map(() => null); d.mon[1] = d.mon[1].map(() => null); d.traps[1] = d.traps[1].map(() => null); d.terrain = null; d.frozen[0] = 0; d.noAttack = false;
+    d.mon[0][0] = monAt(WEAK); d.mon[1][0] = monAt(STRONG); d.lp[0] = db.config.lp;
+    duel(s, { t: 'attack', from: 0, to: 0 }); assert.ok(s.run.duel.stats[0].ach.lpLost > 0, 'the guardian drew blood');
+    const r = s.run.duel; r.mon[1] = r.mon[1].map(() => null); r.lp[0] = db.config.lp;
+    winByBurn(s); for (let g = 0; g < 20 && s.run.phase === 'reward'; g++) s.act({ t: 'pick', i: 0 });
+    assert.ok(s.run.phase === 'over' && s.run.result.won); notEarned(s, ['not_a_mark'], 'a guardian drew blood'); }
 });
 
 test('a run played with the run and the profile saved and reloaded after every move, judged again when over, banked twice, earns exactly what the same run earns without them', () => {
@@ -295,14 +319,14 @@ test('Written Before You, Fivefold Weld and The Long Seam are earned at the very
 
 test('pages found: Ink on the Page, Margins Filling, The Codex Grows, A Heavy Codex', () => {
   const keys = [], ids = new Set();
-  for (const a of byAtk) { for (const b of byAtk) { if (ids.size >= 150) break; if (a.id === b.id || !fuse(a.id, b.id)) continue; const k = codexKey(db, a.id, b.id), r = codexResult(db, k); if (r && !ids.has(r.id)) { ids.add(r.id); keys.push(k); } } if (ids.size >= 150) break; }
-  assert.equal(keys.length, 150);
+  for (const a of byAtk) { for (const b of byAtk) { if (ids.size >= 300) break; if (a.id === b.id || !fuse(a.id, b.id)) continue; const k = codexKey(db, a.id, b.id), r = codexResult(db, k); if (r && !ids.has(r.id)) { ids.add(r.id); keys.push(k); } } if (ids.size >= 300) break; }
+  assert.equal(keys.length, 300);
   const s = scene(db);
-  s.p.codex = keys.slice(0, 24); s.check(null); earned(s, ['ink_on_the_page'], 'pages'); notEarned(s, ['margins_filling'], 'pages 24');
-  assert.equal(achProgress(db, s.p).find(x => x.id === 'margins_filling').have, 24);
-  for (const [n, id] of [[25, 'margins_filling'], [75, 'the_codex_grows'], [150, 'a_heavy_codex']]) { s.p.codex.push(...keys.slice(s.p.codex.length, n)); assert.deepEqual(s.check(null), [id]); }
+  s.p.codex = keys.slice(0, 49); s.check(null); earned(s, ['ink_on_the_page'], 'pages'); notEarned(s, ['margins_filling'], 'pages 49');
+  assert.equal(achProgress(db, s.p).find(x => x.id === 'margins_filling').have, 49);
+  for (const [n, id] of [[50, 'margins_filling'], [150, 'the_codex_grows'], [300, 'a_heavy_codex']]) { s.p.codex.push(...keys.slice(s.p.codex.length, n)); assert.deepEqual(s.check(null), [id]); earned(s, [id], 'pages ' + n); }
   // A run's own new pages count before the run is banked.
-  const t = scene(db, { codex: keys.slice(0, 24) }); start(t); t.run.codex.push(keys[24]); t.check(); earned(t, ['margins_filling'], 'run pages');
+  const t = scene(db, { codex: keys.slice(0, 49) }); start(t); t.run.codex.push(keys[49]); t.check(); earned(t, ['margins_filling'], 'run pages');
 });
 
 test('Every Seam Held: a clear with twenty fusions and no fizzle; one fizzle spoils it, and so does one Steady Hand saved', () => {
@@ -435,8 +459,10 @@ test('Duelcraft: Struck True, The Elements Agree, The Forge Finishes, Three Hear
     d.mon[1] = d.mon[1].map((m, i) => i < 3 ? monAt(WEAK) : null);
     asRival(s, dd => { for (let z = 0; z < 3; z++) { applyMut(dd, { t: 'attack', from: z, to: -1 }, db); applyMut(dd, { t: 'respond', trap: dd.pending.options[0] }, db); } });
     assert.equal(s.run.duel.stats[0].trapsSprung, 3); winByBurn(s); earned(s, ['hall_of_teeth'], 'three Traps'); }
-  { const s = scene(db); start(s); enterDuel(s); winByAttack(s, { id: STRONG, ba: 5000 }); earned(s, ['taller_than_the_gate'], 'tall');
-    const t = scene(db); start(t); enterDuel(t); winByAttack(t, { id: MID }); notEarned(t, ['taller_than_the_gate'], 'short'); }
+  { const SA = db.byId.get(STRONG).atk; // exactly 6,000 earns it, 5,999 does not
+    const s = scene(db); start(s); enterDuel(s); s.run.duel.terrain = null; winByAttack(s, { id: STRONG, ba: 6000 - SA }); assert.equal(s.run.ach.duels.at(-1).top, 6000); earned(s, ['taller_than_the_gate'], 'tall');
+    const t = scene(db); start(t); enterDuel(t); winByAttack(t, { id: MID }); notEarned(t, ['taller_than_the_gate'], 'short');
+    const u = scene(db); start(u); enterDuel(u); u.run.duel.terrain = null; winByAttack(u, { id: STRONG, ba: 5999 - SA }); assert.equal(u.run.ach.duels.at(-1).top, 5999); notEarned(u, ['taller_than_the_gate'], 'one short'); }
   { const s = scene(db); start(s); enterDuel(s); const d = s.run.duel; d.deck[1] = []; d.hand[1] = []; endTurn(s);
     assert.equal(s.run.lastDuel.reason, 'deckout'); earned(s, ['the_well_runs_dry'], 'deck out'); }
 });
