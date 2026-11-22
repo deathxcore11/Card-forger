@@ -351,6 +351,6 @@ export const WAVES = [
   [3, 'Rooms and the things in them', 'Done. Six more rooms, five objects and one sheet of surfaces.'],
   [4, 'Story pictures', 'Done. Five paintings for the long story scenes.'],
   [5, 'The 3D tool test', 'Done. One statue.'],
-  [6, 'Making it good', 'New on 22 November: what the game still shows as a word or a stand-in. The terrain grounds and the Enchant marks change every duel; the reading room, the hidden door and the stair finish the places.'],
-  [7, 'Memories', 'Optional. A painting for each guardian\'s memory and one for beating The Last One. The game is complete without them; they make the secret land harder.'],
+  [6, 'Making it good', 'Done. The terrain grounds, the Enchant marks, the reading room, the hidden door and the stair.'],
+  [7, 'Memories', 'Done. A painting for each guardian\'s memory and one for beating The Last One.'],
 ];

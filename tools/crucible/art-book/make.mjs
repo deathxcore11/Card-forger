@@ -29,7 +29,7 @@ const usedOn = code => SCREENS.filter(s => s.uses.includes(code)).map(s => s.nam
 const count = { have: ASSETS.filter(a => a.state === 'have').length, need: ASSETS.filter(a => a.state === 'need').length, mine: ASSETS.filter(a => a.state === 'mine').length };
 const medCount = { have: MEDALS.filter(m => m.state === 'have').length, need: MEDALS.filter(m => m.state === 'need').length, remake: MEDALS.filter(m => m.state === 'remake').length };
 const pics = PROMPTS.filter(p => p.id !== 'M-one').length;
-const TODO = PROMPTS.filter(p => p.wave >= 6).sort((a, b) => a.wave - b.wave);
+const TODO = PROMPTS.filter(p => p.wave >= 8).sort((a, b) => a.wave - b.wave); // waves 1 to 7 are made
 
 // ---------------------------------------------------------------- words shared by both copies
 const RULES = [
@@ -195,7 +195,7 @@ ${MOCK_CSS}
 <main>
 <h1>Lost Memories Asset Book</h1>
 <p class="lede">Every screen, every piece of art and every prompt, for Lost Memories as a real PlayStation-era game: built to what that console could do, with no cheating.</p>
-<div class="warn"><b>Updated 22 November.</b> Almost everything from the first list is in: your title, logo, crest, table, rooms, faces, medals and story pictures are built into the console look, which you have not seen yet. The next playable shows it. The layouts in part 3 are still sketches of where things go.</div>
+<div class="warn"><b>Updated 22 November, afternoon.</b> Everything on both lists is in and built into the console look: title, logo, crest, table, rooms, faces, medals, story pictures, terrain grounds, Enchant marks, the hidden door, the reading room, the stair and the memories, and your chest, shrine, bowl, stall and keeper as console-size 3D props. Only the Snare redo and one answer are left. The layouts in part 3 are still sketches of where things go.</div>
 <nav><a href="#todo">Still to make</a><a href="#rules">Console rules</a><a href="#look">Identity</a><a href="#screens">Screens</a><a href="#assets">Assets</a><a href="#prompts">Prompts</a><a href="#order">What to make first</a></nav>
 <div class="tally">
 <div><b>${SCREENS.length}</b><span>screens, each drawn to the pixel</span></div>
@@ -205,11 +205,11 @@ ${MOCK_CSS}
 </div>
 
 <h2 id="todo">Still to make</h2>
-<p>Your part: ${TODO.length} pictures, the ones that change the game most first. Each links to its prompt.</p>
+<p>Your part: ${TODO.length ? TODO.length + ' pictures, the ones that change the game most first. Each links to its prompt.' : 'one redo and one answer.'}</p>
 <ol class="todo">${TODO.map(p => `<li><a href="#p-${p.id}"><b>${esc(p.name)}</b></a> <span class="sub">${esc(p.file)}</span>${esc(p.where)}${p.wave === 7 ? ' Optional.' : ''}</li>`).join('')}
 <li><a href="#p-M-one"><b>Snare medallion, redo</b></a> <span class="sub">relic-snare.png</span>It came out as a hanging noose on a dead tree, so it is left out. Use the single medallion prompt with: gold rim, deep violet plum field: ${esc(SUBJECT.snare)}.</li>
 <li><b>Tell me: the three bound arrows</b> <span class="sub">relic-Single medallion.png</span>It matches no relic on the list. Say which medal it is meant to be, or it stays spare.</li></ol>
-<p>My part, from what you sent: rebuild the anvil, hammer, stall, shrine, chest, bowl and keeper statue at console size (60 to 150 triangles each, one 64 by 64 picture each); the crest as a turning coin from your crest and laurel medal; the frame and plaques from your materials sheet; the six new rooms toned darker and warmer so they sit with the halls. No more 3D files are needed: a picture of an object is enough, and I build it.</p>
+<p>My part, still to do: place the anvil and the hammer (both built), the crest as a turning coin from your crest and laurel medal, and the frame and plaques from your materials sheet. No more 3D files are needed: a picture of an object is enough, and I build it.</p>
 <h2 id="rules">1. The console rules</h2>
 <p>Your rule, 22 November: it must look like a real game of that console that could run on one, with no cheating. So the game is held to what the machine could do. If a thing could not be done on it, it is not in the game.</p>
 <div class="scroll"><table><thead><tr><th></th><th>What the console could do</th><th>What Lost Memories does</th></tr></thead><tbody>
@@ -291,7 +291,7 @@ ${WAVES.map(([w, name, note]) => `<li><a href="#w-${w}"><b>Wave ${w}: ${esc(name
 // ---------------------------------------------------------------- Markdown copy
 const md = [];
 md.push('# Lost Memories asset book', '', 'Every screen, every piece of art and every prompt, for Lost Memories as a real PlayStation-era game: built to what that console could do, with no cheating.', '',
-  '**Updated 22 November.** Almost everything from the first list is in and built into the console look, which you have not seen yet.', '',
+  '**Updated 22 November, afternoon.** Everything on both lists is in and built into the console look. Only the Snare redo and one answer are left.', '',
   '## Still to make', '', ...TODO.map(p => `- ${p.name} (${p.file}): ${p.where}${p.wave === 7 ? ' Optional.' : ''}`), `- Snare medallion, redo: ${SUBJECT.snare}.`, '- Tell me which medal the three bound arrows are for.', '',
   'The page version has a pixel sketch of every screen and a copy button on every prompt. This file is the same words without the sketches.', '',
   `Counts: ${SCREENS.length} screens, ${ASSETS.length + MEDALS.length} pieces of art listed, ${TODO.length + 1} pictures still to make, ${count.have + medCount.have} pieces we already have.`, '');
