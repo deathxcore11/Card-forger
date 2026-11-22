@@ -650,7 +650,8 @@ function recover(e, moving) {
 }
 // Era look (Lab switch, display only): the layers under every screen. They sit below the page's own elements, so fog and
 // grain never cross a number, a card or a button.
-const ERA_LAYERS = '<div class="eraBg"></div><div class="fog"><i></i><i></i></div><div class="grain"></div>';
+const ERA_LAYERS = '<div class="eraBg"></div><div class="eraFog"><i></i><i></i></div><div class="eraGrain"></div>'; // names of their own: a duel's twist puts the class fog on the table (found 22 November)
+const sparksMax = r => db.config.sparks - (db.config.heatRules && (r.heat || 0) >= 7 ? 1 : 0); // as newRun deals them
 const fogK = r => !r || r.phase === 'over' ? .8 : Math.max(.7, Math.min(1.3, .75 + .025 * (r.heat || 0) + .12 * Math.max(0, 3 - (r.sparks ?? 3))));
 function render() { try { draw(); G.fresh = false; } catch (e) { recover(e, false); } }
 function draw() {
@@ -672,7 +673,7 @@ function draw() {
   { const rb = $('.rules'); if (rb) { rb.scrollTop = rulesAt; moreBelow(rb); } const tl = $('.trayline'); if (tl) moreBelow(tl); }
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
   if (era) app.style.setProperty('--fog', String(fogK(r))); // Era look: the fog thickens as Sparks are lost and Heat rises
-  const scr = G.screen || app.dataset.phase; if (scr !== render.scr) { if (era && !RM && render.scr !== undefined) app.animate([{ filter: 'brightness(0)' }, { filter: 'brightness(1)' }], { duration: 260, easing: 'ease-out' }); render.scr = scr; cue('screen:' + scr, r ? { floor: r.floor, chamber: r.chamber, rival: r.rival ? r.rival.name : null, tier: r.rival ? r.rival.tier : null } : {}); }
+  const scr = G.screen || app.dataset.phase; if (scr !== render.scr) { if (era && !RM && render.scr !== undefined) app.animate([{ filter: 'brightness(0)' }, { filter: 'brightness(1)' }], { duration: 260, easing: 'ease-out' }); render.scr = scr; cue('screen:' + scr, r ? { floor: r.floor, chamber: r.chamber, rival: r.rival ? r.rival.name : null, tier: r.rival ? r.rival.tier : null, heat: r.heat || 0, sparks: r.sparks ?? 0, sparksMax: sparksMax(r), fog: +((fogK(r) - .7) / .6).toFixed(2) } : {}); } // heat, Sparks and the fog (0 to 1) let the sound follow the danger of the run
 }
 
 // ---------- input ----------

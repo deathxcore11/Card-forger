@@ -431,7 +431,7 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     const fx = () => page.evaluate(() => { const app = document.querySelector('#app'), z = s => { const e = document.querySelector(s); return e ? +getComputedStyle(e).zIndex : null; };
       const btns = [...document.querySelectorAll('#app button')].filter(b => { const r = b.getBoundingClientRect(); return r.width > 4 && r.height > 4 && getComputedStyle(b).visibility !== 'hidden'; });
       const hit = btns.filter(b => { const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e && (e === b || b.contains(e) || e.closest('.modal, .story, .savebar')); }).length;
-      return { layers: ['.eraBg', '.fog', '.grain'].map(z), buttons: btns.length, reached: hit, fonts: ['LM Cinzel', 'LM Spectral', 'LM Barlow'].map(f => document.fonts.check('16px "' + f + '"')) }; });
+      return { layers: ['.eraBg', '.eraFog', '.eraGrain'].map(z), buttons: btns.length, reached: hit, fonts: ['LM Cinzel', 'LM Spectral', 'LM Barlow'].map(f => document.fonts.check('16px "' + f + '"')) }; });
     let f = await fx(); check('on the home screen the fog, grain and vignette lie under everything and every button a tap reaches without it still takes one', f.layers.every(z => z < 0) && f.buttons > 5 && f.reached === offReach, { ...f, offReach });
     await resume(); await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(300); f = await fx();
     check('in a run already in progress the duel is drawn with it, and every button still takes a tap', (await page.evaluate(() => document.querySelector('#app').classList.contains('era'))) && f.reached === f.buttons && f.buttons > 2, f);
@@ -443,8 +443,21 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     check('each door is marked by how much is known, for its fog', kinds.length >= 2 && kinds.every(Boolean), kinds);
     const rm = await browser.newContext({ viewport: { width: +W, height: +H }, reducedMotion: 'reduce' }), pg = await rm.newPage(); pg.on('pageerror', e => errors.push(e.message));
     await pg.goto(url); await pg.evaluate(([o, K]) => { localStorage.clear(); const l = { ...o.labs, era: true }; localStorage.setItem(K.profile, JSON.stringify(o.profile)); localStorage.setItem(K.labs, JSON.stringify(l)); }, [duel, K]); await pg.reload(); await pg.waitForTimeout(350);
-    const still = await pg.evaluate(() => ['.fog i', '.grain'].map(s => getComputedStyle(document.querySelector(s)).animationName));
+    const still = await pg.evaluate(() => ['.eraFog i', '.eraGrain'].map(s => { const e = document.querySelector(s); return e ? getComputedStyle(e).animationName : 'missing'; }));
     check('a device set to less motion gets still fog and still grain', still.every(n => n === 'none'), still); await rm.close(); }
+
+  // A duel's twist is a class on the table (fog, narrow, storm, locked). The Era layers first took the name "fog", so in a Fog
+  // duel the whole table went under the page and no card or zone took a tap (found by the click bot on 22 November, before any
+  // publish). Every control that takes a tap with the look off must take one with it on, in a duel of every twist.
+  { const reach = () => page.evaluate(() => [...document.querySelectorAll('#app [data-a]')].filter(b => { const r = b.getBoundingClientRect(); if (r.width < 5 || r.height < 5 || b.disabled) return false; const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e && e.closest('[data-a]') === b; }).map(b => b.dataset.a));
+    for (const tw of ['fog', 'narrow', 'storm', 'locked']) {
+      const f = fs.readdirSync(dir).filter(x => /^duel-/.test(x) && !/trap-prompt/.test(x)).sort().find(x => { const r = read(x).run; return r.phase === 'duel' && ((r.rival && r.rival.twist) || (r.duel && r.duel.twist)) === tw; });
+      if (!f) { check(`a saved ${tw} duel to try the Era look on`, false); continue; }
+      const s = read(f); s.labs.era = false; await open(s); await resume(); const off = await reach();
+      s.labs.era = true; await open(s); await resume(); const on = await reach(), lost = off.filter(a => !on.includes(a));
+      check(`in a ${tw} duel with the Era look on, every card, zone and button that takes a tap without it still takes one`, (await page.evaluate(() => document.querySelector('#app').classList.contains('era'))) && off.length > 3 && lost.length === 0, { save: f, lost, off: off.length, on: on.length });
+      if (tw === 'fog') { await tap('[data-a="hand:0"]'); check('in a Fog duel with the Era look on, tapping a hand card picks it', await page.evaluate(() => window.LM.G.sel.length === 1), { save: f }); }
+    } }
 
   check('no page errors anywhere', errors.length === 0, errors);
   console.log(`save checks at ${W}x${H}: ${passed} passed, ${failed} failed`);

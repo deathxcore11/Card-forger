@@ -341,20 +341,20 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 #app.era .eraBg { position: absolute; inset: 0; z-index: -3; background: inherit; filter: saturate(.5) sepia(.25) brightness(.64) contrast(1.1); pointer-events: none; }
 #app.era[data-room="2"] .eraBg { filter: saturate(.42) sepia(.18) brightness(.58) contrast(1.12) hue-rotate(-5deg); }
 #app.era[data-room="3"] .eraBg { filter: saturate(.34) sepia(.12) brightness(.52) contrast(1.14) hue-rotate(-10deg); }
-#app.era .fog { position: absolute; inset: 0; z-index: -2; overflow: hidden; pointer-events: none; opacity: min(1, var(--fog, .8)); }
-#app.era .fog i { position: absolute; top: 0; left: 0; width: 200%; height: 100%; background-repeat: repeat-x; background-size: 50% 100%;
+#app.era .eraFog { position: absolute; inset: 0; z-index: -2; overflow: hidden; pointer-events: none; opacity: min(1, var(--fog, .8)); }
+#app.era .eraFog i { position: absolute; top: 0; left: 0; width: 200%; height: 100%; background-repeat: repeat-x; background-size: 50% 100%;
   background-image: radial-gradient(ellipse 20% 18% at 22% 76%, rgba(186, 182, 172, .4), transparent 72%), radial-gradient(ellipse 24% 14% at 62% 68%, rgba(186, 182, 172, .32), transparent 72%), radial-gradient(ellipse 18% 12% at 84% 86%, rgba(186, 182, 172, .36), transparent 72%), linear-gradient(to top, rgba(170, 166, 158, .5), rgba(170, 166, 158, .16) 34%, transparent 60%);
   animation: lmfog 45s linear infinite; }
-#app.era .fog i + i { opacity: .75; transform: translateX(-25%); background-image: radial-gradient(ellipse 22% 16% at 35% 58%, rgba(186, 182, 172, .3), transparent 72%), radial-gradient(ellipse 16% 20% at 75% 78%, rgba(186, 182, 172, .32), transparent 72%), radial-gradient(ellipse 26% 10% at 50% 92%, rgba(186, 182, 172, .4), transparent 72%);
+#app.era .eraFog i + i { opacity: .75; transform: translateX(-25%); background-image: radial-gradient(ellipse 22% 16% at 35% 58%, rgba(186, 182, 172, .3), transparent 72%), radial-gradient(ellipse 16% 20% at 75% 78%, rgba(186, 182, 172, .32), transparent 72%), radial-gradient(ellipse 26% 10% at 50% 92%, rgba(186, 182, 172, .4), transparent 72%);
   animation: lmfog2 70s linear infinite; }
-#app.era .fog::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 72% 68% at 50% 44%, transparent 42%, rgba(0, 0, 0, .72) 100%); }
+#app.era .eraFog::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 72% 68% at 50% 44%, transparent 42%, rgba(0, 0, 0, .72) 100%); }
 @keyframes lmfog { to { transform: translateX(-50%); } }
 @keyframes lmfog2 { from { transform: translateX(-50%); } to { transform: translateX(0); } }
-#app.era .grain { position: absolute; inset: -50%; z-index: -1; pointer-events: none; opacity: .13; mix-blend-mode: overlay;
+#app.era .eraGrain { position: absolute; inset: -50%; z-index: -1; pointer-events: none; opacity: .13; mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   animation: lmgrain .5s steps(6) infinite; }
 @keyframes lmgrain { 0% { transform: translate(0, 0); } 17% { transform: translate(-4%, 2%); } 33% { transform: translate(3%, -3%); } 50% { transform: translate(-2%, 4%); } 67% { transform: translate(4%, 1%); } 83% { transform: translate(-3%, -2%); } 100% { transform: translate(0, 0); } }
-@media (prefers-reduced-motion: reduce) { #app.era .fog i, #app.era .grain { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #app.era .eraFog i, #app.era .eraGrain { animation: none; } }
 /* type */
 #app.era h1, #app.era h2, #app.era h3, #app.era .dtxt b, #app.era .who span, #app.era .relicFlash, #app.era .title > small { font-family: 'LM Cinzel', Georgia, serif; font-weight: 600; letter-spacing: .1em; }
 #app.era h1, #app.era h2 { text-shadow: 0 .08em .3em rgba(0, 0, 0, .8); }

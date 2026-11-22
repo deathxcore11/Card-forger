@@ -56,12 +56,14 @@ const { chromium } = require('playwright'); const fs = require('fs'); const path
   // out, before the last hit and the Life Points falling had been shown. Every outcome cue must come after the last frame.
   for (const fast of [false, true]) {
     await start({}, { 0: mon(ids.strong) }, [ids.weak], d => { d.lp[0] = 100; d.turn = Math.max(d.turn, 3); d.frozen = [0, 0]; d.noAttack = false; });
-    await page.evaluate(fast => { const L = window.LM; L.G.fast = fast; window.__cues = []; window.LMAudio = { cue: (n, d) => window.__cues.push({ n, playing: !!L.G.playing, left: L.G.frames.length, t: Math.round(performance.now()) }) }; }, fast);
+    await page.evaluate(fast => { const L = window.LM; L.G.fast = fast; window.__cues = []; window.LMAudio = { cue: (n, d) => window.__cues.push({ n, playing: !!L.G.playing, left: L.G.frames.length, t: Math.round(performance.now()), d: /^screen:/.test(n) ? d : undefined }) }; }, fast);
     for (let i = 0; i < 12; i++) { if (await page.evaluate(() => !window.LM.G.run || !window.LM.G.run.duel)) break; if (await page.locator('[data-a="respond:-1"]').count()) await tap('[data-a="respond:-1"]'); else await tap('[data-a="end"]'); for (let k = 0; k < 60 && await page.evaluate(() => window.LM.G.playing); k++) await page.waitForTimeout(120); }
     await page.waitForTimeout(300);
     const cues = await page.evaluate(() => window.__cues), outcome = cues.filter(c => /^run:(duelWon|duelLost|over)$|^story:|^unlock$|^codex:new$/.test(c.n)), lastFrame = cues.map(c => c.n).lastIndexOf('duel:frame'), lost = cues.findIndex(c => c.n === 'run:duelLost');
     check(`the duel was lost and its result cue was sent (${fast ? 'fast' : 'normal speed'})`, lost >= 0, cues.map(c => c.n).slice(-12));
     check(`every outcome cue comes after the last frame is shown (${fast ? 'fast' : 'normal speed'})`, lost > lastFrame && outcome.length > 0 && outcome.every(c => !c.playing && c.left === 0), outcome);
+    const scr = cues.filter(c => /^screen:/.test(c.n) && c.d && c.d.floor !== undefined).pop();
+    check(`a screen cue tells the sound the run's danger: Heat, Sparks of the most it can hold, and the fog from 0 to 1 (${fast ? 'fast' : 'normal speed'})`, !!scr && Number.isInteger(scr.d.heat) && Number.isInteger(scr.d.sparks) && scr.d.sparksMax >= scr.d.sparks && scr.d.fog >= 0 && scr.d.fog <= 1, scr);
     check(`the last hit is heard before the result (${fast ? 'fast' : 'normal speed'})`, (() => { const hit = cues.map(c => c.n).lastIndexOf('duel:lp'); return hit >= 0 && hit < lost; })(), cues.map(c => c.n).slice(-12));
   }
   check('no page errors', errors.length === 0, errors);

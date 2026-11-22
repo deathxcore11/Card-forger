@@ -22,7 +22,7 @@ const path = require('path');
   const click = async sel => { const l = page.locator(sel).first(); if (!(await l.count())) return false; await l.click({ timeout: 4000, force: true }); clicks++; return true; };
   const shot = async name => { if (shots && !seen.has(name)) { seen.add(name); await page.screenshot({ path: path.join(shots, name + '.png') }); } };
   const rects = () => page.evaluate(() => { const o = document.querySelector('#app').getBoundingClientRect(); return [...document.querySelectorAll('.hs,.slot,.tslot,.who,.board,.tray,.actions')].map(e => { const r = e.getBoundingClientRect(); return [r.left - o.left, r.top - o.top, r.width, r.height].map(x => Math.round(x)).join(','); }).join('|'); });
-  let base = null, lastPhase = '';
+  let base = null, lastPhase = '', lastSig = '', same = 0;
   const toasts = {}, layout = {}; let reloads = 0;
   // Layout faults on the screen as it stands: controls out of view or covered, and cut-off text.
   const audit = async where => {
@@ -120,6 +120,9 @@ const path = require('path');
       if (st.playing) { await page.waitForTimeout(40); continue; }
       if (st.story) { await shot('story-' + st.story.replace(':', '-')); await click(step % 2 ? '[data-a="storyskip"]' : '[data-a="storynext"]'); continue; }
       const inDuel = st.phase === 'duel';
+      // Every turn of taps in a duel plays, attacks or ends the turn, so the run must change. Twelve turns that change nothing
+      // means the taps are not reaching the table (a layer over it took them: the Era look in a Fog duel, 22 November).
+      if (inDuel && st.active === 0 && !st.pending) { const sig = await page.evaluate(() => JSON.stringify(window.LM.G.run)); if (sig === lastSig) { if (++same === 12) errors.push('no progress: twelve turns of taps changed nothing in the duel'); } else { same = 0; lastSig = sig; } }
       if (inDuel) { const now = await rects(); if (lastPhase !== 'duel') { base = now; duels++; } else if (now !== base) { moved++; if (moved < 4) console.log('MOVED\n' + base + '\n' + now); base = now; } }
       lastPhase = st.phase;
       if (st.ov) { await shot(st.phase === 'over' ? 'duel-lost' : 'duel-end'); await click('[data-a="closeov"]'); continue; }
