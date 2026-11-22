@@ -254,10 +254,13 @@ export function fire(s, db, ev, seat, hook, ctx) {
 
 function hurt(s, ev, seat, n) {
   s.lp[seat] -= n; s.stats[1 - seat].damageDealt += n; ev.push({ e: 'lp', seat, d: -n, src: 'relic' });
+  // Achievement counters (duel.mjs, seats that track): Life Points lost, and a relic that ends the duel.
+  if (s.stats[seat].ach) s.stats[seat].ach.lpLost += n;
   if (s.lp[seat] <= 0 && s.winner === null) {
     const st = s.seat[seat];
     if (st.secondWind && !st.rs.secondWind) { st.rs.secondWind = 1; s.lp[seat] = 1000; ev.push({ e: 'relic', seat, id: 'second_wind' }); return; }
     s.lp[seat] = 0; s.winner = 1 - seat; s.reason = 'lp'; s.pending = null; ev.push({ e: 'end', winner: s.winner, reason: 'lp' });
+    if (s.stats[1 - seat].ach) s.stats[1 - seat].ach.relicFinish = 1;
   }
 }
 

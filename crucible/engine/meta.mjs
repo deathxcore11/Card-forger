@@ -124,6 +124,15 @@ export function applyRun(p, run, { long = false } = {}) {
   }
   // the first secret: what the run found is kept whether it was won or lost
   if (run.secret) { if (run.secret.near) p.loneNear = 1; if (run.secret.met) p.loneMet = 1; if (run.secret.won) p.lastOne = (p.lastOne || 0) + 1; }
+  // Counts the achievements read (engine/achievements.mjs), kept whether the run was won or lost. Only a run begun with
+  // track carries run.ach; an older profile without these fields reads them as zero. descents: runs that fought at
+  // least one duel. forged: Masterworks forged. beaten: the floor guardians ever beaten (the page also adds to it mid-run).
+  if (run.ach) {
+    if (run.stats.duels >= 1) p.descents = (p.descents || 0) + 1;
+    p.forged = (p.forged || 0) + run.masterworks.length;
+    const beaten = (p.beaten || []).slice(); for (const id of run.ach.beaten) if (!beaten.includes(id)) beaten.push(id);
+    p.beaten = beaten;
+  }
   for (const id of Object.keys(FORGER_FEATS)) if (!p.forgers.includes(id) && FORGER_FEATS[id].test(p)) { p.forgers.push(id); unlocks.push({ kind: 'forger', id, name: FORGERS[id].name, text: FORGERS[id].tag + '. ' + FORGERS[id].powerText }); }
   return { ...r, unlocks, feats };
 }
