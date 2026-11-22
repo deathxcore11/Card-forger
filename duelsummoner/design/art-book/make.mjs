@@ -47,7 +47,7 @@ const meshySteps = (a, tris, pic, glb, textPrompt) => ({ text: [
   `2. Upload the picture you just made (${pic}).`,
   `3. Settings: polygons about ${tris.toLocaleString('en')} (pick the lowest setting at or above that; I trim the rest), topology "Triangle", symmetry ${symOf(a)}${a.view === 'biped' ? ', pose "A-pose"' : ''}.`,
   `4. Generate. Pick the result that matches the picture best from every side. Check the back: no holes, no extra limbs, no melted face.`,
-  `5. Download as GLB twice: once WITH texture, once WITHOUT (plain). Save them as ${glb} and ${glb.replace('.glb', '-plain.glb')}.`,
+  `5. Download as GLB. Name it ${glb.replace('.glb', '')} (Meshy adds .glb itself). The plain, untextured copy is not needed any more.`,
 ].join('\n'), alt: textPrompt });
 const RIG_CLIPS = { person: 'Idle, Walking, Running', enemy: 'Idle, Walking (zombie or slow), Running', boss: 'Idle, Walking (heavy)' };
 const rigSteps = (a, glb) => [
@@ -55,7 +55,7 @@ const rigSteps = (a, glb) => [
   `2. Choose the humanoid (two-legged) rig. Set the height to about ${a.h} m.`,
   `3. Place the markers it asks for (chin, shoulders, elbows, wrists, hips, knees, ankles) on the model and confirm.`,
   `4. From the FREE animation library add only these clips: ${RIG_CLIPS[a.style] || RIG_CLIPS.person}. If a name is missing, pick the closest one. Do not spend credits on Text to Motion: I make every other move in code.`,
-  `5. Download as GLB "with animations" and save it as ${glb.replace('.glb', '-anim.glb')}.`,
+  `5. Download as GLB "with animations". Name it ${glb.replace('.glb', '-anim')} (Meshy adds .glb itself).`,
   ``,
   `That is all you do. I retime the clips, blend them, and make every other move in code for free: ${a.anim}.`,
 ].join('\n');
@@ -64,7 +64,7 @@ const creatureRigSteps = (a, glb) => [
   `2. Let Meshy place the skeleton. If it asks for a type, pick the closest: four-legged, winged, or two-legged.`,
   `3. Look at the skeleton lines: they should run down the spine and tail to the tip, out along each wing to the tip, down each leg, and into the head. If a wing or the tail has no bones, try the rig once more.`,
   `4. Do NOT add any animation clips and do not use Text to Motion. No credits needed for movement.`,
-  `5. Download as GLB and save it as ${glb.replace('.glb', '-rig.glb')}.`,
+  `5. Download as GLB. Name it ${glb.replace('.glb', '-rig')} (Meshy adds .glb itself).`,
   ``,
   `That is all you do. One model with a skeleton replaces all the separate wing, tail and jaw models. I make every move in code for free: ${a.anim || 'idle, walk or fly, attack, hurt, defeat'}.`,
 ].join('\n');
@@ -95,6 +95,7 @@ function stepsFor(a) {
   const add = (key, title, tool, body, save, o = {}) => S.push(typeof body === 'string' ? { key, title, tool, text: body, save, ...o } : { key, title, tool, ...body, save, ...o });
   if (a.how === 'model') {
     const variants = [];
+    const living = ['creature', 'enemy', 'boss'].includes(a.style) && !(a.rig && a.rig.startsWith('meshy')) && a.rig !== 'vat';
     if (a.forms && a.forms.length) a.forms.forEach(([subj, tris], i) => variants.push({ sfx: `-f${i + 1}`, label: `Form ${i + 1} of 3`, subj: `${a.name}, form ${i + 1} of 3 (${['baby', 'young', 'grown'][i]}): ${subj}.`, short: subj, tris, h: [0.9, 1.8, 3.6][i] }));
     else if (a.formsAuto) [['young, smaller and softer, with rounder shapes, shorter horns, crests and wings, and a weaker glow', 0.7, 0.8], ['adult, exactly as described', 1, 1], ['fully grown and crowned: bigger and heavier, with extra armour plates, longer horns and crests, and a much stronger glow', 1.25, 1.2]].forEach(([m, k, hk], i) => variants.push({ sfx: `-f${i + 1}`, label: `Form ${i + 1} of 3`, subj: `${a.name}, form ${i + 1} of 3 (${m}): ${a.subj}`, short: a.subj, tris: Math.round(a.tris * k / 50) * 50, h: +(a.h * hk).toFixed(1) }));
     else if (a.subj) variants.push({ sfx: '', label: '', subj: a.subj, short: a.subj, tris: a.tris || 300, h: a.h });
@@ -102,17 +103,17 @@ function stepsFor(a) {
       const pic = `${a.file}${v.sfx}.png`, glb = `${a.file}${v.sfx}.glb`, L = v.label ? v.label + ': ' : '';
       add(pic, L + 'make the picture', 'ChatGPT', conceptPrompt(a, v.subj, { h: v.h, sub: v.label }), ROOT + '2d\\concepts\\' + pic, { copy: true });
       add(glb, L + 'turn the picture into a 3D model', 'Meshy', meshySteps(a, v.tris, pic, glb, meshyText(a, v.short)), ROOT + '3d\\' + glb);
+      if (living) add(glb.replace('.glb', '-rig.glb'), L + 'give it a skeleton', 'Meshy', creatureRigSteps(a, glb), ROOT + '3d\\' + glb.replace('.glb', '-rig.glb'));
     }
     (a.outfits || []).forEach(([nm, subj], i) => {
       const pic = `${a.file}-outfit${i + 1}.png`, glb = `${a.file}-outfit${i + 1}.glb`;
       add(pic, `Outfit ${i + 1} "${nm}": make the picture`, 'ChatGPT', conceptPrompt(a, `${subj}. Same face, hair, body and proportions as the base duelist, who is: ${a.subj}`, { sub: 'outfit: ' + nm }), ROOT + '2d\\concepts\\' + pic, { copy: true });
       add(glb, `Outfit ${i + 1} "${nm}": turn it into a 3D model`, 'Meshy', meshySteps(a, a.tris, pic, glb, meshyText(a, subj)), ROOT + '3d\\' + glb);
+      if (a.rig && a.rig.startsWith('meshy')) add(glb.replace('.glb', '-rig.glb'), `Outfit ${i + 1} "${nm}": give it a skeleton`, 'Meshy', [`1. In Meshy, open the outfit model (${glb.replace('.glb', '')}) and choose "Rig".`, `2. Choose the two-legged rig and drop the markers, the same way as the base model.`, `3. Add NO clips. This outfit borrows every move from the base model's skeleton.`, `4. Download as GLB. Name it ${glb.replace('.glb', '-rig')} (Meshy adds .glb itself).`].join('\n'), ROOT + '3d\\' + glb.replace('.glb', '-rig.glb'));
     });
     const raw = typeof a.parts === 'string' ? a.parts.split(/,\s*/) : Array.isArray(a.parts) ? a.parts : [];
     const parts = raw.filter(p => !/in code|if possible/.test(p)).map(p => p.replace(/\(.*\)/, '').trim()).filter(p => p && p !== 'body' && p !== 'frame' && p !== 'stand');
-    const living = ['creature', 'enemy', 'boss'].includes(a.style) && !(a.rig && a.rig.startsWith('meshy')) && a.rig !== 'vat';
-    if (living) { for (const v of variants) { const glb = `${a.file}${v.sfx}.glb`; add(glb.replace('.glb', '-rig.glb'), (v.label ? v.label + ': ' : '') + 'give it a skeleton', 'Meshy', creatureRigSteps(a, glb), ROOT + '3d\\' + glb.replace('.glb', '-rig.glb')); } }
-    else if ((a.subj || (a.forms && a.forms.length)) && parts.length) {
+    if (!living && (a.subj || (a.forms && a.forms.length)) && parts.length) {
       const base = a.forms && a.forms.length ? `${a.forms[a.forms.length - 1][0]} (the grown form)` : a.subj;
       for (const p of parts) {
         const f = `${a.file}-part-${p.replace(/\s+/g, '-')}`;
