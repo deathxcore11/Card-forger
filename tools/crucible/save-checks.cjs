@@ -366,7 +366,9 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
   { await open(null);
     const cfg = () => page.evaluate(() => ({ s: window.LM.db.config.secretLast, w: window.LM.db.config.loneWatch }));
     await tap('[data-a="new"]');
-    check('with the switch off the fifth Forger slot is locked and says it is not in this build', /Not in this build yet/.test(await text('.ch.locked:has-text("The Last One")')), await text('.ch.locked:has-text("The Last One")'));
+    // Until 22 November the locked slot read "Not in this build yet", which looked like a test build; with the switch off
+    // there is no fifth slot at all, so nothing on the page hints at a Forger that cannot be reached.
+    check('with the switch off there is no fifth Forger slot and no words about a build', !(await has('.ch:has-text("The Last One")')) && !/this build/i.test(await text('.forgers, #app')), await text('.ch.locked'));
     await open(null); await tap('[data-a="lab:secret"]'); let c = await cfg();
     check('the Rumours switch is on the home screen and turns the secret and its watch on', (await has('[data-a="lab:secret"].on')) && c.s === 1 && c.w === 1, c);
     await tap('[data-a="new"]');
@@ -425,11 +427,15 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
   // Era look (Lab switch "era", 21 November 2026, display only): the studio direction drawn over every screen. Its fog,
   // grain and vignette sit under the page's own elements, so they can never take a tap or cover a number.
   { const duel = read(pickFile(/^duel-regular-f1-h0/)); await open(duel);
-    const fx0 = () => page.evaluate(() => [...document.querySelectorAll('#app button')].filter(b => { const r = b.getBoundingClientRect(); if (r.width < 5 || r.height < 5) return false; const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e && (e === b || b.contains(e)); }).length);
+    // Lab switches are left out of the count: with the look on they fold behind one "Lab switches" button (22 November).
+    const fx0 = () => page.evaluate(() => [...document.querySelectorAll('#app button')].filter(b => { const r = b.getBoundingClientRect(); if (r.width < 5 || r.height < 5 || /^lab/.test(b.dataset.a || '')) return false; const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e && (e === b || b.contains(e)); }).length);
     const offReach = await fx0();
-    await tap('[data-a="lab:era"]'); check('the Era look switch is on the home screen and turns on', (await has('[data-a="lab:era"].on')) && (await ls(K.labs)).era === true && (await page.evaluate(() => document.querySelector('#app').classList.contains('era'))));
+    await tap('[data-a="lab:era"]'); check('the Era look switch is on the home screen and turns on', (await ls(K.labs)).era === true && (await page.evaluate(() => document.querySelector('#app').classList.contains('era'))));
+    check('with the look on the home screen is a title screen: the switches fold away, no test-build words', !(await has('.labs')) && !/test build|not final art/i.test(await text('#app')) && (await has('[data-a="labsopen"]')), await text('.home, #app'));
+    await tap('[data-a="labsopen"]'); check('one "Lab switches" button opens them, and the Era switch shows on', (await has('.labs')) && (await has('[data-a="lab:era"].on')));
+    await tap('[data-a="labsopen"]'); check('and folds them away again', !(await has('.labs')));
     const fx = () => page.evaluate(() => { const app = document.querySelector('#app'), z = s => { const e = document.querySelector(s); return e ? +getComputedStyle(e).zIndex : null; };
-      const btns = [...document.querySelectorAll('#app button')].filter(b => { const r = b.getBoundingClientRect(); return r.width > 4 && r.height > 4 && getComputedStyle(b).visibility !== 'hidden'; });
+      const btns = [...document.querySelectorAll('#app button')].filter(b => { const r = b.getBoundingClientRect(); return r.width > 4 && r.height > 4 && getComputedStyle(b).visibility !== 'hidden' && !/^lab/.test(b.dataset.a || ''); });
       const hit = btns.filter(b => { const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e && (e === b || b.contains(e) || e.closest('.modal, .story, .savebar')); }).length;
       return { layers: ['.eraBg', '.eraFog', '.eraGrain'].map(z), buttons: btns.length, reached: hit, fonts: ['LM Cinzel', 'LM Spectral', 'LM Barlow'].map(f => document.fonts.check('16px "' + f + '"')) }; });
     let f = await fx(); check('on the home screen the fog, grain and vignette lie under everything and every button a tap reaches without it still takes one', f.layers.every(z => z < 0) && f.buttons > 5 && f.reached === offReach, { ...f, offReach });
@@ -448,6 +454,34 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     await pg.goto(url); await pg.evaluate(([o, K]) => { localStorage.clear(); const l = { ...o.labs, era: true }; localStorage.setItem(K.profile, JSON.stringify(o.profile)); localStorage.setItem(K.labs, JSON.stringify(l)); }, [duel, K]); await pg.reload(); await pg.waitForTimeout(350);
     const still = await pg.evaluate(() => ['.eraFog i', '.eraGrain'].map(s => { const e = document.querySelector(s); return e ? getComputedStyle(e).animationName : 'missing'; }));
     check('a device set to less motion gets still fog and still grain', still.every(n => n === 'none'), still); await rm.close(); }
+
+  // Placeholder pass (Randall, 22 November: "this is going into the app when it looks real and not placeholder"). With the
+  // Era look on, no screen a player reaches says test build, lab note or not final art, a locked Forger is a shadow of its
+  // portrait, a guardian's reward line is a caption and not an empty paper slip, and a monster on offer says what it is and
+  // whether it fuses with the deck, naming the partner only once that pair is in the Codex.
+  { const era = f => { const s = read(pickFile(f)); s.labs.era = true; return s; };
+    await open(era(/^kit/)); await resume();
+    check('Era look, starter kits: no lab note and no test words', (await has('.kit')) && !/lab note|test cpu|test build/i.test(await text('.kits')), await text('.kits'));
+    const fg = read(pickFile(/^chamber-f1/)); fg.labs.era = true; fg.run = null; fg.profile.forgers = ['tarn']; await open(fg); await tap('[data-a="new"]');
+    const locked = await page.evaluate(() => [...document.querySelectorAll('.ch.locked')].map(c => c.querySelector('img') ? (c.querySelector('img.shade') ? 'shadow' : 'full') : c.querySelector('.q') ? 'mark' : 'none'));
+    check('Era look, choosing a Forger: a locked Forger is a shadow of its portrait or a mark, never the full picture, and no build words', locked.length >= 3 && locked.includes('shadow') && locked.every(x => x === 'shadow' || x === 'mark') && !/this build/i.test(await text('.chars')), locked);
+    await open(era(/^reward-guardian/)); await resume();
+    const caps = await page.evaluate(() => [...document.querySelectorAll('#app.era .pick > .cap')].map(e => { const cs = getComputedStyle(e); return { bg: cs.backgroundImage === 'none' && /rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor), text: e.innerText.trim().length > 3, centre: cs.textAlign === 'center' }; }));
+    check('Era look, guardian reward: each choice has a caption, set in the open and not on an empty paper slip', caps.length >= 2 && caps.every(c => c.bg && c.text && c.centre), caps);
+    await open(era(/^reward-sanctum/)); await resume();
+    check('Era look, Sanctum: the room says what it is', /quiet room/i.test(await text('#app')), await text('.panel'));
+    const base = era(/^reward-card/); await open(base); await resume();
+    const slips = await page.evaluate(() => { const db = window.LM.db, o = window.LM.G.run.offer.options; return [...document.querySelectorAll('.pick')].map((p, i) => { const id = o[i] && o[i].id, d = p.querySelector(':scope > div:not(.c)'); return { mon: db.isMonster(id), first: d ? d.innerText.split('\n')[0].trim() : '', type: db.isMonster(id) ? db.byId.get(id).type : null }; }); });
+    check('Era look, card pick: every monster on offer names its Type first', slips.length === 3 && slips.every(x => !x.mon || x.first === x.type), slips);
+    const pair = await page.evaluate(() => { const db = window.LM.db; for (const k of db.recipes.keys()) { const m = String(k).split('+').map(Number); if (m.length !== 2 || m[0] === m[1] || db.ordered.has(m[0] + '>' + m[1]) || db.ordered.has(m[1] + '>' + m[0])) continue; if (db.isMonster(m[0]) && db.isMonster(m[1])) return { a: m[0], b: m[1], key: k, name: db.byId.get(m[1]).name }; } return null; });
+    if (!pair) check('a printed fusion pair to try the card pick on', false);
+    else {
+      const withPair = codex => { const s = JSON.parse(JSON.stringify(base)); s.run.offer.options[0] = { id: pair.a }; s.run.deck = s.run.deck.filter(e => e.id !== pair.a && e.id !== pair.b); s.run.deck[0] = { ...s.run.deck[0], id: pair.b }; s.profile.codex = codex; return s; };
+      await open(withPair([])); await resume(); let t = await text('.pick');
+      check('a monster that fuses with one in the deck says so, but names no partner while the pair is not in the Codex', /A monster in your deck makes a printed fusion with it/.test(t) && !t.includes(pair.name), { t, pair });
+      await open(withPair([pair.key])); await resume(); t = await text('.pick');
+      check('once the pair is in the Codex it names the partner', t.includes('Printed fusion with ' + pair.name), { t, pair });
+    } }
 
   // A duel's twist is a class on the table (fog, narrow, storm, locked). The Era layers first took the name "fog", so in a Fog
   // duel the whole table went under the page and no card or zone took a tap (found by the click bot on 22 November, before any

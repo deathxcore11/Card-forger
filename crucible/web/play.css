@@ -125,7 +125,7 @@ table { font-size: 1.2em; margin: .5em auto; border-collapse: collapse; } td { p
 .ch { padding: .9em; display: flex; flex-direction: column; gap: .45em; cursor: pointer; } .ch img, .ch .q { width: 100%; aspect-ratio: 1; border-radius: .6em; object-fit: cover; border: 1px solid var(--line); }
 .ch .q { display: flex; align-items: center; justify-content: center; font-size: 5em; color: var(--dim); background: rgba(0, 0, 0, .5); font-family: 'Cinzel', Georgia, serif; }
 .ch b { font-family: 'Cinzel', Georgia, serif; color: var(--gold); font-size: 1.3em; } .ch span { font-size: 1.02em; } .ch i { font-style: normal; color: #ffb37a; font-size: .85em; text-transform: uppercase; letter-spacing: .1em; }
-.ch.locked { opacity: .55; cursor: default; } .ch.on { border-color: var(--gold); box-shadow: 0 0 2em rgba(233, 196, 106, .45); }
+.ch.locked { opacity: .55; cursor: default; } .ch img.shade { filter: grayscale(1) brightness(.32) contrast(1.2); } /* a Forger not yet unlocked: its portrait in shadow */ .ch.on { border-color: var(--gold); box-shadow: 0 0 2em rgba(233, 196, 106, .45); }
 button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482a, #6d2413); border-color: #ffb37a; color: #fff; font-weight: 700; }
 .frule { border-top: 1px solid var(--line); padding-top: .4em; margin-top: auto; color: var(--dim); } .rules .frule { font-size: .95em; line-height: 1.3; } .rules .frule b { font-size: 1em; }
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6em; margin-top: .8em; } .box { padding: 1.3em 1.6em; }
@@ -385,6 +385,9 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
   box-shadow: inset 0 0 0 .2em rgba(20, 15, 9, .75), 0 1px 3px rgba(0, 0, 0, .6); }
 #app.era .ri.gem::after { content: attr(data-l); position: absolute; inset: 0; display: grid; place-items: center; font: 600 1.7em/1 'LM Cinzel', 'Cinzel', serif;
   color: rgba(214, 184, 120, .5); text-shadow: 0 -1px 0 rgba(0, 0, 0, .75), 0 1px 0 rgba(255, 230, 180, .1); }
+/* the title screen: a tagline in the book face, the lab switches behind one button */
+#app.era .hall.home .title > p { font-family: 'LM Spectral', Georgia, serif; font-style: italic; color: var(--dim); letter-spacing: .02em; }
+#app.era [data-a="labsopen"].on { border-color: var(--gold); color: var(--gold); }
 /* the door choice: fog by how much is known, paper labels, a carved plaque for the guardian */
 #app.era .door { position: relative; }
 #app.era .door .dtxt { position: relative; z-index: 1; background: var(--paper); color: var(--pink); border: 0; border-radius: .15em; box-shadow: 0 .45em 1.1em rgba(0, 0, 0, .6), inset 0 0 1.4em rgba(120, 96, 60, .25); }
@@ -407,8 +410,9 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 #app.era .c img { filter: saturate(.9) contrast(1.03); }
 /* picks: relics and cards laid on dark cloth, their words on paper slips */
 #app.era .picks { background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(70, 22, 18, .32), transparent 75%); border-radius: .4em; }
-#app.era .pick .relic > div, #app.era .pick > div:not(.c):not(.relic) { background: var(--paper); color: var(--pink); padding: .45em .8em; border-radius: .14em; box-shadow: 0 .25em .6em rgba(0, 0, 0, .55); }
-#app.era .pick .relic > div b, #app.era .pick > div:not(.c):not(.relic) b { color: #4a2a14; } #app.era .pick small { color: #6d5a43; }
+#app.era .pick .relic > div, #app.era .pick > div:not(.c):not(.relic):not(.col):not(.cap) { background: var(--paper); color: var(--pink); padding: .45em .8em; border-radius: .14em; box-shadow: 0 .25em .6em rgba(0, 0, 0, .55); }
+#app.era .pick .relic > div b, #app.era .pick > div:not(.c):not(.relic):not(.col):not(.cap) b { color: #4a2a14; }
+#app.era .pick > .cap { background: none; box-shadow: none; text-align: center; } #app.era .pick > .cap b { font-family: 'LM Cinzel', 'Cinzel', serif; font-weight: 600; letter-spacing: .06em; color: var(--gold); font-size: .95em; } #app.era .pick small { color: #6d5a43; }
 #app.era .pick em.fits, #app.era .pick .fits { color: #8b3c24; }
 #app.era .pick.fresh { border-color: var(--ember); box-shadow: 0 0 1.2em rgba(217, 132, 63, .35); }
 /* story scenes: letterbox, the portrait half in shadow, white subtitles without a box */
