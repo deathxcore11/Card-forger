@@ -42,13 +42,13 @@ const meshyText = (a, subject) => {
   return clip(`${lead}: ${(a.meshy || subject).replace(/\.?$/, '.')} Flat-shaded faces, hand-painted pixel-art texture, bright clean colours, no tiny details.`, 590);
 };
 const symOf = a => /tree|rock|rubble|cliff|bones|dune|crystal|web|stalactite|reeds|basalt|treasure/i.test(a.file) ? 'OFF (it is lopsided on purpose)' : 'ON';
-const meshySteps = (a, tris, pic, glb, textPrompt) => ({ text: [
+const meshySteps = (a, tris, pic, glb, textPrompt, plain = true) => ({ text: [
   `1. Open Meshy and choose "Image to 3D".`,
   `2. Upload the picture you just made (${pic}).`,
   `3. Settings: polygons about ${tris.toLocaleString('en')} (pick the lowest setting at or above that; I trim the rest), topology "Triangle", symmetry ${symOf(a)}${a.view === 'biped' ? ', pose "A-pose"' : ''}.`,
   `4. Generate. Pick the result that matches the picture best from every side. Check the back: no holes, no extra limbs, no melted face.`,
-  `5. Download as GLB. Name it ${glb.replace('.glb', '')} (Meshy adds .glb itself). The plain, untextured copy is not needed any more.`,
-].join('\n'), alt: textPrompt });
+  plain ? `5. Download as GLB twice. First WITH texture: name it ${glb.replace('.glb', '')}. Then WITHOUT texture (plain): name it ${glb.replace('.glb', '-plain')}. Meshy adds .glb itself.` : `5. Download as GLB WITH texture. Name it ${glb.replace('.glb', '')} (Meshy adds .glb itself). No plain copy is needed for this one, because the skeleton copy comes next.`,
+].join('\n'), alt: textPrompt, names: plain ? [glb.replace('.glb', ''), glb.replace('.glb', '-plain')] : undefined });
 const RIG_CLIPS = { person: 'Idle, Walking, Running', enemy: 'Idle, Walking (zombie or slow), Running', boss: 'Idle, Walking (heavy)' };
 const rigSteps = (a, glb) => [
   `1. In Meshy, open the model you just made and choose "Rig" (or "Animate").`,
@@ -102,13 +102,13 @@ function stepsFor(a) {
     for (const v of variants) {
       const pic = `${a.file}${v.sfx}.png`, glb = `${a.file}${v.sfx}.glb`, L = v.label ? v.label + ': ' : '';
       add(pic, L + 'make the picture', 'ChatGPT', conceptPrompt(a, v.subj, { h: v.h, sub: v.label }), ROOT + '2d\\concepts\\' + pic, { copy: true });
-      add(glb, L + 'turn the picture into a 3D model', 'Meshy', meshySteps(a, v.tris, pic, glb, meshyText(a, v.short)), ROOT + '3d\\' + glb);
+      add(glb, L + 'turn the picture into a 3D model', 'Meshy', meshySteps(a, v.tris, pic, glb, meshyText(a, v.short), !(living || (a.rig && a.rig.startsWith('meshy')))), ROOT + '3d\\' + glb);
       if (living) add(glb.replace('.glb', '-rig.glb'), L + 'give it a skeleton', 'Meshy', creatureRigSteps(a, glb), ROOT + '3d\\' + glb.replace('.glb', '-rig.glb'));
     }
     (a.outfits || []).forEach(([nm, subj], i) => {
       const pic = `${a.file}-outfit${i + 1}.png`, glb = `${a.file}-outfit${i + 1}.glb`;
       add(pic, `Outfit ${i + 1} "${nm}": make the picture`, 'ChatGPT', conceptPrompt(a, `${subj}. Same face, hair, body and proportions as the base duelist, who is: ${a.subj}`, { sub: 'outfit: ' + nm }), ROOT + '2d\\concepts\\' + pic, { copy: true });
-      add(glb, `Outfit ${i + 1} "${nm}": turn it into a 3D model`, 'Meshy', meshySteps(a, a.tris, pic, glb, meshyText(a, subj)), ROOT + '3d\\' + glb);
+      add(glb, `Outfit ${i + 1} "${nm}": turn it into a 3D model`, 'Meshy', meshySteps(a, a.tris, pic, glb, meshyText(a, subj), !(a.rig && a.rig.startsWith('meshy'))), ROOT + '3d\\' + glb);
       if (a.rig && a.rig.startsWith('meshy')) add(glb.replace('.glb', '-rig.glb'), `Outfit ${i + 1} "${nm}": give it a skeleton`, 'Meshy', [`1. In Meshy, open the outfit model (${glb.replace('.glb', '')}) and choose "Rig".`, `2. Choose the two-legged rig and drop the markers, the same way as the base model.`, `3. Add NO clips. This outfit borrows every move from the base model's skeleton.`, `4. Download as GLB. Name it ${glb.replace('.glb', '-rig')} (Meshy adds .glb itself).`].join('\n'), ROOT + '3d\\' + glb.replace('.glb', '-rig.glb'));
     });
     const raw = typeof a.parts === 'string' ? a.parts.split(/,\s*/) : Array.isArray(a.parts) ? a.parts : [];
