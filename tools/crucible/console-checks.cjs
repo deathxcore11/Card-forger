@@ -1,5 +1,6 @@
 // Checks the console look of the Lost Memories test page against its own rules, on many screen shapes.
 //   node tools/crucible/console-checks.cjs <page url> <saves dir> [steps]
+//   CC_ONLY=title checks only the title screen, every shape, no random taps (a quick look after a title change).
 // The page must be served over http (a page opened from the disk may not read its own pictures).
 // For every screen shape and every scene (the title, chambers, duels, every window that opens over them) it checks:
 //   frame   the frame is 512 x 240 to 640 x 480 whole pixels, each a whole number of device pixels, and fills the
@@ -10,7 +11,13 @@
 //   fit     no text cut off by its box (the text bar may be, when it shows its more marker), nothing outside the frame,
 //           nothing written in a pillar crossing out of it, no two plaques on top of each other;
 //   reach   every control that is not switched off can be tapped where it stands (nothing lies over its middle);
+//   placed  every moving part drawn over a picture (data-art) sits on the point of the picture it was measured from,
+//           through the picture's own place and size as the page laid it out; a torch flame also stands on the bright
+//           core of the painted flame, found again in the picture's own pixels;
 //   errors  no page error.
+// Some shapes are checked inside a page that styles pictures the way a host page may (img { max-width: 100%;
+// height: auto } and the like), and at the end a few scenes are pictured with and without those styles, with every
+// animation stopped at its start: the two pictures must be the same to the pixel.
 // Then it taps about the page at random from each scene for [steps] taps (default 40), checking errors and the
 // rules again on every console screen it reaches.
 const { chromium } = require('playwright');
@@ -21,7 +28,15 @@ const SHAPES = [
   ['phone held sideways', 915, 412, 2.625, 1], ['phone held upright', 412, 915, 2.625, 1], ['fold, inner screen', 673, 841, 2.625, 1],
   ['wide desktop', 1024, 480, 1], ['fold, cover screen sideways', 882, 344, 2.625], ['16:9 screen', 1920, 1080, 1],
   ['tablet', 1024, 768, 2], ['small window', 800, 360, 1],
+  ['phone held sideways, in a host page', 915, 412, 2.625, 0, 1], ['16:9 screen, in a host page', 1280, 720, 1, 0, 1], ['upright window, in a host page', 640, 900, 1, 0, 1],
 ];
+// styles a page that holds the game may set on everything in it (a common reset)
+const HOST_CSS = `*,::before,::after{box-sizing:border-box;border:0 solid #e5e7eb}html{line-height:1.5;-webkit-text-size-adjust:100%}body{margin:0;line-height:inherit}
+img,svg,video,canvas,audio,iframe,embed,object{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}
+button,input,select,textarea{font-family:inherit;font-size:100%;font-weight:inherit;line-height:inherit;color:inherit;margin:0;padding:0}
+button{background-color:transparent;background-image:none;cursor:pointer}h1,h2,h3,h4,p,figure,blockquote{margin:0}ol,ul{list-style:none;margin:0;padding:0}`;
+const hostScript = css => { const add = () => { const st = document.createElement('style'); st.textContent = css; (document.head || document.documentElement).prepend(st); }; if (document.documentElement) add(); else document.addEventListener('DOMContentLoaded', add); };
+const SAME = ['', 'chamber-f1.json', 'duel-regular-f1-h0.json', 'anvil-f1.json', 'reward-card-f1.json'];
 const SHORT = [null, 'chamber-f1.json', 'duel-regular-f1-h0.json', 'reward-card-f1.json', 'reward-gift-f1.json', 'anvil-f1.json', 'bazaar-f2.json', 'kit-f1.json'];
 const SCREENS = ['screen:codex', 'screen:feats', 'screen:vault', 'new'];
 const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics', 'tab:doors', 'tab:duel', 'barmore'];
@@ -29,7 +44,7 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
 (async () => {
   const [url, savesDir, stepsArg] = process.argv.slice(2);
   if (!url || !savesDir) { console.log('usage: console-checks.cjs <page url> <saves dir> [steps]'); process.exit(2); }
-  const steps = +(stepsArg || 40);
+  const only = process.env.CC_ONLY === 'title', steps = only ? 0 : +(stepsArg || 40);
   const saves = fs.readdirSync(savesDir).filter(f => /^(chamber|duel|reward|anvil|bazaar|kit|charm)-/.test(f)).sort();
   const pick = [null, ...saves.filter(f => /^chamber-f\d\.json$|^chamber-boss-door-f[13]-h(0|10)\.json$/.test(f)),
     ...saves.filter(f => /^duel-(regular|boss|cursed)-f[123]-h0\.json$|trap-prompt-h5|narrow|fog|lesson/.test(f)).slice(0, 10),
@@ -38,8 +53,9 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
   const fails = []; let scenes = 0, taps = 0, screens = 0;
   const fail = (where, what) => { fails.push(`${where}: ${what}`); if (fails.length < 60) console.log('FAIL', where, what); };
 
-  for (const [shape, W, H, dpr, full] of SHAPES) {
+  for (const [shape, W, H, dpr, full, host] of SHAPES) {
     const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr });
+    if (host) await ctx.addInitScript(hostScript, HOST_CSS);
     const page = await ctx.newPage();
     let errors = [];
     page.on('pageerror', e => errors.push(e.message));
@@ -57,7 +73,7 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
       if (save) { await page.locator('[data-a="resume"]').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(700); }
     };
     const audit = async where => {
-      const r = await page.evaluate(() => {
+      const r = await page.evaluate(async () => {
         const app = document.getElementById('app'), out = [];
         if (!app.classList.contains('ps')) return { ps: false, out };
         const dpr = devicePixelRatio, cs = getComputedStyle(app), W = parseFloat(cs.width), H = parseFloat(cs.height);
@@ -121,6 +137,28 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
           const hit = document.elementFromPoint(x, y);
           if (!hit || !(hit === e || e.contains(hit) || hit.closest('[data-a]') === e)) out.push(`${name(e)}: covered by ${hit ? name(hit) : 'nothing'}`);
         }
+        // placed: the moving parts over a picture, against the picture as laid out (layout places: no animation moves them)
+        for (const e of app.querySelectorAll('[data-art]')) {
+          const pic = app.querySelector(`img[data-pic="${e.dataset.art}"]`); if (!pic) { out.push(`${name(e)}: its picture ${e.dataset.art} is missing`); continue; }
+          if (!pic.complete || !pic.naturalWidth) continue;
+          if (e.offsetParent !== pic.offsetParent) { out.push(`${name(e)}: not laid out beside its picture`); continue; }
+          const [ax, ay] = e.dataset.at.split(',').map(Number), [px, py] = e.dataset.pin.split(',').map(Number);
+          const sx = pic.offsetWidth / pic.naturalWidth, sy = pic.offsetHeight / pic.naturalHeight;
+          const dx = e.offsetLeft + px - (pic.offsetLeft + ax * sx), dy = e.offsetTop + py - (pic.offsetTop + ay * sy);
+          if (Math.abs(dx) > .5 || Math.abs(dy) > .5) out.push(`${name(e)}: ${dx.toFixed(1)}, ${dy.toFixed(1)} frame pixels off its place in the picture (picture drawn ${pic.offsetWidth} x ${pic.offsetHeight} from ${pic.naturalWidth} x ${pic.naturalHeight})`);
+          if (e.classList.contains('flm')) {
+            // a torch is a patch of the picture: its first frame must be the picture under it, nearly pixel for pixel
+            // (a frame differs only where the flame moves; one pixel off and the dither no longer lines up)
+            const w = e.offsetWidth, h = e.offsetHeight, n = +e.dataset.frames, url = (e.style.backgroundImage.match(/url\("?([^")]+)"?\)/) || [])[1];
+            const strip = new Image(); strip.src = url; try { await strip.decode(); } catch { out.push(`${name(e)}: its frames do not load`); continue; }
+            if (strip.naturalWidth !== w * n || strip.naturalHeight !== h) out.push(`${name(e)}: frames ${strip.naturalWidth} x ${strip.naturalHeight}, not ${n} of ${w} x ${h}`);
+            const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+            g.drawImage(pic, -ax, -ay); const under = g.getImageData(0, 0, w, h).data; g.clearRect(0, 0, w, h); g.drawImage(strip, 0, 0); const f0 = g.getImageData(0, 0, w, h).data;
+            let same = 0, edge = 0, edgeSame = 0;
+            for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4, eq = under[i] === f0[i] && under[i + 1] === f0[i + 1] && under[i + 2] === f0[i + 2]; same += eq; if (x === 0 || y === 0 || x === w - 1 || y === h - 1) { edge++; edgeSame += eq; } }
+            if (same / (w * h) < .6 || edgeSame / edge < .85) out.push(`${name(e)}: its first frame matches the picture under it at ${Math.round(same / (w * h) * 100)}% (edge ${Math.round(edgeSame / edge * 100)}%): not cut from this place`);
+          }
+        }
         // the card pictures: cut to console colour once the sheets are converted
         const unconverted = [...app.querySelectorAll('.cd .art, .big .art')].filter(e => e.style.backgroundImage && !/blob:/.test(e.style.backgroundImage)).length;
         if (unconverted) out.push(`${unconverted} card pictures still the full-colour sheet`);
@@ -130,7 +168,7 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
       for (const e of errors) fail(where, 'page error: ' + e); errors = [];
       return r;
     };
-    for (const save of full ? pick : SHORT.filter(x => !x || saves.includes(x))) {
+    for (const save of only ? [null] : full ? pick : SHORT.filter(x => !x || saves.includes(x))) {
       const base = `${shape} ${W}x${H}@${dpr} ${save || 'title'}`;
       await load(save); await page.waitForTimeout(500); scenes++;
       await audit(base);
@@ -167,6 +205,26 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
       }
     }
     await ctx.close();
+  }
+  // the same to the pixel with and without a host page's styles, every animation stopped at its start
+  for (const [W, H, dpr] of [[915, 412, 2.625], [1280, 720, 1], [412, 915, 2.625]]) {
+    const shots = [];
+    for (const host of [0, 1]) {
+      const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr });
+      if (host) await ctx.addInitScript(hostScript, HOST_CSS);
+      const page = await ctx.newPage(), got = [];
+      for (const save of only ? [''] : SAME) {
+        if (save && !saves.includes(save)) continue;
+        await page.goto(url);
+        await page.evaluate(o => { localStorage.clear(); sessionStorage.clear(); const labs = { five: true, lean: true, heat: true, kits: true, items: true }; if (o) { o.profile.runs = 7; localStorage.setItem('lostmemories.profile.v1', JSON.stringify(o.profile)); localStorage.setItem('lostmemories.run.v1', JSON.stringify(o.run)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(o.labs || labs)); } localStorage.setItem('lostmemories.labs.v5', JSON.stringify(o ? o.labs || labs : labs)); }, save ? JSON.parse(fs.readFileSync(path.join(savesDir, save), 'utf8')) : null);
+        await page.reload(); await page.waitForTimeout(600);
+        if (save) { await page.locator('[data-a="resume"]').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(900); }
+        await page.evaluate(() => { document.getAnimations().forEach(a => { a.pause(); a.currentTime = 0; }); for (const c of document.querySelectorAll('#coin')) c.style.visibility = 'hidden'; }); // the turning crest is drawn by the clock
+        got.push([save || 'title', await page.screenshot()]);
+      }
+      shots.push(got); await ctx.close();
+    }
+    for (let i = 0; i < shots[0].length; i++) if (!shots[1][i] || !shots[0][i][1].equals(shots[1][i][1])) fail(`${W}x${H}@${dpr} ${shots[0][i][0]}`, 'the screen differs inside a host page');
   }
   await browser.close();
   console.log(`${scenes} scenes on ${SHAPES.length} screen shapes, ${screens} console screens checked, ${taps} random taps`);

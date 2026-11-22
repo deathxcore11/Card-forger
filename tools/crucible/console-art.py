@@ -18,8 +18,9 @@ from PIL import Image
 BAYER = np.array([[-4, 0, -3, 1], [2, -2, 3, -1], [-3, 1, -4, 0], [3, -1, 2, -2]], dtype=np.float32)  # the console's own table
 
 
-def crunch(im, size, colors, amp=1.0, key=False, box=None):
-    """Resize, dither with the 4 x 4 table, cut to `colors` colours, snap to five bits a channel."""
+def crunch(im, size, colors, amp=1.0, key=False, box=None, info=None):
+    """Resize, dither with the 4 x 4 table, cut to `colors` colours, snap to five bits a channel.
+    info: a dict that is given the palette chosen."""
     im = im.convert('RGBA')
     if box:
         im = im.crop(box)
@@ -33,6 +34,8 @@ def crunch(im, size, colors, amp=1.0, key=False, box=None):
     pal_img = flat.quantize(colors=colors - (1 if key else 0), method=Image.FASTOCTREE, dither=Image.NONE)
     pal = np.array(pal_img.getpalette()[:3 * colors], dtype=np.float32).reshape(-1, 3)
     pal = np.unique((np.clip(pal, 0, 255).astype(np.uint8) & 0xF8), axis=0).astype(np.float32)
+    if info is not None:
+        info['pal'] = pal
     tile = np.tile(BAYER, (h // 4 + 1, w // 4 + 1))[:h, :w] * (8.0 * amp)
     d = np.clip(rgb + tile[..., None], 0, 255)
     # nearest palette colour for every pixel
@@ -86,6 +89,112 @@ def blank_coin(kind, s):
                         a[y, x] = (*((152, 80, 168) if (x + y) % 2 else (104, 48, 128)), 255)
     a[..., :3] &= 0xF8
     return Image.fromarray(a, 'RGBA')
+
+
+# The title's torches burn. Each painted flame is lifted off its wall (the wall behind it filled in from round it),
+# swayed through twelve frames, and laid back where it was; each frame is cut with the title's own colours and its
+# own place in the dither table, and only the pixels that ever differ from the still picture are kept, so a frame's
+# edge is the picture itself and no seam can show. The game steps through the frames at the place each patch was cut
+# from (index.json 'torches': x, y, w, h in the 720 x 480 cut, and the frame count).
+TORCH_FLAMES = [(298, 342, 392, 453), (994, 1040, 390, 453)]  # each painted flame in the painting: x0, x1, top, foot
+TORCH_N = 12
+LIGHT, LIGHT_R = .07, 56  # how far the torchlight on the wall lifts and falls, and how far it reaches (painting pixels)
+
+
+def lum(a):
+    return a[..., 0] * .3 + a[..., 1] * .59 + a[..., 2] * .11
+
+
+def fill(a, mask, iters=800):
+    """The masked pixels filled from the pixels round them by repeated averaging: the wall behind a flame."""
+    b = a.copy()
+    ys, xs = np.nonzero(mask)
+    y0, y1, x0, x1 = ys.min() - 1, ys.max() + 2, xs.min() - 1, xs.max() + 2
+    sub, m = b[y0:y1, x0:x1], mask[y0:y1, x0:x1]
+    sub[m] = sub[~m].mean(0)
+    for _ in range(iters):
+        sub[m] = ((np.roll(sub, 1, 0) + np.roll(sub, -1, 0) + np.roll(sub, 1, 1) + np.roll(sub, -1, 1)) / 4)[m]
+    return b
+
+
+def sample(a, xs, ys):
+    """Bilinear samples of a at the float places xs, ys (clamped to the picture)."""
+    h, w = a.shape[:2]
+    xs, ys = np.clip(xs, 0, w - 1.001), np.clip(ys, 0, h - 1.001)
+    x0, y0 = xs.astype(int), ys.astype(int)
+    fx, fy = (xs - x0)[..., None], (ys - y0)[..., None]
+    a3 = a if a.ndim == 3 else a[..., None]
+    v = (a3[y0, x0] * (1 - fx) * (1 - fy) + a3[y0, x0 + 1] * fx * (1 - fy) + a3[y0 + 1, x0] * (1 - fx) * fy + a3[y0 + 1, x0 + 1] * fx * fy)
+    return v if a.ndim == 3 else v[..., 0]
+
+
+def quant(rgb, pal, amp, x0, y0):
+    """Cut a part of a picture to a palette with the dither table at the part's own place in the whole picture."""
+    h, w = rgb.shape[:2]
+    tile = np.tile(BAYER, (h // 4 + 2, w // 4 + 2))[y0 % 4:y0 % 4 + h, x0 % 4:x0 % 4 + w] * (8.0 * amp)
+    d = np.clip(rgb + tile[..., None], 0, 255)
+    return pal[np.argmin(((d[:, :, None, :] - pal[None, None, :, :]) ** 2).sum(-1), axis=2)].astype(np.uint8)
+
+
+def torch_frames(im, size, pal, still, out, amp=0.6):
+    P = np.asarray(im.convert('RGB')).astype(np.float32)
+    H, W = P.shape[:2]
+    sx, sy = size[0] / W, size[1] / H
+    frames = [P.copy() for _ in range(TORCH_N)]
+    for (fx0, fx1, top, foot) in TORCH_FLAMES:
+        # the flame: brighter than the wall filled in behind it
+        box = np.zeros((H, W), bool); box[top - 4:foot, fx0 - 4:fx1 + 4] = True
+        B = fill(P, box)
+        a = np.clip((lum(P) - lum(B) - 8) / 46, 0, 1) * box
+        a[foot - 2:foot] *= 1  # the foot stays on the bowl
+        mask = a > .02
+        B = fill(P, mask | (box & (np.roll(mask, 1, 0) | np.roll(mask, -1, 0) | np.roll(mask, 1, 1) | np.roll(mask, -1, 1))))
+        a = np.clip((lum(P) - lum(B) - 8) / 46, 0, 1) * box
+        Bt = P * (1 - a[..., None]) + B * a[..., None]  # the picture with the flame taken off
+        cx, hf = (fx0 + fx1) / 2, foot - top
+        gy, gx = np.mgrid[top - 22:foot, fx0 - 16:fx1 + 16].astype(np.float32)
+        # the light it throws on the wall round it lifts and falls with it, fading to nothing at LIGHT_R
+        ly0, ly1, lx0, lx1 = int(foot - hf * .45 - LIGHT_R), int(foot - hf * .45 + LIGHT_R), int(cx - LIGHT_R), int(cx + LIGHT_R)
+        ry, rx = np.mgrid[ly0:ly1, lx0:lx1].astype(np.float32)
+        fall = np.clip(1 - np.hypot(rx - cx, (ry - (foot - hf * .45)) * 1.15) / LIGHT_R, 0, 1) ** 2
+        for f in range(TORCH_N):
+            t = f / TORCH_N
+            h = np.clip((foot - gy) / hf, 0, 1.5)
+            st = 1 + .1 * np.sin(2 * np.pi * t) + .05 * np.sin(2 * np.pi * 3 * t + 1.3)  # the flame's height
+            frames[f][ly0:ly1, lx0:lx1] *= (1 + LIGHT * (st - 1) / .15 * fall)[..., None]
+            dx = 5.5 * h ** 1.5 * np.sin(2 * np.pi * t - 3.4 * h) + 2.4 * h ** 2 * np.sin(4 * np.pi * t - 5.5 * h + .7)  # its sway
+            wv = 1 + .06 * np.sin(4 * np.pi * t + .4)
+            xs, ys = cx + (gx - dx - cx) / wv, foot - (foot - gy) / st
+            af = sample(a, xs, ys) * (ys <= foot)
+            col = sample(P, xs, ys) * (1 + .05 * np.sin(6 * np.pi * t + .9))
+            y0, x0 = top - 22, fx0 - 16
+            bt = Bt[y0:foot, x0:fx1 + 16] * (frames[f][y0:foot, x0:fx1 + 16] / np.maximum(P[y0:foot, x0:fx1 + 16], 1))  # lit as the wall now is
+            frames[f][y0:foot, x0:fx1 + 16] = np.clip(bt * (1 - af[..., None]) + col * af[..., None], 0, 255)
+    # cut every frame like the still picture, and keep the patch of each flame that ever differs from it
+    cuts = []
+    for fr in frames:
+        r = np.asarray(Image.fromarray(np.round(fr).astype(np.uint8), 'RGB').convert('RGBA').resize(size, Image.LANCZOS, reducing_gap=3.0)).astype(np.float32)[..., :3]
+        cuts.append(r)
+    torches = []
+    for (fx0, fx1, top, foot) in TORCH_FLAMES:
+        bx0, bx1 = int((fx0 - LIGHT_R - 24) * sx), int((fx1 + LIGHT_R + 24) * sx) + 1
+        by0, by1 = int((top - LIGHT_R - 24) * sy), min(size[1], int((foot + LIGHT_R) * sy) + 1)
+        q = [quant(c[by0:by1, bx0:bx1], pal, amp, bx0, by0) for c in cuts]
+        base = still[by0:by1, bx0:bx1, :3]
+        diff = np.zeros(base.shape[:2], bool)
+        for x in q:
+            diff |= (x != base).any(-1)
+        ys, xs = np.nonzero(diff)
+        if not len(xs):
+            continue
+        py0, py1, px0, px1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+        strip = np.concatenate([x[py0:py1, px0:px1] for x in q], axis=1)
+        k = len(torches) + 1
+        save(Image.fromarray(strip, 'RGB'), os.path.join(out, f'torch-{k}.png'))
+        torches.append([int(bx0 + px0), int(by0 + py0), int(px1 - px0), int(py1 - py0), TORCH_N])
+        edge = int(diff[py0, px0:px1].sum() + diff[py1 - 1, px0:px1].sum() + diff[py0:py1, px0].sum() + diff[py0:py1, px1 - 1].sum())
+        print(f'torch {k}: {torches[-1]}, {edge} edge pixels differ (a patch is cut to what differs)')
+    return torches
 
 
 def save(im, path):
@@ -157,6 +266,7 @@ def main():
     names = sorted(f[:-5] for f in os.listdir(art) if f.endswith('.webp'))
     made = []
     logo = None
+    torches = []
     op = lambda n: Image.open(os.path.join(art, n + '.webp'))
 
     for n in names:
@@ -223,7 +333,11 @@ def main():
             continue
         elif n == 'key-title':
             # the whole 3:2 picture, 720 x 480: enough to fill any frame the game uses (512 to 640 wide, 240 to 480 tall)
-            save(crunch(im, (720, 480), 256, amp=0.6), os.path.join(out, n + '.png'))
+            info = {}
+            still = crunch(im, (720, 480), 256, amp=0.6, info=info)
+            save(still, os.path.join(out, n + '.png'))
+            torches = torch_frames(im, (720, 480), info['pal'], np.asarray(still), out)
+            made += [f'torch-{k + 1}' for k in range(len(torches))]
         elif n.startswith('face-'):
             save(crunch(im, (64, 64), 256, amp=0.5), os.path.join(out, n + '.png'))
             save(crunch(im, (96, 96), 256, amp=0.5), os.path.join(out, n + '-96.png'))
@@ -293,7 +407,7 @@ def main():
                 save(crunch(Image.open(os.path.join(mdir, f'{mn}-{t}.png')), (pw, ph), 256, amp=0.5), os.path.join(out, f'model-{mn}-{t}.png'))
                 made.append(f'model-{mn}-{t}')
             models[mn] = m
-    json.dump({'art': sorted(made), 'leaf': leaf, 'sheets': sheets, 'title': 720, 'logo': logo, 'models': models}, open(os.path.join(out, 'index.json'), 'w'))  # title: the title picture's width
+    json.dump({'art': sorted(made), 'leaf': leaf, 'sheets': sheets, 'title': 720, 'torches': torches, 'logo': logo, 'models': models}, open(os.path.join(out, 'index.json'), 'w'))  # title: the title picture's width
     total = sum(os.path.getsize(os.path.join(out, f)) for f in os.listdir(out))
     print(f'{len(made)} pictures, {sheets} card sheets, {len(models)} models, door leaves at {leaf}, {total // 1024} KB in {out}')
 

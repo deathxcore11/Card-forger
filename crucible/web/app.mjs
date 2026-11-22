@@ -12,7 +12,7 @@ import { newProfile, applyRun, scoreRun, buy, maxHeat, VAULT, FORGER_FEATS, feat
 import { SCENES, RUMOURS } from './story.mjs';
 import { LAB_DEFAULTS, LAB_ORDER, DEPTH_SET, labConfig } from './labs.mjs';
 import { aimFor } from './aim.mjs';
-import { F, fitConsole, yb, xr, cx0, cy0, viewSize, ledgeW, pq, lb, lbr, box, gauge, frame, win, carveImg, carve, fogSprite } from './ps.mjs';
+import { F, fitConsole, yb, xr, cx0, cy0, viewSize, ledgeW, pq, lb, lbr, box, gauge, frame, win, carveImg, carve } from './ps.mjs';
 import * as R3 from './raster.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
 import './sound.mjs';
@@ -843,21 +843,30 @@ function psYou(r, v = null, extra = '') {
 }
 
 // ---- title
+// The title picture's moving parts, each placed from the picture's own pixels (the 720 x 480 cut) through the same
+// offset as the picture. at: the point in the picture; pin: the point of the part that sits on it.
+// The torches: tools/crucible/console-art.py lifts each painted flame off its wall and sways it through a loop of
+// frames, cut with the title's own colours and dither, and keeps the patch of the picture that ever changes; the patch
+// is laid back exactly where it was cut from (index.json 'torches'), so its edge is the picture's own pixels.
+// Nothing else moves on it: a drawn shape drifting over a painting reads as a sticker, not as the place.
+// tools/crucible/console-checks.cjs measures every part against its picture.
+function titleLife(ox, oy) {
+  const part = (cls, at, pin, more = '') => `<i class="${cls}" data-art="title" data-at="${at}" data-pin="${pin}" style="left:${ox + at[0] - pin[0]}px;top:${oy + at[1] - pin[1]}px;${more}"></i>`;
+  return (D.cart.torches || []).map(([x, y, w, h, n], i) => CART.has(`torch-${i + 1}`) ? part('flm', [x, y], [0, 0], `width:${w}px;height:${h}px;background-image:url(${cimg(`torch-${i + 1}`)});--to:-${w * n}px;animation-timing-function:steps(${n});animation-delay:-${(i * .45).toFixed(2)}s" data-frames="${n}`) : '').join('');
+}
 function psHome() {
   const saved = liveSave(), has = saved && saved.phase !== 'over';
   const { W, H } = F, dy = cy0();
   // The title picture is 720 x 480 (the whole painting at 15/32 of its size); the frame shows its middle. The older
-  // cut, 512 x 240, is the middle band at a third of the size.
-  let pic, at;
-  if (CART.has('key-title') && D.cart && D.cart.title === 720) { const ox = (W - 720) >> 1, oy = (H - 480) >> 1; pic = `<img class="bg" src="${cimg('key-title')}" style="left:${ox}px;top:${oy}px" alt="">`; at = (x, y) => [Math.round(x * 15 / 32) + ox, Math.round(y * 15 / 32) + oy]; }
-  else if (CART.has('key-title')) { const ox = (W - 512) >> 1, oy = (H - 240) >> 1; pic = `<img class="bg" src="${cimg('key-title')}" style="left:${ox}px;top:${oy}px;width:512px;height:240px" alt="">`; at = (x, y) => [Math.round(x / 3) + ox, Math.round((y - 152) / 3) + oy]; }
-  else { pic = box(0, 0, W, H, 'st dk'); at = (x, y) => [Math.round(x / 3), Math.round((y - 152) / 3)]; }
-  const t1 = at(312, 455), t2 = at(1014, 455), fg = at(450, 440); // the two torches and the dark of the doorway, in the painting's own pixels
+  // cut, 512 x 240, is the middle band at a third of the size, and gets no moving parts.
+  let pic = box(0, 0, W, H, 'st dk'), life = '';
+  if (CART.has('key-title') && D.cart && D.cart.title === 720) { const ox = (W - 720) >> 1, oy = (H - 480) >> 1; pic = `<img class="bg" data-pic="title" src="${cimg('key-title')}" width="720" height="480" style="left:${ox}px;top:${oy}px;width:720px;height:480px" alt="">`; life = titleLife(ox, oy); }
+  else if (CART.has('key-title')) { const ox = (W - 512) >> 1, oy = (H - 240) >> 1; pic = `<img class="bg" src="${cimg('key-title')}" width="512" height="240" style="left:${ox}px;top:${oy}px;width:512px;height:240px" alt="">`; }
   const items = [has && ['CONTINUE', 'resume'], ['NEW DESCENT', 'new'], [`CODEX ${G.known.size}`, 'screen:codex'], [`FEATS ${(P.featsDone || []).length}/${featList(!!labs.long).length}`, 'screen:feats'], [`MEMORY VAULT ${P.memories}`, 'screen:vault'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options']].filter(Boolean);
   const mx = W - 148, menu = items.map(([t, a], i) => pq(mx, dy + 78 + i * 20, 136, t, a, { lit: i === 0 })).join('') + (coinTex() || (D.cart && D.cart.crest) ? `<canvas id="coin" class="ab" width="16" height="16" style="left:${mx - 19}px;top:${dy + 78}px;pointer-events:none"></canvas>` : ''); // the turning crest marks the lit choice
   const sy = dy + 82 + items.length * 20, low = sy + 46 <= H - 2; // the saved run under the menu, or beside it when the frame is too short
   const slot = has ? `<div class="wn runslot" style="left:${low ? W - 160 : W - 316}px;top:${low ? sy : dy + 78 + items.length * 20 - 46}px">${lb(0, 0, '', '')}<b class="lb g">${esc(saved.forger ? shortName(FORGERS[saved.forger].name) : 'NO FORGER')}</b><br><b class="lb">FLOOR ${saved.floor + 1} · CHAMBER ${Math.min(6, saved.chamber + 1)}</b><br><b class="lb">SPARKS ${saved.sparks} · EMBERS ${saved.embers}</b></div>` : '';
-  return `<div class="ti">${pic}${CART.has('key-title') ? `<img class="mist" src="${fogSprite(180, 72, .45)}" style="left:${fg[0] - 15}px;top:${fg[1] - 6}px" alt="">` : ''}<i class="tor" style="left:${t1[0]}px;top:${t1[1]}px"></i><i class="tor" style="left:${t2[0]}px;top:${t2[1]}px"></i>
+  return `<div class="ti">${pic}${life}
     ${CART.has('key-logo') && D.cart.logo ? `<img class="ab" src="${cimg('key-logo')}" width="${D.cart.logo[0]}" height="${D.cart.logo[1]}" style="left:${W - 152}px;top:${dy + 6}px" alt="Lost Memories">` : `<div class="ab" style="left:${W - 160}px;top:${dy + 8}px;width:160px;display:flex;flex-direction:column;align-items:center;gap:0">${carveImg('LOST', 22, render)}${carveImg('MEMORIES', 22, render)}</div>`}
     ${lb(W - 154, dy + 66, 'BENEATH ASTERHOLD', 'd')}${menu}${slot}
     ${G.notice ? `<div class="wn" style="position:absolute;left:8px;top:8px;width:200px;padding:5px 6px">${esc(G.notice)}</div>` : ''}

@@ -14,6 +14,9 @@ body.ps { background: #000; }
   --ember: #bd7433; --rust: #964034; --verd: #4c8a7c; --ink: #f3ead8; --dark: #3a2419; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
 #app.ps * { box-sizing: border-box; border-radius: 0 !important; text-shadow: none; }
 #app.ps img, #app.ps canvas { image-rendering: pixelated; display: block; }
+/* a page that holds the game may shrink pictures to fit their box (img { max-width: 100%; height: auto }); a console picture
+   is always drawn at its own size or a whole multiple, so nothing from outside may scale it */
+#app.ps img, #app.ps canvas, #app.ps video { max-width: none; max-height: none; min-width: 0; min-height: 0; }
 #app.ps i, #app.ps b, #app.ps u, #app.ps em { font-style: normal; font-weight: 400; text-decoration: none; }
 #app.ps .lb, #app.ps .pq, #app.ps small { font: 8px/8px 'LM Label', monospace; letter-spacing: 0; text-transform: uppercase; }
 #app.ps .g { color: var(--gl); } #app.ps .d { color: #c2b49c; } #app.ps .r { color: #f08a72; } #app.ps .v { color: #9fd0c0; } #app.ps .k { color: var(--sh); }
@@ -113,8 +116,10 @@ body.ps { background: #000; }
 #app.ps .fog { position: absolute; pointer-events: none; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
 #app.ps .fog.a { animation: psfog 9s steps(18) infinite alternate; } #app.ps .fog.b { animation: psfog 13s steps(26) infinite alternate-reverse; opacity: 1; }
 @keyframes psfog { from { transform: translateX(-6px); } to { transform: translateX(6px); } }
-#app.ps .tor { position: absolute; width: 3px; height: 5px; background: var(--gl); box-shadow: 0 0 0 1px var(--ember), 0 -2px 0 0 var(--ember); animation: psfl .4s steps(1) infinite; pointer-events: none; }
-@keyframes psfl { 33% { background: var(--ink); height: 6px; } 66% { background: var(--ember); height: 4px; } }
+/* the title's torches: each a patch of the picture stepped through its frames, twelve a second (the frames and their
+   places come from the picture, see titleLife in app.mjs) */
+#app.ps .flm { position: absolute; background: 0 0 no-repeat; pointer-events: none; animation: psflame 1s steps(12) infinite; }
+@keyframes psflame { to { background-position: var(--to) 0; } }
 
 /* chamber of doors */
 #app.ps .room { position: absolute; left: -20px; top: -8px; width: 352px; height: 144px; animation: psbreath 6s steps(6) infinite alternate; }
@@ -125,7 +130,6 @@ body.ps { background: #000; }
 #app.ps .dr.l, #app.ps .dr.l img { width: 78px; height: 85px; }
 #app.ps .fade { position: absolute; left: 0; right: 0; height: 4px; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; pointer-events: none; }
 #app.ps .fade.d75 { background: repeating-conic-gradient(#000 0 75%, transparent 0 100%) 0 0 / 2px 2px; }
-#app.ps .mist { position: absolute; pointer-events: none; animation: psfog 9s steps(18) infinite alternate; }
 #app.ps .dr .fg { position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
 #app.ps .dr.k-mystery .fg::after { content: ''; position: absolute; inset: 0; background: conic-gradient(transparent 0 25%, #000 0 50%, transparent 0 100%) 0 0 / 2px 2px; } /* one more dot in four: three in four dark */
 #app.ps .dr.k-known .fg { display: none; }
