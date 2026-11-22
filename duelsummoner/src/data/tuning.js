@@ -1,4 +1,4 @@
-﻿// K: every balance constant of the stat engine (the Ledger), by the name design/stat-engine/SPEC.md uses. Ported from the reference prototype.
+// K: every balance constant of the stat engine (the Ledger), by the name design/stat-engine/SPEC.md uses. Ported from the reference prototype.
 // The sim never hard-codes a balance number: it reads K. Status: numbers are the spec's; none is confirmed in a played seed yet.
 // Phase 1 of the port reads: lvlSlope, lvlRate, form, tier, knee1/kneeK1, knee4/kneeK4, critBase, critCap, procCap and the curve k values.
 

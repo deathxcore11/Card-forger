@@ -1,4 +1,4 @@
-﻿// One local save file with a version number, written after every run (and, later, every purchase).
+// One local save file with a version number, written after every run (and, later, every purchase).
 // records are kept per duelist: longest time survived, most kills, highest level.
 import { defaultMeta } from './meta.js';
 export const SAVE_VERSION = 1;

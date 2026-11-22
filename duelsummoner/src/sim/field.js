@@ -1,4 +1,4 @@
-﻿// The field: 4 Monster Zones and 4 shared Spell and Trap Zones, level-up offers, Redraw / Banish / Pass, and Fusion.
+// The field: 4 Monster Zones and 4 shared Spell and Trap Zones, level-up offers, Redraw / Banish / Pass, and Fusion.
 import { MONSTERS, FUSIONS, SPELLS, ONE_SHOTS, TRAPS, DUELISTS, OFFER, LEVELS, FIELD_RULES, XP, formOf } from '../data/cards.js';
 import { addFx } from './combat.js';
 import { monsterMul } from './ledger.js';
@@ -35,7 +35,7 @@ export const damageOf = m => param(m, 'dmg') * monsterMul(m.id, m.level);       
 // ---- derived stats from spells ----
 export function recompute(g) {
   const f = g.field, M = { burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0,
-    trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0 };
+    trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0, toll: 0, locket: 0 };
   const addMods = mods => { for (const k of Object.keys(mods)) if (k in M && typeof M[k] === 'number') M[k] += mods[k]; };
   if (g.metaMods) addMods(g.metaMods);                                    // Deck Box ranks
   for (const id of (g.items || [])) addMods(ITEMS[id].mods);
@@ -49,10 +49,11 @@ export function recompute(g) {
     if (P.move) { M.move += P.move * n; M.dash += P.dash * n; }
     if (P.maxLp) M.maxLp += P.maxLp * n;
     if (P.pickup) { M.pickup += P.pickup * n; M.xp += P.xp * n; }
+    if (P.toll) { M.toll += n; M.dmgMult += P.dmgMult * n; }
   }
   for (const m of f.monsters) if (m && m.id === 'astral-magus') M.markExplode = { radius: param(m, 'explodeRadius'), dmg: param(m, 'explodeDmg') };
   g.mods = M;
-  const maxHp = g.cfgHp + M.maxLp;
+  const maxHp = g.oaths && g.oaths.glass ? 1 : g.cfgHp + M.maxLp;                  // Glass Oath: 1 LP and it cannot be raised
   if (maxHp !== g.p.maxHp) g.p.maxHp = maxHp;
 }
 
@@ -227,6 +228,7 @@ export function pass(g) {
   g.coins += OFFER.passCoins; g.pendingLevels--; g.offer = null; g.event('offer-closed', null); return true;
 }
 export function leaveChest(g) { const o = g.offer; if (!o || !o.leave) return false; g.offer = null; g.event('offer-closed', null); return true; }
+
 
 
 

@@ -1,4 +1,4 @@
-﻿// Swarm enemies in flat typed arrays. Six kinds, each asking the player to move differently (see data/enemies.js).
+// Swarm enemies in flat typed arrays. Six kinds, each asking the player to move differently (see data/enemies.js).
 import { CFG } from '../data/config.js';
 import { atan2, cos, pow, sin } from './dmath.js';
 import { KINDS, KIND_LIST } from '../data/enemies.js';

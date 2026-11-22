@@ -1,4 +1,4 @@
-﻿// The Buried Kingdom: one map, about 400 m across. Axes: x east, z south (north is -z).
+// The Buried Kingdom: one map, about 400 m across. Axes: x east, z south (north is -z).
 // Primitives are rasterised for collision (src/sim/terrain.js) and meshed for drawing (src/view/mapMesh.js),
 // so what you see is what you stand on. Solid-column model: no overhangs.
 //   box   {x0,z0,x1,z1,h,y0?,rot?}        flat-topped block, optional yaw (deg) about its centre

@@ -1,10 +1,13 @@
-﻿// The rules of a run. No drawing, no DOM: the view reads this state, tests and the run simulator drive it directly.
+// The rules of a run. No drawing, no DOM: the view reads this state, tests and the run simulator drive it directly.
 import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
 import { makeStreams } from './rng.js';
 import { hashHex } from './hash.js';
+import { makeCaps, refillCaps } from './caps.js';
+import { K } from '../data/tuning.js';
 import { SCORE } from '../data/tuning.js';
+import { OATH_BY_ID } from '../data/progress.js';
 import { initRun, updateStages, descentTick, finalChoice, xpScale } from './stages.js';
 import { quantise, decode, emptyRecord, MENU_TAKE, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from './input.js';
 import { Flow } from './flow.js';
@@ -44,6 +47,7 @@ export class Game {
 
   reset(seed = this.seed, duelist) {
     this.seed = seed; this.streams = makeStreams(seed); this.rsp = () => this.streams.spawn.next(); this.rl = () => this.streams.loot.next(); this.rc = () => this.streams.combat.next(); this.rcos = () => this.streams.cosmetic.next(); this.duelist = duelist || this.duelist || 'kael';
+    this.oathList = (this.opts.oaths || []).filter(id => OATH_BY_ID[id]); this.oaths = {}; for (const id of this.oathList) this.oaths[id] = true;      // Oaths: run rules sworn before the run
     this.t = 0; this.kills = 0; this.xp = 0; this.level = 1; this.xpCur = 0; this.xpNeed = xpNeeded(1); this.pendingLevels = 0; this.coins = 0;
     this.over = false; this.ended = false; this.killedBy = null; this.damageBy = {}; this.lastSrc = null; this.won = false; this.otStep = -1; this.otAcc = 0; this.god = false; this.bossKilled = false; this.elitesKilled = 0; this.fusions = 0; this.winAt = 0;
     this.grace = 0; this.flash = 0; this.spawned = 0; this.spawnAcc = 0; this.hitsTaken = 0; this.alpha = 1; this.acc = 0;
@@ -66,14 +70,14 @@ export class Game {
     recompute(this);
     this._openingHand();
     this.world = buildWorld(this);                                  // opts.world === 'none': empty, for a generator to fill through placeObject
-    this.p.maxHp = this.cfgHp + this.mods.maxLp; this.p.hp = this.p.maxHp;
+    this.p.maxHp = this.oaths.glass ? 1 : this.cfgHp + this.mods.maxLp; this.p.hp = this.p.maxHp;
     this.en.alive.fill(0); this.shots.alive.fill(0); this.pick.alive.fill(0);
     this.tele.forEach(o => { o.on = false; }); this.fx.forEach(o => { o.on = false; }); this.eb.forEach(o => { o.on = false; }); this.btraps.forEach(o => { o.on = false; });
     this.grid.rebuild(this.en.max, this.en.x, this.en.z, this.en.alive);
     this.flow.valid = false; this.evHead = this.evTail = 0;
     this.tickN = 0; this.levelUps = 0; this.trapsFired = 0; this.trapsSet = 0; this.maxMonsters = 0; this.gateOpenedAt = -1; this.godFusions = 0; this.secretFusions = 0;
     this.fusionIds = []; this.elementsUsed = 0; this.cardsPicked = []; this.fullForms = [];
-    this.upgHist = []; this.roleKills = { elite: 0, bossA: 0, bossB: 0, gate: 0, other: 0 }; this.callN = 0; this.endAt = -1; this.runs = this.runs || new Int32Array(6 * 4096); this.runN = 0;
+    this.caps = makeCaps(); this.tollT = K.tollEverySec; this.upgHist = []; this.roleKills = { elite: 0, bossA: 0, bossB: 0, gate: 0, other: 0 }; this.callN = 0; this.endAt = -1; this.runs = this.runs || new Int32Array(6 * 4096); this.runN = 0;
     this.srcNames = ['other']; this.curSrc = 0; this.dealtLog = {}; this.fusionGuard = null;
     this.chestsOpenedTotal = 0; this.stagesCleared = 0; this.stageFacts = []; this.swiftChips = 0; this.duelOn = false; this.stagePrompt = ''; this.bDown = false; this.gateDown = null; this.desc = null; this.circle = null; this.altar = null; this.heat = 1;
     initRun(this);                                                  // opts.mode: 'classic' (default, one 8:00 stage), 'run' (three stages) or 'quick' (Quick Duel)
@@ -129,14 +133,15 @@ export class Game {
   // The verifiable record of this run: how to rebuild it, the input, and what it should end as.
   replayRaw() {
     const o = this.opts;
-    return { v: 1, version: BUILD_VERSION_REPLAY, seed: this.seed, duelist: this.duelist, mode: this.mode, difficulty: this.difficulty, world: o.world === undefined ? null : o.world, offers: o.offers !== false, meta: o.meta || null,
+    return { v: 1, version: BUILD_VERSION_REPLAY, seed: this.seed, duelist: this.duelist, mode: this.mode, difficulty: this.difficulty, oaths: this.oathList.slice(), world: o.world === undefined ? null : o.world, offers: o.offers !== false, meta: o.meta || null,
       ticks: this.callN, runs: this.runs.slice(0, this.runN), ended: !!this.ended, endAt: this.ended ? this.endAt : -1, hash: hashHex(this), score: this.score() };
   }
   score() {
     const S = SCORE, R = this.roleKills;
     const sum = this.kills * S.kill + R.elite * S.elite + R.bossA * S.bossA + R.bossB * S.bossB + R.gate * S.gate + R.other * S.other + this.stagesCleared * S.stage +
       Math.floor(this.overtimeSeconds()) * S.overtimeSec + this.fusions * S.fusion + this.godFusions * S.god + this.secretFusions * S.secret;
-    return Math.floor(sum * Math.round(this.diff.score * 100) / 100);
+    let pct = Math.round(this.diff.score * 100); for (const id of this.oathList) pct += OATH_BY_ID[id].scorePct;     // each Oath adds to the score multiplier
+    return Math.floor(sum * pct / 100);
   }
   startTape() { this.tape = []; return this.tape; }
   // For tests, bots and tools: dt seconds as whole ticks of the same fixed step. cmd may be a record or a { f, r, yaw, jump, dash, slide, use } command.
@@ -147,7 +152,7 @@ export class Game {
   // For the browser: whole 1/60 s ticks from real time, at most 2 catch-up ticks (a longer stall is dropped, never simulated with a bigger dt).
   // The view only blends between the previous and current snapshot using the returned alpha.
   fixed(dt, rec) {
-    this.acc += dt;
+    this.acc += dt * (this.oaths.hasty ? 1.25 : 1);                          // Hasty Oath: the game runs 1.25x
     let ticks = 0;
     while (this.acc >= STEP && !this.over && !this.offer && ticks < 2) { this.tick(rec); this.acc -= STEP; ticks++; rec.buttons &= ~8; rec.menu = 0; }   // "use" is a one-tick press
     if (this.acc > STEP) this.acc = STEP;
@@ -185,6 +190,7 @@ export class Game {
     updateWorld(this, dt);
     { let mc = 0; for (let k = 0; k < 4; k++) if (this.field.monsters[k]) mc++; if (mc > this.maxMonsters) this.maxMonsters = mc; }
     tickPool(this.tele, dt); tickPool(this.fx, dt);
+    refillCaps(this, dt);
     if (this.grace > 0) this.grace -= dt;
     if (this.flash > 0) this.flash -= dt;
     this._interact(cmd);
@@ -236,16 +242,19 @@ export class Game {
     while (this.xpCur >= this.xpNeed) { this.xpCur -= this.xpNeed; this.level++; this.xpNeed = xpNeeded(this.level); this.pendingLevels++; this.levelUps++; this.emit('levelup', this.level); }
   }
 
-  hurtPlayer(n, big, src) {
-    this.emit('hurt', n, big ? 1 : 0, 0, src || null);
-    if (this.god || this.p.dashT > 0 || this.over) return false;
-    if (this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = 20; this.event('banner', 'The Paper Talisman blocks the hit.'); return false; }
-    n = Math.max(1, n - this.mods.armour);
-    this.p.hp = Math.max(0, this.p.hp - n);
+  // flags (SPEC section 6): 1 SELF (the player's own cost: 1 HP floor, never kills, no grace, no dodge or Ward), 2 PIERCE, 4 TRUE (ignores Guard)
+  hurtPlayer(n, big, src, flags) {
+    flags = flags | 0; const SELF = (flags & 1) !== 0;
+    this.emit('hurt', n, big ? 1 : 0, SELF ? 1 : 0, src || null);
+    if (this.god || this.over) return false;
+    if (!SELF && this.p.dashT > 0) return false;
+    if (!SELF && this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = 20; this.event('banner', 'The Paper Talisman blocks the hit.'); return false; }
+    if (!(flags & 5)) n = Math.max(1, n - this.mods.armour);
+    this.p.hp = SELF ? Math.max(Math.min(this.p.hp, 1), this.p.hp - n) : Math.max(0, this.p.hp - n);       // the 1 HP floor never raises LP already below 1
     src = src || 'unknown'; this.damageBy[src] = (this.damageBy[src] || 0) + n; this.lastSrc = src;
-    this.hitsTaken++; this.flash = 0.25; this.grace = CFG.enemy.grace;
-    onPlayerHurt(this);
-    if (this.p.hp <= 0) { this.over = true; this.killedBy = src; }
+    if (!SELF) { this.hitsTaken++; this.flash = 0.25; this.grace = CFG.enemy.grace; }
+    onPlayerHurt(this, SELF);
+    if (!SELF && this.p.hp <= 0) { this.over = true; this.killedBy = src; }
     return true;
   }
 

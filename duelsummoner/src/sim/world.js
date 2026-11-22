@@ -2,6 +2,7 @@
 // authored regions (data/encounters.js). Every spot is standable, flat, spaced out and has at least three ways off it.
 import { ENCOUNTERS as E } from '../data/encounters.js';
 import { cos, sin } from './dmath.js';
+import { K } from '../data/tuning.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { heightAt } from './terrain.js';
 import { dropPickup, addFx, PICK_COIN, PICK_XP, PICK_HEART } from './combat.js';
@@ -38,7 +39,7 @@ export function placeObject(g, type, s) {
   const W = g.world;
   if (type === 'vase') { W.vases.push({ x: s.x, y: s.y, z: s.z, alive: true, banded: !!s.banded, hp: 1 }); return W.vases[W.vases.length - 1]; }
   if (type === 'stone') { W.stones.push({ x: s.x, y: s.y, z: s.z, used: false }); return W.stones[W.stones.length - 1]; }
-  if (type === 'broker') { W.broker = { x: s.x, y: s.y, z: s.z, stock: pickStock(g) }; return W.broker; }
+  if (type === 'broker') { if (g.oaths && g.oaths.pauper) return null; W.broker = { x: s.x, y: s.y, z: s.z, stock: pickStock(g) }; return W.broker; }
   if (type === 'shrine') { W.shrines.push({ x: s.x, y: s.y, z: s.z, charge: 0, idle: 0, done: false }); return W.shrines[W.shrines.length - 1]; }
   if (type === 'altar') { W.altar = { x: s.x, y: s.y, z: s.z, used: false }; return W.altar; }
   if (type === 'cchest') { W.cchests.push({ x: s.x, y: s.y, z: s.z, open: false, rarity: s.rarity || E.cardChests.rarityByOrder[W.cchests.length] || 'common' }); return W.cchests[W.cchests.length - 1]; }
@@ -68,6 +69,7 @@ export function buildWorld(g) {
       W.vases.push({ x, y: h, z, alive: true, banded: g.rsp() < V.bandedChance, hp: V.hp });
     }
   }
+  if (g.oaths && g.oaths.pauper) W.broker = null;                          // Pauper Oath: no shop and no Broker
   return W;
 }
 
@@ -112,6 +114,10 @@ export function updateWorld(g, dt) {
     if (inside) { s.idle = 0; s.charge = Math.min(S.hold, s.charge + dt); }
     else { s.idle += dt; if (s.idle > S.leaveGrace && s.charge > 0) s.charge = Math.max(0, s.charge - S.decayPerSecond * dt); }
     if (s.charge >= S.hold) { s.done = true; g.event('banner', 'The shrine accepts your tribute.'); openBlessing(g, s); }
+  }
+  if (g.mods.toll > 0) {                                                  // Toll of Ash: pay a share of current LP every few seconds, never below 1
+    g.tollT -= dt;
+    if (g.tollT <= 0) { g.tollT = K.tollEverySec; g.hurtPlayer(Math.max(1, Math.round(p.hp * K.tollPct)), false, 'Toll of Ash', 1); }
   }
   if (g.mods.regen > 0 && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + g.mods.regen * dt);
   if (g.talismanCd > 0) g.talismanCd -= dt;
@@ -172,3 +178,4 @@ export function useProp(g, hit) {
   else if (hit.type === 'broker') openShop(g);
   else if (hit.type === 'altar') openAltar(g, hit.obj);
 }
+

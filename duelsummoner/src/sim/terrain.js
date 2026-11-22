@@ -1,4 +1,4 @@
-﻿// Collision heightfield: the map primitives rasterised at 1 m. heightAt(x,z) is the standing height there.
+// Collision heightfield: the map primitives rasterised at 1 m. heightAt(x,z) is the standing height there.
 import { MAP, PRIMS } from '../data/map.js';
 import { atan2, cos, sin } from './dmath.js';
 

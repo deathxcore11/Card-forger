@@ -2,6 +2,7 @@
 // Relic Broker and (later) the Echo Forge, BLESSINGS come only from Shrines of Tribute. `mods` are added to the run's stats.
 // Items implemented here are the stat items; the rest of the bible's 30 are listed under PLANNED for later steps.
 export const ITEMS = {
+  'thornbound-locket': { name: 'Thornbound Locket', rarity: 'rare', price: 70, text: 'When you are hurt, a nova of 6 x your Guard (at most 120) hits everything near you. More copies help, with a ceiling.', mods: { locket: 1 } },
   'worn-duel-glove':   { name: 'Worn Duel Glove', rarity: 'common', price: 30, text: 'Card throw 15% faster.', mods: { cardRate: 0.15 } },
   'sand-sandals':      { name: 'Sand Sandals', rarity: 'common', price: 30, text: '+6% move speed.', mods: { move: 0.06 } },
   'cracked-hourglass': { name: 'Cracked Hourglass', rarity: 'common', price: 30, text: 'Trap recharge 10% shorter.', mods: { trapRecharge: 0.10 } },

@@ -1,4 +1,4 @@
-﻿// The host adapter: everything the game needs from the platform, behind one object. In the browser it is localStorage, the
+// The host adapter: everything the game needs from the platform, behind one object. In the browser it is localStorage, the
 // keyboard/mouse/Gamepad API, vibration and the page. A native host (QuickJS inside the Android app) supplies the same shape.
 //   host.input.command()   -> { f, r, yaw, jump, dash, slide, use } for this frame (the sim quantises it)
 //   host.save.load()/write(obj), host.reportRun(results), host.haptic(kind), host.exit(), host.quality

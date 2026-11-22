@@ -1,4 +1,4 @@
-﻿// The 8-minute wave table (bible "Enemies and waves"), plus the boss clock and the Royal Gate.
+// The 8-minute wave table (bible "Enemies and waves"), plus the boss clock and the Royal Gate.
 export const RUN = {
   maxAlive: 300,
   // spawns per second; linear between rows. The last row (8:00) is the rate while the boss is up.

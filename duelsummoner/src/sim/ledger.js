@@ -1,4 +1,4 @@
-﻿// The Ledger, phase 1: curves, brackets and the level / form / tier multipliers (design/stat-engine/SPEC.md sections 2, 3 and 8).
+// The Ledger, phase 1: curves, brackets and the level / form / tier multipliers (design/stat-engine/SPEC.md sections 2, 3 and 8).
 // Pure and integer-friendly: only + - * / and comparisons, so it is safe for the deterministic sim and the native port.
 // Not yet ported: the full stat sheet, caps, self-damage pipeline, reactions, Tuning rolls and duelist passives (see the integration notes).
 import { K } from '../data/tuning.js';

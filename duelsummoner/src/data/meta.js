@@ -21,17 +21,5 @@ export const STARTER = {
   items: ['worn-duel-glove', 'sand-sandals', 'cracked-hourglass', 'scarab-charm', 'clay-heart', 'lucky-coin', 'whetstone-tablet', 'travelling-cloak', 'lodestone', 'bandaged-hand', 'bronze-scale', 'dueling-boots']
 };
 
-// stats = this run's numbers; totals = lifetime counters kept in the save.
-export const QUESTS = [
-  { id: 'husks500', name: 'Husk Hunter', text: 'Defeat 500 enemies in total.', test: (r, T) => T.kills >= 500, unlock: { card: 'kindling-rite' } },
-  { id: 'level15', name: 'Quick Study', text: 'Reach level 15 in one run.', test: (r) => r.level >= 15, unlock: { card: 'deep-marks' } },
-  { id: 'fuse1', name: 'Two Become One', text: 'Make a Fusion.', test: (r) => r.fusions >= 1, unlock: { card: 'pit-of-seals' } },
-  { id: 'warden', name: 'Shieldbreaker', text: 'Defeat the Sealed Warden.', test: (r) => r.wardenKilled, unlock: { card: 'storm-of-cards' } },
-  { id: 'pharaoh', name: 'The Last Round', text: 'Defeat The Hollow Pharaoh.', test: (r) => r.bossKills > 0, unlock: { card: 'second-wind' } },
-  { id: 'survive6', name: 'Long Duel', text: 'Survive 6:00.', test: (r) => r.timeSurvived >= 360, unlock: { item: 'hunters-mark' } },
-  { id: 'chests10', name: 'Collector', text: 'Open 10 Card Chests in total.', test: (r, T) => T.chests >= 10, unlock: { item: 'traders-seal' } },
-  { id: 'vases40', name: 'Clay Breaker', text: 'Break 40 vases in total.', test: (r, T) => T.vases >= 40, unlock: { item: 'graveyard-bell' } },
-  { id: 'overtime2', name: 'Overtime', text: 'Survive 2:00 of Overtime.', test: (r) => r.overtimeSeconds >= 120, unlock: { item: 'paper-talisman' } },
-  { id: 'noTrap', name: 'Bare Hands', text: 'Defeat the Pharaoh with no Trap set.', test: (r) => r.bossKills > 0 && r.trapsSet === 0, unlock: { item: 'burning-deck' } },
-  { id: 'runs5', name: 'Regular', text: 'Finish 5 runs.', test: (r, T) => T.runs >= 5, unlock: { item: 'jar-of-avarice' } }
-];
+// Quests are data in data/quests.js (tabs, rarity, goal, reward).
+export { QUESTS } from './quests.js';

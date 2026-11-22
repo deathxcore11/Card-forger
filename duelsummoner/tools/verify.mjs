@@ -17,7 +17,7 @@ export function verifyReplay(rec) {
   let bytes = fromBase64(rec.tape.data);
   if (rec.tape.format === 'rle-varint-deflate-b64') bytes = new Uint8Array(inflateSync(Buffer.from(bytes)));
   const runs = decodeRuns(bytes);
-  const opts = { duelist: rec.duelist, mode: rec.mode, difficulty: rec.difficulty, offers: rec.offers };
+  const opts = { duelist: rec.duelist, mode: rec.mode, difficulty: rec.difficulty, offers: rec.offers, oaths: rec.oaths || [] };
   if (rec.world !== null && rec.world !== undefined) opts.world = rec.world; if (rec.meta) opts.meta = rec.meta;
   const g = new Game(rec.seed, opts), r = { mx: 0, mz: 0, yaw: 0, buttons: 0, menu: 0 };
   let calls = 0;
