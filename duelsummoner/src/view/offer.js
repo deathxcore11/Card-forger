@@ -5,6 +5,13 @@ import { cardDef, monsterMax } from '../sim/field.js';
 import { MENU_TAKE, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from '../sim/input.js';
 
 const $ = id => document.getElementById(id);
+let busy = false;
+// the chosen card flies down toward the field zones, then the choice enters the sim (instant with reduce motion)
+function fly(btn, go) {
+  const card = btn.closest('.card'); if (busy) return;
+  if (!card || document.body.classList.contains('rm')) { go(); return; }
+  busy = true; card.classList.add('picked'); setTimeout(() => { busy = false; go(); }, 230);
+}
 
 function describe(c) {
   if (c.kind === 'banish') { const D = cardDef(c.id); return { D: { name: D.name, text: 'BANISH: remove this unowned card from every future offer this run.' }, kind: 'Altar action: BANISH', lv: 'Nothing on your field is lost.', fx: '' }; }
@@ -53,8 +60,8 @@ export function showOffer(g, act) {
   if (o.leave) btns.insertAdjacentHTML('beforeend', '<button data-act="leave">' + (shop ? 'LEAVE THE STALL' : 'LEAVE IT FOR LATER') + '</button>');
   $('offerScreen').onclick = e => {
     const t = e.target.closest('button'); if (!t || t.disabled) return;
-    if (t.dataset.pick !== undefined) act(MENU_TAKE + +t.dataset.pick);
-    else if (t.dataset.ban !== undefined) act(MENU_BANISH + 1 + +t.dataset.ban);
+    if (t.dataset.pick !== undefined) fly(t, () => act(MENU_TAKE + +t.dataset.pick));
+    else if (t.dataset.ban !== undefined) fly(t, () => act(MENU_BANISH + 1 + +t.dataset.ban));
     else if (t.dataset.act === 'redraw') act(MENU_REDRAW);
     else if (t.dataset.act === 'pass') act(MENU_PASS);
     else if (t.dataset.act === 'leave') act(MENU_LEAVE);

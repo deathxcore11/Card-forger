@@ -46,7 +46,7 @@ function playerMesh() {
   const robe = new T.Mesh(new T.CylinderGeometry(0.35, 0.65, 1.3, 6), lambert(0x3c2a66)); robe.position.y = 0.65;
   const head = new T.Mesh(new T.BoxGeometry(0.45, 0.45, 0.45), lambert(0xe8c39a)); head.position.y = 1.55;
   const disk = new T.Mesh(new T.BoxGeometry(0.9, 0.08, 0.35), lambert(0xd8b24a)); disk.position.set(-0.55, 1.0, 0.1);
-  g.add(robe, head, disk); g.userData.body = robe;
+  const lean = new T.Group(); lean.add(robe, head, disk); g.add(lean); g.userData.body = robe; g.userData.lean = lean; g.userData.squash = 0;
   return g;
 }
 
@@ -79,8 +79,10 @@ function modelGroup(model, targetSize, axis, glowColor) {
 }
 
 export class Actors {
-  constructor(scene, assets) {
-    this.scene = scene; this.assets = assets || {};
+  constructor(scene, assets, fx) {
+    this.scene = scene; this.assets = assets || {}; this.fx = fx;
+    this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;
+    this._white = new T.Color(0x666666); this._black = new T.Color(0x000000);
     this.player = playerMesh(); scene.add(this.player);
     this.d = new T.Object3D(); this.col = new T.Color(); this.white = new T.Color(0xffffff);
     this._plain = new T.Color(1, 1, 1); this._blue = new T.Color(0.55, 0.75, 1.6); this._gold = new T.Color(1.6, 1.3, 0.5);
@@ -193,8 +195,25 @@ export class Actors {
     this.scene.add(g); return g;
   }
 
-  update(g, a, cam, head) {
-    const d = this.d, p = g.p, e = g.en, t = g.t;
+  // easeOutBack: the summon pop
+  _pop(u) { if (u >= 1) return 1; if (u <= 0) return 0; const c1 = 1.9, c3 = c1 + 1, v = u - 1; return 1 + c3 * v * v * v + c1 * v * v; }
+
+  // a monster mesh has just been made: summon pop, or the form-change moment, or the delayed landing of a Fusion
+  _enter(mesh, m, formSwap, g, x, z) {
+    const ud = mesh.userData, fx = this.fx, y = mesh.position.y; ud.base = mesh.scale.x; ud.lv = m.level; ud.pulse = -9;
+    if (this.fusionAt !== undefined && this.vt - this.fusionAt < 0.6) { ud.born = this.fusionAt + 1.0; ud.shock = 1; return; }
+    ud.born = this.vt;
+    if (formSwap) { fx.flash(0.55); fx.ring(x, y, z, 4, 0xffffff, 0.55); fx.ring(x, y, z, 2.4, 0xffd56a, 0.4); fx.burst(x, y + 1, z, 36, 0xffe9a0, 6, 5, 0.3, 0.7, 6); fx.shake(0.3); }
+    else { fx.ring(x, y, z, 2.4, 0xffd56a, 0.5); fx.burst(x, y + 0.5, z, 18, 0xffd56a, 2.5, 5, 0.22, 0.8, 4); }
+  }
+  _shock(ud, x, y, z) {
+    const fx = this.fx; ud.shock = 0; fx.flash(0.65); fx.ring(x, y, z, 9, 0xffffff, 0.7); fx.ring(x, y, z, 5, 0xffb060, 0.5); fx.burst(x, y + 1, z, 60, 0xfff0c0, 9, 6, 0.32, 0.9, 7); fx.beam(x, y, z, 0xfff0c0, 0.9); fx.shake(0.7);
+  }
+
+  update(g, a, cam, head, dt) {
+    dt = dt || 0.016; this.vt += dt;
+    const d = this.d, p = g.p, e = g.en, t = g.t, fx = this.fx;
+    if (this.fusionAt !== undefined && this.vt - this.fusionAt > 1.8) { this.fusionAt = undefined; }
     // hide anything standing between the camera and the duelist's head, or right at the camera
     const sx = head.x - cam.x, sy = head.y - cam.y, sz = head.z - cam.z, sl2 = sx * sx + sy * sy + sz * sz || 1;
     const blocked = (x, y, z, r) => {
@@ -210,15 +229,27 @@ export class Actors {
     this.player.position.set(px, py, pz); this.player.rotation.y = turnLerp(p.pface, p.face, a);
     this.player.userData.body.scale.y = p.sliding ? 0.55 : 1; this.player.rotation.x = p.sliding ? -0.5 : 0;
     this.player.visible = !(g.over && !g.won);
+    {   // lean into movement, landing squash, dash trail, slide dust
+      const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));
+      const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);
+      lean.rotation.x += (want - lean.rotation.x) * Math.min(1, dt * 12);
+      if (!p.grounded) this._pvy = p.vy;
+      if (p.grounded && !this._pg && this._pvy < -5) { ud.squash = 0.16; fx.burst(px, py + 0.1, pz, 8, 0xd8c08a, 2.2, 1.2, 0.22, 0.5, 6); }
+      this._pg = p.grounded;
+      if (ud.squash > 0) { ud.squash = Math.max(0, ud.squash - dt); const k = ud.squash / 0.16 * 0.28; lean.scale.set(1 + k * 0.5, 1 - k, 1 + k * 0.5); } else if (lean.scale.y !== 1) lean.scale.set(1, 1, 1);
+      if (p.dashT > 0) for (let k = 0; k < 2; k++) fx.spark(px + (Math.random() - 0.5) * 0.4, py + 0.4 + Math.random() * 1.0, pz + (Math.random() - 0.5) * 0.4, 0, 0.3, 0, 0x9fe8ff, 0.4, 0.3);
+      else if (p.sliding && Math.random() < 0.7) fx.spark(px, py + 0.1, pz, (Math.random() - 0.5) * 2, 0.8 + Math.random(), (Math.random() - 0.5) * 2, 0xc9b184, 0.25, 0.4);
+    }
 
     // monsters on the field
-    const live = new Set();
+    const live = this._live || (this._live = new Set()); live.clear();
     g.field.monsters.forEach((m, k) => {
       if (!m) return; live.add(m);
       let mesh = this.monsters.get(m); const form = formOf(m.id, m.level);
-      if (mesh && mesh.userData.formIdx !== form) { this.scene.remove(mesh); mesh = null; }          // crossing level 5 or 10 swaps the model
-      if (!mesh) { mesh = this._monsterMesh(m.id, form); this.monsters.set(m, mesh); }
+      let formSwap = false;
+      if (mesh && mesh.userData.formIdx !== form) { this.scene.remove(mesh); mesh = null; formSwap = true; }          // crossing level 5 or 10 swaps the model
       const x = pl(m.px, m.x, a), z = pl(m.pz, m.z, a);
+      if (!mesh) { mesh = this._monsterMesh(m.id, form); this.monsters.set(m, mesh); mesh.position.set(x, heightGround(x, z), z); this._enter(mesh, m, formSwap, g, x, heightGround(x, z), z); }
       let y = pl(m.py, m.y, a);
       const ud = mesh.userData;
       if (ud.walk) y = heightGround(x, z) + Math.abs(Math.sin(t * 7 + k)) * 0.08;      // the Hatchling walks beside you
@@ -237,14 +268,30 @@ export class Actors {
         if (ud.shear) { const S = ud.shear, a = S.pos.array, o = S.orig; for (let v = 0; v < a.length; v += 3) { const f = 1 - (o[v + 1] - S.minY) / (S.h * 0.3); a[v] = f > 0 ? o[v] + Math.sin(t * 2 + o[v + 1] * 6) * 0.012 * f : o[v]; } S.pos.needsUpdate = true; }
       }
       if (ud.puffs) this._emitPuffs(mesh, m, g);
+      // summon pop, attack squash and stretch, level-up pulse
+      const su = this._pop((this.vt - ud.born) / 0.45); mesh.visible = this.vt >= ud.born;
+      if (ud.shock && this.vt >= ud.born) this._shock(ud, x, y, z);
+      let sxz = 1, sy = 1; const as = t - (m._atkAt || -9);
+      if (as >= 0 && as < 0.1) { const k = 1 - as / 0.1; sxz = 1 + 0.14 * k; sy = 1 - 0.16 * k; } else if (as >= 0.1 && as < 0.22) { const k = 1 - (as - 0.1) / 0.12; sxz = 1 - 0.08 * k; sy = 1 + 0.12 * k; }
+      if (m.level > ud.lv) { ud.lv = m.level; ud.pulse = this.vt; fx.ring(x, y, z, 2.6, 0xc9a3ff, 0.45); fx.burst(x, y + 0.8, z, 14, 0xd9b8ff, 2, 4, 0.2, 0.7, 3); }
+      const pu = this.vt - ud.pulse; if (pu >= 0 && pu < 0.35) { const k = Math.sin(pu / 0.35 * Math.PI) * 0.18; sxz += k; sy += k; }
+      if (fx.rm_) { sxz = 1; sy = 1; }
+      mesh.scale.set(ud.base * sxz * su, ud.base * sy * su, ud.base * sxz * su);
     });
-    for (const [m, mesh] of this.monsters) if (!live.has(m)) { this.scene.remove(mesh); this.monsters.delete(m); }
+    for (const [m, mesh] of this.monsters) if (!live.has(m)) {
+      this.monsters.delete(m);
+      if (this.fusionAt !== undefined && this.vt - this.fusionAt < 0.6) { mesh.userData.g0 = this.vt; mesh.userData.sx = mesh.position.x; mesh.userData.sz = mesh.position.z; this.ghosts.push(mesh); this._ghostFresh = true; }
+      else this.scene.remove(mesh);
+    }
+    this._updateGhosts();
     this._updatePuffs(g.t, cam); this._updateFlames(g.t);
 
     // swarm
-    const counts = this.kinds.map(() => 0), mc = { n: 0 };
+    this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0;
     for (let i = 0; i < e.max; i++) {
-      if (!e.alive[i]) continue;
+      if (!e.alive[i]) { this._wasSwarm[i] = 0; continue; }
+      if (!this._wasSwarm[i]) { this._wasSwarm[i] = 1; this.spawnAge[i] = 0; if (this._dustBudget > 0) { this._dustBudget--; fx.burst(e.x[i], e.y[i] + 0.1, e.z[i], 3, 0xb09a6a, 1.5, 1.5, 0.2, 0.45, 5); } }
+      this.spawnAge[i] += dt; const sage = this.spawnAge[i], rise = sage < 0.35 ? 1 - sage / 0.35 : 0;
       const k = this.kinds[e.kind[i]], K = k.K, n = counts[e.kind[i]];
       const x = pl(e.px[i], e.x[i], a), y = pl(e.py[i], e.y[i], a), z = pl(e.pz[i], e.z[i], a);
       if (blocked(x, y + 0.9, z, 2.4)) continue;
@@ -252,8 +299,9 @@ export class Actors {
       let sc = K.scale, pulse = 1;
       if (K.id === 4 && e.st[i] === 1) pulse = 1 + 0.25 * Math.sin(t * 30);                        // Sand Bloat swelling before it bursts
       const face = turnLerp(e.pface[i], e.face[i], a);
-      d.position.set(x, y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85) + bob, z); d.rotation.set(0, face, 0);
-      d.scale.set(sc[0] * pulse * (hit ? 1.2 : 1), sc[1] * pulse * (hit ? 0.85 : 1), sc[2] * pulse * (hit ? 1.2 : 1)); d.updateMatrix();
+      const grow = 1 - rise * 0.6;
+      d.position.set(x, y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85) + bob - rise * 1.1, z); d.rotation.set(hit && !fx.rm_ ? 0.32 : 0, face, 0);
+      d.scale.set(sc[0] * pulse * grow * (hit ? 1.2 : 1), sc[1] * pulse * grow * (hit ? 0.85 : 1), sc[2] * pulse * grow * (hit ? 1.2 : 1)); d.updateMatrix();
       k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this.white : k.base);
       if (k.eye) {
         d.position.set(x + Math.sin(face) * 0.62 * sc[0], y + 1.05 + bob, z + Math.cos(face) * 0.62 * sc[0]); d.scale.set(1, 1, 1); d.updateMatrix(); k.eye.setMatrixAt(n, d.matrix);
@@ -265,21 +313,25 @@ export class Actors {
     this.marks.count = mc.n; this.marks.instanceMatrix.needsUpdate = true;
 
     // elites and the boss
-    const spLive = new Set();
+    const spLive = this._spLive || (this._spLive = new Set()); spLive.clear();
     for (const sp of g.sp) {
       if (!sp.alive) continue; spLive.add(sp);
-      let mesh = this.specials.get(sp); if (!mesh) { mesh = this._specialMesh(sp); this.specials.set(sp, mesh); }
+      let mesh = this.specials.get(sp); if (!mesh) { mesh = this._specialMesh(sp); this.specials.set(sp, mesh); mesh.userData.born = this.vt; fx.ring(sp.x, sp.y, sp.z, 5, 0xe8b84a, 0.7); fx.burst(sp.x, sp.y + 1, sp.z, 24, 0xe8b84a, 4, 6, 0.3, 0.8, 6); fx.shake(0.25); }
+      mesh.scale.setScalar(0.3 + 0.7 * this._pop((this.vt - mesh.userData.born) / 0.6));
       const x = pl(sp.px, sp.x, a), y = pl(sp.py, sp.y, a), z = pl(sp.pz, sp.z, a);
       mesh.position.set(x, y, z); mesh.rotation.y = turnLerp(sp.pface, sp.face, a);
       mesh.rotation.z = sp.dead ? Math.PI / 2 : 0; mesh.position.y = y + (sp.dead ? 0.8 : 0);
-      mesh.userData.parts.forEach(m => { if (m.material && m.material.color) m.material.emissive = sp.flash > 0 ? new T.Color(0x666666) : new T.Color(0x000000); });
+      mesh.userData.parts.forEach(m => { if (m.material && m.material.color) m.material.emissive = sp.flash > 0 ? this._white : this._black; });
     }
     for (const [sp, mesh] of this.specials) if (!spLive.has(sp)) { this.scene.remove(mesh); this.specials.delete(sp); }
 
     // chests
-    const chLive = new Set();
+    const chLive = this._chLive || (this._chLive = new Set()); chLive.clear();
     for (const c of g.chests) { if (c.open) continue; chLive.add(c); let m = this.chests.get(c); if (!m) { m = this._chestMesh(); this.chests.set(c, m); } m.position.set(c.x, c.y, c.z); m.userData.seals.forEach((s, i) => { s.rotation.y = t * 2 + i; }); }
-    for (const [c, m] of this.chests) if (!chLive.has(c)) { this.scene.remove(m); this.chests.delete(c); }
+    for (const [c, m] of this.chests) if (!chLive.has(c)) {
+      if (c.open) { const q = m.position; fx.beam(q.x, q.y, q.z, 0xffe9a0, 0.9); fx.ring(q.x, q.y, q.z, 3.5, 0xffd56a, 0.5); fx.burst(q.x, q.y + 1, q.z, 26, 0xffd56a, 3, 5, 0.25, 0.9, 6); fx.cards(q.x, q.y + 0.5, q.z, 3); }
+      this.scene.remove(m); this.chests.delete(c);
+    }
 
     // projectiles
     const s = g.shots; let nc = 0, nf = 0, nl = 0;
@@ -314,6 +366,18 @@ export class Actors {
 
     this._telegraphs(g);
     this._sand(g);
+  }
+
+  _updateGhosts() {                                              // the two parents of a Fusion spiral into each other before the new monster lands
+    if (!this.ghosts.length) return;
+    if (this._ghostFresh) { let cx = 0, cz = 0; for (const m of this.ghosts) { cx += m.userData.sx; cz += m.userData.sz; } this._gc = [cx / this.ghosts.length, cz / this.ghosts.length]; this._ghostFresh = false; }
+    for (let i = this.ghosts.length - 1; i >= 0; i--) {
+      const m = this.ghosts[i], ud = m.userData, u = (this.vt - ud.g0) / 1.0;
+      if (u >= 1) { this.scene.remove(m); this.ghosts.splice(i, 1); continue; }
+      const dx = ud.sx - this._gc[0], dz = ud.sz - this._gc[1], r0 = Math.sqrt(dx * dx + dz * dz) + 0.6, ang = Math.atan2(dz, dx) + u * u * 12, r = r0 * (1 - u);
+      m.position.set(this._gc[0] + Math.cos(ang) * r, m.position.y + 0.02, this._gc[1] + Math.sin(ang) * r); m.rotation.y += 0.5; m.scale.setScalar((ud.base || 1) * (1 - u * 0.7));
+      if (this.fx.rm_ === false && Math.random() < 0.5) this.fx.spark(m.position.x, m.position.y + 0.5, m.position.z, 0, 0.5, 0, 0xffd56a, 0.3, 0.4);
+    }
   }
 
   _telegraphs(g) {
@@ -423,6 +487,7 @@ export class Actors {
 
 import { heightAt } from '../sim/terrain.js';
 function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
 
 
 

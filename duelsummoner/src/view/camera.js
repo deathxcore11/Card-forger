@@ -8,15 +8,18 @@ const C = CFG.cam;
 const ARM = Math.sqrt(C.back * C.back + C.up * C.up), BASE = Math.atan2(C.up, C.back);
 
 export class ChaseCamera {
-  constructor(camera) { this.camera = camera; this.t = 1; this.py = 0; this.ready = false; this.pos = { x: 0, y: 0, z: 0 }; }
+  constructor(camera) { this.camera = camera; this.t = 1; this.py = 0; this.ready = false; this.pos = { x: 0, y: 0, z: 0 }; this.sx = 0; this.sz = 0; this.lag = true; }
   reset() { this.ready = false; this.t = 1; }
 
   update(p, yaw, pitch, dt) {
     const fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = -fz, rz = fx;
     const a = BASE + clamp(pitch, C.pitchMin, C.pitchMax), back = Math.cos(a) * ARM, up = Math.sin(a) * ARM;
-    if (!this.ready) { this.py = p.y; this.ready = true; }
+    if (!this.ready) { this.py = p.y; this.sx = p.x; this.sz = p.z; this.ready = true; }
+    // gentle horizontal follow lag (about 55 ms); a jump of more than 3 m is a teleport and snaps
+    if (!this.lag || Math.abs(p.x - this.sx) > 3 || Math.abs(p.z - this.sz) > 3) { this.sx = p.x; this.sz = p.z; }
+    else { const k = Math.min(1, dt * 18); this.sx += (p.x - this.sx) * k; this.sz += (p.z - this.sz) * k; }
     this.py += (p.y - this.py) * Math.min(1, dt * 14);           // smooth the vertical follow over steps
-    const px = p.x + rx * C.shoulder, py = this.py + C.headY, pz = p.z + rz * C.shoulder;
+    const px = this.sx + rx * C.shoulder, py = this.py + C.headY, pz = this.sz + rz * C.shoulder;
     const tx = px - fx * back, ty = py + up, tz = pz - fz * back;
     // march from the pivot toward the wanted position; stop before the first solid sample
     let free = 1;

@@ -1,12 +1,14 @@
-// One local save file with a version number, written after every run (and, later, every purchase).
+﻿// One local save file with a version number, written after every run (and, later, every purchase).
 // records are kept per duelist: longest time survived, most kills, highest level.
 import { defaultMeta } from './meta.js';
 export const SAVE_VERSION = 1;
 
-export function freshSave() { return { v: SAVE_VERSION, records: {}, starChips: 0, runs: 0, bossKills: 0, meta: defaultMeta() }; }
+export function freshSave() { return { v: SAVE_VERSION, records: {}, starChips: 0, runs: 0, bossKills: 0, meta: defaultMeta(), settings: defaultSettings() }; }
+export function defaultSettings() { return { reduceMotion: false, shake: 100 }; }
 function withDefaults(s) {                                           // older saves gain new fields without losing progress
   const d = freshSave(), out = Object.assign(d, s), m = defaultMeta();
   out.meta = Object.assign(m, s.meta || {}); out.meta.totals = Object.assign(m.totals, (s.meta && s.meta.totals) || {}); out.meta.deck = Object.assign({}, (s.meta && s.meta.deck) || {});
+  out.settings = Object.assign(defaultSettings(), s.settings || {});
   for (const c of m.unlockedCards) if (!out.meta.unlockedCards.includes(c)) out.meta.unlockedCards.push(c);
   for (const c of m.unlockedItems) if (!out.meta.unlockedItems.includes(c)) out.meta.unlockedItems.push(c);
   return out;
@@ -30,3 +32,4 @@ export function recordRun(host, save, duelist, run) {
   writeSave(host, save);
   return { record: r, newBest };
 }
+

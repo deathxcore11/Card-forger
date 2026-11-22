@@ -6,7 +6,8 @@ import { fusionsReady } from '../sim/field.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 
 const $ = id => document.getElementById(id);
-let key = '', zoneKey = '', bannerT = 0, zonesBuilt = false;
+let key = '', bannerT = 0, zonesBuilt = false, slowT = -1, nextTxt = '';
+const zM = [], zL = [], sM = [], sL = [], sR = [];
 
 function buildZones() {
   const z = $('zones'); z.innerHTML = '';
@@ -34,9 +35,11 @@ export function drawHud(g, force) {
     $('clock').textContent = g.t >= 480 ? 'OVERTIME +' + clock(g.t - 480) : clock(g.t); $('kills').textContent = g.kills; $('coins').textContent = g.coins;
   }
   // field: 4 Monster Zones then 4 Spell and Trap Zones
-  const zk = JSON.stringify([g.field.monsters.map(m => m && [m.id, m.level]), g.field.spells.map(s => s && [s.id, s.level, s.cd > 0])]);
-  if (force || zk !== zoneKey) {
-    zoneKey = zk;
+  let zdiff = force;
+  const M = g.field.monsters, S = g.field.spells;
+  for (let i = 0; i < M.length; i++) { const id = M[i] ? M[i].id : '', lv = M[i] ? M[i].level : 0; if (zM[i] !== id || zL[i] !== lv) { zM[i] = id; zL[i] = lv; zdiff = true; } }
+  for (let i = 0; i < S.length; i++) { const id = S[i] ? S[i].id : '', lv = S[i] ? S[i].level : 0, rc = S[i] ? S[i].cd > 0 : false; if (sM[i] !== id || sL[i] !== lv || sR[i] !== rc) { sM[i] = id; sL[i] = lv; sR[i] = rc; zdiff = true; } }
+  if (zdiff) {
     g.field.monsters.forEach((m, i) => {
       const el = $('mz' + i); el.className = 'zone' + (m ? ' full' : '');
       if (!m) { el.innerHTML = 'empty<b>MONSTER ' + (i + 1) + '</b>'; return; }
@@ -50,6 +53,10 @@ export function drawHud(g, force) {
       el.innerHTML = '<span style="color:#fff3d0;font-weight:bold">' + D.name + '</span><b>' + (TRAPS[s.id] ? 'TRAP ' + (s.cd > 0 ? 'recharging' : 'set') : 'SPELL') + '  L' + s.level + ' of 5</b>';
     });
   }
+  // the text lines below change at most a few times a second: refresh them four times a second, not every frame
+  const slow = Math.floor(g.t * 4);
+  if (!force && slow === slowT) { const boss0 = g.sp.find(s => s.kind === 'pharaoh' && s.alive); if (boss0) $('bossfill').style.width = Math.max(0, boss0.hp / boss0.maxHp * 100) + '%'; return; }
+  slowT = slow;
   const ready = fusionsReady(g), f = $('fusion');
   f.style.display = ready.length ? 'block' : 'none';
   if (ready.length) f.textContent = 'FUSION READY: ' + ready.map(id => FUSIONS[id].name).join(' or ') + '. Open a sealed chest (E).';
@@ -71,7 +78,11 @@ export function drawHud(g, force) {
 export function showBanner(text) {
   const b = $('banner'); b.textContent = text; b.classList.add('on'); clearTimeout(bannerT); bannerT = setTimeout(() => b.classList.remove('on'), 3200);
 }
-export function showFlash(g) { $('flash').style.opacity = g.flash > 0 ? Math.min(1, g.flash / 0.25) : 0; }
+let flashShown = -1, flashEl = null;
+export function showFlash(g) {
+  const q = g.flash > 0 ? Math.round(Math.min(1, g.flash / 0.25) * 25) / 25 : 0;
+  if (q !== flashShown) { flashShown = q; (flashEl || (flashEl = $('flash'))).style.opacity = q; }
+}
 
 
 
