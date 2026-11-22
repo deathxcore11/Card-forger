@@ -80,6 +80,29 @@
   .settings { font-size:13px; color:var(--dim); display:flex; gap:18px; align-items:center; justify-content:center; flex-wrap:wrap; }
   .settings input[type=range] { vertical-align:middle; width:110px; }
   body.rm .card, body.rm .screen.on, body.rm #plate.on { animation:none; } body.rm #plate.on { opacity:1; } body.rm #lowhp.on { animation:none; opacity:.35; } body.rm .card:hover { transform:none; }
+  #startScreen, #menuScreen { justify-content:flex-start; overflow:auto; padding-top:28px; }
+  #menuBody { width:min(1040px, 96vw); text-align:left; } #menuBody h2 { margin:0 0 8px; letter-spacing:3px; }
+  .chipsTop { position:fixed; right:18px; top:14px; color:#ffe08a; font-size:18px; }
+  .mainRow { display:flex; gap:24px; flex-wrap:wrap; justify-content:center; margin-top:10px; width:min(980px,96vw); }
+  .mainBtns { display:flex; flex-direction:column; gap:8px; min-width:240px; } .mainBtns button { margin:0; width:100%; } .mainSide { flex:1; min-width:300px; display:flex; flex-direction:column; gap:12px; text-align:left; }
+  .panel { background:#1b1220e6; border:1px solid var(--line); padding:12px 14px; } .panel h3 { margin:0 0 8px; font-size:14px; letter-spacing:2px; color:#d8c08a; }
+  .dim { color:var(--dim); font-size:13px; } .joke { font-style:italic; color:#e0cfa8; margin:8px 0; }
+  .bar2 { position:relative; height:14px; border:1px solid var(--ink); background:#000a; margin:3px 0 6px; } .bar2 > i { position:absolute; inset:0 auto 0 0; background:var(--xp); } .bar2 > span { position:relative; font-size:11px; padding-left:6px; line-height:14px; text-shadow:0 0 3px #000; }
+  .trk b { font-size:13px; } .trk span { float:right; font-size:12px; color:var(--dim); } .lbrow { font-size:13px; padding:2px 0; border-bottom:1px solid #3a2a50; }
+  .tabs { display:flex; gap:4px; flex-wrap:wrap; margin:6px 0; } .tab { font-size:13px; padding:6px 12px; margin:0; background:#3a2a50; color:var(--ink); } .tab.sel { background:var(--ink); color:var(--bg); }
+  .selWrap { display:flex; gap:18px; flex-wrap:wrap; } .selLeft { flex:1; min-width:280px; } .selRight { flex:1; min-width:300px; }
+  .portraits { display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:8px; }
+  .portrait { background:#1b1220; color:var(--ink); border:2px solid var(--line); padding:8px; margin:0; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:13px; letter-spacing:0; } .portrait.sel { border-color:#ffe08a; } .portrait.locked { color:#6a5a7a; }
+  .portrait .face { width:64px; height:64px; display:flex; align-items:center; justify-content:center; font-size:30px; color:#fff; background:#2a1a38; border:2px solid #0006; } .portrait.locked .face { background:#0d0810; color:#3a2a50; }
+  .portrait.wide { width:100%; flex-direction:column; align-items:flex-start; text-align:left; } .mapList { display:flex; flex-direction:column; gap:8px; } .portrait small { color:var(--dim); font-size:11px; }
+  .prev { float:right; width:120px; height:140px; border:1px solid var(--line); margin:0 0 8px 10px; background:#120a18; image-rendering:pixelated; }
+  .slots { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:10px; font-size:13px; } .slot { width:34px; height:34px; border:2px solid var(--line); display:inline-flex; align-items:center; justify-content:center; background:#0d0810; color:#6a5a7a; } .slot.on { border-color:#ffe08a; color:var(--ink); }
+  .navRow { display:flex; gap:10px; justify-content:space-between; align-items:center; margin:12px 0; } .navRow button { margin:0; }
+  .diffRow { display:grid; grid-template-columns:20px 70px 130px 90px 90px 90px 1fr; gap:8px; align-items:center; padding:6px; border:1px solid #3a2a50; margin:4px 0; font-size:13px; cursor:pointer; } .diffRow.sel { border-color:#ffe08a; background:#2a1a38; } .diffRow button { margin:0; }
+  .mini { display:inline-block; width:22px; height:22px; text-align:center; line-height:22px; background:#3a2a50; margin-right:3px; font-style:normal; } .oathRow { display:block; padding:4px 0; font-size:13px; }
+  .list { max-height:62vh; overflow:auto; } .libRow { display:flex; gap:10px; align-items:center; padding:7px 4px; border-bottom:1px solid #3a2a50; font-size:13px; } .libRow.locked { color:#7a6a8a; } .libMain { flex:1; }
+  .sil { width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:#2a1a38; border:2px solid var(--line); font-size:20px; flex:none; } .libRow.locked .sil { background:#0d0810; color:#3a2a50; } .chk { font-size:12px; color:var(--dim); white-space:nowrap; }
+  .qgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:10px; max-height:62vh; overflow:auto; } .qcard { border:3px solid; background:#1b1220; padding:8px 10px; font-size:13px; } .qcard.done { opacity:.6; } .qhead { display:flex; justify-content:space-between; }
   .rowBtn { display:flex; gap:6px; margin-top:8px; }
   .rowBtn button { font-size:12px; padding:5px 8px; margin:0; flex:1; }
 </style>
@@ -116,18 +139,8 @@
 <div class="hud" id="itemsList" style="left:16px;bottom:14px;width:min(380px,28vw);color:#e0cfa8;font-size:13px;line-height:1.4"></div>
 <div class="hud" id="zones"></div>
 
-<div class="screen on" id="startScreen">
-  <h1>DUEL SUMMONER</h1>
-  <p>Three stages, each with an elite, two timed bosses and a gate boss. Quick Duel is one stage.<br>
-     WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash &middot; Ctrl or C slide &middot; E use &middot; Esc pause<br>
-     The gate wakes when the second boss falls (or near the end of the clock). Hold E at the gate to enter early. Beat the gate boss, step into the Descent Circle.</p>
-  <div><button class="small sel" id="pickKael">KAEL: Ember Wyvern</button><button class="small" id="pickMira">MIRA: Rune Apprentice</button></div>
-  <div id="diffRow"><button class="small" data-diff="easy">EASY</button><button class="small sel" data-diff="medium">MEDIUM</button><button class="small" data-diff="hard">HARD</button></div>
-  <button id="startBtn">START RUN (3 stages)</button>
-  <button id="quickBtn" class="small">QUICK DUEL (1 stage, 8:00)</button>
-  <div class="settings"><label><input type="checkbox" class="setRM"> Reduce motion</label> <label>Shake <input type="range" class="setShake" min="0" max="100" value="100"> <span class="setShakeV">100</span>%</label></div>
-  <div><button class="small" id="deckBtn">DECK BOX</button><button class="small" id="libBtn">CARD LIBRARY</button> <span id="chipsLine" style="color:var(--dim)"></span></div>
-</div>
+<div class="screen on" id="startScreen"></div>
+<div class="screen" id="menuScreen"><div id="menuBody"></div></div>
 <div class="screen" id="metaScreen"><div id="metaBody" style="max-width:760px;width:94vw"></div></div>
 <div class="screen" id="pauseScreen">
   <h1>PAUSED</h1>
@@ -153,7 +166,7 @@
   <p class="stat">Score <span id="dScore">0</span> &middot; <span id="dDiff">Medium</span></p>
   <p id="dQuests" style="color:#9ff0a8;font-size:15px"></p>
   <p>Best time <span id="dBest">0:00</span></p>
-  <button id="restartBtn">RESTART</button>
+  <button id="restartBtn">RESTART</button> <button id="menuBtn" class="small">MAIN MENU</button>
 </div>
 
 <script src="vendor/three.min.js"></script>

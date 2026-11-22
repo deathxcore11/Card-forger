@@ -42,9 +42,9 @@ function instanced(geo, material, max) {
 }
 const flat = geo => { geo.rotateX(-Math.PI / 2); return geo; };
 
-function playerMesh() {
+function playerMesh(color) {
   const g = new T.Group();
-  const robe = new T.Mesh(new T.CylinderGeometry(0.35, 0.65, 1.3, 6), lambert(0x3c2a66)); robe.position.y = 0.65;
+  const robe = new T.Mesh(new T.CylinderGeometry(0.35, 0.65, 1.3, 6), lambert(color || 0x3c2a66)); robe.position.y = 0.65;
   const head = new T.Mesh(new T.BoxGeometry(0.45, 0.45, 0.45), lambert(0xe8c39a)); head.position.y = 1.55;
   const disk = new T.Mesh(new T.BoxGeometry(0.9, 0.08, 0.35), lambert(0xd8b24a)); disk.position.set(-0.55, 1.0, 0.1);
   const lean = new T.Group(); lean.add(robe, head, disk); g.add(lean); g.userData.body = robe; g.userData.lean = lean; g.userData.squash = 0;
@@ -235,7 +235,7 @@ export class Actors {
     const px = pl(p.px, p.x, a), py = pl(p.py, p.y, a), pz = pl(p.pz, p.z, a);
     this.player.position.set(px, py, pz); this.player.rotation.y = turnLerp(p.pface, p.face, a);
     this.player.userData.body.scale.y = p.sliding ? 0.55 : 1; this.player.rotation.x = p.sliding ? -0.5 : 0;
-    this.player.visible = !(g.over && !g.won);
+    this.player.visible = !(g.over && !g.won); this.player.scale.setScalar(g.oaths.small ? 0.5 : 1);                 // Small Oath: half size
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);
@@ -283,7 +283,8 @@ export class Actors {
       if (m.level > ud.lv) { ud.lv = m.level; ud.pulse = this.vt; fx.ring(x, y, z, 2.6, 0xc9a3ff, 0.45); fx.burst(x, y + 0.8, z, 14, 0xd9b8ff, 2, 4, 0.2, 0.7, 3); }
       const pu = this.vt - ud.pulse; if (pu >= 0 && pu < 0.35) { const k = Math.sin(pu / 0.35 * Math.PI) * 0.18; sxz += k; sy += k; }
       if (fx.rm_) { sxz = 1; sy = 1; }
-      mesh.scale.set(ud.base * sxz * su, ud.base * sy * su, ud.base * sxz * su);
+      const half = g.oaths.small ? 0.5 : 1;
+      mesh.scale.set(ud.base * sxz * su * half, ud.base * sy * su * half, ud.base * sxz * su * half);
     });
     for (const [m, mesh] of this.monsters) if (!live.has(m)) {
       this.monsters.delete(m);

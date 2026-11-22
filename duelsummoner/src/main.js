@@ -19,6 +19,8 @@ import { simMeta, applyRun } from './core/meta.js';
 import { showDeckBox, showLibrary } from './view/metaui.js';
 import { QUESTS } from './data/meta.js';
 import { Fx } from './view/fx.js';
+import { initMenus } from './view/menus.js';
+import { DIFF_CHIPS, DUELIST_INFO } from './data/progress.js';
 import { packReplay, deflateInBrowser } from './core/replay.js';
 import { DIFFICULTY } from './data/stages.js';
 import { KIND_LIST } from './data/enemies.js';
@@ -71,10 +73,12 @@ function applySettings() {
   for (const el of document.querySelectorAll('.setShake')) { el.value = s.shake; el.disabled = !!s.reduceMotion; }
   for (const el of document.querySelectorAll('.setShakeV')) el.textContent = s.reduceMotion ? 'off' : s.shake;
 }
-for (const el of document.querySelectorAll('.setRM')) el.addEventListener('change', () => { save.settings.reduceMotion = el.checked; applySettings(); writeSave(host, save); });
-for (const el of document.querySelectorAll('.setShake')) el.addEventListener('input', () => { save.settings.shake = +el.value; applySettings(); });
-for (const el of document.querySelectorAll('.setShake')) el.addEventListener('change', () => writeSave(host, save));
-applySettings();
+function bindSettings() {
+  for (const el of document.querySelectorAll('.setRM')) el.onchange = () => { save.settings.reduceMotion = el.checked; applySettings(); writeSave(host, save); };
+  for (const el of document.querySelectorAll('.setShake')) { el.oninput = () => { save.settings.shake = +el.value; applySettings(); }; el.onchange = () => writeSave(host, save); }
+  applySettings();
+}
+bindSettings();
 
 function lock() { if (canvas.requestPointerLock) { try { canvas.requestPointerLock(); } catch (e) {} } }
 function setMode(m) {
@@ -84,27 +88,22 @@ function setMode(m) {
   $('hint').textContent = m === 'play' && !document.pointerLockElement ? 'Click the map to look around' : '';
   last = 0;
 }
-function pickDifficulty(d) { if (!DIFFICULTY[d]) d = 'medium'; save.settings.difficulty = d; for (const b of document.querySelectorAll('#diffRow button')) b.classList.toggle('sel', b.dataset.diff === d); writeSave(host, save); }
-for (const b of document.querySelectorAll('#diffRow button')) b.addEventListener('click', () => pickDifficulty(b.dataset.diff));
-pickDifficulty(save.settings.difficulty);
-function begin(mode) {
-  game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions'; game.opts.difficulty = save.settings.difficulty;
+function begin(mode, sel) {
+  sel = sel || {}; if (sel.duelist) pickDuelist(sel.duelist);
+  game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions'; game.opts.difficulty = sel.difficulty || save.settings.difficulty; game.opts.oaths = sel.oaths || []; game.opts.map = sel.map || 'ruins';
   ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; game.opts.meta = simMeta(save.meta); game.reset(Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();
   for (const m of actors.specials.values()) scene.remove(m); actors.specials.clear();
   for (const m of actors.chests.values()) scene.remove(m); actors.chests.clear();
   drawHud(game, true); setMode('play'); lock();
+  const blind = !!game.oaths.blind; for (const id of ['minimap', 'boss', 'plate']) $(id).style.visibility = blind ? 'hidden' : '';      // Blind Oath
 }
-function pickDuelist(id) { duelist = id; $('pickKael').classList.toggle('sel', id === 'kael'); $('pickMira').classList.toggle('sel', id === 'mira'); }
-$('pickKael').addEventListener('click', () => pickDuelist('kael'));
-$('pickMira').addEventListener('click', () => pickDuelist('mira'));
-const showChips = () => { $('chipsLine').textContent = 'Star Chips ' + save.starChips; };
-showChips();
-$('deckBtn').addEventListener('click', () => showDeckBox(save, () => { writeSave(host, save); showChips(); }, showChips));
-$('libBtn').addEventListener('click', () => showLibrary(save, showChips));
-$('startBtn').addEventListener('click', () => begin('run'));
-$('quickBtn').addEventListener('click', () => begin('quick'));
-$('restartBtn').addEventListener('click', () => begin(game.opts.mode));
+function pickDuelist(id) { duelist = id; }
+const menus = initMenus({ save, persist: () => writeSave(host, save), begin, bindSettings: () => { bindSettings(); },
+  showDeckBox: () => showDeckBox(save, () => writeSave(host, save), () => menus.showMain()) });
+$('restartBtn').addEventListener('click', () => begin(game.opts.mode, { duelist, difficulty: game.opts.difficulty, oaths: game.opts.oaths, map: game.opts.map }));
+$('menuBtn').addEventListener('click', () => { setMode('start'); menus.showMain(); });
+menus.showMain();
 $('endBtn').addEventListener('click', () => { game.endRun(); results(); });
 $('resumeBtn').addEventListener('click', () => { setMode('play'); lock(); });
 canvas.addEventListener('mousedown', () => { if (MODE === 'play') lock(); });
@@ -132,15 +131,16 @@ function results() {
   let info = { record: { bestTime: 0 }, newBest: false };
   let unlocked = [];
   if (!ended) {                                                          // saved once per run
-    ended = true; info = recordRun(host, save, duelist, { time: game.t, kills: game.kills, level: game.level, bossKilled: game.bossKilled, chips: game.starChips() });
-    const report = game.results({ runId: 'ds-' + game.seed + '-' + save.runs }); unlocked = applyRun(save.meta, report); writeSave(host, save);
+    ended = true; const chips = Math.floor(game.starChips() * (DIFF_CHIPS[game.difficulty] || 1));         // Star Chips scale with difficulty (separate from the score multiplier)
+    info = recordRun(host, save, duelist, { time: game.t, kills: game.kills, level: game.level, bossKilled: game.bossKilled, chips });
+    const report = game.results({ runId: 'ds-' + game.seed + '-' + save.runs }); unlocked = applyRun(save.meta, report); for (const q of unlocked) if (q.reward && q.reward.chips) save.starChips += q.reward.chips; writeSave(host, save);
     // the verifiable replay (seed, difficulty, mode, build, the run-length input tape and the final state hash) rides along with the report
     packReplay(game.replayRaw(), typeof CompressionStream !== 'undefined' ? deflateInBrowser : null).then(r => { report.replay = r; host.reportRun(report); }).catch(() => host.reportRun(report));
   }
-  $('dQuests').textContent = unlocked.length ? 'Quest done: ' + unlocked.map(q => q.name + ' (unlocked ' + (q.unlock.card || q.unlock.item) + ')').join(', ') : '';
+  $('dQuests').textContent = unlocked.length ? 'Quest done: ' + unlocked.map(q => q.name + ' (' + (q.reward.chips ? '+' + q.reward.chips + ' Star Chips' : 'unlocked ' + (q.reward.card || q.reward.item || q.reward.duelist || q.reward.outfit || q.reward.regalia)) + ')').join(', ') : '';
   $('resTitle').textContent = game.bossKilled ? 'VICTORY' : game.ended ? 'RUN ENDED' : 'DEFEATED';
   $('dTime').textContent = clock(game.t); countUp('dLevel', game.level); countUp('dKills', game.kills); countUp('dFusions', game.fusions);
-  $('dOvertime').textContent = clock(game.overtimeSeconds()); countUp('dChips', game.starChips()); countUp('dScore', game.score()); $('dDiff').textContent = DIFFICULTY[game.difficulty].name + (game.mode === 'quick' ? ' (Quick Duel)' : ''); $('dBest').textContent = clock(save.records[duelist] ? save.records[duelist].bestTime : 0) + (info.newBest ? '  NEW BEST' : '');
+  $('dOvertime').textContent = clock(game.overtimeSeconds()); countUp('dChips', Math.floor(game.starChips() * (DIFF_CHIPS[game.difficulty] || 1))); countUp('dScore', game.score()); $('dDiff').textContent = DIFFICULTY[game.difficulty].name + (game.mode === 'quick' ? ' (Quick Duel)' : ''); $('dBest').textContent = clock(save.records[duelist] ? save.records[duelist].bestTime : 0) + (info.newBest ? '  NEW BEST' : '');
   const stg = game.mode !== 'classic' && game.stages.length > 1 ? ' in Stage ' + (game.stage + 1) : '';
   const why = game.bossKilled ? (game.mode !== 'classic' ? 'The Hollow King fell. ' + (game.duelOn ? 'You Dueled On into Overtime.' : 'The Vault is closed.') : 'The Hollow Pharaoh fell. Overtime goes on until you fall.') : game.ended ? 'You ended the run' + stg + '.' : 'Downed by ' + (game.killedBy || 'the horde') + stg;
   $('dCause').textContent = why;
@@ -272,7 +272,7 @@ requestAnimationFrame(frame);
 window.__ds = {
   game, input, chase, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
-  start: begin, begin, results, setMode, fx, onEvent, save,
+  start: begin, begin, results, setMode, menus, fx, onEvent, save,
   pickDuelist, freeze: v => { frozen = !!v; },
   yaw: v => { input.yaw = v; },
   drive: (secs, cmd) => { const c = Object.assign({ f: 0, r: 0, yaw: input.yaw, jump: false, dash: false, slide: false, use: false }, cmd || {}); for (let t = 0; t < secs && !game.over && !game.offer; t += 1 / 60) game.step(1 / 60, c); drainEvents(); if (game.over && MODE === 'play') results(); drawHud(game, true); },
@@ -280,6 +280,7 @@ window.__ds = {
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
+
 
 
 
