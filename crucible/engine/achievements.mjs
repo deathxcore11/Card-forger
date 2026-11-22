@@ -4,11 +4,15 @@
 // rows were earned in (p.ach) and the number of the run each one was earned in (p.achAt).
 //   achList(db)                         the rows open under this config, as plain data
 //   achCheck(db, p, run)                ids newly earned; they are written to p.ach and p.achAt
-//   achProgress(db, p, run)             { id, have, goal, done } for each open row that counts up
-//   achView(db, p, run)                 every open row with what the page shows for it
+//   achProgress(db, p, run)             { id, have, goal, done } for each row shown that counts up
+//   achView(db, p, run)                 every row shown (open, or already earned) with what the page shows for it
 //   achRunApply(run, a, db, p, opts)    runApply, then achCheck; each new id joins the events as { e: 'ach', id }
 // Only a run begun with track (newRun option; run.ach) counts. A row that reads the profile also counts what the run
-// in progress has added so far, so it can be earned the moment it happens rather than when the run is banked.
+// in progress has added so far, so it can be earned the moment it happens rather than when the run is banked. Once
+// applyRun has banked the run (it marks run.ach.banked; a uid in p.banked counts too) its numbers live in the profile
+// and are not counted again. A tracked run saved by a build before run.ach existed starts keeping facts at its next
+// achRunApply (run.ach.late): what came before is unknown, so rows that need the whole run to have gone a certain way
+// (Owed Nothing, Every Seam Held) are not earned from it. An older profile reads descents and forged as zero.
 import { runApply, BOSSES } from './run.mjs';
 import { VAULT, FORGER_FEATS, scoreRun } from './meta.mjs';
 import { FORGER_IDS } from './forgers.mjs';
@@ -56,7 +60,7 @@ function pageIds(db, keys) {
 // side of the duel in progress, read only by rows that something done earns, never by a row that needs nothing to happen.
 function context(db, p, run0) {
   const run = run0 && run0.ach ? run0 : null;
-  const banked = !!(run && run.uid && (p.banked || []).includes(run.uid));
+  const banked = !!(run && (run.ach.banked || (run.uid && (p.banked || []).includes(run.uid))));
   const add = !!run && !banked, over = !!run && run.phase === 'over', won = over && !!(run.result && run.result.won);
   const S = run ? run.stats : null;
   const c = {
@@ -67,11 +71,13 @@ function context(db, p, run0) {
     clears: (p.clears || 0) + (add && won ? 1 : 0),
     runs: (p.runs || 0) + (add && over ? 1 : 0),
     heatCleared: Math.max(p.heatCleared ?? -1, add && won ? run.heat || 0 : -1),
-    descents: (p.descents || 0) + (add && over && S.duels >= 1 ? 1 : 0),
+    descents: (p.descents || 0) + (add && over && (run.ach.reached || S.duels >= 1) ? 1 : 0),
     forged: (p.forged || 0) + (add ? run.masterworks.length : 0),
     lastOne: (p.lastOne || 0) + (add && run.secret && run.secret.won ? 1 : 0),
     bestFloor: Math.max(p.bestFloor || 0, add ? (won ? 3 : run.floor) : 0),
     beaten: new Set([...(p.beaten || []), ...(run ? run.ach.beaten : [])]),
+    // The door that was not there was shown: dealt once the lone guardian's reward was taken (meta.mjs applyRun).
+    doorFound: !!(p.doorFound ?? p.loneMet) || !!(run && run.secret && run.secret.met && !run.secret.due),
   };
   // One Forger's record: duels won, clears and the highest Heat cleared, with this run counted.
   c.forger = f => {
@@ -112,7 +118,7 @@ export const ACH = [
   R('on_one_spark', 'On One Spark', 'asterhold', 'common', 'Clear the pyramid with exactly one Spark left.', { test: c => c.won && c.run.sparks === 1 }),
   R('room_over_warmth', 'Room Over Warmth', 'asterhold', 'common', 'At a Sanctum on your last Spark, raise your weight cap instead of taking back a Spark.', { test: c => !!(c.run && c.run.ach.capOnLast) }),
   R('a_hammer_like_yours', 'A Hammer Like Yours', 'asterhold', 'uncommon', 'Clear the pyramid for the first time.', { test: c => c.clears >= 1 }),
-  R('owed_nothing', 'Owed Nothing', 'asterhold', 'feat', 'Clear the pyramid after turning down every Gift the forge offered.', { test: c => c.won && c.run.ach.gifts === 0 && c.run.ach.giftSkips >= 1 }),
+  R('owed_nothing', 'Owed Nothing', 'asterhold', 'feat', 'Clear the pyramid after turning down every Gift the forge offered.', { test: c => c.won && !c.run.ach.late && c.run.ach.gifts === 0 && c.run.ach.giftSkips >= 1 }),
   R('every_spark_home', 'Every Spark Home', 'asterhold', 'hidden', 'Clear the pyramid without losing a single duel.', { hint: 'The dark took not one light from you.', test: c => c.won && c.run.stats.losses === 0 }),
   // The Heat
   R('one_coal_hotter', 'One Coal Hotter', 'heat', 'xp', 'Clear the pyramid at Heat 1 or higher.', { test: c => c.heatCleared >= 1 }),
@@ -139,7 +145,7 @@ export const ACH = [
   R('the_codex_grows', 'The Codex Grows', 'codex', 'common', 'Find 75 pages in the Codex.', { goal: 75, have: c => c.pages() }),
   R('a_heavy_codex', 'A Heavy Codex', 'codex', 'uncommon', 'Find 150 pages in the Codex.', { goal: 150, have: c => c.pages() }),
   R('fivefold_weld', 'Fivefold Weld', 'codex', 'uncommon', 'Make a single meld of five cards in which every card fuses.', { test: c => c.fuse() >= 5 }),
-  R('every_seam_held', 'Every Seam Held', 'codex', 'feat', 'Clear the pyramid with at least 20 fusions and not one fizzle.', { test: c => c.won && c.run.stats.fizzles === 0 && sum(c.duels, d => d.fusions) >= 20 }),
+  R('every_seam_held', 'Every Seam Held', 'codex', 'feat', 'Clear the pyramid with at least 20 fusions and not one fizzle.', { test: c => c.won && !c.run.ach.late && c.run.stats.fizzles === 0 && !c.duels.some(d => d.steady) && sum(c.duels, d => d.fusions) >= 20 }),
   R('the_long_seam', 'The Long Seam', 'codex', 'hidden', 'Make a single meld of six or more cards in which every card fuses.', { hint: 'The seam ran longer than any hand should allow.', test: c => c.fuse() >= 6 }),
   // Forge and Vault
   R('paid_in_memories', 'Paid in Memories', 'forge', 'xp', 'Buy anything in the Memory Vault.', { test: c => (c.p.bought || []).length >= 1 }),
@@ -166,7 +172,7 @@ export const ACH = [
   // Rumours. The first needs no switch; every other row here is earned only while the Rumours switch is on.
   R('scratched_on_the_door', 'Scratched on the Door', 'rumours', 'xp', 'Start your first descent and read the line scratched on the first door.', { test: c => !!c.run || (c.p.runs || 0) >= 1 || (c.p.seen || []).includes('intro') }),
   R('the_first_memory', 'The First Memory', 'rumours', 'xp', 'Beat a floor guardian and hear the memory it leaves as it falls.', { needs: 'secret', test: c => (!!c.run && c.run.ach.beaten.length >= 1) || (c.p.seen || []).some(k => String(k).startsWith('memory:')) }),
-  R('where_wall_was', 'Where Wall Was', 'rumours', 'hidden', 'Beat a floor guardian without ever having more than one monster on your side, and find the door that was not there.', { needs: 'secret', hint: 'Every guardian tells you the way as it falls, if you put their memories together.', test: c => !!(c.run && c.run.ach.foundDoor) || !!c.p.loneMet }),
+  R('where_wall_was', 'Where Wall Was', 'rumours', 'hidden', 'Beat a floor guardian without ever having more than one monster on your side, and find the door that was not there.', { needs: 'secret', hint: 'Every guardian tells you the way as it falls, if you put their memories together.', test: c => c.doorFound }),
   R('one_was_enough', 'One Was Enough', 'rumours', 'hidden', 'Win the hidden duel against The Last One.', { needs: 'secret', hint: 'Some doors open only once. Win what waits behind one.', test: c => c.lastOne >= 1 || secretDuel(c, true) }),
   R('the_keeper_leaves', 'The Keeper Leaves', 'rumours', 'hidden', 'Clear the pyramid playing as The Last One.', { needs: 'secret', hint: 'The one who stayed can leave at last.', test: c => c.forger('last').clears >= 1 || (c.won && c.run.forger === 'last') }),
   // Four more hidden rows behind the Rumours switch (approved with the list). What Was Taken still asks for the five above.
@@ -184,8 +190,10 @@ for (const r of ACH) if (r.parts) r.goal = r.parts.length;
 export const ACH_BY_ID = Object.fromEntries(ACH.map(r => [r.id, r]));
 
 // ---------- the functions ----------
-// Is the row open under this config? A row that needs the Rumours switch is never listed or earned with it off.
+// Is the row open under this config? A row that needs the Rumours switch is never earned with it off, and is listed
+// with it off only once earned (an earned and paid row never leaves the screen).
 const open = (db, r) => !r.needs || (r.needs === 'secret' && !!db.config.secretLast);
+const shown = (db, r, mine) => open(db, r) || mine.includes(r.id);
 const plain = r => { const o = { id: r.id, name: r.name, group: r.group, tier: r.tier, hidden: r.hidden, how: r.how }; for (const k of ['hint', 'needs', 'title', 'goal', 'parts']) if (r[k] != null) o[k] = Array.isArray(r[k]) ? r[k].slice() : r[k]; return o; };
 export const achList = db => ACH.filter(r => open(db, r)).map(plain);
 
@@ -203,29 +211,35 @@ export function achCheck(db, p, run = null) {
   return got;
 }
 
-// How far each open row that counts up has come: { id, have, goal, done }. have never goes past goal.
+// How far each row shown that counts up has come: { id, have, goal, done }. have never goes past goal.
 export function achProgress(db, p, run = null) {
   const c = context(db, p, run), mine = p.ach || [];
-  return ACH.filter(r => r.goal && open(db, r)).map(r => {
+  return ACH.filter(r => r.goal && shown(db, r, mine)).map(r => {
     const done = mine.includes(r.id), have = r.parts ? r.parts.filter(id => mine.includes(id)).length : r.have(c);
     return { id: r.id, have: done ? r.goal : Math.min(r.goal, have), goal: r.goal, done };
   });
 }
 
-// Every open row as the page shows it: earned or not, the run it was earned in, its progress, and the words to show
-// (a hidden row not yet earned shows only its hint and no name).
+// Every row shown as the page shows it: earned or not, the run it was earned in, its progress, and the words to show
+// (a hidden row not yet earned shows only its hint and no name). The rows open under this config, and any row already
+// earned, so turning the Rumours switch off later never takes an earned row off the screen.
 export function achView(db, p, run = null) {
   const prog = Object.fromEntries(achProgress(db, p, run).map(x => [x.id, x])), mine = p.ach || [];
-  return ACH.filter(r => open(db, r)).map(r => {
+  return ACH.filter(r => shown(db, r, mine)).map(r => {
     const earned = mine.includes(r.id), veiled = r.hidden && !earned;
     return { ...plain(r), earned, at: earned ? (p.achAt || {})[r.id] ?? null : null, shownName: veiled ? null : r.name, shownText: veiled ? r.hint : r.how, ...(prog[r.id] ? { have: prog[r.id].have } : {}) };
   });
 }
 
 // A run action with the achievements judged after it: the events of runApply, then { e: 'ach', id } for each row it
-// earned, in the order earned. Throws exactly as runApply does, and then judges nothing.
+// earned, in the order earned. Throws exactly as runApply does, leaves the run as it was, and then judges nothing.
+// A tracked run saved before run.ach existed (run.feat only) starts keeping facts here: late, and reached if it is in a
+// duel or has fought one.
 export function achRunApply(run, a, db, p, opts = {}) {
-  const ev = runApply(run, a, db, opts);
+  const late = !!(run && run.feat && !run.ach && run.phase !== 'over');
+  if (late) run.ach = { duels: [], beaten: [], gifts: 0, giftSkips: 0, late: 1, ...(run.phase === 'duel' || run.stats.duels >= 1 ? { reached: 1 } : {}) };
+  let ev;
+  try { ev = runApply(run, a, db, opts); } catch (e) { if (late) delete run.ach; throw e; }
   for (const id of achCheck(db, p, run)) ev.push({ e: 'ach', id });
   return ev;
 }

@@ -17,7 +17,7 @@ node crucible/test/test-crucible-fuzz.mjs 6000 600     # random play with invari
 node crucible/test/test-crucible-fuzz-levers.mjs 1000 200 1   # the same with every Lab lever on, Heat 0-10, wild actions, rule changes mid-run, profiles
 node crucible/test/test-crucible-events.mjs 6000        # random play; every change in the state must have an event the page can show
 node crucible/test/test-crucible-caps.mjs 1500 1        # random CPU duels; no relic may fire more often than its own text says
-node crucible/test/test-crucible-achievements.mjs [24]  # every one of the 68 achievements earned, none twice, none from a reload, no Rumours row with the switch off, metas after their parts, fixtures unchanged
+node crucible/test/test-crucible-achievements.mjs [24]  # every one of the 68 achievements earned, none twice, none from a reload, no Rumours row earned with the switch off (an earned one stays listed), metas after their parts, fixtures unchanged
 node tools/crucible/ach-sim.mjs --profiles 300 --runs 15 [--mix 0]   # how often the scripted player earns each achievement over thousands of tracked runs
 node tools/crucible/page-checks.cjs <built index.html> <duel save> [w h]   # a browser taps the built page: Spell targets, forecast, card page, sound cue order, the danger the screen cue tells the sound (18 checks)
 node tools/crucible/lesson-checks.cjs <built index.html> <duel save> [w h]   # the first lessons, the loss summary and guardian counsel (25 checks)

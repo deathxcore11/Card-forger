@@ -510,6 +510,8 @@ function pickThree(db, rng, list, n, wantRare) {
 // w: won. tier and boss: the rival. reason: how it ended. rank: the letter, for a win. top: the highest ATK on the
 // player's side at the end. veiled: a veiled monster of the player's was still on the table. aceCame: the last Law's
 // ace reached the table. chain: the longest meld. printed: printed fusions made. fams: build families whose relics fired.
+// steady: Steady Hand turned a fizzle back into the hand (its own text calls that a fizzle; the duel does not count it
+// in stats.fizzles). Read from the duel's own state, so a duel begun without counters still tells it.
 function achFacts(db, run, d, won) {
   const st = d.stats[0];
   const f = {
@@ -517,6 +519,7 @@ function achFacts(db, run, d, won) {
     top: d.mon[0].reduce((v, m) => m ? Math.max(v, effAtk(d, db, 0, m)) : v, 0), veiled: d.mon[0].some(m => m && m.veil) ? 1 : 0,
     aceCame: d.seat[1].rs.endCame ? 1 : 0, defWins: st.defWins, chain: st.longestChain, traps: st.trapsSprung,
     printed: st.newMelds.filter(p => p[3] === 'printed').length, fams: Object.keys(st.relicFamilies).filter(k => BUILD_FAMILIES.includes(k)).length,
+    steady: d.seat[0].rs.steady ? 1 : 0,
   };
   if (run.rival.tier === 'boss' && run.door && run.door.boss) f.boss = run.door.boss;
   if (st.ach) Object.assign(f, st.ach, { c: 1 });
@@ -625,7 +628,7 @@ function nextReward(db, run, rng) {
   run.offer = null; run.queue = null;
   if (run.door && run.door.type === 'boss' && run.lastDuel && run.lastDuel.won) {
     run.capBonus += db.config.bossCapBonus;
-    if (run.secret && run.secret.due) { delete run.secret.due; run.lastNote = 'Where there was only wall, a door stands.'; run.door = null; run.doors = secretDoors(run); run.phase = 'chamber'; if (run.ach) run.ach.foundDoor = 1; return; }
+    if (run.secret && run.secret.due) { delete run.secret.due; run.lastNote = 'Where there was only wall, a door stands.'; run.door = null; run.doors = secretDoors(run); run.phase = 'chamber'; return; }
     afterBoss(db, run, rng); return;
   }
   if (run.door && run.door.type === 'secret') { afterBoss(db, run, rng); return; }
@@ -728,7 +731,8 @@ export function runApply(run, a, db, opts = {}) {
       run.door = door; run.stats.doors[door.type] = (run.stats.doors[door.type] || 0) + 1;
       if (run.secret) delete run.lastNote; // the line about the door that was not there is said once
       ev.push({ e: 'door', type: door.type });
-      if (door.tier) { startDuel(db, run, rng, door, opts.onStep); if (run.duel.winner !== null) finishDuel(db, run, rng, ev); break; }
+      // Achievement fact: the run reached a duel, so it is a descent even if it is left before the duel ends.
+      if (door.tier) { if (run.ach) run.ach.reached = 1; startDuel(db, run, rng, door, opts.onStep); if (run.duel.winner !== null) finishDuel(db, run, rng, ev); break; }
       switch (door.type) {
         case 'onward': afterBoss(db, run, rng); break;
         case 'anvil': run.phase = 'anvil'; run.offer = { kind: 'anvil', masterworks: possibleMasterworks(run), enchants: rng.shuffle(ENCHANTS.slice()).filter(e => !run.enchOpen || run.enchOpen.includes(e)).slice(0, 3) }; break;

@@ -422,8 +422,9 @@ function resolveBattle(s, db, ev, atkSeat, az, dz, sprung = false) {
   if (f.killT) tGone = destroyMon(s, db, ev, defSeat, dz, 'battle');
   // The Attribute edge decided it: without the +500 the attacker would not have destroyed the target. A tie with a
   // monster in attack position destroys it anyway (unless its side holds Stonewall), so there the edge must have
-  // turned a loss into a win; against a defender a tie destroys nothing, so the edge only had to break the tie.
-  if (tGone && f.edgeA && X.e !== 'venom' && s.stats[atkSeat].ach) {
+  // turned a loss into a win; against a defender a tie destroys nothing, so the edge only had to break the tie. The
+  // attacker must have beaten the target (f.a > f.d): a tie that destroys both is a trade, not a win.
+  if (tGone && f.edgeA && X.e !== 'venom' && f.a > f.d && s.stats[atkSeat].ach) {
     const bare = f.a - db.config.wheelBonus, tieKills = T.pos === 'a' && s.seat[defSeat].law !== 'stonewall';
     if (tieKills ? bare < f.d : bare <= f.d) s.stats[atkSeat].ach.edgeKills++;
   }

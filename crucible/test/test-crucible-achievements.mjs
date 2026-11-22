@@ -1,6 +1,7 @@
 // Achievement tests for Lost Memories (codename crucible): every one of the 68 rows is earned, none twice, none from a
-// duel reloaded part-way, no Rumours row with the switch off, each meta only once its parts are in, and the golden
-// fixtures replay as before. Run: node crucible/test/test-crucible-achievements.mjs [real-play runs = 24]
+// duel reloaded part-way, no Rumours row earned with the switch off (an earned one stays listed), each meta only once
+// its parts are in, no banked run counted twice, an older save picked up where it stands, and the golden fixtures
+// replay as before. Run: node crucible/test/test-crucible-achievements.mjs [real-play runs = 24]
 // Most rows are earned by the engine's own actions (runApply through achRunApply) from a run put in front of the right
 // door; where a long career would be needed the profile is given the numbers first, and where only the rival can make
 // the move (an attack into a Trap or a defender) the test makes the rival's move with the duel's own applyMut.
@@ -203,16 +204,20 @@ test('a duel saved before the counters existed can never pass for one where noth
   notEarned(s, ['not_a_mark', 'bare_iron', 'they_came_to_you', 'nothing_to_collect'], 'old duel');
 });
 
-test('a run played with a save and reload after every move earns exactly what the same run earns without them', () => {
+test('a run played with the run and the profile saved and reloaded after every move, judged again when over, banked twice, earns exactly what the same run earns without them', () => {
+  const J = x => JSON.parse(JSON.stringify(x));
   for (const seed of [21, 22, 23]) {
     const play = reload => {
-      const P = newProfile(); let run = newRun(LDB, { seed, track: true, forger: 'tarn', uid: 'r' + seed });
-      for (let g = 0; g < 20000 && run.phase !== 'over'; g++) { achRunApply(run, policyAction(LDB, run, { level: 2, lone: seed % 2 ? 'boss' : null }), LDB, P); if (reload && run.phase === 'duel') run = JSON.parse(JSON.stringify(run)); }
+      let P = newProfile(), run = newRun(LDB, { seed, track: true, forger: 'tarn', uid: 'r' + seed });
+      for (let g = 0; g < 20000 && run.phase !== 'over'; g++) { achRunApply(run, policyAction(LDB, run, { level: 2, lone: seed % 2 ? 'boss' : null }), LDB, P); if (reload) { run = J(run); P = J(P); } }
+      if (reload) { assert.deepEqual(achCheck(LDB, P, run), []); run = J(run); P = J(P); } // over and not banked yet: the page reloads here too
       applyRun(P, run); achCheck(LDB, P, run);
+      if (reload) { run = J(run); P = J(P); assert.ok(applyRun(P, run).already); assert.deepEqual(achCheck(LDB, P, run), []); assert.deepEqual(achCheck(LDB, P, null), []); }
       return P;
     };
     const a = play(false), b = play(true);
     assert.deepEqual(b.ach, a.ach, 'seed ' + seed); assert.deepEqual(b.achAt, a.achAt);
+    for (const k of ['runs', 'duelWins', 'descents', 'forged', 'memories', 'beaten', 'doorFound']) assert.deepEqual(b[k], a[k], k + ', seed ' + seed);
     assert.ok(a.ach.length >= 8, 'a real run earns rows: ' + a.ach.join(' '));
   }
 });
@@ -300,19 +305,26 @@ test('pages found: Ink on the Page, Margins Filling, The Codex Grows, A Heavy Co
   const t = scene(db, { codex: keys.slice(0, 24) }); start(t); t.run.codex.push(keys[24]); t.check(); earned(t, ['margins_filling'], 'run pages');
 });
 
-test('Every Seam Held: a clear with twenty fusions and no fizzle, and one fizzle spoils it', () => {
+test('Every Seam Held: a clear with twenty fusions and no fizzle; one fizzle spoils it, and so does one Steady Hand saved', () => {
   const FIZZLE = (() => { for (const a of byAtk) for (const b of byAtk) if (meldPair(db, a.id, b.id).kind === 'fizzle') return [a.id, b.id]; })();
-  const seams = fizzle => {
-    const s = scene(db); start(s); enterDuel(s); s.run.duel.lp[0] = 99999;
+  const seams = (fizzle, steady = false) => {
+    const s = scene(db); start(s); if (steady) s.run.charms = ['steady_hand']; enterDuel(s); s.run.duel.lp[0] = 99999;
     const chain = fuseChain(5);
     for (let k = 0; k < 10 && s.run.duel.stats[0].ach.fusions < 20; k++) { if (s.run.duel.played) endTurn(s); s.run.duel.mon[0] = s.run.duel.mon[0].map(() => null); handSet(s.run.duel, chain); duel(s, { t: 'play', hand: [0, 1, 2, 3, 4], onto: null, pos: 'a' }); }
-    if (fizzle) { endTurn(s); handSet(s.run.duel, FIZZLE); duel(s, { t: 'play', hand: [0, 1], onto: null, pos: 'a' }); assert.equal(s.run.duel.stats[0].fizzles, 1); }
+    if (fizzle) {
+      endTurn(s); s.run.duel.mon[0] = s.run.duel.mon[0].map(() => null); handSet(s.run.duel, FIZZLE); duel(s, { t: 'play', hand: [0, 1], onto: null, pos: 'a' });
+      // Steady Hand's own text calls it a fizzle, though the duel does not count it in stats.fizzles
+      assert.equal(s.run.duel.stats[0].fizzles, steady ? 0 : 1); assert.equal(!!s.run.duel.seat[0].rs.steady, steady);
+    }
     assert.ok(s.run.duel.stats[0].ach.fusions >= 20);
     winByAttack(s); quickClear(s);
     return s;
   };
   earned(seams(false), ['every_seam_held', 'a_hammer_like_yours'], 'seams');
   notEarned(seams(true), ['every_seam_held'], 'a fizzle');
+  const saved = seams(true, true); assert.equal(saved.run.stats.fizzles, 0);
+  notEarned(saved, ['every_seam_held'], 'a fizzle Steady Hand saved'); assert.equal(saved.run.ach.duels[0].steady, 1);
+  earned(seams(false, true), ['every_seam_held'], 'Steady Hand held but never used');
 });
 
 // ---------- the Forge and the Vault ----------
@@ -379,6 +391,12 @@ test('counts: Ten Times Down, Worn Handle, The Hammer Remembers, with banking ne
     const run = s.run; applyRun(s.p, run); assert.equal(s.p.descents, 9); assert.deepEqual(s.check(run), [], 'a banked run is not counted again');
     start(s); s.act({ t: 'abandon' }); applyRun(s.p, s.run); assert.equal(s.p.descents, 9, 'a run left before any duel is no descent'); s.check(null); notEarned(s, ['ten_times_down'], 'no duel');
     start(s); enterDuel(s); winByAttack(s); toChamber(s); s.act({ t: 'abandon' }); earned(s, ['ten_times_down'], 'tenth'); }
+  // A run that reached its first duel and was left part-way through it reached a duel: it is a descent, though the duel
+  // is not counted as fought and pays no Memories.
+  { const s = scene(db, { descents: 9 }); start(s); enterDuel(s); endTurn(s); endTurn(s);
+    assert.ok(s.run.phase === 'duel' && s.run.stats.duels === 0 && s.run.duel.turn >= 3);
+    s.act({ t: 'abandon' }); earned(s, ['ten_times_down'], 'left mid-duel'); assert.equal(s.run.stats.duels, 0);
+    assert.equal(applyRun(s.p, s.run).total, 0); assert.equal(s.p.descents, 10); }
   { const s = scene(db, { duelWins: 249 }); start(s); enterDuel(s); winByAttack(s); earned(s, ['the_hammer_remembers', 'worn_handle'], 'hammer'); }
 });
 
@@ -401,6 +419,13 @@ test('Duelcraft: Struck True, The Elements Agree, The Forge Finishes, Three Hear
     d.mon[0][0] = monAt(STRONG); d.mon[1][0] = monAt(EDGE[1]); duel(s, { t: 'attack', from: 0, to: 0 }); notEarned(s, ['the_elements_agree'], 'won without the edge');
     s.run.duel.mon[0][1] = monAt(EDGE[0]); s.run.duel.mon[1][1] = monAt(EDGE[1]); duel(s, { t: 'attack', from: 1, to: 1 });
     assert.deepEqual(s.last, ['the_elements_agree']); assert.equal(s.run.phase, 'duel', 'earned in the battle itself'); }
+  // A tie the edge only reached is a trade, both destroyed, and the attacker beat nothing.
+  { const s = (() => { for (let seed = 11; seed < 80; seed++) { const t = scene(db); start(t, { seed }); enterDuel(t); if (t.run.duel.turn >= 2 && !t.run.duel.played) return t; } })();
+    const d = s.run.duel; d.terrain = null; d.mon[0] = d.mon[0].map(() => null); d.mon[1] = d.mon[1].map(() => null); d.traps[1] = d.traps[1].map(() => null);
+    d.mon[0][0] = monAt(EDGE[0]); d.mon[1][0] = monAt(EDGE[1]); d.mon[1][0].ba = effAtk(d, db, 0, d.mon[0][0]) + db.config.wheelBonus - effAtk(d, db, 1, d.mon[1][0]);
+    const ev = s.act({ t: 'duel', action: { t: 'attack', from: 0, to: 0 } }), b = ev.find(e => e.e === 'battle');
+    assert.ok(b.edgeA && b.a === b.d && ev.filter(e => e.e === 'destroyed').length === 2, 'the edge made a trade: ' + JSON.stringify(b));
+    notEarned(s, ['the_elements_agree'], 'a trade'); assert.equal(s.run.duel.stats[0].ach.edgeKills, 0); }
   { const s = scene(db); start(s); s.run.gifts = ['thorn_veil']; enterDuel(s); const d = s.run.duel; d.mon[0][0] = monAt(WEAK, { pos: 'd', veil: true }); d.lp[1] = 100; endTurn(s);
     assert.ok(s.run.lastDuel.won); earned(s, ['the_forge_finishes'], 'relic finish'); }
   { const s = scene(db); start(s); s.run.charms = ['balanced_scales', 'copper_loop']; s.run.gifts = ['kindling']; s.run.capBonus = 200; enterDuel(s);
@@ -452,6 +477,63 @@ test('the Rumours switch off: real runs that keep one monster against guardians 
   // even a profile that heard memories and beat The Last One under the switch earns none of them with it off
   Object.assign(P, { seen: ['intro', 'memory:kiln_warden'], lastOne: 2, loneMet: 1, byForger: { ...P.byForger, last: { runs: 1, wins: 9, clears: 1, heat: 0 } } }); achCheck(db, P, null);
   assert.ok(P.ach.length > 5 && P.ach.every(id => !SECRET.includes(id)), P.ach.join(' '));
+});
+
+test('Where Wall Was needs the door itself: a run left on the guardian\'s reward screen earns nothing, an older profile\'s loneMet still stands', () => {
+  const s = bossScene(SDB, 0, 'kiln_warden', clean); winByBurn(s);
+  assert.equal(s.run.phase, 'reward'); assert.ok(s.run.secret.met && s.run.secret.due, 'the lone guardian fell; its reward comes before the door');
+  notEarned(s, ['where_wall_was'], 'reward screen'); s.act({ t: 'abandon' }); notEarned(s, ['where_wall_was'], 'left on the reward screen');
+  const left = s.run; applyRun(s.p, left); s.check(left); s.check(null); notEarned(s, ['where_wall_was'], 'banked');
+  assert.equal(s.p.loneMet, 1); assert.equal(s.p.doorFound, 0, 'met, but the door was never shown');
+  start(s); s.act({ t: 'abandon' }); applyRun(s.p, s.run); s.check(null); notEarned(s, ['where_wall_was'], 'a later run'); assert.equal(s.p.doorFound, 0);
+  // the door shown and then the run left: it counts, banked or not
+  const t = bossScene(SDB, 0, 'kiln_warden', clean); winByBurn(t); toChamber(t); assert.ok(t.run.doors.some(d => d.type === 'secret')); earned(t, ['where_wall_was'], 'door shown');
+  t.act({ t: 'abandon' }); applyRun(t.p, t.run); assert.equal(t.p.doorFound, 1);
+  const q = newProfile(); applyRun(q, t.run); assert.ok(achCheck(SDB, q, null).includes('where_wall_was'), 'banked into a new profile');
+  // A profile banked before doorFound was kept has only loneMet, which stands for the door, then and after its next run.
+  const old = Object.assign(newProfile(), { runs: 6, loneMet: 1 }); assert.ok(achCheck(SDB, old, null).includes('where_wall_was'), 'old profile');
+  const old2 = Object.assign(newProfile(), { runs: 6, loneMet: 1 }); applyRun(old2, left); assert.equal(old2.doorFound, 1); assert.ok(achCheck(SDB, old2, null).includes('where_wall_was'));
+});
+
+test('a tracked run banked without a uid is not counted again after banking', () => {
+  const s = scene(db, { duelWins: 48, runs: 8, descents: 8 });
+  s.run = newRun(db, { seed: 11, track: true, forger: 'tarn' }); s.act({ t: 'kit', i: 0 }); s.act({ t: 'pick', i: 0 }); assert.ok(!s.run.uid);
+  enterDuel(s); winByAttack(s); toChamber(s); s.act({ t: 'abandon' });
+  assert.deepEqual(achProgress(db, s.p, s.run).filter(x => ['worn_handle', 'ten_times_down'].includes(x.id)).map(x => x.have), [9, 49]);
+  applyRun(s.p, s.run); assert.equal(s.p.duelWins, 49); assert.equal(s.p.descents, 9);
+  notEarned(s, ['worn_handle', 'ten_times_down'], 'before'); assert.deepEqual(s.check(), [], 'nothing earned from the run counted twice'); assert.equal(s.run.ach.banked, 1);
+  assert.deepEqual(achProgress(db, s.p, s.run).filter(x => ['worn_handle', 'ten_times_down'].includes(x.id)).map(x => x.have), [9, 49]);
+  // and a row earned after banking is earned in the run just banked, not one past it
+  s.p.duelWins = 50; assert.deepEqual(s.check(), ['worn_handle']); assert.equal(s.p.achAt.worn_handle, s.p.runs);
+});
+
+test('a tracked run saved before achievement facts existed keeps them from its next action, and never earns a whole-run row', () => {
+  const old = (s, fn) => { delete s.run.ach; if (s.run.duel) delete s.run.duel.stats[0].ach; if (fn) fn(s.run); s.run = JSON.parse(JSON.stringify(s.run)); assert.ok(s.run.feat && !s.run.ach); };
+  // a refused action leaves the old run as it was
+  { const s = scene(db); start(s); enterDuel(s); old(s); assert.throws(() => s.act({ t: 'door', i: 0 }), /duel is in progress/); assert.ok(!('ach' in s.run)); }
+  // saved mid-duel: the duel in progress has no counters, later duels do, the clear earns what the run's state shows
+  { const s = scene(db); start(s); enterDuel(s); old(s);
+    winByAttack(s); assert.deepEqual([s.run.ach.late, s.run.ach.reached, s.run.ach.duels.length, s.run.ach.duels[0].c], [1, 1, 1, undefined]);
+    earned(s, ['hammer_finds_its_weight'], 'old run'); notEarned(s, ['they_came_to_you'], 'a duel without counters');
+    toChamber(s); s.run.phase = 'reward'; s.run.queue = []; s.run.offer = { kind: 'gift', options: ['kindling', 'whetstone', 'iron_rations'] }; s.act({ t: 'skip' });
+    quickClear(s, { skipGifts: true }); assert.equal(s.run.ach.gifts, 0);
+    earned(s, ['a_hammer_like_yours', 'every_spark_home', 'the_door_unsealed'], 'old run cleared'); notEarned(s, ['owed_nothing', 'every_seam_held'], 'the start of the run is unknown');
+    applyRun(s.p, s.run); assert.equal(s.p.descents, 1); }
+  // left mid-duel as an old save: still a descent
+  { const s = scene(db); start(s); enterDuel(s); old(s); s.act({ t: 'abandon' }); assert.equal(s.run.ach.reached, 1); applyRun(s.p, s.run); assert.equal(s.p.descents, 1); }
+  // over before the update and banked without another action: banking still counts the descent and the Masterworks
+  { const s = scene(db); start(s); enterDuel(s); winByAttack(s); toChamber(s); s.act({ t: 'abandon' }); old(s, r => { r.masterworks = [MASTERWORKS[0].id]; });
+    applyRun(s.p, s.run); assert.equal(s.p.descents, 1); assert.equal(s.p.forged, 1); assert.deepEqual(s.p.beaten, []); s.check(null); earned(s, ['joined_at_the_anvil'], 'old run banked'); }
+});
+
+test('the Rumours switch turned off later: rows earned under it stay on the screen, the rest stay closed', () => {
+  const P = newProfile(); P.runs = 3; P.seen = ['intro', 'memory:kiln_warden']; P.doorFound = 1;
+  const on = achCheck(SDB, P, null); assert.deepEqual(on.slice().sort(), ['scratched_on_the_door', 'the_first_memory', 'where_wall_was']);
+  const off = achView(db, P), mine = off.filter(r => r.earned).map(r => r.id).sort();
+  assert.deepEqual(mine, on.slice().sort(), 'every earned row is still listed'); assert.equal(off.length, 59 + 2);
+  assert.ok(off.filter(r => SECRET.includes(r.id)).every(r => r.earned), 'an unearned Rumours row stays closed');
+  assert.ok(!achProgress(db, P).some(x => x.id === 'what_was_taken')); assert.deepEqual(achCheck(db, P, null), []);
+  assert.equal(achView(SDB, P).length, 68);
 });
 
 // ---------- metas ----------
