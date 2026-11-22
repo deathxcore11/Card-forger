@@ -31,7 +31,7 @@ const USE = {
 };
 const MOVES = {
   meshy: 'HOW IT WILL MOVE. It gets a skeleton and is animated like a person (walking, running, attacking). So draw it standing in an A-pose: arms straight, angled down and away from the body about 45 degrees, legs slightly apart, facing the viewer straight on, hands open with fingers visible. Keep cloaks, coats, hair and anything loose short or close to the body so the arms and legs are clearly separate.',
-  parts: 'HOW IT WILL MOVE. The game animates it by moving its parts (wings, tail, jaw, legs, arms). So draw it in a neutral pose with every moving part clearly separate from the body: wings fully spread and flat, tail straight out, legs straight and apart, mouth closed.',
+  parts: 'HOW IT WILL MOVE. It gets a skeleton and the game moves its wings, tail, head and legs. So draw it in a neutral pose with every moving part clearly separate from the body: wings fully spread and flat, tail straight out, legs straight and apart, mouth closed.',
   vat: 'HOW IT WILL MOVE. Hundreds of these are on screen at once with a simple looping animation, so it must be very simple: a few big chunky shapes, limbs clearly separate from the body, neutral standing pose.',
   bend: 'HOW IT WILL MOVE. The game bobs, sways and bends it as one piece, so draw it in a calm neutral pose, upright and symmetrical.',
   none: 'HOW IT WILL MOVE. It does not move: it is scenery. Draw it sitting naturally as it would in the world.',
@@ -49,15 +49,24 @@ const meshySteps = (a, tris, pic, glb, textPrompt) => ({ text: [
   `4. Generate. Pick the result that matches the picture best from every side. Check the back: no holes, no extra limbs, no melted face.`,
   `5. Download as GLB twice: once WITH texture, once WITHOUT (plain). Save them as ${glb} and ${glb.replace('.glb', '-plain.glb')}.`,
 ].join('\n'), alt: textPrompt });
-const RIG_CLIPS = { person: 'Idle, Walking, Running, Jump, Throw (or Cast Spell), Hit Reaction, Victory, Death', enemy: 'Idle, Walking (zombie or slow), Running, Attack, Hit Reaction, Death', boss: 'Idle, Walking (heavy), Attack (overhead or slam), Roar or Taunt, Hit Reaction, Death' };
+const RIG_CLIPS = { person: 'Idle, Walking, Running', enemy: 'Idle, Walking (zombie or slow), Running', boss: 'Idle, Walking (heavy)' };
 const rigSteps = (a, glb) => [
   `1. In Meshy, open the model you just made and choose "Rig" (or "Animate").`,
   `2. Choose the humanoid (two-legged) rig. Set the height to about ${a.h} m.`,
   `3. Place the markers it asks for (chin, shoulders, elbows, wrists, hips, knees, ankles) on the model and confirm.`,
-  `4. From the animation library add these clips: ${RIG_CLIPS[a.style] || RIG_CLIPS.person}. If a name is missing, pick the closest one.`,
+  `4. From the FREE animation library add only these clips: ${RIG_CLIPS[a.style] || RIG_CLIPS.person}. If a name is missing, pick the closest one. Do not spend credits on Text to Motion: I make every other move in code.`,
   `5. Download as GLB "with animations" and save it as ${glb.replace('.glb', '-anim.glb')}.`,
   ``,
-  `That is all you do. I retime the clips, blend them, and add the special moves in code: ${a.anim}.`,
+  `That is all you do. I retime the clips, blend them, and make every other move in code for free: ${a.anim}.`,
+].join('\n');
+const creatureRigSteps = (a, glb) => [
+  `1. In Meshy, open the model you just made (${glb}) and choose "Rig" (or "Animate").`,
+  `2. Let Meshy place the skeleton. If it asks for a type, pick the closest: four-legged, winged, or two-legged.`,
+  `3. Look at the skeleton lines: they should run down the spine and tail to the tip, out along each wing to the tip, down each leg, and into the head. If a wing or the tail has no bones, try the rig once more.`,
+  `4. Do NOT add any animation clips and do not use Text to Motion. No credits needed for movement.`,
+  `5. Download as GLB and save it as ${glb.replace('.glb', '-rig.glb')}.`,
+  ``,
+  `That is all you do. One model with a skeleton replaces all the separate wing, tail and jaw models. I make every move in code for free: ${a.anim || 'idle, walk or fly, attack, hurt, defeat'}.`,
 ].join('\n');
 
 const P = (lines) => lines.filter(Boolean).join('\n\n');
@@ -76,7 +85,7 @@ const conceptPrompt = (a, subject, o = {}) => P([
 const partPrompt = (a, part, subject) => P([GAME, USE.part, `WHAT IT BELONGS TO. ${a.name}: ${subject}`, STYLE[a.style] || STYLE.model, `SUBJECT. Only the ${part} of the ${a.style === 'model' ? 'object' : 'creature'} described above, on its own, matching its colours and shapes exactly.`, VIEW.part, 'Make the picture square, 1024 x 1024.', NEVER]);
 
 const ANIM_NOTE = {
-  parts: 'You do nothing for animation. I move the separate parts in code',
+  parts: 'You only add a skeleton in Meshy (no clips). I make every move in code',
   vat: 'You do nothing for animation. I bake a short looping animation into the model so hundreds can be on screen',
   bend: 'You do nothing for animation. I bob, sway and bend it in code',
 };
@@ -101,7 +110,9 @@ function stepsFor(a) {
     });
     const raw = typeof a.parts === 'string' ? a.parts.split(/,\s*/) : Array.isArray(a.parts) ? a.parts : [];
     const parts = raw.filter(p => !/in code|if possible/.test(p)).map(p => p.replace(/\(.*\)/, '').trim()).filter(p => p && p !== 'body' && p !== 'frame' && p !== 'stand');
-    if ((a.subj || (a.forms && a.forms.length)) && parts.length) {
+    const living = ['creature', 'enemy', 'boss'].includes(a.style) && !(a.rig && a.rig.startsWith('meshy')) && a.rig !== 'vat';
+    if (living) { for (const v of variants) { const glb = `${a.file}${v.sfx}.glb`; add(glb.replace('.glb', '-rig.glb'), (v.label ? v.label + ': ' : '') + 'give it a skeleton', 'Meshy', creatureRigSteps(a, glb), ROOT + '3d\\' + glb.replace('.glb', '-rig.glb')); } }
+    else if ((a.subj || (a.forms && a.forms.length)) && parts.length) {
       const base = a.forms && a.forms.length ? `${a.forms[a.forms.length - 1][0]} (the grown form)` : a.subj;
       for (const p of parts) {
         const f = `${a.file}-part-${p.replace(/\s+/g, '-')}`;
@@ -153,14 +164,14 @@ const GROUPS = [
   { id: 'stage1', title: 'Stage 1 scenery: Surface Ruins', kind: '3D model', blurb: 'Trees, bushes, rocks, ruins and landmarks. These do not move.', items: [...STAGE1, ...MORE1] },
   { id: 'stage2', title: 'Stage 2 scenery: Sealed Catacombs', kind: '3D model', blurb: 'Crypt pieces and props. Boulders, cliffs and crates come back from Stage 1, re-coloured by me.', items: [...STAGE2, ...MORE2] },
   { id: 'stage3', title: 'Stage 3 scenery: Vault of the Last Duel', kind: '3D model', blurb: 'The cavern, the sand sea, the statues and the throne.', items: [...STAGE3, ...MORE3] },
-  { id: 'ambient', title: 'Ambient life', kind: '3D model with moving parts', blurb: 'Small creatures that make a stage feel alive: butterflies, birds, rabbits, bats, crabs. They wander and flutter and never fight.', items: AMBIENT },
+  { id: 'ambient', title: 'Ambient life', kind: '3D model with a skeleton', blurb: 'Small creatures that make a stage feel alive: butterflies, birds, rabbits, bats, crabs. They wander and flutter and never fight.', items: AMBIENT },
   { id: 'interact', title: 'Chests, shrines and gates', kind: '3D model', blurb: 'Things you use in a run. Some have a moving part (a lid, a door) that needs its own model so it can open.', items: INTERACT },
   { id: 'pickups', title: 'Pickups', kind: '3D model', blurb: 'Coins, hearts and power-ups. Small and simple.', items: PICKUPS },
   { id: 'duelists', title: 'Duelists and outfits', kind: '3D model with a skeleton', blurb: 'The 12 playable characters and the practice dummy. Each needs a skeleton and animations from Meshy, and has three outfits.', items: DUELISTS },
-  { id: 'summons', title: 'Monsters (18, three forms each)', kind: '3D model with moving parts', blurb: 'Your summons. Form 1 is a baby, form 2 young, form 3 grown. Wings, tails and jaws are made as separate parts so they can flap and swing.', items: SUMMONS },
-  { id: 'fusions', title: 'Fusions, God Fusions and Secret Fusions', kind: '3D model with moving parts', blurb: 'Fusions have three forms. Gods and Secrets have one giant form.', items: [...FUSIONS, ...GODS] },
+  { id: 'summons', title: 'Monsters (18, three forms each)', kind: '3D model with a skeleton', blurb: 'Your summons. Form 1 is a baby, form 2 young, form 3 grown. Each one gets a skeleton in Meshy so its wings, tail and legs can flap and swing.', items: SUMMONS },
+  { id: 'fusions', title: 'Fusions, God Fusions and Secret Fusions', kind: '3D model with a skeleton', blurb: 'Fusions have three forms. Gods and Secrets have one giant form.', items: [...FUSIONS, ...GODS] },
   { id: 'enemies', title: 'Swarm enemies', kind: '3D model, very simple', blurb: 'Hundreds on screen, so each is one simple model. I add the animation.', items: ENEMIES },
-  { id: 'bosses', title: 'Elites and bosses', kind: '3D model', blurb: 'Big and dramatic. Two-legged ones get a Meshy skeleton; the rest move by parts.', items: BOSSES },
+  { id: 'bosses', title: 'Elites and bosses', kind: '3D model', blurb: 'Big and dramatic. Every one gets a Meshy skeleton; I make the moves in code.', items: BOSSES },
   { id: 'npcs', title: 'People in the world', kind: '3D model with a skeleton', blurb: 'The shopkeeper and keepers.', items: NPCS },
   { id: 'regalia', title: 'Hats (Regalia)', kind: '3D model', blurb: 'Worn on any duelist\'s head.', items: REGALIA },
   { id: 'cardart', title: 'Card art', kind: 'Painting', blurb: 'The painting inside every card. No 3D.', items: [...CARDART, ...SPELLS] },
