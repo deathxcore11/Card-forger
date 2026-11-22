@@ -139,7 +139,7 @@ body.ps { background: #000; }
 #app.ps .dr .fg { position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
 #app.ps .dr.k-mystery .fg::after { content: ''; position: absolute; inset: 0; background: conic-gradient(transparent 0 25%, #000 0 50%, transparent 0 100%) 0 0 / 2px 2px; } /* one more dot in four: three in four dark */
 #app.ps .dr.k-known .fg { display: none; }
-#app.ps .dr.lock::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, #4a3024 0 5px, var(--dark) 5px 6px); opacity: .5; }
+#app.ps .dr.lock::after { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='1' shape-rendering='crispEdges'%3E%3Crect width='5' height='1' fill='%234a3024'/%3E%3Crect x='5' width='1' height='1' fill='%233a2419'/%3E%3C/svg%3E") 0 0 / 6px 1px; opacity: .5; }
 #app.ps .dr .no { position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; background: var(--sh); color: var(--gl); font: 8px/10px 'LM Label', monospace; text-align: center; box-shadow: 0 0 0 1px var(--gold); }
 #app.ps .dr:not(.on)::before { content: ''; position: absolute; inset: 0; z-index: 1; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; opacity: .5; pointer-events: none; }
 #app.ps .dr.on { box-shadow: 0 0 0 1px var(--gl), 0 0 0 2px var(--sh); overflow: visible; }
