@@ -8,12 +8,13 @@ const C = CFG.cam;
 const ARM = Math.sqrt(C.back * C.back + C.up * C.up), BASE = Math.atan2(C.up, C.back);
 
 export class ChaseCamera {
-  constructor(camera) { this.camera = camera; this.t = 1; this.py = 0; this.ready = false; this.pos = { x: 0, y: 0, z: 0 }; this.sx = 0; this.sz = 0; this.lag = true; }
+  constructor(camera) { this.camera = camera; this.t = 1; this.py = 0; this.ready = false; this.pos = { x: 0, y: 0, z: 0 }; this.sx = 0; this.sz = 0; this.lag = true; this.zoom = 1; this.zoomTo = 1; }
   reset() { this.ready = false; this.t = 1; }
 
   update(p, yaw, pitch, dt) {
     const fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = -fz, rz = fx;
-    const a = BASE + clamp(pitch, C.pitchMin, C.pitchMax), back = Math.cos(a) * ARM, up = Math.sin(a) * ARM;
+    this.zoom += (this.zoomTo - this.zoom) * Math.min(1, dt * 1.6);               // pulls back and up for big bosses so they fit
+    const a = BASE + clamp(pitch, C.pitchMin, C.pitchMax), back = Math.cos(a) * ARM * this.zoom, up = Math.sin(a) * ARM * this.zoom;
     if (!this.ready) { this.py = p.y; this.sx = p.x; this.sz = p.z; this.ready = true; }
     // gentle horizontal follow lag (about 55 ms); a jump of more than 3 m is a teleport and snaps
     if (!this.lag || Math.abs(p.x - this.sx) > 3 || Math.abs(p.z - this.sz) > 3) { this.sx = p.x; this.sz = p.z; }

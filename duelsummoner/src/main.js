@@ -237,6 +237,10 @@ function frame(now) {
   const a0 = performance.now(), p = game.p;
   ip.x = p.px + (p.x - p.px) * alpha; ip.y = p.py + (p.y - p.py) * alpha; ip.z = p.pz + (p.z - p.pz) * alpha;
   if (Math.abs(p.x - p.px) > 3 || Math.abs(p.z - p.pz) > 3) { ip.x = p.x; ip.y = p.y; ip.z = p.z; }
+  {   // camera: the bigger the nearest big boss, the further back and higher it sits (gate bosses 6x to 10x get the most)
+    let big = 0; for (const sp of game.sp) if (sp.alive && !sp.dead && sp.size > big && (sp.x - ip.x) ** 2 + (sp.z - ip.z) ** 2 < 2500) big = sp.size;
+    chase.zoomTo = fx.rm_ ? 1 : 1 + Math.min(0.95, Math.max(0, (big - 4) / 11));
+  }
   chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
   fx.applyShake(camera);
   if (fx.push > 0) { fx.push = Math.max(0, fx.push - dtReal); const u = 1 - fx.push / 2; camera.fov = 62 - 15 * Math.sin(Math.PI * Math.min(1, u)); camera.updateProjectionMatrix(); fovDirty = true; }

@@ -4,6 +4,7 @@ import { CFG } from '../data/config.js';
 import { KIND_LIST } from '../data/enemies.js';
 import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { MAP } from '../data/map.js';
+import { SCALE, summonSize } from '../data/scale.js';
 
 const T = window.THREE;
 const lambert = (color, extra) => new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {}));
@@ -68,7 +69,7 @@ const PLACEHOLDER = {
 };
 
 function modelGroup(model, targetSize, axis, glowColor) {
-  const g = new T.Group(), s = targetSize / model.size[axis];
+  const g = new T.Group(), s = targetSize / (axis === 'max' ? Math.max(model.size.x, model.size.y, model.size.z) : model.size[axis]);       // size from the SCALE table, in metres
   const root = new T.Group(); root.scale.setScalar(s);
   root.position.set(-(model.min[0] + model.max[0]) / 2 * s, -model.min[1] * s, -(model.min[2] + model.max[2]) / 2 * s);
   const solid = new T.Mesh(model.solid, lambert(0xffffff, { vertexColors: true, side: T.DoubleSide }));
@@ -137,12 +138,14 @@ export class Actors {
   _monsterMesh(id, form) {
     const A = this.assets;
     let g;
-    if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, 2.2, 'x'); g.userData.fly = true; }
-    else if (id === 'cinder-hatchling' && A.hatchling) { g = modelGroup(A.hatchling, 0.9, 'y', 0xff7319); g.userData.walk = true; g.userData.puffs = true; }
-    else if (id === 'twinflare-tyrant' && A.tyrant) { g = modelGroup(A.tyrant, 3.8, 'z', 0xff7319); g.userData.fly = true; g.userData.glowPeriod = 1.2; g.userData.breath = true; }
-    else if (id === 'rune-apprentice') { g = A.apprentice ? modelGroup(A.apprentice, 1.75, 'y') : PLACEHOLDER[id](); g.userData.walk = true; this._attachStaff(g, !!A.apprentice); }
-    else { g = PLACEHOLDER[id](); if (id === 'ember-wyvern' || id === 'twinflare-tyrant') g.userData.fly = true; if (id === 'cinder-hatchling') g.userData.walk = true; }
-    const D = MONSTERS[id] || FUSIONS[id]; g.userData.formIdx = form; g.scale.setScalar(D.forms[form].scale);      // young / grown / full form
+    const size = summonSize(!!FUSIONS[id], form);                      // metres: form 1 / 2 / 3 = 0.5x / 1x / 2x the duelist, Fusions 2x to 3x
+    let modelled = true;
+    if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, size, 'max'); g.userData.fly = true; }
+    else if (id === 'cinder-hatchling' && A.hatchling) { g = modelGroup(A.hatchling, size, 'max', 0xff7319); g.userData.walk = true; g.userData.puffs = true; }
+    else if (id === 'twinflare-tyrant' && A.tyrant) { g = modelGroup(A.tyrant, size, 'max', 0xff7319); g.userData.fly = true; g.userData.glowPeriod = 1.2; g.userData.breath = true; }
+    else if (id === 'rune-apprentice') { g = A.apprentice ? modelGroup(A.apprentice, size, 'y') : PLACEHOLDER[id](); modelled = !!A.apprentice; g.userData.walk = true; this._attachStaff(g, !!A.apprentice); }
+    else { modelled = false; g = PLACEHOLDER[id](); if (id === 'ember-wyvern' || id === 'twinflare-tyrant') g.userData.fly = true; if (id === 'cinder-hatchling') g.userData.walk = true; }
+    g.userData.formIdx = form; g.userData.size = size; g.scale.setScalar(modelled ? 1 : size / 1.4);      // placeholder shapes are about 1.4 m tall at scale 1
     this.scene.add(g); return g;
   }
 
@@ -183,6 +186,10 @@ export class Actors {
       g.add(robe, head, crown, blade);
     }
     g.userData.parts = g.children.slice();
+    const ref = SCALE.engineRef[sp.kind === 'idol' ? 'idol' : sp.kind], base = (sp.size || ref) / ref; g.userData.base = base; g.scale.setScalar(base);
+    if (sp.role === 'elite' || sp.role === 'captain') {                      // elite rim glow: a slightly larger gold back-face shell behind every part
+      for (const part of g.userData.parts) { if (!part.geometry) continue; const rim = new T.Mesh(part.geometry, new T.MeshBasicMaterial({ color: 0xffc94a, side: T.BackSide })); rim.position.copy(part.position); rim.rotation.copy(part.rotation); rim.scale.copy(part.scale).multiplyScalar(1.09); g.add(rim); }
+    }
     this.scene.add(g); return g;
   }
 
@@ -191,7 +198,7 @@ export class Actors {
     const b = new T.Mesh(new T.BoxGeometry(1.6, 1.0, 1.1), lambert(0x7a5a3a)); b.position.y = 0.5;
     const lid = new T.Mesh(new T.BoxGeometry(1.7, 0.4, 1.2), lambert(0x9a7a4a)); lid.position.y = 1.2;
     const s1 = new T.Mesh(new T.OctahedronGeometry(0.25, 0), basic(0xe8c56a)), s2 = s1.clone(); s1.position.set(-0.45, 0.8, 0.62); s2.position.set(0.45, 0.8, 0.62);
-    g.add(b, lid, s1, s2); g.userData.seals = [s1, s2];
+    g.add(b, lid, s1, s2); g.userData.seals = [s1, s2]; g.scale.setScalar(SCALE.chest);        // larger than life so it reads from the gameplay camera
     this.scene.add(g); return g;
   }
 
@@ -269,7 +276,7 @@ export class Actors {
       }
       if (ud.puffs) this._emitPuffs(mesh, m, g);
       // summon pop, attack squash and stretch, level-up pulse
-      const su = this._pop((this.vt - ud.born) / 0.45); mesh.visible = this.vt >= ud.born;
+      const su = this._pop((this.vt - ud.born) / 0.45); mesh.visible = this.vt >= ud.born && !blocked(x, y + ud.size * 0.5, z, ud.size * 0.5);      // a big summon never hides the duelist
       if (ud.shock && this.vt >= ud.born) this._shock(ud, x, y, z);
       let sxz = 1, sy = 1; const as = t - (m._atkAt || -9);
       if (as >= 0 && as < 0.1) { const k = 1 - as / 0.1; sxz = 1 + 0.14 * k; sy = 1 - 0.16 * k; } else if (as >= 0.1 && as < 0.22) { const k = 1 - (as - 0.1) / 0.12; sxz = 1 - 0.08 * k; sy = 1 + 0.12 * k; }
@@ -317,7 +324,7 @@ export class Actors {
     for (const sp of g.sp) {
       if (!sp.alive) continue; spLive.add(sp);
       let mesh = this.specials.get(sp); if (!mesh) { mesh = this._specialMesh(sp); this.specials.set(sp, mesh); mesh.userData.born = this.vt; fx.ring(sp.x, sp.y, sp.z, 5, 0xe8b84a, 0.7); fx.burst(sp.x, sp.y + 1, sp.z, 24, 0xe8b84a, 4, 6, 0.3, 0.8, 6); fx.shake(0.25); }
-      mesh.scale.setScalar(0.3 + 0.7 * this._pop((this.vt - mesh.userData.born) / 0.6));
+      mesh.scale.setScalar((0.3 + 0.7 * this._pop((this.vt - mesh.userData.born) / 0.6)) * mesh.userData.base);
       const x = pl(sp.px, sp.x, a), y = pl(sp.py, sp.y, a), z = pl(sp.pz, sp.z, a);
       mesh.position.set(x, y, z); mesh.rotation.y = turnLerp(sp.pface, sp.face, a);
       mesh.rotation.z = sp.dead ? Math.PI / 2 : 0; mesh.position.y = y + (sp.dead ? 0.8 : 0);
@@ -327,7 +334,7 @@ export class Actors {
 
     // chests
     const chLive = this._chLive || (this._chLive = new Set()); chLive.clear();
-    for (const c of g.chests) { if (c.open) continue; chLive.add(c); let m = this.chests.get(c); if (!m) { m = this._chestMesh(); this.chests.set(c, m); } m.position.set(c.x, c.y, c.z); m.userData.seals.forEach((s, i) => { s.rotation.y = t * 2 + i; }); }
+    for (const c of g.chests) { if (c.open) continue; chLive.add(c); let m = this.chests.get(c); if (!m) { m = this._chestMesh(); this.chests.set(c, m); } m.position.set(c.x, c.y + Math.abs(Math.sin(t * 2 + c.x)) * 0.12, c.z); m.userData.seals.forEach((s, i) => { s.rotation.y = t * 2 + i; }); if (Math.random() < dt * 3) fx.spark(c.x + (Math.random() - 0.5) * 1.6, c.y + 1.2 + Math.random(), c.z + (Math.random() - 0.5), 0, 0.6, 0, 0xffe08a, 0.22, 0.5); }
     for (const [c, m] of this.chests) if (!chLive.has(c)) {
       if (c.open) { const q = m.position; fx.beam(q.x, q.y, q.z, 0xffe9a0, 0.9); fx.ring(q.x, q.y, q.z, 3.5, 0xffd56a, 0.5); fx.burst(q.x, q.y + 1, q.z, 26, 0xffd56a, 3, 5, 0.25, 0.9, 6); fx.cards(q.x, q.y + 0.5, q.z, 3); }
       this.scene.remove(m); this.chests.delete(c);
@@ -354,12 +361,13 @@ export class Actors {
     for (let i = 0; i < m.max; i++) {
       if (!m.alive[i]) continue; const kk = m.kind[i];
       if (kk === 0) {                                          // crystal: tilted 20 degrees, one turn per 2.5 s, bobs 6 cm; size and tint by value
-        const v = m.val[i], sz = v >= 20 ? 0.5 : v >= 5 ? 0.35 : 0.25, col = v >= 20 ? this._gold : v >= 5 ? this._blue : this._plain;
+        const v = m.val[i], sz = (v >= 20 ? 0.5 : v >= 5 ? 0.35 : 0.25) * SCALE.pickup, col = v >= 20 ? this._gold : v >= 5 ? this._blue : this._plain;
         d.position.set(m.x[i], m.y[i] + Math.sin(t * 3 + i) * 0.06, m.z[i]); d.rotation.set(0.35, t * Math.PI * 2 / 2.5 + i, 0); d.scale.setScalar(sz); d.updateMatrix();
         this.pk[0].setMatrixAt(pc[0], d.matrix); this.pk[0].setColorAt(pc[0], col); pc[0]++; continue;
       }
-      d.position.set(m.x[i], m.y[i] + Math.sin(t * 3 + i) * 0.1, m.z[i]); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1, 1); d.updateMatrix(); this.pk[kk].setMatrixAt(pc[kk]++, d.matrix);
+      d.position.set(m.x[i], m.y[i] + Math.sin(t * 3 + i) * 0.1, m.z[i]); d.rotation.set(0, t * 3, 0); d.scale.setScalar(SCALE.pickup); d.updateMatrix(); this.pk[kk].setMatrixAt(pc[kk]++, d.matrix);
     }
+    if (Math.random() < dt * 25) { const j = Math.floor(Math.random() * m.max); if (m.alive[j]) fx.spark(m.x[j], m.y[j] + 0.9, m.z[j], 0, 0.7, 0, m.kind[j] === 1 ? 0xffe08a : m.kind[j] === 2 ? 0xff9aa8 : 0xe6c8ff, 0.16, 0.4); }
     this.pk.forEach((mm, i) => { mm.count = pc[i]; mm.instanceMatrix.needsUpdate = true; if (i === 0) mm.instanceColor.needsUpdate = true; });
     let nt = 0; for (const tr of g.btraps) { if (!tr.on) continue; d.position.set(tr.x, tr.y + 0.05, tr.z); d.rotation.set(0, 0.2, 0); d.scale.set(1, 1, 1); d.updateMatrix(); this.btrap.setMatrixAt(nt++, d.matrix); }
     this.btrap.count = nt; this.btrap.instanceMatrix.needsUpdate = true;

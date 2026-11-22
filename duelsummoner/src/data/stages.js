@@ -34,6 +34,8 @@ export const DIFFICULTY = {
   medium: { name: 'Medium', score: 1.0,  spawn: 1.0,  ramp: 1.0,  cap: { start: 300, end: 300, minutes: 1 },  hp: 1.0,  hpCurve: { a: 0.10, b: 0.008 },  dmg: 1.0,  dmgPerMinute: 0.06, boss: 1.0 },
   hard:   { name: 'Hard',   score: 1.5,  spawn: 1.2,  ramp: 1.25, cap: { start: 300, end: 300, minutes: 1 },  hp: 1.15, hpCurve: { a: 0.18, b: 0.02 }, dmg: 1.15, dmgPerMinute: 0.08, boss: 1.3 }
 };
+// The Twin Jackal Idols' bite and speed per difficulty (stage runs only; the classic mode keeps the base numbers)
+DIFFICULTY.easy.idol = { bite: 10, speed: 5 }; DIFFICULTY.medium.idol = { bite: 12, speed: 5.5 }; DIFFICULTY.hard.idol = { bite: 15, speed: 6 };
 export const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
 const ev = (t, role, id, name, engine, hpScale, drop) => ({ t, role, id, name, engine, hpScale, drop });

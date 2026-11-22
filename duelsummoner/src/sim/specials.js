@@ -5,6 +5,7 @@ import { SPECIALS } from '../data/enemies.js';
 import { RUN } from '../data/waves.js';
 import { RUNSPEC } from '../data/stages.js';
 import { K } from '../data/tuning.js';
+import { SCALE, specialSize } from '../data/scale.js';
 import { mightBracket, targetBracket } from './ledger.js';
 import { FIELD_RULES } from '../data/cards.js';
 import { heightAt, moveXZ } from './terrain.js';
@@ -17,7 +18,7 @@ const sv = { x: 0, z: 0, d: 0, direct: true }, spot = { x: 0, y: 0, z: 0 };
 const DEG = Math.PI / 180;
 
 export function make(kind, name, S, x, y, z) {
-  return { kind, name, alive: true, dead: false, x, y, z, px: x, py: y, pz: z, pface: 0, vy: 0, dx: 0, dz: 0, face: 0, hp: S.hp, maxHp: S.hp, radius: S.radius, st: 0, stT: 0, cd: 0, atk: 0.5, flash: 0, twin: null, reviveT: 0, aux: 0 };
+  return { size: SCALE.engineRef[kind === 'idol' ? 'idol' : kind], k: 1, kr: 1, kind, name, alive: true, dead: false, x, y, z, px: x, py: y, pz: z, pface: 0, vy: 0, dx: 0, dz: 0, face: 0, hp: S.hp, maxHp: S.hp, radius: S.radius, st: 0, stT: 0, cd: 0, atk: 0.5, flash: 0, twin: null, reviveT: 0, aux: 0 };
 }
 export function spawnWarden(g) {
   if (!spotNear(g, spot)) { spot.x = g.p.x + 25; spot.z = g.p.z; spot.y = heightAt(spot.x, spot.z); }
@@ -32,7 +33,8 @@ export function spawnIdols(g) {
 }
 // A timed stage event (elite or timed boss) at a spot chosen when it was announced. engine decides which existing fight plays it.
 export function spawnSpecial(g, ev, at) {
-  const hpm = g.hpMul * (ev.hpScale || 1) * (g.diff ? g.diff.boss : 1), tag = s => { s.role = ev.role; s.id = ev.id; s.drop = ev.drop; };
+  const hpm = g.hpMul * (ev.hpScale || 1) * (g.diff ? g.diff.boss : 1), Z = specialSize(ev.id, ev.engine);
+  const tag = s => { s.role = ev.role; s.id = ev.id; s.drop = ev.drop; s.size = Z.h; s.radius = Z.radius; s.k = Z.k; s.kr = Z.kr; };      // big in the model and in the sim
   if (ev.engine === 'idols') {
     const S = SPECIALS.idol, a = make('idol', ev.name, S, 0, 0, 0), b = make('idol', ev.name, S, 0, 0, 0);
     for (const [s, off] of [[a, -1.2], [b, 1.2]]) { s.x = s.px = at.x + off; s.z = s.pz = at.z; s.y = s.py = heightAt(s.x, s.z); s.hp = s.maxHp = S.hp * hpm; tag(s); }
@@ -46,7 +48,7 @@ export function startBoss(g, early, gate) {
   if (g.boss.state !== 'idle') return false;                       // one shared state: only one gate boss at a time
   const S = SPECIALS.pharaoh, B = gate ? RUNSPEC.gate.arena : RUN.bossSpawn;
   const sp = make('pharaoh', gate ? gate.name : S.name, S, B.x, heightAt(B.x, B.z), B.z); sp.hp = sp.maxHp = gate ? gate.hp * g.stageSpec.mult * g.diff.boss : S.hp * g.hpMul; sp.cd = 3; sp.aux = 6;
-  if (gate) { sp.role = 'gate'; sp.id = gate.id; sp.enrage = gate.enrage || 1; }
+  if (gate) { const Z = specialSize(gate.id, 'pharaoh'); sp.role = 'gate'; sp.id = gate.id; sp.enrage = gate.enrage || 1; sp.size = Z.h; sp.radius = Z.radius; sp.k = Z.k; sp.kr = Z.kr; }
   g.sp.push(sp); g.gateOpenedAt = early ? (gate ? g.sc : g.t) : -1; g.boss = { state: 'active', early: !!early, t0: g.t, phase: 1, sandT: 0, summonT: S.summon.every, trapT: 2 };
   g.event('banner', gate ? gate.name + (gate.enrage > 1 ? ' is enraged by the Toll Bell.' : ' wakes.') : early ? 'You enter the Royal Gate early. The Hollow Pharaoh wakes.' : 'The Hollow Pharaoh wakes.');
   return true;
@@ -103,7 +105,7 @@ function turn(sp, want, rate, dt) {
 }
 function chase(g, sp, spd, dt) {
   load(sp); steerVec(g, o, g.p.x, g.p.y, g.p.z, sv);
-  if (!(sv.direct && sv.d < sp.radius + 0.8)) walk(o, sv.x, sv.z, spd, dt, sp.radius, CFG.enemy.stepUp);
+  if (!(sv.direct && sv.d < sp.radius + 0.8)) walk(o, sv.x, sv.z, spd, dt, Math.min(sp.radius, SCALE.walkRadiusCap), CFG.enemy.stepUp);
   settle(o, dt); store(sp);
 }
 
@@ -111,7 +113,7 @@ export function updateSpecials(g, dt) {
   const p = g.p;
   for (const sp of g.sp) {
     if (!sp.alive) continue;
-    const mul = g.dmgMul * (sp.enrage || 1);
+    const mul = g.dmgMul * (sp.enrage || 1), kr = sp.kr || 1;
     if (sp.flash > 0) sp.flash -= dt;
     const dx = p.x - sp.x, dz = p.z - sp.z, d = Math.sqrt(dx * dx + dz * dz) || 0.001;
 
@@ -121,17 +123,17 @@ export function updateSpecials(g, dt) {
         sp.stT -= dt;
         if (sp.stT <= 0) {
           sp.st = 0; sp.cd = S.slam.cooldown;
-          if (d < S.slam.radius && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.slam.dmg * mul, true, 'Sealed Warden slam');
-          addFx(g, { type: 'ring', x: sp.x, y: sp.y, z: sp.z, r: S.slam.radius, dur: 0.5, color: 0xff5030 });
+          if (d < S.slam.radius * kr && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.slam.dmg * mul, true, 'Sealed Warden slam');
+          addFx(g, { type: 'ring', x: sp.x, y: sp.y, z: sp.z, r: S.slam.radius * kr, dur: 0.5, color: 0xff5030 });
         }
         continue;
       }
       turn(sp, atan2(dx, dz), S.turnRate, dt);
       sp.cd -= dt;
       chase(g, sp, S.speed, dt);
-      if (sp.cd <= 0 && d < S.slam.trigger) {
+      if (sp.cd <= 0 && d < S.slam.trigger * kr) {
         sp.st = 1; sp.stT = S.slam.telegraph;
-        addTele(g.tele, { type: 1, x: sp.x, y: sp.y, z: sp.z, r: S.slam.radius, dur: S.slam.telegraph });
+        addTele(g.tele, { type: 1, x: sp.x, y: sp.y, z: sp.z, r: S.slam.radius * kr, dur: S.slam.telegraph });
       }
     } else if (sp.kind === 'idol') {
       const S = SPECIALS.idol;
@@ -140,9 +142,10 @@ export function updateSpecials(g, dt) {
         if (sp.reviveT <= 0) { sp.dead = false; sp.hp = sp.maxHp * S.reviveHpFraction; g.event('banner', 'An idol rises again.'); }
         continue;
       }
-      chase(g, sp, S.speed, dt); sp.face = atan2(dx, dz);
+      const I = g.mode !== 'classic' && g.diff ? g.diff.idol : null, spd = I ? I.speed : S.speed, bite = I ? I.bite : S.bite;      // difficulty table: bite and speed
+      chase(g, sp, spd, dt); sp.face = atan2(dx, dz);
       sp.atk -= dt;
-      if (d < S.reach && Math.abs(p.y - sp.y) < CFG.enemy.vReach && sp.atk <= 0 && g.grace <= 0 && !isDashing(p)) { sp.atk = CFG.enemy.attackCd; g.hurtPlayer(S.bite * mul, false, 'Twin Jackal Idol'); }
+      if (d < S.reach * kr && Math.abs(p.y - sp.y) < CFG.enemy.vReach && sp.atk <= 0 && g.grace <= 0 && !isDashing(p)) { sp.atk = CFG.enemy.attackCd; g.hurtPlayer(bite * mul, false, 'Twin Jackal Idol'); }
     } else if (sp.kind === 'pharaoh') updatePharaoh(g, sp, dt, dx, dz, d);
   }
   // sand closes in during the last phase
@@ -163,7 +166,7 @@ export function updateSpecials(g, dt) {
 }
 
 function updatePharaoh(g, sp, dt, dx, dz, d) {
-  const S = SPECIALS.pharaoh, b = g.boss, p = g.p, mul = g.dmgMul * (sp.enrage || 1);
+  const S = SPECIALS.pharaoh, BR = S.blade.range * (sp.kr || 1), b = g.boss, p = g.p, mul = g.dmgMul * (sp.enrage || 1);
   const frac = sp.hp / sp.maxHp, phase = frac > S.phase2 ? 1 : frac > S.phase3 ? 2 : 3;
   if (phase !== b.phase) {
     b.phase = phase; g.emit('bossphase', phase);
@@ -175,17 +178,17 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
     if (sp.stT <= 0) {
       sp.st = 0; sp.cd = S.blade.cooldown;
       const fx = sin(sp.face), fz = cos(sp.face), l = d || 1, dot = (dx / l) * fx + (dz / l) * fz;
-      if (d < S.blade.range && dot > cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true, 'The Hollow Pharaoh blade');
-      addFx(g, { type: 'fan', x: sp.x, y: sp.y, z: sp.z, r: S.blade.range, arc: S.blade.arcDeg, dx: fx, dz: fz, dur: 0.3, color: 0xffe0a0 });
+      if (d < BR && dot > cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true, 'The Hollow Pharaoh blade');
+      addFx(g, { type: 'fan', x: sp.x, y: sp.y, z: sp.z, r: BR, arc: S.blade.arcDeg, dx: fx, dz: fz, dur: 0.3, color: 0xffe0a0 });
     }
     return;
   }
   turn(sp, atan2(dx, dz), 2.5, dt);
   sp.cd -= dt;
   chase(g, sp, S.speed, dt);
-  if (sp.cd <= 0 && d < S.blade.range - 1) {
+  if (sp.cd <= 0 && d < BR - 1) {
     sp.st = 1; sp.stT = S.blade.telegraph;
-    addTele(g.tele, { type: 2, x: sp.x, y: sp.y, z: sp.z, r: S.blade.range, arc: S.blade.arcDeg, dx: sin(sp.face), dz: cos(sp.face), dur: S.blade.telegraph });
+    addTele(g.tele, { type: 2, x: sp.x, y: sp.y, z: sp.z, r: BR, arc: S.blade.arcDeg, dx: sin(sp.face), dz: cos(sp.face), dur: S.blade.telegraph });
   }
   if (phase === 1) {
     b.summonT -= dt;
@@ -209,6 +212,7 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
     }
   }
 }
+
 
 
 
