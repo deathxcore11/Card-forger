@@ -23,13 +23,14 @@ const data = { pool: JSON.parse(read('crucible/data/crucible-pool.json')), tags:
   cart: fs.existsSync(path.join(out, 'art', 'c', 'index.json')) ? JSON.parse(fs.readFileSync(path.join(out, 'art', 'c', 'index.json'), 'utf8')) : null, look: flag('--look', 'ps') };
 // The console pictures also go into one pack file beside them, so a published page holds a few files, not hundreds.
 // The page cuts each picture out of the pack by the offsets listed here; the file name carries the pack's hash, so a
-// device never keeps an old pack.
+// device never keeps an old pack. The pack is named .wasm only because the page host serves raw bytes under that
+// name and refuses .bin; the page reads it with fetch as plain bytes and never runs it.
 if (data.cart) {
   const dir = path.join(out, 'art', 'c'), names = fs.readdirSync(dir).filter(f => f.endsWith('.png')).sort(), at = {}, parts = [];
   let o = 0;
   for (const f of names) { const b = fs.readFileSync(path.join(dir, f)); at[f.slice(0, -4)] = [o, b.length]; parts.push(b); o += b.length; }
-  const buf = Buffer.concat(parts), file = 'pack-' + createHash('sha1').update(buf).digest('hex').slice(0, 10) + '.bin';
-  for (const f of fs.readdirSync(dir)) if (/^pack-[0-9a-f]+\.bin$/.test(f) && f !== file) fs.unlinkSync(path.join(dir, f));
+  const buf = Buffer.concat(parts), file = 'pack-' + createHash('sha1').update(buf).digest('hex').slice(0, 10) + '.wasm';
+  for (const f of fs.readdirSync(dir)) if (/^pack-[0-9a-f]+\.(bin|wasm)$/.test(f) && f !== file) fs.unlinkSync(path.join(dir, f));
   fs.writeFileSync(path.join(dir, file), buf);
   data.cart.pack = { file, size: buf.length, at };
   console.log('packed', names.length, 'console pictures into', file, Math.round(buf.length / 1024) + ' KB');
