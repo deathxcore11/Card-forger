@@ -473,6 +473,9 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     const base = era(/^reward-card/); await open(base); await resume();
     const slips = await page.evaluate(() => { const db = window.LM.db, o = window.LM.G.run.offer.options; return [...document.querySelectorAll('.pick')].map((p, i) => { const id = o[i] && o[i].id, d = p.querySelector(':scope > div:not(.c)'); return { mon: db.isMonster(id), first: d ? d.innerText.split('\n')[0].trim() : '', type: db.isMonster(id) ? db.byId.get(id).type : null }; }); });
     check('Era look, card pick: every monster on offer names its Type first', slips.length === 3 && slips.every(x => !x.mon || x.first === x.type), slips);
+    const mi = slips.findIndex(x => x.mon); if (mi >= 0) { await tap(`.pick:nth-child(${mi + 1}) [data-a^="inspect:"]`); check('tapping a monster on offer opens its page, which says printed effects are not used', /printed effects are not used/i.test(await text('.insp')), await text('.insp')); await tap('[data-a="closeinspect"]'); }
+    await tap('[data-a="tab:help"]');
+    check('the Rules page (How to play) says once that monsters fight with printed numbers and printed effects are not used', /Effects printed on a card are not used/.test(await text('.modal')), await text('.modal'));
     const pair = await page.evaluate(() => { const db = window.LM.db; for (const k of db.recipes.keys()) { const m = String(k).split('+').map(Number); if (m.length !== 2 || m[0] === m[1] || db.ordered.has(m[0] + '>' + m[1]) || db.ordered.has(m[1] + '>' + m[0])) continue; if (db.isMonster(m[0]) && db.isMonster(m[1])) return { a: m[0], b: m[1], key: k, name: db.byId.get(m[1]).name }; } return null; });
     if (!pair) check('a printed fusion pair to try the card pick on', false);
     else {
