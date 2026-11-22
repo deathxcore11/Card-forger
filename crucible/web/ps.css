@@ -1,0 +1,172 @@
+/* Lost Memories, the console look. Everything below draws inside one 512 x 240 frame of whole pixels, enlarged by a
+   whole number of device pixels (see fitConsole in ps.mjs). Rules of the look: no rounded corners, no blur, no soft
+   shadows, no smooth gradients, no see-through glass. Shading is done the console's way, with a 2 x 2 dot pattern. */
+@font-face { font-family: 'LM Text'; src: url(art/fonts/dotgothic16-latin-400-normal.woff2) format('woff2'); font-display: block; }
+@font-face { font-family: 'LM Label'; src: url(art/fonts/silkscreen-latin-400-normal.woff2) format('woff2'); font-display: block; }
+
+body.ps { background: #000; }
+#app.ps { position: absolute; left: 50%; top: 50%; width: 512px; height: 240px; overflow: hidden; background: #000; color: #f3ead8;
+  font: 16px/16px 'LM Text', monospace; -webkit-font-smoothing: none; font-smooth: never; image-rendering: pixelated; transform-origin: 50% 50%;
+  --sh: #1a0f12; --plum: #2d121d; --wine: #411b28; --dusty: #69404d; --sd: #7a543c; --sm: #a87e4f; --sl: #c09660; --gold: #dba459; --gl: #e9c46a;
+  --ember: #bd7433; --rust: #964034; --verd: #4c8a7c; --ink: #f3ead8; --dark: #3a2419; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+#app.ps * { box-sizing: border-box; border-radius: 0 !important; text-shadow: none; }
+#app.ps img, #app.ps canvas { image-rendering: pixelated; display: block; }
+#app.ps i, #app.ps b, #app.ps u, #app.ps em { font-style: normal; font-weight: 400; text-decoration: none; }
+#app.ps .lb, #app.ps .pq, #app.ps small { font: 8px/8px 'LM Label', monospace; letter-spacing: 0; text-transform: uppercase; }
+#app.ps .g { color: var(--gl); } #app.ps .d { color: #c2b49c; } #app.ps .r { color: #f08a72; } #app.ps .v { color: #9fd0c0; } #app.ps .k { color: var(--sh); }
+#app.ps [hidden] { display: none !important; }
+/* the old look's button rules do not reach the console look */
+#app.ps button { min-height: 0; transition: none; filter: none; opacity: 1; font-weight: 400; letter-spacing: 0; box-shadow: none; }
+#app.ps button:hover, #app.ps button:disabled { filter: none; opacity: 1; }
+#app.ps button:active { transform: none; }
+#app.ps .lb { white-space: nowrap; }
+#app.ps p, #app.ps li { font-size: 16px; line-height: 16px; margin: 0; }
+#app.ps h1, #app.ps h2, #app.ps h3 { font-size: 8px; line-height: 8px; margin: 0; letter-spacing: 0; }
+
+/* the parts of the frame */
+#app.ps .ab { position: absolute; }
+#app.ps .st { background: repeating-conic-gradient(var(--sm) 0 25%, #9a7347 0 50%) 0 0 / 2px 2px; border: 2px solid; border-color: var(--sl) var(--dark) var(--dark) var(--sl); }
+#app.ps .st.dk { background: repeating-conic-gradient(var(--sd) 0 25%, #6f4b36 0 50%) 0 0 / 2px 2px; }
+#app.ps .wn { background: repeating-conic-gradient(var(--plum) 0 25%, #26101a 0 50%) 0 0 / 2px 2px; border: 1px solid var(--sh); box-shadow: inset 0 0 0 1px var(--gold), inset 0 0 0 2px var(--sh); }
+#app.ps .lg { background: repeating-conic-gradient(var(--dusty) 0 25%, #5c3743 0 50%) 0 0 / 2px 2px; border: 2px solid; border-color: var(--dark) var(--sm) var(--sm) var(--dark); }
+#app.ps .vw { background: #000; box-shadow: 0 0 0 1px var(--gold), 0 0 0 2px var(--dark); overflow: hidden; }
+#app.ps .vw > canvas { position: absolute; left: 0; top: 0; }
+#app.ps .bar { padding: 4px 6px; line-height: 16px; overflow: hidden; }
+#app.ps .bar p { margin: 0; max-height: 32px; overflow: hidden; }
+#app.ps .bar.more::after { content: ''; position: absolute; right: 4px; bottom: 3px; width: 7px; height: 4px; background: var(--gl); clip-path: polygon(0 0, 100% 0, 50% 100%); animation: psbob 1s steps(2) infinite; }
+@keyframes psbob { 50% { transform: translateY(2px); } }
+
+/* a plaque: every button in the game */
+#app.ps .pq { position: absolute; display: block; height: 16px; padding: 4px 4px 0 6px; margin: 0; text-align: left; white-space: nowrap; overflow: hidden; cursor: pointer; color: var(--sh);
+  background: repeating-conic-gradient(var(--sm) 0 25%, #9a7347 0 50%) 0 0 / 2px 2px; border: 1px solid; border-color: var(--sl) var(--dark) var(--dark) var(--sl); outline: none; }
+#app.ps .pq.lit { color: var(--ink); background: repeating-conic-gradient(var(--ember) 0 25%, var(--rust) 0 50%) 0 0 / 2px 2px; border-color: var(--ink) #4a1c16 #4a1c16 var(--ink); padding-left: 16px; animation: pslit 1.2s steps(1) infinite; }
+#app.ps .pq.lit::before { content: ''; position: absolute; left: 3px; top: 4px; width: 10px; height: 6px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' shape-rendering='crispEdges'%3E%3Crect x='0' y='2' width='6' height='1' fill='%23f3ead8'/%3E%3Crect x='6' y='0' width='3' height='5' fill='%23f3ead8'/%3E%3Crect x='6' y='5' width='3' height='1' fill='%234a3024'/%3E%3C/svg%3E"); }
+@keyframes pslit { 50% { background: repeating-conic-gradient(#c98040 0 25%, var(--rust) 0 50%) 0 0 / 2px 2px; } }
+#app.ps .pq:disabled, #app.ps .pq.off { cursor: default; color: var(--dark); background: repeating-conic-gradient(var(--dusty) 0 25%, #5c3743 0 50%) 0 0 / 2px 2px; border-color: #7a5560 var(--sh) var(--sh) #7a5560; animation: none; padding-left: 6px; }
+#app.ps .pq:disabled::before, #app.ps .pq.off::before { display: none; }
+#app.ps .pq:active:not(:disabled) { transform: translate(1px, 1px); }
+#app.ps .pq.on { color: var(--ink); background: var(--verd); }
+
+/* gauges, portraits, marks */
+#app.ps .ga { position: absolute; height: 7px; border: 1px solid var(--gold); background: var(--sh); box-shadow: 0 0 0 1px var(--dark); }
+#app.ps .ga > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--rust); }
+#app.ps .ga.w > i { background: var(--sm); } #app.ps .ga.x > i { background: var(--ember); } #app.ps .ga.over > i { background: #f08a72; }
+#app.ps .pf { position: absolute; width: 68px; height: 68px; border: 2px solid var(--gold); box-shadow: 0 0 0 1px var(--dark), inset 0 0 0 1px var(--dark); background: var(--wine); overflow: hidden; }
+#app.ps .pf img { width: 64px; height: 64px; }
+#app.ps .pf.none { background: repeating-conic-gradient(var(--wine) 0 25%, #3a1620 0 50%) 0 0 / 2px 2px; }
+#app.ps .pf img.crest { position: absolute; left: 8px; top: 8px; width: 48px; height: 48px; }
+#app.ps .pf img.shade { filter: brightness(0); }
+#app.ps .spk { position: absolute; width: 8px; height: 10px; background: var(--ember); box-shadow: inset 0 3px 0 var(--gl), inset 2px 0 0 var(--sh), inset -2px 0 0 var(--sh); }
+#app.ps .spk.out { background: var(--dark); box-shadow: none; }
+#app.ps .seal { position: absolute; width: 10px; height: 10px; border: 1px solid var(--gold); background: var(--sh); }
+#app.ps .seal.on { background: var(--rust); }
+#app.ps .pip { position: absolute; width: 8px; height: 8px; border: 1px solid var(--gold); background: var(--sh); }
+#app.ps .pip.on { background: var(--gold); } #app.ps .pip.at { background: var(--ember); animation: pslit 1s steps(1) infinite; }
+#app.ps .sl { position: absolute; width: 24px; height: 24px; border: 1px solid; border-color: var(--dark) var(--sm) var(--sm) var(--dark); background: var(--sh); padding: 0; cursor: pointer; }
+#app.ps .sl img { width: 24px; height: 24px; margin: -1px; }
+#app.ps .sl b { position: absolute; left: 0; top: 7px; width: 22px; text-align: center; color: var(--gl); font: 8px/8px 'LM Label', monospace; }
+
+/* a card, 44 x 60: picture 40 x 40, ATK over DEF in the label face. Border colour tells the kind. */
+#app.ps .cd { position: absolute; width: 44px; height: 60px; border: 2px solid var(--sm); background: var(--sh); box-shadow: 0 0 0 1px var(--sh); cursor: pointer; padding: 0; overflow: hidden; color: var(--ink); text-align: left; }
+#app.ps .cd .art { position: absolute; left: 0; top: 0; width: 40px; height: 40px; background-color: var(--wine); background-repeat: no-repeat; }
+#app.ps .cd .n1, #app.ps .cd .n2 { position: absolute; left: 2px; font: 8px/8px 'LM Label', monospace; }
+#app.ps .cd .n1 { top: 42px; } #app.ps .cd .n2 { top: 50px; color: #c2b49c; }
+#app.ps .cd.fusion { border-color: var(--dusty); } #app.ps .cd.spell, #app.ps .cd.field { border-color: var(--verd); } #app.ps .cd.trap { border-color: var(--rust); } #app.ps .cd.equip { border-color: var(--sd); } #app.ps .cd.fuel { border-color: #5a5048; }
+#app.ps .cd.up .n1 { color: var(--gl); } #app.ps .cd.down .n1 { color: #f08a72; }
+#app.ps .cd.back .art { height: 56px; background: repeating-conic-gradient(var(--wine) 0 25%, var(--rust) 0 50%) 0 0 / 4px 4px; border: 1px solid var(--gold); }
+#app.ps .cd.can { box-shadow: 0 0 0 1px var(--gl); }
+#app.ps .cd.sel { box-shadow: 0 0 0 1px var(--ink), 0 0 0 2px var(--ember); top: 0 !important; }
+#app.ps .cd .bd, #app.ps .cd .pp { position: absolute; right: 1px; top: 1px; min-width: 9px; height: 9px; padding: 1px 1px 0; background: var(--ember); color: var(--ink); font: 8px/8px 'LM Label', monospace; text-align: center; }
+#app.ps .cd .pp { background: var(--gl); color: var(--sh); animation: psbob 1s steps(2) infinite; }
+#app.ps .cd .en { position: absolute; right: 1px; top: 30px; width: 8px; height: 8px; background: var(--verd); }
+
+/* text in windows */
+#app.ps .wn h2, #app.ps .wn h3 { margin: 0 0 4px; font: 8px/8px 'LM Label', monospace; color: var(--gl); text-transform: uppercase; }
+#app.ps .wn p { margin: 0 0 4px; }
+#app.ps .sc { overflow-y: auto; scrollbar-width: none; }
+#app.ps .sc::-webkit-scrollbar { display: none; }
+#app.ps .mw { position: absolute; z-index: 40; padding: 8px; }
+#app.ps .dim { position: absolute; inset: 0; z-index: 39; background: repeating-conic-gradient(rgba(0,0,0,1) 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
+
+/* title screen */
+#app.ps .ti > img.bg { position: absolute; left: 0; top: 0; width: 512px; height: 240px; }
+#app.ps .ti .logo { position: absolute; left: 0; top: 10px; width: 512px; display: flex; flex-direction: column; align-items: center; }
+#app.ps .ti .logo canvas { image-rendering: pixelated; }
+#app.ps .ti .slot { position: absolute; left: 352px; width: 152px; padding: 5px 6px; }
+#app.ps .fog { position: absolute; pointer-events: none; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
+#app.ps .fog.a { animation: psfog 9s steps(18) infinite alternate; } #app.ps .fog.b { animation: psfog 13s steps(26) infinite alternate-reverse; opacity: 1; }
+@keyframes psfog { from { transform: translateX(-6px); } to { transform: translateX(6px); } }
+#app.ps .tor { position: absolute; width: 3px; height: 5px; background: var(--gl); box-shadow: 0 0 0 1px var(--ember), 0 -2px 0 0 var(--ember); animation: psfl .4s steps(1) infinite; pointer-events: none; }
+@keyframes psfl { 33% { background: var(--ink); height: 6px; } 66% { background: var(--ember); height: 4px; } }
+
+/* chamber of doors */
+#app.ps .room { position: absolute; left: -20px; top: -8px; width: 352px; height: 144px; animation: psbreath 6s steps(6) infinite alternate; }
+@keyframes psbreath { to { transform: translate(-2px, 1px); } }
+#app.ps .room > img { position: absolute; left: 0; top: 0; }
+#app.ps .dr { position: absolute; width: 62px; height: 68px; padding: 0; border: 0; background: #000; cursor: pointer; overflow: hidden; }
+#app.ps .dr img { width: 62px; height: 68px; }
+#app.ps .dr .fg { position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
+#app.ps .dr.k-mystery .fg::after { content: ''; position: absolute; inset: 0; background: repeating-conic-gradient(transparent 0 25%, #000 0 50%) 1px 0 / 2px 2px; opacity: .75; }
+#app.ps .dr.k-known .fg { display: none; }
+#app.ps .dr.lock::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, #4a3024 0 5px, var(--dark) 5px 6px); opacity: .9; }
+#app.ps .dr .no { position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; background: var(--sh); color: var(--gl); font: 8px/10px 'LM Label', monospace; text-align: center; box-shadow: 0 0 0 1px var(--gold); }
+#app.ps .dr:not(.on)::before { content: ''; position: absolute; inset: 0; z-index: 1; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; opacity: .55; pointer-events: none; }
+#app.ps .dr.on { box-shadow: 0 0 0 1px var(--gl), 0 0 0 2px var(--sh); overflow: visible; }
+#app.ps .dr .no { z-index: 2; }
+#app.ps .cur { position: absolute; width: 9px; height: 6px; background: var(--gl); clip-path: polygon(0 0, 100% 0, 50% 100%); box-shadow: none; animation: psbob .8s steps(2) infinite; pointer-events: none; }
+#app.ps .cur::after { content: ''; position: absolute; left: 3px; top: 0; width: 3px; height: 2px; background: var(--ink); }
+/* the door the cursor is on, read out on the ledge */
+#app.ps .dt { position: absolute; left: 4px; top: 4px; width: 238px; height: 56px; padding: 3px 4px 0; overflow: hidden; color: var(--sh);
+  background: repeating-conic-gradient(var(--sm) 0 25%, #9a7347 0 50%) 0 0 / 2px 2px; border: 1px solid; border-color: var(--sl) var(--dark) var(--dark) var(--sl); }
+#app.ps .dt b { display: block; font: 8px/10px 'LM Label', monospace; color: var(--sh); white-space: nowrap; overflow: hidden; }
+#app.ps .dt p { font: 8px/9px 'LM Label', monospace; color: #3a2419; margin: 1px 0 0; max-height: 27px; overflow: hidden; }
+#app.ps .dt p i { color: var(--rust); background: none; } #app.ps .dt p i.lmg { color: #2f5f55; }
+
+/* the duel */
+#app.ps .zh { position: absolute; padding: 0; margin: 0; border: 0; background: transparent; cursor: pointer; }
+#app.ps .zh.ready { box-shadow: inset 0 0 0 1px var(--gl); }
+#app.ps .zh.picked { box-shadow: inset 0 0 0 1px var(--ink), inset 0 0 0 2px var(--ember); }
+#app.ps .zh.target { box-shadow: inset 0 0 0 1px #f08a72; animation: pslit .8s steps(1) infinite; }
+#app.ps .zh.onto { box-shadow: inset 0 0 0 1px var(--verd), inset 0 0 0 2px var(--ink); }
+#app.ps .atk { position: absolute; font: 8px/8px 'LM Label', monospace; color: var(--ink); background: var(--sh); padding: 1px 1px 0; pointer-events: none; }
+#app.ps .atk.up { color: var(--gl); } #app.ps .atk.down { color: #f08a72; } #app.ps .atk.def { color: #9fd0c0; }
+#app.ps .hand .hs { position: absolute; top: 2px; width: 44px; height: 60px; }
+#app.ps .hand .hs.empty { border: 1px solid var(--dark); }
+#app.ps .backs { position: absolute; display: flex; gap: 2px; }
+#app.ps .backs u { width: 7px; height: 10px; border: 1px solid var(--rust); background: var(--wine); }
+#app.ps .flash { position: absolute; left: 0; right: 0; top: 56px; text-align: center; color: var(--gl); pointer-events: none; opacity: 0; }
+
+/* a card read at full size */
+#app.ps .big { position: absolute; width: 104px; height: 152px; border: 2px solid var(--sm); background: var(--sh); box-shadow: 0 0 0 1px var(--dark); overflow: hidden; }
+#app.ps .big .art { position: absolute; left: 2px; top: 2px; width: 96px; height: 96px; background-repeat: no-repeat; background-color: var(--wine); }
+#app.ps .big .n1 { position: absolute; left: 4px; top: 104px; font: 16px/16px 'LM Text', monospace; color: var(--ink); }
+#app.ps .big .n2 { position: absolute; left: 4px; top: 124px; font: 8px/8px 'LM Label', monospace; color: #c2b49c; }
+
+/* story */
+#app.ps .story { position: absolute; inset: 0; z-index: 45; cursor: pointer; background: none; }
+#app.ps .story .bars { position: absolute; left: 96px; width: 320px; height: 20px; background: #000; }
+
+/* lists inside windows */
+#app.ps .row2 { display: flex; flex-wrap: wrap; gap: 4px; }
+#app.ps .rl { display: flex; gap: 6px; align-items: flex-start; margin: 0 0 6px; }
+#app.ps .rl img { width: 32px; height: 32px; flex: none; }
+#app.ps .rl .gem { width: 32px; height: 32px; flex: none; border: 2px solid var(--gold); background: var(--wine); color: var(--gl); font: 8px/28px 'LM Label', monospace; text-align: center; }
+#app.ps .rl div { font: 16px/16px 'LM Text', monospace; }
+#app.ps .rl div b { display: block; color: var(--gl); font: 8px/10px 'LM Label', monospace; }
+#app.ps .lab { display: grid; grid-template-columns: 28px 1fr; gap: 6px; align-items: start; width: 100%; margin: 0 0 4px; padding: 3px; border: 1px solid var(--dark); background: var(--sh); color: var(--ink); text-align: left; cursor: pointer; font: 16px/16px 'LM Text', monospace; }
+#app.ps .lab i { font: 8px/8px 'LM Label', monospace; color: #c2b49c; padding: 4px 0 0; }
+#app.ps .lab.on i { color: var(--gl); }
+#app.ps .lab span { font: 16px/16px 'LM Text', monospace; }
+#app.ps .soundslot { font: 16px/16px 'LM Text', monospace; }
+#app.ps .soundslot * { font: inherit !important; border-radius: 0 !important; box-shadow: none !important; backdrop-filter: none !important; }
+
+/* the page refuses a move, a save failed, a short message */
+#app.ps .savebar { position: absolute; left: 96px; top: 0; width: 320px; z-index: 50; padding: 4px 6px; background: var(--rust); color: var(--ink); font: 8px/10px 'LM Label', monospace; animation: pslit 2s steps(1) infinite; }
+#app.ps .savebar button { font: 8px/8px 'LM Label', monospace; margin-left: 6px; }
+#app.ps .toast { position: absolute; left: 96px; top: 200px; right: auto; bottom: auto; transform: none; width: 320px; height: 40px; font-size: 16px; line-height: 16px; border-radius: 0; box-shadow: none; z-index: 48; padding: 4px 6px; background: repeating-conic-gradient(var(--plum) 0 25%, #26101a 0 50%) 0 0 / 2px 2px; border: 1px solid var(--gold); color: var(--ink); pointer-events: none; overflow: hidden; }
+#app.ps .toast:empty { display: none; }
+
+#app.ps .float { position: absolute; left: 0; top: -10px; font: 8px/8px 'LM Label', monospace; color: #f08a72; pointer-events: none; animation: psfloat .9s steps(9) forwards; }
+#app.ps .float.pos { color: #9fd0c0; }
+@keyframes psfloat { to { transform: translateY(-12px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #app.ps *, #app.ps *::before, #app.ps *::after { animation: none !important; } }

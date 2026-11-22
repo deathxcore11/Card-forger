@@ -12,6 +12,8 @@ import { newProfile, applyRun, scoreRun, buy, maxHeat, VAULT, FORGER_FEATS, feat
 import { SCENES, RUMOURS } from './story.mjs';
 import { LAB_DEFAULTS, LAB_ORDER, DEPTH_SET, labConfig } from './labs.mjs';
 import { aimFor } from './aim.mjs';
+import { fitConsole, pq, lb, lbr, box, gauge, frame, win, carveImg } from './ps.mjs';
+import * as R3 from './raster.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
 import './sound.mjs';
 import { runFault, okProfile } from './saves.mjs'; // sets window.LMAudio; the cue() hook below is all the page knows about sound
@@ -232,6 +234,7 @@ async function playFrames() {
     const ghosts = snapshotGhosts(f.evs);
     G.shown = f; render();
     animate(f.evs, ghosts);
+    if (app.classList.contains('ps') && PSV && !RM) { PSV.anim = { t0: performance.now(), ms: G.fast ? 200 : 560, evs: f.evs, frame: f, gone: f.evs.filter(e => e.e === 'destroyed' && e.zone != null).map(e => ({ seat: e.seat, zone: e.zone })) }; requestAnimationFrame(psPaint); }
     cue('duel:frame', { evs: f.evs, fast: !!G.fast }, f.view); for (const e of f.evs) { logLine(e, f.view); cue('duel:' + e.e, e, f.view); }
     const heavy = f.evs.some(e => ['battle', 'summon', 'spell', 'trap', 'terrain', 'meld', 'equip', 'set', 'destroyed'].includes(e.e));
     await new Promise(r => setTimeout(r, G.fast ? 60 : heavy ? 620 : 140));
@@ -276,6 +279,7 @@ const FIT = { k: 1, h: 900 };
 // It is used when the wide stage would be shrunk below 0.72 (a window under 1152 px wide) on a screen at least 1.6 wide to 1 tall.
 const PHONE_W = 1440, PHONE_MIN = 640, PHONE_MAX = 900;
 function fit() {
+  if (app.classList.contains('ps')) { const c = fitConsole(app); FIT.k = c.k; FIT.phone = false; const n = document.getElementById('turn'); if (n) n.remove(); return; }
   const vw = innerWidth, vh = innerHeight;
   const phone = vw > vh && vw / 1600 < 0.72 && vw / vh >= 1.6;
   app.classList.toggle('phone', phone); FIT.phone = phone;
@@ -325,7 +329,7 @@ function animate(evs, ghosts) {
   for (const e of evs) {
     if (e.e === 'summon') { const c = zoneEl(e.seat, e.zone)?.querySelector('.c'); if (c) c.animate([{ transform: `translateY(${e.seat === 0 ? 60 : -60}%) scale(1.25)`, opacity: 0 }, { transform: 'scale(1.08)', opacity: 1, filter: 'brightness(1.7)', offset: .7 }, { transform: 'none', filter: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
     if (e.e === 'attack') { const a = zoneEl(e.seat, e.from)?.querySelector('.c'); const t = e.to >= 0 ? zoneEl(1 - e.seat, e.to) : $(e.seat === 0 ? '#rivalLp' : '#myLp'); if (a && t) { const ra = a.getBoundingClientRect(), rt = t.getBoundingClientRect(); const dx = ((rt.left + rt.width / 2) - (ra.left + ra.width / 2)) / FIT.k, dy = ((rt.top + rt.height / 2) - (ra.top + ra.height / 2)) / FIT.k; a.animate([{ transform: 'none' }, { transform: `translate(${dx * .08 * -1}px,${dy * -.08}px) scale(1.06)`, offset: .25 }, { transform: `translate(${dx * .8}px,${dy * .8}px) scale(1.12)`, offset: .55 }, { transform: 'none' }], { duration: 460, easing: 'cubic-bezier(.5,0,.2,1)' }); a.style.zIndex = 5; setTimeout(() => (a.style.zIndex = ''), 470); } }
-    if (e.e === 'lp') { const el = $(e.seat === 0 ? '#myLp' : '#rivalLp'); if (el) { el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)', color: e.d < 0 ? '#ff6b5a' : '#7be08d', offset: .3 }, { transform: 'scale(1)' }], { duration: 500 }); const f = document.createElement('span'); f.className = 'float ' + (e.d < 0 ? 'neg' : 'pos'); f.textContent = (e.d > 0 ? '+' : '') + e.d; el.appendChild(f); setTimeout(() => f.remove(), 900); } if (e.d <= -1500) { (document.querySelector('.duel') || app).animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-.5%,.4%)' }, { transform: 'translate(.5%,-.3%)' }, { transform: 'none' }], { duration: 240 }); } }
+    if (e.e === 'lp') { const el = $(e.seat === 0 ? '#myLp' : '#rivalLp'); if (el) { el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)', color: e.d < 0 ? '#ff6b5a' : '#7be08d', offset: .3 }, { transform: 'scale(1)' }], { duration: 500 }); const f = document.createElement('span'); f.className = 'float ' + (e.d < 0 ? 'neg' : 'pos'); f.textContent = (e.d > 0 ? '+' : '') + e.d; el.appendChild(f); setTimeout(() => f.remove(), 900); } if (e.d <= -1500) { (document.querySelector('.duel') || document.querySelector('#app.ps .vw') || app).animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-.5%,.4%)' }, { transform: 'translate(.5%,-.3%)' }, { transform: 'none' }], { duration: 240 }); } }
     if (e.e === 'relic') { const b = $(e.seat === 0 ? '#relicFlash' : '#rivalFlash'); if (b) { b.textContent = (e.seat === 0 ? '' : 'Rival: ') + RELICS[e.id].name + bonusText(e); b.animate([{ opacity: 0, transform: 'translateY(40%)' }, { opacity: 1, transform: 'none', offset: .2 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: 1100 }); } }
     if (e.e === 'terrain') { const t = $('#terrain'); if (t) t.animate([{ filter: 'brightness(2.4)' }, { filter: 'none' }], { duration: 500 }); }
     if (e.e === 'draw' && e.seat === 0) { const cs = [...document.querySelectorAll('.hand .hs .c')].slice(-e.n); cs.forEach((c, i) => c.animate([{ transform: 'translate(120%,-40%) rotate(8deg) scale(.6)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 300, delay: i * 70, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' })); }
@@ -445,7 +449,7 @@ function hud() {
 function screenHome() {
   const saved = liveSave();
   return `<div class="hall home"><div class="title"><small>CARDSTASHY</small><h1>LOST MEMORIES</h1><p>${pref.era ? 'Three floors beneath Asterhold. Three Sparks to carry you down.' : 'Test build of the real rules engine. Three floors, six chambers each, three Sparks.'}</p>${G.notice ? `<p class="notice glass">${esc(G.notice)}</p>` : ''}
-    <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:feats">Feats (${(P.featsDone || []).length}/${featList(!!labs.long).length})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button><button data-a="tab:sound">Sound</button>${pref.era ? `<button data-a="labsopen" class="${G.labsOpen ? 'on' : ''}">Lab switches</button>` : ''}</div>
+    <div class="row">${saved && saved.phase !== 'over' ? '<button class="gold" data-a="resume">Continue run</button>' : ''}<button class="${saved && saved.phase !== 'over' ? '' : 'gold'}" data-a="new">New run</button><button data-a="screen:codex">Codex (${G.known.size})</button><button data-a="screen:feats">Feats (${(P.featsDone || []).length}/${featList(!!labs.long).length})</button><button data-a="screen:vault">Memory Vault (${P.memories})</button><button data-a="tab:help">How to play</button><button data-a="tab:sound">Sound</button>${look === 'old' ? '<button data-a="look">Console look</button>' : ''}${pref.era ? `<button data-a="labsopen" class="${G.labsOpen ? 'on' : ''}">Lab switches</button>` : ''}</div>
     ${pref.era && !G.labsOpen ? '' : `<div class="labs glass"><b>Lab rules</b> <small>experiments. Five Gifts, Leaning offers, the Heat ladder, Even kits and Tuned items start on: they are the current test baseline.${saved && saved.phase !== 'over' ? ' Your run in progress keeps the rules it started with; changes here apply to the next run.' : ''}</small><div class="labgrid">${labKeys().map(k => { const held = pref.depth && DEPTH_SET.includes(k); return `<button class="lab ${pref[k] || held ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] || held ? 'ON' : 'OFF'}</i><span>${LABS[k]}${held && !pref[k] ? ' (On through the depth set.)' : ''}</span></button>`; }).join('')}</div></div>`}
     ${pref.era ? '' : '<p class="fine">Not final art. Seen only in a test browser so far.</p>'}</div></div>`;
 }
@@ -672,6 +676,9 @@ function draw() {
     app.innerHTML = '<div class="modal"><div class="glass panel leave moved"><h2>Your saved progress did not load</h2><p>This browser handed the game an empty store just now, though this tab held your progress a moment ago. That can happen when a device is busy. Nothing has been changed, and what you saved should still be there.</p><div class="row"><button class="gold" data-a="loadagain">Load the page again</button><button data-a="startempty">Start without it</button></div><p><small>Start without it only if you cleared this site\'s data yourself.</small></p></div></div>';
     return;
   }
+  const psOn = psScreen();
+  if (psOn) { drawConsole(psOn); screenCue(); return; }
+  if (app.classList.contains('ps')) { app.classList.remove('ps'); document.body.classList.remove('ps'); app.style.marginLeft = app.style.marginTop = ''; fit(); }
   const r = G.run; let body;
   if (G.screen) body = { forger: screenForger, vault: screenVault, codex: screenCodex, feats: screenFeats }[G.screen]();
   else if (!r) body = screenHome();
@@ -685,6 +692,329 @@ function draw() {
   { const rb = $('.rules'); if (rb) { rb.scrollTop = rulesAt; moreBelow(rb); } const tl = $('.trayline'); if (tl) moreBelow(tl); }
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
   if (era) app.style.setProperty('--fog', String(fogK(r))); // Era look: the fog thickens as Sparks are lost and Heat rises
+  screenCue(era);
+}
+
+// ---------- the console look (ps.css, ps.mjs, raster.mjs) ----------
+// On for everyone. The old look stays one switch away in Options, for the screens not yet drawn the console way and to
+// compare. Drawn the console way so far: the title, the chamber of doors and the duel, with every window over them.
+const LOOKKEY = 'lostmemories.look.v1';
+let look = store.get(LOOKKEY) || D.look || 'ps';
+const CART = new Set((D.cart && D.cart.art) || []);
+const cimg = n => `art/c/${n}.png`;
+const faceName = id => 'face-' + (id === 'last' ? 'last-one' : id);
+const relicFile = id => (RELICS[id].kind === 'M' ? 'masterwork' : 'relic') + '-' + id.replace(/_/g, '-');
+// Card pictures at console size: each sheet of 100 shrunk to 40 (and, for the card page, 96) pixels a card and cut to
+// 15-bit colour when the game loads. A page opened straight from the disk may not read its own pictures: it then shows
+// the sheets as they are, shrunk without smoothing.
+const CSHEET = { 40: [], 96: [] }, CCANVAS = [];
+function convertSheets(size) {
+  if (!D.sheets || convertSheets[size]) return; convertSheets[size] = 1;
+  const n = Math.ceil(D.pool.cards.length / 100);
+  for (let i = 0; i < n; i++) {
+    const im = new Image(); im.onload = () => {
+      const t = R3.crunch(R3.texFrom(im, size * 10, size * 10, 0, 0, im.naturalWidth, im.naturalHeight)); if (!t) return;
+      const c = document.createElement('canvas'); c.width = c.height = size * 10; const x = c.getContext('2d'); const id = x.createImageData(size * 10, size * 10); new Uint32Array(id.data.buffer).set(t.d); x.putImageData(id, 0, 0);
+      if (size === 40) CCANVAS[i] = t;
+      c.toBlob(b => { if (!b) return; CSHEET[size][i] = URL.createObjectURL(b); clearTimeout(convertSheets.t); convertSheets.t = setTimeout(() => { TEX.cards.clear(); if (app.classList.contains('ps')) render(); }, 60); });
+    };
+    im.src = D.sheets + i + '.webp';
+  }
+}
+const cpic = (id, size) => { const i = IDX.get(id); if (i == null || !D.sheets) return ''; const s = Math.floor(i / 100), k = i % 100, url = CSHEET[size][s] || (D.sheets + s + '.webp'); return `background-image:url(${url});background-size:${size * 10}px ${size * 10}px;background-position:-${(k % 10) * size}px -${Math.floor(k / 10) * size}px`; };
+
+// A card, 44 x 60: its picture, then ATK over DEF, or what kind of card it is.
+function psCard(inst, x, y, o = {}) {
+  if (!inst) return '';
+  const pos = x == null ? 'position:relative' : `left:${x}px;top:${y}px`;
+  if (inst.veil && !inst.id) return `<button class="cd back ${o.cls || ''}" style="${pos}" ${o.attrs || ''}><i class="art"></i></button>`;
+  const c = card(inst.id), role = roleOf(db, inst.id), mon = role === 'monster';
+  const a = inst.ea ?? (c.atk + (inst.t ? 300 : 0) + (inst.ba || 0)), d = inst.ed ?? (c.def + (inst.t ? 300 : 0) + (inst.bd || 0));
+  const up = mon && (a > c.atk || d > c.def), down = mon && a < c.atk;
+  return `<button class="cd ${role}${up ? ' up' : ''}${down ? ' down' : ''} ${o.cls || ''}" style="${pos}" ${o.attrs || ''} data-id="${inst.id}" aria-label="${esc(c.name)}"><i class="art" style="${cpic(inst.id, 40)}"></i>${mon ? `<i class="n1">${a}</i><i class="n2">${d}</i>` : `<i class="n1">${role === 'fuel' ? 'FUEL' : role.toUpperCase()}</i>`}${inst.e ? '<i class="en"></i>' : ''}${o.badge ? `<i class="bd">${o.badge}</i>` : o.pip ? `<i class="pp">${o.pip}</i>` : ''}</button>`;
+}
+// A portrait. Someone with no face of their own (a rival of the halls) shows the crest of the pyramid's keepers.
+const psPort = (n, x, y, shade = false) => `<div class="pf ${n && CART.has(n) ? '' : 'none'}" style="left:${x}px;top:${y}px">${n && CART.has(n) ? `<img ${shade ? 'class="shade" ' : ''}src="${cimg(n)}" alt="">` : CART.has('key-crest-48') ? `<img class="crest" src="${cimg('key-crest-48')}" alt="">` : ''}</div>`;
+const shortName = s => String(s || '').replace(/^The /, '');
+// The Forge level: how far toward the next Gift (the same sums as the engine's level-up).
+const forgeFrac = r => { const c = db.config, at = l => l === 0 && c.giftFirstXp ? Math.min(c.giftFirstXp, c.xp.perLevel * (c.giftXpScale || 1)) : (l + 1) * c.xp.perLevel * (c.giftXpScale || 1); const lo = r.level ? at(r.level - 1) : 0, hi = at(r.level); return Math.max(0, Math.min(1, (r.xp - lo) / Math.max(1, hi - lo))); };
+const sparkRow = (r, x, y) => Array.from({ length: sparksMax(r) }, (_, i) => `<i class="spk${i < r.sparks ? '' : ' out'}" style="left:${x + i * 12}px;top:${y}px"></i>`).join('');
+
+// The left pillar: you.
+function psYou(r, v = null, extra = '') {
+  const f = r && r.forger;
+  let s = psPort(f ? faceName(f) : '', 14, 6) + lb(8, 79, f ? shortName(FORGERS[f].name) : 'YOU', 'g');
+  if (v) {
+    s += lb(8, 92, 'LIFE', 'g') + `<b id="myLp" class="ab lb" style="left:${88 - String(v.lp[0]).length * 6}px;top:92px">${v.lp[0]}</b>` + gauge(8, 101, 80, v.lp[0] / 8000)
+      + lb(8, 114, 'DECK', 'g') + lbr(88, 114, v.deckCount[0]) + lb(8, 125, 'TURN', 'g') + lbr(88, 125, v.turn) + lb(8, 138, 'SPARKS', 'g') + sparkRow(r, 52, 136);
+  } else if (r) {
+    const cap = weightCap(db, r), w = deckWeight(db, r.deck);
+    s += lb(8, 92, 'SPARKS', 'g') + sparkRow(r, 52, 90) + lb(8, 106, 'EMBERS', 'g') + lbr(88, 106, r.embers)
+      + lb(8, 120, 'SEALS', 'g') + [0, 1].map(i => `<i class="seal${i < Math.min(2, r.seals) ? ' on' : ''}" style="left:${64 + i * 13}px;top:118px"></i>`).join('')
+      + lb(8, 134, 'WEIGHT', 'g') + lbr(88, 134, `${w}/${cap}`) + gauge(8, 143, 80, w / cap, 'w' + (w > cap ? ' over' : ''))
+      + lb(8, 156, 'FORGE LV ' + r.level, 'g') + gauge(8, 165, 80, forgeFrac(r), 'x');
+  }
+  return s + extra + pq(4, 220, 88, 'MENU', 'tab:menu');
+}
+
+// ---- title
+function psHome() {
+  const saved = liveSave(), has = saved && saved.phase !== 'over';
+  const bg = CART.has('key-title') ? `<img class="bg" src="${cimg('key-title')}" alt="">` : box(0, 0, 512, 240, 'st dk');
+  const items = [has && ['CONTINUE', 'resume'], ['NEW DESCENT', 'new'], [`CODEX ${G.known.size}`, 'screen:codex'], [`FEATS ${(P.featsDone || []).length}/${featList(!!labs.long).length}`, 'screen:feats'], [`MEMORY VAULT ${P.memories}`, 'screen:vault'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options']].filter(Boolean);
+  const menu = items.map(([t, a], i) => pq(364, 78 + i * 20, 136, t, a, { lit: i === 0 })).join('');
+  const slot = has ? `<div class="wn slot" style="top:${82 + items.length * 20}px">${lb(0, 0, '', '')}<b class="lb g">${esc(saved.forger ? shortName(FORGERS[saved.forger].name) : 'NO FORGER')}</b><br><b class="lb">FLOOR ${saved.floor + 1} · CHAMBER ${Math.min(6, saved.chamber + 1)}</b><br><b class="lb">SPARKS ${saved.sparks} · EMBERS ${saved.embers}</b></div>` : '';
+  return `<div class="ti">${bg}<i class="fog a" style="left:150px;top:96px;width:150px;height:60px;opacity:.5"></i><i class="tor" style="left:104px;top:101px"></i><i class="tor" style="left:338px;top:101px"></i>
+    <div class="ab" style="left:352px;top:8px;width:160px;display:flex;flex-direction:column;align-items:center;gap:0">${carveImg('LOST', 22, render)}${carveImg('MEMORIES', 22, render)}</div>
+    ${lb(358, 66, 'BENEATH ASTERHOLD', 'd')}${menu}${slot}
+    ${G.notice ? `<div class="wn" style="position:absolute;left:8px;top:8px;width:200px;padding:5px 6px">${esc(G.notice)}</div>` : ''}
+    ${lb(8, 230, 'A CARDSTASHY GAME · FREE, NOT FOR SALE', 'd')}</div>`;
+}
+
+// ---- the chamber of doors
+const NICHE = [62, 145, 230]; // where the three empty doorways stand in the chamber picture (352 x 144)
+function psChamber() {
+  const r = G.run, boss = BOSSES[r.floor][r.bossOrder[r.floor]], fl = r.floor + 1;
+  const hall = ART.has('hall-doors-' + fl) && CART.has('hall-doors-' + fl) ? 'hall-doors-' + fl : 'hall-doors';
+  const at = r.doors.length === 1 ? [1] : r.doors.length === 2 ? [0, 2] : [0, 1, 2];
+  // A cursor rests on one door, as on a pad: the ledge reads that door out, a second tap on it (or ENTER) goes in.
+  const lockedAt = i => r.doors[i].type === 'boss' && r.seals < 2, key = `${r.floor}.${r.chamber}.${r.doors.map(d => d.type).join()}`;
+  if (!G.doorSel || G.doorSel.at !== key || !r.doors[G.doorSel.i]) G.doorSel = { at: key, i: Math.max(0, r.doors.findIndex((d, i) => !lockedAt(i))) };
+  const sel = G.doorSel.i, d = r.doors[sel], n = r.doors.length;
+  const doors = r.doors.map((d, i) => { const locked = lockedAt(i), leaf = 'door-' + DOOR_ART[d.type] + '-leaf';
+    return `<button class="dr k-${d.know || 'known'}${locked ? ' lock' : ''}${i === sel ? ' on' : ''}" style="left:${NICHE[at[i]]}px;top:44px" data-a="${i === sel ? 'door' : 'dsel'}:${i}" ${locked && i === sel ? 'disabled' : ''} aria-label="${esc(doorName(d))}">${CART.has(leaf) ? `<img src="${cimg(leaf)}" alt="">` : ''}<i class="fg"></i><i class="no">${i + 1}</i></button>`; }).join('');
+  const view = `<div class="room"><img src="${cimg(hall)}" width="352" height="144" alt="">${doors}<i class="cur" style="left:${NICHE[at[sel]] + 27}px;top:34px"></i></div>`;
+  const ledge = `<div class="dt"><b>${sel + 1} · ${esc(doorName(d))}</b><p><i class="lmc">COST</i> ${esc(d.cost)}</p><p><i class="lmg">GAIN</i> ${esc(d.reward)}</p></div>`
+    + (n > 1 ? pq(248, 4, 30, '<', `dsel:${(sel + n - 1) % n}`, { title: 'Door to the left' }) + pq(282, 4, 30, '>', `dsel:${(sel + 1) % n}`, { title: 'Door to the right' }) : '')
+    + pq(248, 40, 64, lockedAt(sel) ? 'SEALED' : 'ENTER', `door:${sel}`, { lit: !lockedAt(sel), off: lockedAt(sel) });
+  const secret = r.doors.some(d => d.type === 'secret');
+  const said = d.law ? 'Its Law: ' + lawShown(d.law) : d.tell ? `${d.style}: ${d.tell}` : d.hidden ? d.hidden : d.know === 'mystery' ? 'Fog hides what waits behind it.' : (d.tags || []).length ? d.tags.join('. ') + '.' : '';
+  const bar = [r.lastNote, said, lockedAt(sel) ? 'It needs two seals.' : '', said || r.lastNote ? '' : secret ? 'A door that was not there before.' : `Guardian of this floor: ${boss.name}. ${r.chamber >= 2 ? bossLaw(db, r) : 'Its Law shows from chamber 3.'}`].filter(Boolean).map(esc).join(' ');
+  const pips = Array.from({ length: 6 }, (_, i) => `<i class="pip${i < r.chamber ? ' on' : i === r.chamber ? ' at' : ''}" style="left:${8 + i * 11}px;top:20px"></i>`).join('') + `<i class="seal${r.seals >= 2 ? ' on' : ''}" style="left:76px;top:19px"></i>`;
+  const rel = relicList(r), belt = Array.from({ length: 9 }, (_, i) => { const id = rel[i]; return `<button class="sl" style="left:${8 + (i % 3) * 28}px;top:${54 + Math.floor(i / 3) * 28}px" data-a="tab:relics" aria-label="${id ? esc(RELICS[id].name) : 'Empty relic slot'}">${id ? (CART.has(relicFile(id) + '-24') ? `<img src="${cimg(relicFile(id) + '-24')}" alt="">` : `<b>${esc(RELICS[id].name.replace(/^The /, '')[0])}</b>`) : ''}</button>`; }).join('');
+  const right = lb(8, 8, `FLOOR ${fl}`, 'g') + pips + lb(8, 40, 'RELICS', 'g') + (rel.length > 9 ? lbr(88, 40, '+' + (rel.length - 9)) : '') + belt
+    + lb(8, 142, `CHARMS ${r.charms.length}/${db.config.charmSlots}`, 'g') + (db.config.heatRules && r.heat ? pq(4, 160, 88, `HEAT ${r.heat} RULES`, `heatinfo:${r.heat}`) : '')
+    + pq(4, 180, 88, 'DOORS IN FULL', 'tab:doors') + pq(4, 200, 88, 'DECK', 'tab:deck') + pq(4, 220, 88, 'RELICS', 'tab:relics');
+  G.barText = bar;
+  return frame({ left: psYou(r), right, view, ledge, bar });
+}
+
+// ---- the duel: a 3D table in the window, the hand on the ledge
+const TBL = { cam: { y: 200, z: 525, pitch: .75, f: 350, cx: 156, cy: 198 }, zx: i => (i - 2) * 62, row: { 1: -80, 0: 80 }, trap: { 1: -152, 0: 152 } };
+const TEX = { cards: new Map(), table: null, back: null, loading: false };
+function psTextures() {
+  if (TEX.loading) return; TEX.loading = true;
+  const load = (n, w, h, k) => { if (!CART.has(n)) return; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, w, h); if (app.classList.contains('ps')) psPaint(); }; im.src = cimg(n); };
+  load('table', 128, 128, 'table'); load('cardback', 44, 60, 'back');
+}
+const ROLE_RGB = { monster: [168, 126, 79], spell: [76, 138, 124], field: [76, 138, 124], trap: [150, 64, 52], equip: [122, 84, 60], fuel: [90, 80, 72] };
+function cardTex(id) {
+  if (TEX.cards.has(id)) return TEX.cards.get(id);
+  const i = IDX.get(id), sh = i == null ? null : CCANVAS[Math.floor(i / 100)];
+  let t = null; if (sh) { const k = i % 100, sx = (k % 10) * 40, sy = Math.floor(k / 10) * 40, d = new Uint32Array(40 * 40); for (let y = 0; y < 40; y++) for (let x = 0; x < 40; x++) d[y * 40 + x] = sh.d[(sy + y) * 400 + sx + x]; t = { w: 40, h: 40, d }; }
+  if (t) TEX.cards.set(id, t);
+  return t;
+}
+let PSV = null; // what the table shows now: { v, sel, anim }
+// Draw the table and every card on it into the window's canvas. Cards lie flat; a card in defense lies sideways.
+function psPaint() {
+  const cv = document.getElementById('tbl'); if (!cv || !PSV) return;
+  const view = R3.makeView(cv, 312, 128), proj = R3.camera(TBL.cam), v = PSV.v, now = performance.now();
+  R3.clear(view, 0); view.px.fill(0); // see-through: the hall picture behind the canvas shows where nothing is drawn
+  const T = TEX.table || R3.flat(8, 8, [168, 126, 79]);
+  R3.quad(view, { p: [[-190, 0, -192], [190, 0, -192], [190, 0, 192], [-190, 0, 192]], uv: [[0, 0], [T.w * 3 - 1, 0], [T.w * 3 - 1, T.h * 3 - 1], [0, T.h * 3 - 1]], tex: { w: T.w * 3, h: T.h * 3, d: tile3(T) }, shade: [.55, .55, 1, 1], bias: 2000 });
+  const narrow = v.mon[0].length < 5;
+  for (const seat of [0, 1]) for (let z = 0; z < 5; z++) { // the zone outlines, cut into the stone
+    const cx = TBL.zx(z), cz = TBL.row[seat], shut = narrow && (z === 0 || z === 4);
+    R3.quad(view, { p: [[cx - 25, 0, cz - 33], [cx + 25, 0, cz - 33], [cx + 25, 0, cz + 33], [cx - 25, 0, cz + 33]], uv: [[0, 0], [0, 0], [0, 0], [0, 0]], col: shut ? [58, 36, 25] : [96, 66, 44], shade: .9, bias: 1000 });
+    if (!shut) R3.quad(view, { p: [[cx - 23, 0, cz - 31], [cx + 23, 0, cz - 31], [cx + 23, 0, cz + 31], [cx - 23, 0, cz + 31]], uv: [[0, 0], [0, 0], [0, 0], [0, 0]], col: [140, 104, 66], shade: .9, bias: 999 });
+  }
+  const anim = PSV.anim && now - PSV.anim.t0 < PSV.anim.ms ? PSV.anim : null, at = anim ? (now - anim.t0) / anim.ms : 1;
+  const lay = (inst, seat, zi, cz, small) => {
+    if (!inst) return;
+    let cx = TBL.zx(zi), lift = 0, dz = 0;
+    if (anim) for (const e of anim.evs) {
+      if (e.e === 'summon' && e.seat === seat && e.zone === zi - (narrow ? 1 : 0) && !small) lift = Math.max(0, 1 - at * 1.6) * 60;
+      if (e.e === 'attack' && e.seat === seat && e.from === zi - (narrow ? 1 : 0) && !small) { const k = Math.sin(Math.min(1, at * 1.4) * Math.PI); const tz = e.to >= 0 ? TBL.row[1 - seat] : (seat === 0 ? -192 : 192), tx = e.to >= 0 ? TBL.zx(e.to + (narrow ? 1 : 0)) : 0; cx += (tx - cx) * k * .8; dz = (tz - cz) * k * .8; lift = k * 14; }
+    }
+    const def = inst.pos === 'd', hw = small ? 16 : def ? 29 : 21, hd = small ? 21 : def ? 21 : 29, y = lift, z0 = cz + dz;
+    const back = inst.veil && (!inst.id || seat === 1), t = back ? TEX.back : cardTex(inst.id);
+    const corners = def ? [[cx + hw, y, z0 - hd], [cx + hw, y, z0 + hd], [cx - hw, y, z0 + hd], [cx - hw, y, z0 - hd]] : [[cx - hw, y, z0 - hd], [cx + hw, y, z0 - hd], [cx + hw, y, z0 + hd], [cx - hw, y, z0 + hd]];
+    if (t) R3.quad(view, { p: corners, uv: back ? [[0, 0], [43, 0], [43, 59], [0, 59]] : [[0, 0], [39, 0], [39, 39], [0, 39]], tex: t, shade: [.8, .8, 1, 1], bias: -lift * 4 });
+    else R3.quad(view, { p: corners, uv: [[0, 0], [0, 0], [0, 0], [0, 0]], col: back ? [65, 27, 40] : ROLE_RGB[roleOf(db, inst.id)] || [168, 126, 79], shade: [.8, .8, 1, 1], bias: -lift * 4 });
+  };
+  for (const seat of [1, 0]) {
+    v.mon[seat].forEach((m, z) => lay(m, seat, z + (narrow ? 1 : 0), TBL.row[seat], false));
+    v.traps[seat].forEach((t, z) => lay(t ? (seat === 1 ? { veil: true } : { ...t, veil: true, id: null }) : null, seat, z, TBL.trap[seat], true));
+  }
+  if (anim) for (const g of anim.gone || []) { const k = Math.min(1, at * 1.5); if (k < 1) { const cx = TBL.zx(g.zone + (narrow ? 1 : 0)), cz = TBL.row[g.seat]; for (let i = 0; i < 16; i++) { const gx = cx - 21 + (i % 4) * 11, gz = cz - 29 + Math.floor(i / 4) * 15, fall = k * (20 + ((i * 7) % 5) * 8); R3.quad(view, { p: [[gx, fall, gz], [gx + 10 - k * 8, fall, gz], [gx + 10 - k * 8, fall, gz + 14 - k * 12], [gx, fall, gz + 14 - k * 12]], uv: [[0, 0], [0, 0], [0, 0], [0, 0]], col: [150, 140, 130], shade: 1 - k * .7, bias: -200 }); } } }
+  R3.draw(view, proj, [420, 760]); R3.present(view);
+  if (anim) requestAnimationFrame(psPaint);
+}
+function tile3(T) { if (T.t3) return T.t3; const w = T.w * 3, h = T.h * 3, d = new Uint32Array(w * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) d[y * w + x] = T.d[(y % T.h) * T.w + (x % T.w)]; T.t3 = d; return d; }
+// Where a zone of the table lands in the window, for its tap area and its number.
+function zoneBox(seat, zi, trap = false) {
+  const proj = R3.camera(TBL.cam), cx = TBL.zx(zi), cz = trap ? TBL.trap[seat] : TBL.row[seat], hw = trap ? 17 : 25, hd = trap ? 22 : 33;
+  const pts = [[cx - hw, 0, cz - hd], [cx + hw, 0, cz - hd], [cx + hw, 0, cz + hd], [cx - hw, 0, cz + hd]].map(proj);
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+}
+// Short words for the plaques.
+const PLAY_WORDS = (x, free, aimM) => x.pos === 'a' ? (x.veiled ? 'VEILED ATTACK' : 'ATTACK POS') : x.pos === 'd' ? (x.veiled ? 'VEILED DEFENSE' : 'DEFENSE POS') : (free ? 'PLAY FREE' : aimM ? 'PLAY ON TARGET' : 'PLAY');
+function psDuel() {
+  const live = G.run.duel, f = G.shown;
+  const v = f ? f.view : live ? viewFor(live, db, 0) : null;
+  if (!v) return frame({});
+  const rv = f ? f.rival : info(G.run);
+  const myTurn = !G.playing && live && !live.pending && live.active === 0;
+  const pend = !G.playing && live && live.pending && live.active === 1;
+  const la = myTurn ? legalActions(live, db, { maxChain: 1 }) : [];
+  const canAtk = new Map(); la.filter(a => a.t === 'attack').forEach(a => { if (!canAtk.has(a.from)) canAtk.set(a.from, []); canAtk.get(a.from).push(a.to); });
+  const canPos = new Set(la.filter(a => a.t === 'pos').map(a => a.zone));
+  const canPlay = myTurn && !live.played && !live.attacked;
+  const targets = G.attacker != null ? (canAtk.get(G.attacker) || []) : [];
+  const holds = m => m.e === 'bulwark' && !m.bulwarkUsed;
+  const aim = canPlay && G.sel.length === 1 && G.onto == null && live.hand[0][G.sel[0]] ? aimFor(db, live, live.hand[0][G.sel[0]].id) : null;
+  const aimed = aim && G.aim != null && aim.zones.includes(G.aim) ? G.aim : null;
+  const T = tips(), lesson = canPlay && G.attacker == null && G.onto == null && live.seat[0].rs.loneTurn !== live.turn && !(T.meld && T.fuel && T.single) ? lessonFor(db, live, T) : null;
+  G.lesson = lesson ? lesson.kind : null;
+  let bar = '', cmds = [];
+  if (canPlay && G.sel.length) {
+    const cards = G.sel.map(i => live.hand[0][i]); const ontoM = G.onto != null ? live.mon[0][G.onto] : null;
+    const plan = planChain(db, cards, ontoM, { tinder: v.relics.includes('tinder_vow'), steady: v.relics.includes('steady_hand') && !v.rs.steady });
+    const ids = (ontoM ? [ontoM.id] : []).concat(cards.map(c => c.id));
+    const allKnown = plan.tried.every(t => codexKnows(db, k => G.known.has(k), t[0], t[1], t[2]));
+    const vars = playVariants(live, db, 0, G.sel, G.onto);
+    const loneNow = live.seat[0].rs.loneTurn === live.turn, freeNow = db.config.freeCast === 'lone' && !live.seat[0].noFree && live.seat[0].rs.freeTurn !== live.turn && G.sel.length === 1 && G.onto == null;
+    const aimM = aimed != null ? v.mon[aim.side][aimed] : null, aimName = aimM ? (aimM.id ? card(aimM.id).name : 'the veiled monster') : '';
+    bar = ids.map(id => esc(card(id).name)).join(' <b class="g">+</b> ') + (ids.length < 2 ? '' : ` <b class="g">=</b> ${allKnown ? esc(card(plan.final.id).name) + (plan.fizzles ? ` (${plan.fizzles} fizzle)` : '') : '? an unknown meld'}`);
+    if (ids.length === 1) bar += '. ' + esc(db.isMonster(ids[0]) ? `${card(ids[0]).type}, ${card(ids[0]).attr}, Level ${card(ids[0]).level}.` : rulesText(ids[0]));
+    if (!vars.length) bar = esc(loneNow && (G.sel.length > 1 || G.onto != null) ? 'You played a free support card this turn, so you cannot meld. Play one card on its own.' : 'That cannot be played right now.');
+    else if (aim) bar += ' ' + esc(aimM ? 'Target: ' + aimName + '.' : `Tap ${aim.side ? 'a rival monster' : 'one of your monsters'} to aim it.`);
+    cmds = vars.map((x, i) => [PLAY_WORDS(x, freeNow, aimM), `play:${x.pos || ''}:${x.veiled ? 1 : 0}`, { lit: i === 0 }]).concat([['UNDO', 'undo']]);
+    if (G.sel.length === 1) cmds.push(['SCRAP CARD', 'scrap']);
+    if (v.relics.includes('clean_draw') && !v.rs.cleanDraw) cmds.push(['CLEAN DRAW', 'clean']);
+  } else if (G.attacker != null) {
+    bar = targets.length ? 'Pick a target. The mark over each rival says how the attack ends.' : 'This monster has nothing it can attack.';
+    if (targets.includes(-1)) cmds.push([`DIRECT ${v.mon[0][G.attacker].ea}`, 'hit:-1', { lit: true }]);
+    if (canPos.has(G.attacker)) cmds.push(['CHANGE POS', 'pos']);
+    cmds.push(['CANCEL', 'undo']);
+  } else if (G.onto != null) { bar = 'Now tap hand cards to meld onto it.'; cmds.push(['CANCEL', 'undo']); }
+  else if (lesson) { const [h, t] = lessonText(lesson.kind, lesson.cards.map(i => card(live.hand[0][i].id).name)); bar = `<b class="g">${esc(h)}.</b> ${esc(t)}`; cmds.push(['NO MORE LESSONS', 'tipsoff']); }
+  else if (myTurn) bar = counsel() ? `<b class="g">Counsel.</b> ${esc(counsel())}` : canPlay ? (live.seat[0].rs.loneTurn === live.turn ? 'Support turn: your support card was free. Play one card on its own. No meld this turn.' : 'Tap hand cards in order. One card plays it. Two or more meld, left to right.') : 'Tap one of your monsters to attack with it, or end your turn.';
+  if (G.playing) bar = esc(G.log.slice(-2).join(' ') || '');
+  else if (!myTurn) bar = pend ? 'Answer the attack.' : 'The rival is thinking.';
+  // the table: tap areas and numbers over the canvas
+  const narrow = v.mon[0].length < 5, off = narrow ? 1 : 0;
+  const fc = z => { const X = live.mon[0][G.attacker], Tm = v.mon[1][z]; if (z < 0 || Tm.veil) return '?'; const q = forecast(live, db, 0, X, 1, live.mon[1][z]); const kt = q.killT && !holds(live.mon[1][z]), kx = q.killX && !holds(X); return kt && kx ? 'BOTH FALL' : kt ? 'WINS' : kx ? 'LOSES' : 'NO KILL'; };
+  let hits = '';
+  for (const seat of [1, 0]) v.mon[seat].forEach((m, z) => {
+    const bx = zoneBox(seat, z + off); let cls = 'zh', attrs = `data-zone="${seat}:${z}"`, mark = '';
+    if (aim && aim.side === seat && m) { cls += ' target' + (aimed === z ? ' picked' : ''); attrs += ` data-a="aim:${z}"`; }
+    else if (seat === 0 && m && myTurn) { if (canAtk.has(z)) cls += ' ready'; attrs += ` data-a="mine:${z}"`; if (G.attacker === z) cls += ' picked'; if (G.onto === z) cls += ' onto'; }
+    else if (seat === 1 && m && targets.includes(z)) { cls += ' target'; attrs += ` data-a="hit:${z}"`; mark = fc(z); }
+    else if (m) attrs += ` data-a="inspectz:${seat}:${z}"`;
+    hits += `<button class="${cls}" style="left:${bx.x}px;top:${bx.y}px;width:${bx.w}px;height:${bx.h}px" ${attrs} aria-label="${m ? (m.id ? esc(card(m.id).name) : 'Veiled monster') : 'Empty zone'}"></button>`;
+    if (m && seat === 0) hits += `<b class="atk${m.pos === 'd' ? ' def' : ''}" style="left:${bx.x + 2}px;top:${bx.y + bx.h - 9}px">${m.pos === 'd' ? m.ed : m.ea}</b>`;
+    if (m && seat === 1 && !m.veil && m.id) hits += `<b class="atk${m.pos === 'd' ? ' def' : ''}" style="left:${bx.x + 1}px;top:${bx.y - 9}px">${m.pos === 'd' ? m.ed : m.ea}</b>`;
+    if (mark) hits += `<b class="atk ${mark === 'WINS' ? 'up' : mark === 'LOSES' ? 'down' : ''}" style="left:${bx.x}px;top:${bx.y + 2}px">${mark}</b>`;
+  });
+  v.traps[0].forEach((t, z) => { if (!t) return; const bx = zoneBox(0, z, true); hits += `<button class="zh" style="left:${bx.x}px;top:${bx.y}px;width:${bx.w}px;height:${bx.h}px" data-a="inspect:${t.id}" aria-label="${esc(card(t.id).name)}"></button>`; });
+  const terr = v.terrain ? card(v.terrain.id).name + (v.terrain.temp != null ? ` (${v.terrain.temp})` : '') + (v.terrain.lock ? ' (locked)' : '') : '';
+  const fl = G.run.floor + 1, hall = CART.has('hall-duel-' + fl) ? 'hall-duel-' + fl : 'hall-duel';
+  const view = `<img class="ab" src="${cimg(hall)}" style="left:-20px;top:-6px" width="352" height="144" alt=""><canvas id="tbl" width="312" height="128"></canvas>${hits}${terr ? `<b class="atk" style="left:4px;top:4px">TERRAIN ${esc(terr)}</b>` : ''}<div id="relicFlash" class="flash"></div><div id="rivalFlash" class="flash"></div>`;
+  PSV = { v, anim: PSV && PSV.anim && PSV.anim.frame === f ? PSV.anim : null };
+  // the hand
+  const hand = [0, 1, 2, 3, 4, 5].map(i => { const c = v.hand[i], k = G.sel.indexOf(i), lp = lesson ? lesson.cards.indexOf(i) : -1, x = 8 + i * 50;
+    return c ? psCard(c, x, k >= 0 ? -4 : 0, { cls: 'hs ' + (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: `data-a="hand:${i}"`, badge: k >= 0 ? k + 1 : '', pip: lp >= 0 ? lp + 1 : '' }) : `<i class="ab" style="left:${x}px;top:0;width:44px;height:60px;border:1px solid var(--dark)"></i>`; }).join('');
+  // the Forger's Power, on your pillar
+  let power = '';
+  if (myTurn && v.forger && !v.rs.power) { const F = FORGERS[v.forger], pa = powerActions(live, db, 0); const ok = F.needs === 'hand' ? G.sel.length === 1 && pa.some(p => p.hand === G.sel[0]) : F.needs === 'zone' ? G.attacker != null && pa.some(p => p.zone === G.attacker) : pa.length > 0 && !G.sel.length;
+    power = pq(4, 176, 88, shortName(F.power), `power:${F.needs || ''}`, { off: !ok, title: F.powerText, cls: ok ? 'on' : '' }); }
+  else if (v.forger && v.rs.power) power = lb(8, 180, 'POWER USED', 'd');
+  // the rival, on the other pillar
+  const rf = rv.tier === 'secret' ? 'face-last-one' : rv.tier === 'boss' ? 'face-' + String(rv.name || '').toLowerCase().replace(/^the /, '').replace(/[^a-z]+/g, '-') : '';
+  const endOk = myTurn && !G.sel.length && G.attacker == null && G.onto == null;
+  const right = psPort(rf, 14, 6) + lb(8, 79, shortName(rv.name), 'g') + lb(8, 92, 'LIFE', 'g') + `<b id="rivalLp" class="ab lb" style="left:${88 - String(v.lp[1]).length * 6}px;top:92px">${v.lp[1]}</b>` + gauge(8, 101, 80, v.lp[1] / 8000)
+    + lb(8, 114, 'HAND', 'g') + `<span class="backs" style="left:40px;top:112px">${'<u></u>'.repeat(Math.min(v.rivalHand, 5))}</span>` + lb(8, 125, 'DECK', 'g') + lbr(88, 125, v.deckCount[1])
+    + cmds.slice(0, 4).map(([t, a, o], i) => pq(4, 138 + i * 20, 88, t, a, o || {})).join('') + (endOk ? pq(4, 220, 88, 'END TURN', 'end', { lit: !cmds.some(c => c[2] && c[2].lit) }) : '');
+  const more = cmds.length > 4 ? cmds.slice(4).map(([t, a, o], i) => pq(300 - i * 92, -18, 88, t, a, o || {})).join('') : '';
+  const left = psYou(G.run, v, power + pq(4, 198, 88, 'THIS DUEL', 'tab:duel'));
+  const prompt = pend ? psTrap(live) : '';
+  G.barText = bar;
+  return frame({ left, right, view, ledge: `<div class="hand">${hand}</div>${more ? `<div class="ab" style="left:0;top:0;width:320px">${more}</div>` : ''}`, bar, barMore: bar.replace(/<[^>]+>/g, '').length > 74, extra: prompt });
+}
+function psTrap(live) {
+  const pv = viewFor(live, db, 0), pX = pv.mon[1][live.pending.from], pT = live.pending.to >= 0 ? pv.mon[0][live.pending.to] : null;
+  const head = `${pX && !pX.veil ? esc(card(pX.id).name) + ' (' + pX.ea + ')' : 'A veiled monster'} attacks ${pT ? esc(card(pT.id).name) + ' (' + (pT.pos === 'd' ? pT.ed + ' DEF' : pT.ea + ' ATK') + ')' : 'you directly'}.`;
+  const opts = live.pending.options.map((i, k) => { const t = live.traps[0][i]; return `<div class="ab" style="left:8px;top:${44 + k * 66}px;width:296px;height:62px">${psCard(t, 0, 0)}<div class="ab" style="left:50px;top:0;width:150px"><b class="lb g">${esc(card(t.id).name)}</b><br>${esc(shortText(t.id))}</div>${pq(206, 22, 88, 'SPRING IT', 'respond:' + i, { lit: k === 0 })}</div>`; }).join('');
+  return win(96, 8, 320, Math.min(224, 72 + live.pending.options.length * 66), `<h2>Spring a Trap?</h2><p>${head}</p>${opts}${pq(216, Math.min(224, 72 + live.pending.options.length * 66) - 26, 88, 'LET IT THROUGH', 'respond:-1')}`);
+}
+
+// ---- windows over a console screen
+function psWindows() {
+  const r = G.run;
+  if (G.story && !G.playing && !G.overlay) { const st = G.story, sc = SCENES[st.id], fc = sc.face && CART.has(sc.face + '-96') ? sc.face + '-96' : null;
+    return `<div class="story" data-a="storynext"><div class="dim"></div><i class="bars" style="top:0"></i><i class="bars" style="top:116px"></i>${fc ? `<div class="pf" style="left:104px;top:20px;width:100px;height:100px"><img src="${cimg(fc)}" width="96" height="96" alt=""></div>` : ''}
+      <div class="wn ab" style="left:96px;top:136px;width:320px;height:104px;padding:6px 8px">${sc.who ? `<h2>${esc(sc.who)}</h2>` : ''}<p>${esc(sc.lines[st.i])}</p>${lb(232, 90, 'TAP TO GO ON', 'd')}</div>${pq(424, 220, 84, 'SKIP', 'storyskip')}</div>`; }
+  const o = G.overlay;
+  if (o && !G.playing) {
+    if (o.kind === 'duelEnd') { const s = o.sum; return win(136, 16, 240, 208, `<div style="display:flex;justify-content:center;margin:2px 0 6px">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><p>${esc(o.rival ? o.rival.name : '')}, ${s.turns} turns${s.reason === 'deckout' ? ', a deck ran out' : ''}.</p>${s.won ? `<p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b></p><p>Embers +${s.embers}${s.bountyMet ? '. Bounty met.' : '.'}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>${(o.why || []).slice(0, 2).map(l => `<p class="d">${esc(l)}</p>`).join('')}`}${pq(76, 184, 88, 'CONTINUE', 'closeov', { lit: true })}`); }
+    if (o.kind === 'leave') { const run = o.saved || G.run, w = worth(run), S = run.stats;
+      return win(96, 24, 320, 192, `<h2>${o.saved ? 'You have a run in progress' : 'Leave the pyramid?'}</h2><p>${o.saved ? `${esc(run.forger ? FORGERS[run.forger].name : 'No Forger')}, Floor ${run.floor + 1}, Chamber ${Math.min(6, run.chamber + 1)}. Starting a new run ends that one.` : 'Leaving ends this run as a loss.'}</p><p>You keep ${w.total} Memories, ${S.wins} duel${S.wins === 1 ? '' : 's'} won and your feat progress.</p>${o.saved ? pq(8, 166, 96, 'CONTINUE IT', 'resume', { lit: true }) + pq(110, 166, 96, 'BANK IT, NEW', 'bankold') + pq(212, 166, 96, 'BACK', 'closeov') : pq(8, 166, 140, 'KEEP PLAYING', 'closeov', { lit: true }) + pq(160, 166, 148, 'LEAVE AND BANK IT', 'abandon')}`); }
+    if (o.kind === 'heat') return win(96, 8, 320, 224, `<h2>Heat ${o.n}</h2><div class="sc" style="height:176px">${HEAT_RULES.filter(x => x.n <= o.n).map(x => `<p><b class="lb g">${x.n}. ${esc(x.name)}</b><br>${esc(x.text)}</p>`).join('')}</div>${pq(220, 196, 88, 'CLOSE', 'closeov', { lit: true })}`);
+    if (o.kind === 'moved') return win(96, 40, 320, 160, `<h2>This run moved on</h2><p>The run was ended or carried on in another tab or window. Nothing was changed from here.</p>${pq(160, 130, 148, 'BACK TO THE START', 'leavetab', { lit: true })}`);
+  }
+  if (G.inspect) { const c = card(G.inspect.id), mon = db.isMonster(c.id); convertSheets(96);
+    return `<div class="dim" data-a="closeinspect"></div><div class="wn mw" data-a="closeinspect" style="left:72px;top:16px;width:368px;height:208px"><div class="big" style="left:8px;top:8px"><i class="art" style="${cpic(c.id, 96)}"></i>${mon ? `<b class="n1">${G.inspect.ea ?? c.atk} / ${G.inspect.ed ?? c.def}</b>` : ''}<b class="n2">${mon ? esc(`${c.attr} · LV ${c.level}`) : esc(roleOf(db, c.id).toUpperCase())}</b></div>
+      <div class="ab sc" style="left:122px;top:8px;width:238px;height:170px"><h2>${esc(c.name)}</h2>${mon ? `<p class="d">${esc(c.type)}. Printed ${c.atk} / ${c.def}.</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p><b class="lb g">ENCHANT ${esc(G.inspect.e.toUpperCase())}</b><br>${esc(ENCHANT_TEXT[G.inspect.e])}</p>` : ''}<p class="d">Weight ${weightOf(db, c.id)}.</p></div>${lb(250, 190, 'TAP TO CLOSE', 'd')}</div>`; }
+  const t = G.tab; if (!t) return '';
+  if (t === 'bar') return win(56, 40, 400, 160, `<div class="sc" style="height:120px"><p>${G.barText || ''}</p></div>${pq(304, 132, 88, 'CLOSE', 'tab:', { lit: true })}`);
+  const close = (y = 200) => pq(304, y, 88, 'CLOSE', 'tab:', { lit: true });
+  if (t === 'menu') { const duel = r && (r.phase === 'duel' || G.shown); const items = [['DECK', 'tab:deck'], ['RELICS', 'tab:relics'], duel && ['THIS DUEL', 'tab:duel'], duel && [G.fast ? 'SPEED: FAST' : 'SPEED: NORMAL', 'speed'], !duel && r && ['DOORS IN FULL', 'tab:doors'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options'], r && ['LEAVE THE RUN', 'quit']].filter(Boolean);
+    return win(176, 16, 160, 28 + items.length * 20 + 24, `<h2>Menu</h2>${items.map(([l, a], i) => pq(8, 22 + i * 20, 144, l, a)).join('')}${pq(8, 26 + items.length * 20, 144, 'CLOSE', 'tab:', { lit: true })}`); }
+  if (t === 'help') return win(16, 8, 480, 224, `<h2>How a duel works</h2><div class="sc" style="height:180px"><p>Each turn: draw toward five cards (two a turn at most), play one card or one meld, then attack.</p><p>Meld: tap two or more hand cards in order. They combine left to right into one monster. Tap one of your table monsters first to meld onto it.</p><p>Monsters fight with their printed ATK and DEF. Effects printed on a card are not used in Lost Memories.</p><p>Attack position fights with ATK. Defense uses DEF and protects your Life Points. Veiled is face down in defense.</p><p>WATER beats FIRE beats WIND beats EARTH beats WATER. LIGHT and DARK beat each other when attacking. The edge is +500 for that battle.</p><p>Field Spells set the terrain (+500 for its Types). ${db.config.equipKinds ? 'Equips made for a Type or Attribute give +800 to that kind and +300 to any other.' : 'Equips give +500.'} Traps wait face down for an attack. Other cards are fuel: +300 in a meld.</p><p>Play comes before attacks. A monster that attacked or just arrived cannot change position.</p><p>Lose a duel and you lose a Spark. The guardian's door needs two seals, one from each duel you win on the floor.</p></div>${pq(8, 196, 160, 'SHOW FIRST LESSONS', 'relearn')}${pq(384, 196, 88, 'CLOSE', 'tab:', { lit: true })}`);
+  if (t === 'sound') return win(96, 24, 320, 192, `<h2>Sound</h2><div id="soundslot" class="soundslot sc" style="height:140px"></div>${close(164 - 0)}`);
+  if (t === 'options') return win(16, 8, 480, 224, `<h2>Options</h2><div class="sc" style="height:180px"><div id="soundslot" class="soundslot"></div><p><b class="lb g">LOOK</b></p><button class="lab" data-a="look"><i>NEW</i><span>The console look. Tap for the old look, to compare. The screens not yet redrawn show the old look either way.</span></button><p><b class="lb g">LAB SWITCHES</b> <small class="d">EXPERIMENTS. A RUN IN PROGRESS KEEPS THE RULES IT STARTED WITH.</small></p>${labKeys().map(k => { const held = pref.depth && DEPTH_SET.includes(k); return `<button class="lab ${pref[k] || held ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] || held ? 'ON' : 'OFF'}</i><span>${esc(LABS[k])}${held && !pref[k] ? ' (On through the depth set.)' : ''}</span></button>`; }).join('')}</div>${pq(384, 196, 88, 'CLOSE', 'tab:', { lit: true })}`);
+  if (!r) return '';
+  if (t === 'relics') return win(16, 8, 480, 224, `<h2>Your relics</h2><div class="sc" style="height:180px">${relicList(r).map(id => `<div class="rl">${CART.has(relicFile(id)) ? `<img src="${cimg(relicFile(id))}" alt="">` : `<i class="gem">${esc(RELICS[id].name.replace(/^The /, '')[0])}</i>`}<div><b>${esc(RELICS[id].name)}</b>${esc(RELICS[id].text)}</div></div>`).join('') || '<p>None yet.</p>'}${possibleMasterworks(r).map(id => `<p class="d">Masterwork ready at an Anvil: ${esc(RELICS[id].name)}.</p>`).join('')}</div>${pq(384, 196, 88, 'CLOSE', 'tab:', { lit: true })}`);
+  if (t === 'doors' && r.doors) return win(16, 8, 480, 224, `<h2>The doors</h2><div class="sc" style="height:180px">${r.doors.map((d, i) => `<p><b class="lb g">${i + 1}. ${esc(doorName(d))}</b> <small class="d">${d.know === 'known' ? 'KNOWN' : d.know === 'partial' ? 'PARTLY HIDDEN' : 'IN FOG'}</small><br>Cost: ${esc(d.cost)}. Reward: ${esc(d.reward)}.${d.law ? ' Law: ' + esc(lawShown(d.law)) : ''}${d.tell ? ` ${esc(d.style)}: ${esc(d.tell)}` : ''}${(d.tags || []).length ? ' ' + esc(d.tags.join(', ')) + '.' : ''}</p>`).join('')}</div>${pq(384, 196, 88, 'CLOSE', 'tab:', { lit: true })}`);
+  if (t === 'duel') { const rv = G.shown ? G.shown.rival : info(r), v = r.duel ? viewFor(r.duel, db, 0) : null;
+    return win(16, 8, 480, 224, `<h2>This duel</h2><div class="sc" style="height:180px">${rv.styleText ? `<p>${esc(rv.styleText)}</p>` : ''}${rv.lawText ? `<p><b class="lb g">LAW</b> ${esc(lawShown(rv.lawText))}</p>` : ''}${rv.twist ? `<p>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</p>` : ''}<p><b class="lb g">BOUNTY</b> ${esc(rv.bountyText || '')}</p>${v && v.forger ? `<p><b class="lb g">${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))}</p><p><b class="lb g">${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'Used this duel.' : esc(FORGERS[v.forger].powerText)}</p>` : ''}<p><b class="lb g">LOG</b><br>${G.log.slice(-8).map(esc).join('<br>')}</p></div>${pq(384, 196, 88, 'CLOSE', 'tab:', { lit: true })}`); }
+  if (t === 'deck') { const list = (l, key, picked, k2) => l.map((e, i) => [e, i]).sort((a, b) => cardValue(db, b[0]) - cardValue(db, a[0])).map(([e, i]) => psCard(e, null, null, { cls: picked === i ? 'sel' : '', attrs: `data-a="${key}:${i}"` })).join('');
+    return win(8, 4, 496, 232, `<h2>Deck ${r.deck.length} · weight ${deckWeight(db, r.deck)}/${weightCap(db, r)}</h2><p class="d">${r.phase === 'chamber' ? 'Tap a deck card, then a trunk card, to swap them.' : 'You can swap cards in a chamber.'}</p><div class="sc" style="height:168px"><div class="row2">${list(r.deck, 'deckpick', G.pickDeck)}</div><h3 style="margin-top:6px">Trunk ${r.trunk.length}</h3><div class="row2">${list(r.trunk, 'trunkpick', G.pickTrunk) || '<span class="d">Empty.</span>'}</div></div>${pq(400, 208, 88, 'CLOSE', 'tab:', { lit: true })}`); }
+  return '';
+}
+// Which screens are drawn the console way. Everything else keeps the old look for now.
+function psScreen() {
+  if (look === 'old' || lostStore) return null;
+  const r = G.run;
+  if (G.screen) return null;
+  if (!r) return psHome;
+  if (G.shown || r.phase === 'duel') return psDuel;
+  if (r.phase === 'chamber') return psChamber;
+  return null;
+}
+function drawConsole(screen) {
+  app.classList.add('ps'); app.classList.remove('phone', 'era'); document.body.classList.add('ps');
+  const r = G.run;
+  app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
+  app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home'; app.dataset.room = '';
+  if (document.getElementById('tbl')) { psTextures(); convertSheets(40); psPaint(); }
+  else convertSheets(40);
+  { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
+  barFits();
+  if (!drawConsole.fonts && document.fonts) { drawConsole.fonts = 1; document.fonts.ready.then(barFits); } // the text face may arrive after the first drawing
+  fit();
+}
+// The text bar holds two lines. When what it says is longer, a marker shows and a tap opens the whole of it.
+function barFits() {
+  const b = app.querySelector('.fr > .bar'), p = b && b.firstElementChild; if (!p) return;
+  const over = p.scrollHeight > p.clientHeight + 1; b.classList.toggle('more', over);
+  if (over) b.dataset.a = 'barmore'; else delete b.dataset.a;
+}
+function screenCue(era = false) {
+  const r = G.run;
   const scr = G.screen || app.dataset.phase; if (scr !== render.scr) { if (era && !RM && render.scr !== undefined) app.animate([{ filter: 'brightness(0)' }, { filter: 'brightness(1)' }], { duration: 260, easing: 'ease-out' }); render.scr = scr; cue('screen:' + scr, r ? { floor: r.floor, chamber: r.chamber, rival: r.rival ? r.rival.name : null, tier: r.rival ? r.rival.tier : null, heat: r.heat || 0, sparks: r.sparks ?? 0, sparksMax: sparksMax(r), fog: +((fogK(r) - .7) / .6).toFixed(2) } : {}); } // heat, Sparks and the fog (0 to 1) let the sound follow the danger of the run
 }
 
@@ -753,6 +1083,9 @@ function tapped(ev) {
     case 'cxclose': G.cx.open = null; render(); break;
     case 'door': { G.log = []; const d = r.doors[n]; const go = () => act({ t: 'door', i: n }); if (d && d.type === 'boss' && r.seals >= 2) { queueStory('boss:' + BOSSES[r.floor][r.bossOrder[r.floor]].id, go); if (G.story) render(); } else if (d && d.type === 'secret') { queueStory('secret:door', go); if (G.story) render(); } else go(); break; }
     case 'leave': G.pickDeck = G.pickTrunk = null; act({ t: 'leave' }); break;
+    case 'look': look = look === 'old' ? 'ps' : 'old'; store.set(LOOKKEY, look); G.tab = null; render(); break; // the console look, or the old one to compare
+    case 'barmore': G.tab = 'bar'; render(); break;
+    case 'dsel': if (r && r.phase === 'chamber' && r.doors[n] && G.doorSel) { G.doorSel.i = n; render(); } break; // the cursor moves to another door
     case 'labsopen': G.labsOpen = !G.labsOpen; render(); break; // Era look: the lab switches wait behind one button on the title screen
     case 'tab': G.tab = x || null; G.pickDeck = G.pickTrunk = null; render(); break;
     case 'deckpick': G.pickDeck = n; trySwap(); break;
