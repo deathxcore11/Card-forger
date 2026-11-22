@@ -1,4 +1,4 @@
-// The three-stage run (design/run-structure.md, draft v1). Everything the stage machine needs is data here, so the numbers can move
+﻿// The three-stage run (design/run-structure.md, draft v1). Everything the stage machine needs is data here, so the numbers can move
 // without touching code. Times are seconds on the stage clock. DRAFT: the spec's numbers may still change.
 //
 // STAND-INS until the real bosses exist (the engine field says which existing fight plays the part):
@@ -18,6 +18,9 @@ export const RUNSPEC = {
   tollHunterEvery: 30, tollHunterCount: 6,
   hpCurve: { a: 0.18, b: 0.02 },   // enemy HP = base x (1 + a m + b m^2) x stage mult, m = run minutes
   dmgPerMinute: 0.06,
+  // XP shaping: level-ups come slowly early and speed up. The XP gained is scaled by start..end over the first `minutes` run minutes
+  // (target: about 4 level-ups a minute through the first 4 minutes of Stage 1, about 7.5 a minute by mid Stage 2).
+  xp: { start: 0.6, end: 1.0, minutes: 10, growth: 0.35, growFrom: 4 },    // growth: crystal value rises per run minute after growFrom, so late level-ups stay frequent
   gate: { x: 0, z: -57, radius: 5.5, arena: { x: 0, z: -12 }, tollPull: { x: 0, z: -2 } },   // stand-in map: the existing Colosseum gate
   overtime: { stepSeconds: 30, baseRate: 2, rateStep: 0.35 }
 };
@@ -58,3 +61,5 @@ export const STAGES = [
 export const QUICK = Object.assign({}, STAGES[0], { id: 'quick', name: 'Quick Duel', clock: 480, gateWake: 420, waves: { offset: 0, scale: 1 } });
 
 export const stagesFor = mode => (mode === 'quick' ? [QUICK] : STAGES);
+
+

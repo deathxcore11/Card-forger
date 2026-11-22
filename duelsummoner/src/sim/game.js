@@ -3,7 +3,7 @@ import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
 import { makeStreams } from './rng.js';
-import { initRun, updateStages, descentTick, finalChoice } from './stages.js';
+import { initRun, updateStages, descentTick, finalChoice, xpScale } from './stages.js';
 import { quantise, decode, emptyRecord, MENU_TAKE, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from './input.js';
 import { Flow } from './flow.js';
 import { makePlayer, updatePlayer } from './player.js';
@@ -69,6 +69,7 @@ export class Game {
     this.flow.valid = false; this.evHead = this.evTail = 0;
     this.tickN = 0; this.levelUps = 0; this.trapsFired = 0; this.trapsSet = 0; this.maxMonsters = 0; this.gateOpenedAt = -1; this.godFusions = 0; this.secretFusions = 0;
     this.fusionIds = []; this.elementsUsed = 0; this.cardsPicked = []; this.fullForms = [];
+    this.upgHist = [];
     this.srcNames = ['other']; this.curSrc = 0; this.dealtLog = {}; this.fusionGuard = null;
     this.chestsOpenedTotal = 0; this.stagesCleared = 0; this.stageFacts = []; this.swiftChips = 0; this.duelOn = false; this.stagePrompt = ''; this.bDown = false; this.gateDown = null; this.desc = null; this.circle = null; this.altar = null; this.heat = 1;
     initRun(this);                                                  // opts.mode: 'classic' (default, one 8:00 stage), 'run' (three stages) or 'quick' (Quick Duel)
@@ -205,7 +206,7 @@ export class Game {
   hitEnemy(i, dmg, vx, vz) { return damageEnemy(this, i, dmg, { kx: vx, kz: vz }); }
 
   addXp(n) {
-    const v = n * (1 + this.mods.xp);
+    const v = n * (1 + this.mods.xp) * xpScale(this);
     this.xp += v; this.xpCur += v;
     while (this.xpCur >= this.xpNeed) { this.xpCur -= this.xpNeed; this.level++; this.xpNeed = xpNeeded(this.level); this.pendingLevels++; this.levelUps++; this.emit('levelup', this.level); }
   }

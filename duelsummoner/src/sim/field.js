@@ -108,9 +108,15 @@ export function candidates(g, minRarity) {
 }
 
 function bonusFree(slots, bonus) { const i = slots.findIndex((x, k) => !x && bonus[k] > 0); return i >= 0 ? bonus[i] : 0; }
-export function buildOffer(g, minRarity) {
+// Offer rules: an owned monster's upgrade is in at most one of the three slots, and in at most 2 of any 3 consecutive offers
+// (a Redraw or Banish rebuilds the current offer and is exempt, so spending one is how you ask for more).
+export function buildOffer(g, minRarity, reroll) {
   const f = g.field, D = DUELISTS[f.duelist] || DUELISTS.kael, pool = candidates(g, minRarity), out = [];
-  const take = c => { out.push(c); const i = pool.indexOf(c); if (i >= 0) pool.splice(i, 1); };
+  const H = g.upgHist || (g.upgHist = []), isUp = c => c.kind === 'monster' && !c.isNew;
+  const allow = reroll || H.length < 2 || !(H[H.length - 1] && H[H.length - 2]);
+  const dropUps = () => { for (let i = pool.length - 1; i >= 0; i--) if (isUp(pool[i])) pool.splice(i, 1); };
+  const take = c => { out.push(c); const i = pool.indexOf(c); if (i >= 0) pool.splice(i, 1); if (isUp(c)) dropUps(); };
+  if (!allow) dropUps();
   // forced cards: the partner monster by level 3, a Trap by level 4
   if (g.level >= OFFER.secondMonsterByLevel && !f.monsters.some(m => m && (m.id === D.second || (FUSIONS[m.id] && FUSIONS[m.id].from.includes(D.second))))) {
     const c = pool.find(x => x.id === D.second && x.isNew); if (c) take(c);
@@ -118,7 +124,7 @@ export function buildOffer(g, minRarity) {
   if (g.level >= OFFER.trapByLevel && !f.spells.some(s => s && TRAPS[s.id]) && out.length < OFFER.size) {
     const c = pool.find(x => x.kind === 'trap' && x.isNew); if (c) take(c);
   }
-  if (OFFER.guaranteeMonsterUpgrade && out.length < OFFER.size && !out.some(c => c.kind === 'monster' && !c.isNew)) {
+  if (OFFER.guaranteeMonsterUpgrade && allow && out.length < OFFER.size && !out.some(isUp)) {
     const ups = pool.filter(x => x.kind === 'monster' && !x.isNew); if (ups.length) take(ups[Math.floor(g.rl() * ups.length)]);
   }
   while (out.length < OFFER.size && pool.length) {
@@ -128,6 +134,7 @@ export function buildOffer(g, minRarity) {
     if (!tier.length) tier = pool;
     take(tier[Math.floor(g.rl() * tier.length)]);
   }
+  const flag = out.some(isUp); if (reroll && H.length) H[H.length - 1] = flag; else H.push(flag); if (H.length > 3) H.shift();
   return out;
 }
 
@@ -208,12 +215,12 @@ export function chooseCard(g, idx) {
 export function redraw(g) {
   const o = g.offer, f = g.field; if (!o || !(o.type === 'level' || o.type === 'chest')) return false;
   if (o.freeRedraws > 0) o.freeRedraws--;                                 // Deck Box: free Redraws on chests
-  else if (f.redraws > 0) f.redraws--; else return false; o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined)); return o.cards.length > 0;
+  else if (f.redraws > 0) f.redraws--; else return false; o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined), true); return o.cards.length > 0;
 }
 export function banish(g, idx) {
   const o = g.offer, f = g.field; if (!o || f.banishes <= 0 || !o.cards[idx] || !(o.type === 'level' || o.type === 'chest')) return false;
   f.banished.add(o.cards[idx].id); f.banishes--;
-  o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined)); return true;
+  o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined), true); return true;
 }
 export function pass(g) {
   const o = g.offer; if (!o || o.type !== 'level') return false;

@@ -42,6 +42,8 @@ export function botRecord(g, bot) {
     if (!target && g.world) { const a = g.world.altar; if (a && !a.used && g.t > 20) target = a; }
     let hold = false;
     const gb = g.sp.find(s => s.alive && s.role === 'gate');                            // the gate boss: close in to about 9 m so the summons can hit it, strafing around it
+    const tb = g.sp.find(s => s.alive && !s.dead && s.role !== 'gate');                // a timed boss or elite: keep it in range of the monsters
+    if (tb && !target) { const dd = Math.hypot(tb.x - p.x, tb.z - p.z); if (dd > 13) target = { x: tb.x, z: tb.z }; }
     if (gb && !target) { const dd = Math.hypot(gb.x - p.x, gb.z - p.z); if (dd > 11) target = { x: gb.x, z: gb.z }; }
     if (g.mode && g.mode !== 'classic' && !target) {                                    // stage run: gate, Descent Circle, Final Altar
       if (g.circle) target = g.circle;
@@ -56,6 +58,16 @@ export function botRecord(g, bot) {
       const far = Math.hypot(target.x - p.x, target.z - p.z) > 4;
       if (far && bot.flow.next(p.x, p.z, wp)) { cx = wp.x - p.x; cz = wp.z - p.z; } else { cx = target.x - p.x; cz = target.z - p.z; } const l = Math.sqrt(cx * cx + cz * cz) || 1; cx /= l; cz /= l; }
     let sx = 0, sz = 0;
+    let danger = false;
+    for (const t of g.tele) if (t.on && t.type === 1) {                                  // blast circle (Warden slam, Golem...): step out of it
+      const cx2 = p.x - t.x, cz2 = p.z - t.z, dd = Math.hypot(cx2, cz2);
+      if (dd < t.r + 2.2) { sx += cx2 / (dd || 1) * 2.2; sz += cz2 / (dd || 1) * 2.2; danger = true; }
+    } else if (t.on && t.type === 2) {                                                  // cone or blade arc: leave it sideways
+      const fx2 = p.x - t.x, fz2 = p.z - t.z, dd = Math.hypot(fx2, fz2);
+      if (dd < t.r + 2 && (fx2 * t.dx + fz2 * t.dz) / (dd || 1) > Math.cos((t.arc / 2 + 18) * Math.PI / 180)) {
+        const side = fx2 * -t.dz + fz2 * t.dx, sg = side >= 0 ? 1 : -1; sx += -t.dz * sg * 2 + fx2 / (dd || 1); sz += t.dx * sg * 2 + fz2 / (dd || 1); danger = true;
+      }
+    }
     for (const t of g.tele) if (t.on && t.type === 0) { const rx2 = p.x - t.x, rz2 = p.z - t.z, along = rx2 * t.dx + rz2 * t.dz, side = rx2 * -t.dz + rz2 * t.dx; if (along > -2 && along < t.len + 2 && Math.abs(side) < t.w / 2 + 1.6) { const sg = side >= 0 ? 1 : -1; sx += -t.dz * sg; sz += t.dx * sg; } }
     let bx = 0, bz = 0; const w = g.sp.find(s => s.kind === 'warden' && s.alive);
     if (w) { const tx = w.x - Math.sin(w.face) * 6 - p.x, tz = w.z - Math.cos(w.face) * 6 - p.z, l = Math.sqrt(tx * tx + tz * tz) || 1; bx = tx / l; bz = tz / l; }
@@ -63,7 +75,7 @@ export function botRecord(g, bot) {
     if (bot.wander > 0) { bot.wander--; dx = Math.cos(bot.wang); dz = Math.sin(bot.wang); }
     const dl = Math.sqrt(dx * dx + dz * dz) || 1; dx /= dl; dz /= dl;
     const c = bot.cmd; c.f = -dz; c.r = dx; c.yaw = 0; c.jump = false; c.slide = false;
-    c.dash = (crowd >= 3 || bot.panic > 12) && g.t - bot.dashAt > 1.2; c.use = hold || !!(target && Math.hypot(target.x - p.x, target.z - p.z) < 2.5);
+    c.dash = (crowd >= 3 || bot.panic > 12 || danger) && g.t - bot.dashAt > 1.2; c.use = hold || !!(target && Math.hypot(target.x - p.x, target.z - p.z) < 2.5);
     if (c.dash) bot.dashAt = g.t;
   } else { bot.cmd.dash = false; bot.cmd.use = bot.hold; }
   quantise(bot.cmd, rec);

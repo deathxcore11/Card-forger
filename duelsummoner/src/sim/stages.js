@@ -14,6 +14,12 @@ import { mixFor, pickKind } from './spawner.js';
 const spot = { x: 0, y: 0, z: 0 };
 const clockText = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
+// XP gained is scaled by the run minute so the first minutes give about 4 level-ups a minute (data: RUNSPEC.xp)
+export function xpScale(g) {
+  const X = RUNSPEC.xp, m = g.mode === 'classic' ? g.t / 60 : (g.scTotal + g.sc) / 60;
+  return (X.start + (X.end - X.start) * (m >= X.minutes ? 1 : m / X.minutes)) * (1 + X.growth * (m > X.growFrom ? m - X.growFrom : 0));
+}
+
 // ---- setup ----
 export function initRun(g) {
   g.mode = g.opts.mode || 'classic';
@@ -210,5 +216,6 @@ function swapStage(g) {
   g.event('banner', 'Stage ' + (g.stage + 1) + ': ' + g.stageSpec.name);
   g.emit('stage', g.stage + 1);
 }
+
 
 
