@@ -1,8 +1,36 @@
-# Duel Summoner: Seeded Stage Generator ("Dealer" engine), final spec v1
+# Duel Summoner: Seeded Stage Generator ("Dealer" engine), spec v2
 
 The base is the Dealer engine: socket-matched authored chunks, integer reach tables, a strict integer validator and merged-section rendering. The macro layer on top comes from Seal-and-Socket: named districts, archetype regions on a coarse grid, a readable spine, a repair loop and the risk score. Several Sealstone rules are grafted in: the ledge-band snap, the rhythm chains, elevation-scaled flyer pressure and pre-generation. The goal is a map you almost never see twice, whose platforming still feels designed, and whose bosses, gates and encounters sit where they make sense.
 
 Never describe any of this in the UI by comparing it to another game. Stages, timers, gate bosses, chests and shrines are genre conventions. Every name, kit, map and layout here is our own.
+
+---
+
+## 0. What changed in v2 (verifier fixes)
+
+Two verifiers ran the v1 prototype over 300 maps and failed it. Every fix below is applied in the Node prototype (`duelsummoner/design/generator-prototype`) and written into the sections that follow.
+
+| Problem found | Fix in v2 | Where |
+|---|---|---|
+| 223 of 1.16 M G1 links could not physically be made (the clearance test ignored the arc and measured from the wrong take-off height) | Jump links are tested against the real ballistic arc from the real lip, with a 30 cm capsule margin. An independent float physics oracle (`tools/physcheck.mjs`) checks the links | §4, G12 |
+| The terrace_ring ramp kerb (+1.0 m) created impossible G1 jumps | The kerb is now +0.6 m (rule: ≤ 0.7 m). A test flies a synthetic kerb case and rescans the v1 failure seeds | G6 |
+| Every map was the same jagged disc, with spawn and gate on opposite rims, a nearly straight spine and the mega landmark at dead centre | 4 silhouettes; spawn inland; a keystone region that the spine must wind around; the mega landmark sits on the keystone, off centre; new batch gates on silhouette IoU and spine ratio | G1-G3, §7 |
+| Large flat plains (p50 48%, max 70%) | Archetype swells, per-region height bias, a 44% cap on any one tier's area, plus plain ≤ 40% and top tier ≤ 55% gates | G4, G7, V19 |
+| Economy rule 2 could be bypassed with dash or AIR links, and passive danger discs counted as gates | Rule 2 uses ANY movement, with no danger exemptions | §8 |
+| Stages 2 and 3 had no waves and no overtime husk ring | Full wave timelines for both | run structure §2 |
+| Stage 2 pits were 1 m dips | Pit floors are 5 m or more below the surrounding ground | G7 |
+| CLI crashes and silent wrap-arounds | Seeds, seals and stages are validated, with a usage message | §2 |
+| `localeCompare` in a sort | Plain `<` comparison, and lint bans it | §3 |
+| Encounters piled into one corner (up to 15 of 27 in one region) | Caps per region and per district, a spread term, district coverage, a lower path-distance weight | §8 |
+| A flat, straight spine with nothing happening on it | 1 to 40% RAMP2 tier changes on the spine, a winding route, a gate approach set piece | G3, G4, G8 |
+| V12 never gated, and lures[] was empty | V12 gates per encounter, with a plinth repair; lures[] is emitted | §7, §8 |
+| 4-8 chunks from about 6 types, and both chains the same type | New chunk types (card_grove, pillar_ring, roof_terrace, ledge_pillars, pillar_steps) and bigger budgets (p50 13-15 chunks per map); the two required chains must be of different types | G5, G6, V16 |
+| No district identity | One hero landmark per district, plus kiting groves in open ground | G8, §11 |
+| 8-9 boss rings, and the spec had been quietly loosened | 5-7 rings. The 70 m rule is stated honestly: 95% of ground within 70 m, all ground within 100 m, and the gate arena counts as a ring until the gate wakes | G8, V8 |
+| Tier-2 ground overlooked nothing; Stage 3 lacked tier 3 and the sand sea | Vantage regions next to the spine or the keystone; Stage 3 must reach tier 3 and contain a Shoal; Stage 2 needs 2 trenches | G4 |
+| Dangers sat in loot corners | Danger encounters get a bonus at ramp feet, bridge heads and hop-stair tops | §8 |
+| The first timed boss at 3:45 conflicted with "earliest Fusion at 4:00" | The spec now says 3:45, matching the run structure | §8 |
+| Generation time about 8x budget | Profiled and stated honestly; not yet fixed | §12, §17 |
 
 ---
 
@@ -26,6 +54,7 @@ Never describe any of this in the UI by comparing it to another game. Stages, ti
   - `attemptSeed = splitmix32(stageSeed + imul(attempt, 0x632BE5AB))`
   - `rng(step) = xoshiro128**` seeded by four `splitmix32` outputs from `attemptSeed ^ fnv1a32(stepName)`
 - **Step streams:** `districts`, `regions`, `graph`, `tiers`, `terrain`, `chunks`, `scatter`, `encounters`, `events`, `repair`. Tuning one step never shifts another.
+- **Input validation (CLI and debug entry):** a typed seed must be an integer in 0 to 2^40-1, a Seal Code must be exactly 8 valid Crockford characters, and a stage must be 1-3. Anything else is rejected with a usage message and exit code 1. Values are never wrapped or coerced.
 - **Map hash:** xxHash32 over the canonical bytes of h0, h1, flags, nav, instances, slots, encounters and anchors, plus `GEN_VERSION` and `libHash` (the xxHash32 of the sorted, canonicalised chunk JSON). The hash appears in the F3 debug overlay and in golden tests.
 
 ---
@@ -34,7 +63,7 @@ Never describe any of this in the UI by comparing it to another game. Stages, ti
 
 - **Banned in `src/gen`:** `Math.random`, `Math.sin`, `cos`, `tan`, `atan2`, `pow`, `exp`, `log`, `sqrt`, `hypot`, and any float arithmetic that feeds a stored value. Use `isqrt32` (integer Newton) and Q16.16 helpers. Angles are 90-degree steps for pieces. Scatter yaw is a 16-step lookup table and only affects visual instances.
 - **Units:** positions are integer centimetres, and heights are int16 centimetres.
-- **Sorting:** every array is sorted by an explicit integer key with an `id` tiebreak before any random pick. Iteration over `Map` or `Set` is forbidden unless it goes through sorted keys.
+- **Sorting:** every array is sorted by an explicit integer key with an `id` tiebreak before any random pick. Iteration over `Map` or `Set` is forbidden unless it goes through sorted keys. String keys compare with plain `<` / `>` on ASCII ids. `localeCompare` and `Intl` are banned, because their results depend on ICU and locale data (Android and Hermes ship different tables). The test lint enforces this.
 - **Piece transforms:** pieces rotate in 90-degree steps plus mirror (8 variants, precomputed at load). There are no free rotations.
 - **Dynamic platforms (stage 3):** their phase comes from the 60 Hz sim tick count, never from wall-clock time.
 
@@ -64,6 +93,17 @@ The reach table is generated by `tools/gen-reach.mjs` from movement constants in
 | -6.0 m | 10.46 m | 7.3 m | 9.1 m |
 
 Gap is measured edge to edge. Intermediate dh values interpolate linearly between rows, rounded down to the cm.
+
+**Arc test for every sampled jump link (v2).** The reach table gives the longest gap. On top of that, every terrain-sampled HOP, G1 or G2 ray is checked against the real arc, in integers:
+
+- Arc constants: horizontal speed `V = 900` cm/s, take-off speed `V0 = 1110` cm/s, `G = 2800` cm/s². Height above take-off after `d` cm of horizontal travel: `arcY(d) = trunc((1110 x 900 x d - 1400 x d²) / 810000)` cm.
+- **Take-off point** is the last cell of the jumper's own surface before the ray leaves it (the real lip), not the start cell. This matters when the ray first walks down a slope. `dh = landingHeight - takeoffHeight`.
+- Each sample uses the lower of the arc heights 25 cm before and 25 cm after it (`yLo`), which accounts for cell size.
+- **Obstacle rule:** for every cell the arc passes over, `groundHeight + 30 cm (capsule margin) - takeoffHeight <= yLo`. If not, the ray stops.
+- **Landing rule:** the landing height must be at or below the arc (`yLo >= dh`) at the landing sample.
+- The 0.70 safety factor on gap length still applies on top of this.
+
+`tools/physcheck.mjs` is an independent float-physics oracle that is allowed to use floats, because it never feeds generated data. It re-flies every HOP, G1 and DROP link reachable from spawn, with ±7° heading spread, and fails any link a capsule cannot make.
 
 **Step and slope rules.** These are the single source of truth, on the 1 m height grid. They replace the conflicting "0.45 m per cell" and "35/40 degree" rules from the earlier designs.
 
@@ -108,12 +148,13 @@ Gap is measured edge to edge. Intermediate dh values interpolate linearly betwee
 |---|---|---|---|
 | Grid | 15 x 15 cells of 24 m = 360 m (≈312 m playable inside the border ring) | 14 x 14 = 336 m (≈288 m) | 15 x 15 = 360 m (≈312 m) |
 | Named districts | 4 drawn from 5 (Colosseum always) | 4 drawn from 5 | 4 drawn from 5 (Duel Table always) |
-| Regions | 12-15 | 11-14 | 12-15 |
-| Tiers used | 0-2 (0/3/6 m) | 0-2, plus sunken trench tier -1 (-3 m) | 0-3 (up to 9 m), plus the sand sea at -1 |
-| Falls | no pits: gullies 3 m deep with exits every 20 m or less | pits allowed: -10 LP and respawn on last safe ground | sand sea: -15 LP and respawn |
+| Regions | 12-15, scaled down by silhouette area (minimum 10) | 11-14, scaled by area | 12-15, scaled by area |
+| Silhouettes | round, lobed, crescent, twin-basin (seeded) | same 4 | same 4 |
+| Tiers used | 0-2 (0/3/6 m); tier weights 40/35/25 | 0-2, plus at least 2 sunken trench regions at tier -1 (-3 m) | 0-3 (up to 9 m); tier 3 is required; at least 1 Shoal region holds the sand sea |
+| Falls | no pits: gullies 3 m deep with exits every 20 m or less | pits are real chasms (floor 5 m or more below the trench floor): -10 LP and respawn on last safe ground | sand sea: -15 LP and respawn |
 | Layers | ground plus sparse deck layer | ground plus deck (the "floors" are trenches with bridges, not stacked floors) | ground plus deck, plus optional dynamic platforms |
 | Gate set piece | Colosseum floor (Stone Arbiter) | Seventh Door vault (Seal Weaver) | Duel Table (Hollow King) |
-| Spine length | 220-290 m | 200-270 m | 230-300 m |
+| Spine length | 190-290 m, path/straight ≥ 1.15 | 175-270 m, ≥ 1.15 | 200-300 m, ≥ 1.15 |
 | Opening radius (economy) | 90 m | 80 m | 90 m |
 
 **v1 scope.** All three stages are built from the Surface Ruins kit:
@@ -139,6 +180,7 @@ Full Catacombs and Vault kits come after Stage 1 ships on the generator.
 **Region archetypes** (7): Plaza, Dunes, Necropolis, Card Graveyard, Canyon, Mesa, Terraces. Stages 2 and 3 add Trench and Shoal.
 
 - The spawn region is always a Plaza.
+- One region per map is the **keystone**: the region nearest the midpoint of the spawn-to-gate line. The spine never passes through it, it is raised to vantage height, and it carries the mega landmark.
 - The gate region is always the set-piece arena.
 - Two Canyon or Trench regions are never adjacent.
 
@@ -153,24 +195,26 @@ Decode the Seal Code, derive `stageSeed` and `attemptSeed`, and load `StageSpec[
 
 ### G1. Districts (coarse grid, 8 m cells)
 
-1. Build the playable mask, a superellipse with exponent 3 inside the border ring:
-   - its edge is pushed in and out by ±1 coarse cell with 1D integer value noise;
-   - outside the mask is cosmetic dune or cliff rim with an invisible collider.
+1. Build the playable mask from one of **4 silhouettes**, chosen by the `districts` stream: `round` (superellipse, exponent 3), `lobed` (3-5 integer lobes), `crescent` (a disc with an offset bite), `twin` (two basins joined by a waist). Each is rotated by a seeded direction.
+   - Its edge is pushed in and out by ±1 coarse cell with 1D integer value noise.
+   - Only the largest 4-connected component is kept.
+   - Outside the mask is cosmetic dune or cliff rim with an invisible collider.
+   - Fallback layouts always use `round`.
 2. Draw 4 districts from the pool of 5, weighted. The gate district is mandatory.
 3. Place district seeds:
-   - **gate district seed:** on the mask edge band, 30-60 m inside the rim;
-   - **spawn district seed:** chosen so that the straight-line distance from spawn to the gate is at least 0.62 x the playable diameter;
+   - **gate district seed:** 5-7 coarse cells (40-56 m) inside the rim, so the 72 m footprint fits;
+   - **spawn district seed (inland):** at least 4 coarse cells (32 m) from the rim, and at 0.50-0.85 x the playable diameter from the gate. With 50% chance it is drawn from the inner pool (within 0.55 x the radius of the centre). The spawn-to-gate angle about the centre therefore varies (measured 81-180°, p50 about 150°);
    - the other two seeds are farthest-point sampled.
 4. Grow districts with multi-source BFS on the coarse grid. Ties break by `hash32(cell, districtId)`, which gives Voronoi-like regions with jittered borders without float Voronoi.
 
 ### G2. Regions
 
 1. Inside each district, Poisson-sample region seeds on the coarse grid:
-   - minimum spacing 7 coarse cells (56 m);
+   - minimum spacing 7 coarse cells (56 m), or 6 when the playable area is under 1,000 coarse cells;
    - best of 20 candidates;
-   - total region count per the StageSpec range.
+   - total region count per the StageSpec range, scaled by playable area (minimum 10).
 2. Grow regions with the same jittered BFS, constrained to stay inside their district.
-3. Assign archetypes from the district weights, applying the archetype rules (§5).
+3. Assign archetypes from the district weights, applying the archetype rules (§5). `requireArche` in the StageSpec forces minimum counts (Stage 2: 2 Trench; Stage 3: 1 Shoal).
 4. Fix the spawn region: a Plaza disc of 34 m.
 5. Fix the gate region: the set-piece footprint, 3 x 3 cells = 72 m, which includes the arena, the stands or ramps and 2-3 entrances.
 
@@ -178,7 +222,10 @@ Decode the Seal Code, derive `stageSeed` and `attemptSeed`, and load `StageSpec[
 
 1. Build the adjacency graph: two regions are adjacent if they share 3 or more coarse border cells.
 2. Take a minimum spanning tree weighted by `centreDist x (1000 + jitter0..300)/1000`, then add back about 30% of the non-tree edges as loops (see §6 constraint 4).
-3. The spine is the shortest path from spawn to the gate. If its estimated length falls outside the spec range, re-pick the gate entrance side, then the spawn seed. This is at most 3 tries before attempt+1.
+3. **Keystone and winding spine.** Pick the keystone region (nearest the midpoint of the spawn-gate line). The spine is the shortest region path spawn → waypoint → gate that never enters the keystone and never revisits a region. The waypoint is a seeded shuffle of the remaining regions. The first route whose length estimate fits the range wins.
+   - **Early reject** (`spine_straight_est`): if the estimate is below `(spineRatioMin - 5)%` of the straight spawn-gate distance, redraw.
+   - After terrain, the real spine is measured. `ratio100 = path / straight x 100` must be at least `spineRatioMin` (115). The batch gate requires a p50 of 130 or more; measured p50 is 139-151.
+   - Layout rejects like this cost 10-120 ms, so up to 16 layout redraws happen inside one attempt before attempt+1.
 4. Tag regions:
    - **Spine:** wide and readable; walk or ramp transitions only.
    - **Branch:** rewards and platforming.
@@ -196,10 +243,12 @@ Decode the Seal Code, derive `stageSeed` and `attemptSeed`, and load `StageSpec[
 Assign region tiers by a constrained seeded walk over the graph.
 
 - Neighbouring regions differ by at most 1 tier.
-- On the spine, at most 40% of edges change tier.
+- On the spine, **at least 1** and at most ceil(40%) of edges change tier (RAMP2). If the walk gives none, a middle spine region is lifted.
 - The spawn region is tier 0.
 - The gate region uses its set-piece tier (stage 1: tier 0).
-- At least 2 regions sit at tier 2 or higher, as vantage points.
+- The keystone is raised first, then **vantage regions adjacent to the spine, the keystone or the gate**. At least 2 regions sit at tier 2 or higher, and they must border the spine or the gate.
+- Stage 3 (`needTopTier`): tier 3 must appear. The walk climbs step by step through tier 2 to reach it.
+- No single tier may cover more than 44% of the playable area (`maxTierAreaPct`).
 - About 40% of branch regions sit above their neighbours.
 
 Each graph edge then gets a transition type:
@@ -216,13 +265,16 @@ Non-adjacent region borders become 3 m cliffs.
 ### G5. Cell roles (24 m chunk grid overlay)
 
 1. A cell becomes **STRUCT** (it gets an authored chunk) if 7 or more of its 9 coarse cells belong to one region and that region's archetype feature budget wants a chunk there. Budgets per region:
-   - Plaza: 1 hub chunk;
-   - Necropolis: 2-3 rooftop chunks;
-   - Card Graveyard: 2;
-   - Canyon: 1-2 bridge chunks along the trench;
-   - Mesa: 1 climb chunk;
-   - Terraces: 1-2;
-   - Dunes: 0-1.
+   - Plaza: 1 hub chunk plus a card grove or a pillar ring (kiting obstacle);
+   - Necropolis: 2 roof terraces (with a 1:2 enemy ramp and a player-only step) plus 1-2 roof runs;
+   - Card Graveyard: 2 plus a card grove;
+   - Canyon and Trench: 1-2 bridge chunks along the channel;
+   - Shoal: bridges and card platforms over the sand sea;
+   - Mesa: 1 climb chunk plus a pillar ring;
+   - Terraces: 1-2 plus a card grove;
+   - Dunes: a slide ramp plus 1-2 groves or pillar rings.
+   - **Spanning chunks** (card_grove, pillar_ring, hub_plaza, card_field) may straddle a border between two regions of the same tier.
+   - Target: 12-20 STRUCT chunks per map. Measured p50 is 13-15 (range 7-26) on 150 maps. The low end comes from small silhouettes.
 2. Every RAMP2 and HOPSTAIR border picks a **CONNECTOR** cell or a carved terrain ramp.
 3. Everything else is **TERRAIN**.
 4. STRUCT footprints are 1x1, 2x1 or 2x2 cells. Variety penalty:
@@ -246,8 +298,9 @@ Neighbouring STRUCT edges must match exactly after rotation and mirror. STRUCT e
 
 **Candidates.** Chunks are filtered by role, footprint, archetype, stage range and the required sockets, across all 8 variants. A candidate's score is `weight x varietyPenalty x rhythmBonus`:
 
-- **rhythmBonus = 1.5** if the candidate completes a parkour chain: 3-6 linked moves (ramp, hop, gap, slab, drop) covering 25-60 m, running parallel to a spine edge within 8-30 m and saving 10-30% travel time over the spine segment;
-- target at least 2 chains per stage.
+- **rhythmBonus = 1.5** if the candidate completes a parkour chain: 3-6 linked moves (ramp, hop, gap, slab, drop) covering 25-60 m, running parallel to a spine edge within 8-30 m and saving 10-35% travel time over the walk route (widened from 30% in v2; a 33% saving is still an optional shortcut);
+- target at least 2 chains per stage, and **the two required chains must be different chunk types**. Chain types: `slab_climb`, `pillar_steps` (tier-border climbs with different rise patterns), and the self-contained fallbacks `ledge_climb` and `ledge_pillars` (33 x 22 m, compact enough for small regions). If the first chain is a `ledge_climb`, the fallback uses `ledge_pillars`.
+- **Kerb rule:** no SOLID kerb, rail or lip within 2 m of a jump line may stand more than 0.7 m above the take-off surface. The terrace_ring kerb is +0.6 m.
 
 **Backtracking:**
 
@@ -261,11 +314,14 @@ Neighbouring STRUCT edges must match exactly after rotation and mirror. STRUCT e
 This is what makes the map read as non-grid.
 
 1. **Base height** is the region tier. Region borders are hard cliffs at the jittered 8 m boundary, refined to 2 m with a hash-noise wobble of ±1 cell.
-2. **Archetype detail** uses 2-octave integer value noise:
-   - Dunes: ±1.0 m at a 24 m wavelength, giving slide lines;
-   - Plaza: ±0.15 m;
-   - Mesa top: ±0.2 m;
+2. **Archetype detail** uses 2-octave integer value noise, plus **swells** (amplitude in cm, wavelength in m) that break up plains:
+   - Plaza: swell 100 cm / 48 m, fine detail ±0.15 m;
+   - Dunes: swell 90 cm / 48 m, plus ±1.0 m at 24 m, giving slide lines;
+   - Necropolis: 80 / 40; Card Graveyard: 90 / 40; Terraces: 55 / 40; Mesa: 40 / 40; Trench: 40 / 40.
+   - **Per-region bias:** each region gets a seeded offset of -90 to +90 cm, faded to 0 over 6 m at its borders, so neighbouring same-tier regions sit at visibly different heights.
    - Canyon or Trench: a carved channel 5-7 m deep and 14-24 m wide along an integer Catmull-Rom path on the coarse grid, with exit ramps every 20 m or less in stage 1.
+   - **Stage 2 pits:** pit floors sit at `trenchTop - depth - 500 cm`, so a pit is a chasm of 5 m or more, never a 1 m dip.
+   - Border distances use a lookup table instead of a per-cell search (profiling fix).
 3. **Undulation** never applies within 3 m of a lane, a jump lip or a T apron.
 4. **Ramps** for RAMP2 edges are carved along an integer spline: 1:2 rise, 8-12 m wide, 1 m shoulders.
 5. **Aprons:** flatten every T apron to the socket tier.
@@ -283,8 +339,13 @@ These are reserved before scatter, and no kit may touch them.
 - **Timed-boss rings:** 5-7 discs.
   - Each has radius 14 m or more, slope 15 degrees or less and no cliff inside.
   - Each is enemy-reachable and player-reachable.
-  - Together they must put every reachable cell within 70 m path distance of a ring.
+  - **The gate arena floor counts as a ring** until the gate wakes (both timed bosses come before the wake).
+  - **Coverage rule (honest form):** 95% of enemy-reachable ground within 70 m path distance of a ring or the arena, and all of it within 100 m. With 7 rings on a 312 m map, "every cell within 70 m" is not reachable on winding silhouettes (the worst cell was 90-120 m), so v2 states the real target. The director adds a sky beam when the chosen ring is more than 70 m away (§9).
+  - The placer works to a 10 m tighter target (60 m / 90 m), because chunks placed later add detours. Greedy farthest-point placement is followed by up to 40 local-search moves (120 evaluations).
   - Use authored `ring_open_r14` slots first, then flatten terrain.
+- **Gate approach set piece:** along the arena's main entrance direction, obelisk pairs at 32, 40 and 48 m out (±9 m off the axis), then a sealed arch at 56 m. They frame the gate from a distance, and every piece keeps 7 m clear of the spine.
+- **Mega landmark:** placed on the keystone region's centre (or a seeded point in the centre third), clear of the spine corridor and reserved discs. Measured offset from the map centre: p50 36-43 m, max 94 m.
+- **District heroes:** one 4 x 4 m SOLID hero landmark, 9 m tall, per district, near the district seed: market awnings, hall-of-cards facade, fossil spine ribs, King's Stair facade, and Stage 2/3 equivalents. The gate district's hero is the arena stands.
 - **Elite ambush pockets:** 3-5, with R 1.5 or more.
 - **Spawn basin:** a 34 m disc with no encounter inside 20 m and no tall kit inside 30 m on the camera side.
 
@@ -354,10 +415,11 @@ Each failure kind has a targeted, deterministic fix. **After every fix, all earl
 | Spawn ring fails at P | open a ramp on the nearest cliff in the annulus; carve a spawn alcove; demote an enclosing STRUCT to TERRAIN |
 | Island too large or uncovered | add an enemy ramp; split it with a gap; add a Seer perch |
 | Economy | push the reward 40 m or more further down its branch; add a guard (an elite pocket or Duel Statue adjacency) |
-| Lure or visibility | raise the landmark on a plinth (+3 m); swap in the larger landmark variant |
+| Lure or visibility | raise the landmark on a plinth (+3 m), which placement already does when that makes it visible; swap in the larger landmark variant |
+| Boss-ring coverage | add a ring near the worst cell (if under 7); move the nearest ring towards it |
 | Perf | drop scatter, then downgrade feature chunks to low-detail variants |
 
-If it still fails after 4 passes, attempt+1 (back to G1). After 8 attempts, use one of the 6 **authored fallback layouts** for that stage. These are hand-made region graphs, still chunk-filled and terrain-sculpted from the live library, and validated in CI. They are not frozen maps.
+If it still fails after 4 passes, attempt+1 (back to G1). After 8 attempts, the generator tries up to 6 **authored fallback layouts** for that stage. These are hand-made region graphs, still chunk-filled and terrain-sculpted from the live library, and validated in CI. They are not frozen maps.
 
 ### G14. Encounters, events, emit
 
@@ -390,20 +452,22 @@ All checks are per seed unless marked CI.
 | V4 | Fall recovery | Stage 1: gully exit ramp within 20 m everywhere and zero `pit` cells. Stages 2-3: every pit-edge cell within 12 m of a `safeGround` respawn cell of 3 x 3 m or more that lies in the spawn SCC |
 | V5 | Enemy coverage | ≥ 95% of walkable layer-0 cells are in the main enemy component, and all enemy-unreachable walkable area is ≤ 8% |
 | V6 | Player-only islands | each single perch ≤ 64 m²; each connected island ≤ 120 m²; 4-8 islands per stage; each within 25 m of a Seer perch and 18 m of open flyer approach |
-| V7 | Spawn ring | at samples every 8 m along the spine and lanes, plus a 16 m lattice: ≥ 40% of the 22-30 m annulus is valid spawn cells, ≥ 3 of 8 compass sectors are populated, and the enemy path back to the sample is ≤ 1.8 x straight-line distance. On islands, measure from the foot ring |
-| V8 | Boss rings | 5-7 rings; every reachable cell within 70 m path distance of one |
-| V9 | Spine | length within spec; width ≥ 12 m; nothing taller than 1.2 m inside except landmarks; walk or ramp only; ≤ 40% of edges change tier |
+| V7 | Spawn ring | at samples every 8 m along the spine, plus a 16 m lattice: ≥ 40% of the **ground** in the 22-30 m annulus is valid spawn cells (chasm and sand-sea cells are excluded, since flyers cover them) and at least 150 m² is valid; ≥ 3 of 8 compass sectors reach the sample by an enemy path ≤ 1.8 x straight-line distance (up to 8 targets per sector, spread over the sector). At most 3% of samples may have fewer sectors, never 0. On islands, measure from the foot ring |
+| V8 | Boss rings | 5-7 rings (the arena also serves until the gate wakes); 95% of enemy-reachable ground within 70 m path distance, all within 100 m |
+| V9 | Spine | length within spec; path/straight ≥ 1.15 (fallback exempt); width ≥ 12 m; nothing taller than 1.2 m inside except landmarks; walk or ramp only; at least 1 and at most ceil(40%) of edges change tier |
 | V10 | Readability | lanes ≥ 6 m; deck clearance ≥ 4.5 m; no unflagged occluder within 4 m of a lane on the camera side; at most 3 feature chunks per 32 m |
 | V11 | Lure | along the spine, every 40 m there is line of sight (heightfield ray from the 1.7 m eye and from the camera point 3 m up and 7 m back) to an off-route encounter landmark within 35 m |
-| V12 | Landmark visibility | each encounter landmark is visible from ≥ 1 spine sample within 60 m; Shrines, Broker and Duel Statues from ≥ 3; the stage mega landmark from ≥ 75% of walkable samples |
+| V12 | Landmark visibility (**gating** in v2) | each encounter landmark is visible from ≥ 1 spine sample within its tell range (column tells such as Witness Stones, Shrines and the sealed fragment: top 25 m, 120 m range; others 60 m). For rewards on non-spine branches, an approach point (ramp end, hop-stair top or region centre) also counts. Shrines, Broker and Duel Statues need ≥ 3 spine samples. Golden statues and the hidden Stage 1 Echo Forge are exempt, because they are secrets. The mega landmark must be seen from ≥ 75% of walkable samples. Every district needs its hero landmark |
 | V13 | Economy | see §8; zero violations |
 | V14 | Branch value | every Branch and Pocket region holds ≥ 1 reward of R ≥ 1; no empty branches |
 | V15 | Jump lint | no rise in 1.8-2.6 m next to walkable cells; every required link within G1; every G2 has a jump-only alternative to the same SCC node within 1.6 x path |
-| V16 | Rhythm | ≥ 2 parkour chains per stage (3-6 moves, 25-60 m, saving 10-30%) |
-| V17 | Perf budget | ≤ 250k static tris per map; ≤ 90k visible from any spine sample; world draw calls ≤ 40; prop instances ≤ 2,000 |
+| V16 | Rhythm | ≥ 2 parkour chains per stage (3-6 moves, 25-60 m, saving 10-35%) of **≥ 2 different chunk types** |
+| V17 | Perf budget | ≤ 250k static tris per map; ≤ 90k visible from any spine sample; world draw calls ≤ 40, counting only kits with 2 or more instances as instanced buckets (single kits merge into sections); prop instances ≤ 2,000 |
 | V18 | Generation time (CI) | ≤ 150 ms median on PC (Worker); ≤ 400 ms p95 on the reference handheld |
-| V19 | Variety (CI, 10k seeds per stage) | collisions on graph topology plus tier signature < 0.1%; per-seed blandness reject if the tier histogram puts > 70% on one tier, ledge count < 25, or spine-versus-loop path variance is under spec |
-| V20 | Robustness (CI) | ≥ 95% of seeds pass at attempt 0-1; fallback rate < 0.5%; socket coverage report shows ≥ 2 chunks per used socket combination |
+| V19 | Variety and flatness | collisions on graph topology plus tier signature < 0.1% (CI, 10k seeds per stage); per seed: the largest connected plain (cells within ±1 m of the flood start) ≤ 40% of walkable area, the top tier ≤ 55%, ledge count ≥ 25 |
+| V20 | Robustness (CI) | target: ≥ 95% of seeds pass at attempt 0-1, fallback rate < 0.5%; socket coverage report shows ≥ 2 chunks per used socket combination. **Prototype gate today:** 100% final pass, first try ≥ 50%, attempt 0-1 ≥ 70%, fallback ≤ 5% |
+| B1 | Macro variety (batch) | silhouette IoU mean ≤ 0.85 across a stage's maps; spine ratio p50 ≥ 1.30; largest plain max ≤ 40%; 0 signature or hash collisions. The batch also reports spawn and gate polar positions, the spawn-gate angle, mega offset, chunk and hero counts, the busiest district and region, and the shortest free item + free level route over ANY links |
+| B2 | Physical links (CI sample) | `tools/physcheck.mjs --edgesOnly` finds 0 HOP, G1 or DROP links reachable from spawn that a capsule cannot fly |
 
 ---
 
@@ -424,13 +488,22 @@ All checks are per seed unless marked CI.
 
 Each type has a minimum R and spacing rules. Placement order is rarest first: gate, Second Seal, Witness Stones, Echo Forge, Broker, Duel Statues, Shrines, Anvils, Altar, Scales, Covenant, Bone Oaths, Magnet Tablets, golden statues, sealed fragment, Card Chests, vases.
 
-Each slot is scored as `score = 0.4 x norm(pathDist) + 0.3 x norm(R) + 0.2 x norm(detourCost x (0.5 + exposure)) + 0.1 x spreadFromSameType`. Placement is greedy, highest score first. Pockets and high routes therefore get the best rewards.
+Each slot is scored as `score = 0.25 x norm(pathDist) + 0.30 x norm(R) + 0.20 x norm(detourCost x (0.5 + exposure)) + 0.10 x spreadFromSameType + 0.15 x spreadFromAnyEncounter`. Placement is greedy, highest score first.
+
+**Spread caps (v2).**
+
+- At most **3 encounters per region** and at most **35% of the planned encounters per district** (vases excluded). If a type cannot be placed under the caps, the caps relax for that type only. Measured busiest region: p50 3-4, max 5. Busiest district: p50 32-33%, max 39%.
+- **District coverage:** after the greedy pass, each of the 4 districts must hold at least one DANGER encounter and at least one free or paid reward. A missing one is moved in from the district that holds the most of that class (and at least 2): any danger type, or a Card Chest for rewards.
+- **Contested crossings:** danger encounters (Shrine, Duel Statue, Bone Oath) get +0.25 for slots within 12 m of a ramp foot, a bridge head or a hop-stair top. This puts the risk on the choke instead of in the loot corner.
+- **Visibility at placement:** a slot whose landmark is not visible from the spine (V12 rule) is skipped. If no visible slot is left, the landmark goes on a +3 m plinth if that makes it visible.
+- **Wrapped Mimics** (Stage 2: 2) are placed on chest slots by the generator, class MIMIC.
+- **lures[]:** for any 40 m stretch of spine that still sees no off-route landmark, the generator carves a 6 m lure obelisk on an off-route cell 10-30 m away. `lureLinks[]` records, for every spine sample, which landmark it sees. The run can use it for tutorial callouts.
 
 ### Economy classes (reconciled with the bible)
 
 - **FREE_ITEM:** Witness Stone (1 item from 3), Echo Forge (a chance to copy an item).
 - **FREE_LEVEL:** Deck Anvil (+1 level on one monster), Magnet Tablet (pulls every crystal on the map).
-- **FUSION_SRC:** Sealed Chest only. It is never placed by the generator. It drops from the two timed bosses and the gate boss of each stage, so the earliest Fusion always costs a timed-boss kill (Stage 1, 4:00).
+- **FUSION_SRC:** Sealed Chest only. It is never placed by the generator. It drops from the two timed bosses and the gate boss of each stage, so the earliest Fusion always costs a timed-boss kill (Stage 1, 3:45, the Sealed Warden; this matches the run structure).
 - **DANGER gates:** Shrine hold, Duel Statue, Bone Oath pile, elite pocket, Golem charge lane, an exposure ≥ 0.6 crossing.
 - **Paid:** Card Chest, Relic Broker.
 - **Utility or risk:** Altar of Tribute, Scales, Broken Covenant, Second Seal.
@@ -438,17 +511,17 @@ Each slot is scored as `score = 0.4 x norm(pathDist) + 0.3 x norm(R) + 0.2 x nor
 ### Economy rules
 
 1. **Opening region** = path distance from spawn at or below `spec.openingM` (90 m in stage 1). It holds at most **one** free-class reward. No Witness Stone and no Anvil may be there.
-2. **POI graph:** danger encounters act as gate edges. No path of 180 m or less from spawn collects FREE_ITEM + FREE_LEVEL without crossing a gate.
+2. **Item + level distance (v2):** the shortest route from spawn that collects one FREE_ITEM and one FREE_LEVEL, in either order, using **ANY** links (walk, hop, G1, drop, dash G2, AIR), must be over 180 m. No danger disc is exempted. At 9 m/s that is at least 20 s of pure running before both are in hand; in practice the elite (1:45) and the first waves come first. Measured minimum over 150 maps: 179 m (one map at the boundary, from rounding to 10 cm); p50 211-229 m.
 3. Witness Stones and Deck Anvils sit in **opposite halves** by spawn-path distance rank, and on **different tiers** where both exist.
 4. The Echo Forge sits at least 200 m from spawn, in a Pocket or behind a breakable wall (stage 2).
 5. Card Chests: at most 2 within 60 m of spawn.
-6. A violation swaps the offending encounter to its next-best slot. After 16 swaps, the repair loop runs.
+6. A violation swaps the offending encounter to its next-best slot, preferring slots far from the other free class. After 16 swaps, the repair loop runs.
 
 ### Per-stage counts
 
 | Encounter | S1 | S2 | S3 | Rules | Landmark and tell |
 |---|---|---|---|---|---|
-| Card Chest | 8 | 7, plus 2 Wrapped Mimics on chest slots | 6 | `pedestal` or `reward_port`; ≥ 25 m apart; ≥ 30% on high routes or pockets; price rises per chest and is shown | card pedestal with a hovering face-down card; gold glint every 2 s |
+| Card Chest | 8 | 7, plus 2 Wrapped Mimics on chest slots (generator-placed) | 6 | `pedestal` or `reward_port`; ≥ 25 m apart; ≥ 30% on high routes or pockets; price rises per chest and is shown | card pedestal with a hovering face-down card; gold glint every 2 s |
 | Witness Stones | 2 | 1 | 1 | R ≥ 2, ≥ 110 m from spawn, ≥ 1 on a high perch or reward port | ring of four tall slabs round a pedestal, eye glyph; white light column |
 | Relic Broker | 1 | 1 (prices x1.4) | 1 (x1.8, always holds one Epic) | 80-160 m path distance, 15-40 m off the spine, enemy-reachable | lantern and folded canopy under a leaning stone card, three plinths |
 | Shrine of Tribute | 3 | 3 | 2 | `ring_open_r10`, exposure ≥ 0.6, ≥ 70 m apart, one on or next to the spine; must pass V7 at 25 m around it | low basin summoning circle; runes fill during the 5 s hold; pale column |
@@ -481,15 +554,18 @@ Tell colours: white = free, gold = coin, red = danger, violet = Fusion or seal.
 - `bossEntry[]`: 4 per ring, 30-40 m out and hidden from the ring centre.
 - `safeGround`: a bitset for pit respawn.
 - `dynamic[]` (stage 3): platform id, cells, type (flip or drift), period in ticks, phase.
+- `gateApproach`: obelisk pairs and the sealed arch (positions), for the gate build-up and the wake effects.
+- `heroes[]`: one hero landmark per district, used for the minimap compass and district name callouts.
+- `lures[]` and `lureLinks[]`: the lure obelisks, and for each spine sample the landmark it sees.
 
 **Runtime director rule for timed bosses**
 
-1. Choose the nearest ring that is 25-40 m from the player by path, on the player's layer group and outside the camera frustum.
+1. Choose the nearest ring that is 25-40 m from the player by path, on the player's layer group and outside the camera frustum. Until the gate wakes, the gate arena floor is also a candidate ring.
 2. At T-5 s, sound the horn and ping the minimap **on that ring**.
 3. At T-1.5 s, the sigil scorches into the ground.
 4. The boss appears.
 
-If no ring qualifies, use the nearest ring and add a sky beam.
+If no ring qualifies, use the nearest ring. If that ring is more than 70 m away by path (up to 5% of the ground, never more than 100 m), add a sky beam over it and lengthen the warning from 5 s to 8 s.
 
 ---
 
@@ -566,13 +642,17 @@ If no ring qualifies, use the nearest ring and add a sky beam.
 - golden statue
 - vase (plain and brass)
 
-**District heroes** (one per district, a unique back pattern acts as a compass)
+**District heroes** (one per district, 4 x 4 m footprint, 9 m tall; a unique back pattern acts as a compass)
 
-- colosseum stands
-- market awnings
-- hall of cards facade
-- fossil spine ribs
-- King's Stair
+- Stage 1: colosseum stands, market awnings, hall of cards facade, fossil spine ribs, King's Stair facade
+- Stage 2: seventh door frame, ossuary arch, sarcophagus colonnade, chain winch tower, niche wall shrine
+- Stage 3: duel table rim, treasury stack, fallen king statue, card shoal spire, throne stair steps
+
+**Kiting and set-piece chunks added in v2**
+
+- `card_grove` (18 x 18 m, standing stone cards 4.5 m tall), `pillar_ring` (18 x 18 m, an obelisk plus 4 pillars): obstacles to circle in open ground
+- `roof_terrace` (20 x 12 m, a 1:2 enemy ramp plus a player-only step), `ledge_pillars` (a second self-contained chain type)
+- gate approach: obelisk pairs and the sealed arch
 
 **Gate set pieces**
 
@@ -580,7 +660,7 @@ If no ring qualifies, use the nearest ring and add a sky beam.
 - (stage 2) the Seventh Door vault
 - (stage 3) the duel table
 
-**Mega landmark:** one per stage near the centre third. It is fog-exempt beyond 90 m via a silhouette impostor.
+**Mega landmark:** one per stage, on the keystone region (seeded, off centre, off the spine). It is fog-exempt beyond 90 m via a silhouette impostor.
 
 **Animation hooks stored per landmark** (instance or uniform tweens only; no skinned scenery)
 
@@ -603,6 +683,7 @@ If no ring qualifies, use the nearest ring and add a sky beam.
 - **Fog:** at 90 m. Landmarks beyond it use impostor quads.
 - **Occluders:** flagged occluders dither to 30% when they sit between the camera and the player.
 - **Memory:** StageMap about 1-2 MB in memory. It is never saved; it is regenerated from the seed.
+- **Measured generation time (prototype, Node 22, this container, 4 workers):** p50 about 1.0-1.3 s per stage, p95 2.6-4.1 s, max 9.9 s. A typical first-try Stage 1 map: macro 9 ms, terrain 240 ms, chunks 140 ms, validation 660 ms. **This is about 7-9 times the 150 ms target.** Validation (V7 spawn-ring searches, V12 line of sight) and terrain are the costs to cut: a coarser V7 lattice, incremental SCC, typed-array BFS throughout, and skipping already-passed metrics in repair re-runs. Until that work is done, pre-generation must hide the time: Stage 1 during the intro and a loading card, Stages 2-3 during the previous gate fight (1.5-2.5 min, plenty even at the p95 max).
 - **When generation runs:**
   - in a Worker on PC, and on the sim thread or a native thread on Android;
   - the next stage is pre-generated during the current gate-boss fight;
@@ -632,14 +713,18 @@ If no ring qualifies, use the nearest ring and add a sky beam.
 {"stage":1,"name":"Surface Ruins","grid":15,"cell_m":24,"coarse_m":8,"palette":"ruins_day",
  "districtPool":[{"id":"sunken_colosseum","required":true,"gate":true,"arche":{"plaza":3,"terraces":1}},{"id":"market_tablets","arche":{"necropolis":3,"dunes":1}},{"id":"hall_sealed_cards","arche":{"graveyard":3,"plaza":1}},{"id":"dragons_spine","arche":{"canyon":2,"mesa":2}},{"id":"kings_stair","arche":{"terraces":3,"mesa":1}}],
  "districts":4,"regions":[12,15],"regionSpacing_m":56,"loopRatio":0.30,
- "tiers":{"weights":[55,30,15],"maxSpineChangeFrac":40},"spineLen_m":[220,290],"spineWidth_m":12,
- "falls":"gully","openingM":90,"econGraphM":180,"bossRings":[5,7],"bossRingCover_m":70,
+ "masks":["round","lobed","crescent","twin"],
+ "tiers":{"weights":[40,35,25],"maxSpineChangeFrac":40,"minSpineChanges":1,"maxTierAreaPct":44,"maxTopTierPct":55,"needTopTier":false},
+ "spineLen_m":[190,290],"spineRatioMin":115,"spineWidth_m":12,"maxPlainPct":40,"requireArche":{},
+ "falls":"gully","openingM":90,"econGraphM":180,"econLinks":"ANY","bossRings":[5,7],"bossRingCover_m":70,"bossRingCoverPct":95,"bossRingCoverMax_m":100,
+ "encounterCaps":{"perRegion":3,"perDistrictPct":35},
  "islands":{"perchMax_m2":64,"islandMax_m2":120,"count":[4,8],"maxFrac":8},
- "spawnRing":{"inner_m":22,"outer_m":30,"minFrac":40,"minSectors":3,"pathRatio":1.8},
- "rhythmChains":{"min":2,"moves":[3,6],"len_m":[25,60],"save":[10,30]},
+ "spawnRing":{"inner_m":22,"outer_m":30,"minFrac":40,"minCells_m2":150,"minSectors":3,"pathRatio":1.8,"tolPct":3},
+ "rhythmChains":{"min":2,"distinctTypes":2,"moves":[3,6],"len_m":[25,60],"save":[10,35]},
  "budgets":{"tris":250000,"visTris":90000,"draws":40,"instances":2000},
- "clock_s":420,"timeline":"see run structure",
- "encounters":{"card_chest":8,"witness_stone":2,"relic_broker":1,"shrine_tribute":3,"duel_statue":2,"deck_anvil":2,"altar_tribute":1,"magnet_tablet":2,"bone_oath":2,"scales_court":1,"broken_covenant":1,"echo_forge":{"n":1,"chance":40},"golden_statue":2,"sealed_fragment":1,"vases":40},
+ "clock_s":420,"timeline":[{"t":0,"ev":"wave","what":"husks"},"... waves at 40/80/140/260 s ...",{"t":105,"ev":"elite","what":"Grave Herald"},{"t":225,"ev":"timed_boss","what":"Sealed Warden","drop":"sealed_chest"},{"t":330,"ev":"timed_boss","what":"Twin Jackal Idols","drop":"sealed_chest"},{"t":360,"ev":"gate_wake"},{"t":360,"ev":"husk_ring_every_30s"},{"t":420,"ev":"toll_bell"}],
+ "heroes":{"market_tablets":"market_awnings","hall_sealed_cards":"hall_of_cards_facade","dragons_spine":"fossil_spine_ribs","kings_stair":"kings_stair_facade","sunken_colosseum":"colosseum_stands"},
+ "encounters":{"card_chest":8,"witness_stone":2,"relic_broker":1,"shrine_tribute":3,"duel_statue":2,"deck_anvil":2,"altar_tribute":1,"magnet_tablet":2,"bone_oath":2,"scales_court":1,"broken_covenant":1,"echo_forge":{"n":1,"chance":40},"golden_statue":2,"sealed_fragment":1,"vases":40,"wrapped_mimic":0},
  "encounterRules":{"witness_stone":{"minR":2.0,"minSpawn_m":110,"class":"FREE_ITEM"},"deck_anvil":{"minR":1.0,"minSpawn_m":120,"class":"FREE_LEVEL"}}}
 ```
 
@@ -658,9 +743,11 @@ If no ring qualifies, use the nearest ring and add a sky beam.
 
 Sockets list 3 segments per 24 m of edge, clockwise. Variants are precomputed with remapped sockets.
 
+Stage 2 differs: `"requireArche":{"trench":2}`, tier weights over tiers -1..2, `"wrapped_mimic":2`. Stage 3: `"needTopTier":true`, `"requireArche":{"shoal":1}`, tier weights 35/30/22/13, clock 480. Both carry full wave timelines (see the run structure).
+
 **StageMap** (sim-owned; binary sections plus a JSON header)
 
-- **Header:** `{magic:"DSM1", genVer, libHash, sealCode, stage, attempt, hash, grid, cell_m, spawn, gate}`
+- **Header:** `{magic:"DSM1", genVer, libHash, sealCode, stage, attempt, hash, grid, cell_m, spawn, gate, shape, keystone}`. `GEN_VERSION` is 2: every v1 Seal Code now gives a different map, which is expected after a generator change.
 - **Sections:**
   - `h0` Int16[N×N] in 1 m cells, cm
   - `h1` sparse rects
@@ -672,7 +759,7 @@ Sockets list 3 segments per 24 m of edge, clockwise. Variants are precomputed wi
   - `bossRings`, `seerPerches`, `chargeLanes`, `footRings`, `houndLinks`
   - `instances` Int32 [kitId, x, y, z, rot8]
   - `encounters` [type, slotId, x, y, z, layer, R×10, class, landmarkId, price]
-  - `events` (anchors, per §9)
+  - `events` (anchors, per §9, including `gateApproach`, `heroes`, `lures`)
   - `dynamic`
   - `safeGround` bitset
   - `minimap` Uint8[256²] plus icons
@@ -719,7 +806,8 @@ src/view/stage/       section merge, instancing, landmark tweens, minimap textur
 tools/gen-reach.mjs   movement.json -> reach.json
 tools/gen-sweep.mjs   N-seed sweep: pass rates, fallback rate, variety, timings
 tools/gen-render.mjs  top-down PNG debug render
-tools/chunk-lint.mjs  socket coverage, forbidden band, reach of authored jumps
+tools/chunk-lint.mjs  socket coverage, forbidden band, reach of authored jumps, kerb height near jump lines
+tools/physcheck.mjs   independent float-physics oracle for jump links (CI sample; floats allowed, output never feeds gen)
 test/gen/golden.json  seeds -> hashes (Node, Chrome, Android)
 ```
 
@@ -745,3 +833,18 @@ test/gen/golden.json  seeds -> hashes (Node, Chrome, Android)
 - **Camera readability on roofs and under bridges at 9 m/s.** Mitigation: occluder dither, spine rules, playtest.
 - **Island pressure tuning.** Too weak becomes camping; too strong feels unfair. Tune the elevation curve and dwell timer from telemetry.
 - **Bible numbers may change.** Counts, classes and radii live in StageSpec JSON, not in code.
+- **Generation time** is 7-9x the budget in the prototype (§12). If profiling cannot close the gap, generation stays behind pre-generation, and the handheld budget must be measured on a device before the port is committed.
+- **Determinism is verified only on Node 22 in this container.** It has not been run on Node 26 (Randall's PC), Chrome or Android. The golden-hash child-process test must run on all three before any "same seed on every device" claim.
+
+---
+
+## 17. Prototype status (v2, `duelsummoner/design/generator-prototype`)
+
+- **Tests:** `node test.mjs`: 13/13 pass. New tests cover the arc check (a synthetic kerb, plus seeds that failed in v1), economy rule 2 with a near pair, CLI rejection of bad seeds, seals and stages, and the lint against `localeCompare` and float transcendentals.
+- **Batch:** `node batch.mjs --count 50 --start 5000 --workers 4` (150 maps): **BATCH PASS**. Final pass is 100% on every stage, the fallback rate is 0 / 0 / 2%, and there are 0 signature or hash collisions. Full numbers are in the metrics report.
+- **Physics oracle:** 18 maps (6 seeds x 3 stages), 63,846 HOP/G1/DROP links reachable from spawn. 2 G1 links fail the strict float check (0.003%), both in seed 5013 Stage 2. v1 had 0.019% (223 of 1.16 M). The two remaining cases are tracked and not yet fixed.
+- **Known gaps:**
+  - Stage 2 draws `round` for 68% of maps (silhouette IoU mean 0.77), probably because the two-trench rule rejects narrow shapes more often (not yet investigated). Stages 1 and 3 are 0.62-0.64.
+  - Encounter caps relax on small maps: the busiest region holds up to 5 and the busiest district up to 39%.
+  - Every map keeps a few cells between 70 and 100 m from a ring (the worst cell has p50 79-82 m, max 99 m), which the 95% rule allows. The sky-beam rule in §9 covers them.
+  - The V7 tolerance (3% of samples may have fewer than 3 sectors) remains.
