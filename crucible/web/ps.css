@@ -5,13 +5,17 @@
 @font-face { font-family: 'LM Label'; src: url(art/fonts/silkscreen-latin-400-normal.woff2) format('woff2'); font-display: block; }
 
 body.ps { background: #000; }
-/* the loading screen while the console pictures arrive: black, two words, the share counting up */
-#boot { position: fixed; inset: 0; z-index: 1000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-family: 'LM Label', monospace; font-size: 24px; letter-spacing: 3px; color: #c9a95a; image-rendering: pixelated; }
-#boot i { font-style: normal; font-size: 16px; color: #6e5a32; min-height: 10px; }
-#app.ps { position: absolute; left: 50%; top: 50%; width: 512px; height: 240px; overflow: hidden; background: #000; color: #f3ead8;
-  font: 16px/16px 'LM Text', monospace; -webkit-font-smoothing: none; font-smooth: never; image-rendering: pixelated; transform-origin: 50% 50%;
+/* the loading screen while the console pictures arrive: black, the turning crest, two words, the share counting up. A screen
+   of the frame (bootScreen in app.mjs places each part at a whole frame pixel). */
+#app.ps #boot { left: 0; top: 0; right: 0; bottom: 0; z-index: 60; background: #000; }
+#app.ps #boot .bpc { color: #8a7040; }
+#app.ps { position: absolute; left: 0; top: 0; margin: 0; width: 512px; height: 240px; overflow: hidden; background: #000; color: #f3ead8;
+  font: 16px/16px 'LM Text', monospace; -webkit-font-smoothing: none; font-smooth: never; image-rendering: pixelated; transform-origin: 0 0;
   --sh: #1a0f12; --plum: #2d121d; --wine: #411b28; --dusty: #69404d; --sd: #7a543c; --sm: #a87e4f; --sl: #c09660; --gold: #dba459; --gl: #e9c46a;
   --ember: #bd7433; --rust: #964034; --verd: #4c8a7c; --ink: #f3ead8; --dark: #3a2419; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+/* the old look's scan lines (play.css) are not the console's: a dark band every third frame row, blended over everything,
+   which also made the browser resample a turned frame. The console look draws none. */
+#app.ps::after { content: none; display: none; }
 #app.ps * { box-sizing: border-box; border-radius: 0 !important; text-shadow: none; }
 #app.ps img, #app.ps canvas { image-rendering: pixelated; display: block; }
 /* a page that holds the game may shrink pictures to fit their box (img { max-width: 100%; height: auto }); a console picture

@@ -281,7 +281,7 @@ const FIT = { k: 1, h: 900 };
 // It is used when the wide stage would be shrunk below 0.72 (a window under 1152 px wide) on a screen at least 1.6 wide to 1 tall.
 const PHONE_W = 1440, PHONE_MIN = 640, PHONE_MAX = 900;
 function fit() {
-  if (app.classList.contains('ps')) { const c = fitConsole(app); FIT.k = c.k; FIT.phone = false; const n = document.getElementById('turn'); if (n) n.remove(); if (c.changed) render(); return; } // a new frame size: the screen is laid out again
+  if (app.classList.contains('ps')) { const c = fitConsole(app); FIT.k = c.k; FIT.phone = false; const n = document.getElementById('turn'); if (n) n.remove(); if (c.changed) { if (booting) bootScreen(); else render(); } return; } // a new frame size: the screen is laid out again
   const vw = innerWidth, vh = innerHeight;
   const phone = vw > vh && vw / 1600 < 0.72 && vw / vh >= 1.6;
   app.classList.toggle('phone', phone); FIT.phone = phone;
@@ -732,14 +732,23 @@ function loadPack(show) {
     } catch (e) { /* the pictures are then asked for one by one, each by its own file */ } finally { clearTimeout(idle); packDone = true; }
   })());
 }
-// The wait, drawn the way a game of the day drew its own: black, and two words. It lies over the page, outside the
-// frame (the page is scaled), and over the old look's turn-your-phone note.
+// The wait, drawn the way a game of the day drew its own: black, the turning crest and two words. It is a screen of the
+// frame like any other, so it has the frame's whole pixels and turns with it on a phone held upright; every part is
+// placed at a whole frame pixel (the word in the label face at twice its size, the coin at its own size).
 function bootScreen(p) {
   let b = document.getElementById('boot');
-  if (!b) { b = document.createElement('div'); b.id = 'boot'; document.body.appendChild(b); app.innerHTML = '';
-    const k = Math.max(1, Math.floor(Math.min(innerWidth, innerHeight) / 200)); // the coin at a whole number of screen pixels to each of its own
-    b.innerHTML = `<canvas id="bootcoin" width="64" height="64" style="width:${64 * k}px;height:${64 * k}px"></canvas><b>NOW LOADING</b><i></i>`; coinLoop(); }
-  b.querySelector('i').textContent = p == null ? '' : p + '%';
+  if (!b || !app.contains(b)) {
+    app.classList.add('ps'); app.classList.remove('phone', 'era'); document.body.classList.add('ps'); fitConsole(app);
+    { const n = document.getElementById('turn'); if (n) n.remove(); } // the old look's turn-your-phone note: the frame turns by itself
+    app.innerHTML = '<div id="boot" class="ab"><canvas id="bootcoin" class="ab" width="64" height="64"></canvas><i class="ab bw"></i><b class="ab lb bpc"></b></div>';
+    b = document.getElementById('boot'); coinLoop();
+  }
+  { const w = b.querySelector('.bw'), c = carve('NOW LOADING', 16, () => { if (booting) bootScreen(); }); if (c && w.dataset.f !== c.url) { w.dataset.f = c.url; w.innerHTML = `<img src="${c.url}" width="${c.w}" height="${c.h}" alt="NOW LOADING">`; } } // carved in the capitals of the book headings, once their face is in
+  if (p !== undefined) bootScreen.p = p; p = bootScreen.p; // a new frame size lays out the last share again
+  const { W, H } = F, top = (H - 98) >> 1, w = b.querySelector('.bw'), q = b.querySelector('.bpc');
+  Object.assign(b.querySelector('canvas').style, { left: ((W - 64) >> 1) + 'px', top: top + 'px' });
+  q.textContent = p == null ? '' : p + '%'; // each word centred from its own width, so it starts on a whole pixel
+  w.style.left = ((W - w.offsetWidth) >> 1) + 'px'; w.style.top = top + 70 + 'px'; q.style.left = ((W - q.offsetWidth) >> 1) + 'px'; q.style.top = top + 92 + 'px';
 }
 // ---- the crest as a struck coin that turns: on the loading screen, and beside the lit choice on the title as its
 // cursor. A 12-sided disc with a rim, the crest on both faces, drawn by the same renderer as the table. The crest

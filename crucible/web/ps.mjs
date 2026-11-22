@@ -2,26 +2,32 @@
 // The frame is a screen of whole pixels: 512 x 240 at the least, as much as 640 x 480, the console's own range of
 // screen sizes. Each frame pixel is a whole number of device pixels, so every pixel stays square and sharp, and the
 // frame takes the shape of the screen it is on, so no band of black is left. On a phone held upright the frame is
-// turned a quarter turn. The pillars keep their size; the window, the view and the ledge take what is left.
+// turned a quarter turn (on a touch screen only). The pillars keep their size; the window, the view and the ledge take what is left.
 export const F = { W: 512, H: 240, n: 1, up: false };
 export const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 export const yb = y => y + F.H - 240; // a place measured from the bottom of the smallest frame
 export const xr = x => x + F.W - 512; // the same from its right edge
 export const cx0 = () => (F.W - 512) >> 1, cy0 = () => (F.H - 240) >> 1; // where the smallest frame would sit, centred
 
+// A screen held upright is turned only on a touch screen (a phone or a tablet, which the player can turn sideways); a
+// desktop window that is taller than it is wide keeps the frame upright, so nobody has to tilt their head at a monitor.
+export const touchScreen = () => { try { return matchMedia('(pointer: coarse)').matches; } catch { return false; } };
 export function fitConsole(app) {
   const dpr = window.devicePixelRatio || 1, vw = innerWidth, vh = innerHeight;
-  const up = vh > vw * 1.15; // held upright: turn the frame
+  const up = touchScreen() && vh > vw * 1.15; // a phone held upright: turn the frame
   const aw = Math.floor((up ? vh : vw) * dpr + .01), ah = Math.floor((up ? vw : vh) * dpr + .01);
   const n = Math.max(1, Math.min(Math.floor(aw / 512), Math.floor(ah / 240))); // whole device pixels per frame pixel
   const W = Math.max(512, Math.min(640, Math.floor(aw / n))), H = Math.max(240, Math.min(480, Math.floor(ah / n)));
   const changed = W !== F.W || H !== F.H; Object.assign(F, { W, H, n, up });
   const k = n / dpr; // the same in CSS pixels
   app.style.width = W + 'px'; app.style.height = H + 'px';
-  app.style.transform = `translate(-50%,-50%) ${up ? 'rotate(90deg) ' : ''}scale(${k})`;
-  // the transform puts the frame's centre on the page centre; nudge it onto whole device pixels
-  const ox = ((vw * dpr - (up ? H : W) * n) / 2) % 1, oy = ((vh * dpr - (up ? W : H) * n) / 2) % 1;
-  app.style.marginLeft = (-ox / dpr) + 'px'; app.style.marginTop = (-oy / dpr) + 'px';
+  // The frame is placed from the page's top left corner, which is device pixel 0 at any pixel ratio, by a whole number of
+  // device pixels. (Centring it with left 50% put it a fraction of a device pixel off the grid at a ratio like 2.625: the
+  // page's width in device pixels is rounded, so its middle is not where innerWidth says. Every frame pixel's left and
+  // top edge then blended into its neighbour.)
+  const dx = Math.max(0, Math.floor((vw * dpr - (up ? H : W) * n) / 2)), dy = Math.max(0, Math.floor((vh * dpr - (up ? W : H) * n) / 2));
+  const tx = (dx + (up ? H * n : 0)) / dpr, ty = dy / dpr; // turned a quarter, the frame's top left corner is its right edge on the screen
+  app.style.transform = `translate(${tx}px,${ty}px) ${up ? 'rotate(90deg) ' : ''}scale(${k})`;
   return { k, n, up, changed };
 }
 
