@@ -422,6 +422,30 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     const sd = process.env.SECRETSAVES, hid = sd && fs.existsSync(path.join(sd, 'duel-secret-f1-h0.json')) ? JSON.parse(fs.readFileSync(path.join(sd, 'duel-secret-f1-h0.json'), 'utf8')) : null;
     if (hid) { await open(hid); await resume(); check('the hidden duel gives counsel on its Law', /Counsel\..*defense/.test(await text('.trayline')), await text('.trayline')); } }
 
+  // Era look (Lab switch "era", 21 November 2026, display only): the studio direction drawn over every screen. Its fog,
+  // grain and vignette sit under the page's own elements, so they can never take a tap or cover a number.
+  { const duel = read(pickFile(/^duel-regular-f1-h0/)); await open(duel);
+    const fx0 = () => page.evaluate(() => [...document.querySelectorAll('#app button')].filter(b => { const r = b.getBoundingClientRect(); if (r.width < 5 || r.height < 5) return false; const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e && (e === b || b.contains(e)); }).length);
+    const offReach = await fx0();
+    await tap('[data-a="lab:era"]'); check('the Era look switch is on the home screen and turns on', (await has('[data-a="lab:era"].on')) && (await ls(K.labs)).era === true && (await page.evaluate(() => document.querySelector('#app').classList.contains('era'))));
+    const fx = () => page.evaluate(() => { const app = document.querySelector('#app'), z = s => { const e = document.querySelector(s); return e ? +getComputedStyle(e).zIndex : null; };
+      const btns = [...document.querySelectorAll('#app button')].filter(b => { const r = b.getBoundingClientRect(); return r.width > 4 && r.height > 4 && getComputedStyle(b).visibility !== 'hidden'; });
+      const hit = btns.filter(b => { const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return e && (e === b || b.contains(e) || e.closest('.modal, .story, .savebar')); }).length;
+      return { layers: ['.eraBg', '.fog', '.grain'].map(z), buttons: btns.length, reached: hit, fonts: ['LM Cinzel', 'LM Spectral', 'LM Barlow'].map(f => document.fonts.check('16px "' + f + '"')) }; });
+    let f = await fx(); check('on the home screen the fog, grain and vignette lie under everything and every button a tap reaches without it still takes one', f.layers.every(z => z < 0) && f.buttons > 5 && f.reached === offReach, { ...f, offReach });
+    await resume(); await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(300); f = await fx();
+    check('in a run already in progress the duel is drawn with it, and every button still takes a tap', (await page.evaluate(() => document.querySelector('#app').classList.contains('era'))) && f.reached === f.buttons && f.buttons > 2, f);
+    check('its three typefaces come with the game and load', f.fonts.every(Boolean), f.fonts);
+    const before = JSON.stringify(await ls(K.run)); await page.reload(); await page.waitForTimeout(350);
+    check('the switch changes nothing in the saved run', JSON.stringify(await ls(K.run)) === before);
+    const known = read(pickFile(/^chamber-f1/)); known.labs.era = true; await open(known); await resume();
+    const kinds = await page.evaluate(() => [...document.querySelectorAll('.door')].map(d => [...d.classList].find(c => /^k-/.test(c))));
+    check('each door is marked by how much is known, for its fog', kinds.length >= 2 && kinds.every(Boolean), kinds);
+    const rm = await browser.newContext({ viewport: { width: +W, height: +H }, reducedMotion: 'reduce' }), pg = await rm.newPage(); pg.on('pageerror', e => errors.push(e.message));
+    await pg.goto(url); await pg.evaluate(([o, K]) => { localStorage.clear(); const l = { ...o.labs, era: true }; localStorage.setItem(K.profile, JSON.stringify(o.profile)); localStorage.setItem(K.labs, JSON.stringify(l)); }, [duel, K]); await pg.reload(); await pg.waitForTimeout(350);
+    const still = await pg.evaluate(() => ['.fog i', '.grain'].map(s => getComputedStyle(document.querySelector(s)).animationName));
+    check('a device set to less motion gets still fog and still grain', still.every(n => n === 'none'), still); await rm.close(); }
+
   check('no page errors anywhere', errors.length === 0, errors);
   console.log(`save checks at ${W}x${H}: ${passed} passed, ${failed} failed`);
   await browser.close(); process.exit(failed ? 1 : 0);

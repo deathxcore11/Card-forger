@@ -41,6 +41,7 @@ const LABS = {
   equips: 'Equips that differ: an Equip made for one Type or Attribute gives +800 ATK and DEF to a monster of that kind and only +300 to any other, judged at the moment it is attached, in a meld too. Blades give +800 ATK and no DEF, armour gives +1000 DEF and no ATK, and the rest stay at +500. Each card says which it is. Off, all 66 Equips give +500.',
   odd: 'Odd Gift at the Bazaar: every Bazaar also sells one Gift from a build this descent does not carry (or, without Two builds a run, a build you hold nothing of), for 70 Embers. It is marked as such and is a Gift beyond your five. Not played by a person yet.',
   secret: 'Rumours (the first secret): a guardian leaves a memory behind when it falls, the Codex keeps them, and something is hidden for a player who works out what they mean. Not played by a person yet.',
+  era: 'Era look (a preview of the studio direction, not a rule): the game drawn as a 1998 console release, with fog that hides what you do not know, film grain, old gold and rust, paper door labels, relics on cloth and letterboxed scenes. Nothing about play changes, and it applies at once, even to a run in progress.',
   table: 'New table look (a preview, not a rule): the duel table is drawn as a tilted stone board with life bars, the rival\'s hand shown as card backs and your Forger\'s face. Nothing about play changes, and it applies at once, even to a run in progress.',
   tombStart: 'Start with the Tomb set: carry all three Tomb relics from the first duel. A strong demonstration, not a fair run.',
 };
@@ -319,7 +320,7 @@ function animate(evs, ghosts) {
     const w = document.createElement('div'); w.className = 'ghost'; w.innerHTML = g.html;
     Object.assign(w.style, { left: g.r.left + 'px', top: g.r.top + 'px', width: g.r.width / FIT.k + 'px', height: g.r.height / FIT.k + 'px', fontSize: g.fs, transform: `scale(${FIT.k})`, transformOrigin: '0 0' });
     document.body.appendChild(w);
-    w.animate(g.kind === 'destroyed' ? [{ opacity: 1, filter: 'brightness(1)' }, { opacity: 1, filter: 'brightness(2.2) sepia(1) saturate(4) hue-rotate(-20deg)', offset: .35 }, { opacity: 0, transform: 'scale(.82) translateY(10%)', filter: 'brightness(.3)' }] : [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-40%) scale(.8)' }], { duration: 480, easing: 'ease-in' }).onfinish = () => w.remove();
+    w.animate(g.kind === 'destroyed' && pref.era ? [{ opacity: 1, filter: 'none' }, { opacity: 1, filter: 'grayscale(1) brightness(1.35)', offset: .22 }, { opacity: 0, transform: 'translateY(9%) scale(.95)', filter: 'grayscale(1) brightness(.35) blur(3px)' }] : g.kind === 'destroyed' ? [{ opacity: 1, filter: 'brightness(1)' }, { opacity: 1, filter: 'brightness(2.2) sepia(1) saturate(4) hue-rotate(-20deg)', offset: .35 }, { opacity: 0, transform: 'scale(.82) translateY(10%)', filter: 'brightness(.3)' }] : [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-40%) scale(.8)' }], { duration: 480, easing: 'ease-in' }).onfinish = () => w.remove();
   }
   for (const e of evs) {
     if (e.e === 'summon') { const c = zoneEl(e.seat, e.zone)?.querySelector('.c'); if (c) c.animate([{ transform: `translateY(${e.seat === 0 ? 60 : -60}%) scale(1.25)`, opacity: 0 }, { transform: 'scale(1.08)', opacity: 1, filter: 'brightness(1.7)', offset: .7 }, { transform: 'none', filter: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
@@ -466,7 +467,7 @@ const DOOR_ART = { duel: 'duel', cursed: 'cursed', champion: 'champion', guardia
 function screenChamber() {
   const r = G.run, boss = BOSSES[r.floor][r.bossOrder[r.floor]];
   return `<div class="hall doorsHall">${r.lastNote ? `<div class="note glass">${esc(r.lastNote)}</div>` : ''}${r.doors.some(d => d.type === 'secret') ? '' : `<div class="bossline glass">Guardian of this floor: <b>${esc(boss.name)}</b>${r.chamber >= 2 ? '. ' + esc(bossLaw(db, r)) : '. Its Law shows from chamber 3.'}${db.config.heatRules && r.heat ? ` <button class="heatchip" data-a="heatinfo:${r.heat}">Heat ${r.heat} rules</button>` : ''}</div>`}
-    <div class="doors${r.doors.length === 2 ? ' pair' : ''}">${r.doors.map((d, i) => { const locked = d.type === 'boss' && r.seals < 2; return `<button class="door t-${d.type}" data-a="door:${i}" ${locked ? 'disabled' : ''}><img decoding="sync" src="art/door-${DOOR_ART[d.type]}.webp" alt=""><div class="dtxt glass"><b>${esc(doorName(d))}</b><span class="k">${d.know === 'known' ? 'Known' : d.know === 'partial' ? 'Partly hidden' : 'Mysterious'}</span><span><i>Cost</i> ${esc(d.cost)}</span><span><i>Reward</i> ${esc(d.reward)}</span>${d.law ? `<span><i>Law</i> ${esc(lawShown(d.law))}</span>` : ''}${d.type === 'boss' && !(P.beaten || []).includes(d.boss) && lawAnswer(boss.law) ? `<span class="counsel"><i>Counsel</i> ${esc(lawAnswer(boss.law))}</span>` : ''}${d.tell ? `<span class="tell"><i>${esc(d.style)}</i> ${esc(d.tell)}</span>` : ''}${(d.tags || []).map(t => `<em>${esc(t)}</em>`).join('')}</div></button>`; }).join('')}</div></div>`;
+    <div class="doors${r.doors.length === 2 ? ' pair' : ''}">${r.doors.map((d, i) => { const locked = d.type === 'boss' && r.seals < 2; return `<button class="door t-${d.type} k-${d.know || 'known'}" data-a="door:${i}" ${locked ? 'disabled' : ''}><img decoding="sync" src="art/door-${DOOR_ART[d.type]}.webp" alt=""><div class="dtxt glass"><b>${esc(doorName(d))}</b><span class="k">${d.know === 'known' ? 'Known' : d.know === 'partial' ? 'Partly hidden' : 'Mysterious'}</span><span><i>Cost</i> ${esc(d.cost)}</span><span><i>Reward</i> ${esc(d.reward)}</span>${d.law ? `<span><i>Law</i> ${esc(lawShown(d.law))}</span>` : ''}${d.type === 'boss' && !(P.beaten || []).includes(d.boss) && lawAnswer(boss.law) ? `<span class="counsel"><i>Counsel</i> ${esc(lawAnswer(boss.law))}</span>` : ''}${d.tell ? `<span class="tell"><i>${esc(d.style)}</i> ${esc(d.tell)}</span>` : ''}${(d.tags || []).map(t => `<em>${esc(t)}</em>`).join('')}</div></button>`; }).join('')}</div></div>`;
 }
 
 function screenDuel() {
@@ -647,6 +648,10 @@ function recover(e, moving) {
   setLabs(pref); later(e);
   try { draw(); } catch (e2) { app.innerHTML = `<div class="hall home"><div class="title"><h1>LOST MEMORIES</h1><p class="notice glass">${esc(G.notice)} Reload this page to go on.</p></div></div>`; later(e2); }
 }
+// Era look (Lab switch, display only): the layers under every screen. They sit below the page's own elements, so fog and
+// grain never cross a number, a card or a button.
+const ERA_LAYERS = '<div class="eraBg"></div><div class="fog"><i></i><i></i></div><div class="grain"></div>';
+const fogK = r => !r || r.phase === 'over' ? .8 : Math.max(.7, Math.min(1.3, .75 + .025 * (r.heat || 0) + .12 * Math.max(0, 3 - (r.sparks ?? 3))));
 function render() { try { draw(); G.fresh = false; } catch (e) { recover(e, false); } }
 function draw() {
   if (lostStore) { // the store came back empty in a tab that had progress: nothing is drawn but the notice, and nothing is written
@@ -660,12 +665,14 @@ function draw() {
   else if (G.shown || r.phase === 'duel') body = screenDuel();
   else body = { kit: screenKit, charm: screenCharm, chamber: screenChamber, reward: screenReward, anvil: screenAnvil, bazaar: screenBazaar, over: screenOver }[r.phase]();
   const rulesAt = ($('.rules') || {}).scrollTop || 0; // the duel rules box keeps its place when the screen is drawn again
-  app.innerHTML = `${G.screen || G.shown || (r && (r.phase === 'duel' || r.phase === 'over')) ? '' : hud()}${body}${tabPanel()}${overlay()}${inspectPanel()}${storyPanel()}${store.failed.size ? `<div class="savebar"><b>Not saved.</b> This device would not store your progress (its storage is full or blocked). You can keep playing, but closing this page now would lose ${store.failed.has(PROFILE) ? 'what you have earned' : unsavedRun() ? 'this run' : store.failed.has(UNSAVED) ? 'the copy of the run this tab could not save' : store.failed.has(KNOWN) ? 'the list of cards you have seen' : 'your settings'}. <button data-a="resave">Try again</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
+  const era = !!pref.era; app.classList.toggle('era', era);
+  app.innerHTML = `${era ? ERA_LAYERS : ''}${G.screen || G.shown || (r && (r.phase === 'duel' || r.phase === 'over')) ? '' : hud()}${body}${tabPanel()}${overlay()}${inspectPanel()}${storyPanel()}${store.failed.size ? `<div class="savebar"><b>Not saved.</b> This device would not store your progress (its storage is full or blocked). You can keep playing, but closing this page now would lose ${store.failed.has(PROFILE) ? 'what you have earned' : unsavedRun() ? 'this run' : store.failed.has(UNSAVED) ? 'the copy of the run this tab could not save' : store.failed.has(KNOWN) ? 'the list of cards you have seen' : 'your settings'}. <button data-a="resave">Try again</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home';
   { const fl = r && r.phase !== 'over' && !G.screen ? r.floor + 1 : 0; app.dataset.room = fl >= 2 && ART.has('hall-' + (app.dataset.phase === 'duel' ? 'duel' : 'doors') + '-' + fl) ? String(fl) : ''; } // floors two and three have rooms of their own when the art folder holds them
   { const rb = $('.rules'); if (rb) { rb.scrollTop = rulesAt; moreBelow(rb); } const tl = $('.trayline'); if (tl) moreBelow(tl); }
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
-  const scr = G.screen || app.dataset.phase; if (scr !== render.scr) { render.scr = scr; cue('screen:' + scr, r ? { floor: r.floor, chamber: r.chamber, rival: r.rival ? r.rival.name : null, tier: r.rival ? r.rival.tier : null } : {}); }
+  if (era) app.style.setProperty('--fog', String(fogK(r))); // Era look: the fog thickens as Sparks are lost and Heat rises
+  const scr = G.screen || app.dataset.phase; if (scr !== render.scr) { if (era && !RM && render.scr !== undefined) app.animate([{ filter: 'brightness(0)' }, { filter: 'brightness(1)' }], { duration: 260, easing: 'ease-out' }); render.scr = scr; cue('screen:' + scr, r ? { floor: r.floor, chamber: r.chamber, rival: r.rival ? r.rival.name : null, tier: r.rival ? r.rival.tier : null } : {}); }
 }
 
 // ---------- input ----------
