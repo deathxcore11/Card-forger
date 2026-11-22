@@ -1,6 +1,6 @@
 // Top-right minimap: a height-shaded picture of the whole kingdom (north up), district names,
 // enemy dots, and the duelist's position with an arrow for the camera facing.
-import { MAP, DISTRICTS } from '../data/map.js';
+import { MAP } from '../data/map.js';
 import { heightAt, WALL } from '../sim/terrain.js';
 
 const SIZE = 168, TEX = 200;
@@ -8,9 +8,9 @@ const SIZE = 168, TEX = 200;
 export class Minimap {
   constructor(canvas) {
     this.cv = canvas; canvas.width = SIZE; canvas.height = SIZE; this.ctx = canvas.getContext('2d');
-    this.base = document.createElement('canvas'); this.base.width = this.base.height = SIZE;
-    this._paint();
+    this.base = document.createElement('canvas'); this.base.width = this.base.height = SIZE; this.map = null;
   }
+  setMap(map) { this.map = map; this._paint(); }
   _paint() {
     const tex = document.createElement('canvas'); tex.width = tex.height = TEX;
     const tc = tex.getContext('2d'), img = tc.createImageData(TEX, TEX), span = MAP.half * 2 / TEX;
@@ -26,7 +26,7 @@ export class Minimap {
     c.drawImage(tex, 0, 0, SIZE, SIZE);
     const s = SIZE / (MAP.half * 2), X = x => (x + MAP.half) * s;
     c.lineWidth = 1.5; c.font = 'bold 9px "Courier New", monospace'; c.textAlign = 'center';
-    DISTRICTS.forEach(d => {
+    (this.map ? this.map.districts : []).forEach(d => {
       c.strokeStyle = d.color;
       let lx, ly;
       if (d.shape === 'circle') { c.beginPath(); c.arc(X(d.cx), X(d.cz), d.r * s, 0, 7); c.stroke(); lx = X(d.cx); ly = X(d.cz) + 3; }
@@ -41,6 +41,7 @@ export class Minimap {
     c.fillStyle = '#e0452c';
     const e = g.en;
     for (let i = 0; i < e.max; i++) if (e.alive[i]) c.fillRect(X(e.x[i]) - 1, X(e.z[i]) - 1, 2, 2);
+    if (g.map && g.map.gate && g.mode !== 'classic') { const gx = X(g.map.gate.x), gz = X(g.map.gate.z); c.fillStyle = g.gate && g.gate.awake ? '#ff5a3a' : '#a04a3a'; c.fillRect(gx - 3, gz - 3, 6, 6); c.strokeStyle = '#000'; c.lineWidth = 1; c.strokeRect(gx - 3, gz - 3, 6, 6); }
     for (const ch of g.chests) if (ch.guaranteed && !ch.open) {                  // the Fusion chest: a gold diamond that blinks
       const cx = X(ch.x), cz = X(ch.z); c.fillStyle = (Math.floor(performance.now() / 350) % 2) ? '#ffe08a' : '#ff9d2a'; c.beginPath(); c.moveTo(cx, cz - 5); c.lineTo(cx + 4, cz); c.lineTo(cx, cz + 5); c.lineTo(cx - 4, cz); c.closePath(); c.fill(); c.lineWidth = 1; c.strokeStyle = '#000'; c.stroke();
     }

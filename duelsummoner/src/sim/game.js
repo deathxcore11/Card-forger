@@ -4,6 +4,8 @@ import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
 import { makeStreams } from './rng.js';
 import { hashHex } from './hash.js';
+import { CLASSIC_MAP } from '../data/maps.js';
+import { loadMap, mapKey } from './terrain.js';
 import { makeCaps, refillCaps } from './caps.js';
 import { K } from '../data/tuning.js';
 import { SCORE } from '../data/tuning.js';
@@ -20,7 +22,7 @@ import { updateSpawner } from './spawner.js';
 import { updateMonsters, updateTraps, onPlayerHurt } from './monsters.js';
 import { makeField, recompute, xpNeeded, openLevelOffer, openChest, chooseCard, redraw, banish, pass, leaveChest, fusionsReady } from './field.js';
 import { MAP } from '../data/map.js';
-import { buildWorld, updateWorld, nearestProp, useProp } from './world.js';
+import { buildWorld, emptyWorld, updateWorld, nearestProp, useProp } from './world.js';
 import { SPELLS } from '../data/cards.js';
 import { runResults } from './results.js';
 
@@ -41,7 +43,7 @@ export class Game {
     this.tele = makeTele(64); this.fx = makeFx(48); this.eb = makeBolts(48);
     this.btraps = []; for (let i = 0; i < 8; i++) this.btraps.push({ on: false, x: 0, y: 0, z: 0, life: 0 });
     this.evType = new Array(256).fill(''); this.evData = new Array(256).fill(null); this.evA = new Float64Array(256); this.evB = new Float64Array(256); this.evC = new Float64Array(256); this.evT = new Float64Array(256); this.evHead = 0; this.evTail = 0;
-    this._cmd = {}; this._rec = emptyRecord(); this.tape = null;
+    this._cmd = {}; this._rec = emptyRecord(); this.tape = null; this.map = CLASSIC_MAP;
     this.reset(seed, opts.duelist);
   }
 
@@ -69,7 +71,8 @@ export class Game {
     if (this.metaMods.startLevel) this.field.monsters[0].level = Math.min(10, 1 + this.metaMods.startLevel);
     recompute(this);
     this._openingHand();
-    this.world = buildWorld(this);                                  // opts.world === 'none': empty, for a generator to fill through placeObject
+    this.map = CLASSIC_MAP; if (mapKey() !== CLASSIC_MAP.key) { loadMap(CLASSIC_MAP); this.flow.rebuild(); }
+    this.world = this.opts.mode && this.opts.mode !== 'classic' ? emptyWorld() : buildWorld(this);       // stage runs: initRun builds the world on the generated map
     this.p.maxHp = this.oaths.glass ? 1 : this.cfgHp + this.mods.maxLp; this.p.hp = this.p.maxHp;
     this.en.alive.fill(0); this.shots.alive.fill(0); this.pick.alive.fill(0);
     this.tele.forEach(o => { o.on = false; }); this.fx.forEach(o => { o.on = false; }); this.eb.forEach(o => { o.on = false; }); this.btraps.forEach(o => { o.on = false; });
@@ -170,6 +173,7 @@ export class Game {
 
   _tick(dt, cmd) {
     const e = this.en;
+    if (mapKey() !== this.map.key) { loadMap(this.map); this.flow.rebuild(); }                   // the terrain is one global: reload if another game changed it
     this._snap();
     this.t += dt; this.tickN++;
     if (this.mode !== 'classic' && this.desc) { descentTick(this, dt); return; }                 // the Descent: the world waits

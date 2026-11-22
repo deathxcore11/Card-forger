@@ -46,7 +46,7 @@ export function spawnSpecial(g, ev, at) {
 }
 export function startBoss(g, early, gate) {
   if (g.boss.state !== 'idle') return false;                       // one shared state: only one gate boss at a time
-  const S = SPECIALS.pharaoh, B = gate ? RUNSPEC.gate.arena : RUN.bossSpawn;
+  const S = SPECIALS.pharaoh, B = gate ? g.map.arena.boss : RUN.bossSpawn;
   const sp = make('pharaoh', gate ? gate.name : S.name, S, B.x, heightAt(B.x, B.z), B.z); sp.hp = sp.maxHp = gate ? gate.hp * g.stageSpec.mult * g.diff.boss : S.hp * g.hpMul; sp.cd = 3; sp.aux = 6;
   if (gate) { const Z = specialSize(gate.id, 'pharaoh'); sp.role = 'gate'; sp.id = gate.id; sp.enrage = gate.enrage || 1; sp.size = Z.h; sp.radius = Z.radius; sp.k = Z.k; sp.kr = Z.kr; }
   g.sp.push(sp); g.gateOpenedAt = early ? (gate ? g.sc : g.t) : -1; g.boss = { state: 'active', early: !!early, t0: g.t, phase: 1, sandT: 0, summonT: S.summon.every, trapT: 2 };

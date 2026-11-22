@@ -49,6 +49,11 @@ export function placeObject(g, type, s) {
 export function buildWorld(g) {
   const W = emptyWorld(), taken = [];
   if (g.opts && g.opts.world === 'none') return W;                          // a generator will place everything itself
+  if (g.mode !== 'classic' && g.map && g.map.encounters) {                    // a generated stage: the generator chose where, the sim places and runs them
+    g.world = W;                                                           // placeObject fills g.world
+    for (const e of g.map.encounters) placeObject(g, e.type, e);
+    return W;
+  }
   const put = s => { if (s) taken.push(s); return s; };
   for (const sp of E.cardChests.placement) for (let i = 0; i < sp.n; i++) {
     const s = put(pickSpot(g, [sp], taken, E.minSpacing)); if (s) W.cchests.push({ ...s, open: false, rarity: null });
