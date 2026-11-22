@@ -1,10 +1,10 @@
-﻿// Contact sheet: every hand-made clip posed at five moments, front 3/4 view, stitched into one picture. Usage: node test/browser-clips.mjs [outDir] [clipNames comma list]
+// Contact sheet: every hand-made clip posed at five moments, front 3/4 view, stitched into one picture. Usage: node test/browser-clips.mjs [outDir] [clipNames comma list]
 import { launch, wait } from './cdp.mjs';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 const b = await launch({ out: process.argv[2], query: '?debug&scenery=0' });
 const DUEL = process.env.DUELIST || 'kael';
-await b.evalIn(`(async()=>{ const D = window.__ds; D.pickDuelist('${DUEL}'); D.start(); await new Promise(r => setTimeout(r, 1000)); D.freeze(true); D.game.god = true; for (const e of document.querySelectorAll('.hud, #tc')) e.style.display = 'none'; const r = D.actors.rig; r.debugHold = true; const p = D.game.p; D.camHold = { x: p.x + 2.4, y: p.y + 1.2, z: p.z + 3.4, lx: p.x, ly: p.y + 0.85, lz: p.z }; return [...r.clips.keys()].length; })()`);
+await b.evalIn(`(async()=>{ const D = window.__ds; D.pickDuelist('${DUEL}'); D.start(); await new Promise(r => setTimeout(r, 1000)); D.freeze(true); D.game.god = true; for (const e of document.querySelectorAll('.hud, #tc')) e.style.display = 'none'; const r = D.actors.rig; r.debugHold = true; const p = D.game.p; r.group.updateMatrixWorld(true); const f = r.forward(); window.__view = (side) => { const rx = f.z, rz = -f.x, k = side ? 1 : 0.55; D.camHold = { x: p.x + f.x * 3.4 * (side ? 0 : 1) + rx * 3.4 * k * (side ? 1 : 0.8), y: p.y + 1.2, z: p.z + f.z * 3.4 * (side ? 0 : 1) + rz * 3.4 * k * (side ? 1 : 0.8), lx: p.x, ly: p.y + 0.85, lz: p.z }; }; window.__view(false); return [...r.clips.keys()].length; })()`);
 const names = (process.argv[3] ? process.argv[3].split(',') : await b.evalIn(`[...__ds.actors.rig.clips.keys()].filter(k => /^[a-z_]+$/.test(k))`));
 const cells = [];
 for (const name of names) {

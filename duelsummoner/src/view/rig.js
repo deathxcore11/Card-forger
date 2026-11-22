@@ -42,6 +42,24 @@ export function cleanNames(J) { const names = J.nodes.map((n, i) => clean(n.name
 // speed a clip up or down to a new length (a Meshy clip came out 1.97 s long and the game wants 0.9 s)
 export function retime(clip, seconds) { const k = seconds / clip.duration; for (const tr of clip.tracks) for (let i = 0; i < tr.times.length; i++) tr.times[i] *= k; clip.duration = seconds; return clip; }
 
+
+// A small detached piece (a hair clip, a quill, a buckle) must move as one rigid thing with the bone it mostly belongs to. Meshy leaves a little
+// weight on the arm or the shoulder, so the piece wobbles when she reaches. Find each small island of the mesh and give all of it to its main bone.
+export function snapSmallIslands(geo, maxTris = 80, minShare = 0.6) {
+  const pos = geo.attributes.position, idx = geo.index.array, sj = geo.attributes.skinIndex, sw = geo.attributes.skinWeight;
+  const id = new Map(), rep = new Uint32Array(pos.count); for (let i = 0; i < pos.count; i++) { const k = pos.getX(i).toFixed(4) + ',' + pos.getY(i).toFixed(4) + ',' + pos.getZ(i).toFixed(4); if (!id.has(k)) id.set(k, id.size); rep[i] = id.get(k); }
+  const par = new Uint32Array(id.size); for (let i = 0; i < par.length; i++) par[i] = i; const find = x => { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; };
+  for (let t = 0; t < idx.length; t += 3) { par[find(rep[idx[t + 1]])] = find(rep[idx[t]]); par[find(rep[idx[t + 2]])] = find(rep[idx[t]]); }
+  const isl = new Map(); for (let t = 0; t < idx.length; t += 3) { const r = find(rep[idx[t]]); let o = isl.get(r); if (!o) isl.set(r, o = { tris: 0, verts: new Set() }); o.tris++; for (let k = 0; k < 3; k++) o.verts.add(idx[t + k]); }
+  let snapped = 0;
+  for (const o of isl.values()) {
+    if (o.tris > maxTris) continue; const share = new Map(); for (const v of o.verts) for (let k = 0; k < 4; k++) { const w = sw.array[v * 4 + k]; if (w > 0) share.set(sj.array[v * 4 + k], (share.get(sj.array[v * 4 + k]) || 0) + w); }
+    let best = -1, bw = 0; for (const [j, w] of share) if (w > bw) { bw = w; best = j; } if (best < 0 || bw / o.verts.size < minShare) continue;
+    for (const v of o.verts) { sj.setXYZW(v, best, 0, 0, 0); sw.setXYZW(v, 1, 0, 0, 0); } snapped++;
+  }
+  return snapped;
+}
+
 // Builds { root, clips: Map(name -> AnimationClip), bones: Map(name -> Bone), height } from a GLB buffer. texSize shrinks the texture (the file's is 2048 px or more).
 export async function buildRig(buf, { texSize = 512 } = {}) {
   const glb = parseGlb(buf), J = glb.json, nodes = J.nodes, skin = J.skins && J.skins[0], jointSet = new Set(skin ? skin.joints : []);
@@ -58,6 +76,7 @@ export async function buildRig(buf, { texSize = 512 } = {}) {
     if (at.TEXCOORD_0 !== undefined) geo.setAttribute('uv', new T.BufferAttribute(accessor(glb, at.TEXCOORD_0), 2));
     if (at.JOINTS_0 !== undefined) { geo.setAttribute('skinIndex', new T.BufferAttribute(new Uint16Array(accessor(glb, at.JOINTS_0)), 4)); geo.setAttribute('skinWeight', new T.BufferAttribute(accessor(glb, at.WEIGHTS_0), 4)); }
     if (p.indices !== undefined) geo.setIndex(new T.BufferAttribute(accessor(glb, p.indices), 1));
+    if (at.JOINTS_0 !== undefined && p.indices !== undefined) geo.userData.snapped = snapSmallIslands(geo);
     let map = null; const mat = J.materials && J.materials[p.material], tex = mat && mat.pbrMetallicRoughness && mat.pbrMetallicRoughness.baseColorTexture;
     if (tex !== undefined && J.images) {
       const im = J.images[J.textures[tex.index].source], v = J.bufferViews[im.bufferView], blob = new Blob([glb.bin.slice(v.byteOffset || 0, (v.byteOffset || 0) + v.byteLength)], { type: im.mimeType });
@@ -76,8 +95,13 @@ export async function buildRig(buf, { texSize = 512 } = {}) {
 }
 
 import { CLIPS, UPPER, JUMP_CUT, locomotion } from './rigstate.js';
-import { buildProcClips } from './procclips.js';
+import { buildProcClips, makeAxes } from './procclips.js';
 export { CLIPS, UPPER, locomotion };
+
+// crossfade seconds: about 0.12 for movement, shorter for snappy actions, longer into idle. Nothing ever cuts.
+const FADE = { default: 0.12, idle_cards: 0.2, select_fidget: 0.2, dash: 0.06, slide: 0.08, hurt: 0.04, throw_card: 0.05, land_light: 0.06, land_heavy: 0.08, jump_rise: 0.05, jump_apex: 0.1, fall_loop: 0.12, air_jump: 0.05, defeat: 0.15, victory: 0.2 };
+const LOCO = ['idle_cards', 'walk', 'run'], WALK_STRIDE = 2.88, RUN_STRIDE = 5.67;   // metres per cycle of the Meshy walk (1.03 s at about 2.8 m/s) and run (0.63 s at about 9 m/s)
+const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 export class DuelistRig {
   constructor(built, { yaw = 0, height = 1.8 } = {}) {
@@ -86,6 +110,7 @@ export class DuelistRig {
     this.group = new T.Group(); this.group.add(this.root); this.missing = new Set();
     this._lowerCache = new Map(); this._upperCache = new Map();
   }
+  forward() { if (!this._F) this._F = makeAxes(this.root).F.clone(); const f = this._F.clone(); f.applyQuaternion(this.group.quaternion); return f; }     // the model's front in the world
   has(name) { return (CLIPS[name] || []).some(n => this.clips.has(n)); }
   _clip(name, part) {                                                       // part: 'all' | 'lower' | 'upper'
     const real = (CLIPS[name] || [name]).find(n => this.clips.has(n)); if (!real) { this.missing.add(name); return null; }
@@ -105,15 +130,36 @@ export class DuelistRig {
     if (this.debugHold) return;                                                // a test is posing the rig by hand
     const pr = this.prev; if (p.grounded && !pr.wasGrounded && pr.fallV < -9) { pr.landT = 0.5; pr.landHeavy = true; } else if (p.grounded && !pr.wasGrounded && pr.fallV < -4) { pr.landT = 0.3; pr.landHeavy = false; }
     if (!p.grounded) pr.fallV = p.vy; if (pr.landT > 0) pr.landT -= dt; if (p.airUsed > pr.airUsed) { pr.airJump = 0.5; } pr.airUsed = p.airUsed || 0; if (pr.airJump > 0) pr.airJump -= dt; pr.wasGrounded = p.grounded;
-    if (this.holdUntil && performance.now() < this.holdUntil) { this.mixer.update(dt); return; }              // a one-shot (hurt, level up, summon...) is playing
+    const hasThrow = this.has('throw_card');
+    if (thrown && hasThrow) { const u = this._play('throw_card', { loop: false, fade: FADE.throw_card, part: 'upper' }); if (u) { if (this.upperAct && this.upperAct !== u) this.upperAct.fadeOut(0.1); this.upperAct = u; this.upperT = 0.5; this.cur = null; } }
+    if (this.upperT > 0) { this.upperT -= dt; if (this.upperT <= 0 && this.upperAct) { this.upperAct.fadeOut(0.12); this.upperAct = null; this.cur = null; } }
+    if (this.holdUntil && performance.now() < this.holdUntil) { this.mixer.update(dt); return; }              // a one-shot (summon, level up...) is playing
     const want = locomotion(p, g, { landT: pr.landT, landHeavy: pr.landHeavy, airJump: pr.airJump > 0 });
-    const upperOn = this.upperT > 0; const part = upperOn && this.has('throw_card') && !['defeat', 'victory', 'slide', 'dash'].includes(want.clip) ? 'lower' : 'all';
+    const sp = Math.hypot(p.vx || 0, p.vz || 0), locoNow = LOCO.includes(want.clip) && this.has('idle_cards') && this.has('walk') && this.has('run');
+    this._loco(sp, dt, locoNow, this.upperT > 0);
+    if (locoNow) { this.cur = 'loco'; this.mixer.update(dt); return; }                      // the blend plays the legs and the torso; the throw layer (if any) plays the arms
+    const part = this.upperT > 0 && hasThrow && !['defeat', 'victory', 'slide', 'dash'].includes(want.clip) ? 'lower' : 'all';
     const key = want.clip + '|' + part;
-    if (key !== this.cur) { const prevAct = this.curAct; const a = this._play(want.clip, { loop: want.loop, speed: want.speed || 1, part }); if (a) { if (prevAct && prevAct !== a) prevAct.fadeOut(0.15); this.curAct = a; this.cur = key; } }
+    if (key !== this.cur) { const prevAct = this.curAct; const act = this._play(want.clip, { loop: want.loop, speed: want.speed || 1, part, fade: FADE[want.clip] || FADE.default }); if (act) { if (prevAct && prevAct !== act) prevAct.fadeOut(0.15); this.curAct = act; this.cur = key; } }
     else if (this.curAct && want.speed) this.curAct.timeScale = want.speed;
-    if (thrown && this.has('throw_card')) { const u = this._play('throw_card', { loop: false, fade: 0.05, part: 'upper' }); if (u) { if (this.upperAct && this.upperAct !== u) this.upperAct.fadeOut(0.1); this.upperAct = u; this.upperT = 0.7; this.cur = null; } }
-    if (this.upperT > 0) { this.upperT -= dt; if (this.upperT <= 0 && this.upperAct) { this.upperAct.fadeOut(0.15); this.upperAct = null; this.cur = null; } }
     this.mixer.update(dt);
+  }
+  // idle, walk and run are one blend: weights follow ground speed and the walk and run share one foot phase, so feet do not slide and nothing switches.
+  // Two sets (legs and hips, arms and torso) so a card throw can take the arms and torso while the legs keep running.
+  _loco(sp, dt, on, throwing) {
+    if (!this.L) {
+      if (!(this.has('idle_cards') && this.has('walk') && this.has('run'))) return;
+      const mk = (n, part) => { const a = this._play(n, { loop: true, fade: 0, part }); a.setEffectiveWeight(0); return a; };
+      this.L = { idleL: mk('idle_cards', 'lower'), walkL: mk('walk', 'lower'), runL: mk('run', 'lower'), idleU: mk('idle_cards', 'upper'), walkU: mk('walk', 'upper'), runU: mk('run', 'upper') };
+      for (const k of ['walkL', 'runL', 'walkU', 'runU']) this.L[k].timeScale = 0; this.lw = { idle: 0, walk: 0, run: 0, up: 1 }; this.ph = 0;
+    }
+    const L = this.L, lw = this.lw; let ti = 0, tw = 0, tr = 0;
+    if (on) { const wi = clamp01(1 - (sp - 0.4) / 1.0), wr = clamp01((sp - 4.5) / 4); ti = wi; tr = (1 - wi) * wr; tw = (1 - wi) * (1 - wr); }
+    const k = on ? Math.min(1, dt * 12) : Math.min(1, dt / 0.12);
+    lw.idle += (ti - lw.idle) * k; lw.walk += (tw - lw.walk) * k; lw.run += (tr - lw.run) * k; lw.up += ((throwing ? 0 : 1) - lw.up) * Math.min(1, dt / 0.06);
+    for (const n of ['idle', 'walk', 'run']) { const w = lw[n], al = L[n + 'L'], au = L[n + 'U']; al.enabled = w > 0.002; al.setEffectiveWeight(w); au.enabled = w * lw.up > 0.002; au.setEffectiveWeight(w * lw.up); }
+    if (on && sp > 0.3) { const rs = lw.run / ((lw.walk + lw.run) || 1); this.ph = (this.ph + sp / (WALK_STRIDE + (RUN_STRIDE - WALK_STRIDE) * rs) * dt) % 1; }
+    const wd = L.walkL.getClip().duration, rd = L.runL.getClip().duration; L.walkL.time = L.walkU.time = this.ph * wd; L.runL.time = L.runU.time = this.ph * rd;
   }
   // one-shot actions the view triggers from sim events: hurt, level_up, summon, fusion, tribute, open_chest...
   once(name) { const a = this._play(name, { loop: false, fade: 0.08 }); if (a) { if (this.curAct && this.curAct !== a) this.curAct.fadeOut(0.08); this.curAct = a; this.cur = '@' + name; this.holdUntil = performance.now() + a.getClip().duration * 1000; } return !!a; }

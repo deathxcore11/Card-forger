@@ -15,7 +15,7 @@ Checked 22 Nov 2026, 6:10 PM ET: duelist-kael-anim.glb, 2,312 triangles, 44-bone
 | Dash (stand-in) | Run_Jump_and_Roll |
 | Defeat | dying_backwards (falling_down and Shot_and_Fall_Backward are spares) |
 
-These are not needed and can be deleted to keep the file small: Lie_Back_Leg_Swing, Fall_from_Bar, Quad_Jump_Left, Walk_Backward_with_Sword_inplace, Jump_and_Grab_Wall, Jump_with_Arms_and_Legs_Open. Fall1 is a skydiving pose, so it doesn't work for a short fall.
+These are not needed and can be deleted to keep the file small: Lie_Back_Leg_Swing, Fall_from_Bar, Walk_Backward_with_Sword_inplace, Jump_and_Grab_Wall. Keep Quad_Jump_Left and Jump_with_Arms_and_Legs_Open for now: the game uses them as stand-ins until strafe_left and air_jump are made. Fall1 is a skydiving pose, so it doesn't work for a short fall.
 
 ## How to make each one
 
@@ -68,3 +68,7 @@ The rules for every clip:
 - throw_card plays on the upper body only (spine, shoulders, arms, head) while the legs keep running, so it must not move the hips or legs.
 - The sim turns the duelist to face where they move, so strafe and backpedal are only used when we add aiming or lock-on. Make them, but they come later in the priority order.
 - Texture: the file's 3.3 MB picture is shrunk to 512 px when loaded. Delete unused clips to keep the GLB small.
+
+## Update, 22 Nov evening: the clips are now made in code (free)
+
+Randall found paying Meshy credits for every motion wasteful, so the motion clips are no longer made in Meshy. `src/view/procclips.js` turns key poses into clips for the same 24 names (19 are written so far: hurt, throw_card, land_light, land_heavy, dash, slide, summon, fusion, tribute, victory, level_up, open_chest, shrine_channel, cast_spell, taunt, and more to come), on any rig through a canonical bone map (Kael's plain names and Mira's mixamorig: names both work). A Meshy clip with the same name is kept as `name_meshy` and never replaces the code-keyed one. **Meshy is now only for making a new character's model and rig** (and for the base walk, run and idle if its version looks better). A clip that looks clearly poor in code can instead come from free Mixamo with a free Adobe account; that is an option only if a code-keyed clip fails, not a request.
