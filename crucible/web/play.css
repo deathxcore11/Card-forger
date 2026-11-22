@@ -377,6 +377,14 @@ button.big { font-size: 1.5em; } button.pow { background: linear-gradient(#c5482
 #app.era button.gold:not(:disabled):hover { box-shadow: inset .24em 0 0 #6b3a12, 0 0 1em rgba(217, 132, 63, .4); }
 #app.era button.door { background: none; border: 0; box-shadow: none; }
 #app.era .hud .sp { color: var(--ember); }
+/* medallions: the pictures graded to the room; a relic with no picture yet is a worn bronze coin stamped with its first letter,
+   so it no longer outshines everything on the screen as a bright gold square */
+#app.era img.ri { filter: sepia(.18) saturate(.82) brightness(.92) contrast(1.06); border-color: rgba(201, 168, 101, .28); }
+#app.era .ri.gem { position: relative; border-radius: 50%; border: 1px solid rgba(201, 168, 101, .34);
+  background: radial-gradient(circle, transparent 57%, rgba(0, 0, 0, .5) 59%, rgba(201, 168, 101, .16) 61%, transparent 63%), radial-gradient(circle at 38% 30%, #6b5636, #3c2f1d 55%, #1b140c);
+  box-shadow: inset 0 0 0 .2em rgba(20, 15, 9, .75), 0 1px 3px rgba(0, 0, 0, .6); }
+#app.era .ri.gem::after { content: attr(data-l); position: absolute; inset: 0; display: grid; place-items: center; font: 600 1.7em/1 'LM Cinzel', 'Cinzel', serif;
+  color: rgba(214, 184, 120, .5); text-shadow: 0 -1px 0 rgba(0, 0, 0, .75), 0 1px 0 rgba(255, 230, 180, .1); }
 /* the door choice: fog by how much is known, paper labels, a carved plaque for the guardian */
 #app.era .door { position: relative; }
 #app.era .door .dtxt { position: relative; z-index: 1; background: var(--paper); color: var(--pink); border: 0; border-radius: .15em; box-shadow: 0 .45em 1.1em rgba(0, 0, 0, .6), inset 0 0 1.4em rgba(120, 96, 60, .25); }

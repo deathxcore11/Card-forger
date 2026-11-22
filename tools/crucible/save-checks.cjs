@@ -441,6 +441,9 @@ const K = { run: 'lostmemories.run.v1', profile: 'lostmemories.profile.v1', runl
     const known = read(pickFile(/^chamber-f1/)); known.labs.era = true; await open(known); await resume();
     const kinds = await page.evaluate(() => [...document.querySelectorAll('.door')].map(d => [...d.classList].find(c => /^k-/.test(c))));
     check('each door is marked by how much is known, for its fog', kinds.length >= 2 && kinds.every(Boolean), kinds);
+    const held = read(pickFile(/^chamber-f2/)); held.labs.era = true; await open(held); await resume(); await tap('[data-a="tab:relics"]');
+    const coins = await page.evaluate(() => [...document.querySelectorAll('.ri')].map(e => e.tagName === 'IMG' ? 'picture' : (/^[A-Z]$/.test(e.dataset.l || '') && getComputedStyle(e, '::after').content === '"' + e.dataset.l + '"' && getComputedStyle(e).borderRadius === '50%' ? 'coin' : 'bare ' + (e.dataset.l || '?'))));
+    check('every medallion in the relics list is a picture or, with no picture yet, a worn coin stamped with its first letter', coins.length >= 2 && coins.every(c => c === 'picture' || c === 'coin'), coins);
     const rm = await browser.newContext({ viewport: { width: +W, height: +H }, reducedMotion: 'reduce' }), pg = await rm.newPage(); pg.on('pageerror', e => errors.push(e.message));
     await pg.goto(url); await pg.evaluate(([o, K]) => { localStorage.clear(); const l = { ...o.labs, era: true }; localStorage.setItem(K.profile, JSON.stringify(o.profile)); localStorage.setItem(K.labs, JSON.stringify(l)); }, [duel, K]); await pg.reload(); await pg.waitForTimeout(350);
     const still = await pg.evaluate(() => ['.eraFog i', '.eraGrain'].map(s => { const e = document.querySelector(s); return e ? getComputedStyle(e).animationName : 'missing'; }));
