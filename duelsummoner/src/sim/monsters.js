@@ -79,6 +79,8 @@ function attack(g, m, D, A) {
       const dur = MARKS.duration + g.mods.markDur;
       for (let k = 0; k < Math.min(n, pick.length); k++) { const i = pick[k].i; e.mark[i] = dur; damageEnemy(g, i, dmg, { noCrit: true, elem: flame }); }
       addFx(g, { type: 'ring', x: m.x, y: m.y, z: m.z, r: 1.2, dur: 0.3, color: 0xb070ff });
+      for (let k = 0; k < Math.min(n, pick.length, 4); k++) { const i = pick[k].i; addFx(g, { type: 'bolt', x: m.x, y: m.y - 0.3, z: m.z, x2: e.x[i], y2: e.y[i] + 0.9, z2: e.z[i], dur: 0.15, color: 0x5fe8ff, seed: i }); }   // cyan rune bolts
+      g.castAt = g.t;
       return true;
     }
     case 'homing': {

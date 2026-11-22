@@ -1,9 +1,9 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js';
 import { heightAt } from '../src/sim/terrain.js';
 import { chestPrice, breakVasesNear, nearestProp, useProp } from '../src/sim/world.js';
-import { addItem, addBlessing } from '../src/sim/field.js';
+import { addItem, addBlessing, buildOffer } from '../src/sim/field.js';
 import { ENCOUNTERS as E } from '../src/data/encounters.js';
 import { ITEMS } from '../src/data/items.js';
 
@@ -109,3 +109,24 @@ test('Paper Talisman blocks one hit every 20 s; Hunter\'s Mark hits elites harde
 test('blessings stack and heal', () => {
   const g = quiet(new Game(9)); g.p.hp = 60; addBlessing(g, 'vigor'); assert.equal(g.p.maxHp, 120); assert.equal(g.p.hp, 80); addBlessing(g, 'might'); assert.ok(Math.abs(g.mods.dmgMult - 0.1) < 1e-9);
 });
+
+test('Altar of Tribute: one landmark, two labelled actions; Tribute frees the zone and the next card starts +2 levels', () => {
+  const g = quiet(new Game(11)); g.field.monsters[0] = { id: 'ember-wyvern', level: 6, cd: 0 }; g.field.monsters[1] = { id: 'rune-apprentice', level: 2, cd: 0 };
+  const a = g.world.altar; assert.ok(a); at(g, a); const hit = nearestProp(g); assert.equal(hit.type, 'altar'); useProp(g, hit);
+  assert.equal(g.offer.type, 'altar'); const kinds = new Set(g.offer.cards.map(c => c.kind)); assert.ok(kinds.has('tribute') && kinds.has('banish'));
+  const i = g.offer.cards.findIndex(c => c.kind === 'tribute' && c.id === 'ember-wyvern'); assert.ok(g.choose(i));
+  assert.equal(g.field.monsters[0], null, 'the zone is freed'); assert.equal(a.used, true, 'one use');
+  g.field.monsters[2] = { id: 'sigil-familiar', level: 1, cd: 0 };                         // fill another zone so the freed one is the only empty one
+  g.field.monsters[3] = { id: 'cinder-hatchling', level: 1, cd: 0 };
+  g.level = 5; const c = { id: 'rune-apprentice', kind: 'monster', isNew: true, to: 1, rarity: 'common' };
+  g.field.monsters[1] = null; g.field.bonusM[1] = 0; g.field.monsters[1] = { id: 'rune-apprentice', level: 2, cd: 0 };
+  g.offer = { type: 'level', cards: [{ id: 'ember-wyvern', kind: 'monster', isNew: true, to: 1, rarity: 'common' }], leave: false }; g.pendingLevels = 1; g.choose(0);
+  assert.equal(g.field.monsters[0].id, 'ember-wyvern'); assert.equal(g.field.monsters[0].level, 3, 'starts +2 levels higher');
+});
+
+test('Altar Banish removes an unowned card from all future offers', () => {
+  const g = quiet(new Game(12)); const a = g.world.altar; at(g, a); useProp(g, nearestProp(g));
+  const i = g.offer.cards.findIndex(c => c.kind === 'banish'); const id = g.offer.cards[i].id; g.choose(i); assert.ok(g.field.banished.has(id));
+  for (let k = 0; k < 30; k++) { g.level = 6; assert.ok(!buildOffer(g).some(c => c.id === id)); }
+});
+

@@ -23,6 +23,7 @@ export const ENCOUNTERS = {
     placement: [{ n: 3, r: [10, 28], deg: [[0, 360]], h: 0 }, { n: 3, r: [36, 50], deg: [[0, 360]], h: 4 }, { n: 2, r: [53, 58], deg: [[0, 360]], h: 5.8 }],
     rarityByOrder: ['common', 'common', 'common', 'rare', 'rare', 'rare', 'epic', 'epic']      // shown on the chest before you pay
   },
+  altar: { count: 1, regions: [{ r: [14, 24], deg: [[-25, 25]], h: 0 }], tributeBonus: 2, banishChoices: 3 },   // one landmark, two labelled actions
   minSpacing: 5,                                                          // spots keep this far from each other
   interactRange: 3.2
 };

@@ -34,8 +34,11 @@ function resize() {
 window.addEventListener('resize', resize); resize();
 
 // the owner's models are optional local assets; the placeholders stay if they are missing
-const assets = { wyvern: await loadModel('assets/models/ember-wyvern.ewv.b64'), hatchling: await loadModel('assets/models/cinder-hatchling.ewv.b64') };
-if (assets.hatchling) assets.puff = await loadPuffTexture('assets/models/puff.png.b64');
+const assets = {
+  wyvern: await loadModel('assets/models/ember-wyvern.ewv.b64'), hatchling: await loadModel('assets/models/cinder-hatchling.ewv.b64'),
+  tyrant: await loadModel('assets/models/twinflare-tyrant.ewv.b64'), apprentice: await loadModel('assets/models/rune-apprentice.ewv.b64')
+};
+assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 scene.add(buildMapMesh());
 let duelist = 'kael';
@@ -133,6 +136,7 @@ function frame(now) {
   ip.x = p.px + (p.x - p.px) * alpha; ip.y = p.py + (p.y - p.py) * alpha; ip.z = p.pz + (p.z - p.pz) * alpha;
   if (Math.abs(p.x - p.px) > 3 || Math.abs(p.z - p.pz) > 3) { ip.x = p.x; ip.y = p.y; ip.z = p.z; }
   chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
+  if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures
   head.x = ip.x; head.y = ip.y + 1.5; head.z = ip.z;
   actors.update(game, alpha, camera.position, head);
   props.update(game);

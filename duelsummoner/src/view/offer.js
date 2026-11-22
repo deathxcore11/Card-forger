@@ -6,6 +6,8 @@ import { cardDef, monsterMax } from '../sim/field.js';
 const $ = id => document.getElementById(id);
 
 function describe(c) {
+  if (c.kind === 'banish') { const D = cardDef(c.id); return { D: { name: D.name, text: 'BANISH: remove this unowned card from every future offer this run.' }, kind: 'Altar action: BANISH', lv: 'Nothing on your field is lost.', fx: '' }; }
+  if (c.kind === 'tribute') { const D = cardDef(c.id); return { D: { name: D.name, text: 'TRIBUTE: give up this card (level ' + c.level + ') and free its zone.' }, kind: 'Altar action: TRIBUTE', lv: 'Lost: the card and its levels. Carries forward: the next card placed in that zone starts +2 levels.', fx: '' }; }
   if (c.kind === 'item') { const D = ITEMS[c.id]; return { D, kind: 'Item (passive, no slot)', lv: c.price !== undefined ? '' : 'Yours for the rest of the run', fx: '' }; }
   if (c.kind === 'blessing') return { D: BLESSINGS[c.id], kind: 'Stat blessing', lv: 'Permanent for this run', fx: '' };
   const D = cardDef(c.id), kind = c.kind === 'fusion' ? 'FUSION' : c.kind === 'monster' ? (D.type + ' monster') : c.kind === 'oneshot' ? 'Spell, acts once' : c.kind === 'trap' ? 'Trap' : 'Spell';
@@ -19,8 +21,9 @@ function describe(c) {
   return { D, kind, lv, fx };
 }
 
-const TITLES = { fusion: 'FUSION', chest: 'CARD CHEST', item: 'WITNESS STONES', shop: 'THE RELIC BROKER', blessing: 'SHRINE OF TRIBUTE' };
+const TITLES = { altar: 'ALTAR OF TRIBUTE', fusion: 'FUSION', chest: 'CARD CHEST', item: 'WITNESS STONES', shop: 'THE RELIC BROKER', blessing: 'SHRINE OF TRIBUTE' };
 const SUBS = {
+  altar: 'Two actions, one use: BANISH an unowned card, or TRIBUTE a card from your field.',
   fusion: 'Both parents are level 10. Choose a Fusion, or leave it for later.',
   item: 'A witnessed duel must begin with an offering. Take one item, free.',
   shop: 'Everything here belonged to a winner. So they told me. Stock and prices are fixed for the run.',
@@ -36,7 +39,8 @@ export function showOffer(g, onChange) {
   o.cards.forEach((c, i) => {
     const { D, kind, lv, fx } = describe(c);
     const el = document.createElement('div'); el.className = 'card ' + c.rarity + (c.isNew && cardy ? ' new' : '');
-    const buy = shop ? (c.sold ? '<button disabled>SOLD</button>' : '<button data-pick="' + i + '"' + (g.coins < c.price ? ' disabled' : '') + '>BUY ' + c.price + '</button>') : '<button data-pick="' + i + '">TAKE</button>';
+    const act = c.kind === 'banish' ? 'BANISH' : c.kind === 'tribute' ? 'TRIBUTE' : 'TAKE';
+    const buy = shop ? (c.sold ? '<button disabled>SOLD</button>' : '<button data-pick="' + i + '"' + (g.coins < c.price ? ' disabled' : '') + '>BUY ' + c.price + '</button>') : '<button data-pick="' + i + '">' + act + '</button>';
     el.innerHTML = '<h3>' + (i + 1) + '. ' + D.name + '</h3><div class="t">' + kind + ' &middot; ' + c.rarity + '</div><div>' + (D.text || '') + '</div><div class="t">' + lv + '</div>' + fx +
       '<div class="rowBtn">' + buy + (cardy && g.field.banishes > 0 ? '<button data-ban="' + i + '">BANISH</button>' : '') + '</div>';
     wrap.appendChild(el);

@@ -1,4 +1,4 @@
-// Loader for the owner's baked low-poly models (EWV1 / EWV2: flat colour per face, no texture). Everything is optional:
+﻿// Loader for the owner's baked low-poly models (EWV1 / EWV2: flat colour per face, no texture). Everything is optional:
 // if a file is missing the game keeps its placeholder shape. Files live in assets/models/ and are kept out of the public repo.
 const T = window.THREE;
 
@@ -26,7 +26,7 @@ export function decodeEwv(bytes) {
   let glowBits = null, nostrils = [];
   if (magic === 'EWV2') {
     const gb = Math.ceil(tc / 8); glowBits = bytes.subarray(off, off + gb); off += gb;
-    for (let k = 0; k < 2; k++, off += 12) nostrils.push([dv.getFloat32(off, true), dv.getFloat32(off + 4, true), dv.getFloat32(off + 8, true)]);
+    for (let k = 0; k < 2 && off + 12 <= bytes.length; k++, off += 12) nostrils.push([dv.getFloat32(off, true), dv.getFloat32(off + 4, true), dv.getFloat32(off + 8, true)]);   // zero emitters is fine
   }
   const build = wantGlow => {
     const p = [], c = [];
@@ -67,3 +67,4 @@ export async function loadPuffTexture(url) {
   x.fillStyle = '#fff'; for (const [cx, cy, rr] of [[8, 8, 6], [5, 9, 4], [11, 9, 4], [8, 5, 4]]) { x.beginPath(); x.arc(cx, cy, rr, 0, 7); x.fill(); }
   return make(c);
 }
+

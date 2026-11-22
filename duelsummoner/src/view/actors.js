@@ -116,6 +116,7 @@ export class Actors {
     this.teleDisc = instanced(flat(new T.CircleGeometry(1, 28)), ghost(0xffffff), 128); this.teleDisc.instanceColor = new T.InstancedBufferAttribute(new Float32Array(128 * 3), 3);
     this.fxRing = instanced(flat(new T.RingGeometry(0.82, 1, 28)), ghost(0xffffff), 64); this.fxRing.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
     scene.add(this.teleLine, this.teleDisc, this.fxRing);
+    this.boltSeg = instanced(new T.BoxGeometry(0.07, 0.07, 1), basic(0x4fd8ff, { transparent: true, opacity: 0.9, depthWrite: false }), 96); scene.add(this.boltSeg);
     this.fans = new Map();                                       // one mesh per arc angle, made on demand
     this.sand = null; this.sandR = -1;
     this.puffs = [];
@@ -136,9 +137,29 @@ export class Actors {
     let g;
     if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, 2.2, 'x'); g.userData.fly = true; }
     else if (id === 'cinder-hatchling' && A.hatchling) { g = modelGroup(A.hatchling, 0.9, 'y', 0xff7319); g.userData.walk = true; g.userData.puffs = true; }
+    else if (id === 'twinflare-tyrant' && A.tyrant) { g = modelGroup(A.tyrant, 3.8, 'z', 0xff7319); g.userData.fly = true; g.userData.glowPeriod = 1.2; g.userData.breath = true; }
+    else if (id === 'rune-apprentice') { g = A.apprentice ? modelGroup(A.apprentice, 1.75, 'y') : PLACEHOLDER[id](); g.userData.walk = true; this._attachStaff(g, !!A.apprentice); }
     else { g = PLACEHOLDER[id](); if (id === 'ember-wyvern' || id === 'twinflare-tyrant') g.userData.fly = true; if (id === 'cinder-hatchling') g.userData.walk = true; }
     const D = MONSTERS[id] || FUSIONS[id]; g.userData.formIdx = form; g.scale.setScalar(D.forms[form].scale);      // young / grown / full form
     this.scene.add(g); return g;
+  }
+
+  // code-built staff in the right hand (the -X hand facing +Z): wood shaft, iron collar with four rivets, blue crystal cube with a cyan spiral rune
+  _attachStaff(g, hasModel) {
+    const staff = new T.Group(), s = hasModel ? g.userData.scale : 1, L = 1.6 / s, u = 1 / s;
+    const shaft = new T.Mesh(new T.CylinderGeometry(0.03 * u, 0.035 * u, L, 6), lambert(0x7a4a26)); shaft.position.y = L / 2; staff.add(shaft);
+    const collar = new T.Mesh(new T.CylinderGeometry(0.06 * u, 0.06 * u, 0.1 * u, 8), lambert(0x5a5650)); collar.position.y = L; staff.add(collar);
+    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2, rv = new T.Mesh(new T.BoxGeometry(0.02 * u, 0.02 * u, 0.02 * u), lambert(0x9a968c)); rv.position.set(Math.cos(a) * 0.065 * u, L, Math.sin(a) * 0.065 * u); staff.add(rv); }
+    const c = document.createElement('canvas'); c.width = c.height = 16; const x = c.getContext('2d'); x.fillStyle = '#3a6cff'; x.fillRect(0, 0, 16, 16); x.strokeStyle = '#bff8ff'; x.lineWidth = 1; x.beginPath();
+    for (let a = 0; a < 12; a += 0.2) { const r = 0.6 + a * 0.55, px = 8 + Math.cos(a) * r, py = 8 + Math.sin(a) * r; if (a === 0) x.moveTo(px, py); else x.lineTo(px, py); } x.stroke();
+    const tex = new T.Texture(c); tex.magFilter = tex.minFilter = T.NearestFilter; tex.needsUpdate = true;
+    const crystal = new T.Mesh(new T.BoxGeometry(0.22 * u, 0.22 * u, 0.22 * u), [0, 1, 2, 3, 4, 5].map(f => (f === 4 ? new T.MeshBasicMaterial({ map: tex }) : new T.MeshBasicMaterial({ color: 0x3a6cff }))));
+    crystal.position.y = L + 0.2 * u; crystal.rotation.y = 0.3; staff.add(crystal);
+    const hand = hasModel ? [-0.325, -0.016, -0.008] : [-0.5 / (hasModel ? 1 : 1), 0.5, 0.1];
+    staff.position.set(hand[0], hand[1] - 0.0, hand[2]);
+    staff.rotation.z = -0.06;
+    (g.userData.root || g).add(staff); g.userData.staff = staff; g.userData.crystal = crystal;
+    if (hasModel) { const geo = g.userData.model.solid, pos = geo.attributes.position, orig = pos.array.slice(); g.userData.shear = { pos, orig, minY: g.userData.model.min[1], h: g.userData.model.size.y }; }
   }
 
   _specialMesh(sp) {
@@ -208,11 +229,17 @@ export class Actors {
       mesh.rotation.y = turnLerp(mesh.rotation.y, wantFace, 0.2);
       if (ud.fly) { mesh.rotation.z = Math.sin(t * 5 + k) * 0.18; mesh.rotation.x = Math.sin(t * 3.3 + k) * 0.08; mesh.position.y += Math.sin(t * 4 + k) * 0.08; }
       if (ud.walk) mesh.rotation.z = Math.sin(t * 7 + k) * 0.06;
-      if (ud.glow) ud.glow.material.color.setRGB(1, 0.45, 0.1).multiplyScalar(0.7 + 0.3 * (0.5 + 0.5 * Math.sin(t * Math.PI * 2 / 1.6)));
+      if (m.cd > (m._lastCdV || 0) + 0.2) { m._atkAt = t; if (ud.breath) this._breath(mesh, m, g); }
+      m._lastCdV = m.cd;
+      if (ud.glow) { const per = ud.glowPeriod || 1.6, lo = ud.glowPeriod ? 0.6 : 0.7, atk = t - (m._atkAt || -9) < 0.3 ? 0.5 : 0; ud.glow.material.color.setRGB(1, 0.45, 0.1).multiplyScalar(Math.min(1.5, lo + (1 - lo) * (0.5 + 0.5 * Math.sin(t * Math.PI * 2 / per)) + atk)); }
+      if (ud.staff) {                                                   // idle bob, robe sway, staff raises on cast
+        const cast = t - (g.castAt || -9) < 0.3; ud.staff.rotation.x = cast ? -0.7 : 0; mesh.position.y += Math.sin(t * Math.PI * 2 * 0.6) * 0.02;
+        if (ud.shear) { const S = ud.shear, a = S.pos.array, o = S.orig; for (let v = 0; v < a.length; v += 3) { const f = 1 - (o[v + 1] - S.minY) / (S.h * 0.3); a[v] = f > 0 ? o[v] + Math.sin(t * 2 + o[v + 1] * 6) * 0.012 * f : o[v]; } S.pos.needsUpdate = true; }
+      }
       if (ud.puffs) this._emitPuffs(mesh, m, g);
     });
     for (const [m, mesh] of this.monsters) if (!live.has(m)) { this.scene.remove(mesh); this.monsters.delete(m); }
-    this._updatePuffs(g.t, cam);
+    this._updatePuffs(g.t, cam); this._updateFlames(g.t);
 
     // swarm
     const counts = this.kinds.map(() => 0), mc = { n: 0 };
@@ -310,9 +337,17 @@ export class Actors {
     this.teleLine.count = nl; this.teleDisc.count = nd;
     for (const mm of [this.teleLine, this.teleDisc]) { mm.instanceMatrix.needsUpdate = true; mm.instanceColor.needsUpdate = true; }
     // effects: expanding rings and fading fans
-    let nr = 0;
+    let nr = 0, nb = 0;
     for (const o of g.fx) {
       if (!o.on) continue;
+      if (o.type === 'bolt') {                                  // jagged 3-segment rune bolt, 0.15 s
+        const pts = [[o.x, o.y, o.z]], dx = o.x2 - o.x, dy = o.y2 - o.y, dz = o.z2 - o.z, l = Math.sqrt(dx * dx + dz * dz) || 1, nx = -dz / l, nz = dx / l;
+        for (let k = 1; k < 3; k++) { const j = ((Math.sin(o.seed * 12.9 + k * 7.1 + Math.floor(o.t * 40)) * 43758.5) % 1) * 0.9; pts.push([o.x + dx * k / 3 + nx * j, o.y + dy * k / 3 + (k % 2 ? 0.4 : -0.3), o.z + dz * k / 3 + nz * j]); }
+        pts.push([o.x2, o.y2, o.z2]);
+        for (let k = 0; k < 3 && nb < 96; k++) { const a = pts[k], b = pts[k + 1], sx = b[0] - a[0], sy = b[1] - a[1], sz = b[2] - a[2], sl = Math.sqrt(sx * sx + sy * sy + sz * sz) || 1;
+          d.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); d.lookAt(b[0], b[1], b[2]); d.scale.set(1, 1, sl); d.updateMatrix(); this.boltSeg.setMatrixAt(nb++, d.matrix); }
+        continue;
+      }
       const f = Math.min(1, o.t / o.dur), fade = 1 - f;
       if (o.type === 'ring') {
         d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = o.r * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix();
@@ -323,6 +358,7 @@ export class Actors {
         fan.setMatrixAt(n, d.matrix); fan.setColorAt(n, col.setHex(o.color).multiplyScalar(0.3 + 0.7 * fade)); fanN.set(fan, n + 1);
       }
     }
+    this.boltSeg.count = nb; this.boltSeg.instanceMatrix.needsUpdate = true;
     this.fxRing.count = nr; this.fxRing.instanceMatrix.needsUpdate = true; this.fxRing.instanceColor.needsUpdate = true;
     for (const [fan, mesh] of this.fans) { mesh.count = fanN.get(mesh) || 0; mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }
   }
@@ -353,6 +389,25 @@ export class Actors {
     if (S.t <= 0) { S.t = 0.35; spawn(0); spawn(1); }
     if (S.burst > 0) { S.burst--; spawn(S.burst % 2); }
   }
+  // Twinflare Tyrant fire breath: a few flame puffs fly forward from the snout (front of the model), fading to half opacity
+  _breath(mesh, m, g) {
+    if (!this.assets.puff) return;
+    this.flames = this.flames || [];
+    const fwd = new T.Vector3(0, 0, 1).applyQuaternion(mesh.quaternion), origin = mesh.position.clone().add(fwd.clone().multiplyScalar(1.6)).add(new T.Vector3(0, 0.3, 0));
+    for (let k = 0; k < 7; k++) {
+      let f = this.flames.find(q => !q.on);
+      if (!f) { const sp = new T.Sprite(new T.SpriteMaterial({ map: this.assets.puff, color: 0xff8a30, transparent: true, depthWrite: false })); this.scene.add(sp); f = { sp, on: false }; this.flames.push(f); }
+      f.on = true; f.born = g.t + k * 0.03; f.o = origin; f.dir = fwd.clone().add(new T.Vector3((k % 3 - 1) * 0.12, (k % 2) * 0.05, 0)).normalize(); f.sp.visible = true;
+    }
+  }
+  _updateFlames(now) {
+    for (const f of this.flames || []) {
+      if (!f.on) continue; const u = (now - f.born) / 0.45;
+      if (u < 0) { f.sp.visible = false; continue; } f.sp.visible = true;
+      if (u >= 1) { f.on = false; f.sp.visible = false; continue; }
+      f.sp.position.copy(f.o).addScaledVector(f.dir, 1 + u * 9); const s = 0.25 + u * 0.8; f.sp.scale.set(s, s, 1); f.sp.material.opacity = u < 0.6 ? 1 : 0.5;
+    }
+  }
   _updatePuffs(now) {
     for (const pf of this.puffs) {
       if (!pf.on) continue;
@@ -368,6 +423,7 @@ export class Actors {
 
 import { heightAt } from '../sim/terrain.js';
 function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
 
 
 

@@ -50,6 +50,12 @@ export class Props {
       const fill = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.25, E.shrines.radius, 48, 1, 0, 0.01), basic(0x7fffc8, { side: T.DoubleSide, depthWrite: false })); fill.rotation.x = -Math.PI / 2; fill.position.y = 0.12; g.add(fill);
       G.add(g); P.shrines.push({ s, g, fill, water, lastP: -1 });
     }
+    if (world.altar) {                                                  // stepped altar with two bowls: Banish and Tribute
+      const a = world.altar, g = new T.Group(); g.position.set(a.x, a.y, a.z);
+      for (let k = 0; k < 3; k++) { const st = new T.Mesh(new T.BoxGeometry(3.2 - k * 0.8, 0.35, 2.2 - k * 0.5), lambert(0xb0a28a)); st.position.y = 0.18 + k * 0.35; g.add(st); }
+      for (const [x, col] of [[-0.6, 0xe8c56a], [0.6, 0xa060e0]]) { const bowl = new T.Mesh(new T.CylinderGeometry(0.4, 0.25, 0.3, 8), lambert(0x7a6a50)); bowl.position.set(x, 1.3, 0); g.add(bowl); const flame = new T.Mesh(new T.OctahedronGeometry(0.22, 0), basic(col)); flame.position.set(x, 1.7, 0); g.add(flame); }
+      G.add(g); P.altar = { a, g };
+    }
     for (const c of world.cchests) {
       const g = new T.Group(); g.position.set(c.x, c.y, c.z);
       const body = new T.Mesh(new T.BoxGeometry(1.5, 0.9, 1.0), lambert(0x7a5a3a)); body.position.y = 0.45; g.add(body);
@@ -76,5 +82,6 @@ export class Props {
       o.water.material.color.setHex(o.s.done ? 0x555555 : p > 0 ? 0xbfffe8 : 0x5fd2a8);
     }
     for (const o of P.chests) o.g.visible = !o.c.open;
+    if (P.altar) P.altar.g.children.forEach(m => { if (m.geometry && m.geometry.type === 'OctahedronGeometry') m.rotation.y = t * 2; });
   }
 }

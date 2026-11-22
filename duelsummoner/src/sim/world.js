@@ -4,7 +4,7 @@ import { ENCOUNTERS as E } from '../data/encounters.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { heightAt } from './terrain.js';
 import { dropPickup, addFx, PICK_COIN, PICK_XP, PICK_HEART } from './combat.js';
-import { buildOffer } from './field.js';
+import { buildOffer, candidates } from './field.js';
 
 const DEG = Math.PI / 180;
 
@@ -29,7 +29,7 @@ export function pickSpot(g, regions, taken, apart, tries = 300, accept) {
   return null;
 }
 
-export const emptyWorld = () => ({ vases: [], stones: [], broker: null, shrines: [], cchests: [], opened: 0, kills50: 0 });
+export const emptyWorld = () => ({ vases: [], stones: [], broker: null, shrines: [], cchests: [], altar: null, opened: 0, kills50: 0 });
 
 // Placement API for a map generator: spawn one placeable object at a position. The sim owns the logic; the generator owns where.
 //   placeObject(g, 'vase', { x, y, z, banded })   'stone' | 'broker' | 'shrine' | { x, y, z }   'cchest' { x, y, z, rarity }
@@ -39,6 +39,7 @@ export function placeObject(g, type, s) {
   if (type === 'stone') { W.stones.push({ x: s.x, y: s.y, z: s.z, used: false }); return W.stones[W.stones.length - 1]; }
   if (type === 'broker') { W.broker = { x: s.x, y: s.y, z: s.z, stock: pickStock(g) }; return W.broker; }
   if (type === 'shrine') { W.shrines.push({ x: s.x, y: s.y, z: s.z, charge: 0, idle: 0, done: false }); return W.shrines[W.shrines.length - 1]; }
+  if (type === 'altar') { W.altar = { x: s.x, y: s.y, z: s.z, used: false }; return W.altar; }
   if (type === 'cchest') { W.cchests.push({ x: s.x, y: s.y, z: s.z, open: false, rarity: s.rarity || E.cardChests.rarityByOrder[W.cchests.length] || 'common' }); return W.cchests[W.cchests.length - 1]; }
   throw new Error('unknown placeable ' + type);
 }
@@ -51,6 +52,7 @@ export function buildWorld(g) {
     const s = put(pickSpot(g, [sp], taken, E.minSpacing)); if (s) W.cchests.push({ ...s, open: false, rarity: null });
   }
   W.cchests.forEach((c, i) => { c.rarity = E.cardChests.rarityByOrder[i] || 'common'; });
+  { const s = put(pickSpot(g, E.altar.regions, taken, E.minSpacing)); if (s) W.altar = { ...s, used: false }; }
   const farFrom = (list, d) => (x, z) => list.every(q => (q.x - x) ** 2 + (q.z - z) ** 2 >= d * d);
   for (let i = 0; i < E.witnessStones.count; i++) { const s = put(pickSpot(g, E.witnessStones.regions, taken, E.minSpacing, 400, farFrom(W.stones, E.witnessStones.minApart))); if (s) W.stones.push({ ...s, used: false }); }
   { const s = put(pickSpot(g, E.broker.regions, taken, E.minSpacing)); if (s) W.broker = { ...s, stock: pickStock(g) }; }
@@ -133,6 +135,17 @@ function openShop(g) {
   g.offer = { type: 'shop', cards: B.stock.map(s => ({ id: s.id, kind: 'item', isNew: true, to: 1, rarity: ITEMS[s.id].rarity, price: shopPrice(g, s.price), sold: s.sold, stockRef: s })), leave: true };
   g.event('offer', null);
 }
+// One landmark, two clearly labelled actions. Shown before committing: what is lost and what carries forward.
+function openAltar(g, altar) {
+  const f = g.field, cards = [];
+  f.monsters.forEach((m, i) => { if (m) cards.push({ kind: 'tribute', zone: 'monster', index: i, id: m.id, level: m.level, rarity: 'rare' }); });
+  f.spells.forEach((s, i) => { if (s) cards.push({ kind: 'tribute', zone: 'spell', index: i, id: s.id, level: s.level, rarity: 'rare' }); });
+  const unowned = candidates(g).filter(c => c.isNew && c.kind !== 'oneshot'), pick = [];
+  while (pick.length < E.altar.banishChoices && unowned.length) pick.push(unowned.splice(Math.floor(g.rng() * unowned.length), 1)[0]);
+  for (const c of pick) cards.push({ kind: 'banish', id: c.id, rarity: c.rarity });
+  if (!cards.length) { g.event('banner', 'The altar has nothing to take.'); return; }
+  g.offer = { type: 'altar', cards, leave: true, source: altar }; g.event('offer', null);
+}
 function openCardChest(g, c) {
   const price = chestPrice(g);
   if (g.coins < price) { g.event('banner', 'This chest costs ' + price + ' coins.'); return; }
@@ -149,10 +162,12 @@ export function nearestProp(g) {
   for (const c of W.cchests) if (!c.open) { const pr = chestPrice(g); consider(c, 'cchest', 'E: open the ' + c.rarity + ' Card Chest (' + (pr === 0 ? 'free' : pr + ' coins' + (g.coins < pr ? ', you have ' + g.coins : '')) + ')'); }
   for (const s of W.stones) if (!s.used) consider(s, 'stone', 'E: take a free item from the Witness Stones');
   if (W.broker) consider(W.broker, 'broker', 'E: browse the Relic Broker');
+  if (W.altar && !W.altar.used) consider(W.altar, 'altar', 'E: Altar of Tribute (Banish a card, or Tribute one from your field)');
   return best;
 }
 export function useProp(g, hit) {
   if (hit.type === 'cchest') openCardChest(g, hit.obj);
   else if (hit.type === 'stone') openStone(g, hit.obj);
   else if (hit.type === 'broker') openShop(g);
+  else if (hit.type === 'altar') openAltar(g, hit.obj);
 }
