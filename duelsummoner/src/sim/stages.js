@@ -7,7 +7,9 @@ import { pow, sin, cos } from './dmath.js';
 import { spawnEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
 import { spawnSpecial, startBoss } from './specials.js';
 import { heightAt } from './terrain.js';
-import { buildWorld } from './world.js';
+import { buildWorld, emptyWorld } from './world.js';
+import { loadMap } from './terrain.js';
+import { generateStage } from '../gen/generate.js';
 import { fusionsReady } from './field.js';
 import { mixFor, pickKind } from './spawner.js';
 
@@ -21,15 +23,21 @@ export function xpScale(g) {
 }
 
 // ---- setup ----
+// Generates this stage's map from the run seed and loads it as the live terrain; the duelist starts on its plaza.
+export function loadStageMap(g, i) {
+  g.map = generateStage(g.seed, i, g.stages[i].gen); loadMap(g.map); g.flow.rebuild(); g.sealCode = g.map.sealCode;
+  const p = g.p; p.x = g.map.spawn.x; p.z = g.map.spawn.z; p.y = heightAt(p.x, p.z); p.vx = p.vz = p.vy = 0; p.grounded = true;
+}
 export function initRun(g) {
   g.mode = g.opts.mode || 'classic'; g.difficulty = DIFFICULTY[g.opts.difficulty] ? g.opts.difficulty : 'medium'; g.diff = DIFFICULTY[g.difficulty]; g.maxAlive = RUN.maxAlive;
   if (g.mode === 'classic') { g.stages = null; g.stageSpec = null; return; }
   g.stages = stagesFor(g.mode); g.stage = 0; g.scTotal = 0; g.stagesCleared = 0; g.stageFacts = [];
   g.swiftChips = 0; g.duelOn = false; g.otT = 0; g.desc = null; g.chestsOpenedTotal = 0; g.heat = 1;
-  initStage(g);
+  initStage(g); loadStageMap(g, 0); g.world = buildWorld(g);
+  g.event('banner', g.stageSpec.name + '. Seal Code ' + g.sealCode);
 }
 // For tools, tests and golden scenes: restart the stage machine at stage i (the build and the clock total carry as they are).
-export function jumpToStage(g, i) { g.stage = i; initStage(g); }
+export function jumpToStage(g, i) { g.stage = i; initStage(g); loadStageMap(g, i); g.world = buildWorld(g); }
 function initStage(g) {
   const S = g.stageSpec = g.stages[g.stage];
   g.sc = 0; g.evState = S.timeline.map(() => 0); g.evSpot = S.timeline.map(() => ({ x: 0, y: 0, z: 0 }));
@@ -61,7 +69,7 @@ export function updateStages(g, dt) {
     const ev = S.timeline[i], st = g.evState[i];
     if (st === 0 && g.sc >= ev.t - RUNSPEC.announceSeconds) {
       const at = g.evSpot[i];
-      if (spotNear(g, spot)) { at.x = spot.x; at.y = spot.y; at.z = spot.z; } else { at.x = g.p.x + 25; at.z = g.p.z; at.y = heightAt(at.x, at.z); }
+      if (ringSpot(g, at)) { /* the nearest boss ring, 25 to 40 m away when one is */ } else if (spotNear(g, spot)) { at.x = spot.x; at.y = spot.y; at.z = spot.z; } else { at.x = g.p.x + 25; at.z = g.p.z; at.y = heightAt(at.x, at.z); }
       g.evState[i] = 1; g.emit('announce', i, at.x, at.z, ev.role); g.event('banner', ev.name + ' in ' + RUNSPEC.announceSeconds + ' seconds.');
     } else if (st === 1 && g.sc >= ev.t) {
       // boss rule: a timed boss waits for the previous timed boss to die, so there are never two timed boss bars at once
@@ -71,7 +79,7 @@ export function updateStages(g, dt) {
   }
   // the gate wakes when timed boss B falls, or at its wake time
   if (G.state === 'closed' && !G.awake && (g.bDown || g.sc >= S.gateWake)) { G.awake = true; g.emit('gatewake'); g.event('banner', 'The gate of ' + S.gate.name + ' wakes. Hold E at the gate to enter.'); }
-  const gr = RUNSPEC.gate, gx = p.x - gr.x, gz = p.z - gr.z;
+  const gr = g.map.gate, gx = p.x - gr.x, gz = p.z - gr.z;
   if (G.state === 'closed' && G.awake && gx * gx + gz * gz < gr.radius * gr.radius) {
     g.stagePrompt = 'Hold E: enter the gate (forfeits ' + clockText(S.clock - g.sc) + ' of the clock)';
     G.hold = cmd && (cmd.use || cmd.hold) ? G.hold + dt : Math.max(0, G.hold - 2 * dt);
@@ -106,6 +114,13 @@ function fusionGuard(g, dt) {
   }
 }
 
+// The boss ring (a flat open disc the generator reserved) whose distance from the duelist is closest to 32 m, avoiding rings already used.
+function ringSpot(g, at) {
+  const R = g.map.bossRings; if (!R || !R.length) return false;
+  let best = null, bs = 1e9;
+  for (const r of R) { const d = Math.sqrt((r.x - g.p.x) ** 2 + (r.z - g.p.z) ** 2), used = g.evSpot.some(s => s !== at && s.x === r.x && s.z === r.z); const s = Math.abs(d - 32) + (used ? 80 : 0) + (d < 15 ? 60 : 0); if (s < bs) { bs = s; best = r; } }
+  at.x = best.x; at.z = best.z; at.y = heightAt(best.x, best.z); return true;
+}
 function startGate(g, early, toll) {
   const S = g.stageSpec, G = g.gate, left = S.clock - g.sc;
   if (!toll && left > 1) { g.swiftChips += Math.floor(left / 2); g.coins += Math.floor(left / 4); early = true; }       // Swift Seal: 1 Star Chip per 2 s left, plus coins
@@ -114,7 +129,7 @@ function startGate(g, early, toll) {
   const gate = Object.assign({}, S.gate); if (toll) gate.enrage = RUNSPEC.tollEnrage;
   startBoss(g, G.early, gate);
   g.gateOpenedAt = g.sc;
-  if (toll) { g.p.x = RUNSPEC.gate.tollPull.x; g.p.z = RUNSPEC.gate.tollPull.z; g.p.y = heightAt(g.p.x, g.p.z); g.p.vx = g.p.vz = 0; g.p.grounded = true; g.event('banner', 'The Toll Bell rings. The sigil pulls you in.'); g.emit('tollbell'); }
+  if (toll) { g.p.x = g.map.arena.tollPull.x; g.p.z = g.map.arena.tollPull.z; g.p.y = heightAt(g.p.x, g.p.z); g.p.vx = g.p.vz = 0; g.p.grounded = true; g.event('banner', 'The Toll Bell rings. The sigil pulls you in.'); g.emit('tollbell'); }
   g.emit('gatefight', g.stage);
 }
 
@@ -208,13 +223,13 @@ function swapStage(g) {
   g.sp = []; g.chests = []; g.en.alive.fill(0); g.shots.alive.fill(0); g.pick.alive.fill(0);
   g.tele.forEach(o => { o.on = false; }); g.fx.forEach(o => { o.on = false; }); g.eb.forEach(o => { o.on = false; }); g.btraps.forEach(o => { o.on = false; });
   g.storm = null; g.offer = null; g.flow.valid = false;
-  g.world = buildWorld(g); g.world.opened = Math.round(prevOpened * RUNSPEC.chestPriceCarry);
-  p.x = 0; p.z = 0; p.y = heightAt(0, 0); p.vx = p.vz = p.vy = 0; p.grounded = true; p.sliding = false; p.dashT = 0;
+  initStage(g); loadStageMap(g, g.stage); g.world = buildWorld(g); g.world.opened = Math.round(prevOpened * RUNSPEC.chestPriceCarry);
+  p.sliding = false; p.dashT = 0;
   p.hp = Math.min(p.maxHp, p.hp + (p.maxHp - p.hp) * RUNSPEC.descentHeal);
   g.field.redraws++;                                            // one free Redraw at the start of each stage
-  initStage(g);
-  for (let i = 0; i < carried; i++) g.chests.push({ x: 2 + i * 1.6, y: heightAt(2 + i * 1.6, 2), z: 2, open: false, kind: 'sealed' });   // carried Sealed Chests
-  g.event('banner', 'Stage ' + (g.stage + 1) + ': ' + g.stageSpec.name);
+  const sp0 = g.map.spawn;
+  for (let i = 0; i < carried; i++) { const x = sp0.x + 2 + i * 1.6, z = sp0.z + 2; g.chests.push({ x, y: heightAt(x, z), z, open: false, kind: 'sealed' }); }   // carried Sealed Chests
+  g.event('banner', 'Stage ' + (g.stage + 1) + ': ' + g.stageSpec.name + '. Seal Code ' + g.sealCode);
   g.emit('stage', g.stage + 1);
 }
 

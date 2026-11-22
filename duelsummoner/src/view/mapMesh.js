@@ -1,5 +1,5 @@
 // Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
-import { MAP, PRIMS } from '../data/map.js';
+import { MAP } from '../data/map.js';
 
 const T = window.THREE, DEG = Math.PI / 180;
 
@@ -76,7 +76,7 @@ function addCyl(B, p) {
   }
 }
 
-export function buildMapMesh() {
+export function buildMapMesh(map) {
   const B = new Builder();
   // desert floor: a coarse patchwork so movement reads
   const R = 215, cell = 16;
@@ -84,7 +84,7 @@ export function buildMapMesh() {
     const t = B.rnd(), col = t < 0.4 ? 0xd2b27a : t < 0.75 ? 0xc9a56c : 0xbf9a62;
     B.quad([x, 0, z], [x + cell, 0, z], [x + cell, 0, z + cell], [x, 0, z + cell], [0, 1, 0], col);
   }
-  PRIMS.forEach(p => { if (p.t === 'box') addBox(B, p); else if (p.t === 'ramp') addRamp(B, p); else if (p.t === 'ring') addRing(B, p); else addCyl(B, p); });
+  map.prims.forEach(p => { if (p.t === 'box') addBox(B, p); else if (p.t === 'ramp') addRamp(B, p); else if (p.t === 'ring') addRing(B, p); else addCyl(B, p); });
   // cliff wall around the edge of the world
   const n = 56, w = MAP.boundaryR + 6;
   for (let i = 0; i < n; i++) {

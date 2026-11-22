@@ -14,6 +14,7 @@ export class Flow {
     this.queue = new Int32Array(this.W * this.W);
     this.ox = 0; this.oz = 0; this.valid = false;
   }
+  rebuild() { this.cells = buildCells(CFG.path.cell); this.valid = false; }                    // after a new map is loaded
   _cell(v) { return Math.floor((v + MAP.half) / this.cells.size); }
   update(px, pz) {
     const c = this.cells, n = c.n, W = this.W, dist = this.dist, q = this.queue, h = c.h;

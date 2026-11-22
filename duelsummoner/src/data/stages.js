@@ -44,6 +44,7 @@ export const STAGES = [
   {
     id: 'ruins', name: 'Surface Ruins', clock: 420, mult: 1.0, gateWake: 360, falls: null,
     waves: { offset: 0, scale: 480 / 420 },
+    gen: { counts: { cchest: 8, stone: 2, broker: 1, shrine: 3, altar: 1, vaseClusters: 12 } },
     timeline: [
       ev(105, 'elite', 'herald', 'Grave Herald', 'warden', 0.4, 'card'),
       ev(225, 'bossA', 'warden', 'Sealed Warden', 'warden', 1, 'sealed'),
@@ -53,6 +54,7 @@ export const STAGES = [
   {
     id: 'catacombs', name: 'Sealed Catacombs', clock: 420, mult: 1.1, gateWake: 360, falls: { lp: 10 },
     waves: { offset: 120, scale: 360 / 420 },
+    gen: { counts: { cchest: 7, stone: 1, broker: 1, shrine: 3, altar: 1, vaseClusters: 10 }, minCounts: { cchest: 5, stone: 1, broker: 1, shrine: 2, altar: 1 } },
     timeline: [
       ev(105, 'elite', 'jailer', 'Chainbound Jailer', 'warden', 0.5, 'card'),
       ev(225, 'bossA', 'coffins', 'Coffin Sentinels', 'warden', 1.3, 'sealed'),
@@ -62,6 +64,7 @@ export const STAGES = [
   {
     id: 'vault', name: 'Vault of the Last Duel', clock: 480, mult: 1.2, gateWake: 420, falls: { lp: 15 },
     waves: { offset: 180, scale: 300 / 480 },
+    gen: { counts: { cchest: 6, stone: 1, broker: 1, shrine: 2, altar: 1, vaseClusters: 9 }, minCounts: { cchest: 4, stone: 1, broker: 1, shrine: 2, altar: 1 } },
     timeline: [
       ev(120, 'elite', 'executioner', 'Royal Executioner', 'warden', 0.6, 'card'),
       ev(255, 'bossA', 'masks', 'Court of Three Masks', 'warden', 1.6, 'sealed'),

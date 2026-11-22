@@ -1,4 +1,4 @@
-﻿// A deterministic player bot: given the game state it returns one input record per tick. Used to record tapes and to
+// A deterministic player bot: given the game state it returns one input record per tick. Used to record tapes and to
 // drive balance runs. It thinks ten times a second and handles level-up / chest / Altar / shop offers through menu input.
 import { quantise, emptyRecord, takeCode, MENU_LEAVE } from '../src/sim/input.js';
 import { DUELISTS } from '../src/data/cards.js';
@@ -48,7 +48,7 @@ export function botRecord(g, bot) {
     if (g.mode && g.mode !== 'classic' && !target) {                                    // stage run: gate, Descent Circle, Final Altar
       if (g.circle) target = g.circle;
       else if (g.altar && !g.altar.used) { target = g.altar; hold = Math.hypot(target.x - p.x, target.z - p.z) < 3; }
-      else if (g.gate && g.gate.awake && g.gate.state === 'closed') { target = { x: 0, z: -57 + 1 }; hold = Math.hypot(target.x - p.x, target.z - p.z) < 3; }
+      else if (g.gate && g.gate.awake && g.gate.state === 'closed') { target = { x: g.map.gate.x, z: g.map.gate.z }; hold = Math.hypot(target.x - p.x, target.z - p.z) < 3; }
     }
     bot.hold = hold; bot.urgent = !!(g.mode && g.mode !== 'classic' && target && (g.circle || g.altar || (g.gate && g.gate.awake)));
     if (target) {                                                              // walk the way a path exists, not through walls
@@ -71,7 +71,7 @@ export function botRecord(g, bot) {
     for (const t of g.tele) if (t.on && t.type === 0) { const rx2 = p.x - t.x, rz2 = p.z - t.z, along = rx2 * t.dx + rz2 * t.dz, side = rx2 * -t.dz + rz2 * t.dx; if (along > -2 && along < t.len + 2 && Math.abs(side) < t.w / 2 + 1.6) { const sg = side >= 0 ? 1 : -1; sx += -t.dz * sg; sz += t.dx * sg; } }
     let bx = 0, bz = 0; const w = g.sp.find(s => s.kind === 'warden' && s.alive);
     if (w) { const tx = w.x - Math.sin(w.face) * 6 - p.x, tz = w.z - Math.cos(w.face) * 6 - p.z, l = Math.sqrt(tx * tx + tz * tz) || 1; bx = tx / l; bz = tz / l; }
-    const rw = bot.panic > 0 ? 0.5 : bot.urgent ? 2.5 : 8; let dx = rx * rw + ax * 0.6 + cx * (target ? (bot.panic > 0 || bot.urgent ? 6 : 1.5) : 0) + bx * 1.4 - p.x * 0.02 + sx * 14, dz = rz * rw + az * 0.6 + cz * (target ? (bot.panic > 0 || bot.urgent ? 6 : 1.5) : 0) + bz * 1.4 - p.z * 0.02 + sz * 14;
+    const rw = bot.panic > 0 ? 0.5 : bot.urgent ? 2.5 : 8; let dx = rx * rw + ax * 0.6 + cx * (target ? (bot.panic > 0 || bot.urgent ? 6 : 1.5) : 0) + bx * 1.4 - (target ? 0 : p.x * 0.02) + sx * 14, dz = rz * rw + az * 0.6 + cz * (target ? (bot.panic > 0 || bot.urgent ? 6 : 1.5) : 0) + bz * 1.4 - (target ? 0 : p.z * 0.02) + sz * 14;
     if (bot.wander > 0) { bot.wander--; dx = Math.cos(bot.wang); dz = Math.sin(bot.wang); }
     const dl = Math.sqrt(dx * dx + dz * dz) || 1; dx /= dl; dz /= dl;
     const c = bot.cmd; c.f = -dz; c.r = dx; c.yaw = 0; c.jump = false; c.slide = false;

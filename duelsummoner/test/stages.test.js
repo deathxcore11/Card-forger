@@ -1,15 +1,16 @@
-﻿// The three-stage run: timeline, gate, gate boss, Descent with carry-over, Final Altar, Toll Bell, Quick Duel.
+// The three-stage run: timeline, gate, gate boss, Descent with carry-over, Final Altar, Toll Bell, Quick Duel.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js';
 import { STAGES, RUNSPEC } from '../src/data/stages.js';
+import { heightAt } from '../src/sim/terrain.js';
 
 const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false };
 const run = (g, s, cmd = idle) => { for (let t = 0; t < s && !g.over && !g.offer; t += 1 / 60) g.step(1 / 60, cmd); };
 const mk = (mode = 'run', seed = 3) => { const g = new Game(seed, { mode, duelist: 'kael', offers: false }); g.god = true; return g; };
 const events = g => { const out = []; g.drainEvents((type, a, b, c, d) => out.push([type, a, d])); return out; };
 const kill = (g, role) => { for (const sp of g.sp) if (sp.alive && (!role || sp.role === role)) g.damageSpecial(sp, 1e9, 0, 0, { noCrit: true, area: true }); };
-const atGate = g => { g.p.x = RUNSPEC.gate.x; g.p.z = RUNSPEC.gate.z + 1; g.p.y = 0; };
+const atGate = g => { g.p.x = g.map.gate.x; g.p.z = g.map.gate.z + 1; g.p.y = heightAt(g.p.x, g.p.z); g.p.vx = g.p.vz = 0; g.p.grounded = true; };
 
 test('a run starts in Stage 1 with the Stage 1 spec, a 7:00 clock and 3 timed events', () => {
   const g = mk(); assert.equal(g.stage, 0); assert.equal(g.stageSpec.id, 'ruins'); assert.equal(g.stageSpec.clock, 420); assert.equal(g.stageSpec.timeline.length, 3);
@@ -55,7 +56,7 @@ test('gate boss down: enemies crumble, a chest descends, the Descent carries the
 test('the Toll Bell: at 0:00 with the gate unopened the duelist is pulled in and the boss is enraged', () => {
   const g = mk(); g.sc = g.stageSpec.clock - 0.2; run(g, 1);
   assert.equal(g.gate.state, 'fight'); assert.equal(g.gate.toll, true); const boss = g.sp.find(s => s.role === 'gate'); assert.equal(boss.enrage, RUNSPEC.tollEnrage);
-  assert.ok(Math.abs(g.p.z - RUNSPEC.gate.tollPull.z) < 2, 'pulled to the arena');
+  assert.ok(Math.abs(g.p.z - g.map.arena.tollPull.z) < 2 && Math.abs(g.p.x - g.map.arena.tollPull.x) < 2, 'pulled to the arena');
   run(g, 4); assert.ok(g.enemyCount() > 0, 'the swarm keeps spawning during a Toll Bell fight');
 });
 

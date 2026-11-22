@@ -1,12 +1,12 @@
-﻿// The named golden scenes. Each is a seed, a deterministic setup, optional scripted moments (at: tick -> function) and a length.
+// The named golden scenes. Each is a seed, a deterministic setup, optional scripted moments (at: tick -> function) and a length.
 // The bot plays them once to record a tape; after that only the tape is replayed. Changing anything here means regenerating.
 import { spawnWarden, spawnIdols, startBoss } from '../src/sim/specials.js';
 import { openChest } from '../src/sim/field.js';
 import { nearestProp, useProp } from '../src/sim/world.js';
 import { DUELISTS } from '../src/data/cards.js';
 import { jumpToStage } from '../src/sim/stages.js';
-import { RUNSPEC } from '../src/data/stages.js';
-const atGate = g => { g.p.x = RUNSPEC.gate.x; g.p.z = RUNSPEC.gate.z + 2; g.p.y = 0; g.p.vx = g.p.vz = 0; g.p.grounded = true; };
+import { heightAt } from '../src/sim/terrain.js';
+const atGate = g => { g.p.x = g.map.gate.x; g.p.z = g.map.gate.z + 1; g.p.y = heightAt(g.p.x, g.p.z); g.p.vx = g.p.vz = 0; g.p.grounded = true; };
 
 const quiet = g => { g.spawnAcc = -1e9; g.golemT = 1e9; g.cardT = 1e9; g.field.monsters.fill(null); return g; };
 const at = (g, o) => { g.p.x = o.x; g.p.z = o.z; g.p.y = o.y; g.p.vx = g.p.vz = 0; g.p.grounded = true; };
