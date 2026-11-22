@@ -6,6 +6,7 @@ import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { MAP } from '../data/map.js';
 import { SCALE, summonSize } from '../data/scale.js';
 import { DuelistRig } from './rig.js';
+import { makeCreature } from './creature.js';
 
 const T = window.THREE;
 const lambert = (color, extra) => new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {}));
@@ -148,7 +149,8 @@ export class Actors {
     let g;
     const size = summonSize(!!FUSIONS[id], form);                      // metres: form 1 / 2 / 3 = 0.5x / 1x / 2x the duelist, Fusions 2x to 3x
     let modelled = true;
-    if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, size, 'max'); g.userData.fly = true; }
+    if (id === 'ember-wyvern' && form === 0 && A.wyvernPrep) { const cr = makeCreature(A.wyvernPrep, size); cr.root.rotation.y = Math.PI; g = cr.group; g.userData.crit = cr; modelled = true; }          // rigged and animated: wings beat, tail sways
+    else if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, size, 'max'); g.userData.fly = true; }
     else if (id === 'cinder-hatchling' && A.hatchling) { g = modelGroup(A.hatchling, size, 'max', 0xff7319); g.userData.walk = true; g.userData.puffs = true; }
     else if (id === 'twinflare-tyrant' && A.tyrant) { g = modelGroup(A.tyrant, size, 'max', 0xff7319); g.userData.fly = true; g.userData.glowPeriod = 1.2; g.userData.breath = true; }
     else if (id === 'rune-apprentice') { g = A.apprentice ? modelGroup(A.apprentice, size, 'y') : PLACEHOLDER[id](); modelled = !!A.apprentice; g.userData.walk = true; this._attachStaff(g, !!A.apprentice); }
@@ -281,6 +283,11 @@ export class Actors {
       const tgt = g.faceOf[m.id];
       const wantFace = tgt !== undefined && t - (g.faceT || 0) < 3 ? tgt : Math.atan2(p.x - x, p.z - z) + Math.PI;
       mesh.rotation.y = turnLerp(mesh.rotation.y, wantFace, 0.2);
+      if (ud.crit) {                                                        // a rigged creature plays its own clips: arrive when summoned, attack when its cooldown restarts, else it hovers
+        let trig = null; if (!ud.arrived && this.vt >= ud.born) { ud.arrived = true; trig = 'arrive'; }
+        if (m.cd > (m._lastCdV || 0) + 0.2) trig = 'attack';
+        ud.crit.update('fly', dt, trig);
+      }
       if (ud.fly) { mesh.rotation.z = Math.sin(t * 5 + k) * 0.18; mesh.rotation.x = Math.sin(t * 3.3 + k) * 0.08; mesh.position.y += Math.sin(t * 4 + k) * 0.08; }
       if (ud.walk) mesh.rotation.z = Math.sin(t * 7 + k) * 0.06;
       if (m.cd > (m._lastCdV || 0) + 0.2) { m._atkAt = t; if (ud.breath) this._breath(mesh, m, g); }
