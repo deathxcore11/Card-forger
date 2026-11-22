@@ -55,6 +55,9 @@
   .card.rare { border-color:#5b9bd5; } .card.epic { border-color:#a974e0; } .card.legendary { border-color:#e8b84a; }
   .card.new h3::after { content:' NEW'; color:#8f6; font-size:10px; }
   #offerBtns button { font-size:14px; padding:8px 16px; margin:4px; }
+  #metaScreen { background:#0d0810; z-index:5; }\n  #metaRows { max-height:60vh; overflow:auto; text-align:left; margin:8px 0; }
+  #metaRows .row { display:grid; grid-template-columns:190px 90px 1fr 110px; gap:8px; align-items:center; padding:5px 8px; border-bottom:1px solid #3a2a50; font-size:14px; }
+  #metaRows .row.locked { color:#7a6a8a; } #metaRows .row i { color:var(--dim); font-style:normal; font-size:13px; } #metaRows .row button { font-size:13px; padding:4px 8px; margin:0; }
   .rowBtn { display:flex; gap:6px; margin-top:8px; }
   .rowBtn button { font-size:12px; padding:5px 8px; margin:0; flex:1; }
 </style>
@@ -93,7 +96,9 @@
      Survive to 8:00, then defeat The Hollow Pharaoh (or enter the Royal Gate early from 6:00).</p>
   <div><button class="small sel" id="pickKael">KAEL: Ember Wyvern</button><button class="small" id="pickMira">MIRA: Rune Apprentice</button></div>
   <button id="startBtn">START</button>
+  <div><button class="small" id="deckBtn">DECK BOX</button><button class="small" id="libBtn">CARD LIBRARY</button> <span id="chipsLine" style="color:var(--dim)"></span></div>
 </div>
+<div class="screen" id="metaScreen"><div id="metaBody" style="max-width:760px;width:94vw"></div></div>
 <div class="screen" id="pauseScreen">
   <h1>PAUSED</h1>
   <p>WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash &middot; Ctrl or C slide &middot; E use</p>
@@ -114,6 +119,7 @@
   <p class="stat">Enemies defeated <span id="dKills">0</span> &middot; Fusions <span id="dFusions">0</span></p>
   <p class="stat">Overtime survived <span id="dOvertime">0:00</span></p>
   <p class="stat">Star Chips earned <span id="dChips">0</span></p>
+  <p id="dQuests" style="color:#9ff0a8;font-size:15px"></p>
   <p>Best time <span id="dBest">0:00</span></p>
   <button id="restartBtn">RESTART</button>
 </div>
@@ -122,5 +128,6 @@
 <script type="module" src="src/main.js"></script>
 </body>
 </html>
+
 
 

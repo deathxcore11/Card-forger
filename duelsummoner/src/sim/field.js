@@ -34,7 +34,8 @@ export const damageOf = m => param(m, 'dmg') * (1 + LEVELS.damagePerLevel * (m.l
 export function recompute(g) {
   const f = g.field, M = { burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0,
     trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0 };
-  const addMods = mods => { for (const k of Object.keys(mods)) M[k] += mods[k]; };
+  const addMods = mods => { for (const k of Object.keys(mods)) if (k in M && typeof M[k] === 'number') M[k] += mods[k]; };
+  if (g.metaMods) addMods(g.metaMods);                                    // Deck Box ranks
   for (const id of (g.items || [])) addMods(ITEMS[id].mods);
   for (const id of (g.blessings || [])) addMods(BLESSINGS[id].mods);
   for (const s of f.spells) {
@@ -85,7 +86,7 @@ const ORDER = ['common', 'rare', 'epic', 'legendary'];
 export function candidates(g, minRarity) {
   const f = g.field, c = [], free = f.monsters.some(m => !m), freeS = f.spells.some(s => !s);
   const minI = minRarity ? ORDER.indexOf(minRarity) : 0;
-  const push = (id, kind, isNew, to) => { const d = cardDef(id); if (!f.banished.has(id) && ORDER.indexOf(d.rarity || 'common') >= minI) c.push({ id, kind, isNew, to, rarity: d.rarity || 'common' }); };
+  const push = (id, kind, isNew, to) => { if (g.unlockedCards && (MONSTERS[id] || SPELLS[id] || TRAPS[id] || ONE_SHOTS[id]) && !g.unlockedCards.has(id)) return; const d = cardDef(id); if (!f.banished.has(id) && ORDER.indexOf(d.rarity || 'common') >= minI) c.push({ id, kind, isNew, to, rarity: d.rarity || 'common' }); };
   for (const id of Object.keys(MONSTERS)) {
     const m = f.monsters.find(x => x && x.id === id);
     if (m) { if (m.level < monsterMax(id)) push(id, 'monster', false, m.level + 1); }
@@ -154,6 +155,7 @@ function applyCard(g, c) {
     const s = f.spells.find(x => x && x.id === c.id);
     if (s) s.level = c.to; else {
       let i = f.spells.findIndex((x, k) => !x && f.bonusS[k] > 0); if (i < 0) i = f.spells.findIndex(x => !x);
+      if (i >= 0 && TRAPS[c.id]) g.trapEver = true;
       if (i >= 0) { const start = Math.min(LEVELS.spellMax, 1 + f.bonusS[i]); f.bonusS[i] = 0; f.spells[i] = { id: c.id, level: start, cd: 0, rootFx: 0 }; }
     }
     if (c.id === 'heart-of-the-cards') g.p.hp = Math.min(g.cfgHp + g.mods.maxLp + SPELLS[c.id].per.maxLp, g.p.hp + SPELLS[c.id].healNow);
@@ -199,8 +201,9 @@ export function chooseCard(g, idx) {
   return true;
 }
 export function redraw(g) {
-  const o = g.offer, f = g.field; if (!o || !(o.type === 'level' || o.type === 'chest') || f.redraws <= 0) return false;
-  f.redraws--; o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined)); return o.cards.length > 0;
+  const o = g.offer, f = g.field; if (!o || !(o.type === 'level' || o.type === 'chest')) return false;
+  if (o.freeRedraws > 0) o.freeRedraws--;                                 // Deck Box: free Redraws on chests
+  else if (f.redraws > 0) f.redraws--; else return false; o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined)); return o.cards.length > 0;
 }
 export function banish(g, idx) {
   const o = g.offer, f = g.field; if (!o || f.banishes <= 0 || !o.cards[idx] || !(o.type === 'level' || o.type === 'chest')) return false;

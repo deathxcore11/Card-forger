@@ -1,0 +1,20 @@
+// Chrome check of the meta screens: Deck Box (spend Star Chips), Card Library (locked/unlocked with quest text), a quest unlock on the results screen, and the save.
+import { launch, wait } from './cdp.mjs';
+const b = await launch({ out: process.argv[2], query: '?debug' });
+const R = {};
+await b.evalIn(`localStorage.setItem('duelsummoner.save', JSON.stringify({ v: 1, records: {}, starChips: 120, runs: 0, bossKills: 0 })); location.reload(); 0`);
+for (let i = 0; i < 60 && !(await b.evalIn('!!window.__ds').catch(() => false)); i++) await wait(250);
+await wait(500);
+R.startChips = await b.evalIn(`document.getElementById('chipsLine').textContent`);
+await b.evalIn(`document.getElementById('deckBtn').click(); 0`); await wait(200);
+R.buy = await b.evalIn(`(async () => { const btn = document.querySelector('#metaRows button[data-k="maxLp"]'); btn.click(); await new Promise(r => setTimeout(r, 100)); document.querySelector('#metaRows button[data-k="xpGain"]').click(); await new Promise(r => setTimeout(r, 100)); const s = JSON.parse(localStorage.getItem('duelsummoner.save')); return { chipsLeft: s.starChips, deck: s.meta.deck }; })()`);
+await b.shot('e1-deck-box');
+await b.evalIn(`document.getElementById('metaBack').click(); document.getElementById('libBtn').click(); 0`); await wait(200);
+R.library = await b.evalIn(`document.querySelectorAll('#metaRows .row.locked').length + ' locked rows of ' + document.querySelectorAll('#metaRows .row').length`);
+await b.shot('e2-card-library');
+await b.evalIn(`document.getElementById('metaBack').click(); 0`);
+R.run = await b.evalIn(`(async () => { const D = window.__ds, g = D.game; D.start(); await new Promise(r => setTimeout(r, 200)); const m = g.p.maxHp; g.god = true; g.kills = 620; g.level = 16; g.fusions = 1; g.wardenKilled = true; g.t = 400; g.hurtPlayer; g.god = false; g.hurtPlayer(9999, false, 'Ram Golem rush'); D.drive(0.05); await new Promise(r => setTimeout(r, 300));
+  const s = JSON.parse(localStorage.getItem('duelsummoner.save')); return { maxHpWithDeckBox: m, quests: document.getElementById('dQuests').textContent, savedQuests: s.meta.questsDone, unlockedCards: s.meta.unlockedCards.length, chips: s.starChips }; })()`);
+await b.shot('e3-results-quests');
+R.pageErrors = JSON.parse(await b.evalIn('JSON.stringify(window.__errs || [])')).filter(e => !/404/.test(e));
+console.log(JSON.stringify(R, null, 1)); b.close(); process.exit(0);

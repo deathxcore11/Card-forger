@@ -12,7 +12,10 @@ import { showOffer, offerKey } from './view/offer.js';
 import { loadModel, loadPuffTexture } from './view/models.js';
 import { spawnEnemy } from './sim/enemies.js';
 import { Props } from './view/props.js';
-import { loadSave, recordRun } from './core/save.js';
+import { loadSave, recordRun, writeSave } from './core/save.js';
+import { simMeta, applyRun } from './core/meta.js';
+import { showDeckBox, showLibrary } from './view/metaui.js';
+import { QUESTS } from './data/meta.js';
 
 const T = window.THREE, $ = id => document.getElementById(id);
 const canvas = $('view');
@@ -62,7 +65,7 @@ function setMode(m) {
   last = 0;
 }
 function begin() {
-  ended = false; game.reset(Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
+  ended = false; game.opts.meta = simMeta(save.meta); game.reset(Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();
   for (const m of actors.specials.values()) scene.remove(m); actors.specials.clear();
   for (const m of actors.chests.values()) scene.remove(m); actors.chests.clear();
@@ -71,6 +74,10 @@ function begin() {
 function pickDuelist(id) { duelist = id; $('pickKael').classList.toggle('sel', id === 'kael'); $('pickMira').classList.toggle('sel', id === 'mira'); }
 $('pickKael').addEventListener('click', () => pickDuelist('kael'));
 $('pickMira').addEventListener('click', () => pickDuelist('mira'));
+const showChips = () => { $('chipsLine').textContent = 'Star Chips ' + save.starChips; };
+showChips();
+$('deckBtn').addEventListener('click', () => showDeckBox(save, () => { writeSave(save); showChips(); }, showChips));
+$('libBtn').addEventListener('click', () => showLibrary(save, showChips));
 $('startBtn').addEventListener('click', begin);
 $('restartBtn').addEventListener('click', begin);
 $('endBtn').addEventListener('click', () => { game.endRun(); results(); });
@@ -94,7 +101,12 @@ function afterOfferChange() {
 let ended = false;
 function results() {
   let info = { record: { bestTime: 0 }, newBest: false };
-  if (!ended) { ended = true; info = recordRun(save, duelist, { time: game.t, kills: game.kills, level: game.level, bossKilled: game.bossKilled, chips: game.starChips() }); }   // saved once per run
+  let unlocked = [];
+  if (!ended) {                                                          // saved once per run
+    ended = true; info = recordRun(save, duelist, { time: game.t, kills: game.kills, level: game.level, bossKilled: game.bossKilled, chips: game.starChips() });
+    unlocked = applyRun(save.meta, game.runStats()); writeSave(save);
+  }
+  $('dQuests').textContent = unlocked.length ? 'Quest done: ' + unlocked.map(q => q.name + ' (unlocked ' + (q.unlock.card || q.unlock.item) + ')').join(', ') : '';
   $('resTitle').textContent = game.bossKilled ? 'VICTORY' : game.ended ? 'RUN ENDED' : 'DEFEATED';
   $('dTime').textContent = clock(game.t); $('dLevel').textContent = game.level; $('dKills').textContent = game.kills; $('dFusions').textContent = game.fusions;
   $('dOvertime').textContent = clock(game.overtimeSeconds()); $('dChips').textContent = game.starChips(); $('dBest').textContent = clock(save.records[duelist] ? save.records[duelist].bestTime : 0) + (info.newBest ? '  NEW BEST' : '');

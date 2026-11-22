@@ -14,6 +14,7 @@ import { updateMonsters, updateTraps, onPlayerHurt } from './monsters.js';
 import { makeField, recompute, xpNeeded, openLevelOffer, openChest, chooseCard, redraw, banish, pass, leaveChest, fusionsReady } from './field.js';
 import { MAP } from '../data/map.js';
 import { buildWorld, updateWorld, nearestProp, useProp } from './world.js';
+import { SPELLS } from '../data/cards.js';
 
 const STEP = 1 / 60;
 
@@ -47,10 +48,17 @@ export class Game {
     this.faceOf = {};
     this.p = makePlayer();
     this.mods = { burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0 };
+    const meta = this.opts.meta || null;                                    // permanent progress, handed in by the browser (pure data)
+    this.metaMods = meta ? meta.mods : {};
+    this.unlockedCards = meta ? new Set(meta.cards) : null; this.unlockedItems = meta ? new Set(meta.items) : null;
+    this.wardenKilled = false; this.trapEver = false;
     this.field = makeField(this.duelist, this.rng);
+    this.field.redraws += this.metaMods.redraws || 0; this.field.banishes += this.metaMods.banishes || 0;
+    if (this.metaMods.startLevel) this.field.monsters[0].level = Math.min(10, 1 + this.metaMods.startLevel);
     recompute(this);
+    this._openingHand();
     this.world = buildWorld(this);                                  // opts.world === 'none': empty, for a generator to fill through placeObject
-    this.p.maxHp = this.cfgHp; this.p.hp = this.cfgHp;
+    this.p.maxHp = this.cfgHp + this.mods.maxLp; this.p.hp = this.p.maxHp;
     this.en.alive.fill(0); this.shots.alive.fill(0); this.pick.alive.fill(0);
     this.tele.forEach(o => { o.on = false; }); this.fx.forEach(o => { o.on = false; }); this.eb.forEach(o => { o.on = false; }); this.btraps.forEach(o => { o.on = false; });
     this.grid.rebuild(this.en.max, this.en.x, this.en.z, this.en.alive);
@@ -176,6 +184,15 @@ export class Game {
   pass() { return pass(this); }
   leave() { return leaveChest(this); }
 
+  // Deck Box "Opening Hand": start with random unlocked Spells already set
+  _openingHand() {
+    const n = this.metaMods.openingHand || 0; if (!n) return;
+    const ids = Object.keys(SPELLS).filter(id => !this.unlockedCards || this.unlockedCards.has(id));
+    for (let k = 0; k < n && ids.length; k++) { const id = ids.splice(Math.floor(this.rng() * ids.length), 1)[0], slot = this.field.spells.findIndex(x => !x); if (slot >= 0) this.field.spells[slot] = { id, level: 1, cd: 0, rootFx: 0 }; }
+    recompute(this);
+  }
+  runStats() { return { time: this.t, kills: this.kills, level: this.level, fusions: this.fusions, bossKilled: this.bossKilled, wardenKilled: this.wardenKilled, overtime: this.overtimeSeconds(), trapSet: this.trapEver, chests: this.world.opened, vases: this.vasesBroken }; }
+
   overtimeSeconds() { return Math.max(0, this.t - RUN.overtime.from); }
   endRun() { if (!this.over) { this.over = true; this.ended = true; } }
 
@@ -184,6 +201,7 @@ export class Game {
     return Math.floor(this.kills / S.perKills) + S.perElite * (this.elitesKilled - (this.bossKilled ? 1 : 0)) + (this.bossKilled ? S.boss : 0) + (this.boss.early && this.bossKilled ? RUN.gate.earlyStarChips : 0);
   }
 }
+
 
 
 

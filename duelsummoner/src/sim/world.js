@@ -71,7 +71,7 @@ export function buildWorld(g) {
 }
 
 function pickStock(g) {
-  const ids = Object.keys(ITEMS), W = E.broker.rarityWeights, out = [];
+  const ids = Object.keys(ITEMS).filter(id => !g.unlockedItems || g.unlockedItems.has(id)), W = E.broker.rarityWeights, out = [];
   const pool = ids.slice();
   while (out.length < E.broker.stock && pool.length) {
     const tot = pool.reduce((a, id) => a + (W[ITEMS[id].rarity] || 1), 0); let r = g.rng() * tot, pick = pool[0];
@@ -125,7 +125,7 @@ function openBlessing(g, shrine) {
   g.event('offer', null);
 }
 function openStone(g, stone) {
-  const owned = new Set(g.items), ids = Object.keys(ITEMS).filter(id => !owned.has(id) && ITEMS[id].rarity === 'common'), pick = [];
+  const owned = new Set(g.items), ids = Object.keys(ITEMS).filter(id => !owned.has(id) && ITEMS[id].rarity === 'common' && (!g.unlockedItems || g.unlockedItems.has(id))), pick = [];
   while (pick.length < E.witnessStones.choices && ids.length) pick.push(ids.splice(Math.floor(g.rng() * ids.length), 1)[0]);
   if (!pick.length) { g.event('banner', 'The stones have nothing left to offer you.'); return; }
   g.offer = { type: 'item', cards: itemCards(g, pick), leave: true, source: stone }; g.event('offer', null);
@@ -152,7 +152,7 @@ function openCardChest(g, c) {
   const cards = buildOffer(g, c.rarity);
   if (!cards.length) { g.event('banner', 'Nothing in this chest you could use.'); return; }
   g.coins -= price; g.world.opened++;
-  g.offer = { type: 'chest', cards, leave: false, chest: c, floor: c.rarity }; g.event('offer', null);
+  g.offer = { type: 'chest', cards, leave: false, chest: c, floor: c.rarity, freeRedraws: g.metaMods.chestRedraws || 0 }; g.event('offer', null);
 }
 
 // nearest thing the duelist can press E on, with its prompt text

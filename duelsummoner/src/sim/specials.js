@@ -53,7 +53,7 @@ export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
 function dropChest(g, x, y, z) { dropPickup(g, PICK_XP, x + 1.2, y, z, 30); g.chests.push({ x, y, z, open: false, kind: 'sealed' }); g.event('banner', 'A sealed chest appears.'); }
 
 function onDeath(g, sp) {
-  if (sp.kind === 'warden') { sp.alive = false; g.elitesKilled++; dropChest(g, sp.x, sp.y, sp.z); g.event('banner', 'The Sealed Warden falls.'); }
+  if (sp.kind === 'warden') { sp.alive = false; g.wardenKilled = true; g.elitesKilled++; dropChest(g, sp.x, sp.y, sp.z); g.event('banner', 'The Sealed Warden falls.'); }
   else if (sp.kind === 'idol') {
     const tw = sp.twin;
     if (tw.dead) {                                                 // the other is already waiting: both down in time
