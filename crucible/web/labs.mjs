@@ -6,7 +6,7 @@ import { LINK_GIFTS } from '../engine/relics.mjs';
 export const LAB_POOL = ['tomb_ledger', 'grave_call', 'second_burial', 'bone_tithe', 'deep_grave', 'last_rites', 'static_field', 'overcharge', 'chain_lightning', 'thorn_veil', 'long_watch', 'deep_shade', 'spite', 'false_floor', 'ossuary', 'grave_ward', 'grounding_rod', 'snare', 'banked_coals', 'cinder_fall', 'quench'];
 // Equips that differ (switch `equips`): what a fitted Equip adds on and off its kind, and the two shapes, as [ATK, DEF].
 export const EQUIP_KINDS = { fit: 800, off: 300, edge: [800, 0], ward: [0, 1000] };
-export const LAB_DEFAULTS = { five: true, lean: true, heat: true, kits: true, items: true };
+export const LAB_DEFAULTS = { five: true, lean: true, heat: true, kits: true, items: true, secret: true }; // Rumours on for everyone (Randall, 22 November 2026): achievements count on it
 
 // The order the home screen shows the switches in. A switch with words in the page but no place here is shown last,
 // so a new switch can never be left off the screen (Equips that differ and Two builds a run were, in Versions 30 and 31).
