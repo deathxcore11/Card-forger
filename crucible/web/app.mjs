@@ -736,13 +736,13 @@ function psCard(inst, x, y, o = {}) {
   const c = card(inst.id), role = roleOf(db, inst.id), mon = role === 'monster';
   const a = inst.ea ?? (c.atk + (inst.t ? 300 : 0) + (inst.ba || 0)), d = inst.ed ?? (c.def + (inst.t ? 300 : 0) + (inst.bd || 0));
   const up = mon && (a > c.atk || d > c.def), down = mon && a < c.atk;
-  return `<button class="cd ${role}${up ? ' up' : ''}${down ? ' down' : ''} ${o.cls || ''}" style="${pos}" ${o.attrs || ''} data-id="${inst.id}" aria-label="${esc(c.name)}"><i class="art" style="${cpic(inst.id, 40)}"></i>${mon ? `<i class="n1">${a}</i><i class="n2">${d}</i>` : `<i class="n1">${role === 'fuel' ? 'FUEL' : role.toUpperCase()}</i>`}${inst.e ? '<i class="en"></i>' : ''}${o.badge ? `<i class="bd">${o.badge}</i>` : o.pip ? `<i class="pp">${o.pip}</i>` : ''}</button>`;
+  return `<button class="cd ${role}${up ? ' up' : ''}${down ? ' down' : ''} ${o.cls || ''}" style="${pos}" ${o.attrs || ''} data-id="${inst.id}" aria-label="${esc(c.name)}"><i class="art" style="${cpic(inst.id, 40)}"></i>${mon ? `<i class="n1">${a}</i><i class="n2">${d}</i>` : `<i class="n1">${role === 'fuel' ? 'FUEL' : role.toUpperCase()}</i>`}${inst.e ? (CART.has('enchant-' + inst.e) ? `<img class="en" src="${cimg('enchant-' + inst.e)}" width="16" height="16" alt="">` : '<i class="en"></i>') : ''}${o.badge ? `<i class="bd">${o.badge}</i>` : o.pip ? `<i class="pp">${o.pip}</i>` : ''}</button>`;
 }
 // A portrait. Someone with no face of their own (a rival of the halls) shows the crest of the pyramid's keepers.
 // A card on a plinth, 68 x 92: its picture at 64.
 function psCardL(inst, x, y, o = {}) {
   const c = card(inst.id), role = roleOf(db, inst.id), mon = role === 'monster';
-  return `<i class="cd l ${role} ${o.cls || ''}" style="left:${x}px;top:${y}px"><i class="art" style="${cpic(inst.id, 64)}"></i>${mon ? `<i class="n1">ATK ${c.atk + (inst.t ? 300 : 0)}</i><i class="n2">DEF ${c.def + (inst.t ? 300 : 0)}</i>` : `<i class="n1">${role === 'fuel' ? 'FUEL' : role.toUpperCase()}</i>`}${inst.e ? '<i class="en"></i>' : ''}</i>`;
+  return `<i class="cd l ${role} ${o.cls || ''}" style="left:${x}px;top:${y}px"><i class="art" style="${cpic(inst.id, 64)}"></i>${mon ? `<i class="n1">ATK ${c.atk + (inst.t ? 300 : 0)}</i><i class="n2">DEF ${c.def + (inst.t ? 300 : 0)}</i>` : `<i class="n1">${role === 'fuel' ? 'FUEL' : role.toUpperCase()}</i>`}${inst.e ? (CART.has('enchant-' + inst.e) ? `<img class="en" src="${cimg('enchant-' + inst.e)}" width="16" height="16" alt="">` : '<i class="en"></i>') : ''}</i>`;
 }
 // An item's medallion; one without a picture yet is a blank medallion of its kind with its first letter struck in.
 const medal = (id, size) => { const f = relicFile(id) + (size === 32 ? '' : '-' + size); if (CART.has(f)) return `<img src="${cimg(f)}" width="${size}" height="${size}" alt="">`;
@@ -813,7 +813,7 @@ function psChamber() {
   if (!G.doorSel || G.doorSel.at !== key || !r.doors[G.doorSel.i]) G.doorSel = { at: key, i: Math.max(0, r.doors.findIndex((d, i) => !lockedAt(i))) };
   const sel = G.doorSel.i, d = r.doors[sel], n = r.doors.length;
   const rp = roomPic(hall, NICHE_Y + 34, true), nx = i => Math.round(NICHE[at[i]] * rp.s), ny = Math.round(NICHE_Y * rp.s);
-  const doors = r.doors.map((d, i) => { const locked = lockedAt(i), leaf = 'door-' + DOOR_ART[d.type] + '-leaf' + (rp.big && CART.has('door-' + DOOR_ART[d.type] + '-leaf-l') ? '-l' : '');
+  const doors = r.doors.map((d, i) => { const locked = lockedAt(i), art = d.type === 'secret' && CART.has('door-hidden-leaf') ? 'hidden' : DOOR_ART[d.type], leaf = 'door-' + art + '-leaf' + (rp.big && CART.has('door-' + art + '-leaf-l') ? '-l' : ''); // the door that is not there has its own plain leaves
     return `<button class="dr k-${d.know || 'known'}${locked ? ' lock' : ''}${i === sel ? ' on' : ''}${rp.big ? ' l' : ''}" style="left:${nx(i)}px;top:${ny}px" data-a="${i === sel ? 'door' : 'dsel'}:${i}" ${locked && i === sel ? 'disabled' : ''} aria-label="${esc(doorName(d))}">${CART.has(leaf) ? `<img src="${cimg(leaf)}" alt="">` : ''}<i class="fg"></i><i class="no">${i + 1}</i></button>`; }).join('');
   const view = `<div class="room" style="left:${rp.ox}px;top:${rp.oy}px;width:${rp.pw}px;height:${rp.ph}px"><img src="${rp.src}" width="${rp.pw}" height="${rp.ph}" alt="">${doors}<i class="cur" style="left:${nx(sel) + (rp.big ? 34 : 27)}px;top:${ny - 10}px"></i></div>${rp.edge}`;
   const lw = ledgeW(), ledge = `<div class="dt" style="width:${lw - 82}px"><b>${sel + 1} · ${esc(doorName(d))}</b><p><i class="lmc">COST</i> ${esc(d.cost)}</p><p><i class="lmg">GAIN</i> ${esc(d.reward)}</p></div>`
@@ -866,6 +866,46 @@ function tableQuads(view) {
   return drawn > 0;
 }
 const TEX = { cards: new Map(), table: null, back: null, loading: false };
+// A Field Spell's ground (Randall's terrain sheet, cut to 128 x 64): loaded the first time its terrain is in play.
+const terrainTex = id => { const n = 'terrain-' + String(card(id).name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), k = 't-' + id; if (TEX[k] !== undefined || !CART.has(n)) return; TEX[k] = null; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, 128, 64); if (app.classList.contains('ps')) psPaint(); }; im.src = cimg(n); };
+// ---- props: Randall's models cut to console size (tools/crucible/console-prop.py), each standing in its room in front of
+// the painting: the shrine in the Sanctum, the bowl in the Omen room, the chest among the treasure, the stall in the Bazaar.
+// A prop beside the choices stands in the space left of them; one behind them (the stall) rises over them, its goods in front.
+const pmodel = n => (D.cart && D.cart.models && D.cart.models[n]) || null;
+const PROP_ROOM = { 'room-sanctum': ['shrine', 'side', 25], 'room-omen': ['bowl', 'side', 0], 'room-vault': ['chest', 'side', -30], 'room-bazaar': ['stall', 'back', 15] };
+function propSpot(hall, vs, x0, y0, ph, kind) { // the canvas a room's prop is drawn into, or nothing
+  const pr = PROP_ROOM[hall]; if (!pr || (kind && kind !== 'treasure' && hall === 'room-vault') || !pmodel(pr[0])) return '';
+  const [name, place, yaw] = pr, side = place === 'side';
+  if (side && x0 < 56) return ''; // no room beside the choices: the prop stays out rather than crowd them
+  const cx = side ? x0 >> 1 : vs.w >> 1, by = y0 + ph - 2, h = side ? Math.min(Math.round(ph * .62), 84) : Math.round(ph * 1.08), w = side ? x0 - 8 : vs.w - 16;
+  return `<canvas id="prop" class="ab" style="left:0;top:0" width="${vs.w}" height="${vs.h}" data-prop="${name}" data-yaw="${yaw}" data-cx="${cx}" data-by="${by}" data-h="${h}" data-w="${w}"></canvas>`;
+}
+let propLoading = false;
+function propTextures() {
+  if (propLoading) return; propLoading = true;
+  for (const [mn, M] of Object.entries((D.cart && D.cart.models) || {})) { if (mn === 'table') continue;
+    for (const [t, [w, h]] of Object.entries(M.pics)) { const n = `model-${mn}-${t}`; if (!CART.has(n)) continue; const im = new Image(); im.onload = () => { TEX[`m-${mn}-${t}`] = R3.texFrom(im, w, h); propPaint(); }; im.src = cimg(n); } }
+}
+function propPaint() {
+  const cv = document.getElementById('prop'); if (!cv) return;
+  const { prop, yaw, cx, by, h, w } = cv.dataset, M = pmodel(prop); if (!M) return;
+  const a = +yaw * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a), turn = p => [p[0] * ca - p[1] * sa, p[0] * sa + p[1] * ca, p[2]];
+  const Wp = p => { const q = turn(p); return [q[0] * TS, q[2] * TS, -q[1] * TS]; }, tall = Math.max(...M.faces.flatMap(f => f.p.map(p => p[2]))) * TS;
+  const cam = { y: tall * .5 + 160, z: 900, pitch: Math.atan2(160, 900), f: 300, cx: 0, cy: 0 };
+  const box = c => { const P = R3.camera(c), pts = M.faces.flatMap(f => f.p.map(p => P(Wp(p)))).filter(Boolean), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+  let b = box(cam); const k = Math.min(+h / Math.max(1, b[3] - b[1]), +w / Math.max(1, b[2] - b[0])); cam.f = Math.round(cam.f * k);
+  b = box(cam); cam.cx = Math.round(+cx - (b[0] + b[2]) / 2); cam.cy = Math.round(+by - b[3]);
+  const view = R3.makeView(cv, cv.width, cv.height); view.px.fill(0); view.list.length = 0;
+  const L = [-.35, .8, .5], ln = Math.hypot(...L);
+  for (const f of M.faces) {
+    const t = TEX[`m-${prop}-${f.t}`]; if (!t || !f.uv) continue;
+    const q = turn(f.n), n = [q[0], q[2], -q[1]], lit = .45 + .55 * Math.max(0, (n[0] * L[0] + n[1] * L[1] + n[2] * L[2]) / ln);
+    const c = f.p.map((p, i) => [Wp(p), [f.uv[i][0] * (t.w - 1), f.uv[i][1] * (t.h - 1)]]); if (c.length === 3) c.push(c[0]);
+    c.reverse(); // the file winds its faces the other way round from the renderer
+    R3.quad(view, { p: c.map(x => x[0]), uv: c.map(x => x[1]), tex: t, shade: lit, cull: true });
+  }
+  R3.draw(view, R3.camera(cam)); R3.present(view);
+}
 function psTextures() {
   if (TEX.loading) return; TEX.loading = true;
   const load = (n, w, h, k) => { if (!CART.has(n)) return; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, w, h); if (app.classList.contains('ps')) psPaint(); }; im.src = cimg(n); };
@@ -889,6 +929,10 @@ function psPaint() {
   R3.clear(view, 0); view.px.fill(0); // see-through: the hall picture behind the canvas shows where nothing is drawn
   const T = TEX.table || R3.flat(8, 8, [168, 126, 79]);
   if (!tableQuads(view)) R3.quad(view, { p: [[-190, 0, -192], [190, 0, -192], [190, 0, 192], [-190, 0, 192]], uv: [[0, 0], [T.w * 3 - 1, 0], [T.w * 3 - 1, T.h * 3 - 1], [0, T.h * 3 - 1]], tex: { w: T.w * 3, h: T.h * 3, d: tile3(T) }, shade: [.55, .55, 1, 1], bias: 2000 });
+  const tg = v.terrain && TEX['t-' + v.terrain.id]; // the terrain's ground, laid inside the table's border while it holds
+  if (tg) for (let j = 0; j < 4; j++) for (let i = 0; i < 2; i++) { const x0 = -170 + i * 170, z0 = -170 + j * 85;
+    R3.quad(view, { p: [[x0, 0, z0], [x0 + 170, 0, z0], [x0 + 170, 0, z0 + 85], [x0, 0, z0 + 85]], uv: [[0, 0], [tg.w - 1, 0], [tg.w - 1, tg.h - 1], [0, tg.h - 1]], tex: tg, shade: .66 + .34 * (j + 1) / 4, bias: 1500 }); }
+  else if (v.terrain) terrainTex(v.terrain.id);
   const narrow = v.mon[0].length < 5;
   for (const seat of [0, 1]) for (let z = 0; z < 5; z++) { // the zone outlines, cut into the stone
     const cx = TBL.zx(z), cz = TBL.row[seat], shut = narrow && (z === 0 || z === 4);
@@ -1015,8 +1059,9 @@ function psDuel() {
 function psTrap(live) {
   const pv = viewFor(live, db, 0), pX = pv.mon[1][live.pending.from], pT = live.pending.to >= 0 ? pv.mon[0][live.pending.to] : null;
   const head = `${pX && !pX.veil ? esc(card(pX.id).name) + ' (' + pX.ea + ')' : 'A veiled monster'} attacks ${pT ? esc(card(pT.id).name) + ' (' + (pT.pos === 'd' ? pT.ed + ' DEF' : pT.ea + ' ATK') + ')' : 'you directly'}.`;
-  const opts = live.pending.options.map((i, k) => { const t = live.traps[0][i]; return `<div class="ab" style="left:8px;top:${44 + k * 66}px;width:296px;height:62px">${psCard(t, 0, 0)}<div class="ab" style="left:50px;top:0;width:150px"><b class="lb g">${esc(card(t.id).name)}</b><br>${esc(shortText(t.id))}</div>${pq(206, 22, 88, 'SPRING IT', 'respond:' + i, { lit: k === 0 })}</div>`; }).join('');
-  return win(96, 8, 320, Math.min(224, 72 + live.pending.options.length * 66), `<h2>Spring a Trap?</h2><p>${head}</p>${opts}${pq(216, Math.min(224, 72 + live.pending.options.length * 66) - 26, 88, 'LET IT THROUGH', 'respond:-1')}`);
+  const n = live.pending.options.length, H = Math.min(224, 92 + n * 66), top = 60; // the attack in two lines, then the Traps in a list that scrolls when there are many
+  const opts = live.pending.options.map((i, k) => { const t = live.traps[0][i]; return `<div class="ab" style="left:8px;top:${k * 66}px;width:296px;height:62px">${psCard(t, 0, 0)}<div class="ab" style="left:50px;top:0;width:150px"><b class="lb g">${esc(card(t.id).name)}</b><br>${esc(shortText(t.id))}</div>${pq(206, 22, 88, 'SPRING IT', 'respond:' + i, { lit: k === 0 })}</div>`; }).join('');
+  return win(96, 8, 320, H, `<h2>Spring a Trap?</h2><p style="height:34px">${head}</p><div class="ab sc" style="left:0;top:${top}px;width:320px;height:${H - top - 30}px">${opts}</div>${pq(216, H - 26, 88, 'LET IT THROUGH', 'respond:-1')}`);
 }
 
 // ---- offerings: a card, a Gift, a charm, a Guardian Reward, a treasure, the Sanctum, a starter kit
@@ -1028,7 +1073,7 @@ function fitName(name, n) {
   while (w.join(' ').length > n && i < w.length - 1) w[i] = w[i++][0] + '.';
   const t = w.join(' '); return t.length > n ? t.slice(0, n) : t;
 }
-function psOffer({ title, items, bar0 = '', right = '', room = 'doors', key, sel = null, selA = null, left = null, pillar = null }) {
+function psOffer({ title, items, bar0 = '', right = '', room = 'doors', key, sel = null, selA = null, left = null, pillar = null, kind = null }) {
   if (!items.length) items = [{ name: 'NOTHING HERE', a: 'skip', take: 'GO ON', pic: () => '', facts: [], text: 'Nothing is offered here.' }]; // never a blank screen
   const r = G.run, n = items.length, vs = viewSize(), lw = ledgeW();
   if (sel == null) { if (!G.offSel || G.offSel.at !== key || !items[G.offSel.i]) G.offSel = { at: key, i: Math.max(0, items.findIndex(x => !x.off)) }; sel = G.offSel.i; }
@@ -1038,7 +1083,7 @@ function psOffer({ title, items, bar0 = '', right = '', room = 'doors', key, sel
   const rp = roomPic(hall, room === 'duel' ? 70 : NICHE_Y + 34, room !== 'duel');
   const sw = Math.min(104, Math.floor((vs.w - 8) / n)), ph = Math.min(vs.h - 22, 124), x0 = (vs.w - sw * n) >> 1, y0 = Math.max(16, (vs.h - ph) >> 1) + 4;
   const plinths = items.map((x, i) => `<button class="pln${i === sel ? ' on' : ''}${x.off ? ' off' : ''}" style="left:${x0 + i * sw + 2}px;top:${y0}px;width:${sw - 4}px;height:${ph}px" ${i === sel ? (x.off ? 'aria-disabled="true"' : `data-a="${x.a}"`) : `data-a="${selA ? selA(i) : 'osel:' + i}"`} aria-label="${esc(x.name)}">${x.pic((sw - 4) >> 1, ph - 13)}<b class="pnm" style="top:${ph - 11}px">${esc(fitName(x.name, (sw - 8) / 6 | 0))}</b></button>`).join('');
-  const view = `<img class="ab" src="${rp.src}" style="left:${rp.ox}px;top:${rp.oy}px" width="${rp.pw}" height="${rp.ph}" alt="">${rp.edge}<i class="dim0"></i>
+  const view = `<img class="ab" src="${rp.src}" style="left:${rp.ox}px;top:${rp.oy}px" width="${rp.pw}" height="${rp.ph}" alt="">${rp.edge}<i class="dim0"></i>${propSpot(hall, vs, x0, y0, ph, kind)}
     <div class="ab" style="left:0;top:3px;width:${vs.w}px;display:flex;justify-content:center">${carveImg(title, 12, render)}</div>${plinths}<i class="cur" style="left:${x0 + sel * sw + (sw >> 1) - 4}px;top:${y0 - 8}px"></i>`;
   const ledge = `<div class="dt" style="width:${lw - 82}px"><b>${esc(it.name)}</b>${(it.facts || []).map(f => `<p>${f}</p>`).join('')}</div>`
     + (n > 1 ? pq(lw - 72, 4, 30, '<', selA ? selA((sel + n - 1) % n) : `osel:${(sel + n - 1) % n}`, { title: 'Choice to the left' }) + pq(lw - 38, 4, 30, '>', selA ? selA((sel + 1) % n) : `osel:${(sel + 1) % n}`, { title: 'Choice to the right' }) : '')
@@ -1073,7 +1118,7 @@ function psReward() {
   }
   if (o.kind === 'charm') return psOffer({ title: 'PICK A CHARM', key, room: 'room-vault', items: o.options.map((id, i) => relicItem(id, `pick:${i}`)), bar0: `Charm slots ${r.charms.length}/${db.config.charmSlots}.`, right: skip });
   if (o.kind === 'guardian') return psOffer({ title: 'GUARDIAN REWARD', key, room: 'room-guardian', bar0: 'The weight cap rises by 20.', items: o.options.map((g, i) => g.kind === 'card' ? cardItem(g.entry, `pick:${i}`, { text: g.text }) : g.kind === 'masterwork' ? relicItem(g.id, `pick:${i}`, { text: g.text + ' ' + RELICS[g.id].text }) : { name: g.ids.length + ' GIFTS', a: `pick:${i}`, text: g.text + ' ' + g.ids.map(id => RELICS[id].name + ': ' + RELICS[id].text).join(' '), facts: g.ids.map(id => esc(RELICS[id].name.toUpperCase())), pic: (cx, h) => `<i class="ab" style="left:${cx - g.ids.length * 17}px;top:${Math.max(0, (h - 32) >> 1)}px;display:flex;gap:2px">${g.ids.map(id => medal(id, 32)).join('')}</i>` }) });
-  if (o.kind === 'treasure') return psOffer({ title: 'TREASURE', key, room: 'room-vault', bar0: 'Take one. The rest stay in the vault.', items: o.options.map((g, i) => g.kind === 'card' ? cardItem(g.entry, `pick:${i}`) : relicItem(g.id, `pick:${i}`)) });
+  if (o.kind === 'treasure') return psOffer({ title: 'TREASURE', key, room: 'room-vault', kind: 'treasure', bar0: 'Take one. The rest stay in the vault.', items: o.options.map((g, i) => g.kind === 'card' ? cardItem(g.entry, `pick:${i}`) : relicItem(g.id, `pick:${i}`)) });
   if (o.kind === 'sanctum') { const full = r.sparks >= db.config.sparks, cap = weightCap(db, r), add = db.config.prices.sanctumCap;
     const big = (t, sub) => (cx, h) => `<b class="ab big2" style="left:0;width:${cx * 2}px;top:${Math.max(0, (h >> 1) - 14)}px">${t}</b><b class="ab lb d" style="left:0;width:${cx * 2}px;text-align:center;top:${Math.max(0, (h >> 1) + 12)}px">${sub}</b>`;
     return psOffer({ title: 'SANCTUM', key, room: 'room-sanctum', bar0: 'A quiet room and one candle. Take one blessing, then go on.', items: [
@@ -1124,7 +1169,7 @@ function psOmen() {
 // ---- the books: the run's end, the Codex, Feats, the Memory Vault
 // One window over the title picture, its heading carved, its pages in a box that scrolls, its plaques along the foot.
 function psBook(title, body, foot, extra = '') {
-  const { W, H } = F, bg = CART.has('key-title') && D.cart && D.cart.title === 720 ? `<img class="bg" src="${cimg('key-title')}" style="position:absolute;left:${(W - 720) >> 1}px;top:${(H - 480) >> 1}px" alt="">` : box(0, 0, W, H, 'st dk');
+  const { W, H } = F, bgPic = CART.has('room-archive-book') ? 'room-archive-book' : 'key-title', bg = CART.has(bgPic) && D.cart && D.cart.title === 720 ? `<img class="bg" src="${cimg(bgPic)}" style="position:absolute;left:${(W - 720) >> 1}px;top:${(H - 480) >> 1}px" alt="">` : box(0, 0, W, H, 'st dk');
   return `<div class="ti">${bg}<i class="dim0"></i><div class="wn book" style="left:8px;top:6px;width:${W - 16}px;height:${H - 12}px"><div class="ab" style="left:0;top:4px;width:${W - 16}px;display:flex;justify-content:center">${carveImg(title, 16, render)}</div>
     <div class="ab sc" style="left:8px;top:26px;width:${W - 32}px;height:${H - 62}px">${body}</div><div class="ab" style="left:8px;top:${H - 32}px;width:${W - 32}px;height:16px">${foot}</div></div>${extra}</div>`;
 }
@@ -1213,6 +1258,9 @@ function psWindows() {
     const pic = sp ? `<img class="ab" src="${cimg(big ? sp + '-l' : sp)}" style="left:${(F.W - pw) >> 1}px;top:${Math.max(4, (F.H - 104 - ph) >> 1)}px" width="${pw}" height="${ph}" alt="">` : '';
     return `<div class="story" data-a="storynext"><div class="dim"></div>${sp ? pic : `<i class="bars" style="top:0;width:${F.W - 192}px"></i><i class="bars" style="top:${F.H - 124}px;width:${F.W - 192}px"></i>`}${fc ? `<div class="pf s96" style="left:104px;top:${20 + ((F.H - 240) >> 1)}px"><img src="${cimg(fc)}" width="96" height="96" alt=""></div>` : ''}
       <div class="wn ab" style="left:96px;top:${F.H - 104}px;width:${F.W - 192}px;height:104px;padding:6px 8px">${sc.who ? `<h2>${esc(sc.who)}</h2>` : ''}<p>${esc(sc.lines[st.i])}</p>${lb(8, 90, 'TAP TO GO ON', 'd')}${pq(F.W - 192 - 72, 82, 64, 'SKIP', 'storyskip')}</div></div>`; } // SKIP sits in the window, clear of the pillar's own plaques
+  { const k = r && r.phase === 'chamber' && r.floor > 0 && r.chamber === 0 ? r.seed + ':' + r.floor : null; if (k && G.floorSeen !== k) { G.floorSeen = k; G.floorCard = r.floor + 1; } } // a new floor gets its card once
+  if (G.floorCard && !G.playing && !G.overlay) { const big = F.W - 192 >= 398 && F.H >= 300 && CART.has('story-stair-l'), pw = big ? 390 : 312, ph = big ? 160 : 128, y = Math.max(28, (F.H - ph - 40) >> 1);
+    return `<div class="story" data-a="floorok"><div class="dim"></div><div class="ab" style="left:0;top:${y - 28}px;width:${F.W}px;display:flex;justify-content:center">${carveImg(['', 'FLOOR ONE', 'FLOOR TWO', 'FLOOR THREE'][G.floorCard] || 'FLOOR ' + G.floorCard, 24, render)}</div>${CART.has('story-stair') ? `<img class="ab" src="${cimg(big ? 'story-stair-l' : 'story-stair')}" style="left:${(F.W - pw) >> 1}px;top:${y}px" width="${pw}" height="${ph}" alt="">` : ''}${lb((F.W >> 1) - 36, y + ph + 8, 'TAP TO GO ON', 'd')}</div>`; }
   const o = G.overlay;
   if (o && !G.playing) {
     if (o.kind === 'duelEnd') { const s = o.sum; return win(136, 16, 240, 208, `<div style="display:flex;justify-content:center;margin:2px 0 6px">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><p>${esc(o.rival ? o.rival.name : '')}, ${s.turns} turns${s.reason === 'deckout' ? ', a deck ran out' : ''}.</p>${s.won ? `<p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b></p><p>Embers +${s.embers}${s.bountyMet ? '. Bounty met.' : '.'}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>${(o.why || []).slice(0, 2).map(l => `<p class="d">${esc(l)}</p>`).join('')}`}${pq(76, 184, 88, 'CONTINUE', 'closeov', { lit: true })}`); }
@@ -1223,7 +1271,7 @@ function psWindows() {
   }
   if (G.inspect) { const c = card(G.inspect.id), mon = db.isMonster(c.id); convertSheets(96);
     return `<div class="dim" data-a="closeinspect"></div><div class="wn mw" data-a="closeinspect" style="left:${72 + cx0()}px;top:${16 + cy0()}px;width:368px;height:208px"><div class="big" style="left:8px;top:8px"><i class="art" style="${cpic(c.id, 96)}"></i>${mon ? `<b class="n1">${G.inspect.ea ?? c.atk} / ${G.inspect.ed ?? c.def}</b>` : ''}<b class="n2">${mon ? esc(`${c.attr} · LV ${c.level}`) : esc(roleOf(db, c.id).toUpperCase())}</b></div>
-      <div class="ab sc" style="left:122px;top:8px;width:238px;height:170px"><h2>${esc(c.name)}</h2>${mon ? `<p class="d">${esc(c.type)}. Printed ${c.atk} / ${c.def}.</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p><b class="lb g">ENCHANT ${esc(G.inspect.e.toUpperCase())}</b><br>${esc(ENCHANT_TEXT[G.inspect.e])}</p>` : ''}<p class="d">Weight ${weightOf(db, c.id)}.</p></div>${lb(250, 190, 'TAP TO CLOSE', 'd')}</div>`; }
+      <div class="ab sc" style="left:122px;top:8px;width:238px;height:170px"><h2>${esc(c.name)}</h2>${mon ? `<p class="d">${esc(c.type)}. Printed ${c.atk} / ${c.def}.</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p>${CART.has('enchant-' + G.inspect.e + '-32') ? `<img src="${cimg('enchant-' + G.inspect.e + '-32')}" width="32" height="32" alt="" style="float:left;margin:0 4px 0 0">` : ''}<b class="lb g">ENCHANT ${esc(G.inspect.e.toUpperCase())}</b><br>${esc(ENCHANT_TEXT[G.inspect.e])}</p>` : ''}<p class="d">Weight ${weightOf(db, c.id)}.</p></div>${lb(250, 190, 'TAP TO CLOSE', 'd')}</div>`; }
   const t = G.tab; if (!t) return '';
   if (t === 'bar') return win(56, 40, 400, 160, `<div class="sc" style="height:120px"><p>${G.barText || ''}</p></div>${pq(304, 132, 88, 'CLOSE', 'tab:', { lit: true })}`);
   const close = (y = 200) => pq(304, y, 88, 'CLOSE', 'tab:', { lit: true });
@@ -1265,6 +1313,7 @@ function drawConsole(screen) {
   app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home'; app.dataset.room = '';
   if (document.getElementById('tbl')) { psTextures(); convertSheets(40); psPaint(); }
+  if (document.getElementById('prop')) { propTextures(); propPaint(); }
   else convertSheets(40);
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
   barFits();
@@ -1374,6 +1423,7 @@ function tapped(ev) {
     case 'pos': duel({ t: 'pos', zone: G.attacker }); break;
     case 'undo': G.sel = []; G.attacker = null; G.onto = null; G.aim = null; render(); break;
     case 'tipsoff': P.tips = learnedAll(); saveP(); render(); break;
+    case 'floorok': G.floorCard = 0; render(); break;
     case 'relearn': P.tips = {}; saveP(); G.tab = null; toast('The first lessons will show again in your next duel.'); render(); break;
     case 'aim': G.aim = G.aim === n ? null : n; render(); break;
     case 'play': { if (G.lesson === 'single' && G.sel.length === 1 && G.onto == null) { tips().single = 1; saveP(); } const a = { t: 'play', hand: G.sel.slice(), onto: G.onto }; if (x) a.pos = x; if (y === '1') a.veiled = true; if (G.aim != null && G.sel.length === 1 && G.onto == null) a.target = G.aim; duel(a); break; }

@@ -80,6 +80,7 @@ body.ps { background: #000; }
 #app.ps .cd .bd, #app.ps .cd .pp { position: absolute; right: 1px; top: 1px; min-width: 9px; height: 9px; padding: 1px 1px 0; background: var(--ember); color: var(--ink); font: 8px/8px 'LM Label', monospace; text-align: center; }
 #app.ps .cd .pp { background: var(--gl); color: var(--sh); animation: psbob 1s steps(2) infinite; }
 #app.ps .cd .en { position: absolute; right: 1px; top: 30px; width: 8px; height: 8px; background: var(--verd); }
+#app.ps .cd img.en { width: 16px; height: 16px; right: 1px; top: 24px; background: none; } /* the Enchant's own mark, from Randall's sheet */
 
 /* text in windows */
 #app.ps .wn h2, #app.ps .wn h3 { margin: 0 0 4px; font: 8px/8px 'LM Label', monospace; color: var(--gl); text-transform: uppercase; }

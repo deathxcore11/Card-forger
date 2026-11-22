@@ -95,7 +95,7 @@ def save(im, path):
 # The rooms painted on 22 November came out bright and evenly lit; the halls are dark with torchlight that falls away.
 # This tones them to sit together: darker mid-tones, warm light, a fall-off toward the edges. The bare room stays cold.
 GRADE = {'room-bare': (.86, .82, .88), 'room-bazaar': (1, .8, .62), 'room-forge': (1, .8, .62), 'room-omen': (1, .84, .7),
-         'room-sanctum': (1, .8, .62), 'room-vault': (1, .8, .62), 'room-archive': (1, .8, .62)}
+         'room-sanctum': (1, .8, .62), 'room-vault': (1, .8, .62)}
 
 
 def grade(im, warm):
@@ -138,6 +138,16 @@ def main():
             save(crunch(im, (352, 198), 256, amp=0.6, box=box), os.path.join(out, n + '.png'))
             save(crunch(im, (440, 248), 256, amp=0.6, box=box), os.path.join(out, n + '-l.png'))
             made.append(n + '-l')
+            if n == 'room-archive':  # the reading room stands whole behind the books (the Codex, Feats, the Vault), as the title picture did
+                save(crunch(im, (720, 480), 256, amp=0.6), os.path.join(out, n + '-book.png')); made.append(n + '-book')
+        elif n.startswith('enchant-'):
+            # an Enchant's mark: a bronze tablet, 16 x 16 on a card and 32 x 32 on the card page; the sheet's white corners go
+            g = im.convert('RGBA'); a = np.asarray(g).copy(); a[..., 3] = np.where(a[..., :3].min(-1) > 215, 0, 255); g = Image.fromarray(a, 'RGBA')
+            save(crunch(g, (16, 16), 16, amp=1.0, key=True), os.path.join(out, n + '.png'))
+            save(crunch(g, (32, 32), 16, amp=1.0, key=True), os.path.join(out, n + '-32.png')); made.append(n + '-32')
+        elif n.startswith('terrain-'):
+            # a Field Spell's ground, laid over the table top while its terrain holds: 128 x 64, tiled
+            save(crunch(im, (128, 64), 256, amp=0.6), os.path.join(out, n + '.png'))
         elif n.startswith('story-'):
             # a story painting, shown above the words in the few long scenes: 312 x 128 (390 x 160 in a larger frame).
             # Its black bars are cut away first; STORY_TOP says where the band sits in what is left (0 top, 1 bottom).
@@ -161,6 +171,8 @@ def main():
             save(crunch(im, (80, 72), 256, amp=0.6, key=True), os.path.join(out, n + '.png'))
             # the two carved leaves alone, to stand in a niche of the chamber picture (62 x 68 there, 78 x 85 in the larger one)
             box = (round(w * .236), round(h * .165), round(w * .764), round(h * .79))
+            if n == 'door-hidden':  # painted square, the leaves narrower in it than on the other doors
+                box = (round(w * .30), round(h * .20), round(w * .70), round(h * .72))
             save(crunch(im, (62, 68), 256, amp=0.6, box=box), os.path.join(out, n + '-leaf.png'))
             save(crunch(im, (78, 85), 256, amp=0.6, box=box), os.path.join(out, n + '-leaf-l.png'))
             made += [n + '-leaf', n + '-leaf-l']
