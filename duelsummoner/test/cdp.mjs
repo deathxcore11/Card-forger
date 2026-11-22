@@ -33,7 +33,7 @@ export async function launch({ out, port = 8767, debugPort = 9334, query = '?deb
   };
   const shot = async name => { const r = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync(join(out, name + '.png'), Buffer.from(r.result.data, 'base64')); };
   await send('Page.enable'); await send('Runtime.enable');
-  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__errs=[];window.addEventListener("error",e=>__errs.push(String(e.message)));const ce=console.error;console.error=function(){__errs.push([].join.call(arguments," "));ce.apply(console,arguments)}' });
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.__errs=[];window.addEventListener("error",e=>__errs.push(String(e.message)+" @ "+((e.error&&e.error.stack)||"").split("\\n").slice(0,3).join(" | ")));const ce=console.error;console.error=function(){__errs.push([].join.call(arguments," "));ce.apply(console,arguments)}' });
   await send('Page.navigate', { url: 'http://127.0.0.1:' + port + '/' + query });
   for (let i = 0; i < 60 && !(await evalIn('!!window.__ds')); i++) await wait(200);
   return { evalIn, shot, send, close, out };

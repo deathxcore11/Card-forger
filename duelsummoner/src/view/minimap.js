@@ -41,7 +41,8 @@ export class Minimap {
     c.fillStyle = '#e0452c';
     const e = g.en;
     for (let i = 0; i < e.max; i++) if (e.alive[i]) c.fillRect(X(e.x[i]) - 1, X(e.z[i]) - 1, 2, 2);
-    if (g.map && g.map.gate && g.mode !== 'classic') { const gx = X(g.map.gate.x), gz = X(g.map.gate.z); c.fillStyle = g.gate && g.gate.awake ? '#ff5a3a' : '#a04a3a'; c.fillRect(gx - 3, gz - 3, 6, 6); c.strokeStyle = '#000'; c.lineWidth = 1; c.strokeRect(gx - 3, gz - 3, 6, 6); }
+    if (g.map && g.map.gate && g.mode !== 'classic' && (g.gate && g.gate.awake || Math.hypot(g.map.gate.x - g.p.x, g.map.gate.z - g.p.z) < 140)) {          // the Gate shows on the disc once you are near it (the threads lead you there)
+      const gx = X(g.map.gate.x), gz = X(g.map.gate.z); c.fillStyle = g.gate && g.gate.awake ? '#ff5a3a' : '#a04a3a'; c.fillRect(gx - 3, gz - 3, 6, 6); c.strokeStyle = '#000'; c.lineWidth = 1; c.strokeRect(gx - 3, gz - 3, 6, 6); }
     for (const ch of g.chests) if (ch.guaranteed && !ch.open) {                  // the Fusion chest: a gold diamond that blinks
       const cx = X(ch.x), cz = X(ch.z); c.fillStyle = (Math.floor(performance.now() / 350) % 2) ? '#ffe08a' : '#ff9d2a'; c.beginPath(); c.moveTo(cx, cz - 5); c.lineTo(cx + 4, cz); c.lineTo(cx, cz + 5); c.lineTo(cx - 4, cz); c.closePath(); c.fill(); c.lineWidth = 1; c.strokeStyle = '#000'; c.stroke();
     }
