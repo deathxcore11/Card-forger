@@ -2,8 +2,8 @@
 // ------------------------------------------------------------------ clip names
 // canonical name -> real names to try, best first. The right side of FALLBACK is the current Meshy test file.
 export const CLIPS = {
-  idle_cards: ['idle_cards', 'Idle'], select_fidget: ['select_fidget', 'idle_cards', 'Idle'],
-  run: ['run', 'Running'], walk: ['walk', 'Walking'], backpedal: ['backpedal', 'Walk_Backward'], limp_run: ['limp_run', 'Walking'],
+  idle_cards: ['idle_cards', 'Idle_7', 'Idle'], select_fidget: ['select_fidget', 'idle_cards', 'Idle_7', 'Idle'],
+  run: ['run', 'Running'], walk: ['walk', 'Walking_Woman', 'Walking'], backpedal: ['backpedal', 'Walk_Backward'], limp_run: ['limp_run', 'Walking'],
   strafe_left: ['strafe_left', 'Quad_Jump_Left', 'Running'], strafe_right: ['strafe_right', 'Running'],
   jump_rise: ['jump_rise', 'Regular_Jump'], jump_apex: ['jump_apex', 'Regular_Jump'], fall_loop: ['fall_loop', 'Fall1'], air_jump: ['air_jump', 'Jump_with_Arms_and_Legs_Open', 'Regular_Jump'],
   land_light: ['land_light', 'Regular_Jump'], land_heavy: ['land_heavy', 'land_light', 'Regular_Jump'],
@@ -14,7 +14,7 @@ export const CLIPS = {
 };
 // which part of a Regular_Jump-style clip each phase plays (seconds), used only while the real jump_* clips do not exist
 export const JUMP_CUT = { jump_rise: [0.0, 0.45], jump_apex: [0.45, 0.8], fall_loop: [0.8, 1.2] };
-export const UPPER = /^(Spine|Spine01|Spine02|neck|Head|Left(Shoulder|Arm|ForeArm|Hand)|Right(Shoulder|Arm|ForeArm|Hand))/;   // bone name starts that belong to the upper body
+export const UPPER = /^(mixamorig[_:]?)?(Spine\d*|neck|Neck|Head|Left(Shoulder|Arm|ForeArm|Hand)|Right(Shoulder|Arm|ForeArm|Hand))/;   // bone name starts that belong to the upper body
 
 // ------------------------------------------------------------------ state machine (pure: tested without a browser)
 // What the base clip should be for this frame. p = the sim's player, g.over / g.won / g.flash as the sim sets them.

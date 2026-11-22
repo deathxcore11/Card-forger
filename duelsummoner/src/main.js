@@ -55,7 +55,8 @@ const assets = {
   wyvern: await loadModel('assets/models/ember-wyvern.ewv.b64'), hatchling: await loadModel('assets/models/cinder-hatchling.ewv.b64'),
   tyrant: await loadModel('assets/models/twinflare-tyrant.ewv.b64'), apprentice: await loadModel('assets/models/rune-apprentice.ewv.b64')
 };
-assets.kael = await loadRig('assets/models/duelist-kael-anim.glb');         // the skinned, animated duelist; the robe stand-in is used when it is missing
+assets.kael = await loadRig('assets/models/duelist-kael-anim.glb', undefined, [{ url: 'assets/models/duelist-kael-anim-2.glb', seconds: { land_heavy: 0.9 } }]);         // the skinned, animated duelist; the robe stand-in is used when it is missing
+assets.mira = await loadRig('assets/models/duelist-mira-anim.glb');
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 let sceneryGroup = null, mapMesh = null, viewMapKey = '';

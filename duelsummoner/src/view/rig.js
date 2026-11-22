@@ -22,6 +22,26 @@ function accessor(glb, i) {
 }
 const clean = s => String(s).replace(/[^A-Za-z0-9_]/g, '_');                       // three reserves . : / [ ] in track names
 
+
+// Reads the animations of a GLB into AnimationClips. The hips lose their sideways and forward travel so the game, not the clip, moves the duelist.
+export function readClips(glb, names) {
+  const J = glb.json, hips = J.nodes.findIndex(n => /hips/i.test(n.name || '')), clips = new Map();
+  for (const an of J.animations || []) {
+    const tracks = [];
+    for (const ch of an.channels) {
+      const s = an.samplers[ch.sampler], times = accessor(glb, s.input), vals = accessor(glb, s.output), nm = names[ch.target.node];
+      if (ch.target.path === 'translation') { const v = Float32Array.from(vals); if (ch.target.node === hips) for (let k = 0; k < v.length; k += 3) { v[k] = vals[0]; v[k + 2] = vals[2]; } tracks.push(new T.VectorKeyframeTrack(nm + '.position', times, v)); }
+      else if (ch.target.path === 'rotation') tracks.push(new T.QuaternionKeyframeTrack(nm + '.quaternion', times, vals));
+      else if (ch.target.path === 'scale') tracks.push(new T.VectorKeyframeTrack(nm + '.scale', times, vals));
+    }
+    clips.set(an.name, new T.AnimationClip(an.name, -1, tracks));
+  }
+  return clips;
+}
+export function cleanNames(J) { const names = J.nodes.map((n, i) => clean(n.name || 'node' + i)), seen = new Set(); names.forEach((n, i) => { let m = n, k = 1; while (seen.has(m)) m = n + '_' + (k++); names[i] = m; seen.add(m); }); return names; }
+// speed a clip up or down to a new length (a Meshy clip came out 1.97 s long and the game wants 0.9 s)
+export function retime(clip, seconds) { const k = seconds / clip.duration; for (const tr of clip.tracks) for (let i = 0; i < tr.times.length; i++) tr.times[i] *= k; clip.duration = seconds; return clip; }
+
 // Builds { root, clips: Map(name -> AnimationClip), bones: Map(name -> Bone), height } from a GLB buffer. texSize shrinks the texture (the file's is 2048 px or more).
 export async function buildRig(buf, { texSize = 512 } = {}) {
   const glb = parseGlb(buf), J = glb.json, nodes = J.nodes, skin = J.skins && J.skins[0], jointSet = new Set(skin ? skin.joints : []);
@@ -44,28 +64,19 @@ export async function buildRig(buf, { texSize = 512 } = {}) {
       const bmp = await createImageBitmap(blob), c = document.createElement('canvas'); c.width = c.height = texSize; c.getContext('2d').drawImage(bmp, 0, 0, texSize, texSize);
       map = new T.CanvasTexture(c); map.flipY = false;
     }
-    const material = new T.MeshLambertMaterial(map ? { map, side: T.DoubleSide } : { color: 0xcccccc, side: T.DoubleSide });
+    const material = new T.MeshLambertMaterial(map ? { map, side: T.DoubleSide, skinning: true } : { color: 0xcccccc, side: T.DoubleSide, skinning: true })   // three r128: a skinned material must say so;
     skinned = new T.SkinnedMesh(geo, material); skinned.frustumCulled = false; skinned.name = names[i];
     objs[i].add(skinned);
     if (skin) { root.updateMatrixWorld(true); const ibm = accessor(glb, skin.inverseBindMatrices), inv = skin.joints.map((_, k) => new T.Matrix4().fromArray(ibm, k * 16)); skinned.bind(new T.Skeleton(skin.joints.map(j => objs[j]), inv), skinned.matrixWorld); }
   }
-  // the clips; the hips lose their sideways and forward travel so the game, not the animation, moves the duelist
-  const hips = nodes.findIndex(n => /hips/i.test(n.name || '')), clips = new Map();
-  for (const an of J.animations || []) {
-    const tracks = [];
-    for (const ch of an.channels) {
-      const s = an.samplers[ch.sampler], times = accessor(glb, s.input), vals = accessor(glb, s.output), nm = names[ch.target.node];
-      if (ch.target.path === 'translation') { const v = Float32Array.from(vals); if (ch.target.node === hips) for (let k = 0; k < v.length; k += 3) { v[k] = vals[0]; v[k + 2] = vals[2]; } tracks.push(new T.VectorKeyframeTrack(nm + '.position', times, v)); }
-      else if (ch.target.path === 'rotation') tracks.push(new T.QuaternionKeyframeTrack(nm + '.quaternion', times, vals));
-      else if (ch.target.path === 'scale') tracks.push(new T.VectorKeyframeTrack(nm + '.scale', times, vals));
-    }
-    clips.set(an.name, new T.AnimationClip(an.name, -1, tracks));
-  }
+  const clips = readClips(glb, names);
+  for (const [k, c] of buildProcClips({ root })) if (!clips.has(k)) clips.set(k, c);                       // hand-keyed clips fill every name a real clip does not
   const box = new T.Box3().setFromObject(root);
   return { root, clips, height: box.max.y - box.min.y, skinned };
 }
 
 import { CLIPS, UPPER, JUMP_CUT, locomotion } from './rigstate.js';
+import { buildProcClips } from './procclips.js';
 export { CLIPS, UPPER, locomotion };
 
 export class DuelistRig {
@@ -91,6 +102,7 @@ export class DuelistRig {
   }
   // call every frame with the sim's player and game, the frame time, and whether a card was just thrown
   update(p, g, dt, thrown) {
+    if (this.debugHold) return;                                                // a test is posing the rig by hand
     const pr = this.prev; if (p.grounded && !pr.wasGrounded && pr.fallV < -9) { pr.landT = 0.5; pr.landHeavy = true; } else if (p.grounded && !pr.wasGrounded && pr.fallV < -4) { pr.landT = 0.3; pr.landHeavy = false; }
     if (!p.grounded) pr.fallV = p.vy; if (pr.landT > 0) pr.landT -= dt; if (p.airUsed > pr.airUsed) { pr.airJump = 0.5; } pr.airUsed = p.airUsed || 0; if (pr.airJump > 0) pr.airJump -= dt; pr.wasGrounded = p.grounded;
     if (this.holdUntil && performance.now() < this.holdUntil) { this.mixer.update(dt); return; }              // a one-shot (hurt, level up, summon...) is playing
@@ -107,6 +119,9 @@ export class DuelistRig {
   once(name) { const a = this._play(name, { loop: false, fade: 0.08 }); if (a) { if (this.curAct && this.curAct !== a) this.curAct.fadeOut(0.08); this.curAct = a; this.cur = '@' + name; this.holdUntil = performance.now() + a.getClip().duration * 1000; } return !!a; }
 }
 
-export async function loadRig(url, opts) {
-  try { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) return null; const built = await buildRig(await r.arrayBuffer(), opts); return built; } catch (e) { console.error('rig load failed', e); return null; }
+// extras: [{ url, rename: { 'land_heavy': 'land_heavy' }, seconds: { land_heavy: 0.9 } }] - clips exported from Meshy one at a time, merged by bone name
+export async function loadRig(url, opts, extras = []) {
+  try { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) return null; const built = await buildRig(await r.arrayBuffer(), opts);
+    for (const ex of extras) { try { const rr = await fetch(ex.url, { cache: 'no-store' }); if (!rr.ok) continue; const g = parseGlb(await rr.arrayBuffer()); for (const [k, c] of readClips(g, cleanNames(g.json))) { if (ex.seconds && ex.seconds[k]) retime(c, ex.seconds[k]); built.clips.set(built.clips.has(k) && !ex.replace ? k + '_meshy' : k, c); } } catch (e) { /* optional */ } }
+    return built; } catch (e) { console.error('rig load failed', e); return null; }
 }
