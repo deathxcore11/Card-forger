@@ -1,0 +1,426 @@
+[
+ {
+  "id": "ds-first-run",
+  "name": "Into the Sand",
+  "condition": "tab summoner; source ds_runs; steps [1]; feat; reward 'xp'. Lore: 'Finish your first Duel Summoner run, win or lose. The Colosseum remembers every challenger.'",
+  "tier": "feat",
+  "reward": "100 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-full-field",
+  "name": "Full Field",
+  "condition": "source ds_f_fullfield (one run fills all 4 Monster and all 4 Spell/Trap Zones); steps [1]; feat; reward 'xp'. The skeptic found it trivial (8 picks), so it is downgraded from 'common' to 'xp', like first-spark (play-achievements.js:46). Lore: 'Fill all 4 Monster Zones and all 4 Spell and Trap Zones in one run.'",
+  "tier": "feat",
+  "reward": "100 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-first-pharaoh",
+  "name": "The Final Round",
+  "condition": "source ds_boss (any boss win, Eye included); steps [1]; feat; reward 'feat'. Lore: 'Defeat the Hollow Pharaoh for the first time.'",
+  "tier": "feat",
+  "reward": "300 coins + 1 pack + 100 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-runs",
+  "name": "Sand in the Boots",
+  "condition": "source ds_runs; steps [10,50,250]. Lore: 'Duel Summoner runs finished. Every run moves something forward.'",
+  "tier": "bronze/silver/gold",
+  "reward": "bronze: uncommon seal + 100 XP; silver: rare seal + 250 XP; gold: mythic seal + 500 XP + 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-pharaoh-falls",
+  "name": "Dynasty's End",
+  "condition": "source ds_boss; steps [5,25,100]. Lore: 'Times you defeated the Hollow Pharaoh, at any Heat.'",
+  "tier": "bronze/silver/gold",
+  "reward": "default tier rewards; the gold step adds 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-overtime",
+  "name": "Past the Final Bell",
+  "condition": "source ds_ot_minutes (minutes after 8:00, server-capped at 120 per run); steps [60,300,600,1200]; unit 'h' (stored in minutes, shown in hours, as table-time does at play-achievements.js:48). Lore: 'Hours survived in Overtime. The hunters never stop coming.'",
+  "tier": "bronze/silver/gold/mythic",
+  "reward": "gold: mythic seal + 500 XP + 1 Collector pack; mythic: mythic seal + 1,000 coins + 1,000 XP + 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-still-standing",
+  "name": "Still Standing",
+  "condition": "source ds_f_ot20 (one run reaches the 28:00 mark); steps [1]; feat; reward 'uncommon'. Lore: 'Survive 20 minutes of Overtime in one run.'",
+  "tier": "feat",
+  "reward": "200 coins + 150 XP + 1 uncommon seal",
+  "hidden": false
+ },
+ {
+  "id": "ds-sweep-the-sands",
+  "name": "Sweep the Sands",
+  "condition": "source ds_kills (server cap 400 kills per run-minute, so long Overtime runs are not clipped); steps [5000,50000,250000]. The old 2,000 step mirrored Zuri's unlock quest, so it was moved. Lore: 'Enemies your field defeated in Duel Summoner.'",
+  "tier": "bronze/silver/gold",
+  "reward": "the gold step adds 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-every-face",
+  "name": "Every Face",
+  "condition": "source '#dsfull' (distinct keys dsfull:<monster> when a monster reaches level 10); steps [6,12]. HOLD until the launch monster list and the level 1-10 rule are frozen; the top step is the launch monster count. Lore: 'Different monsters raised to their full form. All 12 of the launch set.'",
+  "tier": "bronze/gold",
+  "reward": "the gold step adds 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-seals-broken",
+  "name": "Seals Broken",
+  "condition": "source ds_fusions; steps [1]; feat; reward 'uncommon'. Lore: 'Fuse two partner monsters for the first time.' The lore no longer says level 10, because Polymer Flask lowers the gate.",
+  "tier": "feat",
+  "reward": "200 coins + 150 XP + 1 uncommon seal",
+  "hidden": false
+ },
+ {
+  "id": "ds-bound-in-pairs",
+  "name": "Bound in Pairs",
+  "condition": "source ds_fusions; steps [10,100,500]. Lore: 'Fusions made. Two partners, one new creature.'",
+  "tier": "bronze/silver/gold",
+  "reward": "the gold step adds 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-pair-book",
+  "name": "The Pair Book",
+  "condition": "source '#dsfu'; steps [3,6]; tiers ['bronze','silver']. HOLD until the launch Fusion list is final. Lore: 'Different Fusions made. All 6 of the launch set.'",
+  "tier": "bronze/silver",
+  "reward": "uncommon seal + 100 XP; rare seal + 250 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-double-seal",
+  "name": "Double Seal",
+  "condition": "source ds_f_twofusions (two Fusions on the field at once before 8:00); steps [1]; feat; reward 'uncommon'. Lore: 'Hold two Fusions at once before the Pharaoh arrives.'",
+  "tier": "feat",
+  "reward": "uncommon",
+  "hidden": false
+ },
+ {
+  "id": "ds-second-bloom",
+  "name": "Second Bloom",
+  "condition": "source ds_f_fusion10 (a Fusion reaches level 10); steps [1]; feat; reward 'common'. This replaces the dropped ds-full-grown, which overlapped with Every Face and Eightfold. Lore: 'Raise a Fusion from level 1 to its full form.'",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-above-the-field",
+  "name": "Above the Field",
+  "condition": "source ds_gods; steps [1]; feat; reward 'feat'. Lore: 'Fuse two Fusions into a God Fusion.'",
+  "tier": "feat",
+  "reward": "300 coins + 1 pack + 100 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-pantheon",
+  "name": "Pantheon",
+  "condition": "source '#dsgod'; steps [3] (a one-step chain, so gold). HOLD until the launch God Fusion list exists, then set the step to that count or lower. Lore: 'Make 3 different God Fusions.' The verb is 'make', not 'raise', because God Fusions arrive at level 10.",
+  "tier": "gold",
+  "reward": "mythic seal + 500 XP + 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-eightfold",
+  "name": "Eightfold",
+  "condition": "source '#dsel' (a key dsel:<element> is written for every element on a monster or Fusion when it reaches level 10, so a dual-element Fusion writes two keys); steps [4,8]; tiers ['bronze','silver']. HOLD until the launch set's element assignment is confirmed; the top step is the number of elements present at launch. Lore: 'Raise a monster of each element to level 10.'",
+  "tier": "bronze/silver",
+  "reward": "uncommon seal + 100 XP; rare seal + 250 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-chemistry-of-ruin",
+  "name": "Chemistry of Ruin",
+  "condition": "source ds_react, defined as one count per reaction event (shatter, poison explosion, fire spread by Wind), not per enemy hit, server-capped at 500 per run; steps [250,2500,15000]. Lore: 'Element reactions set off by your field.'",
+  "tier": "bronze/silver/gold",
+  "reward": "the gold step adds 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-brittle-ending",
+  "name": "Brittle Ending",
+  "condition": "source ds_f_shatter10 (10 frozen enemies shattered by Lightning within 3 s); steps [1]; feat; reward 'common'. Renamed from 'Cold Snap', which is a Magic card name. Lore: 'Shatter 10 frozen enemies with Lightning in 3 seconds.'",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-fanned-flames",
+  "name": "Fanned Flames",
+  "condition": "source ds_f_wildfire (Wind spreads Fire to 25 enemies within 5 s); steps [1]; feat; reward 'common'. Lore: 'Let the wind carry your fire to 25 enemies in 5 seconds.'",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-chain-reaction",
+  "name": "Chain Reaction",
+  "condition": "source ds_f_react25 (25 reaction events within 5 s); steps [1]; feat; reward 'uncommon'. Renamed from 'Cascade', which collided with Story deed a16-cascade; 'Chain Reaction' was checked by node against every ACHIEVEMENTS title and is free. Lore: 'Set off 25 element reactions within 5 seconds.'",
+  "tier": "feat",
+  "reward": "uncommon",
+  "hidden": false
+ },
+ {
+  "id": "ds-seven-of-gold",
+  "name": "Seven of Gold",
+  "condition": "source '#dsst' (keys dsst:1-7, across runs); steps [7]; feat; reward 'feat'. Lore: 'Find all seven golden relic statues of the Buried Kingdom.'",
+  "tier": "feat",
+  "reward": "300 coins + 1 pack + 100 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-witnessed",
+  "name": "Witnessed",
+  "condition": "source ds_statue_trials; steps [10,50]; tiers ['bronze','silver']. Lore: 'Duel Statue challenges won. The stone keeps score.'",
+  "tier": "bronze/silver",
+  "reward": "uncommon seal + 100 XP; rare seal + 250 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-oath-kept",
+  "name": "Oath Kept",
+  "condition": "source ds_f_secondseal, credited only when winType is 'normal' (not an Eye win); steps [1]; feat; reward 'uncommon'. Lore: 'Take the Oath of the Second Seal, then defeat the Pharaoh in a fair fight.'",
+  "tier": "feat",
+  "reward": "uncommon",
+  "hidden": false
+ },
+ {
+  "id": "ds-bone-debt",
+  "name": "Bone Debt",
+  "condition": "source ds_f_oaths5, normal wins only; steps [1]; feat; reward 'uncommon'. Lore: 'Take all 5 Bone Oaths in one run and still defeat the Pharaoh.'",
+  "tier": "feat",
+  "reward": "uncommon",
+  "hidden": false
+ },
+ {
+  "id": "ds-sealed-verdict",
+  "name": "Sealed Verdict",
+  "condition": "source ds_f_eye (a boss won through the Eye item); steps [1]; feat; reward 'common'. This is the only row that rewards the Eye. Lore: 'Gather all five sealed fragments and end the boss fight in one stroke.' The item's Exodia echo is flagged to Randall.",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-relic-shelf",
+  "name": "Relic Shelf",
+  "condition": "source '#dsit'; steps [15,30]; tiers ['bronze','silver']. HOLD until the item list is final; the bible contradicts itself on how items are obtained. Lore: 'Different items carried in runs.'",
+  "tier": "bronze/silver",
+  "reward": "uncommon seal + 100 XP; rare seal + 250 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-six-hands",
+  "name": "Six Hands",
+  "condition": "source '#dsdu' (a key dsdu:<duelist> is written on a normal-win Pharaoh kill); steps [3,6]. Lore: 'Defeat the Pharaoh in a fair fight with different duelists.'",
+  "tier": "bronze/gold",
+  "reward": "the gold step adds 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-into-the-heat",
+  "name": "Into the Heat",
+  "condition": "source '#dsh' (keys dsh:1-5, normal wins only, because server counters only add); steps [1,3,5]. Lore: 'Heat levels cleared on the Buried Kingdom. Each clear opens the next.'",
+  "tier": "bronze/silver/gold",
+  "reward": "the gold step adds 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-every-hand-burns",
+  "name": "Every Hand Burns",
+  "condition": "source '#dsh5' (key dsh5:<duelist>, normal win at Heat 5); steps [6] (a one-step chain, gold). Lore: 'Clear Heat 5 with all six duelists.'",
+  "tier": "gold",
+  "reward": "mythic seal + 500 XP + 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-whole-library",
+  "name": "The Whole Library",
+  "condition": "source '#dslib' (key dslib:<cardId>, bumped once per unlock, not an absolute total taken from the save); steps [30,40]. HOLD until the launch card list is final. The top step is set below the total so later changes cannot strand it. Lore: 'Cards unlocked in the Card Library.'",
+  "tier": "bronze/gold",
+  "reward": "the gold step adds 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-well-stocked",
+  "name": "Well Stocked",
+  "condition": "source '#dsdb' (key dsdb:<upgrade>:<rank>, bumped once per purchase); steps [20,60]; tiers ['bronze','silver']. Lore: 'Deck Box upgrade ranks bought with Star Chips. Sixty fills the box.'",
+  "tier": "bronze/silver",
+  "reward": "uncommon seal + 100 XP; rare seal + 250 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-nothing-face-down",
+  "name": "Nothing Face Down",
+  "condition": "source ds_f_notrap (normal win at Heat 2 or higher with no Trap ever set). The Heat 2 requirement keeps it distinct from the bible's quest example. Steps [1]; feat; reward 'uncommon'. Lore: 'Defeat the Pharaoh at Heat 2 or higher without setting a single Trap.'",
+  "tier": "feat",
+  "reward": "uncommon",
+  "hidden": false
+ },
+ {
+  "id": "ds-knock-early",
+  "name": "Knock Early",
+  "condition": "source ds_f_earlygate (Royal Gate opened before 8:00, then a normal win); steps [1]; feat; reward 'uncommon'. Lore: 'Open the Royal Gate before the clock runs out, and win.'",
+  "tier": "feat",
+  "reward": "uncommon",
+  "hidden": false
+ },
+ {
+  "id": "ds-lean-field",
+  "name": "Lean Field",
+  "condition": "source ds_f_lean (normal win at Heat 3 or higher with maxMonstersOnField of 2 or fewer at any moment; a Fusion counts as 1); steps [1]; feat; reward 'feat'. Lore: 'Win at Heat 3 or higher with never more than two monsters on your field at once.'",
+  "tier": "feat",
+  "reward": "300 coins + 1 pack + 100 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-card-rain",
+  "name": "Card Rain",
+  "condition": "source ds_f_storm50 (one Storm of Cards cast damages 50 or more enemies); steps [1]; feat; reward 'common'. Fills the Spell coverage gap. Lore: 'Hit 50 enemies with a single Storm of Cards.'",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-past-the-margin",
+  "name": "Past the Margin",
+  "condition": "source ds_f_tomebinder (a Spell levelled beyond its cap with Tome Binder); steps [1]; feat; reward 'uncommon'. Lore: 'Push a Spell past its limit with the Tome Binder.'",
+  "tier": "feat",
+  "reward": "uncommon",
+  "hidden": false
+ },
+ {
+  "id": "ds-spring-loaded",
+  "name": "Spring-Loaded",
+  "condition": "source ds_traps (Trap activations, capped at 300 per run); steps [100,1000]; tiers ['bronze','silver']. Fills the Trap coverage gap. Lore: 'Traps your field set off in Duel Summoner.'",
+  "tier": "bronze/silver",
+  "reward": "uncommon seal + 100 XP; rare seal + 250 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-second-thoughts",
+  "name": "Second Thoughts",
+  "condition": "source ds_tributes (a Tribute or Banish at the Altar of Tribute); steps [1]; feat; reward 'xp'. Teaches the only way to change a build. Lore: 'Offer a card at the Altar of Tribute and choose again.'",
+  "tier": "feat",
+  "reward": "100 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-one-bloodline",
+  "name": "One Bloodline",
+  "condition": "source '#dsmono' (key dsmono:<type> on a normal win where every monster fielded was one type: Dragon, Spellcaster, Warrior, Beast, Machine or Fiend); steps [1,6]. Lore: 'Defeat the Pharaoh with a field of a single monster type. Then do it with all six.'",
+  "tier": "bronze/gold",
+  "reward": "the gold step adds 1 Collector pack",
+  "hidden": false
+ },
+ {
+  "id": "ds-jackals-paired",
+  "name": "Jackals Paired",
+  "condition": "source ds_f_twinidols (both Twin Jackal Idols killed within 10 s); steps [1]; feat; reward 'common'. Lore: 'Bring down both Twin Jackal Idols within 10 seconds.'",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-mind-your-back",
+  "name": "Mind Your Back",
+  "condition": "source ds_f_wardenback (the Sealed Warden's killing blow lands from behind); steps [1]; feat; reward 'common'. Lore: 'Finish the Sealed Warden with a strike from behind.'",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-grand-tour",
+  "name": "Grand Tour",
+  "condition": "source ds_f_districts5 (all five districts visited in one run); steps [1]; feat; reward 'common'. Lore: 'Set foot in all five districts of the Buried Kingdom in one run.'",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-clay-pigeons",
+  "name": "Clay Pigeons",
+  "condition": "source ds_f_allvases (every vase on the map broken in one run); steps [1]; feat; reward 'common'. Lore: 'Break every vase in the Buried Kingdom in one run.'",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-echoes-in-the-forge",
+  "name": "Echoes in the Forge",
+  "condition": "source ds_forge (Echo Forge used); steps [1]; feat; reward 'xp'. Lore: 'Use the Echo Forge for the first time.'",
+  "tier": "feat",
+  "reward": "100 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-endless-hour",
+  "name": "The Endless Hour",
+  "condition": "tab hidden (the existing convention); source ds_f_60mark (one run reaches the 60:00 mark, which is 52 min of Overtime and matches the bible's 'survives an hour' fantasy); steps [1]; feat; hidden. Riddle: 'The clock ran out long ago, and still the sand obeys you.' Confirm it can be reached under launch Overtime balance.",
+  "tier": "feat (hidden)",
+  "reward": "500 coins + 1 Collector pack + 250 XP + 1 rare seal",
+  "hidden": true
+ },
+ {
+  "id": "ds-whispered-name",
+  "name": "Whispered Name",
+  "condition": "tab hidden; source '#dssec'; steps [1]; feat; hidden. Riddle: 'Some names are never written down.' The riddle does not reveal the recipe, because riddles are sent unredacted (play-achievements.js:471-473). This single row replaces the dropped duplicate ds-never-printed. Do not ship it until at least one Secret Fusion exists in the data.",
+  "tier": "feat (hidden)",
+  "reward": "500 coins + 1 Collector pack + 250 XP + 1 rare seal",
+  "hidden": true
+ },
+ {
+  "id": "ds-unmarked",
+  "name": "Unmarked",
+  "condition": "tab hidden; source ds_f_noboss_dmg (a normal win taking zero LP damage during the boss fight); steps [1]; feat; hidden. Riddle: 'The Pharaoh never laid a finger on you.' Fills the no-damage coverage gap. Titles 'Untouched' and 'Not a Scratch' are already taken (node check).",
+  "tier": "feat (hidden)",
+  "reward": "500 coins + 1 Collector pack + 250 XP + 1 rare seal",
+  "hidden": true
+ },
+ {
+  "id": "ds-kindred-seal",
+  "name": "Kindred Seal",
+  "condition": "CROSS-GAME, excluded from glory. The server joins dsst:<n> with a server-held lm:beaten:<guardian> key that a future Lost Memories run report writes. Steps [1]; feat; reward 'common'. Ship only after the Lost Memories report route exists. Lore: 'Find a golden statue whose guardian you have already beaten in Lost Memories.'",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-borrowed-memory",
+  "name": "Borrowed Memory",
+  "condition": "CROSS-GAME, optional, excluded from glory, because it needs the Cross-game links switch turned on. Source ds_links; steps [1]; feat; reward 'xp'. Lore: 'Take a linked choice that only Lost Memories could give.'",
+  "tier": "feat",
+  "reward": "100 XP",
+  "hidden": false
+ },
+ {
+  "id": "ds-ledger-of-seven",
+  "name": "Ledger of Seven",
+  "condition": "CROSS-GAME, excluded from glory. All 7 statues found plus the server-held lm:beaten keys for the six guardians. The Last One is dropped from the condition because it sits behind an off Lab switch (crucible-crossgame-1122.md:11). Steps [1]; feat; reward downgraded to 'common'. Lore: 'Find every statue and beat every guardian it honours.'",
+  "tier": "feat",
+  "reward": "common",
+  "hidden": false
+ },
+ {
+  "id": "ds-three-roads",
+  "name": "Three Roads",
+  "condition": "CROSS-GAME, excluded from glory. The server sees a Duel Summoner win, a Lost Memories clear and a Planeswalk win, all from /adventure reports. Steps [1]; feat; reward 'uncommon'. Ship only when all three games report. Lore: 'Win a run in all three Adventures.'",
+  "tier": "feat",
+  "reward": "uncommon",
+  "hidden": false
+ },
+ {
+  "id": "glory-summoner",
+  "name": "Lord of the Circle",
+  "condition": "tab glory; source 'glory'; glory {ids:[every ds-* row above except the four cross-game rows]}, need 30; steps [1]; feat; reward 'glory'; titleReward 'the Summoner'. Lore: 'Finish 30 Duel Summoner achievements.'",
+  "tier": "feat (glory)",
+  "reward": "500 coins + 250 XP + 1 rare seal + Secret Lair style; title 'the Summoner'",
+  "hidden": false
+ }
+]
