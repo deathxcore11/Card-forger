@@ -3,6 +3,9 @@ import { CFG } from '../data/config.js';
 import { clock } from '../core/util.js';
 import { MONSTERS, FUSIONS, SPELLS, TRAPS, FIELD_RULES, LEVELS, formOf } from '../data/cards.js';
 import { fusionsReady } from '../sim/field.js';
+import { STAT_INFO, fmtStat } from '../data/stats.js';
+import { mightBracket, targetBracket, critMul } from '../sim/ledger.js';
+import { K } from '../data/tuning.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 
 const $ = id => document.getElementById(id);
@@ -100,6 +103,22 @@ export function drawHud(g, force) {
   $('stats').textContent = st.join('\n'); $('stats').style.whiteSpace = 'pre';
 }
 
+// The stat panel (Tab): every stat with its total and where it comes from, and the product of the damage brackets.
+let panelKey = '';
+export function drawStatPanel(g, on) {
+  const el = $('statPanel'); if (!on) { if (el.style.display !== 'none') el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const M = g.mods, src = g.sheetSrc || {}, rows = [];
+  for (const s of STAT_INFO) {
+    const v = M[s.mod] || 0; if (!v) continue;
+    const parts = (src[s.mod] || []).map(p => p[0] + ' ' + fmtStat(s, p[1]).replace('+', '')).join(' + ');
+    rows.push('<div><b>' + s.label + ' ' + fmtStat(s, v) + '</b>' + (parts ? ' <span class="dim">= ' + parts + '</span>' : '') + (s.ceiling ? ' <span class="dim">(' + s.ceiling + ')</span>' : '') + '</div>');
+  }
+  const might = mightBracket(M.dmgMult), hunter = targetBracket(M.bossDmg);
+  const html = '<h3 style="margin:0 0 6px;letter-spacing:2px;color:#d8c08a">STATS <span class="dim" style="font-size:11px">(Tab to close)</span></h3>' + (rows.join('') || '<div class="dim">No bonuses yet.</div>') +
+    '<div style="margin-top:8px"><b>Damage brackets</b> Might x' + might.toFixed(2) + ' (ceiling x' + (1 + K.knee1 + K.kneeK1).toFixed(1) + ') &middot; Hunter/marks x' + hunter.toFixed(2) + ' &middot; Crit x' + K.critBase + ' at ' + Math.round((0.05 + (M.crit || 0)) * 100) + '%</div>';
+  if (html !== panelKey) { panelKey = html; el.innerHTML = html; }
+}
 export function showBanner(text) {
   const b = $('banner'); b.textContent = text; b.classList.add('on'); clearTimeout(bannerT); bannerT = setTimeout(() => b.classList.remove('on'), 3200);
 }

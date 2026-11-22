@@ -16,7 +16,7 @@ const DEG = Math.PI / 180, RAMP_C = 0xb98c56;
 const polar = (r, deg) => [r * cos(deg * DEG), r * sin(deg * DEG)];
 
 export const DEFAULT_GEN = {
-  spine: [150, 520], opening: 90, ringCover: 0.88, ringReach: 86, groundCover: 0.9, gateSepMin: 170, spawnAnnulus: 0.4,
+  minFillers: 1, minPlats: 3, spine: [150, 520], opening: 90, ringCover: 0.88, ringReach: 86, groundCover: 0.9, gateSepMin: 170, spawnAnnulus: 0.4,
   counts: { cchest: 8, stone: 2, broker: 1, shrine: 3, altar: 1, vaseClusters: 12 }, minCounts: { cchest: 6, stone: 1, broker: 1, shrine: 2, altar: 1 }
 };
 
@@ -141,7 +141,7 @@ function tryLayout(as, stage, spec, G) {
       break;
     }
   }
-  if (plats.length < 3) return { fail: 'too few plateaus (' + plats.length + ')' };
+  if (plats.length < G.minPlats) return { fail: 'too few plateaus (' + plats.length + ')' };
   // low mounds (0.5 m): slide lines and a less flat ground
   for (let i = 0; i < 36; i++) { const x = rs.range(-LAYOUT_R, LAYOUT_R), z = rs.range(-LAYOUT_R, LAYOUT_R); if (dist(x - sx, z - sz) < 40 || dist(x, z) > LAYOUT_R) continue; const w = 6 + rs.int(9); kP.box(x - w, z - w / 2, x + w, z + w / 2, 0.5, 0xd2b27a, { rot: rs.int(180) }); }
   // fillers
@@ -150,7 +150,7 @@ function tryLayout(as, stage, spec, G) {
     const id = rd.pick(FILLER_POOL), plan = KITS[id].plan(rd);
     for (let t = 0; t < 140; t++) { const x = rd.range(-LAYOUT_R, LAYOUT_R), z = rd.range(-LAYOUT_R, LAYOUT_R); if (fits(x, z, plan.r, 7)) { emit(id, x, z, plan, rngFor(as, 'kit:' + (n++))); fillers++; break; } }
   }
-  if (fillers < 1) return { fail: 'too few fillers (' + fillers + ')' };
+  if (fillers < G.minFillers) return { fail: 'too few fillers (' + fillers + ')' };
 
   // rasterise and test
   const grid = new Float32Array(N * N); rasterizeInto(grid, N, HALF, prims, BOUNDARY);
@@ -246,8 +246,10 @@ function canon(m) {
 // seed: the run seed (32 bits). stage: 0, 1, 2. spec: optional overrides of DEFAULT_GEN.
 export function generateStage(seed, stage, spec) {
   const G = Object.assign({}, DEFAULT_GEN, spec || {}), lo = seed >>> 0, ss = stageSeed(lo, 0, stage), sealCode = sealCodeFrom(lo, 0), fails = [];
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const r = tryLayout(attemptSeed(ss, attempt), stage, G.stageSpec || G, G);
+  // attempts 0-7 use the full thresholds; 8-15 relax them step by step but still generate a map (it never falls back to the fixed one)
+  const relaxed = Object.assign({}, G, { minFillers: 0, minPlats: 1, ringCover: 0.7, groundCover: 0.8, spine: [90, 800], gateSepMin: 110, spawnAnnulus: 0.3, minCounts: { cchest: 3, stone: 1, broker: 1, shrine: 1, altar: 1 } });
+  for (let attempt = 0; attempt < 16; attempt++) {
+    const r = tryLayout(attemptSeed(ss, attempt), stage, G.stageSpec || G, attempt < 8 ? G : relaxed);
     if (r.ok) {
       const m = { key: '', sealCode, stage, attempt, fallback: false, half: HALF, prims: r.prims, districts: r.districts, spawn: r.spawn, gate: r.gate, arena: r.arena, bossRings: r.bossRings, encounters: r.encounters, report: { genVersion: GEN_VERSION, attempt, metrics: r.metrics, kits: r.kits, failedAttempts: fails } };
       const h = fnv1a32(canon(m) + '|' + GEN_VERSION + '|' + stage); m.hash = h.toString(16).padStart(8, '0'); m.key = 'gen-' + m.hash;

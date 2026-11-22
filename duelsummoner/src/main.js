@@ -7,7 +7,7 @@ import { buildMapMesh } from './view/mapMesh.js';
 import { Actors } from './view/actors.js';
 import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
-import { drawHud, showFlash, showBanner } from './view/hud.js';
+import { drawHud, showFlash, showBanner, drawStatPanel } from './view/hud.js';
 import { showOffer, offerKey } from './view/offer.js';
 import { loadModel, loadPuffTexture } from './view/models.js';
 import { spawnEnemy } from './sim/enemies.js';
@@ -117,6 +117,8 @@ document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && MODE === 'play') setMode('pause');
   else if (MODE === 'play') $('hint').textContent = '';
 });
+let statsOpen = false;
+window.addEventListener('keydown', e => { if (e.code === 'Tab' && (MODE === 'play' || MODE === 'pause')) { e.preventDefault(); statsOpen = !statsOpen; drawStatPanel(game, statsOpen); } });
 window.addEventListener('keydown', e => {
   if (e.code === 'Escape' && MODE === 'play' && !document.pointerLockElement) setMode('pause');
   if (MODE === 'offer' && !e.repeat) offerKey(game, e.code, menu);
@@ -238,7 +240,7 @@ function frame(now) {
     prof.sim = performance.now() - s0; stepMs += prof.sim;
     drainEvents();
     if (game.over && MODE === 'play') results();
-    if (MODE === 'play') drawHud(game, false);
+    if (MODE === 'play') { drawHud(game, false); if (statsOpen) drawStatPanel(game, true); }
   }
   const a0 = performance.now(), p = game.p;
   ip.x = p.px + (p.x - p.px) * alpha; ip.y = p.py + (p.y - p.py) * alpha; ip.z = p.pz + (p.z - p.pz) * alpha;
