@@ -1,0 +1,216 @@
+<title>Duel Summoner Asset Tool</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+/* Layout: a workbench. One "next up" card at the top, then every asset as a row that opens into numbered steps. Sandstone, teal and gold, like the game's own frames. */
+:root{--bg:#f3ead6;--panel:#fbf6ea;--ink:#2a2118;--mute:#6f5d47;--line:#d8c6a2;--teal:#17707c;--teal-ink:#fff;--gold:#a87812;--done:#3f7d3a;--warn:#a3203a;--code:#efe4cc;
+--disp:"Trebuchet MS","Segoe UI",system-ui,sans-serif;--body:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;--mono:Consolas,"Cascadia Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a22;--panel:#1a2530;--ink:#efe6d2;--mute:#a9b4bd;--line:#2f4050;--teal:#3fc2d0;--teal-ink:#0d1418;--gold:#e3b23c;--done:#7fd07a;--warn:#ff7a8a;--code:#0f161d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121a22;--panel:#1a2530;--ink:#efe6d2;--mute:#a9b4bd;--line:#2f4050;--teal:#3fc2d0;--teal-ink:#0d1418;--gold:#e3b23c;--done:#7fd07a;--warn:#ff7a8a;--code:#0f161d;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body)}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 90px}
+h1,h2,h3{font-family:var(--disp);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(26px,5vw,40px);color:var(--teal);letter-spacing:.01em}
+h2{font-size:22px;margin:30px 0 8px;padding-top:10px;border-top:3px solid var(--gold)}
+h3{font-size:17px;margin:18px 0 4px}
+p{max-width:72ch;margin:6px 0}
+button{font:600 14px var(--body);cursor:pointer;border:1px solid var(--teal);background:var(--teal);color:var(--teal-ink);padding:8px 14px;border-radius:4px}
+button.ghost{background:transparent;color:var(--teal)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.sub{color:var(--mute)}
+.bar{height:14px;background:var(--code);border:1px solid var(--line);border-radius:7px;overflow:hidden;margin:8px 0 2px}
+.bar i{display:block;height:100%;background:var(--done);width:0;transition:width .3s}
+.counts{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14px;color:var(--mute);font-variant-numeric:tabular-nums}
+.counts b{color:var(--ink)}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:6px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line);margin-top:10px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.tabs button{background:var(--panel);color:var(--ink);border-color:var(--line)}
+.tabs button[aria-selected="true"]{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+.next{background:var(--panel);border:2px solid var(--gold);border-radius:8px;padding:14px 16px;margin:16px 0}
+.next .lbl{font:700 12px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.next h3{margin:2px 0 2px;font-size:20px}
+.next .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.next button{padding:11px 18px;font-size:15px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 6px}
+.filters select,.filters input[type=search]{font:15px var(--body);padding:8px 10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;min-width:0}
+.filters input[type=search]{flex:1 1 180px}
+.filters label{display:inline-flex;gap:6px;align-items:center;font-size:14px}
+.ghead{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:24px 0 2px}
+.ghead h3{margin:0}.ghead .kind{font-size:12px;border:1px solid var(--line);padding:1px 8px;border-radius:10px;color:var(--mute);white-space:nowrap}
+.ghead .left{margin-left:auto;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+details.a{background:var(--panel);border:1px solid var(--line);border-radius:6px;margin:6px 0;scroll-margin-top:70px}
+details.a[open]{border-color:var(--teal)}
+details.a>summary{list-style:none;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;padding:10px 12px;cursor:pointer}
+details.a>summary::-webkit-details-marker{display:none}
+.code{font:700 13px var(--mono);color:var(--teal);min-width:50px}
+.nm{font-weight:600;flex:1 1 180px;min-width:0}
+.prog{font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--line);white-space:nowrap}
+.a.fin>summary .nm{color:var(--mute);text-decoration:line-through;text-decoration-color:var(--done)}
+.a.fin .pill{background:var(--done);color:var(--bg);border-color:var(--done)}
+.ab{padding:2px 14px 14px}
+.what{font-size:14px;color:var(--mute);margin:0 0 8px}
+dl.f{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:2px 12px;margin:6px 0 10px;font-size:14px}
+dl.f dt{color:var(--mute)}dl.f dd{margin:0}
+.anim{border-left:4px solid var(--gold);padding:6px 10px;background:var(--code);font-size:14px;margin:8px 0}
+.step{border:1px solid var(--line);border-radius:6px;margin:10px 0;background:var(--bg)}
+.step.ok{border-color:var(--done)}
+.sh{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 10px}
+.sh input{width:22px;height:22px;accent-color:var(--done);flex:none}
+.sh .t{font-weight:600;flex:1 1 200px;min-width:0}
+.sh .num{font:700 13px var(--mono);color:var(--gold)}
+.tool{font-size:12px;padding:1px 8px;border-radius:10px;background:var(--teal);color:var(--teal-ink);white-space:nowrap}
+.auto{font-size:12px;color:var(--done)}
+pre{margin:0;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.5 var(--mono);background:var(--code);color:var(--ink);max-height:300px;overflow:auto;border-top:1px solid var(--line)}
+.alt{padding:8px 10px;border-top:1px solid var(--line);font-size:13px}
+.alt pre{border:1px solid var(--line);margin-top:6px;max-height:120px}
+.save{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 10px;border-top:1px solid var(--line);font-size:13px}
+.save code{font:12.5px var(--mono);overflow-wrap:anywhere;min-width:0}
+.save button,.alt button{padding:4px 10px;font-size:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px}
+.card p{font-size:14px;color:var(--mute)}
+.tree{font:13px/1.6 var(--mono);background:var(--code);border:1px solid var(--line);padding:10px 14px;white-space:pre;overflow-x:auto}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);padding:3px 8px 3px 3px;font-size:13px}
+.chip i{width:22px;height:22px;display:inline-block;border:1px solid rgba(0,0,0,.25)}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:14px;min-width:480px}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--teal)}
+.never{border-left:4px solid var(--warn);background:var(--panel);padding:10px 14px;font-size:14px}
+li{margin:3px 0;max-width:80ch}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:20px;font-size:14px;z-index:20;pointer-events:none}
+.empty{padding:20px;text-align:center;color:var(--mute)}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+<div class="wrap">
+  <h1>Duel Summoner Asset Tool</h1>
+  <p class="sub">Every picture, 3D model, sound and song the game needs. Each one is a few steps: copy the prompt, paste it, save the result where it says, tick the box.</p>
+  <div class="bar" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="100" id="barBox"><i id="bar"></i></div>
+  <div class="counts" id="counts"></div>
+  <div class="tabs" role="tablist">
+    <button role="tab" data-tab="make" aria-selected="true">Make</button>
+    <button role="tab" data-tab="guide" aria-selected="false">How it works</button>
+    <button role="tab" data-tab="look" aria-selected="false">The look</button>
+    <button role="tab" data-tab="screens" aria-selected="false">Screens and controls</button>
+  </div>
+
+  <section id="tab-make">
+    <div class="next" id="next"></div>
+    <div class="filters">
+      <select id="fg" aria-label="Category"></select>
+      <input id="fq" type="search" placeholder="Find: tree, chest, dragon, W118…" aria-label="Find an asset">
+      <label><input id="fh" type="checkbox"> Hide finished</label>
+    </div>
+    <div id="list"></div>
+  </section>
+  <section id="tab-guide" hidden></section>
+  <section id="tab-look" hidden></section>
+  <section id="tab-screens" hidden></section>
+  <p class="sub" id="built" style="margin-top:40px;font-size:13px"></p>
+</div>
+<!--HAVE-->
+<script>
+(function(){
+var D=/*DATA*/null;
+var $=function(s,r){return (r||document).querySelector(s)},esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')};
+var LS='ds-asset-tool-v1',mine={},found={},db=null,dbDoc=null;
+try{mine=JSON.parse(localStorage.getItem(LS)||'{}')||{}}catch(e){}
+D.have.forEach(function(k){found[k]=1});
+(window.DS_HAVE||[]).forEach(function(k){found[k]=1});
+var byCode={},order=[];D.assets.forEach(function(a){byCode[a.c]=a});
+D.first.forEach(function(c){order.push(byCode[c])});D.assets.forEach(function(a){if(D.first.indexOf(a.c)<0)order.push(a)});
+var gById={};D.groups.forEach(function(g){gById[g.id]=g});
+function isDone(k){return mine[k]===true||(mine[k]!==false&&!!found[k])}
+function doneCount(a){var n=0;a.steps.forEach(function(s){if(isDone(s.key))n++});return n}
+function fin(a){return a.mine||doneCount(a)===a.steps.length}
+function save(k,v){mine[k]=v;try{localStorage.setItem(LS,JSON.stringify(mine))}catch(e){}
+  if(dbDoc){var o={};o[k.replace(/\./g,'~')]=v;dbDoc.update(o).catch(function(){dbDoc.set(o).catch(function(){})})}}
+function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove()},1500)}
+function copy(text,btn){var ok=function(){toast('Copied')};var fb=function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok()}catch(e){toast('Select the text and copy it')}ta.remove()};
+  try{navigator.clipboard.writeText(text).then(ok,fb)}catch(e){fb()}}
+
+// ---------- header
+function header(){var tot=0,dn=0,af=0,an=0;D.assets.forEach(function(a){if(a.mine)return;an++;tot+=a.steps.length;dn+=doneCount(a);if(fin(a))af++});
+  var pct=tot?Math.round(dn/tot*100):0;$('#bar').style.width=pct+'%';$('#barBox').setAttribute('aria-valuenow',pct);
+  $('#counts').innerHTML='<span><b>'+dn.toLocaleString()+'</b> of '+tot.toLocaleString()+' files made ('+pct+'%)</span><span><b>'+af+'</b> of '+an+' assets finished</span><span><b>'+(tot-dn).toLocaleString()+'</b> files left</span>'}
+
+// ---------- next up
+function nextStep(){var g=$('#fg').value;for(var i=0;i<order.length;i++){var a=order[i];if(a.mine||(g&&a.g!==g))continue;for(var j=0;j<a.steps.length;j++)if(!isDone(a.steps[j].key))return{a:a,s:a.steps[j],j:j}}return null}
+function renderNext(){var n=nextStep(),el=$('#next');if(!n){el.innerHTML='<div class="lbl">Next up</div><h3>Everything here is made.</h3><p class="sub">Pick another category, or enjoy the game.</p>';return}
+  var a=n.a,s=n.s,g=gById[a.g];
+  el.innerHTML='<div class="lbl">Next up · '+esc(g.kind)+'</div><h3>'+esc(a.n)+'</h3><div class="sub">Step '+(n.j+1)+' of '+a.steps.length+': '+esc(s.title)+' <span class="tool">'+esc(s.tool)+'</span></div>'+
+   '<div class="sub" style="margin-top:6px">Save as <code>'+esc(s.save)+'</code></div>'+
+   '<div class="acts">'+(s.copy?'<button id="nCopy">Copy the prompt</button>':'')+'<button id="nOpen" class="ghost">Show the steps</button><button id="nDone" class="ghost">Done, next</button></div>';
+  if(s.copy)$('#nCopy').onclick=function(){copy(s.text)};
+  $('#nOpen').onclick=function(){openAsset(a.c)};
+  $('#nDone').onclick=function(){save(s.key,true);refresh(a.c)}}
+
+// ---------- list
+function rowHtml(a){var d=doneCount(a),t=a.steps.length,f=fin(a);
+  return '<details class="a'+(f?' fin':'')+'" id="'+a.c+'"><summary><span class="code">'+a.c+'</span><span class="nm">'+esc(a.n)+'</span><span class="prog">'+(a.mine?'':d+' / '+t)+'</span><span class="pill">'+(a.mine?'I make this':f?'Finished':t-d+' left')+'</span></summary><div class="ab"></div></details>'}
+function bodyHtml(a){var g=gById[a.g],h='<p class="what"><b>'+esc(g.kind)+'.</b> '+esc(a.w)+'</p>';
+  if(a.facts.length)h+='<dl class="f">'+a.facts.map(function(f){return '<dt>'+esc(f[0])+'</dt><dd>'+esc(f[1])+'</dd>'}).join('')+'</dl>';
+  if(a.anim)h+='<div class="anim"><b>Animation:</b> '+esc(a.anim)+'</div>';
+  a.steps.forEach(function(s,i){var ok=isDone(s.key),auto=ok&&mine[s.key]!==true;
+    h+='<div class="step'+(ok?' ok':'')+'"><div class="sh"><input type="checkbox" id="k-'+esc(s.key)+'" data-k="'+esc(s.key)+'"'+(ok?' checked':'')+' aria-label="Done: '+esc(s.title)+'"><span class="num">'+(i+1)+'</span><label class="t" for="k-'+esc(s.key)+'">'+esc(s.title)+'</label><span class="tool">'+esc(s.tool)+'</span>'+(auto?'<span class="auto">found in your folder</span>':'')+(s.copy?'<button data-copy="'+i+'">Copy the prompt</button>':'')+'</div>'+
+     '<pre>'+esc(s.text)+'</pre>'+(s.alt?'<div class="alt">No picture? In Meshy choose "Text to 3D" and paste this: <button data-alt="'+i+'" class="ghost">Copy</button><pre>'+esc(s.alt)+'</pre></div>':'')+
+     '<div class="save"><span>Save as</span><code>'+esc(s.save)+'</code><button class="ghost" data-name="'+i+'">Copy file name</button></div></div>'});
+  if(a.mine&&!a.steps.length)h+='<p class="sub">Nothing for you to make here.</p>';
+  return h}
+function renderList(){var g=$('#fg').value,q=$('#fq').value.trim().toLowerCase(),hide=$('#fh').checked,h='',any=false;
+  D.groups.forEach(function(G){if(g&&G.id!==g)return;var items=D.assets.filter(function(a){return a.g===G.id}),left=0,rows='';
+    items.forEach(function(a){if(!fin(a))left++;if(hide&&fin(a))return;if(q&&(a.c+' '+a.n+' '+a.w).toLowerCase().indexOf(q)<0)return;rows+=rowHtml(a)});
+    if(!rows)return;any=true;
+    h+='<div class="ghead"><h3>'+esc(G.title)+'</h3><span class="kind">'+esc(G.kind)+'</span><span class="left">'+left+' of '+items.length+' left</span></div><p class="sub" style="margin-top:0">'+esc(G.blurb)+'</p>'+rows});
+  $('#list').innerHTML=any?h:'<div class="empty">Nothing matches. Clear the search or turn off "Hide finished".</div>'}
+function fill(d){var b=$('.ab',d);if(!b.firstChild)b.innerHTML=bodyHtml(byCode[d.id])}
+function openAsset(c){var d=document.getElementById(c);if(!d){$('#fq').value='';$('#fh').checked=false;$('#fg').value='';renderList();d=document.getElementById(c)}if(d){d.open=true;fill(d);d.scrollIntoView({block:'start'})}}
+function refresh(keepOpen){var open=[].map.call(document.querySelectorAll('details.a[open]'),function(d){return d.id});header();renderNext();renderList();
+  open.forEach(function(id){var d=document.getElementById(id);if(d){d.open=true;fill(d)}})}
+document.addEventListener('toggle',function(e){var d=e.target;if(d.classList&&d.classList.contains('a')&&d.open)fill(d)},true);
+$('#list').addEventListener('change',function(e){var k=e.target.getAttribute&&e.target.getAttribute('data-k');if(!k)return;save(k,e.target.checked);refresh()});
+$('#list').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var d=b.closest('details.a'),a=byCode[d.id],i;
+  if((i=b.getAttribute('data-copy'))!==null)copy(a.steps[i].text);else if((i=b.getAttribute('data-alt'))!==null)copy(a.steps[i].alt);else if((i=b.getAttribute('data-name'))!==null)copy(a.steps[i].key)});
+$('#fg').innerHTML='<option value="">All categories</option>'+D.groups.map(function(g){return '<option value="'+g.id+'">'+esc(g.title)+'</option>'}).join('');
+try{var pg=localStorage.getItem(LS+'-g');if(pg&&gById[pg])$('#fg').value=pg;$('#fh').checked=localStorage.getItem(LS+'-h')==='1'}catch(e){}
+$('#fg').onchange=function(){try{localStorage.setItem(LS+'-g',this.value)}catch(e){}renderNext();renderList()};
+$('#fh').onchange=function(){try{localStorage.setItem(LS+'-h',this.checked?'1':'0')}catch(e){}renderList()};
+$('#fq').oninput=renderList;
+
+// ---------- tabs
+var tabs=['make','guide','look','screens'];
+document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){tabs.forEach(function(t){$('#tab-'+t).hidden=t!==b.dataset.tab});document.querySelectorAll('.tabs button').forEach(function(x){x.setAttribute('aria-selected',x===b)});window.scrollTo(0,0)}});
+function table(h,rows){return '<div class="tw"><table><thead><tr>'+h.map(function(x){return '<th>'+esc(x)+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+esc(c)+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>'}
+var G=[
+ ['The short version',['Open the Make tab. The gold card always shows the next thing to make.','Press "Copy the prompt", paste it into the tool named on the step (ChatGPT, Meshy, a sound tool), and make it.','Save the result with the exact file name shown, in the folder shown. The name is how the game finds it.','Tick the box. If the file is in your art folder with the right name, the tool ticks it for you the next time I scan the folder.','You never have to add anything to a prompt. Each one already tells the AI what the game is, what the picture is for and what must not be in it.']],
+ ['The kinds of asset',['Flat picture that repeats (textures): a square picture of grass, stone or sand. The game lays it side by side across the ground. No 3D.','3D model: a picture first, then Meshy turns the picture into a 3D shape. Two steps.','3D model with moving parts: the body, plus each part that moves (a wing, a tail, a lid) as its own small model, so the game can flap, swing or open it.','3D model with a skeleton: people and two-legged creatures. Meshy puts bones inside and adds walking, running and attacking.','Sheets: one picture holding nine icons or nine effect frames. I cut them apart.','Paintings, screen pieces, sounds and music: one prompt, one file.']],
+ ['How a 3D model is made',['Step 1, the picture. ChatGPT draws the thing alone on a plain grey background, whole, evenly lit. This is the plan Meshy copies, so if the picture is wrong, fix the picture, not the model.','Step 2, the model. In Meshy choose Image to 3D, upload the picture, set the polygon number on the step, and generate. Look at it from every side before downloading.','Polygons (triangles) are the tiny flat faces a model is built from. Fewer means faster on a phone. The number on each step is the target; pick the nearest setting above it and I trim the rest.','Download the GLB twice: with texture and without. The plain one is cleaner for me to slim down; the textured one gives me the colours.','You never have to set the size. I size every model from the game\'s size chart.']],
+ ['Moving parts, in plain words',['A model from Meshy is one solid lump, like a statue. A statue cannot flap its wings.','So for anything that flaps, swings, chews or opens, you also make that part alone: one wing, the tail, a chest lid. The tool lists these as extra steps.','You make only the left wing; I mirror it for the right. One leg; I copy it.','In the game I attach the parts to the body and move them: wings beat, tails sway behind the body, jaws open on attacks, lids fly open.','Smoke from the nose, glowing lava cracks and sparkles are effects I add. Do not put them in the model.']],
+ ['Skeletons and animation',['People and two-legged enemies are animated with a skeleton (a rig): bones inside the model that bend it.','That is why their picture is in an A-pose: arms out and down, legs apart. Meshy needs to see each limb.','In Meshy: open the model, choose Rig, pick the two-legged rig, drop the markers on chin, shoulders, elbows, wrists, hips, knees and ankles, then pick clips from its library (the step lists which).','Download "with animations" as GLB. I blend the clips so the duelist can throw cards while running, and I add the special poses.','Swarm enemies need nothing from you: I bake a short loop into each so hundreds can be on screen.','Everything else (trees swaying, chests opening, platforms flipping, cards dealing) I animate in code.']],
+ ['If a result looks wrong',['Picture has a background, floor or shadow: ask ChatGPT "same thing, plain flat light grey background, no floor, no shadow".','Picture is cut off or at an odd angle: ask for "the whole thing, fully inside the picture, three-quarter front view".','Texture has stripes or repeats inside itself: ask for "one tile only, shapes scattered at random, no rows".','Model has holes, melted parts or extra limbs: generate again in Meshy, or simplify the picture (fewer thin bits).','Too detailed or too realistic: ask for "chunkier, simpler, bigger shapes, like a toy".','Writing or symbols sneak in: ask to remove them. No text ever.','Not sure? Send it to me. I check it and tell you keep or redo.']],
+];
+var tree='app art\\DS\\\n├─ 2d\\\n│  ├─ concepts\\   pictures made for Meshy (the plans for 3D models)\n│  ├─ textures\\   ground and wall textures\n│  ├─ icons\\      sheets of nine icons and badges\n│  ├─ ui\\         frames, bars, buttons\n│  ├─ art\\        key art, map cards, portraits, card art\n│  └─ fx\\         effect pictures\n├─ 3d\\            models (.glb), plus -plain and -anim versions\n│  └─ parts\\      wings, tails, lids and other moving parts\n├─ sound\\         sound effects (.wav)\n└─ music\\         music (.wav)';
+$('#tab-guide').innerHTML=G.map(function(s){return '<h2>'+esc(s[0])+'</h2><ul>'+s[1].map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul>'}).join('')+
+ '<h2>Where everything is saved</h2><p>Make these folders once. Every step shows its full path and has a button to copy the file name.</p><div class="tree">'+esc(tree)+'</div>'+
+ '<p>File names are lower case with dashes, exactly as shown. Pictures are PNG, models GLB, sound and music WAV.</p>'+
+ '<h2>What I do with your files</h2><ul><li>Slim each model to its triangle budget and fix seams.</li><li>Cut colours to the stage palette and shrink textures to crunchy pixel size.</li><li>Set the size from the size chart, attach parts, add animation and effects.</li><li>Put it in the game build and show you a screenshot.</li></ul>'+
+ (D.web?'<h2>Your ticks</h2><p>Ticks on this page are saved to your account, so they follow you to your phone.</p>':'<h2>Your ticks</h2><p>Ticks are saved in this browser on this PC. Files I find in your art folder tick themselves. When I update this file, your ticks stay.</p>');
+var L=D.look;
+$('#tab-look').innerHTML='<h2>The look: '+esc(L.name)+'</h2><div class="grid2">'+L.pillars.map(function(p){return '<div class="card"><b>'+esc(p[0])+'</b><p>'+esc(p[1])+'</p></div>'}).join('')+'</div>'+
+ '<h2>Colours</h2>'+L.palettes.map(function(p){return '<h3>'+esc(p.stage)+'</h3><p class="sub">'+esc(p.mood)+'</p><div class="chips">'+p.colours.map(function(c){return '<span class="chip"><i style="background:'+c[0]+'"></i>'+esc(c[1])+'</span>'}).join('')+'</div>'}).join('')+
+ '<h2>Sizes</h2><p>The duelist is 1.8 m and counts as 1x.</p>'+table(['What','Size','Height','Triangles'],L.scale)+'<h2>Limits</h2>'+table(['What','Limit'],L.budgets)+'<h2>Never</h2><p class="never">'+esc(L.never)+'</p>';
+$('#tab-screens').innerHTML='<p class="sub">Where each piece sits on screen, and how the game is played by touch, controller and keys.</p>'+D.screens.map(function(s){return '<div class="card" style="margin:10px 0"><b>'+esc(s.name)+'</b><ul>'+s.lay.map(function(l){return '<li>'+esc(l)+'</li>'}).join('')+'</ul>'+(s.uses.length?'<div class="sub" style="font-size:13px">Uses: '+s.uses.map(function(u){return '<a href="#'+u+'" data-go="'+u+'">'+u+'</a>'}).join(' ')+'</div>':'')+'</div>'}).join('');
+$('#tab-screens').addEventListener('click',function(e){var c=e.target.getAttribute('data-go');if(!c)return;e.preventDefault();document.querySelector('.tabs button[data-tab=make]').click();openAsset(c)});
+$('#built').textContent='Updated '+D.built+'. '+D.assets.length+' assets.';
+
+header();renderNext();renderList();
+if(location.hash.length>1&&byCode[location.hash.slice(1)])openAsset(location.hash.slice(1));
+
+// ---------- online ticks (link version only)
+if(D.web&&window.claude&&window.claude.use){window.claude.use('db').then(function(d){if(!d)return;db=d;dbDoc=d.doc('progress/made');
+  dbDoc.onSnapshot(function(snap){var x=snap.exists?snap.data()||{}:{},ch=false;Object.keys(x).forEach(function(k){var kk=k.replace(/~/g,'.');if(mine[kk]!==x[k]){mine[kk]=x[k];ch=true}});if(ch){try{localStorage.setItem(LS,JSON.stringify(mine))}catch(e){}refresh()}},function(){})}).catch(function(){})}
+})();
+</script>

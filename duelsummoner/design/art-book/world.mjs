@@ -5,7 +5,8 @@ const S = (code, name, file, where, subj, x = {}) => ({ code, name, file, how: '
 
 export const SWATCHES = [
   // Stage 1
-  S('MT01', 'Sunlit grass', 'mat-grass', 'Stage 1 open ground, hills', 'short lush grass seen from above: clumps of bright yellow-green and mid green blades painted as chunky pixel strokes, a few darker gaps between clumps, two tiny pale yellow flower dots.'),
+  S('MT01', 'Sunlit grass', 'mat-grass', 'Stage 1 open ground, hills', 'short lush grass seen from above: clumps of bright yellow-green and mid green blades painted as chunky pixel strokes, a few darker gaps between clumps, two tiny pale yellow flower dots.', { haveFiles: ['mat-grass.png'], have: 'Made 22 Nov (repeats in neat rows; a second version breaks that up)' }),
+  S('MT29', 'Sunlit grass, version 2', 'mat-grass-2', 'mixed with MT01 so a field never looks striped', 'short lush grass seen from above: clumps of bright yellow-green and mid green blades painted as chunky pixel strokes in random sizes and directions, a few darker gaps, a few tiny pale yellow flower dots, scattered with no rows.'),
   S('MT02', 'Dry grass', 'mat-grass-dry', 'Stage 1 edges, King\'s Stair terraces', 'dry olive and straw grass from above, chunky pixel strokes, patches of sandy soil showing through.'),
   S('MT03', 'Sandy path', 'mat-path', 'Stage 1 roads and the Market', 'packed warm sand path from above with small pebbles, faint cart grooves, a few cracks, warm beige and tan.'),
   S('MT04', 'Sandstone blocks', 'mat-sandstone', 'walls, columns, stairs in Stage 1', 'large rectangular sandstone blocks in running bond, chunky bevelled edges painted in a lighter tone, small chips at corners, warm honey and tan.'),
@@ -34,8 +35,47 @@ export const SWATCHES = [
   // shared
   S('MT25', 'Wood planks', 'mat-planks', 'crates, bridges, stalls in every stage', 'warm brown wooden planks with dark gaps, painted grain, two nail heads per plank.'),
   S('MT26', 'Bronze', 'mat-bronze', 'chests, bells, shrines, gates', 'aged bronze, warm brown-gold with teal-green patina in recesses, hammered texture at pixel scale.'),
+  // more ground: variety, blends and later-stage floors
+  S('MT30', 'Flower meadow', 'mat-grass-flowers', 'Stage 1 meadows near water and shrines', 'lush grass from above like the plain grass but dotted with many small simple flowers in white, yellow and coral, scattered at random.'),
+  S('MT31', 'Grass to path blend', 'mat-grass-path', 'where grass meets a sandy path (I use it as the in-between tile)', 'patchy ground from above: half warm sandy soil and half grass clumps mixed together at random, grass tufts invading the sand, no straight boundary.'),
+  S('MT32', 'Bare dirt', 'mat-dirt', 'under trees, in ruins, worn ground', 'packed brown earth from above with small stones, a few dry leaves and faint scuffs, warm brown tones.'),
+  S('MT33', 'Pebble ground', 'mat-pebbles', 'river edges, courtyards', 'ground from above covered in rounded pebbles of many sizes in grey, tan and white, packed close with dark gaps.'),
+  S('MT34', 'Cracked dry earth', 'mat-cracked-earth', 'dry edges, Dragon\'s Spine', 'sun-baked pale earth from above split into irregular polygon plates by dark cracks.'),
+  S('MT35', 'Rippled sand', 'mat-sand', 'dunes and beaches in Stage 1', 'pale warm sand from above with soft wind ripples curving in different directions, a few tiny shells.'),
+  S('MT36', 'Mossy flagstone', 'mat-flagstone-moss', 'old plazas, shrine floors', 'large irregular pale flagstones from above with bright green moss filling the joints and creeping over some stones.'),
+  S('MT37', 'Mosaic floor', 'mat-mosaic', 'the Hall of Sealed Cards, Market squares', 'a worn mosaic floor from above made of small square tiles in teal, cream and terracotta forming simple diamond and card-shaped patterns, a few tiles missing.'),
+  S('MT38', 'Rubble floor', 'mat-rubble', 'collapsed areas in all stages', 'ground from above covered in broken stone chips, dust and small block fragments, pale sandstone tones.'),
+  S('MT39', 'Crypt puddle stone', 'mat-crypt-wet', 'Stage 2 low floors', 'dark blue-grey slate slabs from above with shallow puddles reflecting teal light, wet shine painted as pale streaks.'),
+  S('MT40', 'Bone dust floor', 'mat-bonedust', 'Stage 2 ossuary floors', 'pale grey-white dusty floor from above with small bone fragments and a few teeth scattered at random, friendly not gory.'),
+  S('MT41', 'Iron grate', 'mat-grate', 'Stage 2 bridges and drains', 'a rusted iron floor grate from above: a grid of thick bars over darkness, rivets at the crossings, orange rust blooms. (This one may be a regular grid.)'),
+  S('MT42', 'Royal carpet', 'mat-carpet', 'Stage 3 throne stair and halls', 'deep crimson carpet from above with a subtle woven pattern of small gold diamonds, slightly worn.'),
+  S('MT43', 'Coin floor', 'mat-coins', 'Stage 3 treasury terrace', 'a floor from above completely covered in scattered gold coins of slightly different sizes overlapping at random, with a few violet gems.'),
+  S('MT44', 'Obsidian tile', 'mat-obsidian', 'Stage 3 platforms and the duel table surround', 'polished black obsidian tiles from above with thin gold inlay lines between them and faint violet reflections.'),
+  S('MT45', 'Crystal floor', 'mat-crystal-floor', 'Stage 3 crystal caves', 'a floor from above of flat-topped violet crystal facets fitted together like broken glass, lighter lilac edges, deep purple centres.'),
+  S('MT46', 'Leaf litter', 'mat-leaves', 'under Stage 1 trees', 'ground from above covered in fallen olive leaves in dull green, yellow and brown, overlapping at random on dark soil.'),
   S('MT27', 'Card back', 'mat-cardback', 'card backs on floor cards, doors, platforms flipped face down', 'the back of our game\'s playing card as a tile: deep violet with a gold border and a centred gold sunburst made of eight simple rays round a plain circle. No eye, no symbol inside the circle.'),
   S('MT28', 'Water', 'mat-water', 'oasis pools in Stage 1, crypt pools in Stage 2', 'stylized water from above, teal with bands of lighter ripples and white sparkle pixels, painted not realistic.'),
+];
+
+// Ground decals: small flat pictures laid on top of the ground to break up repeats. One sheet holds nine.
+const DSHEET = (code, name, file, where, cells) => ({ code, name, file, how: 'sheet', style: 'decal', px: '1024 x 1024 made (3 x 3), 128 x 128 each in game', where, cells,
+  ctx: 'WHAT THIS PICTURE IS FOR. It is a sheet of nine ground decals. A decal is a small flat picture the game lays on top of the ground texture, at random spots and angles, so a big field never looks repeated. I cut the sheet into nine separate decals. Each must be seen exactly from above, flat, with no shadow, sitting alone in its cell on a flat pure white background so I can cut it out cleanly.' });
+export const DECALS = [
+  DSHEET('DC01', 'Ground decals: Surface Ruins', 'decals-s1', 'scattered over Stage 1 ground', [
+    ['Grass tuft', 'a round tuft of long grass blades'], ['Flower patch', 'a small patch of five coral flowers with leaves'], ['Pebble scatter', 'seven pebbles of different sizes'],
+    ['Crack', 'a jagged dark crack in the ground'], ['Leaf pile', 'a small pile of fallen olive leaves'], ['Moss patch', 'an irregular patch of bright moss'],
+    ['Card shard', 'a broken corner of a stone playing card lying flat'], ['Sand drift', 'a soft patch of pale sand'], ['Clover', 'a patch of clover leaves'],
+  ]),
+  DSHEET('DC02', 'Ground decals: Catacombs', 'decals-s2', 'scattered over Stage 2 floors', [
+    ['Puddle', 'a small teal-tinted puddle'], ['Bone scatter', 'three small cartoon bones'], ['Cobweb', 'a flat round cobweb'],
+    ['Floor crack', 'a branching crack in slate'], ['Glowing moss', 'a patch of teal glowing moss'], ['Chain piece', 'a short piece of rusty chain'],
+    ['Wax spill', 'a pool of melted candle wax'], ['Dust pile', 'a small grey dust heap'], ['Seal mark', 'a faded round seal ring burned into stone, no symbols inside'],
+  ]),
+  DSHEET('DC03', 'Ground decals: Vault', 'decals-s3', 'scattered over Stage 3 floors', [
+    ['Coin scatter', 'six gold coins'], ['Sand drift', 'a drift of gold sand'], ['Crystal chips', 'small violet crystal fragments'],
+    ['Floor crack', 'a crack in black basalt glowing faint violet'], ['Torn banner', 'a scrap of crimson cloth'], ['Card on floor', 'a single face-down violet and gold card'],
+    ['Gold dust', 'a sparkle patch of gold dust'], ['Broken crown', 'a small cracked gold crown lying flat'], ['Scorch mark', 'a round dark scorch mark'],
+  ]),
 ];
 
 export const STAGE1 = [

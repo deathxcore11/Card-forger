@@ -67,4 +67,14 @@ export const SCREENS = [
   { name: 'Boss intro', uses: ['UI18', 'UI17'], lay: [
     'Camera swings to the boss, slow motion, the name card (UI18) slams in with the boss title; 3 s, skippable.',
   ] },
+  { name: 'Controls: touch, controller and keys', uses: ['UI01', 'UI17'], lay: [
+    'The game plays the same on the AYN Thor, a phone and a PC. Every action works by touch, by controller and by keys; nothing is touch-only or pad-only.',
+    'Touch: left thumb anywhere on the left half is a floating move stick. Right side holds two big round buttons: Jump and Slide. Attacks are automatic.',
+    'Tap the thing itself: tap a chest, shrine, door, merchant or pickup within reach and the Duelist uses it. If it is out of reach, the Duelist walks to it and then uses it. A soft ring shows what a tap will hit.',
+    'Jump: one press. Slide: press while moving to duck low and slip under attacks and gaps; hold to stay crouched when standing still.',
+    'Controller: left stick moves, right stick turns the camera, A jumps, B slides, X uses the nearest thing, Start pauses, Select opens the map. Button hints on screen change to match what was last touched.',
+    'Menus: every button is at least a thumb wide, cards can be tapped, swiped or picked with the stick, and a press-and-hold on any item, card or stat shows what it does. Back is always a swipe from the edge, B, or Esc.',
+    'Thor with two screens: the top screen is the game with nothing on it but the fight; the bottom screen holds the map, the hand and the inventory, all touchable while playing.',
+    'Phone held sideways: buttons stay out of the middle of the screen and move in from the rounded corners and the camera cut-out.',
+  ] },
 ];

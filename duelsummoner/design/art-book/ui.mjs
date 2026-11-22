@@ -1,3 +1,4 @@
+import { DUELISTS } from './cast.mjs';
 // Pickups, item and stat icons, card art, effects, HUD, menus, cosmetics, achievements.
 const I = (code, name, file, x) => ({ code, name, file, ...x });
 const SHEET = (code, name, file, where, cells, x = {}) => I(code, name, file, { how: 'sheet', style: 'icon', px: '1024 x 1024 made (3 x 3), 64 x 64 each in game', where, cells, ...x });
@@ -44,8 +45,19 @@ export const ITEM_SHEETS = [
     ['Thornbound Locket', 'a gold heart locket wrapped in a green thorny vine'],
     ['Recoil Seal', 'a round bronze seal with a curved arrow bouncing back off it'],
     ['Unmarked Card', 'a completely blank white card with a faint shimmer at one corner'],
-    ['Star Chip pouch', 'a small cloth pouch with violet star-shaped tokens spilling out'],
-    ['Deck Box', 'a sandstone deck box with gold corners and a lid ajar'],
+    ['Herd Bell', 'a big bronze cowbell on a leather strap with a paw print stamped on it'],
+    ['Shepherd\'s Crook', 'a wooden shepherd\'s crook with a small glowing card hanging from the hook'],
+  ]),
+  SHEET('IC12', 'Items sheet 4', 'items-s4', 'item slots, shop, chest reveal, Card Library Items tab', [
+    ['Split Deck', 'a deck of cards cut cleanly in two halves, both glowing'],
+    ['Gilded Edge', 'a single card with a sharp shining gold edge cutting through the air'],
+    ['Twin Charm', 'two small charms, one flame and one snowflake, tied together on one cord'],
+    ['Prism Shard', 'a triangular crystal prism splitting light into a rainbow fan'],
+    ['Scar Ledger', 'a leather notebook with red tally scratches on the cover and a bandage strip as a bookmark'],
+    ['Golden Tooth', 'a big shiny gold tooth with a sparkle'],
+    ['Debt Ledger', 'a thick ledger book chained shut with a coin-shaped padlock'],
+    ['Hunter\'s Chalk', 'a stick of red chalk drawing a target circle'],
+    ['Iron Prayer Beads', 'a loop of heavy iron beads with one round shield-shaped bead'],
   ]),
   SHEET('IC04', 'Blessings sheet', 'items-blessings', 'Blessing offers and the pause screen', [
     ['Blessing of Might', 'a raised fist glowing orange inside a gold ring'],
@@ -56,7 +68,7 @@ export const ITEM_SHEETS = [
     ['Blessing of Plenty', 'an overflowing cornucopia of cyan crystals inside a gold ring'],
     ['Blessing of Renewal', 'a green sprout curling into a circle inside a gold ring'],
     ['Blessing of Focus', 'a crosshair over a card inside a gold ring'],
-    ['Spare blessing', 'a plain gold ring with a white sparkle in the middle'],
+    ['Feather Cape (item)', 'a small cape made of long white feathers spread out like wings'],
   ]),
   SHEET('IC05', 'Stats sheet 1', 'stats-s1', 'pause screen stats list, Card Library useful stats, level-up offers', [
     ['Max LP', 'a red heart'], ['LP regen', 'a red heart with a green plus'], ['Overheal', 'a red heart with a gold outline overflowing'],
@@ -97,23 +109,18 @@ export const ITEM_SHEETS = [
 
 // Card art: one painting per monster, Fusion, God and Spell/Trap. Same frame comes from code.
 export const SPELLS = [
-  ['Kindling Rite', 'a ring of small stones around a pile of sticks bursting into a tall orange flame, sparks spiralling up'],
-  ['Frost Litany', 'an open book of ice pages with snowflakes drifting off it in a spiral'],
-  ['Deep Marks', 'claw marks glowing orange gouged deep into a stone wall'],
+  ['Toll of Ash', 'a black iron bell crumbling into grey ash and embers, a single drop of red falling from it'],
+  ['Elemental Litany', 'eight small floating orbs in a circle, each a different element: flame, snowflake, bolt, poison drop, wind swirl, rock, sunburst, crescent'],
+  ['Deep Marks', 'claw marks glowing orange gouged deep into a stone wall, each mark a target ring'],
   ['Swift Draw', 'a hand whipping a card out of a deck in a blur of speed lines'],
-  ['Whetted Focus', 'a whetstone sharpening the edge of a stone card, sparks flying'],
-  ['Savage Rite', 'a drum made of hide with red war paint and two bone beaters, red mist'],
-  ['Storm Lens', 'a big glass lens focusing lightning bolts into one bright point'],
+  ['Whetted Focus', 'a whetstone sharpening the edge of a stone card, sparks flying, a crosshair glint'],
+  ['Storm Lens', 'a big glass lens focusing a flame and an ice shard into one exploding bright point'],
   ['Ringing Rite', 'a bronze bell ringing with golden sound rings spreading out'],
-  ['Iron Psalm', 'an iron hymn book with a padlock, a steel glow from its pages'],
-  ['Quickened Pulse', 'a heart-shaped red crystal pulsing with speed lines'],
-  ['Pack Discipline', 'three small summon creatures standing in a neat line, a gold whistle above them'],
-  ['Gust Ward', 'a swirling mint wind barrier knocking stones away'],
+  ['Pack Discipline', 'five small summon creatures running in a neat line behind a gold whistle'],
+  ['Last Draw', 'a single glowing card caught in mid-air as a duelist falls, warm gold light'],
+  ['Gust Ward (Trap)', 'a swirling mint wind barrier knocking stones away from a crouching figure'],
   ['Pit of Seals (Trap)', 'a round pit in the ground ringed with glowing seal plates, chains reaching up'],
-  ['Heart of the Cards (rename?)', 'a glowing card floating over an open hand, warm gold light'],
-  ['Second Wind', 'a duelist silhouette standing back up inside a swirl of green wind'],
-  ['Storm of Cards', 'a tornado made of hundreds of flying cards'],
-  ['Toll of Ash', 'a black iron bell crumbling into grey ash and embers'],
+  ['Mirror Seal (Trap)', 'a round mirror seal plate reflecting a fireball back the way it came'],
 ].map(([name, subj], i) => I('SP' + String(i + 1).padStart(2, '0'), name, 'card-' + name.toLowerCase().replace(/\(.*\)/, '').trim().replace(/[^a-z]+/g, '-').replace(/-$/, ''), { how: '2d', style: 'paint', px: '1024 x 768 made, 192 x 144 in game', where: 'the picture inside the Spell or Trap card (offers, Card Library, chest reveal)', subj }));
 
 // ---------------------------------------------------------------- effects
@@ -195,12 +202,15 @@ export const SCREENART = [
   A('KA11', 'Loading art 1', 'load-1', '1920 x 1080 made', 'loading screens', 'a baby dragon trying to pick up a card twice its size in its mouth, in a sunny ruin.'),
   A('KA12', 'Loading art 2', 'load-2', '1920 x 1080 made', 'loading screens', 'the Broker merchant pulling his cart up a sandstone road under a big teal sky, wares clinking.'),
   A('KA13', 'Loading art 3', 'load-3', '1920 x 1080 made', 'loading screens', 'a huge stone guardian with a card shield standing in a ruined gate, tiny duelist looking up at it.'),
+  A('KA15', 'Map card: The Frostbound Archive', 'map-frostbound-archive', '1536 x 1024 made', 'map select (map 2)', 'a vast snowed-in library: towering bookshelves half buried in drifts, frozen waterfalls of pages, giant ice crystals, warm candle windows, a pale blue sky with snow falling.'),
+  A('KA16', 'Map card: The Ember Foundry', 'map-ember-foundry', '1536 x 1024 made', 'map select (map 3)', 'a forge city built over rivers of lava: chimneys, chain lifts, giant anvils, glowing crucibles pouring molten gold, orange sky full of sparks.'),
+  A('KA17', 'Map card: The Drowned Court', 'map-drowned-court', '1536 x 1024 made', 'map select (map 4)', 'a sunken palace half under turquoise water: coral growing over marble columns, jellyfish lanterns, a throne in a sunken hall lit by shafts of light.'),
   A('KA14', 'Full map parchment', 'ui-map-parchment', '1024 x 1024 made', 'the full map screen ground (fog is drawn on top in code)', 'an old sand-coloured parchment sheet with soft edges, faint compass rose in one corner made of card shapes, no writing, no drawn map.'),
 ];
 
 // Duelist portraits for the select grid and leaderboards.
-export const PORTRAITS = ['Kael, Ember Tamer', 'Mira, Rune Scribe', 'Vesh, Hollow Hand', 'Oren, Bound Pages', 'Practice Duelist'].map((n, i) =>
-  I('PT0' + (i + 1), 'Portrait: ' + n, 'face-' + n.split(',')[0].toLowerCase().replace(/\s+/g, '-'), { how: '2d', style: 'paint', px: '1024 x 1024 made, 128 x 128 in game', where: 'duelist select grid, leaderboard rows, results', portraitOf: n, subj: 'a head-and-shoulders portrait of the duelist below, three-quarter view, friendly confident expression, plain warm sandstone background with a soft light behind the head. The duelist: ' }));
+export const PORTRAITS = DUELISTS.map(d => d.name).map((n, i) =>
+  I('PT' + String(i + 1).padStart(2, '0'), 'Portrait: ' + n, 'face-' + n.split(',')[0].toLowerCase().replace(/\s+/g, '-'), { how: '2d', style: 'paint', px: '1024 x 1024 made, 128 x 128 in game', where: 'duelist select grid, leaderboard rows, results', portraitOf: n, subj: 'a head-and-shoulders portrait of the duelist below, three-quarter view, friendly confident expression, plain warm sandstone background with a soft light behind the head. The duelist: ' }));
 
 // Regalia: hats and cosmetics found or earned.
 export const REGALIA = [
