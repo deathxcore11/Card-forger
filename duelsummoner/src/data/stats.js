@@ -26,6 +26,9 @@ export const STAT_INFO = [
   { id: STAT.MARKD, label: 'Mark Depth', mod: 'markBonus', unit: 'pct' },
   { id: STAT.BURN, label: 'Burn (damage a second)', mod: 'burnDps', unit: 'flat' }
 ];
+// the panel's groups: survival, offence, tempo and rates, movement, pickups and economy
+export const STAT_GROUPS = [['Survival', [STAT.LP, STAT.GUARD, STAT.REGEN, STAT.WARD]], ['Offence', [STAT.MIGHT, STAT.HUNTER, STAT.KEEN, STAT.BURN, STAT.MARKD]], ['Rates', [STAT.TEMPO, STAT.DRAW, STAT.REWIND]],
+  ['Movement', [STAT.STRIDE, STAT.DASHCD, STAT.LIFT]], ['Pickups and economy', [STAT.MAG, STAT.INSIGHT, STAT.GREED, STAT.BARGAIN, STAT.FORT]]];
 export const STAT_BY_MOD = Object.fromEntries(STAT_INFO.map(s => [s.mod, s]));
 export function fmtStat(s, v) {
   if (s.unit === 'pct') return (v >= 0 ? '+' : '') + Math.round(v * 1000) / 10 + '%';

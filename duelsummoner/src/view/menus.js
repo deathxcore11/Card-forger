@@ -5,10 +5,12 @@ import { QUESTS, QUEST_TABS, RARITY_COLOUR } from '../data/quests.js';
 import { DIFFICULTY, DIFFICULTIES } from '../data/stages.js';
 import { MONSTERS, FUSIONS, SPELLS, TRAPS, ONE_SHOTS } from '../data/cards.js';
 import { ITEMS } from '../data/items.js';
+import { boardUrl, fetchBoard } from '../core/board.js';
 import { questProgress, questDone, closestQuests, questFor, mapRecord, masteryOf, outfitUnlocked, setCardEnabled } from '../core/meta.js';
 import { startPreview } from './preview.js';
 
 const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 const clockText = s => { s = Math.floor(s || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 const bar = (frac, label) => '<div class="bar2"><i style="width:' + Math.round(Math.max(0, Math.min(1, frac)) * 100) + '%"></i><span>' + (label || '') + '</span></div>';
 const initial = id => (DUELIST_INFO[id] ? DUELIST_INFO[id].name[0] : '?');
@@ -35,9 +37,20 @@ export function initMenus(env) {
     $('startScreen').innerHTML = '<div class="chipsTop">Star Chips <b>' + save.starChips + '</b></div><h1>DUEL SUMMONER</h1>' +
       '<div class="mainRow"><div class="mainBtns"><button id="mPlay">PLAY</button><button id="mLib">CARD LIBRARY</button><button id="mQuests">QUESTS</button><button id="mShop">SHOP (DECK BOX)</button><button id="mSettings">SETTINGS</button><button class="small" id="mQuick">QUICK DUEL</button></div>' +
       '<div class="mainSide"><div class="panel"><h3>QUEST TRACKER</h3>' + (tracker || '<p>No quests in progress.</p>') + '</div>' +
-      '<div class="panel"><h3>WEEKLY LEADERBOARD</h3><div class="tabs"><button class="tab sel">Global</button><button class="tab">Friends</button></div><p class="dim">Online boards are not built yet. Your local bests:</p>' + (recs.length ? recs.map(r => '<div class="lbrow">' + r + '</div>').join('') : '<p class="dim">No runs yet.</p>') + '<p class="dim">Resets in ' + dd + 'd ' + hh + 'h</p></div></div></div>';
+      '<div class="panel"><h3>WEEKLY LEADERBOARD</h3><div class="tabs"><button class="tab sel">Global</button><button class="tab">Friends</button></div><div id="lbOnline"></div><p class="dim">' + (boardUrl(save.settings) ? 'Your local bests:' : 'Online boards are off. Your local bests:') + '</p>' + (recs.length ? recs.map(r => '<div class="lbrow">' + r + '</div>').join('') : '<p class="dim">No runs yet.</p>') + '<p class="dim">Resets in ' + dd + 'd ' + hh + 'h</p></div></div></div>';
     $('mPlay').onclick = showDuelists; $('mLib').onclick = () => showLibrary(); $('mQuests').onclick = () => showQuests(); $('mShop').onclick = () => { $('startScreen').classList.remove('on'); env.showDeckBox(); };
     $('mSettings').onclick = showSettings; $('mQuick').onclick = () => start('quick');
+    const base = boardUrl(save.settings);
+    if (base) {                                                                  // live board: difficulty tabs, this week, verified runs only
+      const draw = diff => fetchBoard(base, 'run', diff, 'week').then(b => {
+        const el = $('lbOnline'); if (!el) return;
+        el.innerHTML = '<div class="tabs">' + DIFFICULTIES.map(d => '<button class="tab' + (d === diff ? ' sel' : '') + '" data-lbd="' + d + '">' + DIFFICULTY[d].name + '</button>').join('') + '</div>' +
+          (b.top.length ? b.top.slice(0, 10).map(r => '<div class="lbrow">#' + r.rank + ' ' + esc(r.name) + ' <b>' + r.score + '</b> <span class="dim">' + clockText(r.runMs / 1000) + '</span></div>').join('') : '<p class="dim">No verified runs this week.</p>') +
+          (b.me && b.me.rank > 10 ? '<div class="lbrow">#' + b.me.rank + ' You <b>' + b.me.score + '</b></div>' : '');
+        for (const t of el.querySelectorAll('[data-lbd]')) t.onclick = () => draw(t.dataset.lbd);
+      }).catch(() => { const el = $('lbOnline'); if (el) el.innerHTML = '<p class="dim">Could not reach the leaderboard.</p>'; });
+      draw('medium');
+    }
   }
 
   // ---------- duelist select ----------
