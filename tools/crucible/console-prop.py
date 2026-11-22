@@ -26,9 +26,9 @@ bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
 bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 # stand it on the floor, centred, <height> tall
 xs, ys, zs = zip(*[v.co[:] for v in hi.data.vertices])
-k = height / (max(zs) - min(zs))
+k, mx, my, z0 = height / (max(zs) - min(zs)), (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2, min(zs)
 for v in hi.data.vertices:
-    v.co.x = (v.co.x - (max(xs) + min(xs)) / 2) * k; v.co.y = (v.co.y - (max(ys) + min(ys)) / 2) * k; v.co.z = (v.co.z - min(zs)) * k
+    v.co.x = (v.co.x - mx) * k; v.co.y = (v.co.y - my) * k; v.co.z = (v.co.z - z0) * k
 hi.data.update()
 n0 = sum(len(p.vertices) - 2 for p in hi.data.polygons)
 
@@ -59,9 +59,9 @@ bpy.ops.object.select_all(action='DESELECT'); hi.select_set(True); lo.select_set
 bpy.ops.object.bake(type='DIFFUSE')
 img.filepath_raw = os.path.join(out, f'{name}-skin.png'); img.file_format = 'PNG'; img.save()
 
-# write it as the game loads it: flat faces, four corners where two triangles lie flat together
+# write it as the game loads it: flat faces, four corners where two triangles lie flat together and share their picture
 bm = bmesh.new(); bm.from_mesh(lo.data)
-bmesh.ops.join_triangles(bm, faces=bm.faces[:], angle_face_threshold=math.radians(12), angle_shape_threshold=math.radians(60), cmp_uvs=False)
+bmesh.ops.join_triangles(bm, faces=bm.faces[:], angle_face_threshold=math.radians(12), angle_shape_threshold=math.radians(60), cmp_uvs=True)  # never across a seam of the picture: the face would smear it
 uvl = bm.loops.layers.uv.active; faces = []
 for f in bm.faces:
     if len(f.loops) > 4:

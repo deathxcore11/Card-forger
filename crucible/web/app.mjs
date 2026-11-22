@@ -186,11 +186,12 @@ function act(a) {
   const wasDuel = run.phase === 'duel' || (run.phase === 'chamber' && a.t === 'door');
   const bossId = run.door && run.door.type === 'boss' ? run.door.boss : run.phase === 'chamber' && a.t === 'door' && run.doors[a.i] && run.doors[a.i].type === 'boss' ? run.doors[a.i].boss : null;
   const cx0 = run.codex ? run.codex.length : 0, hidden = (run.phase === 'duel' && run.rival && run.rival.tier === 'secret') || (run.phase === 'chamber' && a.t === 'door' && run.doors[a.i] && run.doors[a.i].type === 'secret');
-  let rev;
+  let rev; const fl0 = run.floor;
   try {
     rev = runApply(run, a, db, { onStep: evs => { if (run.duel) frames.push({ view: JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))), evs, rival: info(run) }); } });
   } catch (e) { if (e && e.constructor !== Error) { recover(e, true); return; } cue('refused', { action: a.t }); toast(e.message); render(); return; } // the engine refuses a move with a plain Error; anything else means the run itself is damaged
   G.faulty = null;
+  if (run.floor > fl0 && run.phase !== 'over') G.floorCard = { u: uidOf(run), n: run.floor + 1 }; // shown at the new floor's first chamber
   holding = wasDuel && frames.length > 0; // released by playFrames when the last frame has been shown
   if (bossId && (rev || []).some(e => e.e === 'duelWon') && !(P.beaten || []).includes(bossId)) { P.beaten = (P.beaten || []).concat(bossId); saveP(); } // counsel on a guardian's door stops once it has been beaten
   if (run.codex && run.codex.length > cx0) cueShown('codex:new', { n: run.codex.length - cx0 });
@@ -674,7 +675,8 @@ function recover(e, moving) {
 const ERA_LAYERS = '<div class="eraBg"></div><div class="eraFog"><i></i><i></i></div><div class="eraGrain"></div>'; // names of their own: a duel's twist puts the class fog on the table (found 22 November)
 const sparksMax = r => db.config.sparks - (db.config.heatRules && (r.heat || 0) >= 7 ? 1 : 0); // as newRun deals them
 const fogK = r => !r || r.phase === 'over' ? .8 : Math.max(.7, Math.min(1.3, .75 + .025 * (r.heat || 0) + .12 * Math.max(0, 3 - (r.sparks ?? 3))));
-function render() { try { draw(); G.fresh = false; } catch (e) { recover(e, false); } }
+let booting = false; // while the console pictures arrive, nothing is drawn over the loading screen
+function render() { if (booting) return; try { draw(); G.fresh = false; } catch (e) { recover(e, false); } }
 function draw() {
   if (lostStore) { // the store came back empty in a tab that had progress: nothing is drawn but the notice, and nothing is written
     app.dataset.phase = 'home';
@@ -706,7 +708,36 @@ function draw() {
 const LOOKKEY = 'lostmemories.look.v1';
 let look = store.get(LOOKKEY) || D.look || 'ps';
 const CART = new Set((D.cart && D.cart.art) || []);
-const cimg = n => `art/c/${n}.png`;
+// The console pictures arrive in one pack (tools/crucible/build-web.mjs lists where each sits in it), cut out here as
+// pictures of their own. Without a pack, or if it cannot be read, each picture is asked for by its own file.
+const PACK = (D.cart && D.cart.pack) || null, PURL = Object.create(null);
+const cimg = n => PURL[n] || `art/c/${n}.png`;
+let packing = null, packShow = null, packDone = !PACK;
+function loadPack(show) {
+  if (show) packShow = show;
+  if (!PACK) return Promise.resolve();
+  return packing || (packing = (async () => {
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null; let idle = 0;
+    const wake = () => { clearTimeout(idle); idle = setTimeout(() => { if (ctl) ctl.abort(); }, 20000); }; // no bytes for 20 seconds: stop waiting
+    try {
+      wake(); const res = await fetch('art/c/' + PACK.file, ctl ? { signal: ctl.signal } : undefined);
+      if (!res.ok) throw new Error('pack ' + res.status);
+      const size = PACK.size || 0, rd = res.body && res.body.getReader ? res.body.getReader() : null, parts = []; let got = 0;
+      if (rd) for (;;) { const { done, value } = await rd.read(); if (done) break; wake(); parts.push(value); got += value.length; if (packShow && size) packShow(Math.min(99, Math.floor(got * 100 / size))); }
+      else parts.push(await res.arrayBuffer());
+      const all = new Blob(parts); // counted against the pack's own size, never the transfer's (a host may send it compressed)
+      if (size && all.size !== size) throw new Error(`pack ${all.size} of ${size} bytes`);
+      for (const [n, [o, l]] of Object.entries(PACK.at)) PURL[n] = URL.createObjectURL(all.slice(o, o + l, 'image/png'));
+    } catch (e) { /* the pictures are then asked for one by one, each by its own file */ } finally { clearTimeout(idle); packDone = true; }
+  })());
+}
+// The wait, drawn the way a game of the day drew its own: black, and two words. It lies over the page, outside the
+// frame (the page is scaled), and over the old look's turn-your-phone note.
+function bootScreen(p) {
+  let b = document.getElementById('boot'); if (!b) { b = document.createElement('div'); b.id = 'boot'; document.body.appendChild(b); app.innerHTML = ''; }
+  b.innerHTML = `<b>NOW LOADING</b><i>${p == null ? '' : p + '%'}</i>`;
+}
+function bootWait() { booting = true; bootScreen(); return loadPack(bootScreen).then(() => { const b = document.getElementById('boot'); if (b) b.remove(); booting = false; render(); }); }
 const faceName = id => 'face-' + (id === 'last' ? 'last-one' : id);
 const relicFile = id => (RELICS[id].kind === 'M' ? 'masterwork' : 'relic') + '-' + id.replace(/_/g, '-');
 // Card pictures at console size: each sheet of 100 shrunk to 40 (and, for the card page, 96) pixels a card and cut to
@@ -784,7 +815,8 @@ function psHome() {
   const t1 = at(312, 455), t2 = at(1014, 455), fg = at(450, 440); // the two torches and the dark of the doorway, in the painting's own pixels
   const items = [has && ['CONTINUE', 'resume'], ['NEW DESCENT', 'new'], [`CODEX ${G.known.size}`, 'screen:codex'], [`FEATS ${(P.featsDone || []).length}/${featList(!!labs.long).length}`, 'screen:feats'], [`MEMORY VAULT ${P.memories}`, 'screen:vault'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options']].filter(Boolean);
   const mx = W - 148, menu = items.map(([t, a], i) => pq(mx, dy + 78 + i * 20, 136, t, a, { lit: i === 0 })).join('');
-  const slot = has ? `<div class="wn slot" style="left:${W - 160}px;top:${dy + 82 + items.length * 20}px">${lb(0, 0, '', '')}<b class="lb g">${esc(saved.forger ? shortName(FORGERS[saved.forger].name) : 'NO FORGER')}</b><br><b class="lb">FLOOR ${saved.floor + 1} · CHAMBER ${Math.min(6, saved.chamber + 1)}</b><br><b class="lb">SPARKS ${saved.sparks} · EMBERS ${saved.embers}</b></div>` : '';
+  const sy = dy + 82 + items.length * 20, low = sy + 46 <= H - 2; // the saved run under the menu, or beside it when the frame is too short
+  const slot = has ? `<div class="wn runslot" style="left:${low ? W - 160 : W - 316}px;top:${low ? sy : dy + 78 + items.length * 20 - 46}px">${lb(0, 0, '', '')}<b class="lb g">${esc(saved.forger ? shortName(FORGERS[saved.forger].name) : 'NO FORGER')}</b><br><b class="lb">FLOOR ${saved.floor + 1} · CHAMBER ${Math.min(6, saved.chamber + 1)}</b><br><b class="lb">SPARKS ${saved.sparks} · EMBERS ${saved.embers}</b></div>` : '';
   return `<div class="ti">${pic}${CART.has('key-title') ? `<img class="mist" src="${fogSprite(180, 72, .45)}" style="left:${fg[0] - 15}px;top:${fg[1] - 6}px" alt="">` : ''}<i class="tor" style="left:${t1[0]}px;top:${t1[1]}px"></i><i class="tor" style="left:${t2[0]}px;top:${t2[1]}px"></i>
     ${CART.has('key-logo') && D.cart.logo ? `<img class="ab" src="${cimg('key-logo')}" width="${D.cart.logo[0]}" height="${D.cart.logo[1]}" style="left:${W - 152}px;top:${dy + 6}px" alt="Lost Memories">` : `<div class="ab" style="left:${W - 160}px;top:${dy + 8}px;width:160px;display:flex;flex-direction:column;align-items:center;gap:0">${carveImg('LOST', 22, render)}${carveImg('MEMORIES', 22, render)}</div>`}
     ${lb(W - 154, dy + 66, 'BENEATH ASTERHOLD', 'd')}${menu}${slot}
@@ -815,7 +847,7 @@ function psChamber() {
   const rp = roomPic(hall, NICHE_Y + 34, true), nx = i => Math.round(NICHE[at[i]] * rp.s), ny = Math.round(NICHE_Y * rp.s);
   const doors = r.doors.map((d, i) => { const locked = lockedAt(i), art = d.type === 'secret' && CART.has('door-hidden-leaf') ? 'hidden' : DOOR_ART[d.type], leaf = 'door-' + art + '-leaf' + (rp.big && CART.has('door-' + art + '-leaf-l') ? '-l' : ''); // the door that is not there has its own plain leaves
     return `<button class="dr k-${d.know || 'known'}${locked ? ' lock' : ''}${i === sel ? ' on' : ''}${rp.big ? ' l' : ''}" style="left:${nx(i)}px;top:${ny}px" data-a="${i === sel ? 'door' : 'dsel'}:${i}" ${locked && i === sel ? 'disabled' : ''} aria-label="${esc(doorName(d))}">${CART.has(leaf) ? `<img src="${cimg(leaf)}" alt="">` : ''}<i class="fg"></i><i class="no">${i + 1}</i></button>`; }).join('');
-  const view = `<div class="room" style="left:${rp.ox}px;top:${rp.oy}px;width:${rp.pw}px;height:${rp.ph}px"><img src="${rp.src}" width="${rp.pw}" height="${rp.ph}" alt="">${doors}<i class="cur" style="left:${nx(sel) + (rp.big ? 34 : 27)}px;top:${ny - 10}px"></i></div>${rp.edge}`;
+  const view = `<div class="room" style="left:${rp.ox}px;top:${rp.oy}px;width:${rp.pw}px;height:${rp.ph}px"><img src="${rp.src}" width="${rp.pw}" height="${rp.ph}" alt="">${doors}<i class="cur" style="left:${nx(sel) + (rp.big ? 34 : 27)}px;top:${ny - 10}px"></i>${keepers(r, rp, viewSize())}</div>${rp.edge}`;
   const lw = ledgeW(), ledge = `<div class="dt" style="width:${lw - 82}px"><b>${sel + 1} · ${esc(doorName(d))}</b><p><i class="lmc">COST</i> ${esc(d.cost)}</p><p><i class="lmg">GAIN</i> ${esc(d.reward)}</p></div>`
     + (n > 1 ? pq(lw - 72, 4, 30, '<', `dsel:${(sel + n - 1) % n}`, { title: 'Door to the left' }) + pq(lw - 38, 4, 30, '>', `dsel:${(sel + 1) % n}`, { title: 'Door to the right' }) : '')
     + pq(lw - 72, 40, 64, lockedAt(sel) ? 'SEALED' : 'ENTER', `door:${sel}`, { lit: !lockedAt(sel), off: lockedAt(sel) });
@@ -874,11 +906,23 @@ const terrainTex = id => { const n = 'terrain-' + String(card(id).name).toLowerC
 const pmodel = n => (D.cart && D.cart.models && D.cart.models[n]) || null;
 const PROP_ROOM = { 'room-sanctum': ['shrine', 'side', 25], 'room-omen': ['bowl', 'side', 0], 'room-vault': ['chest', 'side', -30], 'room-bazaar': ['stall', 'back', 15] };
 function propSpot(hall, vs, x0, y0, ph, kind) { // the canvas a room's prop is drawn into, or nothing
-  const pr = PROP_ROOM[hall]; if (!pr || (kind && kind !== 'treasure' && hall === 'room-vault') || !pmodel(pr[0])) return '';
+  const pr = PROP_ROOM[hall]; if (!pr || (hall === 'room-vault' && kind !== 'treasure') || !pmodel(pr[0])) return ''; // the chest stands at a treasure only, not at the other vault offers
   const [name, place, yaw] = pr, side = place === 'side';
   if (side && x0 < 56) return ''; // no room beside the choices: the prop stays out rather than crowd them
   const cx = side ? x0 >> 1 : vs.w >> 1, by = y0 + ph - 2, h = side ? Math.min(Math.round(ph * .62), 84) : Math.round(ph * 1.08), w = side ? x0 - 8 : vs.w - 16;
-  return `<canvas id="prop" class="ab" style="left:0;top:0" width="${vs.w}" height="${vs.h}" data-prop="${name}" data-yaw="${yaw}" data-cx="${cx}" data-by="${by}" data-h="${h}" data-w="${w}"></canvas>`;
+  return propCanvas(vs, [[name, yaw, cx, by, h, w]]);
+}
+// One canvas over the view for a screen's props, each [model, turn in degrees, middle x, foot y, height, width]: it takes
+// no taps, so what lies under it is tapped as before.
+const propCanvas = (vs, items) => `<canvas id="prop" class="ab" style="left:0;top:0;pointer-events:none" width="${vs.w}" height="${vs.h}" data-items='${JSON.stringify(items)}'></canvas>`;
+// The two keepers stand at the foot of the chamber's side pillars while the guardian's door is among the doors, as statues
+// flanked a boss's door in the games of the day. Places are in the 352 x 198 room picture; the canvas lies in the room
+// itself, so the keepers sway with it.
+function keepers(r, rp, vs) {
+  if (!pmodel('keeper') || !r.doors.some(d => d.type === 'boss')) return '';
+  const at = (x, yaw) => ['keeper', yaw, Math.round(x * rp.s), Math.round(190 * rp.s), Math.round(92 * rp.s), Math.round(44 * rp.s)];
+  const items = [at(24, 28), at(328, -28)].filter(([, , cx, by]) => rp.ox + cx >= 16 && rp.ox + cx <= vs.w - 16 && rp.oy + by <= vs.h + 8); // a keeper the view cuts off stays out
+  return items.length ? propCanvas({ w: rp.pw, h: rp.ph }, items) : '';
 }
 let propLoading = false;
 function propTextures() {
@@ -888,23 +932,28 @@ function propTextures() {
 }
 function propPaint() {
   const cv = document.getElementById('prop'); if (!cv) return;
-  const { prop, yaw, cx, by, h, w } = cv.dataset, M = pmodel(prop); if (!M) return;
-  const a = +yaw * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a), turn = p => [p[0] * ca - p[1] * sa, p[0] * sa + p[1] * ca, p[2]];
-  const Wp = p => { const q = turn(p); return [q[0] * TS, q[2] * TS, -q[1] * TS]; }, tall = Math.max(...M.faces.flatMap(f => f.p.map(p => p[2]))) * TS;
-  const cam = { y: tall * .5 + 160, z: 900, pitch: Math.atan2(160, 900), f: 300, cx: 0, cy: 0 };
-  const box = c => { const P = R3.camera(c), pts = M.faces.flatMap(f => f.p.map(p => P(Wp(p)))).filter(Boolean), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
-  let b = box(cam); const k = Math.min(+h / Math.max(1, b[3] - b[1]), +w / Math.max(1, b[2] - b[0])); cam.f = Math.round(cam.f * k);
-  b = box(cam); cam.cx = Math.round(+cx - (b[0] + b[2]) / 2); cam.cy = Math.round(+by - b[3]);
-  const view = R3.makeView(cv, cv.width, cv.height); view.px.fill(0); view.list.length = 0;
+  let items; try { items = JSON.parse(cv.dataset.items || '[]'); } catch { return; }
+  const view = R3.makeView(cv, cv.width, cv.height); view.px.fill(0);
   const L = [-.35, .8, .5], ln = Math.hypot(...L);
-  for (const f of M.faces) {
-    const t = TEX[`m-${prop}-${f.t}`]; if (!t || !f.uv) continue;
-    const q = turn(f.n), n = [q[0], q[2], -q[1]], lit = .45 + .55 * Math.max(0, (n[0] * L[0] + n[1] * L[1] + n[2] * L[2]) / ln);
-    const c = f.p.map((p, i) => [Wp(p), [f.uv[i][0] * (t.w - 1), f.uv[i][1] * (t.h - 1)]]); if (c.length === 3) c.push(c[0]);
-    c.reverse(); // the file winds its faces the other way round from the renderer
-    R3.quad(view, { p: c.map(x => x[0]), uv: c.map(x => x[1]), tex: t, shade: lit, cull: true });
+  for (const [prop, yaw, cx, by, h, w] of items) { // each prop has its own camera, fitted to its place: drawn one after the other
+    const M = pmodel(prop); if (!M) continue;
+    const a = yaw * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a), turn = p => [p[0] * ca - p[1] * sa, p[0] * sa + p[1] * ca, p[2]];
+    const Wp = p => { const q = turn(p); return [q[0] * TS, q[2] * TS, -q[1] * TS]; }, tall = Math.max(...M.faces.flatMap(f => f.p.map(p => p[2]))) * TS;
+    const cam = { y: tall * .5 + 160, z: 900, pitch: Math.atan2(160, 900), f: 300, cx: 0, cy: 0 };
+    const box = c => { const P = R3.camera(c), pts = M.faces.flatMap(f => f.p.map(p => P(Wp(p)))).filter(Boolean), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+    let b = box(cam); const k = Math.min(h / Math.max(1, b[3] - b[1]), w / Math.max(1, b[2] - b[0])); cam.f = Math.round(cam.f * k);
+    b = box(cam); cam.cx = Math.round(cx - (b[0] + b[2]) / 2); cam.cy = Math.round(by - b[3]);
+    view.list.length = 0;
+    for (const f of M.faces) {
+      const t = TEX[`m-${prop}-${f.t}`]; if (!t || !f.uv) continue;
+      const q = turn(f.n), n = [q[0], q[2], -q[1]], lit = .45 + .55 * Math.max(0, (n[0] * L[0] + n[1] * L[1] + n[2] * L[2]) / ln);
+      const c = f.p.map((p, i) => [Wp(p), [f.uv[i][0] * (t.w - 1), f.uv[i][1] * (t.h - 1)]]); if (c.length === 3) c.push(c[0]);
+      c.reverse(); // the file winds its faces the other way round from the renderer
+      R3.quad(view, { p: c.map(x => x[0]), uv: c.map(x => x[1]), tex: t, shade: lit, cull: true });
+    }
+    R3.draw(view, R3.camera(cam));
   }
-  R3.draw(view, R3.camera(cam)); R3.present(view);
+  R3.present(view);
 }
 function psTextures() {
   if (TEX.loading) return; TEX.loading = true;
@@ -1052,16 +1101,17 @@ function psDuel() {
     + cmds.slice(0, 4).map(([t, a, o], i) => pq(4, yb(138 + i * 20), 88, t, a, o || {})).join('') + (endOk ? pq(4, yb(220), 88, 'END TURN', 'end', { lit: !cmds.some(c => c[2] && c[2].lit) }) : '');
   const more = cmds.length > 4 ? cmds.slice(4).map(([t, a, o], i) => pq(ledgeW() - 92 - i * 92, -18, 88, t, a, o || {})).join('') : '';
   const left = psYou(G.run, v, power + pq(4, yb(198), 88, 'THIS DUEL', 'tab:duel'));
-  const prompt = pend ? psTrap(live) : '';
+  const prompt = pend && !G.tab && !G.inspect && !G.overlay ? psTrap(live) : ''; // another window opened over the question takes its place until it is closed
   G.barText = bar;
   return frame({ left, right, view, ledge: `<div class="hand">${hand}</div>${more ? `<div class="ab" style="left:0;top:0;width:320px">${more}</div>` : ''}`, bar, barMore: bar.replace(/<[^>]+>/g, '').length > 74, extra: prompt });
 }
 function psTrap(live) {
   const pv = viewFor(live, db, 0), pX = pv.mon[1][live.pending.from], pT = live.pending.to >= 0 ? pv.mon[0][live.pending.to] : null;
   const head = `${pX && !pX.veil ? esc(card(pX.id).name) + ' (' + pX.ea + ')' : 'A veiled monster'} attacks ${pT ? esc(card(pT.id).name) + ' (' + (pT.pos === 'd' ? pT.ed + ' DEF' : pT.ea + ' ATK') + ')' : 'you directly'}.`;
-  const n = live.pending.options.length, H = Math.min(224, 92 + n * 66), top = 60; // the attack in two lines, then the Traps in a list that scrolls when there are many
-  const opts = live.pending.options.map((i, k) => { const t = live.traps[0][i]; return `<div class="ab" style="left:8px;top:${k * 66}px;width:296px;height:62px">${psCard(t, 0, 0)}<div class="ab" style="left:50px;top:0;width:150px"><b class="lb g">${esc(card(t.id).name)}</b><br>${esc(shortText(t.id))}</div>${pq(206, 22, 88, 'SPRING IT', 'respond:' + i, { lit: k === 0 })}</div>`; }).join('');
-  return win(96, 8, 320, H, `<h2>Spring a Trap?</h2><p style="height:34px">${head}</p><div class="ab sc" style="left:0;top:${top}px;width:320px;height:${H - top - 30}px">${opts}</div>${pq(216, H - 26, 88, 'LET IT THROUGH', 'respond:-1')}`);
+  const n = live.pending.options.length, hl = Math.min(3, Math.ceil(head.replace(/&[a-z]+;/g, '&').length / 36)), top = 28 + hl * 16; // the attack in its lines, then the Traps
+  const H = Math.min(F.H - 16, top + 32 + n * 66), more = top + 32 + n * 66 > H; // a list that scrolls when the frame cannot hold every Trap, and says so
+  const opts = live.pending.options.map((i, k) => { const t = live.traps[0][i]; return `<div class="ab" style="left:8px;top:${k * 66}px;width:296px;height:62px">${psCard(t, 0, 0)}<div class="ab" style="left:50px;top:0;width:250px;height:44px;line-height:16px;overflow:hidden"><b class="lb g" style="display:block;height:10px;line-height:8px">${esc(card(t.id).name)}</b>${esc(shortText(t.id))}</div>${pq(206, 46, 88, 'SPRING IT', 'respond:' + i, { lit: k === 0 })}</div>`; }).join(''); // the words take two lines across the row, the plaque sits under them
+  return win(96, 8 - cy0(), 320, H, `<h2>Spring a Trap?</h2><p style="height:${hl * 16}px">${head}</p><div class="ab sc" style="left:0;top:${top}px;width:320px;height:${H - top - 30}px">${opts}</div>${more ? lb(8, H - 20, 'MORE BELOW, SCROLL', 'g') : ''}${pq(216, H - 26, 88, 'LET IT THROUGH', 'respond:-1')}`);
 }
 
 // ---- offerings: a card, a Gift, a charm, a Guardian Reward, a treasure, the Sanctum, a starter kit
@@ -1258,9 +1308,9 @@ function psWindows() {
     const pic = sp ? `<img class="ab" src="${cimg(big ? sp + '-l' : sp)}" style="left:${(F.W - pw) >> 1}px;top:${Math.max(4, (F.H - 104 - ph) >> 1)}px" width="${pw}" height="${ph}" alt="">` : '';
     return `<div class="story" data-a="storynext"><div class="dim"></div>${sp ? pic : `<i class="bars" style="top:0;width:${F.W - 192}px"></i><i class="bars" style="top:${F.H - 124}px;width:${F.W - 192}px"></i>`}${fc ? `<div class="pf s96" style="left:104px;top:${20 + ((F.H - 240) >> 1)}px"><img src="${cimg(fc)}" width="96" height="96" alt=""></div>` : ''}
       <div class="wn ab" style="left:96px;top:${F.H - 104}px;width:${F.W - 192}px;height:104px;padding:6px 8px">${sc.who ? `<h2>${esc(sc.who)}</h2>` : ''}<p>${esc(sc.lines[st.i])}</p>${lb(8, 90, 'TAP TO GO ON', 'd')}${pq(F.W - 192 - 72, 82, 64, 'SKIP', 'storyskip')}</div></div>`; } // SKIP sits in the window, clear of the pillar's own plaques
-  { const k = r && r.phase === 'chamber' && r.floor > 0 && r.chamber === 0 ? r.seed + ':' + r.floor : null; if (k && G.floorSeen !== k) { G.floorSeen = k; G.floorCard = r.floor + 1; } } // a new floor gets its card once
-  if (G.floorCard && !G.playing && !G.overlay) { const big = F.W - 192 >= 398 && F.H >= 300 && CART.has('story-stair-l'), pw = big ? 390 : 312, ph = big ? 160 : 128, y = Math.max(28, (F.H - ph - 40) >> 1);
-    return `<div class="story" data-a="floorok"><div class="dim"></div><div class="ab" style="left:0;top:${y - 28}px;width:${F.W}px;display:flex;justify-content:center">${carveImg(['', 'FLOOR ONE', 'FLOOR TWO', 'FLOOR THREE'][G.floorCard] || 'FLOOR ' + G.floorCard, 24, render)}</div>${CART.has('story-stair') ? `<img class="ab" src="${cimg(big ? 'story-stair-l' : 'story-stair')}" style="left:${(F.W - pw) >> 1}px;top:${y}px" width="${pw}" height="${ph}" alt="">` : ''}${lb((F.W >> 1) - 36, y + ph + 8, 'TAP TO GO ON', 'd')}</div>`; }
+  // A new floor gets its card once, when a move took this run down to it (act arms it; a reload does not show it again).
+  const fc = G.floorCard; if (fc && r && fc.u === uidOf(r) && fc.n === r.floor + 1 && r.phase === 'chamber' && !G.playing && !G.overlay) { const big = F.W - 192 >= 398 && F.H >= 300 && CART.has('story-stair-l'), pw = big ? 390 : 312, ph = big ? 160 : 128, y = Math.max(28, (F.H - ph - 40) >> 1);
+    return `<div class="story" data-a="floorok"><div class="dim"></div><div class="ab" style="left:0;top:${y - 28}px;width:${F.W}px;display:flex;justify-content:center">${carveImg(['', 'FLOOR ONE', 'FLOOR TWO', 'FLOOR THREE'][fc.n] || 'FLOOR ' + fc.n, 24, render)}</div>${CART.has('story-stair') ? `<img class="ab" src="${cimg(big ? 'story-stair-l' : 'story-stair')}" style="left:${(F.W - pw) >> 1}px;top:${y}px" width="${pw}" height="${ph}" alt="">` : ''}${lb((F.W >> 1) - 36, y + ph + 8, 'TAP TO GO ON', 'd')}</div>`; }
   const o = G.overlay;
   if (o && !G.playing) {
     if (o.kind === 'duelEnd') { const s = o.sum; return win(136, 16, 240, 208, `<div style="display:flex;justify-content:center;margin:2px 0 6px">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><p>${esc(o.rival ? o.rival.name : '')}, ${s.turns} turns${s.reason === 'deckout' ? ', a deck ran out' : ''}.</p>${s.won ? `<p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b></p><p>Embers +${s.embers}${s.bountyMet ? '. Bounty met.' : '.'}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>${(o.why || []).slice(0, 2).map(l => `<p class="d">${esc(l)}</p>`).join('')}`}${pq(76, 184, 88, 'CONTINUE', 'closeov', { lit: true })}`); }
@@ -1312,8 +1362,8 @@ function drawConsole(screen) {
   const r = G.run;
   app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home'; app.dataset.room = '';
-  if (document.getElementById('tbl')) { psTextures(); convertSheets(40); psPaint(); }
   if (document.getElementById('prop')) { propTextures(); propPaint(); }
+  if (document.getElementById('tbl')) { psTextures(); convertSheets(40); psPaint(); }
   else convertSheets(40);
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
   barFits();
@@ -1396,7 +1446,7 @@ function tapped(ev) {
     case 'cxclose': G.cx.open = null; render(); break;
     case 'door': { G.log = []; const d = r.doors[n]; const go = () => act({ t: 'door', i: n }); if (d && d.type === 'boss' && r.seals >= 2) { queueStory('boss:' + BOSSES[r.floor][r.bossOrder[r.floor]].id, go); if (G.story) render(); } else if (d && d.type === 'secret') { queueStory('secret:door', go); if (G.story) render(); } else go(); break; }
     case 'leave': G.pickDeck = G.pickTrunk = null; act({ t: 'leave' }); break;
-    case 'look': look = look === 'old' ? 'ps' : 'old'; store.set(LOOKKEY, look); G.tab = null; render(); break; // the console look, or the old one to compare
+    case 'look': look = look === 'old' ? 'ps' : 'old'; store.set(LOOKKEY, look); G.tab = null; if (look !== 'old' && !packDone) bootWait(); else render(); break; // the console look, or the old one to compare
     case 'barmore': G.tab = 'bar'; render(); break;
     case 'dsel': if (r && r.phase === 'chamber' && r.doors[n] && G.doorSel) { G.doorSel.i = n; render(); } break; // the cursor moves to another door
     case 'osel': if (G.offSel) { G.offSel.i = n; render(); } break; // the cursor moves to another choice
@@ -1411,14 +1461,14 @@ function tapped(ev) {
     case 'mw': act({ t: 'anvil', kind: 'masterwork', id: x }); break;
     case 'buy': { const d = G.pickDeck; G.pickDeck = G.pickTrunk = null; const it = r.offer && r.offer.items[n]; act(it && it.kind === 'scrap' ? { t: 'buy', i: n, deck: d ?? undefined } : { t: 'buy', i: n }); break; }
     case 'inspect': G.inspect = { id: n }; render(); break;
-    case 'inspectz': { const v = viewFor(r.duel, db, 0); const m = v.mon[n][+y]; if (m && m.id) { G.inspect = m; render(); } break; }
+    case 'inspectz': { const v = G.shown ? G.shown.view : r && r.duel ? viewFor(r.duel, db, 0) : null; const m = v && v.mon[n] && v.mon[n][+y]; if (m && m.id) { G.inspect = m; render(); } break; } // the table as shown: while a move plays out the duel may already be over (found 22 November: tapping the rival's monster during its last attack sent the page back to the start)
     case 'closeinspect': G.inspect = null; render(); break;
     case 'closeov': G.overlay = null; render(); break;
     case 'heatinfo': G.overlay = { kind: 'heat', n }; render(); break;
     case 'speed': G.fast = !G.fast; render(); break;
     // duel
     case 'hand': { if (G.playing || !r.duel || r.duel.active !== 0 || r.duel.pending) break; if (r.duel.played || r.duel.attacked) { G.inspect = r.duel.hand[0][n]; render(); break; } G.attacker = null; G.aim = null; const k = G.sel.indexOf(n); if (k >= 0) G.sel.splice(k, 1); else G.sel.push(n); render(); break; }
-    case 'mine': { if (G.sel.length) { toast('Finish or undo your card pick first.'); break; } if (G.attacker === n) { G.attacker = null; G.onto = n; } else if (G.onto === n) { G.onto = null; G.inspect = viewFor(r.duel, db, 0).mon[0][n]; } else { G.attacker = n; G.onto = null; } render(); break; }
+    case 'mine': { if (G.sel.length) { toast('Finish or undo your card pick first.'); break; } if (G.attacker === n) { G.attacker = null; G.onto = n; } else if (G.onto === n) { G.onto = null; if (r.duel) G.inspect = viewFor(r.duel, db, 0).mon[0][n]; } else { G.attacker = n; G.onto = null; } render(); break; }
     case 'hit': duel({ t: 'attack', from: G.attacker, to: n }); break;
     case 'pos': duel({ t: 'pos', zone: G.attacker }); break;
     case 'undo': G.sel = []; G.attacker = null; G.onto = null; G.aim = null; render(); break;
@@ -1440,7 +1490,7 @@ function trySwap() {
   if (r.phase === 'chamber' && G.pickDeck != null && G.pickTrunk != null) { const a = { t: 'swap', deck: G.pickDeck, trunk: G.pickTrunk }; G.pickDeck = G.pickTrunk = null; act(a); G.tab = 'deck'; render(); }
   else render();
 }
-for (const f of D.art || []) { const im = new Image(); im.src = 'art/' + f + '.webp'; (window.__keep = window.__keep || []).push(im); } // keep pictures warm so a redraw never flashes
+const warmOld = () => { for (const f of D.art || []) { const im = new Image(); im.src = 'art/' + f + '.webp'; (window.__keep = window.__keep || []).push(im); } }; // keep the old look's pictures warm so a redraw never flashes; in the console look only once its own pack is in
 for (let i = 0; D.sheets && i < Math.ceil(D.pool.cards.length / 100); i++) { const im = new Image(); im.src = D.sheets + i + '.webp'; (window.__keep = window.__keep || []).push(im); }
 window.LM = { G, P, db, act, render, labKeys, labWords: () => Object.keys(LABS), unsaved: () => [...store.failed.keys()] }; // for tests
-render();
+if (PACK && look !== 'old') bootWait().then(warmOld); else { warmOld(); render(); loadPack(); }

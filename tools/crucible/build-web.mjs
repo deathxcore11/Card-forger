@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -20,6 +21,19 @@ const js = execFileSync(esbuild, [path.join(root, 'crucible/web/app.mjs'), '--bu
 const data = { pool: JSON.parse(read('crucible/data/crucible-pool.json')), tags: JSON.parse(read('crucible/data/crucible-spell-tags.json')), config: JSON.parse(read('crucible/data/crucible-config.json')), sheets: flag('--sheets', ''), art: fs.existsSync(path.join(out, 'art')) ? fs.readdirSync(path.join(out, 'art')).filter(f => f.endsWith('.webp')).map(f => f.slice(0, -5)) : [],
   // the console look's pictures, cut to console size by tools/crucible/console-art.py into art/c/
   cart: fs.existsSync(path.join(out, 'art', 'c', 'index.json')) ? JSON.parse(fs.readFileSync(path.join(out, 'art', 'c', 'index.json'), 'utf8')) : null, look: flag('--look', 'ps') };
+// The console pictures also go into one pack file beside them, so a published page holds a few files, not hundreds.
+// The page cuts each picture out of the pack by the offsets listed here; the file name carries the pack's hash, so a
+// device never keeps an old pack.
+if (data.cart) {
+  const dir = path.join(out, 'art', 'c'), names = fs.readdirSync(dir).filter(f => f.endsWith('.png')).sort(), at = {}, parts = [];
+  let o = 0;
+  for (const f of names) { const b = fs.readFileSync(path.join(dir, f)); at[f.slice(0, -4)] = [o, b.length]; parts.push(b); o += b.length; }
+  const buf = Buffer.concat(parts), file = 'pack-' + createHash('sha1').update(buf).digest('hex').slice(0, 10) + '.bin';
+  for (const f of fs.readdirSync(dir)) if (/^pack-[0-9a-f]+\.bin$/.test(f) && f !== file) fs.unlinkSync(path.join(dir, f));
+  fs.writeFileSync(path.join(dir, file), buf);
+  data.cart.pack = { file, size: buf.length, at };
+  console.log('packed', names.length, 'console pictures into', file, Math.round(buf.length / 1024) + ' KB');
+}
 const safe = s => s.replace(/<\/(script)/gi, '<\\/$1');
 const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">

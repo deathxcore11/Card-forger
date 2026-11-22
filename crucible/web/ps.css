@@ -5,6 +5,9 @@
 @font-face { font-family: 'LM Label'; src: url(art/fonts/silkscreen-latin-400-normal.woff2) format('woff2'); font-display: block; }
 
 body.ps { background: #000; }
+/* the loading screen while the console pictures arrive: black, two words, the share counting up */
+#boot { position: fixed; inset: 0; z-index: 1000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-family: 'LM Label', monospace; font-size: 24px; letter-spacing: 3px; color: #c9a95a; image-rendering: pixelated; }
+#boot i { font-style: normal; font-size: 16px; color: #6e5a32; min-height: 10px; }
 #app.ps { position: absolute; left: 50%; top: 50%; width: 512px; height: 240px; overflow: hidden; background: #000; color: #f3ead8;
   font: 16px/16px 'LM Text', monospace; -webkit-font-smoothing: none; font-smooth: never; image-rendering: pixelated; transform-origin: 50% 50%;
   --sh: #1a0f12; --plum: #2d121d; --wine: #411b28; --dusty: #69404d; --sd: #7a543c; --sm: #a87e4f; --sl: #c09660; --gold: #dba459; --gl: #e9c46a;
@@ -94,7 +97,7 @@ body.ps { background: #000; }
 #app.ps .ti > img.bg { position: absolute; left: 0; top: 0; }
 #app.ps .ti .logo { position: absolute; left: 0; top: 10px; width: 512px; display: flex; flex-direction: column; align-items: center; }
 #app.ps .ti .logo canvas { image-rendering: pixelated; }
-#app.ps .ti .slot { position: absolute; left: 352px; width: 152px; padding: 5px 6px; }
+#app.ps .ti .runslot { position: absolute; width: 152px; padding: 5px 6px; font-size: 8px; line-height: 11px; } /* not .slot: the old look styles that word */
 #app.ps .fog { position: absolute; pointer-events: none; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
 #app.ps .fog.a { animation: psfog 9s steps(18) infinite alternate; } #app.ps .fog.b { animation: psfog 13s steps(26) infinite alternate-reverse; opacity: 1; }
 @keyframes psfog { from { transform: translateX(-6px); } to { transform: translateX(6px); } }
