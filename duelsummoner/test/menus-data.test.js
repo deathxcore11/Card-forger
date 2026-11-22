@@ -1,4 +1,4 @@
-﻿// Meta and menus data: Oaths in the sim, mastery, map records, the quest tracker, the library switch, replay with oaths.
+// Meta and menus data: Oaths in the sim, mastery, map records, the quest tracker, the library switch, replay with oaths.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js';
@@ -26,8 +26,8 @@ test('Hasty Oath: 1.25x ticks per real second', () => {
 test('Still Oath: no dash. Peace Oath: no damage from your cards for 3 minutes. Pauper: no Broker', () => {
   const g = mk(['still']); g.p.dashCd = 0; g.tick({ mx: 127, mz: 0, yaw: 0, buttons: 2, menu: 0 }); assert.ok(!(g.p.dashT > 0), 'no dash');
   const f = mk([]); f.p.dashCd = 0; f.tick({ mx: 127, mz: 0, yaw: 0, buttons: 2, menu: 0 }); assert.ok(f.p.dashT > 0, 'dash works without the Oath');
-  const p = mk(['peace']); let dealt = 0; p.spawnAcc = 1e9; for (let i = 0; i < 1200; i++) p.tick(idle); dealt = (p.dealtLog['card-throw'] || []).reduce((a, b) => a + (b || 0), 0); assert.equal(dealt, 0, 'no card damage in the first minute');
-  const n = mk([]); n.spawnAcc = 1e9; for (let i = 0; i < 1200; i++) n.tick(idle); assert.ok((n.dealtLog['card-throw'] || []).reduce((a, b) => a + (b || 0), 0) > 0, 'cards do damage without the Oath');
+  const p = mk(['peace']); let dealt = 0; p.spawnAcc = 40; for (let i = 0; i < 1200; i++) p.tick(idle); dealt = (p.dealtLog['card-throw'] || []).reduce((a, b) => a + (b || 0), 0); assert.equal(dealt, 0, 'no card damage in the first minute');
+  const n = mk([]); n.spawnAcc = 40; for (let i = 0; i < 1200; i++) n.tick(idle); assert.ok((n.dealtLog['card-throw'] || []).reduce((a, b) => a + (b || 0), 0) > 0, 'cards do damage without the Oath');
   const q = new Game(4, { mode: 'run', oaths: ['pauper'], offers: false }); assert.equal(q.world.broker, null);
   assert.ok(new Game(4, { mode: 'run', offers: false }).world.broker);
 });

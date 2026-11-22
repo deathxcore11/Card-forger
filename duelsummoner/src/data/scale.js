@@ -27,6 +27,7 @@ export const SCALE = {
   hitShare: 0.28,
   walkRadiusCap: 2.2,        // terrain collision radius never exceeds this, so a big boss still fits the arena
   rangeCap: 1.6,             // slams, reach and blades grow with size, up to this factor
+  shade: { h: M(1.8) },                                   // a Toll Shade: tall, hooded, with a bell
   // things the duelist reads from the camera: made larger than life
   chest: 1.5, pickup: 1.5, npc: DUELIST_H
 };

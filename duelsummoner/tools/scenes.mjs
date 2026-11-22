@@ -83,5 +83,10 @@ export const SCENES = [
       1100: g => { const b = g.sp.find(s => s.role === 'gate'); if (b) b.hp = b.maxHp * 0.3; },
       1700: g => { const b = g.sp.find(s => s.role === 'gate'); if (b) g.damageSpecial(b, 1e9, 0, 0, { noCrit: true, area: true }); }
     }
+  },
+  {
+    // the clock hits 0:00: the Toll Shades rise (unkillable, through terrain), the Toll Bell pulls the duelist into the gate arena
+    name: 'toll-shades', seed: 35, duelist: 'kael', ticks: 1800, opts: { mode: 'run' },
+    setup(g) { g.evState.fill(2); g.sc = g.stageSpec.clock - 5; g.field.monsters[0].level = 6; }
   }
 ];

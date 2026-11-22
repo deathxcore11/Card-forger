@@ -3,8 +3,9 @@
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
 import { RUN } from '../data/waves.js';
 import { RUNSPEC, stagesFor, DIFFICULTY } from '../data/stages.js';
-import { pow, sin, cos } from './dmath.js';
-import { spawnEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
+import { pow, sin, cos, atan2 } from './dmath.js';
+import { spawnEnemy, mergeEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
+import { CFG } from '../data/config.js';
 import { spawnSpecial, startBoss } from './specials.js';
 import { heightAt } from './terrain.js';
 import { buildWorld, emptyWorld } from './world.js';
@@ -45,12 +46,13 @@ function initStage(g) {
   g.bDown = false; g.gateDown = null; g.circle = null; g.altar = null; g.stagePrompt = '';
   g.boss = { state: 'idle', early: false, phase: 1 };
   g.spawnAcc = 0; g.ringT = 0; g.golemT = 0; g.huntT = 0; g.killsAtStage = g.kills;
+  g.shades = []; g.shadeOn = false; g.shadeAge = 0; g.shadeNextAdd = 0; g.shadeWaveT = 0; g.afterGate = 0;
   g.flags.warden = g.flags.idols = true;                       // the classic timed elites are replaced by the timeline
 }
 
 // ---- per tick ----
 export function updateStages(g, dt) {
-  if (g.duelOn) { overtime(g, dt); return; }
+  if (g.duelOn) { shadesTick(g, dt); overtime(g, dt); return; }
   const S = g.stageSpec, G = g.gate, p = g.p, cmd = g._cmd;
   const fight = G.state === 'fight';
   if (G.state === 'closed') g.sc += dt;                         // the clock freezes during the gate fight and after it
@@ -59,6 +61,7 @@ export function updateStages(g, dt) {
   g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3));
   g.maxAlive = Math.floor(D.cap.start + (D.cap.end - D.cap.start) * (m >= D.cap.minutes ? 1 : m / D.cap.minutes));
   g.stagePrompt = '';
+  shadesTick(g, dt);
 
   if (g.gateDown) { const sp = g.gateDown; g.gateDown = null; gateCleared(g, sp); return; }
   if (g.circle) { circleTick(g, dt); return; }
@@ -135,7 +138,7 @@ function startGate(g, early, toll) {
 
 function gateCleared(g, sp) {
   const S = g.stageSpec, G = g.gate, p = g.p, last = g.stage >= g.stages.length - 1;
-  G.state = 'done'; g.stagesCleared++;
+  G.state = 'done'; g.stagesCleared++; g.afterGate = 0;
   g.stageFacts.push({ stage: g.stage + 1, id: S.id, seconds: Math.round(g.sc), kills: g.kills - g.killsAtStage, gateOpenedAt: Math.round(g.gateOpenedAt), early: G.early, toll: G.toll, level: g.level });
   g.en.alive.fill(0);                                           // every enemy crumbles
   for (const o of g.sp) if (o !== sp) o.alive = false;
@@ -176,6 +179,38 @@ export function finalChoice(g, i) {
   return true;
 }
 
+// ---- Toll Shades ----
+function addShade(g, cap) {
+  const SH = RUNSPEC.shades; if (g.shades.length >= cap) return;
+  const a = g.rsp() * 6.283185307179586, d = SH.spawnMin + g.rsp() * (SH.spawnMax - SH.spawnMin), p = g.p, x = p.x + cos(a) * d, z = p.z + sin(a) * d;
+  g.shades.push({ x, y: p.y, z, px: x, py: p.y, pz: z, face: 0, cd: 1.0, born: g.t });                  // a short grace so the rise can be seen
+  g.emit('shade', x, z);
+}
+function startShades(g) {
+  const SH = RUNSPEC.shades; g.shadeOn = true; g.shadeAge = 0; g.shadeNextAdd = SH.addEverySeconds;
+  for (let k = 0; k < SH.start; k++) addShade(g, SH.max);
+  g.event('banner', 'The Toll Shades rise. Nothing can hurt them. Run.'); g.emit('shades', g.stage + 1);
+}
+function shadesTick(g, dt) {
+  const SH = RUNSPEC.shades, G = g.gate, S = g.stageSpec, p = g.p;
+  if (!g.shadeOn && !g.duelOn) {
+    if (G.state === 'closed' && g.sc >= S.clock) startShades(g);                                     // the clock hit 0:00
+    else if (G.state === 'done' && !g.desc && (g.afterGate += dt) >= SH.afterGateSeconds) startShades(g);    // the gate boss fell and the Descent was not taken
+  }
+  if (g.duelOn) { g.shadeWaveT -= dt; if (g.shadeWaveT <= 0) { g.shadeWaveT = SH.overtimeEverySeconds; for (let k = 0; k < SH.overtimeCount; k++) addShade(g, SH.hardMax); g.event('banner', 'A wave of Toll Shades rises.'); } }
+  if (!g.shades.length) return;
+  g.shadeAge += dt;
+  if (g.shadeOn && g.shadeAge >= g.shadeNextAdd) { g.shadeNextAdd += SH.addEverySeconds; addShade(g, SH.max); }
+  const speed = CFG.player.speed * SH.speedFrac * pow(1 + SH.speedStepPct / 100, Math.floor(g.shadeAge / SH.stepSeconds));
+  for (const s of g.shades) {
+    const dx = p.x - s.x, dz = p.z - s.z, d = Math.sqrt(dx * dx + dz * dz) || 0.001;
+    if (d > 0.05) { const m = Math.min(d, speed * dt); s.x += dx / d * m; s.z += dz / d * m; }
+    s.y += (p.y - s.y) * Math.min(1, dt * 4); s.face = atan2(dx, dz);                                 // straight at you, through terrain
+    s.cd -= dt;
+    if (d < SH.touchRadius && Math.abs(p.y - s.y) < 2.5 && s.cd <= 0 && !g.over) { s.cd = SH.touchCooldown; g.hurtPlayer(Math.max(1, p.maxHp * SH.touchPct), true, 'Toll Shade', 4); }       // TRUE damage, not SELF: it can kill
+  }
+}
+
 // ---- the swarm ----
 function spawner(g, dt, fight, toll) {
   const S = g.stageSpec; if (fight && !toll) return;
@@ -194,7 +229,8 @@ function spawner(g, dt, fight, toll) {
   if (toll) { g.huntT -= dt; if (g.huntT <= 0) { g.huntT = RUNSPEC.tollHunterEvery; for (let k = 0; k < RUNSPEC.tollHunterCount; k++) if (enemyCount(g.en) < cap) spawnEnemy(g, 'hunter'); } }
   g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt;
   let live = enemyCount(g.en);
-  while (g.spawnAcc >= 1) { g.spawnAcc -= 1; if (live < cap && spawnEnemy(g, pickKind(g, te))) live++; }
+  if (g.spawnAcc > 60) g.spawnAcc = 60;                                // never a runaway backlog
+  while (g.spawnAcc >= 1) { g.spawnAcc -= 1; const kind = pickKind(g, te); if (live < cap) { if (spawnEnemy(g, kind)) live++; } else mergeEnemy(g, kind); }       // past the cap a spawn merges into the nearest of its kind
 }
 
 // ---- Overtime after Duel On: endless hunters, a captain every 60 s that drops a Sealed Chest ----
@@ -204,7 +240,7 @@ function overtime(g, dt) {
   const m = (g.scTotal + g.sc) / 60, D = g.diff, C = D.hpCurve; g.hpMul = g.stageSpec.mult * (1 + C.a * m + C.b * m * m) * g.heat * D.hp;
   g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3)) * pow(R.dmgGrowth, k + 1);
   g.otAcc += (O.baseRate + O.rateStep * k) * dt;
-  while (g.otAcc >= 1) { g.otAcc -= 1; if (enemyCount(g.en) < g.maxAlive) spawnEnemy(g, 'hunter'); }
+  while (g.otAcc >= 1) { g.otAcc -= 1; if (enemyCount(g.en) < g.maxAlive) spawnEnemy(g, 'hunter'); else mergeEnemy(g, 'hunter'); }
   g.huntT -= dt;
   if (g.huntT <= 0) {
     g.huntT = 60;
