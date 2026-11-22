@@ -17,27 +17,44 @@ function flatHere(x, z, y) {
   for (const [dx, dz] of [[1.2, 0], [-1.2, 0], [0, 1.2], [0, -1.2]]) { const h = heightAt(x + dx, z + dz); if (h >= 50 || Math.abs(h - y) > 0.15) return false; }
   return true;
 }
-export function pickSpot(g, regions, taken, apart, tries = 300) {
+export function pickSpot(g, regions, taken, apart, tries = 300, accept) {
   for (let t = 0; t < tries; t++) {
     const R = regions[Math.floor(g.rng() * regions.length)], iv = R.deg[Math.floor(g.rng() * R.deg.length)];
     const r = R.r[0] + g.rng() * (R.r[1] - R.r[0]), a = (iv[0] + g.rng() * (iv[1] - iv[0])) * DEG, x = r * Math.cos(a), z = r * Math.sin(a), h = heightAt(x, z);
     if (h >= 50 || Math.abs(h - R.h) > 0.2 || !flatHere(x, z, h) || openSides(x, z, h) < 3) continue;
     if (taken.some(q => (q.x - x) ** 2 + (q.z - z) ** 2 < apart * apart)) continue;
+    if (accept && !accept(x, z)) continue;
     return { x, z, y: h };
   }
   return null;
 }
 
+export const emptyWorld = () => ({ vases: [], stones: [], broker: null, shrines: [], cchests: [], opened: 0, kills50: 0 });
+
+// Placement API for a map generator: spawn one placeable object at a position. The sim owns the logic; the generator owns where.
+//   placeObject(g, 'vase', { x, y, z, banded })   'stone' | 'broker' | 'shrine' | { x, y, z }   'cchest' { x, y, z, rarity }
+export function placeObject(g, type, s) {
+  const W = g.world;
+  if (type === 'vase') { W.vases.push({ x: s.x, y: s.y, z: s.z, alive: true, banded: !!s.banded, hp: 1 }); return W.vases[W.vases.length - 1]; }
+  if (type === 'stone') { W.stones.push({ x: s.x, y: s.y, z: s.z, used: false }); return W.stones[W.stones.length - 1]; }
+  if (type === 'broker') { W.broker = { x: s.x, y: s.y, z: s.z, stock: pickStock(g) }; return W.broker; }
+  if (type === 'shrine') { W.shrines.push({ x: s.x, y: s.y, z: s.z, charge: 0, idle: 0, done: false }); return W.shrines[W.shrines.length - 1]; }
+  if (type === 'cchest') { W.cchests.push({ x: s.x, y: s.y, z: s.z, open: false, rarity: s.rarity || E.cardChests.rarityByOrder[W.cchests.length] || 'common' }); return W.cchests[W.cchests.length - 1]; }
+  throw new Error('unknown placeable ' + type);
+}
+
 export function buildWorld(g) {
-  const W = { vases: [], stones: [], broker: null, shrines: [], cchests: [], opened: 0, kills50: 0 }, taken = [];
+  const W = emptyWorld(), taken = [];
+  if (g.opts && g.opts.world === 'none') return W;                          // a generator will place everything itself
   const put = s => { if (s) taken.push(s); return s; };
   for (const sp of E.cardChests.placement) for (let i = 0; i < sp.n; i++) {
     const s = put(pickSpot(g, [sp], taken, E.minSpacing)); if (s) W.cchests.push({ ...s, open: false, rarity: null });
   }
   W.cchests.forEach((c, i) => { c.rarity = E.cardChests.rarityByOrder[i] || 'common'; });
-  for (let i = 0; i < E.witnessStones.count; i++) { const s = put(pickSpot(g, E.witnessStones.regions, taken, E.witnessStones.minApart)); if (s) W.stones.push({ ...s, used: false }); }
+  const farFrom = (list, d) => (x, z) => list.every(q => (q.x - x) ** 2 + (q.z - z) ** 2 >= d * d);
+  for (let i = 0; i < E.witnessStones.count; i++) { const s = put(pickSpot(g, E.witnessStones.regions, taken, E.minSpacing, 400, farFrom(W.stones, E.witnessStones.minApart))); if (s) W.stones.push({ ...s, used: false }); }
   { const s = put(pickSpot(g, E.broker.regions, taken, E.minSpacing)); if (s) W.broker = { ...s, stock: pickStock(g) }; }
-  for (let i = 0; i < E.shrines.count; i++) { const s = put(pickSpot(g, E.shrines.regions, taken, E.shrines.minApart)); if (s) W.shrines.push({ ...s, charge: 0, idle: 0, done: false }); }
+  for (let i = 0; i < E.shrines.count; i++) { const s = put(pickSpot(g, E.shrines.regions, taken, E.minSpacing, 400, farFrom(W.shrines, E.shrines.minApart))); if (s) W.shrines.push({ ...s, charge: 0, idle: 0, done: false }); }
   const V = E.vases;
   for (let c = 0; c < V.clusters; c++) {
     const s = pickSpot(g, V.regions, taken, E.minSpacing); if (!s) continue; taken.push(s);
@@ -122,7 +139,7 @@ function openCardChest(g, c) {
   const cards = buildOffer(g, c.rarity);
   if (!cards.length) { g.event('banner', 'Nothing in this chest you could use.'); return; }
   g.coins -= price; g.world.opened++;
-  g.offer = { type: 'chest', cards, leave: false, chest: c }; g.event('offer', null);
+  g.offer = { type: 'chest', cards, leave: false, chest: c, floor: c.rarity }; g.event('offer', null);
 }
 
 // nearest thing the duelist can press E on, with its prompt text

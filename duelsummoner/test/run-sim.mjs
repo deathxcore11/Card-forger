@@ -44,9 +44,14 @@ function play(seed) {
       const al = Math.sqrt(ax * ax + az * az) || 1; ax /= al; az /= al;
       let cx = 0, cz = 0; const ch = g.chests.find(c => !c.open);
       if (ch) { cx = ch.x - p.x; cz = ch.z - p.z; const l = Math.sqrt(cx * cx + cz * cz) || 1; cx /= l; cz /= l; }
+      let sx = 0, sz = 0;                                                    // step out of any marked lane or bolt line that crosses us
+      for (const t of g.tele) if (t.on && t.type === 0) {
+        const rx2 = p.x - t.x, rz2 = p.z - t.z, along = rx2 * t.dx + rz2 * t.dz, side = rx2 * -t.dz + rz2 * t.dx;
+        if (along > -2 && along < t.len + 2 && Math.abs(side) < t.w / 2 + 1.6) { const sg = side >= 0 ? 1 : -1; sx += -t.dz * sg; sz += t.dx * sg; }
+      }
       let bx = 0, bz = 0; const w = g.sp.find(s => s.kind === 'warden' && s.alive);        // a decent player gets behind the Warden's shield
       if (w) { const tx = w.x - Math.sin(w.face) * 6 - p.x, tz = w.z - Math.cos(w.face) * 6 - p.z, l = Math.sqrt(tx * tx + tz * tz) || 1; bx = tx / l; bz = tz / l; }
-      let dx = rx * 8 + ax * 0.6 + cx * (ch ? 1.5 : 0) + bx * 1.4 - p.x * 0.02, dz = rz * 8 + az * 0.6 + cz * (ch ? 1.5 : 0) + bz * 1.4 - p.z * 0.02;
+      let dx = rx * 8 + ax * 0.6 + cx * (ch ? 1.5 : 0) + bx * 1.4 - p.x * 0.02 + sx * 14, dz = rz * 8 + az * 0.6 + cz * (ch ? 1.5 : 0) + bz * 1.4 - p.z * 0.02 + sz * 14;
       const dl = Math.sqrt(dx * dx + dz * dz) || 1; dx /= dl; dz /= dl;
       cmd = { f: -dz, r: dx, yaw: 0, jump: false, dash: crowd >= 3 && g.t - dashAt > 1.2, slide: false, use: !!(ch && Math.hypot(ch.x - p.x, ch.z - p.z) < 2.5) };
       if (cmd.dash) dashAt = g.t;
@@ -59,14 +64,14 @@ function play(seed) {
   }
   const D = DUELISTS[duelist];
   return { seed, end: g.over ? 'died' : 'alive at cap', t: Math.round(g.t), level: g.level, kills: g.kills, fusions: g.fusions, boss: g.boss.state, bossKilled: g.bossKilled, overtime: Math.round(g.overtimeSeconds()), otStep: g.otStep, dmgMul: +g.dmgMul.toFixed(1), ...L,
-    pick: g.field.picks, field: g.field.monsters.filter(Boolean).map(m => m.id + ' L' + m.level).join(', ') };
+    pick: g.field.picks, killedBy: g.killedBy, dmg: Object.fromEntries(Object.entries(g.damageBy).map(([k, v]) => [k, Math.round(v)])), field: g.field.monsters.filter(Boolean).map(m => m.id + ' L' + m.level).join(', ') };
 }
 
 const out = []; const t0 = Date.now();
 for (let s = 1; s <= runs; s++) out.push(play(s));
 const med = a => { const b = a.filter(x => x !== null && x !== undefined).sort((p, q) => p - q); return b.length ? b[Math.floor(b.length / 2)] : null; };
 console.log(`mode: ${GOD ? 'god (cannot die)' : 'mortal'}, ${FOCUS ? 'focused pair' : 'spread picks'}, duelist ${duelist}, ${runs} runs, cap ${MAXMIN} min`);
-for (const r of out) console.log(JSON.stringify({ seed: r.seed, end: r.end, t: r.t, level: r.level, kills: r.kills, picks: r.pick, fusions: r.fusions, firstFusion: r.firstFusion, bossKilled: r.bossKilled, overtime: r.overtime, otStep: r.otStep, field: r.field }));
+for (const r of out) console.log(JSON.stringify({ seed: r.seed, end: r.end, killedBy: r.killedBy, dmg: r.dmg, t: r.t, level: r.level, kills: r.kills, picks: r.pick, fusions: r.fusions, firstFusion: r.firstFusion, bossKilled: r.bossKilled, overtime: r.overtime, otStep: r.otStep, field: r.field }));
 console.log('--- summary');
 console.log('level-ups by minute (median):', Array.from({ length: 9 }, (_, m) => `${m}:${med(out.map(r => r.lvAtMin[m]))}`).join('  '));
 console.log('level targets by minute:        ' + TARGETS.levelAt.map(a => (a[0] / 60) + ':' + a[1]).join('  ') + '  (about ' + TARGETS.levelUpsByEnd + ' level-ups from the XP curve)');
@@ -75,5 +80,6 @@ console.log('second Fusion share:', (out.filter(r => r.secondFusion !== null).le
 console.log('boss killed:', out.filter(r => r.bossKilled).length + '/' + runs, ' overtime survived (s) median:', med(out.map(r => r.overtime)), ' last step reached median:', med(out.map(r => r.otStep)));
 console.log('overtime curve: hunter hp x' + RUN.overtime.hpGrowth + ' and damage x' + RUN.overtime.dmgGrowth + ' per 30 s; after 5 min hp x' + Math.pow(RUN.overtime.hpGrowth, 10).toFixed(1) + ', damage x' + Math.pow(RUN.overtime.dmgGrowth, 10).toFixed(1) + '; after 10 min hp x' + Math.pow(RUN.overtime.hpGrowth, 20).toFixed(0) + ', damage x' + Math.pow(RUN.overtime.dmgGrowth, 20).toFixed(1));
 console.log('wall time', ((Date.now() - t0) / 1000).toFixed(1), 's');
+
 
 

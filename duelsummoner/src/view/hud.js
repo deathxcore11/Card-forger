@@ -3,6 +3,7 @@ import { CFG } from '../data/config.js';
 import { clock } from '../core/util.js';
 import { MONSTERS, FUSIONS, SPELLS, TRAPS, FIELD_RULES, LEVELS, formOf } from '../data/cards.js';
 import { fusionsReady } from '../sim/field.js';
+import { ITEMS, BLESSINGS } from '../data/items.js';
 
 const $ = id => document.getElementById(id);
 let key = '', zoneKey = '', bannerT = 0, zonesBuilt = false;
@@ -15,6 +16,12 @@ function buildZones() {
 }
 const stars = (n, max) => '*'.repeat(n) + '.'.repeat(Math.max(0, max - n));
 
+const EVENTS = [[240, 'Sealed Warden'], [360, 'Twin Jackal Idols'], [420, 'The Last Audience'], [480, 'The Hollow Pharaoh']];
+function nextEvent(g) {
+  if (g.t >= 480) { const n = 30 - ((g.t - 480) % 30); return 'Overtime hunters grow in ' + clock(n); }
+  for (const [t, name] of EVENTS) if (g.t < t && !(name === 'The Hollow Pharaoh' && g.boss.state !== 'idle')) return name + ' in ' + clock(t - g.t);
+  return '';
+}
 export function drawHud(g, force) {
   if (!zonesBuilt) buildZones();
   const k = Math.ceil(g.p.hp) + '|' + g.p.maxHp + '|' + Math.floor(g.xpCur) + '|' + g.level + '|' + Math.floor(g.t) + '|' + g.kills + '|' + g.coins;
@@ -34,13 +41,13 @@ export function drawHud(g, force) {
       const el = $('mz' + i); el.className = 'zone' + (m ? ' full' : '');
       if (!m) { el.innerHTML = 'empty<b>MONSTER ' + (i + 1) + '</b>'; return; }
       const D = MONSTERS[m.id] || FUSIONS[m.id], max = LEVELS.monsterMax;
-      el.innerHTML = D.name + '<b>' + stars(m.level, max) + ' L' + m.level + ' form ' + (formOf(m.id, m.level) + 1) + '</b>';
+      el.innerHTML = '<span style="color:#fff3d0;font-weight:bold">' + D.name + '</span><b>' + stars(m.level, max) + ' L' + m.level + '  form ' + (formOf(m.id, m.level) + 1) + ' of 3</b>';
     });
     g.field.spells.forEach((s, i) => {
       const el = $('sz' + i); el.className = 'zone st' + (s ? ' full' : '');
       if (!s) { el.innerHTML = 'empty<b>SPELL / TRAP</b>'; return; }
       const D = SPELLS[s.id] || TRAPS[s.id];
-      el.innerHTML = D.name + '<b>' + (TRAPS[s.id] ? 'TRAP ' + (s.cd > 0 ? 'recharging' : 'set') : 'SPELL') + ' L' + s.level + '</b>';
+      el.innerHTML = '<span style="color:#fff3d0;font-weight:bold">' + D.name + '</span><b>' + (TRAPS[s.id] ? 'TRAP ' + (s.cd > 0 ? 'recharging' : 'set') : 'SPELL') + '  L' + s.level + ' of 5</b>';
     });
   }
   const ready = fusionsReady(g), f = $('fusion');
@@ -50,6 +57,9 @@ export function drawHud(g, force) {
   $('boss').style.display = boss ? 'block' : 'none';
   if (boss) $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%';
   $('prompt').textContent = g.prompt;
+  $('nextEvent').textContent = nextEvent(g);
+  const items = g.items.map(id => ITEMS[id].name).concat(g.blessings.map(id => BLESSINGS[id].name.replace('Blessing of ', '') + '+'));
+  $('itemsList').textContent = items.length ? 'ITEMS: ' + items.join(', ') : '';
   const idol = g.sp.filter(s => s.kind === 'idol' && s.alive);
   const st = [];
   if (idol.some(s => s.dead)) st.push('IDOL REVIVES IN ' + Math.max(0, idol.find(s => s.dead).reviveT).toFixed(1) + ' s');

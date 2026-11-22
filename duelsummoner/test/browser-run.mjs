@@ -91,9 +91,21 @@ await run('fps_horde_with_gems', `
   g.offer = null; g.pendingLevels = 0; g.opts.offers = false; const sim = (() => { const t = performance.now(); for (let i = 0; i < 120; i++) g.step(1 / 60, { f: 0, r: 0, yaw: 0 }); return +((performance.now() - t) / 120).toFixed(3); })();
   return { live: g.enemyCount(), gems: g.pick.alive.reduce((a, c) => a + c, 0), fps: +(p.frames * 1000 / p.ms).toFixed(1), worstFrameMs: +p.worstFrameMs.toFixed(1), simMsPerTick: sim, viewMs: +D.prof.view.toFixed(2) };`, 'c5-horde-and-gems');
 
+
+// fixes from the first playtest: defeat screen names what killed you and saves records; a 3:00 moment in readable light
+await run('defeat_screen', `
+  fresh('kael'); g.god = false; g.t = 178; g.kills = 327; g.level = 14; g.hurtPlayer(500, false, 'Ram Golem rush'); D.drive(0.05); await wait(300);
+  const first = { cause: document.getElementById('dCause').textContent, best: document.getElementById('dBest').textContent, breakdown: document.getElementById('dBreakdown').textContent };
+  const saved = JSON.parse(localStorage.getItem('duelsummoner.save') || 'null');
+  return { first, savedRecord: saved && saved.records.kael };`, 'd1-defeat-screen-cause');
+await run('three_minute_moment', `
+  fresh('kael'); g.god = true; g.opts.offers = false; g.t = 175; g.spawnAcc = 0; g.flags.warden = false; g.boss.state = 'idle'; g.field.monsters[1] = { id: 'cinder-hatchling', level: 5, cd: 0 }; g.field.spells[0] = { id: 'gust-ward', level: 1, cd: 0 }; g.field.spells[1] = { id: 'pit-of-seals', level: 1, cd: 0 };
+  FD.recompute(g); g.p.hp = 62; D.drive(7); await still(); return { t: +g.t.toFixed(0), enemies: g.enemyCount(), kinds: [...new Set(Array.from(g.en.kind).filter((k, i) => g.en.alive[i]))] };`, 'd2-three-minute-moment');
+
 R.pageErrors = JSON.parse(await b.evalIn('JSON.stringify(window.__errs || [])')).filter(e => !/404/.test(e));
 console.log(JSON.stringify(R, null, 1));
 b.close(); process.exit(0);
+
 
 
 

@@ -5,6 +5,7 @@ import { spawnEnemy, KIND_ID } from '../src/sim/enemies.js';
 import { spawnWarden, spawnIdols, startBoss } from '../src/sim/specials.js';
 import { fusionsReady, openChest, buildOffer, openLevelOffer } from '../src/sim/field.js';
 import { heightAt } from '../src/sim/terrain.js';
+import * as await_world from '../src/sim/world.js';
 import { RUN } from '../src/data/waves.js';
 import { MONSTERS, FUSIONS, formOf, LEVELS } from '../src/data/cards.js';
 
@@ -133,5 +134,26 @@ test('interpolation: previous-tick positions are kept for the view', () => {
   g.step(1 / 60, idle); const x1 = g.en.x[i]; g.step(1 / 60, idle);
   assert.ok(Math.abs(g.en.px[i] - x1) < 1e-4, 'prev equals last tick'); assert.ok(g.en.x[i] !== x1);
   const a = g.fixed(1 / 144, idle); assert.ok(a >= 0 && a <= 1);
+});
+
+
+test('deterministic from a seed: no Math.random in the sim, same inputs give the same run', () => {
+  const orig = Math.random; Math.random = () => { throw new Error('Math.random used in the sim'); };
+  try {
+    const play = () => {
+      const g = new Game(77, { offers: false }); const cmd = { ...idle, f: 1, yaw: 0.3, dash: false }; let h = 0;
+      for (let i = 0; i < 60 * 40; i++) { g.step(1 / 60, { ...cmd, dash: i % 200 === 0 }); h = (h * 31 + Math.round(g.p.x * 100) + g.kills * 7 + g.enemyCount() * 13) | 0; }
+      return [h, g.kills, g.level, Math.round(g.p.hp)];
+    };
+    assert.deepEqual(play(), play());
+  } finally { Math.random = orig; }
+});
+
+test('a generator can place objects through the API on an empty world', () => {
+  const g = new Game(3, { world: 'none' }); assert.equal(g.world.vases.length, 0);
+  const { placeObject, nearestProp } = await_world;
+  placeObject(g, 'stone', { x: 5, y: 0, z: 5 }); placeObject(g, 'cchest', { x: -5, y: 0, z: 5, rarity: 'rare' }); placeObject(g, 'shrine', { x: 0, y: 0, z: -9 }); placeObject(g, 'broker', { x: 9, y: 0, z: 0 }); placeObject(g, 'vase', { x: 2, y: 0, z: 2, banded: true });
+  assert.equal(g.world.stones.length, 1); assert.equal(g.world.broker.stock.length, 3); assert.equal(g.world.cchests[0].rarity, 'rare');
+  g.p.x = 5; g.p.z = 5; assert.equal(nearestProp(g).type, 'stone');
 });
 

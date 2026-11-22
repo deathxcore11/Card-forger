@@ -25,7 +25,8 @@ export function damageEnemy(g, i, dmg, o) {
   o = o || {};
   let d = dmg;
   if (e.mark[i] > 0) d *= 1 + MARKS.bonus + g.mods.markBonus;
-  if (!o.noCrit && g.rng() < FIELD_RULES.critChance) d *= FIELD_RULES.critMult;
+  d *= 1 + g.mods.dmgMult;
+  if (!o.noCrit && g.rng() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
   e.hp[i] -= d; e.flash[i] = 0.12;
   const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0);
   if (el & ELEMENTS.fire.bit) { e.burn[i] = ELEMENTS.fire.burn.dur + g.mods.burnDur; e.burnDps[i] = ELEMENTS.fire.burn.dps + g.mods.burnDps; }
@@ -55,11 +56,12 @@ function chain(g, from, x, z, dmg) {
 export function killEnemy(g, i) {
   const e = g.en; if (!e.alive[i]) return;
   e.alive[i] = 0; g.kills++;
+  if (g.mods.bell && g.kills % 50 === 0) explode(g, e.x[i], e.y[i], e.z[i], 4, 0, 10, 0xc0c0ff);       // Graveyard Bell
   const x = e.x[i], y = e.y[i], z = e.z[i], K = KIND_LIST[e.kind[i]];
   dropPickup(g, PICK_XP, x, y, z);
   if (g.rng() < RUN.coinChance) dropPickup(g, PICK_COIN, x + 0.6, y, z);
   if (g.rng() < RUN.heartChance) dropPickup(g, PICK_HEART, x - 0.6, y, z);
-  if (K === KINDS.bloat) explode(g, x, y, z, K.blast.radius, K.blast.dmg * g.dmgMul, K.blast.dmg, 0xff9030);
+  if (K === KINDS.bloat) explode(g, x, y, z, K.blast.radius, K.blast.dmg * g.dmgMul, K.blast.dmg, 0xff9030, 'Sand Bloat');
   if (e.mark[i] > 0 && g.mods.markExplode) explode(g, x, y, z, g.mods.markExplode.radius, 0, g.mods.markExplode.dmg, 0xb070ff);
 }
 
@@ -70,10 +72,10 @@ export function dropPickup(g, kind, x, y, z, val) {
 }
 
 // ---- explosions: hurt the duelist (if pDmg) and every enemy and elite in range (if eDmg) ----
-export function explode(g, x, y, z, r, pDmg, eDmg, color) {
+export function explode(g, x, y, z, r, pDmg, eDmg, color, src) {
   addFx(g, { type: 'ring', x, y, z, r, dur: 0.45, color: color || 0xff9030 });
   const p = g.p;
-  if (pDmg > 0) { const dx = p.x - x, dz = p.z - z; if (dx * dx + dz * dz < r * r && Math.abs(p.y - y) < 2.5) g.hurtPlayer(pDmg, true); }
+  if (pDmg > 0) { const dx = p.x - x, dz = p.z - z; if (dx * dx + dz * dz < r * r && Math.abs(p.y - y) < 2.5) g.hurtPlayer(pDmg, true, src || 'an explosion'); }
   if (eDmg > 0) {
     const e = g.en, n = g.grid.query(x, z, r, buf);
     for (let k = 0; k < n; k++) {

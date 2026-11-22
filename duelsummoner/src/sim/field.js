@@ -6,13 +6,13 @@ import { ITEMS, BLESSINGS } from '../data/items.js';
 
 export const xpNeeded = level => XP.base + XP.perLevel * level + (XP.quad || 0) * level * level;
 
-export function makeField(duelistId) {
+export function makeField(duelistId, rng) {
   const D = DUELISTS[duelistId] || DUELISTS.kael;
   const f = { duelist: duelistId, monsters: [null, null, null, null], spells: [null, null, null, null], redraws: OFFER.redraws, banishes: OFFER.banishes, banished: new Set(), picks: 0, firstFusionAt: -1 };
-  f.monsters[0] = newMonster(D.start, 1);
+  f.monsters[0] = newMonster(D.start, 1, rng);
   return f;
 }
-function newMonster(id, level) { return { id, level, cd: 0.3, ang: Math.random() * 6.28, x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0 }; }
+function newMonster(id, level, rng) { return { id, level, cd: 0.3, ang: (rng ? rng() : 0) * 6.28, x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0 }; }
 
 export const def = id => MONSTERS[id] || FUSIONS[id];
 export const isFused = id => !!FUSIONS[id];
@@ -64,7 +64,7 @@ export function doFusion(g, id) {
   const r = RECIPES.find(x => x.result === id); if (!r) return false;
   const f = g.field, ia = f.monsters.findIndex(m => m && m.id === r.a), ib = f.monsters.findIndex(m => m && m.id === r.b);
   if (ia < 0 || ib < 0) return false;
-  f.monsters[Math.min(ia, ib)] = newMonster(id, TIERS[r.tier].startLevel); f.monsters[Math.max(ia, ib)] = null;      // takes one zone, frees the other
+  f.monsters[Math.min(ia, ib)] = newMonster(id, TIERS[r.tier].startLevel, g.rng); f.monsters[Math.max(ia, ib)] = null;      // takes one zone, frees the other
   if (f.firstFusionAt < 0) f.firstFusionAt = g.t;
   g.fusions++; recompute(g); g.event('banner', FUSIONS[id].name + ' is summoned!'); g.event('summon', id);
   return true;
@@ -143,7 +143,7 @@ function applyCard(g, c) {
   if (c.kind === 'fusion') { doFusion(g, c.id); return; }
   if (c.kind === 'monster') {
     const m = f.monsters.find(x => x && x.id === c.id);
-    if (m) { const before = formOf(m.id, m.level); m.level = c.to; evolve(g, m, before); } else { const i = f.monsters.findIndex(x => !x); if (i >= 0) { f.monsters[i] = newMonster(c.id, 1); g.event('summon', c.id); } }
+    if (m) { const before = formOf(m.id, m.level); m.level = c.to; evolve(g, m, before); } else { const i = f.monsters.findIndex(x => !x); if (i >= 0) { f.monsters[i] = newMonster(c.id, 1, g.rng); g.event('summon', c.id); } }
   } else if (c.kind === 'spell' || c.kind === 'trap') {
     const s = f.spells.find(x => x && x.id === c.id);
     if (s) s.level = c.to; else { const i = f.spells.findIndex(x => !x); if (i >= 0) f.spells[i] = { id: c.id, level: 1, cd: 0, rootFx: 0 }; }
@@ -182,11 +182,11 @@ export function chooseCard(g, idx) {
   return true;
 }
 export function redraw(g) {
-  const o = g.offer, f = g.field; if (!o || o.type === 'fusion' || f.redraws <= 0) return false;
+  const o = g.offer, f = g.field; if (!o || !(o.type === 'level' || o.type === 'chest') || f.redraws <= 0) return false;
   f.redraws--; o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined)); return o.cards.length > 0;
 }
 export function banish(g, idx) {
-  const o = g.offer, f = g.field; if (!o || f.banishes <= 0 || !o.cards[idx] || o.type === 'fusion') return false;
+  const o = g.offer, f = g.field; if (!o || f.banishes <= 0 || !o.cards[idx] || !(o.type === 'level' || o.type === 'chest')) return false;
   f.banished.add(o.cards[idx].id); f.banishes--;
   o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined)); return true;
 }

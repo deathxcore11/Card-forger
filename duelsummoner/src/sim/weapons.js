@@ -3,6 +3,7 @@ import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { damageEnemy, explode, addFx, PICK_XP, PICK_COIN, PICK_HEART } from './combat.js';
+import { breakVasesNear } from './world.js';
 
 export const KIND_CARD = 0, KIND_FIRE = 1, KIND_LOB = 2, KIND_HOMING = 3;
 const MAXHITS = 6;
@@ -73,6 +74,7 @@ export function updateShots(g, dt) {
     }
     s.x[i] += s.vx[i] * dt; s.y[i] += s.vy[i] * dt; s.z[i] += s.vz[i] * dt;
     if (s.life[i] <= 0 || s.y[i] < heightAt(s.x[i], s.z[i])) { s.alive[i] = 0; continue; }
+    breakVasesNear(g, s.x[i], s.z[i], 0.9);
     const hr = CFG.card.hitRadius;
     const nc = g.grid.query(s.x[i], s.z[i], hr + 0.5, near);
     let dead = false;
@@ -102,6 +104,7 @@ export function updateShots(g, dt) {
 
 export function splash(g, x, y, z, r, dmg, flame) {
   addFx(g, { type: 'ring', x, y, z, r, dur: 0.35, color: (flame & 1) ? 0xff8a30 : 0x7fe8ff });
+  breakVasesNear(g, x, z, r);
   const e = g.en, nc = g.grid.query(x, z, r, near);
   for (let k = 0; k < nc; k++) { const j = near[k]; if (!e.alive[j]) continue; const dx = e.x[j] - x, dz = e.z[j] - z; if (dx * dx + dz * dz < r * r) damageEnemy(g, j, dmg, { elem: flame }); }
   for (const sp of g.sp) if (sp.alive && !sp.dead) { const dx = sp.x - x, dz = sp.z - z; if (dx * dx + dz * dz < (r + sp.radius) * (r + sp.radius)) g.damageSpecial(sp, dmg, x, z, { area: true, elem: flame }); }
@@ -116,7 +119,7 @@ export function updateBolts(g, dt) {
     b.life -= dt; b.x += b.vx * dt; b.z += b.vz * dt;
     if (b.life <= 0 || heightAt(b.x, b.z) > b.y + 0.4) { b.on = false; continue; }
     const dx = p.x - b.x, dz = p.z - b.z;
-    if (dx * dx + dz * dz < b.r * b.r && Math.abs(p.y + 0.9 - b.y) < 1.4) { b.on = false; g.hurtPlayer(b.dmg, true); }
+    if (dx * dx + dz * dz < b.r * b.r && Math.abs(p.y + 0.9 - b.y) < 1.4) { b.on = false; g.hurtPlayer(b.dmg, true, b.src); }
   }
 }
 
@@ -136,7 +139,7 @@ export function updatePickups(g, dt) {
       m.alive[i] = 0;
       addFx(g, { type: 'ring', x: m.x[i], y: m.y[i] - 0.3, z: m.z[i], r: 0.9, dur: 0.25, color: m.kind[i] === PICK_XP ? 0xd79af0 : 0xffe080 });   // sparkle on collect
       if (m.kind[i] === PICK_XP) g.addXp(m.val[i]);
-      else if (m.kind[i] === PICK_COIN) g.coins++;
+      else if (m.kind[i] === PICK_COIN) { g.coinFrac += 1 + g.mods.coinMult; const w = Math.floor(g.coinFrac); g.coins += w; g.coinFrac -= w; }
       else if (m.kind[i] === PICK_HEART) p.hp = Math.min(p.maxHp, p.hp + RUN.heartHeal);
     }
   }

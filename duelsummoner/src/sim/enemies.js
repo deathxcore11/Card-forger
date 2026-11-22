@@ -106,7 +106,7 @@ export function updateEnemies(g, dt) {
         const S = K.shot;
         if (e.st[i] === 1) {                                        // telegraph: stand still, then fire along the locked line
           e.stT[i] -= dt;
-          if (e.stT[i] <= 0) { g.fireBolt(o.x, o.y + 1.0, o.z, e.ax[i] * S.speed, e.az[i] * S.speed, S.life, S.dmg * mul, S.radius); e.st[i] = 0; e.stT[i] = S.every; }
+          if (e.stT[i] <= 0) { g.fireBolt(o.x, o.y + 1.0, o.z, e.ax[i] * S.speed, e.az[i] * S.speed, S.life, S.dmg * mul, S.radius, 'Glass Seer bolt'); e.st[i] = 0; e.stT[i] = S.every; }
           break;
         }
         e.stT[i] -= dt;
@@ -130,7 +130,7 @@ export function updateEnemies(g, dt) {
           e.stT[i] -= dt;
           o.dx = e.ax[i]; o.dz = e.az[i];
           const b = walk(o, e.ax[i], e.az[i], R.speed, dt, K.radius, E.stepUp); o.dx = e.ax[i]; o.dz = e.az[i];
-          if (e.atk[i] <= 0 && d < K.reach + 0.5 && Math.abs(p.y - o.y) < E.vReach) { e.atk[i] = 5; g.hurtPlayer(R.dmg * mul, true); }   // 5 s marker: one hit per rush
+          if (e.atk[i] <= 0 && d < K.reach + 0.5 && Math.abs(p.y - o.y) < E.vReach) { e.atk[i] = 5; g.hurtPlayer(R.dmg * mul, true, 'Ram Golem rush'); }   // 5 s marker: one hit per rush
           if (e.stT[i] <= 0 || b) { e.st[i] = 0; e.stT[i] = R.cooldown; }
           break;
         }
@@ -147,7 +147,7 @@ export function updateEnemies(g, dt) {
         const B = K.blast;
         if (e.st[i] === 1) {                                        // fuse lit: blast circle is shown on the ground
           e.stT[i] -= dt;
-          if (e.stT[i] <= 0) { e.alive[i] = 0; g.explodeAt(o.x, o.y, o.z, B.radius, B.dmg * mul, B.dmg); }
+          if (e.stT[i] <= 0) { e.alive[i] = 0; g.explodeAt(o.x, o.y, o.z, B.radius, B.dmg * mul, B.dmg, 'Sand Bloat'); }
           break;
         }
         steerVec(g, o, p.x, p.y, p.z, sv);
@@ -183,7 +183,7 @@ export function updateEnemies(g, dt) {
 
     // touch damage: 0.9 s per enemy, plus the 0.25 s shared grace
     e.atk[i] -= dt; if (e.atk[i] < -1) e.atk[i] = -1;
-    if (touching && K.touch > 0 && e.atk[i] <= 0 && g.grace <= 0 && !isDashing(p) && !g.over) { e.atk[i] = E.attackCd; g.hurtPlayer(K.touch * mul); }
+    if (touching && K.touch > 0 && e.atk[i] <= 0 && g.grace <= 0 && !isDashing(p) && !g.over) { e.atk[i] = E.attackCd; g.hurtPlayer(K.touch * mul, false, K.name); }
   }
 }
 

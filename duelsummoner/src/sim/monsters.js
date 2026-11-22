@@ -14,7 +14,7 @@ export function updateMonsters(g, dt) {
   for (let k = 0; k < f.monsters.length; k++) {
     const m = f.monsters[k]; if (!m) continue;
     m.px = m.x; m.py = m.y; m.pz = m.z;
-    const a = m.ang + g.t * 0.9 + k * 1.57, r = 2.1 + (k % 2) * 0.5;
+    const a = (m.ang || 0) + g.t * 0.9 + k * 1.57, r = 2.1 + (k % 2) * 0.5;
     const tx = p.x + Math.cos(a) * r, tz = p.z + Math.sin(a) * r, ty = p.y + 2.2 + Math.sin(g.t * 3 + k) * 0.2;
     if (!m.init) { m.x = tx; m.y = ty; m.z = tz; m.px = tx; m.py = ty; m.pz = tz; m.init = true; }
     const kk = Math.min(1, dt * 6); m.x += (tx - m.x) * kk; m.y += (ty - m.y) * kk; m.z += (tz - m.z) * kk;
@@ -27,7 +27,7 @@ export function updateMonsters(g, dt) {
   g.cardT -= dt;
   if (g.cardT <= 0) {
     const i = g.nearest(p.x, p.z, CFG.card.range), e = g.en;
-    if (i >= 0) { fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, e.x[i], e.y[i] + 0.9, e.z[i], CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
+    if (i >= 0) { fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, e.x[i], e.y[i] + 0.9, e.z[i], CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage, { flame: g.mods.cardBurn ? 1 : 0 }); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
     else {
       const sp = nearestSpecial(g, p.x, p.z, CFG.card.range);
       if (sp) { fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, sp.x, sp.y + 1.2, sp.z, CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
@@ -114,7 +114,7 @@ export function onPlayerHurt(g) {
 }
 function fireTrap(g, s) {
   const T = TRAPS[s.id], p = g.p, e = g.en, lv = s.level - 1;
-  s.cd = T.recharge * Math.pow(T.rechargePerLevel, lv);
+  s.cd = T.recharge * Math.pow(T.rechargePerLevel, lv) * (1 - g.mods.trapRecharge);
   const dmg = T.dmg * (1 + T.dmgPerLevel * lv);
   addFx(g, { type: 'ring', x: p.x, y: p.y, z: p.z, r: T.radius, dur: 0.5, color: s.id === 'gust-ward' ? 0xa0e0ff : 0xe8c56a });
   const c = g.grid.query(p.x, p.z, T.radius, buf);

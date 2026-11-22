@@ -11,17 +11,20 @@ import { drawHud, showFlash, showBanner } from './view/hud.js';
 import { showOffer, offerKey } from './view/offer.js';
 import { loadModel, loadPuffTexture } from './view/models.js';
 import { spawnEnemy } from './sim/enemies.js';
+import { Props } from './view/props.js';
+import { loadSave, recordRun } from './core/save.js';
 
 const T = window.THREE, $ = id => document.getElementById(id);
 const canvas = $('view');
 const renderer = new T.WebGLRenderer({ canvas, antialias: false });
 const LOW = 2;                                   // render at half size for a chunky look
 const scene = new T.Scene();
-scene.background = new T.Color(0x2a1a2e);
-scene.fog = new T.Fog(0x2a1a2e, 90, 280);
+scene.background = new T.Color(0xe6cb97);                // warm daylight sand sky
+scene.fog = new T.Fog(0xe6cb97, 110, 330);
 const camera = new T.PerspectiveCamera(62, 1, 0.1, 520);
-scene.add(new T.HemisphereLight(0xffe2b0, 0x3a2440, 0.8));
-const sun = new T.DirectionalLight(0xffc98a, 0.65); sun.position.set(60, 90, 30); scene.add(sun);
+scene.add(new T.HemisphereLight(0xfff3d6, 0x8a6a48, 0.95));     // raised from the dark build: the arena reads in daylight sand colours
+scene.add(new T.AmbientLight(0xffffff, 0.12));
+const sun = new T.DirectionalLight(0xffe2b0, 0.6); sun.position.set(60, 90, 30); scene.add(sun);
 
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
@@ -36,14 +39,16 @@ if (assets.hatchling) assets.puff = await loadPuffTexture('assets/models/puff.pn
 
 scene.add(buildMapMesh());
 let duelist = 'kael';
-const game = new Game(Date.now() & 0xffff, { duelist });
+const withProps = /[?&]props/.test(location.search);       // map objects are placed by the coming map generator; ?props shows the region-placed test set
+const game = new Game(Date.now() & 0xffff, { duelist, world: withProps ? 'regions' : 'none' });
 const actors = new Actors(scene, assets);
+const props = new Props(scene);
 const chase = new ChaseCamera(camera);
 const input = new Input(canvas);
 const minimap = new Minimap($('minimap'));
 
-let MODE = 'start', best = 0, last = 0, frozen = false;
-try { best = parseFloat(localStorage.getItem('duelsummoner.best') || '0') || 0; } catch (e) {}
+let MODE = 'start', last = 0, frozen = false;
+const save = loadSave();
 
 function lock() { if (canvas.requestPointerLock) { try { canvas.requestPointerLock(); } catch (e) {} } }
 function setMode(m) {
@@ -54,7 +59,7 @@ function setMode(m) {
   last = 0;
 }
 function begin() {
-  game.reset(Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
+  ended = false; game.reset(Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();
   for (const m of actors.specials.values()) scene.remove(m); actors.specials.clear();
   for (const m of actors.chests.values()) scene.remove(m); actors.chests.clear();
@@ -83,12 +88,17 @@ function afterOfferChange() {
   if (game.offer) showOffer(game, afterOfferChange);       // redraw / banish: same screen, new cards
   else { setMode('play'); lock(); drawHud(game, true); }
 }
+let ended = false;
 function results() {
-  const won = game.won;
-  if (game.t > best && won) { best = game.t; try { localStorage.setItem('duelsummoner.best', String(best)); } catch (e) {} }
+  let info = { record: { bestTime: 0 }, newBest: false };
+  if (!ended) { ended = true; info = recordRun(save, duelist, { time: game.t, kills: game.kills, level: game.level, bossKilled: game.bossKilled, chips: game.starChips() }); }   // saved once per run
   $('resTitle').textContent = game.bossKilled ? 'VICTORY' : game.ended ? 'RUN ENDED' : 'DEFEATED';
   $('dTime').textContent = clock(game.t); $('dLevel').textContent = game.level; $('dKills').textContent = game.kills; $('dFusions').textContent = game.fusions;
-  $('dOvertime').textContent = clock(game.overtimeSeconds()); $('dChips').textContent = game.starChips(); $('dBest').textContent = clock(best);
+  $('dOvertime').textContent = clock(game.overtimeSeconds()); $('dChips').textContent = game.starChips(); $('dBest').textContent = clock(save.records[duelist] ? save.records[duelist].bestTime : 0) + (info.newBest ? '  NEW BEST' : '');
+  const why = game.bossKilled ? 'The Hollow Pharaoh fell. Overtime goes on until you fall.' : game.ended ? 'You ended the run.' : 'Downed by ' + (game.killedBy || 'the horde');
+  $('dCause').textContent = why;
+  const top = Object.entries(game.damageBy).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ' ' + Math.round(v)).join('  /  ');
+  $('dBreakdown').textContent = top ? 'Damage taken: ' + top : '';
   drawHud(game, true); setMode('dead');
 }
 function drainEvents() {
@@ -125,6 +135,7 @@ function frame(now) {
   chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
   head.x = ip.x; head.y = ip.y + 1.5; head.z = ip.z;
   actors.update(game, alpha, camera.position, head);
+  props.update(game);
   minimap.draw(game, input.yaw);
   showFlash(game);
   const a1 = performance.now();
@@ -153,6 +164,7 @@ window.__ds = {
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
+
 
 
 

@@ -91,13 +91,13 @@ test('W moves along the camera forward after any yaw (180 degree turn)', () => {
   assert.ok(g.p.z > 2 && Math.abs(g.p.x) < 0.1, `x=${g.p.x} z=${g.p.z}`);
 });
 
-test('spawn rate ramps 1/s to 4/s over three minutes', () => {
-  near(spawnRate(0), 1, 1e-9); near(spawnRate(90), 2.5, 1e-9); near(spawnRate(180), 4, 1e-9); near(spawnRate(500), 3, 1e-9); near(spawnRate(300), 6, 1e-9);
-  const g = new Game(1); g.god = true;
+test('spawn rate ramps from 1/s at 0:00 to 3/s at 3:00 (eased ramp)', () => {
+  near(spawnRate(0), 1, 1e-9); near(spawnRate(90), 2.1, 1e-9); near(spawnRate(180), 3.0, 1e-9); near(spawnRate(500), 3, 1e-9); near(spawnRate(300), 5, 1e-9);
+  const g = new Game(1, { offers: false }); g.god = true;
   run(g, 10, idle); const first = g.spawned;
   g.t = 180; g.spawned = 0; g.en.alive.fill(0); run(g, 10, idle);
   assert.ok(first >= 9 && first <= 12, `first ${first}`);
-  assert.ok(g.spawned >= 38 && g.spawned <= 42, `late ${g.spawned}`);
+  assert.ok(g.spawned >= 29 && g.spawned <= 34, `late ${g.spawned}`);
 });
 
 test('enemies spawn 22 to 30 m away and the live count never exceeds 300', () => {
@@ -167,6 +167,8 @@ test('data files for later steps are shaped as agreed', () => {
   assert.deepEqual([FIELD.spellTrapLevel.min, FIELD.spellTrapLevel.max], [1, 5]);
   assert.equal(FIELD.fusionLevel, 10); assert.equal(RARITIES.length, 5); assert.equal(DISTRICTS.length, 5);
 });
+
+
 
 
 

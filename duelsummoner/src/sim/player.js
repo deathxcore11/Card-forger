@@ -1,6 +1,7 @@
 ﻿// Duelist movement: run, jump, dash (no damage while it lasts), slide (gains speed downhill).
 import { CFG } from '../data/config.js';
 import { heightAt, moveXZ } from './terrain.js';
+import { breakVasesNear } from './world.js';
 
 export function makePlayer() {
   return { x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0, pface: 0, vx: 0, vz: 0, vy: 0, hp: CFG.player.hp, maxHp: CFG.player.hp, face: 0, grounded: true,
@@ -19,8 +20,9 @@ export function updatePlayer(g, dt, cmd) {
 
   p.dashCd = Math.max(0, p.dashCd - dt);
   if (cmd.dash && p.dashCd <= 0 && p.dashT <= 0) {
-    p.dashT = C.dashTime; p.dashCd = C.dashCd; p.sliding = false;
+    p.dashT = C.dashTime; p.dashCd = C.dashCd * (1 - g.mods.dashCd); p.sliding = false;
     p.dashDx = hasInput ? mx : fx; p.dashDz = hasInput ? mz : fz;
+    breakVasesNear(g, p.x + p.dashDx * 2, p.z + p.dashDz * 2, 3);                 // dashing through vases breaks them
   }
 
   let moveX, moveZ;
@@ -65,7 +67,10 @@ export function updatePlayer(g, dt, cmd) {
   if (p.grounded) {
     if (h > p.y || p.y - h <= 0.5) p.y = h; else p.grounded = false;
   }
+  if (p.grounded) p.airUsed = 0;
   if (cmd.jump && p.grounded) { p.vy = jumpV; p.grounded = false; p.sliding = false; }
+  else if (cmd.jump && !p.jumpWas && !p.grounded && (p.airUsed || 0) < g.mods.airJumps) { p.vy = jumpV; p.airUsed = (p.airUsed || 0) + 1; }
+  p.jumpWas = !!cmd.jump;
   if (!p.grounded) {
     p.y += p.vy * dt - 0.5 * CFG.gravity * dt * dt; p.vy -= CFG.gravity * dt;   // exact for constant gravity
     if (p.y <= h) { p.y = h; if (p.vy < 0) { p.vy = 0; p.grounded = true; } else p.vy = 0; }

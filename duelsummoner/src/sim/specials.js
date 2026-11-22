@@ -42,8 +42,8 @@ export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
     const f = SPECIALS.warden.shieldHalfArc * DEG, tx = fromX - sp.x, tz = fromZ - sp.z, tl = Math.sqrt(tx * tx + tz * tz) || 1;
     if ((tx / tl) * Math.sin(sp.face) + (tz / tl) * Math.cos(sp.face) > Math.cos(f)) { g.event('block', { x: sp.x, y: sp.y + 1.5, z: sp.z }); sp.flash = 0.05; return false; }
   }
-  let d = dmg;
-  if (!o.noCrit && g.rng() < FIELD_RULES.critChance) d *= FIELD_RULES.critMult;
+  let d = dmg * (1 + g.mods.dmgMult + g.mods.bossDmg);
+  if (!o.noCrit && g.rng() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
   sp.hp -= d; sp.flash = 0.12;
   if (sp.hp > 0) return false;
   onDeath(g, sp);
@@ -94,7 +94,7 @@ export function updateSpecials(g, dt) {
         sp.stT -= dt;
         if (sp.stT <= 0) {
           sp.st = 0; sp.cd = S.slam.cooldown;
-          if (d < S.slam.radius && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.slam.dmg * mul, true);
+          if (d < S.slam.radius && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.slam.dmg * mul, true, 'Sealed Warden slam');
           addFx(g, { type: 'ring', x: sp.x, y: sp.y, z: sp.z, r: S.slam.radius, dur: 0.5, color: 0xff5030 });
         }
         continue;
@@ -115,7 +115,7 @@ export function updateSpecials(g, dt) {
       }
       chase(g, sp, S.speed, dt); sp.face = Math.atan2(dx, dz);
       sp.atk -= dt;
-      if (d < S.reach && Math.abs(p.y - sp.y) < CFG.enemy.vReach && sp.atk <= 0 && g.grace <= 0 && !isDashing(p)) { sp.atk = CFG.enemy.attackCd; g.hurtPlayer(S.bite * mul); }
+      if (d < S.reach && Math.abs(p.y - sp.y) < CFG.enemy.vReach && sp.atk <= 0 && g.grace <= 0 && !isDashing(p)) { sp.atk = CFG.enemy.attackCd; g.hurtPlayer(S.bite * mul, false, 'Twin Jackal Idol'); }
     } else if (sp.kind === 'pharaoh') updatePharaoh(g, sp, dt, dx, dz, d);
   }
   // sand closes in during the last phase
@@ -124,14 +124,14 @@ export function updateSpecials(g, dt) {
     b.sandT += dt; b.sandR = S.rStart + (S.rEnd - S.rStart) * Math.min(1, b.sandT / S.seconds);
     b.tickT = (b.tickT || 0) - dt;
     const r = Math.sqrt(p.x * p.x + p.z * p.z);
-    if (b.tickT <= 0) { b.tickT = S.tick; if (r > b.sandR && r < 34 && p.y < 1.5) g.hurtPlayer(S.dps * S.tick, true); }
+    if (b.tickT <= 0) { b.tickT = S.tick; if (r > b.sandR && r < 34 && p.y < 1.5) g.hurtPlayer(S.dps * S.tick, true, 'the rising sand'); }
   }
   // face-down trap cards
   for (const t of g.btraps) {
     if (!t.on) continue;
     t.life -= dt; if (t.life <= 0) { t.on = false; continue; }
     const T = SPECIALS.pharaoh.traps, dx = p.x - t.x, dz = p.z - t.z;
-    if (dx * dx + dz * dz < T.stepRadius * T.stepRadius && Math.abs(p.y - t.y) < 1.5) { t.on = false; explode(g, t.x, t.y, t.z, T.burstRadius, T.dmg * mul, 0, 0xb050ff); }
+    if (dx * dx + dz * dz < T.stepRadius * T.stepRadius && Math.abs(p.y - t.y) < 1.5) { t.on = false; explode(g, t.x, t.y, t.z, T.burstRadius, T.dmg * mul, 0, 0xb050ff, 'a Pharaoh trap card'); }
   }
 }
 
@@ -148,7 +148,7 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
     if (sp.stT <= 0) {
       sp.st = 0; sp.cd = S.blade.cooldown;
       const fx = Math.sin(sp.face), fz = Math.cos(sp.face), l = d || 1, cos = (dx / l) * fx + (dz / l) * fz;
-      if (d < S.blade.range && cos > Math.cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true);
+      if (d < S.blade.range && cos > Math.cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true, 'The Hollow Pharaoh blade');
       addFx(g, { type: 'fan', x: sp.x, y: sp.y, z: sp.z, r: S.blade.range, arc: S.blade.arcDeg, dx: fx, dz: fz, dur: 0.3, color: 0xffe0a0 });
     }
     return;

@@ -13,6 +13,7 @@ import { updateSpawner } from './spawner.js';
 import { updateMonsters, updateTraps, onPlayerHurt } from './monsters.js';
 import { makeField, recompute, xpNeeded, openLevelOffer, openChest, chooseCard, redraw, banish, pass, leaveChest, fusionsReady } from './field.js';
 import { MAP } from '../data/map.js';
+import { buildWorld, updateWorld, nearestProp, useProp } from './world.js';
 
 const STEP = 1 / 60;
 
@@ -35,18 +36,20 @@ export class Game {
   reset(seed = this.seed, duelist) {
     this.seed = seed; this.rng = makeRng(seed); this.duelist = duelist || this.duelist || 'kael';
     this.t = 0; this.kills = 0; this.xp = 0; this.level = 1; this.xpCur = 0; this.xpNeed = xpNeeded(1); this.pendingLevels = 0; this.coins = 0;
-    this.over = false; this.ended = false; this.won = false; this.otStep = -1; this.otAcc = 0; this.god = false; this.bossKilled = false; this.elitesKilled = 0; this.fusions = 0; this.winAt = 0;
+    this.over = false; this.ended = false; this.killedBy = null; this.damageBy = {}; this.lastSrc = null; this.won = false; this.otStep = -1; this.otAcc = 0; this.god = false; this.bossKilled = false; this.elitesKilled = 0; this.fusions = 0; this.winAt = 0;
     this.grace = 0; this.flash = 0; this.spawned = 0; this.spawnAcc = 0; this.hitsTaken = 0; this.alpha = 1; this.acc = 0;
     this.cardT = 0.3; this.flowT = 0; this.ringT = 0; this.golemT = 0; this.storm = null; this.offer = null; this.prompt = '';
     this.dmgMul = 1; this.hpMul = 1; this.speedMul = 1; this.cfgHp = CFG.player.hp;
     this.flags = { warden: false, idols: false };
+    this.items = []; this.blessings = []; this.vasesBroken = 0; this.talismanCd = 0; this.coinFrac = 0;
     this.boss = { state: 'idle', early: false, phase: 1 };
     this.sp = []; this.chests = [];
     this.faceOf = {};
     this.p = makePlayer();
     this.mods = { burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0 };
-    this.field = makeField(this.duelist);
+    this.field = makeField(this.duelist, this.rng);
     recompute(this);
+    this.world = buildWorld(this);                                  // opts.world === 'none': empty, for a generator to fill through placeObject
     this.p.maxHp = this.cfgHp; this.p.hp = this.cfgHp;
     this.en.alive.fill(0); this.shots.alive.fill(0); this.pick.alive.fill(0);
     this.tele.forEach(o => { o.on = false; }); this.fx.forEach(o => { o.on = false; }); this.eb.forEach(o => { o.on = false; }); this.btraps.forEach(o => { o.on = false; });
@@ -56,10 +59,10 @@ export class Game {
 
   event(type, data) { if (this.events.length < 64) this.events.push({ type, data, t: this.t }); }
   enemyCount() { return enemyCount(this.en); }
-  fireBolt(x, y, z, vx, vz, life, dmg, r) {
-    for (const b of this.eb) if (!b.on) { Object.assign(b, { on: true, x, y, z, vx, vz, life, dmg, r, px: x, pz: z }); return; }
+  fireBolt(x, y, z, vx, vz, life, dmg, r, src) {
+    for (const b of this.eb) if (!b.on) { Object.assign(b, { on: true, x, y, z, vx, vz, life, dmg, r, px: x, pz: z, src: src || 'Glass Seer bolt' }); return; }
   }
-  explodeAt(x, y, z, r, pDmg, eDmg) { explode(this, x, y, z, r, pDmg, eDmg); }
+  explodeAt(x, y, z, r, pDmg, eDmg, src) { explode(this, x, y, z, r, pDmg, eDmg, undefined, src); }
   damageSpecial(sp, dmg, fx, fz, o) { return damageSpecial(this, sp, dmg, fx, fz, o); }
 
   // Advance by dt seconds in fixed sub-steps of at most 1/60 s. Paused while an offer is open.
@@ -102,6 +105,7 @@ export class Game {
     updateShots(this, dt);
     updateBolts(this, dt);
     updatePickups(this, dt);
+    updateWorld(this, dt);
     tickPool(this.tele, dt); tickPool(this.fx, dt);
     if (this.grace > 0) this.grace -= dt;
     if (this.flash > 0) this.flash -= dt;
@@ -111,15 +115,21 @@ export class Game {
 
   _interact(cmd) {
     const p = this.p; this.prompt = '';
+    const prop = nearestProp(this);
     let chest = null, bd = 9;
     for (const c of this.chests) { if (c.open) continue; const dx = c.x - p.x, dz = c.z - p.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; chest = c; } }
     if (chest) {
       this.prompt = 'E: open the Sealed Chest' + (fusionsReady(this).length ? ' (a Fusion is ready!)' : '');
       if (cmd && cmd.use && !this.offer) { openChest(this, chest); return; }
     }
+    if (!chest && prop) {
+      this.prompt = prop.text;
+      if (cmd && cmd.use && !this.offer) { useProp(this, prop); return; }
+    }
+    if (!chest && !prop) for (const s of this.world.shrines) if (!s.done) { const dx2 = p.x - s.x, dz2 = p.z - s.z; if (dx2 * dx2 + dz2 * dz2 < 36) this.prompt = 'Hold the ring: ' + s.charge.toFixed(1) + ' / ' + 5 + ' s' + (s.charge > 0 && dx2 * dx2 + dz2 * dz2 > 20 ? ' (stay inside)' : ''); }
     const G = RUN.gate, dx = p.x - G.x, dz = p.z - G.z;
     if (this.boss.state === 'idle' && this.t >= G.earliest && dx * dx + dz * dz < G.radius * G.radius) {
-      if (!chest) this.prompt = 'E: enter the Royal Gate (early, bonus Star Chips)';
+      if (!chest && !prop) this.prompt = 'E: enter the Royal Gate (early, bonus Star Chips)';
       if (cmd && cmd.use && !this.offer) startBoss(this, true);
     }
   }
@@ -147,12 +157,15 @@ export class Game {
     while (this.xpCur >= this.xpNeed) { this.xpCur -= this.xpNeed; this.level++; this.xpNeed = xpNeeded(this.level); this.pendingLevels++; this.event('levelup', this.level); }
   }
 
-  hurtPlayer(n, big) {
+  hurtPlayer(n, big, src) {
     if (this.god || this.p.dashT > 0 || this.over) return false;
+    if (this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = 20; this.event('banner', 'The Paper Talisman blocks the hit.'); return false; }
+    n = Math.max(1, n - this.mods.armour);
     this.p.hp = Math.max(0, this.p.hp - n);
+    src = src || 'unknown'; this.damageBy[src] = (this.damageBy[src] || 0) + n; this.lastSrc = src;
     this.hitsTaken++; this.flash = 0.25; this.grace = CFG.enemy.grace;
     onPlayerHurt(this);
-    if (this.p.hp <= 0) this.over = true;
+    if (this.p.hp <= 0) { this.over = true; this.killedBy = src; }
     return true;
   }
 

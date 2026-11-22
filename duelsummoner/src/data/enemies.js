@@ -4,7 +4,7 @@ export const KINDS = {
   husk:   { id: 0, name: 'Dust Husk',   hp: 4,  speed: 4.2, touch: 8, radius: 0.7, reach: 1.45, color: 0x5a6b4a, scale: [1, 1.25, 1], eye: true },
   runner: { id: 1, name: 'Husk Runner', hp: 2,  speed: 7.0, touch: 5, radius: 0.55, reach: 1.3, color: 0xa8683a, scale: [0.7, 1.0, 0.7], eye: true },
   seer:   { id: 2, name: 'Glass Seer',  hp: 8,  speed: 2.5, touch: 0, radius: 0.7, reach: 1.2, color: 0x7aa8c8, scale: [0.8, 1.8, 0.8],
-            shot: { dmg: 12, every: 2.6, telegraph: 0.8, speed: 26, life: 0.9, radius: 0.9, keepMin: 8, keepMax: 14, range: 22, width: 0.9 } },
+            shot: { dmg: 9, every: 3.4, telegraph: 0.8, speed: 20, life: 1.1, radius: 0.8, keepMin: 8, keepMax: 14, range: 18, width: 0.9 } },   // was dmg 12, every 2.6, speed 26
   golem:  { id: 3, name: 'Ram Golem',   hp: 30, speed: 3.0, touch: 0, radius: 1.0, reach: 1.6, color: 0x8a8278, scale: [1.5, 1.3, 1.5],
             rush: { dmg: 25, speed: 16, telegraph: 1.0, duration: 1.0, cooldown: 6, trigger: 18, width: 2.6 } },
   bloat:  { id: 4, name: 'Sand Bloat',  hp: 10, speed: 3.5, touch: 0, radius: 0.9, reach: 1.5, color: 0xd88a3a, scale: [1.3, 1.1, 1.3],
