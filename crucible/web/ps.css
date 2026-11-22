@@ -43,7 +43,8 @@ body.ps { background: #000; }
 #app.ps .vw > canvas { position: absolute; left: 0; top: 0; }
 #app.ps .bar { padding: 4px 6px; line-height: 16px; overflow: hidden; }
 #app.ps .bar p { margin: 0; max-height: 32px; overflow: hidden; }
-#app.ps .bar.more::after { content: ''; position: absolute; right: 4px; bottom: 3px; width: 7px; height: 4px; background: var(--gl); clip-path: polygon(0 0, 100% 0, 50% 100%); animation: psbob 1s steps(2) infinite; }
+#app.ps .bar.more::after, #app.ps .scm { content: ''; position: absolute; right: 4px; bottom: 3px; width: 7px; height: 4px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h7v1h-1v1h-1v1h-1v1h-1v-1h-1v-1h-1v-1h-1z' fill='%23e9c46a'/%3E%3C/svg%3E"); animation: psbob 1s steps(2) infinite; pointer-events: none; } /* rows of 7, 5, 3 and 1 pixels */
+#app.ps .scm { right: auto; bottom: auto; }
 @keyframes psbob { 50% { transform: translateY(2px); } }
 
 /* a plaque: every button in the game. Its capitals stand on rows 5 to 9 of its 16 (the label face draws them on rows 3 to 7
@@ -111,6 +112,7 @@ body.ps { background: #000; }
 #app.ps .wn h2, #app.ps .wn h3 { margin: 0 0 4px; font: 8px/8px 'LM Label', monospace; color: var(--gl); text-transform: uppercase; }
 #app.ps .wn p { margin: 0 0 4px; }
 #app.ps .sc { overflow-y: auto; scrollbar-width: none; }
+#app.ps .sc:not(.ab) { position: relative; }
 #app.ps .sc::-webkit-scrollbar { display: none; }
 #app.ps .mw { position: absolute; z-index: 40; padding: 8px; }
 #app.ps .dim { position: absolute; inset: 0; z-index: 39; background: repeating-conic-gradient(rgba(0,0,0,1) 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
@@ -187,8 +189,23 @@ body.ps { background: #000; }
 #app.ps .lab i { font: 8px/8px 'LM Label', monospace; color: #c2b49c; padding: 4px 0 0; opacity: 1; }
 #app.ps .lab.on i { color: var(--gl); }
 #app.ps .lab span { font: 16px/16px 'LM Text', monospace; }
-#app.ps .soundslot { font: 16px/16px 'LM Text', monospace; }
+/* The sound controls: sound.mjs builds them as a check box and four sliders; here they are drawn as console parts. Each row is
+   a label in the label face and a gauge 126 pixels long whose knob, four pixels wide, steps six pixels for each twentieth;
+   the part of the gauge left of the knob is lit. Mute is a box of the gauge's frame, gold inside when on. */
+#app.ps .soundslot { display: block; min-width: 0; margin: 0 0 4px; font: 8px/16px 'LM Label', monospace; text-transform: uppercase; color: var(--ink); }
 #app.ps .soundslot * { font: inherit !important; border-radius: 0 !important; box-shadow: none !important; backdrop-filter: none !important; }
+#app.ps .soundslot .lm-audio-panel { display: block; }
+#app.ps .soundslot label { display: grid !important; grid-template-columns: 96px 126px; column-gap: 0 !important; align-items: center !important; justify-content: start !important; height: 16px; margin: 0 0 4px; cursor: pointer; }
+#app.ps .soundslot label:first-child { grid-template-columns: 20px auto; }
+#app.ps .soundslot input { margin: 0; padding: 0; outline: none; cursor: pointer; accent-color: auto; }
+#app.ps .soundslot input[type=range] { -webkit-appearance: none; appearance: none; width: 126px !important; height: 10px; border: 1px solid var(--gold); background: var(--sh); overflow: hidden; }
+#app.ps .soundslot input[type=range]::-webkit-slider-runnable-track { -webkit-appearance: none; height: 8px; border: 0; background: none; }
+#app.ps .soundslot input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 4px; height: 8px; margin: 0; border: 0; border-radius: 0; background: var(--gl); box-shadow: inset -1px 0 0 var(--sd), -122px 0 0 118px var(--rust); }
+#app.ps .soundslot input[type=range]::-moz-range-track { height: 8px; border: 0; background: none; }
+#app.ps .soundslot input[type=range]::-moz-range-progress { height: 8px; background: var(--rust); }
+#app.ps .soundslot input[type=range]::-moz-range-thumb { width: 4px; height: 8px; border: 0; border-radius: 0; background: var(--gl); }
+#app.ps .soundslot input[type=checkbox] { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border: 1px solid var(--gold); background: var(--sh); }
+#app.ps .soundslot input[type=checkbox]:checked { background: var(--gl); box-shadow: inset 0 0 0 2px var(--sh) !important; }
 
 /* the page refuses a move, a save failed, a short message */
 #app.ps .savebar { position: absolute; left: 96px; top: 0; width: 320px; z-index: 50; padding: 4px 6px; background: var(--rust); color: var(--ink); font: 8px/10px 'LM Label', monospace; animation: pslit 2s steps(1) infinite; }
