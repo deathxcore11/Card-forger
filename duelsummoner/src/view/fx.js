@@ -43,7 +43,7 @@ export class Fx {
 
     // damage numbers: sprites with their own tiny canvas, text drawn only when one is spawned
     const M = POOL.numbers; this.M = M; this.nh = 0; this.nsp = []; this.nctx = []; this.ntex = [];
-    this.nx = new Float32Array(M * 3); this.nage = new Float32Array(M).fill(-1); this.nbig = new Uint8Array(M); this.nvx = new Float32Array(M);
+    this.nval = new Float32Array(M); this.nx = new Float32Array(M * 3); this.nage = new Float32Array(M).fill(-1); this.nbig = new Uint8Array(M); this.nvx = new Float32Array(M);
     for (let i = 0; i < M; i++) {
       const c = document.createElement('canvas'); c.width = 128; c.height = 48; const ctx = c.getContext('2d');
       const tex = new T.Texture(c); tex.magFilter = tex.minFilter = T.NearestFilter; tex.generateMipmaps = false;
@@ -93,10 +93,16 @@ export class Fx {
   }
   // flags from the sim's hit event: bit 0 crit, bits 1+ the element mask (fire 1, lightning 2, ice 4, poison 8, wind 16, earth 32, light 64, dark 128)
   number(x, y, z, value, flags) {
-    if (this.numBudget < 1) return; this.numBudget -= 1;
+    // hits on one target within 150 ms merge into one number: the total is redrawn on the number that is still fresh
+    for (let i = 0; i < this.M; i++) {
+      if (this.nage[i] < 0 || this.nage[i] > 0.15) continue;
+      const j = i * 3, dx = this.nx[j] - x, dz = this.nx[j + 2] - z;
+      if (dx * dx + dz * dz < 2.25) { this.nval[i] += value; if (flags & 1) this.nbig[i] = 1; this._paint(i, this.nval[i], this.nbig[i], flags); return; }
+    }    if (this.numBudget < 1) return; this.numBudget -= 1;
     const big = flags === undefined || flags === null ? value > this.avgDmg * 2.2 + 1 : (flags & 1) === 1; this.avgDmg += (value - this.avgDmg) * 0.05;
     const el = flags ? flags >> 1 : 0, col = ELEM_COL[el & 1 ? 1 : el & 2 ? 2 : el & 4 ? 3 : el & 8 ? 4 : el & 16 ? 5 : el & 32 ? 6 : el & 64 ? 7 : el & 128 ? 8 : 0];
     const i = this.nh, j = i * 3; this.nh = (this.nh + 1) % this.M;
+    this.nval[i] = value; this._paintAt = null;
     const ctx = this.nctx[i]; ctx.clearRect(0, 0, 128, 48); ctx.font = 'bold ' + (big ? 38 : 28) + 'px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const s = String(Math.max(1, Math.round(value)));
     ctx.lineWidth = 6; ctx.strokeStyle = '#1a0a20'; ctx.strokeText(s, 64, 24); ctx.fillStyle = col || (big ? '#ffd23a' : '#fff6e0'); ctx.fillText(s, 64, 24);
@@ -105,6 +111,11 @@ export class Fx {
     const sp = this.nsp[i]; sp.visible = true; sp.material.opacity = 1;
   }
 
+  _paint(i, value, big, flags) {                                           // redraw a damage number with its new total
+    const ctx = this.nctx[i], el = flags ? flags >> 1 : 0, col = ELEM_COL[el & 1 ? 1 : el & 2 ? 2 : el & 4 ? 3 : el & 8 ? 4 : el & 16 ? 5 : el & 32 ? 6 : el & 64 ? 7 : el & 128 ? 8 : 0], s = String(Math.max(1, Math.round(value)));
+    ctx.clearRect(0, 0, 128, 48); ctx.font = 'bold ' + (big ? 38 : 28) + 'px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 6; ctx.strokeStyle = '#1a0a20'; ctx.strokeText(s, 64, 24); ctx.fillStyle = col || (big ? '#ffd23a' : '#fff6e0'); ctx.fillText(s, 64, 24); this.ntex[i].needsUpdate = true;
+  }
   // ---- per frame ----
   update(dt, camera) {
     this.numBudget = Math.min(8, this.numBudget + dt * 60);

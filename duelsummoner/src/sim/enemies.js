@@ -18,7 +18,8 @@ export function makeEnemies(max) {
     max, alive: new Uint8Array(max), kind: new Uint8Array(max), st: new Uint8Array(max),
     x: f(), y: f(), z: f(), vy: f(), hp: f(), atk: f(), flash: f(), face: f(), spd: f(), dx: f(), dz: f(),
     stT: f(), ax: f(), az: f(), mark: f(), burn: f(), burnDps: f(), root: f(),
-    px: f(), py: f(), pz: f(), pface: f()                       // previous tick, for smooth drawing
+    px: f(), py: f(), pz: f(), pface: f(),                      // previous tick, for smooth drawing
+    mrg: new Uint8Array(max), size: f()                         // enemies merged into this one past the cap, and its size factor (1 to 1.5)
   };
 }
 export function enemyCount(e) { let c = 0; for (let i = 0; i < e.max; i++) c += e.alive[i]; return c; }
@@ -50,6 +51,21 @@ function put(g, i, x, y, z, kind) {
   if (KIND_LIST[kind].fly) e.y[i] = e.py[i] = y + KIND_LIST[kind].hover;
 }
 
+// Past the enemy cap a new spawn does not appear: it merges into the nearest enemy of the same kind. That enemy gains the merged HP, grows up
+// (to 1.5x) and drops the summed reward when it dies, so the total HP and reward are kept while the screen stays readable.
+export function mergeEnemy(g, kindName) {
+  const e = g.en, K = KINDS[kindName || 'husk'];
+  if (!ringSpot(g, spot)) return false;
+  let best = -1, bd = 1e18;
+  for (let i = 0; i < e.max; i++) if (e.alive[i] && e.kind[i] === K.id) { const dx = e.x[i] - spot.x, dz = e.z[i] - spot.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = i; } }
+  if (best < 0) return false;
+  const ot = K === KINDS.hunter ? Math.max(0, g.otStep || 0) : 0;
+  e.hp[best] += K.hp * g.hpMul * pow(RUN.overtime.hpGrowth, ot);
+  if (e.mrg[best] < 255) e.mrg[best]++;
+  e.size[best] = 1 + Math.min(0.5, 0.05 * e.mrg[best]);
+  g.merged = (g.merged || 0) + 1;
+  return true;
+}
 // kindName: 'husk' ... 'scarab'. at: optional {x,z}; otherwise a spot on the spawn ring.
 export function spawnEnemy(g, kindName, at) {
   const e = g.en, K = KINDS[kindName || 'husk'];
@@ -61,6 +77,7 @@ export function spawnEnemy(g, kindName, at) {
   put(g, slot, spot.x, spot.y, spot.z, K.id);
   e.alive[slot] = 1; e.kind[slot] = K.id; e.st[slot] = 0; e.stT[slot] = K.id === SEER ? 1.2 : K.id === GOLEM ? 2 : 0;
   const ot = K === KINDS.hunter ? Math.max(0, g.otStep || 0) : 0, O = RUN.overtime;
+  e.mrg[slot] = 0; e.size[slot] = 1;
   e.hp[slot] = K.hp * g.hpMul * pow(O.hpGrowth, ot); e.atk[slot] = 0.4; e.flash[slot] = 0; e.mark[slot] = 0; e.burn[slot] = 0; e.root[slot] = 0;
   e.spd[slot] = K.speed * (1 + (g.rsp() * 2 - 1) * CFG.enemy.speedJitter) * g.speedMul * Math.min(O.speedCap, pow(O.speedGrowth, ot));
   e.dx[slot] = 0; e.dz[slot] = 0; e.face[slot] = e.pface[slot] = 0;

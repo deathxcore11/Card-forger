@@ -98,6 +98,10 @@ export class Actors {
       scene.add(body); if (eye) scene.add(eye);
       return { K, body, eye, base: new T.Color(K.color) };
     });
+    // Toll Shades: a tall violet-black hooded silhouette with a glowing eye line and a gold bell (stand-in look until the art arrives)
+    this.shadeBody = instanced(new T.ConeGeometry(0.9, 3.0, 7), basic(0x1d1030), 24); this.shadeHood = instanced(new T.ConeGeometry(0.5, 1.0, 6), basic(0x0b0716), 24);
+    this.shadeEye = instanced(new T.BoxGeometry(0.34, 0.07, 0.1), basic(0xc07bff), 24); this.shadeBell = instanced(new T.ConeGeometry(0.17, 0.3, 6), basic(0xe8c56a), 24);
+    scene.add(this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell);
     this.marks = instanced(new T.OctahedronGeometry(0.22, 0), basic(0xc090ff), CFG.enemy.max); scene.add(this.marks);
 
     this.cards = instanced(new T.BoxGeometry(0.5, 0.05, 0.7), basic(0xf3e3c2), CFG.card.max + 64);
@@ -294,6 +298,19 @@ export class Actors {
     this._updateGhosts();
     this._updatePuffs(g.t, cam); this._updateFlames(g.t);
 
+    // Toll Shades
+    { let n = 0; const sk = SCALE.shade.h / 3.4;
+      for (const s of g.shades) {
+        const x = pl(s.px, s.x, a), y = lerp(s.py, s.y, a), z = pl(s.pz, s.z, a), age = g.t - s.born, rise = Math.min(1, age / 0.7), bob = Math.sin(t * 2 + n) * 0.15;
+        d.position.set(x, y + 1.5 * sk * rise - (1 - rise) * 2, z); d.rotation.set(0, s.face, 0); d.scale.set(sk, sk * rise, sk); d.updateMatrix(); this.shadeBody.setMatrixAt(n, d.matrix);
+        d.position.set(x, y + 3.2 * sk * rise + bob * 0.3 - (1 - rise) * 2, z); d.scale.set(sk, sk * rise, sk); d.updateMatrix(); this.shadeHood.setMatrixAt(n, d.matrix);
+        d.position.set(x + Math.sin(s.face) * 0.35 * sk, y + 2.9 * sk * rise + bob * 0.3 - (1 - rise) * 2, z + Math.cos(s.face) * 0.35 * sk); d.scale.set(sk, sk, sk); d.updateMatrix(); this.shadeEye.setMatrixAt(n, d.matrix);
+        d.position.set(x - Math.cos(s.face) * 0.95 * sk, y + 1.5 * sk * rise + Math.sin(t * 5 + n) * 0.08 - (1 - rise) * 2, z + Math.sin(s.face) * 0.95 * sk); d.rotation.set(0, s.face, Math.sin(t * 5 + n) * 0.5); d.scale.set(sk, sk, sk); d.updateMatrix(); this.shadeBell.setMatrixAt(n, d.matrix);
+        if (Math.random() < dt * 1.5) fx.spark(x, y + 2.5, z, 0, 0.6, 0, 0xc07bff, 0.18, 0.6);
+        n++;
+      }
+      for (const mm of [this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell]) { mm.count = n; mm.instanceMatrix.needsUpdate = true; }
+    }
     // swarm
     this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0;
     for (let i = 0; i < e.max; i++) {
@@ -309,7 +326,8 @@ export class Actors {
       const face = turnLerp(e.pface[i], e.face[i], a);
       const grow = 1 - rise * 0.6;
       d.position.set(x, y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85) + bob - rise * 1.1, z); d.rotation.set(hit && !fx.rm_ ? 0.32 : 0, face, 0);
-      d.scale.set(sc[0] * pulse * grow * (hit ? 1.2 : 1), sc[1] * pulse * grow * (hit ? 0.85 : 1), sc[2] * pulse * grow * (hit ? 1.2 : 1)); d.updateMatrix();
+      const mgs = e.size[i];                                                    // merged past the cap: bigger, up to 1.5x
+      d.scale.set(sc[0] * pulse * grow * mgs * (hit ? 1.2 : 1), sc[1] * pulse * grow * mgs * (hit ? 0.85 : 1), sc[2] * pulse * grow * mgs * (hit ? 1.2 : 1)); d.updateMatrix();
       k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this.white : k.base);
       if (k.eye) {
         d.position.set(x + Math.sin(face) * 0.62 * sc[0], y + 1.05 + bob, z + Math.cos(face) * 0.62 * sc[0]); d.scale.set(1, 1, 1); d.updateMatrix(); k.eye.setMatrixAt(n, d.matrix);

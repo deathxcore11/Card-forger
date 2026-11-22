@@ -21,7 +21,11 @@ export const RUNSPEC = {
   // (target: about 4 level-ups a minute through the first 4 minutes of Stage 1, about 7.5 a minute by mid Stage 2).
   xp: { start: 0.7, end: 1.0, minutes: 8, growth: 0.35, growFrom: 4 },    // growth: crystal value rises per run minute after growFrom, so late level-ups stay frequent
   gate: { x: 0, z: -57, radius: 5.5, arena: { x: 0, z: -12 }, tollPull: { x: 0, z: -2 } },   // stand-in map: the existing Colosseum gate
-  overtime: { stepSeconds: 30, baseRate: 2, rateStep: 0.35 }
+  overtime: { stepSeconds: 30, baseRate: 2, rateStep: 0.35 },
+  // Toll Shades, the clock's answer to broken builds: unkillable, they rise when a stage clock hits 0:00 or afterGateSeconds after the gate boss
+  // fell with no Descent taken. They steer straight at the duelist through terrain; a touch costs touchPct of max LP as TRUE damage (it can kill).
+  shades: { start: 3, addEverySeconds: 10, max: 12, speedFrac: 0.7, speedStepPct: 10, stepSeconds: 10, touchPct: 0.25, touchRadius: 1.2, touchCooldown: 1.2,
+            afterGateSeconds: 60, overtimeEverySeconds: 60, overtimeCount: 3, hardMax: 24, spawnMin: 18, spawnMax: 26 }
 };
 
 // Difficulty: per-difficulty tables, applied to every stage and Quick Duel. Medium is the base tuning (all multipliers 1).
