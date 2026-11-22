@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import { LOOK_NAME, PILLARS, PALETTES, SCALE, BUDGETS, NEVER, STYLE, VIEW } from './look.mjs';
 import { SWATCHES, DECALS, STAGE1, STAGE2, STAGE3, INTERACT } from './world.mjs';
+import { MORE1, MORE2, MORE3, AMBIENT } from './world2.mjs';
 import { DUELISTS, SUMMONS, FUSIONS, GODS, ENEMIES, BOSSES, NPCS } from './cast.mjs';
 import { PICKUPS, ITEM_SHEETS, SPELLS, EFFECTS, UIKIT, SCREENART, PORTRAITS, REGALIA } from './ui.mjs';
 import { SOUND_RULES, SOUNDS, MUSIC_RULES, MUSIC } from './audio.mjs';
@@ -149,9 +150,10 @@ const MUS = MUSIC.map(m => ({ code: m.code, name: m.name, file: m.file, how: 'mu
 
 const GROUPS = [
   { id: 'materials', title: 'Ground and wall textures', kind: 'Flat picture that repeats', blurb: 'Flat pictures the game repeats across the ground and walls. No 3D needed. Every prop in a stage is coloured with these, so the stage looks hand-made.', items: [...SWATCHES, ...DECALS] },
-  { id: 'stage1', title: 'Stage 1 scenery: Surface Ruins', kind: '3D model', blurb: 'Trees, bushes, rocks, ruins and landmarks. These do not move.', items: STAGE1 },
-  { id: 'stage2', title: 'Stage 2 scenery: Sealed Catacombs', kind: '3D model', blurb: 'Crypt pieces and props. Boulders, cliffs and crates come back from Stage 1, re-coloured by me.', items: STAGE2 },
-  { id: 'stage3', title: 'Stage 3 scenery: Vault of the Last Duel', kind: '3D model', blurb: 'The cavern, the sand sea, the statues and the throne.', items: STAGE3 },
+  { id: 'stage1', title: 'Stage 1 scenery: Surface Ruins', kind: '3D model', blurb: 'Trees, bushes, rocks, ruins and landmarks. These do not move.', items: [...STAGE1, ...MORE1] },
+  { id: 'stage2', title: 'Stage 2 scenery: Sealed Catacombs', kind: '3D model', blurb: 'Crypt pieces and props. Boulders, cliffs and crates come back from Stage 1, re-coloured by me.', items: [...STAGE2, ...MORE2] },
+  { id: 'stage3', title: 'Stage 3 scenery: Vault of the Last Duel', kind: '3D model', blurb: 'The cavern, the sand sea, the statues and the throne.', items: [...STAGE3, ...MORE3] },
+  { id: 'ambient', title: 'Ambient life', kind: '3D model with moving parts', blurb: 'Small creatures that make a stage feel alive: butterflies, birds, rabbits, bats, crabs. They wander and flutter and never fight.', items: AMBIENT },
   { id: 'interact', title: 'Chests, shrines and gates', kind: '3D model', blurb: 'Things you use in a run. Some have a moving part (a lid, a door) that needs its own model so it can open.', items: INTERACT },
   { id: 'pickups', title: 'Pickups', kind: '3D model', blurb: 'Coins, hearts and power-ups. Small and simple.', items: PICKUPS },
   { id: 'duelists', title: 'Duelists and outfits', kind: '3D model with a skeleton', blurb: 'The 12 playable characters and the practice dummy. Each needs a skeleton and animations from Meshy, and has three outfits.', items: DUELISTS },
