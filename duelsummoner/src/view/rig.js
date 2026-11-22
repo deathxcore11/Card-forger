@@ -61,17 +61,13 @@ export function snapSmallIslands(geo, maxTris = 80, minShare = 0.6) {
 }
 
 // Builds { root, clips: Map(name -> AnimationClip), bones: Map(name -> Bone), height } from a GLB buffer. texSize shrinks the texture (the file's is 2048 px or more).
-export async function buildRig(buf, { texSize = 512 } = {}) {
-  const glb = parseGlb(buf), J = glb.json, nodes = J.nodes, skin = J.skins && J.skins[0], jointSet = new Set(skin ? skin.joints : []);
-  const names = nodes.map((n, i) => clean(n.name || 'node' + i)), seen = new Set(); names.forEach((n, i) => { let m = n, k = 1; while (seen.has(m)) m = n + '_' + (k++); names[i] = m; seen.add(m); });
-  const objs = nodes.map((n, i) => { const o = jointSet.has(i) ? new T.Bone() : new T.Object3D(); o.name = names[i]; if (n.matrix) new T.Matrix4().fromArray(n.matrix).decompose(o.position, o.quaternion, o.scale); else { if (n.translation) o.position.fromArray(n.translation); if (n.rotation) o.quaternion.fromArray(n.rotation); if (n.scale) o.scale.fromArray(n.scale); } return o; });
-  nodes.forEach((n, i) => (n.children || []).forEach(c => objs[i].add(objs[c])));
-  const root = new T.Group(); for (const ni of J.scenes[J.scene || 0].nodes) root.add(objs[ni]);
-  // the mesh
-  let skinned = null;
-  for (let i = 0; i < nodes.length; i++) {
-    if (nodes[i].mesh === undefined) continue;
-    const p = J.meshes[nodes[i].mesh].primitives[0], at = p.attributes, geo = new T.BufferGeometry();
+// Two steps so a creature can be made many times cheaply: prepareRig reads the file once (async: the texture is decoded and shrunk once); instantiateRig then makes
+// a new set of bones and a new skin that share the same geometry, material and texture (sync, so a monster can be made in the middle of a frame).
+export async function prepareRig(buf, opts = {}) {
+  const { texSize = 512 } = opts, glb = parseGlb(buf), J = glb.json, skin = J.skins && J.skins[0], names = cleanNames(J), meshes = [];
+  for (let i = 0; i < J.nodes.length; i++) {
+    if (J.nodes[i].mesh === undefined) continue;
+    const p = J.meshes[J.nodes[i].mesh].primitives[0], at = p.attributes, geo = new T.BufferGeometry();
     geo.setAttribute('position', new T.BufferAttribute(accessor(glb, at.POSITION), 3)); if (at.NORMAL !== undefined) geo.setAttribute('normal', new T.BufferAttribute(accessor(glb, at.NORMAL), 3)); else geo.computeVertexNormals();
     if (at.TEXCOORD_0 !== undefined) geo.setAttribute('uv', new T.BufferAttribute(accessor(glb, at.TEXCOORD_0), 2));
     if (at.JOINTS_0 !== undefined) { geo.setAttribute('skinIndex', new T.BufferAttribute(new Uint16Array(accessor(glb, at.JOINTS_0)), 4)); geo.setAttribute('skinWeight', new T.BufferAttribute(accessor(glb, at.WEIGHTS_0), 4)); }
@@ -83,16 +79,28 @@ export async function buildRig(buf, { texSize = 512 } = {}) {
       const bmp = await createImageBitmap(blob), c = document.createElement('canvas'); c.width = c.height = texSize; c.getContext('2d').drawImage(bmp, 0, 0, texSize, texSize);
       map = new T.CanvasTexture(c); map.flipY = false;
     }
-    const material = new T.MeshLambertMaterial(map ? { map, side: T.DoubleSide, skinning: true } : { color: 0xcccccc, side: T.DoubleSide, skinning: true })   // three r128: a skinned material must say so;
-    skinned = new T.SkinnedMesh(geo, material); skinned.frustumCulled = false; skinned.name = names[i];
-    objs[i].add(skinned);
-    if (skin) { root.updateMatrixWorld(true); const ibm = accessor(glb, skin.inverseBindMatrices), inv = skin.joints.map((_, k) => new T.Matrix4().fromArray(ibm, k * 16)); skinned.bind(new T.Skeleton(skin.joints.map(j => objs[j]), inv), skinned.matrixWorld); }
+    const material = new T.MeshLambertMaterial(map ? { map, side: T.DoubleSide, skinning: true } : { color: 0xcccccc, side: T.DoubleSide, skinning: true });          // three r128: a skinned material must say so
+    meshes.push({ node: i, geo, material });
   }
-  const clips = readClips(glb, names);
-  for (const [k, c] of buildProcClips({ root })) if (!clips.has(k)) clips.set(k, c);                       // hand-keyed clips fill every name a real clip does not
+  const ibm = skin ? accessor(glb, skin.inverseBindMatrices) : null;
+  return { glb, J, skin, names, meshes, ibm, clips: readClips(glb, names) };
+}
+export function instantiateRig(prep, opts = {}) {
+  const { J, skin, names, meshes, ibm } = prep, nodes = J.nodes, jointSet = new Set(skin ? skin.joints : []);
+  const objs = nodes.map((n, i) => { const o = jointSet.has(i) ? new T.Bone() : new T.Object3D(); o.name = names[i]; if (n.matrix) new T.Matrix4().fromArray(n.matrix).decompose(o.position, o.quaternion, o.scale); else { if (n.translation) o.position.fromArray(n.translation); if (n.rotation) o.quaternion.fromArray(n.rotation); if (n.scale) o.scale.fromArray(n.scale); } return o; });
+  nodes.forEach((n, i) => (n.children || []).forEach(c => objs[i].add(objs[c])));
+  const root = new T.Group(); for (const ni of J.scenes[J.scene || 0].nodes) root.add(objs[ni]);
+  let skinned = null;
+  for (const m of meshes) {
+    skinned = new T.SkinnedMesh(m.geo, m.material); skinned.frustumCulled = false; skinned.name = names[m.node]; objs[m.node].add(skinned);
+    if (skin) { root.updateMatrixWorld(true); const inv = skin.joints.map((_, k) => new T.Matrix4().fromArray(ibm, k * 16)); skinned.bind(new T.Skeleton(skin.joints.map(j => objs[j]), inv), skinned.matrixWorld); }
+  }
+  const clips = new Map(prep.clips);                                                // shared clip objects: they address bones by name, so any instance can play them
+  if (!opts.creature) for (const [k, c] of buildProcClips({ root })) if (!clips.has(k)) clips.set(k, c);              // hand-keyed clips fill every name a real clip does not
   const box = new T.Box3().setFromObject(root);
   return { root, clips, height: box.max.y - box.min.y, skinned };
 }
+export async function buildRig(buf, opts = {}) { return instantiateRig(await prepareRig(buf, opts), opts); }
 
 import { CLIPS, UPPER, JUMP_CUT, locomotion } from './rigstate.js';
 import { buildProcClips, makeAxes } from './procclips.js';
