@@ -1498,9 +1498,10 @@ test('Lone watch: with the lever a duel remembers the most monsters each side ha
 
 // ---------- The first secret (lever secretLast, Lab switch `secret`, off): the door that was not there, The Last One ----------
 const SECRET_DB = { ...db, config: { ...db.config, ...labConfig({ ...LAB_DEFAULTS, secret: true }) }, _pair: new Map() };
-test('The first secret: the switch turns on the lone watch and the secret together, and both start off', () => {
-  const off = labConfig(LAB_DEFAULTS), on = labConfig({ ...LAB_DEFAULTS, secret: true });
+test('The first secret: the switch turns on the lone watch and the secret together, and both start on (Randall, 22 November 2026)', () => {
+  const off = labConfig({ ...LAB_DEFAULTS, secret: false }), on = labConfig({ ...LAB_DEFAULTS, secret: true });
   assert.ok(!off.secretLast && !off.loneWatch); assert.ok(on.secretLast && on.loneWatch);
+  assert.ok(labConfig(LAB_DEFAULTS).secretLast && labConfig(LAB_DEFAULTS).loneWatch, 'Rumours is on by default');
   assert.ok(!FORGER_IDS.includes('last') && FORGERS.last.hidden, 'the hidden Forger is on no list of Forgers');
 });
 test('The first secret: a guardian beaten with one monster opens a chamber of two doors, once a run; the way on leads where the run was going; every state is a run the page can store', () => {
