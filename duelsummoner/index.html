@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duel Summoner</title>
+<style>
+  :root { --ink:#f3e3c2; --dim:#b89a6a; --panel:#1b1220; --line:#6b4fa0; --hp:#c8402c; --xp:#8f6bff; --bg:#0d0810; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); overflow:hidden;
+    font-family: "Courier New", ui-monospace, monospace; -webkit-user-select:none; user-select:none; }
+  #stage { position:fixed; inset:0; }
+  canvas#view { width:100%; height:100%; display:block; image-rendering:pixelated; }
+  #flash { position:fixed; inset:0; background:radial-gradient(transparent 40%, rgba(200,40,30,.75)); opacity:0; pointer-events:none; }
+  .hud { position:fixed; pointer-events:none; text-shadow:1px 1px 0 #000; font-size:14px; letter-spacing:1px; }
+  #topleft { left:16px; top:14px; width:min(300px, 44vw); }
+  .bar { height:14px; border:2px solid var(--ink); background:#000a; margin:4px 0 8px; position:relative; }
+  .bar > i { position:absolute; inset:0 auto 0 0; width:100%; background:var(--hp); }
+  #xpbar > i { background:var(--xp); width:0; }
+  #topright { right:16px; top:14px; text-align:right; }
+  #clock { font-size:24px; }
+  #zones { left:50%; bottom:14px; transform:translateX(-50%); display:flex; gap:8px; }
+  .zone { width:84px; height:56px; border:2px solid var(--line); background:#1b1220cc; font-size:11px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--dim); }
+  .zone.full { border-color:var(--ink); color:var(--ink); }
+  .zone b { font-size:10px; color:var(--dim); font-weight:normal; }
+  .zone.trap { border-style:dashed; margin-left:10px; }
+  #hint { left:50%; top:14px; transform:translateX(-50%); color:var(--dim); font-size:12px; text-align:center; }
+  .screen { position:fixed; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column;
+    background:#0d0810d9; text-align:center; padding:16px; gap:10px; }
+  .screen.on { display:flex; }
+  .screen h1 { margin:0; font-size:clamp(28px, 6vw, 52px); letter-spacing:4px; color:var(--ink); }
+  .screen p { margin:0; color:var(--dim); line-height:1.6; max-width:520px; }
+  .screen .stat { color:var(--ink); font-size:18px; }
+  button { font:inherit; font-size:18px; letter-spacing:2px; color:var(--bg); background:var(--ink); border:0;
+    padding:12px 28px; margin-top:10px; cursor:pointer; }
+  button:hover, button:focus-visible { background:#fff; outline:2px solid var(--xp); }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="view"></canvas></div>
+<div id="flash"></div>
+
+<div class="hud" id="topleft">
+  <div>HEALTH <span id="hpnum">100</span></div>
+  <div class="bar" id="hpbar"><i></i></div>
+  <div>XP <span id="xpnum">0</span></div>
+  <div class="bar" id="xpbar"><i></i></div>
+</div>
+<div class="hud" id="topright">
+  <div id="clock">0:00</div>
+  <div>DEFEATED <span id="kills">0</span></div>
+</div>
+<div class="hud" id="hint"></div>
+<div class="hud" id="zones">
+  <div class="zone full" id="z1">Ember Wyvern<b>ZONE 1</b></div>
+  <div class="zone" id="z2">empty<b>ZONE 2</b></div>
+  <div class="zone" id="z3">empty<b>ZONE 3</b></div>
+  <div class="zone trap" id="zt">no trap<b>TRAP</b></div>
+</div>
+
+<div class="screen on" id="startScreen">
+  <h1>DUEL SUMMONER</h1>
+  <p>Test build 1: camera, combat and restart.<br>
+     WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash &middot; Esc pause</p>
+  <button id="startBtn">START</button>
+</div>
+<div class="screen" id="pauseScreen">
+  <h1>PAUSED</h1>
+  <p>WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash</p>
+  <button id="resumeBtn">RESUME</button>
+</div>
+<div class="screen" id="deadScreen">
+  <h1>DEFEATED</h1>
+  <p class="stat">Time survived <span id="dTime">0:00</span></p>
+  <p class="stat">Enemies defeated <span id="dKills">0</span></p>
+  <p>Best time <span id="dBest">0:00</span></p>
+  <button id="restartBtn">RESTART</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
