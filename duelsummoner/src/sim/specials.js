@@ -3,6 +3,7 @@ import { CFG } from '../data/config.js';
 import { atan2, cos, sin } from './dmath.js';
 import { SPECIALS } from '../data/enemies.js';
 import { RUN } from '../data/waves.js';
+import { RUNSPEC } from '../data/stages.js';
 import { FIELD_RULES } from '../data/cards.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { steerVec, walk, settle } from './steer.js';
@@ -13,7 +14,7 @@ import { spawnEnemy, spotNear } from './enemies.js';
 const sv = { x: 0, z: 0, d: 0, direct: true }, spot = { x: 0, y: 0, z: 0 };
 const DEG = Math.PI / 180;
 
-function make(kind, name, S, x, y, z) {
+export function make(kind, name, S, x, y, z) {
   return { kind, name, alive: true, dead: false, x, y, z, px: x, py: y, pz: z, pface: 0, vy: 0, dx: 0, dz: 0, face: 0, hp: S.hp, maxHp: S.hp, radius: S.radius, st: 0, stT: 0, cd: 0, atk: 0.5, flash: 0, twin: null, reviveT: 0, aux: 0 };
 }
 export function spawnWarden(g) {
@@ -27,12 +28,25 @@ export function spawnIdols(g) {
   for (const [s, off] of [[a, -1.2], [b, 1.2]]) { s.x = s.px = spot.x + off; s.z = s.pz = spot.z; s.y = s.py = heightAt(s.x, s.z); s.hp = s.maxHp = S.hp * g.hpMul; }
   a.twin = b; b.twin = a; g.sp.push(a, b); g.event('banner', 'The Twin Jackal Idols hunt you. Fell both within 10 seconds.');
 }
-export function startBoss(g, early) {
-  if (g.boss.state !== 'idle') return false;                       // one shared state: only one Pharaoh ever spawns
-  const S = SPECIALS.pharaoh, B = RUN.bossSpawn;
-  const sp = make('pharaoh', S.name, S, B.x, heightAt(B.x, B.z), B.z); sp.hp = sp.maxHp = S.hp * g.hpMul; sp.cd = 3; sp.aux = 6;
-  g.sp.push(sp); g.gateOpenedAt = early ? g.t : -1; g.boss = { state: 'active', early: !!early, t0: g.t, phase: 1, sandT: 0, summonT: S.summon.every, trapT: 2 };
-  g.event('banner', early ? 'You enter the Royal Gate early. The Hollow Pharaoh wakes.' : 'The Hollow Pharaoh wakes.');
+// A timed stage event (elite or timed boss) at a spot chosen when it was announced. engine decides which existing fight plays it.
+export function spawnSpecial(g, ev, at) {
+  const hpm = g.hpMul * (ev.hpScale || 1), tag = s => { s.role = ev.role; s.id = ev.id; s.drop = ev.drop; };
+  if (ev.engine === 'idols') {
+    const S = SPECIALS.idol, a = make('idol', ev.name, S, 0, 0, 0), b = make('idol', ev.name, S, 0, 0, 0);
+    for (const [s, off] of [[a, -1.2], [b, 1.2]]) { s.x = s.px = at.x + off; s.z = s.pz = at.z; s.y = s.py = heightAt(s.x, s.z); s.hp = s.maxHp = S.hp * hpm; tag(s); }
+    a.twin = b; b.twin = a; g.sp.push(a, b); g.event('banner', ev.name + ' hunt you. Fell both within 10 seconds.');
+  } else {
+    const S = SPECIALS.warden, sp = make('warden', ev.name, S, at.x, at.y, at.z); sp.hp = sp.maxHp = S.hp * hpm; tag(sp);
+    g.sp.push(sp); g.event('banner', ev.name + ' approaches.' + (ev.role === 'elite' ? '' : ' Hit it from behind.'));
+  }
+}
+export function startBoss(g, early, gate) {
+  if (g.boss.state !== 'idle') return false;                       // one shared state: only one gate boss at a time
+  const S = SPECIALS.pharaoh, B = gate ? RUNSPEC.gate.arena : RUN.bossSpawn;
+  const sp = make('pharaoh', gate ? gate.name : S.name, S, B.x, heightAt(B.x, B.z), B.z); sp.hp = sp.maxHp = gate ? gate.hp * g.stageSpec.mult : S.hp * g.hpMul; sp.cd = 3; sp.aux = 6;
+  if (gate) { sp.role = 'gate'; sp.id = gate.id; sp.enrage = gate.enrage || 1; }
+  g.sp.push(sp); g.gateOpenedAt = early ? (gate ? g.sc : g.t) : -1; g.boss = { state: 'active', early: !!early, t0: g.t, phase: 1, sandT: 0, summonT: S.summon.every, trapT: 2 };
+  g.event('banner', gate ? gate.name + (gate.enrage > 1 ? ' is enraged by the Toll Bell.' : ' wakes.') : early ? 'You enter the Royal Gate early. The Hollow Pharaoh wakes.' : 'The Hollow Pharaoh wakes.');
   return true;
 }
 
@@ -45,23 +59,30 @@ export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
   }
   let d = dmg * (1 + g.mods.dmgMult + g.mods.bossDmg);
   if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
+  g.logDealt(d);
   sp.hp -= d; sp.flash = 0.12;
   if (sp.hp > 0) return false;
   onDeath(g, sp);
   return true;
 }
 
-function dropChest(g, x, y, z) { dropPickup(g, PICK_XP, x + 1.2, y, z, 30); g.chests.push({ x, y, z, open: false, kind: 'sealed' }); g.event('banner', 'A sealed chest appears.'); }
+function dropChest(g, x, y, z, sp) {
+  dropPickup(g, PICK_XP, x + 1.2, y, z, 30);
+  if (sp && sp.drop === 'card') { g.world.cchests.push({ x, y, z, open: false, rarity: 'rare', free: true }); g.event('banner', 'A Card Chest appears, free.'); }
+  else { g.chests.push({ x, y, z, open: false, kind: 'sealed' }); g.event('banner', 'A sealed chest appears.'); }
+}
 
 function onDeath(g, sp) {
-  if (sp.kind === 'warden') { sp.alive = false; g.wardenKilled = true; g.elitesKilled++; dropChest(g, sp.x, sp.y, sp.z); g.event('banner', 'The Sealed Warden falls.'); }
+  if (sp.kind === 'warden') { sp.alive = false; if (!sp.role || sp.id === 'warden') g.wardenKilled = true; g.elitesKilled++; dropChest(g, sp.x, sp.y, sp.z, sp); g.event('banner', sp.role ? sp.name + ' falls.' : 'The Sealed Warden falls.'); if (sp.role === 'bossB') g.bDown = true; }
   else if (sp.kind === 'idol') {
     const tw = sp.twin;
     if (tw.dead) {                                                 // the other is already waiting: both down in time
-      sp.alive = false; tw.alive = false; tw.dead = false; g.elitesKilled++; dropChest(g, sp.x, sp.y, sp.z);
-      g.event('banner', 'Both idols are broken.');
+      sp.alive = false; tw.alive = false; tw.dead = false; g.elitesKilled++; dropChest(g, sp.x, sp.y, sp.z, sp);
+      g.event('banner', 'Both idols are broken.'); if (sp.role === 'bossB') g.bDown = true;
     } else if (!tw.alive) { sp.alive = false; }
     else { sp.dead = true; sp.hp = 0; sp.reviveT = SPECIALS.idol.reviveSeconds; g.event('banner', 'Fell the other twin within 10 seconds.'); }
+  } else if (sp.kind === 'pharaoh' && sp.role === 'gate') {
+    sp.alive = false; g.boss.state = 'dead'; g.elitesKilled++; g.gateDown = sp; g.event('banner', sp.name + ' falls.');
   } else if (sp.kind === 'pharaoh') {
     sp.alive = false; g.boss.state = 'dead'; g.elitesKilled++; g.bossKilled = true; g.won = true;
     g.event('banner', 'The Hollow Pharaoh falls. VICTORY. Overtime goes on: pause to end the run.');
@@ -83,9 +104,10 @@ function chase(g, sp, spd, dt) {
 }
 
 export function updateSpecials(g, dt) {
-  const p = g.p, mul = g.dmgMul;
+  const p = g.p;
   for (const sp of g.sp) {
     if (!sp.alive) continue;
+    const mul = g.dmgMul * (sp.enrage || 1);
     if (sp.flash > 0) sp.flash -= dt;
     const dx = p.x - sp.x, dz = p.z - sp.z, d = Math.sqrt(dx * dx + dz * dz) || 0.001;
 
@@ -132,12 +154,12 @@ export function updateSpecials(g, dt) {
     if (!t.on) continue;
     t.life -= dt; if (t.life <= 0) { t.on = false; continue; }
     const T = SPECIALS.pharaoh.traps, dx = p.x - t.x, dz = p.z - t.z;
-    if (dx * dx + dz * dz < T.stepRadius * T.stepRadius && Math.abs(p.y - t.y) < 1.5) { t.on = false; explode(g, t.x, t.y, t.z, T.burstRadius, T.dmg * mul, 0, 0xb050ff, 'a Pharaoh trap card'); }
+    if (dx * dx + dz * dz < T.stepRadius * T.stepRadius && Math.abs(p.y - t.y) < 1.5) { t.on = false; explode(g, t.x, t.y, t.z, T.burstRadius, T.dmg * g.dmgMul, 0, 0xb050ff, 'a Pharaoh trap card'); }
   }
 }
 
 function updatePharaoh(g, sp, dt, dx, dz, d) {
-  const S = SPECIALS.pharaoh, b = g.boss, p = g.p, mul = g.dmgMul;
+  const S = SPECIALS.pharaoh, b = g.boss, p = g.p, mul = g.dmgMul * (sp.enrage || 1);
   const frac = sp.hp / sp.maxHp, phase = frac > S.phase2 ? 1 : frac > S.phase3 ? 2 : 3;
   if (phase !== b.phase) {
     b.phase = phase; g.emit('bossphase', phase);
@@ -148,8 +170,8 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
     sp.stT -= dt;
     if (sp.stT <= 0) {
       sp.st = 0; sp.cd = S.blade.cooldown;
-      const fx = sin(sp.face), fz = cos(sp.face), l = d || 1, cos = (dx / l) * fx + (dz / l) * fz;
-      if (d < S.blade.range && cos > cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true, 'The Hollow Pharaoh blade');
+      const fx = sin(sp.face), fz = cos(sp.face), l = d || 1, dot = (dx / l) * fx + (dz / l) * fz;
+      if (d < S.blade.range && dot > cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true, 'The Hollow Pharaoh blade');
       addFx(g, { type: 'fan', x: sp.x, y: sp.y, z: sp.z, r: S.blade.range, arc: S.blade.arcDeg, dx: fx, dz: fz, dur: 0.3, color: 0xffe0a0 });
     }
     return;
@@ -183,5 +205,6 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
     }
   }
 }
+
 
 

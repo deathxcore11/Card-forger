@@ -1,4 +1,4 @@
-# Duel Summoner: Seeded Stage Generator ("Dealer" engine), final spec v1
+﻿# Duel Summoner: Seeded Stage Generator ("Dealer" engine), final spec v1
 
 The base is the Dealer engine: socket-matched authored chunks, integer reach tables, a strict integer validator and merged-section rendering. The macro layer on top comes from Seal-and-Socket: named districts, archetype regions on a coarse grid, a readable spine, a repair loop and the risk score. Several Sealstone rules are grafted in: the ledge-band snap, the rhythm chains, elevation-scaled flyer pressure and pre-generation. The goal is a map you almost never see twice, whose platforming still feels designed, and whose bosses, gates and encounters sit where they make sense.
 

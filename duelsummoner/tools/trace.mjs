@@ -47,7 +47,7 @@ export const unrle = runs => { const out = []; for (const r of runs) for (let i 
 
 // Plays a scene. records(g, i) gives the input record for tick i (bot when recording, the tape when replaying).
 export function playScene(scene, ticks, records) {
-  const g = new Game(scene.seed, { duelist: scene.duelist, offers: scene.offers !== false });
+  const g = new Game(scene.seed, Object.assign({ duelist: scene.duelist, offers: scene.offers !== false }, scene.opts || {}));
   if (scene.setup) scene.setup(g);
   const tape = g.startTape(), hashes = new Uint32Array(ticks * 2), events = [], snaps = [];
   for (let i = 0; i < ticks; i++) {
@@ -101,4 +101,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     process.exit(bad ? 1 : 0);
   }
 }
+
 

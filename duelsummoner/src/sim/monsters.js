@@ -22,18 +22,22 @@ export function updateMonsters(g, dt) {
     m.cd -= dt;
     if (m.cd > 0) continue;
     const D = def(m.id), A = D.attack, cd = A.cd / (1 + g.mods.monsterRate);
+    g.curSrc = g.srcIndex(m.id);
     if (attack(g, m, D, A)) m.cd = cd; else m.cd = 0;
+    g.curSrc = 0;
   }
   // the duelist's own card throw
   g.cardT -= dt;
   if (g.cardT <= 0) {
     const i = g.nearest(p.x, p.z, CFG.card.range), e = g.en;
+    g.curSrc = g.srcIndex('card-throw');
     if (i >= 0) { fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, e.x[i], e.y[i] + 0.9, e.z[i], CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage, { flame: g.mods.cardBurn ? 1 : 0 }); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
     else {
       const sp = nearestSpecial(g, p.x, p.z, CFG.card.range);
       if (sp) { fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, sp.x, sp.y + 1.2, sp.z, CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
       else g.cardT = 0;
     }
+    g.curSrc = 0;
   }
 }
 
@@ -116,7 +120,7 @@ export function onPlayerHurt(g) {
   for (const s of g.field.spells) if (s && TRAPS[s.id] && TRAPS[s.id].trigger === 'hurt' && s.cd <= 0) fireTrap(g, s);
 }
 function fireTrap(g, s) {
-  const T = TRAPS[s.id], p = g.p, e = g.en, lv = s.level - 1;
+  const T = TRAPS[s.id], p = g.p, e = g.en, lv = s.level - 1; g.curSrc = g.srcIndex(s.id);
   s.cd = T.recharge * pow(T.rechargePerLevel, lv) * (1 - g.mods.trapRecharge); g.trapsFired++; g.emit('sound', 3);
   const dmg = T.dmg * (1 + T.dmgPerLevel * lv);
   addFx(g, { type: 'ring', x: p.x, y: p.y, z: p.z, r: T.radius, dur: 0.5, color: s.id === 'gust-ward' ? 0xa0e0ff : 0xe8c56a });
@@ -128,7 +132,7 @@ function fireTrap(g, s) {
     if (s.id === 'gust-ward') damageEnemy(g, i, dmg, { noCrit: true, kx: dx, kz: dz, knock: T.knock });
     else { e.root[i] = T.root; damageEnemy(g, i, dmg, { noCrit: true }); }
   }
-  g.event('banner', T.name + ' fires!');
+  g.event('banner', T.name + ' fires!'); g.curSrc = 0;
 }
 export function updateTraps(g, dt) {
   const p = g.p, e = g.en;
@@ -146,11 +150,13 @@ export function updateTraps(g, dt) {
   if (g.storm) {
     const S = ONE_SHOTS['storm-of-cards']; g.storm.t += dt;
     const due = Math.floor(S.cards * Math.min(1, g.storm.t / S.seconds)) - (S.cards - g.storm.left);
+    g.curSrc = g.srcIndex('storm-of-cards');
     for (let k = 0; k < due && g.storm.left > 0; k++) {
       g.storm.left--;
       const a = g.rc() * Math.PI * 2, i = g.nearest(p.x + cos(a) * 12, p.z + sin(a) * 12, 40);
       if (i >= 0) { addFx(g, { type: 'ring', x: e.x[i], y: e.y[i], z: e.z[i], r: 1.2, dur: 0.25, color: 0xf3e3c2 }); damageEnemy(g, i, S.dmg, { noCrit: true }); }
     }
+    g.curSrc = 0;
     if (g.storm.left <= 0) g.storm = null;
   }
 }

@@ -148,11 +148,11 @@ function openAltar(g, altar) {
   g.offer = { type: 'altar', cards, leave: true, source: altar }; g.event('offer', null);
 }
 function openCardChest(g, c) {
-  const price = chestPrice(g);
+  const price = c.free ? 0 : chestPrice(g);
   if (g.coins < price) { g.event('banner', 'This chest costs ' + price + ' coins.'); return; }
   const cards = buildOffer(g, c.rarity);
   if (!cards.length) { g.event('banner', 'Nothing in this chest you could use.'); return; }
-  g.coins -= price; g.world.opened++;
+  g.coins -= price; if (!c.free) g.world.opened++; g.chestsOpenedTotal++;
   g.offer = { type: 'chest', cards, leave: false, chest: c, floor: c.rarity, freeRedraws: g.metaMods.chestRedraws || 0 }; g.event('offer', null);
 }
 
@@ -160,7 +160,7 @@ function openCardChest(g, c) {
 export function nearestProp(g) {
   const p = g.p, W = g.world, R = E.interactRange; let best = null, bd = R * R;
   const consider = (obj, type, text) => { const dx = obj.x - p.x, dz = obj.z - p.z, d = dx * dx + dz * dz; if (d < bd && Math.abs(obj.y - p.y) < 2.5) { bd = d; best = { obj, type, text }; } };
-  for (const c of W.cchests) if (!c.open) { const pr = chestPrice(g); consider(c, 'cchest', 'E: open the ' + c.rarity + ' Card Chest (' + (pr === 0 ? 'free' : pr + ' coins' + (g.coins < pr ? ', you have ' + g.coins : '')) + ')'); }
+  for (const c of W.cchests) if (!c.open) { const pr = c.free ? 0 : chestPrice(g); consider(c, 'cchest', 'E: open the ' + c.rarity + ' Card Chest (' + (pr === 0 ? 'free' : pr + ' coins' + (g.coins < pr ? ', you have ' + g.coins : '')) + ')'); }
   for (const s of W.stones) if (!s.used) consider(s, 'stone', 'E: take a free item from the Witness Stones');
   if (W.broker) consider(W.broker, 'broker', 'E: browse the Relic Broker');
   if (W.altar && !W.altar.used) consider(W.altar, 'altar', 'E: Altar of Tribute (Banish a card, or Tribute one from your field)');

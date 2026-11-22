@@ -1,6 +1,8 @@
 // One flat, versioned object describing a finished run. The save, quests, unlock keys and any host (browser or native) read this.
 export const RESULTS_SCHEMA = 1, BUILD_VERSION = '0.3.0';
 
+// damage dealt per source per run minute, rounded: { 'ember-wyvern': [0, 12, 40, ...], 'card-throw': [...] }
+function dealtOf(g) { const out = {}; for (const k of Object.keys(g.dealtLog)) { const a = g.dealtLog[k], r = []; for (let i = 0; i < a.length; i++) r.push(Math.round(a[i] || 0)); out[k] = r; } return out; }
 export function runResults(g, ctx) {
   ctx = ctx || {};
   const keys = [];
@@ -18,8 +20,8 @@ export function runResults(g, ctx) {
     result: g.bossKilled ? 'win' : g.ended ? 'ended' : g.over ? 'loss' : 'running',
     heat: ctx.heat || 0, duelist: g.duelist, kills: g.kills, bossKills: g.bossKilled ? 1 : 0, levelUps: g.levelUps,
     fusions: g.fusions, godFusions: g.godFusions, secretFusions: g.secretFusions, reactionsByType: {},
-    chestsOpened: g.world.opened, trapsFired: g.trapsFired, trapsSet: g.trapsSet, maxMonstersOnField: g.maxMonsters,
-    gateOpenedAt: g.gateOpenedAt, stagesCleared: 0, keys,
+    chestsOpened: g.chestsOpenedTotal, trapsFired: g.trapsFired, trapsSet: g.trapsSet, maxMonstersOnField: g.maxMonsters,
+    gateOpenedAt: g.gateOpenedAt, stagesCleared: g.stagesCleared, stageFacts: g.stageFacts, mode: g.mode, damagePerMinute: dealtOf(g), keys,
     // extras this build also reports
     level: g.level, wardenKilled: g.wardenKilled, elitesKilled: g.elitesKilled, vasesBroken: g.vasesBroken, starChips: g.starChips(), killedBy: g.killedBy
   };

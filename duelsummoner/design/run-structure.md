@@ -1,4 +1,4 @@
-# Duel Summoner: the 3-stage run, final v1
+﻿# Duel Summoner: the 3-stage run, final v1
 
 A run is one descent into the Buried Kingdom: **three stages**, each a freshly seeded map. In every stage the clock brings an elite and **two timed bosses**. A gate on the map wakes up, and the stage ends only when you walk into the gate and beat its gate boss. A Descent Circle then takes your whole build down to the next stage.
 

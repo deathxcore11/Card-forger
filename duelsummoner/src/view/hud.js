@@ -17,6 +17,29 @@ function buildZones() {
 }
 const stars = (n, max) => '*'.repeat(n) + '.'.repeat(Math.max(0, max - n));
 
+function runClock(g) {
+  if (g.duelOn) return 'DUEL ON +' + clock(g.otT);
+  return (g.stages.length > 1 ? 'STAGE ' + (g.stage + 1) + '  ' : '') + clock(Math.max(0, g.stageSpec.clock - g.sc));
+}
+let stripKey = '';
+const ROLE_LETTER = { elite: 'E', bossA: 'A', bossB: 'B' };
+function drawStrip(g) {                                                    // elite, boss A, boss B and gate icons under the clock
+  const S = g.stageSpec, st = g.evState, G = g.gate;
+  let k = S.id + '|' + G.state + '|' + G.awake; for (let i = 0; i < st.length; i++) k += st[i];
+  if (k === stripKey) return; stripKey = k;
+  let h = ''; S.timeline.forEach((ev, i) => { h += '<span class="' + (st[i] === 2 ? 'done' : st[i] === 1 ? 'now' : '') + '" title="' + ev.name + ' at ' + clock(ev.t) + '">' + ROLE_LETTER[ev.role] + ' ' + clock(ev.t) + '</span>'; });
+  h += '<span class="' + (G.state === 'fight' ? 'fight' : G.state === 'done' ? 'done' : G.awake ? 'now' : '') + '" title="' + S.gate.name + '">GATE</span>';
+  $('strip').innerHTML = h;
+}
+function nextEventRun(g) {
+  const S = g.stageSpec;
+  if (g.duelOn) return 'Hunters grow in ' + clock(30 - (g.otT % 30));
+  if (g.circle) return 'Descent Circle closes in ' + clock(g.circle.t);
+  if (g.altar) return 'The Final Altar';
+  if (g.gate.state === 'fight') return S.gate.name + (g.gate.toll ? ' (Toll Bell)' : '');
+  for (let i = 0; i < S.timeline.length; i++) if (g.evState[i] < 2) return S.timeline[i].name + ' in ' + clock(Math.max(0, S.timeline[i].t - g.sc));
+  return g.gate.awake ? 'The gate is awake' : 'The gate wakes in ' + clock(Math.max(0, S.gateWake - g.sc));
+}
 const EVENTS = [[240, 'Sealed Warden'], [360, 'Twin Jackal Idols'], [420, 'The Last Audience'], [480, 'The Hollow Pharaoh']];
 function nextEvent(g) {
   if (g.t >= 480) { const n = 30 - ((g.t - 480) % 30); return 'Overtime hunters grow in ' + clock(n); }
@@ -32,7 +55,7 @@ export function drawHud(g, force) {
     $('hpbar').firstElementChild.style.width = (g.p.hp / g.p.maxHp * 100) + '%';
     $('xpnum').textContent = 'LV ' + g.level + '  ' + Math.floor(g.xpCur) + '/' + Math.ceil(g.xpNeed);
     $('xpbar').firstElementChild.style.width = (g.xpCur / g.xpNeed * 100) + '%';
-    $('clock').textContent = g.t >= 480 ? 'OVERTIME +' + clock(g.t - 480) : clock(g.t); $('kills').textContent = g.kills; $('coins').textContent = g.coins;
+    $('clock').textContent = g.mode !== 'classic' ? runClock(g) : g.t >= 480 ? 'OVERTIME +' + clock(g.t - 480) : clock(g.t); $('kills').textContent = g.kills; $('coins').textContent = g.coins;
   }
   // field: 4 Monster Zones then 4 Spell and Trap Zones
   let zdiff = force;
@@ -62,11 +85,13 @@ export function drawHud(g, force) {
   if (ready.length) f.textContent = 'FUSION READY: ' + ready.map(id => FUSIONS[id].name).join(' or ') + '. Open a sealed chest (E).';
   const boss = g.sp.find(s => s.kind === 'pharaoh' && s.alive);
   $('boss').style.display = boss ? 'block' : 'none';
-  if (boss) $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%';
+  if (boss) { $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%'; if ($('bossname').textContent !== boss.name) $('bossname').textContent = boss.name; }
+  if (g.mode !== 'classic') drawStrip(g);
   $('prompt').textContent = g.prompt;
-  $('nextEvent').textContent = nextEvent(g);
+  $('nextEvent').textContent = g.mode !== 'classic' ? nextEventRun(g) : nextEvent(g);
   const items = g.items.map(id => ITEMS[id].name).concat(g.blessings.map(id => BLESSINGS[id].name.replace('Blessing of ', '') + '+'));
   $('itemsList').textContent = items.length ? 'ITEMS: ' + items.join(', ') : '';
+  if (g.mode !== 'classic') { $('stats').textContent = ''; return; }
   const idol = g.sp.filter(s => s.kind === 'idol' && s.alive);
   const st = [];
   if (idol.some(s => s.dead)) st.push('IDOL REVIVES IN ' + Math.max(0, idol.find(s => s.dead).reviveT).toFixed(1) + ' s');

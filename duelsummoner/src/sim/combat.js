@@ -27,6 +27,7 @@ export function damageEnemy(g, i, dmg, o) {
   if (e.mark[i] > 0) d *= 1 + MARKS.bonus + g.mods.markBonus;
   d *= 1 + g.mods.dmgMult;
   if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) d *= FIELD_RULES.critMult;
+  g.logDealt(d);
   e.hp[i] -= d; e.flash[i] = 0.12; g.emit('hit', d, e.x[i], e.z[i]);
   const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0);
   if (el & ELEMENTS.fire.bit) { e.burn[i] = ELEMENTS.fire.burn.dur + g.mods.burnDur; e.burnDps[i] = ELEMENTS.fire.burn.dps + g.mods.burnDps; }

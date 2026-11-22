@@ -3,6 +3,7 @@ import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
 import { makeStreams } from './rng.js';
+import { initRun, updateStages, descentTick, finalChoice } from './stages.js';
 import { quantise, decode, emptyRecord, MENU_TAKE, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from './input.js';
 import { Flow } from './flow.js';
 import { makePlayer, updatePlayer } from './player.js';
@@ -68,6 +69,9 @@ export class Game {
     this.flow.valid = false; this.evHead = this.evTail = 0;
     this.tickN = 0; this.levelUps = 0; this.trapsFired = 0; this.trapsSet = 0; this.maxMonsters = 0; this.gateOpenedAt = -1; this.godFusions = 0; this.secretFusions = 0;
     this.fusionIds = []; this.elementsUsed = 0; this.cardsPicked = []; this.fullForms = [];
+    this.srcNames = ['other']; this.curSrc = 0; this.dealtLog = {}; this.fusionGuard = null;
+    this.chestsOpenedTotal = 0; this.stagesCleared = 0; this.stageFacts = []; this.swiftChips = 0; this.duelOn = false; this.stagePrompt = ''; this.bDown = false; this.gateDown = null; this.desc = null; this.circle = null; this.altar = null; this.heat = 1;
+    initRun(this);                                                  // opts.mode: 'classic' (default, one 8:00 stage), 'run' (three stages) or 'quick' (Quick Duel)
   }
 
   // Sim to view only through this queue. Fixed size ring; if the view falls behind the oldest events are dropped, never the rules.
@@ -80,6 +84,12 @@ export class Game {
   // calls fn(type, a, b, c, data, t) for every queued event, oldest first, then empties the queue
   drainEvents(fn) { while (this.evTail < this.evHead) { const i = this.evTail & 255; this.evTail++; fn(this.evType[i], this.evA[i], this.evB[i], this.evC[i], this.evData[i], this.evT[i]); } }
   enemyCount() { return enemyCount(this.en); }
+  // Damage dealt by each source, per run minute (recording only, for before/after comparisons). curSrc is set around each attack.
+  srcIndex(name) { let i = this.srcNames.indexOf(name); if (i < 0) { i = this.srcNames.length; this.srcNames.push(name); } return i; }
+  logDealt(d) {
+    const name = this.srcNames[this.curSrc], m = Math.floor(this.mode !== 'classic' ? (this.scTotal + this.sc) / 60 : this.t / 60);
+    const a = this.dealtLog[name] || (this.dealtLog[name] = []); a[m] = (a[m] || 0) + d;
+  }
   fireBolt(x, y, z, vx, vz, life, dmg, r, src) {
     for (const b of this.eb) if (!b.on) { Object.assign(b, { on: true, x, y, z, vx, vz, life, dmg, r, px: x, pz: z, src: src || 'Glass Seer bolt' }); return; }
   }
@@ -98,6 +108,7 @@ export class Game {
   _menu(code) {
     if (!code) return;
     if (code >= MENU_TAKE && code <= MENU_TAKE + 3) this.choose(code - MENU_TAKE);
+    else if (code >= 30 && code < 50) this.choose(code - 30);
     else if (code === MENU_REDRAW) this.redraw(); else if (code === MENU_PASS) this.pass(); else if (code === MENU_LEAVE) this.leave();
     else if (code > MENU_BANISH && code <= MENU_BANISH + 4) this.banish(code - MENU_BANISH - 1);
   }
@@ -130,13 +141,14 @@ export class Game {
     const e = this.en;
     this._snap();
     this.t += dt; this.tickN++;
+    if (this.mode !== 'classic' && this.desc) { descentTick(this, dt); return; }                 // the Descent: the world waits
     this.grid.rebuild(e.max, e.x, e.z, e.alive);
     this.flowT -= dt;
     if (this.flowT <= 0 || !this.flow.valid) { this.flow.update(this.p.x, this.p.z); this.flowT = CFG.path.refresh; }
     updatePlayer(this, dt, cmd);
     if (this.p.hp > this.p.maxHp) this.p.hp = this.p.maxHp;
 
-    updateSpawner(this, dt);
+    if (this.mode === 'classic') updateSpawner(this, dt); else updateStages(this, dt);
     updateEnemies(this, dt);
     updateSpecials(this, dt);
     updateMonsters(this, dt);
@@ -167,6 +179,7 @@ export class Game {
       if (cmd && cmd.use && !this.offer) { useProp(this, prop); return; }
     }
     if (!chest && !prop) for (const s of this.world.shrines) if (!s.done) { const dx2 = p.x - s.x, dz2 = p.z - s.z; if (dx2 * dx2 + dz2 * dz2 < 36) this.prompt = 'Hold the ring: ' + s.charge.toFixed(1) + ' / ' + 5 + ' s' + (s.charge > 0 && dx2 * dx2 + dz2 * dz2 > 20 ? ' (stay inside)' : ''); }
+    if (this.mode !== 'classic') { if (!chest && !prop && this.stagePrompt) this.prompt = this.stagePrompt; return; }
     const G = RUN.gate, dx = p.x - G.x, dz = p.z - G.z;
     if (this.boss.state === 'idle' && this.t >= G.earliest && dx * dx + dz * dz < G.radius * G.radius) {
       if (!chest && !prop) this.prompt = 'E: enter the Royal Gate (early, bonus Star Chips)';
@@ -211,7 +224,7 @@ export class Game {
   }
 
   // offer actions (UI and the run simulator both use these)
-  choose(i) { return chooseCard(this, i); }
+  choose(i) { if (this.offer && this.offer.type === 'final') return finalChoice(this, i); return chooseCard(this, i); }
   redraw() { return redraw(this); }
   banish(i) { return banish(this, i); }
   pass() { return pass(this); }
@@ -227,12 +240,12 @@ export class Game {
   runStats() { return { time: this.t, kills: this.kills, level: this.level, fusions: this.fusions, bossKilled: this.bossKilled, wardenKilled: this.wardenKilled, overtime: this.overtimeSeconds(), trapSet: this.trapEver, chests: this.world.opened, vases: this.vasesBroken }; }
 
   results(ctx) { return runResults(this, ctx); }
-  overtimeSeconds() { return Math.max(0, this.t - RUN.overtime.from); }
+  overtimeSeconds() { return this.mode !== 'classic' ? (this.duelOn ? this.otT : 0) : Math.max(0, this.t - RUN.overtime.from); }
   endRun() { if (!this.over) { this.over = true; this.ended = true; } }
 
   starChips() {
     const S = RUN.starChips;
-    return Math.floor(this.kills / S.perKills) + S.perElite * (this.elitesKilled - (this.bossKilled ? 1 : 0)) + (this.bossKilled ? S.boss : 0) + (this.boss.early && this.bossKilled ? RUN.gate.earlyStarChips : 0);
+    return Math.floor(this.kills / S.perKills) + S.perElite * (this.elitesKilled - (this.bossKilled ? 1 : 0)) + (this.bossKilled ? S.boss : 0) + (this.mode === 'classic' && this.boss.early && this.bossKilled ? RUN.gate.earlyStarChips : 0) + (this.swiftChips || 0);
   }
 }
 

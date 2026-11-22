@@ -41,6 +41,9 @@ export class Minimap {
     c.fillStyle = '#e0452c';
     const e = g.en;
     for (let i = 0; i < e.max; i++) if (e.alive[i]) c.fillRect(X(e.x[i]) - 1, X(e.z[i]) - 1, 2, 2);
+    for (const ch of g.chests) if (ch.guaranteed && !ch.open) {                  // the Fusion chest: a gold diamond that blinks
+      const cx = X(ch.x), cz = X(ch.z); c.fillStyle = (Math.floor(performance.now() / 350) % 2) ? '#ffe08a' : '#ff9d2a'; c.beginPath(); c.moveTo(cx, cz - 5); c.lineTo(cx + 4, cz); c.lineTo(cx, cz + 5); c.lineTo(cx - 4, cz); c.closePath(); c.fill(); c.lineWidth = 1; c.strokeStyle = '#000'; c.stroke();
+    }
     const px = X(g.p.x), pz = X(g.p.z), fx = -Math.sin(yaw), fz = -Math.cos(yaw);
     c.save(); c.translate(px, pz); c.rotate(Math.atan2(fx, -fz));    // arrow points toward the camera facing
     c.beginPath(); c.moveTo(0, -7); c.lineTo(4.5, 5); c.lineTo(0, 2.5); c.lineTo(-4.5, 5); c.closePath();

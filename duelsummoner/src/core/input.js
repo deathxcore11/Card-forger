@@ -28,8 +28,9 @@ export class Input {
       f: (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0),
       r: (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0),
       yaw: this.yaw, jump: !!k.Space, dash: !!(k.ShiftLeft || k.ShiftRight),
-      slide: !!(k.ControlLeft || k.ControlRight || k.KeyC), use
+      slide: !!(k.ControlLeft || k.ControlRight || k.KeyC), use, hold: !!k.KeyE
     };
   }
 }
+
 

@@ -60,7 +60,7 @@ const chase = new ChaseCamera(camera);
 const input = host.input;
 const minimap = new Minimap($('minimap'));
 
-let MODE = 'start', last = 0, frozen = false, holdT = 0, lastFusions = 0;
+let pendingUse = false, MODE = 'start', last = 0, frozen = false, holdT = 0, lastFusions = 0;
 
 // settings: reduce motion turns off shake, hit-stop, flashes, the boss zoom and the follow lag
 function applySettings() {
@@ -82,8 +82,9 @@ function setMode(m) {
   $('hint').textContent = m === 'play' && !document.pointerLockElement ? 'Click the map to look around' : '';
   last = 0;
 }
-function begin() {
-  ended = false; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; game.opts.meta = simMeta(save.meta); game.reset(Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
+function begin(mode) {
+  game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions';
+  ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; game.opts.meta = simMeta(save.meta); game.reset(Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();
   for (const m of actors.specials.values()) scene.remove(m); actors.specials.clear();
   for (const m of actors.chests.values()) scene.remove(m); actors.chests.clear();
@@ -96,8 +97,9 @@ const showChips = () => { $('chipsLine').textContent = 'Star Chips ' + save.star
 showChips();
 $('deckBtn').addEventListener('click', () => showDeckBox(save, () => { writeSave(host, save); showChips(); }, showChips));
 $('libBtn').addEventListener('click', () => showLibrary(save, showChips));
-$('startBtn').addEventListener('click', begin);
-$('restartBtn').addEventListener('click', begin);
+$('startBtn').addEventListener('click', () => begin('run'));
+$('quickBtn').addEventListener('click', () => begin('quick'));
+$('restartBtn').addEventListener('click', () => begin(game.opts.mode));
 $('endBtn').addEventListener('click', () => { game.endRun(); results(); });
 $('resumeBtn').addEventListener('click', () => { setMode('play'); lock(); });
 canvas.addEventListener('mousedown', () => { if (MODE === 'play') lock(); });
@@ -132,7 +134,8 @@ function results() {
   $('resTitle').textContent = game.bossKilled ? 'VICTORY' : game.ended ? 'RUN ENDED' : 'DEFEATED';
   $('dTime').textContent = clock(game.t); countUp('dLevel', game.level); countUp('dKills', game.kills); countUp('dFusions', game.fusions);
   $('dOvertime').textContent = clock(game.overtimeSeconds()); countUp('dChips', game.starChips()); $('dBest').textContent = clock(save.records[duelist] ? save.records[duelist].bestTime : 0) + (info.newBest ? '  NEW BEST' : '');
-  const why = game.bossKilled ? 'The Hollow Pharaoh fell. Overtime goes on until you fall.' : game.ended ? 'You ended the run.' : 'Downed by ' + (game.killedBy || 'the horde');
+  const stg = game.mode !== 'classic' && game.stages.length > 1 ? ' in Stage ' + (game.stage + 1) : '';
+  const why = game.bossKilled ? (game.mode !== 'classic' ? 'The Hollow King fell. ' + (game.duelOn ? 'You Dueled On into Overtime.' : 'The Vault is closed.') : 'The Hollow Pharaoh fell. Overtime goes on until you fall.') : game.ended ? 'You ended the run' + stg + '.' : 'Downed by ' + (game.killedBy || 'the horde') + stg;
   $('dCause').textContent = why;
   const top = Object.entries(game.damageBy).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ' ' + Math.round(v)).join('  /  ');
   $('dBreakdown').textContent = top ? 'Damage taken: ' + top : '';
@@ -153,7 +156,37 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'kill') fx.burst(b, 0.9, c, 6, KCOL[a] || 0xaaaaaa, 3.5, 4, 0.28, 0.55, 14);
   else if (type === 'pickup') fx.burst(ip.x, ip.y + 1.1, ip.z, 3, PCOL[a] || 0xffffff, 1.6, 2.5, 0.14, 0.35, 0);
   else if (type === 'hurt') fx.shake(b ? 0.55 : 0.28);
+  else if (type === 'announce') sigils.push({ x: b, z: c, until: actors.vt + 6.5, next: 0 });
+  else if (type === 'gatewake') { fx.shake(0.5); fx.beam(0, 4, -57, 0xffe9a0, 6); fx.ring(0, 4, -57, 8, 0xffe9a0, 1); }
+  else if (type === 'descent') { fx.flash(1); fx.shake(0.4); }
+  else if (type === 'stage') { fx.flash(0.8); }
+  else if (type === 'gatedown') { fx.flash(0.6); fx.shake(0.6); }
   else if (type === 'bossphase') { fx.hitstop(0.06); fx.shake(0.7); fx.flash(0.3); fx.ring(ip.x, ip.y, ip.z, 8, 0xe8b84a, 0.7); }
+}
+const sigils = [];                                                      // boss rings announced 5 s ahead: a sigil scorches the ground
+const av = { x: 0, y: 0, z: 0 };
+function fusionMarker() {                                               // light beam and an edge-of-screen arrow toward the nearest guaranteed Fusion chest
+  const arrow = $('arrow'); let best = null, bd = 1e9;
+  for (const c of game.chests) if (c.guaranteed && !c.open) { const d = (c.x - game.p.x) ** 2 + (c.z - game.p.z) ** 2; if (d < bd) { bd = d; best = c; } }
+  if (!best) { if (arrow.style.display !== 'none') arrow.style.display = 'none'; return; }
+  if (actors.vt >= (fusionMarker.next || 0)) { fusionMarker.next = actors.vt + 2.5; fx.beam(best.x, best.y, best.z, 0xffe9a0, 3); }
+  av.x = best.x; av.y = best.y + 1; av.z = best.z; const v = camera.position.clone ? null : null;
+  const P = fusionMarker.v || (fusionMarker.v = new T.Vector3()); P.set(av.x, av.y, av.z).project(camera);
+  let sx = P.x, sy = P.y; const behind = P.z > 1; if (behind) { sx = -sx; sy = -sy; }
+  const off = behind || Math.abs(sx) > 0.92 || Math.abs(sy) > 0.88;
+  if (!off) { if (arrow.style.display !== 'none') arrow.style.display = 'none'; return; }
+  const k = Math.max(Math.abs(sx) / 0.92, Math.abs(sy) / 0.88, 1e-3); sx /= k; sy /= k;
+  arrow.style.display = 'block'; arrow.style.left = ((sx * 0.5 + 0.5) * innerWidth) + 'px'; arrow.style.top = ((-sy * 0.5 + 0.5) * innerHeight) + 'px';
+  arrow.style.transform = 'translate(-50%,-50%) rotate(' + Math.atan2(sx, sy) + 'rad)';
+}
+function ringMarks() {
+  const now = actors.vt;
+  fusionMarker();
+  for (let i = sigils.length - 1; i >= 0; i--) { const s = sigils[i]; if (now > s.until) { sigils.splice(i, 1); continue; } if (now >= s.next) { s.next = now + 0.5; fx.ring(s.x, 0.1, s.z, 4, 0xe8b84a, 0.7); } }
+  if (game.mode !== 'classic') {
+    if (game.circle && now >= (ringMarks.c || 0)) { ringMarks.c = now + 0.5; fx.ring(game.circle.x, 0.1, game.circle.z, 3.5, 0xc9a3ff, 0.7); }
+    if (game.altar && !game.altar.used && now >= (ringMarks.a || 0)) { ringMarks.a = now + 0.5; fx.ring(game.altar.x, 0.1, game.altar.z, 3.5, 0xffd56a, 0.7); }
+  }
 }
 const seenSp = new Set(), PLATES = { warden: 'THE SEALED WARDEN', idol: 'TWIN JACKAL IDOLS', pharaoh: 'THE HOLLOW PHARAOH' };
 let plateIdol = false, fovDirty = false;
@@ -161,7 +194,7 @@ function bossIntro() {                                              // name plat
   for (const sp of game.sp) {
     if (!sp.alive || seenSp.has(sp)) continue; seenSp.add(sp);
     if (sp.kind === 'idol') { if (plateIdol) continue; plateIdol = true; }
-    const pl = $('plate'); pl.innerHTML = PLATES[sp.kind] || ''; pl.classList.remove('on'); void pl.offsetWidth; pl.classList.add('on'); fx.push = fx.settings.reduceMotion ? 0 : 2;
+    const pl = $('plate'); pl.innerHTML = sp.role ? sp.name.toUpperCase() : (PLATES[sp.kind] || ''); pl.classList.remove('on'); void pl.offsetWidth; pl.classList.add('on'); fx.push = fx.settings.reduceMotion ? 0 : 2;
   }
 }
 const skipIntro = () => { fx.push = 0; };
@@ -183,7 +216,11 @@ function frame(now) {
     const s0 = performance.now();
     if (fx.stop > 0) fx.stop -= dtReal;                                   // hit-stop on boss phase breaks: the view waits, the sim keeps its tick count
     if (holdT > 0) holdT -= dtReal;
-    if (dtReal > 0 && !frozen && fx.stop <= 0 && holdT <= 0) alpha = game.fixed(dtReal, quantise(input.command(), liveRec));
+    if (dtReal > 0 && !frozen && fx.stop <= 0 && holdT <= 0) {
+      // a one-tick press (E) must survive frames that run no sim tick (above 60 fps most frames run none): latch it until a tick has consumed it
+      const cmd = input.command(); if (cmd.use) pendingUse = true; cmd.use = pendingUse; const t0 = game.tickN;
+      alpha = game.fixed(dtReal, quantise(cmd, liveRec)); if (game.tickN !== t0) pendingUse = false;
+    }
     bossIntro();
     prof.sim = performance.now() - s0; stepMs += prof.sim;
     drainEvents();
@@ -201,6 +238,7 @@ function frame(now) {
   if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures
   head.x = ip.x; head.y = ip.y + 1.5; head.z = ip.z;
   actors.update(game, alpha, camera.position, head, dtReal);
+  ringMarks();
   fx.update(dtReal, camera);
   props.update(game);
   minimap.draw(game, input.yaw);
@@ -223,7 +261,7 @@ requestAnimationFrame(frame);
 window.__ds = {
   game, input, chase, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
-  start: begin, results, setMode, fx, onEvent, save,
+  start: begin, begin, results, setMode, fx, onEvent, save,
   pickDuelist, freeze: v => { frozen = !!v; },
   yaw: v => { input.yaw = v; },
   drive: (secs, cmd) => { const c = Object.assign({ f: 0, r: 0, yaw: input.yaw, jump: false, dash: false, slide: false, use: false }, cmd || {}); for (let t = 0; t < secs && !game.over && !game.offer; t += 1 / 60) game.step(1 / 60, c); drainEvents(); if (game.over && MODE === 'play') results(); drawHud(game, true); },
@@ -231,6 +269,8 @@ window.__ds = {
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
+
+
 
 
 

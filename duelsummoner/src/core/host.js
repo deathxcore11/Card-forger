@@ -22,7 +22,7 @@ export function createBrowserHost(canvas) {
       if (lx || ly) { cmd.r = lx; cmd.f = -ly; }
       if (rx || ry) input.look(rx * 14, ry * 14);
       const b = i => !!(p.buttons[i] && p.buttons[i].pressed);
-      cmd.jump = cmd.jump || b(0); cmd.dash = cmd.dash || b(1); cmd.slide = cmd.slide || b(5); cmd.use = cmd.use || b(2);
+      cmd.jump = cmd.jump || b(0); cmd.dash = cmd.dash || b(1); cmd.slide = cmd.slide || b(5); cmd.use = cmd.use || b(2); cmd.hold = cmd.hold || b(2);
       cmd.yaw = input.yaw;
       break;
     }
@@ -47,4 +47,5 @@ export function createBrowserHost(canvas) {
     quality: { renderScale: 2, maxEnemies: 300, particles: true }
   };
 }
+
 

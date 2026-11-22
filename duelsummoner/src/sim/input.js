@@ -4,7 +4,9 @@
 //   buttons: bit 1 jump, bit 2 dash, bit 4 slide, bit 8 use
 //   menu: 0 none, 1..4 take card, 10 redraw, 11 pass, 12 leave, 21..24 banish card (level-up, chest, altar, shop, pause choices)
 
-export const BTN_JUMP = 1, BTN_DASH = 2, BTN_SLIDE = 4, BTN_USE = 8;
+export const BTN_JUMP = 1, BTN_DASH = 2, BTN_SLIDE = 4, BTN_USE = 8, BTN_HOLD = 16;
+// Menu codes: 1..4 take card 1..4 (old tapes), 30..49 take card 0..19 (Altar offers can hold 11 cards), 10 redraw, 11 pass, 12 leave, 21..24 banish card 1..4.
+export const takeCode = i => (i < 4 ? 1 + i : 30 + i);
 export const MENU_TAKE = 1, MENU_REDRAW = 10, MENU_PASS = 11, MENU_LEAVE = 12, MENU_BANISH = 20;
 const TWO_PI = 6.283185307179586;
 
@@ -19,7 +21,7 @@ export function quantise(c, out) {
   out.mx = q8(c.r || 0); out.mz = q8(c.f || 0);
   let y = (c.yaw || 0) / TWO_PI; y -= Math.floor(y);
   out.yaw = Math.floor(y * 65536) & 65535;
-  out.buttons = (c.jump ? BTN_JUMP : 0) | (c.dash ? BTN_DASH : 0) | (c.slide ? BTN_SLIDE : 0) | (c.use ? BTN_USE : 0);
+  out.buttons = (c.jump ? BTN_JUMP : 0) | (c.dash ? BTN_DASH : 0) | (c.slide ? BTN_SLIDE : 0) | (c.use ? BTN_USE : 0) | (c.hold ? BTN_HOLD : 0);
   out.menu = c.menu | 0;
   return out;
 }
@@ -28,7 +30,8 @@ export function quantise(c, out) {
 export function decode(rec, out) {
   out = out || {};
   out.r = rec.mx / 127; out.f = rec.mz / 127; out.yaw = rec.yaw * (TWO_PI / 65536);
-  out.jump = (rec.buttons & BTN_JUMP) !== 0; out.dash = (rec.buttons & BTN_DASH) !== 0; out.slide = (rec.buttons & BTN_SLIDE) !== 0; out.use = (rec.buttons & BTN_USE) !== 0;
+  out.jump = (rec.buttons & BTN_JUMP) !== 0; out.dash = (rec.buttons & BTN_DASH) !== 0; out.slide = (rec.buttons & BTN_SLIDE) !== 0; out.use = (rec.buttons & BTN_USE) !== 0; out.hold = (rec.buttons & BTN_HOLD) !== 0;
   return out;
 }
+
 

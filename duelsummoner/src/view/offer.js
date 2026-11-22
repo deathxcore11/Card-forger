@@ -2,7 +2,7 @@
 import { OFFER, LEVELS } from '../data/cards.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { cardDef, monsterMax } from '../sim/field.js';
-import { MENU_TAKE, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from '../sim/input.js';
+import { takeCode, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from '../sim/input.js';
 
 const $ = id => document.getElementById(id);
 let busy = false;
@@ -16,6 +16,7 @@ function fly(btn, go) {
 function describe(c) {
   if (c.kind === 'banish') { const D = cardDef(c.id); return { D: { name: D.name, text: 'BANISH: remove this unowned card from every future offer this run.' }, kind: 'Altar action: BANISH', lv: 'Nothing on your field is lost.', fx: '' }; }
   if (c.kind === 'tribute') { const D = cardDef(c.id); return { D: { name: D.name, text: 'TRIBUTE: give up this card (level ' + c.level + ') and free its zone.' }, kind: 'Altar action: TRIBUTE', lv: 'Lost: the card and its levels. Carries forward: the next card placed in that zone starts +2 levels.', fx: '' }; }
+  if (c.kind === 'final') return { D: c.id === 'close' ? { name: 'Close the Vault', text: 'Bank the win and go to the results.' } : { name: 'Duel On', text: 'The win is banked first. Then Overtime: endless hunters, a captain every 60 s, and the only place God Fusions can form.' }, kind: 'Final Altar', lv: '', fx: '' };
   if (c.kind === 'item') { const D = ITEMS[c.id]; return { D, kind: 'Item (passive, no slot)', lv: c.price !== undefined ? '' : 'Yours for the rest of the run', fx: '' }; }
   if (c.kind === 'blessing') return { D: BLESSINGS[c.id], kind: 'Stat blessing', lv: 'Permanent for this run', fx: '' };
   const D = cardDef(c.id), kind = c.kind === 'fusion' ? 'FUSION' : c.kind === 'monster' ? (D.type + ' monster') : c.kind === 'oneshot' ? 'Spell, acts once' : c.kind === 'trap' ? 'Trap' : 'Spell';
@@ -29,8 +30,9 @@ function describe(c) {
   return { D, kind, lv, fx };
 }
 
-const TITLES = { altar: 'ALTAR OF TRIBUTE', fusion: 'FUSION', chest: 'CARD CHEST', item: 'WITNESS STONES', shop: 'THE RELIC BROKER', blessing: 'SHRINE OF TRIBUTE' };
+const TITLES = { final: 'THE FINAL ALTAR', altar: 'ALTAR OF TRIBUTE', fusion: 'FUSION', chest: 'CARD CHEST', item: 'WITNESS STONES', shop: 'THE RELIC BROKER', blessing: 'SHRINE OF TRIBUTE' };
 const SUBS = {
+  final: 'The Hollow King is down. Bank the win, or Duel On into endless Overtime.',
   altar: 'Two actions, one use: BANISH an unowned card, or TRIBUTE a card from your field.',
   fusion: 'Both parents are level 10. Choose a Fusion, or leave it for later.',
   item: 'A witnessed duel must begin with an offering. Take one item, free.',
@@ -60,7 +62,7 @@ export function showOffer(g, act) {
   if (o.leave) btns.insertAdjacentHTML('beforeend', '<button data-act="leave">' + (shop ? 'LEAVE THE STALL' : 'LEAVE IT FOR LATER') + '</button>');
   $('offerScreen').onclick = e => {
     const t = e.target.closest('button'); if (!t || t.disabled) return;
-    if (t.dataset.pick !== undefined) fly(t, () => act(MENU_TAKE + +t.dataset.pick));
+    if (t.dataset.pick !== undefined) fly(t, () => act(takeCode(+t.dataset.pick)));
     else if (t.dataset.ban !== undefined) fly(t, () => act(MENU_BANISH + 1 + +t.dataset.ban));
     else if (t.dataset.act === 'redraw') act(MENU_REDRAW);
     else if (t.dataset.act === 'pass') act(MENU_PASS);
@@ -69,7 +71,7 @@ export function showOffer(g, act) {
 }
 export function offerKey(g, code, act) {                // keyboard: 1 to 4 take or buy, R redraw, P pass, L leave
   if (!g.offer) return false;
-  if (/^Digit[1-4]$/.test(code)) { act(MENU_TAKE + +code.slice(5) - 1); return true; }
+  if (/^Digit[1-9]$/.test(code)) { act(takeCode(+code.slice(5) - 1)); return true; }
   if (code === 'KeyR') { act(MENU_REDRAW); return true; }
   if (code === 'KeyP') { act(MENU_PASS); return true; }
   if (code === 'KeyL') { act(MENU_LEAVE); return true; }

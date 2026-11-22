@@ -1,4 +1,4 @@
-# Prototype brief: Node reference implementation of the stage generator (macro layout, heightfield, platform placement, reachability validation)
+﻿# Prototype brief: Node reference implementation of the stage generator (macro layout, heightfield, platform placement, reachability validation)
 
 ## Goal
 
