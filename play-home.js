@@ -36,6 +36,9 @@ function storyHeader(act, facts, progress = {}) {
 export function playHomeMarkup({econ = null, facts = null, signedIn = false, modesHtml = '', stageHtml = '', story = {}} = {}) {
   const state = econ?.state, p = purse(state), act = storyActFor(story);
   const head = `<header class="pl-home-head"><div><h1 id="playTitle">Play</h1></div>${levelMarkup(econ)}${purseMarkup(econ, {level: false})}</header>`;
+  // Before the Play purse has loaded (or when signed out) the same Hand layout shows, so the page never flashes the old
+  // four-card home and then swaps to the Hand (web, 22 Nov: old home first, Hand a moment later).
+  if (!p && stageHtml) return `<section class="play-menu play-menu--forge pl-home pe-home pl-home--stage pl-home--hand" aria-labelledby="playTitle">${head}${stageHtml}${econNoticeMarkup(econ, {signedIn})}</section>`;
   if (!p) return `<section class="play-menu play-menu--forge pl-home pe-home" aria-labelledby="playTitle">${head}${modesHtml}${storyHeader(act, facts, story)}${econNoticeMarkup(econ, {signedIn})}</section>`;
   // 0.4.95 stage: the deck, five modes, one Play. Packs, Forge, Decks, Collection and Merchant leave the page;
   // the purse opens the Merchant, the Forge and Packs, and the row under Today opens all four.

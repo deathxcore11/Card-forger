@@ -65,7 +65,7 @@ test('lobby inspects in a sheet and offers only formats the engine plays',()=>{
  assert.match(playMenuMarkup(base(),{inspectOpen:true}),/<aside class="panel play-inspector pl-sheet" aria-labelledby="playInspectorTitle" >/);
  assert.match(html,/<button class="pl-format-opt" disabled aria-disabled="true"><b>Pioneer<\/b>/);
  assert.match(html,/data-play-value="Standard"/);assert.match(html,/data-play-value="Commander"/);assert.doesNotMatch(html,/data-play-value="(?:Modern|Draft)"/);
- const home=playMenuMarkup(base(),{view:'home'});assert.match(home,/data-act="playOpenMode" data-play-style="quick"/);assert.match(home,/data-act="playOpenMode" data-play-style="practice"/);assert.match(home,/href="\/planeswalk.html"/);assert.match(home,/data-act="playOpenMode" data-play-style="social"/);assert.doesNotMatch(home+html,/Coming later/);assert.doesNotMatch(html,/data-play-style=/);assert.match(html,/<option value="Easy">Easy<\/option>/);assert.match(html,/<option value="Medium" selected>Medium<\/option>/);assert.match(html,/<option value="Hard">Hard<\/option>/);
+ const home=playMenuMarkup(base(),{view:'home'});assert.match(home,/data-act="playOpenMode" data-play-style="quick"/);assert.match(home,/data-stage-mode="practice"/);assert.match(home,/data-stage-mode="planeswalk"/);assert.match(home,/data-stage-mode="friends"/);assert.doesNotMatch(home+html,/Coming later/);assert.doesNotMatch(html,/data-play-style=/);assert.match(html,/<option value="Easy">Easy<\/option>/);assert.match(html,/<option value="Medium" selected>Medium<\/option>/);assert.match(html,/<option value="Hard">Hard<\/option>/);
 });
 test('shelf filters exact format and search without deleting the selected deck preview',()=>{
  const s=base();s.decks=[{id:'a',name:'Alpha',format:'Standard'},{id:'b',name:'Beta',format:'Commander'},{id:'c',name:'Gamma',format:'Standard'}];s.browse.query='alpha';
@@ -112,7 +112,14 @@ test('Settings › Info shows the Fan Content notice without opening anything',(
  assert.match(info.replace(/<details[\s\S]*?<\/details>/g,''),/unofficial Fan Content permitted under the Fan Content Policy\. Not approved\/endorsed by Wizards\. Portions of the materials used are property of Wizards of the Coast\. &copy;Wizards of the Coast LLC\./);
 });
 test('Quick Play with a chosen deck starts in one tap and keeps the setup one tap away',()=>{
- const none=playMenuMarkup(base(),{view:'home'});assert.doesNotMatch(none,/data-play-direct|playChangeDeck/);
+ const none=playMenuMarkup(base(),{view:'home'});assert.doesNotMatch(none,/data-play-direct/);assert.match(none,/Pick a deck/);
  const chosen=playMenuMarkup({...base(),selected:{name:'Chishiro · Tokens',cards:[]}},{view:'home'});
- assert.match(chosen,/data-play-style="quick" data-play-direct="true"/);assert.match(chosen,/Chishiro · Tokens against a matched CPU\./);assert.match(chosen,/data-act="playChangeDeck"[^>]*>Change deck</);
+ assert.match(chosen,/data-play-style="quick" data-play-direct="true"/);assert.match(chosen,/<h2>Chishiro · Tokens<\/h2>/);assert.match(chosen,/data-act="playChangeDeck"[^>]*>Change</);
+});
+
+// Regression 22 Nov: on the web the old four-card Play home flashed first, then the Hand home, because the Hand layout
+// only rendered once the Play purse had loaded. Before the purse loads it must already be the Hand layout.
+test('Play home shows the Hand layout before the purse has loaded, never the old four-card home',()=>{
+ const before=playMenuMarkup(base(),{view:'home',econ:{loading:true,state:null}});
+ assert.match(before,/pl-home--hand/);assert.match(before,/class="pl-hand"/);assert.doesNotMatch(before,/class="pl-modes"|pe-story-art/);
 });
