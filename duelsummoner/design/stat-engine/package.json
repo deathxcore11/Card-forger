@@ -1,0 +1,7 @@
+{
+  "name": "dsengine",
+  "private": true,
+  "type": "module",
+  "description": "Duel Summoner Ledger prototype: stat sheet, damage brackets, curves, caps, self-damage pipeline and build sim. No dependencies.",
+  "scripts": { "test": "node --test", "sim": "node sim/builds.mjs" }
+}
