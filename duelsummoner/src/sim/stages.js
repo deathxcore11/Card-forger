@@ -2,7 +2,7 @@
 // timeline, a gate that wakes, a gate boss, then a Descent Circle to the next stage (Stage 3: the Final Altar). Pure and deterministic.
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
 import { RUN } from '../data/waves.js';
-import { RUNSPEC, stagesFor } from '../data/stages.js';
+import { RUNSPEC, stagesFor, DIFFICULTY } from '../data/stages.js';
 import { pow, sin, cos } from './dmath.js';
 import { spawnEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
 import { spawnSpecial, startBoss } from './specials.js';
@@ -22,7 +22,7 @@ export function xpScale(g) {
 
 // ---- setup ----
 export function initRun(g) {
-  g.mode = g.opts.mode || 'classic';
+  g.mode = g.opts.mode || 'classic'; g.difficulty = DIFFICULTY[g.opts.difficulty] ? g.opts.difficulty : 'medium'; g.diff = DIFFICULTY[g.difficulty]; g.maxAlive = RUN.maxAlive;
   if (g.mode === 'classic') { g.stages = null; g.stageSpec = null; return; }
   g.stages = stagesFor(g.mode); g.stage = 0; g.scTotal = 0; g.stagesCleared = 0; g.stageFacts = [];
   g.swiftChips = 0; g.duelOn = false; g.otT = 0; g.desc = null; g.chestsOpenedTotal = 0; g.heat = 1;
@@ -46,9 +46,10 @@ export function updateStages(g, dt) {
   const S = g.stageSpec, G = g.gate, p = g.p, cmd = g._cmd;
   const fight = G.state === 'fight';
   if (G.state === 'closed') g.sc += dt;                         // the clock freezes during the gate fight and after it
-  const m = (g.scTotal + g.sc) / 60, C = RUNSPEC.hpCurve;
-  g.hpMul = S.mult * (1 + C.a * m + C.b * m * m) * g.heat;
-  g.dmgMul = 1 + RUNSPEC.dmgPerMinute * Math.max(0, m - 3);
+  const m = (g.scTotal + g.sc) / 60, D = g.diff, C = D.hpCurve;
+  g.hpMul = S.mult * (1 + C.a * m + C.b * m * m) * g.heat * D.hp;
+  g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3));
+  g.maxAlive = Math.floor(D.cap.start + (D.cap.end - D.cap.start) * (m >= D.cap.minutes ? 1 : m / D.cap.minutes));
   g.stagePrompt = '';
 
   if (g.gateDown) { const sp = g.gateDown; g.gateDown = null; gateCleared(g, sp); return; }
@@ -163,32 +164,32 @@ export function finalChoice(g, i) {
 // ---- the swarm ----
 function spawner(g, dt, fight, toll) {
   const S = g.stageSpec; if (fight && !toll) return;
-  const te = Math.min(479, S.waves.offset + g.sc * S.waves.scale), p = g.p;
+  const D = g.diff, te = Math.min(479, S.waves.offset + g.sc * S.waves.scale * D.ramp), p = g.p, cap = g.maxAlive;
   if (te >= RUN.ring.from || toll) {                            // the Last Audience: a ring of Husks closes in
     g.ringT -= dt;
     if (g.ringT <= 0) {
       g.ringT = RUN.ring.every; g.event('banner', 'The Last Audience closes in.');
-      for (let k = 0; k < RUN.ring.count; k++) { if (enemyCount(g.en) >= RUN.maxAlive) break; const a = k / RUN.ring.count * Math.PI * 2; spawnEnemy(g, 'husk', { x: p.x + cos(a) * RUN.ring.radius, z: p.z + sin(a) * RUN.ring.radius }); }
+      for (let k = 0; k < RUN.ring.count; k++) { if (enemyCount(g.en) >= cap) break; const a = k / RUN.ring.count * Math.PI * 2; spawnEnemy(g, 'husk', { x: p.x + cos(a) * RUN.ring.radius, z: p.z + sin(a) * RUN.ring.radius }); }
     }
   }
   if (te >= RUN.golem.from) {
     g.golemT -= dt;
-    if (g.golemT <= 0) { g.golemT = RUN.golem.every; if (enemyCount(g.en) < RUN.maxAlive) spawnEnemy(g, 'golem'); }
+    if (g.golemT <= 0) { g.golemT = RUN.golem.every; if (enemyCount(g.en) < cap) spawnEnemy(g, 'golem'); }
   }
-  if (toll) { g.huntT -= dt; if (g.huntT <= 0) { g.huntT = RUNSPEC.tollHunterEvery; for (let k = 0; k < RUNSPEC.tollHunterCount; k++) if (enemyCount(g.en) < RUN.maxAlive) spawnEnemy(g, 'hunter'); } }
-  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * dt;
+  if (toll) { g.huntT -= dt; if (g.huntT <= 0) { g.huntT = RUNSPEC.tollHunterEvery; for (let k = 0; k < RUNSPEC.tollHunterCount; k++) if (enemyCount(g.en) < cap) spawnEnemy(g, 'hunter'); } }
+  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt;
   let live = enemyCount(g.en);
-  while (g.spawnAcc >= 1) { g.spawnAcc -= 1; if (live < RUN.maxAlive && spawnEnemy(g, pickKind(g, te))) live++; }
+  while (g.spawnAcc >= 1) { g.spawnAcc -= 1; if (live < cap && spawnEnemy(g, pickKind(g, te))) live++; }
 }
 
 // ---- Overtime after Duel On: endless hunters, a captain every 60 s that drops a Sealed Chest ----
 function overtime(g, dt) {
   const O = RUNSPEC.overtime, R = RUN.overtime;
   g.otT += dt; const k = Math.floor(g.otT / O.stepSeconds); g.otStep = k;
-  const m = (g.scTotal + g.sc) / 60, C = RUNSPEC.hpCurve; g.hpMul = g.stageSpec.mult * (1 + C.a * m + C.b * m * m) * g.heat;
-  g.dmgMul = (1 + RUNSPEC.dmgPerMinute * Math.max(0, m - 3)) * pow(R.dmgGrowth, k + 1);
+  const m = (g.scTotal + g.sc) / 60, D = g.diff, C = D.hpCurve; g.hpMul = g.stageSpec.mult * (1 + C.a * m + C.b * m * m) * g.heat * D.hp;
+  g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3)) * pow(R.dmgGrowth, k + 1);
   g.otAcc += (O.baseRate + O.rateStep * k) * dt;
-  while (g.otAcc >= 1) { g.otAcc -= 1; if (enemyCount(g.en) < RUN.maxAlive) spawnEnemy(g, 'hunter'); }
+  while (g.otAcc >= 1) { g.otAcc -= 1; if (enemyCount(g.en) < g.maxAlive) spawnEnemy(g, 'hunter'); }
   g.huntT -= dt;
   if (g.huntT <= 0) {
     g.huntT = 60;
@@ -216,6 +217,7 @@ function swapStage(g) {
   g.event('banner', 'Stage ' + (g.stage + 1) + ': ' + g.stageSpec.name);
   g.emit('stage', g.stage + 1);
 }
+
 
 
 

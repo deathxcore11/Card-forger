@@ -19,6 +19,8 @@ import { simMeta, applyRun } from './core/meta.js';
 import { showDeckBox, showLibrary } from './view/metaui.js';
 import { QUESTS } from './data/meta.js';
 import { Fx } from './view/fx.js';
+import { packReplay, deflateInBrowser } from './core/replay.js';
+import { DIFFICULTY } from './data/stages.js';
 import { KIND_LIST } from './data/enemies.js';
 
 const T = window.THREE, $ = id => document.getElementById(id);
@@ -82,8 +84,11 @@ function setMode(m) {
   $('hint').textContent = m === 'play' && !document.pointerLockElement ? 'Click the map to look around' : '';
   last = 0;
 }
+function pickDifficulty(d) { if (!DIFFICULTY[d]) d = 'medium'; save.settings.difficulty = d; for (const b of document.querySelectorAll('#diffRow button')) b.classList.toggle('sel', b.dataset.diff === d); writeSave(host, save); }
+for (const b of document.querySelectorAll('#diffRow button')) b.addEventListener('click', () => pickDifficulty(b.dataset.diff));
+pickDifficulty(save.settings.difficulty);
 function begin(mode) {
-  game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions';
+  game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions'; game.opts.difficulty = save.settings.difficulty;
   ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; game.opts.meta = simMeta(save.meta); game.reset(Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();
   for (const m of actors.specials.values()) scene.remove(m); actors.specials.clear();
@@ -128,12 +133,14 @@ function results() {
   let unlocked = [];
   if (!ended) {                                                          // saved once per run
     ended = true; info = recordRun(host, save, duelist, { time: game.t, kills: game.kills, level: game.level, bossKilled: game.bossKilled, chips: game.starChips() });
-    const report = game.results({ runId: 'ds-' + game.seed + '-' + save.runs }); unlocked = applyRun(save.meta, report); writeSave(host, save); host.reportRun(report);
+    const report = game.results({ runId: 'ds-' + game.seed + '-' + save.runs }); unlocked = applyRun(save.meta, report); writeSave(host, save);
+    // the verifiable replay (seed, difficulty, mode, build, the run-length input tape and the final state hash) rides along with the report
+    packReplay(game.replayRaw(), typeof CompressionStream !== 'undefined' ? deflateInBrowser : null).then(r => { report.replay = r; host.reportRun(report); }).catch(() => host.reportRun(report));
   }
   $('dQuests').textContent = unlocked.length ? 'Quest done: ' + unlocked.map(q => q.name + ' (unlocked ' + (q.unlock.card || q.unlock.item) + ')').join(', ') : '';
   $('resTitle').textContent = game.bossKilled ? 'VICTORY' : game.ended ? 'RUN ENDED' : 'DEFEATED';
   $('dTime').textContent = clock(game.t); countUp('dLevel', game.level); countUp('dKills', game.kills); countUp('dFusions', game.fusions);
-  $('dOvertime').textContent = clock(game.overtimeSeconds()); countUp('dChips', game.starChips()); $('dBest').textContent = clock(save.records[duelist] ? save.records[duelist].bestTime : 0) + (info.newBest ? '  NEW BEST' : '');
+  $('dOvertime').textContent = clock(game.overtimeSeconds()); countUp('dChips', game.starChips()); countUp('dScore', game.score()); $('dDiff').textContent = DIFFICULTY[game.difficulty].name + (game.mode === 'quick' ? ' (Quick Duel)' : ''); $('dBest').textContent = clock(save.records[duelist] ? save.records[duelist].bestTime : 0) + (info.newBest ? '  NEW BEST' : '');
   const stg = game.mode !== 'classic' && game.stages.length > 1 ? ' in Stage ' + (game.stage + 1) : '';
   const why = game.bossKilled ? (game.mode !== 'classic' ? 'The Hollow King fell. ' + (game.duelOn ? 'You Dueled On into Overtime.' : 'The Vault is closed.') : 'The Hollow Pharaoh fell. Overtime goes on until you fall.') : game.ended ? 'You ended the run' + stg + '.' : 'Downed by ' + (game.killedBy || 'the horde') + stg;
   $('dCause').textContent = why;
@@ -269,6 +276,7 @@ window.__ds = {
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
+
 
 
 

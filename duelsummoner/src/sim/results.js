@@ -1,4 +1,5 @@
 // One flat, versioned object describing a finished run. The save, quests, unlock keys and any host (browser or native) read this.
+import { hashHex } from './hash.js';
 export const RESULTS_SCHEMA = 1, BUILD_VERSION = '0.3.0';
 
 // damage dealt per source per run minute, rounded: { 'ember-wyvern': [0, 12, 40, ...], 'card-throw': [...] }
@@ -21,7 +22,7 @@ export function runResults(g, ctx) {
     heat: ctx.heat || 0, duelist: g.duelist, kills: g.kills, bossKills: g.bossKilled ? 1 : 0, levelUps: g.levelUps,
     fusions: g.fusions, godFusions: g.godFusions, secretFusions: g.secretFusions, reactionsByType: {},
     chestsOpened: g.chestsOpenedTotal, trapsFired: g.trapsFired, trapsSet: g.trapsSet, maxMonstersOnField: g.maxMonsters,
-    gateOpenedAt: g.gateOpenedAt, stagesCleared: g.stagesCleared, stageFacts: g.stageFacts, mode: g.mode, damagePerMinute: dealtOf(g), keys,
+    gateOpenedAt: g.gateOpenedAt, stagesCleared: g.stagesCleared, stageFacts: g.stageFacts, mode: g.mode, difficulty: g.difficulty, score: g.score(), stateHash: hashHex(g), damagePerMinute: dealtOf(g), keys,
     // extras this build also reports
     level: g.level, wardenKilled: g.wardenKilled, elitesKilled: g.elitesKilled, vasesBroken: g.vasesBroken, starChips: g.starChips(), killedBy: g.killedBy
   };

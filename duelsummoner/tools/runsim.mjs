@@ -2,21 +2,21 @@
 // Usage: node tools/runsim.mjs [runs] [--focus] [--god] [--mode run|quick] [--maxmin N] [--duelist kael|mira]
 import { Game } from '../src/sim/game.js';
 import { newBot, botRecord } from './bot.mjs';
-import { RUNSPEC } from '../src/data/stages.js';
+import { RUNSPEC, DIFFICULTY } from '../src/data/stages.js';
 
 const argv = process.argv.slice(2), flag = f => argv.includes(f), val = (f, d) => (argv.includes(f) ? argv[argv.indexOf(f) + 1] : d);
-const runs = Number(argv.find(a => /^\d+$/.test(a)) || 4), MODE = val('--mode', 'run'), FOCUS = flag('--focus'), GOD = flag('--god'), MAXMIN = Number(val('--maxmin', 40)), DU = val('--duelist', 'kael');
+const runs = Number(argv.find(a => /^\d+$/.test(a)) || 4), MODE = val('--mode', 'run'), FOCUS = flag('--focus'), GOD = flag('--god'), MAXMIN = Number(val('--maxmin', 40)), DU = val('--duelist', 'kael'), DIF = val('--difficulty', 'medium');
 const clock = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
 
-if (flag('--nocurve')) { RUNSPEC.hpCurve.a = 0; RUNSPEC.hpCurve.b = 0; }
+if (flag('--nocurve')) { DIFFICULTY[DIF].hpCurve.a = 0; DIFFICULTY[DIF].hpCurve.b = 0; }
 if (argv.includes('--xpstart')) RUNSPEC.xp.start = Number(val('--xpstart', 0.35));
 if (argv.includes('--xpend')) RUNSPEC.xp.end = Number(val('--xpend', 1));
 if (argv.includes('--xpmin')) RUNSPEC.xp.minutes = Number(val('--xpmin', 10));
-if (argv.includes('--ca')) RUNSPEC.hpCurve.a = Number(val('--ca', 0.18));
-if (argv.includes('--cb')) RUNSPEC.hpCurve.b = Number(val('--cb', 0.02));
+if (argv.includes('--ca')) DIFFICULTY[DIF].hpCurve.a = Number(val('--ca', 0.18));
+if (argv.includes('--cb')) DIFFICULTY[DIF].hpCurve.b = Number(val('--cb', 0.02));
 const rows = [];
 for (let r = 0; r < runs; r++) {
-  const w0 = Date.now(), g = new Game(100 + r, { mode: MODE, duelist: DU }); g.god = GOD; const bot = newBot({ focus: FOCUS });
+  const w0 = Date.now(), g = new Game(100 + r, { mode: MODE, duelist: DU, difficulty: DIF }); g.god = GOD; const bot = newBot({ focus: FOCUS });
   const rec = { stage: [], firstFusion: null, enter: [0], lv: [] }; let last = g.stage, ticks = 0, lastMin = 0;
   const runT = () => g.scTotal + g.sc;
   while (!g.over && runT() < MAXMIN * 60 && ticks < MAXMIN * 3600 * 1.2) {
@@ -29,7 +29,8 @@ for (let r = 0; r < runs; r++) {
   rows.push({ run: r, result: res.result, stagesCleared: res.stagesCleared, stageReached: g.stage + 1, diedAt: g.over && res.result === 'loss' ? clock(g.sc) + ' in stage ' + (g.stage + 1) + ' (run ' + clock(runT()) + ')' : null, killedBy: g.killedBy, level: g.level, kills: g.kills, fusions: g.fusions, firstFusion: rec.firstFusion, levelsByMinute: rec.lv.join(' '),
     gate: res.stageFacts.map(f => 'S' + f.stage + ' ' + clock(f.seconds) + (f.early ? ' early' : '') + (f.toll ? ' toll' : '')).join(', '), simMinutes: +(runT() / 60).toFixed(1), wallSec: +((Date.now() - w0) / 1000).toFixed(1) });
 }
-console.log(JSON.stringify({ mode: MODE, focus: FOCUS, god: GOD, rows }, null, 1));
+console.log(JSON.stringify({ difficulty: DIF, mode: MODE, focus: FOCUS, god: GOD, rows }, null, 1));
+
 
 
 

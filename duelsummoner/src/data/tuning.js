@@ -2,6 +2,9 @@
 // The sim never hard-codes a balance number: it reads K. Status: numbers are the spec's; none is confirmed in a played seed yet.
 // Phase 1 of the port reads: lvlSlope, lvlRate, form, tier, knee1/kneeK1, knee4/kneeK4, critBase, critCap, procCap and the curve k values.
 
+// Score weights for verified leaderboards (placeholders). Integers only; the run score is floor(sum x difficulty multiplier).
+export const SCORE = Object.freeze({ kill: 1, elite: 100, bossA: 250, bossB: 250, gate: 1000, other: 400, stage: 2000, overtimeSec: 5, fusion: 300, god: 1500, secret: 6000 });
+
 export const K = Object.freeze({
   hz: 60,
   lutN: 1024,                       // curved stats are clamped to 0..1023 points

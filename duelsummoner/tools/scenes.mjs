@@ -67,5 +67,21 @@ export const SCENES = [
       1100: g => { const b = g.sp.find(s => s.role === 'gate'); if (b) b.hp = b.maxHp * 0.3; },
       1700: g => { const b = g.sp.find(s => s.role === 'gate'); if (b) g.damageSpecial(b, 1e9, 0, 0, { noCrit: true, area: true }); }
     }
+  },
+  {
+    // the same transition on Easy and a Stage 3 gate fight on Hard: the scene name carries the difficulty
+    name: 'stage-transition-easy', seed: 33, duelist: 'kael', ticks: 2000, opts: { mode: 'run', difficulty: 'easy' },
+    setup(g) { g.god = true; g.evState.fill(2); g.sc = 359.5; g.field.monsters[0].level = 6; },
+    at: { 5: g => atGate(g), 400: g => { const b = g.sp.find(s => s.role === 'gate'); if (b) g.damageSpecial(b, 1e9, 0, 0, { noCrit: true, area: true }); } }
+  },
+  {
+    name: 'gate-fight-hard', seed: 34, duelist: 'kael', ticks: 2400, opts: { mode: 'run', difficulty: 'hard' },
+    setup(g) { g.god = true; jumpToStage(g, 2); g.evState.fill(2); g.sc = 430; },
+    at: {
+      5: g => atGate(g),
+      700: g => { const b = g.sp.find(s => s.role === 'gate'); if (b) b.hp = b.maxHp * 0.6; },
+      1100: g => { const b = g.sp.find(s => s.role === 'gate'); if (b) b.hp = b.maxHp * 0.3; },
+      1700: g => { const b = g.sp.find(s => s.role === 'gate'); if (b) g.damageSpecial(b, 1e9, 0, 0, { noCrit: true, area: true }); }
+    }
   }
 ];

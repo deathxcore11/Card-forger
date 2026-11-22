@@ -1,6 +1,6 @@
 ﻿// The sim's only input: one small quantised record per 1/60 s tick, so a run can be recorded to a tape and replayed bit for bit.
 //   mx: right  -127..127   mz: forward -127..127   (int8)
-//   yaw: camera yaw as uint16 turns (0..65535 = 0..2pi)
+//   yaw: camera yaw in 1024 steps of 0.35 degrees (0..1023 = 0..2pi; coarse on purpose so replays stay small)
 //   buttons: bit 1 jump, bit 2 dash, bit 4 slide, bit 8 use
 //   menu: 0 none, 1..4 take card, 10 redraw, 11 pass, 12 leave, 21..24 banish card (level-up, chest, altar, shop, pause choices)
 
@@ -20,7 +20,7 @@ export function quantise(c, out) {
   if (c.mx !== undefined) { out.mx = c.mx; out.mz = c.mz; out.yaw = c.yaw; out.buttons = c.buttons; out.menu = c.menu | 0; return out; }   // already a record
   out.mx = q8(c.r || 0); out.mz = q8(c.f || 0);
   let y = (c.yaw || 0) / TWO_PI; y -= Math.floor(y);
-  out.yaw = Math.floor(y * 65536) & 65535;
+  out.yaw = Math.floor(y * 1024) & 1023;
   out.buttons = (c.jump ? BTN_JUMP : 0) | (c.dash ? BTN_DASH : 0) | (c.slide ? BTN_SLIDE : 0) | (c.use ? BTN_USE : 0) | (c.hold ? BTN_HOLD : 0);
   out.menu = c.menu | 0;
   return out;
@@ -29,9 +29,10 @@ export function quantise(c, out) {
 // Record to the movement command the player code reads.
 export function decode(rec, out) {
   out = out || {};
-  out.r = rec.mx / 127; out.f = rec.mz / 127; out.yaw = rec.yaw * (TWO_PI / 65536);
+  out.r = rec.mx / 127; out.f = rec.mz / 127; out.yaw = rec.yaw * (TWO_PI / 1024);
   out.jump = (rec.buttons & BTN_JUMP) !== 0; out.dash = (rec.buttons & BTN_DASH) !== 0; out.slide = (rec.buttons & BTN_SLIDE) !== 0; out.use = (rec.buttons & BTN_USE) !== 0; out.hold = (rec.buttons & BTN_HOLD) !== 0;
   return out;
 }
+
 
 

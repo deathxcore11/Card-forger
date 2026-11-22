@@ -16,14 +16,25 @@ export const RUNSPEC = {
   chestPriceCarry: 0.7,      // Card Chest prices fall back to this share at each stage
   tollEnrage: 1.3,           // damage multiplier of a gate boss started by the Toll Bell
   tollHunterEvery: 30, tollHunterCount: 6,
-  hpCurve: { a: 0.18, b: 0.02 },   // enemy HP = base x (1 + a m + b m^2) x stage mult, m = run minutes
   dmgPerMinute: 0.06,
   // XP shaping: level-ups come slowly early and speed up. The XP gained is scaled by start..end over the first `minutes` run minutes
   // (target: about 4 level-ups a minute through the first 4 minutes of Stage 1, about 7.5 a minute by mid Stage 2).
-  xp: { start: 0.6, end: 1.0, minutes: 10, growth: 0.35, growFrom: 4 },    // growth: crystal value rises per run minute after growFrom, so late level-ups stay frequent
+  xp: { start: 0.7, end: 1.0, minutes: 8, growth: 0.35, growFrom: 4 },    // growth: crystal value rises per run minute after growFrom, so late level-ups stay frequent
   gate: { x: 0, z: -57, radius: 5.5, arena: { x: 0, z: -12 }, tollPull: { x: 0, z: -2 } },   // stand-in map: the existing Colosseum gate
   overtime: { stepSeconds: 30, baseRate: 2, rateStep: 0.35 }
 };
+
+// Difficulty: per-difficulty tables, applied to every stage and Quick Duel. Medium is the base tuning (all multipliers 1).
+//   spawn  multiplies the spawn rate; ramp speeds up (above 1) or slows (below 1) how fast the wave table climbs with the stage clock
+//   cap    the enemy count cap ramps linearly from start to end over `minutes` run minutes (the hard ceiling is 300)
+//   hp, hpCurve   enemy HP multiplier and the per-minute curve (1 + a m + b m^2); dmg, dmgPerMinute   enemy damage
+//   boss   elite and boss HP multiplier on top of hp;   score   multiplier on the run score (placeholder values)
+export const DIFFICULTY = {
+  easy:   { name: 'Easy',   score: 0.75, spawn: 0.8,  ramp: 0.8,  cap: { start: 150, end: 300, minutes: 14 }, hp: 0.85, hpCurve: { a: 0.07, b: 0.005 }, dmg: 0.85, dmgPerMinute: 0.04, boss: 0.8 },
+  medium: { name: 'Medium', score: 1.0,  spawn: 1.0,  ramp: 1.0,  cap: { start: 300, end: 300, minutes: 1 },  hp: 1.0,  hpCurve: { a: 0.10, b: 0.008 },  dmg: 1.0,  dmgPerMinute: 0.06, boss: 1.0 },
+  hard:   { name: 'Hard',   score: 1.5,  spawn: 1.2,  ramp: 1.25, cap: { start: 300, end: 300, minutes: 1 },  hp: 1.15, hpCurve: { a: 0.18, b: 0.02 }, dmg: 1.15, dmgPerMinute: 0.08, boss: 1.3 }
+};
+export const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
 const ev = (t, role, id, name, engine, hpScale, drop) => ({ t, role, id, name, engine, hpScale, drop });
 
@@ -61,5 +72,6 @@ export const STAGES = [
 export const QUICK = Object.assign({}, STAGES[0], { id: 'quick', name: 'Quick Duel', clock: 480, gateWake: 420, waves: { offset: 0, scale: 1 } });
 
 export const stagesFor = mode => (mode === 'quick' ? [QUICK] : STAGES);
+
 
 

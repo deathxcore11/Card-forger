@@ -32,7 +32,7 @@ export function spawnIdols(g) {
 }
 // A timed stage event (elite or timed boss) at a spot chosen when it was announced. engine decides which existing fight plays it.
 export function spawnSpecial(g, ev, at) {
-  const hpm = g.hpMul * (ev.hpScale || 1), tag = s => { s.role = ev.role; s.id = ev.id; s.drop = ev.drop; };
+  const hpm = g.hpMul * (ev.hpScale || 1) * (g.diff ? g.diff.boss : 1), tag = s => { s.role = ev.role; s.id = ev.id; s.drop = ev.drop; };
   if (ev.engine === 'idols') {
     const S = SPECIALS.idol, a = make('idol', ev.name, S, 0, 0, 0), b = make('idol', ev.name, S, 0, 0, 0);
     for (const [s, off] of [[a, -1.2], [b, 1.2]]) { s.x = s.px = at.x + off; s.z = s.pz = at.z; s.y = s.py = heightAt(s.x, s.z); s.hp = s.maxHp = S.hp * hpm; tag(s); }
@@ -45,7 +45,7 @@ export function spawnSpecial(g, ev, at) {
 export function startBoss(g, early, gate) {
   if (g.boss.state !== 'idle') return false;                       // one shared state: only one gate boss at a time
   const S = SPECIALS.pharaoh, B = gate ? RUNSPEC.gate.arena : RUN.bossSpawn;
-  const sp = make('pharaoh', gate ? gate.name : S.name, S, B.x, heightAt(B.x, B.z), B.z); sp.hp = sp.maxHp = gate ? gate.hp * g.stageSpec.mult : S.hp * g.hpMul; sp.cd = 3; sp.aux = 6;
+  const sp = make('pharaoh', gate ? gate.name : S.name, S, B.x, heightAt(B.x, B.z), B.z); sp.hp = sp.maxHp = gate ? gate.hp * g.stageSpec.mult * g.diff.boss : S.hp * g.hpMul; sp.cd = 3; sp.aux = 6;
   if (gate) { sp.role = 'gate'; sp.id = gate.id; sp.enrage = gate.enrage || 1; }
   g.sp.push(sp); g.gateOpenedAt = early ? (gate ? g.sc : g.t) : -1; g.boss = { state: 'active', early: !!early, t0: g.t, phase: 1, sandT: 0, summonT: S.summon.every, trapT: 2 };
   g.event('banner', gate ? gate.name + (gate.enrage > 1 ? ' is enraged by the Toll Bell.' : ' wakes.') : early ? 'You enter the Royal Gate early. The Hollow Pharaoh wakes.' : 'The Hollow Pharaoh wakes.');
@@ -69,6 +69,7 @@ export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
   return true;
 }
 
+const credit = (g, sp) => { g.roleKills[sp.role || 'other']++; };
 function dropChest(g, x, y, z, sp) {
   dropPickup(g, PICK_XP, x + 1.2, y, z, 30);
   if (sp && sp.drop === 'card') { g.world.cchests.push({ x, y, z, open: false, rarity: 'rare', free: true }); g.event('banner', 'A Card Chest appears, free.'); }
@@ -76,18 +77,18 @@ function dropChest(g, x, y, z, sp) {
 }
 
 function onDeath(g, sp) {
-  if (sp.kind === 'warden') { sp.alive = false; if (!sp.role || sp.id === 'warden') g.wardenKilled = true; g.elitesKilled++; dropChest(g, sp.x, sp.y, sp.z, sp); g.event('banner', sp.role ? sp.name + ' falls.' : 'The Sealed Warden falls.'); if (sp.role === 'bossB') g.bDown = true; }
+  if (sp.kind === 'warden') { sp.alive = false; credit(g, sp); if (!sp.role || sp.id === 'warden') g.wardenKilled = true; g.elitesKilled++; dropChest(g, sp.x, sp.y, sp.z, sp); g.event('banner', sp.role ? sp.name + ' falls.' : 'The Sealed Warden falls.'); if (sp.role === 'bossB') g.bDown = true; }
   else if (sp.kind === 'idol') {
     const tw = sp.twin;
     if (tw.dead) {                                                 // the other is already waiting: both down in time
-      sp.alive = false; tw.alive = false; tw.dead = false; g.elitesKilled++; dropChest(g, sp.x, sp.y, sp.z, sp);
+      sp.alive = false; tw.alive = false; tw.dead = false; g.elitesKilled++; credit(g, sp); dropChest(g, sp.x, sp.y, sp.z, sp);
       g.event('banner', 'Both idols are broken.'); if (sp.role === 'bossB') g.bDown = true;
     } else if (!tw.alive) { sp.alive = false; }
     else { sp.dead = true; sp.hp = 0; sp.reviveT = SPECIALS.idol.reviveSeconds; g.event('banner', 'Fell the other twin within 10 seconds.'); }
   } else if (sp.kind === 'pharaoh' && sp.role === 'gate') {
-    sp.alive = false; g.boss.state = 'dead'; g.elitesKilled++; g.gateDown = sp; g.event('banner', sp.name + ' falls.');
+    sp.alive = false; g.boss.state = 'dead'; g.elitesKilled++; g.gateDown = sp; credit(g, sp); g.event('banner', sp.name + ' falls.');
   } else if (sp.kind === 'pharaoh') {
-    sp.alive = false; g.boss.state = 'dead'; g.elitesKilled++; g.bossKilled = true; g.won = true;
+    sp.alive = false; g.boss.state = 'dead'; g.elitesKilled++; credit(g, sp); g.bossKilled = true; g.won = true;
     g.event('banner', 'The Hollow Pharaoh falls. VICTORY. Overtime goes on: pause to end the run.');
     g.en.alive.fill(0);
   }

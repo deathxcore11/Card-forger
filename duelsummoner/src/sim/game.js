@@ -3,6 +3,8 @@ import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
 import { makeStreams } from './rng.js';
+import { hashHex } from './hash.js';
+import { SCORE } from '../data/tuning.js';
 import { initRun, updateStages, descentTick, finalChoice, xpScale } from './stages.js';
 import { quantise, decode, emptyRecord, MENU_TAKE, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from './input.js';
 import { Flow } from './flow.js';
@@ -21,6 +23,8 @@ import { runResults } from './results.js';
 
 const STEP = 1 / 60;
 
+import { BUILD_VERSION } from './results.js';
+const BUILD_VERSION_REPLAY = BUILD_VERSION;
 export class Game {
   constructor(seed = 1, opts = {}) {
     this.opts = opts;
@@ -69,7 +73,7 @@ export class Game {
     this.flow.valid = false; this.evHead = this.evTail = 0;
     this.tickN = 0; this.levelUps = 0; this.trapsFired = 0; this.trapsSet = 0; this.maxMonsters = 0; this.gateOpenedAt = -1; this.godFusions = 0; this.secretFusions = 0;
     this.fusionIds = []; this.elementsUsed = 0; this.cardsPicked = []; this.fullForms = [];
-    this.upgHist = [];
+    this.upgHist = []; this.roleKills = { elite: 0, bossA: 0, bossB: 0, gate: 0, other: 0 }; this.callN = 0; this.endAt = -1; this.runs = this.runs || new Int32Array(6 * 4096); this.runN = 0;
     this.srcNames = ['other']; this.curSrc = 0; this.dealtLog = {}; this.fusionGuard = null;
     this.chestsOpenedTotal = 0; this.stagesCleared = 0; this.stageFacts = []; this.swiftChips = 0; this.duelOn = false; this.stagePrompt = ''; this.bDown = false; this.gateDown = null; this.desc = null; this.circle = null; this.altar = null; this.heat = 1;
     initRun(this);                                                  // opts.mode: 'classic' (default, one 8:00 stage), 'run' (three stages) or 'quick' (Quick Duel)
@@ -101,6 +105,7 @@ export class Game {
   // THE entry point: one fixed 1/60 s tick from one quantised input record. No variable time ever reaches the rules.
   // While an offer (level-up, chest, Altar, shop, shrine) is open the world is frozen and the tick only reads rec.menu.
   tick(rec) {
+    this._record(rec);
     if (this.tape) this.tape.push([rec.mx, rec.mz, rec.yaw, rec.buttons, rec.menu]);
     if (this.offer) { this._menu(rec.menu); return; }
     if (this.over) return;
@@ -112,6 +117,26 @@ export class Game {
     else if (code >= 30 && code < 50) this.choose(code - 30);
     else if (code === MENU_REDRAW) this.redraw(); else if (code === MENU_PASS) this.pass(); else if (code === MENU_LEAVE) this.leave();
     else if (code > MENU_BANISH && code <= MENU_BANISH + 4) this.banish(code - MENU_BANISH - 1);
+  }
+  // Every tick() call is kept as a run-length record: [count, mx, mz, yaw, buttons, menu] per run of identical input. This is the replay.
+  _record(rec) {
+    this.callN++;
+    let r = this.runs, n = this.runN;
+    if (n > 0 && r[n - 5] === rec.mx && r[n - 4] === rec.mz && r[n - 3] === rec.yaw && r[n - 2] === rec.buttons && r[n - 1] === (rec.menu | 0)) { r[n - 6]++; return; }
+    if (n + 6 > r.length) { const g2 = new Int32Array(r.length * 2); g2.set(r); this.runs = r = g2; }
+    r[n] = 1; r[n + 1] = rec.mx; r[n + 2] = rec.mz; r[n + 3] = rec.yaw; r[n + 4] = rec.buttons; r[n + 5] = rec.menu | 0; this.runN = n + 6;
+  }
+  // The verifiable record of this run: how to rebuild it, the input, and what it should end as.
+  replayRaw() {
+    const o = this.opts;
+    return { v: 1, version: BUILD_VERSION_REPLAY, seed: this.seed, duelist: this.duelist, mode: this.mode, difficulty: this.difficulty, world: o.world === undefined ? null : o.world, offers: o.offers !== false, meta: o.meta || null,
+      ticks: this.callN, runs: this.runs.slice(0, this.runN), ended: !!this.ended, endAt: this.ended ? this.endAt : -1, hash: hashHex(this), score: this.score() };
+  }
+  score() {
+    const S = SCORE, R = this.roleKills;
+    const sum = this.kills * S.kill + R.elite * S.elite + R.bossA * S.bossA + R.bossB * S.bossB + R.gate * S.gate + R.other * S.other + this.stagesCleared * S.stage +
+      Math.floor(this.overtimeSeconds()) * S.overtimeSec + this.fusions * S.fusion + this.godFusions * S.god + this.secretFusions * S.secret;
+    return Math.floor(sum * Math.round(this.diff.score * 100) / 100);
   }
   startTape() { this.tape = []; return this.tape; }
   // For tests, bots and tools: dt seconds as whole ticks of the same fixed step. cmd may be a record or a { f, r, yaw, jump, dash, slide, use } command.
@@ -242,13 +267,14 @@ export class Game {
 
   results(ctx) { return runResults(this, ctx); }
   overtimeSeconds() { return this.mode !== 'classic' ? (this.duelOn ? this.otT : 0) : Math.max(0, this.t - RUN.overtime.from); }
-  endRun() { if (!this.over) { this.over = true; this.ended = true; } }
+  endRun() { if (!this.over) { this.over = true; this.ended = true; this.endAt = this.callN; } }
 
   starChips() {
     const S = RUN.starChips;
     return Math.floor(this.kills / S.perKills) + S.perElite * (this.elitesKilled - (this.bossKilled ? 1 : 0)) + (this.bossKilled ? S.boss : 0) + (this.mode === 'classic' && this.boss.early && this.bossKilled ? RUN.gate.earlyStarChips : 0) + (this.swiftChips || 0);
   }
 }
+
 
 
 
