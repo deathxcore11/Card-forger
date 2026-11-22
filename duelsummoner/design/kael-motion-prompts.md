@@ -60,3 +60,11 @@ The rules for every clip:
 22. **dodge_roll** (0.7 s): A young man does a quick forward shoulder roll and comes back up to a crouched ready stance, on the spot.
 23. **taunt** (1.5 s): A young man points straight forward at an enemy, then beckons with two fingers, "come on", in place.
 24. **cast_spell** (0.9 s): A young man holds a glowing card up in front of him with both hands, pushes it forward with a strong thrust, then recovers, in place.
+
+## Notes from the loader test (22 Nov 2026, built into the game)
+
+- The game now loads `assets/models/duelist-kael-anim.glb` (put the file in `duelsummoner\assets\models`), plays it in place and picks the clip from what the sim says. It uses exactly the 24 names above. A clip that does not exist yet is skipped or replaced by a stand-in (strafe_left uses Quad_Jump_Left, air_jump uses Jump_with_Arms_and_Legs_Open, dash and slide use Run_Jump_and_Roll). So keep those two clips in the file until their real versions are made.
+- Root motion is removed in code: Walk_Backward (1 m), Back_Jump (2 m), Quad_Jump_Left (1.2 m), Run_Jump_and_Roll (3.6 m) and the death clips all drifted, and the game cancels the sideways and forward travel. Asking for "in place" still gives cleaner results.
+- throw_card plays on the upper body only (spine, shoulders, arms, head) while the legs keep running, so it must not move the hips or legs.
+- The sim turns the duelist to face where they move, so strafe and backpedal are only used when we add aiming or lock-on. Make them, but they come later in the priority order.
+- Texture: the file's 3.3 MB picture is shrunk to 512 px when loaded. Delete unused clips to keep the GLB small.

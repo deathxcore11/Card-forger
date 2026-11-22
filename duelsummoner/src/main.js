@@ -26,6 +26,7 @@ import { DIFF_CHIPS, DUELIST_INFO } from './data/progress.js';
 import { packReplay, deflateInBrowser } from './core/replay.js';
 import { boardUrl, sendAndFollow } from './core/board.js';
 import { TouchControls } from './core/touch.js';
+import { loadRig } from './view/rig.js';
 import { nearestProp } from './sim/world.js';
 import { DIFFICULTY } from './data/stages.js';
 import { KIND_LIST } from './data/enemies.js';
@@ -54,6 +55,7 @@ const assets = {
   wyvern: await loadModel('assets/models/ember-wyvern.ewv.b64'), hatchling: await loadModel('assets/models/cinder-hatchling.ewv.b64'),
   tyrant: await loadModel('assets/models/twinflare-tyrant.ewv.b64'), apprentice: await loadModel('assets/models/rune-apprentice.ewv.b64')
 };
+assets.kael = await loadRig('assets/models/duelist-kael-anim.glb');         // the skinned, animated duelist; the robe stand-in is used when it is missing
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 let sceneryGroup = null, mapMesh = null, viewMapKey = '';
@@ -173,6 +175,7 @@ function countUp(id, to) {
 }
 const KCOL = KIND_LIST.map(k => k.color), PCOL = [0xb48cff, 0xf0c040, 0xff5a7a];
 function onEvent(type, a, b, c, data) {
+  if (actors.rig) { if (type === 'hurt') actors.rig.once('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'banner') showBanner(data);
   else if (type === 'offer') { setMode('offer'); showOffer(game, menu); }
   else if (type === 'levelup') { showBanner('Level ' + a); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }

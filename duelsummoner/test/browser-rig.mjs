@@ -1,0 +1,10 @@
+﻿import { launch, wait } from './cdp.mjs';
+const b = await launch({ out: process.argv[2], query: '?debug&scenery=0' });
+await b.evalIn(`(async()=>{ const D = window.__ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 1200)); D.game.god = true; D.game.spawnAcc = -1e9; return 1; })()`);
+const R = {};
+R.rig = await b.evalIn(`(()=>{ const r = __ds.actors.rig; if (!r) return null; return { clips: [...r.clips.keys()], scale: r.scale, missing: [...r.missing] }; })()`);
+const state = async name => { await b.shot(name); return b.evalIn(`(()=>{ const r = __ds.actors.rig; return r ? { cur: r.cur, missing: [...r.missing].slice(0, 12) } : null; })()`); };
+R.idle = await state('rig-idle');
+await b.evalIn(`window.__ds.input.keys.KeyW = true; 1`); await wait(900); R.run = await state('rig-run'); await b.evalIn(`window.__ds.input.keys.Space = true; 1`); await wait(200); R.jump = await state('rig-jump'); await b.evalIn(`window.__ds.input.keys.Space = false; 1`);
+await wait(1200); await b.evalIn(`window.__ds.input.keys.ShiftLeft = true; 1`); await wait(120); R.dash = await state('rig-dash'); await b.evalIn(`window.__ds.input.keys.ShiftLeft = false; window.__ds.input.keys.KeyW = false; 1`);
+R.errors = await b.evalIn('window.__errs.slice(0,3)'); console.log(JSON.stringify(R, null, 1)); b.close(); setTimeout(() => process.exit(0), 300);

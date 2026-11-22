@@ -5,6 +5,7 @@ import { KIND_LIST } from '../data/enemies.js';
 import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { MAP } from '../data/map.js';
 import { SCALE, summonSize } from '../data/scale.js';
+import { DuelistRig } from './rig.js';
 
 const T = window.THREE;
 const lambert = (color, extra) => new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {}));
@@ -85,6 +86,8 @@ export class Actors {
     this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;
     this._white = new T.Color(0x666666); this._black = new T.Color(0x000000);
     this.player = playerMesh(); scene.add(this.player);
+    this.rig = null;                                                          // the skinned duelist, when its GLB is present (assets/models/duelist-kael-anim.glb)
+    if (assets && assets.kael) { this.rig = new DuelistRig(assets.kael, { yaw: Number((/[?&]rigyaw=([-\d.]+)/.exec(location.search) || [])[1]) || 0 }); scene.add(this.rig.group); this.player.visible = false; }
     this.d = new T.Object3D(); this.col = new T.Color(); this.white = new T.Color(0xffffff);
     this._plain = new T.Color(1, 1, 1); this._blue = new T.Color(0.55, 0.75, 1.6); this._gold = new T.Color(1.6, 1.3, 0.5);
     this.monsters = new Map(); this.specials = new Map(); this.chests = new Map();
@@ -240,6 +243,11 @@ export class Actors {
     this.player.position.set(px, py, pz); this.player.rotation.y = turnLerp(p.pface, p.face, a);
     this.player.userData.body.scale.y = p.sliding ? 0.55 : 1; this.player.rotation.x = p.sliding ? -0.5 : 0;
     this.player.visible = !(g.over && !g.won); this.player.scale.setScalar(g.oaths.small ? 0.5 : 1);                 // Small Oath: half size
+    if (this.rig) {
+      const R = this.rig, ct = g.cardT, thrown = this._ct !== undefined && ct > this._ct + 0.01; this._ct = ct;
+      R.group.position.copy(this.player.position); R.group.rotation.y = this.player.rotation.y + R.yaw; R.group.scale.setScalar(g.oaths.small ? 0.5 : 1); this.player.visible = false;
+      R.update(p, g, dt, thrown);
+    }
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);
