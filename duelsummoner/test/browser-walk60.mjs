@@ -1,6 +1,6 @@
 ﻿import { launch, wait } from './cdp.mjs';
 const out = process.argv[2], R = [];
-const SEEDS = [1, 4242, 31337];
+const SEEDS = [4242, 31337, 1];
 for (let run = 0; run < 3; run++) {
   const b = await launch({ out, query: '?debug&seed=' + SEEDS[run] });
   await b.evalIn(`(async()=>{ const D = window.__ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 1500)); D.game.god = true; return 1; })()`);
@@ -21,5 +21,7 @@ for (let run = 0; run < 3; run++) {
   R.push(JSON.parse(r)); await b.shot('walk_seed' + (run + 1)); R[run].errors = await b.evalIn('window.__errs.slice(0,2)'); b.close(); await wait(1500);
 }
 console.log(JSON.stringify(R, null, 1)); setTimeout(() => process.exit(0), 300);
+
+
 
 

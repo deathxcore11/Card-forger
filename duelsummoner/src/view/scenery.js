@@ -31,6 +31,12 @@ const rgb = h => [((h >> 16) & 255) / 255, ((h >> 8) & 255) / 255, (h & 255) / 2
 // stand-ins, each about one metre scale unit; instance scale sets the real size. Colours are the Stage 1 palette: light and bright, never dark.
 // two tree species, both built 10 m tall at scale 1: the parasol (variants 0 and 1, scale 0.9-1.1, a wide flat crown) and the blob (variants 2 and 3, scale 1.3-1.6, 13-16 m). The trunk is bare to about 5.6 m and upright.
 function trunkGeo(theme, v) { const g = new Geo(); g.prism(0, 0, 0, v < 2 ? 6.4 : 5.6, 0.55, 0.32, 8, rgb(theme.bark), 0); return g.geometry(); }
+// one geometry from a trunk and a canopy, with a per-vertex part (0 trunk, 1 canopy) so the two fade on their own
+function treeGeo(theme, v) {
+  const a = trunkGeo(theme, v), b = canopyGeo(theme, v), na = a.attributes.position.count, nb = b.attributes.position.count, g = new T.BufferGeometry(), cat = (n1, n2, k) => { const o = new Float32Array((n1.length + n2.length)); o.set(n1); o.set(n2, n1.length); return o; };
+  g.setAttribute('position', new T.BufferAttribute(cat(a.attributes.position.array, b.attributes.position.array), 3)); g.setAttribute('normal', new T.BufferAttribute(cat(a.attributes.normal.array, b.attributes.normal.array), 3)); g.setAttribute('color', new T.BufferAttribute(cat(a.attributes.color.array, b.attributes.color.array), 3));
+  const part = new Float32Array(na + nb); part.fill(1, na); g.setAttribute('aPart', new T.BufferAttribute(part, 1)); return g;
+}
 function canopyGeo(theme, v) {
   const g = new Geo(), sage = theme.leaf;
   const blobs = v < 2 ? [[0, 7.7, 0, 4.6, 1.9, 4.6], [-3.4, 7.3, 1.0, 3.0, 1.6, 3.0], [3.2, 7.4, -1.2, 3.2, 1.7, 3.2], [0.8, 7.2, 3.4, 2.8, 1.6, 2.8]]
@@ -68,11 +74,11 @@ export function buildScenery(map, stageIndex, models) {
   const kinds = [], add = (geo, list, mat, colored, canopy, v) => { if (list.length) kinds.push({ geo, list, mat, colored, canopy, v }); };
   const mat0 = new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }), mat = mat0, matBoth = new T.MeshLambertMaterial({ vertexColors: true, side: T.DoubleSide });      // blades and petals are single triangles: seen from both sides
   const canopyMat = mat0.clone(); canopyMat.onBeforeCompile = sh => {                       // canopies dither out (a screen-door fade, no sorting) when one hangs between the camera and the duelist
-    sh.vertexShader = sh.vertexShader.replace('void main() {', 'attribute float aFade; varying float vFade;\nvoid main() {').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFade = aFade;');
+    sh.vertexShader = sh.vertexShader.replace('void main() {', 'attribute float aFadeT; attribute float aFadeC; attribute float aPart; varying float vFade;\nvoid main() {').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFade = aPart > 0.5 ? aFadeC : aFadeT;');
     sh.fragmentShader = sh.fragmentShader.replace('void main() {', 'varying float vFade;\nvoid main() {\n  if (vFade > 0.01 && fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) < vFade) discard;');
   };
-  for (let v = 0; v < 4; v++) { add(trunkGeo(theme, v), S.trees[v], canopyMat, false, 2, v); add(canopyGeo(theme, v), S.trees[v], canopyMat, false, 1, v); }
-  for (let v = 0; v < 3; v++) add(rockGeo(theme, v), S.rocks[v], mat);
+  for (let v = 0; v < 4; v++) add(treeGeo(theme, v), S.trees[v], canopyMat, false, 3, v);       // trunk and canopy are one mesh per variant (part 0 and part 1), with separate fade values
+  { const rg = rockGeo(theme, 0), all = [].concat(S.rocks[0], S.rocks[1], S.rocks[2]); add(rg, all, mat); }       // one shared boulder shape; size, squash and turn make the variety
   const fadeOut = (m, nearD, farD) => { const c = m.clone(); c.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n#ifdef USE_INSTANCING\n { float dd_ = distance((modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz, cameraPosition); if (dd_ < ' + nearD.toFixed(1) + ' || dd_ > ' + farD.toFixed(1) + ') transformed *= 0.0; }\n#endif'); }; return c; };       // small scatter collapses in the vertex shader: nothing within 4 m of the camera, and a far cut-off, with no per-frame upload
   add(bushGeo(theme), S.bushes, fadeOut(mat, 0, 90));
   if (theme.special) add(theme.special === 'crystal' ? crystalGeo(theme) : mushroomGeo(theme), S.special, mat);
@@ -91,7 +97,7 @@ export function buildScenery(map, stageIndex, models) {
     const mesh = new T.InstancedMesh(k.geo, k.mat, k.list.length), m = new T.Matrix4(), q = new T.Quaternion(), s = new T.Vector3(), p = new T.Vector3(), up = new T.Vector3(0, 1, 0), c = new T.Color();
     k.list.forEach((it, i) => { q.setFromAxisAngle(up, it[4]); s.set(it[3], it[6] || it[3], it[3]); p.set(it[0], it[1], it[2]); m.compose(p, q, s); mesh.setMatrixAt(i, m); if (k.colored) c.setHex(it[5]); else c.setScalar(it[5]); mesh.setColorAt(i, c); });
     mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; mesh.frustumCulled = false; group.add(mesh);
-    if (k.canopy) { const fade = new T.InstancedBufferAttribute(new Float32Array(k.list.length), 1); fade.setUsage(T.DynamicDrawUsage); k.geo.setAttribute('aFade', fade); fades.push({ attr: fade, list: k.list, trunk: k.canopy === 2, rr: k.v < 2 ? 4.8 : 3.7, th: k.v < 2 ? 6.4 : 5.6 }); }
+    if (k.canopy) { const mk = name => { const fa = new T.InstancedBufferAttribute(new Float32Array(k.list.length), 1); fa.setUsage(T.DynamicDrawUsage); k.geo.setAttribute(name, fa); return fa; }; fades.push({ attr: mk('aFadeT'), list: k.list, trunk: true, rr: k.v < 2 ? 4.8 : 3.7, th: k.v < 2 ? 6.4 : 5.6 }, { attr: mk('aFadeC'), list: k.list, trunk: false, rr: k.v < 2 ? 4.8 : 3.7, th: k.v < 2 ? 6.4 : 5.6 }); }
   }
   // occluders: every frame, a canopy whose crown sits on the line from the camera to the duelist (or that the camera is inside) fades to 15%; the others fade back in
   group.userData.fade = (cam, p, dt) => {

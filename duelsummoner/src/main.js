@@ -55,8 +55,8 @@ let fovK = 1;
 function fitFov() { const a = Math.max(0.3, camera.aspect || 1.78); baseV = Math.max(64, Math.min(88, 2 * Math.atan(Math.tan(fovSetting * Math.PI / 360) / a) * 180 / Math.PI)); fovK = Math.tan(67.7 * Math.PI / 360) / Math.tan(baseV * Math.PI / 360);       // vertical angle held to 64-88; the camera arm scales with it so the duelist keeps the same share of the screen on every screen shape
   camera.fov = baseV; camera.updateProjectionMatrix(); }
 // the look: only the sun is warm; the sky light is cool and its bounce from the ground is warm and dark, so up-faces land near x1.0 R, x0.97 G, x0.90 B
-scene.add(new T.HemisphereLight(0xdfe6f0, 0x6a5038, 0.6));
-const sun = new T.DirectionalLight(0xffe2b0, 0.6); sun.position.set(60, 90, 30); scene.add(sun);
+scene.add(new T.HemisphereLight(0xdfe6f0, 0x6a5038, 0.74));
+const sun = new T.DirectionalLight(0xffe2b0, 0.66); sun.position.set(60, 90, 30); scene.add(sun);
 
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;

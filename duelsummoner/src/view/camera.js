@@ -11,7 +11,7 @@ const ARM = Math.sqrt(C.back * C.back + C.up * C.up), BASE = Math.atan2(C.up, C.
 function hitProp(col, x, y, z) {
   if (!col) return false;
   const i0 = Math.floor((x - 3) / col.CELL), i1 = Math.floor((x + 3) / col.CELL), j0 = Math.floor((z - 3) / col.CELL), j1 = Math.floor((z + 3) / col.CELL);
-  for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const a = col.grid.get(i * 4096 + j); if (!a) continue; for (let n = 0; n < a.length; n++) { const c = a[n], dx = x - c.x, dz = z - c.z, rr = c.r + 0.45; if (dx * dx + dz * dz < rr * rr && y < c.top) return true; } }
+  for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const a = col.grid.get(i * 4096 + j); if (!a) continue; for (let n = 0; n < a.length; n++) { const c = a[n], dx = x - c.x, dz = z - c.z, rr = c.r + 0.85; if (dx * dx + dz * dz < rr * rr && y < c.top) return true; } }
   return false;
 }
 
@@ -34,7 +34,7 @@ export class ChaseCamera {
     const tx = px - fx * back, ty = py + up, tz = pz - fz * back;
     // march from the pivot toward the wanted position; stop before the first solid sample
     let free = 1;
-    const steps = 28;
+    const steps = 40;
     for (let i = 1; i <= steps; i++) {
       const t = i / steps, sx = px + (tx - px) * t, sy = py + (ty - py) * t, sz = pz + (tz - pz) * t;
       if (heightAt(sx, sz) > sy - 0.2 || hitProp(this.cols, sx, sy, sz)) { free = (i - 1) / steps; break; }
@@ -59,4 +59,5 @@ export class ChaseCamera {
     this.pos.x = x; this.pos.y = y; this.pos.z = z;
   }
 }
+
 

@@ -18,6 +18,11 @@ function column(k, x, z, r, rng, toppled) {
   const th = rng.int(360), dx = cos(th * 3.141592653589793 / 180), dz = sin(th * 3.141592653589793 / 180);
   for (let i = 0; i < 3; i++) { const d = r + 2.0 + i * 3.1, cx = x + dx * d, cz = z + dz * d; k.box(cx - 1.4, cz - 0.65, cx + 1.4, cz + 0.65, 1.3, STONE, { rot: th }); }
 }
+// A leaning card: a 3 x 4.5 x 0.4 m stone card tilted back 15 to 35 degrees (drawn by the view as a tilted slab) over a plain vertical slab for the collider, which rises straight from the ground.
+function leanCard(k, x, z, rot, rng) {
+  k.box(x - 1.5, z - 0.3, x + 1.5, z + 0.3, 4.2, LSTONE, { rot });
+  const [px, pz] = k.pt(x, z); k.push({ t: 'tilt', x: px, z: pz, w: 3, th: 0.4, hgt: 4.5, yaw: -(rot + 90 * k.rot), tilt: 15 + rng.int(21), c: LSTONE, deco: true });
+}
 // seeded 25 to 40 percent of a ring or a scatter are toppled, and two neighbours are never both toppled
 const toppleFlags = (n, rng) => { const f = []; for (let i = 0; i < n; i++) f.push(!(f[i - 1]) && !(i === n - 1 && f[0]) && rng.int(100) < 36); if (!f.some(Boolean)) f[1] = true; return f; };
 
@@ -136,7 +141,7 @@ export const KITS = {
     role: 'filler', name: 'Card Graveyard', plan: () => ({ r: 30 }),
     build(k, p, rng) {
       const slots = []; const spots = [[0, 0], [14, 4], [-14, 5], [4, -15], [-6, 16], [17, -13]];
-      spots.forEach((q, i) => { const rot = rng.int(180); k.box(q[0] - 4.5, q[1] - 6.5, q[0] + 4.5, q[1] + 6.5, 1.4, 0x9c8a6e, { rot }); k.box(q[0] - 3.7, q[1] - 5.7, q[0] + 3.7, q[1] + 5.7, 1.46, 0xd8b24a, { rot, y0: 1.4, deco: true }); if (i === 2) slots.push({ tag: 'reward_port', x: q[0], z: q[1], y: 1.4 }); });
+      spots.forEach((q, i) => { const rot = rng.int(180); if (i % 2) { leanCard(k, q[0], q[1], rot, rng); return; } k.box(q[0] - 4.5, q[1] - 6.5, q[0] + 4.5, q[1] + 6.5, 1.4, 0x9c8a6e, { rot }); k.box(q[0] - 3.7, q[1] - 5.7, q[0] + 3.7, q[1] + 5.7, 1.46, 0xd8b24a, { rot, y0: 1.4, deco: true }); if (i === 2) slots.push({ tag: 'reward_port', x: q[0], z: q[1], y: 1.4 }); });
       return { slots };
     }
   },
