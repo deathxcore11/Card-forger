@@ -2091,10 +2091,11 @@ function psCodex() {
   const heard = BOSSES.flat().filter(b => P.seen.includes('memory:' + b.id));
   const rum = rumours() ? `<p><b class="lb g">RUMOURS · ${heard.length} OF ${BOSSES.flat().length} MEMORIES HEARD</b></p>${heard.map(b => `<p><b class="lb">${esc(b.name.toUpperCase())}</b> ${esc(SCENES['memory:' + b.id].lines[0])}</p>`).join('') || '<p class="d">Nothing yet. A guardian remembers something as it falls.</p>'}` : '';
   // Its pages mix three steps: lines of 16 pixels, the filter plaques on rows of 24 and the cards on rows of 64. A give
-  // before the plaques and one before the cards (scrollPlan) open as far as the box needs to come to rest on whole lines,
-  // rows and cards together, so it opens at its count and every line of it can be read.
+  // before the cards (scrollPlan) opens as far as the box needs to come to rest on whole lines, rows and cards together,
+  // so it opens at its count and every line of it can be read. The plaques keep 4 pixels under the words over them, the
+  // same in every view: a give before them opened by a different count in each view and could leave them on the words.
   const give = most => `<i class="scgive" data-step="8" data-most="${most}"></i>`;
-  const body = `<p>${found.size} of ${X.list.length} results found, ${G.known.size} recipes written. A page you have found shows why the meld works, so you can make it again from other cards.</p>${rum}${give(16)}<div class="row2" style="margin:0 0 4px">${filt}</div>${give(56)}<div class="row2" style="margin:0 0 4px">${tiles || '<p class="d">Nothing here yet. Meld two monsters in a duel to write the first page.</p>'}</div>${total > 120 ? `<p class="d">Showing 120 of ${total}. Pick a Type to narrow it.</p>` : ''}<p><b class="lb g">RECORD</b></p><p>Runs ${P.runs}. Clears ${P.clears}. Duels won ${P.duelWins}. Guardians beaten ${P.bossWins}. Memories earned ${P.earned}.</p>`;
+  const body = `<p>${found.size} of ${X.list.length} results found, ${G.known.size} recipes written. A page you have found shows why the meld works, so you can make it again from other cards.</p>${rum}<div class="row2" style="margin:4px 0">${filt}</div>${give(56)}<div class="row2" style="margin:0 0 4px">${tiles || '<p class="d">Nothing here yet. Meld two monsters in a duel to write the first page.</p>'}</div>${total > 120 ? `<p class="d">Showing 120 of ${total}. Pick a Type to narrow it.</p>` : ''}<p><b class="lb g">RECORD</b></p><p>Runs ${P.runs}. Clears ${P.clears}. Duels won ${P.duelWins}. Guardians beaten ${P.bossWins}. Memories earned ${P.earned}.</p>`;
   let page = '';
   if (G.cx.open != null) { const R = X.res.get(G.cx.open); if (R) { const c = card(R.id), recs = found.get(R.id) || [], known = recs.length > 0; if (known) convertSheets(96);
     const hint = R.kind === 'printed' ? `A printed fusion of ${R.mats.map(m => 'a ' + card(m).type).join(' and ')}.` : `A ${c.attr} ${c.type}. Some ${c.type} melded with some ${c.attr} monster makes it. Which ones is for you to find.`;
@@ -2370,7 +2371,10 @@ function fitScroll(sc, want) {
   const P = scrollPlan(sc, max);
   sc.querySelectorAll('.scgive').forEach((g, i) => { g.style.height = (P.o[i] || 0) + 'px'; });
   sc.style.height = P.h + 'px';
-  if (P.pad) { const e = document.createElement('i'); e.className = 'scend'; e.style.height = P.pad + 'px'; sc.appendChild(e); }
+  // The blank starts where the pages' flow ends, which can lie a few pixels above the foot the browser gave the pages
+  // before (a line's letters reach under the line), so it is made as deep again as the last rest still needs.
+  if (P.pad) { const e = document.createElement('i'); e.className = 'scend'; e.style.height = P.pad + 'px'; sc.appendChild(e);
+    const short = P.R[P.R.length - 1] - (sc.scrollHeight - sc.clientHeight); if (short > 0) e.style.height = P.pad + short + 'px'; }
   // the window closes up: what lies under the box moves up to FOOT_GAP under its foot, never over anything left above
   const movers = [...win.querySelectorAll(':scope > [data-t0]')], rest = [...win.children].filter(e => e !== sc && !e.dataset.t0 && !e.classList.contains('scm') && !e.classList.contains('scl') && getComputedStyle(e).position === 'absolute');
   if (movers.length) {

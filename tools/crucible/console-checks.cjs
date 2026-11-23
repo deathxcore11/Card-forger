@@ -342,6 +342,13 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
             if (my < sy + sh + 1) out.push(`${name(sc)}: its more marker at ${my} touches the box's foot at ${sy + sh}`);
             for (const p of box.querySelectorAll('.pq, .lb')) { if (sc.contains(p) || !vis(p)) continue; const [px, py, pw] = fr(p); if (px < mx + mw && mx < px + pw && py >= my && py < lowest + 1) out.push(`${name(sc)}: its more marker reaches row ${lowest - 1} as it bobs, touching "${p.textContent.trim().slice(0, 20)}" at ${py}`); }
           }
+          // a row of plaques in the pages keeps 4 pixels under the words over it
+          for (const row of sc.querySelectorAll('.row2')) {
+            if (!row.querySelector('.pq') || !row.offsetHeight) continue;
+            let p = row.previousElementSibling; while (p && !p.offsetHeight) p = p.previousElementSibling;
+            const gap = p && p.textContent.trim() ? row.offsetTop - (p.offsetTop + p.offsetHeight) : 99;
+            if (gap < 4) out.push(`${name(sc)}: its plaques "${row.textContent.trim().slice(0, 20)}" stand ${gap} pixels under the words over them (4 at least)`);
+          }
         }
         // hammer: one lit plaque in each layer (the screen, and each window or scene over it)
         for (const L of [app, ...app.querySelectorAll('.mw, .story')]) {
