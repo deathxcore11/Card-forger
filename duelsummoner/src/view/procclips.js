@@ -17,6 +17,9 @@ export function boneMap(root) {
   const byNorm = new Map(); root.traverse(o => { if (o.isBone) byNorm.set(norm(o.name), o); });
   const want = [...AIM_BONES, 'Hips', 'head_end', 'headfront', 'LeftHandMiddle1', 'RightHandMiddle1', 'LeftToeBase', 'RightToeBase'], map = {};
   for (const c of want) { const keys = ALIAS[c] || [norm(c)]; for (const k of keys) { const o = byNorm.get(k); if (o) { map[c] = o; break; } } }
+  // some rigs number the spine from the top (Kael: Spine02 is the lowest, Spine the highest), so the three spine bones are assigned by depth in the hierarchy, lowest first
+  const sp = [...byNorm.entries()].filter(([k]) => /^spine(0?[0-2])?$/.test(k)).map(([, o]) => o), depth = o => { let d = 0; for (let q = o; q.parent; q = q.parent) d++; return d; };
+  if (sp.length === 3) { sp.sort((a, b) => depth(a) - depth(b)); map.Spine = sp[0]; map.Spine01 = sp[1]; map.Spine02 = sp[2]; }
   return map;
 }
 

@@ -1,4 +1,4 @@
-﻿// All tuning numbers for the simulation live here. Nothing in src/sim hard-codes a rule value.
+// All tuning numbers for the simulation live here. Nothing in src/sim hard-codes a rule value.
 export const CFG = {
   gravity: 28,
   player: {
@@ -31,3 +31,6 @@ export const CFG = {
 };
 
 
+
+// Ley Threads: the one place their colour lives. A near-white core inside a violet halo with a thin dark under-stroke so it reads on bright sand (red stays reserved for enemy attacks).
+export const LEY = { core: 0xf4ecff, halo: 0xb26bff, under: 0x2e1a52, corePx: 1, haloPx: 2.2, underPx: 3.2, maxAlpha: 0.6 };

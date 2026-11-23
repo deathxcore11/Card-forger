@@ -145,7 +145,7 @@ export class DuelistRig {
     const want = locomotion(p, g, { landT: pr.landT, landHeavy: pr.landHeavy, airJump: pr.airJump > 0 });
     const sp = Math.hypot(p.vx || 0, p.vz || 0), locoNow = LOCO.includes(want.clip) && this.has('idle_cards') && this.has('walk') && this.has('run');
     this._loco(sp, dt, locoNow, this.upperT > 0);
-    if (locoNow) { this.cur = 'loco'; this.mixer.update(dt); return; }                      // the blend plays the legs and the torso; the throw layer (if any) plays the arms
+    if (locoNow) { if (this.curAct) { this.curAct.fadeOut(0.15); this.curAct = null; } this.cur = 'loco'; this.mixer.update(dt); return; }       // a finished one-shot fades out when running resumes, so it no longer blends half and half with the run                      // the blend plays the legs and the torso; the throw layer (if any) plays the arms
     const part = this.upperT > 0 && hasThrow && !['defeat', 'victory', 'slide', 'dash'].includes(want.clip) ? 'lower' : 'all';
     const key = want.clip + '|' + part;
     if (key !== this.cur) { const prevAct = this.curAct; const act = this._play(want.clip, { loop: want.loop, speed: want.speed || 1, part, fade: FADE[want.clip] || FADE.default }); if (act) { if (prevAct && prevAct !== act) prevAct.fadeOut(0.15); this.curAct = act; this.cur = key; } }
@@ -158,7 +158,7 @@ export class DuelistRig {
     if (!this._sp.length || Math.abs(yaw) < 1e-3) return;
     this.group.updateMatrixWorld(true);
     const qy = new T.Quaternion(), qp = new T.Quaternion(), up = new T.Vector3(0, 1, 0), per = yaw / this._sp.length;
-    for (const b of this._sp) { b.parent.getWorldQuaternion(qp); qy.setFromAxisAngle(up, per); b.quaternion.premultiply(qp.clone().invert()).premultiply(qy).premultiply(qp); b.updateMatrixWorld(true); }
+    for (const b of this._sp) { b.parent.getWorldQuaternion(qp); qy.setFromAxisAngle(up, per); b.quaternion.premultiply(qp).premultiply(qy).premultiply(qp.clone().invert()); b.updateMatrixWorld(true); }
   }
   // idle, walk and run are one blend: weights follow ground speed and the walk and run share one foot phase, so feet do not slide and nothing switches.
   // Two sets (legs and hips, arms and torso) so a card throw can take the arms and torso while the legs keep running.
