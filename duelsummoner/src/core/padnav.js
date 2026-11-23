@@ -66,7 +66,7 @@ export function move(dir) {
   if (best) setRing(best); return cur;
 }
 // A: press the ringed control; on a slider or a list left and right change the value instead (see adjust)
-export function press() { if (cur && document.body.contains(cur) && visible(cur)) { const el = cur; if (el.tagName === 'INPUT' && el.type === 'range') return false; el.click(); return true; } return false; }
+export function press() { if (typeof document !== 'undefined') document.body.dataset.input = 'pad'; if (cur && document.body.contains(cur) && visible(cur)) { const el = cur; if (el.tagName === 'INPUT' && el.type === 'range') return false; el.click(); return true; } return false; }
 export function adjust(dir) {
   const el = cur; if (!el || !document.body.contains(el)) return false;
   if (el.tagName === 'INPUT' && el.type === 'range') { const st = +el.step || 1, v = +el.value + (dir === 'right' ? st : -st); el.value = Math.max(+el.min, Math.min(+el.max, v)); el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); return true; }

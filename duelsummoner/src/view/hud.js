@@ -1,5 +1,7 @@
 // The plain placeholder HUD (the real look is awaiting approval). Text and bar widths only change when values change.
 import { RAMP } from '../data/fxramp.js';
+import { keyWords } from '../ui/prompts.js';
+export const inputMode = () => document.body.classList.contains('touch') ? 'touch' : document.body.dataset.input === 'pad' ? 'pad' : 'keys';
 import { CFG } from '../data/config.js';
 import { clock } from '../core/util.js';
 import { MONSTERS, FUSIONS, SPELLS, TRAPS, FIELD_RULES, LEVELS, formOf } from '../data/cards.js';
@@ -104,12 +106,12 @@ export function drawHud(g, force) {
   slowT = slow;
   const ready = fusionsReady(g), f = $('fusion');
   f.style.display = ready.length ? 'block' : 'none';
-  if (ready.length) f.textContent = 'FUSION READY: ' + ready.map(id => FUSIONS[id].name).join(' or ') + '. Open a sealed chest (E).';
+  if (ready.length) f.textContent = 'FUSION READY: ' + ready.map(id => FUSIONS[id].name).join(' or ') + '. Open a sealed chest ({use}).'; if (ready.length) f.textContent = keyWords(f.textContent, inputMode());
   const boss = bossOf(g);
   $('boss').style.display = boss ? 'block' : 'none';
   if (boss) { $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%'; if ($('bossname').textContent !== boss.name) $('bossname').textContent = boss.name; }
   if (g.mode !== 'classic') { drawStrip(g); drawFrenzy(g); }
-  $('prompt').textContent = document.body.classList.contains('touch') ? g.prompt.replace(/^E: /, 'Tap: ') : g.prompt;
+  $('prompt').textContent = keyWords(g.prompt, inputMode());
   if (g.mode !== 'classic') { $('nextEvent').textContent = ''; const rh = riteLines(g); if ($('rite').innerHTML !== rh) $('rite').innerHTML = rh; } else $('nextEvent').textContent = nextEvent(g);
   const cnt = {}; for (const id of g.items) cnt[id] = (cnt[id] || 0) + 1;
   const items = Object.keys(cnt).map(id => ITEMS[id].name + (cnt[id] > 1 ? ' x' + cnt[id] : '')).concat(g.blessings.map(id => BLESSINGS[id].name.replace('Blessing of ', '') + '+'));
@@ -119,7 +121,7 @@ export function drawHud(g, force) {
   const st = [];
   if (idol.some(s => s.dead)) st.push('IDOL REVIVES IN ' + Math.max(0, idol.find(s => s.dead).reviveT).toFixed(1) + ' s');
   const w = g.sp.find(s => s.kind === 'warden' && s.alive); if (w) st.push('SEALED WARDEN ' + Math.ceil(w.hp) + ' HP (shield on its front)');
-  if (g.boss.state === 'idle' && g.t >= 360) st.push('ROYAL GATE OPEN (north, E to enter early)');
+  if (g.boss.state === 'idle' && g.t >= 360) st.push(keyWords('ROYAL GATE OPEN (north, {use} to enter early)', inputMode()));
   $('stats').textContent = st.join('\n'); $('stats').style.whiteSpace = 'pre';
 }
 

@@ -1,4 +1,4 @@
-﻿// The rules of a run. No drawing, no DOM: the view reads this state, tests and the run simulator drive it directly.
+// The rules of a run. No drawing, no DOM: the view reads this state, tests and the run simulator drive it directly.
 import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
@@ -221,7 +221,7 @@ export class Game {
     let chest = null, bd = 9;
     for (const c of this.chests) { if (c.open) continue; const dx = c.x - p.x, dz = c.z - p.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; chest = c; } }
     if (chest) {
-      this.prompt = 'E: open the Sealed Chest' + (fusionsReady(this).length ? ' (a Fusion is ready!)' : '');
+      this.prompt = '{use}: open the Sealed Chest' + (fusionsReady(this).length ? ' (a Fusion is ready!)' : '');
       if (cmd && cmd.use && !this.offer) { openChest(this, chest); return; }
     }
     if (!chest && prop) {
@@ -232,7 +232,7 @@ export class Game {
     if (this.mode !== 'classic') { if (!chest && !prop && this.stagePrompt) this.prompt = this.stagePrompt; return; }
     const G = RUN.gate, dx = p.x - G.x, dz = p.z - G.z;
     if (this.boss.state === 'idle' && this.t >= G.earliest && dx * dx + dz * dz < G.radius * G.radius) {
-      if (!chest && !prop) this.prompt = 'E: enter the Royal Gate (early, bonus Star Chips)';
+      if (!chest && !prop) this.prompt = '{use}: enter the Royal Gate (early, bonus Star Chips)';
       if (cmd && cmd.use && !this.offer) startBoss(this, true);
     }
   }

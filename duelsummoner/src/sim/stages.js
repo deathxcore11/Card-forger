@@ -1,4 +1,4 @@
-﻿// The stage machine: a run is Stage 1, 2 and 3 (or one Quick Duel stage). Each stage has a clock, an elite and two timed bosses on a
+// The stage machine: a run is Stage 1, 2 and 3 (or one Quick Duel stage). Each stage has a clock, an elite and two timed bosses on a
 // timeline, a gate that wakes, a gate boss, then a Descent Circle to the next stage (Stage 3: the Final Altar). Pure and deterministic.
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
 import { RUN } from '../data/waves.js';
@@ -86,10 +86,10 @@ export function updateStages(g, dt) {
     }
   }
   // the gate wakes when timed boss B falls, or at its wake time
-  if (G.state === 'closed' && !G.awake && (g.bDown || g.sc >= S.gateWake)) { G.awake = true; g.emit('gatewake'); g.event('banner', 'The gate of ' + S.gate.name + ' wakes. Hold E at the gate to enter.'); }
+  if (G.state === 'closed' && !G.awake && (g.bDown || g.sc >= S.gateWake)) { G.awake = true; g.emit('gatewake'); g.event('banner', 'The gate of ' + S.gate.name + ' wakes. Hold {use} at the gate to enter.'); }
   const gr = g.map.gate, gx = p.x - gr.x, gz = p.z - gr.z;
   if (G.state === 'closed' && G.awake && gx * gx + gz * gz < gr.radius * gr.radius) {
-    g.stagePrompt = 'Hold E: enter the gate (forfeits ' + clockText(S.clock - g.sc) + ' of the clock)';
+    g.stagePrompt = 'Hold {use}: enter the gate (forfeits ' + clockText(S.clock - g.sc) + ' of the clock)';
     G.hold = cmd && (cmd.use || cmd.hold) ? G.hold + dt : Math.max(0, G.hold - 2 * dt);
     if (G.hold >= RUNSPEC.gateHoldSeconds) startGate(g, false);
   } else G.hold = Math.max(0, G.hold - 2 * dt);
@@ -205,7 +205,7 @@ function altarTick(g) {
   const a = g.altar, p = g.p, dx = p.x - a.x, dz = p.z - a.z;
   if (a.used) return;
   if (dx * dx + dz * dz < RUNSPEC.circleRadius * RUNSPEC.circleRadius) {
-    g.stagePrompt = 'E: the Final Altar';
+    g.stagePrompt = '{use}: the Final Altar';
     if (g._cmd && g._cmd.use && !g.offer) {
       const cards = [{ kind: 'final', id: 'close', rarity: 'epic' }]; if (g.mode !== 'quick') cards.push({ kind: 'final', id: 'duelon', rarity: 'legendary' });
       g.offer = { type: 'final', cards, leave: false }; g.event('offer', null);
