@@ -1,4 +1,4 @@
-﻿// Sunken Colosseum encounters: counts, authored regions, costs and numbers. Spots are drawn each run from these regions
+// Sunken Colosseum encounters: counts, authored regions, costs and numbers. Spots are drawn each run from these regions
 // (src/sim/world.js), so the map is learnable but never the same twice. Regions are polar: radius from the arena centre and
 // angle in degrees (0 = east, 90 = south). Heights: floor 0, stands 4, hall roofs 5.8.
 // Rule that keeps the economy honest: the free item (Witness Stones, far side of the floor), the free level (Deck Anvil, later,
@@ -21,7 +21,7 @@ export const ENCOUNTERS = {
     // each blessing on a shrine rolls a rarity when the map is built; the stat is multiplied (whole numbers for armour and LP). The circle takes the colour of the best one.
     rarity: { order: ['common', 'rare', 'epic', 'legendary'], weights: { common: 55, rare: 30, epic: 12, legendary: 3 }, mult: { common: 1, rare: 1.5, epic: 2, legendary: 3 } } },
   cardChests: {
-    count: 8, basePrice: 30, step: 42, stepGrowth: 1, cap: 6000,     // additive: 30, 72, 115, 159, 204 ... each chest opened adds a step (42, then 43, 44, 45 ...), capped. Tune together with the coin income and the coin sinks.
+    count: 8, basePrice: 30, step: 62, stepGrowth: 10, cap: 6000,     // additive: 30, 92, 164, 246 ... each chest opened adds a step (62, then 72, 82 ...), capped (retuned 23 Nov so the coins left at the gate stay near twice the next price). Tune together with the coin income and the coin sinks.
     placement: [{ n: 3, r: [10, 28], deg: [[0, 360]], h: 0 }, { n: 3, r: [36, 50], deg: [[0, 360]], h: 4 }, { n: 2, r: [53, 58], deg: [[0, 360]], h: 5.8 }],
     rarityByOrder: ['common', 'common', 'common', 'rare', 'rare', 'rare', 'epic', 'epic']      // the lowest tier a chest can roll (a hidden floor): the tier is rolled and first seen when the chest is opened, never shown before
   },

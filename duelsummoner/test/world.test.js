@@ -83,7 +83,7 @@ test('Card Chests: price rises with each chest, rarity is shown, you must be abl
     const c = cs[k]; at(g, c); const p = chestPrice(g); prices.push(p); g.coins = 0; useProp(g, nearestProp(g)); assert.equal(g.offer, null, 'cannot open without coins');
     g.coins = 1000; useProp(g, nearestProp(g)); assert.ok(g.offer && g.offer.type === 'chest'); assert.equal(g.coins, 1000 - p); g.choose(0);
   }
-  assert.deepEqual(prices, [30, 72, 115, 159]); assert.equal(g.world.opened, 4);              // additive: 30, 72, 115, 159, 204
+  assert.deepEqual(prices, [30, 92, 164, 246]); assert.equal(g.world.opened, 4);              // additive: 30, 92, 164, 246
 });
 
 test('items change the run: armour, free chests, discount, regen, coins, luck, dash cooldown, air jump', () => {
@@ -91,7 +91,7 @@ test('items change the run: armour, free chests, discount, regen, coins, luck, d
   addItem(g, 'bronze-scale'); g.p.hp = 100; g.hurtPlayer(8); assert.equal(Math.round(g.p.hp), 93, '+1 armour');
   g.hurtPlayer(1); assert.equal(Math.round(g.p.hp), 92, 'never below 1 damage');
   addItem(g, 'jar-of-avarice'); g.world.opened = 4; assert.equal(chestPrice(g), 0, 'every 5th chest is free');
-  addItem(g, 'traders-seal'); g.world.opened = 1; assert.equal(chestPrice(g), Math.round(72 * 0.75));
+  addItem(g, 'traders-seal'); g.world.opened = 1; assert.equal(chestPrice(g), Math.round(92 * 0.75));
   addItem(g, 'clay-heart'); assert.equal(g.p.maxHp, 115); addItem(g, 'bandaged-hand'); g.p.hp = 50; run(g, 5); assert.ok(g.p.hp >= 50.9, 'regen');
   addItem(g, 'travelling-cloak'); g.step(1 / 60, { ...idle, dash: true }); assert.ok(Math.abs(g.p.dashCd - 1.1 * 0.85) < 0.03);
   addItem(g, 'scarab-charm'); const c0 = g.coins; for (let i = 0; i < 20; i++) { g.pick.alive[i] = 1; g.pick.kind[i] = 1; g.pick.x[i] = g.p.x; g.pick.z[i] = g.p.z; g.pick.y[i] = g.p.y; g.pick.val[i] = 1; } run(g, 0.3);
