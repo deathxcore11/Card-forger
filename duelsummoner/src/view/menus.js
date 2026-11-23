@@ -16,7 +16,7 @@ const bar = (frac, label) => '<div class="bar2"><i style="width:' + Math.round(M
 const initial = id => (DUELIST_INFO[id] ? DUELIST_INFO[id].name[0] : '?');
 const rewardText = r => !r ? '' : r.chips ? r.chips + ' Star Chips' : r.card ? 'Unlocks card: ' + (MONSTERS[r.card] || SPELLS[r.card] || TRAPS[r.card] || ONE_SHOTS[r.card] || { name: r.card }).name : r.item ? 'Unlocks item: ' + (ITEMS[r.item] ? ITEMS[r.item].name : r.item) :
   r.duelist ? 'Unlocks duelist: ' + DUELIST_INFO[r.duelist].name : r.outfit ? 'Unlocks an outfit' : r.regalia ? 'Unlocks Regalia' : '';
-const STAT_LABEL = { burnDps: 'Burn', burnDur: 'Burn', markDur: 'Mark Depth', markBonus: 'Mark Depth', cardRate: 'Draw', move: 'Stride', dash: 'Dash', maxLp: 'Max LP', pickup: 'Magnet', xp: 'Insight', coinMult: 'Greed', luck: 'Fortune', armour: 'Guard', crit: 'Keen', dmgMult: 'Might', bossDmg: 'Hunter', monsterRate: 'Tempo', regen: 'Renewal', trapRecharge: 'Rewind', shopDiscount: 'Bargain', cardBurn: 'Affinity: Fire' };
+const STAT_LABEL = { reach: 'Reach', burnDps: 'Burn', burnDur: 'Burn', markDur: 'Mark Depth', markBonus: 'Mark Depth', cardRate: 'Draw', move: 'Stride', dash: 'Dash', maxLp: 'Max LP', pickup: 'Magnet', xp: 'Insight', coinMult: 'Greed', luck: 'Fortune', armour: 'Guard', crit: 'Keen', dmgMult: 'Might', bossDmg: 'Hunter', monsterRate: 'Tempo', regen: 'Renewal', trapRecharge: 'Rewind', shopDiscount: 'Bargain', cardBurn: 'Affinity: Fire' };
 
 export function initMenus(env) {
   const save = env.save, meta = () => save.meta;

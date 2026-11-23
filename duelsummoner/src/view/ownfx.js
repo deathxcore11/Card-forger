@@ -13,7 +13,7 @@ const T = window.THREE, STRIDE = 12, MAXA = 96, MAXV = 32;
 export const SPELL_FX = { auto: { ink: 0.05, kept: 0.35, raster: 5.0 }, full: { ink: 0.08, kept: 0.5, raster: 5.0 }, soft: { ink: 0.025, kept: 0.2, raster: 5.0 } };
 
 const COMMON = `
-uniform float uProjY; uniform float uAspect; uniform float uInk; uniform float uGov; uniform vec4 uHole; uniform float uFeetY;
+uniform float uRimK; uniform float uProjY; uniform float uAspect; uniform float uInk; uniform float uGov; uniform vec4 uHole; uniform float uFeetY;
 float coverOf(float rad, float viewZ) { float rN = rad * uProjY / max(viewZ, 0.5); return clamp(3.1416 * rN * rN / (4.0 * uAspect), 0.0, 1.0); }
 `;
 
@@ -44,7 +44,7 @@ void main() {
   float dpx = distance(gl_FragCoord.xy, uHole.xy); bool hole = dpx < uHole.z; float bay = bayer();
   ${area ? `
   if (vr > 1.0) discard;
-  float edge = 1.0 - vr; float rimW = max(fw, 0.004);
+  float edge = 1.0 - vr; float rimW = max(fw, 0.004) * uRimK;
   if (vB.z > -0.99) { vec2 dn = normalize(vLocal + 1e-5); float ca = dot(dn, vB.xy); if (ca < vB.z) discard; float ang = acos(clamp(ca, -1.0, 1.0)), half_ = acos(clamp(vB.z, -1.0, 1.0)); edge = min(edge, (half_ - ang) * vr); }
   bool rim = edge < rimW, ink = edge < rimW * 0.5;
   bool ringOnly = vB.w < 0.5; float band = max(fw * 3.0, min(0.06, fw * 6.0)); if (ringOnly && edge > band) discard;       // a plain ring is a thin solid band, never a fill` : `
@@ -59,7 +59,7 @@ void main() {
 }` });
 }
 
-export const OWN = { uni: { uProjY: { value: 1.7 }, uAspect: { value: 1.78 }, uInk: { value: 0.05 }, uGov: { value: 1 }, uHole: { value: new T.Vector4(0, 0, 0, 12) }, uFeetY: { value: 0 } } };
+export const OWN = { uni: { uRimK: { value: 1 }, uProjY: { value: 1.7 }, uAspect: { value: 1.78 }, uInk: { value: 0.05 }, uGov: { value: 1 }, uHole: { value: new T.Vector4(0, 0, 0, 12) }, uFeetY: { value: 0 } } };
 
 export class OwnEffects {
   constructor(scene) {
@@ -91,7 +91,7 @@ export class OwnEffects {
   // per frame, after begin() and the area() / volume() calls: the camera values, the keyhole, the two sums and the governor, then the uploads
   end(camera, duelist, size, dt) {
     const u = OWN.uni, set = SPELL_FX[this.setting], cm = camera.matrixWorldInverse, e = cm.elements, H = size.h, W = size.w;
-    u.uProjY.value = 1 / Math.tan(camera.fov * Math.PI / 360); u.uAspect.value = W / H; u.uInk.value = set.ink;
+    u.uRimK.value = 1 + 0.8 * (this.tier || 0); u.uProjY.value = 1 / Math.tan(camera.fov * Math.PI / 360); u.uAspect.value = W / H; u.uInk.value = set.ink;
     // the duelist's chest on screen: keyhole radius = max(12% of H, 0.9 x the duelist's on-screen height)
     const cx = duelist.x, cy = duelist.y + 0.9, cz = duelist.z, vx = e[0] * cx + e[4] * cy + e[8] * cz + e[12], vy = e[1] * cx + e[5] * cy + e[9] * cz + e[13], vz = -(e[2] * cx + e[6] * cy + e[10] * cz + e[14]);
     const f = u.uProjY.value, sx = (vx * f / u.uAspect / Math.max(vz, 0.5) * 0.5 + 0.5) * W, sy = (vy * f / Math.max(vz, 0.5) * 0.5 + 0.5) * H, hPx = 1.8 * f / Math.max(vz, 0.5) * 0.5 * H;

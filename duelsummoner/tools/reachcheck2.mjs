@@ -1,0 +1,5 @@
+import { Game } from '../src/sim/game.js'; import { recompute } from '../src/sim/field.js'; import { newBot, botRecord } from './bot.mjs';
+// The upper bound of a Reach build: Reach forced to +100% and +150% from tick 0, the same bot, 12 seeds on Medium; kills at 5:00 and the first Fusion.
+const run = reach => { const out = []; for (let seed = 1; seed <= 12; seed++) { const g = new Game(seed, { mode: 'run', difficulty: 'medium', duelist: 'kael' }), bot = newBot({ focus: true, world: true }); if (reach) { g.metaMods = { reach }; recompute(g); } let fus = -1, dead = -1; for (let i = 0; i < 60 * 300 && !g.over; i++) { g.tick(botRecord(g, bot)); if (fus < 0 && g.fusions) fus = g.sc; } out.push({ kills: g.kills, fus, over: g.over, t: g.sc }); }
+  const ks = out.map(o => o.kills), avg = a => a.reduce((x, y) => x + y, 0) / a.length; return { killsAt5: Math.round(avg(ks)), perMin: +(avg(ks) / 5).toFixed(1), died: out.filter(o => o.over).length, fusions: out.filter(o => o.fus >= 0).length }; };
+for (const r of [0, 1.0, 1.5]) console.log('reach +' + r * 100 + '%', JSON.stringify(run(r)));

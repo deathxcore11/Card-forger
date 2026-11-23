@@ -59,6 +59,7 @@ export const SPELLS = {
   'deep-marks': { name: 'Deep Marks', rarity: 'rare', kind: 'spell', text: 'Marks last 4 s longer and add +14% damage taken per level.', per: { markDur: 4, markBonus: 0.14 } },
   'pack-drill': { name: 'Pack Drill', rarity: 'rare', kind: 'spell', text: 'Monster hits do 21% more per level. The Source bracket: it rewards committing to one kind of damage, up to x3.', per: { drill: [0, 0.21] } },
   'elemental-litany': { name: 'Elemental Litany', rarity: 'rare', kind: 'spell', text: '+17% damage in each element for every monster of it you field, per level. The Affinity bracket.', per: { affPerElement: 0.17 } },
+  'widening-rite': { name: 'Widening Rite', rarity: 'common', kind: 'spell', text: 'Your area attacks cover 20% more ground per level (up to +100% at level 5, radius x1.41). Shots keep their hit size.', per: { reach: 0.20 } },
   'swift-draw': { name: 'Swift Draw', rarity: 'common', kind: 'spell', text: 'Your card throw is 28% faster per level.', per: { cardRate: 0.28 } },
   'runners-sash': { name: "Runner's Sash", rarity: 'common', kind: 'spell', text: '+11% move speed and +14% dash distance per level.', per: { move: 0.11, dash: 0.14 } },
   'heart-of-the-cards': { name: 'Heart of the Cards', rarity: 'common', kind: 'spell', text: '+28 max health and heal 28 now.', per: { maxLp: 28 }, healNow: 28 },

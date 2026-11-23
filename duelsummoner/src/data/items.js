@@ -4,6 +4,7 @@
 export const ITEMS = {
   'thornbound-locket': { name: 'Thornbound Locket', rarity: 'rare', price: 70, text: 'When you are hurt, a nova of 6 x your Guard (at most 120) hits everything near you. More copies help, with a ceiling.', mods: { locket: 1 } },
   'worn-duel-glove':   { name: 'Worn Duel Glove', rarity: 'common', price: 30, text: 'Card throw 15% faster.', mods: { cardRate: 0.15 } },
+  'surveyors-lens':    { name: "Surveyor's Lens", rarity: 'common', price: 30, text: 'Your area attacks cover 10% more ground. Stacks, up to +150% with every source.', mods: { reach: 0.10 } },
   'sand-sandals':      { name: 'Sand Sandals', rarity: 'common', price: 30, text: '+6% move speed.', mods: { move: 0.06 } },
   'cracked-hourglass': { name: 'Cracked Hourglass', rarity: 'common', price: 30, text: 'Trap recharge 10% shorter.', mods: { trapRecharge: 0.10 } },
   'scarab-charm':      { name: 'Scarab Charm', rarity: 'common', price: 30, text: '+15% coins.', mods: { coinMult: 0.15 } },
@@ -24,7 +25,7 @@ export const ITEMS = {
 };
 // Items stack: a second Sand Sandals adds another +6%. Ceilings on the summed stat keep copies sensible (the stat panel shows the raw sum and the capped value).
 // Items marked unique:true are single-only (a second copy would do nothing or work against you) and are never offered again once owned.
-export const ITEM_CAPS = { move: 1.0, crit: 0.6, dashCd: 0.6, trapRecharge: 0.6, shopDiscount: 0.6, luck: 0.5, airJumps: 3, bossDmg: 1.0, regen: 3, coinMult: 2.0 };
+export const ITEM_CAPS = { reach: 1.5, move: 1.0, crit: 0.6, dashCd: 0.6, trapRecharge: 0.6, shopDiscount: 0.6, luck: 0.5, airJumps: 3, bossDmg: 1.0, regen: 3, coinMult: 2.0 };
 export const PLANNED_ITEMS = ['Summoner\'s Chalk', 'Mirror Shard', 'Soul Lantern', 'Twin Seal Ring', 'Crown of the Hollow King', 'Sandglass of Haste',
   'Polymer Flask', 'Tome Binder', "Summoner's Whistle", 'Field Banner', 'Eye of the Sealed One', 'Deck of Fate'];
 

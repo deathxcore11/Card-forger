@@ -17,6 +17,7 @@ if (isMainThread) {
   const kb = {}; for (const r of res) if (r.killedBy) kb[r.killedBy] = (kb[r.killedBy] || 0) + 1; console.log('killed by:', JSON.stringify(kb), ' gate states at end:', JSON.stringify(res.reduce((o, r) => { o[r.state] = (o[r.state] || 0) + 1; return o; }, {})));
   const cm = t => { const a = res.map(r => r.coinAt[t]).filter(x => x >= 0).sort((x, y) => x - y); return a.length ? a[Math.floor(a.length / 2)] : null; }; console.log('coins earned (median): by 1:30', cm(90), ' by 1:45', cm(105), ' by 3:30', cm(210), '(target: about 30 by 1:30-1:45 and about 100 by 3:30)');
   const xi = Array.from({ length: 7 }, (_, m) => { const a = res.map(r => r.xpAt[m]).filter(x => x >= 0); return a.length ? +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : 0; }); console.log('cumulative XP at minute ends (survivors):', JSON.stringify(xi));
+  { const ka = Array.from({ length: 7 }, (_, m) => { const a = res.map(r => r.killAt[m]).filter(x => x >= 0); return a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : 0; }); console.log('cumulative kills at minute ends (survivors, average):', JSON.stringify(ka), ' kills a minute by 5:00:', (ka[4] / 5).toFixed(1)); }
   console.log('minute:           1    2    3    4    5    6    7'); console.log('level-ups avg:   ', per.map(avg).join('  ')); console.log('all picks avg:   ', pk.map(avg).join('  '));
   console.log('first level-up s: median', med(res.map(r => r.firstLevel)), 'range', Math.min(...res.map(r => r.firstLevel).filter(x => x >= 0)), Math.max(...res.map(r => r.firstLevel)));
   const fus = res.map(r => r.fusion); console.log('first Fusion: median', med(fus), 's;', fus.filter(x => x >= 330 && x < 420).length + '/' + N, 'between 5:30 and 7:00 (the clock freezes at 7:00, so 420 is late, not in the window);', fus.filter(x => x >= 420).length, 'late;', fus.filter(x => x < 0).length, 'never; before 5:30:', fus.filter(x => x >= 0 && x < 330).length);
@@ -24,13 +25,13 @@ if (isMainThread) {
 } else {
   const { Game } = await import('../src/sim/game.js'), { newBot, botRecord } = await import('./bot.mjs'), { seed, diff, stages, world } = workerData;
   const g = new Game(seed, { mode: 'run', difficulty: diff, duelist: DUELIST }); if (process.env.NOPROPS) { g.colliders = null; g.flow.col = null; g.flow.rebuild(); } if (process.env.GOD) g.god = true; const bot = newBot({ focus: true, world }); let lv = g.level, fusT = -1, prev = null, firstLevel = -1, diedBy = 9999, clear1 = false;
-  const lvl = Array(7).fill(0), pk = Array(7).fill(0), xpAt = Array(7).fill(-1), coinAt = { 90: -1, 105: -1, 210: -1 }, limit = 60 * (stages === 1 ? 700 : 2400);
+  const lvl = Array(7).fill(0), pk = Array(7).fill(0), killAt = Array(7).fill(-1), xpAt = Array(7).fill(-1), coinAt = { 90: -1, 105: -1, 210: -1 }, limit = 60 * (stages === 1 ? 700 : 2400);
   for (let i = 0; i < limit && !g.over; i++) {
-    g.tick(botRecord(g, bot)); if (g.stage === 0) { const m = Math.min(6, Math.floor(g.sc / 60)); for (const t of [90, 105, 210]) if (coinAt[t] < 0 && g.sc >= t) coinAt[t] = (g.coinsGained || 0); for (let k = 0; k <= m; k++) if (xpAt[k] < 0 && g.sc >= (k + 1) * 60 - 0.02) xpAt[k] = g.xp; if (g.level !== lv) { for (let k = lv; k < g.level; k++) { lvl[m]++; if (firstLevel < 0) firstLevel = g.sc; } } if (g.offer !== prev) { if (g.offer) pk[m]++; prev = g.offer; } if (fusT < 0 && g.fusions) fusT = g.sc; }
+    g.tick(botRecord(g, bot)); if (g.stage === 0) { const m = Math.min(6, Math.floor(g.sc / 60)); for (const t of [90, 105, 210]) if (coinAt[t] < 0 && g.sc >= t) coinAt[t] = (g.coinsGained || 0); for (let k = 0; k <= m; k++) if (xpAt[k] < 0 && g.sc >= (k + 1) * 60 - 0.02) { xpAt[k] = g.xp; killAt[k] = g.kills; } if (g.level !== lv) { for (let k = lv; k < g.level; k++) { lvl[m]++; if (firstLevel < 0) firstLevel = g.sc; } } if (g.offer !== prev) { if (g.offer) pk[m]++; prev = g.offer; } if (fusT < 0 && g.fusions) fusT = g.sc; }
     lv = g.level; if (g.stagesCleared >= 1) clear1 = true; if (stages === 1 && g.stagesCleared >= 1) break;
   }
   if (g.over && !g.won) diedBy = g.stage === 0 ? g.sc : 9999;
-  parentPort.postMessage({ seed, coinAt, xpAt, lvl, pk, firstLevel, fusion: fusT, clear1, won: !!g.won, diedBy, killedBy: g.over && !g.won ? String(g.killedBy) : null, level: g.level, state: g.gate.state });
+  parentPort.postMessage({ seed, killAt, coinAt, xpAt, lvl, pk, firstLevel, fusion: fusT, clear1, won: !!g.won, diedBy, killedBy: g.over && !g.won ? String(g.killedBy) : null, level: g.level, state: g.gate.state });
 }
 
 

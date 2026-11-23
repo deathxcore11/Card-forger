@@ -1,4 +1,4 @@
-﻿// The offer screen: level-ups, chests, Witness Stones, the Relic Broker and shrine blessings. Plain placeholder styling.
+// The offer screen: level-ups, chests, Witness Stones, the Relic Broker and shrine blessings. Plain placeholder styling.
 import { OFFER, LEVELS } from '../data/cards.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { cardDef, monsterMax, damageOf, param } from '../sim/field.js';
@@ -31,7 +31,7 @@ function fly(btn, go, g, c) {
 
 // Numeric deltas: every changed stat prints as "Stat: a -> b" with b highlighted. A new card prints its base numbers (damage and attack interval, and the rest of its attack).
 const r2 = n => String(Math.round(n * 100) / 100), arrow = (label, a, b, u) => '<div class="nl">' + label + ': ' + (a === null ? '' : r2(a) + (u || '') + ' &rarr; ') + '<b>' + r2(b) + (u || '') + '</b></div>';
-const SPELL_LABEL = { dmgMult: ['Might', 100, '%'], burnDps: ['Burn damage per second', 1, ''], burnDur: ['Burn time', 1, ' s'], markDur: ['Mark time', 1, ' s'], markBonus: ['Mark bonus', 100, '%'], cardRate: ['Card throw speed', 100, '%'], move: ['Move speed', 100, '%'], dash: ['Dash', 100, '%'], maxLp: ['Max LP', 1, ''], pickup: ['Pickup range', 100, '%'], xp: ['XP gain', 100, '%'], affPerElement: ['Damage per element fielded', 100, '%'] };
+const SPELL_LABEL = { reach: ['Area size', 100, '%'], dmgMult: ['Might', 100, '%'], burnDps: ['Burn damage per second', 1, ''], burnDur: ['Burn time', 1, ' s'], markDur: ['Mark time', 1, ' s'], markBonus: ['Mark bonus', 100, '%'], cardRate: ['Card throw speed', 100, '%'], move: ['Move speed', 100, '%'], dash: ['Dash', 100, '%'], maxLp: ['Max LP', 1, ''], pickup: ['Pickup range', 100, '%'], xp: ['XP gain', 100, '%'], affPerElement: ['Damage per element fielded', 100, '%'] };
 function statLines(c, g) {
   let h = '', L2 = c.to || 1, L1 = c.isNew ? null : L2 - 1; const D = cardDef(c.id); if (!D) return '';
   if (c.kind === 'monster' || c.kind === 'fusion') {

@@ -1,8 +1,8 @@
 // The stat sheet: every player stat by id, how it is shown, and which run modifier feeds it. Content stays written as the modifier keys the
 // sim already uses (data/items.js, cards.js, meta.js); the sheet maps each key to its stat so one panel can show the whole product with its sources
 // ("Might +35% = Blessing of Might 10% + Toll of Ash 21% ..."). Display scale turns a stored fraction into the shown percentage.
-export const STAT = { MIGHT: 0, HUNTER: 1, KEEN: 2, TEMPO: 3, DRAW: 4, REWIND: 5, LP: 6, GUARD: 7, REGEN: 8, WARD: 9, STRIDE: 10, DASHCD: 11, LIFT: 12, MAG: 13, GREED: 14, INSIGHT: 15, BARGAIN: 16, FORT: 17, MARKD: 18, BURN: 19 };
-export const STAT_N = 20;
+export const STAT = { MIGHT: 0, HUNTER: 1, KEEN: 2, TEMPO: 3, DRAW: 4, REWIND: 5, LP: 6, GUARD: 7, REGEN: 8, WARD: 9, STRIDE: 10, DASHCD: 11, LIFT: 12, MAG: 13, GREED: 14, INSIGHT: 15, BARGAIN: 16, FORT: 17, MARKD: 18, BURN: 19, REACH: 20 };
+export const STAT_N = 21;
 // mod: the key in g.mods; unit: pct (fraction shown as %), flat (a number), lps (per second); ceiling: the bracket's asymptote or cap, when it has one
 export const STAT_INFO = [
   { id: STAT.MIGHT, label: 'Might', mod: 'dmgMult', unit: 'pct', ceiling: 'bracket 1, up to x3.5' },
@@ -24,10 +24,11 @@ export const STAT_INFO = [
   { id: STAT.BARGAIN, label: 'Bargain (shop prices)', mod: 'shopDiscount', unit: 'pct' },
   { id: STAT.FORT, label: 'Fortune (luck)', mod: 'luck', unit: 'pct' },
   { id: STAT.MARKD, label: 'Mark Depth', mod: 'markBonus', unit: 'pct' },
-  { id: STAT.BURN, label: 'Burn (damage a second)', mod: 'burnDps', unit: 'flat' }
+  { id: STAT.BURN, label: 'Burn (damage a second)', mod: 'burnDps', unit: 'flat' },
+  { id: STAT.REACH, label: 'Reach (area size)', mod: 'reach', unit: 'pct', ceiling: 'up to +150% area (radius x1.58)' }
 ];
 // the panel's groups: survival, offence, tempo and rates, movement, pickups and economy
-export const STAT_GROUPS = [['Survival', [STAT.LP, STAT.GUARD, STAT.REGEN, STAT.WARD]], ['Offence', [STAT.MIGHT, STAT.HUNTER, STAT.KEEN, STAT.BURN, STAT.MARKD]], ['Rates', [STAT.TEMPO, STAT.DRAW, STAT.REWIND]],
+export const STAT_GROUPS = [['Survival', [STAT.LP, STAT.GUARD, STAT.REGEN, STAT.WARD]], ['Offence', [STAT.MIGHT, STAT.HUNTER, STAT.KEEN, STAT.BURN, STAT.MARKD, STAT.REACH]], ['Rates', [STAT.TEMPO, STAT.DRAW, STAT.REWIND]],
   ['Movement', [STAT.STRIDE, STAT.DASHCD, STAT.LIFT]], ['Pickups and economy', [STAT.MAG, STAT.INSIGHT, STAT.GREED, STAT.BARGAIN, STAT.FORT]]];
 export const STAT_BY_MOD = Object.fromEntries(STAT_INFO.map(s => [s.mod, s]));
 export function fmtStat(s, v) {

@@ -56,6 +56,7 @@ export function recompute(g) {
     if (P.markDur) { M.markDur += P.markDur * n; M.markBonus += P.markBonus * n; }
     if (P.cardRate) { M.cardRate += P.cardRate * n; note('cardRate', SPELLS[s.id].name, P.cardRate * n); }
     if (P.move) { M.move += P.move * n; M.dash += P.dash * n; note('move', SPELLS[s.id].name, P.move * n); }
+    if (P.reach) { M.reach += P.reach * n; note('reach', SPELLS[s.id].name, P.reach * n); }
     if (P.maxLp) { M.maxLp += P.maxLp * n; note('maxLp', SPELLS[s.id].name, P.maxLp * n); }
     if (P.pickup) { M.pickup += P.pickup * n; M.xp += P.xp * n; note('pickup', SPELLS[s.id].name, P.pickup * n); note('xp', SPELLS[s.id].name, P.xp * n); }
     if (P.burnDps) note('burnDps', SPELLS[s.id].name, P.burnDps * n); if (P.markBonus) note('markBonus', SPELLS[s.id].name, P.markBonus * n);
@@ -68,6 +69,7 @@ export function recompute(g) {
   M.cardRateRaw = M.cardRate; M.monsterRateRaw = M.monsterRate;
   M.cardRate = knee(M.cardRate, K.drawKnee, K.drawKneeK); M.monsterRate = knee(M.monsterRate, K.tempoKnee, K.tempoKneeK);
   M.raw = {}; for (const k of Object.keys(ITEM_CAPS)) { M.raw[k] = M[k]; if (M[k] > ITEM_CAPS[k]) M[k] = ITEM_CAPS[k]; }
+  if (M.reach > K.reachCap) M.reach = K.reachCap;       // Reach: the one cap, however many sources stack (Widening Rite, Surveyor's Lens, a future Secret Fusion trait)
   M.raw.pickup = M.pickup; if (M.pickup > K.magCap) M.pickup = K.magCap;       // Magnet is clamped at K.magCap (+180%), not at the old item ceiling that cut Collector's Eye 5 to +10%          // ceilings on stacked stats; the raw sum stays for the stat panel
   g.sheetSrc = src; g.mods = M;
   const maxHp = g.oaths && g.oaths.glass ? 1 : g.cfgHp + M.maxLp;                  // Glass Oath: 1 LP and it cannot be raised

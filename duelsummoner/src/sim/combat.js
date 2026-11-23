@@ -90,6 +90,7 @@ export function dropPickup(g, kind, x, y, z, val) {
 
 // ---- explosions: hurt the duelist (if pDmg) and every enemy and elite in range (if eDmg) ----
 export function explode(g, x, y, z, r, pDmg, eDmg, color, src) {
+  if (!(pDmg > 0)) r *= g.reachK;       // Reach scales the player's own area bursts (the Locket nova, the Graveyard Bell, Mark blasts); a hostile blast (it hurts the duelist) never grows
   addFx(g, { type: 'ring', owner: pDmg > 0 ? 1 : 0, x, y, z, r, dur: 0.45, color: color || 0xff9030 });
   const p = g.p;
   if (pDmg > 0) { const dx = p.x - x, dz = p.z - z; if (dx * dx + dz * dz < r * r && Math.abs(p.y - y) < 2.5) g.hurtPlayer(pDmg, true, src || 'an explosion'); }
