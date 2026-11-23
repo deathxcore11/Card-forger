@@ -94,6 +94,10 @@ th{color:var(--teal)}
 .never{border-left:4px solid var(--warn);background:var(--panel);padding:10px 14px;font-size:14px}
 li{margin:3px 0;max-width:80ch}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:20px;font-size:14px;z-index:20;pointer-events:none}
+.savebar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-start;margin:6px 0 2px;font-size:13px}.sv{padding:2px 10px;border-radius:12px;border:1px solid var(--line,#8884);color:var(--mute)}.sv.on{color:#2f7f86;border-color:#2f7f86}
+#bk summary{cursor:pointer;color:var(--mute)}#bk textarea{width:100%;max-width:60ch;font:12px monospace;margin:6px 0}
+.okg{font-size:12px;padding:1px 8px;border-radius:10px;background:#2f7f86;color:#fff;margin-left:6px;white-space:nowrap}.wt{font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--line,#8884);color:var(--mute);margin-left:6px;white-space:nowrap}.rd{font-size:12px;padding:1px 8px;border-radius:10px;background:#b4643f;color:#fff;margin-left:6px;white-space:nowrap}
+.slice{margin:8px 0;padding:10px 12px;border-radius:10px;border:1px solid var(--line,#8884);font-size:14px}.slice b{font-weight:700}
 .empty{padding:20px;text-align:center;color:var(--mute)}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
@@ -102,6 +106,7 @@ li{margin:3px 0;max-width:80ch}
   <p class="sub">Every picture, 3D model, sound and song the game needs. Each one is a few steps: copy the prompt, paste it, save the result where it says, tick the box.</p>
   <div class="bar" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="100" id="barBox"><i id="bar"></i></div>
   <div class="counts" id="counts"></div>
+  <div class="savebar"><span id="sv" class="sv">Saved on this device</span><details id="bk"><summary>Back up or move my progress</summary><p class="sub">Copy this text and keep it somewhere safe. To bring your ticks to another device, paste it into the box there and press Load.</p><textarea id="bkT" rows="3" aria-label="Progress text"></textarea><div class="acts"><button id="bkC" class="ghost">Copy my progress</button><button id="bkL" class="ghost">Load pasted progress</button></div></details></div>
   <div class="tabs" role="tablist">
     <button role="tab" data-tab="make" aria-selected="true">Make</button>
     <button role="tab" data-tab="guide" aria-selected="false">How it works</button>
@@ -110,12 +115,14 @@ li{margin:3px 0;max-width:80ch}
   </div>
 
   <section id="tab-make">
+    <div class="slice" id="sliceBox"></div>
     <div class="next" id="next"></div>
     <div class="filters">
       <select id="fg" aria-label="Category"></select>
       <input id="fq" type="search" placeholder="Find: tree, chest, dragon, W118…" aria-label="Find an asset">
       <label><input id="fh" type="checkbox"> Hide finished</label>
       <label><input id="fn" type="checkbox"> New only</label>
+      <label><input id="fs" type="checkbox" checked> First slice only</label>
     </div>
     <div id="list"></div>
   </section>
@@ -136,10 +143,12 @@ D.have.forEach(function(k){found[k]=1});
 var byCode={},order=[];D.assets.forEach(function(a){byCode[a.c]=a});
 D.first.forEach(function(c){order.push(byCode[c])});D.assets.forEach(function(a){if(D.first.indexOf(a.c)<0)order.push(a)});
 var gById={};D.groups.forEach(function(g){gById[g.id]=g});
-function isDone(k){return mine[k]===true||(mine[k]!==false&&!!found[k])}
+var redo={},inSlice={},sliceCode={},okCode={};(D.redo||[]).forEach(function(k){redo[k]=1});(D.slice||[]).forEach(function(k){inSlice[k]=1});(D.sliceCodes||[]).forEach(function(c){sliceCode[c]=1});(D.ok||[]).forEach(function(c){okCode[c]=1});
+function tk(k){return redo[k]?k+'#2':k}
+function isDone(k){if(redo[k])return mine[tk(k)]===true;return mine[k]===true||(mine[k]!==false&&!!found[k])}
 function doneCount(a){var n=0;a.steps.forEach(function(s){if(isDone(s.key))n++});return n}
 function fin(a){return a.mine||doneCount(a)===a.steps.length}
-function save(k,v){mine[k]=v;try{localStorage.setItem(LS,JSON.stringify(mine))}catch(e){}
+function save(k,v){k=tk(k);mine[k]=v;try{localStorage.setItem(LS,JSON.stringify(mine))}catch(e){}
   if(dbDoc){var o={};o[k.replace(/\./g,'~')]=v;dbDoc.update(o).catch(function(){dbDoc.set(o).catch(function(){})})}}
 function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove()},1500)}
 function copy(text,btn){var ok=function(){toast('Copied')};var fb=function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok()}catch(e){toast('Select the text and copy it')}ta.remove()};
@@ -148,13 +157,15 @@ function copy(text,btn){var ok=function(){toast('Copied')};var fb=function(){var
 // ---------- header
 function header(){var tot=0,dn=0,af=0,an=0,nn=0,nd=[];D.assets.forEach(function(a){if(a.nw){nn++;if(nd.indexOf(a.nw)<0)nd.push(a.nw)}if(a.mine)return;an++;tot+=a.steps.length;dn+=doneCount(a);if(fin(a))af++});
   var pct=tot?Math.round(dn/tot*100):0;$('#bar').style.width=pct+'%';$('#barBox').setAttribute('aria-valuenow',pct);
-  $('#counts').innerHTML='<span><b>'+dn.toLocaleString()+'</b> of '+tot.toLocaleString()+' files made ('+pct+'%)</span><span><b>'+af+'</b> of '+an+' assets finished</span><span><b>'+(tot-dn).toLocaleString()+'</b> files left</span>'+(nn?'<span><b>'+nn+'</b> new assets, added '+esc(nd.join(', '))+'</span>':'')}
+  $('#counts').innerHTML='<span><b>'+dn.toLocaleString()+'</b> of '+tot.toLocaleString()+' files made ('+pct+'%)</span><span><b>'+af+'</b> of '+an+' assets finished</span><span><b>'+(tot-dn).toLocaleString()+'</b> files left</span>'+(nn?'<span><b>'+nn+'</b> new assets, added '+esc(nd.join(', '))+'</span>':'')+'<span><b>'+(D.ok||[]).length+'</b> approved in the game</span>';
+  var st=0,sd=0;(D.slice||[]).forEach(function(k){st++;if(isDone(k))sd++});var sa=0;(D.sliceCodes||[]).forEach(function(c){if(okCode[c])sa++});
+  var sb=$('#sliceBox');if(sb)sb.innerHTML='<b>First slice: one playable piece of the Surface Ruins.</b> '+sd+' of '+st+' files made, '+sa+' of '+(D.sliceCodes||[]).length+' approved in the game. '+(D.sliceOk?'The slice is approved, so everything else is open.':'Make only these for now. Everything else waits until I have seen the slice working in the game on the handheld and the phone, so nothing is made twice.')}
 
 // ---------- next up
 var skip={},phase=0,phaseKey='';
 function nameOf(k){return /\.png$/i.test(k)?k:k.replace(/\.[a-z0-9]+$/i,'')}
-function nextStep(){var g=$('#fg').value;for(var i=0;i<order.length;i++){var a=order[i];if(a.mine||a.sk||(g&&a.g!==g))continue;for(var j=0;j<a.steps.length;j++)if(!isDone(a.steps[j].key)&&!skip[a.steps[j].key])return{a:a,s:a.steps[j],j:j}}return null}
-function renderNext(){var n=nextStep(),el=$('#next');if(!n){var sk=Object.keys(skip).length;el.innerHTML='<div class="lbl">Next up</div><h3>'+(sk?'Only skipped steps are left here.':'Everything here is made.')+'</h3><p class="sub">'+(sk?'':'Pick another category, or enjoy the game.')+'</p>'+(sk?'<div class="acts"><button id="nUnskip">Go back to the '+sk+' skipped</button></div>':'');if(sk)$('#nUnskip').onclick=function(){skip={};renderNext()};return}
+function nextStep(){var g=$('#fg').value,so=$('#fs').checked,ord=order;if(so){ord=[];(D.sliceCodes||[]).forEach(function(c){ord.push(byCode[c])})}for(var i=0;i<ord.length;i++){var a=ord[i];if(a.mine||a.sk||(!so&&g&&a.g!==g))continue;for(var j=0;j<a.steps.length;j++){var k=a.steps[j].key;if(so&&!inSlice[k])continue;if(!isDone(k)&&!skip[k])return{a:a,s:a.steps[j],j:j}}}return null}
+function renderNext(){var n=nextStep(),el=$('#next');if(!n){var sk=Object.keys(skip).length;el.innerHTML='<div class="lbl">Next up</div><h3>'+(sk?'Only skipped steps are left here.':$('#fs').checked?'The first slice is made.':'Everything here is made.')+'</h3><p class="sub">'+(sk?'':$('#fs').checked?'Tell me, and I will put it in the game and check it. The rest opens once it passes.':'Pick another category, or enjoy the game.')+'</p>'+(sk?'<div class="acts"><button id="nUnskip">Go back to the '+sk+' skipped</button></div>':'');if(sk)$('#nUnskip').onclick=function(){skip={};renderNext()};return}
   var a=n.a,s=n.s,g=gById[a.g],nm=nameOf(s.key);if(phaseKey!==s.key){phaseKey=s.key;phase=0}
   var acts=[];if(s.copy)acts.push(['Copy the prompt',function(){copy(s.text)},'Paste it into '+s.tool+' and make it.']);
   var nms=s.names||[nm];if(nms.length>1){acts.push(['Copy name 1 (plain)',function(){copy(nms[0])},'Save the plain download with this name.']);acts.push(['Copy name 2 (with texture)',function(){copy(nms[1])},'Save the textured download with this name.'])}else acts.push(['Copy the name',function(){copy(nm)},'Save the result with this name.']);
@@ -175,24 +186,24 @@ function renderNext(){var n=nextStep(),el=$('#next');if(!n){var sk=Object.keys(s
 
 // ---------- list
 function rowHtml(a){var d=doneCount(a),t=a.steps.length,f=fin(a);
-  return '<details class="a'+(f?' fin':'')+'" id="'+a.c+'"><summary><span class="code">'+a.c+'</span><span class="nm">'+esc(a.n)+'</span>'+(a.nw?'<span class="new">New '+esc(a.nw)+'</span>':'')+(a.sk?'<span class="skp">Can skip</span>':'')+'<span class="prog">'+(a.mine?'':d+' / '+t)+'</span><span class="pill">'+(a.mine?'I make this':f?'Finished':t-d+' left')+'</span></summary><div class="ab"></div></details>'}
-function bodyHtml(a){var g=gById[a.g],h='<p class="what"><b>'+esc(g.kind)+'.</b> '+esc(a.w)+'</p>';if(a.sk)h+='<p class="skpn"><b>Can skip.</b> '+esc(a.sk)+'</p>';
+  return '<details class="a'+(f?' fin':'')+'" id="'+a.c+'"><summary><span class="code">'+a.c+'</span><span class="nm">'+esc(a.n)+'</span>'+(a.nw?'<span class="new">New '+esc(a.nw)+'</span>':'')+(a.sk?'<span class="skp">Can skip</span>':'')+(okCode[a.c]?'<span class="okg">Approved in game</span>':'')+(a.steps.some(function(s){return redo[s.key]})?'<span class="rd">Make again</span>':'')+(!D.sliceOk&&!sliceCode[a.c]&&!a.mine&&!a.sk?'<span class="wt">Waits for the slice</span>':'')+'<span class="prog">'+(a.mine?'':d+' / '+t)+'</span><span class="pill">'+(a.mine?'I make this':f?'Finished':t-d+' left')+'</span></summary><div class="ab"></div></details>'}
+function bodyHtml(a){var g=gById[a.g],h='<p class="what"><b>'+esc(g.kind)+'.</b> '+esc(a.w)+'</p>';if(a.sk)h+='<p class="skpn"><b>Can skip.</b> '+esc(a.sk)+'</p>';if(a.steps.some(function(s){return redo[s.key]}))h+='<p class="skpn"><b>Make again.</b> The look changed after this was made, so the old file and its tick no longer count for the steps below.</p>';h+='<p class="sub" style="font-size:13px">'+(okCode[a.c]?'Approved in game: I loaded it and checked it from the real game camera.':'Made is not the same as approved. A tick means the file exists. I mark it Approved in game only after I have loaded it and judged it from the real game camera.')+'</p>';
   if(a.facts.length)h+='<dl class="f">'+a.facts.map(function(f){return '<dt>'+esc(f[0])+'</dt><dd>'+esc(f[1])+'</dd>'}).join('')+'</dl>';
   if(a.anim)h+='<div class="anim"><b>Animation:</b> '+esc(a.anim)+'</div>';
-  a.steps.forEach(function(s,i){var ok=isDone(s.key),auto=ok&&mine[s.key]!==true;
+  a.steps.forEach(function(s,i){var ok=isDone(s.key),auto=ok&&!redo[s.key]&&mine[s.key]!==true;
     h+='<div class="step'+(ok?' ok':'')+'"><div class="sh"><input type="checkbox" id="k-'+esc(s.key)+'" data-k="'+esc(s.key)+'"'+(ok?' checked':'')+' aria-label="Done: '+esc(s.title)+'"><span class="num">'+(i+1)+'</span><label class="t" for="k-'+esc(s.key)+'">'+esc(s.title)+'</label><span class="tool">'+esc(s.tool)+'</span>'+(auto?'<span class="auto">found in your folder</span>':'')+(s.copy?'<button data-copy="'+i+'">Copy the prompt</button>':'')+'</div>'+
      '<pre>'+esc(s.text)+'</pre>'+(s.alt?'<div class="alt">No picture? In Meshy choose "Text to 3D" and paste this: <button data-alt="'+i+'" class="ghost">Copy</button><pre>'+esc(s.alt)+'</pre></div>':'')+
      '<div class="save"><span>Save as</span><code>'+esc(s.save)+'</code>'+(s.names?'<button class="ghost" data-name1="'+i+'">Copy name 1 (plain)</button><button class="ghost" data-name2="'+i+'">Copy name 2 (with texture)</button>':'<button class="ghost" data-name="'+i+'">Copy the name</button>')+'</div></div>'});
   if(a.mine&&!a.steps.length)h+='<p class="sub">Nothing for you to make here.</p>';
   return h}
-function renderList(){var g=$('#fg').value,q=$('#fq').value.trim().toLowerCase(),hide=$('#fh').checked,nw=$('#fn').checked,h='',any=false;
+function renderList(){var g=$('#fg').value,q=$('#fq').value.trim().toLowerCase(),hide=$('#fh').checked,nw=$('#fn').checked,so=$('#fs').checked,h='',any=false;
   D.groups.forEach(function(G){if(g&&G.id!==g)return;var items=D.assets.filter(function(a){return a.g===G.id}),left=0,rows='';
-    items.forEach(function(a){if(!fin(a))left++;if(hide&&fin(a))return;if(nw&&!a.nw)return;if(q&&(a.c+' '+a.n+' '+a.w).toLowerCase().indexOf(q)<0)return;rows+=rowHtml(a)});
+    items.forEach(function(a){if(!fin(a))left++;if(hide&&fin(a))return;if(nw&&!a.nw)return;if(so&&!sliceCode[a.c])return;if(q&&(a.c+' '+a.n+' '+a.w).toLowerCase().indexOf(q)<0)return;rows+=rowHtml(a)});
     if(!rows)return;any=true;
     h+='<div class="ghead"><h3>'+esc(G.title)+'</h3><span class="kind">'+esc(G.kind)+'</span><span class="left">'+left+' of '+items.length+' left</span></div><p class="sub" style="margin-top:0">'+esc(G.blurb)+'</p>'+rows});
-  $('#list').innerHTML=any?h:'<div class="empty">Nothing matches. Clear the search, or turn off "Hide finished" or "New only".</div>'}
+  $('#list').innerHTML=any?h:'<div class="empty">Nothing matches. Clear the search, or turn off "Hide finished", "New only" or "First slice only".</div>'}
 function fill(d){var b=$('.ab',d);if(!b.firstChild)b.innerHTML=bodyHtml(byCode[d.id])}
-function openAsset(c){var d=document.getElementById(c);if(!d){$('#fq').value='';$('#fh').checked=false;$('#fn').checked=false;$('#fg').value='';renderList();d=document.getElementById(c)}if(d){d.open=true;fill(d);d.scrollIntoView({block:'start'})}}
+function openAsset(c){var d=document.getElementById(c);if(!d){$('#fq').value='';$('#fh').checked=false;$('#fn').checked=false;$('#fs').checked=false;$('#fg').value='';renderList();d=document.getElementById(c)}if(d){d.open=true;fill(d);d.scrollIntoView({block:'start'})}}
 function refresh(keepOpen){var open=[].map.call(document.querySelectorAll('details.a[open]'),function(d){return d.id});header();renderNext();renderList();
   open.forEach(function(id){var d=document.getElementById(id);if(d){d.open=true;fill(d)}})}
 document.addEventListener('toggle',function(e){var d=e.target;if(d.classList&&d.classList.contains('a')&&d.open)fill(d)},true);
@@ -204,6 +215,11 @@ try{var pg=localStorage.getItem(LS+'-g');if(pg&&gById[pg])$('#fg').value=pg;$('#
 $('#fg').onchange=function(){try{localStorage.setItem(LS+'-g',this.value)}catch(e){}renderNext();renderList()};
 $('#fh').onchange=function(){try{localStorage.setItem(LS+'-h',this.checked?'1':'0')}catch(e){}renderList()};
 $('#fn').onchange=renderList;
+try{if(D.sliceOk||localStorage.getItem(LS+'-s')==='0')$('#fs').checked=false}catch(e){}
+$('#fs').onchange=function(){try{localStorage.setItem(LS+'-s',this.checked?'1':'0')}catch(e){}renderNext();renderList()};
+$('#bk').addEventListener('toggle',function(){if(this.open)$('#bkT').value=JSON.stringify(mine)});
+$('#bkC').onclick=function(){$('#bkT').value=JSON.stringify(mine);copy($('#bkT').value)};
+$('#bkL').onclick=function(){var x;try{x=JSON.parse($('#bkT').value)}catch(e){toast('That text is not a progress copy');return}if(!x||typeof x!=='object'){toast('That text is not a progress copy');return}var n=0;Object.keys(x).forEach(function(k){if(typeof x[k]==='boolean'){n++;if(mine[k]!==x[k]){mine[k]=x[k];if(dbDoc){var o={};o[k.replace(/\./g,'~')]=x[k];dbDoc.update(o).catch(function(){})}}}});try{localStorage.setItem(LS,JSON.stringify(mine))}catch(e){}refresh();toast(n+' ticks loaded')};
 $('#fq').oninput=renderList;
 
 // ---------- tabs
@@ -213,17 +229,17 @@ function table(h,rows){return '<div class="tw"><table><thead><tr>'+h.map(functio
 var G=[
  ['The short version',['Open the Make tab. The gold card always shows the next thing to make.','Keep pressing the one big button. First it copies the prompt: paste it into the tool named on the step (ChatGPT, Meshy, a sound tool) and make it. Then it copies the name: paste that when you save. A 3D object has two names, the plain one first and then the textured one, and the button gives you each in turn. Then it says Done, next, and moves you to the next step.','Pictures are named with .png on the end. Models are named without an ending, because Meshy adds .glb itself. The name is how the game finds the file.','Tick the box. If the file is in your art folder with the right name, the tool ticks it for you the next time I scan the folder.','You never have to add anything to a prompt. Each one already tells the AI what the game is, what the picture is for and what must not be in it.']],
  ['What you never need to make',['Separate wings, tails, jaws or legs for anything alive. One model with a skeleton is enough.','Animation clips made with credits (Text to Motion). I make throws, summons, hurt, landings, attacks, flying and the rest in code.','The same move twice. A move made once plays on every duelist, and on every creature of the same body type, because I map one skeleton onto another even when the bone names differ.','Clips for outfits and later forms. They only need a skeleton; they borrow the moves.','A plain, untextured copy of anything that gets a skeleton. Only objects and scenery need the plain copy as well, and the tool gives you both names.','Sizes, colours cut to the palette, glow, smoke, sparkles or shadows. I add those.','Anything for swarm enemies beyond the one model.']],
- ['The kinds of asset',['Flat picture that repeats (textures): a square picture of grass, stone or sand. The game lays it side by side across the ground. No 3D.','3D model: a picture first, then Meshy turns the picture into a 3D shape. Two steps.','3D model with a skeleton: anything alive (duelists, monsters, enemies, bosses, wildlife). Meshy puts bones inside the one model, and I move them.','3D model with moving parts: only for objects that open or turn, like a chest lid or a gate door. The moving piece is its own small model.','Sheets: one picture holding nine icons or nine effect frames. I cut them apart.','Paintings, screen pieces, sounds and music: one prompt, one file.']],
- ['How a 3D model is made',['Step 1, the picture. ChatGPT draws the thing alone on a plain grey background, whole, evenly lit. This is the plan Meshy copies, so if the picture is wrong, fix the picture, not the model.','Step 2, the model. In Meshy choose Image to 3D, upload the picture, set the polygon number on the step, and generate. Look at it from every side before downloading.','Polygons (triangles) are the tiny flat faces a model is built from. Fewer means faster on a phone. The number on each step is the target; pick the nearest setting above it and I trim the rest.','Download the GLB twice: with texture and without. The plain one is cleaner for me to slim down; the textured one gives me the colours.','You never have to set the size. I size every model from the game\'s size chart.']],
+ ['The kinds of asset',['Flat picture that repeats (detail tiles): a square GREY picture of grass, stone or sand shapes. The game lays it side by side across the ground and adds the colour. No 3D.','3D model: a picture first, then Meshy turns the picture into a 3D shape. Two steps.','3D model with a skeleton: anything alive (duelists, monsters, enemies, bosses, wildlife). Meshy puts bones inside the one model, and I move them.','3D model with moving parts: only for objects that open or turn, like a chest lid or a gate door. The moving piece is its own small model.','Sheets: one picture holding nine icons or nine effect frames. I cut them apart.','Paintings, screen pieces, sounds and music: one prompt, one file.']],
+ ['How a 3D model is made',['Step 1, the picture. ChatGPT draws the thing alone on a plain grey background, whole, evenly lit. This is the plan Meshy copies, so if the picture is wrong, fix the picture, not the model.','Step 2, the model. In Meshy choose Image to 3D, upload the picture, set the polygon number on the step, and generate. Look at it from every side before downloading.','Polygons (triangles) are the tiny flat faces a model is built from. Fewer means faster on a phone. The number on each step is the target; pick the nearest setting above it and I trim the rest.','Download the GLB twice: with texture and without. The plain one is cleaner for me to slim down; the textured one tells me which part is which, and I give each part its colour from the locked palette.','You never have to set the size. I size every model from the game\'s size chart.']],
  ['Moving parts, in plain words',['This is now only for objects: a chest lid, a gate door, a spinning blade. Living things use a skeleton instead (next section).','A model from Meshy is one solid lump, like a statue. For an object that opens or turns, you also make that piece alone. The tool lists it as an extra step.','In the game I attach the piece and move it: lids fly open, doors swing, blades spin.','Smoke, glow and sparkles are effects I add. Do not put them in the model.']],
  ['Skeletons and animation',['Anything alive is animated with a skeleton (a rig): bones inside the one model that bend it. No separate wing, tail or jaw models are needed.','Creatures and monsters: open the model in Meshy, choose Rig, let it place the bones, check they reach the wing tips and tail tip, and download. Add no clips. I make every move in code: flying, walking, biting, breathing fire.','Duelists and two-legged characters: their picture is in an A-pose (arms out and down, legs apart) so Meshy can see each limb. Choose the two-legged rig, drop the markers, and add only Idle, Walking and Running from the free library.','Do not spend credits on Text to Motion. Throws, summons, hurt, landings, victory and the rest are made in code and shared across every character.','Swarm enemies need nothing from you: I bake a short loop into each so hundreds can be on screen.','Everything else (trees swaying, chests opening, platforms flipping, cards dealing) I animate in code.']],
- ['If a result looks wrong',['Picture has a background, floor or shadow: ask ChatGPT "same thing, plain flat light grey background, no floor, no shadow".','Picture is cut off or at an odd angle: ask for "the whole thing, fully inside the picture, three-quarter front view".','Texture has stripes or repeats inside itself: ask for "one tile only, shapes scattered at random, no rows".','Model has holes, melted parts or extra limbs: generate again in Meshy, or simplify the picture (fewer thin bits).','Too detailed or too realistic: ask for "chunkier, simpler, bigger shapes, like a toy".','Writing or symbols sneak in: ask to remove them. No text ever.','Not sure? Send it to me. I check it and tell you keep or redo.']],
+ ['If a result looks wrong',['Picture has a background, floor or shadow: ask ChatGPT "same thing, plain flat light grey background, no floor, no shadow".','Picture is cut off or at an odd angle: ask for "the whole thing, fully inside the picture, three-quarter front view".','Picture has painted shadows, shine or tiny texture: ask for "flat solid colours only, one colour per face, flat even light".','Detail tile has stripes or repeats inside itself: ask for "one grey tile only, shapes scattered at random, no rows".','Model has holes, melted parts or extra limbs: generate again in Meshy, or simplify the picture (fewer thin bits).','Too detailed or too realistic: ask for "chunkier, simpler, bigger shapes, like a toy".','Writing or symbols sneak in: ask to remove them. No text ever.','Not sure? Send it to me. I check it and tell you keep or redo.']],
 ];
 var tree='app art\\DS\\\n├─ 2d\\\n│  ├─ concepts\\   pictures made for Meshy (the plans for 3D models)\n│  ├─ textures\\   ground and wall textures\n│  ├─ icons\\      sheets of nine icons and badges\n│  ├─ ui\\         frames, bars, buttons\n│  ├─ art\\        key art, map cards, portraits, card art\n│  └─ fx\\         effect pictures\n├─ 3d\\            models (.glb), plus -plain and -anim versions\n│  └─ parts\\      wings, tails, lids and other moving parts\n├─ sound\\         sound effects (.wav)\n└─ music\\         music (.wav)';
 $('#tab-guide').innerHTML=G.map(function(s){return '<h2>'+esc(s[0])+'</h2><ul>'+s[1].map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul>'}).join('')+
  '<h2>Where everything is saved</h2><p>Make these folders once. Every step shows its full path and has a button to copy the file name.</p><div class="tree">'+esc(tree)+'</div>'+
  '<p>File names are lower case with dashes, exactly as shown. Pictures are PNG, models GLB, sound and music WAV.</p>'+
- '<h2>What I do with your files</h2><ul><li>Slim each model to its triangle budget and fix seams.</li><li>Cut colours to the stage palette and shrink textures to crunchy pixel size.</li><li>Set the size from the size chart, attach parts, add animation and effects.</li><li>Put it in the game build and show you a screenshot.</li></ul>'+
+ '<h2>What I do with your files</h2><ul><li>Slim each model to its triangle budget and fix seams.</li><li>Give every part its colour from the locked palette, one flat colour per face.</li><li>Set the size from the size chart, attach parts, add animation and effects.</li><li>Put it in the game build and show you a screenshot.</li></ul>'+
  (D.web?'<h2>Your ticks</h2><p>Ticks on this page are saved to your account, so they follow you to your phone.</p>':'<h2>Your ticks</h2><p>Ticks are saved in this browser on this PC. Files I find in your art folder tick themselves. When I update this file, your ticks stay.</p>');
 var L=D.look;
 $('#tab-look').innerHTML='<h2>The look: '+esc(L.name)+'</h2><div class="grid2">'+L.pillars.map(function(p){return '<div class="card"><b>'+esc(p[0])+'</b><p>'+esc(p[1])+'</p></div>'}).join('')+'</div>'+
@@ -238,6 +254,6 @@ if(location.hash.length>1&&byCode[location.hash.slice(1)])openAsset(location.has
 
 // ---------- online ticks (link version only)
 if(D.web&&window.claude&&window.claude.use){window.claude.use('db').then(function(d){if(!d)return;db=d;dbDoc=d.doc('progress/made');
-  dbDoc.onSnapshot(function(snap){var x=snap.exists?snap.data()||{}:{},ch=false;Object.keys(x).forEach(function(k){var kk=k.replace(/~/g,'.');if(mine[kk]!==x[k]){mine[kk]=x[k];ch=true}});if(ch){try{localStorage.setItem(LS,JSON.stringify(mine))}catch(e){}refresh()}},function(){})}).catch(function(){})}
+  dbDoc.onSnapshot(function(snap){var b=$('#sv');if(b){b.textContent='Synced to your account';b.className='sv on'}var x=snap.exists?snap.data()||{}:{},ch=false;Object.keys(x).forEach(function(k){var kk=k.replace(/~/g,'.');if(mine[kk]!==x[k]){mine[kk]=x[k];ch=true}});if(ch){try{localStorage.setItem(LS,JSON.stringify(mine))}catch(e){}refresh()}},function(){var b=$('#sv');if(b){b.textContent='Saved on this device (not synced right now)';b.className='sv'}})}).catch(function(){})}
 })();
 </script>

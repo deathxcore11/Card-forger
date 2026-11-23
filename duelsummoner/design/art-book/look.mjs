@@ -4,27 +4,33 @@
 export const LOOK_NAME = 'The Sunlit Kingdom';
 
 export const PILLARS = [
-  ['Toy-chunky shapes', 'Every model is low-poly with big flat faces, thick parts and exaggerated bevels, like a carved wooden toy. Tops are a little wider than bases. A shape must read as a black silhouette at 40 pixels tall.'],
-  ['Crunchy painted pixels', 'Surfaces carry small hand-painted pixel textures, drawn big and blocky and shown with hard square pixels (no smoothing). Shading is painted in 2 to 3 tones. No photo textures, no realistic wear, no shiny plastic.'],
-  ['One bright sky, three moods', 'Stage 1 is warm and sunlit, Stage 2 cold and blue, Stage 3 black, gold and violet. Each stage keeps to its palette so a screenshot tells you where you are.'],
-  ['Cards everywhere', 'The world was built by duelists: giant stone cards stand in the ground, doors are card backs, platforms are cards, monsters rise from glowing floor cards. The card is our signature shape. The game never uses eyes in triangles, ankhs, puzzle pendants, millennium-style gold items, hieroglyph walls or pharaoh headdresses.'],
-  ['Readable chaos', 'Enemies are dark-rimmed and earthy; the duelist and summons are bright and clean; danger is red and orange; loot is gold, cyan and violet. With 300 enemies on screen the player still finds themself, their summons, danger and loot in under half a second.'],
-  ['Goofy summons, huge bosses', 'Summons are cute-heroic, big heads and big feet, a bit silly next to the duelist. Bosses are enormous and serious. The size chart is law.'],
+  ['Flat faces, no textures on models', 'Every model is cut from big flat planes, 6 to 12 faces per part, one solid colour per face, with edges bevelled like the edge of a thick card. A shape must read as a black silhouette at 40 pixels tall. Only ground, cliffs and walls carry a soft grey detail tile, which the game colours.'],
+  ['The card is the signature', 'Doors, platforms, bridges, shields, plaques and pedestals are card slabs with rounded corners and a carved frame. A standing stone card is 3 x 4.5 x 0.4 m; a colossal one is 18 to 24 m. The game never uses eyes in triangles, ankhs, puzzle pendants, millennium-style gold items, hieroglyph walls or pharaoh headdresses.'],
+  ['One locked palette', 'Every colour comes from the ramps below. When I bake a model, each part is mapped to a named ramp, so a mixed batch of pictures still lands in one world.'],
+  ['Four reserved colours', 'Gold means "use me". Cyan means XP. Violet means summons, Fusions and seals. Red means danger. Scenery never uses them, so 300 enemies on screen never hide the loot. Elites may wear a gold rim because they drop loot.'],
+  ['Value before hue', 'The ground stays mid-bright. Landmarks are dark against a bright horizon. An actor\'s main body sits clearly lighter or darker than the ground under it and gets a thin ink outline; the player\'s outline is white. Props never get outlines, so actors always pop.'],
+  ['The game owns light and motion', 'Fire, glow, water, falling sand, smoke, sparks, wind, light columns and the guide thread are made by the game. Pictures and models are drawn flat and evenly lit, with no glow and no painted shadow.'],
+  ['Retro by render, modern by engine', 'A low-resolution picture with hard pixels and fog in the horizon colour. The pixel pattern is used only for fog, sky and see-through fades (scenery between the camera and the duelist, and your own screen-sized effects).'],
+  ['Goofy summons, huge bosses', 'Summons are round and friendly with big heads and big feet. Swarm enemies are hunched, pointed and darker than the sand. Bosses are monuments. The size chart is law.'],
 ];
 
 export const PALETTES = [
-  { stage: 'Surface Ruins (Stage 1)', mood: 'Hot afternoon, bleached stone, deep teal sky, wind in olive trees.', colours: [
-    ['#4fc6d8', 'Sky teal'], ['#bfeef2', 'Haze'], ['#e8cf9a', 'Sandstone light'], ['#c79a5b', 'Sandstone'], ['#8a5f37', 'Sandstone shadow'],
-    ['#f2ead6', 'Bleached bone'], ['#c4623a', 'Terracotta'], ['#7fa04a', 'Olive leaf'], ['#4f7a3a', 'Leaf shadow'], ['#a7c76a', 'Grass'], ['#e3b23c', 'Old gold']] },
-  { stage: 'Sealed Catacombs (Stage 2)', mood: 'Cold crypt, blue seal-fire, rust chains, dripping water, dust in light shafts.', colours: [
-    ['#0f1a26', 'Deep shadow'], ['#23384d', 'Crypt slate'], ['#3c5a73', 'Slate light'], ['#6e8aa0', 'Wet stone edge'], ['#3fd6e0', 'Seal-fire teal'],
-    ['#b8f4ff', 'Seal-fire core'], ['#8c4a2f', 'Rust'], ['#d9d0b8', 'Old bone'], ['#4b3a5c', 'Bruise violet'], ['#c9a24a', 'Tarnished gold']] },
-  { stage: 'Vault of the Last Duel (Stage 3)', mood: 'A cavern of falling gold sand under a black sky, violet crystals, crimson banners, the last throne.', colours: [
-    ['#0d0814', 'Void'], ['#2a1840', 'Cavern violet'], ['#5a3a8a', 'Amethyst'], ['#b48cff', 'Crystal glow'], ['#f2c14e', 'Gold sand'],
-    ['#ffe9a8', 'Sand light'], ['#9a6a1e', 'Gold shadow'], ['#a3203a', 'Royal crimson'], ['#e8e0f0', 'Moon white'], ['#1e1e2a', 'Basalt']] },
-  { stage: 'Duel colours (every stage)', mood: 'Shared meaning. Never use these for scenery.', colours: [
-    ['#ffffff', 'Player outline'], ['#46e0ff', 'XP crystal'], ['#ffd23f', 'Coins and gold loot'], ['#b26bff', 'Summon and Fusion magic'], ['#ff3b30', 'Danger, telegraphs'],
-    ['#ff8a1f', 'Fire'], ['#ffe14a', 'Lightning'], ['#8ae8ff', 'Ice'], ['#8fd14f', 'Poison'], ['#d9fff0', 'Wind'], ['#c08a3e', 'Earth'], ['#fff3b8', 'Light'], ['#6b3fa0', 'Dark']] },
+  { stage: 'Surface Ruins (Stage 1)', mood: 'Hot afternoon, bleached stone, shade under parasol trees. The only warm light in the game.', colours: [
+    ['#8f7048', 'Sand shadow'], ['#c09c66', 'Sand'], ['#e2c896', 'Sand light'], ['#b09470', 'Road'], ['#3f6e4e', 'Canopy shadow'], ['#5a9a66', 'Canopy'], ['#9cc88a', 'Canopy light'],
+    ['#8fa860', 'Meadow'], ['#5e5048', 'Bark'], ['#b0aa9e', 'Rock'], ['#dcd8ce', 'Rock light'], ['#a89578', 'Ruin stone'], ['#e6dcc0', 'Bone'], ['#4a4250', 'Landmark stone'], ['#b4643f', 'Terracotta'], ['#3e7f80', 'Cloth'], ['#2e3f66', 'Pool ink'], ['#8fb2cc', 'Sky'], ['#e8d6b0', 'Horizon']] },
+  { stage: 'Sealed Catacombs (Stage 2)', mood: 'Cold, damp, quiet. No sun: pale shafts of daylight and ghost-light lamps.', colours: [
+    ['#0f1a26', 'Deep slate'], ['#23384d', 'Slate'], ['#3c5a73', 'Slate light'], ['#6e8aa0', 'Wet stone edge'], ['#9a917c', 'Old bone shadow'], ['#d9d0b8', 'Old bone'],
+    ['#5a3020', 'Rust shadow'], ['#8c4a2f', 'Rust'], ['#3f5f52', 'Verdigris'], ['#5f8a74', 'Verdigris light'], ['#8fbf8a', 'Ghost-light (made by the game)'], ['#d8f0c8', 'Ghost-light core']] },
+  { stage: 'Vault of the Last Duel (Stage 3)', mood: 'A cavern whose roof is lost in black. Basalt, ash-gold sand, moon-white crystal and crimson. No violet in the scenery.', colours: [
+    ['#0d0b12', 'Void'], ['#1e1e2a', 'Basalt'], ['#2e2c3a', 'Basalt mid'], ['#46445a', 'Basalt light'], ['#8a7a5c', 'Ash-gold sand shadow'], ['#b8a37c', 'Ash-gold sand'], ['#d9c7a0', 'Sand light'],
+    ['#9fb4d0', 'Moon-white shadow'], ['#d8e4f4', 'Moon-white'], ['#f4f8ff', 'Moon-white light'], ['#5a1420', 'Crimson shadow'], ['#a3203a', 'Crimson']] },
+  { stage: 'Duelists, summons and enemies', mood: 'Duelists and summons are bright and clean. Enemies are earthy and darker than the sand, with amber eyes as their only bright spot.', colours: [
+    ['#c08a64', 'Skin'], ['#e8b890', 'Skin light'], ['#c8462c', 'Ember costume'], ['#f08040', 'Ember light'], ['#2f7f86', 'Teal costume'], ['#6fc0c0', 'Teal light'], ['#5e4030', 'Leather'], ['#f0e8d4', 'Cream'], ['#18161c', 'Ink'],
+    ['#4a4034', 'Enemy dust dark'], ['#6e604c', 'Enemy dust'], ['#9a8a70', 'Enemy dust light'], ['#4a5260', 'Enemy grave'], ['#e0a040', 'Amber eyes']] },
+  { stage: 'Reserved colours (never on scenery)', mood: 'Shared meaning in every stage. These are the brightest things on screen.', colours: [
+    ['#ffffff', 'Player outline'], ['#46e0ff', 'XP crystals only'], ['#e0b765', 'Gold: things you use, the goal, elite rim'], ['#fff0b8', 'Gold light'], ['#b26bff', 'Violet: summons, Fusions, seals'], ['#f4ecff', 'Violet light'], ['#ff3b30', 'Danger: enemy attack warnings']] },
+  { stage: 'Element effects (made by the game, never on models)', mood: 'Bright moving light, each tuned so it cannot be mistaken for a reserved colour.', colours: [
+    ['#ffc24a', 'Fire (yellow-white core, never red)'], ['#bfdcff', 'Lightning (blue-white, not gold)'], ['#cfeefc', 'Ice (milky, not XP cyan)'], ['#8fd14f', 'Poison'], ['#d9fff0', 'Wind'], ['#c08a3e', 'Earth'], ['#fffbe8', 'Light (white-hot)'], ['#2a2632', 'Dark (black with a moon-white edge)']] },
 ];
 
 // Size chart: the duelist is 1.8 m = 1x. src/data/scale.js on the PC is the source of truth for the game.
@@ -41,17 +47,18 @@ export const SCALE = [
   ['Fusions', '2 to 3x', '3.6 to 5.4 m', '1,600 to 2,400'],
   ['God Fusions', '4x', '7.2 m', '2,500 to 3,500'],
   ['Chests, shrines, pickups', 'Oversized x1.5', 'Chest 1.2 m long', '60 to 400'],
-  ['Trees', 'Big', '5 to 9 m', '120 to 350 (instanced)'],
-  ['Landmarks', 'Huge', '10 to 40 m', '600 to 2,500'],
+  ['Trees', 'Big', '9 to 16 m', '120 to 600 (instanced)'],
+  ['Rocks', 'Low 1.2 to 1.5 m, tall 3 m, hero 4.5 to 6 m', '2 to 6 m', '60 to 300'],
+  ['Landmarks (built by the game)', 'Huge', '20 to 40 m, mega 60 m and up', 'up to 600 each from the kit'],
 ];
 
 export const BUDGETS = [
   ['Triangles on screen', 'Under 250,000 at 300 enemies (swarm drawn instanced, one draw per enemy type).'],
   ['Draw calls', 'Under 150 per frame. Props share one material atlas per stage.'],
-  ['Character textures', 'One 256 x 256 picture per character, 32 to 48 colours, shown with hard pixels.'],
-  ['Prop textures', 'Props use the stage material swatches (64 x 64, tileable) instead of their own picture, so a whole stage is one texture page.'],
+  ['Model colour', 'No textures on models. One flat colour per face, taken from the locked palette when I bake the model.'],
+  ['Ground and wall detail', 'Grey detail tiles, 64 x 64, repeated every 8 m. The game colours them from the stage palette.'],
   ['UI pictures', 'Drawn at 2x the size they show at, cut to 64 colours, shown with hard pixels.'],
-  ['Frame time', '8.3 ms at 120 Hz on the AYN Thor is the bar; the PC build runs the same content.'],
+  ['Frame time', '8.3 ms at 120 Hz on the two-screen handheld is the bar; the PC build runs the same content.'],
 ];
 
 export const PIPELINE = [
@@ -60,7 +67,7 @@ export const PIPELINE = [
   ['3. Parts', 'Creatures that flap, swing or chew need their moving parts as separate models (a card says which). Make the body first, then each part with the part prompt.'],
   ['4. Rig', 'Two-legged people and husks: use Meshy\'s auto-rig and pick its walk, run, idle and attack clips. Everything else is animated in code from its parts.'],
   ['5. Save', 'Download both GLBs (textured and plain) into app art\\DS\\3d with the file name on the card. 2D pictures go to app art\\DS\\2d as PNG.'],
-  ['6. My part', 'I pull the folder, weld and slim each model to its budget, cut its colours to the stage palette, set its size from the chart, and send it to the PC build.'],
+  ['6. My part', 'I pull the folder, weld and slim each model to its budget, give every part its colour from the locked palette (one flat colour per face), set its size from the chart, and send it to the PC build.'],
 ];
 
 export const NEVER = 'Not allowed anywhere: text, letters, numbers, runes or writing of any kind; logos, watermarks or signatures; an eye inside a triangle, ankhs, puzzle-box pendants, gold millennium-style relics, hieroglyph walls, pharaoh headdresses, sphinx faces; any character, creature, card, logo or symbol from an existing game, anime, show or film; realistic gore; photo textures.';
