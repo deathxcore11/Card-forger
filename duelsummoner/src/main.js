@@ -244,7 +244,7 @@ function results() {
   const top = Object.entries(game.damageBy).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ' ' + Math.round(v)).join('  /  ');
   $('dBreakdown').textContent = top ? 'Damage taken: ' + top : '';
   { const BD = game.bracketDmg; let tot = 0, best = 0; for (let i = 1; i < 10; i++) { tot += BD[i]; if (BD[i] > BD[best]) best = i; }          // which bracket the extra damage came from
-    $('dBracket').textContent = tot > 0 && best ? 'What broke the game: ' + BRACKET_NAMES[best] + ' (' + Math.round(BD[best] / tot * 100) + '% of your extra damage)' : ''; }
+    $('dBracket').textContent = tot > 0 && best ? 'Biggest damage boost: ' + BRACKET_NAMES[best] + ' (' + Math.round(BD[best] / tot * 100) + '% of your extra damage)' : ''; }
   { const rows = Object.entries(game.dealtLog).map(([k, a]) => [k, a.reduce((s, v) => s + (v || 0), 0)]).filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]), tot = rows.reduce((s, r) => s + r[1], 0);      // a bar for every source with its share of all the damage you dealt
     $('dShare').innerHTML = tot > 0 ? '<div class="dim" style="margin:6px 0 2px">Damage dealt, by source</div>' + rows.slice(0, 7).map(r => { const p = Math.round(r[1] / tot * 100); return '<div style="display:grid;grid-template-columns:38% 1fr 3.2em;gap:6px;align-items:center;margin:2px 0"><span style="overflow:hidden;white-space:nowrap;text-transform:capitalize">' + r[0].replace(/-/g, ' ') + '</span><span style="background:#2a2036;height:0.9em;display:block"><i style="display:block;height:100%;width:' + Math.max(2, p) + '%;background:#ffd23f"></i></span><span style="text-align:right">' + p + '%</span></div>'; }).join('') : ''; }
   drawHud(game, true); setMode('dead');
@@ -260,7 +260,7 @@ let lastBlockTick = 0;
 function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt') actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'banner') showBanner(data);
-  else if (type === 'offer') { setMode('offer'); showOffer(game, menu); }
+  else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); }
   else if (type === 'levelup') { fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
   else if (type === 'hit') fx.number(b, Math.min(heightAt(b, c), 40) + 1.7, c, a, data);       // at the target's own height, not a fixed 1.7 m
   else if (type === 'relic') { fx.ring(a, game.p.y + 0.3, b, 30, 0xffffff, 0.7); fx.ring(a, game.p.y + 0.3, b, 14, 0xffe08a, 0.5); fx.burst(a, game.p.y + 1.2, b, 40, 0xffe08a, 8, 6, 0.3, 0.8, 5); fx.shake(0.35); }

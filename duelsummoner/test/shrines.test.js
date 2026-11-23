@@ -29,5 +29,5 @@ test('shrines: a higher rarity multiplies the stat', () => {
   const a = mk(9), b = mk(9); addBlessing(a, 'might', 1); addBlessing(b, 'might', 3);
   assert.ok(Math.abs(a.mods.dmgMult - 0.1) < 1e-9); assert.ok(Math.abs(b.mods.dmgMult - 0.3) < 1e-9);
   const c = mk(9); addBlessing(c, 'guard', 1.5); assert.equal(c.mods.armour, 2, 'armour stays whole'); const d = mk(9); addBlessing(d, 'vigor', 2); assert.equal(d.p.maxHp, 100 + 40);
-  assert.equal(BLESSINGS.might.fmt(3), '+30% damage.'); assert.equal(BLESSINGS.renewal.fmt(2), 'Regain 1 LP every 2 s.');
+  assert.equal(BLESSINGS.might.fmt(3), '+30% damage.'); assert.equal(BLESSINGS.renewal.fmt(2), 'Regain 1 health every 2 s.');
 });

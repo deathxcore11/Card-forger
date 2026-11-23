@@ -33,12 +33,12 @@ function drawFrenzy(g) {
   let el = $('frenzyChip'); if (!el) { el = document.createElement('div'); el.id = 'frenzyChip'; $('strip').after(el); }
   const txt = g.frenzyT > 0 ? '\u25CF COIN RITE ' + clock(Math.ceil(g.frenzyT)) : ''; if (txt === frenzyTxt) return; frenzyTxt = txt; el.textContent = txt; el.style.display = txt ? 'block' : 'none';
 }
-const ROLE_LETTER = { elite: 'E', bossA: 'A', bossB: 'B' };
+const ROLE_LETTER = { elite: 'ELITE', bossA: 'BOSS', bossB: 'TWINS' };
 function drawStrip(g) {                                                    // elite, boss A, boss B and gate icons under the clock
   const S = g.stageSpec, st = g.evState, G = g.gate;
   let k = S.id + '|' + G.state + '|' + G.awake; for (let i = 0; i < st.length; i++) k += st[i];
   if (k === stripKey) return; stripKey = k;
-  let h = ''; S.timeline.forEach((ev, i) => { h += '<span class="' + (st[i] === 2 ? 'done' : st[i] === 1 ? 'now' : '') + '" title="' + ev.name + ' at ' + clock(ev.t) + '">' + ROLE_LETTER[ev.role] + ' ' + clock(ev.t) + '</span>'; });
+  let h = ''; S.timeline.forEach((ev, i) => { h += '<span class="' + (st[i] === 2 ? 'done' : st[i] === 1 ? 'now' : '') + '" title="' + ev.name + ' at ' + clock(ev.t) + '">' + ROLE_LETTER[ev.role] + ' ' + clock(Math.max(0, S.clock - ev.t)) + '</span>'; });       // the chips count down on the same clock as the big timer
   h += '<span class="' + (G.state === 'fight' ? 'fight' : G.state === 'done' ? 'done' : G.awake ? 'now' : '') + '" title="' + S.gate.name + '">GATE</span>';
   $('strip').innerHTML = h;
 }
@@ -74,7 +74,7 @@ export function drawHud(g, force) {
   if (force || k !== key) {
     key = k;
     $('hpnum').textContent = Math.ceil(g.p.hp); $('hpmax').textContent = g.p.maxHp;
-        $('xpnum').textContent = 'LV ' + g.level + '  ' + Math.floor(g.xpCur) + '/' + Math.ceil(g.xpNeed);
+        $('xpnum').textContent = 'LV ' + g.level;       // the level and the bar only: a fraction beside a bar always disagreed with it
         $('clock').textContent = g.mode !== 'classic' ? runClock(g) : g.t >= 480 ? 'OVERTIME +' + clock(g.t - 480) : clock(g.t); $('kills').textContent = g.kills; $('coins').textContent = g.coins; { const W = g.world, open = W && (W.cchests || []).some(c => !c.open && !c.free); const el = $('chestPrice'); el.textContent = open ? '(chest ' + chestPrice(g) + ')' : ''; el.style.color = open && g.coins >= chestPrice(g) ? '#ffd23f' : ''; }       // the next paid chest and its price, gold once you can pay it
   }
   // field: 4 Monster Zones then 4 Spell and Trap Zones
@@ -144,9 +144,11 @@ export function drawStatPanel(g, on) {
 export function showBanner(text) {
   const b = $('banner'); b.textContent = text; b.classList.add('on'); clearTimeout(bannerT); bannerT = setTimeout(() => b.classList.remove('on'), 3200);
 }
-let flashShown = -1, flashEl = null;
+let flashShown = -1, flashEl = null, flashPrev = 0, flashStart = -1e9;
 export function showFlash(g) {
-  const q = g.flash > 0 ? Math.round(Math.min(1, g.flash / 0.25) * 25) / 25 : 0;
+  // one short edge vignette per hit, and a new one starts at most every 350 ms (three a second): hits inside that window hold the level instead of retriggering
+  const now = performance.now(); if (g.flash > (flashPrev || 0) + 0.01 && now - flashStart > 350) flashStart = now; flashPrev = g.flash;
+  const age = (now - flashStart) / 1000, lvl = age < 0.25 ? 1 - age / 0.25 : 0, q = g.flash > 0 || lvl > 0 ? Math.round(lvl * 25) / 25 : 0;
   if (q !== flashShown) { flashShown = q; (flashEl || (flashEl = $('flash'))).style.opacity = q; }
 }
 

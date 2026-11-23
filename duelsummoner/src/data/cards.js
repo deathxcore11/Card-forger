@@ -53,15 +53,15 @@ export function formOf(id, level) {
 
 // Spells: levels are stacks. "per" values are added per stack.
 export const SPELLS = {
-  'toll-of-ash': { name: 'Toll of Ash', rarity: 'rare', kind: 'spell', text: 'Every 5 s you pay 3% of your current Life Points (never below 1). +10% Might a level.', per: { dmgMult: 0.10, toll: 1 } },
-  'kindling-rite': { name: 'Kindling Rite', rarity: 'rare', kind: 'spell', text: 'Fire burns +1.4 damage a second, and +1.4 s a stack.', per: { burnDps: 1.4, burnDur: 1.4 } },
-  'deep-marks': { name: 'Deep Marks', rarity: 'rare', kind: 'spell', text: 'Marks last 4 s longer and add +14% damage taken a stack.', per: { markDur: 4, markBonus: 0.14 } },
-  'pack-drill': { name: 'Pack Drill', rarity: 'rare', kind: 'spell', text: 'Monster hits do 21% more a stack. The Source bracket: it rewards committing to one kind of damage, up to x3.', per: { drill: [0, 0.21] } },
-  'elemental-litany': { name: 'Elemental Litany', rarity: 'rare', kind: 'spell', text: '+17% damage in each element for every monster of it you field, a stack. The Affinity bracket.', per: { affPerElement: 0.17 } },
-  'swift-draw': { name: 'Swift Draw', rarity: 'common', kind: 'spell', text: 'Your card throw is 28% faster a stack.', per: { cardRate: 0.28 } },
-  'runners-sash': { name: "Runner's Sash", rarity: 'common', kind: 'spell', text: '+11% move speed and +14% dash distance a stack.', per: { move: 0.11, dash: 0.14 } },
-  'heart-of-the-cards': { name: 'Heart of the Cards', rarity: 'common', kind: 'spell', text: '+28 max Life Points and heal 28 now.', per: { maxLp: 28 }, healNow: 28 },
-  'collectors-eye': { name: "Collector's Eye", rarity: 'common', kind: 'spell', text: '+35% pickup range and +14% XP a stack.', per: { pickup: 0.35, xp: 0.14 } }
+  'toll-of-ash': { name: 'Toll of Ash', rarity: 'rare', kind: 'spell', text: 'Every 5 s you pay 3% of your current health (never below 1). +10% Might per level.', per: { dmgMult: 0.10, toll: 1 } },
+  'kindling-rite': { name: 'Kindling Rite', rarity: 'rare', kind: 'spell', text: 'Fire burns +1.4 damage a second, and +1.4 s per level.', per: { burnDps: 1.4, burnDur: 1.4 } },
+  'deep-marks': { name: 'Deep Marks', rarity: 'rare', kind: 'spell', text: 'Marks last 4 s longer and add +14% damage taken per level.', per: { markDur: 4, markBonus: 0.14 } },
+  'pack-drill': { name: 'Pack Drill', rarity: 'rare', kind: 'spell', text: 'Monster hits do 21% more per level. The Source bracket: it rewards committing to one kind of damage, up to x3.', per: { drill: [0, 0.21] } },
+  'elemental-litany': { name: 'Elemental Litany', rarity: 'rare', kind: 'spell', text: '+17% damage in each element for every monster of it you field, per level. The Affinity bracket.', per: { affPerElement: 0.17 } },
+  'swift-draw': { name: 'Swift Draw', rarity: 'common', kind: 'spell', text: 'Your card throw is 28% faster per level.', per: { cardRate: 0.28 } },
+  'runners-sash': { name: "Runner's Sash", rarity: 'common', kind: 'spell', text: '+11% move speed and +14% dash distance per level.', per: { move: 0.11, dash: 0.14 } },
+  'heart-of-the-cards': { name: 'Heart of the Cards', rarity: 'common', kind: 'spell', text: '+28 max health and heal 28 now.', per: { maxLp: 28 }, healNow: 28 },
+  'collectors-eye': { name: "Collector's Eye", rarity: 'common', kind: 'spell', text: '+35% pickup range and +14% XP per level.', per: { pickup: 0.35, xp: 0.14 } }
 };
 export const ONE_SHOTS = {
   'second-wind': { name: 'Second Wind', rarity: 'epic', kind: 'oneshot', text: 'Heal to full, once, now.' },

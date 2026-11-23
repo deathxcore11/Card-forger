@@ -6,7 +6,7 @@ export const DUELIST_INFO = {
           start: 'ember-wyvern', color: 0x3c2a66, outfits: [{ id: 'kael-1', name: 'Cinder Coat', killsNeeded: 15000 }, { id: 'kael-2', name: 'Ashen Mantle', quest: 'mastery-kael-5' }] },
   mira: { name: 'Mira', title: 'Rune Scribe', joke: 'Annotates everything, including the enemies.', passive: 'Graveyard Toll: every kill quickens her monsters (planned: the Ledger passive).',
           start: 'rune-apprentice', color: 0x1f6a6a, outfits: [{ id: 'mira-1', name: 'Margin Robes', killsNeeded: 15000 }, { id: 'mira-2', name: 'Inked Cloak', quest: 'mastery-mira-5' }] },
-  vesh: { name: 'Vesh', title: 'Hollow Hand', locked: true, quest: 'duelist-vesh', joke: '???', passive: 'Hollow Hand: hits harder the lower his Life Points (planned).', start: null, color: 0x552233, outfits: [] },
+  vesh: { name: 'Vesh', title: 'Hollow Hand', locked: true, quest: 'duelist-vesh', joke: '???', passive: 'Hollow Hand: hits harder the lower his health (planned).', start: null, color: 0x552233, outfits: [] },
   oren: { name: 'Oren', title: 'Page Binder', locked: true, quest: 'duelist-oren', joke: '???', passive: 'Bound Pages: Spell and Trap levels sharpen his luck (planned).', start: null, color: 0x4a5a2a, outfits: [] }
 };
 export const DUELIST_ORDER = ['kael', 'mira', 'vesh', 'oren'];
@@ -29,7 +29,7 @@ export const DIFF_CHIPS = { easy: 1.0, medium: 1.1, hard: 1.2 };
 // Oaths: a rule sworn before the run. Each is its own quest (reward on completing a run with it), and is recorded in the run report.
 // complete: how the run counts as keeping the oath ('clear' = cleared every stage; swift also needs the time). scorePct: added to the score multiplier in percent.
 export const OATHS = [
-  { id: 'glass', name: 'Glass Oath', text: 'Your Life Points are 1 and cannot be raised.', reward: { chips: 60 }, scorePct: 20 },
+  { id: 'glass', name: 'Glass Oath', text: 'Your health are 1 and cannot be raised.', reward: { chips: 60 }, scorePct: 20 },
   { id: 'hasty', name: 'Hasty Oath', text: 'The whole game runs at 1.25x speed.', reward: { chips: 25 }, scorePct: 10 },
   { id: 'small', name: 'Small Oath', text: 'Your duelist and summons are half size.', reward: { chips: 15 }, scorePct: 5 },
   { id: 'still', name: 'Still Oath', text: 'No dashing.', reward: { chips: 30 }, scorePct: 10 },

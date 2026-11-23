@@ -134,15 +134,17 @@ export function buildOffer(g, minRarity, reroll) {
   const dropUps = () => { for (let i = pool.length - 1; i >= 0; i--) if (isUp(pool[i])) pool.splice(i, 1); };
   const take = c => { out.push(c); const i = pool.indexOf(c); if (i >= 0) pool.splice(i, 1); if (isUp(c)) dropUps(); };
   if (!allow) dropUps();
+  const seen = g.upgSeen || (g.upgSeen = {}); g.offerN = (g.offerN || 0) + (reroll ? 0 : 1);
+  if (!reroll && g.lastOffered) { const avoid = new Set(g.lastOffered), keep = pool.filter(c => !(c.isNew && avoid.has(c.id))); if (keep.length >= OFFER.size) { pool.length = 0; pool.push(...keep); } }       // a new card you passed on does not come straight back
   // forced cards: the partner monster by level 3, a Trap by level 4
   if (g.level >= OFFER.secondMonsterByLevel && !f.monsters.some(m => m && (m.id === D.second || (FUSIONS[m.id] && FUSIONS[m.id].from.includes(D.second))))) {
     const c = pool.find(x => x.id === D.second && x.isNew); if (c) take(c);
   }
-  if (g.level >= OFFER.trapByLevel && !f.spells.some(s => s && TRAPS[s.id]) && out.length < OFFER.size) {
-    const c = pool.find(x => x.kind === 'trap' && x.isNew); if (c) take(c);
+  if (g.level >= OFFER.trapByLevel && !g.trapForced && !f.spells.some(s => s && TRAPS[s.id]) && out.length < OFFER.size) {       // the first Trap is pushed into one offer, once
+    const c = pool.find(x => x.kind === 'trap' && x.isNew); if (c) { take(c); g.trapForced = true; }
   }
   if (OFFER.guaranteeMonsterUpgrade && allow && out.length < OFFER.size && !out.some(isUp)) {
-    const ups = pool.filter(x => x.kind === 'monster' && !x.isNew); if (ups.length) take(ups[Math.floor(g.rl() * ups.length)]);
+    const ups = pool.filter(x => x.kind === 'monster' && !x.isNew); if (ups.length) { let best = ups[0]; for (const u of ups) if ((seen[u.id] === undefined ? -1 : seen[u.id]) < (seen[best.id] === undefined ? -1 : seen[best.id])) best = u; take(best); }       // the guaranteed upgrade rotates to the monster offered longest ago
   }
   while (out.length < OFFER.size && pool.length) {
     const want = rarityRoll(g);
@@ -151,6 +153,7 @@ export function buildOffer(g, minRarity, reroll) {
     if (!tier.length) tier = pool;
     take(tier[Math.floor(g.rl() * tier.length)]);
   }
+  for (const c of out) { if (isUp(c)) seen[c.id] = g.offerN; } if (!reroll) g.lastOffered = out.map(c => c.id); else g.lastOffered = out.map(c => c.id);
   const flag = out.some(isUp); if (reroll && H.length) H[H.length - 1] = flag; else H.push(flag); if (H.length > 3) H.shift();
   return out;
 }

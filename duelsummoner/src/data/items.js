@@ -7,12 +7,12 @@ export const ITEMS = {
   'sand-sandals':      { name: 'Sand Sandals', rarity: 'common', price: 30, text: '+6% move speed.', mods: { move: 0.06 } },
   'cracked-hourglass': { name: 'Cracked Hourglass', rarity: 'common', price: 30, text: 'Trap recharge 10% shorter.', mods: { trapRecharge: 0.10 } },
   'scarab-charm':      { name: 'Scarab Charm', rarity: 'common', price: 30, text: '+15% coins.', mods: { coinMult: 0.15 } },
-  'clay-heart':        { name: 'Clay Heart', rarity: 'common', price: 30, text: '+15 max LP.', mods: { maxLp: 15 } },
+  'clay-heart':        { name: 'Clay Heart', rarity: 'common', price: 30, text: '+15 max health.', mods: { maxLp: 15 } },
   'lucky-coin':        { name: 'Lucky Coin', rarity: 'common', price: 30, text: '+5% luck: better rarities in offers.', mods: { luck: 0.05 } },
   'whetstone-tablet':  { name: 'Whetstone Tablet', rarity: 'common', price: 30, text: '+5% crit chance.', mods: { crit: 0.05 } },
   'travelling-cloak':  { name: 'Travelling Cloak', rarity: 'common', price: 30, text: 'Dash cooldown 15% shorter.', mods: { dashCd: 0.15 } },
   'lodestone':         { name: 'Lodestone', rarity: 'common', price: 30, text: '+20% pickup range.', mods: { pickup: 0.20 } },
-  'bandaged-hand':     { name: 'Bandaged Hand', rarity: 'common', price: 30, text: 'Regain 1 LP every 5 s.', mods: { regen: 0.2 } },
+  'bandaged-hand':     { name: 'Bandaged Hand', rarity: 'common', price: 30, text: 'Regain 1 health every 5 s.', mods: { regen: 0.2 } },
   'bronze-scale':      { name: 'Bronze Scale', rarity: 'common', price: 30, text: '+1 armour: each hit does 1 less (never below 1).', mods: { armour: 1 } },
   'dueling-boots':     { name: 'Dueling Boots', rarity: 'common', price: 30, text: '+1 air jump.', mods: { airJumps: 1 } },
   'hunters-mark':      { name: "Hunter's Mark", rarity: 'rare', price: 60, text: '+25% damage to elites and bosses.', mods: { bossDmg: 0.25 } },
@@ -33,9 +33,9 @@ const r1 = n => Math.round(n * 10) / 10;
 export const BLESSINGS = {
   might:     { name: 'Blessing of Might', text: '+10% damage.', fmt: m => '+' + r1(10 * m) + '% damage.', mods: { dmgMult: 0.10 } },
   swiftness: { name: 'Blessing of Swiftness', text: '+8% move speed.', fmt: m => '+' + r1(8 * m) + '% move speed.', mods: { move: 0.08 } },
-  vigor:     { name: 'Blessing of Vigor', text: '+20 max LP and heal 20.', fmt: m => '+' + Math.round(20 * m) + ' max LP and heal ' + Math.round(20 * m) + '.', mods: { maxLp: 20 }, heal: 20 },
-  haste:     { name: 'Blessing of Haste', text: 'Monsters attack 10% faster.', fmt: m => 'Monsters attack ' + r1(10 * m) + '% faster.', mods: { monsterRate: 0.10 } },
+  vigor:     { name: 'Blessing of Vigor', text: '+20 max health and heal 20.', fmt: m => '+' + Math.round(20 * m) + ' max health and heal ' + Math.round(20 * m) + '.', mods: { maxLp: 20 }, heal: 20 },
+  haste:     { name: 'Blessing of Haste', text: 'Your monsters attack 10% faster.', fmt: m => 'Your monsters attack ' + r1(10 * m) + '% faster.', mods: { monsterRate: 0.10 } },
   guard:     { name: 'Blessing of the Guard', text: '+1 armour.', fmt: m => '+' + Math.round(m) + ' armour.', mods: { armour: 1 } },
   plenty:    { name: 'Blessing of Plenty', text: '+15% XP.', fmt: m => '+' + r1(15 * m) + '% XP.', mods: { xp: 0.15 } },
-  renewal:   { name: 'Blessing of Renewal', text: 'Regain 1 LP every 4 s.', fmt: m => 'Regain 1 LP every ' + r1(4 / m) + ' s.', mods: { regen: 0.25 } }
+  renewal:   { name: 'Blessing of Renewal', text: 'Regain 1 health every 4 s.', fmt: m => 'Regain 1 health every ' + r1(4 / m) + ' s.', mods: { regen: 0.25 } }
 };
