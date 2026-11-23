@@ -376,6 +376,19 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
           const odd = held.find(([, a, z]) => a !== held[0][1] || z !== held[0][2]);
           if (odd) out.push(`the plaques in lines of words hold their words unalike: "${held[0][0].textContent.trim()}" with ${held[0][1]} and ${held[0][2]} pixels at its left and right, "${odd[0].textContent.trim()}" with ${odd[1]} and ${odd[2]}`);
         }
+        // offered: on the Anvil every working the run's offer holds (read from the run the page stored) has its plaque on
+        // the ledge, inside it and on no other plaque, so no choice the rules give is left out when the ledge is crowded
+        let run = null; try { run = JSON.parse(localStorage.getItem('lostmemories.run.v1')); } catch { run = null; }
+        const ledgeEl = app.querySelector('.fr > .ledge');
+        if (app.dataset.phase === 'anvil' && run && run.phase === 'anvil' && run.offer && run.offer.kind === 'anvil' && ledgeEl) {
+          const want = [...(run.offer.masterworks || []).map(id => 'mw:' + id), 'temper', ...(run.offer.enchants || []).map(x => 'enchant:' + x), 'bind'];
+          const L = ledgeEl.getBoundingClientRect();
+          for (const a of want) {
+            const b = ledgeEl.querySelector(`.pq[data-a="${a}"]`);
+            if (!b || !vis(b)) { out.push(`the Anvil offers the working ${a}, but the ledge shows no plaque for it`); continue; }
+            const q = b.getBoundingClientRect(); if (q.left < L.left - .5 || q.right > L.right + .5 || q.top < L.top - .5 || q.bottom > L.bottom + .5) out.push(`${name(b)} "${b.textContent.trim()}": the working's plaque reaches out of the ledge`);
+          }
+        }
         // bar: a short message lies on the text bar, and the save bar is as wide
         const W0 = app.offsetWidth, H0 = app.offsetHeight, toastEl = app.querySelector('#toast');
         if (toastEl && toastEl.textContent.trim() && vis(toastEl)) { const [tx, ty, tw2] = fr(toastEl); if (tx !== 96 || ty !== H0 - 40 || tw2 !== W0 - 192) out.push(`#toast at ${tx}, ${ty}, ${tw2} wide: not on the text bar (96, ${H0 - 40}, ${W0 - 192} wide)`); }

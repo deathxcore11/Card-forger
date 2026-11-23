@@ -1913,10 +1913,34 @@ function psAnvil() {
     .concat([[`TEMPER ${Pr.temper}`, 'temper', !e || !db.isMonster(e.id) || e.t || r.embers < Pr.temper, 'Temper: the chosen monster gains 300 ATK and DEF for the rest of the run.']])
     .concat(o.enchants.map(x => [`${x} ${Pr.enchant}`.toUpperCase(), `enchant:${x}`, !e || !db.isMonster(e.id) || e.e || r.embers < Pr.enchant, `${cap(x)}: ${ENCHANT_TEXT[x]}`]))
     .concat([[`BIND ${Pr.bind}`, 'bind', !e || !e2 || r.embers < Pr.bind, 'Bind: the two chosen cards become one meld card in your deck.']]);
-  // Three columns of plaques on three rows. A working whose words and the hammer need more than a column takes two,
-  // and each plaque goes in the first place on the rows that holds it, so a short one fills the gap a long one left.
+  // Every working the engine offers stands on the ledge, in three rows. Three columns of plaques, as long as the nine places
+  // hold them: a working whose words and the hammer need more than a column takes two, and each plaque goes in the first
+  // place on the rows that holds it, so a short one fills the gap a long one left. When they need more than nine places
+  // (three Masterworks on a narrow frame), the rows are laid by the plaques' own widths instead: the workings, in their
+  // order, split into three rows, each no wider than the columns, the split whose widest row is narrowest (then whose
+  // next widest is, so the rows come out even), and each row's plaques widened to fill it: all alike when the widest
+  // leaves room for that, or else the long ones as wide as their words and the hammer need and the others alike in what
+  // they leave.
+  const lit = i => !works[i][2] && i === works.findIndex(w => !w[2]), gw = 3 * cw + 8, need = works.map(w => pqW(w[0]));
   const used = [[], [], []], at = span => { for (let y = 0; y < 3; y++) for (let x = 0; x + span <= 3; x++) if (!used[y].slice(x, x + span).some(Boolean)) { for (let j = x; j < x + span; j++) used[y][j] = 1; return [x, y]; } return null; };
-  const ledge = works.map(([t, a, off], i) => { const span = pqW(t) <= cw ? 1 : 2, p = at(span); return p ? pq(4 + p[0] * (cw + 4), 4 + p[1] * 19, span * cw + (span - 1) * 4, t, a, { off, lit: !off && i === works.findIndex(w => !w[2]) }) : ''; }).join('');
+  const cells = works.map((w, i) => { const span = need[i] <= cw ? 1 : need[i] <= 2 * cw + 4 ? 2 : 4, p = span < 4 && at(span); return p && [p[0], p[1], span]; });
+  let ledge;
+  if (cells.every(Boolean)) ledge = works.map(([t, a, off], i) => { const [x, y, span] = cells[i]; return pq(4 + x * (cw + 4), 4 + y * 19, span * cw + (span - 1) * 4, t, a, { off, lit: lit(i) }); }).join('');
+  else {
+    const n = works.length, rowW = (i, j) => need.slice(i, j).reduce((s, v) => s + v, 0) + 4 * (j - i - 1);
+    const narrower = (p, q) => { for (let y = 0; y < 3; y++) if (p[y] !== q[y]) return p[y] < q[y]; return false; };
+    let best = null;
+    for (let a = 1; a <= n; a++) for (let b = a; b <= n; b++) {
+      const cut = [0, a, b, n], wide = [0, 1, 2].map(y => cut[y + 1] > cut[y] ? rowW(cut[y], cut[y + 1]) : 0).sort((p, q) => q - p);
+      if (!best || narrower(wide, best[0])) best = [wide, cut];
+    }
+    const fill = (ns, room) => { let left = room, pool = ns.map((v, i) => i);
+      for (;;) { const big = pool.filter(i => ns[i] * pool.length > left); if (!big.length) break; for (const i of big) left -= ns[i]; pool = pool.filter(i => !big.includes(i)); if (!pool.length) break; }
+      const ws = ns.slice(); pool.forEach((i, m) => { ws[i] = (left / pool.length | 0) + (m < left % pool.length ? 1 : 0); }); return ws; };
+    ledge = [0, 1, 2].map(y => { const [i, j] = [best[1][y], best[1][y + 1]]; if (j === i) return '';
+      const ws = fill(need.slice(i, j), gw - 4 * (j - i - 1)); let x = 4;
+      return works.slice(i, j).map(([t, a, off], m) => { const h = pq(x, 4 + y * 19, ws[m], t, a, { off, lit: lit(i + m) }); x += ws[m] + 4; return h; }).join(''); }).join('');
+  }
   const bar = e ? `${card(e.id).name}${e.t ? ', tempered' : ''}${e.e ? ', enchanted' : ''}${e2 ? ' and ' + card(e2.id).name : ''}. ${works.filter(w => !w[2]).map(w => w[3]).join(' ') || 'Nothing here can be done to it with your Embers.'}` : `One working, then you move on. Tap a deck card (a second one for a Bind). ${works.map(w => w[3]).join(' ')}`;
   G.barText = bar;
   return frame({ left: psYou(r), right: roomRight(r), view: roomBack('room-forge') + deckGrid(r.deck, 'anvilpick', G.pickDeck, G.pickTrunk), ledge, bar });
