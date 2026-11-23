@@ -1,4 +1,4 @@
-import { launch, wait } from './cdp.mjs';
+﻿import { launch, wait } from './cdp.mjs';
 // Tier 5 (Tablebreak) at the game camera on Stage 1: a 120-creature crowd, warnings on top, the three big own attacks stamped into the ground with hollow giants, the sky tinted. Measures the claimed share (pixels that differ with Tier 5 on and off),
 // the four screen edges and the horizon crossings, takes the picture, then the Tablebreak picture (the three pieces shifted 4, 6 and 8 art pixels).   node test/browser-tier5.mjs <outdir>
 const EL = process.argv[3] || 'fire', b = await launch({ out: process.argv[2], query: '?seed=1&fxlab' });
@@ -10,6 +10,14 @@ console.log(await b.evalIn(`(async()=>{ const D = __ds, g = D.game, { spawnEnemy
 await wait(300); await b.shot(EL === 'fire' ? 'tier5' : 'tier5_' + EL);
 console.log('claimed', await b.evalIn('(async()=>JSON.stringify(await window.__fxlab.tier5Measure()))()'));
 console.log('duelistPixels', JSON.stringify(await b.evalIn('JSON.stringify(__ds.duelistPixels())'))); console.log('own', await b.evalIn('JSON.stringify(window.__fxlab.own())'));
-if (EL === 'fire') { await b.evalIn('__ds.tablebreak(true)'); await wait(500); await b.shot('tablebreak'); }
+if (EL === 'fire') {
+  // the warning check: the same frame drawn twice in ONE task (sim frozen, nothing else moving), once without and once with the break held; the pixels of the warning mask must be identical
+  console.log('warning-check', await b.evalIn(`(()=>{ const D = __ds, c = document.getElementById('view'), grab = () => { D.blitNow(); const cv = document.createElement('canvas'); cv.width = c.width; cv.height = c.height; const x = cv.getContext('2d'); x.drawImage(c, 0, 0); return x.getImageData(0, 0, c.width, c.height).data; };
+    const A = grab(); D.tablebreak(true); const B = grab(), m = D.maskRead(), s = +c.dataset.block; let n = 0, ch = 0, all = 0; for (let Y = 0; Y < c.height; Y++) for (let X = 0; X < c.width; X++) { const i = (Y * c.width + X) * 4, d = A[i] !== B[i] || A[i + 1] !== B[i + 1] || A[i + 2] !== B[i + 2]; if (d) all++; const ix = Math.floor(X / s), iy = m.h - 1 - Math.floor(Y / s); if (ix < m.w && iy >= 0 && m.b[iy * m.w + ix] > 127) { n++; if (d) ch++; } } return JSON.stringify({ warningPixels: n, warningPixelsChanged: ch, allPixelsChanged: all }); })()`));
+  await wait(500); await b.shot('tablebreak'); }
 console.log('errors', JSON.stringify(await b.evalIn('JSON.stringify(window.__errs.slice(0,2))')));
 b.close(); setTimeout(() => process.exit(0), 300);
+
+
+
+

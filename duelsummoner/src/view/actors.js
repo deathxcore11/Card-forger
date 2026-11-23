@@ -1,4 +1,4 @@
-// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
+﻿// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
 // telegraphs and effects, pickups. Positions are blended between the last two sim ticks so any refresh rate looks smooth.
 import { CFG } from '../data/config.js';
 import { KIND_LIST, BOSS_COLORS as BC } from '../data/enemies.js';
@@ -9,7 +9,7 @@ import { DuelistRig } from './rig.js';
 import { actorLit, setStains, setSkyTint } from './engine.js';
 import { Ribbon } from './ribbon.js';
 import { OwnEffects } from './ownfx.js';
-import { RAMP } from '../data/fxramp.js';
+import { RAMP, ELEMENTS } from '../data/fxramp.js';
 import { ownColour } from './fxcolour.js';
 import { statusLit, statusAttr } from './status.js';
 import { creatureGeometry, creatureLit } from './creatures.js';
@@ -145,6 +145,7 @@ export class Actors {
     this.teleDisc = instanced(flat(new T.CircleGeometry(1, 28)), ghost(0xffffff), 128); this.teleDisc.instanceColor = new T.InstancedBufferAttribute(new Float32Array(128 * 3), 3);
     this.fxRing = instanced(flat(new T.RingGeometry(0.82, 1, 28)), ghost(0xffffff), 64); this.fxRing.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
     this.teleRing = instanced(flat(new T.RingGeometry(0.955, 1, 40)), ghost(0xffffff), 64); this.teleRing.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);       // the thin pale outline of a blast circle
+    for (const m of [this.teleLine, this.teleDisc, this.fxRing, this.teleRing]) m.layers.enable(3);       // layer 3 = enemy warnings: the Tablebreak priority mask draws only these
     scene.add(this.teleLine, this.teleDisc, this.fxRing, this.teleRing);
     // soft contact shadows: a dark radial blob under the duelist, summons and swarm enemies (cheap: one instanced quad, no shadow maps)
     { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, 'rgba(30,18,8,0.62)'); gr.addColorStop(0.45, 'rgba(30,18,8,0.52)'); gr.addColorStop(0.8, 'rgba(30,18,8,0.18)'); gr.addColorStop(1, 'rgba(30,18,8,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
@@ -168,7 +169,7 @@ export class Actors {
     fx.ring(o.x, o.y + 0.05, o.z, o.r, hex, 0.5 + 0.4 * tier);
   }
   // Tier 5 (spec 1.4): every large own area is stamped into the stain map and gets a hollow giant at its TRUE rule radius, 16 m tall at Reach +0% up to 40 m at +150%, its top rising and falling slowly at 0.5 Hz; the footprint is never enlarged
-  _tier5(o, rch) { const el = o.el || 'fire', L = RAMP[el] || RAMP.fire, oc = ownColour(el); this._lead = this._lead || el; this._stains.push({ x: o.x, z: o.z, r: o.r, hex: L[3], hexK: oc }); const h = 16 + 24 * Math.min(1, rch / 1.5) + 1.5 * Math.sin(performance.now() / 1000 * Math.PI); this.own.wall(o.x, o.y, o.z, o.r, h, oc, 1);
+  _tier5(o, rch) { const el = o.el || 'fire', L = RAMP[el] || RAMP.fire, oc = ownColour(el); this._lead = this._lead || el; const ground = el === "dark" ? [L[0], L[1]] : el === "ice" ? [L[2], L[0]] : [L[3], oc]; this._stains.push({ x: o.x, z: o.z, r: o.r, hex: ground[0], hexK: ground[1] }); const h = 24 + 40 * Math.min(1, rch / 1.5) + 1.5 * Math.sin(performance.now() / 1000 * Math.PI); this.own.wall(o.x, o.y, o.z, o.r, h, oc, 1, ELEMENTS.indexOf(el));
     const row = ({ fire: 0, ice: 1, lightning: 2, poison: 3, wind: 4, earth: 5, light: 6, dark: 7 })[el] || 0, dt = Math.min(0.05, this._dt || 0.016), n = Math.min(3, Math.floor(dt * 70 + Math.random()));       // the tongues break off as ember cards and sparks that rise and die
     for (let k = 0; k < n; k++) { const a = Math.random() * 6.2832, x = o.x + Math.cos(a) * o.r, z = o.z + Math.sin(a) * o.r; this.fx.sparkEl(x, o.y + h * (0.2 + Math.random() * 0.7), z, (Math.random() - 0.5) * 2, 3 + Math.random() * 4, (Math.random() - 0.5) * 2, row, 0.18 + Math.random() * 0.14, 1.2 + Math.random()); } }
   // the enemy a chain jump reached gets the crawling outline for 300 ms (the nearest live enemy to the bolt's end point, within 1.5 m)
@@ -178,7 +179,7 @@ export class Actors {
     if (!f) {
       const geo = flat(new T.CircleGeometry(1, 20, Math.PI / 2 - arc * Math.PI / 360, arc * Math.PI / 180));
       f = instanced(geo, basic(0xffffff, WARN({ transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide })), max || 16);
-      f.instanceColor = new T.InstancedBufferAttribute(new Float32Array((max || 16) * 3), 3); this.scene.add(f); this.fans.set(arc, f);
+      f.instanceColor = new T.InstancedBufferAttribute(new Float32Array((max || 16) * 3), 3); f.layers.enable(3); this.scene.add(f); this.fans.set(arc, f);
     }
     return f;
   }
@@ -592,6 +593,13 @@ export class Actors {
 
 import { heightAt } from '../sim/terrain.js';
 function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
+
+
+
+
+
+
 
 
 

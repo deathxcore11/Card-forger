@@ -1,4 +1,4 @@
-// Game-feel effects. View only: nothing here reads or changes the rules, everything is fed from the sim's event queue and from
+﻿// Game-feel effects. View only: nothing here reads or changes the rules, everything is fed from the sim's event queue and from
 // state changes the view notices. Every pool is fixed size and allocated once (particles 4000, damage numbers 64, rings 48,
 // beams 4, flipping cards 12), so steady state allocates nothing per frame.
 const T = window.THREE;
@@ -32,7 +32,8 @@ export class Fx {
     const pg = new T.InstancedBufferGeometry(); pg.setAttribute('position', new T.Float32BufferAttribute([-0.5, -0.5, 0, 0.5, -0.5, 0, 0.5, 0.5, 0, -0.5, 0.5, 0], 3)); pg.setIndex([0, 1, 2, 0, 2, 3]);
     pg.setAttribute('iP0', new T.InterleavedBufferAttribute(this.pbuf, 4, 0)); pg.setAttribute('iV0', new T.InterleavedBufferAttribute(this.pbuf, 4, 4)); pg.setAttribute('iK', new T.InterleavedBufferAttribute(this.pbuf, 4, 8)); pg.setAttribute('iC', new T.InterleavedBufferAttribute(this.pbuf, 3, 12)); pg.instanceCount = N;
     this.puni = { uTime: { value: 0 }, uRamp: FX.ramp };
-    this.pm = new T.Mesh(pg, new T.ShaderMaterial({ uniforms: this.puni, fog: false,
+    this.pm = new T.Mesh(pg, new T.ShaderMaterial({ uniforms: this.puni, fog: false, stencilWrite: true, stencilRef: 0, stencilFunc: T.EqualStencilFunc, stencilFuncMask: 0x04, stencilWriteMask: 0x00, stencilFail: T.KeepStencilOp, stencilZFail: T.KeepStencilOp, stencilZPass: T.KeepStencilOp,       // a particle never paints over an enemy warning (stencil bit 2)
+
       vertexShader: 'attribute vec4 iP0; attribute vec4 iV0; attribute vec4 iK; attribute vec3 iC; uniform float uTime; varying vec3 vCol; varying float vU; varying float vRow;\n' +
         'void main() { float t = uTime - iP0.w, u = t / iV0.w; if (t < 0.0 || u >= 1.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }\n' +
         ' float e = iK.y > 0.0 ? (1.0 - exp(-iK.y * t)) / iK.y : t; vec3 p = iP0.xyz + iV0.xyz * e; p.y -= 0.5 * iK.x * t * t; if (iK.x > 0.0) p.y = max(p.y, 0.05);\n' +
@@ -211,6 +212,7 @@ export class Fx {
   }
   applyShake(camera) { const s = this.shakeOff; if (this.trauma <= 0) return; const lim = Math.min(0.25, 0.02 * this.camDist), l = Math.hypot(s.x, s.y, s.z), k = l > lim ? lim / l : 1; camera.position.x += s.x * k; camera.position.y += s.y * k; camera.position.z += s.z * k; camera.rotation.z += s.roll; }       // shake never moves the eye more than 0.25 m
 }
+
 
 
 

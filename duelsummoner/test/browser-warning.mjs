@@ -1,4 +1,4 @@
-import { launch, wait } from './cdp.mjs';
+﻿import { launch, wait } from './cdp.mjs';
 // The rule that must never fail: an enemy warning is never dimmed, thinned or hidden by an own effect. A danger-red telegraph circle and line lie under a 30 m own disc and inside an own dome, at the game camera, with the sim frozen and the grass off;
 // the warning's pixels (found in the frame WITHOUT own effects) must be identical in the frame WITH them.   node test/browser-warning.mjs <outdir>
 const b = await launch({ out: process.argv[2], query: '?seed=1&fxlab' });
@@ -17,3 +17,5 @@ await b.evalIn(`(async()=>{ const D = __ds, g = D.game, C = await import('/src/s
 await wait(1500); await b.evalIn(snap); await b.shot('warning_on');
 console.log(await b.evalIn(`(()=>{ const [Z, A, A2, B] = window.__f; let red = 0, diff = 0, maxd = 0; for (let i = 0; i < A.length; i += 4) { if (Z[i + 1] - A[i + 1] > 25 && A[i] - Z[i] > -8 && A[i] === A2[i] && A[i + 1] === A2[i + 1] && A[i + 1] === A2[i + 1] && A[i + 2] === A2[i + 2]) { red++; const d = Math.abs(A[i] - B[i]) + Math.abs(A[i + 1] - B[i + 1]) + Math.abs(A[i + 2] - B[i + 2]); if (d > 0) { diff++; if (d > maxd) maxd = d; const q = i / 4, W_ = document.getElementById('view').width, px = q % W_, py = (q / W_) | 0, key = (px >> 5) + ',' + (py >> 5); (window.__h = window.__h || {})[key] = (window.__h[key] || 0) + 1; } } } return JSON.stringify({ warningPixels: red, changed: diff, maxChannelSum: maxd, where: Object.entries(window.__h || {}).sort((a, b) => b[1] - a[1]).slice(0, 5), own: __fxlab.own() }); })()`));
 b.close(); setTimeout(() => process.exit(0), 300);
+
+

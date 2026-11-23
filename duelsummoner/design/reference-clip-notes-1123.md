@@ -13,3 +13,11 @@ Feel only, in our own words. Our colour rules win over anything in the clips (no
 - **HUD.** Top left: health bar, a small grid of owned weapon and item icons, and a task list. Top right: a round minimap with a compass. Stat panel on the right during offers.
 
 What this changes for us: the level-up beat and the boss-fall white-out are the two big moments worth matching in our own style; hordes of 100+ readable creatures are the target the stand-in creatures and the Tier 5 look must hold.
+
+
+## Spectacle queue: two designs from the clip notes (queued, NOT built; our own looks)
+
+1. Level-up beat. When the offer panel opens, card-fan rays stand behind it: five to seven pale rays fanning out from the panel's top edge, each a flat card-shaped sliver (5:7 ratio, ink edge, one tone from the leading element's ramp), slowly turning out by about 12 degrees over the half second the panel takes to arrive, then still. The world behind dims by the existing dim term, nothing moves in the sim. Class B moment (no hit-stop). Flash: none. Comfort switch: rays appear without the turn.
+2. Boss-fall white-out. One second, class A. The screen is flooded with a pale flash that is stepped through the ramp, never smooth: three hard steps (bright, then body, then shade) at 0.10 s, 0.35 s and 0.70 s, then clear, with the boss's fall pose held still behind it. Strength is the FlashGate's stage-capped value (never pure white; the ramp's bright tone of the boss's element). The comfort switch (Reduce flashes) replaces it with a 1.0 s dim and a slow fade, no steps. Hit-stop 80 ms, from sim ticks only, as always.
+
+Both go through the director (one moment owns the screen at a time) and neither touches the sim or the replay hash.

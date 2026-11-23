@@ -1,4 +1,4 @@
-// The own-effect material (spectacle spec 2.5 and 6.3, build step 7). One instanced draw for every ground area the player owns (discs, rings, fans) and one for volumes (domes and walls), both with
+﻿// The own-effect material (spectacle spec 2.5 and 6.3, build step 7). One instanced draw for every ground area the player owns (discs, rings, fans) and one for volumes (domes and walls), both with
 //   - the INK RULE: an effect paints at most uInk of the screen in fill however big it grows (fill keep = uInk / screen cover, floored at 12.5% and capped by the governor), stippled with the one Bayer function,
 //   - a SOLID RIM in the effect's colour with a 1 art pixel ink edge, never dithered (except 50% inside the keyhole),
 //   - the KEYHOLE: inside a screen circle round the duelist's chest fills are 0% and rims 50%; plus the stencil test (NOTEQUAL 1) so nothing paints over the duelist's own pixels,
@@ -17,15 +17,43 @@ uniform float uRimK; uniform float uProjY; uniform float uAspect; uniform float 
 float coverOf(float rad, float viewZ) { float rN = rad * uProjY / max(viewZ, 0.5); return clamp(3.1416 * rN * rN / (4.0 * uAspect), 0.0, 1.0); }
 `;
 
-// A hollow giant is drawn as flame tongues only (no fill, no stipple: trees and creatures behind stay clean): a ring of columns about 1.8 m wide, each a stepped tongue that peaks in the middle, 30 to 100% of the wall height by the shared
-// noise, re-rolled 8 times a second so the tongues lick upward; three hard colour steps (hot base, body, dark tip) and a 1 pixel ink edge; the gaps between tongues are see-through.
+// A hollow giant (Tier 5) is drawn from the element's own silhouette (no fill, no stipple: trees and creatures behind stay clean; the gaps are see-through). The wall is a ring of columns about 1.8 m wide, warped so the spacing is uneven:
+//   fire (and every element not listed): flame tongues in 4 shapes (centred, leaning left, leaning right, twin tip), width and height from the shared noise, a slow lean with the gust, tips that break into floating bands, three hard tone steps
+//   ice  (1): faceted shards of mixed size in two layers, two flat facets each (light and body), a pale tip, the ring flaring outward with height
+//   dark (7): black void slabs with a thin moon-white edge, wisps in the gaps that run down toward the base, a slight outward flare
+// The camera-side arc is cut to 1.5 m; the cut rises smoothly with depth so the side arcs stand at full height. The far ring is lower (55%), so the player is inside it.
 const WALL_GLSL = `
-  { float H = vB.x, y01 = (vWP.y - vY0) / H, ang = atan(vLocal.y, vLocal.x) / 6.2832 + 0.5, cols = max(10.0, floor(vRad * 6.2832 / 1.8)), cell = floor(ang * cols), cf = fract(ang * cols);
-    float nh = N(vec2(cell * 0.173 + 0.31, floor(uT * 8.0) / 64.0 * 3.0)).r, nh2 = N(vec2(cell * 0.173 + 0.31, floor(uT * 8.0) / 64.0 * 3.0 + y01 * 0.5)).g;
-    float lim = (0.3 + 0.7 * nh) * (1.0 - 1.5 * abs(cf - 0.5)) + (nh2 - 0.5) * 0.06;
-    if (y01 > lim || lim < 0.04) discard;
-    float tt = y01 / max(lim, 0.01); vec3 tone = tt < 0.34 ? min(vCol * 1.3, vec3(1.0)) : (tt < 0.7 ? vCol : vCol * 0.55);
-    if (lim - y01 < 0.01 || abs(cf - 0.5) > 0.47) tone = vec3(0.118, 0.118, 0.165);
+  { float H = vB.x, el = vB.y, y = vWP.y - vY0, dd = vViewDist - uHole.w;
+    float cutH = 1.5 + 120.0 * smoothstep(-4.0, 0.0, dd);
+    if ((vViewDist < 8.0 && vWP.y > uFeetY + 1.5) || vWP.y > uFeetY + cutH) discard;
+    float hm = mix(1.0, 0.55, smoothstep(0.0, vRad * 1.6, dd)), y01 = y / H, u = wAng * wCols; u += 0.35 * sin(u * 0.83 + 1.3) + 0.25 * sin(u * 2.1);
+    float cell = floor(u), cf = fract(u), h1 = hsh(vec2(cell, 3.0)), h2 = hsh(vec2(cell, 7.0)), h3 = hsh(vec2(cell, 11.0)), eH = fyy / H;
+    float low = N(vec2(wAng * 2.0, 0.6)).g, nh = N(vec2(cell * 0.173 + 0.31, floor(uT * 8.0) / 64.0 * 3.0)).r;
+    vec3 tone = vCol; bool hit = false;
+    if (el > 6.5) {
+      float lh = (0.3 + 0.55 * h1) * (0.75 + 0.25 * low) * hm, c = 0.35 + 0.3 * h2, hw = 0.16 + 0.1 * h3, top = lh * (1.0 - 0.18 * (cf - c) / hw), ax = abs(cf - c);
+      if (ax < hw && y01 < top) { hit = true; tone = vec3(0.05, 0.045, 0.07); if (hw - ax < fu * 1.1 || top - y01 < eH * 1.2) tone = vec3(0.85, 0.89, 0.96); }
+      else { float xs = ax - hw; if (xs > 0.0 && abs(xs - 0.05) < fu * 0.9 && y01 < 0.7 * lh && fract(y01 * 7.0 - uT * 0.9 + h3 * 3.0) < 0.3) { hit = true; tone = vec3(0.85, 0.89, 0.96); } }
+    } else if (el > 0.5) {
+      for (int L = 0; L < 2; L++) {
+        float uu = u + (L == 1 ? 0.5 + 0.2 * h3 : 0.0), cl = floor(uu), cx = fract(uu), a1 = hsh(vec2(cl, 3.0 + float(L) * 14.0)), a2 = hsh(vec2(cl, 7.0 + float(L) * 14.0)), a3 = hsh(vec2(cl, 11.0 + float(L) * 14.0));
+        float lh = (0.15 + 0.85 * pow(a1, 1.6)) * hm * (L == 1 ? 0.7 : 1.0), c = 0.3 + 0.4 * a2, hw = 0.1 + 0.18 * a3, tt = y01 / max(lh, 0.01), cc = c + 0.18 * tt * (a2 - 0.5), ax = abs(cx - cc), w = hw * (1.0 - tt);
+        if (tt < 1.0 && ax < w) { hit = true; vec3 lt = min(vCol * 1.3, vec3(1.0)); tone = cx < cc ? lt : vCol * 0.8; if (tt > 0.86) tone = vec3(0.94, 0.98, 1.0); if (L == 1) tone *= 0.82; if (w - ax < fu * 1.1) tone = vec3(0.118, 0.118, 0.165); break; }
+      }
+    } else {
+      for (int L = 0; L < 2; L++) {
+        float uu = u + (L == 1 ? 0.5 + 0.2 * h3 : 0.0), cl = floor(uu), cx = fract(uu), g2 = hsh(vec2(cl, 7.0 + float(L) * 14.0)), g3 = hsh(vec2(cl, 11.0 + float(L) * 14.0)), nz = N(vec2(cl * 0.173 + 0.31 + float(L) * 0.4, floor(uT * 8.0) / 64.0 * 3.0)).r;
+        float lh = (0.25 + 0.75 * nz) * (0.7 + 0.3 * low) * hm * (L == 1 ? 0.65 : 1.0), lean = (sin(uT * 0.9 + wAng * 18.0) * 0.5 + 0.35) * 0.35 + (g2 - 0.5) * 0.3, tt = y01 / max(lh, 0.01), sh = floor(g3 * 4.0), hw0 = 0.18 + 0.3 * g2, e = -1.0;
+        if (tt < 1.0) {
+          float k = pow(1.0 - tt, 1.5);
+          if (sh < 2.5) { float p = sh < 0.5 ? 0.5 : (sh < 1.5 ? 0.3 : 0.7); e = hw0 * k - abs(cx - (p + lean * tt)); }
+          else { float e1 = 0.13 * k - abs(cx - (0.27 + lean * tt)), e2 = tt < 0.7 ? 0.1 * (1.0 - tt / 0.7) - abs(cx - (0.73 + lean * tt * 0.5)) : -1.0; e = max(e1, e2); }
+          if (tt > 0.72 && N(vec2(cl * 0.31, floor(tt * 7.0) * 0.13 + floor(uT * 5.0) * 0.071)).r < 0.4) e = -1.0;
+        }
+        if (e > 0.0) { hit = true; tone = tt < 0.34 ? min(vCol * 1.3, vec3(1.0)) : (tt < 0.7 ? vCol : vCol * 0.55); if (L == 1) tone *= 0.8; if (e < fu * 1.1) tone = vec3(0.118, 0.118, 0.165); break; }
+      }
+    }
+    if (!hit) discard;
     oc = vec4(tone, 1.0); return; }`;
 function material(kind) {
   const area = kind === 'area', wall = kind === 'wall';
@@ -43,7 +71,7 @@ void main() {
   vKeep = min(clamp(uInk / max(cover, 0.001), 0.125, 1.0), uGov);
   vCol = iC.rgb; vB = iB; vFade = iC.a; vY0 = c0.y; vRad = rad;
   ${area ? `vec3 w = vec3(c0.x + position.x * rad, c0.y + 0.12, c0.z + position.z * rad); vLocal = position.xz; vN = vec3(0.0, 1.0, 0.0);`
-         : wall ? `vec3 w = vec3(c0.x + position.x * rad, c0.y + position.y * iB.x, c0.z + position.z * rad); vLocal = position.xz; vN = normalize(vec3(position.x, 0.0, position.z));`
+         : wall ? `float fl = iB.y > 6.5 ? 0.12 : (iB.y > 0.5 ? 0.35 : 0.0); vec3 w = vec3(c0.x + position.x * rad * (1.0 + fl * position.y), c0.y + position.y * iB.x, c0.z + position.z * rad * (1.0 + fl * position.y)); vLocal = position.xz; vN = normalize(vec3(position.x, 0.0, position.z));`
          : `vec3 w = c0 + position * rad; vLocal = position.xz; vN = normalize(position);`}
   vWP = w; vec4 vp = viewMatrix * vec4(w, 1.0); vViewDist = -vp.z; vV = normalize(-vp.xyz); vN = normalize(mat3(viewMatrix) * vN);
   gl_Position = projectionMatrix * vp;
@@ -52,6 +80,8 @@ void main() {
 in vec2 vLocal; in vec3 vWP; in vec3 vN; in vec3 vV; in float vViewDist; flat in float vKeep; flat in vec3 vCol; flat in vec4 vB; flat in float vFade; flat in float vY0; flat in float vRad; out vec4 oc;
 void main() {
   float vr = length(vLocal); float fw = fwidth(vr) * 2.0, fa = fwidth(vWP.x + vWP.z);       // derivatives first, before any branch or discard
+  
+  ${wall ? 'float wAng = atan(vLocal.y, vLocal.x) / 6.2832 + 0.5, wCols = max(10.0, floor(vRad * 6.2832 / (1.8 + 0.07 * vB.x))), fu = min(fwidth(wAng * wCols), 0.5), fyy = fwidth(vWP.y);' : ''}
   float dpx = distance(gl_FragCoord.xy, uHole.xy); bool hole = dpx < uHole.z; float bay = bayer();
   ${area ? `
   if (vr > 1.0) discard;
@@ -60,7 +90,6 @@ void main() {
   bool rim = edge < rimW, ink = edge < rimW * 0.5;
   bool ringOnly = vB.w < 0.5; float band = max(fw * 3.0, min(0.06, fw * 6.0)); if (ringOnly && edge > band) discard;       // a plain ring is a thin solid band, never a fill` : `
   float fr = 1.0 - abs(dot(normalize(vN), normalize(vV))); bool rim = fr > 0.6, ink = fr > 0.8; bool ringOnly = false;
-  if ((vViewDist < uHole.w || vViewDist < 8.0) && vWP.y > uFeetY + 1.5) discard;       // the camera-side cap: the tall wall is a far-side thing
   ${wall ? WALL_GLSL : ''}`}
   vec3 col = vCol;
   if (ringOnly && !rim) { if (hole && bay > 0.5) discard; oc = vec4(col * (0.6 + 0.4 * vFade), 1.0); return; }
@@ -102,9 +131,9 @@ export class OwnEffects {
     this.recs.push(x, y, z, r, 1, 1, 1);
   }
   // a hollow giant (Tier 5): a wall of height h at the true rule radius r, a solid top and base line and a sparse fill; the camera-side part is cut to 1.5 m by the shader
-  wall(x, y, z, r, h, hex, fade) {
+  wall(x, y, z, r, h, hex, fade, el) {
     const s = this.W; if (s.n >= s.max) { this.dropped++; return; } const a = s.arr, o = s.n++ * STRIDE;
-    a[o] = x; a[o + 1] = y; a[o + 2] = z; a[o + 3] = r; a[o + 4] = h; a[o + 5] = 0; a[o + 6] = -1; a[o + 7] = 1; a[o + 8] = ((hex >> 16) & 255) / 255; a[o + 9] = ((hex >> 8) & 255) / 255; a[o + 10] = (hex & 255) / 255; a[o + 11] = fade === undefined ? 1 : fade;
+    a[o] = x; a[o + 1] = y; a[o + 2] = z; a[o + 3] = r; a[o + 4] = h; a[o + 5] = el || 0; a[o + 6] = -1; a[o + 7] = 1; a[o + 8] = ((hex >> 16) & 255) / 255; a[o + 9] = ((hex >> 8) & 255) / 255; a[o + 10] = (hex & 255) / 255; a[o + 11] = fade === undefined ? 1 : fade;
     this.recs.push(x, y, z, r, 0.4, 1, 1);
   }
   // per frame, after begin() and the area() / volume() calls: the camera values, the keyhole, the two sums and the governor, then the uploads
@@ -127,3 +156,8 @@ export class OwnEffects {
   }
   get readout() { return { areas: this.nArea, volumes: this.nVol, rasterSum: +this.rasterSum.toFixed(2), keptSum: +this.keptSum.toFixed(3), keptRaw: +(this.keptRaw || 0).toFixed(2), governor: +this.gov.toFixed(2), dropped: this.dropped }; }
 }
+
+
+
+
+

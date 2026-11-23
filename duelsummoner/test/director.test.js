@@ -1,4 +1,4 @@
-// The big-moment budgets and the director (spectacle spec 4.2 and 4.3): pure logic, run in node.
+﻿// The big-moment budgets and the director (spectacle spec 4.2 and 4.3): pure logic, run in node.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { StopBudget, FlashGate, ShakeBudget, MomentDirector, STAGE_LUM } from '../src/view/director.js';
@@ -40,3 +40,10 @@ test('director: once per run and once per stage; nothing starts while a panel is
   const p = new MomentDirector(); assert.equal(p.request('fz', 'A', 10, { blocked: true }).dropped, true); p.panel(true, 10); assert.equal(p.panel(false, 20) !== null, true);
   const q = new MomentDirector(); q.request('fz', 'A', 10, { blocked: true }); q.panel(true, 10); assert.equal(q.panel(false, 100), null);
 });
+
+test('hit-stop: a longer stop on the same tick replaces the shorter one (Tablebreak 120 ms after the Reach-cap 40 ms)', () => {
+  const b = new StopBudget(); assert.equal(b.ask(128, 0.04), 0.04); assert.equal(b.ask(128, 0.12), 0.12); assert.equal(b.ask(128, 0.05), 0);       // a shorter one on the same tick is still refused
+  assert.equal(b.log.length, 1); assert.equal(b.ask(140, 0.1), 0);       // the 24-tick gap runs from the replaced stop
+  const c = new StopBudget(); assert.equal(c.ask(10, 0.12), 0.12); assert.equal(c.ask(10, 0.04), 0);
+});
+

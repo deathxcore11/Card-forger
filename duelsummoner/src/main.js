@@ -1,4 +1,4 @@
-// Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
+﻿// Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
 import { CFG } from './data/config.js';
 import { K } from './data/tuning.js';
 import { Game } from './sim/game.js';
@@ -75,20 +75,20 @@ const sun = new T.DirectionalLight(0xffe2b0, 0.66); sun.position.set(60, 90, 30)
 // Low-res target and upscale (engine plan 0b). The scene is drawn into an internal render target and blitted to the canvas by one nearest-sampled quad at a whole-number scale:
 // s = max(2, round(screenHeight / 540)) device pixels per game pixel, internal size ceil(width / s) by ceil(height / s). Every game pixel is the same size; no CSS scaling. HUD and text stay at full resolution.
 const INTERNAL_TARGET = 540;
-let lowRT = null, blitScene = null, blitCam = null, blitQuad = null;
+let lowRT = null, maskRT = null, blitScene = null, blitCam = null, blitQuad = null;
 const composite = new Composite(renderer); composite.on = detailLevel() !== 'low' && !/[?&]composite=0/.test(location.search);       // the composite path: on at Detail Medium and High, off at Low
 const blackTex = new T.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, T.RGBAFormat); blackTex.needsUpdate = true;
 // the post material (engine plan 0c): nearest-sampled scene colour, then the palette snap: the colour is replaced by the nearest entry of the stage's palette (a 3D lookup), blended by `strength` (0 = off, 1 = full). Models, ground and walls get no dither; the strength starts at 0 until the owner has judged an A/B picture.
-const blitMat = new T.ShaderMaterial({ glslVersion: T.GLSL3, depthTest: false, depthWrite: false, uniforms: { tScene: { value: null }, tLut: { value: null }, strength: { value: 0 }, tGlow: { value: null }, uGlow: { value: 0 }, uDim: { value: 0 }, uDrain: { value: 0 }, uFlash: { value: new T.Vector4(0, 0, 0, 0) }, uTB: { value: new T.Vector3() }, uTBang: { value: new T.Vector3(0.4, 2.5, 4.6) }, uTBinfo: { value: new T.Vector4(1, 1, 1, 1) }, uDuel: { value: new T.Vector3(0.5, 0.5, 0) }, uTBh: { value: 0 }, uTBc: { value: new T.Color(0xf3e3c2) } },
+const blitMat = new T.ShaderMaterial({ glslVersion: T.GLSL3, depthTest: false, depthWrite: false, uniforms: { tScene: { value: null }, tLut: { value: null }, strength: { value: 0 }, tGlow: { value: null }, uGlow: { value: 0 }, uDim: { value: 0 }, uDrain: { value: 0 }, uFlash: { value: new T.Vector4(0, 0, 0, 0) }, uTB: { value: new T.Vector3() }, uTBang: { value: new T.Vector3(0.4, 2.5, 4.6) }, uTBinfo: { value: new T.Vector4(1, 1, 1, 1) }, uDuel: { value: new T.Vector3(0.5, 0.5, 0) }, uTBh: { value: 0 }, uTBc: { value: new T.Color(0xf3e3c2) }, tMask: { value: null } },
   vertexShader: 'out vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-  fragmentShader: 'precision highp float; precision highp sampler3D; uniform sampler2D tScene; uniform sampler2D tGlow; uniform sampler3D tLut; uniform float strength; uniform float uGlow; uniform float uDim; uniform float uDrain; uniform vec4 uFlash; uniform vec3 uTB; uniform vec3 uTBang; uniform vec4 uTBinfo; uniform vec3 uDuel; uniform float uTBh; uniform vec3 uTBc; in vec2 vUv; layout(location = 0) out vec4 outColor; void main() { vec2 uvS = vUv; vec2 px = uTBinfo.xy; if (uTBh > 0.5) { vec2 p = (vUv - uDuel.xy) * px; float rr = length(p), ang = atan(p.y, p.x), t = mod(ang - uTBang.x, 6.2832), r1 = mod(uTBang.y - uTBang.x, 6.2832), r2 = mod(uTBang.z - uTBang.x, 6.2832); int k = t < r1 ? 0 : (t < r2 ? 1 : 2); float sh = k == 0 ? uTB.x : (k == 1 ? uTB.y : uTB.z), ra = k == 0 ? uTBang.x : (k == 1 ? uTBang.y : uTBang.z); if (rr > uDuel.z && sh > 0.0) uvS = vUv - vec2(cos(ra), sin(ra)) * sh / px; } vec4 sc = texture(tScene, uvS); vec3 c = sc.rgb; if (uTBh > 0.5) { vec2 p2 = (vUv - uDuel.xy) * px, q = vUv / uTBinfo.zw - 0.5; if (max(abs(q.x), abs(q.y)) > 0.3) { for (int j = 0; j < 3; j++) { float ra2 = j == 0 ? uTBang.x : (j == 1 ? uTBang.y : uTBang.z); vec2 dr = vec2(cos(ra2), sin(ra2)); float al = dot(p2, dr), pd = abs(p2.x * dr.y - p2.y * dr.x); if (al > 0.0 && pd < (uTB.x > 0.0 ? 1.5 : 0.6)) c = uTBc; } } } if (uGlow > 0.0) c += floor(texture(tGlow, vUv).rgb * 6.0 + 0.5) / 6.0 * uGlow; if (uDrain > 0.0) c = mix(c, vec3(dot(c, vec3(0.299, 0.587, 0.114))), uDrain * step(0.9, sc.a)); c *= 1.0 - uDim * step(0.9, sc.a); c = mix(c, uFlash.rgb, uFlash.a); if (strength > 0.0) { vec3 q = texture(tLut, clamp(c, 0.0, 1.0) * (31.0 / 32.0) + 0.5 / 32.0).rgb; c = mix(c, q, strength); } outColor = vec4(c, 1.0); }' });
+  fragmentShader: 'precision highp float; precision highp sampler3D; uniform sampler2D tScene; uniform sampler2D tGlow; uniform sampler3D tLut; uniform float strength; uniform float uGlow; uniform float uDim; uniform float uDrain; uniform vec4 uFlash; uniform vec3 uTB; uniform vec3 uTBang; uniform vec4 uTBinfo; uniform vec3 uDuel; uniform float uTBh; uniform vec3 uTBc; uniform sampler2D tMask; in vec2 vUv; layout(location = 0) out vec4 outColor; void main() { vec2 uvS = vUv; vec2 px = uTBinfo.xy; if (uTBh > 0.5) { vec2 p = (vUv - uDuel.xy) * px; float rr = length(p), ang = atan(p.y, p.x), t = mod(ang - uTBang.x, 6.2832), r1 = mod(uTBang.y - uTBang.x, 6.2832), r2 = mod(uTBang.z - uTBang.x, 6.2832); int k = t < r1 ? 0 : (t < r2 ? 1 : 2); float sh = k == 0 ? uTB.x : (k == 1 ? uTB.y : uTB.z), ra = k == 0 ? uTBang.x : (k == 1 ? uTBang.y : uTBang.z); if (rr > uDuel.z && sh > 0.0) uvS = vUv - vec2(cos(ra), sin(ra)) * sh / px; } vec4 sc = texture(tScene, uvS); if (uTBh > 0.5 && (texture(tMask, uvS).r > 0.5 || texture(tMask, vUv).r > 0.5)) sc = texture(tScene, vUv); vec3 c = sc.rgb; if (uTBh > 0.5) { vec2 p2 = (vUv - uDuel.xy) * px, q = vUv / uTBinfo.zw - 0.5; if (max(abs(q.x), abs(q.y)) > 0.3) { for (int j = 0; j < 3; j++) { float ra2 = j == 0 ? uTBang.x : (j == 1 ? uTBang.y : uTBang.z); vec2 dr = vec2(cos(ra2), sin(ra2)); float al = dot(p2, dr), pd = abs(p2.x * dr.y - p2.y * dr.x); if (al > 0.0 && pd < (uTB.x > 0.0 ? 1.5 : 0.6)) c = uTBc; } } } if (uGlow > 0.0) c += floor(texture(tGlow, vUv).rgb * 6.0 + 0.5) / 6.0 * uGlow; if (uDrain > 0.0) c = mix(c, vec3(dot(c, vec3(0.299, 0.587, 0.114))), uDrain * step(0.9, sc.a)); c *= 1.0 - uDim * step(0.9, sc.a); c = mix(c, uFlash.rgb, uFlash.a); if (strength > 0.0) { vec3 q = texture(tLut, clamp(c, 0.0, 1.0) * (31.0 / 32.0) + 0.5 / 32.0).rgb; c = mix(c, q, strength); } outColor = vec4(c, 1.0); }' });
 function setPaletteStage(stage) { if (!blitMat.uniforms.tLut.value) { const t = new T.DataTexture3D(buildPaletteLUT(stage), 32, 32, 32); t.format = T.RGBAFormat; t.type = T.UnsignedByteType; t.minFilter = t.magFilter = T.NearestFilter; t.wrapR = t.wrapS = t.wrapT = T.ClampToEdgeWrapping; t.unpackAlignment = 1; t.needsUpdate = true; blitMat.uniforms.tLut.value = t; } else { const t = blitMat.uniforms.tLut.value; t.image.data = buildPaletteLUT(stage); t.needsUpdate = true; } }
 function resize() {
   const dpr = window.devicePixelRatio || 1, dw = Math.max(1, Math.round(window.innerWidth * dpr)), dh = Math.max(1, Math.round(window.innerHeight * dpr)), s = Math.max(2, Math.round(dh / INTERNAL_TARGET)), bw = Math.max(1, Math.ceil(dw / s)), bh = Math.max(1, Math.ceil(dh / s));
   renderer.setPixelRatio(1); renderer.setSize(dw, dh, false);
   canvas.style.width = (dw / dpr) + 'px'; canvas.style.height = (dh / dpr) + 'px'; canvas.dataset.block = s; canvas.dataset.internal = bw + 'x' + bh;
   if (!lowRT || lowRT.width !== bw || lowRT.height !== bh) {
-    if (lowRT) lowRT.dispose();
+    if (lowRT) lowRT.dispose(); if (maskRT) maskRT.dispose(); maskRT = new T.WebGLRenderTarget(bw, bh, { minFilter: T.NearestFilter, magFilter: T.NearestFilter, depthBuffer: true, stencilBuffer: false, generateMipmaps: false }); blitMat.uniforms.tMask.value = maskRT.texture;
     lowRT = new T.WebGLRenderTarget(bw, bh, { minFilter: T.NearestFilter, magFilter: T.NearestFilter, depthBuffer: true, stencilBuffer: true, generateMipmaps: false });
     if (!blitScene) { blitScene = new T.Scene(); blitCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1); blitQuad = new T.Mesh(new T.PlaneGeometry(2, 2), blitMat); blitQuad.frustumCulled = false; blitScene.add(blitQuad); }
     blitMat.uniforms.tScene.value = lowRT.texture; composite.resize(bw, bh);
@@ -98,7 +98,9 @@ function resize() {
 }
 const tb = { on: false, t0: 0, fired: false };
 function tbTick() { const u = blitMat.uniforms, bw = lowRT.width, bh = lowRT.height, H = actors.own.hole || new T.Vector4(bw / 2, bh / 2, 0, 0); u.uTBinfo.value.set(bw, bh, blitQuad.geometry.attributes.uv.getX(1) || 1, 1 - (blitQuad.geometry.attributes.uv.getY(2) || 0)); u.uTBh.value = tb.on ? 1 : 0; if (!tb.on) return; const oh = OWN_UNI.uHole.value; u.uDuel.value.set(oh.x / bw, oh.y / bh, oh.z); const t = (performance.now() - tb.t0) / 1000, amt = tb.hold ? 1 : t < 0.1 ? 1 : t < 0.167 ? 1 - (t - 0.1) / 0.067 : 0; u.uTB.value.set(8 * amt, 12 * amt, 16 * amt); }
-function drawFrame() { tbTick(); renderer.setRenderTarget(lowRT); renderer.render(scene, camera); const gl = composite.run(lowRT.texture, lowRT.width, lowRT.height); blitMat.uniforms.tGlow.value = gl || blackTex; blitMat.uniforms.uGlow.value = gl ? 1 : 0; renderer.setRenderTarget(null); renderer.render(blitScene, blitCam); }
+// the priority mask (Tablebreak frames only): every enemy warning drawn flat white into its own target, so the blit can keep warning pixels where they are and never shift them
+const maskMat = new T.MeshBasicMaterial({ color: 0xffffff, side: T.DoubleSide });
+function drawFrame() { tbTick(); renderer.setRenderTarget(lowRT); renderer.render(scene, camera); if (tb.on) { const ca = renderer.getClearAlpha(), cc = renderer.getClearColor(new T.Color()).getHex(), lm = camera.layers.mask; renderer.setClearColor(0x000000, 1); const bg = scene.background, fg = scene.fog; scene.background = null; scene.fog = null; camera.layers.set(3); scene.overrideMaterial = maskMat; renderer.setRenderTarget(maskRT); renderer.clear(); renderer.render(scene, camera); scene.overrideMaterial = null; scene.background = bg; scene.fog = fg; camera.layers.mask = lm; renderer.setClearColor(cc, ca); renderer.setRenderTarget(lowRT); } const gl = composite.run(lowRT.texture, lowRT.width, lowRT.height); blitMat.uniforms.tGlow.value = gl || blackTex; blitMat.uniforms.uGlow.value = gl ? 1 : 0; renderer.setRenderTarget(null); renderer.render(blitScene, blitCam); }
 window.addEventListener('resize', resize); resize();
 
 // the owner's models are optional local assets; the placeholders stay if they are missing
@@ -588,7 +590,7 @@ function duelistPixels() {
   return { alone, visible, silhouette };
 }
 window.__ds = {
-  blitU: blitMat.uniforms, tablebreak: hold => { tb.hold = !!hold; tb.fired = true; blitMat.uniforms.uTBang.value.set(0.5, 2.1, 3.9); tb.on = true; tb.t0 = performance.now(); }, composite, get grass() { return grassMesh; }, chaseZoom: () => chase.zoom, chaseCap: () => chase.zoomCap,
+  blitU: blitMat.uniforms, maskRead: () => { const w = maskRT.width, h = maskRT.height, b = new Uint8Array(w * h * 4); renderer.readRenderTargetPixels(maskRT, 0, 0, w, h, b); return { w, h, b: Array.from(b.filter((_, i) => i % 4 === 0)) }; }, tablebreak: hold => { tb.hold = !!hold; tb.fired = true; blitMat.uniforms.uTBang.value.set(0.5, 2.1, 3.9); tb.on = true; tb.t0 = performance.now(); }, composite, get grass() { return grassMesh; }, chaseZoom: () => chase.zoom, chaseCap: () => chase.zoomCap,
   duelistPixels, see: SEE, tagBlocked,
   bars,
   summonPos: () => { const g = actors.monsters.values().next().value; return g ? { x: g.position.x, y: g.position.y, z: g.position.z } : null; },
@@ -605,6 +607,13 @@ window.__ds = {
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
 if (/[?&]fxlab\b/.test(location.search)) import('./view/fxlab.js').then(m => m.startLab(window.__ds));
+
+
+
+
+
+
+
 
 
 

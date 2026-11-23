@@ -1,4 +1,4 @@
-// The FX lab (?fxlab): a panel over the live game for building and judging effects (spectacle build order, step 5). It starts a run with Kael, and shows
+﻿// The FX lab (?fxlab): a panel over the live game for building and judging effects (spectacle build order, step 5). It starts a run with Kael, and shows
 //   - the effect ramp (a row per element, five tones) and the one noise texture,
 //   - the ES 3.00 probe (does this browser compile a texelFetch shader on the ramp),
 //   - live numbers: draws, triangles, frame time, enemies, effect pool use, and the buffer and texture uploads per frame,
@@ -48,7 +48,7 @@ export function startLab(D) {
   };  // Tier 5 (step 14): the screen-breaking state in one scene. The big own attacks are stamped into the ground (stain map), each gets a hollow giant at its TRUE rule radius, the sky tints and runs a flame band. window.__fxlab.tier5Measure() reports the claimed share
   // (pixels that differ with Tier 5 on and off, same frame, sim frozen) and whether the effect touches all four screen edges and crosses the horizon in at least 3 places.
   const tier5 = async (on, el = 'fire') => {
-    const C = await import('/src/sim/combat.js'), p = g.p; D.tier5Force = on ? 'quiet' : false; for (const o of g.fx) if (o.owner === 0 && o.dur >= 100) o.on = false;
+    const C = await import('/src/sim/combat.js'), p = g.p; D.tier5Force = on ? 'quiet' : false; if (on) { if (g.mods._reach0 === undefined) g.mods._reach0 = g.mods.reach || 0; g.mods.reach = 1.5; } else if (g.mods._reach0 !== undefined) { g.mods.reach = g.mods._reach0; delete g.mods._reach0; } for (const o of g.fx) if (o.owner === 0 && o.dur >= 100) o.on = false;
     if (!on) return; const mk = (r, el, arc) => { const rec = C.addFx(g, arc ? { type: 'fan', owner: 0, el, x: p.x, y: p.y, z: p.z, r, arc, dx: 0, dz: -1, dur: 1e6, color: 0 } : { type: 'ring', owner: 0, el, x: p.x, y: p.y, z: p.z, r, dur: 1e6, color: 0 }); if (rec) rec.t = 0.9999e6; };
     mk(32, el, 150); mk(24, el, 0); mk(16, el, 0); D.ownRForce = 32 * 1.58 / 2;
   };
@@ -78,3 +78,4 @@ export function startLab(D) {
   reset();
   window.__fxlab = { showShapes, tier5, tier5Measure: measure, elementStrip, worstCase, ownStress, own: () => D.actors.own.readout, read, reset, probe: probeTxt, probeOk: probe === RAMP.fire[0], ramp: FX.ramp, panel };
 }
+

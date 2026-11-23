@@ -1,4 +1,4 @@
-// The big-moment budgets and the director (spectacle spec 4.2 and 4.3). Pure view logic: no THREE, no DOM, no sim reads, so the unit tests run it in node. Nothing here changes a tick or the replay hash.
+﻿// The big-moment budgets and the director (spectacle spec 4.2 and 4.3). Pure view logic: no THREE, no DOM, no sim reads, so the unit tests run it in node. Nothing here changes a tick or the replay hash.
 //
 // THE FAIRNESS RULE: hit-stop is decided from sim ticks only (StopBudget). It never reads frame time, settings or the drop ladder, so one tape gets the same (tick, stop) list at 60 fps, 120 fps, with Big moments
 // Full or Off, with Reduce motion on or off. Flashes and shake budgets are real-time or screen budgets (the spec lists them in seconds) and only decide what the SCREEN shows; a dropped flash is dropped, never queued.
@@ -7,7 +7,10 @@
 export class StopBudget {
   constructor() { this.log = []; this.last = -1e9; }
   ask(tick, sec) {
-    if (!(sec > 0) || tick - this.last < 24) return 0;
+    if (!(sec > 0)) return 0;
+    // two moments on the SAME tick: the longer stop wins (the Tablebreak's 120 ms must not be lost to the 40 ms of the Reach-cap burst that fired in the same tick)
+    if (tick === this.last && this.log.length && this.log[this.log.length - 1][0] === tick && sec > this.log[this.log.length - 1][1]) { this.log.pop(); this.last = this.log.length ? this.log[this.log.length - 1][0] : -1e9; }
+    if (tick - this.last < 24) return 0;
     this.log = this.log.filter(e => tick - e[0] < 300); let used = 0; for (const e of this.log) used += e[1];
     const ok = Math.min(sec, 0.25 - used); if (ok < 0.02) return 0;
     this.log.push([tick, ok]); this.last = tick; return ok;
@@ -66,3 +69,4 @@ export class MomentDirector {
     return { cls, screen, world: true };
   }
 }
+
