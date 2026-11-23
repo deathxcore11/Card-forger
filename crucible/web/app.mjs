@@ -188,8 +188,9 @@ function act(a) {
   const bossId = run.door && run.door.type === 'boss' ? run.door.boss : run.phase === 'chamber' && a.t === 'door' && run.doors[a.i] && run.doors[a.i].type === 'boss' ? run.doors[a.i].boss : null;
   const cx0 = run.codex ? run.codex.length : 0, hidden = (run.phase === 'duel' && run.rival && run.rival.tier === 'secret') || (run.phase === 'chamber' && a.t === 'door' && run.doors[a.i] && run.doors[a.i].type === 'secret');
   let rev; const fl0 = run.floor;
+  let last = run.duel ? JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))) : null; // each frame keeps the board it began from, which it shows until each move lands
   try {
-    rev = runApply(run, a, db, { onStep: evs => { if (run.duel) frames.push({ view: JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))), evs, rival: info(run) }); } });
+    rev = runApply(run, a, db, { onStep: evs => { if (run.duel) { const view = JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))); frames.push({ view, prev: last, evs, rival: info(run) }); last = view; } } });
   } catch (e) { if (e && e.constructor !== Error) { recover(e, true); return; } cue('refused', { action: a.t }); toast(e.message); render(); return; } // the engine refuses a move with a plain Error; anything else means the run itself is damaged
   G.faulty = null;
   if (run.floor > fl0 && run.phase !== 'over') G.floorCard = { u: uidOf(run), n: run.floor + 1 }; // shown at the new floor's first chamber
@@ -229,20 +230,41 @@ function cueShown(name, data) { if (holding) held.push([name, data]); else cue(n
 function releaseCues() { holding = false; for (const [n, d] of held.splice(0)) cue(n, d); }
 function toast(m) { cue('toast', { text: m }); G.toast = m; clearTimeout(toast.t); toast.t = setTimeout(() => { G.toast = ''; const t = $('#toast'); if (t) t.textContent = ''; }, 2600); }
 
+// The frames of a move, one after another. The text bar reads out each step as it begins, never the one before.
+// In the console look each frame is a beat (beatOf): the frame lasts as long as its beat, its sounds are sent as the
+// beat comes to them, and the last frame stays a moment longer so its words can be read. The board the duel ended on
+// is kept for the window that ends it.
 async function playFrames() {
   G.playing = true;
   while (G.frames.length) {
-    const f = G.frames.shift();
-    const ghosts = snapshotGhosts(f.evs);
-    G.shown = f; render();
-    animate(f.evs, ghosts);
-    if (app.classList.contains('ps') && PSV && !RM) { PSV.anim = { t0: performance.now(), ms: G.fast ? 200 : 560, evs: f.evs, frame: f, gone: f.evs.filter(e => e.e === 'destroyed' && e.zone != null).map(e => ({ seat: e.seat, zone: e.zone })) }; requestAnimationFrame(psPaint); }
-    cue('duel:frame', { evs: f.evs, fast: !!G.fast }, f.view); for (const e of f.evs) { logLine(e, f.view); cue('duel:' + e.e, e, f.view); }
+    const f = G.frames.shift(), last = !G.frames.length, t0 = performance.now();
     const heavy = f.evs.some(e => ['battle', 'summon', 'spell', 'trap', 'terrain', 'meld', 'equip', 'set', 'destroyed'].includes(e.e));
-    await new Promise(r => setTimeout(r, G.fast ? 60 : heavy ? 620 : 140));
+    if (look === 'old' || lostStore) {
+      for (const e of f.evs) logLine(e, f.view);
+      const ghosts = snapshotGhosts(f.evs);
+      G.shown = f; render();
+      animate(f.evs, ghosts);
+      cue('duel:frame', { evs: f.evs, fast: !!G.fast }, f.view); for (const e of f.evs) cue('duel:' + e.e, e, f.view);
+      await new Promise(r => setTimeout(r, G.fast ? 60 : heavy ? 620 : 140));
+      continue;
+    }
+    G.shown = f; const B = startBeat(f);
+    if (RM) B.t0 -= (B.end + 2) * TICK / B.speed; // no motion asked for: each step shows as it ends, and stays as long as it used to
+    render(); psLoop();
+    const ms = t => Math.max(0, B.t0 + t * TICK / B.speed - performance.now()), first = B.cues.filter(([, e]) => e.e === 'relic' || e.e === 'meld').map(([t]) => t);
+    setTimeout(() => cue('duel:frame', { evs: f.evs, fast: !!G.fast }, f.view), ms(first.length ? Math.min(...first) : 0)); // the frame's sound sequences its melds and relics: sent when the first of them is shown
+    for (const [t, e] of B.cues) setTimeout(() => { logLine(e, f.view); barSay(); cue('duel:' + e.e, e, f.view); }, ms(t)); // each line is read out as the beat reaches its move
+    const hold = Math.max(RM ? (G.fast ? 60 : heavy ? 620 : 140) : 0, last ? (G.fast ? 400 : 800) : 0);
+    await new Promise(r => setTimeout(r, Math.max(ms(B.end + 1), t0 + hold - performance.now())));
   }
+  if (G.overlay && G.overlay.kind === 'duelEnd' && G.shown) G.endFrame = G.shown;
   G.playing = false; G.shown = null; for (const g of document.querySelectorAll('body > .ghost')) g.remove(); render();
   releaseCues(); // the result is on screen now
+}
+// The text bar while a move plays: the last two lines of the log, as each is reached.
+function barSay() {
+  const p = app.querySelector('#app.ps .fr > .bar > p'); if (!p || !G.playing) return;
+  const t = esc(G.log.slice(-2).join(' ') || ''); if (p.innerHTML !== t) { p.innerHTML = t; G.barText = t; barFits(); }
 }
 // The size of a relic's change, for the log and the flash: " +300/+0", or " -400 ATK" when a relic weakens a monster.
 const bonusText = e => e.longer ? ` (the meld counts as ${e.longer} cards)` : !(e.a || e.d) ? '' : e.a < 0 && !e.d ? ` ${e.a} ATK` : ` ${e.a < 0 ? '' : '+'}${e.a || 0}/${e.d < 0 ? '' : '+'}${e.d || 0}`;
@@ -331,13 +353,11 @@ function animate(evs, ghosts) {
   for (const e of evs) {
     if (e.e === 'summon') { const c = zoneEl(e.seat, e.zone)?.querySelector('.c'); if (c) c.animate([{ transform: `translateY(${e.seat === 0 ? 60 : -60}%) scale(1.25)`, opacity: 0 }, { transform: 'scale(1.08)', opacity: 1, filter: 'brightness(1.7)', offset: .7 }, { transform: 'none', filter: 'none' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
     if (e.e === 'attack') { const a = zoneEl(e.seat, e.from)?.querySelector('.c'); const t = e.to >= 0 ? zoneEl(1 - e.seat, e.to) : $(e.seat === 0 ? '#rivalLp' : '#myLp'); if (a && t) { const ra = a.getBoundingClientRect(), rt = t.getBoundingClientRect(); const dx = ((rt.left + rt.width / 2) - (ra.left + ra.width / 2)) / FIT.k, dy = ((rt.top + rt.height / 2) - (ra.top + ra.height / 2)) / FIT.k; a.animate([{ transform: 'none' }, { transform: `translate(${dx * .08 * -1}px,${dy * -.08}px) scale(1.06)`, offset: .25 }, { transform: `translate(${dx * .8}px,${dy * .8}px) scale(1.12)`, offset: .55 }, { transform: 'none' }], { duration: 460, easing: 'cubic-bezier(.5,0,.2,1)' }); a.style.zIndex = 5; setTimeout(() => (a.style.zIndex = ''), 470); } }
-    if (e.e === 'lp') { const el = $(e.seat === 0 ? '#myLp' : '#rivalLp'), ps = app.classList.contains('ps');
-      if (el && ps) { // the console way: the number flashes its colour in two hard steps, the change rises beside it in whole pixels
-        el.animate([{ color: e.d < 0 ? '#f08a72' : '#9fd0c0' }, { color: e.d < 0 ? '#f08a72' : '#9fd0c0', offset: .99 }, {}], { duration: 500, easing: 'steps(1)' });
-        const f = document.createElement('span'); f.className = 'float ' + (e.d < 0 ? 'neg' : 'pos'); f.textContent = (e.d > 0 ? '+' : '') + e.d; f.style.left = el.offsetLeft + 'px'; f.style.top = (el.offsetTop - 10) + 'px'; el.parentElement.appendChild(f); setTimeout(() => f.remove(), 900); }
-      else if (el) { el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)', color: e.d < 0 ? '#ff6b5a' : '#7be08d', offset: .3 }, { transform: 'scale(1)' }], { duration: 500 }); const f = document.createElement('span'); f.className = 'float ' + (e.d < 0 ? 'neg' : 'pos'); f.textContent = (e.d > 0 ? '+' : '') + e.d; el.appendChild(f); setTimeout(() => f.remove(), 900); }
-      if (e.d <= -1500) { (document.querySelector('.duel') || document.querySelector('#app.ps .vw') || app).animate(ps ? [{ transform: 'translate(0,0)' }, { transform: 'translate(-2px,1px)' }, { transform: 'translate(2px,-1px)' }, { transform: 'none' }] : [{ transform: 'translate(0,0)' }, { transform: 'translate(-.5%,.4%)' }, { transform: 'translate(.5%,-.3%)' }, { transform: 'none' }], { duration: 240, easing: ps ? 'steps(1)' : 'linear' }); } }
-    if (e.e === 'relic') { const b = $(e.seat === 0 ? '#relicFlash' : '#rivalFlash'); if (b) { b.textContent = (e.seat === 0 ? '' : 'Rival: ') + RELICS[e.id].name + bonusText(e); const cps = app.classList.contains('ps'); b.animate(cps ? [{ visibility: 'visible', transform: 'translateY(4px)' }, { visibility: 'visible', transform: 'none', offset: .15 }, { visibility: 'visible', offset: .85 }, { visibility: 'hidden' }] : [{ opacity: 0, transform: 'translateY(40%)' }, { opacity: 1, transform: 'none', offset: .2 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: 1100, easing: cps ? 'steps(4)' : 'linear' }); } }
+    // The old look only: the console look shows its Life Points and relics through the duel's beats (beatDom).
+    if (e.e === 'lp') { const el = $(e.seat === 0 ? '#myLp' : '#rivalLp');
+      if (el) { el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)', color: e.d < 0 ? '#ff6b5a' : '#7be08d', offset: .3 }, { transform: 'scale(1)' }], { duration: 500 }); const f = document.createElement('span'); f.className = 'float ' + (e.d < 0 ? 'neg' : 'pos'); f.textContent = (e.d > 0 ? '+' : '') + e.d; el.appendChild(f); setTimeout(() => f.remove(), 900); }
+      if (e.d <= -1500) { (document.querySelector('.duel') || app).animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-.5%,.4%)' }, { transform: 'translate(.5%,-.3%)' }, { transform: 'none' }], { duration: 240, easing: 'linear' }); } }
+    if (e.e === 'relic') { const b = $(e.seat === 0 ? '#relicFlash' : '#rivalFlash'); if (b) { b.textContent = (e.seat === 0 ? '' : 'Rival: ') + RELICS[e.id].name + bonusText(e); b.animate([{ opacity: 0, transform: 'translateY(40%)' }, { opacity: 1, transform: 'none', offset: .2 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: 1100, easing: 'linear' }); } }
     if (e.e === 'terrain') { const t = $('#terrain'); if (t) t.animate([{ filter: 'brightness(2.4)' }, { filter: 'none' }], { duration: 500 }); }
     if (e.e === 'draw' && e.seat === 0) { const cs = [...document.querySelectorAll('.hand .hs .c')].slice(-e.n); cs.forEach((c, i) => c.animate([{ transform: 'translate(120%,-40%) rotate(8deg) scale(.6)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 300, delay: i * 70, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' })); }
   }
@@ -820,18 +840,20 @@ function psCardL(inst, x, y, o = {}) {
 const medal = (id, size) => { const f = relicFile(id) + (size === 32 ? '' : '-' + size); if (CART.has(f)) return `<img src="${cimg(f)}" width="${size}" height="${size}" alt="">`;
   const b = 'coin-' + ({ C: 'c', M: 'm' }[RELICS[id].kind] || 'g') + (size === 32 ? '' : '-' + size), L = RELICS[id].name.replace(/^The /, '')[0].toUpperCase(), c = carve(L, Math.round(size * .5), render);
   return `<i class="coin s${size}">${CART.has(b) ? `<img src="${cimg(b)}" width="${size}" height="${size}" alt="">` : ''}${c ? `<img class="lt" src="${c.url}" style="left:${(size - c.w + 2) >> 1}px;top:${(size - c.h + 3) >> 1}px;width:${c.w}px;height:${c.h}px" alt="">` : `<b>${esc(L)}</b>`}</i>`; };
-const psPort = (n, x, y, shade = false) => `<div class="pf ${n && CART.has(n) ? (shade ? 'pflk' : '') : 'none'}" style="left:${x}px;top:${y}px">${n && CART.has(n) ? `<img src="${cimg(n)}" alt="">` : CART.has('key-crest-48') ? `<img class="crest" src="${cimg('key-crest-48')}" alt="">` : ''}</div>`;
+// pic names the portrait for what is placed on it (a duel's Life Points rising over the face they struck).
+const psPort = (n, x, y, shade = false, pic = '') => `<div class="pf ${n && CART.has(n) ? (shade ? 'pflk' : '') : 'none'}"${pic ? ` data-face="${pic}"` : ''} style="left:${x}px;top:${y}px">${n && CART.has(n) ? `<img${pic ? ` data-pic="${pic}"` : ''} src="${cimg(n)}" alt="">` : CART.has('key-crest-48') ? `<img class="crest" src="${cimg('key-crest-48')}" alt="">` : ''}</div>`;
 const shortName = s => String(s || '').replace(/^the /i, '');
 // The Forge level: how far toward the next Gift (the same sums as the engine's level-up).
 const forgeFrac = r => { const c = db.config, at = l => l === 0 && c.giftFirstXp ? Math.min(c.giftFirstXp, c.xp.perLevel * (c.giftXpScale || 1)) : (l + 1) * c.xp.perLevel * (c.giftXpScale || 1); const lo = r.level ? at(r.level - 1) : 0, hi = at(r.level); return Math.max(0, Math.min(1, (r.xp - lo) / Math.max(1, hi - lo))); };
 const sparkRow = (r, x, y) => Array.from({ length: sparksMax(r) }, (_, i) => `<i class="spk${i < r.sparks ? '' : ' out'}" style="left:${x + i * 12}px;top:${y}px"></i>`).join('');
 
 // The left pillar: you.
-function psYou(r, v = null, extra = '') {
+// In a duel the Life Points shown are the beat's (lifeAt draws the number): they fall as the blow lands, not before.
+function psYou(r, v = null, extra = '', lifeAt = null) {
   const f = r && r.forger;
-  let s = psPort(f ? faceName(f) : '', 14, 6) + lb(8, 79, f ? shortName(FORGERS[f].name) : 'YOU', 'g');
-  if (v) {
-    s += lb(8, 92, 'LIFE', 'g') + `<b id="myLp" class="ab lb" style="left:${88 - String(v.lp[0]).length * 6}px;top:92px">${v.lp[0]}</b>` + gauge(8, 101, 80, v.lp[0] / 8000)
+  let s = psPort(f ? faceName(f) : '', 14, 6, false, v ? 'face0' : '') + lb(8, 79, f ? shortName(FORGERS[f].name) : 'YOU', 'g');
+  if (v) { const L = lpNow(v, 0);
+    s += lb(8, 92, 'LIFE', 'g') + (lifeAt ? lifeAt('myLp', L) : `<b id="myLp" class="ab lb" style="left:${88 - String(L.n).length * 6}px;top:92px">${L.n}</b>`) + gauge(8, 101, 80, L.g / 8000).replace('<i class="ga', '<i id="myGa" class="ga')
       + lb(8, 114, 'DECK', 'g') + lbr(88, 114, v.deckCount[0]) + lb(8, 125, 'TURN', 'g') + lbr(88, 125, v.turn) + lb(8, 138, 'SPARKS', 'g') + sparkRow(r, 52, 136);
   } else if (r) {
     const cap = weightCap(db, r), w = deckWeight(db, r.deck);
@@ -915,11 +937,25 @@ function psChamber() {
 
 // ---- the duel: a 3D table in the window, the hand on the ledge
 const TBL = { cam: { y: 200, z: 525, pitch: .75, f: 350, cx: 156, cy: 198 }, zx: i => (i - 2) * 62, row: { 1: -76, 0: 76 }, trap: { 1: -138, 0: 138 } }; // the trap rows stay inside the table's braided border
-// The camera for a view of w x h: the table as large as the height allows while all five zones of the near row stay in
-// the view, its near edge on the bottom edge.
-// When the table model is there the view shows as much of its front and legs as fits under the far trap row.
-const tableCam = (w, h) => { const k = Math.min(h / 128, (w / 2 - 6) / 119), legs = !!tmodel();
-  return { y: 200, z: 525, pitch: .75, f: Math.round(350 * k), cx: w >> 1, cy: legs ? Math.round(Math.max(2 + 178 * k, h - 13 * k - 2)) : Math.round(h + 74 * k) + 1 }; };
+// The duel hall and its table are one scene. The hall's painting stands whole at its own size with its foot on the
+// view's foot, and the table stands on its floor at the painting's scale (s: 1 for the 352-wide cut, 1.25 for the
+// 440-wide one, 656 / 352 for the tall cut), never larger, and as large as the view's height and width allow under that.
+// The table's near edge lies on the view's bottom edge, so at the painting's own scale its far edge falls on the row
+// where the painted floor meets the back wall, and a taller view shows more of the hall above it.
+const tableCam = (w, h, s = 1) => { const k = Math.min(h / 128, (w / 2 - 6) / 119, s);
+  return { y: 200, z: 525, pitch: .75, f: Math.round(350 * k), cx: w >> 1, cy: Math.round(h + 74 * k) + 1 }; };
+// The hall's painting for this view. Of its cuts (352 x 198, 440 x 248 and the tall 656 x 369, art/c/*-l and *-x) that
+// cover the view's width and leave at most an eighth of it dark above, the one that lets the table be drawn largest at
+// the painting's own scale (within a twentieth of it); when no cut is that close, the closest. When none leaves so
+// little dark, the tallest: the view then shows the hall's high ceiling lost in the dark above the painting.
+function hallPic(name) {
+  const { w, h } = viewSize(), kv = Math.min(h / 128, (w / 2 - 6) / 119);
+  const cuts = [['', 352, 198], ['-l', 440, 248], ['-x', 656, 369]].filter(([t, pw]) => (!t || CART.has(name + t)) && pw >= w).map(([tail, pw, ph]) => ({ tail, pw, ph, s: pw / 352, k: Math.min(kv, pw / 352), dark: h - ph }));
+  const ok = cuts.filter(c => c.dark <= h / 8), near = ok.filter(c => c.s / c.k <= 1.06);
+  const c = near.length ? near.reduce((a, b) => b.k > a.k ? b : a) : ok.length ? ok.reduce((a, b) => b.s / b.k < a.s / a.k ? b : a) : cuts.reduce((a, b) => b.ph > a.ph ? b : a, cuts[0] || { tail: '', pw: 352, ph: 198, s: 1 });
+  const ox = (w - c.pw) >> 1, oy = h - c.ph;
+  return { src: cimg(name + c.tail), s: c.s, pw: c.pw, ph: c.ph, ox, oy, edge: oy > 0 ? `<i class="fade d75" style="top:${oy}px"></i><i class="fade" style="top:${oy + 4}px"></i>` : '' };
+}
 // The duel table: Randall's own model, built to console size (22 November 2026): 26 flat faces, a 128-pixel top and a
 // 64-pixel stone, loaded from art/c/index.json ("models") as a game of the day loaded its models. Model units are
 // metres with Z up; 216 world units to one, the top at height 0. A big face is cut into pieces so the console's flat
@@ -949,7 +985,7 @@ function tableQuads(view) {
 }
 const TEX = { cards: new Map(), table: null, back: null, loading: false };
 // A Field Spell's ground (Randall's terrain sheet, cut to 128 x 64): loaded the first time its terrain is in play.
-const terrainTex = id => { const n = 'terrain-' + String(card(id).name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), k = 't-' + id; if (TEX[k] !== undefined || !CART.has(n)) return; TEX[k] = null; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, 128, 64); if (app.classList.contains('ps')) psPaint(); }; im.src = cimg(n); };
+const terrainTex = id => { const n = 'terrain-' + String(card(id).name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), k = 't-' + id; if (TEX[k] !== undefined || !CART.has(n)) return; TEX[k] = null; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, 128, 64); if (app.classList.contains('ps')) psPaint(true); }; im.src = cimg(n); };
 // ---- props: Randall's models cut to console size (tools/crucible/console-prop.py), each standing in its room in front of
 // the painting: the shrine in the Sanctum, the bowl in the Omen room, the chest among the treasure, the stall in the Bazaar.
 // A prop beside the choices stands in the space left of them; one behind them (the stall) rises over them, its goods in front.
@@ -1009,11 +1045,10 @@ function propPaint() {
 }
 function psTextures() {
   if (TEX.loading) return; TEX.loading = true;
-  const load = (n, w, h, k) => { if (!CART.has(n)) return; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, w, h); if (app.classList.contains('ps')) psPaint(); }; im.src = cimg(n); };
+  const load = (n, w, h, k) => { if (!CART.has(n)) return; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, w, h); if (app.classList.contains('ps')) psPaint(true); }; im.src = cimg(n); };
   load('table', 128, 128, 'table'); load('cardback', 44, 60, 'back');
   const M = tmodel(); if (M) for (const [t, [w, h]] of Object.entries(M.pics)) load('model-table-' + t, w, h, 'm-' + t);
 }
-const ROLE_RGB = { monster: [168, 126, 79], spell: [76, 138, 124], field: [76, 138, 124], trap: [150, 64, 52], equip: [122, 84, 60], fuel: [90, 80, 72] };
 function cardTex(id) {
   if (TEX.cards.has(id)) return TEX.cards.get(id);
   const i = IDX.get(id), sh = i == null ? null : CCANVAS[Math.floor(i / 100)];
@@ -1021,67 +1056,356 @@ function cardTex(id) {
   if (t) TEX.cards.set(id, t);
   return t;
 }
-let PSV = null; // what the table shows now: { v, sel, anim }
-// Draw the table and every card on it into the window's canvas. Cards lie flat; a card in defense lies sideways.
-function psPaint() {
+// ---- the duel's beats
+// A step of the duel (a frame: the events of one move and the board after it) is shown as a short scene, drawn at 30
+// frames a second as the console drew such moments. beatOf lays the step out in thirtieths of a second (ticks; FAST
+// plays the same beat at twice the speed, every other drawing): the board as it was until each move lands, then as it
+// is; who moves, where and when; when a card breaks, when the Life Points fall, when a relic fires. The table (psPaint),
+// the pillars and the strips over the view (beatDom) and the sound cues are all read from it, so nothing shows its
+// result before the blow that brings it.
+const TICK = 1000 / 30;
+let PSV = null; // what the table shows: { v: the board, beat, hl: zone marks, marks: battle forecasts, pend: an attack waiting on your answer, s: the scene's scale, floats, strips }
+const mkey = (s, z) => `m${s}.${z}`, tkey = (s, z) => `t${s}.${z}`;
+// An attack, tick by tick: how far toward its target (0 at home, 1 on it) and how high. The blow lands at LUNGE_HIT.
+const LUNGE = [[-.03, 4], [-.06, 8], [-.06, 10], [.08, 12], [.24, 14], [.46, 14], [.72, 12], [.94, 8], [1, 4], [.98, 4], [.96, 6], [.8, 10], [.55, 12], [.3, 10], [.12, 6], [.03, 2]], LUNGE_HIT = 8;
+// An attack the defender may answer with a Trap stops poised a third of the way, and goes on from there once answered
+// (or goes back, when the Trap stops it).
+const POISE = [[-.03, 4], [-.06, 8], [-.06, 10], [.08, 12], [.22, 13], [.35, 12]], RESUME = [[.35, 12], [.55, 14], [.78, 12], [.95, 8], ...LUNGE.slice(LUNGE_HIT)], RESUME_HIT = 4;
+const RETREAT = [[.3, 12], [.22, 10], [.12, 8], [.05, 4], [0, 0]];
+// A card shown and spent (a Spell, a Field, an Equip, a Trap springing): it rises and stands up toward you face down,
+// turns over in two steps, holds, and breaks. Each tick: [height, how far it stands up, width (below 0: face up)].
+const SHOW = [[6, .3, 1], [14, .6, 1], [22, .85, 1], [24, .85, .5], [24, .85, .05], [24, .85, -.05], [24, .85, -.5], [24, .85, -1], [24, .85, -1], [24, .85, -1], [24, .85, -1]], SHOW_END = SHOW.length;
+// A card arriving on the table slides in over its owner's edge, a little above the top, and lands on its zone in five
+// steps: each tick, how far it has come (1 on its zone) and its height.
+const ARRIVE = [[0, 12], [.35, 10], [.65, 8], [.85, 5], [.96, 2], [1, 0]];
+const SHARD_LIFE = 14;
+function beatOf(f) {
+  const P = f.prev, V = f.view, evs = f.evs;
+  const B = { f, P, V, t0: performance.now(), speed: G.fast ? 2 : 1, swap: {}, look: {}, acts: [], shards: [], lp: [], relics: [], shakes: [], flash: [], wipe: null, hand: -1, cues: [], end: 5 };
+  if (!P) { for (const e of evs) B.cues.push([0, e]); return B; } // the first step of a duel: the board is laid out at once
+  const off = V.mon[0].length < 5 ? 1 : 0, home = (s, z) => ({ x: TBL.zx(z + off), y: 0, z: TBL.row[s] });
+  const sw = (k, t) => { if (B.swap[k] == null) B.swap[k] = t; }; // a card arrives or leaves: the slot changes then
+  const cued = new Set(), cueAt = (t, e) => { if (!cued.has(e)) { cued.add(e); B.cues.push([t, e]); } };
+  const hasBattle = evs.some(e => e.e === 'battle');
+  const sprung = [0, 1].map(s => (P.traps[s] || []).map((x, i) => x && !(V.traps[s] || [])[i] ? i : -1).filter(i => i >= 0));
+  let t = 0, at = 0, lunge = null;
+  const lungeActor = L => { const H = home(L.seat, L.from), T = L.to >= 0 ? home(1 - L.seat, L.to) : { x: H.x * .5, z: L.seat ? 160 : -160 };
+    const A = { x: H.x + (T.x - H.x) * (L.to >= 0 ? .85 : 1), z: H.z + (T.z - H.z) * (L.to >= 0 ? .85 : 1) };
+    const at2 = ([s, y]) => ({ x: H.x + (A.x - H.x) * s, y, z: H.z + (A.z - H.z) * s });
+    B.acts.push(L.act = { key: mkey(L.seat, L.from), t0: L.held ? 0 : L.start, t1: Infinity,
+      inst: tk => L.rev && L.start != null && tk >= L.start + 2 && (L.hit == null || tk < L.hit) ? L.rev : undefined,
+      pose: tk => {
+        if (L.start == null || tk < L.start) return at2(POISE[POISE.length - 1]); // poised, waiting on the answer
+        const i = tk - L.start, seq = L.back ? RETREAT : L.seq, p = at2(seq[Math.min(i, seq.length - 1)]);
+        if (L.rev && i < 4) Object.assign(p, { wide: [.5, .05, .5, 1][i], face: i >= 2 }); // a veiled attacker turns over as it sets off
+        return p; } });
+    L.end = () => L.start == null ? Infinity : L.start + (L.back ? RETREAT : L.seq).length; };
+  // a poised attack from the last step goes on here, from where it waits
+  const pend = P.pending && P.pending.kind === 'trap' ? { seat: P.active, from: P.pending.from, to: P.pending.to } : null;
+  if (pend && P.mon[pend.seat][pend.from]) { lunge = { ...pend, start: null, held: true }; lungeActor(lunge); }
+  // A card is shown in front of its owner's row, mid-table. A set card first lifts off its slot face down and slides
+  // there in three steps (stood up in its slot, near the eye, it would fill the view).
+  const show = (from, inst, t0, key, seat) => {
+    const mid = { x: 0, y: 0, z: seat ? -40 : 40 }, lead = from ? 3 : 0, end = t0 + lead + SHOW_END;
+    const pose = tk => { const i = tk - t0;
+      if (i < lead) { const k = (i + 1) / (lead + 1); return { x: from.x + (mid.x - from.x) * k, y: 2 + 2 * i, z: from.z + (mid.z - from.z) * k, face: false, bias: -800 }; }
+      const [y, tilt, w] = SHOW[Math.min(i - lead, SHOW_END - 1)]; return { ...mid, y, tilt, wide: Math.abs(w), face: w < 0, shade: i - lead === 7 ? 1.3 : 1, bias: -800 }; };
+    B.acts.push({ key, t0, t1: end, inst: () => inst, seat, pose, shown: true });
+    B.shards.push({ t: end, inst, seat, pose: { ...pose(end - 1), shade: 1 } });
+    if (key) sw(key, end);
+    return end; };
+  const busy = k => Math.max(0, ...B.acts.filter(a => a.key === k && a.t1 !== Infinity).map(a => a.t1));
+  for (const e of evs) {
+    switch (e.e) {
+      case 'attack':
+        lunge = { seat: e.seat, from: e.from, to: e.to, start: t, hit: hasBattle ? t + LUNGE_HIT : null, seq: hasBattle ? LUNGE : POISE };
+        lungeActor(lunge); cueAt(t, e); t = at = hasBattle ? lunge.hit : t + POISE.length; break;
+      case 'trap': { const s = e.seat, i = sprung[s].shift(); cueAt(t, e);
+        t = at = show(i != null ? { x: TBL.zx(i), z: TBL.trap[s] } : null, { id: e.id }, t, i != null ? tkey(s, i) : null, s); break; }
+      case 'spell': cueAt(t, e); t = at = show(null, { id: e.id }, t, null, e.seat); break;
+      case 'equip': { const t0 = t, base = { x: 0, y: 0, z: e.seat ? -40 : 40 }, tg = home(e.seat, e.zone), k = mkey(e.seat, e.zone);
+        // shown as a Spell is, then it flies onto its monster and sinks into it, and the monster flashes
+        B.acts.push({ t0, t1: t0 + 11, inst: () => ({ id: e.id }), seat: e.seat, pose: tk => { const i = tk - t0; if (i < 7) { const [y, tilt, w] = SHOW[i]; return { ...base, y, tilt, wide: Math.abs(w), face: w < 0, bias: -800 }; }
+          const s = (i - 6) / 4; return { x: base.x + (tg.x - base.x) * s, y: 24 - 18 * s, z: base.z + (tg.z - base.z) * s, tilt: .85 * (1 - s), wide: 1 - .5 * s, face: true, bias: -800 }; } });
+        B.flash.push({ key: k, t: t0 + 11, k: [1.6, 1, 1.6, 1] }); B.look[k] = t0 + 11; cueAt(t0 + 6, e); t = at = t0 + 12; break; }
+      case 'terrain': { const t0 = e.law || e.storm ? t : show(null, { id: e.id }, t, null, e.seat);
+        if (!B.wipe) B.wipe = { t: t0, from: P.terrain, to: V.terrain, near: e.seat === 0 }; // the ground is laid row by row from its owner's side
+        cueAt(t0, e); t = at = t0 + 8; break; }
+      case 'reveal': { const k = mkey(e.seat, e.zone), was = P.mon[e.seat][e.zone], face = was ? { ...was, id: e.id, veil: false } : null;
+        if (lunge && lunge.seat === e.seat && lunge.from === e.zone) { lunge.rev = face; cueAt(lunge.start ?? t, e); break; } // an attacker shows its face as it sets off
+        const hit = hasBattle && lunge ? lunge.hit ?? t + RESUME_HIT : null, c = hit != null ? hit - 3 : at, h = home(e.seat, e.zone); // a defender turns over as the blow comes
+        B.acts.push({ key: k, t0: c, t1: Math.max(c + 4, hit ?? 0), inst: tk => tk - c >= 2 ? face : undefined, pose: tk => tk - c < 4 ? { ...h, y: 3, wide: [.5, .05, .5, 1][tk - c], face: tk - c >= 2 } : h });
+        B.look[k] = hit ?? c + 2; cueAt(c, e); break; }
+      case 'battle':
+        if (lunge && lunge.held && lunge.start == null) { lunge.start = t; lunge.hit = t + RESUME_HIT; lunge.seq = RESUME; }
+        if (lunge && lunge.hit != null) { const ka = mkey(lunge.seat, lunge.from); sw(ka, lunge.hit); B.look[ka] = lunge.hit; if (lunge.to >= 0) { const kd = mkey(1 - lunge.seat, lunge.to); sw(kd, lunge.hit); B.look[kd] = Math.max(B.look[kd] ?? 0, lunge.hit); } t = Math.max(t, lunge.hit); at = lunge.hit; }
+        cueAt(at, e); break;
+      case 'lp': B.lp.push({ t: at, seat: e.seat, d: e.d }); if (e.d <= -1500) B.shakes.push(at); cueAt(at, e); break;
+      case 'destroyed': { const k = mkey(e.seat, e.zone), was = P.mon[e.seat][e.zone]; B.shards.push({ key: k, t: at, seat: e.seat, inst: { id: e.id, pos: was ? was.pos : 'a' } }); sw(k, at); cueAt(at, e); break; }
+      // A card sent back is lifted off and slid toward its owner's hand.
+      case 'bounce': { const k = mkey(e.seat, e.zone), h = home(e.seat, e.zone), dir = e.seat ? -1 : 1, t0 = Math.max(at, busy(k));
+        B.acts.push({ key: k, t0, t1: t0 + 7, pose: tk => { const i = tk - t0; return { ...h, y: Math.min(8, 4 + i * 4), z: h.z + dir * [0, 0, 20, 50, 90, 140, 200][i] }; } });
+        sw(k, t0 + 7); if (e.seat === 0) B.hand = t0 + 7; cueAt(t0, e); t = at = Math.max(t, t0 + 7); break; }
+      case 'summon': case 'revive': { const k = mkey(e.seat, e.zone), h = home(e.seat, e.zone), t0 = t, land = t0 + ARRIVE.length - 1, inst = V.mon[e.seat][e.zone], from = e.seat ? -260 : 260;
+        if (inst) B.acts.push({ t0, t1: land, inst: () => inst, seat: e.seat, pose: tk => { const [s, y] = ARRIVE[tk - t0]; return { ...h, y, z: from + (h.z - from) * s }; } }); // it comes in over its owner's edge of the table; whatever lay there stays until it lands
+        sw(k, land); B.look[k] = land; B.flash.push({ key: k, t: land, k: [e.melded ? 1.6 : 1.35] }); cueAt(t0, e); t = at = land + 1; break; }
+      case 'set': { const k = tkey(e.seat, e.zone), t0 = t, h = { x: TBL.zx(e.zone), y: 0, z: TBL.trap[e.seat], small: true }, from = e.seat ? -260 : 260;
+        B.acts.push({ t0, t1: t0 + 3, inst: () => ({ veil: true }), seat: e.seat, pose: tk => { const [s, y] = [[0, 8], [.6, 4], [.9, 1]][tk - t0]; return { ...h, y, z: from + (h.z - from) * s }; } }); sw(k, t0 + 3); cueAt(t0, e); t = at = t0 + 4; break; }
+      case 'pos': { const k = mkey(e.seat, e.zone), h = home(e.seat, e.zone), t0 = Math.max(t, busy(k), lunge && lunge.from === e.zone && lunge.seat === e.seat && lunge.end() !== Infinity ? lunge.end() : 0), dir = e.pos === 'd' ? 1 : -1;
+        // a quarter turn in two steps, lifted a little off the table
+        B.acts.push({ key: k, t0, t1: t0 + 4, pose: tk => ({ ...h, y: 4, turn: tk - t0 < 2 ? dir * .5 : 0 }) }); B.look[k] = t0 + 2; cueAt(t0, e); t = at = t0 + 4; break; }
+      case 'stat': case 'enchant': if (e.zone != null) { const k = mkey(e.seat, e.zone); B.flash.push({ key: k, t: at, k: (e.a ?? 1) < 0 ? [.45, 1, .45, 1] : [1.6, 1, 1.6, 1] }); B.look[k] = Math.max(B.look[k] ?? 0, at); } cueAt(at, e); break;
+      case 'relic': B.relics.push({ t: at, e }); cueAt(at, e); break;
+      case 'draw': if (e.seat === 0 && B.hand < 0) B.hand = at; cueAt(at, e); break;
+      default: cueAt(e.e === 'turn' ? t : at, e);
+    }
+  }
+  // an attack stopped by the Trap that answered it goes back to its zone
+  if (lunge && lunge.held && lunge.start == null && V.mon[lunge.seat][lunge.from]) { lunge.start = Math.max(t, at); lunge.back = true; lunge.seq = RETREAT; t = lunge.start + RETREAT.length; }
+  else if (lunge && lunge.held && lunge.start == null) lunge.start = Infinity; // it broke where it waited
+  const ends = [t, at, ...B.acts.map(a => a.t1).filter(x => x !== Infinity), ...B.shards.map(s => s.t + SHARD_LIFE), ...B.flash.map(x => x.t + x.k.length), ...B.lp.map(x => x.t + 4), B.wipe ? B.wipe.t + 8 : 0];
+  if (lunge && lunge.end() !== Infinity) ends.push(lunge.end());
+  B.end = Math.max(B.end, ...ends);
+  // the Life Points: each change from what was shown, the last one to what the board says (it may have been held at 0 or set by a relic)
+  for (const s of [0, 1]) { let n = P.lp[s]; const l = B.lp.filter(x => x.seat === s); l.forEach((x, i) => { x.from = n; x.to = i === l.length - 1 ? V.lp[s] : n + x.d; n = x.to; }); }
+  return B;
+}
+const beatTick = (B, now = performance.now()) => Math.floor((now - B.t0) / TICK) * B.speed;
+// The Life Points a pillar shows at a tick of the beat: the number turns at once, the gauge steps down (or up) in four.
+function lpAt(B, seat, tick) {
+  let n = B.P ? B.P.lp[seat] : B.V.lp[seat], g = n, hot = null;
+  for (const x of B.lp) if (x.seat === seat && tick >= x.t) { n = x.to; g = x.from + (x.to - x.from) * Math.min(1, (tick - x.t + 1) / 4); if (tick < x.t + 15) hot = x.d; }
+  return { n: Math.max(0, n), g: Math.max(0, g), hot };
+}
+const lpNow = (v, seat) => { const B = PSV && PSV.beat; return B && B.V === v ? lpAt(B, seat, beatTick(B)) : { n: v.lp[seat], g: v.lp[seat], hot: null }; };
+
+// The corners of a card at a pose: x, y, z its middle; turn: quarter turns from how it lies (1 turns an attack card to
+// defense); tilt: how far it stands up toward you, about its width; wide: its width while it turns over (1 flat, 0 edge-on).
+function cardQuad(pose, def) {
+  const small = pose.small, hw = small ? 16 : 21, hd = small ? 21 : 29, th = ((def ? 1 : 0) + (pose.turn || 0)) * Math.PI / 2;
+  const c = Math.cos(th), s = Math.sin(th), ct = Math.cos(pose.tilt || 0), st = Math.sin(pose.tilt || 0), wd = pose.wide ?? 1;
+  return [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].map(([lx, lz]) => { lx *= wd; const y = -lz * st, z = lz * ct; return [pose.x + lx * c - z * s, pose.y + y, pose.z + lx * s + z * c]; });
+}
+const UV_FACE = [[0, 0], [39, 0], [39, 39], [0, 39]], UV_BACK = [[0, 0], [43, 0], [43, 59], [0, 59]], UV0 = [[0, 0], [0, 0], [0, 0], [0, 0]];
+const ROLE_RGB = { monster: [168, 126, 79], spell: [76, 138, 124], field: [76, 138, 124], trap: [150, 64, 52], equip: [122, 84, 60], fuel: [90, 80, 72] };
+const cardLook = (inst, seat, pose) => { const back = pose.face != null ? !pose.face : !inst.id || (inst.veil && seat === 1); return { back, def: inst.pos === 'd' && !pose.small, tex: back ? TEX.back : cardTex(inst.id) }; };
+function layCard(view, inst, seat, pose, shade = 1) {
+  const { back, def, tex } = cardLook(inst, seat, pose), p = cardQuad(pose, def), sh = p.map(q => (q[2] < pose.z - 1 ? .8 : 1) * shade * (pose.shade ?? 1)), bias = pose.bias ?? -Math.round(pose.y * 4);
+  if (tex) R3.quad(view, { p, uv: back ? UV_BACK : UV_FACE, tex, shade: sh, bias });
+  else R3.quad(view, { p, uv: UV0, col: back ? [65, 27, 40] : ROLE_RGB[roleOf(db, inst.id)] || [168, 126, 79], shade: sh, bias });
+  return p;
+}
+// A card breaking: its own picture cut four by four where it lay, the pieces thrown up and apart, turning, falling back
+// onto the table where they stop, then taken away a few at a time in a fixed order (no piece blinks, none fades).
+function layShards(view, inst, seat, pose, age) {
+  const { back, def, tex } = cardLook(inst, seat, pose), p = cardQuad({ ...pose, tilt: pose.tilt || 0 }, def), uv = back ? UV_BACK : UV_FACE;
+  const lerp = (a, b, k) => a.map((x, i) => x + (b[i] - x) * k), at = (q, u, v) => lerp(lerp(q[0], q[1], u), lerp(q[3], q[2], u), v);
+  const mid = at(p, .5, .5), rnd = i => { const s = Math.sin(i * 12.9898 + 4.1) * 43758.5453; return s - Math.floor(s); };
+  const dim = age < 8 ? 1 : .8;
+  for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) {
+    const n = j * 4 + i, r = rnd(n); if (age >= 8 + Math.floor(rnd(n + 31) * 6)) continue; // gone, from the eighth thirtieth on
+    const q = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => at(p, a / 4, b / 4)), u = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => at(uv, a / 4, b / 4));
+    const c = at(q, .5, .5), up = 3.5 + r * 2, land = (up + Math.sqrt(up * up + 2.2 * Math.max(0, c[1]))) / 1.1, fly = Math.min(age, land); // a piece goes up, comes down onto the table, and lies where it lands
+    const dx = c[0] - mid[0], dz = c[2] - mid[2], dl = Math.hypot(dx, dz) || 1, out = fly * (1.2 + r * 1.2);
+    const y = Math.max(0, c[1] + fly * up - .55 * fly * fly) - c[1], a = (r - .5) * fly * .3, ca = Math.cos(a), sa = Math.sin(a);
+    const moved = q.map(([x, yy, z]) => { const lx = x - c[0], lz = z - c[2]; return [c[0] + dx / dl * out + lx * ca - lz * sa, c[1] + (yy - c[1]) * (1 - fly / land) + y, c[2] + dz / dl * out + lx * sa + lz * ca]; }); // a piece of a card held up lies flat once it lands
+    if (tex) R3.quad(view, { p: moved, uv: u, tex, shade: dim, bias: -300 });
+    else R3.quad(view, { p: moved, uv: UV0, col: back ? [65, 27, 40] : ROLE_RGB[roleOf(db, inst.id)] || [168, 126, 79], shade: dim, bias: -300 });
+  }
+}
+// The label face drawn into the table's picture: each letter cut once to one bit from the page's own label face, so the
+// numbers on the table are the letters used everywhere else in the frame, never smoothed. They lie flat on the screen,
+// as the console laid its numbers over a scene, and are placed from the card's corners as drawn, so they go with it.
+const GL = new Map(); let glOk = false, glTop = 0;
+function glyphsReady() {
+  if (glOk) return true;
+  try { if (document.fonts && document.fonts.check && !document.fonts.check('8px "LM Label"')) { if (!glyphsReady.asked) { glyphsReady.asked = 1; document.fonts.load('8px "LM Label"').then(() => { glOk = true; GL.clear(); psPaint(true); }).catch(() => {}); } return false; } } catch { /* no way to ask: use what there is */ }
+  glOk = true; return true;
+}
+function glyph(ch) {
+  let g = GL.get(ch); if (g) return g;
+  const c = document.createElement('canvas'); c.width = 12; c.height = 12; const x = c.getContext('2d', { willReadFrequently: true });
+  x.font = '8px "LM Label"'; x.textBaseline = 'top'; x.fillStyle = '#fff'; x.fillText(ch, 0, 1);
+  const d = x.getImageData(0, 0, 12, 12).data, bits = [];
+  for (let y = 0; y < 12; y++) for (let i = 0; i < 12; i++) if (d[(y * 12 + i) * 4 + 3] >= 128) bits.push(i, y);
+  g = { w: Math.round(x.measureText(ch).width), bits }; GL.set(ch, g);
+  if (ch === '0') { let top = 12, bot = 0; for (let i = 1; i < bits.length; i += 2) { top = Math.min(top, bits[i]); bot = Math.max(bot, bits[i]); } glTop = top; GL.h = bot - top + 1; }
+  return g;
+}
+const GLH = () => { glyph('0'); return GL.h || 5; };
+const textW = s => [...s].reduce((n, ch) => n + glyph(ch).w, 0) - 1;
+const RGB = { ink: [243, 234, 216], g: [233, 196, 106], r: [240, 138, 114], d: [194, 180, 156], v: [159, 208, 192], sh: [26, 15, 18], gold: [219, 164, 89] };
+const px15 = rgb => 0xff000000 | ((rgb[2] & 0xf8) << 16) | ((rgb[1] & 0xf8) << 8) | (rgb[0] & 0xf8);
+function putBox(view, x, y, w, h, rgb) { const c = px15(rgb); for (let j = Math.max(0, y); j < Math.min(view.h, y + h); j++) for (let i = Math.max(0, x); i < Math.min(view.w, x + w); i++) view.px[j * view.w + i] = c; }
+function putText(view, x, y, s, rgb) { glyph('0'); const c = px15(rgb); for (const ch of s) { const g = glyph(ch); for (let i = 0; i < g.bits.length; i += 2) { const px = x + g.bits[i], py = y + g.bits[i + 1] - glTop; if (px >= 0 && py >= 0 && px < view.w && py < view.h) view.px[py * view.w + px] = c; } x += g.w; } return x; }
+// A plate of lines, each a list of [text, colour], on the dark of the frame with a pixel round the letters.
+function putPlate(view, x, y, lines) {
+  const h = GLH(), w = Math.max(...lines.map(l => l.reduce((n, [s]) => n + textW(s) + 1, -1))), H = lines.length * (h + 1) + 1;
+  putBox(view, x, y, w + 2, H, RGB.sh);
+  lines.forEach((l, i) => { let cx = x + 1; for (const [s, col] of l) cx = putText(view, cx, y + 1 + i * (h + 1), s, RGB[col]); });
+  return [x, y, w + 2, H];
+}
+const plateSize = lines => { const h = GLH(); return [Math.max(...lines.map(l => l.reduce((n, [s]) => n + textW(s) + 1, -1))) + 2, lines.length * (h + 1) + 1]; };
+// A table monster's two numbers, ATK then DEF. The number its position fights with is bright (gold when raised above the
+// printed number, red when lowered, sea-green for DEF in defense); the other is dim. Yours on one line just beyond your
+// card's far edge, the rival's ATK over DEF just short of its near edge: both in the space between the two rows. On a
+// table drawn too small for both (tight), each shows only the number it fights with, in its colour.
+function numLines(m, seat, tight = false) {
+  const c = m.id ? card(m.id) : null, d = m.pos === 'd', tone = (n, p) => !c ? 'ink' : n > p ? 'g' : n < p ? 'r' : 'ink';
+  const a = [String(m.ea), d ? 'd' : tone(m.ea, c && c.atk)], e = [String(m.ed), d ? (tone(m.ed, c && c.def) === 'ink' ? 'v' : tone(m.ed, c && c.def)) : 'd'];
+  return tight ? [[d ? e : a]] : seat === 0 ? [[a, ['/', 'd'], e]] : [[a], [e]];
+}
+// Whether the table is drawn too small for a card's two numbers: two of your plates side by side would touch at your
+// row's far edge, or the rival's two lines and your one do not fit between the rows.
+function tightPlates(proj, v, off) {
+  if (!glyphsReady()) return false;
+  const far = TBL.row[0] - 33, near = TBL.row[1] + 33, h = GLH(), at = z => proj([TBL.zx(z + off), 0, far])[0];
+  const w = v.mon[0].map(m => m && m.id && m.ea != null ? plateSize(numLines(m, 0))[0] : 0);
+  for (let z = 0; z + 1 < w.length; z++) if (w[z] && w[z + 1] && (w[z] + w[z + 1]) / 2 + 2 > at(z + 1) - at(z)) return true;
+  return 3 * (h + 1) + 2 + 3 > proj([0, 0, far])[1] - proj([0, 0, near])[1];
+}
+const MARK_LINES = { WINS: [[['WINS', 'g']]], LOSES: [[['LOSES', 'r']]], 'BOTH FALL': [[['BOTH', 'r']], [['FALL', 'r']]], 'NO KILL': [[['NO', 'ink']], [['KILL', 'ink']]], '?': [[['?', 'ink']]] };
+// Zone marks, cut into the stone round the zone (under the cards): ready gold; picked ember inside ink; a target red,
+// its two reds changing every 0.4 seconds in two hard steps, as the console blinked a cursor; onto sea-green inside ink.
+const RING = { ready: () => [RGB.gold], picked: () => [[189, 116, 51], RGB.ink], target: b => [b ? [150, 64, 52] : RGB.r], onto: () => [[76, 138, 124], RGB.ink] };
+function ring(view, seat, zd, kind, blink) {
+  const cx = TBL.zx(zd), cz = TBL.row[seat], cols = RING[kind](blink);
+  cols.forEach((c, i) => { const m = 4 * (cols.length - i); R3.quad(view, { p: [[cx - 25 - m, 0, cz - 33 - m], [cx + 25 + m, 0, cz - 33 - m], [cx + 25 + m, 0, cz + 33 + m], [cx - 25 - m, 0, cz + 33 + m]], uv: UV0, col: c, shade: 1, bias: 1200 - i }); });
+}
+// Draw the table and everything on it into the window's canvas, as it stands at this moment of the beat. Cards lie flat;
+// a card in defense lies sideways. Drawn only when the moment has moved on by a whole tick (or the blink has turned).
+function psPaint(force) {
   const cv = document.getElementById('tbl'); if (!cv || !PSV) return;
-  const vs = viewSize(); TBL.cam = tableCam(vs.w, vs.h);
-  const view = R3.makeView(cv, vs.w, vs.h), proj = R3.camera(TBL.cam), v = PSV.v, now = performance.now();
+  const B = PSV.beat, now = performance.now(), tick = B ? beatTick(B, now) : -1, live = B && tick <= B.end + 1;
+  const blink = PSV.hl && [...PSV.hl.values()].includes('target') ? Math.floor(now / 400) & 1 : 0, key = `${live ? tick : 'x'}|${blink}`;
+  if (!force && cv.dataset.k === key) return; cv.dataset.k = key;
+  const vs = viewSize(); TBL.cam = tableCam(vs.w, vs.h, PSV.s);
+  const view = R3.makeView(cv, vs.w, vs.h), proj = R3.camera(TBL.cam), v = live ? B.V : PSV.v, P = live ? B.P || B.V : v;
   R3.clear(view, 0); view.px.fill(0); // see-through: the hall picture behind the canvas shows where nothing is drawn
   const T = TEX.table || R3.flat(8, 8, [168, 126, 79]);
   if (!tableQuads(view)) R3.quad(view, { p: [[-190, 0, -192], [190, 0, -192], [190, 0, 192], [-190, 0, 192]], uv: [[0, 0], [T.w * 3 - 1, 0], [T.w * 3 - 1, T.h * 3 - 1], [0, T.h * 3 - 1]], tex: { w: T.w * 3, h: T.h * 3, d: tile3(T) }, shade: [.55, .55, 1, 1], bias: 2000 });
-  const tg = v.terrain && TEX['t-' + v.terrain.id]; // the terrain's ground, laid inside the table's border while it holds
-  if (tg) for (let j = 0; j < 4; j++) for (let i = 0; i < 2; i++) { const x0 = -170 + i * 170, z0 = -170 + j * 85;
-    R3.quad(view, { p: [[x0, 0, z0], [x0 + 170, 0, z0], [x0 + 170, 0, z0 + 85], [x0, 0, z0 + 85]], uv: [[0, 0], [tg.w - 1, 0], [tg.w - 1, tg.h - 1], [0, tg.h - 1]], tex: tg, shade: .66 + .34 * (j + 1) / 4, bias: 1500 }); }
-  else if (v.terrain) terrainTex(v.terrain.id);
-  const narrow = v.mon[0].length < 5;
+  // the terrain's ground, laid inside the table's border while it holds; a new ground comes in row by row from its owner's side
+  const W = live && B.wipe;
+  for (let j = 0; j < 4; j++) { const ter = W ? (tick >= W.t + (W.near ? 3 - j : j) * 2 ? W.to : W.from) : v.terrain, tg = ter && TEX['t-' + ter.id];
+    if (ter && !tg) terrainTex(ter.id);
+    if (tg) for (let i = 0; i < 2; i++) { const x0 = -170 + i * 170, z0 = -170 + j * 85;
+      R3.quad(view, { p: [[x0, 0, z0], [x0 + 170, 0, z0], [x0 + 170, 0, z0 + 85], [x0, 0, z0 + 85]], uv: [[0, 0], [tg.w - 1, 0], [tg.w - 1, tg.h - 1], [0, tg.h - 1]], tex: tg, shade: .66 + .34 * (j + 1) / 4, bias: 1500 }); } }
+  const off = v.mon[0].length < 5 ? 1 : 0;
   for (const seat of [0, 1]) for (let z = 0; z < 5; z++) { // the zone outlines, cut into the stone
-    const cx = TBL.zx(z), cz = TBL.row[seat], shut = narrow && (z === 0 || z === 4);
-    R3.quad(view, { p: [[cx - 25, 0, cz - 33], [cx + 25, 0, cz - 33], [cx + 25, 0, cz + 33], [cx - 25, 0, cz + 33]], uv: [[0, 0], [0, 0], [0, 0], [0, 0]], col: shut ? [58, 36, 25] : [96, 66, 44], shade: .9, bias: 1000 });
-    if (!shut) R3.quad(view, { p: [[cx - 23, 0, cz - 31], [cx + 23, 0, cz - 31], [cx + 23, 0, cz + 31], [cx - 23, 0, cz + 31]], uv: [[0, 0], [0, 0], [0, 0], [0, 0]], col: [140, 104, 66], shade: .9, bias: 999 });
+    const cx = TBL.zx(z), cz = TBL.row[seat], shut = off && (z === 0 || z === 4);
+    R3.quad(view, { p: [[cx - 25, 0, cz - 33], [cx + 25, 0, cz - 33], [cx + 25, 0, cz + 33], [cx - 25, 0, cz + 33]], uv: UV0, col: shut ? [58, 36, 25] : [96, 66, 44], shade: .9, bias: 1000 });
+    if (!shut) R3.quad(view, { p: [[cx - 23, 0, cz - 31], [cx + 23, 0, cz - 31], [cx + 23, 0, cz + 31], [cx - 23, 0, cz + 31]], uv: UV0, col: [140, 104, 66], shade: .9, bias: 999 });
   }
-  const anim = PSV.anim && now - PSV.anim.t0 < PSV.anim.ms ? PSV.anim : null, at = anim ? (now - anim.t0) / anim.ms : 1;
-  const lay = (inst, seat, zi, cz, small) => {
-    if (!inst) return;
-    let cx = TBL.zx(zi), lift = 0, dz = 0;
-    if (anim) for (const e of anim.evs) {
-      if (e.e === 'summon' && e.seat === seat && e.zone === zi - (narrow ? 1 : 0) && !small) lift = Math.max(0, 1 - at * 1.6) * 60;
-      if (e.e === 'attack' && e.seat === seat && e.from === zi - (narrow ? 1 : 0) && !small) { const k = Math.sin(Math.min(1, at * 1.4) * Math.PI); const tz = e.to >= 0 ? TBL.row[1 - seat] : (seat === 0 ? -192 : 192), tx = e.to >= 0 ? TBL.zx(e.to + (narrow ? 1 : 0)) : 0; cx += (tx - cx) * k * .8; dz = (tz - cz) * k * .8; lift = k * 14; }
-    }
-    const def = inst.pos === 'd', hw = small ? 16 : def ? 29 : 21, hd = small ? 21 : def ? 21 : 29, y = lift, z0 = cz + dz;
-    const back = inst.veil && (!inst.id || seat === 1), t = back ? TEX.back : cardTex(inst.id);
-    const corners = def ? [[cx + hw, y, z0 - hd], [cx + hw, y, z0 + hd], [cx - hw, y, z0 + hd], [cx - hw, y, z0 - hd]] : [[cx - hw, y, z0 - hd], [cx + hw, y, z0 - hd], [cx + hw, y, z0 + hd], [cx - hw, y, z0 + hd]];
-    if (t) R3.quad(view, { p: corners, uv: back ? [[0, 0], [43, 0], [43, 59], [0, 59]] : [[0, 0], [39, 0], [39, 39], [0, 39]], tex: t, shade: [.8, .8, 1, 1], bias: -lift * 4 });
-    else R3.quad(view, { p: corners, uv: [[0, 0], [0, 0], [0, 0], [0, 0]], col: back ? [65, 27, 40] : ROLE_RGB[roleOf(db, inst.id)] || [168, 126, 79], shade: [.8, .8, 1, 1], bias: -lift * 4 });
+  if (!live && PSV.hl) for (const [k, kind] of PSV.hl) { const [s, z] = k.slice(1).split('.').map(Number); ring(view, s, z + off, kind, blink); }
+  const home = (s, z, small) => small ? { x: TBL.zx(z), y: 0, z: TBL.trap[s], small: true } : { x: TBL.zx(z + off), y: 0, z: TBL.row[s] };
+  const actorOn = (k, tk) => { let a = null; if (live) for (const x of B.acts) if (x.key === k && tk >= x.t0 && tk < x.t1 && (!a || x.t0 >= a.t0)) a = x; return a; };
+  const instAt = (k, pi, vi, tk) => !live ? vi : pi && vi && pi.u != null && pi.u === vi.u ? (tk >= (B.look[k] ?? 0) ? vi : pi) : (tk < (B.swap[k] ?? 0) ? pi : vi);
+  const shadeAt = (k, tk) => { if (!live) return 1; let s = 1; for (const x of B.flash) if (x.key === k && tk >= x.t && tk < x.t + x.k.length) s *= x.k[tk - x.t]; return s; };
+  const plates = [], marks = [], tight = tightPlates(proj, v, off);
+  const slot = (seat, z, small) => {
+    const k = small ? tkey(seat, z) : mkey(seat, z), pi = small ? (P.traps[seat] || [])[z] : P.mon[seat][z], vi = small ? (v.traps[seat] || [])[z] : v.mon[seat][z];
+    const a = actorOn(k, tick), base = instAt(k, pi, vi, tick), o = a && a.inst ? a.inst(tick) : undefined, inst0 = o === undefined ? base : o;
+    let pose = a ? a.pose(tick) : home(seat, z, small);
+    if (!live && !small && PSV.pend && PSV.pend.seat === seat && PSV.pend.from === z) { const pk = PSV.pend, H = home(seat, z), Tg = pk.to >= 0 ? home(1 - seat, pk.to) : { x: H.x * .5, z: seat ? 160 : -160 }, kk = POISE[POISE.length - 1][0] * (pk.to >= 0 ? .85 : 1); pose = { x: H.x + (Tg.x - H.x) * kk, y: 12, z: H.z + (Tg.z - H.z) * kk, poised: true }; } // poised while you answer it
+    if (!inst0) return;
+    const inst = small && !(a && a.shown) ? (seat === 1 ? { veil: true } : { ...inst0, veil: true, id: null }) : inst0; // set cards lie face down
+    const p = layCard(view, inst, seat, pose, shadeAt(k, tick));
+    // A card poised over the gap between the rows shows no numbers there (they would lie on its neighbours'): the
+    // prompt that holds it names them.
+    if (!small && inst.id && inst.ea != null && !(seat === 1 && inst.veil) && (pose.wide ?? 1) === 1 && !pose.tilt && !pose.poised) plates.push({ seat, z, lines: numLines(inst, seat, tight), p }); // a card turned face up in the beat shows its numbers once the board has them
+    if (!small && !live && PSV.marks && seat === 1 && PSV.marks.has(z)) marks.push({ lines: MARK_LINES[PSV.marks.get(z)], p });
   };
-  for (const seat of [1, 0]) {
-    v.mon[seat].forEach((m, z) => lay(m, seat, z + (narrow ? 1 : 0), TBL.row[seat], false));
-    v.traps[seat].forEach((t, z) => lay(t ? (seat === 1 ? { veil: true } : { ...t, veil: true, id: null }) : null, seat, z, TBL.trap[seat], true));
+  for (const seat of [1, 0]) { v.mon[seat].forEach((m, z) => slot(seat, z, false)); (v.traps[seat] || []).forEach((t, z) => slot(seat, z, true)); }
+  if (live) {
+    for (const a of B.acts) if (!a.key && tick >= a.t0 && tick < a.t1) layCard(view, a.inst(tick), a.seat, a.pose(tick));
+    for (const s of B.shards) { const age = tick - s.t; if (age < 0 || age >= SHARD_LIFE) continue;
+      let pose = s.pose; if (!pose) { const a = actorOn(s.key, s.t), [sd, zz] = s.key.slice(1).split('.').map(Number); pose = a ? a.pose(s.t) : home(sd, zz, s.key[0] === 't'); }
+      layShards(view, s.inst, s.seat, pose, age); }
   }
-  if (anim) for (const g of anim.gone || []) { const k = Math.min(1, at * 1.5); if (k < 1) { const cx = TBL.zx(g.zone + (narrow ? 1 : 0)), cz = TBL.row[g.seat]; for (let i = 0; i < 16; i++) { const gx = cx - 21 + (i % 4) * 11, gz = cz - 29 + Math.floor(i / 4) * 15, fall = k * (20 + ((i * 7) % 5) * 8); R3.quad(view, { p: [[gx, fall, gz], [gx + 10 - k * 8, fall, gz], [gx + 10 - k * 8, fall, gz + 14 - k * 12], [gx, fall, gz + 14 - k * 12]], uv: [[0, 0], [0, 0], [0, 0], [0, 0]], col: [150, 140, 130], shade: 1 - k * .7, bias: -200 }); } } }
-  R3.draw(view, proj, [420, 760]); R3.present(view);
-  if (anim) requestAnimationFrame(psPaint);
+  R3.draw(view, proj, [420, 760]);
+  // the numbers and the forecasts, flat over the scene, each against its card as drawn
+  const out = [];
+  if (glyphsReady()) {
+    const scr = p => p.map(proj).filter(Boolean);
+    for (const pl of plates) { const s = scr(pl.p); if (s.length < 4) continue; const [w, h] = plateSize(pl.lines), by = [...s].sort((a, b) => a[1] - b[1]);
+      const edge = pl.seat === 0 ? by.slice(0, 2) : by.slice(2), mx = Math.round((edge[0][0] + edge[1][0]) / 2);
+      const x = Math.max(0, Math.min(vs.w - w, mx - (w >> 1))), y = pl.seat === 0 ? Math.min(...edge.map(q => q[1])) - 1 - h : Math.max(...edge.map(q => q[1])) + 2;
+      out.push([pl.seat, pl.z, ...putPlate(view, x, Math.max(0, Math.min(vs.h - h, y)), pl.lines)]); }
+    for (const mk of marks) { const s = scr(mk.p); if (s.length < 4) continue; const [w, h] = plateSize(mk.lines), mx = Math.round(s.reduce((n, q) => n + q[0], 0) / 4), my = Math.round(s.reduce((n, q) => n + q[1], 0) / 4);
+      putPlate(view, mx - (w >> 1), my - (h >> 1), mk.lines); }
+  }
+  R3.present(view);
+  if (!live) { cv.dataset.plates = JSON.stringify(out); cv.dataset.cam = JSON.stringify({ ...TBL.cam, off }); }
 }
 function tile3(T) { if (T.t3) return T.t3; const w = T.w * 3, h = T.h * 3, d = new Uint32Array(w * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) d[y * w + x] = T.d[(y % T.h) * T.w + (x % T.w)]; T.t3 = d; return d; }
-// Where a zone of the table lands in the window, for its tap area and its number.
-function zoneBox(seat, zi, trap = false) {
+// The things over the view and the pillars that move with the beat: the Life Points as the blows land, the change rising
+// over the face it struck, the relics' strips, the view shaking under a heavy blow. Read from the beat's clock, so a
+// screen drawn again part-way (a window opened) picks them up where they are.
+const FLOAT_LIFE = 27, STRIP_STEP = 6, STRIP_HOLD = 24;
+function beatDom() {
+  if (!PSV) return;
+  const B = PSV.beat, now = performance.now(), tick = B ? beatTick(B, now) : 0;
+  if (B && B.P) for (const seat of [0, 1]) { const el = document.getElementById(seat ? 'rivalLp' : 'myLp'), ga = document.getElementById(seat ? 'rivalGa' : 'myGa'); if (!el) continue;
+    const st = lpAt(B, seat, tick), txt = String(st.n); if (el.textContent !== txt) { el.textContent = txt; el.style.left = (88 - txt.length * 6) + 'px'; }
+    el.style.color = st.hot == null ? '' : st.hot < 0 ? '#f08a72' : '#9fd0c0';
+    if (ga && ga.firstElementChild) ga.firstElementChild.style.width = Math.max(0, Math.min(78, Math.round(78 * st.g / 8000))) + 'px'; }
+  // the change in Life Points rises over the face of the one it struck, in whole pixels, and is gone
+  PSV.floats = PSV.floats.filter(x => now - x.at < FLOAT_LIFE * TICK);
+  for (const seat of [0, 1]) { const fl = PSV.floats.filter(x => x.seat === seat && now >= x.at).pop(), host = document.querySelector(`#app.ps .pf[data-face="face${seat}"]`), pf = host && host.querySelector('img[data-pic]');
+    let el = document.querySelector(`#app.ps [data-lpf="${seat}"]`);
+    if (!fl || !host) { if (el) el.remove(); continue; }
+    if (!el || el.parentElement !== host) { if (el) el.remove(); el = document.createElement('b'); el.dataset.lpf = seat; host.appendChild(el); }
+    const age = Math.floor((now - fl.at) / TICK), txt = (fl.d > 0 ? '+' : '') + fl.d; el.className = 'lpfl' + (fl.d > 0 ? ' lpgn' : '');
+    if (el.textContent !== txt) { el.textContent = txt; const half = el.offsetWidth >> 1; el.style.left = (32 - half) + 'px'; el.style.top = '40px'; if (pf) Object.assign(el.dataset, { art: 'face' + seat, at: '32,40', pin: `${half},0` }); } // its top middle on the point of the face under the eyes
+    el.style.transform = `translateY(-${Math.min(4, Math.floor(age / 3)) * 2}px)`; }
+  // the relics that fire: a strip at the rival's side of the view (the top) or yours (the bottom), its medals set in one by one
+  PSV.strips = PSV.strips.filter(x => now < x.until);
+  const vw = document.querySelector('#app.ps .vw');
+  for (const seat of [0, 1]) { const st = PSV.strips.find(x => x.seat === seat), el = vw && vw.querySelector(`[data-rs="${seat}"]`);
+    const shown = st ? st.list.filter(x => now >= x.at) : [];
+    if (!shown.length || !vw) { if (el) el.remove(); continue; }
+    const sig = shown.map(x => x.e.id).join(); if (el && el.dataset.sig === sig) continue;
+    const last = shown[shown.length - 1].e, html = `<span class="wn rlc">${shown.slice(-3).map(x => medal(x.e.id, 24)).join('')}<b class="lb g">${esc(fitName(RELICS[last.id].name + bonusText(last), 30))}</b></span>`;
+    const box = el || Object.assign(document.createElement('div'), { className: 'rlcw' }); box.dataset.rs = seat; box.dataset.sig = sig; box.innerHTML = html;
+    box.style.top = seat ? '2px' : (viewSize().h - 30) + 'px'; if (!el) vw.appendChild(box); }
+  // a heavy blow shakes the picture inside the window, never the window
+  const tv = document.querySelector('#app.ps .tvw'), sh = B ? B.shakes.map(t => tick - t).find(a => a >= 0 && a < 5) : undefined;
+  if (tv) tv.style.transform = sh == null ? '' : ['translate(-2px,1px)', 'translate(-2px,1px)', 'translate(2px,-1px)', 'translate(2px,-1px)', 'translate(-1px,0)'][sh];
+}
+// The beat begins: what the frame brings that outlives it (the floats and the strips) is set by the clock now.
+function startBeat(f) {
+  if (!PSV) PSV = { v: f.view, beat: null, hl: null, marks: null, pend: null, s: 1, floats: [], strips: [] };
+  const B = beatOf(f), abs = t => B.t0 + t * TICK / B.speed; PSV.beat = B;
+  for (const x of B.lp) PSV.floats.push({ seat: x.seat, d: x.to - x.from, at: abs(x.t) });
+  const bySeat = [[], []]; for (const r of B.relics) bySeat[r.e.seat === 0 ? 0 : 1].push(r);
+  bySeat.forEach((l, seat) => { if (!l.length) return; let st = PSV.strips.find(x => x.seat === seat && x.until > B.t0);
+    if (!st) PSV.strips.push(st = { seat, list: [], until: 0 });
+    l.forEach((r, i) => { const t = Math.max(abs(r.t + i * STRIP_STEP), st.list.length ? st.list[st.list.length - 1].at + STRIP_STEP * TICK / B.speed : 0); st.list.push({ e: r.e, at: t }); st.until = t + STRIP_HOLD * TICK; }); });
+  return B;
+}
+let psRaf = 0;
+// The table's clock: while a beat runs, a float rises, a strip shows or a target blinks, draw again at each new tick.
+function psLoop() {
+  cancelAnimationFrame(psRaf); if (!PSV || !document.getElementById('tbl')) return;
+  psPaint(); beatDom();
+  const now = performance.now(), B = PSV.beat;
+  if ((B && beatTick(B, now) <= B.end + 1) || PSV.floats.length || PSV.strips.length || (PSV.hl && [...PSV.hl.values()].includes('target'))) psRaf = requestAnimationFrame(psLoop);
+}
+// Where a zone of the table lands in the window: its four corners, for its tap area.
+function zoneQuad(seat, zi, trap = false) {
   const proj = R3.camera(TBL.cam), cx = TBL.zx(zi), cz = trap ? TBL.trap[seat] : TBL.row[seat], hw = trap ? 17 : 25, hd = trap ? 22 : 33;
-  const pts = [[cx - hw, 0, cz - hd], [cx + hw, 0, cz - hd], [cx + hw, 0, cz + hd], [cx - hw, 0, cz + hd]].map(proj);
-  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  return [[cx - hw, 0, cz - hd], [cx + hw, 0, cz - hd], [cx + hw, 0, cz + hd], [cx - hw, 0, cz + hd]].map(p => proj(p).slice(0, 2));
 }
-// A table monster's two numbers, ATK then DEF: on one line inside your card's near edge, or stacked ATK over DEF (as on
-// a hand card) over a rival's card, where the far row is too tight for one line. The number its position uses is bright
-// (gold when raised above the printed number, red when lowered, sea-green for DEF in defense); the other is dim.
-function tableNums(m, x, y, stack) {
-  const c = m.id ? card(m.id) : null, d = m.pos === 'd', tone = (n, p) => !c ? '' : n > p ? 'g' : n < p ? 'r' : '';
-  const a = `<i class="${d ? 'd' : tone(m.ea, c && c.atk)}">${m.ea}</i>`, e = `<i class="${d ? tone(m.ed, c && c.def) || 'v' : 'd'}">${m.ed}</i>`;
-  return `<b class="atk${stack ? ' two' : ''}" style="left:${x}px;top:${y}px">${stack ? a + e : a + '<i class="d">/</i>' + e}</b>`;
-}
+// A tap area over a zone: a button the size of the zone's box, cut to the zone's own four corners, drawing nothing (the
+// zone's marks are cut into the table itself).
+const zoneTap = (q, attrs) => { const x = Math.min(...q.map(p => p[0])), y = Math.min(...q.map(p => p[1])), w = Math.max(...q.map(p => p[0])) - x, h = Math.max(...q.map(p => p[1])) - y;
+  return `<button class="zh" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;clip-path:polygon(${q.map(p => `${p[0] - x}px ${p[1] - y}px`).join(',')})" ${attrs}></button>`; };
 // Short words for the plaques.
 const PLAY_WORDS = (x, free, aimM) => x.pos === 'a' ? (x.veiled ? 'VEILED ATK' : 'ATTACK POS') : x.pos === 'd' ? (x.veiled ? 'SET VEILED' : 'DEFENSE POS') : (free ? 'PLAY FREE' : aimM ? 'PLAY ON TARGET' : 'PLAY');
+// The window that ends a duel opens over the board as the last blow left it, not over the screen that comes next.
+const endShown = () => G.overlay && G.overlay.kind === 'duelEnd' && G.endFrame && !G.shown ? G.endFrame : null;
 function psDuel() {
-  const live = G.run.duel, f = G.shown;
+  const live = G.run.duel, f = G.shown || endShown();
   const v = f ? f.view : live ? viewFor(live, db, 0) : null;
   if (!v) return frame({});
   const rv = f ? f.rival : info(G.run);
@@ -1121,34 +1445,38 @@ function psDuel() {
   } else if (G.onto != null) { bar = 'Now tap hand cards to meld onto it.'; cmds.push(['CANCEL', 'undo']); }
   else if (lesson) { const [h, t] = lessonText(lesson.kind, lesson.cards.map(i => card(live.hand[0][i].id).name)); bar = `<b class="g">${esc(h)}.</b> ${esc(t)}`; cmds.push(['NO LESSONS', 'tipsoff']); }
   else if (myTurn) bar = counsel() ? `<b class="g">Counsel.</b> ${esc(counsel())}` : canPlay ? (live.seat[0].rs.loneTurn === live.turn ? 'Support turn: your support card was free. Play one card on its own. No meld this turn.' : 'Tap hand cards in order. One card plays it. Two or more meld, left to right.') : 'Tap one of your monsters to attack with it, or end your turn.';
-  if (G.playing) bar = esc(G.log.slice(-2).join(' ') || '');
+  if (G.playing || !live) bar = esc(G.log.slice(-2).join(' ') || ''); // while a move plays, and once the duel is over, the bar reads out what is shown
   else if (!myTurn) bar = pend ? 'Answer the attack.' : 'The rival is thinking.';
-  // the table: tap areas and numbers over the canvas
-  const vs = viewSize(); TBL.cam = tableCam(vs.w, vs.h);
-  const narrow = v.mon[0].length < 5, off = narrow ? 1 : 0;
+  // The table: the hall's painting and the table in front of it as one scene, the canvas drawing the table, and a tap
+  // area cut to each zone's own four corners. The zones' marks, the numbers and the forecasts are drawn into the table.
+  const fl = G.run.floor + 1, hallName = rv.tier === 'secret' && CART.has('room-bare') ? 'room-bare' : rv.tier === 'boss' && CART.has('room-guardian') ? 'room-guardian' : CART.has('hall-duel-' + fl) ? 'hall-duel-' + fl : 'hall-duel'; // a guardian waits in its own hall
+  const vs = viewSize(), hp = hallPic(hallName); TBL.cam = tableCam(vs.w, vs.h, hp.s);
+  const off = v.mon[0].length < 5 ? 1 : 0;
   const fc = z => { const X = live.mon[0][G.attacker], Tm = v.mon[1][z]; if (z < 0 || Tm.veil) return '?'; const q = forecast(live, db, 0, X, 1, live.mon[1][z]); const kt = q.killT && !holds(live.mon[1][z]), kx = q.killX && !holds(X); return kt && kx ? 'BOTH FALL' : kt ? 'WINS' : kx ? 'LOSES' : 'NO KILL'; };
-  let hits = '';
+  const hl = new Map(), marks = new Map(), nums = m => `, ${m.ea} ATK, ${m.ed} DEF${m.pos === 'd' ? ', in defense' : ''}`;
+  let taps = '';
   for (const seat of [1, 0]) v.mon[seat].forEach((m, z) => {
-    const bx = zoneBox(seat, z + off); let cls = 'zh', attrs = `data-zone="${seat}:${z}"`, mark = '';
-    if (aim && aim.side === seat && m) { cls += ' target' + (aimed === z ? ' picked' : ''); attrs += ` data-a="aim:${z}"`; }
-    else if (seat === 0 && m && myTurn) { if (canAtk.has(z)) cls += ' ready'; attrs += ` data-a="mine:${z}"`; if (G.attacker === z) cls += ' picked'; if (G.onto === z) cls += ' onto'; }
-    else if (seat === 1 && m && targets.includes(z)) { cls += ' target'; attrs += ` data-a="hit:${z}"`; mark = fc(z); }
+    const k = mkey(seat, z); let attrs = `data-zone="${seat}:${z}"`;
+    if (aim && aim.side === seat && m) { hl.set(k, aimed === z ? 'picked' : 'target'); attrs += ` data-a="aim:${z}"`; }
+    else if (seat === 0 && m && myTurn) { if (G.attacker === z) hl.set(k, 'picked'); else if (G.onto === z) hl.set(k, 'onto'); else if (canAtk.has(z)) hl.set(k, 'ready'); attrs += ` data-a="mine:${z}"`; }
+    else if (seat === 1 && m && targets.includes(z)) { hl.set(k, 'target'); attrs += ` data-a="hit:${z}"`; marks.set(z, fc(z)); }
     else if (m) attrs += ` data-a="inspectz:${seat}:${z}"`;
-    hits += `<button class="${cls}" style="left:${bx.x}px;top:${bx.y}px;width:${bx.w}px;height:${bx.h}px" ${attrs} aria-label="${m ? (m.id ? esc(card(m.id).name) : 'Veiled monster') : 'Empty zone'}"></button>`;
-    // both numbers on every face-up monster (tableNums)
-    if (m && seat === 0) hits += tableNums(m, bx.x + 2, bx.y + bx.h - 9);
-    if (m && seat === 1 && !m.veil && m.id) hits += tableNums(m, bx.x + 1, Math.max(0, bx.y - 17), true);
-    if (mark) hits += `<b class="atk ${mark === 'WINS' ? 'up' : mark === 'LOSES' ? 'down' : ''}" style="left:${bx.x}px;top:${bx.y + 2}px">${mark}</b>`;
+    const said = !m ? 'Empty zone' : m.id && !(seat === 1 && m.veil) ? card(m.id).name + nums(m) + (marks.has(z) ? `, ${marks.get(z).toLowerCase()}` : '') : 'Veiled monster';
+    taps += zoneTap(zoneQuad(seat, z + off), `${attrs}${hl.has(k) ? ` data-hl="${hl.get(k)}"` : ''} aria-label="${esc(said)}"`);
   });
-  v.traps[0].forEach((t, z) => { if (!t) return; const bx = zoneBox(0, z, true); hits += `<button class="zh" style="left:${bx.x}px;top:${bx.y}px;width:${bx.w}px;height:${bx.h}px" data-a="inspect:${t.id}" aria-label="${esc(card(t.id).name)}"></button>`; });
-  const terr = v.terrain ? card(v.terrain.id).name + (v.terrain.temp != null ? ` (${v.terrain.temp})` : '') + (v.terrain.lock ? ' (locked)' : '') : '';
-  const fl = G.run.floor + 1, hall = rv.tier === 'secret' && CART.has('room-bare') ? 'room-bare' : rv.tier === 'boss' && CART.has('room-guardian') ? 'room-guardian' : CART.has('hall-duel-' + fl) ? 'hall-duel-' + fl : 'hall-duel'; // a guardian waits in its own hall
-  const rp = roomPic(hall, 70, !!tmodel()); // the table stands on the hall's floor
-  const view = `<img class="ab" src="${rp.src}" style="left:${rp.ox}px;top:${rp.oy}px" width="${rp.pw}" height="${rp.ph}" alt="">${rp.edge}<canvas id="tbl" width="${vs.w}" height="${vs.h}"></canvas>${hits}${terr ? `<b class="atk" style="left:4px;top:4px">TERRAIN ${esc(terr)}</b>` : ''}<div id="relicFlash" class="flash"></div><div id="rivalFlash" class="flash"></div>`;
-  PSV = { v, anim: PSV && PSV.anim && PSV.anim.frame === f ? PSV.anim : null };
-  // the hand
+  v.traps[0].forEach((t, z) => { if (t) taps += zoneTap(zoneQuad(0, z, true), `data-zone="t0:${z}" data-a="inspect:${t.id}" aria-label="${esc(card(t.id).name)}, set"`); });
+  const pk = v.pending && v.pending.kind === 'trap' ? { seat: v.active, from: v.pending.from, to: v.pending.to } : null; // an attack held while it is answered stands poised
+  PSV = { v, beat: PSV && PSV.beat && PSV.beat.f === f && f ? PSV.beat : null, hl: hl.size ? hl : null, marks: marks.size ? marks : null, pend: pk, s: hp.s, floats: PSV ? PSV.floats : [], strips: PSV ? PSV.strips : [] };
+  const view = `<div class="tvw" style="width:${vs.w}px;height:${vs.h}px"><img class="ab" data-pic="hall" src="${hp.src}" style="left:${hp.ox}px;top:${hp.oy}px" width="${hp.pw}" height="${hp.ph}" alt="">${hp.edge}<canvas id="tbl" width="${vs.w}" height="${vs.h}"></canvas>${taps}</div>`;
+  // The hand. A card drawn in this step slides in from the ledge's empty right end, stepped, when the beat comes to it (timed from
+  // the beat's own clock, so a screen drawn again part-way picks it up where it is).
+  const B = PSV.beat, was = B && B.P && B.hand >= 0 ? new Set(B.P.hand.map(c => c.u)) : null; let dealt = 0;
   const hx = (ledgeW() - 296) >> 1, hand = [0, 1, 2, 3, 4, 5].map(i => { const c = v.hand[i], k = G.sel.indexOf(i), lp = lesson ? lesson.cards.indexOf(i) : -1, x = hx + i * 50;
-    return c ? psCard(c, x, k >= 0 ? -4 : 0, { cls: 'hs ' + (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: `data-a="hand:${i}"`, badge: k >= 0 ? k + 1 : '', pip: lp >= 0 ? lp + 1 : '' }) : `<i class="ab" style="left:${x}px;top:0;width:44px;height:60px;border:1px solid var(--dark)"></i>`; }).join('');
+    if (!c) return `<i class="ab" style="left:${x}px;top:0;width:44px;height:60px;border:1px solid var(--dark)"></i>`;
+    const el = psCard(c, x, k >= 0 ? -4 : 0, { cls: 'hs ' + (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: G.playing ? '' : `data-a="hand:${i}"`, badge: k >= 0 ? k + 1 : '', pip: lp >= 0 ? lp + 1 : '' });
+    if (!was || c.u == null || was.has(c.u)) return el;
+    const at = B.t0 + (B.hand + 3 * dealt++) * TICK / B.speed - performance.now();
+    return `<div class="ab dealt" style="--dx:${Math.ceil((ledgeW() - x) / 6) * 6}px;animation-duration:${Math.round(6 * TICK / B.speed)}ms;animation-delay:${Math.round(at)}ms">${el}</div>`; }).join('');
   // the Forger's Power, on your pillar
   let power = '';
   if (myTurn && v.forger && !v.rs.power) { const Fg = FORGERS[v.forger], pa = powerActions(live, db, 0); const ok = Fg.needs === 'hand' ? G.sel.length === 1 && pa.some(p => p.hand === G.sel[0]) : Fg.needs === 'zone' ? G.attacker != null && pa.some(p => p.zone === G.attacker) : pa.length > 0 && !G.sel.length;
@@ -1157,14 +1485,21 @@ function psDuel() {
   // the rival, on the other pillar
   const rf = rv.tier === 'secret' ? 'face-last-one' : 'face-' + String(rv.name || '').toLowerCase().replace(/^the /, '').replace(/[^a-z]+/g, '-').replace(/^-|-$/g, ''); // a named rival's own face, when there is one
   const endOk = myTurn && !G.sel.length && G.attacker == null && G.onto == null;
-  const right = psPort(rf, 14, 6) + lb(8, 79, fitName(shortName(rv.name), 13), 'g') + lb(8, 92, 'LIFE', 'g') + `<b id="rivalLp" class="ab lb" style="left:${88 - String(v.lp[1]).length * 6}px;top:92px">${v.lp[1]}</b>` + gauge(8, 101, 80, v.lp[1] / 8000)
+  // The commands stand in the pillar's column of plaques: four over END TURN, five when it is not there. More than that
+  // and the last place turns the page (MORE 1/2), so no plaque ever leaves the pillar.
+  const room = endOk ? 4 : 5, per = cmds.length > room ? room - 1 : room, pages = Math.max(1, Math.ceil(cmds.length / per)), sig = cmds.map(c => c[1]).join();
+  if (!G.cmdPage || G.cmdPage.sig !== sig) G.cmdPage = { sig, n: 0 };
+  const pg = G.cmdPage.n % pages, plaques = cmds.slice(pg * per, pg * per + per).map(([t, a, o], i) => pq(4, yb(138 + i * 20), 88, t, a, o || {})).join('') + (pages > 1 ? pq(4, yb(138 + per * 20), 88, `MORE ${pg + 1}/${pages}`, 'cmdpage') : '');
+  const L1 = lpNow(v, 1), lifeAt = (id, L) => `<b id="${id}" class="ab lb" style="left:${88 - String(L.n).length * 6}px;top:92px${L.hot == null ? '' : `;color:${L.hot < 0 ? '#f08a72' : '#9fd0c0'}`}">${L.n}</b>`;
+  const right = psPort(rf, 14, 6, false, 'face1') + lb(8, 79, fitName(shortName(rv.name), 13), 'g') + lb(8, 92, 'LIFE', 'g') + lifeAt('rivalLp', L1) + gauge(8, 101, 80, L1.g / 8000).replace('<i class="ga', '<i id="rivalGa" class="ga')
     + lb(8, 114, 'HAND', 'g') + `<span class="backs" style="left:40px;top:112px">${'<u></u>'.repeat(Math.min(v.rivalHand, 5))}</span>` + lb(8, 125, 'DECK', 'g') + lbr(88, 125, v.deckCount[1])
-    + cmds.slice(0, 4).map(([t, a, o], i) => pq(4, yb(138 + i * 20), 88, t, a, o || {})).join('') + (endOk ? pq(4, yb(220), 88, 'END TURN', 'end', { lit: !cmds.some(c => c[2] && c[2].lit) }) : '');
-  const more = cmds.length > 4 ? cmds.slice(4).map(([t, a, o], i) => pq(ledgeW() - 92 - i * 92, -18, 88, t, a, o || {})).join('') : '';
-  const left = psYou(G.run, v, power + pq(4, yb(198), 88, 'THIS DUEL', 'tab:duel'));
+    + plaques + (endOk ? pq(4, yb(220), 88, 'END TURN', 'end', { lit: !cmds.some(c => c[2] && c[2].lit) }) : '');
+  // the terrain, under your numbers: its name, and how long it holds or that it is locked
+  const ter = v.terrain, terr = ter ? lb(8, 150, 'TERRAIN', 'g') + (ter.lock ? lbr(88, 150, 'LOCKED', 'd') : ter.temp != null ? lbr(88, 150, ter.temp, 'd') : '') + lb(8, 160, fitName(card(ter.id).name, 13)) : '';
+  const left = psYou(G.run, v, terr + power + pq(4, yb(198), 88, 'THIS DUEL', 'tab:duel'), lifeAt);
   const prompt = pend && !G.tab && !G.inspect && !G.overlay ? psTrap(live) : ''; // another window opened over the question takes its place until it is closed
   G.barText = bar;
-  return frame({ left, right, view, ledge: `<div class="hand">${hand}</div>${more ? `<div class="ab" style="left:0;top:0;width:320px">${more}</div>` : ''}`, bar, barMore: bar.replace(/<[^>]+>/g, '').length > 74, extra: prompt });
+  return frame({ left, right, view, ledge: `<div class="hand">${hand}</div>`, bar, barMore: bar.replace(/<[^>]+>/g, '').length > 74, extra: prompt });
 }
 function psTrap(live) {
   const pv = viewFor(live, db, 0), pX = pv.mon[1][live.pending.from], pT = live.pending.to >= 0 ? pv.mon[0][live.pending.to] : null;
@@ -1452,6 +1787,15 @@ function psCharm() {
 // use theirs once they are in the art folder. A scene with a painting shows it above the words in place of the portrait.
 const STORY_PIC = { intro: ['story-city', 'story-vessa', 'story-oren'], cleared: 'story-forge', fell: 'story-lamp', left: 'story-lamp', 'secret:won': 'story-last' };
 const storyPic = (id, i) => { const p = STORY_PIC[id] || (id.startsWith('memory:') ? 'story-memory-' + id.slice(7).replace(/_/g, '-') : null), n = Array.isArray(p) ? p[Math.min(i, p.length - 1)] : p; return n && CART.has(n) ? n : null; };
+// The end of a duel, over the board it ended on: what happened is read in a list that scrolls (and says so when it
+// holds more than it shows), CONTINUE under it.
+function endWindow(o) {
+  const s = o.sum, head = `${o.rival ? o.rival.name : ''}, ${s.turns} turns${s.reason === 'deckout' ? ', a deck ran out' : ''}.`;
+  const paras = s.won ? [head, `Embers +${s.embers}${s.bountyMet ? '. Bounty met.' : '.'}`] : [head, `You lose a Spark. ${G.run.sparks} left.`, ...(o.why || []).slice(0, 2)];
+  const more = paras.reduce((n, t) => n + Math.ceil(t.length / 36), s.won ? 1 : 0) * 16 + paras.length * 4 > 142; // the text face is 8 pixels a letter: some 36 to a line here
+  const body = s.won ? `<p>${esc(head)}</p><p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b></p><p>${esc(paras[1])}</p>` : paras.map((t, i) => `<p${i > 1 ? ' class="d"' : ''}>${esc(t)}</p>`).join('');
+  return win(96, 8, 320, 224, `<div style="display:flex;justify-content:center;margin:0 0 4px">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><div class="sc" style="height:142px">${body}</div>${more ? lb(8, 202, 'MORE BELOW, SCROLL', 'g') : ''}${pq(216, 198, 88, 'CONTINUE', 'closeov', { lit: true })}`);
+}
 function psWindows() {
   const r = G.run;
   if (G.story && !G.playing && !G.overlay) { const st = G.story, sc = SCENES[st.id], sp = storyPic(st.id, st.i), fc = !sp && sc.face && CART.has(sc.face + '-96') ? sc.face + '-96' : null;
@@ -1464,7 +1808,7 @@ function psWindows() {
     return `<div class="story" data-a="floorok"><div class="dim"></div><div class="ab" style="left:0;top:${y - 28}px;width:${F.W}px;display:flex;justify-content:center">${carveImg(['', 'FLOOR ONE', 'FLOOR TWO', 'FLOOR THREE'][fc.n] || 'FLOOR ' + fc.n, 24, render)}</div>${CART.has('story-stair') ? `<img class="ab" src="${cimg(big ? 'story-stair-l' : 'story-stair')}" style="left:${(F.W - pw) >> 1}px;top:${y}px" width="${pw}" height="${ph}" alt="">` : ''}${lb((F.W >> 1) - 36, y + ph + 8, 'TAP TO GO ON', 'd')}</div>`; }
   const o = G.overlay;
   if (o && !G.playing) {
-    if (o.kind === 'duelEnd') { const s = o.sum; return win(136, 16, 240, 208, `<div style="display:flex;justify-content:center;margin:2px 0 6px">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><p>${esc(o.rival ? o.rival.name : '')}, ${s.turns} turns${s.reason === 'deckout' ? ', a deck ran out' : ''}.</p>${s.won ? `<p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b></p><p>Embers +${s.embers}${s.bountyMet ? '. Bounty met.' : '.'}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>${(o.why || []).slice(0, 2).map(l => `<p class="d">${esc(l)}</p>`).join('')}`}${pq(76, 184, 88, 'CONTINUE', 'closeov', { lit: true })}`); }
+    if (o.kind === 'duelEnd') return endWindow(o);
     if (o.kind === 'leave') { const run = o.saved || G.run, w = worth(run), S = run.stats;
       return win(96, 24, 320, 192, `<h2>${o.saved ? 'You have a run in progress' : 'Leave the pyramid?'}</h2><p>${o.saved ? `${esc(run.forger ? FORGERS[run.forger].name : 'No Forger')}, Floor ${run.floor + 1}, Chamber ${Math.min(6, run.chamber + 1)}. Starting a new run ends that one.` : 'Leaving ends this run as a loss.'}</p><p>You keep ${w.total} Memories, ${S.wins} duel${S.wins === 1 ? '' : 's'} won and your feat progress.</p>${o.saved ? pq(8, 166, 96, 'CONTINUE IT', 'resume', { lit: true }) + pq(110, 166, 96, 'BANK IT, NEW', 'bankold') + pq(212, 166, 96, 'BACK', 'closeov') : pq(8, 166, 140, 'KEEP PLAYING', 'closeov', { lit: true }) + pq(160, 166, 148, 'LEAVE AND BANK IT', 'abandon')}`); }
     if (o.kind === 'heat') return win(96, 8, 320, 224, `<h2>Heat ${o.n}</h2><div class="sc" style="height:176px">${HEAT_RULES.filter(x => x.n <= o.n).map(x => `<p><b class="lb g">${x.n}. ${esc(x.name)}</b><br>${esc(x.text)}</p>`).join('')}</div>${pq(220, 196, 88, 'CLOSE', 'closeov', { lit: true })}`);
@@ -1498,7 +1842,7 @@ function psScreen() {
   if (G.screen) return { codex: psCodex, feats: psFeats, vault: psVault }[G.screen] || null;
   if (!r) return psHome;
   if (G.forge) return psForge; // the hammer is still falling on the last working
-  if (G.shown || r.phase === 'duel') return psDuel;
+  if (G.shown || r.phase === 'duel' || endShown()) return psDuel;
   if (r.phase === 'chamber') return psChamber;
   if (r.phase === 'kit') return psKit;
   if (r.phase === 'charm') return psCharm;
@@ -1522,11 +1866,11 @@ function drawConsole(screen) {
   app.classList.add('ps'); app.classList.remove('phone', 'era'); document.body.classList.add('ps'); fitConsole(app); setMats(); // the frame's size first: the screen is laid out for it
   const r = G.run;
   app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
-  app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home'; app.dataset.room = '';
+  app.dataset.phase = r ? (G.shown || endShown() ? 'duel' : r.phase) : 'home'; app.dataset.room = '';
   if (document.getElementById('prop')) { propTextures(); propPaint(); }
   if (document.getElementById('forge')) { propTextures(); convertSheets(40); forgePaint(); }
   if (document.getElementById('coin')) coinLoop();
-  if (document.getElementById('tbl')) { psTextures(); convertSheets(40); psPaint(); }
+  if (document.getElementById('tbl')) { psTextures(); convertSheets(40); psPaint(true); psLoop(); }
   else convertSheets(40);
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
   barFits();
@@ -1627,7 +1971,8 @@ function tapped(ev) {
     case 'inspect': G.inspect = { id: n }; render(); break;
     case 'inspectz': { const v = G.shown ? G.shown.view : r && r.duel ? viewFor(r.duel, db, 0) : null; const m = v && v.mon[n] && v.mon[n][+y]; if (m && m.id) { G.inspect = m; render(); } break; } // the table as shown: while a move plays out the duel may already be over (found 22 November: tapping the rival's monster during its last attack sent the page back to the start)
     case 'closeinspect': G.inspect = null; render(); break;
-    case 'closeov': G.overlay = null; render(); break;
+    case 'closeov': G.overlay = null; G.endFrame = null; render(); break;
+    case 'cmdpage': if (G.cmdPage) G.cmdPage.n++; render(); break; // the next page of the duel's commands
     case 'heatinfo': G.overlay = { kind: 'heat', n }; render(); break;
     case 'speed': G.fast = !G.fast; render(); break;
     // duel

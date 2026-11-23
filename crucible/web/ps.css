@@ -147,20 +147,27 @@ body.ps { background: #000; }
 #app.ps .dt p { font: 8px/9px 'LM Label', monospace; color: #3a2419; margin: 1px 0 0; max-height: 27px; overflow: hidden; }
 #app.ps .dt p i { color: var(--rust); background: none; } #app.ps .dt p i.lmg { color: #2f5f55; }
 
-/* the duel */
+/* the duel. The table, its cards, the zones' marks, the numbers and the forecasts are all drawn into the canvas (psPaint
+   in app.mjs); over it lie only tap areas cut to each zone's corners, which draw nothing. */
+#app.ps .tvw { position: absolute; left: 0; top: 0; } /* the picture inside the window: a heavy blow shakes this, never the window */
+#app.ps .tvw > canvas { position: absolute; left: 0; top: 0; }
 #app.ps .zh { position: absolute; padding: 0; margin: 0; border: 0; background: transparent; cursor: pointer; }
-#app.ps .zh.ready { box-shadow: inset 0 0 0 1px var(--gl); }
-#app.ps .zh.picked { box-shadow: inset 0 0 0 1px var(--ink), inset 0 0 0 2px var(--ember); }
-#app.ps .zh.target { box-shadow: inset 0 0 0 1px #f08a72; animation: pslit .8s steps(1) infinite; }
-#app.ps .zh.onto { box-shadow: inset 0 0 0 1px var(--verd), inset 0 0 0 2px var(--ink); }
-#app.ps .atk { position: absolute; font: 8px/8px 'LM Label', monospace; color: var(--ink); background: var(--sh); padding: 1px 1px 0; pointer-events: none; }
-#app.ps .atk.up { color: var(--gl); } #app.ps .atk.down { color: #f08a72; } #app.ps .atk.def { color: #9fd0c0; }
-#app.ps .atk.two i { display: block; height: 8px; }
 #app.ps .hand .hs { position: absolute; top: 2px; width: 44px; height: 60px; }
 #app.ps .hand .hs.empty { border: 1px solid var(--dark); }
 #app.ps .backs { position: absolute; display: flex; gap: 2px; }
 #app.ps .backs u { width: 7px; height: 10px; border: 1px solid var(--rust); background: var(--wine); }
-#app.ps .flash { position: absolute; left: 0; right: 0; top: 56px; text-align: center; color: var(--gl); pointer-events: none; visibility: hidden; }
+/* a drawn card slides in from the ledge's empty right end in six whole steps (its timing is set from the beat) */
+#app.ps .ledge > .hand { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; overflow: hidden; }
+#app.ps .dealt { left: 0; top: 0; width: 0; height: 0; animation-name: psdeal; animation-timing-function: steps(6, end); animation-fill-mode: backwards; }
+@keyframes psdeal { from { transform: translateX(var(--dx)); } }
+/* the change in Life Points, in the text face with a hard pixel round it, rising over the face it struck */
+#app.ps .lpfl { position: absolute; left: 0; top: 40px; font: 16px/16px 'LM Text', monospace; color: #f08a72; white-space: nowrap; pointer-events: none; text-shadow: 1px 0 var(--sh), -1px 0 var(--sh), 0 1px var(--sh), 0 -1px var(--sh); }
+#app.ps .lpfl.lpgn { color: #9fd0c0; }
+/* a relic firing: a strip at its owner's side of the view, its medals set in one by one, its name in gold */
+#app.ps .rlcw { position: absolute; left: 0; right: 0; height: 28px; display: flex; justify-content: center; pointer-events: none; }
+#app.ps .rlc { position: relative; display: flex; align-items: center; gap: 2px; height: 28px; padding: 2px 6px 2px 2px; }
+#app.ps .rlc > img, #app.ps .rlc > .coin { position: relative; flex: none; width: 24px; height: 24px; }
+#app.ps .rlc > .lb { position: relative; margin-left: 4px; }
 
 /* a card read at full size */
 #app.ps .big { position: absolute; width: 104px; height: 152px; border: 2px solid var(--sm); background: var(--sh); box-shadow: 0 0 0 1px var(--dark); overflow: hidden; }
@@ -192,9 +199,6 @@ body.ps { background: #000; }
 #app.ps .toast { position: absolute; left: 96px; top: 200px; right: auto; bottom: auto; transform: none; width: 320px; height: 40px; font-size: 16px; line-height: 16px; border-radius: 0; box-shadow: none; z-index: 48; padding: 4px 6px; background: repeating-conic-gradient(var(--plum) 0 25%, #26101a 0 50%) 0 0 / 2px 2px; border: 1px solid var(--gold); color: var(--ink); pointer-events: none; overflow: hidden; }
 #app.ps .toast:empty { display: none; }
 
-#app.ps .float { position: absolute; left: 0; top: -10px; font: 8px/8px 'LM Label', monospace; color: #f08a72; pointer-events: none; animation: psfloat .9s steps(6) forwards; margin: 0; white-space: nowrap; }
-#app.ps .float.pos { color: #9fd0c0; }
-@keyframes psfloat { to { transform: translateY(-12px); } } /* in 9 whole-pixel steps (see .float); it is taken away at the end */
 @media (prefers-reduced-motion: reduce) { #app.ps *, #app.ps *::before, #app.ps *::after { animation: none !important; } }
 
 /* offerings on plinths */
