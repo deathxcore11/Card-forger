@@ -2303,7 +2303,9 @@ function tapped(ev) {
     case 'cxtype': G.cx.type = G.cx.type === x ? null : x; render(); break;
     case 'cxopen': G.cx.open = n; render(); break;
     case 'cxclose': G.cx.open = null; render(); break;
-    case 'door': { G.log = []; const d = r.doors[n]; const go = () => { G.doorOpen = null; act({ t: 'door', i: n }); }; // gone through: the door is shut behind the player
+    case 'door': { G.log = []; const d = r.doors[n];
+      // Once gone through, the door is shut behind the player, so a chamber met again shows it closed.
+      const go = () => { G.doorOpen = null; act({ t: 'door', i: n }); };
       // The guardian's door and the hidden door are met with words first: the door opens and stays open behind them.
       const sid = d && d.type === 'boss' && r.seals >= 2 ? 'boss:' + BOSSES[r.floor][r.bossOrder[r.floor]].id : d && d.type === 'secret' ? 'secret:door' : null;
       doorBeat(n, !!(sid && SCENES[sid] && !P.seen.includes(sid)), () => { if (sid) { queueStory(sid, go); if (G.story) render(); } else go(); }); break; }
