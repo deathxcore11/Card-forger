@@ -7,9 +7,10 @@ await b.evalIn(`(async()=>{ const D = window.__ds; D.pickDuelist('kael'); D.star
 const runCircle = async on => b.evalIn(`(async()=>{ const D = __ds, g = D.game, p = g.p; D.see.on = ${on}; const gt = g.map.gate; const py = g.map.prims.find(q => q.t === 'box' && q.h === 24 && !q.deco && Math.abs((q.x0 + q.x1) / 2 - gt.x) < 20);
   const cx = (py.x0 + py.x1) / 2, cz = (py.z0 + py.z1) / 2, r0 = Math.max(py.x1 - py.x0, py.z1 - py.z0) / 2 + 2.7, rows = [];
   for (let k = 0; k < 120; k++) { const a = k * 3, x = cx + Math.cos(a * Math.PI / 180) * r0, z = cz + Math.sin(a * Math.PI / 180) * r0; p.x = x; p.z = z; p.y = 0; p.vx = p.vz = 0; D.input.yaw = Math.atan2(-(cx - x), -(cz - z)) + Math.PI; D.input.pitch = 0.1;
-    for (let f = 0; f < 4; f++) await new Promise(r => requestAnimationFrame(r)); const px = D.duelistPixels(); rows.push([a, px.alone, px.visible]); }
+    { let still = 0, lx = 1e9, ly = 1e9, lz = 1e9; for (let f = 0; f < 400 && still < 12; f++) { await new Promise(r => requestAnimationFrame(r)); const c = D.chase.pos; still = Math.abs(c.x - lx) + Math.abs(c.y - ly) + Math.abs(c.z - lz) < 0.005 ? still + 1 : 0; lx = c.x; ly = c.y; lz = c.z; } } const px = D.duelistPixels(); rows.push([a, px.alone, px.visible]); }
   D.see.on = true; let ok = 0, worst = 101, worstA = 0; for (const [a, al, vi] of rows) { const pct = al ? vi / al * 100 : 100; if (pct >= 60) ok++; if (pct < worst) { worst = pct; worstA = a; } }
   return JSON.stringify({ steps: rows.length, ok, worstPct: +worst.toFixed(1), worstAngle: worstA, aloneMedian: rows.map(r => r[1]).sort((x, y) => x - y)[60] }); })()`);
 console.log('porthole OFF', await runCircle(false)); console.log('porthole ON ', await runCircle(true));
 console.log(await b.evalIn(`JSON.stringify({ webgl2: __ds.renderer.capabilities.isWebGL2, draws: __ds.renderer.info.render.calls, tris: __ds.renderer.info.render.triangles })`));
 console.log(JSON.stringify(await b.evalIn('window.__errs.slice(0,3)'))); b.close(); setTimeout(() => process.exit(0), 300);
+

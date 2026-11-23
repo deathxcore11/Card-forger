@@ -55,7 +55,7 @@ const sky = new T.Mesh(new T.SphereGeometry(500, 16, 8), new T.ShaderMaterial({ 
   vertexShader: 'varying float vy; void main() { vy = normalize(position).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w; }',
   fragmentShader: 'uniform vec3 top; uniform vec3 hor; uniform vec3 low; varying float vy; void main() { vec3 c = vy >= 0.0 ? mix(hor, top, smoothstep(0.0, 0.6, vy)) : mix(hor, low, smoothstep(0.0, -0.3, vy)); gl_FragColor = vec4(c, 1.0); }' }));
 sky.frustumCulled = false; sky.renderOrder = -10; scene.add(sky);       // a sky dome: cooler and darker overhead than at the horizon (one draw, about 250 triangles)
-const camera = new T.PerspectiveCamera(62, 1, 0.5, 600);
+const camera = new T.PerspectiveCamera(62, 1, 0.15, 600);
 let fpsCap = 60, lastRender = 0;                     // a setting (30, 60, 90 or 120); a frame that comes sooner than the cap allows is skipped
 let fovSetting = 100, baseV = 62;                    // the setting is HORIZONTAL degrees, so it means the same on every screen shape; the vertical angle follows from the aspect and never goes past 88
 let fovK = 1;

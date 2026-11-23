@@ -192,7 +192,7 @@ export class Fx {
     this.flashA = Math.max(0, this.flashA - dt * 2.2);
     if (this.fxFlash) { const q = Math.round(this.flashA * 50) / 50; if (q !== this.flashShown) { this.flashShown = q; this.fxFlash.style.opacity = q; } }
   }
-  applyShake(camera) { const s = this.shakeOff; if (this.trauma <= 0) return; camera.position.x += s.x; camera.position.y += s.y; camera.position.z += s.z; camera.rotation.z += s.roll; }
+  applyShake(camera) { const s = this.shakeOff; if (this.trauma <= 0) return; const l = Math.hypot(s.x, s.y, s.z), k = l > 0.25 ? 0.25 / l : 1; camera.position.x += s.x * k; camera.position.y += s.y * k; camera.position.z += s.z * k; camera.rotation.z += s.roll; }       // shake never moves the eye more than 0.25 m
 }
 
 
