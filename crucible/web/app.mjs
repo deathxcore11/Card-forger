@@ -2432,16 +2432,20 @@ const scrollKeep = () => { const m = new Map(); scrollBoxes().forEach((sc, i) =>
 const fitScrolls = (keep = null) => scrollBoxes().forEach((sc, i) => fitScroll(sc, keep ? keep.get(scrollKey(i)) : undefined));
 // Each scroll the reader makes is added to where the box is wanted (one the box makes itself, coming to a rest, is not:
 // restAt marks it as seen). What the rests left over is kept only while the reader goes on the same way: a scroll the
-// other way starts from the rest the box stands on, and a scroll to the very top wants the top. The box comes to rest
+// other way starts from the rest the box stands on, and a scroll to the very top wants the top. That is for the wheel
+// and the keys, whose steps the box draws itself. A finger carries the pages with it, and what it left on the screen is
+// where they are wanted: from a touch until the next wheel step or key, the box comes to rest at the stop nearest to
+// where the pages are when they stop, and a drag never carries what an earlier drag left over. The box comes to rest
 // 160 ms after the last scroll, and not while a finger still holds it.
-{ let raf = 0, rest = 0, held = 0; const live = t => t && t.classList && t.classList.contains('sc') && app.classList.contains('ps') && t.closest('.mw, .book');
+{ let raf = 0, rest = 0, held = 0, finger = 0; const live = t => t && t.classList && t.classList.contains('sc') && app.classList.contains('ps') && t.closest('.mw, .book');
   const settle = t => { clearTimeout(rest); rest = setTimeout(() => { if (held) settle(t); else restAt(t); }, 160); };
-  for (const k of ['touchstart', 'touchend', 'touchcancel']) app.addEventListener(k, ev => { held = ev.touches.length; }, { capture: true, passive: true });
+  for (const k of ['touchstart', 'touchend', 'touchcancel']) app.addEventListener(k, ev => { held = ev.touches.length; if (held) finger = 1; }, { capture: true, passive: true });
+  for (const k of ['wheel', 'keydown']) window.addEventListener(k, () => { finger = 0; }, { capture: true, passive: true });
   app.addEventListener('scroll', ev => { const t = ev.target; if (!live(t)) return;
     const now = t.scrollTop, d = now - (t._seen ?? now); let w = t._want ?? now;
     if (d * (t._way || 0) < 0) w = t._rest ?? now;
     if (d) t._way = Math.sign(d);
-    t._want = d < 0 && now < .5 ? 0 : w + d; t._seen = now;
+    t._want = finger ? now : d < 0 && now < .5 ? 0 : w + d; t._seen = now;
     cancelAnimationFrame(raf); raf = requestAnimationFrame(() => scrollMark(t)); settle(t); }, true); }
 // Every line of words starts on a whole frame pixel. A line the browser centres in its box (text-align: center: a name
 // plate's line, a door's number, a card's badge, a number on a plinth) lands half a pixel off the grid when its width and

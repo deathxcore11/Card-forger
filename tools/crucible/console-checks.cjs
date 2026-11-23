@@ -741,6 +741,35 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
       if (process.env.CHECKS_SHOTS && shots[1][i]) for (const h of [0, 1]) fs.writeFileSync(path.join(process.env.CHECKS_SHOTS, `host-${W}x${H}-${shots[0][i][0].replace(/\.json$/, '')}-${h}.png`), shots[h][i][1]);
     }
   }
+  // A finger's slow drags on the books' boxes, as a touch screen sends them (held sideways and upright): two drags the
+  // same way of less than half a step, then one back, then a long one and a short one back. Once the finger is lifted and
+  // the box has stopped, it must rest at the stop nearest to where the finger left the pages, never one an earlier
+  // drag's leftover carried it to.
+  for (const [W, H, dpr] of beatsOnly ? [] : [[915, 412, 2.625], [412, 915, 2.625]]) for (const book of ['screen:feats', 'screen:vault', 'screen:codex']) {
+    const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage(), where = `${W}x${H}@${dpr} ${book.slice(7)} drags`;
+    await page.goto(url);
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); localStorage.setItem('lostmemories.labs.v5', JSON.stringify({ five: true, lean: true, heat: true, kits: true, items: true })); });
+    await page.reload(); await page.waitForTimeout(600); await page.waitForFunction(() => !document.getElementById('boot'), null, { timeout: 20000 }).catch(() => {});
+    await page.evaluate(a => { const e = document.createElement('button'); e.dataset.a = a; document.getElementById('app').appendChild(e); e.click(); }, book); await page.waitForTimeout(900);
+    const info = await page.evaluate(() => { const sc = [...document.querySelectorAll('#app .mw .sc, #app .book .sc')].pop(); if (!sc || !sc._plan || sc._plan.R.length < 3) return null; const r = sc.getBoundingClientRect(), a = document.getElementById('app'); return { c: [r.left + r.width / 2, r.top + r.height / 2], k: a.getBoundingClientRect().width / a.offsetWidth, R: sc._plan.R, up: a.style.transform.includes('rotate') }; });
+    if (!info) { await ctx.close(); continue; }
+    const cdp = await ctx.newCDPSession(page), top = () => page.evaluate(() => [...document.querySelectorAll('#app .mw .sc, #app .book .sc')].pop().scrollTop);
+    const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+    const step = 16; // a line of the text face
+    // a finger moving f lines (more than the browser's slop, so the pages move by about a part of a step), slowly
+    for (const [f, label] of [[0.4, 'down'], [0.4, 'down again'], [-0.4, 'back up'], [1.6, 'down further'], [-0.3, 'back a little']]) {
+      const dy = (f * step + (f > 0 ? 12 : -12)) * info.k, n = 24; let [x, y] = info.c;
+      if (info.up) x -= dy / 2; else y += dy / 2;
+      await touch('touchStart', x, y);
+      for (let i = 0; i < n; i++) { if (info.up) x += dy / n; else y -= dy / n; await touch('touchMove', x, y); await page.waitForTimeout(30); }
+      await page.waitForTimeout(120); const lift = await top();
+      await touch('touchEnd', x, y); await page.waitForTimeout(900);
+      const rest = await top(), near = info.R.reduce((b, s) => Math.abs(s - lift) < Math.abs(b - lift) ? s : b, info.R[0]);
+      if (Math.abs(rest - near) > .5 && Math.abs(Math.abs(rest - lift) - Math.abs(near - lift)) > .5) fail(where, `a slow drag ${label} left the pages at ${Math.round(lift)}, but the box came to rest at ${Math.round(rest)}, not at the nearest stop ${near}`);
+    }
+    await ctx.close();
+  }
   // beats: a rival's attack waiting on your answer let through, your attack on a rival monster, then the rival's whole
   // turn, stepped a thirtieth of a second at a time on a stopped clock, the table checked at every drawing (tableNow)
   let beatTicks = 0;
