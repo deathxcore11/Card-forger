@@ -2225,36 +2225,44 @@ function fitScroll(sc, want) {
     const shift = Math.max(0, m0 - FOOT_GAP - floor);
     if (shift) { win.style.height = +win.dataset.h0 - shift + 'px'; win.style.top = +win.dataset.t0 + (shift >> 1) + 'px'; for (const e of movers) e.style.top = +e.dataset.t0 - shift + 'px'; }
   }
-  sc._plan = P; scrollLips(sc, win); restAt(sc, t, true);
+  sc._plan = P; scrollLips(sc, win); restAt(sc, t);
 }
 // A box that scrolls is drawn by the browser as a layer of its own, and at some scales (three device pixels to a frame
 // pixel at a ratio of 2.625) the layer's edge lands a fraction of a device pixel outside the box, so one device row of
 // what the box cuts off showed under its foot (and, scrolled, over its top). A strip of the window's own ground, one frame
 // pixel tall and laid at the window's pattern, covers the frame row above and the row under the box; each strip is a
-// layer of its own (ps.css), so it is drawn over the box's layer.
+// layer of its own (ps.css), so it is drawn over the box's layer. A strip covers only the window's ground, inside its gold
+// line and the dark line within it (two pixels at each side), so a box as wide as its window leaves the gold line whole.
 function scrollLips(sc, win) {
-  const cs = getComputedStyle(win), x = sc.offsetLeft, w = sc.offsetWidth;
+  const cs = getComputedStyle(win), x = Math.max(2, sc.offsetLeft), w = Math.min(win.clientWidth - 2, sc.offsetLeft + sc.offsetWidth) - x;
+  if (w <= 0) return;
   for (const y of [sc.offsetTop - 1, sc.offsetTop + sc.offsetHeight]) {
+    if (y < 2 || y > win.clientHeight - 3) continue;
     const e = document.createElement('i'); e.className = 'scl';
     Object.assign(e.style, { left: x + 'px', top: y + 'px', width: w + 'px', backgroundImage: cs.backgroundImage, backgroundSize: cs.backgroundSize, backgroundRepeat: cs.backgroundRepeat, backgroundColor: cs.backgroundColor, backgroundPosition: `${-x}px ${-y}px` });
     win.appendChild(e);
   }
 }
-// Brings the box to the rest nearest to the scroll t (a step on, the way the scroll went, when that rest is where it
-// last stood), and shows or hides its marker.
-function restAt(sc, t, jump = false) {
+// Brings the box to a rest, and shows or hides its marker. Given a scroll t (the box drawn again), it goes to the rest
+// nearest to t. Otherwise it goes to the rest nearest to where its reader has moved it: the scrolls the reader makes add
+// up (sc._want, kept by the scroll listener below), so a slow drag, or a short wheel step that came back to the rest it
+// left, still counts toward the next rest, and the box never goes further than the reader moved it, give or take half
+// a step between two rests.
+function restAt(sc, t = null) {
   const P = sc._plan; if (!P) return;
-  const R = P.R, was = sc._rest ?? 0; let i = 0;
-  for (let j = 1; j < R.length; j++) if (Math.abs(R[j] - t) < Math.abs(R[i] - t)) i = j;
-  if (!jump && R[i] === was && Math.abs(t - was) > .5) { const j = i + (t > was ? 1 : -1); if (j >= 0 && j < R.length) i = j; }
-  sc._rest = R[i]; if (Math.abs(sc.scrollTop - R[i]) > .5) sc.scrollTop = R[i];
+  const R = P.R, jump = t != null, w = Math.max(R[0], Math.min(R[R.length - 1], jump ? t : sc._want ?? sc.scrollTop));
+  let i = 0; for (let j = 1; j < R.length; j++) if (Math.abs(R[j] - w) < Math.abs(R[i] - w)) i = j;
+  sc._want = jump ? R[i] : w; // the reader's own place is kept, so the half steps the rests round off do not add up
+  sc._rest = R[i]; sc._seen = R[i]; if (Math.abs(sc.scrollTop - R[i]) > .5) sc.scrollTop = R[i];
   scrollMark(sc);
 }
+// The marker stands a pixel under the box's foot and bobs two pixels down, so it keeps a pixel clear of the box's last
+// row over it and of a plaque FOOT_GAP under the box.
 function scrollMark(sc) {
   const P = sc._plan; if (!P) return;
   let m = sc.nextElementSibling; if (!m || !m.classList.contains('scm')) { m = document.createElement('i'); m.className = 'scm'; sc.after(m); }
   m.hidden = !(P.end > sc.scrollTop + P.h + .5); // a margin under the last line is not more to read
-  m.style.left = sc.offsetLeft + sc.offsetWidth - 8 + 'px'; m.style.top = sc.offsetTop + P.h + 2 + 'px';
+  m.style.left = sc.offsetLeft + sc.offsetWidth - 8 + 'px'; m.style.top = sc.offsetTop + P.h + 1 + 'px';
 }
 // The hammer moved onto a plaque in a box: the box rests where that plaque shows whole, as near as it can to where it is.
 function restOn(sc, e) {
@@ -2262,15 +2270,21 @@ function restOn(sc, e) {
   let y = 0; for (let q = e; q && q !== sc; q = q.offsetParent) y += q.offsetTop;
   const z = y + e.offsetHeight, t = sc.scrollTop; if (y >= t && z <= t + P.h) return;
   let best = null; for (const s of P.R) if (s <= y && z <= s + P.h && (best == null || Math.abs(s - t) < Math.abs(best - t))) best = s;
-  if (best != null) { sc._rest = best; sc.scrollTop = best; scrollMark(sc); }
+  if (best != null) { sc._rest = sc._want = sc._seen = best; sc.scrollTop = best; scrollMark(sc); }
 }
 // A screen drawn again keeps each box where it was read, while it is the same window or book.
 const scrollKey = i => [G.screen, G.tab, G.overlay && G.overlay.kind, !!G.inspect, G.cx && G.cx.open, i].join('|');
 const scrollBoxes = () => app.querySelectorAll('.mw .sc, .book .sc');
 const scrollKeep = () => { const m = new Map(); scrollBoxes().forEach((sc, i) => m.set(scrollKey(i), sc._rest ?? sc.scrollTop)); return m; };
 const fitScrolls = (keep = null) => scrollBoxes().forEach((sc, i) => fitScroll(sc, keep ? keep.get(scrollKey(i)) : undefined));
-{ let raf = 0, rest = 0; const live = t => t && t.classList && t.classList.contains('sc') && app.classList.contains('ps') && t.closest('.mw, .book');
-  app.addEventListener('scroll', ev => { const t = ev.target; if (!live(t)) return; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => scrollMark(t)); clearTimeout(rest); rest = setTimeout(() => restAt(t, t.scrollTop), 160); }, true); }
+// Each scroll the reader makes is added to where the box is wanted (one the box makes itself, coming to a rest, is not:
+// restAt marks it as seen). The box comes to rest 160 ms after the last scroll, and not while a finger still holds it.
+{ let raf = 0, rest = 0, held = 0; const live = t => t && t.classList && t.classList.contains('sc') && app.classList.contains('ps') && t.closest('.mw, .book');
+  const settle = t => { clearTimeout(rest); rest = setTimeout(() => { if (held) settle(t); else restAt(t); }, 160); };
+  for (const k of ['touchstart', 'touchend', 'touchcancel']) app.addEventListener(k, ev => { held = ev.touches.length; }, { capture: true, passive: true });
+  app.addEventListener('scroll', ev => { const t = ev.target; if (!live(t)) return;
+    const now = t.scrollTop; t._want = (t._want ?? now) + now - (t._seen ?? now); t._seen = now;
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => scrollMark(t)); settle(t); }, true); }
 // The text bar holds two lines. When what it says is longer, a marker shows and a tap opens the whole of it.
 function barFits() {
   const b = app.querySelector('.fr > .bar'), p = b && b.firstElementChild; if (!p) return;
