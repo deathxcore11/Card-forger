@@ -400,7 +400,7 @@ export class Actors {
     { const S = this.shadow, dd = this.d; let ns = 0;       // contact shadows follow the ground under everything that walks
       const put = (x, z, r) => { if (ns >= S.instanceMatrix.count) return; dd.position.set(x, heightGround(x, z) + 0.07, z); dd.rotation.set(0, 0, 0); dd.scale.setScalar(r); dd.updateMatrix(); S.setMatrixAt(ns++, dd.matrix); };
       if (this.rig && !(g.over && !g.won)) put(px, pz, 0.95);
-      for (const m of g.field.monsters) if (m) { const me = this.monsters.get(m); if (me && me.visible) put(me.position.x, me.position.z, 0.6 * (me.userData.size || 1)); }
+      for (const m of g.field.monsters) if (m) { const me = this.monsters.get(m); if (me && me.visible && !me.userData.fly && !me.userData.crit) put(me.position.x, me.position.z, 0.6 * (me.userData.size || 1)); }
       const e = g.en, cp = cam; for (let i = 0; i < e.max; i++) if (e.alive[i]) { const dx = e.x[i] - cp.x, dz = e.z[i] - cp.z; if (dx * dx + dz * dz < 3600) put(e.x[i], e.z[i], 0.5 + KIND_LIST[e.kind[i]].radius * 0.9); }
       S.count = ns; S.instanceMatrix.needsUpdate = true; }
     this.cards.count = nc; this.fire.count = nf; this.lob.count = nl;

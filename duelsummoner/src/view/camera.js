@@ -16,7 +16,7 @@ function hitProp(col, x, y, z) {
 }
 
 export class ChaseCamera {
-  constructor(camera) { this.camera = camera; this.t = 1; this.py = 0; this.ready = false; this.pos = { x: 0, y: 0, z: 0 }; this.sx = 0; this.sz = 0; this.lag = true; this.zoom = 1; this.zoomTo = 1; this.cols = null; this.spd = 1; this.lx = 0; this.lz = 0; }
+  constructor(camera) { this.camera = camera; this.t = 1; this.py = 0; this.ready = false; this.pos = { x: 0, y: 0, z: 0 }; this.sx = 0; this.sz = 0; this.lag = true; this.zoom = 1; this.zoomTo = 1; this.cols = null; this.fovK = 1; this.spd = 1; this.lx = 0; this.lz = 0; }
   reset() { this.ready = false; this.t = 1; }
 
   update(p, yaw, pitch, dt) {
@@ -24,7 +24,7 @@ export class ChaseCamera {
     this.zoom += (this.zoomTo - this.zoom) * Math.min(1, dt * 1.6);               // pulls back and up for big bosses so they fit
     const mv = Math.hypot(p.x - this.lx, p.z - this.lz) / Math.max(dt, 1e-3); this.lx = p.x; this.lz = p.z;      // fast play pulls the camera back by up to a quarter so the whole map reads
     this.spd += ((1 + 0.25 * clamp((Math.min(mv, 60) - 9) / 9, 0, 1)) - this.spd) * Math.min(1, dt * 1.5);
-    const a = BASE + clamp(pitch, C.pitchMin, C.pitchMax), back = Math.cos(a) * ARM * this.zoom * this.spd, up = Math.sin(a) * ARM * this.zoom * this.spd;
+    const a = BASE + clamp(pitch, C.pitchMin, C.pitchMax), back = Math.cos(a) * ARM * this.zoom * this.spd * this.fovK, up = Math.sin(a) * ARM * this.zoom * this.spd * this.fovK;
     if (!this.ready) { this.py = p.y; this.sx = p.x; this.sz = p.z; this.ready = true; }
     // gentle horizontal follow lag (about 55 ms); a jump of more than 3 m is a teleport and snaps
     if (!this.lag || Math.abs(p.x - this.sx) > 3 || Math.abs(p.z - this.sz) > 3) { this.sx = p.x; this.sz = p.z; }

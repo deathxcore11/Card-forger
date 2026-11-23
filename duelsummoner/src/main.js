@@ -39,15 +39,23 @@ const canvas = $('view');
 const renderer = new T.WebGLRenderer({ canvas, antialias: false });
 const LOW = 2;                                   // render at half size for a chunky look
 const scene = new T.Scene();
-scene.background = new T.Color(0xe6cb97);                // warm daylight sand sky
-scene.fog = new T.Fog(0xe6cb97, 110, 330);
+const HORIZON = 0xcdd3cf;                                    // the sky's horizon colour and the fog colour are one, a little cooler than the sun, so far things fade blue-grey instead of into the sand
+scene.background = new T.Color(HORIZON);
+scene.fog = new T.Fog(HORIZON, 60, 220);
+const sky = new T.Mesh(new T.SphereGeometry(480, 24, 16), new T.ShaderMaterial({ side: T.BackSide, depthWrite: false, fog: false,
+  uniforms: { top: { value: new T.Color(0x3f74b4) }, mid: { value: new T.Color(0x8fb3d4) }, hor: { value: new T.Color(HORIZON) } },
+  vertexShader: 'varying float vy; void main() { vy = normalize(position).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: 'uniform vec3 top; uniform vec3 mid; uniform vec3 hor; varying float vy; void main() { float h = clamp(vy, 0.0, 1.0); vec3 c = mix(hor, mid, smoothstep(0.0, 0.22, h)); c = mix(c, top, smoothstep(0.18, 0.75, h)); gl_FragColor = vec4(c, 1.0); }' }));
+sky.frustumCulled = false; sky.renderOrder = -10; scene.add(sky);       // a real sky: clearly cooler and darker overhead than at the horizon
 const camera = new T.PerspectiveCamera(62, 1, 0.1, 520);
 let fovSetting = 100, baseV = 62;                    // the setting is HORIZONTAL degrees, so it means the same on every screen shape; the vertical angle follows from the aspect and never goes past 88
-function fitFov() { const a = Math.max(0.3, camera.aspect || 1.78); baseV = Math.min(88, 2 * Math.atan(Math.tan(fovSetting * Math.PI / 360) / a) * 180 / Math.PI); camera.fov = baseV; camera.updateProjectionMatrix(); }
+let fovK = 1;
+function fitFov() { const a = Math.max(0.3, camera.aspect || 1.78); baseV = Math.max(64, Math.min(88, 2 * Math.atan(Math.tan(fovSetting * Math.PI / 360) / a) * 180 / Math.PI)); fovK = Math.tan(67.7 * Math.PI / 360) / Math.tan(baseV * Math.PI / 360);       // vertical angle held to 64-88; the camera arm scales with it so the duelist keeps the same share of the screen on every screen shape
+  camera.fov = baseV; camera.updateProjectionMatrix(); }
 // the look: a warm low key light for form, a pale sky and a warm bounce for the shade, and a cool fill from the opposite side so shadowed faces are never grey
-scene.add(new T.HemisphereLight(0xdfeaff, 0x9a7650, 0.72));
+scene.add(new T.HemisphereLight(0xdfeaff, 0x9a7650, 0.6));
 scene.add(new T.AmbientLight(0xfff0dc, 0.1));
-const sun = new T.DirectionalLight(0xffd29a, 1.05); sun.position.set(70, 60, 35); scene.add(sun);
+const sun = new T.DirectionalLight(0xffd29a, 0.92); sun.position.set(70, 60, 35); scene.add(sun);
 const fill = new T.DirectionalLight(0xa9c4ff, 0.28); fill.position.set(-60, 35, -45); scene.add(fill);
 
 function resize() {
@@ -333,7 +341,7 @@ function frame(now) {
     let big = 0; for (const sp of game.sp) if (sp.alive && !sp.dead && sp.size > big && (sp.x - ip.x) ** 2 + (sp.z - ip.z) ** 2 < 2500) big = sp.size;
     chase.zoomTo = fx.rm_ ? 1 : 1 + Math.min(0.95, Math.max(0, (big - 4) / 11));
   }
-  chase.cols = game.colliders; chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
+  chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
   if (sceneryGroup && sceneryGroup.userData.fade) sceneryGroup.userData.fade(chase.pos, ip, dtReal || 0.016);
   if (MODE === 'play') ambient.update(dtReal, camera, game.en);
   threads.update(game.mode !== 'classic' && game.map ? game.map.gate : null, ip, MODE === 'play' ? dtReal : 0, camera, MODE === 'play' && game.boss.state === 'idle' && !game.offer);
