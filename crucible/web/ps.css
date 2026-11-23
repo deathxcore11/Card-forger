@@ -267,7 +267,10 @@ body.ps { background: #000; }
 #app.ps .pln.on { box-shadow: inset 0 0 0 1px var(--gl), 0 0 0 1px var(--sh); }
 #app.ps .pln:not(.on)::after { content: ''; position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) var(--mesh2, 0 0) / 2px 2px; opacity: .5; pointer-events: none; }
 #app.ps .pln.off { cursor: default; }
-#app.ps .pln .pnm { position: absolute; left: 1px; right: 1px; background: #26101a; font: 8px/9px 'LM Label', monospace; color: var(--gl); text-align: center; white-space: nowrap; height: 9px; overflow: hidden; }
+/* the name plate stands inside the plinth's ring with a pixel of plinth between (RIM in app.mjs), so the ring of the
+   chosen one shows whole; each of its lines is a box of its own, centred on whole pixels (gridLines) */
+#app.ps .pln .pnm { position: absolute; left: 2px; right: 2px; background: #26101a; font: 8px/9px 'LM Label', monospace; color: var(--gl); text-align: center; white-space: nowrap; height: 9px; overflow: hidden; }
+#app.ps .pln .pnm > span { display: block; height: 9px; font: inherit; line-height: 9px; }
 #app.ps .big2 { font: 16px/16px 'LM Text', monospace; color: var(--ink); text-align: center; } /* a big number on a plinth or a pillar (the heat): on a line of 16, so its dots stand on whole pixels */
 /* a row of plinths that turns with the cursor: a small gold arrow at the row's end, in the cursor's gold with its dark edge
    under it, points to the choices beyond the view, nudging a pixel outward in time with the cursor's bob (psOffer): it

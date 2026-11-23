@@ -259,9 +259,17 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
           for (const w of shown) { const x = w.replace(/\.\.$/, ''); if (!full.includes(x) && !(/^[A-Z]\.$/.test(x) && full.some(f => f[0] === x[0]))) out.push(`${name(e)} "${e.innerText.replace(/\s+/g, ' ').slice(0, 24)}": the name "${e.dataset.name}" cut inside a word ("${w}")`); }
         }
         // a card may stand with its foot behind its plinth's name plate, never with its numbers or its picture behind it;
-        // what stands on a plinth stands inside its border, centred to within a pixel
+        // what stands on a plinth stands inside its border, centred to within a pixel. The plinth's ring (the first pixel
+        // inside its border, gold on the chosen one) shows whole on all four sides: what stands on the plinth, measured
+        // with its own outline (a shadow spread round it), and the name plate keep at least one pixel of plinth between
+        // them and the ring, at its left, its right, its top and its foot.
+        const outline = e => Math.max(0, ...getComputedStyle(e).boxShadow.split(/,(?![^(]*\))/).filter(p => p.trim() !== 'none' && !/inset/.test(p)).map(p => { const v = (p.replace(/rgba?\([^)]*\)/g, '').match(/-?[\d.]+px/g) || []).map(parseFloat); return (v[3] || 0) + Math.max(Math.abs(v[0] || 0), Math.abs(v[1] || 0)); }));
         for (const pl of app.querySelectorAll('.pln')) {
           for (const e of pl.children) { if (e.classList.contains('pnm') || !vis(e)) continue; const l = e.offsetLeft, r = pl.clientWidth - l - e.offsetWidth; if (l < 0 || r < 0 || Math.abs(l - r) > 1) out.push(`${name(pl)}: ${name(e)} stands ${l} and ${r} pixels inside its border, left and right`); }
+          for (const e of pl.children) {
+            if (!vis(e)) continue; const o = outline(e), W = pl.clientWidth, H = pl.clientHeight, l = e.offsetLeft - o, t = e.offsetTop - o, r = W - e.offsetLeft - e.offsetWidth - o, b = H - e.offsetTop - e.offsetHeight - o;
+            if (Math.min(l, t, r, b) < 2) out.push(`${name(pl)} "${(pl.querySelector('.pnm') || pl).innerText.replace(/\s+/g, ' ').trim()}": ${name(e)}${o ? ` with its ${o}-pixel outline` : ''} leaves ${l}, ${t}, ${r} and ${b} pixels at its left, top, right and foot, so it lies on the plinth's ring or touches it (2 at least)`);
+          }
           const nm = pl.querySelector('.pnm'); if (!nm || !vis(nm)) continue;
           const [, ny] = fr(nm);
           for (const e of pl.querySelectorAll('.cd .art, .cd .n1, .cd .n2, .pf')) { const [, y, , h] = fr(e); if (vis(e) && y + h > ny) out.push(`${name(pl)} "${nm.textContent}": its name plate lies on ${name(e)} (${y + h - ny} rows)`); }
