@@ -10,7 +10,8 @@ export const SOUND_RULES = [
   ['Feel', 'Chunky, punchy, toy-like and warm. Wood, stone, paper, bronze and glass. No realistic gore, no screams, no modern sci-fi zaps.'],
 ];
 
-const s = (code, name, file, len, vars, prompt, loop = false) => ({ code, name, file, len, vars, prompt, loop });
+const s = (code, name, file, len, vars, prompt, loop = false, extra = {}) => ({ code, name, file, len, vars, prompt, loop, ...extra });
+const NEW = { added: '23 Nov' };
 export const SOUNDS = [
   // duelist
   s('SF001', 'Footstep, sand', 'sfx-step-sand', '0.2 s', 6, 'a single soft footstep on dry sand, light crunch, close up'),
@@ -131,6 +132,34 @@ export const SOUNDS = [
   s('SF118', 'Victory sting', 'sfx-victory', '4 s', 1, 'a short heroic victory fanfare, brass and strings, warm and proud'),
   s('SF119', 'Defeat sting', 'sfx-defeat', '4 s', 1, 'a short gentle defeat motif, solo oud and soft strings, falling melody, not sad, "try again"'),
   s('SF120', 'Overtime tick', 'sfx-overtime', '0.8 s', 1, 'a deep clock tick with a rising warning drone'),
+  // added 23 Nov: hits, rewards and pickups (from the pickup and feedback feel spec)
+  s('SF121', 'Kill pop', 'sfx-kill', '0.15 s', 6, 'a small creature bursting into a puff of paper card shards: a short soft pop with a dry paper flutter, light and satisfying (it plays hundreds of times a run, so keep it small)', false, NEW),
+  s('SF123', 'Shield block', 'sfx-block', '0.25 s', 3, 'a thrown card bouncing off a thick stone shield: a dull flat clank with no ring, the sound of a hit that did nothing', false, NEW),
+  s('SF124', 'Trap springs', 'sfx-trap', '0.5 s', 3, 'a hidden trap card snapping face up and going off: a sharp card snap, a quick bronze spring twang and a short magical thump', false, NEW),
+  s('SF125', 'Boon gained', 'sfx-boon', '0.5 s', 2, 'a small card flipping over, then three quick bright glassy notes going up, light and happy (a small permanent bonus)', false, NEW),
+  s('SF127', 'Fusion ready', 'sfx-fusion-ready', '1.2 s', 1, 'two soft glassy notes, the second higher than the first, then a gentle shimmering chord that holds and fades, mysterious and inviting (two monsters are ready to fuse)', false, NEW),
+  s('SF128', 'Shrine charge tick', 'sfx-shrine-tick', '0.25 s', 1, 'one clear soft bell note over a small ripple of water (the game plays it once a second, one note higher each time, while a shrine fills)', false, NEW),
+  s('SF129', 'Pay coins', 'sfx-pay', '0.5 s', 3, 'a small handful of gold coins dropped into a wooden box, a quick clatter and one last clink (paying for a chest or at the shop)', false, NEW),
+  // added 23 Nov: the chest reveal (the lid rattles and the light steps up white, blue, violet, gold; the freeze and the gold burst reuse SF021 Time stop and SF111 Rarity: Mythic)
+  s('SF130', 'Chest reveal: lid rattle', 'sfx-reveal-rattle', '1.2 s', 1, 'a wooden chest lid rattling and shaking on its bronze hinges as something inside tries to get out, steady and eager', true, NEW),
+  s('SF131', 'Chest reveal: light step', 'sfx-reveal-step', '0.4 s', 1, 'one soft clear glassy chime with a small breath of air, as a thin line of light leaks out of a chest (the game plays it one note higher for each brighter light: white, blue, violet, gold)', false, NEW),
+  // added 23 Nov: run moments (from the reference run gap list and the run start in the menus spec)
+  s('SF137', 'Surge horn', 'sfx-surge', '3 s', 1, 'two short urgent blasts on a bronze horn, then a low rumble of hundreds of feet running closer (a big wave of enemies is about to arrive)', false, NEW),
+  s('SF139', 'Coin Rite starts', 'sfx-coinrite', '1.5 s', 1, 'a bright bronze bell struck once, then a cascade of gold coins pouring and spinning, cheerful and greedy (a short gold rush begins)', false, NEW),
+  s('SF140', 'Run begin', 'sfx-begin', '1.2 s', 1, 'a magic card sign flaring up: a quick rising whoosh of fire and shuffling cards, ending in a deep soft boom as the screen closes to dark', false, NEW),
+  // added 23 Nov: menus and controller (from the menus spec)
+  s('SF142', 'UI tab (page turn)', 'sfx-ui-tab', '0.25 s', 2, 'one thick paper page turned over quickly, soft and crisp', false, NEW),
+  s('SF143', 'UI page (card riffle)', 'sfx-ui-page', '0.3 s', 2, 'a quick riffle of a small stack of cards under a thumb, short and tidy', false, NEW),
+  s('SF144', 'UI buy (chip clink)', 'sfx-ui-buy', '0.4 s', 2, 'one crystal game chip dropped onto a wooden tray, a bright clink and then a small firm stamp (the game plays it backwards for a refund)', false, NEW),
+  s('SF145', 'Oath sworn (wax press)', 'sfx-oath', '0.5 s', 2, 'a bronze seal pressed slowly into warm soft wax, a soft squish and a firm low thump, solemn (the game plays it backwards and quieter when an Oath is released)', false, NEW),
+  s('SF146', 'Library reveal', 'sfx-library-reveal', '0.5 s', 1, 'a card flipping from face down to face up with a short chime that rises, a small moment of discovery (the game plays it a little higher for each new card in a row)', false, NEW),
+  s('SF147', 'Count-up tick', 'sfx-count', '0.08 s', 3, 'a tiny bright tick, like one bead sliding on a wooden counting frame (played very fast while a score or reward counts up)', false, NEW),
+  s('SF149', 'Controller connected', 'sfx-pad-on', '0.5 s', 1, 'two soft wooden notes going up with a small bronze click, friendly, something has been plugged in', false, NEW),
+  s('SF150', 'Controller disconnected', 'sfx-pad-off', '0.5 s', 1, 'two soft wooden notes going down with a small dull click, calm, something has been unplugged', false, NEW),
+  // added 23 Nov: quiet background air, one per stage (the World volume slider in Settings)
+  s('SF151', 'Background air, Stage 1: Surface Ruins', 'sfx-amb-stage1', '20 s', 1, 'the quiet background air of the stage (for this one sound a soft layered background is what is wanted, steady, with no single loud event): a warm light breeze over warm sand and old stone, a few small birds far away, now and then a soft rustle of leaves, sunny and calm', true, NEW),
+  s('SF152', 'Background air, Stage 2: Sealed Catacombs', 'sfx-amb-stage2', '20 s', 1, 'the quiet background air of the stage (for this one sound a soft layered background with a little echo is what is wanted, steady, with no single loud event): a cool underground hall with a slow faint draught, single water drips with a long soft echo, a low stone creak far away, calm and a little mysterious, not scary', true, NEW),
+  s('SF153', 'Background air, Stage 3: Vault of the Last Duel', 'sfx-amb-stage3', '20 s', 1, 'the quiet background air of the stage (for this one sound a soft layered background is what is wanted, steady, with no single loud event): a huge golden cavern with a steady soft hiss of sand pouring far away, a deep airy hum, and a faint glint of tiny chimes now and then, grand and still', true, NEW),
 ];
 
 export const MUSIC_RULES = [

@@ -1,18 +1,22 @@
 // Every screen: where things sit and which pieces it uses. Positions are for a 16:9 screen; phones in landscape
 // keep the same corners, the Thor bottom screen takes the minimap and stats.
 export const SCREENS = [
-  { name: 'Run HUD', uses: ['UI06', 'UI07', 'UI08', 'UI09', 'UI10', 'UI11', 'UI12', 'UI13', 'IC11'], lay: [
+  { name: 'Run HUD', uses: ['UI06', 'UI07', 'UI08', 'UI09', 'UI10', 'UI11', 'UI12', 'UI13', 'IC11', 'IC25', 'UI24', 'UI25'], lay: [
     'Top left: LP bar (UI06) with the number inside; under it the five monster field slots (UI13) with each monster\'s level, then two rows of item slots (UI12).',
     'Top centre: stage clock plate (UI08) "STAGE 1  6:42"; under it the event strip: small icons for elite, boss A, boss B and gate at their times; a tracked quest line under that.',
     'Top: counters (UI09): run time, coins, kills, Star Chips, each with its symbol (IC11).',
     'Top right: level badge and the minimap (UI10), north up or rotating (setting).',
     'Bottom: the XP bar (UI07) across the full width.',
     'Boss fights: the boss bar (UI11) slides in under the clock; at most two bars.',
+    'Added 23 Nov. The Rite list: the three goals of the stage, each with its own picture (IC25). The same sheet holds the small marks for the event strip under the clock.',
+    'Added 23 Nov. A surge warning banner (UI24) slides in at the top 4 seconds before a big wave of enemies.',
+    'Added 23 Nov. At 30% LP or less a cracked card border (UI25) is laid over the whole screen.',
   ] },
-  { name: 'Level-up offer', uses: ['UI14', 'UI15', 'IC08', 'IC05'], lay: [
+  { name: 'Level-up offer', uses: ['UI14', 'UI15', 'IC08', 'IC05', 'IC26'], lay: [
     'The game slows to a stop and dims. Three card backs (UI15) deal in from the bottom and flip one by one, each in its rarity frame (UI14) with its rarity sound.',
     'Each card: element icon top left, the art, the name, what it does now and at the next level, one line of stat changes with stat icons.',
     'Under the cards: Redraw and Banish buttons with how many are left; Skip for coins.',
+    'Added 23 Nov. The Redraw, Exile (the new name for Banish) and Pass buttons each carry an icon (IC26).',
   ] },
   { name: 'Pause', uses: ['UI01', 'UI02', 'UI03', 'UI12', 'IC05', 'IC06', 'IC07', 'IC10'], lay: [
     'Title PAUSED across the top. Under it a plaque with the map name, difficulty and the score multiplier.',
@@ -20,10 +24,11 @@ export const SCREENS = [
     'Centre: buttons Resume, Map, Settings, Restart, Quit (UI03), with corner brackets on the chosen one.',
     'Right window "Stats": the full Ledger stat sheet, grouped: life (Max LP, regen, Overheal, Shield, Guard, Sidestep, Lifesteal, Thorns); damage (Damage, Keen, crit damage, attack speed, extra cards, bounces); reach (size, card speed, duration, damage to elites, knockback, move speed); movement (extra jumps, jump height); fortune (Fortune, Difficulty, pickup range, XP, coins, Star Chips). Each with its stat icon.',
   ] },
-  { name: 'Full map', uses: ['UI01', 'UI02', 'KA14', 'IC11'], lay: [
+  { name: 'Full map', uses: ['UI01', 'UI02', 'KA14', 'IC11', 'IC27'], lay: [
     'A big square window titled MAP with compass letters on all four sides and a close button.',
     'The parchment (KA14) shows what you have explored; the rest is drifting fog drawn in code. Icons: you, chests, shrines, the Broker, boss rings, the gate, the Descent Circle.',
     'Better than the reference: tap an icon to drop a pin that shows on the minimap and as a beam in the world.',
+    'Added 23 Nov. More map icons (IC27): you, Trophy Chest, Sealed Chest, Witness Stones, the Broker, the Descent Circle, light pillars, the Ley Thread and the compass mark.',
   ] },
   { name: 'Settings', uses: ['UI01', 'UI02', 'UI04', 'UI05'], lay: [
     'A window titled SETTINGS with tabs (UI04): Game, Video, Controls, Audio, Effects, Accessibility.',
@@ -44,8 +49,9 @@ export const SCREENS = [
     'Left: a grid of portraits (locked are dark silhouettes). Centre: the 3D duelist idling on a pedestal, turnable.',
     'Right window: name, mastery rank and bar, runs and kills, one fun line, starting monster, passive, outfit slots, Regalia slot.',
   ] },
-  { name: 'Map select', uses: ['KA05', 'KA06', 'KA07', 'KA08', 'UI01', 'IC10'], lay: [
+  { name: 'Map select', uses: ['KA05', 'KA06', 'KA07', 'KA08', 'UI01', 'IC10', 'IC24'], lay: [
     'Map cards left (KA05 to KA08); the chosen map on the right with its blurb, Easy / Medium / Hard rows (Star Chip and score multipliers, best score, best time, duelist icons of who cleared it), Stages: 3, the Oaths button and Confirm.',
+    'Added 23 Nov. The Easy, Medium and Hard rows each carry their own mark (IC24).',
   ] },
   { name: 'Oaths', uses: ['IC10', 'NP03', 'UI01'], lay: [
     'The Oath Keeper (NP03) stands left with the book open. Right: eight wax seals (IC10); press one to swear it; each shows its rule, the score bonus and its quest.',
@@ -67,7 +73,7 @@ export const SCREENS = [
   { name: 'Boss intro', uses: ['UI18', 'UI17'], lay: [
     'Camera swings to the boss, slow motion, the name card (UI18) slams in with the boss title; 3 s, skippable.',
   ] },
-  { name: 'Controls: touch, controller and keys', uses: ['UI01', 'UI17'], lay: [
+  { name: 'Controls: touch, controller and keys', uses: ['UI01', 'UI17', 'IC16', 'IC28', 'IC18', 'IC19'], lay: [
     'The game plays the same on the AYN Thor, a phone and a PC. Every action works by touch, by controller and by keys; nothing is touch-only or pad-only.',
     'Touch: left thumb anywhere on the left half is a floating move stick. Right side holds two big round buttons: Jump and Slide. Attacks are automatic.',
     'Tap the thing itself: tap a chest, shrine, door, merchant or pickup within reach and the Duelist uses it. If it is out of reach, the Duelist walks to it and then uses it. A soft ring shows what a tap will hit.',
@@ -76,5 +82,8 @@ export const SCREENS = [
     'Menus: every button is at least a thumb wide, cards can be tapped, swiped or picked with the stick, and a press-and-hold on any item, card or stat shows what it does. Back is always a swipe from the edge, B, or Esc.',
     'Thor with two screens: the top screen is the game with nothing on it but the fight; the bottom screen holds the map, the hand and the inventory, all touchable while playing.',
     'Phone held sideways: buttons stay out of the middle of the screen and move in from the rounded corners and the camera cut-out.',
+    'Added 23 Nov. Button hints: a blank button shape (IC16) with the letter or mark printed on it by the game, so the hint always matches the controller in your hands. Keyboard and mouse hints use the blank key caps (IC18).',
+    'Added 23 Nov. Touch: the stick and the Jump, Slide, Dash, Use, Pause and Map buttons carry pictures (IC28) in place of words.',
+    'Added 23 Nov. When a controller is plugged in, drops out or runs low on battery, a small pop-up shows its drawing (IC19).',
   ] },
 ];

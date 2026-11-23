@@ -129,7 +129,7 @@ function stepsFor(a) {
     const list = rows.map((r, ri) => `${r}, left to right:\n` + a.cells.slice(ri * 3, ri * 3 + 3).map((c, ci) => `${ri * 3 + ci + 1}. ${c[1]} (this is the icon for "${c[0]}")`).join('\n')).join('\n');
     add(a.file + '.png', 'Make the sheet of nine', 'ChatGPT', P([GAME, a.ctx || USE.sheet, `WHAT IT IS IN THE GAME. ${a.name}: ${a.where}.`, STYLE[a.style] || STYLE.icon, `LAYOUT. Nine separate ${a.ctx ? 'decals' : 'icons'} in a 3 by 3 grid on a flat pure ${a.ctx ? 'white' : 'black'} background, all the same size, evenly spaced, none touching, each fully inside its cell and seen straight on.${a.note ? ' ' + a.note : ''}`, list, 'Make the picture square, 1024 x 1024.', NEVER]), ROOT + '2d\\icons\\' + a.file + '.png', { copy: true });
   } else if (a.how === 'fx') {
-    const lay = a.frames > 1 ? `LAYOUT. ${a.frames} frames, left to right then top to bottom, in a 4 by 4 grid of equal square cells${a.frames < 16 ? ' (leave the unused cells pure black)' : ''}. The effect stays centred in each cell at the same scale, and each frame changes a little from the last so they play as smooth animation.` : 'LAYOUT. One single image, centred.';
+    const lay = a.frames > 1 ? `LAYOUT. ${a.frames} frames, left to right then top to bottom, in a 4 by 4 grid of equal square cells${a.frames < 16 ? ' (leave the unused cells pure black)' : ''}. The effect stays centred in each cell at the same scale, and each frame changes a little from the last so they play as smooth animation.` : (a.lay || 'LAYOUT. One single image, centred.');
     add(a.file + '.png', a.frames > 1 ? `Make the ${a.frames}-frame sheet` : 'Make the effect picture', 'ChatGPT', P([GAME, USE.fx, `WHAT IT IS IN THE GAME. ${a.name}: ${a.where}.`, STYLE.fx, 'SUBJECT. ' + a.subj, lay, 'Make the picture square, 1024 x 1024.', NEVER]), ROOT + '2d\\fx\\' + a.file + '.png', { copy: true });
   } else if (a.how === '2d') {
     const isLogo = a.code === 'KA02', isUi = a.style === 'ui' || a.style === 'fx';
@@ -153,7 +153,7 @@ for (let i = 0; i < achievements.length; i += 9) {
     note: 'Each is a round badge: a thick gold laurel rim, a deep teal field, and one bold picture of the feat in the middle.', cells: chunk.map(a => [a.name, 'a badge for the feat "' + a.name + '": ' + (cleanLore(a.condition) || a.name)]) });
 }
 const SOUND_CTX = 'CONTEXT. A sound effect for Duel Summoner, a bright stylized fantasy action game about a card duelist and summoned monsters in sunlit ruins. Sounds are chunky, punchy, warm and a little toy-like: wood, stone, paper, bronze, glass. One clean sound only, dry (no echo or room unless asked), no music, no voices or words, no background noise, starting instantly with no silence at the front.';
-const SND = SOUNDS.map(s => ({ code: s.code, name: s.name, file: s.file, how: 'sound', where: 'plays in the game', len: s.len, vars: s.vars, loop: s.loop,
+const SND = SOUNDS.map(s => ({ code: s.code, name: s.name, file: s.file, how: 'sound', where: 'plays in the game', len: s.len, vars: s.vars, loop: s.loop, added: s.added,
   steps: [{ key: s.file + '.wav', title: `Make the sound${s.vars > 1 ? ` (${s.vars} different takes)` : ''}`, tool: 'Sound tool', copy: true, save: ROOT + 'sound\\' + s.file + (s.vars > 1 ? `-1.wav to -${s.vars}.wav` : '.wav'),
     text: P([SOUND_CTX, `THE SOUND. ${s.name}: ${s.prompt}.`, `LENGTH. About ${s.len}.${s.loop ? ' It must loop seamlessly: the end flows back into the start.' : ''}`, s.vars > 1 ? `Make ${s.vars} takes that are clearly the same sound but each a little different, so repeats never sound identical.` : '']) }] }));
 const MUS = MUSIC.map(m => ({ code: m.code, name: m.name, file: m.file, how: 'music', where: 'music', len: m.len,
@@ -184,7 +184,7 @@ const GROUPS = [
   { id: 'sound', title: 'Sound effects', kind: 'Sound', blurb: 'Each prompt goes into a sound-effect generator (ElevenLabs Sound Effects works). Save as WAV.', items: SND },
   { id: 'music', title: 'Music', kind: 'Music', blurb: 'Each brief goes to a music tool or a composer. Save as WAV.', items: MUS },
 ];
-const FIRST = ['MT01', 'MT29', 'MT04', 'MT05', 'MT08', 'MT09', 'MT11', 'W101', 'W103', 'W106', 'W109', 'W110', 'W111', 'W118', 'W119', 'W114', 'W116', 'EN01', 'EN02', 'EN03', 'EN04', 'EN05', 'EN06', 'UI01', 'UI02', 'UI03', 'UI06', 'UI07', 'UI10', 'UI14', 'IC11', 'WX01', 'WX02', 'PK02', 'PK04', 'IC01', 'IC02', 'CH01', 'SM01', 'SM02'];
+const FIRST = ['MT47', 'MT49', 'W451', 'W455', 'W146', 'W147', 'WX37', 'WX38', 'FX34', 'FX36', 'SF121', 'IC16', 'MT01', 'MT29', 'MT04', 'MT05', 'MT08', 'MT09', 'MT11', 'W101', 'W103', 'W106', 'W109', 'W110', 'W111', 'W118', 'W119', 'W114', 'W116', 'EN01', 'EN02', 'EN03', 'EN04', 'EN05', 'EN06', 'UI01', 'UI02', 'UI03', 'UI06', 'UI07', 'UI10', 'UI14', 'IC11', 'WX01', 'WX02', 'PK02', 'PK04', 'IC01', 'IC02', 'CH01', 'SM01', 'SM02'];
 
 const DATA = { groups: [], assets: [], have: [] };
 const seen = new Set(), keys = new Set();
@@ -210,7 +210,7 @@ for (const g of GROUPS) {
     if (a.have) facts.push(['Already have', a.have]);
     if (a.note) facts.push(['Note', a.note]);
     if (a.how === 'code') facts.push(['Made by me', a.subj]);
-    DATA.assets.push({ c: a.code, n: a.name, g: g.id, w: a.where || '', anim, facts, steps, mine: a.how === 'code' || !steps.length });
+    DATA.assets.push({ c: a.code, n: a.name, g: g.id, w: a.where || '', anim, facts, steps, mine: a.how === 'code' || !steps.length, nw: a.added || '' });   // nw: the date an entry was added, shown as a "New" tag
     for (const f of a.haveFiles || []) { if (!keys.has(f)) throw new Error('haveFiles unknown ' + f); DATA.have.push(f); }
   }
 }
@@ -228,4 +228,4 @@ const html = shell.replace('/*DATA*/null', () => JSON.stringify(DATA).replace(/<
 fs.writeFileSync(out, html);
 fs.writeFileSync(new URL('./asset-keys.json', import.meta.url), JSON.stringify([...keys]));
 const nSteps = DATA.assets.reduce((n, a) => n + a.steps.length, 0);
-console.log(JSON.stringify({ assets: DATA.assets.length, steps: nSteps, copyPrompts: DATA.assets.reduce((n, a) => n + a.steps.filter(s => s.copy).length, 0), kb: Math.round(html.length / 1024), web: WEB }));
+console.log(JSON.stringify({ assets: DATA.assets.length, steps: nSteps, newAssets: DATA.assets.filter(a => a.nw).length, copyPrompts: DATA.assets.reduce((n, a) => n + a.steps.filter(s => s.copy).length, 0), kb: Math.round(html.length / 1024), web: WEB }));

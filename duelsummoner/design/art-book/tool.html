@@ -59,6 +59,7 @@ details.a>summary::-webkit-details-marker{display:none}
 .pill{font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--line);white-space:nowrap}
 .a.fin>summary .nm{color:var(--mute);text-decoration:line-through;text-decoration-color:var(--done)}
 .a.fin .pill{background:var(--done);color:var(--bg);border-color:var(--done)}
+.new{font-size:12px;font-weight:700;padding:1px 8px;border-radius:10px;border:1px solid var(--gold);background:var(--code);color:var(--ink);white-space:nowrap}
 .ab{padding:2px 14px 14px}
 .what{font-size:14px;color:var(--mute);margin:0 0 8px}
 dl.f{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:2px 12px;margin:6px 0 10px;font-size:14px}
@@ -112,6 +113,7 @@ li{margin:3px 0;max-width:80ch}
       <select id="fg" aria-label="Category"></select>
       <input id="fq" type="search" placeholder="Find: tree, chest, dragon, W118…" aria-label="Find an asset">
       <label><input id="fh" type="checkbox"> Hide finished</label>
+      <label><input id="fn" type="checkbox"> New only</label>
     </div>
     <div id="list"></div>
   </section>
@@ -142,9 +144,9 @@ function copy(text,btn){var ok=function(){toast('Copied')};var fb=function(){var
   try{navigator.clipboard.writeText(text).then(ok,fb)}catch(e){fb()}}
 
 // ---------- header
-function header(){var tot=0,dn=0,af=0,an=0;D.assets.forEach(function(a){if(a.mine)return;an++;tot+=a.steps.length;dn+=doneCount(a);if(fin(a))af++});
+function header(){var tot=0,dn=0,af=0,an=0,nn=0,nd=[];D.assets.forEach(function(a){if(a.nw){nn++;if(nd.indexOf(a.nw)<0)nd.push(a.nw)}if(a.mine)return;an++;tot+=a.steps.length;dn+=doneCount(a);if(fin(a))af++});
   var pct=tot?Math.round(dn/tot*100):0;$('#bar').style.width=pct+'%';$('#barBox').setAttribute('aria-valuenow',pct);
-  $('#counts').innerHTML='<span><b>'+dn.toLocaleString()+'</b> of '+tot.toLocaleString()+' files made ('+pct+'%)</span><span><b>'+af+'</b> of '+an+' assets finished</span><span><b>'+(tot-dn).toLocaleString()+'</b> files left</span>'}
+  $('#counts').innerHTML='<span><b>'+dn.toLocaleString()+'</b> of '+tot.toLocaleString()+' files made ('+pct+'%)</span><span><b>'+af+'</b> of '+an+' assets finished</span><span><b>'+(tot-dn).toLocaleString()+'</b> files left</span>'+(nn?'<span><b>'+nn+'</b> new assets, added '+esc(nd.join(', '))+'</span>':'')}
 
 // ---------- next up
 var skip={},phase=0,phaseKey='';
@@ -171,7 +173,7 @@ function renderNext(){var n=nextStep(),el=$('#next');if(!n){var sk=Object.keys(s
 
 // ---------- list
 function rowHtml(a){var d=doneCount(a),t=a.steps.length,f=fin(a);
-  return '<details class="a'+(f?' fin':'')+'" id="'+a.c+'"><summary><span class="code">'+a.c+'</span><span class="nm">'+esc(a.n)+'</span><span class="prog">'+(a.mine?'':d+' / '+t)+'</span><span class="pill">'+(a.mine?'I make this':f?'Finished':t-d+' left')+'</span></summary><div class="ab"></div></details>'}
+  return '<details class="a'+(f?' fin':'')+'" id="'+a.c+'"><summary><span class="code">'+a.c+'</span><span class="nm">'+esc(a.n)+'</span>'+(a.nw?'<span class="new">New '+esc(a.nw)+'</span>':'')+'<span class="prog">'+(a.mine?'':d+' / '+t)+'</span><span class="pill">'+(a.mine?'I make this':f?'Finished':t-d+' left')+'</span></summary><div class="ab"></div></details>'}
 function bodyHtml(a){var g=gById[a.g],h='<p class="what"><b>'+esc(g.kind)+'.</b> '+esc(a.w)+'</p>';
   if(a.facts.length)h+='<dl class="f">'+a.facts.map(function(f){return '<dt>'+esc(f[0])+'</dt><dd>'+esc(f[1])+'</dd>'}).join('')+'</dl>';
   if(a.anim)h+='<div class="anim"><b>Animation:</b> '+esc(a.anim)+'</div>';
@@ -181,14 +183,14 @@ function bodyHtml(a){var g=gById[a.g],h='<p class="what"><b>'+esc(g.kind)+'.</b>
      '<div class="save"><span>Save as</span><code>'+esc(s.save)+'</code>'+(s.names?'<button class="ghost" data-name1="'+i+'">Copy name 1 (plain)</button><button class="ghost" data-name2="'+i+'">Copy name 2 (with texture)</button>':'<button class="ghost" data-name="'+i+'">Copy the name</button>')+'</div></div>'});
   if(a.mine&&!a.steps.length)h+='<p class="sub">Nothing for you to make here.</p>';
   return h}
-function renderList(){var g=$('#fg').value,q=$('#fq').value.trim().toLowerCase(),hide=$('#fh').checked,h='',any=false;
+function renderList(){var g=$('#fg').value,q=$('#fq').value.trim().toLowerCase(),hide=$('#fh').checked,nw=$('#fn').checked,h='',any=false;
   D.groups.forEach(function(G){if(g&&G.id!==g)return;var items=D.assets.filter(function(a){return a.g===G.id}),left=0,rows='';
-    items.forEach(function(a){if(!fin(a))left++;if(hide&&fin(a))return;if(q&&(a.c+' '+a.n+' '+a.w).toLowerCase().indexOf(q)<0)return;rows+=rowHtml(a)});
+    items.forEach(function(a){if(!fin(a))left++;if(hide&&fin(a))return;if(nw&&!a.nw)return;if(q&&(a.c+' '+a.n+' '+a.w).toLowerCase().indexOf(q)<0)return;rows+=rowHtml(a)});
     if(!rows)return;any=true;
     h+='<div class="ghead"><h3>'+esc(G.title)+'</h3><span class="kind">'+esc(G.kind)+'</span><span class="left">'+left+' of '+items.length+' left</span></div><p class="sub" style="margin-top:0">'+esc(G.blurb)+'</p>'+rows});
-  $('#list').innerHTML=any?h:'<div class="empty">Nothing matches. Clear the search or turn off "Hide finished".</div>'}
+  $('#list').innerHTML=any?h:'<div class="empty">Nothing matches. Clear the search, or turn off "Hide finished" or "New only".</div>'}
 function fill(d){var b=$('.ab',d);if(!b.firstChild)b.innerHTML=bodyHtml(byCode[d.id])}
-function openAsset(c){var d=document.getElementById(c);if(!d){$('#fq').value='';$('#fh').checked=false;$('#fg').value='';renderList();d=document.getElementById(c)}if(d){d.open=true;fill(d);d.scrollIntoView({block:'start'})}}
+function openAsset(c){var d=document.getElementById(c);if(!d){$('#fq').value='';$('#fh').checked=false;$('#fn').checked=false;$('#fg').value='';renderList();d=document.getElementById(c)}if(d){d.open=true;fill(d);d.scrollIntoView({block:'start'})}}
 function refresh(keepOpen){var open=[].map.call(document.querySelectorAll('details.a[open]'),function(d){return d.id});header();renderNext();renderList();
   open.forEach(function(id){var d=document.getElementById(id);if(d){d.open=true;fill(d)}})}
 document.addEventListener('toggle',function(e){var d=e.target;if(d.classList&&d.classList.contains('a')&&d.open)fill(d)},true);
@@ -199,6 +201,7 @@ $('#fg').innerHTML='<option value="">All categories</option>'+D.groups.map(funct
 try{var pg=localStorage.getItem(LS+'-g');if(pg&&gById[pg])$('#fg').value=pg;$('#fh').checked=localStorage.getItem(LS+'-h')==='1'}catch(e){}
 $('#fg').onchange=function(){try{localStorage.setItem(LS+'-g',this.value)}catch(e){}renderNext();renderList()};
 $('#fh').onchange=function(){try{localStorage.setItem(LS+'-h',this.checked?'1':'0')}catch(e){}renderList()};
+$('#fn').onchange=renderList;
 $('#fq').oninput=renderList;
 
 // ---------- tabs
