@@ -22,6 +22,7 @@ export function updateMonsters(g, dt) {
     const tx = p.x + cos(a) * r, tz = p.z + sin(a) * r, ty = p.y + 2.2 + sin(g.t * 3 + k) * 0.2;
     if (!m.init) { m.x = tx; m.y = ty; m.z = tz; m.px = tx; m.py = ty; m.pz = tz; m.init = true; }
     const kk = Math.min(1, dt * 6); m.x += (tx - m.x) * kk; m.y += (ty - m.y) * kk; m.z += (tz - m.z) * kk;
+    { const lx = m.x - tx, ly = m.y - ty, lz = m.z - tz, l2 = lx * lx + ly * ly + lz * lz, LEASH = 9; if (l2 > LEASH * LEASH) { const l = Math.sqrt(l2), s = LEASH / l; if (l > 40) { m.x = tx; m.y = ty; m.z = tz; m.px = tx; m.py = ty; m.pz = tz; } else { m.x = tx + lx * s; m.y = ty + ly * s; m.z = tz + lz * s; } } }       // the leash: a summon is never more than 9 m from its duelist, and after a teleport (stage change, gate) it simply arrives with them
     m.cd -= dt;
     if (m.cd > 0) continue;
     const D = def(m.id), A = D.attack, cd = A.cd / (1 + g.mods.monsterRate);
