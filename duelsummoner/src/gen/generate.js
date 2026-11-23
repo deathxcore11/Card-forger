@@ -1,4 +1,4 @@
-// The stage generator. generateStage(seed, stageIndex, spec) -> StageMap. Pure and seeded: the same seed gives the same map everywhere.
+﻿// The stage generator. generateStage(seed, stageIndex, spec) -> StageMap. Pure and seeded: the same seed gives the same map everywhere.
 // Layout: the gate arena and the spawn plaza are placed far apart; three district kits and a handful of fillers fill the ground between;
 // then a validator checks the map (reachability with run and jump only, enemy coverage, boss rings, spawn space, economy) and a bounded
 // retry loop draws new attempts until one passes. After 8 failures the fixed Colosseum map is used (a fallback, flagged in the report).
@@ -152,6 +152,29 @@ function tryLayout(as, stage, spec, G) {
   }
   if (fillers < G.minFillers) return { fail: 'too few fillers (' + fillers + ')' };
 
+  // terraces: low 1.2 m platforms (the Stage 1 rise) with 3 m ramps (about 22 degrees), 12 to 20 m across, in the empty ground between kits; a lighter top tone marks the surface as walkable
+  const rt = rngFor(as, 'terraces'), TOP = 0xd8b886, TRIM = 0xe0b765; let terraces = 0;
+  for (let q = 0; q < 400 && terraces < 10; q++) {
+    const w = 12 + rt.int(9), d = 8 + rt.int(7), cx = rt.range(-LAYOUT_R, LAYOUT_R), cz = rt.range(-LAYOUT_R, LAYOUT_R), rr = dist(w / 2 + 3, d / 2 + 3);
+    if (dist(cx, cz) + rr > LAYOUT_R || dist(cx - sx, cz - sz) < 48 || !fits(cx, cz, rr + 3, 3)) continue;
+    kP.box(cx - w / 2, cz - d / 2, cx + w / 2, cz + d / 2, 1.2, TOP);
+    kP.ramp('x', cx + w / 2 + 3, cx + w / 2, cz - 2, cz + 2, 0, 1.2, RAMP_C); kP.ramp('x', cx - w / 2 - 3, cx - w / 2, cz - 2, cz + 2, 0, 1.2, RAMP_C);
+    kP.box(cx - w / 2, cz - d / 2, cx + w / 2, cz - d / 2 + 0.25, 1.23, TRIM, { y0: 1.17, deco: true }); kP.box(cx - w / 2, cz + d / 2 - 0.25, cx + w / 2, cz + d / 2, 1.23, TRIM, { y0: 1.17, deco: true });       // gold trim on the jump lips
+    placed.push({ cx, cz, r: rr + 3 }); terraces++;
+  }
+  // the spawn hop chain: within 40 m of the spawn and in view of it. A 1.2 m base tier, a 2.4 m tier inset 3 m, and three 4 x 3.5 m pads at 3.6 m with 2.8 m gaps (60 to 75 percent of the Stage 1 reach at +1.2 m).
+  // Every rise next to a walkable cell is 1.2 m, a missed jump lands on the tier below, and the pad edges carry the gold lip trim.
+  { const ex = [[1, 0], [0, 1], [-1, 0], [0, -1]].sort((u, v) => (dist(gx - sx - 38 * u[0], gz - sz - 38 * u[1]) - dist(gx - sx - 38 * v[0], gz - sz - 38 * v[1])));
+    for (const u of ex) {
+      const hx = sx + u[0] * 38, hz = sz + u[1] * 38, rot = u[0] ? 1 : 0;
+      if (dist(hx, hz) + 16 > LAYOUT_R || !placed.every(p => p.id === 'plaza' || (p.rect ? rectGap(p.rect.x0, p.rect.z0, p.rect.x1, p.rect.z1, hx, hz) >= 16 : dist(hx - p.cx, hz - p.cz) >= p.r + 16))) continue;
+      const kh = new Kit(prims, hx, hz, rot, tint);
+      kh.box(-13, -6, 13, 6, 1.2, TOP); kh.ramp('z', 9, 6, -2, 2, 0, 1.2, RAMP_C); kh.box(-10, -3, 10, 3, 2.4, TOP); kh.ramp('x', -13, -10, -2, 2, 1.2, 2.4, RAMP_C);
+      for (const [x0, x1] of [[-8, -4], [-1.2, 2.8], [5.6, 9.6]]) { kh.box(x0, -1.75, x1, 1.75, 3.6, TOP);
+        kh.box(x0, -1.75, x1, -1.5, 3.63, TRIM, { y0: 3.57, deco: true }); kh.box(x0, 1.5, x1, 1.75, 3.63, TRIM, { y0: 3.57, deco: true }); kh.box(x0, -1.75, x0 + 0.25, 1.75, 3.63, TRIM, { y0: 3.57, deco: true }); kh.box(x1 - 0.25, -1.75, x1, 1.75, 3.63, TRIM, { y0: 3.57, deco: true }); }
+      const [px, pz] = kh.pt(7.6, 0); slotsAll.push({ tag: 'reward_port', x: px, z: pz, y: 3.6 }); placed.push({ cx: hx, cz: hz, r: 16 }); break;
+    }
+  }
   // rasterise and test
   const grid = new Float32Array(N * N); rasterizeInto(grid, N, HALF, prims, BOUNDARY);
   const spawnI = ci(sx), spawnJ = ci(sz), ed = bfsEnemy(grid, spawnI, spawnJ), pd = bfsPlayer(grid, spawnI, spawnJ);

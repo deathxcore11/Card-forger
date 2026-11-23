@@ -23,7 +23,7 @@ for (const seed of seeds) {
   // 10 rocks
   let minH = 1e9; for (let i = 0; i < hero.length; i++) for (let j = i + 1; j < hero.length; j++) minH = Math.min(minH, dist(hero[i], hero[j])); R.c10 = { hero: hero.length, minHeroSpacing: +minH.toFixed(0), heroFromRoad: +Math.min(...hero.map(h => roadDist(road, h.x, h.z) - h.r)).toFixed(0), lowTall: rocks.length - hero.length, pebbleMaxH: +Math.max(...S.rocks.flat().filter(r => r[3] < 1).map(r => 1.3 * (r[6] || r[3]))).toFixed(2) };
   // 11 empty space: 4 m raster over walkable ground, nearest feature of 1.5 m or more (trees, rocks, tall prims)
-  const feat = [...L.filter(c => c.top - c.y >= 1.5).map(c => [c.x, c.z]), ...m.prims.filter(p => p.t === 'box' && p.h >= 1.5).map(p => [(p.x0 + p.x1) / 2, (p.z0 + p.z1) / 2]), ...m.prims.filter(p => p.t === 'cyl' && p.h >= 1.5).map(p => [p.x, p.z])];
+  const feat = [...S.bushes.filter(b => b[3] >= 1.5).map(b => [b[0], b[2]]), ...L.filter(c => c.top - c.y >= 1.5).map(c => [c.x, c.z]), ...m.prims.filter(p => p.t === 'box' && p.h >= 1.5).map(p => [(p.x0 + p.x1) / 2, (p.z0 + p.z1) / 2]), ...m.prims.filter(p => p.t === 'cyl' && p.h >= 1.5).map(p => [p.x, p.z])];
   let pts = 0, far = 0; for (let x = -185; x <= 185; x += 4) for (let z = -185; z <= 185; z += 4) { if (x * x + z * z > 185 * 185) continue; pts++; let best = 1e9; for (const f of feat) { const d = Math.hypot(f[0] - x, f[1] - z); if (d < best) best = d; } if (best > 12.5) far++; } R.c11_pointsOver12_5m = (100 * far / pts).toFixed(1) + '%';
   // 17 road width and continuity
   R.c17 = { width: road.width, trails: road.trails.length, mainPoints: road.main.length, reachesGate: Math.hypot(road.main.at(-1)[0] - gt.x, road.main.at(-1)[1] - gt.z) < 1 }; 
@@ -32,3 +32,4 @@ for (const seed of seeds) {
   out.push({ seed, ...R });
 }
 console.log(JSON.stringify(out, null, 1));
+

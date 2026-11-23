@@ -4,7 +4,7 @@ import { MAP } from '../data/map.js';
 const T = window.THREE, DEG = Math.PI / 180;
 
 class Builder {
-  constructor() { this.pos = []; this.nor = []; this.col = []; this.seed = 12345; }
+  constructor(uv) { this.pos = []; this.nor = []; this.col = []; this.uv = uv ? [] : null; this.seed = 12345; }
   rnd() { this.seed = (this.seed * 1664525 + 1013904223) >>> 0; return this.seed / 4294967296; }
   // quad a,b,c,d (any winding); `out` is a vector pointing away from the solid so we can face it correctly
   quad(a, b, c, d, out, color) { this.tri(a, b, c, out, color); this.tri(a, c, d, out, color); }
@@ -15,14 +15,14 @@ class Builder {
     nx /= l; ny /= l; nz /= l;
     if (nx * out[0] + ny * out[1] + nz * out[2] < 0) { const t = b; b = c; c = t; nx = -nx; ny = -ny; nz = -nz; }
     const j = 0.97 + this.rnd() * 0.06, r = ((color >> 16) & 255) / 255 * j, g = ((color >> 8) & 255) / 255 * j, bl = (color & 255) / 255 * j;
-    [a, b, c].forEach(p => { this.pos.push(p[0], p[1], p[2]); this.nor.push(nx, ny, nz); this.col.push(r, g, bl); });
+    [a, b, c].forEach(p => { this.pos.push(p[0], p[1], p[2]); this.nor.push(nx, ny, nz); this.col.push(r, g, bl); if (this.uv) this.uv.push(p[0] / 26, p[2] / 26); });
   }
   mesh(far) {
     const g = new T.BufferGeometry();
     g.setAttribute('position', new T.Float32BufferAttribute(this.pos, 3));
     g.setAttribute('normal', new T.Float32BufferAttribute(this.nor, 3));
-    g.setAttribute('color', new T.Float32BufferAttribute(this.col, 3));
-    const mat = new T.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    g.setAttribute('color', new T.Float32BufferAttribute(this.col, 3)); if (this.uv) g.setAttribute('uv', new T.Float32BufferAttribute(this.uv, 2));
+    const mat = new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }); if (this.uv) mat.map = groundTex();
     if (far) mat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', '#ifdef USE_FOG\n float fogFactor = min(smoothstep(fogNear, fogFar, fogDepth), 0.55);\n gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);\n#endif'); };       // far pieces never fog past 55%, so the rim and the landmarks stay readable silhouettes
     return new T.Mesh(g, mat);
   }
@@ -93,14 +93,24 @@ function vnoise(x, z) { const xi = Math.floor(x), zi = Math.floor(z), fx = x - x
 const SAND = [0xc8a46c, 0xcaa978, 0xc09c66];
 
 import { roadPath, poolSpots } from '../gen/road.js';
+// a tiling detail texture for the ground: soft dark blotches and light and dark flecks, multiplied over the cell colours so open sand is never one flat colour (one draw, no extra triangles)
+let gtex = null;
+function groundTex() {
+  if (gtex) return gtex; const cv = document.createElement('canvas'); cv.width = cv.height = 256; const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 256, 256); let s = 99; const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+  const wrap = (x, y, rad, col) => { c.fillStyle = col; for (const dx of [-256, 0, 256]) for (const dy of [-256, 0, 256]) { c.beginPath(); c.arc(x + dx, y + dy, rad, 0, 6.283); c.fill(); } };
+  for (let i = 0; i < 70; i++) wrap(r() * 256, r() * 256, 12 + r() * 34, 'rgba(120,95,50,0.16)');
+  for (let i = 0; i < 40; i++) wrap(r() * 256, r() * 256, 10 + r() * 24, 'rgba(255,245,215,0.20)');
+  for (let i = 0; i < 900; i++) wrap(r() * 256, r() * 256, 0.8 + r() * 1.6, r() < 0.6 ? 'rgba(90,70,40,0.35)' : 'rgba(255,250,235,0.45)');
+  gtex = new T.CanvasTexture(cv); gtex.wrapS = gtex.wrapT = T.RepeatWrapping; gtex.magFilter = T.NearestFilter; gtex.minFilter = T.LinearMipmapLinearFilter; return gtex;
+}
 export function buildMapMesh(map) {
-  const B = new Builder(), F = new Builder(), group = new T.Group();
+  const B = new Builder(), F = new Builder(), G = new Builder(true), group = new T.Group();
   F.seed = 777;
   // the ground: 8 m cells coloured by two octaves of noise (periods 60 m and 18 m) across three sand tones
   const R = 216, cell = 8;
   for (let x = -R; x < R; x += cell) for (let z = -R; z < R; z += cell) {
     const nz = vnoise(x / 60 + 11, z / 60 + 5) * 0.65 + vnoise(x / 18 + 3, z / 18 + 9) * 0.35, col = nz < 0.4 ? SAND[2] : nz < 0.6 ? SAND[0] : SAND[1];
-    B.quad([x, 0, z], [x + cell, 0, z], [x + cell, 0, z + cell], [x, 0, z + cell], [0, 1, 0], col);
+    G.quad([x, 0, z], [x + cell, 0, z], [x + cell, 0, z + cell], [x, 0, z + cell], [0, 1, 0], col);
   }
   // the worn dirt road and its 3 m trails: top-face strips just above the ground, 15 to 25 percent darker than the sand, no kerbs
   { const rd = roadPath(map), strip = (ax, az, bx, bz, hw) => { const dx = bx - ax, dz = bz - az, l = Math.sqrt(dx * dx + dz * dz) || 1, px = -dz / l * hw, pz = dx / l * hw; B.quad([ax - px, 0.05, az - pz], [ax + px, 0.05, az + pz], [bx + px, 0.05, bz + pz], [bx - px, 0.05, bz - pz], [0, 1, 0], 0xb09470); };
@@ -127,7 +137,7 @@ export function buildMapMesh(map) {
   // the mega landmark: a colossal buried card, half sunk and tilted, 64 m tall, on the far side of the map from the start (view only)
   { const sa = Math.atan2(map.gate.z - map.spawn.z, map.gate.x - map.spawn.x) + 2.6, mx = 250 * Math.cos(sa), mz = 250 * Math.sin(sa), yaw = sa / DEG + 90;
     addTilt(F, mx, -6, mz, 24, 3, 64, yaw, 20, 0xe6dcc0); addTilt(F, mx, -6, mz, 20, 3.5, 60, yaw, 20, 0x4a4250, 2); }
-  group.add(B.mesh(false), F.mesh(true));
+  group.add(B.mesh(false), F.mesh(true), G.mesh(false));
   return group;
 }
 
