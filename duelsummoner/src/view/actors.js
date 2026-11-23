@@ -93,7 +93,7 @@ function modelGroup(model, targetSize, axis, glowColor) {
 export class Actors {
   constructor(scene, assets, fx) {
     this.scene = scene; this.assets = assets || {}; this.fx = fx;
-    this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;
+    this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.hitRow = new Int8Array(CFG.enemy.max).fill(-1); this._fc = new T.Color(); this.flashBright = ['fire', 'ice', 'lightning', 'poison', 'wind', 'earth', 'light', 'dark'].map(n => new T.Color(RAMP[n][1])); this.flashNeutral = new T.Color(0xf3e3c2); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;
     this._white = new T.Color(0x666666); this._black = new T.Color(0x000000);
     this.player = playerMesh(); scene.add(this.player);
     this.rig = null; this.rigs = {};                                          // the skinned duelists, for each GLB present in assets/models (duelist-<id>-anim.glb)
@@ -108,7 +108,7 @@ export class Actors {
       const geo = K.id === 3 ? new T.BoxGeometry(1.1, 1.1, 1.1) : K.id === 4 ? new T.IcosahedronGeometry(0.8, 0) : new T.OctahedronGeometry(0.75, 0);
       geo.computeBoundingBox(); const body = instanced(geo, statusLit(lambert(0xffffff, null, 0.3), geo.boundingBox.max.y), CFG.enemy.max); statusAttr(geo, CFG.enemy.max);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.enemy.max * 3), 3);
-      const eye = K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xffe14a), CFG.enemy.max) : null;
+      const eye = K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xe0a040), CFG.enemy.max) : null;
       scene.add(body); if (eye) scene.add(eye);
       return { K, body, eye, base: new T.Color(K.color), fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false };
     });
@@ -153,6 +153,9 @@ export class Actors {
 
   // an own effect takes its colour from the effect ramp by the element the sim names (bright tone); with no element it is the neutral card tone, never gold, XP cyan or violet, except a summon or seal effect, which keeps its violet
   _ownHex(o) { if (o.el && RAMP[o.el]) return RAMP[o.el][1]; const c = o.color || 0, r = (c >> 16) & 255, gg = (c >> 8) & 255, b = c & 255; return (b > 200 && r > 120 && r < 230 && gg < 170) ? c : 0xf3e3c2; }
+  // the hit flash takes the hitting element's bright tone (peak mix 0.6, never pure white); a hit with no element flashes the neutral card tone. The view learns the element from the hit event (the sim sends only the flags).
+  hitAt(x, z, flags) { const e = this.lastEn; if (!e) return; const el = flags >> 1; const ROW = [[1, 0], [2, 2], [4, 1], [8, 3], [16, 4], [32, 5], [64, 6], [128, 7]]; let row = -1; for (const [bit, r] of ROW) if (el & bit) { row = r; break; } let best = -1, bd = 1.44; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.hitRow[best] = row; }
+  _flashCol(i, base) { const r = this.hitRow[i]; return this._fc.copy(base).lerp(r >= 0 ? this.flashBright[r] : this.flashNeutral, 0.6); }
   // the enemy a chain jump reached gets the crawling outline for 300 ms (the nearest live enemy to the bolt's end point, within 1.5 m)
   _arcAt(g, x, z) { const e = g.en; let best = -1, bd = 2.25; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.arcT[best] = 0.3; }
   _fan(arc, max) {
@@ -241,11 +244,11 @@ export class Actors {
     const ud = mesh.userData, fx = this.fx, y = mesh.position.y; ud.base = mesh.scale.x; ud.lv = m.level; ud.pulse = -9;
     if (this.fusionAt !== undefined && this.vt - this.fusionAt < 0.6) { ud.born = this.fusionAt + 1.0; ud.shock = 1; return; }
     ud.born = this.vt;
-    if (formSwap) { fx.flash(0.55); fx.ring(x, y, z, 4, 0xffffff, 0.55); fx.ring(x, y, z, 2.4, 0xffd56a, 0.4); fx.burst(x, y + 1, z, 36, 0xffe9a0, 6, 5, 0.3, 0.7, 6); fx.shake(0.3); }
+    if (formSwap) { fx.moment('formswap', 'A', { flash: 0.55, shake: 0.3 }); fx.ring(x, y, z, 4, 0xffffff, 0.55); fx.ring(x, y, z, 2.4, 0xffd56a, 0.4); fx.burst(x, y + 1, z, 36, 0xffe9a0, 6, 5, 0.3, 0.7, 6); }
     else { fx.ring(x, y, z, 2.4, 0xffd56a, 0.5); fx.burst(x, y + 0.5, z, 18, 0xffd56a, 2.5, 5, 0.22, 0.8, 4); }
   }
   _shock(ud, x, y, z) {
-    const fx = this.fx; ud.shock = 0; fx.flash(0.65); fx.ring(x, y, z, 9, 0xffffff, 0.7); fx.ring(x, y, z, 5, 0xffb060, 0.5); fx.burst(x, y + 1, z, 60, 0xfff0c0, 9, 6, 0.32, 0.9, 7); fx.beam(x, y, z, 0xfff0c0, 0.9); fx.shake(0.7);
+    const fx = this.fx; ud.shock = 0; fx.moment('arrival', 'A', { flash: 0.65, shake: 0.7 }); fx.ring(x, y, z, 9, 0xffffff, 0.7); fx.ring(x, y, z, 5, 0xffb060, 0.5); fx.burst(x, y + 1, z, 60, 0xfff0c0, 9, 6, 0.32, 0.9, 7); fx.beam(x, y, z, 0xfff0c0, 0.9);
   }
 
   update(g, a, cam, head, dt) {
@@ -357,7 +360,7 @@ export class Actors {
       for (const mm of [this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell]) { mm.count = n; mm.instanceMatrix.needsUpdate = true; }
     }
     // swarm
-    this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); for (const kk of this.kinds) kk.fxNow = false; const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
+    this.lastEn = e; this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); for (const kk of this.kinds) kk.fxNow = false; const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
     for (let i = 0; i < e.max; i++) {
       if (!e.alive[i]) { this._wasSwarm[i] = 0; continue; }
       if (!this._wasSwarm[i]) { this._wasSwarm[i] = 1; this.spawnAge[i] = 0; if (this._dustBudget > 0) { this._dustBudget--; fx.burst(e.x[i], e.y[i] + 0.1, e.z[i], 3, 0xb09a6a, 1.5, 1.5, 0.2, 0.45, 5); } }
@@ -373,7 +376,7 @@ export class Actors {
       d.position.set(x, y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85) + bob - rise * 1.1, z); d.rotation.set(hit && !fx.rm_ ? 0.32 : 0, face, 0);
       const mgs = e.size[i];                                                    // merged past the cap: bigger, up to 1.5x
       d.scale.set(sc[0] * pulse * grow * mgs * (hit ? 1.2 : 1), sc[1] * pulse * grow * mgs * (hit ? 0.85 : 1), sc[2] * pulse * grow * mgs * (hit ? 1.2 : 1)); d.updateMatrix();
-      k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this.white : (e.ace[i] ? this.aceCol : k.base));
+      k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this._flashCol(i, e.ace[i] ? this.aceCol : k.base) : (e.ace[i] ? this.aceCol : k.base)); if (!hit) this.hitRow[i] = -1;
       { const bn = e.burn[i]; let bf = 0; if (bn > 0) { if (this.burnMax[i] < bn) this.burnMax[i] = bn; const bm = this.burnMax[i]; bf = Math.max(0.02, Math.min(1, (bm - bn) / 0.4 + 0.02, bn / (0.35 * bm))); } else this.burnMax[i] = 0;
         let ar = 0; if (this.arcT[i] > 0) { this.arcT[i] -= dt; ar = 1; } const fa = k.fxArr, o3 = n * 3; fa[o3] = bf; fa[o3 + 1] = ar; fa[o3 + 2] = (i * 0.6180339) % 1; if (bf > 0 || ar > 0) k.fxNow = true; }
       if (k.eye) {
@@ -390,7 +393,7 @@ export class Actors {
     const spLive = this._spLive || (this._spLive = new Set()); spLive.clear();
     for (const sp of g.sp) {
       if (!sp.alive) continue; spLive.add(sp);
-      let mesh = this.specials.get(sp); if (!mesh) { mesh = this._specialMesh(sp); this.specials.set(sp, mesh); mesh.userData.born = this.vt; fx.ring(sp.x, sp.y, sp.z, 5, 0xe8b84a, 0.7); fx.burst(sp.x, sp.y + 1, sp.z, 24, 0xe8b84a, 4, 6, 0.3, 0.8, 6); fx.shake(0.25); }
+      let mesh = this.specials.get(sp); if (!mesh) { mesh = this._specialMesh(sp); this.specials.set(sp, mesh); mesh.userData.born = this.vt; fx.ring(sp.x, sp.y, sp.z, 5, 0xe8b84a, 0.7); fx.burst(sp.x, sp.y + 1, sp.z, 24, 0xe8b84a, 4, 6, 0.3, 0.8, 6); fx.moment('special', 'B', { shake: 0.25 }); }
       mesh.scale.setScalar((0.3 + 0.7 * this._pop((this.vt - mesh.userData.born) / 0.6)) * mesh.userData.base);
       const x = pl(sp.px, sp.x, a), y = pl(sp.py, sp.y, a), z = pl(sp.pz, sp.z, a);
       mesh.position.set(x, y, z); mesh.rotation.y = turnLerp(sp.pface, sp.face, a);

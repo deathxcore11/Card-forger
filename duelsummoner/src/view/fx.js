@@ -4,6 +4,7 @@
 const T = window.THREE;
 import { RAMP } from '../data/fxramp.js';
 import { FX } from './fxkit.js';
+import { StopBudget, FlashGate, ShakeBudget, MomentDirector } from './director.js';
 
 // damage number colours by element, from the one effect ramp (bright tone): fire, lightning, ice, poison, wind, earth, light, dark (index = bit + 1, as the hit flags carry them)
 const hexStr = c => '#' + c.toString(16).padStart(6, '0');
@@ -15,7 +16,7 @@ export class Fx {
     this.scene = scene; this.settings = settings || { reduceMotion: false, shake: 100 };
     this.d = new T.Object3D(); this.col = new T.Color(); this.v = new T.Vector3();
     this.trauma = 0; this.stop = 0; this.flashA = 0; this.flashShown = -1; this.push = 0; this.pushMax = 2;
-    this.avgDmg = 3;
+    this.avgDmg = 3; this.tick = 0; this.stage = 0; this.camDist = 12; this.blocked = false; this.stopB = new StopBudget(); this.flashG = new FlashGate(); this.shakeB = new ShakeBudget(); this.dir = new MomentDirector(); this.stopLog = [];
     this.shakeOff = { x: 0, y: 0, z: 0, roll: 0 };
 
     // particles: ONE instanced draw, worked out on the GPU (spectacle spec 6.4). A particle is written once, at spawn, into one interleaved buffer of 15 floats (spawn position and birth time, velocity and life,
@@ -71,9 +72,13 @@ export class Fx {
   get shakeScale() { return this.settings.reduceMotion ? 0 : Math.max(0, Math.min(100, this.settings.shake)) / 100; }
 
   // ---- triggers ----
-  shake(a) { const s = this.shakeScale; if (s > 0) this.trauma = Math.min(1, this.trauma + a * s); }
-  hitstop(sec) { if (!this.rm_) this.stop = Math.max(this.stop, sec); }
-  flash(a) { if (!this.rm_) this.flashA = Math.max(this.flashA, a); }
+  // The big-moment budgets (spec 4.2, view/director.js). Hit-stop is decided from the sim tick only (this.tick, set by main), so every player and every replay gets the same stops at the same ticks; the wait itself is
+  // applied for everyone (Reduce motion changes what the screen shows, not whether the stop happens). A flash or shake the budget refuses is dropped, never queued.
+  shake(a, hurt) { const s = this.shakeScale; if (s > 0) { const ok = this.shakeB.ask(performance.now(), a * s, hurt); if (ok > 0) this.trauma = Math.min(1, this.trauma + ok); } }
+  hitstop(sec) { const ok = this.stopB.ask(this.tick, sec); if (ok > 0) { this.stop = Math.max(this.stop, ok); this.stopLog.push([this.tick, +ok.toFixed(3)]); if (this.stopLog.length > 200) this.stopLog.shift(); } }
+  flash(a, hex) { if (this.rm_) return; const ok = this.flashG.ask(performance.now(), a, this.stage); if (ok > 0) { this.flashA = Math.max(this.flashA, ok); if (this.fxFlash) this.fxFlash.style.backgroundColor = '#' + (hex || 0xf3e3c2).toString(16).padStart(6, '0'); } }       // the colour is an element's bright tone, never white; strength is capped by the stage luminance
+  // one big moment through the director: parts = { hitstop, shake, flash, hex }; a moment that loses the screen keeps only its world parts (the caller draws those itself)
+  moment(id, cls, parts, o) { const g = this.dir.request(id, cls, this.tick, Object.assign({ blocked: this.blocked }, o || {})); if (g.screen && parts) { if (parts.hitstop) this.hitstop(parts.hitstop); if (parts.shake) this.shake(parts.shake); if (parts.flash) this.flash(parts.flash, parts.hex); } return g; }
 
   // one particle into the ring buffer: written once; the GPU does the rest (see the constructor). row >= 0 takes its colour from the effect ramp by age; row < 0 uses the explicit colour (r, g, b)
   _spawn(x, y, z, vx, vy, vz, life, grav, drag, size, row, r, g, b) {
@@ -189,13 +194,14 @@ export class Fx {
     }
     // screen shake offsets, decaying
     this.trauma = Math.max(0, this.trauma - dt * 1.7);
-    const sh = this.trauma * this.trauma * 0.4, t = performance.now() * 0.05;
-    this.shakeOff.x = Math.sin(t * 1.3) * sh; this.shakeOff.y = Math.sin(t * 1.7 + 1) * sh * 0.8; this.shakeOff.z = Math.sin(t * 1.1 + 2) * sh; this.shakeOff.roll = Math.sin(t * 1.9) * sh * 0.05;
+    this.trauma = this.shakeB.limit(performance.now(), dt, this.trauma);
+    const sh = this.trauma * this.trauma * 0.4, t = performance.now() * 0.038;
+    this.shakeOff.x = Math.sin(t * 1.3) * sh; this.shakeOff.y = Math.sin(t * 1.7 + 1) * sh * 0.8; this.shakeOff.z = Math.sin(t * 1.1 + 2) * sh; this.shakeOff.roll = Math.sin(t * 1.9) * Math.min(sh * 0.05, 0.0105);
     // full-screen white flash (form change, fusion)
     this.flashA = Math.max(0, this.flashA - dt * 2.2);
     if (this.fxFlash) { const q = Math.round(this.flashA * 50) / 50; if (q !== this.flashShown) { this.flashShown = q; this.fxFlash.style.opacity = q; } }
   }
-  applyShake(camera) { const s = this.shakeOff; if (this.trauma <= 0) return; const l = Math.hypot(s.x, s.y, s.z), k = l > 0.25 ? 0.25 / l : 1; camera.position.x += s.x * k; camera.position.y += s.y * k; camera.position.z += s.z * k; camera.rotation.z += s.roll; }       // shake never moves the eye more than 0.25 m
+  applyShake(camera) { const s = this.shakeOff; if (this.trauma <= 0) return; const lim = Math.min(0.25, 0.02 * this.camDist), l = Math.hypot(s.x, s.y, s.z), k = l > lim ? lim / l : 1; camera.position.x += s.x * k; camera.position.y += s.y * k; camera.position.z += s.z * k; camera.rotation.z += s.roll; }       // shake never moves the eye more than 0.25 m
 }
 
 
