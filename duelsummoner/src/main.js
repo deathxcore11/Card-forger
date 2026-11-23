@@ -42,6 +42,8 @@ const scene = new T.Scene();
 scene.background = new T.Color(0xe6cb97);                // warm daylight sand sky
 scene.fog = new T.Fog(0xe6cb97, 110, 330);
 const camera = new T.PerspectiveCamera(62, 1, 0.1, 520);
+let fovSetting = 100, baseV = 62;                    // the setting is HORIZONTAL degrees, so it means the same on every screen shape; the vertical angle follows from the aspect and never goes past 88
+function fitFov() { const a = Math.max(0.3, camera.aspect || 1.78); baseV = Math.min(88, 2 * Math.atan(Math.tan(fovSetting * Math.PI / 360) / a) * 180 / Math.PI); camera.fov = baseV; camera.updateProjectionMatrix(); }
 // the look: a warm low key light for form, a pale sky and a warm bounce for the shade, and a cool fill from the opposite side so shadowed faces are never grey
 scene.add(new T.HemisphereLight(0xdfeaff, 0x9a7650, 0.72));
 scene.add(new T.AmbientLight(0xfff0dc, 0.1));
@@ -51,7 +53,7 @@ const fill = new T.DirectionalLight(0xa9c4ff, 0.28); fill.position.set(-60, 35, 
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setPixelRatio(1); renderer.setSize(Math.ceil(w / LOW), Math.ceil(h / LOW), false);
-  camera.aspect = w / h; camera.updateProjectionMatrix();
+  camera.aspect = w / h; fitFov();
 }
 window.addEventListener('resize', resize); resize();
 
@@ -96,6 +98,7 @@ let pendingUse = false, MODE = 'start', last = 0, frozen = false, holdT = 0, las
 // settings: reduce motion turns off shake, hit-stop, flashes, the boss zoom and the follow lag
 function applySettings() {
   const s = save.settings; document.body.classList.toggle('rm', !!s.reduceMotion); chase.lag = !s.reduceMotion;
+  fovSetting = Math.max(80, Math.min(115, +s.fov || 100)); fitFov(); for (const el of document.querySelectorAll('.setFov')) el.value = fovSetting; for (const el of document.querySelectorAll('.setFovV')) el.textContent = fovSetting;
   for (const el of document.querySelectorAll('.setRM')) el.checked = !!s.reduceMotion;
   for (const el of document.querySelectorAll('.setShake')) { el.value = s.shake; el.disabled = !!s.reduceMotion; }
   for (const el of document.querySelectorAll('.setShakeV')) el.textContent = s.reduceMotion ? 'off' : s.shake;
@@ -103,6 +106,7 @@ function applySettings() {
 function bindSettings() {
   for (const el of document.querySelectorAll('.setRM')) el.onchange = () => { save.settings.reduceMotion = el.checked; applySettings(); writeSave(host, save); };
   for (const el of document.querySelectorAll('.setShake')) { el.oninput = () => { save.settings.shake = +el.value; applySettings(); }; el.onchange = () => writeSave(host, save); }
+  for (const el of document.querySelectorAll('.setFov')) { el.oninput = () => { save.settings.fov = +el.value; applySettings(); }; el.onchange = () => writeSave(host, save); }
   applySettings();
 }
 bindSettings();
@@ -118,7 +122,7 @@ function setMode(m) {
 function begin(mode, sel) {
   sel = sel || {}; if (sel.duelist) pickDuelist(sel.duelist);
   game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions'; game.opts.difficulty = sel.difficulty || save.settings.difficulty; game.opts.oaths = sel.oaths || []; game.opts.map = sel.map || 'ruins';
-  ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; game.opts.meta = simMeta(save.meta); game.reset(Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
+  ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; game.opts.meta = simMeta(save.meta); game.reset(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();
   for (const m of actors.specials.values()) scene.remove(m); actors.specials.clear();
   for (const m of actors.chests.values()) scene.remove(m); actors.chests.clear();
@@ -334,8 +338,8 @@ function frame(now) {
   if (MODE === 'play') ambient.update(dtReal, camera, game.en);
   threads.update(game.mode !== 'classic' && game.map ? game.map.gate : null, ip, MODE === 'play' ? dtReal : 0, camera, MODE === 'play' && game.boss.state === 'idle' && !game.offer);
   fx.applyShake(camera);
-  if (fx.push > 0) { fx.push = Math.max(0, fx.push - dtReal); const u = 1 - fx.push / 2; camera.fov = 62 - 15 * Math.sin(Math.PI * Math.min(1, u)); camera.updateProjectionMatrix(); fovDirty = true; }
-  else if (fovDirty) { camera.fov = 62; camera.updateProjectionMatrix(); fovDirty = false; }
+  if (fx.push > 0) { fx.push = Math.max(0, fx.push - dtReal); const u = 1 - fx.push / 2; camera.fov = baseV * (1 - 0.24 * Math.sin(Math.PI * Math.min(1, u))); camera.updateProjectionMatrix(); fovDirty = true; }
+  else if (fovDirty) { camera.fov = baseV; camera.updateProjectionMatrix(); fovDirty = false; }
   const low = MODE === 'play' && !game.over && game.p.hp / game.p.maxHp < 0.3; if (low !== lowShown) { lowShown = low; $('lowhp').classList.toggle('on', low); }
   if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures
   head.x = ip.x; head.y = ip.y + 1.5; head.z = ip.z;

@@ -130,7 +130,7 @@ export function initMenus(env) {
   // ---------- Settings ----------
   function showSettings() {
     const s = save.settings;
-    open('<h2>SETTINGS</h2><div class="panel"><div class="settings"><label><input type="checkbox" class="setRM"' + (s.reduceMotion ? ' checked' : '') + '> Reduce motion</label> <label>Shake <input type="range" class="setShake" min="0" max="100" value="' + s.shake + '"> <span class="setShakeV">' + (s.reduceMotion ? 'off' : s.shake) + '</span>%</label></div><p class="dim">Difficulty and Oaths are chosen on the map screen.</p></div><div class="navRow"><button id="setBack" class="small">BACK</button></div>');
+    open('<h2>SETTINGS</h2><div class="panel"><div class="settings"><label><input type="checkbox" class="setRM"' + (s.reduceMotion ? ' checked' : '') + '> Reduce motion</label> <label>Shake <input type="range" class="setShake" min="0" max="100" value="' + s.shake + '"> <span class="setShakeV">' + (s.reduceMotion ? 'off' : s.shake) + '</span>%</label> <label>Field of view <input type="range" class="setFov" min="80" max="115" value="' + (s.fov || 100) + '"> <span class="setFovV">' + (s.fov || 100) + '</span>&deg;</label></div><p class="dim">Difficulty and Oaths are chosen on the map screen.</p></div><div class="navRow"><button id="setBack" class="small">BACK</button></div>');
     env.bindSettings(); $('setBack').onclick = showMain;
   }
 

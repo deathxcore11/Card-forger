@@ -1,4 +1,4 @@
-// All tuning numbers for the simulation live here. Nothing in src/sim hard-codes a rule value.
+﻿// All tuning numbers for the simulation live here. Nothing in src/sim hard-codes a rule value.
 export const CFG = {
   gravity: 28,
   player: {
@@ -13,7 +13,7 @@ export const CFG = {
     slide: { minStart: 6.5, keepMin: 3.2, max: 22, friction: 2.2, downhill: 34, turn: 1.8, probe: 1.2 }
   },
   cam: {
-    back: 7, up: 3, shoulder: 1, headY: 1.55,          // 7 m behind, 3 m above, over the right shoulder
+    back: 10, up: 1.2, shoulder: 0.6, headY: 1.4,          // 7 m behind, 3 m above, over the right shoulder
     sens: 0.0025, pitchMin: -0.5, pitchMax: 0.75,      // pitch is added to the default arm angle
     minDist: 1.4, margin: 0.35, floorGap: 0.6
   },
@@ -29,4 +29,5 @@ export const CFG = {
   xp: { magnet: 5, pick: 1.3, perLevel: 8, max: 220 },
   path: { cell: 2, span: 80, refresh: 0.25 }            // enemy flow field: 2 m cells, 80 cells (160 m) across
 };
+
 
