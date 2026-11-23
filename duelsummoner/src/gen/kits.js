@@ -165,7 +165,9 @@ export const KITS = {
     role: 'filler', name: 'Terraces', plan: rng => ({ r: 28 + rng.int(6) }),
     build(k, p) {
       const R = p.r - 8; k.box(-R, -R, R, R, 1.4, 0xcdb37c); k.box(-R + 8, -R + 8, R - 8, R - 8, 2.8, 0xc9a46a); k.box(-R + 16, -R + 16, R - 16, R - 16, 4.2, 0xc4a56e);
-      k.ramp('x', R + 3, R, -4, 4, 0, 1.4, RAMPC);                           // ground to the first terrace: a 1.4 m hop with a ramp\n      k.ramp('z', -(R - 2.8), -(R - 8), -4, 4, 1.4, 2.8, RAMPC);              // first terrace to the second, on the north side\n      k.ramp('z', R - 10.8, R - 16, -4, 4, 2.8, 4.2, RAMPC);                  // second terrace to the top, on the south side
+      k.ramp('x', R + 3, R, -4, 4, 0, 1.4, RAMPC);                           // ground to the first terrace: a 1.4 m hop with a ramp
+      k.ramp('z', -(R - 2.8), -(R - 8), -4, 4, 1.4, 2.8, RAMPC);              // first terrace to the second, on the north side
+      k.ramp('z', R - 10.8, R - 16, -4, 4, 2.8, 4.2, RAMPC);                  // second terrace to the top, on the south side
       return { slots: [{ tag: 'high_perch', x: 0, z: 0, y: 4.2 }, { tag: 'reward_port', x: R - 12, z: 0, y: 2.8 }] };
     }
   },

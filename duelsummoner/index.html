@@ -39,7 +39,7 @@
   #boss { left:50%; top:46px; transform:translateX(-50%); width:min(520px, 60vw); display:none; text-align:center; }
   #boss .bar { height:16px; } #boss .bar > i { background:#b0338a; }
   #stats { left:16px; top:128px; color:#e0cfa8; font-size:14px; line-height:1.5; }
-  .screen { position:fixed; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column;
+  .screen { z-index:40; position:fixed; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column;
     background:#0d0810d9; text-align:center; padding:16px; gap:10px; }
   .screen.on { display:flex; }
   .screen h1 { margin:0; font-size:clamp(28px, 6vw, 52px); letter-spacing:4px; color:var(--ink); }
@@ -95,7 +95,8 @@
   .card.rare { border-color:#5b9bd5; } .card.epic { border-color:#a974e0; } .card.legendary { border-color:#e8b84a; }
   .card.new h3::after { content:' NEW'; color:#8f6; font-size:10px; }
   #offerBtns button { font-size:14px; padding:8px 16px; margin:4px; }
-  #metaScreen { background:#0d0810; z-index:5; }\n  #metaRows { max-height:60vh; overflow:auto; text-align:left; margin:8px 0; }
+  #metaScreen { background:#0d0810; }
+  #metaRows { max-height:60vh; overflow:auto; text-align:left; margin:8px 0; }
   #metaRows .row { display:grid; grid-template-columns:190px 90px 1fr 110px; gap:8px; align-items:center; padding:5px 8px; border-bottom:1px solid #3a2a50; font-size:14px; }
   #metaRows .row.locked { color:#7a6a8a; } #metaRows .row i { color:var(--dim); font-style:normal; font-size:13px; } #metaRows .row button { font-size:13px; padding:4px 8px; margin:0; }
   #strip { display:flex; gap:6px; justify-content:flex-end; margin:4px 0 2px; }

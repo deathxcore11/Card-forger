@@ -49,7 +49,7 @@ function initStage(g) {
   g.aceT = 0; g.fog = makeFog(); g.bDown = false; g.gateDown = null; g.circle = null; g.altar = null; g.stagePrompt = '';
   g.boss = { state: 'idle', early: false, phase: 1 };
   g.spawnAcc = 0; g.ringT = 0; g.golemT = 0; g.huntT = 0; g.killsAtStage = g.kills;
-  g.surgeAnn = [0, 0, 0]; g.surgeDone = [0, 0, 0];
+  g.surgeAnn = [0, 0, 0]; g.surgeDone = [0, 0, 0]; g.surgeAt = [0, 0, 0];
   g.shades = []; g.shadeOn = false; g.shadeAge = 0; g.shadeNextAdd = 0; g.shadeWaveT = 0; g.afterGate = 0;
   g.flags.warden = g.flags.idols = true;                       // the classic timed elites are replaced by the timeline
 }
@@ -159,16 +159,23 @@ function gateCleared(g, sp) {
 }
 
 // Surges: two named ones at about 40% and 70% of the stage clock (Stage 1: 2:48 and 4:54) and one when the gate wakes. The banner is up 4 s ahead, then 100 to 120 Husks at half HP close in from a ring round the duelist.
+// Surges 1 and 2 wait while a timed boss (role bossA or bossB) is alive, for at most RUN.surge.waitSeconds, then fire anyway with their banner; the gate-wake surge never waits. (g.boss is the one shared state of the special
+// fight that is running, a timed boss or the gate boss, so the rule looks at the alive timed bosses in g.sp, not at g.boss.)
 const SURGE_NAMES = ['THE HORDE ANSWERS', 'THE HORDE ANSWERS AGAIN', 'THE GATE CALLS ITS DEAD'];
 function surgeTick(g) {
-  const S = g.stageSpec, G = g.gate; if (!S || !g.surgeAnn || g.mode === 'classic' || G.state === 'done' || g.boss && g.boss.state === 'active' && false) return;
-  const at = [S.clock * 0.4, S.clock * 0.7, S.gateWake];
+  const S = g.stageSpec, G = g.gate; if (!S || !g.surgeAnn || g.mode === 'classic' || G.state === 'done') return;
+  const at = [S.clock * 0.4, S.clock * 0.7, S.gateWake], wait = RUN.surge.waitSeconds;
+  const timedBossAlive = g.sp.some(q => q.alive && !q.dead && (q.role === 'bossA' || q.role === 'bossB'));
   for (let i = 0; i < 3; i++) {
-    if (!g.surgeAnn[i] && g.sc >= at[i] - 4 && g.sc < at[i] + 2) { g.surgeAnn[i] = 1; g.event('banner', SURGE_NAMES[i]); g.emit('surge', i); }
-    if (!g.surgeDone[i] && g.sc >= at[i]) {
-      g.surgeDone[i] = 1; if (!g.surgeAnn[i]) g.surgeAnn[i] = 1;
+    if (g.surgeDone[i]) continue;
+    if (!g.surgeAnn[i] && g.sc >= at[i] - 4) {
+      if (i < 2 && timedBossAlive && g.sc < at[i] + wait) continue;               // hold the banner while a timed boss is on the field
+      g.surgeAnn[i] = 1; g.surgeAt = g.surgeAt || [0, 0, 0]; g.surgeAt[i] = Math.max(at[i], g.sc + 4); g.event('banner', SURGE_NAMES[i]); g.emit('surge', i);
+    }
+    if (g.surgeAnn[i] && g.sc >= g.surgeAt[i]) {
+      g.surgeDone[i] = 1;
       const SU = RUN.surge, n = SU.count[0] + Math.floor(g.rsp() * (SU.count[1] - SU.count[0] + 1)), p = g.p; let made = 0;
-      for (let k = 0; k < n; k++) { if (enemyCount(g.en) >= Math.max(g.maxAlive, 140)) break; const a = k / n * 6.283185307, r = 26 + (k % 3) * 4; if (spawnEnemy(g, 'husk', { x: p.x + cos(a) * r, z: p.z + sin(a) * r })) { g.en.hp[g.lastSlot] *= RUN.surge.hpMul; made++; } }
+      for (let k = 0; k < n; k++) { if (enemyCount(g.en) >= Math.max(g.maxAlive, 140)) break; const a2 = k / n * 6.283185307, r = 26 + (k % 3) * 4; if (spawnEnemy(g, 'husk', { x: p.x + cos(a2) * r, z: p.z + sin(a2) * r })) { g.en.hp[g.lastSlot] *= RUN.surge.hpMul; made++; } }
       g.surgeSize = made;
     }
   }

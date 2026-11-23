@@ -27,8 +27,6 @@ export const K = Object.freeze({
   affCap: 2.0,                      // AFFINITY hard x3.0
   markBase: 0.30, revealBonus: 0.10, shredBonus: 0.20,
   knee4: 1.0, kneeK4: 0.8,          // TARGET -> x2.8
-  knee2: 1.0, kneeK2: 1.0,          // SOURCE (Drill for monsters, cards, traps, spells, items) -> x3.0 asymptote
-  affCap: 2.0,                      // AFFINITY (element) is linear up to +200%, a hard x3.0
   otSlope: 0.04,                    // OVERTIME resolve: x(1 + 0.04 n) at Overtime step n (linear, so it always loses to the enemies' exponential growth)
   critBase: 1.75, critCap: 6.0,
   resoCap: 1.5,
