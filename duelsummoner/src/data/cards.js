@@ -56,6 +56,8 @@ export const SPELLS = {
   'toll-of-ash': { name: 'Toll of Ash', rarity: 'rare', kind: 'spell', text: 'Every 5 s you pay 3% of your current Life Points (never below 1). +7% Might a level.', per: { dmgMult: 0.07, toll: 1 } },
   'kindling-rite': { name: 'Kindling Rite', rarity: 'rare', kind: 'spell', text: 'Fire burns +1 damage a second, and +1 s a stack.', per: { burnDps: 1, burnDur: 1 } },
   'deep-marks': { name: 'Deep Marks', rarity: 'rare', kind: 'spell', text: 'Marks last 3 s longer and add +10% damage taken a stack.', per: { markDur: 3, markBonus: 0.10 } },
+  'pack-drill': { name: 'Pack Drill', rarity: 'rare', kind: 'spell', text: 'Monster hits do 15% more a stack. The Source bracket: it rewards committing to one kind of damage, up to x3.', per: { drill: [0, 0.15] } },
+  'elemental-litany': { name: 'Elemental Litany', rarity: 'rare', kind: 'spell', text: '+12% damage in each element for every monster of it you field, a stack. The Affinity bracket.', per: { affPerElement: 0.12 } },
   'swift-draw': { name: 'Swift Draw', rarity: 'common', kind: 'spell', text: 'Your card throw is 20% faster a stack.', per: { cardRate: 0.20 } },
   'runners-sash': { name: "Runner's Sash", rarity: 'common', kind: 'spell', text: '+8% move speed and +10% dash distance a stack.', per: { move: 0.08, dash: 0.10 } },
   'heart-of-the-cards': { name: 'Heart of the Cards', rarity: 'common', kind: 'spell', text: '+20 max Life Points and heal 20 now.', per: { maxLp: 20 }, healNow: 20 },

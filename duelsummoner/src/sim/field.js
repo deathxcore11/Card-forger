@@ -4,7 +4,7 @@ import { addFx } from './combat.js';
 import { monsterMul, knee } from './ledger.js';
 import { STAT_BY_MOD } from '../data/stats.js';
 import { K } from '../data/tuning.js';
-import { RECIPES, TIERS } from '../data/elements.js';
+import { RECIPES, TIERS, ELEMENTS } from '../data/elements.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { ENCOUNTERS } from '../data/encounters.js';
 import { elemBits } from '../data/elements.js';
@@ -39,7 +39,7 @@ export const damageOf = m => param(m, 'dmg') * monsterMul(m.id, m.level);       
 // ---- derived stats from spells ----
 export function recompute(g) {
   const f = g.field, M = { burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0,
-    trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0, toll: 0, locket: 0 };
+    trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0, drill: [0, 0, 0, 0, 0], aff: [0, 0, 0, 0, 0, 0, 0, 0], toll: 0, locket: 0 };
   const addMods = mods => { for (const k of Object.keys(mods)) if (k in M && typeof M[k] === 'number') M[k] += mods[k]; };
   if (g.metaMods) addMods(g.metaMods);                                    // Deck Box ranks
   const src = {};                                                                   // stat mod key -> [[source name, value], ...]
@@ -57,6 +57,8 @@ export function recompute(g) {
     if (P.maxLp) { M.maxLp += P.maxLp * n; note('maxLp', SPELLS[s.id].name, P.maxLp * n); }
     if (P.pickup) { M.pickup += P.pickup * n; M.xp += P.xp * n; note('pickup', SPELLS[s.id].name, P.pickup * n); note('xp', SPELLS[s.id].name, P.xp * n); }
     if (P.burnDps) note('burnDps', SPELLS[s.id].name, P.burnDps); if (P.markBonus) note('markBonus', SPELLS[s.id].name, P.markBonus * n);
+    if (P.drill) M.drill[P.drill[0]] += P.drill[1] * n;                                  // bracket 2: invest in one kind of source
+    if (P.affPerElement) { for (const m of f.monsters) if (m) { const D = MONSTERS[m.id] || FUSIONS[m.id]; if (D) for (const el of D.elements) M.aff[ELEMENTS[el].bit === 1 ? 0 : ELEMENTS[el].bit === 2 ? 1 : ELEMENTS[el].bit === 4 ? 2 : ELEMENTS[el].bit === 8 ? 3 : ELEMENTS[el].bit === 16 ? 4 : ELEMENTS[el].bit === 32 ? 5 : ELEMENTS[el].bit === 64 ? 6 : 7] += P.affPerElement * n; } }       // bracket 3: more for every monster that shares the element
     if (P.toll) { M.toll += n; M.dmgMult += P.dmgMult * n; note('dmgMult', SPELLS[s.id].name, P.dmgMult * n); }
   }
   for (const m of f.monsters) if (m && m.id === 'astral-magus') M.markExplode = { radius: param(m, 'explodeRadius'), dmg: param(m, 'explodeDmg') };

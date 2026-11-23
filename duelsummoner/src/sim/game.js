@@ -82,7 +82,7 @@ export class Game {
     this.tickN = 0; this.levelUps = 0; this.trapsFired = 0; this.trapsSet = 0; this.maxMonsters = 0; this.gateOpenedAt = -1; this.godFusions = 0; this.secretFusions = 0;
     this.fusionIds = []; this.elementsUsed = 0; this.cardsPicked = []; this.fullForms = [];
     this.shades = []; this.shadeOn = false; this.shadeAge = 0; this.merged = 0; this.caps = makeCaps(); this.tollT = K.tollEverySec; this.upgHist = []; this.roleKills = { elite: 0, bossA: 0, bossB: 0, gate: 0, other: 0 }; this.callN = 0; this.endAt = -1; this.runs = this.runs || new Int32Array(6 * 4096); this.runN = 0;
-    this.srcNames = ['other']; this.curSrc = 0; this.dealtLog = {}; this.fusionGuard = null;
+    this.srcNames = ['other']; this.srcClassOf = []; this.bracketDmg = new Float64Array(10); this.curSrc = 0; this.dealtLog = {}; this.fusionGuard = null;
     this.chestsOpenedTotal = 0; this.stagesCleared = 0; this.stageFacts = []; this.swiftChips = 0; this.duelOn = false; this.stagePrompt = ''; this.bDown = false; this.gateDown = null; this.desc = null; this.circle = null; this.altar = null; this.heat = 1;
     initRun(this);                                                  // opts.mode: 'classic' (default, one 8:00 stage), 'run' (three stages) or 'quick' (Quick Duel)
   }

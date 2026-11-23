@@ -2,7 +2,8 @@
 // Pure and integer-friendly: only + - * / and comparisons, so it is safe for the deterministic sim and the native port.
 // Not yet ported: the full stat sheet, caps, self-damage pipeline, reactions, Tuning rolls and duelist passives (see the integration notes).
 import { K } from '../data/tuning.js';
-import { FUSIONS } from '../data/cards.js';
+import { MONSTERS, FUSIONS, SPELLS, TRAPS } from '../data/cards.js';
+import { ITEMS } from '../data/items.js';
 
 // linear up to a, then hyperbolic toward a + k
 export const knee = (s, a, k) => (s <= a ? s : a + (s - a) * k / ((s - a) + k));
@@ -18,6 +19,12 @@ export const monsterMul = (id, L) => lvlMul(L) * formMul(L) * tierMul(id);
 export const mightBracket = m => 1 + knee(m, K.knee1, K.kneeK1);
 // bracket 4: marks, Hunter and Swarmbane add up, then knee
 export const targetBracket = s => 1 + knee(s, K.knee4, K.kneeK4);
+export const sourceBracket = s => (s > 0 ? 1 + knee(s, K.knee2, K.kneeK2) : 1);                    // bracket 2: how much you have invested in the kind of source that hit
+export const affinityBracket = mean => 1 + Math.min(mean > 0 ? mean : 0, K.affCap);                  // bracket 3: the hit's element(s); several elements use the mean
+export const overtimeBracket = n => 1 + K.otSlope * (n > 0 ? n : 0);                                  // bracket 8: Overtime resolve
+// which Drill a damage source feeds: 0 monster or Fusion, 1 card throw, 2 trap, 3 spell, 4 item, -1 none
+export function sourceClass(name) { if (MONSTERS[name] || FUSIONS[name]) return 0; if (name === 'card-throw' || name === 'storm-of-cards') return 1; if (TRAPS[name]) return 2; if (SPELLS[name]) return 3; if (ITEMS[name]) return 4; return -1; }
+export const BRACKET_NAMES = ['Base', 'Might', 'Source', 'Affinity', 'Target', 'Crit', 'Reaction', 'Duelist', 'Overtime', 'Hidden'];
 export const critMul = fero => (K.critBase + fero > K.critCap ? K.critCap : K.critBase + fero);
 export const keenChance = pts => K.keenBase + K.keenSpan * hyp(pts, K.keenK);
 export const guardMit = g => { const m = hyp(g, K.guardK); return m > K.guardCap ? K.guardCap : m; };

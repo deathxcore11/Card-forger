@@ -8,6 +8,7 @@ import { FIELD_RULES, MARKS } from '../data/cards.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { ELEMENTS } from '../data/elements.js';
 import { aceFell } from './aces.js';
+import { sourceBracket, affinityBracket, overtimeBracket, sourceClass } from './ledger.js';
 
 export const PICK_XP = 0, PICK_COIN = 1, PICK_HEART = 2;
 const buf = new Int32Array(CFG.enemy.max);
@@ -27,12 +28,15 @@ export function damageEnemy(g, i, dmg, o) {
   const e = g.en; if (!e.alive[i]) return false;
   o = o || {};
   let d = dmg;
-  if (e.mark[i] > 0) d *= targetBracket(MARKS.bonus + g.mods.markBonus);          // bracket 4
-  d *= mightBracket(g.mods.dmgMult);                                              // bracket 1 (knee: stacking Might has a ceiling)
+  const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0), BD = g.bracketDmg, b4 = e.mark[i] > 0 ? targetBracket(MARKS.bonus + g.mods.markBonus) : 1, b1 = mightBracket(g.mods.dmgMult);
+  let cls = g.srcClassOf[g.curSrc]; if (cls === undefined) cls = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]);
+  const b2 = cls >= 0 ? sourceBracket(g.mods.drill[cls]) : 1, b8 = g.otStep > 0 ? overtimeBracket(g.otStep) : 1;
+  let b3 = 1; if (el) { let sum = 0, cnt = 0; for (let k = 0; k < 8; k++) if (el & (1 << k)) { sum += g.mods.aff[k]; cnt++; } b3 = affinityBracket(sum / cnt); }
+  d *= b4 * b1 * b2 * b3 * b8;                                                    // brackets 4, 1 (knee), 2, 3 and 8: add within a bracket, multiply across
   let crit = 0;
   if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) { d *= K.critBase; crit = 1; }
+  if (BD) { const x1 = b1 - 1, x2 = b2 - 1, x3 = b3 - 1, x4 = b4 - 1, x5 = crit ? K.critBase - 1 : 0, x8 = b8 - 1, tot = x1 + x2 + x3 + x4 + x5 + x8; if (tot > 1e-9) { const sh = d / tot; BD[1] += sh * x1; BD[2] += sh * x2; BD[3] += sh * x3; BD[4] += sh * x4; BD[5] += sh * x5; BD[8] += sh * x8; } }       // where the damage came from, for the end-of-run screen (each bracket's share of the extra damage; no logs, so it stays inside the sim's maths rule)
   g.logDealt(d);
-  const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0);
   e.hp[i] -= d; e.flash[i] = 0.12; g.emit('hit', d, e.x[i], e.z[i], crit | (el << 1));       // flags for the view: bit 0 crit, bits 1+ element mask
   if (el & ELEMENTS.fire.bit) { e.burn[i] = ELEMENTS.fire.burn.dur + g.mods.burnDur; e.burnDps[i] = ELEMENTS.fire.burn.dps + g.mods.burnDps; }
   const chainAfter = (el & ELEMENTS.lightning.bit) && !o.noChain;

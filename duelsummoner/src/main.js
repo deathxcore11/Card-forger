@@ -27,6 +27,7 @@ import { packReplay, deflateInBrowser } from './core/replay.js';
 import { boardUrl, sendAndFollow } from './core/board.js';
 import { TouchControls } from './core/touch.js';
 import { loadRig } from './view/rig.js';
+import { BRACKET_NAMES } from './sim/ledger.js';
 import { loadCreature } from './view/creature.js';
 import { Ambient } from './view/ambient.js';
 import { nearestProp } from './sim/world.js';
@@ -174,6 +175,8 @@ function results() {
   $('dCause').textContent = why; $('dBoard').textContent = '';
   const top = Object.entries(game.damageBy).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => k + ' ' + Math.round(v)).join('  /  ');
   $('dBreakdown').textContent = top ? 'Damage taken: ' + top : '';
+  { const BD = game.bracketDmg; let tot = 0, best = 0; for (let i = 1; i < 10; i++) { tot += BD[i]; if (BD[i] > BD[best]) best = i; }          // which bracket the extra damage came from
+    $('dBracket').textContent = tot > 0 && best ? 'What broke the game: ' + BRACKET_NAMES[best] + ' (' + Math.round(BD[best] / tot * 100) + '% of your extra damage)' : ''; }
   drawHud(game, true); setMode('dead');
 }
 // count-ups on the results screen (instant with reduce motion)
