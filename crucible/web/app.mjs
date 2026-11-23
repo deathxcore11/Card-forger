@@ -822,9 +822,9 @@ function coinLoop() {
   for (const cv of cs) if (cv.dataset.t !== String(t)) { cv.dataset.t = t; paintCoin(cv, a); }
   coinRaf = requestAnimationFrame(coinLoop);
 }
-// The models' skins load with the pack, so the first room or forge beat is drawn whole (a slow one is not waited on for
-// more than three seconds).
-function bootWait() { booting = true; bootScreen(); return loadPack(bootScreen).then(() => Promise.race([propTextures(), new Promise(ok => setTimeout(ok, 3000))])).then(() => { const b = document.getElementById('boot'); if (b) b.remove(); booting = false; render(); }); }
+// The models' skins and the duel table's pictures load with the pack, so the first room, forge beat or duel frame is
+// drawn whole (a slow one is not waited on for more than three seconds).
+function bootWait() { booting = true; bootScreen(); return loadPack(bootScreen).then(() => Promise.race([Promise.all([propTextures(), psTextures()]), new Promise(ok => setTimeout(ok, 3000))])).then(() => { const b = document.getElementById('boot'); if (b) b.remove(); booting = false; render(); }); }
 const faceName = id => 'face-' + (id === 'last' ? 'last-one' : id);
 const relicFile = id => (RELICS[id].kind === 'M' ? 'masterwork' : 'relic') + '-' + id.replace(/_/g, '-');
 // Card pictures at console size: each sheet of 100 shrunk to 40 (and, for the card page, 96) pixels a card and cut to
@@ -1128,9 +1128,15 @@ function tableQuads(view) {
   }
   return drawn > 0;
 }
-const TEX = { cards: new Map(), table: null, back: null, loading: false };
-// A Field Spell's ground (Randall's terrain sheet, cut to 128 x 64): loaded the first time its terrain is in play.
-const terrainTex = id => { const n = 'terrain-' + String(card(id).name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), k = 't-' + id; if (TEX[k] !== undefined || !CART.has(n)) return; TEX[k] = null; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, 128, 64); if (app.classList.contains('ps')) psPaint(true); }; im.src = cimg(n); };
+const TEX = { cards: new Map(), table: undefined, back: undefined, loading: null, wait: {}, laid: false };
+// A Field Spell's ground (Randall's terrain sheet, cut to 128 x 64). Every ground loads with the table's own pictures
+// (psTextures), so a ground is never laid a moment after the table it lies on. TEX['t-' + id]: null while it loads,
+// then its picture, or false when there is none or it failed.
+const terrainTex = id => { const n = 'terrain-' + String(card(id).name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), k = 't-' + id;
+  if (TEX[k] !== undefined) return TEX.wait[k] || Promise.resolve();
+  if (!CART.has(n)) { TEX[k] = false; return Promise.resolve(); }
+  TEX[k] = null; return (TEX.wait[k] = new Promise(done => { const im = new Image(), end = t => { TEX[k] = t; done(); if (app.classList.contains('ps')) psPaint(true); };
+    im.onload = () => end(R3.texFrom(im, 128, 64) || false); im.onerror = () => end(false); im.src = cimg(n); })); };
 // ---- props: Randall's models cut to console size (tools/crucible/console-prop.py), each standing on a spot of its room's
 // painted floor: the shrine in the Sanctum, the bowl in the Omen room, the chest among the treasure, the stall in the
 // Bazaar, the anvil in the forge; and the two keepers before the side doorways of the guardian's chamber. A spot is a
@@ -1207,11 +1213,16 @@ function propPaint() {
   }
   R3.present(view);
 }
+// The table's pictures and the card back. They load with the pack (bootWait waits for them as for the models' skins), so
+// the first duel frame is drawn with them; until each has loaded or failed (false) the table is not drawn.
 function psTextures() {
-  if (TEX.loading) return; TEX.loading = true;
-  const load = (n, w, h, k) => { if (!CART.has(n)) return; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, w, h); if (app.classList.contains('ps')) psPaint(true); }; im.src = cimg(n); };
-  load('table', 128, 128, 'table'); load('cardback', 44, 60, 'back');
-  const M = tmodel(); if (M) for (const [t, [w, h]] of Object.entries(M.pics)) load('model-table-' + t, w, h, 'm-' + t);
+  if (TEX.loading) return TEX.loading;
+  const load = (n, w, h, k) => new Promise(done => { if (!CART.has(n)) { TEX[k] = false; return done(); }
+    const im = new Image(), end = t => { TEX[k] = t; done(); if (app.classList.contains('ps')) psPaint(true); };
+    im.onload = () => end(R3.texFrom(im, w, h) || false); im.onerror = () => end(false); im.src = cimg(n); });
+  const M = tmodel();
+  return (TEX.loading = Promise.all([load('table', 128, 128, 'table'), load('cardback', 44, 60, 'back'), ...(M ? Object.entries(M.pics).map(([t, [w, h]]) => load('model-table-' + t, w, h, 'm-' + t)) : []),
+    ...D.pool.cards.filter(c => c.kind === 'field').map(c => terrainTex(c.id))]));
 }
 function cardTex(id) {
   if (TEX.cards.has(id)) return TEX.cards.get(id);
@@ -1457,12 +1468,17 @@ function psPaint(force) {
   const vs = viewSize(); TBL.cam = tableCam(vs.w, vs.h, PSV.s);
   const view = R3.makeView(cv, vs.w, vs.h), proj = R3.camera(TBL.cam), v = live ? B.V : PSV.v, P = live ? B.P || B.V : v;
   R3.clear(view, 0); view.px.fill(0); // see-through: the hall picture behind the canvas shows where nothing is drawn
+  // Its pictures load with the pack, and the ground with them; until they are in, the hall stands alone (never a bare
+  // table, and never a table whose ground is laid a moment later). Once a table has stood, it is never taken away again
+  // to wait for a ground.
+  const W = live && B.wipe, grounds = (W ? [W.from, W.to] : [v.terrain]).filter(Boolean);
+  grounds.forEach(t => terrainTex(t.id));
+  if (!tableReady() || (!TEX.laid && grounds.some(t => TEX['t-' + t.id] === null))) { R3.present(view); delete cv.dataset.k; return; }
+  TEX.laid = true;
   const T = TEX.table || R3.flat(8, 8, [168, 126, 79]);
   if (!tableQuads(view)) R3.quad(view, { p: [[-190, 0, -192], [190, 0, -192], [190, 0, 192], [-190, 0, 192]], uv: [[0, 0], [T.w * 3 - 1, 0], [T.w * 3 - 1, T.h * 3 - 1], [0, T.h * 3 - 1]], tex: { w: T.w * 3, h: T.h * 3, d: tile3(T) }, shade: [.55, .55, 1, 1], bias: 2000 });
   // the terrain's ground, laid inside the table's border while it holds; a new ground comes in row by row from its owner's side
-  const W = live && B.wipe;
   for (let j = 0; j < 4; j++) { const ter = W ? (tick >= W.t + (W.near ? 3 - j : j) * 2 ? W.to : W.from) : v.terrain, tg = ter && TEX['t-' + ter.id];
-    if (ter && !tg) terrainTex(ter.id);
     if (tg) for (let i = 0; i < 2; i++) { const x0 = -170 + i * 170, z0 = -170 + j * 85;
       R3.quad(view, { p: [[x0, 0, z0], [x0 + 170, 0, z0], [x0 + 170, 0, z0 + 85], [x0, 0, z0 + 85]], uv: [[0, 0], [tg.w - 1, 0], [tg.w - 1, tg.h - 1], [0, tg.h - 1]], tex: tg, shade: .66 + .34 * (j + 1) / 4, bias: 1500 }); } }
   const off = v.mon[0].length < 5 ? 1 : 0;
@@ -1524,6 +1540,8 @@ function psPaint(force) {
 // lifted or shown is drawn nearer still), nearer than the table, its ground, its zone outlines and rings (all biased by 999
 // and more past their depth).
 const PLATE_Z = 900;
+// The table's own pictures (its model's skins, or its top) and the card back: the table is drawn only once they are in.
+const tableReady = () => { const M = tmodel(); return TEX.back !== undefined && (M ? Object.keys(M.pics).every(t => TEX['m-' + t] !== undefined) : TEX.table !== undefined); };
 function tile3(T) { if (T.t3) return T.t3; const w = T.w * 3, h = T.h * 3, d = new Uint32Array(w * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) d[y * w + x] = T.d[(y % T.h) * T.w + (x % T.w)]; T.t3 = d; return d; }
 // The things over the view and the pillars that move with the beat: the Life Points as the blows land, the change rising
 // over the face it struck, the relics' strips, the view shaking under a heavy blow. Read from the beat's clock, so a
