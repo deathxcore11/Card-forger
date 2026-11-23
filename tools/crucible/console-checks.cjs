@@ -41,6 +41,9 @@
 //           say where its dots stand is a fault);
 //   still   a part marked still runs no animation, and a canvas of models marked still draws the same pixels a moment
 //           later;
+//   step    every animation running in the frame moves what it moves on whole frame pixels at every one of its steps
+//           (read at the middle of each step, not only where it happens to be when the screen is looked at), and makes
+//           a part only none, half or all see-through;
 //   table   on the duel's table each tap area is cut to its zone as the table's camera draws it and draws nothing; the
 //           numbers lie inside the view, apart and off the trap rows; the hall's painting spans the view to its foot;
 //   errors  no page error.
@@ -296,6 +299,37 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
             if (low < 0) out.push(`${name(c)}: no model drawn at its spot ${f}`);
             else if (Math.abs(low - (fy - 1)) > 2) out.push(`${name(c)}: a model's foot is at row ${low}, not on its spot ${f}`);
           }
+        }
+        // step: an animation moves a part on whole frame pixels at every step of it, not only at the moment the screen is
+        // looked at. Each animation running in the frame is stopped at the middle of each of its steps in turn (a stepped
+        // timing runs its steps in each stretch between two keyframes; a smooth one is read at eight points of each), what
+        // it moves is read there (a shift, a picture's place in its box, a place, how see-through it is), and it is then
+        // set going again where it was.
+        const pxs = v => (String(v).match(/-?[\d.]+px/g) || []).map(parseFloat), whole = v => Math.abs(v - Math.round(v)) < .01;
+        for (const a of document.getAnimations()) {
+          const ef = a.effect, el = ef && ef.target;
+          if (!el || !app.contains(el) || a.playState !== 'running' || !ef.getKeyframes) continue;
+          const kf = ef.getKeyframes(), tm = ef.getComputedTiming(), d = +tm.duration, delay = +tm.delay || 0;
+          if (!(d > 0) || !kf.length) continue;
+          const props = new Set(kf.flatMap(f => Object.keys(f)).filter(p => !['offset', 'computedOffset', 'easing', 'composite'].includes(p)));
+          const offs = [...new Set([0, ...kf.map(f => f.computedOffset), 1])].sort((x, y) => x - y), at = [];
+          for (let i = 0; i < offs.length - 1; i++) {
+            const k0 = kf.find(f => Math.abs(f.computedOffset - offs[i]) < 1e-6), ease = (k0 && k0.easing) || ef.getTiming().easing || 'linear';
+            const m = /steps\((\d+)/.exec(ease), n = m ? +m[1] : 8;
+            for (let j = 0; j < n; j++) at.push(offs[i] + (j + .5) / n * (offs[i + 1] - offs[i]));
+          }
+          const was = a.currentTime, pseudo = ef.pseudoElement || null, where = name(el) + (pseudo || '') + ` (${a.animationName || 'animation'})`;
+          a.pause();
+          for (const p of at) {
+            a.currentTime = delay + p * d;
+            const s = getComputedStyle(el, pseudo), bad = [];
+            if (props.has('transform') && s.transform !== 'none') { const t = new DOMMatrix(s.transform); if (!whole(t.e) || !whole(t.f)) bad.push(`shifted ${+t.e.toFixed(2)}, ${+t.f.toFixed(2)}`); }
+            if ([...props].some(q => /^background(Position)?/.test(q))) { const v = pxs(s.backgroundPosition); if (v.some(x => !whole(x))) bad.push(`its picture at ${s.backgroundPosition}`); }
+            for (const q of ['left', 'top', 'right', 'bottom', 'marginLeft', 'marginTop']) if (props.has(q) && pxs(s[q]).some(x => !whole(x))) bad.push(`${q} ${s[q]}`);
+            if (props.has('opacity') && !okOpacity(s.opacity)) bad.push(`opacity ${s.opacity}`);
+            if (bad.length) { out.push(`${where}: at ${Math.round(p * 100)}% of its turn ${bad.join(', ')}: off the frame's whole pixels`); break; }
+          }
+          a.currentTime = was; a.play();
         }
         // the duel's table, when no move is playing: each tap area is cut to its zone's four corners as the table's camera
         // draws them and draws nothing itself; the numbers' plates lie inside the view, apart, off the trap rows; the
