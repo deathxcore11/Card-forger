@@ -64,9 +64,9 @@ export class Props {
       const g = new T.Group(); g.position.set(s.x, s.y, s.z); const rc = RARITY[s.best] || 0x7fffc8, dim = (h, f) => (((h >> 16 & 255) * f) << 16) | (((h >> 8 & 255) * f) << 8) | ((h & 255) * f);      // the circle takes the colour of the best blessing on offer
       const basin = new T.Mesh(new T.CylinderGeometry(1.4, 1.8, 0.5, 10), lambert(0x6a5a3a)); basin.position.y = 0.25; g.add(basin);
       const water = new T.Mesh(new T.CylinderGeometry(1.1, 1.1, 0.05, 10), basic(rc)); water.position.y = 0.5; g.add(water);
-      const track = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.25, E.shrines.radius, 48), basic(dim(rc, 0.75), { side: T.DoubleSide })); track.rotation.x = -Math.PI / 2; track.position.y = 0.1; g.add(track);
-      const fill = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.25, E.shrines.radius, 48, 1, 0, 0.01), basic(rc, { side: T.DoubleSide, depthWrite: false })); fill.rotation.x = -Math.PI / 2; fill.position.y = 0.12; g.add(fill);
-      fill.userData.dyn = water.userData.dyn = true; bake(g); G.add(g); P.shrines.push({ s, g, fill, water, lastP: -1 });
+      const track = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.6, E.shrines.radius, 48), basic(dim(rc, 0.75), { side: T.DoubleSide })); track.rotation.x = -Math.PI / 2; track.position.y = 0.1; g.add(track);
+      const fill = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.6, E.shrines.radius, 48, 1, 0, 0.01), basic(rc, { side: T.DoubleSide, depthWrite: false })); fill.rotation.x = -Math.PI / 2; fill.position.y = 0.12; g.add(fill);
+      fill.userData.dyn = water.userData.dyn = track.userData.dyn = true; track.renderOrder = 1; fill.renderOrder = 2;       // the track stays out of the bake and draws first, the progress band over it (0.6 m wide) bake(g); G.add(g); P.shrines.push({ s, g, fill, water, lastP: -1 });
     }
     if (world.altar) {                                                  // stepped altar with two bowls: Banish and Tribute
       const a = world.altar, g = new T.Group(); g.position.set(a.x, a.y, a.z);
@@ -120,7 +120,7 @@ export class Props {
     if (P.broker) P.broker.plinths.forEach((m, k) => { const st = g.world.broker.stock[k], b = g.world.broker; if (!st.sold) gem(b.x - 1.6 + k * 1.6, b.y + 1.3 + Math.sin(t * 2 + k) * 0.06, b.z + 0.4, t * 2 + k, 0.3, RARITY[ITEMS[st.id].rarity]); });
     for (const o of P.shrines) {
       const p = o.s.charge / E.shrines.hold;
-      if (Math.abs(p - o.lastP) > 0.008) { o.lastP = p; o.fill.geometry.dispose(); o.fill.geometry = new T.RingGeometry(E.shrines.radius - 0.25, E.shrines.radius, 48, 1, 0, Math.max(0.01, p * Math.PI * 2)); }
+      if (Math.abs(p - o.lastP) > 0.008) { o.lastP = p; o.fill.geometry.dispose(); o.fill.geometry = new T.RingGeometry(E.shrines.radius - 0.6, E.shrines.radius, 48, 1, 0, Math.max(0.01, p * Math.PI * 2)); }
       { const rc = RARITY[o.s.best] || 0x5fd2a8, lift = h => (((h >> 16 & 255) + 255) >> 1 << 16) | (((h >> 8 & 255) + 255) >> 1 << 8) | (((h & 255) + 255) >> 1); o.water.material.color.setHex(o.s.done ? 0x555555 : p > 0 ? lift(rc) : rc); }       // the basin keeps the rarity colour, brighter while you charge it
     }
     if (this._chestN !== g.world.cchests.length) this._rebuildChests(g.world);       // chests that appear mid-run (an Ace's Trophy Chest) rebuild the shared meshes

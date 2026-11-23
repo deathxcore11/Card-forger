@@ -231,6 +231,7 @@ function tryLayout(as, stage, spec, G) {
       if (got >= count) break;
       if (!rule(c) || !apart(c, minApart) || (extra && !extra(c, got))) continue;
       if (dist(c.x - sx, c.z - sz) < 12) continue;
+      if (dist(c.x - gp[0], c.z - gp[1]) < 12) continue;                 // nothing is placed inside the gate's seal
       taken.push(c); out.push({ type, x: r2(c.x), y: c.y, z: r2(c.z) }); got++;
     }
     return got;

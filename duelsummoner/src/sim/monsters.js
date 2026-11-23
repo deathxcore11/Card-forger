@@ -6,6 +6,8 @@ import { CFG } from '../data/config.js';
 import { atan2, cos, pow, sin } from './dmath.js';
 import { MARKS, TRAPS, ONE_SHOTS, FIELD_RULES } from '../data/cards.js';
 import { heightAt } from './terrain.js';
+import { resolveColliders } from './colliders.js';
+const SUMMON_AT = { x: 0, y: 0, z: 0, vx: 0, vz: 0 };
 import { fireShot, fireLob, fireHoming, KIND_CARD, KIND_FIRE, splash } from './weapons.js';
 import { damageEnemy, addFx, addTele, explode } from './combat.js';
 import { def, param, damageOf } from './field.js';
@@ -22,6 +24,7 @@ export function updateMonsters(g, dt) {
     const tx = p.x + cos(a) * r, tz = p.z + sin(a) * r, ty = p.y + 2.2 + sin(g.t * 3 + k) * 0.2;
     if (!m.init) { m.x = tx; m.y = ty; m.z = tz; m.px = tx; m.py = ty; m.pz = tz; m.init = true; }
     const kk = Math.min(1, dt * 6); m.x += (tx - m.x) * kk; m.y += (ty - m.y) * kk; m.z += (tz - m.z) * kk;
+    if (g.colliders) { const o = SUMMON_AT; o.x = m.x; o.z = m.z; o.y = Math.max(0, heightAt(m.x, m.z)) + 0.5; resolveColliders(g.colliders, o, 0.7); m.x = o.x; m.z = o.z; }       // a summon is pushed out of trunks and boulders as a body on the ground, whatever height it hovers at
     { const lx = m.x - tx, ly = m.y - ty, lz = m.z - tz, l2 = lx * lx + ly * ly + lz * lz, LEASH = 9; if (l2 > LEASH * LEASH) { const l = Math.sqrt(l2), s = LEASH / l; if (l > 40) { m.x = tx; m.y = ty; m.z = tz; m.px = tx; m.py = ty; m.pz = tz; } else { m.x = tx + lx * s; m.y = ty + ly * s; m.z = tz + lz * s; } } }       // the leash: a summon is never more than 9 m from its duelist, and after a teleport (stage change, gate) it simply arrives with them
     m.cd -= dt;
     if (m.cd > 0) continue;
