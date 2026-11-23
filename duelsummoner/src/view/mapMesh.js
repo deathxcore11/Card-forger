@@ -1,6 +1,7 @@
 // Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
 import { MAP } from '../data/map.js';
 import { seeMap } from './seethrough.js';
+import { groundLit } from './engine.js';
 import { STAGE_LOOK, rampColour } from '../data/look.js';
 
 const T = window.THREE, DEG = Math.PI / 180;
@@ -19,14 +20,14 @@ class Builder {
     const j = 0.97 + this.rnd() * 0.06, r = ((color >> 16) & 255) / 255 * j, g = ((color >> 8) & 255) / 255 * j, bl = (color & 255) / 255 * j;
     [a, b, c].forEach(p => { this.pos.push(p[0], p[1], p[2]); this.nor.push(nx, ny, nz); this.col.push(r, g, bl); if (this.uv) this.uv.push(p[0] / 26, p[2] / 26); });
   }
-  mesh(far, fade) {
+  mesh(far, fade, sand) {
     const g = new T.BufferGeometry();
     g.setAttribute('position', new T.Float32BufferAttribute(this.pos, 3));
     g.setAttribute('normal', new T.Float32BufferAttribute(this.nor, 3));
     g.setAttribute('color', new T.Float32BufferAttribute(this.col, 3)); if (this.uv) g.setAttribute('uv', new T.Float32BufferAttribute(this.uv, 2));
     const mat = new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }); if (this.uv) mat.map = groundTex();
-    if (far) mat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', '#ifdef USE_FOG\n float fogFactor = min(smoothstep(fogNear, fogFar, fogDepth), 0.55);\n gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);\n#endif'); };       // far pieces never fog past 55%, so the rim and the landmarks stay readable silhouettes
     if (fade) seeMap(mat);                            // anything solid between the camera and the duelist opens a screen-space porthole round the duelist (walls, pylons, columns, ruins, the rim)
+    groundLit(mat, far ? 0.55 : 1, sand);                   // shadow mask, cloud shadows and the one fog formula (far pieces never fog past 55%, so the rim and the landmarks stay readable silhouettes)
     return new T.Mesh(g, mat);
   }
 }
@@ -124,7 +125,7 @@ export function buildMapMesh(map, look) {
   // the ground: 8 m cells coloured by two octaves of noise (periods 60 m and 18 m) across three sand tones
   const R = 216, cell = 8;
   for (let x = -R; x < R; x += cell) for (let z = -R; z < R; z += cell) {
-    const nz = vnoise(x / 60 + 11, z / 60 + 5) * 0.65 + vnoise(x / 18 + 3, z / 18 + 9) * 0.35, col = nz < 0.4 ? SAND[2] : nz < 0.6 ? SAND[0] : SAND[1];
+    const nz = vnoise(x / 60 + 11, z / 60 + 5) * 0.65 + vnoise(x / 18 + 3, z / 18 + 9) * 0.35, col = 0xffffff;
     G.quad([x, 0, z], [x + cell, 0, z], [x + cell, 0, z + cell], [x, 0, z + cell], [0, 1, 0], col);
   }
   // the worn dirt road and its 3 m trails: top-face strips just above the ground, 15 to 25 percent darker than the sand, no kerbs
@@ -153,7 +154,7 @@ export function buildMapMesh(map, look) {
   { const sa = Math.atan2(map.gate.z - map.spawn.z, map.gate.x - map.spawn.x) + 2.6, mx = 250 * Math.cos(sa), mz = 250 * Math.sin(sa), yaw = sa / DEG + 90;
     addTilt(F, mx, -6, mz, 24, 3, 64, yaw, 20, look.landmark[0]); addTilt(F, mx, -6, mz, 20, 3.5, 60, yaw, 20, look.landmark[1], 2); }
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
-  group.add(B.mesh(false, fadeU), F.mesh(true, fadeU), G.mesh(false));
+  group.add(B.mesh(false, fadeU), F.mesh(true, fadeU), G.mesh(false, undefined, SAND));
   return group;
 }
 

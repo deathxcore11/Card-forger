@@ -23,7 +23,7 @@ export const E = {
   noise: { value: buildNoise() }, T: { value: 0 }, wind: { value: new T.Vector3(1, 0.4, 0.5) },       // wind: x,y = direction on the ground, z = strength (0 to 1)
   skyM: { value: new T.Color(0x4fc6d8) }, cldL: { value: new T.Color(0xffffff) }, cldS: { value: new T.Color(0x8fc0da) }, disc: { value: new T.Color(0xfff3b8) }, cover: { value: 0.55 }, sunOn: { value: 1 }, dither: { value: 1 },
   skyT: { value: new T.Color(0x8fb2cc) }, skyH: { value: new T.Color(0xe8d6b0) }, skyG: { value: new T.Color(0xd9c29a) },
-  skyMode: { value: 0 }, mist: { value: new T.Color(0x7fae9c) }, glow: { value: new T.Color(0x4f7f88) }, star: { value: new T.Color(0xe8eef8) }, moonL: { value: new T.Color(0xe4eaf2) }, moonD: { value: new T.Color(0x04060b) }, ash: { value: new T.Color(0x9c9078) },
+  pl: { value: new T.Vector3() }, skyMode: { value: 0 }, mist: { value: new T.Color(0x7fae9c) }, glow: { value: new T.Color(0x4f7f88) }, star: { value: new T.Color(0xe8eef8) }, moonL: { value: new T.Color(0xe4eaf2) }, moonD: { value: new T.Color(0x04060b) }, ash: { value: new T.Color(0x9c9078) },
   sunD: { value: new T.Vector3(0.5, 0.8, 0.3).normalize() }, sunK: { value: new T.Color(0xffe2b0) }
 };
 let gustT = 0;
@@ -85,6 +85,34 @@ export function windify(mat, k) {
 #endif`);
   };
   const key = mat.customProgramCacheKey ? mat.customProgramCacheKey.bind(mat) : null; mat.customProgramCacheKey = () => (key ? key() : '') + 'windify' + k.h + k.lean + k.flut;
+  return mat;
+}
+
+// ---- the shadow mask and the fog, on the ground and wall materials (engine plan step 8). The mask is baked once per stage (view/scenery.js) as tree, boulder and bush shadows on a top-down texture; the shader reads it at the pixel's own
+// spot, nudged by the gust so the shadows sway with the canopies, and darkens the ground by a stepped amount; cloud shadows come from the same noise as the sky clouds, drifting with the wind. Fog is one formula here: height-dense low, capped
+// (0.55 on far pieces so the rim keeps its silhouette) and quantised into 8 bands with the Bayer offset (dither is allowed on fog). Everything is view only and costs no extra draws.
+const blackTex = new T.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, T.RGBAFormat); blackTex.needsUpdate = true;
+export const MASK = { tex: { value: blackTex }, box: { value: new T.Vector4(-232, -232, 464, 464) }, k: { value: 0 }, ck: { value: 0 } };
+export function setShadeMask(tex, look) { MASK.tex.value = tex || blackTex; const d = look && look.dome; MASK.k.value = tex && d ? (d.shade || 0) : 0; MASK.ck.value = d && d.cover > 0.02 ? 0.12 : 0; }
+// terrain blending: the ground tone is chosen per pixel from two octaves of the shared noise plus a fine ragged term, so the borders between the three sand tones wander instead of running along the 8 m cells (hard borders, no cross-fade)
+const TERRAIN = `#include <color_fragment>
+ { vec2 q = vWP.xz; float tn = N(q * 0.008 + 0.3).a * 0.65 + N(q * 0.022 + 0.6).r * 0.35 + (N(q * 0.35).g - 0.5) * 0.14 + (N(q * 1.1 + 0.2).r - 0.5) * 0.05;
+   diffuseColor.rgb *= tn < 0.4 ? uS2 : tn < 0.6 ? uS0 : uS1; }`;
+export function groundLit(mat, cap = 1, sand = null) {
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = sh => {
+    if (prev) prev(sh); const u = engineUniforms(); for (const n in u) sh.uniforms[n] = u[n]; sh.uniforms.uMask = MASK.tex; sh.uniforms.uMaskB = MASK.box; sh.uniforms.uMaskK = MASK.k; sh.uniforms.uCloudK = MASK.ck; sh.uniforms.uCover = E.cover; if (sand) { sh.uniforms.uS0 = { value: new T.Color(sand[0]) }; sh.uniforms.uS1 = { value: new T.Color(sand[1]) }; sh.uniforms.uS2 = { value: new T.Color(sand[2]) }; }
+    sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = GLSL + (sand ? 'uniform vec3 uS0; uniform vec3 uS1; uniform vec3 uS2;\n' : '') + 'uniform sampler2D uMask; uniform vec4 uMaskB; uniform float uMaskK; uniform float uCloudK; uniform float uCover; varying vec3 vWP;\n' + (sand ? sh.fragmentShader.replace('#include <color_fragment>', TERRAIN) : sh.fragmentShader).replace('#include <fog_fragment>', `#ifdef USE_FOG
+ { vec2 wxz = vWP.xz; float gg = gust(wxz); vec2 wd = normalize(uWind.xy), sp = wxz - wd * (0.12 + 0.88 * gg) * 0.6;
+  float tm = smoothstep(0.42, 0.58, texture2D(uMask, (sp - uMaskB.xy) / uMaskB.zw).r);
+  float cn = N(wxz * 0.012 + uWind.xy * uT * 0.0012).r * 0.62 + N(wxz * 0.032 + 3.0).a * 0.38, cs = step(1.0 - uCover, cn);
+  gl_FragColor.rgb *= 1.0 - uMaskK * tm - uCloudK * cs;
+  float fd = smoothstep(fogNear, fogFar, fogDepth) * mix(1.3, 0.8, clamp(vWP.y / 30.0, 0.0, 1.0));
+  fd = clamp(floor(fd * 8.0 + bayer()) / 8.0, 0.0, ${cap.toFixed(2)}); gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fd); }
+#endif`);
+  };
+  const key = mat.customProgramCacheKey ? mat.customProgramCacheKey.bind(mat) : null; mat.customProgramCacheKey = () => (key ? key() : '') + 'groundlit' + cap + (sand ? 's' : '');
   return mat;
 }
 

@@ -5,6 +5,18 @@ import { scatterStage, mulberry } from '../gen/scatter.js';
 import { seeInstanced } from './seethrough.js';
 import { windify } from './engine.js';
 
+// the top-down shadow mask (one 512 x 512 texture over the 464 m square, baked once per stage): a soft disc for every tree canopy, boulder and bush, pushed away from the sun by its height
+function bakeShadowMask(S) {
+  const n = 512, d = new Uint8Array(n * n * 4), B0 = -232, SZ = 464, k = n / SZ, ox = -0.86, oz = -0.51;
+  const disc = (x, z, r) => { const cx = (x - B0) * k, cz = (z - B0) * k, rr = r * k, x0 = Math.max(0, Math.floor(cx - rr)), x1 = Math.min(n - 1, Math.ceil(cx + rr)), z0 = Math.max(0, Math.floor(cz - rr)), z1 = Math.min(n - 1, Math.ceil(cz + rr));
+    for (let j = z0; j <= z1; j++) for (let i = x0; i <= x1; i++) { const dd = Math.hypot(i + 0.5 - cx, j + 0.5 - cz) / rr; if (dd < 1) { const v = 255 * Math.min(1, (1 - dd) * 3 + 0.2), o = (j * n + i) * 4; if (v > d[o]) d[o] = v; } } };
+  for (let v = 0; v < 4; v++) for (const it of S.trees[v]) disc(it[0] + ox * 5 * it[3], it[2] + oz * 5 * it[3], (v < 2 ? 4.4 : 3.4) * it[3]);
+  for (const it of [].concat(S.rocks[0], S.rocks[1], S.rocks[2])) disc(it[0] + ox * 1.2 * it[3], it[2] + oz * 1.2 * it[3], 1.3 * it[3]);
+  for (const it of S.bushes) disc(it[0] + ox * 0.6 * it[3], it[2] + oz * 0.6 * it[3], 1.0 * it[3]);
+  for (let i = 3; i < d.length; i += 4) d[i] = 255;
+  const tex = new T.DataTexture(d, n, n, T.RGBAFormat); tex.wrapS = tex.wrapT = T.ClampToEdgeWrapping; tex.minFilter = tex.magFilter = T.LinearFilter; tex.generateMipmaps = false; tex.needsUpdate = true; return tex;
+}
+
 const T = window.THREE;
 
 // ------------------------------------------------------------------ geometry: one merged, vertex-coloured, flat-shaded geometry per kind
@@ -99,7 +111,7 @@ export function buildScenery(map, stageIndex, models) {
       sh.forEach((s, i) => { ps.set(s[0], s[1] + 0.06, s[2]); sc.set(s[3], 1, s[3]); m4.compose(ps, q0, sc); mesh.setMatrixAt(i, m4); }); mesh.instanceMatrix.needsUpdate = true; mesh.frustumCulled = false; mesh.renderOrder = 1; group.add(mesh); group.userData.propShadows = sh.length;
     }
   }
-  group.userData.counts = kinds.map(k => k.list.length); group.userData.flowerSpots = S.flowerSpots; group.userData.scatter = S;
+  group.userData.counts = kinds.map(k => k.list.length); group.userData.flowerSpots = S.flowerSpots; group.userData.scatter = S; group.userData.mask = bakeShadowMask(S); group.userData.theme = theme;
   return group;
 }
 
