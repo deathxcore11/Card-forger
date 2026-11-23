@@ -72,6 +72,10 @@ for (let i = 1; i <= 33; i++) if (i !== 5) SKIP_BIBLE['FX' + String(i).padStart(
 for (const c of ['KA15', 'KA16', 'KA17']) SKIP_BIBLE[c] = later;
 SKIP_BIBLE.W112 = SKIP_BIBLE.W113 = 'The game builds its cliffs itself from exact pieces, so they always fit the map. Nothing for you to make.';
 SKIP_BIBLE.W305 = SKIP_BIBLE.W601 = 'Treasure lying around as scenery would wear the gold that means "use me", so it is out. Skip it.';
+// ---- 23 Nov: the engine now makes these itself (engine plan section 7a, spectacle spec). Shown as "Can skip".
+const eng = 'The game now makes this itself in code, as moving water, light or particles, so no picture is needed.';
+for (const c of ['MT28', 'MT53', 'MT31', 'MT48', 'WX14', 'WX30', 'FX05', 'FX35', 'FX36', 'FX37', 'FX38']) if (!SKIP_BIBLE[c]) SKIP_BIBLE[c] = eng;
+for (const c of ['DC01', 'DC02', 'DC03', 'DC04']) SKIP_BIBLE[c] = 'Ground marks are now drawn by the game itself (stains, scorch, drifts), so these sheets are not needed.';
 // Not solid, so the player is never snagged (builder note; shown on the card)
 export const NONSOLID = ['W106', 'W107', 'W108', 'W208', 'W410', 'W504', 'W509', 'W510', 'W601', 'W602', 'W606'];
 export const BREAKABLE = ['W123', 'W124', 'W125', 'W315', 'W438', 'W513'];
