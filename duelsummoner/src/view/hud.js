@@ -55,10 +55,8 @@ export function drawHud(g, force) {
   if (force || k !== key) {
     key = k;
     $('hpnum').textContent = Math.ceil(g.p.hp); $('hpmax').textContent = g.p.maxHp;
-    $('hpbar').firstElementChild.style.width = (g.p.hp / g.p.maxHp * 100) + '%';
-    $('xpnum').textContent = 'LV ' + g.level + '  ' + Math.floor(g.xpCur) + '/' + Math.ceil(g.xpNeed);
-    $('xpbar').firstElementChild.style.width = (g.xpCur / g.xpNeed * 100) + '%';
-    $('clock').textContent = g.mode !== 'classic' ? runClock(g) : g.t >= 480 ? 'OVERTIME +' + clock(g.t - 480) : clock(g.t); $('kills').textContent = g.kills; $('coins').textContent = g.coins;
+        $('xpnum').textContent = 'LV ' + g.level + '  ' + Math.floor(g.xpCur) + '/' + Math.ceil(g.xpNeed);
+        $('clock').textContent = g.mode !== 'classic' ? runClock(g) : g.t >= 480 ? 'OVERTIME +' + clock(g.t - 480) : clock(g.t); $('kills').textContent = g.kills; $('coins').textContent = g.coins;
   }
   // field: 4 Monster Zones then 4 Spell and Trap Zones
   let zdiff = force;

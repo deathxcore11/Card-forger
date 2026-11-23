@@ -170,7 +170,8 @@ export class Fx {
       const dist = Math.sqrt((x - cp.x) * (x - cp.x) + (y - cp.y) * (y - cp.y) + (z - cp.z) * (z - cp.z));
       const k = Math.max(0.6, Math.min(2.2, dist * 0.09)) * pop * (this.nbig[i] ? 1.35 : 1);
       sp.position.set(x, y, z); sp.scale.set(2.2 * k, 0.825 * k, 1);
-      { const T = window.THREE, v = this._nv || (this._nv = new T.Vector3()); v.set(x, y, z).project(camera); if (v.z < 1) { const cx = Math.max(-0.78, Math.min(0.78, v.x)), cy = Math.max(-0.3, Math.min(0.8, v.y)); if (cx !== v.x || cy !== v.y) { v.set(cx, cy, v.z).unproject(camera); sp.position.copy(v); } } }       // clamped to the screen: never off the edge, never down behind the hotbar sp.material.opacity = u < 0.7 ? 1 : 1 - (u - 0.7) / 0.3;
+      { const T = window.THREE, v = this._nv || (this._nv = new T.Vector3()); v.set(x, y, z).project(camera); if (v.z < 1) { const cx = Math.max(-0.78, Math.min(0.78, v.x)), cy = Math.max(-0.3, Math.min(0.8, v.y)); if (cx !== v.x || cy !== v.y) { v.set(cx, cy, v.z).unproject(camera); sp.position.copy(v); } } }       // clamped to the screen: never off the edge, never down behind the hotbar
+      sp.material.opacity = u < 0.7 ? 1 : 1 - (u - 0.7) / 0.3;
     }
     // screen shake offsets, decaying
     this.trauma = Math.max(0, this.trauma - dt * 1.7);
@@ -182,6 +183,7 @@ export class Fx {
   }
   applyShake(camera) { const s = this.shakeOff; if (this.trauma <= 0) return; camera.position.x += s.x; camera.position.y += s.y; camera.position.z += s.z; camera.rotation.z += s.roll; }
 }
+
 
 
 
