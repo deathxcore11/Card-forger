@@ -265,6 +265,20 @@ function drainEvents() { game.drainEvents(onEvent); }
 
 const dbg = $('debug'), showDebug = /[?&]debug/.test(location.search);
 dbg.style.display = showDebug ? 'block' : 'none';
+{ const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 1000 560'); svg.setAttribute('preserveAspectRatio', 'none'); let sd = 7; const rr = () => { sd = (Math.imul(sd, 1664525) + 1013904223) >>> 0; return sd / 4294967296; };
+  const add = (tag, at) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); svg.appendChild(e); return e; };
+  add('rect', { x: 14, y: 14, width: 972, height: 532, rx: 14, fill: 'none', stroke: '#f3e6c8', 'stroke-width': 4, 'stroke-opacity': 0.55, 'stroke-dasharray': '170 9 60 5 300 12 90 6' });       // a card frame with breaks in it
+  for (let i = 0; i < 18; i++) { const side = i % 4, t = rr(), len = 40 + rr() * 70; let x = side === 0 ? 1000 * t : side === 1 ? 1000 * t : side === 2 ? 14 : 986, y = side === 0 ? 14 : side === 1 ? 546 : 560 * t, d = 'M' + x.toFixed(0) + ' ' + y.toFixed(0); for (let k = 0; k < 4; k++) { x += (side < 2 ? (rr() - 0.5) * 36 : (side === 2 ? 1 : -1) * len / 4); y += (side < 2 ? (side === 0 ? 1 : -1) * len / 4 : (rr() - 0.5) * 36); d += 'L' + x.toFixed(0) + ' ' + y.toFixed(0); } add('path', { d, fill: 'none', stroke: '#c8402c', 'stroke-width': 3, 'stroke-opacity': 0.8, 'stroke-linejoin': 'bevel' }); }       // cracks running in from the frame
+  $('lowhp').appendChild(svg); }
+// the dev overlay (?dev=1): what the pacing checks read. Enemies on screen, spawns so far, LP %, spawn rate over the last 10 s, level-ups this minute, and the stage clock.
+const dev = /[?&]dev=1/.test(location.search) ? (() => { const d = document.createElement('div'); d.id = 'dev'; d.style.cssText = 'position:fixed;left:8px;top:300px;z-index:60;font:13px/1.35 monospace;color:#9fffb0;background:#000b;padding:6px 8px;border:1px solid #3a6a44;pointer-events:none;white-space:pre'; document.body.appendChild(d); return { d, spawn: [], lv: [], last: 0, fr: new T.Frustum(), pm: new T.Matrix4(), lastLevel: 1 }; })() : null;
+function devTick(now) {
+  if (!dev || now - dev.last < 200) return; dev.last = now; const g = game, e = g.en, t = g.t; dev.pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); dev.fr.setFromProjectionMatrix(dev.pm);
+  let onScreen = 0, v = new T.Vector3(); for (let i = 0; i < e.max; i++) if (e.alive[i]) { v.set(e.x[i], e.y[i] + 0.8, e.z[i]); if (dev.fr.containsPoint(v)) onScreen++; }
+  dev.spawn.push([t, g.spawned]); while (dev.spawn.length && t - dev.spawn[0][0] > 10) dev.spawn.shift(); const rate = dev.spawn.length > 1 ? (g.spawned - dev.spawn[0][1]) / Math.max(0.5, t - dev.spawn[0][0]) : 0;
+  if (g.level > dev.lastLevel) for (let k = dev.lastLevel; k < g.level; k++) dev.lv.push(t); dev.lastLevel = g.level; while (dev.lv.length && t - dev.lv[0] > 60) dev.lv.shift();
+  dev.d.textContent = 'enemies on screen ' + onScreen + '\nspawns so far ' + g.spawned + '\nLP ' + Math.round(g.p.hp / g.p.maxHp * 100) + '%\nspawn rate ' + rate.toFixed(2) + '/s\nlevel-ups last 60 s ' + dev.lv.length + '\nstage clock ' + Math.floor(g.sc || 0) + ' s';
+}
 let lowShown = false, fpsFrames = 0, fpsT = 0, stepMs = 0;
 const perf = { frames: 0, t0: 0, worst: 0, lastNow: 0 };
 const head = { x: 0, y: 0, z: 0 }, ip = { x: 0, y: 0, z: 0 }, prof = { sim: 0, view: 0, render: 0 };
@@ -349,7 +363,7 @@ function frame(now) {
     let big = 0; for (const sp of game.sp) if (sp.alive && !sp.dead && sp.size > big && (sp.x - ip.x) ** 2 + (sp.z - ip.z) ** 2 < 2500) big = sp.size;
     chase.zoomTo = fx.rm_ ? 1 : 1 + Math.min(0.95, Math.max(0, (big - 4) / 11));
   }
-  bars.tick(dtReal || 0.016, game, document.body.classList.contains('rm'), performance.now());
+  devTick(now); bars.tick(dtReal || 0.016, game, document.body.classList.contains('rm'), performance.now());
   chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
   if (sceneryGroup && sceneryGroup.userData.fade) sceneryGroup.userData.fade(chase.pos, ip, dtReal || 0.016);
   if (MODE === 'play') ambient.update(dtReal, camera, game.en);
@@ -357,7 +371,7 @@ function frame(now) {
   fx.applyShake(camera);
   if (fx.push > 0) { fx.push = Math.max(0, fx.push - dtReal); const u = 1 - fx.push / 2; camera.fov = baseV * (1 - 0.24 * Math.sin(Math.PI * Math.min(1, u))); camera.updateProjectionMatrix(); fovDirty = true; }
   else if (fovDirty) { camera.fov = baseV; camera.updateProjectionMatrix(); fovDirty = false; }
-  const low = MODE === 'play' && !game.over && game.p.hp / game.p.maxHp < 0.3; if (low !== lowShown) { lowShown = low; $('lowhp').classList.toggle('on', low); }
+  const lpf = game.p.hp / game.p.maxHp, low = MODE === 'play' && !game.over && (lowShown ? lpf <= 0.33 : lpf <= 0.30);       if (low !== lowShown) { lowShown = low; $('lowhp').classList.toggle('on', low); }       // on at 30% of max LP or less, off again above 33%
   if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures
   head.x = ip.x; head.y = ip.y + 1.5; head.z = ip.z;
   actors.update(game, alpha, camera.position, head, dtReal);
@@ -394,6 +408,7 @@ window.__ds = {
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
+
 
 
 

@@ -1,0 +1,10 @@
+﻿import { launch, wait } from './cdp.mjs';
+const b = await launch({ out: process.argv[2], query: '?debug&seed=1' });
+await b.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
+await b.evalIn(`(async()=>{ const D = window.__ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 1500)); D.game.god = true; return 1; })()`);
+const probe = async pct => b.evalIn(`(async()=>{ const g = __ds.game; g.p.hp = g.p.maxHp * ${pct} / 100; await new Promise(r => setTimeout(r, 250)); const e = document.getElementById('lowhp'); return e.classList.contains('on'); })()`);
+const out = {}; for (const pct of [50, 31, 30, 32, 34, 30.5, 33.5]) out[pct + '%'] = await probe(pct);
+await b.evalIn(`(async()=>{ __ds.game.p.hp = __ds.game.p.maxHp * 0.2; await new Promise(r => setTimeout(r, 750)); return 1; })()`); await b.shot('lowhp_20pct');
+await b.evalIn(`(async()=>{ document.body.classList.add('rm'); await new Promise(r => setTimeout(r, 300)); return 1; })()`); await b.shot('lowhp_20pct_reduce_motion');
+out.reduceMotionAnimation = await b.evalIn(`getComputedStyle(document.getElementById('lowhp')).animationName`);
+console.log(JSON.stringify(out)); console.log(JSON.stringify(await b.evalIn('window.__errs.slice(0,2)'))); b.close(); setTimeout(() => process.exit(0), 300);

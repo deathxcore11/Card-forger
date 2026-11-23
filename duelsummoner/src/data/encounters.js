@@ -1,4 +1,4 @@
-// Sunken Colosseum encounters: counts, authored regions, costs and numbers. Spots are drawn each run from these regions
+﻿// Sunken Colosseum encounters: counts, authored regions, costs and numbers. Spots are drawn each run from these regions
 // (src/sim/world.js), so the map is learnable but never the same twice. Regions are polar: radius from the arena centre and
 // angle in degrees (0 = east, 90 = south). Heights: floor 0, stands 4, hall roofs 5.8.
 // Rule that keeps the economy honest: the free item (Witness Stones, far side of the floor), the free level (Deck Anvil, later,
@@ -21,9 +21,10 @@ export const ENCOUNTERS = {
   cardChests: {
     count: 8, basePrice: 30, growth: 2.4, cap: 6000,                        // 30, 72, 173, 415 ... each chest opened multiplies the next price (the run recordings: 30, then 72); capped
     placement: [{ n: 3, r: [10, 28], deg: [[0, 360]], h: 0 }, { n: 3, r: [36, 50], deg: [[0, 360]], h: 4 }, { n: 2, r: [53, 58], deg: [[0, 360]], h: 5.8 }],
-    rarityByOrder: ['common', 'common', 'common', 'rare', 'rare', 'rare', 'epic', 'epic']      // shown on the chest before you pay
+    rarityByOrder: ['common', 'common', 'common', 'rare', 'rare', 'rare', 'epic', 'epic']      // the lowest tier a chest can roll (a hidden floor): the tier is rolled and first seen when the chest is opened, never shown before
   },
   altar: { count: 1, regions: [{ r: [14, 24], deg: [[-25, 25]], h: 0 }], tributeBonus: 2, banishChoices: 3 },   // one landmark, two labelled actions
   minSpacing: 5,                                                          // spots keep this far from each other
   interactRange: 3.2
 };
+

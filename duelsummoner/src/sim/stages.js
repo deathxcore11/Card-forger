@@ -49,6 +49,7 @@ function initStage(g) {
   g.aceT = 0; g.fog = makeFog(); g.bDown = false; g.gateDown = null; g.circle = null; g.altar = null; g.stagePrompt = '';
   g.boss = { state: 'idle', early: false, phase: 1 };
   g.spawnAcc = 0; g.ringT = 0; g.golemT = 0; g.huntT = 0; g.killsAtStage = g.kills;
+  g.surgeAnn = [0, 0, 0]; g.surgeDone = [0, 0, 0];
   g.shades = []; g.shadeOn = false; g.shadeAge = 0; g.shadeNextAdd = 0; g.shadeWaveT = 0; g.afterGate = 0;
   g.flags.warden = g.flags.idols = true;                       // the classic timed elites are replaced by the timeline
 }
@@ -64,7 +65,7 @@ export function updateStages(g, dt) {
   g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3));
   g.maxAlive = Math.floor(D.cap.start + (D.cap.end - D.cap.start) * (m >= D.cap.minutes ? 1 : m / D.cap.minutes));
   g.stagePrompt = '';
-  shadesTick(g, dt);
+  shadesTick(g, dt); surgeTick(g);
 
   if (g.gateDown) { const sp = g.gateDown; g.gateDown = null; gateCleared(g, sp); return; }
   if (g.circle) { circleTick(g, dt); return; }
@@ -157,10 +158,27 @@ function gateCleared(g, sp) {
   g.emit('gatedown', g.stage);
 }
 
+// Surges: two named ones at about 40% and 70% of the stage clock (Stage 1: 2:48 and 4:54) and one when the gate wakes. The banner is up 4 s ahead, then 100 to 120 Husks at half HP close in from a ring round the duelist.
+const SURGE_NAMES = ['THE HORDE ANSWERS', 'THE HORDE ANSWERS AGAIN', 'THE GATE CALLS ITS DEAD'];
+function surgeTick(g) {
+  const S = g.stageSpec, G = g.gate; if (!S || !g.surgeAnn || g.mode === 'classic' || G.state === 'done' || g.boss && g.boss.state === 'active' && false) return;
+  const at = [S.clock * 0.4, S.clock * 0.7, S.gateWake];
+  for (let i = 0; i < 3; i++) {
+    if (!g.surgeAnn[i] && g.sc >= at[i] - 4 && g.sc < at[i] + 2) { g.surgeAnn[i] = 1; g.event('banner', SURGE_NAMES[i]); g.emit('surge', i); }
+    if (!g.surgeDone[i] && g.sc >= at[i]) {
+      g.surgeDone[i] = 1; if (!g.surgeAnn[i]) g.surgeAnn[i] = 1;
+      const n = 100 + Math.floor(g.rsp() * 21), p = g.p; let made = 0;
+      for (let k = 0; k < n; k++) { if (enemyCount(g.en) >= Math.max(g.maxAlive, 140)) break; const a = k / n * 6.283185307, r = 26 + (k % 3) * 4; if (spawnEnemy(g, 'husk', { x: p.x + cos(a) * r, z: p.z + sin(a) * r })) { g.en.hp[g.lastSlot] *= 0.5; made++; } }
+      g.surgeSize = made;
+    }
+  }
+}
+
 function circleTick(g, dt) {
-  const c = g.circle, p = g.p, dx = p.x - c.x, dz = p.z - c.z; c.t -= dt;
-  g.stagePrompt = 'Step into the Descent Circle (' + clockText(c.t) + ')';
-  if (dx * dx + dz * dz < RUNSPEC.circleRadius * RUNSPEC.circleRadius || c.t <= 0) { g.desc = { t: 0 }; g.circle = null; g.emit('descent', g.stage + 1); g.event('banner', 'You descend.'); }
+  const c = g.circle, p = g.p, dx = p.x - c.x, dz = p.z - c.z;       // the circle stays open: step in when you choose (greed time), while the Toll Shades rise on their own clock
+  const left = Math.max(0, RUNSPEC.shades.afterGateSeconds - g.afterGate);
+  g.stagePrompt = g.shadeOn ? 'Step into the Descent Circle. The Toll Shades are out.' : 'Step into the Descent Circle when you are ready (the Toll Shades rise in ' + clockText(left) + ')';
+  if (dx * dx + dz * dz < RUNSPEC.circleRadius * RUNSPEC.circleRadius) { g.desc = { t: 0 }; g.circle = null; g.emit('descent', g.stage + 1); g.event('banner', 'You descend.'); }
 }
 
 function altarTick(g) {

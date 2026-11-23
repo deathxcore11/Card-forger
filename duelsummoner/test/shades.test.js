@@ -1,4 +1,4 @@
-// Toll Shades, enemy-cap merging and the data behind them.
+﻿// Toll Shades, enemy-cap merging and the data behind them.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js';
@@ -43,12 +43,12 @@ test('a touch takes 25% of max LP as TRUE damage and can kill, even a 1-LP playe
   const d = mk(); d.sc = STAGES[0].clock; run(d, 0.2); for (const x of d.shades) x.cd = 99; d.shades[0].cd = 0; d.shades[0].x = d.p.x + 0.3; d.shades[0].z = d.p.z; d.p.dashT = 0.2; d.p.hp = 100; d.step(1 / 60, idle); assert.equal(d.p.hp, 100, 'a dash still dodges a shade');
 });
 
-test('shades come 60 s after the gate boss falls if the Descent is not taken (in Stage 3 the Final Altar waits; stages 1 and 2 pull you in after 15 s)', () => {
+test('shades come 60 s after the gate boss falls if the Descent is not taken (in Stage 3 the Final Altar waits; stages 1 and 2 keep the Descent Circle open and the Shades rise on their own clock)', () => {
   const g = mk(); g.god = true; g.stage = 2; g.stageSpec = g.stages[2]; g.sc = 430; g.p.x = g.map.gate.x; g.p.z = g.map.gate.z + 1; g.p.y = heightAt(g.p.x, g.p.z); run(g, 3.5, { ...idle, use: true });
   for (const sp of g.sp) if (sp.alive && sp.role === 'gate') g.damageSpecial(sp, 1e9, 0, 0, { noCrit: true, area: true }); run(g, 0.2); assert.ok(g.altar && !g.circle);
   run(g, 57); assert.equal(g.shades.length, 0); run(g, 4); assert.ok(g.shades.length > 0, 'rose 60 s after the King fell');
   const h = mk(); h.god = true; h.sc = 360; h.p.x = h.map.gate.x; h.p.z = h.map.gate.z + 1; h.p.y = heightAt(h.p.x, h.p.z); run(h, 3.5, { ...idle, use: true });
-  for (const sp of h.sp) if (sp.alive && sp.role === 'gate') h.damageSpecial(sp, 1e9, 0, 0, { noCrit: true, area: true }); run(h, 22); assert.equal(h.stage, 1, 'the Circle pulled the duelist down after 15 s'); run(h, 70); assert.equal(h.shades.length, 0, 'a fresh stage starts clean');
+  for (const sp of h.sp) if (sp.alive && sp.role === 'gate') h.damageSpecial(sp, 1e9, 0, 0, { noCrit: true, area: true }); run(h, 22); assert.equal(h.stage, 0, 'the Circle no longer pulls the duelist down; they step in when they choose'); assert.ok(h.circle, 'the Circle stays open'); run(h, 45); assert.ok(h.shades.length > 0, 'the Toll Shades rose 60 s after the gate boss'); h.p.x = h.circle.x; h.p.z = h.circle.z; run(h, 7); assert.equal(h.stage, 1, 'stepping in descends'); assert.equal(h.shades.length, 0, 'a fresh stage starts clean');
 });
 test('in Overtime after Duel On a wave of 3 shades rises every 60 s (up to 24)', () => {
   const g = mk(); g.god = true; g.stage = 2; g.stageSpec = g.stages[2]; g.duelOn = true; g.shadeWaveT = 0.5; g.otAcc = 0; run(g, 1); assert.equal(g.shades.length, 3);
@@ -65,3 +65,4 @@ test('past the enemy cap a spawn merges into the nearest of its kind: total HP k
   const idx = Array.from(g.en.mrg).indexOf(Math.max(...g.en.mrg)); const xpSum = () => Array.from(g.pick.val).reduce((a, v, i) => a + (g.pick.alive[i] && g.pick.kind[i] === 0 ? v : 0), 0); const xp0 = xpSum(); const m = g.en.mrg[idx];
   killEnemy(g, idx); const xp1 = xpSum(); assert.equal(xp1 - xp0, 1 + m, 'the kill drops the summed reward');
 });
+
