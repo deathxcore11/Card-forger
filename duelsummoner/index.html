@@ -28,6 +28,8 @@
   .zone { height:calc(var(--tz) * 3.7); border:2px solid var(--line); background:#1b1220ee; font-size:var(--tz); line-height:1.15; text-shadow:none;
     display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--dim); padding:0 2px; }
   .zone.full { border-color:var(--ink); color:var(--ink); }
+  .zone { position:relative; } .zone .pips { display:flex; gap:2px; margin:2px 0; } .zone .pips u { width:calc(var(--tz) * 0.42); height:calc(var(--tz) * 0.42); background:#3a2d4d; display:block; text-decoration:none; } .zone .pips u.on { background:#ffd23f; }
+  .zone > span { font-size:.85em; white-space:nowrap; } .zone .fm { position:absolute; bottom:1px; right:5px; font-style:normal; color:#ffd23f; font-size:max(12px, calc(var(--tz) * 0.95)); text-shadow:none; }
   .zone b { font-size:max(12px, calc(var(--tz) * 0.9)); color:#d8c08a; font-weight:normal; }
   .zone.st { border-style:dashed; }
   .zone.st.full { border-style:solid; }
@@ -219,6 +221,7 @@
   <p class="stat" id="dCause" style="color:#ff9a7a;font-size:22px"></p>
   <p id="dBreakdown" style="font-size:14px"></p>
   <p id="dBracket" style="font-size:14px;color:#c9b8f0"></p>
+  <div id="dShare" style="width:min(520px,90vw);text-align:left"></div>
   <p id="dBoard" style="font-size:14px;color:#d8c08a"></p>
   <p class="stat">Time <span id="dTime">0:00</span> &middot; Level <span id="dLevel">1</span></p>
   <p class="stat">Enemies defeated <span id="dKills">0</span> &middot; Fusions <span id="dFusions">0</span></p>

@@ -1,4 +1,4 @@
-﻿// Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
+// Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
 import { CFG } from './data/config.js';
 import { Game } from './sim/game.js';
 import { Input } from './core/input.js';
@@ -242,6 +242,8 @@ function results() {
   $('dBreakdown').textContent = top ? 'Damage taken: ' + top : '';
   { const BD = game.bracketDmg; let tot = 0, best = 0; for (let i = 1; i < 10; i++) { tot += BD[i]; if (BD[i] > BD[best]) best = i; }          // which bracket the extra damage came from
     $('dBracket').textContent = tot > 0 && best ? 'What broke the game: ' + BRACKET_NAMES[best] + ' (' + Math.round(BD[best] / tot * 100) + '% of your extra damage)' : ''; }
+  { const rows = Object.entries(game.dealtLog).map(([k, a]) => [k, a.reduce((s, v) => s + (v || 0), 0)]).filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]), tot = rows.reduce((s, r) => s + r[1], 0);      // a bar for every source with its share of all the damage you dealt
+    $('dShare').innerHTML = tot > 0 ? '<div class="dim" style="margin:6px 0 2px">Damage dealt, by source</div>' + rows.slice(0, 7).map(r => { const p = Math.round(r[1] / tot * 100); return '<div style="display:grid;grid-template-columns:38% 1fr 3.2em;gap:6px;align-items:center;margin:2px 0"><span style="overflow:hidden;white-space:nowrap;text-transform:capitalize">' + r[0].replace(/-/g, ' ') + '</span><span style="background:#2a2036;height:0.9em;display:block"><i style="display:block;height:100%;width:' + Math.max(2, p) + '%;background:#ffd23f"></i></span><span style="text-align:right">' + p + '%</span></div>'; }).join('') : ''; }
   drawHud(game, true); setMode('dead');
 }
 // count-ups on the results screen (instant with reduce motion)

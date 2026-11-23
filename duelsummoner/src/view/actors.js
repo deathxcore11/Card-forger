@@ -1,4 +1,4 @@
-﻿// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
+// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
 // telegraphs and effects, pickups. Positions are blended between the last two sim ticks so any refresh rate looks smooth.
 import { CFG } from '../data/config.js';
 import { KIND_LIST } from '../data/enemies.js';
@@ -165,15 +165,15 @@ export class Actors {
 
   // code-built staff in the right hand (the -X hand facing +Z): wood shaft, iron collar with four rivets, blue crystal cube with a cyan spiral rune
   _attachStaff(g, hasModel) {
-    const staff = new T.Group(), s = hasModel ? g.userData.scale : 1, L = 1.6 / s, u = 1 / s;
-    const shaft = new T.Mesh(new T.CylinderGeometry(0.03 * u, 0.035 * u, L, 6), lambert(0x7a4a26)); shaft.position.y = L / 2; staff.add(shaft);
-    const collar = new T.Mesh(new T.CylinderGeometry(0.06 * u, 0.06 * u, 0.1 * u, 8), lambert(0x5a5650)); collar.position.y = L; staff.add(collar);
-    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2, rv = new T.Mesh(new T.BoxGeometry(0.02 * u, 0.02 * u, 0.02 * u), lambert(0x9a968c)); rv.position.set(Math.cos(a) * 0.065 * u, L, Math.sin(a) * 0.065 * u); staff.add(rv); }
+    const staff = new T.Group(), s = hasModel ? g.userData.scale : 1, L = 1.9 / s, u = 1 / s;           // a taller, thicker staff so the Rune Apprentice reads from the game camera
+    const shaft = new T.Mesh(new T.CylinderGeometry(0.055 * u, 0.065 * u, L, 6), lambert(0x7a4a26)); shaft.position.y = L / 2; staff.add(shaft);
+    const collar = new T.Mesh(new T.CylinderGeometry(0.1 * u, 0.1 * u, 0.12 * u, 8), lambert(0x5a5650)); collar.position.y = L; staff.add(collar);
+    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2, rv = new T.Mesh(new T.BoxGeometry(0.035 * u, 0.035 * u, 0.035 * u), lambert(0x9a968c)); rv.position.set(Math.cos(a) * 0.105 * u, L, Math.sin(a) * 0.105 * u); staff.add(rv); }
     const c = document.createElement('canvas'); c.width = c.height = 16; const x = c.getContext('2d'); x.fillStyle = '#3a6cff'; x.fillRect(0, 0, 16, 16); x.strokeStyle = '#bff8ff'; x.lineWidth = 1; x.beginPath();
     for (let a = 0; a < 12; a += 0.2) { const r = 0.6 + a * 0.55, px = 8 + Math.cos(a) * r, py = 8 + Math.sin(a) * r; if (a === 0) x.moveTo(px, py); else x.lineTo(px, py); } x.stroke();
     const tex = new T.Texture(c); tex.magFilter = tex.minFilter = T.NearestFilter; tex.needsUpdate = true;
-    const crystal = new T.Mesh(new T.BoxGeometry(0.22 * u, 0.22 * u, 0.22 * u), [0, 1, 2, 3, 4, 5].map(f => (f === 4 ? new T.MeshBasicMaterial({ map: tex }) : new T.MeshBasicMaterial({ color: 0x3a6cff }))));
-    crystal.position.y = L + 0.2 * u; crystal.rotation.y = 0.3; staff.add(crystal);
+    const crystal = new T.Mesh(new T.BoxGeometry(0.3 * u, 0.3 * u, 0.3 * u), [0, 1, 2, 3, 4, 5].map(f => (f === 4 ? new T.MeshBasicMaterial({ map: tex }) : new T.MeshBasicMaterial({ color: 0x3a6cff }))));
+    crystal.position.y = L + 0.26 * u; crystal.rotation.y = 0.3; staff.add(crystal);
     const hand = hasModel ? [-0.325, -0.016, -0.008] : [-0.5 / (hasModel ? 1 : 1), 0.5, 0.1];
     staff.position.set(hand[0], hand[1] - 0.0, hand[2]);
     staff.rotation.z = -0.06;
@@ -400,10 +400,10 @@ export class Actors {
     }
     this.bolts.count = nh; this.bolts.instanceMatrix.needsUpdate = true;
     { const S = this.shadow, dd = this.d; let ns = 0;       // contact shadows follow the ground under everything that walks
-      const put = (x, z, r) => { if (ns >= S.instanceMatrix.count) return; dd.position.set(x, heightGround(x, z) + 0.07, z); dd.rotation.set(0, 0, 0); dd.scale.setScalar(r); dd.updateMatrix(); S.setMatrixAt(ns++, dd.matrix); };
+      const put = (x, z, r, y) => { if (ns >= S.instanceMatrix.count) return; const gy = heightGround(x, z), up = y === undefined ? 0 : Math.max(0, y - gy); dd.position.set(x, gy + 0.07, z); dd.rotation.set(0, 0, 0); dd.scale.setScalar(r * Math.max(0.4, 1 / (1 + up * 0.22))); dd.updateMatrix(); S.setMatrixAt(ns++, dd.matrix); };      // a shadow under everything, smaller (so lighter) the higher it is
       if (this.rig && !(g.over && !g.won)) put(px, pz, 0.95);
-      for (const m of g.field.monsters) if (m) { const me = this.monsters.get(m); if (me && me.visible && !me.userData.fly && !me.userData.crit) put(me.position.x, me.position.z, 0.6 * (me.userData.size || 1)); }
-      const e = g.en, cp = cam; for (let i = 0; i < e.max; i++) if (e.alive[i]) { const dx = e.x[i] - cp.x, dz = e.z[i] - cp.z; if (dx * dx + dz * dz < 3600) put(e.x[i], e.z[i], 0.5 + KIND_LIST[e.kind[i]].radius * 0.9); }
+      for (const m of g.field.monsters) if (m) { const me = this.monsters.get(m); if (me && me.visible && !me.userData.crit) put(me.position.x, me.position.z, 0.6 * (me.userData.size || 1), me.userData.fly ? me.position.y - 0.5 : undefined); }
+      const e = g.en, cp = cam; for (let i = 0; i < e.max; i++) if (e.alive[i]) { const dx = e.x[i] - cp.x, dz = e.z[i] - cp.z; if (dx * dx + dz * dz < 3600) put(e.x[i], e.z[i], 0.5 + KIND_LIST[e.kind[i]].radius * 0.9, e.y[i]); }
       S.count = ns; S.instanceMatrix.needsUpdate = true; }
     this.cards.count = nc; this.fire.count = nf; this.lob.count = nl;
     this.cards.instanceMatrix.needsUpdate = this.fire.instanceMatrix.needsUpdate = this.lob.instanceMatrix.needsUpdate = true;

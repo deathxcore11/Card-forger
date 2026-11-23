@@ -18,6 +18,8 @@ function buildZones() {
   for (let i = 0; i < FIELD_RULES.spellTrapZones; i++) z.insertAdjacentHTML('beforeend', '<div class="zone st" id="sz' + i + '"></div>');
   zonesBuilt = true;
 }
+const EL_COL = { fire: '#ff9a4a', lightning: '#7fe0ff' }, ROMAN = ['I', 'II', 'III'];
+const pips = (n, max) => '<i class="pips">' + Array.from({ length: max }, (_, k) => '<u' + (k < n ? ' class="on"' : '') + '></u>').join('') + '</i>';
 const stars = (n, max) => '*'.repeat(n) + '.'.repeat(Math.max(0, max - n));
 
 function runClock(g) {
@@ -75,10 +77,11 @@ export function drawHud(g, force) {
   for (let i = 0; i < S.length; i++) { const id = S[i] ? S[i].id : '', lv = S[i] ? S[i].level : 0, rc = S[i] ? S[i].cd > 0 : false; if (sM[i] !== id || sL[i] !== lv || sR[i] !== rc) { sM[i] = id; sL[i] = lv; sR[i] = rc; zdiff = true; } }
   if (zdiff) {
     g.field.monsters.forEach((m, i) => {
-      const el = $('mz' + i); el.className = 'zone' + (m ? ' full' : '');
+      const el = $('mz' + i); el.className = 'zone' + (m ? ' full' : ''); el.style.borderColor = ''; el.style.boxShadow = '';
       if (!m) { el.innerHTML = 'empty<b>MONSTER ' + (i + 1) + '</b>'; return; }
       const D = MONSTERS[m.id] || FUSIONS[m.id], max = LEVELS.monsterMax;
-      el.innerHTML = '<span style="color:#fff3d0;font-weight:bold">' + D.name + '</span><b>' + stars(m.level, max) + ' L' + m.level + '  form ' + (formOf(m.id, m.level) + 1) + ' of 3</b>';
+      const els = D.elements || []; if (els[0]) el.style.borderColor = EL_COL[els[0]] || ''; if (els[1] && els[1] !== els[0]) el.style.boxShadow = 'inset 0 0 0 2px ' + (EL_COL[els[1]] || 'transparent');     // the element colours the border (two elements: the second shows inside it)
+      el.innerHTML = '<em class="fm" title="form ' + (formOf(m.id, m.level) + 1) + ' of 3">' + ROMAN[formOf(m.id, m.level)] + '</em><span style="color:#fff3d0;font-weight:bold">' + D.name + '</span>' + pips(m.level, max) + '<b>L' + m.level + '</b>';
     });
     g.field.spells.forEach((s, i) => {
       const el = $('sz' + i); el.className = 'zone st' + (s ? ' full' : '');

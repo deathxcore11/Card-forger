@@ -38,7 +38,7 @@ export function damageEnemy(g, i, dmg, o) {
   if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) { d *= K.critBase; crit = 1; }
   if (BD) { const x1 = b1 - 1, x2 = b2 - 1, x3 = b3 - 1, x4 = b4 - 1, x5 = crit ? K.critBase - 1 : 0, x8 = b8 - 1, tot = x1 + x2 + x3 + x4 + x5 + x8; if (tot > 1e-9) { const sh = d / tot; BD[1] += sh * x1; BD[2] += sh * x2; BD[3] += sh * x3; BD[4] += sh * x4; BD[5] += sh * x5; BD[8] += sh * x8; } }       // where the damage came from, for the end-of-run screen (each bracket's share of the extra damage; no logs, so it stays inside the sim's maths rule)
   g.logDealt(d);
-  e.hp[i] -= d; e.flash[i] = 0.12; g.emit('hit', d, e.x[i], e.z[i], crit | (el << 1));       // flags for the view: bit 0 crit, bits 1+ element mask
+  e.hp[i] -= d; e.flash[i] = 0.07; g.emit('hit', d, e.x[i], e.z[i], crit | (el << 1));       // flags for the view: bit 0 crit, bits 1+ element mask
   if (el & ELEMENTS.fire.bit) { e.burn[i] = ELEMENTS.fire.burn.dur + g.mods.burnDur; e.burnDps[i] = ELEMENTS.fire.burn.dps + g.mods.burnDps; }
   const chainAfter = (el & ELEMENTS.lightning.bit) && !o.noChain;
   if (o.kx !== undefined) {
