@@ -20,7 +20,7 @@ const CSS = `
 export class TouchControls {
   // host: { yawLook(dx,dy), onTap(x,y), onPause() }; get(): the live Input object whose .touch this fills
   constructor(input, hooks) {
-    this.input = input; this.hooks = hooks; this.enabled = false; this.visible = false; this.lastTouch = 0;
+    this.input = input; this.hooks = hooks; this.enabled = false; this.visible = false; this.lastTouch = 0; this.lastPad = 0;
     this.state = { f: 0, r: 0, jump: false, slide: false, dash: false, use: false };
     input.touch = this.state;
     this.stick = null; this.look = null; this.btns = {};
@@ -33,7 +33,9 @@ export class TouchControls {
   }
   _padPresent() { const pads = navigator.getGamepads ? navigator.getGamepads() : []; for (const p of pads) if (p && p.connected) return true; return false; }
   _seen() { this.lastTouch = performance.now(); this.touchDevice = true; document.body.classList.add('touch'); this._refresh(); }
-  _refresh() { const show = this.enabled && this.touchDevice && !(this._padPresent() && performance.now() - this.lastTouch > 4000); if (show !== this.visible) { this.visible = show; this.root.classList.toggle('off', !show); } }
+  // the overlay goes away on the frame a pad is used and comes back on the next touch (whichever was used last wins)
+  padUsed() { this.lastPad = performance.now(); this.lastTouch = 0; this._refresh(); }
+  _refresh() { const show = this.enabled && this.touchDevice && !(this._padPresent() && this.lastPad > this.lastTouch); if (show !== this.visible) { this.visible = show; this.root.classList.toggle('off', !show); } }
   setEnabled(on) { this.enabled = on; if (!on) this._release(); this._refresh(); }
   get isTouch() { return !!this.touchDevice; }
 

@@ -14,7 +14,7 @@ import { Actors } from './view/actors.js';
 import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
 import { drawHud, showFlash, showBanner, drawStatPanel } from './view/hud.js';
-import { showOffer, offerKey } from './view/offer.js';
+import { showOffer, offerKey, offerGuard } from './view/offer.js';
 import { loadModel, loadPuffTexture } from './view/models.js';
 import { spawnEnemy } from './sim/enemies.js';
 import { Props } from './view/props.js';
@@ -30,6 +30,7 @@ import { DIFF_CHIPS, DUELIST_INFO } from './data/progress.js';
 import { packReplay, deflateInBrowser } from './core/replay.js';
 import { boardUrl, sendAndFollow } from './core/board.js';
 import { TouchControls } from './core/touch.js';
+import { PadEdges, firstPad, move as padMove, press as padPressEl, adjust as padAdjust, back as padBack, clearRing, ringEl } from './core/padnav.js';
 import { loadRig } from './view/rig.js';
 import { BRACKET_NAMES } from './sim/ledger.js';
 import { loadCreature } from './view/creature.js';
@@ -128,10 +129,10 @@ bindSettings();
 
 function lock() { if (canvas.requestPointerLock) { try { canvas.requestPointerLock(); } catch (e) {} } }
 function setMode(m) {
-  MODE = m; input.enabled = m === 'play';
+  MODE = m; input.enabled = m === 'play'; clearRing();
   for (const [id, mm] of [['startScreen', 'start'], ['pauseScreen', 'pause'], ['deadScreen', 'dead'], ['offerScreen', 'offer']]) $(id).classList.toggle('on', m === mm);
   if (m !== 'play' && document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
-  $('hint').textContent = m === 'play' && !document.pointerLockElement && !(touch && touch.isTouch) ? 'Click the map to look around' : ''; if (touch) touch.setEnabled(m === 'play');
+  $('hint').textContent = m === 'play' && !document.pointerLockElement && !(touch && touch.isTouch) && !firstPad() ? 'Click the map to look around' : ''; if (touch) touch.setEnabled(m === 'play');
   last = 0;
 }
 function begin(mode, sel) {
@@ -166,7 +167,42 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Escape' && MODE === 'play' && !document.pointerLockElement) setMode('pause');
   if (MODE === 'offer' && !e.repeat) offerKey(game, e.code, menu);
 });
+// Pad in every mode: Start pauses and resumes, Select opens the map, B backs out, d-pad and stick move the gold ring, A presses, X redraws and Y passes in an offer.
+const padEdges = new PadEdges(); let fitN = 0;
+function padFrame(now) {
+  const pad = firstPad(), names = padEdges.poll(pad, now / 1000);
+  if (pad && padEdges.any(pad) && touch) touch.padUsed();
+  if (!names.length) return;
+  const rv = document.getElementById('reveal');
+  if (rv) { if (names.includes('a') || names.includes('b') || names.includes('start')) rv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); return; }       // A skips the chest reveal (once you have seen it)
+  for (const n of names) padPress(n);
+}
+function padPress(n) {
+  if (MODE === 'play') {
+    if (mapOpen) { if (n === 'select' || n === 'b' || n === 'start') toggleMap(false); return; }
+    if (n === 'start') setMode('pause'); else if (n === 'select') toggleMap(true);
+    return;
+  }
+  if (MODE === 'offer') {
+    if (!game.offer) return;
+    if (n === 'x') { offerKey(game, 'KeyR', menu); return; } if (n === 'y') { offerKey(game, 'KeyP', menu); return; } if (n === 'b') { offerKey(game, 'KeyL', menu); return; }
+    if (offerGuard()) return;                                                         // nothing is taken in the first 0.3 s
+  }
+  if (MODE === 'pause' && (n === 'start' || n === 'b')) { $('resumeBtn').click(); return; }
+  if (n === 'b') { padBack(); return; }
+  if (n === 'a') { if (!ringEl()) padMove('down'); else padPressEl(); return; }
+  if (n === 'left' || n === 'right') { if (padAdjust(n)) return; }
+  if (n === 'up' || n === 'down' || n === 'left' || n === 'right') padMove(n);
+}
 window.addEventListener('blur', () => { if (MODE === 'play') setMode('pause'); });
+// the prompt and the fusion line sit just above the zone bar, and the items list stays clear of it, whatever the bar's height is
+function fitHud() {
+  const z = $('zones').getBoundingClientRect(); if (!z.width) return;
+  const top = innerHeight - z.top, ps = $('prompt'), fu = $('fusion');
+  ps.style.bottom = Math.round(top + 8) + 'px'; fu.style.bottom = Math.round(top + 8 + ps.offsetHeight + 4) + 'px';
+  $('itemsList').style.maxWidth = Math.max(120, Math.round(z.left - 24)) + 'px';
+}
+window.addEventListener('resize', fitHud);
 document.addEventListener('visibilitychange', () => { if (document.hidden && MODE === 'play') setMode('pause'); });
 
 // Menu choices enter the sim as input on a tick, like movement does.
@@ -336,7 +372,7 @@ function drawTags() {
 function frame(now) {
   requestAnimationFrame(frame);
   if (fpsCap && now - lastRender < 1000 / fpsCap - 2) return; lastRender = now;
-  syncMap();
+  syncMap(); padFrame(now); if (++fitN % 10 === 1) fitHud();
   const dtReal = last ? Math.min(0.1, (now - last) / 1000) : 0;
   let alpha = game.alpha;
   if (MODE === 'play') {
@@ -346,7 +382,7 @@ function frame(now) {
     if (holdT > 0) holdT -= dtReal;
     if (dtReal > 0 && !frozen && !mapOpen && fx.stop <= 0 && holdT <= 0) {
       // a one-tick press (E) must survive frames that run no sim tick (above 60 fps most frames run none): latch it until a tick has consumed it
-      const cmd = input.command();
+      const cmd = input.command(dtReal);
       if (autoWalk) {                                                        // smart tap: steer to the thing you tapped, open it on arrival; any stick or key input cancels
         const p = game.p, dx = autoWalk.x - p.x, dz = autoWalk.z - p.z, d = Math.hypot(dx, dz), sy = Math.sin(input.yaw), cy = Math.cos(input.yaw);
         if (cmd.f || cmd.r || (performance.now() - autoWalk.t0) > 6000) autoWalk = null;
@@ -405,7 +441,7 @@ requestAnimationFrame(frame);
 window.__ds = {
   bars,
   renderer,
-  game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
+  fitHud, game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
   start: begin, begin, results, setMode, menus, fx, onEvent, save,
   pickDuelist, freeze: v => { frozen = !!v; },
