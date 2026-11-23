@@ -564,6 +564,7 @@ function duelistPixels() {
   return { alone, visible, silhouette };
 }
 window.__ds = {
+  get grass() { return grassMesh; },
   duelistPixels, see: SEE, tagBlocked,
   bars,
   summonPos: () => { const g = actors.monsters.values().next().value; return g ? { x: g.position.x, y: g.position.y, z: g.position.z } : null; },

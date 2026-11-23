@@ -101,9 +101,9 @@ let gtex = null;
 function groundTex() {
   if (gtex) return gtex; const cv = document.createElement('canvas'); cv.width = cv.height = 256; const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, 256, 256); let s = 99; const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
   const wrap = (x, y, rad, col) => { c.fillStyle = col; for (const dx of [-256, 0, 256]) for (const dy of [-256, 0, 256]) { c.beginPath(); c.arc(x + dx, y + dy, rad, 0, 6.283); c.fill(); } };
-  for (let i = 0; i < 70; i++) wrap(r() * 256, r() * 256, 12 + r() * 34, 'rgba(120,95,50,0.16)');
-  for (let i = 0; i < 40; i++) wrap(r() * 256, r() * 256, 10 + r() * 24, 'rgba(255,245,215,0.20)');
-  for (let i = 0; i < 900; i++) wrap(r() * 256, r() * 256, 0.8 + r() * 1.6, r() < 0.6 ? 'rgba(90,70,40,0.35)' : 'rgba(255,250,235,0.45)');
+  for (let i = 0; i < 70; i++) wrap(r() * 256, r() * 256, 12 + r() * 34, 'rgba(120,95,50,0.07)');
+  for (let i = 0; i < 40; i++) wrap(r() * 256, r() * 256, 10 + r() * 24, 'rgba(255,245,215,0.09)');
+  for (let i = 0; i < 900; i++) wrap(r() * 256, r() * 256, 0.8 + r() * 1.6, r() < 0.6 ? 'rgba(90,70,40,0.2)' : 'rgba(255,250,235,0.26)');
   gtex = new T.CanvasTexture(cv); gtex.wrapS = gtex.wrapT = T.RepeatWrapping; gtex.magFilter = T.LinearFilter; gtex.minFilter = T.LinearMipmapLinearFilter; return gtex;
 }
 // the pool lip: a low carved stone ring, 0.6 m wide and 0.21 m tall (the water sits 0.15 m below it), faceted in 40 blocks in the ruinstone ramp with a few light faces on top, and a dark wet band on the inner wall

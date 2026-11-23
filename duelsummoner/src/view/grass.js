@@ -9,9 +9,9 @@ import { MAP } from '../data/map.js';
 import { heightAt } from '../sim/terrain.js';
 import { roadPath, roadDist, poolSpots } from '../gen/road.js';
 import { strHash, noise2 } from '../gen/scatter.js';
-import { GLSL, engineUniforms, E } from './engine.js';
+import { GLSL, engineUniforms, E, MASK } from './engine.js';
 
-const CELL = 1.5, BLADES = 24, HALF = 232, MN = 256;
+const CELL = 1.2, BLADES = 36, HALF = 232, MN = 256;
 export function detailLevel() { const q = new URLSearchParams(location.search).get('detail'); return q === 'low' || q === 'medium' ? q : 'high'; }
 
 // density map: R = how thick (0 none, 255 full), G = ground height (0 to 4 m)
@@ -43,12 +43,12 @@ function bladeGeometry(slots) {
 
 export function buildGrass(map, stageIndex, S, theme, level) {
   level = level || detailLevel(); if (level === 'low') return null;
-  const W = level === 'medium' ? 28 : 40, col = h => new T.Color(h);
-  const u = Object.assign({ uMask: { value: bakeDensity(map, S) }, uBox: { value: new T.Vector4(-HALF, -HALF, 2 * HALF, 2 * HALF) }, uPl: E.pl, uW: { value: W }, uR: { value: W * CELL * 0.47 },
-    uC0: { value: col(theme.bladeCols[0]).multiplyScalar(0.7) }, uC1: { value: col(theme.bladeCols[1]) }, uC2: { value: col(theme.leaf[0]).multiplyScalar(0.8) }, uC3: { value: col(theme.leaf[2]) } }, engineUniforms(), T.UniformsUtils.clone(T.UniformsLib.fog));
+  const W = level === 'medium' ? 22 : 32, col = h => new T.Color(h);
+  const u = Object.assign({ uMask: { value: bakeDensity(map, S) }, uBox: { value: new T.Vector4(-HALF, -HALF, 2 * HALF, 2 * HALF) }, uPl: E.pl, uW: { value: W }, uR: { value: W * CELL * 0.47 }, uShT: MASK.tex, uShB: MASK.box, uShK: MASK.k,
+    uC0: { value: col(theme.bladeCols[0]).multiplyScalar(0.75) }, uC1: { value: col(theme.bladeCols[1]) }, uC2: { value: col(theme.grass ? theme.grass[0] : 0x3f6e4e) }, uC3: { value: col(theme.grass ? theme.grass[1] : 0x74ae72) } }, engineUniforms(), T.UniformsUtils.clone(T.UniformsLib.fog));
   const mat = new T.ShaderMaterial({ uniforms: u, fog: true, side: T.DoubleSide,
     vertexShader: GLSL.slice(0, GLSL.indexOf('float bayer()')) + `
-    uniform sampler2D uMask; uniform vec4 uBox; uniform vec3 uPl; uniform float uW; uniform float uR; uniform vec3 uC0; uniform vec3 uC1; uniform vec3 uC2; uniform vec3 uC3;
+    uniform sampler2D uMask; uniform vec4 uBox; uniform vec3 uPl; uniform float uW; uniform float uR; uniform vec3 uC0; uniform vec3 uC1; uniform vec3 uC2; uniform vec3 uC3; uniform sampler2D uShT; uniform vec4 uShB; uniform float uShK;
     attribute vec4 aBl; attribute float aSlot; varying vec3 vCol;
     #include <fog_pars_vertex>
     void main() {
@@ -64,15 +64,16 @@ export function buildGrass(map, stageIndex, S, theme, level) {
       vec2 root = centre + aBl.xy;
       float gy = m.g * 4.0;
       vec2 away = root - uPl.xz; float pr = length(away), push = clamp(1.0 - pr / 1.5, 0.0, 1.0); push *= push;
-      height *= 1.0 - 0.45 * push;
-      float width = 0.05 * (1.0 + dist * 0.06);
+      height *= (1.0 - 0.45 * push) * smoothstep(1.2, 2.4, length(cameraPosition - vec3(root.x, 0.0, root.y)));
+      float width = 0.075 * (1.0 + dist * 0.06);
       vec2 sd = vec2(cos(aBl.z), sin(aBl.z));
       float g = gust(centre), bend = cy * cy * ((0.08 + 0.92 * g) * 0.2 + sin(uT * 5.0 + centre.x * 2.1 + centre.y * 1.7 + aBl.x * 6.0) * 0.015 * g);
       vec2 wd = normalize(uWind.xy), lean = wd * bend + normalize(away + 1e-4) * push * 0.4 * cy;
       vec3 wp = vec3(root.x + sd.x * side * width * 0.5 * (1.0 - cy) + lean.x, gy + cy * height, root.y + sd.y * side * width * 0.5 * (1.0 - cy) + lean.y);
-      float zone = N(centre * 0.02 + 0.3).a, tone = step(0.5, zone + (hh - 0.5) * 0.35);
-      vec3 base = mix(mix(uC0, uC1, hh), mix(uC2, uC3, hh), tone);
-      vCol = base * mix(0.62, 1.05, cy);
+      float zone = N(centre * 0.02 + 0.3).a, tone = step(0.32, zone + (hh - 0.5) * 0.35);
+      vec3 base = mix(mix(uC0, uC1, hh), uC2, tone);
+      vCol = mix(base, mix(uC3, uC1, hh * 0.7), tone * smoothstep(0.35, 1.0, cy) * 0.75) * mix(0.74, 1.08, cy);
+      { vec2 sp = root - normalize(uWind.xy) * (0.12 + 0.88 * g) * 0.6; vCol *= 1.0 - uShK * smoothstep(0.42, 0.58, texture2D(uShT, (sp - uShB.xy) / uShB.zw).r); }
       vec4 mvPosition = viewMatrix * vec4(wp, 1.0); gl_Position = projectionMatrix * mvPosition;
       #include <fog_vertex>
     }`,

@@ -4,6 +4,7 @@
 import { scatterStage, mulberry } from '../gen/scatter.js';
 import { seeInstanced } from './seethrough.js';
 import { windify } from './engine.js';
+import { detailLevel } from './grass.js';
 
 // the top-down shadow mask (one 512 x 512 texture over the 464 m square, baked once per stage): a soft disc for every tree canopy, boulder and bush, pushed away from the sun by its height
 function bakeShadowMask(S) {
@@ -90,9 +91,9 @@ export function buildScenery(map, stageIndex, models) {
   for (let v = 0; v < 4; v++) add(treeGeo(theme, v), S.trees[v], windify(seeInstanced(mat0.clone(), { c: [0, 7.5, 0], r: v < 2 ? 4.8 : 3.7, keep0: 0.25 }, { top: v < 2 ? 6.4 : 5.6 }), { h: 9, lean: 0.35, flut: 0.03 }), false, 3, v);       // trunk and canopy are one mesh per variant (aPart 0 and 1); each variant has its own material (its canopy radius), still 4 draws
   { const rg = rockGeo(theme, 0), all = [].concat(S.rocks[0], S.rocks[1], S.rocks[2]); rg.computeBoundingSphere(); const bs = rg.boundingSphere; add(rg, all, seeInstanced(mat.clone(), { c: [bs.center.x, bs.center.y, bs.center.z], r: bs.radius, keep0: 0.25 })); }       // one shared boulder shape; size, squash and turn make the variety
   const fadeOut = (m, nearD, farD) => { const c = m.clone(); c.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n#ifdef USE_INSTANCING\n { float dd_ = distance((modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz, cameraPosition); if (dd_ < ' + nearD.toFixed(1) + ' || dd_ > ' + farD.toFixed(1) + ') transformed *= 0.0; }\n#endif'); }; return c; };       // small scatter collapses in the vertex shader: nothing within 4 m of the camera, and a far cut-off, with no per-frame upload
-  { const bg = bushGeo(theme); bg.computeBoundingSphere(); const bs = bg.boundingSphere; add(bg, S.bushes, seeInstanced(fadeOut(mat, 0, 90), { c: [bs.center.x, bs.center.y, bs.center.z], r: bs.radius, keep0: 0.25 })); }
+  { const bg = bushGeo(theme); bg.computeBoundingSphere(); const bs = bg.boundingSphere; add(bg, S.bushes, seeInstanced(fadeOut(mat, 4.5, 90), { c: [bs.center.x, bs.center.y, bs.center.z], r: bs.radius, keep0: 0.25 })); }
   if (theme.special) { const sg = theme.special === 'crystal' ? crystalGeo(theme) : mushroomGeo(theme); sg.computeBoundingSphere(); const bs = sg.boundingSphere; add(sg, S.special, seeInstanced(mat.clone(), { c: [bs.center.x, bs.center.y, bs.center.z], r: bs.radius, keep0: 0.25 })); }
-  add(grassGeo(theme), S.grass, windify(fadeOut(matBoth, 4, 70), { h: 0.35, lean: 0.2, flut: 0.03 }));
+  if (detailLevel() === 'low') add(grassGeo(theme), S.grass, windify(fadeOut(matBoth, 4, 70), { h: 0.35, lean: 0.2, flut: 0.03 }));       // the old tufts only stand in when the blade grass is off (Detail Low)
   add(flowerGeo(), S.flowers.map(f => [f[0], f[1], f[2], f[3], f[4], theme.flowerCols[f[5] % theme.flowerCols.length]]), windify(fadeOut(matBoth, 4, 50), { h: 0.5, lean: 0.14, flut: 0.02 }), true);
   for (const k of kinds) {
     const mesh = new T.InstancedMesh(k.geo, k.mat, k.list.length), m = new T.Matrix4(), q = new T.Quaternion(), s = new T.Vector3(), p = new T.Vector3(), up = new T.Vector3(0, 1, 0), c = new T.Color();
