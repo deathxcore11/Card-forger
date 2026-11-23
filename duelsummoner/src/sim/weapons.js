@@ -128,7 +128,7 @@ export function updateBolts(g, dt) {
 // ---- pickups: crystals, coins, hearts ----
 const MAG = { x: 0, y: 0, z: 0 };
 export function updatePickups(g, dt) {
-  const m = g.pick, p = g.p, range = CFG.xp.magnet * (1 + g.mods.pickup);
+  const m = g.pick, p = g.p, range = CFG.xp.magnet * (1 + g.mods.pickup) * (g.frenzyT > 0 ? 2 : 1);
   for (let i = 0; i < m.max; i++) {
     if (!m.alive[i]) continue;
     const dx = p.x - m.x[i], dz = p.z - m.z[i], d = Math.sqrt(dx * dx + dz * dz) || 0.001;

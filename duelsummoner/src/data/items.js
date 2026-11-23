@@ -28,12 +28,14 @@ export const ITEM_CAPS = { move: 1.0, crit: 0.6, dashCd: 0.6, trapRecharge: 0.6,
 export const PLANNED_ITEMS = ['Summoner\'s Chalk', 'Mirror Shard', 'Soul Lantern', 'Twin Seal Ring', 'Crown of the Hollow King', 'Sandglass of Haste',
   'Polymer Flask', 'Tome Binder', "Summoner's Whistle", 'Field Banner', 'Eye of the Sealed One', 'Deck of Fate'];
 
+// text(m): the blessing's line at a rarity multiplier m (1, 1.5, 2, 3)
+const r1 = n => Math.round(n * 10) / 10;
 export const BLESSINGS = {
-  might:     { name: 'Blessing of Might', text: '+10% damage.', mods: { dmgMult: 0.10 } },
-  swiftness: { name: 'Blessing of Swiftness', text: '+8% move speed.', mods: { move: 0.08 } },
-  vigor:     { name: 'Blessing of Vigor', text: '+20 max LP and heal 20.', mods: { maxLp: 20 }, heal: 20 },
-  haste:     { name: 'Blessing of Haste', text: 'Monsters attack 10% faster.', mods: { monsterRate: 0.10 } },
-  guard:     { name: 'Blessing of the Guard', text: '+1 armour.', mods: { armour: 1 } },
-  plenty:    { name: 'Blessing of Plenty', text: '+15% XP.', mods: { xp: 0.15 } },
-  renewal:   { name: 'Blessing of Renewal', text: 'Regain 1 LP every 4 s.', mods: { regen: 0.25 } }
+  might:     { name: 'Blessing of Might', text: '+10% damage.', fmt: m => '+' + r1(10 * m) + '% damage.', mods: { dmgMult: 0.10 } },
+  swiftness: { name: 'Blessing of Swiftness', text: '+8% move speed.', fmt: m => '+' + r1(8 * m) + '% move speed.', mods: { move: 0.08 } },
+  vigor:     { name: 'Blessing of Vigor', text: '+20 max LP and heal 20.', fmt: m => '+' + Math.round(20 * m) + ' max LP and heal ' + Math.round(20 * m) + '.', mods: { maxLp: 20 }, heal: 20 },
+  haste:     { name: 'Blessing of Haste', text: 'Monsters attack 10% faster.', fmt: m => 'Monsters attack ' + r1(10 * m) + '% faster.', mods: { monsterRate: 0.10 } },
+  guard:     { name: 'Blessing of the Guard', text: '+1 armour.', fmt: m => '+' + Math.round(m) + ' armour.', mods: { armour: 1 } },
+  plenty:    { name: 'Blessing of Plenty', text: '+15% XP.', fmt: m => '+' + r1(15 * m) + '% XP.', mods: { xp: 0.15 } },
+  renewal:   { name: 'Blessing of Renewal', text: 'Regain 1 LP every 4 s.', fmt: m => 'Regain 1 LP every ' + r1(4 / m) + ' s.', mods: { regen: 0.25 } }
 };

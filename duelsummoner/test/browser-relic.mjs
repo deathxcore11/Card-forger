@@ -1,0 +1,11 @@
+import { launch, wait } from './cdp.mjs';
+const b = await launch({ out: process.argv[2], query: '?debug&seed=3' });
+await b.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+await b.evalIn(`(async()=>{ const D = window.__ds, g = D.game; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 1200)); g.god = true; const R = g.world.relic;
+  g.p.x = R.x - 7; g.p.z = R.z; g.p.y = R.y; const { spawnEnemy } = await import('/src/sim/enemies.js'); for (let i = 0; i < 40; i++) spawnEnemy(g, 'runner', { x: R.x + 5 + (i % 8), z: R.z - 6 + (i / 8 | 0) * 3 });
+  window.__ds.input.yaw = -Math.PI / 2; await new Promise(r => setTimeout(r, 900)); return 1; })()`);
+await b.shot('relic_before');
+await b.evalIn(`(async()=>{ const g = __ds.game, R = g.world.relic; g.p.x = R.x; g.p.z = R.z; await new Promise(r => setTimeout(r, 500)); return 1; })()`);
+await b.shot('relic_after'); await wait(300);
+console.log(await b.evalIn(`JSON.stringify({ frenzy: __ds.game.frenzyT.toFixed(1), chip: document.getElementById('frenzyChip') && document.getElementById('frenzyChip').textContent, kills: __ds.game.kills })`));
+console.log(JSON.stringify(await b.evalIn('window.__errs.slice(0,3)'))); b.close(); setTimeout(() => process.exit(0), 300);

@@ -17,7 +17,7 @@ const polar = (r, deg) => [r * cos(deg * DEG), r * sin(deg * DEG)];
 
 export const DEFAULT_GEN = {
   minFillers: 1, minPlats: 3, spine: [150, 520], opening: 90, ringCover: 0.88, ringReach: 86, groundCover: 0.9, gateSepMin: 170, spawnAnnulus: 0.4,
-  counts: { cchest: 8, stone: 2, broker: 1, shrine: 3, altar: 1, vaseClusters: 12 }, minCounts: { cchest: 6, stone: 1, broker: 1, shrine: 2, altar: 1 }
+  counts: { cchest: 8, stone: 2, broker: 1, shrine: 2, altar: 1, vaseClusters: 12 }, minCounts: { cchest: 6, stone: 1, broker: 1, shrine: 2, altar: 1 }
 };
 
 const scale3 = (c, a, b, d) => { const r = Math.min(255, Math.round(((c >> 16) & 255) * a)), g = Math.min(255, Math.round(((c >> 8) & 255) * b)), bl = Math.min(255, Math.round((c & 255) * d)); return (r << 16) | (g << 8) | bl; };
@@ -255,9 +255,9 @@ function tryLayout(as, stage, spec, G) {
   // early picks that are not level-ups: one free Card Chest on open ground 14 to 22 m from the spawn (in view of it), and a cluster of three Shrines 30 to 55 m from the spawn, within 25 m of each other, reachable long before 2:00
   { const flatC = c => c.ground && c.y <= 0.05, dS = c => dist(c.x - sx, c.z - sz);
     const fc = cs.find(c => flatC(c) && dS(c) >= 14 && dS(c) <= 22 && apart(c, 6)); if (fc) { taken.push(fc); out.push({ type: 'cchest', x: r2(fc.x), y: fc.y, z: r2(fc.z), free: true }); }
-    const anchor = cs.find(c => flatC(c) && dS(c) >= 30 && dS(c) <= 55 && apart(c, 14));
+    const anchor = cs.find(c => flatC(c) && dS(c) >= 30 && dS(c) <= 55 && apart(c, 16));
     if (anchor) { taken.push(anchor); out.push({ type: 'shrine', x: r2(anchor.x), y: anchor.y, z: r2(anchor.z) }); let n = 0;
-      for (const c of cs) { if (n >= 2) break; const da = dist(c.x - anchor.x, c.z - anchor.z); if (flatC(c) && da >= 12 && da <= 22 && dS(c) >= 24 && apart(c, 12)) { taken.push(c); out.push({ type: 'shrine', x: r2(c.x), y: c.y, z: r2(c.z) }); n++; } } } }
+      for (const c of cs) { if (n >= 2) break; const da = dist(c.x - anchor.x, c.z - anchor.z); if (flatC(c) && da >= 16 && da <= 24 && dS(c) >= 24 && apart(c, 16)) { taken.push(c); out.push({ type: 'shrine', x: r2(c.x), y: c.y, z: r2(c.z) }); n++; } } } }
   // economy: the opening region (90 m of path from spawn) holds at most one free reward; stones are kept out of it by the 110 m rule above
   const opening = out.filter(o => o.type === 'stone' && (ed[idx(ci(o.x), ci(o.z))] >= 0 ? ed[idx(ci(o.x), ci(o.z))] : 999) <= G.opening).length;
   metrics.economy = { value: opening, max: 1, pass: opening <= 1 }; metrics.chestsNearSpawn = { value: nearChests(), max: 2, pass: nearChests() <= 2 };

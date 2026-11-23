@@ -61,11 +61,11 @@ export class Props {
       bake(g); G.add(g); P.broker = { g, plinths };
     }
     for (const s of world.shrines) {                                   // low basin with a filling ring on the floor
-      const g = new T.Group(); g.position.set(s.x, s.y, s.z);
+      const g = new T.Group(); g.position.set(s.x, s.y, s.z); const rc = RARITY[s.best] || 0x7fffc8, dim = (h, f) => (((h >> 16 & 255) * f) << 16) | (((h >> 8 & 255) * f) << 8) | ((h & 255) * f);      // the circle takes the colour of the best blessing on offer
       const basin = new T.Mesh(new T.CylinderGeometry(1.4, 1.8, 0.5, 10), lambert(0x6a5a3a)); basin.position.y = 0.25; g.add(basin);
-      const water = new T.Mesh(new T.CylinderGeometry(1.1, 1.1, 0.05, 10), basic(0x5fd2a8)); water.position.y = 0.5; g.add(water);
-      const track = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.25, E.shrines.radius, 48), basic(0x2a4a3a, { side: T.DoubleSide })); track.rotation.x = -Math.PI / 2; track.position.y = 0.1; g.add(track);
-      const fill = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.25, E.shrines.radius, 48, 1, 0, 0.01), basic(0x7fffc8, { side: T.DoubleSide, depthWrite: false })); fill.rotation.x = -Math.PI / 2; fill.position.y = 0.12; g.add(fill);
+      const water = new T.Mesh(new T.CylinderGeometry(1.1, 1.1, 0.05, 10), basic(rc)); water.position.y = 0.5; g.add(water);
+      const track = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.25, E.shrines.radius, 48), basic(dim(rc, 0.4), { side: T.DoubleSide })); track.rotation.x = -Math.PI / 2; track.position.y = 0.1; g.add(track);
+      const fill = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.25, E.shrines.radius, 48, 1, 0, 0.01), basic(rc, { side: T.DoubleSide, depthWrite: false })); fill.rotation.x = -Math.PI / 2; fill.position.y = 0.12; g.add(fill);
       fill.userData.dyn = water.userData.dyn = true; bake(g); G.add(g); P.shrines.push({ s, g, fill, water, lastP: -1 });
     }
     if (world.altar) {                                                  // stepped altar with two bowls: Banish and Tribute
@@ -116,6 +116,7 @@ export class Props {
     for (const o of P.stones) {                                                       // a used stone stays where it is and changes colour: gold and bobbing when ready, still and grey once spent
       const used = o.s.used; gem(o.s.x, o.s.y + (used ? 1.1 : 1.4 + Math.sin(t * 2) * 0.1), o.s.z, used ? 0.6 : t * 2, 0.32 * (used ? 0.8 : 1), used ? 0x6a6872 : 0xffe07a);
     }
+    if (g.world.relic && !g.world.relic.taken) { const R = g.world.relic; gem(R.x, R.y + 1.7 + Math.sin(t * 2.4) * 0.15, R.z, t * 2.4, 0.6, 0xffffff); }
     if (P.broker) P.broker.plinths.forEach((m, k) => { const st = g.world.broker.stock[k], b = g.world.broker; if (!st.sold) gem(b.x - 1.6 + k * 1.6, b.y + 1.3 + Math.sin(t * 2 + k) * 0.06, b.z + 0.4, t * 2 + k, 0.3, RARITY[ITEMS[st.id].rarity]); });
     for (const o of P.shrines) {
       const p = o.s.charge / E.shrines.hold;

@@ -26,7 +26,12 @@ function runClock(g) {
   if (g.duelOn) return 'DUEL ON +' + clock(g.otT);
   return (g.stages.length > 1 ? 'STAGE ' + (g.stage + 1) + '  ' : '') + clock(Math.max(0, g.stageSpec.clock - g.sc));
 }
-let stripKey = '';
+let stripKey = '', frenzyTxt = '';
+// the Coin Rite: a coin glyph and its countdown on the event strip while it lasts (no screen tint, no big counter)
+function drawFrenzy(g) {
+  let el = $('frenzyChip'); if (!el) { el = document.createElement('div'); el.id = 'frenzyChip'; $('strip').after(el); }
+  const txt = g.frenzyT > 0 ? '\u25CF COIN RITE ' + clock(Math.ceil(g.frenzyT)) : ''; if (txt === frenzyTxt) return; frenzyTxt = txt; el.textContent = txt; el.style.display = txt ? 'block' : 'none';
+}
 const ROLE_LETTER = { elite: 'E', bossA: 'A', bossB: 'B' };
 function drawStrip(g) {                                                    // elite, boss A, boss B and gate icons under the clock
   const S = g.stageSpec, st = g.evState, G = g.gate;
@@ -42,6 +47,7 @@ const bossOf = g => g.sp.find(s => s.alive && !s.dead && (s.kind === 'pharaoh' |
 function riteLines(g) {
   const S = g.stageSpec, awake = g.gate.awake || g.gate.state !== 'closed', fell = g.gate.state === 'done', last = g.stage >= 2;
   const L = [[awake, 'Wake the gate (' + (awake ? 'awake' : clock(Math.max(0, S.gateWake - g.sc))) + ')']];
+  for (let i = 0; i < S.timeline.length; i++) if (g.evState[i] < 2 && !awake) { L.unshift([false, S.timeline[i].name + ' (' + clock(Math.max(0, S.timeline[i].t - g.sc)) + ')']); break; }       // the next timed event and its time, so the player can plan
   if (awake) L.push([fell, 'Fell ' + S.gate.name]);
   if (fell) L.push([!!(g.desc || g.won), last ? 'Claim the Final Altar' : 'Step into the Descent Circle']);
   return L.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join('');
@@ -100,7 +106,7 @@ export function drawHud(g, force) {
   const boss = bossOf(g);
   $('boss').style.display = boss ? 'block' : 'none';
   if (boss) { $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%'; if ($('bossname').textContent !== boss.name) $('bossname').textContent = boss.name; }
-  if (g.mode !== 'classic') drawStrip(g);
+  if (g.mode !== 'classic') { drawStrip(g); drawFrenzy(g); }
   $('prompt').textContent = document.body.classList.contains('touch') ? g.prompt.replace(/^E: /, 'Tap: ') : g.prompt;
   if (g.mode !== 'classic') { $('nextEvent').textContent = ''; const rh = riteLines(g); if ($('rite').innerHTML !== rh) $('rite').innerHTML = rh; } else $('nextEvent').textContent = nextEvent(g);
   const cnt = {}; for (const id of g.items) cnt[id] = (cnt[id] || 0) + 1;

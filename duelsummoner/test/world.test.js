@@ -16,7 +16,7 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 test('placement over many seeds: every spot is standable, flat, in its region, spaced out and has an escape', () => {
   for (let seed = 1; seed <= 40; seed++) {
     const g = new Game(seed), W = g.world, all = [...W.stones, W.broker, ...W.shrines, ...W.cchests];
-    assert.equal(W.stones.length, 2); assert.ok(W.broker); assert.equal(W.shrines.length, 3); assert.equal(W.cchests.length, 8);
+    assert.equal(W.stones.length, 2); assert.ok(W.broker); assert.equal(W.shrines.length, E.shrines.count); assert.equal(W.cchests.length, 8);
     for (const s of all) {
       assert.ok(s.y < 50 && Math.abs(heightAt(s.x, s.z) - s.y) < 1e-6, 'standable');
       let open = 0; for (let k = 0; k < 8; k++) { const h = heightAt(s.x + Math.cos(k * Math.PI / 4) * 4, s.z + Math.sin(k * Math.PI / 4) * 4); if (h < 50 && Math.abs(h - s.y) < 0.7) open++; }

@@ -17,7 +17,9 @@ export const ENCOUNTERS = {
   },
   witnessStones: { count: 2, regions: [{ r: [14, 22], deg: [[20, 70], [200, 250]], h: 0 }], minApart: 25, ring: 3.2, choices: 3 },
   broker: { count: 1, regions: [{ r: [39, 47], deg: [[25, 60], [120, 148], [235, 262], [335, 355]], h: 4 }], stock: 3, rarityWeights: { common: 3, rare: 1 } },
-  shrines: { count: 3, regions: [{ r: [8, 26], deg: [[0, 360]], h: 0 }], minApart: 14, radius: 4.5, hold: 5, leaveGrace: 1.5, decayPerSecond: 0.6, choices: 3 },
+  shrines: { count: 4, regions: [{ r: [8, 26], deg: [[0, 360]], h: 0 }], minApart: 16, radius: 7, hold: 5, leaveGrace: 1.5, decayPerSecond: 0.6, choices: 3,
+    // each blessing on a shrine rolls a rarity when the map is built; the stat is multiplied (whole numbers for armour and LP). The circle takes the colour of the best one.
+    rarity: { order: ['common', 'rare', 'epic', 'legendary'], weights: { common: 55, rare: 30, epic: 12, legendary: 3 }, mult: { common: 1, rare: 1.5, epic: 2, legendary: 3 } } },
   cardChests: {
     count: 8, basePrice: 30, step: 42, stepGrowth: 1, cap: 6000,     // additive: 30, 72, 115, 159, 204 ... each chest opened adds a step (42, then 43, 44, 45 ...), capped. Tune together with the coin income and the coin sinks.
     placement: [{ n: 3, r: [10, 28], deg: [[0, 360]], h: 0 }, { n: 3, r: [36, 50], deg: [[0, 360]], h: 4 }, { n: 2, r: [53, 58], deg: [[0, 360]], h: 5.8 }],

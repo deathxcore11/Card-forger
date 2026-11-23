@@ -41,13 +41,14 @@ export const damageOf = m => param(m, 'dmg') * monsterMul(m.id, m.level);       
 export function recompute(g) {
   const f = g.field, M = { burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0,
     trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0, drill: [0, 0, 0, 0, 0], aff: [0, 0, 0, 0, 0, 0, 0, 0], toll: 0, locket: 0 };
-  const addMods = mods => { for (const k of Object.keys(mods)) if (k in M && typeof M[k] === 'number') M[k] += mods[k]; };
+  const WHOLE = { armour: 1, maxLp: 1, airJumps: 1 };
+  const addMods = (mods, mul) => { mul = mul || 1; for (const k of Object.keys(mods)) if (k in M && typeof M[k] === 'number') M[k] += WHOLE[k] ? Math.round(mods[k] * mul) : mods[k] * mul; };
   if (g.metaMods) addMods(g.metaMods);                                    // Deck Box ranks
   const src = {};                                                                   // stat mod key -> [[source name, value], ...]
   const note = (key, name, v) => { if (v && STAT_BY_MOD[key]) (src[key] || (src[key] = [])).push([name, v]); };
   if (g.metaMods) for (const k of Object.keys(g.metaMods)) note(k, 'Deck Box', g.metaMods[k]);
   for (const id of (g.items || [])) { addMods(ITEMS[id].mods); for (const k of Object.keys(ITEMS[id].mods)) note(k, ITEMS[id].name, ITEMS[id].mods[k]); }
-  for (const id of (g.blessings || [])) { addMods(BLESSINGS[id].mods); for (const k of Object.keys(BLESSINGS[id].mods)) note(k, BLESSINGS[id].name, BLESSINGS[id].mods[k]); }
+  (g.blessings || []).forEach((id, i) => { const m = (g.blessingMult && g.blessingMult[i]) || 1; addMods(BLESSINGS[id].mods, m); for (const k of Object.keys(BLESSINGS[id].mods)) note(k, BLESSINGS[id].name, WHOLE[k] ? Math.round(BLESSINGS[id].mods[k] * m) : BLESSINGS[id].mods[k] * m); });
   for (const s of f.spells) {
     if (!s || !SPELLS[s.id]) continue;
     const P = SPELLS[s.id].per, n = s.level;
@@ -208,7 +209,7 @@ export function tributeCard(g, c) {
   recompute(g); g.event('banner', cardDef(c.id).name + ' is given up. The next card in that zone starts +' + E_ALTAR.tributeBonus + ' levels.');
 }
 export function addItem(g, id) { if (ITEMS[id].unique && g.items.includes(id)) return false; g.items.push(id); recompute(g); g.event('banner', ITEMS[id].name + ': ' + ITEMS[id].text); return true; }
-export function addBlessing(g, id) { g.blessings.push(id); recompute(g); if (BLESSINGS[id].heal) g.p.hp = Math.min(g.p.maxHp, g.p.hp + BLESSINGS[id].heal); g.event('banner', BLESSINGS[id].name + '. ' + BLESSINGS[id].text); }
+export function addBlessing(g, id, mult) { mult = mult || 1; g.blessings.push(id); (g.blessingMult || (g.blessingMult = [])).push(mult); recompute(g); if (BLESSINGS[id].heal) g.p.hp = Math.min(g.p.maxHp, g.p.hp + Math.round(BLESSINGS[id].heal * mult)); g.event('banner', BLESSINGS[id].name + '. ' + (BLESSINGS[id].fmt ? BLESSINGS[id].fmt(mult) : BLESSINGS[id].text)); }
 
 export function chooseCard(g, idx) {
   const o = g.offer; if (!o || !o.cards[idx]) return false;
@@ -218,7 +219,7 @@ export function chooseCard(g, idx) {
     g.coins -= c.price; c.sold = true; c.stockRef.sold = true; addItem(g, c.id); return true;
   }
   if (c.kind === 'item') addItem(g, c.id);
-  else if (c.kind === 'blessing') addBlessing(g, c.id);
+  else if (c.kind === 'blessing') addBlessing(g, c.id, c.mult);
   else if (c.kind === 'banish') { g.field.banished.add(c.id); g.event('banner', cardDef(c.id).name + ' will no longer be offered.'); }
   else if (c.kind === 'tribute') tributeCard(g, c);
   else applyCard(g, c);
@@ -242,7 +243,8 @@ export function pass(g) {
   const o = g.offer; if (!o || o.type !== 'level') return false;
   g.coins += OFFER.passCoins; g.pendingLevels--; g.offer = null; g.event('offer-closed', null); return true;
 }
-export function leaveChest(g) { const o = g.offer; if (!o || !o.leave) return false; g.offer = null; g.event('offer-closed', null); return true; }
+export function leaveChest(g) { const o = g.offer; if (!o || !o.leave) return false; if (o.type === 'blessing' && o.source) { o.source.done = false; o.source.charge = 0; o.source.idle = 0; } g.offer = null;       // declining a shrine keeps it, with the same three blessings, for later
+   g.event('offer-closed', null); return true; }
 
 
 

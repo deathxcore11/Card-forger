@@ -57,7 +57,7 @@ export class Game {
     this.cardT = 0.3; this.flowT = 0; this.ringT = 0; this.golemT = 0; this.storm = null; this.offer = null; this.prompt = '';
     this.dmgMul = 1; this.hpMul = 1; this.speedMul = 1; this.cfgHp = CFG.player.hp;
     this.flags = { warden: false, idols: false };
-    this.items = []; this.blessings = []; this.vasesBroken = 0; this.talismanCd = 0; this.coinFrac = 0;
+    this.items = []; this.blessings = []; this.blessingMult = []; this.vasesBroken = 0; this.talismanCd = 0; this.coinFrac = 0; this.frenzyT = 0;
     this.boss = { state: 'idle', early: false, phase: 1 };
     this.sp = []; this.chests = [];
     this.faceOf = {};

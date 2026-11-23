@@ -5,7 +5,7 @@ import { cos, sin } from './dmath.js';
 import { K } from '../data/tuning.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { heightAt } from './terrain.js';
-import { dropPickup, addFx, PICK_COIN, PICK_XP, PICK_HEART } from './combat.js';
+import { dropPickup, addFx, killEnemy, PICK_COIN, PICK_XP, PICK_HEART } from './combat.js';
 import { buildOffer, candidates } from './field.js';
 import { ACES } from '../data/stages.js';
 
@@ -32,7 +32,19 @@ export function pickSpot(g, regions, taken, apart, tries = 300, accept) {
   return null;
 }
 
-export const emptyWorld = () => ({ vases: [], stones: [], broker: null, shrines: [], cchests: [], altar: null, opened: 0, kills50: 0 });
+export const emptyWorld = () => ({ vases: [], stones: [], broker: null, shrines: [], cchests: [], altar: null, relic: null, opened: 0, kills50: 0 });
+
+// One screen-clear relic per stage on a seeded flat spot 45 to 130 m from the spawn (the same spot on a replay). Taking it clears every swarm enemy within 30 m and starts the Coin Rite frenzy.
+function placeRelic(g) {
+  const W = g.world, S = (g.map && g.map.spawn) || { x: 0, z: 0 }, taken = [...W.stones, ...W.shrines, ...W.cchests, W.broker, W.altar].filter(Boolean);
+  for (let t = 0; t < 400; t++) {
+    const r = 45 + g.rsp() * 85, a = g.rsp() * 6.283, x = S.x + cos(a) * r, z = S.z + sin(a) * r, h = heightAt(x, z);
+    if (h >= 50 || h > 0.05 || !flatHere(x, z, h) || openSides(x, z, h) < 4) continue;
+    if (taken.some(q => (q.x - x) ** 2 + (q.z - z) ** 2 < 100)) continue;
+    W.relic = { x, y: h, z, taken: false }; return;
+  }
+}
+export const RELIC = { radius: 30, pick: 2.2, frenzySeconds: 20 };
 
 // Placement API for a map generator: spawn one placeable object at a position. The sim owns the logic; the generator owns where.
 //   placeObject(g, 'vase', { x, y, z, banded })   'stone' | 'broker' | 'shrine' | { x, y, z }   'cchest' { x, y, z, rarity }
@@ -41,7 +53,7 @@ export function placeObject(g, type, s) {
   if (type === 'vase') { W.vases.push({ x: s.x, y: s.y, z: s.z, alive: true, banded: !!s.banded, hp: 1 }); return W.vases[W.vases.length - 1]; }
   if (type === 'stone') { W.stones.push({ x: s.x, y: s.y, z: s.z, used: false }); return W.stones[W.stones.length - 1]; }
   if (type === 'broker') { if (g.oaths && g.oaths.pauper) return null; W.broker = { x: s.x, y: s.y, z: s.z, stock: pickStock(g) }; return W.broker; }
-  if (type === 'shrine') { W.shrines.push({ x: s.x, y: s.y, z: s.z, charge: 0, idle: 0, done: false }); return W.shrines[W.shrines.length - 1]; }
+  if (type === 'shrine') { W.shrines.push(newShrine(g, s)); return W.shrines[W.shrines.length - 1]; }
   if (type === 'altar') { W.altar = { x: s.x, y: s.y, z: s.z, used: false }; return W.altar; }
   if (type === 'cchest') { W.cchests.push({ x: s.x, y: s.y, z: s.z, open: false, free: !!s.free, rarity: s.rarity || E.cardChests.rarityByOrder[W.cchests.length] || 'common' }); return W.cchests[W.cchests.length - 1]; }
   throw new Error('unknown placeable ' + type);
@@ -53,6 +65,7 @@ export function buildWorld(g) {
   if (g.mode !== 'classic' && g.map && g.map.encounters) {                    // a generated stage: the generator chose where, the sim places and runs them
     g.world = W;                                                           // placeObject fills g.world
     for (const e of g.map.encounters) placeObject(g, e.type, e);
+    placeRelic(g);
     return W;
   }
   const put = s => { if (s) taken.push(s); return s; };
@@ -64,7 +77,7 @@ export function buildWorld(g) {
   const farFrom = (list, d) => (x, z) => list.every(q => (q.x - x) ** 2 + (q.z - z) ** 2 >= d * d);
   for (let i = 0; i < E.witnessStones.count; i++) { const s = put(pickSpot(g, E.witnessStones.regions, taken, E.minSpacing, 400, farFrom(W.stones, E.witnessStones.minApart))); if (s) W.stones.push({ ...s, used: false }); }
   { const s = put(pickSpot(g, E.broker.regions, taken, E.minSpacing)); if (s) W.broker = { ...s, stock: pickStock(g) }; }
-  for (let i = 0; i < E.shrines.count; i++) { const s = put(pickSpot(g, E.shrines.regions, taken, E.minSpacing, 400, farFrom(W.shrines, E.shrines.minApart))); if (s) W.shrines.push({ ...s, charge: 0, idle: 0, done: false }); }
+  for (let i = 0; i < E.shrines.count; i++) { const s = put(pickSpot(g, E.shrines.regions, taken, E.minSpacing, 400, farFrom(W.shrines, E.shrines.minApart))); if (s) W.shrines.push(newShrine(g, s)); }
   const V = E.vases;
   for (let c = 0; c < V.clusters; c++) {
     const s = pickSpot(g, V.regions, taken, E.minSpacing); if (!s) continue; taken.push(s);
@@ -76,6 +89,7 @@ export function buildWorld(g) {
     }
   }
   if (g.oaths && g.oaths.pauper) W.broker = null;                          // Pauper Oath: no shop and no Broker
+  g.world = W; placeRelic(g);
   return W;
 }
 
@@ -122,6 +136,13 @@ export function updateWorld(g, dt) {
     else { s.idle += dt; if (s.idle > S.leaveGrace && s.charge > 0) s.charge = Math.max(0, s.charge - S.decayPerSecond * dt); }
     if (s.charge >= S.hold) { s.done = true; g.event('banner', 'The shrine accepts your tribute.'); openBlessing(g, s); }
   }
+  const R = g.world.relic;
+  if (R && !R.taken && (p.x - R.x) ** 2 + (p.z - R.z) ** 2 < RELIC.pick * RELIC.pick && Math.abs(p.y - R.y) < 2.5) {
+    R.taken = true; let n = 0; const e = g.en;
+    for (let i = 0; i < e.max; i++) if (e.alive[i] && (e.x[i] - R.x) ** 2 + (e.z[i] - R.z) ** 2 <= RELIC.radius * RELIC.radius) { killEnemy(g, i); n++; }     // every swarm enemy in 30 m (elites and bosses are not in this pool)
+    g.frenzyT = RELIC.frenzySeconds; g.emit('relic', R.x, R.z, n); g.event('banner', 'Screen cleared: ' + n + ' defeated. The Coin Rite begins.');
+  }
+  if (g.frenzyT > 0) g.frenzyT = Math.max(0, g.frenzyT - dt);
   if (g.mods.toll > 0) {                                                  // Toll of Ash: pay a share of current LP every few seconds, never below 1
     g.tollT -= dt;
     if (g.tollT <= 0) { g.tollT = K.tollEverySec; g.hurtPlayer(Math.max(1, Math.round(p.hp * K.tollPct)), false, 'Toll of Ash', 1); }
@@ -132,10 +153,16 @@ export function updateWorld(g, dt) {
 
 // ---- offers from encounters ----
 function itemCards(g, ids) { return ids.map(id => ({ id, kind: 'item', isNew: true, to: 1, rarity: ITEMS[id].rarity })); }
-function openBlessing(g, shrine) {
-  const ids = Object.keys(BLESSINGS), pick = [];
+// a shrine rolls its three blessings and their rarities when it is placed (seeded), so the circle can show the best one and a declined shrine offers the same three again
+function newShrine(g, s) {
+  const R = E.shrines.rarity, ids = Object.keys(BLESSINGS), pick = [], tot = R.order.reduce((a, k) => a + R.weights[k], 0);
   while (pick.length < E.shrines.choices && ids.length) pick.push(ids.splice(Math.floor(g.rl() * ids.length), 1)[0]);
-  g.offer = { type: 'blessing', cards: pick.map(id => ({ id, kind: 'blessing', isNew: true, to: 1, rarity: 'rare' })), leave: false, source: shrine };
+  const cards = pick.map(id => { let r = g.rl() * tot, rar = R.order[0]; for (const k of R.order) { r -= R.weights[k]; if (r < 0) { rar = k; break; } } return { id, kind: 'blessing', isNew: true, to: 1, rarity: rar, mult: R.mult[rar] }; });
+  const best = cards.reduce((b, c) => (R.order.indexOf(c.rarity) > R.order.indexOf(b) ? c.rarity : b), R.order[0]);
+  return { x: s.x, y: s.y, z: s.z, charge: 0, idle: 0, done: false, cards, best };
+}
+function openBlessing(g, shrine) {
+  g.offer = { type: 'blessing', cards: shrine.cards.map(c => ({ ...c })), leave: true, source: shrine };
   g.event('offer', null);
 }
 function openStone(g, stone) {

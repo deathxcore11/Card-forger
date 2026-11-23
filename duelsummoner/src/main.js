@@ -260,6 +260,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'offer') { setMode('offer'); showOffer(game, menu); }
   else if (type === 'levelup') { showBanner('Level ' + a); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
   else if (type === 'hit') fx.number(b, 1.7, c, a, data);
+  else if (type === 'relic') { fx.ring(a, game.p.y + 0.3, b, 30, 0xffffff, 0.7); fx.ring(a, game.p.y + 0.3, b, 14, 0xffe08a, 0.5); fx.burst(a, game.p.y + 1.2, b, 40, 0xffe08a, 8, 6, 0.3, 0.8, 5); fx.shake(0.35); }
   else if (type === 'block') { fx.burst(data.x, data.y, data.z, 5, 0xc8d0e0, 2.6, 1.5, 0.1, 0.22, 8); fx.ring(data.x, data.y, data.z, 0.7, 0xc8d0e0, 0.18); if (performance.now() - lastBlockTick > 90) { lastBlockTick = performance.now(); tone(150, 0.06, 0.05, 'square'); } }      // the Warden's shield took a hit: a small grey spark and a dull tick, nothing else
   else if (type === 'ace') { fx.ring(a, b, c, 4, 0xffd23f, 0.5); fx.shake(0.1); showBanner('An Ace approaches'); }
   else if (type === 'trophy') { fx.ring(a, b, c, 4.5, 0xffe9a0, 0.6); fx.burst(a, b + 1, c, 24, 0xffe9a0, 3, 6, 0.25, 0.9, 6); fx.shake(0.12); }

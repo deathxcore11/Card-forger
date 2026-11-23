@@ -108,6 +108,7 @@ export class Actors {
     this.shadeEye = instanced(new T.BoxGeometry(0.34, 0.07, 0.1), basic(0xc07bff), 24); this.shadeBell = instanced(new T.ConeGeometry(0.17, 0.3, 6), basic(0xe8c56a), 24);
     scene.add(this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell);
     this.marks = instanced(new T.OctahedronGeometry(0.22, 0), basic(0xc090ff), CFG.enemy.max); scene.add(this.marks);
+    this.orbit = instanced(new T.CylinderGeometry(0.17, 0.17, 0.05, 12), basic(0xffd23f), 10); this.orbit.count = 0; scene.add(this.orbit);          // the Coin Rite: ten coins circling the duelist
     this.crests = instanced(new T.OctahedronGeometry(0.3, 0), basic(0xffd23f), 24); scene.add(this.crests); this.aceCol = new T.Color(1, 0.86, 0.5);          // the star crest of an Ace monster, and its gold tint
 
     this.cards = instanced(new T.BoxGeometry(0.5, 0.05, 0.7), basic(0xf3e3c2), CFG.card.max + 64);
@@ -130,7 +131,7 @@ export class Actors {
     this.fxRing = instanced(flat(new T.RingGeometry(0.82, 1, 28)), ghost(0xffffff), 64); this.fxRing.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
     scene.add(this.teleLine, this.teleDisc, this.fxRing);
     // soft contact shadows: a dark radial blob under the duelist, summons and swarm enemies (cheap: one instanced quad, no shadow maps)
-    { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, 'rgba(30,18,8,0.55)'); gr.addColorStop(0.6, 'rgba(30,18,8,0.25)'); gr.addColorStop(1, 'rgba(30,18,8,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
+    { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, 'rgba(30,18,8,0.62)'); gr.addColorStop(0.45, 'rgba(30,18,8,0.52)'); gr.addColorStop(0.8, 'rgba(30,18,8,0.18)'); gr.addColorStop(1, 'rgba(30,18,8,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
       const tx = new T.CanvasTexture(cv); this.shadow = instanced(flat(new T.PlaneGeometry(2, 2)), new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), CFG.enemy.max + 16); scene.add(this.shadow); }
     this.boltSeg = instanced(new T.BoxGeometry(0.07, 0.07, 1), basic(0x4fd8ff, { transparent: true, opacity: 0.9, depthWrite: false }), 96); scene.add(this.boltSeg);
     this.fans = new Map();                                       // one mesh per arc angle, made on demand
@@ -400,11 +401,12 @@ export class Actors {
     }
     this.bolts.count = nh; this.bolts.instanceMatrix.needsUpdate = true;
     { const S = this.shadow, dd = this.d; let ns = 0;       // contact shadows follow the ground under everything that walks
-      const put = (x, z, r, y) => { if (ns >= S.instanceMatrix.count) return; const gy = heightGround(x, z), up = y === undefined ? 0 : Math.max(0, y - gy); dd.position.set(x, gy + 0.07, z); dd.rotation.set(0, 0, 0); dd.scale.setScalar(r * Math.max(0.4, 1 / (1 + up * 0.22))); dd.updateMatrix(); S.setMatrixAt(ns++, dd.matrix); };      // a shadow under everything, smaller (so lighter) the higher it is
+      const put = (x, z, r, y) => { if (ns >= S.instanceMatrix.count) return; const gy = heightGround(x, z), up = y === undefined ? 0 : Math.max(0, y - gy); dd.position.set(x, gy + 0.07, z); dd.rotation.set(0, 0, 0); dd.scale.setScalar(r * Math.max(0.3, 1 / (1 + up * 0.4))); dd.updateMatrix(); S.setMatrixAt(ns++, dd.matrix); };      // a shadow under everything, smaller (so lighter) the higher it is
       if (this.rig && !(g.over && !g.won)) put(px, pz, 0.95);
-      for (const m of g.field.monsters) if (m) { const me = this.monsters.get(m); if (me && me.visible && !me.userData.crit) put(me.position.x, me.position.z, 0.6 * (me.userData.size || 1), me.userData.fly ? me.position.y - 0.5 : undefined); }
-      const e = g.en, cp = cam; for (let i = 0; i < e.max; i++) if (e.alive[i]) { const dx = e.x[i] - cp.x, dz = e.z[i] - cp.z; if (dx * dx + dz * dz < 3600) put(e.x[i], e.z[i], 0.5 + KIND_LIST[e.kind[i]].radius * 0.9, e.y[i]); }
+      for (const m of g.field.monsters) if (m) { const me = this.monsters.get(m); if (me && me.visible && !me.userData.crit) put(me.position.x, me.position.z, 0.85 * (me.userData.size || 1), me.userData.fly ? me.position.y - 0.5 : undefined); }
+      const e = g.en, cp = cam; for (let i = 0; i < e.max; i++) if (e.alive[i]) { const dx = e.x[i] - cp.x, dz = e.z[i] - cp.z; if (dx * dx + dz * dz < 3600) put(e.x[i], e.z[i], 0.75 + KIND_LIST[e.kind[i]].radius * 1.2, e.y[i]); }
       S.count = ns; S.instanceMatrix.needsUpdate = true; }
+    { const O = this.orbit; if (g.frenzyT > 0) { const dd = this.d; O.count = 10; for (let k = 0; k < 10; k++) { const an = this.vt * 3 + k * 0.6283; dd.position.set(px + Math.cos(an) * 1.8, p.y + 1.1 + Math.sin(this.vt * 4 + k) * 0.15, pz + Math.sin(an) * 1.8); dd.rotation.set(Math.PI / 2, 0, an + this.vt * 5); dd.scale.set(1, 1, 1); dd.updateMatrix(); O.setMatrixAt(k, dd.matrix); } O.instanceMatrix.needsUpdate = true; } else O.count = 0; }
     this.cards.count = nc; this.fire.count = nf; this.lob.count = nl;
     this.cards.instanceMatrix.needsUpdate = this.fire.instanceMatrix.needsUpdate = this.lob.instanceMatrix.needsUpdate = true;
     let nb = 0;
