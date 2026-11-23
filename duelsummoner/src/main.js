@@ -7,7 +7,7 @@ import { clock } from './core/util.js';
 import { buildMapMesh } from './view/mapMesh.js';
 import { buildGateSeal } from './view/gateseal.js';
 import { buildWater, ripple, ageRipples } from './view/water.js';
-import { updateEngine } from './view/engine.js';
+import { updateEngine, setActorLight } from './view/engine.js';
 import { poolSpots } from './gen/road.js';
 import { lookFor, buildPaletteLUT, STAGE_LOOK as STAGE_LOOK_LIST } from './data/look.js';
 import { Bars } from './view/bars.js';
@@ -106,7 +106,7 @@ assets.mira = await loadRig('assets/models/duelist-mira-anim.glb', { retime: { l
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 document.addEventListener('contextmenu', e => { if (!/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName)) e.preventDefault(); });       // no browser menu over the game or its overlays
-function applyStageLook(look) { setPaletteStage(Math.max(0, STAGE_INDEX_OF(look))); scene.background.setHex(look.sky[1]); scene.fog.color.setHex(look.sky[1]); scene.fog.near = look.fogNear; scene.fog.far = look.fogFar; const u = sky.material.uniforms; u.top.value.setHex(look.sky[0]); u.hor.value.setHex(look.sky[1]); u.low.value.setHex(look.sky[2]); }
+function applyStageLook(look) { setActorLight(look.actor); setPaletteStage(Math.max(0, STAGE_INDEX_OF(look))); scene.background.setHex(look.sky[1]); scene.fog.color.setHex(look.sky[1]); scene.fog.near = look.fogNear; scene.fog.far = look.fogFar; const u = sky.material.uniforms; u.top.value.setHex(look.sky[0]); u.hor.value.setHex(look.sky[1]); u.low.value.setHex(look.sky[2]); }
 const STAGE_INDEX_OF = look => STAGE_LOOK_LIST.indexOf(look);
 let waterMesh = null, curLook = null, ripT = 0;
 let sceneryGroup = null, mapMesh = null, gateSeal = null, viewMapKey = '';
@@ -535,6 +535,20 @@ requestAnimationFrame(frame);
 // Test hooks: read and drive the run without touching its rules.
 // debug: the duelist's pixels, alone (everything else hidden) and in the full scene (everything depth-tested and dithered as drawn), as flat id colour in an off-screen target at the buffer size; silhouette is 0 until the stencil silhouette exists
 function pxRT(w, h) { if (!pxRT.rt || pxRT.w !== w || pxRT.h !== h) { if (pxRT.rt) pxRT.rt.dispose(); pxRT.rt = new T.WebGLRenderTarget(w, h, { depthBuffer: true, stencilBuffer: true }); pxRT.buf = new Uint8Array(w * h * 4); pxRT.w = w; pxRT.h = h; } return pxRT.rt; }       // one target reused by every call (a new one each call ran the GPU out of memory over 200 calls)
+// debug: the median lit lightness (L*) of an object's visible pixels in the real frame, and of the floor in a ring just outside it (the actor readability rule: 12 L* or more)
+function measureObject(root, inst) {
+  const size = renderer.internalSize, w = size.x, h = size.y, rt = pxRT(w, h), A = new Uint8Array(w * h * 4), B = pxRT.buf; const draw = () => { renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.readRenderTargetPixels(rt, 0, 0, w, h, B); renderer.setRenderTarget(null); };
+  draw(); A.set(B);
+  const mag = new T.MeshBasicMaterial({ color: 0xff00ff, fog: false }); mag.skinning = true; const saved = []; const swap = o => { if (o.isMesh) { saved.push([o, o.material]); o.material = mag; } };
+  if (inst) swap(inst); else root.traverse(swap); const hid = []; for (const c of scene.children) if (c.userData && c.userData.extra) { hid.push(c); }
+  draw(); for (const [o, m] of saved) o.material = m; mag.dispose();
+  const L = (r, g, b) => { const f = v => { v /= 255; return v > 0.04045 ? Math.pow((v + 0.055) / 1.055, 2.4) : v / 12.92; }, Y = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); return 116 * (Y > 0.008856 ? Math.cbrt(Y) : 7.787 * Y + 16 / 116) - 16; };
+  const m = new Uint8Array(w * h); let x0 = w, x1 = 0, y0 = h, y1 = 0, n = 0; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; if (B[i] > 200 && B[i + 1] < 60 && B[i + 2] > 200) { m[y * w + x] = 1; n++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+  if (!n) return { n: 0 }; const body = [], floor = [];
+  for (let y = Math.max(0, y0 - 14); y <= Math.min(h - 1, y1 + 14); y++) for (let x = Math.max(0, x0 - 14); x <= Math.min(w - 1, x1 + 14); x++) { const i = (y * w + x) * 4, k = y * w + x; if (m[k]) body.push(L(A[i], A[i + 1], A[i + 2])); else { const near = (x < x0 - 3 || x > x1 + 3 || y < y0 - 3 || y > y1 + 3) ? 1 : 0; if (near && y <= y0 + (y1 - y0) * 0.35 + 0) floor.push(L(A[i], A[i + 1], A[i + 2])); } }
+  const med = a => { a.sort((p, q) => p - q); return a.length ? a[a.length >> 1] : 0; }, q = (a, p) => { a.sort((u, v) => u - v); return a.length ? a[Math.floor((a.length - 1) * p)] : 0; };
+  return { n, bodyL: +med(body).toFixed(1), darkestL: +q(body, 0.05).toFixed(1), lightestL: +q(body, 0.95).toFixed(1), floorL: +med(floor).toFixed(1), delta: +(med(body) - med(floor)).toFixed(1) };
+}
 function duelistPixels() {
   const rig = actors.rig; if (!rig) return null;
   const size = renderer.internalSize, w = size.x, h = size.y, rt = pxRT(w, h), buf = pxRT.buf;
@@ -554,6 +568,8 @@ function duelistPixels() {
 window.__ds = {
   duelistPixels, see: SEE, tagBlocked,
   bars,
+  summonPos: () => { const g = actors.monsters.values().next().value; return g ? { x: g.position.x, y: g.position.y, z: g.position.z } : null; },
+  measure: kind => { const A = actors; if (kind === 'duelist') return measureObject(A.rig.group); if (kind === 'summon') { const g = A.monsters.values().next().value; return g ? measureObject(g) : { n: 0 }; } if (String(kind).startsWith('enemy')) return measureObject(null, A.kinds[+String(kind).slice(6) || 0].body); return { n: 0 }; },
   renderer, get water() { return waterMesh; }, blitNow: drawFrame, paletteStrength: v => { blitMat.uniforms.strength.value = v; }, rigSil: () => actors.rig.see.sil, rigExtras: () => actors.rig.see.extras, rigMeshCount: () => { let n = 0, x = 0; if (actors.rig) actors.rig.group.traverse(o => { if (o.isMesh) { if (o.userData.extra) x++; else n++; } }); return { bodies: n, extras: x }; },
   fitHud, minimap, props, game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,

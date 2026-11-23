@@ -6,10 +6,11 @@ import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { MAP } from '../data/map.js';
 import { SCALE, summonSize } from '../data/scale.js';
 import { DuelistRig } from './rig.js';
+import { actorLit } from './engine.js';
 import { makeCreature } from './creature.js';
 
 const T = window.THREE;
-const lambert = (color, extra) => new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {}));
+const lambert = (color, extra, k) => actorLit(new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {})), k || 1);
 const basic = (color, extra) => new T.MeshBasicMaterial(Object.assign({ color }, extra || {}));
 const lerp = (a, b, t) => a + (b - a) * t;
 const pl = (a, b, t) => (Math.abs(b - a) > 3 ? b : a + (b - a) * t);                // do not blend across a teleport
@@ -98,7 +99,7 @@ export class Actors {
     // the swarm: one instanced mesh per kind (+ eyes for the ground swarmers)
     this.kinds = KIND_LIST.map(K => {
       const geo = K.id === 3 ? new T.BoxGeometry(1.1, 1.1, 1.1) : K.id === 4 ? new T.IcosahedronGeometry(0.8, 0) : new T.OctahedronGeometry(0.75, 0);
-      const body = instanced(geo, lambert(0xffffff), CFG.enemy.max);
+      const body = instanced(geo, lambert(0xffffff, null, 0.3), CFG.enemy.max);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.enemy.max * 3), 3);
       const eye = K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xffe14a), CFG.enemy.max) : null;
       scene.add(body); if (eye) scene.add(eye);

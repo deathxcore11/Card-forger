@@ -49,3 +49,18 @@ vec3 skyBase(vec3 d) {
 float bayer() { vec2 f = floor(gl_FragCoord.xy); float x0 = mod(f.x, 2.0), x1 = floor(mod(f.x, 4.0) / 2.0), y0 = mod(f.y, 2.0), y1 = floor(mod(f.y, 4.0) / 2.0); return (abs(x0 - y0) * 8.0 + y0 * 4.0 + abs(x1 - y1) * 2.0 + y1 + 0.5) / 16.0; }
 `;
 export function engineUniforms() { return { uN: E.noise, uT: E.T, uWind: E.wind, uSkyT: E.skyT, uSkyH: E.skyH, uSkyG: E.skyG, uSunD: E.sunD, uSunK: E.sunK }; }
+
+// ---- the actor light (per stage, in look.js): a flat fill and a soft key from above and behind the camera, added to ACTORS ONLY (duelist, summons, enemies, bosses), never to scenery or the floor.
+// It is added in the material's own fragment shader, so the floor under an actor is untouched. Stage 1's values are zero, so its picture is exactly today's. k scales it (enemies a little weaker).
+export const ACTOR = { lift: { value: new T.Color(0, 0, 0) }, key: { value: new T.Color(0, 0, 0) } };
+export function setActorLight(a) { if (a) { ACTOR.lift.value.setRGB(a.lift[0], a.lift[1], a.lift[2]); ACTOR.key.value.setRGB(a.key[0], a.key[1], a.key[2]); } else { ACTOR.lift.value.setRGB(0, 0, 0); ACTOR.key.value.setRGB(0, 0, 0); } }
+export function actorLit(mat, k = 1) {
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = sh => {
+    if (prev) prev(sh); sh.uniforms.uALift = ACTOR.lift; sh.uniforms.uAKey = ACTOR.key;
+    sh.vertexShader = 'varying vec3 vANormal;\n' + sh.vertexShader.replace('#include <defaultnormal_vertex>', '#include <defaultnormal_vertex>\n vANormal = transformedNormal;');       // r128's Lambert has no normal in the fragment: send the view-space one
+    sh.fragmentShader = 'uniform vec3 uALift; uniform vec3 uAKey; varying vec3 vANormal;\n' + sh.fragmentShader.replace('#include <envmap_fragment>', '#include <envmap_fragment>\n outgoingLight += (uALift * (0.55 + 0.45 * dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11))) + uAKey * diffuseColor.rgb * max(dot(normalize(vANormal), vec3(0.0, 0.62, 0.78)), 0.0)) * ' + k.toFixed(2) + ';');
+  };
+  const key = mat.customProgramCacheKey ? mat.customProgramCacheKey.bind(mat) : null; mat.customProgramCacheKey = () => (key ? key() : '') + 'actorlit' + k.toFixed(2);
+  return mat;
+}

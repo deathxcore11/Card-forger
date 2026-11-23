@@ -92,7 +92,7 @@ export async function prepareRig(buf, opts = {}) {
   for (let i = 0; i < J.nodes.length; i++) {
     if (J.nodes[i].mesh === undefined) continue;
     const p = J.meshes[J.nodes[i].mesh].primitives[0], at = p.attributes; let geo = new T.BufferGeometry();
-    if (opts.facecol && meshes.length === 0 && p.indices !== undefined && at.JOINTS_0 !== undefined) { const fm = faceColourMesh(glb, p, opts.facecol); if (fm) { meshes.push({ node: i, geo: fm, material: new T.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: T.DoubleSide, skinning: true }) }); continue; } }       // a face colour list: no texture at all, one flat colour per triangle
+    if (opts.facecol && meshes.length === 0 && p.indices !== undefined && at.JOINTS_0 !== undefined) { const fm = faceColourMesh(glb, p, opts.facecol); if (fm) { meshes.push({ node: i, geo: fm, material: actorLit(new T.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: T.DoubleSide, skinning: true })) }); continue; } }       // a face colour list: no texture at all, one flat colour per triangle
     geo.setAttribute('position', new T.BufferAttribute(accessor(glb, at.POSITION), 3)); if (at.NORMAL !== undefined) geo.setAttribute('normal', new T.BufferAttribute(accessor(glb, at.NORMAL), 3)); else geo.computeVertexNormals();
     if (at.TEXCOORD_0 !== undefined) geo.setAttribute('uv', new T.BufferAttribute(accessor(glb, at.TEXCOORD_0), 2));
     if (at.JOINTS_0 !== undefined) { geo.setAttribute('skinIndex', new T.BufferAttribute(new Uint16Array(accessor(glb, at.JOINTS_0)), 4)); geo.setAttribute('skinWeight', new T.BufferAttribute(accessor(glb, at.WEIGHTS_0), 4)); }
@@ -105,7 +105,7 @@ export async function prepareRig(buf, opts = {}) {
       map = new T.CanvasTexture(c); map.flipY = false;
     }
     if (!geo.attributes.hnormal) geo.setAttribute('hnormal', geo.attributes.normal);
-    const material = new T.MeshLambertMaterial(map ? { map, side: T.DoubleSide, skinning: true } : { color: 0xcccccc, side: T.DoubleSide, skinning: true });          // three r128: a skinned material must say so
+    const material = actorLit(new T.MeshLambertMaterial(map ? { map, side: T.DoubleSide, skinning: true } : { color: 0xcccccc, side: T.DoubleSide, skinning: true }));          // three r128: a skinned material must say so
     meshes.push({ node: i, geo, material });
   }
   const ibm = skin ? accessor(glb, skin.inverseBindMatrices) : null;
@@ -129,6 +129,7 @@ export function instantiateRig(prep, opts = {}) {
 export async function buildRig(buf, opts = {}) { return instantiateRig(await prepareRig(buf, opts), opts); }
 
 import { CLIPS, UPPER, JUMP_CUT, locomotion } from './rigstate.js';
+import { actorLit } from './engine.js';
 import { buildProcClips, makeAxes } from './procclips.js';
 export { CLIPS, UPPER, locomotion };
 
