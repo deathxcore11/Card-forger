@@ -1899,7 +1899,9 @@ function psOmen() {
 // the most, stands in its middle, so the near shelves frame it on both sides (at 512 pixels wide only their inner edge
 // shows). Its heading is carved, its pages scroll in a box, its plaques lie along its foot.
 function psBook(title, body, foot, extra = '') {
-  const { W, H } = F, bw = Math.min(W - 16, 416), bx = (W - bw) >> 1, bgPic = CART.has('room-archive-book') ? 'room-archive-book' : 'key-title';
+  // The painting has black bands of its own above and below the room, so a frame taller than 360 rows takes the cut of the
+  // room without them (720 x 480, console-art.py), and no band shows above or below the shelves.
+  const { W, H } = F, bw = Math.min(W - 16, 416), bx = (W - bw) >> 1, bgPic = H > 360 && CART.has('room-archive-book-x') ? 'room-archive-book-x' : CART.has('room-archive-book') ? 'room-archive-book' : 'key-title';
   const bg = CART.has(bgPic) && D.cart && D.cart.title === 720 ? `<img class="bg" src="${cimg(bgPic)}" width="720" height="480" style="position:absolute;left:${(W - 720) >> 1}px;top:${(H - 480) >> 1}px" alt="">` : box(0, 0, W, H, 'st dk');
   const c = carve(title, 16, render), head = c ? `<img class="ab" src="${c.url}" width="${c.w}" height="${c.h}" style="left:${(bw - c.w) >> 1}px;top:4px" alt="${esc(title)}">` : `<b class="ab lb g" style="left:8px;top:8px">${esc(title)}</b>`; // placed from its own width, so it starts on a whole pixel
   return `<div class="ti">${bg}<div class="wn book" style="left:${bx}px;top:6px;width:${bw}px;height:${H - 12}px">${head}
