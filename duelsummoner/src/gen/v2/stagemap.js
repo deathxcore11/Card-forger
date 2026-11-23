@@ -1,4 +1,4 @@
-﻿// The v2 generator's StageMap for the game: the designed map (districts, tiers with cliffs, a spine route, landmarks, risk-placed rewards) seen the way the sim and the view read a map.
+// The v2 generator's StageMap for the game: the designed map (districts, tiers with cliffs, a spine route, landmarks, risk-placed rewards) seen the way the sim and the view read a map.
 //   heights   Float32Array(400 x 400), 1 m cells, metres: the standing height (WALL outside the playable shape and on the rim). The sim loads it straight into its collision grid (src/sim/terrain.js loadMap).
 //   cellFlags Uint16Array(400 x 400): the generator's cell flags (F in map.js), so the view can colour cliffs, ramps, lanes, arenas and the spine without guessing
 //   spawn, gate, arena, bossRings, encounters, districts: the shapes the old generator produced (world metres, x east, z south, origin at the grid centre), so the sim, scatter and HUD need no change
@@ -73,7 +73,11 @@ function buildStageMapV2(seedLo, stageIndex) {
         for (let dz = -1; dz <= 1 && flat; dz++) for (let dx = -1; dx <= 1; dx++) if (Math.abs(hAt(x + dx, z + dz) - h0) > 0.12) { flat = false; break; } if (flat) pick = { x: r2(x), z: r2(z), y: r2(h0) }; }
       if (pick) encounters.push({ type: 'cchest', x: pick.x, z: pick.z, y: pick.y, free: true }); } }  const ax = wcm(A.x), az = wcm(A.z), toll = A.tollBell || [A.x, A.z];
   const landmarks = m.landmarks.map(l => ({ type: l.type, x: wc(l.x), z: wc(l.z), base: r2(l.base / 100), top: r2(l.top / 100), mega: !!l.mega, hero: !!l.hero }));       // the view draws these from data
-  const kits = m.instances.map(i => ({ kit: i.kit, x: wc(i.x), z: wc(i.z), y: r2(i.y / 100), rot: i.rot >> 1 })).concat(extraKits(m, N, stageIndex, wc, r2));
+  const kits = m.instances.map(i => ({ kit: i.kit, x: wc(i.x), z: wc(i.z), y: r2(i.y / 100), rot: i.rot >> 1 })).concat(res.spec.rooms ? [] : extraKits(m, N, stageIndex, wc, r2));       // rooms: no loose pieces along the route, only the room structures
+  // rooms: the view tints each room's floor and plants it by its own rule, and the bird's-eye names it. roomOf is one byte per 2 m cell (255 outside), rooms lists each room's centre and style.
+  const roomOf = new Uint8Array(200 * 200).fill(255); if (res.spec.rooms) for (let cz = 0; cz < 200; cz++) for (let cx = 0; cx < 200; cx++) { const gx = cx * 2 + 1 - off, gz = cz * 2 + 1 - off; if (gx >= 0 && gz >= 0 && gx < N && gz < N && m.mask1[gz * N + gx] === 2) roomOf[cz * 200 + cx] = m.reg[gz * N + gx]; }
+  const rooms = (m.rooms || []).map(q => ({ id: q.id, name: q.name, tier: q.tier, style: q.style, x: wc(q.cx), z: wc(q.cz), landmark: q.landmark }));
+  const gateways = (m.gateways || []).map(g => ({ x: wc(g.x), z: wc(g.z), alongZ: g.alongZ }));
   const districts = m.macro.districts.map(d => ({ id: d.id, name: d.name, gate: !!d.gate, cx: wc((d.seed % m.C) * 8 + 4), cz: wc(((d.seed / m.C) | 0) * 8 + 4), r: 40, short: d.name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase(), color: '#f3e3c2' }));
   const sp = m.spine.path, main = []; for (let k = 0; k < sp.length; k += 3) main.push([wc(sp[k] % N), wc((sp[k] / N) | 0)]);
   const map = {
@@ -81,7 +85,7 @@ function buildStageMapV2(seedLo, stageIndex) {
     prims: [], heights, cellFlags, palette: res.spec.palette, stageName: res.spec.name,
     districts, spawn: { x: wcm(m.spawn.x), z: wcm(m.spawn.z) },
     gate: { x: ax, z: az, radius: 5.5 }, arena: { center: { x: ax, z: az }, boss: { x: ax, z: az }, tollPull: { x: wcm(toll[0]), z: wcm(toll[1]) } },
-    bossRings, encounters, landmarks, kits,
+    bossRings, encounters, landmarks, kits, rooms, roomOf, gateways,
     _road: { main, trails: [], width: 4.5, trailWidth: 3 }, _pools: poolSpotsV2(m, N, wc, r2, encounters, [wcm(m.spawn.x), wcm(m.spawn.z)], [ax, az]),
     report: { genVersion: res.genVersion, v2: true, attempt: res.attempt, fallback: !!res.fallback, timingMs: res.timing && res.timing.total, metrics: res.V && res.V.failing }
   };

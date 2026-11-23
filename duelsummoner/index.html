@@ -349,7 +349,15 @@
     #zones .zone:not(.full) { font-size:0; } #zones .zone:not(.full) b { display:none; } #zones .zone:not(.full)::after { content:'\25C7'; font-size:18px; color:#6b4fa0; } #zones .zone.st:not(.full)::after { content:'\2727'; }
     #prompt { bottom:190px; } #fusion { bottom:222px; } #itemsList { bottom:210px; }
   }
-  @media (pointer:coarse) { body[data-mode=play] #devbar { display:none; } }  </style>
+  @media (pointer:coarse) { body[data-mode=play] #devbar { display:none; } }    /* Slots on every screen: one row of eight compact tiles (the four Monster Zones, then the four Spell and Trap Zones), at most 9% of the screen height; empty ones are a dashed outline and a small glyph, filled ones show name, level and pips */
+  #zones { grid-template-columns:repeat(8, minmax(0, 1fr)); gap:4px; width:min(94vw, 900px); }
+  #zones .zone { height:clamp(28px, 7.4vh, 84px); min-height:0; padding:2px 4px; font-size:clamp(9px, 1.45vh, 14px); border-width:1px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; line-height:1.15; }
+  #zones .zone > span { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } #zones .zone b { font-size:.92em; } #zones .zone .fm { display:none; }
+  #zones .zone .pips { margin:1px 0; gap:1px; } #zones .zone .pips u { width:clamp(3px, .6vh, 6px); height:clamp(3px, .6vh, 6px); }
+  #zones .zone:not(.full) { font-size:0; border-style:dashed; background:#1b122066; } #zones .zone:not(.full) b { display:none; } #zones .zone:not(.full)::after { content:'\25C7'; font-size:clamp(14px, 2.4vh, 22px); color:#6b4fa0; } #zones .zone.st:not(.full)::after { content:'\2727'; }
+  #prompt { bottom:calc(7.4vh + 24px); } #fusion { bottom:calc(7.4vh + 52px); } #itemsList { bottom:calc(7.4vh + 20px); }    @media (pointer:coarse) { #zones { width:min(46vw, 560px); } }
+  @media (pointer:coarse) and (min-aspect-ratio: 3/4) and (max-aspect-ratio: 13/10) { #zones { top:100px; bottom:auto; left:8px; transform:none; width:calc(100vw - 190px); } #prompt { bottom:190px; } #fusion { bottom:222px; } #itemsList { bottom:210px; } }    @media (max-height:560px) { #zones .zone .pips { display:none; } #zones .zone { font-size:9px; } }
+  </style>
 </head>
 <body>
 <div id="stage"><canvas id="view"></canvas></div>

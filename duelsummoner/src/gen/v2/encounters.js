@@ -62,7 +62,7 @@ export function buildSlots(ctx, m, A, isl, rings, elites) {
     if (x < 1 || z < 1 || x >= N - 1 || z >= N - 1) continue;
     const h = m.h0[i]; if (Math.abs(m.h0[i + 1] - h) > 30 || Math.abs(m.h0[i - 1] - h) > 30 || Math.abs(m.h0[i + N] - h) > 30 || Math.abs(m.h0[i - N] - h) > 30) continue;
     if ((x * 100 + 50 - m.spawn.x) ** 2 + (z * 100 + 50 - m.spawn.z) ** 2 < 2000 * 2000) continue;
-    if (ringNear(x, z)) continue;
+    if (ringNear(x, z) || (m.reserve && m.reserve[i])) continue;
     add({ tag: 'field', x, z, layer: 0, chunk: -1 });
   }
   return out;

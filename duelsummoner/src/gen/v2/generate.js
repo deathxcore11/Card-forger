@@ -18,6 +18,7 @@ import { buildSlots, placeEncounters } from './encounters.js';
 import { validate } from './validate.js';
 import { repairLoop } from './repair.js';
 import { startViewOk } from './startview.js';
+import { placeRoomDressing } from './rooms.js';
 import { scatter } from './scatter.js';
 
 export const MAX_ATTEMPTS = 8, MAX_REPAIR_PASSES = 4, FALLBACK_TRIES = 6; // attempts MAX_ATTEMPTS.. use the authored layouts
@@ -73,10 +74,13 @@ function attemptOnce(ctx, timing) {
   const rr = reserveBossRings(ctx, m); trace('rings', JSON.stringify(rr), Math.round(clock.now()-t0));
   timing.terrain += clock.now() - t1;
   const t2 = clock.now();
+  if (ctx.spec.rooms) { gateApproach(ctx, m, spineDist); placeRoomDressing(ctx, m, spineDist); }       // rooms: structures only (rooms.js), no loose chunk props
+  else {
   placeChunks(ctx, m, spineDist); trace('placeChunks', Math.round(clock.now()-t0));
   gateApproach(ctx, m, spineDist);
   placeMegaLandmark(ctx, m);
   placeHeroes(ctx, m);
+  }
   finalizeTerrain(m); trace('finalizeTerrain', Math.round(clock.now()-t0));
   scatter(ctx, m);
   timing.chunks += clock.now() - t2;

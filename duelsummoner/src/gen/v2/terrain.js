@@ -249,7 +249,7 @@ export function carveTransitions(ctx, m) {
   return fails;
 }
 
-// Rooms: where two rooms of the same tier meet there is a wall 2 m thick and 4 m high along the whole border, with one passage 14 m wide where the rooms are joined (a graph edge) and none where they are not.
+// Rooms: where two rooms of the same tier meet there is a wall 3 m thick and 6.5 m high along the whole border, with one passage 14 m wide where the rooms are joined (a graph edge) and none where they are not.
 // Rooms of different tiers meet in a cliff (the tier step), with the ramps carved above. The passage is centred on the border's middle, so doors sit in the middle of long straight walls.
 function roomWalls(ctx, m, isEdge, nR) {
   const N = m.N, mac = m.macro, pairs = new Map();
@@ -260,10 +260,13 @@ function roomWalls(ctx, m, isEdge, nR) {
   for (const [key, L] of pairs) {
     const a = (key / 64) | 0, b = key % 64, open = isEdge[a * nR + b] === 1; let sx = 0, sz = 0; const n = L.length / 2; for (let k = 0; k < L.length; k += 2) { sx += L[k]; sz += L[k + 1]; }
     const cx = sx / n, cz = sz / n; let bx = L[0], bz = L[1], bd = 1e18; for (let k = 0; k < L.length; k += 2) { const d = (L[k] - cx) ** 2 + (L[k + 1] - cz) ** 2; if (d < bd) { bd = d; bx = L[k]; bz = L[k + 1]; } }
-    const h = mac.regions[a].tier * 300 + 400;
+    let minx = 1e9, maxx = -1e9, minz = 1e9, maxz = -1e9; for (let k = 0; k < L.length; k += 2) { minx = Math.min(minx, L[k]); maxx = Math.max(maxx, L[k]); minz = Math.min(minz, L[k + 1]); maxz = Math.max(maxz, L[k + 1]); }
+    const alongZ = (maxz - minz) >= (maxx - minx);       // the wall runs along z (so a passage opens along x) or along x
+    (m.roomWalls = m.roomWalls || []).push({ a, b, open, bx, bz, alongZ, minx, maxx, minz, maxz, tier: mac.regions[a].tier });
+    const h = mac.regions[a].tier * 300 + 650;
     for (let k = 0; k < L.length; k += 2) {
       const x = L[k], z = L[k + 1]; if (open && Math.abs(x - bx) <= 7 && Math.abs(z - bz) <= 7) continue;
-      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) { if (Math.abs(dx) + Math.abs(dz) > 1) continue; const xx = x + dx, zz = z + dz; if (xx < 0 || zz < 0 || xx >= N || zz >= N) continue; const j = zz * N + xx; if (m.reg[j] !== a && m.reg[j] !== b) continue; if (m.flags[j] & (F.RAMP | F.GULLY | F.ARENA | F.SPAWNB)) continue; m.flags[j] |= F.SOLID; m.h0[j] = h; m.nodetail[j] = 1; }
+      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) { const xx = x + dx, zz = z + dz; if (xx < 0 || zz < 0 || xx >= N || zz >= N) continue; const j = zz * N + xx; if (m.reg[j] !== a && m.reg[j] !== b) continue; if (m.flags[j] & (F.RAMP | F.GULLY | F.ARENA | F.SPAWNB)) continue; m.flags[j] |= F.SOLID; m.h0[j] = h; m.nodetail[j] = 1; }
     }
   }
 }

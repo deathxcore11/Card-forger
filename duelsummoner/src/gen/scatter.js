@@ -1,4 +1,4 @@
-﻿// The scatter of a stage: where its trees, rocks, bushes, grass and flowers stand. Pure and integer-seeded (the same map always gives the same stage, in Node and in the browser),
+// The scatter of a stage: where its trees, rocks, bushes, grass and flowers stand. Pure and integer-seeded (the same map always gives the same stage, in Node and in the browser),
 // so the sim can make the trees and big rocks solid and the view can draw exactly the same ones. The view adds colours and shapes; this module only decides places and sizes.
 // Rules (design/environment-bar.md): trees and rocks keep 24 m clear of the spawn; groves of 3 to 5 trees with trunks 6 to 9 m apart and at most 3 in any 10 x 10 m cell;
 // two tree species (parasol 9-11 m, blob 13-16 m); rocks in tiers (hero 4.5-6 m, tall 3-3.5 m, low 1.2-1.5 m, pebbles 0.35 m or less), nothing solid between 0.4 and 1.2 m;
@@ -32,6 +32,7 @@ export const TREE_SCALE = { parasol: [0.9, 1.1], blob: [1.3, 1.6] };
 
 // solidOnly: stop after the trees and rocks (the only things you can run into), which come first in the random sequence so they are the same either way
 export function scatterStage(map, stageIndex, solidOnly) {
+  if (map.rooms && map.rooms.length) return scatterRooms(map, stageIndex, solidOnly);
   const D = DENSITY[Math.min(stageIndex || 0, DENSITY.length - 1)], seed = strHash(String(map.hash || map.key || 'x')), rnd = mulberry(seed ^ 0x5CE9E), pat = noise2(seed ^ 0xA11CE);
   const R = (MAP && MAP.boundaryR ? MAP.boundaryR : 195) * 0.94, out = { trees: [[], [], [], []], rocks: [[], [], []], bushes: [], special: [], grass: [], flowers: [], flowerSpots: [] };
   const keep = [{ x: map.spawn.x, z: map.spawn.z, r: 10 }, { x: map.gate.x, z: map.gate.z, r: 12 }];                  // places scenery stays out of: the start, the gate, the arena, boss rings, every encounter
@@ -131,3 +132,40 @@ export function scatterStage(map, stageIndex, solidOnly) {
 
 
 
+
+// ---- rooms (the designed maps): trees and rocks follow the same structure rule as the kit. Each room has its own planting rule: a grove has trees in rows 3 to 7 m from its walls, a pool room a ring of trees round its pool, a meadow a few trees on its walls and bushes,
+// a colonnade, ruin or court none or very few; boulders stand only at the foot of a wall or cliff. Nothing is dropped on open floor, and the 20 m round each room's landmark stays clear.
+function scatterRooms(map, stageIndex, solidOnly) {
+  const seed = strHash(String(map.hash || map.key || 'x')), rnd = mulberry(seed ^ 0x5CE9E), SZ = 400, HALF = 200;
+  const out = { trees: [[], [], [], []], rocks: [[], [], []], bushes: [], special: [], grass: [], flowers: [], flowerSpots: [] };
+  const H = (x, z) => heightAt(x, z), ok = (x, z) => H(x, z) < 50;
+  // distance (m, 1 m cells, chamfer) to the nearest wall cell: a solid block or the rim
+  const dist = new Float32Array(SZ * SZ).fill(1e9), q = [];
+  for (let j = 0; j < SZ; j++) for (let i = 0; i < SZ; i++) { const h = map.heights[j * SZ + i]; if (h >= 50 || (map.cellFlags[j * SZ + i] & 4096)) { dist[j * SZ + i] = 0; q.push(j * SZ + i); } }
+  for (let k = 0; k < q.length; k++) { const c = q[k], x = c % SZ, z = (c / SZ) | 0, d = dist[c]; for (const [dx, dz, w] of [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.4], [-1, -1, 1.4], [1, -1, 1.4], [-1, 1, 1.4]]) { const xx = x + dx, zz = z + dz; if (xx < 0 || zz < 0 || xx >= SZ || zz >= SZ) continue; const n = zz * SZ + xx; if (d + w < dist[n]) { dist[n] = d + w; q.push(n); } } }
+  const wd = (x, z) => { const i = Math.floor(x + HALF), j = Math.floor(z + HALF); return i < 0 || j < 0 || i >= SZ || j >= SZ ? 0 : dist[j * SZ + i]; };
+  const roomAt = (x, z) => { const cx = Math.floor((x + HALF) / 2), cz = Math.floor((z + HALF) / 2); if (cx < 0 || cz < 0 || cx >= 200 || cz >= 200) return -1; const r = map.roomOf[cz * 200 + cx]; return r === 255 ? -1 : r; };
+  const keep = [{ x: map.spawn.x, z: map.spawn.z, r: 24 }, { x: map.gate.x, z: map.gate.z, r: 14 }]; if (map.arena) keep.push({ x: map.arena.center.x, z: map.arena.center.z, r: 18 });
+  for (const r of map.rooms) if (r.landmark) keep.push({ x: r.x, z: r.z, r: 20 });
+  for (const e of map.encounters || []) keep.push({ x: e.x, z: e.z, r: 6 });
+  for (const b of map.bossRings || []) keep.push({ x: b.x, z: b.z, r: (b.r || 14) + 2 });
+  const road = roadPath(map), pools = poolSpots(map); for (const p of pools) keep.push({ x: p.x, z: p.z, r: p.r + 3 });
+  for (const g of map.gateways || []) keep.push({ x: g.x, z: g.z, r: 10 });
+  const free = (x, z, pad) => { if (roadDist(road, x, z) < 4 + (pad || 0)) return false; for (const k of keep) { const dx = x - k.x, dz = z - k.z, rr = k.r + (pad || 0); if (dx * dx + dz * dz < rr * rr) return false; } return true; };
+  const flat = (x, z, tol = 0.3) => { const h = H(x, z); if (h >= 50) return null; for (const [dx, dz] of [[1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6]]) if (Math.abs(H(x + dx, z + dz) - h) > tol) return null; return h; };
+  const tint = (lo, hi) => 1 - lo + rnd() * (lo + hi), trees = [], rocks = [];
+  const rule = { grove: { p: 0.30, lo: 3, hi: 7 }, pool: { p: 0.07, lo: 3, hi: 6 }, meadow: { p: 0.05, lo: 3, hi: 6 }, colonnade: { p: 0.02, lo: 4, hi: 6 }, ruin: { p: 0.03, lo: 3, hi: 6 }, court: { p: 0 } };
+  const treeOk = (x, z) => { for (const t of trees) { const dx = x - t[0], dz = z - t[2]; if (dx * dx + dz * dz < 6.5 * 6.5) return false; } return true; };
+  for (let z = -190; z <= 190; z += 3) for (let x = -190; x <= 190; x += 3) {
+    const jx = x + (rnd() - 0.5) * 2, jz = z + (rnd() - 0.5) * 2, r = roomAt(jx, jz); if (r < 0) continue; const room = map.rooms[r], R = rule[room.style] || rule.court, d = wd(jx, jz);
+    if (R.p > 0 && d >= R.lo && d <= R.hi && rnd() < R.p && trees.length < 220) { if (!free(jx, jz, 3) || !treeOk(jx, jz)) continue; const h = flat(jx, jz, 0.35); if (h === null) continue; const parasol = rnd() < 0.6, sc = parasol ? TREE_SCALE.parasol : TREE_SCALE.blob, s = sc[0] + rnd() * (sc[1] - sc[0]); trees.push([jx, h, jz, s, rnd() * TAU, tint(0.12, 0.12), parasol ? Math.floor(rnd() * 2) : 2 + Math.floor(rnd() * 2)]); continue; }
+    if (d >= 1.8 && d <= 3.6 && rnd() < 0.012 && rocks.length < 60) { if (!free(jx, jz, 2)) continue; const h = flat(jx, jz, 0.4); if (h === null) continue; const tall = rnd() < 0.4, ex = tall ? 1.6 + rnd() * 0.4 : 1.2 + rnd() * 0.5, ey = tall ? 2.4 + rnd() * 0.4 : 1.0 + rnd() * 0.2; let near = false; for (const o of rocks) { const dx = jx - o[0], dz = jz - o[2]; if (dx * dx + dz * dz < 36) { near = true; break; } } if (!near) rocks.push([jx, h, jz, ex, rnd() * TAU, tint(0.1, 0.1), ey]); }
+  }
+  for (const t of trees) out.trees[t[6]].push([t[0], t[1], t[2], t[3], t[4], t[5]]);
+  rocks.forEach((r, i) => out.rocks[i % 3].push(r));
+  if (solidOnly) return out;
+  for (const t of trees) for (let k = 0; k < 2; k++) { const a = rnd() * TAU, dd = 1.8 + rnd() * 2, x = t[0] + cos(a) * dd, z = t[2] + sin(a) * dd, h = flat(x, z, 0.4); if (h !== null && free(x, z, 0)) out.bushes.push([x, h, z, 1.0 + rnd() * 0.8, rnd() * TAU, tint(0.1, 0.1)]); }
+  const pat = noise2(seed ^ 0xA11CE);
+  for (const room of map.rooms) if (room.style === 'meadow') for (let k = 0; k < 40; k++) { const a = rnd() * TAU, dd = 8 + rnd() * 24, x = room.x + cos(a) * dd, z = room.z + sin(a) * dd; if (roomAt(x, z) === room.id && free(x, z, 1) && flat(x, z, 0.3) !== null && pat(x * 0.05, z * 0.05) > 0.4) out.flowerSpots.push([x, flat(x, z, 0.3), z]); }
+  return out;
+}

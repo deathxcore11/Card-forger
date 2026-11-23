@@ -557,7 +557,7 @@ export function buildMacro(ctx) {
   let fail = 'districts';
   for (let gateTry = 0; gateTry < 4; gateTry++) {
     let D, Rg;
-    if (ctx.fallback) { const fb = fallbackDistricts(ctx, M); if (!fb) return { fail: 'fallback_layout' }; D = fb.D; Rg = finishRegions(ctx, M, D, fb.seeds); }
+    if (ctx.fallback && !ctx.spec.rooms) { const fb = fallbackDistricts(ctx, M); if (!fb) return { fail: 'fallback_layout' }; D = fb.D; Rg = finishRegions(ctx, M, D, fb.seeds); }
     else if (ctx.spec.rooms) { const rr = placeRooms(ctx, M, gateTry); if (!rr) { fail = 'rooms'; continue; } D = rr.D; Rg = rr.Rg; }
     else { D = placeDistricts(ctx, M, gateTry); if (!D) { fail = 'districts'; continue; } Rg = placeRegions(ctx, M, D); }
     if (Rg.regions.length < regionRange(ctx, M)[0] - (ctx.fallback ? 2 : 0)) { fail = 'region_count'; continue; }
