@@ -47,7 +47,6 @@ import { KIND_LIST } from './data/enemies.js';
 const T = window.THREE, $ = id => document.getElementById(id);
 const canvas = $('view');
 const renderer = new T.WebGLRenderer({ canvas, antialias: false });
-const LOW = 2;                                   // render at half size for a chunky look
 const scene = new T.Scene();
 const HORIZON = 0xe8d6b0;                                    // the sky's horizon colour and the fog colour are one: far things fade into the haze, not into a flat beige sky
 scene.background = new T.Color(HORIZON);
@@ -67,13 +66,24 @@ function fitFov() { const a = Math.max(0.3, camera.aspect || 1.78); baseV = Math
 scene.add(new T.HemisphereLight(0xdfe6f0, 0x6a5038, 0.74));
 const sun = new T.DirectionalLight(0xffe2b0, 0.66); sun.position.set(60, 90, 30); scene.add(sun);
 
+// Low-res target and upscale (engine plan 0b). The scene is drawn into an internal render target and blitted to the canvas by one nearest-sampled quad at a whole-number scale:
+// s = max(2, round(screenHeight / 540)) device pixels per game pixel, internal size ceil(width / s) by ceil(height / s). Every game pixel is the same size; no CSS scaling. HUD and text stay at full resolution.
+const INTERNAL_TARGET = 540;
+let lowRT = null, blitScene = null, blitCam = null, blitQuad = null;
 function resize() {
-  // the chunky look with even blocks: every block is a whole number of device pixels (about LOW CSS pixels), never a fractional scale, so all blocks are the same size; HUD and text stay at full resolution
-  const dpr = window.devicePixelRatio || 1, dw = Math.round(window.innerWidth * dpr), dh = Math.round(window.innerHeight * dpr), B = Math.max(1, Math.floor(LOW * dpr)), bw = Math.max(1, Math.floor(dw / B)), bh = Math.max(1, Math.floor(dh / B));
-  renderer.setPixelRatio(1); renderer.setSize(bw, bh, false);
-  canvas.style.width = (bw * B / dpr) + 'px'; canvas.style.height = (bh * B / dpr) + 'px'; canvas.dataset.block = B;
-  camera.aspect = bw / bh; fitFov();
+  const dpr = window.devicePixelRatio || 1, dw = Math.max(1, Math.round(window.innerWidth * dpr)), dh = Math.max(1, Math.round(window.innerHeight * dpr)), s = Math.max(2, Math.round(dh / INTERNAL_TARGET)), bw = Math.max(1, Math.ceil(dw / s)), bh = Math.max(1, Math.ceil(dh / s));
+  renderer.setPixelRatio(1); renderer.setSize(dw, dh, false);
+  canvas.style.width = (dw / dpr) + 'px'; canvas.style.height = (dh / dpr) + 'px'; canvas.dataset.block = s; canvas.dataset.internal = bw + 'x' + bh;
+  if (!lowRT || lowRT.width !== bw || lowRT.height !== bh) {
+    if (lowRT) lowRT.dispose();
+    lowRT = new T.WebGLRenderTarget(bw, bh, { minFilter: T.NearestFilter, magFilter: T.NearestFilter, depthBuffer: true, stencilBuffer: true, generateMipmaps: false });
+    if (!blitScene) { blitScene = new T.Scene(); blitCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1); blitQuad = new T.Mesh(new T.PlaneGeometry(2, 2), new T.MeshBasicMaterial({ toneMapped: false, depthTest: false, depthWrite: false, fog: false })); blitQuad.frustumCulled = false; blitScene.add(blitQuad); }
+    blitQuad.material.map = lowRT.texture; blitQuad.material.needsUpdate = true;
+  }
+  { const uv = blitQuad.geometry.attributes.uv, u1 = dw / s / bw, v1 = dh / s / bh; uv.setXY(0, 0, 1); uv.setXY(1, u1, 1); uv.setXY(2, 0, 1 - v1); uv.setXY(3, u1, 1 - v1); uv.needsUpdate = true; }       // the quad shows exactly dw/s by dh/s internal pixels (anchored top left: the right column or bottom row may be cropped by one)
+  renderer.internalSize = new T.Vector2(bw, bh); camera.aspect = bw / bh; fitFov();
 }
+function drawFrame() { renderer.setRenderTarget(lowRT); renderer.render(scene, camera); renderer.setRenderTarget(null); renderer.render(blitScene, blitCam); }
 window.addEventListener('resize', resize); resize();
 
 // the owner's models are optional local assets; the placeholders stay if they are missing
@@ -184,7 +194,7 @@ function toggleProof() { proofOn = !proofOn; proofEl.classList.toggle('on', proo
 { const pe = performance.getEntriesByType ? performance.getEntriesByType('resource') : []; let b = 0; for (const e of pe) b += e.encodedBodySize || e.transferSize || 0; dl.mb = b > 0 ? b / 1048576 : null;       // the build manifest is the target; until one exists, the bytes the page actually fetched
   fetch('build-manifest.json', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(m => { if (m && typeof m.totalBytes === 'number') dl.mb = m.totalBytes / 1048576; }).catch(() => {}); }
 function proofLine() {
-  const s = frameMs.slice().sort((a, b) => a - b), med = s.length ? s[s.length >> 1] : 0, r = renderer.info.render, sz = renderer.getDrawingBufferSize(new T.Vector2());
+  const s = frameMs.slice().sort((a, b) => a - b), med = s.length ? s[s.length >> 1] : 0, r = renderer.info.render, sz = renderer.internalSize;
   return game.enemyCount() + ' enemies  ' + (med > 0 ? (1000 / med).toFixed(0) : '-') + ' fps  ' + r.calls + ' draws  ' + (r.triangles / 1000).toFixed(1) + 'k tris  ' + sz.x + 'x' + sz.y + '  ' + (renderer.capabilities.isWebGL2 ? 'GL2' : 'GL1') + '  ' + (dl.mb === null ? 'dl n/a' : dl.mb.toFixed(1) + ' MB');
 }
 let proofT = 0, proofTouch = 0;
@@ -494,7 +504,7 @@ function frame(now) {
   showFlash(game);
   const a1 = performance.now();
   trimUploads();
-  renderer.info.autoReset = false; renderer.info.reset(); renderer.render(scene, camera);       // calls and triangles are summed over every pass of the frame, so a later post pass is counted too
+  renderer.info.autoReset = false; renderer.info.reset(); drawFrame();       // calls and triangles are summed over every pass of the frame, so a later post pass is counted too
   prof.view = a1 - a0; prof.render = performance.now() - a1;
 
   if (perf.lastNow) { frameMs.push(now - perf.lastNow); while (frameMs.length > 120) frameMs.shift(); }
@@ -514,7 +524,7 @@ requestAnimationFrame(frame);
 function pxRT(w, h) { if (!pxRT.rt || pxRT.w !== w || pxRT.h !== h) { if (pxRT.rt) pxRT.rt.dispose(); pxRT.rt = new T.WebGLRenderTarget(w, h, { depthBuffer: true, stencilBuffer: true }); pxRT.buf = new Uint8Array(w * h * 4); pxRT.w = w; pxRT.h = h; } return pxRT.rt; }       // one target reused by every call (a new one each call ran the GPU out of memory over 200 calls)
 function duelistPixels() {
   const rig = actors.rig; if (!rig) return null;
-  const size = renderer.getDrawingBufferSize(new T.Vector2()), w = size.x, h = size.y, rt = pxRT(w, h), buf = pxRT.buf;
+  const size = renderer.internalSize, w = size.x, h = size.y, rt = pxRT(w, h), buf = pxRT.buf;
   const idMat = new T.MeshBasicMaterial({ color: 0xff00ff, fog: false }); idMat.skinning = true; idMat.stencilWrite = true; idMat.stencilFunc = T.AlwaysStencilFunc; idMat.stencilRef = 1; idMat.stencilZPass = T.ReplaceStencilOp;
   const saved = [], extras = []; rig.group.traverse(o => { if (o.userData.extra) extras.push([o, o.visible]); else if (o.isMesh) { saved.push([o, o.material]); o.material = idMat; } });
   const setExtras = on => { for (const [o] of extras) o.visible = on && o.userData.extra === 'sil'; };
@@ -531,7 +541,7 @@ function duelistPixels() {
 window.__ds = {
   duelistPixels, see: SEE, tagBlocked,
   bars,
-  renderer, rigSil: () => actors.rig.see.sil, rigExtras: () => actors.rig.see.extras, rigMeshCount: () => { let n = 0, x = 0; if (actors.rig) actors.rig.group.traverse(o => { if (o.isMesh) { if (o.userData.extra) x++; else n++; } }); return { bodies: n, extras: x }; },
+  renderer, blitNow: drawFrame, rigSil: () => actors.rig.see.sil, rigExtras: () => actors.rig.see.extras, rigMeshCount: () => { let n = 0, x = 0; if (actors.rig) actors.rig.group.traverse(o => { if (o.isMesh) { if (o.userData.extra) x++; else n++; } }); return { bodies: n, extras: x }; },
   fitHud, minimap, props, game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
   start: begin, begin, results, setMode, menus, fx, onEvent, save,

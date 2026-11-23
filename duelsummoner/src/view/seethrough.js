@@ -104,7 +104,7 @@ export function updateSee(camera, ip, renderer) {
   SEE.cam.value.copy(camera.position);
   SEE.duelist.value.set(ip.x, ip.y + 1.0, ip.z);
   camera.updateMatrixWorld();
-  const size = renderer.getDrawingBufferSize(V2.set(0, 0)), bw = size.x, bh = size.y;     // V2 is reused below, so read the numbers first
+  const size = renderer.internalSize ? V2.copy(renderer.internalSize) : renderer.getDrawingBufferSize(V2.set(0, 0)), bw = size.x, bh = size.y;     // V2 is reused below, so read the numbers first
   V.set(ip.x, ip.y + 1.0, ip.z).project(camera); const cx = (V.x + 1) / 2 * bw, cy = (V.y + 1) / 2 * bh;
   V.set(ip.x, ip.y + 1.9, ip.z).project(camera); const top = (V.y + 1) / 2 * bh;
   V.set(ip.x, ip.y, ip.z).project(camera); const bot = (V.y + 1) / 2 * bh;
