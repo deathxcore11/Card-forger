@@ -1043,7 +1043,7 @@ function psChamber() {
   const pips = Array.from({ length: 6 }, (_, i) => `<i class="pip${i < r.chamber ? ' on' : i === r.chamber ? ' at' : ''}" style="left:${8 + i * 11}px;top:20px"></i>`).join('') + `<i class="seal${r.seals >= 2 ? ' on' : ''}" style="left:76px;top:19px"></i>`;
   const rel = relicList(r), belt = Array.from({ length: 9 }, (_, i) => { const id = rel[i]; return `<button class="sl" style="left:${8 + (i % 3) * 28}px;top:${54 + Math.floor(i / 3) * 28}px" data-a="tab:relics" aria-label="${id ? esc(RELICS[id].name) : 'Empty relic slot'}">${id ? medal(id, 24) : ''}</button>`; }).join('');
   const right = lb(8, 8, `FLOOR ${fl}`, 'g') + pips + lb(8, 40, 'RELICS', 'g') + (rel.length > 9 ? lbr(88, 40, '+' + (rel.length - 9)) : '') + belt
-    + lb(8, 142, `CHARMS ${r.charms.length}/${db.config.charmSlots}`, 'g') + (db.config.heatRules && r.heat ? pq(4, yb(160), 88, [`HEAT ${r.heat} RULES`, `HEAT ${r.heat}`], `heatinfo:${r.heat}`) : '')
+    + lb(8, 142, `CHARMS ${r.charms.length}/${db.config.charmSlots}`, 'g') + (db.config.heatRules && r.heat ? pq(4, yb(160), 88, `HEAT ${r.heat}`, `heatinfo:${r.heat}`) : '')
     + pq(4, yb(180), 88, 'ALL DOORS', 'tab:doors') + pq(4, yb(200), 88, 'DECK', 'tab:deck') + pq(4, yb(220), 88, 'RELICS', 'tab:relics');
   G.barText = bar;
   return frame({ left: psYou(r), right, view, ledge, bar });
