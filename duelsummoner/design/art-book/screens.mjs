@@ -18,19 +18,24 @@ export const SCREENS = [
     'Under the cards: Redraw and Banish buttons with how many are left; Skip for coins.',
     'Added 23 Nov. The Redraw, Exile (the new name for Banish) and Pass buttons each carry an icon (IC26).',
   ] },
-  { name: 'Pause', uses: ['UI01', 'UI02', 'UI03', 'UI12', 'IC05', 'IC06', 'IC07', 'IC10'], lay: [
+  { name: 'Pause', uses: ['UI01', 'UI02', 'UI03', 'UI12', 'IC05', 'IC06', 'IC07', 'IC10', 'UI13', 'UI28', 'FX17', 'IC22', 'IC30', 'IC29', 'IC26', 'IC04', 'IC23'], lay: [
     'Title PAUSED across the top. Under it a plaque with the map name, difficulty and the score multiplier.',
     'Left window "Inventory" (UI01 with UI02): monsters with levels and forms, then items, then Spells and Traps. Under it "Run log": shrine and Blessing results so far, and the Oaths you swore (IC10).',
     'Centre: buttons Resume, Map, Settings, Restart, Quit (UI03), with corner brackets on the chosen one.',
     'Right window "Stats": the full Ledger stat sheet, grouped: life (Max LP, regen, Overheal, Shield, Guard, Sidestep, Lifesteal, Thorns); damage (Damage, Keen, crit damage, attack speed, extra cards, bounces); reach (size, card speed, duration, damage to elites, knockback, move speed); movement (extra jumps, jump height); fortune (Fortune, Difficulty, pickup range, XP, coins, Star Chips). Each with its stat icon.',
+    'Added 23 Nov, approved menus. This is the layout to build; the lines above are the older plan. The run freezes, darkens and blurs behind two glass panels drawn by the game (the stone frames UI01 to UI03 are not used).',
+    'Added 23 Nov, approved menus. Left two thirds, the duel mat: "Duel paused" with the sworn Oath seals (IC10) and the device heat mark (IC23); then the map, stage, difficulty and time; then score, Star Chips, coins, kills and level. Under that the four Monster Zones as tall card tiles (empty ones show UI13) with level and form pips, the four Spell and Trap Zones as wide tiles (empty ones show UI28), a strip of item tiles with counts, and a strip of what was exiled. A faint summon circle (FX17) is engraved in the mat.',
+    'Added 23 Nov, approved menus. Right third, the Ledger column with three tabs (IC22): Actions, Stats, Rites. Actions: Resume (gold), Settings, Map, Restart and End run, each with its picture (IC30; the Settings gear is on IC29); Restart and End run are held for one second. Stats: icon, name, value and change for every stat (IC05, IC06, IC07, IC29, IC26). Rites: the list of Blessings taken (IC04).',
+    'Added 23 Nov, approved menus. Two-screen handheld: the mat fills the top screen; the bottom holds Resume, the action buttons and a Stat sources button (IC30).',
   ] },
-  { name: 'Full map', uses: ['UI01', 'UI02', 'KA14', 'IC11', 'IC27'], lay: [
+  { name: 'Full map', uses: ['UI01', 'UI02', 'KA14', 'IC11', 'IC27', 'IC33'], lay: [
     'A big square window titled MAP with compass letters on all four sides and a close button.',
     'The parchment (KA14) shows what you have explored; the rest is drifting fog drawn in code. Icons: you, chests, shrines, the Broker, boss rings, the gate, the Descent Circle.',
     'Better than the reference: tap an icon to drop a pin that shows on the minimap and as a beam in the world.',
     'Added 23 Nov. More map icons (IC27): you, Trophy Chest, Sealed Chest, Witness Stones, the Broker, the Descent Circle, light pillars, the Ley Thread and the compass mark.',
+    'Added 23 Nov, approved menus. The full map is now the Map tab of Quick Look, opened with Select in a run or with Map on the pause screen. Top: a Close chip and three tabs, Map, Build (IC33) and Stats. Middle: the square map (KA14) as a card with a gold edge and one small compass mark (IC27), with no letters round the rim. Right: the legend of map icons (IC11, IC27).',
   ] },
-  { name: 'Settings', uses: ['UI01', 'UI02', 'UI04', 'UI05'], lay: [
+  { name: 'Settings', uses: ['UI01', 'UI02', 'UI04', 'UI05', 'IC22', 'IC16', 'IC18', 'IC19', 'IC28'], lay: [
     'A window titled SETTINGS with tabs (UI04): Game, Video, Controls, Audio, Effects, Accessibility.',
     'Game: camera shake, aim mode (auto-aim nearest, smart aim, manual), aim randomness, show tips, minimap size and rotation, damage numbers.',
     'Video: resolution scale, frame rate cap (60, 90, 120), shadows, effects quality, view distance.',
@@ -39,33 +44,80 @@ export const SCREENS = [
     'Effects: hit flashes, screen flash, effect opacity of your summons.',
     'Accessibility: reduce motion, colour-blind danger colours, big text, hold or toggle for dash.',
     'Each row: name on the left, arrows or a slider and its value on the right (UI05).',
+    'Added 23 Nov, approved menus. This is the layout to build; the lines above are the older plan. Tabs across the top (IC22): Game, Display, Controls, Sound, Access, Account. The panels, tabs, switches and sliders are drawn by the game as dark glass (UI01, UI02, UI04 and UI05 are not used).',
+    'Added 23 Nov, approved menus. Left, a little over half the screen: six big rows per page, the name on the left and its switch, slider or choice on the right, with page dots under them. Every row works with the d-pad and with a tap.',
+    'Added 23 Nov, approved menus. Right: the help panel. The name of the chosen row, up to three lines about it, its default, and a live preview box: the camera moves for camera rows, a sample for text size, a sample sound for volume rows, a pad drawing that lights up for button rows (IC16, IC18, IC19), and the touch buttons at their real size (IC28).',
+    'Added 23 Nov, approved menus. Behind it the live Camp (or the frozen run, when opened from Pause) is blurred and dimmed by the game, so Settings needs no backdrop picture.',
   ] },
-  { name: 'Main menu', uses: ['KA02', 'KA03', 'UI03', 'IC11', 'UI19', 'UI20'], lay: [
+  { name: 'Main menu', uses: ['KA02', 'KA03', 'UI03', 'IC11', 'UI19', 'UI20', 'W702', 'W703', 'W704', 'W706', 'W146', 'W147', 'IC30', 'IC29', 'IC21', 'IC31', 'IC16', 'UI30', 'KA18', 'SF154', 'SF155', 'MU01'], lay: [
     'Backdrop KA03 with the logo top left. Buttons down the left: Play, Card Library, Quests, Shop, Settings, Quick Duel.',
     'Right: weekly leaderboard window (Global / Friends tabs) with the reset countdown, rows with rank medal, profile frame, duelist icon, name and score.',
     'Bottom left: the four quests closest to done with progress bars. Top right: Star Chips.',
+    'Added 23 Nov, approved menus. This is the layout to build; the lines above are the older plan. The background is the live 3D Camp, not the KA03 picture: the duelist stands on the plinth (W702) on a cliff top (W146, W147) with their starting monster circling, the board stone (W703) just to their right, a stone statue on a statue plinth (W704) for every Fusion found, a banner for every Oath kept, and a brazier (W706) for every duelist, lit at Mastery 10. The sky, the fire, the banners, the statues and the floor are made by the game. You hear the Camp air (SF154), the fires (SF155) and the menu theme (MU01).',
+    'Added 23 Nov, approved menus. Top left: the words DUEL SUMMONER and the tagline, printed by the game. Under them the big buttons, each with its picture (IC30): Play (gold, with who you play and your nearest reward), then Deck Box, Card Library and Quests, each with a small count on the right. Resume run appears above Play when a run is waiting.',
+    'Added 23 Nov, approved menus. Middle: the duelist, and the board stone showing the last map, your rank and how far you are from passing the next player. Pressing the stone opens the Leaderboard.',
+    'Added 23 Nov, approved menus. Top right: Star Chips (IC11) and your picture. Right: "Next goals", five rows, each with an icon (IC29, IC21), the goal, a bar and its reward (Star Chips, or the reward\'s own icon such as the outfit mark on IC31). Bottom right: two small chips, Adventures and Settings, with their button hints (IC16).',
+    'Added 23 Nov, approved menus. Two-screen handheld: the top screen shows only the Camp, the game name and Star Chips; the bottom screen shows the buttons, a Leaderboard button (its picture is on IC29) and Next goals over the Camp terrace picture (KA18). The small emblem (UI30) is for the title card, not this screen.',
+    'Added 23 Nov, approved menus. Phone: the same screen, with the buttons and the goals pulled in from the rounded corners so the duelist and the stone keep the middle.',
   ] },
-  { name: 'Duelist select', uses: ['KA04', 'PT01', 'PT02', 'PT03', 'PT04', 'PT05', 'UI01'], lay: [
+  { name: 'Duelist select', uses: ['KA04', 'PT01', 'PT02', 'PT03', 'PT04', 'PT05', 'UI01', 'W702', 'W709', 'W710', 'W115', 'IC32', 'IC33', 'IC24', 'IC23', 'IC08', 'IC16', 'FX17', 'SF158', 'SF159', 'MU02'], lay: [
     'Left: a grid of portraits (locked are dark silhouettes). Centre: the 3D duelist idling on a pedestal, turnable.',
     'Right window: name, mastery rank and bar, runs and kills, one fun line, starting monster, passive, outfit slots, Regalia slot.',
+    'Added 23 Nov, approved menus. This is the layout to build; the lines above are the older plan. The background is the live 3D summoning hall, not the KA04 picture: the duelist stands on the plinth (W702) in front of the broken summoning ring (W709), under broken vault ribs (W710) and between standing columns (W115), with a shaft of light and a glowing card sign (FX17) made by the game.',
+    'Added 23 Nov, approved menus. Left: "Duelists" and how many you own, then a grid of portrait tiles (PT01 onward), five across. A Mastery 10 tile has a gilded edge and a crown gem (IC24); a favourite has a pin (IC23); locked ones are a thin gold outline with a padlock, made by the game from the real portrait.',
+    'Added 23 Nov, approved menus. Middle: the live duelist, large, turned with the right stick; a "Turn" chip under the feet (IC16) and one line of runs, kills and longest run. Changing duelist plays the swap sound (SF158).',
+    'Added 23 Nov, approved menus. Right, top to bottom: the starting monster card with its element (IC08); the passive with its mark (IC32, IC33); the name and title; "Mastery 4" on its crest (IC33) with a bar and how far to the next rank; the outfit tiles and the Regalia tile (small snapshots of the 3D models, made by the game; changing one plays SF159); one line saying how to unlock what is chosen; then the gold button "Choose Kael".',
   ] },
-  { name: 'Map select', uses: ['KA05', 'KA06', 'KA07', 'KA08', 'UI01', 'IC10', 'IC24'], lay: [
+  { name: 'Map select', uses: ['KA05', 'KA06', 'KA07', 'KA08', 'UI01', 'IC10', 'IC24', 'W711', 'W115', 'FX39', 'FX25', 'FX13', 'IC23', 'KA15', 'SF160', 'SF161', 'SF162', 'SF151', 'MU02'], lay: [
     'Map cards left (KA05 to KA08); the chosen map on the right with its blurb, Easy / Medium / Hard rows (Star Chip and score multipliers, best score, best time, duelist icons of who cleared it), Stages: 3, the Oaths button and Confirm.',
     'Added 23 Nov. The Easy, Medium and Hard rows each carry their own mark (IC24).',
+    'Added 23 Nov, approved menus. This is the layout to build; the lines above are the older plan. The background is the live view of the chosen map under the sky of the chosen difficulty: clear morning for Easy, amber dusk for Medium, eclipse for Hard, all made by the game, each with its own sound (SF160, SF161, SF162). For Surface Ruins the view is the old road between columns (W115) to the Great sun arch (W711). The duelist stands small in the middle of it.',
+    'Added 23 Nov, approved menus. Top left: the maps as a row of up to three upright cards. Each card shows the middle strip of that map\'s painting (KA05, KA15 and so on) with the name on a gold bar; a locked map is an outline with question marks. Two lines about the chosen map sit under the row. Quick duel no longer has a card of its own (KA08).',
+    'Added 23 Nov, approved menus. Bottom left: the Oaths, on this screen now. Eight seal tiles (IC10) in two rows of four, each with its name and score bonus; a sworn seal turns solid gold, and an Oath kept before carries the wax check (IC23). Under them, the rule and reward of the chosen Oath.',
+    'Added 23 Nov, approved menus. Each sworn Oath shows a sign in the world: an hourglass in the sky and cracks over the duelist (FX39), chains at the feet (FX25), wind streaks (FX13); fog, dull coins and dimmed cards are made by the game.',
+    'Added 23 Nov, approved menus. Right: the map name; Full run or Quick duel (IC24); the three difficulty rows in their colours with their marks (IC24), the small portraits of the duelists who cleared each, and best score and time; one line saying what this run pays; then the gold button "Begin".',
   ] },
-  { name: 'Oaths', uses: ['IC10', 'NP03', 'UI01'], lay: [
+  { name: 'Oaths', uses: ['IC10', 'NP03', 'UI01', 'IC23', 'FX39'], lay: [
     'The Oath Keeper (NP03) stands left with the book open. Right: eight wax seals (IC10); press one to swear it; each shows its rule, the score bonus and its quest.',
+    'Added 23 Nov, approved menus. The Oaths no longer have a screen of their own: the eight seals sit at the bottom left of Map select (see that screen), and the signs of the sworn Oaths show in the world behind it (FX39). The Oath Keeper (NP03) is still met inside a run.',
   ] },
-  { name: 'Card Library', uses: ['UI14', 'UI15', 'UI04', 'IC01', 'IC02', 'IC03', 'IC04'], lay: [
+  { name: 'Card Library', uses: ['UI14', 'UI15', 'UI04', 'IC01', 'IC02', 'IC03', 'IC04', 'IC21', 'IC23', 'IC24', 'IC08', 'IC12'], lay: [
     'Tabs: Duelists, Monsters, Spells and Traps, Items, Regalia. A grid of cards (locked ones are card backs with the quest that unlocks them).',
     'Right window: the chosen entry large, what it does, useful stats, and the "in offers" switch.',
+    'Added 23 Nov, approved menus. This is the layout to build; the lines above are the older plan. Top: "Card Library" with how many you have found, and five tabs (IC21), each with its own count: Duelists, Monsters, Spells and Traps, Items, Regalia.',
+    'Added 23 Nov, approved menus. Left, a little over half: a grid of card tiles, six across and three down, in their rarity frames (UI14) with the rarity gem (IC24). A gold dot marks a new one; one kept out of offers is grey with a slash (IC23); a locked one is a card back (UI15) with a thin gold outline.',
+    'Added 23 Nov, approved menus. Right: the chosen card large (a monster turns slowly as a 3D model with its three forms beside it), its name, element (IC08) and kind, what it does, a few key numbers, and the gold button: "In offers: On or Off" for a card you own, "Track goal" for a locked one.',
+    'Added 23 Nov, approved menus. Behind it the live Camp is blurred and dimmed by the game, so the Card Library needs no backdrop picture.',
   ] },
-  { name: 'Quests', uses: ['UI21', 'UI04', 'IC11'], lay: [
+  { name: 'Quests', uses: ['UI21', 'UI04', 'IC11', 'IC21', 'IC23', 'IC29', 'IC31'], lay: [
     'Tabs: Duelists, Monsters, Spells and Traps, Items, General, Oaths, Mastery, Regalia. Rows with rarity borders, a progress bar, the reward and a hide-completed switch.',
+    'Added 23 Nov, approved menus. This is the layout to build; the line above is the older plan. Six tabs now (IC21): Next (the twelve quests closest to done), Duelists, Cards, Runs, Oaths, Regalia.',
+    'Added 23 Nov, approved menus. Rows with a rarity edge (UI21, made by the game): an icon (IC29, IC31), the quest, a bar with its numbers, and the reward on the right (Star Chips, IC11, or the reward\'s own icon). A pinned quest carries the pin and a finished one flips to the wax check (IC23). Behind it the live Camp is blurred by the game.',
   ] },
-  { name: 'Results', uses: ['KA09', 'KA10', 'UI01', 'UI19', 'UI20'], lay: [
+  { name: 'Results', uses: ['KA09', 'KA10', 'UI01', 'UI19', 'UI20', 'IC31', 'IC11', 'IC30', 'IC10', 'IC16', 'SF147', 'SF163', 'UI15', 'MU14', 'MU15'], lay: [
     'Backdrop KA09 or KA10. Score counting up, then time, level, kills, Fusions, Oaths kept, Star Chips, what downed you, damage taken.',
     'Right: where this run places on the boards (personal best, weekly, all-time) with the profile frame; buttons Main menu, Try again, Watch replay.',
+    'Added 23 Nov, approved menus. This is the layout to build; the lines above are the older plan. Backdrop KA09 (win) or KA10 (defeat). Left panel: the score counts up (IC31, with the tick SF147), then time, level, kills, Fusions, Overtime, Oaths kept (IC10) and what ended the run (IC11, IC31).',
+    'Added 23 Nov, approved menus. Right panel: where the run places: personal best, weekly board and all-time board (IC31), each reading "Being checked" until the run is verified. Beating your best or passing your rival plays SF163.',
+    'Added 23 Nov, approved menus. Bottom: the gold button "Try again" (IC30), then "Main menu" and "Watch replay". The buttons wake up only after the counting ends, so a fast thumb cannot start a new run by mistake.',
+    'Added 23 Nov, approved menus. Rewards, on the way back to the main menu: quest bars count up, finished quests flip to the wax check, new Card Library entries flip from card back (UI15) to face one by one, the Star Chip total counts up, and one line names the goal you are closest to.',
+  ] },
+  { name: 'Deck Box', uses: ['KA19', 'IC05', 'IC07', 'IC26', 'IC11', 'IC23', 'IC33', 'IC16', 'SF144'], lay: [
+    'Added 23 Nov, approved menus. Where Star Chips buy upgrades that last. Backdrop: the vault painting (KA19); this screen has no live 3D scene. Top: a Back chip, "Deck Box" and your Star Chips written large (IC11).',
+    'Added 23 Nov, approved menus. Left, a little over half: twelve upgrade tiles, four across and three down. Each has its icon (IC05, IC07, IC26), a short name, rank pips (IC23) and a price badge that turns gold when you can afford it, or a MAX plaque.',
+    'Added 23 Nov, approved menus. Right: the chosen upgrade large, "Rank 2 of 5", what one rank gives, and a big before and after ("Max LP 110 to 115"). Then the gold button "Buy rank 3" with its price (it plays SF144), a quieter "Refund" button (IC33), and one line saying every refund returns the full price.',
+    'Added 23 Nov, approved menus. Two-screen handheld: the chosen upgrade fills the top screen; the twelve tiles and the Buy and Refund buttons are on the bottom.',
+  ] },
+  { name: 'Leaderboard', uses: ['UI30', 'UI19', 'IC24', 'IC10', 'IC31', 'IC29', 'IC21', 'PT01', 'UI13', 'UI28', 'IC16'], lay: [
+    'Added 23 Nov, approved menus. Opened from the board stone on the main menu. Top: the small emblem (UI30) with the title, and three tabs with their marks (IC24): Easy, Medium, Hard. Under them one row of choices: Weekly or All-time, the map, Full run or Quick duel.',
+    'Added 23 Nov, approved menus. Left two thirds: five rows per page: rank (a medal, UI19, for the top three), the player picture in a ring drawn by the game (IC21 when there is none), name, duelist portrait (PT01 onward), sworn Oath seals (IC10), score and time. Your own row is always kept in view.',
+    'Added 23 Nov, approved menus. Right third, the run card of the chosen row: duelist and outfit, difficulty, Oaths, the four Monster Zones and four Spell and Trap Zones (UI13, UI28), Fusions made, what ended the run, and "Verified" or "Being checked" (IC31). A "Watch replay" button (IC29) works for verified runs.',
+    'Added 23 Nov, approved menus. Behind it the live Camp is blurred and dimmed by the game, so the Leaderboard needs no backdrop picture.',
+  ] },
+  { name: 'First launch and controller connect', uses: ['UI30', 'UI29', 'IC19', 'IC16', 'IC28', 'W702', 'SF157', 'SF149', 'SF150', 'MU01'], lay: [
+    'Added 23 Nov, approved menus. Title card, about two and a half seconds: the camera drops through the live Camp onto the plinth (W702) while the game name fades in with its sound (SF157). "Press any button or tap" breathes at the bottom beside the turning seal (UI29). On the two-screen handheld the Camp is on the top screen and the emblem (UI30) with that line is on the bottom.',
+    'Added 23 Nov, approved menus. Quick setup, first launch only: one glass card in the middle with the emblem (UI30) and at most three rows already filled in, so one press continues. Row 1: a drawing of the pad in your hands (IC19, IC16), or the touch buttons at their real size (IC28). Row 2: Performance. Row 3: text size, or the two-screen drawing (IC19).',
+    'Added 23 Nov, approved menus. Controller plugged in, dropped out or low on battery: a small pop-up at the top with its drawing (IC19) and its sound (SF149, SF150). If the controller drops out in a run, the game pauses and shows a card that waits for it, with "Play by touch" where there are touch buttons.',
   ] },
   { name: 'Shop (Broker)', uses: ['NP01', 'WX13', 'UI14', 'UI01'], lay: [
     'The Broker (NP01) waves beside the stall. Three to five item cards with prices, a reroll button and your coins.',

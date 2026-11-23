@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import { LOOK_NAME, PILLARS, PALETTES, SCALE, BUDGETS, NEVER, STYLE, VIEW } from './look.mjs';
 import { SWATCHES, DECALS, STAGE1, STAGE2, STAGE3, INTERACT } from './world.mjs';
-import { MORE1, MORE2, MORE3, AMBIENT } from './world2.mjs';
+import { MORE1, MORE2, MORE3, AMBIENT, MENUSCENE } from './world2.mjs';
 import { DUELISTS, SUMMONS, FUSIONS, GODS, ENEMIES, BOSSES, NPCS } from './cast.mjs';
 import { PICKUPS, ITEM_SHEETS, SPELLS, EFFECTS, UIKIT, SCREENART, PORTRAITS, REGALIA } from './ui.mjs';
 import { SOUND_RULES, SOUNDS, MUSIC_RULES, MUSIC } from './audio.mjs';
@@ -167,6 +167,7 @@ const GROUPS = [
   { id: 'stage3', title: 'Stage 3 scenery: Vault of the Last Duel', kind: '3D model', blurb: 'The cavern, the sand sea, the statues and the throne.', items: [...STAGE3, ...MORE3] },
   { id: 'ambient', title: 'Ambient life', kind: '3D model with a skeleton', blurb: 'Small creatures that make a stage feel alive: butterflies, birds, rabbits, bats, crabs. They wander and flutter and never fight.', items: AMBIENT },
   { id: 'interact', title: 'Chests, shrines and gates', kind: '3D model', blurb: 'Things you use in a run. Some have a moving part (a lid, a door) that needs its own model so it can open.', items: INTERACT },
+  { id: 'menuscene', title: 'Menu scenes: the Camp, the plinth and the map views', kind: '3D model', blurb: 'These stand behind the menus as a real 3D place you look into, not a painted picture: the Camp behind the main menu, the hall where you pick a duelist, and the far view behind the map choice. Most of each place is built from stage scenery you already have on this list; these are only the extra pieces. The sky, the fire, the stone statues, the floor and the moving banners are made by the game, so none of these models has them.', items: MENUSCENE },
   { id: 'pickups', title: 'Pickups', kind: '3D model', blurb: 'Coins, hearts and power-ups. Small and simple.', items: PICKUPS },
   { id: 'duelists', title: 'Duelists and outfits', kind: '3D model with a skeleton', blurb: 'The 12 playable characters and the practice dummy. Each needs a skeleton and animations from Meshy, and has three outfits.', items: DUELISTS },
   { id: 'summons', title: 'Monsters (18, three forms each)', kind: '3D model with a skeleton', blurb: 'Your summons. Form 1 is a baby, form 2 young, form 3 grown. Each one gets a skeleton in Meshy so its wings, tail and legs can flap and swing.', items: SUMMONS },
@@ -184,7 +185,23 @@ const GROUPS = [
   { id: 'sound', title: 'Sound effects', kind: 'Sound', blurb: 'Each prompt goes into a sound-effect generator (ElevenLabs Sound Effects works). Save as WAV.', items: SND },
   { id: 'music', title: 'Music', kind: 'Music', blurb: 'Each brief goes to a music tool or a composer. Save as WAV.', items: MUS },
 ];
-const FIRST = ['MT47', 'MT49', 'W451', 'W455', 'W146', 'W147', 'WX37', 'WX38', 'FX34', 'FX36', 'SF121', 'IC16', 'MT01', 'MT29', 'MT04', 'MT05', 'MT08', 'MT09', 'MT11', 'W101', 'W103', 'W106', 'W109', 'W110', 'W111', 'W118', 'W119', 'W114', 'W116', 'EN01', 'EN02', 'EN03', 'EN04', 'EN05', 'EN06', 'UI01', 'UI02', 'UI03', 'UI06', 'UI07', 'UI10', 'UI14', 'IC11', 'WX01', 'WX02', 'PK02', 'PK04', 'IC01', 'IC02', 'CH01', 'SM01', 'SM02'];
+// Entries the owner can leave out: code -> short plain reason. Shown on the row as a grey "Can skip" tag. The entry itself is never changed.
+export const SKIP = {
+  KA03: 'The main menu now shows the real 3D Camp, so this painting is only a spare. Make it last or not at all.',
+  KA04: 'Choosing a duelist now shows the real 3D hall, so this painting is only a spare. Make it last or not at all.',
+  KA08: 'Quick duel is now a simple choice on the map screen and has no card of its own. Make it last or not at all.',
+  FX38: 'The game now draws the whole eclipse by itself. Make it last or not at all.',
+  UI01: 'The approved menus draw their own panels as dark glass with a gold line, so this stone frame is only a spare. Make it last or not at all.',
+  UI02: 'The approved menus print their titles with no bar behind them, so this is only a spare. Make it last or not at all.',
+  UI03: 'The approved menus draw their own buttons, so this stone button is only a spare. Make it last or not at all.',
+  UI04: 'The approved menus draw their own tabs. Make it last or not at all.',
+  UI05: 'The approved menus draw their own switches, arrows and sliders. Make it last or not at all.',
+  UI20: 'The game now draws a plain gold ring round the player picture. Make it last or not at all.',
+  SF100: 'The approved menus play the paper flick (SF164) when the gold ring moves, so this stone click is only a spare. Make it last or not at all.',
+  SF102: 'The approved menus play the card slide (SF165) for going back, so this stone click is only a spare. Make it last or not at all.',
+};
+// The first ten are the approved menus (added 23 Nov): the Camp pieces, the plinth, the hall, the map view, the emblem, the button pictures, the Camp air and the menu theme.
+const FIRST = ['W702', 'W703', 'W706', 'W704', 'W709', 'W711', 'UI30', 'IC30', 'SF154', 'MU01', 'MT47', 'MT49', 'W451', 'W455', 'W146', 'W147', 'WX37', 'WX38', 'FX34', 'FX36', 'SF121', 'IC16', 'MT01', 'MT29', 'MT04', 'MT05', 'MT08', 'MT09', 'MT11', 'W101', 'W103', 'W106', 'W109', 'W110', 'W111', 'W118', 'W119', 'W114', 'W116', 'EN01', 'EN02', 'EN03', 'EN04', 'EN05', 'EN06', 'UI01', 'UI02', 'UI03', 'UI06', 'UI07', 'UI10', 'UI14', 'IC11', 'WX01', 'WX02', 'PK02', 'PK04', 'IC01', 'IC02', 'CH01', 'SM01', 'SM02'];
 
 const DATA = { groups: [], assets: [], have: [] };
 const seen = new Set(), keys = new Set();
@@ -210,11 +227,13 @@ for (const g of GROUPS) {
     if (a.have) facts.push(['Already have', a.have]);
     if (a.note) facts.push(['Note', a.note]);
     if (a.how === 'code') facts.push(['Made by me', a.subj]);
-    DATA.assets.push({ c: a.code, n: a.name, g: g.id, w: a.where || '', anim, facts, steps, mine: a.how === 'code' || !steps.length, nw: a.added || '' });   // nw: the date an entry was added, shown as a "New" tag
+    DATA.assets.push({ c: a.code, n: a.name, g: g.id, w: a.where || '', anim, facts, steps, mine: a.how === 'code' || !steps.length, nw: a.added || '' });
+    if (SKIP[a.code]) DATA.assets[DATA.assets.length - 1].sk = SKIP[a.code];   // sk: why the owner can skip it, shown as a "Can skip" tag   // nw: the date an entry was added, shown as a "New" tag
     for (const f of a.haveFiles || []) { if (!keys.has(f)) throw new Error('haveFiles unknown ' + f); DATA.have.push(f); }
   }
 }
 for (const s of SCREENS) for (const u of s.uses) if (!seen.has(u)) throw new Error('screen ' + s.name + ' uses unknown ' + u);
+for (const c of Object.keys(SKIP)) if (!seen.has(c)) throw new Error('SKIP unknown ' + c);
 for (const c of FIRST) if (!seen.has(c)) throw new Error('FIRST unknown ' + c);
 DATA.first = FIRST;
 DATA.look = { name: LOOK_NAME, pillars: PILLARS, palettes: PALETTES, scale: SCALE, budgets: BUDGETS, never: NEVER };
