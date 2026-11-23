@@ -5,6 +5,8 @@ import { Game } from './sim/game.js';
 import { Input } from './core/input.js';
 import { clock } from './core/util.js';
 import { buildMapMesh } from './view/mapMesh.js';
+import { chooseStartYaw } from './view/startview.js';
+import { prewarmStage } from './gen/v2/stagemap.js';
 import { buildGateSeal } from './view/gateseal.js';
 import { buildWater, ripple, ageRipples } from './view/water.js';
 import { updateEngine, setActorLight, makeSky, setShadeMask, E } from './view/engine.js';
@@ -125,6 +127,7 @@ function syncMap() {                                                       // th
   if (mapMesh) { scene.remove(mapMesh); mapMesh.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
   const look = lookFor(game.mode === 'classic' ? 0 : game.stage || 0); applyStageLook(look);       // the stage's palette: ground, rim, sky and fog, seal
   mapMesh = buildMapMesh(game.map, look); scene.add(mapMesh);
+  if (game.map.v2) input.yaw = chooseStartYaw(game.map);       // a designed map: the camera starts turned toward the best view from the spawn (open ground, a landmark or the gate, two tiers; never a wall within 40 m)
   if (waterMesh) { scene.remove(waterMesh); waterMesh.geometry.dispose(); waterMesh = null; } { const pl = poolSpots(game.map); if (pl.length) { waterMesh = buildWater(pl, look); scene.add(waterMesh); } } curLook = look;
     if (gateSeal) scene.remove(gateSeal); gateSeal = buildGateSeal(game.map, look); scene.add(gateSeal);
     if (grassMesh) { scene.remove(grassMesh); grassMesh.geometry.dispose(); grassMesh = null; }
@@ -176,7 +179,10 @@ function setMode(m) {
   $('hint').textContent = m === 'play' && !document.pointerLockElement && !(touch && touch.isTouch) && !firstPad() ? 'Click the map to look around' : ''; if (touch) touch.setEnabled(m === 'play');
   last = 0;
 }
-function begin(mode, sel) {
+function begin(mode, sel) {       // a short loading card first: the stage is drawn by the generator (a few hundred ms), so the card must be on screen before that work starts
+  const card = loadingScreen; card.classList.add('on'); requestAnimationFrame(() => requestAnimationFrame(() => { try { beginNow(mode, sel); } finally { card.classList.remove('on'); } }));
+}
+function beginNow(mode, sel) {
   sel = sel || {}; if (sel.duelist) pickDuelist(sel.duelist);
   game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions'; game.opts.difficulty = sel.difficulty || save.settings.difficulty; game.opts.oaths = sel.oaths || []; game.opts.map = sel.map || 'ruins';
   ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; capBurstDone = false; tb.on = false; tb.fired = false; fx.dir.newRun(); fx.stopB.log.length = 0; fx.stopB.last = -1e9; fx.stopLog.length = 0; game.opts.meta = simMeta(save.meta); bars.reset(); game.reset(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
@@ -311,7 +317,7 @@ const groundY = (x, z) => Math.min(heightAt(x, z), 40);       // the one ground 
 function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(data); }       // a refused chest pulses its price tag instead of a banner
-  else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); }
+  else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); if (game.mode !== 'classic' && (game.stage || 0) < 2) setTimeout(() => prewarmStage(game.seed, (game.stage || 0) + 1), 60); }       // the next stage is drawn while the player reads the offer
   else if (type === 'levelup') { fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
   else if (type === 'hit') { actors.hitAt(b, c, data); fx.number(b, Math.min(heightAt(b, c), 40) + 1.7, c, a, data); }       // at the target's own height, not a fixed 1.7 m
   else if (type === 'relic') { fx.ring(a, game.p.y + 0.3, b, 30, 0xffffff, 0.7); fx.ring(a, game.p.y + 0.3, b, 14, 0xffe08a, 0.5); fx.burst(a, game.p.y + 1.2, b, 40, 0xffe08a, 8, 6, 0.3, 0.8, 5); fx.moment('relic', 'B', { shake: 0.35 }); }
@@ -608,6 +614,8 @@ window.__ds = {
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
 if (/[?&]fxlab\b/.test(location.search)) import('./view/fxlab.js').then(m => m.startLab(window.__ds));
+
+
 
 
 

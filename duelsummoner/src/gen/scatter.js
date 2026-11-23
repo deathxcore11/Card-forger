@@ -1,4 +1,4 @@
-// The scatter of a stage: where its trees, rocks, bushes, grass and flowers stand. Pure and integer-seeded (the same map always gives the same stage, in Node and in the browser),
+﻿// The scatter of a stage: where its trees, rocks, bushes, grass and flowers stand. Pure and integer-seeded (the same map always gives the same stage, in Node and in the browser),
 // so the sim can make the trees and big rocks solid and the view can draw exactly the same ones. The view adds colours and shapes; this module only decides places and sizes.
 // Rules (design/environment-bar.md): trees and rocks keep 24 m clear of the spawn; groves of 3 to 5 trees with trunks 6 to 9 m apart and at most 3 in any 10 x 10 m cell;
 // two tree species (parasol 9-11 m, blob 13-16 m); rocks in tiers (hero 4.5-6 m, tall 3-3.5 m, low 1.2-1.5 m, pebbles 0.35 m or less), nothing solid between 0.4 and 1.2 m;
@@ -42,7 +42,7 @@ export function scatterStage(map, stageIndex, solidOnly) {
   const road = roadPath(map);
   const free = (x, z, pad) => { if (roadDist(road, x, z) < 2.25 + 1.5 + (pad ? Math.min(pad, 2) : 0)) return false; for (const k of keep) { const dx = x - k.x, dz = z - k.z, rr = k.r + (pad || 0); if (dx * dx + dz * dz < rr * rr) return false; } return x * x + z * z < R * R; };
   const farSpawn = (x, z, d) => { const dx = x - map.spawn.x, dz = z - map.spawn.z; return dx * dx + dz * dz >= d * d; };      // trees and rocks stay 24 m from the spawn, hero rocks 32 m
-  const flat = (x, z, tol = 0.3) => { const h = heightAt(x, z); for (const [dx, dz] of [[1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6]]) if (Math.abs(heightAt(x + dx, z + dz) - h) > tol) return null; return h; };
+  const flat = (x, z, tol = 0.3) => { const h = heightAt(x, z); if (h >= 50) return null; for (const [dx, dz] of [[1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6]]) if (Math.abs(heightAt(x + dx, z + dz) - h) > tol) return null; return h; };
   const spots = (n, test) => { const o = []; for (let tries = 0; o.length < n && tries < n * 14; tries++) { const a = rnd() * TAU, d = sqrt01(rnd()) * R, x = cos(a) * d, z = sin(a) * d; const h = test(x, z); if (h !== null && h !== undefined && h !== false) o.push([x, h, z]); } return o; };
   const tint = (lo, hi) => 1 - lo + rnd() * (lo + hi);
   const solids = [];                                                              // every tree and big rock placed so far: [x, z, collider radius, isTree]
@@ -125,6 +125,7 @@ export function scatterStage(map, stageIndex, solidOnly) {
   }
   return out;
 }
+
 
 
 

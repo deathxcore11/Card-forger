@@ -10,22 +10,30 @@ function paintBase(size, map) {
   const base = document.createElement('canvas'); base.width = base.height = size;
   const tex = document.createElement('canvas'); tex.width = tex.height = TEX;
   const tc = tex.getContext('2d'), img = tc.createImageData(TEX, TEX), span = MAP.half * 2 / TEX;
+  const v2 = map && map.heights, TIER = [[168, 138, 88], [196, 166, 108], [214, 190, 132], [226, 208, 158], [236, 224, 186], [244, 238, 214]];
   for (let j = 0; j < TEX; j++) for (let i = 0; i < TEX; i++) {
     const x = -MAP.half + (i + 0.5) * span, z = -MAP.half + (j + 0.5) * span, h = heightAt(x, z), o = (j * TEX + i) * 4;
     let r, g, b;
     if (h >= WALL) { r = 40; g = 28; b = 22; }
+    else if (v2) {                                                                         // a designed map: tiers as tones (a step every 3 m), cliffs as dark lines, the arena bright, ramps and the road in their own tone, pits dark
+      const t = TIER[Math.max(0, Math.min(5, Math.floor(h / 3) + 1))]; r = t[0]; g = t[1]; b = t[2]; if (h < -0.3) { r *= 0.6; g *= 0.6; b *= 0.6; }
+      let cliff = 0; for (const [dx, dz] of [[span, 0], [0, span], [-span, 0], [0, -span]]) { const q = heightAt(x + dx, z + dz); if (q < WALL && Math.abs(q - h) > 1.6) cliff = 1; else if (q >= WALL && h < WALL) cliff = 2; }
+      if (cliff === 1) { r *= 0.38; g *= 0.34; b *= 0.3; } else if (cliff === 2) { r = 70; g = 52; b = 40; }
+      const k = (Math.floor(z + MAP.half)) * 400 + Math.floor(x + MAP.half), fl = map.cellFlags[k]; if (fl & 8) { r = 210; g = 150; b = 90; } else if (fl & 256) { r = Math.min(255, r + 30); g = Math.min(255, g + 30); b = Math.min(255, b + 40); }
+    }
     else { const k = Math.min(1, h / 30); r = 150 + k * 100; g = 115 + k * 105; b = 70 + k * 100; if (h > 0) { r *= 0.92; g *= 0.92; b *= 0.92; } }
     img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b; img.data[o + 3] = 255;
-  }
-  tc.putImageData(img, 0, 0);
+  }  tc.putImageData(img, 0, 0);
   const c = base.getContext('2d'); c.imageSmoothingEnabled = false; c.drawImage(tex, 0, 0, size, size);
   const s = size / (MAP.half * 2), X = x => (x + MAP.half) * s, big = size > 300;
   c.lineWidth = big ? 2 : 1.5; c.font = (big ? 'bold 15px' : 'bold 9px') + ' "Courier New", monospace'; c.textAlign = 'center';
+  if (v2 && map._road) { c.strokeStyle = '#7a5a30'; c.lineWidth = big ? 3 : 2; c.beginPath(); map._road.main.forEach((q, k) => { if (k) c.lineTo(X(q[0]), X(q[1])); else c.moveTo(X(q[0]), X(q[1])); }); c.stroke(); }
   (map ? map.districts : []).forEach(d => {
     c.strokeStyle = d.color; let lx, ly;
-    if (d.shape === 'circle') { c.beginPath(); c.arc(X(d.cx), X(d.cz), d.r * s, 0, 7); c.stroke(); lx = X(d.cx); ly = X(d.cz) + 3; }
+    if (v2) { lx = X(d.cx); ly = X(d.cz) + 3; }       // a designed map names its districts (the full name on the big map), no outline
+    else if (d.shape === 'circle') { c.beginPath(); c.arc(X(d.cx), X(d.cz), d.r * s, 0, 7); c.stroke(); lx = X(d.cx); ly = X(d.cz) + 3; }
     else { c.strokeRect(X(d.x0), X(d.z0), (d.x1 - d.x0) * s, (d.z1 - d.z0) * s); lx = X((d.x0 + d.x1) / 2); ly = X((d.z0 + d.z1) / 2) + 3; }
-    c.lineWidth = big ? 4 : 3; c.strokeStyle = '#000b'; c.strokeText(d.short, lx, ly); c.lineWidth = big ? 2 : 1.5; c.fillStyle = d.color; c.fillText(d.short, lx, ly);
+    c.lineWidth = big ? 4 : 3; c.strokeStyle = '#000b'; const label = v2 && big ? d.name : d.short; c.strokeText(label, lx, ly); c.lineWidth = big ? 2 : 1.5; c.fillStyle = d.color; c.fillText(label, lx, ly);
   });
   return base;
 }
@@ -86,3 +94,4 @@ export class Minimap {
     this._render(canvas.getContext('2d'), size, this.big, g, yaw, true);
   }
 }
+

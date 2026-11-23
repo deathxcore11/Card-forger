@@ -1,4 +1,4 @@
-// Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
+﻿// Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
 import { MAP } from '../data/map.js';
 import { seeMap } from './seethrough.js';
 import { groundLit } from './engine.js';
@@ -165,10 +165,18 @@ function buildV2(map, look) {
       void cA; void cB; void nA; void nB;
       if (Math.abs(ca - na) < 0.02 && Math.abs(cb - nb) < 0.02) continue;
       const P0 = d === 0 ? [x1, z0] : [x0, z1], P1 = [x1, z1], hiC = (ca + cb) > (na + nb), hiCell = hiC ? c : n, out = hiC ? (d === 0 ? [1, 0, 0] : [0, 0, 1]) : (d === 0 ? [-1, 0, 0] : [0, 0, -1]), ym = (ca + cb + na + nb) / 4;
-      const base = Wl[hiCell] ? look.rim[0] : colour(hiC ? cx : nx, hiC ? cz : nz), wc = dim(base, 0.7 + 0.09 * (Math.floor(ym / 1.2) & 1));
-      B.quad([P0[0], ca, P0[1]], [P1[0], cb, P1[1]], [P1[0], nb, P1[1]], [P0[0], na, P0[1]], out, wc);
+      const base = Wl[hiCell] ? look.rim[0] : colour(hiC ? cx : nx, hiC ? cz : nz), loA = hiC ? na : ca, loB = hiC ? nb : cb, hiA = hiC ? ca : na, hiB = hiC ? cb : nb, hgt = (hiA + hiB - loA - loB) / 2;
+      // rock strata: bands 1.4 m tall in three flat tones (dark, mid, light) that shift along the face, a pale lip on the top band, a rubble block at the foot of a tall face now and then
+      const nb2 = Math.max(1, Math.min(16, Math.round(hgt / 1.4))), tones = [0.62, 0.76, 0.9], phase = (cx * 5 + cz * 3) & 3;
+      for (let q = 0; q < nb2; q++) {
+        const t0 = q / nb2, t1 = (q + 1) / nb2, lerp = (a, b, t) => a + (b - a) * t, top = q === nb2 - 1;
+        const wc = top && nb2 > 1 ? mixc(dim(base, 0.95), 0xffffff, 0.18) : dim(base, tones[(q + phase) % 3] * (0.96 + 0.08 * hash2(cx * 11 + q, cz * 7 + d)));
+        B.quad([P0[0], lerp(loA, hiA, t0), P0[1]], [P1[0], lerp(loB, hiB, t0), P1[1]], [P1[0], lerp(loB, hiB, t1), P1[1]], [P0[0], lerp(loA, hiA, t1), P0[1]], out, wc);
+      }
+      if (hgt > 4 && hash2(cx * 3 + 1, cz * 5 + d) < 0.25) { const r = 0.7 + 0.8 * hash2(cx, cz), bx = (P0[0] + P1[0]) / 2 + out[0] * (r * 0.6), bz = (P0[1] + P1[1]) / 2 + out[2] * (r * 0.6); addBox(B, { x0: bx - r / 2, x1: bx + r / 2, z0: bz - r / 2, z1: bz + r / 2, y0: (loA + loB) / 2 - 0.2, h: (loA + loB) / 2 + r * 0.7, rot: hash2(cx + 9, cz) * 90, c: dim(base, 0.8) }); }
     }
   }
+  addKits(B, map, look);
   // far backdrop: a ring of mesas behind the rim (fogged), a wide skirt under everything, and the colossal buried card on the far side of the map from the start (view only)
   for (let i = 0; i < 12; i++) { const a = (i + F.rnd() * 0.6) / 12 * 360, r = 270 + F.rnd() * 60, ww = 30 + F.rnd() * 30, hh = 40 + F.rnd() * 50, cx = r * Math.cos(a * DEG), cz = r * Math.sin(a * DEG); addBox(F, { x0: cx - ww / 2, x1: cx + ww / 2, z0: cz - ww / 3, z1: cz + ww / 3, h: hh, rot: a + 90, c: look.mesa }); }
   F.quad([-345, -0.2, -345], [345, -0.2, -345], [345, -0.2, 345], [-345, -0.2, 345], [0, 1, 0], look.skirt);
@@ -178,7 +186,42 @@ function buildV2(map, look) {
   group.add(B.mesh(false, fadeU), F.mesh(true, fadeU)); group.userData.tris = B.pos.length / 9 | 0;
   return group;
 }
-export function buildMapMesh(map, look) {
+// ---- the generator's kit pieces and hero landmarks, drawn from its data in the Carved Cards look: flat-faceted stone from the stage's own colours, a dark accent for gaps and niches, no textures. Each piece is a few boxes; the same
+// table serves every stage. A kit the table does not know is drawn as a plain block so nothing is ever missing.
+const KIT = {
+  stone_card_flat: [[0, 0, 3, 0.25, 4, 0]], stone_card_stand: [[0, 0, 1.6, 2.6, 0.35, 0]], stone_card_lean: [[0, 0, 1.6, 2.4, 0.3, 0, 12]],
+  pillar_short: [[0, 0, 1.2, 3.2, 1.2, 0], [0, 0, 1.7, 0.3, 1.7, 3.2]], pillar_tall: [[0, 0, 1.4, 6.5, 1.4, 0], [0, 0, 1.9, 0.35, 1.9, 6.5]], obelisk: [[0, 0, 1.3, 3, 1.3, 0], [0, 0, 0.8, 2.4, 0.8, 3]],
+  pocket_platform: [[0, 0, 5, 0.5, 5, 0]], stair_step: [[0, 0, 2.2, 0.4, 1.2, 0]], circle_dais: [[0, 0, 5.5, 0.5, 5.5, 0, 0, 'c']], roof_slab: [[0, 0, 6, 0.5, 6, 0]], awning: [[0, 0, 4, 0.2, 3, 2.6, 0, 'a'], [-1.8, -1.3, 0.25, 2.6, 0.25, 0], [1.8, -1.3, 0.25, 2.6, 0.25, 0], [-1.8, 1.3, 0.25, 2.6, 0.25, 0], [1.8, 1.3, 0.25, 2.6, 0.25, 0]],
+  crate: [[0, 0, 1, 1, 1, 0]], sealed_arch_pillar: [[0, 0, 1.6, 8, 1.6, 0], [0, 0, 2.1, 0.4, 2.1, 8]], bridge_span: [[0, 0, 8, 0.4, 3, 0]], slide_lane: [[0, 0, 2.4, 0.15, 8, 0, 0, 'd']], ramp_4m: [],
+  colossal_card: [[0, 0, 12, 22, 2, 0, 14]], market_awnings: [[-6, 0, 4.5, 0.2, 3.5, 3.2, 0, 'a'], [0, 0, 4.5, 0.2, 3.5, 3.2, 0, 'b'], [6, 0, 4.5, 0.2, 3.5, 3.2, 0, 'a'], [-8, 0, 0.3, 3.2, 0.3, 0], [-3, 0, 0.3, 3.2, 0.3, 0], [3, 0, 0.3, 3.2, 0.3, 0], [8, 0, 0.3, 3.2, 0.3, 0]],
+  kings_stair_facade: [[-7, 0, 1.6, 9, 1.6, 0], [0, 0, 1.6, 9, 1.6, 0], [7, 0, 1.6, 9, 1.6, 0], [-3.5, 0, 6, 1.4, 1.6, 7.6], [3.5, 0, 6, 1.4, 1.6, 7.6], [0, 0, 16, 0.5, 2, 9]],
+  hall_of_cards_facade: [[-7.5, 0, 3, 9, 0.7, 0], [-2.5, 0, 3, 11, 0.7, 0], [2.5, 0, 3, 11, 0.7, 0], [7.5, 0, 3, 9, 0.7, 0]],
+  seventh_door_frame: [[-4, 0, 2, 9, 2, 0], [4, 0, 2, 9, 2, 0], [0, 0, 10, 2, 2, 8], [0, 0, 6, 6, 0.6, 0, 0, 'd']],
+  sarcophagus_colonnade: [[-10, 0, 1.3, 6, 1.3, 0], [-6, 0, 1.3, 6, 1.3, 0], [-2, 0, 1.3, 6, 1.3, 0], [2, 0, 1.3, 6, 1.3, 0], [6, 0, 1.3, 6, 1.3, 0], [10, 0, 1.3, 6, 1.3, 0], [0, 0, 22, 0.5, 1.8, 6]],
+  ossuary_arch: [[-4, 0, 2, 8, 2, 0], [4, 0, 2, 8, 2, 0], [0, 0, 10, 1.6, 2, 8], [0, 0, 6, 0.4, 0.4, 7.6, 0, 'd']],
+  niche_wall_shrine: [[0, 0, 12, 5, 1.6, 0], [-3.5, -0.9, 2, 2.4, 0.3, 1, 0, 'd'], [0, -0.9, 2, 2.4, 0.3, 1, 0, 'd'], [3.5, -0.9, 2, 2.4, 0.3, 1, 0, 'd']],
+  duel_table_rim: [[-8, 0, 3, 1.2, 8, 0], [8, 0, 3, 1.2, 8, 0], [0, -8, 8, 1.2, 3, 0], [0, 8, 8, 1.2, 3, 0]],
+  card_shoal_spire: [[0, 0, 4, 2, 2.4, 0, 0], [0, 0, 3, 2, 1.8, 2, 20], [0, 0, 2, 2, 1.2, 4, 40]],
+  throne_stair_steps: [[0, 6, 12, 0.7, 3, 0], [0, 3, 10, 1.4, 3, 0], [0, 0, 8, 2.1, 3, 0], [0, -3, 6, 2.8, 3, 0], [0, -6, 4, 3.5, 3, 0]],
+  fallen_king_statue: [[0, 0, 9, 2.4, 2.6, 0], [5.5, 0, 2.8, 2.8, 2.8, 0], [-2, 0, 1.2, 1.2, 5, 2.4]],
+  fossil_spine_ribs: [[-6, 0, 0.8, 9, 0.8, 0, 8], [-3, 0, 0.8, 11, 0.8, 0, 4], [0, 0, 0.8, 12, 0.8, 0, 0], [3, 0, 0.8, 11, 0.8, 0, -4], [6, 0, 0.8, 9, 0.8, 0, -8]],
+  chain_winch_tower: [[0, 0, 3, 12, 3, 0], [3, 0, 7, 0.6, 0.6, 11, 0, 'd']], treasury_stack: [[0, 0, 4.5, 4, 4.5, 0], [0.4, 0.4, 3.2, 3, 3.2, 4], [-0.2, 0, 2, 2, 2, 7]], mesa_block: [[0, 0, 4, 1.2, 4, 0]]
+};
+function addKits(B, map, look) {
+  const light = look.landmark[0], stone = look.rim[1], dark = look.landmark[1], acc = [0x3e7f80, 0xb4643f];
+  const tone = (kind, i) => kind === 'd' ? dark : kind === 'a' ? acc[i & 1] : kind === 'b' ? acc[(i + 1) & 1] : (i & 1) ? stone : light;
+  let n = 0;
+  for (const k of map.kits || []) {
+    const def = KIT[k.kit] || [[0, 0, 2, 2.4, 2, 0]], yaw = k.rot * 90 * DEG, c = Math.cos(yaw), s = Math.sin(yaw), big = k.kit.length > 14 && !/_(short|tall|flat|stand|lean|step|slab|block|platform)$/.test(k.kit);
+    def.forEach((b, bi) => {
+      const [dx, dz, w, h, d, y0, tilt, kind] = b, cx = k.x + dx * c - dz * s, cz = k.z + dx * s + dz * c, col = tone(kind, (n + bi) | 0);
+      if (kind === 'c') addCyl(B, { x: cx, z: cz, r: w / 2, h: k.y + h, y0: k.y + y0, c: col });
+      else if (tilt) addTilt(B, cx, k.y + y0, cz, w, d, h, (k.rot * 90) + 0, tilt, col);
+      else addBox(B, { x0: cx - w / 2, x1: cx + w / 2, z0: cz - d / 2, z1: cz + d / 2, y0: k.y + y0, h: k.y + y0 + h, rot: k.rot * 90, c: col });
+    });
+    n++; void big;
+  }
+}export function buildMapMesh(map, look) {
   look = look || STAGE_LOOK[0];
   if (map.heights) return buildV2(map, look); const SAND = look.sand, pc = p => (look.ramp ? rampColour(look.ramp, p.c0 === undefined ? p.c : p.c0) : p.c), prims = look.ramp ? map.prims.map(p => Object.assign({}, p, { c: pc(p) })) : map.prims;
   const B = new Builder(), F = new Builder(), G = new Builder(true), group = new T.Group();
@@ -218,4 +261,6 @@ export function buildMapMesh(map, look) {
   group.add(B.mesh(false, fadeU), F.mesh(true, fadeU), G.mesh(false, undefined, SAND));
   return group;
 }
+
+
 
