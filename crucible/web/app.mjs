@@ -971,15 +971,21 @@ function roomPic(name, focus, low = false) {
   const { w, h } = viewSize(), big = (w > 360 || h > 170) && CART.has(name + '-l'), s = big ? 1.25 : 1, pw = big ? 440 : 352, ph = big ? 248 : 198;
   focus = FOCUS[name] || focus;
   const ox = (w - pw) >> 1, oy = ph >= h ? -Math.max(0, Math.min(ph - h, Math.round(focus * s - h * .55))) : low ? h - ph : 0;
-  const fade = (t, cls) => `<i class="fade${cls}" style="top:${t}px;${meshAt(0, t)}"></i>`;
-  const edge = ph >= h ? '' : low ? fade(oy, ' d75') + fade(oy + 4, '') : fade(oy + ph - 8, '') + fade(oy + ph - 4, ' d75');
-  return { name, src: cimg(big ? name + '-l' : name), s, k: s / 1.25, big, ox, oy, pw, ph, edge };
+  // Where the view runs past the painting, its edge dissolves to black through the dot pattern: two strips laid on the
+  // picture's own rows (data-art, measured like every part on it), as wide as the picture. o: the picture's corner in the
+  // box the strips are laid in (the view; the room's own box in the chamber).
+  const fade = (t, cls, o) => `<i class="fade${cls}" data-art="room" data-still data-at="0,${t}" data-pin="0,0" style="left:${o[0]}px;top:${o[1] + t}px;width:${pw}px;${meshAt(ox, oy + t)}"></i>`;
+  const edgeAt = o => ph >= h ? '' : low ? fade(0, ' d75', o) + fade(4, '', o) : fade(ph - 8, '', o) + fade(ph - 4, ' d75', o);
+  return { name, src: cimg(big ? name + '-l' : name), s, k: s / 1.25, big, ox, oy, pw, ph, edge: edgeAt([ox, oy]), edgeIn: edgeAt([0, 0]) };
 }
 // The picture of a room, laid at its place in the view: what every part drawn on it is measured against (data-pic).
 const roomImg = rp => `<img class="ab" data-pic="room" src="${rp.src}" style="left:${rp.ox}px;top:${rp.oy}px" width="${rp.pw}" height="${rp.ph}" alt="">`;
 // A part laid on the room picture at a point measured in it: at, the point in the picture; pin, the point of the part that
 // sits on it. tools/crucible/console-checks.cjs measures every such part against the picture as laid out.
 // o: where the picture's corner is in the part's box (the room's own box in the chamber, the view elsewhere).
+// A part that never moves (a door's leaves at rest, a number on the step, a model standing in its room) carries data-still:
+// it is scenery, and the choices may stand in front of it, as they stand in front of the painting. The checks keep
+// controls off the parts that move (the fog, the cursor, the forge's hammer) and hold a still part to staying still.
 const onPic = (tag, cls, at, pin, style = '', attrs = '', inner = '', o = [0, 0]) => `<${tag} class="${cls}" data-art="room" data-at="${at}" data-pin="${pin}" style="left:${o[0] + at[0] - pin[0]}px;top:${o[1] + at[1] - pin[1]}px;${style}" ${attrs}>${inner}</${tag}>`;
 // The three empty doorways of each hall of doors, measured from the hall's own pixels at both sizes
 // (tools/crucible/console-art.py, index.json 'niches'): x, y, w, h, and the stepped corners of the frame at the top
@@ -1014,11 +1020,11 @@ function psChamber() {
   const rp = roomPic(hall, NICHE_Y + 34, true), ways = doorways(hall, rp), H = hallInfo(hall), open = G.doorOpen && G.doorOpen.at === key && G.story ? G.doorOpen : null;
   const doors = r.doors.map((d, i) => { const [x, y, w, h] = ways[at[i]], locked = lockedAt(i), art = d.type === 'secret' && CART.has(leafPic(hall, 'hidden', at[i], rp)) ? 'hidden' : DOOR_ART[d.type], leaf = leafPic(hall, art, at[i], rp); // the door that is not there has its own plain leaves
     const src = open && open.i === i ? open.url : CART.has(leaf) ? cimg(leaf) : ''; // a door opened while its guardian speaks stays open
-    return onPic('button', `dr k-${d.know || 'known'}${locked ? ' lock' : ''}${i === sel ? ' on' : ''}${open && open.i === i ? ' opn' : ''}`, [x, y], [0, 0], `width:${w}px;height:${h}px;--mesh:${(rp.ox + x) & 1}px ${(rp.oy + y) & 1}px${src ? `;--lf:url(${src})` : ''}`, `data-i="${i}" data-a="${i === sel ? 'door' : 'dsel'}:${i}" ${locked && i === sel ? 'disabled' : ''} aria-label="${esc(doorName(d))}"`, src ? `<img src="${src}" width="${w}" height="${h}" style="width:${w}px;height:${h}px" alt="">` : '') + doorFog(d, [x, y, w, h], rp, H); }).join('');
+    return onPic('button', `dr k-${d.know || 'known'}${locked ? ' lock' : ''}${i === sel ? ' on' : ''}${open && open.i === i ? ' opn' : ''}`, [x, y], [0, 0], `width:${w}px;height:${h}px;--mesh:${(rp.ox + x) & 1}px ${(rp.oy + y) & 1}px${src ? `;--lf:url(${src})` : ''}`, `data-still data-i="${i}" data-a="${i === sel ? 'door' : 'dsel'}:${i}" ${locked && i === sel ? 'disabled' : ''} aria-label="${esc(doorName(d))}"`, src ? `<img src="${src}" width="${w}" height="${h}" style="width:${w}px;height:${h}px" alt="">` : '') + doorFog(d, [x, y, w, h], rp, H); }).join('');
   // Each door's number on the step under it, and the cursor under the chosen one, pointing up at it: clear of the carving.
   const marks = r.doors.map((d, i) => { const [x, y, w, h] = ways[at[i]], foot = [x + (w >> 1), y + h + Math.round(3 * rp.k)];
-    return onPic('i', `dno${i === sel ? ' on' : ''}`, foot, [5, 0], '', '', i + 1) + (i === sel ? onPic('i', 'cur curu', [foot[0], foot[1] + 12], [4, 0]) : ''); }).join('');
-  const view = `<div class="room" style="left:${rp.ox}px;top:${rp.oy}px;width:${rp.pw}px;height:${rp.ph}px"><img data-pic="room" src="${rp.src}" width="${rp.pw}" height="${rp.ph}" alt="">${doors}${keepers(r, rp, ways, H)}${marks}</div>${rp.edge}`;
+    return onPic('i', `dno${i === sel ? ' on' : ''}`, foot, [5, 0], '', 'data-still', i + 1) + (i === sel ? onPic('i', 'cur curu', [foot[0], foot[1] + 12], [4, 0]) : ''); }).join('');
+  const view = `<div class="room" style="left:${rp.ox}px;top:${rp.oy}px;width:${rp.pw}px;height:${rp.ph}px"><img data-pic="room" src="${rp.src}" width="${rp.pw}" height="${rp.ph}" alt="">${doors}${keepers(r, rp, ways, H)}${marks}${rp.edgeIn}</div>`;
   const lw = ledgeW(), ledge = `<div class="dt" style="width:${lw - 82}px"><b>${sel + 1} · ${esc(doorName(d))}</b><p><i class="lmc">COST</i> ${esc(d.cost)}</p><p><i class="lmg">GAIN</i> ${esc(d.reward)}</p></div>`
     + (n > 1 ? pq(lw - 72, 4, 30, '<', `dsel:${(sel + n - 1) % n}`, { title: 'Door to the left' }) + pq(lw - 38, 4, 30, '>', `dsel:${(sel + 1) % n}`, { title: 'Door to the right' }) : '')
     + pq(lw - 72, 40, 64, lockedAt(sel) ? 'SEALED' : 'ENTER', `door:${sel}`, { lit: !lockedAt(sel), off: lockedAt(sel) });
@@ -1047,7 +1053,7 @@ function doorBeat(i, stay, then) {
     try { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(img, 0, 0); src = new Uint32Array(x.getImageData(0, 0, w, h).data.buffer); } catch { src = null; }
   }
   const cv = src && document.createElement('canvas');
-  if (cv) { cv.width = w; cv.height = h; cv.style.cssText = `width:${w}px;height:${h}px`; img.replaceWith(cv); }
+  if (cv) { cv.width = w; cv.height = h; cv.style.cssText = `width:${w}px;height:${h}px`; img.replaceWith(cv); b.removeAttribute('data-still'); } // the leaves move now
   // The dither's place: the leaf's own place in the room picture, where its pixels were cut.
   const leafAt = b.offsetLeft & 3, rowAt = b.offsetTop & 3;
   const paint = deg => {
@@ -1145,8 +1151,9 @@ const spotsOf = room => (D.cart && D.cart.spots && D.cart.spots[room]) || [];
 const spotAt = (rp, [m, x, foot, h, yaw, tint]) => [m, yaw, Math.round(x * rp.k), Math.round(foot * rp.k), Math.round(h * rp.k), tint || null];
 // One canvas the size of the room picture, laid exactly on it, for the models standing in it: drawn under the dimming of
 // the room, so a model is dimmed with its room. data-foot lists where each model's foot is in the picture, and the
-// checks find each drawn model standing there. It takes no taps, so what lies under it is tapped as before.
-const modelCanvas = (rp, items, inRoom = false, id = 'prop') => items.length ? onPic('canvas', 'ab', [0, 0], [0, 0], 'pointer-events:none', `id="${id}" width="${rp.pw}" height="${rp.ph}" data-foot="${items.map(i => i[2] + ',' + i[3]).join(' ')}" data-items='${JSON.stringify(items)}'`, '', inRoom ? [0, 0] : [rp.ox, rp.oy]) : '';
+// checks find each drawn model standing there. It takes no taps, so what lies under it is tapped as before. The models
+// in a room are drawn once and stand still (data-still); the forge's canvas is drawn by the clock as the hammer falls.
+const modelCanvas = (rp, items, inRoom = false, id = 'prop', still = true) => items.length ? onPic('canvas', 'ab', [0, 0], [0, 0], 'pointer-events:none', `id="${id}"${still ? ' data-still' : ''} width="${rp.pw}" height="${rp.ph}" data-foot="${items.map(i => i[2] + ',' + i[3]).join(' ')}" data-items='${JSON.stringify(items)}'`, '', inRoom ? [0, 0] : [rp.ox, rp.oy]) : '';
 function propSpot(rp, kind) { // the models standing in an offer room, or nothing
   if (rp.name === 'room-vault' && kind !== 'treasure') return ''; // the chest stands at a treasure only, not at the other vault offers
   return modelCanvas(rp, spotsOf(rp.name).filter(s => pmodel(s[0])).map(s => spotAt(rp, s)));
@@ -1803,7 +1810,7 @@ const forgeSpot = rp => { const s = spotsOf('room-forge').find(x => x[0] === 'an
 function psForge() {
   const fb = G.forge, vs = viewSize(), r = G.run;
   const rp = CART.has('room-forge') ? roomPic('room-forge', NICHE_Y + 34, true) : { name: '', ox: 0, oy: 0, pw: vs.w, ph: vs.h, s: 1, k: Math.min(vs.w / 440, vs.h / 248), edge: '' }; // the forge undimmed: the fire is lit for the working
-  const view = (rp.src ? roomImg(rp) + rp.edge : '') + (rp.src ? modelCanvas(rp, [forgeSpot(rp)], false, 'forge') : `<canvas id="forge" class="ab" style="left:0;top:0;pointer-events:none" width="${vs.w}" height="${vs.h}" data-items='${JSON.stringify([forgeSpot(rp)])}'></canvas>`) + `<button class="ab" style="left:0;top:0;width:${vs.w}px;height:${vs.h}px;background:none;border:0" data-a="forgeskip" aria-label="Continue"></button>`;
+  const view = (rp.src ? roomImg(rp) + rp.edge : '') + (rp.src ? modelCanvas(rp, [forgeSpot(rp)], false, 'forge', false) :`<canvas id="forge" class="ab" style="left:0;top:0;pointer-events:none" width="${vs.w}" height="${vs.h}" data-items='${JSON.stringify([forgeSpot(rp)])}'></canvas>`) + `<button class="ab" style="left:0;top:0;width:${vs.w}px;height:${vs.h}px;background:none;border:0" data-a="forgeskip" aria-label="Continue"></button>`;
   const what = fb.kind === 'masterwork' ? `<i class="ab" style="left:8px;top:16px">${medal(fb.mw, 32)}</i>` + lb(48, 20, shortName(RELICS[fb.mw].name).toUpperCase(), 'g') : fb.inst ? psCard(fb.inst, 8, 2) + lb(60, 8, fitName(card(fb.inst.id).name.toUpperCase(), 30), 'g') : '';
   return frame({ left: psYou(r), right: pq(4, yb(220), 88, 'CONTINUE', 'forgeskip', { lit: true }), view, ledge: what + lb(fb.kind === 'masterwork' ? 48 : 60, fb.kind === 'masterwork' ? 32 : 22, fb.word, 'd'), bar: esc(fb.text) });
 }

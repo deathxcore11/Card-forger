@@ -26,7 +26,11 @@
 //           core of the painted flame, found again in the picture's own pixels; a model drawn in a room (a canvas laid
 //           on the room picture, its spots in data-foot) stands with its lowest pixel on its spot;
 //   clear   no control, label or coin of the screen (outside a window, a scene, a dim or the toast) lies over such a
-//           moving part;
+//           part while it moves (the fog, the cursor, the forge's hammer); a part marked still (data-still: a door's
+//           leaves at rest, a number on the step, a model standing in its room) is scenery the choices may stand in
+//           front of, and a tap area that draws nothing hides nothing;
+//   still   a part marked still runs no animation, and a canvas of models marked still draws the same pixels a moment
+//           later;
 //   table   on the duel's table each tap area is cut to its zone as the table's camera draws it and draws nothing; the
 //           numbers lie inside the view, apart and off the trap rows; the hall's painting spans the view to its foot;
 //   errors  no page error.
@@ -179,10 +183,14 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
         const W0 = app.offsetWidth, H0 = app.offsetHeight, toastEl = app.querySelector('#toast');
         if (toastEl && toastEl.textContent.trim() && vis(toastEl)) { const [tx, ty, tw2] = fr(toastEl); if (tx !== 96 || ty !== H0 - 40 || tw2 !== W0 - 192) out.push(`#toast at ${tx}, ${ty}, ${tw2} wide: not on the text bar (96, ${H0 - 40}, ${W0 - 192} wide)`); }
         const sbar = app.querySelector('.savebar'); if (sbar && vis(sbar) && sbar.offsetWidth !== W0 - 192) out.push(`.savebar ${sbar.offsetWidth} wide, not ${W0 - 192}`);
-        // clear: no control, label or coin of the screen lies over a moving part drawn on a picture
-        const parts = [...app.querySelectorAll('[data-art]')].filter(vis).map(e => [e, e.getBoundingClientRect()]);
+        // clear: no control, label or coin of the screen lies over a moving part drawn on a picture. A part marked still
+        // (data-still: a door's leaves at rest, a model standing in its room) is scenery the choices may stand in front of,
+        // as they stand in front of the painting; it is held to staying still below. A tap area that draws nothing (the
+        // forge's "tap to go on") hides nothing.
+        const drawsNothing = e => { const s = getComputedStyle(e); return s.backgroundImage === 'none' && /rgba\(0, 0, 0, 0\)|transparent/.test(s.backgroundColor) && ['Top', 'Right', 'Bottom', 'Left'].every(k => !parseFloat(s['border' + k + 'Width'])) && s.boxShadow === 'none' && !(s.outlineStyle !== 'none' && parseFloat(s.outlineWidth)) && !e.textContent.trim() && !e.children.length; };
+        const parts = [...app.querySelectorAll('[data-art]:not([data-still])')].filter(vis).map(e => [e, e.getBoundingClientRect()]);
         if (parts.length) for (const e of app.querySelectorAll('[data-a], .pq, .lb, .coin, #coin, .runslot')) {
-          if (!vis(e) || e.closest('.mw, .story, .dim, .toast, [data-art]') || e.querySelector('[data-art]')) continue;
+          if (!vis(e) || e.closest('.mw, .story, .dim, .toast, [data-art]') || e.querySelector('[data-art]') || drawsNothing(e)) continue;
           const q = e.getBoundingClientRect();
           for (const [p, P] of parts) if (q.left < P.right - .5 && P.left < q.right - .5 && q.top < P.bottom - .5 && P.top < q.bottom - .5) out.push(`${name(e)} "${e.textContent.trim().slice(0, 20)}": lies over the moving part ${name(p)}`);
         }
@@ -220,6 +228,13 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
             if (same / (w * h) < .6 || edgeSame / edge < .85) out.push(`${name(e)}: its first frame matches the picture under it at ${Math.round(same / (w * h) * 100)}% (edge ${Math.round(edgeSame / edge * 100)}%): not cut from this place`);
           }
         }
+        // still: a part marked still does not move. No animation runs on it, and a canvas of models draws the same pixels a
+        // moment later (a room's models are drawn once, when the room is laid out).
+        const stills = [...app.querySelectorAll('[data-still]')].filter(vis);
+        for (const e of stills) if (e.getAnimations().some(a => a.playState === 'running')) out.push(`${name(e)}: marked still, but it moves`);
+        const snap = c => { try { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let h = 0; for (let i = 0; i < d.length; i += 4) h = (h * 31 + d[i] + d[i + 1] * 3 + d[i + 2] * 7 + d[i + 3] * 11) >>> 0; return h; } catch { return null; } };
+        const cvs = stills.filter(e => e.tagName === 'CANVAS').map(c => [c, snap(c)]);
+        if (cvs.length) { await new Promise(ok => setTimeout(ok, 150)); for (const [c, h] of cvs) if (c.isConnected && h !== null && snap(c) !== h) out.push(`${name(c)}: marked still, but what it draws changes`); }
         // a model stands on its spot: in a canvas of models laid on its picture, the lowest pixel drawn within 48 pixels
         // of each spot's x (a model turned stands on a corner) is the row just above the spot's y (data-foot: "x,y" in the
         // picture, one for each model)
