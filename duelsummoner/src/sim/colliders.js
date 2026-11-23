@@ -2,7 +2,7 @@
 // The places come from the same pure scatter the view draws, so what you see is exactly what you hit. Deterministic, no allocation per tick.
 import { scatterStage } from '../gen/scatter.js';
 
-const CELL = 8, TRUNK_R = 0.42, TRUNK_TOP = 3, ROCK_R = 0.9, ROCK_MIN = 1.0, ROCK_TOP = 1.1;
+const CELL = 8, TRUNK_R = 0.7, TRUNK_TOP = 10, ROCK_R = 0.95, ROCK_MIN = 1.0, ROCK_TOP = 1.25;   // landmark scale: a tree is 9-16 m with a trunk 1.4-2.4 m wide, a rock 2-6 m wide; nothing smaller is solid
 export function buildColliders(map, stageIndex) {
   const S = scatterStage(map, stageIndex, true), list = [], grid = new Map();
   const add = (x, y, z, r, top) => { const c = { x, y, z, r, top: y + top }, k = Math.floor(x / CELL) * 4096 + Math.floor(z / CELL); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(c); list.push(c); };

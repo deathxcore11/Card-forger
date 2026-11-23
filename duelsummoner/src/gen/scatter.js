@@ -35,10 +35,10 @@ export function scatterStage(map, stageIndex, solidOnly) {
   const tint = (lo, hi) => 1 - lo + rnd() * (lo + hi);
   if (D.trees > 0) {                                                               // groves: pick centres, then ring them with trees of different sizes
     const groves = spots(Math.round(14 * D.trees), (x, z) => (free(x, z, 14) && flat(x, z, 0.4) !== null ? flat(x, z, 0.4) : null)), per = [];
-    for (const g of groves) { const n = 5 + Math.floor(rnd() * 9); for (let i = 0; i < n; i++) { const a = rnd() * 6.283, d = 3 + rnd() * 11, x = g[0] + cos(a) * d, z = g[2] + sin(a) * d; if (!free(x, z, 3)) continue; const h = flat(x, z, 0.35); if (h === null) continue; per.push([x, h, z, 0.75 + rnd() * 0.7, rnd() * 6.283, tint(0.12, 0.12)]); } }
+    for (const g of groves) { const n = 4 + Math.floor(rnd() * 5); for (let i = 0; i < n; i++) { const a = rnd() * 6.283, d = 6 + rnd() * 18, x = g[0] + cos(a) * d, z = g[2] + sin(a) * d; if (!free(x, z, 5)) continue; const h = flat(x, z, 0.35); if (h === null) continue; per.push([x, h, z, 0.85 + rnd() * 0.6, rnd() * 6.283, tint(0.12, 0.12)]); } }
     per.forEach((t, i) => out.trees[i % 3].push(t));
   }
-  if (D.rocks > 0) { const rs = spots(Math.round(90 * D.rocks), (x, z) => (free(x, z, 2) ? flat(x, z, 0.5) : null)).map(s => [s[0], s[1], s[2], 0.5 + rnd() * rnd() * 3.2, rnd() * 6.283, tint(0.1, 0.1)]); rs.forEach((r, i) => out.rocks[i % 3].push(r)); }
+  if (D.rocks > 0) { const rs = spots(Math.round(55 * D.rocks), (x, z) => (free(x, z, 2) ? flat(x, z, 0.5) : null)).map(s => [s[0], s[1], s[2], 1.0 + rnd() * rnd() * 2.0, rnd() * 6.283, tint(0.1, 0.1)]); rs.forEach((r, i) => out.rocks[i % 3].push(r)); }
   if (solidOnly) return out;
   if (D.bushes > 0) out.bushes = spots(Math.round(110 * D.bushes), (x, z) => (free(x, z, 2) ? flat(x, z, 0.35) : null)).map(s => [s[0], s[1], s[2], 0.7 + rnd() * 0.8, rnd() * 6.283, tint(0.1, 0.1)]);
   if (D.specials > 0) out.special = spots(Math.round(120 * D.specials), (x, z) => (free(x, z, 3) ? flat(x, z, 0.4) : null)).map(s => [s[0], s[1], s[2], 0.8 + rnd() * 1.6, rnd() * 6.283, 1]);
