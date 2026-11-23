@@ -178,8 +178,21 @@ window.addEventListener('keydown', e => {
 });
 // Pad in every mode: Start pauses and resumes, Select opens the map, B backs out, d-pad and stick move the gold ring, A presses, X redraws and Y passes in an offer.
 const padEdges = new PadEdges(); let fitN = 0;
+// the proof overlay (engine plan 0a): enemies on screen, frames a second (median over 2 s), draw calls, triangles, internal size, WebGL version and the download size. View only; hidden by default.
+let proofOn = false; const proofEl = $('proof'), frameMs = [], dl = { mb: null };
+function toggleProof() { proofOn = !proofOn; proofEl.classList.toggle('on', proofOn); proofEl.setAttribute('aria-hidden', proofOn ? 'false' : 'true'); }
+{ const pe = performance.getEntriesByType ? performance.getEntriesByType('resource') : []; let b = 0; for (const e of pe) b += e.encodedBodySize || e.transferSize || 0; dl.mb = b > 0 ? b / 1048576 : null;       // the build manifest is the target; until one exists, the bytes the page actually fetched
+  fetch('build-manifest.json', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(m => { if (m && typeof m.totalBytes === 'number') dl.mb = m.totalBytes / 1048576; }).catch(() => {}); }
+function proofLine() {
+  const s = frameMs.slice().sort((a, b) => a - b), med = s.length ? s[s.length >> 1] : 0, r = renderer.info.render, sz = renderer.getDrawingBufferSize(new T.Vector2());
+  return game.enemyCount() + ' enemies  ' + (med > 0 ? (1000 / med).toFixed(0) : '-') + ' fps  ' + r.calls + ' draws  ' + (r.triangles / 1000).toFixed(1) + 'k tris  ' + sz.x + 'x' + sz.y + '  ' + (renderer.capabilities.isWebGL2 ? 'GL2' : 'GL1') + '  ' + (dl.mb === null ? 'dl n/a' : dl.mb.toFixed(1) + ' MB');
+}
+let proofT = 0, proofTouch = 0;
+window.addEventListener('touchstart', e => { if (e.touches.length === 3) { toggleProof(); proofTouch = performance.now(); } }, { passive: true });
+window.addEventListener('keydown', e => { if (e.key === 'F9') { e.preventDefault(); toggleProof(); } });
 function padFrame(now) {
   const pad = firstPad(), names = padEdges.poll(pad, now / 1000);
+  if (names.includes('y') && pad && pad.buttons && pad.buttons[8] && pad.buttons[8].pressed) { toggleProof(); if (mapOpen) toggleMap(false); return; }       // hold Select and press Y
   if (pad && padEdges.any(pad) && touch) touch.padUsed();
   if (!names.length) return;
   const rv = document.getElementById('reveal');
@@ -481,9 +494,11 @@ function frame(now) {
   showFlash(game);
   const a1 = performance.now();
   trimUploads();
-  renderer.render(scene, camera);
+  renderer.info.autoReset = false; renderer.info.reset(); renderer.render(scene, camera);       // calls and triangles are summed over every pass of the frame, so a later post pass is counted too
   prof.view = a1 - a0; prof.render = performance.now() - a1;
 
+  if (perf.lastNow) { frameMs.push(now - perf.lastNow); while (frameMs.length > 120) frameMs.shift(); }
+  if (proofOn && now - proofT >= 250) { proofT = now; proofEl.textContent = proofLine(); }
   fpsFrames++; if (now - fpsT >= 500) {
     const fps = fpsFrames * 1000 / (now - fpsT); fpsFrames = 0; fpsT = now;
     if (showDebug) dbg.textContent = fps.toFixed(0) + ' fps  enemies ' + game.enemyCount() + '  sim ' + (stepMs / 30).toFixed(2) + ' ms  view ' + prof.view.toFixed(2) + ' ms';

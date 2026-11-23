@@ -113,6 +113,9 @@
   #strip span.now { border-color:#ffe08a; color:#ffe08a; } #strip span.done { border-color:#5a8a5a; color:#8fd08f; text-decoration:line-through; } #strip span.fight { border-color:#c8402c; color:#ff9a7a; }
   #fxflash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; }
   #lowhp { position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center, rgba(14,8,20,0) 56%, rgba(14,8,20,.34) 78%, rgba(14,8,20,.78) 100%); }       /* ink creeping in from the edges; the middle third stays clear */
+  #proof { position:fixed; left:50%; top:34px; transform:translateX(-50%); z-index:15; display:none; padding:3px 10px; border:1px solid #6b4fa0; background:rgba(14,10,24,.82); color:#f0e8d4; font:600 13px/1.3 ui-monospace,Consolas,monospace; white-space:nowrap; pointer-events:none; max-width:96vw; overflow:hidden; text-overflow:ellipsis; }       /* the proof overlay: one line for clips, hidden by default, clear of the health bar and the slots */
+  #proof.on { display:block; }
+  @media (max-width:700px) { #proof { font-size:11px; padding:2px 6px; } }
   #speedlines { position:fixed; inset:0; pointer-events:none; opacity:0; z-index:13; background:repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0) 0 5deg, rgba(255,255,255,.16) 5deg 5.7deg); -webkit-mask-image:radial-gradient(ellipse at center, transparent 42%, #000 88%); mask-image:radial-gradient(ellipse at center, transparent 42%, #000 88%); }       /* slide-hop speed lines: only the edges of the screen */
   body.rm #speedlines { display:none; }
   #lowhp svg { position:absolute; inset:0; width:100%; height:100%; }
@@ -199,6 +202,7 @@
 <div class="hud" id="prompt"></div>
 <div class="hud" id="fusion"></div>
 <div class="hud" id="boss"><div id="bossname">THE HOLLOW PHARAOH</div><div class="bar"><i id="bossfill"></i></div></div>
+<div id="proof" aria-hidden="true"></div>
 <div class="hud" id="debug" style="left:16px;top:230px;display:none"></div>
 <div class="hud" id="stats"></div>
 <div id="tags"></div>
