@@ -1,7 +1,7 @@
 // Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
 // telegraphs and effects, pickups. Positions are blended between the last two sim ticks so any refresh rate looks smooth.
 import { CFG } from '../data/config.js';
-import { KIND_LIST } from '../data/enemies.js';
+import { KIND_LIST, BOSS_COLORS as BC } from '../data/enemies.js';
 import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { MAP } from '../data/map.js';
 import { SCALE, summonSize } from '../data/scale.js';
@@ -189,19 +189,19 @@ export class Actors {
   _specialMesh(sp) {
     const g = new T.Group(), r = sp.radius;
     if (sp.kind === 'warden') {
-      const body = new T.Mesh(new T.BoxGeometry(1.8, 2.6, 1.4), lambert(0x8a8278)); body.position.y = 1.3;
-      const head = new T.Mesh(new T.BoxGeometry(0.9, 0.8, 0.9), lambert(0xb9a98a)); head.position.y = 3.0;
-      const shield = new T.Mesh(new T.BoxGeometry(2.6, 3.0, 0.3), lambert(0xe0b765)); shield.position.set(0, 1.6, 1.0);
+      const body = new T.Mesh(new T.BoxGeometry(1.8, 2.6, 1.4), lambert(BC.warden.body)); body.position.y = 1.3;
+      const head = new T.Mesh(new T.BoxGeometry(0.9, 0.8, 0.9), lambert(BC.warden.head)); head.position.y = 3.0;
+      const shield = new T.Mesh(new T.BoxGeometry(2.6, 3.0, 0.3), lambert(BC.warden.shield)); shield.position.set(0, 1.6, 1.0);
       g.add(body, head, shield);
     } else if (sp.kind === 'idol') {
-      const body = new T.Mesh(new T.OctahedronGeometry(0.95, 0), lambert(0xc9a04a)); body.position.y = 1.0; body.scale.set(0.8, 1.2, 1.4);
-      const e1 = cone(0.18, 0.7, 0x4a3a2a), e2 = cone(0.18, 0.7, 0x4a3a2a); e1.rotation.x = e2.rotation.x = 0; e1.position.set(-0.3, 2.1, 0.5); e2.position.set(0.3, 2.1, 0.5);
+      const body = new T.Mesh(new T.OctahedronGeometry(0.95, 0), lambert(BC.idol.body)); body.position.y = 1.0; body.scale.set(0.8, 1.2, 1.4);
+      const e1 = cone(0.18, 0.7, BC.idol.ear), e2 = cone(0.18, 0.7, BC.idol.ear); e1.rotation.x = e2.rotation.x = 0; e1.position.set(-0.3, 2.1, 0.5); e2.position.set(0.3, 2.1, 0.5);
       g.add(body, e1, e2);
     } else {
-      const robe = new T.Mesh(new T.ConeGeometry(1.5, 4.2, 7), lambert(0x6a5a8a)); robe.position.y = 2.1;
-      const head = new T.Mesh(new T.BoxGeometry(0.9, 1.0, 0.9), lambert(0xd8c8a0)); head.position.y = 4.5;
-      const crown = new T.Mesh(new T.ConeGeometry(0.7, 0.9, 5), lambert(0xe8b84a)); crown.position.y = 5.3;
-      const blade = new T.Mesh(new T.BoxGeometry(0.2, 0.2, 4.2), lambert(0xe8e8f0)); blade.position.set(1.3, 2.6, 2.0);
+      const robe = new T.Mesh(new T.ConeGeometry(1.5, 4.2, 7), lambert(BC.pharaoh.robe)); robe.position.y = 2.1;
+      const head = new T.Mesh(new T.BoxGeometry(0.9, 1.0, 0.9), lambert(BC.pharaoh.head)); head.position.y = 4.5;
+      const crown = new T.Mesh(new T.ConeGeometry(0.7, 0.9, 5), lambert(BC.pharaoh.crown)); crown.position.y = 5.3;
+      const blade = new T.Mesh(new T.BoxGeometry(0.2, 0.2, 4.2), lambert(BC.pharaoh.blade)); blade.position.set(1.3, 2.6, 2.0);
       g.add(robe, head, crown, blade);
     }
     g.userData.parts = g.children.slice();

@@ -42,15 +42,15 @@ void main() {
   vec3 c = mix(bed, uWatS, (1.0 - exp(-dep * 2.6)) * 0.6); c = mix(c, uWatD, 1.0 - exp(-dep * 1.05));
   vec3 Rf = reflect(V, n); Rf.y = abs(Rf.y) + 0.02; Rf = normalize(Rf);
   vec3 rc = skyBase(Rf);
-  float F0 = 0.07; c = mix(c, rc, F0 + (1.0 - F0) * pow(1.0 - max(dot(n, -V), 0.0), 4.0));
+  float F0 = 0.07; c = mix(c, rc, 0.5 * (F0 + (1.0 - F0) * pow(1.0 - max(dot(n, -V), 0.0), 4.0)));
   float tw = hsh(floor(p * 8.0) + floor(uT * 10.0) * vec2(7.0, 3.0)), lobe = pow(max(dot(normalize(Rf.xz + 1e-5), normalize(uSunD.xz)), 0.0), 18.0) * smoothstep(0.0, 0.5, 1.0 - Rf.y);
-  c += mix(uSunK, uSkyH, 0.45) * (step(1.0 - lobe * (0.55 + 0.5 * g), tw) * 1.1 + step(0.9985, tw) * 0.3);      // sun glitter: a band toward the sun, twinkling per texel, in the light tone of the sky
+  c += uWatL * (step(1.0 - lobe * (0.55 + 0.5 * g), tw) * 0.9 + step(0.9985, tw) * 0.25);      // sun glitter: a band toward the sun, twinkling per texel, in the light tone of the sky
   c += uWatS * 0.16 * step(0.55, g);                                                           // a gust shows as a paler patch
   float fn = N(p * 0.19 + vec2(4.0, 2.0) / 512.0 * uT).r, lap = 0.5 + 0.5 * sin(uT * 1.4 + dep * 18.0 + fn * 4.0);
-  float foam = step(dep + (fn - 0.5) * 0.12, 0.03 + 0.05 * lap);                               // the foam line laps in and out at the rim
-  foam = max(foam, step(abs(dep - 0.3 - 0.1 * lap + (fn - 0.5) * 0.2), 0.024) * step(0.5, fn) * step(0.35, lap));
+  float fb = N(p * 0.45 + vec2(9.0, 5.0) / 512.0 * uT).g;                                       // a thin broken line (1 to 2 game pixels) that laps in and out at the rim
+  float foam = step(abs(dep + (fn - 0.5) * 0.05 - (0.04 + 0.05 * lap)), 0.011) * step(0.32, fb);
   c *= 1.0 + max(rf, -1.0) * step(rf, 0.0) * 0.3; foam = max(foam, clamp(rf, 0.0, 1.0) * 0.55);
-  c = mix(c, max(uSunK * 0.55 + uSkyH * 0.5, uSkyH * 0.85) * vec3(0.96, 0.98, 1.0), foam * 0.9);
+  c = mix(c, uWatL, foam * 0.85);
   gl_FragColor = vec4(c, 1.0);
   #include <fog_fragment>
 }`;
