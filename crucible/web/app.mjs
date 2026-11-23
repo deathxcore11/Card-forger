@@ -2189,8 +2189,9 @@ function fitScroll(sc, want) {
 }
 // A box that scrolls is drawn by the browser as a layer of its own, and at some scales (three device pixels to a frame
 // pixel at a ratio of 2.625) the layer's edge lands a fraction of a device pixel outside the box, so one device row of
-// what the box cuts off showed under its foot. A strip of the window's own ground, one frame pixel tall and laid at the
-// window's pattern, covers the frame row above and the row under the box.
+// what the box cuts off showed under its foot (and, scrolled, over its top). A strip of the window's own ground, one frame
+// pixel tall and laid at the window's pattern, covers the frame row above and the row under the box; each strip is a
+// layer of its own (ps.css), so it is drawn over the box's layer.
 function scrollLips(sc, win) {
   const cs = getComputedStyle(win), x = sc.offsetLeft, w = sc.offsetWidth;
   for (const y of [sc.offsetTop - 1, sc.offsetTop + sc.offsetHeight]) {
