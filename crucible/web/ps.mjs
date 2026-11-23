@@ -31,8 +31,19 @@ export function fitConsole(app) {
   return { k, n, up, changed };
 }
 
+// The label face's own advances, in pixels (measured from the face at 8 pixels); a character not listed takes 6. A word
+// set in it is as wide as its letters' advances.
+const LBW = { ' ': 4, I: 3, '!': 3, "'": 3, '.': 3, ':': 3, '|': 3, '·': 3, ',': 4, ';': 4, '(': 4, ')': 4, '[': 4, ']': 4, '`': 4, E: 5, F: 5, L: 5, T: 5, Z: 5, 1: 5, '-': 5, '/': 5, '"': 5, '<': 5, '=': 5, '>': 5, '\\': 5, '^': 5, '{': 5, '}': 5, M: 7, N: 7, V: 7, W: 7, X: 7, Y: 7, '#': 7, '%': 7, '*': 7, '+': 7, '@': 7 };
+export const labelW = s => { let w = 0; for (const c of String(s).toUpperCase()) w += LBW[c] ?? 6; return w; };
 // A plaque (a button). a = the data-a verb; o.lit marks the one the hammer is on; o.off greys it.
-export const pq = (x, y, w, label, a, o = {}) => `<button class="pq${o.lit ? ' lit' : ''}${o.cls ? ' ' + o.cls : ''}" style="left:${x}px;top:${y}px;width:${w}px" ${a ? `data-a="${esc(a)}"` : ''}${o.off ? ' disabled' : ''}${o.title ? ` title="${esc(o.title)}"` : ''}>${esc(label)}</button>`;
+// A plaque is never narrower than its words with the hammer beside them (pqW: its border, the hammer's 16 pixels at the
+// words' left and 4 at their right, ps.css), so the hammer can stand on any plaque without cutting a word. Given several
+// labels, longest first, a plaque takes the first that fits the width its row gives it; when none does, it takes the last
+// and grows to fit it (the console checks report a plaque that then runs into another or out of its pillar). A row laid
+// out from its plaques' words asks pqW how wide each must be.
+export const pqW = s => labelW(s) + 22;
+export const pq = (x, y, w, label, a, o = {}) => { const ls = [].concat(label), t = ls.find(s => pqW(s) <= w) ?? ls[ls.length - 1]; w = Math.max(w, pqW(t));
+  return `<button class="pq${o.lit ? ' lit' : ''}${o.cls ? ' ' + o.cls : ''}" style="left:${x}px;top:${y}px;width:${w}px" ${a ? `data-a="${esc(a)}"` : ''}${o.off ? ' disabled' : ''}${o.title ? ` title="${esc(o.title)}"` : ''}>${esc(t)}</button>`; };
 export const lb = (x, y, txt, cls = '') => `<b class="ab lb ${cls}" style="left:${x}px;top:${y}px">${esc(txt)}</b>`;
 export const tx = (x, y, txt, cls = '') => `<b class="ab ${cls}" style="left:${x}px;top:${y}px">${esc(txt)}</b>`;
 export const box = (x, y, w, h, cls, inner = '', attrs = '') => `<div class="ab ${cls}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px" ${attrs}>${inner}</div>`;

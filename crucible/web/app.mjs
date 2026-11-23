@@ -12,7 +12,7 @@ import { newProfile, applyRun, scoreRun, buy, maxHeat, VAULT, FORGER_FEATS, feat
 import { SCENES, RUMOURS } from './story.mjs';
 import { LAB_DEFAULTS, LAB_ORDER, DEPTH_SET, labConfig } from './labs.mjs';
 import { aimFor } from './aim.mjs';
-import { F, fitConsole, yb, xr, cx0, cy0, viewSize, ledgeW, pq, lb, lbr, box, gauge, frame, win, carveImg, carve, fogSprite } from './ps.mjs';
+import { F, fitConsole, yb, xr, cx0, cy0, viewSize, ledgeW, pq, pqW, labelW, lb, lbr, box, gauge, frame, win, carveImg, carve, fogSprite } from './ps.mjs';
 import * as R3 from './raster.mjs';
 import { pixelText } from './pxtext.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
@@ -1043,8 +1043,8 @@ function psChamber() {
   const pips = Array.from({ length: 6 }, (_, i) => `<i class="pip${i < r.chamber ? ' on' : i === r.chamber ? ' at' : ''}" style="left:${8 + i * 11}px;top:20px"></i>`).join('') + `<i class="seal${r.seals >= 2 ? ' on' : ''}" style="left:76px;top:19px"></i>`;
   const rel = relicList(r), belt = Array.from({ length: 9 }, (_, i) => { const id = rel[i]; return `<button class="sl" style="left:${8 + (i % 3) * 28}px;top:${54 + Math.floor(i / 3) * 28}px" data-a="tab:relics" aria-label="${id ? esc(RELICS[id].name) : 'Empty relic slot'}">${id ? medal(id, 24) : ''}</button>`; }).join('');
   const right = lb(8, 8, `FLOOR ${fl}`, 'g') + pips + lb(8, 40, 'RELICS', 'g') + (rel.length > 9 ? lbr(88, 40, '+' + (rel.length - 9)) : '') + belt
-    + lb(8, 142, `CHARMS ${r.charms.length}/${db.config.charmSlots}`, 'g') + (db.config.heatRules && r.heat ? pq(4, yb(160), 88, `HEAT ${r.heat} RULES`, `heatinfo:${r.heat}`) : '')
-    + pq(4, yb(180), 88, 'DOORS IN FULL', 'tab:doors') + pq(4, yb(200), 88, 'DECK', 'tab:deck') + pq(4, yb(220), 88, 'RELICS', 'tab:relics');
+    + lb(8, 142, `CHARMS ${r.charms.length}/${db.config.charmSlots}`, 'g') + (db.config.heatRules && r.heat ? pq(4, yb(160), 88, [`HEAT ${r.heat} RULES`, `HEAT ${r.heat}`], `heatinfo:${r.heat}`) : '')
+    + pq(4, yb(180), 88, 'ALL DOORS', 'tab:doors') + pq(4, yb(200), 88, 'DECK', 'tab:deck') + pq(4, yb(220), 88, 'RELICS', 'tab:relics');
   G.barText = bar;
   return frame({ left: psYou(r), right, view, ledge, bar });
 }
@@ -1742,17 +1742,14 @@ function psTrap(live) {
   const n = live.pending.options.length, hl = Math.min(3, Math.ceil(head.replace(/&[a-z]+;/g, '&').length / 36)), top = 28 + hl * 16; // the attack in its lines, then the Traps
   const H = Math.min(F.H - 16, top + 32 + n * 66), more = top + 32 + n * 66 > H; // a list that scrolls when the frame cannot hold every Trap, and says so
   const opts = live.pending.options.map((i, k) => { const t = live.traps[0][i]; return `<div class="ab" style="left:8px;top:${k * 66}px;width:296px;height:62px">${psCard(t, 0, 0)}<div class="ab" style="left:50px;top:0;width:250px;height:44px;line-height:16px;overflow:hidden"><b class="lb g" style="display:block;height:10px;line-height:8px">${esc(card(t.id).name)}</b>${esc(shortText(t.id))}</div>${pq(206, 46, 88, 'SPRING IT', 'respond:' + i, { lit: k === 0 })}</div>`; }).join(''); // the words take two lines across the row, the plaque sits under them
-  return win(96, 8 - cy0(), 320, H, `<h2>Spring a Trap?</h2><p style="height:${hl * 16}px">${head}</p><div class="ab sc" style="left:0;top:${top}px;width:320px;height:${H - top - 30}px">${opts}</div>${more ? lb(8, H - 20, 'MORE BELOW, SCROLL', 'g') : ''}${pq(216, H - 26, 88, 'LET IT THROUGH', 'respond:-1')}`);
+  return win(96, 8 - cy0(), 320, H, `<h2>Spring a Trap?</h2><p style="height:${hl * 16}px">${head}</p><div class="ab sc" style="left:0;top:${top}px;width:320px;height:${H - top - 30}px">${opts}</div>${more ? lb(8, H - 20, 'MORE BELOW, SCROLL', 'g') : ''}${pq(302 - Math.max(88, pqW('LET IT THROUGH')), H - 26, 88, 'LET IT THROUGH', 'respond:-1')}`); // as wide as its words and the hammer need, its right edge in line with the Traps' SPRING IT plaques (8 + 206 + 88)
 }
 
 // ---- offerings: a card, a Gift, a charm, a Guardian Reward, a treasure, the Sanctum, a starter kit
 // The choices stand on plinths in the view. A cursor rests on one; the ledge names it, the text bar reads it out, and a
 // second tap on it (or TAKE) takes it. Each choice: { pic, name, facts, text, a, off, card }.
-// The label face's own advances, in pixels (measured from the face at 8 pixels); a character not listed takes 6. A word
-// set in it is as wide as its letters' advances; the last letter's spacing column is blank, so a word may reach one
-// pixel past its room.
-const LBW = { ' ': 4, I: 3, '!': 3, "'": 3, '.': 3, ':': 3, '|': 3, '·': 3, ',': 4, ';': 4, '(': 4, ')': 4, '[': 4, ']': 4, '`': 4, E: 5, F: 5, L: 5, T: 5, Z: 5, 1: 5, '-': 5, '/': 5, '"': 5, '<': 5, '=': 5, '>': 5, '\\': 5, '^': 5, '{': 5, '}': 5, M: 7, N: 7, V: 7, W: 7, X: 7, Y: 7, '#': 7, '%': 7, '*': 7, '+': 7, '@': 7 };
-const labelW = s => { let w = 0; for (const c of String(s).toUpperCase()) w += LBW[c] ?? 6; return w; };
+// A word set in the label face is as wide as its letters' advances (labelW, ps.mjs); the last letter's spacing column is
+// blank, so a word may reach one pixel past its room.
 const fits = (s, px) => labelW(s) <= px + 1;
 // A name in the label face set on lines px wide, never cut inside a word: whole words go on each line as long as they fit,
 // a word wider than the line stands whole on its own (the layout gives the widest word room). When the name needs more
@@ -1845,9 +1842,13 @@ function psOffer({ title, items, bar0 = '', right = '', room = 'doors', key, sel
   // stands out of the dim, so what the room is about reads at a glance.
   const props = propSpot(rp, kind);
   const view = `${roomImg(rp)}${rp.edge}${clear ? '' : props}<i class="dim0"></i>${clear ? props : ''}${head}${plinths}${y0 - 8 >= tb ? `<i class="cur" style="left:${at(sel - first) + (sw >> 1) - 4}px;top:${y0 - 8}px"></i>` : ''}`; // a view too short for the cursor between the title and the plinths marks the choice by its plinth alone
-  const ledge = `<div class="dt" style="width:${lw - 82}px"><b data-name="${esc(it.name)}">${nameLines(it.name, lw - 92, 2).map(esc).join('<br>')}</b>${(it.facts || []).map(f => `<p>${f}</p>`).join('')}</div>`
-    + (n > 1 ? pq(lw - 72, 4, 30, '<', selA ? selA((sel + n - 1) % n) : `osel:${(sel + n - 1) % n}`, { title: 'Choice to the left' }) + pq(lw - 38, 4, 30, '>', selA ? selA((sel + 1) % n) : `osel:${(sel + 1) % n}`, { title: 'Choice to the right' }) : '')
-    + (it.card ? pq(lw - 72, 22, 64, 'CARD PAGE', `inspect:${it.card}`) : '') + pq(lw - 72, 40, 64, it.take || 'TAKE', it.a, { lit: !it.off, off: it.off });
+  // The ledge's plaques stand in a column at its right, as wide as the widest of them needs for its words with the hammer
+  // beside them (64 at the least, and even, so the two arrows split it), the reading taking the rest. The column is laid
+  // out for every choice in the row, so it stays put as the cursor moves along it.
+  const cw = Math.max(64, ...items.map(x => Math.max(x.card ? pqW('CARD PAGE') : 0, pqW(x.take || 'TAKE')))) + 1 & ~1, colX = lw - 8 - cw, aw = (cw - 4) >> 1;
+  const ledge = `<div class="dt" style="width:${colX - 10}px"><b data-name="${esc(it.name)}">${nameLines(it.name, colX - 20, 2).map(esc).join('<br>')}</b>${(it.facts || []).map(f => `<p>${f}</p>`).join('')}</div>`
+    + (n > 1 ? pq(colX, 4, aw, '<', selA ? selA((sel + n - 1) % n) : `osel:${(sel + n - 1) % n}`, { title: 'Choice to the left' }) + pq(colX + aw + 4, 4, aw, '>', selA ? selA((sel + 1) % n) : `osel:${(sel + 1) % n}`, { title: 'Choice to the right' }) : '')
+    + (it.card ? pq(colX, 22, cw, 'CARD PAGE', `inspect:${it.card}`) : '') + pq(colX, 40, cw, it.take || 'TAKE', it.a, { lit: !it.off, off: it.off });
   const bar = [it.text, bar0].map(t => String(t || '').trim()).filter(Boolean).map(t => /[.!?:)]$/.test(t) ? t : t + '.').join(' '); // each part a whole sentence
   G.barText = bar;
   return frame({ left: left ?? psYou(r), right: pillar ?? psRight(r, right), view, ledge, bar });
@@ -1912,7 +1913,10 @@ function psAnvil() {
     .concat([[`TEMPER ${Pr.temper}`, 'temper', !e || !db.isMonster(e.id) || e.t || r.embers < Pr.temper, 'Temper: the chosen monster gains 300 ATK and DEF for the rest of the run.']])
     .concat(o.enchants.map(x => [`${x} ${Pr.enchant}`.toUpperCase(), `enchant:${x}`, !e || !db.isMonster(e.id) || e.e || r.embers < Pr.enchant, `${cap(x)}: ${ENCHANT_TEXT[x]}`]))
     .concat([[`BIND ${Pr.bind}`, 'bind', !e || !e2 || r.embers < Pr.bind, 'Bind: the two chosen cards become one meld card in your deck.']]);
-  const ledge = works.slice(0, 9).map(([t, a, off], i) => pq(4 + (i % 3) * (cw + 4), 4 + Math.floor(i / 3) * 19, cw, t, a, { off, lit: !off && i === works.findIndex(w => !w[2]) })).join('');
+  // Three columns of plaques on three rows. A working whose words and the hammer need more than a column takes two,
+  // and each plaque goes in the first place on the rows that holds it, so a short one fills the gap a long one left.
+  const used = [[], [], []], at = span => { for (let y = 0; y < 3; y++) for (let x = 0; x + span <= 3; x++) if (!used[y].slice(x, x + span).some(Boolean)) { for (let j = x; j < x + span; j++) used[y][j] = 1; return [x, y]; } return null; };
+  const ledge = works.map(([t, a, off], i) => { const span = pqW(t) <= cw ? 1 : 2, p = at(span); return p ? pq(4 + p[0] * (cw + 4), 4 + p[1] * 19, span * cw + (span - 1) * 4, t, a, { off, lit: !off && i === works.findIndex(w => !w[2]) }) : ''; }).join('');
   const bar = e ? `${card(e.id).name}${e.t ? ', tempered' : ''}${e.e ? ', enchanted' : ''}${e2 ? ' and ' + card(e2.id).name : ''}. ${works.filter(w => !w[2]).map(w => w[3]).join(' ') || 'Nothing here can be done to it with your Embers.'}` : `One working, then you move on. Tap a deck card (a second one for a Bind). ${works.map(w => w[3]).join(' ')}`;
   G.barText = bar;
   return frame({ left: psYou(r), right: roomRight(r), view: roomBack('room-forge') + deckGrid(r.deck, 'anvilpick', G.pickDeck, G.pickTrunk), ledge, bar });
@@ -2035,7 +2039,7 @@ function psOmen() {
   const r = G.run, o = r.offer;
   const item = o.seen ? cardItem(o.card, 'pick:0') : { name: 'UNSEEN CARD', a: 'pick:0', ...backItem, facts: ['ONE STRONGER CARD, UNSEEN'], text: '' };
   return psOffer({ title: 'OMEN', key: 'omen', room: 'room-omen', items: [{ ...item, take: 'GIVE TWO', off: r.trunk.length < 2, facts: [...item.facts, `TRUNK CARDS: ${r.trunk.length}`], text: `${o.text} Your two weakest trunk cards are taken.` }],
-    right: pq(4, yb(160), 88, 'PAY 30, SEE IT', 'pick:1', { off: o.seen || r.embers < 30 }) + pq(4, yb(180), 88, 'LEAVE', 'skip') });
+    right: pq(4, yb(160), 88, 'SEE IT FOR 30', 'pick:1', { off: o.seen || r.embers < 30 }) + pq(4, yb(180), 88, 'LEAVE', 'skip') });
 }
 
 // ---- the books: the run's end, the Codex, Feats, the Memory Vault
@@ -2181,7 +2185,7 @@ function psWindows() {
   // less eight pixels above and below, so a taller frame shows more lines. Its pages scroll in a box that ends at least
   // eight pixels above the plaques along its foot (fitScroll trims it to whole lines and marks when more lies below).
   const tall = (title, body, foot = '') => { const h = F.H - 16; return `<div class="dim"></div><div class="wn mw" style="left:${16 + cx0()}px;top:8px;width:480px;height:${h}px"><h2>${title}</h2><div class="sc" style="height:${h - 56}px">${body}</div>${foot}${pq(384, h - 28, 88, 'CLOSE', 'tab:', { lit: true })}</div>`; };
-  if (t === 'menu') { const duel = r && (r.phase === 'duel' || G.shown); const items = [['DECK', 'tab:deck'], ['RELICS', 'tab:relics'], duel && ['THIS DUEL', 'tab:duel'], duel && [G.fast ? 'SPEED: FAST' : 'SPEED: NORMAL', 'speed'], !duel && r && ['DOORS IN FULL', 'tab:doors'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options'], r && ['LEAVE THE RUN', 'quit']].filter(Boolean);
+  if (t === 'menu') { const duel = r && (r.phase === 'duel' || G.shown); const items = [['DECK', 'tab:deck'], ['RELICS', 'tab:relics'], duel && ['THIS DUEL', 'tab:duel'], duel && [G.fast ? 'SPEED: FAST' : 'SPEED: NORMAL', 'speed'], !duel && r && ['ALL DOORS', 'tab:doors'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options'], r && ['LEAVE THE RUN', 'quit']].filter(Boolean);
     return win(176, 16, 160, 28 + items.length * 20 + 24, `<h2>Menu</h2>${items.map(([l, a], i) => pq(8, 22 + i * 20, 144, l, a)).join('')}${pq(8, 26 + items.length * 20, 144, 'CLOSE', 'tab:', { lit: true })}`); }
   if (t === 'help') return tall('How a duel works', `<p>Each turn: draw toward five cards (two a turn at most), play one card or one meld, then attack.</p><p>Meld: tap two or more hand cards in order. They combine left to right into one monster. Tap one of your table monsters first to meld onto it.</p><p>Monsters fight with their printed ATK and DEF. Effects printed on a card are not used in Lost Memories.</p><p>Attack position fights with ATK. Defense uses DEF and protects your Life Points. Veiled is face down in defense.</p><p>WATER beats FIRE beats WIND beats EARTH beats WATER. LIGHT and DARK beat each other when attacking. The edge is +500 for that battle.</p><p>Field Spells set the terrain (+500 for its Types). ${db.config.equipKinds ? 'Equips made for a Type or Attribute give +800 to that kind and +300 to any other.' : 'Equips give +500.'} Traps wait face down for an attack. Other cards are fuel: +300 in a meld.</p><p>Play comes before attacks. A monster that attacked or just arrived cannot change position.</p><p>Lose a duel and you lose a Spark. The guardian's door needs two seals, one from each duel you win on the floor.</p>`, pq(8, F.H - 44, 160, 'SHOW FIRST LESSONS', 'relearn'));
   if (t === 'sound') return win(96, 24, 320, 192, `<h2>Sound</h2><div id="soundslot" class="soundslot sc" style="height:132px"></div>${pq(224, 164, 88, 'CLOSE', 'tab:', { lit: true })}`); // CLOSE inside this narrower window, at its right
