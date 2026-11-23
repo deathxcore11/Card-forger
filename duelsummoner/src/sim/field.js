@@ -5,7 +5,7 @@ import { monsterMul, knee } from './ledger.js';
 import { STAT_BY_MOD } from '../data/stats.js';
 import { K } from '../data/tuning.js';
 import { RECIPES, TIERS, ELEMENTS } from '../data/elements.js';
-import { ITEMS, BLESSINGS } from '../data/items.js';
+import { ITEMS, BLESSINGS, ITEM_CAPS } from '../data/items.js';
 import { ENCOUNTERS } from '../data/encounters.js';
 import { elemBits } from '../data/elements.js';
 const E_ALTAR = ENCOUNTERS.altar;
@@ -66,6 +66,7 @@ export function recompute(g) {
   // rate stats have a ceiling (Tempo and Draw approach x3): linear up to +100%, then a knee
   M.cardRateRaw = M.cardRate; M.monsterRateRaw = M.monsterRate;
   M.cardRate = knee(M.cardRate, K.drawKnee, K.drawKneeK); M.monsterRate = knee(M.monsterRate, K.tempoKnee, K.tempoKneeK);
+  M.raw = {}; for (const k of Object.keys(ITEM_CAPS)) { M.raw[k] = M[k]; if (M[k] > ITEM_CAPS[k]) M[k] = ITEM_CAPS[k]; }          // ceilings on stacked stats; the raw sum stays for the stat panel
   g.sheetSrc = src; g.mods = M;
   const maxHp = g.oaths && g.oaths.glass ? 1 : g.cfgHp + M.maxLp;                  // Glass Oath: 1 LP and it cannot be raised
   if (maxHp !== g.p.maxHp) g.p.maxHp = maxHp;
@@ -206,14 +207,14 @@ export function tributeCard(g, c) {
   list[c.index] = null; bonus[c.index] = (bonus[c.index] || 0) + E_ALTAR.tributeBonus;
   recompute(g); g.event('banner', cardDef(c.id).name + ' is given up. The next card in that zone starts +' + E_ALTAR.tributeBonus + ' levels.');
 }
-export function addItem(g, id) { if (!g.items.includes(id)) g.items.push(id); recompute(g); g.event('banner', ITEMS[id].name + ': ' + ITEMS[id].text); }
+export function addItem(g, id) { if (ITEMS[id].unique && g.items.includes(id)) return false; g.items.push(id); recompute(g); g.event('banner', ITEMS[id].name + ': ' + ITEMS[id].text); return true; }
 export function addBlessing(g, id) { g.blessings.push(id); recompute(g); if (BLESSINGS[id].heal) g.p.hp = Math.min(g.p.maxHp, g.p.hp + BLESSINGS[id].heal); g.event('banner', BLESSINGS[id].name + '. ' + BLESSINGS[id].text); }
 
 export function chooseCard(g, idx) {
   const o = g.offer; if (!o || !o.cards[idx]) return false;
   const c = o.cards[idx];
   if (o.type === 'shop') {                                           // the Broker: pay Coins, the offer stays open so you can browse
-    if (c.sold || g.coins < c.price) return false;
+    if (c.sold || g.coins < c.price || (ITEMS[c.id].unique && g.items.includes(c.id))) return false;
     g.coins -= c.price; c.sold = true; c.stockRef.sold = true; addItem(g, c.id); return true;
   }
   if (c.kind === 'item') addItem(g, c.id);

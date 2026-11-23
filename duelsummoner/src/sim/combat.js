@@ -8,6 +8,7 @@ import { FIELD_RULES, MARKS } from '../data/cards.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { ELEMENTS } from '../data/elements.js';
 import { aceFell } from './aces.js';
+import { CAP, capTake } from './caps.js';
 import { sourceBracket, affinityBracket, overtimeBracket, sourceClass } from './ledger.js';
 
 export const PICK_XP = 0, PICK_COIN = 1, PICK_HEART = 2;
@@ -65,7 +66,7 @@ function chain(g, from, x, z, dmg) {
 export function killEnemy(g, i) {
   const e = g.en; if (!e.alive[i]) return;
   e.alive[i] = 0; g.kills++; g.emit('kill', e.kind[i], e.x[i], e.z[i]);
-  if (g.mods.bell && g.kills % 50 === 0) explode(g, e.x[i], e.y[i], e.z[i], 4, 0, 10, 0xc0c0ff);       // Graveyard Bell
+  if (g.mods.bell && g.kills % Math.max(10, Math.floor(50 / g.mods.bell)) === 0 && capTake(g, CAP.BELL)) explode(g, e.x[i], e.y[i], e.z[i], 4, 0, 10, 0xc0c0ff);       // Graveyard Bell
   const x = e.x[i], y = e.y[i], z = e.z[i], K = KIND_LIST[e.kind[i]];
   const mg = e.mrg[i];                                                        // enemies merged into this one: their rewards are summed
   dropPickup(g, PICK_XP, x, y, z, 1 + mg);
@@ -75,7 +76,7 @@ export function killEnemy(g, i) {
   }
   if (e.ace[i]) aceFell(g, x, y, z);                                          // a star-crested Ace: extra reward and a chance of a Trophy Chest
   if (K === KINDS.bloat) explode(g, x, y, z, K.blast.radius, K.blast.dmg * g.dmgMul, K.blast.dmg, 0xff9030, 'Sand Bloat');
-  if (e.mark[i] > 0 && g.mods.markExplode) explode(g, x, y, z, g.mods.markExplode.radius, 0, g.mods.markExplode.dmg, 0xb070ff);
+  if (e.mark[i] > 0 && g.mods.markExplode && capTake(g, CAP.MARK_EXPLODE)) explode(g, x, y, z, g.mods.markExplode.radius, 0, g.mods.markExplode.dmg, 0xb070ff);
 }
 
 export function dropPickup(g, kind, x, y, z, val) {

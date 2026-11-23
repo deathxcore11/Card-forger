@@ -17,7 +17,7 @@ export function runResults(g, ctx) {
   for (const id of g.fullForms) keys.push('dsfull:' + id);
   for (const id of g.fusionIds) keys.push('dsfu:' + id);
   for (let b = 0; b < 8; b++) if (g.elementsUsed & (1 << b)) keys.push('dsel:' + ['fire', 'lightning', 'ice', 'poison', 'wind', 'earth', 'light', 'dark'][b]);
-  for (const id of g.items) keys.push('dsit:' + id);
+  for (const id of new Set(g.items)) keys.push('dsit:' + id);
   keys.push('dsdu:' + g.duelist);
   for (const id of g.cardsPicked) keys.push('dslib:' + id);
   const deck = g.opts.meta && g.opts.meta.deck ? g.opts.meta.deck : {};

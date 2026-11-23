@@ -33,7 +33,7 @@ export const TREE_SCALE = { parasol: [0.9, 1.1], blob: [1.3, 1.6] };
 // solidOnly: stop after the trees and rocks (the only things you can run into), which come first in the random sequence so they are the same either way
 export function scatterStage(map, stageIndex, solidOnly) {
   const D = DENSITY[Math.min(stageIndex || 0, DENSITY.length - 1)], seed = strHash(String(map.hash || map.key || 'x')), rnd = mulberry(seed ^ 0x5CE9E), pat = noise2(seed ^ 0xA11CE);
-  const R = (MAP && MAP.boundaryR ? MAP.boundaryR : 195) * 0.94, out = { trees: [[], [], [], []], rocks: [[], [], []], bushes: [], special: [], grass: [], flowers: [], flowerSpots: [], decals: [] };
+  const R = (MAP && MAP.boundaryR ? MAP.boundaryR : 195) * 0.94, out = { trees: [[], [], [], []], rocks: [[], [], []], bushes: [], special: [], grass: [], flowers: [], flowerSpots: [] };
   const keep = [{ x: map.spawn.x, z: map.spawn.z, r: 10 }, { x: map.gate.x, z: map.gate.z, r: 12 }];                  // places scenery stays out of: the start, the gate, the arena, boss rings, every encounter
   if (map.arena) keep.push({ x: map.arena.center.x, z: map.arena.center.z, r: 16 });
   const pools = poolSpots(map); for (const p of pools) keep.push({ x: p.x, z: p.z, r: p.r + 3 });
@@ -119,8 +119,6 @@ export function scatterStage(map, stageIndex, solidOnly) {
     const off = Math.floor(rnd() * 4);
     for (let x = -184 + off; x <= 184; x += 4) for (let z = -184 + off; z <= 184; z += 4) { if (x * x + z * z > 184 * 184 || heightAt(x, z) > 0.5 || near2(x, z) <= 156.25) continue;
       for (let k = 0; k < 16; k++) { const px = x + (rnd() - 0.5) * 9, pz = z + (rnd() - 0.5) * 9, h = flat(px, pz, 0.3); if (h !== null && free(px, pz, 0) && farSpawn(px, pz, 10)) { out.bushes.push([px, h, pz, 1.7 + rnd() * 0.5, rnd() * TAU, tint(0.1, 0.1)]); feat.push([px, pz]); break; } } } }
-  // ground decals, drawn only near the camera: dry-grass patches, scuffs, dark dots and pebble flecks, so the sand is never one colour. [x, y, z, scale, rot, kind]
-  for (const s of spots(0, (x, z) => (free(x, z, 0) && heightAt(x, z) < 0.02 ? 0 : null))) { const k = pat(s[0] * 0.04 + 3, s[2] * 0.04 + 8) > 0.55 ? 0 : rnd() < 0.5 ? 1 : rnd() < 0.5 ? 2 : 3; out.decals.push([s[0], 0.04, s[2], k === 0 ? 1.8 + rnd() * 2.2 : k === 1 ? 0.8 + rnd() * 1.1 : k === 2 ? 0.5 + rnd() * 0.8 : 0.2 + rnd() * 0.25, rnd() * TAU, k]); }
   if (D.flowers > 0) {
     const fl = spots(Math.round(420 * D.flowers), (x, z) => (free(x, z, 0) && farSpawn(x, z, 10) && pat(x * 0.03 + 40, z * 0.03 + 9) > 0.62 ? flat(x, z, 0.25) : null));
     for (const s of fl) { const ci = Math.floor(pat(s[0] * 0.05, s[2] * 0.05) * D.nFlowerCols) % D.nFlowerCols; out.flowers.push([s[0], s[1], s[2], 0.8 + rnd() * 0.6, rnd() * TAU, ci]); out.flowerSpots.push([s[0], s[1], s[2]]); }

@@ -4,7 +4,7 @@
 // A second press skips it once you have seen one. Reduce motion shortens it and drops the shake. View only: nothing here can change what the chest gave.
 const COLS = ['#f4f4f4', '#5b9bd5', '#a974e0', '#ffcf4a'], STEP = { rare: 1, epic: 2, legendary: 3 };
 let ctx = null;
-function tone(f, dur, vol, type, glide) {
+export function tone(f, dur, vol, type, glide) {
   try {
     ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume();
     const o = ctx.createOscillator(), gn = ctx.createGain(); o.type = type || 'triangle'; o.frequency.setValueAtTime(f, ctx.currentTime); if (glide) o.frequency.exponentialRampToValueAtTime(glide, ctx.currentTime + dur);

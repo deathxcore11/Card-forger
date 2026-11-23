@@ -80,7 +80,7 @@ export function buildWorld(g) {
 }
 
 function pickStock(g) {
-  const ids = Object.keys(ITEMS).filter(id => !g.unlockedItems || g.unlockedItems.has(id)), W = E.broker.rarityWeights, out = [];
+  const ids = Object.keys(ITEMS).filter(id => (!g.unlockedItems || g.unlockedItems.has(id)) && !(ITEMS[id].unique && g.items.includes(id))), W = E.broker.rarityWeights, out = [];
   const pool = ids.slice();
   while (out.length < E.broker.stock && pool.length) {
     const tot = pool.reduce((a, id) => a + (W[ITEMS[id].rarity] || 1), 0); let r = g.rl() * tot, pick = pool[0];
@@ -139,14 +139,14 @@ function openBlessing(g, shrine) {
   g.event('offer', null);
 }
 function openStone(g, stone) {
-  const owned = new Set(g.items), ids = Object.keys(ITEMS).filter(id => !owned.has(id) && ITEMS[id].rarity === 'common' && (!g.unlockedItems || g.unlockedItems.has(id))), pick = [];
+  const owned = new Set(g.items), ids = Object.keys(ITEMS).filter(id => !(ITEMS[id].unique && owned.has(id)) && ITEMS[id].rarity === 'common' && (!g.unlockedItems || g.unlockedItems.has(id))), pick = [];
   while (pick.length < E.witnessStones.choices && ids.length) pick.push(ids.splice(Math.floor(g.rl() * ids.length), 1)[0]);
   if (!pick.length) { g.event('banner', 'The stones have nothing left to offer you.'); return; }
   g.offer = { type: 'item', cards: itemCards(g, pick), leave: true, source: stone }; g.event('offer', null);
 }
 function openShop(g) {
   const B = g.world.broker;
-  g.offer = { type: 'shop', cards: B.stock.map(s => ({ id: s.id, kind: 'item', isNew: true, to: 1, rarity: ITEMS[s.id].rarity, price: shopPrice(g, s.price), sold: s.sold, stockRef: s })), leave: true };
+  g.offer = { type: 'shop', cards: B.stock.map(s => ({ id: s.id, kind: 'item', isNew: true, to: 1, rarity: ITEMS[s.id].rarity, price: shopPrice(g, s.price), sold: s.sold || !!(ITEMS[s.id].unique && g.items.includes(s.id)), stockRef: s })), leave: true };
   g.event('offer', null);
 }
 // One landmark, two clearly labelled actions. Shown before committing: what is lost and what carries forward.

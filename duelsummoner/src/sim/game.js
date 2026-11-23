@@ -254,7 +254,7 @@ export class Game {
     this.emit('hurt', n, big ? 1 : 0, SELF ? 1 : 0, src || null);
     if (this.god || this.over) return false;
     if (!SELF && this.p.dashT > 0) return false;
-    if (!SELF && this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = 20; this.event('banner', 'The Paper Talisman blocks the hit.'); return false; }
+    if (!SELF && this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = Math.max(6, 20 / this.mods.talisman); this.event('banner', 'The Paper Talisman blocks the hit.'); return false; }
     if (!(flags & 5)) n = Math.max(1, n - this.mods.armour);
     this.p.hp = SELF ? Math.max(Math.min(this.p.hp, 1), this.p.hp - n) : Math.max(0, this.p.hp - n);       // the 1 HP floor never raises LP already below 1
     src = src || 'unknown'; this.damageBy[src] = (this.damageBy[src] || 0) + n; this.lastSrc = src;

@@ -100,7 +100,8 @@ export function drawHud(g, force) {
   if (g.mode !== 'classic') drawStrip(g);
   $('prompt').textContent = document.body.classList.contains('touch') ? g.prompt.replace(/^E: /, 'Tap: ') : g.prompt;
   if (g.mode !== 'classic') { $('nextEvent').textContent = ''; const rh = riteLines(g); if ($('rite').innerHTML !== rh) $('rite').innerHTML = rh; } else $('nextEvent').textContent = nextEvent(g);
-  const items = g.items.map(id => ITEMS[id].name).concat(g.blessings.map(id => BLESSINGS[id].name.replace('Blessing of ', '') + '+'));
+  const cnt = {}; for (const id of g.items) cnt[id] = (cnt[id] || 0) + 1;
+  const items = Object.keys(cnt).map(id => ITEMS[id].name + (cnt[id] > 1 ? ' x' + cnt[id] : '')).concat(g.blessings.map(id => BLESSINGS[id].name.replace('Blessing of ', '') + '+'));
   $('itemsList').textContent = items.length ? 'ITEMS: ' + items.join(', ') : '';
   if (g.mode !== 'classic') { $('stats').textContent = ''; return; }
   const idol = g.sp.filter(s => s.kind === 'idol' && s.alive);
@@ -120,9 +121,9 @@ export function drawStatPanel(g, on) {
   for (const [gname, ids] of STAT_GROUPS) {                                       // every stat always shows, grouped, with its sources when it has any
     rows.push('<div class="dim" style="margin-top:6px;letter-spacing:1px">' + gname.toUpperCase() + '</div>');
     for (const id of ids) {
-      const s = STAT_INFO[id], v = M[s.mod] || 0;
+      const s = STAT_INFO[id], v = M[s.mod] || 0, raw = M.raw && M.raw[s.mod];
       const parts = (src[s.mod] || []).map(p => p[0] + ' ' + fmtStat(s, p[1]).replace('+', '')).join(' + ');
-      rows.push('<div style="' + (v ? '' : 'opacity:.55') + '"><b>' + s.label + ' ' + (v ? fmtStat(s, v) : '0') + '</b>' + (parts ? ' <span class="dim">= ' + parts + '</span>' : '') + (v && s.ceiling ? ' <span class="dim">(' + s.ceiling + ')</span>' : '') + '</div>');
+      rows.push('<div style="' + (v ? '' : 'opacity:.55') + '"><b>' + s.label + ' ' + (v ? fmtStat(s, v) : '0') + '</b>' + (raw > v + 1e-9 ? ' <span class="dim">(' + fmtStat(s, raw) + ' before the ceiling)</span>' : '') + (parts ? ' <span class="dim">= ' + parts + '</span>' : '') + (v && s.ceiling ? ' <span class="dim">(' + s.ceiling + ')</span>' : '') + '</div>');
     }
   }
   const might = mightBracket(M.dmgMult), hunter = targetBracket(M.bossDmg);

@@ -30,6 +30,7 @@ import { DIFF_CHIPS, DUELIST_INFO } from './data/progress.js';
 import { packReplay, deflateInBrowser } from './core/replay.js';
 import { boardUrl, sendAndFollow } from './core/board.js';
 import { TouchControls } from './core/touch.js';
+import { tone } from './view/reveal.js';
 import { PadEdges, firstPad, move as padMove, press as padPressEl, adjust as padAdjust, back as padBack, clearRing, ringEl } from './core/padnav.js';
 import { loadRig } from './view/rig.js';
 import { BRACKET_NAMES } from './sim/ledger.js';
@@ -250,12 +251,14 @@ function countUp(id, to) {
   (function step(now) { const u = Math.min(1, (now - t0) / dur); el.textContent = Math.round(to * (1 - (1 - u) * (1 - u))); if (u < 1) requestAnimationFrame(step); })(t0);
 }
 const KCOL = KIND_LIST.map(k => k.color), PCOL = [0xb48cff, 0xf0c040, 0xff5a7a];
+let lastBlockTick = 0;
 function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt') actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'banner') showBanner(data);
   else if (type === 'offer') { setMode('offer'); showOffer(game, menu); }
   else if (type === 'levelup') { showBanner('Level ' + a); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
   else if (type === 'hit') fx.number(b, 1.7, c, a, data);
+  else if (type === 'block') { fx.burst(data.x, data.y, data.z, 5, 0xc8d0e0, 2.6, 1.5, 0.1, 0.22, 8); fx.ring(data.x, data.y, data.z, 0.7, 0xc8d0e0, 0.18); if (performance.now() - lastBlockTick > 90) { lastBlockTick = performance.now(); tone(150, 0.06, 0.05, 'square'); } }      // the Warden's shield took a hit: a small grey spark and a dull tick, nothing else
   else if (type === 'ace') { fx.ring(a, b, c, 4, 0xffd23f, 0.5); fx.shake(0.1); showBanner('An Ace approaches'); }
   else if (type === 'trophy') { fx.ring(a, b, c, 4.5, 0xffe9a0, 0.6); fx.burst(a, b + 1, c, 24, 0xffe9a0, 3, 6, 0.25, 0.9, 6); fx.shake(0.12); }
   else if (type === 'kill') fx.burst(b, 0.9, c, 6, KCOL[a] || 0xaaaaaa, 3.5, 4, 0.28, 0.55, 14);
@@ -447,7 +450,7 @@ requestAnimationFrame(frame);
 window.__ds = {
   bars,
   renderer,
-  fitHud, game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
+  fitHud, minimap, props, game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
   start: begin, begin, results, setMode, menus, fx, onEvent, save,
   pickDuelist, freeze: v => { frozen = !!v; },

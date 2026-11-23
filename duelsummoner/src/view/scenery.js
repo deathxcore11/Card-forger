@@ -84,14 +84,6 @@ export function buildScenery(map, stageIndex, models) {
   if (theme.special) add(theme.special === 'crystal' ? crystalGeo(theme) : mushroomGeo(theme), S.special, mat);
   add(grassGeo(theme), S.grass, fadeOut(matBoth, 4, 70));
   add(flowerGeo(), S.flowers.map(f => [f[0], f[1], f[2], f[3], f[4], theme.flowerCols[f[5] % theme.flowerCols.length]]), fadeOut(matBoth, 4, 50), true);
-  // ground decals: one instanced quad mesh with a noisy blob cut-out (alpha test, no blending), tinted per kind, culled past 45 m in the vertex shader
-  if (S.decals.length) {
-    const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; const rr = mulberry(5); for (let i = 0; i < 26; i++) { const a = rr() * 6.283, d = rr() * 17, r = 6 + rr() * 9; cx.beginPath(); cx.arc(32 + Math.cos(a) * d, 32 + Math.sin(a) * d, r, 0, 6.283); cx.fill(); }
-    const tex = new T.CanvasTexture(cv), dm = fadeOut(new T.MeshLambertMaterial({ map: tex, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), 0, 45), geo = new T.PlaneGeometry(2, 2); geo.rotateX(-Math.PI / 2);
-    const mesh = new T.InstancedMesh(geo, dm, S.decals.length), m4 = new T.Matrix4(), q4 = new T.Quaternion(), sc = new T.Vector3(), ps = new T.Vector3(), up4 = new T.Vector3(0, 1, 0), c4 = new T.Color(), DC = [0xa8925a, 0xb89a6c, 0x8f7a54, 0x8e8478];
-    S.decals.forEach((d, i) => { q4.setFromAxisAngle(up4, d[4]); sc.set(d[3], 1, d[3]); ps.set(d[0], d[1], d[2]); m4.compose(ps, q4, sc); mesh.setMatrixAt(i, m4); c4.setHex(DC[d[5]]); mesh.setColorAt(i, c4); });
-    mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; mesh.frustumCulled = false; group.add(mesh);
-  }
   const fades = [];
   for (const k of kinds) {
     const mesh = new T.InstancedMesh(k.geo, k.mat, k.list.length), m = new T.Matrix4(), q = new T.Quaternion(), s = new T.Vector3(), p = new T.Vector3(), up = new T.Vector3(0, 1, 0), c = new T.Color();
