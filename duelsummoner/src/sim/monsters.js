@@ -1,4 +1,4 @@
-import { OATH_BY_ID } from '../data/progress.js';
+﻿import { OATH_BY_ID } from '../data/progress.js';
 import { K } from '../data/tuning.js';
 import { CAP, capReady, capTake } from './caps.js';
 // What the monsters on your field do each tick, plus Traps and one-shot Spells. Every number comes from data/cards.js.
@@ -114,7 +114,7 @@ function attack(g, m, D, A) {
         if (d < range && d > 0.01 && (dx / d) * fx + (dz / d) * fz > cosA) damageEnemy(g, j, dmg, { elem: flame, kx: dx, kz: dz });
       }
       for (const sp of g.sp) { if (!sp.alive || sp.dead) continue; const dx = sp.x - m.x, dz = sp.z - m.z, d = Math.sqrt(dx * dx + dz * dz); if (d < range + sp.radius && (dx / (d || 1)) * fx + (dz / (d || 1)) * fz > cosA) g.damageSpecial(sp, dmg, m.x, m.z, { elem: flame }); }
-      addFx(g, { type: 'fan', x: m.x, y: m.y - 0.8, z: m.z, r: range, arc, dx: fx, dz: fz, dur: 0.25, color: 0xff7a30 });
+      addFx(g, { type: 'fan', x: m.x, y: m.y - 0.8, z: m.z, r: range, arc, dx: fx, dz: fz, dur: 0.25, color: 0xffa848 });
       return true;
     }
   }
@@ -179,6 +179,7 @@ export function updateTraps(g, dt) {
     if (g.storm.left <= 0) g.storm = null;
   }
 }
+
 
 
 

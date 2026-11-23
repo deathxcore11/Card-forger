@@ -34,6 +34,14 @@ function drawStrip(g) {                                                    // el
   h += '<span class="' + (G.state === 'fight' ? 'fight' : G.state === 'done' ? 'done' : G.awake ? 'now' : '') + '" title="' + S.gate.name + '">GATE</span>';
   $('strip').innerHTML = h;
 }
+// The Rite: three objective lines that appear in sequence and tick. They replace the next-event text as the main goal; the strip above stays.
+function riteLines(g) {
+  const S = g.stageSpec, awake = g.gate.awake || g.gate.state !== 'closed', fell = g.gate.state === 'done', last = g.stage >= 2;
+  const L = [[awake, 'Wake the gate (' + (awake ? 'awake' : clock(Math.max(0, S.gateWake - g.sc))) + ')']];
+  if (awake) L.push([fell, 'Fell ' + S.gate.name]);
+  if (fell) L.push([!!(g.desc || g.won), last ? 'Claim the Final Altar' : 'Step into the Descent Circle']);
+  return L.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join('');
+}
 function nextEventRun(g) {
   const S = g.stageSpec;
   if (g.duelOn) return 'Hunters grow in ' + clock(30 - (g.otT % 30));
@@ -89,7 +97,7 @@ export function drawHud(g, force) {
   if (boss) { $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%'; if ($('bossname').textContent !== boss.name) $('bossname').textContent = boss.name; }
   if (g.mode !== 'classic') drawStrip(g);
   $('prompt').textContent = document.body.classList.contains('touch') ? g.prompt.replace(/^E: /, 'Tap: ') : g.prompt;
-  $('nextEvent').textContent = g.mode !== 'classic' ? nextEventRun(g) : nextEvent(g);
+  if (g.mode !== 'classic') { $('nextEvent').textContent = ''; const rh = riteLines(g); if ($('rite').innerHTML !== rh) $('rite').innerHTML = rh; } else $('nextEvent').textContent = nextEvent(g);
   const items = g.items.map(id => ITEMS[id].name).concat(g.blessings.map(id => BLESSINGS[id].name.replace('Blessing of ', '') + '+'));
   $('itemsList').textContent = items.length ? 'ITEMS: ' + items.join(', ') : '';
   if (g.mode !== 'classic') { $('stats').textContent = ''; return; }

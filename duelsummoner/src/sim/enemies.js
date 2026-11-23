@@ -209,7 +209,21 @@ export function updateEnemies(g, dt) {
 
     // touch damage: 0.9 s per enemy, plus the 0.25 s shared grace
     e.atk[i] -= dt; if (e.atk[i] < -1) e.atk[i] = -1;
-    if (touching && K.touch > 0 && e.atk[i] <= 0 && g.grace <= 0 && !isDashing(p) && !g.over) { e.atk[i] = E.attackCd; g.hurtPlayer(K.touch * mul, false, K.name); }
+    if (e.ace[i] && K.touch > 0 && kid !== SCARAB) {                  // an Ace's melee gives a tell: a red ground disc for 0.5 s before it lands, and a pack of Aces can take at most a quarter of max LP in any second
+      if (e.st[i] === 1) {
+        e.stT[i] -= dt;
+        if (e.stT[i] <= 0) {
+          e.st[i] = 0; e.atk[i] = E.attackCd; const reach = K.reach * (e.size[i] || 1) * 1.2 + 0.6;
+          if (d < reach && Math.abs(p.y - o.y) < E.vReach && g.grace <= 0 && !isDashing(p) && !g.over) {
+            const H = g.aceHits || (g.aceHits = []); while (H.length && g.t - H[0][0] > 1) H.shift();
+            let used = 0; for (const h of H) used += h[1]; const allow = 0.25 * p.maxHp - used, want = K.touch * mul;
+            if (allow > 0.5) { const dm = Math.min(want, allow); H.push([g.t, dm]); g.hurtPlayer(dm, false, K.name); } else e.atk[i] = 0.3;        // over the cap: the strike waits a moment
+          }
+        }
+      } else if (touching && e.atk[i] <= 0 && g.grace <= 0 && !g.over) {
+        e.st[i] = 1; e.stT[i] = 0.5; addTele(g.tele, { type: 1, x: o.x, y: o.y, z: o.z, r: K.reach * (e.size[i] || 1) * 1.2 + 0.6, dur: 0.5, color: 0xff3020 });
+      }
+    } else if (touching && K.touch > 0 && e.atk[i] <= 0 && g.grace <= 0 && !isDashing(p) && !g.over) { e.atk[i] = E.attackCd; g.hurtPlayer(K.touch * mul, false, K.name); }
   }
 }
 
