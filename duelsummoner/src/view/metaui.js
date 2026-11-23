@@ -2,6 +2,7 @@
 import { DECK_BOX, QUESTS } from '../data/meta.js';
 import { MONSTERS, SPELLS, TRAPS, ONE_SHOTS } from '../data/cards.js';
 import { ITEMS } from '../data/items.js';
+import { deckIcon } from '../ui/icons.js';
 import { rankOf, upgradeCost, buyUpgrade, questFor, refundOne, refundKey, refundAll, refundValue, effectText } from '../core/meta.js';
 
 const $ = id => document.getElementById(id);
@@ -13,12 +14,12 @@ export function showDeckBox(save, persist, back) {
   { const cheap = keys.filter(afford).sort((a, b) => upgradeCost(meta, a) - upgradeCost(meta, b))[0]; sel = cheap || keys[0]; }       // opens on the cheapest affordable upgrade, else the first tile
   const pips = (k, big) => { const r = rankOf(meta, k), n = DECK_BOX[k].cost.length; return '<span class="pips' + (big ? ' big' : '') + '">' + Array.from({ length: n }, (_, i) => '<i class="' + (i < r ? 'on' : '') + '"></i>').join('') + '</span>'; };
   const invested = () => refundValue(meta, sel, 'all');
-  const tile = k => { const D = DECK_BOX[k], c = upgradeCost(meta, k); return '<button class="dtile' + (k === sel ? ' sel' : '') + '" data-k="' + k + '"><span class="dico">' + D.name[0] + '</span><b>' + D.name + '</b>' + pips(k) + (c === null ? '<span class="cost max">MAX</span>' : '<span class="cost' + (afford(k) ? ' ok' : '') + '">' + fmt(c) + ' chips</span>') + '</button>'; };
+  const tile = k => { const D = DECK_BOX[k], c = upgradeCost(meta, k); return '<button class="dtile' + (k === sel ? ' sel' : '') + '" data-k="' + k + '"><span class="dico">' + deckIcon(k, 40) + '</span><b>' + D.name + '</b>' + pips(k) + (c === null ? '<span class="cost max">MAX</span>' : '<span class="cost' + (afford(k) ? ' ok' : '') + '">' + fmt(c) + ' chips</span>') + '</button>'; };
   const details = () => {
     const D = DECK_BOX[sel], r = rankOf(meta, sel), n = D.cost.length, c = upgradeCost(meta, sel);
     const buy = c === null ? '<button class="gold" disabled>MAX RANK</button>' : afford(sel) ? '<button class="gold" id="dBuy">Buy rank ' + (r + 1) + ' &middot; ' + fmt(c) + '</button>' : '<button class="gold" disabled>Buy rank ' + (r + 1) + ' &middot; ' + fmt(c) + '</button><div class="dim need">Need ' + fmt(c - save.starChips) + ' more</div>';
-    let tbl = ''; if (table) tbl = '<table class="rtab"><tr><th>Rank</th><th>Price</th><th>Total effect</th></tr>' + Array.from({ length: n }, (_, i) => '<tr class="' + (i < r ? 'own' : '') + '"><td>' + (i + 1) + '</td><td>' + fmt(D.cost[i]) + '</td><td>' + effectText(sel, i + 1) + '</td></tr>').join('') + '</table>';
-    return '<div class="dico big">' + D.name[0] + '</div><h2>' + D.name + '</h2><div class="rk">Rank ' + r + ' of ' + n + ' ' + pips(sel, true) + '</div><div class="dim">' + D.text + '</div>' +
+    let tbl = ''; if (table) tbl = '<table class="rtab"><tr><th>' + deckIcon(sel, 22) + '</th><th>Price</th><th>Total effect</th></tr>' + Array.from({ length: n }, (_, i) => '<tr class="' + (i < r ? 'own' : '') + '"><td>' + (i + 1) + '</td><td>' + fmt(D.cost[i]) + '</td><td>' + effectText(sel, i + 1) + '</td></tr>').join('') + '</table>';
+    return '<div class="dico big">' + deckIcon(sel, 84) + '</div><h2>' + D.name + '</h2><div class="rk">Rank ' + r + ' of ' + n + ' ' + pips(sel, true) + '</div><div class="dim">' + D.text + '</div>' +
       '<div class="nn">Now <b>' + effectText(sel, r) + '</b> &rarr; Next <b class="gain">' + (c === null ? 'max' : effectText(sel, r + 1)) + '</b></div>' + buy +
       (r > 0 ? '<button class="ghost" id="dRef">Refund&hellip;</button>' : '') + '<div class="foot"><a href="#" id="dTab">' + (table ? 'Hide rank table' : 'Rank table') + '</a> &middot; Invested ' + fmt(refundValue(meta, sel, 'key')) + ' in this upgrade. Refunds return the full price.</div>' + tbl;
   };
