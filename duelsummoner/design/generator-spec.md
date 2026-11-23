@@ -848,3 +848,43 @@ test/gen/golden.json  seeds -> hashes (Node, Chrome, Android)
   - Encounter caps relax on small maps: the busiest region holds up to 5 and the busiest district up to 39%.
   - Every map keeps a few cells between 70 and 100 m from a ring (the worst cell has p50 79-82 m, max 99 m), which the 95% rule allows. The sky-beam rule in §9 covers them.
   - The V7 tolerance (3% of samples may have fewer than 3 sectors) remains.
+
+---
+
+## 18. Randall's bar (22 Nov 2026, 7:01 PM ET): fog of war, side quests, no jank
+
+His words: maps have fog of war, cannot be janky, must be challenging and fun to get through, with platforming that leads to cool side quests and rewards. Seeded, never random. It may seem infinite, but it is smart and made with love. These rules are binding on the port.
+
+### 18.1 Fog of war (new)
+
+- The map screen and minimap start black. A `explored` Uint8[256²] mask (run state, not generator output; saved in the run and in the replay hash) is lit in a 28 m disc round the player each tick, plus a 60 m line-of-sight cone from any `high_perch` or deck cell. Climbing is how you scout.
+- Three states per texel: unseen (black), seen-before (dim, terrain only), in sight (full, with live icons).
+- Icons appear only once their texel is seen. Exceptions that show from the start: the spawn, the district name the player stands in, and the direction (not the position) of the gate, given by the Ley Thread.
+- Tells still work through the fog: light columns, the mega landmark and hero landmarks are visible in the 3D world from their tell range. The fog hides the *map*, never the world's signposts. That is what makes exploring a choice instead of a guess.
+- Witness Stones reveal their whole district on use. One Lost Relic per stage reveals all side-quest pockets.
+- End-of-stage card shows "Explored 74%". 100% in a stage feeds an Adventures achievement.
+- Fog is view and run state. It must not change sim outcomes other than the Witness Stone reveal, and it must be deterministic from the input tape.
+
+### 18.2 Side quests reached by platforming (tightened)
+
+- Every stage holds **3 to 5 side-quest pockets**. Each is a Branch or Pocket region whose only way in is a parkour chain of 3 to 6 moves (G1 jumps, slabs, a slide gap, a drop). The safe spine never passes through one.
+- Each pocket has one authored quest from a seeded table, never a bare chest: a Lost Relic on a pillar top, a timed coin line across decks, a caged summon to free, a sealed urn puzzle (break in the order the glyphs light), an Ace elite den, a Duel Statue challenge with no summons.
+- Reward scales with the chain's difficulty score (sum of gap/reach ratios). Hard climb, better prize. Validator metric **V18**: every pocket's reward class is at least its chain tier; no pocket repeats a quest type inside one stage; no two stages of a run share their first pocket quest.
+- You can always see a pocket's tell from the spine before you can reach it (V12 already gates this). See it, want it, work out the route.
+- Every pocket has a loop-back drop, so a side trip never costs a walk back.
+- **V19 fairness:** each chain has a landing margin of 0.5 m or more on every move, no blind jumps (the landing is in camera view from the take-off), and a failed jump drops to walkable ground within 6 s of the chain start, never into a pit that kills.
+
+### 18.3 No jank (gating checks, measured in the browser)
+
+- No seam, gap or z-fight between chunks: sockets share exact integer heights, and the stamp welds edge vertices. Test: walk the bot along every chunk border on 20 seeds with zero stuck frames and zero falls through.
+- No invisible snag: collider and visual differ by 5 cm at most; every kerb at or under 0.35 m auto-steps.
+- No stuck spots: after any 2 s with input held and under 0.5 m moved, the run report logs the cell. Target is zero across a 50-seed bot batch.
+- Camera never clips through a wall in a lane (V10 occluder rule), and occluders on the camera side fade.
+- Enemies path everywhere the player can stand, or get a flyer/leaper tag for that region. No safe perch that farms forever: a perch held over 12 s draws flyers (§10).
+- Generation happens behind the stage card with the map already built before the fade ends. No hitch on stage entry over 50 ms.
+
+### 18.4 Seems infinite, is authored
+
+- Variety budget: 4 silhouettes x district orders x keystone positions x about 60 chunks with variants x quest table. The 300-map batch must show no two maps with the same (silhouette, district order, keystone cell, first three spine chunks).
+- Every seal is fully reproducible: same seal, same map, same quests, same fog result for the same inputs. Daily seal and friend challenges depend on it.
+- Each stage gets one "postcard" moment by rule: a spine sample where the mega landmark, one pocket tell and the gate district are all in view at once.
