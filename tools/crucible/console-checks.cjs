@@ -46,7 +46,8 @@
 //   errors  no page error.
 // Some shapes are checked inside a page that styles pictures the way a host page may (img { max-width: 100%;
 // height: auto } and the like), and at the end a few scenes are pictured with and without those styles, with every
-// animation stopped at its start: the two pictures must be the same to the pixel.
+// animation stopped at its start, once every face is in and the screen has settled: the two pictures must be the same
+// to the pixel.
 // Then it taps about the page at random from each scene for [steps] taps (default 40), checking errors and the
 // rules again on every console screen it reaches.
 const { chromium } = require('playwright');
@@ -420,15 +421,28 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
         await page.reload(); await page.waitForTimeout(600);
         if (save) { await page.locator('[data-a="resume"]').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(900); }
         await page.waitForFunction(() => [...document.fonts].filter(f => /LM Text/.test(f.family)).length > 1, null, { timeout: 5000 }).catch(() => {}); // the body face struck on whole pixels (pxtext.mjs) is in
-        await page.evaluate(() => { document.getAnimations().forEach(a => { a.pause(); a.currentTime = 0; }); for (const c of document.querySelectorAll('#coin')) c.style.visibility = 'hidden'; }); // the turning crest is drawn by the clock
-        // two frames for the stopped animations to reach the screen: a moving part drawn by the compositor (the cursor's
-        // bob) can still show its last step in the very next picture
-        await page.evaluate(() => new Promise(ok => requestAnimationFrame(() => requestAnimationFrame(ok))));
-        got.push([save || 'title', await page.screenshot()]);
+        // every face in first: a face arriving late (the title's carved capitals) lays the screen out again, its torches
+        // and cursor started afresh, so the two pages would be stopped at different steps
+        await page.evaluate(() => document.fonts.ready.then(() => new Promise(ok => requestAnimationFrame(() => requestAnimationFrame(ok)))));
+        // Every animation stopped at its start (the turning crest, drawn by the clock, hidden), and each picture taken with
+        // the endless loops set back to their start by the browser itself: a loop drawn by the compositor (the cursor's
+        // bob) can go on showing the step it was at when the page stopped it. The screen is taken once it has settled: a
+        // picture drawn when its skins arrive (a room's models) can land after the first shot, so shots are taken until
+        // two in a row agree, stopping again each time.
+        const still = () => page.evaluate(() => { document.getAnimations().forEach(a => { a.pause(); a.currentTime = 0; }); for (const c of document.querySelectorAll('#coin')) c.style.visibility = 'hidden'; return new Promise(ok => requestAnimationFrame(() => requestAnimationFrame(ok))); });
+        const snap = () => page.screenshot({ animations: 'disabled' });
+        await still();
+        let shot = await snap();
+        for (let k = 0; k < 6; k++) { await page.waitForTimeout(250); await still(); const again = await snap(); if (again.equals(shot)) break; shot = again; }
+        got.push([save || 'title', shot]);
       }
       shots.push(got); await ctx.close();
     }
-    for (let i = 0; i < shots[0].length; i++) if (!shots[1][i] || !shots[0][i][1].equals(shots[1][i][1])) fail(`${W}x${H}@${dpr} ${shots[0][i][0]}`, 'the screen differs inside a host page');
+    for (let i = 0; i < shots[0].length; i++) if (!shots[1][i] || !shots[0][i][1].equals(shots[1][i][1])) {
+      fail(`${W}x${H}@${dpr} ${shots[0][i][0]}`, 'the screen differs inside a host page');
+      // with CHECKS_SHOTS set to a folder, both pictures are kept there, to be looked at
+      if (process.env.CHECKS_SHOTS && shots[1][i]) for (const h of [0, 1]) fs.writeFileSync(path.join(process.env.CHECKS_SHOTS, `host-${W}x${H}-${shots[0][i][0].replace(/\.json$/, '')}-${h}.png`), shots[h][i][1]);
+    }
   }
   await browser.close();
   console.log(`${scenes} scenes on ${SHAPES.length} screen shapes, ${screens} console screens checked, ${taps} random taps`);
