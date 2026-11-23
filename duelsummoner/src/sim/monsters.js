@@ -123,15 +123,15 @@ function attack(g, m, D, A) {
       let tx, tz;
       if (i >= 0) { tx = e.x[i] - m.x; tz = e.z[i] - m.z; } else { const sp = nearestSpecial(g, m.x, m.z, range); if (!sp) return false; tx = sp.x - m.x; tz = sp.z - m.z; }
       const l = Math.sqrt(tx * tx + tz * tz) || 1, fx = tx / l, fz = tz / l, cosA = cos(arc / 2 * Math.PI / 180);
-      const buf = takeBuf(), c = g.grid.query(m.x, m.z, range, buf);
+      const rr = range * g.reachK, buf = takeBuf(), c = g.grid.query(m.x, m.z, rr, buf);
       for (let k = 0; k < c; k++) {
         const j = buf[k]; if (!e.alive[j]) continue;
         const dx = e.x[j] - m.x, dz = e.z[j] - m.z, d = Math.sqrt(dx * dx + dz * dz);
-        if (d < range && d > 0.01 && (dx / d) * fx + (dz / d) * fz > cosA) damageEnemy(g, j, dmg, { elem: flame, kx: dx, kz: dz });
+        if (d < rr && d > 0.01 && (dx / d) * fx + (dz / d) * fz > cosA) damageEnemy(g, j, dmg, { elem: flame, kx: dx, kz: dz });
       }
       freeBuf();
-      for (const sp of g.sp) { if (!sp.alive || sp.dead) continue; const dx = sp.x - m.x, dz = sp.z - m.z, d = Math.sqrt(dx * dx + dz * dz); if (d < range + sp.radius && (dx / (d || 1)) * fx + (dz / (d || 1)) * fz > cosA) g.damageSpecial(sp, dmg, m.x, m.z, { elem: flame }); }
-      addFx(g, { type: 'fan', owner: 0, el: 'fire', x: m.x, y: m.y - 0.8, z: m.z, r: range, arc, dx: fx, dz: fz, dur: 0.25, color: 0xffa848 });
+      for (const sp of g.sp) { if (!sp.alive || sp.dead) continue; const dx = sp.x - m.x, dz = sp.z - m.z, d = Math.sqrt(dx * dx + dz * dz); if (d < rr + sp.radius && (dx / (d || 1)) * fx + (dz / (d || 1)) * fz > cosA) g.damageSpecial(sp, dmg, m.x, m.z, { elem: flame }); }
+      addFx(g, { type: 'fan', owner: 0, el: 'fire', x: m.x, y: m.y - 0.8, z: m.z, r: rr, arc, dx: fx, dz: fz, dur: 0.25, color: 0xffa848 });
       return true;
     }
   }
@@ -158,13 +158,13 @@ function locketNova(g) {
 function fireTrap(g, s) {
   const T = TRAPS[s.id], p = g.p, e = g.en, lv = s.level - 1, prevSrc = g.curSrc; g.curSrc = g.srcIndex(s.id);
   s.cd = T.recharge * pow(T.rechargePerLevel, lv) * (1 - g.mods.trapRecharge); g.trapsFired++; g.emit('sound', 3);
-  const dmg = T.dmg * (1 + T.dmgPerLevel * lv);
-  addFx(g, { type: 'ring', owner: 0, el: s.id === 'gust-ward' ? 'wind' : null, x: p.x, y: p.y, z: p.z, r: T.radius, dur: 0.5, color: s.id === 'gust-ward' ? 0xa0e0ff : 0xe8c56a });
-  const buf = takeBuf(), c = g.grid.query(p.x, p.z, T.radius, buf);
+  const dmg = T.dmg * (1 + T.dmgPerLevel * lv), TR = T.radius * g.reachK;
+  addFx(g, { type: 'ring', owner: 0, el: s.id === 'gust-ward' ? 'wind' : null, x: p.x, y: p.y, z: p.z, r: TR, dur: 0.5, color: s.id === 'gust-ward' ? 0xa0e0ff : 0xe8c56a });
+  const buf = takeBuf(), c = g.grid.query(p.x, p.z, TR, buf);
   for (let k = 0; k < c; k++) {
     const i = buf[k]; if (!e.alive[i]) continue;
     const dx = e.x[i] - p.x, dz = e.z[i] - p.z;
-    if (dx * dx + dz * dz > T.radius * T.radius) continue;
+    if (dx * dx + dz * dz > TR * TR) continue;
     if (s.id === 'gust-ward') damageEnemy(g, i, dmg, { noCrit: true, kx: dx, kz: dz, knock: T.knock });
     else { e.root[i] = T.root; damageEnemy(g, i, dmg, { noCrit: true }); }
   }

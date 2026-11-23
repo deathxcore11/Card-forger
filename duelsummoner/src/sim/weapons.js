@@ -112,6 +112,7 @@ export function updateShots(g, dt) {
 }
 
 export function splash(g, x, y, z, r, dmg, flame) {
+  r *= g.reachK;       // Reach scales area: a splash is an area kind
   addFx(g, { type: 'ring', owner: 0, el: (flame & 1) ? 'fire' : null, x, y, z, r, dur: 0.35, color: (flame & 1) ? 0xff8a30 : 0x7fe8ff });
   breakVasesNear(g, x, z, r);
   const e = g.en, nc = g.grid.query(x, z, r, near);

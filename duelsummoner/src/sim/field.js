@@ -39,7 +39,7 @@ export const damageOf = m => param(m, 'dmg') * monsterMul(m.id, m.level);       
 
 // ---- derived stats from spells ----
 export function recompute(g) {
-  const f = g.field, M = { burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0,
+  const f = g.field, M = { reach: 0, burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0,
     trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0, drill: [0, 0, 0, 0, 0], aff: [0, 0, 0, 0, 0, 0, 0, 0], toll: 0, locket: 0 };
   const WHOLE = { armour: 1, maxLp: 1, airJumps: 1 };
   const addMods = (mods, mul) => { mul = mul || 1; for (const k of Object.keys(mods)) if (k in M && typeof M[k] === 'number') M[k] += WHOLE[k] ? Math.round(mods[k] * mul) : mods[k] * mul; };

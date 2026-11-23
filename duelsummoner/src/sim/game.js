@@ -64,7 +64,7 @@ export class Game {
     this.sp = []; this.chests = [];
     this.faceOf = {};
     this.p = makePlayer();
-    this.mods = { burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0 };
+    this.mods = { reach: 0, burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0 };
     const meta = this.opts.meta || null;                                    // permanent progress, handed in by the browser (pure data)
     this.metaMods = meta ? meta.mods : {};
     this.unlockedCards = meta ? new Set(meta.cards) : null; this.unlockedItems = meta ? new Set(meta.items) : null;
@@ -254,6 +254,8 @@ export class Game {
   }
 
   // flags (SPEC section 6): 1 SELF (the player's own cost: 1 HP floor, never kills, no grace, no dodge or Ward), 2 PIERCE, 4 TRUE (ignores Guard)
+  // Reach scales AREA on area kinds only (spectacle spec 1.3): radius and length by the square root of the area factor, x1.58 at the +150% cap (K.reachCap). Arc angles and shot hit radii never change.
+  get reachK() { return Math.sqrt(1 + Math.min(this.mods.reach || 0, K.reachCap)); }
   hurtPlayer(n, big, src, flags) {
     flags = flags | 0; const SELF = (flags & 1) !== 0, bigF = big ? 1 : 0;
     // order: over, dash (dodge), god (hurt, which keeps the golden record), Talisman (ward), Guard, LP, then 'hurt' for a hit that landed

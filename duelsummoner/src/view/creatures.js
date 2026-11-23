@@ -4,7 +4,7 @@
 //
 // Everything is designed in metres on the ground (+z forward, y up), then divided by the kind's draw scale, because the CPU matrix multiplies by K.scale and lifts the body by the kind's offset.
 const T = window.THREE;
-const C = { dd: 0x4a4034, dm: 0x6e604c, dl: 0x9a8a70, gd: 0x2a3038, gm: 0x4a5260, gl: 0x7a8290, eye: 0xe0a040, ink: 0x1d1a16 };
+const C = { dd: 0x4a4034, dm: 0x6e604c, dl: 0x9a8a70, gd: 0x2a3038, gm: 0x4a5260, gl: 0x7a8290, eye: 0xe0a040, bone: 0xb8ab8c, ink: 0x1d1a16 };
 const GAIN = 1.3;       // the palette tones read dark under the Lambert light at game camera: one lift for every part keeps the palette's hue and its light-to-dark order
 const mul = (h, k) => { k *= GAIN; const r = Math.min(255, Math.round(((h >> 16) & 255) * k)), g = Math.min(255, Math.round(((h >> 8) & 255) * k)), b = Math.min(255, Math.round((h & 255) * k)); return [r / 255, g / 255, b / 255]; };
 
@@ -45,13 +45,13 @@ function jx(p, j) { return j; }
 const MAKERS = {
   husk(b) {                                                     // a hunched two-legged shambler: bowed torso, forward head with an amber eye, long arms that swing
     b.box(-0.2, 0.3, 0, 0.3, 0.6, 0.32, C.dd, { sign: 1, hip: 0.6, len: 0.6 }, 0.5); b.box(0.2, 0.3, 0, 0.3, 0.6, 0.32, C.dd, { sign: -1, hip: 0.6, len: 0.6 }, 0.5);
-    b.box(0, 1.05, -0.05, 0.7, 0.75, 0.5, C.dm); b.box(0, 1.62, 0.22, 0.42, 0.4, 0.42, C.dl); b.box(0, 1.66, 0.46, 0.3, 0.08, 0.05, C.eye, null, 1);
+    b.box(0, 1.05, -0.05, 0.7, 0.75, 0.5, C.dm); b.box(0, 1.62, 0.22, 0.42, 0.4, 0.42, C.bone); b.box(0, 1.3, -0.32, 0.5, 0.3, 0.1, C.bone); b.box(0, 1.66, 0.46, 0.3, 0.08, 0.05, C.eye, null, 1);
     b.box(-0.5, 0.95, 0.12, 0.2, 0.75, 0.22, C.dl, { sign: -1, hip: 1.3, len: 0.75 }, 0.8); b.box(0.5, 0.95, 0.12, 0.2, 0.75, 0.22, C.dl, { sign: 1, hip: 1.3, len: 0.75 }, 0.8);
   },
   runner(b) {                                                   // a lean four-legged beast: long body, low head with an amber eye, ears, a flicking tail
     const L = (x, z, s) => b.box(x, 0.22, z, 0.14, 0.44, 0.14, C.dm, { sign: s, hip: 0.44, len: 0.44 }, 0.4);
     L(-0.17, 0.4, 1); L(0.17, 0.4, -1); L(-0.17, -0.4, -1); L(0.17, -0.4, 1);
-    b.box(0, 0.58, 0, 0.42, 0.34, 1.05, C.dl); b.box(0, 0.74, 0.7, 0.3, 0.3, 0.4, C.dl); b.box(0, 0.72, 0.92, 0.2, 0.2, 0.12, C.dd); b.box(0, 0.8, 0.9, 0.22, 0.06, 0.04, C.eye, null, 1);
+    b.box(0, 0.58, 0, 0.42, 0.34, 1.05, C.dl); b.box(0, 0.78, -0.05, 0.3, 0.08, 0.8, C.bone); b.box(0, 0.74, 0.7, 0.3, 0.3, 0.4, C.bone); b.box(0, 0.72, 0.92, 0.2, 0.2, 0.12, C.dd); b.box(0, 0.8, 0.9, 0.22, 0.06, 0.04, C.eye, null, 1);
     b.prism(-0.1, 0.04, [[0.9, 0.62], [0.9, 0.78], [1.12, 0.66]], C.dl); b.prism(0.1, 0.04, [[0.9, 0.62], [0.9, 0.78], [1.12, 0.66]], C.dl);
     b.prism(0, 0.05, [[0.55, -0.5], [0.7, -0.5], [0.62, -0.95]], C.dd);
   },

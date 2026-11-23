@@ -45,6 +45,8 @@ function gemGeometry() {
   return geo;
 }
 const SWAY_T = { value: 0 };
+const SC_SCARAB = [1.04, 0.52, 1.3];
+const DANGER = new T.Color(1.0, 0.231, 0.188), EDGE = new T.Color(1.0, 0.851, 0.831);       // #ff3b30 and the pale edge #ffd9d4
 // every non-own effect and every enemy warning writes stencil bit 2 where it draws; the own-effect fills test it (view/ownfx.js), so an own effect can never be drawn over a warning
 const WARN = o => Object.assign(o, { stencilWrite: true, stencilRef: 4, stencilFunc: T.AlwaysStencilFunc, stencilWriteMask: 0x04, stencilFuncMask: 0xff, stencilFail: T.KeepStencilOp, stencilZFail: T.KeepStencilOp, stencilZPass: T.ReplaceStencilOp });
 function instanced(geo, material, max) {
@@ -141,7 +143,8 @@ export class Actors {
     this.teleLine = instanced(new T.BoxGeometry(1, 0.05, 1), ghost(0xffffff), 64); this.teleLine.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
     this.teleDisc = instanced(flat(new T.CircleGeometry(1, 28)), ghost(0xffffff), 128); this.teleDisc.instanceColor = new T.InstancedBufferAttribute(new Float32Array(128 * 3), 3);
     this.fxRing = instanced(flat(new T.RingGeometry(0.82, 1, 28)), ghost(0xffffff), 64); this.fxRing.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
-    scene.add(this.teleLine, this.teleDisc, this.fxRing);
+    this.teleRing = instanced(flat(new T.RingGeometry(0.955, 1, 40)), ghost(0xffffff), 64); this.teleRing.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);       // the thin pale outline of a blast circle
+    scene.add(this.teleLine, this.teleDisc, this.fxRing, this.teleRing);
     // soft contact shadows: a dark radial blob under the duelist, summons and swarm enemies (cheap: one instanced quad, no shadow maps)
     { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, 'rgba(30,18,8,0.62)'); gr.addColorStop(0.45, 'rgba(30,18,8,0.52)'); gr.addColorStop(0.8, 'rgba(30,18,8,0.18)'); gr.addColorStop(1, 'rgba(30,18,8,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
       const tx = new T.CanvasTexture(cv); this.shadow = instanced(flat(new T.PlaneGeometry(2, 2)), new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), CFG.enemy.max + 16); scene.add(this.shadow); }
@@ -370,7 +373,7 @@ export class Actors {
       const x = pl(e.px[i], e.x[i], a), y = pl(e.py[i], e.y[i], a), z = pl(e.pz[i], e.z[i], a);
       if (blocked(x, y + 0.9, z, 2.4)) continue;
       const hit = e.flash[i] > 0, bob = K.fly ? Math.sin(t * 9 + i) * 0.08 : Math.abs(Math.sin(t * 7 + i)) * 0.15;
-      let sc = K.scale, pulse = 1;
+      let sc = K.scale, pulse = 1; if (K.id === 5) sc = SC_SCARAB;       // the Tomb Scarab is drawn 1.3x so it can be picked out of a crowd (the sim hitbox is unchanged)
       if (K.id === 4 && e.st[i] === 1) pulse = 1 + 0.25 * Math.sin(t * 30);                        // Sand Bloat swelling before it bursts
       const face = turnLerp(e.pface[i], e.face[i], a);
       const grow = 1 - rise * 0.6;
@@ -472,23 +475,26 @@ export class Actors {
 
   _telegraphs(g) {
     const d = this.d, col = this.col;
-    let nl = 0, nd = 0; const fanN = new Map();
+    let nl = 0, nd = 0, nr2 = 0; const fanN = new Map();
     for (const o of g.tele) {
       if (!o.on) continue;
       const f = Math.min(1, o.t / o.dur);
-      if (o.type === 0) {                                       // marked lane: a band that brightens
-        d.position.set(o.x + o.dx * o.len / 2, o.y + 0.08, o.z + o.dz * o.len / 2); d.rotation.set(0, Math.atan2(o.dx, o.dz), 0); d.scale.set(o.w, 1, o.len); d.updateMatrix();
-        this.teleLine.setMatrixAt(nl, d.matrix); this.teleLine.setColorAt(nl, col.setRGB(0.35 + 0.65 * f, 0.08, 0.05)); nl++;
-      } else if (o.type === 1) {                                // blast circle: outline, then fills
-        d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.1, o.z); d.scale.set(o.r, 1, o.r); d.updateMatrix(); this.teleDisc.setMatrixAt(nd, d.matrix); this.teleDisc.setColorAt(nd, col.setRGB(0.3, 0.05, 0.04)); nd++;
-        d.position.y = o.y + 0.12; d.scale.set(o.r * f, 1, o.r * f); d.updateMatrix(); this.teleDisc.setMatrixAt(nd, d.matrix); this.teleDisc.setColorAt(nd, col.setRGB(1, 0.25 + 0.2 * f, 0.1)); nd++;
+      // enemy warnings (spec 2.5): exact danger red, unlit, at the true sim footprint, a thin pale edge, and a fill that follows the tell timer (it grows with the wind-up, so an early tell is mostly outline)
+      if (o.type === 0) {                                       // marked lane: pale edges for the whole footprint, a red fill that runs out from the caster with the timer
+        const yaw = Math.atan2(o.dx, o.dz), fl = Math.max(0.05, o.len * f);
+        if (nl + 3 <= 64) {
+          d.position.set(o.x + o.dx * fl / 2, o.y + 0.08, o.z + o.dz * fl / 2); d.rotation.set(0, yaw, 0); d.scale.set(o.w, 1, fl); d.updateMatrix(); this.teleLine.setMatrixAt(nl, d.matrix); this.teleLine.setColorAt(nl, DANGER); nl++;
+          for (const sd of [-1, 1]) { const ox = Math.cos(yaw) * sd * o.w / 2, oz = -Math.sin(yaw) * sd * o.w / 2; d.position.set(o.x + o.dx * o.len / 2 + ox, o.y + 0.1, o.z + o.dz * o.len / 2 + oz); d.rotation.set(0, yaw, 0); d.scale.set(0.12, 1, o.len); d.updateMatrix(); this.teleLine.setMatrixAt(nl, d.matrix); this.teleLine.setColorAt(nl, EDGE); nl++; }
+        }
+      } else if (o.type === 1) {                                // blast circle: a thin pale outline at the true radius, a red fill that grows to it
+        d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.1, o.z); d.scale.set(o.r, 1, o.r); d.updateMatrix(); if (nr2 < 64) { this.teleRing.setMatrixAt(nr2, d.matrix); this.teleRing.setColorAt(nr2, EDGE); nr2++; }
+        d.position.y = o.y + 0.12; d.scale.set(Math.max(0.05, o.r * f), 1, Math.max(0.05, o.r * f)); d.updateMatrix(); this.teleDisc.setMatrixAt(nd, d.matrix); this.teleDisc.setColorAt(nd, DANGER); nd++;
       } else {
-        const fan = this._fan(Math.round(o.arc)), n = fanN.get(fan) || 0;
-        d.position.set(o.x, o.y + 0.1, o.z); d.rotation.set(0, Math.atan2(o.dx, o.dz), 0); d.scale.set(o.r, 1, o.r); d.updateMatrix();
-        fan.setMatrixAt(n, d.matrix); fan.setColorAt(n, col.setRGB(0.35 + 0.65 * f, 0.1, 0.05)); fanN.set(fan, n + 1);
+        const fan = this._fan(Math.round(o.arc)), n = fanN.get(fan) || 0, rf = Math.max(0.05, o.r * f);
+        d.position.set(o.x, o.y + 0.1, o.z); d.rotation.set(0, Math.atan2(o.dx, o.dz), 0); d.scale.set(rf, 1, rf); d.updateMatrix();
+        fan.setMatrixAt(n, d.matrix); fan.setColorAt(n, DANGER); fanN.set(fan, n + 1);
       }
-    }
-    this.teleLine.count = nl; this.teleDisc.count = nd;
+    }    this.teleLine.count = nl; this.teleDisc.count = nd; this.teleRing.count = nr2; this.teleRing.instanceMatrix.needsUpdate = true; this.teleRing.instanceColor.needsUpdate = true;
     for (const mm of [this.teleLine, this.teleDisc]) { mm.instanceMatrix.needsUpdate = true; mm.instanceColor.needsUpdate = true; }
     // effects: expanding rings and fading fans
     let nr = 0; this.own.begin();
