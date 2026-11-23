@@ -289,9 +289,11 @@ body.ps { background: #000; }
 #app.ps .brow .bt { flex: 1; min-width: 0; } #app.ps .brow .bt .lb { position: relative; display: block; margin: 0; line-height: 16px; white-space: normal; }
 #app.ps .brow .bs { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 0; }
 #app.ps .brow .bs > .ga { margin: 4px 0 5px; } #app.ps .brow .bs > .lb { line-height: 16px; } #app.ps .brow .bs > .pq.in { margin: 0; }
-/* a plaque in a line of words always keeps the hammer's room at its left, lit or not, so the hammer can stand on any of
-   them and no plaque or word moves when it does (litMove in app.mjs) */
-#app.ps .pq.in { position: relative; display: inline-block; margin: 0 4px 4px 0; width: auto; vertical-align: top; padding-left: 16px; }
+/* a plaque in a line of words is always as wide as it is lit, with the hammer's room at its left, so the hammer can stand
+   on any of them and no plaque moves when it does (litMove in app.mjs). Unlit, its words stand in the middle of that room
+   (11 pixels at their left, 9 at their right, as a plaque's 6 and 4); lit, they step right beside the hammer. */
+#app.ps .pq.in { position: relative; display: inline-block; margin: 0 4px 4px 0; width: auto; vertical-align: top; padding-left: 11px; padding-right: 9px; }
+#app.ps .pq.in.lit { padding-left: 16px; padding-right: 4px; }
 #app.ps .ga.in { position: relative; display: block; } #app.ps .ga.in > u { position: absolute; top: 0; bottom: 0; background: var(--gl); }
 #app.ps .lb .d, #app.ps span.d, #app.ps p.d { color: #b39a7c; }
 #app.ps .cd.unk { background: var(--sh); border-color: var(--dark); } #app.ps .cd.unk .n1 { top: 24px; left: 18px; color: var(--sd); }
