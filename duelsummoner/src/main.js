@@ -42,9 +42,11 @@ const scene = new T.Scene();
 scene.background = new T.Color(0xe6cb97);                // warm daylight sand sky
 scene.fog = new T.Fog(0xe6cb97, 110, 330);
 const camera = new T.PerspectiveCamera(62, 1, 0.1, 520);
-scene.add(new T.HemisphereLight(0xfff3d6, 0x8a6a48, 0.95));     // raised from the dark build: the arena reads in daylight sand colours
-scene.add(new T.AmbientLight(0xffffff, 0.12));
-const sun = new T.DirectionalLight(0xffe2b0, 0.6); sun.position.set(60, 90, 30); scene.add(sun);
+// the look: a warm low key light for form, a pale sky and a warm bounce for the shade, and a cool fill from the opposite side so shadowed faces are never grey
+scene.add(new T.HemisphereLight(0xdfeaff, 0x9a7650, 0.72));
+scene.add(new T.AmbientLight(0xfff0dc, 0.1));
+const sun = new T.DirectionalLight(0xffd29a, 1.05); sun.position.set(70, 60, 35); scene.add(sun);
+const fill = new T.DirectionalLight(0xa9c4ff, 0.28); fill.position.set(-60, 35, -45); scene.add(fill);
 
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;

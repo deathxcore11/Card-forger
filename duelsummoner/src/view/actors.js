@@ -1,4 +1,4 @@
-// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
+﻿// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
 // telegraphs and effects, pickups. Positions are blended between the last two sim ticks so any refresh rate looks smooth.
 import { CFG } from '../data/config.js';
 import { KIND_LIST } from '../data/enemies.js';
@@ -117,7 +117,7 @@ export class Actors {
     this.bolt2 = instanced(new T.BoxGeometry(0.2, 0.2, 1.4), basic(0xe0e8ff), 48);
     scene.add(this.cards, this.fire, this.lob, this.bolts, this.bolt2);
     this.pk = [gemGeometry(), new T.CylinderGeometry(0.3, 0.3, 0.08, 10), new T.OctahedronGeometry(0.34, 0)].map((geo, i) => {
-      const m = i === 0 ? instanced(geo, lambert(0xffffff, { vertexColors: true, emissive: 0x2a1040 }), CFG.xp.max) : instanced(geo, basic([0x9f7bff, 0xf0c040, 0xff5a7a][i]), CFG.xp.max);
+      const m = i === 0 ? instanced(geo, lambert(0xffffff, { vertexColors: true, emissive: 0x7a4ad0 }), CFG.xp.max) : instanced(geo, basic([0x9f7bff, 0xf0c040, 0xff5a7a][i]), CFG.xp.max);
       if (i === 0) m.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.xp.max * 3), 3);
       if (i === 1) geo.rotateX(Math.PI / 2); scene.add(m); return m;
     });
@@ -129,6 +129,9 @@ export class Actors {
     this.teleDisc = instanced(flat(new T.CircleGeometry(1, 28)), ghost(0xffffff), 128); this.teleDisc.instanceColor = new T.InstancedBufferAttribute(new Float32Array(128 * 3), 3);
     this.fxRing = instanced(flat(new T.RingGeometry(0.82, 1, 28)), ghost(0xffffff), 64); this.fxRing.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
     scene.add(this.teleLine, this.teleDisc, this.fxRing);
+    // soft contact shadows: a dark radial blob under the duelist, summons and swarm enemies (cheap: one instanced quad, no shadow maps)
+    { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, 'rgba(30,18,8,0.55)'); gr.addColorStop(0.6, 'rgba(30,18,8,0.25)'); gr.addColorStop(1, 'rgba(30,18,8,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
+      const tx = new T.CanvasTexture(cv); this.shadow = instanced(flat(new T.PlaneGeometry(2, 2)), new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), CFG.enemy.max + 16); scene.add(this.shadow); }
     this.boltSeg = instanced(new T.BoxGeometry(0.07, 0.07, 1), basic(0x4fd8ff, { transparent: true, opacity: 0.9, depthWrite: false }), 96); scene.add(this.boltSeg);
     this.fans = new Map();                                       // one mesh per arc angle, made on demand
     this.sand = null; this.sandR = -1;
@@ -262,8 +265,8 @@ export class Actors {
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);
       lean.rotation.x += (want - lean.rotation.x) * Math.min(1, dt * 12);
       if (!p.grounded) this._pvy = p.vy;
-      if (p.grounded && !this._pg && this._pvy < -5) { ud.squash = 0.16; fx.burst(px, py + 0.1, pz, 8, 0xd8c08a, 2.2, 1.2, 0.22, 0.5, 6); if (this._pvy < -9) { fx.shake(Math.min(0.22, -this._pvy * 0.012)); fx.ring(px, py + 0.05, pz, 2.4, 0xd8c08a, 0.3); fx.burst(px, py + 0.1, pz, 14, 0xd8c08a, 3.2, 1.6, 0.3, 0.6, 8); } }       // a heavy landing kicks the camera and throws a ring of dust
-      if (p.dashT > 0 && !this._pd) { fx.shake(0.07); fx.ring(px, py + 0.05, pz, 1.6, 0x9fe8ff, 0.2); }       // dash start
+      if (p.grounded && !this._pg && this._pvy < -5) { ud.squash = 0.16; fx.burst(px, py + 0.1, pz, 8, 0xd8c08a, 2.2, 1.2, 0.22, 0.5, 6); if (this._pvy < -9) { fx.shake(Math.min(0.22, -this._pvy * 0.012)); fx.ring(px, py + 0.05, pz, 1.3, 0xd8c08a, 0.18); fx.burst(px, py + 0.1, pz, 14, 0xd8c08a, 3.2, 1.6, 0.3, 0.6, 8); } }       // a heavy landing kicks the camera and throws a ring of dust
+      if (p.dashT > 0 && !this._pd) { fx.shake(0.07); fx.ring(px, py + 0.05, pz, 1.0, 0x9fe8ff, 0.14); }       // dash start
       this._pd = p.dashT > 0;
       this._pg = p.grounded;
       if (ud.squash > 0) { ud.squash = Math.max(0, ud.squash - dt); const k = ud.squash / 0.16 * 0.28; lean.scale.set(1 + k * 0.5, 1 - k, 1 + k * 0.5); } else if (lean.scale.y !== 1) lean.scale.set(1, 1, 1);
@@ -394,19 +397,26 @@ export class Actors {
       else if (k === 2) { d.rotation.set(t * 5, t * 4, 0); d.updateMatrix(); this.lob.setMatrixAt(nl++, d.matrix); }
       else { d.rotation.set(0, t * 12, 0); d.updateMatrix(); this.fire.setMatrixAt(nf++, d.matrix); }
     }
+    { const S = this.shadow, dd = this.d; let ns = 0;       // contact shadows follow the ground under everything that walks
+      const put = (x, z, r) => { if (ns >= S.instanceMatrix.count) return; dd.position.set(x, heightGround(x, z) + 0.07, z); dd.rotation.set(0, 0, 0); dd.scale.setScalar(r); dd.updateMatrix(); S.setMatrixAt(ns++, dd.matrix); };
+      if (this.rig && !(g.over && !g.won)) put(px, pz, 0.95);
+      for (const m of g.field.monsters) if (m) { const me = this.monsters.get(m); if (me && me.visible) put(me.position.x, me.position.z, 0.6 * (me.userData.size || 1)); }
+      const e = g.en, cp = cam; for (let i = 0; i < e.max; i++) if (e.alive[i]) { const dx = e.x[i] - cp.x, dz = e.z[i] - cp.z; if (dx * dx + dz * dz < 3600) put(e.x[i], e.z[i], 0.5 + KIND_LIST[e.kind[i]].radius * 0.9); }
+      S.count = ns; S.instanceMatrix.needsUpdate = true; }
     this.cards.count = nc; this.fire.count = nf; this.lob.count = nl;
     this.cards.instanceMatrix.needsUpdate = this.fire.instanceMatrix.needsUpdate = this.lob.instanceMatrix.needsUpdate = true;
     let nb = 0;
     for (const b of g.eb) { if (!b.on) continue; d.position.set(lerp(b.px, b.x, a), b.y, lerp(b.pz, b.z, a)); d.rotation.set(0, Math.atan2(b.vx, b.vz), 0); d.scale.set(1, 1, 1); d.updateMatrix(); this.bolt2.setMatrixAt(nb++, d.matrix); }
     this.bolt2.count = nb; this.bolt2.instanceMatrix.needsUpdate = true;
 
-    // pickups
+    // pickups: crystals glow in a slow pulse and bob, coins spin
+    this.pk[0].material.emissiveIntensity = 0.75 + 0.3 * Math.sin(t * 4);
     const m = g.pick, pc = [0, 0, 0];
     for (let i = 0; i < m.max; i++) {
       if (!m.alive[i]) continue; const kk = m.kind[i];
       if (kk === 0) {                                          // crystal: tilted 20 degrees, one turn per 2.5 s, bobs 6 cm; size and tint by value
         const v = m.val[i], sz = (v >= 20 ? 0.5 : v >= 5 ? 0.35 : 0.25) * SCALE.pickup, col = v >= 20 ? this._gold : v >= 5 ? this._blue : this._plain;
-        d.position.set(m.x[i], m.y[i] + Math.sin(t * 3 + i) * 0.06, m.z[i]); d.rotation.set(0.35, t * Math.PI * 2 / 2.5 + i, 0); d.scale.setScalar(sz); d.updateMatrix();
+        d.position.set(m.x[i], m.y[i] + 0.12 + Math.sin(t * 3 + i) * 0.1, m.z[i]); d.rotation.set(0.35, t * Math.PI * 2 / 2.5 + i, 0); d.scale.setScalar(sz * (1 + 0.1 * Math.sin(t * 4 + i))); d.updateMatrix();
         this.pk[0].setMatrixAt(pc[0], d.matrix); this.pk[0].setColorAt(pc[0], col); pc[0]++; continue;
       }
       d.position.set(m.x[i], m.y[i] + Math.sin(t * 3 + i) * 0.1, m.z[i]); d.rotation.set(0, t * 3, 0); d.scale.setScalar(SCALE.pickup); d.updateMatrix(); this.pk[kk].setMatrixAt(pc[kk]++, d.matrix);
@@ -539,6 +549,7 @@ export class Actors {
 
 import { heightAt } from '../sim/terrain.js';
 function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
 
 
 

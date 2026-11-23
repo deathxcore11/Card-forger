@@ -14,7 +14,8 @@ class Builder {
     const l = Math.sqrt(nx * nx + ny * ny + nz * nz); if (l < 1e-9) return;
     nx /= l; ny /= l; nz /= l;
     if (nx * out[0] + ny * out[1] + nz * out[2] < 0) { const t = b; b = c; c = t; nx = -nx; ny = -ny; nz = -nz; }
-    const j = 0.9 + this.rnd() * 0.2, r = ((color >> 16) & 255) / 255 * j, g = ((color >> 8) & 255) / 255 * j, bl = (color & 255) / 255 * j;
+    const cx = (a[0] + b[0] + c[0]) / 3, cz = (a[2] + b[2] + c[2]) / 3, n = (Math.sin(cx * 0.045) + Math.sin(cz * 0.052 + 1.3) + Math.sin((cx + cz) * 0.021 + 2)) / 3;       // slow patches of lighter and warmer ground, so a wide plain is never one flat colour
+    const j = (0.92 + this.rnd() * 0.16) * (1 + 0.08 * n), r = ((color >> 16) & 255) / 255 * j * (1 + 0.04 * n), g = ((color >> 8) & 255) / 255 * j, bl = (color & 255) / 255 * j * (1 - 0.06 * n);
     [a, b, c].forEach(p => { this.pos.push(p[0], p[1], p[2]); this.nor.push(nx, ny, nz); this.col.push(r, g, bl); });
   }
   mesh() {
