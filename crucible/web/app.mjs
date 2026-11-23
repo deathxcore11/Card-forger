@@ -1400,24 +1400,30 @@ function layCard(view, inst, seat, pose, shade = 1) {
 }
 // A card breaking: its own picture cut four by four where it lay, the pieces thrown up and apart, turning, falling back
 // onto the table where they stop, then taken away a few at a time in a fixed order (no piece blinks, none fades).
+// Across the table the pieces keep to the card's own lane, half a zone's pitch to each side of where it broke (less a
+// unit), so those of a card broken in its zone never reach the zone beside it or the numbers there; toward and away from
+// you they fly freely. Returns the pieces' corners, for the numbers they lie over.
 function layShards(view, inst, seat, pose, age) {
   const { back, def, tex } = cardLook(inst, seat, pose), p = cardQuad({ ...pose, tilt: pose.tilt || 0 }, def), uv = back ? UV_BACK : UV_FACE;
   const lerp = (a, b, k) => a.map((x, i) => x + (b[i] - x) * k), at = (q, u, v) => lerp(lerp(q[0], q[1], u), lerp(q[3], q[2], u), v);
   const mid = at(p, .5, .5), rnd = i => { const s = Math.sin(i * 12.9898 + 4.1) * 43758.5453; return s - Math.floor(s); };
-  const dim = age < 8 ? 1 : .8;
+  const dim = age < 8 ? 1 : .8, lane = (TBL.zx(1) - TBL.zx(0)) / 2 - 1, pieces = [];
   for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) {
     const n = j * 4 + i, r = rnd(n); if (age >= 8 + Math.floor(rnd(n + 31) * 6)) continue; // gone, from the eighth thirtieth on
     const q = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => at(p, a / 4, b / 4)), u = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]].map(([a, b]) => at(uv, a / 4, b / 4));
     const c = at(q, .5, .5), up = 3.5 + r * 2, land = (up + Math.sqrt(up * up + 2.2 * Math.max(0, c[1]))) / 1.1, fly = Math.min(age, land); // a piece goes up, comes down onto the table, and lies where it lands
     const dx = c[0] - mid[0], dz = c[2] - mid[2], dl = Math.hypot(dx, dz) || 1, out = fly * (1.2 + r * 1.2);
+    const reach = Math.max(...q.map(m => Math.hypot(m[0] - c[0], m[2] - c[2]))), room = Math.max(0, lane - reach - Math.abs(dx)), ox = Math.max(-room, Math.min(room, dx / dl * out)); // however it turns, the piece stays in the lane
     const y = Math.max(0, c[1] + fly * up - .55 * fly * fly) - c[1], a = (r - .5) * fly * .3, ca = Math.cos(a), sa = Math.sin(a);
-    const moved = q.map(([x, yy, z]) => { const lx = x - c[0], lz = z - c[2]; return [c[0] + dx / dl * out + lx * ca - lz * sa, c[1] + (yy - c[1]) * (1 - fly / land) + y, c[2] + dz / dl * out + lx * sa + lz * ca]; }); // a piece of a card held up lies flat once it lands
+    const moved = q.map(([x, yy, z]) => { const lx = x - c[0], lz = z - c[2]; return [c[0] + ox + lx * ca - lz * sa, c[1] + (yy - c[1]) * (1 - fly / land) + y, c[2] + dz / dl * out + lx * sa + lz * ca]; }); // a piece of a card held up lies flat once it lands
     // a piece is drawn in its place among the cards by its height, as a card is: so at the blow the pieces of the card
     // struck lie under the attacker above them, and rise over it only as they are thrown up
     const bias = -1 - Math.round(4 * Math.max(...moved.map(m => m[1])));
     if (tex) R3.quad(view, { p: moved, uv: u, tex, shade: dim, bias });
     else R3.quad(view, { p: moved, uv: UV0, col: back ? [65, 27, 40] : ROLE_RGB[roleOf(db, inst.id)] || [168, 126, 79], shade: dim, bias });
+    pieces.push(moved);
   }
+  return pieces;
 }
 // The label face drawn into the table's picture: each letter cut once to one bit from the page's own label face, so the
 // numbers on the table are the letters used everywhere else in the frame, never smoothed. They lie flat on the screen,
@@ -1544,7 +1550,11 @@ function psPaint(force) {
   const actorOn = (k, tk) => { let a = null; if (live) for (const x of B.acts) if (x.key === k && tk >= x.t0 && tk < x.t1 && (!a || x.t0 >= a.t0)) a = x; return a; };
   const instAt = (k, pi, vi, tk) => !live ? vi : pi && vi && pi.u != null && pi.u === vi.u ? (tk >= (B.look[k] ?? 0) ? vi : pi) : (tk < (B.swap[k] ?? 0) ? pi : vi);
   const shadeAt = (k, tk) => { if (!live) return 1; let s = 1; for (const x of B.flash) if (x.key === k && tk >= x.t && tk < x.t + x.k.length) s *= x.k[tk - x.t]; return s; };
-  const plates = [], marks = [], cards = [], tight = tightPlates(proj);
+  const plates = [], marks = [], cards = [], tight = tightPlates(proj), scr = p => p.map(proj).filter(Boolean);
+  // Each card and each piece drawn, with the last tick at which it may still lie where it is drawn now: a card at rest
+  // only now, a card in a move until the move is over, a piece until the last piece of its card is taken away.
+  const covers = [], lungeEnd = a => { const L = B.fights.find(x => x.act === a), e = L ? L.end() : Infinity; return e === Infinity ? tick + 1 : e; };
+  const coverTill = a => !live || !a ? tick + 1 : a.t1 !== Infinity ? a.t1 : lungeEnd(a);
   // The monster a blow is coming at stands its numbers down with the attacker's: from the moment the attack sets off (or
   // while it waits poised on your answer) until the attacker is home again or has broken, so in a fight neither number
   // is half hidden by the other card. The one left standing shows its numbers again then; the one that falls takes them.
@@ -1557,7 +1567,7 @@ function psPaint(force) {
     if (!live && !small && PSV.pend && PSV.pend.seat === seat && PSV.pend.from === z) { const pk = PSV.pend, H = home(seat, z), Tg = pk.to >= 0 ? home(1 - seat, pk.to) : { x: H.x * .5, z: seat ? 160 : -160 }, kk = POISE[POISE.length - 1][0] * (pk.to >= 0 ? .85 : 1); pose = { x: H.x + (Tg.x - H.x) * kk, y: 12, z: H.z + (Tg.z - H.z) * kk, poised: true }; } // poised while you answer it
     if (!inst0) return;
     const inst = small && !(a && a.shown) ? (seat === 1 ? { veil: true } : { ...inst0, veil: true, id: null }) : inst0; // set cards lie face down
-    const p = layCard(view, inst, seat, pose, shadeAt(k, tick)); cards.push([k, p]);
+    const p = layCard(view, inst, seat, pose, shadeAt(k, tick)); cards.push([k, p]); covers.push([k, scr(p), coverTill(a)]);
     // A monster shows its numbers only while it lies on its zone. A card off the table (lunging, poised over the gap while
     // its attack is answered, turning, sent back) takes them with it and lays them down again when it lands, so in a
     // battle the attacker's numbers never fly over the other card, and the prompt that holds a poised card names them.
@@ -1566,28 +1576,45 @@ function psPaint(force) {
   };
   for (const seat of [1, 0]) { v.mon[seat].forEach((m, z) => slot(seat, z, false)); (v.traps[seat] || []).forEach((t, z) => slot(seat, z, true)); }
   if (live) {
-    for (const a of B.acts) if (!a.key && tick >= a.t0 && tick < a.t1) cards.push(['', layCard(view, a.inst(tick), a.seat, a.pose(tick))]);
+    for (const a of B.acts) if (!a.key && tick >= a.t0 && tick < a.t1) { const p = layCard(view, a.inst(tick), a.seat, a.pose(tick)); cards.push(['', p]); covers.push(['', scr(p), a.t1]); }
     for (const s of B.shards) { const age = tick - s.t; if (age < 0 || age >= SHARD_LIFE) continue;
       let pose = s.pose; if (!pose) { const a = actorOn(s.key, s.t), [sd, zz] = s.key.slice(1).split('.').map(Number); pose = a ? a.pose(s.t) : home(sd, zz, s.key[0] === 't'); }
-      layShards(view, s.inst, s.seat, pose, age); }
+      for (const p of layShards(view, s.inst, s.seat, pose, age)) { cards.push(['*', p]); covers.push(['*', scr(p), s.t + SHARD_LIFE]); } }
   }
   // The numbers lie on the table beside their cards, under every card: they are put into the scene after the table, its
-  // ground and its marks and before the first card (PLATE_Z among the shapes' depths), so a card that passes over them
-  // (a blow coming in, a Spell shown, a piece of a broken card) covers them and they never lie over a card's picture.
-  const out = [], scr = p => p.map(proj).filter(Boolean);
-  if (glyphsReady()) R3.sprite(view, PLATE_Z, () => {
-    for (const pl of plates) { const s = scr(pl.p); if (s.length < 4) continue; const [w, h] = plateSize(pl.lines), by = [...s].sort((a, b) => a[1] - b[1]);
-      const edge = pl.seat === 0 ? by.slice(0, 2) : by.slice(2), mx = Math.round((edge[0][0] + edge[1][0]) / 2);
-      const y = pl.seat === 0 ? Math.min(...edge.map(q => q[1])) - 1 - h : Math.max(...edge.map(q => q[1])) + 2;
-      out.push([pl.seat, pl.z, ...putPlate(view, mx - (w >> 1), y, pl.lines)]); } });
+  // ground and its marks and before the first card (PLATE_Z among the shapes' depths), so they never lie over a card's
+  // picture. And a number is shown whole or not at all: a monster's numbers are held back while another card or a piece
+  // lies over any pixel of them, and in a move from the first drawing at which one does until it may have gone (its move
+  // over, or the last piece of its card taken away), so they never show cut ('200' over a piece) nor blink as it passes.
+  const out = [], ready = glyphsReady();
+  for (const pl of ready ? plates : []) { const s = scr(pl.p); if (s.length < 4) continue; const [w, h] = plateSize(pl.lines), by = [...s].sort((a, b) => a[1] - b[1]);
+    const edge = pl.seat === 0 ? by.slice(0, 2) : by.slice(2), mx = Math.round((edge[0][0] + edge[1][0]) / 2);
+    pl.r = [mx - (w >> 1), pl.seat === 0 ? Math.min(...edge.map(q => q[1])) - 1 - h : Math.max(...edge.map(q => q[1])) + 2, w, h]; }
+  const whole = pl => { if (!pl.r) return false; const k = mkey(pl.seat, pl.z); let till = -1;
+    for (const [ck, s, t] of covers) if (ck !== k && t > till && s.length === 4 && quadMeets(s, pl.r)) till = t;
+    if (!live) return till < 0;
+    B.held = B.held || {}; if (till > (B.held[k] ?? -1)) B.held[k] = till;
+    return tick >= (B.held[k] ?? -1); };
+  const shown = plates.filter(whole);
+  if (ready) R3.sprite(view, PLATE_Z, () => { for (const pl of shown) out.push([pl.seat, pl.z, ...putPlate(view, pl.r[0], pl.r[1], pl.lines)]); });
   R3.draw(view, proj, [420, 760]);
   // the forecasts, flat over the scene on the middle of the card each speaks of (drawn only while no move plays)
-  if (glyphsReady()) for (const mk of marks) { const s = scr(mk.p); if (s.length < 4) continue; const [w, h] = plateSize(mk.lines), mx = Math.round(s.reduce((n, q) => n + q[0], 0) / 4), my = Math.round(s.reduce((n, q) => n + q[1], 0) / 4);
+  if (ready) for (const mk of marks) { const s = scr(mk.p); if (s.length < 4) continue; const [w, h] = plateSize(mk.lines), mx = Math.round(s.reduce((n, q) => n + q[0], 0) / 4), my = Math.round(s.reduce((n, q) => n + q[1], 0) / 4);
     putPlate(view, mx - (w >> 1), my - (h >> 1), mk.lines); }
   R3.present(view);
-  // for the checks: the plates as drawn, each card's corners on the screen, the camera, the notation, the beat's tick and
-  // the zones' marks (seat, zone, kind, width, the corners of the shape each goes round)
-  Object.assign(cv.dataset, { plates: JSON.stringify(out), cards: JSON.stringify(cards.map(([k, p]) => [k, ...scr(p).flatMap(q => [q[0], q[1]])])), cam: JSON.stringify({ ...TBL.cam, off }), tight: tight ? 1 : 0, tick: live ? tick : -1, rings: JSON.stringify(rings) });
+  // for the checks: the plates as drawn, each card's corners on the screen, the camera, the notation, the beat's tick, the
+  // zones' marks (seat, zone, kind, width, the corners of the shape each goes round) and the numbers held back (seat, zone)
+  const held = plates.filter(pl => pl.r && !shown.includes(pl)).map(pl => [pl.seat, pl.z]);
+  Object.assign(cv.dataset, { plates: JSON.stringify(out), cards: JSON.stringify(cards.map(([k, p]) => [k, ...scr(p).flatMap(q => [q[0], q[1]])])), cam: JSON.stringify({ ...TBL.cam, off }), tight: tight ? 1 : 0, tick: live ? tick : -1, rings: JSON.stringify(rings), held: JSON.stringify(held) });
+}
+// Whether a shape as drawn (four corners on the screen) covers any pixel of a box (x, y, w, h): a pixel whose middle lies
+// inside it or on its edge, as the rasteriser covers one.
+function quadMeets(s, [x, y, w, h]) {
+  const xs = s.map(p => p[0]), ys = s.map(p => p[1]);
+  if (Math.max(...xs) < x + .5 || Math.min(...xs) > x + w - .5 || Math.max(...ys) < y + .5 || Math.min(...ys) > y + h - .5) return false;
+  const inside = (px, py) => { let sg = 0; for (let i = 0; i < 4; i++) { const a = s[i], b = s[(i + 1) % 4], c = (b[0] - a[0]) * (py - a[1]) - (b[1] - a[1]) * (px - a[0]); if (c) { if (sg && Math.sign(c) !== sg) return false; sg = Math.sign(c); } } return true; };
+  for (let j = Math.max(y, Math.floor(Math.min(...ys))); j < Math.min(y + h, Math.ceil(Math.max(...ys)) + 1); j++) for (let i = Math.max(x, Math.floor(Math.min(...xs))); i < Math.min(x + w, Math.ceil(Math.max(...xs)) + 1); i++) if (inside(i + .5, j + .5)) return true;
+  return false;
 }
 // Where the numbers fall in the table's drawing order: farther than every card (a card lies at depth 400 to 700 and one
 // lifted or shown is drawn nearer still), nearer than the table, its ground, its zone outlines (all biased by 999 and more

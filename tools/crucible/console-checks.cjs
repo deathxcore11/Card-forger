@@ -61,12 +61,14 @@
 //           numbers lie inside the view, apart and off the trap rows; the hall's painting spans the view to its foot;
 //           the numbers keep the one notation the frame gives them (tight or full) whatever cards lie there; each
 //           zone's mark lies inside the view and shows on all four sides (where no numbers lie over it), and any two
-//           marks in a row leave stone between them (ringFaults);
+//           marks in a row leave stone between them (ringFaults); no monster's numbers are held back at rest because a
+//           card lies over their place (heldFaults);
 //   beats   on the owner's eight screen shapes, a duel's moves are stepped a thirtieth of a second at a time on a stopped
 //           clock (a rival's attack let through, your attack on a rival monster, then the rival's whole turn), and on
 //           every drawing of the table the numbers lie inside the view, apart, each against its own card as drawn (never
-//           left floating), keep one notation, and none lies over another card's picture (read from the canvas's own
-//           pixels: where a card and a plate meet, the card shows);
+//           left floating), keep one notation, none lies over another card's picture (read from the canvas's own
+//           pixels: where a card and a plate meet, the card shows), and no card or piece of a broken card lies over any
+//           pixel of them (a number is shown whole or not at all);
 //   rings   on the beats' shapes and the two smallest frames, the zones' marks of a few duels in every state (ready,
 //           picked, targets in both blink colours, a card aiming), checked as in table;
 //   first   the duel table's first drawing that has anything in it, kept the moment the page puts it on the screen, is
@@ -99,10 +101,12 @@ const hostScript = css => { const add = () => { const st = document.createElemen
 const SAME = ['', 'chamber-f1.json', 'duel-regular-f1-h0.json', 'anvil-f1.json', 'reward-card-f1.json'];
 const SHORT = [null, 'chamber-f1.json', 'duel-regular-f1-h0.json', 'reward-card-f1.json', 'reward-gift-f1.json', 'anvil-f1.json', 'bazaar-f2.json', 'kit-f1.json'];
 const SCREENS = ['screen:codex', 'screen:codex>cxview:all', 'screen:feats', 'screen:vault', 'new']; // a>b: tap a, then b
-// the shapes the owner plays on, for the duel's beats, and the duels stepped on them
-const BEAT_SHAPES = [['phone held sideways', 915, 412, 2.625, 1], ['phone held upright', 412, 915, 2.625, 1], ['fold, inner screen', 673, 841, 2.625, 1], ['fold, cover screen sideways', 882, 344, 2.625, 1],
-  ['16:9 screen', 1920, 1080, 1, 0], ['tablet', 1024, 768, 2, 1], ['tall desktop window', 800, 1000, 1, 0], ['small window', 800, 360, 1, 0]];
-const BEAT_SAVES = ['duel-regular-f1-h0.json', 'duel-boss-f1-trap-prompt-h0.json'];
+// the shapes the owner plays on, for the duel's beats, and the duels stepped on them; the beat- saves (each one move
+// set up: your attack lost, a defender broken, both falling, the rival's Spells), when the saves folder has them, are
+// stepped on the shapes marked last (1)
+const BEAT_SHAPES = [['phone held sideways', 915, 412, 2.625, 1, 1], ['phone held upright', 412, 915, 2.625, 1, 1], ['fold, inner screen', 673, 841, 2.625, 1, 0], ['fold, cover screen sideways', 882, 344, 2.625, 1, 0],
+  ['16:9 screen', 1920, 1080, 1, 0, 1], ['tablet', 1024, 768, 2, 1, 0], ['tall desktop window', 800, 1000, 1, 0, 0], ['small window', 800, 360, 1, 0, 1]];
+const BEAT_SAVES = ['duel-regular-f1-h0.json', 'duel-boss-f1-trap-prompt-h0.json'], BEAT_MORE = ['beat-lose.json', 'beat-defkill.json', 'beat-both.json', 'beat-spells.json'];
 // the duels whose zones' marks are stepped through every state (rings), on the beats' shapes and the two smallest frames
 const RING_SAVES = ['rings.json', 'last-move-loss-f1-h5.json', 'duel-boss-f1-trap-prompt-h10.json', 'duel-regular-f1-h0.json'];
 const RING_SHAPES = [...BEAT_SHAPES, ['wide desktop', 1024, 480, 2, 0], ['low window', 600, 270, 1, 0]];
@@ -127,8 +131,11 @@ async function tableFirst() {
   return null;
 }
 // The table as drawn at one moment of a beat (in the page): the numbers' plates (data-plates: seat, zone, x, y, w, h), each
-// card's four corners on the screen (data-cards: its zone key, or none for a card shown or arriving) and the canvas's
-// pixels. A plate's own colours are the frame's dark and the five letter colours, cut to 15 bits as the table cuts them.
+// card's four corners on the screen (data-cards: its zone key, none for a card shown or arriving, '*' for a piece of a
+// broken card) and the canvas's pixels. A plate's own colours are the frame's dark and the five letter colours, cut to 15
+// bits as the table cuts them. The plates are drawn before every card and piece, so any pixel of a plate that lies inside
+// another card's or a piece's shape (its middle inside, as the table's rasteriser covers a pixel) is covered: a number
+// cut, which must never be shown.
 function tableNow() {
   const t = document.getElementById('tbl'); if (!t || !t.dataset.plates) return null;
   const plates = JSON.parse(t.dataset.plates), cards = JSON.parse(t.dataset.cards || '[]'), out = [], W = t.width, H = t.height;
@@ -150,6 +157,7 @@ function tableNow() {
       for (let yy = Math.max(0, y); yy < Math.min(H, y + h); yy++) for (let xx = Math.max(0, x); xx < Math.min(W, x + w); xx++) {
         if (!inQuad(q, xx + .5, yy + .5)) continue; n++; const i4 = (yy * W + xx) * 4; if (own.has([px[i4], px[i4 + 1], px[i4 + 2]].join())) ownPx++; }
       if (n >= 6 && ownPx > n * .4) out.push(`numbers of zone ${s}:${z} lie over the card ${c[0] || '(shown)'} (${ownPx} of the ${n} pixels where they meet are the plate's)`);
+      else if (n) out.push(`numbers of zone ${s}:${z} are cut: ${c[0] === '*' ? 'a piece of a broken card' : c[0] ? 'the card ' + c[0] : 'a card shown or arriving'} lies over ${n} of their pixels`);
     }
   });
   return { tick: +t.dataset.tick, tight: t.dataset.tight, out };
@@ -195,6 +203,12 @@ function ringFaults() {
   }
   return out;
 }
+// The table at rest (in the page): no monster's numbers are held back (data-held) because a card lies over their place.
+// In a move a number waits for what passes over it; at rest it must show, or it is lost.
+function heldFaults() {
+  const t = document.getElementById('tbl'); if (!t || !t.dataset.held || +t.dataset.tick >= 0) return [];
+  return JSON.parse(t.dataset.held).map(([s, z]) => `numbers of zone ${s}:${z} not shown at rest: another card lies over their place`);
+}
 const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics', 'tab:doors', 'tab:duel', 'barmore'];
 const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose windows are also read further and pictured at their edges
 
@@ -202,7 +216,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
   const [url, savesDir, stepsArg] = process.argv.slice(2);
   if (!url || !savesDir) { console.log('usage: console-checks.cjs <page url> <saves dir> [steps]'); process.exit(2); }
   const only = process.env.CC_ONLY === 'title', beatsOnly = process.env.CC_ONLY === 'beats', ringsOnly = process.env.CC_ONLY === 'rings', steps = only ? 0 : +(stepsArg || 40);
-  const saves = fs.readdirSync(savesDir).filter(f => /^(chamber|duel|reward|anvil|bazaar|kit|charm)-/.test(f)).sort();
+  const saves = fs.readdirSync(savesDir).filter(f => /^(chamber|duel|reward|anvil|bazaar|kit|charm|beat)-/.test(f)).sort();
   const pick = [null, ...saves.filter(f => /^chamber-f\d\.json$|^chamber-boss-door-f[13]-h(0|10)\.json$/.test(f)),
     ...saves.filter(f => /^duel-(regular|boss|cursed)-f[123]-h0\.json$|trap-prompt-h5|narrow|fog|lesson/.test(f)).slice(0, 10),
     ...saves.filter(f => /^(reward|anvil|bazaar|kit|charm)-/.test(f))];
@@ -592,7 +606,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
         if (unconverted) out.push(`${unconverted} card pictures still the full-colour sheet`);
         return { ps: true, out: [...new Set(out)], sig: app.dataset.phase + '|' + [...app.querySelectorAll('[data-a]')].map(e => e.dataset.a).join(',').slice(0, 400) };
       }, !!touch);
-      if (r.ps) { screens++; for (const o of r.out) fail(where, o); for (const o of await page.evaluate(ringFaults)) fail(where, o); }
+      if (r.ps) { screens++; for (const o of r.out) fail(where, o); for (const o of [...await page.evaluate(ringFaults), ...await page.evaluate(heldFaults)]) fail(where, o); }
       for (const e of errors) fail(where, 'page error: ' + e); errors = [];
       return r;
     };
@@ -780,7 +794,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
   // beats: a rival's attack waiting on your answer let through, your attack on a rival monster, then the rival's whole
   // turn, stepped a thirtieth of a second at a time on a stopped clock, the table checked at every drawing (tableNow)
   let beatTicks = 0;
-  if (!only && !ringsOnly) for (const [shape, W, H, dpr, touch] of BEAT_SHAPES) for (const save of BEAT_SAVES) {
+  if (!only && !ringsOnly) for (const [shape, W, H, dpr, touch, more] of BEAT_SHAPES) for (const save of more ? [...BEAT_SAVES, ...BEAT_MORE] : BEAT_SAVES) {
     if (!saves.includes(save)) continue;
     const where = `${shape} ${W}x${H}@${dpr} ${save} beats`, said = new Set(), notes = new Set();
     const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
@@ -830,7 +844,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     const tap = async sel => { const l = page.locator(sel).first(); if (!(await l.count())) return false; await l.click({ force: true, timeout: 3000 }).catch(() => {}); await page.waitForTimeout(250); return true; };
     const settle = () => page.waitForFunction(() => !(window.LM && LM.G.playing) && document.querySelector('[data-a="end"], [data-a="respond:-1"]'), null, { timeout: 20000 }).catch(() => {}); // until it is your turn again, or another attack waits on your answer
     const seen = []; const look = async state => { seen.push(state); for (const blink of [0, 1]) { if (blink) await page.waitForTimeout(420); ringLooks++;
-      for (const o of await page.evaluate(ringFaults)) if (!said.has(o)) { said.add(o); fail(`${where}, ${state}`, o); } } };
+      for (const o of [...await page.evaluate(ringFaults), ...await page.evaluate(heldFaults)]) if (!said.has(o)) { said.add(o); fail(`${where}, ${state}`, o); } } };
     for (let i = 0; i < 6 && await tap('[data-a="respond:-1"]'); i++) await settle();
     await look('ready');
     const zones = await page.locator('.zh[data-a^="mine:"]').evaluateAll(es => es.map(e => e.dataset.a));
