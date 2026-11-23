@@ -4,10 +4,11 @@ import { seeMap } from './seethrough.js';
 import { groundLit } from './engine.js';
 import { STAGE_LOOK, rampColour } from '../data/look.js';
 import { addSampleProps } from './sampleKit.js';
+import { buildOpen } from './openMesh.js';
 
 const T = window.THREE, DEG = Math.PI / 180;
 
-class Builder {
+export class Builder {
   constructor(uv) { this.pos = []; this.nor = []; this.col = []; this.uv = uv ? [] : null; this.seed = 12345; }
   rnd() { this.seed = (this.seed * 1664525 + 1013904223) >>> 0; return this.seed / 4294967296; }
   // quad a,b,c,d (any winding); `out` is a vector pointing away from the solid so we can face it correctly
@@ -245,6 +246,7 @@ function addKits(B, map, look) {
   }
 }export function buildMapMesh(map, look) {
   look = look || STAGE_LOOK[0];
+  if (map.open) return buildOpen(map, look);
   if (map.heights) return buildV2(map, look); const SAND = look.sand, pc = p => (look.ramp ? rampColour(look.ramp, p.c0 === undefined ? p.c : p.c0) : p.c), prims = look.ramp ? map.prims.map(p => Object.assign({}, p, { c: pc(p) })) : map.prims;
   const B = new Builder(), F = new Builder(), G = new Builder(true), group = new T.Group();
   F.seed = 777;
