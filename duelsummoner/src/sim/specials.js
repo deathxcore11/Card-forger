@@ -1,4 +1,4 @@
-// Elites and the boss: the Sealed Warden (4:00), the Twin Jackal Idols (6:00) and The Hollow Pharaoh (8:00 or the Royal Gate).
+﻿// Elites and the boss: the Sealed Warden (4:00), the Twin Jackal Idols (6:00) and The Hollow Pharaoh (8:00 or the Royal Gate).
 import { CFG } from '../data/config.js';
 import { atan2, cos, sin } from './dmath.js';
 import { SPECIALS } from '../data/enemies.js';
@@ -194,7 +194,7 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
     b.summonT -= dt;
     if (b.summonT <= 0) {
       b.summonT = S.summon.every;
-      for (let k = 0; k < S.summon.count; k++) { const a = k / S.summon.count * 6.283; spawnEnemy(g, 'husk', { x: sp.x + cos(a) * 6, z: sp.z + sin(a) * 6 }); }
+      for (let k = 0; k < S.summon.count; k++) { const a = k / S.summon.count * 6.283; spawnEnemy(g, 'husk', { x: sp.x + cos(a) * 6, z: sp.z + sin(a) * 6 }); } if (g.gate && g.gate.state === 'fight') g.spawnAcc -= S.summon.count;       // during the gate fight the boss's adds count against the 40 percent horde, so the total stays near that rate
       g.event('banner', 'The Pharaoh summons Husks.');
     }
   }
@@ -212,6 +212,7 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
     }
   }
 }
+
 
 
 

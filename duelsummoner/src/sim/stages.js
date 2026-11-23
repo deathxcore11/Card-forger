@@ -234,8 +234,13 @@ function shadesTick(g, dt) {
 
 // ---- the swarm ----
 function spawner(g, dt, fight, toll) {
-  const S = g.stageSpec; if (fight && !toll) return;
+  const S = g.stageSpec;
   const D = g.diff, te = Math.min(479, S.waves.offset + g.sc * S.waves.scale * D.ramp), p = g.p, cap = g.maxAlive;
+  if (fight && !toll) {                                          // the horde keeps coming during the gate fight, thinned to 40 percent of the spawn rate at the moment the gate woke (the stage clock is frozen, so this is steady)
+    g.spawnAcc += 0.4 * spawnRate(te) * D.spawn * dt; let live0 = enemyCount(g.en); if (g.spawnAcc > 60) g.spawnAcc = 60;
+    while (g.spawnAcc >= 1) { g.spawnAcc -= 1; if (live0 < cap && spawnEnemy(g, pickKind(g, te))) live0++; }
+    return;
+  }
   if (te >= RUN.ring.from || toll) {                            // the Last Audience: a ring of Husks closes in
     g.ringT -= dt;
     if (g.ringT <= 0) {

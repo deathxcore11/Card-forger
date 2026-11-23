@@ -1,4 +1,4 @@
-// Cards, levels, offers and Fusion rules. All numbers here; src/sim reads them by name.
+﻿// Cards, levels, offers and Fusion rules. All numbers here; src/sim reads them by name.
 // Rules (owner, 22 Nov): monsters level 1 to 10 with three forms (levels 1, 5, 10); Fusion needs both named partners at level 10;
 // a Fusion is a new monster from level 1 with its own three forms; Spells and Traps level 1 to 5 and never fuse.
 export const XP = { base: 2.5, perLevel: 0.35, quad: 0.038, early: 0, earlyTo: 9 };         // xp to go from level L to L+1 = base + perLevel * L + quad * L * L
@@ -88,6 +88,10 @@ export const TARGETS = {
   firstFusionSeconds: [225, 270],                                     // 3:45 to 4:30 with focused picks
   secondFusionShare: 0.15                                             // runs that reach a second Fusion: rare, under 15%
 };
+
+
+
+
 
 
 
