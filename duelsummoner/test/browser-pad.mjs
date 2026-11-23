@@ -44,7 +44,7 @@ check('d-pad lands the ring on an offer button', !!ringO, String(ringO)); await 
 await wait(300); const c0 = await b.evalIn(`window.__ds.game.coins`), lv0 = await b.evalIn(`window.__ds.game.pendingLevels`);
 await press(3); await wait(400); const c1 = await b.evalIn(`window.__ds.game.coins`), lv1 = await b.evalIn(`window.__ds.game.pendingLevels`);
 check('Y passes the level-up offer (coins up, one level-up consumed)', c1 > c0, 'coins ' + c0 + ' to ' + c1 + ', pending ' + lv0 + ' to ' + lv1);
-await wait(450); const rd = () => b.evalIn(`(document.querySelector('#offerBtns [data-act=redraw]')||{}).textContent`); const r0 = await rd(), cards0 = await b.evalIn(`document.getElementById('offerCards').textContent`);
+await wait(3500); const rd = () => b.evalIn(`(document.querySelector('#offerBtns [data-act=redraw]')||{}).textContent`); const r0 = await rd(), cards0 = await b.evalIn(`document.getElementById('offerCards').textContent`);
 await press(2); await wait(400); const r1 = await rd(), cards1 = await b.evalIn(`document.getElementById('offerCards').textContent`);
 check('X redraws the offer (redraw count drops)', r0 !== r1, r0 + ' to ' + r1 + (cards0 === cards1 ? ' (same cards rolled)' : ''));
 // chest reveal: play one to the end (so it counts as seen), play another and skip it with A

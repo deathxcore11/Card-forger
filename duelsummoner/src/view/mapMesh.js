@@ -1,4 +1,4 @@
-﻿// Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
+// Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
 import { MAP } from '../data/map.js';
 
 const T = window.THREE, DEG = Math.PI / 180;
@@ -106,7 +106,7 @@ function groundTex() {
   for (let i = 0; i < 70; i++) wrap(r() * 256, r() * 256, 12 + r() * 34, 'rgba(120,95,50,0.16)');
   for (let i = 0; i < 40; i++) wrap(r() * 256, r() * 256, 10 + r() * 24, 'rgba(255,245,215,0.20)');
   for (let i = 0; i < 900; i++) wrap(r() * 256, r() * 256, 0.8 + r() * 1.6, r() < 0.6 ? 'rgba(90,70,40,0.35)' : 'rgba(255,250,235,0.45)');
-  gtex = new T.CanvasTexture(cv); gtex.wrapS = gtex.wrapT = T.RepeatWrapping; gtex.magFilter = T.NearestFilter; gtex.minFilter = T.LinearMipmapLinearFilter; return gtex;
+  gtex = new T.CanvasTexture(cv); gtex.wrapS = gtex.wrapT = T.RepeatWrapping; gtex.magFilter = T.LinearFilter; gtex.minFilter = T.LinearMipmapLinearFilter; return gtex;
 }
 export function buildMapMesh(map) {
   const B = new Builder(), F = new Builder(), G = new Builder(true), group = new T.Group();

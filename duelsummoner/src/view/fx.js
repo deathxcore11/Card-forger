@@ -95,27 +95,36 @@ export class Fx {
   number(x, y, z, value, flags) {
     // hits on one target within 150 ms merge into one number: the total is redrawn on the number that is still fresh
     for (let i = 0; i < this.M; i++) {
-      if (this.nage[i] < 0 || this.nage[i] > 0.15) continue;
+      if (this.nage[i] < 0 || this.nage[i] > 0.4) continue;
       const j = i * 3, dx = this.nx[j] - x, dz = this.nx[j + 2] - z;
-      if (dx * dx + dz * dz < 2.25) { this.nval[i] += value; if (flags & 1) this.nbig[i] = 1; this._paint(i, this.nval[i], this.nbig[i], flags); return; }
-    }    if (this.numBudget < 1) return; this.numBudget -= 1;
+      if (dx * dx + dz * dz < 2.25) { this.nage[i] = Math.min(this.nage[i], 0.12); this.nval[i] += value; if (flags & 1) this.nbig[i] = 1; this._paint(i, this.nval[i], this.nbig[i], flags); return; }
+    }    let live = 0; for (let k = 0; k < this.M; k++) if (this.nage[k] >= 0) live++; if (live >= 16) return;         // at most 16 numbers on screen
+    if (this.numBudget < 1) return; this.numBudget -= 1;
     const big = flags === undefined || flags === null ? value > this.avgDmg * 2.2 + 1 : (flags & 1) === 1; this.avgDmg += (value - this.avgDmg) * 0.05;
     const el = flags ? flags >> 1 : 0, col = ELEM_COL[el & 1 ? 1 : el & 2 ? 2 : el & 4 ? 3 : el & 8 ? 4 : el & 16 ? 5 : el & 32 ? 6 : el & 64 ? 7 : el & 128 ? 8 : 0];
     const i = this.nh, j = i * 3; this.nh = (this.nh + 1) % this.M;
     this.nval[i] = value; this._paintAt = null;
     const ctx = this.nctx[i]; ctx.clearRect(0, 0, 128, 48); ctx.font = 'bold ' + (big ? 38 : 28) + 'px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const s = String(Math.max(1, Math.round(value)));
-    ctx.lineWidth = 6; ctx.strokeStyle = '#1a0a20'; ctx.strokeText(s, 64, 24); ctx.fillStyle = col || (big ? '#ffd23a' : '#fff6e0'); ctx.fillText(s, 64, 24);
+    ctx.lineWidth = 6; ctx.strokeStyle = '#1a0a20'; ctx.strokeText(s, 64, 24); ctx.fillStyle = col || (big ? '#e8f6ff' : '#fff6e0'); ctx.fillText(s, 64, 24); if (big) this._star(ctx, 64 - ctx.measureText(s).width / 2 - 12, 24);
     this.ntex[i].needsUpdate = true;
     this.nlane = ((this.nlane || 0) + 1) % 5;       // five side lanes in turn, plus a little height per lane, so numbers from the same spot never sit on each other
-    this.nx[j] = x + (this.nlane - 2) * 0.42 + (Math.random() - 0.5) * 0.2; this.nx[j + 1] = y + (this.nlane % 2) * 0.35; this.nx[j + 2] = z + (Math.random() - 0.5) * 0.3; this.nvx[i] = (Math.random() - 0.5) * 1.2; this.nage[i] = 0; this.nbig[i] = big ? 1 : 0;
+    this.nx[j] = x + (Math.random() - 0.5) * 0.15; this.nx[j + 1] = y + this.nlane * 0.3; this.nx[j + 2] = z + (Math.random() - 0.5) * 0.15; this.nvx[i] = (Math.random() - 0.5) * 0.3;  this.nage[i] = 0; this.nbig[i] = big ? 1 : 0;   // numbers from one spot stack upward instead of spreading sideways
     const sp = this.nsp[i]; sp.visible = true; sp.material.opacity = 1;
   }
 
+  _underHud(px, py) {                                                      // a number never draws over a HUD panel (rects read twice a second)
+    const now = performance.now(); if (!this._hudR || now - this._hudT > 500) { this._hudT = now; this._hudR = ['topleft', 'topright', 'zones', 'minimap', 'stats', 'itemsList'].map(id => { const e = document.getElementById(id); return e && e.offsetWidth ? e.getBoundingClientRect() : null; }).filter(Boolean); }
+    for (const r of this._hudR) if (px > r.left && px < r.right && py > r.top && py < r.bottom) return true; return false;
+  }
   _paint(i, value, big, flags) {                                           // redraw a damage number with its new total
     const ctx = this.nctx[i], el = flags ? flags >> 1 : 0, col = ELEM_COL[el & 1 ? 1 : el & 2 ? 2 : el & 4 ? 3 : el & 8 ? 4 : el & 16 ? 5 : el & 32 ? 6 : el & 64 ? 7 : el & 128 ? 8 : 0], s = String(Math.max(1, Math.round(value)));
     ctx.clearRect(0, 0, 128, 48); ctx.font = 'bold ' + (big ? 38 : 28) + 'px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineWidth = 6; ctx.strokeStyle = '#1a0a20'; ctx.strokeText(s, 64, 24); ctx.fillStyle = col || (big ? '#ffd23a' : '#fff6e0'); ctx.fillText(s, 64, 24); this.ntex[i].needsUpdate = true;
+    ctx.lineWidth = 6; ctx.strokeStyle = '#1a0a20'; ctx.strokeText(s, 64, 24); ctx.fillStyle = col || (big ? '#e8f6ff' : '#fff6e0'); ctx.fillText(s, 64, 24); if (big) this._star(ctx, 64 - ctx.measureText(s).width / 2 - 12, 24); this.ntex[i].needsUpdate = true;
+  }
+  _star(ctx, x, y) {                                                       // the crit mark: an upright four-point star, ice-white with an ink outline (gold means coin)
+    ctx.beginPath(); for (let k = 0; k < 8; k++) { const r = k % 2 ? 3.4 : 9.5, a = k * Math.PI / 4 - Math.PI / 2; ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } ctx.closePath();
+    ctx.lineWidth = 3; ctx.strokeStyle = '#1a0a20'; ctx.stroke(); ctx.fillStyle = '#e8f6ff'; ctx.fill();
   }
   // ---- per frame ----
   update(dt, camera) {
@@ -172,7 +181,7 @@ export class Fx {
       const fov = camera.fov * Math.PI / 180, hw = (this.nbig[i] ? 0.03 : 0.02) * 2 * dist * Math.tan(fov / 2) * pop;
       sp.visible = dist >= 2; sp.scale.set(hw * 2.667, hw, 1);
       sp.position.set(x, y, z);
-      { const T = window.THREE, v = this._nv || (this._nv = new T.Vector3()); v.set(x, y, z).project(camera); if (v.z >= 1) sp.visible = false; if (v.z < 1) { const cx = Math.max(-0.78, Math.min(0.78, v.x)), cy = Math.max(-0.3, Math.min(0.8, v.y)); if (cx !== v.x || cy !== v.y) { v.set(cx, cy, v.z).unproject(camera); sp.position.copy(v); } } }       // clamped to the screen: never off the edge, never down behind the hotbar
+      { const T = window.THREE, v = this._nv || (this._nv = new T.Vector3()); v.set(x, y, z).project(camera); if (v.z >= 1 || Math.abs(v.x) > 0.96 || Math.abs(v.y) > 0.96) sp.visible = false; else if (sp.visible && this._underHud((v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight)) sp.visible = false; }       // hidden when off screen or over a HUD panel (never pinned to an edge); never down behind the hotbar
       sp.material.opacity = u < 0.7 ? 1 : 1 - (u - 0.7) / 0.3;
     }
     // screen shake offsets, decaying

@@ -14,7 +14,7 @@ export function makeShots(max) {
     src: new Uint8Array(max), x: f(), y: f(), z: f(), vx: f(), vy: f(), vz: f(), life: f(), dmg: f(), splash: f(), tx: f(), tz: f(), t0: f(), dur: f(), target: new Int32Array(max), speed: f(),
     px: f(), py: f(), pz: f() };
 }
-export function makePickups(max) { return { max, alive: new Uint8Array(max), kind: new Uint8Array(max), val: new Float32Array(max), x: new Float32Array(max), y: new Float32Array(max), z: new Float32Array(max) }; }
+export function makePickups(max) { return { max, alive: new Uint8Array(max), kind: new Uint8Array(max), val: new Float32Array(max), x: new Float32Array(max), y: new Float32Array(max), z: new Float32Array(max), age: new Float32Array(max), far: new Uint8Array(max) }; }
 export function makeBolts(max) { const a = []; for (let i = 0; i < max; i++) a.push({ on: false, x: 0, y: 0, z: 0, vx: 0, vz: 0, life: 0, dmg: 0, r: 0.9, px: 0, pz: 0 }); return a; }
 
 function slot(s) { for (let i = 0; i < s.max; i++) if (!s.alive[i]) return i; return -1; }
@@ -126,20 +126,24 @@ export function updateBolts(g, dt) {
 }
 
 // ---- pickups: crystals, coins, hearts ----
-const MAG = { x: 0, y: 0, z: 0 };
+const MAG = { x: 0, y: 0, z: 0 }, FLY_AFTER = 1.5;
 export function updatePickups(g, dt) {
   const m = g.pick, p = g.p, range = CFG.xp.magnet * (1 + g.mods.pickup) * (g.frenzyT > 0 ? 2 : 1);
   for (let i = 0; i < m.max; i++) {
     if (!m.alive[i]) continue;
+    m.age[i] += dt;
     const dx = p.x - m.x[i], dz = p.z - m.z[i], d = Math.sqrt(dx * dx + dz * dz) || 0.001;
-    if (d < range && Math.abs(p.y - m.y[i]) < 3 + range * 0.3) {
+    // XP from a kill by one of your monsters (or a trap, a spell) is out of walking reach: after 1.5 s it flies to the duelist from anywhere, faster the longer it waits, and is banked after 6 s
+    const flying = m.far[i] && m.age[i] > FLY_AFTER && m.kind[i] === PICK_XP;
+    if (flying && m.age[i] > 6) { m.x[i] = p.x; m.z[i] = p.z; m.y[i] = p.y + 1; }
+    if (flying || (d < range && Math.abs(p.y - m.y[i]) < 3 + range * 0.3)) {
       const o = MAG; o.x = m.x[i]; o.y = m.y[i]; o.z = m.z[i];
-      const sp = 9 + 20 * (1 - d / range);                 // a short speed-up as it flies in
+      const sp = flying ? Math.min(34, 12 + 10 * (m.age[i] - FLY_AFTER)) : 9 + 20 * (1 - d / range);                 // a short speed-up as it flies in
       moveXZ(o, dx / d * sp * dt, dz / d * sp * dt, 0.1, 12);   // never climbs a wall taller than 12 m
       m.x[i] = o.x; m.z[i] = o.z;
       const hh = heightAt(o.x, o.z); if (hh < 50) m.y[i] = Math.max(hh, 0) + 0.5;   // keep the old height over a wall cell
     }
-    if (d < CFG.xp.pick && Math.abs(p.y + 1 - m.y[i]) < 2.5) {
+    if (d < CFG.xp.pick && (Math.abs(p.y + 1 - m.y[i]) < 2.5 || flying)) {
       m.alive[i] = 0; g.emit('pickup', m.kind[i], m.val[i]);
       addFx(g, { type: 'ring', x: m.x[i], y: m.y[i] - 0.3, z: m.z[i], r: 0.9, dur: 0.25, color: m.kind[i] === PICK_XP ? 0xd79af0 : 0xffe080 });   // sparkle on collect
       if (m.kind[i] === PICK_XP) g.addXp(m.val[i]);

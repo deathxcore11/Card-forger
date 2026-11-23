@@ -7,6 +7,7 @@ import { buildMapMesh } from './view/mapMesh.js';
 import { buildGateSeal } from './view/gateseal.js';
 import { Bars } from './view/bars.js';
 import { chestPrice } from './sim/world.js';
+import { heightAt } from './sim/terrain.js';
 const bars = new Bars();
 import { buildScenery } from './view/scenery.js';
 import { LeyThreads } from './view/threads.js';
@@ -64,9 +65,11 @@ scene.add(new T.HemisphereLight(0xdfe6f0, 0x6a5038, 0.74));
 const sun = new T.DirectionalLight(0xffe2b0, 0.66); sun.position.set(60, 90, 30); scene.add(sun);
 
 function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
-  renderer.setPixelRatio(1); renderer.setSize(Math.ceil(w / LOW), Math.ceil(h / LOW), false);
-  camera.aspect = w / h; fitFov();
+  // the chunky look with even blocks: every block is a whole number of device pixels (about LOW CSS pixels), never a fractional scale, so all blocks are the same size; HUD and text stay at full resolution
+  const dpr = window.devicePixelRatio || 1, dw = Math.round(window.innerWidth * dpr), dh = Math.round(window.innerHeight * dpr), B = Math.max(1, Math.floor(LOW * dpr)), bw = Math.max(1, Math.floor(dw / B)), bh = Math.max(1, Math.floor(dh / B));
+  renderer.setPixelRatio(1); renderer.setSize(bw, bh, false);
+  canvas.style.width = (bw * B / dpr) + 'px'; canvas.style.height = (bh * B / dpr) + 'px'; canvas.dataset.block = B;
+  camera.aspect = bw / bh; fitFov();
 }
 window.addEventListener('resize', resize); resize();
 
@@ -130,7 +133,7 @@ bindSettings();
 
 function lock() { if (canvas.requestPointerLock) { try { canvas.requestPointerLock(); } catch (e) {} } }
 function setMode(m) {
-  MODE = m; input.enabled = m === 'play'; clearRing();
+  MODE = m; input.enabled = m === 'play'; clearRing(); document.body.dataset.mode = m; if (m !== 'play') $('banner').classList.remove('on');          // the run HUD hides under the menus (see the data-mode rules in index.html)
   for (const [id, mm] of [['startScreen', 'start'], ['pauseScreen', 'pause'], ['deadScreen', 'dead'], ['offerScreen', 'offer']]) $(id).classList.toggle('on', m === mm);
   if (m !== 'play' && document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
   $('hint').textContent = m === 'play' && !document.pointerLockElement && !(touch && touch.isTouch) && !firstPad() ? 'Click the map to look around' : ''; if (touch) touch.setEnabled(m === 'play');
@@ -258,8 +261,8 @@ function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt') actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'banner') showBanner(data);
   else if (type === 'offer') { setMode('offer'); showOffer(game, menu); }
-  else if (type === 'levelup') { showBanner('Level ' + a); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
-  else if (type === 'hit') fx.number(b, 1.7, c, a, data);
+  else if (type === 'levelup') { fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
+  else if (type === 'hit') fx.number(b, Math.min(heightAt(b, c), 40) + 1.7, c, a, data);       // at the target's own height, not a fixed 1.7 m
   else if (type === 'relic') { fx.ring(a, game.p.y + 0.3, b, 30, 0xffffff, 0.7); fx.ring(a, game.p.y + 0.3, b, 14, 0xffe08a, 0.5); fx.burst(a, game.p.y + 1.2, b, 40, 0xffe08a, 8, 6, 0.3, 0.8, 5); fx.shake(0.35); }
   else if (type === 'block') { fx.burst(data.x, data.y, data.z, 5, 0xc8d0e0, 2.6, 1.5, 0.1, 0.22, 8); fx.ring(data.x, data.y, data.z, 0.7, 0xc8d0e0, 0.18); if (performance.now() - lastBlockTick > 90) { lastBlockTick = performance.now(); tone(150, 0.06, 0.05, 'square'); } }      // the Warden's shield took a hit: a small grey spark and a dull tick, nothing else
   else if (type === 'ace') { fx.ring(a, b, c, 4, 0xffd23f, 0.5); fx.shake(0.1); showBanner('An Ace approaches'); }
@@ -364,7 +367,7 @@ function landmarkTags() {
     for (const s of W.shrines || []) if (!s.done || spentFor(s)) add(s, s.done ? 'Shrine of Tribute: done' : 'Shrine of Tribute: hold the ring, pick a boon', s.done ? 'spent' : 'free', 2.4);
     if (W.broker) add(W.broker, 'Relic Broker: shop', 'shop', 2.6);
     if (W.altar && (!W.altar.used || spentFor(W.altar))) add(W.altar, W.altar.used ? 'Altar: used' : 'Altar of Tribute: banish or tribute', W.altar.used ? 'spent' : 'seal', 2.4);
-    for (const c of W.cchests || []) if (!c.open) { if (c.trophy || c.free) add(c, c.trophy ? 'Trophy Chest: free, open it' : 'Card Chest: free', 'free', 1.9); else { const pr = chestPrice(game); add(c, 'Card Chest: ' + pr + ' coins', game.coins >= pr ? 'shop' : 'poor', 1.9); } }       // the price, gold when you can pay it and muted red when you cannot (the tier stays hidden)
+    for (const c of W.cchests || []) if (!c.open) { if (c.trophy || c.free) add(c, c.trophy ? 'Trophy Chest: free, open it' : 'Card Chest: free', 'free', 1.9); else { const pr = chestPrice(game); add(c, game.coins >= pr ? 'Card Chest: ' + pr + ' coins' : 'Card Chest: ' + pr + ', need ' + (pr - game.coins) + ' more', game.coins >= pr ? 'shop' : 'poor', 1.9); } }       // the price, gold when you can pay it and muted red when you cannot (the tier stays hidden)
   }
   for (const c of game.chests) if (!c.open) add(c, 'Sealed Chest: free item', 'free', 1.9);
   return out;
@@ -378,6 +381,7 @@ function drawTags() {
     const el = tagEls[i]; if (i >= n) { el.style.display = 'none'; continue; }
     const t = list[i]; tagV.set(t.x, t.y, t.z).project(camera); if (tagV.z > 1) { el.style.display = 'none'; continue; }
     if (bannerUp && (1 - tagV.y) / 2 > 0.12 && (1 - tagV.y) / 2 < 0.31) { el.style.display = 'none'; continue; }       // world labels never draw inside the announcement lane
+    { const px = (tagV.x * 0.5 + 0.5) * w, py = (-tagV.y * 0.5 + 0.5) * h; if (px < 14 || px > w - 14 || py < 14 || py > h - 14 || fx._underHud(px, py)) { el.style.display = 'none'; continue; } }       // a label is whole or absent: never cut at an edge, never over a HUD panel
     el.style.display = 'block'; el.className = 'wtag ' + t.cls; if (el.textContent !== t.text) el.textContent = t.text; el.style.left = ((tagV.x * 0.5 + 0.5) * w) + 'px'; el.style.top = ((-tagV.y * 0.5 + 0.5) * h) + 'px';
   }
 }

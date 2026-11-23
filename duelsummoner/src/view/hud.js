@@ -3,6 +3,7 @@ import { CFG } from '../data/config.js';
 import { clock } from '../core/util.js';
 import { MONSTERS, FUSIONS, SPELLS, TRAPS, FIELD_RULES, LEVELS, formOf } from '../data/cards.js';
 import { fusionsReady } from '../sim/field.js';
+import { chestPrice } from '../sim/world.js';
 import { STAT_INFO, STAT_GROUPS, fmtStat } from '../data/stats.js';
 import { mightBracket, targetBracket, critMul } from '../sim/ledger.js';
 import { K } from '../data/tuning.js';
@@ -74,7 +75,7 @@ export function drawHud(g, force) {
     key = k;
     $('hpnum').textContent = Math.ceil(g.p.hp); $('hpmax').textContent = g.p.maxHp;
         $('xpnum').textContent = 'LV ' + g.level + '  ' + Math.floor(g.xpCur) + '/' + Math.ceil(g.xpNeed);
-        $('clock').textContent = g.mode !== 'classic' ? runClock(g) : g.t >= 480 ? 'OVERTIME +' + clock(g.t - 480) : clock(g.t); $('kills').textContent = g.kills; $('coins').textContent = g.coins;
+        $('clock').textContent = g.mode !== 'classic' ? runClock(g) : g.t >= 480 ? 'OVERTIME +' + clock(g.t - 480) : clock(g.t); $('kills').textContent = g.kills; $('coins').textContent = g.coins; { const W = g.world, open = W && (W.cchests || []).some(c => !c.open && !c.free); const el = $('chestPrice'); el.textContent = open ? '(chest ' + chestPrice(g) + ')' : ''; el.style.color = open && g.coins >= chestPrice(g) ? '#ffd23f' : ''; }       // the next paid chest and its price, gold once you can pay it
   }
   // field: 4 Monster Zones then 4 Spell and Trap Zones
   let zdiff = force;

@@ -223,15 +223,15 @@ A vast cavern over a sea of slow-falling gold sand. It holds a giant stone duel 
   - The simulator must check this against two level-10 Fusions before the numbers are locked.
   - Enemy damage rises 6% per run minute, as in the bible.
 - **Heat 1-5** applies to the whole run: each step is +20% enemy HP, +10% speed and +25% Star Chips.
-- **Level-ups stay frequent.** The XP curve stays 4 + 2L + 0.15L². Crystal value scales with run minutes, so level-ups slow only gently:
+- **Level-ups stay steady and the picks are bigger (owner, 23 Nov).** The XP curve is the data table in `src/data/cards.js` (`XP.table`, fitted on 23 Nov): about 10 XP for the first level, 15, 20, 26, 33 ... rising about 8 XP a level, then a 7% tail. Stage 1 pace: level-ups per minute 0-1, 2, 2-3, 3, 3, 3-4, 4-5 (first level between 0:50 and 1:30, about 20 by 7:00). XP gems from kills by your monsters fly to the duelist after 1.5 s and gems within 1.2 m merge; after a level-up panel closes the next waits 3 s of play.
 
 | Stage | Picks per minute | Picks in the stage |
 |---|---|---|
-| Stage 1 | about 7.5 | about 52 (matching the bible's 60 per 8 min) |
-| Stage 2 | about 6.5 | about 45 |
-| Stage 3 | about 6 | about 48 |
+| Stage 1 | about 5 | 30 to 38 (level-ups plus chests, shrines and stones) |
+| Stage 2 | about 5, to be re-measured | to be re-measured |
+| Stage 3 | about 5, to be re-measured | to be re-measured |
 
-That is about **145 picks** before Overtime. "Picks" means level-ups plus chest, shrine and anvil cards. The bible's "60 level-ups" is the same unit, measured over one 8-minute map.
+"Picks" means level-ups plus chest, shrine and stone choices. The earlier 7.5 a minute and 145 picks are retired.
 
 - **Why a full board is still impossible.** Power is held back by choices, not by starving the player of picks:
   - filling the base board (4 monsters to 10 and 4 Spells or Traps to 5) costs 52;

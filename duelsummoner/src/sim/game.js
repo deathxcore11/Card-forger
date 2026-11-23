@@ -200,7 +200,9 @@ export class Game {
     if (this.grace > 0) this.grace -= dt;
     if (this.flash > 0) this.flash -= dt;
     this._interact(cmd); revealFog(this);                                          // the map shows where you have been (high ground sees further)
-    if (!this.offer && this.pendingLevels > 0 && this.opts.offers !== false) openLevelOffer(this);
+    // after a level-up panel closes, the next one waits 3 s of play: a run of level-ups never becomes a run of panels
+    if (this.offer) { this._offerWas = this.offer.type; this.offerGap = 0; } else if (this._offerWas === 'level') { this.offerGap = 3; this._offerWas = null; } else if (this.offerGap > 0) this.offerGap -= dt;
+    if (!this.offer && this.pendingLevels > 0 && !(this.offerGap > 0) && this.opts.offers !== false) { openLevelOffer(this); if (this.offer) this._offerWas = this.offer.type; }
   }
 
   _interact(cmd) {

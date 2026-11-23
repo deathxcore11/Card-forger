@@ -53,6 +53,9 @@
   .screen .stat { color:var(--ink); font-size:18px; }
   button { font:inherit; font-size:18px; letter-spacing:2px; color:var(--bg); background:var(--ink); border:0;
     padding:12px 28px; margin-top:10px; cursor:pointer; }
+  body[data-mode=start] .hud, body[data-mode=pause] .hud, body[data-mode=dead] .hud, body[data-mode=start] #tags, body[data-mode=pause] #tags, body[data-mode=dead] #tags, body[data-mode=start] #banner, body[data-mode=pause] #banner, body[data-mode=dead] #banner, body[data-mode=start] #frenzyChip, body[data-mode=pause] #frenzyChip, body[data-mode=dead] #frenzyChip { visibility:hidden; }
+  body[data-mode=offer] .hud:not(#topleft):not(#zones), body[data-mode=offer] #tags { visibility:hidden; }
+  #startScreen, #deadScreen, #menuScreen { background:#0d0810f4; }
   .padfocus { outline:3px solid #ffd23f !important; outline-offset:2px; box-shadow:0 0 14px 3px #ffd23f99 !important; position:relative; z-index:2; }
   button:hover, button:focus-visible { background:#fff; outline:2px solid var(--xp); }
   button.small { font-size:13px; padding:6px 12px; margin:2px; }
@@ -181,7 +184,7 @@
   <div id="clock">0:00</div>
   <div id="strip"></div>
   <div>DEFEATED <span id="kills">0</span></div>
-  <div>COINS <span id="coins">0</span></div>
+  <div>COINS <span id="coins">0</span> <span id="chestPrice" class="dim"></span></div>
   <div id="nextEvent" style="color:var(--dim)"></div><div id="rite" style="text-align:right;line-height:1.45"></div>
 </div>
 <canvas class="hud" id="minimap" style="pointer-events:auto;cursor:pointer;right:16px;top:126px;width:168px;height:168px;border:2px solid var(--ink);background:#000a;image-rendering:pixelated"></canvas>
