@@ -1,4 +1,4 @@
-// The see-through camera for scenery and props (spectacle spec section 2). View only: nothing here reads or writes sim state.
+﻿// The see-through camera for scenery and props (spectacle spec section 2). View only: nothing here reads or writes sim state.
 //  - dsDither: one 4 x 4 Bayer pattern locked to buffer pixels, never animated (written with float maths, so it needs no bit operations and works on WebGL 1 and 2 alike).
 //  - the porthole: merged architecture (pylons, walls, pillars, the rim, cliffs) gets a screen-space hole round the duelist, sized to the duelist on screen.
 //  - the corridor: instanced scenery (trees, boulders, bushes) is faded whole, per instance, in the vertex shader from uniforms: no per-frame upload.
@@ -98,6 +98,26 @@ void main() {
   return mat;
 }
 
+// big enemies, elites, bosses and the Toll Shades: the same screen-space porthole as the map pieces, but instance aware, with a solid edge. A fragment in front of the duelist (nearer the lens, above the feet) and inside the hole circle
+// keeps 3% in the inner circle and 6% in the outer ring (the one Bayer pattern); grazing faces (the silhouette of a faceted body) always stay solid, so the threat still reads. Warnings are a separate layer and are never touched.
+export function seeActor(mat) {
+  const prev = mat.onBeforeCompile, prevKey = mat.customProgramCacheKey ? mat.customProgramCacheKey.bind(mat) : null;
+  mat.onBeforeCompile = sh => {
+    if (prev) prev(sh);
+    sh.uniforms.uHole = SEE.hole; sh.uniforms.uHoleR = SEE.holeR; sh.uniforms.uFeetY = SEE.feetY;
+    sh.vertexShader = sh.vertexShader.replace('void main() {', 'varying vec3 vVP; varying float vWY2;\nvoid main() {')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvVP = mvPosition.xyz;\n#ifdef USE_INSTANCING\nvWY2 = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).y;\n#else\nvWY2 = (modelMatrix * vec4(transformed, 1.0)).y;\n#endif');
+    sh.fragmentShader = sh.fragmentShader.replace('void main() {', `varying vec3 vVP; varying float vWY2;
+uniform highp vec3 uHole; uniform highp vec2 uHoleR; uniform highp float uFeetY;
+${DITHER_GLSL}
+void main() {
+  { highp vec2 q = (gl_FragCoord.xy - uHole.xy) / uHoleR; float d = dot(q, q), front = step(-vVP.z, uHole.z - 0.8) * step(uFeetY + 0.3, vWY2);
+    vec3 nn = normalize(cross(dFdx(vVP), dFdy(vVP))); float rim = step(0.92, 1.0 - abs(nn.z)); float k = max(mix(1.0, d < 0.55 ? 0.03 : (d < 1.0 ? 0.0625 : 1.0), front), rim); DS_FADE(k) }`);
+  };
+  mat.customProgramCacheKey = () => (prevKey ? prevKey() : '') + 'seeactor';
+  mat.needsUpdate = true;
+  return mat;
+}
 const V = new T.Vector3(), V2 = new T.Vector3();
 // once a frame, after the camera has moved and before the shake: the corridor and porthole uniforms, from the unshaken camera and the smoothed duelist
 export function updateSee(camera, ip, renderer) {
@@ -113,3 +133,8 @@ export function updateSee(camera, ip, renderer) {
   SEE.hole.value.set(SEE.on ? cx : -1e5, cy, -V.z);
   SEE.holeR.value.set(0.9 * hpx, 1.3 * hpx); SEE.feetY.value = ip.y;
 }
+
+
+
+
+

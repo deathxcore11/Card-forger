@@ -11,6 +11,7 @@ import { Ribbon } from './ribbon.js';
 import { OwnEffects } from './ownfx.js';
 import { RAMP, ELEMENTS } from '../data/fxramp.js';
 import { Signatures } from './signature.js';
+import { seeActor } from './seethrough.js';
 import { ownColour } from './fxcolour.js';
 import { statusLit, statusAttr } from './status.js';
 import { creatureGeometry, creatureLit } from './creatures.js';
@@ -100,7 +101,7 @@ function modelGroup(model, targetSize, axis, glowColor) {
 export class Actors {
   constructor(scene, assets, fx) {
     this.scene = scene; this.assets = assets || {}; this.fx = fx;
-    this.sig = new Signatures(); this.sigRun = []; this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.hitRow = new Int8Array(CFG.enemy.max).fill(-1); this._tierSeen = new WeakMap(); this._stains = []; this._lead = null; this._skyOn = false; this.tier5 = false; this.labStatus = new Uint8Array(CFG.enemy.max); this._fc = new T.Color(); this.flashBright = ['fire', 'ice', 'lightning', 'poison', 'wind', 'earth', 'light', 'dark'].map(n => new T.Color(RAMP[n][1])); this.flashNeutral = new T.Color(0xf3e3c2); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;       // labStatus: the lab sets an element status code on a body (1 ice shell, 2 venom, 3 gust, 4 mire, 5 reveal, 6 shred) until the sim wires those elements
+    this.sig = new Signatures(); this.sigRun = []; this._growSeen = new WeakMap(); this._marks = []; this._skyLight = false; this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.hitRow = new Int8Array(CFG.enemy.max).fill(-1); this._tierSeen = new WeakMap(); this._stains = []; this._lead = null; this._skyOn = false; this.tier5 = false; this.labStatus = new Uint8Array(CFG.enemy.max); this._fc = new T.Color(); this.flashBright = ['fire', 'ice', 'lightning', 'poison', 'wind', 'earth', 'light', 'dark'].map(n => new T.Color(RAMP[n][1])); this.flashNeutral = new T.Color(0xf3e3c2); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;       // labStatus: the lab sets an element status code on a body (1 ice shell, 2 venom, 3 gust, 4 mire, 5 reveal, 6 shred) until the sim wires those elements
     this._white = new T.Color(0x666666); this._black = new T.Color(0x000000);
     this.player = playerMesh(); scene.add(this.player);
     this.rig = null; this.rigs = {};                                          // the skinned duelists, for each GLB present in assets/models (duelist-<id>-anim.glb)
@@ -120,7 +121,7 @@ export class Actors {
       scene.add(body); if (eye) scene.add(eye);
       return { K, body, eye, base: cg ? new T.Color(1, 1, 1) : new T.Color(K.color), boost: cg ? 2.4 : 1, fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false };
     });    // Toll Shades: a tall violet-black hooded silhouette with a glowing eye line and a gold bell (stand-in look until the art arrives)
-    this.shadeBody = instanced(new T.ConeGeometry(0.9, 3.0, 7), basic(0x1d1030), 24); this.shadeHood = instanced(new T.ConeGeometry(0.5, 1.0, 6), basic(0x0b0716), 24);
+    this.shadeBody = instanced(new T.ConeGeometry(0.9, 3.0, 7), seeActor(basic(0x1d1030)), 24); this.shadeHood = instanced(new T.ConeGeometry(0.5, 1.0, 6), seeActor(basic(0x0b0716)), 24);
     this.shadeEye = instanced(new T.BoxGeometry(0.34, 0.07, 0.1), basic(0xc07bff), 24); this.shadeBell = instanced(new T.ConeGeometry(0.17, 0.3, 6), basic(0xe8c56a), 24);
     scene.add(this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell);
     this.marks = instanced(new T.OctahedronGeometry(0.22, 0), basic(0xc090ff), CFG.enemy.max); scene.add(this.marks);
@@ -234,6 +235,17 @@ export class Actors {
     const prev = this._tierSeen.get(o); this._tierSeen.set(o, o.t); if (prev !== undefined && o.t >= prev) return; const el = o.el, row = ({ fire: 0, ice: 1, lightning: 2, poison: 3, wind: 4, earth: 5, light: 6, dark: 7 })[el], fx = this.fx, n = 14 * tier, hex = this._ownHex(o), arc = o.type === 'fan' ? (o.arc || 360) * Math.PI / 360 : Math.PI, ang0 = o.type === 'fan' ? Math.atan2(o.dz, o.dx) : 0;
     for (let k = 0; k < n; k++) { const a = o.type === 'fan' ? ang0 - arc + (k / (n - 1)) * arc * 2 : (k / n) * 6.2832, x = o.x + Math.cos(a) * o.r, z = o.z + Math.sin(a) * o.r; if (row !== undefined) fx.sparkEl(x, o.y + 0.3, z, Math.cos(a) * 1.5, 2.2 + tier, Math.sin(a) * 1.5, row, 0.14, 0.55); else fx.spark(x, o.y + 0.3, z, Math.cos(a) * 1.5, 2.2 + tier, Math.sin(a) * 1.5, hex, 0.14, 0.55); }
     fx.ring(o.x, o.y + 0.05, o.z, o.r, hex, 0.5 + 0.4 * tier);
+  }
+  // Growth through the tiers is measured in claimed screen share, not fill (the ink rule keeps painted-over fill near 5%): Tier 2 leaves ground marks that last 8 s (the stain map holds the 6 newest), Tier 3 adds knee-to-waist rims of the
+  // element's silhouette on the edge of every round area, Tier 4 makes them mid-height walls (a third of the Tier 5 height) and tints the sky at 10%. The footprint is never enlarged: the wall stands on the true rule radius.
+  _grow(o, s, rch) {
+    if (s < 2 || !(o.r >= 2)) return;
+    const el = o.el || 'fire', L = RAMP[el] || RAMP.fire, oc = ownColour(el), ground = el === 'dark' ? [L[0], L[1]] : el === 'ice' ? [L[2], L[0]] : [L[3], oc];
+    const prev = this._growSeen.get(o); this._growSeen.set(o, o.t);
+    if (prev === undefined || o.t < prev) { const M = this._marks; M.push({ x: o.x, z: o.z, r: o.r * 0.95, hex: ground[0], hexK: ground[1], t: 0 }); if (M.length > 6) M.shift(); }
+    this._lead = this._lead || el;
+    if (s >= 3 && o.type !== 'fan') this.own.wall(o.x, o.y, o.z, o.r, s >= 4 ? (24 + 40 * Math.min(1, rch / 1.5)) / 3 : 1.4, oc, 1, ELEMENTS.indexOf(el));
+    if (s >= 4) this._skyLight = true;
   }
   // Tier 5 (spec 1.4): every large own area is stamped into the stain map and gets a hollow giant at its TRUE rule radius, 16 m tall at Reach +0% up to 40 m at +150%, its top rising and falling slowly at 0.5 Hz; the footprint is never enlarged
   _tier5(o, rch) { const el = o.el || 'fire', L = RAMP[el] || RAMP.fire, oc = ownColour(el); this._lead = this._lead || el; const ground = el === "dark" ? [L[0], L[1]] : el === "ice" ? [L[2], L[0]] : [L[3], oc]; this._stains.push({ x: o.x, z: o.z, r: o.r, hex: ground[0], hexK: ground[1] }); const h = 24 + 40 * Math.min(1, rch / 1.5) + 1.5 * Math.sin(performance.now() / 1000 * Math.PI); this.own.wall(o.x, o.y, o.z, o.r, h, oc, 1, ELEMENTS.indexOf(el));
@@ -477,7 +489,7 @@ export class Actors {
     const spLive = this._spLive || (this._spLive = new Set()); spLive.clear();
     for (const sp of g.sp) {
       if (!sp.alive) continue; spLive.add(sp);
-      let mesh = this.specials.get(sp); if (!mesh) { mesh = this._specialMesh(sp); this.specials.set(sp, mesh); mesh.userData.born = this.vt; fx.ring(sp.x, sp.y, sp.z, 5, 0xe8b84a, 0.7); fx.burst(sp.x, sp.y + 1, sp.z, 24, 0xe8b84a, 4, 6, 0.3, 0.8, 6); fx.moment('special', 'B', { shake: 0.25 }); }
+      let mesh = this.specials.get(sp); if (!mesh) { mesh = this._specialMesh(sp); mesh.traverse(o => { if (o.material && !o.material._seeActor) { o.material._seeActor = true; seeActor(o.material); } }); this.specials.set(sp, mesh); mesh.userData.born = this.vt; fx.ring(sp.x, sp.y, sp.z, 5, 0xe8b84a, 0.7); fx.burst(sp.x, sp.y + 1, sp.z, 24, 0xe8b84a, 4, 6, 0.3, 0.8, 6); fx.moment('special', 'B', { shake: 0.25 }); }
       mesh.scale.setScalar((0.3 + 0.7 * this._pop((this.vt - mesh.userData.born) / 0.6)) * mesh.userData.base);
       const x = pl(sp.px, sp.x, a), y = pl(sp.py, sp.y, a), z = pl(sp.pz, sp.z, a);
       mesh.position.set(x, y, z); mesh.rotation.y = turnLerp(sp.pface, sp.face, a);
@@ -577,12 +589,12 @@ export class Actors {
     }    this.teleLine.count = nl; this.teleDisc.count = nd; this.teleRing.count = nr2; this.teleRing.instanceMatrix.needsUpdate = true; this.teleRing.instanceColor.needsUpdate = true;
     for (const mm of [this.teleLine, this.teleDisc]) { mm.instanceMatrix.needsUpdate = true; mm.instanceColor.needsUpdate = true; }
     // effects: expanding rings and fading fans
-    let nr = 0; this._stains.length = 0; this._lead = null; this.own.begin(); const rch = g.mods.reach || 0, tier = rch >= 1.0 ? 2 : rch >= 0.5 ? 1 : 0; this.own.tier = tier;
+    let nr = 0; this._stains.length = 0; this._lead = null; this.own.begin(); const rch = g.mods.reach || 0, tier = rch >= 1.0 ? 2 : rch >= 0.5 ? 1 : 0, stier = this.tier5 ? 5 : rch >= 1.0 ? 4 : rch >= 0.7 ? 3 : rch >= 0.3 ? 2 : 1; this.own.tier = tier; this._skyLight = false;       // stier: the five screen tiers, from Reach (Tier 5 is the Overtime one)
     for (const o of g.fx) {
       if (!o.on) continue;
       if (o.type === 'bolt') { if (this.ribbon.see(o) && o.el === 'lightning') this._arcAt(g, o.x2, o.z2); continue; }
       const f = Math.min(1, o.t / o.dur), fade = 1 - f;
-      if (o.owner === 0 && this.ownCtx) { if (tier > 0) this._tierFx(o, tier); if (this.tier5 && o.r >= 8) this._tier5(o, rch); if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), this._ownHex(o), false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, this._ownHex(o), true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
+      if (o.owner === 0 && this.ownCtx) { if (tier > 0) this._tierFx(o, tier); if (this.tier5 && o.r >= 8) this._tier5(o, rch); else this._grow(o, stier, rch); if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), this._ownHex(o), false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, this._ownHex(o), true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
       if (o.type === 'ring') {
         d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = o.r * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix();
         this.fxRing.setMatrixAt(nr, d.matrix); this.fxRing.setColorAt(nr, col.setHex(o.color).multiplyScalar(0.4 + 0.6 * fade)); nr++;
@@ -593,8 +605,9 @@ export class Actors {
       }
     }
     if (this.capBurst) { const cb = this.capBurst; cb.t += this._dt || 0.016; const u = cb.t / 0.7; if (u >= 1) this.capBurst = null; else this.own.area(cb.x, cb.y + 0.15, cb.z, 6 * (1 - (1 - u) * (1 - u)) + 0.3, cb.hex, false, 0, 1, 0, 1 - u * 0.5); }
+    { const dtm = this._dt || 0.016, M = this._marks; for (let i = M.length - 1; i >= 0; i--) { M[i].t += dtm; if (M[i].t > 8) M.splice(i, 1); else if (stier >= 2) this._stains.push(M[i]); } if (this._stains.length > 6) this._stains.length = 6; }
     this._signatures(g, this._dt || 0.016, tier);
-    if (this.tier5 && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setStains(this._stains); setSkyTint(L[3], L[2], 0.2); this._skyOn = true; } else if (this._stains.length) { setStains(this._stains); if (this._skyOn) { setSkyTint(0, 0, 0); this._skyOn = false; } this._stainOn = true; } else if (this._skyOn || this._stainOn) { setStains([]); setSkyTint(0, 0, 0); this._skyOn = false; this._stainOn = false; }
+    if (this.tier5 && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setStains(this._stains); setSkyTint(L[3], L[2], 0.2); this._skyOn = true; } else if (this._stains.length) { setStains(this._stains); if (this._skyLight && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setSkyTint(L[3], L[2], 0.1); this._skyOn = true; } else if (this._skyOn) { setSkyTint(0, 0, 0); this._skyOn = false; } this._stainOn = true; } else if (this._skyOn || this._stainOn) { setStains([]); setSkyTint(0, 0, 0); this._skyOn = false; this._stainOn = false; }
     this.ribbon.tick(); if (this.ownCtx && this.ownExtra) this.ownExtra(this.own); if (this.ownCtx) { const c = this.ownCtx; this.own.end(c.camera, g.p, c.renderer.internalSize ? { w: c.renderer.internalSize.x, h: c.renderer.internalSize.y } : { w: 960, h: 540 }, this._dt); }
     this.fxRing.count = nr; this.fxRing.instanceMatrix.needsUpdate = true; this.fxRing.instanceColor.needsUpdate = true;
     for (const [fan, mesh] of this.fans) { mesh.count = fanN.get(mesh) || 0; mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }
@@ -662,6 +675,9 @@ export class Actors {
 
 import { heightAt } from '../sim/terrain.js';
 function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
+
+
 
 
 
