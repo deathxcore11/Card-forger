@@ -25,20 +25,20 @@ export function initMenus(env) {
   const stopPreview = () => { if (preview) { preview.stop(); preview = null; } };
   const persist = () => env.persist();
   const root = () => $('menuBody');
-  const open = html => { stopPreview(); $('startScreen').classList.remove('on'); $('menuScreen').classList.add('on'); root().innerHTML = html; };
+  const open = html => { document.body.dataset.cam = 'center'; stopPreview(); $('startScreen').classList.remove('on'); $('menuScreen').classList.add('on'); root().innerHTML = html; };
   const tabs = (names, cur, attr) => '<div class="tabs">' + names.map(n => '<button class="tab' + (n === cur ? ' sel' : '') + '" data-' + attr + '="' + n + '">' + n + '</button>').join('') + '</div>';
 
   // ---------- main menu ----------
   function showMain() {
-    stopPreview(); $('menuScreen').classList.remove('on'); $('startScreen').classList.add('on');
+    stopPreview(); document.body.dataset.cam = 'center'; $('menuScreen').classList.remove('on'); $('startScreen').classList.add('on');
     const tracker = closestQuests(meta(), 4).map(({ q, frac }) => '<div class="trk"><b>' + q.name + '</b><span>' + questProgress(meta(), q) + ' / ' + q.goal + '</span>' + bar(frac) + '</div>').join('');
     const recs = []; for (const map of MAPS) for (const d of DIFFICULTIES) { const r = mapRecord(meta(), map.id, d, 'run'); if (r.bestScore) recs.push(map.name + ', ' + DIFFICULTY[d].name + ': ' + r.bestScore + (r.bestTime ? ' (' + clockText(r.bestTime) + ')' : '')); }
     const now = new Date(), nextMon = new Date(now); nextMon.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7)); nextMon.setHours(0, 0, 0, 0); const ms = nextMon - now, dd = Math.floor(ms / 864e5), hh = Math.floor(ms % 864e5 / 36e5);
     $('startScreen').innerHTML = '<div class="chipsTop">Star Chips <b>' + save.starChips + '</b></div><h1>DUEL SUMMONER</h1>' +
-      '<div class="mainRow"><div class="mainBtns"><button id="mPlay">PLAY</button><button id="mLib">CARD LIBRARY</button><button id="mQuests">QUESTS</button><button id="mShop">SHOP (DECK BOX)</button><button id="mSettings">SETTINGS</button><button class="small" id="mQuick">QUICK DUEL</button></div>' +
-      '<div class="mainSide"><div class="panel"><h3>QUEST TRACKER</h3>' + (tracker || '<p>No quests in progress.</p>') + '</div>' +
-      '<div class="panel"><h3>WEEKLY LEADERBOARD</h3><div class="tabs"><button class="tab sel">Global</button><button class="tab">Friends</button></div><div id="lbOnline"></div><p class="dim">' + (boardUrl(save.settings) ? 'Your local bests:' : 'Online boards are off. Your local bests:') + '</p>' + (recs.length ? recs.map(r => '<div class="lbrow">' + r + '</div>').join('') : '<p class="dim">No runs yet.</p>') + '<p class="dim">Resets in ' + dd + 'd ' + hh + 'h</p></div></div></div>';
-    $('mPlay').onclick = showDuelists; $('mLib').onclick = () => showLibrary(); $('mQuests').onclick = () => showQuests(); $('mShop').onclick = () => { $('startScreen').classList.remove('on'); env.showDeckBox(); };
+      '<div class="mainRow"><div class="mainBtns"><button id="mPlay">PLAY</button><button id="mShop">DECK BOX</button><button id="mLib">CARD LIBRARY</button><button id="mQuests">QUESTS</button><button id="mSettings">SETTINGS</button><button class="small" id="mQuick">QUICK DUEL</button></div>' +
+      '<div class="mainMid"></div><div class="mainSide"><div class="panel goals"><h3>NEXT GOALS</h3>' + (tracker || '<p>No quests in progress.</p>') + '</div>' +
+      '<div class="panel board"><h3>WEEKLY LEADERBOARD</h3><div class="tabs"><button class="tab sel">Global</button><button class="tab">Friends</button></div><div id="lbOnline"></div><p class="dim">' + (boardUrl(save.settings) ? 'Your local bests:' : 'Online boards are off. Your local bests:') + '</p>' + (recs.length ? recs.map(r => '<div class="lbrow">' + r + '</div>').join('') : '<p class="dim">No runs yet.</p>') + '<p class="dim">Resets in ' + dd + 'd ' + hh + 'h</p></div></div></div>';
+    $('mPlay').onclick = showDuelists; const gl = document.querySelector('.goals'); if (gl) gl.onclick = () => gl.classList.toggle('open'); $('mLib').onclick = () => showLibrary(); $('mQuests').onclick = () => showQuests(); $('mShop').onclick = () => { $('startScreen').classList.remove('on'); env.showDeckBox(); };
     $('mSettings').onclick = showSettings; $('mQuick').onclick = () => start('quick');
     const base = boardUrl(save.settings);
     if (base) {                                                                  // live board: difficulty tabs, this week, verified runs only
@@ -67,6 +67,7 @@ export function initMenus(env) {
       '<div><b>Starts with</b> ' + (D.start ? MONSTERS[D.start].name : 'coming later') + '</div><div><b>Passive</b> ' + D.passive + '</div>' +
       '<div class="slots"><span>Outfits</span>' + outfits + '<span>Regalia</span><span class="slot" title="Regalia slot">&#128081;</span></div></div></div>' +
       '<div class="navRow"><button id="selBack" class="small">BACK</button><button id="selNext"' + (D.locked || !unlocked(sel.duelist) ? ' disabled' : '') + '>NEXT: CHOOSE A MAP</button></div>');
+    document.body.dataset.cam = 'left';       // the Camp camera puts the live duelist on the left, the panels on the right
     preview = startPreview($('duelPreview'), D.color);
     for (const b of root().querySelectorAll('.portrait')) b.onclick = () => { if (unlocked(b.dataset.d)) { sel.duelist = b.dataset.d; showDuelists(); } else { sel.duelist = b.dataset.d; showDuelists(); } };
     $('selBack').onclick = showMain; $('selNext').onclick = showMaps;

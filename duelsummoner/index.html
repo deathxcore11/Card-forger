@@ -257,7 +257,20 @@
   @media (max-height:520px) { :is(#startScreen, #menuScreen) .navRow { position:sticky; bottom:0; background:linear-gradient(0deg, rgba(5,7,12,.85), transparent); padding:6px 0; margin:6px 0 0; z-index:2; } }    :is(#startScreen, #menuScreen) button:focus, :is(#startScreen, #menuScreen) select:focus { outline:3px solid var(--gold); outline-offset:4px; }
   :is(#startScreen, #menuScreen) * { scrollbar-color:rgba(232,196,110,.6) rgba(255,255,255,.08); scrollbar-width:thin; }    .seg button.padfocus { outline-offset:-4px !important; }
   .rvTxt { font-family:var(--serif); color:var(--gold2); text-shadow:0 2px 12px #000a; }    :is(#startScreen, #menuScreen) button.sel:not(.padfocus) { outline:none; }
-  </style>
+    /* main menu: verbs left, the duelist in the middle (the hero), next goals right (spec 4.1) */
+  #startScreen .mainRow { display:grid; grid-template-columns:minmax(230px, 24vw) minmax(0, 1fr) minmax(270px, 28vw); gap:0 2vw; width:100%; max-width:1760px; margin:4px auto 0; padding:0 3vw; align-items:start; box-sizing:border-box; flex-wrap:nowrap; justify-content:normal; }
+  #startScreen .mainSide { min-width:0; } #startScreen .mainMid { min-height:1px; }
+  #startScreen .goals { cursor:default; }
+  @media (max-height:700px) { #startScreen .board { display:none; } }
+  @media (max-height:460px) { #startScreen .mainRow { grid-template-columns:minmax(180px, 26vw) minmax(0, 1fr) minmax(200px, 30vw); } #startScreen .goals { cursor:pointer; } #startScreen .goals:not(.open) .trk:nth-of-type(n+2) { display:none; } #startScreen .goals:not(.open)::after { content:'tap for more'; color:#9AA3AE; font-size:11px; } #startScreen .goals h3 { margin:0 0 4px; } }
+  @media (max-width:640px) { #startScreen .mainRow { grid-template-columns:1fr; } #startScreen .mainMid { display:none; } }
+  body[data-mode=start] #devbar, body[data-mode=pause] #devbar { left:auto !important; top:auto !important; right:8px !important; bottom:4px !important; }
+  /* duelist select: the live duelist on the left, the panels on the right */
+  body[data-cam=left] #menuScreen { align-items:flex-end; padding-right:3vw; } body[data-cam=left] #menuBody { width:min(760px, 56vw); } body[data-cam=left] #menuScreen .selWrap { flex-direction:column; flex-wrap:nowrap; } body[data-cam=left] #menuScreen .selLeft, body[data-cam=left] #menuScreen .selRight { min-width:0; flex:none; }
+  /* a long card never pushes TAKE off: the text scrolls inside the card and the buttons stay at its foot */
+  #offerScreen .card { max-height:calc(100vh - 190px); overflow-y:auto; }
+  #offerScreen .card .rowBtn { position:sticky; bottom:-2px; padding:8px 0 2px; background:linear-gradient(0deg, rgba(14,16,22,.96) 70%, transparent); }
+  @media (max-width:640px) { #offerScreen .card { max-height:none; } }    @media (max-height:560px) { body[data-cam=left] #menuScreen { padding-top:6px; padding-bottom:6px; gap:4px; } body[data-cam=left] #menuScreen h2 { font-size:18px; letter-spacing:3px; margin:0 0 4px; } body[data-cam=left] .joke, body[data-cam=left] .prev, body[data-cam=left] .selRight .dim { display:none; } body[data-cam=left] .portrait .face { width:38px; height:38px; font-size:20px; } body[data-cam=left] .portrait { padding:4px; } body[data-cam=left] .portraits { padding:6px; } body[data-cam=left] .selRight { padding:8px 12px; } body[data-cam=left] .slot { width:36px; height:36px; } body[data-cam=left] #menuBody .navRow { margin:4px 0 0; } body[data-cam=left] .selWrap { gap:6px; } }    @media (max-height:560px) { body[data-cam=left] .portraits { display:grid; grid-template-columns:repeat(4, 1fr); gap:4px; } body[data-cam=left] .portrait { min-width:0; width:auto; } body[data-cam=left] .portrait small, body[data-cam=left] .portrait b { font-size:11px; } }    @media (max-height:560px) { body[data-cam=left] #menuBody .slot { width:34px !important; height:34px !important; min-width:0 !important; min-height:0 !important; padding:0 !important; font-size:14px; border-radius:10px; } }  </style>
 </head>
 <body>
 <div id="stage"><canvas id="view"></canvas></div>

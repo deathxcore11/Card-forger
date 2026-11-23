@@ -94,7 +94,7 @@ export function showOffer(g, act) {
     const el = document.createElement('div'); el.className = 'card ' + c.rarity + (c.isNew && cardy ? ' new' : '');
     const act = c.kind === 'banish' ? 'BANISH' : c.kind === 'tribute' ? 'TRIBUTE' : 'TAKE';
     const buy = shop ? (c.sold ? '<button disabled>SOLD</button>' : '<button data-pick="' + i + '"' + (g.coins < c.price ? ' disabled' : '') + '>BUY ' + c.price + '</button>') : '<button data-pick="' + i + '">' + act + '</button>';
-    el.innerHTML = '<h3>' + (i + 1) + '. ' + D.name + '</h3><div class="t">' + kind + ' &middot; ' + c.rarity + '</div><div>' + (D.text || '') + '</div><div class="t">' + lv + '</div>' + fx +
+    el.innerHTML = '<h3>' + D.name + '</h3><div class="t">' + kind + ' &middot; ' + c.rarity + '</div><div>' + (D.text || '') + '</div><div class="t">' + lv + '</div>' + fx +
       '<div class="rowBtn">' + buy + '' + '</div>';
     wrap.appendChild(el);
   });
