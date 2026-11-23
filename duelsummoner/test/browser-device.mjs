@@ -23,8 +23,15 @@ for (const [name, w, h, dpr] of VIEWS) {
     return JSON.stringify({ boxes: R.map(x => x[0] + '@' + Math.round(x[1].left) + ',' + Math.round(x[1].top) + ',' + Math.round(x[1].width) + 'x' + Math.round(x[1].height)), overlaps: out }); })()`));
   console.log(name, JSON.stringify(info), 'moved', moved.toFixed(2), 'm');
   console.log(name, 'hud', JSON.stringify(over));
+  // the stage box is one line on a short touch screen; a tap opens it. Shoot it open and check overlaps again.
+  const tb = JSON.parse(await b.evalIn(`JSON.stringify(document.getElementById('topright').getBoundingClientRect())`)); const tx = Math.round(tb.left + tb.width / 2), ty = Math.round(tb.top + tb.height / 2);
+  await b.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: tx, y: ty, id: 2 }] }); await b.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await wait(600);
+  const open = JSON.parse(await b.evalIn(`(()=>{ const t = document.getElementById('topright'), r = t.getBoundingClientRect(), m = document.getElementById('minimap').getBoundingClientRect(), p = document.querySelector('#tc .tcpause').getBoundingClientRect(); const ov = (a, c) => Math.min(a.right, c.right) - Math.max(a.left, c.left) > 1 && Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top) > 1; return JSON.stringify({ open: t.classList.contains('open'), box: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)], overMinimap: ov(r, m), overPause: ov(r, p) }); })()`));
+  console.log(name, 'expanded', JSON.stringify(open)); await b.shot('device_' + name + '_open');
+  await b.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: tx, y: ty, id: 3 }] }); await b.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await wait(300);
 }
 console.log('errors', JSON.stringify(await b.evalIn('JSON.stringify(window.__errs.slice(0,3))')));
 b.close(); setTimeout(() => process.exit(0), 300);
+
 
 

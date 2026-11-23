@@ -18,13 +18,14 @@
 <main>
   <h1>DUEL SUMMONER</h1>
   <p>Survive the run. Play it here in the browser: it works with touch, a keyboard or a pad.</p>
-  <a class="b" href="/?play=1">PLAY</a>
-  <a class="b alt" href="/?fxlab">EFFECTS TEST SCREEN</a>
+  <a class="b" href="./?play=1">PLAY</a>
+  <a class="b alt" href="./?fxlab">EFFECTS TEST SCREEN</a>
   <small id="build">build ...</small>
 </main>
 <script type="module">
-  import { BUILD_VERSION } from '/src/sim/results.js';
+  import { BUILD_VERSION } from './src/sim/results.js';
   document.getElementById('build').textContent = 'build ' + BUILD_VERSION;
 </script>
 </body>
 </html>
+

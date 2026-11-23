@@ -10,6 +10,7 @@ import { actorLit, setStains, setSkyTint } from './engine.js';
 import { Ribbon } from './ribbon.js';
 import { OwnEffects } from './ownfx.js';
 import { RAMP, ELEMENTS } from '../data/fxramp.js';
+import { Signatures } from './signature.js';
 import { ownColour } from './fxcolour.js';
 import { statusLit, statusAttr } from './status.js';
 import { creatureGeometry, creatureLit } from './creatures.js';
@@ -97,7 +98,7 @@ function modelGroup(model, targetSize, axis, glowColor) {
 export class Actors {
   constructor(scene, assets, fx) {
     this.scene = scene; this.assets = assets || {}; this.fx = fx;
-    this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.hitRow = new Int8Array(CFG.enemy.max).fill(-1); this._tierSeen = new WeakMap(); this._stains = []; this._lead = null; this._skyOn = false; this.tier5 = false; this.labStatus = new Uint8Array(CFG.enemy.max); this._fc = new T.Color(); this.flashBright = ['fire', 'ice', 'lightning', 'poison', 'wind', 'earth', 'light', 'dark'].map(n => new T.Color(RAMP[n][1])); this.flashNeutral = new T.Color(0xf3e3c2); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;       // labStatus: the lab sets an element status code on a body (1 ice shell, 2 venom, 3 gust, 4 mire, 5 reveal, 6 shred) until the sim wires those elements
+    this.sig = new Signatures(); this.sigRun = []; this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.hitRow = new Int8Array(CFG.enemy.max).fill(-1); this._tierSeen = new WeakMap(); this._stains = []; this._lead = null; this._skyOn = false; this.tier5 = false; this.labStatus = new Uint8Array(CFG.enemy.max); this._fc = new T.Color(); this.flashBright = ['fire', 'ice', 'lightning', 'poison', 'wind', 'earth', 'light', 'dark'].map(n => new T.Color(RAMP[n][1])); this.flashNeutral = new T.Color(0xf3e3c2); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;       // labStatus: the lab sets an element status code on a body (1 ice shell, 2 venom, 3 gust, 4 mire, 5 reveal, 6 shred) until the sim wires those elements
     this._white = new T.Color(0x666666); this._black = new T.Color(0x000000);
     this.player = playerMesh(); scene.add(this.player);
     this.rig = null; this.rigs = {};                                          // the skinned duelists, for each GLB present in assets/models (duelist-<id>-anim.glb)
@@ -165,6 +166,7 @@ export class Actors {
   corpse(kind, x, z) {
     const H = this._hits; if (!H || !H.length) return; let best = -1, bd = 16; for (let i = 0; i < H.length; i += 3) { const dx = H[i] - x, dz = H[i + 1] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } }
     if (best < 0) return; const el = H[best + 2], type = (el & 1) ? 7 : (el & 2) ? 8 : 0; if (!type) return;       // bit 0 fire, bit 1 lightning
+    this.sig.note(type === 7 ? 'fire' : 'lightning', this.fx.tick, x, z);
     const e = this.lastEn; if (!e) return; let face = 0, size = 1, y = NaN; for (let i = 0; i < e.max; i++) if (!e.alive[i] && e.x[i] === x && e.z[i] === z && e.kind[i] === kind) { face = e.face[i]; size = e.size[i]; y = e.y[i]; break; } if (y !== y) return;
     const P = this.corpses || (this.corpses = []), c = { kind, x, y, z, face, size, type, t: 0, seed: Math.random() };
     if (P.length >= 48) P.shift(); P.push(c);
@@ -172,18 +174,46 @@ export class Actors {
   _corpses(dt, counts) {
     const P = this.corpses; if (!P || !P.length) return; const d = this.d;
     for (let n = P.length - 1; n >= 0; n--) {
-      const c = P[n], dur = c.type === 7 ? 0.5 : 0.07; c.t += dt; if (c.t >= dur) { P.splice(n, 1); continue; }
+      const c = P[n], dur = c.type === 7 ? 0.5 : 0.267; c.t += dt; if (c.t >= dur) { P.splice(n, 1); continue; }       // lightning: the ink silhouette holds 4 frames (67 ms), then cracks into 4 falling shards over 200 ms
       const k = this.kinds[c.kind], K = k.K, idx = counts[c.kind]; if (idx >= CFG.enemy.max) continue;
       const sc = K.id === 5 ? SC_SCARAB : K.scale, mg = c.size;
       d.position.set(c.x, c.y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85), c.z); d.rotation.set(0, c.face, 0); d.scale.set(sc[0] * mg, sc[1] * mg, sc[2] * mg); d.updateMatrix();
       k.body.setMatrixAt(idx, d.matrix); k.body.setColorAt(idx, k.base);
-      const step = Math.floor(c.t / dur * (c.type === 7 ? 6 : 2)) / (c.type === 7 ? 6 : 2), o3 = idx * 4, fa = k.fxArr;
+      const step = c.type === 7 ? Math.floor(c.t / dur * 6) / 6 : (c.t < 0.067 ? 0 : 1), o3 = idx * 4, fa = k.fxArr;
+      if (c.type === 8 && step === 1 && !c.cracked) { c.cracked = true; this.fx.burstEl(c.x, c.y + 0.9, c.z, 4, 2, 2.2, 1.2, 0.8, 0.22, 20); }
       fa[o3] = step; fa[o3 + 1] = 0; fa[o3 + 2] = c.seed; fa[o3 + 3] = c.type; k.fs += (idx + 1) * (7 + step * 31 + c.type); k.cs += (idx + 1) * 5; k.fxNow = true;
       if (k.eye) { d.position.set(c.x, c.y + 1.05, c.z); d.scale.set(0.001, 0.001, 0.001); d.updateMatrix(); k.eye.setMatrixAt(idx, d.matrix); }
       counts[c.kind]++;
     }
   }
-  hitAt(x, z, flags) { const el = flags >> 1; if (el) { const H = this._hits || (this._hits = []); if (H.length < 72) H.push(x, z, el); } const e = this.lastEn; if (!e) return; const ROW = [[1, 0], [2, 2], [4, 1], [8, 3], [16, 4], [32, 5], [64, 6], [128, 7]]; let row = -1; for (const [bit, r] of ROW) if (el & bit) { row = r; break; } let best = -1, bd = 1.44; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.hitRow[best] = row; }
+  // Signature moments (spec 3.0): Cinder Card (fire) and Sky Seal (lightning), on a spike of kills (view/signature.js). World parts only: the card wall goes through the own-effect material, the seal through the lightning ribbon and the stain map;
+  // the screen parts (hit-stop 80 / 100 ms, one flash) go through the director as a class B moment, so a moment that loses the screen still draws its world part.
+  _signatures(g, dt, tier) {
+    const fx = this.fx, hit = this.ownCtx ? this.sig.check(fx.tick, tier >= 2, fx.blocked) : null;
+    if (hit) {
+      const gm = fx.moment('sig-' + hit.el, 'B', hit.el === 'fire' ? { hitstop: 0.08 } : { hitstop: 0.10, flash: 0.4, hex: RAMP.lightning[1] });
+      if (gm.world) this.sigRun.push({ el: hit.el, x: hit.x, z: hit.z, y: g.p.y, t: 0, bolts: 0 });
+      (this.sigLog || (this.sigLog = [])).push([fx.tick, hit.el, gm.screen, gm.world]);
+    }
+    const R = this.sigRun, rb = this.ribbon;
+    for (let n = R.length - 1; n >= 0; n--) {
+      const s = R[n]; s.t = this.sigHold !== undefined ? this.sigHold : s.t + dt; if (s.t >= (s.el === 'fire' ? 6 : 4)) { R.splice(n, 1); continue; }
+      if (s.el === 'fire') {
+        // a card-shaped scorch 12 m by 17 m, then the whole outline erupts as a wall of flame 40 m tall that burns away from the bottom up over 0.8 s; embers fall for 2 s more
+        const L = RAMP.fire, oc = ownColour('fire'); for (let k = -1; k <= 1; k++) this._stains.push({ x: s.x, z: s.z + k * 4.5, r: 6.4, hex: L[3], hexK: oc });
+        if (s.t < 0.8) this.own.wall(s.x, s.y, s.z, 7.25, 40, oc, s.t / 0.8, 0, 6, 8.5);
+        if (s.t < 2.8) for (let k = Math.min(6, Math.floor(dt * 140 + Math.random())); k > 0; k--) { const a = Math.random() * 6.2832, c = Math.cos(a), sn = Math.sin(a), m = Math.max(Math.abs(c) / 6, Math.abs(sn) / 8.5); this.fx.sparkEl(s.x + c / m * 0.95, s.y + 6 + Math.random() * 28, s.z + sn / m * 0.95, (Math.random() - 0.5) * 1.5, -(3 + Math.random() * 3), (Math.random() - 0.5) * 1.5, 0, 0.2 + Math.random() * 0.12, 1.6); }
+      } else {
+        // six bolts draw a ring in the sky in 200 ms, four card outlines inside it, one trunk comes down through it, and a mark stays on the ground
+        const cx = s.x, cz = s.z, py = s.y + 30, pts = []; for (let i = 0; i < 6; i++) pts.push(cx + Math.cos(i / 6 * 6.2832) * 14, cz + Math.sin(i / 6 * 6.2832) * 14);
+        while (s.bolts < Math.min(6, Math.floor(s.t / 0.033) + 1)) { const i = s.bolts++, j = (i + 1) % 6; rb.see({ x: pts[i * 2], y: py, z: pts[i * 2 + 1], x2: pts[j * 2], y2: py, z2: pts[j * 2 + 1], w: 0.5, seed: 7 + i, dur: 0.9, t: 0, el: 'lightning' }); }
+        if (s.t >= 0.1 && !s.cards) { s.cards = true; for (let k = 0; k < 4; k++) { const a = k * 1.5708, ux = Math.cos(a), uz = Math.sin(a), vx = -uz, vz = ux, mx = cx + ux * 7, mz = cz + uz * 7, cn = [[-1.5, -2.1], [1.5, -2.1], [1.5, 2.1], [-1.5, 2.1]]; for (let e = 0; e < 4; e++) { const p0 = cn[e], p1 = cn[(e + 1) % 4]; rb.see({ x: mx + ux * p0[0] + vx * p0[1], y: py, z: mz + uz * p0[0] + vz * p0[1], x2: mx + ux * p1[0] + vx * p1[1], y2: py, z2: mz + uz * p1[0] + vz * p1[1], w: 0.3, seed: 31 + k * 4 + e, dur: 0.8, t: 0, el: 'lightning' }); } } }
+        if (s.t >= 0.2 && !s.trunk) { s.trunk = true; rb.see({ x: cx, y: py + 40, z: cz, x2: cx, y2: s.y, z2: cz, w: 1.0, seed: 99, dur: 0.7, t: 0, el: 'lightning' }); this.fx.burstEl(cx, s.y + 0.5, cz, 24, 2, 8, 8, 0.4, 0.5, 14); }
+        if (s.t >= 0.2) { const f = 1 - (s.t - 0.2) / 3.8, oc = ownColour('lightning'); this._stains.push({ x: cx, z: cz, r: 5, hex: RAMP.lightning[3], hexK: oc }); this.own.area(cx, s.y + 0.15, cz, 5, oc, false, 0, 1, 0, 0.4 + 0.6 * f); }
+      }
+    }
+  }
+  hitAt(x, z, flags) { const el = flags >> 1; if (el) { const H = this._hits || (this._hits = []); if (H.length < 900) H.push(x, z, el); } const e = this.lastEn; if (!e) return; const ROW = [[1, 0], [2, 2], [4, 1], [8, 3], [16, 4], [32, 5], [64, 6], [128, 7]]; let row = -1; for (const [bit, r] of ROW) if (el & bit) { row = r; break; } let best = -1, bd = 1.44; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.hitRow[best] = row; }
   _flashCol(i, base, boost) { const r = this.hitRow[i]; return this._fc.copy(base).lerp(r >= 0 ? this.flashBright[r] : this.flashNeutral, 0.6).multiplyScalar(boost || 1); }
   // Reach look tiers (spec 1.4): at +50% and +100% an own area effect steps up a tier: a thicker rim (ownfx), particles along its edge, and a lingering ground ring. The footprint is always the true sim size. The tier effects play once per effect record (a restarted pooled record counts as new).
   _tierFx(o, tier) {
@@ -549,7 +579,8 @@ export class Actors {
       }
     }
     if (this.capBurst) { const cb = this.capBurst; cb.t += this._dt || 0.016; const u = cb.t / 0.7; if (u >= 1) this.capBurst = null; else this.own.area(cb.x, cb.y + 0.15, cb.z, 6 * (1 - (1 - u) * (1 - u)) + 0.3, cb.hex, false, 0, 1, 0, 1 - u * 0.5); }
-    if (this.tier5 && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setStains(this._stains); setSkyTint(L[3], L[2], 0.2); this._skyOn = true; } else if (this._skyOn) { setStains([]); setSkyTint(0, 0, 0); this._skyOn = false; }
+    this._signatures(g, this._dt || 0.016, tier);
+    if (this.tier5 && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setStains(this._stains); setSkyTint(L[3], L[2], 0.2); this._skyOn = true; } else if (this._stains.length) { setStains(this._stains); if (this._skyOn) { setSkyTint(0, 0, 0); this._skyOn = false; } this._stainOn = true; } else if (this._skyOn || this._stainOn) { setStains([]); setSkyTint(0, 0, 0); this._skyOn = false; this._stainOn = false; }
     this.ribbon.tick(); if (this.ownCtx && this.ownExtra) this.ownExtra(this.own); if (this.ownCtx) { const c = this.ownCtx; this.own.end(c.camera, g.p, c.renderer.internalSize ? { w: c.renderer.internalSize.x, h: c.renderer.internalSize.y } : { w: 960, h: 540 }, this._dt); }
     this.fxRing.count = nr; this.fxRing.instanceMatrix.needsUpdate = true; this.fxRing.instanceColor.needsUpdate = true;
     for (const [fan, mesh] of this.fans) { mesh.count = fanN.get(mesh) || 0; mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }
@@ -617,6 +648,9 @@ export class Actors {
 
 import { heightAt } from '../sim/terrain.js';
 function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
+
+
 
 
 

@@ -26,6 +26,7 @@ const WALL_GLSL = `
   { float H = vB.x, el = vB.y, y = vWP.y - vY0, dd = vViewDist - uHole.w;
     float cutH = 1.5 + 120.0 * smoothstep(-4.0, 0.0, dd);
     if ((vViewDist < 8.0 && vWP.y > uFeetY + 1.5) || vWP.y > uFeetY + cutH) discard;
+    if (vB.z > 0.0 && y / H < vFade * 1.25 - bay * 0.25) discard;       // a card wall burns away from the bottom up as a screen-door
     float hm = mix(1.0, 0.55, smoothstep(0.0, vRad * 1.6, dd)), y01 = y / H, u = wAng * wCols; u += 0.35 * sin(u * 0.83 + 1.3) + 0.25 * sin(u * 2.1);
     float cell = floor(u), cf = fract(u), h1 = hsh(vec2(cell, 3.0)), h2 = hsh(vec2(cell, 7.0)), h3 = hsh(vec2(cell, 11.0)), eH = fyy / H;
     float low = N(vec2(wAng * 2.0, 0.6)).g, nh = N(vec2(cell * 0.173 + 0.31, floor(uT * 8.0) / 64.0 * 3.0)).r;
@@ -45,10 +46,10 @@ const WALL_GLSL = `
       // Three stepped poses a second apart, out of phase per tongue, move the edge and the sway. The dark ink edge runs on the outer silhouette only.
       for (int L = 0; L < 2; L++) {
         float uu = u + (L == 1 ? 0.5 + 0.2 * h3 : 0.0), cl = floor(uu), cx = fract(uu), g1 = hsh(vec2(cl, 3.0 + float(L) * 14.0)), g2 = hsh(vec2(cl, 7.0 + float(L) * 14.0)), g3 = hsh(vec2(cl, 11.0 + float(L) * 14.0)), nz = N(vec2(cl * 0.173 + 0.31 + float(L) * 0.4, floor(uT * 8.0) / 64.0 * 3.0)).r;
-        float lh = (0.25 + 0.75 * nz) * (0.7 + 0.3 * low) * hm * (L == 1 ? 0.65 : 1.0), tt = y01 / max(lh, 0.01);
+        float lh = (vB.z > 0.0 ? 0.8 + 0.2 * nz : (0.25 + 0.75 * nz) * (0.7 + 0.3 * low) * hm) * (L == 1 ? 0.65 : 1.0), tt = y01 / max(lh, 0.01);
         if (tt > 1.1) continue;
         float pose = mod(floor(uT + g3 * 3.0), 3.0), ph = g1 * 6.2832, lean = (sin(uT * 0.9 + wAng * 18.0) * 0.5 + 0.35) * 0.35 + (g2 - 0.5) * 0.3;
-        float spine = 0.3 + 0.4 * g2 + lean * tt + 0.13 * sin(tt * 5.0 + ph + pose * 2.1) * tt, wb = (0.16 + 0.3 * g2) * (1.0 + (pose - 1.0) * 0.18), s = tt / 0.84;
+        float spine = 0.3 + 0.4 * g2 + lean * tt + 0.13 * sin(tt * 5.0 + ph + pose * 2.1) * tt, wb = (0.16 + 0.3 * g2) * (vB.z > 0.0 ? 1.6 : 1.0) * (1.0 + (pose - 1.0) * 0.18), s = tt / 0.84;
         float w = s < 1.0 ? pow(1.0 - s, 1.2) * wb : -1.0, ax = abs(cx - spine);
         float tw = (tt > 0.9 && g3 > 0.35 && pose != 1.0) ? 0.055 * (1.1 - tt) / 0.2 - abs(cx - (spine + 0.04 * (pose - 1.0))) : -1.0;       // the detached tip
         float e = max(w - ax, tw);
@@ -80,7 +81,7 @@ void main() {
   vKeep = min(clamp(uInk / max(cover, 0.001), 0.125, 1.0), uGov);
   vCol = iC.rgb; vB = iB; vFade = iC.a; vY0 = c0.y; vRad = rad;
   ${area ? `vec3 w = vec3(c0.x + position.x * rad, c0.y + 0.12, c0.z + position.z * rad); vLocal = position.xz; vN = vec3(0.0, 1.0, 0.0);`
-         : wall ? `float fl = iB.y > 6.5 ? 0.12 : (iB.y > 0.5 ? 0.35 : 0.0); vec3 w = vec3(c0.x + position.x * rad * (1.0 + fl * position.y), c0.y + position.y * iB.x, c0.z + position.z * rad * (1.0 + fl * position.y)); vLocal = position.xz; vN = normalize(vec3(position.x, 0.0, position.z));`
+         : wall ? `float fl = iB.y > 6.5 ? 0.12 : (iB.y > 0.5 ? 0.35 : 0.0); vec3 w = vec3(c0.x + position.x * rad * (1.0 + fl * position.y), c0.y + position.y * iB.x, c0.z + position.z * rad * (1.0 + fl * position.y)); if (iB.z > 0.0) { vec2 pp = position.xz; float mm = pow(pow(abs(pp.x), 8.0) + pow(abs(pp.y), 8.0), 0.125); pp /= max(mm, 0.0001); w.x = c0.x + pp.x * iB.z; w.z = c0.z + pp.y * iB.w; } vLocal = position.xz; vN = normalize(vec3(position.x, 0.0, position.z));`
          : `vec3 w = c0 + position * rad; vLocal = position.xz; vN = normalize(position);`}
   vWP = w; vec4 vp = viewMatrix * vec4(w, 1.0); vViewDist = -vp.z; vV = normalize(-vp.xyz); vN = normalize(mat3(viewMatrix) * vN);
   gl_Position = projectionMatrix * vp;
@@ -140,9 +141,10 @@ export class OwnEffects {
     this.recs.push(x, y, z, r, 1, 1, 1);
   }
   // a hollow giant (Tier 5): a wall of height h at the true rule radius r, a solid top and base line and a sparse fill; the camera-side part is cut to 1.5 m by the shader
-  wall(x, y, z, r, h, hex, fade, el) {
+  // sx, sz (optional): a card-shaped wall instead of a round one, a rounded rectangle sx by sz metres from the centre (the Cinder Card signature); then `fade` is the burn-away progress 0..1, bottom up
+  wall(x, y, z, r, h, hex, fade, el, sx, sz) {
     const s = this.W; if (s.n >= s.max) { this.dropped++; return; } const a = s.arr, o = s.n++ * STRIDE;
-    a[o] = x; a[o + 1] = y; a[o + 2] = z; a[o + 3] = r; a[o + 4] = h; a[o + 5] = el || 0; a[o + 6] = -1; a[o + 7] = 1; a[o + 8] = ((hex >> 16) & 255) / 255; a[o + 9] = ((hex >> 8) & 255) / 255; a[o + 10] = (hex & 255) / 255; a[o + 11] = fade === undefined ? 1 : fade;
+    a[o] = x; a[o + 1] = y; a[o + 2] = z; a[o + 3] = r; a[o + 4] = h; a[o + 5] = el || 0; a[o + 6] = sx > 0 ? sx : -1; a[o + 7] = sz > 0 ? sz : 1; a[o + 8] = ((hex >> 16) & 255) / 255; a[o + 9] = ((hex >> 8) & 255) / 255; a[o + 10] = (hex & 255) / 255; a[o + 11] = fade === undefined ? 1 : fade;
     this.recs.push(x, y, z, r, 0.4, 1, 1);
   }
   // per frame, after begin() and the area() / volume() calls: the camera values, the keyhole, the two sums and the governor, then the uploads
@@ -165,6 +167,8 @@ export class OwnEffects {
   }
   get readout() { return { areas: this.nArea, volumes: this.nVol, rasterSum: +this.rasterSum.toFixed(2), keptSum: +this.keptSum.toFixed(3), keptRaw: +(this.keptRaw || 0).toFixed(2), governor: +this.gov.toFixed(2), dropped: this.dropped }; }
 }
+
+
 
 
 
