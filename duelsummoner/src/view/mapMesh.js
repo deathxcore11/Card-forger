@@ -119,7 +119,7 @@ export function buildMapMesh(map, look) {
   { const rd = roadPath(map), strip = (ax, az, bx, bz, hw) => { const dx = bx - ax, dz = bz - az, l = Math.sqrt(dx * dx + dz * dz) || 1, px = -dz / l * hw, pz = dx / l * hw; B.quad([ax - px, 0.05, az - pz], [ax + px, 0.05, az + pz], [bx + px, 0.05, bz + pz], [bx - px, 0.05, bz - pz], [0, 1, 0], look.road); };
     for (let i = 1; i < rd.main.length; i++) strip(rd.main[i - 1][0], rd.main[i - 1][1], rd.main[i][0], rd.main[i][1], rd.width / 2); for (const t of rd.trails) strip(t[0][0], t[0][1], t[1][0], t[1][1], rd.trailWidth / 2); }
   // two summoning pools: an ink-blue disc, a bone rim 1.5 m wide, a ring of glyph tiles; flat and walkable, no effect
-  for (const p of poolSpots(map)) { addCyl(B, { x: p.x, z: p.z, r: p.r, h: 0.06, c: 0x2e3f66 }); addRing(B, { cx: p.x, cz: p.z, r0: p.r, r1: p.r + 1.5, a0: 0, a1: 360, h: 0.08, c: 0xe6dcc0 });
+  for (const p of poolSpots(map)) { addRing(B, { cx: p.x, cz: p.z, r0: p.r, r1: p.r + 1.5, a0: 0, a1: 360, h: 0.08, c: 0xe6dcc0 });
     for (let k = 0; k < 12; k++) { const a = k / 12 * 6.283, x = p.x + Math.cos(a) * (p.r + 2.2), z = p.z + Math.sin(a) * (p.r + 2.2); addBox(B, { x0: x - 0.5, x1: x + 0.5, z0: z - 0.5, z1: z + 0.5, h: 0.09, rot: a / DEG, c: 0x4a4250 }); } }
   prims.forEach(p => { const T2 = p.landmark ? F : B; if (p.t === 'tilt') addTilt(B, p.x, 0, p.z, p.w, p.th, p.hgt, p.yaw, p.tilt, p.c); else if (p.t === 'box') addBox(T2, p); else if (p.t === 'ramp') addRamp(T2, p); else if (p.t === 'ring') addRing(T2, p); else addCyl(T2, p); });
   // the rim: 56 stacked buttes (a base, an inset mid band, a cap on about a third), 16 to 45 m tall, in two strata colours; 8 seeded notches only 8 to 10 m high (view only; the invisible wall stays)

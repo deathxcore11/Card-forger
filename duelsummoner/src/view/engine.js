@@ -1,0 +1,51 @@
+// The shared engine pieces (engine plan, amendment 4: one of each, shared by water, sky, wind and the spectacle effects): the noise texture, the clock, the one gust field, the sky gradient and the Bayer function.
+// Everything here is view only. The noise is built from an integer hash so every device gets the same bits (0 KB on disk).
+const T = window.THREE;
+const cl = (v, a, b) => (v < a ? a : v > b ? b : v);
+function hash2(x, y) { let h = (Math.imul(x, 0x9E3779B1) ^ Math.imul(y, 0x85EBCA77)) >>> 0; h ^= h >>> 15; h = Math.imul(h, 0x2C1B3C6D) >>> 0; h ^= h >>> 12; return (h >>> 0) / 4294967296; }
+// 64 x 64 RGBA8, REPEAT, LINEAR. R = value noise (2 octaves), G = cell distance, B = white hash, A = second value noise. All four tile.
+function buildNoise() {
+  const n = 64, d = new Uint8Array(n * n * 4);
+  const val = (x, y, per, seed) => { const fx = x * per / n, fy = y * per / n, ix = Math.floor(fx), iy = Math.floor(fy); let tx = fx - ix, ty = fy - iy; tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+    const r = (i, j) => hash2(i % per + seed * 131, j % per + seed * 17); return (r(ix, iy) * (1 - tx) + r(ix + 1, iy) * tx) * (1 - ty) + (r(ix, iy + 1) * (1 - tx) + r(ix + 1, iy + 1) * tx) * ty; };
+  const per = 6, cs = n / per, pts = []; for (let j = 0; j < per; j++) for (let i = 0; i < per; i++) pts.push([(i + 0.15 + 0.7 * hash2(i + 71, j + 13)) * cs, (j + 0.15 + 0.7 * hash2(i + 29, j + 57)) * cs]);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const o = (y * n + x) * 4;
+    d[o] = cl(((0.62 * val(x, y, 8, 1) + 0.38 * val(x, y, 16, 2)) - 0.5) * 1.7 + 0.5, 0, 1) * 255;
+    let m = 1e9; for (const p of pts) { let dx = Math.abs(x + 0.5 - p[0]), dy = Math.abs(y + 0.5 - p[1]); dx = Math.min(dx, n - dx); dy = Math.min(dy, n - dy); m = Math.min(m, dx * dx + dy * dy); }
+    d[o + 1] = cl(Math.sqrt(m) / (cs * 0.78), 0, 1) * 255; d[o + 2] = hash2(x + 977, y + 131) * 255;
+    d[o + 3] = cl(((0.6 * val(x, y, 4, 3) + 0.4 * val(x, y, 8, 4)) - 0.5) * 1.7 + 0.5, 0, 1) * 255;
+  }
+  const tex = new T.DataTexture(d, n, n, T.RGBAFormat, T.UnsignedByteType); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.minFilter = tex.magFilter = T.LinearFilter; tex.generateMipmaps = false; tex.needsUpdate = true; return tex;
+}
+// the uniform bus: shared by every engine shader, updated once a frame by updateEngine()
+export const E = {
+  noise: { value: buildNoise() }, T: { value: 0 }, wind: { value: new T.Vector3(1, 0.4, 0.5) },       // wind: x,y = direction on the ground, z = strength (0 to 1)
+  skyT: { value: new T.Color(0x8fb2cc) }, skyH: { value: new T.Color(0xe8d6b0) }, skyG: { value: new T.Color(0xd9c29a) },
+  sunD: { value: new T.Vector3(0.5, 0.8, 0.3).normalize() }, sunK: { value: new T.Color(0xffe2b0) }
+};
+let gustT = 0;
+export function updateEngine(dt, look) {
+  E.T.value += dt; gustT += dt;
+  E.wind.value.z = 0.35 + 0.35 * (0.5 + 0.5 * Math.sin(gustT * 0.31)) + 0.2 * (0.5 + 0.5 * Math.sin(gustT * 0.83 + 1.7));       // a slow overall strength; the travelling fronts come from the noise field in gust()
+  if (look) { E.skyT.value.setHex(look.sky[0]); E.skyH.value.setHex(look.sky[1]); E.skyG.value.setHex(look.sky[2]); }
+}
+// GLSL shared by the engine shaders. N() reads the noise at a normalised coordinate; gust() is the ONE wind field (grass, trees, water, particles); skyBase() is the banded sky gradient the dome, the fog and the water agree on;
+// bayer() is the one 4x4 ordered-dither threshold (sky, fog and haze only: amendment 1).
+export const GLSL = `
+uniform sampler2D uN; uniform float uT; uniform vec3 uWind; uniform vec3 uSkyT; uniform vec3 uSkyH; uniform vec3 uSkyG; uniform vec3 uSunD; uniform vec3 uSunK;
+vec4 N(vec2 u) { return texture2D(uN, u); }
+float hsh(vec2 t) { return texture2D(uN, (floor(t) + 0.5) / 64.0).b; }
+float gust(vec2 p) {
+  float f = smoothstep(0.3, 0.78, N(p * 0.011 - vec2(30.0, 10.0) / 512.0 * uT).r);
+  return f * (0.72 + 0.28 * sin(dot(p, uWind.xy) * 0.12 - uT * 1.2)) * uWind.z;
+}
+vec3 skyBase(vec3 d) {
+  float k = floor(sqrt(max(d.y, 0.0)) * 12.0 + 0.5) / 12.0;
+  vec3 c = mix(uSkyH, uSkyT, k);
+  float s = max(dot(d, uSunD), 0.0); c += uSunK * pow(s, 6.0) * 0.18 * (1.0 - 0.5 * k);
+  return mix(c, uSkyG, smoothstep(0.0, -0.1, d.y));
+}
+float bayer() { vec2 f = floor(gl_FragCoord.xy); float x0 = mod(f.x, 2.0), x1 = floor(mod(f.x, 4.0) / 2.0), y0 = mod(f.y, 2.0), y1 = floor(mod(f.y, 4.0) / 2.0); return (abs(x0 - y0) * 8.0 + y0 * 4.0 + abs(x1 - y1) * 2.0 + y1 + 0.5) / 16.0; }
+`;
+export function engineUniforms() { return { uN: E.noise, uT: E.T, uWind: E.wind, uSkyT: E.skyT, uSkyH: E.skyH, uSkyG: E.skyG, uSunD: E.sunD, uSunK: E.sunK }; }
