@@ -92,6 +92,7 @@ const hash2 = (x, z) => { let h = Math.imul(x | 0, 374761393) ^ Math.imul(z | 0,
 function vnoise(x, z) { const xi = Math.floor(x), zi = Math.floor(z), fx = x - xi, fz = z - zi, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz); return (hash2(xi, zi) * (1 - u) + hash2(xi + 1, zi) * u) * (1 - v) + (hash2(xi, zi + 1) * (1 - u) + hash2(xi + 1, zi + 1) * u) * v; }
 const SAND = [0xc8a46c, 0xcaa978, 0xc09c66];
 
+import { roadPath, poolSpots } from '../gen/road.js';
 export function buildMapMesh(map) {
   const B = new Builder(), F = new Builder(), group = new T.Group();
   F.seed = 777;
@@ -101,6 +102,12 @@ export function buildMapMesh(map) {
     const nz = vnoise(x / 60 + 11, z / 60 + 5) * 0.65 + vnoise(x / 18 + 3, z / 18 + 9) * 0.35, col = nz < 0.4 ? SAND[2] : nz < 0.6 ? SAND[0] : SAND[1];
     B.quad([x, 0, z], [x + cell, 0, z], [x + cell, 0, z + cell], [x, 0, z + cell], [0, 1, 0], col);
   }
+  // the worn dirt road and its 3 m trails: top-face strips just above the ground, 15 to 25 percent darker than the sand, no kerbs
+  { const rd = roadPath(map), strip = (ax, az, bx, bz, hw) => { const dx = bx - ax, dz = bz - az, l = Math.sqrt(dx * dx + dz * dz) || 1, px = -dz / l * hw, pz = dx / l * hw; B.quad([ax - px, 0.05, az - pz], [ax + px, 0.05, az + pz], [bx + px, 0.05, bz + pz], [bx - px, 0.05, bz - pz], [0, 1, 0], 0xb09470); };
+    for (let i = 1; i < rd.main.length; i++) strip(rd.main[i - 1][0], rd.main[i - 1][1], rd.main[i][0], rd.main[i][1], rd.width / 2); for (const t of rd.trails) strip(t[0][0], t[0][1], t[1][0], t[1][1], rd.trailWidth / 2); }
+  // two summoning pools: an ink-blue disc, a bone rim 1.5 m wide, a ring of glyph tiles; flat and walkable, no effect
+  for (const p of poolSpots(map)) { addCyl(B, { x: p.x, z: p.z, r: p.r, h: 0.06, c: 0x2e3f66 }); addRing(B, { cx: p.x, cz: p.z, r0: p.r, r1: p.r + 1.5, a0: 0, a1: 360, h: 0.08, c: 0xe6dcc0 });
+    for (let k = 0; k < 12; k++) { const a = k / 12 * 6.283, x = p.x + Math.cos(a) * (p.r + 2.2), z = p.z + Math.sin(a) * (p.r + 2.2); addBox(B, { x0: x - 0.5, x1: x + 0.5, z0: z - 0.5, z1: z + 0.5, h: 0.09, rot: a / DEG, c: 0x4a4250 }); } }
   map.prims.forEach(p => { const T2 = p.landmark ? F : B; if (p.t === 'box') addBox(T2, p); else if (p.t === 'ramp') addRamp(T2, p); else if (p.t === 'ring') addRing(T2, p); else addCyl(T2, p); });
   // the rim: 56 stacked buttes (a base, an inset mid band, a cap on about a third), 16 to 45 m tall, in two strata colours; 8 seeded notches only 8 to 10 m high (view only; the invisible wall stays)
   const n = 56, w = MAP.boundaryR + 6, hs = [];

@@ -7,6 +7,7 @@ import { MAP } from '../data/map.js';
 import { heightAt } from '../sim/terrain.js';
 import { sin, cos } from '../sim/dmath.js';
 import { isqrt } from './imath.js';
+import { roadPath, roadDist, poolSpots } from './road.js';
 const sqrt01 = u => isqrt(Math.floor(u * 100000000)) / 10000;                  // the square root of a number in 0..1, by integer maths
 const TAU = 6.283185307;
 const sqrtf = v => isqrt(Math.floor(v * 10000)) / 100;                       // square root to 1 cm, by integer maths
@@ -35,9 +36,11 @@ export function scatterStage(map, stageIndex, solidOnly) {
   const R = (MAP && MAP.boundaryR ? MAP.boundaryR : 195) * 0.94, out = { trees: [[], [], [], []], rocks: [[], [], []], bushes: [], special: [], grass: [], flowers: [], flowerSpots: [] };
   const keep = [{ x: map.spawn.x, z: map.spawn.z, r: 10 }, { x: map.gate.x, z: map.gate.z, r: 12 }];                  // places scenery stays out of: the start, the gate, the arena, boss rings, every encounter
   if (map.arena) keep.push({ x: map.arena.center.x, z: map.arena.center.z, r: 16 });
+  const pools = poolSpots(map); for (const p of pools) keep.push({ x: p.x, z: p.z, r: p.r + 3 });
   for (const b of map.bossRings || []) keep.push({ x: b.x, z: b.z, r: (b.r || 14) + 3 });
   for (const e of map.encounters || []) keep.push({ x: e.x, z: e.z, r: 6 });
-  const free = (x, z, pad) => { for (const k of keep) { const dx = x - k.x, dz = z - k.z, rr = k.r + (pad || 0); if (dx * dx + dz * dz < rr * rr) return false; } return x * x + z * z < R * R; };
+  const road = roadPath(map);
+  const free = (x, z, pad) => { if (roadDist(road, x, z) < 2.25 + 1.5 + (pad ? Math.min(pad, 2) : 0)) return false; for (const k of keep) { const dx = x - k.x, dz = z - k.z, rr = k.r + (pad || 0); if (dx * dx + dz * dz < rr * rr) return false; } return x * x + z * z < R * R; };
   const farSpawn = (x, z, d) => { const dx = x - map.spawn.x, dz = z - map.spawn.z; return dx * dx + dz * dz >= d * d; };      // trees and rocks stay 24 m from the spawn, hero rocks 32 m
   const flat = (x, z, tol = 0.3) => { const h = heightAt(x, z); for (const [dx, dz] of [[1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6]]) if (Math.abs(heightAt(x + dx, z + dz) - h) > tol) return null; return h; };
   const spots = (n, test) => { const o = []; for (let tries = 0; o.length < n && tries < n * 14; tries++) { const a = rnd() * TAU, d = sqrt01(rnd()) * R, x = cos(a) * d, z = sin(a) * d; const h = test(x, z); if (h !== null && h !== undefined && h !== false) o.push([x, h, z]); } return o; };
@@ -48,12 +51,13 @@ export function scatterStage(map, stageIndex, solidOnly) {
   const cellCount = new Map(), trees = [];
   if (D.groves > 0) {
     const groves = spots(D.groves, (x, z) => (free(x, z, 14) && farSpawn(x, z, 30) && flat(x, z, 0.4) !== null ? flat(x, z, 0.4) : null));
+    for (const p of pools) groves.unshift([p.x, 0, p.z, p.r + 4]);                 // a ring of trees stands round each pool
     for (const g of groves) {
       if (trees.length >= 214) break;
       const n = 3 + Math.floor(rnd() * 3), a0 = rnd() * TAU;
       for (let i = 0; i < n; i++) {
-        const a = a0 + i * TAU / n + (rnd() - 0.5) * 0.5, d = 4.2 + rnd() * 3.6, x = g[0] + cos(a) * d, z = g[2] + sin(a) * d;
-        if (!free(x, z, 3) || !farSpawn(x, z, 24)) continue; const h = flat(x, z, 0.35); if (h === null) continue;
+        const a = a0 + i * TAU / n + (rnd() - 0.5) * 0.5, d = (g[3] || 4.2) + rnd() * 3.6, x = g[0] + cos(a) * d, z = g[2] + sin(a) * d;
+        if (!free(x, z, g[3] ? 0 : 3) || !farSpawn(x, z, 24)) continue; const h = flat(x, z, 0.35); if (h === null) continue;
         const key = Math.floor(x / 10) * 4096 + Math.floor(z / 10); if ((cellCount.get(key) || 0) >= 3) continue;
         const parasol = rnd() < 0.6, sc = parasol ? TREE_SCALE.parasol : TREE_SCALE.blob, s = sc[0] + rnd() * (sc[1] - sc[0]), r = 0.55 * s;
         if (!gapOk(x, z, r, 3.2, true)) continue;                                  // trunk centres at least 6 m apart, and 3 m or more of air between a trunk and a rock
@@ -74,7 +78,7 @@ export function scatterStage(map, stageIndex, solidOnly) {
     for (let k = 0; k < 2; k++) {                                                   // a low or tall rock touching the hero (gap under 0.9 m)
       const tall = rnd() < 0.5, ex = tall ? 1.6 + rnd() * 0.4 : 1.2 + rnd() * 0.5, ey = tall ? 2.4 + rnd() * 0.4 : 1.0 + rnd() * 0.2, a = rnd() * TAU, d = sx + ex + 0.25 + rnd() * 0.5;
       const x = s[0] + cos(a) * d, z = s[2] + sin(a) * d, h = flat(x, z, 0.5); if (h === null || !free(x, z, 2) || !gapOk(x, z, ex, 0.2) ) continue;
-      let near = false; for (const q of solids) { const dx = x - q[0], dz = z - q[1], gap = sqrtf(dx * dx + dz * dz) - ex - q[2]; if (gap > 0.9 && gap < 3.0) { near = true; break; } } if (near) continue;   // no gap between 0.9 and 3 m
+      let near = false; for (const q of solids) { const dx = x - q[0], dz = z - q[1], gap = sqrtf(dx * dx + dz * dz) - ex - q[2]; if (gap > 0.8 && gap < 3.1) { near = true; break; } } if (near) continue;   // no gap between 0.9 and 3 m
       solidRock(x, z, ex, ey, h);
     }
     for (let k = 0; k < 4; k++) { const a = rnd() * TAU, d = sx + 1.5 + rnd() * 3.5, x = s[0] + cos(a) * d, z = s[2] + sin(a) * d, h = flat(x, z, 0.5); if (h !== null) pebbles.push([x, h, z, 0.16 + rnd() * 0.12, rnd() * TAU, tint(0.1, 0.1), 0.12 + rnd() * 0.08]); }
@@ -83,7 +87,7 @@ export function scatterStage(map, stageIndex, solidOnly) {
   for (const s of spots(D.singles * 3, (x, z) => (free(x, z, 4) && farSpawn(x, z, 28) && flat(x, z, 0.5) !== null ? flat(x, z, 0.5) : null))) {
     if (lowTall >= 95) break;
     const tall = rnd() < 0.5, ex = tall ? 1.6 + rnd() * 0.4 : 1.2 + rnd() * 0.5, ey = tall ? 2.4 + rnd() * 0.4 : 1.0 + rnd() * 0.2;
-    let near = false; for (const q of solids) { const dx = s[0] - q[0], dz = s[2] - q[1], gap = sqrtf(dx * dx + dz * dz) - ex - q[2]; if (gap < 3.0) { near = true; break; } } if (near) continue;      // a lone rock keeps 3 m or more from everything
+    let near = false; for (const q of solids) { const dx = s[0] - q[0], dz = s[2] - q[1], gap = sqrtf(dx * dx + dz * dz) - ex - q[2]; if (gap < 3.1) { near = true; break; } } if (near) continue;      // a lone rock keeps 3 m or more from everything
     solidRock(s[0], s[2], ex, ey, s[1]); lowTall++;
   }
   rocks.forEach((r, i) => out.rocks[i % 3].push(r)); pebbles.forEach((r, i) => out.rocks[i % 3].push(r));
@@ -99,5 +103,6 @@ export function scatterStage(map, stageIndex, solidOnly) {
   }
   return out;
 }
+
 
 

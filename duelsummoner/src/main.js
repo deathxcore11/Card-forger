@@ -1,4 +1,4 @@
-// Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
+﻿// Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
 import { CFG } from './data/config.js';
 import { Game } from './sim/game.js';
 import { Input } from './core/input.js';
@@ -49,6 +49,7 @@ const sky = new T.Mesh(new T.SphereGeometry(500, 16, 8), new T.ShaderMaterial({ 
   fragmentShader: 'uniform vec3 top; uniform vec3 hor; uniform vec3 low; varying float vy; void main() { vec3 c = vy >= 0.0 ? mix(hor, top, smoothstep(0.0, 0.6, vy)) : mix(hor, low, smoothstep(0.0, -0.3, vy)); gl_FragColor = vec4(c, 1.0); }' }));
 sky.frustumCulled = false; sky.renderOrder = -10; scene.add(sky);       // a sky dome: cooler and darker overhead than at the horizon (one draw, about 250 triangles)
 const camera = new T.PerspectiveCamera(62, 1, 0.5, 600);
+let fpsCap = 60, lastRender = 0;                     // a setting (30, 60, 90 or 120); a frame that comes sooner than the cap allows is skipped
 let fovSetting = 100, baseV = 62;                    // the setting is HORIZONTAL degrees, so it means the same on every screen shape; the vertical angle follows from the aspect and never goes past 88
 let fovK = 1;
 function fitFov() { const a = Math.max(0.3, camera.aspect || 1.78); baseV = Math.max(64, Math.min(88, 2 * Math.atan(Math.tan(fovSetting * Math.PI / 360) / a) * 180 / Math.PI)); fovK = Math.tan(67.7 * Math.PI / 360) / Math.tan(baseV * Math.PI / 360);       // vertical angle held to 64-88; the camera arm scales with it so the duelist keeps the same share of the screen on every screen shape
@@ -84,6 +85,7 @@ function syncMap() {                                                       // th
     if (gateSeal) scene.remove(gateSeal); gateSeal = buildGateSeal(game.map); scene.add(gateSeal);
     if (sceneryGroup) { scene.remove(sceneryGroup); sceneryGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); }); sceneryGroup = null; }
     if (!/[?&]scenery=0/.test(location.search)) { sceneryGroup = buildScenery(game.map, game.stage || 0, assets); scene.add(sceneryGroup); ambient.setSpots(sceneryGroup.userData.flowerSpots, game.stage || 0, game.map.hash); } else ambient.clear(); minimap.setMap(game.map);
+    try { renderer.compile(scene, camera); } catch (e) { /* warm-up is best effort */ }       // shaders are built behind the stage card, so the first frames do not hitch
 }
 let duelist = 'kael';
 const withProps = /[?&]props/.test(location.search);       // map objects are placed by the coming map generator; ?props shows the region-placed test set
@@ -106,6 +108,7 @@ let pendingUse = false, MODE = 'start', last = 0, frozen = false, holdT = 0, las
 // settings: reduce motion turns off shake, hit-stop, flashes, the boss zoom and the follow lag
 function applySettings() {
   const s = save.settings; document.body.classList.toggle('rm', !!s.reduceMotion); chase.lag = !s.reduceMotion;
+  fpsCap = [30, 60, 90, 120].includes(+s.fpsCap) ? +s.fpsCap : 60; for (const el of document.querySelectorAll('.setFps')) el.value = fpsCap;
   fovSetting = Math.max(80, Math.min(115, +s.fov || 100)); fitFov(); for (const el of document.querySelectorAll('.setFov')) el.value = fovSetting; for (const el of document.querySelectorAll('.setFovV')) el.textContent = fovSetting;
   for (const el of document.querySelectorAll('.setRM')) el.checked = !!s.reduceMotion;
   for (const el of document.querySelectorAll('.setShake')) { el.value = s.shake; el.disabled = !!s.reduceMotion; }
@@ -114,6 +117,7 @@ function applySettings() {
 function bindSettings() {
   for (const el of document.querySelectorAll('.setRM')) el.onchange = () => { save.settings.reduceMotion = el.checked; applySettings(); writeSave(host, save); };
   for (const el of document.querySelectorAll('.setShake')) { el.oninput = () => { save.settings.shake = +el.value; applySettings(); }; el.onchange = () => writeSave(host, save); }
+  for (const el of document.querySelectorAll('.setFps')) el.onchange = () => { save.settings.fpsCap = +el.value; applySettings(); writeSave(host, save); };
   for (const el of document.querySelectorAll('.setFov')) { el.oninput = () => { save.settings.fov = +el.value; applySettings(); }; el.onchange = () => writeSave(host, save); }
   applySettings();
 }
@@ -308,7 +312,9 @@ function drawTags() {
   }
 }
 function frame(now) {
-  requestAnimationFrame(frame); syncMap();
+  requestAnimationFrame(frame);
+  if (fpsCap && now - lastRender < 1000 / fpsCap - 2) return; lastRender = now;
+  syncMap();
   const dtReal = last ? Math.min(0.1, (now - last) / 1000) : 0;
   let alpha = game.alpha;
   if (MODE === 'play') {
@@ -373,6 +379,7 @@ requestAnimationFrame(frame);
 
 // Test hooks: read and drive the run without touching its rules.
 window.__ds = {
+  renderer,
   game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
   start: begin, begin, results, setMode, menus, fx, onEvent, save,
@@ -383,6 +390,7 @@ window.__ds = {
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
+
 
 
 
