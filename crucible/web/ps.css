@@ -117,6 +117,20 @@ body.ps { background: #000; }
 #app.ps .sc { overflow-y: auto; scrollbar-width: none; }
 #app.ps .sc:not(.ab) { position: relative; }
 #app.ps .sc::-webkit-scrollbar { display: none; }
+#app.ps .sc > .scend { display: block; } /* blank under the last line, so the last rest can show it whole (fitScroll) */
+#app.ps .scl { position: absolute; height: 1px; pointer-events: none; } /* the window's ground over a box's edges (scrollLips) */
+/* A box of pages in a window is laid on lines of 16 pixels, as the books' pages are, so it comes to rest on whole lines at
+   its top and at its foot alike (fitScroll in app.mjs): a paragraph is whole lines with a blank line after it, a heading
+   in the label face takes a line of its own, a row with a picture is whole lines with a rule along its top. */
+#app.ps .mw .sc p { margin: 0 0 16px; }
+#app.ps .mw .sc h2, #app.ps .mw .sc h3 { margin: 0; line-height: 16px; }
+/* a switch's border and padding (4 pixels) stand in the foot of the heading's line over it, so its words fall on the lines;
+   a heading after a switch starts on the next line */
+#app.ps .mw .sc h3 + .lab { margin-top: -4px; } #app.ps .mw .sc .lab + h3 { margin-top: 12px; }
+/* the tile that leads the trunk's row in the deck window, a card's size: the trunk's name and how many cards it holds */
+#app.ps .cd.trk { display: block; flex: none; border-color: var(--dark); cursor: default; }
+#app.ps .cd.trk .n1 { left: 4px; top: 18px; color: var(--gl); }
+#app.ps .cd.trk .n3 { position: absolute; left: 4px; top: 30px; font: 8px/8px 'LM Label', monospace; color: #c2b49c; }
 #app.ps .mw { position: absolute; z-index: 40; padding: 8px; }
 #app.ps .dim { position: absolute; inset: 0; z-index: 39; background: repeating-conic-gradient(rgba(0,0,0,1) 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
 
@@ -203,22 +217,24 @@ body.ps { background: #000; }
 
 /* lists inside windows */
 #app.ps .row2 { display: flex; flex-wrap: wrap; gap: 4px; }
-#app.ps .rl { display: flex; gap: 6px; align-items: flex-start; margin: 0 0 6px; }
+#app.ps .rl { display: flex; gap: 6px; align-items: flex-start; margin: 0; box-shadow: inset 0 1px 0 var(--sh); }
 #app.ps .rl img { width: 32px; height: 32px; flex: none; }
 #app.ps .rl .gem { width: 32px; height: 32px; flex: none; border: 2px solid var(--gold); background: var(--wine); color: var(--gl); font: 8px/28px 'LM Label', monospace; text-align: center; }
 #app.ps .rl div { font: 16px/16px 'LM Text', monospace; }
-#app.ps .rl div b { display: block; color: var(--gl); font: 8px/10px 'LM Label', monospace; }
-#app.ps .lab { display: grid; grid-template-columns: 28px 1fr; gap: 6px; align-items: start; width: 100%; margin: 0 0 4px; padding: 3px; border: 1px solid var(--dark); background: var(--sh); color: var(--ink); text-align: left; cursor: pointer; font: 16px/16px 'LM Text', monospace; }
+#app.ps .rl div b { display: block; color: var(--gl); font: 8px/16px 'LM Label', monospace; }
+/* a switch: its words are whole lines inside a border and padding of 4 pixels, and 8 pixels lie under it, so the switches
+   stand 16 pixels a line apart like everything else in the box */
+#app.ps .lab { display: grid; grid-template-columns: 28px 1fr; gap: 6px; align-items: start; width: 100%; margin: 0 0 8px; padding: 3px; border: 1px solid var(--dark); background: var(--sh); color: var(--ink); text-align: left; cursor: pointer; font: 16px/16px 'LM Text', monospace; }
 #app.ps .lab i { font: 8px/8px 'LM Label', monospace; color: #c2b49c; padding: 4px 0 0; opacity: 1; }
 #app.ps .lab.on i { color: var(--gl); }
 #app.ps .lab span { font: 16px/16px 'LM Text', monospace; }
 /* The sound controls: sound.mjs builds them as a check box and four sliders; here they are drawn as console parts. Each row is
    a label in the label face and a gauge 126 pixels long whose knob, four pixels wide, steps six pixels for each twentieth;
    the part of the gauge left of the knob is lit. Mute is a box of the gauge's frame, gold inside when on. */
-#app.ps .soundslot { display: block; min-width: 0; margin: 0 0 4px; font: 8px/16px 'LM Label', monospace; text-transform: uppercase; color: var(--ink); }
+#app.ps .soundslot { display: block; min-width: 0; margin: 0 0 16px; font: 8px/16px 'LM Label', monospace; text-transform: uppercase; color: var(--ink); }
 #app.ps .soundslot * { font: inherit !important; border-radius: 0 !important; box-shadow: none !important; backdrop-filter: none !important; }
 #app.ps .soundslot .lm-audio-panel { display: block; }
-#app.ps .soundslot label { display: grid !important; grid-template-columns: 96px 126px; column-gap: 0 !important; align-items: center !important; justify-content: start !important; height: 16px; margin: 0 0 4px; cursor: pointer; }
+#app.ps .soundslot label { display: grid !important; grid-template-columns: 96px 126px; column-gap: 0 !important; align-items: center !important; justify-content: start !important; height: 16px; margin: 0; cursor: pointer; } /* a line each, 16 pixels apart */
 #app.ps .soundslot label:first-child { grid-template-columns: 20px auto; }
 #app.ps .soundslot input { margin: 0; padding: 0; outline: none; cursor: pointer; accent-color: auto; }
 #app.ps .soundslot input[type=range] { -webkit-appearance: none; appearance: none; width: 126px !important; height: 10px; border: 1px solid var(--gold); background: var(--sh); overflow: hidden; }
@@ -261,13 +277,16 @@ body.ps { background: #000; }
 #app.ps .story > :not(.dim) { z-index: 40; } /* the painting, the face, the words and SKIP sit over the dimmed screen */
 #app.ps .pf .crest { pointer-events: none; }
 #app.ps .dgrid { padding: 4px; } #app.ps .dgrid .row2 { justify-content: flex-start; } /* its rows are centred by its padding, at a whole pixel (deckGrid) */
-/* the books */
+/* the books. Their pages are laid on lines of 16 pixels, so the box they scroll in comes to rest on whole lines at its top
+   and at its foot alike (fitScroll in app.mjs): a paragraph is whole lines with no gap after it; a row is whole lines, a
+   rule along its top and its name in the label face on its first line; a medal takes two lines, a plaque or a gauge one. */
 #app.ps .book { position: absolute; padding: 0; }
-#app.ps .book .sc p { margin: 0 0 4px; }
-#app.ps .brow { display: flex; gap: 6px; align-items: flex-start; padding: 4px 0; border-bottom: 1px solid var(--sh); }
+#app.ps .book .sc p { margin: 0; }
+#app.ps .brow { display: flex; gap: 6px; align-items: flex-start; padding: 0; box-shadow: inset 0 1px 0 var(--sh); }
 #app.ps .brow .bp { flex: none; width: 32px; } #app.ps .brow .bp > img, #app.ps .brow .bp > .coin { position: relative; display: block; } /* not the letter struck in a blank medal (.coin > img): it stays on the medal */
-#app.ps .brow .bt { flex: 1; min-width: 0; } #app.ps .brow .bt .lb { position: relative; display: block; margin-bottom: 2px; white-space: normal; }
-#app.ps .brow .bs { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+#app.ps .brow .bt { flex: 1; min-width: 0; } #app.ps .brow .bt .lb { position: relative; display: block; margin: 0; line-height: 16px; white-space: normal; }
+#app.ps .brow .bs { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 0; }
+#app.ps .brow .bs > .ga { margin: 4px 0 5px; } #app.ps .brow .bs > .lb { line-height: 16px; } #app.ps .brow .bs > .pq.in { margin: 0; }
 #app.ps .pq.in { position: relative; display: inline-block; margin: 0 4px 4px 0; width: auto; vertical-align: top; }
 #app.ps .ga.in { position: relative; display: block; } #app.ps .ga.in > u { position: absolute; top: 0; bottom: 0; background: var(--gl); }
 #app.ps .lb .d, #app.ps span.d, #app.ps p.d { color: #b39a7c; }
