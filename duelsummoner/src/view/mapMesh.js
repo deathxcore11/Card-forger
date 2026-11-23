@@ -1,4 +1,4 @@
-﻿// Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
+// Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
 import { MAP } from '../data/map.js';
 import { seeMap } from './seethrough.js';
 import { groundLit } from './engine.js';
@@ -129,7 +129,8 @@ function buildV2(map, look) {
     const c = cz * NC + cx; Wl[c] = wall ? 1 : 0; Fc[c] = f; Hc[c] = wall ? 0 : (mx - mn > 0.5 ? mx : s / 4);
   }
   for (let cz = 0; cz < NC; cz++) for (let cx = 0; cx < NC; cx++) if (!Wl[cz * NC + cx]) for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) { const x = cx + dx, z = cz + dz; if (x >= 0 && z >= 0 && x < NC && z < NC) near[z * NC + x] = 1; }
-  for (let c = 0; c < NC * NC; c++) if (Wl[c]) { const cx = c % NC, cz = (c / NC) | 0; Hc[c] = 22 + 5 * hash2(cx * 7 + 3, cz * 13 + 1); }
+  { const sm = (x, z) => { const x0 = Math.floor(x), z0 = Math.floor(z), fx = x - x0, fz = z - z0, s = t => t * t * (3 - 2 * t), a = hash2(x0 * 7 + 3, z0 * 13 + 1), b = hash2((x0 + 1) * 7 + 3, z0 * 13 + 1), c = hash2(x0 * 7 + 3, (z0 + 1) * 13 + 1), d = hash2((x0 + 1) * 7 + 3, (z0 + 1) * 13 + 1); return (a + (b - a) * s(fx)) * (1 - s(fz)) + (c + (d - c) * s(fx)) * s(fz); };       // the rim's ridge line is a slow rolling line (one swell every 24 m), not a different height in every cell
+  for (let c = 0; c < NC * NC; c++) if (Wl[c]) { const cx = c % NC, cz = (c / NC) | 0; Hc[c] = 23 + 4 * sm(cx / 12, cz / 12); } }
   const road = new Uint8Array(NC * NC), rd = roadPath(map);
   for (let i = 1; i < rd.main.length; i++) { const ax = rd.main[i - 1][0], az = rd.main[i - 1][1], bx = rd.main[i][0], bz = rd.main[i][1], l = Math.sqrt((bx - ax) * (bx - ax) + (bz - az) * (bz - az)) || 1, n = Math.ceil(l);
     for (let k = 0; k <= n; k++) { const x = ax + (bx - ax) * k / n, z = az + (bz - az) * k / n, cx = Math.floor((x + 200) / 2), cz = Math.floor((z + 200) / 2); for (let dz = -1; dz <= 0; dz++) for (let dx = -1; dx <= 0; dx++) { const px = cx + dx, pz = cz + dz; if (px >= 0 && pz >= 0 && px < NC && pz < NC) road[pz * NC + px] = 1; } } }
@@ -137,7 +138,7 @@ function buildV2(map, look) {
   const dim = (c, k) => ((Math.min(255, Math.round(((c >> 16) & 255) * k)) << 16) | (Math.min(255, Math.round(((c >> 8) & 255) * k)) << 8) | Math.min(255, Math.round((c & 255) * k)));
   const colour = (cx, cz) => {
     const c = cz * NC + cx, f = Fc[c], h = Hc[c], j = hash2(cx * 31 + 5, cz * 17 + 9);
-    if (Wl[c]) return look.rim[(cx + cz) & 1 ? 0 : 1];
+    if (Wl[c]) return look.rim[1];
     if (f & 4096) return look.rim[1];                                                           // solid blocks: pale stone
     if (f & 8) return dim(look.road, 0.92 + 0.1 * j);                                           // ramps and stairs
     if (f & 256) return mixc(look.sand[(j * 3) | 0], 0xffffff, 0.22);                           // the arena floor
@@ -178,18 +179,15 @@ function buildV2(map, look) {
       if (Math.abs(ca - na) < 0.02 && Math.abs(cb - nb) < 0.02) continue;
       const P0 = d === 0 ? [x1, z0] : [x0, z1], P1 = [x1, z1], hiC = (ca + cb) > (na + nb), hiCell = hiC ? c : n, out = hiC ? (d === 0 ? [1, 0, 0] : [0, 0, 1]) : (d === 0 ? [-1, 0, 0] : [0, 0, -1]), ym = (ca + cb + na + nb) / 4;
       const base = Wl[hiCell] ? look.rim[0] : fin[hiC ? c : n], loA = hiC ? na : ca, loB = hiC ? nb : cb, hiA = hiC ? ca : na, hiB = hiC ? cb : nb, hgt = (hiA + hiB - loA - loB) / 2;
-      // rock strata: bands 1.4 m tall in three flat tones (dark, mid, light) that shift along the face, a pale lip on the top band, a rubble block at the foot of a tall face now and then
-      const nb2 = Math.max(1, Math.min(16, Math.round(hgt / 1.4))), tones = [0.62, 0.76, 0.9], phase = (cx * 5 + cz * 3) & 3;
+      // rock strata: one flat tone per band, the bands horizontal and continuous along the whole wall (the tone comes from the band's height above the world floor, never from the cell), a pale lip on the top band, a darker base strip, and a slight batter:
+      // the foot of the face sits 0.5 m out from the top edge, so the wall leans back like a built wall instead of standing on a cell edge
+      const lo0 = Math.min(loA, loB), nb2 = Math.max(1, Math.min(16, Math.round(hgt / 1.4))), tones = [0.64, 0.78, 0.9], BAT = Math.min(0.5, hgt * 0.12);
       for (let q = 0; q < nb2; q++) {
-        const t0 = q / nb2, t1 = (q + 1) / nb2, lerp = (a, b, t) => a + (b - a) * t, top = q === nb2 - 1;
-        const wc = top && nb2 > 1 ? mixc(dim(base, 0.95), 0xffffff, 0.18) : dim(base, tones[(q + phase) % 3] * (0.96 + 0.08 * hash2(cx * 11 + q, cz * 7 + d)));
-        B.quad([P0[0], lerp(loA, hiA, t0), P0[1]], [P1[0], lerp(loB, hiB, t0), P1[1]], [P1[0], lerp(loB, hiB, t1), P1[1]], [P0[0], lerp(loA, hiA, t1), P0[1]], out, wc);
-        if (!top && hash2(cx * 13 + q, cz * 7 + d) < 0.16) {                               // a grey detail tile inset on the face: a flat slab 0.05 m proud of the rock, in a neutral grey
-          const ua = 0.15 + 0.2 * hash2(cx + q, cz * 3), ub = ua + 0.5, ya = t0 + (t1 - t0) * 0.18, yb = t0 + (t1 - t0) * 0.82, px = v => P0[0] + (P1[0] - P0[0]) * v + out[0] * 0.05, pz = v => P0[1] + (P1[1] - P0[1]) * v + out[2] * 0.05, ly = (u, t) => lerp(lerp(loA, loB, u), lerp(hiA, hiB, u), t);
-          B.quad([px(ua), ly(ua, ya), pz(ua)], [px(ub), ly(ub, ya), pz(ub)], [px(ub), ly(ub, yb), pz(ub)], [px(ua), ly(ua, yb), pz(ua)], out, mixc(wc, 0x8c8a86, 0.7));
-        }
-      }
-      if (hgt > 5 && hash2(cx * 7 + d, cz * 11 + 3) < 0.17) {                                 // a buttress every 8 to 16 m: a faceted pier up the face, 1.8 m wide and 1.2 m proud, 80% as tall as the face, with a pale cap
+        const t0 = q / nb2, t1 = (q + 1) / nb2, lerp = (a, b, t) => a + (b - a) * t, top = q === nb2 - 1, band = Math.round((lo0 + hgt * t0) / 1.4);
+        const wc = top && nb2 > 1 ? mixc(dim(base, 0.95), 0xffffff, 0.18) : q === 0 && nb2 > 2 ? dim(base, 0.5) : dim(base, tones[((band % 3) + 3) % 3]);
+        const o0 = BAT * (1 - t0), o1 = BAT * (1 - t1);
+        B.quad([P0[0] + out[0] * o0, lerp(loA, hiA, t0), P0[1] + out[2] * o0], [P1[0] + out[0] * o0, lerp(loB, hiB, t0), P1[1] + out[2] * o0], [P1[0] + out[0] * o1, lerp(loB, hiB, t1), P1[1] + out[2] * o1], [P0[0] + out[0] * o1, lerp(loA, hiA, t1), P0[1] + out[2] * o1], out, wc);
+      }      if (hgt > 5 && hash2(cx * 7 + d, cz * 11 + 3) < 0.17) {                                 // a buttress every 8 to 16 m: a faceted pier up the face, 1.8 m wide and 1.2 m proud, 80% as tall as the face, with a pale cap
         const bw = 0.9, mx = (P0[0] + P1[0]) / 2 + out[0] * 0.6, mz = (P0[1] + P1[1]) / 2 + out[2] * 0.6, y0b = Math.min(loA, loB) - 0.2, y1b = Math.min(loA, loB) + hgt * 0.8, along = out[0] ? [0, 1] : [1, 0], bc = dim(base, 0.78);
         addBox(B, { x0: mx - (along[0] ? bw : 0.6), x1: mx + (along[0] ? bw : 0.6), z0: mz - (along[1] ? bw : 0.6), z1: mz + (along[1] ? bw : 0.6), y0: y0b, h: y1b, c: bc });
         addBox(B, { x0: mx - (along[0] ? bw + 0.1 : 0.7), x1: mx + (along[0] ? bw + 0.1 : 0.7), z0: mz - (along[1] ? bw + 0.1 : 0.7), z1: mz + (along[1] ? bw + 0.1 : 0.7), y0: y1b, h: y1b + 0.4, c: mixc(dim(base, 0.95), 0xffffff, 0.2) });
