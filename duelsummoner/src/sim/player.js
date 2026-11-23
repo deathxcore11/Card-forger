@@ -39,9 +39,10 @@ export function updatePlayer(g, dt, cmd) {
   let moveX, moveZ;
   if (p.dashT > 0) {
     const sp = C.dashDist * (1 + g.mods.dash) / C.dashTime, use = Math.min(dt, p.dashT);
-    p.dashT -= dt;
+    p.dashT -= dt; if (p.dashT < 1e-6) p.dashT = 0;                          // exactly 9 ticks at 60 Hz (0.15 minus nine ticks is a hair above zero in floating point, which made a tenth)
     moveX = p.dashDx * sp * use; moveZ = p.dashDz * sp * use;
-    p.vx = p.dashDx * C.speed * 0.25; p.vz = p.dashDz * C.speed * 0.25;   // short tail so the dash stays about 4 m
+    const tail = hasInput ? speed : C.speed * C.dashTail;                     // the dash ends at run speed if the stick is held, else at a short tail so it stays about 4 m
+    p.vx = p.dashDx * tail; p.vz = p.dashDz * tail;
   } else {
     const hs = Math.sqrt(p.vx * p.vx + p.vz * p.vz);
     if (!cmd.slide || !p.grounded) p.sliding = false;
@@ -55,7 +56,7 @@ export function updatePlayer(g, dt, cmd) {
         hx = sin(na); hz = cos(na);
       }
       let dh = heightAt(p.x + hx * S.probe, p.z + hz * S.probe) - p.y;
-      if (dh > 0.6) dh = 0;                                   // a wall, not a slope
+      if (dh > 0.9) dh = 0;                                   // a wall, not a slope (a 1:2 ramp over the probe is 0.6)
       const slope = dh / S.probe;
       p.slideSpeed = Math.max(0, Math.min(S.max, p.slideSpeed + (-slope * S.downhill - S.friction) * dt));
       if (p.slideSpeed < S.keepMin) p.sliding = false;

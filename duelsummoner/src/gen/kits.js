@@ -97,8 +97,8 @@ export const KITS = {
     build(k, p, rng) {
       const hs = [6, 6.5, 7, 7.5, 7, 6.5, 6], slots = [], x0 = -p.n * 10;
       for (let i = 0; i < p.n; i++) { const h = hs[i]; k.box(x0 + i * 20, -5, x0 + i * 20 + 20, 5, h, BONE); if (i % 2) k.cyl(x0 + i * 20 + 10, 0, 3.2, h + 1.6, 0xf2e9cf, { y0: h, deco: true }); }
-      [[0, 6], [2, 7], [p.n - 1, 6]].forEach(q => { const x = x0 + q[0] * 20 + 10; k.ramp('z', -28, -5, x - 4, x + 4, 0, q[1], 0xd9cfb0); });
-      [[1, 7], [p.n - 2, 6.5]].forEach(q => { const x = x0 + q[0] * 20 + 10; k.ramp('z', 28, 5, x - 4, x + 4, 0, q[1], 0xd9cfb0); });
+      [0, 2, p.n - 1].forEach(i => { const x = x0 + i * 20 + (i === p.n - 1 ? 5 : 10); k.ramp('z', -28, -5, x - 4, x + 4, 0, hs[i], 0xd9cfb0); });       // the last segment's ramp sits in its first half (the skull's 7.8 m block starts at its middle and used to wall the ramp's end); each ramp tops out at exactly the height of the segment it climbs to (they were 0.5 m off, a ledge at the top)
+      [1, p.n - 2].forEach(i => { const x = x0 + i * 20 + 10; k.ramp('z', 28, 5, x - 4, x + 4, 0, hs[i], 0xd9cfb0); });
       k.box(x0 + p.n * 20 - 10, -9, x0 + p.n * 20 + 12, 9, 7.8, 0xf2e9cf);
       for (const zz of [-5.5, 5.5]) { const hx = x0 + p.n * 20 + 1; k.box(hx - 1.1, zz - 1.1, hx + 1.1, zz + 1.1, 18, LSTONE, { y0: 7.8, deco: true, landmark: true }); k.box(hx - 0.6, zz - 0.6, hx + 0.6, zz + 0.6, 24, LSTONE, { y0: 18, deco: true, landmark: true }); k.box(hx - 0.8, zz - 0.8, hx + 0.8, zz + 0.8, 25, BONE, { y0: 24, deco: true, landmark: true }); }       // a pair of 24 m horns on the skull
       slots.push({ tag: 'high_perch', x: x0 + p.n * 20 + 1, z: 0, y: 7.8 });

@@ -4,6 +4,7 @@ import { RUN } from '../data/waves.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { damageEnemy, explode, addFx, PICK_XP, PICK_COIN, PICK_HEART } from './combat.js';
 import { breakVasesNear } from './world.js';
+import { sin, cos, atan2 } from './dmath.js';
 
 export const KIND_CARD = 0, KIND_FIRE = 1, KIND_LOB = 2, KIND_HOMING = 3;
 const MAXHITS = 6;
@@ -14,7 +15,7 @@ export function makeShots(max) {
     src: new Uint8Array(max), x: f(), y: f(), z: f(), vx: f(), vy: f(), vz: f(), life: f(), dmg: f(), splash: f(), tx: f(), tz: f(), t0: f(), dur: f(), target: new Int32Array(max), speed: f(),
     px: f(), py: f(), pz: f() };
 }
-export function makePickups(max) { return { max, alive: new Uint8Array(max), kind: new Uint8Array(max), val: new Float32Array(max), x: new Float32Array(max), y: new Float32Array(max), z: new Float32Array(max), age: new Float32Array(max), far: new Uint8Array(max) }; }
+export function makePickups(max) { return { max, alive: new Uint8Array(max), kind: new Uint8Array(max), val: new Float32Array(max), x: new Float32Array(max), y: new Float32Array(max), z: new Float32Array(max), age: new Float32Array(max), far: new Uint8Array(max), ht: new Float32Array(max).fill(-1), hd: new Float32Array(max) }; }
 export function makeBolts(max) { const a = []; for (let i = 0; i < max; i++) a.push({ on: false, x: 0, y: 0, z: 0, vx: 0, vz: 0, life: 0, dmg: 0, r: 0.9, px: 0, pz: 0 }); return a; }
 
 function slot(s) { for (let i = 0; i < s.max; i++) if (!s.alive[i]) return i; return -1; }
@@ -132,7 +133,7 @@ export function updateBolts(g, dt) {
 }
 
 // ---- pickups: crystals, coins, hearts ----
-const MAG = { x: 0, y: 0, z: 0 }, FLY_AFTER = 1.5;
+const MAG = { x: 0, y: 0, z: 0 }, FLY_AFTER = 1.5, MAG_SETTLE = 0.28;
 export function updatePickups(g, dt) {
   const m = g.pick, p = g.p, range = CFG.xp.magnet * (1 + g.mods.pickup) * (g.frenzyT > 0 ? 2 : 1);
   for (let i = 0; i < m.max; i++) {
@@ -142,12 +143,24 @@ export function updatePickups(g, dt) {
     // XP from a kill by one of your monsters (or a trap, a spell) is out of walking reach: after 1.5 s it flies to the duelist from anywhere, faster the longer it waits, and is banked after 6 s
     const flying = m.far[i] && m.age[i] > FLY_AFTER && m.kind[i] === PICK_XP;
     if (flying && m.age[i] > 6) { m.x[i] = p.x; m.z[i] = p.z; m.y[i] = p.y + 1; }
-    if (flying || (d < range && Math.abs(p.y - m.y[i]) < 3 + range * 0.3)) {
+    if (flying) {
       const o = MAG; o.x = m.x[i]; o.y = m.y[i]; o.z = m.z[i];
-      const sp = flying ? Math.min(34, 12 + 10 * (m.age[i] - FLY_AFTER)) : 9 + 20 * (1 - d / range);                 // a short speed-up as it flies in
+      const sp = Math.min(34, 12 + 10 * (m.age[i] - FLY_AFTER));                 // a short speed-up as it flies in
       moveXZ(o, dx / d * sp * dt, dz / d * sp * dt, 0.1, 12);   // never climbs a wall taller than 12 m
       m.x[i] = o.x; m.z[i] = o.z;
       const hh = heightAt(o.x, o.z); if (hh < 50) m.y[i] = Math.max(hh, 0) + 0.5;   // keep the old height over a wall cell
+    } else if (m.age[i] > MAG_SETTLE && (m.ht[i] >= 0 || (d < range && Math.abs(p.y - m.y[i]) < 3 + range * 0.3))) {
+      // the magnet curve (feedback-feel 3.3): a drop newer than 280 ms ignores the magnet; on entering range it hops 0.6 m over 120 ms, then flies at v = min(32, 6 + 60 t) m/s from the hop, steering
+      // toward the duelist at up to 14 rad/s so the path curves; never slower than the duelist's own speed + 6, so it can always catch a fast runner. Walls still stop it (12 m step).
+      if (m.ht[i] < 0) { m.ht[i] = 0; m.hd[i] = atan2(dx, dz); }
+      const t0 = m.ht[i]; m.ht[i] = t0 + dt; const t = m.ht[i];
+      let da = atan2(dx, dz) - m.hd[i]; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; const turn = 14 * dt; m.hd[i] += da > turn ? turn : da < -turn ? -turn : da;
+      let v = Math.min(32, 6 + 60 * t); const pv = Math.sqrt(p.vx * p.vx + p.vz * p.vz) + 6; if (v < pv) v = pv;
+      const o = MAG; o.x = m.x[i]; o.y = m.y[i]; o.z = m.z[i];
+      moveXZ(o, sin(m.hd[i]) * v * dt, cos(m.hd[i]) * v * dt, 0.1, 12);
+      m.x[i] = o.x; m.z[i] = o.z;
+      const hh = heightAt(o.x, o.z), outQ = u => 1 - (1 - u) * (1 - u), hop = 0.6 * (outQ(Math.min(1, t / 0.12)) - outQ(Math.min(1, t0 / 0.12)));
+      if (hh < 50) { const ty = p.y + 1.0, k = Math.min(1, v * dt / Math.max(d, 0.4)); m.y[i] += (ty - m.y[i]) * k + hop; if (m.y[i] < Math.max(hh, 0) + 0.3) m.y[i] = Math.max(hh, 0) + 0.3; }       // it rises to the chest point as it closes in
     }
     if (d < CFG.xp.pick && (Math.abs(p.y + 1 - m.y[i]) < 2.5 || flying)) {
       m.alive[i] = 0; g.emit('pickup', m.kind[i], m.val[i]);

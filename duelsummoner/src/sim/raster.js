@@ -53,19 +53,30 @@ function bounds(p) {
 }
 
 // Fills grid (N x N, 1 m cells, origin -half) from prims: tallest primitive wins; outside boundaryR is WALL.
-export function rasterizeInto(grid, N, HALF, prims, boundaryR) {
-  grid.fill(0);
+// sl (optional): { x, z, pb, lo, hi } typed arrays the size of grid. A cell touched by a ramp keeps the ramp's slope (dh/dx, dh/dz), the plane's height at the cell centre (pb) and the ramp's
+// height limits, so the live terrain can give the true sloped surface inside the cell instead of one flat step per metre, including the cells the ramp only partly covers at its foot and its top.
+// The generator calls this without sl and sees the same flat cells as before.
+export function rasterizeInto(grid, N, HALF, prims, boundaryR, sl) {
+  grid.fill(0); if (sl) { sl.x.fill(0); sl.z.fill(0); sl.pb.fill(0); sl.lo.fill(0); sl.hi.fill(0); }
   for (const p of prims) {
     if (p.deco) continue;
     const [x0, x1, z0, z1] = bounds(p);
     const ia = Math.max(0, Math.floor(x0 + HALF)), ib = Math.min(N - 1, Math.floor(x1 + HALF - 1e-6));
     const ja = Math.max(0, Math.floor(z0 + HALF)), jb = Math.min(N - 1, Math.floor(z1 + HALF - 1e-6));
+    const ramp = sl && p.t === 'ramp' && p.a1 !== p.a0, rs = ramp ? (p.h1 - p.h0) / (p.a1 - p.a0) : 0, lo = ramp ? Math.min(p.h0, p.h1) : 0, hi = ramp ? Math.max(p.h0, p.h1) : 0;
     for (let j = ja; j <= jb; j++) for (let i = ia; i <= ib; i++) {
-      const h = primHeight(p, i - HALF + 0.5, j - HALF + 0.5);
-      if (h > 0 && h > grid[j * N + i]) grid[j * N + i] = h;
+      const cx = i - HALF + 0.5, cz = j - HALF + 0.5, k = j * N + i;
+      if (ramp) {
+        const ac = p.axis === 'x' ? cx : cz, bc = p.axis === 'x' ? cz : cx; if (bc < p.b0 || bc > p.b1) continue;
+        const pc = p.h0 + rs * (ac - p.a0), hc = pc < lo ? lo : pc > hi ? hi : pc;
+        if (hc >= grid[k]) { grid[k] = hc; sl.x[k] = p.axis === 'x' ? rs : 0; sl.z[k] = p.axis === 'z' ? rs : 0; sl.pb[k] = pc; sl.lo[k] = lo; sl.hi[k] = hi; }
+        continue;
+      }
+      const h = primHeight(p, cx, cz);
+      if (h > 0 && h > grid[k]) { grid[k] = h; if (sl) { sl.x[k] = 0; sl.z[k] = 0; } }
     }
   }
   const R2 = boundaryR * boundaryR;
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const x = i - HALF + 0.5, z = j - HALF + 0.5; if (x * x + z * z > R2) grid[j * N + i] = WALL; }
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const x = i - HALF + 0.5, z = j - HALF + 0.5; if (x * x + z * z > R2) { grid[j * N + i] = WALL; if (sl) { sl.x[j * N + i] = 0; sl.z[j * N + i] = 0; } } }
   return grid;
 }

@@ -1,4 +1,4 @@
-﻿// The stage generator. generateStage(seed, stageIndex, spec) -> StageMap. Pure and seeded: the same seed gives the same map everywhere.
+// The stage generator. generateStage(seed, stageIndex, spec) -> StageMap. Pure and seeded: the same seed gives the same map everywhere.
 // Layout: the gate arena and the spawn plaza are placed far apart; three district kits and a handful of fillers fill the ground between;
 // then a validator checks the map (reachability with run and jump only, enemy coverage, boss rings, spawn space, economy) and a bounded
 // retry loop draws new attempts until one passes. After 8 failures the fixed Colosseum map is used (a fallback, flagged in the report).
@@ -175,6 +175,9 @@ function tryLayout(as, stage, spec, G) {
       const [px, pz] = kh.pt(8.6, 0); slotsAll.push({ tag: 'reward_port', x: px, z: pz, y: 3.6 }); placed.push({ cx: hx, cz: hz, r: 19 }); break;
     }
   }
+  // a low mound (0.5 m) never sits on a ramp or on the 3 m of ground in front of its foot: it left a 0.5 m block there and the duelist popped up it
+  { const rr = prims.filter(p => p.t === 'ramp').map(p => { const lo = Math.min(p.a0, p.a1), hi = Math.max(p.a0, p.a1), b = p.axis === 'x' ? [lo, hi, p.b0, p.b1] : [p.b0, p.b1, lo, hi]; return [b[0] - 3, b[1] + 3, b[2] - 3, b[3] + 3]; });
+    for (let i = prims.length - 1; i >= 0; i--) { const m = prims[i]; if (m.t !== 'box' || m.h !== 0.5 || m.deco || m.c !== 0xd2b27a) continue; const cx = (m.x0 + m.x1) / 2, cz = (m.z0 + m.z1) / 2, r = dist(m.x1 - m.x0, m.z1 - m.z0) / 2; if (rr.some(b => cx + r > b[0] && cx - r < b[1] && cz + r > b[2] && cz - r < b[3])) prims.splice(i, 1); } }
   // rasterise and test
   const grid = new Float32Array(N * N); rasterizeInto(grid, N, HALF, prims, BOUNDARY);
   const spawnI = ci(sx), spawnJ = ci(sz), ed = bfsEnemy(grid, spawnI, spawnJ), pd = bfsPlayer(grid, spawnI, spawnJ);

@@ -83,7 +83,7 @@ export function killEnemy(g, i) {
 export function dropPickup(g, kind, x, y, z, val) {
   const m = g.pick; val = val || 1; const far = kind === PICK_XP && g.srcNames[g.curSrc] !== 'card-throw' ? 1 : 0;
   if (kind === PICK_XP) for (let i = 0; i < m.max; i++) if (m.alive[i] && m.kind[i] === PICK_XP && (m.x[i] - x) ** 2 + (m.z[i] - z) ** 2 < 1.44) { m.val[i] += val; if (far) m.far[i] = 1; return; }       // gems dropped within 1.2 m merge into one
-  for (let i = 0; i < m.max; i++) if (!m.alive[i]) { m.alive[i] = 1; m.kind[i] = kind; m.x[i] = x; m.y[i] = y + 0.5; m.z[i] = z; m.val[i] = val; m.age[i] = 0; m.far[i] = far; return; }
+  for (let i = 0; i < m.max; i++) if (!m.alive[i]) { m.alive[i] = 1; m.kind[i] = kind; m.x[i] = x; m.y[i] = y + 0.5; m.z[i] = z; m.val[i] = val; m.age[i] = 0; m.far[i] = far; m.ht[i] = -1; return; }
   if (kind === PICK_XP) g.addXp(val);                                    // pool full: bank the XP directly
 }
 

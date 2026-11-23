@@ -9,7 +9,7 @@ export const CFG = {
     jumpBuffer: 0.12,                                  // seconds a jump press is remembered before landing, so it fires the moment the feet touch
     jumpCut: 0.5,                                      // letting go of jump on the way up multiplies the rise speed by this (a short tap is a short hop)
     groundAccel: 16, airAccel: 3,                      // how fast velocity follows input (1/s)
-    dashDist: 4, dashTime: 0.15, dashCd: 1.1,          // no damage taken while dashing
+    dashDist: 4, dashTime: 0.15, dashTail: 0.25, dashCd: 1.1,          // no damage taken while dashing
     slide: { minStart: 6.5, keepMin: 3.2, max: 22, friction: 2.2, downhill: 34, turn: 1.8, probe: 1.2 }
   },
   cam: {
