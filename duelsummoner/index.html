@@ -121,7 +121,7 @@
   #devbar button { pointer-events:auto; font:inherit; font-size:11px; letter-spacing:1px; padding:4px 8px; margin:0; min-height:0; min-width:0; background:#1b1220cc; color:#f3e3c2; border:1px solid #6b4fa0; }
   #devbar.hidefs button { display:none; }
   /* touch screens under 600 px tall: the stage box is one line (clock, next event) and opens on a tap */
-  @media (max-height:600px) and (pointer:coarse) { #topright { pointer-events:auto; z-index:35; padding:3px 8px; } #topright:not(.open) > :not(#clock):not(#nextEvent) { display:none; } #topright:not(.open) #clock { font-size:calc(var(--t) * 1.3); } #topright.open { box-shadow:0 0 0 2px #ffd23f66; } }
+  @media (pointer:coarse) { #topright { pointer-events:auto; z-index:35; padding:3px 8px; } #topright:not(.open) > :not(#clock):not(#nextEvent) { display:none; } #topright:not(.open) #clock { font-size:calc(var(--t) * 1.3); } #topright.open { box-shadow:0 0 0 2px #ffd23f66; } }
   #buildLabel { background:#1b1220cc; padding:3px 6px; border:1px solid #6b4fa0; color:#f3e3c2; }
   @media (max-height:600px), (pointer:coarse) { #devbar { left:8px; top:92px; right:auto; bottom:auto; } :root { --tz:clamp(10px, 2.3vh, 48px); } }
   body[data-mode=dead] #devbar, body[data-mode=offer] #devbar { visibility:hidden; }
@@ -341,7 +341,12 @@
   .qlLegend { display:flex; flex-direction:column; gap:8px; font-size:14px; max-width:300px; } .qlLegend i { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:8px; vertical-align:middle; }
   #qlBuild, #qlStats { overflow-y:auto; max-height:calc(100vh - 90px); padding:16px 20px; text-align:left; background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.035)), rgba(8,10,15,.62); border:1px solid var(--edge); border-radius:22px; }
   @media (max-width:760px) { #qlMap { flex-direction:column; } .qlLegend { max-width:none; font-size:12px; } }
-  @media (max-height:520px) { #qlMap { gap:12px; } #fullmap { width:min(80vh, 60vw); height:min(80vh, 60vw); } .qlLegend { font-size:11px; gap:4px; } .qlWrap { gap:4px; } #mapOverlay button { padding:4px 12px; } }  </style>
+  @media (max-height:520px) { #qlMap { gap:12px; } #fullmap { width:min(80vh, 60vw); height:min(80vh, 60vw); } .qlLegend { font-size:11px; gap:4px; } .qlWrap { gap:4px; } #mapOverlay button { padding:4px 12px; } }    /* Square and tall touch screens (a foldable's inner screen, about 900 x 840 or 840 x 900): the slot row would sit under the jump, slide and dash buttons, so it moves to the top under the HUD row, clear of the minimap; the Full Screen chip is only in the menus there */
+  @media (pointer:coarse) and (min-aspect-ratio: 3/4) and (max-aspect-ratio: 13/10) {
+    #zones { top:100px; bottom:auto; left:8px; transform:none; width:calc(100vw - 176px); grid-template-columns:repeat(4, minmax(0, 1fr)); }
+    #prompt { bottom:190px; } #fusion { bottom:222px; } #itemsList { bottom:210px; }
+  }
+  @media (pointer:coarse) { body[data-mode=play] #devbar { display:none; } }  </style>
 </head>
 <body>
 <div id="stage"><canvas id="view"></canvas></div>
