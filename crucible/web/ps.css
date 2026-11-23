@@ -225,7 +225,7 @@ body.ps { background: #000; }
 /* a switch: its words are whole lines inside a border and padding of 4 pixels, and 8 pixels lie under it, so the switches
    stand 16 pixels a line apart like everything else in the box */
 #app.ps .lab { display: grid; grid-template-columns: 28px 1fr; gap: 6px; align-items: start; width: 100%; margin: 0 0 8px; padding: 3px; border: 1px solid var(--dark); background: var(--sh); color: var(--ink); text-align: left; cursor: pointer; font: 16px/16px 'LM Text', monospace; }
-#app.ps .lab i { font: 8px/8px 'LM Label', monospace; color: #c2b49c; padding: 4px 0 0; opacity: 1; }
+#app.ps .lab i { font: 8px/8px 'LM Label', monospace; color: #c2b49c; padding: 4px 0 0; opacity: 1; text-align: left; } /* not centred (the old look centres it): a tag of odd width stood half a pixel off the grid */
 #app.ps .lab.on i { color: var(--gl); }
 #app.ps .lab span { font: 16px/16px 'LM Text', monospace; }
 /* The sound controls: sound.mjs builds them as a check box and four sliders; here they are drawn as console parts. Each row is
