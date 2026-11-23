@@ -2,12 +2,12 @@
 // The places come from the same pure scatter the view draws, so what you see is exactly what you hit. Deterministic, no allocation per tick.
 import { scatterStage } from '../gen/scatter.js';
 
-const CELL = 8, TRUNK_R = 0.7, TRUNK_TOP = 10, ROCK_R = 0.95, ROCK_MIN = 1.0, ROCK_TOP = 1.25;   // landmark scale: a tree is 9-16 m with a trunk 1.4-2.4 m wide, a rock 2-6 m wide; nothing smaller is solid
+const CELL = 8, TRUNK_R = 0.55, TRUNK_TOP = 10, ROCK_R = 1.0, ROCK_MIN = 1.0, ROCK_TOP = 1.25;   // landmark scale: a tree is 9-16 m with a trunk 1.4-2.4 m wide, a rock 2-6 m wide; nothing smaller is solid
 export function buildColliders(map, stageIndex) {
   const S = scatterStage(map, stageIndex, true), list = [], grid = new Map();
   const add = (x, y, z, r, top) => { const c = { x, y, z, r, top: y + top }, k = Math.floor(x / CELL) * 4096 + Math.floor(z / CELL); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(c); list.push(c); };
   for (const v of S.trees) for (const t of v) add(t[0], t[1], t[2], TRUNK_R * t[3], TRUNK_TOP * t[3]);
-  for (const v of S.rocks) for (const r of v) if (r[3] >= ROCK_MIN) add(r[0], r[1], r[2], ROCK_R * r[3], ROCK_TOP * r[3]);
+  for (const v of S.rocks) for (const r of v) if (r[3] >= ROCK_MIN) add(r[0], r[1], r[2], ROCK_R * r[3], ROCK_TOP * (r[6] || r[3]));
   return { list, grid, CELL };
 }
 // push o (x, z, y, vx, vz) out of any collider within radius, keeping the speed along the surface so the duelist slides round instead of stopping dead
