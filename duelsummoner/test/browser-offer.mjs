@@ -1,0 +1,10 @@
+﻿import { launch } from './cdp.mjs';
+const b = await launch({ out: process.argv[2], query: '?debug' });
+await b.evalIn(`(async()=>{ const D = window.__ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 1500)); D.game.god = true; D.game.addXp(50); await new Promise(r => setTimeout(r, 900)); return 1; })()`);
+await b.shot('offer');
+console.log(await b.evalIn(`(async()=>{ const cs=[...document.querySelectorAll('#offerCards .card')]; const R=c=>{const r=c.getBoundingClientRect();return [Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]};
+  const before=cs.map(R); cs[1].dispatchEvent(new MouseEvent('mouseover',{bubbles:true})); cs[1].style.cssText+=''; await new Promise(r=>setTimeout(r,300)); const hov=document.querySelectorAll('#offerCards .card:hover').length; const after=cs.map(R);
+  const ev=new MouseEvent('contextmenu',{bubbles:true,cancelable:true}); document.getElementById('offerScreen').dispatchEvent(ev);
+  const btn=cs[0].querySelector('[data-pick]'); btn.click(); await new Promise(r=>setTimeout(r,260)); const mid=R(cs[0]); await new Promise(r=>setTimeout(r,500));
+  return JSON.stringify({ before, same: JSON.stringify(before)===JSON.stringify(after), ctxPrevented: ev.defaultPrevented, mid, offerGone: !document.getElementById('offerScreen').classList.contains('on'), textPx: getComputedStyle(cs[0]).fontSize }); })()`));
+await b.shot('after_pick'); console.log(JSON.stringify(await b.evalIn('window.__errs.slice(0,3)'))); b.close(); setTimeout(() => process.exit(0), 300);

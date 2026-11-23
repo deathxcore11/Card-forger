@@ -7,10 +7,21 @@ import { takeCode, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from '../si
 const $ = id => document.getElementById(id);
 let busy = false;
 // the chosen card flies down toward the field zones, then the choice enters the sim (instant with reduce motion)
-function fly(btn, go) {
+function destFor(g, c) {                                  // the zone the pick lands in: the card's own zone if it has one, else the first free zone of its kind
+  const q = s => document.querySelector(s);
+  if (c && (c.kind === 'monster' || c.kind === 'fusion')) { const i = g.field.monsters.findIndex(m => m && m.id === c.id); return i >= 0 ? $('mz' + i) : q('.zone:not(.st):not(.full)') || $('zones'); }
+  if (c && (c.kind === 'spell' || c.kind === 'trap' || c.kind === 'oneshot')) return q('.zone.st:not(.full)') || $('zones');
+  return $('zones');
+}
+function fly(btn, go, g, c) {
   const card = btn.closest('.card'); if (busy) return;
   if (!card || document.body.classList.contains('rm')) { go(); return; }
-  busy = true; card.classList.add('picked'); setTimeout(() => { busy = false; go(); }, 230);
+  busy = true; $('offerScreen').style.pointerEvents = 'none';
+  const r = card.getBoundingClientRect(), d = destFor(g, c).getBoundingClientRect(), dx = d.left + d.width / 2 - (r.left + r.width / 2), dy = d.top + d.height / 2 - (r.top + r.height / 2), s = Math.max(0.1, Math.min(0.3, d.width / r.width));
+  for (const o of card.parentElement.children) if (o !== card) o.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: 'forwards' });
+  card.style.animation = 'none'; card.style.zIndex = 5;
+  const a = card.animate([{ transform: 'none', opacity: 1, offset: 0 }, { transform: 'scale(1.06)', opacity: 1, offset: 0.2 }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + s + ')', opacity: 0.9, offset: 1 }], { duration: 520, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'forwards' });
+  const done = () => { busy = false; $('offerScreen').style.pointerEvents = ''; go(); }; a.onfinish = done;
 }
 
 function describe(c) {
@@ -62,8 +73,8 @@ export function showOffer(g, act) {
   if (o.leave) btns.insertAdjacentHTML('beforeend', '<button data-act="leave">' + (shop ? 'LEAVE THE STALL' : 'LEAVE IT FOR LATER') + '</button>');
   $('offerScreen').onclick = e => {
     const t = e.target.closest('button'); if (!t || t.disabled) return;
-    if (t.dataset.pick !== undefined) fly(t, () => act(takeCode(+t.dataset.pick)));
-    else if (t.dataset.ban !== undefined) fly(t, () => act(MENU_BANISH + 1 + +t.dataset.ban));
+    if (t.dataset.pick !== undefined) fly(t, () => act(takeCode(+t.dataset.pick)), g, o.cards[+t.dataset.pick]);
+    else if (t.dataset.ban !== undefined) fly(t, () => act(MENU_BANISH + 1 + +t.dataset.ban), g, null);
     else if (t.dataset.act === 'redraw') act(MENU_REDRAW);
     else if (t.dataset.act === 'pass') act(MENU_PASS);
     else if (t.dataset.act === 'leave') act(MENU_LEAVE);
@@ -71,7 +82,7 @@ export function showOffer(g, act) {
 }
 export function offerKey(g, code, act) {                // keyboard: 1 to 4 take or buy, R redraw, P pass, L leave
   if (!g.offer) return false;
-  if (/^Digit[1-9]$/.test(code)) { act(takeCode(+code.slice(5) - 1)); return true; }
+  if (/^Digit[1-9]$/.test(code)) { const b = document.querySelector('#offerCards [data-pick="' + (+code.slice(5) - 1) + '"]'); if (b && !b.disabled) b.click(); return true; }
   if (code === 'KeyR') { act(MENU_REDRAW); return true; }
   if (code === 'KeyP') { act(MENU_PASS); return true; }
   if (code === 'KeyL') { act(MENU_LEAVE); return true; }

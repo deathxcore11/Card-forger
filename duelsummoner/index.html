@@ -71,10 +71,11 @@
   .wtag.spent { color:#8a8a92; border-color:#4a4a52; }
   .wtag.free { color:#ffffff; } .wtag.shop { color:#ffd23f; } .wtag.danger { color:#ff6a5a; } .wtag.seal { color:#c9a0ff; }          /* one colour code everywhere: white free, gold coins, red danger, violet Fusion and seals; grey once used */
   #offerScreen { pointer-events:auto; }
-  #offerCards { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
-  .card { width:200px; border:2px solid var(--line); background:var(--panel); padding:10px; text-align:left; font-size:13px; line-height:1.4; }
-  .card h3 { margin:0 0 4px; font-size:15px; letter-spacing:1px; }
-  .card .t { color:var(--dim); font-size:11px; }
+  #offerCards { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; align-items:stretch; }
+  .card { width:272px; min-height:360px; flex:0 0 272px; box-sizing:border-box; display:flex; flex-direction:column; border:2px solid var(--line); background:var(--panel); padding:16px; text-align:left; font-size:16px; line-height:1.45; }
+  .card .rowBtn { margin-top:auto; padding-top:10px; } .card .rowBtn button { font-size:15px; padding:9px 14px; }
+  .card h3 { margin:0 0 6px; font-size:19px; letter-spacing:1px; }
+  .card .t { color:var(--dim); font-size:13px; margin:2px 0; }
   .card.rare { border-color:#5b9bd5; } .card.epic { border-color:#a974e0; } .card.legendary { border-color:#e8b84a; }
   .card.new h3::after { content:' NEW'; color:#8f6; font-size:10px; }
   #offerBtns button { font-size:14px; padding:8px 16px; margin:4px; }
@@ -90,10 +91,10 @@
   @keyframes beat { 0%,100% { opacity:.12; } 12% { opacity:.75; } 24% { opacity:.25; } 36% { opacity:.6; } 60% { opacity:.12; } }
   .screen.on { animation:fadein .25s ease-out; }
   @keyframes fadein { from { opacity:0; } to { opacity:1; } }
-  .card { animation:deal .38s cubic-bezier(.2,.9,.3,1.2) backwards; transition:transform .14s, border-color .14s; }
+  .card { animation:deal .38s cubic-bezier(.2,.9,.3,1.2) backwards; transition:border-color .14s, box-shadow .14s; }
   .card:nth-child(2) { animation-delay:.07s; } .card:nth-child(3) { animation-delay:.14s; } .card:nth-child(4) { animation-delay:.21s; }
   @keyframes deal { from { opacity:0; transform:translateY(-70px) rotate(-9deg) scale(.7); } to { opacity:1; transform:none; } }
-  .card:hover { transform:perspective(560px) rotateX(6deg) rotateY(-6deg) translateY(-6px); border-color:var(--ink); }
+  .card:hover { border-color:var(--ink); box-shadow:0 0 0 2px var(--ink), 0 0 18px rgba(255,255,255,.18); }        /* hover never moves or resizes a card: only the outline lights */
   .card.picked { animation:pick .24s ease-in forwards; pointer-events:none; }
   @keyframes pick { to { opacity:0; transform:translateY(46vh) scale(.35); } }
   #plate { left:50%; top:34%; transform:translateX(-50%); text-align:center; opacity:0; font-size:clamp(26px,5vw,52px); letter-spacing:8px; color:#ffe9b0; }
