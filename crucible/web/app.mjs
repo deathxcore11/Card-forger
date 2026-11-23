@@ -999,12 +999,16 @@ const leafPic = (hall, art, at, rp) => hallInfo(hall) ? `leaf-${art}-${hall}-${a
 // Fog in a doorway: patches of the console's falling-off dither (fogSprite), wider than the doorway so it spills onto the
 // frame and the step, its colour the hall's own stone gone pale. A door partly hidden gets a thin mist; one in fog a thick
 // one and a second, paler layer drifting against it, its shape still showing at the edges.
+// The patch stands still; its cloud drifts two pixels either way and back through eight frames, while its dots stay on the
+// frame's grid (fogSprite), so the mist and a dimmed screen's mesh over it meet the same on every shape and at every step.
+const FOG_DRIFT = [-2, -1, 0, 1, 2, 1, 0, -1];
 function doorFog(d, [x, y, w, h], rp, H) {
   if (!d.know || d.know === 'known') return '';
-  const pw = w + Math.round(22 * rp.k), ph = h + Math.round(16 * rp.k), at = [x + (w >> 1), y + (h >> 1) + Math.round(4 * rp.k)], pin = [pw >> 1, ph >> 1];
+  const pw = w + Math.round(22 * rp.k) + 4, ph = h + Math.round(16 * rp.k), at = [x + (w >> 1), y + (h >> 1) + Math.round(4 * rp.k)], pin = [pw >> 1, ph >> 1]; // 4 more across: room for the drift
   const st = (H && H.stone) || [150, 110, 70], mist = st.map(v => Math.min(255, Math.round(v * .8 + 70))), deep = d.know === 'mystery';
-  const patch = (cls, dens, rgb) => onPic('i', 'dfog ' + cls, at, pin, `width:${pw}px;height:${ph}px;background-image:url(${fogSprite(pw, ph, dens, rgb)})`);
-  return patch('fa', deep ? .9 : .55, mist) + (deep ? patch('fb', .6, mist.map(v => Math.min(255, v + 24))) : '');
+  const grid = [100 + rp.ox + at[0] - pin[0], 4 + rp.oy + at[1] - pin[1]].map(v => v & 3); // the patch's corner on the frame's grid: the view stands at 100, 4
+  const patch = (cls, dens, rgb, gaps) => onPic('i', 'dfog ' + cls, at, pin, `width:${pw}px;height:${ph}px;background-image:url(${fogSprite(pw, ph, dens, rgb, grid, FOG_DRIFT, gaps)});--to:-${pw * FOG_DRIFT.length}px`, `data-grid="${grid}"`);
+  return patch('fa', deep ? .9 : .55, mist) + (deep ? patch('fb', .6, mist.map(v => Math.min(255, v + 24)), true) : '');
 }
 function psChamber() {
   const r = G.run, boss = BOSSES[r.floor][r.bossOrder[r.floor]], fl = r.floor + 1;

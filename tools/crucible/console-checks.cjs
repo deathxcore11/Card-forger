@@ -32,6 +32,9 @@
 //           part while it moves (the fog, the cursor, the forge's hammer); a part marked still (data-still: a door's
 //           leaves at rest, a number on the step, a model standing in its room) is scenery the choices may stand in
 //           front of, and a tap area that draws nothing hides nothing;
+//   grid    a 1-bit dither drawn for its place on the frame's grid (the doorway fog, data-grid) lies at that place and is
+//           never moved, so a dimmed screen's mesh meets it in the same step on every shape (a doorway's fog that does not
+//           say where its dots stand is a fault);
 //   still   a part marked still runs no animation, and a canvas of models marked still draws the same pixels a moment
 //           later;
 //   table   on the duel's table each tap area is cut to its zone as the table's camera draws it and draws nothing; the
@@ -242,6 +245,15 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
             for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4, eq = under[i] === f0[i] && under[i + 1] === f0[i + 1] && under[i + 2] === f0[i + 2]; same += eq; if (x === 0 || y === 0 || x === w - 1 || y === h - 1) { edge++; edgeSame += eq; } }
             if (same / (w * h) < .6 || edgeSame / edge < .85) out.push(`${name(e)}: its first frame matches the picture under it at ${Math.round(same / (w * h) * 100)}% (edge ${Math.round(edgeSame / edge * 100)}%): not cut from this place`);
           }
+        }
+        // grid: a 1-bit dither drawn for its place on the frame's grid (data-grid: where its corner falls, counted in fours)
+        // is laid at that place, and nothing moves it, so it meets every other pattern on the frame in the same step
+        for (const e of app.querySelectorAll('[data-grid], .dfog')) {
+          if (!vis(e)) continue;
+          if (!e.dataset.grid) { out.push(`${name(e)}: a doorway's fog says nothing of where its dots stand on the frame's grid`); continue; }
+          const [gx, gy] = e.dataset.grid.split(',').map(Number), [x, y] = fr(e);
+          if ((x & 3) !== gx || (y & 3) !== gy) out.push(`${name(e)}: its dots were drawn for ${gx}, ${gy} on the frame's grid of fours, and it lies at ${x & 3}, ${y & 3}`);
+          if (getComputedStyle(e).transform !== 'none') out.push(`${name(e)}: a pattern pinned to the frame's grid is moved (${getComputedStyle(e).transform})`);
         }
         // still: a part marked still does not move. No animation runs on it, and a canvas of models draws the same pixels a
         // moment later (a room's models are drawn once, when the room is laid out).

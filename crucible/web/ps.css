@@ -142,11 +142,12 @@ body.ps { background: #000; }
 #app.ps .dr:not(.on)::before, #app.ps .dr.lock::after { content: ''; position: absolute; inset: 0; z-index: 1; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) var(--mesh, 0 0) / 2px 2px; opacity: .5; pointer-events: none;
   -webkit-mask: var(--lf) 0 0 / 100% 100% no-repeat; mask: var(--lf) 0 0 / 100% 100% no-repeat; }
 #app.ps .dr.lock::after { opacity: 1; }
-/* fog in a doorway: two patches of falling-off dots drifting a pixel at a time against each other */
+/* fog in a doorway: two patches of falling-off dots, each stepping through its eight frames, the cloud drifting a pixel at
+   a time against the other while its dots stay on the frame's grid (fogSprite in ps.mjs, doorFog in app.mjs) */
 #app.ps .dfog { position: absolute; z-index: 2; pointer-events: none; background: 0 0 no-repeat; }
-#app.ps .dfog.fa { animation: psdrift 3.2s steps(4) infinite alternate; }
-#app.ps .dfog.fb { animation: psdrift 4.8s steps(4) infinite alternate-reverse; }
-@keyframes psdrift { from { transform: translateX(-2px); } to { transform: translateX(2px); } }
+#app.ps .dfog.fa { animation: psfog 6.4s steps(8) infinite; }
+#app.ps .dfog.fb { animation: psfog 9.6s steps(8) -4.8s infinite; }
+@keyframes psfog { to { background-position: var(--to) 0; } }
 /* each door's number, on the step under it; the chosen one lit */
 #app.ps .dno { position: absolute; z-index: 3; width: 10px; height: 10px; background: var(--sh); color: var(--gl); font: 8px/10px 'LM Label', monospace; text-align: center; box-shadow: 0 0 0 1px var(--gold); pointer-events: none; }
 #app.ps .dno.on { background: var(--gl); color: var(--sh); box-shadow: 0 0 0 1px var(--sh); }
