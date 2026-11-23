@@ -6,7 +6,7 @@ import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { MAP } from '../data/map.js';
 import { SCALE, summonSize } from '../data/scale.js';
 import { DuelistRig } from './rig.js';
-import { actorLit } from './engine.js';
+import { actorLit, setStains, setSkyTint } from './engine.js';
 import { Ribbon } from './ribbon.js';
 import { OwnEffects } from './ownfx.js';
 import { RAMP } from '../data/fxramp.js';
@@ -97,7 +97,7 @@ function modelGroup(model, targetSize, axis, glowColor) {
 export class Actors {
   constructor(scene, assets, fx) {
     this.scene = scene; this.assets = assets || {}; this.fx = fx;
-    this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.hitRow = new Int8Array(CFG.enemy.max).fill(-1); this._tierSeen = new WeakMap(); this.labStatus = new Uint8Array(CFG.enemy.max); this._fc = new T.Color(); this.flashBright = ['fire', 'ice', 'lightning', 'poison', 'wind', 'earth', 'light', 'dark'].map(n => new T.Color(RAMP[n][1])); this.flashNeutral = new T.Color(0xf3e3c2); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;       // labStatus: the lab sets an element status code on a body (1 ice shell, 2 venom, 3 gust, 4 mire, 5 reveal, 6 shred) until the sim wires those elements
+    this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.hitRow = new Int8Array(CFG.enemy.max).fill(-1); this._tierSeen = new WeakMap(); this._stains = []; this._lead = null; this._skyOn = false; this.tier5 = false; this.labStatus = new Uint8Array(CFG.enemy.max); this._fc = new T.Color(); this.flashBright = ['fire', 'ice', 'lightning', 'poison', 'wind', 'earth', 'light', 'dark'].map(n => new T.Color(RAMP[n][1])); this.flashNeutral = new T.Color(0xf3e3c2); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;       // labStatus: the lab sets an element status code on a body (1 ice shell, 2 venom, 3 gust, 4 mire, 5 reveal, 6 shred) until the sim wires those elements
     this._white = new T.Color(0x666666); this._black = new T.Color(0x000000);
     this.player = playerMesh(); scene.add(this.player);
     this.rig = null; this.rigs = {};                                          // the skinned duelists, for each GLB present in assets/models (duelist-<id>-anim.glb)
@@ -167,6 +167,8 @@ export class Actors {
     for (let k = 0; k < n; k++) { const a = o.type === 'fan' ? ang0 - arc + (k / (n - 1)) * arc * 2 : (k / n) * 6.2832, x = o.x + Math.cos(a) * o.r, z = o.z + Math.sin(a) * o.r; if (row !== undefined) fx.sparkEl(x, o.y + 0.3, z, Math.cos(a) * 1.5, 2.2 + tier, Math.sin(a) * 1.5, row, 0.14, 0.55); else fx.spark(x, o.y + 0.3, z, Math.cos(a) * 1.5, 2.2 + tier, Math.sin(a) * 1.5, hex, 0.14, 0.55); }
     fx.ring(o.x, o.y + 0.05, o.z, o.r, hex, 0.5 + 0.4 * tier);
   }
+  // Tier 5 (spec 1.4): every large own area is stamped into the stain map and gets a hollow giant at its TRUE rule radius, 16 m tall at Reach +0% up to 40 m at +150%, its top rising and falling slowly at 0.5 Hz; the footprint is never enlarged
+  _tier5(o, rch) { const el = o.el || 'fire', L = RAMP[el] || RAMP.fire; this._lead = this._lead || el; this._stains.push({ x: o.x, z: o.z, r: o.r, hex: L[3] }); const h = 16 + 24 * Math.min(1, rch / 1.5) + 1.5 * Math.sin(performance.now() / 1000 * Math.PI); this.own.wall(o.x, o.y, o.z, o.r, h, ownColour(el), 1); }
   // the enemy a chain jump reached gets the crawling outline for 300 ms (the nearest live enemy to the bolt's end point, within 1.5 m)
   _arcAt(g, x, z) { const e = g.en; let best = -1, bd = 2.25; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.arcT[best] = 0.3; }
   _fan(arc, max) {
@@ -371,7 +373,7 @@ export class Actors {
       for (const mm of [this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell]) { mm.count = n; mm.instanceMatrix.needsUpdate = true; }
     }
     // swarm
-    this.lastEn = e; this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); for (const kk of this.kinds) kk.fxNow = false; const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
+    this.lastEn = e; this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); for (const kk of this.kinds) { kk.fxNow = false; kk.cs = 0; kk.fs = 0; } const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
     for (let i = 0; i < e.max; i++) {
       if (!e.alive[i]) { this._wasSwarm[i] = 0; continue; }
       if (!this._wasSwarm[i]) { this._wasSwarm[i] = 1; this.spawnAge[i] = 0; if (this._dustBudget > 0) { this._dustBudget--; fx.burst(e.x[i], e.y[i] + 0.1, e.z[i], 3, 0xb09a6a, 1.5, 1.5, 0.2, 0.45, 5); } }
@@ -387,9 +389,9 @@ export class Actors {
       d.position.set(x, y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85) + bob - rise * 1.1, z); d.rotation.set(hit && !fx.rm_ ? 0.32 : 0, face, 0);
       const mgs = e.size[i];                                                    // merged past the cap: bigger, up to 1.5x
       d.scale.set(sc[0] * pulse * grow * mgs * (hit ? 1.2 : 1), sc[1] * pulse * grow * mgs * (hit ? 0.85 : 1), sc[2] * pulse * grow * mgs * (hit ? 1.2 : 1)); d.updateMatrix();
-      k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this._flashCol(i, e.ace[i] ? this.aceCol : k.base, k.boost) : (e.ace[i] ? this.aceCol : k.base)); if (!hit) this.hitRow[i] = -1;
+      k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this._flashCol(i, e.ace[i] ? this.aceCol : k.base, k.boost) : (e.ace[i] ? this.aceCol : k.base)); if (hit) k.cs += (n + 1) * (7 + this.hitRow[i] + 3); else { this.hitRow[i] = -1; if (e.ace[i]) k.cs += (n + 1) * 3; }
       { const bn = e.burn[i]; let bf = 0; if (bn > 0) { if (this.burnMax[i] < bn) this.burnMax[i] = bn; const bm = this.burnMax[i]; bf = Math.max(0.02, Math.min(1, (bm - bn) / 0.4 + 0.02, bn / (0.35 * bm))); } else this.burnMax[i] = 0;
-        let ar = 0; if (this.arcT[i] > 0) { this.arcT[i] -= dt; ar = 1; } const fa = k.fxArr, o3 = n * 4, lc = this.labStatus[i]; fa[o3] = bf; fa[o3 + 1] = ar; fa[o3 + 2] = (i * 0.6180339) % 1; fa[o3 + 3] = lc; if (bf > 0 || ar > 0 || lc > 0) k.fxNow = true; }
+        let ar = 0; if (this.arcT[i] > 0) { this.arcT[i] -= dt; ar = 1; } const fa = k.fxArr, o3 = n * 4, lc = this.labStatus[i]; fa[o3] = bf; fa[o3 + 1] = ar; fa[o3 + 2] = (i * 0.6180339) % 1; fa[o3 + 3] = lc; k.fs += (n + 1) * (bf * 13 + ar * 7 + lc * 3); if (bf > 0 || ar > 0 || lc > 0) k.fxNow = true; }
       if (k.eye) {
         d.position.set(x + Math.sin(face) * 0.62 * sc[0], y + 1.05 + bob, z + Math.cos(face) * 0.62 * sc[0]); d.scale.set(1, 1, 1); d.updateMatrix(); k.eye.setMatrixAt(n, d.matrix);
       }
@@ -397,7 +399,7 @@ export class Actors {
       if (e.ace[i] && cc < 24) { d.position.set(x, y + 2.1 * mgs + 0.4 + Math.sin(t * 3 + i) * 0.08, z); d.rotation.set(0, t * 2.4 + i, 0); d.scale.set(1, 1.5, 1); d.updateMatrix(); this.crests.setMatrixAt(cc++, d.matrix); }
       if (e.mark[i] > 0) { d.position.set(x, y + 2.3 + Math.sin(t * 4) * 0.1, z); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1.4, 1); d.updateMatrix(); this.marks.setMatrixAt(mc.n++, d.matrix); }
     }
-    this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; k.body.instanceColor.needsUpdate = true; { const a = k.body.geometry.attributes.aFx; if (k.fxNow || k.fxPrev) { a.updateRange.offset = 0; a.updateRange.count = counts[i] * 4; a.needsUpdate = true; } k.fxPrev = k.fxNow; } if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
+    this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; if (k.cs !== k.csPrev || counts[i] !== k.cPrev) k.body.instanceColor.needsUpdate = true; k.csPrev = k.cs; k.cPrev = counts[i]; { const a = k.body.geometry.attributes.aFx; if ((k.fxNow || k.fxPrev) && (k.fs !== k.fsPrev || counts[i] !== k.fcPrev || k.fxNow !== k.fxPrev)) { a.updateRange.offset = 0; a.updateRange.count = counts[i] * 4; a.needsUpdate = true; } k.fsPrev = k.fs; k.fcPrev = counts[i]; k.fxPrev = k.fxNow; } if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
     this.marks.count = mc.n; this.marks.instanceMatrix.needsUpdate = true; this.crests.count = cc; this.crests.instanceMatrix.needsUpdate = true;
 
     // elites and the boss
@@ -504,12 +506,12 @@ export class Actors {
     }    this.teleLine.count = nl; this.teleDisc.count = nd; this.teleRing.count = nr2; this.teleRing.instanceMatrix.needsUpdate = true; this.teleRing.instanceColor.needsUpdate = true;
     for (const mm of [this.teleLine, this.teleDisc]) { mm.instanceMatrix.needsUpdate = true; mm.instanceColor.needsUpdate = true; }
     // effects: expanding rings and fading fans
-    let nr = 0; this.own.begin(); const rch = g.mods.reach || 0, tier = rch >= 1.0 ? 2 : rch >= 0.5 ? 1 : 0; this.own.tier = tier;
+    let nr = 0; this._stains.length = 0; this._lead = null; this.own.begin(); const rch = g.mods.reach || 0, tier = rch >= 1.0 ? 2 : rch >= 0.5 ? 1 : 0; this.own.tier = tier;
     for (const o of g.fx) {
       if (!o.on) continue;
       if (o.type === 'bolt') { if (this.ribbon.see(o) && o.el === 'lightning') this._arcAt(g, o.x2, o.z2); continue; }
       const f = Math.min(1, o.t / o.dur), fade = 1 - f;
-      if (o.owner === 0 && this.ownCtx) { if (tier > 0) this._tierFx(o, tier); if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), this._ownHex(o), false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, this._ownHex(o), true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
+      if (o.owner === 0 && this.ownCtx) { if (tier > 0) this._tierFx(o, tier); if (this.tier5 && o.r >= 8) this._tier5(o, rch); if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), this._ownHex(o), false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, this._ownHex(o), true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
       if (o.type === 'ring') {
         d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = o.r * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix();
         this.fxRing.setMatrixAt(nr, d.matrix); this.fxRing.setColorAt(nr, col.setHex(o.color).multiplyScalar(0.4 + 0.6 * fade)); nr++;
@@ -519,6 +521,8 @@ export class Actors {
         fan.setMatrixAt(n, d.matrix); fan.setColorAt(n, col.setHex(o.color).multiplyScalar(0.3 + 0.7 * fade)); fanN.set(fan, n + 1);
       }
     }
+    if (this.capBurst) { const cb = this.capBurst; cb.t += this._dt || 0.016; const u = cb.t / 0.7; if (u >= 1) this.capBurst = null; else this.own.area(cb.x, cb.y + 0.15, cb.z, 6 * (1 - (1 - u) * (1 - u)) + 0.3, cb.hex, false, 0, 1, 0, 1 - u * 0.5); }
+    if (this.tier5 && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setStains(this._stains); setSkyTint(L[3], L[2], 0.2); this._skyOn = true; } else if (this._skyOn) { setStains([]); setSkyTint(0, 0, 0); this._skyOn = false; }
     this.ribbon.tick(); if (this.ownCtx && this.ownExtra) this.ownExtra(this.own); if (this.ownCtx) { const c = this.ownCtx; this.own.end(c.camera, g.p, c.renderer.internalSize ? { w: c.renderer.internalSize.x, h: c.renderer.internalSize.y } : { w: 960, h: 540 }, this._dt); }
     this.fxRing.count = nr; this.fxRing.instanceMatrix.needsUpdate = true; this.fxRing.instanceColor.needsUpdate = true;
     for (const [fan, mesh] of this.fans) { mesh.count = fanN.get(mesh) || 0; mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }

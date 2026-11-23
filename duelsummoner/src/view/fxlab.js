@@ -7,6 +7,8 @@
 import { RAMP, ELEMENTS } from '../data/fxramp.js';
 import { fxProbe, FX } from './fxkit.js';
 import { E } from './engine.js';
+import { ownColour } from './fxcolour.js';
+import { makeElementShape } from './elshapes.js';
 
 export function startLab(D) {
   const g = D.game, R = D.renderer, gl = R.getContext(), fx = D.fx, $ = (t, css, txt) => { const e = document.createElement(t); if (css) e.style.cssText = css; if (txt !== undefined) e.textContent = txt; return e; };
@@ -40,11 +42,32 @@ export function startLab(D) {
   const elementStrip = async name => {
     clearInterval(elTimer); const p = g.p, E = await import('/src/sim/enemies.js'); for (let i = 0; i < g.en.max; i++) { g.en.alive[i] = 0; D.actors.labStatus[i] = 0; }
     const kinds = ['husk', 'runner', 'seer', 'golem', 'bloat', 'hunter', 'scarab']; for (let k = 0; k < 60; k++) { const a = -1.57 + ((k * 7) % 15 - 7) * 0.08, d = 5 + Math.floor(k / 10) * 1.6; E.spawnEnemy(g, kinds[(k * 5) % 7], { x: p.x + Math.cos(a) * d, z: p.z + Math.sin(a) * d }); g.en.hp[g.lastSlot] = 1e9; g.en.spd[g.lastSlot] = 0; D.actors.labStatus[g.lastSlot] = CODE[name]; }
-    const row = ROWS[name], c1 = RAMP[name][1], c2 = RAMP[name][2], c3 = RAMP[name][3], bx = p.x, bz = p.z - 18;
+    const row = ROWS[name], c1 = ownColour(name), c2 = RAMP[name][2] === c1 ? RAMP[name][3] : RAMP[name][2], c3 = RAMP[name][3], bx = p.x, bz = p.z - 18;
     D.actors.ownExtra = own => { own.area(bx - 16, p.y + 0.1, bz, 2, c1, true, 0, 1, 0, 1); own.area(bx - 8, p.y + 0.1, bz, 4, c2, true, 0, 1, 0, 1); own.volume(bx, p.y, bz, 6, c2, 1); own.volume(bx + 10, p.y, bz, 9, c1, 1); own.area(bx + 22, p.y + 0.1, bz, 14, c3, true, 0, 1, 0, 1); };
     elTimer = setInterval(() => { fx.burstEl(bx - 22, 0.4, bz, 6, row, 1.5, 2, 0.14, 0.9, 0); let n = 0; for (let i = 0; i < g.en.max && n < 10; i++) if (g.en.alive[i] && i % 6 === 0) { g.en.flash[i] = 0.07; D.actors.hitRow[i] = row; n++; } }, 90);
+  };  // Tier 5 (step 14): the screen-breaking state in one scene. The big own attacks are stamped into the ground (stain map), each gets a hollow giant at its TRUE rule radius, the sky tints and runs a flame band. window.__fxlab.tier5Measure() reports the claimed share
+  // (pixels that differ with Tier 5 on and off, same frame, sim frozen) and whether the effect touches all four screen edges and crosses the horizon in at least 3 places.
+  const tier5 = async on => {
+    const C = await import('/src/sim/combat.js'), p = g.p; D.tier5Force = !!on; for (const o of g.fx) if (o.owner === 0 && o.dur >= 100) o.on = false;
+    if (!on) return; const mk = (r, el, arc) => { const rec = C.addFx(g, arc ? { type: 'fan', owner: 0, el, x: p.x, y: p.y, z: p.z, r, arc, dx: 0, dz: -1, dur: 1e6, color: 0 } : { type: 'ring', owner: 0, el, x: p.x, y: p.y, z: p.z, r, dur: 1e6, color: 0 }); if (rec) rec.t = 0.9999e6; };
+    mk(32, 'fire', 150); mk(24, 'fire', 0); mk(16, 'fire', 0); D.ownRForce = 32 * 1.58 / 2;
+  };
+  const measure = async () => {
+    const snap = () => { D.blitNow(); const c = document.getElementById('view'), cv = document.createElement('canvas'); cv.width = c.width; cv.height = c.height; const x = cv.getContext('2d'); x.drawImage(c, 0, 0); return { d: x.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height }; };
+    await new Promise(r => setTimeout(r, 400)); const A = snap(); D.tier5Force = false; const saved = g.fx.filter(o => o.on && o.owner === 0 && o.dur >= 100); saved.forEach(o => { o.on = false; }); await new Promise(r => setTimeout(r, 400)); const B = snap(); D.tier5Force = true; saved.forEach(o => { o.on = true; });
+    const diff = (i) => Math.abs(A.d[i] - B.d[i]) + Math.abs(A.d[i + 1] - B.d[i + 1]) + Math.abs(A.d[i + 2] - B.d[i + 2]) > 30; let n = 0; const w = A.w, h = A.h, edge = { top: 0, bottom: 0, left: 0, right: 0 };
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { if (diff((y * w + x) * 4)) { n++; if (y < 3) edge.top++; if (y >= h - 3) edge.bottom++; if (x < 3) edge.left++; if (x >= w - 3) edge.right++; } }
+    let cross = 0, inRun = false; const hy = Math.floor(h * 0.47); for (let x = 0; x < w; x += 2) { let hit = false; for (let y = hy - 4; y <= hy + 4; y++) if (diff((y * w + x) * 4)) { hit = true; break; } if (hit && !inRun) cross++; inRun = hit; }
+    return { claimedPct: +(n / (w * h) * 100).toFixed(1), edge, horizonCrossings: cross };
+  };  // the six elements side by side by SHAPE and MOTION (view/elshapes.js), then the same frame in greyscale (the canvas filter): the lab check that each is recognisable without colour
+  let shapes = [], shapeTimer = 0;
+  const showShapes = async grey => {
+    clearInterval(shapeTimer); for (const s of shapes) D.scene.remove(s.group); shapes = []; const p = g.p;
+    if (grey === undefined) return; ELS.forEach((n, i) => { const s = makeElementShape(n); s.group.position.set(p.x + (i - 2.5) * 6.8, p.y, p.z - 14); D.scene.add(s.group); shapes.push(s); });
+    D.camHold = { x: p.x, y: p.y + 8, z: p.z + 15, lx: p.x, ly: p.y + 2.5, lz: p.z - 14 }; const t0 = performance.now(); shapeTimer = setInterval(() => { const t = (performance.now() - t0) / 1000; for (const s of shapes) s.update(t); }, 16);
+    document.getElementById('view').style.filter = grey ? 'grayscale(1)' : '';
   };  const worstCase = on => { worst = on === undefined ? !worst : on; if (worst) { g.god = true; g.spawnAcc = -1e9; D.fillSwarm(300 - g.enemyCount(), 'husk'); for (let i = 0; i < 300 && g.enemyCount() < 300; i++) D.fillSwarm(1, kinds[i % 6]); timer = setInterval(() => { burstAll(); bolts(); }, 100); wb.textContent = 'Worst case: ON (click to stop)'; } else { clearInterval(timer); wb.textContent = 'Worst case'; } };
-  const wb = btn('Worst case', () => worstCase()); const row2 = $('div', 'display:flex;gap:4px;flex-wrap:wrap;margin-top:4px'); for (const n of ELS) row2.append(btn(n, () => elementStrip(n)));
+  const wb = btn('Worst case', () => worstCase()); const row2 = $('div', 'display:flex;gap:4px;flex-wrap:wrap;margin-top:4px'); for (const n of ELS) row2.append(btn(n, () => elementStrip(n))); row2.append(btn('Shapes', () => showShapes(false)), btn('Grey', () => showShapes(true)), btn('Tier 5', () => tier5(true)), btn('Break', () => D.tablebreak()));
   row.append(wb, btn('Own stress', () => ownStress(true)), btn('Reset', () => { worstCase(false); ownStress(false); clearInterval(elTimer); D.actors.ownExtra = null; D.actors.labStatus.fill(0); for (let k = 0; k < g.en.max; k++) if (g.en.alive[k]) g.en.alive[k] = 0; })); panel.append(row, row2);
   document.body.append(panel);
 
@@ -53,5 +76,5 @@ export function startLab(D) {
   const reset = () => { upBase = { ...U }; upFrames = frames; D.perfReset(); };
   setInterval(() => { const s = read(), ow = D.actors.own.readout; out.textContent = 'own fx: areas ' + ow.areas + ' vols ' + ow.volumes + ' raster ' + ow.rasterSum + ' kept ' + ow.keptSum + ' gov ' + ow.governor + '\ndraws ' + s.draws + '  tris ' + s.tris + '  enemies ' + s.enemies + '\nframe ' + s.frameMsAvg + ' ms avg, ' + s.frameMsWorst + ' worst\nuploads/frame buf ' + s.uploadsPerFrame.bufferData + '+' + s.uploadsPerFrame.bufferSubData + ' tex ' + s.uploadsPerFrame.texImage + '+' + s.uploadsPerFrame.texSubImage; }, 500);
   reset();
-  window.__fxlab = { elementStrip, worstCase, ownStress, own: () => D.actors.own.readout, read, reset, probe: probeTxt, probeOk: probe === RAMP.fire[0], ramp: FX.ramp, panel };
+  window.__fxlab = { showShapes, tier5, tier5Measure: measure, elementStrip, worstCase, ownStress, own: () => D.actors.own.readout, read, reset, probe: probeTxt, probeOk: probe === RAMP.fire[0], ramp: FX.ramp, panel };
 }

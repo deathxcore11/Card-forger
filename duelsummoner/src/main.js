@@ -17,6 +17,11 @@ const bars = new Bars();
 import { buildScenery } from './view/scenery.js';
 import { buildGrass, detailLevel } from './view/grass.js';
 import { Composite } from './view/composite.js';
+import { OWN as OWN_NS } from './view/ownfx.js';
+const OWN_UNI = OWN_NS.uni;
+import { MONSTERS, FUSIONS } from './data/cards.js';
+import { RAMP } from './data/fxramp.js';
+import { ownColour } from './view/fxcolour.js';
 import { LeyThreads } from './view/threads.js';
 import { Actors } from './view/actors.js';
 import { ChaseCamera } from './view/camera.js';
@@ -74,9 +79,9 @@ let lowRT = null, blitScene = null, blitCam = null, blitQuad = null;
 const composite = new Composite(renderer); composite.on = detailLevel() !== 'low' && !/[?&]composite=0/.test(location.search);       // the composite path: on at Detail Medium and High, off at Low
 const blackTex = new T.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, T.RGBAFormat); blackTex.needsUpdate = true;
 // the post material (engine plan 0c): nearest-sampled scene colour, then the palette snap: the colour is replaced by the nearest entry of the stage's palette (a 3D lookup), blended by `strength` (0 = off, 1 = full). Models, ground and walls get no dither; the strength starts at 0 until the owner has judged an A/B picture.
-const blitMat = new T.ShaderMaterial({ glslVersion: T.GLSL3, depthTest: false, depthWrite: false, uniforms: { tScene: { value: null }, tLut: { value: null }, strength: { value: 0 }, tGlow: { value: null }, uGlow: { value: 0 }, uDim: { value: 0 }, uDrain: { value: 0 }, uFlash: { value: new T.Vector4(0, 0, 0, 0) } },
+const blitMat = new T.ShaderMaterial({ glslVersion: T.GLSL3, depthTest: false, depthWrite: false, uniforms: { tScene: { value: null }, tLut: { value: null }, strength: { value: 0 }, tGlow: { value: null }, uGlow: { value: 0 }, uDim: { value: 0 }, uDrain: { value: 0 }, uFlash: { value: new T.Vector4(0, 0, 0, 0) }, uTB: { value: new T.Vector3() }, uTBang: { value: new T.Vector3(0.4, 2.5, 4.6) }, uTBinfo: { value: new T.Vector4(1, 1, 1, 1) }, uDuel: { value: new T.Vector3(0.5, 0.5, 0) }, uTBh: { value: 0 }, uTBc: { value: new T.Color(0xf3e3c2) } },
   vertexShader: 'out vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-  fragmentShader: 'precision highp float; precision highp sampler3D; uniform sampler2D tScene; uniform sampler2D tGlow; uniform sampler3D tLut; uniform float strength; uniform float uGlow; uniform float uDim; uniform float uDrain; uniform vec4 uFlash; in vec2 vUv; layout(location = 0) out vec4 outColor; void main() { vec4 sc = texture(tScene, vUv); vec3 c = sc.rgb; if (uGlow > 0.0) c += floor(texture(tGlow, vUv).rgb * 6.0 + 0.5) / 6.0 * uGlow; if (uDrain > 0.0) c = mix(c, vec3(dot(c, vec3(0.299, 0.587, 0.114))), uDrain * step(0.9, sc.a)); c *= 1.0 - uDim * step(0.9, sc.a); c = mix(c, uFlash.rgb, uFlash.a); if (strength > 0.0) { vec3 q = texture(tLut, clamp(c, 0.0, 1.0) * (31.0 / 32.0) + 0.5 / 32.0).rgb; c = mix(c, q, strength); } outColor = vec4(c, 1.0); }' });
+  fragmentShader: 'precision highp float; precision highp sampler3D; uniform sampler2D tScene; uniform sampler2D tGlow; uniform sampler3D tLut; uniform float strength; uniform float uGlow; uniform float uDim; uniform float uDrain; uniform vec4 uFlash; uniform vec3 uTB; uniform vec3 uTBang; uniform vec4 uTBinfo; uniform vec3 uDuel; uniform float uTBh; uniform vec3 uTBc; in vec2 vUv; layout(location = 0) out vec4 outColor; void main() { vec2 uvS = vUv; vec2 px = uTBinfo.xy; if (uTBh > 0.5) { vec2 p = (vUv - uDuel.xy) * px; float rr = length(p), ang = atan(p.y, p.x), t = mod(ang - uTBang.x, 6.2832), r1 = mod(uTBang.y - uTBang.x, 6.2832), r2 = mod(uTBang.z - uTBang.x, 6.2832); int k = t < r1 ? 0 : (t < r2 ? 1 : 2); float sh = k == 0 ? uTB.x : (k == 1 ? uTB.y : uTB.z), ra = k == 0 ? uTBang.x : (k == 1 ? uTBang.y : uTBang.z); if (rr > uDuel.z && sh > 0.0) uvS = vUv - vec2(cos(ra), sin(ra)) * sh / px; } vec4 sc = texture(tScene, uvS); vec3 c = sc.rgb; if (uTBh > 0.5) { vec2 p2 = (vUv - uDuel.xy) * px, q = vUv / uTBinfo.zw - 0.5; if (max(abs(q.x), abs(q.y)) > 0.3) { for (int j = 0; j < 3; j++) { float ra2 = j == 0 ? uTBang.x : (j == 1 ? uTBang.y : uTBang.z); vec2 dr = vec2(cos(ra2), sin(ra2)); float al = dot(p2, dr), pd = abs(p2.x * dr.y - p2.y * dr.x); if (al > 0.0 && pd < 0.6) c = uTBc; } } } if (uGlow > 0.0) c += floor(texture(tGlow, vUv).rgb * 6.0 + 0.5) / 6.0 * uGlow; if (uDrain > 0.0) c = mix(c, vec3(dot(c, vec3(0.299, 0.587, 0.114))), uDrain * step(0.9, sc.a)); c *= 1.0 - uDim * step(0.9, sc.a); c = mix(c, uFlash.rgb, uFlash.a); if (strength > 0.0) { vec3 q = texture(tLut, clamp(c, 0.0, 1.0) * (31.0 / 32.0) + 0.5 / 32.0).rgb; c = mix(c, q, strength); } outColor = vec4(c, 1.0); }' });
 function setPaletteStage(stage) { if (!blitMat.uniforms.tLut.value) { const t = new T.DataTexture3D(buildPaletteLUT(stage), 32, 32, 32); t.format = T.RGBAFormat; t.type = T.UnsignedByteType; t.minFilter = t.magFilter = T.NearestFilter; t.wrapR = t.wrapS = t.wrapT = T.ClampToEdgeWrapping; t.unpackAlignment = 1; t.needsUpdate = true; blitMat.uniforms.tLut.value = t; } else { const t = blitMat.uniforms.tLut.value; t.image.data = buildPaletteLUT(stage); t.needsUpdate = true; } }
 function resize() {
   const dpr = window.devicePixelRatio || 1, dw = Math.max(1, Math.round(window.innerWidth * dpr)), dh = Math.max(1, Math.round(window.innerHeight * dpr)), s = Math.max(2, Math.round(dh / INTERNAL_TARGET)), bw = Math.max(1, Math.ceil(dw / s)), bh = Math.max(1, Math.ceil(dh / s));
@@ -91,7 +96,9 @@ function resize() {
   { const uv = blitQuad.geometry.attributes.uv, u1 = dw / s / bw, v1 = dh / s / bh; uv.setXY(0, 0, 1); uv.setXY(1, u1, 1); uv.setXY(2, 0, 1 - v1); uv.setXY(3, u1, 1 - v1); uv.needsUpdate = true; }       // the quad shows exactly dw/s by dh/s internal pixels (anchored top left: the right column or bottom row may be cropped by one)
   renderer.internalSize = new T.Vector2(bw, bh); camera.aspect = bw / bh; fitFov();
 }
-function drawFrame() { renderer.setRenderTarget(lowRT); renderer.render(scene, camera); const gl = composite.run(lowRT.texture, lowRT.width, lowRT.height); blitMat.uniforms.tGlow.value = gl || blackTex; blitMat.uniforms.uGlow.value = gl ? 1 : 0; renderer.setRenderTarget(null); renderer.render(blitScene, blitCam); }
+const tb = { on: false, t0: 0, fired: false };
+function tbTick() { const u = blitMat.uniforms, bw = lowRT.width, bh = lowRT.height, H = actors.own.hole || new T.Vector4(bw / 2, bh / 2, 0, 0); u.uTBinfo.value.set(bw, bh, blitQuad.geometry.attributes.uv.getX(1) || 1, 1 - (blitQuad.geometry.attributes.uv.getY(2) || 0)); u.uTBh.value = tb.on ? 1 : 0; if (!tb.on) return; const oh = OWN_UNI.uHole.value; u.uDuel.value.set(oh.x / bw, oh.y / bh, oh.z); const t = (performance.now() - tb.t0) / 1000, amt = tb.hold ? 1 : t < 0.1 ? 1 : t < 0.167 ? 1 - (t - 0.1) / 0.067 : 0; u.uTB.value.set(4 * amt, 6 * amt, 8 * amt); }
+function drawFrame() { tbTick(); renderer.setRenderTarget(lowRT); renderer.render(scene, camera); const gl = composite.run(lowRT.texture, lowRT.width, lowRT.height); blitMat.uniforms.tGlow.value = gl || blackTex; blitMat.uniforms.uGlow.value = gl ? 1 : 0; renderer.setRenderTarget(null); renderer.render(blitScene, blitCam); }
 window.addEventListener('resize', resize); resize();
 
 // the owner's models are optional local assets; the placeholders stay if they are missing
@@ -170,7 +177,7 @@ function setMode(m) {
 function begin(mode, sel) {
   sel = sel || {}; if (sel.duelist) pickDuelist(sel.duelist);
   game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions'; game.opts.difficulty = sel.difficulty || save.settings.difficulty; game.opts.oaths = sel.oaths || []; game.opts.map = sel.map || 'ruins';
-  ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; capBurstDone = false; fx.dir.newRun(); fx.stopB.log.length = 0; fx.stopB.last = -1e9; fx.stopLog.length = 0; game.opts.meta = simMeta(save.meta); bars.reset(); game.reset(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
+  ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; capBurstDone = false; tb.on = false; tb.fired = false; fx.dir.newRun(); fx.stopB.log.length = 0; fx.stopB.last = -1e9; fx.stopLog.length = 0; game.opts.meta = simMeta(save.meta); bars.reset(); game.reset(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();
   for (const m of actors.specials.values()) scene.remove(m); actors.specials.clear();
   for (const m of actors.chests.values()) scene.remove(m); actors.chests.clear();
@@ -512,7 +519,9 @@ function frame(now) {
     if (fx.push <= 0 && !fovDirty && Math.abs(camera.fov - baseV * (1 + 0.06 * hopFov)) > 0.01) { camera.fov = baseV * (1 + 0.06 * hopFov); camera.updateProjectionMatrix(); }
     const sl = rm ? 0 : Math.max(0, Math.min(1, (hv / R - 1.3) / 0.3)) * 0.85; if (Math.abs(sl - speedLines) > 0.01) { speedLines = sl; $('speedlines').style.opacity = sl.toFixed(2); }
   }
-  if (!capBurstDone && (game.mods.reach || 0) >= 1.5 - 1e-9) { capBurstDone = true; fx.moment('capburst', 'B', { hitstop: 0.04 }, { once: 'run' }); fx.ring(ip.x, ip.y + 0.1, ip.z, 6, 0xf3e3c2, 0.6); fx.cardRing(ip.x, ip.y + 0.6, ip.z, 12, 6); showBanner('Reach has hit its cap'); }
+  if (!capBurstDone && (game.mods.reach || 0) >= 1.5 - 1e-9) { capBurstDone = true; fx.moment('capburst', 'B', { hitstop: 0.04 }, { once: 'run' }); { const lead = game.field.monsters.find(m => m), D0 = lead && (MONSTERS[lead.id] || FUSIONS[lead.id]), el0 = D0 && D0.elements && D0.elements[0]; actors.capBurst = { t: 0, x: ip.x, y: ip.y, z: ip.z, hex: el0 && RAMP[el0] ? ownColour(el0) : 0xf3e3c2 }; } fx.cardRing(ip.x, ip.y + 0.6, ip.z, 12, 6); showBanner('Reach has hit its cap'); }
+  { const t5 = ((game.otStep || 0) > 0 && (game.mods.reach || 0) >= 1.5 - 1e-9) || !!(window.__ds && window.__ds.tier5Force); actors.tier5 = t5;       // the screen tier: Tier 5 (Tablebreak) when Overtime is running and Reach is at its +150% ceiling
+    if (t5 && !tb.fired) { tb.fired = true; const gm = fx.moment('tablebreak', 'A', { hitstop: 0.12 }, { once: 'run' }); if (gm.screen) { const sd = (game.seed || 1) * 0.6180339, f1 = sd % 1, f2 = (sd * 7.31) % 1, f3 = (sd * 3.97) % 1, a0 = f1 * 0.9, a1 = a0 + 1.25 + f2 * 0.8, a2 = a1 + 1.25 + f3 * 0.8; blitMat.uniforms.uTBang.value.set(a0, a1, a2); tb.on = true; tb.t0 = performance.now(); } } }
   fx.tick = Math.round(game.t * 60); fx.stage = game.stage || 0; fx.blocked = !!game.offer || mapOpen; fx.camDist = Math.hypot(camera.position.x - ip.x, camera.position.y - ip.y, camera.position.z - ip.z);
   E.pl.value.set(ip.x, ip.y, ip.z); updateEngine(dtReal || 0.016, curLook); ageRipples(dtReal || 0.016);
   if (waterMesh) { waterMesh.userData.update(camera.position); ripT -= dtReal || 0.016; if (ripT <= 0) { const sp = Math.hypot(game.p.vx, game.p.vz); for (const q of poolSpots(game.map)) if (Math.hypot(ip.x - q.x, ip.z - q.z) < q.r + 0.3 && sp > 1) { ripple(ip.x, ip.z, Math.min(1, 0.4 + sp / 14)); ripT = 0.28; } } }       // the duelist's steps in a pool make ripples
@@ -579,7 +588,7 @@ function duelistPixels() {
   return { alone, visible, silhouette };
 }
 window.__ds = {
-  composite, get grass() { return grassMesh; }, chaseZoom: () => chase.zoom, chaseCap: () => chase.zoomCap,
+  blitU: blitMat.uniforms, tablebreak: hold => { tb.hold = !!hold; tb.fired = true; blitMat.uniforms.uTBang.value.set(0.5, 2.1, 3.9); tb.on = true; tb.t0 = performance.now(); }, composite, get grass() { return grassMesh; }, chaseZoom: () => chase.zoom, chaseCap: () => chase.zoomCap,
   duelistPixels, see: SEE, tagBlocked,
   bars,
   summonPos: () => { const g = actors.monsters.values().next().value; return g ? { x: g.position.x, y: g.position.y, z: g.position.z } : null; },

@@ -9,6 +9,12 @@ import { StopBudget, FlashGate, ShakeBudget, MomentDirector } from './director.j
 // damage number colours by element, from the one effect ramp (bright tone): fire, lightning, ice, poison, wind, earth, light, dark (index = bit + 1, as the hit flags carry them)
 const hexStr = c => '#' + c.toString(16).padStart(6, '0');
 const ELEM_COL = [null, ...['fire', 'lightning', 'ice', 'poison', 'wind', 'earth', 'light', 'dark'].map(e => hexStr(RAMP[e][1]))];
+// a card back in two flat tones (no texture, no gold): a dark ink border slab and a raised slate face, in the 5:7 card shape, with a small diamond facet on the face
+function cardBack() {
+  const parts = [[new T.BoxGeometry(0.46, 0.03, 0.64), [0.11, 0.1, 0.09]], [new T.BoxGeometry(0.34, 0.05, 0.52), [0.29, 0.32, 0.38]], [new T.BoxGeometry(0.12, 0.07, 0.16), [0.11, 0.1, 0.09]]], pos = [], col = [], nor = [];
+  for (const [g0, c] of parts) { const g1 = g0.toNonIndexed(), p = g1.attributes.position.array, n = g1.attributes.normal.array; for (let i = 0; i < p.length; i += 3) { pos.push(p[i], p[i + 1], p[i + 2]); nor.push(n[i], n[i + 1], n[i + 2]); col.push(c[0], c[1], c[2]); } }
+  const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new T.Float32BufferAttribute(col, 3)); return g;
+}
 export const POOL = { particles: 4096, numbers: 64, rings: 48, beams: 4, cards: 12 };
 
 export class Fx {
@@ -53,7 +59,7 @@ export class Fx {
     // flipping cards that rise out of an opened chest
     const C = POOL.cards; this.C = C; this.ch = 0;
     this.cdx = new Float32Array(C); this.cdz = new Float32Array(C); this.cp = new Float32Array(C * 3); this.cage = new Float32Array(C); this.clife = new Float32Array(C); this.cspin = new Float32Array(C);
-    this.cm = new T.InstancedMesh(new T.BoxGeometry(0.7, 0.04, 1.0), new T.MeshBasicMaterial({ color: 0xf3e3c2 }), C); this.cm.frustumCulled = false; this.cm.count = 0; scene.add(this.cm);
+    this.cm = new T.InstancedMesh(cardBack(), new T.MeshBasicMaterial({ vertexColors: true }), C); this.cm.frustumCulled = false; this.cm.count = 0; scene.add(this.cm);
 
     // damage numbers: sprites with their own tiny canvas, text drawn only when one is spawned
     const M = POOL.numbers; this.M = M; this.nh = 0; this.nsp = []; this.nctx = []; this.ntex = [];
@@ -176,7 +182,7 @@ export class Fx {
       if (this.clife[i] === 0) continue; const a = (this.cage[i] += dt);
       if (a < 0) continue; if (a >= this.clife[i]) { this.cage[i] = -1; this.clife[i] = 0; continue; }
       const j = i * 3, u = a / this.clife[i];
-      const ue = 1 - (1 - u) * (1 - u); d.position.set(this.cp[j] + this.cdx[i] * ue, this.cp[j + 1] + u * 2.4, this.cp[j + 2] + this.cdz[i] * ue); d.rotation.set(a * this.cspin[i], u * 2, 0); d.scale.setScalar(1 - u * u * 0.6); d.updateMatrix(); this.cm.setMatrixAt(n++, d.matrix);
+      const ue = 1 - (1 - u) * (1 - u), arc = this.cdx[i] || this.cdz[i] ? Math.sin(u * Math.PI) * 1.8 : u * 2.4; d.position.set(this.cp[j] + this.cdx[i] * ue, this.cp[j + 1] + arc, this.cp[j + 2] + this.cdz[i] * ue); d.rotation.set(a * this.cspin[i], u * 2, 0); d.scale.setScalar(1 - u * u * 0.6); d.updateMatrix(); this.cm.setMatrixAt(n++, d.matrix);
     }
     this.cm.count = n; this.cm.instanceMatrix.needsUpdate = true;
     // damage numbers

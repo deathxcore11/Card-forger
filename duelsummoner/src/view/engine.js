@@ -23,10 +23,11 @@ export const E = {
   noise: { value: buildNoise() }, T: { value: 0 }, wind: { value: new T.Vector3(1, 0.4, 0.5) },       // wind: x,y = direction on the ground, z = strength (0 to 1)
   skyM: { value: new T.Color(0x4fc6d8) }, cldL: { value: new T.Color(0xffffff) }, cldS: { value: new T.Color(0x8fc0da) }, disc: { value: new T.Color(0xfff3b8) }, cover: { value: 0.55 }, sunOn: { value: 1 }, dither: { value: 1 },
   skyT: { value: new T.Color(0x8fb2cc) }, skyH: { value: new T.Color(0xe8d6b0) }, skyG: { value: new T.Color(0xd9c29a) },
-  pl: { value: new T.Vector3() }, skyMode: { value: 0 }, mist: { value: new T.Color(0x7fae9c) }, glow: { value: new T.Color(0x4f7f88) }, star: { value: new T.Color(0xe8eef8) }, moonL: { value: new T.Color(0xe4eaf2) }, moonD: { value: new T.Color(0x04060b) }, ash: { value: new T.Color(0x9c9078) },
+  pl: { value: new T.Vector3() }, tintC: { value: new T.Color(0, 0, 0) }, tintA: { value: 0 }, flameC: { value: new T.Color(0, 0, 0) }, skyMode: { value: 0 }, mist: { value: new T.Color(0x7fae9c) }, glow: { value: new T.Color(0x4f7f88) }, star: { value: new T.Color(0xe8eef8) }, moonL: { value: new T.Color(0xe4eaf2) }, moonD: { value: new T.Color(0x04060b) }, ash: { value: new T.Color(0x9c9078) },
   sunD: { value: new T.Vector3(0.5, 0.8, 0.3).normalize() }, sunK: { value: new T.Color(0xffe2b0) }
 };
 let gustT = 0;
+export function setSkyTint(hex, flameHex, a) { E.tintC.value.setHex(hex || 0); E.flameC.value.setHex(flameHex || 0); E.tintA.value = a || 0; }       // Tier 5: the dome tints toward the lead element and its lowest quarter runs a stepped flame band
 export function updateEngine(dt, look) {
   E.T.value += dt; gustT += dt;
   E.wind.value.z = 0.35 + 0.35 * (0.5 + 0.5 * Math.sin(gustT * 0.31)) + 0.2 * (0.5 + 0.5 * Math.sin(gustT * 0.83 + 1.7));       // a slow overall strength; the travelling fronts come from the noise field in gust()
@@ -93,6 +94,9 @@ export function windify(mat, k) {
 // (0.55 on far pieces so the rim keeps its silhouette) and quantised into 8 bands with the Bayer offset (dither is allowed on fog). Everything is view only and costs no extra draws.
 const blackTex = new T.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, T.RGBAFormat); blackTex.needsUpdate = true;
 export const MASK = { tex: { value: blackTex }, box: { value: new T.Vector4(-232, -232, 464, 464) }, k: { value: 0 }, ck: { value: 0 } };
+// the stain map (spec 6.7, Tier 5): up to 6 stamped discs the ground shader recolours in an element's tone while the ground's own pattern stays visible (a mix, never a solid fill), ragged at the edge, 30% calmer inside 3 m of the duelist (the quiet eye)
+export const STAIN = { a: { value: Array.from({ length: 6 }, () => new T.Vector4()) }, c: { value: Array.from({ length: 6 }, () => new T.Color()) }, n: { value: 0 } };
+export function setStains(list) { const n = Math.min(6, list.length); for (let i = 0; i < n; i++) { STAIN.a.value[i].set(list[i].x, list[i].z, list[i].r, 0); STAIN.c.value[i].setHex(list[i].hex); } STAIN.n.value = n; }
 export function setShadeMask(tex, look) { MASK.tex.value = tex || blackTex; const d = look && look.dome; MASK.k.value = tex && d ? (d.shade || 0) : 0; MASK.ck.value = d && d.cover > 0.02 ? 0.12 : 0; }
 // terrain blending: the ground tone is chosen per pixel from two octaves of the shared noise plus a fine ragged term, so the borders between the three sand tones wander instead of running along the 8 m cells (hard borders, no cross-fade)
 const TERRAIN = `#include <color_fragment>
@@ -101,13 +105,15 @@ const TERRAIN = `#include <color_fragment>
 export function groundLit(mat, cap = 1, sand = null) {
   const prev = mat.onBeforeCompile;
   mat.onBeforeCompile = sh => {
-    if (prev) prev(sh); const u = engineUniforms(); for (const n in u) sh.uniforms[n] = u[n]; sh.uniforms.uMask = MASK.tex; sh.uniforms.uMaskB = MASK.box; sh.uniforms.uMaskK = MASK.k; sh.uniforms.uCloudK = MASK.ck; sh.uniforms.uCover = E.cover; if (sand) { sh.uniforms.uS0 = { value: new T.Color(sand[0]) }; sh.uniforms.uS1 = { value: new T.Color(sand[1]) }; sh.uniforms.uS2 = { value: new T.Color(sand[2]) }; }
+    if (prev) prev(sh); const u = engineUniforms(); for (const n in u) sh.uniforms[n] = u[n]; sh.uniforms.uStainA = STAIN.a; sh.uniforms.uStainC = STAIN.c; sh.uniforms.uStainN = STAIN.n; sh.uniforms.uPl = E.pl; sh.uniforms.uMask = MASK.tex; sh.uniforms.uMaskB = MASK.box; sh.uniforms.uMaskK = MASK.k; sh.uniforms.uCloudK = MASK.ck; sh.uniforms.uCover = E.cover; if (sand) { sh.uniforms.uS0 = { value: new T.Color(sand[0]) }; sh.uniforms.uS1 = { value: new T.Color(sand[1]) }; sh.uniforms.uS2 = { value: new T.Color(sand[2]) }; }
     sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = GLSL + (sand ? 'uniform vec3 uS0; uniform vec3 uS1; uniform vec3 uS2;\n' : '') + 'uniform sampler2D uMask; uniform vec4 uMaskB; uniform float uMaskK; uniform float uCloudK; uniform float uCover; varying vec3 vWP;\n' + (sand ? sh.fragmentShader.replace('#include <color_fragment>', TERRAIN) : sh.fragmentShader).replace('#include <fog_fragment>', `#ifdef USE_FOG
+    sh.fragmentShader = GLSL + (sand ? 'uniform vec3 uS0; uniform vec3 uS1; uniform vec3 uS2;\n' : '') + 'uniform vec4 uStainA[6]; uniform vec3 uStainC[6]; uniform int uStainN; uniform vec3 uPl; uniform sampler2D uMask; uniform vec4 uMaskB; uniform float uMaskK; uniform float uCloudK; uniform float uCover; varying vec3 vWP;\n' + (sand ? sh.fragmentShader.replace('#include <color_fragment>', TERRAIN) : sh.fragmentShader).replace('#include <fog_fragment>', `#ifdef USE_FOG
  { vec2 wxz = vWP.xz; float gg = gust(wxz); vec2 wd = normalize(uWind.xy), sp = wxz - wd * (0.12 + 0.88 * gg) * 0.6;
   float tm = smoothstep(0.42, 0.58, texture2D(uMask, (sp - uMaskB.xy) / uMaskB.zw).r);
   float cn = N(wxz * 0.012 + uWind.xy * uT * 0.0012).r * 0.62 + N(wxz * 0.032 + 3.0).a * 0.38, cs = step(1.0 - uCover, cn);
   gl_FragColor.rgb *= 1.0 - uMaskK * tm - uCloudK * cs;
+  float quiet = 0.3 + 0.7 * smoothstep(1.5, 4.5, length(wxz - uPl.xz)); float luma = dot(gl_FragColor.rgb, vec3(0.299, 0.587, 0.114));
+  for (int si = 0; si < 6; si++) { if (si >= uStainN) break; float sd = length(wxz - uStainA[si].xy) / uStainA[si].z + (N(wxz * 0.35).g - 0.5) * 0.14; if (sd < 1.0) gl_FragColor.rgb = mix(gl_FragColor.rgb, uStainC[si] * (0.55 + 0.9 * luma), 0.62 * quiet); }
   float fd = smoothstep(fogNear, fogFar, fogDepth) * mix(1.3, 0.8, clamp(vWP.y / 30.0, 0.0, 1.0));
   fd = clamp(floor(fd * 8.0 + bayer()) / 8.0, 0.0, ${cap.toFixed(2)}); gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fd); }
 #endif`);
@@ -119,11 +125,11 @@ export function groundLit(mat, cap = 1, sand = null) {
 // ---- the sky dome (engine plan step 2): a banded gradient in direction space (bands 12 with the dither, so a band edge is an ordered-dither pattern), a sun disc with a stepped glow, and clouds from the one noise texture
 // (two cover levels, a lit and a shade colour, scrolling with the wind, fading toward the horizon). The dither is allowed on sky only (amendment 1). Stage 2 and 3 have no sun and no clouds.
 export function makeSky() {
-  const u = Object.assign({ uMode: E.skyMode, uMist: E.mist, uGlow: E.glow, uStar: E.star, uMoonL: E.moonL, uMoonD: E.moonD, uAsh: E.ash, uCover: E.cover, uSunOn: E.sunOn, uDither: E.dither, uSkyM: E.skyM, uCldL: E.cldL, uCldS: E.cldS, uDisc: E.disc }, engineUniforms());
+  const u = Object.assign({ uTintC: E.tintC, uTintA: E.tintA, uFlameC: E.flameC, uMode: E.skyMode, uMist: E.mist, uGlow: E.glow, uStar: E.star, uMoonL: E.moonL, uMoonD: E.moonD, uAsh: E.ash, uCover: E.cover, uSunOn: E.sunOn, uDither: E.dither, uSkyM: E.skyM, uCldL: E.cldL, uCldS: E.cldS, uDisc: E.disc }, engineUniforms());
   const mat = new T.ShaderMaterial({ side: T.BackSide, depthWrite: false, depthTest: true, depthFunc: T.LessEqualDepth, fog: false, uniforms: u,
     vertexShader: 'varying vec3 vD; void main() { vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w; }',
     fragmentShader: GLSL + `
-    uniform float uMode; uniform vec3 uMist; uniform vec3 uGlow; uniform vec3 uStar; uniform vec3 uMoonL; uniform vec3 uMoonD; uniform vec3 uAsh;
+    uniform vec3 uTintC; uniform float uTintA; uniform vec3 uFlameC; uniform float uMode; uniform vec3 uMist; uniform vec3 uGlow; uniform vec3 uStar; uniform vec3 uMoonL; uniform vec3 uMoonD; uniform vec3 uAsh;
     uniform float uCover; uniform float uSunOn; uniform float uDither; uniform vec3 uSkyM; uniform vec3 uCldL; uniform vec3 uCldS; uniform vec3 uDisc; varying vec3 vD;
     void main() {
       vec3 d = normalize(vD); float th = bayer() - 0.5;
@@ -160,6 +166,7 @@ export function makeSky() {
           else if (a > R && a < R + len && abs(fr - 0.5) < 0.14 * (1.0 - (a - R) / len)) c = uAsh;
         }
       }
+      if (uTintA > 0.0 && d.y > 0.0) { c = mix(c, uTintC, uTintA); float lowv = 1.0 - smoothstep(0.0, 0.25, d.y); float az3 = atan(d.z, d.x) / 6.2832 * 6.0; float fn = N(vec2(az3, floor(uT * 8.0) / 64.0 + d.y * 0.6)).r; float ff = lowv * 1.1 + fn * 0.55 - 0.62; if (ff > 0.0) c = mix(c, uFlameC, floor(clamp(ff * 3.0, 0.0, 0.99) * 3.0 + 1.0) / 3.0 * 0.9); }
       c = mix(c, uSkyG, smoothstep(0.0, -0.1, d.y));
       gl_FragColor = vec4(c, 1.0);
     }` });
