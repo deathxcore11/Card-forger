@@ -17,14 +17,15 @@
 //   grid    every line of words starts on a whole frame pixel, across and down;
 //   scroll  a box of pages in a window or a book ends at least 2 pixels above the plaques under it and at most 8 (its
 //           window closes up under it), no line of words is cut by its foot or its top, while lines lie below it its
-//           more marker shows and no empty band deeper than a blank line is left above its foot; the same again once
-//           it is scrolled, and the frame rows just above and under it are drawn whole (edges, read from a
-//           screenshot at a scale above one: a box that scrolls is a layer of its own, whose edge may spill a device
-//           row of what it cuts off);
+//           more marker shows, a row clear of the box and of the plaques under it as it bobs, and no empty band deeper
+//           than a blank line is left above its foot; the same again once it is scrolled, and the frame rows just
+//           above and under it are drawn whole (edges, read from a screenshot at a scale above one: a box that scrolls
+//           is a layer of its own, whose edge may spill a device row of what it cuts off); it opens at its top and
+//           comes back to it when scrolled there; on a book, a slow drag takes it no further than the finger went;
 //   hammer  one lit plaque on the screen, and one in each window or scene over it; the lit one shows the hammer; every
 //           plaque that can be lit has room for the hammer beside its words, and lighting it moves no plaque; the
-//           plaques in a line of words hold their words alike, lit or not; on a book, the same after the mouse has
-//           passed over its plaques;
+//           plaques in a line of words that are not lit hold their words alike; on a book, the same after the mouse
+//           has passed over its plaques;
 //   room    a book's room shows none of its painting's black bands;
 //   bar     a short message (the toast) lies exactly on the text bar (96, H - 40, W - 192 wide); the save bar is as wide;
 //   reach   every control that is not switched off can be tapped where it stands (nothing lies over its middle);
@@ -61,7 +62,7 @@ button{background-color:transparent;background-image:none;cursor:pointer}h1,h2,h
 const hostScript = css => { const add = () => { const st = document.createElement('style'); st.textContent = css; (document.head || document.documentElement).prepend(st); }; if (document.documentElement) add(); else document.addEventListener('DOMContentLoaded', add); };
 const SAME = ['', 'chamber-f1.json', 'duel-regular-f1-h0.json', 'anvil-f1.json', 'reward-card-f1.json'];
 const SHORT = [null, 'chamber-f1.json', 'duel-regular-f1-h0.json', 'reward-card-f1.json', 'reward-gift-f1.json', 'anvil-f1.json', 'bazaar-f2.json', 'kit-f1.json'];
-const SCREENS = ['screen:codex', 'screen:feats', 'screen:vault', 'new'];
+const SCREENS = ['screen:codex', 'screen:codex>cxview:all', 'screen:feats', 'screen:vault', 'new']; // a>b: tap a, then b
 const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics', 'tab:doors', 'tab:duel', 'barmore'];
 const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose windows are also read further and pictured at their edges
 
@@ -190,17 +191,20 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
             const gap = Math.min(...under.map(e => fr(e)[1])) - floor, first = under.find(e => fr(e)[1] - floor === gap);
             if (gap > 8.5) out.push(`${name(sc)}: ${gap} pixels of empty window between it and "${first.textContent.trim().slice(0, 20)}" under it (8 at most: the window closes up under its box)`);
           }
-          // each line in the box's own pixels: its line height about the middle of its glyphs' box
+          // each line in the box's own pixels: the line of its block that the middle of its glyphs' box falls in (a block's
+          // lines are its line height apart from the top of its content; words in the label face sit low in a line of the
+          // text face, and are still that line)
           let below = 0, low = 0;
           const inBox = R => { const a = (up ? S.right - R.right : R.top - S.top) / k - sc.clientTop; return [a, a + (up ? R.width : R.height) / k]; };
           const tw = document.createTreeWalker(sc, NodeFilter.SHOW_TEXT);
           for (let t = tw.nextNode(); t; t = tw.nextNode()) {
             if (!t.textContent.trim() || !t.parentElement.offsetHeight) continue;
             let b = t.parentElement; while (b !== sc && getComputedStyle(b).display === 'inline') b = b.parentElement;
-            const lh = parseFloat(getComputedStyle(b).lineHeight) || 16, rg = document.createRange(); rg.selectNodeContents(t);
+            const bs = getComputedStyle(b), lh = parseFloat(bs.lineHeight) || 16, rg = document.createRange(); rg.selectNodeContents(t);
+            const top = b === sc ? (parseFloat(bs.paddingTop) || 0) - sc.scrollTop : inBox(b.getBoundingClientRect())[0] + (parseFloat(bs.borderTopWidth) || 0) + (parseFloat(bs.paddingTop) || 0);
             for (const q of rg.getClientRects()) {
               if (!q.width || !q.height) continue;
-              const [qa, qz] = inBox(q), mid = (qa + qz) / 2, a = mid - lh / 2, z = mid + lh / 2;
+              const [qa, qz] = inBox(q), mid = (qa + qz) / 2, a = top + Math.round((mid - top - lh / 2) / lh) * lh, z = a + lh;
               if (a < h - 1 && z > h + 1 && a > -1) out.push(`${name(sc)}: the line "${t.textContent.trim().slice(0, 24)}" is cut by its foot (${a.toFixed(1)} to ${z.toFixed(1)} in ${h})`);
               if (a < -1 && z > 1 && z < h + 1) out.push(`${name(sc)}: the line "${t.textContent.trim().slice(0, 24)}" is cut by its top (${a.toFixed(1)} to ${z.toFixed(1)})`);
               if (a >= h - 1) below++; else if (a >= -1 && z <= h + 1) low = Math.max(low, z);
@@ -215,14 +219,20 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
           if (below && h - low > 16.5) out.push(`${name(sc)}: an empty band ${Math.round(h - low)} pixels deep above its foot, while ${below} lines lie below`);
           const mk = sc.nextElementSibling && sc.nextElementSibling.classList.contains('scm') ? sc.nextElementSibling : null;
           if (below && (!mk || mk.hidden || !vis(mk))) out.push(`${name(sc)}: ${below} lines lie below it, with no more marker`);
+          // the marker (4 rows, bobbing 2 down) keeps a row clear of the box over it and of any plaque under it
+          if (mk && !mk.hidden && vis(mk)) {
+            const [mx, my, mw] = fr(mk), lowest = my + mk.offsetHeight + 2;
+            if (my < sy + sh + 1) out.push(`${name(sc)}: its more marker at ${my} touches the box's foot at ${sy + sh}`);
+            for (const p of box.querySelectorAll('.pq, .lb')) { if (sc.contains(p) || !vis(p)) continue; const [px, py, pw] = fr(p); if (px < mx + mw && mx < px + pw && py >= my && py < lowest + 1) out.push(`${name(sc)}: its more marker reaches row ${lowest - 1} as it bobs, touching "${p.textContent.trim().slice(0, 20)}" at ${py}`); }
+          }
         }
         // hammer: one lit plaque in each layer (the screen, and each window or scene over it)
         for (const L of [app, ...app.querySelectorAll('.mw, .story')]) {
           const lit = [...L.querySelectorAll('.pq.lit')].filter(e => vis(e) && (L === app ? !e.closest('.mw, .story') : e.closest('.mw, .story') === L));
           if (lit.length > 1) out.push(`${lit.length} plaques lit in ${L === app ? 'the screen' : name(L)} (${lit.map(e => e.textContent.trim().slice(0, 14)).join(', ')}): only the one the hammer is on may be`);
           // the choice is always shown the same way: the lit plaque shows the hammer at its left; each plaque that can be lit
-          // has room for it beside its words, and lighting it moves no plaque; the plaques in a line of words (.in) hold
-          // their words alike, lit or not (the same room at their left and at their right)
+          // has room for it beside its words, and lighting it moves no plaque; the plaques in a line of words (.in) that are
+          // not lit hold their words alike (the same room at their left and at their right)
           const live = [...L.querySelectorAll('.pq')].filter(e => vis(e) && !e.disabled && !scrolledAway(e) && (L === app ? !e.closest('.mw, .story') : e.closest('.mw, .story') === L));
           for (const b of live) {
             if (b.classList.contains('lit') && getComputedStyle(b, '::before').display === 'none') out.push(`${name(b)} "${b.textContent.trim()}": lit without the hammer`);
@@ -233,7 +243,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
             if (cut) out.push(`${name(b)} "${b.textContent.trim()}": too narrow for the hammer beside its words (${room} pixels)`);
             else if (['left', 'top', 'width', 'height'].some(p => Math.abs(r1[p] - r0[p]) > .01)) out.push(`${name(b)} "${b.textContent.trim()}": lighting it moves or sizes it`);
           }
-          const held = [...L.querySelectorAll('.pq.in')].filter(e => vis(e) && !scrolledAway(e) && (L === app ? !e.closest('.mw, .story') : e.closest('.mw, .story') === L)).map(e => { const rg = document.createRange(); rg.selectNodeContents(e); const q = rg.getBoundingClientRect(), r = e.getBoundingClientRect(); return [e, Math.round(fx(q) - fx(r)), Math.round(up ? (r.bottom - q.bottom) / k : (r.right - q.right) / k)]; });
+          const held = [...L.querySelectorAll('.pq.in:not(.lit)')].filter(e => vis(e) && !scrolledAway(e) && (L === app ? !e.closest('.mw, .story') : e.closest('.mw, .story') === L)).map(e => { const rg = document.createRange(); rg.selectNodeContents(e); const q = rg.getBoundingClientRect(), r = e.getBoundingClientRect(); return [e, Math.round(fx(q) - fx(r)), Math.round(up ? (r.bottom - q.bottom) / k : (r.right - q.right) / k)]; });
           const odd = held.find(([, a, z]) => a !== held[0][1] || z !== held[0][2]);
           if (odd) out.push(`the plaques in lines of words hold their words unalike: "${held[0][0].textContent.trim()}" with ${held[0][1]} and ${held[0][2]} pixels at its left and right, "${odd[0].textContent.trim()}" with ${odd[1]} and ${odd[2]}`);
         }
@@ -380,42 +390,67 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     // edges: the frame rows just above and under each box of pages in a window or a book, read from a screenshot at a scale
     // above one, are each frame pixel one flat block of device pixels. A box that scrolls is drawn as a layer of its own,
     // and at some scales its edge lands a fraction of a device pixel outside the box: a device row of what it cuts off shows.
+    // At every scale, the gold line of the box's window is whole on those rows (nothing laid along the box's edges may
+    // cover the window's frame).
     const edges = async where => {
       const g = await page.evaluate(() => {
         const a = document.getElementById('app'); if (!a.classList.contains('ps')) return null;
-        const r = a.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(a).transform), d = devicePixelRatio, k = Math.hypot(m.a, m.b), up = Math.abs(m.b) > Math.abs(m.a), rows = [];
+        const r = a.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(a).transform), d = devicePixelRatio, k = Math.hypot(m.a, m.b), up = Math.abs(m.b) > Math.abs(m.a), rows = [], gold = [];
+        const box = e => { const S = e.getBoundingClientRect(); return [Math.round(up ? (S.top - r.top) / k : (S.left - r.left) / k), Math.round(up ? (r.right - S.right) / k : (S.top - r.top) / k), Math.round((up ? S.height : S.width) / k), Math.round((up ? S.width : S.height) / k)]; };
         for (const sc of a.querySelectorAll('.mw .sc, .book .sc')) {
           const S = sc.getBoundingClientRect(); if (!S.width || !S.height) continue;
-          const x = Math.round(up ? (S.top - r.top) / k : (S.left - r.left) / k), y = Math.round(up ? (r.right - S.right) / k : (S.top - r.top) / k);
-          const w = Math.round((up ? S.height : S.width) / k), h = Math.round((up ? S.width : S.height) / k);
+          const [x, y, w, h] = box(sc);
           rows.push([x, y - 1, w], [x, y + h, w]);
+          const wn = sc.closest('.wn'); if (!wn || !/inset/.test(getComputedStyle(wn).boxShadow)) continue;
+          const [wx, wy, ww, wh] = box(wn);
+          for (const fy of [y - 1, y + h]) if (fy >= wy + 2 && fy <= wy + wh - 3) gold.push([wx + 1, fy], [wx + ww - 2, fy]);
         }
-        return rows.length ? { rows, n: Math.round(k * d), up, x: Math.round(r.left * d), y: Math.round(r.top * d), w: Math.round(r.width * d) } : null;
+        return rows.length ? { rows, gold, n: Math.round(k * d), up, x: Math.round(r.left * d), y: Math.round(r.top * d), w: Math.round(r.width * d) } : null;
       });
-      if (!g || g.n < 2) return;
+      if (!g) return;
       const png = (await page.screenshot()).toString('base64');
-      const bad = await page.evaluate(async ([png, g]) => {
+      const [bad, broken] = await page.evaluate(async ([png, g]) => {
         const img = new Image(); img.src = 'data:image/png;base64,' + png; await img.decode();
         const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
         const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0); const d = x.getImageData(0, 0, c.width, c.height).data;
-        let bad = 0;
-        for (const [fx0, fy, w] of g.rows) for (let fx = fx0; fx < fx0 + w; fx++) {
-          const bx = g.up ? g.x + g.w - (fy + 1) * g.n : g.x + fx * g.n, by = g.up ? g.y + fx * g.n : g.y + fy * g.n;
-          if (bx < 0 || by < 0 || bx + g.n > c.width || by + g.n > c.height) continue;
-          const i0 = (by * c.width + bx) * 4; let worst = 0;
+        const at = (fx, fy) => { const bx = g.up ? g.x + g.w - (fy + 1) * g.n : g.x + fx * g.n, by = g.up ? g.y + fx * g.n : g.y + fy * g.n; return bx < 0 || by < 0 || bx + g.n > c.width || by + g.n > c.height ? -1 : (by * c.width + bx) * 4; };
+        let bad = 0, broken = 0;
+        if (g.n >= 2) for (const [fx0, fy, w] of g.rows) for (let fx = fx0; fx < fx0 + w; fx++) {
+          const i0 = at(fx, fy); if (i0 < 0) continue; let worst = 0;
           for (let yy = 0; yy < g.n && !(worst > 3); yy++) for (let xx = 0; xx < g.n; xx++) { const i = i0 + (yy * c.width + xx) * 4; worst = Math.max(worst, Math.abs(d[i] - d[i0]), Math.abs(d[i + 1] - d[i0 + 1]), Math.abs(d[i + 2] - d[i0 + 2])); }
           if (worst > 3) bad++;
         }
-        return bad;
+        // the window's gold line (#dba459) at the box's edge rows
+        for (const [fx, fy] of g.gold) { const i = at(fx, fy); if (i >= 0 && (Math.abs(d[i] - 219) > 3 || Math.abs(d[i + 1] - 164) > 3 || Math.abs(d[i + 2] - 89) > 3)) broken++; }
+        return [bad, broken];
       }, [png, g]);
       if (bad) fail(where, `${bad} frame pixels along the edges of its boxes of pages are not one flat block of device pixels (the box spills what it cuts off)`);
+      if (broken) fail(where, `the gold line of a window is broken in ${broken} places beside the edges of its box of pages`);
     };
     // a box of pages read further: each one that holds more than it shows is scrolled half its height, and checked again once
     // it has come to rest
-    const scrolled = async where => {
+    // Before that, each box must stand at its top (a box opened part-way down hides its first lines wholly above it, so no
+    // line is cut and the scroll rule above cannot see them); after it, each is scrolled back to the top and must come to
+    // rest there. On a book, a slow drag follows: 3 pixels every 200 ms, 6 times, and the box must come to rest no further
+    // from where it stood than those 18 pixels and half the step between its two rests about them (a box that ran away from
+    // the finger went a whole rest on at every pause).
+    const boxes = () => page.evaluate(() => [...document.querySelectorAll('#app.ps .mw .sc, #app.ps .book .sc')].filter(sc => sc.offsetHeight).map(sc => Math.round(sc.scrollTop)));
+    const scrolled = async (where, drag = false) => {
+      for (const [i, st] of (await boxes()).entries()) if (st) fail(where, `box of pages ${i + 1} opens ${st} pixels down from its top: its first lines cannot be seen`);
       const moved = await page.evaluate(() => { let n = 0; for (const sc of document.querySelectorAll('#app.ps .mw .sc, #app.ps .book .sc')) if (sc.scrollHeight > sc.clientHeight + 1) { sc.scrollTop += Math.max(16, sc.clientHeight >> 1); n++; } return n; });
       if (!moved) return;
       await page.waitForTimeout(400); await audit(`${where} > scrolled`); await edges(`${where} > scrolled`);
+      await page.evaluate(() => { for (const sc of document.querySelectorAll('#app.ps .mw .sc, #app.ps .book .sc')) sc.scrollTop = 0; }); await page.waitForTimeout(400);
+      for (const [i, st] of (await boxes()).entries()) if (st) fail(`${where} > scrolled back`, `box of pages ${i + 1} comes to rest ${st} pixels down when scrolled to its top`);
+      if (!drag) return;
+      const far = await page.evaluate(async () => {
+        const sc = [...document.querySelectorAll('#app.ps .book .sc')].find(s => s.scrollHeight > s.clientHeight + 1); if (!sc) return null;
+        const t0 = sc.scrollTop; for (let i = 0; i < 6; i++) { sc.scrollTop += 3; await new Promise(ok => setTimeout(ok, 200)); }
+        await new Promise(ok => setTimeout(ok, 400));
+        const R = sc._plan && sc._plan.R, to = t0 + 18, nx = R ? R.find(s => s > to) : null, pv = R ? [...R].reverse().find(s => s <= to) : null, gap = nx != null && pv != null ? nx - pv : 64;
+        return { at: sc.scrollTop, most: to + gap / 2, t0 };
+      });
+      if (far && far.at > far.most + .5) fail(`${where} > slow drag`, `a slow drag of 18 pixels from ${far.t0} took the box to ${far.at}, further than the finger went (${far.most} at most)`);
     };
     // the hammer follows the mouse and stays where it was left: the mouse passes over a few plaques and off the frame
     const mousePass = async where => {
@@ -425,7 +460,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     for (const save of only ? [null] : full ? pick : SHORT.filter(x => !x || saves.includes(x))) {
       const base = `${shape} ${W}x${H}@${dpr} ${save || 'title'}`;
       await load(save); await page.waitForTimeout(500); scenes++;
-      await audit(base);
+      await audit(base); await edges(base); // a window open over the scene (the trap prompt, a duel's end) has its edges read too
       if (!save) await flat(base);
       // every window that can open over this screen (over the title, a chamber and a duel, read further too)
       const deep = !save || DEEP.includes(save);
@@ -444,8 +479,8 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
       if (await hc.count()) { await hc.click({ force: true }).catch(() => {}); await page.waitForTimeout(300); await audit(`${base} > card page`); await load(save); }
       // the books and the Forger screen, from the title
       if (!save) for (const a of SCREENS) {
-        await load(null); await page.locator(`[data-a="${a}"]`).first().click({ force: true }).catch(() => {}); await page.waitForTimeout(500);
-        await audit(`${base} > ${a}`); await edges(`${base} > ${a}`); await scrolled(`${base} > ${a}`);
+        await load(null); for (const s of a.split('>')) { await page.locator(`[data-a="${s}"]`).first().click({ force: true }).catch(() => {}); await page.waitForTimeout(500); }
+        await audit(`${base} > ${a}`); await edges(`${base} > ${a}`); await scrolled(`${base} > ${a}`, true);
         if (!touch) await mousePass(`${base} > ${a}`);
       }
       // then tap about at random
