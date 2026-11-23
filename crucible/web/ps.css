@@ -58,7 +58,7 @@ body.ps { background: #000; }
 #app.ps .pq.lit { color: var(--ink); background: repeating-conic-gradient(var(--ember) 0 25%, var(--rust) 0 50%) 0 0 / 2px 2px; border-color: var(--ink) #4a1c16 #4a1c16 var(--ink); padding-left: 16px; animation: pslit 1.2s steps(1) infinite; }
 #app.ps .pq.lit::before { content: ''; position: absolute; left: 3px; top: 4px; width: 10px; height: 6px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' shape-rendering='crispEdges'%3E%3Crect x='0' y='2' width='6' height='1' fill='%23f3ead8'/%3E%3Crect x='6' y='0' width='3' height='5' fill='%23f3ead8'/%3E%3Crect x='6' y='5' width='3' height='1' fill='%234a3024'/%3E%3C/svg%3E"); }
 @keyframes pslit { 50% { background: repeating-conic-gradient(#c98040 0 25%, var(--rust) 0 50%) 0 0 / 2px 2px; } }
-#app.ps .pq.lit.nh { padding-left: 6px; } #app.ps .pq.lit.nh::before { display: none; } /* the hammer moved onto a plaque with no room for it (litMove in app.mjs) */
+#app.ps .pq.lit.nh { padding-left: 6px; } #app.ps .pq.lit.nh::before { display: none; } /* a plaque too narrow for the hammer (a fault the checks report): lit without it, its words whole */
 #app.ps .pq:disabled, #app.ps .pq.off { cursor: default; color: var(--dark); background: repeating-conic-gradient(var(--dusty) 0 25%, #5c3743 0 50%) 0 0 / 2px 2px; border-color: #7a5560 var(--sh) var(--sh) #7a5560; animation: none; padding-left: 6px; }
 #app.ps .pq:disabled::before, #app.ps .pq.off::before { display: none; }
 #app.ps .pq:active:not(:disabled) { transform: translate(1px, 1px); }
@@ -287,7 +287,9 @@ body.ps { background: #000; }
 #app.ps .brow .bt { flex: 1; min-width: 0; } #app.ps .brow .bt .lb { position: relative; display: block; margin: 0; line-height: 16px; white-space: normal; }
 #app.ps .brow .bs { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 0; }
 #app.ps .brow .bs > .ga { margin: 4px 0 5px; } #app.ps .brow .bs > .lb { line-height: 16px; } #app.ps .brow .bs > .pq.in { margin: 0; }
-#app.ps .pq.in { position: relative; display: inline-block; margin: 0 4px 4px 0; width: auto; vertical-align: top; }
+/* a plaque in a line of words always keeps the hammer's room at its left, lit or not, so the hammer can stand on any of
+   them and no plaque or word moves when it does (litMove in app.mjs) */
+#app.ps .pq.in { position: relative; display: inline-block; margin: 0 4px 4px 0; width: auto; vertical-align: top; padding-left: 16px; }
 #app.ps .ga.in { position: relative; display: block; } #app.ps .ga.in > u { position: absolute; top: 0; bottom: 0; background: var(--gl); }
 #app.ps .lb .d, #app.ps span.d, #app.ps p.d { color: #b39a7c; }
 #app.ps .cd.unk { background: var(--sh); border-color: var(--dark); } #app.ps .cd.unk .n1 { top: 24px; left: 18px; color: var(--sd); }
