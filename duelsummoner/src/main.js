@@ -373,7 +373,7 @@ function landmarkTags() {
   for (const c of game.chests) if (!c.open) add(c, 'Sealed Chest: free item', 'free', 1.9);
   return out;
 }
-let bannerUp = false, tagPulse = 0;
+let bannerUp = false, tagPulse = 0, hiddenT = 0;
 // a tag whose anchor cannot be seen from the camera (a wall, a pylon, a trunk or a boulder on the line) is not drawn
 function tagBlocked(t) {
   const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z, N = 14, list = game.colliders ? game.colliders.list : null;
@@ -457,6 +457,10 @@ function frame(now) {
   const lpf = game.p.hp / game.p.maxHp, low = MODE === 'play' && !game.over && (lowShown ? lpf <= 0.33 : lpf <= 0.30);       if (low !== lowShown) { lowShown = low; $('lowhp').classList.toggle('on', low); }       // on at 30% of max LP or less, off again above 33%
   head.x = ip.x; head.y = ip.y + 1.5; head.z = ip.z;
   actors.update(game, alpha, camera.position, head, dtReal);
+  if (actors.rig && actors.rig.marker) {      // the duelist marker (Auto): a white chevron over the head once the head has been out of sight for 0.5 s; it bobs
+    const R = actors.rig; hiddenT = tagBlocked(head) ? hiddenT + (dtReal || 0.016) : 0; const on = hiddenT > 0.5 || window.__ds.markerAlways === true;
+    R.marker.visible = on && MODE === 'play'; if (on) R.marker.position.y = 2.55 + Math.sin(performance.now() / 180) * 0.08;
+  }
   ringMarks();
   fx.update(dtReal, camera);
   props.cam = camera.position; props.update(game);
@@ -481,21 +485,24 @@ requestAnimationFrame(frame);
 // debug: the duelist's pixels, alone (everything else hidden) and in the full scene (everything depth-tested and dithered as drawn), as flat id colour in an off-screen target at the buffer size; silhouette is 0 until the stencil silhouette exists
 function duelistPixels() {
   const rig = actors.rig; if (!rig) return null;
-  const size = renderer.getDrawingBufferSize(new T.Vector2()), w = size.x, h = size.y, rt = new T.WebGLRenderTarget(w, h), buf = new Uint8Array(w * h * 4);
-  const idMat = new T.MeshBasicMaterial({ color: 0xff00ff, fog: false }); idMat.skinning = true;
-  const saved = []; rig.group.traverse(o => { if (o.isMesh) { saved.push([o, o.material]); o.material = idMat; } });
-  const count = () => { renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.readRenderTargetPixels(rt, 0, 0, w, h, buf); renderer.setRenderTarget(null); let n = 0; for (let i = 0; i < buf.length; i += 4) if (buf[i] > 200 && buf[i + 1] < 60 && buf[i + 2] > 200) n++; return n; };
+  const size = renderer.getDrawingBufferSize(new T.Vector2()), w = size.x, h = size.y, rt = new T.WebGLRenderTarget(w, h, { depthBuffer: true, stencilBuffer: true }), buf = new Uint8Array(w * h * 4);
+  const idMat = new T.MeshBasicMaterial({ color: 0xff00ff, fog: false }); idMat.skinning = true; idMat.stencilWrite = true; idMat.stencilFunc = T.AlwaysStencilFunc; idMat.stencilRef = 1; idMat.stencilZPass = T.ReplaceStencilOp;
+  const saved = [], extras = []; rig.group.traverse(o => { if (o.userData.extra) extras.push([o, o.visible]); else if (o.isMesh) { saved.push([o, o.material]); o.material = idMat; } });
+  const setExtras = on => { for (const [o] of extras) o.visible = on && o.userData.extra === 'sil'; };
+  const count = (kind) => { renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.readRenderTargetPixels(rt, 0, 0, w, h, buf); renderer.setRenderTarget(null); let n = 0; for (let i = 0; i < buf.length; i += 4) { if (kind === 'sil') { if (buf[i] < 60 && buf[i + 1] > 200 && buf[i + 2] > 200) n++; } else if (buf[i] > 200 && buf[i + 1] < 60 && buf[i + 2] > 200) n++; } return n; };
+  setExtras(false);
   const visible = count();
+  const silMat = rig.see.sil, silCol = silMat.color.getHex(); setExtras(true); silMat.color.setHex(0x00ffff); const silhouette = count('sil'); silMat.color.setHex(silCol); setExtras(false);
   const keep = new Set(); for (let o = rig.group; o; o = o.parent) keep.add(o);
   const hid = []; scene.children.forEach(c => { if (!keep.has(c) && c.visible) { hid.push(c); c.visible = false; } }); if (rig.group.parent && rig.group.parent !== scene) rig.group.parent.children.forEach(c => { if (!keep.has(c) && c.visible) { hid.push(c); c.visible = false; } });
   const alone = count();
-  for (const c of hid) c.visible = true; for (const [o, m] of saved) o.material = m; rt.dispose(); idMat.dispose();
-  return { alone, visible, silhouette: 0 };
+  for (const c of hid) c.visible = true; for (const [o, m] of saved) o.material = m; for (const [o, v] of extras) o.visible = v; rt.dispose(); idMat.dispose();
+  return { alone, visible, silhouette };
 }
 window.__ds = {
   duelistPixels, see: SEE, tagBlocked,
   bars,
-  renderer,
+  renderer, rigSil: () => actors.rig.see.sil, rigExtras: () => actors.rig.see.extras, rigMeshCount: () => { let n = 0, x = 0; if (actors.rig) actors.rig.group.traverse(o => { if (o.isMesh) { if (o.userData.extra) x++; else n++; } }); return { bodies: n, extras: x }; },
   fitHud, minimap, props, game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
   start: begin, begin, results, setMode, menus, fx, onEvent, save,
@@ -506,6 +513,8 @@ window.__ds = {
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
+
+
 
 
 

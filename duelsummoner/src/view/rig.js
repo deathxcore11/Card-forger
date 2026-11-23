@@ -111,11 +111,51 @@ const FADE = { default: 0.12, idle_cards: 0.2, select_fidget: 0.2, dash: 0.06, s
 const LOCO = ['idle_cards', 'walk', 'run'], WALK_STRIDE = 2.88, RUN_STRIDE = 5.67;   // metres per cycle of the Meshy walk (1.03 s at about 2.8 m/s) and run (0.63 s at about 9 m/s)
 const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
 
+// The duelist through anything solid (spectacle 2.8). Per skinned mesh: a 50% white checker where the duelist is behind something (depth GREATER, not over its own pixels),
+// and a 2 tone outline (white 1 art pixel inside, ink 1 art pixel outside; an art pixel is 1/540 of the screen height) drawn everywhere the body itself is not. The body writes stencil 1.
+// Extras are marked userData.extra and sit as siblings of the body mesh, sharing its geometry and skeleton, so they cost one draw each and no extra animation work.
+const INK = 0x1e1e2a;
+// stencil bit 0 = the body's own pixels, bit 1 = the silhouette's area (marked by a colourless pass), so the outline hulls draw only outside both
+function stencilOutside(m) { m.stencilWrite = true; m.stencilFunc = T.NotEqualStencilFunc; m.stencilRef = 1; m.stencilFuncMask = 1; m.stencilWriteMask = 0; }
+function stencilClear(m) { m.stencilWrite = true; m.stencilFunc = T.EqualStencilFunc; m.stencilRef = 0; m.stencilFuncMask = 3; m.stencilWriteMask = 0; }
+function maskMaterial() {
+  const m = new T.MeshBasicMaterial({ side: T.DoubleSide, fog: false, depthTest: true, depthFunc: T.GreaterDepth, depthWrite: false, colorWrite: false }); m.skinning = true;
+  m.stencilWrite = true; m.stencilFunc = T.EqualStencilFunc; m.stencilRef = 2; m.stencilFuncMask = 1; m.stencilWriteMask = 2; m.stencilZPass = T.ReplaceStencilOp; return m;
+}
+function hullMaterial(artPx, color) {
+  const m = new T.MeshBasicMaterial({ color, side: T.BackSide, fog: false, depthTest: false, depthWrite: false }); m.skinning = true; stencilClear(m);
+  m.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>', 'vec4 mvPosition = vec4(transformed, 1.0); mvPosition = modelViewMatrix * mvPosition; mat4 sm = skinWeight.x * boneMatX + skinWeight.y * boneMatY + skinWeight.z * boneMatZ + skinWeight.w * boneMatW; sm = bindMatrixInverse * sm * bindMatrix; vec3 nv = normalize(normalMatrix * (sm * vec4(normal, 0.0)).xyz);\n mvPosition.xyz += nv * (-mvPosition.z) * (' + artPx.toFixed(1) + ' * 2.0 / (projectionMatrix[1][1] * 540.0)); gl_Position = projectionMatrix * mvPosition;'); };
+  return m;
+}
+function silhouetteMaterial() {
+  const m = new T.MeshBasicMaterial({ color: 0xffffff, side: T.DoubleSide, fog: false, depthTest: true, depthFunc: T.GreaterDepth, depthWrite: false }); m.skinning = true; stencilOutside(m);
+  m.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n if (mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 2.0) < 1.0) discard;'); };
+  return m;
+}
+export function addDuelistExtras(root) {
+  const bodies = []; root.traverse(o => { if (o.isSkinnedMesh && !o.userData.extra) bodies.push(o); });
+  const sil = silhouetteMaterial(), white = hullMaterial(1, 0xffffff), ink = hullMaterial(2, INK), mask = maskMaterial(), extras = [];
+  for (const b of bodies) {
+    b.renderOrder = 8;       // the body is drawn after every other opaque thing, so its stencil mark is written only on pixels that really show it (a later wall would not clear the mark)
+    const m = b.material; m.stencilWrite = true; m.stencilFunc = T.AlwaysStencilFunc; m.stencilRef = 1; m.stencilZPass = T.ReplaceStencilOp;       // the body marks its own pixels
+    for (const [mat, order, kind] of [[mask, 8.5, 'mask'], [sil, 9, 'sil'], [ink, 10, 'ink'], [white, 11, 'white']]) {
+      const s = new T.SkinnedMesh(b.geometry, mat); s.bind(b.skeleton, b.bindMatrix); s.frustumCulled = false; s.renderOrder = order; s.userData.extra = kind; s.name = b.name + '_' + kind;
+      b.parent.add(s); extras.push(s);
+    }
+  }
+  return { bodies, extras, sil, white, ink };
+}
+function makeMarker() {         // a white chevron above the head, pointing down; shown when the duelist is hidden from the camera
+  const g = new T.ConeGeometry(0.22, 0.5, 4); g.rotateX(Math.PI); const m = new T.Mesh(g, new T.MeshBasicMaterial({ color: 0xffffff, fog: false, depthTest: false, depthWrite: false }));
+  m.renderOrder = 12; m.userData.extra = 'marker'; m.visible = false; m.frustumCulled = false; return m;
+}
+
 export class DuelistRig {
   constructor(built, { yaw = 0, height = 1.8 } = {}) {
     this.root = built.root; this.clips = built.clips; this.mixer = new T.AnimationMixer(this.root); this.actions = new Map(); this.cur = null; this.upperAct = null; this.upperT = 0;
     this.yaw = yaw; this.scale = height / (built.height || 1.8); this.root.scale.setScalar(this.scale); this.prev = { landT: 0, airUsed: 0 };
     this.group = new T.Group(); this.group.add(this.root); this.missing = new Set();
+    this.see = addDuelistExtras(this.root); this.marker = makeMarker(); this.group.add(this.marker); this.marker.position.y = 2.55;
     this._lowerCache = new Map(); this._upperCache = new Map();
   }
   forward() { if (!this._F) this._F = makeAxes(this.root).F.clone(); const f = this._F.clone(); f.applyQuaternion(this.group.quaternion); return f; }     // the model's front in the world
