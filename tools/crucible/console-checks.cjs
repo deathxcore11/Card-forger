@@ -75,7 +75,12 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     ...saves.filter(f => /^(reward|anvil|bazaar|kit|charm)-/.test(f))];
   const browser = await chromium.launch();
   const fails = []; let scenes = 0, taps = 0, screens = 0;
-  const fail = (where, what) => { fails.push(`${where}: ${what}`); if (fails.length < 60) console.log('FAIL', where, what); };
+  // each fault is also counted by its kind: its words with the numbers and the quoted words taken out
+  const kinds = new Map();
+  const fail = (where, what) => {
+    fails.push(`${where}: ${what}`); if (fails.length < 60) console.log('FAIL', where, what);
+    const kind = what.replace(/"[^"]*"/g, '"…"').replace(/\d+(\.\d+)?/g, 'N'); kinds.set(kind, (kinds.get(kind) || 0) + 1);
+  };
 
   for (const [shape, W, H, dpr, full, host, touch] of SHAPES) {
     const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
@@ -482,6 +487,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     for (let i = 0; i < shots[0].length; i++) if (!shots[1][i] || !shots[0][i][1].equals(shots[1][i][1])) fail(`${W}x${H}@${dpr} ${shots[0][i][0]}`, 'the screen differs inside a host page');
   }
   await browser.close();
+  if (fails.length) { console.log('faults by kind, most first:'); for (const [k, n] of [...kinds].sort((a, b) => b[1] - a[1]).slice(0, 40)) console.log(`${String(n).padStart(6)}  ${k.slice(0, 220)}`); }
   console.log(`${scenes} scenes on ${SHAPES.length} screen shapes, ${screens} console screens checked, ${taps} random taps`);
   console.log(fails.length ? `${fails.length} faults` : 'console checks: all pass');
   process.exit(fails.length ? 1 : 0);
