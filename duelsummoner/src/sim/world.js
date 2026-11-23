@@ -1,4 +1,4 @@
-// The map's life: breakable vases, Witness Stones, the Relic Broker, Shrines of Tribute and Card Chests, placed each run from
+﻿// The map's life: breakable vases, Witness Stones, the Relic Broker, Shrines of Tribute and Card Chests, placed each run from
 // authored regions (data/encounters.js). Every spot is standable, flat, spaced out and has at least three ways off it.
 import { ENCOUNTERS as E } from '../data/encounters.js';
 import { cos, sin } from './dmath.js';
@@ -7,6 +7,7 @@ import { ITEMS, BLESSINGS } from '../data/items.js';
 import { heightAt } from './terrain.js';
 import { dropPickup, addFx, PICK_COIN, PICK_XP, PICK_HEART } from './combat.js';
 import { buildOffer, candidates } from './field.js';
+import { ACES } from '../data/stages.js';
 
 const DEG = Math.PI / 180;
 
@@ -159,20 +160,30 @@ function openAltar(g, altar) {
   if (!cards.length) { g.event('banner', 'The altar has nothing to take.'); return; }
   g.offer = { type: 'altar', cards, leave: true, source: altar }; g.event('offer', null);
 }
-function openCardChest(g, c) {
+const TIERS = ['common', 'rare', 'epic', 'legendary'];
+function rollTier(g, c) {
+  if (g.forceChest) return g.forceChest;                                                       // test hook only (debug builds set it); never set in a real run
+  if (c.trophy) { let r = g.rl(); for (const [name, p] of ACES.rarity) { if (r < p) return name; r -= p; } return ACES.rarity[0][0]; }
+  const b = Math.max(0, TIERS.indexOf(c.rarity || 'common')), r = g.rl();                       // a stage's chests grow richer in order; any chest can jump one or two tiers
+  return TIERS[Math.min(3, b + (r < 0.08 ? 2 : r < 0.30 ? 1 : 0))];
+}
+export function openCardChest(g, c) {
   const price = c.free ? 0 : chestPrice(g);
   if (g.coins < price) { g.event('banner', 'This chest costs ' + price + ' coins.'); return; }
-  const cards = buildOffer(g, c.rarity);
+  if (!c.rolled) { c.base = c.rarity; c.rolled = rollTier(g, c); }                         // the tier is rolled now, from the seeded loot stream, and never shown before this
+  let cards = buildOffer(g, c.rolled), ti = TIERS.indexOf(c.rolled);
+  while (!cards.length && ti > 0) { ti--; cards = buildOffer(g, TIERS[ti]); }                 // a legendary roll with nothing legendary left to give steps down to what the chest can really hold
+  c.rarity = c.rolled = TIERS[ti];
   if (!cards.length) { g.event('banner', 'Nothing in this chest you could use.'); return; }
   g.coins -= price; if (!c.free) g.world.opened++; g.chestsOpenedTotal++;
-  g.offer = { type: 'chest', cards, leave: false, chest: c, floor: c.rarity, freeRedraws: g.metaMods.chestRedraws || 0 }; g.event('offer', null);
+  g.offer = { type: 'chest', cards, leave: false, chest: c, floor: c.rarity, reveal: c.rarity, freeRedraws: g.metaMods.chestRedraws || 0 }; g.event('offer', null);
 }
 
 // nearest thing the duelist can press E on, with its prompt text
 export function nearestProp(g) {
   const p = g.p, W = g.world, R = E.interactRange; let best = null, bd = R * R;
   const consider = (obj, type, text) => { const dx = obj.x - p.x, dz = obj.z - p.z, d = dx * dx + dz * dz; if (d < bd && Math.abs(obj.y - p.y) < 2.5) { bd = d; best = { obj, type, text }; } };
-  for (const c of W.cchests) if (!c.open) { const pr = c.free ? 0 : chestPrice(g); consider(c, 'cchest', 'E: open the ' + c.rarity + ' Card Chest (' + (pr === 0 ? 'free' : pr + ' coins' + (g.coins < pr ? ', you have ' + g.coins : '')) + ')'); }
+  for (const c of W.cchests) if (!c.open) { const pr = c.free ? 0 : chestPrice(g); consider(c, 'cchest', 'E: open the Card Chest (' + (pr === 0 ? 'free' : pr + ' coins' + (g.coins < pr ? ', you have ' + g.coins : '')) + ')'); }
   for (const s of W.stones) if (!s.used) consider(s, 'stone', 'E: Witness Stone, take 1 free item of 3');
   if (W.broker) consider(W.broker, 'broker', 'E: Relic Broker, buy from 3 items');
   if (W.altar && !W.altar.used) consider(W.altar, 'altar', 'E: Altar of Tribute (Banish a card, or Tribute one from your field)');
@@ -184,4 +195,5 @@ export function useProp(g, hit) {
   else if (hit.type === 'broker') openShop(g);
   else if (hit.type === 'altar') openAltar(g, hit.obj);
 }
+
 

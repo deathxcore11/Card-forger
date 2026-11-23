@@ -5,6 +5,8 @@ import { cardDef, monsterMax } from '../sim/field.js';
 import { takeCode, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from '../sim/input.js';
 
 const $ = id => document.getElementById(id);
+import { playReveal } from './reveal.js';
+const revealed = new WeakSet();
 let busy = false;
 // the chosen card flies down toward the field zones, then the choice enters the sim (instant with reduce motion)
 function destFor(g, c) {                                  // the zone the pick lands in: the card's own zone if it has one, else the first free zone of its kind
@@ -54,6 +56,7 @@ const SUBS = {
 // act(code) sends a menu choice into the sim as input on a tick (see src/sim/input.js); the UI never calls the rules directly.
 export function showOffer(g, act) {
   const o = g.offer; if (!o) return;
+  if (o.type === 'chest' && o.reveal && !revealed.has(o)) { revealed.add(o); const rm = document.body.classList.contains('rm'); $('offerScreen').style.visibility = 'hidden'; playReveal(o.reveal, { rm }, t => { $('offerScreen').style.visibility = ''; showOffer(g, act); if (t === 'legendary') for (const cd of document.querySelectorAll('#offerCards .card')) cd.classList.add('flipslow'); }); return; }
   const shop = o.type === 'shop', level = o.type === 'level', cardy = level || o.type === 'chest';
   $('offerTitle').textContent = TITLES[o.type] ? TITLES[o.type] + (shop ? '  (coins ' + g.coins + ')' : '') : 'LEVEL UP ' + g.level;
   $('offerSub').textContent = SUBS[o.type] || 'Choose a card. Banish removes a card from all future offers.';

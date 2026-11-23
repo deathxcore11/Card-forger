@@ -279,7 +279,7 @@ function landmarkTags() {
     for (const s of W.shrines || []) add(s, s.done ? 'Shrine of Tribute: done' : 'Shrine of Tribute: hold the ring, pick a boon', s.done ? 'spent' : 'free', 2.4);
     if (W.broker) add(W.broker, 'Relic Broker: shop', 'shop', 2.6);
     if (W.altar) add(W.altar, W.altar.used ? 'Altar: used' : 'Altar of Tribute: banish or tribute', W.altar.used ? 'spent' : 'seal', 2.4);
-    for (const c of W.cchests || []) if (!c.open) add(c, c.trophy ? 'Trophy Chest: free, open it' : c.rarity + ' Card Chest: ' + (c.free ? 'free' : 'coins'), c.free || c.trophy ? 'free' : 'shop', 1.9);
+    for (const c of W.cchests || []) if (!c.open) add(c, c.trophy ? 'Trophy Chest: free, open it' : 'Card Chest: ' + (c.free ? 'free' : 'coins'), c.free || c.trophy ? 'free' : 'shop', 1.9);
   }
   for (const c of game.chests) if (!c.open) add(c, 'Sealed Chest: free item', 'free', 1.9);
   return out;

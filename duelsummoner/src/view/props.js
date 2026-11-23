@@ -63,8 +63,8 @@ export class Props {
     const g = new T.Group(); g.position.set(c.x, c.y, c.z);
     const body = new T.Mesh(new T.BoxGeometry(1.5, 0.9, 1.0), lambert(c.trophy ? 0xd9cdb0 : 0x7a5a3a)); body.position.y = 0.45; g.add(body);
     const lid = new T.Mesh(new T.BoxGeometry(1.6, 0.35, 1.1), lambert(c.trophy ? 0xeee4c8 : 0x9a7a4a)); lid.position.y = 1.05; if (c.trophy) { lid.rotation.x = -1.1; lid.position.set(0, 1.25, -0.55); } g.add(lid);
-    const trim = new T.Mesh(new T.BoxGeometry(1.7, 0.18, 1.2), basic(RARITY[c.rarity])); trim.position.y = 0.8; g.add(trim);
-    let beam = null; if (c.trophy) { beam = new T.Mesh(new T.CylinderGeometry(0.28, 0.5, 18, 8, 1, true), basic(RARITY[c.rarity], { transparent: true, opacity: 0.4, depthWrite: false, side: T.DoubleSide })); beam.position.y = 9; g.add(beam); }
+    const trim = new T.Mesh(new T.BoxGeometry(1.7, 0.18, 1.2), basic(0xd8b86a)); trim.position.y = 0.8; g.add(trim);
+    let beam = null; if (c.trophy) { beam = new T.Mesh(new T.CylinderGeometry(0.28, 0.5, 18, 8, 1, true), basic(0xffd27a, { transparent: true, opacity: 0.4, depthWrite: false, side: T.DoubleSide })); beam.position.y = 9; g.add(beam); }
     this.G.add(g); this.parts.chests.push({ c, g, beam });
   }
 
