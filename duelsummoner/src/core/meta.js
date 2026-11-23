@@ -45,6 +45,19 @@ export function buyUpgrade(meta, chips, key) {                    // returns the
   meta.deck[key] = rankOf(meta, key) + 1; return chips - c;
 }
 
+// Refunds (menus-spec 8): every rank gives back its full price, so nothing is lost. Each returns the Star Chips to add; the caller adds them.
+export function refundOne(meta, key) { const r = rankOf(meta, key); if (r <= 0) return 0; meta.deck[key] = r - 1; return DECK_BOX[key].cost[r - 1]; }
+export function refundKey(meta, key) { let sum = 0; while (rankOf(meta, key) > 0) sum += refundOne(meta, key); return sum; }
+export function refundAll(meta) { let sum = 0; for (const k of Object.keys(DECK_BOX)) sum += refundKey(meta, k); return sum; }
+export const refundValue = (meta, key, mode) => { const r = rankOf(meta, key), c = DECK_BOX[key].cost; if (mode === 'one') return r > 0 ? c[r - 1] : 0; if (mode === 'key') return c.slice(0, r).reduce((s, v) => s + v, 0); return Object.keys(DECK_BOX).reduce((s, k) => s + DECK_BOX[k].cost.slice(0, rankOf(meta, k)).reduce((a, v) => a + v, 0), 0); };
+// the total effect of an upgrade at rank r, as text ("+10 max LP", "+4% XP", "+1 Redraw")
+export function effectText(key, r) {
+  const D = DECK_BOX[key]; if (r <= 0) return 'none';
+  const tot = {}; if (D.per) for (const f in D.per) tot[f] = D.per[f] * r; if (D.perRank) for (let i = 0; i < r; i++) for (const f in D.perRank[i]) tot[f] = (tot[f] || 0) + D.perRank[i][f];
+  const NAME = { maxLp: 'max LP', move: 'move speed', pickup: 'pickup range', xp: 'XP', coinMult: 'coins', luck: 'luck', armour: 'armour', redraws: 'Redraw', banishes: 'Exile', startLevel: 'starting monster level', chestRedraws: 'chest Redraw', openingHand: 'opening Spell' };
+  return Object.keys(tot).map(f => (tot[f] < 1 && tot[f] > 0 ? '+' + Math.round(tot[f] * 100) + '%' : '+' + tot[f]) + ' ' + (NAME[f] || f) + (tot[f] > 1 && /Redraw|Exile|Spell/.test(NAME[f] || '') ? 's' : '')).join(', ') || 'none';
+}
+
 // ---- quests ----
 export function statValue(meta, stat) {
   const [kind, name] = [stat.slice(0, stat.indexOf('.')), stat.slice(stat.indexOf('.') + 1)];

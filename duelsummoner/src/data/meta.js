@@ -9,7 +9,7 @@ export const DECK_BOX = {
   luck:        { name: 'Luck', text: '+2% luck a rank', cost: [30, 55, 90, 135, 190], per: { luck: 0.02 } },
   armour:      { name: 'Armour', text: '+1 armour at ranks 2 and 4', cost: [40, 70, 110, 160, 220], perRank: [{}, { armour: 1 }, {}, { armour: 1 }, {}] },
   redraws:     { name: 'Redraws', text: '+1 Redraw at ranks 2 and 4', cost: [35, 65, 100, 150, 210], perRank: [{}, { redraws: 1 }, {}, { redraws: 1 }, {}] },
-  banishes:    { name: 'Banishes', text: '+1 Banish at ranks 3 and 5', cost: [40, 70, 110, 160, 220], perRank: [{}, {}, { banishes: 1 }, {}, { banishes: 1 }] },
+  banishes:    { name: 'Exiles', text: '+1 Exile at ranks 3 and 5', cost: [40, 70, 110, 160, 220], perRank: [{}, {}, { banishes: 1 }, {}, { banishes: 1 }] },
   startLevel:  { name: 'Starting monster level', text: 'Your starter monster begins +1 level at ranks 3 and 5', cost: [50, 90, 140, 200, 280], perRank: [{}, {}, { startLevel: 1 }, {}, { startLevel: 1 }] },
   chestReroll: { name: 'Chest Redraw', text: 'One extra free Redraw on chests at rank 1 (+1 more at rank 4)', cost: [30, 60, 100, 150, 210], perRank: [{ chestRedraws: 1 }, {}, {}, { chestRedraws: 1 }, {}] },
   openingHand: { name: 'Opening Hand', text: 'Start the run with a random unlocked Spell, rank 1; a second at rank 5', cost: [60, 100, 150, 210, 300], perRank: [{ openingHand: 1 }, {}, {}, {}, { openingHand: 1 }] }

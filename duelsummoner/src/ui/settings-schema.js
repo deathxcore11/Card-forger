@@ -66,7 +66,7 @@ export const ROWS = [
   seg('leyThread', 'access', 'Ley thread', ['subtle', 'normal', 'strong'], all('normal')),
   seg('holdConfirm', 'access', 'Hold to confirm', ['hold', 'twice'], all('hold')),
   sw('monoAudio', 'access', 'Mono audio', all(false)),
-  seg('bigMoments', 'access', 'Big moments', ['gentle', 'full'], all('gentle')),       // Gentle skips the impact frames, the Tablebreak shift and the boss-fall flash, and halves hit-stop
+  seg('bigMoments', 'access', 'Big moments', ['full', 'gentle'], all('full')),       // Full is the default; Gentle skips the impact frames, the Tablebreak shift and the boss-fall flash, and halves hit-stop. Reduce motion forces Gentle.
   sw('duelistMarker', 'access', 'Duelist marker', all(true)),       // a small marker over the duelist when the effects are heavy
   // ---- Account ----
   R('profile', 'account', 'Profile', 'action', null, all(null)),

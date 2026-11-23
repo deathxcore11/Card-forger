@@ -53,7 +53,7 @@ function statLines(c, g) {
 }
 
 function describe(c, g) {
-  if (c.kind === 'banish') { const D = cardDef(c.id); return { D: { name: D.name, text: 'BANISH: remove this unowned card from every future offer this run.' }, kind: 'Altar action: BANISH', lv: 'Nothing on your field is lost.', fx: '' }; }
+  if (c.kind === 'banish') { const D = cardDef(c.id); return { D: { name: D.name, text: 'EXILE: remove this unowned card from every future offer this run.' }, kind: 'Altar action: BANISH', lv: 'Nothing on your field is lost.', fx: '' }; }
   if (c.kind === 'tribute') { const D = cardDef(c.id); return { D: { name: D.name, text: 'TRIBUTE: give up this card (level ' + c.level + ') and free its zone.' }, kind: 'Altar action: TRIBUTE', lv: 'Lost: the card and its levels. Carries forward: the next card placed in that zone starts +2 levels.', fx: '' }; }
   if (c.kind === 'final') return { D: c.id === 'close' ? { name: 'Close the Vault', text: 'Bank the win and go to the results.' } : { name: 'Duel On', text: 'The win is banked first. Then Overtime: endless hunters, a captain every 60 s, and the only place God Fusions can form.' }, kind: 'Final Altar', lv: '', fx: '' };
   if (c.kind === 'item') { const D = ITEMS[c.id]; return { D, kind: 'Item (passive, no slot)', lv: c.price !== undefined ? '' : 'Yours for the rest of the run', fx: '' }; }
@@ -72,7 +72,7 @@ function describe(c, g) {
 const TITLES = { final: 'THE FINAL ALTAR', altar: 'ALTAR OF TRIBUTE', fusion: 'FUSION', chest: 'CARD CHEST', item: 'WITNESS STONES', shop: 'THE RELIC BROKER', blessing: 'SHRINE OF TRIBUTE' };
 const SUBS = {
   final: 'The Hollow King is down. Bank the win, or Duel On into endless Overtime.',
-  altar: 'Two actions, one use: BANISH an unowned card, or TRIBUTE a card from your field.',
+  altar: 'Two actions, one use: EXILE an unowned card, or TRIBUTE a card from your field.',
   fusion: 'Both parents are level 10. Choose a Fusion, or leave it for later.',
   item: 'A witnessed duel must begin with an offering. Take one item, free.',
   shop: 'Everything here belonged to a winner. So they told me. Stock and prices are fixed for the run.',
@@ -87,12 +87,12 @@ export function showOffer(g, act) {
   if (o !== openOffer) { openOffer = o; openedAt = performance.now(); }
   const shop = o.type === 'shop', level = o.type === 'level', cardy = level || o.type === 'chest';
   $('offerTitle').textContent = TITLES[o.type] ? TITLES[o.type] + (shop ? '  (coins ' + g.coins + ')' : '') : 'LEVEL UP ' + g.level;
-  $('offerSub').textContent = SUBS[o.type] || 'Choose a card. Banish removes a card from all future offers.';
+  $('offerSub').textContent = SUBS[o.type] || 'Choose a card. Exile removes a card from all future offers.';
   const wrap = $('offerCards'); wrap.innerHTML = '';
   o.cards.forEach((c, i) => {
     const { D, kind, lv, fx } = describe(c, g);
     const el = document.createElement('div'); el.className = 'card ' + c.rarity + (c.isNew && cardy ? ' new' : '');
-    const act = c.kind === 'banish' ? 'BANISH' : c.kind === 'tribute' ? 'TRIBUTE' : 'TAKE';
+    const act = c.kind === 'banish' ? 'EXILE' : c.kind === 'tribute' ? 'TRIBUTE' : 'TAKE';
     const buy = shop ? (c.sold ? '<button disabled>SOLD</button>' : '<button data-pick="' + i + '"' + (g.coins < c.price ? ' disabled' : '') + '>BUY ' + c.price + '</button>') : '<button data-pick="' + i + '">' + act + '</button>';
     el.innerHTML = '<h3>' + D.name + '</h3><div class="t">' + kind + ' &middot; ' + c.rarity + '</div><div>' + (D.text || '') + '</div><div class="t">' + lv + '</div>' + fx +
       '<div class="rowBtn">' + buy + '' + '</div>';
@@ -103,14 +103,14 @@ export function showOffer(g, act) {
   const btns = $('offerBtns'); btns.innerHTML = '';
   const rds = (o.freeRedraws || 0) + g.field.redraws;       // free redraws from the offer are spent first, so they count here too
   if (cardy) btns.insertAdjacentHTML('beforeend', '<button data-act="redraw"' + (rds > 0 ? '' : ' disabled') + '>REDRAW (' + rds + ')</button>');
-  if (cardy && g.field.banishes > 0) btns.insertAdjacentHTML('beforeend', '<button data-act="banish">BANISH (' + g.field.banishes + ')</button>');       // one shared Banish: press it, then press the card to remove
+  if (cardy && g.field.banishes > 0) btns.insertAdjacentHTML('beforeend', '<button data-act="banish">EXILE (' + g.field.banishes + ')</button>');       // one shared Banish: press it, then press the card to remove
   if (level) btns.insertAdjacentHTML('beforeend', '<button data-act="pass">PASS (+' + OFFER.passCoins + ' coins)</button>');
   if (o.leave) btns.insertAdjacentHTML('beforeend', '<button data-act="leave">' + (shop ? 'LEAVE THE STALL' : o.type === 'blessing' ? 'DECLINE' : 'LEAVE IT FOR LATER') + '</button>');
   banishMode = false; $('offerScreen').classList.remove('closing', 'banishing');
   $('offerScreen').onclick = e => {
     if (banishMode && !offerGuard()) { const cd = e.target.closest('.card'); if (cd) { const i = [...cd.parentElement.children].indexOf(cd); banishMode = false; fly(cd.querySelector('button'), () => act(MENU_BANISH + 1 + i), g, null); return; } }
     const t = e.target.closest('button'); if (!t || t.disabled || offerGuard()) return;
-    if (t.dataset.act === 'banish') { banishMode = !banishMode; $('offerScreen').classList.toggle('banishing', banishMode); t.textContent = banishMode ? 'PICK A CARD TO BANISH' : 'BANISH (' + g.field.banishes + ')'; return; }
+    if (t.dataset.act === 'banish') { banishMode = !banishMode; $('offerScreen').classList.toggle('banishing', banishMode); t.textContent = banishMode ? 'PICK A CARD TO EXILE' : 'EXILE (' + g.field.banishes + ')'; return; }
     if (t.dataset.pick !== undefined) fly(t, () => act(takeCode(+t.dataset.pick)), g, o.cards[+t.dataset.pick]);
     else if (t.dataset.ban !== undefined) fly(t, () => act(MENU_BANISH + 1 + +t.dataset.ban), g, null);
     else if (t.dataset.act === 'redraw') act(MENU_REDRAW);
