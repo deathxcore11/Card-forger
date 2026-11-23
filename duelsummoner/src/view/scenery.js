@@ -1,19 +1,9 @@
 // Seeded scenery: groves of trees, boulders, bushes, grass tufts and flowers scattered over the generated stage. View only: it never touches
 // the sim (no collision, no RNG stream the run uses), so replays and goldens are unaffected. The same stage seed always grows the same stage.
 // Every kind is one InstancedMesh with its own chunky look; when a baked model for a kind is present (models.tree etc.) it replaces the stand-in.
-import { heightAt } from '../sim/terrain.js';
-import { MAP } from '../data/map.js';
+import { scatterStage, mulberry } from '../gen/scatter.js';
 
 const T = window.THREE;
-
-// ------------------------------------------------------------------ tiny deterministic helpers
-const strHash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
-const mulberry = a => () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-function noise2(seed) {                                                       // smooth value noise 0..1, for patchy grass and flower meadows
-  const L = 64, v = new Float32Array(L * L), r = mulberry(seed); for (let i = 0; i < v.length; i++) v[i] = r();
-  const g = (x, y) => v[((y & 63) << 6) | (x & 63)], s = t => t * t * (3 - 2 * t);
-  return (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = s(x - xi), fy = s(y - yi); return (g(xi, yi) * (1 - fx) + g(xi + 1, yi) * fx) * (1 - fy) + (g(xi, yi + 1) * (1 - fx) + g(xi + 1, yi + 1) * fx) * fy; };
-}
 
 // ------------------------------------------------------------------ geometry: one merged, vertex-coloured, flat-shaded geometry per kind
 class Geo {
@@ -62,56 +52,29 @@ function crystalGeo(theme) { const g = new Geo(), r = mulberry(21); for (let i =
   for (let k = 0; k < 4; k++) g.tri(B[k], B[(k + 1) % 4], tp, rgb(theme.crystal[(k + i) % theme.crystal.length])); } return g.geometry(); }
 function mushroomGeo(theme) { const g = new Geo(); g.prism(0, 0, 0, 0.35, 0.07, 0.06, 5, [0.8, 0.82, 0.9]); g.blob(0, 0.4, 0, 0.3, 0.16, 0.3, rgb(theme.glow), 0.08, 6); return g.geometry(); }
 
-// ------------------------------------------------------------------ themes: what grows where. One per stage, palette from the look rules.
+// ------------------------------------------------------------------ themes: the palette of each stage (what grows where lives in gen/scatter.js)
 export const THEMES = [
-  { name: 'ruins', leaf: [0x9dc76a, 0xb7d884, 0x86b85a], bark: 0xc79a6b, rock: 0xd9d3c4, rock2: 0xc2b9a6, bladeCols: [0x8fc060, 0xb2d66e], flowerCols: [0xffe14a, 0xffffff, 0xb28cff, 0xff6b5a],
-    trees: 1.0, rocks: 0.5, bushes: 0.6, grass: 1.0, flowers: 0.6, specials: 0 },
-  { name: 'crypt', leaf: [0x6e8aa0, 0x7f9db3, 0x5f7a92], bark: 0x8a7a6a, rock: 0x8fa3b5, rock2: 0x72869a, bladeCols: [0x6f9aa3, 0x86b3b8], flowerCols: [0x8ae8ff, 0xb8f4ff], glow: 0x3fd6e0,
-    trees: 0.0, rocks: 0.9, bushes: 0.0, grass: 0.2, flowers: 0.1, specials: 0.8, special: 'mushroom' },
-  { name: 'vault', leaf: [0xb48cff, 0xc9a8ff, 0x9a70e0], bark: 0x6b3fa0, rock: 0xd8b86a, rock2: 0xb89548, bladeCols: [0xd9b45a, 0xf0cf7a], flowerCols: [0xffe9a8], crystal: [0xb48cff, 0xd6b8ff, 0x8f64d6],
-    trees: 0.0, rocks: 0.6, bushes: 0.0, grass: 0.1, flowers: 0.0, specials: 0.9, special: 'crystal' }
+  { name: 'ruins', leaf: [0x9dc76a, 0xb7d884, 0x86b85a], bark: 0xc79a6b, rock: 0xd9d3c4, rock2: 0xc2b9a6, bladeCols: [0x8fc060, 0xb2d66e], flowerCols: [0xffe14a, 0xffffff, 0xb28cff, 0xff6b5a], special: null },
+  { name: 'crypt', leaf: [0x6e8aa0, 0x7f9db3, 0x5f7a92], bark: 0x8a7a6a, rock: 0x8fa3b5, rock2: 0x72869a, bladeCols: [0x6f9aa3, 0x86b3b8], flowerCols: [0x8ae8ff, 0xb8f4ff], glow: 0x3fd6e0, special: 'mushroom' },
+  { name: 'vault', leaf: [0xb48cff, 0xc9a8ff, 0x9a70e0], bark: 0x6b3fa0, rock: 0xd8b86a, rock2: 0xb89548, bladeCols: [0xd9b45a, 0xf0cf7a], flowerCols: [0xffe9a8], crystal: [0xb48cff, 0xd6b8ff, 0x8f64d6], special: 'crystal' }
 ];
 
-// ------------------------------------------------------------------ the scatter
+// ------------------------------------------------------------------ drawing the scatter
 export function buildScenery(map, stageIndex, models) {
-  const theme = THEMES[Math.min(stageIndex || 0, THEMES.length - 1)], seed = strHash(String(map.hash || map.key || 'x')), rnd = mulberry(seed ^ 0x5CE9E), pat = noise2(seed ^ 0xA11CE), group = new T.Group();
-  const R = (MAP && MAP.boundaryR ? MAP.boundaryR : 195) * 0.94;
-  // places scenery must stay out of: where you start, the gate, the arena, boss rings and every encounter
-  const keep = [{ x: map.spawn.x, z: map.spawn.z, r: 9 }, { x: map.gate.x, z: map.gate.z, r: 12 }];
-  if (map.arena) keep.push({ x: map.arena.center.x, z: map.arena.center.z, r: 16 });
-  for (const b of map.bossRings || []) keep.push({ x: b.x, z: b.z, r: (b.r || 14) + 3 });
-  for (const e of map.encounters || []) keep.push({ x: e.x, z: e.z, r: 6 });
-  const free = (x, z, pad) => { for (const k of keep) { const dx = x - k.x, dz = z - k.z, rr = k.r + (pad || 0); if (dx * dx + dz * dz < rr * rr) return false; } return x * x + z * z < R * R; };
-  const flat = (x, z, tol = 0.3) => { const h = heightAt(x, z); for (const [dx, dz] of [[1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6]]) if (Math.abs(heightAt(x + dx, z + dz) - h) > tol) return null; return h; };
-  const spots = (n, test) => { const out = []; for (let i = 0, tries = 0; out.length < n && tries < n * 12; tries++, i++) { const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * R, x = Math.cos(a) * d, z = Math.sin(a) * d; const h = test(x, z); if (h !== null && h !== undefined && h !== false) out.push([x, h, z, rnd]); } return out; };
-
-  const kinds = [];                                                              // { geo, instances: [[x,y,z,scale,rotY,tint]], tint }
-  const add = (geo, list, mat) => { if (list.length) kinds.push({ geo, list, mat }); };
+  const theme = THEMES[Math.min(stageIndex || 0, THEMES.length - 1)], S = scatterStage(map, stageIndex, false), group = new T.Group();
+  const kinds = [], add = (geo, list, mat, colored) => { if (list.length) kinds.push({ geo, list, mat, colored }); };
   const mat = new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }), matBoth = new T.MeshLambertMaterial({ vertexColors: true, side: T.DoubleSide });      // blades and petals are single triangles: seen from both sides
-  const tint = (lo, hi) => 1 - lo + rnd() * (lo + hi);
-
-  if (theme.trees > 0) {                                                         // groves: pick centres, then ring them with trees of different sizes
-    const groves = spots(Math.round(14 * theme.trees), (x, z) => (free(x, z, 14) && flat(x, z, 0.4) !== null ? flat(x, z, 0.4) : null)), per = [];
-    for (const g of groves) { const n = 5 + Math.floor(rnd() * 9); for (let i = 0; i < n; i++) { const a = rnd() * 6.283, d = 3 + rnd() * 11, x = g[0] + Math.cos(a) * d, z = g[2] + Math.sin(a) * d; if (!free(x, z, 3)) continue; const h = flat(x, z, 0.35); if (h === null) continue; per.push([x, h, z, 0.75 + rnd() * 0.7, rnd() * 6.283, tint(0.12, 0.12)]); } }
-    for (let v = 0; v < 3; v++) add(treeGeo(theme, v), per.filter((_, i) => i % 3 === v), mat);
-  }
-  if (theme.rocks > 0) { const rs = spots(Math.round(90 * theme.rocks), (x, z) => (free(x, z, 2) ? flat(x, z, 0.5) : null)).map(s => [s[0], s[1], s[2], 0.5 + rnd() * rnd() * 3.2, rnd() * 6.283, tint(0.1, 0.1)]); for (let v = 0; v < 3; v++) add(rockGeo(theme, v), rs.filter((_, i) => i % 3 === v), mat); }
-  if (theme.bushes > 0) add(bushGeo(theme), spots(Math.round(110 * theme.bushes), (x, z) => (free(x, z, 2) ? flat(x, z, 0.35) : null)).map(s => [s[0], s[1], s[2], 0.7 + rnd() * 0.8, rnd() * 6.283, tint(0.1, 0.1)]), mat);
-  if (theme.special) add(theme.special === 'crystal' ? crystalGeo(theme) : mushroomGeo(theme), spots(Math.round(120 * theme.specials), (x, z) => (free(x, z, 3) ? flat(x, z, 0.4) : null)).map(s => [s[0], s[1], s[2], 0.8 + rnd() * 1.6, rnd() * 6.283, 1]), mat);
-  if (theme.grass > 0) add(grassGeo(theme), spots(Math.round(2600 * theme.grass), (x, z) => (free(x, z, 0) && pat(x * 0.045 + 7, z * 0.045 + 3) > 0.38 ? flat(x, z, 0.25) : null)).map(s => [s[0], s[1], s[2], 0.8 + rnd() * 0.9, rnd() * 6.283, tint(0.15, 0.1)]), matBoth);
-  if (theme.flowers > 0) {                                                       // meadows: only inside the noise's high patches, in clumps of one colour
-    const cols = theme.flowerCols, fl = spots(Math.round(420 * theme.flowers), (x, z) => (free(x, z, 0) && pat(x * 0.03 + 40, z * 0.03 + 9) > 0.62 ? flat(x, z, 0.25) : null)), tinted = [];
-    for (const s of fl) { const c = cols[Math.floor(pat(s[0] * 0.05, s[2] * 0.05) * cols.length) % cols.length]; tinted.push([s[0], s[1], s[2], 0.8 + rnd() * 0.6, rnd() * 6.283, c]); }
-    kinds.push({ geo: flowerGeo(), list: tinted, mat: matBoth, colored: true });
-  }
-
+  for (let v = 0; v < 3; v++) add(treeGeo(theme, v), S.trees[v], mat);
+  for (let v = 0; v < 3; v++) add(rockGeo(theme, v), S.rocks[v], mat);
+  add(bushGeo(theme), S.bushes, mat);
+  if (theme.special) add(theme.special === 'crystal' ? crystalGeo(theme) : mushroomGeo(theme), S.special, mat);
+  add(grassGeo(theme), S.grass, matBoth);
+  add(flowerGeo(), S.flowers.map(f => [f[0], f[1], f[2], f[3], f[4], theme.flowerCols[f[5] % theme.flowerCols.length]]), matBoth, true);
   for (const k of kinds) {
-    if (!k.geo) continue;
     const mesh = new T.InstancedMesh(k.geo, k.mat, k.list.length), m = new T.Matrix4(), q = new T.Quaternion(), s = new T.Vector3(), p = new T.Vector3(), up = new T.Vector3(0, 1, 0), c = new T.Color();
     k.list.forEach((it, i) => { q.setFromAxisAngle(up, it[4]); s.setScalar(it[3]); p.set(it[0], it[1], it[2]); m.compose(p, q, s); mesh.setMatrixAt(i, m); if (k.colored) c.setHex(it[5]); else c.setScalar(it[5]); mesh.setColorAt(i, c); });
     mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; mesh.frustumCulled = false; group.add(mesh);
   }
-  group.userData.counts = kinds.map(k => k.list.length);
-  const fk = kinds.find(k => k.colored); group.userData.flowerSpots = fk ? fk.list.map(f => [f[0], f[1], f[2]]) : [];         // where the flowers are, for the butterflies
+  group.userData.counts = kinds.map(k => k.list.length); group.userData.flowerSpots = S.flowerSpots; group.userData.scatter = S;
   return group;
 }

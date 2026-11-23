@@ -3,6 +3,7 @@ import { CFG } from '../data/config.js';
 import { atan2, cos, exp, sin } from './dmath.js';
 import { heightAt, moveXZ, WALL } from './terrain.js';
 import { breakVasesNear } from './world.js';
+import { resolveColliders } from './colliders.js';
 
 export function makePlayer() {
   return { x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0, pface: 0, vx: 0, vz: 0, vy: 0, hp: CFG.player.hp, maxHp: CFG.player.hp, face: 0, grounded: true,
@@ -68,6 +69,7 @@ export function updatePlayer(g, dt, cmd) {
     moveX = p.vx * dt; moveZ = p.vz * dt;
   }
   const blocked = moveXZ(p, moveX, moveZ, C.radius, C.stepUp);
+  resolveColliders(g.colliders, p, C.radius);                                        // trunks and big boulders are solid: slide along them
   if (blocked && !p.grounded && hasInput && mantle(p, mx, mz, C, heightAt, WALL)) { p.mantled = (p.mantled || 0) + 1; g.emit('mantle', p.x, p.y, p.z); }                  // the air jump that was nearly enough
   if (blocked & 1) p.vx = 0;
   if (blocked & 2) p.vz = 0;
