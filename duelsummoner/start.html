@@ -1,0 +1,30 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Duel Summoner</title>
+<style>
+  html, body { margin:0; min-height:100%; background:#0d0810; color:#f3e3c2; font-family:"Courier New", ui-monospace, monospace; }
+  main { max-width:520px; margin:0 auto; padding:max(18px, env(safe-area-inset-top)) 18px 24px; text-align:center; }
+  h1 { font-size:clamp(26px, 8vw, 44px); letter-spacing:4px; margin:24px 0 6px; }
+  p { color:#b89a6a; line-height:1.5; margin:6px 0 18px; }
+  a.b { display:block; margin:12px 0; padding:16px 10px; background:#f3e3c2; color:#0d0810; text-decoration:none; font-size:20px; letter-spacing:2px; min-height:24px; }
+  a.b.alt { background:#1b1220; color:#f3e3c2; border:2px solid #6b4fa0; font-size:16px; }
+  small { display:block; margin-top:26px; color:#7a6a8a; }
+</style>
+</head>
+<body>
+<main>
+  <h1>DUEL SUMMONER</h1>
+  <p>Survive the run. Play it here in the browser: it works with touch, a keyboard or a pad.</p>
+  <a class="b" href="/?play=1">PLAY</a>
+  <a class="b alt" href="/?fxlab">EFFECTS TEST SCREEN</a>
+  <small id="build">build ...</small>
+</main>
+<script type="module">
+  import { BUILD_VERSION } from '/src/sim/results.js';
+  document.getElementById('build').textContent = 'build ' + BUILD_VERSION;
+</script>
+</body>
+</html>

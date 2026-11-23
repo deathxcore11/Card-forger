@@ -51,3 +51,9 @@ SKIP
 - Boss stone circles, lit used shrines, audit hex values: against our specs.
 - spots(260) decals: code removed.
 - Split hurt caps, rateMul: against 22 Nov and tonight's pace.
+
+
+## Decided 23 Nov (owner)
+
+- In-run windows (shop, level-up, chest) use the menus' dark glass with a gold line, the same look as the approved menus (design/menus-spec.md). Built with the menus step.
+- Map 2 is the Ashen Orchard. The Frostbound Archive follows it as map 3. The stage names in src/data/stages.js are renamed (ids unchanged). The old working names Sealed Catacombs and Vault of the Last Duel in the art book, the generator spec and the audio list are superseded; their content has NOT been redone and no map content is built yet.

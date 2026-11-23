@@ -1240,3 +1240,8 @@ Rejected, merged or adapted fixes (everything else was applied as written):
 27. **"Never overwrites without [A]"** became "without the player choosing Use it", to keep the no-[A]-glyph rule.
 28. **Gold edge → corner tab:** the approved Thor bottom preview draws Fusion-ready cards with a gold border. Under the new rule that border becomes the corner tab, so the preview needs this change before PC build.
 29. **Draft scores** section deleted as asked.
+
+
+## Decided 23 Nov: in-run windows
+
+In-run windows (the shop, the level-up offer, the chest reveal) use the menus' dark glass with a gold line, the same look as the approved menus in this spec. Decided by the owner. Built with the menus step, which still waits for the go-ahead; nothing is built for it yet.

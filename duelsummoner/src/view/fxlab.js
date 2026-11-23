@@ -58,7 +58,9 @@ export function startLab(D) {
     const diff = (i) => Math.abs(A.d[i] - B.d[i]) + Math.abs(A.d[i + 1] - B.d[i + 1]) + Math.abs(A.d[i + 2] - B.d[i + 2]) > 30; let n = 0; const w = A.w, h = A.h, edge = { top: 0, bottom: 0, left: 0, right: 0 };
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { if (diff((y * w + x) * 4)) { n++; if (y < 3) edge.top++; if (y >= h - 3) edge.bottom++; if (x < 3) edge.left++; if (x >= w - 3) edge.right++; } }
     let cross = 0, inRun = false; const hy = Math.floor(h * 0.47); for (let x = 0; x < w; x += 2) { let hit = false; for (let y = hy - 4; y <= hy + 4; y++) if (diff((y * w + x) * 4)) { hit = true; break; } if (hit && !inRun) cross++; inRun = hit; }
-    return { claimedPct: +(n / (w * h) * 100).toFixed(1), edge, horizonCrossings: cross };
+    D.actors.own.hideWalls = true; await new Promise(r => setTimeout(r, 400)); const C2 = snap(); D.actors.own.hideWalls = false; let wn = 0, cn = 0; const bx0 = Math.floor(w * 0.2), bx1 = Math.floor(w * 0.8), by0 = Math.floor(h * 0.2), by1 = Math.floor(h * 0.8);       // the walls alone, and how much of the centre 60% box they cover
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; if (Math.abs(A.d[i] - C2.d[i]) + Math.abs(A.d[i + 1] - C2.d[i + 1]) + Math.abs(A.d[i + 2] - C2.d[i + 2]) > 30) { wn++; if (x >= bx0 && x < bx1 && y >= by0 && y < by1) cn++; } }
+    return { claimedPct: +(n / (w * h) * 100).toFixed(1), wallsOnlyPct: +(wn / (w * h) * 100).toFixed(1), centreBoxWallPct: +(cn / ((bx1 - bx0) * (by1 - by0)) * 100).toFixed(1), edge, horizonCrossings: cross };
   };  // the six elements side by side by SHAPE and MOTION (view/elshapes.js), then the same frame in greyscale (the canvas filter): the lab check that each is recognisable without colour
   let shapes = [], shapeTimer = 0;
   const showShapes = async grey => {
@@ -78,4 +80,5 @@ export function startLab(D) {
   reset();
   window.__fxlab = { showShapes, tier5, tier5Measure: measure, elementStrip, worstCase, ownStress, own: () => D.actors.own.readout, read, reset, probe: probeTxt, probeOk: probe === RAMP.fire[0], ramp: FX.ramp, panel };
 }
+
 

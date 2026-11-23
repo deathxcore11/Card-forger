@@ -1,4 +1,4 @@
-// The three-stage run (design/run-structure.md, draft v1). Everything the stage machine needs is data here, so the numbers can move
+﻿// The three-stage run (design/run-structure.md, draft v1). Everything the stage machine needs is data here, so the numbers can move
 // without touching code. Times are seconds on the stage clock. DRAFT: the spec's numbers may still change.
 //
 // STAND-INS until the real bosses exist (the engine field says which existing fight plays the part):
@@ -56,7 +56,7 @@ export const STAGES = [
     gate: { id: 'arbiter', name: 'The Stone Arbiter', engine: 'pharaoh', hp: 2640 }
   },
   {
-    id: 'catacombs', name: 'Sealed Catacombs', clock: 420, mult: 1.1, gateWake: 360, falls: { lp: 10 },
+    id: 'catacombs', name: 'Ashen Orchard', clock: 420, mult: 1.1, gateWake: 360, falls: { lp: 10 },
     waves: { offset: 120, scale: 360 / 420 },
     gen: { counts: { cchest: 7, stone: 1, broker: 1, shrine: 2, altar: 1, vaseClusters: 10 }, minCounts: { cchest: 5, stone: 1, broker: 1, shrine: 2, altar: 1 } },
     timeline: [
@@ -66,7 +66,7 @@ export const STAGES = [
     gate: { id: 'weaver', name: 'The Seal Weaver', engine: 'pharaoh', hp: 3960 }
   },
   {
-    id: 'vault', name: 'Vault of the Last Duel', clock: 480, mult: 1.2, gateWake: 420, falls: { lp: 15 },
+    id: 'vault', name: 'Frostbound Archive', clock: 480, mult: 1.2, gateWake: 420, falls: { lp: 15 },
     waves: { offset: 180, scale: 300 / 480 },
     gen: { counts: { cchest: 6, stone: 1, broker: 1, shrine: 2, altar: 1, vaseClusters: 9 }, minCounts: { cchest: 4, stone: 1, broker: 1, shrine: 2, altar: 1 } },
     timeline: [
@@ -93,5 +93,6 @@ export const ACES = {
   trophy: { first: 0.35, decay: 0.07, min: 0.1 },      // chance an Ace drops a Trophy Chest: 35%, then 28%, 21% ... never below 10%
   rarity: [['rare', 0.6], ['epic', 0.3], ['legendary', 0.1]]
 };
+
 
 

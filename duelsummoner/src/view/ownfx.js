@@ -31,7 +31,7 @@ const WALL_GLSL = `
     float low = N(vec2(wAng * 2.0, 0.6)).g, nh = N(vec2(cell * 0.173 + 0.31, floor(uT * 8.0) / 64.0 * 3.0)).r;
     vec3 tone = vCol; bool hit = false;
     if (el > 6.5) {
-      float lh = (0.3 + 0.55 * h1) * (0.75 + 0.25 * low) * hm, c = 0.35 + 0.3 * h2, hw = 0.16 + 0.1 * h3, top = lh * (1.0 - 0.18 * (cf - c) / hw), ax = abs(cf - c);
+      float lh = (0.28 + 0.42 * h1) * (0.75 + 0.25 * low) * hm * mix(1.0, 0.4, smoothstep(0.0, vRad * 1.2, dd)), c = 0.35 + 0.3 * h2, hw = 0.13 + 0.09 * h3, top = lh * (1.0 - 0.18 * (cf - c) / hw), ax = abs(cf - c);
       if (ax < hw && y01 < top) { hit = true; tone = vec3(0.05, 0.045, 0.07); if (hw - ax < fu * 1.1 || top - y01 < eH * 1.2) tone = vec3(0.85, 0.89, 0.96); }
       else { float xs = ax - hw; if (xs > 0.0 && abs(xs - 0.05) < fu * 0.9 && y01 < 0.7 * lh && fract(y01 * 7.0 - uT * 0.9 + h3 * 3.0) < 0.3) { hit = true; tone = vec3(0.85, 0.89, 0.96); } }
     } else if (el > 0.5) {
@@ -41,16 +41,25 @@ const WALL_GLSL = `
         if (tt < 1.0 && ax < w) { hit = true; vec3 lt = min(vCol * 1.3, vec3(1.0)); tone = cx < cc ? lt : vCol * 0.8; if (tt > 0.86) tone = vec3(0.94, 0.98, 1.0); if (L == 1) tone *= 0.82; if (w - ax < fu * 1.1) tone = vec3(0.118, 0.118, 0.165); break; }
       }
     } else {
+      // fire: each tongue is a curved flame: an S-curve spine that sways, a body tongue in the element colour, a narrower hot tongue nested inside it (bright, with a pale core at the root), and a small tip that breaks off above it.
+      // Three stepped poses a second apart, out of phase per tongue, move the edge and the sway. The dark ink edge runs on the outer silhouette only.
       for (int L = 0; L < 2; L++) {
-        float uu = u + (L == 1 ? 0.5 + 0.2 * h3 : 0.0), cl = floor(uu), cx = fract(uu), g2 = hsh(vec2(cl, 7.0 + float(L) * 14.0)), g3 = hsh(vec2(cl, 11.0 + float(L) * 14.0)), nz = N(vec2(cl * 0.173 + 0.31 + float(L) * 0.4, floor(uT * 8.0) / 64.0 * 3.0)).r;
-        float lh = (0.25 + 0.75 * nz) * (0.7 + 0.3 * low) * hm * (L == 1 ? 0.65 : 1.0), lean = (sin(uT * 0.9 + wAng * 18.0) * 0.5 + 0.35) * 0.35 + (g2 - 0.5) * 0.3, tt = y01 / max(lh, 0.01), sh = floor(g3 * 4.0), hw0 = 0.18 + 0.3 * g2, e = -1.0;
-        if (tt < 1.0) {
-          float k = pow(1.0 - tt, 1.5);
-          if (sh < 2.5) { float p = sh < 0.5 ? 0.5 : (sh < 1.5 ? 0.3 : 0.7); e = hw0 * k - abs(cx - (p + lean * tt)); }
-          else { float e1 = 0.13 * k - abs(cx - (0.27 + lean * tt)), e2 = tt < 0.7 ? 0.1 * (1.0 - tt / 0.7) - abs(cx - (0.73 + lean * tt * 0.5)) : -1.0; e = max(e1, e2); }
-          if (tt > 0.72 && N(vec2(cl * 0.31, floor(tt * 7.0) * 0.13 + floor(uT * 5.0) * 0.071)).r < 0.4) e = -1.0;
+        float uu = u + (L == 1 ? 0.5 + 0.2 * h3 : 0.0), cl = floor(uu), cx = fract(uu), g1 = hsh(vec2(cl, 3.0 + float(L) * 14.0)), g2 = hsh(vec2(cl, 7.0 + float(L) * 14.0)), g3 = hsh(vec2(cl, 11.0 + float(L) * 14.0)), nz = N(vec2(cl * 0.173 + 0.31 + float(L) * 0.4, floor(uT * 8.0) / 64.0 * 3.0)).r;
+        float lh = (0.25 + 0.75 * nz) * (0.7 + 0.3 * low) * hm * (L == 1 ? 0.65 : 1.0), tt = y01 / max(lh, 0.01);
+        if (tt > 1.1) continue;
+        float pose = mod(floor(uT + g3 * 3.0), 3.0), ph = g1 * 6.2832, lean = (sin(uT * 0.9 + wAng * 18.0) * 0.5 + 0.35) * 0.35 + (g2 - 0.5) * 0.3;
+        float spine = 0.3 + 0.4 * g2 + lean * tt + 0.13 * sin(tt * 5.0 + ph + pose * 2.1) * tt, wb = (0.16 + 0.3 * g2) * (1.0 + (pose - 1.0) * 0.18), s = tt / 0.84;
+        float w = s < 1.0 ? pow(1.0 - s, 1.2) * wb : -1.0, ax = abs(cx - spine);
+        float tw = (tt > 0.9 && g3 > 0.35 && pose != 1.0) ? 0.055 * (1.1 - tt) / 0.2 - abs(cx - (spine + 0.04 * (pose - 1.0))) : -1.0;       // the detached tip
+        float e = max(w - ax, tw);
+        if (e > 0.0) {
+          hit = true; tone = vCol;
+          float si = tt / 0.55, wi = si < 1.0 ? pow(1.0 - si, 1.2) * wb * 0.5 : -1.0;
+          if (wi - ax > 0.0) { tone = min(vCol * 1.3, vec3(1.0)); if (tt < 0.12) tone = vec3(1.0, 0.96, 0.78); }
+          if (L == 1) tone *= 0.85;
+          if (e < fu * 1.1) tone = vec3(0.118, 0.118, 0.165);
+          break;
         }
-        if (e > 0.0) { hit = true; tone = tt < 0.34 ? min(vCol * 1.3, vec3(1.0)) : (tt < 0.7 ? vCol : vCol * 0.55); if (L == 1) tone *= 0.8; if (e < fu * 1.1) tone = vec3(0.118, 0.118, 0.165); break; }
       }
     }
     if (!hit) discard;
@@ -151,11 +160,13 @@ export class OwnEffects {
     // the governor: the largest cap on every fill keep that brings the kept sum to its limit (bisection; it may go below the 12.5% floor), then smoothed over 0.3 s
     let target = 1; if (keptAt(1) > set.kept) { let lo = 0.0, hi = 1.0; for (let it = 0; it < 14; it++) { const mid = (lo + hi) / 2; if (keptAt(mid) > set.kept) hi = mid; else lo = mid; } target = Math.max(0.005, lo); }
     const kk = 1 - Math.exp(-(dt || 0.016) / 0.3); this.gov += (target - this.gov) * kk; u.uGov.value = Math.max(0.005, Math.min(1, this.gov));
-    this.rasterSum = ras; this.keptSum = keptAt(this.gov); this.keptRaw = keptAt(1);    for (const s of [this.A, this.V, this.W]) { s.g.instanceCount = s.n; s.m.visible = s.n > 0; if (s.n > 0) { s.buf.updateRange.offset = 0; s.buf.updateRange.count = s.n * STRIDE; s.buf.needsUpdate = true; } }
+    this.rasterSum = ras; this.keptSum = keptAt(this.gov); this.keptRaw = keptAt(1);    for (const s of [this.A, this.V, this.W]) { s.g.instanceCount = s.n; s.m.visible = s.n > 0 && !(s === this.W && this.hideWalls); if (s.n > 0) { s.buf.updateRange.offset = 0; s.buf.updateRange.count = s.n * STRIDE; s.buf.needsUpdate = true; } }
     this.nArea = this.A.n; this.nVol = this.V.n + this.W.n;
   }
   get readout() { return { areas: this.nArea, volumes: this.nVol, rasterSum: +this.rasterSum.toFixed(2), keptSum: +this.keptSum.toFixed(3), keptRaw: +(this.keptRaw || 0).toFixed(2), governor: +this.gov.toFixed(2), dropped: this.dropped }; }
 }
+
+
 
 
 

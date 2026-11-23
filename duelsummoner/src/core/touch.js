@@ -1,4 +1,4 @@
-// Touch controls: a floating move stick, drag-to-look, big Jump / Slide / Dash / Use buttons, a pause button, and tap-to-use on the world.
+﻿// Touch controls: a floating move stick, drag-to-look, big Jump / Slide / Dash / Use buttons, a pause button, and tap-to-use on the world.
 // It feeds the same one action map as the keyboard and the pad (Input.command): f, r, jump, slide, dash, use. Nothing here touches the sim.
 // Shown on a touch screen, hidden while a pad is the thing in use (the AYN Thor has a built-in pad and a screen: the pad wins, tap-to-use still works).
 import { clamp } from './util.js';
@@ -33,9 +33,9 @@ export class TouchControls {
   }
   _padPresent() { const pads = navigator.getGamepads ? navigator.getGamepads() : []; for (const p of pads) if (p && p.connected) return true; return false; }
   _seen() { this.lastTouch = performance.now(); this.touchDevice = true; document.body.classList.add('touch'); this._refresh(); }
-  // the overlay goes away on the frame a pad is used and comes back on the next touch (whichever was used last wins)
+  // the overlay stays on beside the pad: a handheld with a built-in pad and a touch screen shows both
   padUsed() { this.lastPad = performance.now(); this.lastTouch = 0; this._refresh(); }
-  _refresh() { const show = this.enabled && this.touchDevice && !(this._padPresent() && this.lastPad > this.lastTouch); if (show !== this.visible) { this.visible = show; this.root.classList.toggle('off', !show); } }
+  _refresh() { const show = this.enabled && this.touchDevice; if (show !== this.visible) { this.visible = show; this.root.classList.toggle('off', !show); } }
   setEnabled(on) { this.enabled = on; if (!on) this._release(); this._refresh(); }
   get isTouch() { return !!this.touchDevice; }
 
@@ -89,3 +89,5 @@ export class TouchControls {
   // the Use button only appears when the game has something to use
   setUseVisible(v) { const b = this.btns.use; if (b && (b.el.style.display !== 'none') !== v) b.el.style.display = v ? 'flex' : 'none'; }
 }
+
+

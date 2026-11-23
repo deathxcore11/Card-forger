@@ -1,8 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Duel Summoner</title>
 <style>
   :root { --t:clamp(12px, 2.2vh, 44px); --tz:clamp(12px, 2.7vh, 48px); --ink:#f3e3c2; --dim:#b89a6a; --panel:#1b1220; --line:#6b4fa0; --hp:#c8402c; --xp:#8f6bff; --bg:#0d0810; }
@@ -115,6 +116,12 @@
   #lowhp { position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center, rgba(14,8,20,0) 56%, rgba(14,8,20,.34) 78%, rgba(14,8,20,.78) 100%); }       /* ink creeping in from the edges; the middle third stays clear */
   #proof { position:fixed; left:50%; top:34px; transform:translateX(-50%); z-index:15; display:none; padding:3px 10px; border:1px solid #6b4fa0; background:rgba(14,10,24,.82); color:#f0e8d4; font:600 13px/1.3 ui-monospace,Consolas,monospace; white-space:nowrap; pointer-events:none; max-width:96vw; overflow:hidden; text-overflow:ellipsis; }       /* the proof overlay: one line for clips, hidden by default, clear of the health bar and the slots */
   #proof.on { display:block; }
+  html, body { touch-action:manipulation; overscroll-behavior:none; -webkit-touch-callout:none; }
+  #devbar { position:fixed; left:50%; top:max(2px, env(safe-area-inset-top)); transform:translateX(-50%); z-index:16; display:flex; gap:6px; align-items:center; font:11px/1 ui-monospace,Consolas,monospace; color:#b89a6a; pointer-events:none; white-space:nowrap; }
+  #devbar button { pointer-events:auto; font:inherit; font-size:11px; letter-spacing:1px; padding:4px 8px; margin:0; min-height:0; min-width:0; background:#1b1220cc; color:#f3e3c2; border:1px solid #6b4fa0; }
+  #devbar.hidefs button { display:none; }
+  @media (max-height:600px), (pointer:coarse) { #devbar { left:8px; top:92px; transform:none; } :root { --tz:clamp(10px, 2.3vh, 48px); } }
+  body[data-mode=dead] #devbar, body[data-mode=offer] #devbar { visibility:hidden; }
   @media (max-width:700px) { #proof { font-size:11px; padding:2px 6px; } }
   #speedlines { position:fixed; inset:0; pointer-events:none; opacity:0; z-index:13; background:repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0) 0 5deg, rgba(255,255,255,.16) 5deg 5.7deg); -webkit-mask-image:radial-gradient(ellipse at center, transparent 42%, #000 88%); mask-image:radial-gradient(ellipse at center, transparent 42%, #000 88%); }       /* slide-hop speed lines: only the edges of the screen */
   body.rm #speedlines { display:none; }
@@ -203,6 +210,7 @@
 <div class="hud" id="fusion"></div>
 <div class="hud" id="boss"><div id="bossname">THE HOLLOW PHARAOH</div><div class="bar"><i id="bossfill"></i></div></div>
 <div id="proof" aria-hidden="true"></div>
+<div id="devbar"><button id="fsBtn" type="button">FULL SCREEN</button><span id="buildLabel"></span></div>
 <div class="hud" id="debug" style="left:16px;top:230px;display:none"></div>
 <div class="hud" id="stats"></div>
 <div id="tags"></div>
@@ -250,8 +258,21 @@
 
 <script src="vendor/three.min.js"></script>
 <script type="module" src="src/main.js"></script>
+<script type="module">
+  // device bits: the build label, the full-screen button (hidden once full screen is on or if the browser has none)
+  import { BUILD_VERSION } from '/src/sim/results.js';
+  document.getElementById('buildLabel').textContent = 'v' + BUILD_VERSION;
+  const fs = document.getElementById('fsBtn'), bar = document.getElementById('devbar'), el = document.documentElement;
+  const can = !!(el.requestFullscreen || el.webkitRequestFullscreen), on = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const sync = () => bar.classList.toggle('hidefs', !can || on());
+  fs.addEventListener('click', () => { try { (el.requestFullscreen || el.webkitRequestFullscreen).call(el); } catch (e) {} });
+  document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync); sync();
+</script>
 </body>
 </html>
+
+
+
 
 
 
