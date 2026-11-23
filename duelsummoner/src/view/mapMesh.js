@@ -105,6 +105,18 @@ function groundTex() {
   for (let i = 0; i < 900; i++) wrap(r() * 256, r() * 256, 0.8 + r() * 1.6, r() < 0.6 ? 'rgba(90,70,40,0.35)' : 'rgba(255,250,235,0.45)');
   gtex = new T.CanvasTexture(cv); gtex.wrapS = gtex.wrapT = T.RepeatWrapping; gtex.magFilter = T.LinearFilter; gtex.minFilter = T.LinearMipmapLinearFilter; return gtex;
 }
+// the pool lip: a low carved stone ring, 0.6 m wide and 0.21 m tall (the water sits 0.15 m below it), faceted in 40 blocks in the ruinstone ramp with a few light faces on top, and a dark wet band on the inner wall
+const LIP = [0x7a6a52, 0xa89578, 0x7a6a52, 0xa89578, 0xc9b896], LIP_H = 0.21, LIP_W = 0.6, WET = 0x3a3028;
+function addLip(B, p, look) {
+  const col = c => (look && look.ramp ? rampColour(look.ramp, c) : c), n = 40, dim = (c, k) => ((Math.round(((c >> 16) & 255) * k) << 16) | (Math.round(((c >> 8) & 255) * k) << 8) | Math.round((c & 255) * k));
+  for (let i = 0; i < n; i++) {
+    const a = i / n * 2 * Math.PI, b = (i + 1) / n * 2 * Math.PI, m = (a + b) / 2, h = LIP_H + (((i * 7) % 5) - 2) * 0.012, r0 = p.r, r1 = p.r + LIP_W, base = LIP[(i * 3 + (i % 4)) % 4], top = col(i % 9 === 4 ? LIP[4] : base), side = col(dim(base, 0.82));
+    const P = (r, ang, y) => [p.x + r * Math.cos(ang), y, p.z + r * Math.sin(ang)];
+    B.quad(P(r0, a, h), P(r1, a, h), P(r1, b, h), P(r0, b, h), [0, 1, 0], top);
+    B.quad(P(r1, a, 0), P(r1, b, 0), P(r1, b, h), P(r1, a, h), [Math.cos(m), 0, Math.sin(m)], side);
+    B.quad(P(r0, a, 0.03), P(r0, b, 0.03), P(r0, b, h), P(r0, a, h), [-Math.cos(m), 0, -Math.sin(m)], col(WET));
+  }
+}
 export function buildMapMesh(map, look) {
   look = look || STAGE_LOOK[0]; const SAND = look.sand, pc = p => (look.ramp ? rampColour(look.ramp, p.c0 === undefined ? p.c : p.c0) : p.c), prims = look.ramp ? map.prims.map(p => Object.assign({}, p, { c: pc(p) })) : map.prims;
   const B = new Builder(), F = new Builder(), G = new Builder(true), group = new T.Group();
@@ -119,7 +131,7 @@ export function buildMapMesh(map, look) {
   { const rd = roadPath(map), strip = (ax, az, bx, bz, hw) => { const dx = bx - ax, dz = bz - az, l = Math.sqrt(dx * dx + dz * dz) || 1, px = -dz / l * hw, pz = dx / l * hw; B.quad([ax - px, 0.05, az - pz], [ax + px, 0.05, az + pz], [bx + px, 0.05, bz + pz], [bx - px, 0.05, bz - pz], [0, 1, 0], look.road); };
     for (let i = 1; i < rd.main.length; i++) strip(rd.main[i - 1][0], rd.main[i - 1][1], rd.main[i][0], rd.main[i][1], rd.width / 2); for (const t of rd.trails) strip(t[0][0], t[0][1], t[1][0], t[1][1], rd.trailWidth / 2); }
   // two summoning pools: an ink-blue disc, a bone rim 1.5 m wide, a ring of glyph tiles; flat and walkable, no effect
-  for (const p of poolSpots(map)) { addRing(B, { cx: p.x, cz: p.z, r0: p.r, r1: p.r + 1.5, a0: 0, a1: 360, h: 0.08, c: 0xe6dcc0 });
+  for (const p of poolSpots(map)) { addLip(B, p, look);
     for (let k = 0; k < 12; k++) { const a = k / 12 * 6.283, x = p.x + Math.cos(a) * (p.r + 2.2), z = p.z + Math.sin(a) * (p.r + 2.2); addBox(B, { x0: x - 0.5, x1: x + 0.5, z0: z - 0.5, z1: z + 0.5, h: 0.09, rot: a / DEG, c: 0x4a4250 }); } }
   prims.forEach(p => { const T2 = p.landmark ? F : B; if (p.t === 'tilt') addTilt(B, p.x, 0, p.z, p.w, p.th, p.hgt, p.yaw, p.tilt, p.c); else if (p.t === 'box') addBox(T2, p); else if (p.t === 'ramp') addRamp(T2, p); else if (p.t === 'ring') addRing(T2, p); else addCyl(T2, p); });
   // the rim: 56 stacked buttes (a base, an inset mid band, a cap on about a third), 16 to 45 m tall, in two strata colours; 8 seeded notches only 8 to 10 m high (view only; the invisible wall stays)
