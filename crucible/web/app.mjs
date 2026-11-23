@@ -1150,13 +1150,19 @@ const spotsOf = room => (D.cart && D.cart.spots && D.cart.spots[room]) || [];
 // A model's place in this picture: [model, turn, middle x, foot y, height, light], from a spot in the larger picture.
 const spotAt = (rp, [m, x, foot, h, yaw, tint]) => [m, yaw, Math.round(x * rp.k), Math.round(foot * rp.k), Math.round(h * rp.k), tint || null];
 // One canvas the size of the room picture, laid exactly on it, for the models standing in it: drawn under the dimming of
-// the room, so a model is dimmed with its room. data-foot lists where each model's foot is in the picture, and the
+// the room, so a model is dimmed with its room (the one a room is about stands over it, see psOffer). data-foot lists where each model's foot is in the picture, and the
 // checks find each drawn model standing there. It takes no taps, so what lies under it is tapped as before. The models
 // in a room are drawn once and stand still (data-still); the forge's canvas is drawn by the clock as the hammer falls.
 const modelCanvas = (rp, items, inRoom = false, id = 'prop', still = true) => items.length ? onPic('canvas', 'ab', [0, 0], [0, 0], 'pointer-events:none', `id="${id}"${still ? ' data-still' : ''} width="${rp.pw}" height="${rp.ph}" data-foot="${items.map(i => i[2] + ',' + i[3]).join(' ')}" data-items='${JSON.stringify(items)}'`, '', inRoom ? [0, 0] : [rp.ox, rp.oy]) : '';
+// The model a room is about (the spot its plinths keep clear: the treasure's chest, the Omen's bowl, the Sanctum's shrine)
+// stands in the key light the models are lit to: the colour of its place, never darker than that key. (The vault's floor
+// lies in shadow, and its chest, darkened to it and then dimmed with the room, read as a dark blot.)
+const KEY_LIGHT = .9, lightLum = t => .3 * t[0] + .59 * t[1] + .11 * t[2]; // as console-art.py measures a place's light
 function propSpot(rp, kind) { // the models standing in an offer room, or nothing
   if (rp.name === 'room-vault' && kind !== 'treasure') return ''; // the chest stands at a treasure only, not at the other vault offers
-  return modelCanvas(rp, spotsOf(rp.name).filter(s => pmodel(s[0])).map(s => spotAt(rp, s)));
+  const subject = CLEAR[rp.name] && (!CLEAR[rp.name][2] || CLEAR[rp.name][2] === kind);
+  return modelCanvas(rp, spotsOf(rp.name).filter(s => pmodel(s[0])).map(s => { const t = s[5], l = t ? lightLum(t) : KEY_LIGHT;
+    return spotAt(rp, subject && l < KEY_LIGHT ? [...s.slice(0, 5), t.map(v => Math.round(v * KEY_LIGHT / l * 1000) / 1000)] : s); }));
 }
 // The two keepers stand before the side doorways while the guardian's door stands alone in the middle one, as statues
 // flanked a boss's door in the games of the day: each on the step in front of its doorway, as tall as the doorway,
@@ -1759,7 +1765,10 @@ function psOffer({ title, items, bar0 = '', right = '', room = 'doors', key, sel
     return `<button class="pln${i === sel ? ' on' : ''}${x.off ? ' off' : ''}" style="left:${L}px;top:${y0}px;width:${sw - 4}px;height:${ph}px;--mesh:${(L + 1) & 1}px ${(y0 + 1) & 1}px;--mesh2:${L & 1}px ${(y0 + 1) & 1}px" ${i === sel ? (x.off ? 'aria-disabled="true"' : `data-a="${x.a}"`) : `data-a="${selA ? selA(i) : 'osel:' + i}"`} aria-label="${esc(x.name)}">${x.pic((sw - 4) >> 1, ph - 4 - 9 * rows)}<b class="pnm" data-name="${esc(x.name)}" style="top:${ph - 2 - 9 * rows}px;height:${9 * rows}px;padding-top:${(rows - lines.length) * 9 >> 1}px">${lines.map(esc).join('<br>')}</b></button>`; }).join('')
     + (first > 0 ? `<i class="mrl" style="left:${Math.max(1, at(0) - 3)}px;top:${y0 + (ph >> 1) - 4}px"></i>` : '') + (first + k < n ? `<i class="mrr" style="left:${Math.min(vs.w - 5, at(k - 1) + sw - 1)}px;top:${y0 + (ph >> 1) - 4}px"></i>` : '');
   const head = tc ? `<img class="ab" src="${tc.url}" width="${tc.w}" height="${tc.h}" style="left:${(vs.w - tc.w) >> 1}px;top:3px" alt="${esc(title)}">` : `<b class="ab lb g" style="left:${(vs.w - title.length * 6) >> 1}px;top:5px">${esc(title)}</b>`;
-  const view = `${roomImg(rp)}${rp.edge}${propSpot(rp, kind)}<i class="dim0"></i>${head}${plinths}${y0 - 8 >= tb ? `<i class="cur" style="left:${at(sel - first) + (sw >> 1) - 4}px;top:${y0 - 8}px"></i>` : ''}`; // a view too short for the cursor between the title and the plinths marks the choice by its plinth alone
+  // The room's models stand under its dimming, dimmed with it; the one the room is about (kept clear of the plinths)
+  // stands out of the dim, so what the room is about reads at a glance.
+  const props = propSpot(rp, kind);
+  const view = `${roomImg(rp)}${rp.edge}${clear ? '' : props}<i class="dim0"></i>${clear ? props : ''}${head}${plinths}${y0 - 8 >= tb ? `<i class="cur" style="left:${at(sel - first) + (sw >> 1) - 4}px;top:${y0 - 8}px"></i>` : ''}`; // a view too short for the cursor between the title and the plinths marks the choice by its plinth alone
   const ledge = `<div class="dt" style="width:${lw - 82}px"><b data-name="${esc(it.name)}">${nameLines(it.name, lw - 92, 2).map(esc).join('<br>')}</b>${(it.facts || []).map(f => `<p>${f}</p>`).join('')}</div>`
     + (n > 1 ? pq(lw - 72, 4, 30, '<', selA ? selA((sel + n - 1) % n) : `osel:${(sel + n - 1) % n}`, { title: 'Choice to the left' }) + pq(lw - 38, 4, 30, '>', selA ? selA((sel + 1) % n) : `osel:${(sel + 1) % n}`, { title: 'Choice to the right' }) : '')
     + (it.card ? pq(lw - 72, 22, 64, 'CARD PAGE', `inspect:${it.card}`) : '') + pq(lw - 72, 40, 64, it.take || 'TAKE', it.a, { lit: !it.off, off: it.off });
