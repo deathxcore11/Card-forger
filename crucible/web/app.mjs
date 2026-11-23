@@ -1675,13 +1675,16 @@ function psDuel() {
   const view = `<div class="tvw" style="width:${vs.w}px;height:${vs.h}px"><img class="ab" data-pic="hall" src="${hp.src}" style="left:${hp.ox}px;top:${hp.oy}px" width="${hp.pw}" height="${hp.ph}" alt="">${hp.edge}<canvas id="tbl" width="${vs.w}" height="${vs.h}"></canvas>${taps}</div>`;
   // The hand. A card drawn in this step slides in from the ledge's empty right end, stepped, when the beat comes to it (timed from
   // the beat's own clock, so a screen drawn again part-way picks it up where it is).
-  const B = PSV.beat, was = B && B.P && B.hand >= 0 ? new Set(B.P.hand.map(c => c.u)) : null; let dealt = 0;
-  const hx = (ledgeW() - 296) >> 1, hand = [0, 1, 2, 3, 4, 5].map(i => { const c = v.hand[i], k = G.sel.indexOf(i), lp = lesson ? lesson.cards.indexOf(i) : -1, x = hx + i * 50;
-    if (!c) return `<i class="ab" style="left:${x}px;top:0;width:44px;height:60px;border:1px solid var(--dark)"></i>`;
+  // Its slot shows empty until it lands, and it slides over the empty slots to its right, never under their outlines.
+  const B = PSV.beat, was = B && B.P && B.hand >= 0 ? new Set(B.P.hand.map(c => c.u)) : null; let dealt = '', nd = 0;
+  const hx = (ledgeW() - 296) >> 1, empty = x => `<i class="ab" style="left:${x}px;top:0;width:44px;height:60px;border:1px solid var(--dark)"></i>`;
+  const hand = [0, 1, 2, 3, 4, 5].map(i => { const c = v.hand[i], k = G.sel.indexOf(i), lp = lesson ? lesson.cards.indexOf(i) : -1, x = hx + i * 50;
+    if (!c) return empty(x);
     const el = psCard(c, x, k >= 0 ? -4 : 0, { cls: 'hs ' + (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: G.playing ? '' : `data-a="hand:${i}"`, badge: k >= 0 ? k + 1 : '', pip: lp >= 0 ? lp + 1 : '' });
     if (!was || c.u == null || was.has(c.u)) return el;
-    const at = B.t0 + (B.hand + 3 * dealt++) * TICK / B.speed - performance.now();
-    return `<div class="ab dealt" style="--dx:${Math.ceil((ledgeW() - x) / 6) * 6}px;animation-duration:${Math.round(6 * TICK / B.speed)}ms;animation-delay:${Math.round(at)}ms">${el}</div>`; }).join('');
+    const at = B.t0 + (B.hand + 3 * nd++) * TICK / B.speed - performance.now();
+    dealt += `<div class="ab dealt" style="--dx:${Math.ceil((ledgeW() - x) / 6) * 6}px;animation-duration:${Math.round(6 * TICK / B.speed)}ms;animation-delay:${Math.round(at)}ms">${el}</div>`;
+    return empty(x); }).join('') + dealt;
   // the Forger's Power, on your pillar
   let power = '';
   if (myTurn && v.forger && !v.rs.power) { const Fg = FORGERS[v.forger], pa = powerActions(live, db, 0); const ok = Fg.needs === 'hand' ? G.sel.length === 1 && pa.some(p => p.hand === G.sel[0]) : Fg.needs === 'zone' ? G.attacker != null && pa.some(p => p.zone === G.attacker) : pa.length > 0 && !G.sel.length;
