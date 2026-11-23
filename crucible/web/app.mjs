@@ -1095,11 +1095,11 @@ function beatOf(f) {
     B.acts.push(L.act = { key: mkey(L.seat, L.from), t0: L.held ? 0 : L.start, t1: Infinity,
       inst: tk => L.rev && L.start != null && tk >= L.start + 2 && (L.hit == null || tk < L.hit) ? L.rev : undefined,
       pose: tk => {
-        if (L.start == null || tk < L.start) return at2(POISE[POISE.length - 1]); // poised, waiting on the answer
+        if (L.start == null || tk < L.start) return { ...at2(POISE[POISE.length - 1]), poised: true }; // poised, waiting on the answer
         const i = tk - L.start, seq = L.back ? RETREAT : L.seq, p = at2(seq[Math.min(i, seq.length - 1)]);
         if (L.rev && i < 4) Object.assign(p, { wide: [.5, .05, .5, 1][i], face: i >= 2 }); // a veiled attacker turns over as it sets off
         return p; } });
-    L.end = () => L.start == null ? Infinity : L.start + (L.back ? RETREAT : L.seq).length; };
+    L.end = () => L.start == null || L.start === Infinity ? Infinity : L.start + (L.back ? RETREAT : L.seq).length; };
   // a poised attack from the last step goes on here, from where it waits
   const pend = P.pending && P.pending.kind === 'trap' ? { seat: P.active, from: P.pending.from, to: P.pending.to } : null;
   if (pend && P.mon[pend.seat][pend.from]) { lunge = { ...pend, start: null, held: true }; lungeActor(lunge); }
