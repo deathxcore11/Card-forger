@@ -1,4 +1,4 @@
-﻿// Chase camera: 7 m behind, 3 m above, over the right shoulder. Yaw is free, pitch is limited,
+// Chase camera: 7 m behind, 3 m above, over the right shoulder. Yaw is free, pitch is limited,
 // it pulls in when terrain is behind it and never goes under the floor.
 import { CFG } from '../data/config.js';
 import { heightAt } from '../sim/terrain.js';
@@ -29,16 +29,16 @@ export class ChaseCamera {
     this.spd += ((1 + 0.25 * clamp((Math.min(mv, 60) - 9) / 9, 0, 1)) - this.spd) * Math.min(1, dt * 1.5);
     const a0 = BASE + clamp(pitch, C.pitchMin, C.pitchMax), aFloor = Math.max(a0, 0), lookUp = (aFloor - a0) * 8;      // the arm never goes below the pivot: looking up tilts the look target instead, so the camera cannot sink under a ledge
     const sc = this.zoom * this.spd * this.fovK;
-    if (!this.ready) { this.py = p.y; this.sx = p.x; this.sz = p.z; this.ready = true; this.swing = 0; this.rise = 0; this.pb = false; this.pbT = 0; }
+    if (!this.ready) { this.py = p.y; this.sx = p.x; this.sz = p.z; this.ready = true; this.swing = 0; this.ys = 0; this.ysSide = 0; this.ysT = 0; this.rise = 0; this.pb = false; this.pbT = 0; }
     // gentle horizontal follow lag (about 55 ms); a jump of more than 3 m is a teleport and snaps
     if (!this.lag || Math.abs(p.x - this.sx) > 3 || Math.abs(p.z - this.sz) > 3) { this.sx = p.x; this.sz = p.z; this.ready0 = false; this.rise = 0; this.py = p.y; }       // a teleport resyncs the height limiter too
     else { const k = Math.min(1, dt * 18); this.sx += (p.x - this.sx) * k; this.sz += (p.z - this.sz) * k; }
     this.py += (p.y - this.py) * Math.min(1, dt * 14);           // smooth the vertical follow over steps
     const px = this.sx + rx * C.shoulder, py = this.py + C.headY, pz = this.sz + rz * C.shoulder;
-    const wanted = ang => { const back = Math.cos(ang) * ARM * sc, up = Math.sin(ang) * ARM * sc; return [px - fx * back, py + up, pz - fz * back, Math.hypot(back, up)]; };
+    const wanted = (ang, ys) => { const back = Math.cos(ang) * ARM * sc, up = Math.sin(ang) * ARM * sc, cs = Math.cos(ys), sn = Math.sin(ys), dx = fx * cs - fz * sn, dz = fx * sn + fz * cs; return [px - dx * back, py + up, pz - dz * back, Math.hypot(back, up)]; };       // ys: the arm is yawed round the duelist by this much (the sideways swing)
     // march from the pivot toward a wanted position; report the first solid sample, how many samples are solid and whether the end itself is
-    const march = ang => {
-      const [tx, ty, tz, len] = wanted(ang); let first = -1, solidN = 0, endSolid = false;
+    const march = (ang, ys = this.ys) => {
+      const [tx, ty, tz, len] = wanted(ang, ys); let first = -1, solidN = 0, endSolid = false;
       for (let i = 1; i <= 40; i++) { const t = i / 40, sx = px + (tx - px) * t, sy = py + (ty - py) * t, sz = pz + (tz - pz) * t; if (solidAt(sx, sy, sz) || hitProp(this.cols, sx, sy, sz)) { solidN++; if (first < 0) first = i; if (i === 40) endSolid = true; } }
       return { free: first < 0 ? 1 : (first - 1) / 40, first, solidN, endSolid, len, tx, ty, tz };
     };
@@ -56,11 +56,22 @@ export class ChaseCamera {
       if (this.pb && !m.endSolid) free = 1;
     } else { this.pb = false; this.pbT = Math.min(this.pbT, 0); }
     // otherwise pull in, but swing the arm up first (up to 0.5 rad, at most 1 rad a second, eased) so the camera looks over the blocker before it closes in under 4 m
-    let swingTo = 0;
+    // player camera input always wins: while the yaw is being turned, the swing eases back to nothing
+    const turning = this.lastYaw !== undefined && Math.abs(yaw - this.lastYaw) / Math.max(dt, 1e-3) > 0.6; this.lastYaw = yaw; this.ysT -= dt;
+    let ysTo = this.ys, swingTo = 0;
+    if (free < 1) {
+      // sideways swing first: yaw the arm round the duelist (up to 0.5 rad) toward the freer side, keeping the side it chose for 1 s so it never flips back and forth
+      const lenAt = ys => { const mm = march(aFloor + this.swing, ys); return mm.first < 0 ? 99 : mm.free * mm.len; };
+      if (turning) ysTo = 0; else if (lenAt(0) >= 4.0) ysTo = 0; else {
+        if (this.ysT <= 0) { const l = lenAt(0.5), r = lenAt(-0.5); this.ysSide = Math.abs(l - r) < 0.5 && this.ysSide ? this.ysSide : (l >= r ? 1 : -1); this.ysT = 1.0; }
+        ysTo = 0.5 * this.ysSide; for (let k = 1; k <= 5; k++) { const ys = 0.1 * k * this.ysSide; if (lenAt(ys) >= 4.0) { ysTo = ys; break; } }
+      }
+    } else if (this.ys !== 0) { if (turning) ysTo = 0; else { ysTo = 0; const m0 = march(aFloor + this.swing, 0); if (m0.first >= 0) ysTo = this.ys; } }       // it eases back once the blocker is clear
+    { const d = ysTo - this.ys, rate = turning ? 2.0 : (Math.abs(ysTo) > Math.abs(this.ys) ? 1.0 : 0.5); this.ys += Math.sign(d) * Math.min(Math.abs(d), dt * rate); if (Math.abs(this.ys) < 1e-4) this.ys = 0; }
     if (free < 1) {
       swingTo = 0.5; for (let sw = 0; sw <= 0.5001; sw += 0.1) { const mm = march(aFloor + sw); if (mm.first < 0 || (mm.free * mm.len) >= 4.0) { swingTo = sw; break; } }
       const dsw = swingTo - this.swing; this.swing += Math.sign(dsw) * Math.min(Math.abs(dsw), dt * (dsw > 0 ? 1.0 : 0.5)) ; this.swing *= 1;
-      ang = aFloor + this.swing; m = march(ang); free = m.free;
+      ang = aFloor + this.swing; m = march(ang, this.ys); free = m.free;
       if (m.first >= 0 && this.pb && !m.endSolid) free = 1;
     } else { this.swing = Math.max(0, this.swing - dt * 0.5); }
     const armLen = m.len; if (free < 1) free = Math.max(C.minDist / armLen, free - C.margin / armLen);   // keep clear of the wall only when one is in the way
@@ -69,17 +80,16 @@ export class ChaseCamera {
       if (this.lastTx === undefined || solidAt(cx0, cy0, cz0) || hitProp(this.cols, cx0, cy0, cz0)) this.t = free; else this.t += (free - this.t) * Math.min(1, dt / 0.06);
     } else this.t = Math.min(free, this.t + dt * 2.5);               // ease back out over about 0.4 s
     this.lastTx = m.tx; this.lastTy = m.ty; this.lastTz = m.tz;
+    { const q = this.t, qx = px + (m.tx - px) * q, qy = py + (m.ty - py) * q, qz = pz + (m.tz - pz) * q; if (q > free && (solidAt(qx, qy, qz) || hitProp(this.cols, qx, qy, qz))) this.t = free; }       // the smoothed pull-in never carries the eye into a wall or the ground: then it goes straight to the free point
     const t = this.t < free ? this.t : Math.max(free, Math.min(this.t, free + (this.t - free))), tx = m.tx, ty = m.ty, tz = m.tz;
     let x = px + (tx - px) * t, y = py + (ty - py) * t, z = pz + (tz - pz) * t;
     // pinned against something tall at the minimum distance: rise over it, looking down at the duelist. The rise is smoothed to at most 6 m a second (0.1 m a frame), never a 1 m jump
     let need = 0; for (; need < 9 && (solidAt(x, y + need, z) || hitProp(this.cols, x, y + need, z)); need += 0.25);
-    if (need > 2) {       // too tall to rise over: sit at the nearest clear spot further back instead (behind the blocker, which the porthole opens)
-      for (let tt = Math.max(t, 0.05) + 0.04; tt <= 1.0001; tt += 0.04) { const qx = px + (tx - px) * tt, qy = py + (ty - py) * tt, qz = pz + (tz - pz) * tt; if (!solidAt(qx, qy, qz) && !hitProp(this.cols, qx, qy, qz)) { x = qx; y = qy; z = qz; need = 0; break; } }
-    }
-    const dr = need - this.rise; this.rise += Math.sign(dr) * Math.min(Math.abs(dr), dt * 6); y += this.rise;
+    { const h = Math.hypot(x - px, z - pz), room = py + 1.73 * h - y; if (need > room) need = Math.max(0, room); }       // the rise never makes the view steeper than about 60 degrees: past that the camera stays where it is and the porthole and the silhouette show the duelist
+    const dr = need - this.rise; this.rise += Math.sign(dr) * Math.min(Math.abs(dr), dt * 5); y += this.rise;
     if (this.cy === undefined || this.cy !== this.cy || !this.ready0) { this.cy = y; this.ready0 = true; }
-    else { const lim = dt * 6; this.cy += Math.max(-lim, Math.min(lim, y - this.cy)); }       // the eye's height changes by at most 6 m a second (0.1 m a frame), whatever pulled it
-    y = this.cy; const floor = Math.max(heightAt(x, z) + C.floorGap, C.floorGap); if (y < floor) { y = floor; this.cy = y; }       // never under the ground, even if that is faster
+    else { const lim = dt * 5; this.cy += Math.max(-lim, Math.min(lim, y - this.cy)); }       // the eye's height changes by at most 6 m a second (0.1 m a frame), whatever pulled it
+    y = this.cy; const floor = Math.max(heightAt(x, z) + C.floorGap, C.floorGap); const D0 = this.dbg || (this.dbg = {}); D0.floorHit = y < floor; D0.need = need; D0.t = this.t; D0.free = free; D0.ys = this.ys; D0.pb = this.pb; D0.swing = this.swing; D0.rise = this.rise; D0.floor = floor; D0.yb = y; if (y < floor) { y = floor; this.cy = y; }       // never under the ground, even if that is faster
     this.camera.position.set(x, y, z);
     let ly = py + 0.2 + lookUp; this.camera.lookAt(px + fx * 6, ly, pz + fz * 6);        // aim past the duelist so the shoulder offset reads
     // safe area: the duelist's feet stay above the hotbar (the bottom quarter of the screen) however steeply the camera looks down or however close the spring pulls it in
@@ -90,6 +100,14 @@ export class ChaseCamera {
       if (cz > -0.1) break; const ndc = cy / (-cz * th);
       if (ndc >= -0.32) break;
       ly -= (-0.32 - ndc) * dist * th; this.camera.lookAt(px + fx * 6, ly, pz + fz * 6);
+    }
+    {   // pitch smoothing: what the player asked for passes straight through; the part the blockers add (the pitch of the actual eye minus the pitch of the unblocked eye) goes through a
+        // critically damped spring (omega 16) with its rate limited to 50 degrees a second, so a pull-in never snaps the view
+      const v = this._dv || (this._dv = this.camera.position.clone()); this.camera.getWorldDirection(v); const now = Math.asin(Math.max(-1, Math.min(1, v.y)));
+      const [ix, iy, iz] = wanted(aFloor, 0), ideal = Math.atan2(py + 0.2 + lookUp - iy, Math.hypot(px + fx * 6 - ix, pz + fz * 6 - iz)), c = now - ideal;
+      if (this.cS === undefined || !this.ready0) { this.cS = c; this.cV = 0; }
+      else { const w = 16, acc = w * w * (c - this.cS) - 2 * w * this.cV; this.cV += acc * dt; let step = this.cV * dt; const lim = 0.52 * dt; step = Math.max(-lim, Math.min(lim, step)); this.cS += step; if (step !== this.cV * dt) this.cV = step / dt; }
+      const dp = ideal + this.cS - now; if (Math.abs(dp) > 1e-5) this.camera.rotateX(dp);
     }
     this.pos.x = x; this.pos.y = y; this.pos.z = z;
   }

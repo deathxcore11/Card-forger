@@ -483,9 +483,10 @@ requestAnimationFrame(frame);
 
 // Test hooks: read and drive the run without touching its rules.
 // debug: the duelist's pixels, alone (everything else hidden) and in the full scene (everything depth-tested and dithered as drawn), as flat id colour in an off-screen target at the buffer size; silhouette is 0 until the stencil silhouette exists
+function pxRT(w, h) { if (!pxRT.rt || pxRT.w !== w || pxRT.h !== h) { if (pxRT.rt) pxRT.rt.dispose(); pxRT.rt = new T.WebGLRenderTarget(w, h, { depthBuffer: true, stencilBuffer: true }); pxRT.buf = new Uint8Array(w * h * 4); pxRT.w = w; pxRT.h = h; } return pxRT.rt; }       // one target reused by every call (a new one each call ran the GPU out of memory over 200 calls)
 function duelistPixels() {
   const rig = actors.rig; if (!rig) return null;
-  const size = renderer.getDrawingBufferSize(new T.Vector2()), w = size.x, h = size.y, rt = new T.WebGLRenderTarget(w, h, { depthBuffer: true, stencilBuffer: true }), buf = new Uint8Array(w * h * 4);
+  const size = renderer.getDrawingBufferSize(new T.Vector2()), w = size.x, h = size.y, rt = pxRT(w, h), buf = pxRT.buf;
   const idMat = new T.MeshBasicMaterial({ color: 0xff00ff, fog: false }); idMat.skinning = true; idMat.stencilWrite = true; idMat.stencilFunc = T.AlwaysStencilFunc; idMat.stencilRef = 1; idMat.stencilZPass = T.ReplaceStencilOp;
   const saved = [], extras = []; rig.group.traverse(o => { if (o.userData.extra) extras.push([o, o.visible]); else if (o.isMesh) { saved.push([o, o.material]); o.material = idMat; } });
   const setExtras = on => { for (const [o] of extras) o.visible = on && o.userData.extra === 'sil'; };
@@ -496,7 +497,7 @@ function duelistPixels() {
   const keep = new Set(); for (let o = rig.group; o; o = o.parent) keep.add(o);
   const hid = []; scene.children.forEach(c => { if (!keep.has(c) && c.visible) { hid.push(c); c.visible = false; } }); if (rig.group.parent && rig.group.parent !== scene) rig.group.parent.children.forEach(c => { if (!keep.has(c) && c.visible) { hid.push(c); c.visible = false; } });
   const alone = count();
-  for (const c of hid) c.visible = true; for (const [o, m] of saved) o.material = m; for (const [o, v] of extras) o.visible = v; rt.dispose(); idMat.dispose();
+  for (const c of hid) c.visible = true; for (const [o, m] of saved) o.material = m; for (const [o, v] of extras) o.visible = v; idMat.dispose();
   return { alone, visible, silhouette };
 }
 window.__ds = {
