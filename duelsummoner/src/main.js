@@ -7,7 +7,7 @@ import { clock } from './core/util.js';
 import { buildMapMesh } from './view/mapMesh.js';
 import { buildGateSeal } from './view/gateseal.js';
 import { buildWater, ripple, ageRipples } from './view/water.js';
-import { updateEngine, setActorLight } from './view/engine.js';
+import { updateEngine, setActorLight, makeSky } from './view/engine.js';
 import { poolSpots } from './gen/road.js';
 import { lookFor, buildPaletteLUT, STAGE_LOOK as STAGE_LOOK_LIST } from './data/look.js';
 import { Bars } from './view/bars.js';
@@ -54,11 +54,7 @@ const scene = new T.Scene();
 const HORIZON = 0xe8d6b0;                                    // the sky's horizon colour and the fog colour are one: far things fade into the haze, not into a flat beige sky
 scene.background = new T.Color(HORIZON);
 scene.fog = new T.Fog(HORIZON, 80, 300);
-const sky = new T.Mesh(new T.SphereGeometry(500, 16, 8), new T.ShaderMaterial({ side: T.BackSide, depthWrite: false, depthTest: false, fog: false,
-  uniforms: { top: { value: new T.Color(0x8fb2cc) }, hor: { value: new T.Color(HORIZON) }, low: { value: new T.Color(0xd9c29a) } },
-  vertexShader: 'varying float vy; void main() { vy = normalize(position).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w; }',
-  fragmentShader: 'uniform vec3 top; uniform vec3 hor; uniform vec3 low; varying float vy; void main() { vec3 c = vy >= 0.0 ? mix(hor, top, smoothstep(0.0, 0.6, vy)) : mix(hor, low, smoothstep(0.0, -0.3, vy)); gl_FragColor = vec4(c, 1.0); }' }));
-sky.frustumCulled = false; sky.renderOrder = -10; scene.add(sky);       // a sky dome: cooler and darker overhead than at the horizon (one draw, about 250 triangles)
+const sky = makeSky(); scene.add(sky);       // the engine sky dome: banded gradient, sun, clouds (view/engine.js)
 const camera = new T.PerspectiveCamera(62, 1, 0.15, 600);
 let fpsCap = 60, lastRender = 0;                     // a setting (30, 60, 90 or 120); a frame that comes sooner than the cap allows is skipped
 let fovSetting = 100, baseV = 62;                    // the setting is HORIZONTAL degrees, so it means the same on every screen shape; the vertical angle follows from the aspect and never goes past 88
@@ -106,7 +102,7 @@ assets.mira = await loadRig('assets/models/duelist-mira-anim.glb', { retime: { l
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 document.addEventListener('contextmenu', e => { if (!/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName)) e.preventDefault(); });       // no browser menu over the game or its overlays
-function applyStageLook(look) { setActorLight(look.actor); setPaletteStage(Math.max(0, STAGE_INDEX_OF(look))); scene.background.setHex(look.sky[1]); scene.fog.color.setHex(look.sky[1]); scene.fog.near = look.fogNear; scene.fog.far = look.fogFar; const u = sky.material.uniforms; u.top.value.setHex(look.sky[0]); u.hor.value.setHex(look.sky[1]); u.low.value.setHex(look.sky[2]); }
+function applyStageLook(look) { setActorLight(look.actor); setPaletteStage(Math.max(0, STAGE_INDEX_OF(look))); scene.background.setHex(look.sky[1]); scene.fog.color.setHex(look.sky[1]); scene.fog.near = look.fogNear; scene.fog.far = look.fogFar;  }
 const STAGE_INDEX_OF = look => STAGE_LOOK_LIST.indexOf(look);
 let waterMesh = null, curLook = null, ripT = 0;
 let sceneryGroup = null, mapMesh = null, gateSeal = null, viewMapKey = '';
@@ -294,7 +290,7 @@ function countUp(id, to) {
   const t0 = performance.now(), dur = 700; el.textContent = 0;
   (function step(now) { const u = Math.min(1, (now - t0) / dur); el.textContent = Math.round(to * (1 - (1 - u) * (1 - u))); if (u < 1) requestAnimationFrame(step); })(t0);
 }
-const KCOL = KIND_LIST.map(k => k.color), PCOL = [0xb48cff, 0xf0c040, 0xff5a7a];
+const KCOL = KIND_LIST.map(k => k.color), PCOL = [0x46e0ff, 0xe0b765, 0xff5a7a];
 let lastBlockTick = 0;
 const groundY = (x, z) => Math.min(heightAt(x, z), 40);       // the one ground height for marks drawn on the map (view only: sim events carry no y)
 function onEvent(type, a, b, c, data) {

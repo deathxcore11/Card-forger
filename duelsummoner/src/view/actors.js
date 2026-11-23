@@ -7,6 +7,7 @@ import { MAP } from '../data/map.js';
 import { SCALE, summonSize } from '../data/scale.js';
 import { DuelistRig } from './rig.js';
 import { actorLit } from './engine.js';
+import { PICKUP_COLORS } from '../data/pickups.js';
 import { makeCreature } from './creature.js';
 
 const T = window.THREE;
@@ -21,7 +22,7 @@ const turnLerp = (a, b, t) => { let d = b - a; while (d > Math.PI) d -= 2 * Math
 function gemGeometry() {
   const R = 0.5, yb = 0, ym = 0.55, yt = 1.05, n = 6, ring = (y, r, chip) => Array.from({ length: n }, (_, i) => { const a = i / n * Math.PI * 2 + 0.3, k = chip && i === 2 ? 0.7 : 1; return [Math.cos(a) * r * k, y, Math.sin(a) * r * k]; });
   const base = ring(yb, R * 0.8, true), mid = ring(ym, R, false), tip = [0, yt, 0], pos = [], col = [];
-  const light = new T.Vector3(0.4, 0.8, 0.45).normalize(), dark = new T.Color(0x4a1a6e), midc = new T.Color(0x8e44b8), lit = new T.Color(0xd79af0);
+  const light = new T.Vector3(0.4, 0.8, 0.45).normalize(), dark = new T.Color(PICKUP_COLORS.xpUnder), midc = new T.Color(PICKUP_COLORS.xp), lit = new T.Color(PICKUP_COLORS.xpTip);
   const tri = (a, b, c) => {
     const u = new T.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]), v = new T.Vector3(c[0] - a[0], c[1] - a[1], c[2] - a[2]), nrm = u.cross(v).normalize();
     const cx = (a[0] + b[0] + c[0]) / 3, cz = (a[2] + b[2] + c[2]) / 3; if (nrm.x * cx + nrm.z * cz < 0 && Math.abs(nrm.y) < 0.99 && nrm.y > -0.99) nrm.negate();
@@ -93,7 +94,7 @@ export class Actors {
     for (const id of ['kael', 'mira']) if (assets && assets[id]) { const r = new DuelistRig(assets[id], { yaw: Number((/[?&]rigyaw=([-\d.]+)/.exec(location.search) || [])[1]) || 0 }); r.group.visible = false; scene.add(r.group); this.rigs[id] = r; }
     if (Object.keys(this.rigs).length) this.player.visible = false;
     this.d = new T.Object3D(); this.col = new T.Color(); this.white = new T.Color(0xffffff);
-    this._plain = new T.Color(1, 1, 1); this._blue = new T.Color(0.55, 0.75, 1.6); this._gold = new T.Color(1.6, 1.3, 0.5);
+    this._plain = new T.Color(1, 1, 1); this._blue = new T.Color(1.06, 1.06, 1.06); this._gold = new T.Color(1.12, 1.12, 1.12);       // a bigger gem is only bigger and a touch lighter: gold and violet are never XP colours
     this.monsters = new Map(); this.specials = new Map(); this.chests = new Map();
 
     // the swarm: one instanced mesh per kind (+ eyes for the ground swarmers)
@@ -122,7 +123,7 @@ export class Actors {
     this.bolt2 = instanced(new T.BoxGeometry(0.2, 0.2, 1.4), basic(0xe0e8ff), 48);
     scene.add(this.cards, this.fire, this.lob, this.bolts, this.bolt2);
     this.pk = [gemGeometry(), new T.CylinderGeometry(0.3, 0.3, 0.08, 10), new T.OctahedronGeometry(0.34, 0)].map((geo, i) => {
-      const m = i === 0 ? instanced(geo, lambert(0xffffff, { vertexColors: true, emissive: 0x7a4ad0 }), CFG.xp.max) : instanced(geo, basic([0x9f7bff, 0xf0c040, 0xff5a7a][i]), CFG.xp.max);
+      const m = i === 0 ? instanced(geo, lambert(0xffffff, { vertexColors: true, emissive: 0x1a5f73 }), CFG.xp.max) : instanced(geo, basic([PICKUP_COLORS.xp, PICKUP_COLORS.coin, PICKUP_COLORS.heart][i]), CFG.xp.max);
       if (i === 0) m.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.xp.max * 3), 3);
       if (i === 1) geo.rotateX(Math.PI / 2); scene.add(m); return m;
     });

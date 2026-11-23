@@ -48,9 +48,9 @@ void main() {
   c += uWatS * 0.16 * step(0.55, g);                                                           // a gust shows as a paler patch
   float fn = N(p * 0.19 + vec2(4.0, 2.0) / 512.0 * uT).r, lap = 0.5 + 0.5 * sin(uT * 1.4 + dep * 18.0 + fn * 4.0);
   float fb = N(p * 0.45 + vec2(9.0, 5.0) / 512.0 * uT).g;                                       // a thin broken line (1 to 2 game pixels) that laps in and out at the rim
-  float foam = step(abs(dep + (fn - 0.5) * 0.05 - (0.04 + 0.05 * lap)), 0.011) * step(0.32, fb);
+  float foam = step(abs(dep + (fn - 0.5) * 0.05 - (0.04 + 0.05 * lap)), 0.017) * step(0.26, fb);
   c *= 1.0 + max(rf, -1.0) * step(rf, 0.0) * 0.3; foam = max(foam, clamp(rf, 0.0, 1.0) * 0.55);
-  c = mix(c, uWatL, foam * 0.85);
+  c = mix(c, mix(uWatL, vec3(0.86, 0.94, 0.9), 0.55), foam);
   gl_FragColor = vec4(c, 1.0);
   #include <fog_fragment>
 }`;

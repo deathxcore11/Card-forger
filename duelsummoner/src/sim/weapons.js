@@ -164,7 +164,7 @@ export function updatePickups(g, dt) {
     }
     if (d < CFG.xp.pick && (Math.abs(p.y + 1 - m.y[i]) < 2.5 || flying)) {
       m.alive[i] = 0; g.emit('pickup', m.kind[i], m.val[i]);
-      addFx(g, { type: 'ring', x: m.x[i], y: m.y[i] - 0.3, z: m.z[i], r: 0.9, dur: 0.25, color: m.kind[i] === PICK_XP ? 0xd79af0 : 0xffe080 });   // sparkle on collect
+      addFx(g, { type: 'ring', x: m.x[i], y: m.y[i] - 0.3, z: m.z[i], r: 0.9, dur: 0.25, color: m.kind[i] === PICK_XP ? 0x46e0ff : 0xe0b765 });   // sparkle on collect
       if (m.kind[i] === PICK_XP) g.addXp(m.val[i]);
       else if (m.kind[i] === PICK_COIN) { g.coinFrac += (m.val[i] || 1) * (1 + g.mods.coinMult); const w = Math.floor(g.coinFrac); g.coins += w; g.coinsGained = (g.coinsGained || 0) + w; g.coinFrac -= w; }
       else if (m.kind[i] === PICK_HEART) p.hp = Math.min(p.maxHp, p.hp + RUN.heartHeal);

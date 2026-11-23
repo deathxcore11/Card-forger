@@ -21,6 +21,7 @@ function buildNoise() {
 // the uniform bus: shared by every engine shader, updated once a frame by updateEngine()
 export const E = {
   noise: { value: buildNoise() }, T: { value: 0 }, wind: { value: new T.Vector3(1, 0.4, 0.5) },       // wind: x,y = direction on the ground, z = strength (0 to 1)
+  skyM: { value: new T.Color(0x4fc6d8) }, cldL: { value: new T.Color(0xffffff) }, cldS: { value: new T.Color(0x8fc0da) }, disc: { value: new T.Color(0xfff3b8) }, cover: { value: 0.55 }, sunOn: { value: 1 }, dither: { value: 1 },
   skyT: { value: new T.Color(0x8fb2cc) }, skyH: { value: new T.Color(0xe8d6b0) }, skyG: { value: new T.Color(0xd9c29a) },
   sunD: { value: new T.Vector3(0.5, 0.8, 0.3).normalize() }, sunK: { value: new T.Color(0xffe2b0) }
 };
@@ -28,7 +29,7 @@ let gustT = 0;
 export function updateEngine(dt, look) {
   E.T.value += dt; gustT += dt;
   E.wind.value.z = 0.35 + 0.35 * (0.5 + 0.5 * Math.sin(gustT * 0.31)) + 0.2 * (0.5 + 0.5 * Math.sin(gustT * 0.83 + 1.7));       // a slow overall strength; the travelling fronts come from the noise field in gust()
-  if (look) { E.skyT.value.setHex(look.sky[0]); E.skyH.value.setHex(look.sky[1]); E.skyG.value.setHex(look.sky[2]); }
+  if (look) { const d = look.dome; E.skyT.value.setHex(d.top); E.skyM.value.setHex(d.mid); E.skyH.value.setHex(d.hor); E.skyG.value.setHex(d.gnd); E.cldL.value.setHex(d.cldL); E.cldS.value.setHex(d.cldS); E.cover.value = d.cover; E.sunOn.value = d.sun ? 1 : 0; }
 }
 // GLSL shared by the engine shaders. N() reads the noise at a normalised coordinate; gust() is the ONE wind field (grass, trees, water, particles); skyBase() is the banded sky gradient the dome, the fog and the water agree on;
 // bayer() is the one 4x4 ordered-dither threshold (sky, fog and haze only: amendment 1).
@@ -63,4 +64,30 @@ export function actorLit(mat, k = 1) {
   };
   const key = mat.customProgramCacheKey ? mat.customProgramCacheKey.bind(mat) : null; mat.customProgramCacheKey = () => (key ? key() : '') + 'actorlit' + k.toFixed(2);
   return mat;
+}
+
+// ---- the sky dome (engine plan step 2): a banded gradient in direction space (bands 12 with the dither, so a band edge is an ordered-dither pattern), a sun disc with a stepped glow, and clouds from the one noise texture
+// (two cover levels, a lit and a shade colour, scrolling with the wind, fading toward the horizon). The dither is allowed on sky only (amendment 1). Stage 2 and 3 have no sun and no clouds.
+export function makeSky() {
+  const u = Object.assign({ uCover: E.cover, uSunOn: E.sunOn, uDither: E.dither, uSkyM: E.skyM, uCldL: E.cldL, uCldS: E.cldS, uDisc: E.disc }, engineUniforms());
+  const mat = new T.ShaderMaterial({ side: T.BackSide, depthWrite: false, depthTest: false, fog: false, uniforms: u,
+    vertexShader: 'varying vec3 vD; void main() { vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w; }',
+    fragmentShader: GLSL + `
+    uniform float uCover; uniform float uSunOn; uniform float uDither; uniform vec3 uSkyM; uniform vec3 uCldL; uniform vec3 uCldS; uniform vec3 uDisc; varying vec3 vD;
+    void main() {
+      vec3 d = normalize(vD); float th = bayer() - 0.5;
+      float k = floor(sqrt(max(d.y, 0.0)) * 12.0 + 0.5 + th * uDither) / 12.0;
+      vec3 c = k < 0.4 ? mix(uSkyH, uSkyM, k / 0.4) : mix(uSkyM, uSkyT, (k - 0.4) / 0.6);
+      float s = max(dot(d, uSunD), 0.0);
+      if (uSunOn > 0.5) { c += uSunK * (floor(pow(s, 6.0) * 4.0 + 0.5 + th * uDither) / 4.0) * 0.22 * (1.0 - 0.5 * k); c = mix(c, uDisc, step(0.9985, s)); }
+      if (uCover > 0.02 && d.y > 0.02) {
+        vec2 p = d.xz / (d.y + 0.22) * 1.6 + uWind.xy * uT * 0.004;
+        float n = N(p * 0.07).r * 0.62 + N(p * 0.19 + 3.0).a * 0.38, cv = floor(smoothstep(1.0 - uCover, 1.0 - uCover + 0.22, n) * 3.0 + 0.5 + th * uDither * 0.8) / 3.0;
+        float lit = N(p * 0.07 + vec2(0.03, -0.02)).r; vec3 cc = mix(uCldS, uCldL, step(lit, n + 0.02));
+        c = mix(c, cc, cv * smoothstep(0.02, 0.2, d.y) * 0.95);
+      }
+      c = mix(c, uSkyG, smoothstep(0.0, -0.1, d.y));
+      gl_FragColor = vec4(c, 1.0);
+    }` });
+  const m = new T.Mesh(new T.SphereGeometry(500, 24, 12), mat); m.frustumCulled = false; m.renderOrder = -10; return m;
 }
