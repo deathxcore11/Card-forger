@@ -29,7 +29,7 @@ export function xpScale(g) {
 // ---- setup ----
 // Generates this stage's map from the run seed and loads it as the live terrain; the duelist starts on its plaza.
 export function loadStageMap(g, i) {
-  g.map = generateStage(g.seed, i, g.stages[i].gen); loadMap(g.map); g.colliders = buildColliders(g.map, i); g.flow.rebuild(); g.sealCode = g.map.sealCode;
+  g.map = generateStage(g.seed, i, g.stages[i].gen); loadMap(g.map); g.colliders = buildColliders(g.map, i); g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
   const p = g.p; p.x = g.map.spawn.x; p.z = g.map.spawn.z; p.y = heightAt(p.x, p.z); p.vx = p.vz = p.vy = 0; p.grounded = true;
 }
 export function initRun(g) {

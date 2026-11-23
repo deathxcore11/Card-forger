@@ -12,9 +12,17 @@ export class Flow {
     this.W = CFG.path.span;
     this.dist = new Int16Array(this.W * this.W);
     this.queue = new Int32Array(this.W * this.W);
-    this.ox = 0; this.oz = 0; this.valid = false;
+    this.ox = 0; this.oz = 0; this.valid = false; this.col = null;
   }
-  rebuild() { this.cells = buildCells(CFG.path.cell); this.valid = false; }                    // after a new map is loaded
+  rebuild() { this.cells = buildCells(CFG.path.cell); this.stamp(); this.valid = false; }
+  // every solid prop (inflated by an enemy's radius) is a wall in the flow field, so a horde goes round a trunk or a boulder, not through it
+  stamp() {
+    const col = this.col, c = this.cells; if (!col) return; const size = c.size, n = c.n, pad = 0.7 + size * 0.35;
+    for (const o of col.list) {
+      const rr = o.r + pad, i0 = Math.max(0, Math.floor((o.x - rr + MAP.half) / size)), i1 = Math.min(n - 1, Math.floor((o.x + rr + MAP.half) / size)), j0 = Math.max(0, Math.floor((o.z - rr + MAP.half) / size)), j1 = Math.min(n - 1, Math.floor((o.z + rr + MAP.half) / size));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const cx = (i + 0.5) * size - MAP.half - o.x, cz = (j + 0.5) * size - MAP.half - o.z; if (cx * cx + cz * cz < rr * rr) c.h[j * n + i] = WALL; }
+    }
+  }                    // after a new map is loaded
   _cell(v) { return Math.floor((v + MAP.half) / this.cells.size); }
   update(px, pz) {
     const c = this.cells, n = c.n, W = this.W, dist = this.dist, q = this.queue, h = c.h;

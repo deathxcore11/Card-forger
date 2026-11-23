@@ -72,7 +72,7 @@ export class Game {
     if (this.metaMods.startLevel) this.field.monsters[0].level = Math.min(10, 1 + this.metaMods.startLevel);
     recompute(this);
     this._openingHand();
-    this.map = CLASSIC_MAP; if (mapKey() !== CLASSIC_MAP.key) { loadMap(CLASSIC_MAP); this.flow.rebuild(); }
+    this.map = CLASSIC_MAP; if (mapKey() !== CLASSIC_MAP.key) { loadMap(CLASSIC_MAP); this.flow.col = null; this.flow.rebuild(); }
     this.world = this.opts.mode && this.opts.mode !== 'classic' ? emptyWorld() : buildWorld(this);       // stage runs: initRun builds the world on the generated map
     this.p.maxHp = this.oaths.glass ? 1 : this.cfgHp + this.mods.maxLp; this.p.hp = this.p.maxHp;
     this.en.alive.fill(0); this.shots.alive.fill(0); this.pick.alive.fill(0);

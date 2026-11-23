@@ -105,7 +105,7 @@ function turn(sp, want, rate, dt) {
 }
 function chase(g, sp, spd, dt) {
   load(sp); steerVec(g, o, g.p.x, g.p.y, g.p.z, sv);
-  if (!(sv.direct && sv.d < sp.radius + 0.8)) walk(o, sv.x, sv.z, spd, dt, Math.min(sp.radius, SCALE.walkRadiusCap), CFG.enemy.stepUp);
+  if (!(sv.direct && sv.d < sp.radius + 0.8)) walk(g, o, sv.x, sv.z, spd, dt, Math.min(sp.radius, SCALE.walkRadiusCap), CFG.enemy.stepUp);
   settle(o, dt); store(sp);
 }
 

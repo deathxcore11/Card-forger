@@ -1,6 +1,7 @@
 // Shared ground movement for swarm enemies, elites and the boss: flow-field steering, walking, settling on the floor.
 import { CFG } from '../data/config.js';
 import { heightAt, moveXZ } from './terrain.js';
+import { resolveColliders } from './colliders.js';
 
 const tgt = { x: 0, z: 0 };
 
@@ -28,10 +29,12 @@ export function steerVec(g, o, px, py, pz, out) {
 }
 
 // Turn toward the wanted direction a little each tick, then move with wall sliding.
-export function walk(o, sx, sz, spd, dt, radius, stepUp) {
+export function walk(g, o, sx, sz, spd, dt, radius, stepUp) {
   const k = Math.min(1, dt * 10);
   o.dx += (sx - o.dx) * k; o.dz += (sz - o.dz) * k;
-  return moveXZ(o, o.dx * spd * dt, o.dz * spd * dt, radius, stepUp);
+  const b = moveXZ(o, o.dx * spd * dt, o.dz * spd * dt, radius, stepUp);
+  if (g.colliders) { o.vx = o.dx * spd; o.vz = o.dz * spd; resolveColliders(g.colliders, o, radius); o.dx = o.vx / (spd || 1); o.dz = o.vz / (spd || 1); }       // solid props push enemies out as they do the duelist
+  return b;
 }
 
 // Snap to gentle ground, fall off ledges.

@@ -137,8 +137,8 @@ export function updateEnemies(g, dt) {
         }
         e.stT[i] -= dt;
         steerVec(g, o, p.x, p.y, p.z, sv);
-        if (d > S.keepMax) walk(o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
-        else if (d < S.keepMin) walk(o, -dx / d, -dz / d, spd, dt, K.radius, E.stepUp);
+        if (d > S.keepMax) walk(g, o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
+        else if (d < S.keepMin) walk(g, o, -dx / d, -dz / d, spd, dt, K.radius, E.stepUp);
         if (e.stT[i] <= 0 && d < S.range && lineClear(o.x, o.z, p.x, p.z, o.y)) {
           e.ax[i] = dx / d; e.az[i] = dz / d; e.st[i] = 1; e.stT[i] = S.telegraph;
           addTele(g.tele, { type: 0, x: o.x, y: o.y, z: o.z, dx: e.ax[i], dz: e.az[i], len: S.speed * S.life, w: S.width, dur: S.telegraph });
@@ -155,14 +155,14 @@ export function updateEnemies(g, dt) {
         if (e.st[i] === 2) {
           e.stT[i] -= dt;
           o.dx = e.ax[i]; o.dz = e.az[i];
-          const b = walk(o, e.ax[i], e.az[i], R.speed, dt, K.radius, E.stepUp); o.dx = e.ax[i]; o.dz = e.az[i];
+          const b = walk(g, o, e.ax[i], e.az[i], R.speed, dt, K.radius, E.stepUp); o.dx = e.ax[i]; o.dz = e.az[i];
           if (e.atk[i] <= 0 && d < K.reach + 0.5 && Math.abs(p.y - o.y) < E.vReach) { e.atk[i] = 5; g.hurtPlayer(R.dmg * mul, true, 'Ram Golem rush'); }   // 5 s marker: one hit per rush
           if (e.stT[i] <= 0 || b) { e.st[i] = 0; e.stT[i] = R.cooldown; }
           break;
         }
         e.stT[i] -= dt;
         steerVec(g, o, p.x, p.y, p.z, sv);
-        if (!(sv.direct && d < K.reach * 0.8)) walk(o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
+        if (!(sv.direct && d < K.reach * 0.8)) walk(g, o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
         if (e.stT[i] <= 0 && d < R.trigger && Math.abs(p.y - o.y) < 1.5 && lineClear(o.x, o.z, p.x, p.z, o.y)) {
           e.ax[i] = dx / d; e.az[i] = dz / d; e.st[i] = 1; e.stT[i] = R.telegraph;
           addTele(g.tele, { type: 0, x: o.x, y: o.y, z: o.z, dx: e.ax[i], dz: e.az[i], len: R.speed * R.duration, w: R.width, dur: R.telegraph });
@@ -177,7 +177,7 @@ export function updateEnemies(g, dt) {
           break;
         }
         steerVec(g, o, p.x, p.y, p.z, sv);
-        walk(o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
+        walk(g, o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
         if (d < B.trigger && Math.abs(p.y - o.y) < 2) {
           e.st[i] = 1; e.stT[i] = B.fuse;
           addTele(g.tele, { type: 1, x: o.x, y: o.y, z: o.z, r: B.radius, dur: B.fuse, color: 0xff7a20 });
@@ -186,7 +186,7 @@ export function updateEnemies(g, dt) {
       }
       default: {                                                   // husk, runner
         steerVec(g, o, p.x, p.y, p.z, sv);
-        if (!(sv.direct && d < K.reach * 0.8)) walk(o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
+        if (!(sv.direct && d < K.reach * 0.8)) walk(g, o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
         touching = d < K.reach && Math.abs(p.y - o.y) < E.vReach;
       }
     }

@@ -1,4 +1,4 @@
-// Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
+﻿// Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
 import { MAP } from '../data/map.js';
 
 const T = window.THREE, DEG = Math.PI / 180;
@@ -14,16 +14,17 @@ class Builder {
     const l = Math.sqrt(nx * nx + ny * ny + nz * nz); if (l < 1e-9) return;
     nx /= l; ny /= l; nz /= l;
     if (nx * out[0] + ny * out[1] + nz * out[2] < 0) { const t = b; b = c; c = t; nx = -nx; ny = -ny; nz = -nz; }
-    const cx = (a[0] + b[0] + c[0]) / 3, cz = (a[2] + b[2] + c[2]) / 3, n = (Math.sin(cx * 0.045) + Math.sin(cz * 0.052 + 1.3) + Math.sin((cx + cz) * 0.021 + 2)) / 3;       // slow patches of lighter and warmer ground, so a wide plain is never one flat colour
-    const j = (0.92 + this.rnd() * 0.16) * (1 + 0.08 * n), r = ((color >> 16) & 255) / 255 * j * (1 + 0.04 * n), g = ((color >> 8) & 255) / 255 * j, bl = (color & 255) / 255 * j * (1 - 0.06 * n);
+    const j = 0.97 + this.rnd() * 0.06, r = ((color >> 16) & 255) / 255 * j, g = ((color >> 8) & 255) / 255 * j, bl = (color & 255) / 255 * j;
     [a, b, c].forEach(p => { this.pos.push(p[0], p[1], p[2]); this.nor.push(nx, ny, nz); this.col.push(r, g, bl); });
   }
-  mesh() {
+  mesh(far) {
     const g = new T.BufferGeometry();
     g.setAttribute('position', new T.Float32BufferAttribute(this.pos, 3));
     g.setAttribute('normal', new T.Float32BufferAttribute(this.nor, 3));
     g.setAttribute('color', new T.Float32BufferAttribute(this.col, 3));
-    return new T.Mesh(g, new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+    const mat = new T.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    if (far) mat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', '#ifdef USE_FOG\n float fogFactor = min(smoothstep(fogNear, fogFar, fogDepth), 0.55);\n gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);\n#endif'); };       // far pieces never fog past 55%, so the rim and the landmarks stay readable silhouettes
+    return new T.Mesh(g, mat);
   }
 }
 
@@ -77,20 +78,28 @@ function addCyl(B, p) {
   }
 }
 
+// 2D value noise, two octaves, for the ground colour
+const hash2 = (x, z) => { let h = Math.imul(x | 0, 374761393) ^ Math.imul(z | 0, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+function vnoise(x, z) { const xi = Math.floor(x), zi = Math.floor(z), fx = x - xi, fz = z - zi, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz); return (hash2(xi, zi) * (1 - u) + hash2(xi + 1, zi) * u) * (1 - v) + (hash2(xi, zi + 1) * (1 - u) + hash2(xi + 1, zi + 1) * u) * v; }
+const SAND = [0xc8a46c, 0xcaa978, 0xc09c66];
+
 export function buildMapMesh(map) {
-  const B = new Builder();
-  // desert floor: a coarse patchwork so movement reads
-  const R = 215, cell = 16;
+  const B = new Builder(), F = new Builder(), group = new T.Group();
+  F.seed = 777;
+  // the ground: 8 m cells coloured by two octaves of noise (periods 60 m and 18 m) across three sand tones
+  const R = 216, cell = 8;
   for (let x = -R; x < R; x += cell) for (let z = -R; z < R; z += cell) {
-    const t = B.rnd(), col = t < 0.4 ? 0xd2b27a : t < 0.75 ? 0xc9a56c : 0xbf9a62;
+    const nz = vnoise(x / 60 + 11, z / 60 + 5) * 0.65 + vnoise(x / 18 + 3, z / 18 + 9) * 0.35, col = nz < 0.4 ? SAND[2] : nz < 0.6 ? SAND[0] : SAND[1];
     B.quad([x, 0, z], [x + cell, 0, z], [x + cell, 0, z + cell], [x, 0, z + cell], [0, 1, 0], col);
   }
-  map.prims.forEach(p => { if (p.t === 'box') addBox(B, p); else if (p.t === 'ramp') addRamp(B, p); else if (p.t === 'ring') addRing(B, p); else addCyl(B, p); });
-  // cliff wall around the edge of the world
+  map.prims.forEach(p => { const T2 = p.landmark ? F : B; if (p.t === 'box') addBox(T2, p); else if (p.t === 'ramp') addRamp(T2, p); else if (p.t === 'ring') addRing(T2, p); else addCyl(T2, p); });
+  // cliff wall around the edge of the world (far mesh)
   const n = 56, w = MAP.boundaryR + 6;
   for (let i = 0; i < n; i++) {
     const a = i / n * 360, cx = w * Math.cos(a * DEG), cz = w * Math.sin(a * DEG), len = 2 * Math.PI * w / n * 0.56;
-    addBox(B, { x0: cx - len, x1: cx + len, z0: cz - 6, z1: cz + 6, h: MAP.wallTop * (0.8 + B.rnd() * 0.4), rot: a + 90, c: i % 2 ? 0x8a6a45 : 0x9a7650 });
+    addBox(F, { x0: cx - len, x1: cx + len, z0: cz - 6, z1: cz + 6, h: MAP.wallTop * (0.8 + F.rnd() * 0.4), rot: a + 90, c: i % 2 ? 0x8a6a45 : 0x9a7650 });
   }
-  return B.mesh();
+  group.add(B.mesh(false), F.mesh(true));
+  return group;
 }
+

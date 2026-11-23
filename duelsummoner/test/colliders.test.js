@@ -22,3 +22,11 @@ test('colliders: a jump clears a big boulder, and colliders are the same on two 
   const g1 = new Game(7, { mode: 'run', duelist: 'kael' }), g2 = new Game(7, { mode: 'run', duelist: 'kael' }); assert.deepEqual(g1.colliders.list, g2.colliders.list);
   const r = g1.colliders.list.find(k => k.r > 1.2 && k.top - k.y < 2.0); if (r) { g1.god = true; const p = g1.p; p.x = r.x; p.z = r.z; p.y = r.top + 0.5; p.vx = p.vz = 0; p.grounded = false; p.vy = 0; g1.step(1 / 60, idle); assert.ok(Math.hypot(p.x - r.x, p.z - r.z) < 0.5, 'not shoved out while above it'); }
 });
+
+test('colliders: enemies are blocked by trunks and boulders too, and the flow field routes round them', () => {
+  const g = new Game(5, { mode: 'run', duelist: 'kael' }); g.god = true; const c = g.colliders.list.find(k => k.r < 1.0 && k.top - k.y > 2 && Math.abs(k.x) < 150 && Math.abs(k.z) < 150);
+  const p = g.p; p.x = c.x + 9; p.z = c.z; p.y = c.y; p.vx = p.vz = 0;                       // the duelist stands 9 m behind the trunk
+  const e = g.en; const n = 40; for (let k = 0; k < n; k++) { e.alive[k] = 1; e.kind[k] = 0; e.hp[k] = 1e6; e.x[k] = c.x - 4 - (k % 5); e.z[k] = c.z + (k - 20) * 0.1; e.y[k] = c.y; }
+  let worst = 1e9; for (let i = 0; i < 360; i++) { p.x = c.x + 9; p.z = c.z; g.step(1 / 60, { ...idle }); for (let k = 0; k < n; k++) if (e.alive[k]) worst = Math.min(worst, Math.hypot(e.x[k] - c.x, e.z[k] - c.z) - c.r); }
+  assert.ok(worst > 0.7 - 0.12, 'no enemy inside the trunk (closest surface gap ' + worst.toFixed(2) + ' m)');
+});
