@@ -31,6 +31,7 @@ import { DIFF_CHIPS, DUELIST_INFO } from './data/progress.js';
 import { packReplay, deflateInBrowser } from './core/replay.js';
 import { boardUrl, sendAndFollow } from './core/board.js';
 import { TouchControls } from './core/touch.js';
+import { updateSee, SEE } from './view/seethrough.js';
 import { tone } from './view/reveal.js';
 import { PadEdges, firstPad, move as padMove, press as padPressEl, adjust as padAdjust, back as padBack, clearRing, ringEl } from './core/padnav.js';
 import { loadRig } from './view/rig.js';
@@ -423,15 +424,15 @@ function frame(now) {
   }
   if (MODE === 'play') { const dv = new T.Vector3(ip.x, ip.y + 1, ip.z).project(camera); window.__dealFrom = { x: (dv.x + 1) / 2 * innerWidth, y: (1 - dv.y) / 2 * innerHeight }; }       // where the level-up cards fan out from
   devTick(now); bars.tick(dtReal || 0.016, game, document.body.classList.contains('rm'), performance.now());
-  chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (mapMesh && mapMesh.userData.fade) { mapMesh.userData.fade.cam.value.copy(camera.position); mapMesh.userData.fade.pl.value.set(ip.x, ip.y + 1, ip.z); } if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
-  if (sceneryGroup && sceneryGroup.userData.fade) sceneryGroup.userData.fade(chase.pos, ip, dtReal || 0.016);
+  chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
+  if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures
+  updateSee(camera, ip, renderer);                                         // the see-through uniforms, from the unshaken camera and the smoothed duelist
   if (MODE === 'play') ambient.update(dtReal, camera, game.en);
   threads.update(game.mode !== 'classic' && game.map ? game.map.gate : null, ip, MODE === 'play' ? dtReal : 0, camera, MODE === 'play' && game.boss.state === 'idle' && !game.offer);
   fx.applyShake(camera);
   if (fx.push > 0) { fx.push = Math.max(0, fx.push - dtReal); const u = 1 - fx.push / 2; camera.fov = baseV * (1 - 0.24 * Math.sin(Math.PI * Math.min(1, u))); camera.updateProjectionMatrix(); fovDirty = true; }
   else if (fovDirty) { camera.fov = baseV; camera.updateProjectionMatrix(); fovDirty = false; }
   const lpf = game.p.hp / game.p.maxHp, low = MODE === 'play' && !game.over && (lowShown ? lpf <= 0.33 : lpf <= 0.30);       if (low !== lowShown) { lowShown = low; $('lowhp').classList.toggle('on', low); }       // on at 30% of max LP or less, off again above 33%
-  if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures
   head.x = ip.x; head.y = ip.y + 1.5; head.z = ip.z;
   actors.update(game, alpha, camera.position, head, dtReal);
   ringMarks();
@@ -454,7 +455,22 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // Test hooks: read and drive the run without touching its rules.
+// debug: the duelist's pixels, alone (everything else hidden) and in the full scene (everything depth-tested and dithered as drawn), as flat id colour in an off-screen target at the buffer size; silhouette is 0 until the stencil silhouette exists
+function duelistPixels() {
+  const rig = actors.rig; if (!rig) return null;
+  const size = renderer.getDrawingBufferSize(new T.Vector2()), w = size.x, h = size.y, rt = new T.WebGLRenderTarget(w, h), buf = new Uint8Array(w * h * 4);
+  const idMat = new T.MeshBasicMaterial({ color: 0xff00ff, fog: false }); idMat.skinning = true;
+  const saved = []; rig.group.traverse(o => { if (o.isMesh) { saved.push([o, o.material]); o.material = idMat; } });
+  const count = () => { renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.readRenderTargetPixels(rt, 0, 0, w, h, buf); renderer.setRenderTarget(null); let n = 0; for (let i = 0; i < buf.length; i += 4) if (buf[i] > 200 && buf[i + 1] < 60 && buf[i + 2] > 200) n++; return n; };
+  const visible = count();
+  const keep = new Set(); for (let o = rig.group; o; o = o.parent) keep.add(o);
+  const hid = []; scene.children.forEach(c => { if (!keep.has(c) && c.visible) { hid.push(c); c.visible = false; } }); if (rig.group.parent && rig.group.parent !== scene) rig.group.parent.children.forEach(c => { if (!keep.has(c) && c.visible) { hid.push(c); c.visible = false; } });
+  const alone = count();
+  for (const c of hid) c.visible = true; for (const [o, m] of saved) o.material = m; rt.dispose(); idMat.dispose();
+  return { alone, visible, silhouette: 0 };
+}
 window.__ds = {
+  duelistPixels, see: SEE,
   bars,
   renderer,
   fitHud, minimap, props, game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,

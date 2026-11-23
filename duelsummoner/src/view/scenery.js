@@ -2,6 +2,7 @@
 // the sim (no collision, no RNG stream the run uses), so replays and goldens are unaffected. The same stage seed always grows the same stage.
 // Every kind is one InstancedMesh with its own chunky look; when a baked model for a kind is present (models.tree etc.) it replaces the stand-in.
 import { scatterStage, mulberry } from '../gen/scatter.js';
+import { seeInstanced } from './seethrough.js';
 
 const T = window.THREE;
 
@@ -73,38 +74,18 @@ export function buildScenery(map, stageIndex, models) {
   const theme = THEMES[Math.min(stageIndex || 0, THEMES.length - 1)], S = scatterStage(map, stageIndex, false), group = new T.Group();
   const kinds = [], add = (geo, list, mat, colored, canopy, v) => { if (list.length) kinds.push({ geo, list, mat, colored, canopy, v }); };
   const mat0 = new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }), mat = mat0, matBoth = new T.MeshLambertMaterial({ vertexColors: true, side: T.DoubleSide });      // blades and petals are single triangles: seen from both sides
-  const canopyMat = mat0.clone(); canopyMat.onBeforeCompile = sh => {                       // canopies dither out (a screen-door fade, no sorting) when one hangs between the camera and the duelist
-    sh.vertexShader = sh.vertexShader.replace('void main() {', 'attribute float aFadeT; attribute float aFadeC; attribute float aPart; varying float vFade;\nvoid main() {').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFade = aPart > 0.5 ? aFadeC : aFadeT;');
-    sh.fragmentShader = sh.fragmentShader.replace('void main() {', 'varying float vFade;\nvoid main() {\n  if (vFade > 0.01 && fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) < vFade) discard;');
-  };
-  for (let v = 0; v < 4; v++) add(treeGeo(theme, v), S.trees[v], canopyMat, false, 3, v);       // trunk and canopy are one mesh per variant (part 0 and part 1), with separate fade values
-  { const rg = rockGeo(theme, 0), all = [].concat(S.rocks[0], S.rocks[1], S.rocks[2]); add(rg, all, mat); }       // one shared boulder shape; size, squash and turn make the variety
+  for (let v = 0; v < 4; v++) add(treeGeo(theme, v), S.trees[v], seeInstanced(mat0.clone(), { c: [0, 7.5, 0], r: v < 2 ? 4.8 : 3.7, keep0: 0.25 }, { top: v < 2 ? 6.4 : 5.6 }), false, 3, v);       // trunk and canopy are one mesh per variant (aPart 0 and 1); each variant has its own material (its canopy radius), still 4 draws
+  { const rg = rockGeo(theme, 0), all = [].concat(S.rocks[0], S.rocks[1], S.rocks[2]); rg.computeBoundingSphere(); const bs = rg.boundingSphere; add(rg, all, seeInstanced(mat.clone(), { c: [bs.center.x, bs.center.y, bs.center.z], r: bs.radius, keep0: 0.25 })); }       // one shared boulder shape; size, squash and turn make the variety
   const fadeOut = (m, nearD, farD) => { const c = m.clone(); c.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n#ifdef USE_INSTANCING\n { float dd_ = distance((modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz, cameraPosition); if (dd_ < ' + nearD.toFixed(1) + ' || dd_ > ' + farD.toFixed(1) + ') transformed *= 0.0; }\n#endif'); }; return c; };       // small scatter collapses in the vertex shader: nothing within 4 m of the camera, and a far cut-off, with no per-frame upload
-  add(bushGeo(theme), S.bushes, fadeOut(mat, 0, 90));
-  if (theme.special) add(theme.special === 'crystal' ? crystalGeo(theme) : mushroomGeo(theme), S.special, mat);
+  { const bg = bushGeo(theme); bg.computeBoundingSphere(); const bs = bg.boundingSphere; add(bg, S.bushes, seeInstanced(fadeOut(mat, 0, 90), { c: [bs.center.x, bs.center.y, bs.center.z], r: bs.radius, keep0: 0.25 })); }
+  if (theme.special) { const sg = theme.special === 'crystal' ? crystalGeo(theme) : mushroomGeo(theme); sg.computeBoundingSphere(); const bs = sg.boundingSphere; add(sg, S.special, seeInstanced(mat.clone(), { c: [bs.center.x, bs.center.y, bs.center.z], r: bs.radius, keep0: 0.25 })); }
   add(grassGeo(theme), S.grass, fadeOut(matBoth, 4, 70));
   add(flowerGeo(), S.flowers.map(f => [f[0], f[1], f[2], f[3], f[4], theme.flowerCols[f[5] % theme.flowerCols.length]]), fadeOut(matBoth, 4, 50), true);
-  const fades = [];
   for (const k of kinds) {
     const mesh = new T.InstancedMesh(k.geo, k.mat, k.list.length), m = new T.Matrix4(), q = new T.Quaternion(), s = new T.Vector3(), p = new T.Vector3(), up = new T.Vector3(0, 1, 0), c = new T.Color();
     k.list.forEach((it, i) => { q.setFromAxisAngle(up, it[4]); s.set(it[3], it[6] || it[3], it[3]); p.set(it[0], it[1], it[2]); m.compose(p, q, s); mesh.setMatrixAt(i, m); if (k.colored) c.setHex(it[5]); else c.setScalar(it[5]); mesh.setColorAt(i, c); });
     mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; mesh.frustumCulled = false; group.add(mesh);
-    if (k.canopy) { const mk = name => { const fa = new T.InstancedBufferAttribute(new Float32Array(k.list.length), 1); fa.setUsage(T.DynamicDrawUsage); k.geo.setAttribute(name, fa); return fa; }; fades.push({ attr: mk('aFadeT'), list: k.list, trunk: true, rr: k.v < 2 ? 4.8 : 3.7, th: k.v < 2 ? 6.4 : 5.6 }, { attr: mk('aFadeC'), list: k.list, trunk: false, rr: k.v < 2 ? 4.8 : 3.7, th: k.v < 2 ? 6.4 : 5.6 }); }
   }
-  // occluders: every frame, a canopy whose crown sits on the line from the camera to the duelist (or that the camera is inside) fades to 15%; the others fade back in
-  group.userData.fade = (cam, p, dt) => {
-    const px = p.x, py = p.y + 1, pz = p.z, vx = px - cam.x, vy = py - cam.y, vz = pz - cam.z, L2 = vx * vx + vy * vy + vz * vz || 1, k = Math.min(1, dt * 9);
-    for (const f of fades) { let dirty = false;
-      for (let i = 0; i < f.list.length; i++) { const t = f.list[i], dx0 = t[0] - cam.x, dz0 = t[2] - cam.z; if (dx0 * dx0 + dz0 * dz0 > 3600) { if (f.attr.array[i] !== 0) { f.attr.array[i] = 0; dirty = true; } continue; }
-        let hit = false;
-        if (f.trunk) { const rr = 0.55 * t[3] + 0.35; for (let q = 0; q <= 10 && !hit; q++) { const ex = cam.x + vx * q / 10 - t[0], ez = cam.z + vz * q / 10 - t[2], ey = cam.y + vy * q / 10 - t[1]; hit = ex * ex + ez * ez < rr * rr && ey > -0.5 && ey < f.th * t[3]; } }
-        else { const cy = t[1] + 7.5 * t[3], rr = f.rr * t[3];
-          let u = ((t[0] - cam.x) * vx + (cy - cam.y) * vy + (t[2] - cam.z) * vz) / L2; u = u < 0 ? 0 : u > 1 ? 1 : u;
-          const ex = cam.x + vx * u - t[0], ey = cam.y + vy * u - cy, ez = cam.z + vz * u - t[2]; hit = ex * ex + ey * ey + ez * ez < rr * rr; }
-        const cur = f.attr.array[i], nxt = cur + ((hit ? 0.75 : 0) - cur) * k;
-        if (Math.abs(nxt - cur) > 0.002) { f.attr.array[i] = nxt; dirty = true; } }
-      if (dirty) f.attr.needsUpdate = true; }
-  };
   {   // one static instanced contact-shadow mesh under every tree, boulder and bush (one draw call): the ground under a prop is darker, so props stand on the sand instead of floating
     const sh = []; const push = (it, r) => sh.push([it[0], it[1], it[2], r]);
     for (let v = 0; v < 4; v++) for (const it of S.trees[v]) push(it, (v < 2 ? 2.4 : 3.2) * it[3]);

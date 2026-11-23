@@ -1,5 +1,6 @@
 // Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
 import { MAP } from '../data/map.js';
+import { seeMap } from './seethrough.js';
 
 const T = window.THREE, DEG = Math.PI / 180;
 
@@ -24,11 +25,7 @@ class Builder {
     g.setAttribute('color', new T.Float32BufferAttribute(this.col, 3)); if (this.uv) g.setAttribute('uv', new T.Float32BufferAttribute(this.uv, 2));
     const mat = new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }); if (this.uv) mat.map = groundTex();
     if (far) mat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', '#ifdef USE_FOG\n float fogFactor = min(smoothstep(fogNear, fogFar, fogDepth), 0.55);\n gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);\n#endif'); };       // far pieces never fog past 55%, so the rim and the landmarks stay readable silhouettes
-    if (fade) {                                       // anything solid that stands between the camera and the duelist dithers out to about 25 percent (walls, pylons, columns, ruins)
-      const prev = mat.onBeforeCompile; mat.onBeforeCompile = sh => { if (prev) prev(sh); sh.uniforms.fadeCam = fade.cam; sh.uniforms.fadePl = fade.pl;
-        sh.vertexShader = sh.vertexShader.replace('void main() {', 'varying vec3 vWP;\nvoid main() {').replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-        sh.fragmentShader = sh.fragmentShader.replace('void main() {', 'uniform vec3 fadeCam; uniform vec3 fadePl; varying vec3 vWP;\nvoid main() {\n  { vec3 d = fadePl - fadeCam; float t = dot(vWP - fadeCam, d) / max(dot(d, d), 0.001); vec3 q = fadeCam + d * clamp(t, 0.0, 1.0); if (t > 0.02 && t < 0.9 && length(vWP - q) < 2.2 && fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) < 0.75) discard; }'); };
-    }
+    if (fade) seeMap(mat);                            // anything solid between the camera and the duelist opens a screen-space porthole round the duelist (walls, pylons, columns, ruins, the rim)
     return new T.Mesh(g, mat);
   }
 }

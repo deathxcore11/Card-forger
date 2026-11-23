@@ -1,5 +1,6 @@
 // Map life: vases, Witness Stones, the Relic Broker, Shrines of Tribute and Card Chests. Each has its own silhouette (shape before colour).
 import { ENCOUNTERS as E } from '../data/encounters.js';
+import { seeMap } from './seethrough.js';
 import { ITEMS } from '../data/items.js';
 
 const T = window.THREE;
@@ -19,7 +20,7 @@ function bake(g) {
     if (!list.length) return; const pos = [], nor = [], col = [];
     for (const [geo, c] of list) { const p = geo.attributes.position, n = geo.attributes.normal; for (let i = 0; i < p.count; i++) { pos.push(p.getX(i), p.getY(i), p.getZ(i)); if (n) nor.push(n.getX(i), n.getY(i), n.getZ(i)); col.push(c.r, c.g, c.b); } }
     const bg = new T.BufferGeometry(); bg.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); if (nor.length) bg.setAttribute('normal', new T.Float32BufferAttribute(nor, 3)); bg.setAttribute('color', new T.Float32BufferAttribute(col, 3));
-    g.add(new T.Mesh(bg, basicMat ? new T.MeshBasicMaterial({ vertexColors: true }) : new T.MeshLambertMaterial({ vertexColors: true, flatShading: true })));
+    g.add(new T.Mesh(bg, seeMap(basicMat ? new T.MeshBasicMaterial({ vertexColors: true }) : new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }))));
   };
   for (const m of kill) { g.remove(m); m.geometry.dispose(); }
   make(lit, false); make(unlit, true);
