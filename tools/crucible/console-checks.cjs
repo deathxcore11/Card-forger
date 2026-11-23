@@ -21,7 +21,8 @@
 //   reach   every control that is not switched off can be tapped where it stands (nothing lies over its middle);
 //   placed  every moving part drawn over a picture (data-art) sits on the point of the picture it was measured from,
 //           through the picture's own place and size as the page laid it out; a torch flame also stands on the bright
-//           core of the painted flame, found again in the picture's own pixels;
+//           core of the painted flame, found again in the picture's own pixels; a model drawn in a room (a canvas laid
+//           on the room picture, its spots in data-foot) stands with its lowest pixel on its spot;
 //   clear   no control, label or coin of the screen (outside a window, a scene, a dim or the toast) lies over such a
 //           moving part;
 //   errors  no page error.
@@ -210,6 +211,18 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
             let same = 0, edge = 0, edgeSame = 0;
             for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4, eq = under[i] === f0[i] && under[i + 1] === f0[i + 1] && under[i + 2] === f0[i + 2]; same += eq; if (x === 0 || y === 0 || x === w - 1 || y === h - 1) { edge++; edgeSame += eq; } }
             if (same / (w * h) < .6 || edgeSame / edge < .85) out.push(`${name(e)}: its first frame matches the picture under it at ${Math.round(same / (w * h) * 100)}% (edge ${Math.round(edgeSame / edge * 100)}%): not cut from this place`);
+          }
+        }
+        // a model stands on its spot: in a canvas of models laid on its picture, the lowest pixel drawn within 48 pixels
+        // of each spot's x (a model turned stands on a corner) is the row just above the spot's y (data-foot: "x,y" in the
+        // picture, one for each model)
+        for (const c of app.querySelectorAll('canvas[data-foot]')) {
+          let px; try { px = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; } catch { continue; }
+          for (const f of c.dataset.foot.split(' ')) {
+            const [fx, fy] = f.split(',').map(Number); let low = -1;
+            for (let y = c.height - 1; y >= 0 && low < 0; y--) for (let x = Math.max(0, fx - 48); x <= Math.min(c.width - 1, fx + 48); x++) if (px[(y * c.width + x) * 4 + 3]) { low = y; break; }
+            if (low < 0) out.push(`${name(c)}: no model drawn at its spot ${f}`);
+            else if (Math.abs(low - (fy - 1)) > 2) out.push(`${name(c)}: a model's foot is at row ${low}, not on its spot ${f}`);
           }
         }
         // the card pictures: cut to console colour once the sheets are converted

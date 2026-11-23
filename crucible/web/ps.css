@@ -130,31 +130,39 @@ body.ps { background: #000; }
 #app.ps .flm { position: absolute; background: 0 0 no-repeat; pointer-events: none; animation: psflame 1s steps(12) infinite; }
 @keyframes psflame { to { background-position: var(--to) 0; } }
 
-/* chamber of doors */
-#app.ps .room { position: absolute; left: -20px; top: -8px; width: 352px; height: 144px; animation: psbreath 6s steps(6) infinite alternate; }
-@keyframes psbreath { to { transform: translate(-2px, 1px); } }
+/* chamber of doors: the hall's painting, held still, with each door's leaves laid into their doorway (see psChamber) */
+#app.ps .room { position: absolute; }
 #app.ps .room > img { position: absolute; left: 0; top: 0; }
-#app.ps .dr { position: absolute; width: 62px; height: 68px; padding: 0; border: 0; background: #000; cursor: pointer; overflow: hidden; }
-#app.ps .dr img { width: 62px; height: 68px; }
-#app.ps .dr.l, #app.ps .dr.l img { width: 78px; height: 85px; }
+#app.ps .dr { position: absolute; padding: 0; border: 0; background: none; cursor: pointer; overflow: hidden; outline: none; }
+#app.ps .dr > img, #app.ps .dr > canvas { position: absolute; left: 0; top: 0; }
 #app.ps .fade { position: absolute; left: 0; right: 0; height: 4px; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; pointer-events: none; }
 #app.ps .fade.d75 { background: repeating-conic-gradient(#000 0 75%, transparent 0 100%) 0 0 / 2px 2px; }
-#app.ps .dr .fg { position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
-#app.ps .dr.k-mystery .fg::after { content: ''; position: absolute; inset: 0; background: conic-gradient(transparent 0 25%, #000 0 50%, transparent 0 100%) 0 0 / 2px 2px; } /* one more dot in four: three in four dark */
-#app.ps .dr.k-known .fg { display: none; }
-#app.ps .dr.lock::after { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='1' shape-rendering='crispEdges'%3E%3Crect width='5' height='1' fill='%234a3024'/%3E%3Crect x='5' width='1' height='1' fill='%233a2419'/%3E%3C/svg%3E") 0 0 / 6px 1px; opacity: .5; }
-#app.ps .dr .no { position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; background: var(--sh); color: var(--gl); font: 8px/10px 'LM Label', monospace; text-align: center; box-shadow: 0 0 0 1px var(--gold); }
-#app.ps .dr:not(.on)::before { content: ''; position: absolute; inset: 0; z-index: 1; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; opacity: .5; pointer-events: none; }
-#app.ps .dr.on { box-shadow: 0 0 0 1px var(--gl), 0 0 0 2px var(--sh); overflow: visible; }
-#app.ps .dr .no { z-index: 2; }
-#app.ps .cur { position: absolute; width: 9px; height: 6px; background: var(--gl); clip-path: polygon(0 0, 100% 0, 50% 100%); box-shadow: none; animation: psbob .8s steps(2) infinite; pointer-events: none; }
-#app.ps .cur::after { content: ''; position: absolute; left: 3px; top: 0; width: 3px; height: 2px; background: var(--ink); }
+/* the doors the cursor is not on stand half in shadow: the dot pattern on the leaves alone (their own shape, --lf), laid on
+   the frame's grid of dots (--mesh); a sealed door darker still */
+#app.ps .dr:not(.on)::before, #app.ps .dr.lock::after { content: ''; position: absolute; inset: 0; z-index: 1; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) var(--mesh, 0 0) / 2px 2px; opacity: .5; pointer-events: none;
+  -webkit-mask: var(--lf) 0 0 / 100% 100% no-repeat; mask: var(--lf) 0 0 / 100% 100% no-repeat; }
+#app.ps .dr.lock::after { opacity: 1; }
+/* fog in a doorway: two patches of falling-off dots drifting a pixel at a time against each other */
+#app.ps .dfog { position: absolute; z-index: 2; pointer-events: none; background: 0 0 no-repeat; }
+#app.ps .dfog.fa { animation: psdrift 3.2s steps(4) infinite alternate; }
+#app.ps .dfog.fb { animation: psdrift 4.8s steps(4) infinite alternate-reverse; }
+@keyframes psdrift { from { transform: translateX(-2px); } to { transform: translateX(2px); } }
+/* each door's number, on the step under it; the chosen one lit */
+#app.ps .dno { position: absolute; z-index: 3; width: 10px; height: 10px; background: var(--sh); color: var(--gl); font: 8px/10px 'LM Label', monospace; text-align: center; box-shadow: 0 0 0 1px var(--gold); pointer-events: none; }
+#app.ps .dno.on { background: var(--gl); color: var(--sh); box-shadow: 0 0 0 1px var(--sh); }
+/* the cursor: a small picture of whole pixels, gold with a dark edge under it, bobbing toward what it points at (.curu points up) */
+#app.ps .cur { position: absolute; z-index: 3; width: 9px; height: 6px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' shape-rendering='crispEdges'%3E%3Cg fill='%231a0f12'%3E%3Crect x='0' y='1' width='9' height='1'/%3E%3Crect x='1' y='2' width='7' height='1'/%3E%3Crect x='2' y='3' width='5' height='1'/%3E%3Crect x='3' y='4' width='3' height='1'/%3E%3Crect x='4' y='5' width='1' height='1'/%3E%3C/g%3E%3Cg fill='%23e9c46a'%3E%3Crect x='0' y='0' width='9' height='1'/%3E%3Crect x='1' y='1' width='7' height='1'/%3E%3Crect x='2' y='2' width='5' height='1'/%3E%3Crect x='3' y='3' width='3' height='1'/%3E%3Crect x='4' y='4' width='1' height='1'/%3E%3C/g%3E%3Crect x='2' y='0' width='4' height='1' fill='%23f3ead8'/%3E%3C/svg%3E") 0 0 no-repeat; animation: psbob .8s steps(2) infinite; pointer-events: none; }
+#app.ps .cur.curu { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' shape-rendering='crispEdges'%3E%3Crect x='0' y='5' width='9' height='1' fill='%231a0f12'/%3E%3Cg fill='%23e9c46a'%3E%3Crect x='4' y='0' width='1' height='1'/%3E%3Crect x='3' y='1' width='3' height='1'/%3E%3Crect x='2' y='2' width='5' height='1'/%3E%3Crect x='1' y='3' width='7' height='1'/%3E%3Crect x='0' y='4' width='9' height='1'/%3E%3C/g%3E%3Cg fill='%23f3ead8'%3E%3Crect x='4' y='0' width='1' height='1'/%3E%3Crect x='3' y='1' width='1' height='1'/%3E%3Crect x='2' y='2' width='1' height='1'/%3E%3C/g%3E%3C/svg%3E"); animation-name: psbobu; }
+@keyframes psbobu { 50% { transform: translateY(-2px); } }
+/* going through a door: the view darkens through the half dot pattern to black (doorBeat in app.mjs) */
+#app.ps .vw.dk1::after, #app.ps .vw.dk2::after { content: ''; position: absolute; inset: 0; z-index: 30; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; pointer-events: none; }
+#app.ps .vw.dk2::after { background: #000; }
 /* the door the cursor is on, read out on the ledge */
 #app.ps .dt { position: absolute; left: 4px; top: 4px; width: 238px; height: 56px; padding: 3px 4px 0; overflow: hidden; color: var(--sh);
   background: repeating-conic-gradient(var(--sm) 0 25%, #9a7347 0 50%) 0 0 / 2px 2px; border: 1px solid; border-color: var(--sl) var(--dark) var(--dark) var(--sl); }
 #app.ps .dt > b { display: block; font: 8px/10px 'LM Label', monospace; color: var(--sh); white-space: nowrap; overflow: hidden; }
 #app.ps .dt p { font: 8px/9px 'LM Label', monospace; color: #3a2419; margin: 1px 0 0; max-height: 27px; overflow: hidden; }
-#app.ps .dt p i { color: var(--rust); background: none; } #app.ps .dt p i.lmg { color: #2f5f55; }
+#app.ps .dt p i { color: #f08a72; background: var(--sh); padding: 0 2px; } #app.ps .dt p i.lmg { color: #9fd0c0; } /* COST and GAIN in light letters on a dark chip, read at a glance on the plaque */
 
 /* the duel */
 #app.ps .zh { position: absolute; padding: 0; margin: 0; border: 0; background: transparent; cursor: pointer; }
@@ -179,7 +187,12 @@ body.ps { background: #000; }
 
 /* story */
 #app.ps .story { position: absolute; inset: 0; z-index: 45; cursor: pointer; background: none; }
-#app.ps .story .bars { position: absolute; left: 96px; width: 320px; height: 20px; background: #000; }
+#app.ps .story .bars { position: absolute; left: 100px; width: 312px; height: 20px; background: #000; }
+/* a story's painting gets the windows' gold edge, drawn round it so the picture keeps its own size */
+#app.ps .story .spic { box-shadow: 0 0 0 1px var(--sh), 0 0 0 2px var(--gold), 0 0 0 3px var(--sh); }
+/* while a story is told the screen under it holds still; under a painting the view and the ledge go dark */
+#app.ps.stup .fr *, #app.ps.stup .fr *::before, #app.ps.stup .fr *::after { animation-play-state: paused !important; }
+#app.ps.stblk .fr .vw > *, #app.ps.stblk .fr .ledge > *, #app.ps.stblk .fr > .bar > * { visibility: hidden; }
 
 /* lists inside windows */
 #app.ps .row2 { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -223,9 +236,11 @@ body.ps { background: #000; }
 
 /* offerings on plinths */
 #app.ps .dim0 { position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; pointer-events: none; }
-#app.ps .pln { position: absolute; padding: 0; margin: 0; cursor: pointer; color: var(--ink); background: repeating-conic-gradient(#26101a 0 25%, transparent 0 50%) 0 0 / 2px 2px; /* mesh: the room shows through every other dot */ border: 1px solid var(--sh); box-shadow: inset 0 0 0 1px var(--dark); }
+/* A plinth's dots lie on the same pixels as the dimming's (--mesh, from psOffer), so the dimmed room shows through every
+   plinth alike; the plinths the cursor is not on put their half shadow on the other pixels (--mesh2), the room's own. */
+#app.ps .pln { position: absolute; padding: 0; margin: 0; cursor: pointer; color: var(--ink); background: repeating-conic-gradient(#26101a 0 25%, transparent 0 50%) var(--mesh, 0 0) / 2px 2px; border: 1px solid var(--sh); box-shadow: inset 0 0 0 1px var(--dark); }
 #app.ps .pln.on { box-shadow: inset 0 0 0 1px var(--gl), 0 0 0 1px var(--sh); }
-#app.ps .pln:not(.on)::after { content: ''; position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; opacity: .5; pointer-events: none; }
+#app.ps .pln:not(.on)::after { content: ''; position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) var(--mesh2, 0 0) / 2px 2px; opacity: .5; pointer-events: none; }
 #app.ps .pln.off { cursor: default; }
 #app.ps .pln .pnm { position: absolute; left: 1px; right: 1px; background: #26101a; font: 8px/9px 'LM Label', monospace; color: var(--gl); text-align: center; white-space: nowrap; height: 9px; overflow: hidden; }
 #app.ps .pln .big2 { font: 16px/16px 'LM Text', monospace; color: var(--ink); text-align: center; }
@@ -241,7 +256,7 @@ body.ps { background: #000; }
 #app.ps .pf.s96 { width: 100px; height: 100px; } #app.ps .pf.s96 img { width: 96px; height: 96px; }
 #app.ps .story > :not(.dim) { z-index: 40; } /* the painting, the face, the words and SKIP sit over the dimmed screen */
 #app.ps .pf .crest { pointer-events: none; }
-#app.ps .dgrid { padding: 4px; } #app.ps .dgrid .row2 { justify-content: center; }
+#app.ps .dgrid { padding: 4px; } #app.ps .dgrid .row2 { justify-content: flex-start; } /* its rows are centred by its padding, at a whole pixel (deckGrid) */
 /* the books */
 #app.ps .book { position: absolute; padding: 0; }
 #app.ps .book .sc p { margin: 0 0 4px; }

@@ -51,17 +51,18 @@ export function frame({ left = '', right = '', view = '', ledge = '', bar = '', 
 export const viewSize = () => ({ w: F.W - 200, h: F.H - 112 });
 export const ledgeW = () => F.W - 192;
 
-// A patch of fog or shadow: black, 1-bit, its density falling away toward the edges through the 4 x 4 dither table,
-// the way the console thinned a sprite without any see-through colour.
+// A patch of fog or shadow: one colour (black unless asked), 1-bit, its density falling away toward the edges through
+// the 4 x 4 dither table, the way the console thinned a sprite without any see-through colour. The table is read at the
+// patch's own pixels, so a patch laid at a place a multiple of four pixels from another keeps in step with it.
 const fogs = new Map(), B4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-export function fogSprite(w, h, dens = .6) {
-  const key = `${w}x${h}x${dens}`; if (fogs.has(key)) return fogs.get(key);
+export function fogSprite(w, h, dens = .6, rgb = [0, 0, 0]) {
+  const key = `${w}x${h}x${dens}x${rgb}`; if (fogs.has(key)) return fogs.get(key);
   let url = '';
   try {
     const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'), id = x.createImageData(w, h), d = id.data;
     for (let y = 0; y < h; y++) for (let i = 0; i < w; i++) {
       const dx = (i + .5) / w * 2 - 1, dy = (y + .5) / h * 2 - 1, k = Math.max(0, 1 - Math.hypot(dx, dy)) ** .8 * dens;
-      if (k * 16 > B4[(y & 3) * 4 + (i & 3)] + .5) d[(y * w + i) * 4 + 3] = 255;
+      if (k * 16 > B4[(y & 3) * 4 + (i & 3)] + .5) { const o = (y * w + i) * 4; d[o] = rgb[0] & 0xf8; d[o + 1] = rgb[1] & 0xf8; d[o + 2] = rgb[2] & 0xf8; d[o + 3] = 255; }
     }
     x.putImageData(id, 0, 0); url = c.toDataURL();
   } catch { /* no canvas: no fog */ }

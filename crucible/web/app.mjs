@@ -12,7 +12,7 @@ import { newProfile, applyRun, scoreRun, buy, maxHeat, VAULT, FORGER_FEATS, feat
 import { SCENES, RUMOURS } from './story.mjs';
 import { LAB_DEFAULTS, LAB_ORDER, DEPTH_SET, labConfig } from './labs.mjs';
 import { aimFor } from './aim.mjs';
-import { F, fitConsole, yb, xr, cx0, cy0, viewSize, ledgeW, pq, lb, lbr, box, gauge, frame, win, carveImg, carve } from './ps.mjs';
+import { F, fitConsole, yb, xr, cx0, cy0, viewSize, ledgeW, pq, lb, lbr, box, gauge, frame, win, carveImg, carve, fogSprite } from './ps.mjs';
 import * as R3 from './raster.mjs';
 import { pixelText } from './pxtext.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
@@ -687,7 +687,7 @@ function draw() {
   }
   const psOn = psScreen();
   if (psOn) { drawConsole(psOn); screenCue(); return; }
-  if (app.classList.contains('ps')) { app.classList.remove('ps'); document.body.classList.remove('ps'); app.style.marginLeft = app.style.marginTop = ''; fit(); }
+  if (app.classList.contains('ps')) { app.classList.remove('ps'); document.body.classList.remove('ps'); app.style.margin = app.style.left = app.style.top = app.style.transformOrigin = ''; fit(); }
   const r = G.run; let body;
   if (G.screen) body = { forger: screenForger, vault: screenVault, codex: screenCodex, feats: screenFeats }[G.screen]();
   else if (!r) body = screenHome();
@@ -802,7 +802,9 @@ function coinLoop() {
   for (const cv of cs) if (cv.dataset.t !== String(t)) { cv.dataset.t = t; paintCoin(cv, a); }
   coinRaf = requestAnimationFrame(coinLoop);
 }
-function bootWait() { booting = true; bootScreen(); return loadPack(bootScreen).then(() => { const b = document.getElementById('boot'); if (b) b.remove(); booting = false; render(); }); }
+// The models' skins load with the pack, so the first room or forge beat is drawn whole (a slow one is not waited on for
+// more than three seconds).
+function bootWait() { booting = true; bootScreen(); return loadPack(bootScreen).then(() => Promise.race([propTextures(), new Promise(ok => setTimeout(ok, 3000))])).then(() => { const b = document.getElementById('boot'); if (b) b.remove(); booting = false; render(); }); }
 const faceName = id => 'face-' + (id === 'last' ? 'last-one' : id);
 const relicFile = id => (RELICS[id].kind === 'M' ? 'masterwork' : 'relic') + '-' + id.replace(/_/g, '-');
 // Card pictures at console size: each sheet of 100 shrunk to 40 (and, for the card page, 96) pixels a card and cut to
@@ -846,6 +848,7 @@ const medal = (id, size) => { const f = relicFile(id) + (size === 32 ? '' : '-' 
   return `<i class="coin s${size}">${CART.has(b) ? `<img src="${cimg(b)}" width="${size}" height="${size}" alt="">` : ''}${c ? `<img class="lt" src="${c.url}" style="left:${(size - c.w + 2) >> 1}px;top:${(size - c.h + 3) >> 1}px;width:${c.w}px;height:${c.h}px" alt="">` : `<b>${esc(L)}</b>`}</i>`; };
 const psPort = (n, x, y, shade = false) => `<div class="pf ${n && CART.has(n) ? (shade ? 'pflk' : '') : 'none'}" style="left:${x}px;top:${y}px">${n && CART.has(n) ? `<img src="${cimg(n)}" alt="">` : CART.has('key-crest-48') ? `<img class="crest" src="${cimg('key-crest-48')}" alt="">` : ''}</div>`;
 const shortName = s => String(s || '').replace(/^the /i, '');
+const stop = s => { s = String(s || '').trim(); return !s || /[.!?]$/.test(s) ? s : s + '.'; }; // a sentence ends once
 // The Forge level: how far toward the next Gift (the same sums as the engine's level-up).
 const forgeFrac = r => { const c = db.config, at = l => l === 0 && c.giftFirstXp ? Math.min(c.giftFirstXp, c.xp.perLevel * (c.giftXpScale || 1)) : (l + 1) * c.xp.perLevel * (c.giftXpScale || 1); const lo = r.level ? at(r.level - 1) : 0, hi = at(r.level); return Math.max(0, Math.min(1, (r.xp - lo) / Math.max(1, hi - lo))); };
 const sparkRow = (r, x, y) => Array.from({ length: sparksMax(r) }, (_, i) => `<i class="spk${i < r.sparks ? '' : ' out'}" style="left:${x + i * 12}px;top:${y}px"></i>`).join('');
@@ -934,15 +937,46 @@ function psHome() {
 
 // ---- the chamber of doors
 // The room pictures are whole: 352 x 198, and 440 x 248 for a larger frame (art/c/index.json says which are there).
-// The three empty doorways stand at fixed places in them. The view shows the part around the doors.
-const NICHE = [62, 145, 230], NICHE_Y = 60; // in the 352 x 198 picture; the larger one is 5/4 of it
+// The view shows the part around the doors. A room is a painting and is held still: nothing on it moves but what was
+// cut from it to move, and the cursor.
 // A view taller than the picture shows darkness above it (the chamber: a high ceiling lost in the dark) or below it
-// (the duel hall, where the table covers it).
+// (the duel hall, where the table covers it). Each dot pattern is laid on the frame's own grid of dots, wherever its
+// box falls, so two patterns never meet out of step.
+const meshAt = (x, y) => `background-position:${x & 1}px ${y & 1}px`; // x, y: the box's place in the view (the view itself sits on even frame pixels)
+// The rooms where the view is moved off the doorways' height: the forge, to show the floor its anvil stands on.
+const FOCUS = { 'room-forge': 108 };
 function roomPic(name, focus, low = false) {
   const { w, h } = viewSize(), big = (w > 360 || h > 170) && CART.has(name + '-l'), s = big ? 1.25 : 1, pw = big ? 440 : 352, ph = big ? 248 : 198;
+  focus = FOCUS[name] || focus;
   const ox = (w - pw) >> 1, oy = ph >= h ? -Math.max(0, Math.min(ph - h, Math.round(focus * s - h * .55))) : low ? h - ph : 0;
-  const edge = ph >= h ? '' : low ? `<i class="fade d75" style="top:${oy}px"></i><i class="fade" style="top:${oy + 4}px"></i>` : `<i class="fade" style="top:${oy + ph - 8}px"></i><i class="fade d75" style="top:${oy + ph - 4}px"></i>`;
-  return { src: cimg(big ? name + '-l' : name), s, big, ox, oy, pw, ph, edge };
+  const fade = (t, cls) => `<i class="fade${cls}" style="top:${t}px;${meshAt(0, t)}"></i>`;
+  const edge = ph >= h ? '' : low ? fade(oy, ' d75') + fade(oy + 4, '') : fade(oy + ph - 8, '') + fade(oy + ph - 4, ' d75');
+  return { name, src: cimg(big ? name + '-l' : name), s, k: s / 1.25, big, ox, oy, pw, ph, edge };
+}
+// The picture of a room, laid at its place in the view: what every part drawn on it is measured against (data-pic).
+const roomImg = rp => `<img class="ab" data-pic="room" src="${rp.src}" style="left:${rp.ox}px;top:${rp.oy}px" width="${rp.pw}" height="${rp.ph}" alt="">`;
+// A part laid on the room picture at a point measured in it: at, the point in the picture; pin, the point of the part that
+// sits on it. tools/crucible/console-checks.cjs measures every such part against the picture as laid out.
+// o: where the picture's corner is in the part's box (the room's own box in the chamber, the view elsewhere).
+const onPic = (tag, cls, at, pin, style = '', attrs = '', inner = '', o = [0, 0]) => `<${tag} class="${cls}" data-art="room" data-at="${at}" data-pin="${pin}" style="left:${o[0] + at[0] - pin[0]}px;top:${o[1] + at[1] - pin[1]}px;${style}" ${attrs}>${inner}</${tag}>`;
+// The three empty doorways of each hall of doors, measured from the hall's own pixels at both sizes
+// (tools/crucible/console-art.py, index.json 'niches'): x, y, w, h, and the stepped corners of the frame at the top
+// (width and depth, left then right). Each door's leaves were cut for each doorway of each hall, toned to its stone and
+// lit as the doorway is lit, so they are laid in exactly where they were cut for. Without the measures (an art folder cut
+// before them) the doorways stand where they were first placed by eye.
+const NICHE = [62, 145, 230], NICHE_Y = 60;
+const hallInfo = hall => (D.cart && D.cart.niches && D.cart.niches[hall]) || null;
+const doorways = (hall, rp) => { const m = hallInfo(hall); return m ? m[rp.big ? 'l' : 's'] : NICHE.map(x => [Math.round(x * rp.s), Math.round(NICHE_Y * rp.s), rp.big ? 78 : 62, rp.big ? 85 : 68, 0, 0, 0, 0]); };
+const leafPic = (hall, art, at, rp) => hallInfo(hall) ? `leaf-${art}-${hall}-${at}${rp.big ? '-l' : ''}` : `door-${art}-leaf${rp.big ? '-l' : ''}`;
+// Fog in a doorway: patches of the console's falling-off dither (fogSprite), wider than the doorway so it spills onto the
+// frame and the step, its colour the hall's own stone gone pale. A door partly hidden gets a thin mist; one in fog a thick
+// one and a second, paler layer drifting against it, its shape still showing at the edges.
+function doorFog(d, [x, y, w, h], rp, H) {
+  if (!d.know || d.know === 'known') return '';
+  const pw = w + Math.round(22 * rp.k), ph = h + Math.round(16 * rp.k), at = [x + (w >> 1), y + (h >> 1) + Math.round(4 * rp.k)], pin = [pw >> 1, ph >> 1];
+  const st = (H && H.stone) || [150, 110, 70], mist = st.map(v => Math.min(255, Math.round(v * .8 + 70))), deep = d.know === 'mystery';
+  const patch = (cls, dens, rgb) => onPic('i', 'dfog ' + cls, at, pin, `width:${pw}px;height:${ph}px;background-image:url(${fogSprite(pw, ph, dens, rgb)})`);
+  return patch('fa', deep ? .9 : .55, mist) + (deep ? patch('fb', .6, mist.map(v => Math.min(255, v + 24))) : '');
 }
 function psChamber() {
   const r = G.run, boss = BOSSES[r.floor][r.bossOrder[r.floor]], fl = r.floor + 1;
@@ -952,10 +986,14 @@ function psChamber() {
   const lockedAt = i => r.doors[i].type === 'boss' && r.seals < 2, key = `${r.floor}.${r.chamber}.${r.doors.map(d => d.type).join()}`;
   if (!G.doorSel || G.doorSel.at !== key || !r.doors[G.doorSel.i]) G.doorSel = { at: key, i: Math.max(0, r.doors.findIndex((d, i) => !lockedAt(i))) };
   const sel = G.doorSel.i, d = r.doors[sel], n = r.doors.length;
-  const rp = roomPic(hall, NICHE_Y + 34, true), nx = i => Math.round(NICHE[at[i]] * rp.s), ny = Math.round(NICHE_Y * rp.s);
-  const doors = r.doors.map((d, i) => { const locked = lockedAt(i), art = d.type === 'secret' && CART.has('door-hidden-leaf') ? 'hidden' : DOOR_ART[d.type], leaf = 'door-' + art + '-leaf' + (rp.big && CART.has('door-' + art + '-leaf-l') ? '-l' : ''); // the door that is not there has its own plain leaves
-    return `<button class="dr k-${d.know || 'known'}${locked ? ' lock' : ''}${i === sel ? ' on' : ''}${rp.big ? ' l' : ''}" style="left:${nx(i)}px;top:${ny}px" data-a="${i === sel ? 'door' : 'dsel'}:${i}" ${locked && i === sel ? 'disabled' : ''} aria-label="${esc(doorName(d))}">${CART.has(leaf) ? `<img src="${cimg(leaf)}" alt="">` : ''}<i class="fg"></i><i class="no">${i + 1}</i></button>`; }).join('');
-  const view = `<div class="room" style="left:${rp.ox}px;top:${rp.oy}px;width:${rp.pw}px;height:${rp.ph}px"><img src="${rp.src}" width="${rp.pw}" height="${rp.ph}" alt="">${doors}<i class="cur" style="left:${nx(sel) + (rp.big ? 34 : 27)}px;top:${ny - 10}px"></i>${keepers(r, rp, viewSize())}</div>${rp.edge}`;
+  const rp = roomPic(hall, NICHE_Y + 34, true), ways = doorways(hall, rp), H = hallInfo(hall), open = G.doorOpen && G.doorOpen.at === key ? G.doorOpen : null;
+  const doors = r.doors.map((d, i) => { const [x, y, w, h] = ways[at[i]], locked = lockedAt(i), art = d.type === 'secret' && CART.has(leafPic(hall, 'hidden', at[i], rp)) ? 'hidden' : DOOR_ART[d.type], leaf = leafPic(hall, art, at[i], rp); // the door that is not there has its own plain leaves
+    const src = open && open.i === i ? open.url : CART.has(leaf) ? cimg(leaf) : ''; // a door opened while its guardian speaks stays open
+    return onPic('button', `dr k-${d.know || 'known'}${locked ? ' lock' : ''}${i === sel ? ' on' : ''}`, [x, y], [0, 0], `width:${w}px;height:${h}px;--mesh:${(rp.ox + x) & 1}px ${(rp.oy + y) & 1}px${src ? `;--lf:url(${src})` : ''}`, `data-i="${i}" data-a="${i === sel ? 'door' : 'dsel'}:${i}" ${locked && i === sel ? 'disabled' : ''} aria-label="${esc(doorName(d))}"`, src ? `<img src="${src}" width="${w}" height="${h}" style="width:${w}px;height:${h}px" alt="">` : '') + doorFog(d, [x, y, w, h], rp, H); }).join('');
+  // Each door's number on the step under it, and the cursor under the chosen one, pointing up at it: clear of the carving.
+  const marks = r.doors.map((d, i) => { const [x, y, w, h] = ways[at[i]], foot = [x + (w >> 1), y + h + Math.round(3 * rp.k)];
+    return onPic('i', `dno${i === sel ? ' on' : ''}`, foot, [5, 0], '', '', i + 1) + (i === sel ? onPic('i', 'cur curu', [foot[0], foot[1] + 12], [4, 0]) : ''); }).join('');
+  const view = `<div class="room" style="left:${rp.ox}px;top:${rp.oy}px;width:${rp.pw}px;height:${rp.ph}px"><img data-pic="room" src="${rp.src}" width="${rp.pw}" height="${rp.ph}" alt="">${doors}${keepers(r, rp, ways, H)}${marks}</div>${rp.edge}`;
   const lw = ledgeW(), ledge = `<div class="dt" style="width:${lw - 82}px"><b>${sel + 1} · ${esc(doorName(d))}</b><p><i class="lmc">COST</i> ${esc(d.cost)}</p><p><i class="lmg">GAIN</i> ${esc(d.reward)}</p></div>`
     + (n > 1 ? pq(lw - 72, 4, 30, '<', `dsel:${(sel + n - 1) % n}`, { title: 'Door to the left' }) + pq(lw - 38, 4, 30, '>', `dsel:${(sel + 1) % n}`, { title: 'Door to the right' }) : '')
     + pq(lw - 72, 40, 64, lockedAt(sel) ? 'SEALED' : 'ENTER', `door:${sel}`, { lit: !lockedAt(sel), off: lockedAt(sel) });
@@ -970,6 +1008,55 @@ function psChamber() {
   G.barText = bar;
   return frame({ left: psYou(r), right, view, ledge, bar });
 }
+// Going through a door: its two leaves swing in on their hinges, four steps at twelve a second, drawn from the leaves' own
+// pixels a column at a time (each leaf narrows toward its hinge and its far edge stands shorter, as the console drew a
+// door turning away, with the dark of the passage behind); then the view goes dark through the half dot pattern to black
+// and the next room is cut in. A guardian's or the hidden door stays open behind the words that follow it instead.
+const SWING = [26, 50, 70, 84];
+function doorBeat(i, stay, then) {
+  const r = G.run, b = app.querySelector(`.dr[data-i="${i}"]`), img = b && b.querySelector('img'), vw = app.querySelector('.fr .vw');
+  if (RM || !b || !vw) { then(); return; }
+  let src = null, w = 0, h = 0;
+  if (img && img.complete && img.naturalWidth && r.doors[i].type !== 'onward') { // the way on already stands open: it only darkens
+    w = img.naturalWidth; h = img.naturalHeight;
+    try { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(img, 0, 0); src = new Uint32Array(x.getImageData(0, 0, w, h).data.buffer); } catch { src = null; }
+  }
+  const cv = src && document.createElement('canvas');
+  if (cv) { cv.width = w; cv.height = h; cv.style.cssText = `width:${w}px;height:${h}px`; img.replaceWith(cv); }
+  // The dither's place: the leaf's own place in the room picture, where its pixels were cut.
+  const leafAt = b.offsetLeft & 3, rowAt = b.offsetTop & 3;
+  const paint = deg => {
+    const g = cv.getContext('2d'), id = g.createImageData(w, h), px = new Uint32Array(id.data.buffer), a = deg * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+    const half = [[0, w >> 1, 1], [w - 1, w - (w >> 1), -1]], yc = h * .55, dark = 1 - .35 * sa; // each leaf: its hinge column, its width, the way it opens
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (src[y * w + x] >>> 24) px[y * w + x] = 0xff000000; // the passage behind, within the doorway's shape
+    for (const [hx, hw, dir] of half) {
+      const pw = Math.max(1, Math.round(hw * ca));
+      for (let c = 0; c < pw; c++) {
+        const t = (c + .5) / pw, u = Math.min(hw - 1, Math.floor(t * hw)), k = 1 - .2 * sa * t, x = hx + dir * c, sx = hx + dir * u; // the far edge stands shorter
+        for (let y = 0; y < h; y++) {
+          const v = Math.floor(yc + (y + .5 - yc) / k); if (v < 0 || v >= h) continue;
+          const p = src[v * w + sx]; if (!(p >>> 24)) continue;
+          const d = BAYER4[((y + rowAt) & 3) * 4 + ((x + leafAt) & 3)], ch = s => Math.max(0, Math.min(255, ((p >> s) & 255) * dark + d)) & 0xf8; // turned from the light: darker, cut to 15-bit colour with the dither
+          px[y * w + x] = 0xff000000 | (ch(16) << 16) | (ch(8) << 8) | ch(0);
+        }
+      }
+    }
+    g.putImageData(id, 0, 0);
+  };
+  G.opening = true; let k = 0;
+  const step = () => {
+    try {
+      if (cv && k < SWING.length) { paint(SWING[k++]); setTimeout(step, 83); return; }
+      if (stay) { if (cv) G.doorOpen = { at: G.doorSel && G.doorSel.at, i, url: cv.toDataURL() }; }
+      else if (!vw.classList.contains('dk1')) { vw.classList.add('dk1'); setTimeout(step, 83); return; }
+      else if (!vw.classList.contains('dk2')) { vw.classList.add('dk2'); setTimeout(step, 83); return; }
+      else G.doorOpen = null;
+    } catch { G.doorOpen = null; } // a door that cannot be drawn turning is simply gone through
+    G.opening = false; then();
+  };
+  step();
+}
+const BAYER4 = [-4, 0, -3, 1, 2, -2, 3, -1, -3, 1, -4, 0, 3, -1, 2, -2];
 
 // ---- the duel: a 3D table in the window, the hand on the ledge
 const TBL = { cam: { y: 200, z: 525, pitch: .75, f: 350, cx: 156, cy: 198 }, zx: i => (i - 2) * 62, row: { 1: -76, 0: 76 }, trap: { 1: -138, 0: 138 } }; // the trap rows stay inside the table's braided border
@@ -1008,59 +1095,78 @@ function tableQuads(view) {
 const TEX = { cards: new Map(), table: null, back: null, loading: false };
 // A Field Spell's ground (Randall's terrain sheet, cut to 128 x 64): loaded the first time its terrain is in play.
 const terrainTex = id => { const n = 'terrain-' + String(card(id).name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), k = 't-' + id; if (TEX[k] !== undefined || !CART.has(n)) return; TEX[k] = null; const im = new Image(); im.onload = () => { TEX[k] = R3.texFrom(im, 128, 64); if (app.classList.contains('ps')) psPaint(); }; im.src = cimg(n); };
-// ---- props: Randall's models cut to console size (tools/crucible/console-prop.py), each standing in its room in front of
-// the painting: the shrine in the Sanctum, the bowl in the Omen room, the chest among the treasure, the stall in the Bazaar.
-// A prop beside the choices stands in the space left of them; one behind them (the stall) rises over them, its goods in front.
+// ---- props: Randall's models cut to console size (tools/crucible/console-prop.py), each standing on a spot of its room's
+// painted floor: the shrine in the Sanctum, the bowl in the Omen room, the chest among the treasure, the stall in the
+// Bazaar, the anvil in the forge; and the two keepers before the side doorways of the guardian's chamber. A spot is a
+// place in the painting (index.json 'spots', in the 440 x 248 picture, with the light the model stands in), so a model
+// keeps its one place and size in its room on every screen, and the view crops it as it crops the painting.
 const pmodel = n => (D.cart && D.cart.models && D.cart.models[n]) || null;
-const PROP_ROOM = { 'room-sanctum': ['shrine', 'side', 25], 'room-omen': ['bowl', 'side', 0], 'room-vault': ['chest', 'side', -30], 'room-bazaar': ['stall', 'back', 15] };
-function propSpot(hall, vs, x0, y0, ph, kind) { // the canvas a room's prop is drawn into, or nothing
-  const pr = PROP_ROOM[hall]; if (!pr || (hall === 'room-vault' && kind !== 'treasure') || !pmodel(pr[0])) return ''; // the chest stands at a treasure only, not at the other vault offers
-  const [name, place, yaw] = pr, side = place === 'side';
-  if (side && x0 < 56) return ''; // no room beside the choices: the prop stays out rather than crowd them
-  const cx = side ? x0 >> 1 : vs.w >> 1, by = y0 + ph - 2, h = side ? Math.min(Math.round(ph * .62), 84) : Math.round(ph * 1.08), w = side ? x0 - 8 : vs.w - 16;
-  return propCanvas(vs, [[name, yaw, cx, by, h, w]]);
+const spotsOf = room => (D.cart && D.cart.spots && D.cart.spots[room]) || [];
+// A model's place in this picture: [model, turn, middle x, foot y, height, light], from a spot in the larger picture.
+const spotAt = (rp, [m, x, foot, h, yaw, tint]) => [m, yaw, Math.round(x * rp.k), Math.round(foot * rp.k), Math.round(h * rp.k), tint || null];
+// One canvas the size of the room picture, laid exactly on it, for the models standing in it: drawn under the dimming of
+// the room, so a model is dimmed with its room. data-foot lists where each model's foot is in the picture, and the
+// checks find each drawn model standing there. It takes no taps, so what lies under it is tapped as before.
+const modelCanvas = (rp, items, inRoom = false, id = 'prop') => items.length ? onPic('canvas', 'ab', [0, 0], [0, 0], 'pointer-events:none', `id="${id}" width="${rp.pw}" height="${rp.ph}" data-foot="${items.map(i => i[2] + ',' + i[3]).join(' ')}" data-items='${JSON.stringify(items)}'`, '', inRoom ? [0, 0] : [rp.ox, rp.oy]) : '';
+function propSpot(rp, kind) { // the models standing in an offer room, or nothing
+  if (rp.name === 'room-vault' && kind !== 'treasure') return ''; // the chest stands at a treasure only, not at the other vault offers
+  return modelCanvas(rp, spotsOf(rp.name).filter(s => pmodel(s[0])).map(s => spotAt(rp, s)));
 }
-// One canvas over the view for a screen's props, each [model, turn in degrees, middle x, foot y, height, width]: it takes
-// no taps, so what lies under it is tapped as before.
-const propCanvas = (vs, items) => `<canvas id="prop" class="ab" style="left:0;top:0;pointer-events:none" width="${vs.w}" height="${vs.h}" data-items='${JSON.stringify(items)}'></canvas>`;
-// The two keepers stand at the foot of the chamber's side pillars while the guardian's door is among the doors, as statues
-// flanked a boss's door in the games of the day. Places are in the 352 x 198 room picture; the canvas lies in the room
-// itself, so the keepers sway with it.
-function keepers(r, rp, vs) {
+// The two keepers stand before the side doorways while the guardian's door stands alone in the middle one, as statues
+// flanked a boss's door in the games of the day: each on the step in front of its doorway, as tall as the doorway,
+// turned a little toward the guardian's door, lit by the hall's own light.
+function keepers(r, rp, ways, H) {
   if (!pmodel('keeper') || !r.doors.some(d => d.type === 'boss')) return '';
-  // On the floor in front of the steps; a view too short to show that floor puts them up on the steps, a little smaller.
-  const foot = Math.min(Math.round(190 * rp.s), vs.h - rp.oy - 2), k = .75 + .25 * foot / (190 * rp.s);
-  const at = (x, yaw) => ['keeper', yaw, Math.round(x * rp.s), foot, Math.round(92 * rp.s * k), Math.round(44 * rp.s * k)];
-  const items = [at(24, 28), at(328, -28)].filter(([, , cx, by, h]) => rp.ox + cx >= 0 && rp.ox + cx <= vs.w && rp.oy + by - h >= 0); // the view may cut one at the side
-  return items.length ? propCanvas({ w: rp.pw, h: rp.ph }, items) : '';
+  const items = [0, 2].map(p => { const [x, y, w, h] = ways[p]; return ['keeper', p ? -28 : 28, x + (w >> 1), y + h + Math.round(6 * rp.k), Math.round(h * 1.04), H && H.tint || null]; });
+  return modelCanvas(rp, items, true);
 }
-let propLoading = false;
+let propLoading = null;
+// The models' pictures, all of them, as soon as the picture pack is in (bootWait waits for them), so no model is ever
+// drawn without its skin. Resolves when every one has loaded or failed.
 function propTextures() {
-  if (propLoading) return; propLoading = true;
-  for (const [mn, M] of Object.entries((D.cart && D.cart.models) || {})) { if (mn === 'table') continue;
-    for (const [t, [w, h]] of Object.entries(M.pics)) { const n = `model-${mn}-${t}`; if (!CART.has(n)) continue; const im = new Image(); im.onload = () => { TEX[`m-${mn}-${t}`] = R3.texFrom(im, w, h); propPaint(); }; im.src = cimg(n); } }
+  return propLoading || (propLoading = Promise.all(Object.entries((D.cart && D.cart.models) || {}).filter(([mn]) => mn !== 'table').flatMap(([mn, M]) => Object.entries(M.pics).map(([t, [w, h]]) => {
+    const n = `model-${mn}-${t}`; if (!CART.has(n)) return null;
+    return new Promise(done => { const im = new Image(); im.onload = () => { TEX[`m-${mn}-${t}`] = R3.texFrom(im, w, h); done(); }; im.onerror = done; im.src = cimg(n); }); }).filter(Boolean)))
+    .then(() => { if (app.classList.contains('ps')) { propPaint(); if (G.forge) forgePaint(); } }));
+}
+const skinsIn = (...ms) => ms.every(m => pmodel(m) && Object.keys(pmodel(m).pics).every(t => TEX[`m-${m}-${t}`]));
+// A model's skin in the light of its place: each colour multiplied by the light, once (the renderer then cuts it to
+// 15-bit colour with the dither as it draws).
+function skin(m, t, tint) {
+  const base = TEX[`m-${m}-${t}`]; if (!base || !tint) return base;
+  const k = `m-${m}-${t}@${tint}`; if (TEX[k]) return TEX[k];
+  const d = new Uint32Array(base.d.length);
+  for (let i = 0; i < d.length; i++) { const c = base.d[i]; d[i] = (c & 0xff000000) | (Math.min(255, ((c >> 16) & 255) * tint[2]) << 16) | (Math.min(255, ((c >> 8) & 255) * tint[1]) << 8) | Math.min(255, (c & 255) * tint[0]); }
+  return (TEX[k] = { w: base.w, h: base.h, d });
+}
+// Queue a model's faces. Each face of four corners goes in as two triangles, each kept or dropped by its own facing:
+// a face that is not flat could otherwise be dropped whole by the facing of its first three corners (the hole once seen
+// in the left keeper's chest).
+function modelFaces(view, M, name, place, normal, shade, o = {}) {
+  for (const f of M.faces) {
+    const t = skin(name, f.t, o.tint); if (!t || !f.uv) continue;
+    const c = f.p.map((p, i) => [place(p), [f.uv[i][0] * (t.w - 1), f.uv[i][1] * (t.h - 1)]]), lit = shade(normal(f.n));
+    for (const tri of c.length === 4 ? [[c[0], c[1], c[2]], [c[0], c[2], c[3]]] : [c.slice(0, 3)]) {
+      tri.push(tri[0]); tri.reverse(); // the file winds its faces the other way round from the renderer
+      R3.quad(view, { p: tri.map(x => x[0]), uv: tri.map(x => x[1]), tex: t, shade: lit, cull: true, bias: o.bias || 0 });
+    }
+  }
 }
 function propPaint() {
   const cv = document.getElementById('prop'); if (!cv) return;
   let items; try { items = JSON.parse(cv.dataset.items || '[]'); } catch { return; }
   const view = R3.makeView(cv, cv.width, cv.height); view.px.fill(0);
   const L = [-.35, .8, .5], ln = Math.hypot(...L);
-  for (const [prop, yaw, cx, by, h, w] of items) { // each prop has its own camera, fitted to its place: drawn one after the other
+  for (const [prop, yaw, cx, by, h, tint] of items) { // each prop has its own camera, fitted to its place: drawn one after the other
     const M = pmodel(prop); if (!M) continue;
     const a = yaw * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a), turn = p => [p[0] * ca - p[1] * sa, p[0] * sa + p[1] * ca, p[2]];
     const Wp = p => { const q = turn(p); return [q[0] * TS, q[2] * TS, -q[1] * TS]; }, tall = Math.max(...M.faces.flatMap(f => f.p.map(p => p[2]))) * TS;
     const cam = { y: tall * .5 + 160, z: 900, pitch: Math.atan2(160, 900), f: 300, cx: 0, cy: 0 };
     const box = c => { const P = R3.camera(c), pts = M.faces.flatMap(f => f.p.map(p => P(Wp(p)))).filter(Boolean), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
-    let b = box(cam); const k = Math.min(h / Math.max(1, b[3] - b[1]), w / Math.max(1, b[2] - b[0])); cam.f = Math.round(cam.f * k);
-    b = box(cam); cam.cx = Math.round(cx - (b[0] + b[2]) / 2); cam.cy = Math.round(by - b[3]);
+    let b = box(cam); cam.f = Math.round(cam.f * h / Math.max(1, b[3] - b[1]));
+    b = box(cam); cam.cx = Math.round(cx - (b[0] + b[2]) / 2); cam.cy = Math.round(by - b[3]); // the foot on its spot
     view.list.length = 0;
-    for (const f of M.faces) {
-      const t = TEX[`m-${prop}-${f.t}`]; if (!t || !f.uv) continue;
-      const q = turn(f.n), n = [q[0], q[2], -q[1]], lit = .45 + .55 * Math.max(0, (n[0] * L[0] + n[1] * L[1] + n[2] * L[2]) / ln);
-      const c = f.p.map((p, i) => [Wp(p), [f.uv[i][0] * (t.w - 1), f.uv[i][1] * (t.h - 1)]]); if (c.length === 3) c.push(c[0]);
-      c.reverse(); // the file winds its faces the other way round from the renderer
-      R3.quad(view, { p: c.map(x => x[0]), uv: c.map(x => x[1]), tex: t, shade: lit, cull: true });
-    }
+    modelFaces(view, M, prop, Wp, n => { const q = turn(n); return [q[0], q[2], -q[1]]; }, n => .45 + .55 * Math.max(0, (n[0] * L[0] + n[1] * L[1] + n[2] * L[2]) / ln), { tint });
     R3.draw(view, R3.camera(cam));
   }
   R3.present(view);
@@ -1236,12 +1342,20 @@ function psTrap(live) {
 // ---- offerings: a card, a Gift, a charm, a Guardian Reward, a treasure, the Sanctum, a starter kit
 // The choices stand on plinths in the view. A cursor rests on one; the ledge names it, the text bar reads it out, and a
 // second tap on it (or TAKE) takes it. Each choice: { pic, name, facts, text, a, off, card }.
-// A name on one plinth line: the first words shrink to initials until it fits (the ledge still gives it whole).
+// A name on one plinth line: the first words shrink to initials until it fits, then the first word stands whole with the
+// rest as initials (TARN E.), then initials alone; a word is never cut in the middle unless it is the only word, and then
+// it ends in a full stop. The ledge still gives the name whole.
 function fitName(name, n) {
-  const w = String(name).toUpperCase().split(/\s+/); let i = 0;
-  while (w.join(' ').length > n && i < w.length - 1) w[i] = w[i++][0] + '.';
-  const t = w.join(' '); return t.length > n ? t.slice(0, n) : t;
+  const w = String(name).toUpperCase().split(/\s+/).filter(Boolean), ini = x => x[0] + '.', whole = w.join(' ');
+  const tries = [whole, ...w.slice(1).map((_, i) => [...w.slice(0, i + 1).map(ini), ...w.slice(i + 1)].join(' '))];
+  if (w.length > 1) tries.push([w[0], ...w.slice(1).map(ini)].join(' '), w.map(ini).join(' '));
+  const t = tries.find(x => x.length <= n); if (t) return t;
+  return w.length > 1 ? w.map(ini).join(' ').slice(0, n) : whole.slice(0, Math.max(1, n - 1)) + '.';
 }
+// What the plinths leave clear in a room, in the 440 x 248 picture: the Omen's circle of light, where its bowl stands, the
+// vault's chest when the room is a treasure, and the Sanctum's lit niche with the shrine under it (from x to x, and the
+// offer it is kept clear for). The plinths stand beside it, or on both sides of it when it is in the middle.
+const CLEAR = { 'room-omen': [172, 268], 'room-vault': [70, 124, 'treasure'], 'room-sanctum': [192, 248] };
 function psOffer({ title, items, bar0 = '', right = '', room = 'doors', key, sel = null, selA = null, left = null, pillar = null, kind = null }) {
   if (!items.length) items = [{ name: 'NOTHING HERE', a: 'skip', take: 'GO ON', pic: () => '', facts: [], text: 'Nothing is offered here.' }]; // never a blank screen
   const r = G.run, n = items.length, vs = viewSize(), lw = ledgeW();
@@ -1250,10 +1364,23 @@ function psOffer({ title, items, bar0 = '', right = '', room = 'doors', key, sel
   if (room.startsWith('room-') && !CART.has(room)) room = { 'room-guardian': 'duel', 'room-vault': 'duel' }[room] || 'doors'; // its painting is not there: a hall stands in
   const hall = room.startsWith('room-') ? room : room === 'duel' ? (CART.has('hall-duel-' + fl) ? 'hall-duel-' + fl : 'hall-duel') : (CART.has('hall-doors-' + fl) ? 'hall-doors-' + fl : 'hall-doors');
   const rp = roomPic(hall, room === 'duel' ? 70 : NICHE_Y + 34, room !== 'duel');
-  const sw = Math.min(104, Math.floor((vs.w - 8) / n)), ph = Math.min(vs.h - 22, 124), x0 = (vs.w - sw * n) >> 1, y0 = Math.max(16, (vs.h - ph) >> 1) + 4;
-  const plinths = items.map((x, i) => `<button class="pln${i === sel ? ' on' : ''}${x.off ? ' off' : ''}" style="left:${x0 + i * sw + 2}px;top:${y0}px;width:${sw - 4}px;height:${ph}px" ${i === sel ? (x.off ? 'aria-disabled="true"' : `data-a="${x.a}"`) : `data-a="${selA ? selA(i) : 'osel:' + i}"`} aria-label="${esc(x.name)}">${x.pic((sw - 4) >> 1, ph - 13)}<b class="pnm" style="top:${ph - 11}px">${esc(fitName(x.name, (sw - 8) / 6 | 0))}</b></button>`).join('');
-  const view = `<img class="ab" src="${rp.src}" style="left:${rp.ox}px;top:${rp.oy}px" width="${rp.pw}" height="${rp.ph}" alt="">${rp.edge}<i class="dim0"></i>${propSpot(hall, vs, x0, y0, ph, kind)}
-    <div class="ab" style="left:0;top:3px;width:${vs.w}px;display:flex;justify-content:center">${carveImg(title, 12, render)}</div>${plinths}<i class="cur" style="left:${x0 + sel * sw + (sw >> 1) - 4}px;top:${y0 - 8}px"></i>`;
+  // The plinths stand below the carved title, with room between for the cursor over them; they leave clear the spot of a
+  // model that is what the room is about (the Omen's bowl in its circle of light) when the view has room beside it, the
+  // plinths a little narrower for it if need be (never under 92, a card and its border).
+  const tc = carve(title, 12, render), tb = 3 + (tc ? tc.h : 10), ph = Math.min(124, Math.max(vs.h - tb - 14, 106)); // 106: a card and its name
+  const clear = CLEAR[rp.name] && (!CLEAR[rp.name][2] || CLEAR[rp.name][2] === kind) ? CLEAR[rp.name] : null, cl = clear && [rp.ox + Math.round(clear[0] * rp.k), rp.ox + Math.round(clear[1] * rp.k)];
+  // Each plinth has a share sw wide and stands 2 pixels inside it; at(i) is where share i begins.
+  const sw0 = Math.min(104, Math.floor((vs.w - 8) / n)), nl = n >> 1, y0 = Math.min(vs.h - 2 - ph, Math.max(tb + 10, ((vs.h - ph) >> 1) + 4));
+  const split = cl && nl ? Math.min(sw0, Math.floor((cl[0] - 1) / nl), Math.floor((vs.w - 1 - cl[1]) / (n - nl))) : 0; // half the choices each side
+  const side = cl ? Math.min(sw0, Math.max(Math.floor((vs.w - 1 - cl[1]) / n), Math.floor((cl[0] - 1) / n))) : 0; // all on one side
+  const sw = split >= 92 ? split : side >= 92 ? side : sw0, wide = sw * n;
+  const at = split >= 92 ? i => i < nl ? cl[0] - 2 - (nl - i) * sw : cl[1] + 2 + (i - nl) * sw
+    : side >= 92 ? i => (cl[1] + 2 + wide <= vs.w + 1 ? cl[1] + 2 : cl[0] - 2 - wide) + i * sw : i => ((vs.w - wide) >> 1) + i * sw;
+  // Each plinth's dots lie on the frame's grid in step with the dimming's, so the room shows through every plinth alike
+  // (the dots start inside its 1-pixel border); the shadow on a plinth not chosen lies on the pixels between.
+  const plinths = items.map((x, i) => { const L = at(i) + 2; return `<button class="pln${i === sel ? ' on' : ''}${x.off ? ' off' : ''}" style="left:${L}px;top:${y0}px;width:${sw - 4}px;height:${ph}px;--mesh:${(L + 1) & 1}px ${(y0 + 1) & 1}px;--mesh2:${L & 1}px ${(y0 + 1) & 1}px" ${i === sel ? (x.off ? 'aria-disabled="true"' : `data-a="${x.a}"`) : `data-a="${selA ? selA(i) : 'osel:' + i}"`} aria-label="${esc(x.name)}">${x.pic((sw - 4) >> 1, ph - 13)}<b class="pnm" style="top:${ph - 11}px">${esc(fitName(x.name, (sw - 12) / 6 | 0))}</b></button>`; }).join('');
+  const head = tc ? `<img class="ab" src="${tc.url}" width="${tc.w}" height="${tc.h}" style="left:${(vs.w - tc.w) >> 1}px;top:3px" alt="${esc(title)}">` : `<b class="ab lb g" style="left:${(vs.w - title.length * 6) >> 1}px;top:5px">${esc(title)}</b>`;
+  const view = `${roomImg(rp)}${rp.edge}${propSpot(rp, kind)}<i class="dim0"></i>${head}${plinths}${y0 - 8 >= tb ? `<i class="cur" style="left:${at(sel) + (sw >> 1) - 4}px;top:${y0 - 8}px"></i>` : ''}`; // a view too short for the cursor between the title and the plinths marks the choice by its plinth alone
   const ledge = `<div class="dt" style="width:${lw - 82}px"><b>${esc(it.name)}</b>${(it.facts || []).map(f => `<p>${f}</p>`).join('')}</div>`
     + (n > 1 ? pq(lw - 72, 4, 30, '<', selA ? selA((sel + n - 1) % n) : `osel:${(sel + n - 1) % n}`, { title: 'Choice to the left' }) + pq(lw - 38, 4, 30, '>', selA ? selA((sel + 1) % n) : `osel:${(sel + 1) % n}`, { title: 'Choice to the right' }) : '')
     + (it.card ? pq(lw - 72, 22, 64, 'CARD PAGE', `inspect:${it.card}`) : '') + pq(lw - 72, 40, 64, it.take || 'TAKE', it.a, { lit: !it.off, off: it.off });
@@ -1297,9 +1424,10 @@ function psReward() {
 }
 // ---- rooms with work in them: the Anvil, the Bazaar, the Omen
 // The deck lies in the view as a grid (it scrolls when it is longer than the view); the workings are plaques on the ledge.
-const deckGrid = (list, verb, picked, picked2 = null, weakFirst = false) => `<div class="ab sc dgrid" style="left:0;top:0;width:${viewSize().w}px;height:${viewSize().h}px"><div class="row2">${list.map((e, i) => [e, i]).sort((a, b) => (weakFirst ? -1 : 1) * (cardValue(db, b[0]) - cardValue(db, a[0]))).map(([e, i]) => psCard(e, null, null, { cls: picked === i ? 'sel' : picked2 === i ? 'sel2' : '', attrs: `data-a="${verb}:${i}"` })).join('')}</div></div>`;
+// Its rows stand in the middle at a whole pixel: as many 44-pixel cards with 4 between as the view takes.
+const deckGrid = (list, verb, picked, picked2 = null, weakFirst = false) => { const vs = viewSize(), cols = Math.max(1, Math.floor((vs.w - 4) / 48)), pad = (vs.w - cols * 48 + 4) >> 1; return `<div class="ab sc dgrid" style="left:0;top:0;width:${vs.w}px;height:${vs.h}px;padding:4px ${pad}px"><div class="row2">${list.map((e, i) => [e, i]).sort((a, b) => (weakFirst ? -1 : 1) * (cardValue(db, b[0]) - cardValue(db, a[0]))).map(([e, i]) => psCard(e, null, null, { cls: picked === i ? 'sel' : picked2 === i ? 'sel2' : '', attrs: `data-a="${verb}:${i}"` })).join('')}</div></div>`; };
 // A room with work in it shows its painting behind the deck, half hidden by the mesh so the cards read over it.
-const roomBack = name => { if (!CART.has(name)) return ''; const rp = roomPic(name, NICHE_Y + 34, true); return `<img class="ab" src="${rp.src}" style="left:${rp.ox}px;top:${rp.oy}px" width="${rp.pw}" height="${rp.ph}" alt="">${rp.edge}<i class="dim0"></i>`; };
+const roomBack = name => { if (!CART.has(name)) return ''; const rp = roomPic(name, NICHE_Y + 34, true); return `${roomImg(rp)}${rp.edge}<i class="dim0"></i>`; };
 const roomRight = (r, extra = '') => psRight(r, extra + pq(4, yb(180), 88, 'LEAVE', 'leave'));
 function psAnvil() {
   const r = G.run, o = r.offer, Pr = db.config.prices, e = G.pickDeck != null ? r.deck[G.pickDeck] : null, e2 = G.pickTrunk != null ? r.deck[G.pickTrunk] : null, lw = ledgeW(), cw = (lw - 16) / 3 | 0;
@@ -1330,10 +1458,14 @@ function forgeWork(kind, idx, a, extra = {}) { // carry out the working; if the 
   G.forge = { kind, ids, made, inst: kind === 'bind' ? r.deck[r.deck.length - 1] : inst, mw: extra.mw || null, t0: performance.now(), text, word: { temper: 'TEMPERED', enchant: 'ENCHANTED: ' + String(extra.enchant || '').toUpperCase(), bind: 'BOUND', masterwork: 'FORGED' }[kind], cam: null };
   render();
 }
+// The anvil stands on its spot of the forge's painted floor (index.json 'spots'), in the picture's own pixels: one canvas
+// the size of the picture laid on it, so the anvil keeps its place and size in the forge on every screen and the view
+// crops the beat with the painting. Without the forge's painting the anvil stands in the middle of an empty view.
+const forgeSpot = rp => { const s = spotsOf('room-forge').find(x => x[0] === 'anvil') || ['anvil', 220, 204, 128, 0, null]; return spotAt(rp, s); };
 function psForge() {
   const fb = G.forge, vs = viewSize(), r = G.run;
-  const rp = CART.has('room-forge') ? roomPic('room-forge', NICHE_Y + 34, true) : null; // the forge undimmed: the fire is lit for the working
-  const view = (rp ? `<img class="ab" src="${rp.src}" style="left:${rp.ox}px;top:${rp.oy}px" width="${rp.pw}" height="${rp.ph}" alt="">${rp.edge}` : '') + `<canvas id="forge" class="ab" style="left:0;top:0;pointer-events:none" width="${vs.w}" height="${vs.h}"></canvas><button class="ab" style="left:0;top:0;width:${vs.w}px;height:${vs.h}px;background:none;border:0" data-a="forgeskip" aria-label="Continue"></button>`;
+  const rp = CART.has('room-forge') ? roomPic('room-forge', NICHE_Y + 34, true) : { name: '', ox: 0, oy: 0, pw: vs.w, ph: vs.h, s: 1, k: Math.min(vs.w / 440, vs.h / 248), edge: '' }; // the forge undimmed: the fire is lit for the working
+  const view = (rp.src ? roomImg(rp) + rp.edge : '') + (rp.src ? modelCanvas(rp, [forgeSpot(rp)], false, 'forge') : `<canvas id="forge" class="ab" style="left:0;top:0;pointer-events:none" width="${vs.w}" height="${vs.h}" data-items='${JSON.stringify([forgeSpot(rp)])}'></canvas>`) + `<button class="ab" style="left:0;top:0;width:${vs.w}px;height:${vs.h}px;background:none;border:0" data-a="forgeskip" aria-label="Continue"></button>`;
   const what = fb.kind === 'masterwork' ? `<i class="ab" style="left:8px;top:16px">${medal(fb.mw, 32)}</i>` + lb(48, 20, shortName(RELICS[fb.mw].name).toUpperCase(), 'g') : fb.inst ? psCard(fb.inst, 8, 2) + lb(60, 8, fitName(card(fb.inst.id).name.toUpperCase(), 30), 'g') : '';
   return frame({ left: psYou(r), right: pq(4, yb(220), 88, 'CONTINUE', 'forgeskip', { lit: true }), view, ledge: what + lb(fb.kind === 'masterwork' ? 48 : 60, fb.kind === 'masterwork' ? 32 : 22, fb.word, 'd'), bar: esc(fb.text) });
 }
@@ -1341,12 +1473,15 @@ let forgeRaf = 0;
 function forgePaint() {
   cancelAnimationFrame(forgeRaf);
   const fb = G.forge, cv = document.getElementById('forge'); if (!fb || !cv) return;
+  if (!skinsIn('anvil', 'hammer')) { fb.t0 = performance.now(); propTextures(); forgeRaf = requestAnimationFrame(forgePaint); return; } // the beat waits for its skins: no blow falls on a bare card
   const B = FORGE_BEAT[fb.kind], t = performance.now() - fb.t0;
   if (t >= B.ms) { G.forge = null; render(); return; }
   forgeRaf = requestAnimationFrame(forgePaint);
   const tf = Math.floor(t * .03) / .03; // whole thirtieths of a second
   if (cv.dataset.tf === String(tf)) return; cv.dataset.tf = tf;
   const A = pmodel('anvil'), Hm = pmodel('hammer'), w = cv.width, h = cv.height;
+  let spot; try { spot = JSON.parse(cv.dataset.items)[0]; } catch { spot = ['anvil', 0, w >> 1, h - 6, Math.round(h * .8), null]; }
+  const [, , sx0, foot, tall, tint] = spot;
   // the scene in metres, z up: the anvil at the middle turned a little toward you, the card on its face, the hammer
   // held by its grip over the far end and swung about it
   const yaw = -18 * Math.PI / 180, cy = Math.cos(yaw), sy = Math.sin(yaw);
@@ -1362,18 +1497,17 @@ function forgePaint() {
     return { pt: p => { const q = rot([p[0], p[1], p[2] - grip]); return [G0[0] + q[0], G0[1] + q[1], G0[2] + q[2]]; }, n: rot }; };
   const cardW = .12, cardD = .17, cardAt = [0, 0, top];
   const cardCorners = (turn = 0) => [[-cardW, cardD], [cardW, cardD], [cardW, -cardD], [-cardW, -cardD]].map(([x, y]) => { const c = Math.cos(turn), s = Math.sin(turn); return [cardAt[0] + x * c - y * s, cardAt[1] + x * s + y * c, top]; });
-  if (!fb.cam) { // one camera for the whole beat, fitted to the anvil and the hammer at both ends of its swing
-    const pts = [...A.faces.flatMap(f => f.p), ...[0, 60].flatMap(d => { const hm = hammerAt(d); return Hm.faces.flatMap(f => f.p.map(hm.pt)); })].map(W);
+  const camKey = [w, h, sx0, foot, tall].join();
+  if (!fb.cam || fb.cam.key !== camKey) { // one camera for the beat, fitted to the anvil and the hammer at both ends of its swing: the whole swing as tall as the spot says, the anvil's foot on its spot. Fitted again if the frame changes size.
+    const anvilPts = A.faces.flatMap(f => f.p).map(W), pts = [...anvilPts, ...[0, 60].flatMap(d => { const hm = hammerAt(d); return Hm.faces.flatMap(f => f.p.map(hm.pt)); }).map(W)];
     const cam = { y: 720, z: 900, pitch: Math.atan2(620, 900), f: 300, cx: 0, cy: 0 }; // looking down on the anvil's face, so the card on it reads
-    const box = c => { const P = R3.camera(c), s = pts.map(P).filter(Boolean), xs = s.map(p => p[0]), ys = s.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
-    let b = box(cam); const k = Math.min(h * .86 / Math.max(1, b[3] - b[1]), w * .7 / Math.max(1, b[2] - b[0])); cam.f = Math.round(cam.f * k);
-    b = box(cam); cam.cx = Math.round(w / 2 - (b[0] + b[2]) / 2); cam.cy = Math.round(h - 6 - b[3]); fb.cam = cam;
+    const box = (c, ps) => { const P = R3.camera(c), s = ps.map(P).filter(Boolean), xs = s.map(p => p[0]), ys = s.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+    let b = box(cam, pts); cam.f = Math.round(cam.f * tall / Math.max(1, b[3] - b[1]));
+    b = box(cam, anvilPts); cam.cx = Math.round(sx0 - (b[0] + b[2]) / 2); cam.cy = Math.round(foot - b[3]); fb.cam = { ...cam, key: camKey };
   }
   const proj = R3.camera(fb.cam), view = R3.makeView(cv, w, h); view.px.fill(0);
   const L = [-.35, .8, .5], ln = Math.hypot(...L), lit = n => { const q = W(n); return .45 + .55 * Math.max(0, (q[0] * L[0] + q[1] * L[1] + q[2] * L[2]) / TS / ln); };
-  const model = (M, name, pt, nr, bias) => { for (const f of M.faces) { const tx = TEX[`m-${name}-${f.t}`]; if (!tx || !f.uv) continue;
-    const c = f.p.map((p, i) => [W(pt(p)), [f.uv[i][0] * (tx.w - 1), f.uv[i][1] * (tx.h - 1)]]); if (c.length === 3) c.push(c[0]); c.reverse();
-    R3.quad(view, { p: c.map(x => x[0]), uv: c.map(x => x[1]), tex: tx, shade: lit(nr(f.n)), cull: true, bias }); } };
+  const model = (M, name, pt, nr, bias) => modelFaces(view, M, name, p => W(pt(p)), nr, lit, { tint, bias });
   model(A, 'anvil', p => p, n => n, 0);
   const ang = swingAt(tf), hm = hammerAt(ang); model(Hm, 'hammer', hm.pt, hm.n, -900);
   const hit = B.hits.some(x => tf >= x && tf - x < 70), flash = hit ? 1.5 : 1;
@@ -1399,7 +1533,7 @@ function forgePaint() {
   if (fb.kind === 'temper' && after > 100) for (let i = 0; i < 18; i++) { const age = after - 100 - i * 30; if (age < 0 || age > 700) continue; const k = age / 700; dot(at[0] + (rnd(i) - .5) * 26 + Math.sin(age * .01 + i) * 3, at[1] - 4 - age * .05, k < .5 ? [215, 210, 200] : [140, 135, 130]); }
   if (fb.kind === 'enchant' && after > 60) for (let i = 0; i < 22; i++) { const age = after - 60 - i * 40; if (age < 0 || age > 900) continue; dot(at[0] + (rnd(i * 7) - .5) * 30 + Math.sin(age * .012 + i) * 4, at[1] + 2 - age * .045, age < 450 ? [200, 150, 255] : [130, 80, 200]); }
   if (fb.kind === 'bind' && tf >= B.lock && tf - B.lock < 450) { const k = (tf - B.lock) / 450, R = 6 + 26 * k; for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; dot(at[0] + Math.cos(a) * R, at[1] + Math.sin(a) * R * .45, k < .5 ? [255, 230, 140] : [220, 160, 70]); } }
-  if (fb.kind === 'masterwork' && tf >= B.roar) for (let i = 0; i < 40; i++) { const age = tf - B.roar - i * 18; if (age < 0 || age > 900) continue; dot(at[0] + (rnd(i * 5) - .5) * w * .5, h - 4 - age * (.08 + .05 * rnd(i)), age < 300 ? [255, 200, 90] : age < 600 ? [240, 120, 40] : [170, 60, 30]); }
+  if (fb.kind === 'masterwork' && tf >= B.roar) for (let i = 0; i < 40; i++) { const age = tf - B.roar - i * 18; if (age < 0 || age > 900) continue; dot(at[0] + (rnd(i * 5) - .5) * tall * 1.4, foot - age * (.08 + .05 * rnd(i)), age < 300 ? [255, 200, 90] : age < 600 ? [240, 120, 40] : [170, 60, 30]); } // the furnace's breath rises from the floor round the anvil
   R3.present(view);
 }
 function psBazaar() {
@@ -1518,12 +1652,18 @@ function psWindows() {
   const r = G.run;
   if (G.story && !G.playing && !G.overlay) { const st = G.story, sc = SCENES[st.id], sp = storyPic(st.id, st.i), fc = !sp && sc.face && CART.has(sc.face + '-96') ? sc.face + '-96' : null;
     const big = sp && F.W - 192 >= 398 && F.H - 104 >= 168 && CART.has(sp + '-l'), pw = big ? 390 : 312, ph = big ? 160 : 128;
-    const pic = sp ? `<img class="ab" src="${cimg(big ? sp + '-l' : sp)}" style="left:${(F.W - pw) >> 1}px;top:${Math.max(4, (F.H - 104 - ph) >> 1)}px" width="${pw}" height="${ph}" alt="">` : '';
-    return `<div class="story" data-a="storynext"><div class="dim"></div>${sp ? pic : `<i class="bars" style="top:0;width:${F.W - 192}px"></i><i class="bars" style="top:${F.H - 124}px;width:${F.W - 192}px"></i>`}${fc ? `<div class="pf s96" style="left:104px;top:${20 + ((F.H - 240) >> 1)}px"><img src="${cimg(fc)}" width="96" height="96" alt=""></div>` : ''}
+    const pic = sp ? `<img class="ab spic" src="${cimg(big ? sp + '-l' : sp)}" style="left:${(F.W - pw) >> 1}px;top:${Math.max(4, (F.H - 104 - ph) >> 1)}px" width="${pw}" height="${ph}" alt="">` : '';
+    // Without a painting the screen stays under the words, dimmed, between black bars inside the view's border; a face stands
+    // on the lower bar, just over its words, on the side away from the door just opened.
+    const r0 = G.run, ds = r0 && r0.phase === 'chamber' && G.doorSel && r0.doors[G.doorSel.i] ? G.doorSel.i : -1, way = ds < 0 ? -1 : r0.doors.length === 1 ? 1 : r0.doors.length === 2 ? ds * 2 : ds;
+    const face = fc ? `<div class="pf s96" style="left:${way === 0 ? F.W - 204 : 104}px;top:${Math.max(4, F.H - 208)}px"><img src="${cimg(fc)}" width="96" height="96" alt=""></div>` : '';
+    return `<div class="story${sp ? ' sblk' : ''}" data-a="storynext"><div class="dim"></div>${sp ? pic : `<i class="bars" style="top:4px;width:${F.W - 200}px"></i><i class="bars" style="top:${F.H - 128}px;width:${F.W - 200}px"></i>`}${face}
       <div class="wn ab" style="left:96px;top:${F.H - 104}px;width:${F.W - 192}px;height:104px;padding:6px 8px">${sc.who ? `<h2>${esc(sc.who)}</h2>` : ''}<p>${esc(sc.lines[st.i])}</p>${lb(8, 90, 'TAP TO GO ON', 'd')}${pq(F.W - 192 - 72, 82, 64, 'SKIP', 'storyskip')}</div></div>`; } // SKIP sits in the window, clear of the pillar's own plaques
   // A new floor gets its card once, when a move took this run down to it (act arms it; a reload does not show it again).
   const fc = G.floorCard; if (fc && r && fc.u === uidOf(r) && fc.n === r.floor + 1 && r.phase === 'chamber' && !G.playing && !G.overlay) { const big = F.W - 192 >= 398 && F.H >= 300 && CART.has('story-stair-l'), pw = big ? 390 : 312, ph = big ? 160 : 128, y = Math.max(28, (F.H - ph - 40) >> 1);
-    return `<div class="story" data-a="floorok"><div class="dim"></div><div class="ab" style="left:0;top:${y - 28}px;width:${F.W}px;display:flex;justify-content:center">${carveImg(['', 'FLOOR ONE', 'FLOOR TWO', 'FLOOR THREE'][fc.n] || 'FLOOR ' + fc.n, 24, render)}</div>${CART.has('story-stair') ? `<img class="ab" src="${cimg(big ? 'story-stair-l' : 'story-stair')}" style="left:${(F.W - pw) >> 1}px;top:${y}px" width="${pw}" height="${ph}" alt="">` : ''}${lb((F.W >> 1) - 36, y + ph + 8, 'TAP TO GO ON', 'd')}</div>`; }
+    const name = ['', 'FLOOR ONE', 'FLOOR TWO', 'FLOOR THREE'][fc.n] || 'FLOOR ' + fc.n, ct = carve(name, 24, render); // the carved name at a whole pixel, centred
+    const title = ct ? `<img class="ab" src="${ct.url}" width="${ct.w}" height="${ct.h}" style="left:${(F.W - ct.w) >> 1}px;top:${y - 28}px" alt="${esc(name)}">` : `<div class="ab" style="left:0;top:${y - 28}px;width:${F.W}px;text-align:center">${carveImg(name, 24, render)}</div>`;
+    return `<div class="story sblk" data-a="floorok"><div class="dim"></div>${title}${CART.has('story-stair') ? `<img class="ab spic" src="${cimg(big ? 'story-stair-l' : 'story-stair')}" style="left:${(F.W - pw) >> 1}px;top:${y}px" width="${pw}" height="${ph}" alt="">` : ''}${lb((F.W >> 1) - 36, y + ph + 8, 'TAP TO GO ON', 'd')}</div>`; }
   const o = G.overlay;
   if (o && !G.playing) {
     if (o.kind === 'duelEnd') { const s = o.sum; return win(136, 16, 240, 208, `<div style="display:flex;justify-content:center;margin:2px 0 6px">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><p>${esc(o.rival ? o.rival.name : '')}, ${s.turns} turns${s.reason === 'deckout' ? ', a deck ran out' : ''}.</p>${s.won ? `<p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b></p><p>Embers +${s.embers}${s.bountyMet ? '. Bounty met.' : '.'}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>${(o.why || []).slice(0, 2).map(l => `<p class="d">${esc(l)}</p>`).join('')}`}${pq(76, 184, 88, 'CONTINUE', 'closeov', { lit: true })}`); }
@@ -1549,7 +1689,7 @@ function psWindows() {
   if (t === 'options') return tall('Options', `<p><b class="lb g">SOUND</b></p><div id="soundslot" class="soundslot"></div><p><b class="lb g">LOOK</b></p><button class="lab" data-a="look"><i>NEW</i><span>The console look. Tap for the old look, to compare.</span></button><p><b class="lb g">LAB SWITCHES</b> <small class="d">EXPERIMENTS. A RUN IN PROGRESS KEEPS THE RULES IT STARTED WITH.</small></p>${labKeys().map(k => { const held = pref.depth && DEPTH_SET.includes(k); return `<button class="lab ${pref[k] || held ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] || held ? 'ON' : 'OFF'}</i><span>${esc(LABS[k])}${held && !pref[k] ? ' (On through the depth set.)' : ''}</span></button>`; }).join('')}`);
   if (!r) return '';
   if (t === 'relics') return tall('Your relics', `${relicList(r).map(id => `<div class="rl">${CART.has(relicFile(id)) ? `<img src="${cimg(relicFile(id))}" alt="">` : `<i class="gem">${esc(RELICS[id].name.replace(/^The /, '')[0])}</i>`}<div><b>${esc(RELICS[id].name)}</b>${esc(RELICS[id].text)}</div></div>`).join('') || '<p>None yet.</p>'}${possibleMasterworks(r).map(id => `<p class="d">Masterwork ready at an Anvil: ${esc(RELICS[id].name)}.</p>`).join('')}`);
-  if (t === 'doors' && r.doors) return tall('The doors', `${r.doors.map((d, i) => `<p><b class="lb g">${i + 1}. ${esc(doorName(d))}</b> <small class="d">${d.know === 'known' ? 'KNOWN' : d.know === 'partial' ? 'PARTLY HIDDEN' : 'IN FOG'}</small><br>Cost: ${esc(d.cost)}. Reward: ${esc(d.reward)}.${d.law ? ' Law: ' + esc(lawShown(d.law)) : ''}${d.tell ? ` ${esc(d.style)}: ${esc(d.tell)}` : ''}${(d.tags || []).length ? ' ' + esc(d.tags.join(', ')) + '.' : ''}</p>`).join('')}`);
+  if (t === 'doors' && r.doors) return tall('The doors', `${r.doors.map((d, i) => `<p><b class="lb g">${i + 1}. ${esc(doorName(d))}</b> <small class="d">${d.know === 'known' ? 'KNOWN' : d.know === 'partial' ? 'PARTLY HIDDEN' : 'IN FOG'}</small><br>Cost: ${esc(stop(d.cost))} Reward: ${esc(stop(d.reward))}${d.law ? ' Law: ' + esc(lawShown(d.law)) : ''}${d.tell ? ` ${esc(d.style)}: ${esc(d.tell)}` : ''}${(d.tags || []).length ? ' ' + esc(d.tags.join(', ')) + '.' : ''}</p>`).join('')}`);
   if (t === 'duel') { const rv = G.shown ? G.shown.rival : info(r), v = r.duel ? viewFor(r.duel, db, 0) : null;
     return tall('This duel', `${rv.styleText ? `<p>${esc(rv.styleText)}</p>` : ''}${rv.lawText ? `<p><b class="lb g">LAW</b> ${esc(lawShown(rv.lawText))}</p>` : ''}${rv.twist ? `<p>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</p>` : ''}<p><b class="lb g">BOUNTY</b> ${esc(rv.bountyText || '')}</p>${v && v.forger ? `<p><b class="lb g">${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))}</p><p><b class="lb g">${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'Used this duel.' : esc(FORGERS[v.forger].powerText)}</p>` : ''}<p><b class="lb g">LOG</b><br>${G.log.slice(-8).map(esc).join('<br>')}</p>`); }
   if (t === 'deck') { const list = (l, key, picked, k2) => l.map((e, i) => [e, i]).sort((a, b) => cardValue(db, b[0]) - cardValue(db, a[0])).map(([e, i]) => psCard(e, null, null, { cls: picked === i ? 'sel' : '', attrs: `data-a="${key}:${i}"` })).join('');
@@ -1590,6 +1730,11 @@ function drawConsole(screen) {
   // the save bar and a short message take the text bar's place and width in this frame (the bar: 40 pixels at its foot, between the pillars)
   app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar" style="width:${F.W - 192}px"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast" style="top:${F.H - 40}px;width:${F.W - 192}px">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home'; app.dataset.room = '';
+  // While words are told over a screen, the screen holds still; under a painting it goes dark, so nothing of it shows round it.
+  const st = app.querySelector('.story'); app.classList.toggle('stup', !!st); app.classList.toggle('stblk', !!(st && st.classList.contains('sblk')));
+  // Every endless loop (a cursor's bob, a lit plaque, the fog) keeps time with the clock, not with the drawing: a screen
+  // drawn again, as when the cursor moves, carries each loop on from where it was instead of starting it over.
+  for (const a of app.getAnimations({ subtree: true })) if (a.playState === 'running' && a.effect && a.effect.getTiming().iterations === Infinity) a.startTime = 0;
   if (document.getElementById('prop')) { propTextures(); propPaint(); }
   if (document.getElementById('forge')) { propTextures(); convertSheets(40); forgePaint(); }
   if (document.getElementById('coin')) coinLoop();
@@ -1694,7 +1839,7 @@ addEventListener('keydown', ev => {
   else if ((k === 'Enter' || k === ' ') && at >= 0 && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#app button'))) { ev.preventDefault(); list[at].click(); } // a focused plaque takes the key itself
 });
 function tapped(ev) {
-  const el = ev.target.closest('[data-a]'); if (!el || el.disabled) return;
+  const el = ev.target.closest('[data-a]'); if (!el || el.disabled || G.opening) return; // nothing is taken while a door swings open
   G.toast = ''; // a tap puts away the last message, so it cannot lie over the screen the tap opens
   syncP();
   const [verb, x, y] = el.dataset.a.split(':'); const r = G.run, n = x === undefined || x === '' ? null : +x;
@@ -1751,7 +1896,10 @@ function tapped(ev) {
     case 'cxtype': G.cx.type = G.cx.type === x ? null : x; render(); break;
     case 'cxopen': G.cx.open = n; render(); break;
     case 'cxclose': G.cx.open = null; render(); break;
-    case 'door': { G.log = []; const d = r.doors[n]; const go = () => act({ t: 'door', i: n }); if (d && d.type === 'boss' && r.seals >= 2) { queueStory('boss:' + BOSSES[r.floor][r.bossOrder[r.floor]].id, go); if (G.story) render(); } else if (d && d.type === 'secret') { queueStory('secret:door', go); if (G.story) render(); } else go(); break; }
+    case 'door': { G.log = []; const d = r.doors[n]; const go = () => act({ t: 'door', i: n });
+      // The guardian's door and the hidden door are met with words first: the door opens and stays open behind them.
+      const sid = d && d.type === 'boss' && r.seals >= 2 ? 'boss:' + BOSSES[r.floor][r.bossOrder[r.floor]].id : d && d.type === 'secret' ? 'secret:door' : null;
+      doorBeat(n, !!(sid && SCENES[sid] && !P.seen.includes(sid)), () => { if (sid) { queueStory(sid, go); if (G.story) render(); } else go(); }); break; }
     case 'leave': G.pickDeck = G.pickTrunk = null; act({ t: 'leave' }); break;
     case 'look': look = look === 'old' ? 'ps' : 'old'; store.set(LOOKKEY, look); G.tab = null; if (look !== 'old' && !packDone) bootWait(); else render(); break; // the console look, or the old one to compare
     case 'barmore': G.tab = 'bar'; render(); break;

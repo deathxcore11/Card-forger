@@ -201,6 +201,156 @@ def save(im, path):
     im.save(path, 'PNG', optimize=True)
 
 
+def save_pal(a, path):
+    """An RGBA picture of few colours (alpha 0 or 255) kept as a paletted PNG, its own colours exactly: half the bytes."""
+    cols, ind = np.unique(a.reshape(-1, 4), axis=0, return_inverse=True)
+    p = Image.fromarray(ind.reshape(a.shape[:2]).astype(np.uint8), 'P')
+    p.putpalette(cols[:, :3].ravel().tolist())
+    p.save(path, 'PNG', optimize=True, transparency=bytes(int(c[3]) for c in cols))
+
+
+# The chamber of doors: three empty doorways stand in each hall picture, and a door's two carved leaves are laid into
+# them. The doorways are measured here from each hall's own pixels at both sizes, and each door's leaves are cut to fit
+# each doorway exactly, with the stepped corners of its frame left showing, toned to that hall's stone and lit the way
+# the painted doorway is lit, then cut with the dither at the doorway's own place in the picture. index.json 'niches'
+# keeps each doorway: x, y, w, h, and the stepped corners (width and depth, left then right).
+NICHE_GUESS, NICHE_GUESS_Y = (62, 145, 230), 60  # roughly where the doorways are in the 352 x 198 picture: the search starts here
+
+
+def edge(p, lo, hi, dark_after):
+    """Where a profile turns from light to dark within lo..hi (dark_after: the dark side lies after the place, and the
+    place is its first dark pixel; otherwise its last): the place with the greatest step from the two light pixels
+    beside it to the brightest of the four dark ones, so a groove in the stone does not pass for the doorway's edge."""
+    def sc(x):
+        return p[x - 2:x].mean() - p[x:x + 4].max() if dark_after else p[x + 1:x + 3].mean() - p[x - 3:x + 1].max()
+    return max(range(lo, hi + 1), key=sc)
+
+
+def niches(rgb, s):
+    """The three doorways of a hall picture (rgb: the picture at this size before it is dithered; s: 1 or 1.25)."""
+    a = lum(rgb)
+    out = []
+    for nx in NICHE_GUESS:
+        x0, y0, w, h = nx * s, NICHE_GUESS_Y * s, 62 * s, 68 * s
+        pc = a[int(y0 + h * .3):int(y0 + h * .85)].mean(0)  # across the doorway's middle rows
+        L = edge(pc, round(x0) - 4, round(x0) + 4, True)
+        R = edge(pc, round(x0 + w) - 5, round(x0 + w) + 3, False)
+        pr = a[:, int(L + w * .25):int(R - w * .25)].mean(1)  # down its middle columns, clear of the corners
+        T = edge(pr, round(y0) - 4, round(y0) + 4, True)
+        B = edge(pr, round(y0 + h) - 5, round(y0 + h) + 3, False)
+        band = a[T:T + 2].mean(0)  # the frame's stepped corners: light in the top rows beside each side
+        eL = edge(band, L + 1, L + round(9 * s), True) - L
+        eR = R - edge(band, R - round(9 * s), R - 1, False)
+        dL = edge(a[:, L:L + eL].mean(1), T + 1, T + round(9 * s), True) - T
+        dR = edge(a[:, R - eR + 1:R + 1].mean(1), T + 1, T + round(9 * s), True) - T
+        out.append([int(L), int(T), int(R - L + 1), int(B - T + 1), int(eL), int(dL), int(eR), int(dR)])
+    return out
+
+
+def box_blur(a, r):
+    """A plain box blur of radius r over the first two axes (edges held)."""
+    for ax in (0, 1):
+        p = np.pad(a, [(r, r) if i == ax else (0, 0) for i in range(a.ndim)], mode='edge')
+        c = np.cumsum(p, axis=ax, dtype=np.float64)
+        c = np.concatenate([np.zeros_like(np.take(c, [0], axis=ax)), c], axis=ax)
+        n = a.shape[ax]
+        a = (np.take(c, range(2 * r + 1, 2 * r + 1 + n), axis=ax) - np.take(c, range(0, n), axis=ax)) / (2 * r + 1)
+    return a
+
+
+LEAF_HUE, LEAF_KEY = .6, .9  # how far a leaf is toned toward its hall's stone, and how bright against it (as on floor 1)
+
+# Where Randall's models stand in the room paintings: a spot on each painted floor in the 440 x 248 picture (the game
+# takes 4/5 of it for the 352 x 198 one): the model, its middle x, the y its foot rests on, its height, its turn in
+# degrees. Each spot lies inside the part of the picture that every screen shape shows (x 64 to 376 of the larger
+# picture, y 31 to 189 where the view is shortest), so the view crops a model with its painting and no shape loses it.
+# The forge's anvil gets the height of its hammer's whole swing. The keepers' spots come from the doorways (niches).
+SPOTS = {
+    'room-sanctum': [['shrine', 220, 190, 46, 0]],   # on the pool's rim under the lit niche, between the two choices
+    'room-omen': [['bowl', 220, 181, 34, 0]],        # in the circle of light under the beam
+    'room-vault': [['chest', 96, 188, 30, -30]],     # on the floor before the shelves, left of the ladder
+    'room-bazaar': [['stall', 220, 188, 74, 15]],    # the trader's stall before the hearth
+    'room-forge': [['anvil', 220, 204, 128, 0]],     # before the furnace mouth, the hammer swinging in its light
+}
+
+
+def light_tint(c, ref):
+    """What a model's own colours are multiplied by to stand in a place whose stone is c: toned toward its colour and
+    darkened as it is darker than ref (the first hall's stone, where the models look right as they are)."""
+    tone = np.ones(3) * (1 - LEAF_HUE) + (c / lum(c)) * LEAF_HUE
+    return tone * min(1.0, lum(c) / lum(ref)) * LEAF_KEY
+
+
+def spot_tints(op, ref):
+    """For each room with models, the light at each model's spot: the painting's colour round its foot."""
+    tints = {}
+    for room, items in SPOTS.items():
+        try:
+            rgb = np.asarray(op(room).convert('RGB')).astype(np.float32)
+        except FileNotFoundError:
+            continue
+        h, w = rgb.shape[:2]
+        box = (0, round(h * .105), w, round(h * .105) + round(w * 9 / 16))  # the band the room is cut to (see main)
+        if room in GRADE:
+            rgb = np.asarray(grade(Image.fromarray(rgb.astype(np.uint8)), GRADE[room])).astype(np.float32)
+        band = np.asarray(Image.fromarray(rgb.astype(np.uint8)).crop(box).resize((440, 248), Image.LANCZOS)).astype(np.float32)
+        out = []
+        for (_m, x, foot, ht, _yaw) in items:
+            c = band[max(0, foot - ht):min(248, foot + 6), max(0, x - ht // 2):x + ht // 2].reshape(-1, 3).mean(0)
+            out.append([round(float(v), 3) for v in light_tint(c, ref)])
+        tints[room] = out
+    return tints
+
+
+def leaves(op, halls, doors, out, made):
+    """Every door's leaves cut for every doorway of every chamber hall, at both sizes."""
+    places = {}
+    stone1 = None
+    for hall in halls:
+        src = op(hall).convert('RGB')
+        places[hall] = {}
+        for size, tag in (((352, 198), ''), ((440, 248), '-l')):
+            s = size[0] / 352
+            rgb = np.asarray(src.resize(size, Image.LANCZOS, reducing_gap=3.0)).astype(np.float32)
+            ns = niches(rgb, s)
+            places[hall]['l' if tag else 's'] = ns
+            # the hall's stone: the frame round its doorways
+            ring = np.zeros(rgb.shape[:2], bool)
+            for (x, y, w, h, *_e) in ns:
+                ring[y - 6:y + h, x - 6:x + w + 6] = True
+                ring[y:y + h, x:x + w] = False
+            stone = rgb[ring].mean(0)
+            if stone1 is None:
+                stone1 = stone
+            if tag:  # the light a model in this hall is lit by, and the hall's stone: toned as the leaves are
+                places[hall]['tint'] = [round(float(v), 3) for v in light_tint(stone, stone1)]
+                places[hall]['stone'] = [int(v) for v in stone]
+            for i, (x, y, w, h, eLw, eLd, eRw, eRd) in enumerate(ns):
+                light = box_blur(lum(rgb[y:y + h, x:x + w]), max(2, round(4 * s)))
+                light = np.clip(light / light.mean(), .55, 1.35) ** .5  # the doorway's own light, softened
+                for d in doors:
+                    im = op(d)
+                    W, H = im.size
+                    box = (round(W * .236), round(H * .165), round(W * .764), round(H * .79))
+                    if d == 'door-hidden':  # painted square, the leaves narrower in it than on the other doors
+                        box = (round(W * .30), round(H * .20), round(W * .70), round(H * .72))
+                    lf = np.asarray(im.convert('RGB').crop(box).resize((w, h), Image.LANCZOS, reducing_gap=3.0)).astype(np.float32)
+                    m = lf.reshape(-1, 3).mean(0)
+                    tone = (m / lum(m)) * (1 - LEAF_HUE) + (stone / lum(stone)) * LEAF_HUE
+                    target = tone * lum(m) * (lum(stone) / lum(stone1)) * LEAF_KEY
+                    g = np.clip(lf * (target / m) * light[..., None], 0, 255)
+                    pal = np.asarray(Image.fromarray(g.astype(np.uint8), 'RGB').quantize(colors=64, method=Image.FASTOCTREE, dither=Image.NONE).convert('RGB')).reshape(-1, 3)
+                    pal = np.unique(pal & 0xF8, axis=0).astype(np.float32)
+                    q = quant(g, pal, .6, x, y)
+                    alpha = np.full((h, w), 255, np.uint8)
+                    alpha[:eLd, :eLw] = 0
+                    alpha[:eRd, w - eRw:] = 0
+                    n = f'leaf-{d[5:]}-{hall}-{i}{tag}'
+                    save_pal(np.dstack([q, alpha]), os.path.join(out, n + '.png'))
+                    made.append(n)
+    return places
+
+
 # The rooms painted on 22 November came out bright and evenly lit; the halls are dark with torchlight that falls away.
 # This tones them to sit together: darker mid-tones, warm light, a fall-off toward the edges. The bare room stays cold.
 GRADE = {'room-bare': (.86, .82, .88), 'room-bazaar': (1, .8, .62), 'room-forge': (1, .8, .62), 'room-omen': (1, .84, .7),
@@ -317,14 +467,8 @@ def main():
             save(crunch(g, (144, round(144 * g.height / g.width)), 16, amp=0.8, key=True), os.path.join(out, n + '.png'))
             logo = [144, round(144 * g.height / g.width)]
         elif n.startswith('door-'):
+            # the door whole; its leaves are cut for each doorway of each hall below (leaves)
             save(crunch(im, (80, 72), 256, amp=0.6, key=True), os.path.join(out, n + '.png'))
-            # the two carved leaves alone, to stand in a niche of the chamber picture (62 x 68 there, 78 x 85 in the larger one)
-            box = (round(w * .236), round(h * .165), round(w * .764), round(h * .79))
-            if n == 'door-hidden':  # painted square, the leaves narrower in it than on the other doors
-                box = (round(w * .30), round(h * .20), round(w * .70), round(h * .72))
-            save(crunch(im, (62, 68), 256, amp=0.6, box=box), os.path.join(out, n + '-leaf.png'))
-            save(crunch(im, (78, 85), 256, amp=0.6, box=box), os.path.join(out, n + '-leaf-l.png'))
-            made += [n + '-leaf', n + '-leaf-l']
         elif n == 'key-crest':
             # struck gold on black: black becomes the see-through colour
             g = im.convert('RGBA'); a = np.asarray(g).copy(); a[..., 3] = np.where(a[..., :3].max(-1) < 40, 0, 255); g = Image.fromarray(a, 'RGBA')
@@ -359,6 +503,21 @@ def main():
         else:
             continue
         made.append(n)
+
+    # the doors' leaves, cut for each doorway of each hall of doors (the leaves cut once for all halls are gone)
+    for f in os.listdir(out):
+        if f.startswith('door-') and '-leaf' in f or f.startswith('leaf-'):
+            os.remove(os.path.join(out, f))
+    halls = [n for n in names if n == 'hall-doors' or n.startswith('hall-doors-')]
+    door_arts = [n for n in names if n.startswith('door-')]
+    places = leaves(op, halls, door_arts, out, made) if halls else {}
+    for hall, p in places.items():
+        print(f'{hall}: doorways {p["s"]} and {p["l"]}, models lit {p["tint"]}')
+    # the models' spots in the rooms, each with the light it stands in
+    ref = np.array(places[halls[0]]['stone'], np.float32) if places else np.array([150, 110, 70], np.float32)
+    tints = spot_tints(op, ref)
+    spots = {room: [it + [tints[room][i]] for i, it in enumerate(items)] for room, items in SPOTS.items() if room in tints}
+    print('spots', spots)
 
     # the frame's materials, from his sheet when the art folder holds it (a .png: the page itself never asks for it)
     if os.path.exists(os.path.join(art, 'ui-materials.png')):
@@ -407,7 +566,7 @@ def main():
                 save(crunch(Image.open(os.path.join(mdir, f'{mn}-{t}.png')), (pw, ph), 256, amp=0.5), os.path.join(out, f'model-{mn}-{t}.png'))
                 made.append(f'model-{mn}-{t}')
             models[mn] = m
-    json.dump({'art': sorted(made), 'leaf': leaf, 'sheets': sheets, 'title': 720, 'torches': torches, 'logo': logo, 'models': models}, open(os.path.join(out, 'index.json'), 'w'))  # title: the title picture's width
+    json.dump({'art': sorted(made), 'leaf': leaf, 'sheets': sheets, 'title': 720, 'torches': torches, 'logo': logo, 'models': models, 'niches': places, 'spots': spots}, open(os.path.join(out, 'index.json'), 'w'))  # title: the title picture's width
     total = sum(os.path.getsize(os.path.join(out, f)) for f in os.listdir(out))
     print(f'{len(made)} pictures, {sheets} card sheets, {len(models)} models, door leaves at {leaf}, {total // 1024} KB in {out}')
 
