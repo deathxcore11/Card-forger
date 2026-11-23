@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Engine Showcase</title>
+<style>
+:root{--bg:#0d0814;--panel:rgba(22,15,34,.74);--line:#8a5f37;--ink:#f2ead6;--dim:#d9d0b8;--on:#e3b23c;--on-ink:#2a1840;--shade:rgba(13,8,20,.85);--back:rgba(22,15,34,.6)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;font:12px/1.35 ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;-webkit-text-size-adjust:100%}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:0;cursor:grab}
+#top{position:fixed;left:0;right:0;top:0;padding:calc(6px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) 0 calc(10px + env(safe-area-inset-left));pointer-events:none}
+#cap,#hud{display:table;background:var(--back);padding:3px 8px;border-radius:3px}
+#cap{font-size:13px}
+#hud{color:var(--dim);font-size:11px;margin-top:2px}
+#ui{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px 10px;padding:6px calc(8px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));pointer-events:none}
+.g{display:flex;align-items:center;gap:4px;pointer-events:auto}
+.g span{color:var(--dim);background:var(--back);border-radius:3px;padding:2px 6px}
+button{min-width:44px;min-height:44px;padding:0 11px;border:2px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink);font:inherit;font-size:13px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button[aria-pressed="true"]{background:var(--on);color:var(--on-ink);border-color:var(--ink)}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+#msg{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:15px;background:var(--bg);white-space:pre-wrap}
+#msg[hidden]{display:none}
+@media (max-height:460px){#cap{font-size:11px}#hud{font-size:10px}button{padding:0 9px}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Live engine showcase. Drag to look, pinch or scroll to zoom."></canvas>
+<div id="top"><div id="cap">Everything you see is made by the engine in code. No pictures, no models.</div><div id="hud">Starting...</div></div>
+<div id="ui">
+<div class="g" role="group" aria-label="Sky"><span>Sky</span><button data-sky="0">Morning</button><button data-sky="1">Dusk</button><button data-sky="2">Eclipse</button></div>
+<div class="g"><button id="retro">Retro: on</button><button id="summon">Summon</button></div>
+<div class="g" role="group" aria-label="Quality"><span>Quality</span><button data-q="0">Low</button><button data-q="1">Medium</button><button data-q="2">High</button></div>
+</div>
+<div id="msg" hidden></div>
+<script>
+(()=>{'use strict';
+// DUEL SUMMONER engine showcase. One file, raw WebGL2, GLSL ES 3.00 only, no optional extensions.
+// Modules below: core, noise, world, mesh, sky, terrain, props, wind (foliage + grass), water, summon (actors, portal, sigil),
+// fire, particles, light (shadow mask, blobs), post. Each has a note on what the Kotlin / GLES 3 port needs.
+const cv=document.getElementById('c'),hudEl=document.getElementById('hud'),msgEl=document.getElementById('msg');
+const TAU=6.28318531,cl=(x,a,b)=>Math.min(b,Math.max(a,x)),ss=(a,b,x)=>{x=cl((x-a)/(b-a),0,1);return x*x*(3-2*x)};
+const hex=h=>[(h>>16&255)/255,(h>>8&255)/255,(h&255)/255];
+const nrm=v=>{const l=Math.hypot(v[0],v[1],v[2])||1;return[v[0]/l,v[1]/l,v[2]/l]};
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+function rng(s){return()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function fail(t){msgEl.textContent=t;msgEl.hidden=false}
+
+// ---------------------------------------------------------------- state
+const S={sky:0,retro:1,q:2,userQ:false};
+try{const s=JSON.parse(localStorage.getItem('ds-engine-demo')||'null');if(s){if(s.q>=0&&s.q<=2){S.q=s.q|0;S.userQ=true}if(s.retro===0)S.retro=0}}catch(e){}
+function save(){try{localStorage.setItem('ds-engine-demo',JSON.stringify({q:S.q,retro:S.retro}))}catch(e){}}
+const QT=[{h:360,grass:6000,mask:512,emb:32,smoke:0,mote:64,spark:48},{h:450,grass:12000,mask:1024,emb:64,smoke:14,mote:160,spark:96},{h:540,grass:20000,mask:1024,emb:96,smoke:24,mote:256,spark:160}];
+
+// ---------------------------------------------------------------- core: GL helpers
+// PORT: one std140 uniform block "F" is shared by every program. One buffer holds three aligned copies (main, shadow mask, mirror); it is written ONCE per frame
+// and each pass picks its copy with glBindBufferRange, so a tile-based driver never sees a buffer rewritten between passes. Fixed texture units. Attribute locations are explicit.
+let gl=null,R=null,raf=0;
+const UNIT={uN:0,uSh:1,uRefl:2,uC:3,uD:4,uL0:5,uL1:6,uB:7};
+const UO={VP:0,EyeT:16,SunD:20,SunC:24,AmbS:28,AmbG:32,SkyT:36,SkyM:40,SkyH:44,SkyG:48,SunK:52,CldL:56,CldS:60,WindV:64,PL0:68,PL0c:72,PL1:76,PL1c:80,WatD:84,WatS:88,Hero:92,Res:96,CamR:100,CamU:104,CamF:108,Misc:112};
+const U=new Float32Array(116);
+const setU=(k,a,w)=>{const o=UO[k];U[o]=a[0];U[o+1]=a[1];U[o+2]=a[2];U[o+3]=w===undefined?a[3]:w};
+const stats={d:0,t:0};
+function draw(n,inst){stats.d++;if(inst===undefined){gl.drawArrays(gl.TRIANGLES,0,n);stats.t+=n/3}else if(inst>0){gl.drawArraysInstanced(gl.TRIANGLES,0,n,inst);stats.t+=n/3*inst}}
+function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+ if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)&&!gl.isContextLost())throw new Error('Shader: '+gl.getShaderInfoLog(s)+'\n'+src.split('\n').map((l,i)=>(i+1)+': '+l).join('\n').slice(0,6000));return s}
+function program(vs,fs){const p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,HEAD+vs));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,HEAD+FSH+fs));gl.linkProgram(p);
+ if(!gl.getProgramParameter(p,gl.LINK_STATUS)&&!gl.isContextLost())throw new Error('Link: '+gl.getProgramInfoLog(p));
+ const bi=gl.getUniformBlockIndex(p,'F');if(bi!==gl.INVALID_INDEX)gl.uniformBlockBinding(p,bi,0);
+ gl.useProgram(p);const u={},n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS)||0;
+ for(let i=0;i<n;i++){const inf=gl.getActiveUniform(p,i);if(!inf)continue;const loc=gl.getUniformLocation(p,inf.name);if(!loc)continue;const nm=inf.name.replace('[0]','');u[nm]=loc;if(nm in UNIT)gl.uniform1i(loc,UNIT[nm])}
+ return{p,u}}
+function vao(specs){const v=gl.createVertexArray();gl.bindVertexArray(v);
+ for(const s of specs){if(!s.buf)s.buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,s.buf);if(s.data)gl.bufferData(gl.ARRAY_BUFFER,s.data,s.dyn?gl.DYNAMIC_DRAW:gl.STATIC_DRAW);
+  for(const[loc,size,off]of s.at){gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,s.stride*4,off*4);if(s.div)gl.vertexAttribDivisor(loc,1)}}
+ gl.bindVertexArray(null);return v}
+function tex2(unit,w,h,ifmt,fmt,type,data,filter,wrap){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,ifmt,w,h,0,fmt,type,data);
+ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,wrap);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,wrap);return t}
+function fbo(color,depthTex,depthRb){const f=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,f);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,color,0);
+ if(depthTex)gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,depthTex,0);if(depthRb)gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,depthRb);return f}
+function persp(fov,asp,n,f){const t=1/Math.tan(fov/2),o=new Float32Array(16);o[0]=t/asp;o[5]=t;o[10]=(f+n)/(n-f);o[11]=-1;o[14]=2*f*n/(n-f);return o}
+function look(e,c){const z=nrm(sub(e,c)),x=nrm(cross([0,1,0],z)),y=cross(z,x);
+ return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-(x[0]*e[0]+x[1]*e[1]+x[2]*e[2]),-(y[0]*e[0]+y[1]*e[1]+y[2]*e[2]),-(z[0]*e[0]+z[1]*e[1]+z[2]*e[2]),1])}
+function mul(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o}
+function model(x,y,z,yaw,sx,sy,sz){const c=Math.cos(yaw),s=Math.sin(yaw);return new Float32Array([c*sx,0,-s*sx,0,0,sy,0,0,s*sz,0,c*sz,0,x,y,z,1])}
+
+// Shared GLSL. Time is wrapped on the CPU (t mod 512); every scroll speed is n/512 and every sine uses W(n) so nothing pops at the wrap.
+const HEAD=`#version 300 es
+precision highp float;precision highp int;precision highp sampler3D;
+#define LP mediump
+// PORT: highp stays the default for world position, time and texel maths. Colour and lighting values are marked LP (mediump). Not assessed on device.
+layout(std140)uniform F{mat4 uVP;vec4 uEyeT,uSunD,uSunC,uAmbS,uAmbG,uSkyT,uSkyM,uSkyH,uSkyG,uSunK,uCldL,uCldS,uWindV,uPL0,uPL0c,uPL1,uPL1c,uWatD,uWatS,uHero,uRes,uCamR,uCamU,uCamF,uMisc;};
+uniform sampler2D uN,uSh;
+#define T uEyeT.w
+#define W(n) (T*.0122718463*(n))
+#define PASS uAmbG.w
+#define QL uAmbS.w
+vec4 N(vec2 u){return textureLod(uN,u,0.);}
+// wind: ONE gust field for grass, trees, water, fire, particles (and the wind sound in the game)
+float gust(vec2 p){float g=smoothstep(.3,.78,N(p*.011-vec2(30.,10.)/512.*T).r);
+ return g*(.72+.28*sin(dot(p,uWindV.xy)*.12-W(100.)))*uWindV.z;}
+// sky gradient, banded in direction space. Shared by sky, fog and water so they always agree.
+LP vec3 skyBase(vec3 d){
+ float nb=uMisc.z>.5?12.:48.,k=floor(sqrt(max(d.y,0.))*nb+.5)/nb;      // 12 bands in Retro, 48 with Retro off
+ LP vec3 c=k<.4?mix(uSkyH.rgb,uSkyM.rgb,k/.4):mix(uSkyM.rgb,uSkyT.rgb,(k-.4)/.6);
+ float s=max(dot(d,uSunD.xyz),0.);
+ c+=uSunK.rgb*pow(s,6.)*uSkyG.w*(1.-.5*k);
+ return mix(c,uSkyG.rgb,smoothstep(0.,-.1,d.y));}
+LP vec3 fog(LP vec3 c,vec3 wp){
+ vec3 e=uEyeT.xyz;e.y=abs(e.y);vec3 rd=wp-e;float d=length(rd);rd/=d;
+ float b=uCldS.w,ry=abs(rd.y)<.002?.002:rd.y;
+ float od=uCldL.w*exp(-b*e.y)*(1.-exp(-b*ry*d))/(b*ry);
+ return mix(c,mix(skyBase(normalize(vec3(rd.x,.04,rd.z))),uSkyG.rgb,.4),min(1.-exp(-od),.72));}
+// pass 1 renders the sun-sheared height mask, other passes use the camera
+vec4 proj(vec3 wp){
+ if(PASS>.5&&PASS<1.5){vec2 g=wp.xz-uSunD.xz*(wp.y/uSunD.y);return vec4(g/40.,0.,1.);}
+ return uVP*vec4(wp,1.);}
+// static shadows: one tap of a top-down R8 mask that stores occluder height along the sun ray
+float shadow(vec3 wp){
+ vec2 g=wp.xz-uSunD.xz*(wp.y/uSunD.y);if(max(abs(g.x),abs(g.y))>39.6)return 1.;
+ vec2 m=textureLod(uSh,g/80.+.5,0.).rg;return 1.-uSunD.w*step(wp.y+.22,max(m.r,m.g)*16.);}
+// point light falloff in 5 rings: fire light lies on the ground in rings, and a flicker moves ring edges instead of re-dithering the whole area
+float gJ=.5; // per-texel hash set by ground and prop shaders: breaks the ring edges on world texels, which stay still over time
+LP float plk(vec3 d,float R){float k=floor(max(1.-length(d)*(1.+(gJ-.5)*.16)/max(R,.001),0.)*5.+.5)/5.;return k*k;}
+LP vec3 lit(LP vec3 a,vec3 n,vec3 wp,LP float sh){
+ LP vec3 l=uSunC.rgb*max(dot(n,uSunD.xyz),0.)*sh+mix(uAmbG.rgb,uAmbS.rgb,n.y*.5+.5);
+ vec3 d=uPL0.xyz-wp;l+=uPL0c.rgb*plk(d,uPL0.w)*(.35+.65*max(dot(n,normalize(d)),0.));
+ d=uPL1.xyz-wp;l+=uPL1c.rgb*plk(d,uPL1.w)*(.35+.65*max(dot(n,normalize(d)),0.));
+ return a*l;}
+`;
+const FSH=`out LP vec4 o;
+float bayer(){ivec2 p=ivec2(gl_FragCoord.xy)&3;int q=p.x^p.y;return(float(((q&1)<<3)|((p.y&1)<<2)|(q&2)|((p.y&2)>>1))+.5)/16.;}
+// pattern contrast fades out when a world texel gets smaller than a screen pixel: this is what keeps shimmer low
+float fadeK(vec2 q){vec2 f=fwidth(q);return clamp(1.3-max(f.x,f.y)*1.1,0.,1.);}
+float hsh(vec2 t){return texelFetch(uN,ivec2(t)&63,0).b;}
+#define OUT(c,w) o=vec4(fog(c,w),PASS>1.5?1.:0.)
+`;
+const QUADV=new Float32Array([-1,-1,1,-1,1,1,-1,-1,1,1,-1,1]);
+
+// ---------------------------------------------------------------- noise
+// PORT: 64x64 RGBA8, REPEAT, LINEAR, built at startup from an integer hash so every GPU sees the same bits (0 KB on disk).
+// R = value noise (2 octaves), G = cell distance, B = white hash, A = second value noise. All four tile.
+function hash2(x,y){let h=(Math.imul(x,0x9E3779B1)^Math.imul(y,0x85EBCA77))>>>0;h^=h>>>15;h=Math.imul(h,0x2C1B3C6D)>>>0;h^=h>>>12;return(h>>>0)/4294967296}
+function buildNoise(){const n=64,d=new Uint8Array(n*n*4);
+ const val=(x,y,per,seed)=>{const fx=x*per/n,fy=y*per/n,ix=Math.floor(fx),iy=Math.floor(fy);let tx=fx-ix,ty=fy-iy;tx=tx*tx*(3-2*tx);ty=ty*ty*(3-2*ty);
+  const r=(i,j)=>hash2(i%per+seed*131,j%per+seed*17);return(r(ix,iy)*(1-tx)+r(ix+1,iy)*tx)*(1-ty)+(r(ix,iy+1)*(1-tx)+r(ix+1,iy+1)*tx)*ty};
+ const per=6,cs=n/per,pts=[];for(let j=0;j<per;j++)for(let i=0;i<per;i++)pts.push([(i+.15+.7*hash2(i+71,j+13))*cs,(j+.15+.7*hash2(i+29,j+57))*cs]);
+ for(let y=0;y<n;y++)for(let x=0;x<n;x++){const o=(y*n+x)*4;
+  d[o]=cl(((.62*val(x,y,8,1)+.38*val(x,y,16,2))-.5)*1.7+.5,0,1)*255;
+  let m=1e9;for(const p of pts){let dx=Math.abs(x+.5-p[0]),dy=Math.abs(y+.5-p[1]);dx=Math.min(dx,n-dx);dy=Math.min(dy,n-dy);m=Math.min(m,dx*dx+dy*dy)}
+  d[o+1]=cl(Math.sqrt(m)/(cs*.78),0,1)*255;
+  d[o+2]=hash2(x+977,y+131)*255;
+  d[o+3]=cl(((.6*val(x,y,4,3)+.4*val(x,y,8,4))-.5)*1.7+.5,0,1)*255}
+ return d}
+
+// ---------------------------------------------------------------- world: layout and height (view-only, nothing here touches src/sim)
+const DAIS=[-11,4.5],BRAZ=[5.8,-6.2];
+const CARDS=[[8.5,-10.5,6.6,.05,0,.4],[13.4,-4.6,5.4,.2,1,.7],[.8,-14,4.6,-.16,0,1.1]];
+const PALMS=[[-7.5,10.5,6.4,.5],[-15,-1,7.6,2.1],[14.5,1.5,5.8,4],[15.5,-11.5,7.2,1.2],[-2.5,16,5.4,5.3],[-2.5,-16.5,6.8,3.3]];
+const COLS=[[-11.9,-4.6,4.7],[-10.3,-7.5,2.3],[-7.8,-10.2,3.5],[-4.6,-12,1.1]];
+const BUSH=[[-9.2,9.2,1],[-13.5,1,1.1],[10.8,-8,.9],[16.5,-1,1],[5.2,-13.2,.8],[-6.5,-12.6,1],[-4,17.5,.9],[-16,8,1.2],[17,-4,1.1],[12.5,8,.8]];
+const shoreR=a=>7.6*(1+.15*Math.sin(3*a+1)+.08*Math.sin(5*a+2.3));
+const shoreD=(x,z)=>Math.hypot(x,z)-shoreR(Math.atan2(z,x));
+function H(x,z){const d=shoreD(x,z),r=Math.hypot(x,z);
+ if(d<0)return-(.35*(1-Math.exp(d*.8))+1.4*ss(.5,6,-d));
+ return 1.1*(1-Math.exp(-d*.22))+ss(5,22,d)*(.55*Math.sin(x*.12+1)*Math.cos(z*.14)+.3*Math.sin(x*.05-z*.07+2))+3*ss(45,100,r)}
+function grassy(x,z){const d=shoreD(x,z),r=Math.hypot(x,z);let g=ss(2.2,6.5,d)*(1-ss(38,52,r));
+ g*=.62+.3*Math.sin(x*.21+1.3)*Math.cos(z*.25-.4)+.25*Math.sin(x*.08-z*.12);
+ g*=ss(3,5.5,Math.hypot(x-DAIS[0],z-DAIS[1]))*ss(1.4,3,Math.hypot(x-BRAZ[0],z-BRAZ[1]));
+ for(const c of CARDS)g*=ss(1.5,3.2,Math.hypot(x-c[0],z-c[1]));
+ return cl(g*1.6,0,1)}
+
+// ---------------------------------------------------------------- mesh builder: boxes, cylinders, cones, low-poly blobs. Flat faces, 12 floats per vertex.
+// vertex = pos3, normal3, colour3, uv2, material (or bone id for actors)
+function xf(x,y,z,yaw,pitch,roll,sx,sy,sz){yaw=yaw||0;pitch=pitch||0;roll=roll||0;sx=sx||1;sy=sy||sx;sz=sz||sx;
+ const cy=Math.cos(yaw),sn=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch),cr=Math.cos(roll),sr=Math.sin(roll);
+ return p=>{let a=p[0]*sx,b=p[1]*sy,c=p[2]*sz,t;t=a*cr-b*sr;b=a*sr+b*cr;a=t;t=b*cp-c*sp;c=b*sp+c*cp;b=t;t=a*cy+c*sn;c=-a*sn+c*cy;a=t;return[a+x,b+y,c+z]}}
+const cmp=(X,x,y,z)=>p=>X([p[0]+x,p[1]+y,p[2]+z]);
+const ICOV=(()=>{const t=(1+Math.sqrt(5))/2,l=Math.hypot(1,t);return[[-1,t,0],[1,t,0],[-1,-t,0],[1,-t,0],[0,-1,t],[0,1,t],[0,-1,-t],[0,1,-t],[t,0,-1],[t,0,1],[-t,0,-1],[-t,0,1]].map(v=>v.map(c=>c/l))})();
+const ICOF=[[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
+function Mesh(){const a=[];const m={a,n:0,
+ tri(p,q,r,c,mat,ua,ub,uc,ctr){let n=cross(sub(q,p),sub(r,p));const l=Math.hypot(n[0],n[1],n[2])||1;n=[n[0]/l,n[1]/l,n[2]/l];
+  if(ctr&&n[0]*(p[0]-ctr[0])+n[1]*(p[1]-ctr[1])+n[2]*(p[2]-ctr[2])<0){let t=q;q=r;r=t;t=ub;ub=uc;uc=t;n=[-n[0],-n[1],-n[2]]}
+  const vs=[p,q,r],us=[ua,ub,uc];for(let i=0;i<3;i++){const v=vs[i],u=us[i]||[0,0];a.push(v[0],v[1],v[2],n[0],n[1],n[2],c[0],c[1],c[2],u[0],u[1],mat)}m.n+=3},
+ quad(p,q,r,s,c,mat,ctr,uv){uv=uv||[[0,0],[1,0],[1,1],[0,1]];m.tri(p,q,r,c,mat,uv[0],uv[1],uv[2],ctr);m.tri(p,r,s,c,mat,uv[0],uv[2],uv[3],ctr)},
+ box(X,w,h,d,c,mat,fm){const x=w/2,z=d/2,P=[[-x,0,-z],[x,0,-z],[x,h,-z],[-x,h,-z],[-x,0,z],[x,0,z],[x,h,z],[-x,h,z]].map(X),C=X([0,h/2,0]);if(fm==null)fm=mat;
+  m.quad(P[4],P[5],P[6],P[7],c,fm,C);m.quad(P[1],P[0],P[3],P[2],c,fm,C);m.quad(P[5],P[1],P[2],P[6],c,mat,C);m.quad(P[0],P[4],P[7],P[3],c,mat,C);m.quad(P[7],P[6],P[2],P[3],c,mat,C);m.quad(P[0],P[1],P[5],P[4],c,mat,C)},
+ cyl(X,r0,r1,h,n,c,mat,cap,tilt){const C=X([0,h/2,0]);tilt=tilt||0;
+  for(let i=0;i<n;i++){const a0=i/n*TAU,a1=(i+1)/n*TAU,c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
+   const b0=X([c0*r0,0,s0*r0]),b1=X([c1*r0,0,s1*r0]),t0=X([c0*r1,h+tilt*c0*r1,s0*r1]),t1=X([c1*r1,h+tilt*c1*r1,s1*r1]);
+   m.quad(b0,b1,t1,t0,c,mat,C,[[i,0],[i+1,0],[i+1,1],[i,1]]);if(cap!==0)m.tri(t0,t1,X([0,h,0]),cap&&cap.length?cap:c,mat,0,0,0,C)}},
+ ico(X,r,c,mat,jit,seed,cf){const V=ICOV.map((v,i)=>{const k=r*(1+(jit||0)*(hash2(i+3,(seed||0)+11)-.5)*2);return[v[0]*k,v[1]*k,v[2]*k]}),C=X([0,0,0]);
+  for(const f of ICOF){const A=V[f[0]],B=V[f[1]],D=V[f[2]],fc=cf?cf([(A[0]+B[0]+D[0])/3,(A[1]+B[1]+D[1])/3,(A[2]+B[2]+D[2])/3]):c;m.tri(X(A),X(B),X(D),fc,mat,0,0,0,C)}}};
+ return m}
+
+// ---------------------------------------------------------------- sky
+// PORT: analytic sky drawn as one full-screen triangle at the far plane. Three difficulty skies are just three uniform sets that the CPU blends.
+// Clouds live on a quantised grid in projected-plane space (hard cloud pixels that do not crawl when the camera turns). The moon slides over the sun for the eclipse.
+const SKYF=`
+float cfbm(vec2 p){return N(p).r*.58+N(p*2.+.37).a*.27+(QL>.5?N(p*4.+.11).r*.15:.075);}
+vec3 sky(vec3 d,float hq){
+ vec3 c=skyBase(d);float ec=uSkyH.w;
+ vec3 sd=uSunD.xyz,su=normalize(cross(sd,vec3(0.,1.,0.))),sv=cross(su,sd);
+ if(hq>.5&&uSkyM.w>.02&&d.y>0.){                                       // stars: skipped for the water reflection
+  ivec2 ci=ivec2(floor(d.xz/(1.+d.y)*300.));
+  float h=texelFetch(uN,ci&63,0).b,h2=texelFetch(uN,(ci>>6)&63,0).b,hh=fract(h+h2*.731);
+  float tw=QL>.5?.55+.45*sin(W(floor(70.+h*90.))+h*50.):.8;
+  c+=mix(vec3(.91,.88,.94),vec3(.71,.55,1.),step(.6,h2))*step(.991,hh)*tw*uSkyM.w*smoothstep(0.,.2,d.y);}
+ float R0=.052*uSunK.w,an=acos(clamp(dot(d,sd),-1.,1.)),r=an/R0;
+ if(r<3.){float disc=step(r,1.);
+  c=mix(c,uSunK.rgb,(step(r,1.45)*.4+step(r,2.1)*.22)*(1.-ec));
+  c=mix(c,uSunK.rgb,disc);}
+ if(ec>.01){
+  if(r<9.){float a=atan(dot(d,sv),dot(d,su));
+   float nz=N(vec2(a*.31831,.37+r*.02-T*6./512.)).r,n2=N(vec2(a*.63662+.5,.11+T*4./512.)).a;
+   float ir=1./max(r,1.),co=(pow(ir,3.2)*(.55+.6*n2)+pow(ir,1.5)*nz*nz*nz*1.2)*ec*ec;
+   float sw=1.-uMisc.z;                                                  // hard corona steps in Retro, blended steps with Retro off
+   #define CS(e,w) smoothstep(e-w*sw,e+w*sw+1e-4,co)
+   if(co>.04){c=mix(c,vec3(.24,.14,.4),CS(.075,.03));c=mix(c,vec3(.64,.125,.227),CS(.15,.03));c=mix(c,vec3(.604,.416,.118),CS(.2,.04));
+    c=mix(c,vec3(.95,.757,.306),CS(.36,.1));c=mix(c,vec3(1.,.914,.66),CS(.62,.15));}}
+  vec3 md=normalize(sd+su*(1.-ec)*R0*3.2);
+  if(dot(d,md)>cos(R0*1.03))c=mix(skyBase(d),vec3(.035,.02,.06),ec);}
+ if(d.y>0.){
+  vec2 u=d.xz/(d.y+.5),uq=(floor(u*96.)+.5)/96.;
+  vec2 p=uq*vec2(.2,.2*uWindV.w)+vec2(6.,2.)/512.*T;
+  float m=smoothstep(.02,.26,d.y),f=cfbm(p)-(1.-m)*.3;
+  f-=ec*smoothstep(.55,.2,an)*.4;
+  if(f>uSkyT.w){
+   vec3 cc=uCldL.rgb;
+   if(hq>.5){vec2 ld=normalize(sd.xz/(sd.y+.5)-u+1e-4);float f2=cfbm(p+ld*vec2(.2,.2*uWindV.w)*.07)-(1.-m)*.3;
+    float t=(f-f2)*7.+.45+(f-uSkyT.w<.035?.3:0.);cc=t>.6?uCldL.rgb:t>.3?mix(uCldL.rgb,uCldS.rgb,.5):uCldS.rgb;}
+   else cc=f-uSkyT.w<.06?uCldL.rgb:mix(uCldL.rgb,uCldS.rgb,.5);
+   c=mix(c,mix(cc,uSkyH.rgb,(1.-m)*.7),.92);}}
+ return c;}
+`;
+const SKY_VS=`layout(location=0)in vec2 aV;out vec3 vD;void main(){vD=uCamF.xyz+aV.x*uCamR.xyz+aV.y*uCamU.xyz;gl_Position=vec4(aV,1.,1.);}`;
+const SKY_FS=SKYF+`in vec3 vD;void main(){o=vec4(sky(normalize(vD),1.),0.);}`;
+const C3=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+const SKIES=[
+ {sun:nrm([-.895,.423,-.141]),sunC:[.9,.8,.62],ambS:[.5,.55,.63],ambG:[.42,.38,.34],top:hex(0x2a8ec8),mid:hex(0x4fc6d8),hor:hex(0xbfeef2),gnd:hex(0xe8d6b0),glow:.3,disc:hex(0xfff3b8),discR:1,cldL:hex(0xffffff),cldS:hex(0x8fc0da),cover:.55,stars:0,ecl:0,fogA:.008,fogB:.08,stretch:1.5,watD:[.1,.29,.45],watS:[.25,.74,.8],shd:1,emb:0,brz:.25,wind:.85,camYaw:.6,camPitch:.14},
+ {sun:nrm([-.235,.16,-.95]),sunC:[1.05,.56,.24],ambS:[.46,.38,.54],ambG:[.44,.31,.3],top:hex(0x33286b),mid:hex(0xb9527a),hor:hex(0xffa94d),gnd:hex(0xd98a5a),glow:.3,disc:hex(0xfff3b8),discR:1.2,cldL:hex(0xffb36b),cldS:hex(0x6b3f7a),cover:.47,stars:.2,ecl:0,fogA:.02,fogB:.33,stretch:2.6,watD:[.22,.11,.28],watS:[.86,.52,.4],shd:1,emb:.3,brz:.9,wind:.6,camYaw:.6,camPitch:.12},
+ {sun:nrm([-.54,.215,-.8]),sunC:[.4,.33,.6],ambS:[.27,.22,.42],ambG:[.16,.12,.24],top:hex(0x0d0814),mid:hex(0x1c1030),hor:hex(0x4a2a62),gnd:hex(0x2a1840),glow:.08,disc:hex(0xf2c14e),discR:1.35,cldL:hex(0x3a2860),cldS:hex(0x15101f),cover:.66,stars:1,ecl:1,fogA:.011,fogB:.15,stretch:2.2,watD:[.05,.035,.11],watS:[.3,.2,.52],shd:.8,emb:1,brz:.85,wind:1,camYaw:.6,camPitch:.08}];
+const skyKeys=Object.keys(SKIES[0]);
+const cloneSky=s=>{const o={};for(const k of skyKeys)o[k]=Array.isArray(s[k])?s[k].slice():s[k];return o};
+const sky={from:cloneSky(SKIES[0]),cur:cloneSky(SKIES[0]),to:0,k:1,lutA:0};
+function setSky(i,snap){if(i===sky.to&&!snap)return;sky.lutA=sky.k>.5?sky.to:sky.lutA;sky.from=cloneSky(sky.cur);sky.to=i;sky.k=snap?1:0;S.sky=i;if(snap){sky.cur=cloneSky(SKIES[i]);sky.lutA=i}
+ cam.goalYaw=sm.look?1.2:SKIES[i].camYaw;cam.goalPitch=SKIES[i].camPitch;if(snap){cam.home=cam.goalYaw;cam.sw=0;cam.pitch=cam.goalPitch;cam.goalYaw=null}maskDirty=true;syncUI()}
+function tickSky(dt){if(sky.k>=1)return;sky.k=Math.min(1,sky.k+dt/1.6);const e=ss(0,1,sky.k),a=sky.from,b=SKIES[sky.to],c=sky.cur;
+ for(const k of skyKeys){if(Array.isArray(a[k]))for(let i=0;i<a[k].length;i++)c[k][i]=a[k][i]+(b[k][i]-a[k][i])*e;else c[k]=a[k]+(b[k]-a[k])*e}
+ c.sun=nrm(c.sun);maskDirty=true;if(sky.k>=1)sky.lutA=sky.to}
+
+// ---------------------------------------------------------------- terrain
+// PORT: in the game the two materials are hand-painted 64x64 swatches in one sampler2DArray; here they are tiny procedural pixel patterns.
+// The shader PICKS a material (no cross-fade) from a per-vertex mask plus noise, so colours stay on the palette. World texel = 1/8 m.
+const GROUND=`
+// Shimmer rule: per-texel white noise stays within a few percent; the visible variation is low-frequency (wind ripple lines, grass clumps).
+LP vec3 sandC(vec2 ti,float h,float fd){
+ LP vec3 a=vec3(.78,.64,.42)*(h<.4?1.:h<.75?1.03:.968);
+ float rp=sin(ti.x*.5+ti.y*.17+N(ti*.004).a*18.);
+ a*=1.-.13*step(.74,rp);a*=1.+.07*step(rp,-.8);a*=1.-.05*step(.99,h);
+ return mix(vec3(.774,.636,.42),a,fd);}
+LP vec3 grassC(vec2 ti,float h,float fd,float mg){
+ float t=mix(.55,N(ti*.045).g*.85+hsh(vec2(ti.x,floor(ti.y*.5)))*.15,mg);   // mg: one flat tone where a texel is many pixels wide
+ LP vec3 a=t<.42?vec3(.498,.627,.29):t<.68?vec3(.655,.78,.416):vec3(.31,.478,.227);
+ a*=1.+(h-.5)*.06;return mix(vec3(.5,.64,.31),a,fd);}
+`;
+const TER_VS=`layout(location=0)in vec3 aP;layout(location=1)in vec3 aN;layout(location=2)in vec2 aM;out vec3 vW;flat out vec3 vN;out vec2 vM;
+void main(){vW=aP;vN=aN;vM=aM;gl_Position=proj(aP);}`;
+const TER_FS=GROUND+`in vec3 vW;flat in vec3 vN;in vec2 vM;
+void main(){
+ if(PASS>1.5&&vW.y<-.06)discard;
+ vec2 q=vW.xz*8.;float fd=fadeK(q);vec2 ti=floor(q);float h=hsh(ti),nr=N(ti*.006).r;
+ vec2 fw=fwidth(q);float mg=clamp(min(fw.x,fw.y)*12.,.2,1.),m=vM.x+(nr-.5)*.6+(h-.5)*.16*fd*mg;   // mg: less speckle where a texel is many pixels wide
+ vec3 a=m>.5?grassC(ti,h,fd,mg):sandC(ti,h,fd);
+ if(m>.5)a=mix(a,vec3(.655,.78,.416),smoothstep(.42,.6,gust((ti+.5)/8.))*.7);   // a gust lays the turf over: a paler band that travels with the blades
+ a*=1.-.06*step(abs(m-.47),.03)*fd;
+ a=mix(a,a*vec3(1.08,.97,.86),smoothstep(40.,80.,length(vW.xz))*(m>.5?0.:1.));   // far plain stays warm sand under the haze
+ float wet=smoothstep(.2,.03,vW.y+(nr-.5)*.12);
+ a=mix(a,a*vec3(.6,.6,.64),wet);
+ if(QL>.5)a*=1.+(N(vW.xz*.021).a-.5)*.16;
+ gJ=h;
+ vec3 c=lit(a,normalize(vN),vW,shadow(vec3((ti.x+.5)/8.,vW.y,(ti.y+.5)/8.)));
+ OUT(c,vW);}`;
+function buildTerrain(){const n=72,cx=i=>{const u=i/n*2-1;return 105*(.3*u+.7*u*u*u)},P=[];
+ for(let j=0;j<=n;j++)for(let i=0;i<=n;i++){const x=cx(i),z=cx(j);P.push([x,H(x,z),z,grassy(x,z)])}
+ const tv=[],wv=[];
+ const cell=(i,j)=>{const a=P[j*(n+1)+i],b=P[j*(n+1)+i+1],c=P[(j+1)*(n+1)+i+1],d=P[(j+1)*(n+1)+i];
+  for(const t of((i+j)&1?[[a,d,b],[b,d,c]]:[[a,d,c],[a,c,b]])){const nn=nrm(cross(sub(t[1],t[0]),sub(t[2],t[0])));
+   for(const v of t)tv.push(v[0],v[1],v[2],nn[0],nn[1],nn[2],v[3],0);
+   if(Math.min(t[0][1],t[1][1],t[2][1])<.12)for(const v of t)wv.push(v[0],0,v[2],-v[1])}};
+ const inner=(i,j)=>i>=n/4&&i<3*n/4&&j>=n/4&&j<3*n/4;
+ for(let j=0;j<n;j++)for(let i=0;i<n;i++)if(inner(i,j))cell(i,j);
+ const nI=tv.length/8;
+ for(let j=0;j<n;j++)for(let i=0;i<n;i++)if(!inner(i,j))cell(i,j);
+ return{tv:new Float32Array(tv),nT:tv.length/8,nI,wv:new Float32Array(wv),nW:wv.length/4}}
+
+// ---------------------------------------------------------------- props: giant stone cards, columns, dais, brazier, palm trunks, rocks, far mesas. One merged mesh, one draw.
+// PORT: props keep hand-made art in the game; this shader shows the shared rules: flat normals, dominant-axis world texels, per-material pixel pattern, one shadow tap.
+const PROP_VS=`layout(location=0)in vec3 aP;layout(location=1)in vec3 aN;layout(location=2)in vec3 aC;layout(location=3)in vec3 aU;
+out vec3 vW,vC,vU;flat out vec3 vN;void main(){vW=aP;vN=aN;vC=aC;vU=aU;gl_Position=proj(aP);}`;
+const PROP_FS=`in vec3 vW,vC,vU;flat in vec3 vN;
+void main(){
+ if(PASS>.5&&PASS<1.5){o=vec4(vW.y/16.);return;}
+ if(PASS>1.5&&vW.y<-.06)discard;
+ vec3 n=normalize(vN),an=abs(n),a=vC;float m=vU.z;
+ vec2 q=(an.y>.6?vW.xz:an.x>an.z?vW.zy:vW.xy)*8.;float fd=fadeK(q);vec2 ti=floor(q);float h=hsh(ti);
+ if(m>6.5){o=vec4(a*(.75+.5*hsh(ti*3.+floor(T*9.)*vec2(3.,5.))),PASS>1.5?1.:0.);return;}       // glowing coals
+ if(m>.5&&m<1.5&&an.y<.6){float row=floor(ti.y/4.),bx=ti.x+mod(row,2.)*4.;                               // stone courses
+  a*=1.+(hsh(vec2(floor(bx/8.),row))-.5)*.2*fd;a*=1.-.24*min(step(mod(ti.y,4.),.5)+step(mod(bx,8.),.5),1.)*fd;}
+ else if(m<2.5&&m>1.5){vec2 g=vec2(40.,56.),ci=floor(vU.xy*g),cp=ci+.5-g*.5;float fc=fadeK(vU.xy*g);   // carved card face: frame lines, ring, tilted card, stud
+  float e=min(min(ci.x,g.x-1.-ci.x),min(ci.y,g.y-1.-ci.y)),r=length(cp);
+  vec2 rp=abs(mat2(.7071,-.7071,.7071,.7071)*cp);float cd=max(rp.x-4.5,rp.y-6.3);
+  float gr=step(abs(e-2.),.5)+step(abs(e-5.),.5)*step(.5,mod(ci.x+ci.y,2.))+step(abs(r-12.5),.8)+step(abs(cd),.7)+step(r,1.6)
+   +step(abs(abs(cp.y)-21.),.6)*step(abs(cp.x),9.);
+  a*=1.-.36*min(gr,1.)*fc;a*=.84+.22*vU.y;a=mix(a,vec3(.5,.56,.36),step(.62,N(ci*.012).r)*step(vU.y,.35)*.35);}
+ else if(m>2.5&&m<3.5){a*=1.-.16*step(.5,fract(vU.x*2.))*fd;a*=1.-.22*step(fract(vW.y*.9),.1)*fd;}        // fluted column drums
+ else if(m>3.5&&m<4.5){float by=vW.y/2.2+N(vec2(q.x*.002,.3)).a*.5,bi=floor(by);                                // mesa: sandstone strata
+  a*=mod(bi,2.)<.5?vec3(1.,.8,.52):vec3(.86,.56,.3);if(mod(bi,3.)<.5&&fract(by)<.16)a=vec3(.56,.33,.2);a*=1.-.1*step(.7,N(vec2(q.x*.004,.5)).r);}
+ else if(m>4.5&&m<5.5)a*=1.-.25*step(vU.y,.16);                                                   // palm bark rings
+ else if(m>5.5)a*=1.+.25*step(.8,vU.y);                                                           // bronze lip
+ a*=1.+(h-.5)*.11*fd;
+ gJ=h;
+ vec3 c=lit(a,n,vW,shadow((floor(vW*8.)+.5)/8.));
+ OUT(c,vW);}`;
+function buildProps(){const m=Mesh(),R0=rng(11);
+ const card=(X,w,h,d,b,rim,pan)=>{m.box(cmp(X,0,b,0),w-2*b,h-2*b,d*.65,pan,0,2);
+  m.box(cmp(X,-w/2+b/2,0,0),b,h,d,rim,0);m.box(cmp(X,w/2-b/2,0,0),b,h,d,rim,0);m.box(X,w-2*b,b,d,rim,0);m.box(cmp(X,0,h-b,0),w-2*b,b,d,rim,0)};
+ const C={bone:hex(0xe6dcc0),rock:hex(0xbdb8ae),rock2:hex(0xa69f93),dark:hex(0x4a4250),sand:hex(0xc79a5b),bark:hex(0x6a574a),bronze:hex(0x8a5f37),mesa:[.93,.93,.93],mesaL:[1,1,1],far:hex(0xbca494),farL:hex(0xd0bcaa)};
+ CARDS.forEach(([x,z,h,lean,dk,sink],i)=>{const w=h*5/7,d=.62,b=w*.1,X=xf(x,H(x,z)-sink,z,Math.atan2(-x,-z)+(i-1)*.22,lean,lean*.5);
+  const rim=dk?C.dark:C.bone,pan=dk?[.4,.36,.46]:C.rock;
+  card(X,w,h,d,b,rim,pan)});
+ COLS.forEach(([x,z,h],i)=>{const y=H(x,z)-.15,X=xf(x,y,z,i*.5);m.box(X,1.5,.4,1.5,C.bone,0);
+  m.cyl(cmp(X,0,.4,0),.47,.53,h,8,C.rock,3,C.rock2,h<4?.45-i*.3:0);if(h>4)m.box(cmp(X,0,h+.4,0),1.45,.42,1.45,C.bone,0)});
+ m.cyl(xf(-8.6,H(-8.6,-7.2)+.42,-7.2,.6,Math.PI/2),.5,.5,1.5,8,C.rock,3,C.rock2);
+ m.cyl(xf(-5.6,H(-5.6,-9.4)+.4,-9.4,2.2,Math.PI/2,0),.5,.5,1.1,8,C.rock2,3,C.rock);
+ const yd=H(DAIS[0],DAIS[1]);m.cyl(xf(DAIS[0],yd-1,DAIS[1]),4,4,1.22,12,C.sand,1);m.cyl(xf(DAIS[0],yd-1,DAIS[1],.26),3.4,3.4,1.5,12,C.rock,1,C.bone);
+ const yb=H(BRAZ[0],BRAZ[1])-.1,XB=xf(BRAZ[0],yb,BRAZ[1],.5);m.box(XB,1.25,.6,1.25,C.sand,1);m.box(cmp(XB,0,.6,0),.95,.16,.95,C.bone,0);
+ m.cyl(cmp(XB,0,.76,0),.17,.24,.5,6,C.bronze,0);m.cyl(cmp(XB,0,1.26,0),.3,.82,.48,8,C.bronze,6,0);m.cyl(cmp(XB,0,1.5,0),.7,.7,.1,8,[1,.42,.1],7);
+ const crowns=[];
+ PALMS.forEach(([x,z,h,la],pi)=>{const y0=H(x,z)-.2,n=7,lx=Math.cos(la),lz=Math.sin(la);
+  for(let i=0;i<n;i++){const t=i/n,o=t*t*1.6,r=.36*(1-t*.42);m.cyl(xf(x+lx*o,y0+t*h,z+lz*o,i*.4),r,r*1.24,h/n+.03,6,C.bark,5)}
+  const top=[x+lx*1.6,y0+h,z+lz*1.6];crowns.push(top);
+  for(let i=0;i<3;i++)m.ico(xf(top[0]+Math.cos(i*2.1+pi)*.3,top[1]-.28,top[2]+Math.sin(i*2.1+pi)*.3),.2,[.36,.26,.2],0,.1,i)});
+ for(let i=0;i<16;i++){const a=R0()*TAU,d=i<9?.4+R0()*3:6+R0()*14,r=shoreR(a)+d,x=Math.cos(a)*r,z=Math.sin(a)*r,s=.35+R0()*.8;
+  m.ico(xf(x,H(x,z)+s*.15,z,R0()*6,0,0,s,s*.62,s*(.7+R0()*.5)),1,i&1?C.rock:C.rock2,0,.3,i)}
+ const nNear=m.n,R2=rng(7);
+ for(let i=0;i<18;i++){const a=i/18*TAU+R2()*.2,r=84+R2()*20,x=Math.cos(a)*r,z=Math.sin(a)*r,y=H(x,z)-2;let rad=9+R2()*9,hh=0;const k=2+(R2()*2|0);
+  for(let s=0;s<k;s++){const h1=3.5+R2()*4.5;m.cyl(xf(x+R2()*3,y+hh,z+R2()*3,R2()*3),rad,rad*.9,h1,7,s&1?C.mesaL:C.mesa,4);hh+=h1;rad*=.6+R2()*.15}}
+ [[-80,-58,24,.94],[-96,-30,18,1.25]].forEach(([x,z,h,yw])=>card(xf(x,H(x,z)-2,z,yw,.04,.03),h*5/7,h,2.4,h*.07,C.farL,C.far));
+ return{v:new Float32Array(m.a),n:m.n,nNear,crowns}}
+
+// ---------------------------------------------------------------- wind: foliage (instanced fronds and bush blobs) and grass (instanced single-triangle blades)
+// PORT: one gust() drives everything. Vertex shaders must use textureLod. Grass is 16 bytes per blade (x,y,z,seed), opaque, double-sided, one draw.
+// In the game the blades live in a hero-centred ring; here the diorama is fixed so they are placed once. GLES 3.0 has no base-instance draw.
+const FOL_VS=`layout(location=0)in vec3 aP;layout(location=1)in vec3 aN;layout(location=2)in vec3 aU;layout(location=3)in vec4 iP;layout(location=4)in vec4 iR;
+uniform float uKind;out vec3 vW,vO,vU;flat out vec3 vN;
+vec3 rot(vec3 p,float cy,float sy,float cp,float sp){p.yz=vec2(p.y*cp+p.z*sp,-p.y*sp+p.z*cp);return vec3(p.x*cy+p.z*sy,p.y,-p.x*sy+p.z*cy);}
+void main(){float cy=cos(iR.x),sy=sin(iR.x),cp=cos(iR.y),sp=sin(iR.y);
+ vec3 p=rot(aP*iP.w,cy,sy,cp,sp),w=iP.xyz+p;float g=gust(iP.xz),k=aU.x,bw=(uKind<.5?k*k:k)*iP.w;
+ w.xz+=uWindV.xy*(.05+g*.5)*bw*(uKind<.5?.34:.2);
+ w.y+=(sin(W(260.)+iR.z*40.+k*2.5)*.05*(.4+g)-g*(uKind<.5?.14:0.))*bw;
+ w.xz+=vec2(sin(W(330.)+iR.z*17.),cos(W(290.)+iR.z*23.))*.022*bw*(.5+g);
+ vW=w;vO=aP*iP.w;vN=rot(aN,cy,sy,cp,sp);vU=vec3(aU.xy,iR.w);gl_Position=proj(w);}`;
+const FOL_FS=`in vec3 vW,vO,vU;flat in vec3 vN;uniform float uKind;
+void main(){vec3 n=normalize(vN),a;float bk=0.;
+ if(uKind<.5){float t=vU.x,s=abs(vU.y),lf=fract(t*12.);
+  if(t>.07&&s>.2+.8*(1.-lf))discard;                                  // leaflet comb cut with discard, no blending
+  a=mix(vec3(.31,.478,.227),vec3(.498,.627,.29),step(.5,fract(t*6.)));
+  a=mix(a,vec3(.64,.76,.4),step(s,.13));a*=.82+.36*vU.z;
+  if(!gl_FrontFacing)n=-n;bk=.3;}
+ else{vec3 an=abs(n);vec2 q=(an.y>.6?vO.xz:an.x>an.z?vO.zy:vO.xy)*8.;float h=hsh(floor(q));
+  a=h<.45?vec3(.498,.627,.29):h<.8?vec3(.353,.604,.4):vec3(.31,.478,.227);a=mix(vec3(.42,.58,.31),a,fadeK(q));
+  a*=(.72+.42*vU.x)*(.86+.28*vU.z);}
+ if(PASS>.5&&PASS<1.5){o=vec4(vW.y/16.);return;}
+ if(PASS>1.5&&vW.y<-.06)discard;
+ float sh=shadow(vW);
+ vec3 c=lit(a,n,vW,sh)+a*uSunC.rgb*bk*max(-dot(n,uSunD.xyz),0.)*sh;      // a little sun through the leaf
+ OUT(c,vW);}`;
+const GRASS_VS=`layout(location=0)in vec2 aV;layout(location=1)in vec4 iP;out LP vec3 vC;out vec3 vW;
+void main(){float sd=fract(iP.w),kd=floor(iP.w+.001);
+ float h=mix(.38,.82,fract(sd*7.31))*(1.+kd*1.1),wd=mix(.07,.105,fract(sd*3.7))*(1.+kd*.2);
+ float ya=sd*31.4;vec2 dr=vec2(cos(ya),sin(ya));vec3 r=iP.xyz;float y=aV.y,g=gust(r.xz);
+ vec2 of=uWindV.xy*(.06+g*(.8-kd*.3))*h+vec2(sin(W(470.)+sd*40.),cos(W(390.)+sd*31.))*.035*(.4+g);
+ if(QL>.5){vec2 dh=r.xz-uHero.xy;float d=length(dh);of+=dh/max(d,.05)*smoothstep(1.4,.2,d)*.45;      // blades lean away from the hero and the summon
+  dh=r.xz-uHero.zw;d=length(dh);of+=dh/max(d,.05)*smoothstep(1.7,.3,d)*.5*uMisc.x;}
+ of*=y;vec3 p=r+vec3(dr.x*aV.x*wd,y*h,dr.y*aV.x*wd);p.xz+=of;p.y-=dot(of,of)/(2.*h);
+ vec3 lt=uSunC.rgb*(uSunD.y*.75+.25)*shadow(r+vec3(0.,.12,0.))+uAmbS.rgb;
+ lt+=(uPL0c.rgb*plk(uPL0.xyz-r,uPL0.w)+uPL1c.rgb*plk(uPL1.xyz-r,uPL1.w))*.8;
+ vec3 a=kd>.5?mix(vec3(.4,.48,.24),vec3(.8,.75,.46),y):mix(vec3(.3,.46,.22),mix(vec3(.6,.74,.36),vec3(.74,.83,.45),fract(sd*5.3)),y);
+ float gs=smoothstep(.42,.6,g);a=mix(a,vec3(.86,.9,.56),gs*(.3+.55*y)*(1.-kd));vC=a*lt;vW=p;                // a gust is a pale streak crossing the field
+ gl_Position=uVP*vec4(p,1.);}`;
+const GRASS_FS=`in LP vec3 vC;in vec3 vW;void main(){o=vec4(fog(vC,vW),.3);}`; // alpha .3 = "no outline here" flag for the post pass
+function buildFoliage(crowns){const R1=rng(23);
+ const push=(v,p,q,r,ua,ub,uc)=>{let n=nrm(cross(sub(q,p),sub(r,p)));if(n[1]<0){let t=q;q=r;r=t;t=ub;ub=uc;uc=t;n=[-n[0],-n[1],-n[2]]}
+  [[p,ua],[q,ub],[r,uc]].forEach(([a,u])=>v.push(a[0],a[1],a[2],n[0],n[1],n[2],u[0],u[1],0))};
+ const fv=[],ns=6,pt=(t,s)=>{const w=.31*Math.pow(Math.sin(Math.PI*Math.min(1,t*.9+.1)),.7)*(1-t*.3);return[s*w,.5*t*(1-t)-.5*t*t-Math.abs(s)*w*.45,t]};
+ for(let i=0;i<ns;i++){const t0=i/ns,t1=(i+1)/ns;for(const s of[-1,1]){push(fv,pt(t0,0),pt(t0,s),pt(t1,s),[t0,0],[t0,s],[t1,s]);push(fv,pt(t0,0),pt(t1,s),pt(t1,0),[t0,0],[t1,s],[t1,0])}}
+ const bm=Mesh();bm.ico(xf(0,0,0,0,0,0,1,.8,1),1,[1,1,1],0,.22,5);const bv=[];
+ for(let i=0;i<bm.n;i++){const o=i*12;bv.push(bm.a[o],bm.a[o+1],bm.a[o+2],bm.a[o+3],bm.a[o+4],bm.a[o+5],cl(bm.a[o+1]/1.6+.5,0,1),0,0)}
+ const fi=[],bi=[];
+ crowns.forEach((c,pi)=>{const h=PALMS[pi][2];for(let i=0;i<11;i++)fi.push(c[0],c[1],c[2],(i%2?2.8:3.4)*(.85+h*.03),i/11*TAU+R1()*.3,(i%2?.42:-.2)+R1()*.2,R1(),R1())});
+ [[-6.2,9.6],[15.6,2.8],[-3.6,-15],[-9.5,-.2+12],[9.6,-12.4]].forEach(([x,z])=>{for(let i=0;i<6;i++)fi.push(x,H(x,z)+.05,z,1.2+R1()*.5,i/6*TAU+R1()*.5,.5+R1()*.35,R1(),R1())});
+ BUSH.forEach(([x,z,s])=>{for(let i=0;i<5;i++){const a=i*1.26+R1(),d=i?(.5+R1()*.5)*s:0,r=(i?.55+R1()*.3:.85)*s,bx=x+Math.cos(a)*d,bz=z+Math.sin(a)*d;bi.push(bx,H(bx,bz)+r*.45,bz,r,R1()*6,0,R1(),R1())}});
+ return{fv:new Float32Array(fv),nf:fv.length/9,bv:new Float32Array(bv),nb:bv.length/9,fi:new Float32Array(fi),nfi:fi.length/8,bi:new Float32Array(bi),nbi:bi.length/8}}
+function buildGrass(max){const Rg=rng(5),a=new Float32Array(max*4);let n=0,guard=0;
+ while(n<max&&guard++<max*60){let x,z,kind=0;
+  if(Rg()<.02){const an=Math.floor(Rg()*4)*1.6+.5+(Rg()-.5)*.35,r=shoreR(an)+(Rg()-.6)*1.3;x=Math.cos(an)*r;z=Math.sin(an)*r;kind=1}
+  else{const r=Math.pow(Rg(),.7)*40,an=Rg()*TAU;x=Math.cos(an)*r;z=Math.sin(an)*r;if(grassy(x,z)<.56+Rg()*.3)continue}
+  a[n*4]=x;a[n*4+1]=Math.max(H(x,z),-.05)-.04;a[n*4+2]=z;a[n*4+3]=kind+Rg()*.998;n++}
+ return a}
+
+// ---------------------------------------------------------------- water
+// PORT: OPAQUE water. No depth read, no scene copy, no blending. The pool bed is a procedural pattern looked up at a wobbled coordinate
+// ("refraction"), shore depth is baked per vertex, ripples are 8 analytic uniform sources (float render targets are an extension in GLES 3.0).
+// Tiers: Low = 2 sines, sky gradient only. Medium = 4 sines, ripples, caustics, clouds in the reflection. High adds one extra
+// quarter-size mirrored scene pass (uRefl) so cards, palms and the fire reflect too. That pass is an option on top of the chosen technique.
+const WAT_VS=`layout(location=0)in vec3 aP;layout(location=1)in float aD;out vec3 vW;out float vD;
+void main(){float bob=.035*sin(W(52.));vW=vec3(aP.x,bob,aP.z);vD=aD+bob;gl_Position=uVP*vec4(vW,1.);}`;
+const WAT_FS=GROUND+SKYF+`in vec3 vW;in float vD;uniform vec4 uRip[8];uniform sampler2D uRefl;
+void main(){
+ vec2 p=(floor(vW.xz*8.)+.5)/8.;float dep=vD;                                    // everything is evaluated per world texel
+ mat2 J=mat2(dFdx(vW.xz),dFdy(vW.xz));
+ if(abs(determinant(J))>1e-8)dep+=dot(vec2(dFdx(vD),dFdy(vD)),clamp(inverse(J)*(p-vW.xz),-1.5,1.5));
+ dep=max(dep,0.);
+ float g=gust(p),amp=.45+.9*g,ph;vec2 gr=vec2(0.);
+ #define WV(k,a,n) ph=dot(k,p)-W(n);gr+=a*k*cos(ph);
+ WV(vec2(1.7,.6),.022,150.)WV(vec2(-.8,2.4),.014,210.)
+ if(QL>.5){WV(vec2(3.6,-1.7),.008,310.)WV(vec2(4.6,3.9),.005,400.)}
+ gr*=amp;float rf=0.;
+ if(QL>.5)for(int i=0;i<8;i++){vec4 s=uRip[i];if(s.w<=0.)continue;
+  vec2 dv=p-s.xy;float r=length(dv),fr=1.1*s.z+.15;if(r>fr||r<fr-1.9)continue;        // outside this ring: skip before the exp
+  float e=s.w*exp(-.6*s.z)*smoothstep(fr-1.9,fr,r),a=9.*(r-fr),k=smoothstep(.04,.2,e);
+  gr+=dv/max(r,.05)*e*.22*cos(a);rf+=k*(step(.5,sin(a))-.6*step(sin(a),-.5));}
+ vec3 n=normalize(vec3(-gr.x,1.,-gr.y)),V=normalize(vW-uEyeT.xyz);
+ float sh=shadow(vec3(p.x,0.,p.y));
+ vec2 bp=p-gr*dep*(QL>.5?3.:0.),ti=floor(bp*8.);float h=hsh(ti),fd=fadeK(vW.xz*8.);
+ LP vec3 bed=sandC(ti,h,fd);
+ bed=mix(bed,vec3(.45,.43,.47),step(N(ti*.047).g,.13)*fd);                          // pebbles
+ vec2 cq=mat2(.82,.57,-.57,.82)*(bp-vec2(.9,4.2));vec2 cb=abs(cq)-vec2(.75,1.05);float cd=max(cb.x,cb.y);
+ if(cd<0.){bed=vec3(.8,.77,.68)*(1.+(h-.5)*.1);bed*=1.-.32*min(step(abs(cd+.2),.07)+step(abs(length(cq)-.42),.07),1.);}   // a sunken stone card
+ float ca=0.;
+ if(QL>.5){vec2 u=bp*.3;ca=min(N(u+vec2(16.,8.)/512.*T).g,N(u*1.37+.5-vec2(20.,12.)/512.*T).g);ca=floor(min(pow(ca,3.)*5.,1.)*3.+.4)/3.;}   // caustics
+ LP vec3 bl=bed*(uSunC.rgb*uSunD.y*sh*(.8+1.5*ca*exp(-dep*.6))+uAmbS.rgb);
+ LP vec3 c=mix(bl*vec3(.82,.97,.97),uWatS.rgb,(1.-exp(-dep*2.6))*.6);c=mix(c,uWatD.rgb,1.-exp(-dep*1.05));
+ vec3 Rf=reflect(V,n);Rf.y=abs(Rf.y)+.02;Rf=normalize(Rf);
+ LP vec3 rc=QL>.5?sky(Rf,0.):skyBase(Rf);
+ if(QL>1.5){LP vec4 pr=texture(uRefl,gl_FragCoord.xy*uRes.zw+gr*vec2(.12,.3));rc=mix(rc,pr.rgb,pr.a*.75);}
+ float ls=smoothstep(.45,.15,uSunD.y),ec=uSkyH.w,F0=.05+.05*ls+.25*ec;              // low sun and eclipse: the pool carries more sky
+ c=mix(c,rc,F0+(1.-F0)*pow(1.-max(dot(n,-V),0.),4.-ls));
+ c+=uSunK.rgb*.3*floor(pow(max(dot(normalize(Rf.xz+1e-5),normalize(uSunD.xz)),0.),6.)*ls*(1.-ec)*3.+.5)/3.*sh;   // wide banded low-sun sheen
+ float tw=hsh(floor(p*8.)+floor(T*10.)*vec2(7.,3.));
+ float lobe=pow(max(dot(Rf,uSunD.xyz),0.),70.);
+ c+=uSunK.rgb*(step(1.-lobe*(.7+g),tw)+step(.9975-.006*g,tw))*sh*(1.-.93*ec)*mix(.85,.6,ls);      // sun glitter, twinkling per texel
+ vec3 lf=normalize(uPL0.xyz+vec3(0.,.5,0.)-vW);c+=uPL0c.rgb*step(1.-pow(max(dot(Rf,lf),0.),140.),tw)*.55*smoothstep(14.,4.,length(vW.xz-uPL0.xz));   // fire glints
+ c+=uWatS.rgb*.16*step(.55,g);                                                    // a gust shows as a paler patch
+ float fn=N(p*.19+vec2(4.,2.)/512.*T).r,lap=.5+.5*sin(W(110.)+dep*18.+fn*4.);
+ float foam=step(dep+(fn-.5)*.12,.03+.05*lap);                                     // foam line that laps in and out
+ foam=max(foam,step(abs(dep-.3-.1*lap+(fn-.5)*.2),.024)*step(.5,fn)*step(.35,lap));
+ c*=1.+max(rf,-1.)*step(rf,0.)*.3;foam=max(foam,clamp(rf,0.,1.)*.55);
+ c=mix(c,max(uSunC.rgb*uSunD.y*sh+uAmbS.rgb,uSkyH.rgb*.85)*vec3(.96,.98,1.),foam*.9);
+ o=vec4(fog(c,vW),0.);}`;
+const rip=new Float32Array(32);let ripI=0;
+function ripple(x,z,s){rip[ripI*4]=x;rip[ripI*4+1]=z;rip[ripI*4+2]=0;rip[ripI*4+3]=s;ripI=(ripI+1)&7}
+
+// ---------------------------------------------------------------- summon: actors (hero, creature), card portal, ground sigil
+// PORT: actors use one rigid bone per vertex (the crowd technique with a 6-entry uniform array instead of a pose texture), posed at 12 fps.
+// Dissolve: noise sampled at model texels (1/16 m) so the edge never swims, discard below the threshold, glow band just above it.
+// The sigil is rings and card rectangles only. No runes, no symbols.
+const ACT_VS=`layout(location=0)in vec3 aP;layout(location=1)in vec3 aN;layout(location=2)in vec3 aC;layout(location=3)in vec3 aU;
+uniform mat4 uM;uniform vec4 uBone[6];out vec3 vW,vO,vC;flat out vec3 vN;
+void main(){vec4 b=uBone[int(aU.z+.5)];float c=cos(b.w),s=sin(b.w);
+ vec3 p=aP-b.xyz;p.yz=vec2(p.y*c-p.z*s,p.y*s+p.z*c);p+=b.xyz;vec3 n=aN;n.yz=vec2(n.y*c-n.z*s,n.y*s+n.z*c);
+ vO=aP;vC=aC;vW=(uM*vec4(p,1.)).xyz;vN=mat3(uM)*n;gl_Position=proj(vW);}`;
+const ACT_FS=`in vec3 vW,vO,vC;flat in vec3 vN;uniform vec4 uDis; // dissolve 0..1, model height, white flash, unused
+void main(){
+ vec3 sq=floor(vO*16.);
+ float nz=N((sq.xy+sq.z*vec2(5.,9.))*.0138).r*.85+hsh(sq.xy+sq.z*vec2(3.,7.))*.15;
+ float k=uDis.x*1.5-(1.-clamp(vO.y/uDis.y,0.,1.))*.45;
+ if(nz<k)discard;
+ if(PASS>1.5&&vW.y<-.06)discard;
+ vec3 a=vC*(1.+(hsh(sq.xy+sq.z*vec2(11.,2.))-.5)*.08);
+ vec3 c=lit(a,normalize(vN),vW,shadow(vW));
+ c=mix(c,vec3(1.,.96,1.),uDis.z);
+ float e=step(nz,k+.12)*step(.001,uDis.x);
+ c=mix(fog(c,vW),mix(vec3(.698,.42,1.),vec3(1.),step(nz,k+.05)),e);
+ o=vec4(c,PASS>1.5?1.:0.);}`;
+function buildHero(){const m=Mesh(),at=(x,y,z)=>p=>[p[0]+x,p[1]+y,p[2]+z];
+ const robe=[.95,.92,.84],robeL=hex(0x3c2a66),skin=hex(0xe8c39a),gold=hex(0xd8b24a),white=hex(0x3c2a66),boot=[.27,.2,.3],teal=hex(0x3fd6e0);
+ for(const s of[-1,1]){const b=s<0?1:2;m.box(at(s*.14,.2,0),.2,.62,.23,robeL,b);m.box(at(s*.14,0,.05),.25,.22,.36,boot,b);
+  const ab=s<0?3:4;m.box(at(s*.41,.84,0),.16,.6,.18,robe,ab);m.box(at(s*.41,.74,0),.17,.13,.19,skin,ab)}
+ m.cyl(at(0,.72,0),.37,.27,.74,6,robe,0);m.box(at(0,.95,0),.6,.1,.44,gold,0);m.box(at(0,1.36,0),.5,.12,.46,teal,0);
+ m.box(at(0,1.45,0),.4,.4,.4,skin,0);m.box(at(0,1.72,-.03),.46,.19,.47,white,0);m.box(at(0,1.5,-.2),.44,.26,.1,white,0);
+ m.box(at(-.56,.86,.08),.3,.07,.5,gold,3);m.box(at(-.56,.93,.08),.2,.05,.3,[1,1,1],3);
+ m.box(at(0,.5,-.26),.62,.94,.06,teal,5);
+ return{v:new Float32Array(m.a),n:m.n}}
+function buildCreature(){const m=Mesh(),body=hex(0xf0843c),belly=hex(0xffe9a8),horn=hex(0x6b3fa0),dark=[.17,.11,.22];
+ for(const s of[-1,1]){m.box(xf(s*.26,0,.06),.3,.2,.46,belly,0);m.ico(xf(s*.5,.72,.12,0,0,0,.16,.22,.16),1,body,0,0,1);
+  m.cyl(xf(s*.3,1.5,.02,0,0,-s*.35),.14,0,.5,5,horn,0,0);m.box(xf(s*.2,1.2,.6),.11,.15,.06,dark,0);m.box(xf(s*.2,1.28,.62),.05,.05,.05,[1,1,1],0)}
+ m.ico(xf(0,.66,0,0,0,0,.52,.5,.46),1,body,0,.1,2,c=>c[2]>.14&&c[1]<.25?belly:body);
+ m.ico(xf(0,1.2,.14,0,0,0,.5,.44,.46),1,body,0,.08,4);
+ m.box(xf(0,1.0,.52),.32,.2,.26,belly,0);m.box(xf(0,1.12,.78),.1,.07,.04,dark,0);
+ m.cyl(xf(0,.5,-.38,0,-1.9),.17,.05,.7,5,body,0,0);m.ico(xf(0,.76,-1.02,0,0,0,.16,.2,.16),1,[1,.82,.25],0,.2,6);
+ return{v:new Float32Array(m.a),n:m.n}}
+const POR_VS=`layout(location=0)in vec2 aV;uniform vec4 uPo,uPs;out vec2 vU;
+void main(){vU=aV;vec3 r=normalize(vec3(uCamR.x,0.,uCamR.z));gl_Position=proj(uPo.xyz+r*aV.x*uPs.x+vec3(0.,(aV.y+1.)*uPs.y,0.));}`;
+const POR_FS=`in vec2 vU;uniform vec4 uPs;
+void main(){vec2 b=uPs.xy,q=(floor(vU*b*16.)+.5)/16.;float rr=min(.24,min(b.x,b.y)),d=length(max(abs(q)-b+rr,0.))-rr;
+ if(d>0.)discard;vec3 c;
+ if(d>-.15)c=d>-.06?vec3(1.,.96,.8):vec3(.95,.757,.306);                             // card frame
+ else{float an=atan(q.y,q.x),rd=length(q*vec2(1.,.72));
+  float n=N(vec2(an*.31831+rd*.3,rd*.22+T*96./512.)).r*.8+.36*(1.-rd/max(b.y,.01));  // polar noise scrolled inward, then banded
+  c=n>.74?vec3(.9,.8,1.):n>.56?vec3(.698,.42,1.):n>.4?vec3(.42,.25,.63):vec3(.165,.094,.25);
+  c=mix(c,vec3(.275,.88,1.),step(.985,hsh(floor(q*16.)+floor(T*8.)*vec2(3.,5.))));}
+ o=vec4(c,PASS>1.5?1.:.8);}`;
+const SIG_VS=`layout(location=0)in vec2 aV;uniform vec4 uPo;out vec2 vU;out vec3 vW;
+void main(){vU=aV;vW=uPo.xyz+vec3(aV.x,0.,aV.y)*3.3;gl_Position=uVP*vec4(vW,1.);}`;
+const SIG_FS=`in vec2 vU;in vec3 vW;uniform vec4 uSg; // glow 0..1, spin, glow radius
+void main(){vec2 q=(floor(vU*3.3*16.)+.5)/16.;float r=length(q),cs=cos(uSg.y),sn=sin(uSg.y);
+ vec2 q2=vec2(q.x*cs-q.y*sn,q.x*sn+q.y*cs);float an=atan(q2.y,q2.x);
+ float l=step(abs(r-2.95),.07)+step(abs(r-2.68),.035)+step(abs(r-1.2),.05);
+ l+=step(abs(fract(an*24./6.2832)-.5),.12)*step(abs(r-2.81),.09);
+ float sa=.7854,a2=(floor(an/sa)+.5)*sa;vec2 lp=mat2(cos(a2),-sin(a2),sin(a2),cos(a2))*q2-vec2(1.94,0.);
+ vec2 cb=abs(lp)-vec2(.44,.31);l+=step(abs(max(cb.x,cb.y)),.045);
+ cb=abs(q)-vec2(.5,.7);l+=step(abs(max(cb.x,cb.y)),.045);
+ if(l<.5)discard;
+ vec3 base=fog(lit(vec3(.34,.3,.38),vec3(0.,1.,0.),vW,shadow(vW)),vW);
+ vec3 glow=mix(vec3(.698,.42,1.),vec3(1.,.95,1.),step(.7,.5+.5*sin(r*4.-W(330.))));
+ o=vec4(mix(base,glow,uSg.x*step(r,uSg.z)),0.);}`;
+const sm={t0:1.2,p:0,foc:0,look:0};
+// u=1: the player pressed the button, so the camera turns to the dais and holds until the effect is over
+function summon(u){sm.t0=time;if(u===1){sm.foc=sm.look=1;cam.goalYaw=1.2;cam.goalPitch=SKIES[S.sky].camPitch}}
+
+// ---------------------------------------------------------------- fire
+// PORT: two crossed quads, a steady cone plus noise scrolled upward, hard colour bands, discard for the edge. Animated in 12 fps steps on a 18x28 texel grid.
+// The flame and a heat card above it write the scene ALPHA; the post pass uses that as the haze mask.
+const FIRE_VS=`layout(location=0)in vec3 aP;uniform vec4 uFp;out vec2 vU;
+void main(){vU=vec2(aP.x+.5,aP.y);float g=gust(uFp.xz);
+ vec3 w=uFp.xyz+vec3(aP.z<.5?aP.x:0.,aP.y*1.6,aP.z<.5?0.:aP.x)*uFp.w;
+ w.xz+=uWindV.xy*(.08+g*.45)*aP.y*aP.y*uFp.w;gl_Position=proj(w);}`;
+const FIRE_FS=`in vec2 vU;
+void main(){vec2 uv=(floor(vU*vec2(18.,28.))+.5)/vec2(18.,28.);float ts=floor(T*12.)/12.;
+ float x=uv.x-.5+(N(vec2(uv.x*.2+.3,uv.y*.35-ts*.75)).r-.5)*.36*uv.y;
+ float n=N(vec2(uv.x*.45,uv.y*.3-ts*1.25)).a*.65+N(vec2(uv.x*.9+.4,uv.y*.6-ts*2.)).r*.35;
+ float f=1.12-uv.y-abs(x)*(2.+uv.y)+(n-.5)*1.25*(.2+uv.y)-smoothstep(.72,1.,uv.y)*.7;                 // a steady cone plus licking tongues
+ if(f<.2)discard;
+ o=vec4(f>.78?vec3(1.,.95,.72):f>.52?vec3(1.,.82,.25):f>.34?vec3(1.,.54,.12):vec3(.77,.25,.1),1.);}`;
+const HEAT_VS=`layout(location=0)in vec2 aV;uniform vec4 uFp;out vec2 vU;
+void main(){vU=aV;vec3 r=normalize(vec3(uCamR.x,0.,uCamR.z));float y=aV.y*.5+.5;
+ vec3 w=uFp.xyz+r*aV.x*1.1*uFp.w+vec3(0.,y*3.4*uFp.w,0.);w.xz+=uWindV.xy*y*y*.9;gl_Position=uVP*vec4(w,1.);}`;
+const HEAT_FS=`in vec2 vU;void main(){float a=(1.-vU.x*vU.x)*(.5-vU.y*.5)*1.6;if(a<.06)discard;o=vec4(0.,0.,0.,.5+.5*min(a,1.));}`;
+
+// ---------------------------------------------------------------- particles
+// PORT: stateless instanced quads (gl_PointSize limits vary by device). Position is a pure function of a per-instance seed and time.
+// Here bursts are driven by an "age" uniform; the game writes bursts once into a 2,048-slot ring buffer instead. Embers, sparks and dust are additive;
+// smoke is a few small opaque flecks in a sky-tinted grey (dithered puffs were tried and read as noise at this resolution).
+const PAR_VS=`layout(location=0)in vec2 aV;layout(location=1)in vec4 aS;
+uniform vec4 uO,uV,uK,uM,uCa,uCb;uniform float uSm; // origin+spread | velocity+random | life,size,gravity,wind | burst age(-1 loop),mode,stagger,fade | colours
+out vec2 vU;out vec4 vC;out vec3 vW;
+void main(){float Tl=uK.x,life=uM.x<0.?fract(T/Tl+aS.x):(uM.x/Tl-aS.x*uM.z);vU=aV;vW=uO.xyz;
+ if(life<0.||life>=1.){gl_Position=vec4(2.,2.,2.,1.);vC=vec4(0.);return;}
+ vec3 r=aS.yzw*2.-1.,p;float t=life*Tl;
+ if(uM.y>.5){float a=aS.y*6.283+life*5.,rad=uO.w*(1.-life*life)*(.35+.65*aS.z);p=uO.xyz+vec3(cos(a)*rad,uV.y*life*life*(.3+aS.w),sin(a)*rad);}
+ else{p=uO.xyz+r*uO.w*vec3(1.,uCb.w,1.)+(uV.xyz+r*uV.w)*t+vec3(0.,uK.z,0.)*t*t;p.xz+=uWindV.xy*uK.w*(.3+gust(p.xz))*life*t;}
+ float fade=uM.w<.5?1.-life:uM.w<1.5?sin(life*3.1416):1.-life*life;
+ float sz=uK.y*(uM.w>1.5?.6+life*1.2:.45+.55*fade);
+ vC=vec4(mix(uCa.rgb,uCb.rgb,life),fade*uCa.w);vW=p;
+ vec4 c=uVP*vec4(p,1.);if(uSm<.5)vC.a*=smoothstep(2.5,7.,c.w)*smoothstep(45.,20.,c.w);c.xy+=aV*max(vec2(sz)*vec2(uCamR.w,uCamU.w),c.w*1.05*uRes.zw);gl_Position=c;}`;
+const PAR_FS=`in vec2 vU;in vec4 vC;in vec3 vW;uniform float uSm;
+void main(){
+ if(uSm>.5){
+  vec3 c=vC.rgb*(uAmbS.rgb+uSunC.rgb*(.25+.35*step(.1,vU.y-vU.x*.4)))+uPL0c.rgb*.1*vC.a;o=vec4(fog(c,vW),.3);}   // .3 = no outline on smoke flecks
+ else o=vec4(vC.rgb*vC.a,0.);}`;
+
+// ---------------------------------------------------------------- light: shadow mask and blob shadows
+// PORT: the mask is a 1024x1024 RG8 target drawn top-down along the sun ray with MAX blending; it stores occluder height (y/16 m).
+// R holds the static props and is redrawn only when the sun moves. G holds foliage and on Medium and High is redrawn at 12 Hz
+// (the same step as the flame and the poses) so palm shadows sway with the fronds. The shadow tap reads max(R,G).
+// Blob shadows: one instanced multiply-blend draw with a dithered rim. Light shafts were tried as additive cards and cut: they did not earn their cost here.
+const BLOB_VS=`layout(location=0)in vec2 aV;layout(location=1)in vec4 iB;out vec2 vU;
+void main(){vU=aV;gl_Position=uVP*vec4(iB.xyz+vec3(aV.x,0.,aV.y)*iB.w,1.);}`;
+const BLOB_FS=`in vec2 vU;void main(){if(smoothstep(1.,.45,length(vU))*1.2<bayer())discard;o=vec4(.6,.57,.68,1.);}`;
+
+// ---------------------------------------------------------------- post: the retro pipeline
+// PORT: scene -> RGBA8 + DEPTH24 texture at 360 to 540 lines. One post pass at that size: heat haze (whole-pixel offsets from scene alpha),
+// 4-tap depth outline, ordered 4x4 dither, then a 32x32x32 palette LUT built at load (every pixel lands on a palette colour).
+// Then one sharp-bilinear upscale. Depth textures use NEAREST and are never sampled while attached.
+const FS_VS=`layout(location=0)in vec2 aV;out vec2 vUV;void main(){vUV=aV*.5+.5;gl_Position=vec4(aV,0.,1.);}`;
+const POST_FS=`in vec2 vUV;uniform sampler2D uC;uniform highp sampler2D uD;uniform sampler3D uL0,uL1;uniform vec4 uP,uP2; // retro, lut blend, outline, haze | near, far, dither spread
+float lin(float d){return uP2.x*uP2.y/(uP2.y-d*(uP2.y-uP2.x));}
+float lz(vec2 u){return lin(textureLod(uD,u,0.).r);}
+void main(){vec2 uv=vUV;
+ if(uP.w>.5){float hz=smoothstep(.5,1.,textureLod(uC,uv,0.).a);
+  if(hz>0.)uv+=floor((N(uv*vec2(4.,3.)+vec2(0.,-T*192./512.)).ra-.5)*hz*5.+.5)*uRes.zw;}
+ LP vec4 s=textureLod(uC,uv,0.);LP vec3 c=s.rgb;float zr=uP.z>.5&&abs(s.a-.3)>.1?textureLod(uD,uv,0.).r:1.;
+ if(zr<1.){float z=lin(zr);vec2 e=uRes.zw;                                  // sky pixels (depth 1) skip the four neighbour taps
+  float zm=max(max(lz(uv+vec2(e.x,0.)),lz(uv-vec2(e.x,0.))),max(lz(uv+vec2(0.,e.y)),lz(uv-vec2(0.,e.y))));
+  c=mix(c,c*vec3(.36,.3,.42),step(.05*z+.25,zm-z)*(1.-smoothstep(40.,100.,z))*.85);}
+ if(uP.x>.5){vec3 q=clamp(c+(bayer()-.5)*uP2.z,0.,1.)*(31./32.)+.5/32.;
+  c=uP.y>0.&&hsh(gl_FragCoord.xy)<uP.y?textureLod(uL1,q,0.).rgb:textureLod(uL0,q,0.).rgb;}
+ o=vec4(c,1.);}`;
+const UP_FS=`in vec2 vUV;uniform sampler2D uB;uniform vec4 uS; // source size, output px per source px
+void main(){vec2 t=vUV*uS.xy-.5,i=floor(t);o=vec4(texture(uB,(i+.5+clamp((t-i-.5)*uS.z+.5,0.,1.))/uS.xy).rgb,1.);}`;
+// palette: the art-book albedos under this sky's light (sunlit, top-lit, shade), plus sky, cloud, water and effect colours
+const ALB=[0xc8a46c,0xe8cf9a,0xc79a5b,0x8a5f37,0xe6dcc0,0xbdb8ae,0x4a4250,0xc4623a,0x7fa04a,0x4f7a3a,0xa7c76a,0x6a574a,0xe3b23c,0xd0bcaa,0x3c2a66,0xe8c39a,0xf0843c,0x3fd6e0].map(hex);
+const FXC=[0xffffff,0xfff3b8,0xffd23f,0xff8a1f,0xc4401a,0xb26bff,0xe6ccff,0x6b3fa0,0x46e0ff,0x2a1840,0x0d0814,0xf2c14e,0x9a6a1e,0x5a3a8a,0xa3203a].map(hex);
+function oklab(c){const f=v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4),r=f(c[0]),g=f(c[1]),b=f(c[2]);
+ const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+ return[.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s]}
+function buildLUT(s){const raw=[],mx=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t],ml=(a,b)=>[a[0]*b[0],a[1]*b[1],a[2]*b[2]];
+ const Lup=s.sunC.map((v,i)=>v*s.sun[1]+s.ambS[i]),Lsun=s.sunC.map((v,i)=>v*.9+s.ambS[i]*.85+s.ambG[i]*.15),Lsh=s.ambS.map((v,i)=>v*.7+s.ambG[i]*.3),Lmid=s.sunC.map((v,i)=>v*.45+(s.ambS[i]+s.ambG[i])*.5);
+ for(const a of ALB){raw.push(ml(a,Lup),ml(a,Lsun),ml(a,Lsh),ml(a,Lmid),C3(ml(a,Lsh),.42))}
+ const F=[1,.52,.2];for(const i of[0,1,2,4,5,8,9,10,15])for(const k of[.16,.36,.64,1])raw.push(ml(ALB[i],Lsh.map((v,j)=>v+F[j]*s.brz*k)));   // firelit ramps
+ const V=[.62,.36,1];for(const i of[2,4,5,10])for(const k of[.3,.7])raw.push(ml(ALB[i],Lsh.map((v,j)=>v+V[j]*k)));                           // summon-lit ramps
+ raw.push(ml(hex(0xdbe68f),Lup),ml(hex(0xdbe68f),Lsh));                                                                                  // gust-tipped grass
+ const fg=mx(mx(s.hor,s.mid,.42),s.gnd,.4);for(const i of[0,1,2,5,10,13])raw.push(mx(ml(ALB[i],Lup),fg,.3),mx(ml(ALB[i],Lup),fg,.55),mx(ml(ALB[i],Lsh),fg,.45));
+ raw.push(s.top,s.mid,s.hor,s.gnd,mx(s.top,s.mid,.5),mx(s.mid,s.hor,.33),mx(s.mid,s.hor,.66),s.cldL,s.cldS,mx(s.cldL,s.cldS,.5),s.disc,mx(s.hor,s.disc,.5),s.watD,s.watS,mx(s.watS,s.watD,.5),mx(ml(ALB[0],Lup),s.watS,.5),C3(s.watD,1.5),mx(s.watD,s.mid,.4),mx(s.watD,s.hor,.5),mx(s.watD,s.top,.5));
+ for(const f of FXC)raw.push(f);
+ const pal=[],lab=[];for(const c of raw){const cc=c.map(v=>cl(v,0,1)),L=oklab(cc);if(!lab.some(q=>Math.hypot(q[0]-L[0],q[1]-L[1],q[2]-L[2])<.028)){pal.push(cc);lab.push(L)}}
+ const n=32,d=new Uint8Array(n*n*n*4);let o=0;
+ for(let b=0;b<n;b++)for(let g=0;g<n;g++)for(let r=0;r<n;r++){const L=oklab([r/31,g/31,b/31]);let best=0,bd=1e9;
+  for(let i=0;i<lab.length;i++){const q=lab[i],d0=L[0]-q[0],d1=L[1]-q[1],d2=L[2]-q[2],dd=d0*d0*1.4+d1*d1+d2*d2;if(dd<bd){bd=dd;best=i}}
+  const c=pal[best];d[o++]=c[0]*255+.5;d[o++]=c[1]*255+.5;d[o++]=c[2]*255+.5;d[o++]=255}
+ return{d,n:pal.length}}
+
+// ---------------------------------------------------------------- build once (CPU side survives a lost context)
+const noiseData=buildNoise(),TER=buildTerrain(),PROPS=buildProps(),FOL=buildFoliage(PROPS.crowns),GRASS=buildGrass(QT[2].grass),HERO=buildHero(),CREA=buildCreature(),LUTS=SKIES.map(buildLUT);
+const SEEDS=(()=>{const r=rng(99),a=new Float32Array(512*4);for(let i=0;i<a.length;i++)a[i]=r();return a})();
+const DAISY=H(DAIS[0],DAIS[1])+.5,BRZY=H(BRAZ[0],BRAZ[1])+1.42;
+const blobData=new Float32Array(8),ZB=new Float32Array(24),bones=new Float32Array(24);
+let maskDirty=true,iw=0,ih=0;
+
+function init(){
+ gl=cv.getContext('webgl2',{antialias:false,alpha:false,depth:false,stencil:false,powerPreference:'high-performance'});
+ if(!gl){fail('This page needs WebGL2, and this browser or device did not give us one.\nTry a current Chrome, Firefox or Safari, or turn hardware acceleration on.');return false}
+ R={};const g=gl;
+ const al=g.getParameter(g.UNIFORM_BUFFER_OFFSET_ALIGNMENT)||256;R.ust=Math.ceil(U.byteLength/al)*al;R.UB=new Float32Array(R.ust*3/4);
+ R.ubo=g.createBuffer();g.bindBuffer(g.UNIFORM_BUFFER,R.ubo);g.bufferData(g.UNIFORM_BUFFER,R.UB.byteLength,g.DYNAMIC_DRAW);g.bindBufferRange(g.UNIFORM_BUFFER,0,R.ubo,0,U.byteLength);
+ const P=R.P={sky:program(SKY_VS,SKY_FS),ter:program(TER_VS,TER_FS),prop:program(PROP_VS,PROP_FS),fol:program(FOL_VS,FOL_FS),grass:program(GRASS_VS,GRASS_FS),water:program(WAT_VS,WAT_FS),
+  act:program(ACT_VS,ACT_FS),por:program(POR_VS,POR_FS),sig:program(SIG_VS,SIG_FS),fire:program(FIRE_VS,FIRE_FS),heat:program(HEAT_VS,HEAT_FS),par:program(PAR_VS,PAR_FS),
+  blob:program(BLOB_VS,BLOB_FS),post:program(FS_VS,POST_FS),up:program(FS_VS,UP_FS)};
+ R.noise=tex2(0,64,64,g.RGBA8,g.RGBA,g.UNSIGNED_BYTE,noiseData,g.LINEAR,g.REPEAT);
+ R.dummy=tex2(1,1,1,g.R8,g.RED,g.UNSIGNED_BYTE,new Uint8Array([0]),g.NEAREST,g.CLAMP_TO_EDGE);
+ R.luts=LUTS.map(l=>{const t=g.createTexture();g.activeTexture(g.TEXTURE5);g.bindTexture(g.TEXTURE_3D,t);g.texImage3D(g.TEXTURE_3D,0,g.RGBA8,32,32,32,0,g.RGBA,g.UNSIGNED_BYTE,l.d);
+  for(const[k,v]of[[g.TEXTURE_MIN_FILTER,g.NEAREST],[g.TEXTURE_MAG_FILTER,g.NEAREST],[g.TEXTURE_WRAP_S,g.CLAMP_TO_EDGE],[g.TEXTURE_WRAP_T,g.CLAMP_TO_EDGE],[g.TEXTURE_WRAP_R,g.CLAMP_TO_EDGE]])g.texParameteri(g.TEXTURE_3D,k,v);return t});
+ const quad={data:QUADV,stride:2,at:[[0,2,0]]};
+ R.vQuad=vao([quad]);
+ R.vTri=vao([{data:new Float32Array([-1,-1,3,-1,-1,3]),stride:2,at:[[0,2,0]]}]);
+ R.vTer=vao([{data:TER.tv,stride:8,at:[[0,3,0],[1,3,3],[2,2,6]]}]);
+ R.vWat=vao([{data:TER.wv,stride:4,at:[[0,3,0],[1,1,3]]}]);
+ const m12=[[0,3,0],[1,3,3],[2,3,6],[3,3,9]];
+ R.vProp=vao([{data:PROPS.v,stride:12,at:m12}]);R.vHero=vao([{data:HERO.v,stride:12,at:m12}]);R.vCrea=vao([{data:CREA.v,stride:12,at:m12}]);
+ const f9=[[0,3,0],[1,3,3],[2,3,6]],i8=[[3,4,0],[4,4,4]];
+ R.vFrond=vao([{data:FOL.fv,stride:9,at:f9},{data:FOL.fi,stride:8,at:i8,div:1}]);
+ R.vBush=vao([{data:FOL.bv,stride:9,at:f9},{data:FOL.bi,stride:8,at:i8,div:1}]);
+ R.vGrass=vao([{data:new Float32Array([-1,0,1,0,0,1]),stride:2,at:[[0,2,0]]},{data:GRASS,stride:4,at:[[1,4,0]],div:1}]);
+ R.vFire=vao([{data:new Float32Array([-.5,0,0,.5,0,0,.5,1,0,-.5,0,0,.5,1,0,-.5,1,0,-.5,0,1,.5,0,1,.5,1,1,-.5,0,1,.5,1,1,-.5,1,1]),stride:3,at:[[0,3,0]]}]);
+ R.vPar=vao([{buf:quad.buf,stride:2,at:[[0,2,0]]},{data:SEEDS,stride:4,at:[[1,4,0]],div:1}]);
+ R.blobBuf={data:blobData,dyn:true,stride:4,at:[[1,4,0]],div:1};R.vBlob=vao([{buf:quad.buf,stride:2,at:[[0,2,0]]},R.blobBuf]);
+ R.maskSize=0;R.maskQ=-1;iw=ih=0;maskDirty=true;
+ g.disable(g.DITHER);g.depthFunc(g.LEQUAL);g.clearColor(0,0,0,0);
+ return true}
+function targets(){const g=gl,q=QT[S.q];
+ if(R.maskSize!==q.mask){if(R.maskT){g.deleteTexture(R.maskT);g.deleteFramebuffer(R.maskF)}R.maskSize=q.mask;
+  R.maskT=tex2(1,q.mask,q.mask,g.RG8,g.RG,g.UNSIGNED_BYTE,null,g.NEAREST,g.CLAMP_TO_EDGE);R.maskF=fbo(R.maskT);maskDirty=true}
+ const dpr=Math.min(window.devicePixelRatio||1,3);let w=Math.max(2,Math.round(cv.clientWidth*dpr)),h=Math.max(2,Math.round(cv.clientHeight*dpr));
+ const mx=Math.max(w,h);if(mx>2560){w=Math.round(w*2560/mx);h=Math.round(h*2560/mx)}
+ if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}
+ const lo=Math.min(w,h),hi=Math.max(w,h),k=S.retro?Math.min(q.h/lo,q.h*16/9/hi,1):Math.min(1,[1280,1600,1920][S.q]/hi);
+ const nw=Math.max(16,Math.round(w*k)),nh=Math.max(16,Math.round(h*k));
+ if(nw===iw&&nh===ih)return;iw=nw;ih=nh;
+ for(const t of['colT','depT','postT','refT','refD'])if(R[t])g.deleteTexture(R[t]);for(const f of['sceneF','postF','refF'])if(R[f])g.deleteFramebuffer(R[f]);
+ R.colT=tex2(3,iw,ih,g.RGBA8,g.RGBA,g.UNSIGNED_BYTE,null,g.NEAREST,g.CLAMP_TO_EDGE);
+ R.depT=tex2(4,iw,ih,g.DEPTH_COMPONENT24,g.DEPTH_COMPONENT,g.UNSIGNED_INT,null,g.NEAREST,g.CLAMP_TO_EDGE);
+ R.sceneF=fbo(R.colT,R.depT);
+ R.postT=tex2(7,iw,ih,g.RGBA8,g.RGBA,g.UNSIGNED_BYTE,null,g.LINEAR,g.CLAMP_TO_EDGE);R.postF=fbo(R.postT);
+ R.rw=Math.max(8,iw>>1);R.rh=Math.max(8,ih>>1);
+ R.refT=tex2(2,R.rw,R.rh,g.RGBA8,g.RGBA,g.UNSIGNED_BYTE,null,g.NEAREST,g.CLAMP_TO_EDGE);
+ R.refD=tex2(4,R.rw,R.rh,g.DEPTH_COMPONENT24,g.DEPTH_COMPONENT,g.UNSIGNED_INT,null,g.NEAREST,g.CLAMP_TO_EDGE);R.refF=fbo(R.refT,R.refD);   // 24-bit depth for the mirror pass (16 bits z-fights at near .5, far 600)
+ g.bindFramebuffer(g.FRAMEBUFFER,null)}
+
+// ---------------------------------------------------------------- simulation of the view (camera, hero walk, summon timeline). Plain view code, never the game sim.
+// yaw = home + a slow swing (never a full orbit: the far side of the diorama puts a card or a trunk in the lens)
+const cam={yaw:0,home:0,sw:0,pitch:.14,dist:14,tx:0,ty:.9,tz:0,goalYaw:null,goalPitch:.14,idle:9,auto:1};
+let time=0,fpsT=0,fpsN=0,fps=0,over=0,under=0,ups=0,budget=1/60;
+const hero={a:1.1,speed:0,timer:0,ph:0,step:0,x:0,z:0,y:0,yaw:0,idle:0,pose:0,pt:-1};
+const crea={x:DAIS[0],z:DAIS[1],dis:1,flash:0,on:0,yaw:0,bob:0};
+function tick(dt){time+=dt;tickSky(dt);
+ // camera
+ cam.idle+=dt;
+ if(cam.goalYaw!==null){let d=cam.goalYaw-cam.home;d=((d+Math.PI)%TAU+TAU)%TAU-Math.PI;const k=Math.min(1,dt*1.6);cam.home+=d*k;cam.sw-=cam.sw*k;cam.pitch+=(cam.goalPitch-cam.pitch)*k;if(Math.abs(d)<.01){cam.goalYaw=null;cam.idle=9}}
+ cam.auto+=((cam.idle>3.5&&cam.goalYaw===null?1:0)-cam.auto)*Math.min(1,dt*1.2);cam.sw+=cam.auto*dt;cam.yaw=cam.home+.35*Math.sin(cam.sw*.07);
+ // hero wades round the pool edge and makes ripples
+ hero.timer+=dt;hero.speed+=(((hero.timer%15)<10.5?1:0)-hero.speed)*Math.min(1,dt*3);
+ const r=shoreR(hero.a)-1.05;hero.a+=hero.speed*1.1*dt/r;hero.x=r*Math.cos(hero.a);hero.z=r*Math.sin(hero.a);hero.y=H(hero.x,hero.z);
+ const hx=-Math.sin(hero.a),hz=Math.cos(hero.a);let gy=Math.atan2(hx*hero.speed-hero.x*(1-hero.speed)*.14,hz*hero.speed-hero.z*(1-hero.speed)*.14),dy=gy-hero.yaw;dy=((dy+Math.PI)%TAU+TAU)%TAU-Math.PI;hero.yaw+=dy*Math.min(1,dt*4);
+ hero.ph+=hero.speed*dt*5.4;const st=Math.floor(hero.ph/Math.PI);if(st!==hero.step){hero.step=st;ripple(hero.x+hx*.25,hero.z+hz*.25,.95)}
+ hero.idle+=dt;if(hero.speed<.2&&hero.idle>1.6){hero.idle=0;ripple(hero.x,hero.z,.5)}
+ if(Math.floor(time/3.3)!==Math.floor((time-dt)/3.3)){const a=hash2(time*7|0,3)*TAU,d=hash2(time*5|0,9)*4.5;ripple(Math.cos(a)*d,Math.sin(a)*d,.7)}
+ for(let i=0;i<8;i++){rip[i*4+2]+=dt;if(rip[i*4+2]>6)rip[i*4+3]=0}
+ // summon timeline
+ let p=time-sm.t0;if(p>12.5){summon();p=0}sm.p=p;
+ if(sm.foc){const k=p<9?1:0,e=Math.min(1,dt*3.5);cam.tx+=(-7*k-cam.tx)*e;cam.tz+=(2.8*k-cam.tz)*e;
+  if(k)cam.idle=0;else{if(sm.look){sm.look=0;cam.goalYaw=SKIES[S.sky].camYaw}if(Math.abs(cam.tx)<.02){cam.tx=cam.tz=0;sm.foc=0}}}
+ const fx=-DAIS[0],fz=-DAIS[1],fl=Math.hypot(fx,fz),out=ss(1.1,2.6,p)*1.2;
+ crea.on=p>1.1&&p<8.4?1:0;crea.dis=p<2.5?1-ss(1.1,2.45,p):ss(7,8.35,p);crea.flash=p>2.45?cl(1-(p-2.45)/.3,0,1):0;
+ crea.x=DAIS[0]+fx/fl*out;crea.z=DAIS[1]+fz/fl*out;crea.yaw=Math.atan2(fx,fz)+(p>2.8&&p<7?Math.sin(p*1.7)*.5:0);
+ const hp=p>2.9&&p<6.9?Math.abs(Math.sin((Math.floor(p*12)/12)*4.2)):0;crea.bob=hp*.16}
+
+// ---------------------------------------------------------------- frame
+const su4=(pr,n,a,b,c,d)=>{const l=pr.u[n];if(l)gl.uniform4f(l,a,b||0,c||0,d||0)};
+function particles(P,count,O,V,K,M,A,B,smoke){if(count<=0)return;su4(P,'uO',...O);su4(P,'uV',...V);su4(P,'uK',...K);su4(P,'uM',...M);su4(P,"uCa",...A);su4(P,"uCb",...B);gl.uniform1f(P.u.uSm,smoke?1:0);draw(6,count)}
+function render(){const g=gl,q=S.q,Q=QT[q],P=R.P,c=sky.cur;targets();stats.d=0;stats.t=0;
+ const Tm=time%512,asp=iw/ih,pit=cam.pitch+(asp<1?.12:0),cp=Math.cos(pit),sp=Math.sin(pit),tgt=[cam.tx,asp<1?.2:cam.ty,cam.tz],cd=cam.dist;   // portrait looks down a little more so the pool sits mid-frame
+ const eye=[cam.tx+cd*Math.sin(cam.yaw)*cp,cam.ty+cd*sp,cam.tz+cd*Math.cos(cam.yaw)*cp];eye[1]=Math.max(eye[1],Math.max(H(eye[0],eye[2]),0)+.7);
+ let fov=50*Math.PI/180;if(asp<1)fov=Math.min(1.42,2*Math.atan(Math.tan(.36)/asp));
+ const near=.5,far=600,Pm=persp(fov,asp,near,far),Vm=look(eye,tgt),VP=mul(Pm,Vm),Vr=Vm.slice();Vr[4]=-Vr[4];Vr[5]=-Vr[5];Vr[6]=-Vr[6];Vr[7]=-Vr[7];const VPr=mul(Pm,Vr);
+ const fw=nrm(sub(tgt,eye)),rt=nrm(cross(fw,[0,1,0])),up=cross(rt,fw),ty=Math.tan(fov/2),tx=ty*asp;
+ // frame uniforms
+ const fq=Math.floor(time*12),fl=1+.02*Math.sin(fq*1.7)+.015*Math.sin(fq*4.3),p=sm.p,sigA=ss(0,.6,p)*(1-ss(8.6,9.6,p)),porO=p>.4&&p<3.1,porL=ss(.4,1,p)*(1-ss(2.6,3.1,p)),dEdge=p>7&&p<8.4?Math.sin((p-7)/1.4*Math.PI):0;
+ const pl1=sigA*.35+porL*1.1+dEdge*.9+crea.flash*1.2;
+ setU('SunD',c.sun,c.shd);setU('SunC',c.sunC,0);setU('AmbS',c.ambS,q);setU('SkyT',c.top,c.cover);setU('SkyM',c.mid,c.stars);setU('SkyH',c.hor,c.ecl);setU('SkyG',c.gnd,c.glow);
+ setU('SunK',c.disc,c.discR);setU('CldL',c.cldL,c.fogA);setU('CldS',c.cldS,c.fogB);setU('WindV',[.9487,.3162,c.wind],c.stretch);
+ setU('PL0',[BRAZ[0],BRZY+.7,BRAZ[1]],10.5*fl);setU('PL0c',C3([1,.52,.2],c.brz),0);   // the flicker breathes the light radius, not its brightness
+ setU('PL1',[DAIS[0],DAISY+1.5,DAIS[1]],12);setU('PL1c',C3([.62,.36,1],pl1),0);
+ setU('WatD',c.watD,0);setU('WatS',c.watS,0);setU('Hero',[hero.x,hero.z,crea.x],crea.z);setU('Res',[iw,ih,1/iw],1/ih);
+ setU('CamR',C3(rt,tx),Pm[0]);setU('CamU',C3(up,ty),Pm[5]);setU('CamF',fw,0);setU('Misc',[crea.on*(1-crea.dis),c.emb,S.retro],0);
+ const fill=(i,vp,e,n)=>{U.set(vp,0);setU('EyeT',e,Tm);setU('AmbG',c.ambG,n);R.UB.set(U,i*R.ust/4)};
+ fill(0,VP,eye,0);fill(1,VP,eye,1);fill(2,VPr,[eye[0],-eye[1],eye[2]],2);g.bindBuffer(g.UNIFORM_BUFFER,R.ubo);g.bufferSubData(g.UNIFORM_BUFFER,0,R.UB);   // one write per frame
+ const pass=i=>g.bindBufferRange(g.UNIFORM_BUFFER,0,R.ubo,i*R.ust,U.byteLength);
+ const use=pr=>{g.useProgram(pr.p);return pr};
+ g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,R.noise);
+ g.colorMask(true,true,true,true);g.depthMask(true);g.disable(g.BLEND);g.disable(g.POLYGON_OFFSET_FILL);g.frontFace(g.CCW);
+ const foliage=()=>{g.disable(g.CULL_FACE);use(P.fol);g.uniform1f(P.fol.u.uKind,0);g.bindVertexArray(R.vFrond);draw(FOL.nf,FOL.nfi);g.uniform1f(P.fol.u.uKind,1);g.bindVertexArray(R.vBush);draw(FOL.nb,FOL.nbi)};
+ // 1. shadow mask (height along the sun ray, MAX blend)
+ if(maskDirty||(q>0&&fq!==R.maskQ)){R.maskQ=fq;pass(1);g.activeTexture(g.TEXTURE1);g.bindTexture(g.TEXTURE_2D,R.dummy);
+  g.bindFramebuffer(g.FRAMEBUFFER,R.maskF);g.viewport(0,0,Q.mask,Q.mask);g.disable(g.DEPTH_TEST);g.disable(g.CULL_FACE);g.enable(g.BLEND);g.blendEquation(g.MAX);g.blendFunc(g.ONE,g.ONE);
+  if(maskDirty){maskDirty=false;g.colorMask(true,false,false,false);g.clear(g.COLOR_BUFFER_BIT);use(P.prop);g.bindVertexArray(R.vProp);draw(PROPS.nNear)}   // R: static props, only when the sun moves
+  g.colorMask(false,true,false,false);g.clear(g.COLOR_BUFFER_BIT);foliage();g.colorMask(true,true,true,true);g.blendEquation(g.FUNC_ADD);g.disable(g.BLEND)}   // G: swaying foliage
+ g.activeTexture(g.TEXTURE1);g.bindTexture(g.TEXTURE_2D,R.maskT);
+ // shared opaque scene (main pass and the mirrored pass)
+ const hm=model(hero.x,hero.y,hero.z,hero.yaw,1,1,1),pq=Math.floor(time*12);if(pq!==hero.pt){hero.pt=pq;hero.pose=hero.ph}
+ const sw=Math.sin(hero.pose)*.62*hero.speed,br=Math.sin(pq*.4)*.03,wg=.25+.2*Math.sin(pq*.55);
+ bones.set([0,0,0,0,-.14,.82,0,sw,.14,.82,0,-sw,-.41,1.42,0,-sw*.7+br-.25,.41,1.42,0,sw*.7-br,0,1.42,-.24,-.12-wg*.5-Math.abs(sw)*.3]);
+ const sq=1+crea.bob*.5,cm=model(crea.x,DAISY+crea.bob,crea.z,crea.yaw,1.3/Math.sqrt(sq),1.3*sq,1.3/Math.sqrt(sq));
+ const scene=(main)=>{
+  g.enable(g.DEPTH_TEST);g.enable(g.CULL_FACE);
+  use(P.ter);g.bindVertexArray(R.vTer);draw(main?TER.nT:TER.nI);
+  use(P.prop);g.bindVertexArray(R.vProp);draw(PROPS.n);
+  use(P.act);g.uniformMatrix4fv(P.act.u.uM,false,hm);g.uniform4fv(P.act.u.uBone,bones);su4(P.act,'uDis',0,1.9,0);g.bindVertexArray(R.vHero);draw(HERO.n);
+  if(crea.on){g.uniformMatrix4fv(P.act.u.uM,false,cm);g.uniform4fv(P.act.u.uBone,ZB);su4(P.act,'uDis',crea.dis,1.8,crea.flash);g.bindVertexArray(R.vCrea);draw(CREA.n)}
+  foliage();
+  use(P.fire);su4(P.fire,'uFp',BRAZ[0],BRZY,BRAZ[1],1.05);g.bindVertexArray(R.vFire);draw(12);
+  if(porO){const ey=p<1?1-Math.pow(1-ss(.4,1,p),2):1,ex=1-ss(2.6,3.1,p);use(P.por);su4(P.por,'uPo',DAIS[0],DAISY+.05,DAIS[1]);su4(P.por,'uPs',1.5*Math.max(ex,.04)*(.3+.7*ey),2.1*Math.max(ey,.03));g.bindVertexArray(R.vQuad);draw(6)}};
+ // 2. mirrored pass for the pool (High)
+ if(q>1){pass(2);g.bindFramebuffer(g.FRAMEBUFFER,R.refF);g.viewport(0,0,R.rw,R.rh);g.depthMask(true);g.clear(g.COLOR_BUFFER_BIT|g.DEPTH_BUFFER_BIT);g.frontFace(g.CW);scene(false);g.frontFace(g.CCW)}
+ // 3. main pass at the low internal resolution
+ pass(0);g.bindFramebuffer(g.FRAMEBUFFER,R.sceneF);g.viewport(0,0,iw,ih);g.depthMask(true);g.clear(g.COLOR_BUFFER_BIT|g.DEPTH_BUFFER_BIT);
+ scene(true);
+ g.disable(g.CULL_FACE);use(P.grass);g.bindVertexArray(R.vGrass);draw(3,Q.grass);
+ use(P.sig);su4(P.sig,'uPo',DAIS[0],DAISY+.03,DAIS[1]);su4(P.sig,'uSg',sigA,time*.25*sigA,p<1?p*5:9);g.bindVertexArray(R.vQuad);draw(6);
+ g.activeTexture(g.TEXTURE2);g.bindTexture(g.TEXTURE_2D,R.refT);
+ use(P.water);g.uniform4fv(P.water.u.uRip,rip);g.bindVertexArray(R.vWat);draw(TER.nW);
+ g.depthMask(false);use(P.sky);g.bindVertexArray(R.vTri);draw(3);
+ // decals and effects
+ g.enable(g.BLEND);g.blendFuncSeparate(g.DST_COLOR,g.ZERO,g.ZERO,g.ONE);g.enable(g.POLYGON_OFFSET_FILL);g.polygonOffset(-2,-2);
+ blobData.set([hero.x,Math.max(hero.y,0)+.05,hero.z,.62,crea.x,DAISY+.04,crea.z,crea.on&&crea.dis<.6?.8:0]);g.bindBuffer(g.ARRAY_BUFFER,R.blobBuf.buf);g.bufferSubData(g.ARRAY_BUFFER,0,blobData);
+ use(P.blob);g.bindVertexArray(R.vBlob);draw(6,2);g.disable(g.POLYGON_OFFSET_FILL);
+ if(q>0){g.colorMask(false,false,false,true);g.blendEquation(g.MAX);g.blendFunc(g.ONE,g.ONE);use(P.heat);su4(P.heat,'uFp',BRAZ[0],BRZY,BRAZ[1],1.05);g.bindVertexArray(R.vQuad);draw(6);g.blendEquation(g.FUNC_ADD);g.colorMask(true,true,true,true)}
+ g.blendFuncSeparate(g.ONE,g.ONE,g.ZERO,g.ONE);
+ use(P.par);g.bindVertexArray(R.vPar);
+ if(Q.smoke&&c.brz>.6){const sa=c.mid.map(v=>v*.6+.2);g.disable(g.BLEND);g.depthMask(true);particles(P.par,Q.smoke,[BRAZ[0],BRZY+1.3,BRAZ[1],.16],[0,1.25,0,.2],[3.2,.03,0,.9],[-1,0,0,0],[sa[0],sa[1],sa[2],1],[c.mid[0],c.mid[1],c.mid[2],.5],1);g.depthMask(false);g.enable(g.BLEND)}
+ particles(P.par,Q.emb,[BRAZ[0],BRZY+.5,BRAZ[1],.28],[0,1.5,0,.55],[2.56,.05,.25,.5],[-1,0,0,0],[1,.8,.3,1.1*(.5+.5*c.brz)],[1,.25,.05,.3]);
+ const e=c.emb;particles(P.par,Math.round(Q.mote*(1-.45*e)),[0,2.4+e,-1,24],[1.6,.25+e*.5,.55,.5],[6.4,.03,0,.22],[-1,0,0,1],[1,.95-.35*e,.8-.55*e,.3+.3*e],[1,.9-.5*e,.7-.6*e,.16]);
+ if(p<2.2)particles(P.par,Q.spark,[DAIS[0],DAISY+.1,DAIS[1],3.2],[0,2.6,0,0],[1.6,.06,0,0],[p-.1,1,.35,1],[.8,.5,1,1.2],[.3,.9,1,0]);
+ if(p>2.5&&p<4)particles(P.par,Q.spark,[crea.x,DAISY+1,crea.z,.5],[0,2.2,0,3.2],[1.1,.065,-2.4,.1],[p-2.5,0,.15,0],[1,.9,1,1.3],[.7,.4,1,.6]);
+ if(p>7&&p<9.6)particles(P.par,Q.spark,[crea.x,DAISY+.9,crea.z,.55],[0,1.5,0,.6],[1.5,.06,.3,.6],[p-7.1,0,.6,0],[.9,.7,1,1.2],[.5,.3,1,1]);
+ g.disable(g.BLEND);g.depthMask(true);
+ // 4. post at the internal resolution, 5. upscale
+ g.disable(g.DEPTH_TEST);g.bindFramebuffer(g.FRAMEBUFFER,R.postF);g.viewport(0,0,iw,ih);
+ g.activeTexture(g.TEXTURE3);g.bindTexture(g.TEXTURE_2D,R.colT);g.activeTexture(g.TEXTURE4);g.bindTexture(g.TEXTURE_2D,R.depT);
+ g.activeTexture(g.TEXTURE5);g.bindTexture(g.TEXTURE_3D,R.luts[sky.lutA]);g.activeTexture(g.TEXTURE6);g.bindTexture(g.TEXTURE_3D,R.luts[sky.to]);
+ use(P.post);su4(P.post,'uP',S.retro,sky.k<1?ss(0,1,sky.k):0,S.retro&&q>0?1:0,q>0?1:0);su4(P.post,'uP2',near,far,.055);g.bindVertexArray(R.vTri);draw(3);
+ g.bindFramebuffer(g.FRAMEBUFFER,null);g.viewport(0,0,cv.width,cv.height);g.activeTexture(g.TEXTURE7);g.bindTexture(g.TEXTURE_2D,R.postT);
+ use(P.up);su4(P.up,'uS',iw,ih,Math.max(1,cv.height/ih));draw(3);g.bindVertexArray(null)}
+let last=0,realT=0,fast=0;
+// One call per half-second window with the average frame time. 120 Hz is only assumed after 20 fast windows in a row;
+// a 120 Hz budget that cannot be held on Medium falls back to the 60 Hz budget instead of dropping to Low.
+function autoQ(avg){fast=avg<.0095?fast+1:0;if(fast>=20)budget=1/120;
+ over=avg>1.25*budget?over+1:0;under=avg<1.05*budget?under+1:0;
+ if(over>=4){over=under=0;if(budget<.01&&S.q<2){budget=1/60;fast=0}else if(S.q>0){S.q--;maskDirty=true;syncUI()}}
+ else if(under>=20&&S.q<2&&ups<1){under=0;ups++;S.q++;maskDirty=true;syncUI()}}
+function frame(ms){raf=requestAnimationFrame(frame);const now=ms/1000;let dt=now-last;last=now;if(!(dt>0))return;const real=dt;dt=Math.min(dt,.1);
+ tick(dt);render();
+ // PORT: automatic quality. Step down when the average frame time stays above 1.25 x budget for 2 s. The native build steps back up after 10 s under 0.7 x budget
+ // (measured CPU + GPU time). A browser cannot see below vsync, so here "under" means holding the budget, and only one step up is tried.
+ fpsT+=real;fpsN++;realT+=real;if(fpsT>=.5){const avg=fpsT/fpsN;fps=1/avg;fpsT=0;fpsN=0;hud();if(!S.userQ&&realT>4)autoQ(avg)}}
+const PAGE_KB=Math.round((document.documentElement.outerHTML.length+16)/1024);
+function hud(){const f=Math.round(fps)+' fps | '+stats.d+' draws | ',t=Math.round(stats.t);
+ hudEl.textContent=innerWidth<600?f+Math.round(t/1000)+'k tris | '+iw+'x'+ih+' | '+PAGE_KB+' KB code':f+t.toLocaleString('en-US')+' triangles | '+iw+'x'+ih+' | This page: '+PAGE_KB+' KB, all of it code'}
+function start(){if(!raf&&gl&&!document.hidden){last=performance.now()/1000;raf=requestAnimationFrame(frame)}}
+function stop(){if(raf){cancelAnimationFrame(raf);raf=0}}
+
+// ---------------------------------------------------------------- controls
+const skyB=[...document.querySelectorAll('[data-sky]')],qB=[...document.querySelectorAll('[data-q]')],retroB=document.getElementById('retro');
+function syncUI(){skyB.forEach((b,i)=>b.setAttribute('aria-pressed',i===S.sky));qB.forEach((b,i)=>b.setAttribute('aria-pressed',i===S.q));retroB.textContent='Retro: '+(S.retro?'on':'off');retroB.setAttribute('aria-pressed',!!S.retro)}
+skyB.forEach((b,i)=>b.addEventListener('click',()=>setSky(i)));
+qB.forEach((b,i)=>b.addEventListener('click',()=>{S.q=i;S.userQ=true;maskDirty=true;save();syncUI()}));
+retroB.addEventListener('click',()=>{S.retro=S.retro?0:1;save();syncUI()});
+document.getElementById('summon').addEventListener('click',()=>summon(1));
+const ptr=new Map();let pinch=0;
+cv.addEventListener('pointerdown',e=>{ptr.set(e.pointerId,[e.clientX,e.clientY]);try{cv.setPointerCapture(e.pointerId)}catch(_){}cam.idle=0;cam.goalYaw=null;sm.look=0;pinch=0;cv.style.cursor='grabbing'});
+cv.addEventListener('pointermove',e=>{const a=ptr.get(e.pointerId);if(!a)return;const dx=e.clientX-a[0],dy=e.clientY-a[1];a[0]=e.clientX;a[1]=e.clientY;cam.idle=0;
+ if(ptr.size===1){const k=3.2/Math.max(320,Math.min(cv.clientWidth,cv.clientHeight));cam.home-=dx*k;cam.pitch=cl(cam.pitch+dy*k,-.06,1.1)}
+ else if(ptr.size===2){const v=[...ptr.values()],d=Math.hypot(v[0][0]-v[1][0],v[0][1]-v[1][1]);if(pinch)cam.dist=cl(cam.dist*pinch/Math.max(d,1),9,30);pinch=d}});
+const pup=e=>{ptr.delete(e.pointerId);pinch=0;if(!ptr.size)cv.style.cursor='grab'};cv.addEventListener('pointerup',pup);cv.addEventListener('pointercancel',pup);
+cv.addEventListener('wheel',e=>{e.preventDefault();cam.dist=cl(cam.dist*Math.exp(e.deltaY*.001),9,30);cam.idle=0},{passive:false});
+cv.addEventListener('webglcontextlost',e=>{e.preventDefault();stop()});
+cv.addEventListener('webglcontextrestored',()=>{try{if(init())start()}catch(err){fail('The graphics context could not be restored.\n'+err.message)}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else start()});
+window.DS={S,cam,sky,stats,view:(y,pt,d)=>{cam.home=y;cam.sw=0;cam.goalYaw=null;cam.idle=-1e9;cam.auto=0;if(pt!=null)cam.pitch=pt;if(d)cam.dist=d},setSky,summon,at:p=>{sm.t0=time-p},ripple,setRetro:v=>{S.retro=v?1:0;syncUI()},setQ:v=>{S.q=v;S.userQ=true;maskDirty=true;syncUI()},advance:s=>{for(let i=0,n=Math.ceil(s*30);i<n;i++)tick(s/n)},glError:()=>gl?gl.getError():-1,autoQ:(avg,n,reset)=>{if(reset){over=under=ups=fast=0;budget=1/60;S.q=2}for(let i=0;i<n;i++)autoQ(avg);return{q:S.q,hz:Math.round(1/budget)}},size:()=>[iw,ih],palette:LUTS.map(l=>l.n)};
+try{if(init()){setSky(0,true);start()}}catch(err){fail('The showcase could not start on this device.\n'+String(err.message||err).slice(0,900));if(window.console)console.error(err)}
+})();
+</script>
+</body>
+</html>
