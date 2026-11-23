@@ -9,7 +9,7 @@ import { DuelistRig } from './rig.js';
 import { actorLit } from './engine.js';
 import { Ribbon } from './ribbon.js';
 import { OwnEffects } from './ownfx.js';
-import { RAMP } from '../data/fxramp.js';
+import { RAMP, ownColour } from '../data/fxramp.js';
 import { statusLit, statusAttr } from './status.js';
 import { creatureGeometry, creatureLit } from './creatures.js';
 import { PICKUP_COLORS } from '../data/pickups.js';
@@ -96,7 +96,7 @@ function modelGroup(model, targetSize, axis, glowColor) {
 export class Actors {
   constructor(scene, assets, fx) {
     this.scene = scene; this.assets = assets || {}; this.fx = fx;
-    this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.hitRow = new Int8Array(CFG.enemy.max).fill(-1); this._tierSeen = new WeakMap(); this._fc = new T.Color(); this.flashBright = ['fire', 'ice', 'lightning', 'poison', 'wind', 'earth', 'light', 'dark'].map(n => new T.Color(RAMP[n][1])); this.flashNeutral = new T.Color(0xf3e3c2); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;
+    this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.hitRow = new Int8Array(CFG.enemy.max).fill(-1); this._tierSeen = new WeakMap(); this.labStatus = new Uint8Array(CFG.enemy.max); this._fc = new T.Color(); this.flashBright = ['fire', 'ice', 'lightning', 'poison', 'wind', 'earth', 'light', 'dark'].map(n => new T.Color(RAMP[n][1])); this.flashNeutral = new T.Color(0xf3e3c2); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;       // labStatus: the lab sets an element status code on a body (1 ice shell, 2 venom, 3 gust, 4 mire, 5 reveal, 6 shred) until the sim wires those elements
     this._white = new T.Color(0x666666); this._black = new T.Color(0x000000);
     this.player = playerMesh(); scene.add(this.player);
     this.rig = null; this.rigs = {};                                          // the skinned duelists, for each GLB present in assets/models (duelist-<id>-anim.glb)
@@ -156,7 +156,7 @@ export class Actors {
   }
 
   // an own effect takes its colour from the effect ramp by the element the sim names (bright tone); with no element it is the neutral card tone, never gold, XP cyan or violet, except a summon or seal effect, which keeps its violet
-  _ownHex(o) { if (o.el && RAMP[o.el]) return RAMP[o.el][1]; const c = o.color || 0, r = (c >> 16) & 255, gg = (c >> 8) & 255, b = c & 255; return (b > 200 && r > 120 && r < 230 && gg < 170) ? c : 0xf3e3c2; }
+  _ownHex(o) { if (o.el && RAMP[o.el]) return ownColour(o.el); const c = o.color || 0, r = (c >> 16) & 255, gg = (c >> 8) & 255, b = c & 255; return (b > 200 && r > 120 && r < 230 && gg < 170) ? c : 0xf3e3c2; }
   // the hit flash takes the hitting element's bright tone (peak mix 0.6, never pure white); a hit with no element flashes the neutral card tone. The view learns the element from the hit event (the sim sends only the flags).
   hitAt(x, z, flags) { const e = this.lastEn; if (!e) return; const el = flags >> 1; const ROW = [[1, 0], [2, 2], [4, 1], [8, 3], [16, 4], [32, 5], [64, 6], [128, 7]]; let row = -1; for (const [bit, r] of ROW) if (el & bit) { row = r; break; } let best = -1, bd = 1.44; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.hitRow[best] = row; }
   _flashCol(i, base, boost) { const r = this.hitRow[i]; return this._fc.copy(base).lerp(r >= 0 ? this.flashBright[r] : this.flashNeutral, 0.6).multiplyScalar(boost || 1); }
@@ -388,7 +388,7 @@ export class Actors {
       d.scale.set(sc[0] * pulse * grow * mgs * (hit ? 1.2 : 1), sc[1] * pulse * grow * mgs * (hit ? 0.85 : 1), sc[2] * pulse * grow * mgs * (hit ? 1.2 : 1)); d.updateMatrix();
       k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this._flashCol(i, e.ace[i] ? this.aceCol : k.base, k.boost) : (e.ace[i] ? this.aceCol : k.base)); if (!hit) this.hitRow[i] = -1;
       { const bn = e.burn[i]; let bf = 0; if (bn > 0) { if (this.burnMax[i] < bn) this.burnMax[i] = bn; const bm = this.burnMax[i]; bf = Math.max(0.02, Math.min(1, (bm - bn) / 0.4 + 0.02, bn / (0.35 * bm))); } else this.burnMax[i] = 0;
-        let ar = 0; if (this.arcT[i] > 0) { this.arcT[i] -= dt; ar = 1; } const fa = k.fxArr, o3 = n * 3; fa[o3] = bf; fa[o3 + 1] = ar; fa[o3 + 2] = (i * 0.6180339) % 1; if (bf > 0 || ar > 0) k.fxNow = true; }
+        let ar = 0; if (this.arcT[i] > 0) { this.arcT[i] -= dt; ar = 1; } const fa = k.fxArr, o3 = n * 4, lc = this.labStatus[i]; fa[o3] = bf; fa[o3 + 1] = ar; fa[o3 + 2] = (i * 0.6180339) % 1; fa[o3 + 3] = lc; if (bf > 0 || ar > 0 || lc > 0) k.fxNow = true; }
       if (k.eye) {
         d.position.set(x + Math.sin(face) * 0.62 * sc[0], y + 1.05 + bob, z + Math.cos(face) * 0.62 * sc[0]); d.scale.set(1, 1, 1); d.updateMatrix(); k.eye.setMatrixAt(n, d.matrix);
       }
@@ -396,7 +396,7 @@ export class Actors {
       if (e.ace[i] && cc < 24) { d.position.set(x, y + 2.1 * mgs + 0.4 + Math.sin(t * 3 + i) * 0.08, z); d.rotation.set(0, t * 2.4 + i, 0); d.scale.set(1, 1.5, 1); d.updateMatrix(); this.crests.setMatrixAt(cc++, d.matrix); }
       if (e.mark[i] > 0) { d.position.set(x, y + 2.3 + Math.sin(t * 4) * 0.1, z); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1.4, 1); d.updateMatrix(); this.marks.setMatrixAt(mc.n++, d.matrix); }
     }
-    this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; k.body.instanceColor.needsUpdate = true; { const a = k.body.geometry.attributes.aFx; if (k.fxNow || k.fxPrev) { a.updateRange.offset = 0; a.updateRange.count = counts[i] * 3; a.needsUpdate = true; } k.fxPrev = k.fxNow; } if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
+    this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; k.body.instanceColor.needsUpdate = true; { const a = k.body.geometry.attributes.aFx; if (k.fxNow || k.fxPrev) { a.updateRange.offset = 0; a.updateRange.count = counts[i] * 4; a.needsUpdate = true; } k.fxPrev = k.fxNow; } if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
     this.marks.count = mc.n; this.marks.instanceMatrix.needsUpdate = true; this.crests.count = cc; this.crests.instanceMatrix.needsUpdate = true;
 
     // elites and the boss

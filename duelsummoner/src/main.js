@@ -512,7 +512,7 @@ function frame(now) {
     if (fx.push <= 0 && !fovDirty && Math.abs(camera.fov - baseV * (1 + 0.06 * hopFov)) > 0.01) { camera.fov = baseV * (1 + 0.06 * hopFov); camera.updateProjectionMatrix(); }
     const sl = rm ? 0 : Math.max(0, Math.min(1, (hv / R - 1.3) / 0.3)) * 0.85; if (Math.abs(sl - speedLines) > 0.01) { speedLines = sl; $('speedlines').style.opacity = sl.toFixed(2); }
   }
-  if (!capBurstDone && (game.mods.reach || 0) >= 1.5 - 1e-9) { capBurstDone = true; fx.moment('capburst', 'B', { hitstop: 0.04 }, { once: 'run' }); fx.ring(ip.x, ip.y + 0.1, ip.z, 6, 0xf3e3c2, 0.6); fx.cards(ip.x, ip.y + 0.6, ip.z, 12); showBanner('Reach has hit its cap'); }
+  if (!capBurstDone && (game.mods.reach || 0) >= 1.5 - 1e-9) { capBurstDone = true; fx.moment('capburst', 'B', { hitstop: 0.04 }, { once: 'run' }); fx.ring(ip.x, ip.y + 0.1, ip.z, 6, 0xf3e3c2, 0.6); fx.cardRing(ip.x, ip.y + 0.6, ip.z, 12, 6); showBanner('Reach has hit its cap'); }
   fx.tick = Math.round(game.t * 60); fx.stage = game.stage || 0; fx.blocked = !!game.offer || mapOpen; fx.camDist = Math.hypot(camera.position.x - ip.x, camera.position.y - ip.y, camera.position.z - ip.z);
   E.pl.value.set(ip.x, ip.y, ip.z); updateEngine(dtReal || 0.016, curLook); ageRipples(dtReal || 0.016);
   if (waterMesh) { waterMesh.userData.update(camera.position); ripT -= dtReal || 0.016; if (ripT <= 0) { const sp = Math.hypot(game.p.vx, game.p.vz); for (const q of poolSpots(game.map)) if (Math.hypot(ip.x - q.x, ip.z - q.z) < q.r + 0.3 && sp > 1) { ripple(ip.x, ip.z, Math.min(1, 0.4 + sp / 14)); ripT = 0.28; } } }       // the duelist's steps in a pool make ripples

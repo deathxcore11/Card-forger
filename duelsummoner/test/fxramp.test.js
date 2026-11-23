@@ -2,7 +2,7 @@
 // violet or danger red. Pure data: no browser.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RAMP, ELEMENTS, ROW } from '../src/data/fxramp.js';
+import { RAMP, ELEMENTS, ROW, ownColour, nearestReserved } from '../src/data/fxramp.js';
 
 const rgb = h => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
 const hue = h => { const [r, g, b] = rgb(h).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; if (d === 0) return 0; let x = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; x *= 60; return x < 0 ? x + 360 : x; };
@@ -25,4 +25,9 @@ test('ramp: the cold elements keep their art book hue split (lightning is more s
 test('ramp (the spec fire core #fff4c8 is only 6.5 from the gold light #fff0b8, so that one is exempt and reported): no tone is within 12 delta E of a reserved colour (XP cyan, violet, danger red, gold), except the documented near-gold tones (the light row, and the fire core)', () => {
   const RES = { xp: 0x46e0ff, violet: 0xb26bff, danger: 0xff3b30, gold: 0xe0b765, goldLight: 0xfff0b8 };
   for (const e of ELEMENTS) RAMP[e].forEach((c, t) => { for (const [n, r] of Object.entries(RES)) { if (e === 'light' && (n === 'gold' || n === 'goldLight')) continue; if (e === 'fire' && t === 0 && n === 'goldLight') continue; const d = dE(c, r); assert.ok(d >= 12, e + ' tone ' + t + ' ' + c.toString(16) + ' is only ' + d.toFixed(1) + ' from ' + n); } });
+});
+
+test('own-effect colour: no element draws its own areas in a colour near reserved gold, XP cyan, violet or danger red (the light row is near gold by the spec, so it only has to be the farthest tone)', () => {
+  for (const e of ELEMENTS) { const c = ownColour(e), d = nearestReserved(c); assert.ok(d >= (e === 'light' ? 15 : 25), e + ' own colour ' + c.toString(16) + ' is only ' + d.toFixed(1) + ' from a reserved colour'); }
+  assert.equal(ownColour('fire'), RAMP.fire[2], 'fire uses its orange body, not the gold-like bright tone'); assert.equal(ownColour(null), 0xf3e3c2);
 });

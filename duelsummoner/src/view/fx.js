@@ -30,7 +30,7 @@ export class Fx {
       vertexShader: 'attribute vec4 iP0; attribute vec4 iV0; attribute vec4 iK; attribute vec3 iC; uniform float uTime; varying vec3 vCol; varying float vU; varying float vRow;\n' +
         'void main() { float t = uTime - iP0.w, u = t / iV0.w; if (t < 0.0 || u >= 1.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }\n' +
         ' float e = iK.y > 0.0 ? (1.0 - exp(-iK.y * t)) / iK.y : t; vec3 p = iP0.xyz + iV0.xyz * e; p.y -= 0.5 * iK.x * t * t; if (iK.x > 0.0) p.y = max(p.y, 0.05);\n' +
-        ' float sz = iK.z * (u < 0.65 ? 1.0 : (1.0 - u) / 0.35); sz = ceil(sz * 16.0) / 16.0; vec4 c = viewMatrix * vec4(p, 1.0);\n' +
+        ' float sz = iK.z * (u < 0.65 ? 1.0 : (1.0 - u) / 0.35); sz = ceil(sz * 16.0) / 16.0; vec4 c = viewMatrix * vec4(p, 1.0); float dd = -c.z; sz = min(sz, 0.03 * dd / projectionMatrix[1][1]) * smoothstep(2.0, 6.0, dd);\n' +
         ' if (-c.z < 2.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }\n' +
         ' c.xy += position.xy * sz; vU = u; vRow = iK.w; vCol = iC; gl_Position = projectionMatrix * c; }',
       fragmentShader: 'uniform sampler2D uRamp; varying vec3 vCol; varying float vU; varying float vRow;\n' +
@@ -52,7 +52,7 @@ export class Fx {
 
     // flipping cards that rise out of an opened chest
     const C = POOL.cards; this.C = C; this.ch = 0;
-    this.cp = new Float32Array(C * 3); this.cage = new Float32Array(C); this.clife = new Float32Array(C); this.cspin = new Float32Array(C);
+    this.cdx = new Float32Array(C); this.cdz = new Float32Array(C); this.cp = new Float32Array(C * 3); this.cage = new Float32Array(C); this.clife = new Float32Array(C); this.cspin = new Float32Array(C);
     this.cm = new T.InstancedMesh(new T.BoxGeometry(0.7, 0.04, 1.0), new T.MeshBasicMaterial({ color: 0xf3e3c2 }), C); this.cm.frustumCulled = false; this.cm.count = 0; scene.add(this.cm);
 
     // damage numbers: sprites with their own tiny canvas, text drawn only when one is spawned
@@ -107,8 +107,10 @@ export class Fx {
       const m = this.beams[i]; m.position.set(x, y + 20, z); m.material.color.setHex(hex); m.visible = true; this.bage[i] = 0; this.blife[i] = life; return;
     }
   }
+  // a ring of n flipping cards that bursts outward from (x, y, z) to radius R and rises (the Cap Burst)
+  cardRing(x, y, z, n, R) { for (let k = 0; k < n; k++) { const i = this.ch, j = i * 3, a = k / n * 6.2832; this.ch = (this.ch + 1) % this.C; this.cp[j] = x; this.cp[j + 1] = y + 0.8; this.cp[j + 2] = z; this.cdx[i] = Math.cos(a) * R; this.cdz[i] = Math.sin(a) * R; this.cage[i] = 0; this.clife[i] = 0.9; this.cspin[i] = 7 + (k % 3); } }
   cards(x, y, z, n) {
-    for (let k = 0; k < n; k++) { const i = this.ch, j = i * 3; this.ch = (this.ch + 1) % this.C; this.cp[j] = x + (k - (n - 1) / 2) * 0.9; this.cp[j + 1] = y + 0.8; this.cp[j + 2] = z; this.cage[i] = -k * 0.12; this.clife[i] = 1.1; this.cspin[i] = 6 + k; }
+    for (let k = 0; k < n; k++) { const i = this.ch, j = i * 3; this.ch = (this.ch + 1) % this.C; this.cp[j] = x + (k - (n - 1) / 2) * 0.9; this.cp[j + 1] = y + 0.8; this.cp[j + 2] = z; this.cage[i] = -k * 0.12; this.clife[i] = 1.1; this.cspin[i] = 6 + k; this.cdx[i] = 0; this.cdz[i] = 0; }
   }
   // flags from the sim's hit event: bit 0 crit, bits 1+ the element mask (fire 1, lightning 2, ice 4, poison 8, wind 16, earth 32, light 64, dark 128)
   number(x, y, z, value, flags) {
@@ -174,7 +176,7 @@ export class Fx {
       if (this.clife[i] === 0) continue; const a = (this.cage[i] += dt);
       if (a < 0) continue; if (a >= this.clife[i]) { this.cage[i] = -1; this.clife[i] = 0; continue; }
       const j = i * 3, u = a / this.clife[i];
-      d.position.set(this.cp[j], this.cp[j + 1] + u * 2.4, this.cp[j + 2]); d.rotation.set(a * this.cspin[i], u * 2, 0); d.scale.setScalar(1 - u * u * 0.6); d.updateMatrix(); this.cm.setMatrixAt(n++, d.matrix);
+      const ue = 1 - (1 - u) * (1 - u); d.position.set(this.cp[j] + this.cdx[i] * ue, this.cp[j + 1] + u * 2.4, this.cp[j + 2] + this.cdz[i] * ue); d.rotation.set(a * this.cspin[i], u * 2, 0); d.scale.setScalar(1 - u * u * 0.6); d.updateMatrix(); this.cm.setMatrixAt(n++, d.matrix);
     }
     this.cm.count = n; this.cm.instanceMatrix.needsUpdate = true;
     // damage numbers
