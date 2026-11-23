@@ -14,9 +14,18 @@
 //           pixels (read from a screenshot: a soft or shifted pixel is not flat);
 //   fit     no text cut off by its box (the text bar may be, when it shows its more marker), nothing outside the frame,
 //           nothing written in a pillar crossing out of it, no two plaques on top of each other;
-//   scroll  a box of pages in a window or a book ends at least 2 pixels above the plaques under it, no line of words
-//           is cut by its foot, and while lines lie below it its more marker shows;
-//   hammer  one lit plaque on the screen, and one in each window or scene over it;
+//   grid    every line of words starts on a whole frame pixel, across and down;
+//   scroll  a box of pages in a window or a book ends at least 2 pixels above the plaques under it and at most 8 (its
+//           window closes up under it), no line of words is cut by its foot or its top, while lines lie below it its
+//           more marker shows and no empty band deeper than a blank line is left above its foot; the same again once
+//           it is scrolled, and the frame rows just above and under it are drawn whole (edges, read from a
+//           screenshot at a scale above one: a box that scrolls is a layer of its own, whose edge may spill a device
+//           row of what it cuts off);
+//   hammer  one lit plaque on the screen, and one in each window or scene over it; the lit one shows the hammer; every
+//           plaque that can be lit has room for the hammer beside its words, and lighting it moves no plaque; the
+//           plaques in a line of words hold their words alike, lit or not; on a book, the same after the mouse has
+//           passed over its plaques;
+//   room    a book's room shows none of its painting's black bands;
 //   bar     a short message (the toast) lies exactly on the text bar (96, H - 40, W - 192 wide); the save bar is as wide;
 //   reach   every control that is not switched off can be tapped where it stands (nothing lies over its middle);
 //   placed  every moving part drawn over a picture (data-art) sits on the point of the picture it was measured from,
@@ -41,7 +50,7 @@ const fs = require('fs'), path = require('path');
 const SHAPES = [
   ['phone held sideways', 915, 412, 2.625, 1, 0, 1], ['phone held upright', 412, 915, 2.625, 1, 0, 1], ['fold, inner screen', 673, 841, 2.625, 1, 0, 1],
   ['wide desktop', 1024, 480, 1], ['fold, cover screen sideways', 882, 344, 2.625, 0, 0, 1], ['16:9 screen', 1920, 1080, 1],
-  ['tablet', 1024, 768, 2, 0, 0, 1], ['small window', 800, 360, 1], ['tall desktop window', 800, 1000, 1],
+  ['tablet', 1024, 768, 2, 0, 0, 1], ['small window', 800, 360, 1], ['tall desktop window', 800, 1000, 1], ['low window', 600, 270, 1],
   ['phone held sideways, in a host page', 915, 412, 2.625, 0, 1, 1], ['16:9 screen, in a host page', 1280, 720, 1, 0, 1], ['upright window, in a host page', 640, 900, 1, 0, 1],
 ];
 // styles a page that holds the game may set on everything in it (a common reset)
@@ -54,6 +63,7 @@ const SAME = ['', 'chamber-f1.json', 'duel-regular-f1-h0.json', 'anvil-f1.json',
 const SHORT = [null, 'chamber-f1.json', 'duel-regular-f1-h0.json', 'reward-card-f1.json', 'reward-gift-f1.json', 'anvil-f1.json', 'bazaar-f2.json', 'kit-f1.json'];
 const SCREENS = ['screen:codex', 'screen:feats', 'screen:vault', 'new'];
 const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics', 'tab:doors', 'tab:duel', 'barmore'];
+const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose windows are also read further and pictured at their edges
 
 (async () => {
   const [url, savesDir, stepsArg] = process.argv.slice(2);
@@ -147,24 +157,55 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
         // (a plaque scrolled out of its box is not on the screen, so it overlaps nothing)
         const pqs = [...app.querySelectorAll('.pq')].filter(vis).map(e => [e, e.getBoundingClientRect()]);
         for (let i = 0; i < pqs.length; i++) for (let j = i + 1; j < pqs.length; j++) { const [a, ra] = pqs[i], [b, rb] = pqs[j]; if (a.closest('.mw') !== b.closest('.mw') || scrolledAway(a) || scrolledAway(b)) continue; if (ra.left < rb.right - 1 && rb.left < ra.right - 1 && ra.top < rb.bottom - 1 && rb.top < ra.bottom - 1) out.push(`plaques "${a.textContent}" and "${b.textContent}" overlap`); }
-        // scroll: each box of pages in a window or a book ends on a whole line, clear of the plaques under it, and marks more below
+        // grid: each line of words starts on a whole frame pixel, across and down (half a pixel off, a pixel face is drawn
+        // soft or a pixel wide in places)
+        const fx = q => up ? (q.top - A.top) / k : (q.left - A.left) / k, fy = q => up ? (A.right - q.right) / k : (q.top - A.top) / k;
+        const words = document.createTreeWalker(app, NodeFilter.SHOW_TEXT);
+        for (let t = words.nextNode(); t; t = words.nextNode()) {
+          const el = t.parentElement; if (!t.textContent.trim() || !vis(el) || scrolledAway(el)) continue;
+          const rg = document.createRange(); rg.selectNodeContents(t);
+          for (const q of rg.getClientRects()) {
+            if (!q.width || !q.height) continue;
+            const x = fx(q), y = fy(q);
+            if (Math.abs(x - Math.round(x)) > .02 || Math.abs(y - Math.round(y)) > .02) { out.push(`${name(el)} "${t.textContent.trim().slice(0, 20)}": its words start at ${x.toFixed(2)}, ${y.toFixed(2)}, off the frame's pixel grid`); break; }
+          }
+        }
+        // scroll: each box of pages in a window or a book shows whole lines, its window closed up under it, and marks more below
         for (const sc of app.querySelectorAll('.mw .sc, .book .sc')) {
           if (!vis(sc)) continue;
           const [sx, sy, sw, sh] = fr(sc), box = sc.closest('.mw, .book'), S = sc.getBoundingClientRect(), h = sc.clientHeight;
           for (const p of box.querySelectorAll('.pq')) { if (sc.contains(p) || !vis(p)) continue; const [px, py, pw] = fr(p); if (px < sx + sw && sx < px + pw && py >= sy && sy + sh > py - 2) out.push(`${name(sc)}: its foot at ${sy + sh} is less than 2 pixels above the plaque "${p.textContent.trim()}" at ${py}`); }
-          let below = 0;
+          // the window closes up: the plaques and labels under the box stand at most 8 pixels under its foot, or under
+          // whatever else of the window (placed on its own) reaches lower beside it
+          const under = [...box.querySelectorAll('.pq, .lb, .ga')].filter(e => !sc.contains(e) && vis(e) && fr(e)[1] >= sy + sh);
+          if (under.length) {
+            const floor = Math.max(sy + sh, ...[...box.children].filter(e => e !== sc && vis(e) && !/\b(scm|scl)\b/.test(e.className) && getComputedStyle(e).position === 'absolute' && fr(e)[1] < sy + sh).map(e => fr(e)[1] + fr(e)[3]));
+            const gap = Math.min(...under.map(e => fr(e)[1])) - floor, first = under.find(e => fr(e)[1] - floor === gap);
+            if (gap > 8.5) out.push(`${name(sc)}: ${gap} pixels of empty window between it and "${first.textContent.trim().slice(0, 20)}" under it (8 at most: the window closes up under its box)`);
+          }
+          // each line in the box's own pixels: its line height about the middle of its glyphs' box
+          let below = 0, low = 0;
+          const inBox = R => { const a = (up ? S.right - R.right : R.top - S.top) / k - sc.clientTop; return [a, a + (up ? R.width : R.height) / k]; };
           const tw = document.createTreeWalker(sc, NodeFilter.SHOW_TEXT);
           for (let t = tw.nextNode(); t; t = tw.nextNode()) {
             if (!t.textContent.trim() || !t.parentElement.offsetHeight) continue;
             let b = t.parentElement; while (b !== sc && getComputedStyle(b).display === 'inline') b = b.parentElement;
             const lh = parseFloat(getComputedStyle(b).lineHeight) || 16, rg = document.createRange(); rg.selectNodeContents(t);
             for (const q of rg.getClientRects()) {
-              if (!q.width || !q.height) continue; // a line's box is its line height about the middle of its glyphs' box, in the box's own pixels
-              const mid = (up ? S.right - (q.left + q.right) / 2 : (q.top + q.bottom) / 2 - S.top) / k - sc.clientTop, a = mid - lh / 2, z = mid + lh / 2;
+              if (!q.width || !q.height) continue;
+              const [qa, qz] = inBox(q), mid = (qa + qz) / 2, a = mid - lh / 2, z = mid + lh / 2;
               if (a < h - 1 && z > h + 1 && a > -1) out.push(`${name(sc)}: the line "${t.textContent.trim().slice(0, 24)}" is cut by its foot (${a.toFixed(1)} to ${z.toFixed(1)} in ${h})`);
-              if (a >= h - 1) below++;
+              if (a < -1 && z > 1 && z < h + 1) out.push(`${name(sc)}: the line "${t.textContent.trim().slice(0, 24)}" is cut by its top (${a.toFixed(1)} to ${z.toFixed(1)})`);
+              if (a >= h - 1) below++; else if (a >= -1 && z <= h + 1) low = Math.max(low, z);
             }
           }
+          for (const e of sc.querySelectorAll('img, canvas, button, .cd, .coin, .ga, .big')) {
+            if (!vis(e)) continue; const [a, z] = inBox(e.getBoundingClientRect());
+            if (a >= -1 && z <= h + 1) low = Math.max(low, z);
+            else if (!e.closest('button.lab') && !e.classList.contains('lab') && a < h - 1 && z > 1) out.push(`${name(e)}: cut by the ${a < -1 ? 'top' : 'foot'} of its box of pages (${a.toFixed(1)} to ${z.toFixed(1)} in ${h})`); // a switch may be cut between its lines
+          }
+          // while more lies below, no empty band deeper than a blank line above the foot (a box cut short of a row it could show)
+          if (below && h - low > 16.5) out.push(`${name(sc)}: an empty band ${Math.round(h - low)} pixels deep above its foot, while ${below} lines lie below`);
           const mk = sc.nextElementSibling && sc.nextElementSibling.classList.contains('scm') ? sc.nextElementSibling : null;
           if (below && (!mk || mk.hidden || !vis(mk))) out.push(`${name(sc)}: ${below} lines lie below it, with no more marker`);
         }
@@ -172,6 +213,22 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
         for (const L of [app, ...app.querySelectorAll('.mw, .story')]) {
           const lit = [...L.querySelectorAll('.pq.lit')].filter(e => vis(e) && (L === app ? !e.closest('.mw, .story') : e.closest('.mw, .story') === L));
           if (lit.length > 1) out.push(`${lit.length} plaques lit in ${L === app ? 'the screen' : name(L)} (${lit.map(e => e.textContent.trim().slice(0, 14)).join(', ')}): only the one the hammer is on may be`);
+          // the choice is always shown the same way: the lit plaque shows the hammer at its left; each plaque that can be lit
+          // has room for it beside its words, and lighting it moves no plaque; the plaques in a line of words (.in) hold
+          // their words alike, lit or not (the same room at their left and at their right)
+          const live = [...L.querySelectorAll('.pq')].filter(e => vis(e) && !e.disabled && !scrolledAway(e) && (L === app ? !e.closest('.mw, .story') : e.closest('.mw, .story') === L));
+          for (const b of live) {
+            if (b.classList.contains('lit') && getComputedStyle(b, '::before').display === 'none') out.push(`${name(b)} "${b.textContent.trim()}": lit without the hammer`);
+            const was = [b.classList.contains('lit'), b.classList.contains('nh')], r0 = b.getBoundingClientRect();
+            b.classList.add('lit'); b.classList.remove('nh');
+            const cut = b.scrollWidth > b.clientWidth + 1, room = `${b.scrollWidth} in ${b.clientWidth}`, r1 = b.getBoundingClientRect();
+            b.classList.toggle('lit', was[0]); b.classList.toggle('nh', was[1]);
+            if (cut) out.push(`${name(b)} "${b.textContent.trim()}": too narrow for the hammer beside its words (${room} pixels)`);
+            else if (['left', 'top', 'width', 'height'].some(p => Math.abs(r1[p] - r0[p]) > .01)) out.push(`${name(b)} "${b.textContent.trim()}": lighting it moves or sizes it`);
+          }
+          const held = [...L.querySelectorAll('.pq.in')].filter(e => vis(e) && !scrolledAway(e) && (L === app ? !e.closest('.mw, .story') : e.closest('.mw, .story') === L)).map(e => { const rg = document.createRange(); rg.selectNodeContents(e); const q = rg.getBoundingClientRect(), r = e.getBoundingClientRect(); return [e, Math.round(fx(q) - fx(r)), Math.round(up ? (r.bottom - q.bottom) / k : (r.right - q.right) / k)]; });
+          const odd = held.find(([, a, z]) => a !== held[0][1] || z !== held[0][2]);
+          if (odd) out.push(`the plaques in lines of words hold their words unalike: "${held[0][0].textContent.trim()}" with ${held[0][1]} and ${held[0][2]} pixels at its left and right, "${odd[0].textContent.trim()}" with ${odd[1]} and ${odd[2]}`);
         }
         // bar: a short message lies on the text bar, and the save bar is as wide
         const W0 = app.offsetWidth, H0 = app.offsetHeight, toastEl = app.querySelector('#toast');
@@ -264,6 +321,21 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
           const vwin = app.querySelector('.vw');
           for (const e of app.querySelectorAll('.rlcw')) if (vwin && !inside(e.getBoundingClientRect(), vwin.getBoundingClientRect())) out.push(`${name(e)}: a relic's strip reaches out of the window`);
         }
+        // room: a book's room shows none of its painting's black bands (a row of the frame with no pixel brighter than the
+        // bands' dark dither across the whole of the painting shown in it, read from the picture's own pixels)
+        const room = app.querySelector('.book') && app.querySelector('.ti > img.bg');
+        if (room && room.complete && room.naturalWidth) {
+          const pw = room.naturalWidth, ph = room.naturalHeight, c = document.createElement('canvas'); c.width = pw; c.height = ph;
+          const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(room, 0, 0); const px = g.getImageData(0, 0, pw, ph).data;
+          const s = room.offsetHeight / ph, x0 = Math.max(0, Math.floor(-room.offsetLeft / s)), x1 = Math.min(pw, Math.ceil((app.offsetWidth - room.offsetLeft) / s));
+          let black = 0;
+          for (let y = 0; y < app.offsetHeight; y++) {
+            const py = Math.floor((y - room.offsetTop) / s); if (py < 0 || py >= ph) { black++; continue; }
+            let lit = 0; for (let x = x0; x < x1 && !lit; x++) { const i = (py * pw + x) * 4; if (px[i] + px[i + 1] + px[i + 2] > 96) lit++; }
+            if (!lit) black++;
+          }
+          if (black) out.push(`the book's room shows ${black} rows of the frame black across the painting (its bands, or no painting there)`);
+        }
         // the card pictures: cut to console colour once the sheets are converted
         const unconverted = [...app.querySelectorAll('.cd .art, .big .art')].filter(e => e.style.backgroundImage && !/blob:/.test(e.style.backgroundImage)).length;
         if (unconverted) out.push(`${unconverted} card pictures still the full-colour sheet`);
@@ -298,17 +370,64 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
       }, [png, g]);
       if (bad > g.W * g.H * .002) fail(where, `${bad} of ${g.W * g.H} frame pixels are not one flat block of device pixels (more than 0.2%)`);
     };
+    // edges: the frame rows just above and under each box of pages in a window or a book, read from a screenshot at a scale
+    // above one, are each frame pixel one flat block of device pixels. A box that scrolls is drawn as a layer of its own,
+    // and at some scales its edge lands a fraction of a device pixel outside the box: a device row of what it cuts off shows.
+    const edges = async where => {
+      const g = await page.evaluate(() => {
+        const a = document.getElementById('app'); if (!a.classList.contains('ps')) return null;
+        const r = a.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(a).transform), d = devicePixelRatio, k = Math.hypot(m.a, m.b), up = Math.abs(m.b) > Math.abs(m.a), rows = [];
+        for (const sc of a.querySelectorAll('.mw .sc, .book .sc')) {
+          const S = sc.getBoundingClientRect(); if (!S.width || !S.height) continue;
+          const x = Math.round(up ? (S.top - r.top) / k : (S.left - r.left) / k), y = Math.round(up ? (r.right - S.right) / k : (S.top - r.top) / k);
+          const w = Math.round((up ? S.height : S.width) / k), h = Math.round((up ? S.width : S.height) / k);
+          rows.push([x, y - 1, w], [x, y + h, w]);
+        }
+        return rows.length ? { rows, n: Math.round(k * d), up, x: Math.round(r.left * d), y: Math.round(r.top * d), w: Math.round(r.width * d) } : null;
+      });
+      if (!g || g.n < 2) return;
+      const png = (await page.screenshot()).toString('base64');
+      const bad = await page.evaluate(async ([png, g]) => {
+        const img = new Image(); img.src = 'data:image/png;base64,' + png; await img.decode();
+        const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0); const d = x.getImageData(0, 0, c.width, c.height).data;
+        let bad = 0;
+        for (const [fx0, fy, w] of g.rows) for (let fx = fx0; fx < fx0 + w; fx++) {
+          const bx = g.up ? g.x + g.w - (fy + 1) * g.n : g.x + fx * g.n, by = g.up ? g.y + fx * g.n : g.y + fy * g.n;
+          if (bx < 0 || by < 0 || bx + g.n > c.width || by + g.n > c.height) continue;
+          const i0 = (by * c.width + bx) * 4; let worst = 0;
+          for (let yy = 0; yy < g.n && !(worst > 3); yy++) for (let xx = 0; xx < g.n; xx++) { const i = i0 + (yy * c.width + xx) * 4; worst = Math.max(worst, Math.abs(d[i] - d[i0]), Math.abs(d[i + 1] - d[i0 + 1]), Math.abs(d[i + 2] - d[i0 + 2])); }
+          if (worst > 3) bad++;
+        }
+        return bad;
+      }, [png, g]);
+      if (bad) fail(where, `${bad} frame pixels along the edges of its boxes of pages are not one flat block of device pixels (the box spills what it cuts off)`);
+    };
+    // a box of pages read further: each one that holds more than it shows is scrolled half its height, and checked again once
+    // it has come to rest
+    const scrolled = async where => {
+      const moved = await page.evaluate(() => { let n = 0; for (const sc of document.querySelectorAll('#app.ps .mw .sc, #app.ps .book .sc')) if (sc.scrollHeight > sc.clientHeight + 1) { sc.scrollTop += Math.max(16, sc.clientHeight >> 1); n++; } return n; });
+      if (!moved) return;
+      await page.waitForTimeout(400); await audit(`${where} > scrolled`); await edges(`${where} > scrolled`);
+    };
+    // the hammer follows the mouse and stays where it was left: the mouse passes over a few plaques and off the frame
+    const mousePass = async where => {
+      for (const p of (await page.locator('#app .pq:not([disabled])').all()).slice(0, 3)) await p.hover({ force: true, timeout: 1000 }).catch(() => {});
+      await page.mouse.move(1, 1); await page.waitForTimeout(150); await audit(`${where} > mouse pass`);
+    };
     for (const save of only ? [null] : full ? pick : SHORT.filter(x => !x || saves.includes(x))) {
       const base = `${shape} ${W}x${H}@${dpr} ${save || 'title'}`;
       await load(save); await page.waitForTimeout(500); scenes++;
       await audit(base);
       if (!save) await flat(base);
-      // every window that can open over this screen
+      // every window that can open over this screen (over the title, a chamber and a duel, read further too)
+      const deep = !save || DEEP.includes(save);
       for (const a of WINDOWS) {
         const l = page.locator(`[data-a="${a}"]`).first();
         if (!(await l.count()) || await l.isDisabled().catch(() => true)) continue;
         await l.click({ force: true }).catch(() => {}); await page.waitForTimeout(250);
         await audit(`${base} > ${a}`);
+        if (deep) { await edges(`${base} > ${a}`); await scrolled(`${base} > ${a}`); }
         const c = page.locator('.mw [data-a="tab:"], .mw [data-a="closeov"], .mw [data-a="closeinspect"]').first();
         if (await c.count()) await c.click({ force: true }).catch(() => {}); else await load(save);
         await page.waitForTimeout(200);
@@ -317,7 +436,11 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
       const hc = page.locator('[data-a^="inspect"]').first();
       if (await hc.count()) { await hc.click({ force: true }).catch(() => {}); await page.waitForTimeout(300); await audit(`${base} > card page`); await load(save); }
       // the books and the Forger screen, from the title
-      if (!save) for (const a of SCREENS) { await load(null); await page.locator(`[data-a="${a}"]`).first().click({ force: true }).catch(() => {}); await page.waitForTimeout(500); await audit(`${base} > ${a}`); }
+      if (!save) for (const a of SCREENS) {
+        await load(null); await page.locator(`[data-a="${a}"]`).first().click({ force: true }).catch(() => {}); await page.waitForTimeout(500);
+        await audit(`${base} > ${a}`); await edges(`${base} > ${a}`); await scrolled(`${base} > ${a}`);
+        if (!touch) await mousePass(`${base} > ${a}`);
+      }
       // then tap about at random
       let last = '';
       for (let i = 0; i < (full ? steps : 0); i++) {
