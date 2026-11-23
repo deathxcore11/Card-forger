@@ -1,6 +1,7 @@
 // Builds one flat-shaded, vertex-coloured mesh from the same primitives the collision uses.
 import { MAP } from '../data/map.js';
 import { seeMap } from './seethrough.js';
+import { STAGE_LOOK, rampColour } from '../data/look.js';
 
 const T = window.THREE, DEG = Math.PI / 180;
 
@@ -92,7 +93,6 @@ function addCyl(B, p) {
 // 2D value noise, two octaves, for the ground colour
 const hash2 = (x, z) => { let h = Math.imul(x | 0, 374761393) ^ Math.imul(z | 0, 668265263); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 function vnoise(x, z) { const xi = Math.floor(x), zi = Math.floor(z), fx = x - xi, fz = z - zi, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz); return (hash2(xi, zi) * (1 - u) + hash2(xi + 1, zi) * u) * (1 - v) + (hash2(xi, zi + 1) * (1 - u) + hash2(xi + 1, zi + 1) * u) * v; }
-const SAND = [0xc8a46c, 0xcaa978, 0xc09c66];
 
 import { roadPath, poolSpots } from '../gen/road.js';
 // a tiling detail texture for the ground: soft dark blotches and light and dark flecks, multiplied over the cell colours so open sand is never one flat colour (one draw, no extra triangles)
@@ -105,7 +105,8 @@ function groundTex() {
   for (let i = 0; i < 900; i++) wrap(r() * 256, r() * 256, 0.8 + r() * 1.6, r() < 0.6 ? 'rgba(90,70,40,0.35)' : 'rgba(255,250,235,0.45)');
   gtex = new T.CanvasTexture(cv); gtex.wrapS = gtex.wrapT = T.RepeatWrapping; gtex.magFilter = T.LinearFilter; gtex.minFilter = T.LinearMipmapLinearFilter; return gtex;
 }
-export function buildMapMesh(map) {
+export function buildMapMesh(map, look) {
+  look = look || STAGE_LOOK[0]; const SAND = look.sand, pc = p => (look.ramp ? rampColour(look.ramp, p.c0 === undefined ? p.c : p.c0) : p.c), prims = look.ramp ? map.prims.map(p => Object.assign({}, p, { c: pc(p) })) : map.prims;
   const B = new Builder(), F = new Builder(), G = new Builder(true), group = new T.Group();
   F.seed = 777;
   // the ground: 8 m cells coloured by two octaves of noise (periods 60 m and 18 m) across three sand tones
@@ -115,12 +116,12 @@ export function buildMapMesh(map) {
     G.quad([x, 0, z], [x + cell, 0, z], [x + cell, 0, z + cell], [x, 0, z + cell], [0, 1, 0], col);
   }
   // the worn dirt road and its 3 m trails: top-face strips just above the ground, 15 to 25 percent darker than the sand, no kerbs
-  { const rd = roadPath(map), strip = (ax, az, bx, bz, hw) => { const dx = bx - ax, dz = bz - az, l = Math.sqrt(dx * dx + dz * dz) || 1, px = -dz / l * hw, pz = dx / l * hw; B.quad([ax - px, 0.05, az - pz], [ax + px, 0.05, az + pz], [bx + px, 0.05, bz + pz], [bx - px, 0.05, bz - pz], [0, 1, 0], 0xb09470); };
+  { const rd = roadPath(map), strip = (ax, az, bx, bz, hw) => { const dx = bx - ax, dz = bz - az, l = Math.sqrt(dx * dx + dz * dz) || 1, px = -dz / l * hw, pz = dx / l * hw; B.quad([ax - px, 0.05, az - pz], [ax + px, 0.05, az + pz], [bx + px, 0.05, bz + pz], [bx - px, 0.05, bz - pz], [0, 1, 0], look.road); };
     for (let i = 1; i < rd.main.length; i++) strip(rd.main[i - 1][0], rd.main[i - 1][1], rd.main[i][0], rd.main[i][1], rd.width / 2); for (const t of rd.trails) strip(t[0][0], t[0][1], t[1][0], t[1][1], rd.trailWidth / 2); }
   // two summoning pools: an ink-blue disc, a bone rim 1.5 m wide, a ring of glyph tiles; flat and walkable, no effect
   for (const p of poolSpots(map)) { addCyl(B, { x: p.x, z: p.z, r: p.r, h: 0.06, c: 0x2e3f66 }); addRing(B, { cx: p.x, cz: p.z, r0: p.r, r1: p.r + 1.5, a0: 0, a1: 360, h: 0.08, c: 0xe6dcc0 });
     for (let k = 0; k < 12; k++) { const a = k / 12 * 6.283, x = p.x + Math.cos(a) * (p.r + 2.2), z = p.z + Math.sin(a) * (p.r + 2.2); addBox(B, { x0: x - 0.5, x1: x + 0.5, z0: z - 0.5, z1: z + 0.5, h: 0.09, rot: a / DEG, c: 0x4a4250 }); } }
-  map.prims.forEach(p => { const T2 = p.landmark ? F : B; if (p.t === 'tilt') addTilt(B, p.x, 0, p.z, p.w, p.th, p.hgt, p.yaw, p.tilt, p.c); else if (p.t === 'box') addBox(T2, p); else if (p.t === 'ramp') addRamp(T2, p); else if (p.t === 'ring') addRing(T2, p); else addCyl(T2, p); });
+  prims.forEach(p => { const T2 = p.landmark ? F : B; if (p.t === 'tilt') addTilt(B, p.x, 0, p.z, p.w, p.th, p.hgt, p.yaw, p.tilt, p.c); else if (p.t === 'box') addBox(T2, p); else if (p.t === 'ramp') addRamp(T2, p); else if (p.t === 'ring') addRing(T2, p); else addCyl(T2, p); });
   // the rim: 56 stacked buttes (a base, an inset mid band, a cap on about a third), 16 to 45 m tall, in two strata colours; 8 seeded notches only 8 to 10 m high (view only; the invisible wall stays)
   const n = 56, w = MAP.boundaryR + 6, hs = [];
   for (let i = 0; i < n; i++) {
@@ -129,16 +130,16 @@ export function buildMapMesh(map) {
     else { const t = hb + hm + hc, p1 = hs[i - 1], p2 = hs[i - 2]; if (p1 !== undefined && p2 !== undefined && Math.abs(t - p1) < 2 && Math.abs(p1 - p2) < 2) hm += 4; }
     hs.push(hb + hm + hc);
     const a = i / n * 360, cx = w * Math.cos(a * DEG), cz = w * Math.sin(a * DEG), len = 2 * Math.PI * w / n * 0.56, ry = a + 90 + (F.rnd() - 0.5) * 16;
-    addBox(F, { x0: cx - len, x1: cx + len, z0: cz - 6, z1: cz + 6, h: hb, rot: ry, c: 0xbca494 });
-    if (hm > 0) addBox(F, { x0: cx - len + 3, x1: cx + len - 3, z0: cz - 3.5, z1: cz + 3.5, y0: hb, h: hb + hm, rot: ry, c: 0xd0bcaa });
-    if (hc > 0) addBox(F, { x0: cx - len + 7, x1: cx + len - 7, z0: cz - 2, z1: cz + 2, y0: hb + hm, h: hb + hm + hc, rot: ry, c: 0xbca494 });
+    addBox(F, { x0: cx - len, x1: cx + len, z0: cz - 6, z1: cz + 6, h: hb, rot: ry, c: look.rim[0] });
+    if (hm > 0) addBox(F, { x0: cx - len + 3, x1: cx + len - 3, z0: cz - 3.5, z1: cz + 3.5, y0: hb, h: hb + hm, rot: ry, c: look.rim[1] });
+    if (hc > 0) addBox(F, { x0: cx - len + 7, x1: cx + len - 7, z0: cz - 2, z1: cz + 2, y0: hb + hm, h: hb + hm + hc, rot: ry, c: look.rim[2] });
   }
   // a backdrop ring of 12 mesas far behind the rim (fogged), and a wide skirt of ground under them
-  for (let i = 0; i < 12; i++) { const a = (i + F.rnd() * 0.6) / 12 * 360, r = 270 + F.rnd() * 60, ww = 30 + F.rnd() * 30, hh = 40 + F.rnd() * 50, cx = r * Math.cos(a * DEG), cz = r * Math.sin(a * DEG); addBox(F, { x0: cx - ww / 2, x1: cx + ww / 2, z0: cz - ww / 3, z1: cz + ww / 3, h: hh, rot: a + 90, c: 0xd4c4ac }); }
-  F.quad([-345, -0.2, -345], [345, -0.2, -345], [345, -0.2, 345], [-345, -0.2, 345], [0, 1, 0], 0xc8a46c);
+  for (let i = 0; i < 12; i++) { const a = (i + F.rnd() * 0.6) / 12 * 360, r = 270 + F.rnd() * 60, ww = 30 + F.rnd() * 30, hh = 40 + F.rnd() * 50, cx = r * Math.cos(a * DEG), cz = r * Math.sin(a * DEG); addBox(F, { x0: cx - ww / 2, x1: cx + ww / 2, z0: cz - ww / 3, z1: cz + ww / 3, h: hh, rot: a + 90, c: look.mesa }); }
+  F.quad([-345, -0.2, -345], [345, -0.2, -345], [345, -0.2, 345], [-345, -0.2, 345], [0, 1, 0], look.skirt);
   // the mega landmark: a colossal buried card, half sunk and tilted, 64 m tall, on the far side of the map from the start (view only)
   { const sa = Math.atan2(map.gate.z - map.spawn.z, map.gate.x - map.spawn.x) + 2.6, mx = 250 * Math.cos(sa), mz = 250 * Math.sin(sa), yaw = sa / DEG + 90;
-    addTilt(F, mx, -6, mz, 24, 3, 64, yaw, 20, 0xe6dcc0); addTilt(F, mx, -6, mz, 20, 3.5, 60, yaw, 20, 0x4a4250, 2); }
+    addTilt(F, mx, -6, mz, 24, 3, 64, yaw, 20, look.landmark[0]); addTilt(F, mx, -6, mz, 20, 3.5, 60, yaw, 20, look.landmark[1], 2); }
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
   group.add(B.mesh(false, fadeU), F.mesh(true, fadeU), G.mesh(false));
   return group;

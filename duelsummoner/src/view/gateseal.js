@@ -7,8 +7,8 @@ function merge(parts) {                                                    // pa
   for (const [geo, m, c] of parts) { const g = geo.index ? geo.toNonIndexed() : geo.clone(); g.applyMatrix4(m); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { pos.push(p.getX(i), p.getY(i), p.getZ(i)); col.push(c[0], c[1], c[2]); } }
   const out = new T.BufferGeometry(); out.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); out.setAttribute('color', new T.Float32BufferAttribute(col, 3)); return out;
 }
-export function buildGateSeal(map) {
-  const g = new T.Group(), H = 90, W = 4.5, M = new T.Matrix4(), VIO = [0.18, 0.10, 0.32], PALE = [0.96, 0.93, 1];
+export function buildGateSeal(map, look) {
+  const g = new T.Group(), H = 90, W = 4.5, M = new T.Matrix4(), VIO = look && look.seal ? look.seal : [0.18, 0.10, 0.32], PALE = [0.96, 0.93, 1];
   const col = [[new T.BoxGeometry(W, H, W), M.clone().makeTranslation(0, H / 2, 0), VIO]];
   for (const [x, z] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) col.push([new T.BoxGeometry(0.4, H, 0.4), M.clone().makeTranslation(x * W / 2, H / 2, z * W / 2), PALE]);
   const ringParts = []; for (let i = 0; i < 5; i++) ringParts.push([new T.TorusGeometry(4, 0.25, 5, 20), M.clone().makeRotationX(Math.PI / 2).setPosition(0, 14 + i * 12, 0), PALE]);

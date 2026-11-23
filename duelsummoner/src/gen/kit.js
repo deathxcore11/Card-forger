@@ -7,7 +7,7 @@ export class Kit {
     let a = x, b = z; for (let i = 0; i < this.rot; i++) { const t = a; a = -b; b = t; }
     return [a + this.ox, b + this.oz];
   }
-  push(p) { p.c = this.tint(p.c); this.out.push(p); }
+  push(p) { p.c0 = p.c; p.c = this.tint(p.c); this.out.push(p); }       // c0: the colour before the stage tint (the view can retint from it; the map hash does not read it)
   box(x0, z0, x1, z1, h, c, o) {
     o = o || {};
     if (o.rot) {                                                // a tilted slab: keep its extents, turn the slab

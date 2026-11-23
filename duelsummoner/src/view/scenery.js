@@ -66,7 +66,7 @@ function mushroomGeo(theme) { const g = new Geo(); g.prism(0, 0, 0, 0.35, 0.07, 
 export const THEMES = [
   { name: 'ruins', leaf: [0x5a9a66, 0x66a46e, 0x74ae72], bark: 0x5e5048, rock: 0xbdb8ae, rock2: 0xb0aa9e, bladeCols: [0x8a7a48, 0x8a7a48], flowerCols: [0xffe14a, 0xffffff, 0xb28cff, 0xff6b5a], special: null },
   { name: 'crypt', leaf: [0x6e8aa0, 0x7f9db3, 0x5f7a92], bark: 0x8a7a6a, rock: 0x8fa3b5, rock2: 0x72869a, bladeCols: [0x6f9aa3, 0x86b3b8], flowerCols: [0x8ae8ff, 0xb8f4ff], glow: 0x3fd6e0, special: 'mushroom' },
-  { name: 'vault', leaf: [0xb48cff, 0xc9a8ff, 0x9a70e0], bark: 0x6b3fa0, rock: 0xd8b86a, rock2: 0xb89548, bladeCols: [0xd9b45a, 0xf0cf7a], flowerCols: [0xffe9a8], crystal: [0xb48cff, 0xd6b8ff, 0x8f64d6], special: 'crystal' }
+  { name: 'vault', leaf: [0x8a7a5c, 0xb8a37c, 0x46445a], bark: 0x2e2c3a, rock: 0x46445a, rock2: 0x2e2c3a, bladeCols: [0x8a7a5c, 0xb8a37c], flowerCols: [0xd8e4f4], crystal: [0xd8e4f4, 0xf4f8ff, 0x9fb4d0], glow: 0x9fb4d0, special: 'crystal' }       // basalt, ash-gold and moon-white: no violet in the scenery (violet means summons and seals)
 ];
 
 // ------------------------------------------------------------------ drawing the scatter
