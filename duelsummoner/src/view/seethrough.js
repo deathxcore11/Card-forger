@@ -74,19 +74,19 @@ void main() {`).replace('#include <begin_vertex>', `#include <begin_vertex>
 #else
   mat4 inst = mat4(1.0);
 #endif
-  float s = length(inst[0].xyz);
+  float s = max(length(inst[0].xyz), max(length(inst[1].xyz), length(inst[2].xyz)));       // the largest axis: a squashed or stretched boulder is bounded by its tallest side
   highp vec3 d = uDuelist - uCam;
   highp vec3 c = (modelMatrix * (inst * vec4(uBoundC, 1.0))).xyz;
   float t = clamp(dot(c - uCam, d) / dot(d, d), 0.0, 0.92);
-  float gap = length(c - (uCam + d * t)) - uBoundR * s;
+  float gap = length(c - (uCam + d * t)) - uBoundR * s - 0.9;       // the line is the duelist's chest: widen it by half a duelist so the head and feet clear the solid too
   float kCanopy = dsKeep(gap);
   ${tree ? `
   highp vec3 b = (modelMatrix * (inst * vec4(0.0, 0.0, 0.0, 1.0))).xyz;
   float tt = clamp(dot(b.xz - uCam.xz, d.xz) / max(dot(d.xz, d.xz), 0.0001), 0.0, 0.92);
-  float gapT = length(b.xz - (uCam.xz + d.xz * tt)) - (0.55 * s + 0.35);
+  float gapT = length(b.xz - (uCam.xz + d.xz * tt)) - (0.55 * s + 0.35) - 0.9;
   float lineY = uCam.y + d.y * tt;
-  bool inSpan = lineY > b.y - 0.5 && lineY < b.y + uTrunkTop * s;
-  float kTrunk = inSpan ? floor((0.5 + 0.5 * clamp(gapT / 3.0, 0.0, 1.0)) * 8.0 + 0.5) / 8.0 : 1.0;
+  float span = clamp((b.y + uTrunkTop * s - lineY) / 1.5, 0.0, 1.0) * clamp((lineY - (b.y - 0.5)) / 1.5, 0.0, 1.0);       // the span ends in 1.5 m ramps, so a sight line leaving the top of the trunk never pops
+  float kTrunk = floor((mix(1.0, 0.5 + 0.5 * clamp(gapT / 3.0, 0.0, 1.0), span)) * 8.0 + 0.5) / 8.0;
   vKeep = aPart > 0.5 ? kCanopy : kTrunk;` : 'vKeep = kCanopy;'}
 }`).replace('#include <project_vertex>', '#include <project_vertex>\nvViewZ = -mvPosition.z;');
     sh.fragmentShader = sh.fragmentShader.replace('void main() {', `varying float vKeep; varying float vViewZ;

@@ -37,6 +37,7 @@ function gemGeometry() {
   geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
   return geo;
 }
+const SWAY_T = { value: 0 };
 function instanced(geo, material, max) {
   const m = new T.InstancedMesh(geo, material, max);
   m.frustumCulled = false; m.count = 0; m.instanceMatrix.setUsage(T.DynamicDrawUsage);
@@ -181,7 +182,7 @@ export class Actors {
     staff.position.set(hand[0], hand[1] - 0.0, hand[2]);
     staff.rotation.z = -0.06;
     (g.userData.root || g).add(staff); g.userData.staff = staff; g.userData.crystal = crystal;
-    if (hasModel) { const geo = g.userData.model.solid, pos = geo.attributes.position, orig = pos.array.slice(); g.userData.shear = { pos, orig, minY: g.userData.model.min[1], h: g.userData.model.size.y }; }
+    if (hasModel) { const m0 = g.userData.model, minY = m0.min[1], hh = m0.size.y; g.traverse(o => { if (o.isMesh && o.geometry === m0.solid) { const mat = o.material = o.material.clone(); mat.onBeforeCompile = sh => { sh.uniforms.uSwayT = SWAY_T; sh.uniforms.uSwayMin = { value: minY }; sh.uniforms.uSwayH = { value: hh }; sh.vertexShader = sh.vertexShader.replace('void main() {', 'uniform float uSwayT; uniform float uSwayMin; uniform float uSwayH;\nvoid main() {').replace('#include <begin_vertex>', '#include <begin_vertex>\n{ float f = 1.0 - (position.y - uSwayMin) / (uSwayH * 0.3); if (f > 0.0) transformed.x += sin(uSwayT * 2.0 + position.y * 6.0) * 0.012 * f; }'); }; mat.needsUpdate = true; } }); g.userData.sway = true; }       // the robe sway runs in the vertex shader from one time uniform: no per-frame vertex loop and no upload
   }
 
   _specialMesh(sp) {
@@ -306,7 +307,7 @@ export class Actors {
       if (ud.glow) { const per = ud.glowPeriod || 1.6, lo = ud.glowPeriod ? 0.6 : 0.7, atk = t - (m._atkAt || -9) < 0.3 ? 0.5 : 0; ud.glow.material.color.setRGB(1, 0.45, 0.1).multiplyScalar(Math.min(1.5, lo + (1 - lo) * (0.5 + 0.5 * Math.sin(t * Math.PI * 2 / per)) + atk)); }
       if (ud.staff) {                                                   // idle bob, robe sway, staff raises on cast
         const cast = t - (g.castAt || -9) < 0.3; ud.staff.rotation.x = cast ? -0.7 : 0; mesh.position.y += Math.sin(t * Math.PI * 2 * 0.6) * 0.02;
-        if (ud.shear) { const S = ud.shear, a = S.pos.array, o = S.orig; for (let v = 0; v < a.length; v += 3) { const f = 1 - (o[v + 1] - S.minY) / (S.h * 0.3); a[v] = f > 0 ? o[v] + Math.sin(t * 2 + o[v + 1] * 6) * 0.012 * f : o[v]; } S.pos.needsUpdate = true; }
+        if (ud.sway) SWAY_T.value = t;
       }
       if (ud.puffs) this._emitPuffs(mesh, m, g);
       // summon pop, attack squash and stretch, level-up pulse

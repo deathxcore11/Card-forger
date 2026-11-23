@@ -386,6 +386,18 @@ function drawTags() {
     el.style.display = 'block'; el.className = 'wtag ' + t.cls; if (el.textContent !== t.text) el.textContent = t.text; el.style.left = ((tagV.x * 0.5 + 0.5) * w) + 'px'; el.style.top = ((-tagV.y * 0.5 + 0.5) * h) + 'px';
   }
 }
+// Upload only what changed: an instanced mesh with no instances this frame and last frame is not re-uploaded (its version is put back), and one with instances uploads just the first count rows,
+// not the whole pool (a 4000-slot particle mesh with 90 live is 6 KB, not 300 KB). three.js sends an attribute whenever its version moves, so this runs just before the render.
+const instMeshes = []; let instStamp = -1;
+function trimUploads() {
+  if (instStamp !== scene.children.length) { instStamp = scene.children.length; instMeshes.length = 0; scene.traverse(m => { if (m.isInstancedMesh) instMeshes.push(m); }); }
+  for (const m of instMeshes) {
+    const im = m.instanceMatrix, ic = m.instanceColor, dead = m.count === 0 && m._lastCount === 0;
+    if (dead) { if (m._imV !== undefined) im.version = m._imV; if (ic && m._icV !== undefined) ic.version = m._icV; }
+    else { im.updateRange.offset = 0; im.updateRange.count = m.count * 16; if (ic) { ic.updateRange.offset = 0; ic.updateRange.count = m.count * 3; } }
+    m._lastCount = m.count; m._imV = im.version; m._icV = ic ? ic.version : undefined;
+  }
+}
 function frame(now) {
   requestAnimationFrame(frame);
   if (fpsCap && now - lastRender < 1000 / fpsCap - 2) return; lastRender = now;
@@ -441,6 +453,7 @@ function frame(now) {
   drawTags(); minimap.draw(game, input.yaw); if (mapOpen) minimap.drawFull($('fullmap'), game, input.yaw);
   showFlash(game);
   const a1 = performance.now();
+  trimUploads();
   renderer.render(scene, camera);
   prof.view = a1 - a0; prof.render = performance.now() - a1;
 

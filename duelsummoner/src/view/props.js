@@ -107,13 +107,14 @@ export class Props {
   update(g) {
     if (this.world !== g.world) { this._build(g.world); this._known = null; }
     const P = this.parts, d = this.d, t = g.t;
-    let n = 0, b = 0;
+    let n = 0, b = 0, vk = 0; for (const v of g.world.vases) if (v.alive) vk += v.banded ? 1000 : 1;
+    if (vk !== this._vk || this._vw !== g.world) { this._vk = vk; this._vw = g.world;       // the vases are re-laid and re-uploaded only when one breaks
     for (const v of g.world.vases) {
       if (!v.alive) continue; d.position.set(v.x, v.y, v.z); d.rotation.set(0, v.x * 3, 0); d.scale.set(1, 1, 1); d.updateMatrix();
       if (v.banded) this.banded.setMatrixAt(b++, d.matrix); else this.vases.setMatrixAt(n++, d.matrix);
     }
-    this.vases.count = n; this.banded.count = b; this.vases.instanceMatrix.needsUpdate = this.banded.instanceMatrix.needsUpdate = true;
-    let ng = 0; const gc = new T.Color(), gem = (x, y, z, ry, sc, hex) => { if (ng >= 48) return; d.position.set(x, y, z); d.rotation.set(0, ry, 0); d.scale.setScalar(sc); d.updateMatrix(); this.gems.setMatrixAt(ng, d.matrix); this.gems.setColorAt(ng, gc.setHex(hex)); ng++; };
+    this.vases.count = n; this.banded.count = b; this.vases.instanceMatrix.needsUpdate = this.banded.instanceMatrix.needsUpdate = true; }
+    let ng = 0, gsig = 0; const gc = new T.Color(), gem = (x, y, z, ry, sc, hex) => { if (ng >= 48) return; d.position.set(x, y, z); d.rotation.set(0, ry, 0); d.scale.setScalar(sc); d.updateMatrix(); this.gems.setMatrixAt(ng, d.matrix); this.gems.setColorAt(ng, gc.setHex(hex)); gsig = gsig * 31 + hex + ng | 0; ng++; };
     for (const o of P.stones) {                                                       // a used stone stays where it is and changes colour: gold and bobbing when ready, still and grey once spent
       const used = o.s.used; gem(o.s.x, o.s.y + (used ? 1.1 : 1.4 + Math.sin(t * 2) * 0.1), o.s.z, used ? 0.6 : t * 2, 0.32 * (used ? 0.8 : 1), used ? 0x6a6872 : 0xffe07a);
     }
@@ -127,6 +128,6 @@ export class Props {
     if (this._chestN !== g.world.cchests.length) this._rebuildChests(g.world);       // chests that appear mid-run (an Ace's Trophy Chest) rebuild the shared meshes
     this._syncChests(g.world, t);
     if (P.altar) { const a = P.altar.a; gem(a.x - 0.6, a.y + 1.7, a.z, t * 2, 0.22, 0xe8c56a); gem(a.x + 0.6, a.y + 1.7, a.z, t * 2, 0.22, 0xa060e0); }
-    this.gems.count = ng; this.gems.instanceMatrix.needsUpdate = true; this.gems.instanceColor.needsUpdate = true;
+    this.gems.count = ng; this.gems.instanceMatrix.needsUpdate = true; if (gsig !== this._gsig) { this._gsig = gsig; this.gems.instanceColor.needsUpdate = true; }       // the gems bob every frame, but their colours only change when one is used
   }
 }
