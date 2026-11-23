@@ -2,18 +2,22 @@
 import { MAP, PRIMS } from '../data/map.js';
 
 import { rasterizeInto, primHeight, WALL } from './raster.js';
+import { groundAt } from '../gen/open/terrain.js';
 export { primHeight, WALL };
 
 const HALF = MAP.half, N = HALF * 2;
 const grid = new Float32Array(N * N), SLX = new Float32Array(N * N), SLZ = new Float32Array(N * N), PB = new Float32Array(N * N), LO = new Float32Array(N * N), HI = new Float32Array(N * N), SL = { x: SLX, z: SLZ, pb: PB, lo: LO, hi: HI };
-let currentKey = '';
+let currentKey = '', farGround = null;
 
 // Loads a map's primitives into the collision grid. The live terrain is one global: the sim checks mapKey() each tick and reloads if needed.
 export function loadMap(map) {
+  farGround = map.open ? (x, z) => groundAt(map, x, z) : null;       // the open desert carries on past its boundary line: the camera (view only) reads the sand drawn there, the sim still sees wall
   if (map.heights) { grid.set(map.heights); SLX.fill(0); SLZ.fill(0); PB.fill(0); LO.fill(0); HI.fill(0); currentKey = map.key; return; }       // a designed (v2) map is already a heightfield: 1 m cells, no ramp slopes inside a cell
   rasterizeInto(grid, N, HALF, map.prims, MAP.boundaryR, SL); currentKey = map.key;
 }
 export const mapKey = () => currentKey;
+// view only: the ground under the camera. Past the boundary line of an open map the sim has wall, but the camera must not rise over it: it reads the sand that is drawn there.
+export function camGround(x, z) { const h = heightAt(x, z); return h >= 50 && farGround ? farGround(x, z) : h; }
 loadMap({ key: 'classic', prims: PRIMS });
 
 export function heightAt(x, z) {

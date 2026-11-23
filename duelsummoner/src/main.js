@@ -9,7 +9,7 @@ import { chooseStartYaw } from './view/startview.js';
 import { prewarmStage } from './gen/v2/stagemap.js';
 import { buildGateSeal } from './view/gateseal.js';
 import { buildWater, ripple, ageRipples } from './view/water.js';
-import { updateEngine, setActorLight, makeSky, setShadeMask, E } from './view/engine.js';
+import { updateEngine, setActorLight, makeSky, setShadeMask, E, MASK } from './view/engine.js';
 import { poolSpots } from './gen/road.js';
 import { lookFor, buildPaletteLUT, STAGE_LOOK as STAGE_LOOK_LIST } from './data/look.js';
 import { Bars } from './view/bars.js';
@@ -136,7 +136,7 @@ function syncMap() {                                                       // th
     if (gateSeal) scene.remove(gateSeal); gateSeal = buildGateSeal(game.map, look); scene.add(gateSeal);
     if (grassMesh) { scene.remove(grassMesh); grassMesh.geometry.dispose(); grassMesh = null; }
     if (sceneryGroup) { scene.remove(sceneryGroup); sceneryGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); }); sceneryGroup = null; }
-    if (!/[?&]scenery=0/.test(location.search)) { sceneryGroup = buildScenery(game.map, game.stage || 0, assets); scene.add(sceneryGroup); setShadeMask(sceneryGroup.userData.mask, look); grassMesh = buildGrass(game.map, game.stage || 0, sceneryGroup.userData.scatter, sceneryGroup.userData.theme, null, scene.fog.near); if (grassMesh) scene.add(grassMesh); ambient.setSpots(sceneryGroup.userData.flowerSpots, game.stage || 0, game.map.hash); } else { ambient.clear(); setShadeMask(null, look); } minimap.setMap(game.map);
+    if (!/[?&]scenery=0/.test(location.search)) { sceneryGroup = buildScenery(game.map, game.stage || 0, assets); scene.add(sceneryGroup); setShadeMask(sceneryGroup.userData.mask, look); if (game.map && game.map.open) MASK.ck.value = 0; /* the open desert has no cloud shadows on the sand */ grassMesh = buildGrass(game.map, game.stage || 0, sceneryGroup.userData.scatter, sceneryGroup.userData.theme, null, scene.fog.near); if (grassMesh) scene.add(grassMesh); ambient.setSpots(sceneryGroup.userData.flowerSpots, game.stage || 0, game.map.hash); } else { ambient.clear(); setShadeMask(null, look); } minimap.setMap(game.map);
     try { renderer.compile(scene, camera); } catch (e) { /* warm-up is best effort */ }       // shaders are built behind the stage card, so the first frames do not hitch
 }
 let duelist = 'kael';

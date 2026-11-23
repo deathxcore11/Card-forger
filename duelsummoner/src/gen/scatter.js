@@ -172,27 +172,5 @@ function scatterRooms(map, stageIndex, solidOnly) {
   for (const room of map.rooms) if (room.style === 'meadow') for (let k = 0; k < 40; k++) { const a = rnd() * TAU, dd = 8 + rnd() * 24, x = room.x + cos(a) * dd, z = room.z + sin(a) * dd; if (roomAt(x, z) === room.id && free(x, z, 1) && flat(x, z, 0.3) !== null && pat(x * 0.05, z * 0.05) > 0.4) out.flowerSpots.push([x, flat(x, z, 0.3), z]); }
   return out;
 }
-// ---- open terrain (the preview landscape): natural dressing only. Forests and clumps follow a density noise (thick woods in places, open meadow in others, no lone trees), boulders stand at cliff feet and a few on slopes, bushes at the edge of the woods, flowers in the meadows.
-function scatterOpen(map, stageIndex, solidOnly) {
-  const seed = strHash(String(map.key)), rnd = mulberry(seed ^ 0x5CE9E), out = { trees: [[], [], [], []], rocks: [[], [], []], bushes: [], special: [], grass: [], flowers: [], flowerSpots: [] };
-  const H = (x, z) => heightAt(x, z), sl = (x, z) => { const a = H(x + 1, z), b = H(x - 1, z), c = H(x, z + 1), d = H(x, z - 1); if (a >= 50 || b >= 50 || c >= 50 || d >= 50) return 9; return sqrtf(((a - b) * (a - b) + (c - d) * (c - d)) / 4); };
-  const dens = (x, z) => 0.62 * vnoise(seed & 0xffff, x / 55, z / 55) + 0.38 * vnoise((seed >>> 8) & 0xffff, x / 21, z / 21);
-  const keep = [{ x: map.spawn.x, z: map.spawn.z, r: 20 }, { x: map.gate.x, z: map.gate.z, r: 30 }]; for (const e of map.encounters || []) keep.push({ x: e.x, z: e.z, r: 6 }); for (const b of map.bossRings || []) keep.push({ x: b.x, z: b.z, r: 18 }); for (const c of map.clearings || []) keep.push(c);
-  const free = (x, z, pad) => { for (const k of keep) { const dx = x - k.x, dz = z - k.z, rr = k.r + (pad || 0); if (dx * dx + dz * dz < rr * rr) return false; } return true; };
-  const grid = new Map(), put = (kind, x, z) => { const k = Math.floor(x / 8) * 4096 + Math.floor(z / 8); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push([kind, x, z]); }, nearAny = (kind, x, z, d) => { for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const a = grid.get((Math.floor(x / 8) + i) * 4096 + Math.floor(z / 8) + j); if (a) for (const o of a) if (o[0] === kind && (o[1] - x) * (o[1] - x) + (o[2] - z) * (o[2] - z) < d * d) return true; } return false; };
-  const tint = (lo, hi) => 1 - lo + rnd() * (lo + hi), trees = [], rocks = [];
-  for (let z = -172; z <= 172; z += 4) for (let x = -172; x <= 172; x += 4) {
-    const jx = x + (rnd() - 0.5) * 3, jz = z + (rnd() - 0.5) * 3, h = H(jx, jz); if (h >= 50) continue; const f = dens(jx, jz);
-    if (f > 0.58 + (h > 4 ? 0.1 : 0) && trees.length < 420) { const p = Math.min(1, (f - 0.58 - (h > 4 ? 0.1 : 0)) / 0.1) * 0.85; if (rnd() < p && free(jx, jz, 2) && sl(jx, jz) < 0.4 && !nearAny('t', jx, jz, 5)) { const parasol = rnd() < 0.55, sc = parasol ? TREE_SCALE.parasol : TREE_SCALE.blob, s = sc[0] + rnd() * (sc[1] - sc[0]); trees.push([jx, h, jz, s, rnd() * TAU, tint(0.12, 0.12), parasol ? Math.floor(rnd() * 2) : 2 + Math.floor(rnd() * 2)]); put('t', jx, jz); continue; } }
-    if (rocks.length < 90) {                                                    // boulders: at the foot of a steep face, and a few on slopes
-      const s0 = sl(jx, jz); let foot = false; if (s0 < 0.45) for (const [dx, dz] of [[3.5, 0], [-3.5, 0], [0, 3.5], [0, -3.5]]) if (sl(jx + dx, jz + dz) > 1.0 && H(jx + dx, jz + dz) > h + 1) { foot = true; break; }
-      if (((foot && rnd() < 0.3) || (s0 > 0.3 && s0 < 0.6 && rnd() < 0.01)) && free(jx, jz, 2) && !nearAny('r', jx, jz, 7)) { const tall = rnd() < 0.4, ex = tall ? 1.6 + rnd() * 0.5 : 1.2 + rnd() * 0.6, ey = tall ? 2.4 + rnd() * 0.5 : 1.0 + rnd() * 0.3; rocks.push([jx, h, jz, ex, rnd() * TAU, tint(0.1, 0.1), ey]); put('r', jx, jz); }
-    }
-  }
-  for (const t of trees) out.trees[t[6]].push([t[0], t[1], t[2], t[3], t[4], t[5]]);
-  rocks.forEach((r, i) => out.rocks[i % 3].push(r));
-  if (solidOnly) return out;
-  for (const t of trees) if (rnd() < 0.5) { const a = rnd() * TAU, dd = 2 + rnd() * 2.5, x = t[0] + cos(a) * dd, z = t[2] + sin(a) * dd, h = H(x, z); if (h < 50 && sl(x, z) < 0.4 && free(x, z, 0)) out.bushes.push([x, h, z, 1.0 + rnd() * 0.8, rnd() * TAU, tint(0.1, 0.1)]); }
-  for (let k = 0; k < 600 && out.flowerSpots.length < 70; k++) { const x = (rnd() - 0.5) * 340, z = (rnd() - 0.5) * 340, h = H(x, z); if (h < 50 && dens(x, z) < 0.42 && sl(x, z) < 0.15 && free(x, z, 1)) out.flowerSpots.push([x, h, z]); }
-  return out;
-}
+// ---- open terrain (the preview desert): the trees, boulders, bushes and flowers of the other stages do not grow here. Its dressing (cacti, dead trees, logs, pots, the carved head) is a plain list in the map (map.dress, drawn by view/openMesh.js), its solid pieces are map.solid (read by sim/colliders.js).
+function scatterOpen(map, stageIndex, solidOnly) { return { trees: [[], [], [], []], rocks: [[], [], []], bushes: [], special: [], grass: [], flowers: [], flowerSpots: [] }; }

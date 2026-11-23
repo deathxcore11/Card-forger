@@ -1,131 +1,82 @@
-// Open terrain (preview, ?terrain=open): one square landscape, 360 m a side, a smooth heightfield with no tiers, no rooms and no walls but the plain steep bank round the edge.
-// Each seed picks a landscape archetype (a to f), then draws every landform from the seed: gentle rolling ground (0 to 2 m), mesas (flat top, cliff on some sides, one to three smooth ramps on the others), round hills, long ridges with a saddle,
-// a basin, a diagonal escarpment, terraced plateaus. Ramps and hills are never steeper than about 20 degrees; only mesa flanks and ramp flanks are steep. Integer hash and + - * / sqrt only (no sin, cos, pow, clock): the same seed gives the same ground everywhere.
+// Open terrain (preview, ?terrain=open): one square of rolling desert, 356 m a side inside a thin dark boundary line, with the same sand carrying on past the line for 220 m (the view draws it, the sim stops the duelist at the line).
+// The floor is one broad dune sheet: a long swell and a shorter cross swell (wavelength 40 to 120 m, 2 to 8 m high, slow windward rise and quicker lee fall) over a very slow rise and fall of the whole ground, so it is almost never flat for 25 m.
+// On it stand 2 to 4 blocky mesas (5 to 8 m tall, flat tops, steep sides, no ramps) and a few small lone ruin blocks (about 3 m). Rewards stand on open, nearly flat sand beside a block, one at a time and far apart, never on a height.
+// Dressing (cacti, dead trees, half-sunk logs, clay pots, one carved head) and the far dressing beyond the line are plain lists in the map: the view draws them, the sim reads only `solid`.
+// Integer hash and + - * / sqrt only (no sin, cos, pow, clock): the same seed gives the same ground everywhere.
 // The sim reads the same heightfield (400 x 400 cells of 1 m, WALL outside the square); the view samples it on a 2 m grid with true heights.
-const SIM = 400, HALF = 200, S = 360, OFF = 20, WALL = 99, EDGE_H = 14;
+const SIM = 400, HALF = 200, S = 360, OFF = 20, WALL = 99;
+export const LINE = 178;                                                                           // the boundary line: |x| or |z| of 178 m; the cells beyond are wall for the sim
 export const ARCHETYPES = ['a', 'b', 'c', 'd', 'e', 'f'];
-export const ARCH_NAME = { a: 'Great Mesa', b: 'Twin Ridges', c: 'Ring of Hills', d: 'Escarpment', e: 'Knolls and Mesas', f: 'Terraced Plateau' };
+export const ARCH_NAME = { a: 'Long Swells', b: 'Cross Dunes', c: 'Great Hollow', d: 'High Shelf', e: 'Short Dunes', f: 'Wide Swells' };
 const TAU = 6.283185307179586;
 function sq(v) { if (!(v > 0)) return 0; let x = v > 1 ? (v + 1) / 2 : 1; for (let k = 0; k < 40; k++) { const y = 0.5 * (x + v / x); if (y >= x && k > 4) break; x = y; } return x; }       // square root by Newton's method (+ - * / only, the same on every platform)
 const sstep = (a, b, x) => { let t = (x - a) / (b - a); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
-const smax = (a, b, k) => (a + b + sq((a - b) * (a - b) + k * k)) / 2;
 function rngOf(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function lat(seed, ix, iz) { let h = Math.imul(ix, 374761393) ^ Math.imul(iz, 668265263) ^ Math.imul(seed, 2246822519); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 export function vnoise(seed, x, z) { const x0 = Math.floor(x), z0 = Math.floor(z), fx = x - x0, fz = z - z0, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz), a = lat(seed, x0, z0), b = lat(seed, x0 + 1, z0), c = lat(seed, x0, z0 + 1), d = lat(seed, x0 + 1, z0 + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
 const cosA = a => { a = ((a % TAU) + TAU) % TAU; const t = a > 3.141592653589793 ? a - TAU : a; return polyCos(t); };       // cos and sin by a short series (no Math.cos): angles are reduced to -pi..pi
 function polyCos(t) { let q = t, flip = 1; if (q > 1.5707963267948966) { q = 3.141592653589793 - q; flip = -1; } else if (q < -1.5707963267948966) { q = -3.141592653589793 - q; flip = -1; } const x = q * q; return flip * (1 - x / 2 + x * x / 24 - x * x * x / 720 + x * x * x * x / 40320 - x * x * x * x * x / 3628800); }
 const sinA = a => cosA(a - 1.5707963267948966);
+const r2 = v => Math.round(v * 100) / 100;
 
-// ---- landform builders: each returns { bb: [x0, x1, z0, z1], f(x, z) -> height above 0 (0 outside), tops: [[x, z]] } ----
-function mesa(rn, o) {
-  const { cx, cz, rx, rz, h } = o, rot = o.rot, cr = cosA(rot), sr = sinA(rot), cw = Math.max(3, h * 0.45), seed = Math.floor(rn() * 1e9), ramps = o.ramps.map(r => ({ dx: cosA(r.ang), dz: sinA(r.ang), w: r.w }));
-  const edge = (dx, dz) => { const ux = (dx * cr + dz * sr) / rx, uz = (-dx * sr + dz * cr) / rz, q4 = ux * ux * ux * ux + uz * uz * uz * uz; return 1 / sq(sq(q4)); };       // distance from the centre to the footprint edge along a direction
-  for (const r of ramps) { r.t0 = edge(r.dx, r.dz) - cw * 0.5; r.L = h * 4.3; }
-  const R = Math.max(rx, rz) * 1.25 + 6, Lmax = Math.max(0, ...ramps.map(r => r.t0 + r.L + 12));
-  const m = Math.max(R, Lmax);
-  return { bb: [cx - m, cx + m, cz - m, cz + m], tops: [[cx, cz]], mesa: { cx, cz, h, rx, rz }, f: (x, z) => {
-    const dx = x - cx, dz = z - cz, ux = (dx * cr + dz * sr) / rx, uz = (-dx * sr + dz * cr) / rz;
-    let v = 0; const q4 = ux * ux * ux * ux + uz * uz * uz * uz;
-    if (q4 < 2.2) { let q = sq(sq(q4)); q = q / (1 + 0.16 * (vnoise(seed, x * 0.04, z * 0.04) - 0.5)); const s = (1 - q) * ((rx + rz) / 2); if (s > 0) v = h * sstep(0, cw, s); }
-    for (const r of ramps) { const t = dx * r.dx + dz * r.dz, u = -dx * r.dz + dz * r.dx; if (t < r.t0 - cw || t > r.t0 + r.L) continue; const hr = h * (1 - sstep(r.t0, r.t0 + r.L, t)), lm = 1 - sstep(r.w / 2, r.w / 2 + 5 + 0.6 * hr, Math.abs(u)); const rv = hr * lm; if (rv > v) v = rv; }
-    return v;
-  } };
+// ---- the dune sheet: a pure function of (params, x, z), used for the playable square and, unchanged, for the land beyond the line
+const saw = (t, k) => { const p = t - Math.floor(t); return p < k ? sstep(0, k, p) : 1 - sstep(k, 1, p); };       // 0 to 1: a slow windward rise to the crest, then a quicker lee fall
+export function duneH(P, x, z) {
+  const u1 = x * P.c1 + z * P.s1, u2 = x * P.c2 + z * P.s2, sd = P.seed;
+  const w1 = 16 * (vnoise(sd ^ 0x101, x / 70, z / 70) - 0.5), w2 = 9 * (vnoise(sd ^ 0x102, x / 40, z / 40) - 0.5);
+  const m1 = 0.5 + vnoise(sd ^ 0x103, x / 160, z / 160), m2 = 0.4 + 1.2 * vnoise(sd ^ 0x104, x / 110, z / 110);
+  let h = P.a1 * m1 * saw((u1 + w1) / P.l1 + P.p1, P.k) + P.a2 * m2 * saw((u2 + w2) / P.l2 + P.p2, P.k) + P.lo * vnoise(sd ^ 0x105, x / 170, z / 170) + 0.35 * vnoise(sd ^ 0x106, x / 30, z / 30) + 0.07 * vnoise(sd ^ 0x107, x / 7, z / 7);
+  if (P.shelf) h += P.shelf * sstep(-200, 200, x * P.cs + z * P.ss);
+  if (P.bowl) { const dx = x - P.bx, dz = z - P.bz; h -= P.bowl * (1 - sstep(0, P.br, sq(dx * dx + dz * dz))); }
+  return h + P.shift;
 }
-function hill(rn, o) {
-  const { cx, cz, h } = o, R = Math.max(o.R, h * 4.6), asp = o.asp || 1, cr = cosA(o.rot || 0), sr = sinA(o.rot || 0);
-  return { bb: [cx - R * asp, cx + R * asp, cz - R * asp, cz + R * asp], tops: [[cx, cz]], f: (x, z) => { const dx = x - cx, dz = z - cz, u = (dx * cr + dz * sr) / asp, v = -dx * sr + dz * cr, q2 = (u * u + v * v) / (R * R); if (q2 >= 1) return 0; const a = 1 - q2; return h * a * a; } };
-}
-function ridge(rn, o) {
-  const { ax, az, bx, bz, h } = o, W = Math.max(o.W, h * 4.4), len = sq((bx - ax) * (bx - ax) + (bz - az) * (bz - az)), tx = (bx - ax) / len, tz = (bz - az) / len, ts = o.saddle === undefined ? 0.5 : o.saddle, sp = o.sp === undefined ? 0.5 : o.sp, sw = Math.max(0.1, 26 / len);
-  const m = W + 4;
-  return { bb: [Math.min(ax, bx) - m, Math.max(ax, bx) + m, Math.min(az, bz) - m, Math.max(az, bz) + m], tops: [[ax + (bx - ax) * 0.2, az + (bz - az) * 0.2], [ax + (bx - ax) * 0.8, az + (bz - az) * 0.8]], f: (x, z) => {
-    const dx = x - ax, dz = z - az, t = (dx * tx + dz * tz) / len, l = -dx * tz + dz * tx; if (Math.abs(l) >= W) return 0;
-    const e = sstep(0, 0.2, t) * sstep(0, 0.2, 1 - t); if (e <= 0) return 0; const sad = 1 - sp * (1 - sstep(0, sw, Math.abs(t - ts))), q2 = (l * l) / (W * W), a = 1 - q2; return h * e * sad * a * a; } };
-}
-function basin(rn, o) { const { cx, cz, R, depth } = o; return { bb: [cx - R, cx + R, cz - R, cz + R], tops: [], neg: true, f: (x, z) => { const q2 = ((x - cx) * (x - cx) + (z - cz) * (z - cz)) / (R * R); if (q2 >= 1) return 0; const a = 1 - q2; return depth * a * a; } }; }
-// a plateau on one side of a diagonal line: a cliff along the line, with ramps cut down to the low side
-function escarpment(rn, o) {
-  const { cx, cz, h } = o, nx = cosA(o.ang), nz = sinA(o.ang), tx = -nz, tz = nx, cw = 3.5, L = h * 4.3, ramps = o.ramps, seed = Math.floor(rn() * 1e9);
-  return { bb: [-HALF, HALF, -HALF, HALF], tops: o.tops, f: (x, z) => {
-    const dx = x - cx, dz = z - cz, d0 = dx * nx + dz * nz, along = dx * tx + dz * tz, d = d0 + 7 * (vnoise(seed, along * 0.02, 3.3) - 0.5);       // the edge wanders a little along its length
-    let v = h * sstep(0, cw, d) + (d > cw ? 3.2 * sstep(cw, cw + 25, d) * (vnoise(seed, x * 0.03, z * 0.03) - 0.4) : 0);
-    for (const r of ramps) { const a = -d, u = along - r.s; if (a > L || d > cw) continue; const hr = a <= 0 ? h : h * (1 - sstep(0, L, a)), lm = 1 - sstep(r.w / 2, r.w / 2 + 5 + 0.6 * hr, Math.abs(u)); if (hr * lm > v) v = hr * lm; }
-    return v; } };
-}
-// terraces stepping down from a corner as smooth slopes (about 15 degrees), each a flat tread
-function terraces(rn, o) {
-  const { sx, sz, a, tread, rise, wid } = o, seed = Math.floor(rn() * 1e9), n = 3;
-  return { bb: [-HALF, HALF, -HALF, HALF], tops: o.tops, f: (x, z) => { const p = ((x * sx + z * sz) / 1.4142135623730951) + 16 * (vnoise(seed, x * 0.012, z * 0.012) - 0.5); let v = 0; for (let k = 0; k < n; k++) v += rise * sstep(a + k * (tread + wid), a + k * (tread + wid) + wid, p); return v > 0.5 ? v + 1.6 * sstep(0, 20, v) * (vnoise(seed ^ 5, x * 0.035, z * 0.035) - 0.4) : v; } };
+function params(arch, rn, seed) {
+  const th = rn() * TAU, side = rn() < 0.5 ? -1 : 1, P = { seed: seed | 0, k: 0.58 + rn() * 0.1, p1: rn() * 50, p2: rn() * 50, shift: 0, shelf: 0, bowl: 0 };
+  let l1 = 72 + rn() * 48, a1 = 2.4 + rn() * 1.6, l2 = 40 + rn() * 24, a2 = 1.0 + rn() * 0.9, lo = 3 + rn() * 2.5, th2 = th + side * (0.35 + rn() * 0.5);
+  if (arch === 'a') { l1 = 100 + rn() * 20; a1 = 3.2 + rn() * 1.2; a2 *= 0.6; th2 = th + side * 0.3; }
+  else if (arch === 'b') { th2 = th + side * (1.2 + rn() * 0.3); a2 = a1 * (0.55 + rn() * 0.2); l2 = 55 + rn() * 20; }
+  else if (arch === 'c') { P.bowl = 4 + rn() * 2; P.br = 95 + rn() * 25; P.bx = (rn() - 0.5) * 60; P.bz = (rn() - 0.5) * 60; }
+  else if (arch === 'd') { P.shelf = 6 + rn() * 3; const a = rn() * TAU; P.cs = cosA(a); P.ss = sinA(a); }
+  else if (arch === 'e') { l1 = 46 + rn() * 14; a1 = 1.9 + rn() * 0.7; l2 = 30 + rn() * 10; a2 = 0.9 + rn() * 0.5; }
+  else { l1 = 110 + rn() * 14; a1 = 3.6 + rn() * 0.8; l2 = 70 + rn() * 15; a2 = 1.1 + rn() * 0.4; lo = 3.5 + rn() * 1.5; }
+  Object.assign(P, { l1, a1, l2, a2, lo, c1: cosA(th), s1: sinA(th), c2: cosA(th2), s2: sinA(th2), wind: th });
+  return P;
 }
 
-// ---- the edge: a ring of steep rock hills 17 to 25 m high that carries on outward into far hills (the view draws them; the sim has wall cells from 2 m in)
-const PLAY = HALF - OFF;                                                                           // 180: half the square
-function edgeD(seed, x, z) {
-  const ax = PLAY - Math.abs(x), az = PLAY - Math.abs(z), useX = ax < az, e = useX ? ax : az, along = useX ? z : x, side = useX ? (x < 0 ? 0 : 1) : (z < 0 ? 2 : 3);
-  return { e: e + 7 * (vnoise(seed ^ 0x51, along / 52, side * 7.3) - 0.5) * 2, top: 17 + 8 * vnoise(seed ^ 0x52, along / 70, side * 3.1 + 9) };
+// ---- blocks: a flat-topped box standing on the sand, 5 to 8 m above the highest ground under it (mesas) or about 3 m (lone ruin blocks), steep sides, no ramps
+function block(rn, cx, cz, rx, rz, h, cw, tone) {
+  const rot = rn() * TAU; return { cx, cz, rx, rz, h, cw, rot, cr: cosA(rot), sr: sinA(rot), seed: Math.floor(rn() * 1e9) & 0xffff, tone, T: 0, door: false };
 }
-const bankH = (seed, x, z) => { const q = edgeD(seed, x, z); return q.e >= 30 ? 0 : q.top * (1 - sstep(0, 30, q.e)); };
-export function outerH(seed, x, z) {                                                               // the ground beyond the square: the bank's top carrying on into far hills
-  const q = edgeD(seed, x, z); if (q.e >= 0) return bankH(seed, x, z); const d = -q.e;
-  return q.top + 14 * sstep(0, 160, d) + 10 * vnoise(seed ^ 0x53, x / 38, z / 38) * sstep(0, 30, d) + 5 * vnoise(seed ^ 0x54, x / 16, z / 16) * sstep(0, 20, d);
+function cbrt(v) { if (!(v > 0)) return 0; let x = v > 1 ? v / 3 + 0.67 : 1; for (let k = 0; k < 40; k++) { const y = (2 * x + v / (x * x)) / 3; if (Math.abs(y - x) < 1e-9) { x = y; break; } x = y; } return x; }       // cube root by Newton's method (+ - * / only)
+function prof(b, x, z) {                                                                           // 0 outside, 1 on the flat top, a smooth rise across the steep side
+  const dx = x - b.cx, dz = z - b.cz, ux = (dx * b.cr + dz * b.sr) / b.rx, uz = (-dx * b.sr + dz * b.cr) / b.rz, u2 = ux * ux, v2 = uz * uz, q6 = u2 * u2 * u2 + v2 * v2 * v2;
+  if (q6 > 3) return 0; const q = cbrt(sq(q6)); const s = (1 - q) * ((b.rx + b.rz) / 2); return s > 0 ? sstep(0, b.cw, s) : 0;
 }
+export const blockProf = prof;
+const reachOf = b => Math.max(b.rx, b.rz) * 1.25 + 2;
 
-// ---- the archetypes: each returns the landforms of this seed, 7 to 10 major ones (big enough to be the map) plus a few minor knolls; they may overlap and blend
-function layout(arch, rn) {
-  const L = [], placed = []; let major = 0;
-  const add = (f, x, z, r, isMajor = true) => { f.major = isMajor; f.cx = x; f.cz = z; L.push(f); placed.push({ x, z, r }); if (isMajor) major++; };
-  const spot = (r, margin) => { for (let k = 0; k < 150; k++) { const m = Math.max(margin, r * 0.35 + 40), x = -PLAY + m + rn() * (S - 2 * m), z = -PLAY + m + rn() * (S - 2 * m); let ok = true; for (const p of placed) { const dx = x - p.x, dz = z - p.z, rr = 0.5 * (r + p.r); if (dx * dx + dz * dz < rr * rr) { ok = false; break; } } if (ok) return { x, z }; } return null; };
-  const addMesa = () => { const rx = 20 + rn() * 14, rz = 18 + rn() * 14, h = 10 + rn() * 7, R = Math.max(rx, rz) + h * 2.2, p = spot(R, 50); if (!p) return; add(mesa(rn, { cx: p.x, cz: p.z, rx, rz, rot: rn() * TAU, h, ramps: ramps(rn, 1 + ((rn() * 3) | 0), 12) }), p.x, p.z, R); };
-  const addHill = (rmin, rmax, hmin, hmax, isMajor = true) => { const h = hmin + rn() * (hmax - hmin), R = Math.max(rmin + rn() * (rmax - rmin), h * 4.6), p = spot(R, 50); if (!p) return; add(hill(rn, { cx: p.x, cz: p.z, R, h, asp: 1 + rn() * 0.5, rot: rn() * TAU }), p.x, p.z, R, isMajor); };
-  if (arch === 'a') {
-    const cx = (rn() - 0.5) * 40, cz = (rn() - 0.5) * 40, rot = rn() * TAU, a0 = rn() * TAU;
-    add(mesa(rn, { cx, cz, rx: 62 + rn() * 8, rz: 56 + rn() * 8, rot, h: 6 + rn() * 2, ramps: [{ ang: a0, w: 14 + rn() * 4 }, { ang: a0 + 3.4, w: 14 + rn() * 4 }] }), cx, cz, 105);
-    add(mesa(rn, { cx: cx + (rn() - 0.5) * 16, cz: cz + (rn() - 0.5) * 16, rx: 32 + rn() * 6, rz: 28 + rn() * 6, rot: rot + 0.5, h: 16 + rn() * 2, ramps: [{ ang: a0 + 1.6, w: 14 }, { ang: a0 + 4.8, w: 14 }] }), cx, cz, 70);
-    for (let k = 0; k < 7; k++) addHill(32, 46, 6, 10.5); addMesa();
-  } else if (arch === 'b') {
-    const th = rn() * TAU, c = cosA(th), s = sinA(th), off = 66 + rn() * 14, len = 250 + rn() * 30;
-    for (const sg of [-1, 1]) { const mx = -s * off * sg, mz = c * off * sg, jx = (rn() - 0.5) * 20; add(ridge(rn, { ax: mx - c * len / 2 + jx, az: mz - s * len / 2, bx: mx + c * len / 2 + jx, bz: mz + s * len / 2, W: 40 + rn() * 6, h: 8 + rn() * 2, saddle: 0.3 + rn() * 0.4, sp: 0.5 }), mx, mz, 80); }
-    add(basin(rn, { cx: (rn() - 0.5) * 60 * c, cz: (rn() - 0.5) * 60 * s, R: 48, depth: 3 + rn() * 2 }), 0, 0, 40, false);
-    for (let k = 0; k < 4; k++) addHill(30, 44, 5, 9); for (let k = 0; k < 3; k++) addMesa();
-  } else if (arch === 'c') {
-    const n = 7, a0 = rn() * TAU, rr = 100 + rn() * 10;
-    add(basin(rn, { cx: 0, cz: 0, R: 62, depth: 4 + rn() * 2 }), 0, 0, 50, false);
-    for (let k = 0; k < n; k++) { const a = a0 + k * TAU / n + (rn() - 0.5) * 0.2, h = 6 + rn() * 4, R = Math.max(34 + rn() * 8, h * 4.6); add(hill(rn, { cx: cosA(a) * rr, cz: sinA(a) * rr, R, h, asp: 1 + rn() * 0.4, rot: a + 1.57 }), cosA(a) * rr, sinA(a) * rr, R); }
-    for (let k = 0; k < 2; k++) addMesa(); addHill(28, 36, 5, 8);
-  } else if (arch === 'd') {
-    const ang = rn() * TAU, h = 9 + rn() * 3, cx = (rn() - 0.5) * 50, cz = (rn() - 0.5) * 50, ra = [];
-    for (let k = 0; k < 3; k++) ra.push({ s: -90 + k * 90 + (rn() - 0.5) * 24, w: 14 + rn() * 5 });
-    const nx = cosA(ang), nz = sinA(ang), tops = [];
-    for (let k = 0; k < 6; k++) { const s = -140 + k * 56, d = 35 + rn() * 50; tops.push([cx + (-nz) * s + nx * d, cz + nx * s + nz * d]); }
-    add(escarpment(rn, { cx, cz, ang, h, ramps: ra, tops }), cx, cz, 90);
-    for (let k = 0; k < 9; k++) addHill(32, 46, 6, 10.5); for (let k = 0; k < 2; k++) addMesa();
-  } else if (arch === 'e') {
-    for (let k = 0; k < 8; k++) addHill(30, 46, 5, 10);
-    for (let k = 0; k < 3; k++) addMesa();
-  } else {
-    const sx = rn() < 0.5 ? -1 : 1, sz = rn() < 0.5 ? -1 : 1, tread = 34 + rn() * 12, wid = 24 + rn() * 4, a = -10 + rn() * 30, tops = [];
-    for (let k = 1; k <= 3; k++) { const p = a + (k - 1) * (tread + wid) + wid + tread / 2 + 30; tops.push([(sx * p) / 1.4142 - sz * (rn() - 0.5) * 120, (sz * p) / 1.4142 + sx * (rn() - 0.5) * 120]); }
-    add(terraces(rn, { sx, sz, a: a + 30, tread, rise: 4, wid, tops }), sx * 80, sz * 80, 110);
-    for (let k = 0; k < 8; k++) addHill(32, 46, 6, 10.5); for (let k = 0; k < 2; k++) addMesa();
+function field(P, blocks) {
+  const G = new Float32Array(S * S); let lo = 1e9;
+  for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) { const v = duneH(P, i + 0.5 - HALF + OFF, j + 0.5 - HALF + OFF); G[j * S + i] = v; if (v < lo) lo = v; }
+  P.shift = 0.3 - lo; for (let k = 0; k < S * S; k++) G[k] += P.shift - 0;                         // the lowest sand is 0.3 m (duneH adds P.shift itself for the view)
+  for (const b of blocks) {
+    const R = reachOf(b), i0 = Math.max(0, Math.floor(b.cx - R + HALF - OFF)), i1 = Math.min(S - 1, Math.ceil(b.cx + R + HALF - OFF)), j0 = Math.max(0, Math.floor(b.cz - R + HALF - OFF)), j1 = Math.min(S - 1, Math.ceil(b.cz + R + HALF - OFF));
+    let top = -1e9; for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (prof(b, i + 0.5 - HALF + OFF, j + 0.5 - HALF + OFF) > 0.02) top = Math.max(top, G[j * S + i]);
+    b.T = top + b.h;
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const p = prof(b, i + 0.5 - HALF + OFF, j + 0.5 - HALF + OFF); if (p > 0) G[j * S + i] += (b.T - G[j * S + i]) * p; }
   }
-  for (let k = 0; k < 3; k++) addHill(14, 22, 2, 3.5, false);                         // minor knolls
-  return { L, major };
-}
-function ramps(rn, n, w0) { const out = [], a0 = rn() * TAU; for (let k = 0; k < n; k++) out.push({ ang: a0 + k * (TAU / n) + (rn() - 0.5) * 0.7, w: w0 + rn() * 6 }); return out; }
-
-// ---- the heightfield: rolling base 0 to 4 m, the landforms blended on, the bank round the edge
-function field(L, seed) {
-  const G = new Float32Array(S * S), F = new Float32Array(S * S), N = new Float32Array(S * S);
-  for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) { const x = i + 0.5 - HALF + OFF, z = j + 0.5 - HALF + OFF; G[j * S + i] = 8 * (0.45 * vnoise(seed ^ 0x11, x / 50, z / 50) + 0.4 * vnoise(seed ^ 0x22, x / 23, z / 23)) + 1.8 * vnoise(seed ^ 0x33, x / 11, z / 11); }
-  for (const lf of L) {
-    const x0 = Math.max(0, Math.floor(lf.bb[0] + HALF - OFF)), x1 = Math.min(S - 1, Math.ceil(lf.bb[1] + HALF - OFF)), z0 = Math.max(0, Math.floor(lf.bb[2] + HALF - OFF)), z1 = Math.min(S - 1, Math.ceil(lf.bb[3] + HALF - OFF));
-    for (let j = z0; j <= z1; j++) for (let i = x0; i <= x1; i++) { const v = lf.f(i + 0.5 - HALF + OFF, j + 0.5 - HALF + OFF); if (v <= 0.005) continue; const k = j * S + i; if (lf.neg) N[k] += v; else F[k] = F[k] <= 0 ? v : smax(F[k], v, 1.2); }
-  }
-  for (let k = 0; k < S * S; k++) G[k] = (F[k] > 0 ? smax(G[k], F[k] + 0.3 * G[k], 1.2) : G[k]) - N[k];
   return G;
 }
+// the ground height anywhere (bilinear on the 1 m cells inside the line, the dune function beyond it); used by the view and the dressing
+export function groundAt(map, x, z) {
+  if (x > -LINE + 1 && x < LINE - 1 && z > -LINE + 1 && z < LINE - 1) { const H = map.heights, fx = x + HALF - 0.5, fz = z + HALF - 0.5, i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j; return (H[j * SIM + i] * (1 - u) + H[j * SIM + i + 1] * u) * (1 - v) + (H[(j + 1) * SIM + i] * (1 - u) + H[(j + 1) * SIM + i + 1] * u) * v; }
+  const cx = x < -LINE + 1 ? -LINE + 1 : x > LINE - 1 ? LINE - 1 : x, cz = z < -LINE + 1 ? -LINE + 1 : z > LINE - 1 ? LINE - 1 : z, d = sq((x - cx) * (x - cx) + (z - cz) * (z - cz));
+  const H = map.heights, fx = cx + HALF - 0.5, fz = cz + HALF - 0.5, i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j, g = (H[j * SIM + i] * (1 - u) + H[j * SIM + i + 1] * u) * (1 - v) + (H[(j + 1) * SIM + i] * (1 - u) + H[(j + 1) * SIM + i + 1] * u) * v;
+  const w = 1 - sstep(0, 2.5, d); return duneH(map.dune, x, z) * (1 - w) + (g + duneH(map.dune, x, z) - duneH(map.dune, cx, cz)) * w;       // the last 2.5 m blend the cell value into the pure function so the seam at the line has no step
+}
+
 const at = (G, x, z) => { const i = Math.floor(x + HALF - OFF), j = Math.floor(z + HALF - OFF); return i < 0 || j < 0 || i >= S || j >= S ? WALL : G[j * S + i]; };
-// a flatten pad: inside rIn the ground is the height at the centre, between rIn and rOut it blends back to the hills with a smoothstep (a flush piece with an earthen approach)
+// a flatten pad: inside rIn the ground is the height at the centre, between rIn and rOut it blends back to the dunes with a smoothstep (a flush piece with a sand approach)
 function pad(G, cx, cz, rIn, rOut) {
   let s = 0, n = 0; for (let dz = -rIn; dz <= rIn; dz += 1) for (let dx = -rIn; dx <= rIn; dx += 1) if (dx * dx + dz * dz <= rIn * rIn) { s += at(G, cx + dx, cz + dz); n++; } const hc = n ? s / n : at(G, cx, cz);
   const i0 = Math.max(0, Math.floor(cx - rOut + HALF - OFF)), i1 = Math.min(S - 1, Math.ceil(cx + rOut + HALF - OFF)), j0 = Math.max(0, Math.floor(cz - rOut + HALF - OFF)), j1 = Math.min(S - 1, Math.ceil(cz + rOut + HALF - OFF));
@@ -134,103 +85,122 @@ function pad(G, cx, cz, rIn, rOut) {
 }
 const slopeAt = (G, x, z) => { const a = at(G, x + 1, z), b = at(G, x - 1, z), c = at(G, x, z + 1), d = at(G, x, z - 1); if (a >= 50 || b >= 50 || c >= 50 || d >= 50) return 9; return sq(((a - b) * (a - b) + (c - d) * (c - d)) / 4); };
 const spread = (G, x, z, r) => { let lo = 1e9, hi = -1e9; for (let a = 0; a < 12; a++) { const t = a * TAU / 12, h = at(G, x + cosA(t) * r, z + sinA(t) * r); if (h >= 50) return 99; lo = Math.min(lo, h); hi = Math.max(hi, h); } const h0 = at(G, x, z); return Math.max(hi, h0) - Math.min(lo, h0); };
+const dist = (ax, az, bx, bz) => sq((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 
-// ---- checks over the inner 300 m (the bank is the edge, not the play area): slope shares, relief, what the starting kit can reach
+// ---- checks over the inner square: slope shares, relief, flat patches, what the starting kit can reach
 export function analyse(G, from) {
   let sl = 0, open = 0, tot = 0, lo = 1e9, hi = -1e9; const walk = new Uint8Array(S * S);
   for (let j = 2; j < S - 2; j++) for (let i = 2; i < S - 2; i++) { const k = j * S + i, sx = (G[k + 1] - G[k - 1]) / 2, sz = (G[k + S] - G[k - S]) / 2, s2 = sx * sx + sz * sz; if (i < 30 || i >= S - 30 || j < 30 || j >= S - 30) continue; if (s2 < 0.25) walk[k] = 1; tot++; if (s2 < 0.0719) open++; if (s2 >= 0.00766 && s2 < 0.1632) sl++; if (G[k] < lo) lo = G[k]; if (G[k] > hi) hi = G[k]; }
   const seen = new Uint8Array(S * S), q = []; const s = (Math.floor(from[1] + HALF - OFF)) * S + Math.floor(from[0] + HALF - OFF); seen[s] = 1; q.push(s);
   while (q.length) { const c = q.pop(), x = c % S, z = (c / S) | 0; for (let d = 0; d < 4; d++) { const xx = x + (d === 0 ? 1 : d === 1 ? -1 : 0), zz = z + (d === 2 ? 1 : d === 3 ? -1 : 0); if (xx < 0 || zz < 0 || xx >= S || zz >= S) continue; const m = zz * S + xx; if (seen[m] || Math.abs(G[m] - G[c]) > 0.5 || G[m] > 40) continue; seen[m] = 1; q.push(m); } }
   let w = 0, wr = 0; for (let k = 0; k < S * S; k++) if (walk[k]) { w++; if (seen[k]) wr++; }
-  return { openFrac: open / tot, slopeShare: sl / tot, range: hi - lo, reach: seen, walkFrac: w ? wr / w : 0 };
-}
-
-// ---- paths: a seeded network over the walkable ground (colour only), spawn to gate and out to every reward, found by cheapest-slope routes on a 4 m grid
-function paths(G, points) {
-  const C = 90, cs = 4, cx = i => -PLAY + (i + 0.5) * cs, idx = (x, z) => Math.max(0, Math.min(C - 1, Math.floor((z + PLAY) / cs))) * C + Math.max(0, Math.min(C - 1, Math.floor((x + PLAY) / cs)));
-  const cost = new Float32Array(C * C); for (let j = 0; j < C; j++) for (let i = 0; i < C; i++) { const s = slopeAt(G, cx(i), cx(j)), h = at(G, cx(i), cx(j)); cost[j * C + i] = s > 0.5 || h > 40 || Math.abs(cx(i)) > 158 || Math.abs(cx(j)) > 158 ? 1e9 : 1 + 30 * s * s; }
-  const route = (a, b) => {
-    const dist = new Float32Array(C * C).fill(1e18), prev = new Int32Array(C * C).fill(-1), s = idx(a[0], a[1]), t = idx(b[0], b[1]); dist[s] = 0; const heap = [[0, s]];
-    const push = e => { heap.push(e); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
-    const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
-    while (heap.length) { const [d, u] = pop(); if (d > dist[u]) continue; if (u === t) break; const ux = u % C, uz = (u / C) | 0; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dz) continue; const x = ux + dx, z = uz + dz; if (x < 0 || z < 0 || x >= C || z >= C) continue; const v = z * C + x, c = cost[v]; if (c >= 1e8) continue; const nd = d + c * (dx && dz ? 1.4142 : 1); if (nd < dist[v]) { dist[v] = nd; prev[v] = u; push([nd, v]); } } }
-    if (prev[t] < 0 && t !== s) return null; const out = []; for (let u = t; u >= 0; u = prev[u]) out.push([cx(u % C), cx((u / C) | 0)]); out.reverse(); return out;
-  };
-  const chaikin = P => { for (let r = 0; r < 2; r++) { const Q = [P[0]]; for (let i = 0; i < P.length - 1; i++) { Q.push([P[i][0] * 0.75 + P[i + 1][0] * 0.25, P[i][1] * 0.75 + P[i + 1][1] * 0.25], [P[i][0] * 0.25 + P[i + 1][0] * 0.75, P[i][1] * 0.25 + P[i + 1][1] * 0.75]); } Q.push(P[P.length - 1]); P = Q; } return P; };
-  const out = [], linked = [0]; const rest = points.map((p, i) => i).slice(1);
-  while (rest.length) { let bi = -1, bj = -1, bd = 1e18; for (const i of rest) for (const j of linked) { const d = (points[i][0] - points[j][0]) ** 2 + (points[i][1] - points[j][1]) ** 2; if (d < bd) { bd = d; bi = i; bj = j; } } const r = route(points[bj], points[bi]); if (r && r.length > 1) out.push(chaikin(r).map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10])); linked.push(bi); rest.splice(rest.indexOf(bi), 1); }
-  return out;
+  let win = 0, flatWin = 0; for (let z = 40; z < S - 65; z += 12) for (let x = 40; x < S - 65; x += 12) { let a = 1e9, b = -1e9; for (let dz = 0; dz <= 25; dz += 5) for (let dx = 0; dx <= 25; dx += 5) { const v = G[(z + dz) * S + x + dx]; if (v < a) a = v; if (v > b) b = v; } win++; if (b - a < 0.6) flatWin++; }       // 25 m windows with under 0.6 m of relief
+  return { openFrac: open / tot, slopeShare: sl / tot, range: hi - lo, reach: seen, walkFrac: w ? wr / w : 0, flatShare: flatWin / win };
 }
 
 function attempt(seed, arch, k) {
-  const rn = rngOf((seed ^ Math.imul(k + 1, 0x9E3779B1)) >>> 0), lay = layout(arch, rn), L = lay.L, G = field(L, seed ^ k);
-  for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) { const x = i + 0.5 - HALF + OFF, z = j + 0.5 - HALF + OFF; G[j * S + i] += bankH(seed, x, z); }
+  const rn = rngOf((seed ^ Math.imul(k + 1, 0x9E3779B1)) >>> 0), P = params(arch, rn, seed ^ k);
+  // 2 to 4 mesas and 6 to 9 lone ruin blocks, 50 m or more in from the line, kept apart
+  const blocks = [], placedAt = [];
+  const place = (n, mk, gap) => { for (let t = 0; t < 300 && n > 0; t++) { const x = (rn() - 0.5) * 240, z = (rn() - 0.5) * 240; if (placedAt.some(p => dist(p[0], p[1], x, z) < gap + p[2])) continue; const b = mk(x, z); blocks.push(b); placedAt.push([x, z, Math.max(b.rx, b.rz)]); n--; } };
+  const nm = 2 + ((rn() * 3) | 0); place(nm, (x, z) => block(rn, x, z, 7 + rn() * 6, 7 + rn() * 5, 5 + rn() * 3, 2.4, 1), 60);
+  place(6 + ((rn() * 4) | 0), (x, z) => { const b = block(rn, x, z, 2.8 + rn() * 1.6, 2.2 + rn() * 0.9, 2.6 + rn() * 1.2, 1.1, 0); b.door = rn() < 0.55; return b; }, 45);
+  const G = field(P, blocks);
   const relief = (x, z, r) => { let lo = 1e9, hi = -1e9; for (const rr of [r, r * 0.6]) for (let a = 0; a < 12; a++) { const t = a * TAU / 12, h = at(G, x + cosA(t) * rr, z + sinA(t) * rr); lo = Math.min(lo, h); hi = Math.max(hi, h); } return hi - lo; };
-  // spawn on a slope (never a flat plate): standable underfoot, the ground rising and falling within 30 m; gate on gentle ground 190 m or more away
-  const cand = []; for (let z = -120; z <= 120; z += 9) for (let x = -120; x <= 120; x += 9) { const rl = relief(x, z, 30); if (slopeAt(G, x, z) <= 0.22 && spread(G, x, z, 5) <= 0.9 && rl >= 2 && rl <= 8) cand.push([x, z]); }
-  const gcand = []; for (let z = -135; z <= 135; z += 9) for (let x = -135; x <= 135; x += 9) if (spread(G, x, z, 24) <= 3.2 && slopeAt(G, x, z) < 0.3) gcand.push([x, z]);
+  const nearBlock = (x, z, d) => blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + d);
+  // spawn on a slope (never a flat plate): standable underfoot, the ground rising and falling within 30 m; gate on gentle ground 190 m or more away; both well clear of the blocks
+  const cand = []; for (let z = -120; z <= 120; z += 9) for (let x = -120; x <= 120; x += 9) { const rl = relief(x, z, 30); if (slopeAt(G, x, z) <= 0.22 && spread(G, x, z, 5) <= 0.9 && rl >= 2 && rl <= 9 && !nearBlock(x, z, 20)) cand.push([x, z]); }
+  const gcand = []; for (let z = -135; z <= 135; z += 9) for (let x = -135; x <= 135; x += 9) if (spread(G, x, z, 24) <= 5 && slopeAt(G, x, z) < 0.3 && !nearBlock(x, z, 30)) gcand.push([x, z]);
   if (cand.length < 8 || gcand.length < 8) return null;
   for (let tries = 0; tries < 30; tries++) {
-    const sp = cand[(rn() * cand.length) | 0], far = gcand.filter(c => Math.sqrt((c[0] - sp[0]) * (c[0] - sp[0]) + (c[1] - sp[1]) * (c[1] - sp[1])) >= 190); if (!far.length) continue;
-    const gt = far[(rn() * far.length) | 0], h0 = at(G, sp[0], sp[1]), dir = Math.atan2(gt[1] - sp[1], gt[0] - sp[0]); let forward = false;       // a landform at least 6 m high within 120 m in front of the spawn (60 degrees either side of the gate)
-    for (let a = -1; a <= 1 && !forward; a += 0.25) for (let d = 30; d <= 120 && !forward; d += 10) if (at(G, sp[0] + cosA(dir + a) * d, sp[1] + sinA(dir + a) * d) - h0 >= 6) forward = true;
-    if (!forward) continue;
-    return { L, G, sp, gt, rn, forms: lay.major };
+    const sp = cand[(rn() * cand.length) | 0], far = gcand.filter(c => dist(c[0], c[1], sp[0], sp[1]) >= 190); if (!far.length) continue;
+    return { P, blocks, G, sp, gt: far[(rn() * far.length) | 0], rn };
   }
   return null;
+}
+
+// ---- dressing and far dressing: plain lists, drawn by the view
+function dressing(b, seed, enc, rings, st) {
+  const { G, sp, gt, blocks, P } = b, rn = rngOf(seed ^ 0xD7E55), out = { cacti: [], dead: [], logs: [], pots: [], head: null }, solid = [], grid = new Map();
+  const keep = [{ x: sp[0], z: sp[1], r: 22 }, { x: gt[0], z: gt[1], r: 32 }]; for (const e of enc) keep.push({ x: e.x, z: e.z, r: e.type === 'broker' ? 12 : 6 }); for (const q of rings) keep.push({ x: q.x, z: q.z, r: 18 });
+  const free = (x, z, pad) => { for (const k of keep) { const rr = k.r + (pad || 0); if ((x - k.x) * (x - k.x) + (z - k.z) * (z - k.z) < rr * rr) return false; } for (const bl of blocks) if (dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 1 + (pad || 0)) return false; return true; };
+  const key = (x, z) => Math.floor(x / 8) * 4096 + Math.floor(z / 8), put = (kind, x, z) => { const k = key(x, z); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push([kind, x, z]); };
+  const near = (kind, x, z, d) => { for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const a = grid.get(key(x + i * 8, z + j * 8)); if (a) for (const o of a) if ((kind === '*' || o[0] === kind) && (o[1] - x) * (o[1] - x) + (o[2] - z) * (o[2] - z) < d * d) return true; } return false; };
+  const dens = (x, z) => 0.6 * vnoise(seed & 0xffff, x / 70, z / 70) + 0.4 * vnoise((seed >>> 7) & 0xffff, x / 28, z / 28);
+  const gy = (x, z) => groundAt(b.map, x, z), spot = () => [(rn() - 0.5) * 344, (rn() - 0.5) * 344];
+  const okAt = (x, z, pad, maxSlope) => free(x, z, pad) && slopeAt(G, x, z) < (maxSlope || 0.42);
+  const rnd = rn;
+  // the head: one large carved head on open, nearly flat sand 60 m or more from the start
+  for (let t = 0; t < 400 && !out.head; t++) { const [x, z] = spot(); if (Math.abs(x) < 120 && Math.abs(z) < 120 && dist(x, z, sp[0], sp[1]) > 60 && dist(x, z, gt[0], gt[1]) > 60 && spread(G, x, z, 4) < 0.7 && okAt(x, z, 6, 0.2)) { out.head = { x: r2(x), y: r2(gy(x, z)), z: r2(z), rot: r2(rnd() * TAU), s: 1 }; put('h', x, z); solid.push([r2(x), r2(gy(x, z)), r2(z), 1.7, 5.5]); keep.push({ x, z, r: 4 }); } }
+  const fill = (n, tries, kind, sep, ok, make) => { let k = 0; for (let t = 0; t < tries && k < n; t++) { const [x, z] = spot(); if (!ok(x, z) || near(kind, x, z, sep)) continue; make(x, z); put(kind, x, z); k++; } };
+  fill(70, 4000, 'c', 11, (x, z) => dens(x, z) > 0.3 && okAt(x, z, 2), (x, z) => { const y = gy(x, z), s = 0.85 + rnd() * 0.5; out.cacti.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.55 * s), r2(3.5 * s)]);
+    if (rnd() < 0.4) { const a = rnd() * TAU, d = 2.2 + rnd() * 1.5, x2 = x + cosA(a) * d, z2 = z + sinA(a) * d; if (okAt(x2, z2, 1)) { const y2 = gy(x2, z2), s2 = 0.6 + rnd() * 0.5; out.cacti.push([r2(x2), r2(y2), r2(z2), r2(s2), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x2), r2(y2), r2(z2), r2(0.55 * s2), r2(3.5 * s2)]); } } });
+  fill(42, 3000, 'd', 14, (x, z) => okAt(x, z, 2), (x, z) => { const y = gy(x, z), s = 0.8 + rnd() * 0.6; out.dead.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.4 * s), r2(4 * s)]); });
+  fill(120, 5000, 'l', 9, (x, z) => okAt(x, z, 1, 0.5), (x, z) => { const a = rnd() * TAU, len = 3 + rnd() * 6, dx = cosA(a) * len / 2, dz = sinA(a) * len / 2, x0 = x - dx, z0 = z - dz, x1 = x + dx, z1 = z + dz; out.logs.push([r2(x0), r2(gy(x0, z0) - 0.12), r2(z0), r2(x1), r2(gy(x1, z1) - 0.12), r2(z1), r2(0.22 + rnd() * 0.2), (rnd() * 2) | 0]); });
+  fill(30, 3000, 'p', 16, (x, z) => okAt(x, z, 2, 0.35), (x, z) => { const n = 2 + ((rnd() * 3) | 0); for (let q = 0; q < n; q++) { const a = rnd() * TAU, d = q ? 0.8 + rnd() * 1.2 : 0, px = x + cosA(a) * d, pz = z + sinA(a) * d; out.pots.push([r2(px), r2(gy(px, pz)), r2(pz), r2(0.8 + rnd() * 0.6), r2(rnd() * TAU), (rnd() * 3) | 0]); } });
+  // a beam beside every ruin block and every mesa: a long grey beam lying at an angle, half sunk
+  for (const bl of blocks) { const a = rnd() * TAU, d = reachOf(bl) + 2 + rnd() * 3, x = bl.cx + cosA(a) * d, z = bl.cz + sinA(a) * d; if (!free(x, z, 1) || slopeAt(G, x, z) > 0.5) continue; const a2 = rnd() * TAU, len = 4 + rnd() * 5, dx = cosA(a2) * len / 2, dz = sinA(a2) * len / 2; out.logs.push([r2(x - dx), r2(gy(x - dx, z - dz) - 0.15), r2(z - dz), r2(x + dx), r2(gy(x + dx, z + dz) - 0.15), r2(z + dz), r2(0.3 + rnd() * 0.15), 2]); }
+  return { dress: out, solid };
+}
+function farDressing(P, seed) {                                                                    // large rock blocks, dead trees and ruin pieces on the sand beyond the line, 190 to 380 m out; sparse
+  const rn = rngOf(seed ^ 0xFA2), out = { rocks: [], dead: [], ruins: [] }; const ring = () => { for (;;) { const x = (rn() - 0.5) * 780, z = (rn() - 0.5) * 780; if (Math.abs(x) > 190 || Math.abs(z) > 190) return [x, z]; } };
+  const H = (x, z) => duneH(P, x, z);
+  for (let k = 0; k < 28; k++) { const [x, z] = ring(), w = 7 + rn() * 12, h = 4 + rn() * 9; out.rocks.push([r2(x), r2(H(x, z)), r2(z), r2(w), r2(h), r2(rn() * TAU), (rn() * 3) | 0]); }
+  for (let k = 0; k < 26; k++) { const [x, z] = ring(); out.dead.push([r2(x), r2(H(x, z)), r2(z), r2(1.1 + rn() * 0.8), r2(rn() * TAU), (rn() * 3) | 0]); }
+  for (let k = 0; k < 12; k++) { const [x, z] = ring(); out.ruins.push([r2(x), r2(H(x, z)), r2(z), r2(5 + rn() * 5), r2(3 + rn() * 4), r2(rn() * TAU), (rn() * 3) | 0]); }
+  return out;
 }
 
 export function openMap(seedLo, stageIndex, archOverride) {
   const seed = ((seedLo >>> 0) ^ Math.imul(stageIndex + 1, 0x85EBCA6B)) >>> 0, rr = rngOf(seed ^ 0xC0FFEE), arch = archOverride && ARCHETYPES.includes(archOverride) ? archOverride : ARCHETYPES[(rr() * 6) | 0];
   for (let k = 0; k < 24; k++) {
     const a = attempt(seed, arch, k); if (!a) continue;
-    const { G, sp, gt, rn, L } = a;
+    const { G, sp, gt, rn, blocks, P } = a;
     pad(G, gt[0], gt[1], 14, 30); pad(G, sp[0], sp[1], 3, 9);
-    let st = analyse(G, sp); if (st.slopeShare < 0.45 || st.openFrac < 0.4 || st.range < 18 || st.walkFrac < 0.97) continue;
+    let st = analyse(G, sp); if (st.slopeShare < 0.45 || st.openFrac < 0.6 || st.range < 9 || st.walkFrac < 0.97 || st.flatShare > 0.04) continue;
     const reach = (x, z) => st.reach[Math.floor(z + HALF - OFF) * S + Math.floor(x + HALF - OFF)] === 1;
     if (!reach(gt[0], gt[1])) continue;
-    // every walker sees at least two landforms: each point of a 40 m grid has two landform centres within 140 m
-    const centres = L.filter(l => l.major).map(l => [l.cx, l.cz]); let seeOk = true; for (let z = -140; z <= 140 && seeOk; z += 40) for (let x = -140; x <= 140; x += 40) { let n = 0; for (const c of centres) if ((c[0] - x) * (c[0] - x) + (c[1] - z) * (c[1] - z) < 140 * 140) n++; if (n < 2) { seeOk = false; break; } } if (!seeOk) continue;
-    const tops = []; for (const lf of L) for (const t of lf.tops) { if (Math.abs(t[0]) < 140 && Math.abs(t[1]) < 140 && reach(t[0], t[1]) && slopeAt(G, t[0], t[1]) < 0.4) tops.push({ x: t[0], z: t[1], y: at(G, t[0], t[1]) }); }
-    tops.sort((p, q) => q.y - p.y); const used = [], enc = [], types = ['cchest', 'shrine', 'cchest', 'altar', 'cchest', 'stone', 'cchest', 'shrine', 'cchest', 'stone'];
-    const far = (x, z, d) => used.every(u => (u.x - x) * (u.x - x) + (u.z - z) * (u.z - z) >= d * d) && (x - sp[0]) * (x - sp[0]) + (z - sp[1]) * (z - sp[1]) > 40 * 40 && (x - gt[0]) * (x - gt[0]) + (z - gt[1]) * (z - gt[1]) > 45 * 45;
-    for (const t of tops) { if (enc.length >= types.length) break; if (!far(t.x, t.z, 34)) continue; used.push(t); enc.push({ type: types[enc.length], x: t.x, z: t.z, y: t.y }); }
-    let fc = null; for (let r = 14; r <= 28 && !fc; r += 2) for (let a2 = 0; a2 < 16 && !fc; a2++) { const x = sp[0] + cosA(a2 * TAU / 16) * r, z = sp[1] + sinA(a2 * TAU / 16) * r; if (spread(G, x, z, 3) < 0.7 && reach(x, z)) fc = { type: 'cchest', x, z, y: at(G, x, z), free: true }; }
+    // rewards stand on open, nearly flat sand beside a block, one at a time and far apart: a ring of spots round every block, the first that is flat, reachable and 52 m from the others
+    const used = [], enc = [], types = ['cchest', 'shrine', 'cchest', 'altar', 'cchest', 'stone', 'cchest', 'shrine', 'cchest', 'stone'];
+    const clear = (x, z, d) => used.every(u => dist(u.x, u.z, x, z) >= d) && dist(x, z, sp[0], sp[1]) > 45 && dist(x, z, gt[0], gt[1]) > 50 && Math.abs(x) < 150 && Math.abs(z) < 150 && !blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 2);
+    const flatOk = (x, z) => spread(G, x, z, 4) <= 0.8 && slopeAt(G, x, z) < 0.18 && reach(x, z);
+    const order = blocks.map((bl, i) => [rn(), i]).sort((p, q) => p[0] - q[0]).map(p => blocks[p[1]]);
+    for (const bl of order) { if (enc.length >= types.length) break; const a0 = rn() * TAU; let got = false; for (let t = 0; t < 24 && !got; t++) { const ang = a0 + t * 0.2618, d = reachOf(bl) + 3 + (t % 3) * 1.5, x = bl.cx + cosA(ang) * d, z = bl.cz + sinA(ang) * d; if (clear(x, z, 52) && flatOk(x, z)) { used.push({ x, z }); enc.push({ type: types[enc.length], x, z, y: 0, beside: true }); got = true; } } }
+    for (let t = 0; t < 3000 && enc.length < types.length; t++) { const x = (rn() - 0.5) * 290, z = (rn() - 0.5) * 290; if (clear(x, z, 55) && flatOk(x, z)) { used.push({ x, z }); enc.push({ type: types[enc.length], x, z, y: 0 }); } }
+    if (enc.length < types.length) continue;
+    let fc = null; for (let r = 14; r <= 28 && !fc; r += 2) for (let a2 = 0; a2 < 16 && !fc; a2++) { const x = sp[0] + cosA(a2 * TAU / 16) * r, z = sp[1] + sinA(a2 * TAU / 16) * r; if (spread(G, x, z, 3) < 0.9 && reach(x, z) && !blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 3)) fc = { type: 'cchest', x, z, y: at(G, x, z), free: true }; }
     if (!fc) continue; enc.push(fc);
-    let bk = null; for (let t = 0; t < 400 && !bk; t++) { const x = (rn() - 0.5) * 260, z = (rn() - 0.5) * 260, d = sq((x - sp[0]) * (x - sp[0]) + (z - sp[1]) * (z - sp[1])); if (d > 60 && d < 150 && spread(G, x, z, 10) < 1.2 && reach(x, z) && far(x, z, 30)) bk = { type: 'broker', x, z, y: at(G, x, z) }; }
+    let bk = null; for (let t = 0; t < 600 && !bk; t++) { const x = (rn() - 0.5) * 260, z = (rn() - 0.5) * 260, d = dist(x, z, sp[0], sp[1]); if (d > 60 && d < 150 && spread(G, x, z, 10) < 2.2 && slopeAt(G, x, z) < 0.25 && reach(x, z) && clear(x, z, 40) && !near2(enc, x, z, 30)) bk = { type: 'broker', x, z, y: at(G, x, z) }; }
     if (!bk) continue; enc.push(bk);
-    if (enc.filter(e => e.type === 'cchest').length < 4 || !enc.some(e => e.type === 'shrine') || !enc.some(e => e.type === 'altar') || !enc.some(e => e.type === 'stone')) continue;
-    const rings = []; for (let t = 0; t < 800 && rings.length < 2; t++) { const x = (rn() - 0.5) * 270, z = (rn() - 0.5) * 270; if (spread(G, x, z, 15) > 1.0 || !reach(x, z)) continue; if (sq((x - sp[0]) * (x - sp[0]) + (z - sp[1]) * (z - sp[1])) < 60 || sq((x - gt[0]) * (x - gt[0]) + (z - gt[1]) * (z - gt[1])) < 60 || rings.some(q => sq((q.x - x) * (q.x - x) + (q.z - z) * (q.z - z)) < 80) || enc.some(e => sq((e.x - x) * (e.x - x) + (e.z - z) * (e.z - z)) < 20)) continue; rings.push({ x, z, r: 14, y: at(G, x, z) }); }
+    const rings = []; for (let t = 0; t < 1500 && rings.length < 2; t++) { const x = (rn() - 0.5) * 270, z = (rn() - 0.5) * 270; if (spread(G, x, z, 15) > 3.2 || !reach(x, z) || blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 18)) continue; if (dist(x, z, sp[0], sp[1]) < 60 || dist(x, z, gt[0], gt[1]) < 60 || rings.some(q => dist(q.x, q.z, x, z) < 80) || enc.some(e => dist(e.x, e.z, x, z) < 22)) continue; rings.push({ x, z, r: 14, y: at(G, x, z) }); }
     if (!rings.length) continue;
-    // pads under everything placed: the piece sits flush, the ground blends back into the hills
+    // pads under everything placed: the piece sits flush, the sand blends back into the dunes
     for (const e of enc) { const big = e.type === 'broker'; e.y = pad(G, e.x, e.z, big ? 7 : 3, big ? 15 : 8); }
     for (const q of rings) q.y = pad(G, q.x, q.z, 14, 26);
-    // half-buried ruins: cut into steep hillsides, sunk and tilted with the slope
-    const ruins = [], kinds = ['wall', 'slab', 'arch', 'stair', 'wall', 'slab']; for (let t = 0; t < 900 && ruins.length < 5; t++) { const x = (rn() - 0.5) * 280, z = (rn() - 0.5) * 280, s = slopeAt(G, x, z); if (s < 0.28 || s > 0.5 || at(G, x, z) < 2) continue; if (ruins.some(q => sq((q.x - x) * (q.x - x) + (q.z - z) * (q.z - z)) < 50) || enc.some(e => sq((e.x - x) * (e.x - x) + (e.z - z) * (e.z - z)) < 18) || sq((x - sp[0]) * (x - sp[0]) + (z - sp[1]) * (z - sp[1])) < 30 || sq((x - gt[0]) * (x - gt[0]) + (z - gt[1]) * (z - gt[1])) < 40) continue;
-      const gx = (at(G, x + 1, z) - at(G, x - 1, z)) / 2, gz = (at(G, x, z + 1) - at(G, x, z - 1)) / 2; ruins.push({ kind: kinds[ruins.length % kinds.length], x, z, y: at(G, x, z), face: Math.atan2(-gz, -gx), tilt: s }); }
-    if (ruins.length < 3) continue;
     st = analyse(G, sp); if (st.walkFrac < 0.97) continue;
-    // groves: 5 to 25 trees each with clearings between, on crests and gentle ground, spread over the map
-    const groves = []; for (let t = 0; t < 1500 && groves.length < 16; t++) { const x = (rn() - 0.5) * 290, z = (rn() - 0.5) * 290, r = 7 + rn() * 9; if (slopeAt(G, x, z) > 0.4 || at(G, x, z) > 30) continue; const dens = vnoise(seed ^ 0x77, x / 80, z / 80); if (dens < 0.4 && rn() < 0.7) continue;
-      if (groves.some(q => sq((q.x - x) * (q.x - x) + (q.z - z) * (q.z - z)) < q.r + r + 26) || enc.some(e => sq((e.x - x) * (e.x - x) + (e.z - z) * (e.z - z)) < r + 8) || sq((x - sp[0]) * (x - sp[0]) + (z - sp[1]) * (z - sp[1])) < r + 24 || sq((x - gt[0]) * (x - gt[0]) + (z - gt[1]) * (z - gt[1])) < r + 40 || rings.some(q => sq((q.x - x) * (q.x - x) + (q.z - z) * (q.z - z)) < r + 20)) continue; groves.push({ x, z, r }); }
-    const pts = [[sp[0], sp[1]], [gt[0], gt[1]]].concat(enc.map(e => [e.x, e.z]));
-    return assemble({ arch, k, G, sp, gt, enc, rings, st, ruins, groves, paths: paths(G, pts), forms: a.forms }, seed, stageIndex);
+    return assemble({ arch, k, G, sp, gt, enc, rings, st, blocks, P }, seed, stageIndex);
   }
   return null;
 }
+const near2 = (enc, x, z, d) => enc.some(e => dist(e.x, e.z, x, z) < d);
 
 function assemble(b, seed, stageIndex) {
   const H = new Float32Array(SIM * SIM).fill(WALL), Fl = new Uint16Array(SIM * SIM);
   for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) { const e = Math.min(i, S - 1 - i, j, S - 1 - j); if (e < 2) continue; H[(j + OFF) * SIM + i + OFF] = Math.round(b.G[j * S + i] * 100) / 100; }
-  const r2 = v => Math.round(v * 100) / 100, ex = e => Object.assign({}, e, { x: r2(e.x), z: r2(e.z), y: r2(e.y) });
-  const key = 'open-' + b.arch + '-' + (seed >>> 0).toString(16);
-  return {
-    key, hash: key, sealCode: 'OPEN-' + b.arch.toUpperCase() + '-' + (seed >>> 0).toString(16).slice(0, 4).toUpperCase(), stage: stageIndex, attempt: b.k, fallback: false, half: HALF, v2: true, open: true, arch: b.arch, n: S, off: OFF, edgeSeed: seed,
+  const ex = e => Object.assign({}, e, { x: r2(e.x), z: r2(e.z), y: r2(e.y) });
+  const key = 'open-' + b.arch + '-' + (seed >>> 0).toString(16), P = b.P;
+  const map = {
+    key, hash: key, sealCode: 'OPEN-' + b.arch.toUpperCase() + '-' + (seed >>> 0).toString(16).slice(0, 4).toUpperCase(), stage: stageIndex, attempt: b.k, fallback: false, half: HALF, v2: true, open: true, arch: b.arch, n: S, off: OFF, line: LINE, edgeSeed: seed,
     prims: [], heights: H, cellFlags: Fl, palette: undefined, stageName: ARCH_NAME[b.arch],
     districts: [], spawn: { x: r2(b.sp[0]), z: r2(b.sp[1]) }, gate: { x: r2(b.gt[0]), z: r2(b.gt[1]), radius: 5.5 }, arena: { center: { x: r2(b.gt[0]), z: r2(b.gt[1]) }, boss: { x: r2(b.gt[0]), z: r2(b.gt[1]) }, tollPull: { x: r2(b.gt[0] + 6), z: r2(b.gt[1]) } },
     bossRings: b.rings.map(q => ({ x: r2(q.x), z: r2(q.z), r: 14, y: r2(q.y) })), encounters: b.enc.map(ex), landmarks: [], kits: [], rooms: [], roomOf: null, gateways: [],
-    clearings: b.enc.filter(e => e.type === 'broker').map(e => ({ x: r2(e.x), z: r2(e.z), r: 12 })), ruins: b.ruins.map(q => ({ kind: q.kind, x: r2(q.x), z: r2(q.z), y: r2(q.y), face: r2(q.face), tilt: r2(q.tilt) })), groves: b.groves.map(q => ({ x: r2(q.x), z: r2(q.z), r: r2(q.r) })), paths: b.paths,
+    clearings: b.enc.filter(e => e.type === 'broker').map(e => ({ x: r2(e.x), z: r2(e.z), r: 12 })), groves: [], paths: [],
+    dune: { seed: P.seed, k: P.k, p1: r2(P.p1), p2: r2(P.p2), shift: P.shift, shelf: P.shelf, bowl: P.bowl, br: P.br, bx: P.bx, bz: P.bz, cs: P.cs, ss: P.ss, l1: P.l1, a1: P.a1, l2: P.l2, a2: P.a2, lo: P.lo, c1: P.c1, s1: P.s1, c2: P.c2, s2: P.s2, wind: P.wind },
+    blocks: b.blocks.map(q => ({ cx: r2(q.cx), cz: r2(q.cz), rx: r2(q.rx), rz: r2(q.rz), h: r2(q.h), cw: q.cw, rot: q.rot, seed: q.seed, tone: q.tone, T: r2(q.T), door: q.door })),
     _road: { main: [[9000, 9000], [9001, 9001]], trails: [], width: 4.5, trailWidth: 3 }, _pools: [],
-    report: { genVersion: 'open2', v2: true, attempt: b.k, fallback: false, openFrac: r2(b.st.openFrac), slopeShare: r2(b.st.slopeShare), range: r2(b.st.range), forms: b.forms, walkFrac: r2(b.st.walkFrac) }
+    report: { genVersion: 'open3', v2: true, attempt: b.k, fallback: false, openFrac: r2(b.st.openFrac), slopeShare: r2(b.st.slopeShare), range: r2(b.st.range), forms: b.blocks.length, walkFrac: r2(b.st.walkFrac), flatShare: r2(b.st.flatShare) }
   };
+  map.ruins = map.blocks.filter(q => q.tone === 0).map(q => ({ kind: 'block', x: q.cx, z: q.cz, y: q.T, face: q.rot, tilt: 0 }));
+  const d = dressing(Object.assign({ map }, b), seed, b.enc, b.rings, b.st); map.dress = d.dress; map.solid = d.solid; map.far = farDressing(P, seed);
+  return map;
 }

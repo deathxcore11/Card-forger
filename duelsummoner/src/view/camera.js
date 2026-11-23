@@ -1,7 +1,7 @@
 // Chase camera: 7 m behind, 3 m above, over the right shoulder. Yaw is free, pitch is limited,
 // it pulls in when terrain is behind it and never goes under the floor.
 import { CFG } from '../data/config.js';
-import { heightAt } from '../sim/terrain.js';
+import { heightAt, camGround } from '../sim/terrain.js';
 import { clamp } from '../core/util.js';
 
 const C = CFG.cam;
@@ -9,7 +9,7 @@ const ARM = Math.sqrt(C.back * C.back + C.up * C.up), BASE = Math.atan2(C.up, C.
 
 // is this point inside a tree trunk or a boulder (with a little room)? the spring pulls the camera in before it
 // a sphere of 0.3 m: the ground (and every wall prim) at the point and at four points round it
-function solidAt(x, y, z) { const r = 0.3; return heightAt(x, z) > y - 0.2 || heightAt(x + r, z) > y - 0.2 || heightAt(x - r, z) > y - 0.2 || heightAt(x, z + r) > y - 0.2 || heightAt(x, z - r) > y - 0.2; }
+function solidAt(x, y, z) { const r = 0.3; return camGround(x, z) > y - 0.2 || camGround(x + r, z) > y - 0.2 || camGround(x - r, z) > y - 0.2 || camGround(x, z + r) > y - 0.2 || camGround(x, z - r) > y - 0.2; }
 function hitProp(col, x, y, z) {
   if (!col) return false;
   const i0 = Math.floor((x - 3) / col.CELL), i1 = Math.floor((x + 3) / col.CELL), j0 = Math.floor((z - 3) / col.CELL), j1 = Math.floor((z + 3) / col.CELL);
@@ -89,7 +89,7 @@ export class ChaseCamera {
     const dr = need - this.rise; this.rise += Math.sign(dr) * Math.min(Math.abs(dr), dt * 5); y += this.rise;
     if (this.cy === undefined || this.cy !== this.cy || !this.ready0) { this.cy = y; this.ready0 = true; }
     else { const lim = dt * 5; this.cy += Math.max(-lim, Math.min(lim, y - this.cy)); }       // the eye's height changes by at most 6 m a second (0.1 m a frame), whatever pulled it
-    y = this.cy; const floor = Math.max(heightAt(x, z) + C.floorGap, C.floorGap); const D0 = this.dbg || (this.dbg = {}); D0.floorHit = y < floor; D0.need = need; D0.t = this.t; D0.free = free; D0.ys = this.ys; D0.pb = this.pb; D0.swing = this.swing; D0.rise = this.rise; D0.floor = floor; D0.yb = y; if (y < floor) { y = floor; this.cy = y; }       // never under the ground, even if that is faster
+    y = this.cy; const floor = Math.max(camGround(x, z) + C.floorGap, C.floorGap); const D0 = this.dbg || (this.dbg = {}); D0.floorHit = y < floor; D0.need = need; D0.t = this.t; D0.free = free; D0.ys = this.ys; D0.pb = this.pb; D0.swing = this.swing; D0.rise = this.rise; D0.floor = floor; D0.yb = y; if (y < floor) { y = floor; this.cy = y; }       // never under the ground, even if that is faster
     this.camera.position.set(x, y, z);
     let ly = py + 0.2 + lookUp; this.camera.lookAt(px + fx * 6, ly, pz + fz * 6);        // aim past the duelist so the shoulder offset reads
     // safe area: the duelist's feet stay above the hotbar (the bottom quarter of the screen) however steeply the camera looks down or however close the spring pulls it in
