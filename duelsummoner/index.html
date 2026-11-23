@@ -310,7 +310,30 @@
   .rsheet { position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; background:rgba(5,7,12,.6); } .rsheet .panel { display:flex; flex-direction:column; gap:8px; min-width:min(420px, 90vw); } .rsheet button { margin:0; }
   @media (max-height:560px), (max-width:700px) { #metaBody:has(.dbWrap) { height:calc(100vh - 12px); display:flex; flex-direction:column; } .dbHead { margin-bottom:4px; } .dbHead h1 { font-size:18px; } .dchips, .dchips b { font-size:16px; } .dbWrap { flex:1 1 auto; min-height:0; grid-template-columns:minmax(0, 1.5fr) minmax(220px, 1fr); gap:8px; } .dbGrid { gap:4px; } .dtile { padding:4px 2px !important; gap:2px; border-radius:12px !important; } .dtile b { font-size:11px; } .dtile .dico { width:30px; height:30px; font-size:15px; border-radius:9px; } .cost { font-size:10px; padding:1px 6px; } .dbDet { padding:8px 10px; gap:4px; overflow-y:auto; max-height:100%; } .dbDet h2 { font-size:16px; } .dbDet .dico.big { width:44px; height:44px; font-size:22px; margin:0 auto; } .dbDet .nn { font-size:13px; } .dbDet .gold { padding:8px; font-size:14px; } .dbDet .dim, .dbDet .foot { font-size:11px; } }    .dtile.sel { outline:none !important; } .dbGrid { grid-auto-rows:1fr; }
     .dicon { display:block; } .dico { font-size:0 !important; } .dico .dicon { width:70%; height:70%; } .dico.big .dicon { width:75%; height:75%; } .rtab th .dicon { width:22px; height:22px; }
-  </style>
+    /* Pause: the duel mat on the left, the Ledger column on the right (spec 10.1) */
+  #pauseScreen { background:rgba(8,10,15,.55); -webkit-backdrop-filter:blur(14px) saturate(.6); backdrop-filter:blur(14px) saturate(.6); font-family:var(--sans); overflow:hidden; }
+  .pauseWrap { display:grid; grid-template-columns:minmax(0, 1.9fr) minmax(250px, 1fr); gap:16px; width:min(1500px, 97vw); max-height:calc(100vh - 24px); align-items:stretch; text-align:left; }
+  .pauseWrap .panel { max-height:calc(100vh - 24px); overflow-y:auto; padding:18px 20px; }
+  #pmHeader h1 { margin:0; font-size:34px; } .pm2 { margin-top:4px; color:#c9ced6; } .pm3 { margin:2px 0 12px; color:#9AA3AE; } .pm3 b { color:var(--gold2); }
+  .pmRow { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin-bottom:10px; }
+  .ptile { display:flex; flex-direction:column; gap:4px; padding:12px; border-radius:16px; background:rgba(255,255,255,.06); border:1px solid var(--edge); min-height:96px; } .pmRow.m .ptile { min-height:130px; }
+  .ptile b { font-family:var(--serif); color:#f1e6c8; font-size:16px; } .ptile .plv { color:#9AA3AE; font-size:13px; } .ptile small { color:var(--gold2); } .ptile.empty { color:#7d8590; align-items:center; justify-content:center; text-align:center; border-style:dashed; background:transparent; }
+  .ptile .pform { align-self:flex-end; font-family:var(--serif); color:var(--gold2); font-size:13px; } .ptile.fusionReady { box-shadow:inset 0 1px 0 rgba(232,196,110,.8); }
+  .pitems { display:flex; flex-wrap:wrap; gap:6px; } .pitem { padding:5px 10px; border-radius:12px; background:rgba(255,255,255,.07); border:1px solid var(--edge); font-size:13px; } .pitem em { margin-left:5px; color:var(--gold2); font-style:normal; }
+  .pexiled { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .pexile { padding:3px 10px; border-radius:10px; border:1px dashed rgba(224,106,90,.6); color:#9AA3AE; text-decoration:line-through; font-size:12px; }
+  #pmActions { display:flex; flex-direction:column; gap:10px; margin-top:12px; } #pmActions button { margin:0; width:100%; padding:14px; } #pmActions .goldbtn { color:#10131a; background:linear-gradient(180deg, var(--gold2), var(--gold)); border-color:var(--gold); font-size:18px; }
+  button[data-hold] { position:relative; overflow:hidden; } button[data-hold].holding::after { content:''; position:absolute; left:0; bottom:0; height:4px; background:var(--gold); animation:holdfill 1s linear forwards; } @keyframes holdfill { from { width:0; } to { width:100%; } }
+  #pmStats h4 { margin:12px 0 2px; font-family:var(--serif); letter-spacing:2px; color:var(--gold); font-size:13px; } .srow2 { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.07); } .srow2.zero { opacity:.5; } .tlink { color:var(--gold2); font-size:13px; }
+  .rite { display:flex; flex-direction:column; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.08); } .rite b { color:#f1e6c8; }
+  @media (max-width:760px) { .pauseWrap { grid-template-columns:1fr; overflow-y:auto; } }
+  @media (max-height:560px) { .pauseWrap { gap:8px; grid-template-columns:minmax(0, 1.7fr) minmax(210px, 1fr); } .pauseWrap .panel { padding:8px 10px; } #pmHeader h1 { font-size:18px; } .pm2, .pm3 { font-size:11px; margin:1px 0 4px; } .pmRow { gap:5px; margin-bottom:5px; } .ptile { padding:5px 6px; min-height:52px !important; gap:1px; border-radius:10px; } .ptile b { font-size:11px; } .ptile .plv, .ptile small { font-size:10px; } .pitem { font-size:10px; padding:2px 6px; } #pmActions { gap:5px; margin-top:6px; } #pmActions button { padding:7px; font-size:12px; } #pmActions .goldbtn { font-size:14px; } .pauseWrap .tab { padding:3px 8px; font-size:11px; min-height:0; } .ptile .pips i { width:6px; height:6px; } }    #pauseScreen h1 { font-family:var(--serif); font-weight:600; letter-spacing:5px; color:var(--gold2); text-shadow:0 2px 12px #000a; }
+  #pauseScreen .panel { background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.035)), rgba(8,10,15,.62); border:1px solid var(--edge); border-radius:24px; box-shadow:inset 0 1px 0 rgba(232,196,110,.45), 0 14px 40px #000a; -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); }
+  #pauseScreen button { font-family:var(--sans); font-weight:600; letter-spacing:1.5px; color:var(--gold2); background:var(--glass); border:1px solid rgba(232,196,110,.55); border-radius:14px; }
+  #pauseScreen button:hover { background:rgba(232,196,110,.16); } #pauseScreen button:focus { outline:3px solid var(--gold); outline-offset:4px; }
+  #pauseScreen .goldbtn { color:#10131a !important; background:linear-gradient(180deg, var(--gold2), var(--gold)) !important; border-color:var(--gold) !important; }
+  #pauseScreen .tab { border-radius:12px; padding:6px 14px; font-size:14px; } #pauseScreen .tab.sel { color:#10131a; background:linear-gradient(180deg, var(--gold2), var(--gold)); border-color:var(--gold); outline:none; }
+  #pauseScreen .dangerBtn { color:var(--danger) !important; border-color:rgba(224,106,90,.6) !important; }
+  #pauseScreen .pips { display:inline-flex; gap:3px; } #pauseScreen .pips i { width:9px; height:9px; border-radius:50%; border:1px solid rgba(232,196,110,.6); } #pauseScreen .pips i.on { background:var(--gold); }  </style>
 </head>
 <body>
 <div id="stage"><canvas id="view"></canvas></div>
@@ -354,17 +377,15 @@
 <div class="screen" id="menuScreen"><div id="menuBody"></div></div>
 <div class="screen" id="metaScreen"><div id="metaBody" style="max-width:760px;width:94vw"></div></div>
 <div class="screen" id="pauseScreen">
-  <div class="pausePanel">
-    <h1>PAUSED</h1>
-    <button id="resumeBtn">RESUME</button>
-    <button id="endBtn" class="small">END RUN (cash out)</button>
-    <hr>
-    <div class="settings sgrid"><label>Reduce motion <input type="checkbox" class="setRM"></label> <label>Shake <input type="range" class="setShake" min="0" max="100" value="100"> <span class="setShakeV">100</span>%</label> <label>Field of view <input type="range" class="setFov" min="80" max="115" value="100"> <span class="setFovV">100</span>&deg;</label> <label>Detail <span class="seg setDetail"><button data-v="low">Low</button><button data-v="medium">Medium</button><button data-v="high">High</button></span></label> <label>Frame cap <select class="setFps"><option value="30">30</option><option value="60" selected>60</option><option value="90">90</option><option value="120">120</option></select></label></div>
-    <hr>
-    <p class="dim">WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash &middot; Ctrl or C slide &middot; E use</p>
+  <div class="pauseWrap">
+    <div class="mat panel" id="pmMat"><div id="pmHeader"></div><div id="pmMonsters" class="pmRow m"></div><div id="pmSpells" class="pmRow s"></div><div id="pmItems"></div></div>
+    <div class="ledger panel">
+      <div class="tabs" id="pmTabs"><button class="tab sel" data-pt="actions">Actions</button><button class="tab" data-pt="stats">Stats</button><button class="tab" data-pt="rites">Rites</button></div>
+      <div id="pmActions"><button id="resumeBtn" class="goldbtn">RESUME</button><button id="pmSettings">Settings</button><button id="pmMap">Map</button><button id="pmRestart" data-hold="1">Restart (hold)</button><button id="endBtn" data-hold="1" class="dangerBtn">End run (hold)</button></div>
+      <div id="pmStats" style="display:none"></div><div id="pmRites" style="display:none"></div>
+    </div>
   </div>
-</div>
-<div class="screen" id="offerScreen">
+</div><div class="screen" id="offerScreen">
   <h1 id="offerTitle" style="font-size:28px">LEVEL UP</h1>
   <p id="offerSub"></p>
   <div id="offerCards"></div>

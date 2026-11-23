@@ -132,16 +132,16 @@ export function initMenus(env) {
   }
 
   // ---------- Settings ----------
-  let setTab = 'game';
-  function showSettings(tab) {
-    if (typeof tab === 'string') setTab = tab;
-    const cls = deviceClass(), ctx = { cls, pad: !!firstPad(), dual: true, gyro: false, keyboard: false, signedIn: false, inRun: false, version: (document.getElementById('buildLabel') || {}).textContent || '' };
+  let setTab = 'game', setOpts = {};
+  function showSettings(tab, opts) {
+    if (typeof tab === 'string') setTab = tab; if (opts) setOpts = opts; else if (typeof tab !== 'string') setOpts = {};
+    const cls = deviceClass(), ctx = { cls, pad: !!firstPad(), dual: true, gyro: false, keyboard: false, signedIn: false, inRun: !!setOpts.inRun, version: (document.getElementById('buildLabel') || {}).textContent || '' };
     { const tl = tabsFor(save, ctx); if (!tl.includes(setTab)) setTab = tl[0] || 'game'; }
     open(settingsHtml(save, setTab, ctx));
-    const draw = () => showSettings(), live = (id, dragging) => { if (!dragging) persist(); env.bindSettings(); };
-    for (const t of root().querySelectorAll('[data-stab]')) t.onclick = () => showSettings(t.dataset.stab);
+    const draw = () => showSettings(setTab, setOpts), live = (id, dragging) => { if (!dragging) persist(); env.bindSettings(); };
+    for (const t of root().querySelectorAll('[data-stab]')) t.onclick = () => showSettings(t.dataset.stab, setOpts);
     bindSettingsScreen(root(), save, ctx, draw, live);
-    $('setBack').onclick = showMain;
+    $('setBack').onclick = setOpts.back ? () => { const b = setOpts.back; setOpts = {}; b(); } : showMain;
   }
   return { showMain, showDuelists, showMaps, showLibrary, showQuests, showSettings, sel };
 }

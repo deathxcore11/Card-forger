@@ -30,6 +30,7 @@ import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
 import { drawHud, showFlash, showBanner, clearBanners, drawStatPanel, inputMode } from './view/hud.js';
 import { keyWords } from './ui/prompts.js';
+import { renderPause, setTab as pauseTab, bindHolds } from './view/pause.js';
 import { deviceClass } from './ui/device.js';
 import { defaultFor } from './ui/settings-schema.js';
 import { showOffer, offerKey, offerGuard } from './view/offer.js';
@@ -183,6 +184,7 @@ function setMode(m) {
   for (const [id, mm] of [['startScreen', 'start'], ['pauseScreen', 'pause'], ['deadScreen', 'dead'], ['offerScreen', 'offer']]) $(id).classList.toggle('on', m === mm);
   if (m !== 'play' && document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
   $('hint').textContent = m === 'play' && !document.pointerLockElement && !(touch && touch.isTouch) && !firstPad() ? 'Click the map to look around' : ''; if (touch) touch.setEnabled(m === 'play');
+  if (m === 'pause') renderPause(game);
   last = 0;
 }
 function begin(mode, sel) {       // a short loading card first: the stage is drawn by the generator (a few hundred ms), so the card must be on screen before that work starts
@@ -206,6 +208,11 @@ $('menuBtn').addEventListener('click', () => { setMode('start'); menus.showMain(
 menus.showMain();
 $('endBtn').addEventListener('click', () => { game.endRun(); results(); });
 $('resumeBtn').addEventListener('click', () => { setMode('play'); lock(); });
+bindHolds($('pmActions'));       // End run and Restart: a 1.0 s hold with a pointer, or two presses from a pad or keys
+for (const t of document.querySelectorAll('#pmTabs [data-pt]')) t.addEventListener('click', () => pauseTab(t.dataset.pt));
+$('pmMap').addEventListener('click', () => { toggleMap(true); });
+$('pmSettings').addEventListener('click', () => { $('pauseScreen').style.display = 'none'; menus.showSettings('game', { inRun: true, back: () => { $('menuScreen').classList.remove('on'); $('pauseScreen').style.display = ''; } }); });
+$('pmRestart').addEventListener('click', () => { const o = game.opts; game.endRun(); results(); begin(o.mode, { duelist, difficulty: o.difficulty, oaths: o.oaths, map: o.map }); });       // Restart pays like End run and goes straight to a new run with the same duelist and rules
 canvas.addEventListener('mousedown', () => { if (MODE === 'play') lock(); });
 document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && MODE === 'play') setMode('pause');
