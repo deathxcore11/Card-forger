@@ -13,19 +13,23 @@ const slopes = m => { const H = m.heights, out = []; for (let j = 40; j < 360; j
 test('open desert: every dune style makes a rolling sand sheet that is mostly open, fully reachable, never flat for 25 m, with 2 to 4 mesas and the rewards the game needs', () => {
   for (const a of ARCHETYPES) for (const seed of [1, 2, 3]) {
     const m = openMap(seed * 7919, 0, a); assert.ok(m, a + ' ' + seed); assert.equal(m.arch, a);
-    assert.ok(m.report.openFrac >= 0.6, a + ' open ground ' + m.report.openFrac); assert.ok(m.report.walkFrac >= 0.97, a + ' reachable ' + m.report.walkFrac);
+    assert.ok(m.report.openFrac >= 0.55, a + ' open ground ' + m.report.openFrac); assert.ok(m.report.walkFrac >= 0.97, a + ' reachable ' + m.report.walkFrac);
     assert.ok(m.report.flatShare <= 0.04, a + ' flat patches ' + m.report.flatShare);
     const sl = slopes(m), q = p => sl[Math.floor(p * sl.length)];
-    assert.ok(q(0.5) >= 3 && q(0.5) <= 9, a + ' median slope ' + q(0.5)); assert.ok(q(0.9) <= 16, a + ' p90 slope ' + q(0.9));
-    const mesas = m.blocks.filter(b => b.tone > 0 && b.h >= 5 && b.h <= 8.1), walls = m.blocks.filter(b => b.h > 8.5), ruins = m.blocks.filter(b => b.tone === 0);
-    assert.ok(mesas.length >= 2 && mesas.length <= 4, a + ' mesas ' + mesas.length); assert.ok(walls.length >= 1 && walls.length <= 2, a + ' tall walls ' + walls.length); assert.ok(ruins.length >= 6, a + ' ruin blocks ' + ruins.length);
+    assert.ok(q(0.5) >= 5 && q(0.5) <= 15, a + ' median slope ' + q(0.5)); assert.ok(q(0.9) <= 30, a + ' p90 slope ' + q(0.9)); assert.ok(sl.filter(v => v < 15).length / sl.length >= 0.55, a + ' under 15 degrees');
+    const mesas = m.blocks.filter(b => b.tone > 0 && b.h >= 6.9 && b.h <= 10.1), walls = m.blocks.filter(b => b.h >= 9.9 && b.rx > 12), ruins = m.blocks.filter(b => b.tone === 0); for (const r of ruins) assert.ok(r.h >= 5.9 && r.h <= 9.1, 'ruin block height ' + r.h);
+    assert.ok(mesas.length >= 2 && mesas.length <= 4, a + ' mesas ' + mesas.length); assert.ok(m.dune.big.length >= 2 && m.dune.big.length <= 3 && m.dune.big.every(d => d.H >= 14 && d.H <= 18), a + ' big dunes');
+    // the start: the ground within 30 m spans 3 m, the gate and a landmark are within 40 degrees of the opening heading, and the skyline rises and falls
+    { const fx = -Math.sin(m.startYaw), fz = -Math.cos(m.startYaw), cosd = (x, z) => ((x - m.spawn.x) * fx + (z - m.spawn.z) * fz) / Math.hypot(x - m.spawn.x, z - m.spawn.z); assert.ok(cosd(m.gate.x, m.gate.z) >= 0.766, a + ' gate in the opening view'); const lms = m.blocks.filter(b => b.tone > 0).map(b => [b.cx, b.cz]).concat(m.dress.heads.map(h => [h.x, h.z])); assert.ok(lms.some(l => { const d = Math.hypot(l[0] - m.spawn.x, l[1] - m.spawn.z); return d >= 35 && d <= 130 && cosd(l[0], l[1]) >= 0.766; }), a + ' a landmark in the opening view');
+      let lo = 1e9, hi = -1e9; for (const r of [30, 18]) for (let t = 0; t < 12; t++) { const h = groundAt(m, m.spawn.x + Math.cos(t * 0.5236) * r, m.spawn.z + Math.sin(t * 0.5236) * r); lo = Math.min(lo, h); hi = Math.max(hi, h); } assert.ok(hi - lo >= 3, a + ' relief at the start ' + (hi - lo));
+      const y0 = groundAt(m, m.spawn.x, m.spawn.z) + 4; let tl = 9, th = -9; for (let k = -8; k <= 8; k++) { const ang = m.startYaw + k * 0.098; let e = -9; for (let d = 6; d <= 400; d += 4) e = Math.max(e, (groundAt(m, m.spawn.x - Math.sin(ang) * d, m.spawn.z - Math.cos(ang) * d) - y0) / d); tl = Math.min(tl, e); th = Math.max(th, e); } assert.ok(th - tl >= 0.07, a + ' skyline varies ' + (th - tl)); } assert.ok(walls.length >= 1 && walls.length <= 2, a + ' tall walls ' + walls.length); assert.ok(ruins.length >= 6, a + ' ruin blocks ' + ruins.length);
     assert.ok(Math.hypot(m.spawn.x - m.gate.x, m.spawn.z - m.gate.z) >= 180, 'spawn and gate are far apart');
     const by = t => m.encounters.filter(e => e.type === t).length; assert.ok(by('cchest') >= 4 && by('shrine') >= 1 && by('altar') >= 1 && by('stone') >= 1 && by('broker') === 1, a + ' rewards');
     assert.ok(m.encounters.some(e => e.free), 'a free chest near the start'); assert.ok(m.bossRings.length >= 1);
     // rewards stand on open sand beside a block (never on a block), far apart
     const rw = m.encounters.filter(e => !e.free && e.type !== 'broker'); let beside = 0;
     for (const e of rw) { for (const b of m.blocks) assert.ok(blockProf(b, e.x, e.z) === 0, 'a reward on a block'); if (m.blocks.some(b => Math.hypot(b.cx - e.x, b.cz - e.z) < Math.max(b.rx, b.rz) * 1.25 + 8)) beside++; }
-    assert.ok(beside >= Math.floor(rw.length * 0.6), a + ' beside blocks ' + beside + ' of ' + rw.length);
+    assert.ok(beside >= Math.floor(rw.length * 0.4), a + ' beside blocks ' + beside + ' of ' + rw.length);
     for (let i = 0; i < rw.length; i++) for (let j = i + 1; j < rw.length; j++) assert.ok(Math.hypot(rw[i].x - rw[j].x, rw[i].z - rw[j].z) >= 50, 'rewards far apart');
     // the line: the cells beyond it are wall for the sim, the square inside is sand
     for (let k = 0; k < SIM; k++) assert.equal(m.heights[k], 99, 'outside the square is wall');

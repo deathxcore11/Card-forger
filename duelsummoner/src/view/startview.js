@@ -3,6 +3,7 @@
 // (ground heights 3 m apart) along the rays. The first heading toward the route wins ties. View only: it never touches the sim.
 const HALF = 200, N = 400, WALL = 50;
 export function chooseStartYaw(map) {
+  if (map.startYaw !== undefined) return map.startYaw;       // the open desert chooses its own opening view when it is made
   const H = map.heights, sx = map.spawn.x, sz = map.spawn.z, at = (x, z) => { const i = Math.floor(x + HALF), j = Math.floor(z + HALF); return i < 0 || j < 0 || i >= N || j >= N ? 99 : H[j * N + i]; }, h0 = at(sx, sz);
   const fwd = a => [-Math.sin(a), -Math.cos(a)];
   const open = (a, max) => { const [fx, fz] = fwd(a); for (let d = 2; d <= max; d += 2) { const h = at(sx + fx * d, sz + fz * d); if (h >= WALL || h - h0 > 5) return d; } return max; };
