@@ -46,7 +46,7 @@ function params(arch, rn, seed) {
   else if (arch === 'd') { P.shelf = 7 + rn() * 2; const a = rn() * TAU; P.cs = cosA(a); P.ss = sinA(a); mode = 'line'; }
   else if (arch === 'e') { l1 = 60 + rn() * 20; a1 = 4.5 + rn() * 2; l2 = 26 + rn() * 8; P.warp = 56; nBig = 2; }
   else { l1 = 120 + rn() * 20; mode = 'ring'; nBig = 3; P.pan = { x: (rn() - 0.5) * 40, z: (rn() - 0.5) * 40, c: cosA(th + 1.57), s: sinA(th + 1.57), ax: 100 + rn() * 20, az: 70 + rn() * 15, depth: 2.2 + rn() * 1.0 }; }
-  a1 = Math.min(a1, 0.11 * l1); a2 = Math.min(a2, 0.11 * l2);
+  a1 = Math.min(a1, 0.1 * l1); a2 = Math.min(a2, 0.1 * l2);
   Object.assign(P, { l1, a1, l2, a2, lo, c1: cosA(th), s1: sinA(th), c2: cosA(th2), s2: sinA(th2) });
   const cw = cosA(th), sw = sinA(th), c0 = [(rn() - 0.5) * 120, (rn() - 0.5) * 120];
   for (let k = 0; k < nBig; k++) {
@@ -55,7 +55,7 @@ function params(arch, rn, seed) {
     else if (mode === 'cluster') { x = c0[0] + (k ? (rn() - 0.5) * 150 : 0); z = c0[1] + (k ? (rn() - 0.5) * 150 : 0); }
     else if (mode === 'ring') { const a = k * TAU / nBig + rn() * 0.5; x = (P.pan ? P.pan.x : 0) + cosA(a) * 125; z = (P.pan ? P.pan.z : 0) + sinA(a) * 125; }
     else { x = (rn() - 0.5) * 240; z = (rn() - 0.5) * 240; }
-    const ang = th + (rn() - 0.5) * 0.4; P.big.push({ x: Math.max(-130, Math.min(130, x)), z: Math.max(-130, Math.min(130, z)), c: cosA(ang), s: sinA(ang), H, Lw: 85 + rn() * 25, Ll: Math.max(52, 1.6 * H / 0.48), W: 75 + rn() * 30, sd: Math.floor(rn() * 1e6) });
+    const ang = th + (rn() - 0.5) * 0.4; P.big.push({ x: Math.max(-130, Math.min(130, x)), z: Math.max(-130, Math.min(130, z)), c: cosA(ang), s: sinA(ang), H, Lw: 85 + rn() * 25, Ll: Math.max(60, 2.1 * H / 0.48), W: 75 + rn() * 30, sd: Math.floor(rn() * 1e6) });
   }
   return P;
 }
