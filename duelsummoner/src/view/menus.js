@@ -7,7 +7,7 @@ import { MONSTERS, FUSIONS, SPELLS, TRAPS, ONE_SHOTS } from '../data/cards.js';
 import { ITEMS } from '../data/items.js';
 import { boardUrl, fetchBoard } from '../core/board.js';
 import { deviceClass } from '../ui/device.js';
-import { settingsHtml, bindSettingsScreen } from './settings-screen.js';
+import { settingsHtml, bindSettingsScreen, tabsFor } from './settings-screen.js';
 import { firstPad } from '../core/padnav.js';
 import { questProgress, questDone, closestQuests, questFor, mapRecord, masteryOf, outfitUnlocked, setCardEnabled } from '../core/meta.js';
 import { startPreview } from './preview.js';
@@ -136,6 +136,7 @@ export function initMenus(env) {
   function showSettings(tab) {
     if (typeof tab === 'string') setTab = tab;
     const cls = deviceClass(), ctx = { cls, pad: !!firstPad(), dual: true, gyro: false, keyboard: false, signedIn: false, inRun: false, version: (document.getElementById('buildLabel') || {}).textContent || '' };
+    { const tl = tabsFor(save, ctx); if (!tl.includes(setTab)) setTab = tl[0] || 'game'; }
     open(settingsHtml(save, setTab, ctx));
     const draw = () => showSettings(), live = (id, dragging) => { if (!dragging) persist(); env.bindSettings(); };
     for (const t of root().querySelectorAll('[data-stab]')) t.onclick = () => showSettings(t.dataset.stab);

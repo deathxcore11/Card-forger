@@ -3,7 +3,9 @@ import { TABS, visibleRows, defaultFor, ROW_BY_ID } from '../ui/settings-schema.
 const LEGACY = { camShake: 'shake', frameRate: 'fpsCap' };
 const TAB_LABEL = { game: 'Game', display: 'Display', controls: 'Controls', sound: 'Sound', access: 'Access', account: 'Account' };
 const SECTION_LABEL = { all: null, controller: 'Controller', touch: 'Touch', kbm: 'Keyboard and mouse', reset: null };
-const WIRED = new Set(['fov', 'camShake', 'detail', 'reduceMotion', 'frameRate']);       // rows the game reads today; the others are saved but not connected yet
+// Rows the game reads today. Only these show to players; a row appears when it is connected. ?dev=1 (or window.__showAllRows) shows every row, marked, so the rest can be built against the real screen.
+export const WIRED = new Set(['fov', 'camShake', 'detail', 'reduceMotion', 'frameRate']);
+const showAll = () => (typeof window !== 'undefined' && (window.__showAllRows || /[?&]dev=1/.test(window.location.search)));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const CHOICE = { near: 'Near', standard: 'Standard', far: 'Far', off: 'Off', gentle: 'Gentle', strong: 'Strong', big: 'Big hits', all: 'All', balanced: 'Balanced', nearest: 'Nearest', strongest: 'Strongest', small: 'Small', medium: 'Medium', large: 'Large',
   turns: 'Turns with camera', north: 'North up', battery: 'Battery', performance: 'Performance', match: 'Match screen', auto: 'Auto', low: 'Low', high: 'High', quicklook: 'In Quick Look', always: 'Always', hold: 'Hold', toggle: 'Toggle', letters: 'Letters', shapes: 'Shapes',
@@ -22,13 +24,15 @@ function rowHtml(r, v, ctx) {
   else if (r.kind === 'danger') c = '<button class="dangerBtn" data-act="' + r.id + '"' + dis + '>Hold to reset</button>';
   else if (r.kind === 'action') c = '<button data-act="' + r.id + '"' + dis + '>Open</button>';
   else c = '<span class="dim">' + (r.id === 'version' ? esc(ctx.version || '') : '') + '</span>';
-  return '<div class="srow" data-id="' + r.id + '"><span class="sl">' + esc(r.label) + (dis ? ' <small class="dim">(not during a run)</small>' : '') + (WIRED.has(r.id) || r.kind === 'caption' ? '' : ' <small class="dim">(not connected yet)</small>') + '</span><span class="sc">' + c + '</span></div>';
+  return '<div class="srow" data-id="' + r.id + '"><span class="sl">' + esc(r.label) + (dis ? ' <small class="dim">(not during a run)</small>' : '') + (showAll() && !WIRED.has(r.id) && r.kind !== 'caption' ? ' <small class="dim">(dev: not connected)</small>' : '') + '</span><span class="sc">' + c + '</span></div>';
 }
+const rowsFor = (save, tab, ctx) => visibleRows(tab, Object.assign({}, ctx, { values: Object.fromEntries(Object.keys(ROW_BY_ID).map(id => [id, getVal(save, ROW_BY_ID[id], ctx.cls)])) })).filter(r => showAll() || WIRED.has(r.id));
+export const tabsFor = (save, ctx) => TABS.filter(t => rowsFor(save, t, ctx).some(r => r.kind !== 'caption'));
 export function settingsHtml(save, tab, ctx) {
-  const rows = visibleRows(tab, Object.assign({}, ctx, { values: Object.fromEntries(Object.keys(ROW_BY_ID).map(id => [id, getVal(save, ROW_BY_ID[id], ctx.cls)])) }));
+  const rows = rowsFor(save, tab, ctx), TL = tabsFor(save, ctx);
   let last = null, body = '';
   for (const r of rows) { if (r.section !== last && SECTION_LABEL[r.section]) body += '<h3 class="ssec">' + SECTION_LABEL[r.section] + '</h3>'; last = r.section; body += rowHtml(r, getVal(save, r, ctx.cls), ctx); }
-  return '<h2>SETTINGS</h2><div class="tabs">' + TABS.map(t => '<button class="tab' + (t === tab ? ' sel' : '') + '" data-stab="' + t + '">' + TAB_LABEL[t] + '</button>').join('') + '</div><div class="panel sbody">' + body + '</div><div class="navRow"><button id="setBack" class="small">BACK</button><span class="dim">' + ctx.cls + '</span></div>';
+  return '<h2>SETTINGS</h2><div class="tabs">' + TL.map(t => '<button class="tab' + (t === tab ? ' sel' : '') + '" data-stab="' + t + '">' + TAB_LABEL[t] + '</button>').join('') + '</div><div class="panel sbody">' + body + '</div><div class="navRow"><button id="setBack" class="small">BACK</button><span class="dim">' + ctx.cls + '</span></div>';
 }
 // wires one drawn screen. onChange(id) lets the caller apply the live rows.
 export function bindSettingsScreen(root, save, ctx, redraw, onChange) {

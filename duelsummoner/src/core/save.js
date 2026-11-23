@@ -6,13 +6,13 @@ export const SAVE_VERSION = 2;
 export function freshSave() { return { v: SAVE_VERSION, records: {}, starChips: 0, runs: 0, bossKills: 0, meta: defaultMeta(), settings: defaultSettings() }; }
 // In memory `settings` is the resolved flat object the game reads (defaults plus the player's overrides). On disk (v2) it is overrides only, under the spec names (camShake, not shake),
 // so a default that changes later reaches every player who never touched the row.
-export function defaultSettings() { return { reduceMotion: false, shake: 100, difficulty: 'medium', fov: 100, fpsCap: 60, detail: 'auto' }; }
+export function defaultSettings() { return { reduceMotion: false, shake: 80, difficulty: 'medium', fov: 100, fpsCap: 60, detail: 'auto' }; }
 const V1_DEFAULTS = { reduceMotion: false, shake: 100, difficulty: 'medium', fov: 100, fpsCap: 60 };
 const TO_DISK = { shake: 'camShake' }, FROM_DISK = { camShake: 'shake' };
 export function overridesOf(settings) { const d = defaultSettings(), out = {}; for (const k in settings) if (settings[k] !== d[k] && settings[k] !== undefined) out[TO_DISK[k] || k] = settings[k]; return out; }
 export function resolveSettings(ov) { const out = defaultSettings(); for (const k in (ov || {})) out[FROM_DISK[k] || k] = ov[k]; return out; }
 // v1 to v2: keep everything, drop settings equal to the v1 defaults (they are not overrides), rename shake to camShake.
-export function migrateV1(s) { const out = Object.assign({}, s, { v: 2 }), ov = {}, old = s.settings || {}; for (const k in old) if (old[k] !== V1_DEFAULTS[k]) ov[TO_DISK[k] || k] = old[k]; out.settings = ov; return out; }
+export function migrateV1(s) { const out = Object.assign({}, s, { v: 2 }), ov = {}, old = s.settings || {}; for (const k in old) if (old[k] !== V1_DEFAULTS[k] || k === 'shake') ov[TO_DISK[k] || k] = old[k]; out.settings = ov; return out; }       // a v1 player keeps the shake they had (the new-save default is 80)
 function withDefaults(s) {                                           // older saves gain new fields without losing progress
   const d = freshSave(), out = Object.assign(d, s), m = defaultMeta();
   out.meta = Object.assign(m, s.meta || {}); out.meta.totals = Object.assign(m.totals, (s.meta && s.meta.totals) || {}); out.meta.deck = Object.assign({}, (s.meta && s.meta.deck) || {});
