@@ -2238,7 +2238,7 @@ function endWindow(o) {
   const paras = s.won ? [head, `Embers +${s.embers}${s.bountyMet ? '. Bounty met.' : '.'}`] : [head, `You lose a Spark. ${G.run.sparks} left.`, ...(o.why || []).slice(0, 2)];
   const more = paras.reduce((n, t) => n + Math.ceil(t.length / 36), s.won ? 1 : 0) * 16 + (paras.length - 1) * 16 > 142; // the text face is 8 pixels a letter: some 36 to a line here, a blank line between paragraphs
   const body = s.won ? `<p>${esc(head)}</p><p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b></p><p>${esc(paras[1])}</p>` : paras.map((t, i) => `<p${i > 1 ? ' class="d"' : ''}>${esc(t)}</p>`).join('');
-  return win(96, 8, 320, 224, `<div style="display:flex;justify-content:center;margin:0 0 4px">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><div class="sc" style="height:142px">${body}</div>${more ? lb(8, 202, 'MORE BELOW, SCROLL', 'g') : ''}${pq(216, 198, 88, 'CONTINUE', 'closeov', { lit: true })}`);
+  return win(96, 8, 320, 224, `<div style="display:flex;justify-content:center;margin:0 0 4px${endPad(s.won ? 'VICTORY' : 'DEFEAT')}">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><div class="sc" style="height:142px">${body}</div>${more ? lb(8, 202, 'MORE BELOW, SCROLL', 'g') : ''}${pq(216, 198, 88, 'CONTINUE', 'closeov', { lit: true })}`);
 }
 function psWindows() {
   const r = G.run;
@@ -2545,6 +2545,8 @@ const fitScrolls = (keep = null) => scrollBoxes().forEach((sc, i) => fitScroll(s
 // grid. Its words then stand in the middle to within a pixel, and their ink (the face leaves the last column of a word's
 // last letter blank) exactly in it. A box of centred words holds one line: a plate of several sets each line as a box
 // of its own. Measured after the screen is drawn and again once the faces are in.
+// The end window's carved title is a picture centred in an even-width row; an odd-width picture would land half a pixel off, so the row gives it one pixel on the left.
+function endPad(word) { const c = carve(word, 24, render); return c && c.w & 1 ? ';padding-left:1px' : ''; }
 function gridLines() {
   if (!app.classList.contains('ps')) return;
   const A = app.getBoundingClientRect(), k = Math.max(A.width, A.height) / (app.offsetWidth || 1), up = F.up, boxes = [];
