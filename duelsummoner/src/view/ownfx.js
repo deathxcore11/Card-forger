@@ -19,8 +19,8 @@ float coverOf(float rad, float viewZ) { float rN = rad * uProjY / max(viewZ, 0.5
 
 function material(kind) {
   const area = kind === 'area';
-  return new T.ShaderMaterial({ glslVersion: T.GLSL3, side: T.DoubleSide, depthTest: true, depthWrite: false, transparent: false, fog: false, blending: T.NoBlending,
-    stencilWrite: true, stencilRef: 1, stencilFunc: T.NotEqualStencilFunc, stencilFuncMask: 0x01, stencilWriteMask: 0x00, stencilFail: T.KeepStencilOp, stencilZFail: T.KeepStencilOp, stencilZPass: T.KeepStencilOp,
+  return new T.ShaderMaterial({ glslVersion: T.GLSL3, side: T.DoubleSide, depthTest: true, depthWrite: false, transparent: true, fog: false, blending: T.NoBlending,
+    stencilWrite: true, stencilRef: 0, stencilFunc: T.EqualStencilFunc, stencilFuncMask: 0x05, stencilWriteMask: 0x00, stencilFail: T.KeepStencilOp, stencilZFail: T.KeepStencilOp, stencilZPass: T.KeepStencilOp,
     uniforms: OWN.uni,
     vertexShader: `precision highp float; precision highp int; ${COMMON}
 in vec4 iA; in vec4 iB; in vec4 iC;
@@ -68,7 +68,7 @@ export class OwnEffects {
       const buf = new T.InstancedInterleavedBuffer(new Float32Array(max * STRIDE), STRIDE, 1); buf.setUsage(T.DynamicDrawUsage);
       const g = new T.InstancedBufferGeometry(); g.index = geo.index; g.setAttribute('position', geo.attributes.position);
       g.setAttribute('iA', new T.InterleavedBufferAttribute(buf, 4, 0)); g.setAttribute('iB', new T.InterleavedBufferAttribute(buf, 4, 4)); g.setAttribute('iC', new T.InterleavedBufferAttribute(buf, 4, 8)); g.instanceCount = 0;
-      const m = new T.Mesh(g, material(kind)); m.frustumCulled = false; m.renderOrder = 3; m.visible = false; scene.add(m); return { buf, g, m, max, n: 0, arr: buf.array };
+      const m = new T.Mesh(g, material(kind)); m.frustumCulled = false; m.renderOrder = 5; m.visible = false; scene.add(m); return { buf, g, m, max, n: 0, arr: buf.array };
     };
     const quad = new T.PlaneGeometry(2, 2); quad.rotateX(-Math.PI / 2);
     const dome = new T.SphereGeometry(1, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2);       // a dome: the upper half of a sphere
@@ -97,12 +97,14 @@ export class OwnEffects {
     const f = u.uProjY.value, sx = (vx * f / u.uAspect / Math.max(vz, 0.5) * 0.5 + 0.5) * W, sy = (vy * f / Math.max(vz, 0.5) * 0.5 + 0.5) * H, hPx = 1.8 * f / Math.max(vz, 0.5) * 0.5 * H;
     u.uHole.value.set(sx, sy, Math.max(0.12 * H, 0.9 * hPx), vz); u.uFeetY.value = duelist.y;
     // the sums: rasterised = every fill and volume's screen cover, kept = cover x keep. A discarded pixel is still rasterised, so this is the true fill cost.
-    let ras = 0, kept = 0; const r = this.recs;
-    for (let i = 0; i < r.length; i += 7) { const dx = r[i] - camera.position.x, dy = r[i + 1] - camera.position.y, dz = r[i + 2] - camera.position.z, vzz = Math.max(Math.abs(dx * e[2] + dy * e[6] + dz * e[10]), 0.5), rN = r[i + 3] * f / vzz, cover = Math.min(1, 3.1416 * rN * rN / (4 * u.uAspect.value || 1)) * r[i + 4]; if (!r[i + 5]) continue; ras += cover; kept += cover * Math.min(Math.max(set.ink / Math.max(cover, 0.001), 0.125), 1); }
-    this.rasterSum = ras; this.keptSum = kept;
-    const target = kept > set.kept ? set.kept / kept : 1, k = 1 - Math.exp(-(dt || 0.016) / 0.3); this.gov += (target - this.gov) * k; u.uGov.value = Math.max(0.02, Math.min(1, this.gov));
-    for (const s of [this.A, this.V]) { s.g.instanceCount = s.n; s.m.visible = s.n > 0; if (s.n > 0) { s.buf.updateRange.offset = 0; s.buf.updateRange.count = s.n * STRIDE; s.buf.needsUpdate = true; } }
+    const r = this.recs, cov = [], inkk = []; let ras = 0;
+    for (let i = 0; i < r.length; i += 7) { const dx = r[i] - camera.position.x, dy = r[i + 1] - camera.position.y, dz = r[i + 2] - camera.position.z, vzz = Math.max(Math.abs(dx * e[2] + dy * e[6] + dz * e[10]), 0.5), rN = r[i + 3] * f / vzz, cover = Math.min(1, 3.1416 * rN * rN / ((4 * u.uAspect.value) || 1)) * r[i + 4]; if (!r[i + 5]) continue; ras += cover; cov.push(cover); inkk.push(Math.min(Math.max(set.ink / Math.max(cover, 0.001), 0.125), 1)); }
+    const keptAt = gv => { let k = 0; for (let j = 0; j < cov.length; j++) k += cov[j] * Math.min(inkk[j], gv); return k; };
+    // the governor: the largest cap on every fill keep that brings the kept sum to its limit (bisection; it may go below the 12.5% floor), then smoothed over 0.3 s
+    let target = 1; if (keptAt(1) > set.kept) { let lo = 0.0, hi = 1.0; for (let it = 0; it < 14; it++) { const mid = (lo + hi) / 2; if (keptAt(mid) > set.kept) hi = mid; else lo = mid; } target = Math.max(0.005, lo); }
+    const kk = 1 - Math.exp(-(dt || 0.016) / 0.3); this.gov += (target - this.gov) * kk; u.uGov.value = Math.max(0.005, Math.min(1, this.gov));
+    this.rasterSum = ras; this.keptSum = keptAt(this.gov); this.keptRaw = keptAt(1);    for (const s of [this.A, this.V]) { s.g.instanceCount = s.n; s.m.visible = s.n > 0; if (s.n > 0) { s.buf.updateRange.offset = 0; s.buf.updateRange.count = s.n * STRIDE; s.buf.needsUpdate = true; } }
     this.nArea = this.A.n; this.nVol = this.V.n;
   }
-  get readout() { return { areas: this.nArea, volumes: this.nVol, rasterSum: +this.rasterSum.toFixed(2), keptSum: +this.keptSum.toFixed(2), governor: +this.gov.toFixed(2), dropped: this.dropped }; }
+  get readout() { return { areas: this.nArea, volumes: this.nVol, rasterSum: +this.rasterSum.toFixed(2), keptSum: +this.keptSum.toFixed(3), keptRaw: +(this.keptRaw || 0).toFixed(2), governor: +this.gov.toFixed(2), dropped: this.dropped }; }
 }

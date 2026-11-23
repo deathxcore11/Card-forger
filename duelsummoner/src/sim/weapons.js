@@ -112,7 +112,7 @@ export function updateShots(g, dt) {
 }
 
 export function splash(g, x, y, z, r, dmg, flame) {
-  addFx(g, { type: 'ring', owner: 0, x, y, z, r, dur: 0.35, color: (flame & 1) ? 0xff8a30 : 0x7fe8ff });
+  addFx(g, { type: 'ring', owner: 0, el: (flame & 1) ? 'fire' : null, x, y, z, r, dur: 0.35, color: (flame & 1) ? 0xff8a30 : 0x7fe8ff });
   breakVasesNear(g, x, z, r);
   const e = g.en, nc = g.grid.query(x, z, r, near);
   for (let k = 0; k < nc; k++) { const j = near[k]; if (!e.alive[j]) continue; const dx = e.x[j] - x, dz = e.z[j] - z; if (dx * dx + dz * dz < r * r) damageEnemy(g, j, dmg, { elem: flame }); }

@@ -9,6 +9,7 @@ import { DuelistRig } from './rig.js';
 import { actorLit } from './engine.js';
 import { Ribbon } from './ribbon.js';
 import { OwnEffects } from './ownfx.js';
+import { RAMP } from '../data/fxramp.js';
 import { PICKUP_COLORS } from '../data/pickups.js';
 import { makeCreature } from './creature.js';
 
@@ -42,6 +43,8 @@ function gemGeometry() {
   return geo;
 }
 const SWAY_T = { value: 0 };
+// every non-own effect and every enemy warning writes stencil bit 2 where it draws; the own-effect fills test it (view/ownfx.js), so an own effect can never be drawn over a warning
+const WARN = o => Object.assign(o, { stencilWrite: true, stencilRef: 4, stencilFunc: T.AlwaysStencilFunc, stencilWriteMask: 0x04, stencilFuncMask: 0xff, stencilFail: T.KeepStencilOp, stencilZFail: T.KeepStencilOp, stencilZPass: T.ReplaceStencilOp });
 function instanced(geo, material, max) {
   const m = new T.InstancedMesh(geo, material, max);
   m.frustumCulled = false; m.count = 0; m.instanceMatrix.setUsage(T.DynamicDrawUsage);
@@ -132,7 +135,7 @@ export class Actors {
     this.btrap = instanced(new T.BoxGeometry(1.2, 0.06, 1.7), basic(0x8a3ad8), 8); scene.add(this.btrap);
 
     // telegraphs and effects (flat, drawn on the ground)
-    const ghost = c => basic(c, { transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide });
+    const ghost = c => basic(c, WARN(Object.assign({ transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide })));
     this.teleLine = instanced(new T.BoxGeometry(1, 0.05, 1), ghost(0xffffff), 64); this.teleLine.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
     this.teleDisc = instanced(flat(new T.CircleGeometry(1, 28)), ghost(0xffffff), 128); this.teleDisc.instanceColor = new T.InstancedBufferAttribute(new Float32Array(128 * 3), 3);
     this.fxRing = instanced(flat(new T.RingGeometry(0.82, 1, 28)), ghost(0xffffff), 64); this.fxRing.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
@@ -147,11 +150,13 @@ export class Actors {
     this.puffs = [];
   }
 
+  // an own effect takes its colour from the effect ramp by the element the sim names (bright tone); with no element it is the neutral card tone, never gold, XP cyan or violet, except a summon or seal effect, which keeps its violet
+  _ownHex(o) { if (o.el && RAMP[o.el]) return RAMP[o.el][1]; const c = o.color || 0, r = (c >> 16) & 255, gg = (c >> 8) & 255, b = c & 255; return (b > 200 && r > 120 && r < 230 && gg < 170) ? c : 0xf3e3c2; }
   _fan(arc, max) {
     let f = this.fans.get(arc);
     if (!f) {
       const geo = flat(new T.CircleGeometry(1, 20, Math.PI / 2 - arc * Math.PI / 360, arc * Math.PI / 180));
-      f = instanced(geo, basic(0xffffff, { transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide }), max || 16);
+      f = instanced(geo, basic(0xffffff, WARN({ transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide })), max || 16);
       f.instanceColor = new T.InstancedBufferAttribute(new Float32Array((max || 16) * 3), 3); this.scene.add(f); this.fans.set(arc, f);
     }
     return f;
@@ -482,7 +487,7 @@ export class Actors {
       if (!o.on) continue;
       if (o.type === 'bolt') { this.ribbon.see(o); continue; }
       const f = Math.min(1, o.t / o.dur), fade = 1 - f;
-      if (o.owner === 0 && this.ownCtx) { if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), o.color, false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, o.color, true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
+      if (o.owner === 0 && this.ownCtx) { if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), this._ownHex(o), false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, this._ownHex(o), true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
       if (o.type === 'ring') {
         d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = o.r * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix();
         this.fxRing.setMatrixAt(nr, d.matrix); this.fxRing.setColorAt(nr, col.setHex(o.color).multiplyScalar(0.4 + 0.6 * fade)); nr++;
