@@ -594,6 +594,7 @@ export class Actors {
       if (!o.on) continue;
       if (o.type === 'bolt') { if (this.ribbon.see(o) && o.el === 'lightning') this._arcAt(g, o.x2, o.z2); continue; }
       const f = Math.min(1, o.t / o.dur), fade = 1 - f;
+      if (o.type === 'wake') { if (this.ownCtx) this.own.card((o.ax + o.bx) / 2, o.y, (o.az + o.bz) / 2, o.r, o.hw, 0xff8a30, 0, 0, Math.atan2(o.dz, o.dx)); continue; }       // the Ember Wake: the sim's rectangle itself (half length r, half width hw), lit from the Wyvern to the line's end
       if (o.owner === 0 && this.ownCtx) { if (tier > 0) this._tierFx(o, tier); if (this.tier5 && o.r >= 8) this._tier5(o, rch); else this._grow(o, stier, rch); if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), this._ownHex(o), false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, this._ownHex(o), true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
       if (o.type === 'ring') {
         d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = o.r * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix();

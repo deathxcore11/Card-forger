@@ -28,7 +28,7 @@ export function fireShot(g, kind, x, y, z, tx, ty, tz, speed, life, dmg, o) {
   const s = g.shots, i = slot(s); if (i < 0) return -1;
   o = o || {}; init(s, i, kind, x, y, z, o.flame, dmg); s.src[i] = g.curSrc;
   const dx = tx - x, dy = ty - y, dz = tz - z, l = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-  s.vx[i] = dx / l * speed; s.vy[i] = dy / l * speed; s.vz[i] = dz / l * speed; s.life[i] = life; s.pierce[i] = o.pierce || 0; s.speed[i] = speed;
+  s.vx[i] = dx / l * speed; s.vy[i] = dy / l * speed; s.vz[i] = dz / l * speed; s.life[i] = life; s.pierce[i] = o.pierce || 0; s.speed[i] = speed; s.splash[i] = o.burst || 0;       // burst: a fire line's end burst radius (before Reach), dmg x BURST_SHARE
   return i;
 }
 export function fireLob(g, x, y, z, tx, tz, flight, dmg, splash, flame) {
@@ -81,7 +81,7 @@ export function updateShots(g, dt) {
       }
     }
     s.x[i] += s.vx[i] * dt; s.y[i] += s.vy[i] * dt; s.z[i] += s.vz[i] * dt;
-    if (s.life[i] <= 0 || s.y[i] < heightAt(s.x[i], s.z[i])) { s.alive[i] = 0; continue; }
+    if (s.life[i] <= 0 || s.y[i] < heightAt(s.x[i], s.z[i])) { s.alive[i] = 0; endBurst(g, s, i); continue; }
     breakVasesNear(g, s.x[i], s.z[i], 0.9);
     const hr = CFG.card.hitRadius;
     const nc = g.grid.query(s.x[i], s.z[i], hr + 0.5, near);
@@ -106,10 +106,12 @@ export function updateShots(g, dt) {
         dead = true; break;
       }
     }
-    if (dead) s.alive[i] = 0;
+    if (dead) { s.alive[i] = 0; endBurst(g, s, i); }
   }
   g.curSrc = 0;
 }
+export let AREA_SHARE = 0.35; export const setAreaShare = v => { AREA_SHARE = v; };       // an added area part (the Wake strip, the line's end burst, the Seal Ring) deals this share of the main hit to each target in it
+function endBurst(g, s, i) { if (s.kind[i] === KIND_FIRE && s.splash[i] > 0) splash(g, s.x[i], heightAt(s.x[i], s.z[i]), s.z[i], s.splash[i], s.dmg[i] * AREA_SHARE, s.flame[i]); }
 
 export function splash(g, x, y, z, r, dmg, flame) {
   r *= g.reachK;       // Reach scales area: a splash is an area kind

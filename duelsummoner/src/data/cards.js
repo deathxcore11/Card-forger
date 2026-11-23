@@ -22,21 +22,21 @@ const forms = id => [{ fromLevel: 1, modelId: id, scale: 0.7 }, { fromLevel: 5, 
 // Attack kinds: line (piercing shot), lob (splash), mark, homing, cone. fx = extras gained at levels 3, 6 and 10.
 export const MONSTERS = {
   'ember-wyvern': { name: 'Ember Wyvern', type: 'Dragon', elements: ['fire'], rarity: 'common', flame: true, partner: 'cinder-hatchling', forms: forms('ember-wyvern'),
-    text: 'Fire line 20 m long, pierces 2.',
+    text: 'Fire line 20 m long, pierces 2. Level 3 leaves embers; level 10 bursts at the end.',
     attack: { kind: 'line', dmg: 2, cd: 0.65, length: 20, pierce: 2, speed: 34 },
-    fx: { 3: { pierce: 1 }, 6: { length: 6 }, 10: { pierce: 2 } }, fxText: { 3: 'pierces +1', 6: 'line +6 m', 10: 'pierces +2' } },
+    fx: { 3: { pierce: 1, wake: 1 }, 6: { length: 6 }, 10: { pierce: 2, burst: 5.5 } }, fxText: { 3: 'pierces +1, leaves an ember strip', 6: 'line +6 m', 10: 'pierces +2, a 5.5 m burst where the line ends' } },
   'cinder-hatchling': { name: 'Cinder Hatchling', type: 'Dragon', elements: ['fire'], rarity: 'common', flame: true, partner: 'ember-wyvern', forms: forms('cinder-hatchling'),
     text: 'Lobbed fireball, 3 m splash.',
     attack: { kind: 'lob', dmg: 3, cd: 1.4, splash: 3, range: 22, flight: 0.7, count: 1 },
-    fx: { 3: { splash: 0.7 }, 6: { count: 1 }, 10: { splash: 1 } }, fxText: { 3: 'splash +0.7 m', 6: 'a second fireball', 10: 'splash +1 m' } },
+    fx: { 3: { splash: 1 }, 6: { count: 1 }, 10: { splash: 1.5 } }, fxText: { 3: 'splash +1 m (4 m)', 6: 'a second fireball', 10: 'splash +1.5 m (5.5 m)' } },
   'rune-apprentice': { name: 'Rune Apprentice', type: 'Spellcaster', elements: ['lightning'], rarity: 'common', partner: 'sigil-familiar', forms: forms('rune-apprentice'),
     text: 'Marks the 3 nearest for 6 s; marked take +30%.',
     attack: { kind: 'mark', dmg: 1, cd: 1.0, marks: 3, range: 24 },
     fx: { 3: { marks: 1 }, 6: { marks: 1 }, 10: { marks: 2 } }, fxText: { 3: 'marks +1', 6: 'marks +1', 10: 'marks +2' } },
   'sigil-familiar': { name: 'Sigil Familiar', type: 'Spellcaster', elements: ['lightning'], rarity: 'common', partner: 'rune-apprentice', forms: forms('sigil-familiar'),
-    text: 'Homing bolt at a marked enemy, else the nearest.',
+    text: 'Homing bolt at a marked enemy, else the nearest. Level 3 adds a lightning ring.',
     attack: { kind: 'homing', dmg: 3, cd: 0.5, speed: 22, range: 26 },
-    fx: { 3: { dmg: 1 }, 6: { speed: 6 }, 10: { dmg: 2 } }, fxText: { 3: '+1 damage', 6: 'faster bolt', 10: '+2 damage' } }
+    fx: { 3: { dmg: 1, ring: 5 }, 6: { speed: 6 }, 10: { dmg: 2, ring: 1 } }, fxText: { 3: '+1 damage, a 5 m lightning ring every 4 s', 6: 'faster bolt', 10: '+2 damage, the ring grows to 6 m' } }
 };
 export const FUSIONS = {
   'twinflare-tyrant': { name: 'Twinflare Tyrant', type: 'Dragon', elements: ['fire'], flame: true, from: ['ember-wyvern', 'cinder-hatchling'], forms: forms('twinflare-tyrant'),
@@ -44,7 +44,7 @@ export const FUSIONS = {
     attack: { kind: 'cone', dmg: 2.5, cd: 0.9, range: 14, arc: 60 }, fx: { 3: { range: 2 }, 6: { arc: 20 }, 10: { range: 3, arc: 20 } }, fxText: { 3: 'cone +2 m', 6: 'cone wider', 10: 'longest, widest cone' } },
   'astral-magus': { name: 'Astral Magus', type: 'Spellcaster', elements: ['lightning'], from: ['rune-apprentice', 'sigil-familiar'], forms: forms('astral-magus'),
     text: 'Marks 6. Marked enemies explode on defeat: 4 m, 8 damage.',
-    attack: { kind: 'mark', dmg: 1, cd: 1.0, marks: 6, range: 26, explodeRadius: 4, explodeDmg: 8 }, fx: { 3: { marks: 2 }, 6: { explodeDmg: 4 }, 10: { marks: 2, explodeRadius: 1 } }, fxText: { 3: 'marks +2', 6: 'bigger blasts', 10: 'marks +2, wider blasts' } }
+    attack: { kind: 'mark', dmg: 1, cd: 1.0, marks: 6, range: 26, explodeRadius: 4, explodeDmg: 8 }, fx: { 3: { marks: 2, explodeRadius: 0.75 }, 6: { explodeDmg: 4 }, 10: { marks: 2, explodeRadius: 0.75 } }, fxText: { 3: 'marks +2, blasts +0.75 m', 6: 'bigger blasts', 10: 'marks +2, blasts reach 5.5 m' } }
 };
 export function formOf(id, level) {
   const D = MONSTERS[id] || FUSIONS[id]; let f = 0;
