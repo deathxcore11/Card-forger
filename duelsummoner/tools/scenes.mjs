@@ -39,6 +39,11 @@ export const SCENES = [
     }
   },
   {
+    name: 'mira-boss', seed: 14, duelist: 'mira', ticks: 1800,       // Mira's pair against a boss: the marks and the homing bolts must reach it
+    setup(g) { g.god = true; g.spawnAcc = -1e9; g.golemT = 1e9; g.flags.warden = g.flags.idols = true; g.t = 480; startBoss(g, true); },
+    at: { 1500: g => { const p = g.sp.find(s => s.kind === 'pharaoh'); if (p) g.damageSpecial(p, 1e9, 0, 0, { noCrit: true, area: true }); } }
+  },
+  {
     name: 'altar-use', seed: 12, duelist: 'kael', ticks: 900,
     setup(g) { quiet(g); g.god = true; g.flags.warden = g.flags.idols = true; },
     at: { 5: g => { const a = g.world.altar; at(g, a); }, 10: g => { const h = nearestProp(g); if (h) useProp(g, h); } }

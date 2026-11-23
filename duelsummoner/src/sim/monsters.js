@@ -1,6 +1,7 @@
 ﻿import { OATH_BY_ID } from '../data/progress.js';
 import { K } from '../data/tuning.js';
 import { CAP, capReady, capTake } from './caps.js';
+import { takeBuf, freeBuf } from './scratch.js';
 // What the monsters on your field do each tick, plus Traps and one-shot Spells. Every number comes from data/cards.js.
 import { CFG } from '../data/config.js';
 import { atan2, cos, pow, sin } from './dmath.js';
@@ -13,7 +14,7 @@ import { damageEnemy, addFx, addTele, explode } from './combat.js';
 import { def, param, damageOf } from './field.js';
 import { elemBits } from '../data/elements.js';
 
-const buf = new Int32Array(CFG.enemy.max), pick = [];
+const pick = [];
 
 // shrine basins, stones, chests, the Broker and the altar are solid for a summon (their size is a stand-in until the models have collision data)
 function propPush(g, m) {
@@ -50,7 +51,7 @@ export function updateMonsters(g, dt) {
     if (i >= 0) { g.aimX = e.x[i]; g.aimZ = e.z[i]; fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, e.x[i], e.y[i] + 0.9, e.z[i], CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage, { flame: g.mods.cardBurn ? 1 : 0 }); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
     else {
       const sp = nearestSpecial(g, p.x, p.z, CFG.card.range);
-      if (sp) { g.aimX = sp.x; g.aimZ = sp.z; fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, sp.x, sp.y + 1.2, sp.z, CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
+      if (sp) { g.aimX = sp.x; g.aimZ = sp.z; fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, sp.x, sp.y + 1.2, sp.z, CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage, { flame: g.mods.cardBurn ? 1 : 0 }); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
       else g.cardT = 0;
     }
     g.curSrc = 0;
@@ -92,37 +93,43 @@ function attack(g, m, D, A) {
     }
     case 'mark': {
       const range = param(m, 'range'), n = param(m, 'marks');
-      const c = g.grid.query(m.x, m.z, range, buf);
+      const buf = takeBuf(), c = g.grid.query(m.x, m.z, range, buf);
       pick.length = 0;
       for (let k = 0; k < c; k++) { const i = buf[k]; if (!e.alive[i]) continue; const dx = e.x[i] - m.x, dz = e.z[i] - m.z, d = dx * dx + dz * dz; if (d < range * range) pick.push({ i, d, marked: e.mark[i] > 0 ? 1 : 0 }); }
+      freeBuf();
+      for (const sp of g.sp) { if (!sp.alive || sp.dead) continue; const dx = sp.x - m.x, dz = sp.z - m.z, d = dx * dx + dz * dz, rr = range + sp.radius; if (d < rr * rr) pick.push({ i: -1, sp, d, marked: sp.mark > 0 ? 1 : 0, big: 1 }); }       // elites and bosses can be marked too
       if (!pick.length) return false;
-      pick.sort((a, b) => a.marked - b.marked || a.d - b.d);               // unmarked ones first, nearest first
+      pick.sort((a, b) => a.marked - b.marked || (b.big | 0) - (a.big | 0) || a.d - b.d);               // unmarked ones first, a boss or elite before the swarm, then nearest first
       const dur = MARKS.duration + g.mods.markDur;
-      for (let k = 0; k < Math.min(n, pick.length); k++) { const i = pick[k].i; e.mark[i] = dur; damageEnemy(g, i, dmg, { noCrit: true, elem: flame }); }
+      for (let k = 0; k < Math.min(n, pick.length); k++) { const P = pick[k]; if (P.sp) { P.sp.mark = dur; g.damageSpecial(P.sp, dmg, m.x, m.z, { noCrit: true, elem: flame }); } else { e.mark[P.i] = dur; damageEnemy(g, P.i, dmg, { noCrit: true, elem: flame }); } }
       addFx(g, { type: 'ring', x: m.x, y: m.y, z: m.z, r: 1.2, dur: 0.3, color: 0xb070ff });
-      for (let k = 0; k < Math.min(n, pick.length, 4); k++) { const i = pick[k].i; addFx(g, { type: 'bolt', x: m.x, y: m.y - 0.3, z: m.z, x2: e.x[i], y2: e.y[i] + 0.9, z2: e.z[i], dur: 0.15, color: 0x5fe8ff, seed: i }); }   // cyan rune bolts
+      for (let k = 0; k < Math.min(n, pick.length, 4); k++) { const P = pick[k], i = P.i; addFx(g, { type: 'bolt', x: m.x, y: m.y - 0.3, z: m.z, x2: P.sp ? P.sp.x : e.x[i], y2: P.sp ? P.sp.y + 1.2 : e.y[i] + 0.9, z2: P.sp ? P.sp.z : e.z[i], dur: 0.15, color: 0x5fe8ff, seed: P.sp ? 99 : i }); }   // cyan rune bolts
       g.castAt = g.t;
       return true;
     }
     case 'homing': {
       const range = param(m, 'range'); let t = -1, bd = range * range;
-      const c = g.grid.query(m.x, m.z, range, buf);
+      { const buf = takeBuf(), c = g.grid.query(m.x, m.z, range, buf);
       for (let k = 0; k < c; k++) { const i = buf[k]; if (!e.alive[i] || e.mark[i] <= 0) continue; const dx = e.x[i] - m.x, dz = e.z[i] - m.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; t = i; } }
-      if (t < 0) t = g.nearest(m.x, m.z, range);
-      if (t < 0) return false;
-      const hi = fireHoming(g, m.x, m.y, m.z, t, param(m, 'speed') || A.speed, 2.5, dmg); if (hi >= 0) g.shots.flame[hi] = flame; return true;
+      freeBuf(); }
+      let tsp = null; for (const sp of g.sp) { if (!sp.alive || sp.dead || sp.mark <= 0) continue; const dx = sp.x - m.x, dz = sp.z - m.z, d = dx * dx + dz * dz, rr = range + sp.radius; if (d < rr * rr && d < bd) { bd = d; tsp = sp; t = -1; } }       // a marked boss or elite is the first choice
+      if (t < 0 && !tsp) t = g.nearest(m.x, m.z, range);
+      if (t < 0 && !tsp) tsp = nearestSpecial(g, m.x, m.z, range);
+      if (t < 0 && !tsp) return false;
+      const hi = fireHoming(g, m.x, m.y, m.z, t, param(m, 'speed') || A.speed, 2.5, dmg, tsp); if (hi >= 0) g.shots.flame[hi] = flame; return true;
     }
     case 'cone': {
       const range = param(m, 'range'), arc = param(m, 'arc'), i = g.nearest(m.x, m.z, range);
       let tx, tz;
       if (i >= 0) { tx = e.x[i] - m.x; tz = e.z[i] - m.z; } else { const sp = nearestSpecial(g, m.x, m.z, range); if (!sp) return false; tx = sp.x - m.x; tz = sp.z - m.z; }
       const l = Math.sqrt(tx * tx + tz * tz) || 1, fx = tx / l, fz = tz / l, cosA = cos(arc / 2 * Math.PI / 180);
-      const c = g.grid.query(m.x, m.z, range, buf);
+      const buf = takeBuf(), c = g.grid.query(m.x, m.z, range, buf);
       for (let k = 0; k < c; k++) {
         const j = buf[k]; if (!e.alive[j]) continue;
         const dx = e.x[j] - m.x, dz = e.z[j] - m.z, d = Math.sqrt(dx * dx + dz * dz);
         if (d < range && d > 0.01 && (dx / d) * fx + (dz / d) * fz > cosA) damageEnemy(g, j, dmg, { elem: flame, kx: dx, kz: dz });
       }
+      freeBuf();
       for (const sp of g.sp) { if (!sp.alive || sp.dead) continue; const dx = sp.x - m.x, dz = sp.z - m.z, d = Math.sqrt(dx * dx + dz * dz); if (d < range + sp.radius && (dx / (d || 1)) * fx + (dz / (d || 1)) * fz > cosA) g.damageSpecial(sp, dmg, m.x, m.z, { elem: flame }); }
       addFx(g, { type: 'fan', x: m.x, y: m.y - 0.8, z: m.z, r: range, arc, dx: fx, dz: fz, dur: 0.25, color: 0xffa848 });
       return true;
@@ -144,16 +151,16 @@ export function onPlayerHurt(g, self) {
 }
 const copyEff = n => 1 + (K.copyCap - 1) * (n - 1) / ((n - 1) + K.copyK);        // n copies act as 1, 2, 2.5, 2.8 ... toward x4
 function locketNova(g) {
-  const guard = g.mods.armour * 4, base = K.locketPerGuard * Math.min(guard, K.locketGuardCap) * copyEff(g.mods.locket);
+  const guard = g.mods.armour * K.guardPerArmour, base = K.locketPerGuard * Math.min(guard, K.locketGuardCap) * copyEff(g.mods.locket);
   if (base <= 0) return;
-  g.curSrc = g.srcIndex('thornbound-locket'); explode(g, g.p.x, g.p.y, g.p.z, 4, 0, base, 0xd8b24a, 'Thornbound Locket'); g.curSrc = 0;
+  const prev = g.curSrc; g.curSrc = g.srcIndex('thornbound-locket'); explode(g, g.p.x, g.p.y, g.p.z, K.locketRadius, 0, base, 0xd8b24a, 'Thornbound Locket'); g.curSrc = prev;       // the attack that set this off keeps its own source (and its Pack Drill) for the rest of its hits
 }
 function fireTrap(g, s) {
-  const T = TRAPS[s.id], p = g.p, e = g.en, lv = s.level - 1; g.curSrc = g.srcIndex(s.id);
+  const T = TRAPS[s.id], p = g.p, e = g.en, lv = s.level - 1, prevSrc = g.curSrc; g.curSrc = g.srcIndex(s.id);
   s.cd = T.recharge * pow(T.rechargePerLevel, lv) * (1 - g.mods.trapRecharge); g.trapsFired++; g.emit('sound', 3);
   const dmg = T.dmg * (1 + T.dmgPerLevel * lv);
   addFx(g, { type: 'ring', x: p.x, y: p.y, z: p.z, r: T.radius, dur: 0.5, color: s.id === 'gust-ward' ? 0xa0e0ff : 0xe8c56a });
-  const c = g.grid.query(p.x, p.z, T.radius, buf);
+  const buf = takeBuf(), c = g.grid.query(p.x, p.z, T.radius, buf);
   for (let k = 0; k < c; k++) {
     const i = buf[k]; if (!e.alive[i]) continue;
     const dx = e.x[i] - p.x, dz = e.z[i] - p.z;
@@ -161,7 +168,8 @@ function fireTrap(g, s) {
     if (s.id === 'gust-ward') damageEnemy(g, i, dmg, { noCrit: true, kx: dx, kz: dz, knock: T.knock });
     else { e.root[i] = T.root; damageEnemy(g, i, dmg, { noCrit: true }); }
   }
-  g.event('banner', T.name + ' fires!'); g.curSrc = 0;
+  freeBuf();
+  g.event('banner', T.name + ' fires!'); g.curSrc = prevSrc;
 }
 export function updateTraps(g, dt) {
   const p = g.p, e = g.en;
@@ -170,8 +178,9 @@ export function updateTraps(g, dt) {
     if (s.cd > 0) { s.cd -= dt; continue; }
     const T = TRAPS[s.id];
     if (T.trigger === 'crowd') {
-      const c = g.grid.query(p.x, p.z, T.radius + 6, buf); let n = 0;
+      const buf = takeBuf(), c = g.grid.query(p.x, p.z, T.radius + 6, buf); let n = 0;
       for (let k = 0; k < c; k++) { const i = buf[k]; if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z; if (dx * dx + dz * dz < T.radius * T.radius) n++; }
+      freeBuf();
       if (n >= T.crowd) fireTrap(g, s);
     }
   }

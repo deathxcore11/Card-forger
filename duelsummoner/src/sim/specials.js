@@ -8,7 +8,7 @@ import { K } from '../data/tuning.js';
 import { SCALE, specialSize } from '../data/scale.js';
 import { mightBracket, targetBracket, sourceBracket, affinityBracket, overtimeBracket, sourceClass } from './ledger.js';
 import { ELEMENTS } from '../data/elements.js';
-import { FIELD_RULES } from '../data/cards.js';
+import { FIELD_RULES, MARKS } from '../data/cards.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { steerVec, walk, settle } from './steer.js';
 import { addTele, addFx, explode, dropPickup, PICK_XP } from './combat.js';
@@ -19,7 +19,7 @@ const sv = { x: 0, z: 0, d: 0, direct: true }, spot = { x: 0, y: 0, z: 0 };
 const DEG = Math.PI / 180;
 
 export function make(kind, name, S, x, y, z) {
-  return { size: SCALE.engineRef[kind === 'idol' ? 'idol' : kind], k: 1, kr: 1, kind, name, alive: true, dead: false, x, y, z, px: x, py: y, pz: z, pface: 0, vy: 0, dx: 0, dz: 0, face: 0, hp: S.hp, maxHp: S.hp, radius: S.radius, st: 0, stT: 0, cd: 0, atk: 0.5, flash: 0, twin: null, reviveT: 0, aux: 0 };
+  return { size: SCALE.engineRef[kind === 'idol' ? 'idol' : kind], k: 1, kr: 1, kind, name, alive: true, dead: false, x, y, z, px: x, py: y, pz: z, pface: 0, vy: 0, dx: 0, dz: 0, face: 0, hp: S.hp, maxHp: S.hp, radius: S.radius, st: 0, stT: 0, cd: 0, atk: 0.5, flash: 0, twin: null, reviveT: 0, aux: 0, mark: 0, burn: 0, burnDps: 0 };
 }
 export function spawnWarden(g) {
   if (!spotNear(g, spot)) { spot.x = g.p.x + 25; spot.z = g.p.z; spot.y = heightAt(spot.x, spot.z); }
@@ -65,10 +65,12 @@ export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
   // brackets 1, 2, 3, 4 and 8, the same as for the swarm: Might, the Drill of the source, the hit's element, Hunter, Overtime
   const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0); let cls = g.srcClassOf[g.curSrc]; if (cls === undefined) cls = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]);
   let b3 = 1; if (el) { let sum = 0, cnt = 0; for (let k = 0; k < 8; k++) if (el & (1 << k)) { sum += g.mods.aff[k]; cnt++; } b3 = affinityBracket(sum / cnt); }
-  let d = dmg * mightBracket(g.mods.dmgMult) * targetBracket(g.mods.bossDmg) * (cls >= 0 ? sourceBracket(g.mods.drill[cls]) : 1) * b3 * (g.otStep > 0 ? overtimeBracket(g.otStep) : 1);
+  const b4m = sp.mark > 0 ? targetBracket(MARKS.bonus + g.mods.markBonus) : 1;       // bracket 4 reads the mark on a boss or an elite too
+  let d = dmg * b4m * mightBracket(g.mods.dmgMult) * targetBracket(g.mods.bossDmg) * (cls >= 0 ? sourceBracket(g.mods.drill[cls]) : 1) * b3 * (g.otStep > 0 ? overtimeBracket(g.otStep) : 1);
   let crit = 0;
   if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) { d *= K.critBase; crit = 1; }
   g.logDealt(d); g.emit('hit', d, sp.x, sp.z, crit | ((o.elem || 0) << 1));
+  if (el & ELEMENTS.fire.bit) { sp.burn = ELEMENTS.fire.burn.dur + g.mods.burnDur; sp.burnDps = ELEMENTS.fire.burn.dps + g.mods.burnDps; }
   sp.hp -= d; sp.flash = 0.12;
   if (sp.hp > 0) return false;
   onDeath(g, sp);
@@ -119,6 +121,8 @@ export function updateSpecials(g, dt) {
     if (!sp.alive) continue;
     const mul = g.dmgMul * (sp.enrage || 1), kr = sp.kr || 1;
     if (sp.flash > 0) sp.flash -= dt;
+    if (sp.mark > 0) sp.mark -= dt;
+    if (sp.burn > 0) { sp.burn -= dt; const bd = sp.burnDps * dt; sp.hp -= bd; { const prev = g.curSrc; g.curSrc = g.srcIndex('burn'); g.logDealt(bd); g.curSrc = prev; } if (sp.hp <= 0) { onDeath(g, sp); continue; } }
     const dx = p.x - sp.x, dz = p.z - sp.z, d = Math.sqrt(dx * dx + dz * dz) || 0.001;
 
     if (sp.kind === 'warden') {

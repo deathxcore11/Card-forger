@@ -89,7 +89,7 @@ test('Card Chests: price rises with each chest, rarity is shown, you must be abl
 test('items change the run: armour, free chests, discount, regen, coins, luck, dash cooldown, air jump', () => {
   const g = quiet(new Game(9)); g.god = false;
   addItem(g, 'bronze-scale'); g.p.hp = 100; g.hurtPlayer(8); assert.equal(Math.round(g.p.hp), 93, '+1 armour');
-  g.hurtPlayer(1); assert.equal(Math.round(g.p.hp), 92, 'never below 1 damage');
+  g.hurtPlayer(1); assert.ok(Math.abs(g.p.hp - (100 - 9 * 5 / 6)) < 1e-9, 'a small hit is cut by the same sixth, no flat floor: ' + g.p.hp);
   addItem(g, 'jar-of-avarice'); g.world.opened = 4; assert.equal(chestPrice(g), 0, 'every 5th chest is free');
   addItem(g, 'traders-seal'); g.world.opened = 1; assert.equal(chestPrice(g), Math.round(66 * 0.75));
   addItem(g, 'clay-heart'); assert.equal(g.p.maxHp, 115); addItem(g, 'bandaged-hand'); g.p.hp = 50; run(g, 5); assert.ok(g.p.hp >= 50.9, 'regen');

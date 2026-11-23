@@ -258,8 +258,9 @@ function countUp(id, to) {
 }
 const KCOL = KIND_LIST.map(k => k.color), PCOL = [0xb48cff, 0xf0c040, 0xff5a7a];
 let lastBlockTick = 0;
+const groundY = (x, z) => Math.min(heightAt(x, z), 40);       // the one ground height for marks drawn on the map (view only: sim events carry no y)
 function onEvent(type, a, b, c, data) {
-  if (actors.rig) { if (type === 'hurt') actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
+  if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(data); }       // a refused chest pulses its price tag instead of a banner
   else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); }
   else if (type === 'levelup') { fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
@@ -268,9 +269,9 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'block') { fx.burst(data.x, data.y, data.z, 5, 0xc8d0e0, 2.6, 1.5, 0.1, 0.22, 8); fx.ring(data.x, data.y, data.z, 0.7, 0xc8d0e0, 0.18); if (performance.now() - lastBlockTick > 90) { lastBlockTick = performance.now(); tone(150, 0.06, 0.05, 'square'); } }      // the Warden's shield took a hit: a small grey spark and a dull tick, nothing else
   else if (type === 'ace') { fx.ring(a, b, c, 4, 0xffd23f, 0.5); fx.shake(0.1); showBanner('An Ace approaches'); }
   else if (type === 'trophy') { fx.ring(a, b, c, 4.5, 0xffe9a0, 0.6); fx.burst(a, b + 1, c, 24, 0xffe9a0, 3, 6, 0.25, 0.9, 6); fx.shake(0.12); }
-  else if (type === 'kill') fx.burst(b, 0.9, c, 6, KCOL[a] || 0xaaaaaa, 3.5, 4, 0.28, 0.55, 14);
+  else if (type === 'kill') fx.burst(b, groundY(b, c) + 0.9, c, 6, KCOL[a] || 0xaaaaaa, 3.5, 4, 0.28, 0.55, 14);
   else if (type === 'pickup') fx.burst(ip.x, ip.y + 1.1, ip.z, 3, PCOL[a] || 0xffffff, 1.6, 2.5, 0.14, 0.35, 0);
-  else if (type === 'hurt') fx.shake(b ? 0.55 : 0.28);
+  else if (type === 'hurt') { if (!c) fx.shake(b ? 0.55 : 0.28); }       // the player's own cost (c is 1) neither flinches nor shakes
   else if (type === 'announce') sigils.push({ x: b, z: c, until: actors.vt + 6.5, next: 0 });
   else if (type === 'gatewake') { fx.shake(0.5); fx.beam(game.map.gate.x, 4, game.map.gate.z, 0xffe9a0, 6); fx.ring(game.map.gate.x, 4, game.map.gate.z, 8, 0xffe9a0, 1); }
   else if (type === 'descent') { fx.flash(1); fx.shake(0.4); }
@@ -297,10 +298,10 @@ function fusionMarker() {                                               // light
 function ringMarks() {
   const now = actors.vt;
   fusionMarker();
-  for (let i = sigils.length - 1; i >= 0; i--) { const s = sigils[i]; if (now > s.until) { sigils.splice(i, 1); continue; } if (now >= s.next) { s.next = now + 0.5; fx.ring(s.x, 0.1, s.z, 4, 0xe8b84a, 0.7); } }
+  for (let i = sigils.length - 1; i >= 0; i--) { const s = sigils[i]; if (now > s.until) { sigils.splice(i, 1); continue; } if (now >= s.next) { s.next = now + 0.5; fx.ring(s.x, groundY(s.x, s.z) + 0.1, s.z, 4, 0xe8b84a, 0.7); } }
   if (game.mode !== 'classic') {
-    if (game.circle && now >= (ringMarks.c || 0)) { ringMarks.c = now + 0.5; fx.ring(game.circle.x, 0.1, game.circle.z, 3.5, 0xc9a3ff, 0.7); }
-    if (game.altar && !game.altar.used && now >= (ringMarks.a || 0)) { ringMarks.a = now + 0.5; fx.ring(game.altar.x, 0.1, game.altar.z, 3.5, 0xffd56a, 0.7); }
+    if (game.circle && now >= (ringMarks.c || 0)) { ringMarks.c = now + 0.5; fx.ring(game.circle.x, groundY(game.circle.x, game.circle.z) + 0.1, game.circle.z, 3.5, 0xc9a3ff, 0.7); }
+    if (game.altar && !game.altar.used && now >= (ringMarks.a || 0)) { ringMarks.a = now + 0.5; fx.ring(game.altar.x, groundY(game.altar.x, game.altar.z) + 0.1, game.altar.z, 3.5, 0xffd56a, 0.7); }
   }
 }
 const seenSp = new Set(), PLATES = { warden: 'THE SEALED WARDEN', idol: 'TWIN JACKAL IDOLS', pharaoh: 'THE HOLLOW PHARAOH' };

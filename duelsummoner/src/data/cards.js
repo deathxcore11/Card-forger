@@ -2,7 +2,7 @@
 // Rules (owner, 22 Nov): monsters level 1 to 10 with three forms (levels 1, 5, 10); Fusion needs both named partners at level 10;
 // a Fusion is a new monster from level 1 with its own three forms; Spells and Traps level 1 to 5 and never fuse.
 export const XP = { table: [9.7,14.7,20.3,26.3,32.9,39.9,47.5,55.5,64.1,73.1,82.7,92.7,103.3,114.3,125.9,137.9,150.5,163.5,177.1,191.1,205.7,220.7,236.3,252.3], tail: 1.07, base: 2.5, perLevel: 0.35, quad: 0.038, early: 0, earlyTo: 9 };         // xp to go from level L to L+1 = base + perLevel * L + quad * L * L
-export const LEVELS = { monsterMax: 10, fusedMax: 10, spellMax: 5, damagePerLevel: 0.15 };
+export const LEVELS = { monsterMax: 10, fusedMax: 10, spellMax: 5 };
 export const OFFER = {
   size: 3, redraws: 2, banishes: 1, passCoins: 6,
   rarityOdds: { common: 60, rare: 28, epic: 10, legendary: 2 },
@@ -11,7 +11,7 @@ export const OFFER = {
   chestRarityFloor: 'rare',
   guaranteeMonsterUpgrade: true                                       // every offer holds at least one upgrade for a monster you already field
 };
-export const FIELD_RULES = { monsterZones: 4, spellTrapZones: 4, fusionLevel: 10, critChance: 0.05, critMult: 2, playerCardDamage: 2, playerCardCooldown: 0.8 };
+export const FIELD_RULES = { monsterZones: 4, spellTrapZones: 4, fusionLevel: 10, critChance: 0.05, playerCardDamage: 2, playerCardCooldown: 0.8 };
 export const MARKS = { duration: 6, bonus: 0.30 };
 
 // Three forms per monster: young (level 1), grown (5), full (10). Each form is its own model; until more art arrives
@@ -39,7 +39,7 @@ export const MONSTERS = {
 };
 export const FUSIONS = {
   'twinflare-tyrant': { name: 'Twinflare Tyrant', type: 'Dragon', elements: ['fire'], flame: true, from: ['ember-wyvern', 'cinder-hatchling'], forms: forms('twinflare-tyrant'),
-    text: '60 degree cone, 14 m, about 8 damage a hit at level 1. Starts stronger than a level 10 basic.',
+    text: '60 degree cone, 14 m, about 11 damage a hit at level 1. Starts stronger than a level 10 basic.',
     attack: { kind: 'cone', dmg: 2.5, cd: 0.9, range: 14, arc: 60 }, fx: { 3: { range: 2 }, 6: { arc: 20 }, 10: { range: 3, arc: 20 } }, fxText: { 3: 'cone +2 m', 6: 'cone wider', 10: 'longest, widest cone' } },
   'astral-magus': { name: 'Astral Magus', type: 'Spellcaster', elements: ['lightning'], from: ['rune-apprentice', 'sigil-familiar'], forms: forms('astral-magus'),
     text: 'Marks 6. Marked enemies explode on defeat: 4 m, 8 damage.',
@@ -54,7 +54,7 @@ export function formOf(id, level) {
 // Spells: levels are stacks. "per" values are added per stack.
 export const SPELLS = {
   'toll-of-ash': { name: 'Toll of Ash', rarity: 'rare', kind: 'spell', text: 'Every 5 s you pay 3% of your current health (never below 1). +10% Might per level.', per: { dmgMult: 0.10, toll: 1 } },
-  'kindling-rite': { name: 'Kindling Rite', rarity: 'rare', kind: 'spell', text: 'Fire burns +1.4 damage a second, and +1.4 s per level.', per: { burnDps: 1.4, burnDur: 1.4 } },
+  'kindling-rite': { name: 'Kindling Rite', rarity: 'rare', kind: 'spell', text: 'For each level, fire burns +1.4 damage a second and 1.4 s longer.', per: { burnDps: 1.4, burnDur: 1.4 } },
   'deep-marks': { name: 'Deep Marks', rarity: 'rare', kind: 'spell', text: 'Marks last 4 s longer and add +14% damage taken per level.', per: { markDur: 4, markBonus: 0.14 } },
   'pack-drill': { name: 'Pack Drill', rarity: 'rare', kind: 'spell', text: 'Monster hits do 21% more per level. The Source bracket: it rewards committing to one kind of damage, up to x3.', per: { drill: [0, 0.21] } },
   'elemental-litany': { name: 'Elemental Litany', rarity: 'rare', kind: 'spell', text: '+17% damage in each element for every monster of it you field, per level. The Affinity bracket.', per: { affPerElement: 0.17 } },

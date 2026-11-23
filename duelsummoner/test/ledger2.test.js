@@ -23,7 +23,7 @@ test('self-damage: never kills, 1 HP floor, grants no i-frames, ignores dash i-f
   g.p.hp = 0.5; g.hurtPlayer(10, false, 'Toll', 1); assert.equal(g.p.hp, 0.5, 'LP already below 1 is not healed to 1');
   const h = mk(); h.p.dashT = 0.2; h.p.hp = 50; h.hurtPlayer(10, false, 'enemy'); assert.equal(h.p.hp, 50, 'a dash dodges an enemy hit'); h.hurtPlayer(10, false, 'Toll', 1); assert.ok(h.p.hp < 50, 'but not a self cost');
   const k = mk(); k.p.hp = 5; k.hurtPlayer(50, false, 'enemy'); assert.equal(k.over, true, 'enemy damage still kills'); assert.equal(k.killedBy, 'enemy');
-  const t = mk(); t.mods.armour = 3; t.p.hp = 50; t.hurtPlayer(10, false, 'enemy'); assert.equal(t.p.hp, 43); t.p.hp = 50; t.hurtPlayer(10, false, 'enemy', 4); assert.equal(t.p.hp, 40, 'TRUE damage ignores Guard');
+  const t = mk(); t.mods.armour = 3; t.p.hp = 50; t.hurtPlayer(10, false, 'enemy'); assert.ok(Math.abs(t.p.hp - 43.75) < 1e-9, 'armour 3 = 12 Guard = 37.5% off: ' + t.p.hp); t.p.hp = 50; t.hurtPlayer(10, false, 'enemy', 4); assert.equal(t.p.hp, 40, 'TRUE damage ignores Guard');
 });
 
 test('Toll of Ash: pays 3% of current LP every 5 s, never kills, adds +10% Might a level', () => {

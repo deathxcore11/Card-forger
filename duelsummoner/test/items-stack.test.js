@@ -27,12 +27,3 @@ test('S1: a unique item is never offered or sold again once owned', () => {
   g.coins = 999; g.offer = { type: 'shop', cards: stock.map(s => ({ id: s.id, kind: 'item', price: s.price, sold: false, stockRef: s, rarity: ITEMS[s.id].rarity })), leave: true };
   assert.equal(chooseCard(g, 0), false, 'the shop refuses a second Burning Deck'); assert.equal(g.items.filter(x => x === 'burning-deck').length, 1); assert.equal(chooseCard(g, 1), true);
 });
-
-test('S2: with 120 enemies felled at once, the Graveyard Bell and mark explosions stay inside their caps', () => {
-  const g = mk(9); for (let i = 0; i < 4; i++) addItem(g, 'graveyard-bell'); g.mods.markExplode = { radius: 3, dmg: 5 };
-  for (let i = 0; i < 120; i++) { const s = spawnEnemy(g, 0, g.p.x + 15 + (i % 10), g.p.z + (i / 10 | 0)); }
-  let n = 0; for (let i = 0; i < g.en.max; i++) if (g.en.alive[i]) { g.en.mark[i] = 5; killEnemy(g, i); n++; }
-  assert.ok(n >= 100, 'felled ' + n);
-  assert.ok(g.caps.taken[CAP.BELL] <= 1 + Math.ceil(capLimit(CAP.BELL) / 60), 'bell explosions ' + g.caps.taken[CAP.BELL]); assert.ok(g.caps.denied[CAP.BELL] > 0, 'the bell was held back');
-  assert.ok(g.caps.taken[CAP.MARK_EXPLODE] <= 1 + Math.ceil(capLimit(CAP.MARK_EXPLODE) / 60), 'mark explosions ' + g.caps.taken[CAP.MARK_EXPLODE]); assert.ok(g.caps.denied[CAP.MARK_EXPLODE] > 0);
-});

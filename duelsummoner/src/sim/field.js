@@ -52,13 +52,13 @@ export function recompute(g) {
   for (const s of f.spells) {
     if (!s || !SPELLS[s.id]) continue;
     const P = SPELLS[s.id].per, n = s.level;
-    if (P.burnDps) { M.burnDps += P.burnDps; M.burnDur += P.burnDur * n; }
+    if (P.burnDps) { M.burnDps += P.burnDps * n; M.burnDur += P.burnDur * n; }
     if (P.markDur) { M.markDur += P.markDur * n; M.markBonus += P.markBonus * n; }
     if (P.cardRate) { M.cardRate += P.cardRate * n; note('cardRate', SPELLS[s.id].name, P.cardRate * n); }
     if (P.move) { M.move += P.move * n; M.dash += P.dash * n; note('move', SPELLS[s.id].name, P.move * n); }
     if (P.maxLp) { M.maxLp += P.maxLp * n; note('maxLp', SPELLS[s.id].name, P.maxLp * n); }
     if (P.pickup) { M.pickup += P.pickup * n; M.xp += P.xp * n; note('pickup', SPELLS[s.id].name, P.pickup * n); note('xp', SPELLS[s.id].name, P.xp * n); }
-    if (P.burnDps) note('burnDps', SPELLS[s.id].name, P.burnDps); if (P.markBonus) note('markBonus', SPELLS[s.id].name, P.markBonus * n);
+    if (P.burnDps) note('burnDps', SPELLS[s.id].name, P.burnDps * n); if (P.markBonus) note('markBonus', SPELLS[s.id].name, P.markBonus * n);
     if (P.drill) M.drill[P.drill[0]] += P.drill[1] * n;                                  // bracket 2: invest in one kind of source
     if (P.affPerElement) { for (const m of f.monsters) if (m) { const D = MONSTERS[m.id] || FUSIONS[m.id]; if (D) for (const el of D.elements) M.aff[ELEMENTS[el].bit === 1 ? 0 : ELEMENTS[el].bit === 2 ? 1 : ELEMENTS[el].bit === 4 ? 2 : ELEMENTS[el].bit === 8 ? 3 : ELEMENTS[el].bit === 16 ? 4 : ELEMENTS[el].bit === 32 ? 5 : ELEMENTS[el].bit === 64 ? 6 : 7] += P.affPerElement * n; } }       // bracket 3: more for every monster that shares the element
     if (P.toll) { M.toll += n; M.dmgMult += P.dmgMult * n; note('dmgMult', SPELLS[s.id].name, P.dmgMult * n); }
@@ -67,7 +67,8 @@ export function recompute(g) {
   // rate stats have a ceiling (Tempo and Draw approach x3): linear up to +100%, then a knee
   M.cardRateRaw = M.cardRate; M.monsterRateRaw = M.monsterRate;
   M.cardRate = knee(M.cardRate, K.drawKnee, K.drawKneeK); M.monsterRate = knee(M.monsterRate, K.tempoKnee, K.tempoKneeK);
-  M.raw = {}; for (const k of Object.keys(ITEM_CAPS)) { M.raw[k] = M[k]; if (M[k] > ITEM_CAPS[k]) M[k] = ITEM_CAPS[k]; }          // ceilings on stacked stats; the raw sum stays for the stat panel
+  M.raw = {}; for (const k of Object.keys(ITEM_CAPS)) { M.raw[k] = M[k]; if (M[k] > ITEM_CAPS[k]) M[k] = ITEM_CAPS[k]; }
+  M.raw.pickup = M.pickup; if (M.pickup > K.magCap) M.pickup = K.magCap;       // Magnet is clamped at K.magCap (+180%), not at the old item ceiling that cut Collector's Eye 5 to +10%          // ceilings on stacked stats; the raw sum stays for the stat panel
   g.sheetSrc = src; g.mods = M;
   const maxHp = g.oaths && g.oaths.glass ? 1 : g.cfgHp + M.maxLp;                  // Glass Oath: 1 LP and it cannot be raised
   if (maxHp !== g.p.maxHp) g.p.maxHp = maxHp;

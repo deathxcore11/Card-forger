@@ -85,10 +85,12 @@ export class Props {
     for (const m of this.chestMeshes) { this.G.remove(m); if (m.geometry) m.geometry.dispose(); } this.chestMeshes = []; this._chestN = world.cchests.length; this.chestRange = [];
     const lit = { pos: [], nor: [], col: [], hide: [] }, unlit = { pos: [], nor: [], col: [], hide: [] }, M = new T.Matrix4(), R = new T.Matrix4(), col = new T.Color();
     world.cchests.forEach((c, ci) => {
-      const piece = (geo, x, y, z, hex, un, rx) => { M.makeTranslation(c.x + x, c.y + y, c.z + z); if (rx) { R.makeRotationX(rx); M.multiply(R); } const g2 = geo.toNonIndexed(); g2.applyMatrix4(M); col.setHex(hex); const o = un ? unlit : lit, st = o.pos.length / 3, p = g2.attributes.position, n = g2.attributes.normal; for (let i = 0; i < p.count; i++) { o.pos.push(p.getX(i), p.getY(i), p.getZ(i)); if (n) o.nor.push(n.getX(i), n.getY(i), n.getZ(i)); o.col.push(col.r, col.g, col.b); o.hide.push(c.open ? 1 : 0); } return [un ? 1 : 0, st, p.count]; };
-      const lid = c.trophy ? piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.25, -0.55, 0xeee4c8, false, -1.1) : piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.05, 0, 0x2a2026, false);
-      this.chestRange[ci] = [piece(new T.BoxGeometry(1.5, 0.9, 1.0), 0, 0.45, 0, c.trophy ? 0xd9cdb0 : 0x2a2026, false), lid, piece(new T.BoxGeometry(1.7, 0.18, 1.2), 0, 0.8, 0, 0xe0b765, true)];
-      if (!c.trophy) { const ch = [piece(new T.BoxGeometry(0.14, 1.4, 1.14), -0.45, 0.78, 0, 0xe0b765, true), piece(new T.BoxGeometry(0.14, 1.4, 1.14), 0.45, 0.78, 0, 0xe0b765, true)]; this.chestRange[ci].push(...ch); }       // black lacquer body with two gold chains (gold is reserved for things you can use)
+      const piece = (geo, x, y, z, hex, un, rx, when) => {       // when: 'c' shows only while closed, 'o' only while open, none always
+        const hv = when === 'c' ? (c.open ? 1 : 0) : when === 'o' ? (c.open ? 0 : 1) : 0; M.makeTranslation(c.x + x, c.y + y, c.z + z); if (rx) { R.makeRotationX(rx); M.multiply(R); } const g2 = geo.toNonIndexed(); g2.applyMatrix4(M); col.setHex(hex); const o = un ? unlit : lit, st = o.pos.length / 3, p = g2.attributes.position, n = g2.attributes.normal; for (let i = 0; i < p.count; i++) { o.pos.push(p.getX(i), p.getY(i), p.getZ(i)); if (n) o.nor.push(n.getX(i), n.getY(i), n.getZ(i)); o.col.push(col.r, col.g, col.b); o.hide.push(hv); } return [un ? 1 : 0, st, p.count, when || '']; };
+      const lid = c.trophy ? piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.25, -0.55, 0xeee4c8, false, -1.1) : piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.05, 0, 0x2a2026, false, 0, 'c');
+      this.chestRange[ci] = [piece(new T.BoxGeometry(1.5, 0.9, 1.0), 0, 0.45, 0, c.trophy ? 0xd9cdb0 : 0x2a2026, false), lid, piece(new T.BoxGeometry(1.7, 0.18, 1.2), 0, 0.8, 0, 0xe0b765, true)];       // an opened chest keeps its body and its gold band
+      if (!c.trophy) { this.chestRange[ci].push(piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.25, -0.55, 0x2a2026, false, -1.1, 'o'));       // the lid thrown back
+        const ch = [piece(new T.BoxGeometry(0.14, 1.4, 1.14), -0.45, 0.78, 0, 0xe0b765, true, 0, 'c'), piece(new T.BoxGeometry(0.14, 1.4, 1.14), 0.45, 0.78, 0, 0xe0b765, true, 0, 'c')]; this.chestRange[ci].push(...ch); }       // black lacquer body with two gold chains (gold is reserved for things you can use)
       if (c.trophy) { const beam = new T.Mesh(new T.CylinderGeometry(0.28, 0.5, 18, 8, 1, true), basic(0xffd27a, { transparent: true, opacity: 0.4, depthWrite: false, side: T.DoubleSide })); beam.position.set(c.x, c.y + 9, c.z); this.G.add(beam); this.chestMeshes.push(beam); beam.userData.c = c; }
     });
     const hide = (mat) => { mat.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('void main() {', 'attribute float aHide;\nvoid main() {').replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed *= 1.0 - aHide;'); }; return mat; };
@@ -100,7 +102,7 @@ export class Props {
   }
   _syncChests(world, t) {
     const sets = [null, null]; for (const m of this.chestMeshes) if (m.userData.set !== undefined) sets[m.userData.set] = m;
-    world.cchests.forEach((c, ci) => { const open = !!c.open; if (open === this.chestOpen[ci]) return; this.chestOpen[ci] = open; for (const [which, st, n] of this.chestRange[ci]) { const m = sets[which]; if (!m) continue; const a = m.geometry.attributes.aHide; for (let i = 0; i < n; i++) a.array[st + i] = open ? 1 : 0; a.needsUpdate = true; } });
+    world.cchests.forEach((c, ci) => { const open = !!c.open; if (open === this.chestOpen[ci]) return; this.chestOpen[ci] = open; for (const [which, st, n, when] of this.chestRange[ci]) { const m = sets[which]; if (!m) continue; const a = m.geometry.attributes.aHide, hv = when === 'c' ? (open ? 1 : 0) : when === 'o' ? (open ? 0 : 1) : 0; for (let i = 0; i < n; i++) a.array[st + i] = hv; a.needsUpdate = true; } });
     for (const m of this.chestMeshes) if (m.userData.c) { m.visible = !m.userData.c.open; m.material.opacity = (0.3 + 0.12 * Math.sin(t * 3)) * (this.cam ? Math.max(0.1, Math.min(1, (Math.hypot(this.cam.x - m.position.x, this.cam.z - m.position.z) - 3) / 12)) : 1); }
   }
 

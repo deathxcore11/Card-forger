@@ -96,7 +96,7 @@ export function spawnAce(g, kindName) {
 const o = { x: 0, y: 0, z: 0, vy: 0, dx: 0, dz: 0 }, sv = { x: 0, z: 0, d: 0, direct: true };
 
 export function updateEnemies(g, dt) {
-  const e = g.en, p = g.p, E = CFG.enemy, mul = g.dmgMul;
+  const e = g.en, p = g.p, E = CFG.enemy, mul = g.dmgMul; let burnSum = 0;       // burn is summed over the tick and logged once, under its own source
   for (let i = 0; i < e.max; i++) {
     if (!e.alive[i]) continue;
     const K = KIND_LIST[e.kind[i]], kid = e.kind[i];
@@ -104,7 +104,7 @@ export function updateEnemies(g, dt) {
 
     if (e.mark[i] > 0) e.mark[i] -= dt;
     if (e.flash[i] > 0) e.flash[i] -= dt;
-    if (e.burn[i] > 0) { e.burn[i] -= dt; e.hp[i] -= e.burnDps[i] * dt; if (e.hp[i] <= 0) { killEnemy(g, i); continue; } }
+    if (e.burn[i] > 0) { const bd = e.burnDps[i] * dt; burnSum += bd; e.burn[i] -= dt; e.hp[i] -= bd; if (e.hp[i] <= 0) { killEnemy(g, i); continue; } }
     const rooted = e.root[i] > 0; if (rooted) e.root[i] -= dt;
 
     let dx = p.x - o.x, dz = p.z - o.z, d = Math.sqrt(dx * dx + dz * dz) || 0.001;
@@ -225,6 +225,7 @@ export function updateEnemies(g, dt) {
       }
     } else if (touching && K.touch > 0 && e.atk[i] <= 0 && g.grace <= 0 && !isDashing(p) && !g.over) { e.atk[i] = E.attackCd; g.hurtPlayer(K.touch * mul, false, K.name); }
   }
+  if (burnSum > 0) { const prev = g.curSrc; g.curSrc = g.srcIndex('burn'); g.logDealt(burnSum); g.curSrc = prev; }
 }
 
 import { moveXZ } from './terrain.js';

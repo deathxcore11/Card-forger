@@ -7,6 +7,8 @@ import { hashHex } from './hash.js';
 import { CLASSIC_MAP } from '../data/maps.js';
 import { loadMap, mapKey } from './terrain.js';
 import { makeCaps, refillCaps } from './caps.js';
+import { resetBufs } from './scratch.js';
+import { guardMit } from './ledger.js';
 import { K } from '../data/tuning.js';
 import { SCORE } from '../data/tuning.js';
 import { OATH_BY_ID } from '../data/progress.js';
@@ -82,7 +84,7 @@ export class Game {
     this.tickN = 0; this.levelUps = 0; this.trapsFired = 0; this.trapsSet = 0; this.maxMonsters = 0; this.gateOpenedAt = -1; this.godFusions = 0; this.secretFusions = 0;
     this.fusionIds = []; this.elementsUsed = 0; this.cardsPicked = []; this.fullForms = [];
     this.shades = []; this.shadeOn = false; this.shadeAge = 0; this.merged = 0; this.caps = makeCaps(); this.tollT = K.tollEverySec; this.upgHist = []; this.roleKills = { elite: 0, bossA: 0, bossB: 0, gate: 0, other: 0 }; this.callN = 0; this.endAt = -1; this.runs = this.runs || new Int32Array(6 * 4096); this.runN = 0;
-    this.srcNames = ['other']; this.srcClassOf = []; this.bracketDmg = new Float64Array(10); this.curSrc = 0; this.dealtLog = {}; this.fusionGuard = null;
+    this.srcNames = ['other']; this.srcClassOf = []; this.bracketDmg = new Float64Array(10); this.curSrc = 0; this.markDepth = 0; this.dealtLog = {}; this.fusionGuard = null;
     this.chestsOpenedTotal = 0; this.stagesCleared = 0; this.stageFacts = []; this.swiftChips = 0; this.duelOn = false; this.stagePrompt = ''; this.bDown = false; this.gateDown = null; this.desc = null; this.circle = null; this.altar = null; this.heat = 1;
     initRun(this);                                                  // opts.mode: 'classic' (default, one 8:00 stage), 'run' (three stages) or 'quick' (Quick Duel)
   }
@@ -174,6 +176,7 @@ export class Game {
   }
 
   _tick(dt, cmd) {
+    resetBufs();
     const e = this.en;
     if (mapKey() !== this.map.key) { loadMap(this.map); this.flow.rebuild(); }                   // the terrain is one global: reload if another game changed it
     this._snap();
@@ -252,15 +255,17 @@ export class Game {
 
   // flags (SPEC section 6): 1 SELF (the player's own cost: 1 HP floor, never kills, no grace, no dodge or Ward), 2 PIERCE, 4 TRUE (ignores Guard)
   hurtPlayer(n, big, src, flags) {
-    flags = flags | 0; const SELF = (flags & 1) !== 0;
-    this.emit('hurt', n, big ? 1 : 0, SELF ? 1 : 0, src || null);
-    if (this.god || this.over) return false;
-    if (!SELF && this.p.dashT > 0) return false;
-    if (!SELF && this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = Math.max(6, 20 / this.mods.talisman); this.event('banner', 'The Paper Talisman blocks the hit.'); return false; }
-    if (!(flags & 5)) n = Math.max(1, n - this.mods.armour);
+    flags = flags | 0; const SELF = (flags & 1) !== 0, bigF = big ? 1 : 0;
+    // order: over, dash (dodge), god (hurt, which keeps the golden record), Talisman (ward), Guard, LP, then 'hurt' for a hit that landed
+    if (this.over) return false;
+    if (!SELF && this.p.dashT > 0) { this.emit('dodge', n, bigF, 0, src || null); return false; }
+    if (this.god) { this.emit('hurt', n, bigF, SELF ? 1 : 0, src || null); return false; }
+    if (!SELF && this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = Math.max(6, 20 / this.mods.talisman); this.event('banner', 'The Paper Talisman blocks the hit.'); this.emit('ward', n, bigF, 0, src || null); return false; }
+    if (!(flags & 5)) n *= 1 - guardMit(this.mods.armour * K.guardPerArmour);       // Guard points through the hyperbola: never a flat cut, never above the cap
     this.p.hp = SELF ? Math.max(Math.min(this.p.hp, 1), this.p.hp - n) : Math.max(0, this.p.hp - n);       // the 1 HP floor never raises LP already below 1
     src = src || 'unknown'; this.damageBy[src] = (this.damageBy[src] || 0) + n; this.lastSrc = src;
     if (!SELF) { this.hitsTaken++; this.flash = 0.25; this.grace = CFG.enemy.grace; }
+    this.emit('hurt', n, bigF, SELF ? 1 : 0, src);
     onPlayerHurt(this, SELF);
     if (!SELF && this.p.hp <= 0) { this.over = true; this.killedBy = src; }
     return true;

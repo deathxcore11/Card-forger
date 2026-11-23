@@ -1,6 +1,6 @@
 // The Ledger, phase 1: curves, brackets and the level / form / tier multipliers (design/stat-engine/SPEC.md sections 2, 3 and 8).
 // Pure and integer-friendly: only + - * / and comparisons, so it is safe for the deterministic sim and the native port.
-// Not yet ported: the full stat sheet, caps, self-damage pipeline, reactions, Tuning rolls and duelist passives (see the integration notes).
+// Ported since: caps (caps.js), the hurt pipeline and Guard (game.js hurtPlayer). Still to come: reactions, Tuning rolls, duelist passives and the full stat sheet (see the integration notes).
 import { K } from '../data/tuning.js';
 import { MONSTERS, FUSIONS, SPELLS, TRAPS } from '../data/cards.js';
 import { ITEMS } from '../data/items.js';
@@ -9,7 +9,7 @@ import { ITEMS } from '../data/items.js';
 export const knee = (s, a, k) => (s <= a ? s : a + (s - a) * k / ((s - a) + k));
 export const hyp = (x, k) => x / (k + x);
 
-export const lvlMul = L => 1 + K.lvlSlope * (L - 1);                 // level 10 = 2.08
+export const lvlMul = L => 1 + K.lvlSlope * (L - 1);                 // level 10 = 2.512
 export const rateMul = L => 1 + K.lvlRate * (L - 1);                 // level 10 = 1.225
 export const formMul = L => (L >= K.formAt[2] ? K.form[2] : L >= K.formAt[1] ? K.form[1] : K.form[0]);
 export const tierMul = id => (FUSIONS[id] ? K.tier[1] : K.tier[0]);   // God and Secret Fusions are not built yet

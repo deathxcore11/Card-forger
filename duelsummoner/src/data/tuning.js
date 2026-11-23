@@ -10,7 +10,7 @@ export const K = Object.freeze({
   lutN: 1024,                       // curved stats are clamped to 0..1023 points
 
   // ---- curves (section 3) ----
-  guardK: 20, guardCap: 0.85,
+  guardK: 20, guardCap: 0.85, guardPerArmour: 4,       // 1 armour = 4 Guard points, which go through the same hyperbola as everything else (no flat subtraction, no 1 LP floor)
   sideK: 60, sideCap: 0.55,
   keenBase: 0.05, keenSpan: 0.75, keenK: 40,
   fervK: 30,
@@ -30,7 +30,6 @@ export const K = Object.freeze({
   otSlope: 0.04,                    // OVERTIME resolve: x(1 + 0.04 n) at Overtime step n (linear, so it always loses to the enemies' exponential growth)
   critBase: 1.75, critCap: 6.0,
   resoCap: 1.5,
-  resolvePerStep: 0.04,             // OVERTIME bracket, linear
   hiddenPer: 0.03, hiddenMax: 60, hiddenReveal: 25,
   // Rate and flat stats: SPEC.md v1 had no ceiling on these (found by the boundedness probe, see SIM-REPORT.md).
   tempoKnee: 1.0, tempoKneeK: 1.0,  // TEMPO (monster rate) -> x3.0 asymptote
@@ -39,7 +38,7 @@ export const K = Object.freeze({
   edgeCap: 3000,                    // EDGE flat, x100 units -> +30 flat per hit for a 1 s weapon
   edgeRefCd: 1.0,                   // Edge per hit = edge x weapon cd / edgeRefCd, so Edge adds the same DPS per target to every weapon
                                     // (flat per hit let a 0.1 s beam gain x18 from Edge while a God Fusion gained x1.3; skeptic review 22 Nov)
-  locketGuardCap: 120,              // Thornbound Locket reads min(Guard, this)
+  locketRadius: 4, locketGuardCap: 120,              // Thornbound Locket reads min(Guard, this)
   copyCap: 4, copyK: 2,             // on-event items (Locket, Recoil Seal, Bell): n copies act as 1 + (cap-1)(n-1)/((n-1)+k), x4 asymptote
 
   // ---- levels, forms, tiers (section 8) ----

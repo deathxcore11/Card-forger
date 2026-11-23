@@ -51,7 +51,7 @@ export class Minimap {
     c.fillStyle = '#e0452c'; const e = g.en; for (let i = 0; i < e.max; i++) if (e.alive[i] && ex(e.x[i], e.z[i])) c.fillRect(X(e.x[i]) - 1, X(e.z[i]) - 1, 2, 2);
     const W = g.world;
     if (W) {
-      for (const k of W.cchests || []) if (!k.open && ex(k.x, k.z)) sq(k.x, k.z, k.free || k.trophy ? '#ffffff' : '#ffd23f', r0);          // chests
+      for (const k of W.cchests || []) if (ex(k.x, k.z)) sq(k.x, k.z, k.open ? '#7a7a86' : k.free || k.trophy ? '#ffffff' : '#ffd23f', r0);          // chests
       if (W.relic && !W.relic.taken && ex(W.relic.x, W.relic.z)) {                                                           // the screen-clear relic: a white four-point star with a dark edge, 1.6 times a chest mark, only once the ground there is explored
       const cx = X(W.relic.x), cy = X(W.relic.z), R = r0 * 1.6 * 1.5, q = R * 0.28; c.beginPath(); c.moveTo(cx, cy - R); c.lineTo(cx + q, cy - q); c.lineTo(cx + R, cy); c.lineTo(cx + q, cy + q); c.lineTo(cx, cy + R); c.lineTo(cx - q, cy + q); c.lineTo(cx - R, cy); c.lineTo(cx - q, cy - q); c.closePath();
       c.fillStyle = '#ffffff'; c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#1a1020'; c.stroke();

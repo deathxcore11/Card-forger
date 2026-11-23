@@ -1,4 +1,5 @@
-﻿// Balance harness: the player bot plays Stage 1 (or the whole run) on many seeds at a difficulty, in parallel worker threads.
+const DUELIST = (process.argv.find(a => a.startsWith('--duelist=')) || '').slice(10) || process.env.DUELIST || 'kael';       // node tools/balance.mjs --duelist=mira
+// Balance harness: the player bot plays Stage 1 (or the whole run) on many seeds at a difficulty, in parallel worker threads.
 // GOD=1 makes the bot invulnerable, to measure pacing (level-ups, picks, Fusion) independent of survival.
 // node tools/balance.mjs [seeds=20] [difficulty=medium] [stages=1|3] [bot=world|plain]
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
@@ -22,7 +23,7 @@ if (isMainThread) {
   console.log('picks in 7 min: avg', avg(res.map(r => r.pk.reduce((a, b) => a + b, 0))), 'min', Math.min(...res.map(r => r.pk.reduce((a, b) => a + b, 0))), 'max', Math.max(...res.map(r => r.pk.reduce((a, b) => a + b, 0))));
 } else {
   const { Game } = await import('../src/sim/game.js'), { newBot, botRecord } = await import('./bot.mjs'), { seed, diff, stages, world } = workerData;
-  const g = new Game(seed, { mode: 'run', difficulty: diff, duelist: 'kael' }); if (process.env.NOPROPS) { g.colliders = null; g.flow.col = null; g.flow.rebuild(); } if (process.env.GOD) g.god = true; const bot = newBot({ focus: true, world }); let lv = g.level, fusT = -1, prev = null, firstLevel = -1, diedBy = 9999, clear1 = false;
+  const g = new Game(seed, { mode: 'run', difficulty: diff, duelist: DUELIST }); if (process.env.NOPROPS) { g.colliders = null; g.flow.col = null; g.flow.rebuild(); } if (process.env.GOD) g.god = true; const bot = newBot({ focus: true, world }); let lv = g.level, fusT = -1, prev = null, firstLevel = -1, diedBy = 9999, clear1 = false;
   const lvl = Array(7).fill(0), pk = Array(7).fill(0), xpAt = Array(7).fill(-1), coinAt = { 90: -1, 105: -1, 210: -1 }, limit = 60 * (stages === 1 ? 700 : 2400);
   for (let i = 0; i < limit && !g.over; i++) {
     g.tick(botRecord(g, bot)); if (g.stage === 0) { const m = Math.min(6, Math.floor(g.sc / 60)); for (const t of [90, 105, 210]) if (coinAt[t] < 0 && g.sc >= t) coinAt[t] = (g.coinsGained || 0); for (let k = 0; k <= m; k++) if (xpAt[k] < 0 && g.sc >= (k + 1) * 60 - 0.02) xpAt[k] = g.xp; if (g.level !== lv) { for (let k = lv; k < g.level; k++) { lvl[m]++; if (firstLevel < 0) firstLevel = g.sc; } } if (g.offer !== prev) { if (g.offer) pk[m]++; prev = g.offer; } if (fusT < 0 && g.fusions) fusT = g.sc; }

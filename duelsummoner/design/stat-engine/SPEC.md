@@ -298,7 +298,7 @@ That makes the cap table a menu for breaking the game.
 - EV_DODGE and EV_BLOCK are real events that content can hook.
 
 **Content that uses the path:**
-- **Toll of Ash** (Spell, Lv1-5): every 5 s, pay 3% of current LP. Gives +7% Might per level.
+- **Toll of Ash** (Spell, Lv1-5): every 5 s, pay 3% of current LP. Gives +10% Might per level.
 - **Cinder Penitent** (monster): each attack costs 1 LP and has ×1.4 in BASE.
 - **Thornbound Locket** (rare item): on EV_HURT, releases a nova of 6 × min(Guard, 120) points of base damage at coef 0.25. The 120 is `K.locketGuardCap` (changed 22 Nov). Guard adds no defence past about 114 points, so without the cap it kept adding damage only, up to the 1023-point clamp.
 - **Item copies.** Items stack by count, but the on-event items (Thornbound Locket, Recoil Seal, Graveyard Bell) multiply their base by `copyEff(n) = 1 + (K.copyCap − 1)(n − 1)/((n − 1) + K.copyK)` with `copyCap` 4 and `copyK` 2: 1, 2, 2.5, 2.8, … toward ×4. Without it the item BASE was bounded only by coins (skeptic review, 22 Nov).
@@ -310,7 +310,7 @@ That makes the cap table a menu for breaking the game.
 
 | Family | Shape | Our example |
 |---|---|---|
-| Linear | a + b·n | Monster level multiplier 1 + 0.12(L−1); Clay Heart +15 LP per copy; Ferocity |
+| Linear | a + b·n | Monster level multiplier 1 + 0.168(L−1); Clay Heart +15 LP per copy; Ferocity |
 | Stepped | jumps at thresholds | Forms at levels 1/5/10; fx extras at 3/6/10; Graveyard Bell every 50th kill |
 | Hyperbolic | x/(k+x) | Guard, Sidestep, Keen, Fervor, Fortune, Rewind, Bargain |
 | Knee | linear, then hyperbolic | Brackets 1, 2 and 4 |
@@ -327,19 +327,19 @@ That makes the cap table a menu for breaking the game.
 ## 8. Monster levels, forms, Fusion tiers and Tuning rolls
 
 ```
-lvlMul(L)  = 1 + K.lvlSlope·(L − 1)             // K.lvlSlope = 0.12 → L10 = 2.08
+lvlMul(L)  = 1 + K.lvlSlope·(L − 1)             // K.lvlSlope = 0.168 → L10 = 2.51
 rateMul(L) = 1 + K.lvlRate·(L − 1)              // K.lvlRate = 0.025 → L10 = 1.225
 formMul    = K.form[f] = [1.00, 1.30, 1.70]     // Forms I/II/III at L1/L5/L10
 ```
 
-A level-10 Monster is therefore ×3.54 before Tuning.
+A level-10 Monster is therefore ×4.27 before Tuning (2.512 x 1.7).
 
 | Tier | Recipe | Arrives at | T (`K.tier`) | Power on arrival | Compared with its parents |
 |---|---|---|---|---|---|
 | Monster | offer | L1 | 1.0 | 1.0 | n/a |
-| Fusion | two L10 partners + next sealed chest | **L1** | 3.2 | 3.2 | 7.08 combined. A dip, but it frees a zone, and the Fusion reaches 11.3 at L10. |
-| God Fusion | two L10 Fusions | **L10** | 8.5 | 30.1 | 22.7 combined, so +33% |
-| Secret Fusion | two God Fusions | **L10** | 22 | 77.9 | 60.2 combined, so +29%, plus one cap-lifting trait |
+| Fusion | two L10 partners + next sealed chest | **L1** | 4.5 | 4.5 | 8.54 combined. A dip, but it frees a zone, and the Fusion reaches 19.2 at L10. |
+| God Fusion | two L10 Fusions | **L10** | 12 | 51.2 | 38.4 combined, so +33% |
+| Secret Fusion | two God Fusions | **L10** | 31 | 132.4 | 102.4 combined, so +29%, plus one cap-lifting trait |
 
 - Fusions inherit 50% of the parents' summed Tuning bp, rounded down.
 - Tier auras add team-wide MIGHT: Fusion +500 bp, God Fusion +1000 bp, Secret Fusion +1500 bp.
@@ -556,7 +556,7 @@ Pick by intent:
 6. **O(1) pools:** shots, pickups, fx and telegraphs each get an Int32Array free-list stack. This replaces the linear `slot()`, `dropPickup` and `addFx` scans.
 7. **No recursion:**
    - Kills push `(idx, cause, depth)` into the Int32 ring `killQ`. `drainKills()` runs after each system's update and applies the section 5 budgets.
-   - Explosions and chains use `scratch[depth]` slabs. This fixes today's bug where `explode` iterates `buf` while a nested `chain` call overwrites it (combat.js:10, :80-84).
+   - Explosions, chains, cones and traps take their candidate list from `src/sim/scratch.js` (`takeBuf` / `freeBuf`, one slab per nesting depth, `resetBufs` at the top of every tick). Built: before it, `explode` iterated one shared list while a nested blast overwrote it.
 8. **Events:** at recompute, EV_HURT, EV_DODGE, EV_BLOCK, EV_KILL and EV_REACT are each compiled into an Int16Array of effect ids. Dispatch is a `switch`, with no closures.
 9. **Caps:** caps are Uint16 bucket arrays, rolled in the existing 1 Hz world tick.
 10. **Counters:**

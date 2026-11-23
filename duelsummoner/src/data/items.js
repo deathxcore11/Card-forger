@@ -13,7 +13,7 @@ export const ITEMS = {
   'travelling-cloak':  { name: 'Travelling Cloak', rarity: 'common', price: 30, text: 'Dash cooldown 15% shorter.', mods: { dashCd: 0.15 } },
   'lodestone':         { name: 'Lodestone', rarity: 'common', price: 30, text: '+20% pickup range.', mods: { pickup: 0.20 } },
   'bandaged-hand':     { name: 'Bandaged Hand', rarity: 'common', price: 30, text: 'Regain 1 health every 5 s.', mods: { regen: 0.2 } },
-  'bronze-scale':      { name: 'Bronze Scale', rarity: 'common', price: 30, text: '+1 armour: each hit does 1 less (never below 1).', mods: { armour: 1 } },
+  'bronze-scale':      { name: 'Bronze Scale', rarity: 'common', price: 30, text: '+1 armour (4 Guard): about 17% less damage from every hit, a little less with each one you add.', mods: { armour: 1 } },
   'dueling-boots':     { name: 'Dueling Boots', rarity: 'common', price: 30, text: '+1 air jump.', mods: { airJumps: 1 } },
   'hunters-mark':      { name: "Hunter's Mark", rarity: 'rare', price: 60, text: '+25% damage to elites and bosses.', mods: { bossDmg: 0.25 } },
   'burning-deck':      { name: 'Burning Deck', rarity: 'rare', price: 60, text: 'Your card throw sets enemies on fire.', mods: { cardBurn: 1 }, unique: true },
@@ -24,7 +24,7 @@ export const ITEMS = {
 };
 // Items stack: a second Sand Sandals adds another +6%. Ceilings on the summed stat keep copies sensible (the stat panel shows the raw sum and the capped value).
 // Items marked unique:true are single-only (a second copy would do nothing or work against you) and are never offered again once owned.
-export const ITEM_CAPS = { move: 1.0, crit: 0.6, dashCd: 0.6, trapRecharge: 0.6, shopDiscount: 0.6, luck: 0.5, pickup: 1.5, airJumps: 3, bossDmg: 1.0, regen: 3, coinMult: 2.0 };
+export const ITEM_CAPS = { move: 1.0, crit: 0.6, dashCd: 0.6, trapRecharge: 0.6, shopDiscount: 0.6, luck: 0.5, airJumps: 3, bossDmg: 1.0, regen: 3, coinMult: 2.0 };
 export const PLANNED_ITEMS = ['Summoner\'s Chalk', 'Mirror Shard', 'Soul Lantern', 'Twin Seal Ring', 'Crown of the Hollow King', 'Sandglass of Haste',
   'Polymer Flask', 'Tome Binder', "Summoner's Whistle", 'Field Banner', 'Eye of the Sealed One', 'Deck of Fate'];
 

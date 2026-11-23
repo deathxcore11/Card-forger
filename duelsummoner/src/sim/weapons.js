@@ -36,11 +36,11 @@ export function fireLob(g, x, y, z, tx, tz, flight, dmg, splash, flame) {
   s.tx[i] = tx; s.tz[i] = tz; s.t0[i] = 0; s.dur[i] = flight; s.splash[i] = splash; s.life[i] = flight + 0.5; s.vx[i] = x; s.vz[i] = z; s.vy[i] = y;   // vx,vz,vy hold the start point
   return i;
 }
-export function fireHoming(g, x, y, z, target, speed, life, dmg) {
+export function fireHoming(g, x, y, z, target, speed, life, dmg, sp) {       // sp: an elite or boss to chase (target is then -2 - its index in g.sp)
   const s = g.shots, i = slot(s); if (i < 0) return -1;
   init(s, i, KIND_HOMING, x, y, z, false, dmg); s.src[i] = g.curSrc;
-  s.target[i] = target; s.speed[i] = speed; s.life[i] = life; s.vy[i] = 0;
-  const e = g.en; let dx = e.x[target] - x, dz = e.z[target] - z; const l = Math.sqrt(dx * dx + dz * dz) || 1; s.vx[i] = dx / l * speed; s.vz[i] = dz / l * speed;
+  s.target[i] = sp ? -2 - g.sp.indexOf(sp) : target; s.speed[i] = speed; s.life[i] = life; s.vy[i] = 0;
+  const e = g.en; let dx = (sp ? sp.x : e.x[target]) - x, dz = (sp ? sp.z : e.z[target]) - z; const l = Math.sqrt(dx * dx + dz * dz) || 1; s.vx[i] = dx / l * speed; s.vz[i] = dz / l * speed;
   return i;
 }
 
@@ -65,12 +65,18 @@ export function updateShots(g, dt) {
       continue;
     }
     if (kind === KIND_HOMING) {
-      let t = s.target[i];
+      let t = s.target[i]; const tsp = t <= -2 ? g.sp[-2 - t] : null;
+      if (tsp && tsp.alive && !tsp.dead) {           // chasing an elite or boss
+        const dx = tsp.x - s.x[i], dz = tsp.z - s.z[i], l = Math.sqrt(dx * dx + dz * dz) || 1, k = Math.min(1, dt * 9);
+        s.vx[i] += (dx / l * s.speed[i] - s.vx[i]) * k; s.vz[i] += (dz / l * s.speed[i] - s.vz[i]) * k;
+        s.vy[i] += ((tsp.y + 1.2 - s.y[i]) / l * s.speed[i] - s.vy[i]) * k;
+      } else {
       if (t < 0 || !e.alive[t]) { t = g.nearest(s.x[i], s.z[i], 30); s.target[i] = t; }
       if (t >= 0) {
         const dx = e.x[t] - s.x[i], dz = e.z[t] - s.z[i], l = Math.sqrt(dx * dx + dz * dz) || 1, k = Math.min(1, dt * 9);
         s.vx[i] += (dx / l * s.speed[i] - s.vx[i]) * k; s.vz[i] += (dz / l * s.speed[i] - s.vz[i]) * k;
         s.vy[i] += ((e.y[t] + 0.9 - s.y[i]) / l * s.speed[i] - s.vy[i]) * k;
+      }
       }
     }
     s.x[i] += s.vx[i] * dt; s.y[i] += s.vy[i] * dt; s.z[i] += s.vz[i] * dt;

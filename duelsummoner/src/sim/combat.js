@@ -9,10 +9,10 @@ import { heightAt, moveXZ } from './terrain.js';
 import { ELEMENTS } from '../data/elements.js';
 import { aceFell } from './aces.js';
 import { CAP, capTake } from './caps.js';
+import { takeBuf, freeBuf } from './scratch.js';
 import { sourceBracket, affinityBracket, overtimeBracket, sourceClass } from './ledger.js';
 
 export const PICK_XP = 0, PICK_COIN = 1, PICK_HEART = 2;
-const buf = new Int32Array(CFG.enemy.max);
 const tmp = { x: 0, y: 0, z: 0 };
 
 // ---- pools the view reads ----
@@ -55,9 +55,10 @@ export function damageEnemy(g, i, dmg, o) {
 
 // lightning: arc to the nearest other enemy within a few metres for a fraction of the damage
 function chain(g, from, x, z, dmg) {
-  const C = ELEMENTS.lightning.chain, e = g.en, n = g.grid.query(x, z, C.radius, buf);
+  const C = ELEMENTS.lightning.chain, e = g.en, buf = takeBuf(), n = g.grid.query(x, z, C.radius, buf);
   let best = -1, bd = C.radius * C.radius;
   for (let k = 0; k < n; k++) { const j = buf[k]; if (j === from || !e.alive[j]) continue; const dx = e.x[j] - x, dz = e.z[j] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = j; } }
+  freeBuf();
   if (best < 0) return;
   addFx(g, { type: 'ring', x: e.x[best], y: e.y[best] + 0.5, z: e.z[best], r: 1.0, dur: 0.2, color: 0x7fe8ff });
   damageEnemy(g, best, dmg, { noCrit: true, noChain: true });
@@ -66,8 +67,8 @@ function chain(g, from, x, z, dmg) {
 export function killEnemy(g, i) {
   const e = g.en; if (!e.alive[i]) return;
   e.alive[i] = 0; g.kills++; g.emit('kill', e.kind[i], e.x[i], e.z[i]);
-  if (g.mods.bell && g.kills % Math.max(10, Math.floor(50 / g.mods.bell)) === 0 && capTake(g, CAP.BELL)) explode(g, e.x[i], e.y[i], e.z[i], 4, 0, 10, 0xc0c0ff);       // Graveyard Bell
-  const x = e.x[i], y = e.y[i], z = e.z[i], K = KIND_LIST[e.kind[i]];
+  if (g.mods.bell && g.kills % Math.max(10, Math.floor(K.bellEvery / g.mods.bell)) === 0 && capTake(g, CAP.BELL)) { const prev = g.curSrc; g.curSrc = g.srcIndex('graveyard-bell'); explode(g, e.x[i], e.y[i], e.z[i], 4, 0, K.bellBase, 0xc0c0ff); g.curSrc = prev; }       // Graveyard Bell: its own source, so the toll is the same whoever landed the kill
+  const x = e.x[i], y = e.y[i], z = e.z[i], kind = KIND_LIST[e.kind[i]];
   const mg = e.mrg[i];                                                        // enemies merged into this one: their rewards are summed
   dropPickup(g, PICK_XP, x, y, z, 1 + mg);
   for (let k = 0; k <= mg; k++) {
@@ -75,8 +76,8 @@ export function killEnemy(g, i) {
     if (g.rl() < RUN.heartChance) dropPickup(g, PICK_HEART, x - 0.6, y, z);
   }
   if (e.ace[i]) aceFell(g, x, y, z);                                          // a star-crested Ace: extra reward and a chance of a Trophy Chest
-  if (K === KINDS.bloat) explode(g, x, y, z, K.blast.radius, K.blast.dmg * g.dmgMul, K.blast.dmg, 0xff9030, 'Sand Bloat');
-  if (e.mark[i] > 0 && g.mods.markExplode && capTake(g, CAP.MARK_EXPLODE)) explode(g, x, y, z, g.mods.markExplode.radius, 0, g.mods.markExplode.dmg, 0xb070ff);
+  if (kind === KINDS.bloat) explode(g, x, y, z, kind.blast.radius, kind.blast.dmg * g.dmgMul, kind.blast.dmg, 0xff9030, 'Sand Bloat');
+  if (e.mark[i] > 0 && g.mods.markExplode && g.markDepth < K.explodeDepth && capTake(g, CAP.MARK_EXPLODE)) { g.markDepth++; explode(g, x, y, z, g.mods.markExplode.radius, 0, g.mods.markExplode.dmg, 0xb070ff); g.markDepth--; }       // victims of a mark blast do not blast again (depth), and the bucket holds a tick's worth (K.explodeBudget)
 }
 
 export function dropPickup(g, kind, x, y, z, val) {
@@ -92,12 +93,13 @@ export function explode(g, x, y, z, r, pDmg, eDmg, color, src) {
   const p = g.p;
   if (pDmg > 0) { const dx = p.x - x, dz = p.z - z; if (dx * dx + dz * dz < r * r && Math.abs(p.y - y) < 2.5) g.hurtPlayer(pDmg, true, src || 'an explosion'); }
   if (eDmg > 0) {
-    const e = g.en, n = g.grid.query(x, z, r, buf);
+    const e = g.en, buf = takeBuf(), n = g.grid.query(x, z, r, buf);       // its own list: a Bloat felled in this loop blasts inside it
     for (let k = 0; k < n; k++) {
       const i = buf[k]; if (!e.alive[i]) continue;
       const dx = e.x[i] - x, dz = e.z[i] - z;
       if (dx * dx + dz * dz < r * r) damageEnemy(g, i, eDmg, { noCrit: true });
     }
+    freeBuf();
     for (const sp of g.sp) {
       if (!sp.alive) continue;
       const dx = sp.x - x, dz = sp.z - z;
