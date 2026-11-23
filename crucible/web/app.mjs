@@ -1669,10 +1669,15 @@ app.addEventListener('click', ev => { try { tapped(ev); } catch (e) { recover(e,
 // Enter or Space takes the one it is on. On the title the turning crest goes with it.
 function litLayer() { const ws = app.querySelectorAll('.mw'); return ws.length ? ws[ws.length - 1] : app.querySelector('.story') || app; }
 const litPlaques = layer => [...layer.querySelectorAll('.pq')].filter(b => !b.disabled && b.offsetWidth && (layer !== app || !b.closest('.mw, .story')));
+// Moving the hammer never moves a plaque: one in a line of words (.in) keeps its width as it gains or loses the hammer
+// (it is lit without the hammer, .nh, and one that loses it keeps the width it had), and a plaque too narrow for the
+// hammer beside its words is lit without the hammer too.
 function litMove(b) {
   const layer = b.closest('.mw') || b.closest('.story') || app;
-  for (const e of layer.querySelectorAll('.pq.lit')) if (e !== b && (layer !== app || !e.closest('.mw, .story'))) e.classList.remove('lit');
+  for (const e of layer.querySelectorAll('.pq.lit')) if (e !== b && (layer !== app || !e.closest('.mw, .story'))) { if (e.classList.contains('in') && !e.style.width) e.style.width = e.offsetWidth + 'px'; e.classList.remove('lit', 'nh'); }
+  if (b.classList.contains('in')) b.classList.add('nh');
   b.classList.add('lit');
+  if (b.scrollWidth > b.clientWidth + 1) b.classList.add('nh');
   if (b.classList.contains('tm')) { G.tcur = [...app.querySelectorAll('.pq.tm')].indexOf(b); const c = document.getElementById('coin'); if (c) c.style.top = b.style.top; }
   const sc = b.closest('.sc'); if (sc) { const t = b.offsetTop, h = sc.clientHeight; if (t < sc.scrollTop) sc.scrollTop = t; else if (t + b.offsetHeight > sc.scrollTop + h) sc.scrollTop = t + b.offsetHeight - h; }
 }
