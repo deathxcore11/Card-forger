@@ -21,7 +21,7 @@ function destFor(g, c) {                                  // the zone the pick l
 function fly(btn, go, g, c) {
   const card = btn.closest('.card'); if (busy) return;
   if (!card || document.body.classList.contains('rm')) { go(); return; }
-  busy = true; $('offerScreen').style.pointerEvents = 'none';
+  busy = true; $('offerScreen').style.pointerEvents = 'none'; $('offerScreen').classList.add('closing');       // the title and buttons fade with the other cards
   const r = card.getBoundingClientRect(), d = destFor(g, c).getBoundingClientRect(), dx = d.left + d.width / 2 - (r.left + r.width / 2), dy = d.top + d.height / 2 - (r.top + r.height / 2), s = Math.max(0.1, Math.min(0.3, d.width / r.width));
   for (const o of card.parentElement.children) if (o !== card) o.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: 'forwards' });
   card.style.animation = 'none'; card.style.zIndex = 5;
@@ -80,6 +80,7 @@ const SUBS = {
 };
 
 // act(code) sends a menu choice into the sim as input on a tick (see src/sim/input.js); the UI never calls the rules directly.
+let banishMode = false;
 export function showOffer(g, act) {
   const o = g.offer; if (!o) return;
   if (o.type === 'chest' && o.reveal && !revealed.has(o)) { revealed.add(o); const rm = document.body.classList.contains('rm'); $('offerScreen').style.visibility = 'hidden'; playReveal(o.reveal, { rm }, t => { $('offerScreen').style.visibility = ''; showOffer(g, act); if (t === 'legendary') for (const cd of document.querySelectorAll('#offerCards .card')) cd.classList.add('flipslow'); }); return; }
@@ -94,7 +95,7 @@ export function showOffer(g, act) {
     const act = c.kind === 'banish' ? 'BANISH' : c.kind === 'tribute' ? 'TRIBUTE' : 'TAKE';
     const buy = shop ? (c.sold ? '<button disabled>SOLD</button>' : '<button data-pick="' + i + '"' + (g.coins < c.price ? ' disabled' : '') + '>BUY ' + c.price + '</button>') : '<button data-pick="' + i + '">' + act + '</button>';
     el.innerHTML = '<h3>' + (i + 1) + '. ' + D.name + '</h3><div class="t">' + kind + ' &middot; ' + c.rarity + '</div><div>' + (D.text || '') + '</div><div class="t">' + lv + '</div>' + fx +
-      '<div class="rowBtn">' + buy + (cardy && g.field.banishes > 0 ? '<button data-ban="' + i + '">BANISH</button>' : '') + '</div>';
+      '<div class="rowBtn">' + buy + '' + '</div>';
     wrap.appendChild(el);
   });
   if ((level || o.type === 'blessing') && window.__dealFrom && !document.body.classList.contains('rm')) { const O = window.__dealFrom; [...wrap.children].forEach((el, i, all) => { const r = el.getBoundingClientRect(); el.style.animation = 'none'; el.animate([{ transform: 'translate(' + (O.x - (r.left + r.width / 2)) + 'px,' + (O.y - (r.top + r.height / 2)) + 'px) scale(0.12) rotate(' + ((i - (all.length - 1) / 2) * 38) + 'deg)', opacity: 0.9 }, { transform: 'none', opacity: 1 }], { duration: 340, delay: i * 45, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'backwards' }); }); }       // the cards travel out from the duelist (about 0.43 s from the bar filling to the last card landed)
@@ -102,10 +103,14 @@ export function showOffer(g, act) {
   const btns = $('offerBtns'); btns.innerHTML = '';
   const rds = (o.freeRedraws || 0) + g.field.redraws;       // free redraws from the offer are spent first, so they count here too
   if (cardy) btns.insertAdjacentHTML('beforeend', '<button data-act="redraw"' + (rds > 0 ? '' : ' disabled') + '>REDRAW (' + rds + ')</button>');
+  if (cardy && g.field.banishes > 0) btns.insertAdjacentHTML('beforeend', '<button data-act="banish">BANISH (' + g.field.banishes + ')</button>');       // one shared Banish: press it, then press the card to remove
   if (level) btns.insertAdjacentHTML('beforeend', '<button data-act="pass">PASS (+' + OFFER.passCoins + ' coins)</button>');
   if (o.leave) btns.insertAdjacentHTML('beforeend', '<button data-act="leave">' + (shop ? 'LEAVE THE STALL' : o.type === 'blessing' ? 'DECLINE' : 'LEAVE IT FOR LATER') + '</button>');
+  banishMode = false; $('offerScreen').classList.remove('closing', 'banishing');
   $('offerScreen').onclick = e => {
+    if (banishMode && !offerGuard()) { const cd = e.target.closest('.card'); if (cd) { const i = [...cd.parentElement.children].indexOf(cd); banishMode = false; fly(cd.querySelector('button'), () => act(MENU_BANISH + 1 + i), g, null); return; } }
     const t = e.target.closest('button'); if (!t || t.disabled || offerGuard()) return;
+    if (t.dataset.act === 'banish') { banishMode = !banishMode; $('offerScreen').classList.toggle('banishing', banishMode); t.textContent = banishMode ? 'PICK A CARD TO BANISH' : 'BANISH (' + g.field.banishes + ')'; return; }
     if (t.dataset.pick !== undefined) fly(t, () => act(takeCode(+t.dataset.pick)), g, o.cards[+t.dataset.pick]);
     else if (t.dataset.ban !== undefined) fly(t, () => act(MENU_BANISH + 1 + +t.dataset.ban), g, null);
     else if (t.dataset.act === 'redraw') act(MENU_REDRAW);

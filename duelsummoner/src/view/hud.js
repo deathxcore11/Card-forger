@@ -141,9 +141,27 @@ export function drawStatPanel(g, on) {
     '<div style="margin-top:8px"><b>Damage brackets</b> Might x' + might.toFixed(2) + ' (ceiling x' + (1 + K.knee1 + K.kneeK1).toFixed(1) + ') &middot; Hunter/marks x' + hunter.toFixed(2) + ' &middot; Crit x' + K.critBase + ' at ' + Math.round((0.05 + (M.crit || 0)) * 100) + '%</div>';
   if (html !== panelKey) { panelKey = html; el.innerHTML = html; }
 }
-export function showBanner(text) {
-  const b = $('banner'); b.textContent = text; b.classList.add('on'); clearTimeout(bannerT); bannerT = setTimeout(() => b.classList.remove('on'), 3200);
+// Banners: one at a time on the plate, at most 2 waiting, and a newer banner of the same kind (the same words with other numbers) replaces the older one. A banner that says
+// "in N seconds" counts down live, once a second. Each shows for 2.4 s, or 1.2 s when others are waiting.
+const bq = [], BANNER_MAX = 2; let bShowing = null, bTimer = 0, bCount = 0;
+const bKind = t => String(t).replace(/[0-9]+/g, '#');
+function bannerNext() {
+  const b = $('banner'); clearTimeout(bTimer); clearInterval(bCount);
+  if (!bq.length) { bShowing = null; b.classList.remove('on'); return; }
+  const it = bq.shift(); bShowing = it; const cd = /in (\d+) seconds?/.exec(it.text); let left = cd ? +cd[1] : 0;
+  const paint = () => { b.textContent = cd ? it.text.replace(/in \d+ seconds?/, 'in ' + left + (left === 1 ? ' second' : ' seconds')) : it.text; };
+  paint(); b.classList.add('on');
+  if (cd) bCount = setInterval(() => { if (left > 1) { left--; paint(); } }, 1000);
+  bTimer = setTimeout(bannerNext, cd ? (left + 1) * 1000 : (bq.length ? 1200 : 2400));
 }
+export function showBanner(text) {
+  const k = bKind(text), same = bq.findIndex(q => q.kind === k);
+  if (bShowing && bShowing.kind === k && !bq.length) { bShowing = { text, kind: k }; bq.push(bShowing); bannerNext(); return; }       // the same kind again: update in place
+  if (same >= 0) bq.splice(same, 1);
+  bq.push({ text, kind: k }); while (bq.length > BANNER_MAX) bq.shift();
+  if (!bShowing) bannerNext();
+}
+export function clearBanners() { bq.length = 0; bShowing = null; clearTimeout(bTimer); clearInterval(bCount); $('banner').classList.remove('on'); }
 let flashShown = -1, flashEl = null, flashPrev = 0, flashStart = -1e9;
 export function showFlash(g) {
   // one short edge vignette per hit, and a new one starts at most every 350 ms (three a second): hits inside that window hold the level instead of retriggering

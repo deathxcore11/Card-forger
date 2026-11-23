@@ -14,7 +14,7 @@ import { LeyThreads } from './view/threads.js';
 import { Actors } from './view/actors.js';
 import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
-import { drawHud, showFlash, showBanner, drawStatPanel } from './view/hud.js';
+import { drawHud, showFlash, showBanner, clearBanners, drawStatPanel } from './view/hud.js';
 import { showOffer, offerKey, offerGuard } from './view/offer.js';
 import { loadModel, loadPuffTexture } from './view/models.js';
 import { spawnEnemy } from './sim/enemies.js';
@@ -134,7 +134,7 @@ bindSettings();
 
 function lock() { if (canvas.requestPointerLock) { try { canvas.requestPointerLock(); } catch (e) {} } }
 function setMode(m) {
-  MODE = m; input.enabled = m === 'play'; clearRing(); document.body.dataset.mode = m; if (m !== 'play') $('banner').classList.remove('on');          // the run HUD hides under the menus (see the data-mode rules in index.html)
+  MODE = m; input.enabled = m === 'play'; clearRing(); document.body.dataset.mode = m; if (m !== 'play') clearBanners();          // the run HUD hides under the menus (see the data-mode rules in index.html)
   for (const [id, mm] of [['startScreen', 'start'], ['pauseScreen', 'pause'], ['deadScreen', 'dead'], ['offerScreen', 'offer']]) $(id).classList.toggle('on', m === mm);
   if (m !== 'play' && document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
   $('hint').textContent = m === 'play' && !document.pointerLockElement && !(touch && touch.isTouch) && !firstPad() ? 'Click the map to look around' : ''; if (touch) touch.setEnabled(m === 'play');
@@ -260,7 +260,7 @@ const KCOL = KIND_LIST.map(k => k.color), PCOL = [0xb48cff, 0xf0c040, 0xff5a7a];
 let lastBlockTick = 0;
 function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt') actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
-  if (type === 'banner') showBanner(data);
+  if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(data); }       // a refused chest pulses its price tag instead of a banner
   else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); }
   else if (type === 'levelup') { fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
   else if (type === 'hit') fx.number(b, Math.min(heightAt(b, c), 40) + 1.7, c, a, data);       // at the target's own height, not a fixed 1.7 m
@@ -373,17 +373,27 @@ function landmarkTags() {
   for (const c of game.chests) if (!c.open) add(c, 'Sealed Chest: free item', 'free', 1.9);
   return out;
 }
-let bannerUp = false;
+let bannerUp = false, tagPulse = 0;
+// a tag whose anchor cannot be seen from the camera (a wall, a pylon, a trunk or a boulder on the line) is not drawn
+function tagBlocked(t) {
+  const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z, N = 14, list = game.colliders ? game.colliders.list : null;
+  for (let i = 1; i < N; i++) {
+    const u = i / N, x = cx + (t.x - cx) * u, y = cy + (t.y - cy) * u, z = cz + (t.z - cz) * u;
+    if (Math.abs(x) < 190 && Math.abs(z) < 190 && heightAt(x, z) > y + 0.1 && (t.x - x) * (t.x - x) + (t.z - z) * (t.z - z) > 1.2) return true;
+    if (list) for (let k = 0; k < list.length; k++) { const c = list[k], dx = x - c.x, dz = z - c.z; if (dx * dx + dz * dz < c.r * c.r && y < c.top && (t.x - c.x) * (t.x - c.x) + (t.z - c.z) * (t.z - c.z) > c.r * c.r) return true; }
+  }
+  return false;
+}
 function drawTags() {
   { const bn = $('banner'); bannerUp = !!bn && bn.classList.contains('on'); }
   const list = MODE === 'play' && !mapOpen ? landmarkTags() : []; list.sort((a, b) => a.d2 - b.d2); const n = Math.min(6, list.length), host = $('tags'), w = innerWidth, h = innerHeight;
   for (let i = 0; i < Math.max(n, tagEls.length); i++) {
     if (i >= tagEls.length) { const el = document.createElement('div'); el.className = 'wtag'; host.appendChild(el); tagEls.push(el); }
     const el = tagEls[i]; if (i >= n) { el.style.display = 'none'; continue; }
-    const t = list[i]; tagV.set(t.x, t.y, t.z).project(camera); if (tagV.z > 1) { el.style.display = 'none'; continue; }
+    const t = list[i]; tagV.set(t.x, t.y, t.z).project(camera); if (tagV.z > 1 || tagBlocked(t)) { el.style.display = 'none'; continue; }
     if (bannerUp && (1 - tagV.y) / 2 > 0.12 && (1 - tagV.y) / 2 < 0.31) { el.style.display = 'none'; continue; }       // world labels never draw inside the announcement lane
     { const px = (tagV.x * 0.5 + 0.5) * w, py = (-tagV.y * 0.5 + 0.5) * h; if (px < 14 || px > w - 14 || py < 14 || py > h - 14 || fx._underHud(px, py)) { el.style.display = 'none'; continue; } }       // a label is whole or absent: never cut at an edge, never over a HUD panel
-    el.style.display = 'block'; el.className = 'wtag ' + t.cls; if (el.textContent !== t.text) el.textContent = t.text; el.style.left = ((tagV.x * 0.5 + 0.5) * w) + 'px'; el.style.top = ((-tagV.y * 0.5 + 0.5) * h) + 'px';
+    el.style.display = 'block'; el.className = 'wtag ' + t.cls + (t.cls === 'poor' && performance.now() < tagPulse ? ' pulse' : ''); if (el.textContent !== t.text) el.textContent = t.text; el.style.left = ((tagV.x * 0.5 + 0.5) * w) + 'px'; el.style.top = ((-tagV.y * 0.5 + 0.5) * h) + 'px';
   }
 }
 // Upload only what changed: an instanced mesh with no instances this frame and last frame is not re-uploaded (its version is put back), and one with instances uploads just the first count rows,
@@ -483,7 +493,7 @@ function duelistPixels() {
   return { alone, visible, silhouette: 0 };
 }
 window.__ds = {
-  duelistPixels, see: SEE,
+  duelistPixels, see: SEE, tagBlocked,
   bars,
   renderer,
   fitHud, minimap, props, game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
