@@ -6,6 +6,9 @@ import { DIFFICULTY, DIFFICULTIES } from '../data/stages.js';
 import { MONSTERS, FUSIONS, SPELLS, TRAPS, ONE_SHOTS } from '../data/cards.js';
 import { ITEMS } from '../data/items.js';
 import { boardUrl, fetchBoard } from '../core/board.js';
+import { deviceClass } from '../ui/device.js';
+import { settingsHtml, bindSettingsScreen } from './settings-screen.js';
+import { firstPad } from '../core/padnav.js';
 import { questProgress, questDone, closestQuests, questFor, mapRecord, masteryOf, outfitUnlocked, setCardEnabled } from '../core/meta.js';
 import { startPreview } from './preview.js';
 
@@ -129,11 +132,15 @@ export function initMenus(env) {
   }
 
   // ---------- Settings ----------
-  function showSettings() {
-    const s = save.settings;
-    open('<h2>SETTINGS</h2><div class="panel"><div class="settings"><label>Reduce motion <input type="checkbox" class="setRM"' + (s.reduceMotion ? ' checked' : '') + '></label> <label>Shake <input type="range" class="setShake" min="0" max="100" value="' + s.shake + '"> <span class="setShakeV">' + (s.reduceMotion ? 'off' : s.shake) + '</span>%</label> <label>Field of view <input type="range" class="setFov" min="80" max="115" value="' + (s.fov || 100) + '"> <span class="setFovV">' + (s.fov || 100) + '</span>&deg;</label> <label>Detail <span class="seg setDetail"><button data-v="low">Low</button><button data-v="medium">Medium</button><button data-v="high">High</button></span></label> <label>Frame cap <select class="setFps">' + [30, 60, 90, 120].map(v => '<option value="' + v + '"' + ((s.fpsCap || 60) === v ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></label></div><p class="dim">Difficulty and Oaths are chosen on the map screen.</p></div><div class="navRow"><button id="setBack" class="small">BACK</button></div>');
-    env.bindSettings(); $('setBack').onclick = showMain;
+  let setTab = 'game';
+  function showSettings(tab) {
+    if (typeof tab === 'string') setTab = tab;
+    const cls = deviceClass(), ctx = { cls, pad: !!firstPad(), dual: true, gyro: false, keyboard: false, signedIn: false, inRun: false, version: (document.getElementById('buildLabel') || {}).textContent || '' };
+    open(settingsHtml(save, setTab, ctx));
+    const draw = () => showSettings(), live = (id, dragging) => { if (!dragging) persist(); env.bindSettings(); };
+    for (const t of root().querySelectorAll('[data-stab]')) t.onclick = () => showSettings(t.dataset.stab);
+    bindSettingsScreen(root(), save, ctx, draw, live);
+    $('setBack').onclick = showMain;
   }
-
   return { showMain, showDuelists, showMaps, showLibrary, showQuests, showSettings, sel };
 }
