@@ -177,11 +177,12 @@ export class OwnEffects {
     // the governor: the largest cap on every fill keep that brings the kept sum to its limit (bisection; it may go below the 12.5% floor), then smoothed over 0.3 s
     let target = 1; if (keptAt(1) > set.kept) { let lo = 0.0, hi = 1.0; for (let it = 0; it < 14; it++) { const mid = (lo + hi) / 2; if (keptAt(mid) > set.kept) hi = mid; else lo = mid; } target = Math.max(0.005, lo); }
     const kk = 1 - Math.exp(-(dt || 0.016) / 0.3); this.gov += (target - this.gov) * kk; u.uGov.value = Math.max(0.005, Math.min(1, this.gov));
-    this.rasterSum = ras; this.keptSum = keptAt(this.gov); this.keptRaw = keptAt(1);    for (const s of [this.A, this.V, this.W, this.C]) { s.g.instanceCount = s.n; s.m.visible = s.n > 0 && !(s === this.W && this.hideWalls); if (s.n > 0) { s.buf.updateRange.offset = 0; s.buf.updateRange.count = s.n * STRIDE; s.buf.needsUpdate = true; } }
+    this.rasterSum = ras; this.keptSum = keptAt(this.gov); this.keptRaw = keptAt(1);    for (const s of [this.A, this.V, this.W, this.C]) { s.g.instanceCount = s.n; s.m.visible = s.n > 0 && !this.hideAll && !(s === this.W && this.hideWalls); if (s.n > 0) { s.buf.updateRange.offset = 0; s.buf.updateRange.count = s.n * STRIDE; s.buf.needsUpdate = true; } }
     this.nArea = this.A.n; this.nVol = this.V.n + this.W.n;
   }
   get readout() { return { areas: this.nArea, volumes: this.nVol, rasterSum: +this.rasterSum.toFixed(2), keptSum: +this.keptSum.toFixed(3), keptRaw: +(this.keptRaw || 0).toFixed(2), governor: +this.gov.toFixed(2), dropped: this.dropped }; }
 }
+
 
 
 

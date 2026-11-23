@@ -54,6 +54,8 @@ const WARN = o => Object.assign(o, { stencilWrite: true, stencilRef: 4, stencilF
 function instanced(geo, material, max) {
   const m = new T.InstancedMesh(geo, material, max);
   m.frustumCulled = false; m.count = 0; m.instanceMatrix.setUsage(T.DynamicDrawUsage);
+  // upload only what is drawn: nothing at all while the mesh has no instances, and only the first `count` matrices otherwise (the rest of the buffer is never read). A mesh that is empty frame after frame costs no upload.
+  const im = m.instanceMatrix; Object.defineProperty(im, 'needsUpdate', { get() { return false; }, set(v) { if (v === true && m.count > 0) { this.version++; this.updateRange.offset = 0; this.updateRange.count = m.count * 16; } } });
   return m;
 }
 const flat = geo => { geo.rotateX(-Math.PI / 2); return geo; };
