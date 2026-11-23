@@ -1,4 +1,4 @@
-﻿// K: every balance constant of the stat engine (the Ledger), by the name design/stat-engine/SPEC.md uses. Ported from the reference prototype.
+// K: every balance constant of the stat engine (the Ledger), by the name design/stat-engine/SPEC.md uses. Ported from the reference prototype.
 // The sim never hard-codes a balance number: it reads K. Status: numbers are the spec's; none is confirmed in a played seed yet.
 // Phase 1 of the port reads: lvlSlope, lvlRate, form, tier, knee1/kneeK1, knee4/kneeK4, critBase, critCap, procCap and the curve k values.
 
@@ -14,6 +14,7 @@ export const K = Object.freeze({
   hopWindow: 6,                     // a jump within this many ticks of landing, with slide held (or out of a slide), is a slide hop
   hopGain: 0.08,                    // each slide hop adds this fraction of run speed to the speed it keeps
   hopCap: 1.6,                      // ... up to this multiple of run speed (also the cap on a slide's downhill gain)
+  hopSlideDown: 2.0,                // a slide on a downward slope may reach this multiple of run speed; on the flat it falls to hopCap over hopDecayTicks
   hopDashSlide: 1.25,               // a slide begun within hopWindow ticks of a dash's end starts at this multiple of run speed
   hopAirCone: 0.5,                  // in the air, carried speed is kept while the stick is within 60 degrees of the travel direction (cos 60)
   hopAirTurn: 2.0944,               // and the velocity turns toward the stick at most this fast (120 degrees a second) while above run speed
@@ -105,7 +106,6 @@ export const K = Object.freeze({
   // ---- player and self-damage (section 6) ----
   baseLp: 100, graceSec: 0.25, wardCdSec: 20,
   tollEverySec: 5, tollPct: 0.03,
-  trapDmgPerLevel: 0.35,
   gustCdSec: 4, pitCdSec: 6,
   locketPerGuard: 6, locketTargets: 8,
   recoilMul: 2.0,

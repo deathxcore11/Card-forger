@@ -61,7 +61,8 @@ export function updatePlayer(g, dt, cmd) {
       let dh = heightAt(p.x + hx * S.probe, p.z + hz * S.probe) - p.y;
       if (dh > 0.9) dh = 0;                                   // a wall, not a slope (a 1:2 ramp over the probe is 0.6)
       const slope = dh / S.probe;
-      p.slideSpeed = Math.max(0, Math.min(Math.min(S.max, K.hopCap * speed), p.slideSpeed + (-slope * S.downhill - S.friction) * dt));       // a slide's downhill gain stops at the hop cap
+      p.slideSpeed = Math.max(0, Math.min(Math.min(S.max, K.hopSlideDown * speed), p.slideSpeed + (-slope * S.downhill - S.friction) * dt));
+      if (slope > -0.05 && p.slideSpeed > K.hopCap * speed) p.slideSpeed = Math.max(K.hopCap * speed, p.slideSpeed - (K.hopSlideDown - K.hopCap) * speed / K.hopDecayTicks);       // on a downward slope a slide may reach 2.0x run speed; on the flat it falls to 1.6x over 18 ticks
       if (p.slideSpeed < S.keepMin) p.sliding = false;
       p.vx = hx * p.slideSpeed; p.vz = hz * p.slideSpeed;
       p.face = atan2(hx, hz);
