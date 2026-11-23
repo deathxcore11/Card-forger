@@ -32,6 +32,7 @@ export const TREE_SCALE = { parasol: [0.9, 1.1], blob: [1.3, 1.6] };
 
 // solidOnly: stop after the trees and rocks (the only things you can run into), which come first in the random sequence so they are the same either way
 export function scatterStage(map, stageIndex, solidOnly) {
+  if (map.sample) return { trees: [[], [], [], []], rocks: [[], [], []], bushes: [], special: [], grass: [], flowers: [], flowerSpots: [] };       // the hand-built sample plants nothing yet
   if (map.rooms && map.rooms.length) return scatterRooms(map, stageIndex, solidOnly);
   const D = DENSITY[Math.min(stageIndex || 0, DENSITY.length - 1)], seed = strHash(String(map.hash || map.key || 'x')), rnd = mulberry(seed ^ 0x5CE9E), pat = noise2(seed ^ 0xA11CE);
   const R = (MAP && MAP.boundaryR ? MAP.boundaryR : 195) * 0.94, out = { trees: [[], [], [], []], rocks: [[], [], []], bushes: [], special: [], grass: [], flowers: [], flowerSpots: [] };

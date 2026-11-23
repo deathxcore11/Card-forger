@@ -3,6 +3,7 @@ import { MAP } from '../data/map.js';
 import { seeMap } from './seethrough.js';
 import { groundLit } from './engine.js';
 import { STAGE_LOOK, rampColour } from '../data/look.js';
+import { addSampleProps } from './sampleKit.js';
 
 const T = window.THREE, DEG = Math.PI / 180;
 
@@ -122,7 +123,7 @@ function addLip(B, p, look) {
 // a bigger step is a cliff: the two tops stay apart and a vertical face with rock strata joins them. The rim (everything outside the playable shape, up to 8 m out) is sheer rock 22 to 27 m tall.
 // The colours come from the stage's look: sand tones at the foot, rim tones on the tiers, the road colour on ramps and along the spine, a bright floor in the arena, pale stone on solid blocks.
 function buildV2(map, look) {
-  const SIM = 400, NC = 200, H = map.heights, FL = map.cellFlags, Hc = new Float32Array(NC * NC), Fc = new Uint16Array(NC * NC), Wl = new Uint8Array(NC * NC), near = new Uint8Array(NC * NC);
+  const SIM = 400, NC = 200, H = map.drawH || map.heights, FL = map.cellFlags, Hc = new Float32Array(NC * NC), Fc = new Uint16Array(NC * NC), Wl = new Uint8Array(NC * NC), near = new Uint8Array(NC * NC);
   for (let cz = 0; cz < NC; cz++) for (let cx = 0; cx < NC; cx++) {
     let s = 0, mx = -1e9, mn = 1e9, wall = false, f = 0;
     for (let b = 0; b < 2; b++) for (let a = 0; a < 2; a++) { const k = (cz * 2 + b) * SIM + cx * 2 + a, h = H[k]; if (h >= 50) wall = true; else { s += h; if (h > mx) mx = h; if (h < mn) mn = h; } f |= FL[k]; }
@@ -143,13 +144,13 @@ function buildV2(map, look) {
     if (f & 4096) return look.rim[1];                                                           // solid blocks: pale stone
     if (f & 8) return dim(look.road, 0.92 + 0.1 * j);                                           // ramps and stairs
     if (f & 256) return mixc(look.sand[(j * 3) | 0], 0xffffff, 0.22);                           // the arena floor
-    let col = look.sand[(j * 2.99) | 0]; if (h > 0.4) col = mixc(col, look.rim[1], Math.min(0.7, h / 9));
+    let col = map.sample ? look.sand[1] : look.sand[(j * 2.99) | 0]; if (h > 0.4) col = mixc(col, look.rim[1], Math.min(0.7, h / 9));
     if (f & 2048 || h < -0.3) col = dim(col, 0.72);
-    if (map.roomOf) { const r = map.roomOf[cz * NC + cx]; if (r !== 255) col = mixc(col, ROOM_TINT[r % ROOM_TINT.length], 0.16); }           // each room has its own small shift inside the stage palette
-    return dim(col, 0.97 + 0.06 * hash2(cx * 5 + 1, cz * 3 + 7));
+    if (map.roomOf) { const r = map.roomOf[cz * NC + cx], TT = map.roomTint || ROOM_TINT; if (r !== 255) col = mixc(col, TT[r % TT.length], map.roomTintK || 0.16); }           // each room has its own small shift inside the stage palette
+    return map.sample ? col : dim(col, 0.97 + 0.06 * hash2(cx * 5 + 1, cz * 3 + 7));
   };
   const corner = (cx, cz, a, b) => {                                                           // the height of corner (a, b) of cell (cx, cz): the average of the cells round it that are within 0.5 m of this one
-    const c = cz * NC + cx, h = Hc[c]; if (Wl[c]) return h; let s = 0, n = 0;
+    const c = cz * NC + cx, h = Hc[c]; if (Wl[c] || map.sample) return h; let s = 0, n = 0;
     for (let dz = b - 1; dz <= b; dz++) for (let dx = a - 1; dx <= a; dx++) { const x = cx + dx, z = cz + dz; if (x < 0 || z < 0 || x >= NC || z >= NC) continue; const q = z * NC + x; if (Wl[q] || Math.abs(Hc[q] - h) > 0.5) continue; s += Hc[q]; n++; }
     return n ? s / n : h;
   };
@@ -157,7 +158,7 @@ function buildV2(map, look) {
   const raw = new Int32Array(NC * NC), fin = new Int32Array(NC * NC), rw = new Float32Array(NC * NC).fill(0);
   for (let cz = 0; cz < NC; cz++) for (let cx = 0; cx < NC; cx++) raw[cz * NC + cx] = colour(cx, cz);
   { const segs = rd.main, dseg = (x, z) => { let best = 1e9; for (let i = 1; i < segs.length; i++) { const ax = segs[i - 1][0], az = segs[i - 1][1], bx = segs[i][0], bz = segs[i][1], dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz || 1, u = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2)), ex = ax + dx * u - x, ez = az + dz * u - z, d2 = ex * ex + ez * ez; if (d2 < best) best = d2; } return Math.sqrt(best); };
-    for (let cz = 0; cz < NC; cz++) for (let cx = 0; cx < NC; cx++) { const c = cz * NC + cx; if (Wl[c] || (Fc[c] & (4096 | 8 | 256))) continue; const x = cx * 2 - 200 + 1, z = cz * 2 - 200 + 1; if (Math.abs(x - rd.main[0][0]) > 400) continue; const d = dseg(x, z); rw[c] = Math.max(0, Math.min(1, (2.6 - d) / 1.4)); } }
+    for (let cz = 0; cz < NC && !map.sample; cz++) for (let cx = 0; cx < NC; cx++) { const c = cz * NC + cx; if (Wl[c] || (Fc[c] & (4096 | 8 | 256))) continue; const x = cx * 2 - 200 + 1, z = cz * 2 - 200 + 1; if (Math.abs(x - rd.main[0][0]) > 400) continue; const d = dseg(x, z); rw[c] = Math.max(0, Math.min(1, (2.6 - d) / 1.4)); } }
   const chan = (v, s) => (v >> s) & 255;
   for (let cz = 0; cz < NC; cz++) for (let cx = 0; cx < NC; cx++) {
     const c = cz * NC + cx; let col = raw[c];
@@ -189,19 +190,19 @@ function buildV2(map, look) {
         const wc = top && nb2 > 1 ? mixc(dim(base, 0.95), 0xffffff, 0.18) : q === 0 && nb2 > 2 ? dim(base, 0.5) : dim(base, tones[((band % 3) + 3) % 3]);
         const o0 = BAT * (1 - t0), o1 = BAT * (1 - t1);
         B.quad([P0[0] + out[0] * o0, lerp(loA, hiA, t0), P0[1] + out[2] * o0], [P1[0] + out[0] * o0, lerp(loB, hiB, t0), P1[1] + out[2] * o0], [P1[0] + out[0] * o1, lerp(loB, hiB, t1), P1[1] + out[2] * o1], [P0[0] + out[0] * o1, lerp(loA, hiA, t1), P0[1] + out[2] * o1], out, wc);
-      }      if (hgt > 5 && hash2(cx * 7 + d, cz * 11 + 3) < 0.17) {                                 // a buttress every 8 to 16 m: a faceted pier up the face, 1.8 m wide and 1.2 m proud, 80% as tall as the face, with a pale cap
+      }      if (!map.sample && hgt > 5 && hash2(cx * 7 + d, cz * 11 + 3) < 0.17) {                                 // a buttress every 8 to 16 m: a faceted pier up the face, 1.8 m wide and 1.2 m proud, 80% as tall as the face, with a pale cap
         const bw = 0.9, mx = (P0[0] + P1[0]) / 2 + out[0] * 0.6, mz = (P0[1] + P1[1]) / 2 + out[2] * 0.6, y0b = Math.min(loA, loB) - 0.2, y1b = Math.min(loA, loB) + hgt * 0.8, along = out[0] ? [0, 1] : [1, 0], bc = dim(base, 0.78);
         addBox(B, { x0: mx - (along[0] ? bw : 0.6), x1: mx + (along[0] ? bw : 0.6), z0: mz - (along[1] ? bw : 0.6), z1: mz + (along[1] ? bw : 0.6), y0: y0b, h: y1b, c: bc });
         addBox(B, { x0: mx - (along[0] ? bw + 0.1 : 0.7), x1: mx + (along[0] ? bw + 0.1 : 0.7), z0: mz - (along[1] ? bw + 0.1 : 0.7), z1: mz + (along[1] ? bw + 0.1 : 0.7), y0: y1b, h: y1b + 0.4, c: mixc(dim(base, 0.95), 0xffffff, 0.2) });
       }
-      if (hgt > 4 && hash2(cx * 3 + 1, cz * 5 + d) < 0.25) { const r = 0.7 + 0.8 * hash2(cx, cz), bx = (P0[0] + P1[0]) / 2 + out[0] * (r * 0.6), bz = (P0[1] + P1[1]) / 2 + out[2] * (r * 0.6); addBox(B, { x0: bx - r / 2, x1: bx + r / 2, z0: bz - r / 2, z1: bz + r / 2, y0: (loA + loB) / 2 - 0.2, h: (loA + loB) / 2 + r * 0.7, rot: hash2(cx + 9, cz) * 90, c: dim(base, 0.8) }); }
+      if (!map.sample && hgt > 4 && hash2(cx * 3 + 1, cz * 5 + d) < 0.25) { const r = 0.7 + 0.8 * hash2(cx, cz), bx = (P0[0] + P1[0]) / 2 + out[0] * (r * 0.6), bz = (P0[1] + P1[1]) / 2 + out[2] * (r * 0.6); addBox(B, { x0: bx - r / 2, x1: bx + r / 2, z0: bz - r / 2, z1: bz + r / 2, y0: (loA + loB) / 2 - 0.2, h: (loA + loB) / 2 + r * 0.7, rot: hash2(cx + 9, cz) * 90, c: dim(base, 0.8) }); }
     }
   }
-  addKits(B, map, look);
+  addKits(B, map, look); if (map.props) addSampleProps(B, map, look, { addBox, addCyl, addRing, mixc });
   // far backdrop: a ring of mesas behind the rim (fogged), a wide skirt under everything, and the colossal buried card on the far side of the map from the start (view only)
   /* the ring of mesas outside the rim is gone: they read as errors beside a designed map */
   F.quad([-345, -0.2, -345], [345, -0.2, -345], [345, -0.2, 345], [-345, -0.2, 345], [0, 1, 0], look.skirt);
-  { const sa = Math.atan2(map.gate.z - map.spawn.z, map.gate.x - map.spawn.x) + 2.6, mx = 250 * Math.cos(sa), mz = 250 * Math.sin(sa), yaw = sa / DEG + 90;
+  if (!map.sample) { const sa = Math.atan2(map.gate.z - map.spawn.z, map.gate.x - map.spawn.x) + 2.6, mx = 250 * Math.cos(sa), mz = 250 * Math.sin(sa), yaw = sa / DEG + 90;
     addTilt(F, mx, -6, mz, 24, 3, 64, yaw, 20, look.landmark[0]); addTilt(F, mx, -6, mz, 20, 3.5, 60, yaw, 20, look.landmark[1], 2); }
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
   group.add(B.mesh(false, fadeU), F.mesh(true, fadeU)); group.userData.tris = B.pos.length / 9 | 0;
@@ -276,7 +277,7 @@ function addKits(B, map, look) {
   /* the ring of mesas outside the rim is gone: they read as errors beside a designed map */
   F.quad([-345, -0.2, -345], [345, -0.2, -345], [345, -0.2, 345], [-345, -0.2, 345], [0, 1, 0], look.skirt);
   // the mega landmark: a colossal buried card, half sunk and tilted, 64 m tall, on the far side of the map from the start (view only)
-  { const sa = Math.atan2(map.gate.z - map.spawn.z, map.gate.x - map.spawn.x) + 2.6, mx = 250 * Math.cos(sa), mz = 250 * Math.sin(sa), yaw = sa / DEG + 90;
+  if (!map.sample) { const sa = Math.atan2(map.gate.z - map.spawn.z, map.gate.x - map.spawn.x) + 2.6, mx = 250 * Math.cos(sa), mz = 250 * Math.sin(sa), yaw = sa / DEG + 90;
     addTilt(F, mx, -6, mz, 24, 3, 64, yaw, 20, look.landmark[0]); addTilt(F, mx, -6, mz, 20, 3.5, 60, yaw, 20, look.landmark[1], 2); }
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
   group.add(B.mesh(false, fadeU), F.mesh(true, fadeU), G.mesh(false, undefined, SAND));

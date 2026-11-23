@@ -22,7 +22,7 @@ function bladeGeometry() {
   return { pos, bl };
 }
 export function buildGrass(map, stageIndex, S, theme, level, fogNear) {
-  level = level || detailLevel(); if (level === 'low') return null;
+  level = level || detailLevel(); if (level === 'low' || map.sample) return null;
   const R = grassRadius(fogNear), col = h => new T.Color(h), tufts = bakeTufts(map, S, heightAt, level === 'medium' ? 150 : 190), n = tufts.length / 4;
   const u = Object.assign({ uPl: E.pl, uR: { value: R }, uShT: MASK.tex, uShB: MASK.box, uShK: MASK.k,
     uC0: { value: col(theme.bladeCols[0]).multiplyScalar(0.75) }, uC1: { value: col(theme.bladeCols[1]) }, uC2: { value: col(theme.grass ? theme.grass[0] : 0x3f6e4e) }, uC3: { value: col(theme.grass ? theme.grass[1] : 0x74ae72) } }, engineUniforms(), T.UniformsUtils.clone(T.UniformsLib.fog));
