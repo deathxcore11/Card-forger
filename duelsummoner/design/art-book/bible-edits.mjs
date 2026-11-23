@@ -89,3 +89,20 @@ export const SUBS = {
   WX22: [['a pulsing violet ring', 'a raised gold rim. Nothing glows']],
   WX37: [[' This one is the single exception to the rule about dark colours and is dark on purpose, so ignore any line that says the darkest tone must be a mid tone:', ' It has'], ['painted in flat tones, not shiny or mirror-like (deep black-violet with one soft painted sheen stripe so its shape still reads)', 'in flat black (#2a2026), not shiny']],
 };
+// Art-direction spot-check of version 14 (23 Nov): no summon violet and no loot gold on enemies; Vault map card; olive leaf value.
+Object.assign(SUBS, {
+  EN07: [['gold sand running inside it', 'pale ash-gold sand running inside it']],
+  EN12: [['gold-plated stone segments', 'tarnished bronze stone segments'], ['violet gem eyes', 'amber gem eyes'], ['a crack glowing violet down its spine', 'a crimson crack down its spine']],
+  EN13: [['loose violet and gold playing cards', 'loose crimson and bone-white playing cards']],
+  EN15: [['a fast gold beetle', 'a fast tarnished bronze beetle']],
+  EN16: [['dark gold sand', 'dark ash-gold sand']],
+  EN18: [['a long violet-black robe', 'a long slate-black robe']],
+  TB02: [['gold collar plates', 'tarnished bronze collar plates'], ['violet gem eyes', 'amber gem eyes']],
+  TB04: [['violet edges', 'moon-white edges']],
+  TB05: [['of gold and basalt', 'of tarnished bronze and basalt'], ['a violet glow', 'a crimson glow']],
+  TB06: [['crimson and gold coat', 'crimson and bone-white coat'], ['a gold crown', 'a tarnished bronze crown']],
+  EL03: [['of basalt and gold', 'of basalt and tarnished bronze']],
+  GB03: [['crimson and gold royal robe', 'crimson and bone-white royal robe'], ['two violet lights for eyes', 'two moon-white lights for eyes'], ['a long gold blade', 'a long tarnished bronze blade'], ['a cape of falling gold sand', 'a cape of falling ash-gold sand']],
+  KA07: [['a sea of falling gold sand', 'a sea of falling pale ash-gold sand'], ['amethyst crystals glowing', 'pale moon-white crystals, and the only violet in the picture is the seal on the Throne Gate']],
+  W101: [['Leaves are light silvery sage green with pale yellow-green highlights; bark is warm light grey-brown.', 'Leaves in the canopy greens; bark in the bark browns.'], ['light sage green leaves, light grey-brown bark', 'mid green leaves, dark brown bark']],
+});
