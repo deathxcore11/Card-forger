@@ -580,6 +580,7 @@ window.__ds = {
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
+if (/[?&]fxlab\b/.test(location.search)) import('./view/fxlab.js').then(m => m.startLab(window.__ds));
 
 
 
