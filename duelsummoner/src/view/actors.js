@@ -1,4 +1,4 @@
-﻿// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
+// Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
 // telegraphs and effects, pickups. Positions are blended between the last two sim ticks so any refresh rate looks smooth.
 import { CFG } from '../data/config.js';
 import { KIND_LIST, BOSS_COLORS as BC } from '../data/enemies.js';
@@ -595,7 +595,7 @@ export class Actors {
       if (o.type === 'bolt') { if (this.ribbon.see(o) && o.el === 'lightning') this._arcAt(g, o.x2, o.z2); continue; }
       const f = Math.min(1, o.t / o.dur), fade = 1 - f;
       if (o.type === 'wake') { if (this.ownCtx) this.own.card((o.ax + o.bx) / 2, o.y, (o.az + o.bz) / 2, o.r, o.hw, 0xff8a30, 0, 0, Math.atan2(o.dz, o.dx)); continue; }       // the Ember Wake: the sim's rectangle itself (half length r, half width hw), lit from the Wyvern to the line's end
-      if (o.owner === 0 && this.ownCtx) { if (tier > 0) this._tierFx(o, tier); if (this.tier5 && o.r >= 8) this._tier5(o, rch); else this._grow(o, stier, rch); if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), this._ownHex(o), false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, this._ownHex(o), true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
+      if (o.owner === 0 && this.ownCtx) { if (!this.own.hideAll) { if (tier > 0) this._tierFx(o, tier); if (this.tier5 && o.r >= 8) this._tier5(o, rch); else this._grow(o, stier, rch); } if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), this._ownHex(o), false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, this._ownHex(o), true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
       if (o.type === 'ring') {
         d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = o.r * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix();
         this.fxRing.setMatrixAt(nr, d.matrix); this.fxRing.setColorAt(nr, col.setHex(o.color).multiplyScalar(0.4 + 0.6 * fade)); nr++;
@@ -606,7 +606,7 @@ export class Actors {
       }
     }
     if (this.capBurst) { const cb = this.capBurst; cb.t += this._dt || 0.016; const u = cb.t / 0.7; if (u >= 1) this.capBurst = null; else this.own.area(cb.x, cb.y + 0.15, cb.z, 6 * (1 - (1 - u) * (1 - u)) + 0.3, cb.hex, false, 0, 1, 0, 1 - u * 0.5); }
-    { const dtm = this._dt || 0.016, M = this._marks; for (let i = M.length - 1; i >= 0; i--) { M[i].t += dtm; if (M[i].t > 8) M.splice(i, 1); else if (stier >= 2) this._stains.push(M[i]); } if (this._stains.length > 6) this._stains.length = 6; }
+    { const dtm = this._dt || 0.016, M = this._marks; for (let i = M.length - 1; i >= 0; i--) { M[i].t += dtm; if (M[i].t > 8) M.splice(i, 1); else if (stier >= 2 && !this.own.hideAll) this._stains.push(M[i]); } if (this._stains.length > 6) this._stains.length = 6; }
     this._signatures(g, this._dt || 0.016, tier);
     if (this.tier5 && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setStains(this._stains); setSkyTint(L[3], L[2], 0.2); this._skyOn = true; } else if (this._stains.length) { setStains(this._stains); if (this._skyLight && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setSkyTint(L[3], L[2], 0.1); this._skyOn = true; } else if (this._skyOn) { setSkyTint(0, 0, 0); this._skyOn = false; } this._stainOn = true; } else if (this._skyOn || this._stainOn) { setStains([]); setSkyTint(0, 0, 0); this._skyOn = false; this._stainOn = false; }
     this.ribbon.tick(); if (this.ownCtx && this.ownExtra) this.ownExtra(this.own); if (this.ownCtx) { const c = this.ownCtx; this.own.end(c.camera, g.p, c.renderer.internalSize ? { w: c.renderer.internalSize.x, h: c.renderer.internalSize.y } : { w: 960, h: 540 }, this._dt); }

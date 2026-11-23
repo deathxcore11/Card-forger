@@ -11,7 +11,7 @@ const near = (a, b) => Math.abs(a - b) < 1e-6;
 
 test('rule numbers per level', () => {
   const at = (id, lv, name) => param({ id, level: lv }, name);
-  assert.deepEqual([1, 5, 10].map(l => at('cinder-hatchling', l, 'splash')), [3, 4, 5.5]);
+  assert.deepEqual([1, 5, 10].map(l => at('cinder-hatchling', l, 'splash')), [3, 3.75, 5.5]);
   assert.deepEqual([1, 5, 10].map(l => at('astral-magus', l, 'explodeRadius')), [4, 4.75, 5.5]);
   assert.deepEqual([1, 5, 10].map(l => at('sigil-familiar', l, 'ring')), [0, 5, 6]);
   assert.deepEqual([1, 5, 10].map(l => at('ember-wyvern', l, 'wake')), [0, 1, 1]);

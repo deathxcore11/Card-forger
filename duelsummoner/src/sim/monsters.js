@@ -23,7 +23,7 @@ function propPush(g, m) {
 }
 // ---- the Ember Wake: a strip of embers left under a fire line (level 3 and up on the Wyvern). One per Wyvern, laid again by each shot; every WAKE_TICK s it hurts everything within half its width of the line ----
 const RING_EVERY = 4;
-export const WAKE_W = 3, WAKE_TICK = 0.5, WAKE_LIFE = 1.5;       // base width in metres (grows with Reach), seconds between hits, seconds it lasts
+export const WAKE_W = 2, WAKE_TICK = 0.5, WAKE_LIFE = 1.5;       // base width in metres (grows with Reach), seconds between hits, seconds it lasts
 export function layWake(g, m, tx, ty, tz, len, dmg, flame) {
   const dx = tx - m.x, dz = tz - m.z, l = Math.sqrt(dx * dx + dz * dz) || 1, ux = dx / l, uz = dz / l, hw = WAKE_W * g.reachK / 2;
   const x2 = m.x + ux * len, z2 = m.z + uz * len, mx = (m.x + x2) / 2, mz = (m.z + z2) / 2, id = g.srcIndex(m.id);

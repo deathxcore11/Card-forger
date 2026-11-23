@@ -28,7 +28,7 @@ export const MONSTERS = {
   'cinder-hatchling': { name: 'Cinder Hatchling', type: 'Dragon', elements: ['fire'], rarity: 'common', flame: true, partner: 'ember-wyvern', forms: forms('cinder-hatchling'),
     text: 'Lobbed fireball, 3 m splash.',
     attack: { kind: 'lob', dmg: 3, cd: 1.4, splash: 3, range: 22, flight: 0.7, count: 1 },
-    fx: { 3: { splash: 1 }, 6: { count: 1 }, 10: { splash: 1.5 } }, fxText: { 3: 'splash +1 m (4 m)', 6: 'a second fireball', 10: 'splash +1.5 m (5.5 m)' } },
+    fx: { 3: { splash: 0.75 }, 6: { count: 1 }, 10: { splash: 1.75 } }, fxText: { 3: 'splash +0.75 m (3.75 m)', 6: 'a second fireball', 10: 'splash +1.75 m (5.5 m)' } },
   'rune-apprentice': { name: 'Rune Apprentice', type: 'Spellcaster', elements: ['lightning'], rarity: 'common', partner: 'sigil-familiar', forms: forms('rune-apprentice'),
     text: 'Marks the 3 nearest for 6 s; marked take +30%.',
     attack: { kind: 'mark', dmg: 1, cd: 1.0, marks: 3, range: 24 },
