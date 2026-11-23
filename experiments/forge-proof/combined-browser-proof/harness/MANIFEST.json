@@ -91,7 +91,7 @@
     {
       "path": "cleanup-image.mjs",
       "bytes": 2967,
-      "sha256": "50d4f44db9cd4f823f13f8e2207b18f00c53835d58bf61386cadb81d73fa57e8"
+      "sha256": "272cb0fa3756f43c659c552e7fdc04e955c1ae1d877d80601f2ef15ec7ae3332"
     },
     {
       "path": "cleanup-preflight.py",
@@ -101,7 +101,7 @@
     {
       "path": "collect-combined.py",
       "bytes": 10399,
-      "sha256": "5c60eb9579947b4218ab0a0cab900b7a5d9ca6a7965785a3d42804261e950385"
+      "sha256": "f709ad02ae2ec30b74965a2c1c93071b5b55020e4397486b2c96d7390d5fcbf4"
     },
     {
       "path": "combined-driver.patch",
@@ -111,7 +111,7 @@
     {
       "path": "composition-contract.json",
       "bytes": 5606,
-      "sha256": "eb5f2a987fbbb276fe4ee761cc8433ce046c5c1ad5edc9830a0d5d7cd63b9ae3"
+      "sha256": "26d2e2173bc29c1d39b95d96ad35c96bf868257514912aa4ab1e0fbe89f32b76"
     },
     {
       "path": "evidence/ci-40318684639/artifact/image-summary.json",
@@ -371,7 +371,7 @@
     {
       "path": "fixture-server.mjs",
       "bytes": 12720,
-      "sha256": "fc11e831c267992a11ffff0808bbec3ba1cd8a73e18bcbd0ba9380d0e5388ebf"
+      "sha256": "8393ba57ef92287249ea0772a50911bd9eddf7612a8e3e9c6cbf03ae5afea6ce"
     },
     {
       "path": "fixture-storage.mjs",
@@ -431,7 +431,7 @@
     {
       "path": "image-stages/MANIFEST.json",
       "bytes": 5201,
-      "sha256": "98795d35f7297dbb34879303c747ce063c5d68df0d6e91e04efbc1e485e757f9"
+      "sha256": "cbb9fb7761b7c5dba15397d72f99e3022c4fe10e89c285ab58e6dc0383e818c3"
     },
     {
       "path": "image-stages/README.md",
@@ -441,7 +441,7 @@
     {
       "path": "image-stages/SHA256SUMS",
       "bytes": 1550,
-      "sha256": "90f0162ea2c49fce4a1f965e19b17aaf0b33e117ccdd56c2e3549904d282202d"
+      "sha256": "2b726577ae7a19fa127f66267c998692cf9fe59fc3a96cf40800f6ef75a64314"
     },
     {
       "path": "image-stages/build-and-probe.mjs",
@@ -481,7 +481,7 @@
     {
       "path": "image-stages/pins.mjs",
       "bytes": 1210,
-      "sha256": "6ca5b6c48b76d4278d01bfa7d81a41c15dc26694573639947b17763e3e28e61f"
+      "sha256": "94b0f732cb4364d09199b8e2bd810333e8f322a8831afb640406e963780b78e5"
     },
     {
       "path": "image-stages/probe-image.mjs",
@@ -516,7 +516,7 @@
     {
       "path": "image-stages/test-probe-loader.mjs",
       "bytes": 11925,
-      "sha256": "009d341ca97d8cb45782f6d16ca367bf0dc4b2a7fdf79913b43cbffb7264fbef"
+      "sha256": "a25dfd3ba66eae43f0980cbfcdcd30243eeeadc19ff9b7e09bbf8c44ff78f1a3"
     },
     {
       "path": "image-stages/test-starting-player-contract.mjs",
@@ -531,7 +531,7 @@
     {
       "path": "local-oci/MANIFEST.json",
       "bytes": 2491,
-      "sha256": "9d3fc028d38336c2703e55856db266cd77a2700c9ec4028f2d580c647764d8da"
+      "sha256": "db07bc97b5a30e227c0608c5517b64c011c7dc1e2191a87fc8c51edb4b69c874"
     },
     {
       "path": "local-oci/README.md",
@@ -576,7 +576,7 @@
     {
       "path": "local-oci/reviewed-host.mjs",
       "bytes": 2132,
-      "sha256": "089069b0c060aa4dd82467c43e06a12ded487173bf0bbdca7b825d490360f1cf"
+      "sha256": "98dd111d989af036d8ef0143ec4ec5990a7105120cdb40a158f95eaa9f1ee904"
     },
     {
       "path": "local-oci/schema.json",
@@ -586,17 +586,17 @@
     {
       "path": "local-oci/test-fixtures.mjs",
       "bytes": 7478,
-      "sha256": "2e202e8e9925208a006b26e7665e84e10c2dadfd71d557be1f02a2a607a1ea58"
+      "sha256": "62b7e4f18ad0c5cd87d0a3f16d3c8bba9cb0b7629e789266076967a6332e884f"
     },
     {
       "path": "local-oci/test-local-oci.mjs",
       "bytes": 13461,
-      "sha256": "e6fb46eceb7ad3cf91880855016feca2e8ea41902cb160c18925f1d76ba9ae53"
+      "sha256": "1ad63b4ddce4ba4870ce517e72674b080ab6068ecdfcb7c9e8c65eeffab4575d"
     },
     {
       "path": "local-oci/test-provider.mjs",
       "bytes": 14267,
-      "sha256": "3acac063274e4f649298652f0a6b61c48493c50290b6d19851596553890a6c3e"
+      "sha256": "b04d1b6784717b2b7a011522b6e1faa6e2a4685e347ea118291a642a83e9ceb3"
     },
     {
       "path": "local-oci/test-relay.py",
@@ -666,12 +666,12 @@
     {
       "path": "test-cleanup-image.mjs",
       "bytes": 3614,
-      "sha256": "0f4669cfd43d6688aac7d8d6faddac330fd0e81e6b7c6a4a6711f0b0c96bca21"
+      "sha256": "24bb36d6f667f25defe63833ff582b2acc14f7f5d9d538306a1ba1b8b0cc52fb"
     },
     {
       "path": "test-collector.py",
       "bytes": 6328,
-      "sha256": "cd55803c90f14406a6d7da70c7d2c88126929b83a33cd5140b93476ca231fd17"
+      "sha256": "89a5eda93b0bc4eb5c2e8bee544b64e7919ad138cea2846fad28d4aa32a52977"
     },
     {
       "path": "test-delivered-observer.mjs",

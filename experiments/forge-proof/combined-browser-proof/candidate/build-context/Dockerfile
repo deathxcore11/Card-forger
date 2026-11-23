@@ -49,7 +49,7 @@ HEALTHCHECK --interval=15s --timeout=3s --start-period=120s --retries=3 \
  CMD ["python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready', timeout=2).read()"]
 ENTRYPOINT ["python3", "/opt/host-service/bootstrap.py"]
 
-LABEL org.cardstashy.native-manifest-sha256="3a00b5e91cddf14ec47bd1d4139b24ee9a343e0568ac511bdc7bbc14f14316c2"
+LABEL org.cardstashy.native-manifest-sha256="74e3814d1e817c34f46ef280c902a8e853dbe54d4c206aacbff93842ea2c67c0"
 
 LABEL org.cardstashy.native-ai-modified="true" \
       org.cardstashy.native-ai-class-set-sha256="e39ea6388050f31319b121c0605fde23069d35e7133a203fd19f0a6c72528f80"
