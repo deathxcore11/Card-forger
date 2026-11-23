@@ -115,10 +115,10 @@ function fusionGuard(g, dt) {
   const ready = fusionsReady(g).length > 0, gd = g.fusionGuard, at = { x: 0, y: 0, z: 0 };
   if (!ready) { if (gd) { g.chests = g.chests.filter(c => !c.guaranteed || c.open); g.fusionGuard = null; } return; }
   const add = (lo, hi) => { if (placeNear(g, lo, hi, at)) { const c = { x: at.x, y: at.y, z: at.z, open: false, kind: 'sealed', guaranteed: true }; g.chests.push(c); g.emit('fusionchest', 0, at.x, at.z); return c; } return null; };
-  if (!gd) { const c = add(15, 25); if (c) { g.fusionGuard = { t: 0, second: false }; g.event('banner', 'A Fusion is ready. A Sealed Chest has appeared nearby: open it.'); } return; }
+  if (!gd) { const c = add(8, 14); if (c) { g.fusionGuard = { t: 0, second: false }; g.event('banner', 'A Fusion is ready. A Sealed Chest has appeared nearby: open it.'); } return; }
   if (g.chests.some(c => c.guaranteed && !c.open)) {
     gd.t += dt;
-    if (gd.t >= 45 && !gd.second) { gd.second = true; if (add(8, 14)) g.event('banner', 'Another Sealed Chest has appeared closer.'); }
+    if (gd.t >= 45 && !gd.second) { gd.second = true; if (add(5, 9)) g.event('banner', 'Another Sealed Chest has appeared closer.'); }
   }
 }
 

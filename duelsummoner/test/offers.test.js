@@ -10,8 +10,10 @@ test('offers: an untaken new card does not come back on the next offer, and the 
   }
 });
 
-test('offers: over 1000 offers the guaranteed monster upgrade is spread across the owned monsters', () => {
-  const g = mk(5); g.level = 10; g.field.monsters[0] = { id: 'ember-wyvern', level: 3, cd: 0 }; g.field.monsters[1] = { id: 'cinder-hatchling', level: 3, cd: 0 }; g.field.monsters[2] = { id: 'rune-apprentice', level: 3, cd: 0 };
-  const count = {}; for (let n = 0; n < 1000; n++) { g.upgHist = []; const cards = buildOffer(g); for (const c of cards) if (c.kind === 'monster' && !c.isNew) count[c.id] = (count[c.id] || 0) + 1; }
-  const tot = Object.values(count).reduce((a, b) => a + b, 0); for (const id of ['ember-wyvern', 'cinder-hatchling', 'rune-apprentice']) { const s = (count[id] || 0) / tot; assert.ok(s > 0.25 && s < 0.42, id + ' share ' + s.toFixed(2)); }
+test('offers: over 1000 offers the guaranteed upgrade goes to the lower partner of a fielded Fusion pair, and a rule-of-three offer is never starved of it', () => {
+  const g = mk(5); g.level = 10; g.field.monsters[0] = { id: 'ember-wyvern', level: 3, cd: 0 }; g.field.monsters[1] = { id: 'cinder-hatchling', level: 5, cd: 0 }; g.field.monsters[2] = { id: 'rune-apprentice', level: 3, cd: 0 };
+  const count = {}; let withUp = 0; for (let n = 0; n < 1000; n++) { g.upgHist = [true, true]; const cards = buildOffer(g); let any = false; for (const c of cards) if (c.kind === 'monster' && !c.isNew) { count[c.id] = (count[c.id] || 0) + 1; any = true; } if (any) withUp++; }
+  assert.equal(withUp, 1000, 'every offer holds an upgrade even after two upgrade offers in a row (the pair is being finished)');
+  const tot = Object.values(count).reduce((a, b) => a + b, 0); assert.ok((count['ember-wyvern'] || 0) / tot > 0.4, 'the lower partner leads: ' + JSON.stringify(count));
+  const h = mk(6); h.level = 10; h.field.monsters[0] = { id: 'ember-wyvern', level: 1, cd: 0 }; h.field.monsters[1] = { id: 'cinder-hatchling', level: 1, cd: 0 }; h.upgHist = [true, true]; assert.ok(!buildOffer(h).some(c => c.kind === 'monster' && !c.isNew), 'below the push level the two-in-three rule still holds');
 });

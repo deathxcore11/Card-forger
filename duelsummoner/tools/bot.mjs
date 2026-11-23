@@ -1,4 +1,4 @@
-﻿// A deterministic player bot: given the game state it returns one input record per tick. Used to record tapes and to
+// A deterministic player bot: given the game state it returns one input record per tick. Used to record tapes and to
 // drive balance runs. It thinks ten times a second and handles level-up / chest / Altar / shop offers through menu input.
 import { quantise, emptyRecord, takeCode, MENU_LEAVE } from '../src/sim/input.js';
 import { DUELISTS } from '../src/data/cards.js';
@@ -46,7 +46,7 @@ export function botRecord(g, bot) {
     let ax = 0, az = 0, best = 400; const m = g.pick;
     for (let i = 0; i < m.max; i++) { if (!m.alive[i]) continue; const dx = m.x[i] - p.x, dz = m.z[i] - p.z, d2 = dx * dx + dz * dz; if (d2 < best) { best = d2; ax = dx; az = dz; } }
     const al = Math.sqrt(ax * ax + az * az) || 1; ax /= al; az /= al;
-    let cx = 0, cz = 0, target = g.chests.find(c => !c.open);
+    let cx = 0, cz = 0, target = g.chests.find(c => c.guaranteed && !c.open) || g.chests.find(c => !c.open);       // the banner says a Fusion chest has appeared: a player goes to it first
     if (g.mode && g.mode !== 'classic' && g.gate && g.gate.awake && g.gate.state === 'closed') { if (bot.awakeT === undefined) bot.awakeT = g.sc; if (!target || g.sc - bot.awakeT > 40) target = null; } else bot.awakeT = undefined;
     if (!target && g.world) { const a = g.world.altar; if (a && !a.used && g.t > 20) target = a; }
     let hold = false;

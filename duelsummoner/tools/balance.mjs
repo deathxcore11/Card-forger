@@ -19,7 +19,7 @@ if (isMainThread) {
   const xi = Array.from({ length: 7 }, (_, m) => { const a = res.map(r => r.xpAt[m]).filter(x => x >= 0); return a.length ? +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(1) : 0; }); console.log('cumulative XP at minute ends (survivors):', JSON.stringify(xi));
   console.log('minute:           1    2    3    4    5    6    7'); console.log('level-ups avg:   ', per.map(avg).join('  ')); console.log('all picks avg:   ', pk.map(avg).join('  '));
   console.log('first level-up s: median', med(res.map(r => r.firstLevel)), 'range', Math.min(...res.map(r => r.firstLevel).filter(x => x >= 0)), Math.max(...res.map(r => r.firstLevel)));
-  const fus = res.map(r => r.fusion); console.log('first Fusion: median', med(fus), 's;', fus.filter(x => x >= 330 && x <= 420).length + '/' + N, 'between 5:30 and 7:00;', fus.filter(x => x < 0).length, 'never; before 5:30:', fus.filter(x => x >= 0 && x < 330).length);
+  const fus = res.map(r => r.fusion); console.log('first Fusion: median', med(fus), 's;', fus.filter(x => x >= 330 && x < 420).length + '/' + N, 'between 5:30 and 7:00 (the clock freezes at 7:00, so 420 is late, not in the window);', fus.filter(x => x >= 420).length, 'late;', fus.filter(x => x < 0).length, 'never; before 5:30:', fus.filter(x => x >= 0 && x < 330).length);
   console.log('picks in 7 min: avg', avg(res.map(r => r.pk.reduce((a, b) => a + b, 0))), 'min', Math.min(...res.map(r => r.pk.reduce((a, b) => a + b, 0))), 'max', Math.max(...res.map(r => r.pk.reduce((a, b) => a + b, 0))));
 } else {
   const { Game } = await import('../src/sim/game.js'), { newBot, botRecord } = await import('./bot.mjs'), { seed, diff, stages, world } = workerData;

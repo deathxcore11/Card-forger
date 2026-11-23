@@ -97,11 +97,11 @@ test('boss rule: a timed boss waits for the one before it, so never two timed bo
   assert.equal(g.sp.filter(s => s.alive && s.role !== 'gate').length, 0, 'earlier bosses do not join the gate fight'); assert.equal(g.sp.filter(s => s.alive).length, 1);
 });
 
-test('Fusion chest: a ready pair gets a free Sealed Chest 15 to 25 m away on walkable ground, a closer one after 45 s, and it fuses', () => {
+test('Fusion chest: a ready pair gets a free Sealed Chest 8 to 14 m away on walkable ground, a closer one after 45 s, and it fuses', () => {
   const g = mk(); g.field.monsters[1] = { id: 'cinder-hatchling', level: 10, cd: 0 }; g.field.monsters[0].level = 10; g.spawnAcc = -1e9;
   run(g, 0.5); const c = g.chests.find(x => x.guaranteed); assert.ok(c, 'a chest appears');
-  const d = Math.hypot(c.x - g.p.x, c.z - g.p.z); assert.ok(d >= 14 && d <= 26, 'distance ' + d);
-  run(g, 46); assert.equal(g.chests.filter(x => x.guaranteed).length, 2, 'a second one after 45 s'); const c2 = g.chests[g.chests.length - 1]; assert.ok(Math.hypot(c2.x - g.p.x, c2.z - g.p.z) <= 15);
+  const d = Math.hypot(c.x - g.p.x, c.z - g.p.z); assert.ok(d >= 7 && d <= 15, 'distance ' + d);
+  run(g, 46); assert.equal(g.chests.filter(x => x.guaranteed).length, 2, 'a second one after 45 s'); const c2 = g.chests[g.chests.length - 1]; assert.ok(Math.hypot(c2.x - g.p.x, c2.z - g.p.z) <= 10);
 });
 
 test('per-monster damage per minute is recorded in the run report', () => {

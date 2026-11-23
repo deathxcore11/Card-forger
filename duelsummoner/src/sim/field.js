@@ -83,6 +83,16 @@ export function fusionsReady(g) {
   }
   return out;
 }
+// the monsters of a Fusion pair you field that are not both at the Fusion level yet, lower first; .relax is set once the higher of the two has reached OFFER.fusionPushAt
+export function pairPush(g) {
+  const f = g.field;
+  for (const r of RECIPES) {
+    const ma = f.monsters.find(m => m && m.id === r.a), mb = f.monsters.find(m => m && m.id === r.b); if (!ma || !mb) continue;
+    const FL = FIELD_RULES.fusionLevel; if (ma.level >= FL && mb.level >= FL) continue;
+    const ids = [ma, mb].filter(m => m.level < FL).sort((x, y) => x.level - y.level).map(m => m.id); ids.relax = Math.max(ma.level, mb.level) >= OFFER.fusionPushAt; return ids;
+  }
+  const none = []; none.relax = false; return none;
+}
 export function doFusion(g, id) {
   const r = RECIPES.find(x => x.result === id); if (!r) return false;
   const f = g.field, ia = f.monsters.findIndex(m => m && m.id === r.a), ib = f.monsters.findIndex(m => m && m.id === r.b);
@@ -131,10 +141,11 @@ function bonusFree(slots, bonus) { const i = slots.findIndex((x, k) => !x && bon
 export function buildOffer(g, minRarity, reroll) {
   const f = g.field, D = DUELISTS[f.duelist] || DUELISTS.kael, pool = candidates(g, minRarity), out = [];
   const H = g.upgHist || (g.upgHist = []), isUp = c => c.kind === 'monster' && !c.isNew;
-  const allow = reroll || H.length < 2 || !(H[H.length - 1] && H[H.length - 2]);
+  const push = pairPush(g), allow = reroll || H.length < 2 || !(H[H.length - 1] && H[H.length - 2]) || push.relax;
   const dropUps = () => { for (let i = pool.length - 1; i >= 0; i--) if (isUp(pool[i])) pool.splice(i, 1); };
   const take = c => { out.push(c); const i = pool.indexOf(c); if (i >= 0) pool.splice(i, 1); if (isUp(c)) dropUps(); };
   if (!allow) dropUps();
+  if (push.length && minRarity) { const extra = candidates(g).find(c => c.id === push[0] && !c.isNew); if (extra && !pool.some(x => x.id === extra.id)) pool.push(extra); }       // a chest's rarity floor never hides the Fusion pair's upgrade
   const seen = g.upgSeen || (g.upgSeen = {}); g.offerN = (g.offerN || 0) + (reroll ? 0 : 1);
   if (!reroll && g.lastOffered) { const avoid = new Set(g.lastOffered), keep = pool.filter(c => !(c.isNew && avoid.has(c.id))); if (keep.length >= OFFER.size) { pool.length = 0; pool.push(...keep); } }       // a new card you passed on does not come straight back
   // forced cards: the partner monster by level 3, a Trap by level 4
@@ -145,7 +156,8 @@ export function buildOffer(g, minRarity, reroll) {
     const c = pool.find(x => x.kind === 'trap' && x.isNew); if (c) { take(c); g.trapForced = true; }
   }
   if (OFFER.guaranteeMonsterUpgrade && allow && out.length < OFFER.size && !out.some(isUp)) {
-    const ups = pool.filter(x => x.kind === 'monster' && !x.isNew); if (ups.length) { let best = ups[0]; for (const u of ups) if ((seen[u.id] === undefined ? -1 : seen[u.id]) < (seen[best.id] === undefined ? -1 : seen[best.id])) best = u; take(best); }       // the guaranteed upgrade rotates to the monster offered longest ago
+    const ups = pool.filter(x => x.kind === 'monster' && !x.isNew), pu = push.length ? ups.find(x => x.id === push[0]) : null;
+    if (pu) take(pu); else if (ups.length) { let best = ups[0]; for (const u of ups) if ((seen[u.id] === undefined ? -1 : seen[u.id]) < (seen[best.id] === undefined ? -1 : seen[best.id])) best = u; take(best); }       // the guaranteed upgrade rotates to the monster offered longest ago
   }
   while (out.length < OFFER.size && pool.length) {
     const want = rarityRoll(g);
