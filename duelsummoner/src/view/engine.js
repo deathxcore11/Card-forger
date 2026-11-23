@@ -38,9 +38,12 @@ export const GLSL = `
 uniform sampler2D uN; uniform float uT; uniform vec3 uWind; uniform vec3 uSkyT; uniform vec3 uSkyH; uniform vec3 uSkyG; uniform vec3 uSunD; uniform vec3 uSunK;
 vec4 N(vec2 u) { return texture2D(uN, u); }
 float hsh(vec2 t) { return texture2D(uN, (floor(t) + 0.5) / 64.0).b; }
-float gust(vec2 p) {
-  float f = smoothstep(0.3, 0.78, N(p * 0.011 - vec2(30.0, 10.0) / 512.0 * uT).r);
-  return f * (0.72 + 0.28 * sin(dot(p, uWind.xy) * 0.12 - uT * 1.2)) * uWind.z;
+float gust(vec2 p) {                                       // a travelling front: a sharp leading edge, a long tail behind it, broken into patches by the noise, crossing the ground at about 9 m/s with 40 m between fronts
+  vec2 d = normalize(uWind.xy);
+  float s = dot(p, d) * 0.025 - uT * 0.22 + 0.35 * (N(p * 0.013).r - 0.5), ph = fract(s);
+  float front = smoothstep(0.0, 0.05, ph) * (1.0 - smoothstep(0.05, 0.5, ph));
+  float gp = smoothstep(0.25, 0.65, N(p * 0.015 + 0.2).a);
+  return mix(0.15, 1.0, front * gp) * uWind.z;
 }
 vec3 skyBase(vec3 d) {
   float k = floor(sqrt(max(d.y, 0.0)) * 12.0 + 0.5) / 12.0;
@@ -64,6 +67,24 @@ export function actorLit(mat, k = 1) {
     sh.fragmentShader = 'uniform vec3 uALift; uniform vec3 uAKey; varying vec3 vANormal;\n' + sh.fragmentShader.replace('#include <envmap_fragment>', '#include <envmap_fragment>\n outgoingLight += (uALift * (0.55 + 0.45 * dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11))) + uAKey * diffuseColor.rgb * max(dot(normalize(vANormal), vec3(0.0, 0.62, 0.78)), 0.0)) * ' + k.toFixed(2) + ';');
   };
   const key = mat.customProgramCacheKey ? mat.customProgramCacheKey.bind(mat) : null; mat.customProgramCacheKey = () => (key ? key() : '') + 'actorlit' + k.toFixed(2);
+  return mat;
+}
+
+// ---- wind on instanced scenery: bends each instance along the gust direction by its height, read from the one gust() field at the instance's own spot (grass: tip lean and flutter; trees: a slow lean that lags the front).
+// k = { h: height that counts as full bend (m), lean: metres of lean at full height in a full gust, flut: flutter in metres }. View only; vertex shader, so no per-frame upload.
+export function windify(mat, k) {
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = sh => {
+    if (prev) prev(sh); const u = engineUniforms(); for (const n in u) sh.uniforms[n] = u[n];
+    sh.vertexShader = GLSL.slice(0, GLSL.indexOf('float bayer()')) + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+#ifdef USE_INSTANCING
+ { mat3 im_ = mat3(modelMatrix * instanceMatrix); vec3 ip_ = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz; float g_ = gust(ip_.xz), hh_ = clamp(transformed.y / ${k.h.toFixed(2)}, 0.0, 1.0); hh_ *= hh_;
+  float fl_ = sin(uT * 4.3 + ip_.x * 1.7 + ip_.z * 2.3 + transformed.x * 3.0) * ${k.flut.toFixed(3)} * g_;
+  vec2 wd_ = normalize(uWind.xy); vec3 dw_ = vec3(wd_.x, 0.0, wd_.y) * (0.12 + 0.88 * g_) * ${k.lean.toFixed(3)} * hh_ + vec3(fl_ * hh_, 0.0, -fl_ * hh_);
+  transformed += vec3(dot(im_[0], dw_), dot(im_[1], dw_), dot(im_[2], dw_)) / max(dot(im_[0], im_[0]), 1e-4); }
+#endif`);
+  };
+  const key = mat.customProgramCacheKey ? mat.customProgramCacheKey.bind(mat) : null; mat.customProgramCacheKey = () => (key ? key() : '') + 'windify' + k.h + k.lean + k.flut;
   return mat;
 }
 
