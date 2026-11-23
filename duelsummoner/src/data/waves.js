@@ -2,7 +2,7 @@
 export const RUN = {
   maxAlive: 300,
   // spawns per second; linear between rows. The last row (8:00) is the rate while the boss is up.
-  rate: [[0, 0.3], [60, 0.4], [120, 1.4], [180, 2.2], [240, 3.0], [300, 4.2], [360, 5.5], [420, 7], [480, 3]],   // was 1, 2, 3, 4, 4, 6, 7, 9: eased 1:00 to 5:00 by about 25%
+  rate: [[0, 0.3], [60, 0.4], [120, 0.9], [180, 1.4], [240, 2.0], [300, 3.0], [360, 4.5], [420, 6], [480, 3]],   // was 1, 2, 3, 4, 4, 6, 7, 9: eased 1:00 to 5:00 by about 25%
   bossRate: 3,
   surge: { count: [100, 120], hpMul: 0.5 },                  // the named surges (about 40% and 70% of the stage clock, and the gate wake): Husks closing in from a ring, at this share of their HP
   // from this second on, each spawn rolls these chances in order; whatever is left over is a Husk

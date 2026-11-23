@@ -1,4 +1,4 @@
-// The three-stage run (design/run-structure.md, draft v1). Everything the stage machine needs is data here, so the numbers can move
+﻿// The three-stage run (design/run-structure.md, draft v1). Everything the stage machine needs is data here, so the numbers can move
 // without touching code. Times are seconds on the stage clock. DRAFT: the spec's numbers may still change.
 //
 // STAND-INS until the real bosses exist (the engine field says which existing fight plays the part):
@@ -34,9 +34,9 @@ export const RUNSPEC = {
 //   hp, hpCurve   enemy HP multiplier and the per-minute curve (1 + a m + b m^2); dmg, dmgPerMinute   enemy damage
 //   boss   elite and boss HP multiplier on top of hp;   score   multiplier on the run score (placeholder values)
 export const DIFFICULTY = {
-  easy:   { name: 'Easy',   score: 0.75, spawn: 0.8,  ramp: 0.8,  cap: { start: 150, end: 300, minutes: 14 }, hp: 0.85, hpCurve: { a: 0.07, b: 0.005 }, dmg: 0.85, dmgPerMinute: 0.04, boss: 0.8 },
-  medium: { name: 'Medium', score: 1.0,  spawn: 1.0,  ramp: 1.0,  cap: { start: 300, end: 300, minutes: 1 },  hp: 1.0,  hpCurve: { a: 0.10, b: 0.008 },  dmg: 1.0,  dmgPerMinute: 0.06, boss: 1.0 },
-  hard:   { name: 'Hard',   score: 1.5,  spawn: 1.2,  ramp: 1.25, cap: { start: 300, end: 300, minutes: 1 },  hp: 1.15, hpCurve: { a: 0.18, b: 0.02 }, dmg: 1.15, dmgPerMinute: 0.08, boss: 1.3 }
+  easy:   { name: 'Easy',   score: 0.75, spawn: 0.8,  ramp: 0.8,  cap: { start: 150, end: 300, minutes: 14 }, hp: 0.5, hpCurve: { a: 0.05, b: 0.003 }, dmg: 0.4, dmgPerMinute: 0.04, boss: 0.8 },
+  medium: { name: 'Medium', score: 1.0,  spawn: 1.0,  ramp: 1.0,  cap: { start: 300, end: 300, minutes: 1 },  hp: 0.6,  hpCurve: { a: 0.07, b: 0.005 },  dmg: 0.5,  dmgPerMinute: 0.06, boss: 1.0 },
+  hard:   { name: 'Hard',   score: 1.5,  spawn: 1.2,  ramp: 1.25, cap: { start: 300, end: 300, minutes: 1 },  hp: 0.8, hpCurve: { a: 0.12, b: 0.01 }, dmg: 0.7, dmgPerMinute: 0.08, boss: 1.3 }
 };
 // The Twin Jackal Idols' bite and speed per difficulty (stage runs only; the classic mode keeps the base numbers)
 DIFFICULTY.easy.idol = { bite: 10, speed: 5 }; DIFFICULTY.medium.idol = { bite: 12, speed: 5.5 }; DIFFICULTY.hard.idol = { bite: 15, speed: 6 };
@@ -93,3 +93,5 @@ export const ACES = {
   trophy: { first: 0.35, decay: 0.07, min: 0.1 },      // chance an Ace drops a Trophy Chest: 35%, then 28%, 21% ... never below 10%
   rarity: [['rare', 0.6], ['epic', 0.3], ['legendary', 0.1]]
 };
+
+

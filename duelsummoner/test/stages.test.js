@@ -50,7 +50,7 @@ test('gate boss down: enemies crumble, a chest descends, the Descent carries the
   assert.equal(g.stage, 1); assert.equal(g.stageSpec.id, 'catacombs'); assert.equal(g.sc < 1, true, 'a new stage clock');
   assert.equal(g.field.monsters[0].level, 6, 'the field carries'); assert.ok(g.level >= 9, 'the level carries (kills on the way can add one)'); assert.ok(g.coins >= 77);
   assert.ok(g.p.hp > 50, 'the Descent heals part of the missing LP'); assert.equal(g.chests.filter(c => !c.open).length, 1, 'the unopened Sealed Chest is carried');
-  assert.equal(g.stageFacts.length, 1); assert.equal(g.stageFacts[0].stage, 1); assert.ok(g.hpMul > 1.1, 'stage multiplier and the minute curve apply');
+  assert.equal(g.stageFacts.length, 1); assert.equal(g.stageFacts[0].stage, 1); assert.ok(g.hpMul > 0.7, 'stage multiplier and the minute curve apply');
 });
 
 test('the Toll Bell: at 0:00 with the gate unopened the duelist is pulled in and the boss is enraged', () => {

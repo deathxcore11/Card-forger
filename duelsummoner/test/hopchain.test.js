@@ -38,3 +38,15 @@ for (const seed of [1, 4242, 31337, 48879]) test('hop chain on seed ' + seed + '
 
 
 
+
+for (const seed of [1, 4242, 31337, 48879]) test('hop chain on seed ' + seed + ': a standing-start jump at the edge of each pad lands on the next pad, so the early game never needs a run-up', () => {
+  const g = new Game(seed, { mode: 'run', duelist: 'kael' }); g.god = true; const P = g.map.prims, p = g.p;
+  const pads = P.filter(q => q.t === 'box' && q.h === 3.6 && !q.deco).map(q => ({ x: (q.x0 + q.x1) / 2, z: (q.z0 + q.z1) / 2, hw: (q.x1 - q.x0) / 2, hd: (q.z1 - q.z0) / 2 })); assert.equal(pads.length, 3);
+  const alongX = Math.abs(pads[1].x - pads[0].x) > Math.abs(pads[1].z - pads[0].z); pads.sort((a, b) => alongX ? a.x - b.x : a.z - b.z);
+  for (let k = 0; k < 2; k++) {
+    const a = pads[k], b = pads[k + 1], dx = Math.sign(b.x - a.x), dz = Math.sign(b.z - a.z), half = alongX ? a.hw : a.hd, yaw = Math.atan2(-(b.x - a.x), -(b.z - a.z));
+    p.x = a.x + dx * (half - 0.7); p.z = a.z + dz * (half - 0.7); p.y = 3.6; p.vx = p.vz = 0; p.vy = 0; p.grounded = true; let landed = false;
+    for (let i = 0; i < 120; i++) { g.step(1 / 60, { ...idle, f: 1, yaw, jump: i < 30 }); if (i > 5 && p.grounded && Math.abs(b.x - p.x) <= b.hw && Math.abs(b.z - p.z) <= b.hd && Math.abs(p.y - 3.6) < 0.1) { landed = true; break; } }
+    assert.ok(landed, 'standing jump from pad ' + k + ' to pad ' + (k + 1));
+  }
+});

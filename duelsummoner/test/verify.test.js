@@ -49,7 +49,7 @@ test('score: integer, weights from tuning, difficulty multiplier applies, and it
 test('difficulty tables: three of them, Medium is the base, Easy is gentler and Hard ramps faster', () => {
   assert.deepEqual(DIFFICULTIES, ['easy', 'medium', 'hard']);
   const E = DIFFICULTY.easy, M = DIFFICULTY.medium, H = DIFFICULTY.hard;
-  assert.equal(M.spawn, 1); assert.equal(M.hp, 1); assert.equal(M.score, 1);
+  assert.equal(M.spawn, 1); assert.equal(M.hp, 0.6); assert.equal(M.score, 1);       // Medium's enemy HP is 0.6 since the pick pace was slowed (item 12)
   assert.ok(E.spawn < M.spawn && M.spawn < H.spawn); assert.ok(E.ramp < H.ramp); assert.ok(E.hpCurve.a < M.hpCurve.a && M.hpCurve.a < H.hpCurve.a); assert.ok(E.cap.start < M.cap.start);
   const hpAt = (dif, min) => { const g = new Game(5, { mode: 'run', difficulty: dif, offers: false }); g.sc = min * 60; g.tick({ mx: 0, mz: 0, yaw: 0, buttons: 0, menu: 0 }); return g.hpMul; };
   assert.ok(hpAt('easy', 5) < hpAt('medium', 5) && hpAt('medium', 5) < hpAt('hard', 5));

@@ -36,6 +36,13 @@ export function botRecord(g, bot) {
     if (bot.still >= 8) { bot.panic = 15; bot.still = 0; } else if (bot.panic > 0) bot.panic--;
     for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = p.x - e.x[i], dz = p.z - e.z[i], d2 = dx * dx + dz * dz; if (d2 < 100) { const w = 1 / (d2 + 0.5); rx += dx * w; rz += dz * w; if (d2 < 6) crowd++; } }
     for (const sp of g.sp) if (sp.alive && !sp.dead) { const dx = p.x - sp.x, dz = p.z - sp.z, d2 = dx * dx + dz * dz; if (d2 < 150) { rx += dx / (d2 + 1) * 3; rz += dz / (d2 + 1) * 3; } }
+    if (crowd >= 3) {                                                    // pinned: do not run straight away, run through the widest gap in the ring of enemies (and not into a trunk or a boulder)
+      const SEC = 16, dens = new Float32Array(SEC); const add = (dx, dz, w) => { const a = Math.atan2(dz, dx), k = ((Math.round(a / (Math.PI * 2) * SEC) % SEC) + SEC) % SEC; dens[k] += w; };
+      for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z, d2 = dx * dx + dz * dz; if (d2 < 196) add(dx, dz, 1 / (d2 + 1)); }
+      if (g.colliders) for (const c of g.colliders.list) { const dx = c.x - p.x, dz = c.z - p.z, d2 = dx * dx + dz * dz; if (d2 < 100 && p.y < c.top - 0.3) add(dx, dz, 2 / (d2 + 0.5)); }
+      let bk = 0, bs = 1e9; for (let k = 0; k < SEC; k++) { const s = dens[k] + 0.5 * (dens[(k + 1) % SEC] + dens[(k + SEC - 1) % SEC]); if (s < bs) { bs = s; bk = k; } }
+      const ga = bk / SEC * Math.PI * 2, mag = Math.hypot(rx, rz) + 0.2; rx = Math.cos(ga) * mag; rz = Math.sin(ga) * mag;
+    }
     let ax = 0, az = 0, best = 400; const m = g.pick;
     for (let i = 0; i < m.max; i++) { if (!m.alive[i]) continue; const dx = m.x[i] - p.x, dz = m.z[i] - p.z, d2 = dx * dx + dz * dz; if (d2 < best) { best = d2; ax = dx; az = dz; } }
     const al = Math.sqrt(ax * ax + az * az) || 1; ax /= al; az /= al;
@@ -48,6 +55,7 @@ export function botRecord(g, bot) {
       for (const c of W.cchests) if (!c.open && (c.free || g.coins >= chestPrice(g))) consider(c, false); for (const s of W.shrines) if (!s.done) consider(s, true); for (const s of W.stones) if (!s.used) consider(s, false);
       if (best) { target = best; hold = bot.shrineT && Math.hypot(best.x - p.x, best.z - p.z) < EN.shrines.radius - 0.8; }
     }
+    if (!target && g.mode && g.mode !== 'classic' && g.sc >= 335 && g.gate && g.gate.state === 'closed' && !g.circle) { target = { x: g.map.gate.x, z: g.map.gate.z }; hold = g.gate.awake && Math.hypot(target.x - p.x, target.z - p.z) < 3; }       // by about 5:35 the bot is at the gate, so it can walk in the moment it wakes
     const gb = g.sp.find(s => s.alive && s.role === 'gate');                            // the gate boss: close in to about 9 m so the summons can hit it, strafing around it
     const tb = g.sp.find(s => s.alive && !s.dead && s.role !== 'gate');                // a timed boss or elite: keep it in range of the monsters
     if (tb && !target) { const dd = Math.hypot(tb.x - p.x, tb.z - p.z); if (dd > 13) target = { x: tb.x, z: tb.z }; }

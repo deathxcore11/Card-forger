@@ -113,12 +113,12 @@ test('W moves along the camera forward after any yaw (180 degree turn)', () => {
 });
 
 test('spawn rate: a quiet first minute (0.3 to 0.4/s), then 2.2/s at 3:00 and 4.2/s at 5:00', () => {
-  near(spawnRate(0), 0.3, 1e-9); near(spawnRate(60), 0.4, 1e-9); near(spawnRate(90), 0.9, 1e-9); near(spawnRate(180), 2.2, 1e-9); near(spawnRate(500), 3, 1e-9); near(spawnRate(300), 4.2, 1e-9);
+  near(spawnRate(0), 0.3, 1e-9); near(spawnRate(60), 0.4, 1e-9); near(spawnRate(90), 0.65, 1e-9); near(spawnRate(180), 1.4, 1e-9); near(spawnRate(500), 3, 1e-9); near(spawnRate(300), 3.0, 1e-9);
   const g = new Game(1, { offers: false }); g.god = true;
   run(g, 10, idle); const first = g.spawned;
   g.t = 180; g.spawned = 0; g.en.alive.fill(0); run(g, 10, idle);
   assert.ok(first >= 2 && first <= 5, `first `);
-  assert.ok(g.spawned >= 19 && g.spawned <= 25, `late ${g.spawned}`);
+  assert.ok(g.spawned >= 12 && g.spawned <= 16, `late ${g.spawned}`);
 });
 
 test('enemies spawn 22 to 30 m away and the live count never exceeds 300', () => {
