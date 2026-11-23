@@ -12,8 +12,12 @@
 //           not a whole multiple of its own, no canvas stretched, text only in the game's two pixel faces;
 //   flat    on the title, at a scale above one, at most 0.2% of the frame's pixels are not one flat block of device
 //           pixels (read from a screenshot: a soft or shifted pixel is not flat);
-//   fit     no text cut off by its box (the text bar may be, when it shows its more marker), nothing outside the frame,
-//           nothing written in a pillar crossing out of it, no two plaques on top of each other;
+//   fit     no text cut off by its box (the text bar may be, when it shows its more marker; a plinth's name plate may
+//           not), nothing outside the frame, nothing written in a pillar crossing out of it or lying on another word or
+//           plaque there, no two plaques on top of each other, a plinth's name plate never on its card's picture or
+//           numbers (a card's foot may stand behind it);
+//   names   a name set short on a plinth, the ledge or a pillar (its whole in data-name) is never cut inside a word: it
+//           shows whole words of the name, or an initial and a full stop, the last perhaps followed by two dots;
 //   grid    every line of words starts on a whole frame pixel, across and down;
 //   scroll  a box of pages in a window or a book ends at least 2 pixels above the plaques under it and at most 8 (its
 //           window closes up under it), no line of words is cut by its foot or its top, while lines lie below it its
@@ -28,19 +32,36 @@
 //           has passed over its plaques;
 //   room    a book's room shows none of its painting's black bands;
 //   bar     a short message (the toast) lies exactly on the text bar (96, H - 40, W - 192 wide); the save bar is as wide;
+//   door    a door of the chamber is drawn closed unless the words it led to are told over it (a chamber met again
+//           after a lost guardian duel shows its door shut);
 //   reach   every control that is not switched off can be tapped where it stands (nothing lies over its middle);
 //   placed  every moving part drawn over a picture (data-art) sits on the point of the picture it was measured from,
 //           through the picture's own place and size as the page laid it out; a torch flame also stands on the bright
 //           core of the painted flame, found again in the picture's own pixels; a model drawn in a room (a canvas laid
 //           on the room picture, its spots in data-foot) stands with its lowest pixel on its spot;
-//   clear   no control, label or coin of the screen (outside a window, a scene, a dim or the toast) lies over such a
-//           moving part;
+//   tagged  every part laid on a room's picture says where on it it stands (data-art): each canvas of models beside the
+//           picture, and each part of the chamber's room (door leaves, fog, numbers, cursor, keepers), so the placed and
+//           clear rules measure them all;
+//   clear  no control, label or coin of the screen (outside a window, a scene, a dim or the toast) lies over such a
+//           part while it moves (the fog, the cursor, the forge's hammer); a part marked still (data-still: a door's
+//           leaves at rest, a number on the step, a model standing in its room) is scenery the choices may stand in
+//           front of, and a tap area that draws nothing hides nothing; a part is measured where it shows, cut to the
+//           view or any other box that hides what spills out of it;
+//   grid    a 1-bit dither drawn for its place on the frame's grid (the doorway fog, data-grid) lies at that place and is
+//           never moved, so a dimmed screen's mesh meets it in the same step on every shape (a doorway's fog that does not
+//           say where its dots stand is a fault);
+//   still   a part marked still runs no animation, and a canvas of models marked still draws the same pixels a moment
+//           later;
+//   step    every animation running in the frame moves what it moves on whole frame pixels at every one of its steps
+//           (read at the middle of each step, not only where it happens to be when the screen is looked at), and makes
+//           a part only none, half or all see-through;
 //   table   on the duel's table each tap area is cut to its zone as the table's camera draws it and draws nothing; the
 //           numbers lie inside the view, apart and off the trap rows; the hall's painting spans the view to its foot;
 //   errors  no page error.
 // Some shapes are checked inside a page that styles pictures the way a host page may (img { max-width: 100%;
 // height: auto } and the like), and at the end a few scenes are pictured with and without those styles, with every
-// animation stopped at its start: the two pictures must be the same to the pixel.
+// animation stopped at its start, once every face is in and the screen has settled: the two pictures must be the same
+// to the pixel.
 // Then it taps about the page at random from each scene for [steps] taps (default 40), checking errors and the
 // rules again on every console screen it reaches.
 const { chromium } = require('playwright');
@@ -154,7 +175,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
         const inside = (r, o, slack = 1) => r.left >= o.left - slack && r.top >= o.top - slack && r.right <= o.right + slack && r.bottom <= o.bottom + slack;
         // scrolled out of view inside a list that scrolls (the list itself is checked): not a fault, a scroll away
         const scrolledAway = e => { for (let p = e.parentElement; p && p !== app; p = p.parentElement) { const s = getComputedStyle(p); if (/(auto|scroll)/.test(s.overflowY + s.overflowX) && !inside(e.getBoundingClientRect(), p.getBoundingClientRect())) return true; } return false; };
-        for (const e of app.querySelectorAll('.pq, .lb, .dt b, .dt p, .mw h2, .atk, .cd .n1, .cd .n2')) {
+        for (const e of app.querySelectorAll('.pq, .lb, .dt b, .dt p, .mw h2, .atk, .cd .n1, .cd .n2, .pln .pnm, [data-name]')) {
           if (!vis(e) || e.closest('.sc')) continue;
           if (e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 2 && getComputedStyle(e).overflow !== 'visible') out.push(`${name(e)} "${e.textContent.slice(0, 30)}": text cut off (${e.scrollWidth}x${e.scrollHeight} in ${e.clientWidth}x${e.clientHeight})`);
         }
@@ -162,6 +183,26 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
         for (const e of app.querySelectorAll('.lb, .pq, .cd, .pf, .sl, .ga, .mw')) if (vis(e) && !inside(e.getBoundingClientRect(), A) && !scrolledAway(e)) out.push(`${name(e)} "${e.textContent.slice(0, 20)}": outside the frame`);
         const pillars = [...app.querySelectorAll('.fr > .ab')].filter(p => p.style.width === '96px');
         for (const p of pillars) { const P = p.getBoundingClientRect(); for (const e of p.querySelectorAll('.lb, .pq, .ga, .pf, .sl, .spk, .seal, .pip, .backs')) if (vis(e) && !inside(e.getBoundingClientRect(), P)) out.push(`${name(e)} "${e.textContent.slice(0, 20)}": crosses out of its pillar`); }
+        // in a pillar no word lies on another word or a plaque (a name on two lines, a readout over the plaque under it)
+        for (const p of pillars) {
+          const ws = [...p.querySelectorAll('.lb, .pq, .big2')].filter(vis).map(e => [e, fr(e)]);
+          for (let i = 0; i < ws.length; i++) for (let j = i + 1; j < ws.length; j++) { const [a, A2] = ws[i], [b, B2] = ws[j]; if (A2[0] < B2[0] + B2[2] && B2[0] < A2[0] + A2[2] && A2[1] < B2[1] + B2[3] && B2[1] < A2[1] + A2[3]) out.push(`${name(a)} "${a.textContent.trim().slice(0, 16)}" and ${name(b)} "${b.textContent.trim().slice(0, 16)}" lie on each other in a pillar`); }
+        }
+        // names: a name set short (data-name holds it whole) is never cut inside a word: each word shown is a whole word
+        // of the name, or one word's initial and a full stop, and only the last may be followed by two dots
+        for (const e of app.querySelectorAll('[data-name]')) {
+          if (!vis(e)) continue;
+          const full = e.dataset.name.toUpperCase().split(/\s+/).filter(Boolean), shown = e.innerText.toUpperCase().split(/\s+/).filter(Boolean);
+          for (const w of shown) { const x = w.replace(/\.\.$/, ''); if (!full.includes(x) && !(/^[A-Z]\.$/.test(x) && full.some(f => f[0] === x[0]))) out.push(`${name(e)} "${e.innerText.replace(/\s+/g, ' ').slice(0, 24)}": the name "${e.dataset.name}" cut inside a word ("${w}")`); }
+        }
+        // a card may stand with its foot behind its plinth's name plate, never with its numbers or its picture behind it;
+        // what stands on a plinth stands inside its border, centred to within a pixel
+        for (const pl of app.querySelectorAll('.pln')) {
+          for (const e of pl.children) { if (e.classList.contains('pnm') || !vis(e)) continue; const l = e.offsetLeft, r = pl.clientWidth - l - e.offsetWidth; if (l < 0 || r < 0 || Math.abs(l - r) > 1) out.push(`${name(pl)}: ${name(e)} stands ${l} and ${r} pixels inside its border, left and right`); }
+          const nm = pl.querySelector('.pnm'); if (!nm || !vis(nm)) continue;
+          const [, ny] = fr(nm);
+          for (const e of pl.querySelectorAll('.cd .art, .cd .n1, .cd .n2, .pf')) { const [, y, , h] = fr(e); if (vis(e) && y + h > ny) out.push(`${name(pl)} "${nm.textContent}": its name plate lies on ${name(e)} (${y + h - ny} rows)`); }
+        }
         // (a plaque scrolled out of its box is not on the screen, so it overlaps nothing)
         const pqs = [...app.querySelectorAll('.pq')].filter(vis).map(e => [e, e.getBoundingClientRect()]);
         for (let i = 0; i < pqs.length; i++) for (let j = i + 1; j < pqs.length; j++) { const [a, ra] = pqs[i], [b, rb] = pqs[j]; if (a.closest('.mw') !== b.closest('.mw') || scrolledAway(a) || scrolledAway(b)) continue; if (ra.left < rb.right - 1 && rb.left < ra.right - 1 && ra.top < rb.bottom - 1 && rb.top < ra.bottom - 1) out.push(`plaques "${a.textContent}" and "${b.textContent}" overlap`); }
@@ -251,13 +292,31 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
         const W0 = app.offsetWidth, H0 = app.offsetHeight, toastEl = app.querySelector('#toast');
         if (toastEl && toastEl.textContent.trim() && vis(toastEl)) { const [tx, ty, tw2] = fr(toastEl); if (tx !== 96 || ty !== H0 - 40 || tw2 !== W0 - 192) out.push(`#toast at ${tx}, ${ty}, ${tw2} wide: not on the text bar (96, ${H0 - 40}, ${W0 - 192} wide)`); }
         const sbar = app.querySelector('.savebar'); if (sbar && vis(sbar) && sbar.offsetWidth !== W0 - 192) out.push(`.savebar ${sbar.offsetWidth} wide, not ${W0 - 192}`);
-        // clear: no control, label or coin of the screen lies over a moving part drawn on a picture
-        const parts = [...app.querySelectorAll('[data-art]')].filter(vis).map(e => [e, e.getBoundingClientRect()]);
+        // clear: no control, label or coin of the screen lies over a moving part drawn on a picture. A part marked still
+        // (data-still: a door's leaves at rest, a model standing in its room) is scenery the choices may stand in front of,
+        // as they stand in front of the painting; it is held to staying still below. A tap area that draws nothing (the
+        // forge's "tap to go on") hides nothing.
+        const drawsNothing = e => { const s = getComputedStyle(e); return s.backgroundImage === 'none' && /rgba\(0, 0, 0, 0\)|transparent/.test(s.backgroundColor) && ['Top', 'Right', 'Bottom', 'Left'].every(k => !parseFloat(s['border' + k + 'Width'])) && s.boxShadow === 'none' && !(s.outlineStyle !== 'none' && parseFloat(s.outlineWidth)) && !e.textContent.trim() && !e.children.length; };
+        // A part is measured where it shows: cut to every box round it that hides what spills out (the view crops a
+        // room's canvas as it crops the painting, so the canvas never reaches the pillars).
+        const shown = e => {
+          const r = e.getBoundingClientRect(); let { left, top, right, bottom } = r;
+          for (let q = e.parentElement; q && q !== document.documentElement; q = q.parentElement) {
+            const s = getComputedStyle(q), c = q.getBoundingClientRect();
+            if (s.overflowX !== 'visible') { left = Math.max(left, c.left); right = Math.min(right, c.right); }
+            if (s.overflowY !== 'visible') { top = Math.max(top, c.top); bottom = Math.min(bottom, c.bottom); }
+          }
+          return { left, top, right, bottom };
+        };
+        const parts = [...app.querySelectorAll('[data-art]:not([data-still])')].filter(vis).map(e => [e, shown(e)]).filter(([, P]) => P.right > P.left && P.bottom > P.top);
         if (parts.length) for (const e of app.querySelectorAll('[data-a], .pq, .lb, .coin, #coin, .runslot')) {
-          if (!vis(e) || e.closest('.mw, .story, .dim, .toast, [data-art]') || e.querySelector('[data-art]')) continue;
+          if (!vis(e) || e.closest('.mw, .story, .dim, .toast, [data-art]') || e.querySelector('[data-art]') || drawsNothing(e)) continue;
           const q = e.getBoundingClientRect();
           for (const [p, P] of parts) if (q.left < P.right - .5 && P.left < q.right - .5 && q.top < P.bottom - .5 && P.top < q.bottom - .5) out.push(`${name(e)} "${e.textContent.trim().slice(0, 20)}": lies over the moving part ${name(p)}`);
         }
+        // door: a door is closed until the player goes through it; one stands open (its opened picture, made as it swung)
+        // only under the words it led to
+        if (!app.querySelector('.story')) for (const d of app.querySelectorAll('.dr.opn, .dr > img[src^="data:"]')) out.push(`${name(d.closest('.dr'))}: a door drawn open with no words over it`);
         // reach: every live control can be tapped at its middle
         const top = app.querySelector('.mw, .story, .dim') ? [...app.querySelectorAll('.mw [data-a], .story[data-a], .story [data-a], .dim[data-a], .mw[data-a]')] : [...app.querySelectorAll('[data-a]')];
         for (const e of top) {
@@ -289,6 +348,29 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
             if (same / (w * h) < .6 || edgeSame / edge < .85) out.push(`${name(e)}: its first frame matches the picture under it at ${Math.round(same / (w * h) * 100)}% (edge ${Math.round(edgeSame / edge * 100)}%): not cut from this place`);
           }
         }
+        // tagged: what is laid on a room's picture carries data-art, so the rules above measure it. A canvas of models
+        // beside the picture, and every part inside the chamber's room, which holds nothing but its picture and what
+        // stands on it.
+        for (const pic of app.querySelectorAll('img[data-pic="room"]')) {
+          const sib = [...pic.parentElement.children].filter(e => e !== pic && (e.tagName === 'CANVAS' || pic.parentElement.classList.contains('room')));
+          for (const e of sib) if (!e.hasAttribute('data-art')) out.push(`${name(e)}: laid on the room's picture, but says nothing of where on it it stands`);
+        }
+        // grid: a 1-bit dither drawn for its place on the frame's grid (data-grid: where its corner falls, counted in fours)
+        // is laid at that place, and nothing moves it, so it meets every other pattern on the frame in the same step
+        for (const e of app.querySelectorAll('[data-grid], .dfog')) {
+          if (!vis(e)) continue;
+          if (!e.dataset.grid) { out.push(`${name(e)}: a doorway's fog says nothing of where its dots stand on the frame's grid`); continue; }
+          const [gx, gy] = e.dataset.grid.split(',').map(Number), [x, y] = fr(e);
+          if ((x & 3) !== gx || (y & 3) !== gy) out.push(`${name(e)}: its dots were drawn for ${gx}, ${gy} on the frame's grid of fours, and it lies at ${x & 3}, ${y & 3}`);
+          if (getComputedStyle(e).transform !== 'none') out.push(`${name(e)}: a pattern pinned to the frame's grid is moved (${getComputedStyle(e).transform})`);
+        }
+        // still: a part marked still does not move. No animation runs on it, and a canvas of models draws the same pixels a
+        // moment later (a room's models are drawn once, when the room is laid out).
+        const stills = [...app.querySelectorAll('[data-still]')].filter(vis);
+        for (const e of stills) if (e.getAnimations().some(a => a.playState === 'running')) out.push(`${name(e)}: marked still, but it moves`);
+        const snap = c => { try { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let h = 0; for (let i = 0; i < d.length; i += 4) h = (h * 31 + d[i] + d[i + 1] * 3 + d[i + 2] * 7 + d[i + 3] * 11) >>> 0; return h; } catch { return null; } };
+        const cvs = stills.filter(e => e.tagName === 'CANVAS').map(c => [c, snap(c)]);
+        if (cvs.length) { await new Promise(ok => setTimeout(ok, 150)); for (const [c, h] of cvs) if (c.isConnected && h !== null && snap(c) !== h) out.push(`${name(c)}: marked still, but what it draws changes`); }
         // a model stands on its spot: in a canvas of models laid on its picture, the lowest pixel drawn within 48 pixels
         // of each spot's x (a model turned stands on a corner) is the row just above the spot's y (data-foot: "x,y" in the
         // picture, one for each model)
@@ -300,6 +382,37 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
             if (low < 0) out.push(`${name(c)}: no model drawn at its spot ${f}`);
             else if (Math.abs(low - (fy - 1)) > 2) out.push(`${name(c)}: a model's foot is at row ${low}, not on its spot ${f}`);
           }
+        }
+        // step: an animation moves a part on whole frame pixels at every step of it, not only at the moment the screen is
+        // looked at. Each animation running in the frame is stopped at the middle of each of its steps in turn (a stepped
+        // timing runs its steps in each stretch between two keyframes; a smooth one is read at eight points of each), what
+        // it moves is read there (a shift, a picture's place in its box, a place, how see-through it is), and it is then
+        // set going again where it was.
+        const pxs = v => (String(v).match(/-?[\d.]+px/g) || []).map(parseFloat), whole = v => Math.abs(v - Math.round(v)) < .01;
+        for (const a of document.getAnimations()) {
+          const ef = a.effect, el = ef && ef.target;
+          if (!el || !app.contains(el) || a.playState !== 'running' || !ef.getKeyframes) continue;
+          const kf = ef.getKeyframes(), tm = ef.getComputedTiming(), d = +tm.duration, delay = +tm.delay || 0;
+          if (!(d > 0) || !kf.length) continue;
+          const props = new Set(kf.flatMap(f => Object.keys(f)).filter(p => !['offset', 'computedOffset', 'easing', 'composite'].includes(p)));
+          const offs = [...new Set([0, ...kf.map(f => f.computedOffset), 1])].sort((x, y) => x - y), at = [];
+          for (let i = 0; i < offs.length - 1; i++) {
+            const k0 = kf.find(f => Math.abs(f.computedOffset - offs[i]) < 1e-6), ease = (k0 && k0.easing) || ef.getTiming().easing || 'linear';
+            const m = /steps\((\d+)/.exec(ease), n = m ? +m[1] : 8;
+            for (let j = 0; j < n; j++) at.push(offs[i] + (j + .5) / n * (offs[i + 1] - offs[i]));
+          }
+          const was = a.currentTime, pseudo = ef.pseudoElement || null, where = name(el) + (pseudo || '') + ` (${a.animationName || 'animation'})`;
+          a.pause();
+          for (const p of at) {
+            a.currentTime = delay + p * d;
+            const s = getComputedStyle(el, pseudo), bad = [];
+            if (props.has('transform') && s.transform !== 'none') { const t = new DOMMatrix(s.transform); if (!whole(t.e) || !whole(t.f)) bad.push(`shifted ${+t.e.toFixed(2)}, ${+t.f.toFixed(2)}`); }
+            if ([...props].some(q => /^background(Position)?/.test(q))) { const v = pxs(s.backgroundPosition); if (v.some(x => !whole(x))) bad.push(`its picture at ${s.backgroundPosition}`); }
+            for (const q of ['left', 'top', 'right', 'bottom', 'marginLeft', 'marginTop']) if (props.has(q) && pxs(s[q]).some(x => !whole(x))) bad.push(`${q} ${s[q]}`);
+            if (props.has('opacity') && !okOpacity(s.opacity)) bad.push(`opacity ${s.opacity}`);
+            if (bad.length) { out.push(`${where}: at ${Math.round(p * 100)}% of its turn ${bad.join(', ')}: off the frame's whole pixels`); break; }
+          }
+          a.currentTime = was; a.play();
         }
         // the duel's table, when no move is playing: each tap area is cut to its zone's four corners as the table's camera
         // draws them and draws nothing itself; the numbers' plates lie inside the view, apart, off the trap rows; the
@@ -519,12 +632,28 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
         // a screen is drawn again when a carved word it asked for is ready, with its crest and its animations new: wait
         // until nothing has been drawn again for 400 ms (5 s at most) before the animations are stopped
         await page.evaluate(() => new Promise(ok => { const done = () => { mo.disconnect(); ok(); }; let t = setTimeout(done, 400); const mo = new MutationObserver(() => { clearTimeout(t); t = setTimeout(done, 400); }); mo.observe(document.getElementById('app'), { childList: true }); setTimeout(done, 5000); }));
-        await page.evaluate(() => { document.getAnimations().forEach(a => { a.pause(); a.currentTime = 0; }); for (const c of document.querySelectorAll('#coin')) c.style.visibility = 'hidden'; }); // the turning crest is drawn by the clock
-        got.push([save || 'title', await page.screenshot()]);
+        // every face in first: a face arriving late (the title's carved capitals) lays the screen out again, its torches
+        // and cursor started afresh, so the two pages would be stopped at different steps
+        await page.evaluate(() => document.fonts.ready.then(() => new Promise(ok => requestAnimationFrame(() => requestAnimationFrame(ok)))));
+        // Every animation stopped at its start (the turning crest, drawn by the clock, hidden), and each picture taken with
+        // the endless loops set back to their start by the browser itself: a loop drawn by the compositor (the cursor's
+        // bob) can go on showing the step it was at when the page stopped it. The screen is taken once it has settled: a
+        // picture drawn when its skins arrive (a room's models) can land after the first shot, so shots are taken until
+        // two in a row agree, stopping again each time.
+        const still = () => page.evaluate(() => { document.getAnimations().forEach(a => { a.pause(); a.currentTime = 0; }); for (const c of document.querySelectorAll('#coin')) c.style.visibility = 'hidden'; return new Promise(ok => requestAnimationFrame(() => requestAnimationFrame(ok))); });
+        const snap = () => page.screenshot({ animations: 'disabled' });
+        await still();
+        let shot = await snap();
+        for (let k = 0; k < 6; k++) { await page.waitForTimeout(250); await still(); const again = await snap(); if (again.equals(shot)) break; shot = again; }
+        got.push([save || 'title', shot]);
       }
       shots.push(got); await ctx.close();
     }
-    for (let i = 0; i < shots[0].length; i++) if (!shots[1][i] || !shots[0][i][1].equals(shots[1][i][1])) fail(`${W}x${H}@${dpr} ${shots[0][i][0]}`, 'the screen differs inside a host page');
+    for (let i = 0; i < shots[0].length; i++) if (!shots[1][i] || !shots[0][i][1].equals(shots[1][i][1])) {
+      fail(`${W}x${H}@${dpr} ${shots[0][i][0]}`, 'the screen differs inside a host page');
+      // with CHECKS_SHOTS set to a folder, both pictures are kept there, to be looked at
+      if (process.env.CHECKS_SHOTS && shots[1][i]) for (const h of [0, 1]) fs.writeFileSync(path.join(process.env.CHECKS_SHOTS, `host-${W}x${H}-${shots[0][i][0].replace(/\.json$/, '')}-${h}.png`), shots[h][i][1]);
+    }
   }
   await browser.close();
   if (fails.length) { console.log('faults by kind, most first:'); for (const [k, n] of [...kinds].sort((a, b) => b[1] - a[1]).slice(0, 40)) console.log(`${String(n).padStart(6)}  ${k.slice(0, 220)}`); }

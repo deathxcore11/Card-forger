@@ -52,18 +52,24 @@ export const viewSize = () => ({ w: F.W - 200, h: F.H - 112 });
 export const ledgeW = () => F.W - 192;
 
 // A patch of fog or shadow: one colour (black unless asked), 1-bit, its density falling away toward the edges through
-// the 4 x 4 dither table, the way the console thinned a sprite without any see-through colour. The table is read at the
-// patch's own pixels, so a patch laid at a place a multiple of four pixels from another keeps in step with it.
+// the 4 x 4 dither table, the way the console thinned a sprite without any see-through colour. The table is read on the
+// frame's own grid of pixels, as the console's screen-door patterns were: at, where the patch's corner falls on that grid
+// (its place in the frame, counted in fours), so every patch, and the half-dot mesh of a dimmed screen laid over it,
+// meet in the same step on every screen shape. drift: the patch's frames, side by side, its cloud moved that many whole
+// pixels across in each while every lit pixel stays on the grid's pattern (the fog drifts through the screen door; the
+// door does not move). gaps: read the table upside down, so the patch's dots fall first in the gaps another patch at the
+// same place leaves (a second layer of the same fog fills the first instead of lying on it).
 const fogs = new Map(), B4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-export function fogSprite(w, h, dens = .6, rgb = [0, 0, 0]) {
-  const key = `${w}x${h}x${dens}x${rgb}`; if (fogs.has(key)) return fogs.get(key);
+export function fogSprite(w, h, dens = .6, rgb = [0, 0, 0], at = [0, 0], drift = [0], gaps = false) {
+  const px = at[0] & 3, py = at[1] & 3, key = `${w}x${h}x${dens}x${rgb}x${px}${py}x${drift}x${gaps}`; if (fogs.has(key)) return fogs.get(key);
   let url = '';
   try {
-    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'), id = x.createImageData(w, h), d = id.data;
-    for (let y = 0; y < h; y++) for (let i = 0; i < w; i++) {
-      const dx = (i + .5) / w * 2 - 1, dy = (y + .5) / h * 2 - 1, k = Math.max(0, 1 - Math.hypot(dx, dy)) ** .8 * dens;
-      if (k * 16 > B4[(y & 3) * 4 + (i & 3)] + .5) { const o = (y * w + i) * 4; d[o] = rgb[0] & 0xf8; d[o + 1] = rgb[1] & 0xf8; d[o + 2] = rgb[2] & 0xf8; d[o + 3] = 255; }
-    }
+    const n = drift.length, c = document.createElement('canvas'); c.width = w * n; c.height = h; const x = c.getContext('2d'), id = x.createImageData(w * n, h), d = id.data;
+    drift.forEach((s, f) => { for (let y = 0; y < h; y++) for (let i = 0; i < w; i++) {
+      const dx = (i - s + .5) / w * 2 - 1, dy = (y + .5) / h * 2 - 1, k = Math.max(0, 1 - Math.hypot(dx, dy)) ** .8 * dens;
+      const t = B4[((y + py) & 3) * 4 + ((i + px) & 3)];
+      if (k * 16 > (gaps ? 15 - t : t) + .5) { const o = (y * w * n + f * w + i) * 4; d[o] = rgb[0] & 0xf8; d[o + 1] = rgb[1] & 0xf8; d[o + 2] = rgb[2] & 0xf8; d[o + 3] = 255; }
+    } });
     x.putImageData(id, 0, 0); url = c.toDataURL();
   } catch { /* no canvas: no fog */ }
   fogs.set(key, url); return url;
