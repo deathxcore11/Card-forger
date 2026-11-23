@@ -11,6 +11,7 @@ import { Ribbon } from './ribbon.js';
 import { OwnEffects } from './ownfx.js';
 import { RAMP } from '../data/fxramp.js';
 import { statusLit, statusAttr } from './status.js';
+import { creatureGeometry, creatureLit } from './creatures.js';
 import { PICKUP_COLORS } from '../data/pickups.js';
 import { makeCreature } from './creature.js';
 
@@ -105,14 +106,14 @@ export class Actors {
 
     // the swarm: one instanced mesh per kind (+ eyes for the ground swarmers)
     this.kinds = KIND_LIST.map(K => {
-      const geo = K.id === 3 ? new T.BoxGeometry(1.1, 1.1, 1.1) : K.id === 4 ? new T.IcosahedronGeometry(0.8, 0) : new T.OctahedronGeometry(0.75, 0);
-      geo.computeBoundingBox(); const body = instanced(geo, statusLit(lambert(0xffffff, null, 0.3), geo.boundingBox.max.y), CFG.enemy.max); statusAttr(geo, CFG.enemy.max);
+      const cg = creatureGeometry(K.id), geo = cg || (K.id === 3 ? new T.BoxGeometry(1.1, 1.1, 1.1) : K.id === 4 ? new T.IcosahedronGeometry(0.8, 0) : new T.OctahedronGeometry(0.75, 0));
+      geo.computeBoundingBox(); const bb = geo.boundingBox, mat = lambert(0xffffff, cg ? { vertexColors: true, side: T.DoubleSide } : null, 0.3); if (cg) creatureLit(mat); statusLit(mat, bb.min.y, bb.max.y);
+      const body = instanced(geo, mat, CFG.enemy.max); statusAttr(geo, CFG.enemy.max);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.enemy.max * 3), 3);
-      const eye = K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xe0a040), CFG.enemy.max) : null;
+      const eye = !cg && K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xe0a040), CFG.enemy.max) : null;
       scene.add(body); if (eye) scene.add(eye);
-      return { K, body, eye, base: new T.Color(K.color), fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false };
-    });
-    // Toll Shades: a tall violet-black hooded silhouette with a glowing eye line and a gold bell (stand-in look until the art arrives)
+      return { K, body, eye, base: cg ? new T.Color(1, 1, 1) : new T.Color(K.color), boost: cg ? 2.4 : 1, fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false };
+    });    // Toll Shades: a tall violet-black hooded silhouette with a glowing eye line and a gold bell (stand-in look until the art arrives)
     this.shadeBody = instanced(new T.ConeGeometry(0.9, 3.0, 7), basic(0x1d1030), 24); this.shadeHood = instanced(new T.ConeGeometry(0.5, 1.0, 6), basic(0x0b0716), 24);
     this.shadeEye = instanced(new T.BoxGeometry(0.34, 0.07, 0.1), basic(0xc07bff), 24); this.shadeBell = instanced(new T.ConeGeometry(0.17, 0.3, 6), basic(0xe8c56a), 24);
     scene.add(this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell);
@@ -155,7 +156,7 @@ export class Actors {
   _ownHex(o) { if (o.el && RAMP[o.el]) return RAMP[o.el][1]; const c = o.color || 0, r = (c >> 16) & 255, gg = (c >> 8) & 255, b = c & 255; return (b > 200 && r > 120 && r < 230 && gg < 170) ? c : 0xf3e3c2; }
   // the hit flash takes the hitting element's bright tone (peak mix 0.6, never pure white); a hit with no element flashes the neutral card tone. The view learns the element from the hit event (the sim sends only the flags).
   hitAt(x, z, flags) { const e = this.lastEn; if (!e) return; const el = flags >> 1; const ROW = [[1, 0], [2, 2], [4, 1], [8, 3], [16, 4], [32, 5], [64, 6], [128, 7]]; let row = -1; for (const [bit, r] of ROW) if (el & bit) { row = r; break; } let best = -1, bd = 1.44; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.hitRow[best] = row; }
-  _flashCol(i, base) { const r = this.hitRow[i]; return this._fc.copy(base).lerp(r >= 0 ? this.flashBright[r] : this.flashNeutral, 0.6); }
+  _flashCol(i, base, boost) { const r = this.hitRow[i]; return this._fc.copy(base).lerp(r >= 0 ? this.flashBright[r] : this.flashNeutral, 0.6).multiplyScalar(boost || 1); }
   // the enemy a chain jump reached gets the crawling outline for 300 ms (the nearest live enemy to the bolt's end point, within 1.5 m)
   _arcAt(g, x, z) { const e = g.en; let best = -1, bd = 2.25; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.arcT[best] = 0.3; }
   _fan(arc, max) {
@@ -376,7 +377,7 @@ export class Actors {
       d.position.set(x, y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85) + bob - rise * 1.1, z); d.rotation.set(hit && !fx.rm_ ? 0.32 : 0, face, 0);
       const mgs = e.size[i];                                                    // merged past the cap: bigger, up to 1.5x
       d.scale.set(sc[0] * pulse * grow * mgs * (hit ? 1.2 : 1), sc[1] * pulse * grow * mgs * (hit ? 0.85 : 1), sc[2] * pulse * grow * mgs * (hit ? 1.2 : 1)); d.updateMatrix();
-      k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this._flashCol(i, e.ace[i] ? this.aceCol : k.base) : (e.ace[i] ? this.aceCol : k.base)); if (!hit) this.hitRow[i] = -1;
+      k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this._flashCol(i, e.ace[i] ? this.aceCol : k.base, k.boost) : (e.ace[i] ? this.aceCol : k.base)); if (!hit) this.hitRow[i] = -1;
       { const bn = e.burn[i]; let bf = 0; if (bn > 0) { if (this.burnMax[i] < bn) this.burnMax[i] = bn; const bm = this.burnMax[i]; bf = Math.max(0.02, Math.min(1, (bm - bn) / 0.4 + 0.02, bn / (0.35 * bm))); } else this.burnMax[i] = 0;
         let ar = 0; if (this.arcT[i] > 0) { this.arcT[i] -= dt; ar = 1; } const fa = k.fxArr, o3 = n * 3; fa[o3] = bf; fa[o3 + 1] = ar; fa[o3 + 2] = (i * 0.6180339) % 1; if (bf > 0 || ar > 0) k.fxNow = true; }
       if (k.eye) {
