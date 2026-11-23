@@ -389,6 +389,21 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
             const q = b.getBoundingClientRect(); if (q.left < L.left - .5 || q.right > L.right + .5 || q.top < L.top - .5 || q.bottom > L.bottom + .5) out.push(`${name(b)} "${b.textContent.trim()}": the working's plaque reaches out of the ledge`);
           }
         }
+        // marker: the text bar's more marker lies on none of its letters (it has its own room at the lines' end)
+        const barEl = app.querySelector('.fr > .bar.more'), barP = barEl && barEl.firstElementChild;
+        if (barP) {
+          const m = getComputedStyle(barEl, '::after'), B = barEl.getBoundingClientRect(), bl = parseFloat(getComputedStyle(barEl).borderLeftWidth) || 0, bt = parseFloat(getComputedStyle(barEl).borderTopWidth) || 0;
+          const mw = parseFloat(m.width), mh = parseFloat(m.height), mx = barEl.clientWidth - parseFloat(m.right) - mw, my = barEl.clientHeight - parseFloat(m.bottom) - mh; // in frame pixels, from the bar's padding box
+          const shown = barP.offsetTop + barP.clientHeight, words = document.createTreeWalker(barP, NodeFilter.SHOW_TEXT);
+          for (let t = words.nextNode(); t; t = words.nextNode()) {
+            const rg = document.createRange(); rg.selectNodeContents(t);
+            for (const q of rg.getClientRects()) {
+              const x0 = fx(q) - fx(B) - bl, w = (up ? q.height : q.width) / k, y0 = fy(q) - fy(B) - bt, h = (up ? q.width : q.height) / k;
+              if (y0 >= shown - .5) continue;
+              if (x0 < mx + mw && mx < x0 + w - 1 && y0 < my + mh + 2 && my < y0 + h) { out.push(`the text bar's more marker (${mx} to ${mx + mw}) lies on its words "${t.textContent.trim().slice(-14)}" (to ${(x0 + w - 1).toFixed(0)})`); break; }
+            }
+          }
+        }
         // bar: a short message lies on the text bar, and the save bar is as wide
         const W0 = app.offsetWidth, H0 = app.offsetHeight, toastEl = app.querySelector('#toast');
         if (toastEl && toastEl.textContent.trim() && vis(toastEl)) { const [tx, ty, tw2] = fr(toastEl); if (tx !== 96 || ty !== H0 - 40 || tw2 !== W0 - 192) out.push(`#toast at ${tx}, ${ty}, ${tw2} wide: not on the text bar (96, ${H0 - 40}, ${W0 - 192} wide)`); }

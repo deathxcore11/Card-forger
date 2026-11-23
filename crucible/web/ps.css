@@ -44,6 +44,7 @@ body.ps { background: #000; }
 #app.ps .bar { padding: 4px 6px; line-height: 16px; overflow: hidden; }
 #app.ps .bar p { margin: 0; max-height: 32px; overflow: hidden; }
 #app.ps .bar.more::after, #app.ps .scm { content: ''; position: absolute; right: 4px; bottom: 3px; width: 7px; height: 4px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h7v1h-1v1h-1v1h-1v1h-1v-1h-1v-1h-1v-1h-1z' fill='%23e9c46a'/%3E%3C/svg%3E"); animation: psbob 1s steps(2) infinite; pointer-events: none; } /* rows of 7, 5, 3 and 1 pixels */
+#app.ps .bar.more { padding-right: 13px; } /* the marker's own room at the lines' end (4 to 11 from the right), so it never lies on a letter */
 #app.ps .scm { right: auto; bottom: auto; }
 @keyframes psbob { 50% { transform: translateY(2px); } }
 
