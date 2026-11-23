@@ -7,6 +7,7 @@ import { RUN } from '../data/waves.js';
 import { FIELD_RULES, MARKS } from '../data/cards.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { ELEMENTS } from '../data/elements.js';
+import { aceFell } from './aces.js';
 
 export const PICK_XP = 0, PICK_COIN = 1, PICK_HEART = 2;
 const buf = new Int32Array(CFG.enemy.max);
@@ -68,6 +69,7 @@ export function killEnemy(g, i) {
     if (g.rl() < RUN.coinChance) dropPickup(g, PICK_COIN, x + 0.6, y, z);
     if (g.rl() < RUN.heartChance) dropPickup(g, PICK_HEART, x - 0.6, y, z);
   }
+  if (e.ace[i]) aceFell(g, x, y, z);                                          // a star-crested Ace: extra reward and a chance of a Trophy Chest
   if (K === KINDS.bloat) explode(g, x, y, z, K.blast.radius, K.blast.dmg * g.dmgMul, K.blast.dmg, 0xff9030, 'Sand Bloat');
   if (e.mark[i] > 0 && g.mods.markExplode) explode(g, x, y, z, g.mods.markExplode.radius, 0, g.mods.markExplode.dmg, 0xb070ff);
 }

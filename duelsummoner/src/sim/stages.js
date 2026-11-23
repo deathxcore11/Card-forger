@@ -2,9 +2,10 @@
 // timeline, a gate that wakes, a gate boss, then a Descent Circle to the next stage (Stage 3: the Final Altar). Pure and deterministic.
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
 import { RUN } from '../data/waves.js';
-import { RUNSPEC, stagesFor, DIFFICULTY } from '../data/stages.js';
+import { RUNSPEC, stagesFor, DIFFICULTY, ACES } from '../data/stages.js';
 import { pow, sin, cos, atan2 } from './dmath.js';
-import { spawnEnemy, mergeEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
+import { spawnEnemy, spawnAce, mergeEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
+import { aliveAces } from './aces.js';
 import { CFG } from '../data/config.js';
 import { spawnSpecial, startBoss } from './specials.js';
 import { heightAt } from './terrain.js';
@@ -43,7 +44,7 @@ function initStage(g) {
   const S = g.stageSpec = g.stages[g.stage];
   g.sc = 0; g.evState = S.timeline.map(() => 0); g.evSpot = S.timeline.map(() => ({ x: 0, y: 0, z: 0 }));
   g.gate = { state: 'closed', awake: false, hold: 0, early: false, toll: false };
-  g.bDown = false; g.gateDown = null; g.circle = null; g.altar = null; g.stagePrompt = '';
+  g.aceT = 0; g.bDown = false; g.gateDown = null; g.circle = null; g.altar = null; g.stagePrompt = '';
   g.boss = { state: 'idle', early: false, phase: 1 };
   g.spawnAcc = 0; g.ringT = 0; g.golemT = 0; g.huntT = 0; g.killsAtStage = g.kills;
   g.shades = []; g.shadeOn = false; g.shadeAge = 0; g.shadeNextAdd = 0; g.shadeWaveT = 0; g.afterGate = 0;
@@ -221,6 +222,10 @@ function spawner(g, dt, fight, toll) {
       g.ringT = RUN.ring.every; g.event('banner', 'The Last Audience closes in.');
       for (let k = 0; k < RUN.ring.count; k++) { if (enemyCount(g.en) >= cap) break; const a = k / RUN.ring.count * Math.PI * 2; spawnEnemy(g, 'husk', { x: p.x + cos(a) * RUN.ring.radius, z: p.z + sin(a) * RUN.ring.radius }); }
     }
+  }
+  if (!toll && g.sc >= ACES.from) {                              // an Ace monster now and then, from 1:24 of the stage
+    g.aceT -= dt;
+    if (g.aceT <= 0) { g.aceT = ACES.every; if (aliveAces(g) < ACES.max && enemyCount(g.en) < cap) spawnAce(g, pickKind(g, te)); }
   }
   if (te >= RUN.golem.from) {
     g.golemT -= dt;

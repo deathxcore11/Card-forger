@@ -56,17 +56,20 @@ export class Props {
       for (const [x, col] of [[-0.6, 0xe8c56a], [0.6, 0xa060e0]]) { const bowl = new T.Mesh(new T.CylinderGeometry(0.4, 0.25, 0.3, 8), lambert(0x7a6a50)); bowl.position.set(x, 1.3, 0); g.add(bowl); const flame = new T.Mesh(new T.OctahedronGeometry(0.22, 0), basic(col)); flame.position.set(x, 1.7, 0); g.add(flame); }
       G.add(g); P.altar = { a, g };
     }
-    for (const c of world.cchests) {
-      const g = new T.Group(); g.position.set(c.x, c.y, c.z);
-      const body = new T.Mesh(new T.BoxGeometry(1.5, 0.9, 1.0), lambert(0x7a5a3a)); body.position.y = 0.45; g.add(body);
-      const lid = new T.Mesh(new T.BoxGeometry(1.6, 0.35, 1.1), lambert(0x9a7a4a)); lid.position.y = 1.05; g.add(lid);
-      const trim = new T.Mesh(new T.BoxGeometry(1.7, 0.18, 1.2), basic(RARITY[c.rarity])); trim.position.y = 0.8; g.add(trim);
-      G.add(g); P.chests.push({ c, g });
-    }
+    this.G = G; for (const c of world.cchests) this._addChest(c);
+  }
+  // one Card Chest. A Trophy Chest (dropped by an Ace) is pale wood with its lid already open and a tall pillar of light in its rarity colour, so it can be seen across the map.
+  _addChest(c) {
+    const g = new T.Group(); g.position.set(c.x, c.y, c.z);
+    const body = new T.Mesh(new T.BoxGeometry(1.5, 0.9, 1.0), lambert(c.trophy ? 0xd9cdb0 : 0x7a5a3a)); body.position.y = 0.45; g.add(body);
+    const lid = new T.Mesh(new T.BoxGeometry(1.6, 0.35, 1.1), lambert(c.trophy ? 0xeee4c8 : 0x9a7a4a)); lid.position.y = 1.05; if (c.trophy) { lid.rotation.x = -1.1; lid.position.set(0, 1.25, -0.55); } g.add(lid);
+    const trim = new T.Mesh(new T.BoxGeometry(1.7, 0.18, 1.2), basic(RARITY[c.rarity])); trim.position.y = 0.8; g.add(trim);
+    let beam = null; if (c.trophy) { beam = new T.Mesh(new T.CylinderGeometry(0.28, 0.5, 18, 8, 1, true), basic(RARITY[c.rarity], { transparent: true, opacity: 0.4, depthWrite: false, side: T.DoubleSide })); beam.position.y = 9; g.add(beam); }
+    this.G.add(g); this.parts.chests.push({ c, g, beam });
   }
 
   update(g) {
-    if (this.world !== g.world) this._build(g.world);
+    if (this.world !== g.world) { this._build(g.world); this._known = null; }
     const P = this.parts, d = this.d, t = g.t;
     let n = 0, b = 0;
     for (const v of g.world.vases) {
@@ -81,7 +84,8 @@ export class Props {
       if (Math.abs(p - o.lastP) > 0.008) { o.lastP = p; o.fill.geometry.dispose(); o.fill.geometry = new T.RingGeometry(E.shrines.radius - 0.25, E.shrines.radius, 48, 1, 0, Math.max(0.01, p * Math.PI * 2)); }
       o.water.material.color.setHex(o.s.done ? 0x555555 : p > 0 ? 0xbfffe8 : 0x5fd2a8);
     }
-    for (const o of P.chests) o.g.visible = !o.c.open;
+    const known = this._known || (this._known = new Set(P.chests.map(o => o.c))); for (const c of g.world.cchests) if (!known.has(c)) { known.add(c); this._addChest(c); }       // chests that appear mid-run (an Ace's Trophy Chest)
+    for (const o of P.chests) { o.g.visible = !o.c.open; if (o.beam) o.beam.material.opacity = 0.3 + 0.12 * Math.sin(t * 3); }
     if (P.altar) P.altar.g.children.forEach(m => { if (m.geometry && m.geometry.type === 'OctahedronGeometry') m.rotation.y = t * 2; });
   }
 }

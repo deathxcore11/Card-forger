@@ -108,6 +108,7 @@ export class Actors {
     this.shadeEye = instanced(new T.BoxGeometry(0.34, 0.07, 0.1), basic(0xc07bff), 24); this.shadeBell = instanced(new T.ConeGeometry(0.17, 0.3, 6), basic(0xe8c56a), 24);
     scene.add(this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell);
     this.marks = instanced(new T.OctahedronGeometry(0.22, 0), basic(0xc090ff), CFG.enemy.max); scene.add(this.marks);
+    this.crests = instanced(new T.OctahedronGeometry(0.3, 0), basic(0xffd23f), 24); scene.add(this.crests); this.aceCol = new T.Color(1, 0.86, 0.5);          // the star crest of an Ace monster, and its gold tint
 
     this.cards = instanced(new T.BoxGeometry(0.5, 0.05, 0.7), basic(0xf3e3c2), CFG.card.max + 64);
     this.fire = instanced(new T.OctahedronGeometry(0.3, 0), basic(0xffb040), CFG.card.max + 64);
@@ -331,7 +332,7 @@ export class Actors {
       for (const mm of [this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell]) { mm.count = n; mm.instanceMatrix.needsUpdate = true; }
     }
     // swarm
-    this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0;
+    this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
     for (let i = 0; i < e.max; i++) {
       if (!e.alive[i]) { this._wasSwarm[i] = 0; continue; }
       if (!this._wasSwarm[i]) { this._wasSwarm[i] = 1; this.spawnAge[i] = 0; if (this._dustBudget > 0) { this._dustBudget--; fx.burst(e.x[i], e.y[i] + 0.1, e.z[i], 3, 0xb09a6a, 1.5, 1.5, 0.2, 0.45, 5); } }
@@ -347,15 +348,16 @@ export class Actors {
       d.position.set(x, y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85) + bob - rise * 1.1, z); d.rotation.set(hit && !fx.rm_ ? 0.32 : 0, face, 0);
       const mgs = e.size[i];                                                    // merged past the cap: bigger, up to 1.5x
       d.scale.set(sc[0] * pulse * grow * mgs * (hit ? 1.2 : 1), sc[1] * pulse * grow * mgs * (hit ? 0.85 : 1), sc[2] * pulse * grow * mgs * (hit ? 1.2 : 1)); d.updateMatrix();
-      k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this.white : k.base);
+      k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this.white : (e.ace[i] ? this.aceCol : k.base));
       if (k.eye) {
         d.position.set(x + Math.sin(face) * 0.62 * sc[0], y + 1.05 + bob, z + Math.cos(face) * 0.62 * sc[0]); d.scale.set(1, 1, 1); d.updateMatrix(); k.eye.setMatrixAt(n, d.matrix);
       }
       counts[e.kind[i]]++;
+      if (e.ace[i] && cc < 24) { d.position.set(x, y + 2.1 * mgs + 0.4 + Math.sin(t * 3 + i) * 0.08, z); d.rotation.set(0, t * 2.4 + i, 0); d.scale.set(1, 1.5, 1); d.updateMatrix(); this.crests.setMatrixAt(cc++, d.matrix); }
       if (e.mark[i] > 0) { d.position.set(x, y + 2.3 + Math.sin(t * 4) * 0.1, z); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1.4, 1); d.updateMatrix(); this.marks.setMatrixAt(mc.n++, d.matrix); }
     }
     this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; k.body.instanceColor.needsUpdate = true; if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
-    this.marks.count = mc.n; this.marks.instanceMatrix.needsUpdate = true;
+    this.marks.count = mc.n; this.marks.instanceMatrix.needsUpdate = true; this.crests.count = cc; this.crests.instanceMatrix.needsUpdate = true;
 
     // elites and the boss
     const spLive = this._spLive || (this._spLive = new Set()); spLive.clear();

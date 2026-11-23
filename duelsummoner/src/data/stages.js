@@ -84,3 +84,12 @@ export const stagesFor = mode => (mode === 'quick' ? [QUICK] : STAGES);
 
 
 
+
+// Ace monsters: swarm enemies that carry a star crest, take much more to kill, and may drop a Trophy Chest (a free, open, glowing Card Chest). From the run recordings: the first
+// crowned enemy shows about 1:24 into a stage and the first elite chest comes about 35 s later. The drop chance falls with every Trophy so they stay a treat.
+export const ACES = {
+  from: 84, every: 40, max: 3,                         // first at 1:24 of the stage, then one every 40 s, never more than 3 alive
+  hpMul: 7, sizeMul: 1.45, speedMul: 0.92, xp: 6, coins: 3,
+  trophy: { first: 0.35, decay: 0.07, min: 0.1 },      // chance an Ace drops a Trophy Chest: 35%, then 28%, 21% ... never below 10%
+  rarity: [['rare', 0.6], ['epic', 0.3], ['legendary', 0.1]]
+};

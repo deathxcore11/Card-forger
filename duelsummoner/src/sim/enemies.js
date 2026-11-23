@@ -8,6 +8,7 @@ import { steerVec, walk, settle, lineClear } from './steer.js';
 import { addTele, killEnemy } from './combat.js';
 import { isDashing } from './player.js';
 import { MAP } from '../data/map.js';
+import { ACES } from '../data/stages.js';
 
 const HUSK = KINDS.husk.id, RUNNER = KINDS.runner.id, SEER = KINDS.seer.id, GOLEM = KINDS.golem.id, BLOAT = KINDS.bloat.id, SCARAB = KINDS.scarab.id;
 export const KIND_ID = Object.fromEntries(Object.keys(KINDS).map(k => [k, KINDS[k].id]));
@@ -19,7 +20,8 @@ export function makeEnemies(max) {
     x: f(), y: f(), z: f(), vy: f(), hp: f(), atk: f(), flash: f(), face: f(), spd: f(), dx: f(), dz: f(),
     stT: f(), ax: f(), az: f(), mark: f(), burn: f(), burnDps: f(), root: f(),
     px: f(), py: f(), pz: f(), pface: f(),                      // previous tick, for smooth drawing
-    mrg: new Uint8Array(max), size: f()                         // enemies merged into this one past the cap, and its size factor (1 to 1.5)
+    mrg: new Uint8Array(max), size: f(),                        // enemies merged into this one past the cap, and its size factor (1 to 1.5)
+    ace: new Uint8Array(max)                                    // 1 = an Ace monster (star crest, big, tough, may drop a Trophy Chest)
   };
 }
 export function enemyCount(e) { let c = 0; for (let i = 0; i < e.max; i++) c += e.alive[i]; return c; }
@@ -57,7 +59,7 @@ export function mergeEnemy(g, kindName) {
   const e = g.en, K = KINDS[kindName || 'husk'];
   if (!ringSpot(g, spot)) return false;
   let best = -1, bd = 1e18;
-  for (let i = 0; i < e.max; i++) if (e.alive[i] && e.kind[i] === K.id) { const dx = e.x[i] - spot.x, dz = e.z[i] - spot.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = i; } }
+  for (let i = 0; i < e.max; i++) if (e.alive[i] && e.kind[i] === K.id && !e.ace[i]) { const dx = e.x[i] - spot.x, dz = e.z[i] - spot.z, d = dx * dx + dz * dz; if (d < bd) { bd = d; best = i; } }
   if (best < 0) return false;
   const ot = K === KINDS.hunter ? Math.max(0, g.otStep || 0) : 0;
   e.hp[best] += K.hp * g.hpMul * pow(RUN.overtime.hpGrowth, ot);
@@ -77,12 +79,18 @@ export function spawnEnemy(g, kindName, at) {
   put(g, slot, spot.x, spot.y, spot.z, K.id);
   e.alive[slot] = 1; e.kind[slot] = K.id; e.st[slot] = 0; e.stT[slot] = K.id === SEER ? 1.2 : K.id === GOLEM ? 2 : 0;
   const ot = K === KINDS.hunter ? Math.max(0, g.otStep || 0) : 0, O = RUN.overtime;
-  e.mrg[slot] = 0; e.size[slot] = 1;
+  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; g.lastSlot = slot;
   e.hp[slot] = K.hp * g.hpMul * pow(O.hpGrowth, ot); e.atk[slot] = 0.4; e.flash[slot] = 0; e.mark[slot] = 0; e.burn[slot] = 0; e.root[slot] = 0;
   e.spd[slot] = K.speed * (1 + (g.rsp() * 2 - 1) * CFG.enemy.speedJitter) * g.speedMul * Math.min(O.speedCap, pow(O.speedGrowth, ot));
   e.dx[slot] = 0; e.dz[slot] = 0; e.face[slot] = e.pface[slot] = 0;
   g.spawned++;
   return true;
+}
+
+// an Ace: an ordinary enemy of the kind asked for, made big and tough and marked for the crest
+export function spawnAce(g, kindName) {
+  if (!spawnEnemy(g, kindName)) return false;
+  const e = g.en, i = g.lastSlot; e.ace[i] = 1; e.hp[i] *= ACES.hpMul; e.size[i] = ACES.sizeMul; e.spd[i] *= ACES.speedMul; g.emit('ace', e.x[i], e.y[i], e.z[i]); return true;
 }
 
 const o = { x: 0, y: 0, z: 0, vy: 0, dx: 0, dz: 0 }, sv = { x: 0, z: 0, d: 0, direct: true };
