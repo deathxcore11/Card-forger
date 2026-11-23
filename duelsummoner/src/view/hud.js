@@ -1,4 +1,5 @@
 // The plain placeholder HUD (the real look is awaiting approval). Text and bar widths only change when values change.
+import { RAMP } from '../data/fxramp.js';
 import { CFG } from '../data/config.js';
 import { clock } from '../core/util.js';
 import { MONSTERS, FUSIONS, SPELLS, TRAPS, FIELD_RULES, LEVELS, formOf } from '../data/cards.js';
@@ -19,7 +20,7 @@ function buildZones() {
   for (let i = 0; i < FIELD_RULES.spellTrapZones; i++) z.insertAdjacentHTML('beforeend', '<div class="zone st" id="sz' + i + '"></div>');
   zonesBuilt = true;
 }
-const EL_COL = { fire: '#ff9a4a', lightning: '#7fe0ff' }, ROMAN = ['I', 'II', 'III'];
+const EL_COL = { fire: '#' + RAMP.fire[1].toString(16), lightning: '#' + RAMP.lightning[1].toString(16) }, ROMAN = ['I', 'II', 'III'];
 const pips = (n, max) => '<i class="pips">' + Array.from({ length: max }, (_, k) => '<u' + (k < n ? ' class="on"' : '') + '></u>').join('') + '</i>';
 const stars = (n, max) => '*'.repeat(n) + '.'.repeat(Math.max(0, max - n));
 

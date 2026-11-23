@@ -1,10 +1,14 @@
-﻿// Game-feel effects. View only: nothing here reads or changes the rules, everything is fed from the sim's event queue and from
+// Game-feel effects. View only: nothing here reads or changes the rules, everything is fed from the sim's event queue and from
 // state changes the view notices. Every pool is fixed size and allocated once (particles 4000, damage numbers 64, rings 48,
 // beams 4, flipping cards 12), so steady state allocates nothing per frame.
 const T = window.THREE;
+import { RAMP } from '../data/fxramp.js';
+import { FX } from './fxkit.js';
 
-const ELEM_COL = [null, '#ff9a3a', '#8fe8ff', '#9fd8ff', '#9be86a', '#c8f0d0', '#c9a46a', '#fff2a0', '#c08aff'];
-export const POOL = { particles: 4000, numbers: 64, rings: 48, beams: 4, cards: 12 };
+// damage number colours by element, from the one effect ramp (bright tone): fire, lightning, ice, poison, wind, earth, light, dark (index = bit + 1, as the hit flags carry them)
+const hexStr = c => '#' + c.toString(16).padStart(6, '0');
+const ELEM_COL = [null, ...['fire', 'lightning', 'ice', 'poison', 'wind', 'earth', 'light', 'dark'].map(e => hexStr(RAMP[e][1]))];
+export const POOL = { particles: 4096, numbers: 64, rings: 48, beams: 4, cards: 12 };
 
 export class Fx {
   constructor(scene, settings) {
@@ -14,14 +18,23 @@ export class Fx {
     this.avgDmg = 3;
     this.shakeOff = { x: 0, y: 0, z: 0, roll: 0 };
 
-    // particles: one instanced mesh, ring-buffer slots
-    const N = POOL.particles; this.N = N; this.head = 0;
-    this.pos = new Float32Array(N * 3); this.vel = new Float32Array(N * 3); this.age = new Float32Array(N); this.life = new Float32Array(N);
-    this.size = new Float32Array(N); this.grav = new Float32Array(N); this.rgb = new Float32Array(N * 3); this.on = new Uint8Array(N);
-    this.pm = new T.InstancedMesh(new T.OctahedronGeometry(0.5, 0), new T.MeshBasicMaterial({ color: 0xffffff }), N);
-    this.pm.instanceColor = new T.InstancedBufferAttribute(new Float32Array(N * 3), 3); this.pm.instanceMatrix.setUsage(T.DynamicDrawUsage);
+    // particles: ONE instanced draw, worked out on the GPU (spectacle spec 6.4). A particle is written once, at spawn, into one interleaved buffer of 15 floats (spawn position and birth time, velocity and life,
+    // gravity, drag, size and ramp row, an explicit colour used when the row is negative); the vertex shader finds its place from the clock, so nothing is uploaded per frame except the slots spawned that frame.
+    const N = POOL.particles; this.N = N; this.head = 0; this.pt = 0; this.pdie = new Float32Array(N).fill(-1); this._lo = N; this._hi = -1; this._wrap = false;
+    this.pbuf = new T.InstancedInterleavedBuffer(new Float32Array(N * 15), 15, 1); this.pbuf.setUsage(T.DynamicDrawUsage);
+    const pg = new T.InstancedBufferGeometry(); pg.setAttribute('position', new T.Float32BufferAttribute([-0.5, -0.5, 0, 0.5, -0.5, 0, 0.5, 0.5, 0, -0.5, 0.5, 0], 3)); pg.setIndex([0, 1, 2, 0, 2, 3]);
+    pg.setAttribute('iP0', new T.InterleavedBufferAttribute(this.pbuf, 4, 0)); pg.setAttribute('iV0', new T.InterleavedBufferAttribute(this.pbuf, 4, 4)); pg.setAttribute('iK', new T.InterleavedBufferAttribute(this.pbuf, 4, 8)); pg.setAttribute('iC', new T.InterleavedBufferAttribute(this.pbuf, 3, 12)); pg.instanceCount = N;
+    this.puni = { uTime: { value: 0 }, uRamp: FX.ramp };
+    this.pm = new T.Mesh(pg, new T.ShaderMaterial({ uniforms: this.puni, fog: false,
+      vertexShader: 'attribute vec4 iP0; attribute vec4 iV0; attribute vec4 iK; attribute vec3 iC; uniform float uTime; varying vec3 vCol; varying float vU; varying float vRow;\n' +
+        'void main() { float t = uTime - iP0.w, u = t / iV0.w; if (t < 0.0 || u >= 1.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }\n' +
+        ' float e = iK.y > 0.0 ? (1.0 - exp(-iK.y * t)) / iK.y : t; vec3 p = iP0.xyz + iV0.xyz * e; p.y -= 0.5 * iK.x * t * t; if (iK.x > 0.0) p.y = max(p.y, 0.05);\n' +
+        ' float sz = iK.z * (u < 0.65 ? 1.0 : (1.0 - u) / 0.35); sz = ceil(sz * 16.0) / 16.0; vec4 c = viewMatrix * vec4(p, 1.0);\n' +
+        ' if (-c.z < 2.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }\n' +
+        ' c.xy += position.xy * sz; vU = u; vRow = iK.w; vCol = iC; gl_Position = projectionMatrix * c; }',
+      fragmentShader: 'uniform sampler2D uRamp; varying vec3 vCol; varying float vU; varying float vRow;\n' +
+        'void main() { vec3 c = vRow >= 0.0 ? texture2D(uRamp, vec2((floor(vU * 4.0) + 0.5) / 8.0, (vRow + 0.5) / 8.0)).rgb : vCol; gl_FragColor = vec4(c, 1.0); }' }));
     this.pm.frustumCulled = false; this.pm.count = 0; scene.add(this.pm);
-
     // rings (flat, additive)
     const R = POOL.rings; this.R = R; this.rh = 0;
     this.rp = new Float32Array(R * 3); this.rr = new Float32Array(R); this.rage = new Float32Array(R); this.rlife = new Float32Array(R); this.rcol = new Float32Array(R * 3); this.ron = new Uint8Array(R);
@@ -62,24 +75,25 @@ export class Fx {
   hitstop(sec) { if (!this.rm_) this.stop = Math.max(this.stop, sec); }
   flash(a) { if (!this.rm_) this.flashA = Math.max(this.flashA, a); }
 
+  // one particle into the ring buffer: written once; the GPU does the rest (see the constructor). row >= 0 takes its colour from the effect ramp by age; row < 0 uses the explicit colour (r, g, b)
+  _spawn(x, y, z, vx, vy, vz, life, grav, drag, size, row, r, g, b) {
+    const i = this.head, o = i * 15, a = this.pbuf.array; if (i < this._lo) this._lo = i; if (i > this._hi) this._hi = i; this.head = (this.head + 1) % this.N; if (this.head === 0) this._wrap = true;
+    a[o] = x; a[o + 1] = y; a[o + 2] = z; a[o + 3] = this.pt; a[o + 4] = vx; a[o + 5] = vy; a[o + 6] = vz; a[o + 7] = life; a[o + 8] = grav; a[o + 9] = drag; a[o + 10] = size; a[o + 11] = row; a[o + 12] = r; a[o + 13] = g; a[o + 14] = b; this.pdie[i] = this.pt + life;
+  }
   burst(x, y, z, n, hex, speed, up, size, life, grav) {
     const c = this.col.setHex(hex);
     for (let k = 0; k < n; k++) {
-      const i = this.head, j = i * 3; this.head = (this.head + 1) % this.N;
-      const a = Math.random() * 6.2832, r = Math.random() * speed, u = (0.3 + Math.random()) * up;
-      this.pos[j] = x; this.pos[j + 1] = y; this.pos[j + 2] = z;
-      this.vel[j] = Math.cos(a) * r; this.vel[j + 1] = u; this.vel[j + 2] = Math.sin(a) * r;
-      this.age[i] = 0; this.life[i] = life * (0.7 + Math.random() * 0.6); this.size[i] = size * (0.6 + Math.random() * 0.8); this.grav[i] = grav;
-      const shade = 0.75 + Math.random() * 0.5; this.rgb[j] = c.r * shade; this.rgb[j + 1] = c.g * shade; this.rgb[j + 2] = c.b * shade; this.on[i] = 1;
+      const a = Math.random() * 6.2832, r = Math.random() * speed, u = (0.3 + Math.random()) * up, shade = 0.75 + Math.random() * 0.5;
+      this._spawn(x, y, z, Math.cos(a) * r, u, Math.sin(a) * r, life * (0.7 + Math.random() * 0.6), grav, 0, size * (0.6 + Math.random() * 0.8), -1, c.r * shade, c.g * shade, c.b * shade);
     }
   }
-  // one particle with an explicit velocity (trails, dust)
-  spark(x, y, z, vx, vy, vz, hex, size, life) {
-    const i = this.head, j = i * 3, c = this.col.setHex(hex); this.head = (this.head + 1) % this.N;
-    this.pos[j] = x; this.pos[j + 1] = y; this.pos[j + 2] = z; this.vel[j] = vx; this.vel[j + 1] = vy; this.vel[j + 2] = vz;
-    this.age[i] = 0; this.life[i] = life; this.size[i] = size; this.grav[i] = 0; this.rgb[j] = c.r; this.rgb[j + 1] = c.g; this.rgb[j + 2] = c.b; this.on[i] = 1;
+  // a burst in an element's own ramp row (0 fire, 1 ice, 2 lightning, 3 poison, 4 wind, 5 earth, 6 light, 7 dark): the colour steps core, bright, body, shade over the particle's life
+  burstEl(x, y, z, n, row, speed, up, size, life, grav) {
+    for (let k = 0; k < n; k++) { const a = Math.random() * 6.2832, r = Math.random() * speed, u = (0.3 + Math.random()) * up; this._spawn(x, y, z, Math.cos(a) * r, u, Math.sin(a) * r, life * (0.7 + Math.random() * 0.6), grav, 0, size * (0.6 + Math.random() * 0.8), row, 0, 0, 0); }
   }
-  ring(x, y, z, r, hex, life) {
+  // one particle with an explicit velocity (trails, dust)
+  spark(x, y, z, vx, vy, vz, hex, size, life) { const c = this.col.setHex(hex); this._spawn(x, y, z, vx, vy, vz, life, 0, 0, size, -1, c.r, c.g, c.b); }
+  sparkEl(x, y, z, vx, vy, vz, row, size, life) { this._spawn(x, y, z, vx, vy, vz, life, 0, 0, size, row, 0, 0, 0); }  ring(x, y, z, r, hex, life) {
     const i = this.rh, j = i * 3, c = this.col.setHex(hex); this.rh = (this.rh + 1) % this.R;
     this.rp[j] = x; this.rp[j + 1] = y; this.rp[j + 2] = z; this.rr[i] = r; this.rage[i] = 0; this.rlife[i] = life; this.rcol[j] = c.r; this.rcol[j + 1] = c.g; this.rcol[j + 2] = c.b; this.ron[i] = 1;
   }
@@ -129,23 +143,12 @@ export class Fx {
   // ---- per frame ----
   update(dt, camera) {
     this.numBudget = Math.min(8, this.numBudget + dt * 60);
-    const d = this.d, c = this.col;
-    // particles
-    let n = 0;
-    for (let i = 0; i < this.N; i++) {
-      if (!this.on[i]) continue;
-      const j = i * 3, a = (this.age[i] += dt), life = this.life[i];
-      if (a >= life) { this.on[i] = 0; continue; }
-      this.vel[j + 1] -= this.grav[i] * dt;
-      this.pos[j] += this.vel[j] * dt; this.pos[j + 1] += this.vel[j + 1] * dt; this.pos[j + 2] += this.vel[j + 2] * dt;
-      if (this.pos[j + 1] < 0.05 && this.grav[i] > 0) { this.pos[j + 1] = 0.05; this.vel[j + 1] *= -0.3; this.vel[j] *= 0.6; this.vel[j + 2] *= 0.6; }
-      const f = 1 - a / life, s = this.size[i] * (f < 0.35 ? f / 0.35 : 1);
-      d.position.set(this.pos[j], this.pos[j + 1], this.pos[j + 2]); d.rotation.set(a * 5, a * 3, 0); d.scale.setScalar(s); d.updateMatrix();
-      this.pm.setMatrixAt(n, d.matrix); this.pm.setColorAt(n, c.setRGB(this.rgb[j], this.rgb[j + 1], this.rgb[j + 2])); n++;
-    }
-    this.pm.count = n; this.pm.instanceMatrix.needsUpdate = true; this.pm.instanceColor.needsUpdate = true;
-    // rings
-    n = 0;
+    // particles: the GPU moves them; here only the clock, the one upload of the slots spawned this frame, and the live count (the tests and the lab read it)
+    this.pt += dt; this.puni.uTime.value = this.pt;
+    if (this._hi >= 0) { const b = this.pbuf; if (this._wrap) b.updateRange.count = -1; else { b.updateRange.offset = this._lo * 15; b.updateRange.count = (this._hi - this._lo + 1) * 15; } b.needsUpdate = true; this._lo = this.N; this._hi = -1; this._wrap = false; }
+    let n = 0; for (let i = 0; i < this.N; i++) if (this.pdie[i] > this.pt) n++;
+    this.pm.count = n;    // rings
+    n = 0; const d = this.d, c = this.col;
     for (let i = 0; i < this.R; i++) {
       if (!this.ron[i]) continue; const j = i * 3, a = (this.rage[i] += dt), u = a / this.rlife[i];
       if (u >= 1) { this.ron[i] = 0; continue; }

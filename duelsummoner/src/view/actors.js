@@ -7,6 +7,7 @@ import { MAP } from '../data/map.js';
 import { SCALE, summonSize } from '../data/scale.js';
 import { DuelistRig } from './rig.js';
 import { actorLit } from './engine.js';
+import { Ribbon } from './ribbon.js';
 import { PICKUP_COLORS } from '../data/pickups.js';
 import { makeCreature } from './creature.js';
 
@@ -138,7 +139,7 @@ export class Actors {
     // soft contact shadows: a dark radial blob under the duelist, summons and swarm enemies (cheap: one instanced quad, no shadow maps)
     { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, 'rgba(30,18,8,0.62)'); gr.addColorStop(0.45, 'rgba(30,18,8,0.52)'); gr.addColorStop(0.8, 'rgba(30,18,8,0.18)'); gr.addColorStop(1, 'rgba(30,18,8,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
       const tx = new T.CanvasTexture(cv); this.shadow = instanced(flat(new T.PlaneGeometry(2, 2)), new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), CFG.enemy.max + 16); scene.add(this.shadow); }
-    this.boltSeg = instanced(new T.BoxGeometry(0.07, 0.07, 1), basic(0x4fd8ff, { transparent: true, opacity: 0.9, depthWrite: false }), 96); scene.add(this.boltSeg);
+    this.ribbon = new Ribbon(scene);       // the rune bolts of the Spellcaster summons: the lightning ribbon, one draw (view/ribbon.js)
     this.fans = new Map();                                       // one mesh per arc angle, made on demand
     this.sand = null; this.sandR = -1;
     this.puffs = [];
@@ -473,17 +474,10 @@ export class Actors {
     this.teleLine.count = nl; this.teleDisc.count = nd;
     for (const mm of [this.teleLine, this.teleDisc]) { mm.instanceMatrix.needsUpdate = true; mm.instanceColor.needsUpdate = true; }
     // effects: expanding rings and fading fans
-    let nr = 0, nb = 0;
+    let nr = 0;
     for (const o of g.fx) {
       if (!o.on) continue;
-      if (o.type === 'bolt') {                                  // jagged 3-segment rune bolt, 0.15 s
-        const pts = [[o.x, o.y, o.z]], dx = o.x2 - o.x, dy = o.y2 - o.y, dz = o.z2 - o.z, l = Math.sqrt(dx * dx + dz * dz) || 1, nx = -dz / l, nz = dx / l;
-        for (let k = 1; k < 3; k++) { const j = ((Math.sin(o.seed * 12.9 + k * 7.1 + Math.floor(o.t * 40)) * 43758.5) % 1) * 0.9; pts.push([o.x + dx * k / 3 + nx * j, o.y + dy * k / 3 + (k % 2 ? 0.4 : -0.3), o.z + dz * k / 3 + nz * j]); }
-        pts.push([o.x2, o.y2, o.z2]);
-        for (let k = 0; k < 3 && nb < 96; k++) { const a = pts[k], b = pts[k + 1], sx = b[0] - a[0], sy = b[1] - a[1], sz = b[2] - a[2], sl = Math.sqrt(sx * sx + sy * sy + sz * sz) || 1;
-          d.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); d.lookAt(b[0], b[1], b[2]); d.scale.set(1, 1, sl); d.updateMatrix(); this.boltSeg.setMatrixAt(nb++, d.matrix); }
-        continue;
-      }
+      if (o.type === 'bolt') { this.ribbon.see(o); continue; }
       const f = Math.min(1, o.t / o.dur), fade = 1 - f;
       if (o.type === 'ring') {
         d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = o.r * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix();
@@ -494,7 +488,7 @@ export class Actors {
         fan.setMatrixAt(n, d.matrix); fan.setColorAt(n, col.setHex(o.color).multiplyScalar(0.3 + 0.7 * fade)); fanN.set(fan, n + 1);
       }
     }
-    this.boltSeg.count = nb; this.boltSeg.instanceMatrix.needsUpdate = true;
+    this.ribbon.tick();
     this.fxRing.count = nr; this.fxRing.instanceMatrix.needsUpdate = true; this.fxRing.instanceColor.needsUpdate = true;
     for (const [fan, mesh] of this.fans) { mesh.count = fanN.get(mesh) || 0; mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }
   }
