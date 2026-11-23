@@ -6,6 +6,7 @@ import { RUNSPEC, stagesFor, DIFFICULTY, ACES } from '../data/stages.js';
 import { pow, sin, cos, atan2 } from './dmath.js';
 import { spawnEnemy, spawnAce, mergeEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
 import { aliveAces } from './aces.js';
+import { makeFog } from './fog.js';
 import { CFG } from '../data/config.js';
 import { spawnSpecial, startBoss } from './specials.js';
 import { heightAt } from './terrain.js';
@@ -44,7 +45,7 @@ function initStage(g) {
   const S = g.stageSpec = g.stages[g.stage];
   g.sc = 0; g.evState = S.timeline.map(() => 0); g.evSpot = S.timeline.map(() => ({ x: 0, y: 0, z: 0 }));
   g.gate = { state: 'closed', awake: false, hold: 0, early: false, toll: false };
-  g.aceT = 0; g.bDown = false; g.gateDown = null; g.circle = null; g.altar = null; g.stagePrompt = '';
+  g.aceT = 0; g.fog = makeFog(); g.bDown = false; g.gateDown = null; g.circle = null; g.altar = null; g.stagePrompt = '';
   g.boss = { state: 'idle', early: false, phase: 1 };
   g.spawnAcc = 0; g.ringT = 0; g.golemT = 0; g.huntT = 0; g.killsAtStage = g.kills;
   g.shades = []; g.shadeOn = false; g.shadeAge = 0; g.shadeNextAdd = 0; g.shadeWaveT = 0; g.afterGate = 0;

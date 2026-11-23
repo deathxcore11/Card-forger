@@ -86,7 +86,7 @@ const input = host.input;
 const minimap = new Minimap($('minimap'));
 syncMap();
 
-let touch = null, autoWalk = null;                                        // tap-to-use: walk to a far chest, then open it
+let touch = null, autoWalk = null, mapOpen = false;                                        // tap-to-use: walk to a far chest, then open it
 let pendingUse = false, MODE = 'start', last = 0, frozen = false, holdT = 0, lastFusions = 0;
 
 // settings: reduce motion turns off shake, hit-stop, flashes, the boss zoom and the follow lag
@@ -134,6 +134,9 @@ document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && MODE === 'play') setMode('pause');
   else if (MODE === 'play') $('hint').textContent = '';
 });
+function toggleMap(force) { const want = force === undefined ? !mapOpen : force; if (want && MODE !== 'play') return; mapOpen = want; $('mapOverlay').style.display = want ? 'flex' : 'none'; if (want) { if (document.pointerLockElement && document.exitPointerLock) { /* keep play mode: the overlay pauses the sim */ } } }
+window.addEventListener('keydown', e => { if (e.code === 'KeyM' && !e.repeat && (MODE === 'play' || mapOpen)) { e.preventDefault(); toggleMap(); } else if (e.code === 'Escape' && mapOpen) { e.preventDefault(); toggleMap(false); } });
+$('minimap').addEventListener('click', () => { if (MODE === 'play') toggleMap(true); }); $('mapOverlay').addEventListener('click', () => toggleMap(false));
 let statsOpen = false;
 window.addEventListener('keydown', e => { if (e.code === 'Tab' && (MODE === 'play' || MODE === 'pause')) { e.preventDefault(); statsOpen = !statsOpen; drawStatPanel(game, statsOpen); } });
 window.addEventListener('keydown', e => {
@@ -271,7 +274,7 @@ function frame(now) {
     const s0 = performance.now();
     if (fx.stop > 0) fx.stop -= dtReal;                                   // hit-stop on boss phase breaks: the view waits, the sim keeps its tick count
     if (holdT > 0) holdT -= dtReal;
-    if (dtReal > 0 && !frozen && fx.stop <= 0 && holdT <= 0) {
+    if (dtReal > 0 && !frozen && !mapOpen && fx.stop <= 0 && holdT <= 0) {
       // a one-tick press (E) must survive frames that run no sim tick (above 60 fps most frames run none): latch it until a tick has consumed it
       const cmd = input.command();
       if (autoWalk) {                                                        // smart tap: steer to the thing you tapped, open it on arrival; any stick or key input cancels
@@ -309,7 +312,7 @@ function frame(now) {
   ringMarks();
   fx.update(dtReal, camera);
   props.update(game);
-  minimap.draw(game, input.yaw);
+  minimap.draw(game, input.yaw); if (mapOpen) minimap.drawFull($('fullmap'), game, input.yaw);
   showFlash(game);
   const a1 = performance.now();
   renderer.render(scene, camera);
@@ -327,7 +330,7 @@ requestAnimationFrame(frame);
 
 // Test hooks: read and drive the run without touching its rules.
 window.__ds = {
-  game, input, chase, touch, pickAndUse, threads, ambient, cfg: CFG, camera, scene, actors, assets, prof,
+  game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
   start: begin, begin, results, setMode, menus, fx, onEvent, save,
   pickDuelist, freeze: v => { frozen = !!v; },

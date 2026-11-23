@@ -23,6 +23,7 @@ import { updateMonsters, updateTraps, onPlayerHurt } from './monsters.js';
 import { makeField, recompute, xpNeeded, openLevelOffer, openChest, chooseCard, redraw, banish, pass, leaveChest, fusionsReady } from './field.js';
 import { MAP } from '../data/map.js';
 import { buildWorld, emptyWorld, updateWorld, nearestProp, useProp } from './world.js';
+import { makeFog, revealFog } from './fog.js';
 import { SPELLS } from '../data/cards.js';
 import { runResults } from './results.js';
 
@@ -66,7 +67,7 @@ export class Game {
     this.metaMods = meta ? meta.mods : {};
     this.unlockedCards = meta ? new Set(meta.cards) : null; this.unlockedItems = meta ? new Set(meta.items) : null;
     this.wardenKilled = false; this.trapEver = false;
-    this.field = makeField(this.duelist, this.rcos);
+    this.field = makeField(this.duelist, this.rcos); this.fog = makeFog();
     this.field.redraws += this.metaMods.redraws || 0; this.field.banishes += this.metaMods.banishes || 0;
     if (this.metaMods.startLevel) this.field.monsters[0].level = Math.min(10, 1 + this.metaMods.startLevel);
     recompute(this);
@@ -198,7 +199,7 @@ export class Game {
     refillCaps(this, dt);
     if (this.grace > 0) this.grace -= dt;
     if (this.flash > 0) this.flash -= dt;
-    this._interact(cmd);
+    this._interact(cmd); revealFog(this);                                          // the map shows where you have been (high ground sees further)
     if (!this.offer && this.pendingLevels > 0 && this.opts.offers !== false) openLevelOffer(this);
   }
 
