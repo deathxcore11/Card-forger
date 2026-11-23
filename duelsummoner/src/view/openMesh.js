@@ -7,18 +7,18 @@ import { addDressing } from './openDressing.js';
 const T = window.THREE;
 const mixc = (a, b, t) => { const m = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
 const dim = (c, k) => ((Math.min(255, Math.round(((c >> 16) & 255) * k)) << 16) | (Math.min(255, Math.round(((c >> 8) & 255) * k)) << 8) | Math.min(255, Math.round((c & 255) * k)));
-const LIT = 0xf2bc66, MID = 0xe3a04b, LEE = 0xb26b2e, TINT_A = 0xdf9a45, TINT_B = 0xeaac58, LINE_COL = 0x2a1a10;
+const LIT = 0xfbeab4, LEE = 0xd0832f, TINT_A = 0xf1c773, TINT_B = 0xf6d489, LINE_COL = 0x2a1a10;       // sunlit slopes pale cream (never white), flat sand warm yellow, lee slopes orange
 
 // the ripple streak map: long thin pale and dark lines along u (the wind), repeating every 24 m by 12 m
 function streakTex() {
   const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256; const c = cv.getContext('2d'); c.fillStyle = '#ebebeb'; c.fillRect(0, 0, 512, 256);
   let s = 12345; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-  for (let k = 0; k < 260; k++) { const y = r() * 256, x = r() * 512, len = 60 + r() * 220, light = r() < 0.5, a = 0.06 + r() * 0.14; c.strokeStyle = light ? 'rgba(255,255,255,' + a * 1.4 + ')' : 'rgba(150,150,150,' + a + ')'; c.lineWidth = 1 + (r() < 0.25 ? 1 : 0); for (const ox of [-512, 0, 512]) { c.beginPath(); c.moveTo(x + ox, y); c.lineTo(x + ox + len, y + (r() - 0.5) * 2); c.stroke(); } }
+  for (let k = 0; k < 260; k++) { const y = r() * 256, x = r() * 512, len = 60 + r() * 220, light = r() < 0.5, a = 0.09 + r() * 0.2; c.strokeStyle = light ? 'rgba(255,255,255,' + a * 1.4 + ')' : 'rgba(150,150,150,' + a + ')'; c.lineWidth = 1 + (r() < 0.25 ? 1 : 0); for (const ox of [-512, 0, 512]) { c.beginPath(); c.moveTo(x + ox, y); c.lineTo(x + ox + len, y + (r() - 0.5) * 2); c.stroke(); } }
   const tex = new T.CanvasTexture(cv); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.anisotropy = 4; return tex;
 }
 
 export function buildOpen(map, look) {
-  const group = new T.Group(), B = new Builder(), O = new Builder(), D = new Builder(), blocks = map.blocks || [], wind = map.dune ? map.dune.wind : 0, cw = Math.cos(wind), sw = Math.sin(wind);
+  const group = new T.Group(), B = new Builder(), O = new Builder(), D = new Builder(), Ln = new Builder(), blocks = map.blocks || [], wind = map.dune ? map.dune.wind : 0, cw = Math.cos(wind), sw = Math.sin(wind);
   // under a block the view ground is the plain dune (the box drawn by openDressing hides it), so the 2 m grid leaves no teeth round the foot
   const near = [], gh = (x, z) => { for (const b of blocks) { const dx = x - b.cx, dz = z - b.cz, R = Math.max(b.rx, b.rz) * 1.3 + 3; if (dx * dx + dz * dz < R * R && blockProf(b, x, z) > 0.05) return duneH(map.dune, x, z); } return groundAt(map, x, z); };
   const colour = (cx, cz, cy, nx, ny, nz) => {
@@ -41,12 +41,12 @@ export function buildOpen(map, look) {
   const FAR = 400, SO = 6, SA = 4, east = lin(LINE, FAR, SO), west = east.map(v => -v).reverse(), along = lin(-LINE, LINE, SA), tall = lin(-FAR - 2, FAR + 2, SA);     // beyond the line: 6 m cells outward, 4 m along the edge
   patch(O, east, tall); patch(O, west, tall); patch(O, along, east); patch(O, along, west);
   // the boundary line: a thin dark strip lying on the sand along the four sides, following the ground
-  { const w = 0.07, lift = 0.05; for (let s = 0; s < 4; s++) { const horiz = s < 2, sg = s % 2 ? 1 : -1; for (let t = -LINE; t < LINE; t += 2) { const p = (u, v) => horiz ? [u, groundAt(map, u, v) + lift, v] : [v, groundAt(map, v, u) + lift, u];
-      const a = p(t, sg * (LINE - w)), b = p(t + 2, sg * (LINE - w)), c = p(t + 2, sg * (LINE + w)), d = p(t, sg * (LINE + w)); B.quad(a, b, c, d, [0, 1, 0], LINE_COL); } } }
+  { const w = 0.12, lift = 0.1; for (let s = 0; s < 4; s++) { const horiz = s < 2, sg = s % 2 ? 1 : -1; for (let t = -LINE; t < LINE; t += 2) { const p = (u, v) => horiz ? [u, groundAt(map, u, v) + lift, v] : [v, groundAt(map, v, u) + lift, u];
+      const a = p(t, sg * (LINE - w)), b = p(t + 2, sg * (LINE - w)), c = p(t + 2, sg * (LINE + w)), d = p(t, sg * (LINE + w)); Ln.quad(a, b, c, d, [0, 1, 0], LINE_COL); } } }
   addDressing(D, map);
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
-  const tex = streakTex(), meshes = [B.mesh(false, fadeU), O.mesh(false, fadeU), D.mesh(false, fadeU)];
+  const tex = streakTex(), lineMesh = Ln.mesh(false, fadeU), meshes = [B.mesh(false, fadeU), O.mesh(false, fadeU), D.mesh(false, fadeU)]; lineMesh.material.polygonOffset = true; lineMesh.material.polygonOffsetFactor = -3; lineMesh.material.polygonOffsetUnits = -3;
   for (const m of meshes.slice(0, 2)) { const p = m.geometry.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv[i * 2] = (x * cw + z * sw) / 24; uv[i * 2 + 1] = (-x * sw + z * cw) / 12; } m.geometry.setAttribute('uv', new T.BufferAttribute(uv, 2)); m.material.map = tex; m.material.needsUpdate = true; }
-  group.add(...meshes); group.userData.tris = (B.pos.length + O.pos.length + D.pos.length) / 9 | 0;
+  group.add(...meshes, lineMesh); group.userData.tris = (B.pos.length + O.pos.length + D.pos.length) / 9 | 0;
   return group;
 }

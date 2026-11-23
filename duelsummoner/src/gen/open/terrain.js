@@ -103,7 +103,8 @@ function attempt(seed, arch, k) {
   // 2 to 4 mesas and 6 to 9 lone ruin blocks, 50 m or more in from the line, kept apart
   const blocks = [], placedAt = [];
   const place = (n, mk, gap) => { for (let t = 0; t < 300 && n > 0; t++) { const x = (rn() - 0.5) * 240, z = (rn() - 0.5) * 240; if (placedAt.some(p => dist(p[0], p[1], x, z) < gap + p[2])) continue; const b = mk(x, z); blocks.push(b); placedAt.push([x, z, Math.max(b.rx, b.rz)]); n--; } };
-  const nm = 2 + ((rn() * 3) | 0); place(nm, (x, z) => block(rn, x, z, 7 + rn() * 6, 7 + rn() * 5, 5 + rn() * 3, 2.4, 1), 60);
+  const nm = 2 + ((rn() * 3) | 0); place(nm, (x, z) => block(rn, x, z, 7 + rn() * 6, 7 + rn() * 5, 5 + rn() * 3, 2.4, rn() < 0.45 ? 2 : 1), 60);
+  place(1 + (rn() < 0.5 ? 1 : 0), (x, z) => block(rn, x, z, 13 + rn() * 6, 3 + rn() * 1.5, 9 + rn() * 4, 2.4, rn() < 0.5 ? 2 : 1), 60);       // 1 or 2 tall rock walls, 9 to 13 m
   place(6 + ((rn() * 4) | 0), (x, z) => { const b = block(rn, x, z, 2.8 + rn() * 1.6, 2.2 + rn() * 0.9, 2.6 + rn() * 1.2, 1.1, 0); b.door = rn() < 0.55; return b; }, 45);
   const G = field(P, blocks);
   const relief = (x, z, r) => { let lo = 1e9, hi = -1e9; for (const rr of [r, r * 0.6]) for (let a = 0; a < 12; a++) { const t = a * TAU / 12, h = at(G, x + cosA(t) * rr, z + sinA(t) * rr); lo = Math.min(lo, h); hi = Math.max(hi, h); } return hi - lo; };
@@ -130,24 +131,27 @@ function dressing(b, seed, enc, rings, st) {
   const gy = (x, z) => groundAt(b.map, x, z), spot = () => [(rn() - 0.5) * 344, (rn() - 0.5) * 344];
   const okAt = (x, z, pad, maxSlope) => free(x, z, pad) && slopeAt(G, x, z) < (maxSlope || 0.42);
   const rnd = rn;
-  // the head: one large carved head on open, nearly flat sand 60 m or more from the start
-  for (let t = 0; t < 400 && !out.head; t++) { const [x, z] = spot(); if (Math.abs(x) < 120 && Math.abs(z) < 120 && dist(x, z, sp[0], sp[1]) > 60 && dist(x, z, gt[0], gt[1]) > 60 && spread(G, x, z, 4) < 0.7 && okAt(x, z, 6, 0.2)) { out.head = { x: r2(x), y: r2(gy(x, z)), z: r2(z), rot: r2(rnd() * TAU), s: 1 }; put('h', x, z); solid.push([r2(x), r2(gy(x, z)), r2(z), 1.7, 5.5]); keep.push({ x, z, r: 4 }); } }
+  // 2 or 3 large carved monuments (a duelist mask, a great stone hand holding a card), on open, nearly flat sand 60 m or more from the start and 70 m apart
+  out.heads = []; const nh = 2 + (rn() < 0.5 ? 1 : 0), k0 = (rn() * 2) | 0;
+  for (let t = 0; t < 1500 && out.heads.length < nh; t++) { const [x, z] = spot(); if (Math.abs(x) > 120 || Math.abs(z) > 120 || dist(x, z, sp[0], sp[1]) < 60 || dist(x, z, gt[0], gt[1]) < 60 || out.heads.some(h => dist(h.x, h.z, x, z) < 70) || spread(G, x, z, 4) > 0.8 || !okAt(x, z, 6, 0.2)) continue;
+    const y = gy(x, z); out.heads.push({ x: r2(x), y: r2(y), z: r2(z), rot: r2(rn() * TAU), s: 1, kind: (out.heads.length + k0) % 2 }); put('h', x, z); solid.push([r2(x), r2(y), r2(z), 1.9, 6]); keep.push({ x, z, r: 4 }); }
+  out.head = out.heads[0] || null;
   const fill = (n, tries, kind, sep, ok, make) => { let k = 0; for (let t = 0; t < tries && k < n; t++) { const [x, z] = spot(); if (!ok(x, z) || near(kind, x, z, sep)) continue; make(x, z); put(kind, x, z); k++; } };
   fill(70, 4000, 'c', 11, (x, z) => dens(x, z) > 0.3 && okAt(x, z, 2), (x, z) => { const y = gy(x, z), s = 0.85 + rnd() * 0.5; out.cacti.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.55 * s), r2(3.5 * s)]);
     if (rnd() < 0.4) { const a = rnd() * TAU, d = 2.2 + rnd() * 1.5, x2 = x + cosA(a) * d, z2 = z + sinA(a) * d; if (okAt(x2, z2, 1)) { const y2 = gy(x2, z2), s2 = 0.6 + rnd() * 0.5; out.cacti.push([r2(x2), r2(y2), r2(z2), r2(s2), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x2), r2(y2), r2(z2), r2(0.55 * s2), r2(3.5 * s2)]); } } });
   fill(42, 3000, 'd', 14, (x, z) => okAt(x, z, 2), (x, z) => { const y = gy(x, z), s = 0.8 + rnd() * 0.6; out.dead.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.4 * s), r2(4 * s)]); });
-  fill(120, 5000, 'l', 9, (x, z) => okAt(x, z, 1, 0.5), (x, z) => { const a = rnd() * TAU, len = 3 + rnd() * 6, dx = cosA(a) * len / 2, dz = sinA(a) * len / 2, x0 = x - dx, z0 = z - dz, x1 = x + dx, z1 = z + dz; out.logs.push([r2(x0), r2(gy(x0, z0) - 0.12), r2(z0), r2(x1), r2(gy(x1, z1) - 0.12), r2(z1), r2(0.22 + rnd() * 0.2), (rnd() * 2) | 0]); });
+  fill(120, 5000, 'l', 9, (x, z) => okAt(x, z, 1, 0.5), (x, z) => { const a = rnd() * TAU, len = 3 + rnd() * 6, dx = cosA(a) * len / 2, dz = sinA(a) * len / 2, x0 = x - dx, z0 = z - dz, x1 = x + dx, z1 = z + dz; out.logs.push([r2(x0), r2(gy(x0, z0) - 0.12), r2(z0), r2(x1), r2(gy(x1, z1) - 0.12), r2(z1), r2(0.3 + rnd() * 0.25), (rnd() * 2) | 0]); });
   fill(30, 3000, 'p', 16, (x, z) => okAt(x, z, 2, 0.35), (x, z) => { const n = 2 + ((rnd() * 3) | 0); for (let q = 0; q < n; q++) { const a = rnd() * TAU, d = q ? 0.8 + rnd() * 1.2 : 0, px = x + cosA(a) * d, pz = z + sinA(a) * d; out.pots.push([r2(px), r2(gy(px, pz)), r2(pz), r2(0.8 + rnd() * 0.6), r2(rnd() * TAU), (rnd() * 3) | 0]); } });
   // a beam beside every ruin block and every mesa: a long grey beam lying at an angle, half sunk
-  for (const bl of blocks) { const a = rnd() * TAU, d = reachOf(bl) + 2 + rnd() * 3, x = bl.cx + cosA(a) * d, z = bl.cz + sinA(a) * d; if (!free(x, z, 1) || slopeAt(G, x, z) > 0.5) continue; const a2 = rnd() * TAU, len = 4 + rnd() * 5, dx = cosA(a2) * len / 2, dz = sinA(a2) * len / 2; out.logs.push([r2(x - dx), r2(gy(x - dx, z - dz) - 0.15), r2(z - dz), r2(x + dx), r2(gy(x + dx, z + dz) - 0.15), r2(z + dz), r2(0.3 + rnd() * 0.15), 2]); }
+  for (const bl of blocks) { const a = rnd() * TAU, d = reachOf(bl) + 2 + rnd() * 3, x = bl.cx + cosA(a) * d, z = bl.cz + sinA(a) * d; if (!free(x, z, 1) || slopeAt(G, x, z) > 0.5) continue; const a2 = rnd() * TAU, len = 4 + rnd() * 5, dx = cosA(a2) * len / 2, dz = sinA(a2) * len / 2; out.logs.push([r2(x - dx), r2(gy(x - dx, z - dz) - 0.15), r2(z - dz), r2(x + dx), r2(gy(x + dx, z + dz) - 0.15), r2(z + dz), r2(0.4 + rnd() * 0.2), 2]); }
   return { dress: out, solid };
 }
 function farDressing(P, seed) {                                                                    // large rock blocks, dead trees and ruin pieces on the sand beyond the line, 190 to 380 m out; sparse
   const rn = rngOf(seed ^ 0xFA2), out = { rocks: [], dead: [], ruins: [] }; const ring = () => { for (;;) { const x = (rn() - 0.5) * 780, z = (rn() - 0.5) * 780; if (Math.abs(x) > 190 || Math.abs(z) > 190) return [x, z]; } };
   const H = (x, z) => duneH(P, x, z);
-  for (let k = 0; k < 28; k++) { const [x, z] = ring(), w = 7 + rn() * 12, h = 4 + rn() * 9; out.rocks.push([r2(x), r2(H(x, z)), r2(z), r2(w), r2(h), r2(rn() * TAU), (rn() * 3) | 0]); }
-  for (let k = 0; k < 26; k++) { const [x, z] = ring(); out.dead.push([r2(x), r2(H(x, z)), r2(z), r2(1.1 + rn() * 0.8), r2(rn() * TAU), (rn() * 3) | 0]); }
-  for (let k = 0; k < 12; k++) { const [x, z] = ring(); out.ruins.push([r2(x), r2(H(x, z)), r2(z), r2(5 + rn() * 5), r2(3 + rn() * 4), r2(rn() * TAU), (rn() * 3) | 0]); }
+  for (let k = 0; k < 40; k++) { const [x, z] = ring(), w = 7 + rn() * 12, h = 4 + rn() * 9; out.rocks.push([r2(x), r2(H(x, z)), r2(z), r2(w), r2(h), r2(rn() * TAU), (rn() * 3) | 0]); }
+  for (let k = 0; k < 40; k++) { const [x, z] = ring(); out.dead.push([r2(x), r2(H(x, z)), r2(z), r2(1.1 + rn() * 0.8), r2(rn() * TAU), (rn() * 3) | 0]); }
+  for (let k = 0; k < 18; k++) { const [x, z] = ring(); out.ruins.push([r2(x), r2(H(x, z)), r2(z), r2(5 + rn() * 5), r2(3 + rn() * 4), r2(rn() * TAU), (rn() * 3) | 0]); }
   return out;
 }
 
@@ -196,7 +200,7 @@ function assemble(b, seed, stageIndex) {
     bossRings: b.rings.map(q => ({ x: r2(q.x), z: r2(q.z), r: 14, y: r2(q.y) })), encounters: b.enc.map(ex), landmarks: [], kits: [], rooms: [], roomOf: null, gateways: [],
     clearings: b.enc.filter(e => e.type === 'broker').map(e => ({ x: r2(e.x), z: r2(e.z), r: 12 })), groves: [], paths: [],
     dune: { seed: P.seed, k: P.k, p1: r2(P.p1), p2: r2(P.p2), shift: P.shift, shelf: P.shelf, bowl: P.bowl, br: P.br, bx: P.bx, bz: P.bz, cs: P.cs, ss: P.ss, l1: P.l1, a1: P.a1, l2: P.l2, a2: P.a2, lo: P.lo, c1: P.c1, s1: P.s1, c2: P.c2, s2: P.s2, wind: P.wind },
-    blocks: b.blocks.map(q => ({ cx: r2(q.cx), cz: r2(q.cz), rx: r2(q.rx), rz: r2(q.rz), h: r2(q.h), cw: q.cw, rot: q.rot, seed: q.seed, tone: q.tone, T: r2(q.T), door: q.door })),
+    blocks: b.blocks.map(q => ({ cx: r2(q.cx), cz: r2(q.cz), rx: r2(q.rx), rz: r2(q.rz), h: r2(q.h), cw: q.cw, rot: q.rot, cr: q.cr, sr: q.sr, seed: q.seed, tone: q.tone, T: r2(q.T), door: q.door })),
     _road: { main: [[9000, 9000], [9001, 9001]], trails: [], width: 4.5, trailWidth: 3 }, _pools: [],
     report: { genVersion: 'open3', v2: true, attempt: b.k, fallback: false, openFrac: r2(b.st.openFrac), slopeShare: r2(b.st.slopeShare), range: r2(b.st.range), forms: b.blocks.length, walkFrac: r2(b.st.walkFrac), flatShare: r2(b.st.flatShare) }
   };

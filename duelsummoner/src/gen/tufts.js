@@ -23,7 +23,7 @@ export function bakeTufts(map, S, hf, reach) {
   for (let j = -n; j <= n; j++) for (let i = -n; i <= n; i++) {
     const x = (i + 0.5 + (rnd(i, j, 1) - 0.5) * 0.9) * TUFT_STEP, z = (j + 0.5 + (rnd(i, j, 2) - 0.5) * 0.9) * TUFT_STEP; if (x * x + z * z > R * R) continue;
     const m = pat(x * 0.03 + 40, z * 0.03 + 9), mm = pat(x * 0.012 + 7, z * 0.012 + 70), dens = Math.min(1, 0.22 + Math.max(0, m - 0.42) * 3.2 + Math.max(0, mm - 0.5) * 1.5);
-    if (rnd(i, j, 3) > dens * 0.95) continue;
+    if (rnd(i, j, 3) > dens * 0.95 * (map.open ? 0.3 : 1)) continue;       // the open desert: few, pale tufts
     const h = tuftOk(hf, x, z); if (h === null) continue;
     if (roadDist(road, x, z) < 5.2) continue;
     let bad = false; for (const k of keep) { const dx = x - k.x, dz = z - k.z; if (dx * dx + dz * dz < k.r * k.r) { bad = true; break; } } if (bad) continue;

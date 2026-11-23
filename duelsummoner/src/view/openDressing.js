@@ -54,23 +54,42 @@ function pot(D, x, y, z, s, rot, v) {
   rod(D, [x, y - 0.06 * s, z], [x + lean, y + 0.3 * s, z], 0.2 * s, 0.34 * s, 7, dk, false, true); rod(D, [x + lean, y + 0.3 * s, z], [x + lean, y + 0.6 * s, z], 0.34 * s, 0.22 * s, 7, col, false);
   rod(D, [x + lean, y + 0.6 * s, z], [x + lean, y + 0.72 * s, z], 0.22 * s, 0.17 * s, 7, col, false); rod(D, [x + lean, y + 0.72 * s, z], [x + lean, y + 0.78 * s, z], 0.2 * s, 0.2 * s, 7, dk, true);
 }
-// ---- the carved head: a squat, flat-faced watcher, about 5 m tall, our own design: a stepped crest, a heavy brow slab, a wedge nose, two long eye slits, a mouth bar, side ears, a neck block on a wide plinth
-function head(D, q) {
-  const { x, y, z, rot, s } = q, c = Math.cos(rot), sn = Math.sin(rot), G = 0xbaab91, G2 = 0xa89a82, G3 = 0xc9bba2, DK = 0x5b4a38;
-  const L = (lx, lz) => [x + lx * s * c - lz * s * sn, z + lx * s * sn + lz * s * c];                 // local +z is the face
+// ---- carved monuments, our own design, about 6 m tall. kind 0: a duelist mask (a tall stone slab with a brow band, two eye holes, a nose ridge, a jaw bar and two pointed ties). kind 1: a great stone hand rising from the sand holding a card upright (palm, four curled fingers, a thumb, a framed card with a diamond seal).
+function monument(D, q) {
+  const { x, y, z, rot, s, kind } = q, c = Math.cos(rot), sn = Math.sin(rot), G = 0xc2b498, G2 = 0xaa9c82, G3 = 0xd2c5aa, DK = 0x4f4130;
+  const L = (lx, lz) => [x + lx * s * c - lz * s * sn, z + lx * s * sn + lz * s * c];                 // local +z is the front
   const part = (lx, lz, y0, hx0, hz0, hx1, hz1, h, col, colTop) => { const p = L(lx, lz); frustum(D, p[0], y + y0 * s - 0.3, p[1], hx0 * s, hz0 * s, hx1 * s, hz1 * s, h * s, rot, col, colTop); };
-  part(0, 0, 0, 2.3, 1.9, 1.9, 1.6, 0.9, G2);                                         // plinth
-  part(0, 0, 0.9, 1.15, 1.0, 1.0, 0.9, 1.0, G);                                       // neck
-  part(0, 0, 1.9, 1.45, 1.15, 1.15, 0.95, 2.6, G, G3);                                // the head, tapering to the top
-  part(0, 0.62, 3.75, 1.35, 0.55, 1.3, 0.5, 0.5, G2);                                 // the brow slab
-  part(0, 1.02, 2.9, 0.22, 0.38, 0.14, 0.1, 0.85, G3);                                // the nose wedge
-  part(-0.62, 1.06, 3.2, 0.38, 0.05, 0.38, 0.03, 0.2, DK); part(0.62, 1.06, 3.2, 0.38, 0.05, 0.38, 0.03, 0.2, DK);       // eye slits
-  part(0, 1.04, 2.28, 0.55, 0.05, 0.55, 0.03, 0.14, DK);                              // mouth bar
-  part(-1.38, 0, 2.6, 0.16, 0.34, 0.12, 0.28, 0.9, G2); part(1.38, 0, 2.6, 0.16, 0.34, 0.12, 0.28, 0.9, G2);                 // ears
-  part(0, -0.05, 4.5, 0.9, 0.55, 0.7, 0.45, 0.35, G3); part(0, -0.05, 4.85, 0.6, 0.4, 0.4, 0.3, 0.3, G2);                    // stepped crest
+  part(0, 0, 0, 2.6, 2.0, 2.2, 1.7, 0.8, G2);
+  if (kind === 0) {
+    part(0, 0, 0.8, 1.5, 0.75, 1.3, 0.6, 4.4, G, G3);
+    part(0, 0.55, 3.9, 1.7, 0.3, 1.6, 0.25, 0.55, G2);
+    part(-0.62, 0.62, 3.35, 0.36, 0.06, 0.3, 0.04, 0.36, DK); part(0.62, 0.62, 3.35, 0.36, 0.06, 0.3, 0.04, 0.36, DK);
+    part(0, 0.6, 2.2, 0.18, 0.18, 0.12, 0.1, 1.5, G3);
+    part(0, 0.62, 1.55, 0.7, 0.05, 0.7, 0.03, 0.14, DK);
+    part(-1.85, 0, 3.3, 0.38, 0.12, 0.05, 0.06, 1.3, G2); part(1.85, 0, 3.3, 0.38, 0.12, 0.05, 0.06, 1.3, G2);
+    part(0, 0, 5.2, 0.9, 0.4, 0.6, 0.3, 0.45, G2);
+  } else {
+    part(0, -0.2, 0.8, 1.2, 1.0, 1.1, 0.9, 2.0, G);
+    part(0, 0.1, 2.8, 1.5, 1.05, 1.5, 1.0, 0.9, G, G3);
+    for (let k = -1.5; k <= 1.5; k += 1) part(k * 0.72, 0.85, 3.05, 0.3, 0.32, 0.28, 0.3, 1.0, G2, G3);
+    part(-1.65, 0.45, 3.0, 0.3, 0.5, 0.26, 0.4, 1.1, G2);
+    part(0.1, 0.55, 3.7, 1.15, 0.12, 1.1, 0.1, 2.5, G3);
+    part(0.1, 0.69, 4.05, 0.8, 0.02, 0.8, 0.02, 1.8, G);
+    part(0.1, 0.71, 4.6, 0.32, 0.02, 0.05, 0.02, 0.6, DK); part(0.1, 0.71, 4.0, 0.32, 0.02, 0.05, 0.02, 0.6, DK);
+  }
+}
+// ---- the gate: a low round stone plinth and a framed standing gateway (two pillars, a lintel, a stepped crest and a carved round seal), turned toward the start, so it reads as a built place across the sand
+function gateway(D, map) {
+  const g = map.gate, sp = map.spawn, y = groundAt(map, g.x, g.z), dx = sp.x - g.x, dz = sp.z - g.z, d = Math.sqrt(dx * dx + dz * dz) || 1, nx = dx / d, nz = dz / d, yaw = Math.atan2(nz, nx) - Math.PI / 2, tx = -nz, tz = nx, ST = 0xb6aa94, ST2 = 0xa09580, ST3 = 0xcfc3a8, DK = 0x4a3f30;
+  rod(D, [g.x, y - 0.4, g.z], [g.x, y + 0.35, g.z], 7.6, 7.0, 12, ST2, true, false, 0.2);
+  const P = (u, v, y0) => [g.x + tx * u + nx * v, y0, g.z + tz * u + nz * v];
+  for (const u of [-4.6, 4.6]) { const c = P(u, 0, y); frustum(D, c[0], y + 0.3, c[2], 0.55, 0.55, 0.45, 0.45, 6.6, yaw, ST, ST3); frustum(D, c[0], y + 0.3, c[2], 0.75, 0.75, 0.65, 0.65, 0.6, yaw, ST2); }
+  const m = P(0, 0, y); frustum(D, m[0], y + 6.9, m[2], 5.6, 0.6, 5.4, 0.55, 0.9, yaw, ST, ST3); frustum(D, m[0], y + 7.8, m[2], 3.8, 0.5, 3.4, 0.45, 0.5, yaw, ST2, ST3); frustum(D, m[0], y + 8.3, m[2], 1.4, 0.4, 1.0, 0.35, 0.5, yaw, ST, ST3);
+  const sCtr = P(0, 0.9, y + 5.6); rod(D, sCtr, [sCtr[0] + nx * 0.15, sCtr[1], sCtr[2] + nz * 0.15], 1.5, 1.5, 16, ST3, true, true);
+  const sIn = P(0, 1.1, y + 5.6); rod(D, sIn, [sIn[0] + nx * 0.05, sIn[1], sIn[2] + nz * 0.05], 1.0, 1.0, 16, DK, true, true);
 }
 // ---- blocks: a crisp box drawn at the foot of the sim's steep side (15 % into the rise), with a flat top, banded walls, a row of dark window slits high on the long faces and a doorway low on one face
-const BLK = [{ face: 0xf2dcae, top: 0xf6e6c2, bands: [0.9, 0.96, 1.0], sl: 0x6a4a2c }, { face: 0xe2a361, top: 0xeab777, bands: [0.82, 0.91, 1.0], sl: 0x5a3a20 }];
+const BLK = [{ face: 0xf2dcae, top: 0xf6e6c2, bands: [0.9, 0.96, 1.0], sl: 0x6a4a2c }, { face: 0xe2a361, top: 0xeab777, bands: [0.82, 0.91, 1.0], sl: 0x5a3a20 }, { face: 0xf0b98a, top: 0xf6d2ac, bands: [0.86, 0.94, 1.0], sl: 0x6a3f28 }];
 function blockMesh(D, map, b) {
   const cr = Math.cos(b.rot), sr = Math.sin(b.rot), avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg, K = BLK[b.tone], N = 56, T = b.T + 0.04;
   const pt = k => { const t = k / N * TAU, c = Math.cos(t), s = Math.sin(t), ux = q * Math.sign(c) * Math.sqrt(Math.abs(c)), uz = q * Math.sign(s) * Math.sqrt(Math.abs(s)); return [b.cx + ux * b.rx * cr - uz * b.rz * sr, b.cz + ux * b.rx * sr + uz * b.rz * cr]; };
@@ -78,10 +97,11 @@ function blockMesh(D, map, b) {
   for (let k = 0; k < N; k++) { const a0 = P[k], a1 = P[k + 1], g = Math.min(groundAt(map, a0[0], a0[1]), groundAt(map, a1[0], a1[1])) - 0.6, mx = (a0[0] + a1[0]) / 2 - b.cx, mz = (a0[1] + a1[1]) / 2 - b.cz;
     for (let y = g, i = 0; y < T - 0.01; i++) { const y1 = Math.min(T, (Math.floor(y / 1.2) + 1) * 1.2); D.quad([a0[0], y, a0[1]], [a1[0], y, a1[1]], [a1[0], y1, a1[1]], [a0[0], y1, a0[1]], [mx, 0, mz], mixc(K.face, 0x000000, 1 - K.bands[((Math.floor(y / 1.2) % 3) + 3) % 3])); y = y1; if (i > 40) break; }
     D.tri([b.cx, T, b.cz], [a0[0], T, a0[1]], [a1[0], T, a1[1]], [0, 1, 0], K.top); }
+  if (b.tone === 2) { let sd = b.seed + 7; const r = () => { sd = (Math.imul(sd, 1664525) + 1013904223) >>> 0; return sd / 4294967296; }; const nsh = 5 + ((r() * 4) | 0); for (let k = 0; k < nsh; k++) { const ang = r() * TAU, rr = 0.2 + r() * 0.6, px = b.cx + (Math.cos(ang) * b.rx * rr) * cr - (Math.sin(ang) * b.rz * rr) * sr, pz = b.cz + (Math.cos(ang) * b.rx * rr) * sr + (Math.sin(ang) * b.rz * rr) * cr, h = 1.4 + r() * 2.6, lean = (r() - 0.5) * 2.2, la = r() * TAU, w = 0.5 + r() * 0.7; rod(D, [px, T - 0.1, pz], [px + Math.cos(la) * lean, T + h, pz + Math.sin(la) * lean], w, w * 0.15, 4, mixc(K.face, 0xffffff, 0.12 + r() * 0.15), true, false, r() * 1.5); } }
   const faces = [[1, 0, b.rx, b.rz], [-1, 0, b.rx, b.rz], [0, 1, b.rz, b.rx], [0, -1, b.rz, b.rx]];
   faces.forEach((f, fi) => {
     const [ax, az, ext, lat] = f, nx = ax * cr - az * sr, nz = ax * sr + az * cr, tx = -nz, tz = nx, edge = ext * q, px = b.cx + nx * edge, pz = b.cz + nz * edge, span = lat * 0.62;
-    if (lat > 3.2 || (b.tone === 0 && fi < 2)) for (let k = -Math.floor(span / 1.15); k <= Math.floor(span / 1.15); k++) { const o = k * 1.15, cx = px + tx * o + nx * 0.03, cz = pz + tz * o + nz * 0.03, hw = 0.24, y = T - (b.tone ? 1.0 : 0.6); D.quad([cx - tx * hw, y - 0.18, cz - tz * hw], [cx + tx * hw, y - 0.18, cz + tz * hw], [cx + tx * hw, y + 0.18, cz + tz * hw], [cx - tx * hw, y + 0.18, cz - tz * hw], [nx, 0, nz], K.sl); }
+    if (b.tone !== 2 && (lat > 3.2 || (b.tone === 0 && fi < 2))) for (let k = -Math.floor(span / 1.15); k <= Math.floor(span / 1.15); k++) { const o = k * 1.15, cx = px + tx * o + nx * 0.03, cz = pz + tz * o + nz * 0.03, hw = 0.24, y = T - (b.tone ? 1.0 : 0.6); D.quad([cx - tx * hw, y - 0.18, cz - tz * hw], [cx + tx * hw, y - 0.18, cz + tz * hw], [cx + tx * hw, y + 0.18, cz + tz * hw], [cx - tx * hw, y + 0.18, cz - tz * hw], [nx, 0, nz], K.sl); }
     if (b.door && fi === 2) { const gy = groundAt(map, px + nx * 0.6, pz + nz * 0.6), cx = px + nx * 0.03, cz = pz + nz * 0.03, hw = 0.62, dh = Math.min(b.h * 0.7, 2.0);
       D.quad([cx - tx * hw, gy - 0.1, cz - tz * hw], [cx + tx * hw, gy - 0.1, cz + tz * hw], [cx + tx * hw, gy + dh, cz + tz * hw], [cx - tx * hw, gy + dh, cz - tz * hw], [nx, 0, nz], 0x40301f);
       D.quad([cx - tx * (hw + 0.25), gy + dh, cz - tz * (hw + 0.25)], [cx + tx * (hw + 0.25), gy + dh, cz + tz * (hw + 0.25)], [cx + tx * (hw + 0.25), gy + dh + 0.3, cz + tz * (hw + 0.25)], [cx - tx * (hw + 0.25), gy + dh + 0.3, cz - tz * (hw + 0.25)], [nx, 0, nz], 0xcfae78); }
@@ -98,7 +118,8 @@ export function addDressing(D, map) {
   for (const q of d.dead || []) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], false);
   for (const q of d.logs || []) log(D, q);
   for (const q of d.pots || []) pot(D, q[0], q[1], q[2], q[3], q[4], q[5]);
-  if (d.head) head(D, d.head);
+  for (const q of d.heads || []) monument(D, q);
+  gateway(D, map);
   for (const b of map.blocks || []) blockMesh(D, map, b);
   const f = map.far || {};
   for (const q of f.rocks || []) farRock(D, q);
