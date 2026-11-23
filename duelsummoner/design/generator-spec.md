@@ -1,4 +1,4 @@
-# Duel Summoner: Seeded Stage Generator ("Dealer" engine), spec v2
+﻿# Duel Summoner: Seeded Stage Generator ("Dealer" engine), spec v2
 
 The base is the Dealer engine: socket-matched authored chunks, integer reach tables, a strict integer validator and merged-section rendering. The macro layer on top comes from Seal-and-Socket: named districts, archetype regions on a coarse grid, a readable spine, a repair loop and the risk score. Several Sealstone rules are grafted in: the ledge-band snap, the rhythm chains, elevation-scaled flyer pressure and pre-generation. The goal is a map you almost never see twice, whose platforming still feels designed, and whose bosses, gates and encounters sit where they make sense.
 
@@ -144,7 +144,7 @@ Gap is measured edge to edge. Intermediate dh values interpolate linearly betwee
 
 ## 5. Stage sizes and structure (from StageSpec)
 
-| | Stage 1 Surface Ruins | Stage 2 Sealed Catacombs | Stage 3 Vault of the Last Duel |
+| | Stage 1 Surface Ruins | Stage 2 Ashen Orchard | Stage 3 Frostbound Archive |
 |---|---|---|---|
 | Grid | 15 x 15 cells of 24 m = 360 m (≈312 m playable inside the border ring) | 14 x 14 = 336 m (≈288 m) | 15 x 15 = 360 m (≈312 m) |
 | Named districts | 4 drawn from 5 (Colosseum always) | 4 drawn from 5 | 4 drawn from 5 (Duel Table always) |
@@ -908,3 +908,4 @@ His words: trees are kind of small; the world needs scaling and can be big; item
 - **The map stays big; speed shrinks it.** Stage sizes stay at the spec's 312 m playable or larger. At base speed (9 m/s) a full sweep of a stage takes about 4 to 5 minutes of a 7-minute clock, so a new player sees most of it. A fast late build (18 m/s or more, plus air moves) can sweep everything with time to spare. The camera pulls back slightly with speed (up to +25% distance), and the fog reveal radius grows with height, so fast play reads the whole map.
 - **Reachable by everyone:** 18.5 still holds. Speed and height only make it quicker, never possible.
 - **"All in one go" quests:** each stage records per-run completion sets so quests can ask for them. Examples: use every Shrine on a stage in one run, open every Card Chest on a stage, find all three Sealed fragments in one run, reveal 100% of the fog on all three stages in one run, and break every vase in a district within 60 s. The generator emits per-stage totals (`counts[]`), so the game knows what "every" means for that seed.
+

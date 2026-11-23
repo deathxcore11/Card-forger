@@ -152,7 +152,7 @@ export class OwnEffects {
     // the duelist's chest on screen: keyhole radius = max(12% of H, 0.9 x the duelist's on-screen height)
     const cx = duelist.x, cy = duelist.y + 0.9, cz = duelist.z, vx = e[0] * cx + e[4] * cy + e[8] * cz + e[12], vy = e[1] * cx + e[5] * cy + e[9] * cz + e[13], vz = -(e[2] * cx + e[6] * cy + e[10] * cz + e[14]);
     const f = u.uProjY.value, sx = (vx * f / u.uAspect.value / Math.max(vz, 0.5) * 0.5 + 0.5) * W, sy = (vy * f / Math.max(vz, 0.5) * 0.5 + 0.5) * H, hPx = 1.8 * f / Math.max(vz, 0.5) * 0.5 * H;
-    u.uHole.value.set(sx, sy, Math.max(0.12 * H, 0.9 * hPx), vz); u.uFeetY.value = duelist.y;
+    u.uHole.value.set(sx, sy, this.noHole ? 0 : Math.max(0.12 * H, 0.9 * hPx), vz); u.uFeetY.value = duelist.y;
     // the sums: rasterised = every fill and volume's screen cover, kept = cover x keep. A discarded pixel is still rasterised, so this is the true fill cost.
     const r = this.recs, cov = [], inkk = []; let ras = 0;
     for (let i = 0; i < r.length; i += 7) { const dx = r[i] - camera.position.x, dy = r[i + 1] - camera.position.y, dz = r[i + 2] - camera.position.z, vzz = Math.max(Math.abs(dx * e[2] + dy * e[6] + dz * e[10]), 0.5), rN = r[i + 3] * f / vzz, cover = Math.min(1, 3.1416 * rN * rN / ((4 * u.uAspect.value) || 1)) * r[i + 4]; if (!r[i + 5]) continue; ras += cover; cov.push(cover); inkk.push(Math.min(Math.max(set.ink / Math.max(cover, 0.001), 0.125), 1)); }
@@ -165,6 +165,7 @@ export class OwnEffects {
   }
   get readout() { return { areas: this.nArea, volumes: this.nVol, rasterSum: +this.rasterSum.toFixed(2), keptSum: +this.keptSum.toFixed(3), keptRaw: +(this.keptRaw || 0).toFixed(2), governor: +this.gov.toFixed(2), dropped: this.dropped }; }
 }
+
 
 
 

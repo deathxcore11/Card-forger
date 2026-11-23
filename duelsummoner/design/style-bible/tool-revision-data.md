@@ -1,4 +1,4 @@
-# Asset tool revision data (bible v3, approved by Randall 23 Nov 03:08Z)
+﻿# Asset tool revision data (bible v3, approved by Randall 23 Nov 03:08Z)
 
 Plain-text source for the rewrite. Order inside every prompt: MASTER, then BECOMES 3D (models only), then ONE class block, then the PALETTE line for the stage and class, then SUBJECT, then SIZE as L x W x H, then the framing line the tool already has.
 
@@ -67,14 +67,14 @@ Use the stage line for scenery, structural kit, interactable objects and ambient
 PALETTE (Surface Ruins): sand #8f7048 #c09c66 #c8a46c #e2c896; road #b09470; canopy #3f6e4e #5a9a66 #74ae72 #9cc88a; meadow #6f8a4a #8fa860 #aebf78; bark #3e342f #5e5048 #7d6a5c; rock #8c8579 #b0aa9e #bdb8ae #dcd8ce; ruin stone #7a6a52 #a89578 #c9b896; bone #b8ab8c #e6dcc0 #f4eedc; landmark stone #2f2a36 #4a4250 #6a6272; terracotta #8a4a30 #b4643f #d0835a; cloth #2c5c60 #3e7f80 #e8dcc0; pool ink #1c2440 #2e3f66; sky #8fb2cc #e8d6b0.
 ```
 
-**Stage 2 · Sealed Catacombs**
+**Stage 2 · Ashen Orchard**
 ```
-PALETTE (Sealed Catacombs): slate #0f1a26 #23384d #3c5a73 #6e8aa0; old bone #9a917c #d9d0b8; rust #5a3020 #8c4a2f; verdigris #3f5f52 #5f8a74; ghost-light #8fbf8a #d8f0c8.
+PALETTE (Ashen Orchard): slate #0f1a26 #23384d #3c5a73 #6e8aa0; old bone #9a917c #d9d0b8; rust #5a3020 #8c4a2f; verdigris #3f5f52 #5f8a74; ghost-light #8fbf8a #d8f0c8.
 ```
 
-**Stage 3 · Vault of the Last Duel**
+**Stage 3 · Frostbound Archive**
 ```
-PALETTE (Vault of the Last Duel): basalt #0d0b12 #1e1e2a #2e2c3a #46445a; ash-gold sand #8a7a5c #b8a37c #d9c7a0; moon-white #9fb4d0 #d8e4f4 #f4f8ff; crimson #5a1420 #a3203a.
+PALETTE (Frostbound Archive): basalt #0d0b12 #1e1e2a #2e2c3a #46445a; ash-gold sand #8a7a5c #b8a37c #d9c7a0; moon-white #9fb4d0 #d8e4f4 #f4f8ff; crimson #5a1420 #a3203a.
 ```
 
 **Actors · duelists and summons**
@@ -164,3 +164,4 @@ See the table in tool-revision-brief.md (unchanged).
 - Fix 17 slice: Surface Ruins arena, Kael, Ember Wyvern (grey reference through the new bake before any redraw), one enemy, engine XP crystal, the sealed chest, one engine-built card bridge tested across a chunk seam. Rewrite all prompts in the one pass, but Next up shows only the slice; blocks get tuned from the slice before the rest is made.
 - Slice gate: everything outside the slice shows as waiting until the slice is Approved in game on the Thor (player, ally, XP, danger tell readable in motion over bright sand, tree shade, crowd). Slice also includes one tree and one rock he already made, re-baked.
 - Ley Thread (23 Nov 03:17Z ruling): inside the violet reserve (seal magic pointing at the seal). Engine line: core #f4ecff, halo #b26bff, plus a 1 px #2e1a52 under-stroke so it reads on bright Stage 1 sand; the pale core carries it on Stage 2 slate and Stage 3 basalt.
+

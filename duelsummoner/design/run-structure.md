@@ -1,4 +1,4 @@
-# Duel Summoner: the 3-stage run, final v1
+﻿# Duel Summoner: the 3-stage run, final v1
 
 A run is one descent into the Buried Kingdom: **three stages**, each a freshly seeded map. In every stage the clock brings an elite and **two timed bosses**. A gate on the map wakes up, and the stage ends only when you walk into the gate and beat its gate boss. A Descent Circle then takes your whole build down to the next stage.
 
@@ -18,7 +18,7 @@ The judges asked for these fixes, and all of them are applied here:
 
 ## 1. Overview
 
-| | Stage 1 Surface Ruins | Stage 2 Sealed Catacombs | Stage 3 Vault of the Last Duel |
+| | Stage 1 Surface Ruins | Stage 2 Ashen Orchard | Stage 3 Frostbound Archive |
 |---|---|---|---|
 | Clock | 7:00 | 7:00 | 8:00 |
 | Elite (Card Chest) | 1:45 Grave Herald | 1:45 Chainbound Jailer | 2:00 Royal Executioner |
@@ -103,7 +103,7 @@ The ground is open and readable for learning to kite, and the roofs and bone rid
 
 **The Arbiter's Gate** is a stepped gate with chains across it, and the chains glow once it is awake.
 
-### Stage 2: Sealed Catacombs
+### Stage 2: Ashen Orchard
 
 The crypt under the Colosseum, built for v1 as deep trench galleries:
 
@@ -147,7 +147,7 @@ The minimap shows a deck or ground indicator. Falling into a pit costs 10 LP and
 
 **The Seventh Door** is a round vault door with seven glowing seals, sitting at the lowest trench.
 
-### Stage 3: Vault of the Last Duel
+### Stage 3: Frostbound Archive
 
 A vast cavern over a sea of slow-falling gold sand. It holds a giant stone duel table, floating stone card platforms, statues of fallen kings, a treasury terrace and a throne stair.
 
@@ -483,3 +483,4 @@ Per StageSpec, the generator provides:
    - One named gate per stage: the Arbiter's Gate, the Seventh Door, the Throne Gate.
 7. The Mirror Duelist and the Hollow Heir are both rival duelists. Keep both, or change one (for example, turn the Heir into a "Card Croupier" that deals traps)?
 8. Ship all three stages on the Surface Ruins kit first, with palette swaps and set pieces, before full Catacomb and Vault art?
+

@@ -100,7 +100,7 @@ const tb = { on: false, t0: 0, fired: false };
 function tbTick() { const u = blitMat.uniforms, bw = lowRT.width, bh = lowRT.height, H = actors.own.hole || new T.Vector4(bw / 2, bh / 2, 0, 0); u.uTBinfo.value.set(bw, bh, blitQuad.geometry.attributes.uv.getX(1) || 1, 1 - (blitQuad.geometry.attributes.uv.getY(2) || 0)); u.uTBh.value = tb.on ? 1 : 0; if (!tb.on) return; const oh = OWN_UNI.uHole.value; u.uDuel.value.set(oh.x / bw, oh.y / bh, oh.z); const t = (performance.now() - tb.t0) / 1000, amt = tb.hold ? 1 : t < 0.1 ? 1 : t < 0.167 ? 1 - (t - 0.1) / 0.067 : 0; u.uTB.value.set(8 * amt, 12 * amt, 16 * amt); }
 // the priority mask (Tablebreak frames only): every enemy warning drawn flat white into its own target, so the blit can keep warning pixels where they are and never shift them
 const maskMat = new T.MeshBasicMaterial({ color: 0xffffff, side: T.DoubleSide });
-function drawFrame() { tbTick(); renderer.setRenderTarget(lowRT); renderer.render(scene, camera); if (tb.on) { const ca = renderer.getClearAlpha(), cc = renderer.getClearColor(new T.Color()).getHex(), lm = camera.layers.mask; renderer.setClearColor(0x000000, 1); const bg = scene.background, fg = scene.fog; scene.background = null; scene.fog = null; camera.layers.set(3); scene.overrideMaterial = maskMat; renderer.setRenderTarget(maskRT); renderer.clear(); renderer.render(scene, camera); scene.overrideMaterial = null; scene.background = bg; scene.fog = fg; camera.layers.mask = lm; renderer.setClearColor(cc, ca); renderer.setRenderTarget(lowRT); } const gl = composite.run(lowRT.texture, lowRT.width, lowRT.height); blitMat.uniforms.tGlow.value = gl || blackTex; blitMat.uniforms.uGlow.value = gl ? 1 : 0; renderer.setRenderTarget(null); renderer.render(blitScene, blitCam); }
+function drawFrame() { tbTick(); renderer.setRenderTarget(lowRT); renderer.render(scene, camera); if (tb.on || window.__maskAlways) { const ca = renderer.getClearAlpha(), cc = renderer.getClearColor(new T.Color()).getHex(), lm = camera.layers.mask; renderer.setClearColor(0x000000, 1); const bg = scene.background, fg = scene.fog; scene.background = null; scene.fog = null; camera.layers.set(3); scene.overrideMaterial = maskMat; renderer.setRenderTarget(maskRT); renderer.clear(); renderer.render(scene, camera); scene.overrideMaterial = null; scene.background = bg; scene.fog = fg; camera.layers.mask = lm; renderer.setClearColor(cc, ca); renderer.setRenderTarget(lowRT); } const gl = composite.run(lowRT.texture, lowRT.width, lowRT.height); blitMat.uniforms.tGlow.value = gl || blackTex; blitMat.uniforms.uGlow.value = gl ? 1 : 0; renderer.setRenderTarget(null); renderer.render(blitScene, blitCam); }
 window.addEventListener('resize', resize); resize();
 
 // the owner's models are optional local assets; the placeholders stay if they are missing
@@ -255,7 +255,7 @@ function fitHud() {
   const top = innerHeight - z.top, ps = $('prompt'), fu = $('fusion');
   ps.style.bottom = Math.round(top + 8) + 'px'; fu.style.bottom = Math.round(top + 8 + ps.offsetHeight + 4) + 'px';
   const tr = $('topright').getBoundingClientRect(), tl = $('topleft').getBoundingClientRect();     // the minimap hangs under the clock box and the stats list under the LP box, whatever size the text is
-  $('minimap').style.setProperty('top', Math.round(tr.bottom + 6) + 'px', 'important'); $('stats').style.top = Math.round(tl.bottom + 6) + 'px';
+  $('minimap').style.setProperty('top', Math.max(Math.round(tr.bottom + 6), document.body.classList.contains('touch') ? 68 : 0) + 'px', 'important');       // on touch the pause button owns the top right corner $('stats').style.top = Math.round(tl.bottom + 6) + 'px';
   // the items list sits beside the zone bar when there is room, else just above it; it never grows into the stats list above it
   const il = $('itemsList'), room = z.left - 64; il.style.overflow = 'hidden';
   const ib = room >= 150 ? 14 : Math.round(top + 8); il.style.bottom = ib + 'px'; il.style.maxWidth = room >= 150 ? Math.round(room) + 'px' : '';
@@ -318,7 +318,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'block') { fx.burst(data.x, data.y, data.z, 5, 0xc8d0e0, 2.6, 1.5, 0.1, 0.22, 8); fx.ring(data.x, data.y, data.z, 0.7, 0xc8d0e0, 0.18); if (performance.now() - lastBlockTick > 90) { lastBlockTick = performance.now(); tone(150, 0.06, 0.05, 'square'); } }      // the Warden's shield took a hit: a small grey spark and a dull tick, nothing else
   else if (type === 'ace') { fx.ring(a, b, c, 4, 0xffd23f, 0.5); fx.moment('ace', 'C'); showBanner('An Ace approaches'); }
   else if (type === 'trophy') { fx.ring(a, b, c, 4.5, 0xffe9a0, 0.6); fx.burst(a, b + 1, c, 24, 0xffe9a0, 3, 6, 0.25, 0.9, 6); fx.moment('trophy', 'C'); }
-  else if (type === 'kill') fx.burst(b, groundY(b, c) + 0.9, c, 6, KCOL[a] || 0xaaaaaa, 3.5, 4, 0.28, 0.55, 14);
+  else if (type === 'kill') { fx.burst(b, groundY(b, c) + 0.9, c, 6, KCOL[a] || 0xaaaaaa, 3.5, 4, 0.28, 0.55, 14); actors.corpse(a, b, c); }
   else if (type === 'pickup') fx.burst(ip.x, ip.y + 1.1, ip.z, 3, PCOL[a] || 0xffffff, 1.6, 2.5, 0.14, 0.35, 0);
   else if (type === 'hop') { if (!fx.rm_) tone(330 * Math.pow(1.07, Math.min(a, 10)), 0.05, 0.035, 'triangle'); }       // a rising tick for every chained slide hop
   else if (type === 'hurt') { if (!c) fx.shake(b ? 0.55 : 0.28, true); }       // the player's own cost (c is 1) neither flinches nor shakes
@@ -607,6 +607,9 @@ window.__ds = {
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
 };
 if (/[?&]fxlab\b/.test(location.search)) import('./view/fxlab.js').then(m => m.startLab(window.__ds));
+
+
+
 
 
 

@@ -160,7 +160,30 @@ export class Actors {
   // an own effect takes its colour from the effect ramp by the element the sim names (bright tone); with no element it is the neutral card tone, never gold, XP cyan or violet, except a summon or seal effect, which keeps its violet
   _ownHex(o) { if (o.el && RAMP[o.el]) return ownColour(o.el); const c = o.color || 0, r = (c >> 16) & 255, gg = (c >> 8) & 255, b = c & 255; return (b > 200 && r > 120 && r < 230 && gg < 170) ? c : 0xf3e3c2; }
   // the hit flash takes the hitting element's bright tone (peak mix 0.6, never pure white); a hit with no element flashes the neutral card tone. The view learns the element from the hit event (the sim sends only the flags).
-  hitAt(x, z, flags) { const e = this.lastEn; if (!e) return; const el = flags >> 1; const ROW = [[1, 0], [2, 2], [4, 1], [8, 3], [16, 4], [32, 5], [64, 6], [128, 7]]; let row = -1; for (const [bit, r] of ROW) if (el & bit) { row = r; break; } let best = -1, bd = 1.44; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.hitRow[best] = row; }
+  // Death looks (spectacle spec 3.0): the kill event carries no element, but the hit that caused it was reported just before it, so the last hits of the frame (x, z, element mask) are kept and the nearest one names the element.
+  // A fire kill leaves a ghost body that burns away bottom-up as a 6 step screen-door; a lightning kill leaves a 2 frame flat ink silhouette with a pale outline. View only: the pool of 48 is drawn in the enemy's own instanced mesh, so no extra draw.
+  corpse(kind, x, z) {
+    const H = this._hits; if (!H || !H.length) return; let best = -1, bd = 16; for (let i = 0; i < H.length; i += 3) { const dx = H[i] - x, dz = H[i + 1] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } }
+    if (best < 0) return; const el = H[best + 2], type = (el & 1) ? 7 : (el & 2) ? 8 : 0; if (!type) return;       // bit 0 fire, bit 1 lightning
+    const e = this.lastEn; if (!e) return; let face = 0, size = 1, y = NaN; for (let i = 0; i < e.max; i++) if (!e.alive[i] && e.x[i] === x && e.z[i] === z && e.kind[i] === kind) { face = e.face[i]; size = e.size[i]; y = e.y[i]; break; } if (y !== y) return;
+    const P = this.corpses || (this.corpses = []), c = { kind, x, y, z, face, size, type, t: 0, seed: Math.random() };
+    if (P.length >= 48) P.shift(); P.push(c);
+  }
+  _corpses(dt, counts) {
+    const P = this.corpses; if (!P || !P.length) return; const d = this.d;
+    for (let n = P.length - 1; n >= 0; n--) {
+      const c = P[n], dur = c.type === 7 ? 0.5 : 0.07; c.t += dt; if (c.t >= dur) { P.splice(n, 1); continue; }
+      const k = this.kinds[c.kind], K = k.K, idx = counts[c.kind]; if (idx >= CFG.enemy.max) continue;
+      const sc = K.id === 5 ? SC_SCARAB : K.scale, mg = c.size;
+      d.position.set(c.x, c.y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85), c.z); d.rotation.set(0, c.face, 0); d.scale.set(sc[0] * mg, sc[1] * mg, sc[2] * mg); d.updateMatrix();
+      k.body.setMatrixAt(idx, d.matrix); k.body.setColorAt(idx, k.base);
+      const step = Math.floor(c.t / dur * (c.type === 7 ? 6 : 2)) / (c.type === 7 ? 6 : 2), o3 = idx * 4, fa = k.fxArr;
+      fa[o3] = step; fa[o3 + 1] = 0; fa[o3 + 2] = c.seed; fa[o3 + 3] = c.type; k.fs += (idx + 1) * (7 + step * 31 + c.type); k.cs += (idx + 1) * 5; k.fxNow = true;
+      if (k.eye) { d.position.set(c.x, c.y + 1.05, c.z); d.scale.set(0.001, 0.001, 0.001); d.updateMatrix(); k.eye.setMatrixAt(idx, d.matrix); }
+      counts[c.kind]++;
+    }
+  }
+  hitAt(x, z, flags) { const el = flags >> 1; if (el) { const H = this._hits || (this._hits = []); if (H.length < 72) H.push(x, z, el); } const e = this.lastEn; if (!e) return; const ROW = [[1, 0], [2, 2], [4, 1], [8, 3], [16, 4], [32, 5], [64, 6], [128, 7]]; let row = -1; for (const [bit, r] of ROW) if (el & bit) { row = r; break; } let best = -1, bd = 1.44; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.hitRow[best] = row; }
   _flashCol(i, base, boost) { const r = this.hitRow[i]; return this._fc.copy(base).lerp(r >= 0 ? this.flashBright[r] : this.flashNeutral, 0.6).multiplyScalar(boost || 1); }
   // Reach look tiers (spec 1.4): at +50% and +100% an own area effect steps up a tier: a thicker rim (ownfx), particles along its edge, and a lingering ground ring. The footprint is always the true sim size. The tier effects play once per effect record (a restarted pooled record counts as new).
   _tierFx(o, tier) {
@@ -402,6 +425,7 @@ export class Actors {
       if (e.ace[i] && cc < 24) { d.position.set(x, y + 2.1 * mgs + 0.4 + Math.sin(t * 3 + i) * 0.08, z); d.rotation.set(0, t * 2.4 + i, 0); d.scale.set(1, 1.5, 1); d.updateMatrix(); this.crests.setMatrixAt(cc++, d.matrix); }
       if (e.mark[i] > 0) { d.position.set(x, y + 2.3 + Math.sin(t * 4) * 0.1, z); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1.4, 1); d.updateMatrix(); this.marks.setMatrixAt(mc.n++, d.matrix); }
     }
+    this._corpses(dt, counts); if (this._hits) this._hits.length = 0;
     this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; if (k.cs !== k.csPrev || counts[i] !== k.cPrev) k.body.instanceColor.needsUpdate = true; k.csPrev = k.cs; k.cPrev = counts[i]; { const a = k.body.geometry.attributes.aFx; if ((k.fxNow || k.fxPrev) && (k.fs !== k.fsPrev || counts[i] !== k.fcPrev || k.fxNow !== k.fxPrev)) { a.updateRange.offset = 0; a.updateRange.count = counts[i] * 4; a.needsUpdate = true; } k.fsPrev = k.fs; k.fcPrev = counts[i]; k.fxPrev = k.fxNow; } if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
     this.marks.count = mc.n; this.marks.instanceMatrix.needsUpdate = true; this.crests.count = cc; this.crests.instanceMatrix.needsUpdate = true;
 
@@ -593,6 +617,8 @@ export class Actors {
 
 import { heightAt } from '../sim/terrain.js';
 function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
+
 
 
 

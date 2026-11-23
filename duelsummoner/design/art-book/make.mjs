@@ -1,4 +1,4 @@
-// Builds the Duel Summoner Asset Tool: one self-contained HTML file.
+﻿// Builds the Duel Summoner Asset Tool: one self-contained HTML file.
 //   node make.mjs <out.html> [web]
 // "web" builds the copy published as a link (ticks saved online). Without it, the file is for the PC folder:
 // ticks are saved in the browser and anything listed in asset-have.js (written by scan-art.mjs) ticks itself.
@@ -50,8 +50,8 @@ const CLASS = {
 const FLAT2D = 'THIS ONE IS A FLAT PICTURE, NOT A 3D MODEL. Where the look lock above and the block below disagree, the block below wins.';
 const PAL = {
   s1: 'PALETTE (Surface Ruins): sand #8f7048 #c09c66 #c8a46c #e2c896; road #b09470; canopy #3f6e4e #5a9a66 #74ae72 #9cc88a; meadow #6f8a4a #8fa860 #aebf78; bark #3e342f #5e5048 #7d6a5c; rock #8c8579 #b0aa9e #bdb8ae #dcd8ce; ruin stone #7a6a52 #a89578 #c9b896; bone #b8ab8c #e6dcc0 #f4eedc; landmark stone #2f2a36 #4a4250 #6a6272; terracotta #8a4a30 #b4643f #d0835a; cloth #2c5c60 #3e7f80 #e8dcc0; pool ink #1c2440 #2e3f66; sky #8fb2cc #e8d6b0.',
-  s2: 'PALETTE (Sealed Catacombs): slate #0f1a26 #23384d #3c5a73 #6e8aa0; old bone #9a917c #d9d0b8; rust #5a3020 #8c4a2f; verdigris #3f5f52 #5f8a74; ghost-light #8fbf8a #d8f0c8.',
-  s3: 'PALETTE (Vault of the Last Duel): basalt #0d0b12 #1e1e2a #2e2c3a #46445a; ash-gold sand #8a7a5c #b8a37c #d9c7a0; moon-white #9fb4d0 #d8e4f4 #f4f8ff; crimson #5a1420 #a3203a.',
+  s2: 'PALETTE (Ashen Orchard): slate #0f1a26 #23384d #3c5a73 #6e8aa0; old bone #9a917c #d9d0b8; rust #5a3020 #8c4a2f; verdigris #3f5f52 #5f8a74; ghost-light #8fbf8a #d8f0c8.',
+  s3: 'PALETTE (Frostbound Archive): basalt #0d0b12 #1e1e2a #2e2c3a #46445a; ash-gold sand #8a7a5c #b8a37c #d9c7a0; moon-white #9fb4d0 #d8e4f4 #f4f8ff; crimson #5a1420 #a3203a.',
   actor: 'PALETTE (duelists and summons): skin #8a5a40 #c08a64 #e8b890; ember #8a2a20 #c8462c #f08040; teal #1f4f5a #2f7f86 #6fc0c0; leather #3a2a20 #5e4030 #8a6448; cream #d8ccb0 #f0e8d4; ink #18161c #2a2632.',
   enemy: 'PALETTE (enemies): dust #4a4034 #6e604c #9a8a70; grave #2a3038 #4a5260 #7a8290; amber eyes #e0a040.',
   gold: 'PALETTE (only for things the player uses): gold #a07a2a #e0b765 #fff0b8.',
@@ -221,8 +221,8 @@ const MUS = MUSIC.map(m => ({ code: m.code, name: m.name, file: m.file, how: 'mu
 const GROUPS = [
   { id: 'materials', title: 'Ground and wall textures', kind: 'Flat picture that repeats', blurb: 'Flat pictures the game repeats across the ground and walls. No 3D needed. Every prop in a stage is coloured with these, so the stage looks hand-made.', items: [...SWATCHES, ...DECALS] },
   { id: 'stage1', title: 'Stage 1 scenery: Surface Ruins', kind: '3D model', blurb: 'Trees, bushes, rocks, ruins and landmarks. These do not move.', items: [...STAGE1, ...MORE1] },
-  { id: 'stage2', title: 'Stage 2 scenery: Sealed Catacombs', kind: '3D model', blurb: 'Crypt pieces and props. Boulders, cliffs and crates come back from Stage 1, re-coloured by me.', items: [...STAGE2, ...MORE2] },
-  { id: 'stage3', title: 'Stage 3 scenery: Vault of the Last Duel', kind: '3D model', blurb: 'The cavern, the sand sea, the statues and the throne.', items: [...STAGE3, ...MORE3] },
+  { id: 'stage2', title: 'Stage 2 scenery: Ashen Orchard', kind: '3D model', blurb: 'Crypt pieces and props. Boulders, cliffs and crates come back from Stage 1, re-coloured by me.', items: [...STAGE2, ...MORE2] },
+  { id: 'stage3', title: 'Stage 3 scenery: Frostbound Archive', kind: '3D model', blurb: 'The cavern, the sand sea, the statues and the throne.', items: [...STAGE3, ...MORE3] },
   { id: 'ambient', title: 'Ambient life', kind: '3D model with a skeleton', blurb: 'Small creatures that make a stage feel alive: butterflies, birds, rabbits, bats, crabs. They wander and flutter and never fight.', items: AMBIENT },
   { id: 'interact', title: 'Chests, shrines and gates', kind: '3D model', blurb: 'Things you use in a run. Some have a moving part (a lid, a door) that needs its own model so it can open.', items: INTERACT },
   { id: 'menuscene', title: 'Menu scenes: the Camp, the plinth and the map views', kind: '3D model', blurb: 'These stand behind the menus as a real 3D place you look into, not a painted picture: the Camp behind the main menu, the hall where you pick a duelist, and the far view behind the map choice. Most of each place is built from stage scenery you already have on this list; these are only the extra pieces. The sky, the fire, the stone statues, the floor and the moving banners are made by the game, so none of these models has them.', items: MENUSCENE },
@@ -324,3 +324,4 @@ fs.writeFileSync(out, html);
 fs.writeFileSync(new URL('./asset-keys.json', import.meta.url), JSON.stringify([...keys]));
 const nSteps = DATA.assets.reduce((n, a) => n + a.steps.length, 0);
 console.log(JSON.stringify({ assets: DATA.assets.length, steps: nSteps, newAssets: DATA.assets.filter(a => a.nw).length, copyPrompts: DATA.assets.reduce((n, a) => n + a.steps.filter(s => s.copy).length, 0), kb: Math.round(html.length / 1024), web: WEB }));
+

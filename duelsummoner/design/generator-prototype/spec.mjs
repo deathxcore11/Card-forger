@@ -1,4 +1,4 @@
-// StageSpec tables (numbers live here, not in code). Mirrors src/data/stages/stage{1,2,3}.json.
+﻿// StageSpec tables (numbers live here, not in code). Mirrors src/data/stages/stage{1,2,3}.json.
 
 const ENC_RULES = {
   witness_stone: { cls: 'FREE_ITEM', minR: 200, minSpawn: 110, tags: ['high_perch', 'reward_port', 'pocket_end', 'field', 'hub_edge'] },
@@ -55,7 +55,7 @@ export const STAGE_SPECS = {
       magnet_tablet: 2, bone_oath: 2, scales_court: 1, broken_covenant: 1, echo_forge: { n: 1, chance: 40 }, golden_statue: 2, sealed_fragment: 1, second_seal: 0, vases: 40 },
   },
   2: {
-    ...BASE, stage: 2, name: 'Sealed Catacombs', grid: 14, palette: 'catacomb_cool', gate: 'Seventh Door', gateBoss: 'The Seal Weaver',
+    ...BASE, stage: 2, name: 'Ashen Orchard', grid: 14, palette: 'catacomb_cool', gate: 'Seventh Door', gateBoss: 'The Seal Weaver',
     districtPool: [
       { id: 'seventh_door_vault', hero: 'seventh_door_frame', name: 'Seventh Door Vault', required: true, gate: true, w: 0, arche: { plaza: 3, trench: 1 } },
       { id: 'ossuary_galleries', hero: 'ossuary_arch', name: 'Ossuary Galleries', w: 10, arche: { necropolis: 2, trench: 2 } },
@@ -73,7 +73,7 @@ export const STAGE_SPECS = {
       magnet_tablet: 1, bone_oath: 2, scales_court: 1, broken_covenant: 2, echo_forge: { n: 1, chance: 100 }, golden_statue: 2, sealed_fragment: 1, second_seal: 0, vases: 35 },
   },
   3: {
-    ...BASE, stage: 3, name: 'Vault of the Last Duel', grid: 15, palette: 'vault_gold', gate: 'Throne Gate', gateBoss: 'The Hollow King',
+    ...BASE, stage: 3, name: 'Frostbound Archive', grid: 15, palette: 'vault_gold', gate: 'Throne Gate', gateBoss: 'The Hollow King',
     districtPool: [
       { id: 'duel_table', hero: 'duel_table_rim', name: 'Duel Table', required: true, gate: true, w: 0, arche: { plaza: 3, terraces: 1 } },
       { id: 'treasury_terrace', hero: 'treasury_stack', name: 'Treasury Terrace', w: 10, arche: { terraces: 3, mesa: 1 } },
@@ -105,3 +105,4 @@ export const FALLBACK_LAYOUTS = [
   { seeds: [[0, -14], [0, 14], [-9, 10], [9, 10], [-12, 0], [12, 0], [-5, 4], [5, 4], [0, -2], [-8, -8], [8, -8], [-14, 8], [14, 8]],
     district: [0, 1, 1, 1, 2, 3, 2, 3, 2, 2, 3, 2, 3] },
 ];
+

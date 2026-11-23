@@ -1,4 +1,4 @@
-import { DUELISTS } from './cast.mjs';
+﻿import { DUELISTS } from './cast.mjs';
 // Pickups, item and stat icons, card art, effects, HUD, menus, cosmetics, achievements.
 const I = (code, name, file, x) => ({ code, name, file, ...x });
 const SHEET = (code, name, file, where, cells, x = {}) => I(code, name, file, { how: 'sheet', style: 'icon', px: '1024 x 1024 made (3 x 3), 64 x 64 each in game', where, cells, ...x });
@@ -298,8 +298,8 @@ export const SCREENART = [
   A('KA03', 'Main menu backdrop', 'bg-mainmenu', '1920 x 1080 made', 'behind the main menu', 'a cosy camp in the ruins at dusk: a campfire beside a fallen giant stone card, a deck box and bedroll, a small dragon asleep curled by the fire, ruins and olive trees silhouetted against an orange and teal sky. Keep the left third calm and dark for buttons.'),
   A('KA04', 'Duelist select backdrop', 'bg-duelists', '1920 x 1080 made', 'behind the duelist grid', 'the inside of a sunlit sandstone hall with a long row of empty stone pedestals, banners hanging between columns, warm light shafts, quiet and empty. The middle is open for the 3D duelist.'),
   A('KA05', 'Map card: Surface Ruins', 'map-surface-ruins', '1536 x 1024 made', 'map select', 'a bright aerial view of sun-bleached sandstone ruins: a round colosseum, a market of flat roofs with striped awnings, giant stone cards standing in fields, a long fossil dragon spine ridge, olive trees, teal sky.'),
-  A('KA06', 'Map card: Sealed Catacombs', 'map-catacombs', '1536 x 1024 made', 'map select (later map) and the Stage 2 load card', 'a deep blue crypt: chain bridges over dark pits, walls of card niches, teal fire braziers, a huge round vault door with seven seals glowing at the far end.'),
-  A('KA07', 'Map card: Vault of the Last Duel', 'map-vault', '1536 x 1024 made', 'map select (later map) and the Stage 3 load card', 'a vast black cavern over a sea of falling gold sand, floating giant stone cards as platforms, toppled statues of kings, amethyst crystals glowing, a throne on a grand stair at the far end.'),
+  A('KA06', 'Map card: Ashen Orchard', 'map-catacombs', '1536 x 1024 made', 'map select (later map) and the Stage 2 load card', 'a deep blue crypt: chain bridges over dark pits, walls of card niches, teal fire braziers, a huge round vault door with seven seals glowing at the far end.'),
+  A('KA07', 'Map card: Frostbound Archive', 'map-vault', '1536 x 1024 made', 'map select (later map) and the Stage 3 load card', 'a vast black cavern over a sea of falling gold sand, floating giant stone cards as platforms, toppled statues of kings, amethyst crystals glowing, a throne on a grand stair at the far end.'),
   A('KA08', 'Map card: Quick Duel', 'map-quick-duel', '1536 x 1024 made', 'Quick Duel button', 'a close view of a sunlit arena floor with a ring of card-shaped slabs, a single stone card standing in the middle, dust in the air, dramatic and simple.'),
   A('KA09', 'Results backdrop (win)', 'bg-victory', '1920 x 1080 made', 'victory results', 'the duelist and their summons silhouetted on top of the vault stair, gold light pouring out of an opened gate, cards drifting in the air like confetti.'),
   A('KA10', 'Results backdrop (defeat)', 'bg-defeat', '1920 x 1080 made', 'death results', 'a lone deck of cards lying scattered on cracked sand at night, one card still glowing faintly, the ruins dark behind.'),
@@ -326,3 +326,4 @@ export const REGALIA = [
   ['Last King\'s crown', 'a tall plain gold crown with a crimson gem'], ['Bone tiara', 'a cartoon bone tiara with a skull in the middle'], ['Deck-box hat', 'a top hat shaped like a deck box with a card poking out'],
   ['Moth antennae', 'a headband with two fuzzy moth antennae'], ['Golem helm', 'a stone helmet with ram horns'], ['Star circlet', 'a thin circlet with a violet star token'],
 ].map(([name, subj], i) => I('RG' + String(i + 1).padStart(2, '0'), name, 'hat-' + name.toLowerCase().replace(/[^a-z]+/g, '-'), { how: 'model', style: 'model', view: 'model', tris: 200, h: 0.4, where: 'Regalia slot: worn on any duelist\'s head', subj: 'a hat for a game character, shown alone: ' + subj + '.' }));
+

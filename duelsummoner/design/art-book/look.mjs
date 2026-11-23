@@ -1,4 +1,4 @@
-// Duel Summoner asset book: the look rules and the style blocks every prompt is built from.
+﻿// Duel Summoner asset book: the look rules and the style blocks every prompt is built from.
 // Plain data. make.mjs turns it into the book page and a Markdown copy.
 
 export const LOOK_NAME = 'The Sunlit Kingdom';
@@ -18,10 +18,10 @@ export const PALETTES = [
   { stage: 'Surface Ruins (Stage 1)', mood: 'Hot afternoon, bleached stone, shade under parasol trees. The only warm light in the game.', colours: [
     ['#8f7048', 'Sand shadow'], ['#c09c66', 'Sand'], ['#e2c896', 'Sand light'], ['#b09470', 'Road'], ['#3f6e4e', 'Canopy shadow'], ['#5a9a66', 'Canopy'], ['#9cc88a', 'Canopy light'],
     ['#8fa860', 'Meadow'], ['#5e5048', 'Bark'], ['#b0aa9e', 'Rock'], ['#dcd8ce', 'Rock light'], ['#a89578', 'Ruin stone'], ['#e6dcc0', 'Bone'], ['#4a4250', 'Landmark stone'], ['#b4643f', 'Terracotta'], ['#3e7f80', 'Cloth'], ['#2e3f66', 'Pool ink'], ['#8fb2cc', 'Sky'], ['#e8d6b0', 'Horizon']] },
-  { stage: 'Sealed Catacombs (Stage 2)', mood: 'Cold, damp, quiet. No sun: pale shafts of daylight and ghost-light lamps.', colours: [
+  { stage: 'Ashen Orchard (Stage 2)', mood: 'Cold, damp, quiet. No sun: pale shafts of daylight and ghost-light lamps.', colours: [
     ['#0f1a26', 'Deep slate'], ['#23384d', 'Slate'], ['#3c5a73', 'Slate light'], ['#6e8aa0', 'Wet stone edge'], ['#9a917c', 'Old bone shadow'], ['#d9d0b8', 'Old bone'],
     ['#5a3020', 'Rust shadow'], ['#8c4a2f', 'Rust'], ['#3f5f52', 'Verdigris'], ['#5f8a74', 'Verdigris light'], ['#8fbf8a', 'Ghost-light (made by the game)'], ['#d8f0c8', 'Ghost-light core']] },
-  { stage: 'Vault of the Last Duel (Stage 3)', mood: 'A cavern whose roof is lost in black. Basalt, ash-gold sand, moon-white crystal and crimson. No violet in the scenery.', colours: [
+  { stage: 'Frostbound Archive (Stage 3)', mood: 'A cavern whose roof is lost in black. Basalt, ash-gold sand, moon-white crystal and crimson. No violet in the scenery.', colours: [
     ['#0d0b12', 'Void'], ['#1e1e2a', 'Basalt'], ['#2e2c3a', 'Basalt mid'], ['#46445a', 'Basalt light'], ['#8a7a5c', 'Ash-gold sand shadow'], ['#b8a37c', 'Ash-gold sand'], ['#d9c7a0', 'Sand light'],
     ['#9fb4d0', 'Moon-white shadow'], ['#d8e4f4', 'Moon-white'], ['#f4f8ff', 'Moon-white light'], ['#5a1420', 'Crimson shadow'], ['#a3203a', 'Crimson']] },
   { stage: 'Duelists, summons and enemies', mood: 'Duelists and summons are bright and clean. Enemies are earthy and darker than the sand, with amber eyes as their only bright spot.', colours: [
@@ -93,3 +93,4 @@ export const VIEW = {
   beast: 'View: one creature only, full body and uncut, in a neutral standing pose with legs straight under the body, wings or fins spread flat if it has them, tail straight out behind, mouth closed, seen from a three-quarter front view, on a plain flat light grey background, no floor, no shadow.',
   part: 'View: this one part only, uncut, laid out flat and seen straight from the side, on a plain flat light grey background, no body attached, no shadow.',
 };
+

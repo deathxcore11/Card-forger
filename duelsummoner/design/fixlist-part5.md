@@ -1,4 +1,4 @@
-# Duel Summoner fix list part 5
+﻿# Duel Summoner fix list part 5
 
 FIX LIST PART 5 (outside audit of the stat engine, movement and environment; each claim verified and challenged at b28f851)
 
@@ -56,4 +56,6 @@ SKIP
 ## Decided 23 Nov (owner)
 
 - In-run windows (shop, level-up, chest) use the menus' dark glass with a gold line, the same look as the approved menus (design/menus-spec.md). Built with the menus step.
-- Map 2 is the Ashen Orchard. The Frostbound Archive follows it as map 3. The stage names in src/data/stages.js are renamed (ids unchanged). The old working names Sealed Catacombs and Vault of the Last Duel in the art book, the generator spec and the audio list are superseded; their content has NOT been redone and no map content is built yet.
+- Map 2 is the Ashen Orchard. The Frostbound Archive follows it as map 3. The stage names in src/data/stages.js are renamed (ids unchanged). The earlier working names (Sealed Catacombs for map 2, Vault of the Last Duel for map 3) are superseded: the art book, the audio list and the generator spec now show the new names, asset codes and file keys unchanged. Their descriptions still describe the earlier content, which has NOT been redone; no map content is built yet.
+
+

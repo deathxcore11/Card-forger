@@ -120,6 +120,9 @@
   #devbar { position:fixed; left:50%; top:max(2px, env(safe-area-inset-top)); transform:translateX(-50%); z-index:16; display:flex; gap:6px; align-items:center; font:11px/1 ui-monospace,Consolas,monospace; color:#b89a6a; pointer-events:none; white-space:nowrap; }
   #devbar button { pointer-events:auto; font:inherit; font-size:11px; letter-spacing:1px; padding:4px 8px; margin:0; min-height:0; min-width:0; background:#1b1220cc; color:#f3e3c2; border:1px solid #6b4fa0; }
   #devbar.hidefs button { display:none; }
+  /* touch screens under 600 px tall: the stage box is one line (clock, next event) and opens on a tap */
+  @media (max-height:600px) and (pointer:coarse) { #topright { pointer-events:auto; padding:3px 8px; } #topright:not(.open) > :not(#clock):not(#nextEvent) { display:none; } #topright:not(.open) #clock { font-size:calc(var(--t) * 1.3); } #topright.open { box-shadow:0 0 0 2px #ffd23f66; } }
+  #buildLabel { background:#1b1220cc; padding:3px 6px; border:1px solid #6b4fa0; color:#f3e3c2; }
   @media (max-height:600px), (pointer:coarse) { #devbar { left:8px; top:92px; transform:none; } :root { --tz:clamp(10px, 2.3vh, 48px); } }
   body[data-mode=dead] #devbar, body[data-mode=offer] #devbar { visibility:hidden; }
   @media (max-width:700px) { #proof { font-size:11px; padding:2px 6px; } }
@@ -266,10 +269,14 @@
   const can = !!(el.requestFullscreen || el.webkitRequestFullscreen), on = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
   const sync = () => bar.classList.toggle('hidefs', !can || on());
   fs.addEventListener('click', () => { try { (el.requestFullscreen || el.webkitRequestFullscreen).call(el); } catch (e) {} });
+  const tr = document.getElementById('topright'); tr.addEventListener('click', () => tr.classList.toggle('open'));
   document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync); sync();
 </script>
 </body>
 </html>
+
+
+
 
 
 
