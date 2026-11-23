@@ -118,6 +118,7 @@ body.ps { background: #000; }
 #app.ps .sc:not(.ab) { position: relative; }
 #app.ps .sc::-webkit-scrollbar { display: none; }
 #app.ps .sc > .scend { display: block; } /* blank under the last line, so the last rest can show it whole (fitScroll) */
+#app.ps .sc .scgive { display: block; height: 0; } /* a blank between parts of a box's pages that opens as its rests need (scrollPlan) */
 /* the window's ground over a box's edges (scrollLips): a layer of its own, so it is drawn over the box's layer and not under it */
 #app.ps .scl { position: absolute; height: 1px; pointer-events: none; will-change: transform; }
 /* A box of pages in a window is laid on lines of 16 pixels, as the books' pages are, so it comes to rest on whole lines at

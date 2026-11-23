@@ -1942,7 +1942,11 @@ function psCodex() {
   const filt = inl('FOUND', 'cxview:found', { on: v.view === 'found' }) + inl('ALL', 'cxview:all', { on: v.view === 'all' }) + X.types.map(t => inl(`${t} ${byType(t).filter(R => found.has(R.id)).length}/${byType(t).length}`, `cxtype:${t}`, { on: v.type === t })).join('');
   const heard = BOSSES.flat().filter(b => P.seen.includes('memory:' + b.id));
   const rum = rumours() ? `<p><b class="lb g">RUMOURS · ${heard.length} OF ${BOSSES.flat().length} MEMORIES HEARD</b></p>${heard.map(b => `<p><b class="lb">${esc(b.name.toUpperCase())}</b> ${esc(SCENES['memory:' + b.id].lines[0])}</p>`).join('') || '<p class="d">Nothing yet. A guardian remembers something as it falls.</p>'}` : '';
-  const body = `<p>${found.size} of ${X.list.length} results found, ${G.known.size} recipes written. A page you have found shows why the meld works, so you can make it again from other cards.</p>${rum}<div class="row2" style="margin:4px 0">${filt}</div><div class="row2">${tiles || '<p class="d">Nothing here yet. Meld two monsters in a duel to write the first page.</p>'}</div>${total > 120 ? `<p class="d">Showing 120 of ${total}. Pick a Type to narrow it.</p>` : ''}<p><b class="lb g">RECORD</b></p><p>Runs ${P.runs}. Clears ${P.clears}. Duels won ${P.duelWins}. Guardians beaten ${P.bossWins}. Memories earned ${P.earned}.</p>`;
+  // Its pages mix three steps: lines of 16 pixels, the filter plaques on rows of 24 and the cards on rows of 64. A give
+  // before the plaques and one before the cards (scrollPlan) open as far as the box needs to come to rest on whole lines,
+  // rows and cards together, so it opens at its count and every line of it can be read.
+  const give = most => `<i class="scgive" data-step="8" data-most="${most}"></i>`;
+  const body = `<p>${found.size} of ${X.list.length} results found, ${G.known.size} recipes written. A page you have found shows why the meld works, so you can make it again from other cards.</p>${rum}${give(16)}<div class="row2" style="margin:0 0 4px">${filt}</div>${give(56)}<div class="row2" style="margin:0 0 4px">${tiles || '<p class="d">Nothing here yet. Meld two monsters in a duel to write the first page.</p>'}</div>${total > 120 ? `<p class="d">Showing 120 of ${total}. Pick a Type to narrow it.</p>` : ''}<p><b class="lb g">RECORD</b></p><p>Runs ${P.runs}. Clears ${P.clears}. Duels won ${P.duelWins}. Guardians beaten ${P.bossWins}. Memories earned ${P.earned}.</p>`;
   let page = '';
   if (G.cx.open != null) { const R = X.res.get(G.cx.open); if (R) { const c = card(R.id), recs = found.get(R.id) || [], known = recs.length > 0; if (known) convertSheets(96);
     const hint = R.kind === 'printed' ? `A printed fusion of ${R.mats.map(m => 'a ' + card(m).type).join(' and ')}.` : `A ${c.attr} ${c.type}. Some ${c.type} melded with some ${c.attr} monster makes it. Which ones is for you to find.`;
@@ -2107,14 +2111,17 @@ function scrollAtoms(sc) {
   const out = [], yOf = e => { let y = 0; for (let q = e; q && q !== sc; q = q.offsetParent) y += q.offsetTop; return y; };
   // A button of a line or two is kept whole; a switch with a paragraph beside it (.lab) may be cut between its lines.
   const whole = c => /^(IMG|CANVAS|INPUT)$/.test(c.tagName) || (c.tagName === 'BUTTON' && c.offsetHeight <= 40 && !c.classList.contains('lab')) || c.classList.contains('cd') || c.classList.contains('coin') || c.classList.contains('ga') || c.classList.contains('big');
-  // Each line of words is found where the browser set it, from the middle of its box on the screen, so a name in the label
-  // face above a paragraph, or small words inside a line, take their real place. The frame may be scaled and turned.
+  // Each line of words is found where the browser set it, from the middle of its box on the screen, and taken as the line
+  // of its block it stands in (the block's lines are its line height apart from the top of its content), so a name in the
+  // label face, which sits low in a line of the text face, or small words inside a line, take their line's real place.
+  // The frame may be scaled and turned.
   const box = sc.getBoundingClientRect(), up = app.style.transform.includes('rotate'), k = app.getBoundingClientRect().width / (up ? app.offsetHeight : app.offsetWidth) || 1, base = sc.scrollTop - sc.clientTop;
   const mid = r => (up ? box.right - (r.left + r.right) / 2 : (r.top + r.bottom) / 2 - box.top) / k + base;
   const lines = (n, e) => {
     let b = e; while (b !== sc && getComputedStyle(b).display === 'inline') b = b.parentElement;
-    const lh = parseFloat(getComputedStyle(b).lineHeight) || 16, rg = document.createRange(); rg.selectNodeContents(n);
-    for (const r of rg.getClientRects()) if (r.width && r.height) { const t = Math.round(mid(r) - lh / 2); out.push([t, t + lh]); }
+    const cs = getComputedStyle(b), lh = parseFloat(cs.lineHeight) || 16, rg = document.createRange(); rg.selectNodeContents(n);
+    const top = (b === sc ? 0 : yOf(b) + (parseFloat(cs.borderTopWidth) || 0)) + (parseFloat(cs.paddingTop) || 0);
+    for (const r of rg.getClientRects()) if (r.width && r.height) { const t = top + Math.round((mid(r) - top - lh / 2) / lh) * lh; out.push([t, t + lh]); }
   };
   const walk = e => { for (const n of e.childNodes) {
     if (n.nodeType === 3) { if (n.textContent.trim()) lines(n, e); continue; }
@@ -2130,33 +2137,65 @@ const FOOT_GAP = 8; // from a box's foot to the plaques under it
 // The box's rests at a height h: blk marks every row of the box's pages that lies inside a line, a card or a row (a cut
 // there would split it); a rest is a scroll whose top and foot both lie on rows that are not marked. The last rest shows
 // the last line whole, with blank under it if need be (pad: the blank the pages need below them to scroll that far).
+// The box always opens at its top: a height is taken only if the scroll 0 is a rest (its foot, at the top, falls between
+// two lines), so its first lines can always be read.
+// Pages that mix steps (lines of 16 pixels, plaques on rows of 24, cards on rows of 64) may hold gives (.scgive): blanks
+// between their parts that may open by a few steps (data-step, 16 pixels unless it says, up to data-most, 48 unless it
+// says), so the parts come to rest whole together. Of the ways
+// to open them and the heights near the largest, the plan takes the one that leaves the least blank, in the box and
+// under it, at which every line can be read whole at some rest and a rest comes at least every half a box.
 function scrollPlan(sc, max) {
   for (const e of sc.querySelectorAll(':scope > .scend')) e.remove();
-  const atoms = scrollAtoms(sc), end = Math.ceil(atoms.reduce((m, [, b]) => Math.max(m, b), 0));
-  const L = Math.max(end, sc.scrollHeight > sc.clientHeight + .5 ? sc.scrollHeight : 0), blk = new Uint8Array(L + max + 2);
-  for (const [a, b] of atoms) for (let y = Math.max(0, Math.floor(a) + 1); y < Math.ceil(b); y++) blk[y] = 1;
-  const at = h => {
-    if (end <= h) return { h, R: [0], pad: 0 };
+  const gv = [...sc.querySelectorAll('.scgive')]; for (const g of gv) g.style.height = '0px';
+  const atoms = scrollAtoms(sc), end0 = Math.ceil(atoms.reduce((m, [, b]) => Math.max(m, b), 0));
+  const L0 = Math.max(end0, sc.scrollHeight > sc.clientHeight + .5 ? sc.scrollHeight : 0);
+  const gy = gv.map(g => { let y = 0; for (let q = g; q && q !== sc; q = q.offsetParent) y += q.offsetTop; return y; });
+  const sum = o => o.reduce((s, v) => s + v, 0);
+  let opens = [[]];
+  for (const g of gv) { const st = +g.dataset.step || 16, most = +g.dataset.most || 48, vs = []; for (let v = 0; v <= most; v += st) vs.push(v); opens = opens.flatMap(o => vs.map(v => o.concat(v))); }
+  opens.sort((p, q) => sum(p) - sum(q));
+  // the pages with the gives opened by o: their marks, their foot and how well each height reads with them
+  const lay = o => {
+    const sh = a => o.reduce((s, v, i) => s + (gy[i] <= a + .5 ? v : 0), 0), tot = sum(o), L = L0 + tot, end = end0 + tot, blk = new Uint8Array(L + max + 2);
+    const parts = atoms.filter(([a, b]) => b > a).map(([a, b]) => [a + sh(a), b + sh(a)]).sort((p, q) => p[0] - q[0]);
+    for (const [a, b] of parts) for (let y = Math.max(0, Math.floor(a) + 1); y < Math.ceil(b); y++) blk[y] = 1;
+    return { o, tot, L, end, blk, parts };
+  };
+  const at = (Y, h) => {
+    const { blk, end, L } = Y; if (end <= h) return { h, R: [0], pad: 0, Y };
     let last = end - h; while (blk[last]) last++;
     const R = []; for (let s = 0; s < last; s++) if (!blk[s] && !blk[s + h]) R.push(s);
-    R.push(last); return { h, R, pad: Math.max(0, last + h - L) };
+    R.push(last); return { h, R, pad: Math.max(0, last + h - L), Y };
   };
   // how well a height reads: the lines never seen whole at any rest, and the longest step from one rest to the next
-  const parts = atoms.filter(([a, b]) => b > a).sort((p, q) => p[0] - q[0]);
   const score = P => { let unseen = 0, j = 0, step = 0; const { h, R } = P;
-    for (const [a, b] of parts) { if (b - a > h) continue; while (j + 1 < R.length && R[j + 1] <= a + .5) j++; if (!(R[j] <= a + .5 && b <= R[j] + h + .5)) unseen++; }
+    for (const [a, b] of P.Y.parts) { if (b - a > h) continue; while (j + 1 < R.length && R[j + 1] <= a + .5) j++; if (!(R[j] <= a + .5 && b <= R[j] + h + .5)) unseen++; }
     for (let i = 1; i < R.length; i++) step = Math.max(step, R[i] - R[i - 1]);
     return Object.assign(P, { unseen, step }); };
-  if (end <= max) return Object.assign(score(at(Math.max(1, end))), { end });
-  // the heights to try: every one from the largest down to 80 pixels less; the first at which every line can be read
-  // and a rest comes at least every half a box is taken, or else the one that reads best
-  let best = null;
-  const good = P => !P.unseen && P.step <= Math.max(16, P.h >> 1);
-  for (let h = Math.floor(max); h >= Math.max(16, max - 80); h--) { const P = score(at(h)); if (good(P)) { best = P; break; } if (!best || P.unseen < best.unseen || (P.unseen === best.unseen && P.step < best.step)) best = P; }
+  const done = P => Object.assign(P, { end: P.Y.end, o: P.Y.o });
+  const lays = opens.map(lay);
+  if (end0 <= max) return done(score(at(lays[0], Math.max(1, end0))));
+  const good = P => P.R[0] === 0 && !P.unseen && P.step <= Math.max(16, P.h >> 1);
   // a box whose foot, at the top, falls in the blank under a line or a row closes up to that line when it reads as well
-  const tight = atoms.reduce((m, [, b]) => b <= best.h + .5 && b > m ? Math.round(b) : m, 0);
-  if (tight > 0 && tight < best.h) { const P = score(at(tight)); if (good(P)) best = P; }
-  return Object.assign(best, { end });
+  const tighten = P => { const t = P.Y.parts.reduce((m, [, b]) => b <= P.h + .5 && b > m ? Math.round(b) : m, 0); if (t > 0 && t < P.h) { const Q = score(at(P.Y, t)); if (good(Q)) return Q; } return P; };
+  // the blank a plan leaves: the height the box gives up, twice what its gives open (a blank inside the pages shows more
+  // than a window a little shorter), and the blank over the box's foot as it opens, under the last line it shows whole
+  const band = P => P.h - P.Y.parts.reduce((m, [, b]) => b <= P.h + .5 && b > m ? b : m, 0);
+  const cost = P => Math.floor(max) - P.h + 2 * P.Y.tot + band(P);
+  let best = null, fall = null;
+  for (const Y of lays) {
+    if (best && 2 * Y.tot >= cost(best)) break;
+    for (let h = Math.floor(max); h >= Math.max(16, Math.floor(max) - 80); h--) {
+      if (best && Math.floor(max) - h + 2 * Y.tot >= cost(best)) break;
+      const P = score(at(Y, h)); if (P.R[0] !== 0) continue;
+      if (good(P)) { const Q = tighten(P); if (!best || cost(Q) < cost(best)) best = Q; continue; }
+      if (!fall || P.unseen < fall.unseen || (P.unseen === fall.unseen && P.step < fall.step)) fall = P;
+    }
+  }
+  // none reads well: the one that reads best, still opening at its top (a shorter box if no height near the largest can)
+  best = best || fall;
+  for (let h = Math.floor(max) - 81; !best && h >= 16; h--) { const P = score(at(lays[0], h)); if (P.R[0] === 0) best = P; }
+  return done(best || score(at(lays[0], Math.floor(max))));
 }
 // The box's window and the plaques under the box, as the screen drew them (kept, so a box fitted again starts from them).
 function scrollHome(sc) {
@@ -2176,6 +2215,7 @@ function fitScroll(sc, want) {
   const win = scrollHome(sc); sc.style.height = max + 'px';
   for (const e of win.querySelectorAll(':scope > .scl')) e.remove();
   const P = scrollPlan(sc, max);
+  sc.querySelectorAll('.scgive').forEach((g, i) => { g.style.height = (P.o[i] || 0) + 'px'; });
   sc.style.height = P.h + 'px';
   if (P.pad) { const e = document.createElement('i'); e.className = 'scend'; e.style.height = P.pad + 'px'; sc.appendChild(e); }
   // the window closes up: what lies under the box moves up to FOOT_GAP under its foot, never over anything left above
