@@ -117,13 +117,13 @@
   #proof { position:fixed; left:50%; top:34px; transform:translateX(-50%); z-index:15; display:none; padding:3px 10px; border:1px solid #6b4fa0; background:rgba(14,10,24,.82); color:#f0e8d4; font:600 13px/1.3 ui-monospace,Consolas,monospace; white-space:nowrap; pointer-events:none; max-width:96vw; overflow:hidden; text-overflow:ellipsis; }       /* the proof overlay: one line for clips, hidden by default, clear of the health bar and the slots */
   #proof.on { display:block; }
   html, body { touch-action:manipulation; overscroll-behavior:none; -webkit-touch-callout:none; }
-  #devbar { position:fixed; left:50%; top:max(2px, env(safe-area-inset-top)); transform:translateX(-50%); z-index:16; display:flex; gap:6px; align-items:center; font:11px/1 ui-monospace,Consolas,monospace; color:#b89a6a; pointer-events:none; white-space:nowrap; }
+  #devbar { position:fixed; right:8px; bottom:4px; z-index:16; display:flex; gap:6px; align-items:center; font:11px/1 ui-monospace,Consolas,monospace; color:#b89a6a; pointer-events:none; white-space:nowrap; }
   #devbar button { pointer-events:auto; font:inherit; font-size:11px; letter-spacing:1px; padding:4px 8px; margin:0; min-height:0; min-width:0; background:#1b1220cc; color:#f3e3c2; border:1px solid #6b4fa0; }
   #devbar.hidefs button { display:none; }
   /* touch screens under 600 px tall: the stage box is one line (clock, next event) and opens on a tap */
   @media (max-height:600px) and (pointer:coarse) { #topright { pointer-events:auto; z-index:35; padding:3px 8px; } #topright:not(.open) > :not(#clock):not(#nextEvent) { display:none; } #topright:not(.open) #clock { font-size:calc(var(--t) * 1.3); } #topright.open { box-shadow:0 0 0 2px #ffd23f66; } }
   #buildLabel { background:#1b1220cc; padding:3px 6px; border:1px solid #6b4fa0; color:#f3e3c2; }
-  @media (max-height:600px), (pointer:coarse) { #devbar { left:8px; top:92px; transform:none; } :root { --tz:clamp(10px, 2.3vh, 48px); } }
+  @media (max-height:600px), (pointer:coarse) { #devbar { left:8px; top:92px; right:auto; bottom:auto; } :root { --tz:clamp(10px, 2.3vh, 48px); } }
   body[data-mode=dead] #devbar, body[data-mode=offer] #devbar { visibility:hidden; }
   @media (max-width:700px) { #proof { font-size:11px; padding:2px 6px; } }
   #speedlines { position:fixed; inset:0; pointer-events:none; opacity:0; z-index:13; background:repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0) 0 5deg, rgba(255,255,255,.16) 5deg 5.7deg); -webkit-mask-image:radial-gradient(ellipse at center, transparent 42%, #000 88%); mask-image:radial-gradient(ellipse at center, transparent 42%, #000 88%); }       /* slide-hop speed lines: only the edges of the screen */
@@ -274,6 +274,7 @@
 </script>
 </body>
 </html>
+
 
 
 

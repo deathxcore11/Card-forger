@@ -11,10 +11,14 @@ console.log('first', await spike(process.argv[3] || 'fire')); console.log('dbg',
 for (const t of [0.05, 0.45, 0.78, 1.6]) { await b.evalIn('__ds.actors.sigHold = ' + t + '; 1'); await wait(500); await b.shot('sig_fire_' + String(t).replace('.', '_')); }
 await b.evalIn(`(()=>{ const A = __ds.actors; A.sigHold = undefined; A.sigRun.length = 0; A.sig.last.lightning = -1e9; A.sig.kills.lightning.length = 0; const p = __ds.game.p; __ds.camHold = { x: p.x, y: p.y + 4, z: p.z + 16, lx: p.x, ly: p.y + 20, lz: p.z - 12 }; return 1; })()`);
 await b.evalIn(`(()=>{ const A = __ds.actors, oh = A.hitAt.bind(A), oc = A.corpse.bind(A); window.__lg = []; A.hitAt = (x, z, f) => { if (__lg.length < 6) __lg.push(['h', f]); oh(x, z, f); }; A.corpse = (k, x, z) => { if (__lg.length < 10) __lg.push(['c', k, (A._hits || []).length]); oc(k, x, z); }; return 1; })()`);console.log('second', await spike(process.argv[3] === 'lightning' ? 'fire' : 'lightning')); console.log('lg', await b.evalIn('JSON.stringify(window.__lg)')); console.log('lg', await b.evalIn('JSON.stringify(window.__lg)')); console.log('dbg2', await b.evalIn('JSON.stringify({ notes: __ds.actors.sig.kills.lightning.length / 3, corp: (__ds.actors.corpses||[]).length, last: __ds.actors.sig.last, tick: __ds.fx.tick, bit: 0, cs: (__ds.actors.corpses||[]).slice(0,3).map(c => [c.type, +c.t.toFixed(2)]), hits: (__ds.actors._hits||[]).length })'));
-await b.evalIn('__ds.actors.sigRun.forEach(s => { s.bolts = 0; s.cards = false; s.trunk = false; }); 1');
-for (const t of [0.12, 0.3, 0.6]) { await b.evalIn('(()=>{ const A = __ds.actors; A.sigHold = ' + t + '; return 1; })()'); await wait(150); await b.shot('sig_lightning_' + String(t).replace('.', '_')); }
-console.log('errors', JSON.stringify(await b.evalIn('JSON.stringify(window.__errs.slice(0,3))')));
+await b.evalIn('__ds.actors.sigRun.forEach(s => { s.bolts = 0; s.cards = 0; s.trunk = false; }); 1');
+for (const t of [0.05, 0.2, 0.45]) { await b.evalIn('(()=>{ const A = __ds.actors; A.sigHold = ' + t + '; return 1; })()'); await wait(150); await b.shot('sig_lightning_' + String(t).replace('.', '_')); }
+await b.evalIn('window.__imp = setInterval(() => { __ds.actors.impactFrame = "lightning"; }, 4); 1'); await wait(150); await b.shot('sig_impact_lightning'); await b.evalIn('clearInterval(window.__imp); __ds.actors.sigHold = undefined; __ds.actors.sigRun.length = 0; 1');
+await b.evalIn(`(()=>{ const A = __ds.actors, s = A.sigRun[0] || { x: __ds.game.p.x, z: __ds.game.p.z }, p = __ds.game.p; A.sigRun.forEach(q => { q.bolts = 0; q.cards = 0; q.trunk = false; }); A.sigHold = 0.5; __ds.camHold = { x: s.x, y: p.y + 14, z: s.z + 9, lx: s.x, ly: p.y, lz: s.z }; return 1; })()`); await wait(300); await b.shot('sig_lightning_star');
+await b.evalIn('window.__imp = setInterval(() => { __ds.actors.impactFrame = "fire"; }, 4); 1'); await wait(150); await b.shot('sig_impact_fire'); await b.evalIn('clearInterval(window.__imp); 1');console.log('errors', JSON.stringify(await b.evalIn('JSON.stringify(window.__errs.slice(0,3))')));
 b.close(); setTimeout(() => process.exit(0), 300);
+
+
 
 
 

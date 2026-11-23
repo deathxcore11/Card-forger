@@ -1,4 +1,4 @@
-// The lightning ribbon (spectacle spec 6.5): one static strip of 17 points by 2 sides, drawn instanced, one instance per bolt. The zigzag is summed from midpoint displacement in the vertex shader (closed form, no history),
+﻿// The lightning ribbon (spectacle spec 6.5): one static strip of 17 points by 2 sides, drawn instanced, one instance per bolt. The zigzag is summed from midpoint displacement in the vertex shader (closed form, no history),
 // the bolt picks a new shape every 50 ms while it is thin, and the instance data is written once, when the sim first shows the bolt. Nothing is uploaded after that. View only: the sim keeps sending each bolt with both end
 // points and a seed (the 'bolt' effect entries); this file only draws them. Colours come from the one effect ramp (row 2, lightning: blue-white core, electric body, indigo shade, ink edge).
 import { GLSL } from './engine.js';
@@ -52,7 +52,8 @@ void main() {
   see(o) {
     const prev = this.seen.get(o); this.seen.set(o, o.t); if (prev !== undefined && o.t >= prev) return false;
     this.last = this.uni.uTime.value; const i = this.head, k = i * STRIDE, a = this.buf.array, now = this.uni.uTime.value - (o.t || 0); this.head = (this.head + 1) % POOL;
-    a[k] = o.x; a[k + 1] = o.y; a[k + 2] = o.z; a[k + 3] = o.w || 0.14; a[k + 4] = o.x2; a[k + 5] = o.y2; a[k + 6] = o.z2; a[k + 7] = now; a[k + 8] = o.seed || 1; a[k + 9] = o.dur || 0.15; a[k + 10] = ROW.LIGHTNING; a[k + 11] = 1; a[k + 12] = 1;
+    a[k] = o.x; a[k + 1] = o.y; a[k + 2] = o.z; a[k + 3] = o.w || 0.14; a[k + 4] = o.x2; a[k + 5] = o.y2; a[k + 6] = o.z2; a[k + 7] = now; a[k + 8] = o.seed || 1; a[k + 9] = o.dur || 0.15; a[k + 10] = ROW.LIGHTNING; a[k + 11] = o.amp === undefined ? 1 : o.amp; a[k + 12] = 1;       // o.amp 0 draws a ruler-straight segment (the sky seal)
     this.buf.updateRange.count = -1; this._dirty = true; return true;
   }
 }
+

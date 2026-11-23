@@ -1,4 +1,4 @@
-// The rules of a run. No drawing, no DOM: the view reads this state, tests and the run simulator drive it directly.
+﻿// The rules of a run. No drawing, no DOM: the view reads this state, tests and the run simulator drive it directly.
 import { CFG } from '../data/config.js';
 import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
@@ -33,6 +33,7 @@ const STEP = 1 / 60;
 
 import { BUILD_VERSION } from './results.js';
 const BUILD_VERSION_REPLAY = BUILD_VERSION;
+const EV_START = 1024, EV_MAX = 1 << 16;       // the event ring: starts at 1,024 and grows to 65,536
 export class Game {
   constructor(seed = 1, opts = {}) {
     this.opts = opts;
@@ -45,7 +46,7 @@ export class Game {
     this.nearBuf2 = new Int32Array(64);
     this.tele = makeTele(64); this.fx = makeFx(48); this.eb = makeBolts(48);
     this.btraps = []; for (let i = 0; i < 8; i++) this.btraps.push({ on: false, x: 0, y: 0, z: 0, life: 0 });
-    this.evType = new Array(256).fill(''); this.evData = new Array(256).fill(null); this.evA = new Float64Array(256); this.evB = new Float64Array(256); this.evC = new Float64Array(256); this.evT = new Float64Array(256); this.evHead = 0; this.evTail = 0;
+    this.evCap = EV_START; this.evType = new Array(EV_START).fill(''); this.evData = new Array(EV_START).fill(null); this.evA = new Float64Array(EV_START); this.evB = new Float64Array(EV_START); this.evC = new Float64Array(EV_START); this.evT = new Float64Array(EV_START); this.evHead = 0; this.evTail = 0; this.evDropped = 0;
     this._cmd = {}; this._rec = emptyRecord(); this.tape = null; this.map = CLASSIC_MAP;
     this.reset(seed, opts.duelist);
   }
@@ -89,16 +90,22 @@ export class Game {
     initRun(this);                                                  // opts.mode: 'classic' (default, one 8:00 stage), 'run' (three stages) or 'quick' (Quick Duel)
   }
 
-  // Sim to view only through this queue. Fixed size ring; if the view falls behind the oldest events are dropped, never the rules.
+  // Sim to view only through this queue. A ring that GROWS when the view falls behind (a frame of Overtime can kill hundreds of enemies, each with a hit, a kill and pickups), so no event is lost while the view drains once a frame;
+  // only past EV_MAX (a harness that never drains) are the oldest dropped, and counted in evDropped. Nothing in the rules reads this queue.
   // emit(type, a, b, c) is for numeric events (hit, kill, pickup, levelup, hurt, bossphase, sound); event(type, text) carries UI text.
   emit(type, a, b, c, d) {
-    const i = this.evHead & 255; this.evHead++; if (this.evHead - this.evTail > 256) this.evTail = this.evHead - 256;
+    if (this.evHead - this.evTail >= this.evCap) { if (this.evCap < EV_MAX) this._growEv(); else { this.evTail++; this.evDropped++; } }
+    const i = this.evHead & (this.evCap - 1); this.evHead++;
     this.evType[i] = type; this.evA[i] = a || 0; this.evB[i] = b || 0; this.evC[i] = c || 0; this.evData[i] = d === undefined ? null : d; this.evT[i] = this.t;
+  }
+  _growEv() {
+    const o = this.evCap, n = o * 2, ty = new Array(n).fill(''), da = new Array(n).fill(null), a = new Float64Array(n), b = new Float64Array(n), c = new Float64Array(n), t = new Float64Array(n);
+    for (let k = this.evTail; k < this.evHead; k++) { const s = k & (o - 1), j = k & (n - 1); ty[j] = this.evType[s]; da[j] = this.evData[s]; a[j] = this.evA[s]; b[j] = this.evB[s]; c[j] = this.evC[s]; t[j] = this.evT[s]; }
+    this.evType = ty; this.evData = da; this.evA = a; this.evB = b; this.evC = c; this.evT = t; this.evCap = n;
   }
   event(type, data) { this.emit(type, 0, 0, 0, data); }
   // calls fn(type, a, b, c, data, t) for every queued event, oldest first, then empties the queue
-  drainEvents(fn) { while (this.evTail < this.evHead) { const i = this.evTail & 255; this.evTail++; fn(this.evType[i], this.evA[i], this.evB[i], this.evC[i], this.evData[i], this.evT[i]); } }
-  enemyCount() { return enemyCount(this.en); }
+  drainEvents(fn) { while (this.evTail < this.evHead) { const i = this.evTail & (this.evCap - 1); this.evTail++; fn(this.evType[i], this.evA[i], this.evB[i], this.evC[i], this.evData[i], this.evT[i]); } }  enemyCount() { return enemyCount(this.en); }
   // Damage dealt by each source, per run minute (recording only, for before/after comparisons). curSrc is set around each attack.
   srcIndex(name) { let i = this.srcNames.indexOf(name); if (i < 0) { i = this.srcNames.length; this.srcNames.push(name); } return i; }
   logDealt(d) {
@@ -299,6 +306,7 @@ export class Game {
     return Math.floor(this.kills / S.perKills) + S.perElite * (this.elitesKilled - (this.bossKilled ? 1 : 0)) + (this.bossKilled ? S.boss : 0) + (this.mode === 'classic' && this.boss.early && this.bossKilled ? RUN.gate.earlyStarChips : 0) + (this.swiftChips || 0);
   }
 }
+
 
 
 

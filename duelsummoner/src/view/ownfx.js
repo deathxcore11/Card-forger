@@ -26,7 +26,7 @@ const WALL_GLSL = `
   { float H = vB.x, el = vB.y, y = vWP.y - vY0, dd = vViewDist - uHole.w;
     float cutH = 1.5 + 120.0 * smoothstep(-4.0, 0.0, dd);
     if ((vViewDist < 8.0 && vWP.y > uFeetY + 1.5) || vWP.y > uFeetY + cutH) discard;
-    if (vB.z > 0.0 && y / H < vFade * 1.25 - bay * 0.25) discard;       // a card wall burns away from the bottom up as a screen-door
+    if (vB.z > 0.0 && y / H < vFade * 1.12 - bay * 0.12) discard;       // a card wall burns away from the bottom up as a screen-door
     float hm = mix(1.0, 0.55, smoothstep(0.0, vRad * 1.6, dd)), y01 = y / H, u = wAng * wCols; u += 0.35 * sin(u * 0.83 + 1.3) + 0.25 * sin(u * 2.1);
     float cell = floor(u), cf = fract(u), h1 = hsh(vec2(cell, 3.0)), h2 = hsh(vec2(cell, 7.0)), h3 = hsh(vec2(cell, 11.0)), eH = fyy / H;
     float low = N(vec2(wAng * 2.0, 0.6)).g, nh = N(vec2(cell * 0.173 + 0.31, floor(uT * 8.0) / 64.0 * 3.0)).r;
@@ -65,8 +65,18 @@ const WALL_GLSL = `
     }
     if (!hit) discard;
     oc = vec4(tone, 1.0); return; }`;
-function material(kind) {
-  const area = kind === 'area', wall = kind === 'wall';
+// The card footprint (Cinder Card and the sky seal's cards): a flat rectangle sx by sz metres, turned by yaw (iB.w). mode 0: a scorched ground card, a dark ink border line 0.55 m wide, a dithered dark fill, and for the first moments the crack pattern in the lava colour;
+// mode 1: a solid bright fill that snaps on (one frame). Drawn through the same stencil, keyhole and ink rules as the other own effects.
+const CARD_V = 'float cs = sin(iB.w), cc = cos(iB.w); vec2 lp = vec2(position.x * iB.x, position.z * iB.y); vec3 w = vec3(c0.x + lp.x * cc - lp.y * cs, c0.y + 0.12, c0.z + lp.x * cs + lp.y * cc); vLocal = position.xz; vN = vec3(0.0, 1.0, 0.0);';
+const CARD_F = `
+  { vec2 l = vLocal * vB.xy; float e = min(vB.x - abs(l.x), vB.y - abs(l.y)); if (e < 0.0) discard;
+    if (vB.z > 0.5) { if (hole && bay > 0.5) discard; oc = vec4(vCol, 1.0); return; }
+    if (e < 0.55) { if (hole && bay > 0.5) discard; oc = vec4(0.118, 0.118, 0.165, 1.0); return; }
+    if (hole) discard;
+    float cr = N(vWP.xz * 0.09).g; if (vFade > 0.4 && cr > 0.66 && cr < 0.95) { oc = vec4(min(vCol * 2.2, vec3(1.0)), 1.0); return; }
+    if (bay >= 0.7) discard; oc = vec4(vCol * 0.55, 1.0); return; }
+  bool ringOnly = false, rim = false, ink = false;`;function material(kind) {
+  const area = kind === 'area', wall = kind === 'wall', card = kind === 'card';
   return new T.ShaderMaterial({ glslVersion: T.GLSL3, side: T.DoubleSide, depthTest: true, depthWrite: false, transparent: true, fog: false, blending: T.NoBlending,
     stencilWrite: true, stencilRef: 0, stencilFunc: T.EqualStencilFunc, stencilFuncMask: 0x05, stencilWriteMask: 0x00, stencilFail: T.KeepStencilOp, stencilZFail: T.KeepStencilOp, stencilZPass: T.KeepStencilOp,
     uniforms: OWN.uni,
@@ -80,7 +90,7 @@ void main() {
   float cover = coverOf(rad, vz) * frac;
   vKeep = min(clamp(uInk / max(cover, 0.001), 0.125, 1.0), uGov);
   vCol = iC.rgb; vB = iB; vFade = iC.a; vY0 = c0.y; vRad = rad;
-  ${area ? `vec3 w = vec3(c0.x + position.x * rad, c0.y + 0.12, c0.z + position.z * rad); vLocal = position.xz; vN = vec3(0.0, 1.0, 0.0);`
+  ${card ? CARD_V : area ? `vec3 w = vec3(c0.x + position.x * rad, c0.y + 0.12, c0.z + position.z * rad); vLocal = position.xz; vN = vec3(0.0, 1.0, 0.0);`
          : wall ? `float fl = iB.y > 6.5 ? 0.12 : (iB.y > 0.5 ? 0.35 : 0.0); vec3 w = vec3(c0.x + position.x * rad * (1.0 + fl * position.y), c0.y + position.y * iB.x, c0.z + position.z * rad * (1.0 + fl * position.y)); if (iB.z > 0.0) { vec2 pp = position.xz; float mm = pow(pow(abs(pp.x), 8.0) + pow(abs(pp.y), 8.0), 0.125); pp /= max(mm, 0.0001); w.x = c0.x + pp.x * iB.z; w.z = c0.z + pp.y * iB.w; } vLocal = position.xz; vN = normalize(vec3(position.x, 0.0, position.z));`
          : `vec3 w = c0 + position * rad; vLocal = position.xz; vN = normalize(position);`}
   vWP = w; vec4 vp = viewMatrix * vec4(w, 1.0); vViewDist = -vp.z; vV = normalize(-vp.xyz); vN = normalize(mat3(viewMatrix) * vN);
@@ -93,7 +103,7 @@ void main() {
   
   ${wall ? 'float wAng = atan(vLocal.y, vLocal.x) / 6.2832 + 0.5, wCols = max(10.0, floor(vRad * 6.2832 / (1.8 + 0.07 * vB.x))), fu = min(fwidth(wAng * wCols), 0.5), fyy = fwidth(vWP.y);' : ''}
   float dpx = distance(gl_FragCoord.xy, uHole.xy); bool hole = dpx < uHole.z; float bay = bayer();
-  ${area ? `
+  ${card ? CARD_F : area ? `
   if (vr > 1.0) discard;
   float edge = 1.0 - vr; float rimW = max(fw, 0.004) * uRimK;
   if (vB.z > -0.99) { vec2 dn = normalize(vLocal + 1e-5); float ca = dot(dn, vB.xy); if (ca < vB.z) discard; float ang = acos(clamp(ca, -1.0, 1.0)), half_ = acos(clamp(vB.z, -1.0, 1.0)); edge = min(edge, (half_ - ang) * vr); }
@@ -124,10 +134,10 @@ export class OwnEffects {
     const quad = new T.PlaneGeometry(2, 2); quad.rotateX(-Math.PI / 2);
     const dome = new T.SphereGeometry(1, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2);       // a dome: the upper half of a sphere
     const cyl = new T.CylinderGeometry(1, 1, 1, 56, 1, true); cyl.translate(0, 0.5, 0);
-    this.A = mk('area', quad, MAXA); this.V = mk('vol', dome, MAXV); this.W = mk('wall', cyl, 16); this.recs = [];
+    this.A = mk('area', quad, MAXA); this.V = mk('vol', dome, MAXV); this.W = mk('wall', cyl, 16); this.C = mk('card', quad, 24); this.recs = [];
   }
   setSpellEffects(name) { this.setting = SPELL_FX[name] ? name : 'auto'; }
-  begin() { this.A.n = 0; this.V.n = 0; this.W.n = 0; this.recs.length = 0; this.dropped = 0; }
+  begin() { this.A.n = 0; this.V.n = 0; this.W.n = 0; this.C.n = 0; this.recs.length = 0; this.dropped = 0; }
   // a ground area: disc, ring or fan. dx,dz the fan direction (unit), halfArcDeg 0 for a full circle, filled false for a plain ring. colour as 0xRRGGBB, fade 0..1
   area(x, y, z, r, hex, filled, dx, dz, halfArcDeg, fade) {
     const s = this.A; if (s.n >= s.max) { this.dropped++; return; } const a = s.arr, o = s.n++ * STRIDE;
@@ -147,7 +157,12 @@ export class OwnEffects {
     a[o] = x; a[o + 1] = y; a[o + 2] = z; a[o + 3] = r; a[o + 4] = h; a[o + 5] = el || 0; a[o + 6] = sx > 0 ? sx : -1; a[o + 7] = sz > 0 ? sz : 1; a[o + 8] = ((hex >> 16) & 255) / 255; a[o + 9] = ((hex >> 8) & 255) / 255; a[o + 10] = (hex & 255) / 255; a[o + 11] = fade === undefined ? 1 : fade;
     this.recs.push(x, y, z, r, 0.4, 1, 1);
   }
-  // per frame, after begin() and the area() / volume() calls: the camera values, the keyhole, the two sums and the governor, then the uploads
+  // a flat card rectangle (sx by sz metres from the centre) at height y, turned by yaw; mode 0 the scorched ground card (fade 1 shows the cracks), mode 1 a solid bright fill. Not counted in the ink governor: it is a thin ground mark.
+  card(x, y, z, sx, sz, hex, fade, mode, yaw) {
+    const s = this.C; if (s.n >= s.max) { this.dropped++; return; } const a = s.arr, o = s.n++ * STRIDE;
+    a[o] = x; a[o + 1] = y; a[o + 2] = z; a[o + 3] = Math.max(sx, sz); a[o + 4] = sx; a[o + 5] = sz; a[o + 6] = mode || 0; a[o + 7] = yaw || 0;
+    a[o + 8] = ((hex >> 16) & 255) / 255; a[o + 9] = ((hex >> 8) & 255) / 255; a[o + 10] = (hex & 255) / 255; a[o + 11] = fade === undefined ? 1 : fade;
+  }  // per frame, after begin() and the area() / volume() calls: the camera values, the keyhole, the two sums and the governor, then the uploads
   end(camera, duelist, size, dt) {
     const u = OWN.uni, set = SPELL_FX[this.setting], cm = camera.matrixWorldInverse, e = cm.elements, H = size.h, W = size.w;
     u.uRimK.value = 1 + 0.8 * (this.tier || 0); u.uProjY.value = 1 / Math.tan(camera.fov * Math.PI / 360); u.uAspect.value = W / H; u.uInk.value = set.ink;
@@ -162,11 +177,15 @@ export class OwnEffects {
     // the governor: the largest cap on every fill keep that brings the kept sum to its limit (bisection; it may go below the 12.5% floor), then smoothed over 0.3 s
     let target = 1; if (keptAt(1) > set.kept) { let lo = 0.0, hi = 1.0; for (let it = 0; it < 14; it++) { const mid = (lo + hi) / 2; if (keptAt(mid) > set.kept) hi = mid; else lo = mid; } target = Math.max(0.005, lo); }
     const kk = 1 - Math.exp(-(dt || 0.016) / 0.3); this.gov += (target - this.gov) * kk; u.uGov.value = Math.max(0.005, Math.min(1, this.gov));
-    this.rasterSum = ras; this.keptSum = keptAt(this.gov); this.keptRaw = keptAt(1);    for (const s of [this.A, this.V, this.W]) { s.g.instanceCount = s.n; s.m.visible = s.n > 0 && !(s === this.W && this.hideWalls); if (s.n > 0) { s.buf.updateRange.offset = 0; s.buf.updateRange.count = s.n * STRIDE; s.buf.needsUpdate = true; } }
+    this.rasterSum = ras; this.keptSum = keptAt(this.gov); this.keptRaw = keptAt(1);    for (const s of [this.A, this.V, this.W, this.C]) { s.g.instanceCount = s.n; s.m.visible = s.n > 0 && !(s === this.W && this.hideWalls); if (s.n > 0) { s.buf.updateRange.offset = 0; s.buf.updateRange.count = s.n * STRIDE; s.buf.needsUpdate = true; } }
     this.nArea = this.A.n; this.nVol = this.V.n + this.W.n;
   }
   get readout() { return { areas: this.nArea, volumes: this.nVol, rasterSum: +this.rasterSum.toFixed(2), keptSum: +this.keptSum.toFixed(3), keptRaw: +(this.keptRaw || 0).toFixed(2), governor: +this.gov.toFixed(2), dropped: this.dropped }; }
 }
+
+
+
+
 
 
 

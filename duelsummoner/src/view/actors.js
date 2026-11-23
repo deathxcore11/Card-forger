@@ -186,34 +186,46 @@ export class Actors {
       counts[c.kind]++;
     }
   }
-  // Signature moments (spec 3.0): Cinder Card (fire) and Sky Seal (lightning), on a spike of kills (view/signature.js). World parts only: the card wall goes through the own-effect material, the seal through the lightning ribbon and the stain map;
-  // the screen parts (hit-stop 80 / 100 ms, one flash) go through the director as a class B moment, so a moment that loses the screen still draws its world part.
+  // Signature moments (spec 3.0): Cinder Card (fire) and Sky Seal (lightning), on a spike of kills (view/signature.js). World parts only: the card goes through the own-effect material, the seal through the lightning ribbon;
+  // the screen parts (hit-stop 80 / 100 ms, one flash at the landing, one 2-tone impact frame) go through the director as a class B moment, so a moment that loses the screen still draws its world part. The impact frame is chosen from sim ticks.
   _signatures(g, dt, tier) {
     const fx = this.fx, hit = this.ownCtx ? this.sig.check(fx.tick, tier >= 2, fx.blocked) : null;
     if (hit) {
-      const gm = fx.moment('sig-' + hit.el, 'B', hit.el === 'fire' ? { hitstop: 0.08 } : { hitstop: 0.10, flash: 0.4, hex: RAMP.lightning[1] });
-      if (gm.world) this.sigRun.push({ el: hit.el, x: hit.x, z: hit.z, y: g.p.y, t: 0, bolts: 0 });
+      const gm = fx.moment('sig-' + hit.el, 'B', { hitstop: hit.el === 'fire' ? 0.08 : 0.10 });
+      if (gm.world) this.sigRun.push({ el: hit.el, x: hit.x, z: hit.z, y: g.p.y, t: 0, bolts: 0, cards: 0, screen: gm.screen, impactTick: fx.tick + (hit.el === 'fire' ? 4 : 12) });
       (this.sigLog || (this.sigLog = [])).push([fx.tick, hit.el, gm.screen, gm.world]);
     }
-    const R = this.sigRun, rb = this.ribbon;
+    const R = this.sigRun, rb = this.ribbon, SEG = (x, y, z, x2, y2, z2, w, seed, dur, amp) => rb.see({ x, y, z, x2, y2, z2, w, seed, dur, amp, t: 0, el: 'lightning' });
     for (let n = R.length - 1; n >= 0; n--) {
       const s = R[n]; s.t = this.sigHold !== undefined ? this.sigHold : s.t + dt; if (s.t >= (s.el === 'fire' ? 6 : 4)) { R.splice(n, 1); continue; }
+      if (!s.impacted && fx.tick >= s.impactTick) { s.impacted = true; if (s.screen && !fx.rm_) this.impactFrame = s.el; }       // one frame, 2 tones, skipped when Reduce motion is on
       if (s.el === 'fire') {
-        // a card-shaped scorch 12 m by 17 m, then the whole outline erupts as a wall of flame 40 m tall that burns away from the bottom up over 0.8 s; embers fall for 2 s more
-        const L = RAMP.fire, oc = ownColour('fire'); for (let k = -1; k <= 1; k++) this._stains.push({ x: s.x, z: s.z + k * 4.5, r: 6.4, hex: L[3], hexK: oc });
-        if (s.t < 0.8) this.own.wall(s.x, s.y, s.z, 7.25, 40, oc, s.t / 0.8, 0, 6, 8.5);
-        if (s.t < 2.8) for (let k = Math.min(6, Math.floor(dt * 140 + Math.random())); k > 0; k--) { const a = Math.random() * 6.2832, c = Math.cos(a), sn = Math.sin(a), m = Math.max(Math.abs(c) / 6, Math.abs(sn) / 8.5); this.fx.sparkEl(s.x + c / m * 0.95, s.y + 6 + Math.random() * 28, s.z + sn / m * 0.95, (Math.random() - 0.5) * 1.5, -(3 + Math.random() * 3), (Math.random() - 0.5) * 1.5, 0, 0.2 + Math.random() * 0.12, 1.6); }
+        // a card rectangle (5 by 7) laid on the ground with a dark border line and, at first, the lava cracks inside; the flame wall rises along its four edges 40 m tall and burns away from the bottom up over 0.8 s; embers fall for 2 s more
+        const oc = ownColour('fire'), sx = 6, sz = 8.4;
+        this.own.card(s.x, s.y, s.z, sx, sz, 0x6b3a18, s.t < 0.9 ? 1 : 0, 0, 0);
+        if (s.t < 0.8) this.own.wall(s.x, s.y, s.z, 7.2, 40, oc, s.t / 0.8, 0, sx, sz);
+        if (s.t < 2.8) for (let k = Math.min(6, Math.floor(dt * 140 + Math.random())); k > 0; k--) { const a = Math.random() * 6.2832, c = Math.cos(a), sn = Math.sin(a), m = Math.max(Math.abs(c) / sx, Math.abs(sn) / sz); this.fx.sparkEl(s.x + c / m * 0.95, s.y + 6 + Math.random() * 28, s.z + sn / m * 0.95, (Math.random() - 0.5) * 1.5, -(3 + Math.random() * 3), (Math.random() - 0.5) * 1.5, 0, 0.2 + Math.random() * 0.12, 1.6); }
       } else {
-        // six bolts draw a ring in the sky in 200 ms, four card outlines inside it, one trunk comes down through it, and a mark stays on the ground
-        const cx = s.x, cz = s.z, py = s.y + 30, pts = []; for (let i = 0; i < 6; i++) pts.push(cx + Math.cos(i / 6 * 6.2832) * 14, cz + Math.sin(i / 6 * 6.2832) * 14);
-        while (s.bolts < Math.min(6, Math.floor(s.t / 0.033) + 1)) { const i = s.bolts++, j = (i + 1) % 6; rb.see({ x: pts[i * 2], y: py, z: pts[i * 2 + 1], x2: pts[j * 2], y2: py, z2: pts[j * 2 + 1], w: 0.5, seed: 7 + i, dur: 0.9, t: 0, el: 'lightning' }); }
-        if (s.t >= 0.1 && !s.cards) { s.cards = true; for (let k = 0; k < 4; k++) { const a = k * 1.5708, ux = Math.cos(a), uz = Math.sin(a), vx = -uz, vz = ux, mx = cx + ux * 7, mz = cz + uz * 7, cn = [[-1.5, -2.1], [1.5, -2.1], [1.5, 2.1], [-1.5, 2.1]]; for (let e = 0; e < 4; e++) { const p0 = cn[e], p1 = cn[(e + 1) % 4]; rb.see({ x: mx + ux * p0[0] + vx * p0[1], y: py, z: mz + uz * p0[0] + vz * p0[1], x2: mx + ux * p1[0] + vx * p1[1], y2: py, z2: mz + uz * p1[0] + vz * p1[1], w: 0.3, seed: 31 + k * 4 + e, dur: 0.8, t: 0, el: 'lightning' }); } } }
-        if (s.t >= 0.2 && !s.trunk) { s.trunk = true; rb.see({ x: cx, y: py + 40, z: cz, x2: cx, y2: s.y, z2: cz, w: 1.0, seed: 99, dur: 0.7, t: 0, el: 'lightning' }); this.fx.burstEl(cx, s.y + 0.5, cz, 24, 2, 8, 8, 0.4, 0.5, 14); }
-        if (s.t >= 0.2) { const f = 1 - (s.t - 0.2) / 3.8, oc = ownColour('lightning'); this._stains.push({ x: cx, z: cz, r: 5, hex: RAMP.lightning[3], hexK: oc }); this.own.area(cx, s.y + 0.15, cz, 5, oc, false, 0, 1, 0, 0.4 + 0.6 * f); }
+        // the seal is ruler-straight: an exact hexagon of six thick segments drawn corner to corner in order over 6 frames, four clean card rectangles with one diagonal stroke each, each snapping on with a 1-frame bright fill;
+        // then the trunk (wide at the top, jagged, three side branches), the gated flash at the landing and a six-pointed star on the ground that fades over 2 s
+        const cx = s.x, cz = s.z, py = s.y + 30, hx = [], FR = 1 / 60;
+        for (let i = 0; i < 6; i++) hx.push(cx + Math.cos(i / 6 * 6.2832) * 14, cz + Math.sin(i / 6 * 6.2832) * 14);
+        while (s.bolts < Math.min(6, Math.floor(s.t / FR) + 1)) { const i = s.bolts++, j = (i + 1) % 6; SEG(hx[i * 2], py, hx[i * 2 + 1], hx[j * 2], py, hx[j * 2 + 1], 1.3, 7 + i, 1.4, 0); }
+        const t0 = 0.12;
+        while (s.cards < 4 && s.t >= t0 + s.cards * 0.04) { const k = s.cards++, a = 0.7854 + k * 1.5708, ux = Math.cos(a), uz = Math.sin(a), vx = -uz, vz = ux, mx = cx + ux * 6.5, mz = cz + uz * 6.5, cn = [[-1.5, -2.1], [1.5, -2.1], [1.5, 2.1], [-1.5, 2.1]], P = q => [mx + ux * q[0] + vx * q[1], mz + uz * q[0] + vz * q[1]];
+          for (let e = 0; e < 4; e++) { const p0 = P(cn[e]), p1 = P(cn[(e + 1) % 4]); SEG(p0[0], py, p0[1], p1[0], py, p1[1], 0.8, 31 + k * 5 + e, 1.2, 0); }
+          const d0 = P(cn[0]), d1 = P(cn[2]); SEG(d0[0], py, d0[1], d1[0], py, d1[1], 0.8, 31 + k * 5 + 4, 1.2, 0); }
+        for (let k = 0; k < 4; k++) { const tk = t0 + k * 0.04; if (s.t >= tk && s.t < tk + 0.02) { const a = 0.7854 + k * 1.5708; this.own.card(cx + Math.cos(a) * 6.5, py, cz + Math.sin(a) * 6.5, 1.5, 2.1, RAMP.lightning[0], 1, 1, a); } }
+        if (s.t >= 0.3 && !s.trunk) {
+          s.trunk = true; SEG(cx, py + 40, cz, cx, s.y, cz, 2.2, 99, 0.9, 1);
+          for (let b = 0; b < 3; b++) { const h = [py + 24, py + 6, py - 12][b], sd = b % 2 ? -1 : 1; SEG(cx, h, cz, cx + sd * (7 + b * 2), h - 9, cz + (b - 1) * 5, 0.9, 120 + b, 0.7, 1); }
+          this.fx.burstEl(cx, s.y + 0.5, cz, 24, 2, 8, 8, 0.4, 0.5, 14); this.fx.flash(0.4, RAMP.lightning[1]);
+          const T0 = [90, 210, 330], T1 = [270, 30, 150], P = (d, r) => [cx + Math.cos(d * Math.PI / 180) * r, cz + Math.sin(d * Math.PI / 180) * r];
+          for (const T of [T0, T1]) for (let i = 0; i < 3; i++) { const p0 = P(T[i], 5), p1 = P(T[(i + 1) % 3], 5); SEG(p0[0], s.y + 0.25, p0[1], p1[0], s.y + 0.25, p1[1], 0.8, 140 + i, 2.0, 0); }
+        }
       }
     }
-  }
-  hitAt(x, z, flags) { const el = flags >> 1; if (el) { const H = this._hits || (this._hits = []); if (H.length < 900) H.push(x, z, el); } const e = this.lastEn; if (!e) return; const ROW = [[1, 0], [2, 2], [4, 1], [8, 3], [16, 4], [32, 5], [64, 6], [128, 7]]; let row = -1; for (const [bit, r] of ROW) if (el & bit) { row = r; break; } let best = -1, bd = 1.44; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.hitRow[best] = row; }
+  }  hitAt(x, z, flags) { const el = flags >> 1; if (el) { const H = this._hits || (this._hits = []); if (H.length < 900) H.push(x, z, el); } const e = this.lastEn; if (!e) return; const ROW = [[1, 0], [2, 2], [4, 1], [8, 3], [16, 4], [32, 5], [64, 6], [128, 7]]; let row = -1; for (const [bit, r] of ROW) if (el & bit) { row = r; break; } let best = -1, bd = 1.44; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.hitRow[best] = row; }
   _flashCol(i, base, boost) { const r = this.hitRow[i]; return this._fc.copy(base).lerp(r >= 0 ? this.flashBright[r] : this.flashNeutral, 0.6).multiplyScalar(boost || 1); }
   // Reach look tiers (spec 1.4): at +50% and +100% an own area effect steps up a tier: a thicker rim (ownfx), particles along its edge, and a lingering ground ring. The footprint is always the true sim size. The tier effects play once per effect record (a restarted pooled record counts as new).
   _tierFx(o, tier) {
@@ -648,6 +660,8 @@ export class Actors {
 
 import { heightAt } from '../sim/terrain.js';
 function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
+
 
 
 

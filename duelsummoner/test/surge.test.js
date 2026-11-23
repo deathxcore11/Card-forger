@@ -5,7 +5,7 @@ const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', of
 const AT = [0.4 * 420, 0.7 * 420, 360];
 test('surges: a banner 4 s ahead of each of the two timed surges and the gate wake, then 100 or more Husks within 15 s', () => {
   for (const seed of [3, 7, 11]) {
-    const g = mk(seed), banners = []; let seen = g.evHead; const drain = () => { for (; seen < g.evHead; seen++) { const i = seen & 255; if (g.evType[i] === 'banner') banners.push([g.sc, g.evData[i]]); } };
+    const g = mk(seed), banners = []; let seen = g.evHead; const drain = () => { for (; seen < g.evHead; seen++) { const i = seen & (g.evCap - 1); if (g.evType[i] === 'banner') banners.push([g.sc, g.evData[i]]); } };
     for (let i = 0; i < 3; i++) {
       g.sc = AT[i] - 6; g.evState.fill(2); for (const q of g.sp) if (q.role === 'bossA' || q.role === 'bossB') q.alive = false; g.en.alive.fill(0); const n0 = g.spawned; let peak = 0;
       for (let t = 0; t < 22; t += 1 / 60) { g.step(1 / 60, idle); drain(); peak = Math.max(peak, enemyCount(g.en)); if (g.over || g.offer) break; }
@@ -30,7 +30,7 @@ test('gate fight: the horde keeps coming at 40 percent of the spawn rate at the 
 
 
 test('surges: 1 and 2 wait for a live timed boss (at most 25 s) and then fire with their banner; the gate-wake surge never waits', () => {
-  const g = mk(5), banners = []; let seen = g.evHead; const drain = () => { for (; seen < g.evHead; seen++) { const i = seen & 255; if (g.evType[i] === 'banner') banners.push([g.sc, g.evData[i]]); } };
+  const g = mk(5), banners = []; let seen = g.evHead; const drain = () => { for (; seen < g.evHead; seen++) { const i = seen & (g.evCap - 1); if (g.evType[i] === 'banner') banners.push([g.sc, g.evData[i]]); } };
   const sur = () => banners.filter(x => /HORDE|GATE CALLS/.test(x[1]));
   const boss = { alive: true, dead: false, role: 'bossA', x: 0, y: 0, z: 0 }; g.sp.push(boss);
   g.sc = AT[0] - 6; for (let t = 0; t < 12 && !g.over; t += 1 / 60) { g.step(1 / 60, idle); drain(); }
@@ -43,5 +43,6 @@ test('surges: 1 and 2 wait for a live timed boss (at most 25 s) and then fire wi
   g.sp.push({ alive: true, dead: false, role: 'bossB', x: 0, y: 0, z: 0 }); g.sc = AT[2] - 6; for (let t = 0; t < 8 && !g.over; t += 1 / 60) { g.step(1 / 60, idle); drain(); }
   assert.equal(g.surgeDone[2], 1, 'the gate-wake surge fires on time even with a timed boss alive');
 });
+
 
 

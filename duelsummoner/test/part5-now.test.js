@@ -1,4 +1,4 @@
-// Fix list part 5, NOW items. One test group per item, added as each one lands.
+﻿// Fix list part 5, NOW items. One test group per item, added as each one lands.
 import test from 'node:test'; import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js'; import { onPlayerHurt } from '../src/sim/monsters.js'; import { TRAPS } from '../src/data/cards.js';
 const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false }); g.god = true; g.spawnAcc = -1e9; return g; };
@@ -89,3 +89,4 @@ test('10: Collector\'s Eye level 5 reaches 13.75 m, and Magnet stops at the tuni
   assert.ok(Math.abs(g.mods.pickup - 1.75) < 1e-9, 'pickup ' + g.mods.pickup); assert.ok(Math.abs(CFG.xp.magnet * (1 + g.mods.pickup) - 13.75) < 1e-9, 'range ' + CFG.xp.magnet * (1 + g.mods.pickup));
   for (let i = 0; i < 12; i++) g.items.push('lodestone'); recompute(g); assert.equal(g.mods.pickup, K.magCap, 'clamped at the cap'); assert.ok(g.mods.raw.pickup > K.magCap, 'the raw sum is kept for the panel');
 });
+
