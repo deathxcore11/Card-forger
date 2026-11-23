@@ -136,7 +136,7 @@ function syncMap() {                                                       // th
     if (gateSeal) scene.remove(gateSeal); gateSeal = buildGateSeal(game.map, look); scene.add(gateSeal);
     if (grassMesh) { scene.remove(grassMesh); grassMesh.geometry.dispose(); grassMesh = null; }
     if (sceneryGroup) { scene.remove(sceneryGroup); sceneryGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); }); sceneryGroup = null; }
-    if (!/[?&]scenery=0/.test(location.search)) { sceneryGroup = buildScenery(game.map, game.stage || 0, assets); scene.add(sceneryGroup); setShadeMask(sceneryGroup.userData.mask, look); grassMesh = buildGrass(game.map, game.stage || 0, sceneryGroup.userData.scatter, sceneryGroup.userData.theme); if (grassMesh) scene.add(grassMesh); ambient.setSpots(sceneryGroup.userData.flowerSpots, game.stage || 0, game.map.hash); } else { ambient.clear(); setShadeMask(null, look); } minimap.setMap(game.map);
+    if (!/[?&]scenery=0/.test(location.search)) { sceneryGroup = buildScenery(game.map, game.stage || 0, assets); scene.add(sceneryGroup); setShadeMask(sceneryGroup.userData.mask, look); grassMesh = buildGrass(game.map, game.stage || 0, sceneryGroup.userData.scatter, sceneryGroup.userData.theme, null, scene.fog.near); if (grassMesh) scene.add(grassMesh); ambient.setSpots(sceneryGroup.userData.flowerSpots, game.stage || 0, game.map.hash); } else { ambient.clear(); setShadeMask(null, look); } minimap.setMap(game.map);
     try { renderer.compile(scene, camera); } catch (e) { /* warm-up is best effort */ }       // shaders are built behind the stage card, so the first frames do not hitch
 }
 let duelist = 'kael';
