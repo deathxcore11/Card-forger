@@ -24,6 +24,7 @@ export class Bars {
     if (!this.ok && !this._build()) return;
     const xf = g.xpNeed > 0 ? clamp01(g.xpCur / g.xpNeed) : 0, hf = g.p.maxHp > 0 ? clamp01(g.p.hp / g.p.maxHp) : 0, X = this.xp, H = this.hp;
     if (this.lv === null || g.t < 0.3) { this.lv = g.level; X.shown = X.target = X.ghost = xf; H.shown = H.target = H.ghost = hf; H.rose = -1; }
+    $('xpbar').classList.toggle('pending', !!(g.offer && g.offer.type === 'level'));       // while the level-up panel is up the bar shows a distinct pending look
     // ---- XP
     if (g.level !== this.lv) { this.lv = g.level; X.shown = X.ghost = X.target = xf; X.glint = 0; this.punch('xpnum', now); }
     else if (xf > X.target + 1e-4) { X.ghost = xf; X.glint = 1; this.log.push(['xp', now, xf]); }

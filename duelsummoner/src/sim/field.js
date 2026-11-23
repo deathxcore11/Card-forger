@@ -20,7 +20,7 @@ export function makeField(duelistId, rng) {
   f.monsters[0] = newMonster(D.start, 1, rng);
   return f;
 }
-function newMonster(id, level, rng) { return { id, level, cd: 0.3, ang: (rng ? rng() : 0) * 6.28, x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0 }; }
+function newMonster(id, level, rng) { return { id, level, cd: 0.1, ang: (rng ? rng() : 0) * 6.28, x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0 }; }
 
 export const def = id => MONSTERS[id] || FUSIONS[id];
 export const isFused = id => !!FUSIONS[id];

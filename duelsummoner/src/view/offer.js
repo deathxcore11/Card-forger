@@ -1,7 +1,8 @@
 // The offer screen: level-ups, chests, Witness Stones, the Relic Broker and shrine blessings. Plain placeholder styling.
 import { OFFER, LEVELS } from '../data/cards.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
-import { cardDef, monsterMax } from '../sim/field.js';
+import { cardDef, monsterMax, damageOf, param } from '../sim/field.js';
+import { SPELLS, TRAPS } from '../data/cards.js';
 import { takeCode, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from '../sim/input.js';
 
 const $ = id => document.getElementById(id);
@@ -26,7 +27,30 @@ function fly(btn, go, g, c) {
   const done = () => { busy = false; $('offerScreen').style.pointerEvents = ''; go(); }; a.onfinish = done;
 }
 
-function describe(c) {
+// Numeric deltas: every changed stat prints as "Stat: a -> b" with b highlighted. A new card prints its base numbers (damage and attack interval, and the rest of its attack).
+const r2 = n => String(Math.round(n * 100) / 100), arrow = (label, a, b, u) => '<div class="nl">' + label + ': ' + (a === null ? '' : r2(a) + (u || '') + ' &rarr; ') + '<b>' + r2(b) + (u || '') + '</b></div>';
+const SPELL_LABEL = { dmgMult: ['Might', 100, '%'], burnDps: ['Burn damage per second', 1, ''], burnDur: ['Burn time', 1, ' s'], markDur: ['Mark time', 1, ' s'], markBonus: ['Mark bonus', 100, '%'], cardRate: ['Card throw speed', 100, '%'], move: ['Move speed', 100, '%'], dash: ['Dash', 100, '%'], maxLp: ['Max LP', 1, ''], pickup: ['Pickup range', 100, '%'], xp: ['XP gain', 100, '%'], affPerElement: ['Damage per element fielded', 100, '%'] };
+function statLines(c, g) {
+  let h = '', L2 = c.to || 1, L1 = c.isNew ? null : L2 - 1; const D = cardDef(c.id); if (!D) return '';
+  if (c.kind === 'monster' || c.kind === 'fusion') {
+    const m1 = { id: c.id, level: L1 || 1 }, m2 = { id: c.id, level: L2 }; h += arrow('Damage', L1 === null ? null : damageOf(m1), damageOf(m2));
+    if (L1 === null) h += arrow('Attacks every', null, D.attack.cd / (1 + ((g.mods && g.mods.monsterRate) || 0)), ' s');
+    for (const [k, label, u] of [['pierce', 'Pierces', ''], ['length', 'Line length', ' m'], ['splash', 'Splash', ' m'], ['count', 'Fireballs', ''], ['marks', 'Marks', ''], ['range', 'Range', ' m'], ['arc', 'Cone', ' deg'], ['speed', 'Bolt speed', '']]) {
+      const a = param(m1, k), b = param(m2, k); if (L1 === null ? b > 0 : a !== b) h += arrow(label, L1 === null ? null : a, b, u);
+    }
+  } else if (c.kind === 'spell') {
+    const per = D.per || {}; for (const k of Object.keys(per)) { const sp = SPELL_LABEL[k]; if (!sp || typeof per[k] !== 'number') continue; h += arrow(sp[0], L1 === null ? null : per[k] * L1 * sp[1], per[k] * L2 * sp[1], sp[2]); }
+    if (D.per && D.per.drill) h += arrow('Monster hits', L1 === null ? null : D.per.drill[1] * L1 * 100, D.per.drill[1] * L2 * 100, '%');
+  } else if (c.kind === 'trap') {
+    const T = TRAPS[c.id], rc = n => T.recharge * Math.pow(T.rechargePerLevel, n - 1), dm = n => T.dmg * (1 + T.dmgPerLevel * (n - 1));
+    h += arrow('Damage', L1 === null ? null : dm(L1), dm(L2)) + arrow('Recharge', L1 === null ? null : rc(L1), rc(L2), ' s');
+  } else if (c.kind === 'oneshot') {
+    h += D.cards ? arrow('Cards', null, D.cards) + arrow('Damage each', null, D.dmg) : arrow('Heals', null, Math.max(0, Math.ceil((g.p ? g.p.maxHp - g.p.hp : 0))), ' LP');
+  }
+  return h;
+}
+
+function describe(c, g) {
   if (c.kind === 'banish') { const D = cardDef(c.id); return { D: { name: D.name, text: 'BANISH: remove this unowned card from every future offer this run.' }, kind: 'Altar action: BANISH', lv: 'Nothing on your field is lost.', fx: '' }; }
   if (c.kind === 'tribute') { const D = cardDef(c.id); return { D: { name: D.name, text: 'TRIBUTE: give up this card (level ' + c.level + ') and free its zone.' }, kind: 'Altar action: TRIBUTE', lv: 'Lost: the card and its levels. Carries forward: the next card placed in that zone starts +2 levels.', fx: '' }; }
   if (c.kind === 'final') return { D: c.id === 'close' ? { name: 'Close the Vault', text: 'Bank the win and go to the results.' } : { name: 'Duel On', text: 'The win is banked first. Then Overtime: endless hunters, a captain every 60 s, and the only place God Fusions can form.' }, kind: 'Final Altar', lv: '', fx: '' };
@@ -40,7 +64,7 @@ function describe(c) {
   let fx = '';
   if (c.kind === 'monster' && D.fxText && !c.isNew && D.fxText[c.to]) fx = '<br><b>Now: ' + D.fxText[c.to] + '</b>';
   else if (c.kind === 'monster' && D.fxText && c.isNew) fx = '<br>Level 3: ' + D.fxText[3] + '; 6: ' + D.fxText[6] + '; 10: ' + D.fxText[10];
-  return { D, kind, lv, fx };
+  return { D, kind, lv, fx: fx + '<div class="nums">' + statLines(c, g) + '</div>' };
 }
 
 const TITLES = { final: 'THE FINAL ALTAR', altar: 'ALTAR OF TRIBUTE', fusion: 'FUSION', chest: 'CARD CHEST', item: 'WITNESS STONES', shop: 'THE RELIC BROKER', blessing: 'SHRINE OF TRIBUTE' };
@@ -62,7 +86,7 @@ export function showOffer(g, act) {
   $('offerSub').textContent = SUBS[o.type] || 'Choose a card. Banish removes a card from all future offers.';
   const wrap = $('offerCards'); wrap.innerHTML = '';
   o.cards.forEach((c, i) => {
-    const { D, kind, lv, fx } = describe(c);
+    const { D, kind, lv, fx } = describe(c, g);
     const el = document.createElement('div'); el.className = 'card ' + c.rarity + (c.isNew && cardy ? ' new' : '');
     const act = c.kind === 'banish' ? 'BANISH' : c.kind === 'tribute' ? 'TRIBUTE' : 'TAKE';
     const buy = shop ? (c.sold ? '<button disabled>SOLD</button>' : '<button data-pick="' + i + '"' + (g.coins < c.price ? ' disabled' : '') + '>BUY ' + c.price + '</button>') : '<button data-pick="' + i + '">' + act + '</button>';
@@ -70,6 +94,7 @@ export function showOffer(g, act) {
       '<div class="rowBtn">' + buy + (cardy && g.field.banishes > 0 ? '<button data-ban="' + i + '">BANISH</button>' : '') + '</div>';
     wrap.appendChild(el);
   });
+  if (level && window.__dealFrom && !document.body.classList.contains('rm')) { const O = window.__dealFrom; [...wrap.children].forEach((el, i, all) => { const r = el.getBoundingClientRect(); el.style.animation = 'none'; el.animate([{ transform: 'translate(' + (O.x - (r.left + r.width / 2)) + 'px,' + (O.y - (r.top + r.height / 2)) + 'px) scale(0.12) rotate(' + ((i - (all.length - 1) / 2) * 38) + 'deg)', opacity: 0.9 }, { transform: 'none', opacity: 1 }], { duration: 340, delay: i * 45, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'backwards' }); }); }       // the cards travel out from the duelist (about 0.43 s from the bar filling to the last card landed)
   const btns = $('offerBtns'); btns.innerHTML = '';
   if (cardy) btns.insertAdjacentHTML('beforeend', '<button data-act="redraw"' + (g.field.redraws > 0 ? '' : ' disabled') + '>REDRAW (' + g.field.redraws + ')</button>');
   if (level) btns.insertAdjacentHTML('beforeend', '<button data-act="pass">PASS (+' + OFFER.passCoins + ' coins)</button>');
