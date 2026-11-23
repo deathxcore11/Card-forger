@@ -1,6 +1,6 @@
-﻿import { launch, wait } from './cdp.mjs';
+import { launch, wait } from './cdp.mjs';
 // Signatures: Cinder Card (fire) and Sky Seal (lightning). A spike of 40 kills with one element at Reach +100% (screen tier 4) fires the signature; the lab holds its clock still for the stills.   node test/browser-signature.mjs <outdir>
-const b = await launch({ out: process.argv[2], query: '?seed=1&debug' });
+const b = await launch({ out: process.argv[2], query: '?seed=1&debug&moments=full' });
 await b.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
 await wait(3000);
 console.log(await b.evalIn(`(async()=>{ const D = __ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 2200)); const g = D.game, F = await import('/src/sim/field.js'); g.god = true; g.opts.offers = false; g.items = []; for (let i = 0; i < 11; i++) g.items.push('surveyors-lens'); F.recompute(g); g.field.monsters.fill(null); g.spawnAcc = -1e9; for (let i = 0; i < g.en.max; i++) g.en.alive[i] = 0; if (D.grass) D.grass.visible = false; return JSON.stringify({ reach: g.mods.reach }); })()`));

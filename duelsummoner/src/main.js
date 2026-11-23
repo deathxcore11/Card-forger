@@ -161,7 +161,7 @@ function applySettings() {
   const s = save.settings; document.body.classList.toggle('rm', !!s.reduceMotion); chase.lag = !s.reduceMotion;
   fpsCap = [30, 60, 90, 120].includes(+s.fpsCap) ? +s.fpsCap : 60; for (const el of document.querySelectorAll('.setFps')) el.value = fpsCap;
   fovSetting = Math.max(80, Math.min(115, +s.fov || 100)); fitFov(); for (const el of document.querySelectorAll('.setFov')) el.value = fovSetting; for (const el of document.querySelectorAll('.setFovV')) el.textContent = fovSetting;
-  { const cls = deviceClass(), V = (id, d) => { const v = s[id]; if (v !== undefined) return v; const dv = defaultFor(id, cls); return dv === null || dv === undefined ? d : dv; }; fx.dmgMode = V('damageNumbers', 'all'); input.mult = { pad: V('lookSpeed', 5) / 5, drag: V('dragLook', 5) / 5, mouse: V('mouseLook', 5) / 5 }; const il = V('invertLook', 'none'); input.inv = { pad: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, drag: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, mouse: { x: false, y: !!V('invertMouse', false) } }; window.__dsVib = V('vibration', 70) / 100; }
+  { const cls = deviceClass(), V = (id, d) => { const v = s[id]; if (v !== undefined) return v; const dv = defaultFor(id, cls); return dv === null || dv === undefined ? d : dv; }; fx.dmgMode = V('damageNumbers', 'all'); fx.gentle = (new URLSearchParams(location.search).get('moments') || V('bigMoments', 'gentle')) !== 'full'; window.__dsMarker = V('duelistMarker', true) !== false; input.mult = { pad: V('lookSpeed', 5) / 5, drag: V('dragLook', 5) / 5, mouse: V('mouseLook', 5) / 5 }; const il = V('invertLook', 'none'); input.inv = { pad: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, drag: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, mouse: { x: false, y: !!V('invertMouse', false) } }; window.__dsVib = V('vibration', 70) / 100; }
   window.__dsDetail = s.detail === 'low' || s.detail === 'medium' || s.detail === 'high' ? s.detail : null; composite.on = detailLevel() !== 'low' && !/[?&]composite=0/.test(location.search); for (const el of document.querySelectorAll('.setDetail button')) el.classList.toggle('on', el.dataset.v === detailLevel());       // Detail: Low drops the composite pass and the blade grass; it applies live to the composite and to the next stage's grass
   for (const el of document.querySelectorAll('.setRM')) el.checked = !!s.reduceMotion;
   for (const el of document.querySelectorAll('.setShake')) { el.value = s.shake; el.disabled = !!s.reduceMotion; }
@@ -246,6 +246,7 @@ function padFrame(now) {
 function padPress(n) {
   if (MODE === 'play') {
     if (mapOpen) { if (n === 'select' || n === 'b' || n === 'start') toggleMap(false); return; }
+    if (n === 'a' || n === 'b') skipIntro();       // the boss name card is skipped by A or B (no prompt is drawn for it)
     if (n === 'start') setMode('pause'); else if (n === 'select') toggleMap(true);
     return;
   }
@@ -368,7 +369,7 @@ function ringMarks() {
 }
 const seenSp = new Set(), PLATES = { warden: 'THE SEALED WARDEN', idol: 'TWIN JACKAL IDOLS', pharaoh: 'THE HOLLOW PHARAOH' };
 let plateIdol = false, fovDirty = false, hopFov = 0, speedLines = 0;
-function bossIntro() {                                              // name plate for elites and the boss, plus a 2 s zoom (skip with Enter or a click)
+function bossIntro() {                                              // name plate for elites and the boss, plus a 2 s zoom (skipped by A, B, Enter or a tap; no prompt is drawn)
   for (const sp of game.sp) {
     if (!sp.alive || seenSp.has(sp)) continue; seenSp.add(sp);
     if (sp.kind === 'idol') { if (plateIdol) continue; plateIdol = true; }
@@ -436,7 +437,7 @@ function landmarkTags() {
   for (const c of game.chests) if (!c.open) add(c, 'Sealed Chest: free item', 'free', 1.9);
   return out;
 }
-let bannerUp = false, tagPulse = 0, hiddenT = 0;
+let bannerUp = false, tagPulse = 0, hiddenT = 0; const mkV = new T.Vector3(); let mkUntil = 0;
 // a tag whose anchor cannot be seen from the camera (a wall, a pylon, a trunk or a boulder on the line) is not drawn
 function tagBlocked(t) {
   const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z, N = 14, list = game.colliders ? game.colliders.list : null;
@@ -448,6 +449,7 @@ function tagBlocked(t) {
   return false;
 }
 function drawTags() {
+  { const mk = $('duelMarker'), r = actors.own && actors.own.readout, heavy = !!r && (r.areas + r.volumes >= 3 || r.keptSum > 0.08), nowM = performance.now(); if (heavy) mkUntil = nowM + 700; const on = window.__dsMarker !== false && MODE === 'play' && nowM < mkUntil; if (mk) { if (on) { mkV.set(game.p.x, game.p.y + 2.6, game.p.z).project(camera); if (mkV.z < 1) { mk.style.display = 'block'; mk.style.left = ((mkV.x + 1) / 2 * 100) + '%'; mk.style.top = ((1 - mkV.y) / 2 * 100) + '%'; } else mk.style.display = 'none'; } else mk.style.display = 'none'; } }       // the Duelist marker: a small gold chevron over the duelist while the effects are heavy
   { const bn = $('banner'); bannerUp = !!bn && bn.classList.contains('on'); }
   const list = MODE === 'play' && !mapOpen ? landmarkTags() : []; list.sort((a, b) => a.d2 - b.d2); const n = Math.min(6, list.length), host = $('tags'), w = innerWidth, h = innerHeight;
   for (let i = 0; i < Math.max(n, tagEls.length); i++) {

@@ -295,6 +295,7 @@
   .sbody .srow input[type=range] { width:min(240px, 36vw); }
   .dangerBtn { color:var(--danger) !important; border-color:rgba(224,106,90,.6) !important; }
   @media (max-height:560px) { .sbody { max-height:calc(100vh - 140px); } #menuBody:has(> .sbody) { display:flex; flex-direction:column; height:calc(100vh - 12px); } #menuBody:has(> .sbody) > .sbody { flex:1 1 auto; min-height:0; } .srow { padding:5px 2px; } }    .srow button[data-act] { padding:6px 16px; font-size:14px; }
+    #duelMarker { position:fixed; z-index:13; display:none; width:0; height:0; border-left:9px solid transparent; border-right:9px solid transparent; border-top:13px solid #E8C46E; transform:translate(-50%, -100%); filter:drop-shadow(0 0 5px rgba(232,196,110,.8)) drop-shadow(0 2px 0 #10131a); pointer-events:none; }
   </style>
 </head>
 <body>
@@ -325,7 +326,7 @@
 <div class="hud" id="fusion"></div>
 <div class="hud" id="boss"><div id="bossname">THE HOLLOW PHARAOH</div><div class="bar"><i id="bossfill"></i></div></div>
 <div id="proof" aria-hidden="true"></div>
-<div id="devbar"><button id="fsBtn" type="button">FULL SCREEN</button><span id="buildLabel"></span></div>
+<div id="duelMarker"></div><div id="devbar"><button id="fsBtn" type="button">FULL SCREEN</button><span id="buildLabel"></span></div>
 <div class="hud" id="debug" style="left:16px;top:230px;display:none"></div>
 <div class="hud" id="stats"></div>
 <div id="tags"></div>

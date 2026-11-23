@@ -1,7 +1,7 @@
 import { launch, wait } from './cdp.mjs';
 // The claimed share over a run: the same real run (Kael, a god-mode player, the game's own spawner and attacks) at 1:00, 3:00, 5:00, 7:30 and Overtime +2:00, with the Reach a build would plausibly have by then
 // (0, +30%, +70%, +100%, +150% from Surveyor's Lens stacks, +10% each). At each stop: how many screen pixels differ with the own effects drawn and with them hidden (the claimed share), the own-effect readout, one picture.   node test/browser-share.mjs <outdir>
-const b = await launch({ out: process.argv[2], query: '?seed=9&debug' });
+const b = await launch({ out: process.argv[2], query: '?seed=9&debug&moments=full' });
 await b.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
 await wait(3000);
 await b.evalIn(`(async()=>{ const D = __ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 2500)); const g = D.game; g.god = true; g.opts.offers = false; if (D.grass) D.grass.visible = false; window.__F = await import('/src/sim/field.js'); return 1; })()`);

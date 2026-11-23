@@ -1,7 +1,7 @@
-﻿import { launch, wait } from './cdp.mjs';
+import { launch, wait } from './cdp.mjs';
 // Tier 5 (Tablebreak) at the game camera on Stage 1: a 120-creature crowd, warnings on top, the three big own attacks stamped into the ground with hollow giants, the sky tinted. Measures the claimed share (pixels that differ with Tier 5 on and off),
 // the four screen edges and the horizon crossings, takes the picture, then the Tablebreak picture (the three pieces shifted 4, 6 and 8 art pixels).   node test/browser-tier5.mjs <outdir>
-const EL = process.argv[3] || 'fire', b = await launch({ out: process.argv[2], query: '?seed=1&fxlab' });
+const EL = process.argv[3] || 'fire', b = await launch({ out: process.argv[2], query: '?seed=1&fxlab&moments=full' });
 await b.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
 await b.evalIn('new Promise(r => { const t = setInterval(() => { if (window.__fxlab) { clearInterval(t); r(1); } }, 200); setTimeout(() => r(0), 20000); })'); await wait(500);
 console.log(await b.evalIn(`(async()=>{ const D = __ds, g = D.game, { spawnEnemy } = await import('/src/sim/enemies.js'), C = await import('/src/sim/combat.js'), p = g.p; g.field.monsters.fill(null); for (let i = 0; i < g.en.max; i++) g.en.alive[i] = 0; if (D.grass) D.grass.visible = false;

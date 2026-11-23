@@ -1,7 +1,7 @@
 import { launch, wait } from './cdp.mjs';
 // The FX lab and the worst case budget: opens ?fxlab, reads the ES 3.00 probe, the idle numbers, then switches Worst case on (300 enemies and every element's bursts at the pool caps) and reads draws, triangles, frame time and the
 // uploads per frame again. Pass: probe OK, draws under 150, triangles under 250,000, no page errors.   node test/browser-fxlab.mjs <outdir>
-const b = await launch({ out: process.argv[2], query: '?seed=1&fxlab' });
+const b = await launch({ out: process.argv[2], query: '?seed=1&fxlab&moments=full' });
 await b.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
 await wait(3500);
 const probe = await b.evalIn('JSON.stringify({ probe: window.__fxlab.probe, ok: window.__fxlab.probeOk })'); console.log(probe);

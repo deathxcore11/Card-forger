@@ -1,13 +1,13 @@
-﻿import test from 'node:test'; import assert from 'node:assert/strict';
+import test from 'node:test'; import assert from 'node:assert/strict';
 import { visibleRows, defaultFor, valueOf, ROWS, ROW_BY_ID } from '../src/ui/settings-schema.js';
 const n = (tab, ctx) => visibleRows(tab, ctx).length, ids = (tab, ctx) => visibleRows(tab, ctx).map(r => r.id);
 test('row counts per device class match spec 9.8', () => {
   const ph = { cls: 'phone' };
-  assert.deepEqual(['game', 'display', 'sound', 'access'].map(t => n(t, ph)), [10, 7, 6, 8]);
+  assert.deepEqual(['game', 'display', 'sound', 'access'].map(t => n(t, ph)), [10, 7, 6, 10]);       // Access has 8 in the spec plus Big moments and Duelist marker
   assert.deepEqual(ids('controls', ph), ['slideMode', 'onScreenControls', 'moveStick', 'controlSize', 'controlOpacity', 'dragLook', 'tapToUse', 'touchHaptics', 'resetControls']);
   assert.equal(n('controls', { cls: 'phone', pad: true }), 9 + 9, 'a phone with a pad adds the Controller section');
   const th = { cls: 'thor', dual: true };
-  assert.deepEqual(['game', 'display', 'sound', 'access'].map(t => n(t, th)), [9, 7, 6, 8]);
+  assert.deepEqual(['game', 'display', 'sound', 'access'].map(t => n(t, th)), [9, 7, 6, 10]);
   assert.equal(n('game', { cls: 'thor', dual: false }), 10, 'Map overlay size shows only while Dual screen is Off');
   assert.deepEqual(ids('controls', th), ['slideMode', 'glyphs', 'confirmButton', 'stickLayout', 'buttonMap', 'lookSpeed', 'lookEasing', 'invertLook', 'deadZone', 'vibration', 'tapToUse', 'touchHaptics', 'resetControls']);
   assert.ok(ids('display', th).includes('dualScreen') && !ids('display', th).includes('edgePadding') && !ids('display', th).includes('fullScreen'));

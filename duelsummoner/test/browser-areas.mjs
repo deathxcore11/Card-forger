@@ -8,6 +8,6 @@ const setup = reach => b.evalIn(`(async()=>{ const D = __ds; if (!D.game.p.hp ||
   window.__slots = []; for (let k = 0; k < 14; k++) { spawnEnemy(g, 'husk', { x: p.x + ((k % 5) - 2) * 1.6, z: p.z - 6 - (k / 5 | 0) * 6 }); const i = g.lastSlot; g.en.spd[i] = 0; g.en.hp[i] = 1e7; __slots.push(i); }
   D.camHold = { x: p.x + 0.5, y: p.y + 24, z: p.z + 12, lx: p.x, ly: p.y, lz: p.z - 12 }; await new Promise(r => setTimeout(r, 900)); return g.reachK; })()`);
 console.log('reach 0, reachK', await setup(0)); await wait(500); await b.shot('areas_r0_a'); await wait(350); await b.shot('areas_r0_b');
-console.log('reach +150%, reachK', await setup(1.5)); await wait(500); await b.shot('areas_r150_a'); await wait(350); await b.shot('areas_r150_b');
+console.log('reach +150%, reachK', await setup(1.5)); await wait(500); await b.shot('areas_r150_a'); await wait(350); await b.shot('areas_r150_b'); console.log('duelist marker shown at +150%:', await b.evalIn(`(async()=>{ const m = document.getElementById('duelMarker'); let shown = 0; for (let i = 0; i < 20; i++) { if (getComputedStyle(m).display === 'block') shown++; await new Promise(r => setTimeout(r, 60)); } return JSON.stringify({ shownOf20: shown, left: m.style.left, top: m.style.top, readout: __ds.actors.own.readout }); })()`)); await b.shot('areas_marker');
 console.log('errors', JSON.stringify(await b.evalIn('JSON.stringify(window.__errs.slice(0,3))')));
 b.close(); setTimeout(() => process.exit(0), 300);

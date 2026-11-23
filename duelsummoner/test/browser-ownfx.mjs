@@ -1,6 +1,6 @@
 import { launch, wait } from './cdp.mjs';
 // 1. The governor: hold the Own stress scene for 6 s and print the kept sum, the raw kept sum and the governor each second (it must settle at or under the Auto limit of 0.35 and stay there).
-const b = await launch({ out: process.argv[2], query: '?seed=1&fxlab' });
+const b = await launch({ out: process.argv[2], query: '?seed=1&fxlab&moments=full' });
 await b.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
 await wait(3500);
 await b.evalIn('window.__fxlab.ownStress(true)');

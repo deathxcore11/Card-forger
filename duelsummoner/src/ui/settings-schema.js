@@ -1,4 +1,4 @@
-﻿// The Settings rows as data (menus-spec section 9). Each row: id, tab, label, kind, choices, def (per device class; null = the row is not shown on that class), optional section and show(ctx).
+// The Settings rows as data (menus-spec section 9). Each row: id, tab, label, kind, choices, def (per device class; null = the row is not shown on that class), optional section and show(ctx).
 // ctx = { cls: 'phone'|'thor'|'portal'|'pc', pad, dual, gyro, keyboard, signedIn, inRun, values }. Defaults are resolved at read time (defaultFor), so a default that changes later reaches everyone who never touched the row.
 export const CLASSES = ['phone', 'thor', 'portal', 'pc'];
 export const TABS = ['game', 'display', 'controls', 'sound', 'access', 'account'];
@@ -66,6 +66,8 @@ export const ROWS = [
   seg('leyThread', 'access', 'Ley thread', ['subtle', 'normal', 'strong'], all('normal')),
   seg('holdConfirm', 'access', 'Hold to confirm', ['hold', 'twice'], all('hold')),
   sw('monoAudio', 'access', 'Mono audio', all(false)),
+  seg('bigMoments', 'access', 'Big moments', ['gentle', 'full'], all('gentle')),       // Gentle skips the impact frames, the Tablebreak shift and the boss-fall flash, and halves hit-stop
+  sw('duelistMarker', 'access', 'Duelist marker', all(true)),       // a small marker over the duelist when the effects are heavy
   // ---- Account ----
   R('profile', 'account', 'Profile', 'action', null, all(null)),
   sw('postRuns', 'account', 'Post runs to leaderboards', all(true), { show: c => !!c.signedIn }),
