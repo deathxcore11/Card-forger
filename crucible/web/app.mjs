@@ -14,6 +14,7 @@ import { LAB_DEFAULTS, LAB_ORDER, DEPTH_SET, labConfig } from './labs.mjs';
 import { aimFor } from './aim.mjs';
 import { F, fitConsole, yb, xr, cx0, cy0, viewSize, ledgeW, pq, lb, lbr, box, gauge, frame, win, carveImg, carve } from './ps.mjs';
 import * as R3 from './raster.mjs';
+import { pixelText } from './pxtext.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
 import './sound.mjs';
 import { runFault, okProfile } from './saves.mjs'; // sets window.LMAudio; the cue() hook below is all the page knows about sound
@@ -741,7 +742,7 @@ function bootScreen(p) {
     app.classList.add('ps'); app.classList.remove('phone', 'era'); document.body.classList.add('ps'); fitConsole(app);
     { const n = document.getElementById('turn'); if (n) n.remove(); } // the old look's turn-your-phone note: the frame turns by itself
     app.innerHTML = '<div id="boot" class="ab"><canvas id="bootcoin" class="ab" width="64" height="64"></canvas><i class="ab bw"></i><b class="ab lb bpc"></b></div>';
-    b = document.getElementById('boot'); coinLoop();
+    b = document.getElementById('boot'); coinLoop(); pixelText(); // the body face struck on whole pixels while the pictures load
   }
   { const w = b.querySelector('.bw'), c = carve('NOW LOADING', 16, () => { if (booting) bootScreen(); }); if (c && w.dataset.f !== c.url) { w.dataset.f = c.url; w.innerHTML = `<img src="${c.url}" width="${c.w}" height="${c.h}" alt="NOW LOADING">`; } } // carved in the capitals of the book headings, once their face is in
   if (p !== undefined) bootScreen.p = p; p = bootScreen.p; // a new frame size lays out the last share again
@@ -1597,7 +1598,7 @@ function drawConsole(screen) {
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
   barFits(); fitScrolls();
   if (!drawConsole.fonts && document.fonts) { // a text face may arrive after the drawing that first asks for it (the body face only with the first page of words): measure again
-    drawConsole.fonts = 1; const again = () => { if (app.classList.contains('ps')) { barFits(); fitScrolls(); } };
+    drawConsole.fonts = 1; const again = () => { if (app.classList.contains('ps')) { barFits(); fitScrolls(); } }; pixelText();
     document.fonts.ready.then(again); if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', again); }
   fit();
 }
