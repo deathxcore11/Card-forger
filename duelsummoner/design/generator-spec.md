@@ -888,3 +888,14 @@ His words: maps have fog of war, cannot be janky, must be challenging and fun to
 - Variety budget: 4 silhouettes x district orders x keystone positions x about 60 chunks with variants x quest table. The 300-map batch must show no two maps with the same (silhouette, district order, keystone cell, first three spine chunks).
 - Every seal is fully reproducible: same seal, same map, same quests, same fog result for the same inputs. Daily seal and friend challenges depend on it.
 - Each stage gets one "postcard" moment by rule: a spine sample where the mega landmark, one pocket tell and the gate district are all in view at once.
+
+### 18.5 Built for the base kit, not the broken build (Randall 22 Nov 2026, 7:03 PM ET)
+
+His words: early on you may have no double jump and no way to get very high, so you platform to reach things and to explore the whole map, but moving through must be easy and never feel bad.
+
+- **Everything is reachable with the starting kit.** 100% of the map, every pocket, every reward and 100% fog reveal must be reachable with one jump, slide and dash at base move speed and base jump height, with zero items and zero upgrades. This extends V3/V15 from "required links" to **every reward and every explorable cell** (new gating check **V20**). Air jumps, extra height and speed are only ever shortcuts, never keys.
+- **The spine is a walk.** Spawn to gate needs no jump harder than a 0.35 m auto-step kerb. Nobody is ever blocked from finishing a stage by platforming.
+- **Difficulty by stage, on base kit:** Stage 1 pocket chains use gaps at 60 to 75% of base reach and rises at or under 1.2 m; Stage 2 goes to 85%; Stage 3 to 92%. Nothing is ever placed above 92% of base reach, so a clean jump always has slack.
+- **Late-game builds skip, they do not unlock.** Height and air-jump builds get roof lines and coin lines that save time (G2/AIR links). Each one must have a base-kit route to the same place within 1.6 x the path length.
+- **Flow rules:** ledges within 0.4 m of the jump apex are grabbed by an auto-mantle (no pixel-perfect lips); 0.1 s coyote time and 0.12 s jump buffer always on; run speed is kept through hops, slides and drops in a chain; no move in a chain needs a full stop or a camera turn over 90 degrees; ramps and hop stairs give a slower no-skill way up to every tier, so a parkour chain is always the fast way, never the only way to change tier (pockets excepted, and their fail drop returns you to the chain start within 6 s).
+- **Bot proof:** a base-kit bot with no upgrades must reach every pocket and reveal 100% of the fog on 50 seeds per stage. Any cell it cannot reach fails the map.
