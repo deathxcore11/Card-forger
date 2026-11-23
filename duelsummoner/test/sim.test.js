@@ -1,4 +1,4 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js';
 import { heightAt, WALL } from '../src/sim/terrain.js';
@@ -62,6 +62,17 @@ test('jump feel: a short tap is a short hop, a press just before landing still j
     const c = new Game(1); noEnemies(c); c.mods.airJumps = 0; c.p.grounded = false; c.p.y = 0.5; c.p.vy = 0; c.p.coyote = 0; c.step(1 / 60, { ...idle, jump: true }); assert.ok(c.p.vy < 0, 'no coyote left: no jump'); }
   // buffer: pressed 3 ticks before landing, then released; the duelist lifts off as he lands
   { const g = new Game(1); noEnemies(g); g.mods.airJumps = 0; g.p.y = 0.12; g.p.grounded = false; g.p.vy = -3; let lifted = false; for (let i = 0; i < 12; i++) { g.step(1 / 60, { ...idle, jump: i === 0 }); if (i > 0 && g.p.vy > 5) lifted = true; } assert.ok(lifted, 'buffered jump fired on landing'); }
+});
+
+import { mantle } from '../src/sim/player.js';
+test('auto-mantle: a jump that comes up just short of a ledge lifts you onto it; too high, too fast a fall, or no push does nothing', () => {
+  const C = { radius: 0.4, mantle: 0.9 }, ledge = (x, z) => (x > 1 ? 1.2 : 0), mk = o => ({ x: 0.8, y: 0.5, z: 0, vy: 1, grounded: false, ...o });
+  const a = mk({}); assert.equal(mantle(a, 1, 0, C, ledge, 50), true); assert.ok(a.grounded && Math.abs(a.y - 1.2) < 1e-9 && a.vy === 0 && a.x > 1.2, 'up on the ledge');
+  assert.equal(mantle(mk({ y: 0.1 }), 1, 0, C, ledge, 50), false, 'ledge 1.1 m above is out of reach');
+  assert.equal(mantle(mk({ vy: -9 }), 1, 0, C, ledge, 50), false, 'falling fast');
+  assert.equal(mantle(mk({}), 0, 0, C, ledge, 50), false, 'not pushing into it');
+  assert.equal(mantle(mk({ grounded: true }), 1, 0, C, ledge, 50), false, 'on the ground the step-up rule applies');
+  assert.equal(mantle(mk({}), 1, 0, C, () => 60, 50), false, 'a wall (a solid wall height) is not a ledge');
 });
 
 test('dash covers 4 m, has a 1.1 s cooldown and no damage while dashing', () => {

@@ -1,7 +1,7 @@
 // Duelist movement: run, jump, dash (no damage while it lasts), slide (gains speed downhill).
 import { CFG } from '../data/config.js';
 import { atan2, cos, exp, sin } from './dmath.js';
-import { heightAt, moveXZ } from './terrain.js';
+import { heightAt, moveXZ, WALL } from './terrain.js';
 import { breakVasesNear } from './world.js';
 
 export function makePlayer() {
@@ -12,6 +12,14 @@ export function makePlayer() {
 export const isDashing = p => p.dashT > 0;
 
 // cmd: { f, r (-1..1), yaw, jump, dash, slide }. Forward is relative to the camera yaw, on the ground plane only.
+// Auto-mantle: a jump that comes up just short of a ledge still gets you onto it. Pushing into a wall in the air, with its top within reach above your feet and you not falling hard,
+// lifts you onto the top and one step in. Always on (no input, no skill), so early game with no double jump never punishes a jump that was nearly right.
+export function mantle(p, dirx, dirz, C, heightAtFn, wall) {
+  if (p.grounded || p.vy < -4 || (!dirx && !dirz)) return false;
+  const reach = C.radius + 0.35, top = heightAtFn(p.x + dirx * reach, p.z + dirz * reach), rise = top - p.y;
+  if (top >= wall || rise <= 0.05 || rise > C.mantle) return false;
+  p.x += dirx * (C.radius + 0.3); p.z += dirz * (C.radius + 0.3); p.y = top; p.vy = 0; p.grounded = true; return true;
+}
 export function updatePlayer(g, dt, cmd) {
   const p = g.p, C = CFG.player, S = C.slide;
   if (g.oaths.still) cmd.dash = false;                                   // Still Oath: no dash
@@ -60,6 +68,7 @@ export function updatePlayer(g, dt, cmd) {
     moveX = p.vx * dt; moveZ = p.vz * dt;
   }
   const blocked = moveXZ(p, moveX, moveZ, C.radius, C.stepUp);
+  if (blocked && !p.grounded && hasInput && mantle(p, mx, mz, C, heightAt, WALL)) { p.mantled = (p.mantled || 0) + 1; g.emit('mantle', p.x, p.y, p.z); }                  // the air jump that was nearly enough
   if (blocked & 1) p.vx = 0;
   if (blocked & 2) p.vz = 0;
 
