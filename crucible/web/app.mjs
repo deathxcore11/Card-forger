@@ -857,7 +857,10 @@ function psCard(inst, x, y, o = {}) {
   return `<button class="cd ${role}${up ? ' up' : ''}${down ? ' down' : ''} ${o.cls || ''}" style="${pos}" ${o.attrs || ''} data-id="${inst.id}" aria-label="${esc(c.name)}"><i class="art" style="${cpic(inst.id, 40)}"></i>${mon ? `<i class="n1">${a}</i><i class="n2">${d}</i>` : `<i class="n1">${role === 'fuel' ? 'FUEL' : role.toUpperCase()}</i>`}${inst.e ? (CART.has('enchant-' + inst.e) ? `<img class="en" src="${cimg('enchant-' + inst.e)}" width="16" height="16" alt="">` : '<i class="en"></i>') : ''}${o.badge ? `<i class="bd">${o.badge}</i>` : o.pip ? `<i class="pp">${o.pip}</i>` : ''}</button>`;
 }
 // A portrait. Someone with no face of their own (a rival of the halls) shows the crest of the pyramid's keepers.
-// A card on a plinth, 68 x 92: its picture at 64.
+// A card on a plinth, 68 x 92: its picture at 64. On a short plinth the card may stand with its last 6 rows (the blank
+// under its numbers and its border) behind the name plate in front of it; with the 2 pixels a plinth keeps between its
+// picture and its plate, the card then reaches CARD_FOOT rows past the room kept for its picture.
+const CARD_FOOT = 8;
 function psCardL(inst, x, y, o = {}) {
   const c = card(inst.id), role = roleOf(db, inst.id), mon = role === 'monster';
   return `<i class="cd l ${role} ${o.cls || ''}" style="left:${x}px;top:${y}px"><i class="art" style="${cpic(inst.id, 64)}"></i>${mon ? `<i class="n1">ATK ${c.atk + (inst.t ? 300 : 0)}</i><i class="n2">DEF ${c.def + (inst.t ? 300 : 0)}</i>` : `<i class="n1">${role === 'fuel' ? 'FUEL' : role.toUpperCase()}</i>`}${inst.e ? (CART.has('enchant-' + inst.e) ? `<img class="en" src="${cimg('enchant-' + inst.e)}" width="16" height="16" alt="">` : '<i class="en"></i>') : ''}</i>`;
@@ -1762,11 +1765,19 @@ function psOffer({ title, items, bar0 = '', right = '', room = 'doors', key, sel
   let k = n; while (k > 1 && lay(k).sw < need) k--;
   const { sw, at } = lay(k), w0 = G.offWin && G.offWin.at === key ? G.offWin.first : 0, first = Math.max(0, Math.min(n - k, sel < w0 ? sel : sel >= w0 + k ? sel - k + 1 : w0));
   G.offWin = { at: key, first };
-  const plate = sw - 8, rows = ph - 22 >= Math.max(...items.map(x => x.tall || 68)) ? Math.min(2, Math.max(...items.slice(first, first + k).map(x => nameLines(x.name, plate).length))) : 1;
+  // A name keeps 2 pixels clear at each end of its plate when that costs it no line it has; a name that needs the plate's
+  // whole width to show its words on the lines there are is set across all of it. The plates take as many lines as the
+  // longest name shown needs, up to three, as far as the pictures leave room: a card may stand with its foot behind its
+  // plate, down to its numbers (CARD_FOOT).
+  const deep = Math.max(...items.map(x => (x.tall || 68) - (x.foot || 0))), most = Math.max(1, Math.min(3, Math.floor((ph - 4 - deep) / 9)));
+  const plate = sw - 8, rows = Math.min(most, Math.max(...items.slice(first, first + k).map(x => nameLines(x.name, plate - 4).length)));
+  const plateLines = name => { const loose = nameLines(name, plate - 4); return loose.length <= rows ? loose : nameLines(name, plate, rows); };
   // Each plinth's dots lie on the frame's grid in step with the dimming's, so the room shows through every plinth alike
-  // (the dots start inside its 1-pixel border); the shadow on a plinth not chosen lies on the pixels between.
-  const plinths = items.slice(first, first + k).map((x, j) => { const i = first + j, L = at(j) + 2, lines = nameLines(x.name, plate, rows);
-    return `<button class="pln${i === sel ? ' on' : ''}${x.off ? ' off' : ''}" style="left:${L}px;top:${y0}px;width:${sw - 4}px;height:${ph}px;--mesh:${(L + 1) & 1}px ${(y0 + 1) & 1}px;--mesh2:${L & 1}px ${(y0 + 1) & 1}px" ${i === sel ? (x.off ? 'aria-disabled="true"' : `data-a="${x.a}"`) : `data-a="${selA ? selA(i) : 'osel:' + i}"`} aria-label="${esc(x.name)}">${x.pic((sw - 4) >> 1, ph - 4 - 9 * rows)}<b class="pnm" data-name="${esc(x.name)}" style="top:${ph - 2 - 9 * rows}px;height:${9 * rows}px;padding-top:${(rows - lines.length) * 9 >> 1}px">${lines.map(esc).join('<br>')}</b></button>`; }).join('')
+  // (the dots start inside its 1-pixel border); the shadow on a plinth not chosen lies on the pixels between. What stands
+  // on a plinth is centred inside its border, where the plinth lays it out (pic is given that middle, and the height
+  // over the name plate less a 2-pixel gap).
+  const plinths = items.slice(first, first + k).map((x, j) => { const i = first + j, L = at(j) + 2, lines = plateLines(x.name);
+    return `<button class="pln${i === sel ? ' on' : ''}${x.off ? ' off' : ''}" style="left:${L}px;top:${y0}px;width:${sw - 4}px;height:${ph}px;--mesh:${(L + 1) & 1}px ${(y0 + 1) & 1}px;--mesh2:${L & 1}px ${(y0 + 1) & 1}px" ${i === sel ? (x.off ? 'aria-disabled="true"' : `data-a="${x.a}"`) : `data-a="${selA ? selA(i) : 'osel:' + i}"`} aria-label="${esc(x.name)}">${x.pic((sw - 6) >> 1, ph - 4 - 9 * rows)}<b class="pnm" data-name="${esc(x.name)}" style="top:${ph - 2 - 9 * rows}px;height:${9 * rows}px;padding-top:${(rows - lines.length) * 9 >> 1}px">${lines.map(esc).join('<br>')}</b></button>`; }).join('')
     + (first > 0 ? `<i class="mrl" style="left:${Math.max(1, at(0) - 3)}px;top:${y0 + (ph >> 1) - 4}px"></i>` : '') + (first + k < n ? `<i class="mrr" style="left:${Math.min(vs.w - 5, at(k - 1) + sw - 1)}px;top:${y0 + (ph >> 1) - 4}px"></i>` : '');
   const head = tc ? `<img class="ab" src="${tc.url}" width="${tc.w}" height="${tc.h}" style="left:${(vs.w - tc.w) >> 1}px;top:3px" alt="${esc(title)}">` : `<b class="ab lb g" style="left:${(vs.w - title.length * 6) >> 1}px;top:5px">${esc(title)}</b>`;
   // The room's models stand under its dimming, dimmed with it; the one the room is about (kept clear of the plinths)
@@ -1791,9 +1802,13 @@ function psRight(r, extra = '') {
 const kindWord = id => ({ C: 'CHARM', G: 'GIFT', M: 'MASTERWORK' })[RELICS[id].kind];
 const plain = h => String(h).replace(/<br>/g, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 const cardItem = (e, a, extra = {}) => { const c = card(e.id), mon = db.isMonster(e.id); convertSheets(64);
-  return { pic: (cx, h) => psCardL(e, cx - 34, Math.max(0, (h - 92) >> 1)), tall: 92, name: c.name, card: e.id, a, text: plain(pickNote(e.id, G.run).replace(/^<b>[^<]*<\/b>(<br>)?/, '')),
+  return { pic: (cx, h) => psCardL(e, cx - 34, Math.max(0, (h - 92) >> 1)), tall: 92, foot: CARD_FOOT, name: c.name, card: e.id, a, text: plain(pickNote(e.id, G.run).replace(/^<b>[^<]*<\/b>(<br>)?/, '')),
     facts: [mon ? esc(`${c.attr} · LEVEL ${c.level} · ${c.type}`.toUpperCase()) : esc(roleOf(db, e.id).toUpperCase()), `WEIGHT ${weightOf(db, e.id)}`], ...extra }; };
 const relicItem = (id, a, extra = {}) => ({ pic: (cx, h) => `<i class="ab" style="left:${cx - 32}px;top:${Math.max(0, (h - 64) >> 1)}px">${medal(id, 64)}</i>`, name: RELICS[id].name, a, text: RELICS[id].text, facts: [kindWord(id)], ...extra });
+// A few Gifts offered as one, their medals at 32 in a row 2 pixels apart, centred inside the plinth's border; when the row
+// is wider than that, a pile: two over one, each row centred.
+const giftPile = ids => (cx, h) => { const per = ids.length * 34 - 2 <= 2 * cx ? ids.length : Math.ceil(ids.length / 2), w = per * 34 - 2, hh = Math.ceil(ids.length / per) * 34 - 2;
+  return `<i class="ab" style="left:${cx - (w >> 1)}px;top:${Math.max(0, (h - hh) >> 1)}px;width:${w}px;display:flex;flex-wrap:wrap;justify-content:center;gap:2px">${ids.map(id => medal(id, 32)).join('')}</i>`; };
 function psReward() {
   const r = G.run, o = r.offer, key = `${r.floor}.${r.chamber}.${o.kind}.${JSON.stringify(o.options || o.kind)}`;
   const skip = pq(4, yb(180), 88, 'TAKE NOTHING', 'skip');
@@ -1805,7 +1820,7 @@ function psReward() {
       bar0: 'A Gift lasts the whole run.', right: r.rerolls ? pq(4, yb(180), 88, `DEAL AGAIN ${r.rerolls}`, 'reroll') : '' });
   }
   if (o.kind === 'charm') return psOffer({ title: 'PICK A CHARM', key, room: 'room-vault', items: o.options.map((id, i) => relicItem(id, `pick:${i}`)), bar0: `Charm slots ${r.charms.length}/${db.config.charmSlots}.`, right: skip });
-  if (o.kind === 'guardian') return psOffer({ title: 'GUARDIAN REWARD', key, room: 'room-guardian', bar0: 'The weight cap rises by 20.', items: o.options.map((g, i) => g.kind === 'card' ? cardItem(g.entry, `pick:${i}`, { text: g.text }) : g.kind === 'masterwork' ? relicItem(g.id, `pick:${i}`, { text: g.text + ' ' + RELICS[g.id].text }) : { name: g.ids.length + ' GIFTS', a: `pick:${i}`, text: g.text + ' ' + g.ids.map(id => RELICS[id].name + ': ' + RELICS[id].text).join(' '), facts: g.ids.map(id => esc(RELICS[id].name.toUpperCase())), pic: (cx, h) => `<i class="ab" style="left:${cx - g.ids.length * 17}px;top:${Math.max(0, (h - 32) >> 1)}px;display:flex;gap:2px">${g.ids.map(id => medal(id, 32)).join('')}</i>` }) });
+  if (o.kind === 'guardian') return psOffer({ title: 'GUARDIAN REWARD', key, room: 'room-guardian', bar0: 'The weight cap rises by 20.', items: o.options.map((g, i) => g.kind === 'card' ? cardItem(g.entry, `pick:${i}`, { text: g.text }) : g.kind === 'masterwork' ? relicItem(g.id, `pick:${i}`, { text: g.text + ' ' + RELICS[g.id].text }) : { name: g.ids.length + ' GIFTS', a: `pick:${i}`, text: g.text + ' ' + g.ids.map(id => RELICS[id].name + ': ' + RELICS[id].text).join(' '), facts: g.ids.map(id => esc(RELICS[id].name.toUpperCase())), pic: giftPile(g.ids) }) });
   if (o.kind === 'treasure') return psOffer({ title: 'TREASURE', key, room: 'room-vault', kind: 'treasure', bar0: 'Take one. The rest stay in the vault.', items: o.options.map((g, i) => g.kind === 'card' ? cardItem(g.entry, `pick:${i}`) : relicItem(g.id, `pick:${i}`)) });
   if (o.kind === 'sanctum') { const full = r.sparks >= db.config.sparks, cap = weightCap(db, r), add = db.config.prices.sanctumCap;
     const big = (t, sub) => (cx, h) => `<b class="ab big2" style="left:0;width:${cx * 2}px;top:${Math.max(0, (h >> 1) - 14)}px">${t}</b><b class="ab lb d" style="left:0;width:${cx * 2}px;text-align:center;top:${Math.max(0, (h >> 1) + 12)}px">${sub}</b>`;
@@ -2011,10 +2026,11 @@ function psCodex() {
 // ---- choosing a Forger, before a descent
 function psForger() {
   const ids = FORGER_IDS.concat(P.forgers.includes('last') || labs.secret ? ['last'] : []), heatMax = heatOpen(), h = G.pickHeat, hr = labs.heat ? HEAT_RULES.filter(x => x.n <= h) : [];
-  const vs = viewSize(), sw = Math.min(104, Math.floor((vs.w - 8) / ids.length)), fs = sw - 4 >= 68 ? 64 : 48;
-  const items = ids.map(id => { const f = FORGERS[id], own = P.forgers.includes(id), fc = faceName(id) + (fs === 48 ? '-48' : '');
+  // Each face at 64 on a plinth wide enough for it (68 with its frame, inside the plinth's border), else at 48: sized
+  // from the plinth it stands on, as wide as the row of plinths, or the turning row, makes it.
+  const items = ids.map(id => { const f = FORGERS[id], own = P.forgers.includes(id);
     return { name: own ? shortName(f.name) : id === 'last' && !own ? 'HIDDEN' : shortName(f.name), a: 'descend', take: 'DESCEND', off: !own,
-      pic: (cx, hh) => CART.has(fc) ? `<i class="ab pf${fs === 48 ? ' s48' : ''}${own ? '' : ' pflk'}" style="left:${cx - fs / 2 - 2}px;top:${Math.max(0, (hh - fs) >> 1) - 2}px"><img src="${cimg(fc)}" width="${fs}" height="${fs}" alt=""></i>` : `<i class="ab pf none${fs === 48 ? ' s48' : ''}" style="left:${cx - fs / 2 - 2}px;top:${Math.max(0, (hh - fs) >> 1) - 2}px"></i>`,
+      pic: (cx, hh) => { const fs = 2 * cx >= 68 ? 64 : 48, fc = faceName(id) + (fs === 48 ? '-48' : ''); return CART.has(fc) ? `<i class="ab pf${fs === 48 ? ' s48' : ''}${own ? '' : ' pflk'}" style="left:${cx - fs / 2 - 2}px;top:${Math.max(0, (hh - fs) >> 1) - 2}px"><img src="${cimg(fc)}" width="${fs}" height="${fs}" alt=""></i>` : `<i class="ab pf none${fs === 48 ? ' s48' : ''}" style="left:${cx - fs / 2 - 2}px;top:${Math.max(0, (hh - fs) >> 1) - 2}px"></i>`; },
       facts: own ? [esc(f.tag.toUpperCase()), esc(`POWER: ${f.power}`.toUpperCase())] : ['LOCKED'],
       text: own ? `${ruleText(f.rule)} ${f.power}: ${f.powerText}` + (labs.long ? ' ' + plain(roadLine(id)) : '') : id === 'last' && !P.forgers.includes('last') ? 'Nobody says how. The guardians remember things as they fall, and the Codex keeps what they say.' : `To unlock: ${FORGER_FEATS[id].text}` }; });
   const sel = Math.max(0, ids.indexOf(G.pickForger)), pick = ids[sel], F0 = FORGERS[pick];
@@ -2034,7 +2050,7 @@ function psKit() {
   const r = G.run, key = 'kit.' + r.offer.map(k => k.kit + k.deck.length).join();
   return psOffer({ title: 'PICK A STARTER KIT', key, room: 'room-forgers', bar0: r.builds ? `This descent carries ${r.builds.map(f => FAMILY_NAME[f]).join(' and ')} Gifts.` : '', right: r.redeal ? pq(4, yb(180), 88, 'DEAL AGAIN', 'redeal') : '',
     items: r.offer.map((k, i) => { const best = k.deck.slice().sort((a, b) => cardValue(db, b) - cardValue(db, a))[0]; convertSheets(64);
-      return { name: k.name, a: `kit:${i}`, take: 'TAKE KIT', card: best.id, tall: 92, pic: (cx, h) => psCardL(best, cx - 34, Math.max(0, (h - 92) >> 1)), facts: [`${k.deck.length} CARDS · WEIGHT ${deckWeight(db, k.deck)}`, esc(`BEST: ${card(best.id).name}`.toUpperCase())], text: plain(summary(k.deck)) }; }) });
+      return { name: k.name, a: `kit:${i}`, take: 'TAKE KIT', card: best.id, tall: 92, foot: CARD_FOOT, pic: (cx, h) => psCardL(best, cx - 34, Math.max(0, (h - 92) >> 1)), facts: [`${k.deck.length} CARDS · WEIGHT ${deckWeight(db, k.deck)}`, esc(`BEST: ${card(best.id).name}`.toUpperCase())], text: plain(summary(k.deck)) }; }) });
 }
 function psCharm() {
   const r = G.run, key = 'charm.' + r.offer.options.join();

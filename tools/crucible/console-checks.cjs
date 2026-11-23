@@ -14,7 +14,8 @@
 //           pixels (read from a screenshot: a soft or shifted pixel is not flat);
 //   fit     no text cut off by its box (the text bar may be, when it shows its more marker; a plinth's name plate may
 //           not), nothing outside the frame, nothing written in a pillar crossing out of it or lying on another word or
-//           plaque there, no two plaques on top of each other;
+//           plaque there, no two plaques on top of each other, a plinth's name plate never on its card's picture or
+//           numbers (a card's foot may stand behind it);
 //   names   a name set short on a plinth, the ledge or a pillar (its whole in data-name) is never cut inside a word: it
 //           shows whole words of the name, or an initial and a full stop, the last perhaps followed by two dots;
 //   scroll  a box of pages in a window or a book ends at least 2 pixels above the plaques under it, no line of words
@@ -175,6 +176,14 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
           if (!vis(e)) continue;
           const full = e.dataset.name.toUpperCase().split(/\s+/).filter(Boolean), shown = e.innerText.toUpperCase().split(/\s+/).filter(Boolean);
           for (const w of shown) { const x = w.replace(/\.\.$/, ''); if (!full.includes(x) && !(/^[A-Z]\.$/.test(x) && full.some(f => f[0] === x[0]))) out.push(`${name(e)} "${e.innerText.replace(/\s+/g, ' ').slice(0, 24)}": the name "${e.dataset.name}" cut inside a word ("${w}")`); }
+        }
+        // a card may stand with its foot behind its plinth's name plate, never with its numbers or its picture behind it;
+        // what stands on a plinth stands inside its border, centred to within a pixel
+        for (const pl of app.querySelectorAll('.pln')) {
+          for (const e of pl.children) { if (e.classList.contains('pnm') || !vis(e)) continue; const l = e.offsetLeft, r = pl.clientWidth - l - e.offsetWidth; if (l < 0 || r < 0 || Math.abs(l - r) > 1) out.push(`${name(pl)}: ${name(e)} stands ${l} and ${r} pixels inside its border, left and right`); }
+          const nm = pl.querySelector('.pnm'); if (!nm || !vis(nm)) continue;
+          const [, ny] = fr(nm);
+          for (const e of pl.querySelectorAll('.cd .art, .cd .n1, .cd .n2, .pf')) { const [, y, , h] = fr(e); if (vis(e) && y + h > ny) out.push(`${name(pl)} "${nm.textContent}": its name plate lies on ${name(e)} (${y + h - ny} rows)`); }
         }
         // (a plaque scrolled out of its box is not on the screen, so it overlaps nothing)
         const pqs = [...app.querySelectorAll('.pq')].filter(vis).map(e => [e, e.getBoundingClientRect()]);
