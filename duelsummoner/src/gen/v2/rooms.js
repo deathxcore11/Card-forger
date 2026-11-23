@@ -10,7 +10,7 @@ export function placeRoomDressing(ctx, m, spineDist) {
   const keyOf = (r) => regs[r];
   regs.forEach((R, k) => {
     const district = mac.districts[R.district], cx = (R.centre % C) * 8 + 4, cz = ((R.centre / C) | 0) * 8 + 4, style = k === 0 ? 'court' : k === 1 ? 'meadow' : ROOM_STYLES[(k - 2 + rot) % ROOM_STYLES.length];
-    const room = { id: k, name: district.name, district: R.district, tier: R.tier, style, cx: 0, cz: 0, landmark: null };
+    const dup = regs.slice(0, k).filter((q) => mac.districts[q.district].name === district.name).length, room = { id: k, name: dup ? district.name + ' ' + (dup + 1) : district.name, district: R.district, tier: R.tier, style, cx: 0, cz: 0, landmark: null };
     // the centre landmark: the nearest flat spot to the room's middle, 9 m off the spine, 25 m from the spawn
     const cand = []; for (let dz = -26; dz <= 26; dz += 2) for (let dx = -26; dx <= 26; dx += 2) { const x = cx + dx, z = cz + dz; if (x < 6 || z < 6 || x >= N - 6 || z >= N - 6) continue; if (m.reg[z * N + x] !== k) continue; cand.push([dx * dx + dz * dz, z * N + x]); }
     cand.sort((a, b) => a[0] - b[0] || a[1] - b[1]);

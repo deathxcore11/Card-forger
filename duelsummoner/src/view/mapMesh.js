@@ -136,6 +136,7 @@ function buildV2(map, look) {
     for (let k = 0; k <= n; k++) { const x = ax + (bx - ax) * k / n, z = az + (bz - az) * k / n, cx = Math.floor((x + 200) / 2), cz = Math.floor((z + 200) / 2); for (let dz = -1; dz <= 0; dz++) for (let dx = -1; dx <= 0; dx++) { const px = cx + dx, pz = cz + dz; if (px >= 0 && pz >= 0 && px < NC && pz < NC) road[pz * NC + px] = 1; } } }
   const mixc = (a, b, t) => { const m = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
   const dim = (c, k) => ((Math.min(255, Math.round(((c >> 16) & 255) * k)) << 16) | (Math.min(255, Math.round(((c >> 8) & 255) * k)) << 8) | Math.min(255, Math.round((c & 255) * k)));
+  const ROOM_TINT = [0xd9a86a, 0xc9b27a, 0xb98a6a, 0xd8c08a, 0xa8a07a, 0xc99a80, 0xbfae92];
   const colour = (cx, cz) => {
     const c = cz * NC + cx, f = Fc[c], h = Hc[c], j = hash2(cx * 31 + 5, cz * 17 + 9);
     if (Wl[c]) return look.rim[1];
@@ -144,6 +145,7 @@ function buildV2(map, look) {
     if (f & 256) return mixc(look.sand[(j * 3) | 0], 0xffffff, 0.22);                           // the arena floor
     let col = look.sand[(j * 2.99) | 0]; if (h > 0.4) col = mixc(col, look.rim[1], Math.min(0.7, h / 9));
     if (f & 2048 || h < -0.3) col = dim(col, 0.72);
+    if (map.roomOf) { const r = map.roomOf[cz * NC + cx]; if (r !== 255) col = mixc(col, ROOM_TINT[r % ROOM_TINT.length], 0.16); }           // each room has its own small shift inside the stage palette
     return dim(col, 0.97 + 0.06 * hash2(cx * 5 + 1, cz * 3 + 7));
   };
   const corner = (cx, cz, a, b) => {                                                           // the height of corner (a, b) of cell (cx, cz): the average of the cells round it that are within 0.5 m of this one
