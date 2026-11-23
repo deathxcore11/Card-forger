@@ -171,24 +171,36 @@ function attempt(seed, arch, k) {
 
 // ---- dressing and far dressing: plain lists, drawn by the view
 function dressing(b, seed, enc, rings, st) {
-  const { G, sp, gt, blocks, P } = b, rn = rngOf(seed ^ 0xD7E55), out = { cacti: [], dead: [], logs: [], pots: [], head: null }, solid = [], grid = new Map();
-  const keep = [{ x: sp[0], z: sp[1], r: 22 }, { x: gt[0], z: gt[1], r: 32 }]; for (const e of enc) keep.push({ x: e.x, z: e.z, r: e.type === 'broker' ? 12 : 6 }); for (const q of rings) keep.push({ x: q.x, z: q.z, r: 18 });
+  const { G, sp, gt, blocks } = b, rn = rngOf(seed ^ 0xD7E55), out = { cacti: [], dead: [], logs: [], pots: [], heads: [], head: null, stalls: b.stalls || [] }, solid = [], grid = new Map();
+  const keep = [{ x: sp[0], z: sp[1], r: 22 }, { x: gt[0], z: gt[1], r: 34 }]; for (const e of enc) keep.push({ x: e.x, z: e.z, r: e.type === 'broker' ? 12 : 7 }); for (const q of rings) keep.push({ x: q.x, z: q.z, r: 18 });
   const free = (x, z, pad) => { for (const k of keep) { const rr = k.r + (pad || 0); if ((x - k.x) * (x - k.x) + (z - k.z) * (z - k.z) < rr * rr) return false; } for (const bl of blocks) if (dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 1 + (pad || 0)) return false; return true; };
   const key = (x, z) => Math.floor(x / 8) * 4096 + Math.floor(z / 8), put = (kind, x, z) => { const k = key(x, z); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push([kind, x, z]); };
-  const near = (kind, x, z, d) => { for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const a = grid.get(key(x + i * 8, z + j * 8)); if (a) for (const o of a) if ((kind === '*' || o[0] === kind) && (o[1] - x) * (o[1] - x) + (o[2] - z) * (o[2] - z) < d * d) return true; } return false; };
+  const near = (kind, x, z, d) => { for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) { const a = grid.get(key(x + i * 8, z + j * 8)); if (a) for (const o of a) if ((kind === '*' || o[0] === kind) && (o[1] - x) * (o[1] - x) + (o[2] - z) * (o[2] - z) < d * d) return true; } return false; };
   const dens = (x, z) => 0.6 * vnoise(seed & 0xffff, x / 70, z / 70) + 0.4 * vnoise((seed >>> 7) & 0xffff, x / 28, z / 28);
   const gy = (x, z) => groundAt(b.map, x, z), spot = () => [(rn() - 0.5) * 344, (rn() - 0.5) * 344];
   const okAt = (x, z, pad, maxSlope) => free(x, z, pad) && slopeAt(G, x, z) < (maxSlope || 0.42);
   const rnd = rn;
   out.heads = (b.heads || []).map(h => ({ x: r2(h.x), y: r2(gy(h.x, h.z)), z: r2(h.z), rot: h.rot, s: 1, kind: h.kind })); for (const h of out.heads) { put('h', h.x, h.z); solid.push([h.x, h.y, h.z, 1.9, 6]); keep.push({ x: h.x, z: h.z, r: 4 }); } out.head = out.heads[0] || null;
-  const fill = (n, tries, kind, sep, ok, make) => { let k = 0; for (let t = 0; t < tries && k < n; t++) { const [x, z] = spot(); if (!ok(x, z) || near(kind, x, z, sep)) continue; make(x, z); put(kind, x, z); k++; } };
-  fill(70, 4000, 'c', 11, (x, z) => dens(x, z) > 0.3 && okAt(x, z, 2), (x, z) => { const y = gy(x, z), s = 0.85 + rnd() * 0.5; out.cacti.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.55 * s), r2(3.5 * s)]);
-    if (rnd() < 0.4) { const a = rnd() * TAU, d = 2.2 + rnd() * 1.5, x2 = x + cosA(a) * d, z2 = z + sinA(a) * d; if (okAt(x2, z2, 1)) { const y2 = gy(x2, z2), s2 = 0.6 + rnd() * 0.5; out.cacti.push([r2(x2), r2(y2), r2(z2), r2(s2), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x2), r2(y2), r2(z2), r2(0.55 * s2), r2(3.5 * s2)]); } } });
-  fill(42, 3000, 'd', 14, (x, z) => okAt(x, z, 2), (x, z) => { const y = gy(x, z), s = 0.8 + rnd() * 0.6; out.dead.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.4 * s), r2(4 * s)]); });
-  fill(120, 5000, 'l', 9, (x, z) => okAt(x, z, 1, 0.5), (x, z) => { const a = rnd() * TAU, len = 3 + rnd() * 6, dx = cosA(a) * len / 2, dz = sinA(a) * len / 2, x0 = x - dx, z0 = z - dz, x1 = x + dx, z1 = z + dz; out.logs.push([r2(x0), r2(gy(x0, z0) - 0.12), r2(z0), r2(x1), r2(gy(x1, z1) - 0.12), r2(z1), r2(0.3 + rnd() * 0.25), (rnd() * 2) | 0]); });
-  fill(30, 3000, 'p', 16, (x, z) => okAt(x, z, 2, 0.35), (x, z) => { const n = 2 + ((rnd() * 3) | 0); for (let q = 0; q < n; q++) { const a = rnd() * TAU, d = q ? 0.8 + rnd() * 1.2 : 0, px = x + cosA(a) * d, pz = z + sinA(a) * d; out.pots.push([r2(px), r2(gy(px, pz)), r2(pz), r2(0.8 + rnd() * 0.6), r2(rnd() * TAU), (rnd() * 3) | 0]); } });
-  // a beam beside every ruin block and every mesa: a long grey beam lying at an angle, half sunk
-  for (const bl of blocks) { const a = rnd() * TAU, d = reachOf(bl) + 2 + rnd() * 3, x = bl.cx + cosA(a) * d, z = bl.cz + sinA(a) * d; if (!free(x, z, 1) || slopeAt(G, x, z) > 0.5) continue; const a2 = rnd() * TAU, len = 4 + rnd() * 5, dx = cosA(a2) * len / 2, dz = sinA(a2) * len / 2; out.logs.push([r2(x - dx), r2(gy(x - dx, z - dz) - 0.15), r2(z - dz), r2(x + dx), r2(gy(x + dx, z + dz) - 0.15), r2(z + dz), r2(0.4 + rnd() * 0.2), 2]); }
+  const cactus = (x, z, s) => { const y = gy(x, z); out.cacti.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.55 * s), r2(3.5 * s)]); put('c', x, z); };
+  const dead = (x, z, s) => { const y = gy(x, z); out.dead.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.4 * s), r2(4 * s)]); put('d', x, z); };
+  const beam = (x, z, len, rad, kind) => { const a = rnd() * TAU, dx = cosA(a) * len / 2, dz = sinA(a) * len / 2; out.logs.push([r2(x - dx), r2(gy(x - dx, z - dz) - 0.15), r2(z - dz), r2(x + dx), r2(gy(x + dx, z + dz) - 0.15), r2(z + dz), r2(rad), kind]); put('l', x, z); };
+  const potc = (x, z) => { const n = 3 + ((rnd() * 3) | 0); for (let q = 0; q < n; q++) { const a = rnd() * TAU, d = q ? 0.8 + rnd() * 1.3 : 0, px = x + cosA(a) * d, pz = z + sinA(a) * d; out.pots.push([r2(px), r2(gy(px, pz)), r2(pz), r2(0.9 + rnd() * 0.7), r2(rnd() * TAU), (rnd() * 3) | 0]); } put('p', x, z); };
+  // anchors: every block, monument and reward site. Dense groups of 4 to 9 cacti (2 to 6 m, mixed heights) stand 7 to 15 m off each, so the ring round the reward itself stays open for circling
+  const anchors = []; for (const bl of blocks) anchors.push({ x: bl.cx, z: bl.cz, r: reachOf(bl) + 2, blk: bl }); for (const h of out.heads) anchors.push({ x: h.x, z: h.z, r: 6 }); for (const e of enc) anchors.push({ x: e.x, z: e.z, r: 8 });
+  for (const an of anchors) {
+    if (!an.blk && rnd() < 0.2) continue;
+    for (let g = 0; g < 2 && !(g && rnd() < 0.5); g++) { const a0 = rnd() * TAU, d0 = an.r + 3 + rnd() * 7, cx = an.x + cosA(a0) * d0, cz = an.z + sinA(a0) * d0, n = 4 + ((rnd() * 6) | 0); let k = 0;
+      for (let t = 0; t < 40 && k < n; t++) { const a = rnd() * TAU, d = 0.8 + rnd() * 4.5, x = cx + cosA(a) * d, z = cz + sinA(a) * d; if (!okAt(x, z, 1, 0.45) || near('c', x, z, 1.7)) continue; const s = k === 0 ? 1.3 + rnd() * 0.25 : 0.6 + rnd() * 0.7; cactus(x, z, s); k++; } }
+    if (rnd() < 0.55) { const a0 = rnd() * TAU, d0 = an.r + 4 + rnd() * 8, n = 1 + ((rnd() * 3) | 0); for (let k = 0; k < n; k++) { const x = an.x + cosA(a0) * d0 + (rnd() - 0.5) * 7, z = an.z + sinA(a0) * d0 + (rnd() - 0.5) * 7; if (okAt(x, z, 2) && !near('d', x, z, 6)) dead(x, z, 1.1 + rnd() * 0.5); } }
+    if (an.blk) { const bl = an.blk, a0 = rnd() * TAU, d0 = Math.max(bl.rx, bl.rz) * 1.05 + 4 + rnd() * 3, x = bl.cx + cosA(a0) * d0, z = bl.cz + sinA(a0) * d0; if (okAt(x, z, 1.5, 0.35)) potc(x, z); const a1 = a0 + 2 + rnd() * 2, d1 = d0 + 3 + rnd() * 3, x1 = bl.cx + cosA(a1) * d1, z1 = bl.cz + sinA(a1) * d1; if (free(x1, z1, 1) && slopeAt(G, x1, z1) < 0.5) beam(x1, z1, 7 + rnd() * 6, 0.45 + rnd() * 0.25, 2); }
+  }
+  const fill = (n, tries, kind, sep, ok, make) => { let k = 0; for (let t = 0; t < tries && k < n; t++) { const [x, z] = spot(); if (!ok(x, z) || near(kind, x, z, sep)) continue; make(x, z); k++; } };
+  fill(60, 4000, 'c', 12, (x, z) => dens(x, z) > 0.3 && okAt(x, z, 2), (x, z) => cactus(x, z, 0.9 + rnd() * 0.6));
+  fill(26, 3000, 'd', 16, (x, z) => okAt(x, z, 2), (x, z) => dead(x, z, 1.1 + rnd() * 0.5));
+  fill(90, 5000, 'l', 10, (x, z) => okAt(x, z, 1, 0.5), (x, z) => beam(x, z, 5 + rnd() * 7, 0.4 + rnd() * 0.3, (rnd() * 2) | 0));
+  fill(10, 2000, 'p', 20, (x, z) => okAt(x, z, 2, 0.35), (x, z) => potc(x, z));
+  // coverage: every 28 m cell of the square has a piece within 25 m of its centre
+  for (let cz = -168; cz <= 168; cz += 28) for (let cx = -168; cx <= 168; cx += 28) { if (near('*', cx, cz, 22)) continue; for (let t = 0; t < 12; t++) { const x = cx + (rnd() - 0.5) * 16, z = cz + (rnd() - 0.5) * 16; if (!okAt(x, z, 2, 0.45)) continue; const r = rnd(); if (r < 0.45) cactus(x, z, 1.0 + rnd() * 0.5); else if (r < 0.7) dead(x, z, 1.1 + rnd() * 0.5); else beam(x, z, 6 + rnd() * 6, 0.45 + rnd() * 0.25, 2); break; } }
   return { dress: out, solid };
 }
 function farDressing(P, seed) {                                                                    // large rock blocks, dead trees and ruin pieces on the sand beyond the line, 190 to 380 m out; sparse
@@ -209,17 +221,22 @@ export function openMap(seedLo, stageIndex, archOverride) {
     let st = analyse(G, sp); if (st.slopeShare < 0.45 || st.openFrac < 0.55 || st.range < 14 || st.walkFrac < 0.97 || st.flatShare > 0.04) continue;
     const reach = (x, z) => st.reach[Math.floor(z + HALF - OFF) * S + Math.floor(x + HALF - OFF)] === 1;
     if (!reach(gt[0], gt[1])) continue;
-    // rewards stand on open, nearly flat sand beside a block, one at a time and far apart: a ring of spots round every block, the first that is flat, reachable and 52 m from the others
-    const used = [], enc = [], types = ['cchest', 'shrine', 'cchest', 'altar', 'cchest', 'stone', 'cchest', 'shrine', 'cchest', 'stone'];
-    const clear = (x, z, d) => used.every(u => dist(u.x, u.z, x, z) >= d) && dist(x, z, sp[0], sp[1]) > 45 && dist(x, z, gt[0], gt[1]) > 50 && Math.abs(x) < 150 && Math.abs(z) < 150 && !blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 2);
-    const flatOk = (x, z) => spread(G, x, z, 4) <= 0.8 && slopeAt(G, x, z) < 0.18 && reach(x, z);
-    const order = blocks.map((bl, i) => [rn(), i]).sort((p, q) => p[0] - q[0]).map(p => blocks[p[1]]);
-    for (const bl of order) { if (enc.length >= types.length) break; const a0 = rn() * TAU; let got = false; for (let t = 0; t < 24 && !got; t++) { const ang = a0 + t * 0.2618, d = reachOf(bl) + 3 + (t % 3) * 1.5, x = bl.cx + cosA(ang) * d, z = bl.cz + sinA(ang) * d; if (clear(x, z, 52) && flatOk(x, z)) { used.push({ x, z }); enc.push({ type: types[enc.length], x, z, y: 0, beside: true }); got = true; } } }
-    for (let t = 0; t < 3000 && enc.length < types.length; t++) { const x = (rn() - 0.5) * 290, z = (rn() - 0.5) * 290; if (clear(x, z, 55) && flatOk(x, z)) { used.push({ x, z }); enc.push({ type: types[enc.length], x, z, y: 0 }); } }
+    // points of interest gather loosely round blocks, tall walls and monuments (2 or 3 per cluster, 14 m or more apart); clusters stand 70 m or more apart with open sand between
+    const enc = [], types = ['cchest', 'shrine', 'cchest', 'altar', 'cchest', 'stone', 'cchest', 'shrine', 'cchest', 'stone'];
+    const anchors = blocks.map(bl => ({ x: bl.cx, z: bl.cz, r: Math.max(bl.rx, bl.rz) * 1.1 })).concat(a.heads.map(h => ({ x: h.x, z: h.z, r: 4 })));
+    const gapOk = (x, z, d) => enc.every(e => dist(e.x, e.z, x, z) >= d);
+    const farOk = (x, z) => dist(x, z, sp[0], sp[1]) > 45 && dist(x, z, gt[0], gt[1]) > 50 && Math.abs(x) < 150 && Math.abs(z) < 150 && !blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 2) && !a.heads.some(h => dist(h.x, h.z, x, z) < 8);
+    const flatOk = (x, z) => spread(G, x, z, 4) <= 1.6 && slopeAt(G, x, z) < 0.3 && reach(x, z);
+    const order = anchors.map(an => [rn(), an]).sort((p, q) => p[0] - q[0]).map(p => p[1]), picked = [];
+    for (const an of order) { if (enc.length >= types.length) break; if (picked.some(q => dist(q.x, q.z, an.x, an.z) < 70)) continue; const want = 2 + (rn() < 0.4 ? 1 : 0); let got = 0;
+      for (let t = 0; t < 80 && got < want && enc.length < types.length; t++) { const ang = rn() * TAU, d = an.r + 4 + rn() * 14, x = an.x + cosA(ang) * d, z = an.z + sinA(ang) * d; if (farOk(x, z) && gapOk(x, z, 14) && flatOk(x, z)) { enc.push({ type: types[enc.length], x, z, y: 0, beside: true }); got++; } }
+      if (got) picked.push(an); }
+    for (let t = 0; t < 4000 && enc.length < types.length; t++) { const x = (rn() - 0.5) * 290, z = (rn() - 0.5) * 290; if (farOk(x, z) && gapOk(x, z, 40) && flatOk(x, z)) enc.push({ type: types[enc.length], x, z, y: 0 }); }
     if (enc.length < types.length) continue;
     let fc = null; for (let r = 14; r <= 28 && !fc; r += 2) for (let a2 = 0; a2 < 16 && !fc; a2++) { const x = sp[0] + cosA(a2 * TAU / 16) * r, z = sp[1] + sinA(a2 * TAU / 16) * r; if (spread(G, x, z, 3) < 0.9 && reach(x, z) && !blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 3)) fc = { type: 'cchest', x, z, y: at(G, x, z), free: true }; }
     if (!fc) continue; enc.push(fc);
-    let bk = null; for (let t = 0; t < 600 && !bk; t++) { const x = (rn() - 0.5) * 260, z = (rn() - 0.5) * 260, d = dist(x, z, sp[0], sp[1]); if (d > 60 && d < 150 && spread(G, x, z, 10) < 2.2 && slopeAt(G, x, z) < 0.25 && reach(x, z) && clear(x, z, 40) && !near2(enc, x, z, 30)) bk = { type: 'broker', x, z, y: at(G, x, z) }; }
+    let bk = null, stalls = [];
+    for (const bl of blocks.filter(q => q.tone === 0).sort(() => rn() - 0.5)) { if (bk) break; for (let t = 0; t < 30 && !bk; t++) { const ang = rn() * TAU, d = Math.max(bl.rx, bl.rz) * 1.05 + 5 + rn() * 4, x = bl.cx + cosA(ang) * d, z = bl.cz + sinA(ang) * d; if (dist(x, z, sp[0], sp[1]) > 50 && farOk(x, z) && gapOk(x, z, 14) && spread(G, x, z, 5) < 1.3 && slopeAt(G, x, z) < 0.25 && reach(x, z)) { bk = { type: 'broker', x, z, y: at(G, x, z) }; stalls.push({ x: r2(x + cosA(ang + 3.1416) * 3), z: r2(z + sinA(ang + 3.1416) * 3), rot: r2(ang) }); } } }
     if (!bk) continue; enc.push(bk);
     const rings = []; for (let t = 0; t < 1500 && rings.length < 2; t++) { const x = (rn() - 0.5) * 270, z = (rn() - 0.5) * 270; if (spread(G, x, z, 15) > 3.2 || !reach(x, z) || blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 18)) continue; if (dist(x, z, sp[0], sp[1]) < 60 || dist(x, z, gt[0], gt[1]) < 60 || rings.some(q => dist(q.x, q.z, x, z) < 80) || enc.some(e => dist(e.x, e.z, x, z) < 22)) continue; rings.push({ x, z, r: 14, y: at(G, x, z) }); }
     if (!rings.length) continue;
@@ -227,7 +244,7 @@ export function openMap(seedLo, stageIndex, archOverride) {
     for (const e of enc) { const big = e.type === 'broker'; e.y = pad(G, e.x, e.z, big ? 7 : 3, big ? 15 : 8); }
     for (const q of rings) q.y = pad(G, q.x, q.z, 14, 26);
     st = analyse(G, sp); if (st.walkFrac < 0.97) continue;
-    return assemble({ arch, k, G, sp, gt, enc, rings, st, blocks, P, heads: a.heads, start: a.start }, seed, stageIndex);
+    return assemble({ arch, k, G, sp, gt, enc, rings, st, blocks, P, heads: a.heads, start: a.start, stalls }, seed, stageIndex);
   }
   return null;
 }

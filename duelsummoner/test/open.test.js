@@ -28,17 +28,23 @@ test('open desert: every dune style makes a rolling sand sheet that is mostly op
     assert.ok(m.encounters.some(e => e.free), 'a free chest near the start'); assert.ok(m.bossRings.length >= 1);
     // rewards stand on open sand beside a block (never on a block), far apart
     const rw = m.encounters.filter(e => !e.free && e.type !== 'broker'); let beside = 0;
-    for (const e of rw) { for (const b of m.blocks) assert.ok(blockProf(b, e.x, e.z) === 0, 'a reward on a block'); if (m.blocks.some(b => Math.hypot(b.cx - e.x, b.cz - e.z) < Math.max(b.rx, b.rz) * 1.25 + 8)) beside++; }
-    assert.ok(beside >= Math.floor(rw.length * 0.4), a + ' beside blocks ' + beside + ' of ' + rw.length);
-    for (let i = 0; i < rw.length; i++) for (let j = i + 1; j < rw.length; j++) assert.ok(Math.hypot(rw[i].x - rw[j].x, rw[i].z - rw[j].z) >= 50, 'rewards far apart');
+    for (const e of rw) { for (const b of m.blocks) assert.ok(blockProf(b, e.x, e.z) === 0, 'a reward on a block'); if (m.blocks.some(b => Math.hypot(b.cx - e.x, b.cz - e.z) < Math.max(b.rx, b.rz) * 1.1 + 19) || m.dress.heads.some(h => Math.hypot(h.x - e.x, h.z - e.z) < 24)) beside++; }
+    assert.ok(beside >= Math.floor(rw.length * 0.8), a + ' beside blocks or monuments ' + beside + ' of ' + rw.length);
+    // loose clusters with open stretches: nothing stacks (14 m or more apart), most have a neighbour within 40 m, and some stand alone for 45 m or more
+    { const nn = rw.map(e => Math.min(...rw.filter(f => f !== e).map(f => Math.hypot(e.x - f.x, e.z - f.z)))); assert.ok(Math.min(...nn) >= 14, a + ' nothing stacks ' + Math.min(...nn)); assert.ok(nn.filter(d => d <= 40).length >= rw.length * 0.5, a + ' clustered'); const far = rw.filter(e => rw.filter(f => f !== e && Math.hypot(e.x - f.x, e.z - f.z) < 45).length === 0).length; assert.ok(far >= 1 || m.blocks.length > 0, 'open stretches'); }
+    const bk = m.encounters.find(e => e.type === 'broker'); assert.ok(m.blocks.some(b => b.tone === 0 && Math.hypot(b.cx - bk.x, b.cz - bk.z) < Math.max(b.rx, b.rz) * 1.05 + 10), a + ' shop beside a ruin block'); assert.equal(m.dress.stalls.length, 1);
     // the line: the cells beyond it are wall for the sim, the square inside is sand
     for (let k = 0; k < SIM; k++) assert.equal(m.heights[k], 99, 'outside the square is wall');
     assert.ok(m.heights[(HALF) * SIM + HALF + 177] < 50 && m.heights[(HALF) * SIM + HALF + 179] >= 99, 'wall begins at the line');
     // dressing: 2 to 3 monuments, plenty of cacti, dead trees, logs and pots; far dressing beyond the line
-    assert.ok(m.dress.heads.length >= 2 && m.dress.heads.length <= 3, 'monuments'); assert.ok(m.dress.cacti.length >= 50 && m.dress.dead.length >= 20 && m.dress.logs.length >= 80 && m.dress.pots.length >= 20, a + ' dressing');
+    assert.ok(m.dress.heads.length >= 2 && m.dress.heads.length <= 3, 'monuments'); assert.ok(m.dress.cacti.length >= 150 && m.dress.dead.length >= 25 && m.dress.logs.length >= 80 && m.dress.pots.length >= 25, a + ' dressing');
+    // dense cactus groups of 4 to 9 with mixed heights (2 to 7 m), dead trees 5 to 9 m, beams long and fat
+    { const C = m.dress.cacti; let grouped = 0; for (const c of C) if (C.filter(o => o !== c && Math.hypot(o[0] - c[0], o[2] - c[2]) < 6).length >= 3) grouped++; assert.ok(grouped >= C.length * 0.4, a + ' grouped cacti ' + grouped + ' of ' + C.length); const hs = C.map(c => 3.9 * c[3]); assert.ok(Math.min(...hs) >= 2 && Math.max(...hs) <= 7.5 && Math.max(...hs) - Math.min(...hs) >= 2.5, a + ' cactus heights'); for (const d of m.dress.dead) assert.ok(4.8 * d[3] >= 4.8 && 4.8 * d[3] <= 9, 'dead tree height'); assert.ok(m.dress.logs.filter(l => Math.hypot(l[3] - l[0], l[5] - l[2]) >= 5 && l[6] >= 0.4).length >= 60, a + ' long fat beams'); }
+    // on foot, a piece within 25 m and three within 60 m from nearly every open spot
+    { const pcs = [...m.dress.cacti, ...m.dress.dead, ...m.dress.pots].map(q => [q[0], q[2]]).concat(m.dress.logs.map(q => [(q[0] + q[3]) / 2, (q[2] + q[5]) / 2]), m.dress.heads.map(h => [h.x, h.z]), m.blocks.map(b => [b.cx, b.cz])); let n25 = 0, n60 = 0, N = 0; for (let i = 0; i < 500; i++) { const x = (((i * 7919) % 2999) / 2999 - 0.5) * 320, z = (((i * 104729) % 3001) / 3001 - 0.5) * 320; N++; let c25 = 0, c60 = 0; for (const q of pcs) { const d = Math.hypot(q[0] - x, q[1] - z); if (d < 25) c25++; if (d < 60) c60++; } if (c25 >= 1) n25++; if (c60 >= 3) n60++; } assert.ok(n25 / N >= 0.95 && n60 / N >= 0.95, a + ' coverage ' + n25 / N + ' ' + n60 / N); }
     assert.ok(m.far.rocks.length >= 30 && m.far.dead.length >= 30 && m.far.ruins.length >= 10, 'far dressing'); for (const r of m.far.rocks) assert.ok(Math.abs(r[0]) > 190 || Math.abs(r[2]) > 190, 'far rock past the line');
     // at least 60 percent of the ground is open for packs: nothing solid or steep there
-    const sol = m.solid.length; assert.ok(sol < 200, 'few solid pieces ' + sol);
+    const sol = m.solid.length; assert.ok(sol < 450, 'few solid pieces ' + sol);
   }
 });
 test('open desert: the same seed gives the same ground, different seeds differ in dunes, rocks and where things stand, and it only loads behind the option', () => {

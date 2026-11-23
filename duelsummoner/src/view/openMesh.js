@@ -17,6 +17,32 @@ function streakTex() {
   const tex = new T.CanvasTexture(cv); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.anisotropy = 4; return tex;
 }
 
+// the boundary line: dark geometry lying on the sand along the four sides, 1.8 screen pixels wide at the very least at any distance (and 24 cm wide up close). Each strip vertex is pushed sideways in screen space by the vertex shader.
+function edgeLine(map) {
+  const pos = [], other = [], side = [], tt = [], idx = []; let n = 0;
+  for (let s = 0; s < 4; s++) { const horiz = s < 2, sg = s % 2 ? 1 : -1, P = u => horiz ? [u, groundAt(map, u, sg * LINE) + 0.1, sg * LINE] : [sg * LINE, groundAt(map, sg * LINE, u) + 0.1, u];
+    for (let u = -LINE; u < LINE; u += 2) { const a = P(u), b = P(Math.min(LINE, u + 2)); for (const [tv, sd] of [[0, -1], [0, 1], [1, 1], [1, -1]]) { pos.push(a[0], a[1], a[2]); other.push(b[0], b[1], b[2]); tt.push(tv); side.push(sd); } idx.push(n, n + 1, n + 2, n, n + 2, n + 3); n += 4; } }
+  const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('aB', new T.Float32BufferAttribute(other, 3)); g.setAttribute('aT', new T.Float32BufferAttribute(tt, 1)); g.setAttribute('aS', new T.Float32BufferAttribute(side, 1)); g.setIndex(idx);
+  const u = Object.assign({ uRes: { value: new T.Vector2(1280, 720) }, uCol: { value: new T.Color(LINE_COL) } }, T.UniformsUtils.clone(T.UniformsLib.fog));
+  const mat = new T.ShaderMaterial({ uniforms: u, fog: true, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3,
+    vertexShader: `uniform vec2 uRes; attribute vec3 aB; attribute float aT; attribute float aS;
+    #include <fog_pars_vertex>
+    void main() {
+      vec3 pa = position, pb = aB; vec4 ca = projectionMatrix * modelViewMatrix * vec4(pa, 1.0), cb = projectionMatrix * modelViewMatrix * vec4(pb, 1.0);
+      vec4 c = mix(ca, cb, aT); vec2 d = (cb.xy / max(cb.w, 0.01) - ca.xy / max(ca.w, 0.01)) * uRes; float l = length(d); d = l > 1e-5 ? d / l : vec2(1.0, 0.0);
+      vec2 perp = vec2(-d.y, d.x); float worldPx = 0.12 * projectionMatrix[1][1] / max(c.w, 0.01) * uRes.y * 0.5, hp = max(0.9, worldPx * 0.5);
+      c.xy += perp * aS * hp * 2.0 / uRes * c.w; gl_Position = c;
+      vec4 mvPosition = modelViewMatrix * vec4(mix(pa, pb, aT), 1.0);
+      #include <fog_vertex>
+    }`,
+    fragmentShader: `uniform vec3 uCol;
+    #include <fog_pars_fragment>
+    void main() { gl_FragColor = vec4(uCol, 1.0);
+      #include <fog_fragment>
+    }` });
+  const m = new T.Mesh(g, mat); m.frustumCulled = false; m.onBeforeRender = r => { const v = r.getDrawingBufferSize(new T.Vector2()); u.uRes.value.copy(v); }; return m;
+}
+
 export function buildOpen(map, look) {
   const group = new T.Group(), B = new Builder(), O = new Builder(), D = new Builder(), Ln = new Builder(), blocks = map.blocks || [], wind = map.dune ? map.dune.wind : 0, cw = Math.cos(wind), sw = Math.sin(wind);
   // under a block the view ground is the plain dune (the box drawn by openDressing hides it), so the 2 m grid leaves no teeth round the foot
@@ -40,12 +66,10 @@ export function buildOpen(map, look) {
   patch(B, lin(-LINE, LINE, 2), lin(-LINE, LINE, 2));                                           // the playable square, 2 m cells
   const FAR = 400, SO = 6, SA = 4, east = lin(LINE, FAR, SO), west = east.map(v => -v).reverse(), along = lin(-LINE, LINE, SA), tall = lin(-FAR - 2, FAR + 2, SA);     // beyond the line: 6 m cells outward, 4 m along the edge
   patch(O, east, tall); patch(O, west, tall); patch(O, along, east); patch(O, along, west);
-  // the boundary line: a thin dark strip lying on the sand along the four sides, following the ground
-  { const w = 0.12, lift = 0.1; for (let s = 0; s < 4; s++) { const horiz = s < 2, sg = s % 2 ? 1 : -1; for (let t = -LINE; t < LINE; t += 2) { const p = (u, v) => horiz ? [u, groundAt(map, u, v) + lift, v] : [v, groundAt(map, v, u) + lift, u];
-      const a = p(t, sg * (LINE - w)), b = p(t + 2, sg * (LINE - w)), c = p(t + 2, sg * (LINE + w)), d = p(t, sg * (LINE + w)); Ln.quad(a, b, c, d, [0, 1, 0], LINE_COL); } } }
+  const lineMesh = edgeLine(map);
   addDressing(D, map);
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
-  const tex = streakTex(), lineMesh = Ln.mesh(false, fadeU), meshes = [B.mesh(false, fadeU), O.mesh(false, fadeU), D.mesh(false, fadeU)]; lineMesh.material.polygonOffset = true; lineMesh.material.polygonOffsetFactor = -3; lineMesh.material.polygonOffsetUnits = -3;
+  const tex = streakTex(), meshes = [B.mesh(false, fadeU), O.mesh(false, fadeU), D.mesh(false, fadeU)];
   for (const m of meshes.slice(0, 2)) { const p = m.geometry.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv[i * 2] = (x * cw + z * sw) / 24; uv[i * 2 + 1] = (-x * sw + z * cw) / 12; } m.geometry.setAttribute('uv', new T.BufferAttribute(uv, 2)); m.material.map = tex; m.material.needsUpdate = true; }
   group.add(...meshes, lineMesh); group.userData.tris = (B.pos.length + O.pos.length + D.pos.length) / 9 | 0;
   return group;

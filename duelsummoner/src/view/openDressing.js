@@ -89,23 +89,41 @@ function gateway(D, map) {
   const sIn = P(0, 1.1, y + 5.6); rod(D, sIn, [sIn[0] + nx * 0.05, sIn[1], sIn[2] + nz * 0.05], 1.0, 1.0, 16, DK, true, true);
 }
 // ---- blocks: a crisp box drawn at the foot of the sim's steep side (15 % into the rise), with a flat top, banded walls, a row of dark window slits high on the long faces and a doorway low on one face
-const BLK = [{ face: 0xf2dcae, top: 0xf6e6c2, bands: [0.9, 0.96, 1.0], sl: 0x6a4a2c }, { face: 0xe2a361, top: 0xeab777, bands: [0.82, 0.91, 1.0], sl: 0x5a3a20 }, { face: 0xf0b98a, top: 0xf6d2ac, bands: [0.86, 0.94, 1.0], sl: 0x6a3f28 }];
+const BLK = [{ face: 0xf8e8c4, top: 0xfcf3da, shade: 0xdea56a, frame: 0xefdfb8, bands: [0.94, 0.98, 1.0], sl: 0x5a3f28 }, { face: 0xe8a766, top: 0xf0bb7c, shade: 0xc47a42, frame: 0xefd2a0, bands: [0.88, 0.94, 1.0], sl: 0x4d321e }, { face: 0xf3c094, top: 0xf8d6b0, shade: 0xd98a5c, frame: 0xf3d6b4, bands: [0.9, 0.96, 1.0], sl: 0x5c3a26 }];
+// a light frame with a dark pane set in a wall: centre (cx, y, cz), tangent (tx, tz), outward normal (nx, nz), width and height
+function pane(D, K, cx, y, cz, tx, tz, nx, nz, w, h) {
+  const q = (o, hw, y0, y1, col) => D.quad([cx + nx * o - tx * hw, y0, cz + nz * o - tz * hw], [cx + nx * o + tx * hw, y0, cz + nz * o + tz * hw], [cx + nx * o + tx * hw, y1, cz + nz * o + tz * hw], [cx + nx * o - tx * hw, y1, cz + nz * o - tz * hw], [nx, 0, nz], col);
+  q(0.03, w / 2 + 0.22, y - 0.22, y + h + 0.22, K.frame); q(0.07, w / 2, y, y + h, K.sl);
+}
 function blockMesh(D, map, b) {
   const cr = Math.cos(b.rot), sr = Math.sin(b.rot), avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg, K = BLK[b.tone], N = 56, T = b.T + 0.04;
-  const pt = k => { const t = k / N * TAU, c = Math.cos(t), s = Math.sin(t), ux = q * Math.sign(c) * Math.sqrt(Math.abs(c)), uz = q * Math.sign(s) * Math.sqrt(Math.abs(s)); return [b.cx + ux * b.rx * cr - uz * b.rz * sr, b.cz + ux * b.rx * sr + uz * b.rz * cr]; };
+  const pt = k => { const t = k / N * TAU, c = Math.cos(t), s = Math.sin(t), ux = q * Math.sign(c) * Math.cbrt(Math.abs(c)), uz = q * Math.sign(s) * Math.cbrt(Math.abs(s)); return [b.cx + ux * b.rx * cr - uz * b.rz * sr, b.cz + ux * b.rx * sr + uz * b.rz * cr]; };
   const P = []; for (let k = 0; k <= N; k++) P.push(pt(k % N));
-  for (let k = 0; k < N; k++) { const a0 = P[k], a1 = P[k + 1], g = Math.min(groundAt(map, a0[0], a0[1]), groundAt(map, a1[0], a1[1])) - 0.6, mx = (a0[0] + a1[0]) / 2 - b.cx, mz = (a0[1] + a1[1]) / 2 - b.cz;
-    for (let y = g, i = 0; y < T - 0.01; i++) { const y1 = Math.min(T, (Math.floor(y / 1.2) + 1) * 1.2); D.quad([a0[0], y, a0[1]], [a1[0], y, a1[1]], [a1[0], y1, a1[1]], [a0[0], y1, a0[1]], [mx, 0, mz], mixc(K.face, 0x000000, 1 - K.bands[((Math.floor(y / 1.2) % 3) + 3) % 3])); y = y1; if (i > 40) break; }
+  for (let k = 0; k < N; k++) { const a0 = P[k], a1 = P[k + 1], g = Math.min(groundAt(map, a0[0], a0[1]), groundAt(map, a1[0], a1[1])) - 0.6, mx = (a0[0] + a1[0]) / 2 - b.cx, mz = (a0[1] + a1[1]) / 2 - b.cz, ml = Math.sqrt(mx * mx + mz * mz) || 1, sh = (mx * 0.8 + mz * 0.55) / (ml * 0.97);
+    const base = sh >= 0 ? mixc(K.face, 0xfffbe8, 0.3 * sh) : mixc(K.face, K.shade, Math.min(1, -sh * 0.95));              // lit faces cream, shaded faces warm tan, never grey
+    for (let y = g, i = 0; y < T - 0.01; i++) { const y1 = Math.min(T, (Math.floor(y / 1.2) + 1) * 1.2); D.quad([a0[0], y, a0[1]], [a1[0], y, a1[1]], [a1[0], y1, a1[1]], [a0[0], y1, a0[1]], [mx, 0, mz], mixc(base, 0x000000, 1 - K.bands[((Math.floor(y / 1.2) % 3) + 3) % 3])); y = y1; if (i > 40) break; }
     D.tri([b.cx, T, b.cz], [a0[0], T, a0[1]], [a1[0], T, a1[1]], [0, 1, 0], K.top); }
   if (b.tone === 2) { let sd = b.seed + 7; const r = () => { sd = (Math.imul(sd, 1664525) + 1013904223) >>> 0; return sd / 4294967296; }; const nsh = 5 + ((r() * 4) | 0); for (let k = 0; k < nsh; k++) { const ang = r() * TAU, rr = 0.2 + r() * 0.6, px = b.cx + (Math.cos(ang) * b.rx * rr) * cr - (Math.sin(ang) * b.rz * rr) * sr, pz = b.cz + (Math.cos(ang) * b.rx * rr) * sr + (Math.sin(ang) * b.rz * rr) * cr, h = 1.4 + r() * 2.6, lean = (r() - 0.5) * 2.2, la = r() * TAU, w = 0.5 + r() * 0.7; rod(D, [px, T - 0.1, pz], [px + Math.cos(la) * lean, T + h, pz + Math.sin(la) * lean], w, w * 0.15, 4, mixc(K.face, 0xffffff, 0.12 + r() * 0.15), true, false, r() * 1.5); } }
   const faces = [[1, 0, b.rx, b.rz], [-1, 0, b.rx, b.rz], [0, 1, b.rz, b.rx], [0, -1, b.rz, b.rx]];
   faces.forEach((f, fi) => {
-    const [ax, az, ext, lat] = f, nx = ax * cr - az * sr, nz = ax * sr + az * cr, tx = -nz, tz = nx, edge = ext * q, px = b.cx + nx * edge, pz = b.cz + nz * edge, span = lat * 0.62;
+    const [ax, az, ext, lat] = f, nx = ax * cr - az * sr, nz = ax * sr + az * cr, tx = -nz, tz = nx, edge = ext * q, px = b.cx + nx * edge, pz = b.cz + nz * edge, span = lat * 0.62, gy = groundAt(map, px + nx * 0.6, pz + nz * 0.6);
     if (b.tone !== 2 && (lat > 3.2 || (b.tone === 0 && fi < 2))) for (let k = -Math.floor(span / 1.15); k <= Math.floor(span / 1.15); k++) { const o = k * 1.15, cx = px + tx * o + nx * 0.03, cz = pz + tz * o + nz * 0.03, hw = 0.24, y = T - (b.tone ? 1.0 : 0.6); D.quad([cx - tx * hw, y - 0.18, cz - tz * hw], [cx + tx * hw, y - 0.18, cz + tz * hw], [cx + tx * hw, y + 0.18, cz + tz * hw], [cx - tx * hw, y + 0.18, cz - tz * hw], [nx, 0, nz], K.sl); }
-    if (b.door && fi === 2) { const gy = groundAt(map, px + nx * 0.6, pz + nz * 0.6), cx = px + nx * 0.03, cz = pz + nz * 0.03, hw = 0.62, dh = Math.min(b.h * 0.7, 2.0);
-      D.quad([cx - tx * hw, gy - 0.1, cz - tz * hw], [cx + tx * hw, gy - 0.1, cz + tz * hw], [cx + tx * hw, gy + dh, cz + tz * hw], [cx - tx * hw, gy + dh, cz - tz * hw], [nx, 0, nz], 0x40301f);
-      D.quad([cx - tx * (hw + 0.25), gy + dh, cz - tz * (hw + 0.25)], [cx + tx * (hw + 0.25), gy + dh, cz + tz * (hw + 0.25)], [cx + tx * (hw + 0.25), gy + dh + 0.3, cz + tz * (hw + 0.25)], [cx - tx * (hw + 0.25), gy + dh + 0.3, cz - tz * (hw + 0.25)], [nx, 0, nz], 0xcfae78); }
+    if (b.tone === 0 && fi === 3 && b.h >= 5) for (const o of [-lat * 0.35, lat * 0.35]) pane(D, K, px + tx * o, T - 2.6, pz + tz * o, tx, tz, nx, nz, 0.9, 1.1);
+    if (b.door && fi === 2) { const cx = px, cz = pz, dh = Math.min(b.h * 0.6, 2.4), hw = 0.7;
+      pane(D, K, cx, gy - 0.1, cz, tx, tz, nx, nz, hw * 2, dh);
+      D.quad([cx - tx * (hw + 0.5), gy + dh + 0.12, cz - tz * (hw + 0.5)], [cx + tx * (hw + 0.5), gy + dh + 0.12, cz + tz * (hw + 0.5)], [cx + tx * (hw + 0.5), gy + dh + 0.55, cz + tz * (hw + 0.5)], [cx - tx * (hw + 0.5), gy + dh + 0.55, cz - tz * (hw + 0.5)], [nx, 0, nz], K.frame);
+      const yaw = Math.atan2(tz, tx); for (let k = 0; k < 3; k++) { const d = 0.9 + k * 0.85, sx = px + nx * d, sz = pz + nz * d; frustum(D, sx, groundAt(map, sx, sz) - 0.25, sz, 1.25 - k * 0.1, 0.42, 1.2 - k * 0.1, 0.4, 0.25 + (2 - k) * 0.25, yaw, mixc(K.face, K.shade, 0.25), K.top); } }       // steps up to the door
+    if (b.door && fi === 1) { const yaw = Math.atan2(nz, nx), ox = px + tx * lat * 0.55, oz = pz + tz * lat * 0.55; for (const [d0, len, h] of [[0.5, 2.4, 1.5], [3.7, 1.3, 0.8]]) { const cxx = ox + nx * (d0 + len / 2), czz = oz + nz * (d0 + len / 2); frustum(D, cxx, groundAt(map, cxx, czz) - 0.3, czz, len / 2, 0.3, len / 2 - 0.1, 0.25, h + 0.3, yaw, K.face, K.top); } }       // a low broken wall, attached
   });
+}
+// ---- the shop stall: a counter, four posts and a striped ochre awning, beside a ruin block
+function stall(D, map, q) {
+  const y = groundAt(map, q.x, q.z), c = Math.cos(q.rot), s = Math.sin(q.rot), P = (u, v) => [q.x + u * c - v * s, q.z + u * s + v * c], WOOD = 0xa9763f, W2 = 0x8c5f30;
+  const cn = P(0, 0.6); frustum(D, cn[0], y - 0.2, cn[1], 1.2, 0.45, 1.2, 0.45, 1.3, q.rot, WOOD, 0xc89458);
+  for (const [u, v] of [[-1.5, -0.8], [1.5, -0.8], [-1.5, 1.0], [1.5, 1.0]]) { const pp = P(u, v); rod(D, [pp[0], y - 0.2, pp[1]], [pp[0], y + 2.6, pp[1]], 0.09, 0.08, 4, W2, true); }
+  const aw = P(0, 0.1); frustum(D, aw[0], y + 2.55, aw[1], 1.9, 1.5, 1.8, 1.3, 0.14, q.rot, 0xdcae52, 0xe6c273);
+  for (let k = -3; k <= 3; k += 2) { const st = P(k * 0.5, 0.1); frustum(D, st[0], y + 2.56, st[1], 0.22, 1.51, 0.22, 1.31, 0.15, q.rot, 0xf7ecd0, 0xf7ecd0); }
+  for (const [u, v, h] of [[-1.0, 1.7, 0.7], [-0.2, 1.8, 0.5]]) { const cr2 = P(u, v); frustum(D, cr2[0], y - 0.2, cr2[1], 0.35, 0.35, 0.33, 0.33, h + 0.2, q.rot + 0.3, 0x9c7040, 0xb98a55); }
 }
 // ---- beyond the line: big rock blocks (two stacked frusta, banded), a ruin piece (a broken wall slab and fallen blocks), small dead trees
 const ROCKC = [[0xc98a4a, 0xdcae72], [0xd39a5a, 0xe3bd82], [0xbb7d41, 0xd29f66]];
@@ -120,6 +138,7 @@ export function addDressing(D, map) {
   for (const q of d.pots || []) pot(D, q[0], q[1], q[2], q[3], q[4], q[5]);
   for (const q of d.heads || []) monument(D, q);
   gateway(D, map);
+  for (const q of d.stalls || []) stall(D, map, q);
   for (const b of map.blocks || []) blockMesh(D, map, b);
   const f = map.far || {};
   for (const q of f.rocks || []) farRock(D, q);
