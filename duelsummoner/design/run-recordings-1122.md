@@ -1,6 +1,6 @@
-# Megabonk run breakdown for Duel Summoner (22 Nov 2026)
+# Reference run breakdown for Duel Summoner (22 Nov 2026)
 
-Sources: three recordings Randall made of one Megabonk run on **Forest, Tier 3**:
+Sources: three recordings Randall made of one run of the reference game on **Forest, Tier 3**:
 - **Video A** `20261122-2212-26.9161500.mp4` (51 s): run 0:11 to 0:49, first level-up, first shrine, the free gold chest.
 - **Video B** `20261122-2215-53.7204872.mp4` (81 s): run 0:55 to 2:01, the boss portal arch, second shrine, pots with a "Break pot" prompt, the Shady Guy shop, first elites (crowned bees), and an elite-dropped glowing chest.
 - **Video C** `20261122-2219-14.4746533.mp4` (31 s): run 2:05 to 2:23, slimes, a paid chest (price 30, then 72), the Aura weapon, the swarm, death and the death screen.
@@ -9,7 +9,7 @@ Part 1 (sections 1 to 15) covers video A. **Part 2 (sections 16 to 30) covers vi
 
 How this was read: one frame per second for the whole clip, three to five frames per second around every event, crops of the HUD and minimap, and a pixel scan for red streaks across every frame. Reference stills are in `duel-summoner/megabonk-refs-1122/` (numbered to match the sections below).
 
-**Rule for using this doc:** Megabonk is a reference for *feel, pacing and readability only*. Nothing in it (names, art, items, UI layout, fonts, icons) is copied. Every "Our version" below is our own design in Duel Summoner's world: Yu-Gi-Oh-style summons, Fusions, Spells and Traps, three seeded stages each ending in a gate boss, PS1-era look, native in the CardStashy app at 60 fps or better, touch and controller, phone and AYN Thor.
+**Rule for using this doc:** The reference game is a reference for *feel, pacing and readability only*. Nothing in it (names, art, items, UI layout, fonts, icons) is copied. Every "Our version" below is our own design in Duel Summoner's world: Yu-Gi-Oh-style summons, Fusions, Spells and Traps, three seeded stages each ending in a gate boss, PS1-era look, native in the CardStashy app at 60 fps or better, touch and controller, phone and AYN Thor.
 
 **Marks:** SEEN = visible in the video. GUESSED = my inference (how it works, what it gives, numbers) that the video does not prove. RANDALL = what Randall told us about it.
 
@@ -66,7 +66,7 @@ How this was read: one frame per second for the whole clip, three to five frames
 - **Gate Clock**: one countdown per stage (our current budget is 8 minutes a run before Overtime; the build thread should decide stage lengths so three stages fit, for example 3:00 / 3:00 / 2:00 plus gate fights, or switch to per-stage clocks).
 - **Rite line**: a single objective tag under the slots in our glass-and-gold HUD, written in our voice ("Find the Gate", then "Defeat the Gatekeeper", then "Step through"). It ticks with a small seal-stamp animation.
 - Freeze the run clock in every menu, exactly as standard for the genre, so touch players on a phone are never punished for slower taps.
-- GUESSED: in Megabonk the boss portal must be found before the timer runs out or things get harder. Ours: when the Gate Clock hits zero, the Gatekeeper comes to you and hunters start (fits our Overtime rule).
+- GUESSED: in the reference game the boss portal must be found before the timer runs out or things get harder. Ours: when the Gate Clock hits zero, the Gatekeeper comes to you and hunters start (fits our Overtime rule).
 
 ## 2. Red wind lines (guidance to the exit) — the big one
 
@@ -85,7 +85,7 @@ How this was read: one frame per second for the whole clip, three to five frames
 - **Lore hook**: the Gate is a sealed duel door, and the threads are the "summoning circle's pull", the same energy our Fusions draw on. After the gate boss dies the threads turn gold and pull toward the open Gate.
 - **Rules**: threads never pass through UI; never drawn over enemies in a way that hides them; at most around 6 on screen; on low-end phones fall back to 3. PS1 look: flat-shaded additive quads, no bloom, vertex-colour fade, 15 to 20 fps texture flicker on purpose.
 - **Accessibility**: a Settings toggle for "Thread colour" (crimson, white, gold) for colour-blind players, and "Thread strength" (subtle / normal / strong).
-- **Controller and touch**: no input needed. Optional: holding the minimap button (Select on pad, tap the Disc on touch) sends one bright thread pulse toward the Gate with a 20-second cooldown. GUESSED as a nice extra; Megabonk shows nothing like this.
+- **Controller and touch**: no input needed. Optional: holding the minimap button (Select on pad, tap the Disc on touch) sends one bright thread pulse toward the Gate with a 20-second cooldown. GUESSED as a nice extra; the reference game shows nothing like this.
 - **Thor**: on the bottom screen the Scrying Disc can be a bigger map with the thread direction drawn as an arc on its edge.
 - **Generator hook**: the seeded map generator must output the Gate position plus a "thread path" (a few waypoints around cliffs), so threads bend around walls instead of pointing through a mountain. This matters because our maps have real platforming.
 
@@ -93,7 +93,7 @@ How this was read: one frame per second for the whole clip, three to five frames
 
 **Seen.** Round minimap top right with N/E/S/W letters on the rim that **rotate with the camera** (the player arrow stays pointing up). Icons: yellow chest shapes (chests), cyan squares (the Charge Shrine was cyan; it was near the player at 0:35), a green square (GUESSED: another interactable, maybe a merchant or special shrine), white dots (GUESSED: pots or small pickups), and later the red square (exit). Dark grey blocks on the disc show terrain shape.
 
-**Our version: Scrying Disc.** A round lens framed in tarnished gold, ours. Icon set ours: chest = small seal, Witness Stone = eye, Coffer = coin, Gate = crimson sigil, boss = horned mark. Rotating rim like Megabonk is standard for a third-person camera and should stay. Fog of war: we only draw what the player has been near, which makes the threads matter. Touch: tap to open a full-screen map; pad: Select. Thor: the full map lives on the bottom screen all the time (no dead space).
+**Our version: Scrying Disc.** A round lens framed in tarnished gold, ours. Icon set ours: chest = small seal, Witness Stone = eye, Coffer = coin, Gate = crimson sigil, boss = horned mark. Rotating rim like the reference game is standard for a third-person camera and should stay. Fog of war: we only draw what the player has been near, which makes the threads matter. Touch: tap to open a full-screen map; pad: Select. Thor: the full map lives on the bottom screen all the time (no dead space).
 
 ## 4. Gold chest (free item) and the reveal
 
@@ -105,7 +105,7 @@ How this was read: one frame per second for the whole clip, three to five frames
 
 **Our version: Sealed Chest.**
 - Ours already exists in the rules: Sealed Chests give items, and when two partner monsters are at level 10, the next Sealed Chest is the **Fusion** chest. Keep that. This video shows why the reveal must be a ceremony.
-- **Reveal**: camera holds, our card-back spins up out of the chest and flips, rarity band colour floods the frame, card name in our font, effect text, then **Claim** / **Exile** (Exile = our word for banish, it also fits Yu-Gi-Oh language). On a Fusion chest the reveal is bigger: both partners fly in, swirl, and the new monster card flips (this is our signature moment; Megabonk has nothing like it).
+- **Reveal**: camera holds, our card-back spins up out of the chest and flips, rarity band colour floods the frame, card name in our font, effect text, then **Claim** / **Exile** (Exile = our word for banish, it also fits Yu-Gi-Oh language). On a Fusion chest the reveal is bigger: both partners fly in, swirl, and the new monster card flips (this is our signature moment; the reference game has nothing like it).
 - **Exile** puts the card in an Exiled pile shown on the pause screen, greyed with a seal stamp, not a red X.
 - Free Sealed Chests should be rare on the map (2 to 4 per stage, GUESSED from the minimap showing about 5 chest icons in view at once, most of them paid).
 - Touch: big buttons at thumb height. Pad: A = Claim, Y = Exile. Thor: the reveal plays on the top screen while the card text and buttons sit on the bottom.
@@ -133,9 +133,9 @@ How this was read: one frame per second for the whole clip, three to five frames
 **What it does.** Risk for reward: you must hold a spot while the horde comes. The reward is a permanent stat for the run, with rarity bands. Some offers are traps (Difficulty up gives more enemies and more score, GUESSED).
 
 **Our version: Witness Stone.** Our existing name in the old map spec; keep it.
-- A worn stone tablet with an eye carved in it. Step in, and a **summoning circle** draws itself on the ground (flat PS1 decal, ring by ring) instead of a dome. You must stay in the circle about 4 seconds while monsters come; leaving pauses (GUESSED rule: in Megabonk it seemed to pause; ours pauses and slowly drains).
+- A worn stone tablet with an eye carved in it. Step in, and a **summoning circle** draws itself on the ground (flat PS1 decal, ring by ring) instead of a dome. You must stay in the circle about 4 seconds while monsters come; leaving pauses (GUESSED rule: in the reference game it seemed to pause; ours pauses and slowly drains).
 - Reward: three **Witness Offerings** as small cards with our rarity bands (Common, Rare, Super Rare, Ultra Rare, Secret Rare, the Yu-Gi-Oh rarity ladder our players know). Plus **Decline**.
-- One offer in some rolls is a **Pact**: a power gain with a cost (for example "+15% Fusion speed, enemies +10% HP"). This replaces Megabonk's Difficulty offer with something that fits our duel theme.
+- One offer in some rolls is a **Pact**: a power gain with a cost (for example "+15% Fusion speed, enemies +10% HP"). This replaces the reference game's Difficulty offer with something that fits our duel theme.
 - Glyph motes (our own glyphs) drift across the screen while picking, like the rune letters seen here.
 - Tooltip on hover/focus for every stat word.
 
@@ -164,7 +164,7 @@ How this was read: one frame per second for the whole clip, three to five frames
 
 **Our version.** Already decided in our rules: 4 Monster Zones (weapons, your summoned monsters fight beside you), 4 Spell/Trap Zones (tomes), slotless Relics (items). What this video adds for the build:
 - Each attack needs a **readable signature shape** at gameplay distance: the dice were readable because they were white cubes on green. Ours: every monster's attack gets a distinct silhouette and colour against each stage palette.
-- Slot icons show level as small pips under the icon (Megabonk writes "LVL 1"; we use pips plus a star at 5 and a crown at 10).
+- Slot icons show level as small pips under the icon (the reference writes "LVL 1"; we use pips plus a star at 5 and a crown at 10).
 
 ## 11. Pickups, currencies and counters
 
@@ -194,13 +194,13 @@ How this was read: one frame per second for the whole clip, three to five frames
 
 **Seen.** Only one enemy type in the first 50 s: green goblins, low-poly, in loin cloths. They come in loose packs; at 0:17 about ten run in from the left together. Kills are slow early (13 kills by 0:49).
 
-**Our version.** Stage 1 fodder should be our own creatures (rule: monsters are creatures). The pacing match matters more than the look: a quiet first 30 seconds, a first pack at about 0:15, first level-up at about 0:30 (matches Randall saying our levelling is too fast; Megabonk's first level took about 30 s here).
+**Our version.** Stage 1 fodder should be our own creatures (rule: monsters are creatures). The pacing match matters more than the look: a quiet first 30 seconds, a first pack at about 0:15, first level-up at about 0:30 (matches Randall saying our levelling is too fast; the reference game's first level took about 30 s here).
 
 ## 14. The map
 
 **Seen.** Big open forest on rolling hills, steep grey cliff walls at the edges, ivy-covered brick ruins and broken towers, boulders, fallen logs, a small pond, dirt paths, background towers in fog. Plenty of space; Randall could not see the exit until it was close. Texture is low-res and pixelated, chunky trees with pixel leaves.
 
-**Our version.** Our seeded generator (already planned) should place, per stage: 1 Gate (far from spawn, but with a thread path), 2 to 4 Sealed Chests, 6 to 10 Tribute Coffers, 2 to 3 Witness Stones, 15 to 30 Urns in clusters, ruins as landmarks so players can say "the Gate was by the broken tower". Paths of dirt should naturally lead toward the Gate (a third, quiet guide after threads and urns). GUESSED: Megabonk tiers the same map (this was "Forest Tier 3"); our three stages each have their own biome and the gate boss.
+**Our version.** Our seeded generator (already planned) should place, per stage: 1 Gate (far from spawn, but with a thread path), 2 to 4 Sealed Chests, 6 to 10 Tribute Coffers, 2 to 3 Witness Stones, 15 to 30 Urns in clusters, ruins as landmarks so players can say "the Gate was by the broken tower". Paths of dirt should naturally lead toward the Gate (a third, quiet guide after threads and urns). GUESSED: the reference game tiers the same map (this was "Forest Tier 3"); our three stages each have their own biome and the gate boss.
 
 ## 15. Stats panel and pause screen
 
@@ -263,7 +263,7 @@ Reveal ceremony for all three is the same shell (keeps code and art small), with
 
 **What it does.** The player chooses when to fight the boss: farm longer and be stronger, or go early. The timer still runs (GUESSED: when it hits zero, something forces the issue).
 
-**Our version: the Gate Dais.** A ring of standing stones around a sunken duel circle, with a sealed stone door in the middle carved with the stage's gatekeeper. Prompt: **"Challenge the Gatekeeper"** (pad A / touch button that appears only on the dais). Pressing it: the door's seal cracks, the gatekeeper is summoned from the door in a full summon animation (our Yu-Gi-Oh flavour), and the arena edge closes in. This keeps Megabonk's good idea (player picks the moment) in our language. The Ley Threads (section 2) lead here.
+**Our version: the Gate Dais.** A ring of standing stones around a sunken duel circle, with a sealed stone door in the middle carved with the stage's gatekeeper. Prompt: **"Challenge the Gatekeeper"** (pad A / touch button that appears only on the dais). Pressing it: the door's seal cracks, the gatekeeper is summoned from the door in a full summon animation (our Yu-Gi-Oh flavour), and the arena edge closes in. This keeps the reference game's good idea (player picks the moment) in our language. The Ley Threads (section 2) lead here.
 
 ## 19. Pots (now seen properly)
 
