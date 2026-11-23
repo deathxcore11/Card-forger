@@ -6,7 +6,7 @@ import { Input } from './core/input.js';
 import { clock } from './core/util.js';
 import { buildMapMesh } from './view/mapMesh.js';
 import { buildGateSeal } from './view/gateseal.js';
-import { lookFor } from './data/look.js';
+import { lookFor, buildPaletteLUT, STAGE_LOOK as STAGE_LOOK_LIST } from './data/look.js';
 import { Bars } from './view/bars.js';
 import { chestPrice } from './sim/world.js';
 import { heightAt } from './sim/terrain.js';
@@ -70,6 +70,11 @@ const sun = new T.DirectionalLight(0xffe2b0, 0.66); sun.position.set(60, 90, 30)
 // s = max(2, round(screenHeight / 540)) device pixels per game pixel, internal size ceil(width / s) by ceil(height / s). Every game pixel is the same size; no CSS scaling. HUD and text stay at full resolution.
 const INTERNAL_TARGET = 540;
 let lowRT = null, blitScene = null, blitCam = null, blitQuad = null;
+// the post material (engine plan 0c): nearest-sampled scene colour, then the palette snap: the colour is replaced by the nearest entry of the stage's palette (a 3D lookup), blended by `strength` (0 = off, 1 = full). Models, ground and walls get no dither; the strength starts at 0 until the owner has judged an A/B picture.
+const blitMat = new T.ShaderMaterial({ glslVersion: T.GLSL3, depthTest: false, depthWrite: false, uniforms: { tScene: { value: null }, tLut: { value: null }, strength: { value: 0 } },
+  vertexShader: 'out vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+  fragmentShader: 'precision highp float; precision highp sampler3D; uniform sampler2D tScene; uniform sampler3D tLut; uniform float strength; in vec2 vUv; layout(location = 0) out vec4 outColor; void main() { vec3 c = texture(tScene, vUv).rgb; if (strength > 0.0) { vec3 q = texture(tLut, clamp(c, 0.0, 1.0) * (31.0 / 32.0) + 0.5 / 32.0).rgb; c = mix(c, q, strength); } outColor = vec4(c, 1.0); }' });
+function setPaletteStage(stage) { if (!blitMat.uniforms.tLut.value) { const t = new T.DataTexture3D(buildPaletteLUT(stage), 32, 32, 32); t.format = T.RGBAFormat; t.type = T.UnsignedByteType; t.minFilter = t.magFilter = T.NearestFilter; t.wrapR = t.wrapS = t.wrapT = T.ClampToEdgeWrapping; t.unpackAlignment = 1; t.needsUpdate = true; blitMat.uniforms.tLut.value = t; } else { const t = blitMat.uniforms.tLut.value; t.image.data = buildPaletteLUT(stage); t.needsUpdate = true; } }
 function resize() {
   const dpr = window.devicePixelRatio || 1, dw = Math.max(1, Math.round(window.innerWidth * dpr)), dh = Math.max(1, Math.round(window.innerHeight * dpr)), s = Math.max(2, Math.round(dh / INTERNAL_TARGET)), bw = Math.max(1, Math.ceil(dw / s)), bh = Math.max(1, Math.ceil(dh / s));
   renderer.setPixelRatio(1); renderer.setSize(dw, dh, false);
@@ -77,8 +82,8 @@ function resize() {
   if (!lowRT || lowRT.width !== bw || lowRT.height !== bh) {
     if (lowRT) lowRT.dispose();
     lowRT = new T.WebGLRenderTarget(bw, bh, { minFilter: T.NearestFilter, magFilter: T.NearestFilter, depthBuffer: true, stencilBuffer: true, generateMipmaps: false });
-    if (!blitScene) { blitScene = new T.Scene(); blitCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1); blitQuad = new T.Mesh(new T.PlaneGeometry(2, 2), new T.MeshBasicMaterial({ toneMapped: false, depthTest: false, depthWrite: false, fog: false })); blitQuad.frustumCulled = false; blitScene.add(blitQuad); }
-    blitQuad.material.map = lowRT.texture; blitQuad.material.needsUpdate = true;
+    if (!blitScene) { blitScene = new T.Scene(); blitCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1); blitQuad = new T.Mesh(new T.PlaneGeometry(2, 2), blitMat); blitQuad.frustumCulled = false; blitScene.add(blitQuad); }
+    blitMat.uniforms.tScene.value = lowRT.texture;
   }
   { const uv = blitQuad.geometry.attributes.uv, u1 = dw / s / bw, v1 = dh / s / bh; uv.setXY(0, 0, 1); uv.setXY(1, u1, 1); uv.setXY(2, 0, 1 - v1); uv.setXY(3, u1, 1 - v1); uv.needsUpdate = true; }       // the quad shows exactly dw/s by dh/s internal pixels (anchored top left: the right column or bottom row may be cropped by one)
   renderer.internalSize = new T.Vector2(bw, bh); camera.aspect = bw / bh; fitFov();
@@ -98,7 +103,8 @@ assets.mira = await loadRig('assets/models/duelist-mira-anim.glb', { retime: { l
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 document.addEventListener('contextmenu', e => { if (!/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName)) e.preventDefault(); });       // no browser menu over the game or its overlays
-function applyStageLook(look) { scene.background.setHex(look.sky[1]); scene.fog.color.setHex(look.sky[1]); scene.fog.near = look.fogNear; scene.fog.far = look.fogFar; const u = sky.material.uniforms; u.top.value.setHex(look.sky[0]); u.hor.value.setHex(look.sky[1]); u.low.value.setHex(look.sky[2]); }
+function applyStageLook(look) { setPaletteStage(Math.max(0, STAGE_INDEX_OF(look))); scene.background.setHex(look.sky[1]); scene.fog.color.setHex(look.sky[1]); scene.fog.near = look.fogNear; scene.fog.far = look.fogFar; const u = sky.material.uniforms; u.top.value.setHex(look.sky[0]); u.hor.value.setHex(look.sky[1]); u.low.value.setHex(look.sky[2]); }
+const STAGE_INDEX_OF = look => STAGE_LOOK_LIST.indexOf(look);
 let sceneryGroup = null, mapMesh = null, gateSeal = null, viewMapKey = '';
 function syncMap() {                                                       // the stage's map was generated by the sim; build its mesh and minimap once
   if (game.map.key === viewMapKey) return; viewMapKey = game.map.key;
@@ -541,7 +547,7 @@ function duelistPixels() {
 window.__ds = {
   duelistPixels, see: SEE, tagBlocked,
   bars,
-  renderer, blitNow: drawFrame, rigSil: () => actors.rig.see.sil, rigExtras: () => actors.rig.see.extras, rigMeshCount: () => { let n = 0, x = 0; if (actors.rig) actors.rig.group.traverse(o => { if (o.isMesh) { if (o.userData.extra) x++; else n++; } }); return { bodies: n, extras: x }; },
+  renderer, blitNow: drawFrame, paletteStrength: v => { blitMat.uniforms.strength.value = v; }, rigSil: () => actors.rig.see.sil, rigExtras: () => actors.rig.see.extras, rigMeshCount: () => { let n = 0, x = 0; if (actors.rig) actors.rig.group.traverse(o => { if (o.isMesh) { if (o.userData.extra) x++; else n++; } }); return { bodies: n, extras: x }; },
   fitHud, minimap, props, game, input, chase, touch, pickAndUse, threads, ambient, toggleMap, mapIsOpen: () => mapOpen, cfg: CFG, camera, scene, actors, assets, prof,
   mode: () => MODE,
   start: begin, begin, results, setMode, menus, fx, onEvent, save,
