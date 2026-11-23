@@ -213,7 +213,7 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
       b.trapT = S.traps.every;
       let placed = 0;
       for (let tries = 0; tries < 30 && placed < S.traps.count; tries++) {
-        const a = g.rsp() * 6.283, r = 3 + g.rsp() * S.traps.spread, x = p.x + cos(a) * r, z = p.z + sin(a) * r, h = heightAt(x, z);
+        const a = g.rsp() * 6.283, r = 3 + g.rsp() * S.traps.spread, x = p.x + p.vx * K.leadCap + cos(a) * r, z = p.z + p.vz * K.leadCap + sin(a) * r, h = heightAt(x, z);       // traps are laid where the duelist's real velocity takes them
         if (h >= 50 || Math.abs(h - p.y) > 1) continue;
         let slot = g.btraps.find(t => !t.on); if (!slot || g.btraps.filter(t => t.on).length >= S.traps.max) break;
         Object.assign(slot, { on: true, x, y: h, z, life: S.traps.lifetime }); placed++;

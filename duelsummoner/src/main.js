@@ -1,5 +1,6 @@
 // Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
 import { CFG } from './data/config.js';
+import { K } from './data/tuning.js';
 import { Game } from './sim/game.js';
 import { Input } from './core/input.js';
 import { clock } from './core/util.js';
@@ -271,6 +272,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'trophy') { fx.ring(a, b, c, 4.5, 0xffe9a0, 0.6); fx.burst(a, b + 1, c, 24, 0xffe9a0, 3, 6, 0.25, 0.9, 6); fx.shake(0.12); }
   else if (type === 'kill') fx.burst(b, groundY(b, c) + 0.9, c, 6, KCOL[a] || 0xaaaaaa, 3.5, 4, 0.28, 0.55, 14);
   else if (type === 'pickup') fx.burst(ip.x, ip.y + 1.1, ip.z, 3, PCOL[a] || 0xffffff, 1.6, 2.5, 0.14, 0.35, 0);
+  else if (type === 'hop') { if (!fx.rm_) tone(330 * Math.pow(1.07, Math.min(a, 10)), 0.05, 0.035, 'triangle'); }       // a rising tick for every chained slide hop
   else if (type === 'hurt') { if (!c) fx.shake(b ? 0.55 : 0.28); }       // the player's own cost (c is 1) neither flinches nor shakes
   else if (type === 'announce') sigils.push({ x: b, z: c, until: actors.vt + 6.5, next: 0 });
   else if (type === 'gatewake') { fx.shake(0.5); fx.beam(game.map.gate.x, 4, game.map.gate.z, 0xffe9a0, 6); fx.ring(game.map.gate.x, 4, game.map.gate.z, 8, 0xffe9a0, 1); }
@@ -305,7 +307,7 @@ function ringMarks() {
   }
 }
 const seenSp = new Set(), PLATES = { warden: 'THE SEALED WARDEN', idol: 'TWIN JACKAL IDOLS', pharaoh: 'THE HOLLOW PHARAOH' };
-let plateIdol = false, fovDirty = false;
+let plateIdol = false, fovDirty = false, hopFov = 0, speedLines = 0;
 function bossIntro() {                                              // name plate for elites and the boss, plus a 2 s zoom (skip with Enter or a click)
   for (const sp of game.sp) {
     if (!sp.alive || seenSp.has(sp)) continue; seenSp.add(sp);
@@ -455,6 +457,13 @@ function frame(now) {
   fx.applyShake(camera);
   if (fx.push > 0) { fx.push = Math.max(0, fx.push - dtReal); const u = 1 - fx.push / 2; camera.fov = baseV * (1 - 0.24 * Math.sin(Math.PI * Math.min(1, u))); camera.updateProjectionMatrix(); fovDirty = true; }
   else if (fovDirty) { camera.fov = baseV; camera.updateProjectionMatrix(); fovDirty = false; }
+  {   // slide-hop feel (view only): the field of view widens up to 6% with the speed bonus, speed lines appear above 1.3x run speed (both off under Reduce motion)
+    const R = CFG.player.speed * (1 + game.mods.move), hv = (window.__ds && window.__ds.hv > 0) ? window.__ds.hv : Math.sqrt(game.p.vx * game.p.vx + game.p.vz * game.p.vz), rm = fx.rm_ || MODE !== 'play';       // __ds.hv: a test hook that pretends the duelist is that fast
+    const bonus = rm ? 0 : Math.max(0, Math.min(1, (hv / R - 1) / (K.hopCap - 1)));
+    hopFov += (bonus - hopFov) * Math.min(1, (dtReal || 0.016) * 6); if (hopFov < 0.001) hopFov = 0;
+    if (fx.push <= 0 && !fovDirty && Math.abs(camera.fov - baseV * (1 + 0.06 * hopFov)) > 0.01) { camera.fov = baseV * (1 + 0.06 * hopFov); camera.updateProjectionMatrix(); }
+    const sl = rm ? 0 : Math.max(0, Math.min(1, (hv / R - 1.3) / 0.3)) * 0.85; if (Math.abs(sl - speedLines) > 0.01) { speedLines = sl; $('speedlines').style.opacity = sl.toFixed(2); }
+  }
   const lpf = game.p.hp / game.p.maxHp, low = MODE === 'play' && !game.over && (lowShown ? lpf <= 0.33 : lpf <= 0.30);       if (low !== lowShown) { lowShown = low; $('lowhp').classList.toggle('on', low); }       // on at 30% of max LP or less, off again above 33%
   head.x = ip.x; head.y = ip.y + 1.5; head.z = ip.z;
   actors.update(game, alpha, camera.position, head, dtReal);

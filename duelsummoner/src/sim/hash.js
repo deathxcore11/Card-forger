@@ -7,7 +7,7 @@ export class H {
 }
 export function stateHash(g, h = new H()) {
   const p = g.p;
-  h.u(g.tickN); h.n(g.t); h.n(p.x); h.n(p.y); h.n(p.z); h.n(p.hp); h.u(g.kills); h.u(g.coins | 0); h.n(g.xp); h.u(g.level); h.u(g.over ? 1 : 0); h.u(g.offer ? 1 : 0);
+  h.u(g.tickN); h.n(g.t); h.n(p.x); h.n(p.y); h.n(p.z); h.n(p.hp); h.n(p.vx + 0); h.n(p.vz + 0); h.u(p.chain | 0); h.u(p.landT | 0); h.u(g.kills); h.u(g.coins | 0); h.n(g.xp); h.u(g.level); h.u(g.over ? 1 : 0); h.u(g.offer ? 1 : 0);       // + 0 turns a negative zero into a plain zero: a tape that went through JSON loses the sign of its zeros
   const e = g.en; let c = 0, sx = 0, sz = 0, sh = 0;
   for (let i = 0; i < e.max; i++) if (e.alive[i]) { c++; sx += e.x[i]; sz += e.z[i]; sh += e.hp[i]; }
   h.u(c); h.n(sx); h.n(sz); h.n(sh);

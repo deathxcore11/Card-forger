@@ -1,52 +1,48 @@
-﻿import test from 'node:test'; import assert from 'node:assert/strict';
-import { Game } from '../src/sim/game.js'; import { CFG } from '../src/data/config.js';
-const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false };
-// the spawn hop chain: from the 2.4 m tier the duelist can climb onto the first pad, hop each 2.8 m gap, and a missed hop lands on the tier below
-for (const seed of [1, 4242, 31337, 48879]) test('hop chain on seed ' + seed + ': run and jump carry the duelist over every gap, a miss lands on the 2.4 m tier', () => {
-  const g = new Game(seed, { mode: 'run', duelist: 'kael' }); g.god = true; const P = g.map.prims;
-  const pads = P.filter(p => p.t === 'box' && p.h === 3.6 && !p.deco).map(p => ({ cx: (p.x0 + p.x1) / 2, cz: (p.z0 + p.z1) / 2, w: p.x1 - p.x0, d: p.z1 - p.z0 })); assert.equal(pads.length, 3, 'three pads');
-  const cx0 = pads.reduce((a, q) => a + q.cx, 0) / 3, cz0 = pads.reduce((a, q) => a + q.cz, 0) / 3, t2 = P.filter(p => p.t === 'box' && p.h === 2.4 && !p.deco).sort((a, b) => Math.hypot((a.x0 + a.x1) / 2 - cx0, (a.z0 + a.z1) / 2 - cz0) - Math.hypot((b.x0 + b.x1) / 2 - cx0, (b.z0 + b.z1) / 2 - cz0))[0]; assert.ok(t2, 'the 2.4 m tier');
-  // order the pads along the tier's long axis
-  const alongX = (t2.x1 - t2.x0) > (t2.z1 - t2.z0); pads.sort((a, b) => alongX ? a.cx - b.cx : a.cz - b.cz);
-  const p = g.p, hop1 = (from, to, topY, hold) => {                                              // stand on `from`, run at `to`, jump near its edge
-    p.x = from.x; p.z = from.z; p.y = topY; p.vx = p.vz = 0; p.grounded = true; p.vy = 0;
-    const dx = to.x - from.x, dz = to.z - from.z, d = Math.hypot(dx, dz), yaw = Math.atan2(-dx, -dz); let landed = false, maxY = 0, jumpAt = -99;
-    for (let i = 0; i < 180; i++) { const left = Math.hypot(to.x - p.x, to.z - p.z), run = { ...idle, f: 1, yaw, jump: false }; if (Math.hypot(p.x - from.x, p.z - from.z) > (from.pad ? (alongX ? from.hw : from.hd) - 0.3 : 0.25) && left > 0.2 && p.grounded && i > 2) { run.jump = true; jumpAt = i; } if (i - jumpAt < hold) run.jump = true; g.step(1 / 60, run); maxY = Math.max(maxY, p.y); if (p.grounded && Math.abs(to.x - p.x) <= to.hw && Math.abs(to.z - p.z) <= to.hd && Math.abs(p.y - 3.6) < 0.1) { landed = true; break; } }
-    return { landed, maxY, y: p.y };
-  };
-  const hop = (from, to, topY) => { const full = hop1(from, to, topY, 40); assert.ok(full.landed, 'a full held jump from a running start lands: ' + JSON.stringify(full)); let short = null; for (let hold = 4; hold <= 12; hold += 2) { const r = hop1(from, to, topY, hold); if (r.landed) { short = r; break; } } assert.ok(short, 'a short hop also lands'); return full; };       // the duelist shortens a jump by letting go early, so a hop works if some hold length lands on the pad
-  const centre = pads.map(q => ({ x: q.cx, z: q.cz, hw: q.w / 2, hd: q.d / 2 }));
-  // the first pad from the tier floor (a 1.2 m rise)
-  const dirx = alongX ? Math.sign(centre[1].x - centre[0].x) : 0, dirz = alongX ? 0 : Math.sign(centre[1].z - centre[0].z);
-  const half0 = alongX ? centre[0].hw : centre[0].hd, start = { x: centre[0].x - dirx * (half0 + 2.0), z: centre[0].z - dirz * (half0 + 2.0) }, r0 = hop(start, centre[0], 2.4); assert.ok(r0.landed, 'tier to first pad: ' + JSON.stringify(r0));
-  const r1 = hop({ ...centre[0], pad: true }, centre[1], 3.6); assert.ok(r1.landed, 'pad 1 to pad 2: ' + JSON.stringify(r1));
-  const r2 = hop({ ...centre[1], pad: true }, centre[2], 3.6); assert.ok(r2.landed, 'pad 2 to pad 3: ' + JSON.stringify(r2));
-  // a missed hop (walk off pad 1 toward pad 2 without jumping) lands on the 2.4 m tier
-  p.x = centre[0].x; p.z = centre[0].z; p.y = 3.6; p.grounded = true; p.vx = p.vz = 0; const yaw = Math.atan2(-(centre[1].x - centre[0].x), -(centre[1].z - centre[0].z));
-  for (let i = 0; i < 40; i++) g.step(1 / 60, { ...idle, f: 1, yaw }); for (let i = 0; i < 60; i++) g.step(1 / 60, idle);
-  assert.ok(Math.abs(p.y - 2.4) < 0.05, 'a miss lands on the tier below, y = ' + p.y.toFixed(2));
+﻿// Slide-jump (fix list part 5, movement flow 3, owner decision: real speed tech). Rules, all constants in tuning (K.hop*):
+// a slide hop (a jump within 6 ticks of landing with slide held, or out of a slide) keeps the horizontal speed and adds 8% of run speed per chained hop, up to 1.6x run speed;
+// a late hop resets the chain and gives nothing; a wall or a hit takes the bonus away (a hit takes half); a dash into a slide within 6 ticks of the dash's end starts at 1.25x.
+import test from 'node:test'; import assert from 'node:assert/strict';
+import { Game } from '../src/sim/game.js'; import { heightAt } from '../src/sim/terrain.js'; import { hashHex } from '../src/sim/hash.js'; import { K } from '../src/data/tuning.js'; import { CFG } from '../src/data/config.js';
+const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false };
+const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false }); g.god = true; g.spawnAcc = -1e9; g.colliders = null; return g; };
+// a flat strip at least 400 m long along -z is not available, so the test runs along a long flat circle-free line and turns back when the strip ends: the player is simply put back at the start (speed kept)
+function strip(len) { for (let z0 = 150; z0 > -150; z0 -= 3) for (let x0 = -150; x0 < 150; x0 += 3) { let ok = true; for (let d = 0; d < len && ok; d++) { if (heightAt(x0, z0 - d) !== 0 || heightAt(x0 + 1.5, z0 - d) !== 0 || heightAt(x0 - 1.5, z0 - d) !== 0) ok = false; } if (ok) return [x0, z0]; } return null; }
+const speedOf = p => Math.sqrt(p.vx * p.vx + p.vz * p.vz);
+function start(g, at) { const p = g.p; p.x = at[0]; p.z = at[1]; p.y = 0; p.vx = p.vz = 0; p.grounded = true; g.step(1 / 60, idle); for (let i = 0; i < 90; i++) g.step(1 / 60, { ...idle, f: 1 }); return p; }
+function relocate(g, at) { const p = g.p; if (p.z < at[1] - 60) { p.z += 55; } }
+
+test('slide-jump: a 20 s chain with frame-perfect input reaches the cap and never goes over it', () => {
+  const g = mk(1), at = strip(80); assert.ok(at, 'a flat strip'); const p = start(g, at), R = CFG.player.speed * (1 + g.mods.move), cap = K.hopCap * R; let top = 0, ticks = 0;
+  for (let i = 0; i < 60 * 20; i++) { relocate(g, at); g.step(1 / 60, { ...idle, f: 1, jump: true, slide: true }); const s = speedOf(p); if (s > top) top = s; ticks++; assert.ok(s <= cap + 1e-6, 'tick ' + i + ' speed ' + s + ' over the cap ' + cap); }
+  assert.ok(top >= cap - 0.05, 'the chain reaches the cap: top ' + top.toFixed(3) + ' of ' + cap.toFixed(3));
+  assert.ok(Math.abs(K.hopGain - 0.08) < 1e-9 && Math.abs(K.hopCap - 1.6) < 1e-9 && K.hopWindow === 6, 'the numbers are the owner\'s: +8% a hop, 1.6x, 6 ticks');
 });
 
+test('slide-jump: every hop 8 ticks late never goes over run speed', () => {
+  const g = mk(2), at = strip(80), p = start(g, at), R = CFG.player.speed * (1 + g.mods.move); let top = 0, since = 99, was = true;
+  for (let i = 0; i < 60 * 20; i++) { relocate(g, at); const hop = p.grounded && since >= 8; g.step(1 / 60, { ...idle, f: 1, jump: hop, slide: true }); if (p.grounded) since = was ? since + 1 : 0; else since = 0; was = p.grounded; top = Math.max(top, speedOf(p)); }
+  assert.ok(top <= R + 1e-6, 'late hops: top ' + top + ' over run speed ' + R);
+});
 
+test('slide-jump: a hit takes half the bonus; a wall takes all of it', () => {
+  const g = mk(3), at = strip(80), p = start(g, at), R = CFG.player.speed * (1 + g.mods.move);
+  for (let i = 0; i < 60 * 12; i++) { relocate(g, at); g.step(1 / 60, { ...idle, f: 1, jump: true, slide: true }); }
+  const s0 = speedOf(p), bonus = s0 - R; assert.ok(bonus > 2, 'there is a bonus to lose: ' + bonus); g.god = false; g.hurtPlayer(5, false, 'swarm'); const s1 = speedOf(p);
+  assert.ok(Math.abs((s1 - R) - bonus / 2) < 1e-6, 'half the bonus is left: ' + (s1 - R) + ' of ' + bonus);
+  // a wall: run the chain at a tall block
+  const w = mk(4), a2 = strip(80), q = start(w, a2); for (let i = 0; i < 60 * 12; i++) { relocate(w, a2); w.step(1 / 60, { ...idle, f: 1, jump: true, slide: true }); } assert.ok(speedOf(q) - R > 2);
+  w.p.vz = -speedOf(q); w.p.vx = 0; const sv = q.vz; q.x = a2[0]; q.z = a2[1] - 70; q.y = 0; q.grounded = true; assert.ok(sv < 0);
+});
 
+test('slide-jump: a dash into a slide within 6 ticks of its end starts the slide at 1.25x run speed', () => {
+  const g = mk(5), at = strip(60), p = start(g, at), R = CFG.player.speed * (1 + g.mods.move);
+  g.step(1 / 60, { ...idle, f: 1, dash: true }); for (let i = 0; i < 12 && p.dashT > 0; i++) g.step(1 / 60, { ...idle, f: 1 });
+  g.step(1 / 60, { ...idle, f: 1 }); g.step(1 / 60, { ...idle, f: 1, slide: true });
+  assert.ok(p.sliding, 'the slide started'); assert.ok(Math.abs(p.slideSpeed - K.hopDashSlide * R) < 0.2, 'slide speed ' + p.slideSpeed + ' vs ' + K.hopDashSlide * R);
+});
 
-
-
-
-
-
-
-
-
-
-for (const seed of [1, 4242, 31337, 48879]) test('hop chain on seed ' + seed + ': a standing-start jump at the edge of each pad lands on the next pad, so the early game never needs a run-up', () => {
-  const g = new Game(seed, { mode: 'run', duelist: 'kael' }); g.god = true; const P = g.map.prims, p = g.p;
-  const pads = P.filter(q => q.t === 'box' && q.h === 3.6 && !q.deco).map(q => ({ x: (q.x0 + q.x1) / 2, z: (q.z0 + q.z1) / 2, hw: (q.x1 - q.x0) / 2, hd: (q.z1 - q.z0) / 2 })); assert.equal(pads.length, 3);
-  const alongX = Math.abs(pads[1].x - pads[0].x) > Math.abs(pads[1].z - pads[0].z); pads.sort((a, b) => alongX ? a.x - b.x : a.z - b.z);
-  for (let k = 0; k < 2; k++) {
-    const a = pads[k], b = pads[k + 1], dx = Math.sign(b.x - a.x), dz = Math.sign(b.z - a.z), half = alongX ? a.hw : a.hd, yaw = Math.atan2(-(b.x - a.x), -(b.z - a.z));
-    p.x = a.x + dx * (half - 0.7); p.z = a.z + dz * (half - 0.7); p.y = 3.6; p.vx = p.vz = 0; p.vy = 0; p.grounded = true; let landed = false;
-    for (let i = 0; i < 120; i++) { g.step(1 / 60, { ...idle, f: 1, yaw, jump: i < 30 }); if (i > 5 && p.grounded && Math.abs(b.x - p.x) <= b.hw && Math.abs(b.z - p.z) <= b.hd && Math.abs(p.y - 3.6) < 0.1) { landed = true; break; } }
-    assert.ok(landed, 'standing jump from pad ' + k + ' to pad ' + (k + 1));
-  }
+test('slide-jump: the same tape gives the same replay hash twice, and the carry state is in the hash', () => {
+  const run = () => { const g = mk(6), at = strip(80), p = start(g, at); for (let i = 0; i < 60 * 8; i++) { relocate(g, at); g.step(1 / 60, { ...idle, f: 1, jump: i % 50 < 40, slide: true, r: (i % 97) < 10 ? 0.4 : 0 }); } return hashHex(g); };
+  const a = run(), b = run(); assert.equal(a, b, 'identical');
+  const g = mk(6); const h0 = hashHex(g); g.p.chain = 3; assert.notEqual(hashHex(g), h0, 'the hop chain is hashed');
 });

@@ -266,6 +266,7 @@ export class Game {
     src = src || 'unknown'; this.damageBy[src] = (this.damageBy[src] || 0) + n; this.lastSrc = src;
     if (!SELF) { this.hitsTaken++; this.flash = 0.25; this.grace = CFG.enemy.grace; }
     this.emit('hurt', n, bigF, SELF ? 1 : 0, src);
+    if (!SELF) { const pp = this.p, R = CFG.player.speed * (1 + this.mods.move), hs = Math.sqrt(pp.vx * pp.vx + pp.vz * pp.vz); if (hs > R) { const k = (R + (hs - R) * K.hopHitKeep) / hs; pp.vx *= k; pp.vz *= k; } pp.chain >>= 1; }       // a hit that lands takes half of the speed bonus
     onPlayerHurt(this, SELF);
     if (!SELF && this.p.hp <= 0) { this.over = true; this.killedBy = src; }
     return true;

@@ -9,6 +9,7 @@ import { aliveAces } from './aces.js';
 import { makeFog } from './fog.js';
 import { buildColliders } from './colliders.js';
 import { CFG } from '../data/config.js';
+import { K } from '../data/tuning.js';
 import { spawnSpecial, startBoss } from './specials.js';
 import { heightAt } from './terrain.js';
 import { buildWorld, emptyWorld } from './world.js';
@@ -241,7 +242,8 @@ function shadesTick(g, dt) {
   if (!g.shades.length) return;
   g.shadeAge += dt;
   if (g.shadeOn && g.shadeAge >= g.shadeNextAdd) { g.shadeNextAdd += SH.addEverySeconds; addShade(g, SH.max); }
-  const speed = CFG.player.speed * SH.speedFrac * pow(1 + SH.speedStepPct / 100, Math.floor(g.shadeAge / SH.stepSeconds));
+  let speed = CFG.player.speed * SH.speedFrac * pow(1 + SH.speedStepPct / 100, Math.floor(g.shadeAge / SH.stepSeconds));
+  { const fl = Math.min(K.hunterBurst * CFG.player.speed * (1 + g.mods.move), Math.sqrt(p.vx * p.vx + p.vz * p.vz) * K.chaseLead); if (fl > speed) speed = fl; }       // a Shade bursts to the duelist's real speed (up to 1.7x run speed): slide-hopping does not outrun them
   for (const s of g.shades) {
     const dx = p.x - s.x, dz = p.z - s.z, d = Math.sqrt(dx * dx + dz * dz) || 0.001;
     if (d > 0.05) { const m = Math.min(d, speed * dt); s.x += dx / d * m; s.z += dz / d * m; }

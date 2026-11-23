@@ -7,7 +7,7 @@ import { chestPrice } from '../src/sim/world.js';
 import { ENCOUNTERS as EN } from '../src/data/encounters.js';
 const wp = { x: 0, z: 0 };
 
-export function newBot(opts) { return { rec: emptyRecord(), cmd: { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false }, dashAt: -9, hold: false, flow: null, navAt: -1, navKey: '', lx: 0, lz: 0, still: 0, panic: 0, stuck: 0, wander: 0, wang: 0, tick: 0, focus: !!(opts && opts.focus), world: !!(opts && opts.world) }; }
+export function newBot(opts) { return { rec: emptyRecord(), cmd: { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false }, dashAt: -9, hold: false, flow: null, navAt: -1, navKey: '', lx: 0, lz: 0, still: 0, panic: 0, stuck: 0, wander: 0, wang: 0, tick: 0, focus: !!(opts && opts.focus), world: !!(opts && opts.world), hop: opts && opts.hop !== undefined ? opts.hop : Number(process.env.HOP || 0), hopSeed: 12345, hopWait: 0, hopDecided: false, hopOk: false, hopP() { return this.hop; } }; }       // hop: the share of landings on which the bot hits a frame-perfect slide hop (HOP=0.5 in the environment): the rest are hopped late, which gives nothing
 
 function score(g, c, focus) {
   const D = DUELISTS[g.field.duelist], pair = [D.start, D.second];
@@ -93,6 +93,11 @@ export function botRecord(g, bot) {
     const c = bot.cmd; c.f = -dz; c.r = dx; c.yaw = 0; c.jump = false; c.slide = false;
     c.dash = (crowd >= 3 || bot.panic > 12 || danger) && g.t - bot.dashAt > 1.2; c.use = hold || !!(target && Math.hypot(target.x - p.x, target.z - p.z) < 2.5);
     if (c.dash) bot.dashAt = g.t;
+    if (bot.hop > 0 && !c.dash) {       // slide-hop bot: on each landing it either hops at once with slide held (success) or waits 8 ticks first (a miss); a LCG of its own, so the sim's streams are untouched
+      if (!p.grounded) bot.hopDecided = false;
+      else if (!bot.hopDecided) { bot.hopDecided = true; bot.hopSeed = (Math.imul(bot.hopSeed, 1103515245) + 12345) >>> 0; bot.hopOk = (bot.hopSeed >>> 16) / 65536 < bot.hopP(); bot.hopWait = bot.hopOk ? 0 : 8; }
+      if (p.grounded) { if (bot.hopWait > 0) bot.hopWait--; else { c.jump = true; c.slide = true; } }
+    }
   } else { bot.cmd.dash = false; bot.cmd.use = bot.hold; }
   quantise(bot.cmd, rec);
   return rec;

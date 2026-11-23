@@ -10,6 +10,19 @@ export const K = Object.freeze({
   lutN: 1024,                       // curved stats are clamped to 0..1023 points
 
   // ---- curves (section 3) ----
+  // ---- slide-jump (movement flow 3): speed tech, all of it tick-based ----
+  hopWindow: 6,                     // a jump within this many ticks of landing, with slide held (or out of a slide), is a slide hop
+  hopGain: 0.08,                    // each slide hop adds this fraction of run speed to the speed it keeps
+  hopCap: 1.6,                      // ... up to this multiple of run speed (also the cap on a slide's downhill gain)
+  hopDashSlide: 1.25,               // a slide begun within hopWindow ticks of a dash's end starts at this multiple of run speed
+  hopAirCone: 0.5,                  // in the air, carried speed is kept while the stick is within 60 degrees of the travel direction (cos 60)
+  hopAirTurn: 2.0944,               // and the velocity turns toward the stick at most this fast (120 degrees a second) while above run speed
+  hopDecayTicks: 18,                // on the ground, not sliding, speed above run speed falls to run speed over this many ticks
+  hopStep: 0.5,                     // a wall, or a step up of more than this, drops the speed to run speed
+  hunterBurst: 1.7,                 // Overtime hunters and Toll Shades can reach this multiple of run speed in bursts, so a slide-hopper does not simply outrun them
+  chaseLead: 1.05,                  // ... a burst matches the duelist's real speed times this
+  leadCap: 0.8,                     // gate-boss and Seer shots lead the duelist's real velocity by at most this many seconds
+  hopHitKeep: 0.5,                  // a hit that lands keeps this fraction of the bonus
   guardK: 20, guardCap: 0.85, guardPerArmour: 4,       // 1 armour = 4 Guard points, which go through the same hyperbola as everything else (no flat subtraction, no 1 LP floor)
   sideK: 60, sideCap: 0.55,
   keenBase: 0.05, keenSpan: 0.75, keenK: 40,

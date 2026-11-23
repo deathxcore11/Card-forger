@@ -10,7 +10,8 @@ import { isDashing } from './player.js';
 import { MAP } from '../data/map.js';
 import { ACES } from '../data/stages.js';
 
-const HUSK = KINDS.husk.id, RUNNER = KINDS.runner.id, SEER = KINDS.seer.id, GOLEM = KINDS.golem.id, BLOAT = KINDS.bloat.id, SCARAB = KINDS.scarab.id;
+import { K as K2 } from '../data/tuning.js';
+const HUNTER = KINDS.hunter.id, HUSK = KINDS.husk.id, RUNNER = KINDS.runner.id, SEER = KINDS.seer.id, GOLEM = KINDS.golem.id, BLOAT = KINDS.bloat.id, SCARAB = KINDS.scarab.id;
 export const KIND_ID = Object.fromEntries(Object.keys(KINDS).map(k => [k, KINDS[k].id]));
 
 export function makeEnemies(max) {
@@ -113,7 +114,8 @@ export function updateEnemies(g, dt) {
       o.x = e.x[i]; o.y = e.y[i]; o.z = e.z[i]; o.vy = 0;
       dx = p.x - o.x; dz = p.z - o.z; d = Math.sqrt(dx * dx + dz * dz) || 0.001;
     }
-    const spd = rooted ? 0 : e.spd[i];
+    let spd = rooted ? 0 : e.spd[i];
+    if (kid === HUNTER && !rooted) { const fl = Math.min(K2.hunterBurst * CFG.player.speed * (1 + g.mods.move), Math.sqrt(p.vx * p.vx + p.vz * p.vz) * K2.chaseLead); if (fl > spd) spd = fl; }       // an Overtime hunter bursts to the duelist's real speed (up to 1.7x run speed)
     let touching = false;
 
     switch (kid) {
@@ -140,7 +142,8 @@ export function updateEnemies(g, dt) {
         if (d > S.keepMax) walk(g, o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
         else if (d < S.keepMin) walk(g, o, -dx / d, -dz / d, spd, dt, K.radius, E.stepUp);
         if (e.stT[i] <= 0 && d < S.range && lineClear(o.x, o.z, p.x, p.z, o.y)) {
-          e.ax[i] = dx / d; e.az[i] = dz / d; e.st[i] = 1; e.stT[i] = S.telegraph;
+          { const tl = Math.min(K2.leadCap, S.telegraph + d / S.speed), lx = dx + p.vx * tl, lz = dz + p.vz * tl, ll = Math.sqrt(lx * lx + lz * lz) || 1; e.ax[i] = lx / ll; e.az[i] = lz / ll; }       // the bolt leads the duelist's real velocity
+          e.st[i] = 1; e.stT[i] = S.telegraph;
           addTele(g.tele, { type: 0, x: o.x, y: o.y, z: o.z, dx: e.ax[i], dz: e.az[i], len: S.speed * S.life, w: S.width, dur: S.telegraph });
         }
         break;
