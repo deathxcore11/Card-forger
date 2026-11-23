@@ -428,6 +428,11 @@ def main():
             save(crunch(im, (352, 198), 256, amp=0.6), os.path.join(out, n + '.png'))
             save(crunch(im, (440, 248), 256, amp=0.6), os.path.join(out, n + '-l.png'))
             made.append(n + '-l')
+            if n.startswith('hall-duel'):
+                # the duel halls also stand behind a tall view (an unfolded phone, a tall window) at 656 x 369, so the
+                # table is drawn in front of the whole room there and no dark band is left above it
+                save(crunch(im, (656, 369), 256, amp=0.6), os.path.join(out, n + '-x.png'))
+                made.append(n + '-x')
         elif n.startswith('room-'):
             # a room of its own (the Forgers' room, the guardian's hall): a 3:2 painting, cut to the halls' 16:9 band
             # (most of the dark ceiling goes) so it stands in for a hall at the same two sizes
@@ -437,6 +442,10 @@ def main():
             save(crunch(im, (352, 198), 256, amp=0.6, box=box), os.path.join(out, n + '.png'))
             save(crunch(im, (440, 248), 256, amp=0.6, box=box), os.path.join(out, n + '-l.png'))
             made.append(n + '-l')
+            # the guardian's hall and the hidden duel's: a tall view's cut, as the duel halls have
+            if n in ('room-guardian', 'room-bare'):
+                save(crunch(im, (656, 369), 256, amp=0.6, box=box), os.path.join(out, n + '-x.png'))
+                made.append(n + '-x')
             if n == 'room-archive':  # the reading room stands whole behind the books (the Codex, Feats, the Vault), as the title picture did
                 save(crunch(im, (720, 480), 256, amp=0.6), os.path.join(out, n + '-book.png')); made.append(n + '-book')
         elif n.startswith('enchant-'):

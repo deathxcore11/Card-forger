@@ -25,6 +25,8 @@
 //           on the room picture, its spots in data-foot) stands with its lowest pixel on its spot;
 //   clear   no control, label or coin of the screen (outside a window, a scene, a dim or the toast) lies over such a
 //           moving part;
+//   table   on the duel's table each tap area is cut to its zone as the table's camera draws it and draws nothing; the
+//           numbers lie inside the view, apart and off the trap rows; the hall's painting spans the view to its foot;
 //   errors  no page error.
 // Some shapes are checked inside a page that styles pictures the way a host page may (img { max-width: 100%;
 // height: auto } and the like), and at the end a few scenes are pictured with and without those styles, with every
@@ -224,6 +226,43 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
             if (low < 0) out.push(`${name(c)}: no model drawn at its spot ${f}`);
             else if (Math.abs(low - (fy - 1)) > 2) out.push(`${name(c)}: a model's foot is at row ${low}, not on its spot ${f}`);
           }
+        }
+        // the duel's table, when no move is playing: each tap area is cut to its zone's four corners as the table's camera
+        // draws them and draws nothing itself; the numbers' plates lie inside the view, apart, off the trap rows; the
+        // hall's painting spans the view's width down to its foot, with at most an eighth of the view dark above it
+        // (or it is the tallest cut); a relic's strip lies inside the window.
+        const tbl = app.querySelector('canvas#tbl');
+        if (tbl && tbl.dataset.cam && !(window.LM && LM.G && LM.G.playing)) {
+          const c = JSON.parse(tbl.dataset.cam), co = Math.cos(c.pitch), si = Math.sin(c.pitch);
+          const proj = p => { const dy = p[1] - c.y, dz = p[2] - c.z, d = -dy * si - dz * co, u = dy * co - dz * si; return [Math.round(c.cx + c.f * p[0] / d), Math.round(c.cy - c.f * u / d)]; };
+          // the table's measures as app.mjs lays it out (TBL and zoneQuad): zones 62 apart, rows at 76, trap rows at 138
+          const quad = (seat, zi, trap) => { const x = (zi - 2) * 62, z = (seat ? -1 : 1) * (trap ? 138 : 76), hw = trap ? 17 : 25, hd = trap ? 22 : 33; return [[x - hw, 0, z - hd], [x + hw, 0, z - hd], [x + hw, 0, z + hd], [x - hw, 0, z + hd]].map(proj); };
+          for (const e of app.querySelectorAll('.zh[data-zone]')) {
+            const [s, z] = e.dataset.zone.split(':'), q = s[0] === 't' ? quad(+s.slice(1), +z, true) : quad(+s, +z + (c.off || 0), false);
+            const pts = (e.style.clipPath.match(/-?[\d.]+px -?[\d.]+px/g) || []).map(t => t.split(' ').map(parseFloat));
+            if (pts.length !== 4) { out.push(`${name(e)} zone ${e.dataset.zone}: tap area not cut to four corners`); continue; }
+            const off = pts.map(([x, y], i) => Math.hypot(e.offsetLeft + x - q[i][0], e.offsetTop + y - q[i][1]));
+            if (Math.max(...off) > .5) out.push(`${name(e)} zone ${e.dataset.zone}: tap area ${Math.max(...off).toFixed(1)} frame pixels off the zone as drawn`);
+            const st = getComputedStyle(e);
+            if (st.backgroundImage !== 'none' || !/rgba\(0, 0, 0, 0\)|transparent/.test(st.backgroundColor) || ['Top', 'Right', 'Bottom', 'Left'].some(k => parseFloat(st['border' + k + 'Width'])) || (st.outlineStyle !== 'none' && parseFloat(st.outlineWidth)) || st.boxShadow !== 'none') out.push(`${name(e)} zone ${e.dataset.zone}: a tap area that draws something over the table`);
+          }
+          const plates = JSON.parse(tbl.dataset.plates || '[]'), traps = [0, 1].flatMap(s => [0, 1, 2, 3, 4].map(z => { const q = quad(s, z, true), xs = q.map(p => p[0]), ys = q.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; }));
+          const meet = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+          plates.forEach(([s, z, x, y, w, h], i) => {
+            if (x < 0 || y < 0 || x + w > tbl.width || y + h > tbl.height) out.push(`numbers of zone ${s}:${z} reach out of the view (${x}, ${y}, ${w} x ${h} in ${tbl.width} x ${tbl.height})`);
+            const r = [x, y, x + w, y + h];
+            if (traps.some(t => meet(r, t))) out.push(`numbers of zone ${s}:${z} lie over a trap zone`);
+            for (const [s2, z2, x2, y2, w2, h2] of plates.slice(i + 1)) if (meet(r, [x2, y2, x2 + w2, y2 + h2])) out.push(`numbers of zones ${s}:${z} and ${s2}:${z2} overlap`);
+          });
+          const hall = app.querySelector('img[data-pic="hall"]');
+          if (hall && hall.complete && hall.naturalWidth) {
+            const vwW = tbl.width, vwH = tbl.height, l = hall.offsetLeft, t = hall.offsetTop;
+            if (l > 0 || l + hall.offsetWidth < vwW) out.push(`the hall's painting does not span the view (${l} to ${l + hall.offsetWidth} of ${vwW})`);
+            if (t + hall.offsetHeight < vwH) out.push(`the hall's painting stops ${vwH - t - hall.offsetHeight} frame pixels above the view's foot`);
+            if (t > Math.ceil(vwH / 8) && hall.naturalHeight < 369) out.push(`the hall's painting leaves ${t} frame pixels dark above it, and a taller cut exists`);
+          }
+          const vwin = app.querySelector('.vw');
+          for (const e of app.querySelectorAll('.rlcw')) if (vwin && !inside(e.getBoundingClientRect(), vwin.getBoundingClientRect())) out.push(`${name(e)}: a relic's strip reaches out of the window`);
         }
         // the card pictures: cut to console colour once the sheets are converted
         const unconverted = [...app.querySelectorAll('.cd .art, .big .art')].filter(e => e.style.backgroundImage && !/blob:/.test(e.style.backgroundImage)).length;
