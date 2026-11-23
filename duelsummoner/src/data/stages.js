@@ -34,9 +34,9 @@ export const RUNSPEC = {
 //   hp, hpCurve   enemy HP multiplier and the per-minute curve (1 + a m + b m^2); dmg, dmgPerMinute   enemy damage
 //   boss   elite and boss HP multiplier on top of hp;   score   multiplier on the run score (placeholder values)
 export const DIFFICULTY = {
-  easy:   { name: 'Easy',   score: 0.75, spawn: 0.8,  ramp: 0.8,  cap: { start: 150, end: 300, minutes: 14 }, hp: 0.5, hpCurve: { a: 0.05, b: 0.003 }, dmg: 0.4, dmgPerMinute: 0.04, boss: 0.8 },
-  medium: { name: 'Medium', score: 1.0,  spawn: 1.0,  ramp: 1.0,  cap: { start: 300, end: 300, minutes: 1 },  hp: 0.6,  hpCurve: { a: 0.07, b: 0.005 },  dmg: 0.5,  dmgPerMinute: 0.06, boss: 1.0 },
-  hard:   { name: 'Hard',   score: 1.5,  spawn: 1.2,  ramp: 1.25, cap: { start: 300, end: 300, minutes: 1 },  hp: 0.8, hpCurve: { a: 0.12, b: 0.01 }, dmg: 0.7, dmgPerMinute: 0.08, boss: 1.3 }
+  easy:   { name: 'Easy',   coin: 1.5, score: 0.75, spawn: 0.8,  ramp: 0.8,  cap: { start: 150, end: 300, minutes: 14 }, hp: 0.5, hpCurve: { a: 0.05, b: 0.003 }, dmg: 0.4, dmgPerMinute: 0.04, boss: 0.8 },
+  medium: { name: 'Medium', coin: 1, score: 1.0,  spawn: 1.0,  ramp: 1.0,  cap: { start: 300, end: 300, minutes: 1 },  hp: 0.6,  hpCurve: { a: 0.07, b: 0.005 },  dmg: 0.5,  dmgPerMinute: 0.06, boss: 1.0 },
+  hard:   { name: 'Hard',   coin: 1, priceMul: 1.5, score: 1.5,  spawn: 1.2,  ramp: 1.25, cap: { start: 300, end: 300, minutes: 1 },  hp: 0.8, hpCurve: { a: 0.12, b: 0.01 }, dmg: 0.7, dmgPerMinute: 0.08, boss: 1.3 }
 };
 // The Twin Jackal Idols' bite and speed per difficulty (stage runs only; the classic mode keeps the base numbers)
 DIFFICULTY.easy.idol = { bite: 10, speed: 5 }; DIFFICULTY.medium.idol = { bite: 12, speed: 5.5 }; DIFFICULTY.hard.idol = { bite: 15, speed: 6 };
