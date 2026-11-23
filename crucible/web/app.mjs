@@ -1899,7 +1899,9 @@ function psOmen() {
 // the most, stands in its middle, so the near shelves frame it on both sides (at 512 pixels wide only their inner edge
 // shows). Its heading is carved, its pages scroll in a box, its plaques lie along its foot.
 function psBook(title, body, foot, extra = '') {
-  const { W, H } = F, bw = Math.min(W - 16, 416), bx = (W - bw) >> 1, bgPic = CART.has('room-archive-book') ? 'room-archive-book' : 'key-title';
+  // The painting has black bands of its own above and below the room, so a frame taller than 360 rows takes the cut of the
+  // room without them (720 x 480, console-art.py), and no band shows above or below the shelves.
+  const { W, H } = F, bw = Math.min(W - 16, 416), bx = (W - bw) >> 1, bgPic = H > 360 && CART.has('room-archive-book-x') ? 'room-archive-book-x' : CART.has('room-archive-book') ? 'room-archive-book' : 'key-title';
   const bg = CART.has(bgPic) && D.cart && D.cart.title === 720 ? `<img class="bg" src="${cimg(bgPic)}" width="720" height="480" style="position:absolute;left:${(W - 720) >> 1}px;top:${(H - 480) >> 1}px" alt="">` : box(0, 0, W, H, 'st dk');
   const c = carve(title, 16, render), head = c ? `<img class="ab" src="${c.url}" width="${c.w}" height="${c.h}" style="left:${(bw - c.w) >> 1}px;top:4px" alt="${esc(title)}">` : `<b class="ab lb g" style="left:8px;top:8px">${esc(title)}</b>`; // placed from its own width, so it starts on a whole pixel
   return `<div class="ti">${bg}<div class="wn book" style="left:${bx}px;top:6px;width:${bw}px;height:${H - 12}px">${head}
@@ -1940,12 +1942,16 @@ function psCodex() {
   const filt = inl('FOUND', 'cxview:found', { on: v.view === 'found' }) + inl('ALL', 'cxview:all', { on: v.view === 'all' }) + X.types.map(t => inl(`${t} ${byType(t).filter(R => found.has(R.id)).length}/${byType(t).length}`, `cxtype:${t}`, { on: v.type === t })).join('');
   const heard = BOSSES.flat().filter(b => P.seen.includes('memory:' + b.id));
   const rum = rumours() ? `<p><b class="lb g">RUMOURS · ${heard.length} OF ${BOSSES.flat().length} MEMORIES HEARD</b></p>${heard.map(b => `<p><b class="lb">${esc(b.name.toUpperCase())}</b> ${esc(SCENES['memory:' + b.id].lines[0])}</p>`).join('') || '<p class="d">Nothing yet. A guardian remembers something as it falls.</p>'}` : '';
-  const body = `<p>${found.size} of ${X.list.length} results found, ${G.known.size} recipes written. A page you have found shows why the meld works, so you can make it again from other cards.</p>${rum}<div class="row2" style="margin:4px 0">${filt}</div><div class="row2">${tiles || '<p class="d">Nothing here yet. Meld two monsters in a duel to write the first page.</p>'}</div>${total > 120 ? `<p class="d">Showing 120 of ${total}. Pick a Type to narrow it.</p>` : ''}<p><b class="lb g">RECORD</b></p><p>Runs ${P.runs}. Clears ${P.clears}. Duels won ${P.duelWins}. Guardians beaten ${P.bossWins}. Memories earned ${P.earned}.</p>`;
+  // Its pages mix three steps: lines of 16 pixels, the filter plaques on rows of 24 and the cards on rows of 64. A give
+  // before the plaques and one before the cards (scrollPlan) open as far as the box needs to come to rest on whole lines,
+  // rows and cards together, so it opens at its count and every line of it can be read.
+  const give = most => `<i class="scgive" data-step="8" data-most="${most}"></i>`;
+  const body = `<p>${found.size} of ${X.list.length} results found, ${G.known.size} recipes written. A page you have found shows why the meld works, so you can make it again from other cards.</p>${rum}${give(16)}<div class="row2" style="margin:0 0 4px">${filt}</div>${give(56)}<div class="row2" style="margin:0 0 4px">${tiles || '<p class="d">Nothing here yet. Meld two monsters in a duel to write the first page.</p>'}</div>${total > 120 ? `<p class="d">Showing 120 of ${total}. Pick a Type to narrow it.</p>` : ''}<p><b class="lb g">RECORD</b></p><p>Runs ${P.runs}. Clears ${P.clears}. Duels won ${P.duelWins}. Guardians beaten ${P.bossWins}. Memories earned ${P.earned}.</p>`;
   let page = '';
   if (G.cx.open != null) { const R = X.res.get(G.cx.open); if (R) { const c = card(R.id), recs = found.get(R.id) || [], known = recs.length > 0; if (known) convertSheets(96);
     const hint = R.kind === 'printed' ? `A printed fusion of ${R.mats.map(m => 'a ' + card(m).type).join(' and ')}.` : `A ${c.attr} ${c.type}. Some ${c.type} melded with some ${c.attr} monster makes it. Which ones is for you to find.`;
     page = `<div class="dim" data-a="cxclose"></div><div class="wn mw" data-a="cxclose" style="left:${72 + cx0()}px;top:${16 + cy0()}px;width:368px;height:208px">${known ? `<div class="big" style="left:8px;top:8px"><i class="art" style="${cpic(R.id, 96)}"></i><b class="n1">${c.atk} / ${c.def}</b><b class="n2">${esc(`${c.attr} · LV ${c.level}`)}</b></div>` : '<div class="big unk" style="left:8px;top:8px"><b class="n1">?</b></div>'}
-      <div class="ab sc" style="left:122px;top:8px;width:238px;height:170px"><h2>${known ? esc(c.name) : 'Not found yet'}</h2><p>${known ? esc(`${c.type}. ${whyLine(R)}`) : esc(hint)}</p>${known ? `<p class="d">Recipes you have found (${recs.length}):</p>${recs.slice(0, 8).map(ids => `<p>${ids.map(x => esc(card(x).name)).join(' + ')}</p>`).join('')}${recs.length > 8 ? `<p class="d">and ${recs.length - 8} more</p>` : ''}` : ''}</div>${lb(250, 190, 'TAP TO CLOSE', 'd')}</div>`; } }
+      <div class="ab sc" style="left:122px;top:8px;width:238px;height:170px"><h2>${known ? esc(c.name) : 'Not found yet'}</h2><p>${known ? esc(`${c.type}. ${whyLine(R)}`) : esc(hint)}</p>${known ? `<p class="d">Recipes you have found (${recs.length}):</p><p>${recs.slice(0, 8).map(ids => ids.map(x => esc(card(x).name)).join(' + ')).join('<br>')}</p>${recs.length > 8 ? `<p class="d">and ${recs.length - 8} more</p>` : ''}` : ''}</div>${lb(250, 190, 'TAP TO CLOSE', 'd')}</div>`; } }
   return psBook('CODEX', body, inl('BACK', 'home', { lit: true }), page);
 }
 
@@ -1988,7 +1994,7 @@ const storyPic = (id, i) => { const p = STORY_PIC[id] || (id.startsWith('memory:
 function endWindow(o) {
   const s = o.sum, head = `${o.rival ? o.rival.name : ''}, ${s.turns} turns${s.reason === 'deckout' ? ', a deck ran out' : ''}.`;
   const paras = s.won ? [head, `Embers +${s.embers}${s.bountyMet ? '. Bounty met.' : '.'}`] : [head, `You lose a Spark. ${G.run.sparks} left.`, ...(o.why || []).slice(0, 2)];
-  const more = paras.reduce((n, t) => n + Math.ceil(t.length / 36), s.won ? 1 : 0) * 16 + paras.length * 4 > 142; // the text face is 8 pixels a letter: some 36 to a line here
+  const more = paras.reduce((n, t) => n + Math.ceil(t.length / 36), s.won ? 1 : 0) * 16 + (paras.length - 1) * 16 > 142; // the text face is 8 pixels a letter: some 36 to a line here, a blank line between paragraphs
   const body = s.won ? `<p>${esc(head)}</p><p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b></p><p>${esc(paras[1])}</p>` : paras.map((t, i) => `<p${i > 1 ? ' class="d"' : ''}>${esc(t)}</p>`).join('');
   return win(96, 8, 320, 224, `<div style="display:flex;justify-content:center;margin:0 0 4px">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><div class="sc" style="height:142px">${body}</div>${more ? lb(8, 202, 'MORE BELOW, SCROLL', 'g') : ''}${pq(216, 198, 88, 'CONTINUE', 'closeov', { lit: true })}`);
 }
@@ -2021,7 +2027,6 @@ function psWindows() {
       <div class="ab sc" style="left:122px;top:8px;width:238px;height:170px"><h2>${esc(c.name)}</h2>${mon ? `<p class="d">${esc(c.type)}. Printed ${c.atk} / ${c.def}.</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p>${CART.has('enchant-' + G.inspect.e + '-32') ? `<img src="${cimg('enchant-' + G.inspect.e + '-32')}" width="32" height="32" alt="" style="float:left;margin:0 4px 0 0">` : ''}<b class="lb g">ENCHANT ${esc(G.inspect.e.toUpperCase())}</b><br>${esc(ENCHANT_TEXT[G.inspect.e])}</p>` : ''}<p class="d">Weight ${weightOf(db, c.id)}.</p></div>${lb(250, 190, 'TAP TO CLOSE', 'd')}</div>`; }
   const t = G.tab; if (!t) return '';
   if (t === 'bar') return win(56, 40, 400, 160, `<div class="sc" style="height:116px"><p>${G.barText || ''}</p></div>${pq(304, 132, 88, 'CLOSE', 'tab:', { lit: true })}`);
-  const close = (y = 200) => pq(304, y, 88, 'CLOSE', 'tab:', { lit: true });
   // A tall window (How to Play, Options, the relics, the doors, this duel): 480 wide in the middle, and as tall as the frame
   // less eight pixels above and below, so a taller frame shows more lines. Its pages scroll in a box that ends at least
   // eight pixels above the plaques along its foot (fitScroll trims it to whole lines and marks when more lies below).
@@ -2029,15 +2034,17 @@ function psWindows() {
   if (t === 'menu') { const duel = r && (r.phase === 'duel' || G.shown); const items = [['DECK', 'tab:deck'], ['RELICS', 'tab:relics'], duel && ['THIS DUEL', 'tab:duel'], duel && [G.fast ? 'SPEED: FAST' : 'SPEED: NORMAL', 'speed'], !duel && r && ['DOORS IN FULL', 'tab:doors'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options'], r && ['LEAVE THE RUN', 'quit']].filter(Boolean);
     return win(176, 16, 160, 28 + items.length * 20 + 24, `<h2>Menu</h2>${items.map(([l, a], i) => pq(8, 22 + i * 20, 144, l, a)).join('')}${pq(8, 26 + items.length * 20, 144, 'CLOSE', 'tab:', { lit: true })}`); }
   if (t === 'help') return tall('How a duel works', `<p>Each turn: draw toward five cards (two a turn at most), play one card or one meld, then attack.</p><p>Meld: tap two or more hand cards in order. They combine left to right into one monster. Tap one of your table monsters first to meld onto it.</p><p>Monsters fight with their printed ATK and DEF. Effects printed on a card are not used in Lost Memories.</p><p>Attack position fights with ATK. Defense uses DEF and protects your Life Points. Veiled is face down in defense.</p><p>WATER beats FIRE beats WIND beats EARTH beats WATER. LIGHT and DARK beat each other when attacking. The edge is +500 for that battle.</p><p>Field Spells set the terrain (+500 for its Types). ${db.config.equipKinds ? 'Equips made for a Type or Attribute give +800 to that kind and +300 to any other.' : 'Equips give +500.'} Traps wait face down for an attack. Other cards are fuel: +300 in a meld.</p><p>Play comes before attacks. A monster that attacked or just arrived cannot change position.</p><p>Lose a duel and you lose a Spark. The guardian's door needs two seals, one from each duel you win on the floor.</p>`, pq(8, F.H - 44, 160, 'SHOW FIRST LESSONS', 'relearn'));
-  if (t === 'sound') return win(96, 24, 320, 192, `<h2>Sound</h2><div id="soundslot" class="soundslot sc" style="height:132px"></div>${close(164 - 0)}`);
-  if (t === 'options') return tall('Options', `<p><b class="lb g">SOUND</b></p><div id="soundslot" class="soundslot"></div><p><b class="lb g">LOOK</b></p><button class="lab" data-a="look"><i>NEW</i><span>The console look. Tap for the old look, to compare.</span></button><p><b class="lb g">LAB SWITCHES</b> <small class="d">EXPERIMENTS. A RUN IN PROGRESS KEEPS THE RULES IT STARTED WITH.</small></p>${labKeys().map(k => { const held = pref.depth && DEPTH_SET.includes(k); return `<button class="lab ${pref[k] || held ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] || held ? 'ON' : 'OFF'}</i><span>${esc(LABS[k])}${held && !pref[k] ? ' (On through the depth set.)' : ''}</span></button>`; }).join('')}`);
+  if (t === 'sound') return win(96, 24, 320, 192, `<h2>Sound</h2><div id="soundslot" class="soundslot sc" style="height:132px"></div>${pq(224, 164, 88, 'CLOSE', 'tab:', { lit: true })}`); // CLOSE inside this narrower window, at its right
+  if (t === 'options') return tall('Options', `<h3>SOUND</h3><div id="soundslot" class="soundslot"></div><h3>LOOK</h3><button class="lab" data-a="look"><i>NEW</i><span>The console look. Tap for the old look, to compare.</span></button><h3>LAB SWITCHES <small class="d">EXPERIMENTS. A RUN IN PROGRESS KEEPS THE RULES IT STARTED WITH.</small></h3>${labKeys().map(k => { const held = pref.depth && DEPTH_SET.includes(k); return `<button class="lab ${pref[k] || held ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] || held ? 'ON' : 'OFF'}</i><span>${esc(LABS[k])}${held && !pref[k] ? ' (On through the depth set.)' : ''}</span></button>`; }).join('')}`);
   if (!r) return '';
   if (t === 'relics') return tall('Your relics', `${relicList(r).map(id => `<div class="rl">${CART.has(relicFile(id)) ? `<img src="${cimg(relicFile(id))}" alt="">` : `<i class="gem">${esc(RELICS[id].name.replace(/^The /, '')[0])}</i>`}<div><b>${esc(RELICS[id].name)}</b>${esc(RELICS[id].text)}</div></div>`).join('') || '<p>None yet.</p>'}${possibleMasterworks(r).map(id => `<p class="d">Masterwork ready at an Anvil: ${esc(RELICS[id].name)}.</p>`).join('')}`);
   if (t === 'doors' && r.doors) return tall('The doors', `${r.doors.map((d, i) => `<p><b class="lb g">${i + 1}. ${esc(doorName(d))}</b> <small class="d">${d.know === 'known' ? 'KNOWN' : d.know === 'partial' ? 'PARTLY HIDDEN' : 'IN FOG'}</small><br>Cost: ${esc(stop(d.cost))} Reward: ${esc(stop(d.reward))}${d.law ? ' Law: ' + esc(lawShown(d.law)) : ''}${d.tell ? ` ${esc(d.style)}: ${esc(d.tell)}` : ''}${(d.tags || []).length ? ' ' + esc(d.tags.join(', ')) + '.' : ''}</p>`).join('')}`);
   if (t === 'duel') { const rv = G.shown ? G.shown.rival : info(r), v = r.duel ? viewFor(r.duel, db, 0) : null;
     return tall('This duel', `${rv.styleText ? `<p>${esc(rv.styleText)}</p>` : ''}${rv.lawText ? `<p><b class="lb g">LAW</b> ${esc(lawShown(rv.lawText))}</p>` : ''}${rv.twist ? `<p>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</p>` : ''}<p><b class="lb g">BOUNTY</b> ${esc(rv.bountyText || '')}</p>${v && v.forger ? `<p><b class="lb g">${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))}</p><p><b class="lb g">${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'Used this duel.' : esc(FORGERS[v.forger].powerText)}</p>` : ''}<p><b class="lb g">LOG</b><br>${G.log.slice(-8).map(esc).join('<br>')}</p>`); }
+  // The deck and the trunk: rows of cards 64 pixels apart, the trunk's row led by a tile that names it, so every row of the
+  // box is a whole row of cards wherever it rests (fitScroll closes the window up under the rows it shows).
   if (t === 'deck') { const list = (l, key, picked, k2) => l.map((e, i) => [e, i]).sort((a, b) => cardValue(db, b[0]) - cardValue(db, a[0])).map(([e, i]) => psCard(e, null, null, { cls: picked === i ? 'sel' : '', attrs: `data-a="${key}:${i}"` })).join('');
-    const h = F.H - 8; return `<div class="dim"></div><div class="wn mw" style="left:${8 + cx0()}px;top:4px;width:496px;height:${h}px"><h2>Deck ${r.deck.length} · weight ${deckWeight(db, r.deck)}/${weightCap(db, r)}</h2><p class="d">${r.phase === 'chamber' ? 'Tap a deck card, then a trunk card, to swap them.' : 'You can swap cards in a chamber.'}</p><div class="sc" style="height:${h - 76}px"><div class="row2">${list(r.deck, 'deckpick', G.pickDeck)}</div><h3 style="margin-top:6px">Trunk ${r.trunk.length}</h3><div class="row2">${list(r.trunk, 'trunkpick', G.pickTrunk) || '<span class="d">Empty.</span>'}</div></div>${pq(400, h - 24, 88, 'CLOSE', 'tab:', { lit: true })}</div>`; }
+    const h = F.H - 8; return `<div class="dim"></div><div class="wn mw" style="left:${8 + cx0()}px;top:4px;width:496px;height:${h}px"><h2>Deck ${r.deck.length} · weight ${deckWeight(db, r.deck)}/${weightCap(db, r)}</h2><p class="d">${r.phase === 'chamber' ? 'Tap a deck card, then a trunk card, to swap them.' : 'You can swap cards in a chamber.'}</p><div class="sc" style="height:${h - 72}px"><div class="row2">${list(r.deck, 'deckpick', G.pickDeck)}</div><div class="row2" style="margin-top:4px"><i class="cd trk" style="position:relative"><b class="n1">TRUNK</b><b class="n3">${r.trunk.length || 'NONE'}</b></i>${list(r.trunk, 'trunkpick', G.pickTrunk)}</div></div>${pq(400, h - 24, 88, 'CLOSE', 'tab:', { lit: true })}</div>`; }
   return '';
 }
 // Which screens are drawn the console way. Everything else keeps the old look for now.
@@ -2070,7 +2077,7 @@ function setMats() {
 }
 function drawConsole(screen) {
   app.classList.add('ps'); app.classList.remove('phone', 'era'); document.body.classList.add('ps'); fitConsole(app); setMats(); // the frame's size first: the screen is laid out for it
-  const r = G.run;
+  const r = G.run, keep = scrollKeep();
   // the save bar and a short message take the text bar's place and width in this frame (the bar: 40 pixels at its foot, between the pillars)
   app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar" style="width:${F.W - 192}px"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast" style="top:${F.H - 40}px;width:${F.W - 192}px">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown || endShown() ? 'duel' : r.phase) : 'home'; app.dataset.room = '';
@@ -2085,27 +2092,35 @@ function drawConsole(screen) {
   if (document.getElementById('tbl')) { psTextures(); convertSheets(40); psPaint(true); psLoop(); }
   else convertSheets(40);
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
-  barFits(); fitScrolls();
+  barFits(); fitScrolls(keep);
   if (!drawConsole.fonts && document.fonts) { // a text face may arrive after the drawing that first asks for it (the body face only with the first page of words): measure again
     drawConsole.fonts = 1; const again = () => { if (app.classList.contains('ps')) { barFits(); fitScrolls(); } }; pixelText();
     document.fonts.ready.then(again); if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', again); }
   fit();
 }
-// A box of pages that scrolls, in a window or a book, ends on a whole line. Its height is trimmed from the one the screen
-// gave it (data-max) to the foot of the last line, card or row it can show whole, and a scroll comes to rest with a whole
-// line at its top. While more lies below, a marker bobs under its right end, as under the text bar.
+// A box of pages that scrolls, in a window or a book, shows whole lines and only whole lines, and its window closes up
+// under it, so no empty band is left in it. When the screen is drawn, the box's height is cut from the one the screen gave
+// it (data-max) to the foot of the last line, card or row it can show whole; the plaques along the window's foot move up
+// to eight pixels under it, and the window is that much shorter and stands in the middle of the room it had. The box keeps
+// that height while it is read: a scroll comes to rest only where a whole line stands at its top and a whole line ends at
+// its foot (its rests). The lists are laid on lines of 16 pixels (cards on rows of 64), so a rest comes every line or two,
+// and of the heights near the largest the box takes one at which every line can be read whole at some rest. While more
+// lies below, a marker bobs under its right end, as under the text bar.
 function scrollAtoms(sc) {
   const out = [], yOf = e => { let y = 0; for (let q = e; q && q !== sc; q = q.offsetParent) y += q.offsetTop; return y; };
-  // A button of a line or two is kept whole; a taller one (a switch with a paragraph beside it) may be cut between its lines.
-  const whole = c => /^(IMG|CANVAS|INPUT)$/.test(c.tagName) || (c.tagName === 'BUTTON' && c.offsetHeight <= 40) || c.classList.contains('cd') || c.classList.contains('coin') || c.classList.contains('ga') || c.classList.contains('big');
-  // Each line of words is found where the browser set it, from the middle of its box on the screen, so a name in the label
-  // face above a paragraph, or small words inside a line, take their real place. The frame may be scaled and turned.
+  // A button of a line or two is kept whole; a switch with a paragraph beside it (.lab) may be cut between its lines.
+  const whole = c => /^(IMG|CANVAS|INPUT)$/.test(c.tagName) || (c.tagName === 'BUTTON' && c.offsetHeight <= 40 && !c.classList.contains('lab')) || c.classList.contains('cd') || c.classList.contains('coin') || c.classList.contains('ga') || c.classList.contains('big');
+  // Each line of words is found where the browser set it, from the middle of its box on the screen, and taken as the line
+  // of its block it stands in (the block's lines are its line height apart from the top of its content), so a name in the
+  // label face, which sits low in a line of the text face, or small words inside a line, take their line's real place.
+  // The frame may be scaled and turned.
   const box = sc.getBoundingClientRect(), up = app.style.transform.includes('rotate'), k = app.getBoundingClientRect().width / (up ? app.offsetHeight : app.offsetWidth) || 1, base = sc.scrollTop - sc.clientTop;
   const mid = r => (up ? box.right - (r.left + r.right) / 2 : (r.top + r.bottom) / 2 - box.top) / k + base;
   const lines = (n, e) => {
     let b = e; while (b !== sc && getComputedStyle(b).display === 'inline') b = b.parentElement;
-    const lh = parseFloat(getComputedStyle(b).lineHeight) || 16, rg = document.createRange(); rg.selectNodeContents(n);
-    for (const r of rg.getClientRects()) if (r.width && r.height) { const t = Math.round(mid(r) - lh / 2); out.push([t, t + lh]); }
+    const cs = getComputedStyle(b), lh = parseFloat(cs.lineHeight) || 16, rg = document.createRange(); rg.selectNodeContents(n);
+    const top = (b === sc ? 0 : yOf(b) + (parseFloat(cs.borderTopWidth) || 0)) + (parseFloat(cs.paddingTop) || 0);
+    for (const r of rg.getClientRects()) if (r.width && r.height) { const t = top + Math.round((mid(r) - top - lh / 2) / lh) * lh; out.push([t, t + lh]); }
   };
   const walk = e => { for (const n of e.childNodes) {
     if (n.nodeType === 3) { if (n.textContent.trim()) lines(n, e); continue; }
@@ -2117,26 +2132,163 @@ function scrollAtoms(sc) {
   } };
   walk(sc); return out;
 }
-function fitScroll(sc) {
+const FOOT_GAP = 8; // from a box's foot to the plaques under it
+// The box's rests at a height h: blk marks every row of the box's pages that lies inside a line, a card or a row (a cut
+// there would split it); a rest is a scroll whose top and foot both lie on rows that are not marked. The last rest shows
+// the last line whole, with blank under it if need be (pad: the blank the pages need below them to scroll that far).
+// The box always opens at its top: a height is taken only if the scroll 0 is a rest (its foot, at the top, falls between
+// two lines), so its first lines can always be read.
+// Pages that mix steps (lines of 16 pixels, plaques on rows of 24, cards on rows of 64) may hold gives (.scgive): blanks
+// between their parts that may open by a few steps (data-step, 16 pixels unless it says, up to data-most, 48 unless it
+// says), so the parts come to rest whole together. Of the ways
+// to open them and the heights near the largest, the plan takes the one that leaves the least blank, in the box and
+// under it, at which every line can be read whole at some rest and a rest comes at least every half a box.
+function scrollPlan(sc, max) {
+  for (const e of sc.querySelectorAll(':scope > .scend')) e.remove();
+  const gv = [...sc.querySelectorAll('.scgive')]; for (const g of gv) g.style.height = '0px';
+  const atoms = scrollAtoms(sc), end0 = Math.ceil(atoms.reduce((m, [, b]) => Math.max(m, b), 0));
+  const L0 = Math.max(end0, sc.scrollHeight > sc.clientHeight + .5 ? sc.scrollHeight : 0);
+  const gy = gv.map(g => { let y = 0; for (let q = g; q && q !== sc; q = q.offsetParent) y += q.offsetTop; return y; });
+  const sum = o => o.reduce((s, v) => s + v, 0);
+  let opens = [[]];
+  for (const g of gv) { const st = +g.dataset.step || 16, most = +g.dataset.most || 48, vs = []; for (let v = 0; v <= most; v += st) vs.push(v); opens = opens.flatMap(o => vs.map(v => o.concat(v))); }
+  opens.sort((p, q) => sum(p) - sum(q));
+  // the pages with the gives opened by o: their marks, their foot and how well each height reads with them
+  const lay = o => {
+    const sh = a => o.reduce((s, v, i) => s + (gy[i] <= a + .5 ? v : 0), 0), tot = sum(o), L = L0 + tot, end = end0 + tot, blk = new Uint8Array(L + max + 2);
+    const parts = atoms.filter(([a, b]) => b > a).map(([a, b]) => [a + sh(a), b + sh(a)]).sort((p, q) => p[0] - q[0]);
+    for (const [a, b] of parts) for (let y = Math.max(0, Math.floor(a) + 1); y < Math.ceil(b); y++) blk[y] = 1;
+    return { o, tot, L, end, blk, parts };
+  };
+  const at = (Y, h) => {
+    const { blk, end, L } = Y; if (end <= h) return { h, R: [0], pad: 0, Y };
+    let last = end - h; while (blk[last]) last++;
+    const R = []; for (let s = 0; s < last; s++) if (!blk[s] && !blk[s + h]) R.push(s);
+    R.push(last); return { h, R, pad: Math.max(0, last + h - L), Y };
+  };
+  // how well a height reads: the lines never seen whole at any rest, and the longest step from one rest to the next
+  const score = P => { let unseen = 0, j = 0, step = 0; const { h, R } = P;
+    for (const [a, b] of P.Y.parts) { if (b - a > h) continue; while (j + 1 < R.length && R[j + 1] <= a + .5) j++; if (!(R[j] <= a + .5 && b <= R[j] + h + .5)) unseen++; }
+    for (let i = 1; i < R.length; i++) step = Math.max(step, R[i] - R[i - 1]);
+    return Object.assign(P, { unseen, step }); };
+  const done = P => Object.assign(P, { end: P.Y.end, o: P.Y.o });
+  const lays = opens.map(lay);
+  if (end0 <= max) return done(score(at(lays[0], Math.max(1, end0))));
+  const good = P => P.R[0] === 0 && !P.unseen && P.step <= Math.max(16, P.h >> 1);
+  // a box whose foot, at the top, falls in the blank under a line or a row closes up to that line when it reads as well
+  const tighten = P => { const t = P.Y.parts.reduce((m, [, b]) => b <= P.h + .5 && b > m ? Math.round(b) : m, 0); if (t > 0 && t < P.h) { const Q = score(at(P.Y, t)); if (good(Q)) return Q; } return P; };
+  // the blank a plan leaves: the height the box gives up, twice what its gives open (a blank inside the pages shows more
+  // than a window a little shorter), and the blank over the box's foot as it opens, under the last line it shows whole
+  const band = P => P.h - P.Y.parts.reduce((m, [, b]) => b <= P.h + .5 && b > m ? b : m, 0);
+  const cost = P => Math.floor(max) - P.h + 2 * P.Y.tot + band(P);
+  let best = null, fall = null;
+  for (const Y of lays) {
+    if (best && 2 * Y.tot >= cost(best)) break;
+    for (let h = Math.floor(max); h >= Math.max(16, Math.floor(max) - 80); h--) {
+      if (best && Math.floor(max) - h + 2 * Y.tot >= cost(best)) break;
+      const P = score(at(Y, h)); if (P.R[0] !== 0) continue;
+      if (good(P)) { const Q = tighten(P); if (!best || cost(Q) < cost(best)) best = Q; continue; }
+      if (!fall || P.unseen < fall.unseen || (P.unseen === fall.unseen && P.step < fall.step)) fall = P;
+    }
+  }
+  // none reads well: the one that reads best, still opening at its top (a shorter box if no height near the largest can)
+  best = best || fall;
+  for (let h = Math.floor(max) - 81; !best && h >= 16; h--) { const P = score(at(lays[0], h)); if (P.R[0] === 0) best = P; }
+  return done(best || score(at(lays[0], Math.floor(max))));
+}
+// The box's window and the plaques under the box, as the screen drew them (kept, so a box fitted again starts from them).
+function scrollHome(sc) {
+  const win = sc.closest('.mw, .book'), max = +sc.dataset.max;
+  if (!win.dataset.h0) {
+    win.dataset.h0 = win.offsetHeight; win.dataset.t0 = win.offsetTop;
+    const foot = sc.offsetTop + max - 1;
+    for (const e of win.children) if (e !== sc && !e.classList.contains('scm') && !e.classList.contains('scl') && getComputedStyle(e).position === 'absolute' && e.offsetTop >= foot) e.dataset.t0 = e.offsetTop;
+  }
+  win.style.height = win.dataset.h0 + 'px'; win.style.top = win.dataset.t0 + 'px';
+  for (const e of win.querySelectorAll(':scope > [data-t0]')) e.style.top = e.dataset.t0 + 'px';
+  return win;
+}
+function fitScroll(sc, want) {
   if (!sc.dataset.max) sc.dataset.max = parseFloat(sc.style.height) || sc.offsetHeight;
-  const max = +sc.dataset.max, top = sc.scrollTop, atoms = scrollAtoms(sc), inside = c => atoms.some(([a, b]) => a < c - .5 && c + .5 < b);
-  let cut = 0;
-  for (const [, b] of atoms) if (b > cut && b <= top + max + .5 && b > top && !inside(b)) cut = b;
-  const h = cut > top ? Math.round(cut - top) : max;
-  if (Math.round(sc.offsetHeight) !== h) sc.style.height = h + 'px';
+  const max = +sc.dataset.max, t = want ?? sc.scrollTop;
+  const win = scrollHome(sc); sc.style.height = max + 'px';
+  for (const e of win.querySelectorAll(':scope > .scl')) e.remove();
+  const P = scrollPlan(sc, max);
+  sc.querySelectorAll('.scgive').forEach((g, i) => { g.style.height = (P.o[i] || 0) + 'px'; });
+  sc.style.height = P.h + 'px';
+  if (P.pad) { const e = document.createElement('i'); e.className = 'scend'; e.style.height = P.pad + 'px'; sc.appendChild(e); }
+  // the window closes up: what lies under the box moves up to FOOT_GAP under its foot, never over anything left above
+  const movers = [...win.querySelectorAll(':scope > [data-t0]')], rest = [...win.children].filter(e => e !== sc && !e.dataset.t0 && !e.classList.contains('scm') && !e.classList.contains('scl') && getComputedStyle(e).position === 'absolute');
+  if (movers.length) {
+    const m0 = Math.min(...movers.map(e => +e.dataset.t0)), floor = Math.max(sc.offsetTop + P.h, ...rest.map(e => e.offsetTop + e.offsetHeight));
+    const shift = Math.max(0, m0 - FOOT_GAP - floor);
+    if (shift) { win.style.height = +win.dataset.h0 - shift + 'px'; win.style.top = +win.dataset.t0 + (shift >> 1) + 'px'; for (const e of movers) e.style.top = +e.dataset.t0 - shift + 'px'; }
+  }
+  sc._plan = P; scrollLips(sc, win); restAt(sc, t);
+}
+// A box that scrolls is drawn by the browser as a layer of its own, and at some scales (three device pixels to a frame
+// pixel at a ratio of 2.625) the layer's edge lands a fraction of a device pixel outside the box, so one device row of
+// what the box cuts off showed under its foot (and, scrolled, over its top). A strip of the window's own ground, one frame
+// pixel tall and laid at the window's pattern, covers the frame row above and the row under the box; each strip is a
+// layer of its own (ps.css), so it is drawn over the box's layer. A strip covers only the window's ground, inside its gold
+// line and the dark line within it (two pixels at each side), so a box as wide as its window leaves the gold line whole.
+function scrollLips(sc, win) {
+  const cs = getComputedStyle(win), x = Math.max(2, sc.offsetLeft), w = Math.min(win.clientWidth - 2, sc.offsetLeft + sc.offsetWidth) - x;
+  if (w <= 0) return;
+  for (const y of [sc.offsetTop - 1, sc.offsetTop + sc.offsetHeight]) {
+    if (y < 2 || y > win.clientHeight - 3) continue;
+    const e = document.createElement('i'); e.className = 'scl';
+    Object.assign(e.style, { left: x + 'px', top: y + 'px', width: w + 'px', backgroundImage: cs.backgroundImage, backgroundSize: cs.backgroundSize, backgroundRepeat: cs.backgroundRepeat, backgroundColor: cs.backgroundColor, backgroundPosition: `${-x}px ${-y}px` });
+    win.appendChild(e);
+  }
+}
+// Brings the box to a rest, and shows or hides its marker. Given a scroll t (the box drawn again), it goes to the rest
+// nearest to t. Otherwise it goes to the rest nearest to where its reader has moved it: the scrolls the reader makes add
+// up (sc._want, kept by the scroll listener below), so a slow drag, or a short wheel step that came back to the rest it
+// left, still counts toward the next rest, and the box never goes further than the reader moved it, give or take half
+// a step between two rests.
+function restAt(sc, t = null) {
+  const P = sc._plan; if (!P) return;
+  const R = P.R, jump = t != null, w = Math.max(R[0], Math.min(R[R.length - 1], jump ? t : sc._want ?? sc.scrollTop));
+  let i = 0; for (let j = 1; j < R.length; j++) if (Math.abs(R[j] - w) < Math.abs(R[i] - w)) i = j;
+  sc._want = jump ? R[i] : w; // the reader's own place is kept, so the half steps the rests round off do not add up
+  sc._rest = R[i]; sc._seen = R[i]; if (Math.abs(sc.scrollTop - R[i]) > .5) sc.scrollTop = R[i];
+  scrollMark(sc);
+}
+// The marker stands a pixel under the box's foot and bobs two pixels down, so it keeps a pixel clear of the box's last
+// row over it and of a plaque FOOT_GAP under the box.
+function scrollMark(sc) {
+  const P = sc._plan; if (!P) return;
   let m = sc.nextElementSibling; if (!m || !m.classList.contains('scm')) { m = document.createElement('i'); m.className = 'scm'; sc.after(m); }
-  const more = atoms.some(([, b]) => b > top + h + .5); // a margin under the last line is not more to read
-  m.hidden = !more; m.style.left = sc.offsetLeft + sc.offsetWidth - 8 + 'px'; m.style.top = sc.offsetTop + h + 2 + 'px';
+  m.hidden = !(P.end > sc.scrollTop + P.h + .5); // a margin under the last line is not more to read
+  m.style.left = sc.offsetLeft + sc.offsetWidth - 8 + 'px'; m.style.top = sc.offsetTop + P.h + 1 + 'px';
 }
-function snapScroll(sc) { // at rest, a whole line at the top
-  const atoms = scrollAtoms(sc), top = sc.scrollTop, inside = c => atoms.some(([a, b]) => a < c - .5 && c + .5 < b);
-  let best = top, d = Infinity; for (const [a] of atoms.concat([[0, 0]])) if (!inside(a) && Math.abs(a - top) < d) { d = Math.abs(a - top); best = a; }
-  if (Math.abs(best - top) > .5) sc.scrollTop = best;
-  fitScroll(sc);
+// The hammer moved onto a plaque in a box: the box rests where that plaque shows whole, as near as it can to where it is.
+function restOn(sc, e) {
+  const P = sc._plan; if (!P) return;
+  let y = 0; for (let q = e; q && q !== sc; q = q.offsetParent) y += q.offsetTop;
+  const z = y + e.offsetHeight, t = sc.scrollTop; if (y >= t && z <= t + P.h) return;
+  let best = null; for (const s of P.R) if (s <= y && z <= s + P.h && (best == null || Math.abs(s - t) < Math.abs(best - t))) best = s;
+  if (best != null) { sc._rest = sc._want = sc._seen = best; sc.scrollTop = best; scrollMark(sc); }
 }
-const fitScrolls = () => { for (const sc of app.querySelectorAll('.mw .sc, .book .sc')) fitScroll(sc); };
-{ let raf = 0, rest = 0; const live = t => t && t.classList && t.classList.contains('sc') && app.classList.contains('ps') && t.closest('.mw, .book');
-  app.addEventListener('scroll', ev => { const t = ev.target; if (!live(t)) return; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => fitScroll(t)); clearTimeout(rest); rest = setTimeout(() => snapScroll(t), 160); }, true); }
+// A screen drawn again keeps each box where it was read, while it is the same window or book.
+const scrollKey = i => [G.screen, G.tab, G.overlay && G.overlay.kind, !!G.inspect, G.cx && G.cx.open, i].join('|');
+const scrollBoxes = () => app.querySelectorAll('.mw .sc, .book .sc');
+const scrollKeep = () => { const m = new Map(); scrollBoxes().forEach((sc, i) => m.set(scrollKey(i), sc._rest ?? sc.scrollTop)); return m; };
+const fitScrolls = (keep = null) => scrollBoxes().forEach((sc, i) => fitScroll(sc, keep ? keep.get(scrollKey(i)) : undefined));
+// Each scroll the reader makes is added to where the box is wanted (one the box makes itself, coming to a rest, is not:
+// restAt marks it as seen). What the rests left over is kept only while the reader goes on the same way: a scroll the
+// other way starts from the rest the box stands on, and a scroll to the very top wants the top. The box comes to rest
+// 160 ms after the last scroll, and not while a finger still holds it.
+{ let raf = 0, rest = 0, held = 0; const live = t => t && t.classList && t.classList.contains('sc') && app.classList.contains('ps') && t.closest('.mw, .book');
+  const settle = t => { clearTimeout(rest); rest = setTimeout(() => { if (held) settle(t); else restAt(t); }, 160); };
+  for (const k of ['touchstart', 'touchend', 'touchcancel']) app.addEventListener(k, ev => { held = ev.touches.length; }, { capture: true, passive: true });
+  app.addEventListener('scroll', ev => { const t = ev.target; if (!live(t)) return;
+    const now = t.scrollTop, d = now - (t._seen ?? now); let w = t._want ?? now;
+    if (d * (t._way || 0) < 0) w = t._rest ?? now;
+    if (d) t._way = Math.sign(d);
+    t._want = d < 0 && now < .5 ? 0 : w + d; t._seen = now;
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(() => scrollMark(t)); settle(t); }, true); }
 // The text bar holds two lines. When what it says is longer, a marker shows and a tap opens the whole of it.
 function barFits() {
   const b = app.querySelector('.fr > .bar'), p = b && b.firstElementChild; if (!p) return;
@@ -2158,17 +2310,18 @@ app.addEventListener('click', ev => { try { tapped(ev); } catch (e) { recover(e,
 // Enter or Space takes the one it is on. On the title the turning crest goes with it.
 function litLayer() { const ws = app.querySelectorAll('.mw'); return ws.length ? ws[ws.length - 1] : app.querySelector('.story') || app; }
 const litPlaques = layer => [...layer.querySelectorAll('.pq')].filter(b => !b.disabled && b.offsetWidth && (layer !== app || !b.closest('.mw, .story')));
-// Moving the hammer never moves a plaque: one in a line of words (.in) keeps its width as it gains or loses the hammer
-// (it is lit without the hammer, .nh, and one that loses it keeps the width it had), and a plaque too narrow for the
-// hammer beside its words is lit without the hammer too.
+// The choice is always shown the same way: the hammer stands at the left of the lit plaque, beside its words. Moving it
+// never moves a plaque: a plaque placed on its own keeps its width (the words step right into room the plaque has for
+// them), and one in a line of words (.in) always keeps the hammer's room at its left, lit or not. A plaque made too
+// narrow for the hammer beside its words is a fault the console checks report; until it is widened it is lit without
+// the hammer (.nh), so its words are never cut.
 function litMove(b) {
   const layer = b.closest('.mw') || b.closest('.story') || app;
-  for (const e of layer.querySelectorAll('.pq.lit')) if (e !== b && (layer !== app || !e.closest('.mw, .story'))) { if (e.classList.contains('in') && !e.style.width) e.style.width = e.offsetWidth + 'px'; e.classList.remove('lit', 'nh'); }
-  if (b.classList.contains('in')) b.classList.add('nh');
+  for (const e of layer.querySelectorAll('.pq.lit')) if (e !== b && (layer !== app || !e.closest('.mw, .story'))) e.classList.remove('lit', 'nh');
   b.classList.add('lit');
   if (b.scrollWidth > b.clientWidth + 1) b.classList.add('nh');
   if (b.classList.contains('tm')) { G.tcur = [...app.querySelectorAll('.pq.tm')].indexOf(b); const c = document.getElementById('coin'); if (c) c.style.top = b.style.top; }
-  const sc = b.closest('.sc'); if (sc) { const t = b.offsetTop, h = sc.clientHeight; if (t < sc.scrollTop) sc.scrollTop = t; else if (t + b.offsetHeight > sc.scrollTop + h) sc.scrollTop = t + b.offsetHeight - h; }
+  const sc = b.closest('.sc'); if (sc) restOn(sc, b);
 }
 app.addEventListener('pointerover', ev => {
   if (ev.pointerType !== 'mouse' || !app.classList.contains('ps')) return;

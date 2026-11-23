@@ -448,6 +448,15 @@ def main():
                 made.append(n + '-x')
             if n == 'room-archive':  # the reading room stands whole behind the books (the Codex, Feats, the Vault), as the title picture did
                 save(crunch(im, (720, 480), 256, amp=0.6), os.path.join(out, n + '-book.png')); made.append(n + '-book')
+                # The painting has black bands of its own above and below the room (an eighth of its height each), so it
+                # fills a frame only up to 360 rows. A frame taller than that (an unfolded phone, a tablet, a tall window)
+                # is given the room without its bands, 720 x 480 from the middle of the painted part: no band can show.
+                a = np.asarray(im.convert('RGB')).astype(np.float32)
+                rows = np.nonzero(a.reshape(h, -1).std(1) > 4)[0]
+                y0, y1 = int(rows.min()) + 2, int(rows.max()) - 1  # the first and last rows still fading out of the band go too
+                bw = round((y1 - y0) * 1.5)
+                box = ((w - bw) // 2, y0, (w - bw) // 2 + bw, y1)
+                save(crunch(im, (720, 480), 256, amp=0.6, box=box), os.path.join(out, n + '-book-x.png')); made.append(n + '-book-x')
         elif n.startswith('enchant-'):
             # an Enchant's mark: a bronze tablet, 16 x 16 on a card and 32 x 32 on the card page; the sheet's white corners go
             g = im.convert('RGBA'); a = np.asarray(g).copy(); a[..., 3] = np.where(a[..., :3].min(-1) > 215, 0, 255); g = Image.fromarray(a, 'RGBA')
