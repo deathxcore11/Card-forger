@@ -15,16 +15,23 @@ import { elemBits } from '../data/elements.js';
 
 const buf = new Int32Array(CFG.enemy.max), pick = [];
 
+// shrine basins, stones, chests, the Broker and the altar are solid for a summon (their size is a stand-in until the models have collision data)
+function propPush(g, m) {
+  const W = g.world, push = (o, r) => { const dx = m.x - o.x, dz = m.z - o.z, rr = r + 0.6, d2 = dx * dx + dz * dz; if (d2 < rr * rr && Math.abs(m.y - (o.y || 0)) < 6) { const d = Math.sqrt(d2) || 1e-4; m.x = o.x + dx / d * rr; m.z = o.z + dz / d * rr; } };
+  for (const s of W.shrines) push(s, 1.9); for (const s of W.stones) push(s, 1.1); for (const c of W.cchests) if (!c.open) push(c, 0.9); if (W.broker) push(W.broker, 2.6); if (W.altar) push(W.altar, 2.2);
+}
 export function updateMonsters(g, dt) {
   const p = g.p, f = g.field;
   for (let k = 0; k < f.monsters.length; k++) {
     const m = f.monsters[k]; if (!m) continue;
     m.px = m.x; m.py = m.y; m.pz = m.z;
-    const a = (m.ang || 0) + g.t * 0.9 + k * 1.57, r = 2.1 + (k % 2) * 0.5;
-    const tx = p.x + cos(a) * r, tz = p.z + sin(a) * r, ty = p.y + 2.2 + sin(g.t * 3 + k) * 0.2;
+    // fixed slots beside the duelist, relative to the camera yaw (right, left, then wider and a step back): a summon never sits on the camera line over the duelist, and none overlap each other
+    const cy = g.camYaw || 0, fx0 = -sin(cy), fz0 = -cos(cy), rx0 = -fz0, rz0 = fx0, side = (k % 2 ? -1 : 1) * (k < 2 ? 2.7 : 3.6), ahead = k < 2 ? 0.8 : -0.6;
+    const tx = p.x + rx0 * side + fx0 * ahead, tz = p.z + rz0 * side + fz0 * ahead, ty = p.y + 2.2 + sin(g.t * 3 + k) * 0.2;
     if (!m.init) { m.x = tx; m.y = ty; m.z = tz; m.px = tx; m.py = ty; m.pz = tz; m.init = true; }
     const kk = Math.min(1, dt * 6); m.x += (tx - m.x) * kk; m.y += (ty - m.y) * kk; m.z += (tz - m.z) * kk;
-    if (g.colliders) { const o = SUMMON_AT; o.x = m.x; o.z = m.z; o.y = Math.max(0, heightAt(m.x, m.z)) + 0.5; resolveColliders(g.colliders, o, 0.7); m.x = o.x; m.z = o.z; }       // a summon is pushed out of trunks and boulders as a body on the ground, whatever height it hovers at
+    if (g.colliders) { const o = SUMMON_AT; o.x = m.x; o.z = m.z; o.y = Math.max(0, heightAt(m.x, m.z)) + 0.5; resolveColliders(g.colliders, o, 0.7); m.x = o.x; m.z = o.z; }
+    if (g.world) propPush(g, m);       // a summon is pushed out of trunks and boulders as a body on the ground, whatever height it hovers at
     { const lx = m.x - tx, ly = m.y - ty, lz = m.z - tz, l2 = lx * lx + ly * ly + lz * lz, LEASH = 9; if (l2 > LEASH * LEASH) { const l = Math.sqrt(l2), s = LEASH / l; if (l > 40) { m.x = tx; m.y = ty; m.z = tz; m.px = tx; m.py = ty; m.pz = tz; } else { m.x = tx + lx * s; m.y = ty + ly * s; m.z = tz + lz * s; } } }       // the leash: a summon is never more than 9 m from its duelist, and after a teleport (stage change, gate) it simply arrives with them
     m.cd -= dt;
     if (m.cd > 0) continue;

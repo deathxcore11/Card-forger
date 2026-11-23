@@ -24,7 +24,7 @@ export function mantle(p, dirx, dirz, C, heightAtFn, wall) {
 export function updatePlayer(g, dt, cmd) {
   const p = g.p, C = CFG.player, S = C.slide;
   if (g.oaths.still) cmd.dash = false;                                   // Still Oath: no dash
-  const fx = -sin(cmd.yaw), fz = -cos(cmd.yaw), rx = -fz, rz = fx;
+  g.camYaw = cmd.yaw; const fx = -sin(cmd.yaw), fz = -cos(cmd.yaw), rx = -fz, rz = fx;
   let mx = fx * cmd.f + rx * cmd.r, mz = fz * cmd.f + rz * cmd.r;
   const ml = Math.sqrt(mx * mx + mz * mz), hasInput = ml > 0.001, speed = C.speed * (1 + g.mods.move);
   if (hasInput) { mx /= ml; mz /= ml; p.face = atan2(mx, mz); }
