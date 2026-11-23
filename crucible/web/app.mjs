@@ -1402,31 +1402,36 @@ const RGB = { ink: [243, 234, 216], g: [233, 196, 106], r: [240, 138, 114], d: [
 const px15 = rgb => 0xff000000 | ((rgb[2] & 0xf8) << 16) | ((rgb[1] & 0xf8) << 8) | (rgb[0] & 0xf8);
 function putBox(view, x, y, w, h, rgb) { const c = px15(rgb); for (let j = Math.max(0, y); j < Math.min(view.h, y + h); j++) for (let i = Math.max(0, x); i < Math.min(view.w, x + w); i++) view.px[j * view.w + i] = c; }
 function putText(view, x, y, s, rgb) { glyph('0'); const c = px15(rgb); for (const ch of s) { const g = glyph(ch); for (let i = 0; i < g.bits.length; i += 2) { const px = x + g.bits[i], py = y + g.bits[i + 1] - glTop; if (px >= 0 && py >= 0 && px < view.w && py < view.h) view.px[py * view.w + px] = c; } x += g.w; } return x; }
-// A plate of lines, each a list of [text, colour], on the dark of the frame with a pixel round the letters.
+// A plate of lines on the dark of the frame with a pixel round the letters. Each line is a list of [text, colour], and a
+// bare number in it is that many pixels of space.
+const lineW = l => l.reduce((n, g) => n + (typeof g === 'number' ? g : textW(g[0]) + 1), -1);
 function putPlate(view, x, y, lines) {
-  const h = GLH(), w = Math.max(...lines.map(l => l.reduce((n, [s]) => n + textW(s) + 1, -1))), H = lines.length * (h + 1) + 1;
+  const h = GLH(), w = Math.max(...lines.map(lineW)), H = lines.length * (h + 1) + 1;
   putBox(view, x, y, w + 2, H, RGB.sh);
-  lines.forEach((l, i) => { let cx = x + 1; for (const [s, col] of l) cx = putText(view, cx, y + 1 + i * (h + 1), s, RGB[col]); });
+  lines.forEach((l, i) => { let cx = x + 1; for (const g of l) cx = typeof g === 'number' ? cx + g : putText(view, cx, y + 1 + i * (h + 1), g[0], RGB[g[1]]); });
   return [x, y, w + 2, H];
 }
-const plateSize = lines => { const h = GLH(); return [Math.max(...lines.map(l => l.reduce((n, [s]) => n + textW(s) + 1, -1))) + 2, lines.length * (h + 1) + 1]; };
+const plateSize = lines => [Math.max(...lines.map(lineW)) + 2, lines.length * (GLH() + 1) + 1];
 // A table monster's two numbers, ATK then DEF. The number its position fights with is bright (gold when raised above the
 // printed number, red when lowered, sea-green for DEF in defense); the other is dim. Yours on one line just beyond your
-// card's far edge, the rival's ATK over DEF just short of its near edge: both in the space between the two rows. On a
-// table drawn too small for both (tight), each shows only the number it fights with, in its colour.
+// card's far edge, the two three pixels apart (the hand's cards print theirs without a stroke between, so the table does
+// too); the rival's ATK over DEF just short of its near edge: both in the space between the two rows. On a table drawn too
+// small for both (tight), each shows only the number it fights with, in its colour.
 function numLines(m, seat, tight = false) {
   const c = m.id ? card(m.id) : null, d = m.pos === 'd', tone = (n, p) => !c ? 'ink' : n > p ? 'g' : n < p ? 'r' : 'ink';
   const a = [String(m.ea), d ? 'd' : tone(m.ea, c && c.atk)], e = [String(m.ed), d ? (tone(m.ed, c && c.def) === 'ink' ? 'v' : tone(m.ed, c && c.def)) : 'd'];
-  return tight ? [[d ? e : a]] : seat === 0 ? [[a, ['/', 'd'], e]] : [[a], [e]];
+  return tight ? [[d ? e : a]] : seat === 0 ? [[a, 2, e]] : [[a], [e]];
 }
-// Whether the table is drawn too small for a card's two numbers: two of your plates side by side would touch at your
-// row's far edge, or the rival's two lines and your one do not fit between the rows.
-function tightPlates(proj, v, off) {
+// Whether the table is drawn too small for every monster's two numbers. It is decided by the frame (the table's camera)
+// for the widest numbers a monster can have, four digits each, never by the cards lying there, so the numbers keep one
+// notation for the whole duel: two of your plates side by side must leave four pixels of stone between them at your
+// row's far edge, and the rival's two lines and your one must fit between the rows.
+const STONE = 4;
+function tightPlates(proj) {
   if (!glyphsReady()) return false;
-  const far = TBL.row[0] - 33, near = TBL.row[1] + 33, h = GLH(), at = z => proj([TBL.zx(z + off), 0, far])[0];
-  const w = v.mon[0].map(m => m && m.id && m.ea != null ? plateSize(numLines(m, 0))[0] : 0);
-  for (let z = 0; z + 1 < w.length; z++) if (w[z] && w[z + 1] && (w[z] + w[z + 1]) / 2 + 2 > at(z + 1) - at(z)) return true;
-  return 3 * (h + 1) + 2 + 3 > proj([0, 0, far])[1] - proj([0, 0, near])[1];
+  const far = TBL.row[0] - 33, near = TBL.row[1] + 33, h = GLH(), n = [...'0123456789'].reduce((a, b) => glyph(b).w > glyph(a).w ? b : a).repeat(4);
+  const w = plateSize([[[n, 'ink'], 2, [n, 'd']]])[0], gap = proj([TBL.zx(1), 0, far])[0] - proj([TBL.zx(0), 0, far])[0];
+  return w + STONE > gap || 3 * (h + 1) + 2 + 3 > proj([0, 0, far])[1] - proj([0, 0, near])[1];
 }
 const MARK_LINES = { WINS: [[['WINS', 'g']]], LOSES: [[['LOSES', 'r']]], 'BOTH FALL': [[['BOTH', 'r']], [['FALL', 'r']]], 'NO KILL': [[['NO', 'ink']], [['KILL', 'ink']]], '?': [[['?', 'ink']]] };
 // Zone marks, cut into the stone round the zone (under the cards): ready gold; picked ember inside ink; a target red,
