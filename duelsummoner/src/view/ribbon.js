@@ -50,9 +50,9 @@ void main() {
   // called every frame from the view: sets the clock and shows any sim bolt not seen before (a restarted pooled entry counts as new)
   tick() { const t = this.uni.uTime.value = (performance.now() - this.t0) / 1000; this.mesh.visible = t - this.last < 2; if (this._dirty) { this.buf.needsUpdate = true; this._dirty = false; } }
   see(o) {
-    const prev = this.seen.get(o); this.seen.set(o, o.t); if (prev !== undefined && o.t >= prev) return;
+    const prev = this.seen.get(o); this.seen.set(o, o.t); if (prev !== undefined && o.t >= prev) return false;
     this.last = this.uni.uTime.value; const i = this.head, k = i * STRIDE, a = this.buf.array, now = this.uni.uTime.value - (o.t || 0); this.head = (this.head + 1) % POOL;
     a[k] = o.x; a[k + 1] = o.y; a[k + 2] = o.z; a[k + 3] = o.w || 0.14; a[k + 4] = o.x2; a[k + 5] = o.y2; a[k + 6] = o.z2; a[k + 7] = now; a[k + 8] = o.seed || 1; a[k + 9] = o.dur || 0.15; a[k + 10] = ROW.LIGHTNING; a[k + 11] = 1; a[k + 12] = 1;
-    this.buf.updateRange.count = -1; this._dirty = true;
+    this.buf.updateRange.count = -1; this._dirty = true; return true;
   }
 }

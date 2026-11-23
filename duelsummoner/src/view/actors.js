@@ -10,6 +10,7 @@ import { actorLit } from './engine.js';
 import { Ribbon } from './ribbon.js';
 import { OwnEffects } from './ownfx.js';
 import { RAMP } from '../data/fxramp.js';
+import { statusLit, statusAttr } from './status.js';
 import { PICKUP_COLORS } from '../data/pickups.js';
 import { makeCreature } from './creature.js';
 
@@ -92,7 +93,7 @@ function modelGroup(model, targetSize, axis, glowColor) {
 export class Actors {
   constructor(scene, assets, fx) {
     this.scene = scene; this.assets = assets || {}; this.fx = fx;
-    this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;
+    this.vt = 0; this.fusionAt = undefined; this.ghosts = []; this._pg = true; this._pvy = 0; this._wasSwarm = new Uint8Array(CFG.enemy.max); this.burnMax = new Float32Array(CFG.enemy.max); this.arcT = new Float32Array(CFG.enemy.max); this.spawnAge = new Float32Array(CFG.enemy.max); this._dustBudget = 0; this._ghostFresh = false;
     this._white = new T.Color(0x666666); this._black = new T.Color(0x000000);
     this.player = playerMesh(); scene.add(this.player);
     this.rig = null; this.rigs = {};                                          // the skinned duelists, for each GLB present in assets/models (duelist-<id>-anim.glb)
@@ -105,11 +106,11 @@ export class Actors {
     // the swarm: one instanced mesh per kind (+ eyes for the ground swarmers)
     this.kinds = KIND_LIST.map(K => {
       const geo = K.id === 3 ? new T.BoxGeometry(1.1, 1.1, 1.1) : K.id === 4 ? new T.IcosahedronGeometry(0.8, 0) : new T.OctahedronGeometry(0.75, 0);
-      const body = instanced(geo, lambert(0xffffff, null, 0.3), CFG.enemy.max);
+      geo.computeBoundingBox(); const body = instanced(geo, statusLit(lambert(0xffffff, null, 0.3), geo.boundingBox.max.y), CFG.enemy.max); statusAttr(geo, CFG.enemy.max);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.enemy.max * 3), 3);
       const eye = K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xffe14a), CFG.enemy.max) : null;
       scene.add(body); if (eye) scene.add(eye);
-      return { K, body, eye, base: new T.Color(K.color) };
+      return { K, body, eye, base: new T.Color(K.color), fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false };
     });
     // Toll Shades: a tall violet-black hooded silhouette with a glowing eye line and a gold bell (stand-in look until the art arrives)
     this.shadeBody = instanced(new T.ConeGeometry(0.9, 3.0, 7), basic(0x1d1030), 24); this.shadeHood = instanced(new T.ConeGeometry(0.5, 1.0, 6), basic(0x0b0716), 24);
@@ -152,6 +153,8 @@ export class Actors {
 
   // an own effect takes its colour from the effect ramp by the element the sim names (bright tone); with no element it is the neutral card tone, never gold, XP cyan or violet, except a summon or seal effect, which keeps its violet
   _ownHex(o) { if (o.el && RAMP[o.el]) return RAMP[o.el][1]; const c = o.color || 0, r = (c >> 16) & 255, gg = (c >> 8) & 255, b = c & 255; return (b > 200 && r > 120 && r < 230 && gg < 170) ? c : 0xf3e3c2; }
+  // the enemy a chain jump reached gets the crawling outline for 300 ms (the nearest live enemy to the bolt's end point, within 1.5 m)
+  _arcAt(g, x, z) { const e = g.en; let best = -1, bd = 2.25; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.arcT[best] = 0.3; }
   _fan(arc, max) {
     let f = this.fans.get(arc);
     if (!f) {
@@ -354,7 +357,7 @@ export class Actors {
       for (const mm of [this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell]) { mm.count = n; mm.instanceMatrix.needsUpdate = true; }
     }
     // swarm
-    this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
+    this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); for (const kk of this.kinds) kk.fxNow = false; const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
     for (let i = 0; i < e.max; i++) {
       if (!e.alive[i]) { this._wasSwarm[i] = 0; continue; }
       if (!this._wasSwarm[i]) { this._wasSwarm[i] = 1; this.spawnAge[i] = 0; if (this._dustBudget > 0) { this._dustBudget--; fx.burst(e.x[i], e.y[i] + 0.1, e.z[i], 3, 0xb09a6a, 1.5, 1.5, 0.2, 0.45, 5); } }
@@ -371,6 +374,8 @@ export class Actors {
       const mgs = e.size[i];                                                    // merged past the cap: bigger, up to 1.5x
       d.scale.set(sc[0] * pulse * grow * mgs * (hit ? 1.2 : 1), sc[1] * pulse * grow * mgs * (hit ? 0.85 : 1), sc[2] * pulse * grow * mgs * (hit ? 1.2 : 1)); d.updateMatrix();
       k.body.setMatrixAt(n, d.matrix); k.body.setColorAt(n, hit ? this.white : (e.ace[i] ? this.aceCol : k.base));
+      { const bn = e.burn[i]; let bf = 0; if (bn > 0) { if (this.burnMax[i] < bn) this.burnMax[i] = bn; const bm = this.burnMax[i]; bf = Math.max(0.02, Math.min(1, (bm - bn) / 0.4 + 0.02, bn / (0.35 * bm))); } else this.burnMax[i] = 0;
+        let ar = 0; if (this.arcT[i] > 0) { this.arcT[i] -= dt; ar = 1; } const fa = k.fxArr, o3 = n * 3; fa[o3] = bf; fa[o3 + 1] = ar; fa[o3 + 2] = (i * 0.6180339) % 1; if (bf > 0 || ar > 0) k.fxNow = true; }
       if (k.eye) {
         d.position.set(x + Math.sin(face) * 0.62 * sc[0], y + 1.05 + bob, z + Math.cos(face) * 0.62 * sc[0]); d.scale.set(1, 1, 1); d.updateMatrix(); k.eye.setMatrixAt(n, d.matrix);
       }
@@ -378,7 +383,7 @@ export class Actors {
       if (e.ace[i] && cc < 24) { d.position.set(x, y + 2.1 * mgs + 0.4 + Math.sin(t * 3 + i) * 0.08, z); d.rotation.set(0, t * 2.4 + i, 0); d.scale.set(1, 1.5, 1); d.updateMatrix(); this.crests.setMatrixAt(cc++, d.matrix); }
       if (e.mark[i] > 0) { d.position.set(x, y + 2.3 + Math.sin(t * 4) * 0.1, z); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1.4, 1); d.updateMatrix(); this.marks.setMatrixAt(mc.n++, d.matrix); }
     }
-    this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; k.body.instanceColor.needsUpdate = true; if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
+    this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; k.body.instanceColor.needsUpdate = true; { const a = k.body.geometry.attributes.aFx; if (k.fxNow || k.fxPrev) { a.updateRange.offset = 0; a.updateRange.count = counts[i] * 3; a.needsUpdate = true; } k.fxPrev = k.fxNow; } if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
     this.marks.count = mc.n; this.marks.instanceMatrix.needsUpdate = true; this.crests.count = cc; this.crests.instanceMatrix.needsUpdate = true;
 
     // elites and the boss
@@ -485,7 +490,7 @@ export class Actors {
     let nr = 0; this.own.begin();
     for (const o of g.fx) {
       if (!o.on) continue;
-      if (o.type === 'bolt') { this.ribbon.see(o); continue; }
+      if (o.type === 'bolt') { if (this.ribbon.see(o) && o.el === 'lightning') this._arcAt(g, o.x2, o.z2); continue; }
       const f = Math.min(1, o.t / o.dur), fade = 1 - f;
       if (o.owner === 0 && this.ownCtx) { if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), this._ownHex(o), false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, this._ownHex(o), true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
       if (o.type === 'ring') {

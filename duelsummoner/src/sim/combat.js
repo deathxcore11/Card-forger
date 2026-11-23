@@ -60,6 +60,7 @@ function chain(g, from, x, z, dmg) {
   for (let k = 0; k < n; k++) { const j = buf[k]; if (j === from || !e.alive[j]) continue; const dx = e.x[j] - x, dz = e.z[j] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = j; } }
   freeBuf();
   if (best < 0) return;
+  addFx(g, { type: 'bolt', owner: 0, el: 'lightning', x: x, y: e.y[from] + 0.9, z: z, x2: e.x[best], y2: e.y[best] + 0.9, z2: e.z[best], dur: 0.3, seed: best + 1, w: 0.12 });       // the link arc: the record carries the source point as well as the target
   addFx(g, { type: 'ring', owner: 0, el: 'lightning', x: e.x[best], y: e.y[best] + 0.5, z: e.z[best], r: 1.0, dur: 0.2, color: 0x7fe8ff });
   damageEnemy(g, best, dmg, { noCrit: true, noChain: true });
 }
