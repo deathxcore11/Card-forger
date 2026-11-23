@@ -1,4 +1,4 @@
-﻿// The three-stage run: timeline, gate, gate boss, Descent with carry-over, Final Altar, Toll Bell, Quick Duel.
+// The three-stage run: timeline, gate, gate boss, Descent with carry-over, Final Altar, Toll Bell, Quick Duel.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js';
@@ -32,7 +32,7 @@ test('the gate wakes when boss B falls, or at its time; holding E for 3 s starts
   kill(g, 'bossB'); run(g, 0.2); assert.equal(g.gate.awake, true, 'B down wakes the gate');
   atGate(g); const left = g.stageSpec.clock - g.sc; run(g, 2.5, { ...idle, use: true }); assert.equal(g.gate.state, 'closed', '2.5 s is too short');
   run(g, 1, { ...idle, use: true }); assert.equal(g.gate.state, 'fight');
-  const boss = g.sp.find(s => s.role === 'gate'); assert.ok(boss); assert.equal(Math.round(boss.maxHp), 2400); assert.equal(boss.name, 'The Stone Arbiter');
+  const boss = g.sp.find(s => s.role === 'gate'); assert.ok(boss); assert.equal(Math.round(boss.maxHp), 2640); assert.equal(boss.name, 'The Stone Arbiter');
   assert.ok(g.swiftChips >= Math.floor(left / 2) - 2, 'Swift Seal pays Star Chips for clock left');
   const sc0 = g.sc; run(g, 2); assert.equal(g.sc, sc0, 'the clock freezes during the fight');
 });
@@ -62,7 +62,7 @@ test('the Toll Bell: at 0:00 with the gate unopened the duelist is pulled in and
 
 test('Stage 3: the King falls, the run is won, the Final Altar offers Close or Duel On', () => {
   const g = mk(); g.stage = 2; g.stageSpec = g.stages[2]; g.sc = 430; atGate(g); run(g, 3.5, { ...idle, use: true });
-  const boss = g.sp.find(s => s.role === 'gate'); assert.equal(Math.round(boss.maxHp), 5000 * 1.2); kill(g, 'gate'); run(g, 0.1);
+  const boss = g.sp.find(s => s.role === 'gate'); assert.equal(Math.round(boss.maxHp), 5500 * 1.2); kill(g, 'gate'); run(g, 0.1);
   assert.equal(g.won, true); assert.equal(g.bossKilled, true); assert.ok(g.altar, 'the Final Altar rises'); assert.equal(g.circle, null);
   g.p.x = g.altar.x; g.p.z = g.altar.z; run(g, 0.2, { ...idle, use: true }); assert.equal(g.offer.type, 'final'); assert.equal(g.offer.cards.length, 2);
   g.choose(1); assert.equal(g.duelOn, true); run(g, 40); assert.ok(g.otStep >= 1 && g.enemyCount() > 0, 'Overtime hunters step up');

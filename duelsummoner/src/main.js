@@ -200,7 +200,13 @@ function fitHud() {
   const z = $('zones').getBoundingClientRect(); if (!z.width) return;
   const top = innerHeight - z.top, ps = $('prompt'), fu = $('fusion');
   ps.style.bottom = Math.round(top + 8) + 'px'; fu.style.bottom = Math.round(top + 8 + ps.offsetHeight + 4) + 'px';
-  $('itemsList').style.maxWidth = Math.max(120, Math.round(z.left - 24)) + 'px';
+  const tr = $('topright').getBoundingClientRect(), tl = $('topleft').getBoundingClientRect();     // the minimap hangs under the clock box and the stats list under the LP box, whatever size the text is
+  $('minimap').style.setProperty('top', Math.round(tr.bottom + 6) + 'px', 'important'); $('stats').style.top = Math.round(tl.bottom + 6) + 'px';
+  // the items list sits beside the zone bar when there is room, else just above it; it never grows into the stats list above it
+  const il = $('itemsList'), room = z.left - 64; il.style.overflow = 'hidden';
+  const ib = room >= 150 ? 14 : Math.round(top + 8); il.style.bottom = ib + 'px'; il.style.maxWidth = room >= 150 ? Math.round(room) + 'px' : '';
+  const st = $('stats'), stb = st.textContent ? st.getBoundingClientRect().bottom : tl.bottom;
+  il.style.maxHeight = Math.max(48, Math.round(innerHeight - ib - stb - 30)) + 'px';
 }
 window.addEventListener('resize', fitHud);
 document.addEventListener('visibilitychange', () => { if (document.hidden && MODE === 'play') setMode('pause'); });

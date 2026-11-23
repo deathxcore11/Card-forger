@@ -79,13 +79,13 @@ export const DUELISTS = {
   mira: { name: 'Mira, Rune Scribe', start: 'rune-apprentice', second: 'sigil-familiar' }
 };
 
-// Balance targets, checked by test/run-sim.mjs. Pick budget: about 48 level-ups from the XP curve (faster early) plus about 12
-// from chests and shrines = about 60. A focused pair costs 18 level-ups (two monsters, 9 each). Maxing 4 monsters to 10 and
-// 4 Spells/Traps to 5 costs 52, so no run maxes everything.
+// Balance targets, checked by test/run-sim.mjs and tools/balance.mjs. Stage 1 pace: level-ups per minute 0-1, 2, 2-3, 3, 3, 3-4, 4-5 (about 20 by 7:00),
+// 30 to 38 picks in all with chests and shrines, the first Fusion between 5:30 and 7:00. The full-run budget below is the old whole-run figure:
+// a focused pair costs 18 level-ups (two monsters, 9 each) and maxing 4 monsters to 10 and 4 Spells/Traps to 5 costs 52, so no run maxes everything.
 export const TARGETS = {
-  levelUpsByEnd: 48, picksPerRun: 60, focusedPairPicks: 18, maxEverythingPicks: 52,
-  levelAt: [[60, 8], [120, 16], [180, 24], [240, 30], [300, 35], [360, 40], [420, 44], [480, 48]],   // [seconds, level]: fast early, slow late; a player who collects most crystals
-  firstFusionSeconds: [225, 270],                                     // 3:45 to 4:30 with focused picks
+  levelUpsByEnd: 20, picksPerRun: [30, 38], focusedPairPicks: 18, maxEverythingPicks: 52,
+  levelAt: [[60, 1], [120, 3], [180, 6], [240, 9], [300, 12], [360, 16], [420, 20]],   // [seconds, level] on Stage 1: about the middle of each minute's range (0-1, 2, 2-3, 3, 3, 3-4, 4-5 level-ups)
+  firstFusionSeconds: [330, 420],                                     // 5:30 to 7:00 with focused picks
   secondFusionShare: 0.15                                             // runs that reach a second Fusion: rare, under 15%
 };
 

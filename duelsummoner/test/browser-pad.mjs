@@ -1,4 +1,4 @@
-﻿// Pad in every mode, driven by a fake Gamepad: Start and Select in play, the ring and A in pause, offer X/Y/B and the 0.3 s guard, chest-reveal skip, touch overlay hiding, use edge.
+// Pad in every mode, driven by a fake Gamepad: Start and Select in play, the ring and A in pause, offer X/Y/B and the 0.3 s guard, chest-reveal skip, touch overlay hiding, use edge.
 import { launch, wait } from './cdp.mjs';
 const b = await launch({ out: process.argv[2], query: '?debug&seed=1' });
 await b.send('Emulation.setDeviceMetricsOverride', { width: 960, height: 540, deviceScaleFactor: 1, mobile: true });
@@ -47,6 +47,16 @@ check('Y passes the level-up offer (coins up, one level-up consumed)', c1 > c0, 
 await wait(450); const rd = () => b.evalIn(`(document.querySelector('#offerBtns [data-act=redraw]')||{}).textContent`); const r0 = await rd(), cards0 = await b.evalIn(`document.getElementById('offerCards').textContent`);
 await press(2); await wait(400); const r1 = await rd(), cards1 = await b.evalIn(`document.getElementById('offerCards').textContent`);
 check('X redraws the offer (redraw count drops)', r0 !== r1, r0 + ' to ' + r1 + (cards0 === cards1 ? ' (same cards rolled)' : ''));
+// chest reveal: play one to the end (so it counts as seen), play another and skip it with A
+await b.evalIn(`(async()=>{ const m = await import('/src/view/reveal.js'); window.__rv = m; window.__rvDone = 0; m.playReveal('rare', { rm: true, noNearMiss: true }, () => { window.__rvDone = 1; }); return 1; })()`); await wait(2600);
+check('first reveal ran to its end', await b.evalIn('window.__rvDone === 1'));
+await b.evalIn(`window.__rvDone = 0; window.__rv.playReveal('legendary', { noNearMiss: true }, () => { window.__rvDone = 2; }); 1`); await wait(400);
+check('a reveal is playing', await b.evalIn(`!!document.getElementById('reveal')`));
+await press(0, 60); await wait(300); check('A skips the chest reveal', await b.evalIn('window.__rvDone === 2'));
+// run-ended screen: B does what the Main menu button does
+await b.evalIn(`document.getElementById('endBtn').click(); 1`); await wait(400);
+check('the run-ended screen is up', await on('deadScreen')); await b.shot('pad_dead');
+await press(1); await wait(300); check('B on the run-ended screen goes to the main menu', await on('startScreen') && !(await on('deadScreen')));
 console.log(JSON.stringify(await b.evalIn('window.__errs.slice(0,3)'))); console.log('failed', res.filter(x => !x).length, 'of', res.length);
 b.close(); setTimeout(() => process.exit(0), 300);
 

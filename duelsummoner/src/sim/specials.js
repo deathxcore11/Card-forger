@@ -6,7 +6,8 @@ import { RUN } from '../data/waves.js';
 import { RUNSPEC } from '../data/stages.js';
 import { K } from '../data/tuning.js';
 import { SCALE, specialSize } from '../data/scale.js';
-import { mightBracket, targetBracket } from './ledger.js';
+import { mightBracket, targetBracket, sourceBracket, affinityBracket, overtimeBracket, sourceClass } from './ledger.js';
+import { ELEMENTS } from '../data/elements.js';
 import { FIELD_RULES } from '../data/cards.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { steerVec, walk, settle } from './steer.js';
@@ -61,7 +62,10 @@ export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
     const f = SPECIALS.warden.shieldHalfArc * DEG, tx = fromX - sp.x, tz = fromZ - sp.z, tl = Math.sqrt(tx * tx + tz * tz) || 1;
     if ((tx / tl) * sin(sp.face) + (tz / tl) * cos(sp.face) > cos(f)) { g.event('block', { x: sp.x, y: sp.y + 1.5, z: sp.z }); sp.flash = 0.05; return false; }
   }
-  let d = dmg * mightBracket(g.mods.dmgMult) * targetBracket(g.mods.bossDmg);     // brackets 1 and 4 (Hunter feeds the target bracket)
+  // brackets 1, 2, 3, 4 and 8, the same as for the swarm: Might, the Drill of the source, the hit's element, Hunter, Overtime
+  const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0); let cls = g.srcClassOf[g.curSrc]; if (cls === undefined) cls = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]);
+  let b3 = 1; if (el) { let sum = 0, cnt = 0; for (let k = 0; k < 8; k++) if (el & (1 << k)) { sum += g.mods.aff[k]; cnt++; } b3 = affinityBracket(sum / cnt); }
+  let d = dmg * mightBracket(g.mods.dmgMult) * targetBracket(g.mods.bossDmg) * (cls >= 0 ? sourceBracket(g.mods.drill[cls]) : 1) * b3 * (g.otStep > 0 ? overtimeBracket(g.otStep) : 1);
   let crit = 0;
   if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) { d *= K.critBase; crit = 1; }
   g.logDealt(d); g.emit('hit', d, sp.x, sp.z, crit | ((o.elem || 0) << 1));

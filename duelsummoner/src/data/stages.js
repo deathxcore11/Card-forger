@@ -1,4 +1,4 @@
-﻿// The three-stage run (design/run-structure.md, draft v1). Everything the stage machine needs is data here, so the numbers can move
+// The three-stage run (design/run-structure.md, draft v1). Everything the stage machine needs is data here, so the numbers can move
 // without touching code. Times are seconds on the stage clock. DRAFT: the spec's numbers may still change.
 //
 // STAND-INS until the real bosses exist (the engine field says which existing fight plays the part):
@@ -53,7 +53,7 @@ export const STAGES = [
       ev(105, 'elite', 'herald', 'Grave Herald', 'warden', 0.4, 'card'),
       ev(225, 'bossA', 'warden', 'Sealed Warden', 'warden', 1, 'sealed'),
       ev(330, 'bossB', 'idols', 'Twin Jackal Idols', 'idols', 1, 'sealed')],
-    gate: { id: 'arbiter', name: 'The Stone Arbiter', engine: 'pharaoh', hp: 2400 }
+    gate: { id: 'arbiter', name: 'The Stone Arbiter', engine: 'pharaoh', hp: 2640 }
   },
   {
     id: 'catacombs', name: 'Sealed Catacombs', clock: 420, mult: 1.1, gateWake: 360, falls: { lp: 10 },
@@ -63,7 +63,7 @@ export const STAGES = [
       ev(105, 'elite', 'jailer', 'Chainbound Jailer', 'warden', 0.5, 'card'),
       ev(225, 'bossA', 'coffins', 'Coffin Sentinels', 'warden', 1.3, 'sealed'),
       ev(330, 'bossB', 'mirror', 'Mirror Duelist', 'idols', 1.3, 'sealed')],
-    gate: { id: 'weaver', name: 'The Seal Weaver', engine: 'pharaoh', hp: 3600 }
+    gate: { id: 'weaver', name: 'The Seal Weaver', engine: 'pharaoh', hp: 3960 }
   },
   {
     id: 'vault', name: 'Vault of the Last Duel', clock: 480, mult: 1.2, gateWake: 420, falls: { lp: 15 },
@@ -73,7 +73,7 @@ export const STAGES = [
       ev(120, 'elite', 'executioner', 'Royal Executioner', 'warden', 0.6, 'card'),
       ev(255, 'bossA', 'masks', 'Court of Three Masks', 'warden', 1.6, 'sealed'),
       ev(375, 'bossB', 'heir', 'The Hollow Heir', 'idols', 1.6, 'sealed')],
-    gate: { id: 'king', name: 'The Hollow King', engine: 'pharaoh', hp: 5000 }
+    gate: { id: 'king', name: 'The Hollow King', engine: 'pharaoh', hp: 5500 }
   }
 ];
 
