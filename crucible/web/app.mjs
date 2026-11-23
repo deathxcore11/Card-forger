@@ -1440,10 +1440,12 @@ function tightPlates(proj) {
 const MARK_LINES = { WINS: [[['WINS', 'g']]], LOSES: [[['LOSES', 'r']]], 'BOTH FALL': [[['BOTH', 'r']], [['FALL', 'r']]], 'NO KILL': [[['NO', 'ink']], [['KILL', 'ink']]], '?': [[['?', 'ink']]] };
 // Zone marks, cut into the stone round the zone (under the cards): ready gold; picked ember inside ink; a target red,
 // its two reds changing every 0.4 seconds in two hard steps, as the console blinked a cursor; onto sea-green inside ink.
+// A card in defense lies sideways, 29 to each side of its zone's middle where the zone is 25, so the ring round it is cut
+// round the card's width and the zone's depth: its sides then show beside the card, not under it.
 const RING = { ready: () => [RGB.gold], picked: () => [[189, 116, 51], RGB.ink], target: b => [b ? [150, 64, 52] : RGB.r], onto: () => [[76, 138, 124], RGB.ink] };
-function ring(view, seat, zd, kind, blink) {
-  const cx = TBL.zx(zd), cz = TBL.row[seat], cols = RING[kind](blink);
-  cols.forEach((c, i) => { const m = 4 * (cols.length - i); R3.quad(view, { p: [[cx - 25 - m, 0, cz - 33 - m], [cx + 25 + m, 0, cz - 33 - m], [cx + 25 + m, 0, cz + 33 + m], [cx - 25 - m, 0, cz + 33 + m]], uv: UV0, col: c, shade: 1, bias: 1200 - i }); });
+function ring(view, seat, zd, kind, blink, def = false) {
+  const cx = TBL.zx(zd), cz = TBL.row[seat], cols = RING[kind](blink), hw = def ? 29 : 25;
+  cols.forEach((c, i) => { const m = 4 * (cols.length - i); R3.quad(view, { p: [[cx - hw - m, 0, cz - 33 - m], [cx + hw + m, 0, cz - 33 - m], [cx + hw + m, 0, cz + 33 + m], [cx - hw - m, 0, cz + 33 + m]], uv: UV0, col: c, shade: 1, bias: 1200 - i }); });
 }
 // Draw the table and everything on it into the window's canvas, as it stands at this moment of the beat. Cards lie flat;
 // a card in defense lies sideways. Drawn only when the moment has moved on by a whole tick (or the blink has turned).
@@ -1469,7 +1471,7 @@ function psPaint(force) {
     R3.quad(view, { p: [[cx - 25, 0, cz - 33], [cx + 25, 0, cz - 33], [cx + 25, 0, cz + 33], [cx - 25, 0, cz + 33]], uv: UV0, col: shut ? [58, 36, 25] : [96, 66, 44], shade: .9, bias: 1000 });
     if (!shut) R3.quad(view, { p: [[cx - 23, 0, cz - 31], [cx + 23, 0, cz - 31], [cx + 23, 0, cz + 31], [cx - 23, 0, cz + 31]], uv: UV0, col: [140, 104, 66], shade: .9, bias: 999 });
   }
-  if (!live && PSV.hl) for (const [k, kind] of PSV.hl) { const [s, z] = k.slice(1).split('.').map(Number); ring(view, s, z + off, kind, blink); }
+  if (!live && PSV.hl) for (const [k, kind] of PSV.hl) { const [s, z] = k.slice(1).split('.').map(Number); ring(view, s, z + off, kind, blink, !!(v.mon[s][z] && v.mon[s][z].pos === 'd')); }
   const home = (s, z, small) => small ? { x: TBL.zx(z), y: 0, z: TBL.trap[s], small: true } : { x: TBL.zx(z + off), y: 0, z: TBL.row[s] };
   const actorOn = (k, tk) => { let a = null; if (live) for (const x of B.acts) if (x.key === k && tk >= x.t0 && tk < x.t1 && (!a || x.t0 >= a.t0)) a = x; return a; };
   const instAt = (k, pi, vi, tk) => !live ? vi : pi && vi && pi.u != null && pi.u === vi.u ? (tk >= (B.look[k] ?? 0) ? vi : pi) : (tk < (B.swap[k] ?? 0) ? pi : vi);
