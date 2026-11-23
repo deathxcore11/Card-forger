@@ -1,7 +1,7 @@
 // One flat, versioned object describing a finished run. The save, quests, unlock keys and any host (browser or native) read this.
 import { hashHex } from './hash.js';
 import { OATH_BY_ID } from '../data/progress.js';
-export const RESULTS_SCHEMA = 1, BUILD_VERSION = '0.3.0';
+export const RESULTS_SCHEMA = 1, BUILD_VERSION = '0.3.1';
 
 // damage dealt per source per run minute, rounded: { 'ember-wyvern': [0, 12, 40, ...], 'card-throw': [...] }
 function dealtOf(g) { const out = {}; for (const k of Object.keys(g.dealtLog)) { const a = g.dealtLog[k], r = []; for (let i = 0; i < a.length; i++) r.push(Math.round(a[i] || 0)); out[k] = r; } return out; }
