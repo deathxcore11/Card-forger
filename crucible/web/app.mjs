@@ -1380,8 +1380,12 @@ const lpNow = (v, seat) => { const B = PSV && PSV.beat; return B && B.V === v ? 
 
 // The corners of a card at a pose: x, y, z its middle; turn: quarter turns from how it lies (1 turns an attack card to
 // defense); tilt: how far it stands up toward you, about its width; wide: its width while it turns over (1 flat, 0 edge-on).
+// A monster card is 40 x 53 (CARD_HW, CARD_HD: half of each) on a zone of 50 x 66, 62 apart, so one lying sideways in
+// defense reaches 1.5 past its zone's sides, and two side by side leave 9 between their ends for their marks (ring) and
+// stone between. (At 42 x 58 they left 4, and two marks there ran into one band.)
+const CARD_HW = 20, CARD_HD = 26.5;
 function cardQuad(pose, def) {
-  const small = pose.small, hw = small ? 16 : 21, hd = small ? 21 : 29, th = ((def ? 1 : 0) + (pose.turn || 0)) * Math.PI / 2;
+  const small = pose.small, hw = small ? 16 : CARD_HW, hd = small ? 21 : CARD_HD, th = ((def ? 1 : 0) + (pose.turn || 0)) * Math.PI / 2;
   const c = Math.cos(th), s = Math.sin(th), ct = Math.cos(pose.tilt || 0), st = Math.sin(pose.tilt || 0), wd = pose.wide ?? 1;
   return [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].map(([lx, lz]) => { lx *= wd; const y = -lz * st, z = lz * ct; return [pose.x + lx * c - z * s, pose.y + y, pose.z + lx * s + z * c]; });
 }
@@ -1472,14 +1476,38 @@ function tightPlates(proj) {
   return w + STONE > gap || 3 * (h + 1) + 2 + 3 > proj([0, 0, far])[1] - proj([0, 0, near])[1];
 }
 const MARK_LINES = { WINS: [[['WINS', 'g']]], LOSES: [[['LOSES', 'r']]], 'BOTH FALL': [[['BOTH', 'r']], [['FALL', 'r']]], 'NO KILL': [[['NO', 'ink']], [['KILL', 'ink']]], '?': [[['?', 'ink']]] };
-// Zone marks, cut into the stone round the zone (under the cards): ready gold; picked ember inside ink; a target red,
-// its two reds changing every 0.4 seconds in two hard steps, as the console blinked a cursor; onto sea-green inside ink.
-// A card in defense lies sideways, 29 to each side of its zone's middle where the zone is 25, so the ring round it is cut
-// round the card's width and the zone's depth: its sides then show beside the card, not under it.
-const RING = { ready: () => [RGB.gold], picked: () => [[189, 116, 51], RGB.ink], target: b => [b ? [150, 64, 52] : RGB.r], onto: () => [[76, 138, 124], RGB.ink] };
-function ring(view, seat, zd, kind, blink, def = false) {
-  const cx = TBL.zx(zd), cz = TBL.row[seat], cols = RING[kind](blink), hw = def ? 29 : 25;
-  cols.forEach((c, i) => { const m = 4 * (cols.length - i); R3.quad(view, { p: [[cx - hw - m, 0, cz - 33 - m], [cx + hw + m, 0, cz - 33 - m], [cx + hw + m, 0, cz + 33 + m], [cx - hw - m, 0, cz + 33 + m]], uv: UV0, col: c, shade: 1, bias: 1200 - i }); });
+// Zone marks, cut into the stone round the zone (under the cards) as the console drew a cursor on its table: a frame of
+// whole pixels round the zone as the camera shows it, as wide on all four sides. Ready gold; picked ember round ink; a
+// target red, its two reds changing every 0.4 seconds in two hard steps, as the console blinked a cursor; onto sea-green
+// round ink (a frame one pixel wide has room for one colour: picked is then ink, onto sea-green). A card in defense lies
+// sideways, 26.5 to each side of its zone's middle where the zone is 25, so the frame round it is cut round the card's
+// width and the zone's depth: its sides then show beside the card, not under it.
+const RING = { ready: () => [RGB.gold], picked: () => [[189, 116, 51], RGB.ink], target: b => [b ? [150, 64, 52] : RGB.r], onto: () => [[76, 138, 124], RGB.ink] }, RING_ONE = { picked: RGB.ink, onto: [76, 138, 124] };
+// How wide the frames of a row are: two cards in defense side by side leave 9 between their ends, where both their
+// frames and a pixel of stone between them must fit, at the row's far edge where it is drawn smallest. The pixels left
+// between two shapes g pixels apart may be one fewer than g, so a frame is (g - 2) / 2 pixels wide, from one to three.
+function ringWidth(seat) {
+  const c = TBL.cam, z = TBL.row[seat] - 33 - 6, k = c.f / (c.y * Math.sin(c.pitch) + (c.z - z) * Math.cos(c.pitch));
+  return Math.max(1, Math.min(3, (Math.floor((TBL.zx(1) - TBL.zx(0) - 2 * CARD_HD) * k) - 2) >> 1));
+}
+// The pixels of a frame t wide round a four-cornered shape as drawn (its corners on the screen: far left, far right, near
+// right, near left, the far two on one row and the near two on another), each with how far out it lies (1 next to the
+// shape). The shape covers what the rasteriser covers: each pixel whose middle lies inside it.
+function ringPixels(q, t, put) {
+  const [A, B, C, D] = q, yf = A[1], yn = D[1], y0 = Math.ceil(yf - .5), y1 = Math.floor(yn - .5);
+  const span = yc => { const k = (yc - yf) / (yn - yf || 1); return [Math.ceil(A[0] + (D[0] - A[0]) * k - .5), Math.floor(B[0] + (C[0] - B[0]) * k - .5)]; };
+  for (let y = y0 - t; y <= y1 + t; y++) { const dy = y < y0 ? y0 - y : y > y1 ? y - y1 : 0, [l, r] = span(y + .5);
+    for (let x = l - t; x <= r + t; x++) { const d = Math.max(dy, x < l ? l - x : x > r ? x - r : 0); if (d >= 1) put(x, y, d); } }
+}
+// A zone's mark, put into the scene after the table, its ground and its zone outlines and before the numbers and the
+// cards (RING_Z among the shapes' depths). Returns its shape's corners on the screen, for the checks.
+const RING_Z = 950;
+function ring(view, proj, seat, zd, kind, blink, t, def = false) {
+  const cx = TBL.zx(zd), cz = TBL.row[seat], hw = def ? CARD_HD : 25, cols = t > 1 ? RING[kind](blink) : [RING_ONE[kind] || RING[kind](blink)[0]];
+  const q = [[cx - hw, 0, cz - 33], [cx + hw, 0, cz - 33], [cx + hw, 0, cz + 33], [cx - hw, 0, cz + 33]].map(proj); if (q.some(p => !p)) return null;
+  const c = cols.map(px15), inner = cols.length > 1 ? t >> 1 : 0; // the inner colour takes the inner half
+  R3.sprite(view, RING_Z, v => ringPixels(q, t, (x, y, d) => { if (x >= 0 && y >= 0 && x < v.w && y < v.h) v.px[y * v.w + x] = c[d <= inner ? 1 : 0]; }));
+  return q;
 }
 // Draw the table and everything on it into the window's canvas, as it stands at this moment of the beat. Cards lie flat;
 // a card in defense lies sideways. Drawn only when the moment has moved on by a whole tick (or the blink has turned).
@@ -1510,7 +1538,8 @@ function psPaint(force) {
     R3.quad(view, { p: [[cx - 25, 0, cz - 33], [cx + 25, 0, cz - 33], [cx + 25, 0, cz + 33], [cx - 25, 0, cz + 33]], uv: UV0, col: shut ? [58, 36, 25] : [96, 66, 44], shade: .9, bias: 1000 });
     if (!shut) R3.quad(view, { p: [[cx - 23, 0, cz - 31], [cx + 23, 0, cz - 31], [cx + 23, 0, cz + 31], [cx - 23, 0, cz + 31]], uv: UV0, col: [140, 104, 66], shade: .9, bias: 999 });
   }
-  if (!live && PSV.hl) for (const [k, kind] of PSV.hl) { const [s, z] = k.slice(1).split('.').map(Number); ring(view, s, z + off, kind, blink, !!(v.mon[s][z] && v.mon[s][z].pos === 'd')); }
+  const rings = [];
+  if (!live && PSV.hl) for (const [k, kind] of PSV.hl) { const [s, z] = k.slice(1).split('.').map(Number), t = ringWidth(s), q = ring(view, proj, s, z + off, kind, blink, t, !!(v.mon[s][z] && v.mon[s][z].pos === 'd')); if (q) rings.push([s, z, kind, t, ...q.flatMap(p => [p[0], p[1]])]); }
   const home = (s, z, small) => small ? { x: TBL.zx(z), y: 0, z: TBL.trap[s], small: true } : { x: TBL.zx(z + off), y: 0, z: TBL.row[s] };
   const actorOn = (k, tk) => { let a = null; if (live) for (const x of B.acts) if (x.key === k && tk >= x.t0 && tk < x.t1 && (!a || x.t0 >= a.t0)) a = x; return a; };
   const instAt = (k, pi, vi, tk) => !live ? vi : pi && vi && pi.u != null && pi.u === vi.u ? (tk >= (B.look[k] ?? 0) ? vi : pi) : (tk < (B.swap[k] ?? 0) ? pi : vi);
@@ -1556,12 +1585,13 @@ function psPaint(force) {
   if (glyphsReady()) for (const mk of marks) { const s = scr(mk.p); if (s.length < 4) continue; const [w, h] = plateSize(mk.lines), mx = Math.round(s.reduce((n, q) => n + q[0], 0) / 4), my = Math.round(s.reduce((n, q) => n + q[1], 0) / 4);
     putPlate(view, mx - (w >> 1), my - (h >> 1), mk.lines); }
   R3.present(view);
-  // for the checks: the plates as drawn, each card's corners on the screen, the camera, the notation and the beat's tick
-  Object.assign(cv.dataset, { plates: JSON.stringify(out), cards: JSON.stringify(cards.map(([k, p]) => [k, ...scr(p).flatMap(q => [q[0], q[1]])])), cam: JSON.stringify({ ...TBL.cam, off }), tight: tight ? 1 : 0, tick: live ? tick : -1 });
+  // for the checks: the plates as drawn, each card's corners on the screen, the camera, the notation, the beat's tick and
+  // the zones' marks (seat, zone, kind, width, the corners of the shape each goes round)
+  Object.assign(cv.dataset, { plates: JSON.stringify(out), cards: JSON.stringify(cards.map(([k, p]) => [k, ...scr(p).flatMap(q => [q[0], q[1]])])), cam: JSON.stringify({ ...TBL.cam, off }), tight: tight ? 1 : 0, tick: live ? tick : -1, rings: JSON.stringify(rings) });
 }
 // Where the numbers fall in the table's drawing order: farther than every card (a card lies at depth 400 to 700 and one
-// lifted or shown is drawn nearer still), nearer than the table, its ground, its zone outlines and rings (all biased by 999
-// and more past their depth).
+// lifted or shown is drawn nearer still), nearer than the table, its ground, its zone outlines (all biased by 999 and more
+// past their depth) and the zones' marks (RING_Z).
 const PLATE_Z = 900;
 // The table's own pictures (its model's skins, or its top) and the card back: the table is drawn only once they are in.
 const tableReady = () => { const M = tmodel(); return TEX.back !== undefined && (M ? Object.keys(M.pics).every(t => TEX['m-' + t] !== undefined) : TEX.table !== undefined); };

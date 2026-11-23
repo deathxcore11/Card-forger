@@ -2,6 +2,7 @@
 //   node tools/crucible/console-checks.cjs <page url> <saves dir> [steps]
 //   CC_ONLY=title checks only the title screen, every shape, no random taps (a quick look after a title change).
 //   CC_ONLY=beats steps only the duel's beats (a quick look after a change to the table).
+//   CC_ONLY=rings steps only the zones' marks through their states (a quick look after a change to the marks).
 // The page must be served over http (a page opened from the disk may not read its own pictures).
 // For every screen shape and every scene (the title, chambers, duels, every window that opens over them) it checks:
 //   frame   the frame is 512 x 240 to 640 x 480 whole pixels, each a whole number of device pixels, and fills the
@@ -58,12 +59,16 @@
 //           a part only none, half or all see-through;
 //   table   on the duel's table each tap area is cut to its zone as the table's camera draws it and draws nothing; the
 //           numbers lie inside the view, apart and off the trap rows; the hall's painting spans the view to its foot;
-//           the numbers keep the one notation the frame gives them (tight or full) whatever cards lie there;
+//           the numbers keep the one notation the frame gives them (tight or full) whatever cards lie there; each
+//           zone's mark lies inside the view and shows on all four sides (where no numbers lie over it), and any two
+//           marks in a row leave stone between them (ringFaults);
 //   beats   on the owner's eight screen shapes, a duel's moves are stepped a thirtieth of a second at a time on a stopped
 //           clock (a rival's attack let through, your attack on a rival monster, then the rival's whole turn), and on
 //           every drawing of the table the numbers lie inside the view, apart, each against its own card as drawn (never
 //           left floating), keep one notation, and none lies over another card's picture (read from the canvas's own
 //           pixels: where a card and a plate meet, the card shows);
+//   rings   on the beats' shapes and the two smallest frames, the zones' marks of a few duels in every state (ready,
+//           picked, targets in both blink colours, a card aiming), checked as in table;
 //   first   the duel table's first drawing that has anything in it, kept the moment the page puts it on the screen, is
 //           the finished table, the same to the pixel as once all is settled (until then the hall stands alone): never a
 //           bare table drawn before its pictures or its ground are in;
@@ -98,6 +103,9 @@ const SCREENS = ['screen:codex', 'screen:codex>cxview:all', 'screen:feats', 'scr
 const BEAT_SHAPES = [['phone held sideways', 915, 412, 2.625, 1], ['phone held upright', 412, 915, 2.625, 1], ['fold, inner screen', 673, 841, 2.625, 1], ['fold, cover screen sideways', 882, 344, 2.625, 1],
   ['16:9 screen', 1920, 1080, 1, 0], ['tablet', 1024, 768, 2, 1], ['tall desktop window', 800, 1000, 1, 0], ['small window', 800, 360, 1, 0]];
 const BEAT_SAVES = ['duel-regular-f1-h0.json', 'duel-boss-f1-trap-prompt-h0.json'];
+// the duels whose zones' marks are stepped through every state (rings), on the beats' shapes and the two smallest frames
+const RING_SAVES = ['rings.json', 'last-move-loss-f1-h5.json', 'duel-boss-f1-trap-prompt-h10.json', 'duel-regular-f1-h0.json'];
+const RING_SHAPES = [...BEAT_SHAPES, ['wide desktop', 1024, 480, 2, 0], ['low window', 600, 270, 1, 0]];
 // The duel table's first drawing that has anything in it, kept the moment it is put on the screen (firstTable, run in
 // the page before it loads), and held against the table as it stands once settled (tableFirst).
 function firstTable() {
@@ -146,13 +154,54 @@ function tableNow() {
   });
   return { tick: +t.dataset.tick, tight: t.dataset.tight, out };
 }
+// The zones' marks on the table as drawn while no move plays (in the page): data-rings gives each mark's seat, zone, kind,
+// width t and the four corners of the shape it goes round (far left, far right, near right, near left); its pixels are
+// those the table gives them (ringPixels in app.mjs): t rows and columns round what the rasteriser covers of that shape.
+// Each mark lies inside the view; shows on all four sides, read from the canvas's own pixels in its own colours: along
+// each side, the places where its own monster's numbers do not lie over it must mostly show it (those numbers, on the
+// side of the mark between the rows, may cover that side as a tab on the frame: your numbers, on one line, are wider than
+// a zone on the phone's screen); and any two marks in a row leave at least a pixel of stone between them on every row
+// they share: marks that touch or overlap run into one band.
+function ringFaults() {
+  const t = document.getElementById('tbl'); if (!t || !t.dataset.rings || +t.dataset.tick >= 0) return [];
+  const rings = JSON.parse(t.dataset.rings), plates = JSON.parse(t.dataset.plates || '[]'), W = t.width, H = t.height, out = [];
+  const px = t.getContext('2d').getImageData(0, 0, W, H).data, cut = c => c.map(v => v & 0xf8).join();
+  const COL = { ready: [[219, 164, 89]], picked: [[189, 116, 51], [243, 234, 216]], target: [[150, 64, 52], [240, 138, 114]], onto: [[76, 138, 124], [243, 234, 216]] };
+  const mk = ([s, z, kind, w, ax, ay, bx, by, cx, cy, dx, dy]) => {
+    const y0 = Math.ceil(ay - .5), y1 = Math.floor(dy - .5), span = y => { const k = (y + .5 - ay) / (dy - ay || 1); return [Math.ceil(ax + (dx - ax) * k - .5), Math.floor(bx + (cx - bx) * k - .5)]; };
+    return { s, z, kind, w, y0, y1, span, cols: new Set((COL[kind] || []).map(cut)) };
+  };
+  const all = rings.map(mk), mine = (r, x, y) => x >= 0 && y >= 0 && x < W && y < H && r.cols.has(cut([...px.slice((y * W + x) * 4, (y * W + x) * 4 + 3)]));
+  for (const r of all) {
+    const at = `mark of zone ${r.s}:${r.z} (${r.kind})`, own = plates.find(p => p[0] === r.s && p[1] === r.z), tab = r.s ? 'near' : 'far';
+    const under = (x, y) => !!own && x >= own[2] && x < own[2] + own[4] && y >= own[3] && y < own[3] + own[5];
+    const [lt, rt] = r.span(r.y0 - r.w), [lb, rb] = r.span(r.y1 + r.w);
+    if (r.y0 - r.w < 0 || r.y1 + r.w >= H || Math.min(lt, lb) - r.w < 0 || Math.max(rt, rb) + r.w >= W) out.push(`${at} reaches out of the view`);
+    // each of its pixels by side (far, near, left, right) and place along that side; a place is free when some pixel of
+    // the mark there lies under no numbers, and shows when one of those is in the mark's colours
+    const sides = { far: new Map(), near: new Map(), left: new Map(), right: new Map() };
+    for (let y = r.y0 - r.w; y <= r.y1 + r.w; y++) { const [l, rr] = r.span(y);
+      for (let x = l - r.w; x <= rr + r.w; x++) {
+        const side = y < r.y0 ? 'far' : y > r.y1 ? 'near' : x < l ? 'left' : x > rr ? 'right' : null; if (!side || under(x, y)) continue;
+        const m = sides[side], k = side === 'far' || side === 'near' ? x : y; m.set(k, (m.get(k) || 0) | (mine(r, x, y) ? 1 : 0) | 2); } }
+    for (const [side, m] of Object.entries(sides)) { const free = m.size, shown = [...m.values()].filter(v => v & 1).length;
+      if ((!free && side !== tab) || shown < free * .6) out.push(`${at}: its ${side} side shows at ${shown} of the ${free} places its numbers do not lie over`); }
+  }
+  for (const a of all) for (const b of all) {
+    if (a === b || a.s !== b.s || a.span(a.y0)[0] >= b.span(b.y0)[0]) continue;
+    let least = Infinity;
+    for (let y = Math.max(a.y0, b.y0) - Math.min(a.w, b.w); y <= Math.min(a.y1, b.y1) + Math.min(a.w, b.w); y++) least = Math.min(least, (b.span(y)[0] - b.w) - (a.span(y)[1] + a.w) - 1);
+    if (least < 1) out.push(`marks of zones ${a.s}:${a.z} and ${b.s}:${b.z} ${least < 0 ? 'overlap' : 'touch'}: no stone between them`);
+  }
+  return out;
+}
 const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics', 'tab:doors', 'tab:duel', 'barmore'];
 const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose windows are also read further and pictured at their edges
 
 (async () => {
   const [url, savesDir, stepsArg] = process.argv.slice(2);
   if (!url || !savesDir) { console.log('usage: console-checks.cjs <page url> <saves dir> [steps]'); process.exit(2); }
-  const only = process.env.CC_ONLY === 'title', beatsOnly = process.env.CC_ONLY === 'beats', steps = only ? 0 : +(stepsArg || 40);
+  const only = process.env.CC_ONLY === 'title', beatsOnly = process.env.CC_ONLY === 'beats', ringsOnly = process.env.CC_ONLY === 'rings', steps = only ? 0 : +(stepsArg || 40);
   const saves = fs.readdirSync(savesDir).filter(f => /^(chamber|duel|reward|anvil|bazaar|kit|charm)-/.test(f)).sort();
   const pick = [null, ...saves.filter(f => /^chamber-f\d\.json$|^chamber-boss-door-f[13]-h(0|10)\.json$/.test(f)),
     ...saves.filter(f => /^duel-(regular|boss|cursed)-f[123]-h0\.json$|trap-prompt-h5|narrow|fog|lesson/.test(f)).slice(0, 10),
@@ -166,7 +215,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     const kind = what.replace(/"[^"]*"/g, '"…"').replace(/\d+(\.\d+)?/g, 'N'); kinds.set(kind, (kinds.get(kind) || 0) + 1);
   };
 
-  for (const [shape, W, H, dpr, full, host, touch] of beatsOnly ? [] : SHAPES) {
+  for (const [shape, W, H, dpr, full, host, touch] of beatsOnly || ringsOnly ? [] : SHAPES) {
     const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
     if (host) await ctx.addInitScript(hostScript, HOST_CSS);
     await ctx.addInitScript(firstTable);
@@ -543,7 +592,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
         if (unconverted) out.push(`${unconverted} card pictures still the full-colour sheet`);
         return { ps: true, out: [...new Set(out)], sig: app.dataset.phase + '|' + [...app.querySelectorAll('[data-a]')].map(e => e.dataset.a).join(',').slice(0, 400) };
       }, !!touch);
-      if (r.ps) { screens++; for (const o of r.out) fail(where, o); }
+      if (r.ps) { screens++; for (const o of r.out) fail(where, o); for (const o of await page.evaluate(ringFaults)) fail(where, o); }
       for (const e of errors) fail(where, 'page error: ' + e); errors = [];
       return r;
     };
@@ -689,7 +738,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     await ctx.close();
   }
   // the same to the pixel with and without a host page's styles, every animation stopped at its start
-  for (const [W, H, dpr, touch] of beatsOnly ? [] : [[915, 412, 2.625, 1], [1280, 720, 1, 0], [412, 915, 2.625, 1]]) {
+  for (const [W, H, dpr, touch] of beatsOnly || ringsOnly ? [] : [[915, 412, 2.625, 1], [1280, 720, 1, 0], [412, 915, 2.625, 1]]) {
     const shots = [];
     for (const host of [0, 1]) {
       const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
@@ -731,7 +780,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
   // beats: a rival's attack waiting on your answer let through, your attack on a rival monster, then the rival's whole
   // turn, stepped a thirtieth of a second at a time on a stopped clock, the table checked at every drawing (tableNow)
   let beatTicks = 0;
-  if (!only) for (const [shape, W, H, dpr, touch] of BEAT_SHAPES) for (const save of BEAT_SAVES) {
+  if (!only && !ringsOnly) for (const [shape, W, H, dpr, touch] of BEAT_SHAPES) for (const save of BEAT_SAVES) {
     if (!saves.includes(save)) continue;
     const where = `${shape} ${W}x${H}@${dpr} ${save} beats`, said = new Set(), notes = new Set();
     const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
@@ -763,6 +812,39 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     await ctx.close();
   }
   if (beatTicks) console.log(`${beatTicks} drawings of the table checked in the duel's beats`);
+  // rings: the zones' marks in every state a duel shows them (ringFaults): your attackers ready; each of your monsters
+  // picked in turn (an attacker with the rival's monsters it can strike marked as targets, seen in both of their blinking
+  // colours; a monster in defense picked to change its position); a hand card that aims picked with each zone it may aim
+  // at, and then aimed at its first. A rival's attack waiting on your answer is let through first.
+  let ringLooks = 0;
+  if (!only && !beatsOnly) for (const [shape, W, H, dpr, touch] of RING_SHAPES) for (const save of RING_SAVES) {
+    if (!fs.existsSync(path.join(savesDir, save))) continue;
+    const where = `${shape} ${W}x${H}@${dpr} ${save} rings`, said = new Set();
+    const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
+    const page = await ctx.newPage(), errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.goto(url);
+    await page.evaluate(o => { localStorage.clear(); sessionStorage.clear(); o.profile.runs = 7; localStorage.setItem('lostmemories.profile.v1', JSON.stringify(o.profile)); localStorage.setItem('lostmemories.run.v1', JSON.stringify(o.run)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(o.labs)); localStorage.setItem('lostmemories.labs.v5', JSON.stringify(o.labs)); }, JSON.parse(fs.readFileSync(path.join(savesDir, save), 'utf8')));
+    await page.reload(); await page.waitForTimeout(1500);
+    await page.locator('[data-a="resume"]').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(1500);
+    const tap = async sel => { const l = page.locator(sel).first(); if (!(await l.count())) return false; await l.click({ force: true, timeout: 3000 }).catch(() => {}); await page.waitForTimeout(250); return true; };
+    const settle = () => page.waitForFunction(() => !(window.LM && LM.G.playing) && document.querySelector('[data-a="end"], [data-a="respond:-1"]'), null, { timeout: 20000 }).catch(() => {}); // until it is your turn again, or another attack waits on your answer
+    const seen = []; const look = async state => { seen.push(state); for (const blink of [0, 1]) { if (blink) await page.waitForTimeout(420); ringLooks++;
+      for (const o of await page.evaluate(ringFaults)) if (!said.has(o)) { said.add(o); fail(`${where}, ${state}`, o); } } };
+    for (let i = 0; i < 6 && await tap('[data-a="respond:-1"]'); i++) await settle();
+    await look('ready');
+    const zones = await page.locator('.zh[data-a^="mine:"]').evaluateAll(es => es.map(e => e.dataset.a));
+    for (const a of zones) { await tap(`[data-a="${a}"]`); await look(`${a} picked`); await tap('[data-a="undo"]'); }
+    const hand = await page.locator('[data-a^="hand:"]').evaluateAll(es => es.map(e => e.dataset.a));
+    let aimed = 0;
+    for (const a of hand) { if (aimed >= 2) break; await tap(`[data-a="${a}"]`);
+      if (await page.locator('.zh[data-a^="aim:"]').count()) { aimed++; await look(`${a} aiming`); await tap('.zh[data-a^="aim:"]'); await look(`${a} aimed`); }
+      await tap('[data-a="undo"]'); }
+    for (const e of errors) fail(where, 'page error: ' + e);
+    console.log(`${where}: ${seen.join(', ')}`);
+    await ctx.close();
+  }
+  if (ringLooks) console.log(`${ringLooks} drawings of the table's marks checked`);
   await browser.close();
   if (fails.length) { console.log('faults by kind, most first:'); for (const [k, n] of [...kinds].sort((a, b) => b[1] - a[1]).slice(0, 40)) console.log(`${String(n).padStart(6)}  ${k.slice(0, 220)}`); }
   console.log(`${scenes} scenes on ${SHAPES.length} screen shapes, ${screens} console screens checked, ${taps} random taps`);
