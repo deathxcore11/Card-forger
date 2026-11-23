@@ -253,3 +253,13 @@ General genre craft is fine to use: one-frame hit flash, magnet pull, ease-out b
 - **Consistency edit: lane C contents.** Level, shrine and Fusion announcements are removed, so lane C now carries only existing stage banners and quest toasts, under the new queue limit of 2 and the 3 s staleness rule.
 - **Consistency edit: Ledger "punches".** Under the 15 Hz, no-animation Ledger rule, the Ledger cells that said "punches" now say "updates". Run log lines for Fusions and completed quests were added to match the run-log review.
 - **Consistency edit: "twinkles" in the degrade ladder.** Renamed to "glints" to match the new section 6 row (card-corner glints instead of 4-point twinkles).
+## Notes from the reference
+
+Feel only, in our own words; our colour rules win (no gold banner for a level-up unless it is a "use me" prompt; hearts are never danger red).
+
+- A coin pickup lifts a short amount tag off the duelist while the top counter ticks up, so the number reads at the place and at the corner.
+- A stat or card pickup shows a one-line name and value above the spot for about a second; a rare pickup gets a larger line.
+- A heart has a soft pale ring that pulses slowly, so it reads before it is near.
+- Level-up is a brief sparkle burst on the duelist plus a changed counter and a new icon in the grid; the burst is over in under a second.
+- Walking kicks up a few small pale dust dots at the feet, and nothing more.
+- A charge shrine shows a translucent dome that grows with the charge and a short "charged" line with a small +1 at the end.

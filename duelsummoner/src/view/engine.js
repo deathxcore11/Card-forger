@@ -23,13 +23,14 @@ export const E = {
   noise: { value: buildNoise() }, T: { value: 0 }, wind: { value: new T.Vector3(1, 0.4, 0.5) },       // wind: x,y = direction on the ground, z = strength (0 to 1)
   skyM: { value: new T.Color(0x4fc6d8) }, cldL: { value: new T.Color(0xffffff) }, cldS: { value: new T.Color(0x8fc0da) }, disc: { value: new T.Color(0xfff3b8) }, cover: { value: 0.55 }, sunOn: { value: 1 }, dither: { value: 1 },
   skyT: { value: new T.Color(0x8fb2cc) }, skyH: { value: new T.Color(0xe8d6b0) }, skyG: { value: new T.Color(0xd9c29a) },
+  skyMode: { value: 0 }, mist: { value: new T.Color(0x7fae9c) }, glow: { value: new T.Color(0x4f7f88) }, star: { value: new T.Color(0xe8eef8) }, moonL: { value: new T.Color(0xe4eaf2) }, moonD: { value: new T.Color(0x04060b) }, ash: { value: new T.Color(0x9c9078) },
   sunD: { value: new T.Vector3(0.5, 0.8, 0.3).normalize() }, sunK: { value: new T.Color(0xffe2b0) }
 };
 let gustT = 0;
 export function updateEngine(dt, look) {
   E.T.value += dt; gustT += dt;
   E.wind.value.z = 0.35 + 0.35 * (0.5 + 0.5 * Math.sin(gustT * 0.31)) + 0.2 * (0.5 + 0.5 * Math.sin(gustT * 0.83 + 1.7));       // a slow overall strength; the travelling fronts come from the noise field in gust()
-  if (look) { const d = look.dome; E.skyT.value.setHex(d.top); E.skyM.value.setHex(d.mid); E.skyH.value.setHex(d.hor); E.skyG.value.setHex(d.gnd); E.cldL.value.setHex(d.cldL); E.cldS.value.setHex(d.cldS); E.cover.value = d.cover; E.sunOn.value = d.sun ? 1 : 0; }
+  if (look) { const d = look.dome; E.skyT.value.setHex(d.top); E.skyM.value.setHex(d.mid); E.skyH.value.setHex(d.hor); E.skyG.value.setHex(d.gnd); E.cldL.value.setHex(d.cldL); E.cldS.value.setHex(d.cldS); E.cover.value = d.cover; E.sunOn.value = d.sun ? 1 : 0; E.skyMode.value = d.mode || 0; if (d.mist) E.mist.value.setHex(d.mist); if (d.glow) E.glow.value.setHex(d.glow); }
 }
 // GLSL shared by the engine shaders. N() reads the noise at a normalised coordinate; gust() is the ONE wind field (grass, trees, water, particles); skyBase() is the banded sky gradient the dome, the fog and the water agree on;
 // bayer() is the one 4x4 ordered-dither threshold (sky, fog and haze only: amendment 1).
@@ -69,10 +70,11 @@ export function actorLit(mat, k = 1) {
 // ---- the sky dome (engine plan step 2): a banded gradient in direction space (bands 12 with the dither, so a band edge is an ordered-dither pattern), a sun disc with a stepped glow, and clouds from the one noise texture
 // (two cover levels, a lit and a shade colour, scrolling with the wind, fading toward the horizon). The dither is allowed on sky only (amendment 1). Stage 2 and 3 have no sun and no clouds.
 export function makeSky() {
-  const u = Object.assign({ uCover: E.cover, uSunOn: E.sunOn, uDither: E.dither, uSkyM: E.skyM, uCldL: E.cldL, uCldS: E.cldS, uDisc: E.disc }, engineUniforms());
+  const u = Object.assign({ uMode: E.skyMode, uMist: E.mist, uGlow: E.glow, uStar: E.star, uMoonL: E.moonL, uMoonD: E.moonD, uAsh: E.ash, uCover: E.cover, uSunOn: E.sunOn, uDither: E.dither, uSkyM: E.skyM, uCldL: E.cldL, uCldS: E.cldS, uDisc: E.disc }, engineUniforms());
   const mat = new T.ShaderMaterial({ side: T.BackSide, depthWrite: false, depthTest: false, fog: false, uniforms: u,
     vertexShader: 'varying vec3 vD; void main() { vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w; }',
     fragmentShader: GLSL + `
+    uniform float uMode; uniform vec3 uMist; uniform vec3 uGlow; uniform vec3 uStar; uniform vec3 uMoonL; uniform vec3 uMoonD; uniform vec3 uAsh;
     uniform float uCover; uniform float uSunOn; uniform float uDither; uniform vec3 uSkyM; uniform vec3 uCldL; uniform vec3 uCldS; uniform vec3 uDisc; varying vec3 vD;
     void main() {
       vec3 d = normalize(vD); float th = bayer() - 0.5;
@@ -85,6 +87,29 @@ export function makeSky() {
         float n = N(p * 0.07).r * 0.62 + N(p * 0.19 + 3.0).a * 0.38, cv = floor(smoothstep(1.0 - uCover, 1.0 - uCover + 0.22, n) * 3.0 + 0.5 + th * uDither * 0.8) / 3.0;
         float lit = N(p * 0.07 + vec2(0.03, -0.02)).r; vec3 cc = mix(uCldS, uCldL, step(lit, n + 0.02));
         c = mix(c, cc, cv * smoothstep(0.02, 0.2, d.y) * 0.95);
+      }
+      if (uMode > 0.5 && uMode < 1.5 && d.y > 0.0) {
+        float az = atan(d.z, d.x) / 6.2832 * 3.0;
+        float b1 = smoothstep(0.05, 0.0, abs(d.y - 0.075)) * smoothstep(0.38, 0.7, N(vec2(az + uT * 0.004, 0.31)).r);
+        float b2 = smoothstep(0.04, 0.0, abs(d.y - 0.17)) * smoothstep(0.42, 0.74, N(vec2(az * 1.3 - uT * 0.003, 0.67)).a) * 0.7;
+        float mb = floor(max(b1, b2) * 3.0 + 0.5 + th * uDither * 0.8) / 3.0;
+        c = mix(c, uMist, mb * 0.6);
+        float gs = max(dot(d, normalize(vec3(-0.6, 0.14, -0.5))), 0.0);
+        c += uGlow * (floor(pow(gs, 14.0) * 4.0 + 0.5 + th * uDither) / 4.0) * 0.5;
+      }
+      if (uMode > 1.5 && d.y > 0.0) {
+        vec2 sc = floor(vec2(atan(d.z, d.x) * 573.0, asin(clamp(d.y, -1.0, 1.0)) * 573.0));
+        vec2 so = floor(sc / 64.0).yx * vec2(23.0, 37.0);
+        float h1 = hsh(sc + so), h2 = hsh(sc + so + vec2(11.0, 29.0)), h3 = hsh(sc + so + vec2(41.0, 7.0)), h4 = hsh(sc.yx + so);
+        if (h1 > 0.93 && h2 > 0.93 && h3 > 0.93) { float tw = h4 > 0.5 ? 0.65 + 0.35 * sin(uT * (0.5 + h4) + h1 * 40.0) : 1.0; c = mix(c, uStar, (0.55 + 0.45 * h3) * tw * smoothstep(0.02, 0.2, d.y)); }
+        vec3 ed = normalize(vec3(-0.85, 0.5, -0.25)), ex = normalize(cross(ed, vec3(0.0, 1.0, 0.0))), ey = cross(ed, ex);
+        float a = acos(clamp(dot(d, ed), -1.0, 1.0)), R = 0.075;
+        if (a < R + 0.05) {
+          float phi = atan(dot(d, ey), dot(d, ex)) / 6.2832 * 28.0, fi = floor(phi), fr = phi - fi, len = 0.012 + 0.03 * hsh(vec2(fi + 3.0, 5.0)) * hsh(vec2(fi * 0.5 + 9.0, 2.0));
+          if (a < R - 0.004) c = uMoonD;
+          if (abs(a - R) < 0.0042) c = uMoonL;
+          else if (a > R && a < R + len && abs(fr - 0.5) < 0.14 * (1.0 - (a - R) / len)) c = uAsh;
+        }
       }
       c = mix(c, uSkyG, smoothstep(0.0, -0.1, d.y));
       gl_FragColor = vec4(c, 1.0);
