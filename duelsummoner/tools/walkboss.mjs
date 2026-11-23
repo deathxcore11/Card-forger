@@ -19,8 +19,11 @@ for (const mode of ['run', 'quick']) for (const seed of seeds) for (const stage 
   const ac = m.arena.center, hc = heightAt(ac.x, ac.z); let bad = 0, tot = 0; for (let r = 0; r <= 24; r += 2) for (let a = 0; a < 16; a++) { const x = ac.x + r * Math.cos(a * 0.3927), z = ac.z + r * Math.sin(a * 0.3927), h = heightAt(x, z); tot++; if (h >= 50 || Math.abs(h - hc) > 1.0) bad++; }
   g.sc = Math.max(g.sc, (g.stageSpec && g.stageSpec.gateWake || 360) + 2); p.x = gate.x; p.z = gate.z + 1; p.y = heightAt(p.x, p.z); let fight = false;
   for (let tick = 0; tick < 60 * 6 && !fight; tick++) { g.step(1 / 60, Object.assign({}, idle, { use: true })); fight = g.gate && (g.gate.state === 'fight' || (g.boss && g.boss.state === 'active')); }
+  { const bs = g.sp.find(s => s.role === 'gate'); if (bs) bs.hp = 1; }
   let alive = 0; for (let tick = 0; tick < 60 * 90; tick++) { g.step(1 / 60, Object.assign({}, idle, { f: 1, yaw: (tick / 60) * 0.5 })); }
+  let ring = 0, ringTot = 0; { const bc = m.arena.boss; const hb = heightAt(bc.x, bc.z); for (let r = 0; r <= 14; r += 2) for (let a = 0; a < 16; a++) { const h = heightAt(bc.x + r * Math.cos(a * 0.3927), bc.z + r * Math.sin(a * 0.3927)); ringTot++; if (h < 50 && Math.abs(h - hb) <= 1.0) ring++; } }
   const bossAlive = g.sp.filter(s => s.alive && /boss/.test(s.role || '')).length;
-  console.log(`${mode} seed ${seed} stage ${stage + 1} ${m.key || m.v2}: ${reached ? 'gate reached' : 'NOT reached'}, stuck ${stuck}; gate state ${g.gate && g.gate.state}, boss ${g.boss && g.boss.state}, fight started ${fight}; arena floor within 1 m of the centre on ${tot - bad}/${tot} sample points (ring radius ${m.arena.r || 'n/a'}); p at ${p.x.toFixed(0)},${p.z.toFixed(0)} dist to gate ${Math.hypot(p.x - gate.x, p.z - gate.z).toFixed(1)} m; boss specials alive ${bossAlive}`);
+  console.log(`${mode} seed ${seed} stage ${stage + 1} ${m.key || m.v2}: ${reached ? 'gate reached' : 'NOT reached'}, stuck ${stuck}; gate state ${g.gate && g.gate.state}, boss ${g.boss && g.boss.state}, fight started ${fight}; arena floor within 1 m of the centre on ${tot - bad}/${tot} sample points (ring radius ${m.arena.r || 'n/a'}); p at ${p.x.toFixed(0)},${p.z.toFixed(0)} dist to gate ${Math.hypot(p.x - gate.x, p.z - gate.z).toFixed(1)} m; boss specials alive ${bossAlive}; 14 m boss ring: floor within 1 m of the boss's on ${ring}/${ringTot} points; boss state after the kill ${g.boss && g.boss.state}; stages cleared ${g.stagesCleared}; stage ${g.stage}`);
 }
+
 

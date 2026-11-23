@@ -25,7 +25,8 @@ export function bakeDensity(map, S) {
   for (let j = 0; j < MN; j++) for (let i = 0; i < MN; i++) {
     const x = -HALF + (i + 0.5) * sz, z = -HALF + (j + 0.5) * sz, o = (j * MN + i) * 4; if (x * x + z * z > R * R) continue;
     const h = heightAt(x, z); if (h > 2.5 || Math.abs(heightAt(x + 1.6, z) - h) > 0.3 || Math.abs(heightAt(x, z + 1.6) - h) > 0.3) continue;
-    if (roadDist(road, x, z) < 3.8) continue; let bad = false; for (const k of keep) { const dx = x - k.x, dz = z - k.z; if (dx * dx + dz * dz < k.r * k.r) { bad = true; break; } } if (bad) continue;
+    if (roadDist(road, x, z) < 5.2) continue;       // the road strip is 4.5 m wide: keep 1 m either side clear, plus the 1.8 m cell the filtered density map bleeds across
+     let bad = false; for (const k of keep) { const dx = x - k.x, dz = z - k.z; if (dx * dx + dz * dz < k.r * k.r) { bad = true; break; } } if (bad) continue;
     const m = pat(x * 0.03 + 40, z * 0.03 + 9), mm = pat(x * 0.012 + 7, z * 0.012 + 70);       // meadows: the same noise the flowers use, plus a broad one
     d[o] = Math.round(255 * Math.min(1, 0.16 + Math.max(0, m - 0.42) * 3.2 + Math.max(0, mm - 0.5) * 1.5)); d[o + 1] = Math.round(h / 4 * 255); d[o + 3] = 255;
   }
@@ -84,4 +85,5 @@ export function buildGrass(map, stageIndex, S, theme, level) {
     }` });
   const mesh = new T.Mesh(bladeGeometry(W * W), mat); mesh.frustumCulled = false; mesh.renderOrder = 1; mesh.userData.tris = W * W * BLADES; return mesh;
 }
+
 
