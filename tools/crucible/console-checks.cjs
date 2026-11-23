@@ -4,16 +4,26 @@
 // The page must be served over http (a page opened from the disk may not read its own pictures).
 // For every screen shape and every scene (the title, chambers, duels, every window that opens over them) it checks:
 //   frame   the frame is 512 x 240 to 640 x 480 whole pixels, each a whole number of device pixels, and fills the
-//           screen to within one frame pixel (or reaches 640 x 480);
-//   law     no rounded corner, no blur, no soft shadow, no smooth gradient, no transition, no see-through amount but
-//           none, half or all (the console's own blend), no turned or scaled element inside the frame, no picture drawn at a size that is
+//           screen to within one frame pixel (or reaches 640 x 480); its corner is on a whole device pixel; it is turned
+//           a quarter turn on a touch screen held upright, and only there (a desktop window is never turned);
+//   law     no rounded corner, no blur, no soft shadow, no gradient (repeating ones too; a conic one only as a 2 or 4
+//           pixel dot pattern), no blend mode, no transition, no see-through amount but none, half or all (the
+//           console's own blend), no turned or scaled element inside the frame, no picture drawn at a size that is
 //           not a whole multiple of its own, no canvas stretched, text only in the game's two pixel faces;
+//   flat    on the title, at a scale above one, at most 0.2% of the frame's pixels are not one flat block of device
+//           pixels (read from a screenshot: a soft or shifted pixel is not flat);
 //   fit     no text cut off by its box (the text bar may be, when it shows its more marker), nothing outside the frame,
 //           nothing written in a pillar crossing out of it, no two plaques on top of each other;
+//   scroll  a box of pages in a window or a book ends at least 2 pixels above the plaques under it, no line of words
+//           is cut by its foot, and while lines lie below it its more marker shows;
+//   hammer  one lit plaque on the screen, and one in each window or scene over it;
+//   bar     a short message (the toast) lies exactly on the text bar (96, H - 40, W - 192 wide); the save bar is as wide;
 //   reach   every control that is not switched off can be tapped where it stands (nothing lies over its middle);
 //   placed  every moving part drawn over a picture (data-art) sits on the point of the picture it was measured from,
 //           through the picture's own place and size as the page laid it out; a torch flame also stands on the bright
 //           core of the painted flame, found again in the picture's own pixels;
+//   clear   no control, label or coin of the screen (outside a window, a scene, a dim or the toast) lies over such a
+//           moving part;
 //   errors  no page error.
 // Some shapes are checked inside a page that styles pictures the way a host page may (img { max-width: 100%;
 // height: auto } and the like), and at the end a few scenes are pictured with and without those styles, with every
@@ -24,11 +34,12 @@ const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
 
 // The first three shapes get every scene and the random taps; the others a short list of scenes.
+// [name, width, height, pixel ratio, every scene, in a host page, a touch screen (a phone, a fold or a tablet)]
 const SHAPES = [
-  ['phone held sideways', 915, 412, 2.625, 1], ['phone held upright', 412, 915, 2.625, 1], ['fold, inner screen', 673, 841, 2.625, 1],
-  ['wide desktop', 1024, 480, 1], ['fold, cover screen sideways', 882, 344, 2.625], ['16:9 screen', 1920, 1080, 1],
-  ['tablet', 1024, 768, 2], ['small window', 800, 360, 1],
-  ['phone held sideways, in a host page', 915, 412, 2.625, 0, 1], ['16:9 screen, in a host page', 1280, 720, 1, 0, 1], ['upright window, in a host page', 640, 900, 1, 0, 1],
+  ['phone held sideways', 915, 412, 2.625, 1, 0, 1], ['phone held upright', 412, 915, 2.625, 1, 0, 1], ['fold, inner screen', 673, 841, 2.625, 1, 0, 1],
+  ['wide desktop', 1024, 480, 1], ['fold, cover screen sideways', 882, 344, 2.625, 0, 0, 1], ['16:9 screen', 1920, 1080, 1],
+  ['tablet', 1024, 768, 2, 0, 0, 1], ['small window', 800, 360, 1], ['tall desktop window', 800, 1000, 1],
+  ['phone held sideways, in a host page', 915, 412, 2.625, 0, 1, 1], ['16:9 screen, in a host page', 1280, 720, 1, 0, 1], ['upright window, in a host page', 640, 900, 1, 0, 1],
 ];
 // styles a page that holds the game may set on everything in it (a common reset)
 const HOST_CSS = `*,::before,::after{box-sizing:border-box;border:0 solid #e5e7eb}html{line-height:1.5;-webkit-text-size-adjust:100%}body{margin:0;line-height:inherit}
@@ -53,8 +64,8 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
   const fails = []; let scenes = 0, taps = 0, screens = 0;
   const fail = (where, what) => { fails.push(`${where}: ${what}`); if (fails.length < 60) console.log('FAIL', where, what); };
 
-  for (const [shape, W, H, dpr, full, host] of SHAPES) {
-    const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr });
+  for (const [shape, W, H, dpr, full, host, touch] of SHAPES) {
+    const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
     if (host) await ctx.addInitScript(hostScript, HOST_CSS);
     const page = await ctx.newPage();
     let errors = [];
@@ -73,7 +84,7 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
       if (save) { await page.locator('[data-a="resume"]').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(700); }
     };
     const audit = async where => {
-      const r = await page.evaluate(async () => {
+      const r = await page.evaluate(async touch => {
         const app = document.getElementById('app'), out = [];
         if (!app.classList.contains('ps')) return { ps: false, out };
         const dpr = devicePixelRatio, cs = getComputedStyle(app), W = parseFloat(cs.width), H = parseFloat(cs.height);
@@ -86,6 +97,9 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
         if (W < 640 && aw - W * N >= N && Math.floor(ah / 240) >= Math.floor(aw / 512)) out.push(`frame leaves ${aw - W * N} device pixels unused across`);
         if (H < 480 && ah - H * N >= N && Math.floor(aw / 512) >= Math.floor(ah / 240)) out.push(`frame leaves ${ah - H * N} device pixels unused down`);
         const A = app.getBoundingClientRect();
+        if (up !== (touch && innerHeight > innerWidth * 1.15)) out.push(up ? 'frame turned, on a screen that is not a touch screen held upright' : 'frame not turned, on a touch screen held upright');
+        if ([A.left, A.top].some(v => Math.abs(v * dpr - Math.round(v * dpr)) > .02)) out.push(`frame's corner at ${(A.left * dpr).toFixed(3)}, ${(A.top * dpr).toFixed(3)} device pixels, off the device grid`);
+        const fr = e => { let x = 0, y = 0; for (let q = e; q && q !== app; q = q.offsetParent) { x += q.offsetLeft; y += q.offsetTop; } return [x, y, e.offsetWidth, e.offsetHeight]; }; // in frame pixels
         const name = e => (e.id ? '#' + e.id : '') + (e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).join('.') : e.tagName.toLowerCase()) + (e.dataset && e.dataset.a ? `[${e.dataset.a}]` : '');
         const okOpacity = v => [0, .5, 1].some(x => Math.abs(+v - x) < .001); // the console's half-and-half blend, or none
         const shadowBlur = s => s !== 'none' && s.split(/,(?![^(]*\))/).some(p => { const nums = p.replace(/rgba?\([^)]*\)/g, '').match(/-?[\d.]+px/g) || []; return nums.length >= 3 && parseFloat(nums[2]) !== 0; });
@@ -100,7 +114,8 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
             if (shadowBlur(s.boxShadow)) out.push(`${where}: soft shadow ${s.boxShadow}`);
             if (shadowBlur(s.textShadow)) out.push(`${where}: soft text shadow`);
             if (s.transitionDuration.split(',').some(t => parseFloat(t) !== 0)) out.push(`${where}: transition ${s.transitionDuration}`);
-            if (/(^|[^-])(linear|radial)-gradient\(/.test(s.backgroundImage) || /(^|[^-])conic-gradient\(/.test(s.backgroundImage) && !/2px 2px|4px 4px/.test(s.backgroundSize)) out.push(`${where}: smooth gradient`); // a conic pattern is a dot pattern only at 2 or 4 pixels
+            if (/(linear|radial)-gradient\(/.test(s.backgroundImage) || /conic-gradient\(/.test(s.backgroundImage) && !/2px 2px|4px 4px/.test(s.backgroundSize)) out.push(`${where}: gradient ${s.backgroundImage.slice(0, 60)}`); // repeating ones too; a conic pattern is a dot pattern only at 2 or 4 pixels
+            if (s.mixBlendMode && s.mixBlendMode !== 'normal') out.push(`${where}: blend mode ${s.mixBlendMode}`);
             if (!okOpacity(s.opacity)) out.push(`${where}: opacity ${s.opacity}`);
             if (e !== app && s.transform !== 'none') { const t = new DOMMatrix(s.transform); if (Math.abs(t.a - 1) > 1e-6 || Math.abs(t.d - 1) > 1e-6 || t.b || t.c) out.push(`${where}: turned or scaled (${s.transform})`); }
             if (s.imageRendering !== 'pixelated' && s.imageRendering !== 'crisp-edges' && pseudo == null && e.tagName === 'IMG' && e.naturalWidth && (e.width % e.naturalWidth || e.height % e.naturalHeight)) out.push(`${where}: picture drawn at ${e.width} x ${e.height} from ${e.naturalWidth} x ${e.naturalHeight}`);
@@ -126,8 +141,46 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
         for (const e of app.querySelectorAll('.lb, .pq, .cd, .pf, .sl, .ga, .mw')) if (vis(e) && !inside(e.getBoundingClientRect(), A) && !scrolledAway(e)) out.push(`${name(e)} "${e.textContent.slice(0, 20)}": outside the frame`);
         const pillars = [...app.querySelectorAll('.fr > .ab')].filter(p => p.style.width === '96px');
         for (const p of pillars) { const P = p.getBoundingClientRect(); for (const e of p.querySelectorAll('.lb, .pq, .ga, .pf, .sl, .spk, .seal, .pip, .backs')) if (vis(e) && !inside(e.getBoundingClientRect(), P)) out.push(`${name(e)} "${e.textContent.slice(0, 20)}": crosses out of its pillar`); }
+        // (a plaque scrolled out of its box is not on the screen, so it overlaps nothing)
         const pqs = [...app.querySelectorAll('.pq')].filter(vis).map(e => [e, e.getBoundingClientRect()]);
-        for (let i = 0; i < pqs.length; i++) for (let j = i + 1; j < pqs.length; j++) { const [a, ra] = pqs[i], [b, rb] = pqs[j]; if (a.closest('.mw') !== b.closest('.mw')) continue; if (ra.left < rb.right - 1 && rb.left < ra.right - 1 && ra.top < rb.bottom - 1 && rb.top < ra.bottom - 1) out.push(`plaques "${a.textContent}" and "${b.textContent}" overlap`); }
+        for (let i = 0; i < pqs.length; i++) for (let j = i + 1; j < pqs.length; j++) { const [a, ra] = pqs[i], [b, rb] = pqs[j]; if (a.closest('.mw') !== b.closest('.mw') || scrolledAway(a) || scrolledAway(b)) continue; if (ra.left < rb.right - 1 && rb.left < ra.right - 1 && ra.top < rb.bottom - 1 && rb.top < ra.bottom - 1) out.push(`plaques "${a.textContent}" and "${b.textContent}" overlap`); }
+        // scroll: each box of pages in a window or a book ends on a whole line, clear of the plaques under it, and marks more below
+        for (const sc of app.querySelectorAll('.mw .sc, .book .sc')) {
+          if (!vis(sc)) continue;
+          const [sx, sy, sw, sh] = fr(sc), box = sc.closest('.mw, .book'), S = sc.getBoundingClientRect(), h = sc.clientHeight;
+          for (const p of box.querySelectorAll('.pq')) { if (sc.contains(p) || !vis(p)) continue; const [px, py, pw] = fr(p); if (px < sx + sw && sx < px + pw && py >= sy && sy + sh > py - 2) out.push(`${name(sc)}: its foot at ${sy + sh} is less than 2 pixels above the plaque "${p.textContent.trim()}" at ${py}`); }
+          let below = 0;
+          const tw = document.createTreeWalker(sc, NodeFilter.SHOW_TEXT);
+          for (let t = tw.nextNode(); t; t = tw.nextNode()) {
+            if (!t.textContent.trim() || !t.parentElement.offsetHeight) continue;
+            let b = t.parentElement; while (b !== sc && getComputedStyle(b).display === 'inline') b = b.parentElement;
+            const lh = parseFloat(getComputedStyle(b).lineHeight) || 16, rg = document.createRange(); rg.selectNodeContents(t);
+            for (const q of rg.getClientRects()) {
+              if (!q.width || !q.height) continue; // a line's box is its line height about the middle of its glyphs' box, in the box's own pixels
+              const mid = (up ? S.right - (q.left + q.right) / 2 : (q.top + q.bottom) / 2 - S.top) / k - sc.clientTop, a = mid - lh / 2, z = mid + lh / 2;
+              if (a < h - 1 && z > h + 1 && a > -1) out.push(`${name(sc)}: the line "${t.textContent.trim().slice(0, 24)}" is cut by its foot (${a.toFixed(1)} to ${z.toFixed(1)} in ${h})`);
+              if (a >= h - 1) below++;
+            }
+          }
+          const mk = sc.nextElementSibling && sc.nextElementSibling.classList.contains('scm') ? sc.nextElementSibling : null;
+          if (below && (!mk || mk.hidden || !vis(mk))) out.push(`${name(sc)}: ${below} lines lie below it, with no more marker`);
+        }
+        // hammer: one lit plaque in each layer (the screen, and each window or scene over it)
+        for (const L of [app, ...app.querySelectorAll('.mw, .story')]) {
+          const lit = [...L.querySelectorAll('.pq.lit')].filter(e => vis(e) && (L === app ? !e.closest('.mw, .story') : e.closest('.mw, .story') === L));
+          if (lit.length > 1) out.push(`${lit.length} plaques lit in ${L === app ? 'the screen' : name(L)} (${lit.map(e => e.textContent.trim().slice(0, 14)).join(', ')}): only the one the hammer is on may be`);
+        }
+        // bar: a short message lies on the text bar, and the save bar is as wide
+        const W0 = app.offsetWidth, H0 = app.offsetHeight, toastEl = app.querySelector('#toast');
+        if (toastEl && toastEl.textContent.trim() && vis(toastEl)) { const [tx, ty, tw2] = fr(toastEl); if (tx !== 96 || ty !== H0 - 40 || tw2 !== W0 - 192) out.push(`#toast at ${tx}, ${ty}, ${tw2} wide: not on the text bar (96, ${H0 - 40}, ${W0 - 192} wide)`); }
+        const sbar = app.querySelector('.savebar'); if (sbar && vis(sbar) && sbar.offsetWidth !== W0 - 192) out.push(`.savebar ${sbar.offsetWidth} wide, not ${W0 - 192}`);
+        // clear: no control, label or coin of the screen lies over a moving part drawn on a picture
+        const parts = [...app.querySelectorAll('[data-art]')].filter(vis).map(e => [e, e.getBoundingClientRect()]);
+        if (parts.length) for (const e of app.querySelectorAll('[data-a], .pq, .lb, .coin, #coin, .runslot')) {
+          if (!vis(e) || e.closest('.mw, .story, .dim, .toast, [data-art]') || e.querySelector('[data-art]')) continue;
+          const q = e.getBoundingClientRect();
+          for (const [p, P] of parts) if (q.left < P.right - .5 && P.left < q.right - .5 && q.top < P.bottom - .5 && P.top < q.bottom - .5) out.push(`${name(e)} "${e.textContent.trim().slice(0, 20)}": lies over the moving part ${name(p)}`);
+        }
         // reach: every live control can be tapped at its middle
         const top = app.querySelector('.mw, .story, .dim') ? [...app.querySelectorAll('.mw [data-a], .story[data-a], .story [data-a], .dim[data-a], .mw[data-a]')] : [...app.querySelectorAll('[data-a]')];
         for (const e of top) {
@@ -163,15 +216,41 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
         const unconverted = [...app.querySelectorAll('.cd .art, .big .art')].filter(e => e.style.backgroundImage && !/blob:/.test(e.style.backgroundImage)).length;
         if (unconverted) out.push(`${unconverted} card pictures still the full-colour sheet`);
         return { ps: true, out: [...new Set(out)], sig: app.dataset.phase + '|' + [...app.querySelectorAll('[data-a]')].map(e => e.dataset.a).join(',').slice(0, 400) };
-      });
+      }, !!touch);
       if (r.ps) { screens++; for (const o of r.out) fail(where, o); }
       for (const e of errors) fail(where, 'page error: ' + e); errors = [];
       return r;
+    };
+    // flat: every frame pixel one flat block of device pixels, read back from a screenshot (at a scale above one)
+    const flat = async where => {
+      const g = await page.evaluate(() => {
+        const a = document.getElementById('app'); if (!a.classList.contains('ps')) return null;
+        const r = a.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(a).transform), d = devicePixelRatio;
+        return { W: a.offsetWidth, H: a.offsetHeight, n: Math.round(Math.hypot(m.a, m.b) * d), up: Math.abs(m.b) > Math.abs(m.a), x: Math.round(r.left * d), y: Math.round(r.top * d), w: Math.round(r.width * d) };
+      });
+      if (!g || g.n < 2) return;
+      await page.waitForFunction(() => [...document.fonts].filter(f => /LM Text/.test(f.family)).length > 1, null, { timeout: 5000 }).catch(() => {}); // the body face struck on whole pixels (pxtext.mjs) is in
+      const png = (await page.screenshot()).toString('base64');
+      const bad = await page.evaluate(async ([png, g]) => {
+        const img = new Image(); img.src = 'data:image/png;base64,' + png; await img.decode();
+        const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0); const d = x.getImageData(0, 0, c.width, c.height).data;
+        let bad = 0;
+        for (let fy = 0; fy < g.H; fy++) for (let fx = 0; fx < g.W; fx++) {
+          const bx = g.up ? g.x + g.w - (fy + 1) * g.n : g.x + fx * g.n, by = g.up ? g.y + fx * g.n : g.y + fy * g.n;
+          const i0 = (by * c.width + bx) * 4; let worst = 0;
+          for (let yy = 0; yy < g.n && !(worst > 3); yy++) for (let xx = 0; xx < g.n; xx++) { const i = i0 + (yy * c.width + xx) * 4; worst = Math.max(worst, Math.abs(d[i] - d[i0]), Math.abs(d[i + 1] - d[i0 + 1]), Math.abs(d[i + 2] - d[i0 + 2])); }
+          if (worst > 3) bad++;
+        }
+        return bad;
+      }, [png, g]);
+      if (bad > g.W * g.H * .002) fail(where, `${bad} of ${g.W * g.H} frame pixels are not one flat block of device pixels (more than 0.2%)`);
     };
     for (const save of only ? [null] : full ? pick : SHORT.filter(x => !x || saves.includes(x))) {
       const base = `${shape} ${W}x${H}@${dpr} ${save || 'title'}`;
       await load(save); await page.waitForTimeout(500); scenes++;
       await audit(base);
+      if (!save) await flat(base);
       // every window that can open over this screen
       for (const a of WINDOWS) {
         const l = page.locator(`[data-a="${a}"]`).first();
@@ -207,10 +286,10 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
     await ctx.close();
   }
   // the same to the pixel with and without a host page's styles, every animation stopped at its start
-  for (const [W, H, dpr] of [[915, 412, 2.625], [1280, 720, 1], [412, 915, 2.625]]) {
+  for (const [W, H, dpr, touch] of [[915, 412, 2.625, 1], [1280, 720, 1, 0], [412, 915, 2.625, 1]]) {
     const shots = [];
     for (const host of [0, 1]) {
-      const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr });
+      const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
       if (host) await ctx.addInitScript(hostScript, HOST_CSS);
       const page = await ctx.newPage(), got = [];
       for (const save of only ? [''] : SAME) {
@@ -219,6 +298,7 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
         await page.evaluate(o => { localStorage.clear(); sessionStorage.clear(); const labs = { five: true, lean: true, heat: true, kits: true, items: true }; if (o) { o.profile.runs = 7; localStorage.setItem('lostmemories.profile.v1', JSON.stringify(o.profile)); localStorage.setItem('lostmemories.run.v1', JSON.stringify(o.run)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(o.labs || labs)); } localStorage.setItem('lostmemories.labs.v5', JSON.stringify(o ? o.labs || labs : labs)); }, save ? JSON.parse(fs.readFileSync(path.join(savesDir, save), 'utf8')) : null);
         await page.reload(); await page.waitForTimeout(600);
         if (save) { await page.locator('[data-a="resume"]').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(900); }
+        await page.waitForFunction(() => [...document.fonts].filter(f => /LM Text/.test(f.family)).length > 1, null, { timeout: 5000 }).catch(() => {}); // the body face struck on whole pixels (pxtext.mjs) is in
         await page.evaluate(() => { document.getAnimations().forEach(a => { a.pause(); a.currentTime = 0; }); for (const c of document.querySelectorAll('#coin')) c.style.visibility = 'hidden'; }); // the turning crest is drawn by the clock
         got.push([save || 'title', await page.screenshot()]);
       }
