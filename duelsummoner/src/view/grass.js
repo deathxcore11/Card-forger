@@ -1,4 +1,4 @@
-﻿// Blade grass (engine plan, wind and grass): single-triangle blades built in code, drawn as ONE instanced draw. View only; nothing here touches the sim.
+// Blade grass (engine plan, wind and grass): single-triangle blades built in code, drawn as ONE instanced draw. View only; nothing here touches the sim.
 //
 // How it fills the ground without per-frame uploads: a fixed grid of patch slots (1.5 m cells) that wraps round the duelist in the vertex shader, so the same slots always cover the 60 m square around them and a cell
 // keeps the same patch while it is in view. Which cells grow grass, and how thick, comes from a density map baked once per stage from the generator (meadow noise, never on the road, pools, the start, the gate, boss rings,
@@ -12,7 +12,7 @@ import { strHash, noise2 } from '../gen/scatter.js';
 import { GLSL, engineUniforms, E, MASK } from './engine.js';
 
 const CELL = 1.2, BLADES = 36, HALF = 232, MN = 256;
-export function detailLevel() { const q = new URLSearchParams(location.search).get('detail'); if (q === 'low' || q === 'medium' || q === 'high') return q; const touch = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0 || (typeof matchMedia === 'function' && matchMedia('(pointer:coarse)').matches); return touch ? 'medium' : 'high'; }       // touch devices default to Medium; ?detail=high overrides
+export function detailLevel() { const q = new URLSearchParams(location.search).get('detail'); if (q === 'low' || q === 'medium' || q === 'high') return q; const sv = typeof window !== 'undefined' && window.__dsDetail; if (sv === 'low' || sv === 'medium' || sv === 'high') return sv; const touch = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0 || (typeof matchMedia === 'function' && matchMedia('(pointer:coarse)').matches); return touch ? 'medium' : 'high'; }       // touch devices default to Medium; ?detail=high overrides
 
 // density map: R = how thick (0 none, 255 full), G = ground height (0 to 4 m)
 export function bakeDensity(map, S) {

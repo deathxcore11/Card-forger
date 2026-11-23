@@ -6,7 +6,7 @@ const b = await launch({ out: process.argv[2], query: '?seed=1&fxlab' });
 await b.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
 await wait(3500); await b.evalIn('window.__maskAlways = true; 1'); await b.evalIn("(async()=>{ const m = await import('/src/view/engine.js'); m.E.hold = true; return 1; })()");
 await b.evalIn(`window.__hideDuel = on => { const D = __ds; D.actors.player.visible = !on; for (const k in D.actors.rigs) D.actors.rigs[k].group.visible = !on; D.actors._hideDuel = on; return 1; }; 1`);
-console.log(await b.evalIn(`(async()=>{ const D = __ds, g = D.game, C = await import('/src/sim/combat.js'); g.god = true; g.mods.reach = ${+(process.env.REACH || 0)}; g.spawnAcc = -1e9; g.field.monsters.fill(null); if (D.grass) D.grass.visible = false; const p = g.p;
+console.log(await b.evalIn(`(async()=>{ const D = __ds, g = D.game, C = await import('/src/sim/combat.js'); g.god = true; g.mods.reach = ${+(process.env.REACH || 0)}; if (g.mods.reach >= 1.5) D.tier5Force = 'quiet'; g.spawnAcc = -1e9; g.field.monsters.fill(null); if (D.grass) D.grass.visible = false; const p = g.p;
   window.__w = { x: p.x + 1.5, z: p.z - 6 };
   C.addTele(g.tele, { type: 1, x: __w.x, y: p.y, z: __w.z, r: 5, dur: 1e6, t: 0.7e6 }); C.addTele(g.tele, { type: 0, x: p.x - 6, y: p.y, z: p.z - 3, dx: 1, dz: 0, len: 9, w: 2, dur: 1e6, t: 0.7e6 });
   D.camHold = { x: p.x + 0.5, y: p.y + 6, z: p.z + 9, lx: p.x, ly: p.y, lz: p.z - 5 }; D.freeze(true); await new Promise(r => setTimeout(r, 1500)); return 'set'; })()`));
