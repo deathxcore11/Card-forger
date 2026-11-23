@@ -93,7 +93,7 @@ export const shopPrice = (g, base) => Math.max(1, Math.round(base * (1 - g.mods.
 export function chestPrice(g) {
   const C = E.cardChests, n = g.world.opened + 1;
   if (g.mods.freeChestEvery && n % g.mods.freeChestEvery === 0) return 0;
-  let price = C.basePrice; for (let k = 0; k < g.world.opened; k++) { price *= C.growth; if (price > C.cap) { price = C.cap; break; } }          // a plain loop: the same on every machine
+  let price = C.basePrice; for (let k = 0; k < g.world.opened; k++) { price += C.step + C.stepGrowth * k; if (price > C.cap) { price = C.cap; break; } }          // a plain loop: the same on every machine
   return Math.max(1, Math.round(price * (1 - g.mods.shopDiscount)));
 }
 

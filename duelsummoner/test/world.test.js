@@ -83,7 +83,7 @@ test('Card Chests: price rises with each chest, rarity is shown, you must be abl
     const c = cs[k]; at(g, c); const p = chestPrice(g); prices.push(p); g.coins = 0; useProp(g, nearestProp(g)); assert.equal(g.offer, null, 'cannot open without coins');
     g.coins = 1000; useProp(g, nearestProp(g)); assert.ok(g.offer && g.offer.type === 'chest'); assert.equal(g.coins, 1000 - p); g.choose(0);
   }
-  assert.deepEqual(prices, [30, 72, 173, 415]); assert.equal(g.world.opened, 4);              // 30 x 2.4 each time, as the run recordings showed (30, then 72)
+  assert.deepEqual(prices, [30, 72, 115, 159]); assert.equal(g.world.opened, 4);              // additive: 30, 72, 115, 159, 204
 });
 
 test('items change the run: armour, free chests, discount, regen, coins, luck, dash cooldown, air jump', () => {

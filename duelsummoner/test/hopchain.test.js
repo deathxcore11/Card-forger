@@ -11,14 +11,14 @@ for (const seed of [1, 4242, 31337, 48879]) test('hop chain on seed ' + seed + '
   const p = g.p, hop1 = (from, to, topY, hold) => {                                              // stand on `from`, run at `to`, jump near its edge
     p.x = from.x; p.z = from.z; p.y = topY; p.vx = p.vz = 0; p.grounded = true; p.vy = 0;
     const dx = to.x - from.x, dz = to.z - from.z, d = Math.hypot(dx, dz), yaw = Math.atan2(-dx, -dz); let landed = false, maxY = 0, jumpAt = -99;
-    for (let i = 0; i < 180; i++) { const left = Math.hypot(to.x - p.x, to.z - p.z), run = { ...idle, f: 1, yaw, jump: false }; if (Math.hypot(p.x - from.x, p.z - from.z) > (from.pad ? 1.5 : 0.25) && left > 0.2 && p.grounded && i > 2) { run.jump = true; jumpAt = i; } if (i - jumpAt < hold) run.jump = true; g.step(1 / 60, run); maxY = Math.max(maxY, p.y); if (p.grounded && Math.abs(to.x - p.x) <= to.hw && Math.abs(to.z - p.z) <= to.hd && Math.abs(p.y - 3.6) < 0.1) { landed = true; break; } }
+    for (let i = 0; i < 180; i++) { const left = Math.hypot(to.x - p.x, to.z - p.z), run = { ...idle, f: 1, yaw, jump: false }; if (Math.hypot(p.x - from.x, p.z - from.z) > (from.pad ? (alongX ? from.hw : from.hd) - 0.3 : 0.25) && left > 0.2 && p.grounded && i > 2) { run.jump = true; jumpAt = i; } if (i - jumpAt < hold) run.jump = true; g.step(1 / 60, run); maxY = Math.max(maxY, p.y); if (p.grounded && Math.abs(to.x - p.x) <= to.hw && Math.abs(to.z - p.z) <= to.hd && Math.abs(p.y - 3.6) < 0.1) { landed = true; break; } }
     return { landed, maxY, y: p.y };
   };
-  const hop = (from, to, topY) => { let best = null; for (let hold = 4; hold <= 26; hold += 2) { const r = hop1(from, to, topY, hold); if (r.landed) return Object.assign(r, { hold }); best = r; } return best; };       // the duelist shortens a jump by letting go early, so a hop works if some hold length lands on the pad
+  const hop = (from, to, topY) => { const full = hop1(from, to, topY, 40); assert.ok(full.landed, 'a full held jump from a running start lands: ' + JSON.stringify(full)); let short = null; for (let hold = 4; hold <= 12; hold += 2) { const r = hop1(from, to, topY, hold); if (r.landed) { short = r; break; } } assert.ok(short, 'a short hop also lands'); return full; };       // the duelist shortens a jump by letting go early, so a hop works if some hold length lands on the pad
   const centre = pads.map(q => ({ x: q.cx, z: q.cz, hw: q.w / 2, hd: q.d / 2 }));
   // the first pad from the tier floor (a 1.2 m rise)
   const dirx = alongX ? Math.sign(centre[1].x - centre[0].x) : 0, dirz = alongX ? 0 : Math.sign(centre[1].z - centre[0].z);
-  const start = { x: centre[0].x - dirx * 3.4, z: centre[0].z - dirz * 3.4 }, r0 = hop(start, centre[0], 2.4); assert.ok(r0.landed, 'tier to first pad: ' + JSON.stringify(r0));
+  const half0 = alongX ? centre[0].hw : centre[0].hd, start = { x: centre[0].x - dirx * (half0 + 2.0), z: centre[0].z - dirz * (half0 + 2.0) }, r0 = hop(start, centre[0], 2.4); assert.ok(r0.landed, 'tier to first pad: ' + JSON.stringify(r0));
   const r1 = hop({ ...centre[0], pad: true }, centre[1], 3.6); assert.ok(r1.landed, 'pad 1 to pad 2: ' + JSON.stringify(r1));
   const r2 = hop({ ...centre[1], pad: true }, centre[2], 3.6); assert.ok(r2.landed, 'pad 2 to pad 3: ' + JSON.stringify(r2));
   // a missed hop (walk off pad 1 toward pad 2 without jumping) lands on the 2.4 m tier
@@ -26,6 +26,7 @@ for (const seed of [1, 4242, 31337, 48879]) test('hop chain on seed ' + seed + '
   for (let i = 0; i < 40; i++) g.step(1 / 60, { ...idle, f: 1, yaw }); for (let i = 0; i < 60; i++) g.step(1 / 60, idle);
   assert.ok(Math.abs(p.y - 2.4) < 0.05, 'a miss lands on the tier below, y = ' + p.y.toFixed(2));
 });
+
 
 
 
