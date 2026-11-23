@@ -18,6 +18,7 @@ export function buildGateSeal(map) {
   g.userData.update = (cam, t) => {
     const dx = cam.x - map.gate.x, dz = cam.z - map.gate.z, d = Math.sqrt(dx * dx + dz * dz), k = Math.max(1, d * 0.0175 / W);
     g.scale.set(k, 1, k); rings.rotation.y = t * 0.4;
+    const f = Math.max(0.1, Math.min(1, (d - 6) / 30)); column.material.opacity = rings.material.opacity = 0.85 * f;       // a light column is never solid and fades as the camera nears it
   };
   return g;
 }

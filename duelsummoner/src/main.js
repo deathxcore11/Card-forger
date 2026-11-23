@@ -378,7 +378,7 @@ function frame(now) {
   actors.update(game, alpha, camera.position, head, dtReal);
   ringMarks();
   fx.update(dtReal, camera);
-  props.update(game);
+  props.cam = camera.position; props.update(game);
   drawTags(); minimap.draw(game, input.yaw); if (mapOpen) minimap.drawFull($('fullmap'), game, input.yaw);
   showFlash(game);
   const a1 = performance.now();

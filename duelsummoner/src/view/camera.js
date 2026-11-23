@@ -8,6 +8,8 @@ const C = CFG.cam;
 const ARM = Math.sqrt(C.back * C.back + C.up * C.up), BASE = Math.atan2(C.up, C.back);
 
 // is this point inside a tree trunk or a boulder (with a little room)? the spring pulls the camera in before it
+// a sphere of 0.3 m: the ground (and every wall prim) at the point and at four points round it
+function solidAt(x, y, z) { const r = 0.3; return heightAt(x, z) > y - 0.2 || heightAt(x + r, z) > y - 0.2 || heightAt(x - r, z) > y - 0.2 || heightAt(x, z + r) > y - 0.2 || heightAt(x, z - r) > y - 0.2; }
 function hitProp(col, x, y, z) {
   if (!col) return false;
   const i0 = Math.floor((x - 3) / col.CELL), i1 = Math.floor((x + 3) / col.CELL), j0 = Math.floor((z - 3) / col.CELL), j1 = Math.floor((z + 3) / col.CELL);
@@ -37,13 +39,14 @@ export class ChaseCamera {
     const steps = 40;
     for (let i = 1; i <= steps; i++) {
       const t = i / steps, sx = px + (tx - px) * t, sy = py + (ty - py) * t, sz = pz + (tz - pz) * t;
-      if (heightAt(sx, sz) > sy - 0.2 || hitProp(this.cols, sx, sy, sz)) { free = (i - 1) / steps; break; }
+      if (solidAt(sx, sy, sz) || hitProp(this.cols, sx, sy, sz)) { free = (i - 1) / steps; break; }
     }
     if (free < 1) free = Math.max(C.minDist / ARM, free - C.margin / ARM);   // keep clear of the wall only when one is in the way
     if (free < this.t) this.t = free;                              // pull in at once
-    else this.t = Math.min(free, this.t + dt * 4);                 // ease back out
+    else this.t = Math.min(free, this.t + dt * 2.5);               // ease back out over about 0.4 s
     const t = Math.min(this.t, free);
     let x = px + (tx - px) * t, y = py + (ty - py) * t, z = pz + (tz - pz) * t;
+    for (let up = 0; up < 9 && (solidAt(x, y, z) || hitProp(this.cols, x, y, z)); up++) y += 1.0;       // pinned against something tall at the minimum distance: rise over it, looking down at the duelist, rather than sit inside it
     y = Math.max(y, heightAt(x, z) + C.floorGap, C.floorGap);
     this.camera.position.set(x, y, z);
     let ly = py + 0.2; this.camera.lookAt(px + fx * 6, ly, pz + fz * 6);        // aim past the duelist so the shoulder offset reads

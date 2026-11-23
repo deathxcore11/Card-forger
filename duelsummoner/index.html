@@ -74,6 +74,11 @@
   .wtag.spent { color:#8a8a92; border-color:#4a4a52; }
   .wtag.free { color:#ffffff; } .wtag.shop { color:#ffd23f; } .wtag.danger { color:#ff6a5a; } .wtag.seal { color:#c9a0ff; }          /* one colour code everywhere: white free, gold coins, red danger, violet Fusion and seals; grey once used */
   #offerScreen { pointer-events:auto; }
+  /* the pause screen: one centred dark panel, a column: title, Resume, End run, the settings as a tidy grid under a divider, the controls hint last */
+  .pausePanel { background:#0d0810f2; border:2px solid #6b4fa0; padding:20px 28px; width:min(580px, 92vw); max-height:92vh; overflow:auto; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .pausePanel hr { width:100%; border:0; border-top:1px solid #3a2a50; margin:2px 0; } .pausePanel h1 { margin:0; } .pausePanel p { margin:0; text-align:center; font-size:14px; line-height:1.5; }
+  .pausePanel .sgrid { width:100%; display:grid !important; grid-template-columns:1fr 1fr; gap:12px 22px; justify-content:stretch; align-items:center; text-align:left; } .pausePanel .sgrid label { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  @media (max-width:520px) { .pausePanel .sgrid { grid-template-columns:1fr; } .pausePanel { padding:14px 16px; } }
   .reveal { position:fixed; inset:0; z-index:50; background:rgba(6,4,10,.86); display:flex; align-items:center; justify-content:center; flex-direction:column; transition:opacity .16s; } .reveal.out { opacity:0; }
   .rvChest { position:relative; width:190px; height:140px; } .rvBody { position:absolute; left:0; right:0; bottom:0; height:84px; background:#6b4a2a; border:3px solid #d8b86a; box-sizing:border-box; } .rvLid { position:absolute; left:-6px; right:-6px; top:8px; height:50px; background:#7d5832; border:3px solid #d8b86a; box-sizing:border-box; border-radius:26px 26px 4px 4px; z-index:2; }
   .rvSeam { position:absolute; left:6px; right:6px; top:54px; height:6px; border-radius:3px; opacity:0; z-index:3; transition:box-shadow .2s, background .2s; }
@@ -194,11 +199,15 @@
 <div class="screen" id="menuScreen"><div id="menuBody"></div></div>
 <div class="screen" id="metaScreen"><div id="metaBody" style="max-width:760px;width:94vw"></div></div>
 <div class="screen" id="pauseScreen">
-  <h1>PAUSED</h1>
-  <p>WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash &middot; Ctrl or C slide &middot; E use</p>
-  <button id="resumeBtn">RESUME</button>
-  <div class="settings"><label><input type="checkbox" class="setRM"> Reduce motion</label> <label>Shake <input type="range" class="setShake" min="0" max="100" value="100"> <span class="setShakeV">100</span>%</label> <label>Field of view <input type="range" class="setFov" min="80" max="115" value="100"> <span class="setFovV">100</span>&deg;</label> <label>Frame cap <select class="setFps"><option value="30">30</option><option value="60" selected>60</option><option value="90">90</option><option value="120">120</option></select></label></div>
-  <button id="endBtn" class="small">END RUN (cash out)</button>
+  <div class="pausePanel">
+    <h1>PAUSED</h1>
+    <button id="resumeBtn">RESUME</button>
+    <button id="endBtn" class="small">END RUN (cash out)</button>
+    <hr>
+    <div class="settings sgrid"><label><input type="checkbox" class="setRM"> Reduce motion</label> <label>Shake <input type="range" class="setShake" min="0" max="100" value="100"> <span class="setShakeV">100</span>%</label> <label>Field of view <input type="range" class="setFov" min="80" max="115" value="100"> <span class="setFovV">100</span>&deg;</label> <label>Frame cap <select class="setFps"><option value="30">30</option><option value="60" selected>60</option><option value="90">90</option><option value="120">120</option></select></label></div>
+    <hr>
+    <p class="dim">WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash &middot; Ctrl or C slide &middot; E use</p>
+  </div>
 </div>
 <div class="screen" id="offerScreen">
   <h1 id="offerTitle" style="font-size:28px">LEVEL UP</h1>

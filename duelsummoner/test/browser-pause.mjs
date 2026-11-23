@@ -1,0 +1,10 @@
+﻿import { launch, wait } from './cdp.mjs';
+const b = await launch({ out: process.argv[2], query: '?debug&seed=1' });
+await b.evalIn(`(async()=>{ const D = window.__ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 1500)); return 1; })()`);
+for (const [n, w, h] of [['16x9', 1920, 1080], ['20x9', 2400, 1080], ['4x3', 1440, 1080], ['412w', 412, 780]]) {
+  await b.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: w < 600 }); await wait(400);
+  await b.evalIn(`window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape', bubbles: true })); 1`); await wait(400);
+  console.log(n, await b.evalIn(`(()=>{ const P = document.querySelector('.pausePanel').getBoundingClientRect(), kids = [...document.querySelectorAll('.pausePanel > *')].map(e => e.getBoundingClientRect()); let overlap = 0; for (let i = 0; i < kids.length; i++) for (let j = i + 1; j < kids.length; j++) { const a = kids[i], c = kids[j]; if (a.left < c.right && c.left < a.right && a.top < c.bottom - 1 && c.top < a.bottom - 1) overlap++; } const labels = [...document.querySelectorAll('.pausePanel .sgrid label')].map(e => e.getBoundingClientRect()); let lo = 0; for (let i = 0; i < labels.length; i++) for (let j = i + 1; j < labels.length; j++) { const a = labels[i], c = labels[j]; if (a.left < c.right - 1 && c.left < a.right - 1 && a.top < c.bottom - 1 && c.top < a.bottom - 1) lo++; } return JSON.stringify({ panel: [Math.round(P.left), Math.round(P.top), Math.round(P.width), Math.round(P.height)], viewport: [innerWidth, innerHeight], blockOverlaps: overlap, settingOverlaps: lo, fitsViewport: P.left >= 0 && P.right <= innerWidth && P.top >= 0 && P.bottom <= innerHeight, horizontalScroll: document.documentElement.scrollWidth > innerWidth }); })()`));
+  await b.shot('pause_' + n); await b.evalIn(`document.getElementById('resumeBtn').click(); 1`); await wait(300);
+}
+console.log(JSON.stringify(await b.evalIn('window.__errs.slice(0,2)'))); b.close(); setTimeout(() => process.exit(0), 300);

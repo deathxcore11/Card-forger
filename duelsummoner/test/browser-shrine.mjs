@@ -1,0 +1,5 @@
+﻿import { launch, wait } from './cdp.mjs';
+const b = await launch({ out: process.argv[2], query: '?debug&seed=1' }); await b.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
+await b.evalIn(`(async()=>{ const D = window.__ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 1500)); D.game.god = true; const g = D.game, s = g.world.shrines[0]; g.p.x = s.x; g.p.z = s.z; g.p.y = s.y; s.charge = 4.95; await new Promise(r => setTimeout(r, 1800)); return 1; })()`);
+console.log(await b.evalIn(`(()=>{ const cs = [...document.querySelectorAll('#offerCards .card')].map(c => { const r = c.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; }); return JSON.stringify({ offerType: __ds.game.offer && __ds.game.offer.type, cards: cs, screenOn: document.getElementById('offerScreen').className }); })()`));
+await b.shot('shrine_offer'); console.log(JSON.stringify(await b.evalIn('window.__errs.slice(0,2)'))); b.close(); setTimeout(() => process.exit(0), 300);

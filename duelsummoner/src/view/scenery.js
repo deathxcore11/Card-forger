@@ -109,7 +109,7 @@ export function buildScenery(map, stageIndex, models) {
         else { const cy = t[1] + 7.5 * t[3], rr = f.rr * t[3];
           let u = ((t[0] - cam.x) * vx + (cy - cam.y) * vy + (t[2] - cam.z) * vz) / L2; u = u < 0 ? 0 : u > 1 ? 1 : u;
           const ex = cam.x + vx * u - t[0], ey = cam.y + vy * u - cy, ez = cam.z + vz * u - t[2]; hit = ex * ex + ey * ey + ez * ez < rr * rr; }
-        const cur = f.attr.array[i], nxt = cur + ((hit ? 0.9 : 0) - cur) * k;
+        const cur = f.attr.array[i], nxt = cur + ((hit ? 0.75 : 0) - cur) * k;
         if (Math.abs(nxt - cur) > 0.002) { f.attr.array[i] = nxt; dirty = true; } }
       if (dirty) f.attr.needsUpdate = true; }
   };

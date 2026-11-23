@@ -15,7 +15,7 @@ export const CFG = {
   cam: {
     back: 10, up: 1.2, shoulder: 0.6, headY: 1.4,          // 7 m behind, 3 m above, over the right shoulder
     sens: 0.0025, pitchMin: -0.5, pitchMax: 0.75,      // pitch is added to the default arm angle
-    minDist: 1.4, margin: 0.35, floorGap: 0.6
+    minDist: 2.2, margin: 0.35, floorGap: 0.6
   },
   enemy: {
     max: 300, hp: 4, speed: 4.2, speedJitter: 0.18, radius: 0.7, reach: 1.45, vReach: 1.3,
