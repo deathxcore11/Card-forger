@@ -18,6 +18,8 @@
 //           is cut by its foot, and while lines lie below it its more marker shows;
 //   hammer  one lit plaque on the screen, and one in each window or scene over it;
 //   bar     a short message (the toast) lies exactly on the text bar (96, H - 40, W - 192 wide); the save bar is as wide;
+//   door    a door of the chamber is drawn closed unless the words it led to are told over it (a chamber met again
+//           after a lost guardian duel shows its door shut);
 //   reach   every control that is not switched off can be tapped where it stands (nothing lies over its middle);
 //   placed  every moving part drawn over a picture (data-art) sits on the point of the picture it was measured from,
 //           through the picture's own place and size as the page laid it out; a torch flame also stands on the bright
@@ -184,6 +186,9 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
           const q = e.getBoundingClientRect();
           for (const [p, P] of parts) if (q.left < P.right - .5 && P.left < q.right - .5 && q.top < P.bottom - .5 && P.top < q.bottom - .5) out.push(`${name(e)} "${e.textContent.trim().slice(0, 20)}": lies over the moving part ${name(p)}`);
         }
+        // door: a door is closed until the player goes through it; one stands open (its opened picture, made as it swung)
+        // only under the words it led to
+        if (!app.querySelector('.story')) for (const d of app.querySelectorAll('.dr.opn, .dr > img[src^="data:"]')) out.push(`${name(d.closest('.dr'))}: a door drawn open with no words over it`);
         // reach: every live control can be tapped at its middle
         const top = app.querySelector('.mw, .story, .dim') ? [...app.querySelectorAll('.mw [data-a], .story[data-a], .story [data-a], .dim[data-a], .mw[data-a]')] : [...app.querySelectorAll('[data-a]')];
         for (const e of top) {

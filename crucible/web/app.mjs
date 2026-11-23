@@ -1008,10 +1008,13 @@ function psChamber() {
   const lockedAt = i => r.doors[i].type === 'boss' && r.seals < 2, key = `${r.floor}.${r.chamber}.${r.doors.map(d => d.type).join()}`;
   if (!G.doorSel || G.doorSel.at !== key || !r.doors[G.doorSel.i]) G.doorSel = { at: key, i: Math.max(0, r.doors.findIndex((d, i) => !lockedAt(i))) };
   const sel = G.doorSel.i, d = r.doors[sel], n = r.doors.length;
-  const rp = roomPic(hall, NICHE_Y + 34, true), ways = doorways(hall, rp), H = hallInfo(hall), open = G.doorOpen && G.doorOpen.at === key ? G.doorOpen : null;
+  // A door is closed until the player goes through it. The one just opened stands open only while the words it led to are
+  // told over this chamber; once they end the player has gone through, and a chamber met again (a guardian lost to, the
+  // Second Gate) shows the door shut.
+  const rp = roomPic(hall, NICHE_Y + 34, true), ways = doorways(hall, rp), H = hallInfo(hall), open = G.doorOpen && G.doorOpen.at === key && G.story ? G.doorOpen : null;
   const doors = r.doors.map((d, i) => { const [x, y, w, h] = ways[at[i]], locked = lockedAt(i), art = d.type === 'secret' && CART.has(leafPic(hall, 'hidden', at[i], rp)) ? 'hidden' : DOOR_ART[d.type], leaf = leafPic(hall, art, at[i], rp); // the door that is not there has its own plain leaves
     const src = open && open.i === i ? open.url : CART.has(leaf) ? cimg(leaf) : ''; // a door opened while its guardian speaks stays open
-    return onPic('button', `dr k-${d.know || 'known'}${locked ? ' lock' : ''}${i === sel ? ' on' : ''}`, [x, y], [0, 0], `width:${w}px;height:${h}px;--mesh:${(rp.ox + x) & 1}px ${(rp.oy + y) & 1}px${src ? `;--lf:url(${src})` : ''}`, `data-i="${i}" data-a="${i === sel ? 'door' : 'dsel'}:${i}" ${locked && i === sel ? 'disabled' : ''} aria-label="${esc(doorName(d))}"`, src ? `<img src="${src}" width="${w}" height="${h}" style="width:${w}px;height:${h}px" alt="">` : '') + doorFog(d, [x, y, w, h], rp, H); }).join('');
+    return onPic('button', `dr k-${d.know || 'known'}${locked ? ' lock' : ''}${i === sel ? ' on' : ''}${open && open.i === i ? ' opn' : ''}`, [x, y], [0, 0], `width:${w}px;height:${h}px;--mesh:${(rp.ox + x) & 1}px ${(rp.oy + y) & 1}px${src ? `;--lf:url(${src})` : ''}`, `data-i="${i}" data-a="${i === sel ? 'door' : 'dsel'}:${i}" ${locked && i === sel ? 'disabled' : ''} aria-label="${esc(doorName(d))}"`, src ? `<img src="${src}" width="${w}" height="${h}" style="width:${w}px;height:${h}px" alt="">` : '') + doorFog(d, [x, y, w, h], rp, H); }).join('');
   // Each door's number on the step under it, and the cursor under the chosen one, pointing up at it: clear of the carving.
   const marks = r.doors.map((d, i) => { const [x, y, w, h] = ways[at[i]], foot = [x + (w >> 1), y + h + Math.round(3 * rp.k)];
     return onPic('i', `dno${i === sel ? ' on' : ''}`, foot, [5, 0], '', '', i + 1) + (i === sel ? onPic('i', 'cur curu', [foot[0], foot[1] + 12], [4, 0]) : ''); }).join('');
@@ -2240,7 +2243,7 @@ function tapped(ev) {
     case 'cxtype': G.cx.type = G.cx.type === x ? null : x; render(); break;
     case 'cxopen': G.cx.open = n; render(); break;
     case 'cxclose': G.cx.open = null; render(); break;
-    case 'door': { G.log = []; const d = r.doors[n]; const go = () => act({ t: 'door', i: n });
+    case 'door': { G.log = []; const d = r.doors[n]; const go = () => { G.doorOpen = null; act({ t: 'door', i: n }); }; // gone through: the door is shut behind the player
       // The guardian's door and the hidden door are met with words first: the door opens and stays open behind them.
       const sid = d && d.type === 'boss' && r.seals >= 2 ? 'boss:' + BOSSES[r.floor][r.bossOrder[r.floor]].id : d && d.type === 'secret' ? 'secret:door' : null;
       doorBeat(n, !!(sid && SCENES[sid] && !P.seen.includes(sid)), () => { if (sid) { queueStory(sid, go); if (G.story) render(); } else go(); }); break; }
