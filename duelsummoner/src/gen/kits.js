@@ -7,9 +7,19 @@ import { sin, cos } from '../sim/dmath.js';
 import { COLOSSEUM } from '../data/map.js';
 import { isqrt } from './imath.js';
 
-const SAND = 0xc9a46a, DARK = 0xa98150, ROOF = 0xd8b87c, RAMPC = 0xb98c56, STONE = 0xa89578, BONE = 0xe6dcc0, GOLD = 0xe0b765;
+const SAND = 0xc9a46a, DARK = 0xa98150, ROOF = 0xd8b87c, RAMPC = 0xb98c56, STONE = 0xa89578, BONE = 0xe6dcc0, GOLD = 0xe0b765, LSTONE = 0x4a4250;         // LSTONE: grey-violet landmark stone
 const polar = (r, deg) => [r * cos(deg * 3.141592653589793 / 180), r * sin(deg * 3.141592653589793 / 180)];
 const hyp = (a, b) => isqrt(a * a + b * b);
+// A built column: a stone shaft 4.5 to 7 m tall with a bone capital (the capital is for show and not solid). A toppled one leaves a stump (1.2-1.5 m or 3 m and up) and three lying drums
+// 1.3 m high; the shaft tops stay out of the 1.8-2.6 m band, so nothing here is a jump you could half-make.
+function column(k, x, z, r, rng, toppled) {
+  if (!toppled) { const h = 4.5 + rng.int(26) / 10; k.cyl(x, z, r, h, STONE); k.cyl(x, z, r + 0.15, h + 0.5, BONE, { y0: h, deco: true }); return; }
+  k.cyl(x, z, r, rng.int(2) ? 1.2 + rng.int(4) / 10 : 3.0 + rng.int(8) / 10, STONE);
+  const th = rng.int(360), dx = cos(th * 3.141592653589793 / 180), dz = sin(th * 3.141592653589793 / 180);
+  for (let i = 0; i < 3; i++) { const d = r + 2.0 + i * 3.1, cx = x + dx * d, cz = z + dz * d; k.box(cx - 1.4, cz - 0.65, cx + 1.4, cz + 0.65, 1.3, STONE, { rot: th }); }
+}
+// seeded 25 to 40 percent of a ring or a scatter are toppled, and two neighbours are never both toppled
+const toppleFlags = (n, rng) => { const f = []; for (let i = 0; i < n; i++) f.push(!(f[i - 1]) && !(i === n - 1 && f[0]) && rng.int(100) < 36); if (!f.some(Boolean)) f[1] = true; return f; };
 
 export const KITS = {
   // ---- the gate arena: the Sunken Colosseum floor with broken stands, ramps out, and the Royal Gate on its north side ----
@@ -28,7 +38,8 @@ export const KITS = {
       [[14, 20, 1.3, 6], [13, 95, 1.3, 3.2], [15, 170, 1.3, 6.5], [12, 250, 1.3, 2.6], [21, 55, 1.3, 5], [22, 140, 1.3, 1.6], [22, 215, 1.3, 6], [21, 305, 1.3, 3.6], [8, 130, 1, 1.3], [8, 310, 1, 1.3]]
         .forEach(q => { const p = polar(q[0], q[1]); k.cyl(p[0], p[1], q[2], q[3], q[3] > 2.5 ? 0xd9b27a : RAMPC); });
       [[44, 30], [45, 70], [44, 112], [46, 195], [44, 250], [45, 290], [44, 350]].forEach(q => { const p = polar(q[0], q[1]); k.cyl(p[0], p[1], 1.4, 5.3, RAMPC); });
-      k.box(-15, -63, -8, -53, 24, GOLD, { y0: 4 }); k.box(8, -63, 15, -53, 24, GOLD, { y0: 4 });                        // the gate pylons
+      k.box(-15, -63, -8, -53, 24, LSTONE, { y0: 4 }); k.box(8, -63, 15, -53, 24, LSTONE, { y0: 4 });
+      k.box(-15.2, -63.2, -7.8, -52.8, 24, GOLD, { y0: 22, deco: true }); k.box(7.8, -63.2, 15.2, -52.8, 24, GOLD, { y0: 22, deco: true });       // a 2 m gold band at the top of each pylon                        // the gate pylons
       k.box(-15, -63, 15, -53, 27, 0xf0cf86, { y0: 20, deco: true }); k.box(-6, -63, -4, -62, 11, 0xd8a84a, { y0: 4, deco: true }); k.box(4, -63, 6, -62, 11, 0xd8a84a, { y0: 4, deco: true });
       for (const [r, d] of [[16, 150], [20, 300], [24, 60]]) { const p = polar(r, d); slots.push({ tag: 'floor', x: p[0], z: p[1], y: 0 }); }
       for (const d of [40, 130, 220, 330]) { const p = polar(39, d); slots.push({ tag: 'reward_port', x: p[0], z: p[1], y: 4 }); }
@@ -40,7 +51,8 @@ export const KITS = {
   plaza: {
     role: 'spawn', name: 'Spawn Plaza', plan: () => ({ r: 34 }),
     build(k, p, rng) {
-      for (let i = 0; i < 8; i++) { const q = polar(27 + (i % 2) * 2, i * 45 + 22); k.cyl(q[0], q[1], 0.9, 2.2 + (i % 3) * 0.7, RAMPC); }
+      const fl = toppleFlags(8, rng);
+      for (let i = 0; i < 8; i++) { const q = polar(27 + (i % 2) * 2, i * 45 + 22); column(k, q[0], q[1], 0.9, rng, fl[i]); }
       return { slots: [] };
     }
   },
@@ -55,6 +67,9 @@ export const KITS = {
         k.box(x, z, x + 14, z + 14, h, tints[(i * 3 + j) % 4]); k.box(x + 1, z + 1, x + 13, z + 13, h + 0.15, 0x8f6a40, { y0: h, deco: true });
         if ((i + j) % 3 === 0) slots.push({ tag: 'reward_port', x: x + 7, z: z + 7, y: h });
       }
+      // the hero landmark: twin standing cards 22 m and 18 m on a pedestal, in landmark stone with bone caps (view only above the pedestal)
+      k.box(-9, -3, 9, 3, 1.5, LSTONE); k.box(-8, -0.4, 0, 0.4, 23.5, LSTONE, { y0: 1.5, deco: true, landmark: true }); k.box(1.5, -0.4, 8.5, 0.4, 19.5, LSTONE, { y0: 1.5, deco: true, landmark: true });
+      k.box(-8, -0.5, 0, 0.5, 24, BONE, { y0: 23.5, deco: true, landmark: true }); k.box(1.5, -0.5, 8.5, 0.5, 20, BONE, { y0: 19.5, deco: true, landmark: true });
       return { slots };
     }
   },
@@ -66,6 +81,8 @@ export const KITS = {
       k.box(105 + ox, -45 + oz, 155 + ox, 45 + oz, 5, STONE); k.box(135 + ox, -45 + oz, 155 + ox, 45 + oz, 10, 0xb9a687);
       k.ramp('x', 90 + ox, 105 + ox, -8 + oz, 8 + oz, 0, 5, RAMPC); k.ramp('z', -62 + oz, -45 + oz, 120 + ox, 132 + ox, 0, 5, RAMPC); k.ramp('x', 117 + ox, 135 + ox, -6 + oz, 6 + oz, 5, 10, RAMPC);
       for (let i = 0; i < 7; i++) { const z = -36 + i * 12 + oz; k.box(103.2 + ox, z, 105 + ox, z + 8, 9, 0x6f6a8a, { y0: 0, deco: true }); k.box(103 + ox, z + 1, 105 + ox, z + 7, 8, 0xd8b24a, { y0: 1, deco: true }); }
+      const ob = (w, y0, y1, c) => k.box(145 + ox - w / 2, oz - w / 2, 145 + ox + w / 2, oz + w / 2, y1, c, { y0, deco: true, landmark: true });       // a stepped obelisk (4, 2.5 and 1.2 m wide) up to 26 m, bone cap
+      ob(4, 10, 18, LSTONE); ob(2.5, 18, 23, LSTONE); ob(1.2, 23, 26, LSTONE); ob(1.5, 26, 27, BONE);
       return { slots: [{ tag: 'reward_port', x: 115 + ox, z: -20 + oz, y: 5 }, { tag: 'reward_port', x: 125 + ox, z: 25 + oz, y: 5 }, { tag: 'high_perch', x: 145 + ox, z: oz, y: 10 }, { tag: 'high_perch', x: 145 + ox, z: 30 + oz, y: 10 }] };
     }
   },
@@ -77,7 +94,9 @@ export const KITS = {
       for (let i = 0; i < p.n; i++) { const h = hs[i]; k.box(x0 + i * 20, -5, x0 + i * 20 + 20, 5, h, BONE); if (i % 2) k.cyl(x0 + i * 20 + 10, 0, 3.2, h + 1.6, 0xf2e9cf, { y0: h, deco: true }); }
       [[0, 6], [2, 7], [p.n - 1, 6]].forEach(q => { const x = x0 + q[0] * 20 + 10; k.ramp('z', -28, -5, x - 4, x + 4, 0, q[1], 0xd9cfb0); });
       [[1, 7], [p.n - 2, 6.5]].forEach(q => { const x = x0 + q[0] * 20 + 10; k.ramp('z', 28, 5, x - 4, x + 4, 0, q[1], 0xd9cfb0); });
-      k.box(x0 + p.n * 20 - 10, -9, x0 + p.n * 20 + 12, 9, 7.8, 0xf2e9cf); slots.push({ tag: 'high_perch', x: x0 + p.n * 20 + 1, z: 0, y: 7.8 });
+      k.box(x0 + p.n * 20 - 10, -9, x0 + p.n * 20 + 12, 9, 7.8, 0xf2e9cf);
+      for (const zz of [-5.5, 5.5]) { const hx = x0 + p.n * 20 + 1; k.box(hx - 1.1, zz - 1.1, hx + 1.1, zz + 1.1, 18, LSTONE, { y0: 7.8, deco: true, landmark: true }); k.box(hx - 0.6, zz - 0.6, hx + 0.6, zz + 0.6, 24, LSTONE, { y0: 18, deco: true, landmark: true }); k.box(hx - 0.8, zz - 0.8, hx + 0.8, zz + 0.8, 25, BONE, { y0: 24, deco: true, landmark: true }); }       // a pair of 24 m horns on the skull
+      slots.push({ tag: 'high_perch', x: x0 + p.n * 20 + 1, z: 0, y: 7.8 });
       slots.push({ tag: 'reward_port', x: x0 + 30, z: 0, y: hs[1] }, { tag: 'reward_port', x: x0 + 90, z: 0, y: hs[4] });
       return { slots };
     }
@@ -89,6 +108,7 @@ export const KITS = {
       const tierH = 2.4, shrink = 3, slots = [];
       for (let i = 0; i < p.tiers; i++) { const half = p.half0 - shrink * i; k.box(-half, -half, half, half, tierH * (i + 1), i % 2 ? 0xb89a62 : 0xc4a56e); }
       const half4 = p.half0 - shrink * 4; k.ramp('z', p.half0 + 30, half4, -6, 6, 0, tierH * 5, 0xd2b27a);
+      k.box(-2.5, -2.5, 2.5, 2.5, tierH * p.tiers + 6, BONE, { y0: tierH * p.tiers, deco: true, landmark: true });       // a 6 m bone capstone, not gold
       slots.push({ tag: 'high_perch', x: 0, z: 0, y: tierH * p.tiers }, { tag: 'reward_port', x: 0, z: half4 + 2, y: tierH * 5 }, { tag: 'reward_port', x: half4 - 2, z: 0, y: tierH * 5 });
       return { slots };
     }
@@ -106,7 +126,8 @@ export const KITS = {
   ruinfield: {
     role: 'filler', name: 'Broken Colonnade', plan: () => ({ r: 26 }),
     build(k, p, rng) {
-      for (let i = 0; i < 9; i++) { const q = polar(6 + rng.int(18), rng.int(360)); k.cyl(q[0], q[1], 1.1 + rng.range(0, 0.5), 1.8 + rng.int(5), i % 2 ? 0xd9b27a : RAMPC); }
+      const fl = toppleFlags(9, rng);
+      for (let i = 0; i < 9; i++) { const q = polar(6 + rng.int(18), rng.int(360)); column(k, q[0], q[1], 1.1 + rng.range(0, 0.5), rng, fl[i]); }
       k.box(-12, -2, -4, 1, 1.2, STONE); k.box(4, 6, 12, 9, 1.2, STONE); k.box(-3, -13, 1, -6, 1.4, STONE);       // hop-height walls
       return { slots: [{ tag: 'reward_port', x: 8, z: 7.5, y: 1.2 }] };
     }
