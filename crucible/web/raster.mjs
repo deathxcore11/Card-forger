@@ -41,9 +41,14 @@ export function backdrop(v, tex, ox = 0, oy = 0) { // a painted picture behind e
 // Fog: how much of a corner's colour is left at a depth. near and far in world units.
 export const fogAt = (d, near, far) => Math.max(0, Math.min(1, 1 - (d - near) / (far - near)));
 
+// A flat picture put straight into the frame at its place in the drawing order (blit: a function that writes the
+// view's pixels, z: where it falls among the shapes), as the console put its sprites between the shapes of a scene.
+export const sprite = (v, z, blit) => v.list.push({ blit, z });
+
 export function draw(v, proj, fog = null) {
   const items = [];
   for (const q of v.list) {
+    if (q.blit) { items.push({ q, z: q.z }); continue; }
     const s = q.p.map(proj); if (s.some(x => !x)) continue;
     if (q.cull && (s[1][0] - s[0][0]) * (s[2][1] - s[0][1]) - (s[1][1] - s[0][1]) * (s[2][0] - s[0][0]) <= 0) continue; // facing away: not drawn (the console's own test)
     const sh = Array.isArray(q.shade) ? q.shade : [q.shade ?? 1, q.shade ?? 1, q.shade ?? 1, q.shade ?? 1];
@@ -53,6 +58,7 @@ export function draw(v, proj, fog = null) {
   items.sort((a, b) => b.z - a.z); // far first: the console's ordering table
   for (const it of items) {
     const { q, s, k } = it;
+    if (q.blit) { q.blit(v); continue; }
     tri(v, s[0], s[1], s[2], q.uv[0], q.uv[1], q.uv[2], k[0], k[1], k[2], q.tex, q.col);
     tri(v, s[0], s[2], s[3], q.uv[0], q.uv[2], q.uv[3], k[0], k[2], k[3], q.tex, q.col);
   }

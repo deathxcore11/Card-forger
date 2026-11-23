@@ -1,6 +1,7 @@
 // Checks the console look of the Lost Memories test page against its own rules, on many screen shapes.
 //   node tools/crucible/console-checks.cjs <page url> <saves dir> [steps]
 //   CC_ONLY=title checks only the title screen, every shape, no random taps (a quick look after a title change).
+//   CC_ONLY=beats steps only the duel's beats (a quick look after a change to the table).
 // The page must be served over http (a page opened from the disk may not read its own pictures).
 // For every screen shape and every scene (the title, chambers, duels, every window that opens over them) it checks:
 //   frame   the frame is 512 x 240 to 640 x 480 whole pixels, each a whole number of device pixels, and fills the
@@ -57,6 +58,15 @@
 //           a part only none, half or all see-through;
 //   table   on the duel's table each tap area is cut to its zone as the table's camera draws it and draws nothing; the
 //           numbers lie inside the view, apart and off the trap rows; the hall's painting spans the view to its foot;
+//           the numbers keep the one notation the frame gives them (tight or full) whatever cards lie there;
+//   beats   on the owner's eight screen shapes, a duel's moves are stepped a thirtieth of a second at a time on a stopped
+//           clock (a rival's attack let through, your attack on a rival monster, then the rival's whole turn), and on
+//           every drawing of the table the numbers lie inside the view, apart, each against its own card as drawn (never
+//           left floating), keep one notation, and none lies over another card's picture (read from the canvas's own
+//           pixels: where a card and a plate meet, the card shows);
+//   first   the duel table's first drawing that has anything in it, kept the moment the page puts it on the screen, is
+//           the finished table, the same to the pixel as once all is settled (until then the hall stands alone): never a
+//           bare table drawn before its pictures or its ground are in;
 //   errors  no page error.
 // Some shapes are checked inside a page that styles pictures the way a host page may (img { max-width: 100%;
 // height: auto } and the like), and at the end a few scenes are pictured with and without those styles, with every
@@ -84,13 +94,65 @@ const hostScript = css => { const add = () => { const st = document.createElemen
 const SAME = ['', 'chamber-f1.json', 'duel-regular-f1-h0.json', 'anvil-f1.json', 'reward-card-f1.json'];
 const SHORT = [null, 'chamber-f1.json', 'duel-regular-f1-h0.json', 'reward-card-f1.json', 'reward-gift-f1.json', 'anvil-f1.json', 'bazaar-f2.json', 'kit-f1.json'];
 const SCREENS = ['screen:codex', 'screen:codex>cxview:all', 'screen:feats', 'screen:vault', 'new']; // a>b: tap a, then b
+// the shapes the owner plays on, for the duel's beats, and the duels stepped on them
+const BEAT_SHAPES = [['phone held sideways', 915, 412, 2.625, 1], ['phone held upright', 412, 915, 2.625, 1], ['fold, inner screen', 673, 841, 2.625, 1], ['fold, cover screen sideways', 882, 344, 2.625, 1],
+  ['16:9 screen', 1920, 1080, 1, 0], ['tablet', 1024, 768, 2, 1], ['tall desktop window', 800, 1000, 1, 0], ['small window', 800, 360, 1, 0]];
+const BEAT_SAVES = ['duel-regular-f1-h0.json', 'duel-boss-f1-trap-prompt-h0.json'];
+// The duel table's first drawing that has anything in it, kept the moment it is put on the screen (firstTable, run in
+// the page before it loads), and held against the table as it stands once settled (tableFirst).
+function firstTable() {
+  const put = CanvasRenderingContext2D.prototype.putImageData;
+  CanvasRenderingContext2D.prototype.putImageData = function (im, ...a) {
+    put.call(this, im, ...a);
+    if (!window.__tbl0 && this.canvas.id === 'tbl') for (let i = 3; i < im.data.length; i += 4) if (im.data[i]) { window.__tbl0 = this.canvas.toDataURL(); break; }
+  };
+}
+async function tableFirst() {
+  const c = document.getElementById('tbl'); if (!c || !window.__tbl0 || (window.LM && LM.G && LM.G.playing)) return null;
+  const im = new Image(); im.src = window.__tbl0; await im.decode(); const k = document.createElement('canvas'); k.width = im.width; k.height = im.height; const x = k.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0);
+  const d = x.getImageData(0, 0, k.width, k.height).data, same = () => { const n = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; return n.length === d.length && n.every((v, i) => v === d[i]); };
+  // Something was drawn: it must be the table as it stands, seen twice 450 ms apart, so a blinking mark is caught in both
+  // its colours.
+  for (let i = 3; i < d.length; i += 4) if (d[i]) {
+    if (same()) return null; await new Promise(r => setTimeout(r, 450)); if (same()) return null;
+    return "the duel table's first drawing is not the finished table (drawn before its pictures or its numbers were in)"; }
+  return null;
+}
+// The table as drawn at one moment of a beat (in the page): the numbers' plates (data-plates: seat, zone, x, y, w, h), each
+// card's four corners on the screen (data-cards: its zone key, or none for a card shown or arriving) and the canvas's
+// pixels. A plate's own colours are the frame's dark and the five letter colours, cut to 15 bits as the table cuts them.
+function tableNow() {
+  const t = document.getElementById('tbl'); if (!t || !t.dataset.plates) return null;
+  const plates = JSON.parse(t.dataset.plates), cards = JSON.parse(t.dataset.cards || '[]'), out = [], W = t.width, H = t.height;
+  const px = t.getContext('2d').getImageData(0, 0, W, H).data, cut = c => c.map(v => v & 0xf8).join();
+  const own = new Set([[26, 15, 18], [243, 234, 216], [233, 196, 106], [240, 138, 114], [194, 180, 156], [159, 208, 192]].map(cut));
+  const inQuad = (q, x, y) => { let s = 0; for (let i = 0; i < 4; i++) { const [ax, ay] = [q[i * 2], q[i * 2 + 1]], [bx, by] = [q[(i + 1) % 4 * 2], q[(i + 1) % 4 * 2 + 1]], c = (bx - ax) * (y - ay) - (by - ay) * (x - ax); if (c) { if (s && Math.sign(c) !== s) return false; s = Math.sign(c); } } return true; };
+  const meet = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  plates.forEach(([s, z, x, y, w, h], i) => {
+    const r = [x, y, x + w, y + h], key = `m${s}.${z}`;
+    if (x < 0 || y < 0 || x + w > W || y + h > H) out.push(`numbers of zone ${s}:${z} reach out of the view (${x}, ${y}, ${w} x ${h} in ${W} x ${H})`);
+    for (const [s2, z2, x2, y2, w2, h2] of plates.slice(i + 1)) if (meet(r, [x2, y2, x2 + w2, y2 + h2])) out.push(`numbers of zones ${s}:${z} and ${s2}:${z2} overlap`);
+    const mine = cards.find(c => c[0] === key);
+    if (!mine) out.push(`numbers of zone ${s}:${z} drawn with no card of theirs on the table`);
+    else { const xs = [1, 3, 5, 7].map(i => mine[i]), ys = [2, 4, 6, 8].map(i => mine[i]), mx = x + w / 2, gap = s === 0 ? Math.min(...ys) - (y + h) : y - Math.max(...ys);
+      if (mx < Math.min(...xs) || mx > Math.max(...xs) || gap < 0 || gap > 3) out.push(`numbers of zone ${s}:${z} (${x}, ${y}) are not against their card's ${s === 0 ? 'far' : 'near'} edge (${gap} pixels off)`); }
+    for (const c of cards) {
+      if (c[0] === key || c.length < 9) continue;
+      const q = c.slice(1); let n = 0, ownPx = 0;
+      for (let yy = Math.max(0, y); yy < Math.min(H, y + h); yy++) for (let xx = Math.max(0, x); xx < Math.min(W, x + w); xx++) {
+        if (!inQuad(q, xx + .5, yy + .5)) continue; n++; const i4 = (yy * W + xx) * 4; if (own.has([px[i4], px[i4 + 1], px[i4 + 2]].join())) ownPx++; }
+      if (n >= 6 && ownPx > n * .4) out.push(`numbers of zone ${s}:${z} lie over the card ${c[0] || '(shown)'} (${ownPx} of the ${n} pixels where they meet are the plate's)`);
+    }
+  });
+  return { tick: +t.dataset.tick, tight: t.dataset.tight, out };
+}
 const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics', 'tab:doors', 'tab:duel', 'barmore'];
 const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose windows are also read further and pictured at their edges
 
 (async () => {
   const [url, savesDir, stepsArg] = process.argv.slice(2);
   if (!url || !savesDir) { console.log('usage: console-checks.cjs <page url> <saves dir> [steps]'); process.exit(2); }
-  const only = process.env.CC_ONLY === 'title', steps = only ? 0 : +(stepsArg || 40);
+  const only = process.env.CC_ONLY === 'title', beatsOnly = process.env.CC_ONLY === 'beats', steps = only ? 0 : +(stepsArg || 40);
   const saves = fs.readdirSync(savesDir).filter(f => /^(chamber|duel|reward|anvil|bazaar|kit|charm)-/.test(f)).sort();
   const pick = [null, ...saves.filter(f => /^chamber-f\d\.json$|^chamber-boss-door-f[13]-h(0|10)\.json$/.test(f)),
     ...saves.filter(f => /^duel-(regular|boss|cursed)-f[123]-h0\.json$|trap-prompt-h5|narrow|fog|lesson/.test(f)).slice(0, 10),
@@ -104,9 +166,10 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     const kind = what.replace(/"[^"]*"/g, '"…"').replace(/\d+(\.\d+)?/g, 'N'); kinds.set(kind, (kinds.get(kind) || 0) + 1);
   };
 
-  for (const [shape, W, H, dpr, full, host, touch] of SHAPES) {
+  for (const [shape, W, H, dpr, full, host, touch] of beatsOnly ? [] : SHAPES) {
     const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
     if (host) await ctx.addInitScript(hostScript, HOST_CSS);
+    await ctx.addInitScript(firstTable);
     const page = await ctx.newPage();
     let errors = [];
     page.on('pageerror', e => errors.push(e.message));
@@ -434,6 +497,15 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
             if (st.backgroundImage !== 'none' || !/rgba\(0, 0, 0, 0\)|transparent/.test(st.backgroundColor) || ['Top', 'Right', 'Bottom', 'Left'].some(k => parseFloat(st['border' + k + 'Width'])) || (st.outlineStyle !== 'none' && parseFloat(st.outlineWidth)) || st.boxShadow !== 'none') out.push(`${name(e)} zone ${e.dataset.zone}: a tap area that draws something over the table`);
           }
           const plates = JSON.parse(tbl.dataset.plates || '[]'), traps = [0, 1].flatMap(s => [0, 1, 2, 3, 4].map(z => { const q = quad(s, z, true), xs = q.map(p => p[0]), ys = q.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; }));
+          // the notation the frame gives: one number a card (tight) exactly when two of your plates of the widest four-digit
+          // numbers (ATK, three pixels, DEF, on the frame's dark) would leave under four pixels of stone between them at your
+          // row's far edge, or three lines do not fit between the rows; and each plate has the lines its notation says
+          const g = document.createElement('canvas'), gx = g.getContext('2d', { willReadFrequently: true }); g.width = g.height = 12; gx.font = '8px "LM Label"';
+          const dw = Math.max(...[...'0123456789'].map(ch => Math.round(gx.measureText(ch).width))), fullW = 2 * (4 * dw - 1) + 5;
+          gx.textBaseline = 'top'; gx.fillStyle = '#fff'; gx.fillText('0', 0, 1); const gd = gx.getImageData(0, 0, 12, 12).data, rows = [...Array(12).keys()].filter(y => [...Array(12).keys()].some(x => gd[(y * 12 + x) * 4 + 3] >= 128)), gh = rows.length ? rows[rows.length - 1] - rows[0] + 1 : 5;
+          const tight = fullW + 4 > proj([-62, 0, 43])[0] - proj([-124, 0, 43])[0] || 3 * (gh + 1) + 5 > proj([0, 0, 43])[1] - proj([0, 0, -43])[1];
+          if (tbl.dataset.tight != null && +tbl.dataset.tight !== +tight) out.push(`the numbers are drawn ${+tbl.dataset.tight ? 'one to a card' : 'in full'}, but the frame gives ${tight ? 'one to a card' : 'them in full'}`);
+          for (const [s, z, , , , h] of plates) if (h !== (s === 1 && !tight ? 2 : 1) * (gh + 1) + 1) out.push(`numbers of zone ${s}:${z} are ${h} pixels tall, not the ${s === 1 && !tight ? 'two lines' : 'one line'} of their notation`);
           const meet = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
           plates.forEach(([s, z, x, y, w, h], i) => {
             if (x < 0 || y < 0 || x + w > tbl.width || y + h > tbl.height) out.push(`numbers of zone ${s}:${z} reach out of the view (${x}, ${y}, ${w} x ${h} in ${tbl.width} x ${tbl.height})`);
@@ -574,6 +646,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
       const base = `${shape} ${W}x${H}@${dpr} ${save || 'title'}`;
       await load(save); await page.waitForTimeout(500); scenes++;
       await audit(base); await edges(base); // a window open over the scene (the trap prompt, a duel's end) has its edges read too
+      if (save) { const d = await page.evaluate(tableFirst); if (d) fail(base, d); }
       if (!save) await flat(base);
       // every window that can open over this screen (over the title, a chamber and a duel, read further too)
       const deep = !save || DEEP.includes(save);
@@ -616,7 +689,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     await ctx.close();
   }
   // the same to the pixel with and without a host page's styles, every animation stopped at its start
-  for (const [W, H, dpr, touch] of [[915, 412, 2.625, 1], [1280, 720, 1, 0], [412, 915, 2.625, 1]]) {
+  for (const [W, H, dpr, touch] of beatsOnly ? [] : [[915, 412, 2.625, 1], [1280, 720, 1, 0], [412, 915, 2.625, 1]]) {
     const shots = [];
     for (const host of [0, 1]) {
       const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
@@ -655,6 +728,41 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
       if (process.env.CHECKS_SHOTS && shots[1][i]) for (const h of [0, 1]) fs.writeFileSync(path.join(process.env.CHECKS_SHOTS, `host-${W}x${H}-${shots[0][i][0].replace(/\.json$/, '')}-${h}.png`), shots[h][i][1]);
     }
   }
+  // beats: a rival's attack waiting on your answer let through, your attack on a rival monster, then the rival's whole
+  // turn, stepped a thirtieth of a second at a time on a stopped clock, the table checked at every drawing (tableNow)
+  let beatTicks = 0;
+  if (!only) for (const [shape, W, H, dpr, touch] of BEAT_SHAPES) for (const save of BEAT_SAVES) {
+    if (!saves.includes(save)) continue;
+    const where = `${shape} ${W}x${H}@${dpr} ${save} beats`, said = new Set(), notes = new Set();
+    const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, hasTouch: !!touch, isMobile: !!touch });
+    const page = await ctx.newPage(), errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.goto(url);
+    await page.evaluate(o => { localStorage.clear(); sessionStorage.clear(); o.profile.runs = 7; localStorage.setItem('lostmemories.profile.v1', JSON.stringify(o.profile)); localStorage.setItem('lostmemories.run.v1', JSON.stringify(o.run)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(o.labs)); localStorage.setItem('lostmemories.labs.v5', JSON.stringify(o.labs)); }, JSON.parse(fs.readFileSync(path.join(savesDir, save), 'utf8')));
+    await page.reload(); await page.waitForTimeout(1500);
+    await page.locator('[data-a="resume"]').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(1500);
+    await page.clock.install(); await page.clock.pauseAt(new Date(Date.now() + 3000));
+    const tap = async sel => { const l = page.locator(sel).first(); if (!(await l.count())) return false; await l.click({ force: true, noWaitAfter: true, timeout: 3000 }).catch(() => {}); return true; };
+    let tight = null; const counts = {};
+    const step = async (label, max) => {
+      let rest = 0; counts[label] = 0;
+      for (let i = 0; i < max && rest < 12; i++) {
+        await page.clock.runFor(34);
+        const r = await page.evaluate(tableNow);
+        if (r && r.tick >= 0) { beatTicks++; counts[label]++; for (const o of r.out) if (!said.has(o)) { said.add(o); fail(`${where}, ${label} at tick ${r.tick}`, o); } }
+        if (r && tight != null && r.tight !== tight && !notes.has('tight')) { notes.add('tight'); fail(`${where}, ${label}`, `the numbers' notation changed from ${tight} to ${r.tight} in the duel`); }
+        if (r) tight = r.tight;
+        rest = await page.evaluate(() => !!(window.LM && LM.G.playing)) ? 0 : rest + 1;
+      }
+    };
+    if (await tap('[data-a="respond:-1"]')) await step("the rival's attack, let through", 120);
+    if (await tap('.zh[data-hl="ready"]')) { await page.clock.runFor(600); if (await tap('[data-a^="hit:"]:not([data-a="hit:-1"])') || await tap('[data-a="hit:-1"]')) await step('your attack', 120); }
+    if (await tap('[data-a="end"]')) await step("the rival's turn", 900);
+    for (const e of errors) fail(where, 'page error: ' + e);
+    console.log(where + ': ' + (Object.entries(counts).map(([k, n]) => `${k} ${n} drawings`).join(', ') || 'no move to step'));
+    await ctx.close();
+  }
+  if (beatTicks) console.log(`${beatTicks} drawings of the table checked in the duel's beats`);
   await browser.close();
   if (fails.length) { console.log('faults by kind, most first:'); for (const [k, n] of [...kinds].sort((a, b) => b[1] - a[1]).slice(0, 40)) console.log(`${String(n).padStart(6)}  ${k.slice(0, 220)}`); }
   console.log(`${scenes} scenes on ${SHAPES.length} screen shapes, ${screens} console screens checked, ${taps} random taps`);
