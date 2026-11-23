@@ -17,6 +17,16 @@ uniform float uRimK; uniform float uProjY; uniform float uAspect; uniform float 
 float coverOf(float rad, float viewZ) { float rN = rad * uProjY / max(viewZ, 0.5); return clamp(3.1416 * rN * rN / (4.0 * uAspect), 0.0, 1.0); }
 `;
 
+// A hollow giant is drawn as flame tongues only (no fill, no stipple: trees and creatures behind stay clean): a ring of columns about 1.8 m wide, each a stepped tongue that peaks in the middle, 30 to 100% of the wall height by the shared
+// noise, re-rolled 8 times a second so the tongues lick upward; three hard colour steps (hot base, body, dark tip) and a 1 pixel ink edge; the gaps between tongues are see-through.
+const WALL_GLSL = `
+  { float H = vB.x, y01 = (vWP.y - vY0) / H, ang = atan(vLocal.y, vLocal.x) / 6.2832 + 0.5, cols = max(10.0, floor(vRad * 6.2832 / 1.8)), cell = floor(ang * cols), cf = fract(ang * cols);
+    float nh = N(vec2(cell * 0.173 + 0.31, floor(uT * 8.0) / 64.0 * 3.0)).r, nh2 = N(vec2(cell * 0.173 + 0.31, floor(uT * 8.0) / 64.0 * 3.0 + y01 * 0.5)).g;
+    float lim = (0.3 + 0.7 * nh) * (1.0 - 1.5 * abs(cf - 0.5)) + (nh2 - 0.5) * 0.06;
+    if (y01 > lim || lim < 0.04) discard;
+    float tt = y01 / max(lim, 0.01); vec3 tone = tt < 0.34 ? min(vCol * 1.3, vec3(1.0)) : (tt < 0.7 ? vCol : vCol * 0.55);
+    if (lim - y01 < 0.01 || abs(cf - 0.5) > 0.47) tone = vec3(0.118, 0.118, 0.165);
+    oc = vec4(tone, 1.0); return; }`;
 function material(kind) {
   const area = kind === 'area', wall = kind === 'wall';
   return new T.ShaderMaterial({ glslVersion: T.GLSL3, side: T.DoubleSide, depthTest: true, depthWrite: false, transparent: true, fog: false, blending: T.NoBlending,
@@ -24,14 +34,14 @@ function material(kind) {
     uniforms: OWN.uni,
     vertexShader: `precision highp float; precision highp int; ${COMMON}
 in vec4 iA; in vec4 iB; in vec4 iC;
-out vec2 vLocal; out vec3 vWP; out vec3 vN; out vec3 vV; out float vViewDist; flat out float vKeep; flat out vec3 vCol; flat out vec4 vB; flat out float vFade; flat out float vY0;
+out vec2 vLocal; out vec3 vWP; out vec3 vN; out vec3 vV; out float vViewDist; flat out float vKeep; flat out vec3 vCol; flat out vec4 vB; flat out float vFade; flat out float vY0; flat out float vRad;
 void main() {
   vec3 c0 = iA.xyz; float rad = iA.w;
   vec4 vc = viewMatrix * vec4(c0, 1.0); float vz = -vc.z;
   float frac = ${area ? '(iB.z > -0.99 ? acos(clamp(iB.z, -1.0, 1.0)) / 3.1416 : 1.0)' : '1.0'};
   float cover = coverOf(rad, vz) * frac;
   vKeep = min(clamp(uInk / max(cover, 0.001), 0.125, 1.0), uGov);
-  vCol = iC.rgb; vB = iB; vFade = iC.a; vY0 = c0.y;
+  vCol = iC.rgb; vB = iB; vFade = iC.a; vY0 = c0.y; vRad = rad;
   ${area ? `vec3 w = vec3(c0.x + position.x * rad, c0.y + 0.12, c0.z + position.z * rad); vLocal = position.xz; vN = vec3(0.0, 1.0, 0.0);`
          : wall ? `vec3 w = vec3(c0.x + position.x * rad, c0.y + position.y * iB.x, c0.z + position.z * rad); vLocal = position.xz; vN = normalize(vec3(position.x, 0.0, position.z));`
          : `vec3 w = c0 + position * rad; vLocal = position.xz; vN = normalize(position);`}
@@ -39,7 +49,7 @@ void main() {
   gl_Position = projectionMatrix * vp;
 }`,
     fragmentShader: GLSL + COMMON + `
-in vec2 vLocal; in vec3 vWP; in vec3 vN; in vec3 vV; in float vViewDist; flat in float vKeep; flat in vec3 vCol; flat in vec4 vB; flat in float vFade; flat in float vY0; out vec4 oc;
+in vec2 vLocal; in vec3 vWP; in vec3 vN; in vec3 vV; in float vViewDist; flat in float vKeep; flat in vec3 vCol; flat in vec4 vB; flat in float vFade; flat in float vY0; flat in float vRad; out vec4 oc;
 void main() {
   float vr = length(vLocal); float fw = fwidth(vr) * 2.0, fa = fwidth(vWP.x + vWP.z);       // derivatives first, before any branch or discard
   float dpx = distance(gl_FragCoord.xy, uHole.xy); bool hole = dpx < uHole.z; float bay = bayer();
@@ -50,8 +60,8 @@ void main() {
   bool rim = edge < rimW, ink = edge < rimW * 0.5;
   bool ringOnly = vB.w < 0.5; float band = max(fw * 3.0, min(0.06, fw * 6.0)); if (ringOnly && edge > band) discard;       // a plain ring is a thin solid band, never a fill` : `
   float fr = 1.0 - abs(dot(normalize(vN), normalize(vV))); bool rim = fr > 0.6, ink = fr > 0.8; bool ringOnly = false;
-  ${wall ? 'if (vWP.y > vY0 + vB.x - 0.45 || vWP.y < vY0 + 0.3) { rim = true; ink = vWP.y > vY0 + vB.x - 0.15; }' : ''}
-  if ((vViewDist < uHole.w || vViewDist < 8.0) && vWP.y > uFeetY + 1.5) discard;       // the camera-side cap: the tall wall is a far-side thing`}
+  if ((vViewDist < uHole.w || vViewDist < 8.0) && vWP.y > uFeetY + 1.5) discard;       // the camera-side cap: the tall wall is a far-side thing
+  ${wall ? WALL_GLSL : ''}`}
   vec3 col = vCol;
   if (ringOnly && !rim) { if (hole && bay > 0.5) discard; oc = vec4(col * (0.6 + 0.4 * vFade), 1.0); return; }
   if (rim) { if (hole && bay > 0.5) discard; oc = vec4(ink ? vec3(0.118, 0.118, 0.165) : col, 1.0); return; }

@@ -168,7 +168,9 @@ export class Actors {
     fx.ring(o.x, o.y + 0.05, o.z, o.r, hex, 0.5 + 0.4 * tier);
   }
   // Tier 5 (spec 1.4): every large own area is stamped into the stain map and gets a hollow giant at its TRUE rule radius, 16 m tall at Reach +0% up to 40 m at +150%, its top rising and falling slowly at 0.5 Hz; the footprint is never enlarged
-  _tier5(o, rch) { const el = o.el || 'fire', L = RAMP[el] || RAMP.fire; this._lead = this._lead || el; this._stains.push({ x: o.x, z: o.z, r: o.r, hex: L[3] }); const h = 16 + 24 * Math.min(1, rch / 1.5) + 1.5 * Math.sin(performance.now() / 1000 * Math.PI); this.own.wall(o.x, o.y, o.z, o.r, h, ownColour(el), 1); }
+  _tier5(o, rch) { const el = o.el || 'fire', L = RAMP[el] || RAMP.fire, oc = ownColour(el); this._lead = this._lead || el; this._stains.push({ x: o.x, z: o.z, r: o.r, hex: L[3], hexK: oc }); const h = 16 + 24 * Math.min(1, rch / 1.5) + 1.5 * Math.sin(performance.now() / 1000 * Math.PI); this.own.wall(o.x, o.y, o.z, o.r, h, oc, 1);
+    const row = ({ fire: 0, ice: 1, lightning: 2, poison: 3, wind: 4, earth: 5, light: 6, dark: 7 })[el] || 0, dt = Math.min(0.05, this._dt || 0.016), n = Math.min(3, Math.floor(dt * 70 + Math.random()));       // the tongues break off as ember cards and sparks that rise and die
+    for (let k = 0; k < n; k++) { const a = Math.random() * 6.2832, x = o.x + Math.cos(a) * o.r, z = o.z + Math.sin(a) * o.r; this.fx.sparkEl(x, o.y + h * (0.2 + Math.random() * 0.7), z, (Math.random() - 0.5) * 2, 3 + Math.random() * 4, (Math.random() - 0.5) * 2, row, 0.18 + Math.random() * 0.14, 1.2 + Math.random()); } }
   // the enemy a chain jump reached gets the crawling outline for 300 ms (the nearest live enemy to the bolt's end point, within 1.5 m)
   _arcAt(g, x, z) { const e = g.en; let best = -1, bd = 2.25; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = i; } } if (best >= 0) this.arcT[best] = 0.3; }
   _fan(arc, max) {

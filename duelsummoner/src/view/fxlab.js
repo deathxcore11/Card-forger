@@ -47,14 +47,14 @@ export function startLab(D) {
     elTimer = setInterval(() => { fx.burstEl(bx - 22, 0.4, bz, 6, row, 1.5, 2, 0.14, 0.9, 0); let n = 0; for (let i = 0; i < g.en.max && n < 10; i++) if (g.en.alive[i] && i % 6 === 0) { g.en.flash[i] = 0.07; D.actors.hitRow[i] = row; n++; } }, 90);
   };  // Tier 5 (step 14): the screen-breaking state in one scene. The big own attacks are stamped into the ground (stain map), each gets a hollow giant at its TRUE rule radius, the sky tints and runs a flame band. window.__fxlab.tier5Measure() reports the claimed share
   // (pixels that differ with Tier 5 on and off, same frame, sim frozen) and whether the effect touches all four screen edges and crosses the horizon in at least 3 places.
-  const tier5 = async on => {
-    const C = await import('/src/sim/combat.js'), p = g.p; D.tier5Force = !!on; for (const o of g.fx) if (o.owner === 0 && o.dur >= 100) o.on = false;
+  const tier5 = async (on, el = 'fire') => {
+    const C = await import('/src/sim/combat.js'), p = g.p; D.tier5Force = on ? 'quiet' : false; for (const o of g.fx) if (o.owner === 0 && o.dur >= 100) o.on = false;
     if (!on) return; const mk = (r, el, arc) => { const rec = C.addFx(g, arc ? { type: 'fan', owner: 0, el, x: p.x, y: p.y, z: p.z, r, arc, dx: 0, dz: -1, dur: 1e6, color: 0 } : { type: 'ring', owner: 0, el, x: p.x, y: p.y, z: p.z, r, dur: 1e6, color: 0 }); if (rec) rec.t = 0.9999e6; };
-    mk(32, 'fire', 150); mk(24, 'fire', 0); mk(16, 'fire', 0); D.ownRForce = 32 * 1.58 / 2;
+    mk(32, el, 150); mk(24, el, 0); mk(16, el, 0); D.ownRForce = 32 * 1.58 / 2;
   };
   const measure = async () => {
     const snap = () => { D.blitNow(); const c = document.getElementById('view'), cv = document.createElement('canvas'); cv.width = c.width; cv.height = c.height; const x = cv.getContext('2d'); x.drawImage(c, 0, 0); return { d: x.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height }; };
-    await new Promise(r => setTimeout(r, 400)); const A = snap(); D.tier5Force = false; const saved = g.fx.filter(o => o.on && o.owner === 0 && o.dur >= 100); saved.forEach(o => { o.on = false; }); await new Promise(r => setTimeout(r, 400)); const B = snap(); D.tier5Force = true; saved.forEach(o => { o.on = true; });
+    await new Promise(r => setTimeout(r, 400)); const A = snap(); D.tier5Force = false; const saved = g.fx.filter(o => o.on && o.owner === 0 && o.dur >= 100); saved.forEach(o => { o.on = false; }); await new Promise(r => setTimeout(r, 400)); const B = snap(); D.tier5Force = 'quiet'; saved.forEach(o => { o.on = true; });
     const diff = (i) => Math.abs(A.d[i] - B.d[i]) + Math.abs(A.d[i + 1] - B.d[i + 1]) + Math.abs(A.d[i + 2] - B.d[i + 2]) > 30; let n = 0; const w = A.w, h = A.h, edge = { top: 0, bottom: 0, left: 0, right: 0 };
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { if (diff((y * w + x) * 4)) { n++; if (y < 3) edge.top++; if (y >= h - 3) edge.bottom++; if (x < 3) edge.left++; if (x >= w - 3) edge.right++; } }
     let cross = 0, inRun = false; const hy = Math.floor(h * 0.47); for (let x = 0; x < w; x += 2) { let hit = false; for (let y = hy - 4; y <= hy + 4; y++) if (diff((y * w + x) * 4)) { hit = true; break; } if (hit && !inRun) cross++; inRun = hit; }
