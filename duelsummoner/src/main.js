@@ -268,6 +268,30 @@ export function pickAndUse(cx, cy) {
   if (best.near) { pendingUse = true; autoWalk = null; } else autoWalk = { x: best.x, z: best.z, stop: 2.4, t0: performance.now() };
   return true;
 }
+// Landmark tags: a short label over every landmark you are close to, saying what it is and what it gives, so nothing has to be guessed. Spent ones turn grey and stay.
+const tagEls = [], tagV = new T.Vector3();
+function landmarkTags() {
+  const W = game.world, p = game.p, out = [];
+  const add = (o, text, cls, y) => { const dx = o.x - p.x, dz = o.z - p.z, d2 = dx * dx + dz * dz; if (d2 < 30 * 30) out.push({ x: o.x, y: (o.y || 0) + y, z: o.z, text, cls, d2 }); };
+  if (W) {
+    for (const s of W.stones || []) add(s, s.used ? 'Witness Stone: used' : 'Witness Stone: 1 free item of 3', s.used ? 'spent' : 'free', 2.1);
+    for (const s of W.shrines || []) add(s, s.done ? 'Shrine of Tribute: done' : 'Shrine of Tribute: hold the ring, pick a boon', s.done ? 'spent' : 'free', 2.4);
+    if (W.broker) add(W.broker, 'Relic Broker: shop', 'shop', 2.6);
+    if (W.altar) add(W.altar, W.altar.used ? 'Altar: used' : 'Altar of Tribute: banish or tribute', W.altar.used ? 'spent' : 'seal', 2.4);
+    for (const c of W.cchests || []) if (!c.open) add(c, c.trophy ? 'Trophy Chest: free, open it' : c.rarity + ' Card Chest: ' + (c.free ? 'free' : 'coins'), c.free || c.trophy ? 'free' : 'shop', 1.9);
+  }
+  for (const c of game.chests) if (!c.open) add(c, 'Sealed Chest: free item', 'free', 1.9);
+  return out;
+}
+function drawTags() {
+  const list = MODE === 'play' && !mapOpen ? landmarkTags() : []; list.sort((a, b) => a.d2 - b.d2); const n = Math.min(6, list.length), host = $('tags'), w = innerWidth, h = innerHeight;
+  for (let i = 0; i < Math.max(n, tagEls.length); i++) {
+    if (i >= tagEls.length) { const el = document.createElement('div'); el.className = 'wtag'; host.appendChild(el); tagEls.push(el); }
+    const el = tagEls[i]; if (i >= n) { el.style.display = 'none'; continue; }
+    const t = list[i]; tagV.set(t.x, t.y, t.z).project(camera); if (tagV.z > 1) { el.style.display = 'none'; continue; }
+    el.style.display = 'block'; el.className = 'wtag ' + t.cls; if (el.textContent !== t.text) el.textContent = t.text; el.style.left = ((tagV.x * 0.5 + 0.5) * w) + 'px'; el.style.top = ((-tagV.y * 0.5 + 0.5) * h) + 'px';
+  }
+}
 function frame(now) {
   requestAnimationFrame(frame); syncMap();
   const dtReal = last ? Math.min(0.1, (now - last) / 1000) : 0;
@@ -315,7 +339,7 @@ function frame(now) {
   ringMarks();
   fx.update(dtReal, camera);
   props.update(game);
-  minimap.draw(game, input.yaw); if (mapOpen) minimap.drawFull($('fullmap'), game, input.yaw);
+  drawTags(); minimap.draw(game, input.yaw); if (mapOpen) minimap.drawFull($('fullmap'), game, input.yaw);
   showFlash(game);
   const a1 = performance.now();
   renderer.render(scene, camera);

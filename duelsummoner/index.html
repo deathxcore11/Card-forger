@@ -66,7 +66,11 @@
     #banner { font-size:18px; }
   }
   /* touch: every button is at least 44 px tall, with no hover-only controls */
-  @media (pointer:coarse) { button, .tab { min-height:46px; min-width:46px; } button.small { padding:10px 14px; } .trk, .lbrow { padding:4px 0; } }  #offerScreen { pointer-events:auto; }
+  @media (pointer:coarse) { button, .tab { min-height:46px; min-width:46px; } button.small { padding:10px 14px; } .trk, .lbrow { padding:4px 0; } }  #tags { position:fixed; inset:0; pointer-events:none; z-index:12; overflow:hidden; }
+  .wtag { position:absolute; transform:translate(-50%,-100%); white-space:nowrap; font-size:12px; letter-spacing:0; padding:2px 7px; border:1px solid #000a; background:#0d0810c8; color:#ffe9a0; text-shadow:none; }
+  .wtag.spent { color:#8a8a92; border-color:#4a4a52; }
+  .wtag.free { color:#ffffff; } .wtag.shop { color:#ffd23f; } .wtag.danger { color:#ff6a5a; } .wtag.seal { color:#c9a0ff; }          /* one colour code everywhere: white free, gold coins, red danger, violet Fusion and seals; grey once used */
+  #offerScreen { pointer-events:auto; }
   #offerCards { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .card { width:200px; border:2px solid var(--line); background:var(--panel); padding:10px; text-align:left; font-size:13px; line-height:1.4; }
   .card h3 { margin:0 0 4px; font-size:15px; letter-spacing:1px; }
@@ -155,7 +159,8 @@
 <div class="hud" id="boss"><div id="bossname">THE HOLLOW PHARAOH</div><div class="bar"><i id="bossfill"></i></div></div>
 <div class="hud" id="debug" style="left:16px;top:230px;display:none"></div>
 <div class="hud" id="stats"></div>
-<div id="mapOverlay" style="position:fixed;inset:0;display:none;z-index:45;background:#000b;align-items:center;justify-content:center;flex-direction:column;color:#d8c08a;font-family:monospace"><div style="letter-spacing:3px;margin-bottom:6px">MAP</div><canvas id="fullmap" width="640" height="640" style="width:min(86vmin,640px);height:min(86vmin,640px);border:2px solid #d8c08a;background:#000;image-rendering:pixelated"></canvas><div style="margin-top:8px;font-size:12px;opacity:.8">N is up. Dark ground is not explored yet; climb to see further. M, Esc or a tap closes this.</div></div>
+<div id="tags"></div>
+<div id="mapOverlay" style="position:fixed;inset:0;display:none;z-index:45;background:#000b;align-items:center;justify-content:center;flex-direction:column;color:#d8c08a;font-family:monospace"><div style="letter-spacing:3px;margin-bottom:6px">MAP</div><canvas id="fullmap" width="640" height="640" style="width:min(86vmin,640px);height:min(86vmin,640px);border:2px solid #d8c08a;background:#000;image-rendering:pixelated"></canvas><div style="margin-top:8px;font-size:12px;opacity:.8"><span style="color:#fff">White</span> is free: square = Witness Stone (1 free item of 3), ring = Shrine of Tribute (hold the ring, pick a boon) &middot; <span style="color:#ffd23f">gold</span> costs coins: chests and the Broker &middot; <span style="color:#c9a0ff">violet</span> Altar and seals &middot; <span style="color:#ff6a5a">red</span> the Gate and danger &middot; <span style="color:#9a9aa2">grey</span> already used.<br>N is up. Dark ground is not explored yet; climb to see further. M, Esc or a tap closes this.</div></div>
 <div class="hud" id="statPanel" style="display:none;left:50%;top:16%;transform:translateX(-50%);width:min(680px,92vw);background:#0d0810f0;border:2px solid #6b4fa0;padding:12px 16px;font-size:13px;line-height:1.5;max-height:64vh;overflow:auto;pointer-events:auto"></div>
 <div class="hud" id="itemsList" style="left:16px;bottom:14px;width:min(380px,28vw);color:#e0cfa8;font-size:13px;line-height:1.4"></div>
 <div class="hud" id="zones"></div>

@@ -173,8 +173,8 @@ export function nearestProp(g) {
   const p = g.p, W = g.world, R = E.interactRange; let best = null, bd = R * R;
   const consider = (obj, type, text) => { const dx = obj.x - p.x, dz = obj.z - p.z, d = dx * dx + dz * dz; if (d < bd && Math.abs(obj.y - p.y) < 2.5) { bd = d; best = { obj, type, text }; } };
   for (const c of W.cchests) if (!c.open) { const pr = c.free ? 0 : chestPrice(g); consider(c, 'cchest', 'E: open the ' + c.rarity + ' Card Chest (' + (pr === 0 ? 'free' : pr + ' coins' + (g.coins < pr ? ', you have ' + g.coins : '')) + ')'); }
-  for (const s of W.stones) if (!s.used) consider(s, 'stone', 'E: take a free item from the Witness Stones');
-  if (W.broker) consider(W.broker, 'broker', 'E: browse the Relic Broker');
+  for (const s of W.stones) if (!s.used) consider(s, 'stone', 'E: Witness Stone, take 1 free item of 3');
+  if (W.broker) consider(W.broker, 'broker', 'E: Relic Broker, buy from 3 items');
   if (W.altar && !W.altar.used) consider(W.altar, 'altar', 'E: Altar of Tribute (Banish a card, or Tribute one from your field)');
   return best;
 }

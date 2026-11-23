@@ -51,10 +51,11 @@ export class Minimap {
     c.fillStyle = '#e0452c'; const e = g.en; for (let i = 0; i < e.max; i++) if (e.alive[i] && ex(e.x[i], e.z[i])) c.fillRect(X(e.x[i]) - 1, X(e.z[i]) - 1, 2, 2);
     const W = g.world;
     if (W) {
-      for (const k of W.cchests || []) if (!k.open && ex(k.x, k.z)) sq(k.x, k.z, k.trophy ? '#ffd23f' : '#d9a441', r0);          // chests
-      for (const k of W.stones || []) if (!k.used && ex(k.x, k.z)) sq(k.x, k.z, '#5fe0ff', r0);                                      // Witness Stones
-      if (W.broker && ex(W.broker.x, W.broker.z)) sq(W.broker.x, W.broker.z, '#6be08a', r0);                                          // the Broker
-      if (W.altar && !W.altar.used && ex(W.altar.x, W.altar.z)) sq(W.altar.x, W.altar.z, '#b070ff', r0);                              // the Altar
+      for (const k of W.cchests || []) if (!k.open && ex(k.x, k.z)) sq(k.x, k.z, k.free || k.trophy ? '#ffffff' : '#ffd23f', r0);          // chests
+      for (const k of W.stones || []) if (ex(k.x, k.z)) sq(k.x, k.z, k.used ? '#6a6a72' : '#ffffff', r0);                                // Witness Stones: cyan, grey once used (they stay on the map so you know)
+      for (const k of W.shrines || []) if (ex(k.x, k.z)) { const x = X(k.x), z = X(k.z); c.strokeStyle = k.done ? '#6a6a72' : '#ffffff'; c.lineWidth = big ? 3 : 2; c.beginPath(); c.arc(x, z, r0 + 1, 0, 7); c.stroke(); }          // Shrines of Tribute: a ring, grey once done
+      if (W.broker && ex(W.broker.x, W.broker.z)) sq(W.broker.x, W.broker.z, '#ffd23f', r0);                                          // the Broker
+      if (W.altar && !W.altar.used && ex(W.altar.x, W.altar.z)) sq(W.altar.x, W.altar.z, '#c9a0ff', r0);                              // the Altar
     }
     if (g.map && g.map.gate && g.mode !== 'classic' && ((g.gate && g.gate.awake) || ex(g.map.gate.x, g.map.gate.z))) { const gx = X(g.map.gate.x), gz = X(g.map.gate.z), r = big ? 7 : 3.5; c.fillStyle = g.gate && g.gate.awake ? '#ff5a3a' : '#c0503a'; c.fillRect(gx - r, gz - r, r * 2, r * 2); c.strokeStyle = '#000'; c.lineWidth = 1; c.strokeRect(gx - r, gz - r, r * 2, r * 2); }
     for (const ch of g.chests) if (ch.guaranteed && !ch.open) {

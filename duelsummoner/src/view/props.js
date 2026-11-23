@@ -77,7 +77,9 @@ export class Props {
       if (v.banded) this.banded.setMatrixAt(b++, d.matrix); else this.vases.setMatrixAt(n++, d.matrix);
     }
     this.vases.count = n; this.banded.count = b; this.vases.instanceMatrix.needsUpdate = this.banded.instanceMatrix.needsUpdate = true;
-    for (const o of P.stones) { o.gem.visible = !o.s.used; o.gem.rotation.y = t * 2; o.gem.position.y = 1.4 + Math.sin(t * 2) * 0.1; }
+    for (const o of P.stones) {                                                       // a used stone stays where it is and changes colour: gold and bobbing when ready, still and grey once spent
+      const used = o.s.used; o.gem.material.color.setHex(used ? 0x6a6872 : 0xffe07a); o.gem.visible = true; o.gem.rotation.y = used ? 0.6 : t * 2; o.gem.position.y = used ? 1.1 : 1.4 + Math.sin(t * 2) * 0.1; o.gem.scale.setScalar(used ? 0.8 : 1);
+    }
     if (P.broker) P.broker.plinths.forEach((m, k) => { const st = g.world.broker.stock[k]; m.visible = !st.sold; m.rotation.y = t * 2 + k; m.position.y = 1.3 + Math.sin(t * 2 + k) * 0.06; });
     for (const o of P.shrines) {
       const p = o.s.charge / E.shrines.hold;
