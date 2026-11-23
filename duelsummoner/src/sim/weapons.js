@@ -93,7 +93,7 @@ export function updateShots(g, dt) {
     if (!dead) for (const sp of g.sp) {                                // elites and the boss
       if (!sp.alive || sp.dead) continue;
       const hx = sp.x - s.x[i], hz = sp.z - s.z[i], r = sp.radius + 0.4;
-      if (hx * hx + hz * hz < r * r && s.y[i] > sp.y - 0.3 && s.y[i] < sp.y + 3) {
+      if (hx * hx + hz * hz < r * r && s.y[i] > sp.y - 0.3 && s.y[i] < sp.y + Math.max(3, sp.size || 0)) {
         const l = Math.sqrt(s.vx[i] * s.vx[i] + s.vz[i] * s.vz[i]) || 1;
         g.damageSpecial(sp, s.dmg[i], sp.x - s.vx[i] / l * 5, sp.z - s.vz[i] / l * 5, { elem: s.flame[i] });   // attacker is "behind" the shot
         dead = true; break;
@@ -126,16 +126,18 @@ export function updateBolts(g, dt) {
 }
 
 // ---- pickups: crystals, coins, hearts ----
+const MAG = { x: 0, y: 0, z: 0 };
 export function updatePickups(g, dt) {
   const m = g.pick, p = g.p, range = CFG.xp.magnet * (1 + g.mods.pickup);
   for (let i = 0; i < m.max; i++) {
     if (!m.alive[i]) continue;
     const dx = p.x - m.x[i], dz = p.z - m.z[i], d = Math.sqrt(dx * dx + dz * dz) || 0.001;
     if (d < range && Math.abs(p.y - m.y[i]) < 3 + range * 0.3) {
-      const o = { x: m.x[i], y: m.y[i], z: m.z[i] };
+      const o = MAG; o.x = m.x[i]; o.y = m.y[i]; o.z = m.z[i];
       const sp = 9 + 20 * (1 - d / range);                 // a short speed-up as it flies in
-      moveXZ(o, dx / d * sp * dt, dz / d * sp * dt, 0.1, 99);
-      m.x[i] = o.x; m.z[i] = o.z; m.y[i] = Math.max(heightAt(o.x, o.z), 0) + 0.5;
+      moveXZ(o, dx / d * sp * dt, dz / d * sp * dt, 0.1, 12);   // never climbs a wall taller than 12 m
+      m.x[i] = o.x; m.z[i] = o.z;
+      const hh = heightAt(o.x, o.z); if (hh < 50) m.y[i] = Math.max(hh, 0) + 0.5;   // keep the old height over a wall cell
     }
     if (d < CFG.xp.pick && Math.abs(p.y + 1 - m.y[i]) < 2.5) {
       m.alive[i] = 0; g.emit('pickup', m.kind[i], m.val[i]);

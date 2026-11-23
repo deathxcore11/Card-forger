@@ -153,7 +153,8 @@ export function updateSpecials(g, dt) {
     const S = SPECIALS.pharaoh.sand, b = g.boss;
     b.sandT += dt; b.sandR = S.rStart + (S.rEnd - S.rStart) * Math.min(1, b.sandT / S.seconds);
     b.tickT = (b.tickT || 0) - dt;
-    const r = Math.sqrt(p.x * p.x + p.z * p.z);
+    const ac = (g.map && g.map.arena && g.map.arena.center) || { x: 0, z: 0 };       // measured from the arena centre, not the world origin
+    const r = Math.sqrt((p.x - ac.x) * (p.x - ac.x) + (p.z - ac.z) * (p.z - ac.z));
     if (b.tickT <= 0) { b.tickT = S.tick; if (r > b.sandR && r < 34 && p.y < 1.5) g.hurtPlayer(S.dps * S.tick, true, 'the rising sand'); }
   }
   // face-down trap cards

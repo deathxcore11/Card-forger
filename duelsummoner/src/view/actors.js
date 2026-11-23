@@ -282,7 +282,7 @@ export class Actors {
       let formSwap = false;
       if (mesh && mesh.userData.formIdx !== form) { this.scene.remove(mesh); mesh = null; formSwap = true; }          // crossing level 5 or 10 swaps the model
       const x = pl(m.px, m.x, a), z = pl(m.pz, m.z, a);
-      if (!mesh) { mesh = this._monsterMesh(m.id, form); this.monsters.set(m, mesh); mesh.position.set(x, heightGround(x, z), z); this._enter(mesh, m, formSwap, g, x, heightGround(x, z), z); }
+      if (!mesh) { mesh = this._monsterMesh(m.id, form); this.monsters.set(m, mesh); mesh.position.set(x, heightGround(x, z), z); this._enter(mesh, m, formSwap, g, x, z); }
       let y = pl(m.py, m.y, a);
       const ud = mesh.userData;
       if (ud.walk) y = heightGround(x, z) + Math.abs(Math.sin(t * 7 + k)) * 0.08;      // the Hatchling walks beside you
@@ -388,15 +388,17 @@ export class Actors {
     }
 
     // projectiles
-    const s = g.shots; let nc = 0, nf = 0, nl = 0;
+    const s = g.shots; let nc = 0, nf = 0, nl = 0, nh = 0;
     for (let i = 0; i < s.max; i++) {
       if (!s.alive[i]) continue;
       d.position.set(pl(s.px[i], s.x[i], a), pl(s.py[i], s.y[i], a), pl(s.pz[i], s.z[i], a)); d.scale.set(1, 1, 1);
       const k = s.kind[i];
       if (k === 0) { d.rotation.set(0, Math.atan2(s.vx[i], s.vz[i]) + t * 14, 0); d.updateMatrix(); this.cards.setMatrixAt(nc++, d.matrix); }
       else if (k === 2) { d.rotation.set(t * 5, t * 4, 0); d.updateMatrix(); this.lob.setMatrixAt(nl++, d.matrix); }
+      else if (k === 3) { if (nh < 64) { d.rotation.set(t * 9, t * 11, 0); d.updateMatrix(); this.bolts.setMatrixAt(nh++, d.matrix); } }       // homing bolts have their own mesh (violet)
       else { d.rotation.set(0, t * 12, 0); d.updateMatrix(); this.fire.setMatrixAt(nf++, d.matrix); }
     }
+    this.bolts.count = nh; this.bolts.instanceMatrix.needsUpdate = true;
     { const S = this.shadow, dd = this.d; let ns = 0;       // contact shadows follow the ground under everything that walks
       const put = (x, z, r) => { if (ns >= S.instanceMatrix.count) return; dd.position.set(x, heightGround(x, z) + 0.07, z); dd.rotation.set(0, 0, 0); dd.scale.setScalar(r); dd.updateMatrix(); S.setMatrixAt(ns++, dd.matrix); };
       if (this.rig && !(g.over && !g.won)) put(px, pz, 0.95);
@@ -494,6 +496,8 @@ export class Actors {
     if (!on) { if (this.sand) this.sand.visible = false; return; }
     if (!this.sand) { this.sand = new T.Mesh(new T.RingGeometry(10, 33, 48), basic(0xe8b84a, { transparent: true, opacity: 0.55, side: T.DoubleSide, depthWrite: false })); this.sand.rotation.x = -Math.PI / 2; this.sand.position.y = 0.12; this.scene.add(this.sand); }
     this.sand.visible = true;
+    const ac = (g.map && g.map.arena && g.map.arena.center) || { x: 0, z: 0 };
+    this.sand.position.x = ac.x; this.sand.position.z = ac.z; this.sand.position.y = (g.sp[0] ? g.sp[0].y : 0) + 0.12;
     if (Math.abs(b.sandR - this.sandR) > 0.4) { this.sandR = b.sandR; this.sand.geometry.dispose(); this.sand.geometry = new T.RingGeometry(b.sandR, 33, 48); }
   }
 
@@ -549,6 +553,7 @@ export class Actors {
 
 import { heightAt } from '../sim/terrain.js';
 function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
 
 
 

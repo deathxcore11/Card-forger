@@ -371,7 +371,7 @@ function frame(now) {
   }
   if (MODE === 'play') { const dv = new T.Vector3(ip.x, ip.y + 1, ip.z).project(camera); window.__dealFrom = { x: (dv.x + 1) / 2 * innerWidth, y: (1 - dv.y) / 2 * innerHeight }; }       // where the level-up cards fan out from
   devTick(now); bars.tick(dtReal || 0.016, game, document.body.classList.contains('rm'), performance.now());
-  chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
+  chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (mapMesh && mapMesh.userData.fade) { mapMesh.userData.fade.cam.value.copy(camera.position); mapMesh.userData.fade.pl.value.set(ip.x, ip.y + 1, ip.z); } if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
   if (sceneryGroup && sceneryGroup.userData.fade) sceneryGroup.userData.fade(chase.pos, ip, dtReal || 0.016);
   if (MODE === 'play') ambient.update(dtReal, camera, game.en);
   threads.update(game.mode !== 'classic' && game.map ? game.map.gate : null, ip, MODE === 'play' ? dtReal : 0, camera, MODE === 'play' && game.boss.state === 'idle' && !game.offer);

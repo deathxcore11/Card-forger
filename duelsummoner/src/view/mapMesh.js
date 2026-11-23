@@ -17,13 +17,18 @@ class Builder {
     const j = 0.97 + this.rnd() * 0.06, r = ((color >> 16) & 255) / 255 * j, g = ((color >> 8) & 255) / 255 * j, bl = (color & 255) / 255 * j;
     [a, b, c].forEach(p => { this.pos.push(p[0], p[1], p[2]); this.nor.push(nx, ny, nz); this.col.push(r, g, bl); if (this.uv) this.uv.push(p[0] / 26, p[2] / 26); });
   }
-  mesh(far) {
+  mesh(far, fade) {
     const g = new T.BufferGeometry();
     g.setAttribute('position', new T.Float32BufferAttribute(this.pos, 3));
     g.setAttribute('normal', new T.Float32BufferAttribute(this.nor, 3));
     g.setAttribute('color', new T.Float32BufferAttribute(this.col, 3)); if (this.uv) g.setAttribute('uv', new T.Float32BufferAttribute(this.uv, 2));
     const mat = new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }); if (this.uv) mat.map = groundTex();
     if (far) mat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', '#ifdef USE_FOG\n float fogFactor = min(smoothstep(fogNear, fogFar, fogDepth), 0.55);\n gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);\n#endif'); };       // far pieces never fog past 55%, so the rim and the landmarks stay readable silhouettes
+    if (fade) {                                       // anything solid that stands between the camera and the duelist dithers out to about 25 percent (walls, pylons, columns, ruins)
+      const prev = mat.onBeforeCompile; mat.onBeforeCompile = sh => { if (prev) prev(sh); sh.uniforms.fadeCam = fade.cam; sh.uniforms.fadePl = fade.pl;
+        sh.vertexShader = sh.vertexShader.replace('void main() {', 'varying vec3 vWP;\nvoid main() {').replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+        sh.fragmentShader = sh.fragmentShader.replace('void main() {', 'uniform vec3 fadeCam; uniform vec3 fadePl; varying vec3 vWP;\nvoid main() {\n  { vec3 d = fadePl - fadeCam; float t = dot(vWP - fadeCam, d) / max(dot(d, d), 0.001); vec3 q = fadeCam + d * clamp(t, 0.0, 1.0); if (t > 0.02 && t < 0.9 && length(vWP - q) < 2.2 && fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) < 0.75) discard; }'); };
+    }
     return new T.Mesh(g, mat);
   }
 }
@@ -137,7 +142,8 @@ export function buildMapMesh(map) {
   // the mega landmark: a colossal buried card, half sunk and tilted, 64 m tall, on the far side of the map from the start (view only)
   { const sa = Math.atan2(map.gate.z - map.spawn.z, map.gate.x - map.spawn.x) + 2.6, mx = 250 * Math.cos(sa), mz = 250 * Math.sin(sa), yaw = sa / DEG + 90;
     addTilt(F, mx, -6, mz, 24, 3, 64, yaw, 20, 0xe6dcc0); addTilt(F, mx, -6, mz, 20, 3.5, 60, yaw, 20, 0x4a4250, 2); }
-  group.add(B.mesh(false), F.mesh(true), G.mesh(false));
+  const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
+  group.add(B.mesh(false, fadeU), F.mesh(true, fadeU), G.mesh(false));
   return group;
 }
 

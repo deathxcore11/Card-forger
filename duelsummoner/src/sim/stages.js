@@ -140,6 +140,17 @@ function startGate(g, early, toll) {
   g.emit('gatefight', g.stage);
 }
 
+// The first walkable spot at the boss's ground height, searched outward from the wanted place (not a wall, within 0.5 m of the boss's ground).
+function goodSpot(g, sp, wx, wz) {
+  const ok = (x, z) => { const h = heightAt(x, z); return h < 50 && Math.abs(h - sp.y) <= 0.5; };
+  if (ok(wx, wz)) return { x: wx, z: wz };
+  for (let r = 1; r <= 14; r++) for (let k = 0; k < 16; k++) {
+    const a = k * 0.3927, x = wx + cos(a) * r, z = wz + sin(a) * r;
+    if (ok(x, z)) return { x, z };
+  }
+  const c = (g.map && g.map.arena && g.map.arena.center) || { x: sp.x, z: sp.z };
+  return { x: c.x, z: c.z };
+}
 function gateCleared(g, sp) {
   const S = g.stageSpec, G = g.gate, p = g.p, last = g.stage >= g.stages.length - 1;
   G.state = 'done'; g.stagesCleared++; g.afterGate = 0;
@@ -148,11 +159,12 @@ function gateCleared(g, sp) {
   for (const o of g.sp) if (o !== sp) o.alive = false;
   const k = g.pick; for (let i = 0; i < k.max; i++) if (k.alive[i]) { k.x[i] = p.x; k.y[i] = p.y; k.z[i] = p.z; }      // every crystal and coin is pulled to the duelist
   g.chests.push({ x: sp.x, y: sp.y, z: sp.z, open: false, kind: 'sealed' });
+  const spot = goodSpot(g, sp, last ? sp.x : sp.x + 8, last ? sp.z + 6 : sp.z);
   if (last) {
-    g.won = true; g.bossKilled = true; g.altar = { x: sp.x, z: sp.z + 6, used: false };
+    g.won = true; g.bossKilled = true; g.altar = { x: spot.x, z: spot.z, used: false };
     g.event('banner', S.gate.name + ' falls. VICTORY. The Final Altar rises.');
   } else {
-    g.circle = { x: sp.x + 8, z: sp.z, t: RUNSPEC.circleSeconds };
+    g.circle = { x: spot.x, z: spot.z, t: RUNSPEC.circleSeconds };
     g.event('banner', S.gate.name + ' falls. A Descent Circle opens: open the chest, then step in.');
   }
   g.emit('gatedown', g.stage);

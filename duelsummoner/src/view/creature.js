@@ -36,7 +36,8 @@ export function classifyCreature(root) {
     parts.spine.push(...chestChain); const chest = chestChain[chestChain.length - 1], cp = pos(chest);
     for (const c of kids(chest)) {
       const ch = chainFrom(c), e = pos(ch[ch.length - 1]), dx = e.x - cp.x, dy = e.y - cp.y;
-      if (Math.abs(dx) > reach * 0.6) { const k = 'wing' + sideName(dx); if (parts[k].length) parts[k + '2'] = ch; else parts[k] = ch; }                  // reaches out as far as anything: a wing\n      else if (Math.abs(dx) > side * 1.5 && dy < -Math.abs(dx) * 0.6) parts['arm' + sideName(dx)] = ch;                                          // lateral and hanging down: an arm
+      if (Math.abs(dx) > reach * 0.6) { const k = 'wing' + sideName(dx); if (parts[k].length) parts[k + '2'] = ch; else parts[k] = ch; }                  // reaches out as far as anything: a wing
+      else if (Math.abs(dx) > side * 1.5 && dy < -Math.abs(dx) * 0.6) parts['arm' + sideName(dx)] = ch;                                          // lateral and hanging down: an arm
       else { parts.head = ch[ch.length - 1]; parts.neck = ch.slice(0, -1); }
     }
   }
