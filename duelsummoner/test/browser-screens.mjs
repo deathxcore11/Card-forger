@@ -4,9 +4,10 @@ const out = process.argv[2], only = process.argv.slice(3);
 const b = await launch({ out, query: '?seed=3&debug' });
 const SIZES = [['1920', 1920, 1080, false], ['1280', 1280, 720, false], ['960', 960, 540, false], ['844', 844, 390, true]];
 await b.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false }); await wait(3000);
-const SCREENS = { main: `__ds.menus.showMain()`, duelists: `__ds.menus.showDuelists()`, maps: `__ds.menus.showMaps()`, library: `__ds.menus.showLibrary()`, quests: `__ds.menus.showQuests()`, settings: `__ds.menus.showSettings()` };
+const SCREENS = { main: `__ds.menus.showMain()`, duelists: `__ds.menus.showDuelists()`, maps: `__ds.menus.showMaps()`, library: `__ds.menus.showLibrary()`, quests: `__ds.menus.showQuests()`, settings: `__ds.menus.showSettings()`, deckbox: `(__ds.menus.showMain(), document.getElementById('mShop').click())`, results: `(()=>{ document.getElementById('metaScreen').classList.remove('on'); document.body.dataset.mode = 'play'; __ds.game.endRun(); document.getElementById('endBtn').click(); })()` };
 for (const [name, js] of Object.entries(SCREENS)) {
   if (only.length && !only.includes(name)) continue;
+  if (name === 'results') { await b.evalIn(`(async()=>{ __ds.pickDuelist('kael'); __ds.start(); await new Promise(r => setTimeout(r, 2200)); return 1; })()`); }
   for (const [sn, w, h, mob] of SIZES) {
     await b.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: mob }); await wait(300);
     await b.evalIn(`(()=>{ document.body.dataset.mode = 'start'; if (${JSON.stringify(name)} === 'main') document.getElementById('startScreen').classList.add('on'); ${js}; return 1; })()`); await wait(900);
