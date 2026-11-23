@@ -1,4 +1,4 @@
-// The three-stage run: timeline, gate, gate boss, Descent with carry-over, Final Altar, Toll Bell, Quick Duel.
+﻿// The three-stage run: timeline, gate, gate boss, Descent with carry-over, Final Altar, Toll Bell, Quick Duel.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js';
@@ -7,7 +7,7 @@ import { heightAt } from '../src/sim/terrain.js';
 
 const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false };
 const run = (g, s, cmd = idle) => { for (let t = 0; t < s && !g.over && !g.offer; t += 1 / 60) g.step(1 / 60, cmd); };
-const mk = (mode = 'run', seed = 3) => { const g = new Game(seed, { mode, duelist: 'kael', offers: false }); g.god = true; return g; };
+const mk = (mode = 'run', seed = 3) => { const g = new Game(seed, { oldGen: true, mode, duelist: 'kael', offers: false }); g.god = true; return g; };
 const events = g => { const out = []; g.drainEvents((type, a, b, c, d) => out.push([type, a, d])); return out; };
 const kill = (g, role) => { for (const sp of g.sp) if (sp.alive && (!role || sp.role === role)) g.damageSpecial(sp, 1e9, 0, 0, { noCrit: true, area: true }); };
 const atGate = g => { g.p.x = g.map.gate.x; g.p.z = g.map.gate.z + 1; g.p.y = heightAt(g.p.x, g.p.z); g.p.vx = g.p.vz = 0; g.p.grounded = true; };
@@ -112,11 +112,12 @@ test('per-monster damage per minute is recorded in the run report', () => {
 test('bot with a ready pair fuses within 30 s of the pair becoming ready', async () => {
   const { newBot, botRecord } = await import('../tools/bot.mjs');
   for (const seed of [3, 4, 5, 6, 7]) {
-    const g = new Game(seed, { mode: 'run', duelist: 'kael' }); g.god = true; g.spawnAcc = -1e9; const bot = newBot({ focus: true });
+    const g = new Game(seed, { oldGen: true, mode: 'run', duelist: 'kael' }); g.god = true; g.spawnAcc = -1e9; const bot = newBot({ focus: true });
     g.field.monsters[0].level = 10; g.field.monsters[1] = { id: 'cinder-hatchling', level: 10, cd: 0 };
     let n = 0; while (g.fusions < 1 && n < 1800) { g.tick(botRecord(g, bot)); n++; }
     assert.ok(g.fusions >= 1, 'seed ' + seed + ' did not fuse in 30 s (ticks ' + n + ')');
   }
 });
+
 
 

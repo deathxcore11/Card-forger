@@ -144,7 +144,7 @@ export class Actors {
     this.btrap = instanced(new T.BoxGeometry(1.2, 0.06, 1.7), basic(0x8a3ad8), 8); scene.add(this.btrap);
 
     // telegraphs and effects (flat, drawn on the ground)
-    const ghost = c => basic(c, WARN(Object.assign({ transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide })));
+    const ghost = c => basic(c, WARN(Object.assign({ transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8 })));       // pulled toward the lens so a flat warning does not sink into a 20 cm bump of the designed ground
     this.teleLine = instanced(new T.BoxGeometry(1, 0.05, 1), ghost(0xffffff), 64); this.teleLine.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
     this.teleDisc = instanced(flat(new T.CircleGeometry(1, 28)), ghost(0xffffff), 128); this.teleDisc.instanceColor = new T.InstancedBufferAttribute(new Float32Array(128 * 3), 3);
     this.fxRing = instanced(flat(new T.RingGeometry(0.82, 1, 28)), ghost(0xffffff), 64); this.fxRing.instanceColor = new T.InstancedBufferAttribute(new Float32Array(64 * 3), 3);
@@ -257,7 +257,7 @@ export class Actors {
     let f = this.fans.get(arc);
     if (!f) {
       const geo = flat(new T.CircleGeometry(1, 20, Math.PI / 2 - arc * Math.PI / 360, arc * Math.PI / 180));
-      f = instanced(geo, basic(0xffffff, WARN({ transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide })), max || 16);
+      f = instanced(geo, basic(0xffffff, WARN({ transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8 })), max || 16);
       f.instanceColor = new T.InstancedBufferAttribute(new Float32Array((max || 16) * 3), 3); f.layers.enable(3); this.scene.add(f); this.fans.set(arc, f);
     }
     return f;
@@ -675,6 +675,7 @@ export class Actors {
 
 import { heightAt } from '../sim/terrain.js';
 function heightGround(x, z) { const h = heightAt(x, z); return h >= 50 ? 0 : h; }
+
 
 
 

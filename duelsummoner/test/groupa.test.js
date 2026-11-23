@@ -1,8 +1,8 @@
-import test from 'node:test'; import assert from 'node:assert/strict';
+﻿import test from 'node:test'; import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js'; import { heightAt } from '../src/sim/terrain.js';
 import { fireShot, updatePickups } from '../src/sim/weapons.js';
 const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false };
-const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false }); g.god = true; return g; };
+const mk = seed => { const g = new Game(seed, { oldGen: true, mode: 'run', duelist: 'kael', offers: false }); g.god = true; return g; };
 const walkable = (x, z, y) => { const h = heightAt(x, z); return h < 50 && Math.abs(h - y) <= 0.5; };
 
 test('A6: a magnet-pulled pickup never rides a wall: its height stays on the ground and it never crosses a tall wall', () => {
@@ -53,3 +53,4 @@ test('A9: the rising sand is measured from the arena centre', () => {
   g.step(1 / 60, idle);
   assert.ok(g.p.hp < hp0, 'the sand hurts a duelist 20 m from the arena centre when the ring is at 10 m');
 });
+

@@ -77,7 +77,7 @@ const CARD_F = `
     if (bay >= 0.7) discard; oc = vec4(vCol * 0.55, 1.0); return; }
   bool ringOnly = false, rim = false, ink = false;`;function material(kind) {
   const area = kind === 'area', wall = kind === 'wall', card = kind === 'card';
-  return new T.ShaderMaterial({ glslVersion: T.GLSL3, side: T.DoubleSide, depthTest: true, depthWrite: false, transparent: true, fog: false, blending: T.NoBlending,
+  return new T.ShaderMaterial({ glslVersion: T.GLSL3, side: T.DoubleSide, depthTest: true, depthWrite: false, transparent: true, fog: false, blending: T.NoBlending, polygonOffset: kind !== 'wall', polygonOffsetFactor: -4, polygonOffsetUnits: -8,
     stencilWrite: true, stencilRef: 0, stencilFunc: T.EqualStencilFunc, stencilFuncMask: 0x05, stencilWriteMask: 0x00, stencilFail: T.KeepStencilOp, stencilZFail: T.KeepStencilOp, stencilZPass: T.KeepStencilOp,
     uniforms: OWN.uni,
     vertexShader: `precision highp float; precision highp int; ${COMMON}
@@ -182,6 +182,7 @@ export class OwnEffects {
   }
   get readout() { return { areas: this.nArea, volumes: this.nVol, rasterSum: +this.rasterSum.toFixed(2), keptSum: +this.keptSum.toFixed(3), keptRaw: +(this.keptRaw || 0).toFixed(2), governor: +this.gov.toFixed(2), dropped: this.dropped }; }
 }
+
 
 
 

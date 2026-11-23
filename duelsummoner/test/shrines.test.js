@@ -1,8 +1,8 @@
-import test from 'node:test'; import assert from 'node:assert/strict';
+﻿import test from 'node:test'; import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js'; import { addBlessing } from '../src/sim/field.js';
 import { ENCOUNTERS as E } from '../src/data/encounters.js'; import { BLESSINGS } from '../src/data/items.js';
 const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false };
-const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false }); g.god = true; return g; };
+const mk = seed => { const g = new Game(seed, { oldGen: true, mode: 'run', duelist: 'kael', offers: false }); g.god = true; return g; };
 const d2 = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.z - b.z) ** 2);
 
 test('shrines: 4 or 5 a stage, a cluster of 2 or 3 within 25 m, 7 m circles that do not overlap', () => {
@@ -31,3 +31,4 @@ test('shrines: a higher rarity multiplies the stat', () => {
   const c = mk(9); addBlessing(c, 'guard', 1.5); assert.equal(c.mods.armour, 2, 'armour stays whole'); const d = mk(9); addBlessing(d, 'vigor', 2); assert.equal(d.p.maxHp, 100 + 40);
   assert.equal(BLESSINGS.might.fmt(3), '+30% damage.'); assert.equal(BLESSINGS.renewal.fmt(2), 'Regain 1 health every 2 s.');
 });
+

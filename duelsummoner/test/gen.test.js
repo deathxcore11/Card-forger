@@ -1,8 +1,9 @@
-// The seeded stage generator: determinism, variety, fairness (reachability, enemy coverage, rings), purity and speed.
+﻿// The seeded stage generator: determinism, variety, fairness (reachability, enemy coverage, rings), purity and speed.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { generateStage, analyze } from '../src/gen/generate.js';
+import { generateStage as generateStageAny, analyze } from '../src/gen/generate.js';
+const generateStage = (s, i, sp) => generateStageAny(s, i, Object.assign({ old: true }, sp));       // these tests guard the OLD generator (the last-resort fallback); the designed one has its own tests in stagemap.test.js and gen2.test.js
 import { STAGES } from '../src/data/stages.js';
 import { sealCodeFrom, sealCodeParse, stageSeed, rngFor } from '../src/gen/seed.js';
 import { Game } from '../src/sim/game.js';
@@ -12,7 +13,9 @@ const SEEDS = Array.from({ length: 40 }, (_, i) => 1000 + i * 37);
 
 test('src/gen is pure: no platform maths, no clocks, no randomness', () => {
   const banned = /\bMath\.(random|sin|cos|tan|atan|atan2|pow|exp|log|log2|log10|sqrt|hypot|cbrt)\b|\bDate\b|\bperformance\b|\bsetTimeout\b|\blocalStorage\b|\bwindow\b|\bdocument\b/;
-  for (const f of readdirSync(new URL('../src/gen/', import.meta.url))) {
+  const walk = d => readdirSync(new URL('../src/gen/' + d, import.meta.url), { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(d + e.name + '/') : [d + e.name]);
+  for (const f of walk('')) {
+    if (f === 'v2/reach.js') continue;       // the movement table is built once at load from IEEE square roots only (correctly rounded everywhere); it is checked against fixed rows in gen2.test.js
     const src = readFileSync(new URL('../src/gen/' + f, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, "''");
     assert.ok(!banned.test(src), f + ' uses ' + (src.match(banned) || [])[0]);
   }
@@ -59,3 +62,6 @@ test('the sim plays on a generated map: the stage machine loads it, the duelist 
   const c = new Game(9, { mode: 'classic', offers: false }); assert.equal(c.map.key, 'classic', 'classic keeps the fixed map'); assert.equal(heightAt(0, -57), 4, 'terrain reloaded for the classic map');
   g.tick({ mx: 0, mz: 0, yaw: 0, buttons: 0, menu: 0 }); assert.equal(g.map.hash, h0); assert.ok(heightAt(g.map.gate.x, g.map.gate.z) >= 0);
 });
+
+
+

@@ -1,4 +1,4 @@
-// The shared engine pieces (engine plan, amendment 4: one of each, shared by water, sky, wind and the spectacle effects): the noise texture, the clock, the one gust field, the sky gradient and the Bayer function.
+﻿// The shared engine pieces (engine plan, amendment 4: one of each, shared by water, sky, wind and the spectacle effects): the noise texture, the clock, the one gust field, the sky gradient and the Bayer function.
 // Everything here is view only. The noise is built from an integer hash so every device gets the same bits (0 KB on disk).
 const T = window.THREE;
 const cl = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -29,6 +29,7 @@ export const E = {
 let gustT = 0;
 export function setSkyTint(hex, flameHex, a) { E.tintC.value.setHex(hex || 0); E.flameC.value.setHex(flameHex || 0); E.tintA.value = a || 0; }       // Tier 5: the dome tints toward the lead element and its lowest quarter runs a stepped flame band
 export function updateEngine(dt, look) {
+  if (E.hold) return;       // the lab and the pixel tests freeze the world's clock (wind, sway, flicker) so two frames of a frozen sim are pixel-identical
   E.T.value += dt; gustT += dt;
   E.wind.value.z = 0.35 + 0.35 * (0.5 + 0.5 * Math.sin(gustT * 0.31)) + 0.2 * (0.5 + 0.5 * Math.sin(gustT * 0.83 + 1.7));       // a slow overall strength; the travelling fronts come from the noise field in gust()
   if (look) { const d = look.dome; E.skyT.value.setHex(d.top); E.skyM.value.setHex(d.mid); E.skyH.value.setHex(d.hor); E.skyG.value.setHex(d.gnd); E.cldL.value.setHex(d.cldL); E.cldS.value.setHex(d.cldS); E.cover.value = d.cover; E.sunOn.value = d.sun ? 1 : 0; E.skyMode.value = d.mode || 0; if (d.mist) E.mist.value.setHex(d.mist); if (d.glow) E.glow.value.setHex(d.glow); }
@@ -172,3 +173,4 @@ export function makeSky() {
     }` });
   const m = new T.Mesh(new T.SphereGeometry(500, 24, 12), mat); m.frustumCulled = false; m.renderOrder = 100; return m;       // the sky is drawn LAST among the opaque draws, at depth 1 with LEQUAL, so it only shades the pixels nothing else covered (spec 2.12 d)
 }
+

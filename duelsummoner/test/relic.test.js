@@ -1,7 +1,7 @@
-import test from 'node:test'; import assert from 'node:assert/strict';
+﻿import test from 'node:test'; import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js'; import { spawnEnemy } from '../src/sim/enemies.js'; import { RELIC } from '../src/sim/world.js';
 const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false };
-const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false }); g.god = true; return g; };
+const mk = seed => { const g = new Game(seed, { oldGen: true, mode: 'run', duelist: 'kael', offers: false }); g.god = true; return g; };
 const spot = g => g.world.relic && [g.world.relic.x, g.world.relic.z].join(',');
 
 test('relic: one per stage, on the same spot for the same seed, 45 to 130 m from the spawn', () => {
@@ -32,3 +32,4 @@ test('Coin Rite: while it lasts every kill drops a coin, worth double', () => {
   for (let i = 0; i < m.max; i++) if (m.alive[i] && m.kind[i] === 1) { coins++; val += m.val[i]; }
   assert.equal(coins, 20, 'a coin for every kill'); assert.ok(val >= 40, 'double value: ' + val);
 });
+

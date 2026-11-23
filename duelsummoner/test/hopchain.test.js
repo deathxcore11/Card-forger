@@ -1,10 +1,10 @@
-// Slide-jump (fix list part 5, movement flow 3, owner decision: real speed tech). Rules, all constants in tuning (K.hop*):
+﻿// Slide-jump (fix list part 5, movement flow 3, owner decision: real speed tech). Rules, all constants in tuning (K.hop*):
 // a slide hop (a jump within 6 ticks of landing with slide held, or out of a slide) keeps the horizontal speed and adds 8% of run speed per chained hop, up to 1.6x run speed;
 // a late hop resets the chain and gives nothing; a wall or a hit takes the bonus away (a hit takes half); a dash into a slide within 6 ticks of the dash's end starts at 1.25x.
 import test from 'node:test'; import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js'; import { heightAt } from '../src/sim/terrain.js'; import { hashHex } from '../src/sim/hash.js'; import { K } from '../src/data/tuning.js'; import { CFG } from '../src/data/config.js';
 const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false };
-const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false }); g.god = true; g.spawnAcc = -1e9; g.colliders = null; return g; };
+const mk = seed => { const g = new Game(seed, { oldGen: true, mode: 'run', duelist: 'kael', offers: false }); g.god = true; g.spawnAcc = -1e9; g.colliders = null; return g; };
 // a flat strip at least 400 m long along -z is not available, so the test runs along a long flat circle-free line and turns back when the strip ends: the player is simply put back at the start (speed kept)
 function strip(len) { for (let z0 = 150; z0 > -150; z0 -= 3) for (let x0 = -150; x0 < 150; x0 += 3) { let ok = true; for (let d = 0; d < len && ok; d++) { if (heightAt(x0, z0 - d) !== 0 || heightAt(x0 + 1.5, z0 - d) !== 0 || heightAt(x0 - 1.5, z0 - d) !== 0) ok = false; } if (ok) return [x0, z0]; } return null; }
 const speedOf = p => Math.sqrt(p.vx * p.vx + p.vz * p.vz);
@@ -64,3 +64,4 @@ test('slide-jump: a slide may reach 2.0x run speed on a downward slope; on the f
   const f = mk(10), at2 = strip(80), q = f.p; q.x = at2[0]; q.z = at2[1]; q.y = 0; q.grounded = true; f.step(1 / 60, idle); q.vx = 0; q.vz = -1.95 * R; q.sliding = true; q.slideSpeed = 1.95 * R;
   for (let i = 0; i < 20; i++) f.step(1 / 60, { ...idle, f: 1, slide: true }); assert.ok(q.slideSpeed <= 1.6 * R + 1e-6, 'on the flat it is back to 1.6x after 18 ticks: ' + (q.slideSpeed / R).toFixed(3));
 });
+

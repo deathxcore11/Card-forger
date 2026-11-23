@@ -1,4 +1,4 @@
-// The stage machine: a run is Stage 1, 2 and 3 (or one Quick Duel stage). Each stage has a clock, an elite and two timed bosses on a
+﻿// The stage machine: a run is Stage 1, 2 and 3 (or one Quick Duel stage). Each stage has a clock, an elite and two timed bosses on a
 // timeline, a gate that wakes, a gate boss, then a Descent Circle to the next stage (Stage 3: the Final Altar). Pure and deterministic.
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
 import { RUN } from '../data/waves.js';
@@ -30,7 +30,7 @@ export function xpScale(g) {
 // ---- setup ----
 // Generates this stage's map from the run seed and loads it as the live terrain; the duelist starts on its plaza.
 export function loadStageMap(g, i) {
-  g.map = generateStage(g.seed, i, g.stages[i].gen); loadMap(g.map); g.colliders = buildColliders(g.map, i); g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
+  g.map = generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.colliders = buildColliders(g.map, i); g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
   const p = g.p; p.x = g.map.spawn.x; p.z = g.map.spawn.z; p.y = heightAt(p.x, p.z); p.vx = p.vz = p.vy = 0; p.grounded = true;
 }
 export function initRun(g) {
@@ -319,6 +319,7 @@ function swapStage(g) {
   g.event('banner', 'Stage ' + (g.stage + 1) + ': ' + g.stageSpec.name + '. Seal Code ' + g.sealCode);
   g.emit('stage', g.stage + 1);
 }
+
 
 
 

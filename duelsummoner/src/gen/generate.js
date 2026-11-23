@@ -1,4 +1,4 @@
-// The stage generator. generateStage(seed, stageIndex, spec) -> StageMap. Pure and seeded: the same seed gives the same map everywhere.
+﻿// The stage generator. generateStage(seed, stageIndex, spec) -> StageMap. Pure and seeded: the same seed gives the same map everywhere.
 // Layout: the gate arena and the spawn plaza are placed far apart; three district kits and a handful of fillers fill the ground between;
 // then a validator checks the map (reachability with run and jump only, enemy coverage, boss rings, spawn space, economy) and a bounded
 // retry loop draws new attempts until one passes. After 8 failures the fixed Colosseum map is used (a fallback, flagged in the report).
@@ -9,6 +9,7 @@ import { CLASSIC_MAP } from '../data/maps.js';
 import { splitmix32, fnv1a32, rngFor, stageSeed, attemptSeed, sealCodeFrom, GEN_VERSION } from './seed.js';
 import { dist, r2 } from './imath.js';
 import { Kit } from './kit.js';
+import { stageMapV2 } from './v2/stagemap.js';
 import { KITS, DISTRICT_POOL, FILLER_POOL } from './kits.js';
 
 const HALF = 200, N = 400, BOUNDARY = 195, LAYOUT_R = 186;
@@ -278,6 +279,7 @@ function canon(m) {
 
 // seed: the run seed (32 bits). stage: 0, 1, 2. spec: optional overrides of DEFAULT_GEN.
 export function generateStage(seed, stage, spec) {
+  if (!(spec && spec.old)) { const v2 = stageMapV2(seed, stage); if (v2) return v2; }       // the designed generator (src/gen/v2); the old simple one below stays as the last resort and for stages the designed one cannot make
   const G = Object.assign({}, DEFAULT_GEN, spec || {}), lo = seed >>> 0, ss = stageSeed(lo, 0, stage), sealCode = sealCodeFrom(lo, 0), fails = [];
   // attempts 0-7 use the full thresholds; 8-15 relax them step by step but still generate a map (it never falls back to the fixed one)
   const relaxed = Object.assign({}, G, { minFillers: 0, minPlats: 1, ringCover: 0.7, groundCover: 0.8, spine: [90, 800], gateSepMin: 110, spawnAnnulus: 0.3, minCounts: { cchest: 3, stone: 1, broker: 1, shrine: 1, altar: 1 } });
@@ -299,3 +301,5 @@ export function analyze(map) {
   return { grid, ed: bfsEnemy(grid, si, sj), pd: bfsPlayer(grid, si, sj), ci, idx, N };
 }
 export { WALL };
+
+

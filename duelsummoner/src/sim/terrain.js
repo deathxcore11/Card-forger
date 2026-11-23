@@ -1,4 +1,4 @@
-// Collision heightfield: the map primitives rasterised at 1 m. heightAt(x,z) is the standing height there.
+﻿// Collision heightfield: the map primitives rasterised at 1 m. heightAt(x,z) is the standing height there.
 import { MAP, PRIMS } from '../data/map.js';
 
 import { rasterizeInto, primHeight, WALL } from './raster.js';
@@ -9,7 +9,10 @@ const grid = new Float32Array(N * N), SLX = new Float32Array(N * N), SLZ = new F
 let currentKey = '';
 
 // Loads a map's primitives into the collision grid. The live terrain is one global: the sim checks mapKey() each tick and reloads if needed.
-export function loadMap(map) { rasterizeInto(grid, N, HALF, map.prims, MAP.boundaryR, SL); currentKey = map.key; }
+export function loadMap(map) {
+  if (map.heights) { grid.set(map.heights); SLX.fill(0); SLZ.fill(0); PB.fill(0); LO.fill(0); HI.fill(0); currentKey = map.key; return; }       // a designed (v2) map is already a heightfield: 1 m cells, no ramp slopes inside a cell
+  rasterizeInto(grid, N, HALF, map.prims, MAP.boundaryR, SL); currentKey = map.key;
+}
 export const mapKey = () => currentKey;
 loadMap({ key: 'classic', prims: PRIMS });
 
@@ -56,3 +59,5 @@ export function moveXZ(o, dx, dz, radius, stepUp) {
   }
   return blocked;
 }
+
+

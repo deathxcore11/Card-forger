@@ -1,10 +1,10 @@
-// Movement flow step 1 (fix list part 5): ramps. The duelist must not pop up a ramp in 0.5 m steps, every body from 0.7 m to 2.2 m radius must be able to climb every ramp it fits on,
+﻿// Movement flow step 1 (fix list part 5): ramps. The duelist must not pop up a ramp in 0.5 m steps, every body from 0.7 m to 2.2 m radius must be able to climb every ramp it fits on,
 // and an uphill dash must still go the full 4 m. Plus the pinned jump distances, so nothing here moves a jump by accident.
 import test from 'node:test'; import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js'; import { heightAt } from '../src/sim/terrain.js'; import { CFG } from '../src/data/config.js'; import { walk, settle } from '../src/sim/steer.js';
 const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false };
 const YAW = { '+x': -Math.PI / 2, '-x': Math.PI / 2, '+z': Math.PI, '-z': 0 };
-const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false }); g.god = true; g.spawnAcc = -1e9; g.colliders = null; return g; };
+const mk = seed => { const g = new Game(seed, { oldGen: true, mode: 'run', duelist: 'kael', offers: false }); g.god = true; g.spawnAcc = -1e9; g.colliders = null; return g; };
 
 // every ramp of a map that has clean flat ground for 6 m before its foot, described by where it starts, which way is up, and its slope
 function ramps(g) {
@@ -76,3 +76,4 @@ test('magnet curve: a drop 5 m away is collected 0.25 to 0.50 s after its hop (0
   const a = arrive(4.8, 0); assert.ok(a.started >= 0.27, 'it starts moving at ' + a.started + ' s, not before 0.28'); const flight = a.t - a.started; assert.ok(flight > 0.25 && flight < 0.50, 'arrives ' + flight + ' s after it starts');
   const b = arrive(4.8, 11); assert.ok(b.t < 2.5, 'a drop still catches a duelist running at 11 m/s: ' + b.t);
 });
+
