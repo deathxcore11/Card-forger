@@ -14,6 +14,7 @@ import { LAB_DEFAULTS, LAB_ORDER, DEPTH_SET, labConfig } from './labs.mjs';
 import { aimFor } from './aim.mjs';
 import { F, fitConsole, yb, xr, cx0, cy0, viewSize, ledgeW, pq, lb, lbr, box, gauge, frame, win, carveImg, carve } from './ps.mjs';
 import * as R3 from './raster.mjs';
+import { pixelText } from './pxtext.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
 import './sound.mjs';
 import { runFault, okProfile } from './saves.mjs'; // sets window.LMAudio; the cue() hook below is all the page knows about sound
@@ -281,7 +282,7 @@ const FIT = { k: 1, h: 900 };
 // It is used when the wide stage would be shrunk below 0.72 (a window under 1152 px wide) on a screen at least 1.6 wide to 1 tall.
 const PHONE_W = 1440, PHONE_MIN = 640, PHONE_MAX = 900;
 function fit() {
-  if (app.classList.contains('ps')) { const c = fitConsole(app); FIT.k = c.k; FIT.phone = false; const n = document.getElementById('turn'); if (n) n.remove(); if (c.changed) render(); return; } // a new frame size: the screen is laid out again
+  if (app.classList.contains('ps')) { const c = fitConsole(app); FIT.k = c.k; FIT.phone = false; const n = document.getElementById('turn'); if (n) n.remove(); if (c.changed) { if (booting) bootScreen(); else render(); } return; } // a new frame size: the screen is laid out again
   const vw = innerWidth, vh = innerHeight;
   const phone = vw > vh && vw / 1600 < 0.72 && vw / vh >= 1.6;
   app.classList.toggle('phone', phone); FIT.phone = phone;
@@ -732,19 +733,28 @@ function loadPack(show) {
     } catch (e) { /* the pictures are then asked for one by one, each by its own file */ } finally { clearTimeout(idle); packDone = true; }
   })());
 }
-// The wait, drawn the way a game of the day drew its own: black, and two words. It lies over the page, outside the
-// frame (the page is scaled), and over the old look's turn-your-phone note.
+// The wait, drawn the way a game of the day drew its own: black, the turning crest and two words. It is a screen of the
+// frame like any other, so it has the frame's whole pixels and turns with it on a phone held upright; every part is
+// placed at a whole frame pixel (the word in the label face at twice its size, the coin at its own size).
 function bootScreen(p) {
   let b = document.getElementById('boot');
-  if (!b) { b = document.createElement('div'); b.id = 'boot'; document.body.appendChild(b); app.innerHTML = '';
-    const k = Math.max(1, Math.floor(Math.min(innerWidth, innerHeight) / 200)); // the coin at a whole number of screen pixels to each of its own
-    b.innerHTML = `<canvas id="bootcoin" width="64" height="64" style="width:${64 * k}px;height:${64 * k}px"></canvas><b>NOW LOADING</b><i></i>`; coinLoop(); }
-  b.querySelector('i').textContent = p == null ? '' : p + '%';
+  if (!b || !app.contains(b)) {
+    app.classList.add('ps'); app.classList.remove('phone', 'era'); document.body.classList.add('ps'); fitConsole(app);
+    { const n = document.getElementById('turn'); if (n) n.remove(); } // the old look's turn-your-phone note: the frame turns by itself
+    app.innerHTML = '<div id="boot" class="ab"><canvas id="bootcoin" class="ab" width="64" height="64"></canvas><i class="ab bw"></i><b class="ab lb bpc"></b></div>';
+    b = document.getElementById('boot'); coinLoop(); pixelText(); // the body face struck on whole pixels while the pictures load
+  }
+  { const w = b.querySelector('.bw'), c = carve('NOW LOADING', 16, () => { if (booting) bootScreen(); }); if (c && w.dataset.f !== c.url) { w.dataset.f = c.url; w.innerHTML = `<img src="${c.url}" width="${c.w}" height="${c.h}" alt="NOW LOADING">`; } } // carved in the capitals of the book headings, once their face is in
+  if (p !== undefined) bootScreen.p = p; p = bootScreen.p; // a new frame size lays out the last share again
+  const { W, H } = F, top = (H - 98) >> 1, w = b.querySelector('.bw'), q = b.querySelector('.bpc');
+  Object.assign(b.querySelector('canvas').style, { left: ((W - 64) >> 1) + 'px', top: top + 'px' });
+  q.textContent = p == null ? '' : p + '%'; // each word centred from its own width, so it starts on a whole pixel
+  w.style.left = ((W - w.offsetWidth) >> 1) + 'px'; w.style.top = top + 70 + 'px'; q.style.left = ((W - q.offsetWidth) >> 1) + 'px'; q.style.top = top + 92 + 'px';
 }
 // ---- the crest as a struck coin that turns: on the loading screen, and beside the lit choice on the title as its
 // cursor. A 12-sided disc with a rim, the crest on both faces, drawn by the same renderer as the table. The crest
 // picture comes inside the page (D.cart.crest), so it turns before the picture pack has arrived.
-const COIN = { tex: null, asked: false };
+const COIN = { tex: null, asked: false, small: null };
 function coinTex() {
   if (COIN.asked || !(D.cart && D.cart.crest)) return COIN.tex; COIN.asked = true;
   const im = new Image(); im.onload = () => { try {
@@ -755,11 +765,25 @@ function coinTex() {
     x.drawImage(im, 8, 8, 48, 48); COIN.tex = R3.crunch(R3.texFrom(c, 64, 64)); } catch { /* a plain disc then */ } };
   im.src = D.cart.crest; return null;
 }
+// The cursor coin on the title is 16 pixels: the crest's wreath would be a smudge there, so its faces are struck plainer, a
+// bright rim round a dark field and the hammer in the middle, which read at that size as the crest does on the large coin.
+function coinTexSmall() {
+  if (COIN.small) return COIN.small;
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+    x.fillStyle = '#f0cc70'; x.beginPath(); x.arc(32, 32, 32, 0, Math.PI * 2); x.fill(); // the rim, bright gold
+    x.fillStyle = '#4a2a12'; x.beginPath(); x.arc(32, 32, 22, 0, Math.PI * 2); x.fill(); // the field, dark bronze
+    x.fillStyle = '#ffe8a8'; x.fillRect(18, 18, 28, 10); x.fillRect(28, 28, 8, 20); // the hammer: head and handle
+    COIN.small = R3.crunch(R3.texFrom(c, 64, 64));
+  } catch { COIN.small = null; }
+  return COIN.small;
+}
 function paintCoin(cv, a) {
   const w = cv.width, h = cv.height, view = R3.makeView(cv, w, h); view.px.fill(0);
-  const R = 100, T = 16, N = 12, ca = Math.cos(a), sa = Math.sin(a), t = coinTex();
+  const R = 100, T = 16, N = 12, ca = Math.cos(a), sa = Math.sin(a), t = w <= 24 ? coinTexSmall() : coinTex();
   const P = (x, y, z) => [x * ca + z * sa, y, -x * sa + z * ca], ring = i => { const q = i / N * Math.PI * 2; return [Math.cos(q) * R, Math.sin(q) * R]; };
-  const L = [-.4, .5, .77], lit = n => { const m = P(...n); return .5 + .65 * Math.max(0, m[0] * L[0] + m[1] * L[1] + m[2] * L[2]); };
+  const lo = w <= 24 ? .8 : .5; // the small coin is lit more evenly, so its rim stays bright beside the plaques as it turns
+  const L = [-.4, .5, .77], lit = n => { const m = P(...n); return lo + (1.15 - lo) * Math.max(0, m[0] * L[0] + m[1] * L[1] + m[2] * L[2]); };
   const uv = (x, y) => [(.5 + .5 * x / R) * 63, (.5 - .5 * y / R) * 63];
   for (let i = 0; i < N; i++) { const [x0, y0] = ring(i), [x1, y1] = ring(i + 1);
     const face = (z, back) => { const pts = back ? [[0, 0], [x1, y1], [x0, y0], [0, 0]] : [[0, 0], [x0, y0], [x1, y1], [0, 0]];
@@ -855,21 +879,55 @@ function titleLife(ox, oy) {
   const part = (cls, at, pin, more = '') => `<i class="${cls}" data-art="title" data-at="${at}" data-pin="${pin}" style="left:${ox + at[0] - pin[0]}px;top:${oy + at[1] - pin[1]}px;${more}"></i>`;
   return (D.cart.torches || []).map(([x, y, w, h, n], i) => CART.has(`torch-${i + 1}`) ? part('flm', [x, y], [0, 0], `width:${w}px;height:${h}px;background-image:url(${cimg(`torch-${i + 1}`)});--to:-${w * n}px;animation-timing-function:steps(${n});animation-delay:-${(i * .45).toFixed(2)}s" data-frames="${n}`) : '').join('');
 }
+// The title's right-hand column (the logo, its line, the menu with the turning crest beside it, the saved run) and the
+// picture behind it are laid out together, so that nothing of the column ever lies over a torch (each torch keeps a
+// two-pixel margin). The picture stands centred if it can; else it is moved, never so far that the left torch leaves the
+// frame; then the menu steps down below the right torch's foot, its line moves under the logo's right end, and the
+// plaques close up to two pixels apart. The cheapest arrangement that is clear wins. The saved run lies under the menu,
+// lined up with it, or, on a frame too short, beside its foot, clear of the crest's column.
+const TITLE_SUB = 'BENEATH ASTERHOLD', SLOT_H = 45;
+function titleLayout(W, H, items, has) {
+  const T = (D.cart && D.cart.title === 720 && D.cart.torches) || [], key = [W, H, items, has, T.length].join(); if (titleLayout.key === key) return titleLayout.v;
+  const dy = cy0(), cx = (W - 720) >> 1, cy = (H - 480) >> 1, mx = W - 148;
+  const hit = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
+  const xs = T.map(t => t[0]), xe = T.map(t => t[0] + t[2]), ys = T.map(t => t[1]), ye = T.map(t => t[1] + t[3]);
+  const oxLo = T.length ? Math.max(W - 720, 2 - Math.min(...xs)) : cx, oxHi = T.length ? Math.min(0, W - 2 - Math.max(...xe)) : cx;
+  const oyLo = T.length ? Math.max(H - 480, 2 - Math.min(...ys)) : cy, oyHi = T.length ? Math.min(0, H - 12 - Math.max(...ye)) : cy; // the foot line stays clear too
+  const subW = TITLE_SUB.length * 6;
+  let best = null;
+  for (const pitch of [20, 18]) for (const subR of [false, true]) for (const below of [false, true]) for (let oy = oyLo; oy <= oyHi; oy++) {
+    const mt = below ? Math.max(dy + 78, oy + Math.max(...ye, 0) + 3) : dy + 78, mh = items * pitch - (pitch - 16), mb = mt + mh;
+    if (mb > H - 4) continue;
+    const low = mb + 4 + SLOT_H <= H - 2, slot = has ? (low ? [mx, mb + 4, 136, SLOT_H] : [mx - 22 - 136, mb - SLOT_H, 136, SLOT_H]) : null;
+    const R = [[W - 160, dy + 6, 160, 60], [subR ? W - 8 - subW : W - 154, dy + 66, subW, 8], [mx - 19, mt, 155, mh]].concat(slot ? [slot] : []);
+    const cost0 = Math.abs(oy - cy) + (pitch === 18 ? 40 : 0) + (below ? 20 : 0) + (subR ? 10 : 0);
+    if (best && cost0 >= best.cost) continue;
+    for (let ox = oxLo; ox <= oxHi; ox++) {
+      const cost = cost0 + Math.abs(ox - cx); if (best && cost >= best.cost) continue;
+      if (T.some(([x, y, w, h]) => R.some(r => hit(r, [ox + x - 2, oy + y - 2, w + 4, h + 4])))) continue;
+      best = { cost, ox, oy, mx, mt, pitch, subX: R[1][0], slot, low };
+    }
+  }
+  if (!best) best = { cost: 0, ox: cx, oy: cy, mx, mt: dy + 78, pitch: 20, subX: W - 154, slot: has ? [W - 306, dy + 78 + items * 20 - 4 - SLOT_H, 136, SLOT_H] : null }; // no torches, or no room: the old place
+  titleLayout.key = key; titleLayout.v = best; return best;
+}
 function psHome() {
   const saved = liveSave(), has = saved && saved.phase !== 'over';
   const { W, H } = F, dy = cy0();
-  // The title picture is 720 x 480 (the whole painting at 15/32 of its size); the frame shows its middle. The older
-  // cut, 512 x 240, is the middle band at a third of the size, and gets no moving parts.
-  let pic = box(0, 0, W, H, 'st dk'), life = '';
-  if (CART.has('key-title') && D.cart && D.cart.title === 720) { const ox = (W - 720) >> 1, oy = (H - 480) >> 1; pic = `<img class="bg" data-pic="title" src="${cimg('key-title')}" width="720" height="480" style="left:${ox}px;top:${oy}px;width:720px;height:480px" alt="">`; life = titleLife(ox, oy); }
-  else if (CART.has('key-title')) { const ox = (W - 512) >> 1, oy = (H - 240) >> 1; pic = `<img class="bg" src="${cimg('key-title')}" width="512" height="240" style="left:${ox}px;top:${oy}px;width:512px;height:240px" alt="">`; }
   const items = [has && ['CONTINUE', 'resume'], ['NEW DESCENT', 'new'], [`CODEX ${G.known.size}`, 'screen:codex'], [`FEATS ${(P.featsDone || []).length}/${featList(!!labs.long).length}`, 'screen:feats'], [`MEMORY VAULT ${P.memories}`, 'screen:vault'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options']].filter(Boolean);
-  const mx = W - 148, menu = items.map(([t, a], i) => pq(mx, dy + 78 + i * 20, 136, t, a, { lit: i === 0 })).join('') + (coinTex() || (D.cart && D.cart.crest) ? `<canvas id="coin" class="ab" width="16" height="16" style="left:${mx - 19}px;top:${dy + 78}px;pointer-events:none"></canvas>` : ''); // the turning crest marks the lit choice
-  const sy = dy + 82 + items.length * 20, low = sy + 46 <= H - 2; // the saved run under the menu, or beside it when the frame is too short
-  const slot = has ? `<div class="wn runslot" style="left:${low ? W - 160 : W - 316}px;top:${low ? sy : dy + 78 + items.length * 20 - 46}px">${lb(0, 0, '', '')}<b class="lb g">${esc(saved.forger ? shortName(FORGERS[saved.forger].name) : 'NO FORGER')}</b><br><b class="lb">FLOOR ${saved.floor + 1} · CHAMBER ${Math.min(6, saved.chamber + 1)}</b><br><b class="lb">SPARKS ${saved.sparks} · EMBERS ${saved.embers}</b></div>` : '';
+  const L = titleLayout(W, H, items.length, !!has), { mx, mt, pitch } = L;
+  // The title picture is 720 x 480 (the whole painting at 15/32 of its size); the frame shows the part titleLayout
+  // chose. The older cut, 512 x 240, is the middle band at a third of the size, and gets no moving parts.
+  let pic = box(0, 0, W, H, 'st dk'), life = '';
+  if (CART.has('key-title') && D.cart && D.cart.title === 720) { const { ox, oy } = L; pic = `<img class="bg" data-pic="title" src="${cimg('key-title')}" width="720" height="480" style="left:${ox}px;top:${oy}px;width:720px;height:480px" alt="">`; life = titleLife(ox, oy); }
+  else if (CART.has('key-title')) { const ox = (W - 512) >> 1, oy = (H - 240) >> 1; pic = `<img class="bg" src="${cimg('key-title')}" width="512" height="240" style="left:${ox}px;top:${oy}px;width:512px;height:240px" alt="">`; }
+  if (render.scr !== 'home') G.tcur = 0; // the hammer starts on the first choice; while the title stays, it stays where the mouse or the keys put it
+  const cur = Math.max(0, Math.min(items.length - 1, G.tcur || 0));
+  const menu = items.map(([t, a], i) => pq(mx, mt + i * pitch, 136, t, a, { lit: i === cur, cls: 'tm' })).join('') + (coinTex() || (D.cart && D.cart.crest) ? `<canvas id="coin" class="ab" width="16" height="16" style="left:${mx - 19}px;top:${mt + cur * pitch}px;pointer-events:none"></canvas>` : ''); // the turning crest marks the lit choice
+  const slot = has && L.slot ? `<div class="wn runslot" style="left:${L.slot[0]}px;top:${L.slot[1]}px;width:${L.slot[2]}px;height:${L.slot[3]}px">${lb(6, 6, saved.forger ? shortName(FORGERS[saved.forger].name) : 'NO FORGER', 'g')}${lb(6, 18, `FLOOR ${saved.floor + 1} · CHAMBER ${Math.min(6, saved.chamber + 1)}`)}${lb(6, 30, `SPARKS ${saved.sparks}`)}${lbr(L.slot[2] - 6, 30, `EMBERS ${saved.embers}`)}</div>` : '';
   return `<div class="ti">${pic}${life}
     ${CART.has('key-logo') && D.cart.logo ? `<img class="ab" src="${cimg('key-logo')}" width="${D.cart.logo[0]}" height="${D.cart.logo[1]}" style="left:${W - 152}px;top:${dy + 6}px" alt="Lost Memories">` : `<div class="ab" style="left:${W - 160}px;top:${dy + 8}px;width:160px;display:flex;flex-direction:column;align-items:center;gap:0">${carveImg('LOST', 22, render)}${carveImg('MEMORIES', 22, render)}</div>`}
-    ${lb(W - 154, dy + 66, 'BENEATH ASTERHOLD', 'd')}${menu}${slot}
+    ${lb(L.subX, dy + 66, TITLE_SUB, 'd')}${menu}${slot}
     ${G.notice ? `<div class="wn" style="position:absolute;left:8px;top:8px;width:200px;padding:5px 6px">${esc(G.notice)}</div>` : ''}
     ${lb(8, H - 10, 'A CARDSTASHY GAME · FREE, NOT FOR SALE', 'd')}</div>`;
 }
@@ -1368,14 +1426,18 @@ function psOmen() {
 }
 
 // ---- the books: the run's end, the Codex, Feats, the Memory Vault
-// One window over the title picture, its heading carved, its pages in a box that scrolls, its plaques along the foot.
+// The book stands in the reading room: the room is shown whole and undimmed, and the book's window, 416 pixels wide at
+// the most, stands in its middle, so the near shelves frame it on both sides (at 512 pixels wide only their inner edge
+// shows). Its heading is carved, its pages scroll in a box, its plaques lie along its foot.
 function psBook(title, body, foot, extra = '') {
-  const { W, H } = F, bgPic = CART.has('room-archive-book') ? 'room-archive-book' : 'key-title', bg = CART.has(bgPic) && D.cart && D.cart.title === 720 ? `<img class="bg" src="${cimg(bgPic)}" style="position:absolute;left:${(W - 720) >> 1}px;top:${(H - 480) >> 1}px" alt="">` : box(0, 0, W, H, 'st dk');
-  return `<div class="ti">${bg}<i class="dim0"></i><div class="wn book" style="left:8px;top:6px;width:${W - 16}px;height:${H - 12}px"><div class="ab" style="left:0;top:4px;width:${W - 16}px;display:flex;justify-content:center">${carveImg(title, 16, render)}</div>
-    <div class="ab sc" style="left:8px;top:26px;width:${W - 32}px;height:${H - 62}px">${body}</div><div class="ab" style="left:8px;top:${H - 32}px;width:${W - 32}px;height:16px">${foot}</div></div>${extra}</div>`;
+  const { W, H } = F, bw = Math.min(W - 16, 416), bx = (W - bw) >> 1, bgPic = CART.has('room-archive-book') ? 'room-archive-book' : 'key-title';
+  const bg = CART.has(bgPic) && D.cart && D.cart.title === 720 ? `<img class="bg" src="${cimg(bgPic)}" width="720" height="480" style="position:absolute;left:${(W - 720) >> 1}px;top:${(H - 480) >> 1}px" alt="">` : box(0, 0, W, H, 'st dk');
+  const c = carve(title, 16, render), head = c ? `<img class="ab" src="${c.url}" width="${c.w}" height="${c.h}" style="left:${(bw - c.w) >> 1}px;top:4px" alt="${esc(title)}">` : `<b class="ab lb g" style="left:8px;top:8px">${esc(title)}</b>`; // placed from its own width, so it starts on a whole pixel
+  return `<div class="ti">${bg}<div class="wn book" style="left:${bx}px;top:6px;width:${bw}px;height:${H - 12}px">${head}
+    <div class="ab sc" style="left:8px;top:26px;width:${bw - 16}px;height:${H - 66}px">${body}</div><div class="ab" style="left:8px;top:${H - 32}px;width:${bw - 16}px;height:16px">${foot}</div></div>${extra}</div>`;
 }
 const row = (pic, head, text, side = '') => `<div class="brow">${pic ? `<div class="bp">${pic}</div>` : ''}<div class="bt"><b class="lb g">${head}</b><p>${text}</p></div>${side ? `<div class="bs">${side}</div>` : ''}</div>`;
-const inl = (label, a, o = {}) => `<button class="pq in${o.lit ? ' lit' : ''}" ${a ? `data-a="${esc(a)}"` : ''}${o.off ? ' disabled' : ''}>${esc(label)}</button>`; // a plaque that sits in a line
+const inl = (label, a, o = {}) => `<button class="pq in${o.lit ? ' lit' : ''}${o.on ? ' on' : ''}" ${a ? `data-a="${esc(a)}"` : ''}${o.off ? ' disabled' : ''}>${esc(label)}</button>`; // a plaque that sits in a line
 const meter = (n, goal, gain = 0) => `<i class="ga in" style="width:120px"><i style="width:${Math.round(118 * Math.min(1, n / goal))}px"></i>${gain ? `<u style="left:${Math.round(118 * Math.min(1, (n - gain) / goal))}px;width:${Math.round(118 * Math.min(1, gain / goal))}px"></u>` : ''}</i>`;
 const featPs = f => row('', `${esc(f.name.toUpperCase())} <span class="d">${esc(f.build.toUpperCase())}</span>`, `${esc(f.text)}`, `${meter(f.after, f.goal, f.after - f.before)}<b class="lb">${f.done ? 'COMPLETE' : `${f.after} / ${f.goal}`}${f.gain && !f.done ? ` (+${f.gain})` : ''}</b>`);
 function psOver() {
@@ -1384,7 +1446,7 @@ function psOver() {
   const unl = R ? R.unlocks.filter(u => u.kind !== 'heat' || u.id <= heatTop()).map(u => u.kind === 'heat' && labs.heat ? { ...u, name: `Heat ${u.id}, ${HEAT_RULES[u.id - 1].name}`, text: HEAT_RULES[u.id - 1].text + ' It pays more Memories.' } : u)
     .map(u => u.kind === 'gift' ? row(medal(u.id, 32), `NEW GIFT: ${esc(u.name.toUpperCase())}`, `${esc(RELICS[u.id].text)} ${esc(u.why)} It will be in the first Gift offer of your next run.`) : row('', `${u.kind === 'record' ? 'NEW RECORD' : 'UNLOCKED'}: ${esc(String(u.name).toUpperCase())}`, esc(u.text))).join('') : '';
   const tally = `<p>Floor ${r.floor + 1}, chamber ${Math.min(6, r.chamber + 1)}. ${esc(r.forger ? FORGERS[r.forger].name : 'No Forger')}. Duels won ${S.wins} of ${S.duels}. Guardians beaten ${S.bossWins}. Melds ${S.melds}.${Object.keys(S.ranks).length ? ' Ranks ' + Object.entries(S.ranks).map(([k, v]) => k + ' x' + v).join(', ') + '.' : ''}</p>`;
-  const mem = R ? `<p>${R.lines.map(l => `${esc(l[0])} +${l[1]}`).join('. ')}.</p><p><b class="lb g">+${R.total} MEMORIES</b></p>` : '<p class="d">Already banked.</p>';
+  const mem = R ? `${R.lines.length ? `<p>${R.lines.map(l => `${esc(l[0])} +${l[1]}`).join('. ')}.</p>` : ''}<p><b class="lb g">+${R.total} MEMORIES</b></p>` : '<p class="d">Already banked.</p>';
   const feats = R && R.feats.length ? `<p><b class="lb g">FEATS</b></p>${R.feats.map(featPs).join('')}<p class="d">Feats count across runs, win or lose.</p>` : '';
   return psBook(head, unl + tally + mem + feats, inl('NEW RUN', 'new', { lit: true }) + inl('CODEX', 'screen:codex') + inl('FEATS', 'screen:feats') + inl(`VAULT ${P.memories}`, 'screen:vault') + inl('TITLE', 'home'));
 }
@@ -1396,7 +1458,7 @@ function psFeats() {
 }
 const plainKits = () => FORGER_IDS.concat(HIDDEN_FORGERS).filter(id => P.forgers.includes(id)).map(id => FORGERS[id].kits.map((k, i) => { if (!i) return ''; const w = forgerStats(P, id).wins, g = KIT_GOALS[i], n = Math.min(w, g); return row('', `${esc(k.name.toUpperCase())} <span class="d">${esc(FORGERS[id].name.toUpperCase())}</span>`, `Win ${g} duels as ${esc(FORGERS[id].name)}.`, `${meter(n, g)}<b class="lb">${w >= g ? 'OPEN' : n + ' / ' + g}</b>`); }).join('')).join('');
 function psVault() {
-  const tiles = VAULT.map(v => { const own = P.bought.includes(v.id), rr = RELICS[v.id]; return row(medal(v.id, 32), `${esc(rr.name.toUpperCase())} <span class="d">${rr.kind === 'M' ? 'MASTERWORK' : 'CHARM'}</span>`, esc(rr.text), inl(own ? 'OWNED' : `${v.price} MEMORIES`, `vbuy:${v.id}`, { off: own || P.memories < v.price, lit: !own && P.memories >= v.price })); }).join('');
+  const tiles = VAULT.map(v => { const own = P.bought.includes(v.id), rr = RELICS[v.id]; return row(medal(v.id, 32), `${esc(rr.name.toUpperCase())} <span class="d">${rr.kind === 'M' ? 'MASTERWORK' : 'CHARM'}</span>`, esc(rr.text), inl(own ? 'OWNED' : `${v.price} MEMORIES`, `vbuy:${v.id}`, { off: own || P.memories < v.price })); }).join('');
   const ench = labs.long ? `<p><b class="lb g">ENCHANTS</b></p><p class="d">An Anvil offers three Enchants from the ones you hold. Six are yours from the start: ${START6}.</p>${VAULT_ENCHANTS.map(v => { const own = P.bought.includes(v.key); return row('', esc(v.id.toUpperCase()), esc(ENCHANT_TEXT[v.id]), inl(own ? 'OWNED' : `${v.price} MEMORIES`, `vbuy:${v.key}`, { off: own || P.memories < v.price })); }).join('')}` : '';
   return psBook(`MEMORY VAULT  ${P.memories}`, `<p>Spend Memories to widen what a run can offer. Nothing here makes you stronger at the start.</p>${tiles}${ench}`, inl('BACK', 'home', { lit: true }));
 }
@@ -1406,7 +1468,7 @@ function psCodex() {
   const total = list.length; list = list.slice(0, 120);
   const byType = t => X.list.filter(R => card(R.id).type === t);
   const tiles = list.map(R => found.has(R.id) ? psCard({ id: R.id }, null, null, { attrs: `data-a="cxopen:${R.id}"`, badge: found.get(R.id).length }) : `<button class="cd unk" style="position:relative" data-a="cxopen:${R.id}" aria-label="Not found yet"><i class="n1">?</i></button>`).join('');
-  const filt = inl('FOUND', 'cxview:found', { lit: v.view === 'found' }) + inl('ALL', 'cxview:all', { lit: v.view === 'all' }) + X.types.map(t => inl(`${t} ${byType(t).filter(R => found.has(R.id)).length}/${byType(t).length}`, `cxtype:${t}`, { lit: v.type === t })).join('');
+  const filt = inl('FOUND', 'cxview:found', { on: v.view === 'found' }) + inl('ALL', 'cxview:all', { on: v.view === 'all' }) + X.types.map(t => inl(`${t} ${byType(t).filter(R => found.has(R.id)).length}/${byType(t).length}`, `cxtype:${t}`, { on: v.type === t })).join('');
   const heard = BOSSES.flat().filter(b => P.seen.includes('memory:' + b.id));
   const rum = rumours() ? `<p><b class="lb g">RUMOURS · ${heard.length} OF ${BOSSES.flat().length} MEMORIES HEARD</b></p>${heard.map(b => `<p><b class="lb">${esc(b.name.toUpperCase())}</b> ${esc(SCENES['memory:' + b.id].lines[0])}</p>`).join('') || '<p class="d">Nothing yet. A guardian remembers something as it falls.</p>'}` : '';
   const body = `<p>${found.size} of ${X.list.length} results found, ${G.known.size} recipes written. A page you have found shows why the meld works, so you can make it again from other cards.</p>${rum}<div class="row2" style="margin:4px 0">${filt}</div><div class="row2">${tiles || '<p class="d">Nothing here yet. Meld two monsters in a duel to write the first page.</p>'}</div>${total > 120 ? `<p class="d">Showing 120 of ${total}. Pick a Type to narrow it.</p>` : ''}<p><b class="lb g">RECORD</b></p><p>Runs ${P.runs}. Clears ${P.clears}. Duels won ${P.duelWins}. Guardians beaten ${P.bossWins}. Memories earned ${P.earned}.</p>`;
@@ -1467,27 +1529,31 @@ function psWindows() {
     if (o.kind === 'duelEnd') { const s = o.sum; return win(136, 16, 240, 208, `<div style="display:flex;justify-content:center;margin:2px 0 6px">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><p>${esc(o.rival ? o.rival.name : '')}, ${s.turns} turns${s.reason === 'deckout' ? ', a deck ran out' : ''}.</p>${s.won ? `<p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b></p><p>Embers +${s.embers}${s.bountyMet ? '. Bounty met.' : '.'}</p>` : `<p>You lose a Spark. ${G.run.sparks} left.</p>${(o.why || []).slice(0, 2).map(l => `<p class="d">${esc(l)}</p>`).join('')}`}${pq(76, 184, 88, 'CONTINUE', 'closeov', { lit: true })}`); }
     if (o.kind === 'leave') { const run = o.saved || G.run, w = worth(run), S = run.stats;
       return win(96, 24, 320, 192, `<h2>${o.saved ? 'You have a run in progress' : 'Leave the pyramid?'}</h2><p>${o.saved ? `${esc(run.forger ? FORGERS[run.forger].name : 'No Forger')}, Floor ${run.floor + 1}, Chamber ${Math.min(6, run.chamber + 1)}. Starting a new run ends that one.` : 'Leaving ends this run as a loss.'}</p><p>You keep ${w.total} Memories, ${S.wins} duel${S.wins === 1 ? '' : 's'} won and your feat progress.</p>${o.saved ? pq(8, 166, 96, 'CONTINUE IT', 'resume', { lit: true }) + pq(110, 166, 96, 'BANK IT, NEW', 'bankold') + pq(212, 166, 96, 'BACK', 'closeov') : pq(8, 166, 140, 'KEEP PLAYING', 'closeov', { lit: true }) + pq(160, 166, 148, 'LEAVE AND BANK IT', 'abandon')}`); }
-    if (o.kind === 'heat') return win(96, 8, 320, 224, `<h2>Heat ${o.n}</h2><div class="sc" style="height:176px">${HEAT_RULES.filter(x => x.n <= o.n).map(x => `<p><b class="lb g">${x.n}. ${esc(x.name)}</b><br>${esc(x.text)}</p>`).join('')}</div>${pq(220, 196, 88, 'CLOSE', 'closeov', { lit: true })}`);
+    if (o.kind === 'heat') return win(96, 8, 320, 224, `<h2>Heat ${o.n}</h2><div class="sc" style="height:168px">${HEAT_RULES.filter(x => x.n <= o.n).map(x => `<p><b class="lb g">${x.n}. ${esc(x.name)}</b><br>${esc(x.text)}</p>`).join('')}</div>${pq(220, 196, 88, 'CLOSE', 'closeov', { lit: true })}`);
     if (o.kind === 'moved') return win(96, 40, 320, 160, `<h2>This run moved on</h2><p>The run was ended or carried on in another tab or window. Nothing was changed from here.</p>${pq(160, 130, 148, 'BACK TO THE START', 'leavetab', { lit: true })}`);
   }
   if (G.inspect) { const c = card(G.inspect.id), mon = db.isMonster(c.id); convertSheets(96);
     return `<div class="dim" data-a="closeinspect"></div><div class="wn mw" data-a="closeinspect" style="left:${72 + cx0()}px;top:${16 + cy0()}px;width:368px;height:208px"><div class="big" style="left:8px;top:8px"><i class="art" style="${cpic(c.id, 96)}"></i>${mon ? `<b class="n1">${G.inspect.ea ?? c.atk} / ${G.inspect.ed ?? c.def}</b>` : ''}<b class="n2">${mon ? esc(`${c.attr} · LV ${c.level}`) : esc(roleOf(db, c.id).toUpperCase())}</b></div>
       <div class="ab sc" style="left:122px;top:8px;width:238px;height:170px"><h2>${esc(c.name)}</h2>${mon ? `<p class="d">${esc(c.type)}. Printed ${c.atk} / ${c.def}.</p>` : ''}<p>${esc(rulesText(c.id))}</p>${G.inspect.e ? `<p>${CART.has('enchant-' + G.inspect.e + '-32') ? `<img src="${cimg('enchant-' + G.inspect.e + '-32')}" width="32" height="32" alt="" style="float:left;margin:0 4px 0 0">` : ''}<b class="lb g">ENCHANT ${esc(G.inspect.e.toUpperCase())}</b><br>${esc(ENCHANT_TEXT[G.inspect.e])}</p>` : ''}<p class="d">Weight ${weightOf(db, c.id)}.</p></div>${lb(250, 190, 'TAP TO CLOSE', 'd')}</div>`; }
   const t = G.tab; if (!t) return '';
-  if (t === 'bar') return win(56, 40, 400, 160, `<div class="sc" style="height:120px"><p>${G.barText || ''}</p></div>${pq(304, 132, 88, 'CLOSE', 'tab:', { lit: true })}`);
+  if (t === 'bar') return win(56, 40, 400, 160, `<div class="sc" style="height:116px"><p>${G.barText || ''}</p></div>${pq(304, 132, 88, 'CLOSE', 'tab:', { lit: true })}`);
   const close = (y = 200) => pq(304, y, 88, 'CLOSE', 'tab:', { lit: true });
+  // A tall window (How to Play, Options, the relics, the doors, this duel): 480 wide in the middle, and as tall as the frame
+  // less eight pixels above and below, so a taller frame shows more lines. Its pages scroll in a box that ends at least
+  // eight pixels above the plaques along its foot (fitScroll trims it to whole lines and marks when more lies below).
+  const tall = (title, body, foot = '') => { const h = F.H - 16; return `<div class="dim"></div><div class="wn mw" style="left:${16 + cx0()}px;top:8px;width:480px;height:${h}px"><h2>${title}</h2><div class="sc" style="height:${h - 56}px">${body}</div>${foot}${pq(384, h - 28, 88, 'CLOSE', 'tab:', { lit: true })}</div>`; };
   if (t === 'menu') { const duel = r && (r.phase === 'duel' || G.shown); const items = [['DECK', 'tab:deck'], ['RELICS', 'tab:relics'], duel && ['THIS DUEL', 'tab:duel'], duel && [G.fast ? 'SPEED: FAST' : 'SPEED: NORMAL', 'speed'], !duel && r && ['DOORS IN FULL', 'tab:doors'], ['HOW TO PLAY', 'tab:help'], ['OPTIONS', 'tab:options'], r && ['LEAVE THE RUN', 'quit']].filter(Boolean);
     return win(176, 16, 160, 28 + items.length * 20 + 24, `<h2>Menu</h2>${items.map(([l, a], i) => pq(8, 22 + i * 20, 144, l, a)).join('')}${pq(8, 26 + items.length * 20, 144, 'CLOSE', 'tab:', { lit: true })}`); }
-  if (t === 'help') return win(16, 8, 480, 224, `<h2>How a duel works</h2><div class="sc" style="height:180px"><p>Each turn: draw toward five cards (two a turn at most), play one card or one meld, then attack.</p><p>Meld: tap two or more hand cards in order. They combine left to right into one monster. Tap one of your table monsters first to meld onto it.</p><p>Monsters fight with their printed ATK and DEF. Effects printed on a card are not used in Lost Memories.</p><p>Attack position fights with ATK. Defense uses DEF and protects your Life Points. Veiled is face down in defense.</p><p>WATER beats FIRE beats WIND beats EARTH beats WATER. LIGHT and DARK beat each other when attacking. The edge is +500 for that battle.</p><p>Field Spells set the terrain (+500 for its Types). ${db.config.equipKinds ? 'Equips made for a Type or Attribute give +800 to that kind and +300 to any other.' : 'Equips give +500.'} Traps wait face down for an attack. Other cards are fuel: +300 in a meld.</p><p>Play comes before attacks. A monster that attacked or just arrived cannot change position.</p><p>Lose a duel and you lose a Spark. The guardian's door needs two seals, one from each duel you win on the floor.</p></div>${pq(8, 196, 160, 'SHOW FIRST LESSONS', 'relearn')}${pq(384, 196, 88, 'CLOSE', 'tab:', { lit: true })}`);
-  if (t === 'sound') return win(96, 24, 320, 192, `<h2>Sound</h2><div id="soundslot" class="soundslot sc" style="height:140px"></div>${close(164 - 0)}`);
-  if (t === 'options') return win(16, 8, 480, 224, `<h2>Options</h2><div class="sc" style="height:180px"><div id="soundslot" class="soundslot"></div><p><b class="lb g">LOOK</b></p><button class="lab" data-a="look"><i>NEW</i><span>The console look. Tap for the old look, to compare.</span></button><p><b class="lb g">LAB SWITCHES</b> <small class="d">EXPERIMENTS. A RUN IN PROGRESS KEEPS THE RULES IT STARTED WITH.</small></p>${labKeys().map(k => { const held = pref.depth && DEPTH_SET.includes(k); return `<button class="lab ${pref[k] || held ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] || held ? 'ON' : 'OFF'}</i><span>${esc(LABS[k])}${held && !pref[k] ? ' (On through the depth set.)' : ''}</span></button>`; }).join('')}</div>${pq(384, 196, 88, 'CLOSE', 'tab:', { lit: true })}`);
+  if (t === 'help') return tall('How a duel works', `<p>Each turn: draw toward five cards (two a turn at most), play one card or one meld, then attack.</p><p>Meld: tap two or more hand cards in order. They combine left to right into one monster. Tap one of your table monsters first to meld onto it.</p><p>Monsters fight with their printed ATK and DEF. Effects printed on a card are not used in Lost Memories.</p><p>Attack position fights with ATK. Defense uses DEF and protects your Life Points. Veiled is face down in defense.</p><p>WATER beats FIRE beats WIND beats EARTH beats WATER. LIGHT and DARK beat each other when attacking. The edge is +500 for that battle.</p><p>Field Spells set the terrain (+500 for its Types). ${db.config.equipKinds ? 'Equips made for a Type or Attribute give +800 to that kind and +300 to any other.' : 'Equips give +500.'} Traps wait face down for an attack. Other cards are fuel: +300 in a meld.</p><p>Play comes before attacks. A monster that attacked or just arrived cannot change position.</p><p>Lose a duel and you lose a Spark. The guardian's door needs two seals, one from each duel you win on the floor.</p>`, pq(8, F.H - 44, 160, 'SHOW FIRST LESSONS', 'relearn'));
+  if (t === 'sound') return win(96, 24, 320, 192, `<h2>Sound</h2><div id="soundslot" class="soundslot sc" style="height:132px"></div>${close(164 - 0)}`);
+  if (t === 'options') return tall('Options', `<p><b class="lb g">SOUND</b></p><div id="soundslot" class="soundslot"></div><p><b class="lb g">LOOK</b></p><button class="lab" data-a="look"><i>NEW</i><span>The console look. Tap for the old look, to compare.</span></button><p><b class="lb g">LAB SWITCHES</b> <small class="d">EXPERIMENTS. A RUN IN PROGRESS KEEPS THE RULES IT STARTED WITH.</small></p>${labKeys().map(k => { const held = pref.depth && DEPTH_SET.includes(k); return `<button class="lab ${pref[k] || held ? 'on' : ''}" data-a="lab:${k}"><i>${pref[k] || held ? 'ON' : 'OFF'}</i><span>${esc(LABS[k])}${held && !pref[k] ? ' (On through the depth set.)' : ''}</span></button>`; }).join('')}`);
   if (!r) return '';
-  if (t === 'relics') return win(16, 8, 480, 224, `<h2>Your relics</h2><div class="sc" style="height:180px">${relicList(r).map(id => `<div class="rl">${CART.has(relicFile(id)) ? `<img src="${cimg(relicFile(id))}" alt="">` : `<i class="gem">${esc(RELICS[id].name.replace(/^The /, '')[0])}</i>`}<div><b>${esc(RELICS[id].name)}</b>${esc(RELICS[id].text)}</div></div>`).join('') || '<p>None yet.</p>'}${possibleMasterworks(r).map(id => `<p class="d">Masterwork ready at an Anvil: ${esc(RELICS[id].name)}.</p>`).join('')}</div>${pq(384, 196, 88, 'CLOSE', 'tab:', { lit: true })}`);
-  if (t === 'doors' && r.doors) return win(16, 8, 480, 224, `<h2>The doors</h2><div class="sc" style="height:180px">${r.doors.map((d, i) => `<p><b class="lb g">${i + 1}. ${esc(doorName(d))}</b> <small class="d">${d.know === 'known' ? 'KNOWN' : d.know === 'partial' ? 'PARTLY HIDDEN' : 'IN FOG'}</small><br>Cost: ${esc(d.cost)}. Reward: ${esc(d.reward)}.${d.law ? ' Law: ' + esc(lawShown(d.law)) : ''}${d.tell ? ` ${esc(d.style)}: ${esc(d.tell)}` : ''}${(d.tags || []).length ? ' ' + esc(d.tags.join(', ')) + '.' : ''}</p>`).join('')}</div>${pq(384, 196, 88, 'CLOSE', 'tab:', { lit: true })}`);
+  if (t === 'relics') return tall('Your relics', `${relicList(r).map(id => `<div class="rl">${CART.has(relicFile(id)) ? `<img src="${cimg(relicFile(id))}" alt="">` : `<i class="gem">${esc(RELICS[id].name.replace(/^The /, '')[0])}</i>`}<div><b>${esc(RELICS[id].name)}</b>${esc(RELICS[id].text)}</div></div>`).join('') || '<p>None yet.</p>'}${possibleMasterworks(r).map(id => `<p class="d">Masterwork ready at an Anvil: ${esc(RELICS[id].name)}.</p>`).join('')}`);
+  if (t === 'doors' && r.doors) return tall('The doors', `${r.doors.map((d, i) => `<p><b class="lb g">${i + 1}. ${esc(doorName(d))}</b> <small class="d">${d.know === 'known' ? 'KNOWN' : d.know === 'partial' ? 'PARTLY HIDDEN' : 'IN FOG'}</small><br>Cost: ${esc(d.cost)}. Reward: ${esc(d.reward)}.${d.law ? ' Law: ' + esc(lawShown(d.law)) : ''}${d.tell ? ` ${esc(d.style)}: ${esc(d.tell)}` : ''}${(d.tags || []).length ? ' ' + esc(d.tags.join(', ')) + '.' : ''}</p>`).join('')}`);
   if (t === 'duel') { const rv = G.shown ? G.shown.rival : info(r), v = r.duel ? viewFor(r.duel, db, 0) : null;
-    return win(16, 8, 480, 224, `<h2>This duel</h2><div class="sc" style="height:180px">${rv.styleText ? `<p>${esc(rv.styleText)}</p>` : ''}${rv.lawText ? `<p><b class="lb g">LAW</b> ${esc(lawShown(rv.lawText))}</p>` : ''}${rv.twist ? `<p>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</p>` : ''}<p><b class="lb g">BOUNTY</b> ${esc(rv.bountyText || '')}</p>${v && v.forger ? `<p><b class="lb g">${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))}</p><p><b class="lb g">${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'Used this duel.' : esc(FORGERS[v.forger].powerText)}</p>` : ''}<p><b class="lb g">LOG</b><br>${G.log.slice(-8).map(esc).join('<br>')}</p></div>${pq(384, 196, 88, 'CLOSE', 'tab:', { lit: true })}`); }
+    return tall('This duel', `${rv.styleText ? `<p>${esc(rv.styleText)}</p>` : ''}${rv.lawText ? `<p><b class="lb g">LAW</b> ${esc(lawShown(rv.lawText))}</p>` : ''}${rv.twist ? `<p>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</p>` : ''}<p><b class="lb g">BOUNTY</b> ${esc(rv.bountyText || '')}</p>${v && v.forger ? `<p><b class="lb g">${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))}</p><p><b class="lb g">${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'Used this duel.' : esc(FORGERS[v.forger].powerText)}</p>` : ''}<p><b class="lb g">LOG</b><br>${G.log.slice(-8).map(esc).join('<br>')}</p>`); }
   if (t === 'deck') { const list = (l, key, picked, k2) => l.map((e, i) => [e, i]).sort((a, b) => cardValue(db, b[0]) - cardValue(db, a[0])).map(([e, i]) => psCard(e, null, null, { cls: picked === i ? 'sel' : '', attrs: `data-a="${key}:${i}"` })).join('');
-    return win(8, 4, 496, 232, `<h2>Deck ${r.deck.length} · weight ${deckWeight(db, r.deck)}/${weightCap(db, r)}</h2><p class="d">${r.phase === 'chamber' ? 'Tap a deck card, then a trunk card, to swap them.' : 'You can swap cards in a chamber.'}</p><div class="sc" style="height:168px"><div class="row2">${list(r.deck, 'deckpick', G.pickDeck)}</div><h3 style="margin-top:6px">Trunk ${r.trunk.length}</h3><div class="row2">${list(r.trunk, 'trunkpick', G.pickTrunk) || '<span class="d">Empty.</span>'}</div></div>${pq(400, 208, 88, 'CLOSE', 'tab:', { lit: true })}`); }
+    const h = F.H - 8; return `<div class="dim"></div><div class="wn mw" style="left:${8 + cx0()}px;top:4px;width:496px;height:${h}px"><h2>Deck ${r.deck.length} · weight ${deckWeight(db, r.deck)}/${weightCap(db, r)}</h2><p class="d">${r.phase === 'chamber' ? 'Tap a deck card, then a trunk card, to swap them.' : 'You can swap cards in a chamber.'}</p><div class="sc" style="height:${h - 76}px"><div class="row2">${list(r.deck, 'deckpick', G.pickDeck)}</div><h3 style="margin-top:6px">Trunk ${r.trunk.length}</h3><div class="row2">${list(r.trunk, 'trunkpick', G.pickTrunk) || '<span class="d">Empty.</span>'}</div></div>${pq(400, h - 24, 88, 'CLOSE', 'tab:', { lit: true })}</div>`; }
   return '';
 }
 // Which screens are drawn the console way. Everything else keeps the old look for now.
@@ -1521,7 +1587,8 @@ function setMats() {
 function drawConsole(screen) {
   app.classList.add('ps'); app.classList.remove('phone', 'era'); document.body.classList.add('ps'); fitConsole(app); setMats(); // the frame's size first: the screen is laid out for it
   const r = G.run;
-  app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast">${esc(G.toast)}</div>`;
+  // the save bar and a short message take the text bar's place and width in this frame (the bar: 40 pixels at its foot, between the pillars)
+  app.innerHTML = `${screen()}${psWindows()}${store.failed.size ? `<div class="savebar" style="width:${F.W - 192}px"><b>NOT SAVED.</b> This device would not store your progress. <button class="pq" style="position:relative;display:inline-block" data-a="resave">TRY AGAIN</button></div>` : ''}<div id="toast" class="toast" style="top:${F.H - 40}px;width:${F.W - 192}px">${esc(G.toast)}</div>`;
   app.dataset.phase = r ? (G.shown ? 'duel' : r.phase) : 'home'; app.dataset.room = '';
   if (document.getElementById('prop')) { propTextures(); propPaint(); }
   if (document.getElementById('forge')) { propTextures(); convertSheets(40); forgePaint(); }
@@ -1529,10 +1596,58 @@ function drawConsole(screen) {
   if (document.getElementById('tbl')) { psTextures(); convertSheets(40); psPaint(); }
   else convertSheets(40);
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
-  barFits();
-  if (!drawConsole.fonts && document.fonts) { drawConsole.fonts = 1; document.fonts.ready.then(barFits); } // the text face may arrive after the first drawing
+  barFits(); fitScrolls();
+  if (!drawConsole.fonts && document.fonts) { // a text face may arrive after the drawing that first asks for it (the body face only with the first page of words): measure again
+    drawConsole.fonts = 1; const again = () => { if (app.classList.contains('ps')) { barFits(); fitScrolls(); } }; pixelText();
+    document.fonts.ready.then(again); if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', again); }
   fit();
 }
+// A box of pages that scrolls, in a window or a book, ends on a whole line. Its height is trimmed from the one the screen
+// gave it (data-max) to the foot of the last line, card or row it can show whole, and a scroll comes to rest with a whole
+// line at its top. While more lies below, a marker bobs under its right end, as under the text bar.
+function scrollAtoms(sc) {
+  const out = [], yOf = e => { let y = 0; for (let q = e; q && q !== sc; q = q.offsetParent) y += q.offsetTop; return y; };
+  // A button of a line or two is kept whole; a taller one (a switch with a paragraph beside it) may be cut between its lines.
+  const whole = c => /^(IMG|CANVAS|INPUT)$/.test(c.tagName) || (c.tagName === 'BUTTON' && c.offsetHeight <= 40) || c.classList.contains('cd') || c.classList.contains('coin') || c.classList.contains('ga') || c.classList.contains('big');
+  // Each line of words is found where the browser set it, from the middle of its box on the screen, so a name in the label
+  // face above a paragraph, or small words inside a line, take their real place. The frame may be scaled and turned.
+  const box = sc.getBoundingClientRect(), up = app.style.transform.includes('rotate'), k = app.getBoundingClientRect().width / (up ? app.offsetHeight : app.offsetWidth) || 1, base = sc.scrollTop - sc.clientTop;
+  const mid = r => (up ? box.right - (r.left + r.right) / 2 : (r.top + r.bottom) / 2 - box.top) / k + base;
+  const lines = (n, e) => {
+    let b = e; while (b !== sc && getComputedStyle(b).display === 'inline') b = b.parentElement;
+    const lh = parseFloat(getComputedStyle(b).lineHeight) || 16, rg = document.createRange(); rg.selectNodeContents(n);
+    for (const r of rg.getClientRects()) if (r.width && r.height) { const t = Math.round(mid(r) - lh / 2); out.push([t, t + lh]); }
+  };
+  const walk = e => { for (const n of e.childNodes) {
+    if (n.nodeType === 3) { if (n.textContent.trim()) lines(n, e); continue; }
+    if (n.nodeType !== 1 || n.classList.contains('scm') || !n.offsetHeight) continue;
+    const t = yOf(n), h = n.offsetHeight;
+    if (whole(n)) { out.push([t, t + h]); continue; }
+    if (n.tagName === 'BUTTON') out.push([t, t], [t + h, t + h]);
+    walk(n);
+  } };
+  walk(sc); return out;
+}
+function fitScroll(sc) {
+  if (!sc.dataset.max) sc.dataset.max = parseFloat(sc.style.height) || sc.offsetHeight;
+  const max = +sc.dataset.max, top = sc.scrollTop, atoms = scrollAtoms(sc), inside = c => atoms.some(([a, b]) => a < c - .5 && c + .5 < b);
+  let cut = 0;
+  for (const [, b] of atoms) if (b > cut && b <= top + max + .5 && b > top && !inside(b)) cut = b;
+  const h = cut > top ? Math.round(cut - top) : max;
+  if (Math.round(sc.offsetHeight) !== h) sc.style.height = h + 'px';
+  let m = sc.nextElementSibling; if (!m || !m.classList.contains('scm')) { m = document.createElement('i'); m.className = 'scm'; sc.after(m); }
+  const more = atoms.some(([, b]) => b > top + h + .5); // a margin under the last line is not more to read
+  m.hidden = !more; m.style.left = sc.offsetLeft + sc.offsetWidth - 8 + 'px'; m.style.top = sc.offsetTop + h + 2 + 'px';
+}
+function snapScroll(sc) { // at rest, a whole line at the top
+  const atoms = scrollAtoms(sc), top = sc.scrollTop, inside = c => atoms.some(([a, b]) => a < c - .5 && c + .5 < b);
+  let best = top, d = Infinity; for (const [a] of atoms.concat([[0, 0]])) if (!inside(a) && Math.abs(a - top) < d) { d = Math.abs(a - top); best = a; }
+  if (Math.abs(best - top) > .5) sc.scrollTop = best;
+  fitScroll(sc);
+}
+const fitScrolls = () => { for (const sc of app.querySelectorAll('.mw .sc, .book .sc')) fitScroll(sc); };
+{ let raf = 0, rest = 0; const live = t => t && t.classList && t.classList.contains('sc') && app.classList.contains('ps') && t.closest('.mw, .book');
+  app.addEventListener('scroll', ev => { const t = ev.target; if (!live(t)) return; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => fitScroll(t)); clearTimeout(rest); rest = setTimeout(() => snapScroll(t), 160); }, true); }
 // The text bar holds two lines. When what it says is longer, a marker shows and a tap opens the whole of it.
 function barFits() {
   const b = app.querySelector('.fr > .bar'), p = b && b.firstElementChild; if (!p) return;
@@ -1549,6 +1664,35 @@ function screenCue(era = false) {
 function moreBelow(el) { el.classList.toggle('more', el.scrollTop + el.clientHeight < el.scrollHeight - 2); }
 app.addEventListener('scroll', ev => { const t = ev.target; if (t && t.classList && (t.classList.contains('rules') || t.classList.contains('trayline'))) moreBelow(t); }, true);
 app.addEventListener('click', ev => { try { tapped(ev); } catch (e) { recover(e, false); } });
+// The hammer: one lit plaque on a console screen, and one in the window over it. A mouse moves it to the plaque it points
+// at (a finger does not: a tap simply takes the plaque), the arrow keys move it along the plaques in reading order, and
+// Enter or Space takes the one it is on. On the title the turning crest goes with it.
+function litLayer() { const ws = app.querySelectorAll('.mw'); return ws.length ? ws[ws.length - 1] : app.querySelector('.story') || app; }
+const litPlaques = layer => [...layer.querySelectorAll('.pq')].filter(b => !b.disabled && b.offsetWidth && (layer !== app || !b.closest('.mw, .story')));
+// Moving the hammer never moves a plaque: one in a line of words (.in) keeps its width as it gains or loses the hammer
+// (it is lit without the hammer, .nh, and one that loses it keeps the width it had), and a plaque too narrow for the
+// hammer beside its words is lit without the hammer too.
+function litMove(b) {
+  const layer = b.closest('.mw') || b.closest('.story') || app;
+  for (const e of layer.querySelectorAll('.pq.lit')) if (e !== b && (layer !== app || !e.closest('.mw, .story'))) { if (e.classList.contains('in') && !e.style.width) e.style.width = e.offsetWidth + 'px'; e.classList.remove('lit', 'nh'); }
+  if (b.classList.contains('in')) b.classList.add('nh');
+  b.classList.add('lit');
+  if (b.scrollWidth > b.clientWidth + 1) b.classList.add('nh');
+  if (b.classList.contains('tm')) { G.tcur = [...app.querySelectorAll('.pq.tm')].indexOf(b); const c = document.getElementById('coin'); if (c) c.style.top = b.style.top; }
+  const sc = b.closest('.sc'); if (sc) { const t = b.offsetTop, h = sc.clientHeight; if (t < sc.scrollTop) sc.scrollTop = t; else if (t + b.offsetHeight > sc.scrollTop + h) sc.scrollTop = t + b.offsetHeight - h; }
+}
+app.addEventListener('pointerover', ev => {
+  if (ev.pointerType !== 'mouse' || !app.classList.contains('ps')) return;
+  const b = ev.target.closest && ev.target.closest('.pq'); if (!b || b.disabled || b.classList.contains('lit') || !litPlaques(litLayer()).includes(b)) return;
+  litMove(b); if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#app button')) b.focus({ preventScroll: true }); // the keys then take this one
+});
+addEventListener('keydown', ev => {
+  if (!app.classList.contains('ps') || booting || ev.altKey || ev.ctrlKey || ev.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test((ev.target || {}).tagName || '')) return;
+  const k = ev.key, list = litPlaques(litLayer()); if (!list.length) return;
+  const at = list.findIndex(b => b.classList.contains('lit'));
+  if (/^Arrow(Up|Down|Left|Right)$/.test(k)) { ev.preventDefault(); const d = k === 'ArrowUp' || k === 'ArrowLeft' ? -1 : 1, b = list[at < 0 ? 0 : (at + d + list.length) % list.length]; litMove(b); b.focus({ preventScroll: true }); }
+  else if ((k === 'Enter' || k === ' ') && at >= 0 && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#app button'))) { ev.preventDefault(); list[at].click(); } // a focused plaque takes the key itself
+});
 function tapped(ev) {
   const el = ev.target.closest('[data-a]'); if (!el || el.disabled) return;
   G.toast = ''; // a tap puts away the last message, so it cannot lie over the screen the tap opens
@@ -1632,7 +1776,7 @@ function tapped(ev) {
     case 'speed': G.fast = !G.fast; render(); break;
     // duel
     case 'hand': { if (G.playing || !r.duel || r.duel.active !== 0 || r.duel.pending) break; if (r.duel.played || r.duel.attacked) { G.inspect = r.duel.hand[0][n]; render(); break; } G.attacker = null; G.aim = null; const k = G.sel.indexOf(n); if (k >= 0) G.sel.splice(k, 1); else G.sel.push(n); render(); break; }
-    case 'mine': { if (G.sel.length) { toast('Finish or undo your card pick first.'); break; } if (G.attacker === n) { G.attacker = null; G.onto = n; } else if (G.onto === n) { G.onto = null; if (r.duel) G.inspect = viewFor(r.duel, db, 0).mon[0][n]; } else { G.attacker = n; G.onto = null; } render(); break; }
+    case 'mine': { if (G.sel.length) { toast('Finish or undo your card pick first.'); render(); break; } if (G.attacker === n) { G.attacker = null; G.onto = n; } else if (G.onto === n) { G.onto = null; if (r.duel) G.inspect = viewFor(r.duel, db, 0).mon[0][n]; } else { G.attacker = n; G.onto = null; } render(); break; }
     case 'hit': duel({ t: 'attack', from: G.attacker, to: n }); break;
     case 'pos': duel({ t: 'pos', zone: G.attacker }); break;
     case 'undo': G.sel = []; G.attacker = null; G.onto = null; G.aim = null; render(); break;

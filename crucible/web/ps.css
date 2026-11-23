@@ -5,13 +5,17 @@
 @font-face { font-family: 'LM Label'; src: url(art/fonts/silkscreen-latin-400-normal.woff2) format('woff2'); font-display: block; }
 
 body.ps { background: #000; }
-/* the loading screen while the console pictures arrive: black, two words, the share counting up */
-#boot { position: fixed; inset: 0; z-index: 1000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-family: 'LM Label', monospace; font-size: 24px; letter-spacing: 3px; color: #c9a95a; image-rendering: pixelated; }
-#boot i { font-style: normal; font-size: 16px; color: #6e5a32; min-height: 10px; }
-#app.ps { position: absolute; left: 50%; top: 50%; width: 512px; height: 240px; overflow: hidden; background: #000; color: #f3ead8;
-  font: 16px/16px 'LM Text', monospace; -webkit-font-smoothing: none; font-smooth: never; image-rendering: pixelated; transform-origin: 50% 50%;
+/* the loading screen while the console pictures arrive: black, the turning crest, two words, the share counting up. A screen
+   of the frame (bootScreen in app.mjs places each part at a whole frame pixel). */
+#app.ps #boot { left: 0; top: 0; right: 0; bottom: 0; z-index: 60; background: #000; }
+#app.ps #boot .bpc { color: #8a7040; }
+#app.ps { position: absolute; left: 0; top: 0; margin: 0; width: 512px; height: 240px; overflow: hidden; background: #000; color: #f3ead8;
+  font: 16px/16px 'LM Text', monospace; -webkit-font-smoothing: none; font-smooth: never; image-rendering: pixelated; transform-origin: 0 0;
   --sh: #1a0f12; --plum: #2d121d; --wine: #411b28; --dusty: #69404d; --sd: #7a543c; --sm: #a87e4f; --sl: #c09660; --gold: #dba459; --gl: #e9c46a;
   --ember: #bd7433; --rust: #964034; --verd: #4c8a7c; --ink: #f3ead8; --dark: #3a2419; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+/* the old look's scan lines (play.css) are not the console's: a dark band every third frame row, blended over everything,
+   which also made the browser resample a turned frame. The console look draws none. */
+#app.ps::after { content: none; display: none; }
 #app.ps * { box-sizing: border-box; border-radius: 0 !important; text-shadow: none; }
 #app.ps img, #app.ps canvas { image-rendering: pixelated; display: block; }
 /* a page that holds the game may shrink pictures to fit their box (img { max-width: 100%; height: auto }); a console picture
@@ -39,15 +43,22 @@ body.ps { background: #000; }
 #app.ps .vw > canvas { position: absolute; left: 0; top: 0; }
 #app.ps .bar { padding: 4px 6px; line-height: 16px; overflow: hidden; }
 #app.ps .bar p { margin: 0; max-height: 32px; overflow: hidden; }
-#app.ps .bar.more::after { content: ''; position: absolute; right: 4px; bottom: 3px; width: 7px; height: 4px; background: var(--gl); clip-path: polygon(0 0, 100% 0, 50% 100%); animation: psbob 1s steps(2) infinite; }
+#app.ps .bar.more::after, #app.ps .scm { content: ''; position: absolute; right: 4px; bottom: 3px; width: 7px; height: 4px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h7v1h-1v1h-1v1h-1v1h-1v-1h-1v-1h-1v-1h-1z' fill='%23e9c46a'/%3E%3C/svg%3E"); animation: psbob 1s steps(2) infinite; pointer-events: none; } /* rows of 7, 5, 3 and 1 pixels */
+#app.ps .scm { right: auto; bottom: auto; }
 @keyframes psbob { 50% { transform: translateY(2px); } }
 
-/* a plaque: every button in the game */
-#app.ps .pq { position: absolute; display: block; height: 16px; padding: 4px 4px 0 6px; margin: 0; text-align: left; white-space: nowrap; overflow: hidden; cursor: pointer; color: var(--sh);
+/* a plaque: every button in the game. Its capitals stand on rows 5 to 9 of its 16, the rows of the lit one's hammer head. (A
+   button centres its 8-pixel line in the room its border and padding leave: with 2 pixels of padding below, that room is 12
+   rows from row 1, so the line starts on a whole row, row 3, and the label face's capitals fall two rows into it. With
+   padding above instead, the room was odd and the words stood half a pixel off the grid.) Only one plaque on a
+   screen, or in the window over it, is lit: the one the hammer is on (a choice that is merely open is a plain plaque, one
+   picked is .on). */
+#app.ps .pq { position: absolute; display: block; height: 16px; padding: 0 4px 2px 6px; margin: 0; text-align: left; white-space: nowrap; overflow: hidden; cursor: pointer; color: var(--sh);
   background: repeating-conic-gradient(var(--sm) 0 25%, #9a7347 0 50%) 0 0 / 2px 2px; border: 1px solid; border-color: var(--sl) var(--dark) var(--dark) var(--sl); outline: none; }
 #app.ps .pq.lit { color: var(--ink); background: repeating-conic-gradient(var(--ember) 0 25%, var(--rust) 0 50%) 0 0 / 2px 2px; border-color: var(--ink) #4a1c16 #4a1c16 var(--ink); padding-left: 16px; animation: pslit 1.2s steps(1) infinite; }
 #app.ps .pq.lit::before { content: ''; position: absolute; left: 3px; top: 4px; width: 10px; height: 6px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' shape-rendering='crispEdges'%3E%3Crect x='0' y='2' width='6' height='1' fill='%23f3ead8'/%3E%3Crect x='6' y='0' width='3' height='5' fill='%23f3ead8'/%3E%3Crect x='6' y='5' width='3' height='1' fill='%234a3024'/%3E%3C/svg%3E"); }
 @keyframes pslit { 50% { background: repeating-conic-gradient(#c98040 0 25%, var(--rust) 0 50%) 0 0 / 2px 2px; } }
+#app.ps .pq.lit.nh { padding-left: 6px; } #app.ps .pq.lit.nh::before { display: none; } /* the hammer moved onto a plaque with no room for it (litMove in app.mjs) */
 #app.ps .pq:disabled, #app.ps .pq.off { cursor: default; color: var(--dark); background: repeating-conic-gradient(var(--dusty) 0 25%, #5c3743 0 50%) 0 0 / 2px 2px; border-color: #7a5560 var(--sh) var(--sh) #7a5560; animation: none; padding-left: 6px; }
 #app.ps .pq:disabled::before, #app.ps .pq.off::before { display: none; }
 #app.ps .pq:active:not(:disabled) { transform: translate(1px, 1px); }
@@ -104,6 +115,7 @@ body.ps { background: #000; }
 #app.ps .wn h2, #app.ps .wn h3 { margin: 0 0 4px; font: 8px/8px 'LM Label', monospace; color: var(--gl); text-transform: uppercase; }
 #app.ps .wn p { margin: 0 0 4px; }
 #app.ps .sc { overflow-y: auto; scrollbar-width: none; }
+#app.ps .sc:not(.ab) { position: relative; }
 #app.ps .sc::-webkit-scrollbar { display: none; }
 #app.ps .mw { position: absolute; z-index: 40; padding: 8px; }
 #app.ps .dim { position: absolute; inset: 0; z-index: 39; background: repeating-conic-gradient(rgba(0,0,0,1) 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
@@ -112,10 +124,7 @@ body.ps { background: #000; }
 #app.ps .ti > img.bg { position: absolute; left: 0; top: 0; }
 #app.ps .ti .logo { position: absolute; left: 0; top: 10px; width: 512px; display: flex; flex-direction: column; align-items: center; }
 #app.ps .ti .logo canvas { image-rendering: pixelated; }
-#app.ps .ti .runslot { position: absolute; width: 152px; padding: 5px 6px; font-size: 8px; line-height: 11px; } /* not .slot: the old look styles that word */
-#app.ps .fog { position: absolute; pointer-events: none; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
-#app.ps .fog.a { animation: psfog 9s steps(18) infinite alternate; } #app.ps .fog.b { animation: psfog 13s steps(26) infinite alternate-reverse; opacity: 1; }
-@keyframes psfog { from { transform: translateX(-6px); } to { transform: translateX(6px); } }
+#app.ps .ti .runslot { position: absolute; padding: 0; } /* not .slot: the old look styles that word. Its three lines are labels placed in it (psHome) */
 /* the title's torches: each a patch of the picture stepped through its frames, twelve a second (the frames and their
    places come from the picture, see titleLife in app.mjs) */
 #app.ps .flm { position: absolute; background: 0 0 no-repeat; pointer-events: none; animation: psflame 1s steps(12) infinite; }
@@ -133,7 +142,7 @@ body.ps { background: #000; }
 #app.ps .dr .fg { position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
 #app.ps .dr.k-mystery .fg::after { content: ''; position: absolute; inset: 0; background: conic-gradient(transparent 0 25%, #000 0 50%, transparent 0 100%) 0 0 / 2px 2px; } /* one more dot in four: three in four dark */
 #app.ps .dr.k-known .fg { display: none; }
-#app.ps .dr.lock::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, #4a3024 0 5px, var(--dark) 5px 6px); opacity: .5; }
+#app.ps .dr.lock::after { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='1' shape-rendering='crispEdges'%3E%3Crect width='5' height='1' fill='%234a3024'/%3E%3Crect x='5' width='1' height='1' fill='%233a2419'/%3E%3C/svg%3E") 0 0 / 6px 1px; opacity: .5; }
 #app.ps .dr .no { position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; background: var(--sh); color: var(--gl); font: 8px/10px 'LM Label', monospace; text-align: center; box-shadow: 0 0 0 1px var(--gold); }
 #app.ps .dr:not(.on)::before { content: ''; position: absolute; inset: 0; z-index: 1; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) 0 0 / 2px 2px; opacity: .5; pointer-events: none; }
 #app.ps .dr.on { box-shadow: 0 0 0 1px var(--gl), 0 0 0 2px var(--sh); overflow: visible; }
@@ -183,13 +192,28 @@ body.ps { background: #000; }
 #app.ps .lab i { font: 8px/8px 'LM Label', monospace; color: #c2b49c; padding: 4px 0 0; opacity: 1; }
 #app.ps .lab.on i { color: var(--gl); }
 #app.ps .lab span { font: 16px/16px 'LM Text', monospace; }
-#app.ps .soundslot { font: 16px/16px 'LM Text', monospace; }
+/* The sound controls: sound.mjs builds them as a check box and four sliders; here they are drawn as console parts. Each row is
+   a label in the label face and a gauge 126 pixels long whose knob, four pixels wide, steps six pixels for each twentieth;
+   the part of the gauge left of the knob is lit. Mute is a box of the gauge's frame, gold inside when on. */
+#app.ps .soundslot { display: block; min-width: 0; margin: 0 0 4px; font: 8px/16px 'LM Label', monospace; text-transform: uppercase; color: var(--ink); }
 #app.ps .soundslot * { font: inherit !important; border-radius: 0 !important; box-shadow: none !important; backdrop-filter: none !important; }
+#app.ps .soundslot .lm-audio-panel { display: block; }
+#app.ps .soundslot label { display: grid !important; grid-template-columns: 96px 126px; column-gap: 0 !important; align-items: center !important; justify-content: start !important; height: 16px; margin: 0 0 4px; cursor: pointer; }
+#app.ps .soundslot label:first-child { grid-template-columns: 20px auto; }
+#app.ps .soundslot input { margin: 0; padding: 0; outline: none; cursor: pointer; accent-color: auto; }
+#app.ps .soundslot input[type=range] { -webkit-appearance: none; appearance: none; width: 126px !important; height: 10px; border: 1px solid var(--gold); background: var(--sh); overflow: hidden; }
+#app.ps .soundslot input[type=range]::-webkit-slider-runnable-track { -webkit-appearance: none; height: 8px; border: 0; background: none; }
+#app.ps .soundslot input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 4px; height: 8px; margin: 0; border: 0; border-radius: 0; background: var(--gl); box-shadow: inset -1px 0 0 var(--sd), -122px 0 0 118px var(--rust); }
+#app.ps .soundslot input[type=range]::-moz-range-track { height: 8px; border: 0; background: none; }
+#app.ps .soundslot input[type=range]::-moz-range-progress { height: 8px; background: var(--rust); }
+#app.ps .soundslot input[type=range]::-moz-range-thumb { width: 4px; height: 8px; border: 0; border-radius: 0; background: var(--gl); }
+#app.ps .soundslot input[type=checkbox] { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border: 1px solid var(--gold); background: var(--sh); }
+#app.ps .soundslot input[type=checkbox]:checked { background: var(--gl); box-shadow: inset 0 0 0 2px var(--sh) !important; }
 
 /* the page refuses a move, a save failed, a short message */
-#app.ps .savebar { position: absolute; left: 96px; top: 0; width: 320px; z-index: 50; padding: 4px 6px; background: var(--rust); color: var(--ink); font: 8px/10px 'LM Label', monospace; animation: pslit 2s steps(1) infinite; }
+#app.ps .savebar { position: absolute; left: 96px; top: 0; z-index: 50; padding: 4px 6px; background: var(--rust); color: var(--ink); font: 8px/10px 'LM Label', monospace; animation: pslit 2s steps(1) infinite; }
 #app.ps .savebar button { font: 8px/8px 'LM Label', monospace; margin-left: 6px; }
-#app.ps .toast { position: absolute; left: 96px; top: 200px; right: auto; bottom: auto; transform: none; width: 320px; height: 40px; font-size: 16px; line-height: 16px; border-radius: 0; box-shadow: none; z-index: 48; padding: 4px 6px; background: repeating-conic-gradient(var(--plum) 0 25%, #26101a 0 50%) 0 0 / 2px 2px; border: 1px solid var(--gold); color: var(--ink); pointer-events: none; overflow: hidden; }
+#app.ps .toast { position: absolute; left: 96px; right: auto; bottom: auto; transform: none; height: 40px; font-size: 16px; line-height: 16px; border-radius: 0; box-shadow: none; z-index: 48; padding: 4px 6px; background: repeating-conic-gradient(var(--plum) 0 25%, #26101a 0 50%) 0 0 / 2px 2px; border: 1px solid var(--gold); color: var(--ink); pointer-events: none; overflow: hidden; }
 #app.ps .toast:empty { display: none; }
 
 #app.ps .float { position: absolute; left: 0; top: -10px; font: 8px/8px 'LM Label', monospace; color: #f08a72; pointer-events: none; animation: psfloat .9s steps(6) forwards; margin: 0; white-space: nowrap; }
@@ -222,7 +246,7 @@ body.ps { background: #000; }
 #app.ps .book { position: absolute; padding: 0; }
 #app.ps .book .sc p { margin: 0 0 4px; }
 #app.ps .brow { display: flex; gap: 6px; align-items: flex-start; padding: 4px 0; border-bottom: 1px solid var(--sh); }
-#app.ps .brow .bp { flex: none; width: 32px; } #app.ps .brow .bp img, #app.ps .brow .bp .coin { position: relative; display: block; }
+#app.ps .brow .bp { flex: none; width: 32px; } #app.ps .brow .bp > img, #app.ps .brow .bp > .coin { position: relative; display: block; } /* not the letter struck in a blank medal (.coin > img): it stays on the medal */
 #app.ps .brow .bt { flex: 1; min-width: 0; } #app.ps .brow .bt .lb { position: relative; display: block; margin-bottom: 2px; white-space: normal; }
 #app.ps .brow .bs { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 #app.ps .pq.in { position: relative; display: inline-block; margin: 0 4px 4px 0; width: auto; vertical-align: top; }
