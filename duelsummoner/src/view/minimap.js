@@ -52,7 +52,10 @@ export class Minimap {
     const W = g.world;
     if (W) {
       for (const k of W.cchests || []) if (!k.open && ex(k.x, k.z)) sq(k.x, k.z, k.free || k.trophy ? '#ffffff' : '#ffd23f', r0);          // chests
-      if (W.relic && !W.relic.taken && ex(W.relic.x, W.relic.z)) sq(W.relic.x, W.relic.z, '#ffffff', r0 + 2);                         // the screen-clear relic: a larger white square
+      if (W.relic && !W.relic.taken && ex(W.relic.x, W.relic.z)) {                                                           // the screen-clear relic: a white four-point star with a dark edge, 1.6 times a chest mark, only once the ground there is explored
+      const cx = X(W.relic.x), cy = X(W.relic.z), R = r0 * 1.6 * 1.5, q = R * 0.28; c.beginPath(); c.moveTo(cx, cy - R); c.lineTo(cx + q, cy - q); c.lineTo(cx + R, cy); c.lineTo(cx + q, cy + q); c.lineTo(cx, cy + R); c.lineTo(cx - q, cy + q); c.lineTo(cx - R, cy); c.lineTo(cx - q, cy - q); c.closePath();
+      c.fillStyle = '#ffffff'; c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#1a1020'; c.stroke();
+    }
   for (const k of W.stones || []) if (ex(k.x, k.z)) sq(k.x, k.z, k.used ? '#6a6a72' : '#ffffff', r0);                                // Witness Stones: cyan, grey once used (they stay on the map so you know)
       for (const k of W.shrines || []) if (ex(k.x, k.z)) { const x = X(k.x), z = X(k.z); c.strokeStyle = k.done ? '#6a6a72' : '#ffffff'; c.lineWidth = big ? 3 : 2; c.beginPath(); c.arc(x, z, r0 + 1, 0, 7); c.stroke(); }          // Shrines of Tribute: a ring, grey once done
       if (W.broker && ex(W.broker.x, W.broker.z)) sq(W.broker.x, W.broker.z, '#ffd23f', r0);                                          // the Broker

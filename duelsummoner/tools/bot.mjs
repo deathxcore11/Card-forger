@@ -50,10 +50,11 @@ export function botRecord(g, bot) {
     if (g.mode && g.mode !== 'classic' && g.gate && g.gate.awake && g.gate.state === 'closed') { if (bot.awakeT === undefined) bot.awakeT = g.sc; if (!target || g.sc - bot.awakeT > 40) target = null; } else bot.awakeT = undefined;
     if (!target && g.world) { const a = g.world.altar; if (a && !a.used && g.t > 20) target = a; }
     let hold = false;
-    if (!target && bot.world && g.world && g.mode && g.mode !== 'classic' && !(g.gate && g.gate.awake) && !(g.sp.find(s => s.alive && !s.dead))) {       // a player who goes for the nearest free chest, shrine or stone within about 90 m
-      let best = null, bd = 8100; const W = g.world, consider = (o, shrine) => { const d = (o.x - p.x) ** 2 + (o.z - p.z) ** 2; if (d < bd) { bd = d; best = o; bot.shrineT = shrine; } };
-      for (const c of W.cchests) if (!c.open && (c.free || g.coins >= chestPrice(g))) consider(c, false); for (const s of W.shrines) if (!s.done) consider(s, true); for (const s of W.stones) if (!s.used) consider(s, false);
-      if (best) { target = best; hold = bot.shrineT && Math.hypot(best.x - p.x, best.z - p.z) < EN.shrines.radius - 0.8; }
+    if (!target && bot.world && g.world && g.mode && g.mode !== 'classic' && !(g.gate && g.gate.awake) && !(g.sp.find(s => s.alive && !s.dead && s.role !== 'elite'))) {       // an elite wandering about does not stop shopping; a boss does       // a player who goes for the nearest free chest, shrine or stone within about 90 m
+      let best = null, bd = (+process.env.BOT_REACH || 90) ** 2; const W = g.world, consider = (o, shrine) => { const d = (o.x - p.x) ** 2 + (o.z - p.z) ** 2; if (d < bd) { bd = d; best = o; bot.shrineT = shrine; } };
+      for (const c of W.cchests) if (!c.open && (c.free || g.coins >= chestPrice(g))) consider(c, false);
+      if (W.broker && g.coins >= 30 && W.broker.stock.some(s => !s.sold && s.price <= g.coins)) consider(W.broker, false);       // an affordable Broker is a stop too for (const s of W.shrines) if (!s.done) consider(s, true); for (const s of W.stones) if (!s.used) consider(s, false);
+      if (best) { target = best; hold = bot.shrineT && Math.hypot(best.x - p.x, best.z - p.z) < EN.shrines.radius - 0.8; bot.shopping = !bot.shrineT && Math.hypot(best.x - p.x, best.z - p.z) < (+process.env.BOT_SHOP || 40); } else bot.shopping = false;       // holding the price and within 40 m of a chest or the Broker: walk there and open it, whoever is chasing
     }
     if (!target && g.mode && g.mode !== 'classic' && g.sc >= 335 && g.gate && g.gate.state === 'closed' && !g.circle) { target = { x: g.map.gate.x, z: g.map.gate.z }; hold = g.gate.awake && Math.hypot(target.x - p.x, target.z - p.z) < 3; }       // by about 5:35 the bot is at the gate, so it can walk in the moment it wakes
     const gb = g.sp.find(s => s.alive && s.role === 'gate');                            // the gate boss: close in to about 9 m so the summons can hit it, strafing around it
@@ -65,7 +66,7 @@ export function botRecord(g, bot) {
       else if (g.altar && !g.altar.used) { target = g.altar; hold = Math.hypot(target.x - p.x, target.z - p.z) < 3; }
       else if (g.gate && g.gate.awake && g.gate.state === 'closed') { target = { x: g.map.gate.x, z: g.map.gate.z }; hold = Math.hypot(target.x - p.x, target.z - p.z) < 3; }
     }
-    bot.hold = hold; bot.urgent = !!(g.mode && g.mode !== 'classic' && target && (g.circle || g.altar || (g.gate && g.gate.awake)));
+    bot.hold = hold; bot.urgent = !!(g.mode && g.mode !== 'classic' && target && (g.circle || g.altar || (g.gate && g.gate.awake))) || !!(target && bot.shopping);
     if (target) {                                                              // walk the way a path exists, not through walls
       const key = Math.round(target.x) + ',' + Math.round(target.z);
       if (!bot.flow) { bot.flow = new Flow(); bot.flow.col = g.colliders; bot.flow.rebuild(); }       // the bot walks round trunks and boulders like the horde does
