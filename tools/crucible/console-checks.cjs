@@ -227,6 +227,11 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
           }
           if (e.tagName === 'IMG' && e.complete && e.naturalWidth && (e.width % e.naturalWidth || e.height % e.naturalHeight) && !e.closest('.cd')) out.push(`${name(e)}: picture drawn at ${e.width} x ${e.height} from ${e.naturalWidth} x ${e.naturalHeight}`);
           if (e.tagName === 'CANVAS') { const r = e.getBoundingClientRect(); const cw = r.width / k, ch = r.height / k, w2 = up ? ch : cw, h2 = up ? cw : ch; if (Math.abs(w2 - e.width) > .5 || Math.abs(h2 - e.height) > .5) out.push(`${name(e)}: canvas ${e.width} x ${e.height} drawn at ${w2.toFixed(1)} x ${h2.toFixed(1)}`); }
+          // a picture starts on a whole frame pixel too (half a pixel off, each of its pixels is drawn soft across two)
+          if ((e.tagName === 'IMG' || e.tagName === 'CANVAS') && e.offsetWidth && getComputedStyle(e).visibility !== 'hidden') {
+            const q = e.getBoundingClientRect(), x = (up ? q.top - A.top : q.left - A.left) / k, y = (up ? A.right - q.right : q.top - A.top) / k;
+            if (Math.abs(x - Math.round(x)) > .05 || Math.abs(y - Math.round(y)) > .05) out.push(`${name(e)}: picture at ${x.toFixed(2)}, ${y.toFixed(2)}, off the frame grid`);
+          }
           const text = [...e.childNodes].some(c => c.nodeType === 3 && c.textContent.trim());
           if (text) {
             const ff = getComputedStyle(e).fontFamily.split(',')[0].replace(/["']/g, '').trim();
