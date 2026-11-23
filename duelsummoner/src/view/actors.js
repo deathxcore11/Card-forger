@@ -244,7 +244,8 @@ export class Actors {
 
     // duelist
     const px = pl(p.px, p.x, a), py = pl(p.py, p.y, a), pz = pl(p.pz, p.z, a);
-    this.player.position.set(px, py, pz); this.player.rotation.y = turnLerp(p.pface, p.face, a);
+    this.player.position.set(px, py, pz);
+    { const want = turnLerp(p.pface, p.face, a); if (this._by === undefined || g.t < 0.1) this._by = want; let d = want - this._by; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); this._by += Math.max(-1, Math.min(1, d)) * Math.min(1, dt * 14) * (Math.abs(d) > 0.02 ? 1 : 0) + (Math.abs(d) <= 0.02 ? d : 0); this.player.rotation.y = this._by; }       // the body turns to the move direction over about 0.1 s, never a snap
     this.player.userData.body.scale.y = p.sliding ? 0.55 : 1; this.player.rotation.x = p.sliding ? -0.5 : 0;
     this.player.visible = !(g.over && !g.won); this.player.scale.setScalar(g.oaths.small ? 0.5 : 1);                 // Small Oath: half size
     { const want = this.rigs[g.duelist] || null; if (want !== this.rig) { if (this.rig) this.rig.group.visible = false; this.rig = want; if (want) want.group.visible = true; } }       // the rig of the duelist being played; the others sleep (no mixer work)
@@ -252,6 +253,9 @@ export class Actors {
       const R = this.rig, ct = g.cardT, thrown = this._ct !== undefined && ct > this._ct + 0.01; this._ct = ct;
       R.group.position.copy(this.player.position); R.group.rotation.y = this.player.rotation.y + R.yaw; R.group.scale.setScalar(g.oaths.small ? 0.5 : 1); this.player.visible = false;
       R.update(p, g, dt, thrown);
+      if (thrown && g.aimX !== undefined) { this._aimY = Math.atan2(g.aimX - p.x, g.aimZ - p.z); this._aimT = 0.55; }
+      let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let d = this._aimY - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-1.57, Math.min(1.57, d)); }       // torso aim at the throw target, capped at 90 degrees
+      this._tw = (this._tw || 0) + (tw - (this._tw || 0)) * Math.min(1, dt / 0.12); R.twist(this._tw);
     }
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));

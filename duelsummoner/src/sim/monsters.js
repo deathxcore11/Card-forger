@@ -36,10 +36,10 @@ export function updateMonsters(g, dt) {
   if (g.cardT <= 0) {
     const i = g.nearest(p.x, p.z, CFG.card.range), e = g.en;
     g.curSrc = g.srcIndex('card-throw');
-    if (i >= 0) { fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, e.x[i], e.y[i] + 0.9, e.z[i], CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage, { flame: g.mods.cardBurn ? 1 : 0 }); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
+    if (i >= 0) { g.aimX = e.x[i]; g.aimZ = e.z[i]; fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, e.x[i], e.y[i] + 0.9, e.z[i], CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage, { flame: g.mods.cardBurn ? 1 : 0 }); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
     else {
       const sp = nearestSpecial(g, p.x, p.z, CFG.card.range);
-      if (sp) { fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, sp.x, sp.y + 1.2, sp.z, CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
+      if (sp) { g.aimX = sp.x; g.aimZ = sp.z; fireShot(g, KIND_CARD, p.x, p.y + 1.1, p.z, sp.x, sp.y + 1.2, sp.z, CFG.card.speed, CFG.card.life, FIELD_RULES.playerCardDamage); g.cardT = FIELD_RULES.playerCardCooldown / (1 + g.mods.cardRate); }
       else g.cardT = 0;
     }
     g.curSrc = 0;

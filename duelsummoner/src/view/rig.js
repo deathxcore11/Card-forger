@@ -152,6 +152,14 @@ export class DuelistRig {
     else if (this.curAct && want.speed) this.curAct.timeScale = want.speed;
     this.mixer.update(dt);
   }
+  // upper-body aim: after the clips have played, turn the spine chain about the world's up axis by 'yaw' (the body keeps its move direction; only the torso looks at the target)
+  twist(yaw) {
+    if (!this._sp) { const all = []; this.root.traverse(o => { if (o.isBone && /spine|chest/i.test(o.name)) all.push(o); }); const depth = o => { let d = 0; for (let q = o; q.parent; q = q.parent) d++; return d; }; all.sort((a, b) => depth(a) - depth(b)); this._sp = all.slice(0, 3); }
+    if (!this._sp.length || Math.abs(yaw) < 1e-3) return;
+    this.group.updateMatrixWorld(true);
+    const qy = new T.Quaternion(), qp = new T.Quaternion(), up = new T.Vector3(0, 1, 0), per = yaw / this._sp.length;
+    for (const b of this._sp) { b.parent.getWorldQuaternion(qp); qy.setFromAxisAngle(up, per); b.quaternion.premultiply(qp.clone().invert()).premultiply(qy).premultiply(qp); b.updateMatrixWorld(true); }
+  }
   // idle, walk and run are one blend: weights follow ground speed and the walk and run share one foot phase, so feet do not slide and nothing switches.
   // Two sets (legs and hips, arms and torso) so a card throw can take the arms and torso while the legs keep running.
   _loco(sp, dt, on, throwing) {
