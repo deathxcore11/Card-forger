@@ -2,7 +2,8 @@
 // violet or danger red. Pure data: no browser.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RAMP, ELEMENTS, ROW, ownColour, nearestReserved } from '../src/data/fxramp.js';
+import { RAMP, ELEMENTS, ROW } from '../src/data/fxramp.js';
+import { ownColour, nearestReserved } from '../src/view/fxcolour.js';
 
 const rgb = h => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
 const hue = h => { const [r, g, b] = rgb(h).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; if (d === 0) return 0; let x = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; x *= 60; return x < 0 ? x + 360 : x; };
