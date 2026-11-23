@@ -1,7 +1,8 @@
 ﻿import { launch, wait } from './cdp.mjs';
 const out = process.argv[2], R = [];
+const SEEDS = [1, 4242, 31337];
 for (let run = 0; run < 3; run++) {
-  const b = await launch({ out, query: '?debug' });
+  const b = await launch({ out, query: '?debug&seed=' + SEEDS[run] });
   await b.evalIn(`(async()=>{ const D = window.__ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 1500)); D.game.god = true; return 1; })()`);
   const r = await b.evalIn(`(async()=>{ const D = __ds, g = D.game, k = D.input.keys, col = g.colliders; const seed = g.seed;
     const hit = (x, y, z, margin) => { for (const c of col.list) { const dx = x - c.x, dz = z - c.z, rr = c.r + margin; if (dx * dx + dz * dz < rr * rr && y < c.top && y > c.y - 0.5) return true; } return false; };
@@ -20,4 +21,5 @@ for (let run = 0; run < 3; run++) {
   R.push(JSON.parse(r)); await b.shot('walk_seed' + (run + 1)); R[run].errors = await b.evalIn('window.__errs.slice(0,2)'); b.close(); await wait(1500);
 }
 console.log(JSON.stringify(R, null, 1)); setTimeout(() => process.exit(0), 300);
+
 

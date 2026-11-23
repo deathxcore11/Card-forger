@@ -64,6 +64,20 @@ export function scatterStage(map, stageIndex, solidOnly) {
         cellCount.set(key, (cellCount.get(key) || 0) + 1); solids.push([x, z, r, true]); trees.push([x, h, z, s, rnd() * TAU, tint(0.12, 0.12), parasol ? Math.floor(rnd() * 2) : 2 + Math.floor(rnd() * 2)]);
       }
     }
+    // road-aware thinning and filling: walking the road, every sample (about every 20 m) should see 6 to 10 trees within 50 m
+    const countNear = (x, z) => { let c = 0; for (const t of trees) { const dx = t[0] - x, dz = t[2] - z; if (dx * dx + dz * dz < 2500) c++; } return c; };
+    const samples = []; for (let i = 1; i < road.main.length; i++) { const a = road.main[i - 1], b = road.main[i], l = sqrtf((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])), n = Math.max(1, Math.round(l / 20)); for (let k = 0; k < n; k++) samples.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); }
+    const dropTree = i => { const t = trees[i], key = Math.floor(t[0] / 10) * 4096 + Math.floor(t[2] / 10); cellCount.set(key, (cellCount.get(key) || 1) - 1); trees.splice(i, 1); const si = solids.findIndex(q => q[3] && q[0] === t[0] && q[1] === t[2]); if (si >= 0) solids.splice(si, 1); };
+    for (let pass = 0; pass < 8; pass++) for (const sm of samples) {
+      let n = countNear(sm[0], sm[1]);
+      while (n > 10) { let best = -1, bd = -1; for (let i = 0; i < trees.length; i++) { const dx = trees[i][0] - sm[0], dz = trees[i][2] - sm[1], d2 = dx * dx + dz * dz; if (d2 < 2500 && d2 > bd) { bd = d2; best = i; } } if (best < 0) break; dropTree(best); n--; }       // too many: drop the farthest ones in view
+      for (let tries = 0; n < 6 && tries < 40; tries++) {                                                            // too few: stand a tree 10 to 30 m off the road
+        const a = rnd() * TAU, d = 10 + rnd() * 20, x = sm[0] + cos(a) * d, z = sm[1] + sin(a) * d; if (!free(x, z, 3) || !farSpawn(x, z, 24)) continue; const h = flat(x, z, 0.35); if (h === null) continue;
+        const key = Math.floor(x / 10) * 4096 + Math.floor(z / 10); if ((cellCount.get(key) || 0) >= 3) continue;
+        const parasol = rnd() < 0.6, sc = parasol ? TREE_SCALE.parasol : TREE_SCALE.blob, sz = sc[0] + rnd() * (sc[1] - sc[0]), r = 0.55 * sz; if (!gapOk(x, z, r, 3.2, true)) continue;
+        cellCount.set(key, (cellCount.get(key) || 0) + 1); solids.push([x, z, r, true]); trees.push([x, h, z, sz, rnd() * TAU, tint(0.12, 0.12), parasol ? Math.floor(rnd() * 2) : 2 + Math.floor(rnd() * 2)]); n++;
+      }
+    }
     for (const t of trees) out.trees[t[6]].push([t[0], t[1], t[2], t[3], t[4], t[5]]);
   }
   // ---- rocks: hero boulders with a low or tall rock leaning on them and a few pebbles, plus lone low and tall rocks
@@ -72,6 +86,7 @@ export function scatterStage(map, stageIndex, solidOnly) {
   for (const s of spots(D.heroes * 10, (x, z) => (free(x, z, 8) && farSpawn(x, z, 32) && flat(x, z, 0.5) !== null ? flat(x, z, 0.5) : null))) {
     const sx = 2.6 + rnd() * 0.8, sy = 3.5 + rnd() * 0.9;                           // 5.2-6.8 m wide, 4.5-6 m tall (the blob is about 1.3 high at scale 1)
     if (heroes.length >= D.heroes) break;
+    if (roadDist(road, s[0], s[2]) < sx + 10) continue;                              // hero boulders keep 10 m from the road
     let ok = true; for (const o of heroes) { const dx = s[0] - o[0], dz = s[2] - o[1]; if (dx * dx + dz * dz < 25 * 25) { ok = false; break; } }
     if (!ok || !gapOk(s[0], s[2], sx, 3.2)) continue;
     heroes.push([s[0], s[2]]); solidRock(s[0], s[2], sx, sy, s[1]);
@@ -103,6 +118,7 @@ export function scatterStage(map, stageIndex, solidOnly) {
   }
   return out;
 }
+
 
 
 
