@@ -113,7 +113,9 @@ export class Actors {
 
     this.cards = instanced(new T.BoxGeometry(0.5, 0.05, 0.7), basic(0xf3e3c2), CFG.card.max + 64);
     this.fire = instanced(new T.OctahedronGeometry(0.3, 0), basic(0xffb040), CFG.card.max + 64);
-    this.lob = instanced(new T.IcosahedronGeometry(0.4, 0), basic(0xff6a20), 16);
+    this.lob = instanced(new T.IcosahedronGeometry(0.4, 0), basic(0xffb340), 16);       // amber, never the orange-red that is reserved for enemy attacks
+    const glow = () => basic(0xffc860, { transparent: true, opacity: 0.32, blending: T.AdditiveBlending, depthWrite: false });
+    this.lobGlow = instanced(new T.IcosahedronGeometry(0.4, 0), glow(), 16); this.fireGlow = instanced(new T.OctahedronGeometry(0.3, 0), glow(), CFG.card.max + 64); scene.add(this.lobGlow, this.fireGlow);
     this.bolts = instanced(new T.OctahedronGeometry(0.25, 0), basic(0xa57bff), 64);
     this.bolt2 = instanced(new T.BoxGeometry(0.2, 0.2, 1.4), basic(0xe0e8ff), 48);
     scene.add(this.cards, this.fire, this.lob, this.bolts, this.bolt2);
@@ -158,15 +160,15 @@ export class Actors {
     else if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, size, 'max'); g.userData.fly = true; }
     else if (id === 'cinder-hatchling' && A.hatchling) { g = modelGroup(A.hatchling, size, 'max', 0xff7319); g.userData.walk = true; g.userData.puffs = true; }
     else if (id === 'twinflare-tyrant' && A.tyrant) { g = modelGroup(A.tyrant, size, 'max', 0xff7319); g.userData.fly = true; g.userData.glowPeriod = 1.2; g.userData.breath = true; }
-    else if (id === 'rune-apprentice') { g = A.apprentice ? modelGroup(A.apprentice, size, 'y') : PLACEHOLDER[id](); modelled = !!A.apprentice; g.userData.walk = true; this._attachStaff(g, !!A.apprentice); }
+    else if (id === 'rune-apprentice') { g = A.apprentice ? modelGroup(A.apprentice, size, 'y') : PLACEHOLDER[id](); modelled = !!A.apprentice; g.userData.walk = true; this._attachStaff(g, !!A.apprentice, size); }
     else { modelled = false; g = PLACEHOLDER[id](); if (id === 'ember-wyvern' || id === 'twinflare-tyrant') g.userData.fly = true; if (id === 'cinder-hatchling') g.userData.walk = true; }
     g.userData.formIdx = form; g.userData.size = size; g.scale.setScalar(modelled ? 1 : size / 1.4);      // placeholder shapes are about 1.4 m tall at scale 1
     this.scene.add(g); return g;
   }
 
   // code-built staff in the right hand (the -X hand facing +Z): wood shaft, iron collar with four rivets, blue crystal cube with a cyan spiral rune
-  _attachStaff(g, hasModel) {
-    const staff = new T.Group(), s = hasModel ? g.userData.scale : 1, L = 1.9 / s, u = 1 / s;           // a taller, thicker staff so the Rune Apprentice reads from the game camera
+  _attachStaff(g, hasModel, bodyH) {
+    const staff = new T.Group(), s = hasModel ? g.userData.scale : 1, L = 1.15 * (bodyH || 1.7) / s, u = ((bodyH || 1.7) / 1.7) / s;           // the staff is 1.15 times the figure's height (the crystal top is at most 1.3x), thickness in proportion
     const shaft = new T.Mesh(new T.CylinderGeometry(0.055 * u, 0.065 * u, L, 6), lambert(0x7a4a26)); shaft.position.y = L / 2; staff.add(shaft);
     const collar = new T.Mesh(new T.CylinderGeometry(0.1 * u, 0.1 * u, 0.12 * u, 8), lambert(0x5a5650)); collar.position.y = L; staff.add(collar);
     for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2, rv = new T.Mesh(new T.BoxGeometry(0.035 * u, 0.035 * u, 0.035 * u), lambert(0x9a968c)); rv.position.set(Math.cos(a) * 0.105 * u, L, Math.sin(a) * 0.105 * u); staff.add(rv); }
@@ -389,17 +391,18 @@ export class Actors {
     }
 
     // projectiles
-    const s = g.shots; let nc = 0, nf = 0, nl = 0, nh = 0;
+    const s = g.shots; let nc = 0, nf = 0, nl = 0, nh = 0, ngl = 0, ngf = 0;
     for (let i = 0; i < s.max; i++) {
       if (!s.alive[i]) continue;
       d.position.set(pl(s.px[i], s.x[i], a), pl(s.py[i], s.y[i], a), pl(s.pz[i], s.z[i], a)); d.scale.set(1, 1, 1);
       const k = s.kind[i];
+      { const ex = d.position.x - cam.x, ey = d.position.y - cam.y, ez = d.position.z - cam.z; if (ex * ex + ey * ey + ez * ez < 6.25) continue; }       // a shot within 2.5 m of the camera is not drawn (it would fill the frame)
       if (k === 0) { d.rotation.set(0, Math.atan2(s.vx[i], s.vz[i]) + t * 14, 0); d.updateMatrix(); this.cards.setMatrixAt(nc++, d.matrix); }
-      else if (k === 2) { d.rotation.set(t * 5, t * 4, 0); d.updateMatrix(); this.lob.setMatrixAt(nl++, d.matrix); }
+      else if (k === 2) { d.rotation.set(t * 5, t * 4, 0); d.updateMatrix(); this.lob.setMatrixAt(nl++, d.matrix); d.scale.set(1.9, 1.9, 1.9); d.updateMatrix(); this.lobGlow.setMatrixAt(ngl++, d.matrix); }
       else if (k === 3) { if (nh < 64) { d.rotation.set(t * 9, t * 11, 0); d.updateMatrix(); this.bolts.setMatrixAt(nh++, d.matrix); } }       // homing bolts have their own mesh (violet)
-      else { d.rotation.set(0, t * 12, 0); d.updateMatrix(); this.fire.setMatrixAt(nf++, d.matrix); }
+      else { d.rotation.set(0, t * 12, 0); d.updateMatrix(); this.fire.setMatrixAt(nf++, d.matrix); d.scale.set(1.9, 1.9, 1.9); d.updateMatrix(); this.fireGlow.setMatrixAt(ngf++, d.matrix); }
     }
-    this.bolts.count = nh; this.bolts.instanceMatrix.needsUpdate = true;
+    this.bolts.count = nh; this.bolts.instanceMatrix.needsUpdate = true; this.lobGlow.count = ngl; this.fireGlow.count = ngf; this.lobGlow.instanceMatrix.needsUpdate = this.fireGlow.instanceMatrix.needsUpdate = true;
     { const S = this.shadow, dd = this.d; let ns = 0;       // contact shadows follow the ground under everything that walks
       const put = (x, z, r, y) => { if (ns >= S.instanceMatrix.count) return; const gy = heightGround(x, z), up = y === undefined ? 0 : Math.max(0, y - gy); dd.position.set(x, gy + 0.07, z); dd.rotation.set(0, 0, 0); dd.scale.setScalar(r * Math.max(0.3, 1 / (1 + up * 0.4))); dd.updateMatrix(); S.setMatrixAt(ns++, dd.matrix); };      // a shadow under everything, smaller (so lighter) the higher it is
       if (this.rig && !(g.over && !g.won)) put(px, pz, 0.95);

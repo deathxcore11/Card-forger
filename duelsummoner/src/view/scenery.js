@@ -1,4 +1,4 @@
-﻿// Seeded scenery: groves of trees, boulders, bushes, grass tufts and flowers scattered over the generated stage. View only: it never touches
+// Seeded scenery: groves of trees, boulders, bushes, grass tufts and flowers scattered over the generated stage. View only: it never touches
 // the sim (no collision, no RNG stream the run uses), so replays and goldens are unaffected. The same stage seed always grows the same stage.
 // Every kind is one InstancedMesh with its own chunky look; when a baked model for a kind is present (models.tree etc.) it replaces the stand-in.
 import { scatterStage, mulberry } from '../gen/scatter.js';
@@ -105,6 +105,18 @@ export function buildScenery(map, stageIndex, models) {
         if (Math.abs(nxt - cur) > 0.002) { f.attr.array[i] = nxt; dirty = true; } }
       if (dirty) f.attr.needsUpdate = true; }
   };
+  {   // one static instanced contact-shadow mesh under every tree, boulder and bush (one draw call): the ground under a prop is darker, so props stand on the sand instead of floating
+    const sh = []; const push = (it, r) => sh.push([it[0], it[1], it[2], r]);
+    for (let v = 0; v < 4; v++) for (const it of S.trees[v]) push(it, (v < 2 ? 2.4 : 3.2) * it[3]);
+    for (const it of [].concat(S.rocks[0], S.rocks[1], S.rocks[2])) push(it, 1.5 * it[3]);
+    for (const it of S.bushes) push(it, 1.1 * it[3]);
+    if (sh.length) {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, 'rgba(30,18,8,0.55)'); gr.addColorStop(0.5, 'rgba(30,18,8,0.4)'); gr.addColorStop(1, 'rgba(30,18,8,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
+      const geo = new T.PlaneGeometry(2, 2); geo.rotateX(-Math.PI / 2); const m4 = new T.Matrix4(), sc = new T.Vector3(), ps = new T.Vector3(), q0 = new T.Quaternion();
+      const mesh = new T.InstancedMesh(geo, new T.MeshBasicMaterial({ map: new T.CanvasTexture(cv), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), sh.length);
+      sh.forEach((s, i) => { ps.set(s[0], s[1] + 0.06, s[2]); sc.set(s[3], 1, s[3]); m4.compose(ps, q0, sc); mesh.setMatrixAt(i, m4); }); mesh.instanceMatrix.needsUpdate = true; mesh.frustumCulled = false; mesh.renderOrder = 1; group.add(mesh); group.userData.propShadows = sh.length;
+    }
+  }
   group.userData.counts = kinds.map(k => k.list.length); group.userData.flowerSpots = S.flowerSpots; group.userData.scatter = S;
   return group;
 }

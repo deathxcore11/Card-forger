@@ -1,4 +1,4 @@
-﻿// The scatter of a stage: where its trees, rocks, bushes, grass and flowers stand. Pure and integer-seeded (the same map always gives the same stage, in Node and in the browser),
+// The scatter of a stage: where its trees, rocks, bushes, grass and flowers stand. Pure and integer-seeded (the same map always gives the same stage, in Node and in the browser),
 // so the sim can make the trees and big rocks solid and the view can draw exactly the same ones. The view adds colours and shapes; this module only decides places and sizes.
 // Rules (design/environment-bar.md): trees and rocks keep 24 m clear of the spawn; groves of 3 to 5 trees with trunks 6 to 9 m apart and at most 3 in any 10 x 10 m cell;
 // two tree species (parasol 9-11 m, blob 13-16 m); rocks in tiers (hero 4.5-6 m, tall 3-3.5 m, low 1.2-1.5 m, pebbles 0.35 m or less), nothing solid between 0.4 and 1.2 m;
@@ -118,7 +118,7 @@ export function scatterStage(map, stageIndex, solidOnly) {
     const near2 = (x, z) => { let b = 1e9; for (const f of feat) { const dx = f[0] - x, dz = f[1] - z, d = dx * dx + dz * dz; if (d < b) b = d; } return b; };
     const off = Math.floor(rnd() * 4);
     for (let x = -184 + off; x <= 184; x += 4) for (let z = -184 + off; z <= 184; z += 4) { if (x * x + z * z > 184 * 184 || heightAt(x, z) > 0.5 || near2(x, z) <= 156.25) continue;
-      for (let k = 0; k < 16; k++) { const px = x + (rnd() - 0.5) * 9, pz = z + (rnd() - 0.5) * 9, h = flat(px, pz, 0.3); if (h !== null && free(px, pz, 0) && farSpawn(px, pz, 10)) { out.bushes.push([px, h, pz, 1.7 + rnd() * 0.5, rnd() * TAU, tint(0.1, 0.1)]); feat.push([px, pz]); break; } } } }
+      for (let k = 0; k < 16; k++) { const px = x + (rnd() - 0.5) * 9, pz = z + (rnd() - 0.5) * 9, h = flat(px, pz, 0.3); if (h !== null && free(px, pz, 0) && farSpawn(px, pz, 16)) { out.bushes.push([px, h, pz, 1.7 + rnd() * 0.5, rnd() * TAU, tint(0.1, 0.1)]); feat.push([px, pz]); break; } } } }
   if (D.flowers > 0) {
     const fl = spots(Math.round(420 * D.flowers), (x, z) => (free(x, z, 0) && farSpawn(x, z, 10) && pat(x * 0.03 + 40, z * 0.03 + 9) > 0.62 ? flat(x, z, 0.25) : null));
     for (const s of fl) { const ci = Math.floor(pat(s[0] * 0.05, s[2] * 0.05) * D.nFlowerCols) % D.nFlowerCols; out.flowers.push([s[0], s[1], s[2], 0.8 + rnd() * 0.6, rnd() * TAU, ci]); out.flowerSpots.push([s[0], s[1], s[2]]); }
