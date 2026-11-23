@@ -120,7 +120,7 @@ export function groundLit(mat, cap = 1, sand = null) {
 // (two cover levels, a lit and a shade colour, scrolling with the wind, fading toward the horizon). The dither is allowed on sky only (amendment 1). Stage 2 and 3 have no sun and no clouds.
 export function makeSky() {
   const u = Object.assign({ uMode: E.skyMode, uMist: E.mist, uGlow: E.glow, uStar: E.star, uMoonL: E.moonL, uMoonD: E.moonD, uAsh: E.ash, uCover: E.cover, uSunOn: E.sunOn, uDither: E.dither, uSkyM: E.skyM, uCldL: E.cldL, uCldS: E.cldS, uDisc: E.disc }, engineUniforms());
-  const mat = new T.ShaderMaterial({ side: T.BackSide, depthWrite: false, depthTest: false, fog: false, uniforms: u,
+  const mat = new T.ShaderMaterial({ side: T.BackSide, depthWrite: false, depthTest: true, depthFunc: T.LessEqualDepth, fog: false, uniforms: u,
     vertexShader: 'varying vec3 vD; void main() { vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w; }',
     fragmentShader: GLSL + `
     uniform float uMode; uniform vec3 uMist; uniform vec3 uGlow; uniform vec3 uStar; uniform vec3 uMoonL; uniform vec3 uMoonD; uniform vec3 uAsh;
@@ -163,5 +163,5 @@ export function makeSky() {
       c = mix(c, uSkyG, smoothstep(0.0, -0.1, d.y));
       gl_FragColor = vec4(c, 1.0);
     }` });
-  const m = new T.Mesh(new T.SphereGeometry(500, 24, 12), mat); m.frustumCulled = false; m.renderOrder = -10; return m;
+  const m = new T.Mesh(new T.SphereGeometry(500, 24, 12), mat); m.frustumCulled = false; m.renderOrder = 100; return m;       // the sky is drawn LAST among the opaque draws, at depth 1 with LEQUAL, so it only shades the pixels nothing else covered (spec 2.12 d)
 }

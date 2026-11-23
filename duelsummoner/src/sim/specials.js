@@ -1,4 +1,4 @@
-﻿// Elites and the boss: the Sealed Warden (4:00), the Twin Jackal Idols (6:00) and The Hollow Pharaoh (8:00 or the Royal Gate).
+// Elites and the boss: the Sealed Warden (4:00), the Twin Jackal Idols (6:00) and The Hollow Pharaoh (8:00 or the Royal Gate).
 import { CFG } from '../data/config.js';
 import { atan2, cos, sin } from './dmath.js';
 import { SPECIALS } from '../data/enemies.js';
@@ -132,7 +132,7 @@ export function updateSpecials(g, dt) {
         if (sp.stT <= 0) {
           sp.st = 0; sp.cd = S.slam.cooldown;
           if (d < S.slam.radius * kr && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.slam.dmg * mul, true, 'Sealed Warden slam');
-          addFx(g, { type: 'ring', x: sp.x, y: sp.y, z: sp.z, r: S.slam.radius * kr, dur: 0.5, color: 0xff5030 });
+          addFx(g, { type: 'ring', owner: 1, x: sp.x, y: sp.y, z: sp.z, r: S.slam.radius * kr, dur: 0.5, color: 0xff5030 });
         }
         continue;
       }
@@ -180,7 +180,7 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
   if (phase !== b.phase) {
     b.phase = phase; g.emit('bossphase', phase);
     g.event('banner', phase === 2 ? 'Phase two: face-down traps cover the floor.' : 'Phase three: the sand rises.');
-    addFx(g, { type: 'ring', x: sp.x, y: sp.y, z: sp.z, r: 12, dur: 0.8, color: 0xe8c56a });
+    addFx(g, { type: 'ring', owner: 1, x: sp.x, y: sp.y, z: sp.z, r: 12, dur: 0.8, color: 0xe8c56a });
   }
   if (sp.st === 1) {                                               // blade windup: marked arc
     sp.stT -= dt;
@@ -188,7 +188,7 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
       sp.st = 0; sp.cd = S.blade.cooldown;
       const fx = sin(sp.face), fz = cos(sp.face), l = d || 1, dot = (dx / l) * fx + (dz / l) * fz;
       if (d < BR && dot > cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true, 'The Hollow Pharaoh blade');
-      addFx(g, { type: 'fan', x: sp.x, y: sp.y, z: sp.z, r: BR, arc: S.blade.arcDeg, dx: fx, dz: fz, dur: 0.3, color: 0xffe0a0 });
+      addFx(g, { type: 'fan', owner: 1, x: sp.x, y: sp.y, z: sp.z, r: BR, arc: S.blade.arcDeg, dx: fx, dz: fz, dur: 0.3, color: 0xffe0a0 });
     }
     return;
   }

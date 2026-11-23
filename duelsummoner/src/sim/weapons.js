@@ -112,7 +112,7 @@ export function updateShots(g, dt) {
 }
 
 export function splash(g, x, y, z, r, dmg, flame) {
-  addFx(g, { type: 'ring', x, y, z, r, dur: 0.35, color: (flame & 1) ? 0xff8a30 : 0x7fe8ff });
+  addFx(g, { type: 'ring', owner: 0, x, y, z, r, dur: 0.35, color: (flame & 1) ? 0xff8a30 : 0x7fe8ff });
   breakVasesNear(g, x, z, r);
   const e = g.en, nc = g.grid.query(x, z, r, near);
   for (let k = 0; k < nc; k++) { const j = near[k]; if (!e.alive[j]) continue; const dx = e.x[j] - x, dz = e.z[j] - z; if (dx * dx + dz * dz < r * r) damageEnemy(g, j, dmg, { elem: flame }); }
@@ -164,7 +164,7 @@ export function updatePickups(g, dt) {
     }
     if (d < CFG.xp.pick && (Math.abs(p.y + 1 - m.y[i]) < 2.5 || flying)) {
       m.alive[i] = 0; g.emit('pickup', m.kind[i], m.val[i]);
-      addFx(g, { type: 'ring', x: m.x[i], y: m.y[i] - 0.3, z: m.z[i], r: 0.9, dur: 0.25, color: m.kind[i] === PICK_XP ? 0x46e0ff : 0xe0b765 });   // sparkle on collect
+      addFx(g, { type: 'ring', owner: 2, x: m.x[i], y: m.y[i] - 0.3, z: m.z[i], r: 0.9, dur: 0.25, color: m.kind[i] === PICK_XP ? 0x46e0ff : 0xe0b765 });   // sparkle on collect
       if (m.kind[i] === PICK_XP) g.addXp(m.val[i]);
       else if (m.kind[i] === PICK_COIN) { g.coinFrac += (m.val[i] || 1) * (1 + g.mods.coinMult); const w = Math.floor(g.coinFrac); g.coins += w; g.coinsGained = (g.coinsGained || 0) + w; g.coinFrac -= w; }
       else if (m.kind[i] === PICK_HEART) p.hp = Math.min(p.maxHp, p.hp + RUN.heartHeal);

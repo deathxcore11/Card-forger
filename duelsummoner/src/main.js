@@ -125,7 +125,7 @@ const game = new Game(Date.now() & 0xffff, { duelist, world: withProps ? 'region
 const host = createBrowserHost(canvas);
 const save = loadSave(host);
 const fx = new Fx(scene, save.settings);
-const actors = new Actors(scene, assets, fx);
+const actors = new Actors(scene, assets, fx); actors.ownCtx = { camera, renderer };
 const ambient = new Ambient(scene, assets.butterflyPrep);
 const threads = new LeyThreads(scene, 6);                               // crimson ribbons toward the Gate
 const props = new Props(scene);

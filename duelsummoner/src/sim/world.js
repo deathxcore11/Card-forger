@@ -115,7 +115,7 @@ export function chestPrice(g) {
 export function breakVase(g, v) {
   if (!v.alive) return; v.alive = false;
   const D = E.vases.drops, d = v.banded ? E.vases.banded : D;
-  addFx(g, { type: 'ring', x: v.x, y: v.y, z: v.z, r: 1.2, dur: 0.3, color: v.banded ? 0xe8c56a : 0xc9965a });
+  addFx(g, { type: 'ring', owner: 2, x: v.x, y: v.y, z: v.z, r: 1.2, dur: 0.3, color: v.banded ? 0xe8c56a : 0xc9965a });
   const coins = D.coins[0] + Math.floor(g.rl() * (D.coins[1] - D.coins[0] + 1));
   for (let i = 0; i < coins; i++) dropPickup(g, PICK_COIN, v.x + (g.rl() - 0.5), v.y, v.z + (g.rl() - 0.5));
   dropPickup(g, PICK_XP, v.x, v.y, v.z, v.banded ? d.xp : 1);

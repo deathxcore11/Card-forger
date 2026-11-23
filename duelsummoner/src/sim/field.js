@@ -214,7 +214,7 @@ function applyCard(g, c) {
 function evolve(g, m, before) {
   if (formOf(m.id, m.level) === 2 && !g.fullForms.includes(m.id)) g.fullForms.push(m.id);          // reached its full form (unlock key dsfull:<monster>)
   if (formOf(m.id, m.level) <= before) return;
-  addFx(g, { type: 'ring', x: m.x, y: m.y - 1, z: m.z, r: 3.5, dur: 0.6, color: 0xc090ff });
+  addFx(g, { type: 'ring', owner: 2, x: m.x, y: m.y - 1, z: m.z, r: 3.5, dur: 0.6, color: 0xc090ff });
   g.event('banner', def(m.id).name + ' evolves!'); g.event('summon', m.id);
 }
 

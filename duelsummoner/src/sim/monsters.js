@@ -1,4 +1,4 @@
-﻿import { OATH_BY_ID } from '../data/progress.js';
+import { OATH_BY_ID } from '../data/progress.js';
 import { K } from '../data/tuning.js';
 import { CAP, capReady, capTake } from './caps.js';
 import { takeBuf, freeBuf } from './scratch.js';
@@ -102,8 +102,8 @@ function attack(g, m, D, A) {
       pick.sort((a, b) => a.marked - b.marked || (b.big | 0) - (a.big | 0) || a.d - b.d);               // unmarked ones first, a boss or elite before the swarm, then nearest first
       const dur = MARKS.duration + g.mods.markDur;
       for (let k = 0; k < Math.min(n, pick.length); k++) { const P = pick[k]; if (P.sp) { P.sp.mark = dur; g.damageSpecial(P.sp, dmg, m.x, m.z, { noCrit: true, elem: flame }); } else { e.mark[P.i] = dur; damageEnemy(g, P.i, dmg, { noCrit: true, elem: flame }); } }
-      addFx(g, { type: 'ring', x: m.x, y: m.y, z: m.z, r: 1.2, dur: 0.3, color: 0xb070ff });
-      for (let k = 0; k < Math.min(n, pick.length, 4); k++) { const P = pick[k], i = P.i; addFx(g, { type: 'bolt', x: m.x, y: m.y - 0.3, z: m.z, x2: P.sp ? P.sp.x : e.x[i], y2: P.sp ? P.sp.y + 1.2 : e.y[i] + 0.9, z2: P.sp ? P.sp.z : e.z[i], dur: 0.15, color: 0x5fe8ff, seed: P.sp ? 99 : i }); }   // cyan rune bolts
+      addFx(g, { type: 'ring', owner: 0, x: m.x, y: m.y, z: m.z, r: 1.2, dur: 0.3, color: 0xb070ff });
+      for (let k = 0; k < Math.min(n, pick.length, 4); k++) { const P = pick[k], i = P.i; addFx(g, { type: 'bolt', owner: 0, x: m.x, y: m.y - 0.3, z: m.z, x2: P.sp ? P.sp.x : e.x[i], y2: P.sp ? P.sp.y + 1.2 : e.y[i] + 0.9, z2: P.sp ? P.sp.z : e.z[i], dur: 0.15, color: 0x5fe8ff, seed: P.sp ? 99 : i }); }   // cyan rune bolts
       g.castAt = g.t;
       return true;
     }
@@ -131,7 +131,7 @@ function attack(g, m, D, A) {
       }
       freeBuf();
       for (const sp of g.sp) { if (!sp.alive || sp.dead) continue; const dx = sp.x - m.x, dz = sp.z - m.z, d = Math.sqrt(dx * dx + dz * dz); if (d < range + sp.radius && (dx / (d || 1)) * fx + (dz / (d || 1)) * fz > cosA) g.damageSpecial(sp, dmg, m.x, m.z, { elem: flame }); }
-      addFx(g, { type: 'fan', x: m.x, y: m.y - 0.8, z: m.z, r: range, arc, dx: fx, dz: fz, dur: 0.25, color: 0xffa848 });
+      addFx(g, { type: 'fan', owner: 0, x: m.x, y: m.y - 0.8, z: m.z, r: range, arc, dx: fx, dz: fz, dur: 0.25, color: 0xffa848 });
       return true;
     }
   }
@@ -159,7 +159,7 @@ function fireTrap(g, s) {
   const T = TRAPS[s.id], p = g.p, e = g.en, lv = s.level - 1, prevSrc = g.curSrc; g.curSrc = g.srcIndex(s.id);
   s.cd = T.recharge * pow(T.rechargePerLevel, lv) * (1 - g.mods.trapRecharge); g.trapsFired++; g.emit('sound', 3);
   const dmg = T.dmg * (1 + T.dmgPerLevel * lv);
-  addFx(g, { type: 'ring', x: p.x, y: p.y, z: p.z, r: T.radius, dur: 0.5, color: s.id === 'gust-ward' ? 0xa0e0ff : 0xe8c56a });
+  addFx(g, { type: 'ring', owner: 0, x: p.x, y: p.y, z: p.z, r: T.radius, dur: 0.5, color: s.id === 'gust-ward' ? 0xa0e0ff : 0xe8c56a });
   const buf = takeBuf(), c = g.grid.query(p.x, p.z, T.radius, buf);
   for (let k = 0; k < c; k++) {
     const i = buf[k]; if (!e.alive[i]) continue;
@@ -192,7 +192,7 @@ export function updateTraps(g, dt) {
     for (let k = 0; k < due && g.storm.left > 0; k++) {
       g.storm.left--;
       const a = g.rc() * Math.PI * 2, i = g.nearest(p.x + cos(a) * 12, p.z + sin(a) * 12, 40);
-      if (i >= 0) { addFx(g, { type: 'ring', x: e.x[i], y: e.y[i], z: e.z[i], r: 1.2, dur: 0.25, color: 0xf3e3c2 }); damageEnemy(g, i, S.dmg, { noCrit: true }); }
+      if (i >= 0) { addFx(g, { type: 'ring', owner: 0, x: e.x[i], y: e.y[i], z: e.z[i], r: 1.2, dur: 0.25, color: 0xf3e3c2 }); damageEnemy(g, i, S.dmg, { noCrit: true }); }
     }
     g.curSrc = 0;
     if (g.storm.left <= 0) g.storm = null;

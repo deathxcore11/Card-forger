@@ -8,6 +8,7 @@ import { SCALE, summonSize } from '../data/scale.js';
 import { DuelistRig } from './rig.js';
 import { actorLit } from './engine.js';
 import { Ribbon } from './ribbon.js';
+import { OwnEffects } from './ownfx.js';
 import { PICKUP_COLORS } from '../data/pickups.js';
 import { makeCreature } from './creature.js';
 
@@ -139,6 +140,7 @@ export class Actors {
     // soft contact shadows: a dark radial blob under the duelist, summons and swarm enemies (cheap: one instanced quad, no shadow maps)
     { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const cx = cv.getContext('2d'), gr = cx.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, 'rgba(30,18,8,0.62)'); gr.addColorStop(0.45, 'rgba(30,18,8,0.52)'); gr.addColorStop(0.8, 'rgba(30,18,8,0.18)'); gr.addColorStop(1, 'rgba(30,18,8,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 64, 64);
       const tx = new T.CanvasTexture(cv); this.shadow = instanced(flat(new T.PlaneGeometry(2, 2)), new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), CFG.enemy.max + 16); scene.add(this.shadow); }
+    this.own = new OwnEffects(scene);       // the player's ground areas (rings, fans) through the own-effect material: ink rule, solid rim, keyhole, governor (view/ownfx.js)
     this.ribbon = new Ribbon(scene);       // the rune bolts of the Spellcaster summons: the lightning ribbon, one draw (view/ribbon.js)
     this.fans = new Map();                                       // one mesh per arc angle, made on demand
     this.sand = null; this.sandR = -1;
@@ -239,6 +241,7 @@ export class Actors {
   }
 
   update(g, a, cam, head, dt) {
+    this._dt = dt;
     dt = dt || 0.016; this.vt += dt;
     const d = this.d, p = g.p, e = g.en, t = g.t, fx = this.fx;
     if (this.fusionAt !== undefined && this.vt - this.fusionAt > 1.8) { this.fusionAt = undefined; }
@@ -474,11 +477,12 @@ export class Actors {
     this.teleLine.count = nl; this.teleDisc.count = nd;
     for (const mm of [this.teleLine, this.teleDisc]) { mm.instanceMatrix.needsUpdate = true; mm.instanceColor.needsUpdate = true; }
     // effects: expanding rings and fading fans
-    let nr = 0;
+    let nr = 0; this.own.begin();
     for (const o of g.fx) {
       if (!o.on) continue;
       if (o.type === 'bolt') { this.ribbon.see(o); continue; }
       const f = Math.min(1, o.t / o.dur), fade = 1 - f;
+      if (o.owner === 0 && this.ownCtx) { if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), o.color, false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, o.color, true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
       if (o.type === 'ring') {
         d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = o.r * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix();
         this.fxRing.setMatrixAt(nr, d.matrix); this.fxRing.setColorAt(nr, col.setHex(o.color).multiplyScalar(0.4 + 0.6 * fade)); nr++;
@@ -488,7 +492,7 @@ export class Actors {
         fan.setMatrixAt(n, d.matrix); fan.setColorAt(n, col.setHex(o.color).multiplyScalar(0.3 + 0.7 * fade)); fanN.set(fan, n + 1);
       }
     }
-    this.ribbon.tick();
+    this.ribbon.tick(); if (this.ownCtx && this.ownExtra) this.ownExtra(this.own); if (this.ownCtx) { const c = this.ownCtx; this.own.end(c.camera, g.p, c.renderer.internalSize ? { w: c.renderer.internalSize.x, h: c.renderer.internalSize.y } : { w: 960, h: 540 }, this._dt); }
     this.fxRing.count = nr; this.fxRing.instanceMatrix.needsUpdate = true; this.fxRing.instanceColor.needsUpdate = true;
     for (const [fan, mesh] of this.fans) { mesh.count = fanN.get(mesh) || 0; mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }
   }

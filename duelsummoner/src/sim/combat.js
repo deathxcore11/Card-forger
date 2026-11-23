@@ -60,7 +60,7 @@ function chain(g, from, x, z, dmg) {
   for (let k = 0; k < n; k++) { const j = buf[k]; if (j === from || !e.alive[j]) continue; const dx = e.x[j] - x, dz = e.z[j] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = j; } }
   freeBuf();
   if (best < 0) return;
-  addFx(g, { type: 'ring', x: e.x[best], y: e.y[best] + 0.5, z: e.z[best], r: 1.0, dur: 0.2, color: 0x7fe8ff });
+  addFx(g, { type: 'ring', owner: 0, x: e.x[best], y: e.y[best] + 0.5, z: e.z[best], r: 1.0, dur: 0.2, color: 0x7fe8ff });
   damageEnemy(g, best, dmg, { noCrit: true, noChain: true });
 }
 
@@ -89,7 +89,7 @@ export function dropPickup(g, kind, x, y, z, val) {
 
 // ---- explosions: hurt the duelist (if pDmg) and every enemy and elite in range (if eDmg) ----
 export function explode(g, x, y, z, r, pDmg, eDmg, color, src) {
-  addFx(g, { type: 'ring', x, y, z, r, dur: 0.45, color: color || 0xff9030 });
+  addFx(g, { type: 'ring', owner: pDmg > 0 ? 1 : 0, x, y, z, r, dur: 0.45, color: color || 0xff9030 });
   const p = g.p;
   if (pDmg > 0) { const dx = p.x - x, dz = p.z - z; if (dx * dx + dz * dz < r * r && Math.abs(p.y - y) < 2.5) g.hurtPlayer(pDmg, true, src || 'an explosion'); }
   if (eDmg > 0) {
@@ -110,10 +110,10 @@ export function explode(g, x, y, z, r, pDmg, eDmg, color, src) {
 
 export function addFx(g, spec) {
   const list = g.fx;
-  for (let i = 0; i < list.length; i++) if (!list[i].on) { Object.assign(list[i], { on: true, t: 0, dur: 0.4, r: 1, arc: 0, dx: 0, dz: 1, color: 0xff9030 }, spec); return list[i]; }
+  for (let i = 0; i < list.length; i++) if (!list[i].on) { Object.assign(list[i], { on: true, t: 0, dur: 0.4, r: 1, arc: 0, dx: 0, dz: 1, color: 0xff9030, owner: 2 }, spec); return list[i]; }
   return null;
 }
-export function makeFx(n) { const a = []; for (let i = 0; i < n; i++) a.push({ on: false, type: 'ring', x: 0, y: 0, z: 0, r: 1, arc: 0, dx: 0, dz: 1, t: 0, dur: 0.4, color: 0xff9030 }); return a; }
+export function makeFx(n) { const a = []; for (let i = 0; i < n; i++) a.push({ on: false, type: 'ring', owner: 2, x: 0, y: 0, z: 0, r: 1, arc: 0, dx: 0, dz: 1, t: 0, dur: 0.4, color: 0xff9030 }); return a; }
 
 export { heightAt };
 
