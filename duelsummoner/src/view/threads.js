@@ -19,7 +19,7 @@ export class LeyThreads {
     const mk = (strips, mat) => { const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array(SEG * 2 * strips * 3), 3)); g.setAttribute('color', new T.BufferAttribute(new Float32Array(SEG * 2 * strips * 4), 4));
       const idx = []; for (let k = 0; k < strips; k++) for (let s = 0; s < SEG - 1; s++) { const a = (k * SEG + s) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } g.setIndex(idx);
       const m = new T.Mesh(g, mat); m.frustumCulled = false; m.visible = false; m.renderOrder = 3; this.group.add(m); return m; };
-    for (let i = 0; i < this.max; i++) this.list.push({ mesh: mk(2, this.matAdd), under: mk(1, this.matUnder), alive: false, trail: [], x: 0, z: 0, h: 0, gy: 0, gr: 0, life: 0, spd: 0, dx: 0, dz: 0, lat: 0 });
+    for (let i = 0; i < this.max; i++) this.list.push({ mesh: mk(1, this.matAdd), under: mk(2, this.matUnder), alive: false, trail: [], x: 0, z: 0, h: 0, gy: 0, gr: 0, life: 0, spd: 0, dx: 0, dz: 0, lat: 0 });
   }
   rnd() { this.rng = (this.rng * 1664525 + 1013904223) >>> 0; return this.rng / 4294967296; }
   _show(th, v) { th.mesh.visible = v; th.under.visible = v; }
@@ -71,10 +71,10 @@ export class LeyThreads {
       const taper = 1 - s / SEG, tw = 0.35 + taper * 0.65, near = sstep(4, 9, dist), a = taper * fade * fl * near * (th.far ? 0.75 : 1);
       const wc = Math.min(0.2, 0.5 * LEY.corePx * pxk * depth * tw), wh = Math.min(0.3, 0.5 * LEY.haloPx * pxk * depth * tw), wu = Math.min(0.4, 0.5 * LEY.underPx * pxk * depth * tw);       // sized by depth along the view axis, so the pixel width holds out to the screen edges
       const put = (P, i, w, sg) => P.setXYZ(i, q[0] + sx * w * sg, q[1] + sy * w * sg, q[2] + sz * w * sg);
-      put(pos, s * 2, wh, 1); put(pos, s * 2 + 1, wh, -1); put(pos, (SEG + s) * 2, wc, 1); put(pos, (SEG + s) * 2 + 1, wc, -1); put(upos, s * 2, wu, 1); put(upos, s * 2 + 1, wu, -1);
-      const ah = Math.min(maxA, a * 0.5), ac = Math.min(maxA, a * 0.75), au = Math.min(maxA, a * 0.55);
+      put(pos, s * 2, wh, 1); put(pos, s * 2 + 1, wh, -1); put(upos, s * 2, wu, 1); put(upos, s * 2 + 1, wu, -1); put(upos, (SEG + s) * 2, wc, 1); put(upos, (SEG + s) * 2 + 1, wc, -1);
+      const ah = Math.min(maxA, a * 0.5), ac = Math.min(LEY.coreAlpha, a * 1.1), au = Math.min(maxA, a * 0.55);       // the core is drawn with normal blending (additive white vanishes on bright sand), so it can be bright
       col.setXYZW(s * 2, this.halo.r, this.halo.g, this.halo.b, ah); col.setXYZW(s * 2 + 1, this.halo.r, this.halo.g, this.halo.b, ah);
-      col.setXYZW((SEG + s) * 2, this.core.r, this.core.g, this.core.b, ac); col.setXYZW((SEG + s) * 2 + 1, this.core.r, this.core.g, this.core.b, ac);
+      ucol.setXYZW((SEG + s) * 2, this.core.r, this.core.g, this.core.b, ac); ucol.setXYZW((SEG + s) * 2 + 1, this.core.r, this.core.g, this.core.b, ac);
       ucol.setXYZW(s * 2, this.under.r, this.under.g, this.under.b, au); ucol.setXYZW(s * 2 + 1, this.under.r, this.under.g, this.under.b, au);
     }
     pos.needsUpdate = col.needsUpdate = upos.needsUpdate = ucol.needsUpdate = true;

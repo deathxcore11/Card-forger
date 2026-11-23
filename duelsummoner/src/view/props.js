@@ -66,7 +66,7 @@ export class Props {
       const water = new T.Mesh(new T.CylinderGeometry(1.1, 1.1, 0.05, 10), basic(rc)); water.position.y = 0.5; g.add(water);
       const track = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.6, E.shrines.radius, 48), basic(dim(rc, 0.75), { side: T.DoubleSide })); track.rotation.x = -Math.PI / 2; track.position.y = 0.1; g.add(track);
       const fill = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.6, E.shrines.radius, 48, 1, 0, 0.01), basic(rc, { side: T.DoubleSide, depthWrite: false })); fill.rotation.x = -Math.PI / 2; fill.position.y = 0.12; g.add(fill);
-      fill.userData.dyn = water.userData.dyn = track.userData.dyn = true; track.renderOrder = 1; fill.renderOrder = 2;       // the track stays out of the bake and draws first, the progress band over it (0.6 m wide) bake(g); G.add(g); P.shrines.push({ s, g, fill, water, lastP: -1 });
+      fill.userData.dyn = water.userData.dyn = track.userData.dyn = true; track.renderOrder = 1; fill.renderOrder = 2; bake(g); G.add(g); P.shrines.push({ s, g, fill, water, lastP: -1 });       // the track stays out of the bake and draws first, the progress band over it (0.6 m wide)
     }
     if (world.altar) {                                                  // stepped altar with two bowls: Banish and Tribute
       const a = world.altar, g = new T.Group(); g.position.set(a.x, a.y, a.z);
