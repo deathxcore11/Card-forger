@@ -3,7 +3,7 @@
 import test from 'node:test'; import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js'; import { spawnEnemy } from '../src/sim/enemies.js'; import { killEnemy } from '../src/sim/combat.js'; import { KINDS } from '../src/data/enemies.js';
 import { takeBuf, freeBuf, resetBufs } from '../src/sim/scratch.js';
-const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false }); g.god = true; g.spawnAcc = -1e9; return g; };
+const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false, oldGen: true }); g.god = true; g.spawnAcc = -1e9; return g; };
 const R = KINDS.bloat.blast.radius;
 
 function ring(seed) {

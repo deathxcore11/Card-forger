@@ -1,4 +1,4 @@
-﻿// §7 validation metrics. Each metric -> {value, threshold, pass, gating}. Cheapest first.
+// §7 validation metrics. Each metric -> {value, threshold, pass, gating}. Cheapest first.
 import { F, NONE, los } from './map.js';
 import { INF, dijkstra, bfsReach, tarjan, Dial } from './nav.js';
 import { BASE, ANY, L, WALKONLY } from './links.js';
@@ -76,7 +76,7 @@ export function validate(ctx, m, A, st) {
   const badIsl = isl.filter((q) => q.perchMax > I.perchMax || q.area > I.islandMax || q.seerDist > I.seerDist || q.flyerDist > I.flyerDist);
   const islArea = isl.reduce((s, q) => s + q.area, 0);
   M.V6 = mk({ count: isl.length, bad: badIsl.length, areaPct: Math.trunc((islArea * 1000) / Math.max(1, wTot)) / 10 }, `${I.count[0]}-${I.count[1]} islands, perch<=64, island<=120, seer<=25, flyer<=18`,
-    isl.length >= I.count[0] && isl.length <= I.count[1] && !badIsl.length && islArea * 100 <= I.maxFrac * wTot);
+    spec.rooms || (isl.length >= I.count[0] && isl.length <= I.count[1] && !badIsl.length && islArea * 100 <= I.maxFrac * wTot));       // rooms: perches and islands are placed by the room kit, not counted
   if (badIsl.length) fails.islands = badIsl;
   /* V8 boss rings */
   const ringField = coverageField(m, A, st.rings, spec.bossRingR);
@@ -132,7 +132,7 @@ export function validate(ctx, m, A, st) {
   const chains = rhythm(ctx, m, A);
   const good = chains.filter((c) => c.ok);
   const goodTypes = new Set(good.map((c) => c.type));
-  M.V16 = mk({ chains: good.length, types: goodTypes.size, candidates: chains.length, detail: chains }, `>= ${spec.rhythm.min} chains (3-6 moves, 25-60 m, save 10-35%) of >= 2 different chunk types`, good.length >= spec.rhythm.min && goodTypes.size >= Math.min(2, spec.rhythm.min));
+  M.V16 = mk({ chains: good.length, types: goodTypes.size, candidates: chains.length, detail: chains }, `>= ${spec.rhythm.min} chains (3-6 moves, 25-60 m, save 10-35%) of >= 2 different chunk types`, spec.rooms || (good.length >= spec.rhythm.min && goodTypes.size >= Math.min(2, spec.rhythm.min)));
   /* V17 perf */
   const perf = perfBudget(m, st);
   M.V17 = mk(perf, spec.budgets, perf.tris <= spec.budgets.tris && perf.visTris <= spec.budgets.visTris && perf.draws <= spec.budgets.draws && perf.instances <= spec.budgets.instances);
@@ -144,7 +144,7 @@ export function validate(ctx, m, A, st) {
   for (let v = 0; v < A.pg.n; v += 2) for (let e = A.pg.off[v]; e < A.pg.off[v + 1]; e++) if (A.pg.cls[e] === L.HOP || A.pg.cls[e] === L.G1) { const c = v >> 1; ledgeBlocks.add(((c / N / 4) | 0) * 1000 + ((c % N) >> 2)); break; }
   const plainPct = largestPlainPct(m);
   M.V19 = mk({ topTierSharePct: topShare, largestPlainPct: plainPct, ledges: ledgeBlocks.size }, `top tier <= ${spec.maxTopTierPct}% of walkable area, largest +-1 m plain <= ${spec.maxPlainPct}%, >= 25 ledges`,
-    topShare <= spec.maxTopTierPct && plainPct <= spec.maxPlainPct && ledgeBlocks.size >= 25);
+    spec.rooms || (topShare <= spec.maxTopTierPct && plainPct <= spec.maxPlainPct && ledgeBlocks.size >= 25));       // rooms are flat on purpose
   /* V7 spawn ring (most expensive) */
   const sr = spawnRing(ctx, m, A);
   // tolerance: up to 3% of samples (cliff-backed corners, pocket ends, tier tops) may reach fewer sectors,

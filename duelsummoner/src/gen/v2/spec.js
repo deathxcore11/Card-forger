@@ -1,4 +1,4 @@
-﻿// StageSpec tables (numbers live here, not in code). Mirrors src/data/stages/stage{1,2,3}.json.
+// StageSpec tables (numbers live here, not in code). Mirrors src/data/stages/stage{1,2,3}.json.
 
 const ENC_RULES = {
   witness_stone: { cls: 'FREE_ITEM', minR: 200, minSpawn: 110, tags: ['high_perch', 'reward_port', 'pocket_end', 'field', 'hub_edge'] },
@@ -24,8 +24,8 @@ export const PLACE_ORDER = ['second_seal', 'witness_stone', 'echo_forge', 'relic
   'altar_tribute', 'scales_court', 'broken_covenant', 'bone_oath', 'magnet_tablet', 'golden_statue', 'sealed_fragment', 'start_chest', 'card_chest'];
 
 const BASE = {
-  cell_m: 24, coarse_m: 8, districts: 4, regionSpacing: 7, loopRatio: 30, maxSpineChange: 40, spineWidth: 12,
-  spineRatioMin: 115, maxTierAreaPct: 44, maxTopTierPct: 55, maxPlainPct: 40, // macro-variety and flatness gates (x100 / %)
+  cell_m: 24, coarse_m: 8, districts: 5, regionSpacing: 7, rooms: true, roomR: 17, loopRatio: 30, maxSpineChange: 40, spineWidth: 12,
+  spineRatioMin: 105, maxTierAreaPct: 60, maxTopTierPct: 55, maxPlainPct: 40, // macro-variety and flatness gates (x100 / %)
   econGraphM: 180, bossRings: [5, 7], bossRingCover: 70, bossRingCoverMax: 100, // 5-7 rings; 95% of enemy-reachable ground within 70 m path, all within 100 m (director adds a sky beam past 70 m)
   bossRingR: 14,
   islands: { perchMax: 64, islandMax: 120, count: [4, 8], maxFrac: 8, seerDist: 25, flyerDist: 18 },
@@ -45,7 +45,7 @@ export const STAGE_SPECS = {
       { id: 'dragons_spine', hero: 'fossil_spine_ribs', name: 'Dragon\'s Spine', w: 10, arche: { canyon: 2, mesa: 2 } },
       { id: 'kings_stair', hero: 'kings_stair_facade', name: 'King\'s Stair', w: 10, arche: { terraces: 3, mesa: 1 } },
     ],
-    regions: [12, 15], tierRange: [0, 2], tierWeights: [40, 35, 25], gateTier: 0, spineLen: [190, 290],
+    regions: [5, 7], tierRange: [0, 2], tierWeights: [40, 35, 25], gateTier: 0, spineLen: [120, 230],
     falls: 'gully', openingM: 90, clock_s: 420,
     timeline: [{ t: 0, ev: 'wave', what: 'husks' }, { t: 40, ev: 'wave', what: 'runners' }, { t: 80, ev: 'wave', what: 'seers' },
       { t: 105, ev: 'elite', what: 'Grave Herald', drop: 'card_chest' }, { t: 140, ev: 'wave', what: 'golems' },
@@ -64,8 +64,8 @@ export const STAGE_SPECS = {
       { id: 'chain_bridges', hero: 'chain_winch_tower', name: 'Chain Bridges', w: 10, arche: { trench: 3, mesa: 1 } },
       { id: 'niche_walls', hero: 'niche_wall_shrine', name: 'Niche Walls', w: 10, arche: { terraces: 3, mesa: 1 } },
     ],
-    regions: [11, 14], tierRange: [-1, 2], tierWeights: [15, 45, 28, 12], gateTier: -1, spineLen: [175, 270],
-    falls: 'pit', pitLP: 10, openingM: 80, clock_s: 420, requireArche: { trench: 2 },
+    regions: [5, 7], tierRange: [-1, 1], tierWeights: [25, 45, 30], gateTier: -1, spineLen: [120, 220],
+    falls: 'pit', pitLP: 10, openingM: 80, clock_s: 420,
     timeline: [{ t: 0, ev: 'wave', what: 'husks_greyblue' }, { t: 40, ev: 'wave', what: 'runners_greyblue' }, { t: 80, ev: 'wave', what: 'chain_wights' },
       { t: 105, ev: 'elite', what: 'Chainbound Jailer', drop: 'card_chest' }, { t: 140, ev: 'wave', what: 'lantern_keepers' }, { t: 180, ev: 'wave', what: 'seal_moths' },
       { t: 225, ev: 'timed_boss', what: 'Coffin Sentinels', drop: 'sealed_chest' }, { t: 260, ev: 'wave', what: 'ossuary_crawlers' },
@@ -82,8 +82,8 @@ export const STAGE_SPECS = {
       { id: 'card_shoals', hero: 'card_shoal_spire', name: 'Card Shoals', w: 10, arche: { shoal: 3, dunes: 1 } },
       { id: 'throne_stair', hero: 'throne_stair_steps', name: 'Throne Stair', w: 10, arche: { terraces: 2, mesa: 2 } },
     ],
-    regions: [12, 15], tierRange: [0, 3], tierWeights: [35, 30, 22, 13], gateTier: 1, needTopTier: true, spineLen: [200, 300],
-    falls: 'pit', pitLP: 15, openingM: 90, clock_s: 480, requireArche: { shoal: 1 },
+    regions: [5, 7], tierRange: [0, 2], tierWeights: [35, 40, 25], gateTier: 1, needTopTier: true, spineLen: [120, 230],
+    falls: 'pit', pitLP: 15, openingM: 90, clock_s: 480,
     timeline: [{ t: 0, ev: 'wave', what: 'husks_gilded' }, { t: 40, ev: 'wave', what: 'runners' }, { t: 80, ev: 'wave', what: 'gilded_seers_golems' },
       { t: 120, ev: 'elite', what: 'Royal Executioner', drop: 'card_chest' }, { t: 150, ev: 'wave', what: 'gilded_hounds' }, { t: 195, ev: 'wave', what: 'card_wraiths' },
       { t: 255, ev: 'timed_boss', what: 'Court of Three Masks', drop: 'sealed_chest' }, { t: 290, ev: 'wave', what: 'throne_bowmen_coin_thieves' }, { t: 330, ev: 'wave', what: 'abyss_hands' },

@@ -1,4 +1,4 @@
-﻿// G1-G4: playable mask, districts, regions, region graph + spine, tiers and transitions. Coarse 8 m grid.
+// G1-G4: playable mask, districts, regions, region graph + spine, tiers and transitions. Coarse 8 m grid.
 import { hash32, fnv1a32Ints } from './seed.js';
 import { isqrt, valueNoise1, pseudoAngle, Heap, DIR16 } from './imath.js';
 import { CHANNEL_ARCH, FALLBACK_LAYOUTS } from './spec.js';
@@ -244,6 +244,51 @@ function finishRegions(ctx, M, D, seeds) {
   return { regions, cregion: own };
 }
 
+/* ---------- rooms (the designed layout): 5 to 7 rooms cut from the playable shape by straight bisectors ---------- */
+// Every coarse cell goes to the nearest room seed by a Chebyshev-first metric (never a jittered flood fill), so the borders between rooms are long straight runs, axis-aligned or at 45 degrees.
+// Each room is its own region, one tier, one named district for the first five. The gate and spawn seeds are chosen as before.
+function partitionBox(C, cmask, seeds) {
+  const own = new Int16Array(C * C).fill(-1);
+  for (let z = 0; z < C; z++) for (let x = 0; x < C; x++) {
+    if (cmask[z * C + x] !== 2) continue; let best = -1, bs = 1e9;
+    for (let k = 0; k < seeds.length; k++) { const dx = Math.abs(x - seeds[k] % C), dz = Math.abs(z - ((seeds[k] / C) | 0)), s = Math.max(dx, dz) * 16 + dx + dz; if (s < bs) { bs = s; best = k; } }
+    own[z * C + x] = best;
+  }
+  return own;
+}
+function placeRooms(ctx, M, gateTry) {
+  const { spec, C } = ctx; const rng = ctx.streams.districts; const { cmask, dRim } = M;
+  const gc = []; for (let i = 0; i < C * C; i++) if (cmask[i] === 2 && dRim[i] >= 5 && dRim[i] <= 7) gc.push(i);
+  if (!gc.length) return null;
+  const gate = gc[rng.int(gc.length)];
+  const diam = 2 * (ctx.R - 2), dLo = Math.trunc((50 * diam) / 100), dHi = Math.trunc((85 * diam) / 100), sc = [];
+  for (let i = 0; i < C * C; i++) { if (cmask[i] !== 2 || dRim[i] < 4) continue; const g2 = cd2(C, i, gate); if (g2 >= dLo * dLo && g2 <= dHi * dHi) sc.push(i); }
+  if (!sc.length) return null;
+  const spawn = sc[rng.int(sc.length)];
+  const nRooms = rng.range(spec.regions[0], spec.regions[1]), MINSEP = 7, seeds = [gate, spawn];
+  while (seeds.length < nRooms) {                                           // farthest point from every seed so far (random among the best 3), at least 9 cells (72 m) from each
+    const cand = []; for (let i = 0; i < C * C; i++) { if (cmask[i] !== 2 || dRim[i] < 2) continue; let md = 1e9; for (const s of seeds) md = Math.min(md, cd2(C, i, s)); if (md >= MINSEP * MINSEP) cand.push([md, i]); }
+    if (!cand.length) break; cand.sort((a, b) => b[0] - a[0] || a[1] - b[1]); seeds.push(cand[rng.int(Math.min(3, cand.length))][1]);
+  }
+  if (seeds.length < spec.regions[0]) { if (globalThis.__TRACE) console.error('rooms: seeds', seeds.length); return null; }
+  let own = partitionBox(C, cmask, seeds);
+  const gx = gate % C, gz = (gate / C) | 0; for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) { const j = (gz + dz) * C + gx + dx; if (cmask[j] === 2) own[j] = 0; }       // the gate plaza is region 0
+  const sx = spawn % C, sz = (spawn / C) | 0; for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) { if (dx * dx + dz * dz > 5) continue; const j = (sz + dz) * C + sx + dx; if (cmask[j] === 2 && own[j] !== 0) own[j] = 1; }
+  const cnt = new Array(seeds.length).fill(0); for (let i = 0; i < C * C; i++) if (own[i] >= 0) cnt[own[i]]++;
+  { let touch = 0; for (let z = 0; z < C; z++) for (let x = 0; x < C; x++) { const a = own[z * C + x]; if (a < 0) continue; for (const [dx, dz] of N4) { const xx = x + dx, zz = z + dz; if (xx >= C || zz >= C || xx < 0 || zz < 0) continue; const b = own[zz * C + xx]; if ((a === 0 && b === 1) || (a === 1 && b === 0)) touch++; } } if (touch > 0) return null; }       // the spawn room and the gate room never share a wall: there is always a room between them
+  if (cnt.some((n) => n < 26)) { if (globalThis.__TRACE) console.error('rooms: small', cnt.join(',')); return null; }                                  // a room under about 2,300 m2 is a closet: re-draw
+  const pool = spec.districtPool, chosen = [pool.find((d) => d.required)], rest = pool.filter((d) => !d.required).map((d) => ({ ...d })), nD = Math.min(spec.districts, seeds.length);
+  while (chosen.length < nD) { const p = rng.pickWeighted(rest, 'w'); chosen.push(p); rest.splice(rest.indexOf(p), 1); }
+  const distOf = (k) => (k < nD ? k : (() => { let b = 0, bd = 1e9; for (let q = 0; q < nD; q++) { const d = cd2(C, seeds[k], seeds[q]); if (d < bd) { bd = d; b = q; } } return b; })());
+  const cdist = new Int16Array(C * C).fill(-1); for (let i = 0; i < C * C; i++) if (own[i] >= 0) cdist[i] = distOf(own[i]);
+  const districts = chosen.map((d, k) => ({ id: d.id, name: d.name, hero: d.hero, idx: k, gate: !!d.gate, arche: d.arche, seed: seeds[k] }));
+  const D = { districts, cdist, gate, spawn };
+  const regions = seeds.map((s, k) => ({ id: k, district: distOf(k), seed: s, cells: cnt[k], centre: s }));
+  const sxs = new Array(seeds.length).fill(0), szs = new Array(seeds.length).fill(0); for (let i = 0; i < C * C; i++) if (own[i] >= 0) { sxs[own[i]] += i % C; szs[own[i]] += (i / C) | 0; }
+  for (const r of regions) { if (r.id <= 1) continue; const mx = Math.round(sxs[r.id] / Math.max(1, r.cells)), mz = Math.round(szs[r.id] / Math.max(1, r.cells)); let best = r.seed, bd = 1e9; for (let i = 0; i < C * C; i++) if (own[i] === r.id) { const d = (i % C - mx) ** 2 + (((i / C) | 0) - mz) ** 2; if (d < bd) { bd = d; best = i; } } r.centre = best; }
+  return { D, Rg: { regions, cregion: own } };
+}
+
 /* ---------- G3 graph ---------- */
 function buildGraph(ctx, M, D, Rg) {
   const { C, spec } = ctx; const rng = ctx.streams.graph;
@@ -281,8 +326,8 @@ function buildGraph(ctx, M, D, Rg) {
   }
   const sp = 1;
   const addIf = (pred) => { const c = rest.filter((e) => !e.loop && pred(e)).sort((p, q) => p.len - q.len || p.id - q.id); if (!c.length) return false; const e = c[0]; e.loop = true; chosen.push(e); deg[e.a]++; deg[e.b]++; return true; };
-  while (chosen.length - nR + 1 < 2) if (!addIf((e) => deg[e.a] < 5 && deg[e.b] < 5) && !addIf(() => true)) return { fail: 'graph_cycles' };
-  while (deg[sp] < 3) if (!addIf((e) => e.a === sp || e.b === sp)) return { fail: 'spawn_degree' };
+  while (chosen.length - nR + 1 < (spec.rooms ? 1 : 2)) if (!addIf((e) => deg[e.a] < 5 && deg[e.b] < 5) && !addIf(() => true)) return { fail: 'graph_cycles' };
+  while (deg[sp] < (spec.rooms ? 2 : 3)) if (!addIf((e) => e.a === sp || e.b === sp)) return { fail: 'spawn_degree' };
   // spawn on a cycle (kiting loop near spawn)
   const adj = () => { const A = []; for (let i = 0; i < nR; i++) A.push([]); for (const e of chosen) { A[e.a].push(e.b); A[e.b].push(e.a); } A.forEach((l) => l.sort((p, q) => p - q)); return A; };
   const onCycle = () => {
@@ -290,7 +335,7 @@ function buildGraph(ctx, M, D, Rg) {
     while (q.length) { const r = q.pop(); for (const t of A[r]) if (!seen[t]) { seen[t] = 1; q.push(t); } }
     return nb.slice(1).some((t) => seen[t]);
   };
-  if (!onCycle()) {
+  if (!spec.rooms && !onCycle()) {
     const nb = adj()[sp];
     if (!addIf((e) => nb.includes(e.a) && nb.includes(e.b)) || !onCycle()) return { fail: 'spawn_cycle' };
   }
@@ -353,6 +398,7 @@ function windingSpine(ctx, Rg, G, keystone, straightM) {
 // Region count range scales with the playable area (the round silhouette, about 1,080 coarse cells, gets the
 // StageSpec range; smaller silhouettes get proportionally fewer regions, never under 10).
 export function regionRange(ctx, M) {
+  if (ctx.spec.rooms) return ctx.spec.regions.slice();
   const [a, b] = ctx.spec.regions; const k = Math.min(1000, Math.trunc((M.playable * 1000) / 1080));
   return [Math.max(10, Math.trunc((a * k) / 1000)), Math.max(11, Math.trunc((b * k + 999) / 1000))];
 }
@@ -419,7 +465,7 @@ function assignTiers(ctx, Rg, G, spine, keystone = -1) {
     const vantN = () => { let n = 0; for (const t of T) if (t >= vant) n++; return n; };
     if (keystone >= 0) for (let k = 0; k < 2 && T[keystone] < hi && fits(keystone, T[keystone] + 1); k++) T[keystone]++;
     for (let it = 0; it < 12; it++) {
-      if (vantN() >= 2) break;
+      if (vantN() >= (spec.rooms ? 1 : 2)) break;
       const cands = [];
       for (let r = 2; r < nR; r++) if (!onSpine[r] && T[r] < hi && fits(r, T[r] + 1)) cands.push(r);
       if (!cands.length) break;
@@ -427,7 +473,7 @@ function assignTiers(ctx, Rg, G, spine, keystone = -1) {
       const top = cands.filter((r) => nearSpine[r] === nearSpine[cands[0]] && T[r] === T[cands[0]]);
       const r = top[rng.int(top.length)]; T[r]++;
     }
-    if (vantN() < 2) continue;
+    if (vantN() < (spec.rooms ? 1 : 2)) continue;
     if (spec.needTopTier) { // e.g. stage 3 must climb to tier 3 somewhere
       for (let it = 0; it < 16 && !T.some((t) => t >= hi); it++) { // climb the highest liftable region step by step
         const c = []; for (let r = 2; r < nR; r++) if (!onSpine[r] && fits(r, T[r] + 1)) c.push(r);
@@ -451,7 +497,7 @@ function classifyEdges(ctx, Rg, G, tiers, spineEdgeSet) {
     const ta = tiers[e.a], tb = tiers[e.b];
     if (ta === tb) e.type = 'open';
     else if (e.spine) e.type = 'ramp2';
-    else { e.type = rng.chance(70) ? 'ramp2' : 'hopstair'; other.push(e); }
+    else { e.type = ctx.spec.rooms || rng.chance(70) ? 'ramp2' : 'hopstair'; other.push(e); }
     const lowR = ta < tb ? e.a : e.b, highR = ta < tb ? e.b : e.a;
     e.low = ta === tb ? e.a : lowR; e.high = ta === tb ? e.b : highR;
     e.drop = ta !== tb && Rg.regions[highR].role === 'pocket';
@@ -488,6 +534,7 @@ function pickArchetypes(ctx, Rg, D, G) {
     r.archetype = pick;
   }
   // structural identity per stage: e.g. stage 2 needs 2 trenches (pits + chain bridges), stage 3 a sand sea
+  if (ctx.spec.rooms) { for (const r of Rg.regions) if (r.id > 1) r.archetype = 'plaza'; return; }       // rooms: flat floors, the identity comes from the kit and the landmark
   const req = ctx.spec.requireArche || {};
   for (const k of Object.keys(req).sort()) {
     let have = Rg.regions.filter((r) => r.archetype === k).length;
@@ -511,6 +558,7 @@ export function buildMacro(ctx) {
   for (let gateTry = 0; gateTry < 4; gateTry++) {
     let D, Rg;
     if (ctx.fallback) { const fb = fallbackDistricts(ctx, M); if (!fb) return { fail: 'fallback_layout' }; D = fb.D; Rg = finishRegions(ctx, M, D, fb.seeds); }
+    else if (ctx.spec.rooms) { const rr = placeRooms(ctx, M, gateTry); if (!rr) { fail = 'rooms'; continue; } D = rr.D; Rg = rr.Rg; }
     else { D = placeDistricts(ctx, M, gateTry); if (!D) { fail = 'districts'; continue; } Rg = placeRegions(ctx, M, D); }
     if (Rg.regions.length < regionRange(ctx, M)[0] - (ctx.fallback ? 2 : 0)) { fail = 'region_count'; continue; }
     const G = buildGraph(ctx, M, D, Rg);
@@ -559,7 +607,7 @@ function fallbackDistricts(ctx, M) {
     return cz * C + cx;
   };
   const pool = spec.districtPool;
-  const chosen = [pool.find((d) => d.required), ...pool.filter((d) => !d.required).slice(0, spec.districts - 1)];
+  const chosen = [pool.find((d) => d.required), ...pool.filter((d) => !d.required).slice(0, Math.min(spec.districts, 4) - 1)];       // the authored layouts name four districts
   const seeds = L.seeds.map((s, k) => ({ cell: cell(s), district: L.district[k] }));
   // gate must sit with dRim >= 5: walk it inward
   let g = seeds[0].cell;

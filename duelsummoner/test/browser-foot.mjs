@@ -17,6 +17,6 @@ for (const k of ['spawn', 'room', 'passage', 'gate']) {
   await b.shot(prefix + '-' + k);
 }
 // bird's eye at 45 degrees, fog off
-await b.evalIn(`(()=>{ const D = __ds; const s = D.scene; if (s && s.fog) { s.fog.near = 5000; s.fog.far = 9000; } D.camHold = { x: 0, y: 330, z: 330, lx: 0, ly: 0, lz: 0 }; return 1; })()`); await wait(1500); await b.shot(prefix + '-bird');
+await b.evalIn(`(()=>{ const D = __ds; const s = D.scene; if (s && s.fog) { s.fog.near = 5000; s.fog.far = 9000; } D.camHold = { x: 0, y: 190, z: 175, lx: 0, ly: 0, lz: 10 }; return 1; })()`); await wait(1500); await b.shot(prefix + '-bird');
 console.log('errors', JSON.stringify(await b.evalIn('JSON.stringify(window.__errs.slice(0,3))')));
 b.close(); setTimeout(() => process.exit(0), 300);

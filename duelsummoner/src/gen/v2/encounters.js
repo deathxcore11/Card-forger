@@ -1,4 +1,4 @@
-﻿// G14 encounter placement: slots, risk score R, quotas (rarest first), economy rules and swaps.
+// G14 encounter placement: slots, risk score R, quotas (rarest first), economy rules and swaps.
 import { F, los } from './map.js';
 import { INF, dijkstra } from './nav.js';
 import { BASE, ANY } from './links.js';
@@ -92,7 +92,7 @@ export function placeEncounters(ctx, m, A, slots) {
   const witnessHalf = dMed >= 1300 ? 'far' : 'near';
   // spread caps: at most 3 encounters per region and 35% of the stage total per district
   const planned = Object.keys(counts).filter((k) => k !== 'vases').reduce((a, k) => a + (typeof counts[k] === 'object' ? counts[k].n : counts[k] | 0), 0);
-  const capRegion = 3, capDistrict = Math.max(3, Math.trunc((planned * 35) / 100));
+  const capRegion = spec.rooms ? 7 : 3, capDistrict = spec.rooms ? planned : Math.max(3, Math.trunc((planned * 35) / 100));       // rooms are big: up to 7 in a room
   // V12 visibility from the spine, cached per slot: 0 = landmark visible as is, 1 = needs a +3 m plinth, -1 = not visible
   const samples = spineSamples(m); const appr = approachPoints(m); const visCache = new Map();
   const seen = (type, s, top) => { const T = tellOf(type); if (MAJOR[type]) return visCount(m, samples, s.x, s.z, s.y, top, T.range) >= 3; return visCount(m, samples, s.x, s.z, s.y, top, T.range) >= 1 || (s.role !== 'spine' && visCount(m, appr, s.x, s.z, s.y, top, T.range) >= 1); };

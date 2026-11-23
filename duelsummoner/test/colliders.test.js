@@ -1,4 +1,4 @@
-﻿// Solid scenery: tree trunks and big boulders are pillars the duelist slides along, the same places the view draws, deterministic.
+// Solid scenery: tree trunks and big boulders are pillars the duelist slides along, the same places the view draws, deterministic.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js';
@@ -7,7 +7,7 @@ import { CFG } from '../src/data/config.js';
 
 const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false };
 test('scatter: the same map gives the same places, and the solid-only call matches the full one for trees and rocks', () => {
-  const g = new Game(5, { mode: 'run', duelist: 'kael' }), a = scatterStage(g.map, 0, false), b = scatterStage(g.map, 0, false), s = scatterStage(g.map, 0, true);
+  const g = new Game(5, { mode: 'run', duelist: 'kael', oldGen: true }), a = scatterStage(g.map, 0, false), b = scatterStage(g.map, 0, false), s = scatterStage(g.map, 0, true);
   assert.deepEqual(a, b); assert.deepEqual(a.trees, s.trees); assert.deepEqual(a.rocks, s.rocks); assert.ok(a.trees.flat().length > 30 && a.rocks.flat().length > 10, 'trees ' + a.trees.flat().length);
   assert.ok(a.grass.length > 100 && a.flowers.length > 0);
 });

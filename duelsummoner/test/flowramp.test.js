@@ -3,7 +3,7 @@ import { Game } from '../src/sim/game.js'; import { Flow } from '../src/sim/flow
 
 test('flow field: enemies on the ground have a route up a 1:2 ramp to a 3 m plateau (a per-edge pass mask from the 1 m lanes, not whole-cell heights)', () => {
   for (const seed of [1, 3, 7]) {
-    const g = new Game(seed, { mode: 'run', duelist: 'kael' }), spots = [];
+    const g = new Game(seed, { mode: 'run', duelist: 'kael', oldGen: true }), spots = [];
     for (let x = -190; x < 190; x += 4) for (let z = -190; z < 190; z += 4) { const h = heightAt(x, z); if (h > 2.2 && h < 3.6 && [-1, 0, 1].every(a => [-1, 0, 1].every(b => Math.abs(heightAt(x + a * 2, z + b * 2) - h) < 0.1))) spots.push([x, z]); }
     assert.ok(spots.length > 20, 'seed ' + seed + ' has plateaus');
     const f = new Flow(); f.col = g.colliders; f.rebuild(); let reach = 0, tot = 0; const o = {}, n = Math.min(spots.length, 12);

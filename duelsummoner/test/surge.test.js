@@ -1,7 +1,7 @@
-﻿import test from 'node:test'; import assert from 'node:assert/strict';
+import test from 'node:test'; import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js'; import { enemyCount, spawnRate } from '../src/sim/enemies.js';
 const idle = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false };
-const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false }); g.god = true; return g; };
+const mk = seed => { const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false, oldGen: true }); g.god = true; return g; };
 const AT = [0.4 * 420, 0.7 * 420, 360];
 test('surges: a banner 4 s ahead of each of the two timed surges and the gate wake, then 100 or more Husks within 15 s', () => {
   for (const seed of [3, 7, 11]) {

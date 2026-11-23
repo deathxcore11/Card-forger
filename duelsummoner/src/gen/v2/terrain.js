@@ -1,4 +1,4 @@
-﻿// G7-G9 terrain: 1 m heightfield (int16 cm). Region wobble, tiers, channels, ramps, hop stairs,
+// G7-G9 terrain: 1 m heightfield (int16 cm). Region wobble, tiers, channels, ramps, hop stairs,
 // walls, gate set piece, spawn basin, archetype detail, snap/relax/rail passes.
 import { isqrt, valueNoise2, catmullRomInt, chamfer, DIR8 } from './imath.js';
 import { hash32 } from './seed.js';
@@ -37,7 +37,7 @@ export function initTerrain(ctx, mac) {
       for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
         const xx = cx + dx, zz = cz + dz; if (xx < 0 || zz < 0 || xx >= C || zz >= C) continue;
         const nci = zz * C + xx;
-        const d = DT[(x - xx * 8 + 8) * 24 + (z - zz * 8 + 8)] + ((valueNoise2(x + xx * 131, z + zz * 71, seed, 6) * 150) >> 10);
+        const d = DT[(x - xx * 8 + 8) * 24 + (z - zz * 8 + 8)] + (ctx.spec.rooms ? 0 : ((valueNoise2(x + xx * 131, z + zz * 71, seed, 6) * 150) >> 10));       // rooms: no wobble, the borders are the straight coarse-cell lines
         if (d < best) { best = d; r = cmask[nci] === 2 ? creg[nci] : -1; }
       }
     } else if (cmask[ci] !== 2) r = -1;
@@ -233,6 +233,7 @@ export function carveTransitions(ctx, m) {
   for (const e of mac.edges) { isEdge[e.a * nR + e.b] = 1; isEdge[e.b * nR + e.a] = 1; }
   const N = m.N;
   if (globalThis.__NOWALLS) return fails;
+  if (ctx.spec.rooms) { roomWalls(ctx, m, isEdge, nR); return fails; }
   for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) {
     const i = z * N + x; const a = m.reg[i]; if (a === 255) continue;
     for (const [dx, dz] of N4) {
@@ -246,6 +247,25 @@ export function carveTransitions(ctx, m) {
     }
   }
   return fails;
+}
+
+// Rooms: where two rooms of the same tier meet there is a wall 2 m thick and 4 m high along the whole border, with one passage 14 m wide where the rooms are joined (a graph edge) and none where they are not.
+// Rooms of different tiers meet in a cliff (the tier step), with the ramps carved above. The passage is centred on the border's middle, so doors sit in the middle of long straight walls.
+function roomWalls(ctx, m, isEdge, nR) {
+  const N = m.N, mac = m.macro, pairs = new Map();
+  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) {
+    const i = z * N + x, a = m.reg[i]; if (a === 255 || m.mask1[i] !== 2) continue;
+    for (const [dx, dz] of N4) { const xx = x + dx, zz = z + dz; if (xx < 0 || zz < 0 || xx >= N || zz >= N) continue; const b = m.reg[zz * N + xx]; if (b === 255 || b === a || m.mask1[zz * N + xx] !== 2) continue; if (mac.regions[a].tier !== mac.regions[b].tier) continue; const key = Math.min(a, b) * 64 + Math.max(a, b); let L = pairs.get(key); if (!L) { L = []; pairs.set(key, L); } L.push(x, z); }
+  }
+  for (const [key, L] of pairs) {
+    const a = (key / 64) | 0, b = key % 64, open = isEdge[a * nR + b] === 1; let sx = 0, sz = 0; const n = L.length / 2; for (let k = 0; k < L.length; k += 2) { sx += L[k]; sz += L[k + 1]; }
+    const cx = sx / n, cz = sz / n; let bx = L[0], bz = L[1], bd = 1e18; for (let k = 0; k < L.length; k += 2) { const d = (L[k] - cx) ** 2 + (L[k + 1] - cz) ** 2; if (d < bd) { bd = d; bx = L[k]; bz = L[k + 1]; } }
+    const h = mac.regions[a].tier * 300 + 400;
+    for (let k = 0; k < L.length; k += 2) {
+      const x = L[k], z = L[k + 1]; if (open && Math.abs(x - bx) <= 7 && Math.abs(z - bz) <= 7) continue;
+      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) { if (Math.abs(dx) + Math.abs(dz) > 1) continue; const xx = x + dx, zz = z + dz; if (xx < 0 || zz < 0 || xx >= N || zz >= N) continue; const j = zz * N + xx; if (m.reg[j] !== a && m.reg[j] !== b) continue; if (m.flags[j] & (F.RAMP | F.GULLY | F.ARENA | F.SPAWNB)) continue; m.flags[j] |= F.SOLID; m.h0[j] = h; m.nodetail[j] = 1; }
+    }
+  }
 }
 
 /* ---------- gate set piece ---------- */
@@ -319,7 +339,7 @@ export function spawnBasin(ctx, m) {
 /* ---------- archetype detail ---------- */
 // [amplitude cm, wavelength m] octaves. The long 40-48 m swells keep big same-tier fields from reading as one
 // flat sheet (slopes stay under 3%), the short octave is surface texture.
-const DETAIL = { plaza: [[15, 16], [100, 48]], dunes: [[85, 24], [25, 8], [90, 48]], necropolis: [[10, 12], [80, 40]], graveyard: [[25, 12], [90, 40]], canyon: [[30, 16]],
+const DETAIL = { plaza: [[15, 16], [100, 48]], room: [[8, 40]], dunes: [[85, 24], [25, 8], [90, 48]], necropolis: [[10, 12], [80, 40]], graveyard: [[25, 12], [90, 40]], canyon: [[30, 16]],
   mesa: [[20, 16], [40, 40]], terraces: [[10, 12], [55, 40]], setpiece: [], trench: [[20, 12], [40, 40]], shoal: [[20, 12]] };
 export function applyDetail(ctx, m) {
   const N = m.N; const mac = m.macro;
@@ -334,10 +354,10 @@ export function applyDetail(ctx, m) {
   const seed = m.noiseSeed;
   // per-region swell bias (-90..+90 cm, faded to 0 over 6 m at region borders): neighbouring same-tier
   // regions sit at slightly different heights, so a tier is never one flat sheet; slopes stay under 20%
-  const bias = mac.regions.map((r) => (r.id <= 1 || r.archetype === 'setpiece' || CHANNEL_ARCH[r.archetype] ? 0 : ((hash32((seed ^ Math.imul(r.id + 1, 0x9E3779B1)) >>> 0) % 5) - 2) * 45));
+  const bias = mac.regions.map((r) => (ctx.spec.rooms || r.id <= 1 || r.archetype === 'setpiece' || CHANNEL_ARCH[r.archetype] ? 0 : ((hash32((seed ^ Math.imul(r.id + 1, 0x9E3779B1)) >>> 0) % 5) - 2) * 45));
   for (let i = 0; i < N * N; i++) {
     if (src[i] || m.mask1[i] !== 2) continue;
-    const oct = DETAIL[mac.regions[m.reg[i]].archetype] || [];
+    const oct = (ctx.spec.rooms ? DETAIL.room : DETAIL[mac.regions[m.reg[i]].archetype]) || [];       // rooms: flat floors, under 0.1 m of swell
     if (!oct.length) continue;
     const fade = Math.min(d[i], 60);
     const x = i % N, z = (i / N) | 0;

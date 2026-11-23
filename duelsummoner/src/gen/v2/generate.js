@@ -1,4 +1,4 @@
-﻿// Pipeline driver: G0 seed -> macro -> terrain -> spine -> chunks -> finalise -> graphs -> events ->
+// Pipeline driver: G0 seed -> macro -> terrain -> spine -> chunks -> finalise -> graphs -> events ->
 // encounters -> validate -> repair loop -> attempt+1 -> authored fallback. Pure, deterministic.
 // timing is diagnostic only and never feeds generation: the clock is injected (tools and tests call setClock), so this module stays free of clocks
 let clockFn = () => 0; export function setClock(f) { clockFn = f; }
@@ -109,7 +109,7 @@ export function generateStage(seal, stage, opts = {}) {
     const attemptSeed = attemptSeedOf(stageSeed, attempt);
     let ctx, r; const draws = [];
     for (let d = 0; d < (fallback ? LAYOUT_DRAWS * 3 : LAYOUT_DRAWS); d++) {
-      ctx = { spec, stage, C: spec.grid * 3, R: Math.trunc((spec.grid * 3) / 2) - 2, streams: makeStreams(layoutSeedOf(attemptSeed, d)), attempt, draw: d, fallback, fallbackIndex: (stageSeed + attempt + d) % 3, sealCode };
+      ctx = { spec, stage, C: spec.grid * 3, R: spec.roomR || Math.trunc((spec.grid * 3) / 2) - 2, streams: makeStreams(layoutSeedOf(attemptSeed, d)), attempt, draw: d, fallback, fallbackIndex: (stageSeed + attempt + d) % 3, sealCode };
       r = attemptOnce(ctx, timing);
       if (!r.fail) break;
       draws.push(r.fail);
