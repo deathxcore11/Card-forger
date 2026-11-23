@@ -28,7 +28,10 @@
 //           through the picture's own place and size as the page laid it out; a torch flame also stands on the bright
 //           core of the painted flame, found again in the picture's own pixels; a model drawn in a room (a canvas laid
 //           on the room picture, its spots in data-foot) stands with its lowest pixel on its spot;
-//   clear   no control, label or coin of the screen (outside a window, a scene, a dim or the toast) lies over such a
+//   tagged  every part laid on a room's picture says where on it it stands (data-art): each canvas of models beside the
+//           picture, and each part of the chamber's room (door leaves, fog, numbers, cursor, keepers), so the placed and
+//           clear rules measure them all;
+//   clear  no control, label or coin of the screen (outside a window, a scene, a dim or the toast) lies over such a
 //           part while it moves (the fog, the cursor, the forge's hammer); a part marked still (data-still: a door's
 //           leaves at rest, a number on the step, a model standing in its room) is scenery the choices may stand in
 //           front of, and a tap area that draws nothing hides nothing;
@@ -245,6 +248,13 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
             for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4, eq = under[i] === f0[i] && under[i + 1] === f0[i + 1] && under[i + 2] === f0[i + 2]; same += eq; if (x === 0 || y === 0 || x === w - 1 || y === h - 1) { edge++; edgeSame += eq; } }
             if (same / (w * h) < .6 || edgeSame / edge < .85) out.push(`${name(e)}: its first frame matches the picture under it at ${Math.round(same / (w * h) * 100)}% (edge ${Math.round(edgeSame / edge * 100)}%): not cut from this place`);
           }
+        }
+        // tagged: what is laid on a room's picture carries data-art, so the rules above measure it. A canvas of models
+        // beside the picture, and every part inside the chamber's room, which holds nothing but its picture and what
+        // stands on it.
+        for (const pic of app.querySelectorAll('img[data-pic="room"]')) {
+          const sib = [...pic.parentElement.children].filter(e => e !== pic && (e.tagName === 'CANVAS' || pic.parentElement.classList.contains('room')));
+          for (const e of sib) if (!e.hasAttribute('data-art')) out.push(`${name(e)}: laid on the room's picture, but says nothing of where on it it stands`);
         }
         // grid: a 1-bit dither drawn for its place on the frame's grid (data-grid: where its corner falls, counted in fours)
         // is laid at that place, and nothing moves it, so it meets every other pattern on the frame in the same step
