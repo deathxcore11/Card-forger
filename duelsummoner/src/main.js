@@ -15,7 +15,8 @@ import { chestPrice } from './sim/world.js';
 import { heightAt } from './sim/terrain.js';
 const bars = new Bars();
 import { buildScenery } from './view/scenery.js';
-import { buildGrass } from './view/grass.js';
+import { buildGrass, detailLevel } from './view/grass.js';
+import { Composite } from './view/composite.js';
 import { LeyThreads } from './view/threads.js';
 import { Actors } from './view/actors.js';
 import { ChaseCamera } from './view/camera.js';
@@ -70,10 +71,12 @@ const sun = new T.DirectionalLight(0xffe2b0, 0.66); sun.position.set(60, 90, 30)
 // s = max(2, round(screenHeight / 540)) device pixels per game pixel, internal size ceil(width / s) by ceil(height / s). Every game pixel is the same size; no CSS scaling. HUD and text stay at full resolution.
 const INTERNAL_TARGET = 540;
 let lowRT = null, blitScene = null, blitCam = null, blitQuad = null;
+const composite = new Composite(renderer); composite.on = detailLevel() !== 'low' && !/[?&]composite=0/.test(location.search);       // the composite path: on at Detail Medium and High, off at Low
+const blackTex = new T.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, T.RGBAFormat); blackTex.needsUpdate = true;
 // the post material (engine plan 0c): nearest-sampled scene colour, then the palette snap: the colour is replaced by the nearest entry of the stage's palette (a 3D lookup), blended by `strength` (0 = off, 1 = full). Models, ground and walls get no dither; the strength starts at 0 until the owner has judged an A/B picture.
-const blitMat = new T.ShaderMaterial({ glslVersion: T.GLSL3, depthTest: false, depthWrite: false, uniforms: { tScene: { value: null }, tLut: { value: null }, strength: { value: 0 } },
+const blitMat = new T.ShaderMaterial({ glslVersion: T.GLSL3, depthTest: false, depthWrite: false, uniforms: { tScene: { value: null }, tLut: { value: null }, strength: { value: 0 }, tGlow: { value: null }, uGlow: { value: 0 }, uDim: { value: 0 }, uDrain: { value: 0 }, uFlash: { value: new T.Vector4(0, 0, 0, 0) } },
   vertexShader: 'out vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-  fragmentShader: 'precision highp float; precision highp sampler3D; uniform sampler2D tScene; uniform sampler3D tLut; uniform float strength; in vec2 vUv; layout(location = 0) out vec4 outColor; void main() { vec3 c = texture(tScene, vUv).rgb; if (strength > 0.0) { vec3 q = texture(tLut, clamp(c, 0.0, 1.0) * (31.0 / 32.0) + 0.5 / 32.0).rgb; c = mix(c, q, strength); } outColor = vec4(c, 1.0); }' });
+  fragmentShader: 'precision highp float; precision highp sampler3D; uniform sampler2D tScene; uniform sampler2D tGlow; uniform sampler3D tLut; uniform float strength; uniform float uGlow; uniform float uDim; uniform float uDrain; uniform vec4 uFlash; in vec2 vUv; layout(location = 0) out vec4 outColor; void main() { vec4 sc = texture(tScene, vUv); vec3 c = sc.rgb; if (uGlow > 0.0) c += floor(texture(tGlow, vUv).rgb * 6.0 + 0.5) / 6.0 * uGlow; if (uDrain > 0.0) c = mix(c, vec3(dot(c, vec3(0.299, 0.587, 0.114))), uDrain * step(0.9, sc.a)); c *= 1.0 - uDim * step(0.9, sc.a); c = mix(c, uFlash.rgb, uFlash.a); if (strength > 0.0) { vec3 q = texture(tLut, clamp(c, 0.0, 1.0) * (31.0 / 32.0) + 0.5 / 32.0).rgb; c = mix(c, q, strength); } outColor = vec4(c, 1.0); }' });
 function setPaletteStage(stage) { if (!blitMat.uniforms.tLut.value) { const t = new T.DataTexture3D(buildPaletteLUT(stage), 32, 32, 32); t.format = T.RGBAFormat; t.type = T.UnsignedByteType; t.minFilter = t.magFilter = T.NearestFilter; t.wrapR = t.wrapS = t.wrapT = T.ClampToEdgeWrapping; t.unpackAlignment = 1; t.needsUpdate = true; blitMat.uniforms.tLut.value = t; } else { const t = blitMat.uniforms.tLut.value; t.image.data = buildPaletteLUT(stage); t.needsUpdate = true; } }
 function resize() {
   const dpr = window.devicePixelRatio || 1, dw = Math.max(1, Math.round(window.innerWidth * dpr)), dh = Math.max(1, Math.round(window.innerHeight * dpr)), s = Math.max(2, Math.round(dh / INTERNAL_TARGET)), bw = Math.max(1, Math.ceil(dw / s)), bh = Math.max(1, Math.ceil(dh / s));
@@ -83,12 +86,12 @@ function resize() {
     if (lowRT) lowRT.dispose();
     lowRT = new T.WebGLRenderTarget(bw, bh, { minFilter: T.NearestFilter, magFilter: T.NearestFilter, depthBuffer: true, stencilBuffer: true, generateMipmaps: false });
     if (!blitScene) { blitScene = new T.Scene(); blitCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1); blitQuad = new T.Mesh(new T.PlaneGeometry(2, 2), blitMat); blitQuad.frustumCulled = false; blitScene.add(blitQuad); }
-    blitMat.uniforms.tScene.value = lowRT.texture;
+    blitMat.uniforms.tScene.value = lowRT.texture; composite.resize(bw, bh);
   }
   { const uv = blitQuad.geometry.attributes.uv, u1 = dw / s / bw, v1 = dh / s / bh; uv.setXY(0, 0, 1); uv.setXY(1, u1, 1); uv.setXY(2, 0, 1 - v1); uv.setXY(3, u1, 1 - v1); uv.needsUpdate = true; }       // the quad shows exactly dw/s by dh/s internal pixels (anchored top left: the right column or bottom row may be cropped by one)
   renderer.internalSize = new T.Vector2(bw, bh); camera.aspect = bw / bh; fitFov();
 }
-function drawFrame() { renderer.setRenderTarget(lowRT); renderer.render(scene, camera); renderer.setRenderTarget(null); renderer.render(blitScene, blitCam); }
+function drawFrame() { renderer.setRenderTarget(lowRT); renderer.render(scene, camera); const gl = composite.run(lowRT.texture, lowRT.width, lowRT.height); blitMat.uniforms.tGlow.value = gl || blackTex; blitMat.uniforms.uGlow.value = gl ? 1 : 0; renderer.setRenderTarget(null); renderer.render(blitScene, blitCam); }
 window.addEventListener('resize', resize); resize();
 
 // the owner's models are optional local assets; the placeholders stay if they are missing
@@ -575,7 +578,7 @@ function duelistPixels() {
   return { alone, visible, silhouette };
 }
 window.__ds = {
-  get grass() { return grassMesh; }, chaseZoom: () => chase.zoom, chaseCap: () => chase.zoomCap,
+  composite, get grass() { return grassMesh; }, chaseZoom: () => chase.zoom, chaseCap: () => chase.zoomCap,
   duelistPixels, see: SEE, tagBlocked,
   bars,
   summonPos: () => { const g = actors.monsters.values().next().value; return g ? { x: g.position.x, y: g.position.y, z: g.position.z } : null; },
