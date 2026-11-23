@@ -12,8 +12,11 @@
 //           not a whole multiple of its own, no canvas stretched, text only in the game's two pixel faces;
 //   flat    on the title, at a scale above one, at most 0.2% of the frame's pixels are not one flat block of device
 //           pixels (read from a screenshot: a soft or shifted pixel is not flat);
-//   fit     no text cut off by its box (the text bar may be, when it shows its more marker), nothing outside the frame,
-//           nothing written in a pillar crossing out of it, no two plaques on top of each other;
+//   fit     no text cut off by its box (the text bar may be, when it shows its more marker; a plinth's name plate may
+//           not), nothing outside the frame, nothing written in a pillar crossing out of it or lying on another word or
+//           plaque there, no two plaques on top of each other;
+//   names   a name set short on a plinth, the ledge or a pillar (its whole in data-name) is never cut inside a word: it
+//           shows whole words of the name, or an initial and a full stop, the last perhaps followed by two dots;
 //   scroll  a box of pages in a window or a book ends at least 2 pixels above the plaques under it, no line of words
 //           is cut by its foot, and while lines lie below it its more marker shows;
 //   hammer  one lit plaque on the screen, and one in each window or scene over it;
@@ -142,7 +145,7 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
         const inside = (r, o, slack = 1) => r.left >= o.left - slack && r.top >= o.top - slack && r.right <= o.right + slack && r.bottom <= o.bottom + slack;
         // scrolled out of view inside a list that scrolls (the list itself is checked): not a fault, a scroll away
         const scrolledAway = e => { for (let p = e.parentElement; p && p !== app; p = p.parentElement) { const s = getComputedStyle(p); if (/(auto|scroll)/.test(s.overflowY + s.overflowX) && !inside(e.getBoundingClientRect(), p.getBoundingClientRect())) return true; } return false; };
-        for (const e of app.querySelectorAll('.pq, .lb, .dt b, .dt p, .mw h2, .atk, .cd .n1, .cd .n2')) {
+        for (const e of app.querySelectorAll('.pq, .lb, .dt b, .dt p, .mw h2, .atk, .cd .n1, .cd .n2, .pln .pnm, [data-name]')) {
           if (!vis(e) || e.closest('.sc')) continue;
           if (e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 2 && getComputedStyle(e).overflow !== 'visible') out.push(`${name(e)} "${e.textContent.slice(0, 30)}": text cut off (${e.scrollWidth}x${e.scrollHeight} in ${e.clientWidth}x${e.clientHeight})`);
         }
@@ -150,6 +153,18 @@ const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics'
         for (const e of app.querySelectorAll('.lb, .pq, .cd, .pf, .sl, .ga, .mw')) if (vis(e) && !inside(e.getBoundingClientRect(), A) && !scrolledAway(e)) out.push(`${name(e)} "${e.textContent.slice(0, 20)}": outside the frame`);
         const pillars = [...app.querySelectorAll('.fr > .ab')].filter(p => p.style.width === '96px');
         for (const p of pillars) { const P = p.getBoundingClientRect(); for (const e of p.querySelectorAll('.lb, .pq, .ga, .pf, .sl, .spk, .seal, .pip, .backs')) if (vis(e) && !inside(e.getBoundingClientRect(), P)) out.push(`${name(e)} "${e.textContent.slice(0, 20)}": crosses out of its pillar`); }
+        // in a pillar no word lies on another word or a plaque (a name on two lines, a readout over the plaque under it)
+        for (const p of pillars) {
+          const ws = [...p.querySelectorAll('.lb, .pq, .big2')].filter(vis).map(e => [e, fr(e)]);
+          for (let i = 0; i < ws.length; i++) for (let j = i + 1; j < ws.length; j++) { const [a, A2] = ws[i], [b, B2] = ws[j]; if (A2[0] < B2[0] + B2[2] && B2[0] < A2[0] + A2[2] && A2[1] < B2[1] + B2[3] && B2[1] < A2[1] + A2[3]) out.push(`${name(a)} "${a.textContent.trim().slice(0, 16)}" and ${name(b)} "${b.textContent.trim().slice(0, 16)}" lie on each other in a pillar`); }
+        }
+        // names: a name set short (data-name holds it whole) is never cut inside a word: each word shown is a whole word
+        // of the name, or one word's initial and a full stop, and only the last may be followed by two dots
+        for (const e of app.querySelectorAll('[data-name]')) {
+          if (!vis(e)) continue;
+          const full = e.dataset.name.toUpperCase().split(/\s+/).filter(Boolean), shown = e.innerText.toUpperCase().split(/\s+/).filter(Boolean);
+          for (const w of shown) { const x = w.replace(/\.\.$/, ''); if (!full.includes(x) && !(/^[A-Z]\.$/.test(x) && full.some(f => f[0] === x[0]))) out.push(`${name(e)} "${e.innerText.replace(/\s+/g, ' ').slice(0, 24)}": the name "${e.dataset.name}" cut inside a word ("${w}")`); }
+        }
         // (a plaque scrolled out of its box is not on the screen, so it overlaps nothing)
         const pqs = [...app.querySelectorAll('.pq')].filter(vis).map(e => [e, e.getBoundingClientRect()]);
         for (let i = 0; i < pqs.length; i++) for (let j = i + 1; j < pqs.length; j++) { const [a, ra] = pqs[i], [b, rb] = pqs[j]; if (a.closest('.mw') !== b.closest('.mw') || scrolledAway(a) || scrolledAway(b)) continue; if (ra.left < rb.right - 1 && rb.left < ra.right - 1 && ra.top < rb.bottom - 1 && rb.top < ra.bottom - 1) out.push(`plaques "${a.textContent}" and "${b.textContent}" overlap`); }

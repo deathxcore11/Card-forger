@@ -1668,8 +1668,9 @@ function psDuel() {
   const right = psPort(rf, 14, 6, false, 'face1') + lb(8, 79, fitName(shortName(rv.name), 13), 'g') + lb(8, 92, 'LIFE', 'g') + lifeAt('rivalLp', L1) + gauge(8, 101, 80, L1.g / 8000).replace('<i class="ga', '<i id="rivalGa" class="ga')
     + lb(8, 114, 'HAND', 'g') + `<span class="backs" style="left:40px;top:112px">${'<u></u>'.repeat(Math.min(v.rivalHand, 5))}</span>` + lb(8, 125, 'DECK', 'g') + lbr(88, 125, v.deckCount[1])
     + plaques + (endOk ? pq(4, yb(220), 88, 'END TURN', 'end', { lit: !cmds.some(c => c[2] && c[2].lit) }) : '');
-  // the terrain, under your numbers: its name, and how long it holds or that it is locked
-  const ter = v.terrain, terr = ter ? lb(8, 150, 'TERRAIN', 'g') + (ter.lock ? lbr(88, 150, 'LOCKED', 'd') : ter.temp != null ? lbr(88, 150, ter.temp, 'd') : '') + lb(8, 160, fitName(card(ter.id).name, 13)) : '';
+  // the terrain, under your numbers: its name in whole words on up to two lines of the pillar's 80 pixels (every terrain's
+  // name sets whole so), clear of the plaque under it, and how long it holds or that it is locked
+  const ter = v.terrain, terr = ter ? lb(8, 149, 'TERRAIN', 'g') + (ter.lock ? lbr(88, 149, 'LOCKED', 'd') : ter.temp != null ? lbr(88, 149, ter.temp, 'd') : '') + nameLines(card(ter.id).name, 80, 2).map((t, i) => `<b class="ab lb" data-name="${esc(card(ter.id).name)}" style="left:8px;top:${158 + 9 * i}px">${esc(t)}</b>`).join('') : '';
   const left = psYou(G.run, v, terr + power + pq(4, yb(198), 88, 'THIS DUEL', 'tab:duel'), lifeAt);
   const prompt = pend && !G.tab && !G.inspect && !G.overlay ? psTrap(live) : ''; // another window opened over the question takes its place until it is closed
   G.barText = bar;
@@ -1687,15 +1688,33 @@ function psTrap(live) {
 // ---- offerings: a card, a Gift, a charm, a Guardian Reward, a treasure, the Sanctum, a starter kit
 // The choices stand on plinths in the view. A cursor rests on one; the ledge names it, the text bar reads it out, and a
 // second tap on it (or TAKE) takes it. Each choice: { pic, name, facts, text, a, off, card }.
-// A name on one plinth line: the first words shrink to initials until it fits, then the first word stands whole with the
-// rest as initials (TARN E.), then initials alone; a word is never cut in the middle unless it is the only word, and then
-// it ends in a full stop. The ledge still gives the name whole.
+// The label face's own advances, in pixels (measured from the face at 8 pixels); a character not listed takes 6. A word
+// set in it is as wide as its letters' advances; the last letter's spacing column is blank, so a word may reach one
+// pixel past its room.
+const LBW = { ' ': 4, I: 3, '!': 3, "'": 3, '.': 3, ':': 3, '|': 3, '·': 3, ',': 4, ';': 4, '(': 4, ')': 4, '[': 4, ']': 4, '`': 4, E: 5, F: 5, L: 5, T: 5, Z: 5, 1: 5, '-': 5, '/': 5, '"': 5, '<': 5, '=': 5, '>': 5, '\\': 5, '^': 5, '{': 5, '}': 5, M: 7, N: 7, V: 7, W: 7, X: 7, Y: 7, '#': 7, '%': 7, '*': 7, '+': 7, '@': 7 };
+const labelW = s => { let w = 0; for (const c of String(s).toUpperCase()) w += LBW[c] ?? 6; return w; };
+const fits = (s, px) => labelW(s) <= px + 1;
+// A name in the label face set on lines px wide, never cut inside a word: whole words go on each line as long as they fit,
+// a word wider than the line stands whole on its own (the layout gives the widest word room). When the name needs more
+// than max lines, the last line ends after its whole words with two dots, and the ledge or the bar gives it whole.
+function nameLines(name, px, max = 9) {
+  const w = String(name).toUpperCase().split(/\s+/).filter(Boolean), out = [];
+  for (const x of w) { const l = out.length ? out[out.length - 1] + ' ' + x : null; if (l && fits(l, px)) out[out.length - 1] = l; else out.push(x); }
+  if (out.length <= max) return out;
+  const keep = out.slice(0, max), last = keep[max - 1].split(' ');
+  while (last.length > 1 && !fits(last.join(' ') + '..', px)) last.pop();
+  keep[max - 1] = last.join(' ') + (fits(last.join(' ') + '..', px) ? '..' : ''); return keep;
+}
+// A name on one line of n characters' room (6 pixels each, measured with the face's own advances), never cut inside a
+// word: whole if it fits; else without a note in brackets; else its first word as an initial, the rest whole (STONE
+// SENTINEL, S. SENTINEL); else its first whole words and two dots, the ledge or the bar giving it whole. A single word
+// too wide for the room stands whole: the layout must give it room (nameLines sets a name on more lines).
 function fitName(name, n) {
-  const w = String(name).toUpperCase().split(/\s+/).filter(Boolean), ini = x => x[0] + '.', whole = w.join(' ');
-  const tries = [whole, ...w.slice(1).map((_, i) => [...w.slice(0, i + 1).map(ini), ...w.slice(i + 1)].join(' '))];
-  if (w.length > 1) tries.push([w[0], ...w.slice(1).map(ini)].join(' '), w.map(ini).join(' '));
-  const t = tries.find(x => x.length <= n); if (t) return t;
-  return w.length > 1 ? w.map(ini).join(' ').slice(0, n) : whole.slice(0, Math.max(1, n - 1)) + '.';
+  const px = n * 6, s = String(name).toUpperCase().replace(/\s+/g, ' ').trim(); if (fits(s, px)) return s;
+  const head = s.replace(/\s*\(.*$/, '') || s; if (fits(head, px)) return head;
+  const w = head.split(' ');
+  if (w.length > 1 && /^[A-Z]+$/.test(w[0])) { const t = [w[0][0] + '.', ...w.slice(1)].join(' '); if (fits(t, px)) return t; }
+  return nameLines(head, px, 1)[0];
 }
 // What the plinths leave clear in a room, in the 440 x 248 picture: the Omen's circle of light, where its bowl stands, the
 // vault's chest when the room is a treasure, and the Sanctum's lit niche with the shrine under it (from x to x, and the
@@ -1711,22 +1730,37 @@ function psOffer({ title, items, bar0 = '', right = '', room = 'doors', key, sel
   const rp = roomPic(hall, room === 'duel' ? 70 : NICHE_Y + 34, room !== 'duel');
   // The plinths stand below the carved title, with room between for the cursor over them; they leave clear the spot of a
   // model that is what the room is about (the Omen's bowl in its circle of light) when the view has room beside it, the
-  // plinths a little narrower for it if need be (never under 92, a card and its border).
+  // plinths a little narrower for it if need be, never narrower than what they hold needs.
   const tc = carve(title, 12, render), tb = 3 + (tc ? tc.h : 10), ph = Math.min(124, Math.max(vs.h - tb - 14, 106)); // 106: a card and its name
   const clear = CLEAR[rp.name] && (!CLEAR[rp.name][2] || CLEAR[rp.name][2] === kind) ? CLEAR[rp.name] : null, cl = clear && [rp.ox + Math.round(clear[0] * rp.k), rp.ox + Math.round(clear[1] * rp.k)];
-  // Each plinth has a share sw wide and stands 2 pixels inside it; at(i) is where share i begins.
-  const sw0 = Math.min(104, Math.floor((vs.w - 8) / n)), nl = n >> 1, y0 = Math.min(vs.h - 2 - ph, Math.max(tb + 10, ((vs.h - ph) >> 1) + 4));
-  const split = cl && nl ? Math.min(sw0, Math.floor((cl[0] - 1) / nl), Math.floor((vs.w - 1 - cl[1]) / (n - nl))) : 0; // half the choices each side
-  const side = cl ? Math.min(sw0, Math.max(Math.floor((vs.w - 1 - cl[1]) / n), Math.floor((cl[0] - 1) / n))) : 0; // all on one side
-  const sw = split >= 92 ? split : side >= 92 ? side : sw0, wide = sw * n;
-  const at = split >= 92 ? i => i < nl ? cl[0] - 2 - (nl - i) * sw : cl[1] + 2 + (i - nl) * sw
-    : side >= 92 ? i => (cl[1] + 2 + wide <= vs.w + 1 ? cl[1] + 2 : cl[0] - 2 - wide) + i * sw : i => ((vs.w - wide) >> 1) + i * sw;
+  // What a plinth must hold: a card with a pixel either side of it, and the widest word of each name whole on its plate
+  // (the plate is the plinth's share less 8). A name sets on the plate in whole words, on two lines when the picture
+  // leaves room for them.
+  const need = Math.max(...items.map(x => Math.max(x.card ? 76 : 0, ...String(x.name).toUpperCase().split(/\s+/).map(w => labelW(w) + 7))));
+  // Each plinth has a share sw wide and stands 2 pixels inside it; at(i) is where share i begins, for m plinths in a row.
+  const y0 = Math.min(vs.h - 2 - ph, Math.max(tb + 10, ((vs.h - ph) >> 1) + 4));
+  const lay = m => {
+    const sw0 = Math.min(104, Math.floor((vs.w - 8) / m)), nl = m >> 1;
+    const split = cl && nl ? Math.min(sw0, Math.floor((cl[0] - 1) / nl), Math.floor((vs.w - 1 - cl[1]) / (m - nl))) : 0; // half the choices each side
+    const side = cl ? Math.min(sw0, Math.max(Math.floor((vs.w - 1 - cl[1]) / m), Math.floor((cl[0] - 1) / m))) : 0; // all on one side
+    const sw = split >= need ? split : side >= need ? side : sw0, wide = sw * m;
+    return { sw, at: split >= need ? i => i < nl ? cl[0] - 2 - (nl - i) * sw : cl[1] + 2 + (i - nl) * sw
+      : side >= need ? i => (cl[1] + 2 + wide <= vs.w + 1 ? cl[1] + 2 : cl[0] - 2 - wide) + i * sw : i => ((vs.w - wide) >> 1) + i * sw };
+  };
+  // More choices than the view holds at that width stand in a row that turns with the cursor, as a console's row of
+  // choices did: k of them show, and a marker at the row's end points to those beyond.
+  let k = n; while (k > 1 && lay(k).sw < need) k--;
+  const { sw, at } = lay(k), w0 = G.offWin && G.offWin.at === key ? G.offWin.first : 0, first = Math.max(0, Math.min(n - k, sel < w0 ? sel : sel >= w0 + k ? sel - k + 1 : w0));
+  G.offWin = { at: key, first };
+  const plate = sw - 8, rows = ph - 22 >= Math.max(...items.map(x => x.tall || 68)) ? Math.min(2, Math.max(...items.slice(first, first + k).map(x => nameLines(x.name, plate).length))) : 1;
   // Each plinth's dots lie on the frame's grid in step with the dimming's, so the room shows through every plinth alike
   // (the dots start inside its 1-pixel border); the shadow on a plinth not chosen lies on the pixels between.
-  const plinths = items.map((x, i) => { const L = at(i) + 2; return `<button class="pln${i === sel ? ' on' : ''}${x.off ? ' off' : ''}" style="left:${L}px;top:${y0}px;width:${sw - 4}px;height:${ph}px;--mesh:${(L + 1) & 1}px ${(y0 + 1) & 1}px;--mesh2:${L & 1}px ${(y0 + 1) & 1}px" ${i === sel ? (x.off ? 'aria-disabled="true"' : `data-a="${x.a}"`) : `data-a="${selA ? selA(i) : 'osel:' + i}"`} aria-label="${esc(x.name)}">${x.pic((sw - 4) >> 1, ph - 13)}<b class="pnm" style="top:${ph - 11}px">${esc(fitName(x.name, (sw - 12) / 6 | 0))}</b></button>`; }).join('');
+  const plinths = items.slice(first, first + k).map((x, j) => { const i = first + j, L = at(j) + 2, lines = nameLines(x.name, plate, rows);
+    return `<button class="pln${i === sel ? ' on' : ''}${x.off ? ' off' : ''}" style="left:${L}px;top:${y0}px;width:${sw - 4}px;height:${ph}px;--mesh:${(L + 1) & 1}px ${(y0 + 1) & 1}px;--mesh2:${L & 1}px ${(y0 + 1) & 1}px" ${i === sel ? (x.off ? 'aria-disabled="true"' : `data-a="${x.a}"`) : `data-a="${selA ? selA(i) : 'osel:' + i}"`} aria-label="${esc(x.name)}">${x.pic((sw - 4) >> 1, ph - 4 - 9 * rows)}<b class="pnm" data-name="${esc(x.name)}" style="top:${ph - 2 - 9 * rows}px;height:${9 * rows}px;padding-top:${(rows - lines.length) * 9 >> 1}px">${lines.map(esc).join('<br>')}</b></button>`; }).join('')
+    + (first > 0 ? `<i class="mrl" style="left:${Math.max(1, at(0) - 3)}px;top:${y0 + (ph >> 1) - 4}px"></i>` : '') + (first + k < n ? `<i class="mrr" style="left:${Math.min(vs.w - 5, at(k - 1) + sw - 1)}px;top:${y0 + (ph >> 1) - 4}px"></i>` : '');
   const head = tc ? `<img class="ab" src="${tc.url}" width="${tc.w}" height="${tc.h}" style="left:${(vs.w - tc.w) >> 1}px;top:3px" alt="${esc(title)}">` : `<b class="ab lb g" style="left:${(vs.w - title.length * 6) >> 1}px;top:5px">${esc(title)}</b>`;
-  const view = `${roomImg(rp)}${rp.edge}${propSpot(rp, kind)}<i class="dim0"></i>${head}${plinths}${y0 - 8 >= tb ? `<i class="cur" style="left:${at(sel) + (sw >> 1) - 4}px;top:${y0 - 8}px"></i>` : ''}`; // a view too short for the cursor between the title and the plinths marks the choice by its plinth alone
-  const ledge = `<div class="dt" style="width:${lw - 82}px"><b>${esc(it.name)}</b>${(it.facts || []).map(f => `<p>${f}</p>`).join('')}</div>`
+  const view = `${roomImg(rp)}${rp.edge}${propSpot(rp, kind)}<i class="dim0"></i>${head}${plinths}${y0 - 8 >= tb ? `<i class="cur" style="left:${at(sel - first) + (sw >> 1) - 4}px;top:${y0 - 8}px"></i>` : ''}`; // a view too short for the cursor between the title and the plinths marks the choice by its plinth alone
+  const ledge = `<div class="dt" style="width:${lw - 82}px"><b data-name="${esc(it.name)}">${nameLines(it.name, lw - 92, 2).map(esc).join('<br>')}</b>${(it.facts || []).map(f => `<p>${f}</p>`).join('')}</div>`
     + (n > 1 ? pq(lw - 72, 4, 30, '<', selA ? selA((sel + n - 1) % n) : `osel:${(sel + n - 1) % n}`, { title: 'Choice to the left' }) + pq(lw - 38, 4, 30, '>', selA ? selA((sel + 1) % n) : `osel:${(sel + 1) % n}`, { title: 'Choice to the right' }) : '')
     + (it.card ? pq(lw - 72, 22, 64, 'CARD PAGE', `inspect:${it.card}`) : '') + pq(lw - 72, 40, 64, it.take || 'TAKE', it.a, { lit: !it.off, off: it.off });
   const bar = [it.text, bar0].map(t => String(t || '').trim()).filter(Boolean).map(t => /[.!?:)]$/.test(t) ? t : t + '.').join(' '); // each part a whole sentence
@@ -1744,7 +1778,7 @@ function psRight(r, extra = '') {
 const kindWord = id => ({ C: 'CHARM', G: 'GIFT', M: 'MASTERWORK' })[RELICS[id].kind];
 const plain = h => String(h).replace(/<br>/g, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 const cardItem = (e, a, extra = {}) => { const c = card(e.id), mon = db.isMonster(e.id); convertSheets(64);
-  return { pic: (cx, h) => psCardL(e, cx - 34, Math.max(0, (h - 92) >> 1)), name: c.name, card: e.id, a, text: plain(pickNote(e.id, G.run).replace(/^<b>[^<]*<\/b>(<br>)?/, '')),
+  return { pic: (cx, h) => psCardL(e, cx - 34, Math.max(0, (h - 92) >> 1)), tall: 92, name: c.name, card: e.id, a, text: plain(pickNote(e.id, G.run).replace(/^<b>[^<]*<\/b>(<br>)?/, '')),
     facts: [mon ? esc(`${c.attr} · LEVEL ${c.level} · ${c.type}`.toUpperCase()) : esc(roleOf(db, e.id).toUpperCase()), `WEIGHT ${weightOf(db, e.id)}`], ...extra }; };
 const relicItem = (id, a, extra = {}) => ({ pic: (cx, h) => `<i class="ab" style="left:${cx - 32}px;top:${Math.max(0, (h - 64) >> 1)}px">${medal(id, 64)}</i>`, name: RELICS[id].name, a, text: RELICS[id].text, facts: [kindWord(id)], ...extra });
 function psReward() {
@@ -1811,8 +1845,10 @@ function psForge() {
   const fb = G.forge, vs = viewSize(), r = G.run;
   const rp = CART.has('room-forge') ? roomPic('room-forge', NICHE_Y + 34, true) : { name: '', ox: 0, oy: 0, pw: vs.w, ph: vs.h, s: 1, k: Math.min(vs.w / 440, vs.h / 248), edge: '' }; // the forge undimmed: the fire is lit for the working
   const view = (rp.src ? roomImg(rp) + rp.edge : '') + (rp.src ? modelCanvas(rp, [forgeSpot(rp)], false, 'forge', false) :`<canvas id="forge" class="ab" style="left:0;top:0;pointer-events:none" width="${vs.w}" height="${vs.h}" data-items='${JSON.stringify([forgeSpot(rp)])}'></canvas>`) + `<button class="ab" style="left:0;top:0;width:${vs.w}px;height:${vs.h}px;background:none;border:0" data-a="forgeskip" aria-label="Continue"></button>`;
-  const what = fb.kind === 'masterwork' ? `<i class="ab" style="left:8px;top:16px">${medal(fb.mw, 32)}</i>` + lb(48, 20, shortName(RELICS[fb.mw].name).toUpperCase(), 'g') : fb.inst ? psCard(fb.inst, 8, 2) + lb(60, 8, fitName(card(fb.inst.id).name.toUpperCase(), 30), 'g') : '';
-  return frame({ left: psYou(r), right: pq(4, yb(220), 88, 'CONTINUE', 'forgeskip', { lit: true }), view, ledge: what + lb(fb.kind === 'masterwork' ? 48 : 60, fb.kind === 'masterwork' ? 32 : 22, fb.word, 'd'), bar: esc(fb.text) });
+  // The card's name on the ledge beside it in whole words, on a second line when it is long, the working's word under it.
+  const nl = fb.kind !== 'masterwork' && fb.inst ? nameLines(card(fb.inst.id).name, ledgeW() - 68, 2) : [];
+  const what = fb.kind === 'masterwork' ? `<i class="ab" style="left:8px;top:16px">${medal(fb.mw, 32)}</i>` + lb(48, 20, shortName(RELICS[fb.mw].name).toUpperCase(), 'g') : fb.inst ? psCard(fb.inst, 8, 2) + nl.map((t, i) => `<b class="ab lb g" data-name="${esc(card(fb.inst.id).name)}" style="left:60px;top:${8 + 9 * i}px">${esc(t)}</b>`).join('') : '';
+  return frame({ left: psYou(r), right: pq(4, yb(220), 88, 'CONTINUE', 'forgeskip', { lit: true }), view, ledge: what + lb(fb.kind === 'masterwork' ? 48 : 60, fb.kind === 'masterwork' ? 32 : 13 + 9 * Math.max(1, nl.length), fb.word, 'd'), bar: esc(fb.text) });
 }
 let forgeRaf = 0;
 function forgePaint() {
@@ -1969,10 +2005,14 @@ function psForger() {
       facts: own ? [esc(f.tag.toUpperCase()), esc(`POWER: ${f.power}`.toUpperCase())] : ['LOCKED'],
       text: own ? `${ruleText(f.rule)} ${f.power}: ${f.powerText}` + (labs.long ? ' ' + plain(roadLine(id)) : '') : id === 'last' && !P.forgers.includes('last') ? 'Nobody says how. The guardians remember things as they fall, and the Codex keeps what they say.' : `To unlock: ${FORGER_FEATS[id].text}` }; });
   const sel = Math.max(0, ids.indexOf(G.pickForger)), pick = ids[sel], F0 = FORGERS[pick];
-  const left = psPort(P.forgers.includes(pick) ? faceName(pick) : '', 14, 6, !P.forgers.includes(pick)) + lb(8, 79, shortName(F0.name), 'g') + lb(8, 92, F0.tag.toUpperCase().slice(0, 14), 'd') + pq(4, yb(220), 88, 'BACK', 'home');
+  // The pillars' words in whole words, on as many lines of 80 pixels as they take (a Forger's way of playing, the last
+  // heat rule's name), each plaque under them moved down for them.
+  const words = (t, x, y, cls) => nameLines(t, 80, 3).map((s, i) => `<b class="ab lb ${cls}" data-name="${esc(t)}" style="left:${x}px;top:${y + 9 * i}px">${esc(s)}</b>`).join('');
+  const left = psPort(P.forgers.includes(pick) ? faceName(pick) : '', 14, 6, !P.forgers.includes(pick)) + lb(8, 79, shortName(F0.name), 'g') + words(F0.tag, 8, 92, 'd') + pq(4, yb(220), 88, 'BACK', 'home');
+  const rule = hr.length ? hr[hr.length - 1].name : '', rl = rule ? nameLines(rule, 80, 3).length : 0;
   const right = lb(8, 8, 'HEAT', 'g') + `<b class="ab big2" style="left:8px;top:20px;width:80px;text-align:center">${h}</b>`
     + pq(4, 40, 42, '<', `heat:${Math.max(0, h - 1)}`, { off: h <= 0 }) + pq(50, 40, 42, '>', `heat:${Math.min(heatMax, h + 1)}`, { off: h >= heatMax })
-    + (hr.length ? lb(8, 62, hr[hr.length - 1].name.toUpperCase().slice(0, 14), 'd') + pq(4, 74, 88, 'HEAT RULES', `heatinfo:${h}`) : heatMax ? '' : lb(8, 62, 'CLEAR TO OPEN', 'd'))
+    + (rule ? words(rule, 8, 62, 'd') + pq(4, 65 + 9 * rl, 88, 'HEAT RULES', `heatinfo:${h}`) : heatMax ? '' : lb(8, 62, 'CLEAR TO OPEN', 'd'))
     + pq(4, yb(200), 88, 'HOW TO PLAY', 'tab:help') + pq(4, yb(220), 88, 'OPTIONS', 'tab:options');
   const bar0 = h ? `Heat ${h}: Memories +${h * 20}%.` + (hr.length ? ` ${hr[hr.length - 1].name}: ${hr[hr.length - 1].text}` : ' Rivals are stronger.') : '';
   return psOffer({ title: 'CHOOSE YOUR FORGER', items, key: 'forger', room: 'room-forgers', sel, selA: i => `forger:${ids[i]}`, left, pillar: right, bar0 });
@@ -1981,7 +2021,7 @@ function psKit() {
   const r = G.run, key = 'kit.' + r.offer.map(k => k.kit + k.deck.length).join();
   return psOffer({ title: 'PICK A STARTER KIT', key, room: 'room-forgers', bar0: r.builds ? `This descent carries ${r.builds.map(f => FAMILY_NAME[f]).join(' and ')} Gifts.` : '', right: r.redeal ? pq(4, yb(180), 88, 'DEAL AGAIN', 'redeal') : '',
     items: r.offer.map((k, i) => { const best = k.deck.slice().sort((a, b) => cardValue(db, b) - cardValue(db, a))[0]; convertSheets(64);
-      return { name: k.name, a: `kit:${i}`, take: 'TAKE KIT', card: best.id, pic: (cx, h) => psCardL(best, cx - 34, Math.max(0, (h - 92) >> 1)), facts: [`${k.deck.length} CARDS · WEIGHT ${deckWeight(db, k.deck)}`, esc(`BEST: ${card(best.id).name}`.toUpperCase())], text: plain(summary(k.deck)) }; }) });
+      return { name: k.name, a: `kit:${i}`, take: 'TAKE KIT', card: best.id, tall: 92, pic: (cx, h) => psCardL(best, cx - 34, Math.max(0, (h - 92) >> 1)), facts: [`${k.deck.length} CARDS · WEIGHT ${deckWeight(db, k.deck)}`, esc(`BEST: ${card(best.id).name}`.toUpperCase())], text: plain(summary(k.deck)) }; }) });
 }
 function psCharm() {
   const r = G.run, key = 'charm.' + r.offer.options.join();

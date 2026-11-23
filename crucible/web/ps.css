@@ -247,7 +247,13 @@ body.ps { background: #000; }
 #app.ps .pln:not(.on)::after { content: ''; position: absolute; inset: 0; background: repeating-conic-gradient(#000 0 25%, transparent 0 50%) var(--mesh2, 0 0) / 2px 2px; opacity: .5; pointer-events: none; }
 #app.ps .pln.off { cursor: default; }
 #app.ps .pln .pnm { position: absolute; left: 1px; right: 1px; background: #26101a; font: 8px/9px 'LM Label', monospace; color: var(--gl); text-align: center; white-space: nowrap; height: 9px; overflow: hidden; }
-#app.ps .pln .big2 { font: 16px/16px 'LM Text', monospace; color: var(--ink); text-align: center; }
+#app.ps .big2 { font: 16px/16px 'LM Text', monospace; color: var(--ink); text-align: center; } /* a big number on a plinth or a pillar (the heat): on a line of 16, so its dots stand on whole pixels */
+/* a row of plinths that turns with the cursor: a small gold arrow at the row's end, in the cursor's gold with its dark edge
+   under it, points to the choices beyond the view, nudging a pixel outward in time with the cursor's bob (psOffer) */
+#app.ps .mrl, #app.ps .mrr { position: absolute; z-index: 3; width: 4px; height: 8px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='8' shape-rendering='crispEdges'%3E%3Cg fill='%231a0f12'%3E%3Crect x='0' y='4' width='1' height='1'/%3E%3Crect x='1' y='5' width='1' height='1'/%3E%3Crect x='2' y='6' width='1' height='1'/%3E%3Crect x='3' y='7' width='1' height='1'/%3E%3C/g%3E%3Cg fill='%23e9c46a'%3E%3Crect x='0' y='3' width='1' height='1'/%3E%3Crect x='1' y='2' width='1' height='3'/%3E%3Crect x='2' y='1' width='1' height='5'/%3E%3Crect x='3' y='0' width='1' height='7'/%3E%3C/g%3E%3C/svg%3E") 0 0 no-repeat; pointer-events: none; animation: psnudl .8s steps(2) infinite; }
+#app.ps .mrr { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='8' shape-rendering='crispEdges'%3E%3Cg fill='%231a0f12'%3E%3Crect x='3' y='4' width='1' height='1'/%3E%3Crect x='2' y='5' width='1' height='1'/%3E%3Crect x='1' y='6' width='1' height='1'/%3E%3Crect x='0' y='7' width='1' height='1'/%3E%3C/g%3E%3Cg fill='%23e9c46a'%3E%3Crect x='3' y='3' width='1' height='1'/%3E%3Crect x='2' y='2' width='1' height='3'/%3E%3Crect x='1' y='1' width='1' height='5'/%3E%3Crect x='0' y='0' width='1' height='7'/%3E%3C/g%3E%3C/svg%3E"); animation-name: psnudr; }
+@keyframes psnudl { 50% { transform: translateX(-1px); } }
+@keyframes psnudr { 50% { transform: translateX(1px); } }
 #app.ps .cd.l { width: 68px; height: 92px; cursor: inherit; }
 #app.ps .cd.l .art { width: 64px; height: 64px; }
 #app.ps .cd.l .n1 { top: 66px; } #app.ps .cd.l .n2 { top: 76px; }
