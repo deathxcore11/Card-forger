@@ -30,6 +30,8 @@ import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
 import { drawHud, showFlash, showBanner, clearBanners, drawStatPanel, inputMode } from './view/hud.js';
 import { keyWords } from './ui/prompts.js';
+import { deviceClass } from './ui/device.js';
+import { defaultFor } from './ui/settings-schema.js';
 import { showOffer, offerKey, offerGuard } from './view/offer.js';
 import { loadModel, loadPuffTexture } from './view/models.js';
 import { spawnEnemy } from './sim/enemies.js';
@@ -159,6 +161,7 @@ function applySettings() {
   const s = save.settings; document.body.classList.toggle('rm', !!s.reduceMotion); chase.lag = !s.reduceMotion;
   fpsCap = [30, 60, 90, 120].includes(+s.fpsCap) ? +s.fpsCap : 60; for (const el of document.querySelectorAll('.setFps')) el.value = fpsCap;
   fovSetting = Math.max(80, Math.min(115, +s.fov || 100)); fitFov(); for (const el of document.querySelectorAll('.setFov')) el.value = fovSetting; for (const el of document.querySelectorAll('.setFovV')) el.textContent = fovSetting;
+  { const cls = deviceClass(), V = (id, d) => { const v = s[id]; if (v !== undefined) return v; const dv = defaultFor(id, cls); return dv === null || dv === undefined ? d : dv; }; fx.dmgMode = V('damageNumbers', 'all'); input.mult = { pad: V('lookSpeed', 5) / 5, drag: V('dragLook', 5) / 5, mouse: V('mouseLook', 5) / 5 }; const il = V('invertLook', 'none'); input.inv = { pad: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, drag: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, mouse: { x: false, y: !!V('invertMouse', false) } }; window.__dsVib = V('vibration', 70) / 100; }
   window.__dsDetail = s.detail === 'low' || s.detail === 'medium' || s.detail === 'high' ? s.detail : null; composite.on = detailLevel() !== 'low' && !/[?&]composite=0/.test(location.search); for (const el of document.querySelectorAll('.setDetail button')) el.classList.toggle('on', el.dataset.v === detailLevel());       // Detail: Low drops the composite pass and the blade grass; it applies live to the composite and to the next stage's grass
   for (const el of document.querySelectorAll('.setRM')) el.checked = !!s.reduceMotion;
   for (const el of document.querySelectorAll('.setShake')) { el.value = s.shake; el.disabled = !!s.reduceMotion; }
@@ -321,7 +324,7 @@ function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(keyWords(data, inputMode())); }       // a refused chest pulses its price tag instead of a banner
   else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); if (game.mode !== 'classic' && (game.stage || 0) < 2) setTimeout(() => prewarmStage(game.seed, (game.stage || 0) + 1), 60); }       // the next stage is drawn while the player reads the offer
-  else if (type === 'levelup') { fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
+  else if (type === 'levelup') { host.haptic('levelup'); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
   else if (type === 'hit') { actors.hitAt(b, c, data); fx.number(b, Math.min(heightAt(b, c), 40) + 1.7, c, a, data); }       // at the target's own height, not a fixed 1.7 m
   else if (type === 'relic') { fx.ring(a, game.p.y + 0.3, b, 30, 0xffffff, 0.7); fx.ring(a, game.p.y + 0.3, b, 14, 0xffe08a, 0.5); fx.burst(a, game.p.y + 1.2, b, 40, 0xffe08a, 8, 6, 0.3, 0.8, 5); fx.moment('relic', 'B', { shake: 0.35 }); }
   else if (type === 'block') { fx.burst(data.x, data.y, data.z, 5, 0xc8d0e0, 2.6, 1.5, 0.1, 0.22, 8); fx.ring(data.x, data.y, data.z, 0.7, 0xc8d0e0, 0.18); if (performance.now() - lastBlockTick > 90) { lastBlockTick = performance.now(); tone(150, 0.06, 0.05, 'square'); } }      // the Warden's shield took a hit: a small grey spark and a dull tick, nothing else
@@ -330,7 +333,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'kill') { fx.burst(b, groundY(b, c) + 0.9, c, 6, KCOL[a] || 0xaaaaaa, 3.5, 4, 0.28, 0.55, 14); actors.corpse(a, b, c); }
   else if (type === 'pickup') fx.burst(ip.x, ip.y + 1.1, ip.z, 3, PCOL[a] || 0xffffff, 1.6, 2.5, 0.14, 0.35, 0);
   else if (type === 'hop') { if (!fx.rm_) tone(330 * Math.pow(1.07, Math.min(a, 10)), 0.05, 0.035, 'triangle'); }       // a rising tick for every chained slide hop
-  else if (type === 'hurt') { if (!c) fx.shake(b ? 0.55 : 0.28, true); }       // the player's own cost (c is 1) neither flinches nor shakes
+  else if (type === 'hurt') { if (!c) host.haptic('hurt'); if (!c) fx.shake(b ? 0.55 : 0.28, true); }       // the player's own cost (c is 1) neither flinches nor shakes
   else if (type === 'announce') sigils.push({ x: b, z: c, until: actors.vt + 6.5, next: 0 });
   else if (type === 'gatewake') { fx.moment('gatewake', 'A', { shake: 0.5 }); fx.beam(game.map.gate.x, 4, game.map.gate.z, 0xffe9a0, 6); fx.ring(game.map.gate.x, 4, game.map.gate.z, 8, 0xffe9a0, 1); }
   else if (type === 'descent') { fx.moment('descent', 'A', { flash: 1, shake: 0.4 }); }
@@ -398,7 +401,7 @@ const head = { x: 0, y: 0, z: 0 }, ip = { x: 0, y: 0, z: 0 }, prof = { sim: 0, v
 
 // Touch: stick, look, buttons, pause, and tap-to-use. A tap picks the nearest usable thing within a thumb's width of the finger.
 touch = new TouchControls(input.raw || input, {
-  look: (dx, dy) => input.look(dx, dy), onManualMove: () => { autoWalk = null; },
+  look: (dx, dy) => input.look(dx, dy, 'drag'), onManualMove: () => { autoWalk = null; },
   onPause: () => { if (MODE === 'play') setMode('pause'); },
   onTap: (x, y) => { if (MODE !== 'play' || game.offer) return; pickAndUse(x, y); }
 });

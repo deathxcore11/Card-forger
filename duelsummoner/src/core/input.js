@@ -10,16 +10,18 @@ export class Input {
     window.addEventListener('keydown', e => { if (!e.repeat && e.code === 'KeyE') this.use = true; this.keys[e.code] = true; if (e.code === 'Space') e.preventDefault(); });
     window.addEventListener('keyup', e => { this.keys[e.code] = false; });
     document.addEventListener('mousemove', e => {
-      if (document.pointerLockElement === canvas || this.dragging) this.look(e.movementX, e.movementY);
+      if (document.pointerLockElement === canvas || this.dragging) this.look(e.movementX, e.movementY, 'mouse');
     });
     canvas.addEventListener('mousedown', () => { this.dragging = true; });
     window.addEventListener('mouseup', () => { this.dragging = false; });
     window.addEventListener('blur', () => { this.keys = {}; });
   }
-  look(dx, dy) {
+  // kind: 'mouse', 'pad' (right stick) or 'drag' (touch). this.mult scales the turn speed per kind (Settings: look speed, drag look speed, mouse look speed; 5 is 1x); this.inv inverts per kind: { x, y }
+  look(dx, dy, kind) {
     if (!this.enabled) return;
-    this.yaw -= dx * CFG.cam.sens;
-    this.pitch = clamp(this.pitch + dy * CFG.cam.sens, CFG.cam.pitchMin, CFG.cam.pitchMax);
+    const m = (this.mult && this.mult[kind]) || 1, iv = (this.inv && this.inv[kind]) || null, k = CFG.cam.sens * m;
+    this.yaw -= dx * k * (iv && iv.x ? -1 : 1);
+    this.pitch = clamp(this.pitch + dy * k * (iv && iv.y ? -1 : 1), CFG.cam.pitchMin, CFG.cam.pitchMax);
   }
   // ArrowUp/Down also move. Ctrl or C slides (browsers keep Ctrl+W for themselves, so C is the safe key).
   command() {

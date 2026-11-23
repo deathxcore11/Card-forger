@@ -1,4 +1,4 @@
-﻿// Game-feel effects. View only: nothing here reads or changes the rules, everything is fed from the sim's event queue and from
+// Game-feel effects. View only: nothing here reads or changes the rules, everything is fed from the sim's event queue and from
 // state changes the view notices. Every pool is fixed size and allocated once (particles 4000, damage numbers 64, rings 48,
 // beams 4, flipping cards 12), so steady state allocates nothing per frame.
 const T = window.THREE;
@@ -128,7 +128,7 @@ export class Fx {
       if (dx * dx + dz * dz < 2.25) { this.nage[i] = Math.min(this.nage[i], 0.12); this.nval[i] += value; if (flags & 1) this.nbig[i] = 1; this._paint(i, this.nval[i], this.nbig[i], flags); return; }
     }    let live = 0; for (let k = 0; k < this.M; k++) if (this.nage[k] >= 0) live++; if (live >= 16) return;         // at most 16 numbers on screen
     if (this.numBudget < 1) return; this.numBudget -= 1;
-    const big = flags === undefined || flags === null ? value > this.avgDmg * 2.2 + 1 : (flags & 1) === 1; this.avgDmg += (value - this.avgDmg) * 0.05;
+    const big = flags === undefined || flags === null ? value > this.avgDmg * 2.2 + 1 : (flags & 1) === 1; this.avgDmg += (value - this.avgDmg) * 0.05; if (this.dmgMode === 'off' || (this.dmgMode === 'big' && !big)) return;       // Settings > Damage numbers: Off, Big hits (crits and hits well above the average) or All
     const el = flags ? flags >> 1 : 0, col = ELEM_COL[el & 1 ? 1 : el & 2 ? 2 : el & 4 ? 3 : el & 8 ? 4 : el & 16 ? 5 : el & 32 ? 6 : el & 64 ? 7 : el & 128 ? 8 : 0];
     const i = this.nh, j = i * 3; this.nh = (this.nh + 1) % this.M;
     this.nval[i] = value; this._paintAt = null;

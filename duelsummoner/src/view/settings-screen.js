@@ -4,7 +4,7 @@ const LEGACY = { camShake: 'shake', frameRate: 'fpsCap' };
 const TAB_LABEL = { game: 'Game', display: 'Display', controls: 'Controls', sound: 'Sound', access: 'Access', account: 'Account' };
 const SECTION_LABEL = { all: null, controller: 'Controller', touch: 'Touch', kbm: 'Keyboard and mouse', reset: null };
 // Rows the game reads today. Only these show to players; a row appears when it is connected. ?dev=1 (or window.__showAllRows) shows every row, marked, so the rest can be built against the real screen.
-export const WIRED = new Set(['fov', 'camShake', 'detail', 'reduceMotion', 'frameRate']);
+export const WIRED = new Set(['fov', 'camShake', 'detail', 'reduceMotion', 'frameRate', 'damageNumbers', 'lookSpeed', 'dragLook', 'mouseLook', 'invertLook', 'invertMouse', 'vibration']);
 const showAll = () => (typeof window !== 'undefined' && (window.__showAllRows || /[?&]dev=1/.test(window.location.search)));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const CHOICE = { near: 'Near', standard: 'Standard', far: 'Far', off: 'Off', gentle: 'Gentle', strong: 'Strong', big: 'Big hits', all: 'All', balanced: 'Balanced', nearest: 'Nearest', strongest: 'Strongest', small: 'Small', medium: 'Medium', large: 'Large',

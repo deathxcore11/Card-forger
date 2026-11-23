@@ -22,7 +22,7 @@ export function createBrowserHost(canvas) {
       if (!p || !p.connected) continue;
       const lx = dead(p.axes[0] || 0), ly = dead(p.axes[1] || 0), rx = dead(p.axes[2] || 0), ry = dead(p.axes[3] || 0);
       if (lx || ly) { cmd.r = lx; cmd.f = -ly; }
-      if (rx || ry) { const l = padLook(rx, ry, dt === undefined ? 1 / 60 : dt); input.look(l[0], l[1]); }      // turn per second, not per frame
+      if (rx || ry) { const l = padLook(rx, ry, dt === undefined ? 1 / 60 : dt); input.look(l[0], l[1], 'pad'); }      // turn per second, not per frame
       const b = i => !!(p.buttons[i] && p.buttons[i].pressed);
       cmd.jump = cmd.jump || b(0); cmd.dash = cmd.dash || b(1); cmd.slide = cmd.slide || b(5); const x = b(2); cmd.use = cmd.use || (x && !prevUse); cmd.hold = cmd.hold || x; prevUse = x;
       cmd.yaw = input.yaw;
@@ -34,7 +34,7 @@ export function createBrowserHost(canvas) {
 
   return {
     input: {
-      raw: input, look(dx, dy) { input.look(dx, dy); },
+      raw: input, look(dx, dy, kind) { input.look(dx, dy, kind); }, get mult() { return input.mult; }, set mult(v) { input.mult = v; }, get inv() { return input.inv; }, set inv(v) { input.inv = v; },
       command(dt) { return padCommand(input.command(), dt); },
       get yaw() { return input.yaw; }, set yaw(v) { input.yaw = v; },
       get pitch() { return input.pitch; }, set pitch(v) { input.pitch = v; },
@@ -45,7 +45,7 @@ export function createBrowserHost(canvas) {
       write(obj) { return storage.set(JSON.stringify(obj)); }
     },
     reportRun(results) { try { if (typeof window !== 'undefined' && window.dsReportRun) window.dsReportRun(results); } catch (e) { /* the host may not care */ } },
-    haptic(kind) { try { if (navigator.vibrate) navigator.vibrate(kind === 'hurt' ? 40 : kind === 'levelup' ? [20, 30, 20] : 15); } catch (e) { /* optional */ } },
+    haptic(kind) { try { const k = typeof window !== 'undefined' && window.__dsVib !== undefined ? window.__dsVib : 0.7; if (k > 0 && navigator.vibrate) { const s = v => Math.max(5, Math.round(v * k / 0.7)); navigator.vibrate(kind === 'hurt' ? s(40) : kind === 'levelup' ? [s(20), 30, s(20)] : s(15)); } } catch (e) { /* optional */ } },
     exit() { try { history.back(); } catch (e) { /* optional */ } },
     quality: { renderScale: 2, maxEnemies: 300, particles: true }
   };
