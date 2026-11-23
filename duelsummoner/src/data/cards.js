@@ -4,7 +4,7 @@
 export const XP = { table: [6.9,9.6,12.3,24.1,36,48.3,60.7,73,106,139,172,197,222,247,272,295.8,319.5,343.3,367], tail: 1.05, base: 2.5, perLevel: 0.35, quad: 0.038, early: 0, earlyTo: 9 };         // xp to go from level L to L+1 = base + perLevel * L + quad * L * L
 export const LEVELS = { monsterMax: 10, fusedMax: 10, spellMax: 5, damagePerLevel: 0.15 };
 export const OFFER = {
-  size: 3, redraws: 2, banishes: 1, passCoins: 10,
+  size: 3, redraws: 2, banishes: 1, passCoins: 6,
   rarityOdds: { common: 60, rare: 28, epic: 10, legendary: 2 },
   secondMonsterByLevel: 3,                                           // the duelist's partner monster is forced into an offer by here
   trapByLevel: 4,                                                    // a Trap is forced by here if none is set
@@ -88,6 +88,7 @@ export const TARGETS = {
   firstFusionSeconds: [225, 270],                                     // 3:45 to 4:30 with focused picks
   secondFusionShare: 0.15                                             // runs that reach a second Fusion: rare, under 15%
 };
+
 
 
 

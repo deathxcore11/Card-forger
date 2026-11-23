@@ -25,8 +25,10 @@ export const RUN = {
   bossSpawn: { x: 0, z: -12 },
   starChips: { perKills: 10, perElite: 20, boss: 100 },
   // drops
-  coinChance: 1 / 6, heartChance: 1 / 50, heartHeal: 15
+  coinChance: 0.45, coinEarly: { until: 150, mult: 3 }, heartChance: 1 / 50, heartHeal: 15
 };
+
+
 
 
 

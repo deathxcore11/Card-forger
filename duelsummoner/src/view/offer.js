@@ -8,7 +8,9 @@ import { takeCode, MENU_REDRAW, MENU_PASS, MENU_LEAVE, MENU_BANISH } from '../si
 const $ = id => document.getElementById(id);
 import { playReveal } from './reveal.js';
 const revealed = new WeakSet();
-let busy = false;
+let busy = false, openOffer = null, openedAt = 0;
+// Input guard: for 0.3 s after an offer opens, and for as long as a picked card is flying, every key, click, touch and pad press is ignored, so a click or jump from the fight cannot take or banish a card
+export const offerGuard = () => busy || performance.now() - openedAt < 300;
 // the chosen card flies down toward the field zones, then the choice enters the sim (instant with reduce motion)
 function destFor(g, c) {                                  // the zone the pick lands in: the card's own zone if it has one, else the first free zone of its kind
   const q = s => document.querySelector(s);
@@ -81,6 +83,7 @@ const SUBS = {
 export function showOffer(g, act) {
   const o = g.offer; if (!o) return;
   if (o.type === 'chest' && o.reveal && !revealed.has(o)) { revealed.add(o); const rm = document.body.classList.contains('rm'); $('offerScreen').style.visibility = 'hidden'; playReveal(o.reveal, { rm }, t => { $('offerScreen').style.visibility = ''; showOffer(g, act); if (t === 'legendary') for (const cd of document.querySelectorAll('#offerCards .card')) cd.classList.add('flipslow'); }); return; }
+  if (o !== openOffer) { openOffer = o; openedAt = performance.now(); }
   const shop = o.type === 'shop', level = o.type === 'level', cardy = level || o.type === 'chest';
   $('offerTitle').textContent = TITLES[o.type] ? TITLES[o.type] + (shop ? '  (coins ' + g.coins + ')' : '') : 'LEVEL UP ' + g.level;
   $('offerSub').textContent = SUBS[o.type] || 'Choose a card. Banish removes a card from all future offers.';
@@ -95,12 +98,14 @@ export function showOffer(g, act) {
     wrap.appendChild(el);
   });
   if ((level || o.type === 'blessing') && window.__dealFrom && !document.body.classList.contains('rm')) { const O = window.__dealFrom; [...wrap.children].forEach((el, i, all) => { const r = el.getBoundingClientRect(); el.style.animation = 'none'; el.animate([{ transform: 'translate(' + (O.x - (r.left + r.width / 2)) + 'px,' + (O.y - (r.top + r.height / 2)) + 'px) scale(0.12) rotate(' + ((i - (all.length - 1) / 2) * 38) + 'deg)', opacity: 0.9 }, { transform: 'none', opacity: 1 }], { duration: 340, delay: i * 45, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'backwards' }); }); }       // the cards travel out from the duelist (about 0.43 s from the bar filling to the last card landed)
+  { let pill = $('offerPill'); if (!pill) { pill = document.createElement('div'); pill.id = 'offerPill'; $('offerTitle').after(pill); } const waiting = level ? g.pendingLevels : 0; pill.textContent = waiting > 1 ? waiting + ' level-ups waiting' : ''; pill.style.display = waiting > 1 ? 'inline-block' : 'none'; }
   const btns = $('offerBtns'); btns.innerHTML = '';
-  if (cardy) btns.insertAdjacentHTML('beforeend', '<button data-act="redraw"' + (g.field.redraws > 0 ? '' : ' disabled') + '>REDRAW (' + g.field.redraws + ')</button>');
+  const rds = (o.freeRedraws || 0) + g.field.redraws;       // free redraws from the offer are spent first, so they count here too
+  if (cardy) btns.insertAdjacentHTML('beforeend', '<button data-act="redraw"' + (rds > 0 ? '' : ' disabled') + '>REDRAW (' + rds + ')</button>');
   if (level) btns.insertAdjacentHTML('beforeend', '<button data-act="pass">PASS (+' + OFFER.passCoins + ' coins)</button>');
   if (o.leave) btns.insertAdjacentHTML('beforeend', '<button data-act="leave">' + (shop ? 'LEAVE THE STALL' : 'LEAVE IT FOR LATER') + '</button>');
   $('offerScreen').onclick = e => {
-    const t = e.target.closest('button'); if (!t || t.disabled) return;
+    const t = e.target.closest('button'); if (!t || t.disabled || offerGuard()) return;
     if (t.dataset.pick !== undefined) fly(t, () => act(takeCode(+t.dataset.pick)), g, o.cards[+t.dataset.pick]);
     else if (t.dataset.ban !== undefined) fly(t, () => act(MENU_BANISH + 1 + +t.dataset.ban), g, null);
     else if (t.dataset.act === 'redraw') act(MENU_REDRAW);
@@ -110,6 +115,7 @@ export function showOffer(g, act) {
 }
 export function offerKey(g, code, act) {                // keyboard: 1 to 4 take or buy, R redraw, P pass, L leave
   if (!g.offer) return false;
+  if (offerGuard()) return /^(Digit[1-9]|KeyR|KeyP|KeyL)$/.test(code);       // swallowed while the guard is on
   if (/^Digit[1-9]$/.test(code)) { const b = document.querySelector('#offerCards [data-pick="' + (+code.slice(5) - 1) + '"]'); if (b && !b.disabled) b.click(); return true; }
   if (code === 'KeyR') { act(MENU_REDRAW); return true; }
   if (code === 'KeyP') { act(MENU_PASS); return true; }

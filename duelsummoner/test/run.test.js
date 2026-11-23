@@ -100,7 +100,7 @@ test('level-up offers: 3 cards, forced partner by level 3, Redraw, Banish, Pass'
   const before = g.offer.cards.map(c => c.id).join(); assert.ok(g.redraw()); assert.equal(g.field.redraws, 1);
   const victim = g.offer.cards[0].id; assert.ok(g.banish(0)); assert.ok(g.field.banished.has(victim)); assert.equal(g.field.banishes, 0);
   assert.ok(!g.offer.cards.some(c => c.id === victim));
-  const coins = g.coins; g.pendingLevels = 1; assert.ok(g.pass()); assert.equal(g.coins, coins + 10); assert.equal(g.offer, null);
+  const coins = g.coins; g.pendingLevels = 1; assert.ok(g.pass()); assert.equal(g.coins, coins + 6); assert.equal(g.offer, null);
 });
 
 test('locked in: with all four Monster Zones full, offers only upgrade those four', () => {
@@ -156,4 +156,5 @@ test('a generator can place objects through the API on an empty world', () => {
   assert.equal(g.world.stones.length, 1); assert.equal(g.world.broker.stock.length, 3); assert.equal(g.world.cchests[0].rarity, 'rare');
   g.p.x = 5; g.p.z = 5; assert.equal(nearestProp(g).type, 'stone');
 });
+
 

@@ -34,6 +34,7 @@
   #hint { left:50%; top:14px; transform:translateX(-50%); color:var(--dim); font-size:12px; text-align:center; }
   #banner { left:50%; top:20%; transform:translateX(-50%); font-size:24px; color:var(--ink); text-align:center; opacity:0; transition:opacity .4s; max-width:70vw; }
   #banner.on { opacity:1; }
+  #banner { background:linear-gradient(90deg, #0d081000, #0d0810e6 18%, #0d0810e6 82%, #0d081000); padding:8px 64px; text-shadow:0 2px 6px #000, 0 0 3px #000; color:#fff0c8; }       /* announcements: one lane, a dark ribbon behind the text and a soft shadow */
   #prompt { left:50%; bottom:176px; transform:translateX(-50%); color:#ffe08a; font-size:18px; text-align:center; }
   #fusion { left:50%; bottom:152px; transform:translateX(-50%); color:#ff9de0; font-size:14px; text-align:center; display:none; }
   #boss { left:50%; top:46px; transform:translateX(-50%); width:min(520px, 60vw); display:none; text-align:center; }
@@ -72,7 +73,7 @@
   @media (pointer:coarse) { button, .tab { min-height:46px; min-width:46px; } button.small { padding:10px 14px; } .trk, .lbrow { padding:4px 0; } }  #tags { position:fixed; inset:0; pointer-events:none; z-index:12; overflow:hidden; }
   .wtag { position:absolute; transform:translate(-50%,-100%); white-space:nowrap; font-size:12px; letter-spacing:0; padding:2px 7px; border:1px solid #000a; background:#0d0810c8; color:#ffe9a0; text-shadow:none; }
   .wtag.spent { color:#8a8a92; border-color:#4a4a52; }
-  .wtag.free { color:#ffffff; } .wtag.shop { color:#ffd23f; } .wtag.danger { color:#ff6a5a; } .wtag.seal { color:#c9a0ff; }          /* one colour code everywhere: white free, gold coins, red danger, violet Fusion and seals; grey once used */
+  .wtag.poor { color:#c46a60; } .wtag.free { color:#ffffff; } .wtag.shop { color:#ffd23f; } .wtag.danger { color:#ff6a5a; } .wtag.seal { color:#c9a0ff; }          /* one colour code everywhere: white free, gold coins, red danger, violet Fusion and seals; grey once used */
   #offerScreen { pointer-events:auto; }
   /* the pause screen: one centred dark panel, a column: title, Resume, End run, the settings as a tidy grid under a divider, the controls hint last */
   .pausePanel { background:#0d0810f2; border:2px solid #6b4fa0; padding:20px 28px; width:min(580px, 92vw); max-height:92vh; overflow:auto; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; gap:12px; }
@@ -88,6 +89,7 @@
   .card.flipslow { animation:flipslow .9s ease-out backwards; } @keyframes flipslow { from { transform:perspective(700px) rotateY(90deg); opacity:.2; } to { transform:none; opacity:1; } }
   #offerCards { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; align-items:stretch; }
   .card { width:272px; min-height:360px; flex:0 0 272px; box-sizing:border-box; display:flex; flex-direction:column; border:2px solid var(--line); background:var(--panel); padding:16px; text-align:left; font-size:16px; line-height:1.45; }
+  #offerPill { margin:6px 0 0; padding:3px 14px; border:1px solid #ffd23f; border-radius:14px; color:#ffd23f; font-size:15px; letter-spacing:2px; }
   .card .rowBtn { margin-top:auto; padding-top:10px; } .card .rowBtn button { font-size:15px; padding:9px 14px; }
   .card h3 { margin:0 0 6px; font-size:19px; letter-spacing:1px; }
   .card .t { color:var(--dim); font-size:13px; margin:2px 0; }

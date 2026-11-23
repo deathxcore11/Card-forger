@@ -6,6 +6,7 @@ import { clock } from './core/util.js';
 import { buildMapMesh } from './view/mapMesh.js';
 import { buildGateSeal } from './view/gateseal.js';
 import { Bars } from './view/bars.js';
+import { chestPrice } from './sim/world.js';
 const bars = new Bars();
 import { buildScenery } from './view/scenery.js';
 import { LeyThreads } from './view/threads.js';
@@ -305,25 +306,30 @@ export function pickAndUse(cx, cy) {
 }
 // Landmark tags: a short label over every landmark you are close to, saying what it is and what it gives, so nothing has to be guessed. Spent ones turn grey and stay.
 const tagEls = [], tagV = new T.Vector3();
+const doneAt = new Map();
 function landmarkTags() {
   const W = game.world, p = game.p, out = [];
   const add = (o, text, cls, y) => { const dx = o.x - p.x, dz = o.z - p.z, d2 = dx * dx + dz * dz; if (d2 < 30 * 30) out.push({ x: o.x, y: (o.y || 0) + y, z: o.z, text, cls, d2 }); };
   if (W) {
-    for (const s of W.stones || []) add(s, s.used ? 'Witness Stone: used' : 'Witness Stone: 1 free item of 3', s.used ? 'spent' : 'free', 2.1);
-    for (const s of W.shrines || []) add(s, s.done ? 'Shrine of Tribute: done' : 'Shrine of Tribute: hold the ring, pick a boon', s.done ? 'spent' : 'free', 2.4);
+    const spentFor = o => { if (!doneAt.has(o)) doneAt.set(o, performance.now()); return performance.now() - doneAt.get(o) < 3000; };       // a 'used' label fades out after 3 s (the object keeps its used colour)
+    for (const s of W.stones || []) if (!s.used || spentFor(s)) add(s, s.used ? 'Witness Stone: used' : 'Witness Stone: 1 free item of 3', s.used ? 'spent' : 'free', 2.1);
+    for (const s of W.shrines || []) if (!s.done || spentFor(s)) add(s, s.done ? 'Shrine of Tribute: done' : 'Shrine of Tribute: hold the ring, pick a boon', s.done ? 'spent' : 'free', 2.4);
     if (W.broker) add(W.broker, 'Relic Broker: shop', 'shop', 2.6);
-    if (W.altar) add(W.altar, W.altar.used ? 'Altar: used' : 'Altar of Tribute: banish or tribute', W.altar.used ? 'spent' : 'seal', 2.4);
-    for (const c of W.cchests || []) if (!c.open) add(c, c.trophy ? 'Trophy Chest: free, open it' : 'Card Chest: ' + (c.free ? 'free' : 'coins'), c.free || c.trophy ? 'free' : 'shop', 1.9);
+    if (W.altar && (!W.altar.used || spentFor(W.altar))) add(W.altar, W.altar.used ? 'Altar: used' : 'Altar of Tribute: banish or tribute', W.altar.used ? 'spent' : 'seal', 2.4);
+    for (const c of W.cchests || []) if (!c.open) { if (c.trophy || c.free) add(c, c.trophy ? 'Trophy Chest: free, open it' : 'Card Chest: free', 'free', 1.9); else { const pr = chestPrice(game); add(c, 'Card Chest: ' + pr + ' coins', game.coins >= pr ? 'shop' : 'poor', 1.9); } }       // the price, gold when you can pay it and muted red when you cannot (the tier stays hidden)
   }
   for (const c of game.chests) if (!c.open) add(c, 'Sealed Chest: free item', 'free', 1.9);
   return out;
 }
+let bannerUp = false;
 function drawTags() {
+  { const bn = $('banner'); bannerUp = !!bn && bn.classList.contains('on'); }
   const list = MODE === 'play' && !mapOpen ? landmarkTags() : []; list.sort((a, b) => a.d2 - b.d2); const n = Math.min(6, list.length), host = $('tags'), w = innerWidth, h = innerHeight;
   for (let i = 0; i < Math.max(n, tagEls.length); i++) {
     if (i >= tagEls.length) { const el = document.createElement('div'); el.className = 'wtag'; host.appendChild(el); tagEls.push(el); }
     const el = tagEls[i]; if (i >= n) { el.style.display = 'none'; continue; }
     const t = list[i]; tagV.set(t.x, t.y, t.z).project(camera); if (tagV.z > 1) { el.style.display = 'none'; continue; }
+    if (bannerUp && (1 - tagV.y) / 2 > 0.12 && (1 - tagV.y) / 2 < 0.31) { el.style.display = 'none'; continue; }       // world labels never draw inside the announcement lane
     el.style.display = 'block'; el.className = 'wtag ' + t.cls; if (el.textContent !== t.text) el.textContent = t.text; el.style.left = ((tagV.x * 0.5 + 0.5) * w) + 'px'; el.style.top = ((-tagV.y * 0.5 + 0.5) * h) + 'px';
   }
 }

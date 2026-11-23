@@ -35,6 +35,8 @@ function drawStrip(g) {                                                    // el
   $('strip').innerHTML = h;
 }
 // The Rite: three objective lines that appear in sequence and tick. They replace the next-event text as the main goal; the strip above stays.
+// the boss bar shows for the final boss, the gate boss and the timed bosses, with the name on it
+const bossOf = g => g.sp.find(s => s.alive && !s.dead && (s.kind === 'pharaoh' || s.role === 'gate' || s.role === 'bossA' || s.role === 'bossB'));
 function riteLines(g) {
   const S = g.stageSpec, awake = g.gate.awake || g.gate.state !== 'closed', fell = g.gate.state === 'done', last = g.stage >= 2;
   const L = [[awake, 'Wake the gate (' + (awake ? 'awake' : clock(Math.max(0, S.gateWake - g.sc))) + ')']];
@@ -87,12 +89,12 @@ export function drawHud(g, force) {
   }
   // the text lines below change at most a few times a second: refresh them four times a second, not every frame
   const slow = Math.floor(g.t * 4);
-  if (!force && slow === slowT) { const boss0 = g.sp.find(s => s.kind === 'pharaoh' && s.alive); if (boss0) $('bossfill').style.width = Math.max(0, boss0.hp / boss0.maxHp * 100) + '%'; return; }
+  if (!force && slow === slowT) { const boss0 = bossOf(g); if (boss0) $('bossfill').style.width = Math.max(0, boss0.hp / boss0.maxHp * 100) + '%'; return; }
   slowT = slow;
   const ready = fusionsReady(g), f = $('fusion');
   f.style.display = ready.length ? 'block' : 'none';
   if (ready.length) f.textContent = 'FUSION READY: ' + ready.map(id => FUSIONS[id].name).join(' or ') + '. Open a sealed chest (E).';
-  const boss = g.sp.find(s => s.kind === 'pharaoh' && s.alive);
+  const boss = bossOf(g);
   $('boss').style.display = boss ? 'block' : 'none';
   if (boss) { $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%'; if ($('bossname').textContent !== boss.name) $('bossname').textContent = boss.name; }
   if (g.mode !== 'classic') drawStrip(g);
