@@ -1,4 +1,4 @@
-// Chase camera: 7 m behind, 3 m above, over the right shoulder. Yaw is free, pitch is limited,
+﻿// Chase camera: 7 m behind, 3 m above, over the right shoulder. Yaw is free, pitch is limited,
 // it pulls in when terrain is behind it and never goes under the floor.
 import { CFG } from '../data/config.js';
 import { heightAt } from '../sim/terrain.js';
@@ -46,7 +46,17 @@ export class ChaseCamera {
     let x = px + (tx - px) * t, y = py + (ty - py) * t, z = pz + (tz - pz) * t;
     y = Math.max(y, heightAt(x, z) + C.floorGap, C.floorGap);
     this.camera.position.set(x, y, z);
-    this.camera.lookAt(px + fx * 6, py + 0.2, pz + fz * 6);        // aim past the duelist so the shoulder offset reads
+    let ly = py + 0.2; this.camera.lookAt(px + fx * 6, ly, pz + fz * 6);        // aim past the duelist so the shoulder offset reads
+    // safe area: the duelist's feet stay above the hotbar (the bottom quarter of the screen) however steeply the camera looks down or however close the spring pulls it in
+    const dx = this.sx - x, dy = this.py - y, dz = this.sz - z, dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1, th = Math.tan(this.camera.fov * Math.PI / 360);
+    for (let k = 0; k < 8; k++) {
+      this.camera.updateMatrixWorld(); const v = this.camera.matrixWorldInverse.elements, fy = this.py + 0.9;
+      const cx = v[0] * this.sx + v[4] * fy + v[8] * this.sz + v[12], cy = v[1] * this.sx + v[5] * fy + v[9] * this.sz + v[13], cz = v[2] * this.sx + v[6] * fy + v[10] * this.sz + v[14];
+      if (cz > -0.1) break; const ndc = cy / (-cz * th);
+      if (ndc >= -0.32) break;
+      ly -= (-0.32 - ndc) * dist * th; this.camera.lookAt(px + fx * 6, ly, pz + fz * 6);
+    }
     this.pos.x = x; this.pos.y = y; this.pos.z = z;
   }
 }
+
