@@ -343,7 +343,10 @@
   @media (max-width:760px) { #qlMap { flex-direction:column; } .qlLegend { max-width:none; font-size:12px; } }
   @media (max-height:520px) { #qlMap { gap:12px; } #fullmap { width:min(80vh, 60vw); height:min(80vh, 60vw); } .qlLegend { font-size:11px; gap:4px; } .qlWrap { gap:4px; } #mapOverlay button { padding:4px 12px; } }    /* Square and tall touch screens (a foldable's inner screen, about 900 x 840 or 840 x 900): the slot row would sit under the jump, slide and dash buttons, so it moves to the top under the HUD row, clear of the minimap; the Full Screen chip is only in the menus there */
   @media (pointer:coarse) and (min-aspect-ratio: 3/4) and (max-aspect-ratio: 13/10) {
-    #zones { top:100px; bottom:auto; left:8px; transform:none; width:calc(100vw - 176px); grid-template-columns:repeat(4, minmax(0, 1fr)); }
+    #zones { top:100px; bottom:auto; left:8px; transform:none; width:calc(100vw - 176px); grid-template-columns:repeat(8, minmax(0, 1fr)); gap:4px; }
+    #zones .zone { height:7.2vh; min-height:0; padding:2px 3px; font-size:11px; border-width:1px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+    #zones .zone .pips, #zones .zone .fm { display:none; } #zones .zone b { font-size:10px; }
+    #zones .zone:not(.full) { font-size:0; } #zones .zone:not(.full) b { display:none; } #zones .zone:not(.full)::after { content:'\25C7'; font-size:18px; color:#6b4fa0; } #zones .zone.st:not(.full)::after { content:'\2727'; }
     #prompt { bottom:190px; } #fusion { bottom:222px; } #itemsList { bottom:210px; }
   }
   @media (pointer:coarse) { body[data-mode=play] #devbar { display:none; } }  </style>
