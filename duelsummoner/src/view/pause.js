@@ -1,4 +1,4 @@
-﻿// The Pause screen as a duel mat (menus-spec 10.1): the run's board laid out as a card mat on the left, the Ledger column (Actions, Stats, Rites) on the right.
+// The Pause screen as a duel mat (menus-spec 10.1): the run's board laid out as a card mat on the left, the Ledger column (Actions, Stats, Rites) on the right.
 // The static markup lives in index.html; renderPause(g) fills it each time Pause opens. Hold buttons need a 1.0 s hold with a pointer; with a pad or keys they need two presses within 1.5 s.
 import { MONSTERS, FUSIONS, SPELLS, TRAPS, LEVELS, FIELD_RULES, formOf } from '../data/cards.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
@@ -34,6 +34,7 @@ export function pauseMat(g) {
   const ex = [...(g.field.banished || [])].map(id => { const D = MONSTERS[id] || FUSIONS[id] || SPELLS[id] || TRAPS[id]; return '<span class="pexile">' + esc(D ? D.name : id) + '</span>'; }).join('');
   return { header: pauseHeader(g), monsters: g.field.monsters.map(monsterTile).join(''), spells: g.field.spells.map(spellTile).join(''), items: '<div class="pitems">' + items + '</div>' + (ex ? '<div class="pexiled"><small>Exiled</small>' + ex + '</div>' : '') };
 }
+export function matHtml(g) { const m = pauseMat(g); return '<div class="pmHeader">' + m.header + '</div><div class="pmRow m">' + m.monsters + '</div><div class="pmRow s">' + m.spells + '</div>' + m.items; }
 export function statRows(g, all) {
   const M = g.mods, out = [];
   for (const [gname, ids] of STAT_GROUPS) {

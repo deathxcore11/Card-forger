@@ -30,7 +30,7 @@ import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
 import { drawHud, showFlash, showBanner, clearBanners, drawStatPanel, inputMode } from './view/hud.js';
 import { keyWords } from './ui/prompts.js';
-import { renderPause, setTab as pauseTab, bindHolds } from './view/pause.js';
+import { renderPause, setTab as pauseTab, bindHolds, matHtml, statRows } from './view/pause.js';
 import { deviceClass } from './ui/device.js';
 import { defaultFor } from './ui/settings-schema.js';
 import { showOffer, offerKey, offerGuard } from './view/offer.js';
@@ -210,7 +210,8 @@ $('endBtn').addEventListener('click', () => { game.endRun(); results(); });
 $('resumeBtn').addEventListener('click', () => { setMode('play'); lock(); });
 bindHolds($('pmActions'));       // End run and Restart: a 1.0 s hold with a pointer, or two presses from a pad or keys
 for (const t of document.querySelectorAll('#pmTabs [data-pt]')) t.addEventListener('click', () => pauseTab(t.dataset.pt));
-$('pmMap').addEventListener('click', () => { toggleMap(true); });
+$('pmMap').addEventListener('click', () => { qlCur = 'map'; toggleMap(true); });
+$('qlClose').addEventListener('click', () => toggleMap(false)); for (const t of document.querySelectorAll('#qlTabs [data-qt]')) t.addEventListener('click', () => qlTab(t.dataset.qt));
 $('pmSettings').addEventListener('click', () => { $('pauseScreen').style.display = 'none'; menus.showSettings('game', { inRun: true, back: () => { $('menuScreen').classList.remove('on'); $('pauseScreen').style.display = ''; } }); });
 $('pmRestart').addEventListener('click', () => { const o = game.opts; game.endRun(); results(); begin(o.mode, { duelist, difficulty: o.difficulty, oaths: o.oaths, map: o.map }); });       // Restart pays like End run and goes straight to a new run with the same duelist and rules
 canvas.addEventListener('mousedown', () => { if (MODE === 'play') lock(); });
@@ -218,7 +219,9 @@ document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && MODE === 'play') setMode('pause');
   else if (MODE === 'play') $('hint').textContent = '';
 });
-function toggleMap(force) { const want = force === undefined ? !mapOpen : force; if (want && MODE !== 'play') return; mapOpen = want; $('mapOverlay').style.display = want ? 'flex' : 'none'; if (want) { if (document.pointerLockElement && document.exitPointerLock) { /* keep play mode: the overlay pauses the sim */ } } }
+let qlCur = 'map';
+function qlTab(t) { qlCur = t; for (const b of document.querySelectorAll('#qlTabs [data-qt]')) b.classList.toggle('sel', b.dataset.qt === t); $('qlMap').style.display = t === 'map' ? 'flex' : 'none'; $('qlBuild').style.display = t === 'build' ? 'block' : 'none'; $('qlStats').style.display = t === 'stats' ? 'block' : 'none'; if (t === 'build') $('qlBuild').innerHTML = matHtml(game); if (t === 'stats') $('qlStats').innerHTML = statRows(game, false); }
+function toggleMap(force) { const want = force === undefined ? !mapOpen : force; if (want && MODE !== 'play' && MODE !== 'pause') return; mapOpen = want; $('mapOverlay').style.display = want ? 'flex' : 'none'; if (want) qlTab(qlCur); if (want) { if (document.pointerLockElement && document.exitPointerLock) { /* keep play mode: the overlay pauses the sim */ } } }
 window.addEventListener('keydown', e => { if (e.code === 'KeyM' && !e.repeat && (MODE === 'play' || mapOpen)) { e.preventDefault(); toggleMap(); } else if (e.code === 'Escape' && mapOpen) { e.preventDefault(); toggleMap(false); } });
 $('minimap').addEventListener('click', () => { if (MODE === 'play') toggleMap(true); }); $('mapOverlay').addEventListener('click', () => toggleMap(false));
 let statsOpen = false;
@@ -251,8 +254,9 @@ function padFrame(now) {
   for (const n of names) padPress(n);
 }
 function padPress(n) {
+  if (mapOpen) { if (n === 'select' || n === 'b') toggleMap(false); else if (n === 'start') { toggleMap(false); setMode('pause'); } else if (n === 'lb' || n === 'rb') { const T = ['map', 'build', 'stats']; qlTab(T[(T.indexOf(qlCur) + (n === 'rb' ? 1 : 2)) % 3]); } return; }
   if (MODE === 'play') {
-    if (mapOpen) { if (n === 'select' || n === 'b' || n === 'start') toggleMap(false); return; }
+    if (mapOpen) { if (n === 'select' || n === 'b') toggleMap(false); else if (n === 'start') { toggleMap(false); setMode('pause'); } else if (n === 'lb' || n === 'rb') { const T = ['map', 'build', 'stats']; qlTab(T[(T.indexOf(qlCur) + (n === 'rb' ? 1 : 2)) % 3]); } return; }
     if (n === 'a' || n === 'b') skipIntro();       // the boss name card is skipped by A or B (no prompt is drawn for it)
     if (n === 'start') setMode('pause'); else if (n === 'select') toggleMap(true);
     return;
