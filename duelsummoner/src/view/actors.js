@@ -6,7 +6,7 @@ import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { MAP } from '../data/map.js';
 import { SCALE, summonSize } from '../data/scale.js';
 import { DuelistRig } from './rig.js';
-import { actorLit, setStains, setSkyTint } from './engine.js';
+import { actorLit, setStains, setSkyTint, setTele } from './engine.js';
 import { Ribbon } from './ribbon.js';
 import { OwnEffects } from './ownfx.js';
 import { RAMP, ELEMENTS } from '../data/fxramp.js';
@@ -98,6 +98,8 @@ function modelGroup(model, targetSize, axis, glowColor) {
   return g;
 }
 
+// how much of an own area's true radius its lingering ground mark covers, by screen tier 1..5 (the ramp is measured as claimed screen share, test/browser-share.mjs)
+const STK = [0, 1.0, 0.95, 1.0, 1.0, 1.0], STCAP = [0, 6, 6, 8, 10, 24];       // and the largest true radius a mark follows, so one huge cone cannot paint the screen
 export class Actors {
   constructor(scene, assets, fx) {
     this.scene = scene; this.assets = assets || {}; this.fx = fx;
@@ -242,13 +244,13 @@ export class Actors {
     if (s < 2 || !(o.r >= 2)) return;
     const el = o.el || 'fire', L = RAMP[el] || RAMP.fire, oc = ownColour(el), ground = el === 'dark' ? [L[0], L[1]] : el === 'ice' ? [L[2], L[0]] : [L[3], oc];
     const prev = this._growSeen.get(o); this._growSeen.set(o, o.t);
-    if (prev === undefined || o.t < prev) { const M = this._marks; M.push({ x: o.x, z: o.z, r: o.r * 0.95, hex: ground[0], hexK: ground[1], t: 0 }); if (M.length > 6) M.shift(); }
+    if (prev === undefined || o.t < prev) { const M = this._marks; M.push({ x: o.x, z: o.z, r: Math.min(o.r, STCAP[s]) * STK[s], hex: ground[0], hexK: ground[1], t: 0 }); if (M.length > 6) M.shift(); }
     this._lead = this._lead || el;
     if (s >= 3 && o.type !== 'fan') this.own.wall(o.x, o.y, o.z, o.r, s >= 4 ? (24 + 40 * Math.min(1, rch / 1.5)) / 3 : 1.4, oc, 1, ELEMENTS.indexOf(el));
     if (s >= 4) this._skyLight = true;
   }
   // Tier 5 (spec 1.4): every large own area is stamped into the stain map and gets a hollow giant at its TRUE rule radius, 16 m tall at Reach +0% up to 40 m at +150%, its top rising and falling slowly at 0.5 Hz; the footprint is never enlarged
-  _tier5(o, rch) { const el = o.el || 'fire', L = RAMP[el] || RAMP.fire, oc = ownColour(el); this._lead = this._lead || el; const ground = el === "dark" ? [L[0], L[1]] : el === "ice" ? [L[2], L[0]] : [L[3], oc]; this._stains.push({ x: o.x, z: o.z, r: o.r, hex: ground[0], hexK: ground[1] }); const h = 24 + 40 * Math.min(1, rch / 1.5) + 1.5 * Math.sin(performance.now() / 1000 * Math.PI); this.own.wall(o.x, o.y, o.z, o.r, h, oc, 1, ELEMENTS.indexOf(el));
+  _tier5(o, rch) { const el = o.el || 'fire', L = RAMP[el] || RAMP.fire, oc = ownColour(el); this._lead = this._lead || el; const ground = el === "dark" ? [L[0], L[1]] : el === "ice" ? [L[2], L[0]] : [L[3], oc]; this._stains.push({ x: o.x, z: o.z, r: Math.min(o.r, STCAP[5]) * STK[5], hex: ground[0], hexK: ground[1] }); const h = 24 + 40 * Math.min(1, rch / 1.5) + 1.5 * Math.sin(performance.now() / 1000 * Math.PI); this.own.wall(o.x, o.y, o.z, o.r, h, oc, 1, ELEMENTS.indexOf(el));
     const row = ({ fire: 0, ice: 1, lightning: 2, poison: 3, wind: 4, earth: 5, light: 6, dark: 7 })[el] || 0, dt = Math.min(0.05, this._dt || 0.016), n = Math.min(10, Math.floor(dt * 260 + Math.random()));       // the tongues break off as ember cards and sparks that rise and die
     for (let k = 0; k < n; k++) { const a = Math.random() * 6.2832, x = o.x + Math.cos(a) * o.r, z = o.z + Math.sin(a) * o.r; this.fx.sparkEl(x, o.y + h * (0.05 + Math.random() * 0.5), z, (Math.random() - 0.5) * 2, 3 + Math.random() * 4, (Math.random() - 0.5) * 2, row, 0.18 + Math.random() * 0.14, 1.2 + Math.random()); } }
   // the enemy a chain jump reached gets the crawling outline for 300 ms (the nearest live enemy to the bolt's end point, within 1.5 m)
@@ -567,7 +569,7 @@ export class Actors {
 
   _telegraphs(g) {
     const d = this.d, col = this.col;
-    let nl = 0, nd = 0, nr2 = 0; const fanN = new Map();
+    let nl = 0, nd = 0, nr2 = 0; const fanN = new Map(); setTele(g.tele, g.p.x, g.p.z);
     for (const o of g.tele) {
       if (!o.on) continue;
       const f = Math.min(1, o.t / o.dur);
@@ -608,7 +610,7 @@ export class Actors {
     if (this.capBurst) { const cb = this.capBurst; cb.t += this._dt || 0.016; const u = cb.t / 0.7; if (u >= 1) this.capBurst = null; else this.own.area(cb.x, cb.y + 0.15, cb.z, 6 * (1 - (1 - u) * (1 - u)) + 0.3, cb.hex, false, 0, 1, 0, 1 - u * 0.5); }
     { const dtm = this._dt || 0.016, M = this._marks; for (let i = M.length - 1; i >= 0; i--) { M[i].t += dtm; if (M[i].t > 8) M.splice(i, 1); else if (stier >= 2 && !this.own.hideAll) this._stains.push(M[i]); } if (this._stains.length > 6) this._stains.length = 6; }
     this._signatures(g, this._dt || 0.016, tier);
-    if (this.tier5 && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setStains(this._stains); setSkyTint(L[3], L[2], 0.2); this._skyOn = true; } else if (this._stains.length) { setStains(this._stains); if (this._skyLight && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setSkyTint(L[3], L[2], 0.1); this._skyOn = true; } else if (this._skyOn) { setSkyTint(0, 0, 0); this._skyOn = false; } this._stainOn = true; } else if (this._skyOn || this._stainOn) { setStains([]); setSkyTint(0, 0, 0); this._skyOn = false; this._stainOn = false; }
+    if (this.tier5 && this._lead) { const L = RAMP[this._lead] || RAMP.fire; if (this._stains.length >= 6) this._stains.length = 5; this._stains.push({ x: g.p.x, z: g.p.z, r: 11, hex: L[3], hexK: ownColour(this._lead) }); setStains(this._stains); setSkyTint(L[3], L[2], 0.45); this._skyOn = true; } else if (this._stains.length) { setStains(this._stains); if (this._skyLight && this._lead) { const L = RAMP[this._lead] || RAMP.fire; setSkyTint(L[3], L[2], 0.1); this._skyOn = true; } else if (this._skyOn) { setSkyTint(0, 0, 0); this._skyOn = false; } this._stainOn = true; } else if (this._skyOn || this._stainOn) { setStains([]); setSkyTint(0, 0, 0); this._skyOn = false; this._stainOn = false; }
     this.ribbon.tick(); if (this.ownCtx && this.ownExtra) this.ownExtra(this.own); if (this.ownCtx) { const c = this.ownCtx; this.own.end(c.camera, g.p, c.renderer.internalSize ? { w: c.renderer.internalSize.x, h: c.renderer.internalSize.y } : { w: 960, h: 540 }, this._dt); }
     this.fxRing.count = nr; this.fxRing.instanceMatrix.needsUpdate = true; this.fxRing.instanceColor.needsUpdate = true;
     for (const [fan, mesh] of this.fans) { mesh.count = fanN.get(mesh) || 0; mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }

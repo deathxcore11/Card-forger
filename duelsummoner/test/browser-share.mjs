@@ -1,4 +1,4 @@
-﻿import { launch, wait } from './cdp.mjs';
+import { launch, wait } from './cdp.mjs';
 // The claimed share over a run: the same real run (Kael, a god-mode player, the game's own spawner and attacks) at 1:00, 3:00, 5:00, 7:30 and Overtime +2:00, with the Reach a build would plausibly have by then
 // (0, +30%, +70%, +100%, +150% from Surveyor's Lens stacks, +10% each). At each stop: how many screen pixels differ with the own effects drawn and with them hidden (the claimed share), the own-effect readout, one picture.   node test/browser-share.mjs <outdir>
 const b = await launch({ out: process.argv[2], query: '?seed=9&debug' });
@@ -12,7 +12,7 @@ for (const [name, t, lenses, rite, lv, m1, m2] of STOPS) {
   const m = JSON.parse(await b.evalIn(`(async()=>{ const D = __ds, A = D.actors, g = D.game; D.freeze(true); const snap = () => { D.blitNow(); const c = document.getElementById('view'), cv = document.createElement('canvas'); cv.width = c.width; cv.height = c.height; const x = cv.getContext('2d'); x.drawImage(c, 0, 0); return { d: x.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height }; };
     await new Promise(r => setTimeout(r, 300)); const own = JSON.stringify(A.own.readout), a = snap(); A.own.hideAll = true; await new Promise(r => setTimeout(r, 300)); const bb = snap(); A.own.hideAll = false; let n = 0; for (let i = 0; i < a.d.length; i += 4) if (Math.abs(a.d[i] - bb.d[i]) + Math.abs(a.d[i + 1] - bb.d[i + 1]) + Math.abs(a.d[i + 2] - bb.d[i + 2]) > 30) n++;
     D.freeze(false); return JSON.stringify({ reach: +g.mods.reach.toFixed(2), tier5: A.tier5, otStep: g.otStep, enemies: g.enemyCount ? g.enemyCount() : -1, fx: g.fx.filter(o => o.on && o.owner === 0).length, maxR: +Math.max(0, ...g.fx.filter(o => o.on && o.owner === 0).map(o => o.r || 0)).toFixed(1), kills: g.kills, claimedPct: +(n / (a.w * a.h) * 100).toFixed(1), own: JSON.parse(own) }); })()`));
-  console.log(name, JSON.stringify(m)); await b.shot('share_' + name);
+  const tg = { '1m00': 5, '3m00': 10, '5m00': 18, '7m30': 28, 'ot2m00': 35 }[name]; console.log(name, JSON.stringify(m), 'target ' + tg + '%: ' + (Math.abs(m.claimedPct - tg) <= Math.max(3, tg * 0.25) ? 'PASS' : 'FAIL (' + m.claimedPct + '%)')); await b.shot('share_' + name);
 }
 console.log('errors', JSON.stringify(await b.evalIn('JSON.stringify(window.__errs.slice(0,3))')));
 b.close(); setTimeout(() => process.exit(0), 300);
