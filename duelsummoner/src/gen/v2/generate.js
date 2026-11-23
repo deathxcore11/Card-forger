@@ -17,6 +17,7 @@ import { reserveBossRings, placeElitePockets, eventAnchors } from './events.js';
 import { buildSlots, placeEncounters } from './encounters.js';
 import { validate } from './validate.js';
 import { repairLoop } from './repair.js';
+import { startViewOk } from './startview.js';
 import { scatter } from './scatter.js';
 
 export const MAX_ATTEMPTS = 8, MAX_REPAIR_PASSES = 4, FALLBACK_TRIES = 6; // attempts MAX_ATTEMPTS.. use the authored layouts
@@ -126,11 +127,13 @@ export function generateStage(seal, stage, opts = {}) {
     attempts.push({ attempt, draws, fail: V.failing.length ? 'validate:' + V.failing.join(',') : null, repairs: rep.log.length, failVals: Object.fromEntries(V.failing.map((k) => [k, V.metrics[k].value])) });
     last = { ok: false, sealCode, stage, spec, ctx, m, A, st, V, attempt, fallback, attempts, repairs: rep.log };
     if (V.failing.length && !lastTry) continue;
+    if (!V.failing.length && !fallback && attempt < MAX_ATTEMPTS - 1 && !startViewOk(m)) { attempts[attempts.length - 1].fail = 'startview'; continue; }       // the spawn-view rule: re-roll
     const ms = Math.round(clock.now() - T0);
     return { ok: !V.failing.length, sealCode, stage, spec, ctx, m, A, st, V, attempt, fallback, attempts, repairs: rep.log, timing: { total: ms, ...roundT(timing) }, genVersion: GEN_VERSION };
   }
   return { ...(last || {}), ok: false, sealCode, stage, attempts, timing: { total: Math.round(clock.now() - T0), ...roundT(timing) } };
 }
 const roundT = (t) => Object.fromEntries(Object.keys(t).map((k) => [k, Math.round(t[k])]));
+
 
 

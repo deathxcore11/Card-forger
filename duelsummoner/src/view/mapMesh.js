@@ -112,7 +112,7 @@ function addLip(B, p, look) {
   const col = c => (look && look.ramp ? rampColour(look.ramp, c) : c), n = 40, dim = (c, k) => ((Math.round(((c >> 16) & 255) * k) << 16) | (Math.round(((c >> 8) & 255) * k) << 8) | Math.round((c & 255) * k));
   for (let i = 0; i < n; i++) {
     const a = i / n * 2 * Math.PI, b = (i + 1) / n * 2 * Math.PI, m = (a + b) / 2, h = LIP_H + (((i * 7) % 5) - 2) * 0.012, r0 = p.r, r1 = p.r + LIP_W, base = LIP[(i * 3 + (i % 4)) % 4], top = col(i % 9 === 4 ? LIP[4] : base), side = col(dim(base, 0.82));
-    const P = (r, ang, y) => [p.x + r * Math.cos(ang), y, p.z + r * Math.sin(ang)];
+    const P = (r, ang, y) => [p.x + r * Math.cos(ang), y + (p.y || 0), p.z + r * Math.sin(ang)];
     B.quad(P(r0, a, h), P(r1, a, h), P(r1, b, h), P(r0, b, h), [0, 1, 0], top);
     B.quad(P(r1, a, 0), P(r1, b, 0), P(r1, b, h), P(r1, a, h), [Math.cos(m), 0, Math.sin(m)], side);
     B.quad(P(r0, a, 0.03), P(r0, b, 0.03), P(r0, b, h), P(r0, a, h), [-Math.cos(m), 0, -Math.sin(m)], col(WET));
@@ -141,7 +141,6 @@ function buildV2(map, look) {
     if (f & 4096) return look.rim[1];                                                           // solid blocks: pale stone
     if (f & 8) return dim(look.road, 0.92 + 0.1 * j);                                           // ramps and stairs
     if (f & 256) return mixc(look.sand[(j * 3) | 0], 0xffffff, 0.22);                           // the arena floor
-    if (road[c]) return dim(look.road, 0.9 + 0.1 * j);
     let col = look.sand[(j * 2.99) | 0]; if (h > 0.4) col = mixc(col, look.rim[1], Math.min(0.7, h / 9));
     if (f & 2048 || h < -0.3) col = dim(col, 0.72);
     return dim(col, 0.97 + 0.06 * hash2(cx * 5 + 1, cz * 3 + 7));
@@ -151,10 +150,23 @@ function buildV2(map, look) {
     for (let dz = b - 1; dz <= b; dz++) for (let dx = a - 1; dx <= a; dx++) { const x = cx + dx, z = cz + dz; if (x < 0 || z < 0 || x >= NC || z >= NC) continue; const q = z * NC + x; if (Wl[q] || Math.abs(Hc[q] - h) > 0.5) continue; s += Hc[q]; n++; }
     return n ? s / n : h;
   };
-  const B = new Builder(), F = new Builder(), group = new T.Group(); F.seed = 777;
+  // ground tones blend into their neighbours on the same tier (a 3 x 3 weighted average of the cell colours, ramps, solids and the arena kept crisp), and the road is a soft strip: full colour within 1.2 m of the route, fading to nothing at 2.6 m
+  const raw = new Int32Array(NC * NC), fin = new Int32Array(NC * NC), rw = new Float32Array(NC * NC).fill(0);
+  for (let cz = 0; cz < NC; cz++) for (let cx = 0; cx < NC; cx++) raw[cz * NC + cx] = colour(cx, cz);
+  { const segs = rd.main, dseg = (x, z) => { let best = 1e9; for (let i = 1; i < segs.length; i++) { const ax = segs[i - 1][0], az = segs[i - 1][1], bx = segs[i][0], bz = segs[i][1], dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz || 1, u = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2)), ex = ax + dx * u - x, ez = az + dz * u - z, d2 = ex * ex + ez * ez; if (d2 < best) best = d2; } return Math.sqrt(best); };
+    for (let cz = 0; cz < NC; cz++) for (let cx = 0; cx < NC; cx++) { const c = cz * NC + cx; if (Wl[c] || (Fc[c] & (4096 | 8 | 256))) continue; const x = cx * 2 - 200 + 1, z = cz * 2 - 200 + 1; if (Math.abs(x - rd.main[0][0]) > 400) continue; const d = dseg(x, z); rw[c] = Math.max(0, Math.min(1, (2.6 - d) / 1.4)); } }
+  const chan = (v, s) => (v >> s) & 255;
+  for (let cz = 0; cz < NC; cz++) for (let cx = 0; cx < NC; cx++) {
+    const c = cz * NC + cx; let col = raw[c];
+    if (!Wl[c] && !(Fc[c] & (4096 | 8 | 256))) { let r = chan(col, 16) * 4, g = chan(col, 8) * 4, b = chan(col, 0) * 4, w = 4;
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const x = cx + dx, z = cz + dz; if (x < 0 || z < 0 || x >= NC || z >= NC) continue; const q = z * NC + x; if (Wl[q] || (Fc[q] & (4096 | 8 | 256)) || Math.abs(Hc[q] - Hc[c]) > 0.5) continue; const wt = dx && dz ? 1 : 2; r += chan(raw[q], 16) * wt; g += chan(raw[q], 8) * wt; b += chan(raw[q], 0) * wt; w += wt; }
+      col = (Math.round(r / w) << 16) | (Math.round(g / w) << 8) | Math.round(b / w);
+      if (rw[c] > 0) col = mixc(col, dim(look.road, 0.92 + 0.08 * hash2(cx * 3 + 2, cz * 5 + 4)), rw[c]); }
+    fin[c] = col;
+  }  const B = new Builder(), F = new Builder(), group = new T.Group(); F.seed = 777;
   for (let cz = 0; cz < NC; cz++) for (let cx = 0; cx < NC; cx++) {
     const c = cz * NC + cx; if (Wl[c] && !near[c]) continue;
-    const x0 = cx * 2 - 200, z0 = cz * 2 - 200, x1 = x0 + 2, z1 = z0 + 2, col = colour(cx, cz);
+    const x0 = cx * 2 - 200, z0 = cz * 2 - 200, x1 = x0 + 2, z1 = z0 + 2, col = fin[c];
     const h00 = corner(cx, cz, 0, 0), h10 = corner(cx, cz, 1, 0), h11 = corner(cx, cz, 1, 1), h01 = corner(cx, cz, 0, 1);
     B.quad([x0, h00, z0], [x1, h10, z0], [x1, h11, z1], [x0, h01, z1], [0, 1, 0], col);
     // the faces towards the +x and +z neighbours (each edge once): a vertical strip wherever the two tops differ
@@ -165,13 +177,22 @@ function buildV2(map, look) {
       void cA; void cB; void nA; void nB;
       if (Math.abs(ca - na) < 0.02 && Math.abs(cb - nb) < 0.02) continue;
       const P0 = d === 0 ? [x1, z0] : [x0, z1], P1 = [x1, z1], hiC = (ca + cb) > (na + nb), hiCell = hiC ? c : n, out = hiC ? (d === 0 ? [1, 0, 0] : [0, 0, 1]) : (d === 0 ? [-1, 0, 0] : [0, 0, -1]), ym = (ca + cb + na + nb) / 4;
-      const base = Wl[hiCell] ? look.rim[0] : colour(hiC ? cx : nx, hiC ? cz : nz), loA = hiC ? na : ca, loB = hiC ? nb : cb, hiA = hiC ? ca : na, hiB = hiC ? cb : nb, hgt = (hiA + hiB - loA - loB) / 2;
+      const base = Wl[hiCell] ? look.rim[0] : fin[hiC ? c : n], loA = hiC ? na : ca, loB = hiC ? nb : cb, hiA = hiC ? ca : na, hiB = hiC ? cb : nb, hgt = (hiA + hiB - loA - loB) / 2;
       // rock strata: bands 1.4 m tall in three flat tones (dark, mid, light) that shift along the face, a pale lip on the top band, a rubble block at the foot of a tall face now and then
       const nb2 = Math.max(1, Math.min(16, Math.round(hgt / 1.4))), tones = [0.62, 0.76, 0.9], phase = (cx * 5 + cz * 3) & 3;
       for (let q = 0; q < nb2; q++) {
         const t0 = q / nb2, t1 = (q + 1) / nb2, lerp = (a, b, t) => a + (b - a) * t, top = q === nb2 - 1;
         const wc = top && nb2 > 1 ? mixc(dim(base, 0.95), 0xffffff, 0.18) : dim(base, tones[(q + phase) % 3] * (0.96 + 0.08 * hash2(cx * 11 + q, cz * 7 + d)));
         B.quad([P0[0], lerp(loA, hiA, t0), P0[1]], [P1[0], lerp(loB, hiB, t0), P1[1]], [P1[0], lerp(loB, hiB, t1), P1[1]], [P0[0], lerp(loA, hiA, t1), P0[1]], out, wc);
+        if (!top && hash2(cx * 13 + q, cz * 7 + d) < 0.16) {                               // a grey detail tile inset on the face: a flat slab 0.05 m proud of the rock, in a neutral grey
+          const ua = 0.15 + 0.2 * hash2(cx + q, cz * 3), ub = ua + 0.5, ya = t0 + (t1 - t0) * 0.18, yb = t0 + (t1 - t0) * 0.82, px = v => P0[0] + (P1[0] - P0[0]) * v + out[0] * 0.05, pz = v => P0[1] + (P1[1] - P0[1]) * v + out[2] * 0.05, ly = (u, t) => lerp(lerp(loA, loB, u), lerp(hiA, hiB, u), t);
+          B.quad([px(ua), ly(ua, ya), pz(ua)], [px(ub), ly(ub, ya), pz(ub)], [px(ub), ly(ub, yb), pz(ub)], [px(ua), ly(ua, yb), pz(ua)], out, mixc(wc, 0x8c8a86, 0.7));
+        }
+      }
+      if (hgt > 5 && hash2(cx * 7 + d, cz * 11 + 3) < 0.17) {                                 // a buttress every 8 to 16 m: a faceted pier up the face, 1.8 m wide and 1.2 m proud, 80% as tall as the face, with a pale cap
+        const bw = 0.9, mx = (P0[0] + P1[0]) / 2 + out[0] * 0.6, mz = (P0[1] + P1[1]) / 2 + out[2] * 0.6, y0b = Math.min(loA, loB) - 0.2, y1b = Math.min(loA, loB) + hgt * 0.8, along = out[0] ? [0, 1] : [1, 0], bc = dim(base, 0.78);
+        addBox(B, { x0: mx - (along[0] ? bw : 0.6), x1: mx + (along[0] ? bw : 0.6), z0: mz - (along[1] ? bw : 0.6), z1: mz + (along[1] ? bw : 0.6), y0: y0b, h: y1b, c: bc });
+        addBox(B, { x0: mx - (along[0] ? bw + 0.1 : 0.7), x1: mx + (along[0] ? bw + 0.1 : 0.7), z0: mz - (along[1] ? bw + 0.1 : 0.7), z1: mz + (along[1] ? bw + 0.1 : 0.7), y0: y1b, h: y1b + 0.4, c: mixc(dim(base, 0.95), 0xffffff, 0.2) });
       }
       if (hgt > 4 && hash2(cx * 3 + 1, cz * 5 + d) < 0.25) { const r = 0.7 + 0.8 * hash2(cx, cz), bx = (P0[0] + P1[0]) / 2 + out[0] * (r * 0.6), bz = (P0[1] + P1[1]) / 2 + out[2] * (r * 0.6); addBox(B, { x0: bx - r / 2, x1: bx + r / 2, z0: bz - r / 2, z1: bz + r / 2, y0: (loA + loB) / 2 - 0.2, h: (loA + loB) / 2 + r * 0.7, rot: hash2(cx + 9, cz) * 90, c: dim(base, 0.8) }); }
     }
@@ -237,7 +258,7 @@ function addKits(B, map, look) {
     for (let i = 1; i < rd.main.length; i++) strip(rd.main[i - 1][0], rd.main[i - 1][1], rd.main[i][0], rd.main[i][1], rd.width / 2); for (const t of rd.trails) strip(t[0][0], t[0][1], t[1][0], t[1][1], rd.trailWidth / 2); }
   // two summoning pools: an ink-blue disc, a bone rim 1.5 m wide, a ring of glyph tiles; flat and walkable, no effect
   for (const p of poolSpots(map)) { addLip(B, p, look);
-    for (let k = 0; k < 12; k++) { const a = k / 12 * 6.283, x = p.x + Math.cos(a) * (p.r + 2.2), z = p.z + Math.sin(a) * (p.r + 2.2); addBox(B, { x0: x - 0.5, x1: x + 0.5, z0: z - 0.5, z1: z + 0.5, h: 0.09, rot: a / DEG, c: 0x4a4250 }); } }
+    for (let k = 0; k < 12; k++) { const a = k / 12 * 6.283, x = p.x + Math.cos(a) * (p.r + 2.2), z = p.z + Math.sin(a) * (p.r + 2.2); addBox(B, { x0: x - 0.5, x1: x + 0.5, z0: z - 0.5, z1: z + 0.5, y0: p.y || 0, h: (p.y || 0) + 0.09, rot: a / DEG, c: 0x4a4250 }); } }
   prims.forEach(p => { const T2 = p.landmark ? F : B; if (p.t === 'tilt') addTilt(B, p.x, 0, p.z, p.w, p.th, p.hgt, p.yaw, p.tilt, p.c); else if (p.t === 'box') addBox(T2, p); else if (p.t === 'ramp') addRamp(T2, p); else if (p.t === 'ring') addRing(T2, p); else addCyl(T2, p); });
   // the rim: 56 stacked buttes (a base, an inset mid band, a cap on about a third), 16 to 45 m tall, in two strata colours; 8 seeded notches only 8 to 10 m high (view only; the invisible wall stays)
   const n = 56, w = MAP.boundaryR + 6, hs = [];
@@ -261,6 +282,9 @@ function addKits(B, map, look) {
   group.add(B.mesh(false, fadeU), F.mesh(true, fadeU), G.mesh(false, undefined, SAND));
   return group;
 }
+
+
+
 
 
 

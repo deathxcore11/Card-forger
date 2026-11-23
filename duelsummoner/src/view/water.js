@@ -1,4 +1,4 @@
-// Water (engine plan step 1): the summoning pools. One opaque draw for every pool: summed-sine normals, the banded sky reflected with a Fresnel mix, a wobbled bed colour that darkens with depth, banded sun glitter that twinkles per world texel,
+﻿// Water (engine plan step 1): the summoning pools. One opaque draw for every pool: summed-sine normals, the banded sky reflected with a Fresnel mix, a wobbled bed colour that darkens with depth, banded sun glitter that twinkles per world texel,
 // foam that laps at the rim, and ripples (8 analytic sources: the duelist and up to 7 others). Opaque on purpose: no depth read, no scene copy, no blending, so it never hides a pickup, a warning ring or the duelist's feet (they draw over it).
 // Everything is evaluated per world texel (1/8 m) so the pattern does not swim when the camera moves. The pool stays flat and walkable (the sim never sees it).
 import { E, GLSL, engineUniforms } from './engine.js';
@@ -58,8 +58,8 @@ void main() {
 export function buildWater(pools, look) {
   const pos = [], dep = [], idx = []; let base = 0;
   for (const p of pools) {
-    pos.push(p.x, Y, p.z); dep.push(DEPTH);
-    for (let ri = 1; ri < RINGS.length; ri++) for (let s = 0; s < SIDES; s++) { const a = s / SIDES * Math.PI * 2, r = p.r * RINGS[ri]; pos.push(p.x + Math.cos(a) * r, Y, p.z + Math.sin(a) * r); dep.push(DEPTH * Math.min(1, (1 - RINGS[ri]) * p.r / 1.6)); }
+    pos.push(p.x, Y + (p.y || 0), p.z); dep.push(DEPTH);
+    for (let ri = 1; ri < RINGS.length; ri++) for (let s = 0; s < SIDES; s++) { const a = s / SIDES * Math.PI * 2, r = p.r * RINGS[ri]; pos.push(p.x + Math.cos(a) * r, Y + (p.y || 0), p.z + Math.sin(a) * r); dep.push(DEPTH * Math.min(1, (1 - RINGS[ri]) * p.r / 1.6)); }
     const ring = k => base + 1 + (k - 1) * SIDES;
     for (let s = 0; s < SIDES; s++) idx.push(base, ring(1) + s, ring(1) + (s + 1) % SIDES);
     for (let ri = 1; ri < RINGS.length - 1; ri++) for (let s = 0; s < SIDES; s++) { const a = ring(ri) + s, b = ring(ri) + (s + 1) % SIDES, c = ring(ri + 1) + s, d = ring(ri + 1) + (s + 1) % SIDES; idx.push(a, c, b, b, c, d); }
@@ -72,3 +72,4 @@ export function buildWater(pools, look) {
   const mesh = new T.Mesh(g, mat); mesh.frustumCulled = false; mesh.userData.update = cam => { u.uEye.value.copy(cam); for (let i = 0; i < 8; i++) u.uRip.value[i].set(RIP[i * 4], RIP[i * 4 + 1], RIP[i * 4 + 2], RIP[i * 4 + 3]); };
   mesh.userData.pools = pools.length; return mesh;
 }
+

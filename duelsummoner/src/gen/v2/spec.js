@@ -14,13 +14,14 @@ const ENC_RULES = {
   broken_covenant: { cls: 'UTILITY', tags: ['pocket_end', 'reward_port', 'field'] },
   golden_statue: { cls: 'COLLECT', minR: 150, tags: ['reward_port', 'high_perch', 'pocket_end', 'field'] },
   sealed_fragment: { cls: 'COLLECT', deepest: true, tags: ['pocket_end', 'reward_port', 'high_perch', 'field'] },
+  start_chest: { cls: 'PAID', pathRange: [14, 50], offSpine: [0, 30], spacing: 25, tags: ['field', 'hub_edge', 'pedestal'] },       // the free Card Chest in reach of the spawn (the game makes it free)
   card_chest: { cls: 'PAID', spacing: 25, tags: ['pedestal', 'reward_port', 'high_perch', 'pocket_end', 'field', 'hub_edge'] },
   second_seal: { cls: 'UTILITY', tags: ['field', 'hub_edge'] },
   wrapped_mimic: { cls: 'MIMIC', spacing: 25, tags: ['pedestal', 'reward_port', 'high_perch', 'pocket_end', 'field'] },
 };
 // rarest first (spec §8)
 export const PLACE_ORDER = ['second_seal', 'witness_stone', 'echo_forge', 'relic_broker', 'duel_statue', 'shrine_tribute', 'deck_anvil',
-  'altar_tribute', 'scales_court', 'broken_covenant', 'bone_oath', 'magnet_tablet', 'golden_statue', 'sealed_fragment', 'card_chest'];
+  'altar_tribute', 'scales_court', 'broken_covenant', 'bone_oath', 'magnet_tablet', 'golden_statue', 'sealed_fragment', 'start_chest', 'card_chest'];
 
 const BASE = {
   cell_m: 24, coarse_m: 8, districts: 4, regionSpacing: 7, loopRatio: 30, maxSpineChange: 40, spineWidth: 12,
@@ -51,7 +52,7 @@ export const STAGE_SPECS = {
       { t: 225, ev: 'timed_boss', what: 'Sealed Warden', drop: 'sealed_chest' }, { t: 260, ev: 'wave', what: 'bloats_scarabs' },
       { t: 330, ev: 'timed_boss', what: 'Twin Jackal Idols', drop: 'sealed_chest' }, { t: 360, ev: 'gate_wake' }, { t: 360, ev: 'husk_ring_every_30s' },
       { t: 420, ev: 'toll_bell' }],
-    encounters: { card_chest: 8, witness_stone: 2, relic_broker: 1, shrine_tribute: 3, duel_statue: 2, deck_anvil: 2, altar_tribute: 1,
+    encounters: { start_chest: 1, card_chest: 8, witness_stone: 2, relic_broker: 1, shrine_tribute: 3, duel_statue: 2, deck_anvil: 2, altar_tribute: 1,
       magnet_tablet: 2, bone_oath: 2, scales_court: 1, broken_covenant: 1, echo_forge: { n: 1, chance: 40 }, golden_statue: 2, sealed_fragment: 1, second_seal: 0, vases: 40 },
   },
   2: {
@@ -69,7 +70,7 @@ export const STAGE_SPECS = {
       { t: 105, ev: 'elite', what: 'Chainbound Jailer', drop: 'card_chest' }, { t: 140, ev: 'wave', what: 'lantern_keepers' }, { t: 180, ev: 'wave', what: 'seal_moths' },
       { t: 225, ev: 'timed_boss', what: 'Coffin Sentinels', drop: 'sealed_chest' }, { t: 260, ev: 'wave', what: 'ossuary_crawlers' },
       { t: 330, ev: 'timed_boss', what: 'Mirror Duelist', drop: 'sealed_chest' }, { t: 360, ev: 'gate_wake' }, { t: 360, ev: 'husk_ring_every_30s' }, { t: 420, ev: 'toll_bell' }],
-    encounters: { card_chest: 7, wrapped_mimic: 2, witness_stone: 1, relic_broker: 1, shrine_tribute: 3, duel_statue: 2, deck_anvil: 1, altar_tribute: 1,
+    encounters: { start_chest: 1, card_chest: 7, wrapped_mimic: 2, witness_stone: 1, relic_broker: 1, shrine_tribute: 3, duel_statue: 2, deck_anvil: 1, altar_tribute: 1,
       magnet_tablet: 1, bone_oath: 2, scales_court: 1, broken_covenant: 2, echo_forge: { n: 1, chance: 100 }, golden_statue: 2, sealed_fragment: 1, second_seal: 0, vases: 35 },
   },
   3: {
@@ -87,7 +88,7 @@ export const STAGE_SPECS = {
       { t: 120, ev: 'elite', what: 'Royal Executioner', drop: 'card_chest' }, { t: 150, ev: 'wave', what: 'gilded_hounds' }, { t: 195, ev: 'wave', what: 'card_wraiths' },
       { t: 255, ev: 'timed_boss', what: 'Court of Three Masks', drop: 'sealed_chest' }, { t: 290, ev: 'wave', what: 'throne_bowmen_coin_thieves' }, { t: 330, ev: 'wave', what: 'abyss_hands' },
       { t: 375, ev: 'timed_boss', what: 'The Hollow Heir', drop: 'sealed_chest' }, { t: 420, ev: 'gate_wake' }, { t: 420, ev: 'husk_ring_every_30s' }, { t: 480, ev: 'toll_bell' }],
-    encounters: { card_chest: 6, witness_stone: 1, relic_broker: 1, shrine_tribute: 2, duel_statue: 2, deck_anvil: 1, altar_tribute: 1,
+    encounters: { start_chest: 1, card_chest: 6, witness_stone: 1, relic_broker: 1, shrine_tribute: 2, duel_statue: 2, deck_anvil: 1, altar_tribute: 1,
       magnet_tablet: 1, bone_oath: 1, scales_court: 1, broken_covenant: 1, echo_forge: { n: 1, chance: 100 }, golden_statue: 3, sealed_fragment: 1, second_seal: 1, vases: 30 },
   },
 };
@@ -105,5 +106,6 @@ export const FALLBACK_LAYOUTS = [
   { seeds: [[0, -14], [0, 14], [-9, 10], [9, 10], [-12, 0], [12, 0], [-5, 4], [5, 4], [0, -2], [-8, -8], [8, -8], [-14, 8], [14, 8]],
     district: [0, 1, 1, 1, 2, 3, 2, 3, 2, 2, 3, 2, 3] },
 ];
+
 
 
