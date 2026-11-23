@@ -517,6 +517,7 @@ function frame(now) {
   if (MODE === 'play') { const dv = new T.Vector3(ip.x, ip.y + 1, ip.z).project(camera); window.__dealFrom = { x: (dv.x + 1) / 2 * innerWidth, y: (1 - dv.y) / 2 * innerHeight }; }       // where the level-up cards fan out from
   devTick(now); bars.tick(dtReal || 0.016, game, document.body.classList.contains('rm'), performance.now());
   chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
+  if (MODE === 'start' && !(window.__ds && window.__ds.camHold)) { const tc = performance.now() / 1000, ac = 0.7 + tc * 0.06, pc = game.p; camera.position.set(pc.x + Math.sin(ac) * 7.2, pc.y + 2.5 + Math.sin(tc * 0.3) * 0.18, pc.z + Math.cos(ac) * 7.2); const sh = innerWidth > innerHeight * 1.25 ? 2.6 : 0; camera.lookAt(pc.x - Math.cos(ac) * sh, pc.y + 1.3, pc.z + Math.sin(ac) * sh); }       // the Camp: a slow orbit around the duelist while a menu is up (view only)
   if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures
   updateSee(camera, ip, renderer);                                         // the see-through uniforms, from the unshaken camera and the smoothed duelist
   if (MODE === 'play') ambient.update(dtReal, camera, game.en);
@@ -601,7 +602,7 @@ function duelistPixels() {
 }
 window.__ds = {
   blitU: blitMat.uniforms, maskRead: () => { const w = maskRT.width, h = maskRT.height, b = new Uint8Array(w * h * 4); renderer.readRenderTargetPixels(maskRT, 0, 0, w, h, b); return { w, h, b: Array.from(b.filter((_, i) => i % 4 === 0)) }; }, tablebreak: hold => { tb.hold = !!hold; tb.fired = true; blitMat.uniforms.uTBang.value.set(0.5, 2.1, 3.9); tb.on = true; tb.t0 = performance.now(); }, composite, get grass() { return grassMesh; }, chaseZoom: () => chase.zoom, chaseCap: () => chase.zoomCap,
-  duelistPixels, see: SEE, tagBlocked,
+  duelistPixels, see: SEE, tagBlocked, menus,
   bars,
   summonPos: () => { const g = actors.monsters.values().next().value; return g ? { x: g.position.x, y: g.position.y, z: g.position.z } : null; },
   measure: kind => { const A = actors; if (kind === 'duelist') return measureObject(A.rig.group); if (kind === 'summon') { const g = A.monsters.values().next().value; return g ? measureObject(g) : { n: 0 }; } if (String(kind).startsWith('enemy')) return measureObject(null, A.kinds[+String(kind).slice(6) || 0].body); return { n: 0 }; },

@@ -204,7 +204,60 @@
   .seg button { margin:0 !important; border:0 !important; border-radius:0 !important; padding:6px 12px !important; font-size:14px !important; letter-spacing:1px !important; color:var(--gold2) !important; background:transparent !important; }
   .seg button.on { color:#10131a !important; background:linear-gradient(180deg, var(--gold2), var(--gold)) !important; }    #offerScreen { overflow-y:auto; justify-content:safe center; }
   @media (max-width:640px) { #offerScreen { justify-content:flex-start; padding:14px 12px 24px; } #offerScreen .card { width:min(100%, 340px); flex:0 0 auto; min-height:0; } #offerCards { gap:12px; } #offerScreen h1 { font-size:26px; } }    .pausePanel input[type=range], .settings input[type=range] { accent-color:var(--gold); } .pausePanel input[type=checkbox], .settings input[type=checkbox] { accent-color:var(--gold); width:20px; height:20px; }
-  .pausePanel select, .settings select { color:var(--gold2); background:rgba(255,255,255,.08); border:1px solid rgba(232,196,110,.55); border-radius:10px; padding:4px 8px; font:inherit; font-size:14px; }  </style>
+  .pausePanel select, .settings select { color:var(--gold2); background:rgba(255,255,255,.08); border:1px solid rgba(232,196,110,.55); border-radius:10px; padding:4px 8px; font:inherit; font-size:14px; }    /* The menus: dark glass with a gold line over the live Camp (spec 3.10). */
+  #startScreen { background:radial-gradient(ellipse at 50% 55%, rgba(5,7,12,0) 35%, rgba(5,7,12,.72) 100%), linear-gradient(90deg, rgba(5,7,12,.62), rgba(5,7,12,.18) 60%, rgba(5,7,12,.5)); font-family:var(--sans); overflow-y:auto; justify-content:safe center; color:#dfe3ea; }
+  #startScreen h1, #startScreen h2 { font-family:var(--serif); font-weight:600; letter-spacing:6px; color:var(--gold2); text-shadow:0 2px 14px #000c; }
+  #startScreen h3 { font-family:var(--serif); font-weight:600; color:#f1e6c8 !important; letter-spacing:2px; }
+  #startScreen .panel, #startScreen .qcard, #startScreen .slot { background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.035)), rgba(8,10,15,.62); border:1px solid var(--edge); border-radius:22px; box-shadow:inset 0 1px 0 rgba(232,196,110,.45), 0 10px 30px #0008; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); padding:16px 18px; }
+  #startScreen .dim { color:#9AA3AE; }
+  #startScreen button { font-family:var(--sans); font-weight:600; letter-spacing:1.5px; color:var(--gold2); background:var(--glass); border:1px solid rgba(232,196,110,.55); border-radius:14px; padding:12px 24px; }
+  #startScreen button:hover:not(:disabled) { background:rgba(232,196,110,.16); } #startScreen button:disabled { opacity:.45; }
+  #startScreen #mPlay, #startScreen #selNext, #startScreen #mapGo { color:#10131a; background:linear-gradient(180deg, var(--gold2), var(--gold)); border-color:var(--gold); }
+  #startScreen .mainBtns button.small, #startScreen button.small { font-size:14px; padding:9px 18px; }
+  #startScreen .tab { padding:6px 14px; font-size:14px; border-radius:12px; } #startScreen .tab.sel, #startScreen .portrait.sel, #startScreen .diffRow.sel { color:#10131a; background:linear-gradient(180deg, var(--gold2), var(--gold)); border-color:var(--gold); }
+  #startScreen .portrait { color:#dfe3ea; background:rgba(255,255,255,.06); border:1px solid var(--edge); border-radius:18px; } #startScreen .portrait.sel small, #startScreen .portrait.sel b { color:#10131a; }
+  #startScreen .portrait .face { border-radius:14px; background:rgba(255,255,255,.08); border-color:var(--edge); } #startScreen .portrait.locked { opacity:.55; }
+  #startScreen .bar, #startScreen .bar2, #startScreen .trk { border:1px solid var(--edge); border-radius:8px; background:rgba(0,0,0,.45); overflow:hidden; }
+  #startScreen .bar > i, #startScreen .bar2 > i, #startScreen .trk > i { background:linear-gradient(90deg, #c9a04a, var(--gold2)) !important; }
+  #startScreen input[type=range] { accent-color:var(--gold); } #startScreen input[type=checkbox], #startScreen input[type=radio] { accent-color:var(--gold); }
+  #startScreen select { color:var(--gold2); background:rgba(255,255,255,.08); border:1px solid rgba(232,196,110,.55); border-radius:10px; padding:5px 10px; font:inherit; font-size:14px; }
+  .chipsTop { font-family:var(--sans); color:var(--gold2); text-shadow:0 1px 8px #000; }
+  @media (max-height:460px) { #startScreen { padding:8px 12px; gap:6px; } #startScreen h1 { font-size:26px; letter-spacing:4px; } #startScreen button { padding:7px 14px; font-size:14px; margin-top:4px; } #startScreen .mainRow { margin-top:4px; gap:12px; } #startScreen .mainBtns { gap:5px; } #startScreen .panel { padding:10px 12px; border-radius:16px; } }    #startScreen { overflow-x:hidden; } #startScreen .tab.sel { border-color:var(--gold) !important; }
+  #startScreen button:focus-visible, .padfocus { outline:3px solid var(--gold) !important; outline-offset:4px !important; box-shadow:0 0 14px 2px rgba(232,196,110,.35) !important; }    .pausePanel select, .settings select { color:var(--gold2); background:rgba(255,255,255,.08); border:1px solid rgba(232,196,110,.55); border-radius:10px; padding:4px 8px; font:inherit; font-size:14px; }    /* The same skin for the second menu root (duelist select, map select, library, quests, settings). */
+  #menuScreen { background:radial-gradient(ellipse at 50% 55%, rgba(5,7,12,0) 35%, rgba(5,7,12,.72) 100%), linear-gradient(90deg, rgba(5,7,12,.62), rgba(5,7,12,.18) 60%, rgba(5,7,12,.5)); font-family:var(--sans); overflow-y:auto; justify-content:safe center; color:#dfe3ea; }
+  #menuScreen h1, #menuScreen h2 { font-family:var(--serif); font-weight:600; letter-spacing:6px; color:var(--gold2); text-shadow:0 2px 14px #000c; }
+  #menuScreen h3 { font-family:var(--serif); font-weight:600; color:#f1e6c8 !important; letter-spacing:2px; }
+  #menuScreen .panel, #menuScreen .qcard, #menuScreen .slot { background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.035)), rgba(8,10,15,.62); border:1px solid var(--edge); border-radius:22px; box-shadow:inset 0 1px 0 rgba(232,196,110,.45), 0 10px 30px #0008; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); padding:16px 18px; }
+  #menuScreen .dim { color:#9AA3AE; }
+  #menuScreen button { font-family:var(--sans); font-weight:600; letter-spacing:1.5px; color:var(--gold2); background:var(--glass); border:1px solid rgba(232,196,110,.55); border-radius:14px; padding:12px 24px; }
+  #menuScreen button:hover:not(:disabled) { background:rgba(232,196,110,.16); } #menuScreen button:disabled { opacity:.45; }
+  #menuScreen #mPlay, #menuScreen #selNext, #menuScreen #mapGo { color:#10131a; background:linear-gradient(180deg, var(--gold2), var(--gold)); border-color:var(--gold); }
+  #menuScreen .mainBtns button.small, #menuScreen button.small { font-size:14px; padding:9px 18px; }
+  #menuScreen .tab { padding:6px 14px; font-size:14px; border-radius:12px; } #menuScreen .tab.sel, #menuScreen .portrait.sel, #menuScreen .diffRow.sel { color:#10131a; background:linear-gradient(180deg, var(--gold2), var(--gold)); border-color:var(--gold); }
+  #menuScreen .portrait { color:#dfe3ea; background:rgba(255,255,255,.06); border:1px solid var(--edge); border-radius:18px; } #menuScreen .portrait.sel small, #menuScreen .portrait.sel b { color:#10131a; }
+  #menuScreen .portrait .face { border-radius:14px; background:rgba(255,255,255,.08); border-color:var(--edge); } #menuScreen .portrait.locked { opacity:.55; }
+  #menuScreen .bar, #menuScreen .bar2, #menuScreen .trk { border:1px solid var(--edge); border-radius:8px; background:rgba(0,0,0,.45); overflow:hidden; }
+  #menuScreen .bar > i, #menuScreen .bar2 > i, #menuScreen .trk > i { background:linear-gradient(90deg, #c9a04a, var(--gold2)) !important; }
+  #menuScreen input[type=range] { accent-color:var(--gold); } #menuScreen input[type=checkbox], #menuScreen input[type=radio] { accent-color:var(--gold); }
+  #menuScreen select { color:var(--gold2); background:rgba(255,255,255,.08); border:1px solid rgba(232,196,110,.55); border-radius:10px; padding:5px 10px; font:inherit; font-size:14px; }
+    @media (max-height:460px) { #menuScreen { padding:8px 12px; gap:6px; } #menuScreen h1 { font-size:26px; letter-spacing:4px; } #menuScreen button { padding:7px 14px; font-size:14px; margin-top:4px; } #menuScreen .mainRow { margin-top:4px; gap:12px; } #menuScreen .mainBtns { gap:5px; } #menuScreen .panel { padding:10px 12px; border-radius:16px; } }    #menuScreen { overflow-x:hidden; } #menuScreen .tab.sel { border-color:var(--gold) !important; }
+  #menuScreen button:focus-visible, .padfocus { outline:3px solid var(--gold) !important; outline-offset:4px !important; box-shadow:0 0 14px 2px rgba(232,196,110,.35) !important; }      :is(#startScreen, #menuScreen) .portraits, :is(#startScreen, #menuScreen) .mapList { background:rgba(8,10,15,.55); border:1px solid var(--edge); border-radius:20px; padding:10px; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+  :is(#startScreen, #menuScreen) .portrait.sel, :is(#startScreen, #menuScreen) .portrait:focus-visible { box-shadow:0 0 14px 2px rgba(232,196,110,.4) !important; outline-color:var(--gold); }
+  :is(#startScreen, #menuScreen) .bar2 { min-height:16px; } :is(#startScreen, #menuScreen) .bar2 span { font-size:11px; }
+  :is(#startScreen, #menuScreen) .diffRow { background:rgba(255,255,255,.05); border:1px solid var(--edge); border-radius:14px; } :is(#startScreen, #menuScreen) .diffRow.sel { color:#10131a; }
+  :is(#startScreen, #menuScreen) .diffRow.sel * { color:#10131a; }
+  :is(#startScreen, #menuScreen) .joke, :is(#startScreen, #menuScreen) .portrait small { color:#c9b98e; }    /* sliders: a gold thumb on a thin glass track, in every screen */
+  input[type=range] { -webkit-appearance:none; appearance:none; height:6px; border-radius:6px; background:rgba(255,255,255,.18); border:0; outline:none; vertical-align:middle; }
+  input[type=range]::-webkit-slider-runnable-track { height:6px; border-radius:6px; background:linear-gradient(90deg, rgba(232,196,110,.7), rgba(255,255,255,.18)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; margin-top:-7px; border-radius:50%; background:linear-gradient(180deg, var(--gold2), var(--gold)); border:2px solid #10131a; box-shadow:0 0 8px rgba(232,196,110,.5); }
+  input[type=range]::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--gold); border:2px solid #10131a; }
+  .settings { display:grid !important; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:14px 32px; align-items:center; text-align:left; }
+  .settings label { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  :is(#startScreen, #menuScreen) .libMain, :is(#startScreen, #menuScreen) .list, :is(#startScreen, #menuScreen) .qgrid { background:rgba(8,10,15,.6); border:1px solid var(--edge); border-radius:20px; padding:12px 16px; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+  @media (max-height:520px) { :is(#startScreen, #menuScreen) .navRow { position:sticky; bottom:0; background:linear-gradient(0deg, rgba(5,7,12,.85), transparent); padding:6px 0; margin:6px 0 0; z-index:2; } }    :is(#startScreen, #menuScreen) button:focus, :is(#startScreen, #menuScreen) select:focus { outline:3px solid var(--gold); outline-offset:4px; }
+  :is(#startScreen, #menuScreen) * { scrollbar-color:rgba(232,196,110,.6) rgba(255,255,255,.08); scrollbar-width:thin; }    .seg button.padfocus { outline-offset:-4px !important; }
+  .rvTxt { font-family:var(--serif); color:var(--gold2); text-shadow:0 2px 12px #000a; }    :is(#startScreen, #menuScreen) button.sel:not(.padfocus) { outline:none; }
+  </style>
 </head>
 <body>
 <div id="stage"><canvas id="view"></canvas></div>
@@ -253,7 +306,7 @@
     <button id="resumeBtn">RESUME</button>
     <button id="endBtn" class="small">END RUN (cash out)</button>
     <hr>
-    <div class="settings sgrid"><label><input type="checkbox" class="setRM"> Reduce motion</label> <label>Shake <input type="range" class="setShake" min="0" max="100" value="100"> <span class="setShakeV">100</span>%</label> <label>Field of view <input type="range" class="setFov" min="80" max="115" value="100"> <span class="setFovV">100</span>&deg;</label> <label>Detail <span class="seg setDetail"><button data-v="low">Low</button><button data-v="medium">Medium</button><button data-v="high">High</button></span></label> <label>Frame cap <select class="setFps"><option value="30">30</option><option value="60" selected>60</option><option value="90">90</option><option value="120">120</option></select></label></div>
+    <div class="settings sgrid"><label>Reduce motion <input type="checkbox" class="setRM"></label> <label>Shake <input type="range" class="setShake" min="0" max="100" value="100"> <span class="setShakeV">100</span>%</label> <label>Field of view <input type="range" class="setFov" min="80" max="115" value="100"> <span class="setFovV">100</span>&deg;</label> <label>Detail <span class="seg setDetail"><button data-v="low">Low</button><button data-v="medium">Medium</button><button data-v="high">High</button></span></label> <label>Frame cap <select class="setFps"><option value="30">30</option><option value="60" selected>60</option><option value="90">90</option><option value="120">120</option></select></label></div>
     <hr>
     <p class="dim">WASD move &middot; Mouse look &middot; Space jump &middot; Shift dash &middot; Ctrl or C slide &middot; E use</p>
   </div>
