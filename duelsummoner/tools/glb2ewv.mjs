@@ -1,5 +1,6 @@
 // Bakes a textured GLB (from Meshy) into the game's flat-colour model format (EWV1: one colour per face, no texture, tiny file).
-//   node tools/glb2ewv.mjs <in.glb> <out.ewv.b64> [gamma]    gamma 1 = as painted; 0.6 lifts a too-dark texture
+//   node tools/glb2ewv.mjs <in.glb> <out.ewv.b64> [gamma] [facecol.json]    gamma 1 = as painted; 0.6 lifts a too-dark texture; a face colour list (palette hex + one byte per triangle) replaces the sampled texture colours
+//   (the EWV1 format keeps 5 bits a channel, so a palette colour is rounded to the nearest of 32 levels)
 // Colour per face = the texture averaged at the face centre and the three points halfway to each corner. The model is kept as it is (Y up).
 import { readFileSync, writeFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
@@ -31,12 +32,14 @@ export function readGlb(buf) {
   return { pos, idx, uv, png };
 }
 
-export function bake(glb, gamma = 1) {
+export function bake(glb, gamma = 1, facecol = null) {
   const { pos, idx, uv, png } = glb, tc = idx.length / 3; const col = new Uint16Array(tc);
+  const fcIdx = facecol ? Buffer.from(facecol.index, 'base64') : null, fcPal = facecol ? facecol.palette.map(h => parseInt(String(h).replace('#', ''), 16)) : null; if (fcIdx && fcIdx.length !== tc) throw new Error('face colour list has ' + fcIdx.length + ' faces, the model has ' + tc);
   const samp = (u, v) => { const x = Math.min(png.w - 1, Math.max(0, Math.floor((u % 1 + 1) % 1 * png.w))), y = Math.min(png.h - 1, Math.max(0, Math.floor((1 - ((v % 1 + 1) % 1)) * png.h))); return png.rgb(x, y); };
   for (let f = 0; f < tc; f++) {
     let r = 128, g = 128, b = 128;
-    if (png && uv) {
+    if (fcIdx) { const v = fcPal[Math.min(fcIdx[f], fcPal.length - 1)]; r = (v >> 16) & 255; g = (v >> 8) & 255; b = v & 255; }
+    else if (png && uv) {
       const t = [idx[f * 3], idx[f * 3 + 1], idx[f * 3 + 2]], cu = (uv[t[0] * 2] + uv[t[1] * 2] + uv[t[2] * 2]) / 3, cv = (uv[t[0] * 2 + 1] + uv[t[1] * 2 + 1] + uv[t[2] * 2 + 1]) / 3;
       const pts = [[cu, cv], ...t.map(k => [(cu + uv[k * 2]) / 2, (cv + uv[k * 2 + 1]) / 2])]; let sr = 0, sg = 0, sb = 0;
       for (const [u, v] of pts) { const c = samp(u, v); sr += c[0]; sg += c[1]; sb += c[2]; } r = sr / 4; g = sg / 4; b = sb / 4;
@@ -61,7 +64,7 @@ export function writeEwv({ vp, ix, col, vc, tc }) {
 
 import { fileURLToPath } from 'node:url';
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const [inp, out, gm] = process.argv.slice(2); if (!inp || !out) { console.log('usage: node tools/glb2ewv.mjs in.glb out.ewv.b64'); process.exit(2); }
-  const g = readGlb(readFileSync(inp)), b = bake(g, gm ? Number(gm) : 1); writeFileSync(out, writeEwv(b));
+  const [inp, out, gm, fc] = process.argv.slice(2); if (!inp || !out) { console.log('usage: node tools/glb2ewv.mjs in.glb out.ewv.b64 [gamma] [facecol.json]'); process.exit(2); }
+  const g = readGlb(readFileSync(inp)), b = bake(g, gm ? Number(gm) : 1, fc ? JSON.parse(readFileSync(fc, 'utf8')) : null); writeFileSync(out, writeEwv(b));
   console.log('baked ' + b.tc + ' faces, ' + b.vc + ' vertices' + (g.png ? ' (texture ' + g.png.w + 'x' + g.png.h + ')' : ' (no texture: grey)'));
 }

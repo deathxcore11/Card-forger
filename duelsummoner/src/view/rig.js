@@ -60,6 +60,30 @@ export function snapSmallIslands(geo, maxTris = 80, minShare = 0.6) {
   return snapped;
 }
 
+// The Carved Cards re-bake: de-index the first primitive so every triangle has its own three vertices (position, skin index, skin weight copied), give them the triangle's colour from the face colour list
+// (palette hex list plus one byte per triangle, in index-buffer order), flat normals for the light, and smoothed 'hnormal' for the outline hulls (flat normals would crack them open).
+function faceColourMesh(glb, p, fc) {
+  const at = p.attributes, pos = accessor(glb, at.POSITION), idx = accessor(glb, p.indices), jt = accessor(glb, at.JOINTS_0), wt = accessor(glb, at.WEIGHTS_0), col = Uint8Array.from(atob(fc.index), c => c.charCodeAt(0)), nT = idx.length / 3;
+  if (col.length !== nT) { console.warn('face colour list has ' + col.length + ' faces, the model has ' + nT + ': using the texture'); return null; }
+  const pal = fc.palette.map(h => { const v = parseInt(String(h).replace('#', ''), 16); return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255]; });
+  const P = new Float32Array(nT * 9), C = new Float32Array(nT * 9), Nf = new Float32Array(nT * 9), H = new Float32Array(nT * 9), SI = new Uint16Array(nT * 12), SW = new Float32Array(nT * 12), acc = new Float32Array(pos.length);
+  for (let f = 0; f < nT; f++) {       // area-weighted vertex normals for the hulls
+    const a = idx[f * 3], b = idx[f * 3 + 1], c = idx[f * 3 + 2], ux = pos[b * 3] - pos[a * 3], uy = pos[b * 3 + 1] - pos[a * 3 + 1], uz = pos[b * 3 + 2] - pos[a * 3 + 2], vx = pos[c * 3] - pos[a * 3], vy = pos[c * 3 + 1] - pos[a * 3 + 1], vz = pos[c * 3 + 2] - pos[a * 3 + 2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; for (const k of [a, b, c]) { acc[k * 3] += nx; acc[k * 3 + 1] += ny; acc[k * 3 + 2] += nz; }
+  }
+  for (let f = 0; f < nT; f++) {
+    const col3 = pal[Math.min(col[f], pal.length - 1)], tri = [idx[f * 3], idx[f * 3 + 1], idx[f * 3 + 2]], a = tri[0], b = tri[1], c = tri[2];
+    const ux = pos[b * 3] - pos[a * 3], uy = pos[b * 3 + 1] - pos[a * 3 + 1], uz = pos[b * 3 + 2] - pos[a * 3 + 2], vx = pos[c * 3] - pos[a * 3], vy = pos[c * 3 + 1] - pos[a * 3 + 1], vz = pos[c * 3 + 2] - pos[a * 3 + 2];
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; nx /= l; ny /= l; nz /= l;
+    for (let k = 0; k < 3; k++) {
+      const v = tri[k], o = f * 9 + k * 3; P[o] = pos[v * 3]; P[o + 1] = pos[v * 3 + 1]; P[o + 2] = pos[v * 3 + 2]; C[o] = col3[0]; C[o + 1] = col3[1]; C[o + 2] = col3[2]; Nf[o] = nx; Nf[o + 1] = ny; Nf[o + 2] = nz;
+      const al = Math.sqrt(acc[v * 3] ** 2 + acc[v * 3 + 1] ** 2 + acc[v * 3 + 2] ** 2) || 1; H[o] = acc[v * 3] / al; H[o + 1] = acc[v * 3 + 1] / al; H[o + 2] = acc[v * 3 + 2] / al;
+      for (let j = 0; j < 4; j++) { SI[f * 12 + k * 4 + j] = jt[v * 4 + j]; SW[f * 12 + k * 4 + j] = wt[v * 4 + j]; }
+    }
+  }
+  const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(P, 3)); g.setAttribute('normal', new T.BufferAttribute(Nf, 3)); g.setAttribute('hnormal', new T.BufferAttribute(H, 3)); g.setAttribute('color', new T.BufferAttribute(C, 3));
+  g.setAttribute('skinIndex', new T.BufferAttribute(SI, 4)); g.setAttribute('skinWeight', new T.BufferAttribute(SW, 4)); g.userData.faceColour = true; return g;
+}
 // Builds { root, clips: Map(name -> AnimationClip), bones: Map(name -> Bone), height } from a GLB buffer. texSize shrinks the texture (the file's is 2048 px or more).
 // Two steps so a creature can be made many times cheaply: prepareRig reads the file once (async: the texture is decoded and shrunk once); instantiateRig then makes
 // a new set of bones and a new skin that share the same geometry, material and texture (sync, so a monster can be made in the middle of a frame).
@@ -67,7 +91,8 @@ export async function prepareRig(buf, opts = {}) {
   const { texSize = 512 } = opts, glb = parseGlb(buf), J = glb.json, skin = J.skins && J.skins[0], names = cleanNames(J), meshes = [];
   for (let i = 0; i < J.nodes.length; i++) {
     if (J.nodes[i].mesh === undefined) continue;
-    const p = J.meshes[J.nodes[i].mesh].primitives[0], at = p.attributes, geo = new T.BufferGeometry();
+    const p = J.meshes[J.nodes[i].mesh].primitives[0], at = p.attributes; let geo = new T.BufferGeometry();
+    if (opts.facecol && meshes.length === 0 && p.indices !== undefined && at.JOINTS_0 !== undefined) { const fm = faceColourMesh(glb, p, opts.facecol); if (fm) { meshes.push({ node: i, geo: fm, material: new T.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: T.DoubleSide, skinning: true }) }); continue; } }       // a face colour list: no texture at all, one flat colour per triangle
     geo.setAttribute('position', new T.BufferAttribute(accessor(glb, at.POSITION), 3)); if (at.NORMAL !== undefined) geo.setAttribute('normal', new T.BufferAttribute(accessor(glb, at.NORMAL), 3)); else geo.computeVertexNormals();
     if (at.TEXCOORD_0 !== undefined) geo.setAttribute('uv', new T.BufferAttribute(accessor(glb, at.TEXCOORD_0), 2));
     if (at.JOINTS_0 !== undefined) { geo.setAttribute('skinIndex', new T.BufferAttribute(new Uint16Array(accessor(glb, at.JOINTS_0)), 4)); geo.setAttribute('skinWeight', new T.BufferAttribute(accessor(glb, at.WEIGHTS_0), 4)); }
@@ -79,6 +104,7 @@ export async function prepareRig(buf, opts = {}) {
       const bmp = await createImageBitmap(blob), c = document.createElement('canvas'); c.width = c.height = texSize; c.getContext('2d').drawImage(bmp, 0, 0, texSize, texSize);
       map = new T.CanvasTexture(c); map.flipY = false;
     }
+    if (!geo.attributes.hnormal) geo.setAttribute('hnormal', geo.attributes.normal);
     const material = new T.MeshLambertMaterial(map ? { map, side: T.DoubleSide, skinning: true } : { color: 0xcccccc, side: T.DoubleSide, skinning: true });          // three r128: a skinned material must say so
     meshes.push({ node: i, geo, material });
   }
@@ -124,7 +150,7 @@ function maskMaterial() {
 }
 function hullMaterial(artPx, color) {
   const m = new T.MeshBasicMaterial({ color, side: T.BackSide, fog: false, depthTest: false, depthWrite: false }); m.skinning = true; stencilClear(m);
-  m.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>', 'vec4 mvPosition = vec4(transformed, 1.0); mvPosition = modelViewMatrix * mvPosition; mat4 sm = skinWeight.x * boneMatX + skinWeight.y * boneMatY + skinWeight.z * boneMatZ + skinWeight.w * boneMatW; sm = bindMatrixInverse * sm * bindMatrix; vec3 nv = normalize(normalMatrix * (sm * vec4(normal, 0.0)).xyz);\n mvPosition.xyz += nv * (-mvPosition.z) * (' + artPx.toFixed(1) + ' * 2.0 / (projectionMatrix[1][1] * 540.0)); gl_Position = projectionMatrix * mvPosition;'); };
+  m.onBeforeCompile = sh => { sh.vertexShader = 'attribute vec3 hnormal;\n' + sh.vertexShader.replace('#include <project_vertex>', 'vec4 mvPosition = vec4(transformed, 1.0); mvPosition = modelViewMatrix * mvPosition; mat4 sm = skinWeight.x * boneMatX + skinWeight.y * boneMatY + skinWeight.z * boneMatZ + skinWeight.w * boneMatW; sm = bindMatrixInverse * sm * bindMatrix; vec3 nv = normalize(normalMatrix * (sm * vec4(hnormal, 0.0)).xyz);\n mvPosition.xyz += nv * (-mvPosition.z) * (' + artPx.toFixed(1) + ' * 2.0 / (projectionMatrix[1][1] * 540.0)); gl_Position = projectionMatrix * mvPosition;'); };
   return m;
 }
 function silhouetteMaterial() {
@@ -228,8 +254,10 @@ export class DuelistRig {
 }
 
 // extras: [{ url, rename: { 'land_heavy': 'land_heavy' }, seconds: { land_heavy: 0.9 } }] - clips exported from Meshy one at a time, merged by bone name
+// the face colour list lives beside the model (model.glb -> model.facecol.json); a model without one keeps its texture
+export async function loadFaceColours(url) { try { const r = await fetch(url.replace(/\.glb$/, '.facecol.json'), { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
 export async function loadRig(url, opts, extras = []) {
-  try { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) return null; const built = await buildRig(await r.arrayBuffer(), opts);
+  try { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) return null; opts = Object.assign({}, opts, { facecol: await loadFaceColours(url) }); const built = await buildRig(await r.arrayBuffer(), opts);
     if (opts && opts.retime) for (const [k, s] of Object.entries(opts.retime)) { const c = built.clips.get(k); if (c) retime(c, s); }        // Meshy's own clips can be too long for the game
     for (const ex of extras) { try { const rr = await fetch(ex.url, { cache: 'no-store' }); if (!rr.ok) continue; const g = parseGlb(await rr.arrayBuffer()); for (const [k, c] of readClips(g, cleanNames(g.json))) { if (ex.seconds && ex.seconds[k]) retime(c, ex.seconds[k]); built.clips.set(built.clips.has(k) && !ex.replace ? k + '_meshy' : k, c); } } catch (e) { /* optional */ } }
     return built; } catch (e) { console.error('rig load failed', e); return null; }

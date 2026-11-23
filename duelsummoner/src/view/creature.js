@@ -2,7 +2,7 @@
 // (wingL/R, legL/R, tail, neck, head, spine), and a clip set is written once against those parts: idle, fly, walk, attack, breath, hurt, arrive, defeat.
 // Clips are made from small functions of time, so loops close exactly (the period divides the duration). Rotations are about the MODEL's axes
 // (F forward, U up, R right) applied to a bone around its own joint, so nobody needs to know a bone's local axes.
-import { prepareRig, instantiateRig } from './rig.js';
+import { prepareRig, instantiateRig, loadFaceColours } from './rig.js';
 const T = window.THREE;
 
 // ------------------------------------------------------------------ the classifier
@@ -162,7 +162,7 @@ export function creatureClips(built, parts) {
 export async function loadCreature(url) {
   try {
     const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) return null;
-    const prep = await prepareRig(await r.arrayBuffer(), { creature: true }), first = instantiateRig(prep, { creature: true }), parts = classifyCreature(first.root);
+    const prep = await prepareRig(await r.arrayBuffer(), { creature: true, facecol: await loadFaceColours(url) }), first = instantiateRig(prep, { creature: true }), parts = classifyCreature(first.root);
     if (!parts) return null; prep.creatureClips = creatureClips(first, parts); return prep;                  // clips address bones by name, so every instance shares them
   } catch (e) { console.error('creature load failed', url, e); return null; }
 }
