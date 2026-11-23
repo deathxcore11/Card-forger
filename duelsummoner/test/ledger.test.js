@@ -19,12 +19,12 @@ test('curves: knee is linear then bounded, hyperbolic curves never pass their ca
 });
 
 test('level, form and tier: a maxed monster clearly outhits a fresh one, in every card', () => {
-  assert.ok(Math.abs(lvlMul(10) - 2.08) < 1e-9); assert.equal(formMul(1), 1); assert.equal(formMul(5), 1.3); assert.equal(formMul(10), 1.7);
+  assert.ok(Math.abs(lvlMul(10) - 2.512) < 1e-9); assert.equal(formMul(1), 1); assert.equal(formMul(5), 1.3); assert.equal(formMul(10), 1.7);
   for (const id of [...Object.keys(MONSTERS), ...Object.keys(FUSIONS)]) {
     const d1 = damageOf({ id, level: 1 }), d5 = damageOf({ id, level: 5 }), d10 = damageOf({ id, level: 10 });
     assert.ok(d5 > d1 * 1.5, id + ' level 5 should clearly beat level 1'); assert.ok(d10 > d1 * 3.4, id + ' level 10 should be about x3.5 level 1 (got x' + (d10 / d1).toFixed(2) + ')');
   }
-  assert.ok(Math.abs(monsterMul('twinflare-tyrant', 1) - 3.2) < 1e-9, 'a fresh Fusion is tier x3.2');
+  assert.ok(Math.abs(monsterMul('twinflare-tyrant', 1) - 4.5) < 1e-9, 'a fresh Fusion is tier x4.5 (3.2 before the 1.4x level steps)');
   assert.ok(damageOf({ id: 'twinflare-tyrant', level: 1 }) > damageOf({ id: 'ember-wyvern', level: 10 }), 'a fresh Fusion starts above a level 10 basic');
 });
 
@@ -39,3 +39,4 @@ test('no NaN or Infinity at a million kills and absurd stat values', () => {
   for (const v of [0, 1, 1e3, 1e6, 1e9]) for (const f of [mightBracket, targetBracket, critMul, keenChance, guardMit]) assert.ok(Number.isFinite(f(v)));
   assert.ok(Number.isFinite(damageOf({ id: 'twinflare-tyrant', level: 10 })));
 });
+

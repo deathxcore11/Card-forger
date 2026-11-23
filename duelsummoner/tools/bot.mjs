@@ -1,11 +1,13 @@
-// A deterministic player bot: given the game state it returns one input record per tick. Used to record tapes and to
+﻿// A deterministic player bot: given the game state it returns one input record per tick. Used to record tapes and to
 // drive balance runs. It thinks ten times a second and handles level-up / chest / Altar / shop offers through menu input.
 import { quantise, emptyRecord, takeCode, MENU_LEAVE } from '../src/sim/input.js';
 import { DUELISTS } from '../src/data/cards.js';
 import { Flow } from '../src/sim/flow.js';
+import { chestPrice } from '../src/sim/world.js';
+import { ENCOUNTERS as EN } from '../src/data/encounters.js';
 const wp = { x: 0, z: 0 };
 
-export function newBot(opts) { return { rec: emptyRecord(), cmd: { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false }, dashAt: -9, hold: false, flow: null, navAt: -1, navKey: '', lx: 0, lz: 0, still: 0, panic: 0, stuck: 0, wander: 0, wang: 0, tick: 0, focus: !!(opts && opts.focus) }; }
+export function newBot(opts) { return { rec: emptyRecord(), cmd: { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false }, dashAt: -9, hold: false, flow: null, navAt: -1, navKey: '', lx: 0, lz: 0, still: 0, panic: 0, stuck: 0, wander: 0, wang: 0, tick: 0, focus: !!(opts && opts.focus), world: !!(opts && opts.world) }; }
 
 function score(g, c, focus) {
   const D = DUELISTS[g.field.duelist], pair = [D.start, D.second];
@@ -41,6 +43,11 @@ export function botRecord(g, bot) {
     if (g.mode && g.mode !== 'classic' && g.gate && g.gate.awake && g.gate.state === 'closed') { if (bot.awakeT === undefined) bot.awakeT = g.sc; if (!target || g.sc - bot.awakeT > 40) target = null; } else bot.awakeT = undefined;
     if (!target && g.world) { const a = g.world.altar; if (a && !a.used && g.t > 20) target = a; }
     let hold = false;
+    if (!target && bot.world && g.world && g.mode && g.mode !== 'classic' && !(g.gate && g.gate.awake) && !(g.sp.find(s => s.alive && !s.dead))) {       // a player who goes for the nearest free chest, shrine or stone within about 90 m
+      let best = null, bd = 8100; const W = g.world, consider = (o, shrine) => { const d = (o.x - p.x) ** 2 + (o.z - p.z) ** 2; if (d < bd) { bd = d; best = o; bot.shrineT = shrine; } };
+      for (const c of W.cchests) if (!c.open && (c.free || g.coins >= chestPrice(g))) consider(c, false); for (const s of W.shrines) if (!s.done) consider(s, true); for (const s of W.stones) if (!s.used) consider(s, false);
+      if (best) { target = best; hold = bot.shrineT && Math.hypot(best.x - p.x, best.z - p.z) < EN.shrines.radius - 0.8; }
+    }
     const gb = g.sp.find(s => s.alive && s.role === 'gate');                            // the gate boss: close in to about 9 m so the summons can hit it, strafing around it
     const tb = g.sp.find(s => s.alive && !s.dead && s.role !== 'gate');                // a timed boss or elite: keep it in range of the monsters
     if (tb && !target) { const dd = Math.hypot(tb.x - p.x, tb.z - p.z); if (dd > 13) target = { x: tb.x, z: tb.z }; }
@@ -53,7 +60,7 @@ export function botRecord(g, bot) {
     bot.hold = hold; bot.urgent = !!(g.mode && g.mode !== 'classic' && target && (g.circle || g.altar || (g.gate && g.gate.awake)));
     if (target) {                                                              // walk the way a path exists, not through walls
       const key = Math.round(target.x) + ',' + Math.round(target.z);
-      if (!bot.flow) bot.flow = new Flow();
+      if (!bot.flow) { bot.flow = new Flow(); bot.flow.col = g.colliders; bot.flow.rebuild(); }       // the bot walks round trunks and boulders like the horde does
       if (key !== bot.navKey || g.tickN - bot.navAt > 30) { bot.flow.update(target.x, target.z); bot.navKey = key; bot.navAt = g.tickN; }
       const far = Math.hypot(target.x - p.x, target.z - p.z) > 4;
       if (far && bot.flow.next(p.x, p.z, wp)) { cx = wp.x - p.x; cz = wp.z - p.z; } else { cx = target.x - p.x; cz = target.z - p.z; } const l = Math.sqrt(cx * cx + cz * cz) || 1; cx /= l; cz /= l; }
@@ -81,6 +88,7 @@ export function botRecord(g, bot) {
   quantise(bot.cmd, rec);
   return rec;
 }
+
 
 
 

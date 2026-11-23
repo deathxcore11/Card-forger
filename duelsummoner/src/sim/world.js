@@ -43,7 +43,7 @@ export function placeObject(g, type, s) {
   if (type === 'broker') { if (g.oaths && g.oaths.pauper) return null; W.broker = { x: s.x, y: s.y, z: s.z, stock: pickStock(g) }; return W.broker; }
   if (type === 'shrine') { W.shrines.push({ x: s.x, y: s.y, z: s.z, charge: 0, idle: 0, done: false }); return W.shrines[W.shrines.length - 1]; }
   if (type === 'altar') { W.altar = { x: s.x, y: s.y, z: s.z, used: false }; return W.altar; }
-  if (type === 'cchest') { W.cchests.push({ x: s.x, y: s.y, z: s.z, open: false, rarity: s.rarity || E.cardChests.rarityByOrder[W.cchests.length] || 'common' }); return W.cchests[W.cchests.length - 1]; }
+  if (type === 'cchest') { W.cchests.push({ x: s.x, y: s.y, z: s.z, open: false, free: !!s.free, rarity: s.rarity || E.cardChests.rarityByOrder[W.cchests.length] || 'common' }); return W.cchests[W.cchests.length - 1]; }
   throw new Error('unknown placeable ' + type);
 }
 

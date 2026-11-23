@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/sim/game.js';
 import { heightAt, WALL } from '../src/sim/terrain.js';
@@ -112,13 +112,13 @@ test('W moves along the camera forward after any yaw (180 degree turn)', () => {
   assert.ok(g.p.z > 2 && Math.abs(g.p.x) < 0.1, `x=${g.p.x} z=${g.p.z}`);
 });
 
-test('spawn rate ramps from 1/s at 0:00 to 3/s at 3:00 (eased ramp)', () => {
-  near(spawnRate(0), 1, 1e-9); near(spawnRate(90), 2.1, 1e-9); near(spawnRate(180), 3.0, 1e-9); near(spawnRate(500), 3, 1e-9); near(spawnRate(300), 5, 1e-9);
+test('spawn rate: a quiet first minute (0.3 to 0.4/s), then 2.2/s at 3:00 and 4.2/s at 5:00', () => {
+  near(spawnRate(0), 0.3, 1e-9); near(spawnRate(60), 0.4, 1e-9); near(spawnRate(90), 0.9, 1e-9); near(spawnRate(180), 2.2, 1e-9); near(spawnRate(500), 3, 1e-9); near(spawnRate(300), 4.2, 1e-9);
   const g = new Game(1, { offers: false }); g.god = true;
   run(g, 10, idle); const first = g.spawned;
   g.t = 180; g.spawned = 0; g.en.alive.fill(0); run(g, 10, idle);
-  assert.ok(first >= 9 && first <= 12, `first ${first}`);
-  assert.ok(g.spawned >= 29 && g.spawned <= 34, `late ${g.spawned}`);
+  assert.ok(first >= 2 && first <= 5, `first `);
+  assert.ok(g.spawned >= 19 && g.spawned <= 25, `late ${g.spawned}`);
 });
 
 test('enemies spawn 22 to 30 m away and the live count never exceeds 300', () => {
@@ -188,6 +188,9 @@ test('data files for later steps are shaped as agreed', () => {
   assert.deepEqual([FIELD.spellTrapLevel.min, FIELD.spellTrapLevel.max], [1, 5]);
   assert.equal(FIELD.fusionLevel, 10); assert.equal(RARITIES.length, 5); assert.equal(DISTRICTS.length, 5);
 });
+
+
+
 
 
 

@@ -167,8 +167,8 @@ function surgeTick(g) {
     if (!g.surgeAnn[i] && g.sc >= at[i] - 4 && g.sc < at[i] + 2) { g.surgeAnn[i] = 1; g.event('banner', SURGE_NAMES[i]); g.emit('surge', i); }
     if (!g.surgeDone[i] && g.sc >= at[i]) {
       g.surgeDone[i] = 1; if (!g.surgeAnn[i]) g.surgeAnn[i] = 1;
-      const n = 100 + Math.floor(g.rsp() * 21), p = g.p; let made = 0;
-      for (let k = 0; k < n; k++) { if (enemyCount(g.en) >= Math.max(g.maxAlive, 140)) break; const a = k / n * 6.283185307, r = 26 + (k % 3) * 4; if (spawnEnemy(g, 'husk', { x: p.x + cos(a) * r, z: p.z + sin(a) * r })) { g.en.hp[g.lastSlot] *= 0.5; made++; } }
+      const SU = RUN.surge, n = SU.count[0] + Math.floor(g.rsp() * (SU.count[1] - SU.count[0] + 1)), p = g.p; let made = 0;
+      for (let k = 0; k < n; k++) { if (enemyCount(g.en) >= Math.max(g.maxAlive, 140)) break; const a = k / n * 6.283185307, r = 26 + (k % 3) * 4; if (spawnEnemy(g, 'husk', { x: p.x + cos(a) * r, z: p.z + sin(a) * r })) { g.en.hp[g.lastSlot] *= RUN.surge.hpMul; made++; } }
       g.surgeSize = made;
     }
   }

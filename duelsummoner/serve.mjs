@@ -9,6 +9,7 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/ja
 const port = Number(process.env.PORT || 8765);
 
 http.createServer(async (req, res) => {
+  console.log(new Date().toISOString(), req.method, req.url, req.socket.remoteAddress);           // one line per request, so a device test can be watched
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (p === '/') p = '/index.html';
   const file = normalize(join(root, p));
@@ -18,4 +19,4 @@ http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': types[extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     res.end(body);
   } catch { res.writeHead(404); res.end('not found'); }
-}).listen(port, () => console.log('Duel Summoner on http://localhost:' + port + '/'));
+}).listen(port, '0.0.0.0', () => console.log('Duel Summoner on http://localhost:' + port + '/ (all IPv4 interfaces)'));

@@ -53,15 +53,15 @@ export function formOf(id, level) {
 
 // Spells: levels are stacks. "per" values are added per stack.
 export const SPELLS = {
-  'toll-of-ash': { name: 'Toll of Ash', rarity: 'rare', kind: 'spell', text: 'Every 5 s you pay 3% of your current Life Points (never below 1). +7% Might a level.', per: { dmgMult: 0.07, toll: 1 } },
-  'kindling-rite': { name: 'Kindling Rite', rarity: 'rare', kind: 'spell', text: 'Fire burns +1 damage a second, and +1 s a stack.', per: { burnDps: 1, burnDur: 1 } },
-  'deep-marks': { name: 'Deep Marks', rarity: 'rare', kind: 'spell', text: 'Marks last 3 s longer and add +10% damage taken a stack.', per: { markDur: 3, markBonus: 0.10 } },
-  'pack-drill': { name: 'Pack Drill', rarity: 'rare', kind: 'spell', text: 'Monster hits do 15% more a stack. The Source bracket: it rewards committing to one kind of damage, up to x3.', per: { drill: [0, 0.15] } },
-  'elemental-litany': { name: 'Elemental Litany', rarity: 'rare', kind: 'spell', text: '+12% damage in each element for every monster of it you field, a stack. The Affinity bracket.', per: { affPerElement: 0.12 } },
-  'swift-draw': { name: 'Swift Draw', rarity: 'common', kind: 'spell', text: 'Your card throw is 20% faster a stack.', per: { cardRate: 0.20 } },
-  'runners-sash': { name: "Runner's Sash", rarity: 'common', kind: 'spell', text: '+8% move speed and +10% dash distance a stack.', per: { move: 0.08, dash: 0.10 } },
-  'heart-of-the-cards': { name: 'Heart of the Cards', rarity: 'common', kind: 'spell', text: '+20 max Life Points and heal 20 now.', per: { maxLp: 20 }, healNow: 20 },
-  'collectors-eye': { name: "Collector's Eye", rarity: 'common', kind: 'spell', text: '+25% pickup range and +10% XP a stack.', per: { pickup: 0.25, xp: 0.10 } }
+  'toll-of-ash': { name: 'Toll of Ash', rarity: 'rare', kind: 'spell', text: 'Every 5 s you pay 3% of your current Life Points (never below 1). +10% Might a level.', per: { dmgMult: 0.10, toll: 1 } },
+  'kindling-rite': { name: 'Kindling Rite', rarity: 'rare', kind: 'spell', text: 'Fire burns +1.4 damage a second, and +1.4 s a stack.', per: { burnDps: 1.4, burnDur: 1.4 } },
+  'deep-marks': { name: 'Deep Marks', rarity: 'rare', kind: 'spell', text: 'Marks last 4 s longer and add +14% damage taken a stack.', per: { markDur: 4, markBonus: 0.14 } },
+  'pack-drill': { name: 'Pack Drill', rarity: 'rare', kind: 'spell', text: 'Monster hits do 21% more a stack. The Source bracket: it rewards committing to one kind of damage, up to x3.', per: { drill: [0, 0.21] } },
+  'elemental-litany': { name: 'Elemental Litany', rarity: 'rare', kind: 'spell', text: '+17% damage in each element for every monster of it you field, a stack. The Affinity bracket.', per: { affPerElement: 0.17 } },
+  'swift-draw': { name: 'Swift Draw', rarity: 'common', kind: 'spell', text: 'Your card throw is 28% faster a stack.', per: { cardRate: 0.28 } },
+  'runners-sash': { name: "Runner's Sash", rarity: 'common', kind: 'spell', text: '+11% move speed and +14% dash distance a stack.', per: { move: 0.11, dash: 0.14 } },
+  'heart-of-the-cards': { name: 'Heart of the Cards', rarity: 'common', kind: 'spell', text: '+28 max Life Points and heal 28 now.', per: { maxLp: 28 }, healNow: 28 },
+  'collectors-eye': { name: "Collector's Eye", rarity: 'common', kind: 'spell', text: '+35% pickup range and +14% XP a stack.', per: { pickup: 0.35, xp: 0.14 } }
 };
 export const ONE_SHOTS = {
   'second-wind': { name: 'Second Wind', rarity: 'epic', kind: 'oneshot', text: 'Heal to full, once, now.' },
@@ -69,9 +69,9 @@ export const ONE_SHOTS = {
 };
 export const TRAPS = {
   'gust-ward': { name: 'Gust Ward', rarity: 'rare', kind: 'trap', trigger: 'hurt', text: 'When you take damage: knocks back everything within 6 m, 2 damage.',
-    recharge: 10, rechargePerLevel: 0.9, radius: 6, dmg: 2, dmgPerLevel: 0.25, knock: 6 },
+    recharge: 10, rechargePerLevel: 0.9, radius: 6, dmg: 2, dmgPerLevel: 0.35, knock: 6 },
   'pit-of-seals': { name: 'Pit of Seals', rarity: 'rare', kind: 'trap', trigger: 'crowd', text: '8 enemies within 4 m: a seal opens, 10 damage, roots 2 s.',
-    recharge: 14, rechargePerLevel: 0.9, crowd: 8, radius: 4, dmg: 10, dmgPerLevel: 0.25, root: 2 }
+    recharge: 14, rechargePerLevel: 0.9, crowd: 8, radius: 4, dmg: 10, dmgPerLevel: 0.35, root: 2 }
 };
 
 export const DUELISTS = {
@@ -88,6 +88,7 @@ export const TARGETS = {
   firstFusionSeconds: [225, 270],                                     // 3:45 to 4:30 with focused picks
   secondFusionShare: 0.15                                             // runs that reach a second Fusion: rare, under 15%
 };
+
 
 
 

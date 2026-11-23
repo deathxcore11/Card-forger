@@ -1,9 +1,10 @@
-// The 8-minute wave table (bible "Enemies and waves"), plus the boss clock and the Royal Gate.
+﻿// The 8-minute wave table (bible "Enemies and waves"), plus the boss clock and the Royal Gate.
 export const RUN = {
   maxAlive: 300,
   // spawns per second; linear between rows. The last row (8:00) is the rate while the boss is up.
-  rate: [[0, 1], [60, 1.8], [120, 2.4], [180, 3.0], [240, 3.3], [300, 5], [360, 7], [420, 9], [480, 3]],   // was 1, 2, 3, 4, 4, 6, 7, 9: eased 1:00 to 5:00 by about 25%
+  rate: [[0, 0.3], [60, 0.4], [120, 1.4], [180, 2.2], [240, 3.0], [300, 4.2], [360, 5.5], [420, 7], [480, 3]],   // was 1, 2, 3, 4, 4, 6, 7, 9: eased 1:00 to 5:00 by about 25%
   bossRate: 3,
+  surge: { count: [100, 120], hpMul: 0.5 },                  // the named surges (about 40% and 70% of the stage clock, and the gate wake): Husks closing in from a ring, at this share of their HP
   // from this second on, each spawn rolls these chances in order; whatever is left over is a Husk
   mix: [
     { from: 0,   chance: {} },
@@ -26,4 +27,8 @@ export const RUN = {
   // drops
   coinChance: 1 / 6, heartChance: 1 / 50, heartHeal: 15
 };
+
+
+
+
 

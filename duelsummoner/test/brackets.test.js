@@ -34,6 +34,6 @@ test('brackets: the breakdown says which bracket the damage came from', () => {
 
 test('brackets: the new spells feed them through the stat sheet (Pack Drill, Elemental Litany)', () => {
   const g = new Game(3, { mode: 'run', duelist: 'kael' }); g.god = true; g.field.spells[0] = { id: 'pack-drill', level: 2, cd: 0 }; g.field.spells[1] = { id: 'elemental-litany', level: 1, cd: 0 }; recompute(g);
-  assert.ok(Math.abs(g.mods.drill[0] - 0.3) < 1e-9, 'drill ' + g.mods.drill[0]);
-  const fire = g.field.monsters.filter(m => m && /ember|cinder/.test(m.id)).length; assert.ok(g.mods.aff[0] >= 0.12 * fire - 1e-9, 'fire affinity ' + g.mods.aff[0] + ' for ' + fire + ' fire monsters');
+  assert.ok(Math.abs(g.mods.drill[0] - 0.42) < 1e-9, 'drill ' + g.mods.drill[0]);
+  const fire = g.field.monsters.filter(m => m && /ember|cinder/.test(m.id)).length; assert.ok(g.mods.aff[0] >= 0.17 * fire - 1e-9, 'fire affinity ' + g.mods.aff[0] + ' for ' + fire + ' fire monsters');
 });

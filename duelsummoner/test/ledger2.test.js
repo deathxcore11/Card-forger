@@ -26,11 +26,11 @@ test('self-damage: never kills, 1 HP floor, grants no i-frames, ignores dash i-f
   const t = mk(); t.mods.armour = 3; t.p.hp = 50; t.hurtPlayer(10, false, 'enemy'); assert.equal(t.p.hp, 43); t.p.hp = 50; t.hurtPlayer(10, false, 'enemy', 4); assert.equal(t.p.hp, 40, 'TRUE damage ignores Guard');
 });
 
-test('Toll of Ash: pays 3% of current LP every 5 s, never kills, adds +7% Might a level', () => {
+test('Toll of Ash: pays 3% of current LP every 5 s, never kills, adds +10% Might a level', () => {
   const g = mk(); g.field.spells[0] = { id: 'toll-of-ash', level: 3, cd: 0, rootFx: 0 }; g.god = false;
   import('../src/sim/field.js').then(() => {});
   return import('../src/sim/field.js').then(F => {
-    F.recompute(g); assert.ok(Math.abs(g.mods.dmgMult - 0.21) < 1e-9, 'might ' + g.mods.dmgMult); assert.equal(g.mods.toll, 3);
+    F.recompute(g); assert.ok(Math.abs(g.mods.dmgMult - 0.30) < 1e-9, 'might ' + g.mods.dmgMult); assert.equal(g.mods.toll, 3);
     const hp0 = g.p.hp; for (let i = 0; i < 60 * 11; i++) g.tick(idle); assert.ok(g.p.hp < hp0 && g.p.hp > hp0 * 0.9, 'LP ' + g.p.hp);
     g.p.hp = 2; for (let i = 0; i < 60 * 60; i++) g.tick(idle); assert.ok(g.p.hp >= 1 && !g.over, 'the Toll never takes you below 1 (hp ' + g.p.hp + ')');
   });

@@ -21,7 +21,7 @@ test('timeline: events are announced 5 s ahead, then spawn; the elite drops a fr
   const g = mk(); g.sc = 99.5; run(g, 1);
   assert.ok(events(g).some(e => e[0] === 'announce' && e[1] === 0), 'elite announced at 1:40');
   g.sc = 104.5; run(g, 1); assert.equal(g.sp.filter(s => s.alive && s.role === 'elite').length, 1, 'elite on the field at 1:45');
-  kill(g, 'elite'); assert.equal(g.world.cchests.filter(c => c.free).length, 1); assert.equal(g.chests.length, 0, 'an elite drops no Sealed Chest');
+  kill(g, 'elite'); assert.equal(g.world.cchests.filter(c => c.free).length, 2, 'the elite drops a free Card Chest (the other free chest is the one placed near the spawn)'); assert.equal(g.chests.length, 0, 'an elite drops no Sealed Chest');
   g.sc = 224.5; run(g, 6); assert.equal(g.sp.filter(s => s.alive && s.role === 'bossA').length, 1);
   kill(g, 'bossA'); assert.equal(g.chests.length, 1); assert.equal(g.chests[0].kind, 'sealed');
 });
@@ -118,4 +118,5 @@ test('bot with a ready pair fuses within 30 s of the pair becoming ready', async
     assert.ok(g.fusions >= 1, 'seed ' + seed + ' did not fuse in 30 s (ticks ' + n + ')');
   }
 });
+
 

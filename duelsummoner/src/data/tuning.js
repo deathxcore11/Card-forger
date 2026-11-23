@@ -1,4 +1,4 @@
-// K: every balance constant of the stat engine (the Ledger), by the name design/stat-engine/SPEC.md uses. Ported from the reference prototype.
+﻿// K: every balance constant of the stat engine (the Ledger), by the name design/stat-engine/SPEC.md uses. Ported from the reference prototype.
 // The sim never hard-codes a balance number: it reads K. Status: numbers are the spec's; none is confirmed in a played seed yet.
 // Phase 1 of the port reads: lvlSlope, lvlRate, form, tier, knee1/kneeK1, knee4/kneeK4, critBase, critCap, procCap and the curve k values.
 
@@ -45,9 +45,9 @@ export const K = Object.freeze({
   copyCap: 4, copyK: 2,             // on-event items (Locket, Recoil Seal, Bell): n copies act as 1 + (cap-1)(n-1)/((n-1)+k), x4 asymptote
 
   // ---- levels, forms, tiers (section 8) ----
-  lvlSlope: 0.12, lvlRate: 0.025,
+  lvlSlope: 0.168, lvlRate: 0.025,
   form: [1.0, 1.3, 1.7], formAt: [1, 5, 10],
-  tier: [1.0, 3.2, 8.5, 22],        // Monster, Fusion, God Fusion, Secret Fusion
+  tier: [1.0, 4.5, 12, 31],        // Monster, Fusion, God Fusion, Secret Fusion
   tierAura: [0, 500, 1000, 1500],   // team-wide MIGHT bp
   tierArrive: [1, 1, 10, 10],
   fusionInherit: 0.5,
@@ -95,7 +95,7 @@ export const K = Object.freeze({
   // ---- player and self-damage (section 6) ----
   baseLp: 100, graceSec: 0.25, wardCdSec: 20,
   tollEverySec: 5, tollPct: 0.03,
-  trapDmgPerLevel: 0.25,
+  trapDmgPerLevel: 0.35,
   gustCdSec: 4, pitCdSec: 6,
   locketPerGuard: 6, locketTargets: 8,
   recoilMul: 2.0,
@@ -128,4 +128,5 @@ export const K = Object.freeze({
   simContactPerSec: 0.25, enemyTouch: 8,
   simKillsPerMinPre: 1200, simKillsPerMinOt: 12000      // run-total kill estimate fed to Mira's passive
 });
+
 
