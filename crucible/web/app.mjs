@@ -2277,12 +2277,17 @@ const scrollBoxes = () => app.querySelectorAll('.mw .sc, .book .sc');
 const scrollKeep = () => { const m = new Map(); scrollBoxes().forEach((sc, i) => m.set(scrollKey(i), sc._rest ?? sc.scrollTop)); return m; };
 const fitScrolls = (keep = null) => scrollBoxes().forEach((sc, i) => fitScroll(sc, keep ? keep.get(scrollKey(i)) : undefined));
 // Each scroll the reader makes is added to where the box is wanted (one the box makes itself, coming to a rest, is not:
-// restAt marks it as seen). The box comes to rest 160 ms after the last scroll, and not while a finger still holds it.
+// restAt marks it as seen). What the rests left over is kept only while the reader goes on the same way: a scroll the
+// other way starts from the rest the box stands on, and a scroll to the very top wants the top. The box comes to rest
+// 160 ms after the last scroll, and not while a finger still holds it.
 { let raf = 0, rest = 0, held = 0; const live = t => t && t.classList && t.classList.contains('sc') && app.classList.contains('ps') && t.closest('.mw, .book');
   const settle = t => { clearTimeout(rest); rest = setTimeout(() => { if (held) settle(t); else restAt(t); }, 160); };
   for (const k of ['touchstart', 'touchend', 'touchcancel']) app.addEventListener(k, ev => { held = ev.touches.length; }, { capture: true, passive: true });
   app.addEventListener('scroll', ev => { const t = ev.target; if (!live(t)) return;
-    const now = t.scrollTop; t._want = (t._want ?? now) + now - (t._seen ?? now); t._seen = now;
+    const now = t.scrollTop, d = now - (t._seen ?? now); let w = t._want ?? now;
+    if (d * (t._way || 0) < 0) w = t._rest ?? now;
+    if (d) t._way = Math.sign(d);
+    t._want = d < 0 && now < .5 ? 0 : w + d; t._seen = now;
     cancelAnimationFrame(raf); raf = requestAnimationFrame(() => scrollMark(t)); settle(t); }, true); }
 // The text bar holds two lines. When what it says is longer, a marker shows and a tap opens the whole of it.
 function barFits() {
