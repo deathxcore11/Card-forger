@@ -686,7 +686,7 @@ function draw() {
   }
   const psOn = psScreen();
   if (psOn) { drawConsole(psOn); screenCue(); return; }
-  if (app.classList.contains('ps')) { app.classList.remove('ps'); document.body.classList.remove('ps'); app.style.marginLeft = app.style.marginTop = ''; fit(); }
+  if (app.classList.contains('ps')) { app.classList.remove('ps'); document.body.classList.remove('ps'); app.style.margin = app.style.left = app.style.top = app.style.transformOrigin = ''; fit(); }
   const r = G.run; let body;
   if (G.screen) body = { forger: screenForger, vault: screenVault, codex: screenCodex, feats: screenFeats }[G.screen]();
   else if (!r) body = screenHome();

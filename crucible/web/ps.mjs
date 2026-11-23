@@ -18,10 +18,12 @@ export function fitConsole(app) {
   const changed = W !== F.W || H !== F.H; Object.assign(F, { W, H, n, up });
   const k = n / dpr; // the same in CSS pixels
   app.style.width = W + 'px'; app.style.height = H + 'px';
-  app.style.transform = `translate(-50%,-50%) ${up ? 'rotate(90deg) ' : ''}scale(${k})`;
-  // the transform puts the frame's centre on the page centre; nudge it onto whole device pixels
-  const ox = ((vw * dpr - (up ? H : W) * n) / 2) % 1, oy = ((vh * dpr - (up ? W : H) * n) / 2) % 1;
-  app.style.marginLeft = (-ox / dpr) + 'px'; app.style.marginTop = (-oy / dpr) + 'px';
+  // The frame is laid from the page's corner straight onto whole device pixels, in the middle: moved there, turned if need
+  // be, then enlarged from its own corner. Centred through translate(-50%,-50%) instead, it was drawn in its own layer
+  // half a device pixel off at 2.625 device pixels to the CSS pixel, and every frame pixel's edge took in its neighbour.
+  const sw = (up ? H : W) * n, sh = (up ? W : H) * n, L = Math.floor((vw * dpr - sw) / 2), T = Math.floor((vh * dpr - sh) / 2);
+  app.style.left = app.style.top = '0px'; app.style.margin = '0'; app.style.transformOrigin = '0 0';
+  app.style.transform = `translate(${(L + (up ? sw : 0)) / dpr}px,${T / dpr}px) ${up ? 'rotate(90deg) ' : ''}scale(${k})`;
   return { k, n, up, changed };
 }
 
