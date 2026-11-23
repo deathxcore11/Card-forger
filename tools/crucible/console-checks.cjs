@@ -90,6 +90,8 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
     page.on('requestfailed', r => { if (!/audio\//.test(r.url())) errors.push('request failed ' + r.url().slice(-60)); });
+    // the loading screen (#boot) stays while the console pictures arrive, which takes longer on a busy machine
+    const booted = () => page.waitForFunction(() => !document.getElementById('boot'), null, { timeout: 20000 }).catch(() => {});
     const load = async save => {
       await page.goto(url);
       await page.evaluate(o => {
@@ -98,7 +100,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
         if (o) { o.profile.runs = 7; localStorage.setItem('lostmemories.profile.v1', JSON.stringify(o.profile)); localStorage.setItem('lostmemories.run.v1', JSON.stringify(o.run)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(o.labs || labs)); }
         localStorage.setItem('lostmemories.labs.v5', JSON.stringify(o ? o.labs || labs : labs));
       }, save ? JSON.parse(fs.readFileSync(path.join(savesDir, save), 'utf8')) : null);
-      await page.reload(); await page.waitForTimeout(600);
+      await page.reload(); await page.waitForTimeout(600); await booted();
       if (save) { await page.locator('[data-a="resume"]').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(700); }
     };
     const audit = async where => {
@@ -476,9 +478,12 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
         if (save && !saves.includes(save)) continue;
         await page.goto(url);
         await page.evaluate(o => { localStorage.clear(); sessionStorage.clear(); const labs = { five: true, lean: true, heat: true, kits: true, items: true }; if (o) { o.profile.runs = 7; localStorage.setItem('lostmemories.profile.v1', JSON.stringify(o.profile)); localStorage.setItem('lostmemories.run.v1', JSON.stringify(o.run)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(o.labs || labs)); } localStorage.setItem('lostmemories.labs.v5', JSON.stringify(o ? o.labs || labs : labs)); }, save ? JSON.parse(fs.readFileSync(path.join(savesDir, save), 'utf8')) : null);
-        await page.reload(); await page.waitForTimeout(600);
+        await page.reload(); await page.waitForTimeout(600); await page.waitForFunction(() => !document.getElementById('boot'), null, { timeout: 20000 }).catch(() => {});
         if (save) { await page.locator('[data-a="resume"]').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(900); }
         await page.waitForFunction(() => [...document.fonts].filter(f => /LM Text/.test(f.family)).length > 1, null, { timeout: 5000 }).catch(() => {}); // the body face struck on whole pixels (pxtext.mjs) is in
+        // a screen is drawn again when a carved word it asked for is ready, with its crest and its animations new: wait
+        // until nothing has been drawn again for 400 ms (5 s at most) before the animations are stopped
+        await page.evaluate(() => new Promise(ok => { const done = () => { mo.disconnect(); ok(); }; let t = setTimeout(done, 400); const mo = new MutationObserver(() => { clearTimeout(t); t = setTimeout(done, 400); }); mo.observe(document.getElementById('app'), { childList: true }); setTimeout(done, 5000); }));
         await page.evaluate(() => { document.getAnimations().forEach(a => { a.pause(); a.currentTime = 0; }); for (const c of document.querySelectorAll('#coin')) c.style.visibility = 'hidden'; }); // the turning crest is drawn by the clock
         got.push([save || 'title', await page.screenshot()]);
       }
