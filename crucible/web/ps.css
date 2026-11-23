@@ -16,7 +16,7 @@ body.ps { background: #000; }
 /* the old look's scan lines (play.css) are not the console's: a dark band every third frame row, blended over everything,
    which also made the browser resample a turned frame. The console look draws none. */
 #app.ps::after { content: none; display: none; }
-#app.ps * { box-sizing: border-box; border-radius: 0 !important; text-shadow: none; }
+#app.ps * { box-sizing: border-box; border-radius: 0 !important; text-shadow: none; text-indent: 0; } /* an indent is never inherited: the one gridLines gives a box of centred words is that box's own */
 #app.ps img, #app.ps canvas { image-rendering: pixelated; display: block; }
 /* a page that holds the game may shrink pictures to fit their box (img { max-width: 100%; height: auto }); a console picture
    is always drawn at its own size or a whole multiple, so nothing from outside may scale it */
@@ -198,8 +198,10 @@ body.ps { background: #000; }
 #app.ps .lpfl { position: absolute; left: 0; top: 40px; font: 16px/16px 'LM Text', monospace; color: #f08a72; white-space: nowrap; pointer-events: none; text-shadow: 1px 0 var(--sh), -1px 0 var(--sh), 0 1px var(--sh), 0 -1px var(--sh); }
 #app.ps .lpfl.lpgn { color: #9fd0c0; }
 /* a relic firing: a strip at its owner's side of the view, its medals set in one by one, its name in gold */
-#app.ps .rlcw { position: absolute; left: 0; right: 0; height: 28px; display: flex; justify-content: center; pointer-events: none; }
-#app.ps .rlc { position: relative; display: flex; align-items: center; gap: 2px; height: 28px; padding: 2px 6px 2px 2px; }
+#app.ps .rlcw { position: absolute; left: 0; right: 0; height: 28px; pointer-events: none; }
+/* the strip stands in the middle of the view at a whole pixel, placed from its own width (beatDom): centred by the
+   browser, a strip of odd width stood half a pixel off the grid with its words */
+#app.ps .rlc { position: absolute; top: 0; display: flex; align-items: center; gap: 2px; height: 28px; padding: 2px 6px 2px 2px; }
 #app.ps .rlc > img, #app.ps .rlc > .coin { position: relative; flex: none; width: 24px; height: 24px; }
 #app.ps .rlc > .lb { position: relative; margin-left: 4px; }
 

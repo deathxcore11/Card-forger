@@ -270,17 +270,22 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
         const pqs = [...app.querySelectorAll('.pq')].filter(vis).map(e => [e, e.getBoundingClientRect()]);
         for (let i = 0; i < pqs.length; i++) for (let j = i + 1; j < pqs.length; j++) { const [a, ra] = pqs[i], [b, rb] = pqs[j]; if (a.closest('.mw') !== b.closest('.mw') || scrolledAway(a) || scrolledAway(b)) continue; if (ra.left < rb.right - 1 && rb.left < ra.right - 1 && ra.top < rb.bottom - 1 && rb.top < ra.bottom - 1) out.push(`plaques "${a.textContent}" and "${b.textContent}" overlap`); }
         // grid: each line of words starts on a whole frame pixel, across and down (half a pixel off, a pixel face is drawn
-        // soft or a pixel wide in places)
+        // soft or a pixel wide in places). Every line is measured where the browser set it, not only a box's first: a
+        // range over the words gives one box to each line they take (a name plate's lines, a paragraph's). And a line
+        // the browser centres in its box (text-align: center, a box holding only those words) stands in the middle of the
+        // room it is centred in to within a pixel.
         const fx = q => up ? (q.top - A.top) / k : (q.left - A.left) / k, fy = q => up ? (A.right - q.right) / k : (q.top - A.top) / k;
         const words = document.createTreeWalker(app, NodeFilter.SHOW_TEXT);
         for (let t = words.nextNode(); t; t = words.nextNode()) {
           const el = t.parentElement; if (!t.textContent.trim() || !vis(el) || scrolledAway(el)) continue;
-          const rg = document.createRange(); rg.selectNodeContents(t);
-          for (const q of rg.getClientRects()) {
-            if (!q.width || !q.height) continue;
-            const x = fx(q), y = fy(q);
-            if (Math.abs(x - Math.round(x)) > .02 || Math.abs(y - Math.round(y)) > .02) { out.push(`${name(el)} "${t.textContent.trim().slice(0, 20)}": its words start at ${x.toFixed(2)}, ${y.toFixed(2)}, off the frame's pixel grid`); break; }
-          }
+          const rg = document.createRange(), cs = getComputedStyle(el); rg.selectNodeContents(t);
+          const mid =cs.textAlign === 'center' && cs.display !== 'inline' && el.childNodes.length === 1, E = el.getBoundingClientRect();
+          const c0 = fx(E) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft), c1 = fx(E) + el.offsetWidth - parseFloat(cs.borderRightWidth) - parseFloat(cs.paddingRight);
+          [...rg.getClientRects()].filter(q => q.width && q.height).forEach((q, i, all) => {
+            const x = fx(q), y = fy(q), w = (up ? q.height : q.width) / k, line = all.length > 1 ? ` (line ${i + 1})` : '';
+            if (Math.abs(x - Math.round(x)) > .02 || Math.abs(y - Math.round(y)) > .02) out.push(`${name(el)} "${t.textContent.trim().slice(0, 20)}"${line}: its words start at ${x.toFixed(2)}, ${y.toFixed(2)}, off the frame's pixel grid`);
+            else if (mid && w <= c1 - c0 + .5 && Math.abs((x - c0) - (c1 - x - w)) > 1.02) out.push(`${name(el)} "${t.textContent.trim().slice(0, 20)}"${line}: centred with ${(x - c0).toFixed(1)} pixels at its left and ${(c1 - x - w).toFixed(1)} at its right, not in the middle`);
+          });
         }
         // scroll: each box of pages in a window or a book shows whole lines, its window closed up under it, and marks more below
         for (const sc of app.querySelectorAll('.mw .sc, .book .sc')) {

@@ -1595,7 +1595,8 @@ function beatDom() {
     const sig = shown.map(x => x.e.id).join(); if (el && el.dataset.sig === sig) continue;
     const last = shown[shown.length - 1].e, html = `<span class="wn rlc">${shown.slice(-3).map(x => medal(x.e.id, 24)).join('')}<b class="lb g">${esc(fitName(RELICS[last.id].name + bonusText(last), 30))}</b></span>`;
     const box = el || Object.assign(document.createElement('div'), { className: 'rlcw' }); box.dataset.rs = seat; box.dataset.sig = sig; box.innerHTML = html;
-    box.style.top = seat ? '2px' : (viewSize().h - 30) + 'px'; if (!el) vw.appendChild(box); }
+    box.style.top = seat ? '2px' : (viewSize().h - 30) + 'px'; if (!el) vw.appendChild(box);
+    const s = box.firstElementChild; s.style.left = ((box.clientWidth - s.offsetWidth) >> 1) + 'px'; } // in the middle of the view, at a whole pixel
   // a heavy blow shakes the picture inside the window, never the window
   const tv = document.querySelector('#app.ps .tvw'), sh = B ? B.shakes.map(t => tick - t).find(a => a >= 0 && a < 5) : undefined;
   if (tv) tv.style.transform = sh == null ? '' : ['translate(-2px,1px)', 'translate(-2px,1px)', 'translate(2px,-1px)', 'translate(2px,-1px)', 'translate(-1px,0)'][sh];
@@ -2215,9 +2216,9 @@ function drawConsole(screen) {
   if (document.getElementById('tbl')) { psTextures(); convertSheets(40); psPaint(true); psLoop(); }
   else convertSheets(40);
   { const slot = $('#soundslot'); if (slot && window.LMAudio && window.LMAudio.panel) { try { slot.appendChild(window.LMAudio.panel()); } catch (e) { slot.textContent = 'Sound is not available in this browser.'; } } }
-  barFits(); fitScrolls(keep);
+  barFits(); fitScrolls(keep); gridLines();
   if (!drawConsole.fonts && document.fonts) { // a text face may arrive after the drawing that first asks for it (the body face only with the first page of words): measure again
-    drawConsole.fonts = 1; const again = () => { if (app.classList.contains('ps')) { barFits(); fitScrolls(); } }; pixelText();
+    drawConsole.fonts = 1; const again = () => { if (app.classList.contains('ps')) { barFits(); fitScrolls(); gridLines(); } }; pixelText();
     document.fonts.ready.then(again); if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', again); }
   fit();
 }
@@ -2412,6 +2413,25 @@ const fitScrolls = (keep = null) => scrollBoxes().forEach((sc, i) => fitScroll(s
     if (d) t._way = Math.sign(d);
     t._want = d < 0 && now < .5 ? 0 : w + d; t._seen = now;
     cancelAnimationFrame(raf); raf = requestAnimationFrame(() => scrollMark(t)); settle(t); }, true); }
+// Every line of words starts on a whole frame pixel. A line the browser centres in its box (text-align: center: a name
+// plate's line, a door's number, a card's badge, a number on a plinth) lands half a pixel off the grid when its width and
+// the room it is centred in differ by an odd number of pixels, and the face's one-pixel strokes are then drawn soft, two
+// pixels at half strength. Such a box is given one pixel of indent, which moves its line half a pixel right, onto the
+// grid. Its words then stand in the middle to within a pixel, and their ink (the face leaves the last column of a word's
+// last letter blank) exactly in it. A box of centred words holds one line: a plate of several sets each line as a box
+// of its own. Measured after the screen is drawn and again once the faces are in.
+function gridLines() {
+  if (!app.classList.contains('ps')) return;
+  const A = app.getBoundingClientRect(), k = Math.max(A.width, A.height) / (app.offsetWidth || 1), up = F.up, boxes = [];
+  for (const e of app.querySelectorAll('*')) {
+    let t = null; for (const n of e.childNodes) if (n.nodeType === 3 && n.textContent.trim()) { t = n; break; }
+    if (t && getComputedStyle(e).textAlign === 'center') boxes.push([e, t]);
+  }
+  for (const [e] of boxes) e.style.textIndent = '';
+  const half = boxes.filter(([, t]) => { const rg = document.createRange(); rg.selectNodeContents(t); const q = rg.getClientRects()[0]; if (!q) return false;
+    const x = (up ? q.top - A.top : q.left - A.left) / k; return Math.abs(x - Math.round(x)) > .25; });
+  for (const [e] of half) e.style.textIndent = '1px';
+}
 // The text bar holds two lines. When what it says is longer, a marker shows and a tap opens the whole of it.
 function barFits() {
   const b = app.querySelector('.fr > .bar'), p = b && b.firstElementChild; if (!p) return;
