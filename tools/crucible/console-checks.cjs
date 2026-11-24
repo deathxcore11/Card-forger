@@ -100,7 +100,11 @@
 //   page    in a duel on your turn the page reads a chosen hand card for as long as one is chosen (also while the
 //           cursor walks down through the relics to the plaques), and after the play what the cursor is on;
 //   A       the lit plaque shows the A chip (or the chip of its own key); after a pad key, a control under the cursor that A acts on has a plaque
-//           that says what A does.
+//           that says what A does (or the top frame's window says it in words, or reads the thing already); no plaque is
+//           lit while A does nothing, none that can be pressed gives its place to those words, the cursor never stands
+//           on the plaque that only says them;
+//   attack  with one of your monsters chosen by the pad a legal attack is done by A within three keys, and by up to the
+//           rival's row and A; where none is legal none is offered; no relic's strip lies over the table.
 // Some shapes are checked inside a page that styles pictures the way a host page may (img { max-width: 100%;
 // height: auto } and the like), and at the end a few scenes are pictured with and without those styles, with every
 // animation stopped at its start, once every face is in and the screen has settled: the two pictures must be the same
@@ -373,7 +377,20 @@ function dualAudit(bare) {
   // acts on has a plaque that says so
   { for (const [e] of lit) { const c = e.previousElementSibling; if (!((c && c.classList.contains('kc') && (c.classList.contains('ka') || c.dataset.key)) || e.querySelector('.kin'))) add(`A: the lit plaque "${text(e)}" shows no chip, neither A nor a key of its own`); }
     const cur = app.querySelector('.scr .nvf'), verb = cur && !cur.classList.contains('pq') ? (cur.dataset.a || '').split(':')[0] : '';
-    if (window.__pad && verb && !/^(nop|inspect|inspectz)$/.test(verb) && cur.getAttribute('aria-disabled') !== 'true' && !lit.length) add(`A: the cursor is on ${cur.dataset.a} and no plaque says what A does`); }
+    // A control may say itself what A does on it: nothing (data-act=""), or what a window of words says
+    // (data-said, which must stand there). A card, relic or row that a finger taps to read is read by the window as soon
+    // as the cursor is on it, so A has nothing to add.
+    const act = cur ? cur.dataset.act : null, said = cur ? cur.dataset.said : '', reads = verb === 'read', topWords = app.textContent.replace(/\s+/g, ' ');
+    if (window.__pad && verb && !/^(nop|inspect|inspectz)$/.test(verb) && cur.getAttribute('aria-disabled') !== 'true' && !lit.length && act !== '' && !reads) {
+      if (!said) add(`A: the cursor is on ${cur.dataset.a} and no plaque says what A does`); else if (!topWords.includes(said)) add(`A: the cursor is on ${cur.dataset.a} and no window says "${said}"`); }
+    // a lit plaque always does something: none is lit while A does nothing on what the cursor is on, the plaque that
+    // says what A does is never the cursor's own place, a monster already chosen is not offered for choosing again,
+    // and no plaque that can be pressed gives its place to those words
+    if (window.__pad && cur && act === '' && lit.length) add(`A: the plaque "${text(lit[0][0])}" is lit while A does nothing on ${cur.dataset.a}`);
+    if (cur && cur.dataset.hl === 'picked' && lit.some(([e]) => /CHOOSE/.test(text(e)))) add('A: the monster already chosen is offered for choosing again');
+    if (D.walk().at === 'acur' || app.querySelector('.scr .pq.aslot.nvf')) add('A: the cursor stands on the plaque that only says what A does');
+    for (const e of app.querySelectorAll('.scr .pq[data-t0]')) if (e.dataset.d0 !== '1' && !e.classList.contains('aslot')) add(`A: the plaque "${e.dataset.t0}", which can be pressed, gave its place to "${text(e)}"`);
+    if (app.querySelector('.scr .rlcw')) add('table: a relic\'s strip is drawn over the table'); }
   // table: the duel's fixed places, for the caller to hold against the rest of the duel
   const tbl = document.getElementById('tbl'); let table = null;
   if (tbl) { const q = e => { const b = e.getBoundingClientRect(), f = frameOf(e), r = rel(b, f); return [f, Math.round(r.x * 100) / 100, Math.round(r.y * 100) / 100, Math.round(r.w * 100) / 100, Math.round(r.h * 100) / 100].join(); };
@@ -451,6 +468,27 @@ async function dualPass(browser, url, savesDir, steps) {
         if (a !== 'new') { await press('down'); await press('right'); await page.waitForTimeout(150); await audit(`title, ${a}, the cursor moved by the pad`); }
         for (const m of more) { await page.evaluate(a => { const b = document.querySelector(`.scr [data-a="${a}"]`); if (b) b.click(); }, m); await page.waitForTimeout(300); await audit(`title, ${a}, ${m}`); await press('up'); await press('up'); await press('A'); await page.waitForTimeout(400); await audit(`title, ${a}, a page open`); }
         if (a === 'new') { await press('A'); await page.waitForTimeout(1200); await audit('title, a new descent, its first words'); await press('B'); await page.waitForTimeout(900); await audit('title, a new descent, the kits'); } }
+      // attack: with one of your monsters chosen by the pad, a legal attack is done by A within three keys (A on the lit
+      // DIRECT, or A to the first target and A on it), and also by up to the rival's row and A; where no attack is
+      // legal the screen offers none
+      if (save && /^(duel|beat|rings)/.test(save) && !/trap-prompt/.test(save)) {
+        const st = () => page.evaluate(() => { const d = LM.G.run && LM.G.run.duel, a = document.getElementById('app'), cur = a.querySelector('.scr .nvf'), lit = a.querySelector('.scr .pq.lit'), bar = a.querySelector('.scrT .bar');
+          return { done: !d || !!d.attacked || !!LM.G.playing || !!d.pending, cur: cur ? cur.dataset.k || '' : '', picked: !!a.querySelector('.scr [data-hl="picked"]'), direct: !!a.querySelector('.scr .pq[data-a="hit:-1"]:not(:disabled)'), zones: a.querySelectorAll('.scr .zh[data-a^="hit:"]').length, lit: lit ? lit.textContent : '', bar: bar ? bar.textContent.trim().slice(0, 60) : '' }; });
+        const toMine = async () => { await load(save); await settle(); await press('up'); for (let i = 0; i < 5 && !/^z0/.test((await st()).cur); i++) await press('right'); const s = await st(); if (!/^z0/.test(s.cur)) return null; await press('A'); await page.waitForTimeout(120); return st(); };
+        let s = await toMine();
+        if (s && !s.picked) fail(`${shape}, ${name}`, 'attack: A on one of your monsters does not choose it');
+        else if (s && (s.direct || s.zones)) { const zones = s.zones && !s.direct;
+          for (let i = 0; i < 3 && !(s = await st()).done; i++) { await press('A'); await page.waitForTimeout(150); }
+          if (!(await st()).done) fail(`${shape}, ${name}`, `attack: an attacker is chosen and A does not attack within three keys (lit "${s.lit}", bar "${s.bar}")`);
+          await settle();
+          if (zones) { s = await toMine(); await press('up'); s = await st();
+            if (!/^z1/.test(s.cur) || !/ATTACK/.test(s.lit)) fail(`${shape}, ${name}`, `attack: up from the chosen attacker does not reach a target (cursor ${s.cur}, lit "${s.lit}")`);
+            else { await press('A'); await page.waitForTimeout(150); if (!(await st()).done) fail(`${shape}, ${name}`, 'attack: A on a target does not attack it'); await settle(); } } }
+        else if (s && (/DIRECT|ATTACK|TARGET/.test(s.lit) || /target/i.test(s.bar))) fail(`${shape}, ${name}`, `attack: no attack is legal and the screen offers one (lit "${s.lit}", bar "${s.bar}")`);
+      }
+      // your graveyard: the cursor taken to it along the hand's ledge, and its list, when it holds more than it shows, paged
+      if (save && /^(duel|beat|last-move-loss)-/.test(save) && !/trap-prompt/.test(save)) { await load(save); await settle(); fixed = null; first = true;
+        for (let i = 0; i < 7; i++) await press('right'); await page.waitForTimeout(120); const a = await audit(name + ', the cursor on your graveyard'); await pageLists(name + ', your graveyard', a); }
       // a duel: a move chosen, then the turn ended and the rival's moves watched as they play
       if (save && /^(duel|beat)-/.test(save) && !/trap-prompt/.test(save)) {
         await load(save); await settle(); fixed = null; first = false; await audit(name);
