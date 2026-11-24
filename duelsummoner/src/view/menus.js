@@ -9,7 +9,7 @@ import { boardUrl, fetchBoard } from '../core/board.js';
 import { deviceClass } from '../ui/device.js';
 import { settingsHtml, bindSettingsScreen, tabsFor } from './settings-screen.js';
 import { firstPad } from '../core/padnav.js';
-import { questProgress, questDone, closestQuests, questFor, mapRecord, masteryOf, outfitUnlocked, setCardEnabled } from '../core/meta.js';
+import { diffUnlocked, questProgress, questDone, closestQuests, questFor, mapRecord, masteryOf, outfitUnlocked, setCardEnabled } from '../core/meta.js';
 import { startPreview } from './preview.js';
 import { startBakedPreview } from './portraits.js';
 
@@ -48,7 +48,7 @@ export function initMenus(env) {
     if (base) {                                                                  // live board: difficulty tabs, this week, verified runs only
       const draw = diff => fetchBoard(base, 'run', diff, 'week').then(b => {
         const el = $('lbOnline'); if (!el) return;
-        el.innerHTML = '<div class="tabs">' + DIFFICULTIES.map(d => '<button class="tab' + (d === diff ? ' sel' : '') + '" data-lbd="' + d + '">' + DIFFICULTY[d].name + '</button>').join('') + '</div>' +
+        el.innerHTML = '<div class="tabs">' + DIFFICULTIES.filter(d => diffUnlocked(meta(), MAPS[0].id, d)).map(d => '<button class="tab' + (d === diff ? ' sel' : '') + '" data-lbd="' + d + '">' + DIFFICULTY[d].name + '</button>').join('') + '</div>' +
           (b.top.length ? b.top.slice(0, 10).map(r => '<div class="lbrow">#' + r.rank + ' ' + esc(r.name) + ' <b>' + r.score + '</b> <span class="dim">' + clockText(r.runMs / 1000) + '</span></div>').join('') : '<p class="dim">No verified runs this week.</p>') +
           (b.me && b.me.rank > 10 ? '<div class="lbrow">#' + b.me.rank + ' You <b>' + b.me.score + '</b></div>' : '');
         for (const t of el.querySelectorAll('[data-lbd]')) t.onclick = () => draw(t.dataset.lbd);
@@ -80,8 +80,10 @@ export function initMenus(env) {
   // ---------- map select ----------
   function showMaps() {
     const map = MAPS.find(m => m.id === sel.map) || MAPS[0];
-    const rows = DIFFICULTIES.map(d => { const r = mapRecord(meta(), map.id, d, 'run'), D = DIFFICULTY[d];
-      return '<label class="diffRow' + (sel.difficulty === d ? ' sel' : '') + '"><input type="radio" name="dif" value="' + d + '"' + (sel.difficulty === d ? ' checked' : '') + '><b>' + D.name + '</b><span>Star Chips x' + DIFF_CHIPS[d].toFixed(1) + '</span><span>Score x' + D.score + '</span><span>Best ' + (r.bestScore || '-') + '</span><span>Clear ' + (r.bestTime ? clockText(r.bestTime) : '-') + '</span><span class="icons">' + (r.cleared.length ? r.cleared.map(id => '<i class="mini">' + initial(id) + '</i>').join('') : '<i class="dim">none yet</i>') + '</span></label>'; }).join('');
+    if (!diffUnlocked(meta(), map.id, sel.difficulty)) { sel.difficulty = 'easy'; save.settings.difficulty = 'easy'; }       // a locked difficulty can never stay picked
+    const rows = DIFFICULTIES.map((d, i) => { const r = mapRecord(meta(), map.id, d, 'run'), D = DIFFICULTY[d], open = diffUnlocked(meta(), map.id, d);
+      if (!open) return '<label class="diffRow locked" title="Locked"><input type="radio" name="dif" value="' + d + '" disabled><b>' + D.name + '</b><span class="dstats"><span class="lockTxt">&#128274; Clear ' + DIFFICULTY[DIFFICULTIES[i - 1]].name + ' to unlock</span></span></label>';
+      return '<label class="diffRow' + (sel.difficulty === d ? ' sel' : '') + '"><input type="radio" name="dif" value="' + d + '"' + (sel.difficulty === d ? ' checked' : '') + '><b>' + D.name + '</b><span class="dstats"><span>Star Chips x' + DIFF_CHIPS[d].toFixed(1) + '</span><span>Score x' + D.score + '</span><span>Best ' + (r.bestScore || '-') + '</span><span>Clear ' + (r.bestTime ? clockText(r.bestTime) : '-') + '</span><span class="icons">' + (r.cleared.length ? r.cleared.map(id => '<i class="mini">' + initial(id) + '</i>').join('') : '<i class="dim">none yet</i>') + '</span></span></label>'; }).join('');
     const oathHtml = oathPanel ? '<div class="panel oaths"><h3>OATHS</h3><p class="dim">Sworn before the run. Each adds to the score multiplier, and keeping one by clearing the run earns its quest reward.</p>' +
       OATHS.map(o => '<label class="oathRow"><input type="checkbox" data-oath="' + o.id + '"' + (sel.oaths.includes(o.id) ? ' checked' : '') + '><b>' + o.name + '</b> ' + o.text + ' <span class="dim">(+' + o.scorePct + '% score, ' + o.reward.chips + ' chips)</span></label>').join('') + '<button class="small" id="oathDone">DONE</button></div>' : '';
     open('<h2>CHOOSE A MAP</h2><div class="selWrap"><div class="selLeft"><div class="mapList"><button class="portrait sel wide" data-m="' + map.id + '"><b>' + map.name + '</b><small>' + map.blurb + '</small></button><button class="portrait locked wide" disabled><b>???</b><small>More maps later.</small></button></div></div>' +
@@ -94,7 +96,7 @@ export function initMenus(env) {
     if ($('oathDone')) $('oathDone').onclick = () => { oathPanel = false; showMaps(); };
     $('mapBack').onclick = showDuelists; $('mapGo').onclick = () => start('run'); $('mapQuick').onclick = () => start('quick');
   }
-  function start(mode) { stopPreview(); $('menuScreen').classList.remove('on'); $('startScreen').classList.remove('on'); env.begin(mode, { duelist: sel.duelist, difficulty: sel.difficulty, oaths: sel.oaths.slice(), map: sel.map }); }
+  function start(mode) { if (!diffUnlocked(meta(), sel.map, sel.difficulty)) sel.difficulty = 'easy'; stopPreview(); $('menuScreen').classList.remove('on'); $('startScreen').classList.remove('on'); env.begin(mode, { duelist: sel.duelist, difficulty: sel.difficulty, oaths: sel.oaths.slice(), map: sel.map }); }
 
   // ---------- Card Library ----------
   function libEntries(tab) {

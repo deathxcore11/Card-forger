@@ -7,7 +7,7 @@ export function defaultMeta() {
   return {
     deck: {}, unlockedCards: STARTER.cards.slice(), unlockedItems: STARTER.items.slice(), questsDone: [],
     totals: { kills: 0, chests: 0, vases: 0, runs: 0, bossKills: 0, stagesCleared: 0, fusions: 0, godFusions: 0, wardenKills: 0 },
-    best: {}, keys: {}, oathCount: {}, mastery: {}, maps: {}, duelists: ['kael', 'mira'], outfits: [], regalia: [], libraryOff: []
+    best: {}, keys: {}, oathCount: {}, mastery: {}, maps: {}, duelists: ['kael', 'mira'], outfits: [], regalia: [], libraryOff: [], diffUnlock: {}
   };
 }
 export const rankOf = (meta, key) => Math.min(5, meta.deck[key] || 0);
@@ -93,6 +93,22 @@ export function questFor(kind, id) { return QUESTS.find(q => q.reward && q.rewar
 export const masteryOf = (meta, duelist) => masteryRank(meta.mastery[duelist]);
 export const outfitUnlocked = (meta, duelist, outfit) => meta.outfits.includes(outfit.id) || (outfit.killsNeeded && ((meta.mastery[duelist] || { kills: 0 }).kills >= outfit.killsNeeded)) || false;
 
+// ---- difficulty unlocks: per map, Easy is open; Medium opens when that map is cleared on Easy, Hard when it is cleared on Medium. A clear is a won FULL run (mode 'run'); a Quick Duel win is a separate record and does not count. ----
+export const DIFF_ORDER = ['easy', 'medium', 'hard'];
+export const diffUnlocked = (meta, map, d) => d === 'easy' || ((meta.diffUnlock || {})[map] || []).includes(d);
+export function unlockAfterClear(meta, map, d) {
+  const next = DIFF_ORDER[DIFF_ORDER.indexOf(d) + 1]; if (!next) return null; const u = meta.diffUnlock || (meta.diffUnlock = {}), list = u[map] || (u[map] = []);
+  if (list.includes(next)) return null; list.push(next); return next;
+}
+// older saves (before the unlock order) keep every difficulty they had played or cleared: anything with a score or a clear stays open, along with everything under it, and a clear opens the next one up
+export function migrateDiffUnlock(meta) {
+  if (meta.diffUnlock) return meta; meta.diffUnlock = {};
+  for (const key of Object.keys(meta.maps || {})) { const parts = key.split(':'); if (parts[2] === 'quick') continue; const [map, d] = parts, rec = meta.maps[key], i = DIFF_ORDER.indexOf(d); if (i < 0) continue;
+    const cleared = (rec.bestTime || 0) > 0 || (rec.cleared || []).length > 0, played = cleared || (rec.bestScore || 0) > 0; if (!played) continue;
+    const top = cleared ? Math.min(2, i + 1) : i; for (let k = 1; k <= top; k++) { const u = meta.diffUnlock[map] || (meta.diffUnlock[map] = []); if (!u.includes(DIFF_ORDER[k])) u.push(DIFF_ORDER[k]); } }
+  return meta;
+}
+
 // ---- map records ----
 export const mapKey = (map, difficulty, mode) => map + ':' + difficulty + (mode === 'quick' ? ':quick' : '');
 export const mapRecord = (meta, map, difficulty, mode) => meta.maps[mapKey(map, difficulty, mode)] || { bestScore: 0, bestTime: 0, cleared: [] };
@@ -113,7 +129,7 @@ export function applyRun(meta, r) {
   if (r.map) {
     const rec = meta.maps[mapKey(r.map, r.difficulty, r.mode)] || (meta.maps[mapKey(r.map, r.difficulty, r.mode)] = { bestScore: 0, bestTime: 0, cleared: [] });
     if ((r.score || 0) > rec.bestScore) rec.bestScore = r.score;
-    if (win) { if (!rec.bestTime || r.timeSurvived < rec.bestTime) rec.bestTime = r.timeSurvived; if (r.duelist && !rec.cleared.includes(r.duelist)) rec.cleared.push(r.duelist); }
+    if (win) { if (!rec.bestTime || r.timeSurvived < rec.bestTime) rec.bestTime = r.timeSurvived; if (r.duelist && !rec.cleared.includes(r.duelist)) rec.cleared.push(r.duelist); if (r.mode === 'run') unlockAfterClear(meta, r.map, r.difficulty); }
   }
   return evaluateQuests(meta);
 }
