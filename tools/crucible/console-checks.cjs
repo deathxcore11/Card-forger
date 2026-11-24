@@ -3,6 +3,7 @@
 //   CC_ONLY=title checks only the title screen, every shape, no random taps (a quick look after a title change).
 //   CC_ONLY=beats steps only the duel's beats (a quick look after a change to the table).
 //   CC_ONLY=rings steps only the zones' marks through their states (a quick look after a change to the marks).
+//   CC_DUAL=1 checks the two-screen layout instead (the page is opened with ?dual=1): see "two screens" below.
 // The page must be served over http (a page opened from the disk may not read its own pictures).
 // For every screen shape and every scene (the title, chambers, duels, every window that opens over them) it checks:
 //   frame   the frame is 512 x 240 to 640 x 480 whole pixels, each a whole number of device pixels, and fills the
@@ -75,6 +76,23 @@
 //           the finished table, the same to the pixel as once all is settled (until then the hall stands alone): never a
 //           bare table drawn before its pictures or its ground are in;
 //   errors  no page error.
+// Two screens (CC_DUAL=1, crucible/web/DUAL.md): at 1920 x 2160, 1280 x 1440, 640 x 720, with a hinge gap and at a
+// pixel ratio of 2, every save, every window and book over it, a duel's moves as they play and a walk of random pad keys:
+//   frame   the top frame is 640 x 360 and the bottom one 413 x 360, both the same whole number of device pixels to the
+//           frame pixel, the largest that fits, on whole device pixels, inside the window, one under the other;
+//   law, grid, fit, names, reach, plinth, table, beats, first, errors: as above, on both frames (a card is never cut:
+//           a grid shows whole rows; words in a box that does not page are never cut at its foot);
+//   plaque  at most one plaque is lit and it can be pressed; each pad key stands on one chip, beside a plaque, and is
+//           dim exactly when its plaque is switched off;
+//   twice   nothing is said on both frames: no plaque's verb, none of the run's or the duel's numbers (Sparks, Embers,
+//           seals, weight, Forge level, Life Points, the turn, charms, the floor, the terrain; off a duel the deck's
+//           and the trunk's counts), no relic;
+//   bare    no frame shows a square of bare stone or black 124 pixels or more on a side (a story's painting on its dark
+//           frame is not bare);
+//   walk    the d-pad's own steps reach every control from where the cursor stands and come back from each (the
+//           controls of a frame held under a window wait), and a cursor always shows;
+//   table   the table is the top frame's 640 x 304 and nothing lies over it; it, every zone and the hand's ledge keep
+//           their place and size through a duel; the hand's six places stand at 8, 58 .. 258.
 // Some shapes are checked inside a page that styles pictures the way a host page may (img { max-width: 100%;
 // height: auto } and the like), and at the end a few scenes are pictured with and without those styles, with every
 // animation stopped at its start, once every face is in and the screen has settled: the two pictures must be the same
@@ -209,6 +227,189 @@ function heldFaults() {
   const t = document.getElementById('tbl'); if (!t || !t.dataset.held || +t.dataset.tick >= 0) return [];
   return JSON.parse(t.dataset.held).map(([s, z]) => `numbers of zone ${s}:${z} not shown at rest: another card lies over their place`);
 }
+// ---------- the two-screen layout (CC_DUAL=1; crucible/web/DUAL.md) ----------
+// One screen of the two-screen layout, read in the page: both frames against the rules listed at the head of this file
+// under "two screens". bare: the side, in frame pixels, of the largest square of bare stone or black a frame may show.
+function dualAudit(bare) {
+  const out = [], app = document.getElementById('app'), D = window.LM_DUAL, add = t => { if (!out.includes(t)) out.push(t); };
+  if (!D || !app || !app.classList.contains('dual')) return { out: ['the page is not drawn in the two-screen layout'] };
+  const dpr = devicePixelRatio || 1, k = app.getBoundingClientRect().width / app.offsetWidth, n = Math.round(k * dpr), R = {};
+  // frame: both frames a whole number of device pixels to the frame pixel, the largest that fits, on whole device pixels
+  if (Math.abs(k * dpr - n) > .001) add(`frame: a frame pixel is ${(k * dpr).toFixed(3)} device pixels`);
+  const best = Math.max(1, Math.min(Math.floor(innerWidth * dpr / 640 + .001), Math.floor(innerHeight * dpr / 720 + .001)));
+  if (n !== best) add(`frame: drawn at ${n} device pixels to the frame pixel where ${best} fit the window`);
+  for (const name of ['top', 'bottom']) { const b = D[name].getBoundingClientRect(), q = [b.left, b.top, b.width, b.height].map(v => v * dpr), [fw, fh] = D.frames[name]; R[name] = b;
+    if (q.some(v => Math.abs(v - Math.round(v)) > .01)) add(`frame: the ${name} frame is not on whole device pixels (${q.map(v => v.toFixed(2))})`);
+    if (Math.abs(q[2] - fw * n) > .01 || Math.abs(q[3] - fh * n) > .01) add(`frame: the ${name} frame is ${q[2]} x ${q[3]} device pixels, not ${fw * n} x ${fh * n}`);
+    if (best >= 1 && innerWidth * dpr >= 640 && innerHeight * dpr >= 720 && (b.left < -.01 || b.top < -.01 || b.right > innerWidth + .01 || b.bottom > innerHeight + .01)) add(`frame: the ${name} frame leaves the window`); }
+  if (R.bottom.top < R.top.bottom - .01) add('frame: the bottom frame lies over the top one');
+  const frameOf = e => D.top.contains(e) ? 'top' : D.bottom.contains(e) ? 'bottom' : null;
+  const rel = (b, f) => ({ x: (b.left - R[f].left) / k, y: (b.top - R[f].top) / k, w: b.width / k, h: b.height / k });
+  // what of an element shows: its box cut by every box above it that hides what spills out of it
+  const shown = e => { const f = frameOf(e); if (!f) return null; const cs = getComputedStyle(e); if (cs.visibility === 'hidden' || cs.display === 'none') return null;
+    const b = e.getBoundingClientRect(); let l = b.left, t = b.top, r = b.right, bt = b.bottom; if (r - l <= 0 || bt - t <= 0) return null;
+    for (let p = e.parentElement; p && p !== app; p = p.parentElement) { const ps = getComputedStyle(p); if (ps.display === 'none') return null; if (ps.overflowX === 'visible' && ps.overflowY === 'visible' && p !== D[f]) continue;
+      const q = p.getBoundingClientRect(), ql = q.left + p.clientLeft * k, qt = q.top + p.clientTop * k; l = Math.max(l, ql); t = Math.max(t, qt); r = Math.min(r, ql + p.clientWidth * k); bt = Math.min(bt, qt + p.clientHeight * k); if (r - l <= .01 || bt - t <= .01) return null; }
+    return { f, full: rel(b, f), cut: rel({ left: l, top: t, width: r - l, height: bt - t }, f), whole: r - l >= b.width - .01 && bt - t >= b.height - .01 }; };
+  const text = e => [...e.childNodes].filter(c => c.nodeType === 3).map(c => c.textContent).join('').trim();
+  const meet = (a, b, m = 0) => a.x < b.x + b.w - m && b.x < a.x + a.w - m && a.y < b.y + b.h - m && b.y < a.y + a.h - m;
+  const all = [...app.querySelectorAll('.scr *')].map(e => [e, shown(e)]).filter(x => x[1]);
+  // law
+  for (const [e, s] of all) { const cs = getComputedStyle(e), at = `${s.f} frame, <${e.tagName.toLowerCase()} class="${e.className}">`;
+    if ([cs.borderTopLeftRadius, cs.borderTopRightRadius, cs.borderBottomLeftRadius, cs.borderBottomRightRadius].some(v => parseFloat(v))) add(`law: a rounded corner (${at})`);
+    if (cs.filter !== 'none' || (cs.backdropFilter && cs.backdropFilter !== 'none')) add(`law: a filter (${at})`);
+    for (const sh of [cs.boxShadow, cs.textShadow]) if (sh && sh !== 'none') for (const m of sh.split(/,(?![^(]*\))/)) { const px = (m.replace(/rgba?\([^)]*\)/g, '').match(/-?[\d.]+px/g) || []).map(parseFloat); if (px[2]) add(`law: a soft shadow (${at})`); }
+    if (cs.transitionDuration.split(',').some(v => parseFloat(v))) add(`law: a transition (${at})`);
+    if (![0, .5, 1].includes(+cs.opacity)) add(`law: see-through by ${cs.opacity} (${at})`);
+    if (/linear-gradient|radial-gradient/.test(cs.backgroundImage) || (/conic-gradient/.test(cs.backgroundImage) && !(/repeating-conic/.test(cs.backgroundImage) && /^(2px 2px|4px 4px)/.test(cs.backgroundSize)))) add(`law: a gradient (${at})`);
+    if (cs.mixBlendMode !== 'normal') add(`law: a blend mode (${at})`);
+    if (cs.transform !== 'none') { const m = (cs.transform.match(/matrix\(([^)]*)\)/) || [])[1], v = m ? m.split(',').map(Number) : null; if (!v || v[0] !== 1 || v[1] || v[2] || v[3] !== 1 || v[4] % 1 || v[5] % 1) add(`law: turned, scaled or moved off the grid (${at})`); }
+    if (text(e) && !/^"?LM (Label|Text)/.test(cs.fontFamily)) add(`law: words in another face, ${cs.fontFamily.slice(0, 30)} (${at}: "${text(e).slice(0, 20)}")`);
+    if (e.tagName === 'IMG' && e.naturalWidth) { const kx = s.full.w / e.naturalWidth, ky = s.full.h / e.naturalHeight, bw = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth); if (!bw && (Math.abs(kx - Math.round(kx)) > .01 || Math.abs(kx - ky) > .01 || kx < 1)) add(`law: a picture of ${e.naturalWidth} x ${e.naturalHeight} drawn at ${s.full.w} x ${s.full.h} (${at})`); }
+    if (e.tagName === 'CANVAS' && (Math.abs(s.full.w - e.width) > .01 || Math.abs(s.full.h - e.height) > .01)) add(`law: a canvas of ${e.width} x ${e.height} drawn at ${s.full.w} x ${s.full.h} (${at})`);
+  }
+  // grid and fit: every box of words on whole frame pixels, inside its frame, whole
+  const words = all.filter(([e]) => text(e) && getComputedStyle(e).display !== 'inline');
+  for (const [e, s] of words) { const t = text(e).slice(0, 24), W = D.frames[s.f][0], H = D.frames[s.f][1], paged = e.closest('[data-pager]');
+    if (Math.abs(s.full.x - Math.round(s.full.x)) > .02 || Math.abs(s.full.y - Math.round(s.full.y)) > .02) add(`grid: "${t}" starts at ${s.full.x.toFixed(2)}, ${s.full.y.toFixed(2)} of the ${s.f} frame`);
+    if (!paged && (s.full.x < -.01 || s.full.y < -.01 || s.full.x + s.full.w > W + .01 || s.full.y + s.full.h > H + .01)) add(`fit: "${t}" reaches out of the ${s.f} frame`);
+    if (!paged && !s.whole && !e.closest('.gsc')) add(`fit: "${t}" is cut off by a box round it (${s.f} frame)`);
+    if ((e.classList.contains('pq') || e.classList.contains('kc') || e.classList.contains('lb')) && e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflowX !== 'visible') add(`fit: "${t}" is wider than its box (${s.f} frame)`); }
+  for (const [e, s] of all) if (e.classList.contains('txw') && e.scrollHeight > e.clientHeight + 8) add(`fit: words cut off at the foot of their box, "${e.textContent.trim().slice(0, 24)}" (${s.f} frame)`);
+  for (const [e, s] of all) if (e.classList.contains('cd') && e.closest('.gsc') && !s.whole) add(`fit: a card of a grid is cut (${s.f} frame, ${Math.round(s.full.x)}, ${Math.round(s.full.y)})`);
+  for (const [e, s] of all) if ((e.classList.contains('cd') || e.classList.contains('big')) && !e.closest('.gsc') && !e.closest('.dealt') && !s.whole) add(`fit: a card is cut (${s.f} frame, ${Math.round(s.full.x)}, ${Math.round(s.full.y)})`);
+  const pqs = all.filter(([e]) => e.classList.contains('pq')), chips = all.filter(([e]) => e.classList.contains('kc')), lbs = all.filter(([e]) => e.classList.contains('lb') && text(e));
+  for (let i = 0; i < pqs.length; i++) { for (let j = i + 1; j < pqs.length; j++) if (pqs[i][1].f === pqs[j][1].f && meet(pqs[i][1].cut, pqs[j][1].cut)) add(`fit: the plaques "${pqs[i][0].textContent}" and "${pqs[j][0].textContent}" lie on each other`);
+    for (const [c, cs] of chips) if (cs.f === pqs[i][1].f && meet(pqs[i][1].cut, cs.cut)) add(`fit: the key chip ${c.dataset.key} lies on the plaque "${pqs[i][0].textContent}"`);
+    for (const [l, ls] of lbs) if (ls.f === pqs[i][1].f && !pqs[i][0].contains(l) && meet(pqs[i][1].cut, ls.cut, 1)) add(`fit: "${text(l).slice(0, 20)}" lies on the plaque "${pqs[i][0].textContent}"`); }
+  for (let i = 0; i < lbs.length; i++) for (let j = i + 1; j < lbs.length; j++) { const [a, sa] = lbs[i], [b, sb] = lbs[j]; if (sa.f === sb.f && !a.contains(b) && !b.contains(a) && meet(sa.cut, sb.cut, 1)) add(`fit: "${text(a).slice(0, 20)}" and "${text(b).slice(0, 20)}" lie on each other (${sa.f} frame)`); }
+  // names: a name set short shows whole words of the name
+  for (const [e] of all) if (e.dataset.name) { const c = e.cloneNode(true); c.querySelectorAll('.d').forEach(x => x.remove()); c.querySelectorAll('span, br').forEach(x => x.after(' '));
+    const have = new Set(e.dataset.name.toUpperCase().split(/\s+/)), init = new Set([...have].map(w => w[0] + '.'));
+    for (const w of c.textContent.toUpperCase().replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean)) { const x = w.replace(/\.\.$/, ''); if (x && !have.has(x) && !init.has(x) && !have.has(x.replace(/[.,]$/, ''))) add(`names: "${w}" is not a whole word of "${e.dataset.name}"`); } }
+  // reach: every control that is not switched off can be tapped where it stands
+  const live = [...app.querySelectorAll('.scr:not(.held) button[data-a], .scr:not(.held) input')].filter(e => !e.disabled && e.getAttribute('aria-disabled') !== 'true');
+  for (const e of live) { const s = shown(e); if (!s || (!s.whole && e.closest('.gsc'))) continue; const b = e.getBoundingClientRect(), hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+    if (!hit || !(hit === e || e.contains(hit))) add(`reach: ${e.dataset.a || e.type} cannot be tapped where it stands (${hit ? '<' + hit.tagName.toLowerCase() + ' class="' + hit.className + '">' : 'nothing'} lies over it)`); }
+  // plaque: one lit plaque, never one that is switched off; each pad key on one chip, the chip dim when its plaque is off
+  const lit = pqs.filter(([e]) => e.classList.contains('lit'));
+  if (lit.length > 1) add(`plaque: ${lit.length} plaques are lit (${lit.map(x => x[0].textContent).join(', ')})`);
+  for (const [e] of lit) { if (e.disabled) add(`plaque: the lit plaque "${e.textContent}" is switched off`); if (e.scrollWidth > e.clientWidth + 1) add(`plaque: the lit plaque "${e.textContent}" has no room for the hammer`); }
+  const keys = new Map(); for (const [c] of chips) { const key = c.classList.contains('ka') ? 'A' : c.dataset.key; if (!key) continue; keys.set(key, (keys.get(key) || 0) + 1); const p = c.nextElementSibling;
+    if (!p || !p.classList.contains('pq')) add(`plaque: the key chip ${key} stands beside no plaque`); else if (!!p.disabled !== c.classList.contains('kco') && !c.classList.contains('ka')) add(`plaque: the key chip ${key} and its plaque "${p.textContent}" do not agree on whether it can be pressed`); }
+  for (const [key, c] of keys) if (c > 1) add(`plaque: the key ${key} stands on ${c} chips`);
+  // plinth: one chosen, and no name plate on its picture or numbers
+  const pl = all.filter(([e]) => e.classList.contains('pln')); if (pl.length && pl.filter(([e]) => e.classList.contains('on')).length !== 1) add('plinth: not exactly one plinth is chosen');
+  for (const [e] of pl) { const plate = e.querySelector('.pnm'), ps = plate && shown(plate); if (!ps) continue; for (const x of e.querySelectorAll('.art, .n1, .n2, img')) { if (plate.contains(x)) continue; const xs = shown(x); if (xs && meet(ps.cut, xs.cut, 1) && !x.classList.contains('art')) add(`plinth: the name plate of "${e.getAttribute('aria-label')}" lies on its ${x.className || 'picture'}`); } }
+  // twice: nothing said on both frames (a frame gone dark under a story's painting says nothing)
+  if (!app.classList.contains('stblk')) {
+    const verbs = f => new Set(pqs.filter(x => x[1].f === f).map(x => x[0].dataset.a).filter(Boolean)); for (const a of verbs('top')) if (verbs('bottom').has(a)) add(`twice: the plaque ${a} stands on both frames`);
+    const duel = !!document.getElementById('tbl'), WATCH = /^(SPARKS|EMBERS|SEALS|WEIGHT|FORGE LV|LIFE|TURN|CHARMS|FLOOR|TERRAIN)\b/, side = f => new Set(lbs.filter(x => x[1].f === f && x[0].classList.contains('g')).map(x => (text(x[0]).toUpperCase().match(duel ? WATCH : /^(SPARKS|EMBERS|SEALS|WEIGHT|FORGE LV|LIFE|TURN|CHARMS|FLOOR|TERRAIN|DECK \d|TRUNK \d)/) || [])[0]).filter(Boolean).map(t => t.replace(/ \d$/, '')));
+    for (const t of side('top')) if (side('bottom').has(t)) add(`twice: ${t} is told on both frames`);
+    const medals = f => new Set(all.filter(x => x[1].f === f && x[0].tagName === 'IMG' && x[0].closest('.sl, .rwp')).map(x => x[0].getAttribute('src'))); for (const m of medals('top')) if (medals('bottom').has(m)) add('twice: a relic stands on both frames');
+  }
+  // bare: no square of bare stone or black of the stated side or more
+  for (const f of ['top', 'bottom']) { const [W, H] = D.frames[f], gw = Math.ceil(W / 4), gh = Math.ceil(H / 4), g = new Uint8Array(gw * gh);
+    for (const [e, s] of all) { if (s.f !== f || !e.matches('.wn, .vw, .lg, .gsc, .cd, .pq, .kc:not(.kce), .lb, .pf, .sl, .ga, .spk, .seal, .pip, img, canvas, .big, .rw, .dcol, .txw, .pln, .story.sblk, input, .soundslot label')) continue; if (e.matches('.lb') && !text(e)) continue;
+      for (let y = Math.max(0, Math.floor(s.cut.y / 4)); y < Math.min(gh, Math.ceil((s.cut.y + s.cut.h) / 4)); y++) for (let x = Math.max(0, Math.floor(s.cut.x / 4)); x < Math.min(gw, Math.ceil((s.cut.x + s.cut.w) / 4)); x++) g[y * gw + x] = 1; }
+    const sq = new Uint16Array(gw * gh); let most = 0, at = [0, 0];
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) { if (g[y * gw + x]) continue; const v = x && y ? Math.min(sq[y * gw + x - 1], sq[(y - 1) * gw + x], sq[(y - 1) * gw + x - 1]) + 1 : 1; sq[y * gw + x] = v; if (v > most) { most = v; at = [(x - v + 1) * 4, (y - v + 1) * 4]; } }
+    if (most * 4 >= bare) add(`bare: the ${f} frame has an empty square of ${most * 4} pixels at ${at}`); }
+  // walk: the d-pad reaches every control from where the cursor stands, and comes back from each
+  let walk = null; try { walk = D.walk(); } catch (e) { add('walk: ' + e.message); }
+  if (walk) { if (walk.n && walk.at == null) add('walk: the cursor stands on nothing'); if (walk.lost.length && walk.at != null) add(`walk: the d-pad cannot reach ${walk.lost.slice(0, 6).join(', ')}${walk.lost.length > 6 ? ' and ' + (walk.lost.length - 6) + ' more' : ''} from ${walk.at}`); if (walk.trapped.length) add(`walk: the cursor cannot come back from ${walk.trapped.slice(0, 6).join(', ')}`); }
+  if (live.length && !app.querySelector('.nvf, .scr .pq.lit')) add('walk: no cursor shows on the screen');
+  // table: the duel's fixed places, for the caller to hold against the rest of the duel
+  const tbl = document.getElementById('tbl'); let table = null;
+  if (tbl) { const q = e => { const b = e.getBoundingClientRect(), f = frameOf(e), r = rel(b, f); return [f, Math.round(r.x * 100) / 100, Math.round(r.y * 100) / 100, Math.round(r.w * 100) / 100, Math.round(r.h * 100) / 100].join(); };
+    const hand = app.querySelector('.scrB .hand'), slots = hand ? [...hand.children].filter(e => !e.classList.contains('dealt') && !e.classList.contains('dcur')) : [], hb = hand ? hand.getBoundingClientRect() : null;
+    const sx = slots.map(e => { const b = e.getBoundingClientRect(); return [Math.round((b.left - hb.left) / k), Math.round((b.top - hb.top) / k), Math.round(b.width / k), Math.round(b.height / k)].join(); });
+    table = { canvas: q(tbl), zones: [...app.querySelectorAll('.zh[data-zone]')].filter(e => !e.dataset.zone.startsWith('t0')).map(e => e.dataset.zone + '=' + q(e)).join(' '), hand: hand ? q(hand) : '', slots: sx.join(' '), playing: !!(window.LM && LM.G && LM.G.playing) };
+    if (tbl.width !== 640 || tbl.height !== 304 || !/^top,0,0,640,304$/.test(table.canvas)) add(`table: the table is drawn at ${table.canvas}, not the top frame's 640 x 304`);
+    if (hand && !table.playing) { const want = [0, 1, 2, 3, 4, 5].map(i => [8 + i * 50, 10, 44, 60].join()).join(' '); if (table.slots !== want) add(`table: the hand's six places stand at ${table.slots}`); }
+    if (!frameOf(tbl) || D.top.querySelector('.mw, .dim')) add('table: a window lies over the table');
+    const hall = app.querySelector('img[data-pic="hall"]'), hs = hall && shown(hall); if (hall && (!hs || hs.cut.x > .01 || hs.cut.x + hs.cut.w < 639.99 || hs.cut.y > .01)) add('table: the hall does not span the view');
+  }
+  return { out, table, n, lit: lit.map(x => x[0].textContent).join(), sig: [app.dataset.phase, [...app.querySelectorAll('.scr .pq')].map(e => e.dataset.a).join()].join('|') };
+}
+// The dual pass: every save and every window and book over it on the first shapes, a short list on the others; a walk
+// of random pad keys from each scene; a duel's moves watched as they play out.
+const DUAL_SHAPES = [['two screens, 3 device pixels', 1920, 2160, 1, 1], ['two screens, 2 device pixels', 1280, 1440, 1, 1], ['two screens, 1 device pixel', 640, 720, 1, 0], ['a hinge gap of 16', 1280, 1500, 1, 0], ['a ratio of 2', 700, 760, 2, 0]];
+const DUAL_KEYS = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'A', 'A', 'B', 'X', 'Y', 'L1', 'R1', 'L2', 'R2', 'START'];
+async function dualPass(browser, url, savesDir, steps) {
+  const BARE = 124, saves = fs.readdirSync(savesDir).filter(f => f.endsWith('.json')).sort(), fails = [], kinds = new Map(); let scenes = 0, screens = 0, presses = 0;
+  const fail = (where, what) => { fails.push(`${where}: ${what}`); if (fails.length < 400) console.log('FAIL', where, what); const kind = what.replace(/"[^"]*"/g, '"…"').replace(/\d+(\.\d+)?/g, 'N'); kinds.set(kind, (kinds.get(kind) || 0) + 1); };
+  for (const [shape, W, H, dpr, full] of DUAL_SHAPES) {
+    const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr });
+    await ctx.addInitScript(firstTable);
+    const page = await ctx.newPage(); let errors = [];
+    page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
+    await page.goto(url + (url.includes('?') ? '&' : '?') + 'dual=1');
+    const load = async save => {
+      const o = save ? JSON.parse(fs.readFileSync(path.join(savesDir, save), 'utf8')) : null;
+      await page.evaluate(o => { localStorage.clear(); sessionStorage.clear(); const labs = { five: true, lean: true, heat: true, kits: true, items: true };
+        if (o) { o.profile.runs = 7; localStorage.setItem('lostmemories.profile.v1', JSON.stringify(o.profile)); localStorage.setItem('lostmemories.run.v1', JSON.stringify(o.run)); localStorage.setItem('lostmemories.runlabs.v1', JSON.stringify(o.labs || labs)); }
+        localStorage.setItem('lostmemories.labs.v5', JSON.stringify(o ? o.labs || labs : labs)); }, o);
+      await page.reload(); await page.waitForFunction(() => !document.getElementById('boot') && document.querySelector('#app.ps.dual .scr .pq'), null, { timeout: 20000 }).catch(() => {});
+      await page.waitForFunction(() => [...document.fonts].filter(f => /LM Text/.test(f.family)).length > 1, null, { timeout: 5000 }).catch(() => {});
+      await page.waitForTimeout(350);
+      if (o) { await page.evaluate(() => { const b = document.querySelector('.scr [data-a="resume"]'); if (b) b.click(); }); await page.waitForTimeout(700); }
+    };
+    const press = async key => { await page.evaluate(k => window.LM_DUAL.press(k), key); presses++; await page.waitForTimeout(60); };
+    const settle = () => page.waitForFunction(() => !(window.LM && LM.G && LM.G.playing), null, { timeout: 20000 }).catch(() => {});
+    let fixed = null; // the table's fixed places through one duel
+    const audit = async where => {
+      screens++;
+      const a = await page.evaluate(dualAudit, BARE).catch(e => ({ out: ['the audit broke: ' + e.message] }));
+      for (const t of a.out) fail(`${shape}, ${where}`, t);
+      if (a.table) { const tz = a.table.canvas + ' ' + a.table.zones, hd = a.table.hand; // the hand's ledge gives its place to a window's sheet and comes back
+        if (!fixed) fixed = { tz, hd }; else if (fixed.tz !== tz || (hd && fixed.hd && fixed.hd !== hd)) { fail(`${shape}, ${where}`, 'table: the table, a zone or the hand moved or changed size during the duel'); fixed = { tz, hd: hd || fixed.hd }; } else if (hd) fixed.hd = hd;
+        for (const fn of [ringFaults, heldFaults]) for (const t of await page.evaluate(fn).catch(() => [])) fail(`${shape}, ${where}`, 'table: ' + t);
+        if (!a.table.playing) { const t = await page.evaluate(tableFirst).catch(() => null); if (t) fail(`${shape}, ${where}`, 'first: ' + t); } }
+      for (const e of errors.splice(0)) fail(`${shape}, ${where}`, 'errors: ' + e);
+      return a;
+    };
+    const list = full ? [null, ...saves] : [null, ...saves.filter(f => /^(chamber-f1|duel-regular-f1-h0|duel-regular-f1-trap-prompt-h0|reward-card-f2|reward-gift-f3|anvil-f2|bazaar-f2)\.json$/.test(f))];
+    for (const save of list) {
+      const name = save ? save.replace(/\.json$/, '') : 'title'; scenes++; fixed = null;
+      await load(save); await settle(); await audit(name);
+      // every window and book over it, opened by its pad key or from the menu, and shut again
+      const menu = await page.evaluate(() => !!document.querySelector('.scr .kc[data-key="START"]'));
+      if (menu) { await press('START'); await audit(name + ', the menu');
+        const items = await page.evaluate(() => [...document.querySelectorAll('.scrB .pq[data-a]')].map(e => e.dataset.a).filter(a => /^tab:.|^quit$/.test(a)));
+        for (const a of items) { await page.evaluate(a => { const b = document.querySelector(`.scrB .pq[data-a="${a}"]`); if (b) b.click(); }, a); await page.waitForTimeout(250); await audit(`${name}, ${a}`);
+          if (a === 'tab:deck' || a === 'tab:relics' || a === 'tab:help' || a === 'tab:options') { for (const key of ['up', 'up', 'right', 'down']) await press(key); await page.waitForTimeout(200); await audit(`${name}, ${a}, the cursor moved`); }
+          await press('B'); await page.waitForTimeout(120);
+          if (!(await page.evaluate(() => !!document.querySelector('.scrB .pq[data-a="tab:"]')))) { await press('START'); await page.waitForTimeout(120); } }
+        await press('B'); await page.waitForTimeout(150); }
+      if (!save) for (const [a, more] of [['screen:codex', ['cxview:all']], ['screen:feats', []], ['screen:vault', []], ['tab:help', []], ['tab:options', []], ['new', []]]) {
+        await load(null); await page.evaluate(a => { const b = document.querySelector(`.scr [data-a="${a}"]`); if (b) b.click(); }, a); await page.waitForTimeout(500); await audit(`title, ${a}`);
+        for (const m of more) { await page.evaluate(a => { const b = document.querySelector(`.scr [data-a="${a}"]`); if (b) b.click(); }, m); await page.waitForTimeout(300); await audit(`title, ${a}, ${m}`); await press('up'); await press('up'); await press('A'); await page.waitForTimeout(400); await audit(`title, ${a}, a page open`); }
+        if (a === 'new') { await press('A'); await page.waitForTimeout(1200); await audit('title, a new descent, its first words'); await press('B'); await page.waitForTimeout(900); await audit('title, a new descent, the kits'); } }
+      // a duel: a move chosen, then the turn ended and the rival's moves watched as they play
+      if (save && /^(duel|beat)-/.test(save) && !/trap-prompt/.test(save)) {
+        await load(save); await settle(); fixed = null; await audit(name);
+        await press('A'); await page.waitForTimeout(150); await audit(name + ', a hand card chosen');
+        await press('L1'); await page.waitForTimeout(150); await audit(name + ', the cursor on the table');
+        await press('B'); await page.waitForTimeout(150);
+        await page.evaluate(() => { const b = document.querySelector('.scr .pq[data-a="end"]:not(:disabled)'); if (b) b.click(); });
+        for (let i = 0; i < 40; i++) { await page.waitForTimeout(110); const t = await page.evaluate(tableNow).catch(() => null); if (t) for (const x of t.out) fail(`${shape}, ${name}, the rival's turn`, 'beats: ' + x);
+          if (i % 8 === 3) await audit(`${name}, the rival's turn`); }
+        await settle(); await page.waitForTimeout(300); await audit(name + ', after the rival\'s turn');
+      }
+      // random pad keys from the scene
+      if (full && steps) { await load(save); await settle(); fixed = null; let rnd = 7 + scenes * 131;
+        for (let i = 0; i < steps; i++) { rnd = (rnd * 1103515245 + 12345) & 0x7fffffff; const key = DUAL_KEYS[rnd % DUAL_KEYS.length]; await press(key);
+          if (key === 'A' || key === 'X' || key === 'B' || i % 5 === 4) { await page.waitForTimeout(250); const where = await page.evaluate(() => document.getElementById('app').dataset.phase + (window.LM && LM.G.tab ? ' ' + LM.G.tab : '')); if (!/duel/.test(where)) fixed = null; await audit(`${name}, pad key ${i + 1} (${key}), ${where}`); } } }
+    }
+    await ctx.close();
+  }
+  console.log(`two screens: ${DUAL_SHAPES.length} shapes, ${scenes} scenes, ${screens} screens read, ${presses} pad keys pressed; the largest bare square allowed is under ${BARE} pixels`);
+  for (const [kind, c] of [...kinds].sort((a, b) => b[1] - a[1]).slice(0, 40)) console.log(String(c).padStart(5), kind);
+  console.log(fails.length ? `${fails.length} FAULTS` : 'all rules hold');
+  await browser.close();
+  process.exit(fails.length ? 1 : 0);
+}
 const WINDOWS = ['tab:menu', 'tab:help', 'tab:options', 'tab:deck', 'tab:relics', 'tab:doors', 'tab:duel', 'barmore'];
 const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose windows are also read further and pictured at their edges
 
@@ -221,6 +422,7 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
     ...saves.filter(f => /^duel-(regular|boss|cursed)-f[123]-h0\.json$|trap-prompt-h5|narrow|fog|lesson/.test(f)).slice(0, 10),
     ...saves.filter(f => /^(reward|anvil|bazaar|kit|charm)-/.test(f))];
   const browser = await chromium.launch();
+  if (process.env.CC_DUAL) return dualPass(browser, url, savesDir, +(stepsArg || 25)); // the two-screen layout has its own pass
   const fails = []; let scenes = 0, taps = 0, screens = 0;
   // each fault is also counted by its kind: its words with the numbers and the quoted words taken out
   const kinds = new Map();
