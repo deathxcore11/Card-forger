@@ -1271,7 +1271,7 @@ const mkey = (s, z) => `m${s}.${z}`, tkey = (s, z) => `t${s}.${z}`;
 const LUNGE = [[-.03, 4], [-.06, 8], [-.06, 10], [.08, 12], [.24, 14], [.46, 14], [.72, 12], [.94, 8], [1, 4], [.98, 4], [.96, 6], [.8, 10], [.55, 12], [.3, 10], [.12, 6], [.03, 2], [0, 0]], LUNGE_HIT = 8;
 // An attack the defender may answer with a Trap stops poised a third of the way, and goes on from there once answered
 // (or goes back, when the Trap stops it).
-const POISE = [[-.03, 4], [-.06, 8], [-.06, 10], [.08, 12], [.22, 13], [.35, 12]], RESUME = [[.35, 12], [.55, 14], [.78, 12], [.95, 8], ...LUNGE.slice(LUNGE_HIT)], RESUME_HIT = 4;
+const POISE = [[-.03, 4], [-.06, 8], [-.06, 10], [.04, 12], [.1, 13], [.14, 12]], RESUME = [[.14, 12], [.4, 14], [.78, 12], [.95, 8], ...LUNGE.slice(LUNGE_HIT)], RESUME_HIT = 4;
 const RETREAT = [[.3, 12], [.22, 10], [.12, 8], [.05, 4], [0, 0]];
 // A card shown and spent (a Spell, a Field, an Equip, a Trap springing): it rises and stands up toward you face down,
 // turns over in two steps, holds, and breaks. Each tick: [height, how far it stands up, width (below 0: face up)].
