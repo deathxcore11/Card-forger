@@ -448,6 +448,7 @@ async function dualPass(browser, url, savesDir, steps) {
         await press('B'); await page.waitForTimeout(150); }
       if (!save) for (const [a, more] of [['screen:codex', ['cxview:all']], ['screen:feats', []], ['screen:vault', []], ['tab:help', []], ['tab:options', []], ['new', []]]) {
         await load(null); await page.evaluate(a => { const b = document.querySelector(`.scr [data-a="${a}"]`); if (b) b.click(); }, a); await page.waitForTimeout(500); await audit(`title, ${a}`);
+        if (a !== 'new') { await press('down'); await press('right'); await page.waitForTimeout(150); await audit(`title, ${a}, the cursor moved by the pad`); }
         for (const m of more) { await page.evaluate(a => { const b = document.querySelector(`.scr [data-a="${a}"]`); if (b) b.click(); }, m); await page.waitForTimeout(300); await audit(`title, ${a}, ${m}`); await press('up'); await press('up'); await press('A'); await page.waitForTimeout(400); await audit(`title, ${a}, a page open`); }
         if (a === 'new') { await press('A'); await page.waitForTimeout(1200); await audit('title, a new descent, its first words'); await press('B'); await page.waitForTimeout(900); await audit('title, a new descent, the kits'); } }
       // a duel: a move chosen, then the turn ended and the rival's moves watched as they play
