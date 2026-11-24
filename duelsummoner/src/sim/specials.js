@@ -56,7 +56,7 @@ export function startBoss(g, early, gate) {
   const sp = make('pharaoh', gate ? gate.name : S.name, S, B.x, heightAt(B.x, B.z), B.z); sp.hp = sp.maxHp = gate ? gate.hp * g.stageSpec.mult * g.diff.boss : S.hp * g.hpMul; sp.cd = 3; sp.aux = 6;
   if (gate) { const Z = specialSize(gate.id, 'pharaoh'); sp.role = 'gate'; sp.id = gate.id; sp.enrage = gate.enrage || 1; sp.size = Z.h; sp.radius = Z.radius; sp.k = Z.k; sp.kr = Z.kr; }
   g.sp.push(sp); g.gateOpenedAt = early ? (gate ? g.sc : g.t) : -1; g.boss = { state: 'active', early: !!early, t0: g.t, phase: 1, sandT: 0, summonT: S.summon.every, trapT: 2 };
-  g.event('banner', gate ? gate.name + (gate.enrage > 1 ? ' is enraged by the Toll Bell.' : ' wakes.') : early ? 'You enter the Royal Gate early. The Hollow Pharaoh wakes.' : 'The Hollow Pharaoh wakes.');
+  if (!(gate && g.openFlow && !(gate.enrage > 1))) g.event('banner', gate ? gate.name + (gate.enrage > 1 ? ' is enraged by the Toll Bell.' : ' wakes.') : early ? 'You enter the Royal Gate early. The Hollow Pharaoh wakes.' : 'The Hollow Pharaoh wakes.');
   return true;
 }
 
