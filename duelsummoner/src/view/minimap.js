@@ -66,6 +66,7 @@ export class Minimap {
     }
   for (const k of W.stones || []) if (ex(k.x, k.z)) sq(k.x, k.z, k.used ? '#6a6a72' : '#ffffff', r0);                                // Witness Stones: cyan, grey once used (they stay on the map so you know)
       for (const k of W.shrines || []) if (ex(k.x, k.z)) { const x = X(k.x), z = X(k.z); c.strokeStyle = k.done ? '#6a6a72' : '#ffffff'; c.lineWidth = big ? 3 : 2; c.beginPath(); c.arc(x, z, r0 + 1, 0, 7); c.stroke(); }          // Shrines of Tribute: a ring, grey once done
+      for (const q of g.sp) if (q.asleep && q.alive && ex(q.x, q.z)) sq(q.x, q.z, '#ffa05a', r0 + 1);       // a sleeping elite or mini boss, marked once seen
       if (W.broker && ex(W.broker.x, W.broker.z)) sq(W.broker.x, W.broker.z, '#ffd23f', r0);                                          // the Broker
       if (W.altar && !W.altar.used && ex(W.altar.x, W.altar.z)) sq(W.altar.x, W.altar.z, '#c9a0ff', r0);                              // the Altar
     }

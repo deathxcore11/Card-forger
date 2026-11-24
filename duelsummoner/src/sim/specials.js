@@ -33,16 +33,21 @@ export function spawnIdols(g) {
   a.twin = b; b.twin = a; g.sp.push(a, b); g.event('banner', 'The Twin Jackal Idols hunt you. Fell both within 10 seconds.');
 }
 // A timed stage event (elite or timed boss) at a spot chosen when it was announced. engine decides which existing fight plays it.
-export function spawnSpecial(g, ev, at) {
+// a sleeper wakes when the duelist comes within 18 m or when it is hit; its health is set from the stage clock at that moment
+function wake(g, sp) {
+  for (const q of [sp, sp.twin]) { if (!q || !q.asleep) continue; q.asleep = false; if (q.hpBase) q.maxHp = q.hp = q.hpBase * (g.hpMul || 1); q.cd = Math.max(q.cd || 0, 1.5); }
+  g.event('banner', sp.name + ' wakes.'); g.emit('sleeperwake', sp.x, sp.z);
+}
+export function spawnSpecial(g, ev, at, quiet) {
   const hpm = g.hpMul * (ev.hpScale || 1) * (g.diff ? g.diff.boss : 1), Z = specialSize(ev.id, ev.engine);
   const tag = s => { s.role = ev.role; s.id = ev.id; s.drop = ev.drop; s.size = Z.h; s.radius = Z.radius; s.k = Z.k; s.kr = Z.kr; };      // big in the model and in the sim
   if (ev.engine === 'idols') {
     const S = SPECIALS.idol, a = make('idol', ev.name, S, 0, 0, 0), b = make('idol', ev.name, S, 0, 0, 0);
     for (const [s, off] of [[a, -1.2], [b, 1.2]]) { s.x = s.px = at.x + off; s.z = s.pz = at.z; s.y = s.py = heightAt(s.x, s.z); s.hp = s.maxHp = S.hp * hpm; tag(s); }
-    a.twin = b; b.twin = a; g.sp.push(a, b); g.event('banner', ev.name + ' hunt you. Fell both within 10 seconds.');
+    a.twin = b; b.twin = a; g.sp.push(a, b); if (!quiet) g.event('banner', ev.name + ' hunt you. Fell both within 10 seconds.');
   } else {
     const S = SPECIALS.warden, sp = make('warden', ev.name, S, at.x, at.y, at.z); sp.hp = sp.maxHp = S.hp * hpm; tag(sp);
-    g.sp.push(sp); g.event('banner', ev.name + ' approaches.' + (ev.role === 'elite' ? '' : ' Hit it from behind.'));
+    g.sp.push(sp); if (!quiet) g.event('banner', ev.name + ' approaches.' + (ev.role === 'elite' ? '' : ' Hit it from behind.'));
   }
 }
 export function startBoss(g, early, gate) {
@@ -57,6 +62,7 @@ export function startBoss(g, early, gate) {
 
 export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
   if (!sp.alive || sp.dead) return false;
+  if (sp.asleep) wake(g, sp);
   o = o || {};
   if (sp.kind === 'warden' && !o.area) {                           // the shield blocks everything from the front
     const f = SPECIALS.warden.shieldHalfArc * DEG, tx = fromX - sp.x, tz = fromZ - sp.z, tl = Math.sqrt(tx * tx + tz * tz) || 1;
@@ -119,6 +125,7 @@ export function updateSpecials(g, dt) {
   const p = g.p;
   for (const sp of g.sp) {
     if (!sp.alive) continue;
+    if (sp.asleep) { if (sp.flash > 0) sp.flash -= dt; const sx = p.x - sp.x, sz = p.z - sp.z; if (sx * sx + sz * sz < 18 * 18) wake(g, sp); else continue; }       // asleep: no move, no attack, no bar
     const mul = g.dmgMul * (sp.enrage || 1), kr = sp.kr || 1;
     if (sp.flash > 0) sp.flash -= dt;
     if (sp.mark > 0) sp.mark -= dt;

@@ -241,11 +241,22 @@ export function openMap(seedLo, stageIndex, archOverride) {
     if (!bk) continue; enc.push(bk);
     const rings = []; for (let t = 0; t < 4000 && rings.length < 4; t++) { const x = (rn() - 0.5) * 540, z = (rn() - 0.5) * 540; if (spread(G, x, z, 15) > 3.2 || !reach(x, z) || blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 18)) continue; if (dist(x, z, sp[0], sp[1]) < 60 || dist(x, z, gt[0], gt[1]) < 60 || rings.some(q => dist(q.x, q.z, x, z) < 100) || enc.some(e => dist(e.x, e.z, x, z) < 22)) continue; rings.push({ x, z, r: 14, y: at(G, x, z) }); }
     if (!rings.length) continue;
+    // the three sleepers (the elite and the two mini bosses): each stands asleep at its own spot far from the start, from the gate and from each other, on open sand beside a block, wall or monument
+    const sleepers = [], shuffled = anchors.map(an => [rn(), an]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
+    for (const role of ['elite', 'bossA', 'bossB']) {
+      let site = null;
+      for (let pass = 0; pass < 3 && !site; pass++) { const minSp = [200, 150, 100][pass], minMu = [150, 110, 70][pass];
+        for (const an of shuffled) { for (let t = 0; t < 20 && !site; t++) { const ang = rn() * TAU, d = an.r + 8 + rn() * 10, x = an.x + cosA(ang) * d, z = an.z + sinA(ang) * d; if (dist(x, z, sp[0], sp[1]) >= minSp && dist(x, z, gt[0], gt[1]) >= 100 && sleepers.every(q => dist(q.x, q.z, x, z) >= minMu) && farOk(x, z) && enc.every(e => dist(e.x, e.z, x, z) >= 16) && flatOk(x, z)) site = { role, x, z }; } if (site) break; } }
+      for (let t = 0; t < 6000 && !site; t++) { const x = (rn() - 0.5) * 540, z = (rn() - 0.5) * 540; if (dist(x, z, sp[0], sp[1]) >= 120 && dist(x, z, gt[0], gt[1]) >= 80 && sleepers.every(q => dist(q.x, q.z, x, z) >= 70) && farOk(x, z) && enc.every(e => dist(e.x, e.z, x, z) >= 16) && flatOk(x, z)) site = { role, x, z }; }
+      if (!site) break; sleepers.push(site);
+    }
+    if (sleepers.length < 3) continue;
+    for (const q of sleepers) pad(G, q.x, q.z, 5, 12);
     // pads under everything placed: the piece sits flush, the sand blends back into the dunes
     for (const e of enc) { const big = e.type === 'broker'; e.y = pad(G, e.x, e.z, big ? 7 : 3, big ? 15 : 8); }
     for (const q of rings) q.y = pad(G, q.x, q.z, 14, 26);
     st = analyse(G, sp); if (st.walkFrac < 0.97) continue;
-    return assemble({ arch, k, G, sp, gt, enc, rings, st, blocks, P, heads: a.heads, start: a.start, stalls }, seed, stageIndex);
+    return assemble({ arch, k, G, sp, gt, enc, rings, st, blocks, P, heads: a.heads, start: a.start, stalls, sleepers }, seed, stageIndex);
   }
   return null;
 }
@@ -259,10 +270,10 @@ function assemble(b, seed, stageIndex) {
   const map = {
     key, hash: key, sealCode: 'OPEN-' + b.arch.toUpperCase() + '-' + (seed >>> 0).toString(16).slice(0, 4).toUpperCase(), stage: stageIndex, attempt: b.k, fallback: false, half: HALF, simN: SIM, v2: true, open: true, arch: b.arch, n: S, off: OFF, play: EDGE_R, edgeSeed: seed,
     prims: [], heights: H, cellFlags: Fl, palette: undefined, stageName: ARCH_NAME[b.arch],
-    districts: [], spawn: { x: r2(b.sp[0]), z: r2(b.sp[1]) }, gate: { x: r2(b.gt[0]), z: r2(b.gt[1]), radius: 5.5, guide: { far: 340, mid: 190, near: 60 } }, arena: { center: { x: r2(b.gt[0]), z: r2(b.gt[1]) }, boss: { x: r2(b.gt[0]), z: r2(b.gt[1]) }, tollPull: { x: r2(b.gt[0] + 6), z: r2(b.gt[1]) } },
+    districts: [], spawn: { x: r2(b.sp[0]), z: r2(b.sp[1]) }, gate: { x: r2(b.gt[0]), z: r2(b.gt[1]), radius: 5.5, guide: { far: 340, mid: 190, near: 60 } }, arena: { center: { x: r2(b.gt[0]), z: r2(b.gt[1]) }, boss: { x: r2(b.gt[0] + 9), z: r2(b.gt[1]) }, tollPull: { x: r2(b.gt[0] + 6), z: r2(b.gt[1]) } },
     bossRings: b.rings.map(q => ({ x: r2(q.x), z: r2(q.z), r: 14, y: r2(q.y) })), encounters: b.enc.map(ex), landmarks: [], kits: [], rooms: [], roomOf: null, gateways: [],
     clearings: b.enc.filter(e => e.type === 'broker').map(e => ({ x: r2(e.x), z: r2(e.z), r: 12 })), groves: [], paths: [],
-    dune: P, startYaw: r2(b.start.yaw),
+    dune: P, startYaw: r2(b.start.yaw), sleepers: b.sleepers.map(q => ({ role: q.role, x: r2(q.x), z: r2(q.z) })),
     blocks: b.blocks.map(q => ({ cx: r2(q.cx), cz: r2(q.cz), rx: r2(q.rx), rz: r2(q.rz), h: r2(q.h), cw: q.cw, rot: q.rot, cr: q.cr, sr: q.sr, seed: q.seed, tone: q.tone, T: r2(q.T), door: q.door })),
     _road: { main: [[9000, 9000], [9001, 9001]], trails: [], width: 4.5, trailWidth: 3 }, _pools: [],
     report: { genVersion: 'open3', v2: true, attempt: b.k, fallback: false, openFrac: r2(b.st.openFrac), slopeShare: r2(b.st.slopeShare), range: r2(b.st.range), forms: b.blocks.length, walkFrac: r2(b.st.walkFrac), flatShare: r2(b.st.flatShare), horizon: r2(b.start.horizon), fg: r2(b.start.fg), big: P.big.length }

@@ -6,7 +6,7 @@ import { RUNSPEC, stagesFor, DIFFICULTY, ACES } from '../data/stages.js';
 import { pow, sin, cos, atan2 } from './dmath.js';
 import { spawnEnemy, spawnAce, mergeEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
 import { aliveAces } from './aces.js';
-import { makeFog } from './fog.js';
+import { makeFog, exploredAt } from './fog.js';
 import { buildColliders } from './colliders.js';
 import { CFG } from '../data/config.js';
 import { K } from '../data/tuning.js';
@@ -34,6 +34,7 @@ export function xpScale(g) {
 export function loadStageMap(g, i) {
   g.map = g.opts.terrain === 'open' ? (openMap(g.seed, i, g.opts.arch) || generateStage(g.seed, i, g.stages[i].gen)) : g.opts.sample && i === 0 ? sampleMap() : generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.syncGrid(); g.colliders = buildColliders(g.map, i); g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
   const p = g.p; p.x = g.map.spawn.x; p.z = g.map.spawn.z; p.y = heightAt(p.x, p.z); p.vx = p.vz = p.vy = 0; p.grounded = true;
+  g.openFlow = !!(g.map && g.map.open && g.mode !== 'classic'); g.gateSeen = false; g.sleepersMade = false; g.horde = { on: false, t: 0, why: '' };       // the open desert has its own stage flow: the gate wakes by choice, the elite and the mini bosses sleep, a horde rises after the boss or when the clock runs out
 }
 export function initRun(g) {
   g.mode = g.opts.mode || 'classic'; g.difficulty = DIFFICULTY[g.opts.difficulty] ? g.opts.difficulty : 'medium'; g.diff = DIFFICULTY[g.difficulty]; g.maxAlive = RUN.maxAlive;
@@ -68,12 +69,14 @@ export function updateStages(g, dt) {
   g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3));
   g.maxAlive = Math.floor(D.cap.start + (D.cap.end - D.cap.start) * (m >= D.cap.minutes ? 1 : m / D.cap.minutes));
   g.stagePrompt = '';
+  if (g.openFlow && g.horde.on) { g.horde.t += dt; const hm = Math.max(0, g.horde.t) / 60; if (g.horde.t > 0) { g.hpMul *= 1.6 * (1 + 0.25 * hm); g.dmgMul *= 1.25 * (1 + 0.1 * hm); g.maxAlive = Math.floor(g.maxAlive * (1.5 + 0.2 * hm)); } }       // a clearly stronger, endless, rising horde
   shadesTick(g, dt); surgeTick(g);
 
   if (g.gateDown) { const sp = g.gateDown; g.gateDown = null; gateCleared(g, sp); return; }
-  if (g.circle) { circleTick(g, dt); return; }
+  if (g.circle) { circleTick(g, dt); if (g.openFlow) spawner(g, dt, false, false); return; }       // the horde keeps rising while the gateway stands open
   if (g.altar) { altarTick(g); return; }
 
+  if (g.openFlow) { openTick(g, dt); fusionGuard(g, dt); spawner(g, dt, G.state === 'fight', false); return; }
   // timeline: announce 5 s ahead on a chosen boss ring, then spawn there
   if (G.state === 'closed') for (let i = 0; i < S.timeline.length; i++) {
     const ev = S.timeline[i], st = g.evState[i];
@@ -133,13 +136,14 @@ function ringSpot(g, at) {
 }
 function startGate(g, early, toll) {
   const S = g.stageSpec, G = g.gate, left = S.clock - g.sc;
-  if (!toll && left > 1) { g.swiftChips += Math.floor(left / 2); g.coins += Math.floor(left / 4); early = true; }       // Swift Seal: 1 Star Chip per 2 s left, plus coins
+  if (!toll && left > 1 && !g.openFlow) { g.swiftChips += Math.floor(left / 2); g.coins += Math.floor(left / 4); early = true; }       // Swift Seal: 1 Star Chip per 2 s left, plus coins
   G.state = 'fight'; G.early = early && !toll; G.toll = !!toll;
   for (const o of g.sp) if (o.alive && o.role !== 'gate') o.alive = false;      // timed bosses still alive are dismissed: one boss bar at a time
   const gate = Object.assign({}, S.gate); if (toll) gate.enrage = RUNSPEC.tollEnrage;
   startBoss(g, G.early, gate);
   g.gateOpenedAt = g.sc;
   if (toll) { g.p.x = g.map.arena.tollPull.x; g.p.z = g.map.arena.tollPull.z; g.p.y = heightAt(g.p.x, g.p.z); g.p.vx = g.p.vz = 0; g.p.grounded = true; g.event('banner', 'The Toll Bell rings. The sigil pulls you in.'); g.emit('tollbell'); }
+  if (g.openFlow) g.event('bosscard', gate.name);       // the large name card: only for the stage boss, when the player wakes the gate
   g.emit('gatefight', g.stage);
 }
 
@@ -159,6 +163,7 @@ function gateCleared(g, sp) {
   G.state = 'done'; g.stagesCleared++; g.afterGate = 0;
   g.stageFacts.push({ stage: g.stage + 1, id: S.id, seconds: Math.round(g.sc), kills: g.kills - g.killsAtStage, gateOpenedAt: Math.round(g.gateOpenedAt), early: G.early, toll: G.toll, level: g.level });
   g.en.alive.fill(0);                                           // every enemy crumbles
+  if (g.openFlow && !last) { if (!g.horde.on) startHorde(g, 'boss'); else g.horde.t = Math.min(g.horde.t, 0); }       // the end-stage horde rises after a short beat
   for (const o of g.sp) if (o !== sp) o.alive = false;
   const k = g.pick; for (let i = 0; i < k.max; i++) if (k.alive[i]) { k.x[i] = p.x; k.y[i] = p.y; k.z[i] = p.z; }      // every crystal and coin is pulled to the duelist
   g.chests.push({ x: sp.x, y: sp.y, z: sp.z, open: false, kind: 'sealed' });
@@ -167,8 +172,8 @@ function gateCleared(g, sp) {
     g.won = true; g.bossKilled = true; g.altar = { x: spot.x, z: spot.z, used: false };
     g.event('banner', S.gate.name + ' falls. VICTORY. The Final Altar rises.');
   } else {
-    g.circle = { x: spot.x, z: spot.z, t: RUNSPEC.circleSeconds };
-    g.event('banner', S.gate.name + ' falls. A Descent Circle opens: open the chest, then step in.');
+    g.circle = { x: spot.x, z: spot.z, t: g.openFlow ? 1e9 : RUNSPEC.circleSeconds };
+    g.event('banner', g.openFlow ? S.gate.name + ' falls. The gateway is open. The horde rises.' : S.gate.name + ' falls. A Descent Circle opens: open the chest, then step in.');
   }
   g.emit('gatedown', g.stage);
 }
@@ -199,6 +204,7 @@ function surgeTick(g) {
 function circleTick(g, dt) {
   const c = g.circle, p = g.p, dx = p.x - c.x, dz = p.z - c.z;       // the circle stays open: step in when you choose (greed time), while the Toll Shades rise on their own clock
   const left = Math.max(0, RUNSPEC.shades.afterGateSeconds - g.afterGate);
+  if (g.openFlow) { g.stagePrompt = 'Step through the gateway when you are ready, or stay and farm the rising horde.'; if (dx * dx + dz * dz < RUNSPEC.circleRadius * RUNSPEC.circleRadius) { g.desc = { t: 0 }; g.circle = null; g.emit('descent', g.stage + 1); g.event('banner', 'You step through.'); } return; }
   g.stagePrompt = g.shadeOn ? 'Step into the Descent Circle. The Toll Shades are out.' : 'Step into the Descent Circle when you are ready (the Toll Shades rise in ' + clockText(left) + ')';
   if (dx * dx + dz * dz < RUNSPEC.circleRadius * RUNSPEC.circleRadius) { g.desc = { t: 0 }; g.circle = null; g.emit('descent', g.stage + 1); g.event('banner', 'You descend.'); }
 }
@@ -236,7 +242,7 @@ function startShades(g) {
 }
 function shadesTick(g, dt) {
   const SH = RUNSPEC.shades, G = g.gate, S = g.stageSpec, p = g.p;
-  if (!g.shadeOn && !g.duelOn) {
+  if (!g.shadeOn && !g.duelOn && !g.openFlow) {
     if (G.state === 'closed' && g.sc >= S.clock) startShades(g);                                     // the clock hit 0:00
     else if (G.state === 'done' && !g.desc && (g.afterGate += dt) >= SH.afterGateSeconds) startShades(g);    // the gate boss fell and the Descent was not taken
   }
@@ -255,10 +261,33 @@ function shadesTick(g, dt) {
   }
 }
 
+// ---- the open stage flow: the gate wakes by choice, three sleepers, the horde ----
+function startHorde(g, why) {
+  g.horde = { on: true, t: -3, why };
+  g.event('banner', why === 'clock' ? 'The clock runs out. The horde rises.' : 'The end-stage horde rises.'); g.emit('horde', why === 'clock' ? 1 : 2);
+}
+function openTick(g, dt) {
+  const S = g.stageSpec, G = g.gate, p = g.p, cmd = g._cmd, gr = g.map.gate;
+  if (!g.sleepersMade) {                                               // the elite and the two mini bosses stand asleep at their own spots (map.sleepers), with the same rewards as before
+    g.sleepersMade = true;
+    for (let i = 0; i < S.timeline.length; i++) { const ev = S.timeline[i], sl = (g.map.sleepers || []).find(q => q.role === ev.role); if (!sl) continue; const at = { x: sl.x, y: heightAt(sl.x, sl.z), z: sl.z }, n0 = g.sp.length; spawnSpecial(g, ev, at, true); for (let k = n0; k < g.sp.length; k++) { const q = g.sp[k]; q.asleep = true; q.hpBase = q.maxHp / (g.hpMul || 1); } g.evState[i] = 2; }
+  }
+  const gx = p.x - gr.x, gz = p.z - gr.z, gd2 = gx * gx + gz * gz;
+  if (!g.gateSeen && (gd2 < 90 * 90 || exploredAt(g.fog, gr.x, gr.z))) { g.gateSeen = true; g.event('banner', 'You see the gate. Wake it when you are ready.'); }
+  G.awake = true;
+  if (G.state === 'closed' && gd2 < gr.radius * gr.radius) {
+    g.stagePrompt = 'Hold {use}: wake the gate (the stage boss comes)';
+    G.hold = cmd && (cmd.use || cmd.hold) ? G.hold + dt : Math.max(0, G.hold - 2 * dt);
+    if (G.hold >= 1.5) startGate(g, false);
+  } else G.hold = Math.max(0, G.hold - 2 * dt);
+  if (G.state === 'closed' && !g.horde.on && g.sc >= S.clock) startHorde(g, 'clock');       // the clock ran out before the gate was woken: the horde starts anyway and keeps rising
+}
+
 // ---- the swarm ----
 function spawner(g, dt, fight, toll) {
   const S = g.stageSpec;
-  const D = g.diff, te = Math.min(479, S.waves.offset + g.sc * S.waves.scale * D.ramp), p = g.p, cap = g.maxAlive;
+  const hordeOn = g.openFlow && g.horde.on && g.horde.t > 0, hm = hordeOn ? 2.2 + 0.5 * g.horde.t / 60 : 1;
+  const D = g.diff, te = Math.min(479, S.waves.offset + g.sc * S.waves.scale * D.ramp + (hordeOn ? 90 : 0)), p = g.p, cap = g.maxAlive;
   if (fight && !toll) {                                          // the horde keeps coming during the gate fight, thinned to 40 percent of the spawn rate at the moment the gate woke (the stage clock is frozen, so this is steady)
     g.spawnAcc += 0.4 * spawnRate(te) * D.spawn * dt; let live0 = enemyCount(g.en); if (g.spawnAcc > 60) g.spawnAcc = 60;
     while (g.spawnAcc >= 1) { g.spawnAcc -= 1; if (live0 < cap && spawnEnemy(g, pickKind(g, te))) live0++; }
@@ -280,7 +309,7 @@ function spawner(g, dt, fight, toll) {
     if (g.golemT <= 0) { g.golemT = RUN.golem.every; if (enemyCount(g.en) < cap) spawnEnemy(g, 'golem'); }
   }
   if (toll) { g.huntT -= dt; if (g.huntT <= 0) { g.huntT = RUNSPEC.tollHunterEvery; for (let k = 0; k < RUNSPEC.tollHunterCount; k++) if (enemyCount(g.en) < cap) spawnEnemy(g, 'hunter'); } }
-  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt;
+  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt * hm;
   let live = enemyCount(g.en);
   if (g.spawnAcc > 60) g.spawnAcc = 60;                                // never a runaway backlog
   while (g.spawnAcc >= 1) { g.spawnAcc -= 1; const kind = pickKind(g, te); if (live < cap) { if (spawnEnemy(g, kind)) live++; } else mergeEnemy(g, kind); }       // past the cap a spawn merges into the nearest of its kind

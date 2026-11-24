@@ -334,7 +334,8 @@ let lastBlockTick = 0;
 const groundY = (x, z) => Math.min(heightAt(x, z), 40);       // the one ground height for marks drawn on the map (view only: sim events carry no y)
 function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
-  if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(keyWords(data, inputMode())); }       // a refused chest pulses its price tag instead of a banner
+  if (type === 'bosscard') { const el = $('bosscard'); if (el) { el.textContent = data; el.classList.add('on'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 2500); } }       // the stage boss's name, in the top third, 2.5 s
+  else if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(keyWords(data, inputMode())); }       // a refused chest pulses its price tag instead of a banner
   else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); if (game.mode !== 'classic' && (game.stage || 0) < 2) setTimeout(() => prewarmStage(game.seed, (game.stage || 0) + 1), 60); }       // the next stage is drawn while the player reads the offer
   else if (type === 'levelup') { host.haptic('levelup'); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
   else if (type === 'hit') { actors.hitAt(b, c, data); fx.number(b, Math.min(heightAt(b, c), 40) + 1.7, c, a, data); }       // at the target's own height, not a fixed 1.7 m
