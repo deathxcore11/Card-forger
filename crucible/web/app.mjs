@@ -2389,12 +2389,22 @@ function rowsB(y, h, head, headR, rows, o = {}) {
 // What the player holds, as rows: every charm, Gift and Masterwork by name, kind and family, a gold line on those of one
 // family (the family of the Gift being weighed).
 const heldRows = (r, fam = null, look = false, read = true) => relicList(r).map(id => ({ pic: medal(id, 24), name: RELICS[id].name, sub: kindWord(id) + (FAMILY_NAME[RELICS[id].family] ? ' · ' + esc(FAMILY_NAME[RELICS[id].family].toUpperCase()) : ''), gold: !!fam && RELICS[id].family === fam, ...(!read ? {} : look ? { look: 'r:' + id, a: 'nop' } : { a: 'read:r:' + id }) }));
+// A run that carries no card yet, from row ya to row yb of the bottom frame: the player's record, and under it the Forger
+// who goes down, with the rule and the power.
+function beforeB(ya, yb, r) {
+  const f = r && r.forger ? FORGERS[r.forger] : null, y2 = ya + 96, h = yb - y2 - 22;
+  const rec = [['RUNS', P.runs], ['CLEARS', P.clears], ['DUELS WON', P.duelWins], ['GUARDIANS BEATEN', P.bossWins], ['FORGERS', `${P.forgers.length} OF ${FORGER_IDS.length}`], ['MEMORIES', P.memories]];
+  return box(0, ya, 413, 96, 'st') + lb(8, ya + 8, 'YOUR RECORD', 'g') + rec.map(([k, v], i) => lb(8 + (i % 2) * 206, ya + 26 + (i >> 1) * 22, k, 'g') + lbr(198 + (i % 2) * 206, ya + 26 + (i >> 1) * 22, v)).join('')
+    + (yb > y2 ? box(0, y2, 413, yb - y2, 'wn') + (f && h >= 32 ? lb(8, y2 + 6, 'WHO GOES DOWN', 'g') + lbr(405, y2 + 6, esc(f.name.toUpperCase()), 'd') + txb(8, y2 + 18, 397, h - h % 16, `<p>${esc(ruleText(f.rule))}</p><p class="d">${esc(f.power)}: ${esc(f.powerText)}</p>`) : '') : '');
+}
 // What the player holds and carries, from row y0 to row y1 of the bottom frame, with no part of it left bare: the relics
 // as named rows, as many rows as are held (four at the most; more are moved through), and under them the deck as a grid
 // of whole cards in the rows that are left. o: fam (the family marked), look (the cursor reads a relic on the page),
 // read (a card or relic can be asked into the window above), head, headR.
 function holdDeckB(y0, y1, r, o = {}) {
   const held = relicList(r), list = o.rows || heldRows(r, o.fam || null, !!o.look, o.read !== false), n = Math.max(1, Math.ceil(list.length / 2)), H = y1 - y0, want = 20 + 26 * Math.min(n, 4);
+  // Before the first kit there is no card to show: the rows keep their place and the record stands under them.
+  if (!r.deck.length) { const rh = Math.min(H - 150, 20 + 26 * n); return rowsB(y0, rh, o.head || `YOU HOLD ${held.length}`, o.headR || '', list, { none: o.none || 'NO CHARM OR GIFT YET', sk: o.sk }) + beforeB(y0 + rh, y1, r); }
   let v = 4; while (v > 1 && H - 23 - 63 * v < want) v--;
   const gh = 5 + 63 * v, rh = H - 18 - gh, per = Math.floor((rh - 20) / 26), spare = per > n;
   return rowsB(y0, rh, o.head || `YOU HOLD ${held.length}`, o.headR || '', list, { none: o.none || 'NO CHARM OR GIFT YET', sk: o.sk })
@@ -2836,10 +2846,11 @@ function offerDual({ r, items, it, sel, n, selA, view, left, right, pillar, bar0
   else if (it.deck) bottom = grid(`${String(it.name).toUpperCase()} · ${it.deck.length} CARDS`, `WEIGHT ${deckWeight(db, it.deck)}`, it.deck, { verb: (i, e) => `read:c:${e.id}`, sk: 'kit' + sel }, cells);
   else if (key === 'omen' && r) { const weak = r.trunk.map((e, i) => [e, i]).sort((a, b) => cardValue(db, a[0]) - cardValue(db, b[0])).slice(0, 2).map(x => x[1]);
     const tr = Math.max(1, Math.ceil(r.trunk.length / 8)), to = { verb: i => `read:t:${i}`, weakFirst: true, gold: new Set(r.trunk.length >= 2 ? weak : []), sk: 'omen', kp: 't', none: 'YOUR TRUNK IS EMPTY' }, hr = r.trunk.length >= 2 ? 'THE TWO MARKED ARE TAKEN' : 'IT NEEDS TWO CARDS';
-    // A trunk of one or two rows leaves the deck its place under it, so the frame is never half empty.
-    if (tr <= 2) { const y1 = 18 + 5 + tr * 63, dh = 5 + (3 - tr) * 63;
+    // A short trunk leaves the deck its place under it, in every row the foot leaves free, so the frame is never half empty.
+    const c4 = cells.filter(Boolean).map((c, i) => ({ ...c, t: c.t4 || c.t, ka: i === 0 && !c.k })), fr = rowsOf(c4, 4), tot = Math.floor((360 - (fr.length * 21 - 2) - 46) / 63);
+    if (tr < tot) { const y1 = 18 + 5 + tr * 63, dh = 5 + (tot - tr) * 63;
       bottom = box(0, 0, 413, 18, 'st dk') + lb(6, 5, 'YOUR TRUNK, WEAKEST FIRST', 'g') + lbr(407, 5, hr) + gridB(r.trunk, { ...to, y: 18, h: 5 + tr * 63 })
-        + box(0, y1, 413, 18, 'st dk') + lb(6, y1 + 5, 'YOUR DECK, STRONGEST FIRST', 'g') + gridB(r.deck, { y: y1 + 18, h: dh, verb: i => `read:d:${i}`, sk: 'omendeck' }) + footOf(y1 + 18 + dh, cells); }
+        + box(0, y1, 413, 18, 'st dk') + lb(6, y1 + 5, 'YOUR DECK, STRONGEST FIRST', 'g') + gridB(r.deck, { y: y1 + 18, h: dh, verb: i => `read:d:${i}`, sk: 'omendeck' }) + foot(y1 + 18 + dh, fr, 4); }
     else bottom = grid('YOUR TRUNK, WEAKEST FIRST', hr, r.trunk, to, cells); }
   else if (it.card && r) { const c = card(it.card), mon = db.isMonster(it.card), gold = new Set(r.deck.map((e, i) => e.id === it.card || (mon && db.isMonster(e.id) && card(e.id).type === c.type) ? i : -1).filter(i => i >= 0));
     said = emb ? cap(emb.toLowerCase()) + '.' : gold.size ? `Marked below: ${mon ? 'the same card or Type' : 'the same card'} in your deck.` : '';
@@ -2926,7 +2937,8 @@ function codexDual() {
   if (R) { const c = card(R.id), recs = found.get(R.id) || [], known = recs.length > 0; if (known) convertSheets(96);
     const hint = R.kind === 'printed' ? `A printed fusion of ${R.mats.map(m => 'a ' + card(m).type).join(' and ')}.` : `A ${c.attr} ${c.type}. Some ${c.type} melded with some ${c.attr} monster makes it. Which ones is for you to find.`;
     top = lectern('CODEX', known ? `${recs.length} RECIPE${recs.length === 1 ? '' : 'S'} FOUND` : 'NOT FOUND YET', (known ? bigCard({ id: R.id }, 12, 24) : '<div class="big unk" style="left:12px;top:24px"><b class="n1">?</b></div>')
-      + `<b class="ab lb g" style="left:128px;top:26px">${esc((known ? c.name : 'Not found yet').toUpperCase())}</b>` + pagerB(122, 40, 498, 138, known ? `<p>${esc(`${c.type}. ${whyLine(R)}`)}</p><p class="gp"><span class="d">Recipes you have found:</span></p><p>${recs.map(ids => ids.map(x => esc(card(x).name)).join(' + ')).join('<br>')}</p>` : `<p>${esc(hint)}</p>`, 'bar'), 188); }
+      + `<b class="ab lb g" style="left:128px;top:26px">${esc((known ? c.name : 'Not found yet').toUpperCase())}</b>` + pagerB(122, 40, 274, 138, known ? `<p>${esc(`${c.type}. ${whyLine(R)}`)}</p><p class="gp"><span class="d">Recipes you have found:</span></p><p>${recs.map(ids => ids.map(x => esc(card(x).name)).join(' + ')).join('<br>')}</p>` : `<p>${esc(hint)}</p>`, 'bar')
+      + lb(404, 26, 'PAGES FOUND', 'g') + lbr(620, 26, `${found.size} OF ${X.list.length}`) + tally(404, 40, 216, X.types.map(t => [String(t).toUpperCase(), byType(t).filter(Rr => found.has(Rr.id)).length]).slice(0, 9)), 188); }
   else { const tiles = list.map((Rr, k) => found.has(Rr.id) ? psCard({ id: Rr.id }, 9 + (k % 12) * 50, 3 + Math.floor(k / 12) * 63, { attrs: `data-a="cxopen:${Rr.id}" data-k="cx${Rr.id}"`, badge: found.get(Rr.id).length }) : `<button class="cd unk" style="left:${9 + (k % 12) * 50}px;top:${3 + Math.floor(k / 12) * 63}px" data-a="cxopen:${Rr.id}" data-k="cx${Rr.id}" aria-label="Not found yet"><i class="n1">?</i></button>`).join(''), rows = Math.ceil(list.length / 12);
     top = bookTop('CODEX', `${none ? 'NONE FOUND YET · ' : ''}${found.size} OF ${X.list.length} RESULTS FOUND${total > 120 ? ` · SHOWING 120 OF ${total}` : ''}`, `<div class="ab gsc" data-sk="codex" data-row="63" style="left:8px;top:24px;width:614px;height:320px"><div class="gin" style="height:${Math.max(318, rows * 63 + 3)}px">${tiles || `<b class="ab lb d" style="left:8px;top:8px">NOTHING HERE YET. MELD TWO MONSTERS IN A DUEL TO WRITE THE FIRST PAGE.</b>`}</div></div>`); }
   const cells = [R ? { k: 'B', t: 'CLOSE THE PAGE', a: 'cxclose', lit: true } : null, { t: 'FOUND', a: 'cxview:found', cls: v.view === 'found' ? 'on' : '' }, { t: 'ALL', a: 'cxview:all', cls: v.view === 'all' ? 'on' : '' }].filter(Boolean);
@@ -2948,16 +2960,16 @@ function overDual({ head, unl, tally, mem }) {
 // Gives back { top, bottom, over } for what is open, each one only when it takes that frame's place, or nothing.
 // A sheet of words on the bottom frame: its name, the words in a window, the plaques. A sheet with few words (lines:
 // how many rows of text its window is given) leaves the rest of the frame to the run it is asked about.
-const sheetB = (title, html, cells, right = '', lines = 0) => { const rows = rowsOf(cells.filter(Boolean), 3), y0 = 360 - (rows.length * 28 + 8), r = G.run && G.run.deck.length ? G.run : null;
-  const v = lines && r ? Math.max(1, Math.floor((y0 - 22 - lines * 16 - 12 - 23) / 63)) : 0, th = v ? y0 - 22 - 23 - 63 * v : y0 - 22; // the deck under the words, in whole rows; the words take what is left
-  return box(0, 0, 413, 22, 'st dk') + lb(8, 7, title, 'g') + (right ? lbr(405, 7, right, 'd') : '') + pagerB(0, 22, 413, th, html)
+const sheetB = (title, html, cells, right = '', lines = 0) => { const rows = rowsOf(cells.filter(Boolean), 3), y0 = 360 - (rows.length * 28 + 8), r = G.run && G.run.deck.length ? G.run : null, bf = lines && G.run && !r;
+  const v = lines && r ? Math.max(1, Math.floor((y0 - 22 - lines * 16 - 12 - 23) / 63)) : 0, th = v ? y0 - 22 - 23 - 63 * v : bf ? lines * 16 + 12 : y0 - 22; // the deck under the words, in whole rows; the words take what is left
+  return box(0, 0, 413, 22, 'st dk') + lb(8, 7, title, 'g') + (right ? lbr(405, 7, right, 'd') : '') + pagerB(0, 22, 413, th, html) + (bf ? beforeB(22 + th, y0, G.run) : '')
     + (v ? box(0, 22 + th, 413, 18, 'st dk') + lb(6, 27 + th, 'YOUR DECK, STRONGEST FIRST', 'g') + lbr(407, 27 + th, `${r.deck.length} CARDS`) + gridB(r.deck, { y: 40 + th, h: 5 + 63 * v, verb: null, sk: 'sheet' }) : '') + foot(y0, rows); };
 // A scene told on two frames: the top frame is a room's frame with the painting (or the speaker's face) in its window on
 // black and the words in the window under it, where the letters are largest; the pillars keep the run. The bottom frame
 // shows what is carried into what comes next: the relics by name and the deck, or, before a run, the record so far.
 function tellTop(r, inner, head, sub, text, verb) {
   const inert = h => noPq(h).replace(/ data-a="[^"]*"/g, ' tabindex="-1"');
-  return `<div data-a="${verb}">${frame({ left: r ? inert(psYou(r)) : '', right: r ? inert(psRight(r, '', { bare: !!r.deck.length, note: (() => { const b = BOSSES[r.floor] && BOSSES[r.floor][r.bossOrder[r.floor]]; return b ? lb(8, 262, 'GUARDIAN', 'g') + psPort(faceOfName(b.name), 14, 276) : ''; })() })) : '', view: `<i class="ab" style="left:0;top:0;width:440px;height:248px;background:#000"></i>${inner}`,
+  return `<div data-a="${verb}">${frame({ left: r ? inert(psYou(r)) : '', right: r ? inert(psRight(r, '', { bare: !!r.deck.length, note: (() => { const b = BOSSES[r.floor] && BOSSES[r.floor][r.bossOrder[r.floor]]; return !b ? '' : r.deck.length ? lb(8, 144, 'GUARDIAN', 'g') + psPort(faceOfName(b.name), 14, 156) + nameLines(b.name, 84, 2).map((x, i) => lb(8, 234 + i * 10, esc(x))).join('') : lb(8, 262, 'GUARDIAN', 'g') + psPort(faceOfName(b.name), 14, 276); })() })) : '', view: `<i class="ab" style="left:0;top:0;width:440px;height:248px;background:#000"></i>${inner}`,
     tall: `<b class="lb g th">${esc(String(head).toUpperCase())}${sub ? ` <span class="d">· ${sub}</span>` : ''}</b><div class="pgw" data-pager><p>${text}</p></div>` })}</div>`;
 }
 function tellBottom(r, cells, told = []) {
@@ -3029,20 +3041,26 @@ function dualWindows(s) {
     for (const e of r.deck) { const k = db.isMonster(e.id) ? 'MONSTERS' : String(roleOf(db, e.id)).toUpperCase(); kinds[k] = (kinds[k] || 0) + 1; }
     const hint = r.phase === 'chamber' ? (one ? 'Now choose the card to swap it with. B puts it back.' : 'Cards you take go to your trunk. Choose a deck card, then a trunk card, to swap them.') : 'You can swap cards with the trunk in a chamber.';
     const copies = L && L.inst ? r.deck.filter(e => e.id === L.inst.id).length : 0, inTrunk = /^t:/.test(G.look || '');
-    const page = L ? bigCard(L.inst, 12, 30) + `<b class="ab lb g" data-name="${esc(L.name)}" style="left:128px;top:32px;width:190px;white-space:normal">${nameLines(L.name, 186, 2).map(esc).join('<br>')}</b>` + pagerB(122, 56, 196, 128, L.lines.map(x => `<p>${esc(x)}</p>`).join('') + `<p class="d">${inTrunk ? 'In the trunk.' : copies > 1 ? `${copies} copies in the deck.` : 'One copy in the deck.'} Weight ${weightOf(db, L.inst.id)}.</p>`, 'bar') : '';
+    const heavy = [...r.deck].sort((p, q) => weightOf(db, q.id) - weightOf(db, p.id)).slice(0, 8); // a short trunk leaves room beside it for the cards that weigh most
+    const page = !r.deck.length ? lb(12, 80, 'NO CARDS YET', 'g') + txb(12, 94, 300, 32, '<p class="d">The kit you choose is your first deck.</p>') : L ? bigCard(L.inst, 12, 30) + `<b class="ab lb g" data-name="${esc(L.name)}" style="left:128px;top:32px;width:190px;white-space:normal">${nameLines(L.name, 186, 2).map(esc).join('<br>')}</b>` + pagerB(122, 56, 196, 128, L.lines.map(x => `<p>${esc(x)}</p>`).join('') + `<p class="d">${inTrunk ? 'In the trunk.' : copies > 1 ? `${copies} copies in the deck.` : 'One copy in the deck.'} Weight ${weightOf(db, L.inst.id)}.</p>`, 'bar') : '';
     const act1 = r.phase === 'chamber' ? { t: one ? 'SWAP' : 'PICK UP', a: 'pickcur', for: 'deckpick trunkpick' } : { t: 'PICK UP', a: 'nop', off: true };
-    return { top: bookTop('YOUR DECK', bookOf('deck'), page + lb(12, 192, `TRUNK · ${r.trunk.length} CARD${r.trunk.length === 1 ? '' : 'S'}`, 'g')
-        + gridB(r.trunk, { x: 8, y: 204, cols: 6, h: 131, verb: i => `trunkpick:${i}`, look: i => `t:${i}`, sel: G.pickTrunk, kp: 't', sk: 'trunk', none: 'THE TRUNK IS EMPTY' })
+    return { top: bookTop('YOUR DECK', bookOf('deck'), page + lb(12, r.deck.length ? 192 : 216, `TRUNK · ${r.trunk.length} CARD${r.trunk.length === 1 ? '' : 'S'}`, 'g')
+        + (r.trunk.length > 6 ? gridB(r.trunk, { x: 8, y: 204, cols: 6, h: 131, verb: i => `trunkpick:${i}`, look: i => `t:${i}`, sel: G.pickTrunk, kp: 't', sk: 'trunk' })
+          : (r.trunk.length ? gridB(r.trunk, { x: 8, y: 204, cols: 3, h: 131, verb: i => `trunkpick:${i}`, look: i => `t:${i}`, sel: G.pickTrunk, kp: 't', sk: 'trunk' }) : txb(12, r.deck.length ? 204 : 228, heavy.length ? 150 : 300, 64, '<p class="d">The trunk is empty. Cards you take go to your trunk.</p>'))
+            + (heavy.length ? lb(180, 192, 'HEAVIEST CARDS', 'g') : '') + heavy.map((e, i) => lb(180, 208 + i * 14, esc(fitName(card(e.id).name, 18))) + lbr(314, 208 + i * 14, weightOf(db, e.id))).join(''))
         + `<i class="ab" style="left:322px;top:28px;width:1px;height:316px;background:var(--dark)"></i>` + lb(332, 32, 'WEIGHT', 'g') + lbr(620, 32, `${wt}/${cap}`) + gauge(332, 42, 288, wt / cap, 'w' + (wt > cap ? ' over' : ''))
         + txb(332, 54, 288, 32, `<p class="d">Every card has a weight. This deck may carry ${cap}.</p>`) + lb(332, 96, 'WHAT IS IN IT', 'g') + lbr(620, 96, `${r.deck.length} CARDS`)
-        + tally(332, 110, 288, Object.entries(kinds).sort((p, q) => (q[0] === 'MONSTERS') - (p[0] === 'MONSTERS') || q[1] - p[1]).slice(0, 8)) + lb(332, 232, 'SWAPPING', 'g') + txb(332, 244, 288, 96, `<p>${hint}</p>`)),
-      bottom: gridB(r.deck, { y: 0, h: 320, verb: i => `deckpick:${i}`, look: i => `d:${i}`, sel: G.pickDeck, sk: 'deck', n1: true })
+        + tally(332, 110, 288, Object.entries(kinds).sort((p, q) => (q[0] === 'MONSTERS') - (p[0] === 'MONSTERS') || q[1] - p[1]).slice(0, 8).concat(r.deck.length ? [] : ['MONSTERS', 'EQUIP', 'FIELD', 'TRAP', 'SPELL', 'FUEL'].map(k => [k, 0]))) + lb(332, 232, 'SWAPPING', 'g') + txb(332, 244, 288, 96, `<p>${hint}</p>`)),
+      bottom: (r.deck.length ? gridB(r.deck, { y: 0, h: 320, verb: i => `deckpick:${i}`, look: i => `d:${i}`, sel: G.pickDeck, sk: 'deck', n1: true }) : beforeB(0, 320, r))
         + foot(320, footRows4([...bookFoot('deck', [{ ...act1, ka: true }], one).map(c => c && /BOOK$/.test(c.t) ? { ...c, t: [c.t, c.t.replace(' BOOK', '')] } : c)]), 4) }; }
   if (t === 'duel') { const rv = G.shown ? G.shown.rival : G.overlay && G.overlay.rival ? G.overlay.rival : info(r), v = r.duel ? viewFor(r.duel, db, 0) : null, log = G.log.slice(-8);
-    const words = `${rv.styleText ? `<p>${esc(rv.styleText)}</p>` : ''}${rv.lawText ? `<p><b class="lb g">LAW</b> ${esc(lawShown(rv.lawText))}</p>` : ''}${rv.twist ? `<p>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</p>` : ''}<p><b class="lb g">BOUNTY</b> ${esc(rv.bountyText || '')}</p>${v && v.forger ? `<p><b class="lb g">${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))}</p><p><b class="lb g">${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'Used this duel.' : esc(FORGERS[v.forger].powerText)}</p>` : ''}<p><b class="lb g">${log.length ? 'THE LAST MOVES' : 'NO MOVES YET'}</b>${log.length ? '<br>' + log.map(esc).join('<br>') : ''}</p>`;
+    const words = `${rv.styleText ? `<p>${esc(rv.styleText)}</p>` : ''}${rv.lawText ? `<p><b class="lb g">LAW</b> ${esc(lawShown(rv.lawText))}</p>` : ''}${rv.twist ? `<p>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</p>` : ''}<p><b class="lb g">BOUNTY</b> ${esc(rv.bountyText || '')}</p>${v && v.forger ? `<p><b class="lb g">${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))}</p><p><b class="lb g">${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'Used this duel.' : esc(FORGERS[v.forger].powerText)}</p>` : ''}`, moves = `<p><b class="lb g">${log.length ? 'THE LAST MOVES' : 'NO MOVES YET'}</b></p>${log.map(x => `<p>${esc(x)}</p>`).join('')}`;
     // the words in a window of twelve lines, and under it what you carry into the fight: the relics and the strongest cards
-    return { bottom: box(0, 0, 413, 22, 'st dk') + lb(8, 7, 'THIS DUEL', 'g') + pagerB(0, 22, 413, 196, words) + stripB(218, r) + deckStripB(248, 'YOUR STRONGEST CARDS', r.deck, 'c')
-      + foot(324, [[{ k: 'B', t: 'CLOSE', a: 'tab:' }, { k: 'X', t: G.fast ? 'SPEED: FAST' : 'SPEED: NORMAL', a: 'speed' }, { k: 'START', t: 'MENU', a: 'tab:menu' }]]) }; }
+    // Few words leave the window seven lines and the deck two whole rows, so no part of the frame stands bare.
+    const few = (words + moves).split('</p>').reduce((n, x) => n + Math.ceil(x.replace(/<[^>]+>/g, '').length / 44), 0) <= 6;
+    return { bottom: box(0, 0, 413, 22, 'st dk') + lb(8, 7, 'THIS DUEL', 'g') + (few ? pagerB(0, 22, 413, 116, words + moves) + stripB(138, r) + box(0, 168, 413, 18, 'st dk') + lb(6, 173, 'YOUR DECK, STRONGEST FIRST', 'g') + gridB(r.deck, { y: 186, h: 131, verb: (i, e) => `read:c:${e.id}`, sk: 'duelsheet' })
+        : pagerB(0, 22, 413, 196, words + moves) + stripB(218, r) + deckStripB(248, 'YOUR STRONGEST CARDS', r.deck, 'c'))
+      + foot(few ? 317 : 324, [[{ k: 'B', t: 'CLOSE', a: 'tab:' }, { k: 'X', t: G.fast ? 'SPEED: FAST' : 'SPEED: NORMAL', a: 'speed' }, { k: 'START', t: 'MENU', a: 'tab:menu' }]]) }; }
   return null;
 }
 
