@@ -487,7 +487,7 @@ export class Actors {
       const x = pl(e.px[i], e.x[i], a), y = pl(e.py[i], e.y[i], a), z = pl(e.pz[i], e.z[i], a);
       { const ddx = x - px, ddz = z - pz; if (ddx * ddx + ddz * ddz < 20) nearN++; }
       if (blocked(x, y + 0.9, z, 2.4)) continue;
-      const hit = e.flash[i] > 0; let bob; if (K.fly) bob = Math.sin(t * 9 + i) * 0.08; else { const bp = this._bp || (this._bp = new Float32Array(e.max * 3)), j3 = i * 3; if (sage < 0.02) { bp[j3] = i; bp[j3 + 1] = x; bp[j3 + 2] = z; } const spd = Math.min(14, Math.hypot(x - bp[j3 + 1], z - bp[j3 + 2]) / Math.max(dt, 0.004)); bp[j3 + 1] = x; bp[j3 + 2] = z; bp[j3] += spd / 1.3 * dt * Math.PI; bob = Math.abs(Math.sin(bp[j3])) * 0.15 * Math.min(1, spd / 1.5); }       // the hop follows ground speed (one hop per 1.3 m), and stops when the enemy stands
+      const hit = e.flash[i] > 0; let bob; if (K.fly) bob = Math.sin(t * 9 + i) * 0.08; else { const bp = this._bp || (this._bp = new Float32Array(e.max * 3)), j3 = i * 3; if (sage < 0.02) { bp[j3] = i; bp[j3 + 1] = x; bp[j3 + 2] = z; } const spd = Math.min(14, Math.hypot(x - bp[j3 + 1], z - bp[j3 + 2]) / Math.max(dt, 0.004)); bp[j3 + 1] = x; bp[j3 + 2] = z; bp[j3] += spd / 1.3 * dt * Math.PI; bob = Math.abs(Math.sin(bp[j3])) * (K.id === 0 ? 0.04 : 0.15) * Math.min(1, spd / 1.5); }       // the hop follows ground speed (one hop per 1.3 m), and stops when the enemy stands
       let sc = K.scale, pulse = 1; if (K.id === 5) sc = SC_SCARAB;       // the Tomb Scarab is drawn 1.3x so it can be picked out of a crowd (the sim hitbox is unchanged)
       if (K.id === 4 && e.st[i] === 1) pulse = 1 + 0.25 * Math.sin(t * 30);                        // Sand Bloat swelling before it bursts
       const face = turnLerp(e.pface[i], e.face[i], a);

@@ -43,10 +43,16 @@ function jx(p, j) { return j; }
 
 // ---- the seven kinds. sc = the kind's draw scale (data/enemies.js), off = the lift the CPU adds (0.85, golem 0.7, seer 1.2) ----
 const MAKERS = {
-  husk(b) {                                                     // a hunched two-legged shambler: bowed torso, forward head with an amber eye, long arms that swing
-    b.box(-0.2, 0.3, 0, 0.3, 0.6, 0.32, C.dd, { sign: 1, hip: 0.6, len: 0.6 }, 0.5); b.box(0.2, 0.3, 0, 0.3, 0.6, 0.32, C.dd, { sign: -1, hip: 0.6, len: 0.6 }, 0.5);
-    b.box(0, 1.05, -0.05, 0.7, 0.75, 0.5, C.dm); b.box(0, 1.62, 0.22, 0.42, 0.4, 0.42, C.bone); b.box(0, 1.3, -0.32, 0.5, 0.3, 0.1, C.bone); b.box(0, 1.66, 0.46, 0.3, 0.08, 0.05, C.eye, null, 1);
-    b.box(-0.5, 0.95, 0.12, 0.2, 0.75, 0.22, C.dl, { sign: -1, hip: 1.3, len: 0.75 }, 0.8); b.box(0.5, 0.95, 0.12, 0.2, 0.75, 0.22, C.dl, { sign: 1, hip: 1.3, len: 0.75 }, 0.8);
+  husk(b) {                                                     // a hunched sand-wrapped shambler, 1.75 m: dark umber body, ochre wraps over the shoulders, a low forward head with an amber eye, two long arms reaching forward that sway
+    const U = 0x5a3f2b, UD = 0x3d2a1d, UL = 0x7a5639, W = 0xd2a05c, WD = 0xa87a42;      // umber, deep umber, lit umber, ochre wrap, shaded wrap: warm and dark against cream sand, no red
+    b.box(-0.18, 0.4, 0.02, 0.26, 0.8, 0.3, UD, { sign: 1, hip: 0.8, len: 0.8 }, 0.4); b.box(0.18, 0.4, 0.02, 0.26, 0.8, 0.3, UD, { sign: -1, hip: 0.8, len: 0.8 }, 0.4);       // legs
+    b.box(-0.18, 0.06, 0.12, 0.28, 0.12, 0.42, W, { sign: 1, hip: 0.8, len: 0.8 }, 0.4); b.box(0.18, 0.06, 0.12, 0.28, 0.12, 0.42, W, { sign: -1, hip: 0.8, len: 0.8 }, 0.4);      // wrapped feet
+    b.box(0, 0.92, -0.04, 0.56, 0.4, 0.42, U); b.box(0, 1.3, 0.06, 0.74, 0.5, 0.52, UL);       // pelvis and bowed chest
+    b.box(0, 1.2, 0.06, 0.8, 0.08, 0.58, W); b.box(0, 1.02, 0.0, 0.62, 0.07, 0.48, WD);       // wraps across the body
+    b.box(0, 1.56, 0.1, 1.02, 0.2, 0.56, W); b.box(0, 1.5, -0.22, 0.5, 0.36, 0.3, U);       // shoulder yoke and the hump on the back
+    b.box(0, 1.62, 0.46, 0.4, 0.4, 0.42, UD); b.box(0, 1.76, 0.44, 0.44, 0.1, 0.46, W); b.box(0, 1.64, 0.68, 0.32, 0.08, 0.05, C.eye, null, 1);       // head, wrapped crown, amber eye
+    b.box(-0.58, 1.34, 0.52, 0.2, 0.22, 0.92, U, { sign: -1, hip: 1.8, len: 0.9 }, 0.8); b.box(0.58, 1.34, 0.52, 0.2, 0.22, 0.92, U, { sign: 1, hip: 1.8, len: 0.9 }, 0.8);       // arms reaching forward
+    b.box(-0.58, 1.3, 1.02, 0.24, 0.26, 0.18, W, { sign: -1, hip: 1.8, len: 0.9 }, 0.8); b.box(0.58, 1.3, 1.02, 0.24, 0.26, 0.18, W, { sign: 1, hip: 1.8, len: 0.9 }, 0.8);       // wrapped hands
   },
   runner(b) {                                                   // a lean four-legged beast: long body, low head with an amber eye, ears, a flicking tail
     const L = (x, z, s) => b.box(x, 0.22, z, 0.14, 0.44, 0.14, C.dm, { sign: s, hip: 0.44, len: 0.44 }, 0.4);
@@ -100,8 +106,8 @@ export function creatureLit(mat) {
     sh.vertexShader = 'attribute vec3 aJ;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
 #ifdef USE_INSTANCING
  { vec3 ip_ = instanceMatrix[3].xyz; vec2 fw_ = normalize(instanceMatrix[2].xz + vec2(1e-5)); float s_ = length(instanceMatrix[2].xyz), sy_ = length(instanceMatrix[1].xyz);
-   float ph_ = floor((dot(ip_.xz, fw_) / 1.5 + float(gl_InstanceID) * 0.37) * 6.0) / 6.0 * 6.2832; float sw_ = sin(ph_), ab_ = abs(sw_);
-   transformed.y += aJ.z * 0.07 * ab_ / max(sy_, 0.3); transformed.z += aJ.x * aJ.y * sw_ * 0.3 / max(s_, 0.3) + aJ.z * (transformed.y + 0.8) * 0.05; transformed.y += aJ.x * aJ.y * max(sw_ * aJ.x, 0.0) * 0.1 / max(sy_, 0.3); }
+   float ph_ = floor((dot(ip_.xz, fw_) / 1.5 + float(gl_InstanceID) * 0.37) * 4.0) / 4.0 * 6.2832; float sw_ = sin(ph_), ab_ = abs(sw_);
+   transformed.y += aJ.z * 0.07 * ab_ / max(sy_, 0.3); transformed.z += aJ.x * aJ.y * sw_ * 0.3 / max(s_, 0.3) + aJ.z * (transformed.y + 0.8) * (0.05 + 0.09 * max(sw_, 0.0)); transformed.y += aJ.x * aJ.y * max(sw_ * aJ.x, 0.0) * 0.1 / max(sy_, 0.3); }
 #endif`);
   };
   const key = mat.customProgramCacheKey ? mat.customProgramCacheKey.bind(mat) : null; mat.customProgramCacheKey = () => (key ? key() : '') + 'creature';
