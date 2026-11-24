@@ -20,7 +20,7 @@ export function foot(y0, rows, cols = 3) {
       const cw = cols === 3 || c.k || c.ka ? (c.k && c.k.length > 2 ? 32 : 22) : 0, need = pqW([].concat(c.t).slice(-1)[0]) + (cw ? cw + 4 : 0);
       let span = 1; while (span * colw + (span - 1) * gx < need && i + span < cols && (n + 1 >= r.length || r[n + 1] == null)) { span++; if (n + 1 < r.length) r.splice(n + 1, 1); }
       const x = 4 + i * (colw + gx), w = span * colw + (span - 1) * gx, y = y0 + pad + j * pitch;
-      s += (cw ? kc(x, y + 3, c.k, cw, c.off) : '') + pq(x + (cw ? cw + 4 : 0), y, w - (cw ? cw + 4 : 0), c.t, c.a, { lit: c.lit && !c.off, off: c.off, cls: c.cls, title: c.title }).replace('<button ', `<button ${c.for ? `data-for="${c.for}" ` : ''}${c.look ? `data-look="${c.look}" ` : ''}`);
+      s += (cw ? kc(x, y + 3, c.k, cw, c.off) : '') + pq(x + (cw ? cw + 4 : 0), y, w - (cw ? cw + 4 : 0), c.t, c.a, { lit: c.lit && !c.off, off: c.off, cls: c.cls, title: c.title }).replace('<button ', `<button ${c.cls === 'aslot' ? 'data-nonav ' : ''}${c.for ? `data-for="${c.for}" ` : ''}${c.look ? `data-look="${c.look}" ` : ''}`);
       i += span; } });
   return s;
 }
