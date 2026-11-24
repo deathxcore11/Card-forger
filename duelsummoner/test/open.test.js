@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { openMap, ARCHETYPES, EDGE_R, groundAt, blockProf, footY, duneH, viewH } from '../src/gen/open/terrain.js';
+import { openMap, ARCHETYPES, EDGE_R, groundAt, blockProf, footY, duneH, viewH, MAX_DROP } from '../src/gen/open/terrain.js';
 import { Game } from '../src/sim/game.js';
 import { scatterStage } from '../src/gen/scatter.js';
 import { loadMap, heightAt, camGround, moveXZ } from '../src/sim/terrain.js';
@@ -47,12 +47,17 @@ test('open desert: 840 m of heightfield (about 720 m of playable ground), genera
     // beams 6 to 9 m
     for (const l of m.dress.logs) { const len = Math.hypot(l[3] - l[0], l[5] - l[2]); assert.ok(len >= 5.99 && len <= 9.01, a + ' beam length ' + len); }
     // every block sits on the ground along its whole outline: for each of the 56 wall segments (as the view draws them) the wall bottom is a flat line, and the ground at both ends, in the middle and a quarter along must be at least 0.3 m above it (a wall cannot hang), and the wall must not be buried deeper than 8 m
+    const pads = [m.gate, m.spawn, ...(m.sleepers || []), ...(m.encounters || []), ...((m.dress && m.dress.heads) || [])].filter(Boolean), padNear = (x, z) => pads.some(q => Math.hypot(q.x - x, q.z - z) < 34);       // a flattened pad (a shrine, a chest, the gate, a head) blends the sand over up to 34 m
     for (const b of m.blocks) {
       const avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg; let worst = 1e9, deep = 0;
       const pt = k => { const t = k / 56 * Math.PI * 2, c = Math.cos(t), s = Math.sin(t), ux = q * Math.sign(c) * Math.cbrt(Math.abs(c)), uz = q * Math.sign(s) * Math.cbrt(Math.abs(s)); return [b.cx + ux * b.rx * b.cr - uz * b.rz * b.sr, b.cz + ux * b.rx * b.sr + uz * b.rz * b.cr]; };
       const view = (x, z) => viewH(m, x, z);
       for (let k = 0; k < 56; k++) { const a0 = pt(k), a1 = pt(k + 1), bottom = Math.min(footY(m, a0[0], a0[1]), footY(m, a1[0], a1[1]));
-        for (const t of [0, 0.25, 0.5, 0.75, 1]) { const g = view(a0[0] + (a1[0] - a0[0]) * t, a0[1] + (a1[1] - a0[1]) * t); worst = Math.min(worst, g - bottom); deep = Math.max(deep, g - bottom); } }
+        for (const t of [0, 0.25, 0.5, 0.75, 1]) { const g = view(a0[0] + (a1[0] - a0[0]) * t, a0[1] + (a1[1] - a0[1]) * t); worst = Math.min(worst, g - bottom); deep = Math.max(deep, g - bottom); }
+        assert.ok(b.T + 0.04 - bottom >= 3.2, a + ' every wall piece is at least 3.2 m tall, so the windows, slits and roof details (drawn from the roof down) always have wall under them: ' + (b.T - bottom));
+        for (const t of [0, 0.5, 1]) { const x = a0[0] + (a1[0] - a0[0]) * t, z = a0[1] + (a1[1] - a0[1]) * t, nx = x - b.cx, nz = z - b.cz, nl = Math.hypot(nx, nz) || 1; for (const d of [0.5, 1.5, 3]) { const px = x + nx / nl * d, pz = z + nz / nl * d; if (padNear(px, pz)) continue; assert.ok(viewH(m, px, pz) >= duneH(m.dune, px, pz) - 0.5, a + ' the drawn ground beside a block is never more than 0.5 m under the dune (no scooped hollow), unless a flattened pad of a shrine, the gate or a head is there on purpose'); } } }
+      // the footprint is never steeper than MAX_DROP
+      { let lo = 1e9, hi = -1e9; for (let k = 0; k < 20; k++) { const tt = k / 20 * Math.PI * 2; for (const f of [1, 0.55, 0]) { const ux = Math.cos(tt) * b.rx * f, uz = Math.sin(tt) * b.rz * f, h = duneH(m.dune, b.cx + ux * b.cr - uz * b.sr, b.cz + ux * b.sr + uz * b.cr); lo = Math.min(lo, h); hi = Math.max(hi, h); } } assert.ok(hi - lo <= MAX_DROP + 0.01, a + ' a block footprint spans ' + (hi - lo) + ' m of ground'); }
       assert.ok(worst >= 0.3, a + ' a block hangs: its wall stops only ' + worst + ' m below the ground');
       assert.ok(duneH(m.dune, b.cx, b.cz) - footY(m, b.cx, b.cz) >= 0.3 && groundAt(m, b.cx, b.cz) >= duneH(m.dune, b.cx, b.cz) - 0.01, a + ' block centre');
     }

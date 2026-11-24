@@ -169,11 +169,13 @@ function startView(G, P, sp, gt, blocks, heads) {
   }
   return best;
 }
+export const MAX_DROP = 2.0;       // a block is never put where its footprint spans more than 2 m of ground height: on a steeper slope it would hang or be carved in
 function attempt(seed, arch, k) {
   const rn = rngOf((seed ^ Math.imul(k + 1, 0x9E3779B1)) >>> 0), P = params(arch, rn, seed ^ k);
   // 4 to 6 mesas (7 to 10 m), 2 to 4 tall rock walls (10 to 14 m) and 16 to 22 lone ruin blocks (6 to 9 m), kept apart
   const blocks = [], placedAt = [];
-  const place = (n, mk, gap) => { for (let t = 0; t < 600 && n > 0; t++) { const x = (rn() - 0.5) * 520, z = (rn() - 0.5) * 520; if (placedAt.some(p => dist(p[0], p[1], x, z) < gap + p[2])) continue; const b = mk(x, z); blocks.push(b); placedAt.push([x, z, Math.max(b.rx, b.rz)]); n--; } };
+  const drop = b => { let lo = 1e9, hi = -1e9; for (let k = 0; k < 20; k++) { const t = k / 20 * TAU, c = cosA(t), s = sinA(t); for (const f of [1, 0.55, 0]) { const ux = c * b.rx * f, uz = s * b.rz * f, h = duneH(P, b.cx + ux * b.cr - uz * b.sr, b.cz + ux * b.sr + uz * b.cr); if (h < lo) lo = h; if (h > hi) hi = h; } } return hi - lo; };       // the ground height difference under a block's footprint
+  const place = (n, mk, gap) => { for (let t = 0; t < 1500 && n > 0; t++) { const x = (rn() - 0.5) * 520, z = (rn() - 0.5) * 520; if (placedAt.some(p => dist(p[0], p[1], x, z) < gap + p[2])) continue; const b = mk(x, z); if (drop(b) > MAX_DROP) continue; blocks.push(b); placedAt.push([x, z, Math.max(b.rx, b.rz)]); n--; } };
   place(4 + ((rn() * 3) | 0), (x, z) => block(rn, x, z, 7 + rn() * 6, 7 + rn() * 5, 7 + rn() * 3, 2.4, rn() < 0.45 ? 2 : 1), 70);
   place(2 + ((rn() * 3) | 0), (x, z) => block(rn, x, z, 13 + rn() * 6, 3 + rn() * 1.5, 10 + rn() * 4, 2.4, rn() < 0.5 ? 2 : 1), 70);
   place(16 + ((rn() * 7) | 0), (x, z) => { const b = block(rn, x, z, 3.8 + rn() * 2, 3 + rn() * 1.4, 6 + rn() * 3, 1.3, 0); b.door = rn() < 0.55; return b; }, 45);
