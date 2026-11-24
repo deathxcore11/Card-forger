@@ -70,9 +70,10 @@ scene.fog = new T.Fog(HORIZON, 80, 300);
 const sky = makeSky(); scene.add(sky);       // the engine sky dome: banded gradient, sun, clouds (view/engine.js)
 const camera = new T.PerspectiveCamera(62, 1, 0.15, 600);
 let fpsCap = 60, lastRender = 0;                     // a setting (30, 60, 90 or 120); a frame that comes sooner than the cap allows is skipped
-let fovSetting = 100, baseV = 62;                    // the setting is HORIZONTAL degrees, so it means the same on every screen shape; the vertical angle follows from the aspect and never goes past 88
+let fovSetting = 100, baseV = 62, defV = 62;                    // the setting is HORIZONTAL degrees, so it means the same on every screen shape; the vertical angle follows from the aspect and never goes past 88
 let fovK = 1;
-function fitFov() { const a = Math.max(0.3, camera.aspect || 1.78); baseV = Math.max(64, Math.min(88, 2 * Math.atan(Math.tan(fovSetting * Math.PI / 360) / a) * 180 / Math.PI)); fovK = Math.tan(67.7 * Math.PI / 360) / Math.tan(baseV * Math.PI / 360);       // vertical angle held to 64-88; the camera arm scales with it so the duelist keeps the same share of the screen on every screen shape
+const vOf = (h, a) => { let raw = a < 1 ? 50 + (h - 80) * 1.1 : 2 * Math.atan(Math.tan(h * Math.PI / 360) / a) * 180 / Math.PI; raw = Math.max(40, raw); return raw < 70 ? raw : 70 + 18 * (1 - Math.exp(-(raw - 70) / 18)); };       // horizontal degrees to vertical: exact on wide screens, a straight 50 to 88 ramp on tall ones, and a soft ceiling at 88 so no step of the slider is lost
+function fitFov() { const a = Math.max(0.3, camera.aspect || 1.78); baseV = vOf(fovSetting, a); defV = vOf(100, a); fovK = 1;       // the chase arm no longer follows the setting: a wider FOV shows more, a narrower one shows less
   camera.fov = baseV; camera.updateProjectionMatrix(); }
 // the look: only the sun is warm; the sky light is cool and its bounce from the ground is warm and dark, so up-faces land near x1.0 R, x0.97 G, x0.90 B
 scene.add(new T.HemisphereLight(0xdfe6f0, 0x6a5038, 0.74));
@@ -531,7 +532,7 @@ function frame(now) {
     // ownZoom = R / 5.4, capped at a size FLOOR: the duelist never goes under 7.5% of the screen height (cap = dMax / (arm x fovK), dMax = 1.8 m / (2 x minShare x tan(fovV / 2))). Max, not product, with the boss zoom.
     let R = 0; actors.monsters.forEach(m => { const h = (m.userData.size || 0) / 2; if (h > R) R = h; }); for (const o of game.fx) if (o.on && o.owner === 0 && o.dur >= 1 && o.r > R) R = o.r; if (window.__ds && window.__ds.ownRForce) R = window.__ds.ownRForce;
     const nowS = performance.now() / 1000; if (R >= ownPeak.r || nowS - ownPeak.t > 2) { ownPeak.r = R; ownPeak.t = nowS; }
-    const arm = Math.hypot(CFG.cam.back, CFG.cam.up), minShare = Math.min(innerWidth, innerHeight) < 600 ? 0.085 : 0.075, dMax = 1.8 / (2 * minShare * Math.tan(baseV * Math.PI / 360)), cap = Math.max(1, dMax / (arm * fovK));
+    const arm = Math.hypot(CFG.cam.back, CFG.cam.up), minShare = Math.min(innerWidth, innerHeight) < 600 ? 0.085 : 0.075, dMax = 1.8 / (2 * minShare * Math.tan(defV * Math.PI / 360)), cap = Math.max(1, dMax / (arm * fovK));
     const ownZoom = Math.max(1, Math.min(cap / Math.max(0.5, chase.spd), ownPeak.r / 5.4));
     chase.zoomCap = cap; chase.zoomRate = fx.rm_ ? 0.5 : 0;
     chase.zoomTo = Math.max(bossZoom, ownZoom);
@@ -636,6 +637,7 @@ window.__ds = {
   pickDuelist, freeze: v => { frozen = !!v; },
   yaw: v => { input.yaw = v; },
   drive: (secs, cmd) => { const c = Object.assign({ f: 0, r: 0, yaw: input.yaw, jump: false, dash: false, slide: false, use: false }, cmd || {}); for (let t = 0; t < secs && !game.over && !game.offer; t += 1 / 60) game.step(1 / 60, c); drainEvents(); if (game.over && MODE === 'play') results(); drawHud(game, true); },
+  setFov: v => { save.settings.fov = v; applySettings(); },
   fillSwarm: (n, kind) => { for (let i = 0; i < n; i++) spawnEnemy(game, kind); },
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
