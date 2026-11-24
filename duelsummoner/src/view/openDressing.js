@@ -1,6 +1,6 @@
 // The open desert's dressing, drawn into one flat-faceted, vertex-coloured builder: cacti, bare dead trees, half-sunk grey logs and beams, clay pots, one large carved head, the slits and doorways on the ruin blocks,
 // and, beyond the boundary line, large rock blocks, dead trees and ruin pieces. No textures; every piece is a handful of prisms and frusta with one colour per piece. View only: the sim reads map.solid.
-import { vnoise, groundAt } from '../gen/open/terrain.js';
+import { vnoise, groundAt, footY } from '../gen/open/terrain.js';
 const TAU = 6.283185307179586;
 const mixc = (a, b, t) => { const m = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
 function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -46,12 +46,12 @@ function deadTree(D, x, y, z, s, rot, v, small) {
     rod(D, [bx, by, bz], [ex, ey, ez], 0.2 * s, 0.07 * s, 5, [col, dkc], true); for (let f = 0; f < (small ? 1 : 2); f++) { if (r() < 0.25) continue; const a2 = a + (f ? 1 : -1) * (0.5 + r() * 0.8), L2 = L * (0.5 + r() * 0.2), u = 0.55 + 0.2 * f, fx = bx + (ex - bx) * u, fy = by + (ey - by) * u, fz = bz + (ez - bz) * u; rod(D, [fx, fy, fz], [fx + Math.cos(a2) * L2, fy + L2 * 0.6, fz + Math.sin(a2) * L2], 0.11 * s, 0.04 * s, 4, col, true); } }
 }
 // ---- logs and beams: bleached grey-brown, a darker end-grain disc at each end, one end broken; every fifth one stands as a broken post
-function log(D, q) {
-  const [x0, y0, z0, x1, y1, z1, rad, kind] = q, base = kind === 2 ? 0xb4a894 : kind ? 0xa89c88 : 0x9c8f7a, col = [base, mixc(base, 0x6a5c48, 0.25)], n = kind === 2 ? 4 : 6, grain = 0x5e5040, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1;
+function log(D, map, q) {
+  const [x0, y0, z0, x1, y1, z1, rad, kind] = q, base = kind === 2 ? 0xe0c89a : kind ? 0xd6b88a : 0xcaa878, col = [base, mixc(base, 0xb98a55, 0.28)], ns = kind === 2 ? 4 : 6, grain = 0x6a4f30, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1;
   if (((Math.floor(x0 * 7 + z0 * 13) % 5) + 5) % 5 === 0) {       // a broken post standing up, half sunk, with a jagged top
-    const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2, my = Math.min(y0, y1), h = 2.4 + (rad * 6 % 1.5); rod(D, [mx, my - 0.3, mz], [mx + 0.12, my + h, mz], rad, rad * 0.85, n, col, true, false, 0.3, grain); rod(D, [mx + 0.05, my + h - 0.05, mz], [mx + 0.25, my + h + rad * 1.5, mz + 0.1], rad * 0.35, 0.03, 4, col[0], true); return; }
-  rod(D, [x0, y0 + rad * 0.5, z0], [x1, y1 + rad * 0.5, z1], rad, rad * 0.92, n, col, true, true, 0.4, grain);
-  rod(D, [x1, y1 + rad * 1.0, z1], [x1 + dx / l * 0.1, y1 + rad * 1.0 + rad * 1.7, z1 + dz / l * 0.1], rad * 0.34, 0.02, 4, mixc(base, 0xd9d2c0, 0.4), true);
+    const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2, my = groundAt(map, mx, mz), h = 2.4 + (rad * 6 % 1.5); rod(D, [mx, my - 0.5, mz], [mx + 0.12, my + h, mz], rad, rad * 0.85, ns, col, true, false, 0.3, grain); rod(D, [mx + 0.05, my + h - 0.05, mz], [mx + 0.25, my + h + rad * 1.5, mz + 0.1], rad * 0.35, 0.03, 4, col[0], true); return; }
+  const n = Math.max(1, Math.round(l / 2)), pt = t => { const x = x0 + dx * t, z = z0 + dz * t; return [x, groundAt(map, x, z) + rad * 0.1, z]; };       // 2 m pieces that follow the ground, the middle of the beam on the surface so it is half sunk
+  for (let i = 0; i < n; i++) rod(D, pt(i / n), pt((i + 1) / n), rad, rad * 0.97, ns, col, i === n - 1, i === 0, 0.4, grain);
 }
 // ---- clay pot
 const CLAY = [0xc2642f, 0xb4562a, 0xd0793c];
@@ -105,11 +105,11 @@ function blockMesh(D, map, b) {
   const cr = Math.cos(b.rot), sr = Math.sin(b.rot), avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg, K = BLK[b.tone], N = 56, T = b.T + 0.04;
   const pt = k => { const t = k / N * TAU, c = Math.cos(t), s = Math.sin(t), ux = q * Math.sign(c) * Math.cbrt(Math.abs(c)), uz = q * Math.sign(s) * Math.cbrt(Math.abs(s)); return [b.cx + ux * b.rx * cr - uz * b.rz * sr, b.cz + ux * b.rx * sr + uz * b.rz * cr]; };
   const P = []; for (let k = 0; k <= N; k++) P.push(pt(k % N));
-  for (let k = 0; k < N; k++) { const a0 = P[k], a1 = P[k + 1], g = Math.min(groundAt(map, a0[0], a0[1]), groundAt(map, a1[0], a1[1])) - 0.6, mx = (a0[0] + a1[0]) / 2 - b.cx, mz = (a0[1] + a1[1]) / 2 - b.cz, ml = Math.sqrt(mx * mx + mz * mz) || 1, sh = (mx * 0.8 + mz * 0.55) / (ml * 0.97);
+  for (let k = 0; k < N; k++) { const a0 = P[k], a1 = P[k + 1], g = Math.min(footY(map, a0[0], a0[1]), footY(map, a1[0], a1[1])), mx = (a0[0] + a1[0]) / 2 - b.cx, mz = (a0[1] + a1[1]) / 2 - b.cz, ml = Math.sqrt(mx * mx + mz * mz) || 1, sh = (mx * 0.8 + mz * 0.55) / (ml * 0.97);
     const base = sh >= 0 ? mixc(K.face, 0xfffbe8, 0.3 * sh) : mixc(K.face, K.shade, Math.min(1, 0.25 - sh * 1.1));              // lit faces cream, shaded faces warm tan, never grey
     for (let y = g, i = 0; y < T - 0.01; i++) { const y1 = Math.min(T, (Math.floor(y / 1.2) + 1) * 1.2); const bc = mixc(base, 0x000000, 1 - K.bands[((Math.floor(y / 1.2) % 3) + 3) % 3]); D.quad([a0[0], y, a0[1]], [a1[0], y, a1[1]], [a1[0], y1, a1[1]], [a0[0], y1, a0[1]], [mx, 0, mz], y < g + 1.5 ? mixc(bc, 0x5e3f22, 0.4) : bc); y = y1; if (i > 40) break; }
     D.tri([b.cx, T, b.cz], [a0[0], T, a0[1]], [a1[0], T, a1[1]], [0, 1, 0], K.top); }
-  if (b.tone === 2) { let sd = b.seed + 7; const r = () => { sd = (Math.imul(sd, 1664525) + 1013904223) >>> 0; return sd / 4294967296; }; const nsh = 5 + ((r() * 4) | 0); for (let k = 0; k < nsh; k++) { const ang = r() * TAU, rr = 0.2 + r() * 0.6, px = b.cx + (Math.cos(ang) * b.rx * rr) * cr - (Math.sin(ang) * b.rz * rr) * sr, pz = b.cz + (Math.cos(ang) * b.rx * rr) * sr + (Math.sin(ang) * b.rz * rr) * cr, h = 1.4 + r() * 2.6, lean = (r() - 0.5) * 2.2, la = r() * TAU, w = 0.5 + r() * 0.7; rod(D, [px, T - 0.1, pz], [px + Math.cos(la) * lean, T + h, pz + Math.sin(la) * lean], w, w * 0.15, 4, mixc(K.face, 0xffffff, 0.12 + r() * 0.15), true, false, r() * 1.5); } }
+  if (b.tone === 2) { let sd = b.seed + 7; const r = () => { sd = (Math.imul(sd, 1664525) + 1013904223) >>> 0; return sd / 4294967296; }; const nsh = 4 + ((r() * 4) | 0); for (let k = 0; k < nsh; k++) { const ang = r() * TAU, rr = 0.2 + r() * 0.6, px = b.cx + (Math.cos(ang) * b.rx * rr) * cr - (Math.sin(ang) * b.rz * rr) * sr, pz = b.cz + (Math.cos(ang) * b.rx * rr) * sr + (Math.sin(ang) * b.rz * rr) * cr, wd = 1.2 + r() * 1.4; frustum(D, px, T - 0.05, pz, wd * 1.5, wd, wd * 1.1, wd * 0.8, wd * 0.5, r() * TAU, mixc(K.face, 0xffffff, 0.08 + r() * 0.12), K.top); } }       // low broad rubble on the top (each slab far wider than tall), no spikes
   const faces = [[1, 0, b.rx, b.rz], [-1, 0, b.rx, b.rz], [0, 1, b.rz, b.rx], [0, -1, b.rz, b.rx]];
   faces.forEach((f, fi) => {
     const [ax, az, ext, lat] = f, nx = ax * cr - az * sr, nz = ax * sr + az * cr, tx = -nz, tz = nx, edge = ext * q, px = b.cx + nx * edge, pz = b.cz + nz * edge, span = lat * 0.62, gy = groundAt(map, px + nx * 0.6, pz + nz * 0.6);
@@ -140,7 +140,7 @@ export function addDressing(D, map, ok) {
   const d = map.dress || {}, yes = ok || (() => true);
   for (const q of d.cacti || []) if (yes(q[0], q[2])) cactus(D, q[0], q[1], q[2], q[3], q[4], q[5]);
   for (const q of d.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], false);
-  for (const q of d.logs || []) if (yes(q[0], q[2])) log(D, q);
+  for (const q of d.logs || []) if (yes(q[0], q[2])) log(D, map, q);
   for (const q of d.pots || []) if (yes(q[0], q[2])) pot(D, q[0], q[1], q[2], q[3], q[4], q[5]);
   for (const q of d.heads || []) if (yes(q.x, q.z)) monument(D, q);
   if (yes(map.gate.x, map.gate.z)) gateway(D, map);

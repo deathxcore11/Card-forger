@@ -3,7 +3,7 @@
 // are hidden by a 3 m skirt round every chunk. One material is shared by all of them. Flat-shaded facets.
 // Ground look: pale cream sand on the sun side of every dune, orange on the lee side; fine ripple streaks along the wind (a tiling streak map, view only); steep faces (mountains, blocks) are banded sandstone, lit and shaded.
 import { Builder } from './mapMesh.js';
-import { vnoise, groundAt, duneH, blockProf } from '../gen/open/terrain.js';
+import { vnoise, groundAt, duneH, blockProf, viewH } from '../gen/open/terrain.js';
 import { addDressing } from './openDressing.js';
 const T = window.THREE;
 const mixc = (a, b, t) => { const m = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
@@ -29,8 +29,8 @@ function mountainFog(mat) {
 
 export function buildOpen(map, look) {
   const group = new T.Group(), blocks = map.blocks || [], wind = map.dune ? map.dune.wind : 0, cw = Math.cos(wind), sw = Math.sin(wind);
-  // under a block the view ground is the plain dune (the box drawn by openDressing hides it), so the 2 m grid leaves no teeth round the foot
-  const gh = (x, z) => { for (const b of blocks) { const dx = x - b.cx, dz = z - b.cz, R = Math.max(b.rx, b.rz) * 1.3 + 3; if (dx * dx + dz * dz < R * R && blockProf(b, x, z) > 0.05) return duneH(map.dune, x, z); } return groundAt(map, x, z); };
+  // under a block (wherever its rise has started, so the ground is continuous at its foot and no cone of ramp is left standing beside the wall) the view ground is the plain dune; the box drawn by openDressing hides it
+  const gh = (x, z) => viewH(map, x, z);
   const sandColour = (cx, cz, cy) => {
     const e = 3, gx = (groundAt(map, cx + e, cz) - groundAt(map, cx - e, cz)) / (2 * e), gz = (groundAt(map, cx, cz + e) - groundAt(map, cx, cz - e)) / (2 * e), sh = Math.max(-1, Math.min(1, (-gx * 0.8 - gz * 0.55) * 4.2));       // the slope over a 6 m window (not the facet), so a dune reads as one lit side and one shaded side
     const base = mixc(TINT_A, TINT_B, vnoise(77, cx / 110, cz / 110));                          // one slow tint across the map, no blotches

@@ -71,6 +71,22 @@ function prof(b, x, z) {                                                        
   if (q6 > 3) return 0; const q = cbrt(sq(q6)); const s = (1 - q) * ((b.rx + b.rz) / 2); return s > 0 ? sstep(0, b.cw, s) : 0;
 }
 export const blockProf = prof;
+// the sand banked against the windward face of a block (a low broad mound, up to 0.9 m, fading over 14 m; it carries on at full height under the box so there is no step at the foot)
+function bankOf(P, b, x, z) {
+  const so = Math.max(0, qOf(b, x, z) - 1) * (b.rx + b.rz) / 2; if (so > 14) return 0;
+  const dx = x - b.cx, dz = z - b.cz, d = sq(dx * dx + dz * dz) || 1;
+  return 0.9 * (1 - sstep(0, 14, so)) * sstep(0.1, 0.7, -(dx * cosA(P.wind) + dz * sinA(P.wind)) / d);
+}
+// the ground the view draws: the heightfield, except wherever a block's rise has started (the drawn box hides it): there the plain dune plus the same banked sand, so the ground is continuous at the foot and the steep rise is never drawn as a cone
+export function viewH(map, x, z) {
+  const bl = map.blocks || []; let under = false, bank = 0;
+  for (const b of bl) { const dx = x - b.cx, dz = z - b.cz, R = Math.max(b.rx, b.rz) * 1.3 + 3; if (dx * dx + dz * dz < R * R && (prof(b, x, z) > 0 || (qOf(b, x, z) - 1) * (b.rx + b.rz) / 2 < 1.6)) under = true; }       // also the 1.6 m just outside the foot: the 1 m cells there borrow height from the steep rise inside and would stand up as a cone
+  if (!under) return groundAt(map, x, z);
+  for (const b of bl) { const dx = x - b.cx, dz = z - b.cz, R = reachOf(b) + 16; if (dx * dx + dz * dz < R * R) bank += bankOf(map.dune, b, x, z); }
+  return duneH(map.dune, x, z) + bank;
+}
+// where the drawn wall of a block stops at a point on its outline: 1 m below the lowest of the plain dune and the heightfield there, so the wall is always sunk into the ground and never hangs
+export function footY(map, x, z) { return Math.min(duneH(map.dune, x, z), groundAt(map, x, z)) - 1.0; }
 const reachOf = b => Math.max(b.rx, b.rz) * 1.25 + 2;
 
 // the mountain range all round: steep faceted rock rising 35 to 70 m out of the dunes. The outline is a rounded square that wanders by up to 30 m; the rise takes 30 to 44 m, so the faces are far too steep to climb
@@ -87,9 +103,9 @@ function field(P, blocks) {
   for (let cj = 0; cj < NC; cj++) for (let ci = 0; ci < NC; ci++) { const x = 2 * ci + 0.5 - HALF, z = 2 * cj + 0.5 - HALF, d = duneH(P, x, z); if (x > -300 && x < 300 && z > -300 && z < 300 && d < lo) lo = d; C[cj * NC + ci] = d + mount(P, x, z); }       // dunes and mountains on a 2 m grid, then 1 m by interpolation
   for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) { const ci = i >> 1, cj = j >> 1, a = C[cj * NC + ci]; G[j * S + i] = (i & 1) ? ((j & 1) ? 0.25 * (a + C[cj * NC + ci + 1] + C[(cj + 1) * NC + ci] + C[(cj + 1) * NC + ci + 1]) : 0.5 * (a + C[cj * NC + ci + 1])) : ((j & 1) ? 0.5 * (a + C[(cj + 1) * NC + ci]) : a); }
   P.shift = 0.3 - lo; for (let k = 0; k < S * S; k++) G[k] += P.shift;                              // the lowest sand is 0.3 m (duneH adds P.shift itself for the view)
-  // sand banked against the windward face of every block: up to 1.8 m, fading over 9 m
-  { const wx = cosA(P.wind), wz = sinA(P.wind); for (const b of blocks) { const R = reachOf(b) + 10, avg = (b.rx + b.rz) / 2, i0 = Math.max(0, Math.floor(b.cx - R + HALF - OFF)), i1 = Math.min(S - 1, Math.ceil(b.cx + R + HALF - OFF)), j0 = Math.max(0, Math.floor(b.cz - R + HALF - OFF)), j1 = Math.min(S - 1, Math.ceil(b.cz + R + HALF - OFF));
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const x = i + 0.5 - HALF + OFF, z = j + 0.5 - HALF + OFF, q = qOf(b, x, z); if (q <= 1) continue; const so = (q - 1) * avg; if (so > 9) continue; const dx = x - b.cx, dz = z - b.cz, d = sq(dx * dx + dz * dz) || 1, face = sstep(0.1, 0.7, -(dx * wx + dz * wz) / d); G[j * S + i] += 1.8 * (1 - sstep(0, 9, so)) * face; } } }
+  // sand banked against the windward face of every block: a low broad mound, up to 0.9 m fading over 14 m (under 6 degrees anywhere, so it is sand and never a steep brown wedge)
+  { const wx = cosA(P.wind), wz = sinA(P.wind); for (const b of blocks) { const R = reachOf(b) + 16, avg = (b.rx + b.rz) / 2, i0 = Math.max(0, Math.floor(b.cx - R + HALF - OFF)), i1 = Math.min(S - 1, Math.ceil(b.cx + R + HALF - OFF)), j0 = Math.max(0, Math.floor(b.cz - R + HALF - OFF)), j1 = Math.min(S - 1, Math.ceil(b.cz + R + HALF - OFF));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const x = i + 0.5 - HALF + OFF, z = j + 0.5 - HALF + OFF, q = qOf(b, x, z); const so = Math.max(0, q - 1) * avg; if (so > 14) continue; const dx = x - b.cx, dz = z - b.cz, d = sq(dx * dx + dz * dz) || 1, face = sstep(0.1, 0.7, -(dx * wx + dz * wz) / d); G[j * S + i] += 0.9 * (1 - sstep(0, 14, so)) * face; } } }
   for (const b of blocks) {
     const R = reachOf(b), i0 = Math.max(0, Math.floor(b.cx - R + HALF - OFF)), i1 = Math.min(S - 1, Math.ceil(b.cx + R + HALF - OFF)), j0 = Math.max(0, Math.floor(b.cz - R + HALF - OFF)), j1 = Math.min(S - 1, Math.ceil(b.cz + R + HALF - OFF));
     let top = -1e9; for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (prof(b, i + 0.5 - HALF + OFF, j + 0.5 - HALF + OFF) > 0.02) top = Math.max(top, G[j * S + i]);
@@ -200,15 +216,15 @@ function dressing(b, seed, enc, rings, st) {
     for (let g = 0; g < 2 && !(g && rnd() < 0.5); g++) { const a0 = rnd() * TAU, d0 = an.r + 3 + rnd() * 7, cx = an.x + cosA(a0) * d0, cz = an.z + sinA(a0) * d0, n = 4 + ((rnd() * 6) | 0); let k = 0;
       for (let t = 0; t < 40 && k < n; t++) { const a = rnd() * TAU, d = 0.8 + rnd() * 4.5, x = cx + cosA(a) * d, z = cz + sinA(a) * d; if (!okAt(x, z, 1, 0.45) || near('c', x, z, 1.7)) continue; const s = k === 0 ? 1.3 + rnd() * 0.25 : 0.6 + rnd() * 0.7; cactus(x, z, s); k++; } }
     if (rnd() < 0.55) { const a0 = rnd() * TAU, d0 = an.r + 4 + rnd() * 8, n = 1 + ((rnd() * 3) | 0); for (let k = 0; k < n; k++) { const x = an.x + cosA(a0) * d0 + (rnd() - 0.5) * 7, z = an.z + sinA(a0) * d0 + (rnd() - 0.5) * 7; if (okAt(x, z, 2) && !near('d', x, z, 6)) dead(x, z, 1.25 + rnd() * 0.35); } }
-    if (an.blk) { const bl = an.blk, a0 = rnd() * TAU, d0 = Math.max(bl.rx, bl.rz) * 1.05 + 4 + rnd() * 3, x = bl.cx + cosA(a0) * d0, z = bl.cz + sinA(a0) * d0; if (okAt(x, z, 1.5, 0.35)) potc(x, z); const a1 = a0 + 2 + rnd() * 2, d1 = d0 + 3 + rnd() * 3, x1 = bl.cx + cosA(a1) * d1, z1 = bl.cz + sinA(a1) * d1; if (free(x1, z1, 1) && slopeAt(G, x1, z1) < 0.5) beam(x1, z1, 7 + rnd() * 6, 0.45 + rnd() * 0.25, 2); }
+    if (an.blk) { const bl = an.blk, a0 = rnd() * TAU, d0 = Math.max(bl.rx, bl.rz) * 1.05 + 4 + rnd() * 3, x = bl.cx + cosA(a0) * d0, z = bl.cz + sinA(a0) * d0; if (okAt(x, z, 1.5, 0.35)) potc(x, z); const a1 = a0 + 2 + rnd() * 2, d1 = d0 + 3 + rnd() * 3, x1 = bl.cx + cosA(a1) * d1, z1 = bl.cz + sinA(a1) * d1; if (free(x1, z1, 1) && slopeAt(G, x1, z1) < 0.5) beam(x1, z1, 6 + rnd() * 3, 0.45 + rnd() * 0.25, 2); }
   }
   const fill = (n, tries, kind, sep, ok, make) => { let k = 0; for (let t = 0; t < tries && k < n; t++) { const [x, z] = spot(); if (!ok(x, z) || near(kind, x, z, sep)) continue; make(x, z); k++; } };
   fill(240, 16000, 'c', 12, (x, z) => dens(x, z) > 0.3 && okAt(x, z, 2), (x, z) => cactus(x, z, 0.9 + rnd() * 0.6));
   fill(100, 12000, 'd', 16, (x, z) => okAt(x, z, 2), (x, z) => dead(x, z, 1.25 + rnd() * 0.35));
-  fill(360, 20000, 'l', 10, (x, z) => okAt(x, z, 1, 0.5), (x, z) => beam(x, z, 5 + rnd() * 7, 0.4 + rnd() * 0.3, (rnd() * 2) | 0));
+  fill(360, 20000, 'l', 10, (x, z) => okAt(x, z, 1, 0.5), (x, z) => beam(x, z, 6 + rnd() * 3, 0.4 + rnd() * 0.3, (rnd() * 2) | 0));
   fill(40, 8000, 'p', 20, (x, z) => okAt(x, z, 2, 0.35), (x, z) => potc(x, z));
   // coverage: every 28 m cell of the square has a piece within 25 m of its centre
-  for (let cz = -280; cz <= 280; cz += 28) for (let cx = -280; cx <= 280; cx += 28) { if (near('*', cx, cz, 22)) continue; for (let t = 0; t < 12; t++) { const x = cx + (rnd() - 0.5) * 16, z = cz + (rnd() - 0.5) * 16; if (!okAt(x, z, 2, 0.45)) continue; const r = rnd(); if (r < 0.45) cactus(x, z, 1.0 + rnd() * 0.5); else if (r < 0.7) dead(x, z, 1.25 + rnd() * 0.35); else beam(x, z, 6 + rnd() * 6, 0.45 + rnd() * 0.25, 2); break; } }
+  for (let cz = -280; cz <= 280; cz += 28) for (let cx = -280; cx <= 280; cx += 28) { if (near('*', cx, cz, 22)) continue; for (let t = 0; t < 12; t++) { const x = cx + (rnd() - 0.5) * 16, z = cz + (rnd() - 0.5) * 16; if (!okAt(x, z, 2, 0.45)) continue; const r = rnd(); if (r < 0.45) cactus(x, z, 1.0 + rnd() * 0.5); else if (r < 0.7) dead(x, z, 1.25 + rnd() * 0.35); else beam(x, z, 6 + rnd() * 3, 0.45 + rnd() * 0.25, 2); break; } }
   return { dress: out, solid };
 }
 const farDressing = () => ({ rocks: [], dead: [], ruins: [] });                                          // the mountains close the view: nothing stands beyond them

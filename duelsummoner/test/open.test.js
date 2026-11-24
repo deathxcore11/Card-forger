@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { openMap, ARCHETYPES, EDGE_R, groundAt, blockProf } from '../src/gen/open/terrain.js';
+import { openMap, ARCHETYPES, EDGE_R, groundAt, blockProf, footY, duneH, viewH } from '../src/gen/open/terrain.js';
 import { Game } from '../src/sim/game.js';
 import { scatterStage } from '../src/gen/scatter.js';
 import { loadMap, heightAt, camGround, moveXZ } from '../src/sim/terrain.js';
@@ -44,6 +44,18 @@ test('open desert: 840 m of heightfield (about 720 m of playable ground), genera
     { const C = m.dress.cacti; let grouped = 0; for (const c of C) if (C.filter(o => o !== c && Math.hypot(o[0] - c[0], o[2] - c[2]) < 6).length >= 3) grouped++; assert.ok(grouped >= C.length * 0.4, a + ' grouped cacti ' + grouped + ' of ' + C.length); for (const d of m.dress.dead) assert.ok(4.6 * d[3] >= 5.7 && 5.5 * d[3] <= 9.1, 'dead tree height 6 to 9 m');
       const pcs = [...C, ...m.dress.dead, ...m.dress.pots].map(q => [q[0], q[2]]).concat(m.dress.logs.map(q => [(q[0] + q[3]) / 2, (q[2] + q[5]) / 2]), m.dress.heads.map(h => [h.x, h.z]), m.blocks.map(b => [b.cx, b.cz])); let n25 = 0, n60 = 0, N = 0; for (let i = 0; i < 500; i++) { const x = (((i * 7919) % 2999) / 2999 - 0.5) * 520, z = (((i * 104729) % 3001) / 3001 - 0.5) * 520; N++; let c25 = 0, c60 = 0; for (const q of pcs) { const d = Math.hypot(q[0] - x, q[1] - z); if (d < 25) c25++; if (d < 60) c60++; } if (c25 >= 1) n25++; if (c60 >= 3) n60++; } assert.ok(n25 / N >= 0.95 && n60 / N >= 0.95, a + ' coverage ' + n25 / N + ' ' + n60 / N); }
     assert.ok(m.solid.length < 1500, 'solid pieces ' + m.solid.length);
+    // beams 6 to 9 m
+    for (const l of m.dress.logs) { const len = Math.hypot(l[3] - l[0], l[5] - l[2]); assert.ok(len >= 5.99 && len <= 9.01, a + ' beam length ' + len); }
+    // every block sits on the ground along its whole outline: for each of the 56 wall segments (as the view draws them) the wall bottom is a flat line, and the ground at both ends, in the middle and a quarter along must be at least 0.3 m above it (a wall cannot hang), and the wall must not be buried deeper than 8 m
+    for (const b of m.blocks) {
+      const avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg; let worst = 1e9, deep = 0;
+      const pt = k => { const t = k / 56 * Math.PI * 2, c = Math.cos(t), s = Math.sin(t), ux = q * Math.sign(c) * Math.cbrt(Math.abs(c)), uz = q * Math.sign(s) * Math.cbrt(Math.abs(s)); return [b.cx + ux * b.rx * b.cr - uz * b.rz * b.sr, b.cz + ux * b.rx * b.sr + uz * b.rz * b.cr]; };
+      const view = (x, z) => viewH(m, x, z);
+      for (let k = 0; k < 56; k++) { const a0 = pt(k), a1 = pt(k + 1), bottom = Math.min(footY(m, a0[0], a0[1]), footY(m, a1[0], a1[1]));
+        for (const t of [0, 0.25, 0.5, 0.75, 1]) { const g = view(a0[0] + (a1[0] - a0[0]) * t, a0[1] + (a1[1] - a0[1]) * t); worst = Math.min(worst, g - bottom); deep = Math.max(deep, g - bottom); } }
+      assert.ok(worst >= 0.3, a + ' a block hangs: its wall stops only ' + worst + ' m below the ground');
+      assert.ok(duneH(m.dune, b.cx, b.cz) - footY(m, b.cx, b.cz) >= 0.3 && groundAt(m, b.cx, b.cz) >= duneH(m.dune, b.cx, b.cz) - 0.01, a + ' block centre');
+    }
   }
   const sorted = maps.slice().sort((a, b) => a - b), p95 = sorted[Math.floor(sorted.length * 0.95)]; assert.ok(p95 < 1500, 'generation p95 ' + p95 + ' ms (max ' + sorted[sorted.length - 1] + ')');
 });
