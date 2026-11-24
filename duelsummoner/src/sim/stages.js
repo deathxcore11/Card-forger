@@ -143,7 +143,7 @@ function startGate(g, early, toll) {
   startBoss(g, G.early, gate);
   g.gateOpenedAt = g.sc;
   if (toll) { g.p.x = g.map.arena.tollPull.x; g.p.z = g.map.arena.tollPull.z; g.p.y = heightAt(g.p.x, g.p.z); g.p.vx = g.p.vz = 0; g.p.grounded = true; g.event('banner', 'The Toll Bell rings. The sigil pulls you in.'); g.emit('tollbell'); }
-  if (g.openFlow) g.event('bosscard', gate.name);       // the large name card: only for the stage boss, when the player wakes the gate
+  if (g.openFlow) { g.event('bannerdrop', 'You see the gate'); g.event('bosscard', gate.name); }       // the large name card: only for the stage boss, when the player wakes the gate
   g.emit('gatefight', g.stage);
 }
 
@@ -273,7 +273,7 @@ function openTick(g, dt) {
     for (let i = 0; i < S.timeline.length; i++) { const ev = S.timeline[i], sl = (g.map.sleepers || []).find(q => q.role === ev.role); if (!sl) continue; const at = { x: sl.x, y: heightAt(sl.x, sl.z), z: sl.z }, n0 = g.sp.length; spawnSpecial(g, ev, at, true); for (let k = n0; k < g.sp.length; k++) { const q = g.sp[k]; q.asleep = true; q.hpBase = q.maxHp / (g.hpMul || 1); } g.evState[i] = 2; }
   }
   const gx = p.x - gr.x, gz = p.z - gr.z, gd2 = gx * gx + gz * gz;
-  if (!g.gateSeen && (gd2 < 90 * 90 || exploredAt(g.fog, gr.x, gr.z))) { g.gateSeen = true; g.event('banner', 'You see the gate. Wake it when you are ready.'); }
+  if (!g.gateSeen && (gd2 < 90 * 90 || exploredAt(g.fog, gr.x, gr.z))) { g.gateSeen = true; if (G.state === 'closed' && gd2 > 64) g.event('banner', 'You see the gate. Wake it when you are ready.'); }
   G.awake = true;
   if (G.state === 'closed' && gd2 < gr.radius * gr.radius) {
     g.stagePrompt = 'Hold {use}: wake the gate (the stage boss comes)';

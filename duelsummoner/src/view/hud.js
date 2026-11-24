@@ -167,6 +167,7 @@ export function showBanner(text) {
   bq.push({ text, kind: k }); while (bq.length > BANNER_MAX) bq.shift();
   if (!bShowing) bannerNext();
 }
+export function dropBanner(start) { for (let i = bq.length - 1; i >= 0; i--) if (bq[i].text.startsWith(start)) bq.splice(i, 1); if (bShowing && bShowing.text.startsWith(start)) bannerNext(); }       // a banner that has stopped being true leaves at once
 export function clearBanners() { bq.length = 0; bShowing = null; clearTimeout(bTimer); clearInterval(bCount); $('banner').classList.remove('on'); }
 let flashShown = -1, flashEl = null, flashPrev = 0, flashStart = -1e9;
 export function showFlash(g) {

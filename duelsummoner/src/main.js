@@ -28,7 +28,7 @@ import { LeyThreads } from './view/threads.js';
 import { Actors } from './view/actors.js';
 import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
-import { drawHud, showFlash, showBanner, clearBanners, drawStatPanel, inputMode } from './view/hud.js';
+import { drawHud, showFlash, showBanner, dropBanner, clearBanners, drawStatPanel, inputMode } from './view/hud.js';
 import { keyWords } from './ui/prompts.js';
 import { renderPause, setTab as pauseTab, bindHolds, matHtml, statRows } from './view/pause.js';
 import { deviceClass } from './ui/device.js';
@@ -336,6 +336,7 @@ const groundY = (x, z) => Math.min(heightAt(x, z), 40);       // the one ground 
 function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'bosscard') { const el = $('bosscard'); if (el) { el.textContent = data; el.classList.add('on'); document.body.classList.add('cardon'); clearTimeout(el._t); el._t = setTimeout(() => { el.classList.remove('on'); document.body.classList.remove('cardon'); }, 2500); } }       // the stage boss's name, in the top third, 2.5 s
+  else if (type === 'bannerdrop') dropBanner(data);
   else if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(keyWords(data, inputMode())); }       // a refused chest pulses its price tag instead of a banner
   else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); if (game.mode !== 'classic' && (game.stage || 0) < 2) setTimeout(() => prewarmStage(game.seed, (game.stage || 0) + 1), 60); }       // the next stage is drawn while the player reads the offer
   else if (type === 'levelup') { host.haptic('levelup'); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }

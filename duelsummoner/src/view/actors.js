@@ -372,7 +372,7 @@ export class Actors {
     { const want = this.rigs[g.duelist] || null; if (want !== this.rig) { if (this.rig) this.rig.group.visible = false; this.rig = want; if (want) want.group.visible = true; } }       // the rig of the duelist being played; the others sleep (no mixer work)
     if (this.rig) {
       const R = this.rig, ct = g.cardT, thrown = this._ct !== undefined && ct > this._ct + 0.01; this._ct = ct;
-      R.group.position.copy(this.player.position); R.group.rotation.y = this.player.rotation.y + R.yaw; R.group.scale.setScalar(g.oaths.small ? 0.5 : 1); this.player.visible = false;
+      R.group.position.copy(this.player.position); R.group.rotation.order = 'YXZ'; R.group.rotation.y = this.player.rotation.y + R.yaw; { const yr = this._yr = (this._yr || 0) + (((this._ly === undefined ? this.player.rotation.y : this._ly) - this.player.rotation.y) / Math.max(dt, 0.004) - (this._yr || 0)) * Math.min(1, dt * 10); this._ly = this.player.rotation.y; const dy = Math.max(-2.5, Math.min(2.5, yr)); R.group.rotation.z = p.grounded && !p.sliding && !fx.rm_ ? Math.max(-0.2, Math.min(0.2, (dy > 0 ? Math.max(0, dy - 0.5) : Math.min(0, dy + 0.5)) * 0.1)) * Math.min(1, Math.hypot(p.vx || 0, p.vz || 0) / 5) : 0; }       // a sharp turn at speed banks the body into it, up to 11 degrees R.group.scale.setScalar(g.oaths.small ? 0.5 : 1); this.player.visible = false;
       R.update(p, g, dt, thrown);
       if (thrown && g.aimX !== undefined) { const ay = Math.atan2(g.aimX - p.x, g.aimZ - p.z); if (!(this._aimT > 0)) this._aimYs = ay; this._aimY = ay; this._aimT = 0.9; }       // one aim, followed slowly while throws keep coming, faded out over 0.4 s after the last
       let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees
@@ -465,7 +465,7 @@ export class Actors {
       const k = this.kinds[e.kind[i]], K = k.K, n = counts[e.kind[i]];
       const x = pl(e.px[i], e.x[i], a), y = pl(e.py[i], e.y[i], a), z = pl(e.pz[i], e.z[i], a);
       if (blocked(x, y + 0.9, z, 2.4)) continue;
-      const hit = e.flash[i] > 0, bob = K.fly ? Math.sin(t * 9 + i) * 0.08 : Math.abs(Math.sin(t * 7 + i)) * 0.15;
+      const hit = e.flash[i] > 0; let bob; if (K.fly) bob = Math.sin(t * 9 + i) * 0.08; else { const bp = this._bp || (this._bp = new Float32Array(e.max * 3)), j3 = i * 3; if (sage < 0.02) { bp[j3] = i; bp[j3 + 1] = x; bp[j3 + 2] = z; } const spd = Math.min(14, Math.hypot(x - bp[j3 + 1], z - bp[j3 + 2]) / Math.max(dt, 0.004)); bp[j3 + 1] = x; bp[j3 + 2] = z; bp[j3] += spd / 1.3 * dt * Math.PI; bob = Math.abs(Math.sin(bp[j3])) * 0.15 * Math.min(1, spd / 1.5); }       // the hop follows ground speed (one hop per 1.3 m), and stops when the enemy stands
       let sc = K.scale, pulse = 1; if (K.id === 5) sc = SC_SCARAB;       // the Tomb Scarab is drawn 1.3x so it can be picked out of a crowd (the sim hitbox is unchanged)
       if (K.id === 4 && e.st[i] === 1) pulse = 1 + 0.25 * Math.sin(t * 30);                        // Sand Bloat swelling before it bursts
       const face = turnLerp(e.pface[i], e.face[i], a);
