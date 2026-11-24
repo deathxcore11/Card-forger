@@ -205,7 +205,7 @@ function beginNow(mode, sel) {
   const blind = !!game.oaths.blind; for (const id of ['minimap', 'boss', 'plate']) $(id).style.visibility = blind ? 'hidden' : '';      // Blind Oath
 }
 function pickDuelist(id) { duelist = id; }
-let freshSeals = [];
+let freshSeals = [], sealShown = 0;
 const portraits = {}; for (const id of Object.keys(actors.rigs)) { const b = bakeDuelist(renderer, actors.rigs[id]); if (b) portraits[id] = b; }       // real-model pictures for the duelist screen, taken once
 const menus = initMenus({ save, portraits, freshSeals: () => freshSeals, persist: () => writeSave(host, save), begin, bindSettings: () => { bindSettings(); },
   showDeckBox: () => showDeckBox(save, () => writeSave(host, save), () => menus.showMain()) });
@@ -343,7 +343,7 @@ function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'bosscard') { const el = $('bosscard'); if (el) { el.textContent = data; el.classList.add('on'); document.body.classList.add('cardon'); clearTimeout(el._t); el._t = setTimeout(() => { el.classList.remove('on'); document.body.classList.remove('cardon'); }, 2500); } }       // the stage boss's name, in the top third, 2.5 s
   else if (type === 'bannerdrop') dropBanner(data);
-  else if (type === 'sealcrack') { showBanner('A seal cracks...'); fx.ring(ip.x, ip.y + 1.2, ip.z, 2.4, 0xb8913f, 0.5); fx.burst(ip.x, ip.y + 1.4, ip.z, 14, 0xd8b86a, 2.6, 3.5, 0.16, 0.6, 5); tone(196, 0.25, 0.05, 'triangle'); }       // a feat broke an Oath seal: the Oath itself is named on the results screen
+  else if (type === 'sealcrack') { const n = sealShown++; setTimeout(() => showBanner(n % 2 ? 'Another seal cracks...' : 'A seal cracks...'), 1200 + Math.floor(n / 2) * 0 + n * 2600); fx.ring(ip.x, ip.y + 1.2, ip.z, 2.4, 0xb8913f, 0.5); fx.burst(ip.x, ip.y + 1.4, ip.z, 14, 0xd8b86a, 2.6, 3.5, 0.16, 0.6, 5); tone(196, 0.25, 0.05, 'triangle'); }       // a feat broke an Oath seal: the Oath itself is named on the results screen
   else if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(keyWords(data, inputMode())); }       // a refused chest pulses its price tag instead of a banner
   else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); if (game.mode !== 'classic' && (game.stage || 0) < 2) setTimeout(() => prewarmStage(game.seed, (game.stage || 0) + 1), 60); }       // the next stage is drawn while the player reads the offer
   else if (type === 'levelup') { host.haptic('levelup'); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }

@@ -74,3 +74,21 @@ test('seals: the run report unseals the Oath for good; Oaths already kept stay o
   const store = {}, fs2 = freshSave(); fs2.meta.oathsOpen = ['small']; writeSave({ save: { write: o => { store.s = JSON.parse(JSON.stringify(o)); return true; } } }, fs2); assert.deepEqual(loadSave({ save: { load: () => store.s } }).meta.oathsOpen, ['small']);
   assert.deepEqual(migrateSeals({ oathsOpen: ['x'], oathCount: { y: 1 } }).oathsOpen, ['x'], 'an already migrated meta is untouched');
 });
+
+test('seals: Still, Blind and Pauper need a stage of at least 6:00; Small needs the boss felled after 3:00', () => {
+  assert.deepEqual(cracked(stage(mk(), { sc: 359, dashes: 0, hit: 358 })), [], 'Still on a 5:59 stage');
+  assert.deepEqual(cracked(stage(mk(), { sc: 360, dashes: 0, hit: 359 })), ['still']);
+  assert.deepEqual(cracked(stage(mk(), { sc: 359, map: false, hit: 358 })), [], 'Blind on a 5:59 stage');
+  assert.deepEqual(cracked(stage(mk(), { sc: 359, spent: 0, hit: 358 })), [], 'Pauper on a 5:59 stage');
+  assert.deepEqual(cracked(stage(mk(), { sc: 4, level: 1, hit: 0, gate: 400 })), [], 'a boss felled at 0:04 with a level 1 summon (a new player who never levels)');
+  assert.deepEqual(cracked(stage(mk(), { sc: 179, level: 1, hit: 178 })), [], 'Small before 3:00');
+  assert.deepEqual(cracked(stage(mk(), { sc: 180, level: 1, hit: 179 })), ['small']);
+});
+
+test('seals: at most two seals break from one stage clear, the first two in table order; the rest wait for a later clear', () => {
+  const g = mk(); stage(g, { sc: 700, hit: 100, gate: 100, level: 1, dashes: 0, map: false, spent: 0 });
+  assert.deepEqual(g.sealT.cracked, ['glass', 'hasty'], 'five or more feats met: only the first two in table order');
+  assert.equal(g.events.filter(e => e[0] === 'sealcrack').length, 2);
+  sealStageStart(g); const S = g.sealT.stage; S.lastHitSc = 690; S.dashes = 0; S.mapOpened = false; S.spent = 0; g.sc = 700; g.gateOpenedAt = 100; g.field.monsters[0].level = 1; sealGateCleared(g, false);
+  assert.deepEqual(g.sealT.cracked, ['glass', 'hasty', 'small', 'still'], 'the next clear breaks the next two that are met');
+});

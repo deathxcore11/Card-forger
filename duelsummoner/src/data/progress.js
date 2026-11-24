@@ -29,7 +29,7 @@ export const DIFF_CHIPS = { easy: 1.0, medium: 1.1, hard: 1.2 };
 // Oaths: a rule sworn before the run. Each is its own quest (reward on completing a run with it), and is recorded in the run report.
 // complete: how the run counts as keeping the oath ('clear' = cleared every stage; swift also needs the time). scorePct: added to the score multiplier in percent.
 export const OATHS = [
-  { id: 'glass', name: 'Glass Oath', text: 'Your health are 1 and cannot be raised.', reward: { chips: 60 }, scorePct: 20 },
+  { id: 'glass', name: 'Glass Oath', text: 'Your health is 1 and cannot be raised.', reward: { chips: 60 }, scorePct: 20 },
   { id: 'hasty', name: 'Hasty Oath', text: 'The whole game runs at 1.25x speed.', reward: { chips: 25 }, scorePct: 10 },
   { id: 'small', name: 'Small Oath', text: 'Your duelist and summons are half size.', reward: { chips: 15 }, scorePct: 5 },
   { id: 'still', name: 'Still Oath', text: 'No dashing.', reward: { chips: 30 }, scorePct: 10 },

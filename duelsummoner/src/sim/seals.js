@@ -16,14 +16,15 @@ export function sealKill(g, cls) {
   const T = g.sealT; if (!T || !normal(g)) return; if (cls === 0) T.summonKills++; else if (cls === 1) T.handKills++;
   if (T.summonKills >= L.peaceSummonKills && T.handKills < L.peaceHandKills) crack(g, 'peace');
 }
-// the stage boss has fallen (the stage is cleared): last = it was the final stage
+// the stage boss has fallen (the stage is cleared): last = it was the final stage. The feats that are met are collected in table order and at most L.maxPerClear of them break now; the rest wait for a later clear.
 export function sealGateCleared(g, last) {
-  const T = g.sealT; if (!T || !normal(g)) return; const S = T.stage, sc = g.sc || 0;
-  if (sc - Math.max(0, S.lastHitSc) >= L.glassSeconds && sc >= L.glassSeconds) crack(g, 'glass');       // no damage for the last 3 minutes before the clear
-  if (g.gateOpenedAt >= 0 && g.gateOpenedAt < L.hastySeconds) crack(g, 'hasty');
-  const m0 = g.field && g.field.monsters && g.field.monsters[0]; if (m0 && m0.level === 1) crack(g, 'small');
-  if (S.dashes === 0) crack(g, 'still');
-  if (!S.mapOpened) crack(g, 'blind');
-  if (S.spent === 0) crack(g, 'pauper');
-  if (last && g.stagesCleared >= 3 && g.t < L.swiftSeconds) crack(g, 'swift');
+  const T = g.sealT; if (!T || !normal(g)) return; const S = T.stage, sc = g.sc || 0, met = [], m0 = g.field && g.field.monsters && g.field.monsters[0], long = sc >= L.minStageSeconds;
+  if (sc - Math.max(0, S.lastHitSc) >= L.glassSeconds && sc >= L.glassSeconds) met.push('glass');       // no damage for the last 3 minutes before the clear
+  if (g.gateOpenedAt >= 0 && g.gateOpenedAt < L.hastySeconds) met.push('hasty');
+  if (m0 && m0.level === 1 && sc >= L.smallMinSeconds) met.push('small');
+  if (long && S.dashes === 0) met.push('still');
+  if (long && !S.mapOpened) met.push('blind');
+  if (long && S.spent === 0) met.push('pauper');
+  if (last && g.stagesCleared >= 3 && g.t < L.swiftSeconds) met.push('swift');
+  let n = 0; for (const id of met) { if (n >= L.maxPerClear) break; if (!T.cracked.includes(id)) { crack(g, id); n++; } }
 }
