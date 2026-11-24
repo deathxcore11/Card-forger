@@ -135,6 +135,7 @@ export { CLIPS, UPPER, locomotion };
 
 // crossfade seconds: about 0.12 for movement, shorter for snappy actions, longer into idle. Nothing ever cuts.
 const FADE = { default: 0.12, idle_cards: 0.2, select_fidget: 0.2, dash: 0.06, slide: 0.1, hurt: 0.08, throw_card: 0.1, land_light: 0.1, land_heavy: 0.1, jump_rise: 0.1, jump_apex: 0.1, fall_loop: 0.12, air_jump: 0.1, defeat: 0.15, victory: 0.2 };
+const AIRSPEED = { jump_rise: 2.2, jump_apex: 2.5, air_jump: 1.6 };       // the jump clips are 0.45 s long but the rise lasts 0.2 s and the apex 0.1 s: they play fast enough to reach their pose in time
 const LOCO = ['idle_cards', 'walk', 'run'], WALK_STRIDE = 2.88, RUN_STRIDE = 5.67;   // metres per cycle of the Meshy walk (1.03 s at about 2.8 m/s) and run (0.63 s at about 9 m/s)
 const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
 
@@ -205,21 +206,21 @@ export class DuelistRig {
     if (this.debugHold) return;                                                // a test is posing the rig by hand
     if (this._twSaved) { for (const [b, q] of this._twSaved) b.quaternion.copy(q); this._twSaved = null; }       // take last frame's torso twist off first: the mixer only writes a bone whose clip value changed, so on a held pose the twist would pile up frame after frame and snap back later
     const pr = this.prev; this._airT = p.grounded ? 0 : (this._airT || 0) + dt; this._airWas = p.grounded ? (this._airLast || 0) : 0; if (p.grounded) { this._airLast = this._airMax || 0; this._airMax = 0; } else this._airMax = this._airT;       // how long the last flight lasted: a landing animation only follows a real one (over 0.12 s)
-    if (p.grounded && !pr.wasGrounded && this._airLast < 0.12) pr.fallV = 0;
-    if (p.grounded && !pr.wasGrounded && pr.fallV < -9) { pr.landT = 0.5; pr.landHeavy = true; } else if (p.grounded && !pr.wasGrounded && pr.fallV < -4) { pr.landT = 0.3; pr.landHeavy = false; }
+    if (p.grounded && !pr.wasGrounded && this._airLast < 0.12) pr.fallV = 0; if (p.grounded && !pr.wasGrounded && this._airLast >= 0.12) this._landDip = 0.18;       // the landing is a 0.18 s dip of the whole body (see actors), not a second jump clip
+    if (p.grounded && !pr.wasGrounded && pr.fallV < -9) { } else if (p.grounded && !pr.wasGrounded && pr.fallV < -4) { }
     if (!p.grounded) pr.fallV = p.vy; if (pr.landT > 0) pr.landT -= dt; if (p.airUsed > pr.airUsed) { pr.airJump = 0.5; } pr.airUsed = p.airUsed || 0; if (pr.airJump > 0) pr.airJump -= dt; pr.wasGrounded = p.grounded;
     const hasThrow = this.has('throw_card');
     if (thrown && hasThrow) this.overlay('throw_card', { fadeIn: 0.12, fadeOut: 0.25, weight: 0.6, gap: 0.3, speed: 0.6 });       // a throw is a soft arm flick laid over the run: the run arms never drop out, the clip never restarts while it plays
     this._overlays();
     if (this.holdUntil && performance.now() < this.holdUntil) { this.mixer.update(dt); return; }              // a one-shot (summon, level up...) is playing
-    const want = locomotion(p.grounded || this._airT >= 0.1 ? p : Object.assign({}, p, { grounded: true }), g, { landT: pr.landT, landHeavy: pr.landHeavy, airJump: pr.airJump > 0 });       // under 0.1 s off the ground still counts as the ground (a dune bump never plays a jump)
+    const want = locomotion(p.grounded || this._airT >= 0.06 || p.vy >= 3 ? p : Object.assign({}, p, { grounded: true }), g, { landT: pr.landT, landHeavy: pr.landHeavy, airJump: pr.airJump > 0 });       // under 0.1 s off the ground still counts as the ground (a dune bump never plays a jump)
     let sp = Math.hypot(p.vx || 0, p.vz || 0); if (p.grounded && this._py !== undefined && dt > 0.002) { const rise = (p.y - this._py) / dt; if (Math.abs(rise) < 8) this._rv = (this._rv || 0) + (rise - (this._rv || 0)) * Math.min(1, dt * 6); sp = Math.hypot(sp, this._rv || 0); } this._py = p.y;       // 3D ground speed: climbing or descending a dune counts the height too, so the legs match the distance covered
     const locoNow = LOCO.includes(want.clip) && this.has('idle_cards') && this.has('walk') && this.has('run');
     this._loco(sp, dt, locoNow, this.upperT > 0);
-    if (locoNow) { if (this.curAct) { this.curAct.fadeOut(0.15); this.curAct = null; } this.cur = 'loco'; this.mixer.update(dt); return; }       // a finished one-shot fades out when running resumes, so it no longer blends half and half with the run                      // the blend plays the legs and the torso; the throw layer (if any) plays the arms
+    if (locoNow) { if (this.curAct) { this.curAct.fadeOut(0.15); this.curAct = null; } if (this.cur !== 'loco') this._rs = 0; this.cur = 'loco'; this.mixer.update(dt); return; }       // a finished one-shot fades out when running resumes, so it no longer blends half and half with the run                      // the blend plays the legs and the torso; the throw layer (if any) plays the arms
     const part = this.upperT > 0 && hasThrow && !['defeat', 'victory', 'slide', 'dash'].includes(want.clip) ? 'lower' : 'all';
     const key = want.clip + '|' + part;
-    if (key !== this.cur) { const prevAct = this.curAct; const act = this._play(want.clip, { loop: want.loop, speed: want.speed || 1, part, fade: FADE[want.clip] || FADE.default }); if (act) { if (prevAct && prevAct !== act) prevAct.fadeOut(0.15); this.curAct = act; this.cur = key; } }
+    if (key !== this.cur) { const prevAct = this.curAct; const act = this._play(want.clip, { loop: want.loop, speed: want.speed || AIRSPEED[want.clip] || 1, part, fade: FADE[want.clip] || FADE.default }); if (act) { if (prevAct && prevAct !== act) prevAct.fadeOut(0.15); this.curAct = act; this.cur = key; } }
     else if (this.curAct && want.speed) this.curAct.timeScale = want.speed;
     this.mixer.update(dt);
   }
@@ -243,7 +244,7 @@ export class DuelistRig {
     }
     const L = this.L, lw = this.lw; let ti = 0, tw = 0, tr = 0;
     if (on) { const wi = clamp01(1 - (sp - 0.4) / 1.0), wr = clamp01((sp - 4.5) / 4); ti = wi; tr = (1 - wi) * wr; tw = (1 - wi) * (1 - wr); }
-    const k = on ? Math.min(1, dt * 9) : Math.min(1, dt / 0.12);       // idle to run blend over about 0.15 s
+    const k = on ? Math.min(1, dt * 9) : Math.min(1, dt / 0.04);       // idle to run blend over about 0.15 s; out of the run (into the air, a dash) in about 0.08 s       // idle to run blend over about 0.15 s
     if (this._rs < 0.15) { this._rs += dt; const f = Math.min(1, this._rs / 0.15); lw.idle = ti * f; lw.walk = tw * f; lw.run = tr * f; }       // after a one-shot the blend comes in linearly over 0.15 s while the one-shot fades out, so the two always add up to a whole
     else { lw.idle += (ti - lw.idle) * k; lw.walk += (tw - lw.walk) * k; lw.run += (tr - lw.run) * k; }
     lw.up += ((throwing ? 0 : 1) - lw.up) * Math.min(1, dt / 0.06);

@@ -5,7 +5,7 @@ export const CLIPS = {
   idle_cards: ['idle_cards', 'Idle_7', 'Idle'], select_fidget: ['select_fidget', 'idle_cards', 'Idle_7', 'Idle'],
   run: ['run', 'Running'], walk: ['walk', 'Walking_Woman', 'Walking'], backpedal: ['backpedal', 'Walk_Backward'], limp_run: ['limp_run', 'Walking'],
   strafe_left: ['strafe_left', 'Quad_Jump_Left', 'Running'], strafe_right: ['strafe_right', 'Running'],
-  jump_rise: ['jump_rise', 'Regular_Jump'], jump_apex: ['jump_apex', 'Regular_Jump'], fall_loop: ['fall_loop', 'Fall1'], air_jump: ['air_jump', 'Jump_with_Arms_and_Legs_Open', 'Regular_Jump'],
+  jump_rise: ['jump_rise', 'Regular_Jump'], jump_apex: ['jump_apex', 'Regular_Jump'], fall_loop: ['fall_loop', 'Regular_Jump', 'Fall1'], air_jump: ['air_jump', 'Jump_with_Arms_and_Legs_Open', 'Regular_Jump'],
   land_light: ['land_light', 'Regular_Jump'], land_heavy: ['land_heavy', 'land_light', 'Regular_Jump'],
   dash: ['dash', 'Run_Jump_and_Roll'], slide: ['slide', 'Run_Jump_and_Roll'], dodge_roll: ['dodge_roll', 'Run_Jump_and_Roll'],
   throw_card: ['throw_card'], cast_spell: ['cast_spell', 'summon'], summon: ['summon'], fusion: ['fusion', 'summon'], tribute: ['tribute', 'summon'], taunt: ['taunt', 'victory'],

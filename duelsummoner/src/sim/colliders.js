@@ -20,7 +20,7 @@ export function resolveColliders(col, o, radius) {
     for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
       const a = col.grid.get(i * 4096 + j); if (!a) continue;
       for (let n = 0; n < a.length; n++) {
-        const c = a[n]; if (o.y > c.top - 0.15) continue;                          // above it (jumping over a rock): not blocked
+        const c = a[n]; if (c.top - c.y < 2.2 && o.y > c.top - 0.15) continue;                          // above a low rock (jumping over it): not blocked; a cactus, a trunk or the head is always solid, so a jump cannot land on top of one: the duelist slides off
         const dx = o.x - c.x, dz = o.z - c.z, rr = c.r + radius, d2 = dx * dx + dz * dz; if (d2 >= rr * rr) continue;
         const d = Math.sqrt(d2) || 1e-4, nx = d2 > 1e-8 ? dx / d : 1, nz = d2 > 1e-8 ? dz / d : 0, push = rr - d + 0.001;
         o.x += nx * push; o.z += nz * push; moved = true;
