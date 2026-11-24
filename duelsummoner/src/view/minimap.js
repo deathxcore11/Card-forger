@@ -14,12 +14,12 @@ function paintBase(size, map) {
   for (let j = 0; j < TEX; j++) for (let i = 0; i < TEX; i++) {
     const x = -MAP.half + (i + 0.5) * span, z = -MAP.half + (j + 0.5) * span, h = heightAt(x, z), o = (j * TEX + i) * 4;
     let r, g, b;
-    if (h >= WALL) { r = 40; g = 28; b = 22; }
+    if (h >= WALL || (map && map.open && h > 33)) { r = 40; g = 28; b = 22; }       // the mountains of the open desert read as the dark outside
     else if (v2) {                                                                         // a designed map: tiers as tones (a step every 3 m), cliffs as dark lines, the arena bright, ramps and the road in their own tone, pits dark
       const t = TIER[Math.max(0, Math.min(5, Math.floor(h / 3) + 1))]; r = t[0]; g = t[1]; b = t[2]; if (h < -0.3) { r *= 0.6; g *= 0.6; b *= 0.6; }
       let cliff = 0; for (const [dx, dz] of [[span, 0], [0, span], [-span, 0], [0, -span]]) { const q = heightAt(x + dx, z + dz); if (q < WALL && Math.abs(q - h) > 1.6) cliff = 1; else if (q >= WALL && h < WALL) cliff = 2; }
       if (cliff === 1) { r *= 0.38; g *= 0.34; b *= 0.3; } else if (cliff === 2) { r = 70; g = 52; b = 40; }
-      const k = (Math.floor(z + MAP.half)) * 400 + Math.floor(x + MAP.half), fl = map.cellFlags[k]; if (fl & 8) { r = 210; g = 150; b = 90; } else if (fl & 256) { r = Math.min(255, r + 30); g = Math.min(255, g + 30); b = Math.min(255, b + 40); }
+      const k = (Math.floor(z + MAP.half)) * (MAP.half * 2) + Math.floor(x + MAP.half), fl = map.cellFlags[k]; if (fl & 8) { r = 210; g = 150; b = 90; } else if (fl & 256) { r = Math.min(255, r + 30); g = Math.min(255, g + 30); b = Math.min(255, b + 40); }
     }
     else { const k = Math.min(1, h / 30); r = 150 + k * 100; g = 115 + k * 105; b = 70 + k * 100; if (h > 0) { r *= 0.92; g *= 0.92; b *= 0.92; } }
     img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b; img.data[o + 3] = 255;

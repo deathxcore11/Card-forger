@@ -40,7 +40,7 @@ function ringSpot(g, out) {
   for (let k = 0; k < S.tries; k++) {
     const a = g.rsp() * Math.PI * 2, d = S.min + g.rsp() * (S.max - S.min);
     const x = p.x + cos(a) * d, z = p.z + sin(a) * d, h = heightAt(x, z);
-    if (h >= 50) continue;
+    if (h >= 50 || (g.map && g.map.open && h > 38)) continue;
     out.x = x; out.z = z; out.y = h; return true;
   }
   return false;

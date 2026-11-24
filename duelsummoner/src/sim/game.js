@@ -51,6 +51,8 @@ export class Game {
     this.reset(seed, opts.duelist);
   }
 
+  syncGrid() { if (this.grid.half !== MAP.half) this.grid = new SpatialGrid(2, MAP.half, CFG.enemy.max); }       // the open desert is bigger than the old maps
+
   reset(seed = this.seed, duelist) {
     this.seed = seed; this.streams = makeStreams(seed); this.rsp = () => this.streams.spawn.next(); this.rl = () => this.streams.loot.next(); this.rc = () => this.streams.combat.next(); this.rcos = () => this.streams.cosmetic.next(); this.duelist = duelist || this.duelist || 'kael';
     this.oathList = (this.opts.oaths || []).filter(id => OATH_BY_ID[id]); this.oaths = {}; for (const id of this.oathList) this.oaths[id] = true;      // Oaths: run rules sworn before the run
@@ -185,7 +187,7 @@ export class Game {
   _tick(dt, cmd) {
     resetBufs();
     const e = this.en;
-    if (mapKey() !== this.map.key) { loadMap(this.map); this.flow.rebuild(); }                   // the terrain is one global: reload if another game changed it
+    if (mapKey() !== this.map.key) { loadMap(this.map); this.syncGrid(); this.flow.rebuild(); }                   // the terrain is one global: reload if another game changed it
     this._snap();
     this.t += dt; this.tickN++;
     if (this.mode !== 'classic' && this.desc) { descentTick(this, dt); return; }                 // the Descent: the world waits

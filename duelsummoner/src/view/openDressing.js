@@ -136,19 +136,19 @@ const ROCKC = [[0xc98a4a, 0xdcae72], [0xd39a5a, 0xe3bd82], [0xbb7d41, 0xd29f66]]
 function farRock(D, q) { const [x, y, z, w, h, rot, v] = q, c = ROCKC[v % 3]; frustum(D, x, y - 1, z, w * 0.55, w * 0.42, w * 0.48, w * 0.36, h * 0.62 + 1, rot, c[0], c[1]); frustum(D, x + Math.cos(rot) * w * 0.05, y + h * 0.62 - 1, z + Math.sin(rot) * w * 0.05, w * 0.4, w * 0.3, w * 0.34, w * 0.26, h * 0.38, rot, c[1], mixc(c[1], 0xffffff, 0.15)); }
 function farRuin(D, q) { const [x, y, z, w, h, rot, v] = q, c = Math.cos(rot), s = Math.sin(rot), col = 0xd6b98a; frustum(D, x, y - 0.8, z, w * 0.5, 0.7, w * 0.46, 0.6, h + 0.8, rot, col, 0xe2c99c); frustum(D, x + c * w * 0.9, y - 0.5, z + s * w * 0.9, 1.2, 1.1, 1.1, 1.0, 1.3, rot + 0.5, col); frustum(D, x - s * 2.8, y - 0.5, z + c * 2.8, 0.9, 0.9, 0.8, 0.8, 0.9, rot + 1.2, 0xc9ab7c); }
 
-export function addDressing(D, map) {
-  const d = map.dress || {};
-  for (const q of d.cacti || []) cactus(D, q[0], q[1], q[2], q[3], q[4], q[5]);
-  for (const q of d.dead || []) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], false);
-  for (const q of d.logs || []) log(D, q);
-  for (const q of d.pots || []) pot(D, q[0], q[1], q[2], q[3], q[4], q[5]);
-  for (const q of d.heads || []) monument(D, q);
-  gateway(D, map);
-  for (const q of d.stalls || []) stall(D, map, q);
-  for (const b of map.blocks || []) blockMesh(D, map, b);
+export function addDressing(D, map, ok) {
+  const d = map.dress || {}, yes = ok || (() => true);
+  for (const q of d.cacti || []) if (yes(q[0], q[2])) cactus(D, q[0], q[1], q[2], q[3], q[4], q[5]);
+  for (const q of d.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], false);
+  for (const q of d.logs || []) if (yes(q[0], q[2])) log(D, q);
+  for (const q of d.pots || []) if (yes(q[0], q[2])) pot(D, q[0], q[1], q[2], q[3], q[4], q[5]);
+  for (const q of d.heads || []) if (yes(q.x, q.z)) monument(D, q);
+  if (yes(map.gate.x, map.gate.z)) gateway(D, map);
+  for (const q of d.stalls || []) if (yes(q.x, q.z)) stall(D, map, q);
+  for (const b of map.blocks || []) if (yes(b.cx, b.cz)) blockMesh(D, map, b);
   const f = map.far || {};
-  for (const q of f.rocks || []) farRock(D, q);
-  for (const q of f.dead || []) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], true);
-  for (const q of f.ruins || []) farRuin(D, q);
+  for (const q of f.rocks || []) if (yes(q[0], q[2])) farRock(D, q);
+  for (const q of f.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], true);
+  for (const q of f.ruins || []) if (yes(q[0], q[2])) farRuin(D, q);
 }
 void vnoise;

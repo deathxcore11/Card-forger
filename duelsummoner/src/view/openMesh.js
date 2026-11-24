@@ -1,13 +1,16 @@
-// The open desert drawn as it is: the playable square (within the boundary line) sampled on a 2 m grid at true heights, and the same dune sheet carrying on past the line for 222 m on every side (a coarser grid, no collision),
-// fading into the haze. There is no wall, no bank and no table plane: the line itself is a thin dark strip lying on the sand. Flat-shaded facets.
-// Ground look: warm orange sand, the sun side of every dune lighter, the lee side deeper; fine ripple streaks run along the wind (a tiling streak map, view only); the blocks are plaster and sandstone with banded steep sides.
+// The open desert drawn as it is: 840 m of heightfield (the playable ground about 720 m across, ringed by steep mountains) cut into 84 m chunks. Each chunk has a coarse ground mesh (6 m cells) that is always there within 520 m
+// and a fine one (2 m cells, true heights) built the first time the camera comes within 120 m (and freed again beyond 380 m), plus its own mesh of dressing (cacti, dead trees, beams, pots, blocks) shown within 340 m. Cracks between fine and coarse chunks
+// are hidden by a 3 m skirt round every chunk. One material is shared by all of them. Flat-shaded facets.
+// Ground look: pale cream sand on the sun side of every dune, orange on the lee side; fine ripple streaks along the wind (a tiling streak map, view only); steep faces (mountains, blocks) are banded sandstone, lit and shaded.
 import { Builder } from './mapMesh.js';
-import { vnoise, groundAt, duneH, blockProf, LINE } from '../gen/open/terrain.js';
+import { vnoise, groundAt, duneH, blockProf } from '../gen/open/terrain.js';
 import { addDressing } from './openDressing.js';
 const T = window.THREE;
 const mixc = (a, b, t) => { const m = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
 const dim = (c, k) => ((Math.min(255, Math.round(((c >> 16) & 255) * k)) << 16) | (Math.min(255, Math.round(((c >> 8) & 255) * k)) << 8) | Math.min(255, Math.round((c & 255) * k)));
-const LIT = 0xfbeab4, LEE = 0xd0832f, TINT_A = 0xf1c773, TINT_B = 0xf6d489, LINE_COL = 0x2a1a10;       // sunlit slopes pale cream (never white), flat sand warm yellow, lee slopes orange
+const LIT = 0xfbeab4, LEE = 0xd0832f, TINT_A = 0xf1c773, TINT_B = 0xf6d489;       // sunlit slopes pale cream (never white), flat sand warm yellow, lee slopes orange
+const ROCK = 0xd49a60, ROCK_LIT = 0xf0c394, ROCK_SH = 0xa56a3e;                  // mountain faces: banded sandstone, sun side light, shade side deep warm brown
+const CH = 84, HALF = 420, NCH = 10, NEAR_ON = 120, NEAR_OFF = 150, FAR_MAX = 1100, DRESS_ON = 340, DRESS_OFF = 370;
 
 // the ripple streak map: long thin pale and dark lines along u (the wind), repeating every 24 m by 12 m
 function streakTex() {
@@ -17,60 +20,71 @@ function streakTex() {
   const tex = new T.CanvasTexture(cv); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.anisotropy = 4; return tex;
 }
 
-// the boundary line: dark geometry lying on the sand along the four sides, 1.8 screen pixels wide at the very least at any distance (and 24 cm wide up close). Each strip vertex is pushed sideways in screen space by the vertex shader.
-function edgeLine(map) {
-  const pos = [], other = [], side = [], tt = [], idx = []; let n = 0;
-  for (let s = 0; s < 4; s++) { const horiz = s < 2, sg = s % 2 ? 1 : -1, P = u => horiz ? [u, groundAt(map, u, sg * LINE) + 0.1, sg * LINE] : [sg * LINE, groundAt(map, sg * LINE, u) + 0.1, u];
-    for (let u = -LINE; u < LINE; u += 2) { const a = P(u), b = P(Math.min(LINE, u + 2)); for (const [tv, sd] of [[0, -1], [0, 1], [1, 1], [1, -1]]) { pos.push(a[0], a[1], a[2]); other.push(b[0], b[1], b[2]); tt.push(tv); side.push(sd); } idx.push(n, n + 1, n + 2, n, n + 2, n + 3); n += 4; } }
-  const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('aB', new T.Float32BufferAttribute(other, 3)); g.setAttribute('aT', new T.Float32BufferAttribute(tt, 1)); g.setAttribute('aS', new T.Float32BufferAttribute(side, 1)); g.setIndex(idx);
-  const u = Object.assign({ uRes: { value: new T.Vector2(1280, 720) }, uCol: { value: new T.Color(LINE_COL) } }, T.UniformsUtils.clone(T.UniformsLib.fog));
-  const mat = new T.ShaderMaterial({ uniforms: u, fog: true, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3,
-    vertexShader: `uniform vec2 uRes; attribute vec3 aB; attribute float aT; attribute float aS;
-    #include <fog_pars_vertex>
-    void main() {
-      vec3 pa = position, pb = aB; vec4 ca = projectionMatrix * modelViewMatrix * vec4(pa, 1.0), cb = projectionMatrix * modelViewMatrix * vec4(pb, 1.0);
-      vec4 c = mix(ca, cb, aT); vec2 d = (cb.xy / max(cb.w, 0.01) - ca.xy / max(ca.w, 0.01)) * uRes; float l = length(d); d = l > 1e-5 ? d / l : vec2(1.0, 0.0);
-      vec2 perp = vec2(-d.y, d.x); float worldPx = 0.12 * projectionMatrix[1][1] / max(c.w, 0.01) * uRes.y * 0.5, hp = max(0.9, worldPx * 0.5);
-      c.xy += perp * aS * hp * 2.0 / uRes * c.w; gl_Position = c;
-      vec4 mvPosition = modelViewMatrix * vec4(mix(pa, pb, aT), 1.0);
-      #include <fog_vertex>
-    }`,
-    fragmentShader: `uniform vec3 uCol;
-    #include <fog_pars_fragment>
-    void main() { gl_FragColor = vec4(uCol, 1.0);
-      #include <fog_fragment>
-    }` });
-  const m = new T.Mesh(g, mat); m.frustumCulled = false; m.onBeforeRender = r => { const v = r.getDrawingBufferSize(new T.Vector2()); u.uRes.value.copy(v); }; return m;
-}
-
 export function buildOpen(map, look) {
-  const group = new T.Group(), B = new Builder(), O = new Builder(), D = new Builder(), Ln = new Builder(), blocks = map.blocks || [], wind = map.dune ? map.dune.wind : 0, cw = Math.cos(wind), sw = Math.sin(wind);
+  const group = new T.Group(), blocks = map.blocks || [], wind = map.dune ? map.dune.wind : 0, cw = Math.cos(wind), sw = Math.sin(wind);
   // under a block the view ground is the plain dune (the box drawn by openDressing hides it), so the 2 m grid leaves no teeth round the foot
-  const near = [], gh = (x, z) => { for (const b of blocks) { const dx = x - b.cx, dz = z - b.cz, R = Math.max(b.rx, b.rz) * 1.3 + 3; if (dx * dx + dz * dz < R * R && blockProf(b, x, z) > 0.05) return duneH(map.dune, x, z); } return groundAt(map, x, z); };
-  const colour = (cx, cz, cy, nx, ny, nz) => {
-        const e = 3, gx = (groundAt(map, cx + e, cz) - groundAt(map, cx - e, cz)) / (2 * e), gz = (groundAt(map, cx, cz + e) - groundAt(map, cx, cz - e)) / (2 * e), sh = Math.max(-1, Math.min(1, (-gx * 0.8 - gz * 0.55) * 4.2));       // the slope over a 6 m window (not the facet), so a dune reads as one lit side and one shaded side                       // the sun is on the +x +z side: windward faces are lit, lee faces are in shade
+  const gh = (x, z) => { for (const b of blocks) { const dx = x - b.cx, dz = z - b.cz, R = Math.max(b.rx, b.rz) * 1.3 + 3; if (dx * dx + dz * dz < R * R && blockProf(b, x, z) > 0.05) return duneH(map.dune, x, z); } return groundAt(map, x, z); };
+  const sandColour = (cx, cz, cy) => {
+    const e = 3, gx = (groundAt(map, cx + e, cz) - groundAt(map, cx - e, cz)) / (2 * e), gz = (groundAt(map, cx, cz + e) - groundAt(map, cx, cz - e)) / (2 * e), sh = Math.max(-1, Math.min(1, (-gx * 0.8 - gz * 0.55) * 4.2));       // the slope over a 6 m window (not the facet), so a dune reads as one lit side and one shaded side
     const base = mixc(TINT_A, TINT_B, vnoise(77, cx / 110, cz / 110));                          // one slow tint across the map, no blotches
-    let g = sh > 0 ? mixc(base, LIT, sh) : mixc(base, LEE, -sh * 0.9); return dim(g, 0.97 + 0.05 * Math.max(0, Math.min(1, (cy - 1) / 8)));
+    const g = sh > 0 ? mixc(base, LIT, sh) : mixc(base, LEE, -sh * 0.9); return dim(g, 0.97 + 0.05 * Math.max(0, Math.min(1, (cy - 1) / 8)));
+  };
+  const colour = (cx, cz, cy, nx, ny, nz) => {
+    const ang = Math.acos(Math.max(0, Math.min(1, ny))) * 57.29578;
+    if (ang > 24) {                                                                            // mountain faces: banded rock, lit on the sun side
+      const t = ang >= 36 ? 1 : (ang - 24) / 12, sh = Math.max(-1, Math.min(1, nx * 0.8 + nz * 0.55)), band = [0.86, 0.94, 1.0][((Math.round(cy / 4) % 3) + 3) % 3];
+      let g = sh >= 0 ? mixc(ROCK, ROCK_LIT, sh * 0.9) : mixc(ROCK, ROCK_SH, -sh * 0.9); g = dim(g, band * (0.92 + 0.12 * vnoise(61, cx / 18, cz / 18)));
+      return t >= 1 ? g : mixc(sandColour(cx, cz, cy), g, t);
+    }
+    return sandColour(cx, cz, cy);
   };
   const tri = (Bd, a, b, c) => { const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2]; let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; nx /= l; ny /= l; nz /= l; if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }
     Bd.tri(a, b, c, [nx, ny, nz], colour((a[0] + b[0] + c[0]) / 3, (a[2] + b[2] + c[2]) / 3, (a[1] + b[1] + c[1]) / 3, nx, ny, nz)); };
-  // a grid patch: xs and zs are the grid lines; heights come from the one ground function (cached per vertex)
-  const patch = (Bd, xs, zs) => {
-    const nx = xs.length, nz = zs.length, V = new Float32Array(nx * nz); for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) V[j * nx + i] = gh(xs[i], zs[j]);
-    for (let j = 0; j < nz - 1; j++) for (let i = 0; i < nx - 1; i++) {
-      const a = [xs[i], V[j * nx + i], zs[j]], b = [xs[i + 1], V[j * nx + i + 1], zs[j]], c = [xs[i + 1], V[(j + 1) * nx + i + 1], zs[j + 1]], d = [xs[i], V[(j + 1) * nx + i], zs[j + 1]];
+  // one chunk's ground at a cell size, with a 3 m skirt all round
+  const grid = (Bd, x0, z0, step) => {
+    const n = Math.round(CH / step), V = new Float32Array((n + 1) * (n + 1)); for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) V[j * (n + 1) + i] = gh(x0 + i * step, z0 + j * step);
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const xa = x0 + i * step, za = z0 + j * step, a = [xa, V[j * (n + 1) + i], za], b = [xa + step, V[j * (n + 1) + i + 1], za], c = [xa + step, V[(j + 1) * (n + 1) + i + 1], za + step], d = [xa, V[(j + 1) * (n + 1) + i], za + step];
       if (Math.abs(a[1] - c[1]) < Math.abs(b[1] - d[1])) { tri(Bd, a, b, c); tri(Bd, a, c, d); } else { tri(Bd, a, b, d); tri(Bd, b, c, d); }       // the cut follows the smaller height change
     }
+    const sk = (p, q, out) => { const col = dim(sandColour((p[0] + q[0]) / 2, (p[2] + q[2]) / 2, p[1]), 0.8); Bd.quad(p, q, [q[0], q[1] - 3, q[2]], [p[0], p[1] - 3, p[2]], out, col); };
+    for (let i = 0; i < n; i++) { const xa = x0 + i * step; sk([xa, V[i], z0], [xa + step, V[i + 1], z0], [0, 0, -1]); sk([xa, V[n * (n + 1) + i], z0 + CH], [xa + step, V[n * (n + 1) + i + 1], z0 + CH], [0, 0, 1]); }
+    for (let j = 0; j < n; j++) { const za = z0 + j * step; sk([x0, V[j * (n + 1)], za], [x0, V[(j + 1) * (n + 1)], za + step], [-1, 0, 0]); sk([x0 + CH, V[j * (n + 1) + n], za], [x0 + CH, V[(j + 1) * (n + 1) + n], za + step], [1, 0, 0]); }
   };
-  const lin = (a, b, st) => { const o = []; for (let v = a; v <= b + 1e-6; v += st) o.push(v); return o; };
-  patch(B, lin(-LINE, LINE, 2), lin(-LINE, LINE, 2));                                           // the playable square, 2 m cells
-  const FAR = 400, SO = 6, SA = 4, east = lin(LINE, FAR, SO), west = east.map(v => -v).reverse(), along = lin(-LINE, LINE, SA), tall = lin(-FAR - 2, FAR + 2, SA);     // beyond the line: 6 m cells outward, 4 m along the edge
-  patch(O, east, tall); patch(O, west, tall); patch(O, along, east); patch(O, along, west);
-  const lineMesh = edgeLine(map);
-  addDressing(D, map);
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
-  const tex = streakTex(), meshes = [B.mesh(false, fadeU), O.mesh(false, fadeU), D.mesh(false, fadeU)];
-  for (const m of meshes.slice(0, 2)) { const p = m.geometry.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv[i * 2] = (x * cw + z * sw) / 24; uv[i * 2 + 1] = (-x * sw + z * cw) / 12; } m.geometry.setAttribute('uv', new T.BufferAttribute(uv, 2)); m.material.map = tex; m.material.needsUpdate = true; }
-  group.add(...meshes, lineMesh); group.userData.tris = (B.pos.length + O.pos.length + D.pos.length) / 9 | 0;
+  const tex = streakTex(); let shared = null, tris = 0;
+  const meshOf = (Bd, streaks) => {                                                            // every chunk mesh shares one material
+    const m = Bd.mesh(false, fadeU); if (!shared) { shared = m.material; shared.map = tex; shared.needsUpdate = true; } else { m.material.dispose(); m.material = shared; }
+    if (streaks) { const p = m.geometry.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv[i * 2] = (x * cw + z * sw) / 24; uv[i * 2 + 1] = (-x * sw + z * cw) / 12; } m.geometry.setAttribute('uv', new T.BufferAttribute(uv, 2)); }
+    tris += Bd.pos.length / 9 | 0; m.geometry.computeBoundingSphere(); return m;
+  };
+  let dshared = null; const dmesh = Bd => { const m = Bd.mesh(false, fadeU); if (!dshared) dshared = m.material; else { m.material.dispose(); m.material = dshared; } return m; };
+  const chunks = [];
+  for (let cj = 0; cj < NCH; cj++) for (let ci = 0; ci < NCH; ci++) {
+    const x0 = -HALF + ci * CH, z0 = -HALF + cj * CH, c = { x0, z0, cx: x0 + CH / 2, cz: z0 + CH / 2, far: null, near: null, dress: null, nearOn: false };
+    const F = new Builder(); grid(F, x0, z0, 6); c.far = meshOf(F, true); c.far.visible = false; group.add(c.far);
+    const D = new Builder(); addDressing(D, map, (x, z) => x >= x0 && x < x0 + CH && z >= z0 && z < z0 + CH);
+    if (D.pos.length) { c.dress = dmesh(D); c.dress.geometry.computeBoundingSphere(); c.dress.visible = false; tris += D.pos.length / 9 | 0; group.add(c.dress); }
+    chunks.push(c);
+  }
+  // the controller: a tiny always-drawn mesh whose onBeforeRender sees the camera and shows each chunk at the right detail
+  const ctl = new T.Mesh(new T.BufferGeometry().setAttribute('position', new T.Float32BufferAttribute([0, 0, 0, 0, 0.01, 0, 0.01, 0, 0], 3)), new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false })); ctl.frustumCulled = false;
+  let built = 0; const stats = group.userData.stats = { near: 0, far: 0, dress: 0, builtNear: 0 };
+  const update = cam => {
+    let nn = 0, nf = 0, nd = 0;
+    for (const c of chunks) {
+      const dx = Math.max(0, Math.abs(cam.x - c.cx) - CH / 2), dz = Math.max(0, Math.abs(cam.z - c.cz) - CH / 2), d = Math.sqrt(dx * dx + dz * dz);
+      const wantNear = c.nearOn ? d < NEAR_OFF : d < NEAR_ON;
+      if (wantNear && !c.near && built < 6) { const N = new Builder(); grid(N, c.x0, c.z0, 2); c.near = meshOf(N, true); group.add(c.near); built++; stats.builtNear++; }       // at most 6 fine meshes are built in one frame
+      if (c.near && !wantNear && d > 380) { group.remove(c.near); c.near.geometry.dispose(); c.near = null; }       // a fine mesh far behind the duelist is freed
+      c.nearOn = wantNear && !!c.near; if (c.near) c.near.visible = c.nearOn; c.far.visible = !c.nearOn && d < FAR_MAX;
+      if (c.dress) c.dress.visible = c.dress.visible ? d < DRESS_OFF : d < DRESS_ON;
+      if (c.nearOn) nn++; else if (c.far.visible) nf++; if (c.dress && c.dress.visible) nd++;
+    }
+    built = 0; stats.near = nn; stats.far = nf; stats.dress = nd;
+  };
+  ctl.onBeforeRender = (r, sc, cam) => update(cam.position); group.add(ctl); group.userData.update = update;
+  update({ x: map.spawn.x, z: map.spawn.z });
+  group.userData.tris = tris; group.userData.chunks = chunks.length;
   return group;
 }

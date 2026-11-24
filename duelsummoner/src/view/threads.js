@@ -25,12 +25,12 @@ export class LeyThreads {
   _show(th, v) { th.mesh.visible = v; th.under.visible = v; }
   // gate: { x, z } or null; player: { x, y, z }; dt seconds; show: false hides them (boss fight, menus)
   update(gate, player, dt, camera, show) {
-    this.t += dt;
+    this.t += dt; const GU = this.gu = gate && gate.guide ? gate.guide : { far: FAR, mid: MID, near: NEAR };       // the open desert is big: its gate's threads start 340 m out
     const live = this.on && show && gate;
     let d = 1e9, dx = 0, dz = 0;
     if (gate) { dx = gate.x - player.x; dz = gate.z - player.z; d = Math.hypot(dx, dz); }
-    if (live && d < FAR && d > 6) {
-      const step = d < NEAR ? 0.35 : d < MID ? 0.9 : 3.2;                   // seconds between threads
+    if (live && d < GU.far && d > 6) {
+      const step = d < GU.near ? 0.35 : d < GU.mid ? 0.9 : 3.2;                   // seconds between threads
       this.acc += dt;
       if (this.acc >= step / this.strength) { this.acc = 0; this._spawn(player, dx / d, dz / d, d); }
     }
@@ -51,14 +51,14 @@ export class LeyThreads {
   }
   _spawn(p, ux, uz, d) {
     const th = this.list.find(t => !t.alive); if (!th) return;
-    const near = d < NEAR, mid = d < MID, sign = this.rnd() < 0.5 ? -1 : 1, side = sign * (2 + this.rnd() * (near ? 7 : 14)), ahead = 4 + this.rnd() * 14;      // 4 to 18 m ahead toward the Gate, never within 2 m sideways of the duelist
+    const near = d < this.gu.near, mid = d < this.gu.mid, sign = this.rnd() < 0.5 ? -1 : 1, side = sign * (2 + this.rnd() * (near ? 7 : 14)), ahead = 4 + this.rnd() * 14;      // 4 to 18 m ahead toward the Gate, never within 2 m sideways of the duelist
     const px = -uz, pz = ux;
     th.x = p.x + px * side + ux * ahead; th.z = p.z + pz * side + uz * ahead;
     th.dx = ux + px * (this.rnd() - 0.5) * 0.06; th.dz = uz + pz * (this.rnd() - 0.5) * 0.06; const l = Math.hypot(th.dx, th.dz); th.dx /= l; th.dz /= l;
     th.h = near ? 0.35 + this.rnd() * 0.5 : mid ? 1.4 + this.rnd() * 1.6 : 8 + this.rnd() * 9;     // far threads ride high, near ones hug the ground
     const g0 = Math.abs(th.x) < 190 && Math.abs(th.z) < 190 ? heightAt(th.x, th.z) : 0; if (g0 >= 50) return;
     th.gy = th.gr = g0; th.spd = (near ? 26 : 20) + this.rnd() * 8; th.life = near ? 1.8 : 3; th.dist = 0; th.lat = this.rnd() * 6; th.alive = true; th.trail.length = 0; this._show(th, true);
-    th.far = d >= MID;
+    th.far = d >= this.gu.mid;
   }
   _shape(th, cam, pxk) {
     const A = th.mesh.geometry.attributes, pos = A.position, col = A.color, U = th.under.geometry.attributes, upos = U.position, ucol = U.color, tr = th.trail, fl = 0.85 + 0.15 * Math.sin(this.t * 17 + th.lat * 3);

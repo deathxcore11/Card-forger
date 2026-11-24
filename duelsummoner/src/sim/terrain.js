@@ -5,12 +5,15 @@ import { rasterizeInto, primHeight, WALL } from './raster.js';
 import { groundAt } from '../gen/open/terrain.js';
 export { primHeight, WALL };
 
-const HALF = MAP.half, N = HALF * 2;
-const grid = new Float32Array(N * N), SLX = new Float32Array(N * N), SLZ = new Float32Array(N * N), PB = new Float32Array(N * N), LO = new Float32Array(N * N), HI = new Float32Array(N * N), SL = { x: SLX, z: SLZ, pb: PB, lo: LO, hi: HI };
+// the grid is 1 m cells; the old maps are 400 x 400, the open desert 840 x 840 (MAP.half follows the loaded map, so the fog, the flow field and the minimap follow it too)
+let HALF = 200, N = 400, grid, SLX, SLZ, PB, LO, HI, SL;
+function alloc(h) { HALF = h; N = h * 2; MAP.half = h; grid = new Float32Array(N * N); SLX = new Float32Array(N * N); SLZ = new Float32Array(N * N); PB = new Float32Array(N * N); LO = new Float32Array(N * N); HI = new Float32Array(N * N); SL = { x: SLX, z: SLZ, pb: PB, lo: LO, hi: HI }; }
+alloc(MAP.half);
 let currentKey = '', farGround = null;
 
 // Loads a map's primitives into the collision grid. The live terrain is one global: the sim checks mapKey() each tick and reloads if needed.
 export function loadMap(map) {
+  const want = map.half || 200; if (want !== HALF) alloc(want);
   farGround = map.open ? (x, z) => groundAt(map, x, z) : null;       // the open desert carries on past its boundary line: the camera (view only) reads the sand drawn there, the sim still sees wall
   if (map.heights) { grid.set(map.heights); SLX.fill(0); SLZ.fill(0); PB.fill(0); LO.fill(0); HI.fill(0); currentKey = map.key; return; }       // a designed (v2) map is already a heightfield: 1 m cells, no ramp slopes inside a cell
   rasterizeInto(grid, N, HALF, map.prims, MAP.boundaryR, SL); currentKey = map.key;
