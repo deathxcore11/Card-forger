@@ -155,8 +155,7 @@ function hullMaterial(artPx, color) {
   return m;
 }
 function silhouetteMaterial() {
-  const m = new T.MeshBasicMaterial({ color: 0xffffff, side: T.DoubleSide, fog: false, depthTest: true, depthFunc: T.GreaterDepth, depthWrite: false }); m.skinning = true; stencilOutside(m);
-  m.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n if (mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 2.0) < 1.0) discard;'); };
+  const m = new T.MeshBasicMaterial({ color: 0x15131f, side: T.DoubleSide, fog: false, depthTest: true, depthFunc: T.GreaterDepth, depthWrite: false, transparent: true, opacity: 0.6 }); m.skinning = true;       // where the duelist is covered: a flat dark ink shape at 60% (no stencil: the body's mark lands on covered pixels too, so the stencil test hid it), inside the thin bright rim of the white hull (no checker, no gold)
   return m;
 }
 export function addDuelistExtras(root) {
@@ -164,7 +163,8 @@ export function addDuelistExtras(root) {
   const sil = silhouetteMaterial(), white = hullMaterial(1, 0xffffff), ink = hullMaterial(2, INK), mask = maskMaterial(), extras = [];
   for (const b of bodies) {
     b.renderOrder = 8;       // the body is drawn after every other opaque thing, so its stencil mark is written only on pixels that really show it (a later wall would not clear the mark)
-    const m = b.material; m.stencilWrite = true; m.stencilFunc = T.AlwaysStencilFunc; m.stencilRef = 1; m.stencilZPass = T.ReplaceStencilOp;       // the body marks its own pixels
+    const m = b.material; m.transparent = true; mask.transparent = white.transparent = ink.transparent = true;       // the body and its extras draw in the transparent queue, after the swarm (whose material is transparent too), in renderOrder 8 to 11: its stencil mark then lands only on pixels no enemy covers
+    m.stencilWrite = true; m.stencilFunc = T.AlwaysStencilFunc; m.stencilRef = 1; m.stencilZPass = T.ReplaceStencilOp;       // the body marks its own pixels
     for (const [mat, order, kind] of [[mask, 8.5, 'mask'], [sil, 9, 'sil'], [ink, 10, 'ink'], [white, 11, 'white']]) {
       const s = new T.SkinnedMesh(b.geometry, mat); s.bind(b.skeleton, b.bindMatrix); s.frustumCulled = false; s.renderOrder = order; s.userData.extra = kind; s.name = b.name + '_' + kind;
       b.parent.add(s); extras.push(s);

@@ -393,6 +393,7 @@ export class Actors {
     if (this.rig) {
       const R = this.rig, ct = g.cardT, thrown = this._ct !== undefined && ct > this._ct + 0.01; this._ct = ct;
       R.group.position.copy(this.player.position); R.group.rotation.order = 'YXZ'; R.group.rotation.y = this.player.rotation.y + R.yaw; { const yr = this._yr = (this._yr || 0) + (((this._ly === undefined ? this.player.rotation.y : this._ly) - this.player.rotation.y) / Math.max(dt, 0.004) - (this._yr || 0)) * Math.min(1, dt * 10); this._ly = this.player.rotation.y; const dy = Math.max(-2.5, Math.min(2.5, yr)); R.group.rotation.z = p.grounded && !p.sliding && !fx.rm_ ? Math.max(-0.2, Math.min(0.2, (dy > 0 ? Math.max(0, dy - 0.5) : Math.min(0, dy + 0.5)) * 0.1)) * Math.min(1, Math.hypot(p.vx || 0, p.vz || 0) / 5) : 0; } R.group.scale.setScalar(g.oaths.small ? 0.5 : 1); this.player.visible = false;
+      { const S = R.see; if (S) { const on = (this._nearN || 0) > 0 && !fx.rm_; if (S.silOn !== on) { S.silOn = on; for (const m of S.extras) if (m.userData.extra === 'sil') m.visible = on; } } }       // the covered-silhouette ink is drawn only while an enemy is within 4.5 m
       R.update(p, g, dt, thrown);
       if (thrown && g.aimX !== undefined) { const ay = Math.atan2(g.aimX - p.x, g.aimZ - p.z); if (!(this._aimT > 0)) this._aimYs = ay; this._aimY = ay; this._aimT = 0.9; }       // one aim, followed slowly while throws keep coming, faded out over 0.4 s after the last
       let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees
@@ -477,13 +478,14 @@ export class Actors {
       for (const mm of [this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell]) { mm.count = n; mm.instanceMatrix.needsUpdate = true; }
     }
     // swarm
-    this.lastEn = e; this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); for (const kk of this.kinds) { kk.fxNow = false; kk.cs = 0; kk.fs = 0; } const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
+    this.lastEn = e; let nearN = 0; this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); for (const kk of this.kinds) { kk.fxNow = false; kk.cs = 0; kk.fs = 0; } const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
     for (let i = 0; i < e.max; i++) {
       if (!e.alive[i]) { this._wasSwarm[i] = 0; continue; }
       if (!this._wasSwarm[i]) { this._wasSwarm[i] = 1; this.spawnAge[i] = 0; if (this._dustBudget > 0) { this._dustBudget--; fx.burst(e.x[i], e.y[i] + 0.1, e.z[i], 3, 0xb09a6a, 1.5, 1.5, 0.2, 0.45, 5); } }
       this.spawnAge[i] += dt; const sage = this.spawnAge[i], rise = sage < 0.35 ? 1 - sage / 0.35 : 0;
       const k = this.kinds[e.kind[i]], K = k.K, n = counts[e.kind[i]];
       const x = pl(e.px[i], e.x[i], a), y = pl(e.py[i], e.y[i], a), z = pl(e.pz[i], e.z[i], a);
+      { const ddx = x - px, ddz = z - pz; if (ddx * ddx + ddz * ddz < 20) nearN++; }
       if (blocked(x, y + 0.9, z, 2.4)) continue;
       const hit = e.flash[i] > 0; let bob; if (K.fly) bob = Math.sin(t * 9 + i) * 0.08; else { const bp = this._bp || (this._bp = new Float32Array(e.max * 3)), j3 = i * 3; if (sage < 0.02) { bp[j3] = i; bp[j3 + 1] = x; bp[j3 + 2] = z; } const spd = Math.min(14, Math.hypot(x - bp[j3 + 1], z - bp[j3 + 2]) / Math.max(dt, 0.004)); bp[j3 + 1] = x; bp[j3 + 2] = z; bp[j3] += spd / 1.3 * dt * Math.PI; bob = Math.abs(Math.sin(bp[j3])) * 0.15 * Math.min(1, spd / 1.5); }       // the hop follows ground speed (one hop per 1.3 m), and stops when the enemy stands
       let sc = K.scale, pulse = 1; if (K.id === 5) sc = SC_SCARAB;       // the Tomb Scarab is drawn 1.3x so it can be picked out of a crowd (the sim hitbox is unchanged)
@@ -503,7 +505,7 @@ export class Actors {
       if (e.ace[i] && cc < 24) { d.position.set(x, y + 2.1 * mgs + 0.4 + Math.sin(t * 3 + i) * 0.08, z); d.rotation.set(0, t * 2.4 + i, 0); d.scale.set(1, 1.5, 1); d.updateMatrix(); this.crests.setMatrixAt(cc++, d.matrix); }
       if (e.mark[i] > 0) { d.position.set(x, y + 2.3 + Math.sin(t * 4) * 0.1, z); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1.4, 1); d.updateMatrix(); this.marks.setMatrixAt(mc.n++, d.matrix); }
     }
-    this._pops(dt, counts); this._corpses(dt, counts); if (this._hits) this._hits.length = 0;
+    this._nearN = nearN; this._pops(dt, counts); this._corpses(dt, counts); if (this._hits) this._hits.length = 0;
     this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.out.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; if (k.cs !== k.csPrev || counts[i] !== k.cPrev) k.body.instanceColor.needsUpdate = true; k.csPrev = k.cs; k.cPrev = counts[i]; { const a = k.body.geometry.attributes.aFx; if ((k.fxNow || k.fxPrev) && (k.fs !== k.fsPrev || counts[i] !== k.fcPrev || k.fxNow !== k.fxPrev)) { a.updateRange.offset = 0; a.updateRange.count = counts[i] * 4; a.needsUpdate = true; } k.fsPrev = k.fs; k.fcPrev = counts[i]; k.fxPrev = k.fxNow; } if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
     this.marks.count = mc.n; this.marks.instanceMatrix.needsUpdate = true; this.crests.count = cc; this.crests.instanceMatrix.needsUpdate = true;
 
