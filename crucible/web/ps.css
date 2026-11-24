@@ -352,6 +352,6 @@ body.ps { background: #000; }
 #app.ps .cd.fam { box-shadow: 0 0 0 1px var(--ink), 0 0 0 2px var(--gl); }
 /* a frame held under a window on the other one: it shows, and nothing on it is pressed (a story's own layer still is) */
 #app.ps .scr.held > :not(.story) { pointer-events: none; }
-#app.ps .pgw span, #app.ps .txw span { line-height: inherit; }
+#app.ps .pgw span, #app.ps .txw span, #app.ps .bar .th span { line-height: inherit; }
 /* under a story's painting the whole top frame goes dark, so nothing of the screen shows round it */
 #app.ps.dual.stblk .scrT > :not(.story):not(.toast) { visibility: hidden; }

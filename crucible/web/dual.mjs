@@ -62,7 +62,7 @@ export function navKeys(items) {
 // A frame held under a window (.held) is left out: its controls wait until the window is shut.
 export function navStep(app, items, cur, dir) {
   const c = rectOf(app, cur), scr = cur.closest('.scr'), horiz = dir === 'left' || dir === 'right', sign = dir === 'left' || dir === 'up' ? -1 : 1;
-  let best = null, bs = Infinity;
+  let best = null, bs = Infinity, inside = null, is = Infinity; // inside: the nearest row of the same grid, which comes before anything outside it
   const box = cur.closest('.gsc');
   for (const e of items) { if (e === cur) continue; const r = rectOf(app, e);
     const g = e.closest('.gsc'); if (g && g !== box) { const q = rectOf(app, g); if (r.y < q.y - 1 || r.y + r.h > q.y + q.h + 1) continue; } // a row of a grid that is moved out of sight is reached through the grid, not from beside it
@@ -72,8 +72,9 @@ export function navStep(app, items, cur, dir) {
     const off = horiz ? Math.abs(r.y + r.h / 2 - c.y - c.h / 2) : Math.abs(r.x + r.w / 2 - c.x - c.w / 2);
     const edge = horiz ? (sign > 0 ? r.x - c.x - c.w : c.x - r.x - r.w) : (sign > 0 ? r.y - c.y - c.h : c.y - r.y - r.h); // from this one's far edge to that one's near edge
     const s = Math.max(0, edge) + gap * (horiz ? 40 : 3) + off * .05 + d * .01; // sideways, a control in the same row always wins over one in the row under it
+    if (g && g === box && !horiz) { if (s < is) { is = s; inside = e; } }
     if (s < bs) { bs = s; best = e; } }
-  return best;
+  return inside || best;
 }
 
 // ---- the pad
