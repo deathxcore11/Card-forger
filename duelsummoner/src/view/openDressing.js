@@ -40,7 +40,8 @@ function cactus(D, x, y, z, s, rot, v) {
 const WOOD = [0xdcd3bc, 0xd0c6aa, 0xe4dcc8];
 function deadTree(D, x, y, z, s, rot, v, small) {
   const r = rng(Math.floor(x * 97 + z * 53 + v * 11)), col = WOOD[v % 3], dkc = mixc(col, 0x8a7a5a, 0.35), h = (4.6 + r() * 0.9) * s, lean = (r() - 0.5) * 0.9, tx = x + Math.cos(rot) * lean * s, tz = z + Math.sin(rot) * lean * s;
-  rod(D, [x, y - 0.3, z], [tx, y + h, tz], 0.55 * s, 0.18 * s, 6, [col, dkc], true);
+  rod(D, [x, y - 0.4, z], [x + (tx - x) * 0.12, y + h * 0.12, z + (tz - z) * 0.12], 0.9 * s, 0.68 * s, 7, [col, dkc], false);       // a flared root, then a thick trunk with a broken flat top: never a thin point
+  rod(D, [x + (tx - x) * 0.12, y + h * 0.12, z + (tz - z) * 0.12], [tx, y + h, tz], 0.68 * s, 0.34 * s, 7, [col, dkc], true);
   const nb = small ? 3 : 3 + ((r() * 3) | 0);
   for (let k = 0; k < nb; k++) { const t = 0.35 + 0.55 * (k + r() * 0.5) / nb, bx = x + (tx - x) * t, by = y + h * t, bz = z + (tz - z) * t, a = rot + k * 2.1 + r() * 1.2, L = (1.7 + r() * 1.7) * s * (1.15 - t * 0.5), ex = bx + Math.cos(a) * L, ey = by + L * (0.45 + r() * 0.5), ez = bz + Math.sin(a) * L;
     rod(D, [bx, by, bz], [ex, ey, ez], 0.2 * s, 0.07 * s, 5, [col, dkc], true); for (let f = 0; f < (small ? 1 : 2); f++) { if (r() < 0.25) continue; const a2 = a + (f ? 1 : -1) * (0.5 + r() * 0.8), L2 = L * (0.5 + r() * 0.2), u = 0.55 + 0.2 * f, fx = bx + (ex - bx) * u, fy = by + (ey - by) * u, fz = bz + (ez - bz) * u; rod(D, [fx, fy, fz], [fx + Math.cos(a2) * L2, fy + L2 * 0.6, fz + Math.sin(a2) * L2], 0.11 * s, 0.04 * s, 4, col, true); } }
