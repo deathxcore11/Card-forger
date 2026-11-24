@@ -45,6 +45,7 @@ import { showDeckBox, showLibrary } from './view/metaui.js';
 import { QUESTS } from './data/meta.js';
 import { Fx } from './view/fx.js';
 import { initMenus } from './view/menus.js';
+import { bakeDuelist } from './view/portraits.js';
 import { DIFF_CHIPS, DUELIST_INFO } from './data/progress.js';
 import { packReplay, deflateInBrowser } from './core/replay.js';
 import { boardUrl, sendAndFollow } from './core/board.js';
@@ -203,7 +204,8 @@ function beginNow(mode, sel) {
   const blind = !!game.oaths.blind; for (const id of ['minimap', 'boss', 'plate']) $(id).style.visibility = blind ? 'hidden' : '';      // Blind Oath
 }
 function pickDuelist(id) { duelist = id; }
-const menus = initMenus({ save, persist: () => writeSave(host, save), begin, bindSettings: () => { bindSettings(); },
+const portraits = {}; for (const id of Object.keys(actors.rigs)) { const b = bakeDuelist(renderer, actors.rigs[id]); if (b) portraits[id] = b; }       // real-model pictures for the duelist screen, taken once
+const menus = initMenus({ save, portraits, persist: () => writeSave(host, save), begin, bindSettings: () => { bindSettings(); },
   showDeckBox: () => showDeckBox(save, () => writeSave(host, save), () => menus.showMain()) });
 $('restartBtn').addEventListener('click', () => begin(game.opts.mode, { duelist, difficulty: game.opts.difficulty, oaths: game.opts.oaths, map: game.opts.map }));
 $('menuBtn').addEventListener('click', () => { setMode('start'); menus.showMain(); });

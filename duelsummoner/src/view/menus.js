@@ -11,6 +11,7 @@ import { settingsHtml, bindSettingsScreen, tabsFor } from './settings-screen.js'
 import { firstPad } from '../core/padnav.js';
 import { questProgress, questDone, closestQuests, questFor, mapRecord, masteryOf, outfitUnlocked, setCardEnabled } from '../core/meta.js';
 import { startPreview } from './preview.js';
+import { startBakedPreview } from './portraits.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
@@ -22,7 +23,7 @@ const rewardText = r => !r ? '' : r.chips ? r.chips + ' Star Chips' : r.card ? '
 const STAT_LABEL = { reach: 'Reach', burnDps: 'Burn', burnDur: 'Burn', markDur: 'Mark Depth', markBonus: 'Mark Depth', cardRate: 'Draw', move: 'Stride', dash: 'Dash', maxLp: 'Max LP', pickup: 'Magnet', xp: 'Insight', coinMult: 'Greed', luck: 'Fortune', armour: 'Guard', crit: 'Keen', dmgMult: 'Might', bossDmg: 'Hunter', monsterRate: 'Tempo', regen: 'Renewal', trapRecharge: 'Rewind', shopDiscount: 'Bargain', cardBurn: 'Affinity: Fire' };
 
 export function initMenus(env) {
-  const save = env.save, meta = () => save.meta;
+  const save = env.save, meta = () => save.meta, portraits = env.portraits || {};
   const sel = { duelist: 'kael', map: MAPS[0].id, difficulty: save.settings.difficulty || 'medium', oaths: [] };
   let preview = null, oathPanel = false, questTab = 'General', libTab = 'Monsters', hideDone = false, note = '';
   const stopPreview = () => { if (preview) { preview.stop(); preview = null; } };
@@ -60,7 +61,7 @@ export function initMenus(env) {
   function showDuelists() {
     const unlocked = id => meta().duelists.includes(id) && !DUELIST_INFO[id].locked || meta().duelists.includes(id);
     if (!unlocked(sel.duelist)) sel.duelist = 'kael';
-    const grid = DUELIST_ORDER.map(id => { const D = DUELIST_INFO[id], open = unlocked(id); return '<button class="portrait' + (id === sel.duelist ? ' sel' : '') + (open ? '' : ' locked') + '" data-d="' + id + '"><span class="face" style="' + (open ? 'background:#' + D.color.toString(16).padStart(6, '0') : '') + '">' + (open ? initial(id) : '?') + '</span><small>' + (open ? D.name : '???') + '</small></button>'; }).join('');
+    const grid = DUELIST_ORDER.map(id => { const D = DUELIST_INFO[id], open = unlocked(id); return '<button class="portrait' + (id === sel.duelist ? ' sel' : '') + (open ? '' : ' locked') + '" data-d="' + id + '"><span class="face" style="' + (open ? 'background:#' + D.color.toString(16).padStart(6, '0') : '') + '">' + (open ? (portraits[id] ? '<img class="faceImg" alt="" src="' + portraits[id].tile + '">' : initial(id)) : '?') + '</span><small>' + (open ? D.name : '???') + '</small></button>'; }).join('');
     const D = DUELIST_INFO[sel.duelist], mst = masteryOf(meta(), sel.duelist), m = meta().mastery[sel.duelist] || { runs: 0, kills: 0 };
     const outfits = D.outfits.map(o => '<span class="slot' + (outfitUnlocked(meta(), sel.duelist, o) ? ' on' : '') + '" title="' + o.name + '">' + (outfitUnlocked(meta(), sel.duelist, o) ? o.name[0] : '&#128274;') + '</span>').join('') + '<span class="slot" title="locked">&#128274;</span>';
     open('<div class="selWrap"><div class="selLeft"><h2>CHOOSE YOUR DUELIST</h2><div class="portraits">' + grid + '</div></div><div class="selRight panel">' +
@@ -71,7 +72,7 @@ export function initMenus(env) {
       '<div class="slots"><span>Outfits</span>' + outfits + '<span>Regalia</span><span class="slot" title="Regalia slot">&#128081;</span></div></div></div>' +
       '<div class="navRow"><button id="selBack" class="small">BACK</button><button id="selNext"' + (D.locked || !unlocked(sel.duelist) ? ' disabled' : '') + '>NEXT: CHOOSE A MAP</button></div>');
     document.body.dataset.cam = 'left';       // the Camp camera puts the live duelist on the left, the panels on the right
-    preview = startPreview($('duelPreview'), D.color);
+    preview = portraits[sel.duelist] ? startBakedPreview($('duelPreview'), portraits[sel.duelist]) : startPreview($('duelPreview'), D.color);       // the real model from its baked frames; the robe stand-in only when a model is missing
     for (const b of root().querySelectorAll('.portrait')) b.onclick = () => { if (unlocked(b.dataset.d)) { sel.duelist = b.dataset.d; showDuelists(); } else { sel.duelist = b.dataset.d; showDuelists(); } };
     $('selBack').onclick = showMain; $('selNext').onclick = showMaps;
   }
