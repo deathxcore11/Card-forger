@@ -275,6 +275,14 @@ function dualAudit(bare) {
     if (!paged && (s.full.x < -.01 || s.full.y < -.01 || s.full.x + s.full.w > W + .01 || s.full.y + s.full.h > H + .01)) add(`fit: "${t}" reaches out of the ${s.f} frame`);
     if (!paged && !s.whole && !e.closest('.gsc')) add(`fit: "${t}" is cut off by a box round it (${s.f} frame)`);
     if ((e.classList.contains('pq') || e.classList.contains('kc') || e.classList.contains('lb')) && e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflowX !== 'visible') add(`fit: "${t}" is wider than its box (${s.f} frame)`); }
+  // lines: every line of words starts on a whole frame pixel (a centred label too), and no line of a box of words is
+  // cut through at the box's foot
+  const lineRects = []; { const w = document.createTreeWalker(app, NodeFilter.SHOW_TEXT); let nd;
+    while ((nd = w.nextNode())) { if (!nd.textContent.trim()) continue; const e = nd.parentElement, s = e.closest('.scr') && shown(e); if (!s) continue; const rg = document.createRange(); rg.selectNodeContents(nd);
+      const box = e.closest('[data-pager], .txw'), bb = box ? box.getBoundingClientRect() : null, lh = parseFloat(getComputedStyle(e).lineHeight) || 16;
+      for (const q of rg.getClientRects()) { if (!q.width) continue; const r = rel(q, s.f); lineRects.push([s.f, r, e]);
+        if (q.bottom > R[s.f].top && q.top < R[s.f].bottom && (!bb || (q.top < bb.bottom && q.bottom > bb.top)) && (Math.abs(r.x - Math.round(r.x)) > .02 || Math.abs(r.y - Math.round(r.y)) > .02)) add(`grid: the line "${nd.textContent.trim().slice(0, 20)}" starts at ${r.x.toFixed(2)}, ${r.y.toFixed(2)} of the ${s.f} frame`);
+        if (bb) { const mid = (q.top + q.bottom) / 2, top = mid - lh * k / 2, bot = mid + lh * k / 2; if (top < bb.bottom - k && bot > bb.bottom + k) add(`fit: the line "${nd.textContent.trim().slice(0, 20)}" is cut through at the foot of its box (${s.f} frame)`); } } } }
   for (const [e, s] of all) if (e.classList.contains('txw') && e.scrollHeight > e.clientHeight + 8) add(`fit: words cut off at the foot of their box, "${e.textContent.trim().slice(0, 24)}" (${s.f} frame)`);
   for (const [e, s] of all) if (e.classList.contains('cd') && e.closest('.gsc') && !s.whole) add(`fit: a card of a grid is cut (${s.f} frame, ${Math.round(s.full.x)}, ${Math.round(s.full.y)})`);
   for (const [e, s] of all) if ((e.classList.contains('cd') || e.classList.contains('big')) && !e.closest('.gsc') && !e.closest('.dealt') && !s.whole) add(`fit: a card is cut (${s.f} frame, ${Math.round(s.full.x)}, ${Math.round(s.full.y)})`);
@@ -310,11 +318,16 @@ function dualAudit(bare) {
   }
   // bare: no square of bare stone or black of the stated side or more
   for (const f of ['top', 'bottom']) { const [W, H] = D.frames[f], gw = Math.ceil(W / 4), gh = Math.ceil(H / 4), g = new Uint8Array(gw * gh);
-    for (const [e, s] of all) { if (s.f !== f || !e.matches('.wn, .vw, .lg, .gsc, .cd, .pq, .kc:not(.kce), .lb, .pf, .sl, .ga, .spk, .seal, .pip, img, canvas, .big, .rw, .dcol, .txw, .pln, .story.sblk, input, .soundslot label')) continue; if (e.matches('.lb') && !text(e)) continue;
-      for (let y = Math.max(0, Math.floor(s.cut.y / 4)); y < Math.min(gh, Math.ceil((s.cut.y + s.cut.h) / 4)); y++) for (let x = Math.max(0, Math.floor(s.cut.x / 4)); x < Math.min(gw, Math.ceil((s.cut.x + s.cut.w) / 4)); x++) g[y * gw + x] = 1; }
+    const fill = c => { for (let y = Math.max(0, Math.floor(c.y / 4)); y < Math.min(gh, Math.ceil((c.y + c.h) / 4)); y++) for (let x = Math.max(0, Math.floor(c.x / 4)); x < Math.min(gw, Math.ceil((c.x + c.w) / 4)); x++) g[y * gw + x] = 1; };
+    // what is drawn counts, not the window it is drawn in: pictures, cards, plaques, rows, gauges, and each line of words
+    // (a book's page lies over the reading room's painting: the painting counts only where the page leaves it showing)
+    for (const [e, s] of all) if (s.f === f && e.matches('.ti > img')) fill(s.cut);
+    for (const [e, s] of all) if (s.f === f && e.matches('.bk2')) { const c = s.cut; for (let y = Math.max(0, Math.ceil(c.y / 4)); y < Math.min(gh, Math.floor((c.y + c.h) / 4)); y++) for (let x = Math.max(0, Math.ceil(c.x / 4)); x < Math.min(gw, Math.floor((c.x + c.w) / 4)); x++) g[y * gw + x] = 0; }
+    for (const [e, s] of all) { if (s.f !== f || e.matches('.ti > img') || !e.matches('.cd, .pq, .kc:not(.kce), .pf, .sl, .ga, .spk, .seal, .pip, img, canvas, .big, .rw, .dcol, .pln, .nof, input, .soundslot label, .hand > i')) continue; fill(s.cut); }
+    for (const [lf, r, e] of lineRects) { if (lf !== f) continue; const s = shown(e); if (s) fill({ x: Math.max(r.x, s.cut.x), y: Math.max(r.y, s.cut.y), w: Math.min(r.x + r.w, s.cut.x + s.cut.w) - Math.max(r.x, s.cut.x), h: Math.min(r.y + r.h, s.cut.y + s.cut.h) - Math.max(r.y, s.cut.y) }); }
     const sq = new Uint16Array(gw * gh); let most = 0, at = [0, 0];
     for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) { if (g[y * gw + x]) continue; const v = x && y ? Math.min(sq[y * gw + x - 1], sq[(y - 1) * gw + x], sq[(y - 1) * gw + x - 1]) + 1 : 1; sq[y * gw + x] = v; if (v > most) { most = v; at = [(x - v + 1) * 4, (y - v + 1) * 4]; } }
-    if (most * 4 >= bare) add(`bare: the ${f} frame has an empty square of ${most * 4} pixels at ${at}`); }
+    if (most * 4 >= bare) add(`bare: the ${f} frame has an empty square of ${most * 4} pixels at ${at}`); (window.__bare = window.__bare || {})[f] = most * 4; }
   // walk: the d-pad reaches every control from where the cursor stands, and comes back from each
   let walk = null; try { walk = D.walk(); } catch (e) { add('walk: ' + e.message); }
   if (walk) { if (walk.n && walk.at == null) add('walk: the cursor stands on nothing'); if (walk.lost.length && walk.at != null) add(`walk: the d-pad cannot reach ${walk.lost.slice(0, 6).join(', ')}${walk.lost.length > 6 ? ' and ' + (walk.lost.length - 6) + ' more' : ''} from ${walk.at}`); if (walk.trapped.length) add(`walk: the cursor cannot come back from ${walk.trapped.slice(0, 6).join(', ')}`); }

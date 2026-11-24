@@ -8,8 +8,8 @@ import { box, pq, pqW, esc, labelW } from './ps.mjs';
 export const kc = (x, y, key, w = key && key.length > 2 ? 32 : 22, off = false) => { const pad = (w - labelW(key || 'A') + 1) >> 1; return `<i class="kc${key ? '' : ' kce'}${off ? ' kco' : ''}" data-key="${esc(key || '')}" style="left:${x}px;top:${y}px;width:${w}px;padding-left:${pad}px">${esc(key || '')}</i>`; };
 
 // The foot of the bottom frame: a slab of stone from row y0 down, its plaques in rows of three columns (28 rows apart,
-// each with a chip's room at its left) or four (21 apart, a chip only where a key is given). A cell: null for a gap, or
-// { k: pad key, t: words (or several, longest first), a: the verb, off, lit, cls, title, span: columns it takes }.
+// each with a chip's room at its left) or four (21 apart, a chip only where a key is given or room for A is asked, ka).
+// A cell: null for a gap, or { k: pad key, ka, t: words (or several, longest first), a: the verb, off, lit, cls, title }.
 // A plaque whose words and hammer need more than its columns give takes the next column too when that one is free.
 export function foot(y0, rows, cols = 3) {
   const colw = cols === 3 ? 131 : 99, gx = cols === 3 ? 6 : 3, pitch = cols === 3 ? 28 : 21, h = 360 - y0;
@@ -17,7 +17,7 @@ export function foot(y0, rows, cols = 3) {
   let s = box(0, y0, 413, h, 'st');
   rows.forEach((r, j) => { let i = 0; r = r.slice();
     for (let n = 0; n < r.length && i < cols; n++) { const c = r[n]; if (!c) { i++; continue; }
-      const cw = cols === 3 || c.k ? (c.k && c.k.length > 2 ? 32 : 22) : 0, need = pqW([].concat(c.t).slice(-1)[0]) + (cw ? cw + 4 : 0);
+      const cw = cols === 3 || c.k || c.ka ? (c.k && c.k.length > 2 ? 32 : 22) : 0, need = pqW([].concat(c.t).slice(-1)[0]) + (cw ? cw + 4 : 0);
       let span = 1; while (span * colw + (span - 1) * gx < need && i + span < cols && (n + 1 >= r.length || r[n + 1] == null)) { span++; if (n + 1 < r.length) r.splice(n + 1, 1); }
       const x = 4 + i * (colw + gx), w = span * colw + (span - 1) * gx, y = y0 + pad + j * pitch;
       s += (cw ? kc(x, y + 3, c.k, cw, c.off) : '') + pq(x + (cw ? cw + 4 : 0), y, w - (cw ? cw + 4 : 0), c.t, c.a, { lit: c.lit && !c.off, off: c.off, cls: c.cls, title: c.title }).replace('<button ', `<button ${c.for ? `data-for="${c.for}" ` : ''}${c.look ? `data-look="${c.look}" ` : ''}`);
@@ -27,8 +27,9 @@ export function foot(y0, rows, cols = 3) {
 // A list of cells cut into rows of so many columns, a cell whose words need two columns followed by a gap for the second.
 export function rowsOf(cells, cols) {
   const colw = cols === 3 ? 131 : 99, gx = cols === 3 ? 6 : 3, out = [[]]; let i = 0;
-  for (const c of cells) { const cw = cols === 3 || (c && c.k) ? (c && c.k && c.k.length > 2 ? 32 : 22) : 0, need = c ? pqW([].concat(c.t).slice(-1)[0]) + (cw ? cw + 4 : 0) : 0, span = Math.min(cols, Math.max(1, Math.ceil((need + gx) / (colw + gx))));
-    if (i + span > cols) { out.push([]); i = 0; }
+  const spanOf = c => { const cw = cols === 3 || (c && (c.k || c.ka)) ? (c && c.k && c.k.length > 2 ? 32 : 22) : 0, need = c ? pqW([].concat(c.t).slice(-1)[0]) + (cw ? cw + 4 : 0) : 0; return Math.min(cols, Math.max(1, Math.ceil((need + gx) / (colw + gx)))); };
+  for (let n = 0; n < cells.length; n++) { const c = cells[n], span = spanOf(c), nx = cells[n + 1], pair = c && c.k === 'L1' && nx && nx.k === 'R1' ? spanOf(nx) : 0; // the one before and the next one stand side by side
+    if (i + span > cols || (pair && i + span + pair > cols && span + pair <= cols)) { out.push([]); i = 0; }
     out[out.length - 1].push(c, ...Array(span - 1).fill(null)); i += span; }
   return out.filter(r => r.length);
 }

@@ -62,16 +62,21 @@ if you want it to repeat).
 |---------------------|-------------------------------|--------------|
 | D-pad, left stick   | `up` `down` `left` `right`    | Moves the one cursor to the nearest control that way, on either frame. Left and right stay in the row; up and down cross the hinge. |
 | A (button 0)        | `A`                           | Presses what the cursor is on. On a card already chosen it presses the lit plaque, so A chooses a card and A again plays it. |
-| B (button 1)        | `B`                           | Back or undo: the plaque with the B chip. Puts away a card or relic being read. |
+| B (button 1)        | `B`                           | Back or undo: the plaque with the B chip. Puts away a card or relic being read, and puts back a card picked up at the Anvil or in the deck book before it leaves. Where B would walk away from a room and what it offers (TAKE NOTHING, LEAVE), the first press only says so and the second one goes. |
 | X (button 2)        | `X`                           | The screen's other main action: the plaque with the X chip (END TURN in a duel). |
 | Y (button 3)        | `Y`                           | Look closer: the plaque with the Y chip (THIS DUEL, the deck or the relics). |
 | L1, R1 (4, 5)       | `L1` `R1`                     | The one before and the next one: doors, choices, Traps, books. In a duel with no such plaque they jump between the hand, your row and the rival's row. |
 | L2, R2, right stick | `L2` `R2`                     | Page long text up and down. |
-| Start (button 9)    | `START`                       | The menu. |
+| Start (button 9)    | `START`                       | The menu. Pressed again, or in a book, it shuts the menu or the book. |
 | Select              |                               | Not used. |
 
 A key does only what a plaque on the screen says it does: each plaque that has a key shows the key on a chip at its
-left, and no key is shown twice. The plaque A presses is the lit one, and its chip shows A.
+left, and no key is shown twice. The plaque A presses is the lit one, and its chip shows A. A key with a chip presses
+its plaque and leaves the cursor where it was.
+
+Where the cursor starts: on the first card of your hand at the start of each of your turns, on the first card of the
+deck at the Anvil and in the deck book, on the chosen door, plinth or row elsewhere. It never starts on a plaque that
+goes back, leaves or ends a turn, so a stray A does none of those.
 
 The cursor is the hammer on a plaque, and a small marker over a card, a monster, a relic or a row. It is never lost:
 when the control it was on goes away, it waits on the screen's own plaque.
@@ -94,22 +99,30 @@ when the control it was on goes away, it waits on the screen's own plaque.
 - Title: the painting above; the menu below, with a panel that says what the choice under the hammer opens.
 - A chamber: the hall and its doors above with the chosen door read whole; below, what each door costs and gives,
   your strongest cards and the plaques.
-- A duel: the hall and the whole table above, with both duelists' plates and the bar of words; below, the hand in six
-  places that never move, the deck and the graveyard, the page of whatever the cursor is on, the relics and the
-  plaques. An attack that waits on an answer and the duel's end take the page's place below. Nothing covers the table.
+- A duel: the hall and the whole table above, with both duelists' plates and the bar of words, which only tells the
+  fight; below, the hand in six places that never move (a card played leaves its place empty, a card drawn takes the
+  first empty place), the deck and the graveyard, the page of whatever the cursor is on, the relics and the plaques.
+  Both graveyards can be listed: yours beside the hand, the rival's on the rival's plate. An attack that waits on an
+  answer and the duel's end take the page's place below. Nothing covers the table.
 - A room with choices: the room and its plinths above with the chosen thing read whole; below, what it would join
-  (the deck, the relics you hold, the kit's cards, the trunk).
-- The Anvil and the Winnower: the room above with the chosen card shown large; the whole deck below.
-- A book (the deck, the relics, the rules, the options, the Codex, the Feats, the Vault): the open page above, the
-  list below. L1 and R1 turn to the next book.
+  (the deck as a grid of whole cards, forty to a frame where the plaques leave five rows; the relics you hold by name
+  over the deck; the kit's cards; the trunk).
+- The Anvil and the Winnower: the room above with the chosen card shown large; the whole deck below, forty cards whole.
+- The deck book: the page of the card under the cursor above, with the trunk beside it and what the deck is made of;
+  the whole deck below. Up from the first row of the deck crosses to the trunk.
+- The other books (the relics, the rules, the options, the Codex, the Feats, the Vault): the open page above, the list
+  below. L1 and R1 turn to the next book.
 - A question (the menu, leaving, the heat's rules, this duel): the bottom frame only. The top frame holds still until
   it is answered.
-- A story: its painting above, its words below.
+- A story, and the card of a new floor: the painting in the room's window above with the words under it, where the
+  letters are largest; below, what you carry into what comes next.
 
 ## Checks
 
 `CC_DUAL=1 node tools/crucible/console-checks.cjs <page url> <saves folder> [pad keys]` reads both frames of every
 screen against the rules of the look, and against the rules of this layout: nothing said on both frames, no large
-bare square on either, every control reached by the d-pad, the table and the hand's six places fixed through a duel.
+bare square on either (what is drawn is counted, not the window it is drawn in), every line of words on a whole frame
+pixel and none cut through at the foot of its box, every control reached by the d-pad, the table and the hand's six
+places fixed through a duel.
 
 Not assessed: a real two-screen handheld, a real pad, and how fast it draws there.
