@@ -2749,10 +2749,15 @@ function offerDual({ r, items, it, sel, n, selA, view, left, right, pillar, bar0
     n > 1 && { k: 'L1', t: `${noun} BEFORE`, a: turn(-1) }, n > 1 && { k: 'R1', t: `NEXT ${noun}`, a: turn(1) }, ...others.filter(c => c !== main2), r && { k: 'START', t: 'MENU', a: 'tab:menu' }].filter(Boolean);
   const emb = it.price != null && r ? (r.embers >= it.price ? `${r.embers - it.price} LEFT AFTER BUYING` : `${it.price - r.embers} SHORT`) : '', facts = (it.facts || []).filter(Boolean);
   let bottom, bare = false;
-  if (it.fid) { const y0 = 360 - (cells.length > 9 ? Math.ceil(cells.length / 4) * 21 + 12 : Math.ceil(cells.length / 3) * 28 + 8); bottom = forgerB(it.fid, y0) + footOf(y0, cells); }
+  if (it.fid) { const cs = cells.filter(Boolean), y0 = 360 - (cs.length > 9 ? rowsOf(cs, 4).length * 21 + 12 : rowsOf(cs, 3).length * 28 + 8); bottom = forgerB(it.fid, y0) + footOf(y0, cells); }
   else if (it.deck) bottom = gridScreen(`${String(it.name).toUpperCase()} · ${it.deck.length} CARDS`, `WEIGHT ${deckWeight(db, it.deck)}`, it.deck, { verb: (i, e) => `read:c:${e.id}`, sk: 'kit' + sel }, cells);
   else if (key === 'omen' && r) { const weak = r.trunk.map((e, i) => [e, i]).sort((a, b) => cardValue(db, a[0]) - cardValue(db, b[0])).slice(0, 2).map(x => x[1]);
-    bottom = gridScreen('YOUR TRUNK, WEAKEST FIRST', r.trunk.length >= 2 ? 'THE TWO MARKED ARE TAKEN' : 'IT NEEDS TWO CARDS', r.trunk, { verb: i => `read:t:${i}`, weakFirst: true, gold: new Set(r.trunk.length >= 2 ? weak : []), sk: 'omen', none: 'YOUR TRUNK IS EMPTY' }, cells); }
+    const tr = Math.max(1, Math.ceil(r.trunk.length / 8)), to = { verb: i => `read:t:${i}`, weakFirst: true, gold: new Set(r.trunk.length >= 2 ? weak : []), sk: 'omen', kp: 't', none: 'YOUR TRUNK IS EMPTY' }, hr = r.trunk.length >= 2 ? 'THE TWO MARKED ARE TAKEN' : 'IT NEEDS TWO CARDS';
+    // A trunk of one or two rows leaves the deck its place under it, so the frame is never half empty.
+    if (tr <= 2) { const y1 = 18 + 5 + tr * 63, dh = 5 + (3 - tr) * 63;
+      bottom = box(0, 0, 413, 18, 'st dk') + lb(6, 5, 'YOUR TRUNK, WEAKEST FIRST', 'g') + lbr(407, 5, hr) + gridB(r.trunk, { ...to, y: 18, h: 5 + tr * 63 })
+        + box(0, y1, 413, 18, 'st dk') + lb(6, y1 + 5, 'YOUR DECK, STRONGEST FIRST', 'g') + gridB(r.deck, { y: y1 + 18, h: dh, verb: i => `read:d:${i}`, sk: 'omendeck' }) + footOf(y1 + 18 + dh, cells); }
+    else bottom = gridScreen('YOUR TRUNK, WEAKEST FIRST', hr, r.trunk, to, cells); }
   else if (it.card && r) { const c = card(it.card), mon = db.isMonster(it.card), gold = new Set(r.deck.map((e, i) => e.id === it.card || (mon && db.isMonster(e.id) && card(e.id).type === c.type) ? i : -1).filter(i => i >= 0));
     bottom = gridScreen('YOUR DECK, STRONGEST FIRST', emb || (mon ? 'MARKED: THE SAME CARD OR TYPE' : 'MARKED: THE SAME CARD'), r.deck, { verb: i => `read:d:${i}`, gold, sk: 'pick' }, cells); }
   else if (r) { bare = true; const fam = it.relic ? RELICS[it.relic].family : null, held = relicList(r).length;
