@@ -1,6 +1,7 @@
 // The map's life: breakable vases, Witness Stones, the Relic Broker, Shrines of Tribute and Card Chests, placed each run from
 // authored regions (data/encounters.js). Every spot is standable, flat, spaced out and has at least three ways off it.
 import { ENCOUNTERS as E } from '../data/encounters.js';
+import { sealSpend } from './seals.js';
 import { cos, sin } from './dmath.js';
 import { K } from '../data/tuning.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
@@ -202,7 +203,7 @@ export function openCardChest(g, c) {
   while (!cards.length && ti > 0) { ti--; cards = buildOffer(g, TIERS[ti]); }                 // a legendary roll with nothing legendary left to give steps down to what the chest can really hold
   c.rarity = c.rolled = TIERS[ti];
   if (!cards.length) { g.event('banner', 'Nothing in this chest you could use.'); return; }
-  g.coins -= price; if (!c.free) g.world.opened++; g.chestsOpenedTotal++;
+  g.coins -= price; sealSpend(g, price); if (!c.free) g.world.opened++; g.chestsOpenedTotal++;
   g.offer = { type: 'chest', cards, leave: false, chest: c, floor: c.rarity, reveal: c.rarity, freeRedraws: g.metaMods.chestRedraws || 0 }; g.event('offer', null);
 }
 

@@ -1,5 +1,6 @@
 // Damage, status effects, explosions, drops and the little pools the view draws (telegraphs, effects).
 import { K } from '../data/tuning.js';
+import { sealKill } from './seals.js';
 import { mightBracket, targetBracket } from './ledger.js';
 import { CFG } from '../data/config.js';
 import { KIND_LIST, KINDS } from '../data/enemies.js';
@@ -67,7 +68,7 @@ function chain(g, from, x, z, dmg) {
 
 export function killEnemy(g, i) {
   const e = g.en; if (!e.alive[i]) return;
-  e.alive[i] = 0; g.kills++; g.emit('kill', e.kind[i], e.x[i], e.z[i]);
+  e.alive[i] = 0; g.kills++; g.emit('kill', e.kind[i], e.x[i], e.z[i]); { let cl = g.srcClassOf[g.curSrc]; if (cl === undefined) cl = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]); sealKill(g, cl); }
   if (g.mods.bell && g.kills % Math.max(10, Math.floor(K.bellEvery / g.mods.bell)) === 0 && capTake(g, CAP.BELL)) { const prev = g.curSrc; g.curSrc = g.srcIndex('graveyard-bell'); explode(g, e.x[i], e.y[i], e.z[i], 4, 0, K.bellBase, 0xc0c0ff); g.curSrc = prev; }       // Graveyard Bell: its own source, so the toll is the same whoever landed the kill
   const x = e.x[i], y = e.y[i], z = e.z[i], kind = KIND_LIST[e.kind[i]];
   const mg = e.mrg[i];                                                        // enemies merged into this one: their rewards are summed

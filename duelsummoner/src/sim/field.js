@@ -1,5 +1,6 @@
 // The field: 4 Monster Zones and 4 shared Spell and Trap Zones, level-up offers, Redraw / Banish / Pass, and Fusion.
 import { MONSTERS, FUSIONS, SPELLS, ONE_SHOTS, TRAPS, DUELISTS, OFFER, LEVELS, FIELD_RULES, XP, formOf } from '../data/cards.js';
+import { sealSpend } from './seals.js';
 import { addFx } from './combat.js';
 import { monsterMul, knee } from './ledger.js';
 import { STAT_BY_MOD } from '../data/stats.js';
@@ -234,7 +235,7 @@ export function chooseCard(g, idx) {
   const c = o.cards[idx];
   if (o.type === 'shop') {                                           // the Broker: pay Coins, the offer stays open so you can browse
     if (c.sold || g.coins < c.price || (ITEMS[c.id].unique && g.items.includes(c.id))) return false;
-    g.coins -= c.price; c.sold = true; c.stockRef.sold = true; addItem(g, c.id); return true;
+    g.coins -= c.price; sealSpend(g, c.price); c.sold = true; c.stockRef.sold = true; addItem(g, c.id); return true;
   }
   if (c.kind === 'item') addItem(g, c.id);
   else if (c.kind === 'blessing') addBlessing(g, c.id, c.mult);

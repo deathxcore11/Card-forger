@@ -7,7 +7,7 @@ export function defaultMeta() {
   return {
     deck: {}, unlockedCards: STARTER.cards.slice(), unlockedItems: STARTER.items.slice(), questsDone: [],
     totals: { kills: 0, chests: 0, vases: 0, runs: 0, bossKills: 0, stagesCleared: 0, fusions: 0, godFusions: 0, wardenKills: 0 },
-    best: {}, keys: {}, oathCount: {}, mastery: {}, maps: {}, duelists: ['kael', 'mira'], outfits: [], regalia: [], libraryOff: [], diffUnlock: {}
+    best: {}, keys: {}, oathCount: {}, mastery: {}, maps: {}, duelists: ['kael', 'mira'], outfits: [], regalia: [], libraryOff: [], diffUnlock: {}, oathsOpen: []
   };
 }
 export const rankOf = (meta, key) => Math.min(5, meta.deck[key] || 0);
@@ -109,6 +109,12 @@ export function migrateDiffUnlock(meta) {
   return meta;
 }
 
+// ---- Oath seals: every Oath starts sealed; a feat in a normal run (sim/seals.js) breaks its seal for good. oathsOpen lists the unsealed ones. ----
+export const oathOpen = (meta, id) => (meta.oathsOpen || []).includes(id);
+// older saves had every Oath open: anyone who already KEPT an Oath (cleared a run with it sworn) keeps it; the rest start sealed
+export function migrateSeals(meta) { if (meta.oathsOpen) return meta; meta.oathsOpen = Object.keys(meta.oathCount || {}).filter(id => meta.oathCount[id] > 0); return meta; }
+export function unseal(meta, ids) { const open = meta.oathsOpen || (meta.oathsOpen = []), fresh = []; for (const id of ids || []) if (!open.includes(id)) { open.push(id); fresh.push(id); } return fresh; }
+
 // ---- map records ----
 export const mapKey = (map, difficulty, mode) => map + ':' + difficulty + (mode === 'quick' ? ':quick' : '');
 export const mapRecord = (meta, map, difficulty, mode) => meta.maps[mapKey(map, difficulty, mode)] || { bestScore: 0, bestTime: 0, cleared: [] };
@@ -125,6 +131,7 @@ export function applyRun(meta, r) {
   if (r.difficulty === 'hard') mx('hardStages', r.stagesCleared); if (r.difficulty === 'medium' && r.mode === 'run' && (r.stagesCleared || 0) >= 3) B.mediumFull = 1;
   for (const k of r.keys || []) meta.keys[k] = (meta.keys[k] || 0) + 1;
   for (const o of r.oathsKept || []) meta.oathCount[o] = (meta.oathCount[o] || 0) + 1;
+  unseal(meta, r.oathsKept); r.newSeals = unseal(meta, r.sealsCracked);       // keeping an Oath also proves it; r.newSeals lists the seals this run broke, for the results screen
   if (r.duelist) { const m = meta.mastery[r.duelist] || (meta.mastery[r.duelist] = { runs: 0, kills: 0 }); m.runs += 1; m.kills += r.kills || 0; }
   if (r.map) {
     const rec = meta.maps[mapKey(r.map, r.difficulty, r.mode)] || (meta.maps[mapKey(r.map, r.difficulty, r.mode)] = { bestScore: 0, bestTime: 0, cleared: [] });

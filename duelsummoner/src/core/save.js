@@ -1,6 +1,6 @@
 // One local save file with a version number, written after every run (and, later, every purchase).
 // records are kept per duelist: longest time survived, most kills, highest level.
-import { defaultMeta, migrateDiffUnlock } from './meta.js';
+import { defaultMeta, migrateDiffUnlock, migrateSeals } from './meta.js';
 export const SAVE_VERSION = 3;       // v3: difficulty unlock order (meta.diffUnlock, migrated from the map records)
 
 export function freshSave() { return { v: SAVE_VERSION, records: {}, starChips: 0, runs: 0, bossKills: 0, meta: defaultMeta(), settings: defaultSettings() }; }
@@ -17,6 +17,7 @@ function withDefaults(s) {                                           // older sa
   const d = freshSave(), out = Object.assign(d, s), m = defaultMeta();
   out.meta = Object.assign(m, s.meta || {}); out.meta.totals = Object.assign(m.totals, (s.meta && s.meta.totals) || {}); out.meta.deck = Object.assign({}, (s.meta && s.meta.deck) || {});
   out.settings = resolveSettings(s.settings);
+  if (!(s.meta && s.meta.oathsOpen)) { out.meta.oathsOpen = undefined; migrateSeals(out.meta); }       // a save from before the seals: Oaths already kept stay open, the rest are sealed
   if (!(s.meta && s.meta.diffUnlock)) { out.meta.diffUnlock = undefined; migrateDiffUnlock(out.meta); }       // a save from before the unlock order
   for (const c of m.unlockedCards) if (!out.meta.unlockedCards.includes(c)) out.meta.unlockedCards.push(c);
   for (const c of m.unlockedItems) if (!out.meta.unlockedItems.includes(c)) out.meta.unlockedItems.push(c);

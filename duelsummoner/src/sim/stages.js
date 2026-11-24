@@ -2,6 +2,7 @@
 // timeline, a gate that wakes, a gate boss, then a Descent Circle to the next stage (Stage 3: the Final Altar). Pure and deterministic.
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
 import { RUN } from '../data/waves.js';
+import { sealStageStart, sealGateCleared } from './seals.js';
 import { RUNSPEC, stagesFor, DIFFICULTY, ACES } from '../data/stages.js';
 import { pow, sin, cos, atan2 } from './dmath.js';
 import { spawnEnemy, spawnAce, mergeEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
@@ -52,7 +53,7 @@ function initStage(g) {
   g.gate = { state: 'closed', awake: false, hold: 0, early: false, toll: false };
   g.aceT = 0; g.fog = makeFog(); g.bDown = false; g.gateDown = null; g.circle = null; g.altar = null; g.stagePrompt = '';
   g.boss = { state: 'idle', early: false, phase: 1 };
-  g.spawnAcc = 0; g.ringT = 0; g.golemT = 0; g.huntT = 0; g.killsAtStage = g.kills;
+  g.spawnAcc = 0; g.ringT = 0; g.golemT = 0; g.huntT = 0; g.killsAtStage = g.kills; sealStageStart(g);
   g.surgeAnn = [0, 0, 0]; g.surgeDone = [0, 0, 0]; g.surgeAt = [0, 0, 0];
   g.shades = []; g.shadeOn = false; g.shadeAge = 0; g.shadeNextAdd = 0; g.shadeWaveT = 0; g.afterGate = 0;
   g.flags.warden = g.flags.idols = true;                       // the classic timed elites are replaced by the timeline
@@ -160,7 +161,7 @@ function goodSpot(g, sp, wx, wz) {
 }
 function gateCleared(g, sp) {
   const S = g.stageSpec, G = g.gate, p = g.p, last = g.stage >= g.stages.length - 1;
-  G.state = 'done'; g.stagesCleared++; g.afterGate = 0;
+  G.state = 'done'; g.stagesCleared++; g.afterGate = 0; sealGateCleared(g, last);
   g.stageFacts.push({ stage: g.stage + 1, id: S.id, seconds: Math.round(g.sc), kills: g.kills - g.killsAtStage, gateOpenedAt: Math.round(g.gateOpenedAt), early: G.early, toll: G.toll, level: g.level });
   g.en.alive.fill(0);                                           // every enemy crumbles
   if (g.openFlow && !last) { if (!g.horde.on) startHorde(g, 'boss'); else g.horde.t = Math.min(g.horde.t, 0); }       // the end-stage horde rises after a short beat

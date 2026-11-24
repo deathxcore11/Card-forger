@@ -1,5 +1,6 @@
 // The rules of a run. No drawing, no DOM: the view reads this state, tests and the run simulator drive it directly.
 import { CFG } from '../data/config.js';
+import { sealInit, sealHit } from './seals.js';
 import { RUN } from '../data/waves.js';
 import { SpatialGrid } from '../core/grid.js';
 import { makeStreams } from './rng.js';
@@ -55,7 +56,7 @@ export class Game {
 
   reset(seed = this.seed, duelist) {
     this.seed = seed; this.streams = makeStreams(seed); this.rsp = () => this.streams.spawn.next(); this.rl = () => this.streams.loot.next(); this.rc = () => this.streams.combat.next(); this.rcos = () => this.streams.cosmetic.next(); this.duelist = duelist || this.duelist || 'kael';
-    this.oathList = (this.opts.oaths || []).filter(id => OATH_BY_ID[id]); this.oaths = {}; for (const id of this.oathList) this.oaths[id] = true;      // Oaths: run rules sworn before the run
+    this.oathList = (this.opts.oaths || []).filter(id => OATH_BY_ID[id]); this.oaths = {}; for (const id of this.oathList) this.oaths[id] = true; sealInit(this);      // Oaths: run rules sworn before the run
     this.t = 0; this.kills = 0; this.xp = 0; this.level = 1; this.xpCur = 0; this.xpNeed = xpNeeded(1); this.pendingLevels = 0; this.coins = 0;
     this.over = false; this.ended = false; this.killedBy = null; this.damageBy = {}; this.lastSrc = null; this.won = false; this.otStep = -1; this.otAcc = 0; this.god = false; this.bossKilled = false; this.elitesKilled = 0; this.fusions = 0; this.winAt = 0;
     this.grace = 0; this.flash = 0; this.spawned = 0; this.spawnAcc = 0; this.hitsTaken = 0; this.alpha = 1; this.acc = 0;
@@ -275,7 +276,7 @@ export class Game {
     if (!(flags & 5)) n *= 1 - guardMit(this.mods.armour * K.guardPerArmour);       // Guard points through the hyperbola: never a flat cut, never above the cap
     this.p.hp = SELF ? Math.max(Math.min(this.p.hp, 1), this.p.hp - n) : Math.max(0, this.p.hp - n);       // the 1 HP floor never raises LP already below 1
     src = src || 'unknown'; this.damageBy[src] = (this.damageBy[src] || 0) + n; this.lastSrc = src;
-    if (!SELF) { this.hitsTaken++; this.flash = 0.25; this.grace = CFG.enemy.grace; }
+    if (!SELF) { this.hitsTaken++; this.flash = 0.25; this.grace = CFG.enemy.grace; sealHit(this); }
     this.emit('hurt', n, bigF, SELF ? 1 : 0, src);
     if (!SELF) { const pp = this.p, R = CFG.player.speed * (1 + this.mods.move), hs = Math.sqrt(pp.vx * pp.vx + pp.vz * pp.vz); if (hs > R) { const k = (R + (hs - R) * K.hopHitKeep) / hs; pp.vx *= k; pp.vz *= k; } pp.chain >>= 1; }       // a hit that lands takes half of the speed bonus
     onPlayerHurt(this, SELF);

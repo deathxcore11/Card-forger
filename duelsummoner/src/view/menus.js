@@ -9,7 +9,8 @@ import { boardUrl, fetchBoard } from '../core/board.js';
 import { deviceClass } from '../ui/device.js';
 import { settingsHtml, bindSettingsScreen, tabsFor } from './settings-screen.js';
 import { firstPad } from '../core/padnav.js';
-import { diffUnlocked, questProgress, questDone, closestQuests, questFor, mapRecord, masteryOf, outfitUnlocked, setCardEnabled } from '../core/meta.js';
+import { SEALS } from '../data/seals.js';
+import { oathOpen, diffUnlocked, questProgress, questDone, closestQuests, questFor, mapRecord, masteryOf, outfitUnlocked, setCardEnabled } from '../core/meta.js';
 import { startPreview } from './preview.js';
 import { startBakedPreview } from './portraits.js';
 
@@ -84,8 +85,12 @@ export function initMenus(env) {
     const rows = DIFFICULTIES.map((d, i) => { const r = mapRecord(meta(), map.id, d, 'run'), D = DIFFICULTY[d], open = diffUnlocked(meta(), map.id, d);
       if (!open) return '<label class="diffRow locked" title="Locked"><input type="radio" name="dif" value="' + d + '" disabled><b>' + D.name + '</b><span class="dstats"><span class="lockTxt">&#128274; Clear ' + DIFFICULTY[DIFFICULTIES[i - 1]].name + ' to unlock</span></span></label>';
       return '<label class="diffRow' + (sel.difficulty === d ? ' sel' : '') + '"><input type="radio" name="dif" value="' + d + '"' + (sel.difficulty === d ? ' checked' : '') + '><b>' + D.name + '</b><span class="dstats"><span>Star Chips x' + DIFF_CHIPS[d].toFixed(1) + '</span><span>Score x' + D.score + '</span><span>Best ' + (r.bestScore || '-') + '</span><span>Clear ' + (r.bestTime ? clockText(r.bestTime) : '-') + '</span><span class="icons">' + (r.cleared.length ? r.cleared.map(id => '<i class="mini">' + initial(id) + '</i>').join('') : '<i class="dim">none yet</i>') + '</span></span></label>'; }).join('');
-    const oathHtml = oathPanel ? '<div class="panel oaths"><h3>OATHS</h3><p class="dim">Sworn before the run. Each adds to the score multiplier, and keeping one by clearing the run earns its quest reward.</p>' +
-      OATHS.map(o => '<label class="oathRow"><input type="checkbox" data-oath="' + o.id + '"' + (sel.oaths.includes(o.id) ? ' checked' : '') + '><b>' + o.name + '</b> ' + o.text + ' <span class="dim">(+' + o.scorePct + '% score, ' + o.reward.chips + ' chips)</span></label>').join('') + '<button class="small" id="oathDone">DONE</button></div>' : '';
+    const fresh = env.freshSeals ? env.freshSeals() : [];
+    sel.oaths = sel.oaths.filter(id => oathOpen(meta(), id));       // a sealed Oath can never be sworn
+    const oathHtml = oathPanel ? '<div class="panel oaths"><h3>OATHS</h3><p class="dim">Sworn before the run. Each adds to the score multiplier, and keeping one by clearing the run earns its quest reward. Every Oath starts sealed: do its feat in a normal run (no Oath sworn) to break the seal.</p>' +
+      OATHS.map(o => oathOpen(meta(), o.id)
+        ? '<label class="oathRow' + (fresh.includes(o.id) ? ' fresh' : '') + '"><input type="checkbox" data-oath="' + o.id + '"' + (sel.oaths.includes(o.id) ? ' checked' : '') + '><b>' + o.name + '</b> ' + o.text + ' <span class="dim">(+' + o.scorePct + '% score, ' + o.reward.chips + ' chips)</span></label>'
+        : '<div class="oathRow sealed" data-sealed="' + o.id + '"><span class="waxSeal" aria-hidden="true"></span><span><b>Sealed Oath</b> <span class="riddle">&ldquo;' + esc(SEALS[o.id] ? SEALS[o.id].riddle : 'Its seal is unbroken.') + '&rdquo;</span></span></div>').join('') + '<button class="small" id="oathDone">DONE</button></div>' : '';
     open('<h2>CHOOSE A MAP</h2><div class="selWrap"><div class="selLeft"><div class="mapList"><button class="portrait sel wide" data-m="' + map.id + '"><b>' + map.name + '</b><small>' + map.blurb + '</small></button><button class="portrait locked wide" disabled><b>???</b><small>More maps later.</small></button></div></div>' +
       '<div class="selRight panel"><h3>' + map.name + '</h3><p>' + map.blurb + '</p><div class="dim">Stages: ' + map.stages + '</div><div class="diffs">' + rows + '</div>' +
       '<div class="navRow"><button class="small" id="mapOaths">OATHS' + (sel.oaths.length ? ' (' + sel.oaths.length + ')' : '') + '</button></div>' + oathHtml + '</div></div>' +

@@ -40,13 +40,14 @@ import { Props } from './view/props.js';
 import { quantise, emptyRecord } from './sim/input.js';
 import { loadSave, recordRun, writeSave } from './core/save.js';
 import { createBrowserHost } from './core/host.js';
-import { simMeta, applyRun } from './core/meta.js';
+import { simMeta, applyRun, unseal } from './core/meta.js';
 import { showDeckBox, showLibrary } from './view/metaui.js';
 import { QUESTS } from './data/meta.js';
 import { Fx } from './view/fx.js';
 import { initMenus } from './view/menus.js';
 import { bakeDuelist } from './view/portraits.js';
-import { DIFF_CHIPS, DUELIST_INFO } from './data/progress.js';
+import { DIFF_CHIPS, DUELIST_INFO, OATH_BY_ID } from './data/progress.js';
+import { SEALS } from './data/seals.js';
 import { packReplay, deflateInBrowser } from './core/replay.js';
 import { boardUrl, sendAndFollow } from './core/board.js';
 import { TouchControls } from './core/touch.js';
@@ -204,12 +205,13 @@ function beginNow(mode, sel) {
   const blind = !!game.oaths.blind; for (const id of ['minimap', 'boss', 'plate']) $(id).style.visibility = blind ? 'hidden' : '';      // Blind Oath
 }
 function pickDuelist(id) { duelist = id; }
+let freshSeals = [];
 const portraits = {}; for (const id of Object.keys(actors.rigs)) { const b = bakeDuelist(renderer, actors.rigs[id]); if (b) portraits[id] = b; }       // real-model pictures for the duelist screen, taken once
-const menus = initMenus({ save, portraits, persist: () => writeSave(host, save), begin, bindSettings: () => { bindSettings(); },
+const menus = initMenus({ save, portraits, freshSeals: () => freshSeals, persist: () => writeSave(host, save), begin, bindSettings: () => { bindSettings(); },
   showDeckBox: () => showDeckBox(save, () => writeSave(host, save), () => menus.showMain()) });
 $('restartBtn').addEventListener('click', () => begin(game.opts.mode, { duelist, difficulty: game.opts.difficulty, oaths: game.opts.oaths, map: game.opts.map }));
 $('menuBtn').addEventListener('click', () => { setMode('start'); menus.showMain(); });
-menus.showMain();
+document.body.dataset.mode = MODE; menus.showMain();       // the run HUD is hidden under the menus from the first frame
 $('endBtn').addEventListener('click', () => { game.endRun(); results(); });
 $('resumeBtn').addEventListener('click', () => { setMode('play'); lock(); });
 bindHolds($('pmActions'));       // End run and Restart: a 1.0 s hold with a pointer, or two presses from a pad or keys
@@ -308,10 +310,11 @@ function results() {
   if (!ended) {                                                          // saved once per run
     ended = true; const chips = Math.floor(game.starChips() * (DIFF_CHIPS[game.difficulty] || 1));         // Star Chips scale with difficulty (separate from the score multiplier)
     info = recordRun(host, save, duelist, { time: game.t, kills: game.kills, level: game.level, bossKilled: game.bossKilled, chips });
-    const report = game.results({ runId: 'ds-' + game.seed + '-' + save.runs }); unlocked = applyRun(save.meta, report); for (const q of unlocked) if (q.reward && q.reward.chips) save.starChips += q.reward.chips; writeSave(host, save);
+    const report = game.results({ runId: 'ds-' + game.seed + '-' + save.runs }); unlocked = applyRun(save.meta, report); freshSeals = (report.newSeals || []).slice(); for (const q of unlocked) if (q.reward && q.reward.chips) save.starChips += q.reward.chips; writeSave(host, save);
     // the verifiable replay (seed, difficulty, mode, build, the run-length input tape and the final state hash) rides along with the report
     packReplay(game.replayRaw(), typeof CompressionStream !== 'undefined' ? deflateInBrowser : null).then(r => { report.replay = r; host.reportRun(report); const base = boardUrl(save.settings); if (base) sendAndFollow(base, r, t => { $('dBoard').textContent = t; }); }).catch(() => host.reportRun(report));
   }
+  $('dSeals').innerHTML = freshSeals.length && ended ? freshSeals.map(id => '<div class="unseal"><span class="sealBig"><i></i><i></i></span><span class="unsealTxt"><b>' + (OATH_BY_ID[id] ? OATH_BY_ID[id].name : id) + ' unsealed</b><br>' + (OATH_BY_ID[id] ? OATH_BY_ID[id].text : '') + '<br><span class="dim">' + (SEALS[id] ? SEALS[id].feat : '') + '</span></span></div>').join('') : '';
   $('dQuests').textContent = unlocked.length ? 'Quest done: ' + unlocked.map(q => q.name + ' (' + (q.reward.chips ? '+' + q.reward.chips + ' Star Chips' : 'unlocked ' + (q.reward.card || q.reward.item || q.reward.duelist || q.reward.outfit || q.reward.regalia)) + ')').join(', ') : '';
   $('resTitle').textContent = game.bossKilled ? 'VICTORY' : game.ended ? 'RUN ENDED' : 'DEFEATED';
   $('dTime').textContent = clock(game.t); countUp('dLevel', game.level); countUp('dKills', game.kills); countUp('dFusions', game.fusions);
@@ -340,6 +343,7 @@ function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'bosscard') { const el = $('bosscard'); if (el) { el.textContent = data; el.classList.add('on'); document.body.classList.add('cardon'); clearTimeout(el._t); el._t = setTimeout(() => { el.classList.remove('on'); document.body.classList.remove('cardon'); }, 2500); } }       // the stage boss's name, in the top third, 2.5 s
   else if (type === 'bannerdrop') dropBanner(data);
+  else if (type === 'sealcrack') { showBanner('A seal cracks...'); fx.ring(ip.x, ip.y + 1.2, ip.z, 2.4, 0xb8913f, 0.5); fx.burst(ip.x, ip.y + 1.4, ip.z, 14, 0xd8b86a, 2.6, 3.5, 0.16, 0.6, 5); tone(196, 0.25, 0.05, 'triangle'); }       // a feat broke an Oath seal: the Oath itself is named on the results screen
   else if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(keyWords(data, inputMode())); }       // a refused chest pulses its price tag instead of a banner
   else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); if (game.mode !== 'classic' && (game.stage || 0) < 2) setTimeout(() => prewarmStage(game.seed, (game.stage || 0) + 1), 60); }       // the next stage is drawn while the player reads the offer
   else if (type === 'levelup') { host.haptic('levelup'); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
@@ -640,6 +644,7 @@ window.__ds = {
   yaw: v => { input.yaw = v; },
   drive: (secs, cmd) => { const c = Object.assign({ f: 0, r: 0, yaw: input.yaw, jump: false, dash: false, slide: false, use: false }, cmd || {}); for (let t = 0; t < secs && !game.over && !game.offer; t += 1 / 60) game.step(1 / 60, c); drainEvents(); if (game.over && MODE === 'play') results(); drawHud(game, true); },
   setFov: v => { save.settings.fov = v; applySettings(); },
+  unseal: ids => { unseal(save.meta, ids); freshSeals = ids.slice(); },
   fillSwarm: (n, kind) => { for (let i = 0; i < n; i++) spawnEnemy(game, kind); },
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
   perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
