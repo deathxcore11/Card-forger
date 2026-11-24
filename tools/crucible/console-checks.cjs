@@ -368,10 +368,10 @@ async function dualPass(browser, url, savesDir, steps) {
       await page.waitForTimeout(350);
       if (o) { await page.evaluate(() => { const b = document.querySelector('.scr [data-a="resume"]'); if (b) b.click(); }); await page.waitForTimeout(700); }
     };
-    const press = async key => { await page.evaluate(k => window.LM_DUAL.press(k), key); presses++; await page.waitForTimeout(60); };
+    const press = async key => { await page.evaluate(k => window.LM_DUAL.press(k), key); presses++; first = true; await page.waitForTimeout(60); };
     const settle = () => page.waitForFunction(() => !(window.LM && LM.G && LM.G.playing), null, { timeout: 20000 }).catch(() => {});
     let fixed = null; // the table's fixed places through one duel
-    let first = false; // the first drawing is read once, before a move changes the table
+    let first = false; // the first drawing is read once, at the first reading of the table and before any key: a move changes the table
     const audit = async where => {
       screens++;
       const a = await page.evaluate(dualAudit, BARE).catch(e => ({ out: ['the audit broke: ' + e.message] }));
@@ -379,7 +379,7 @@ async function dualPass(browser, url, savesDir, steps) {
       if (a.table) { const tz = a.table.canvas + ' ' + a.table.zones, hd = a.table.hand; // the hand's ledge gives its place to a window's sheet and comes back
         if (!fixed) fixed = { tz, hd }; else if (fixed.tz !== tz || (hd && fixed.hd && fixed.hd !== hd)) { fail(`${shape}, ${where}`, 'table: the table, a zone or the hand moved or changed size during the duel'); fixed = { tz, hd: hd || fixed.hd }; } else if (hd) fixed.hd = hd;
         for (const fn of [ringFaults, heldFaults]) for (const t of await page.evaluate(fn).catch(() => [])) fail(`${shape}, ${where}`, 'table: ' + t);
-        if (!a.table.playing && !first) { first = true; const t = await page.evaluate(tableFirst).catch(() => null); if (t) fail(`${shape}, ${where}`, 'first: ' + t); } }
+        if (!first) { first = true; const t = a.table.playing ? null : await page.evaluate(tableFirst).catch(() => null); if (t) fail(`${shape}, ${where}`, 'first: ' + t); } }
       for (const e of errors.splice(0)) fail(`${shape}, ${where}`, 'errors: ' + e);
       return a;
     };
