@@ -28,7 +28,7 @@ export function loadSave(host) {
   const s = host.save.load();
   if (!s) return freshSave();
   if (s.v > SAVE_VERSION) { const f = freshSave(); f._readOnly = true; return f; }       // a save from a newer build: shown as fresh, never written over
-  if (s.v === 1) return withDefaults(migrateV1(s));
+  if (s.v === 1) return withDefaults(Object.assign(migrateV1(s), { v: SAVE_VERSION }));
   if (s.v === 2) return withDefaults(Object.assign({}, s, { v: 3 }));
   if (s.v !== SAVE_VERSION) return freshSave();
   return withDefaults(s);
