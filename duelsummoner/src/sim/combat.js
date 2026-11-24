@@ -42,7 +42,7 @@ export function damageEnemy(g, i, dmg, o) {
   if (el & ELEMENTS.fire.bit) { e.burn[i] = ELEMENTS.fire.burn.dur + g.mods.burnDur; e.burnDps[i] = ELEMENTS.fire.burn.dps + g.mods.burnDps; }
   const chainAfter = (el & ELEMENTS.lightning.bit) && !o.noChain;
   if (o.kx !== undefined) {
-    const l = Math.sqrt(o.kx * o.kx + o.kz * o.kz) || 1, k = o.knock === undefined ? CFG.enemy.knock : o.knock;
+    const l = Math.sqrt(o.kx * o.kx + o.kz * o.kz) || 1, k = o.knock === undefined ? (e.ace[i] ? 0 : CFG.enemy.knock) : o.knock;       // a card hit pushes a swarm enemy 0.4 m away; an Ace is not pushed by it (a named push such as the Gust Ward still moves everything)
     tmp.x = e.x[i]; tmp.y = e.y[i]; tmp.z = e.z[i];
     moveXZ(tmp, o.kx / l * k, o.kz / l * k, KIND_LIST[e.kind[i]].radius, CFG.enemy.stepUp);
     e.x[i] = tmp.x; e.z[i] = tmp.z;

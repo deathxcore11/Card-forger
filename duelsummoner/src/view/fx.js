@@ -124,7 +124,7 @@ export class Fx {
   number(x, y, z, value, flags) {
     // hits on one target within 150 ms merge into one number: the total is redrawn on the number that is still fresh
     for (let i = 0; i < this.M; i++) {
-      if (this.nage[i] < 0 || this.nage[i] > 0.4) continue;
+      if (this.nage[i] < 0 || this.nage[i] > 0.2) continue;
       const j = i * 3, dx = this.nx[j] - x, dz = this.nx[j + 2] - z;
       if (dx * dx + dz * dz < 2.25) { this.nage[i] = Math.min(this.nage[i], 0.12); this.nval[i] += value; if (flags & 1) this.nbig[i] = 1; this._paint(i, this.nval[i], this.nbig[i], flags); return; }
     }    let live = 0; for (let k = 0; k < this.M; k++) if (this.nage[k] >= 0) live++; if (live >= 16) return;         // at most 16 numbers on screen

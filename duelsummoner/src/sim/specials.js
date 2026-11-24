@@ -83,7 +83,7 @@ export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
   return true;
 }
 
-const credit = (g, sp) => { g.roleKills[sp.role || 'other']++; };
+const credit = (g, sp) => { g.roleKills[sp.role || 'other']++; g.emit('elitefall', sp.x, sp.z); };
 function dropChest(g, x, y, z, sp) {
   dropPickup(g, PICK_XP, x + 1.2, y, z, 30);
   if (sp && sp.drop === 'card') { g.world.cchests.push({ x, y, z, open: false, rarity: 'rare', free: true }); g.event('banner', 'A Card Chest appears, free.'); }

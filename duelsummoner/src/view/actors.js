@@ -20,6 +20,7 @@ import { makeCreature } from './creature.js';
 
 const T = window.THREE;
 const lambert = (color, extra, k) => actorLit(new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {})), k || 1);
+const OUTLINE = new T.MeshBasicMaterial({ color: 0x1b1008, side: T.BackSide }); OUTLINE.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', 'vec3 transformed = position + normalize(normal) * 0.05;'); };
 const basic = (color, extra) => new T.MeshBasicMaterial(Object.assign({ color }, extra || {}));
 const lerp = (a, b, t) => a + (b - a) * t;
 const pl = (a, b, t) => (Math.abs(b - a) > 3 ? b : a + (b - a) * t);                // do not blend across a teleport
@@ -120,8 +121,9 @@ export class Actors {
       const body = instanced(geo, mat, CFG.enemy.max); statusAttr(geo, CFG.enemy.max);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.enemy.max * 3), 3);
       const eye = !cg && K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xe0a040), CFG.enemy.max) : null;
-      scene.add(body); if (eye) scene.add(eye);
-      return { K, body, eye, base: cg ? new T.Color(1, 1, 1) : new T.Color(K.color), boost: cg ? 2.4 : 1, fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false };
+      const out = new T.InstancedMesh(geo, OUTLINE, CFG.enemy.max); out.instanceMatrix = body.instanceMatrix; out.frustumCulled = false; out.count = 0; out.renderOrder = -1;       // a dark hull drawn behind each enemy, pushed out 5 cm: a clear outline against pale sand, one extra draw per kind
+      scene.add(body, out); if (eye) scene.add(eye);
+      return { K, body, out, eye, base: cg ? new T.Color(1, 1, 1) : new T.Color(K.color), boost: cg ? 2.4 : 1, fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false };
     });    // Toll Shades: a tall violet-black hooded silhouette with a glowing eye line and a gold bell (stand-in look until the art arrives)
     this.shadeBody = instanced(new T.ConeGeometry(0.9, 3.0, 7), seeActor(basic(0x1d1030)), 24); this.shadeHood = instanced(new T.ConeGeometry(0.5, 1.0, 6), seeActor(basic(0x0b0716)), 24);
     this.shadeEye = instanced(new T.BoxGeometry(0.34, 0.07, 0.1), basic(0xc07bff), 24); this.shadeBell = instanced(new T.ConeGeometry(0.17, 0.3, 6), basic(0xe8c56a), 24);
@@ -174,7 +176,25 @@ export class Actors {
     this.sig.note(type === 7 ? 'fire' : 'lightning', this.fx.tick, x, z);
     const e = this.lastEn; if (!e) return; let face = 0, size = 1, y = NaN; for (let i = 0; i < e.max; i++) if (!e.alive[i] && e.x[i] === x && e.z[i] === z && e.kind[i] === kind) { face = e.face[i]; size = e.size[i]; y = e.y[i]; break; } if (y !== y) return;
     const P = this.corpses || (this.corpses = []), c = { kind, x, y, z, face, size, type, t: 0, seed: Math.random() };
-    if (P.length >= 48) P.shift(); P.push(c);
+    if (P.length >= 48) P.shift(); P.push(c); return true;
+  }
+  // the quick death: scale up 15% in 0.08 s, then collapse to nothing by 0.25 s (the sand puffs come from main); drawn in the enemy's own instanced mesh from a pool of 64
+  pop(kind, x, z) {
+    const e = this.lastEn; if (!e || this.fx.rm_) return; let face = 0, size = 1, y = NaN; for (let i = 0; i < e.max; i++) if (!e.alive[i] && e.x[i] === x && e.z[i] === z && e.kind[i] === kind) { face = e.face[i]; size = e.size[i]; y = e.y[i]; break; } if (y !== y) return;
+    const P = this.pops || (this.pops = []); if (P.length >= 64) P.shift(); P.push({ kind, x, y, z, face, size, t: 0, seed: Math.random() });
+  }
+  _pops(dt, counts) {
+    const P = this.pops; if (!P || !P.length) return; const d = this.d;
+    for (let n = P.length - 1; n >= 0; n--) {
+      const c = P[n]; c.t += dt; if (c.t >= 0.25) { P.splice(n, 1); continue; }
+      const k = this.kinds[c.kind], K = k.K, idx = counts[c.kind]; if (idx >= CFG.enemy.max) continue;
+      const sc = K.id === 5 ? SC_SCARAB : K.scale, mg = c.size, f = c.t < 0.08 ? 1 + 0.15 * c.t / 0.08 : 1.15 * (1 - (c.t - 0.08) / 0.17);
+      d.position.set(c.x, c.y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85), c.z); d.rotation.set(0, c.face, 0); d.scale.set(sc[0] * mg * f, sc[1] * mg * f, sc[2] * mg * f); d.updateMatrix();
+      k.body.setMatrixAt(idx, d.matrix); k.body.setColorAt(idx, k.base);
+      const o3 = idx * 4, fa = k.fxArr; fa[o3] = 0; fa[o3 + 1] = 0; fa[o3 + 2] = c.seed; fa[o3 + 3] = 0; k.fs += (idx + 1) * 3; k.cs += (idx + 1) * 5; k.fxNow = true;
+      if (k.eye) { d.position.set(c.x, c.y + 1.05, c.z); d.scale.set(0.001, 0.001, 0.001); d.updateMatrix(); k.eye.setMatrixAt(idx, d.matrix); }
+      counts[c.kind]++;
+    }
   }
   _corpses(dt, counts) {
     const P = this.corpses; if (!P || !P.length) return; const d = this.d;
@@ -483,8 +503,8 @@ export class Actors {
       if (e.ace[i] && cc < 24) { d.position.set(x, y + 2.1 * mgs + 0.4 + Math.sin(t * 3 + i) * 0.08, z); d.rotation.set(0, t * 2.4 + i, 0); d.scale.set(1, 1.5, 1); d.updateMatrix(); this.crests.setMatrixAt(cc++, d.matrix); }
       if (e.mark[i] > 0) { d.position.set(x, y + 2.3 + Math.sin(t * 4) * 0.1, z); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1.4, 1); d.updateMatrix(); this.marks.setMatrixAt(mc.n++, d.matrix); }
     }
-    this._corpses(dt, counts); if (this._hits) this._hits.length = 0;
-    this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; if (k.cs !== k.csPrev || counts[i] !== k.cPrev) k.body.instanceColor.needsUpdate = true; k.csPrev = k.cs; k.cPrev = counts[i]; { const a = k.body.geometry.attributes.aFx; if ((k.fxNow || k.fxPrev) && (k.fs !== k.fsPrev || counts[i] !== k.fcPrev || k.fxNow !== k.fxPrev)) { a.updateRange.offset = 0; a.updateRange.count = counts[i] * 4; a.needsUpdate = true; } k.fsPrev = k.fs; k.fcPrev = counts[i]; k.fxPrev = k.fxNow; } if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
+    this._pops(dt, counts); this._corpses(dt, counts); if (this._hits) this._hits.length = 0;
+    this.kinds.forEach((k, i) => { k.body.count = counts[i]; k.out.count = counts[i]; k.body.instanceMatrix.needsUpdate = true; if (k.cs !== k.csPrev || counts[i] !== k.cPrev) k.body.instanceColor.needsUpdate = true; k.csPrev = k.cs; k.cPrev = counts[i]; { const a = k.body.geometry.attributes.aFx; if ((k.fxNow || k.fxPrev) && (k.fs !== k.fsPrev || counts[i] !== k.fcPrev || k.fxNow !== k.fxPrev)) { a.updateRange.offset = 0; a.updateRange.count = counts[i] * 4; a.needsUpdate = true; } k.fsPrev = k.fs; k.fcPrev = counts[i]; k.fxPrev = k.fxNow; } if (k.eye) { k.eye.count = counts[i]; k.eye.instanceMatrix.needsUpdate = true; } });
     this.marks.count = mc.n; this.marks.instanceMatrix.needsUpdate = true; this.crests.count = cc; this.crests.instanceMatrix.needsUpdate = true;
 
     // elites and the boss
