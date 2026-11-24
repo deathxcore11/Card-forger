@@ -83,14 +83,15 @@ export class Props {
   // collapsing its own vertices in the shader (aHide), so the whole set is two draws however many chests there are. Only a Trophy Chest's light pillar is a mesh of its own (neutral gold, never the tier).
   _rebuildChests(world) {
     for (const m of this.chestMeshes) { this.G.remove(m); if (m.geometry) m.geometry.dispose(); } this.chestMeshes = []; this._chestN = world.cchests.length; this.chestRange = [];
+    const OPEN = !!this.openMap;       // the open desert: a warm wood chest with a lit top, readable from 30 m
     const lit = { pos: [], nor: [], col: [], hide: [] }, unlit = { pos: [], nor: [], col: [], hide: [] }, M = new T.Matrix4(), R = new T.Matrix4(), col = new T.Color();
     world.cchests.forEach((c, ci) => {
       const piece = (geo, x, y, z, hex, un, rx, when) => {       // when: 'c' shows only while closed, 'o' only while open, none always
         const hv = when === 'c' ? (c.open ? 1 : 0) : when === 'o' ? (c.open ? 0 : 1) : 0; M.makeTranslation(c.x + x, c.y + y, c.z + z); if (rx) { R.makeRotationX(rx); M.multiply(R); } const g2 = geo.toNonIndexed(); g2.applyMatrix4(M); col.setHex(hex); const o = un ? unlit : lit, st = o.pos.length / 3, p = g2.attributes.position, n = g2.attributes.normal; for (let i = 0; i < p.count; i++) { o.pos.push(p.getX(i), p.getY(i), p.getZ(i)); if (n) o.nor.push(n.getX(i), n.getY(i), n.getZ(i)); o.col.push(col.r, col.g, col.b); o.hide.push(hv); } return [un ? 1 : 0, st, p.count, when || '']; };
-      const lid = c.trophy ? piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.25, -0.55, 0xeee4c8, false, -1.1) : piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.05, 0, 0x2a2026, false, 0, 'c');
-      this.chestRange[ci] = [piece(new T.BoxGeometry(1.5, 0.9, 1.0), 0, 0.45, 0, c.trophy ? 0xd9cdb0 : 0x2a2026, false), lid, piece(new T.BoxGeometry(1.7, 0.18, 1.2), 0, 0.8, 0, 0xe0b765, true)];       // an opened chest keeps its body and its gold band
-      if (!c.trophy) { this.chestRange[ci].push(piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.25, -0.55, 0x2a2026, false, -1.1, 'o'));       // the lid thrown back
-        const ch = [piece(new T.BoxGeometry(0.14, 1.4, 1.14), -0.45, 0.78, 0, 0xe0b765, true, 0, 'c'), piece(new T.BoxGeometry(0.14, 1.4, 1.14), 0.45, 0.78, 0, 0xe0b765, true, 0, 'c')]; this.chestRange[ci].push(...ch); }       // black lacquer body with two gold chains (gold is reserved for things you can use)
+      const lid = c.trophy ? piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.25, -0.55, 0xeee4c8, false, -1.1) : piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.05, 0, OPEN ? 0xc98a4a : 0x2a2026, false, 0, 'c');
+      this.chestRange[ci] = [piece(new T.BoxGeometry(1.5, 0.9, 1.0), 0, 0.45, 0, c.trophy ? 0xd9cdb0 : OPEN ? 0xb4703a : 0x2a2026, false), lid, piece(new T.BoxGeometry(1.7, 0.18, 1.2), 0, 0.8, 0, 0xe0b765, true)];       // an opened chest keeps its body and its gold band
+      if (!c.trophy) { this.chestRange[ci].push(piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.25, -0.55, OPEN ? 0xc98a4a : 0x2a2026, false, -1.1, 'o'));       // the lid thrown back
+        const ch = [piece(new T.BoxGeometry(0.14, 1.4, 1.14), -0.45, 0.78, 0, 0xe0b765, true, 0, 'c'), piece(new T.BoxGeometry(0.14, 1.4, 1.14), 0.45, 0.78, 0, 0xe0b765, true, 0, 'c')]; this.chestRange[ci].push(...ch); if (OPEN) this.chestRange[ci].push(piece(new T.BoxGeometry(1.5, 0.06, 1.0), 0, 1.24, 0, 0xf6d9a2, false, 0, 'c')); }       // black lacquer body with two gold chains (gold is reserved for things you can use)
       if (c.trophy) { const beam = new T.Mesh(new T.CylinderGeometry(0.28, 0.5, 18, 8, 1, true), basic(0xffd27a, { transparent: true, opacity: 0.4, depthWrite: false, side: T.DoubleSide })); beam.position.set(c.x, c.y + 9, c.z); this.G.add(beam); this.chestMeshes.push(beam); beam.userData.c = c; }
     });
     const hide = (mat) => { mat.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('void main() {', 'attribute float aHide;\nvoid main() {').replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed *= 1.0 - aHide;'); }; return mat; };
@@ -127,7 +128,7 @@ export class Props {
       if (Math.abs(p - o.lastP) > 0.008) { o.lastP = p; o.fill.geometry.dispose(); o.fill.geometry = new T.RingGeometry(E.shrines.radius - 0.6, E.shrines.radius, 48, 1, 0, Math.max(0.01, p * Math.PI * 2)); }
       { const rc = RARITY[o.s.best] || 0x5fd2a8, lift = h => (((h >> 16 & 255) + 255) >> 1 << 16) | (((h >> 8 & 255) + 255) >> 1 << 8) | (((h & 255) + 255) >> 1); o.water.material.color.setHex(o.s.done ? 0x555555 : p > 0 ? lift(rc) : rc); }       // the basin keeps the rarity colour, brighter while you charge it
     }
-    if (this._chestN !== g.world.cchests.length) this._rebuildChests(g.world);       // chests that appear mid-run (an Ace's Trophy Chest) rebuild the shared meshes
+    this.openMap = !!(g.map && g.map.open); if (this._chestN !== g.world.cchests.length) this._rebuildChests(g.world);       // chests that appear mid-run (an Ace's Trophy Chest) rebuild the shared meshes
     this._syncChests(g.world, t);
     if (P.altar) { const a = P.altar.a; gem(a.x - 0.6, a.y + 1.7, a.z, t * 2, 0.22, 0xe8c56a); gem(a.x + 0.6, a.y + 1.7, a.z, t * 2, 0.22, 0xa060e0); }
     this.gems.count = ng; this.gems.instanceMatrix.needsUpdate = true; if (gsig !== this._gsig) { this._gsig = gsig; this.gems.instanceColor.needsUpdate = true; }       // the gems bob every frame, but their colours only change when one is used

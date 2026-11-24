@@ -182,7 +182,7 @@ function dressing(b, seed, enc, rings, st) {
   const rnd = rn;
   out.heads = (b.heads || []).map(h => ({ x: r2(h.x), y: r2(gy(h.x, h.z)), z: r2(h.z), rot: h.rot, s: 1, kind: h.kind })); for (const h of out.heads) { put('h', h.x, h.z); solid.push([h.x, h.y, h.z, 1.9, 6]); keep.push({ x: h.x, z: h.z, r: 4 }); } out.head = out.heads[0] || null;
   const cactus = (x, z, s) => { const y = gy(x, z); out.cacti.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.55 * s), r2(3.5 * s)]); put('c', x, z); };
-  const dead = (x, z, s) => { const y = gy(x, z); out.dead.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.4 * s), r2(4 * s)]); put('d', x, z); };
+  const dead = (x, z, s) => { const y = gy(x, z); out.dead.push([r2(x), r2(y), r2(z), r2(s), r2(rnd() * TAU), (rnd() * 3) | 0]); solid.push([r2(x), r2(y), r2(z), r2(0.55 * s), r2(6 * s)]); put('d', x, z); };
   const beam = (x, z, len, rad, kind) => { const a = rnd() * TAU, dx = cosA(a) * len / 2, dz = sinA(a) * len / 2; out.logs.push([r2(x - dx), r2(gy(x - dx, z - dz) - 0.15), r2(z - dz), r2(x + dx), r2(gy(x + dx, z + dz) - 0.15), r2(z + dz), r2(rad), kind]); put('l', x, z); };
   const potc = (x, z) => { const n = 3 + ((rnd() * 3) | 0); for (let q = 0; q < n; q++) { const a = rnd() * TAU, d = q ? 0.8 + rnd() * 1.3 : 0, px = x + cosA(a) * d, pz = z + sinA(a) * d; out.pots.push([r2(px), r2(gy(px, pz)), r2(pz), r2(0.9 + rnd() * 0.7), r2(rnd() * TAU), (rnd() * 3) | 0]); } put('p', x, z); };
   // anchors: every block, monument and reward site. Dense groups of 4 to 9 cacti (2 to 6 m, mixed heights) stand 7 to 15 m off each, so the ring round the reward itself stays open for circling
@@ -191,16 +191,16 @@ function dressing(b, seed, enc, rings, st) {
     if (!an.blk && rnd() < 0.2) continue;
     for (let g = 0; g < 2 && !(g && rnd() < 0.5); g++) { const a0 = rnd() * TAU, d0 = an.r + 3 + rnd() * 7, cx = an.x + cosA(a0) * d0, cz = an.z + sinA(a0) * d0, n = 4 + ((rnd() * 6) | 0); let k = 0;
       for (let t = 0; t < 40 && k < n; t++) { const a = rnd() * TAU, d = 0.8 + rnd() * 4.5, x = cx + cosA(a) * d, z = cz + sinA(a) * d; if (!okAt(x, z, 1, 0.45) || near('c', x, z, 1.7)) continue; const s = k === 0 ? 1.3 + rnd() * 0.25 : 0.6 + rnd() * 0.7; cactus(x, z, s); k++; } }
-    if (rnd() < 0.55) { const a0 = rnd() * TAU, d0 = an.r + 4 + rnd() * 8, n = 1 + ((rnd() * 3) | 0); for (let k = 0; k < n; k++) { const x = an.x + cosA(a0) * d0 + (rnd() - 0.5) * 7, z = an.z + sinA(a0) * d0 + (rnd() - 0.5) * 7; if (okAt(x, z, 2) && !near('d', x, z, 6)) dead(x, z, 1.1 + rnd() * 0.5); } }
+    if (rnd() < 0.55) { const a0 = rnd() * TAU, d0 = an.r + 4 + rnd() * 8, n = 1 + ((rnd() * 3) | 0); for (let k = 0; k < n; k++) { const x = an.x + cosA(a0) * d0 + (rnd() - 0.5) * 7, z = an.z + sinA(a0) * d0 + (rnd() - 0.5) * 7; if (okAt(x, z, 2) && !near('d', x, z, 6)) dead(x, z, 1.25 + rnd() * 0.35); } }
     if (an.blk) { const bl = an.blk, a0 = rnd() * TAU, d0 = Math.max(bl.rx, bl.rz) * 1.05 + 4 + rnd() * 3, x = bl.cx + cosA(a0) * d0, z = bl.cz + sinA(a0) * d0; if (okAt(x, z, 1.5, 0.35)) potc(x, z); const a1 = a0 + 2 + rnd() * 2, d1 = d0 + 3 + rnd() * 3, x1 = bl.cx + cosA(a1) * d1, z1 = bl.cz + sinA(a1) * d1; if (free(x1, z1, 1) && slopeAt(G, x1, z1) < 0.5) beam(x1, z1, 7 + rnd() * 6, 0.45 + rnd() * 0.25, 2); }
   }
   const fill = (n, tries, kind, sep, ok, make) => { let k = 0; for (let t = 0; t < tries && k < n; t++) { const [x, z] = spot(); if (!ok(x, z) || near(kind, x, z, sep)) continue; make(x, z); k++; } };
   fill(60, 4000, 'c', 12, (x, z) => dens(x, z) > 0.3 && okAt(x, z, 2), (x, z) => cactus(x, z, 0.9 + rnd() * 0.6));
-  fill(26, 3000, 'd', 16, (x, z) => okAt(x, z, 2), (x, z) => dead(x, z, 1.1 + rnd() * 0.5));
+  fill(26, 3000, 'd', 16, (x, z) => okAt(x, z, 2), (x, z) => dead(x, z, 1.25 + rnd() * 0.35));
   fill(90, 5000, 'l', 10, (x, z) => okAt(x, z, 1, 0.5), (x, z) => beam(x, z, 5 + rnd() * 7, 0.4 + rnd() * 0.3, (rnd() * 2) | 0));
   fill(10, 2000, 'p', 20, (x, z) => okAt(x, z, 2, 0.35), (x, z) => potc(x, z));
   // coverage: every 28 m cell of the square has a piece within 25 m of its centre
-  for (let cz = -168; cz <= 168; cz += 28) for (let cx = -168; cx <= 168; cx += 28) { if (near('*', cx, cz, 22)) continue; for (let t = 0; t < 12; t++) { const x = cx + (rnd() - 0.5) * 16, z = cz + (rnd() - 0.5) * 16; if (!okAt(x, z, 2, 0.45)) continue; const r = rnd(); if (r < 0.45) cactus(x, z, 1.0 + rnd() * 0.5); else if (r < 0.7) dead(x, z, 1.1 + rnd() * 0.5); else beam(x, z, 6 + rnd() * 6, 0.45 + rnd() * 0.25, 2); break; } }
+  for (let cz = -168; cz <= 168; cz += 28) for (let cx = -168; cx <= 168; cx += 28) { if (near('*', cx, cz, 22)) continue; for (let t = 0; t < 12; t++) { const x = cx + (rnd() - 0.5) * 16, z = cz + (rnd() - 0.5) * 16; if (!okAt(x, z, 2, 0.45)) continue; const r = rnd(); if (r < 0.45) cactus(x, z, 1.0 + rnd() * 0.5); else if (r < 0.7) dead(x, z, 1.25 + rnd() * 0.35); else beam(x, z, 6 + rnd() * 6, 0.45 + rnd() * 0.25, 2); break; } }
   return { dress: out, solid };
 }
 function farDressing(P, seed) {                                                                    // large rock blocks, dead trees and ruin pieces on the sand beyond the line, 190 to 380 m out; sparse
