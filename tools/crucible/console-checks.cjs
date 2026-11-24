@@ -358,6 +358,7 @@ async function dualPass(browser, url, savesDir, steps) {
     const press = async key => { await page.evaluate(k => window.LM_DUAL.press(k), key); presses++; await page.waitForTimeout(60); };
     const settle = () => page.waitForFunction(() => !(window.LM && LM.G && LM.G.playing), null, { timeout: 20000 }).catch(() => {});
     let fixed = null; // the table's fixed places through one duel
+    let first = false; // the first drawing is read once, before a move changes the table
     const audit = async where => {
       screens++;
       const a = await page.evaluate(dualAudit, BARE).catch(e => ({ out: ['the audit broke: ' + e.message] }));
@@ -365,13 +366,13 @@ async function dualPass(browser, url, savesDir, steps) {
       if (a.table) { const tz = a.table.canvas + ' ' + a.table.zones, hd = a.table.hand; // the hand's ledge gives its place to a window's sheet and comes back
         if (!fixed) fixed = { tz, hd }; else if (fixed.tz !== tz || (hd && fixed.hd && fixed.hd !== hd)) { fail(`${shape}, ${where}`, 'table: the table, a zone or the hand moved or changed size during the duel'); fixed = { tz, hd: hd || fixed.hd }; } else if (hd) fixed.hd = hd;
         for (const fn of [ringFaults, heldFaults]) for (const t of await page.evaluate(fn).catch(() => [])) fail(`${shape}, ${where}`, 'table: ' + t);
-        if (!a.table.playing) { const t = await page.evaluate(tableFirst).catch(() => null); if (t) fail(`${shape}, ${where}`, 'first: ' + t); } }
+        if (!a.table.playing && !first) { first = true; const t = await page.evaluate(tableFirst).catch(() => null); if (t) fail(`${shape}, ${where}`, 'first: ' + t); } }
       for (const e of errors.splice(0)) fail(`${shape}, ${where}`, 'errors: ' + e);
       return a;
     };
     const list = full ? [null, ...saves] : [null, ...saves.filter(f => /^(chamber-f1|duel-regular-f1-h0|duel-regular-f1-trap-prompt-h0|reward-card-f2|reward-gift-f3|anvil-f2|bazaar-f2)\.json$/.test(f))];
     for (const save of list) {
-      const name = save ? save.replace(/\.json$/, '') : 'title'; scenes++; fixed = null;
+      const name = save ? save.replace(/\.json$/, '') : 'title'; scenes++; fixed = null; first = false;
       await load(save); await settle(); await audit(name);
       // every window and book over it, opened by its pad key or from the menu, and shut again
       const menu = await page.evaluate(() => !!document.querySelector('.scr .kc[data-key="START"]'));
@@ -388,7 +389,7 @@ async function dualPass(browser, url, savesDir, steps) {
         if (a === 'new') { await press('A'); await page.waitForTimeout(1200); await audit('title, a new descent, its first words'); await press('B'); await page.waitForTimeout(900); await audit('title, a new descent, the kits'); } }
       // a duel: a move chosen, then the turn ended and the rival's moves watched as they play
       if (save && /^(duel|beat)-/.test(save) && !/trap-prompt/.test(save)) {
-        await load(save); await settle(); fixed = null; await audit(name);
+        await load(save); await settle(); fixed = null; first = false; await audit(name);
         await press('A'); await page.waitForTimeout(150); await audit(name + ', a hand card chosen');
         await press('L1'); await page.waitForTimeout(150); await audit(name + ', the cursor on the table');
         await press('B'); await page.waitForTimeout(150);
@@ -398,7 +399,7 @@ async function dualPass(browser, url, savesDir, steps) {
         await settle(); await page.waitForTimeout(300); await audit(name + ', after the rival\'s turn');
       }
       // random pad keys from the scene
-      if (full && steps) { await load(save); await settle(); fixed = null; let rnd = 7 + scenes * 131;
+      if (full && steps) { await load(save); await settle(); fixed = null; first = false; let rnd = 7 + scenes * 131;
         for (let i = 0; i < steps; i++) { rnd = (rnd * 1103515245 + 12345) & 0x7fffffff; const key = DUAL_KEYS[rnd % DUAL_KEYS.length]; await press(key);
           if (key === 'A' || key === 'X' || key === 'B' || i % 5 === 4) { await page.waitForTimeout(250); const where = await page.evaluate(() => document.getElementById('app').dataset.phase + (window.LM && LM.G.tab ? ' ' + LM.G.tab : '')); if (!/duel/.test(where)) fixed = null; await audit(`${name}, pad key ${i + 1} (${key}), ${where}`); } } }
     }
