@@ -2638,7 +2638,7 @@ function aWords(f) {
   if (f.getAttribute('aria-disabled') === 'true') return null;
   const a = (f.dataset.a || '').split(':')[0], sel = !!app.querySelector('.scr .hand .cd.sel');
   return { hand: sel ? ['ADD TO MELD', 'ADD'] : ['CHOOSE CARD', 'CHOOSE'], mine: ['CHOOSE MONSTER', 'CHOOSE'], hit: ['ATTACK IT', 'ATTACK'], aim: ['AIM AT IT', 'AIM'], read: ['READ IT ABOVE', 'READ IT', 'READ'], tab: ['OPEN THE BOOK', 'OPEN'],
-    deckpick: ['CHOOSE CARD', 'CHOOSE'], trunkpick: ['CHOOSE CARD', 'CHOOSE'], anvilpick: ['CHOOSE CARD', 'CHOOSE'], lab: ['SWITCH IT', 'SWITCH'], cxopen: ['OPEN THE PAGE', 'OPEN'] }[a] || null;
+    deckpick: ['CHOOSE CARD', 'CHOOSE'], trunkpick: ['CHOOSE CARD', 'CHOOSE'], anvilpick: ['CHOOSE CARD', 'CHOOSE'], lab: ['SWITCH IT', 'SWITCH'], cxopen: ['OPEN THE PAGE', 'OPEN PAGE', 'OPEN'] }[a] || null;
 }
 // The plaque that says it: the duel's own place for it, else (for a pad; a finger has pressed the thing itself) the
 // plaque with room for the A chip at its left, the screen's own lit one first. It is given back its own words and verb
@@ -3063,7 +3063,7 @@ function codexDual() {
     top = bookTop('CODEX', `${none ? 'NONE FOUND YET · ' : ''}${found.size} OF ${X.list.length} RESULTS FOUND${total > 120 ? ` · SHOWING 120 OF ${total}` : ''}`, `<div class="ab gsc" data-sk="codex" data-row="63" style="left:8px;top:24px;width:614px;height:320px"><div class="gin" style="height:${Math.max(318, rows * 63 + 3)}px">${tiles || `<b class="ab lb d" style="left:8px;top:8px">NOTHING HERE YET. MELD TWO MONSTERS IN A DUEL TO WRITE THE FIRST PAGE.</b>`}</div></div>`); }
   const cells = [R ? { k: 'B', t: 'CLOSE THE PAGE', a: 'cxclose', lit: true } : null, { t: 'FOUND', a: 'cxview:found', cls: v.view === 'found' ? 'on' : '' }, { t: 'ALL', a: 'cxview:all', cls: v.view === 'all' ? 'on' : '' }].filter(Boolean);
   const kinds = X.types.map(t => ({ t: `${t} ${byType(t).filter(Rr => found.has(Rr.id)).length}/${byType(t).length}`, a: `cxtype:${t}`, cls: v.type === t ? 'on' : '' }));
-  const rows = [...rowsOf(cells, 4), ...rowsOf(kinds, 4), ...footRows4(R ? tbookFoot('codex').slice(4) : tbookFoot('codex'))], ft = { y0: 360 - (rows.length * 21 + 11), html: foot(360 - (rows.length * 21 + 11), rows, 4) };
+  const rows = [...rowsOf(cells, 4), ...rowsOf(kinds, 4), ...footRows4(R ? tbookFoot('codex').slice(4) : tbookFoot('codex', [{ t: 'OPEN PAGE', a: 'acur', off: true, cls: 'aslot', ka: true }]))], ft = { y0: 360 - (rows.length * 21 + 11), html: foot(360 - (rows.length * 21 + 11), rows, 4) };
   const words = `<p>${G.known.size} recipes written. A page you have found shows why the meld works, so you can make it again from other cards.</p><p class="gp">Runs ${P.runs}. Clears ${P.clears}. Duels won ${P.duelWins}. Guardians beaten ${P.bossWins}. Memories earned ${P.earned}.</p>`
     + (rumours() ? `<p class="gp"><span class="d">Rumours: ${heard.length} of ${BOSSES.flat().length} memories heard.</span></p>${heard.map(b => `<p>${esc(b.name)}: ${esc(SCENES['memory:' + b.id].lines[0])}</p>`).join('')}` : '');
   return two(top, pagerB(0, 0, 413, ft.y0, words) + ft.html);
