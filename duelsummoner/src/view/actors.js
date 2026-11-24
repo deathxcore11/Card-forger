@@ -374,9 +374,9 @@ export class Actors {
       const R = this.rig, ct = g.cardT, thrown = this._ct !== undefined && ct > this._ct + 0.01; this._ct = ct;
       R.group.position.copy(this.player.position); R.group.rotation.y = this.player.rotation.y + R.yaw; R.group.scale.setScalar(g.oaths.small ? 0.5 : 1); this.player.visible = false;
       R.update(p, g, dt, thrown);
-      if (thrown && g.aimX !== undefined) { this._aimY = Math.atan2(g.aimX - p.x, g.aimZ - p.z); this._aimT = 0.55; }
-      let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let d = this._aimY - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-1.57, Math.min(1.57, d)); }       // torso aim at the throw target, capped at 90 degrees
-      this._tw = (this._tw || 0) + (tw - (this._tw || 0)) * Math.min(1, dt / 0.12); R.twist(this._tw);
+      if (thrown && g.aimX !== undefined) { const ay = Math.atan2(g.aimX - p.x, g.aimZ - p.z); if (!(this._aimT > 0)) this._aimYs = ay; this._aimY = ay; this._aimT = 0.9; }       // one aim, followed slowly while throws keep coming, faded out over 0.4 s after the last
+      let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees
+      this._tw = (this._tw || 0) + (tw - (this._tw || 0)) * Math.min(1, dt / 0.3); R.twist(this._tw);
     }
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));

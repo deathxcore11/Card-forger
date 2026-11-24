@@ -134,7 +134,7 @@ import { buildProcClips, makeAxes } from './procclips.js';
 export { CLIPS, UPPER, locomotion };
 
 // crossfade seconds: about 0.12 for movement, shorter for snappy actions, longer into idle. Nothing ever cuts.
-const FADE = { default: 0.12, idle_cards: 0.2, select_fidget: 0.2, dash: 0.06, slide: 0.08, hurt: 0.04, throw_card: 0.05, land_light: 0.06, land_heavy: 0.08, jump_rise: 0.05, jump_apex: 0.1, fall_loop: 0.12, air_jump: 0.05, defeat: 0.15, victory: 0.2 };
+const FADE = { default: 0.12, idle_cards: 0.2, select_fidget: 0.2, dash: 0.06, slide: 0.1, hurt: 0.08, throw_card: 0.1, land_light: 0.1, land_heavy: 0.1, jump_rise: 0.1, jump_apex: 0.1, fall_loop: 0.12, air_jump: 0.1, defeat: 0.15, victory: 0.2 };
 const LOCO = ['idle_cards', 'walk', 'run'], WALK_STRIDE = 2.88, RUN_STRIDE = 5.67;   // metres per cycle of the Meshy walk (1.03 s at about 2.8 m/s) and run (0.63 s at about 9 m/s)
 const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
 
@@ -206,8 +206,8 @@ export class DuelistRig {
     const pr = this.prev; if (p.grounded && !pr.wasGrounded && pr.fallV < -9) { pr.landT = 0.5; pr.landHeavy = true; } else if (p.grounded && !pr.wasGrounded && pr.fallV < -4) { pr.landT = 0.3; pr.landHeavy = false; }
     if (!p.grounded) pr.fallV = p.vy; if (pr.landT > 0) pr.landT -= dt; if (p.airUsed > pr.airUsed) { pr.airJump = 0.5; } pr.airUsed = p.airUsed || 0; if (pr.airJump > 0) pr.airJump -= dt; pr.wasGrounded = p.grounded;
     const hasThrow = this.has('throw_card');
-    if (thrown && hasThrow) { const u = this._play('throw_card', { loop: false, fade: FADE.throw_card, part: 'upper' }); if (u) { if (this.upperAct && this.upperAct !== u) this.upperAct.fadeOut(0.1); this.upperAct = u; this.upperT = 0.5; this.cur = null; } }
-    if (this.upperT > 0) { this.upperT -= dt; if (this.upperT <= 0 && this.upperAct) { this.upperAct.fadeOut(0.12); this.upperAct = null; this.cur = null; } }
+    if (thrown && hasThrow) this.overlay('throw_card', { fadeIn: 0.12, fadeOut: 0.25, weight: 0.6, gap: 0.3, speed: 0.6 });       // a throw is a soft arm flick laid over the run: the run arms never drop out, the clip never restarts while it plays
+    this._overlays();
     if (this.holdUntil && performance.now() < this.holdUntil) { this.mixer.update(dt); return; }              // a one-shot (summon, level up...) is playing
     const want = locomotion(p, g, { landT: pr.landT, landHeavy: pr.landHeavy, airJump: pr.airJump > 0 });
     const sp = Math.hypot(p.vx || 0, p.vz || 0), locoNow = LOCO.includes(want.clip) && this.has('idle_cards') && this.has('walk') && this.has('run');
@@ -245,13 +245,22 @@ export class DuelistRig {
     const wd = L.walkL.getClip().duration, rd = L.runL.getClip().duration; L.walkL.time = L.walkU.time = this.ph * wd; L.runL.time = L.runU.time = this.ph * rd;
   }
   // an additive flinch (hurt, a small hit): laid on top of whatever is playing as the difference from the standing pose, so it never interrupts a run or a jump
-  overlay(name) {
+  // Every flinch and flick has an envelope (fades in over fadeIn, out over fadeOut, never under 0.08 s), a gap before it may fire again (0.4 s for a hurt), and is never restarted while it still plays.
+  overlay(name, o = {}) {
     const src = this.clips.get(name); if (!src) return false; if (!this._add) this._add = new Map();
+    const gap = (o.gap === undefined ? (name === 'hurt' ? 0.4 : 0.2) : o.gap) * 1000, now = performance.now(); if (!this._ovT) this._ovT = {}; if (now - (this._ovT[name] || 0) < gap) return false;
     let c = this._add.get(name); if (!c) { c = T.AnimationUtils.makeClipAdditive(src.clone(), 0, src, 30); this._add.set(name, c); }
-    const a = this.mixer.clipAction(c); a.blendMode = T.AdditiveAnimationBlendMode; a.reset(); a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = false; a.setEffectiveWeight(1); a.fadeIn(0.02).play(); return true;
+    const a = this.mixer.clipAction(c), L = this._ovList || (this._ovList = []); if (L.some(x => x.a === a)) return false;
+    this._ovT[name] = now; a.blendMode = T.AdditiveAnimationBlendMode; a.reset(); a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = false; a.setEffectiveWeight(0); a.enabled = true; const sp = o.speed || (name === 'hurt' ? 0.6 : 1); a.timeScale = sp; a.play();
+    L.push({ a, sp, dur: c.duration, fin: Math.max(0.08, o.fadeIn || 0.08), fout: Math.max(0.08, o.fadeOut || 0.15), w: o.weight === undefined ? (name === 'hurt' ? 0.7 : 1) : o.weight }); return true;
+  }
+  _overlays() {
+    const L = this._ovList; if (!L || !L.length) return;
+    for (let i = L.length - 1; i >= 0; i--) { const x = L[i], t = x.a.time / x.sp, dur = x.dur / x.sp; if (t >= dur - 0.001) { x.a.stop(); L.splice(i, 1); continue; } const e = Math.min(1, t / x.fin) * Math.min(1, (dur - t) / x.fout); x.a.setEffectiveWeight(x.w * Math.max(0, e)); }
   }
   // one-shot actions the view triggers from sim events: hurt, level_up, summon, fusion, tribute, open_chest...
-  once(name) { const a = this._play(name, { loop: false, fade: 0.08 }); if (a) { if (this.curAct && this.curAct !== a) this.curAct.fadeOut(0.08); this.curAct = a; this.cur = '@' + name; this.holdUntil = performance.now() + a.getClip().duration * 1000; } return !!a; }
+  once(name) { if (this.L) for (const k of Object.keys(this.L)) this.L[k].fadeOut(0.15);       // the run blend gives way while the one-shot fades in, so the two never add up
+    const a = this._play(name, { loop: false, fade: 0.15 }); if (a) { if (this.curAct && this.curAct !== a) this.curAct.fadeOut(0.15); this.curAct = a; this.cur = '@' + name; this.holdUntil = performance.now() + a.getClip().duration * 1000; } return !!a; }
 }
 
 // extras: [{ url, rename: { 'land_heavy': 'land_heavy' }, seconds: { land_heavy: 0.9 } }] - clips exported from Meshy one at a time, merged by bone name
