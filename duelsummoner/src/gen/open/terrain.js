@@ -248,30 +248,30 @@ export function openMap(seedLo, stageIndex, archOverride) {
     const flatOk = (x, z) => spread(G, x, z, 4) <= 1.6 && slopeAt(G, x, z) < 0.3 && reach(x, z);
     const order = anchors.map(an => [rn(), an]).sort((p, q) => p[0] - q[0]).map(p => p[1]), picked = [];
     for (const an of order) { if (enc.length >= types.length) break; if (picked.some(q => dist(q.x, q.z, an.x, an.z) < 70)) continue; const want = 2 + (rn() < 0.4 ? 1 : 0); let got = 0;
-      for (let t = 0; t < 80 && got < want && enc.length < types.length; t++) { const ang = rn() * TAU, d = an.r + 4 + rn() * 14, x = an.x + cosA(ang) * d, z = an.z + sinA(ang) * d; if (farOk(x, z) && gapOk(x, z, 14) && flatOk(x, z)) { enc.push({ type: types[enc.length], x, z, y: 0, beside: true }); got++; } }
+      for (let t = 0; t < 80 && got < want && enc.length < types.length; t++) { const ang = rn() * TAU, d = an.r + 12 + rn() * 6, x = an.x + cosA(ang) * d, z = an.z + sinA(ang) * d; if (farOk(x, z) && gapOk(x, z, 14) && flatOk(x, z) && blocks.every(bl => dist(bl.cx, bl.cz, x, z) >= Math.max(bl.rx, bl.rz) + 11)) { enc.push({ type: types[enc.length], x, z, y: 0, beside: true }); got++; } }
       if (got) picked.push(an); }
     for (let t = 0; t < 8000 && enc.length < types.length; t++) { const x = (rn() - 0.5) * 570, z = (rn() - 0.5) * 570; if (farOk(x, z) && gapOk(x, z, 40) && flatOk(x, z)) enc.push({ type: types[enc.length], x, z, y: 0 }); }
     if (enc.length < types.length) continue;
     let fc = null; for (let r = 14; r <= 30 && !fc; r += 2) for (let a2 = 0; a2 < 16 && !fc; a2++) { const x = sp[0] + cosA(a2 * TAU / 16) * r, z = sp[1] + sinA(a2 * TAU / 16) * r; if (spread(G, x, z, 3) < 0.9 && reach(x, z) && !blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 3)) fc = { type: 'cchest', x, z, y: at(G, x, z), free: true }; }
     if (!fc) continue; enc.push(fc);
     let bk = null, stalls = [];
-    for (const bl of blocks.filter(q => q.tone === 0).sort(() => rn() - 0.5)) { if (bk) break; for (let t = 0; t < 30 && !bk; t++) { const ang = rn() * TAU, d = Math.max(bl.rx, bl.rz) * 1.05 + 5 + rn() * 4, x = bl.cx + cosA(ang) * d, z = bl.cz + sinA(ang) * d; if (dist(x, z, sp[0], sp[1]) > 50 && farOk(x, z) && gapOk(x, z, 14) && spread(G, x, z, 5) < 1.3 && slopeAt(G, x, z) < 0.25 && reach(x, z)) { bk = { type: 'broker', x, z, y: at(G, x, z) }; stalls.push({ x: r2(x + cosA(ang + 3.1416) * 3), z: r2(z + sinA(ang + 3.1416) * 3), rot: r2(ang) }); } } }
+    for (const bl of blocks.filter(q => q.tone === 0).sort(() => rn() - 0.5)) { if (bk) break; for (let t = 0; t < 30 && !bk; t++) { const ang = rn() * TAU, d = Math.max(bl.rx, bl.rz) * 1.05 + 12 + rn() * 4, x = bl.cx + cosA(ang) * d, z = bl.cz + sinA(ang) * d; if (dist(x, z, sp[0], sp[1]) > 50 && farOk(x, z) && gapOk(x, z, 14) && spread(G, x, z, 5) < 1.3 && slopeAt(G, x, z) < 0.25 && reach(x, z)) { bk = { type: 'broker', x, z, y: at(G, x, z) }; stalls.push({ x: r2(x + cosA(ang + 3.1416) * 3), z: r2(z + sinA(ang + 3.1416) * 3), rot: r2(ang) }); } } }
     if (!bk) continue; enc.push(bk);
-    const rings = []; for (let t = 0; t < 4000 && rings.length < 4; t++) { const x = (rn() - 0.5) * 540, z = (rn() - 0.5) * 540; if (spread(G, x, z, 15) > 3.2 || !reach(x, z) || blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 18)) continue; if (dist(x, z, sp[0], sp[1]) < 60 || dist(x, z, gt[0], gt[1]) < 60 || rings.some(q => dist(q.x, q.z, x, z) < 100) || enc.some(e => dist(e.x, e.z, x, z) < 22)) continue; rings.push({ x, z, r: 14, y: at(G, x, z) }); }
+    const rings = []; for (let t = 0; t < 4000 && rings.length < 4; t++) { const x = (rn() - 0.5) * 540, z = (rn() - 0.5) * 540; if (spread(G, x, z, 15) > 3.2 || !reach(x, z) || blocks.some(bl => dist(bl.cx, bl.cz, x, z) < reachOf(bl) + 30)) continue; if (dist(x, z, sp[0], sp[1]) < 60 || dist(x, z, gt[0], gt[1]) < 60 || rings.some(q => dist(q.x, q.z, x, z) < 100) || enc.some(e => dist(e.x, e.z, x, z) < 22)) continue; rings.push({ x, z, r: 14, y: at(G, x, z) }); }
     if (!rings.length) continue;
     // the three sleepers (the elite and the two mini bosses): each stands asleep at its own spot far from the start, from the gate and from each other, on open sand beside a block, wall or monument
     const sleepers = [], shuffled = anchors.map(an => [rn(), an]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
     for (const role of ['elite', 'bossA', 'bossB']) {
       let site = null;
       for (let pass = 0; pass < 3 && !site; pass++) { const minSp = [200, 150, 100][pass], minMu = [150, 110, 70][pass];
-        for (const an of shuffled) { for (let t = 0; t < 20 && !site; t++) { const ang = rn() * TAU, d = an.r + 8 + rn() * 10, x = an.x + cosA(ang) * d, z = an.z + sinA(ang) * d; if (dist(x, z, sp[0], sp[1]) >= minSp && dist(x, z, gt[0], gt[1]) >= 100 && sleepers.every(q => dist(q.x, q.z, x, z) >= minMu) && farOk(x, z) && enc.every(e => dist(e.x, e.z, x, z) >= 16) && flatOk(x, z)) site = { role, x, z }; } if (site) break; } }
-      for (let t = 0; t < 6000 && !site; t++) { const x = (rn() - 0.5) * 540, z = (rn() - 0.5) * 540; if (dist(x, z, sp[0], sp[1]) >= 120 && dist(x, z, gt[0], gt[1]) >= 80 && sleepers.every(q => dist(q.x, q.z, x, z) >= 70) && farOk(x, z) && enc.every(e => dist(e.x, e.z, x, z) >= 16) && flatOk(x, z)) site = { role, x, z }; }
+        for (const an of shuffled) { for (let t = 0; t < 20 && !site; t++) { const ang = rn() * TAU, d = an.r + 12 + rn() * 8, x = an.x + cosA(ang) * d, z = an.z + sinA(ang) * d; if (blocks.every(bl => dist(bl.cx, bl.cz, x, z) >= Math.max(bl.rx, bl.rz) + 11) && dist(x, z, sp[0], sp[1]) >= minSp && dist(x, z, gt[0], gt[1]) >= 100 && sleepers.every(q => dist(q.x, q.z, x, z) >= minMu) && farOk(x, z) && enc.every(e => dist(e.x, e.z, x, z) >= 16) && flatOk(x, z)) site = { role, x, z }; } if (site) break; } }
+      for (let t = 0; t < 6000 && !site; t++) { const x = (rn() - 0.5) * 540, z = (rn() - 0.5) * 540; if (blocks.every(bl => dist(bl.cx, bl.cz, x, z) >= Math.max(bl.rx, bl.rz) + 11) && dist(x, z, sp[0], sp[1]) >= 120 && dist(x, z, gt[0], gt[1]) >= 80 && sleepers.every(q => dist(q.x, q.z, x, z) >= 70) && farOk(x, z) && enc.every(e => dist(e.x, e.z, x, z) >= 16) && flatOk(x, z)) site = { role, x, z }; }
       if (!site) break; sleepers.push(site);
     }
     if (sleepers.length < 3) continue;
-    for (const q of sleepers) pad(G, q.x, q.z, 5, 12);
+    for (const q of sleepers) pad(G, q.x, q.z, 4, 8);
     // pads under everything placed: the piece sits flush, the sand blends back into the dunes
-    for (const e of enc) { const big = e.type === 'broker'; e.y = pad(G, e.x, e.z, big ? 7 : 3, big ? 15 : 8); }
+    for (const e of enc) { const big = e.type === 'broker'; e.y = pad(G, e.x, e.z, big ? 4 : 3, big ? 7 : 8); }       // pads stay at least 3 m clear of every block foot (the shop stands 12 m or more off a block with a 7 m pad)
     for (const q of rings) q.y = pad(G, q.x, q.z, 14, 26);
     st = analyse(G, sp); if (st.walkFrac < 0.97) continue;
     return assemble({ arch, k, G, sp, gt, enc, rings, st, blocks, P, heads: a.heads, start: a.start, stalls, sleepers }, seed, stageIndex);
