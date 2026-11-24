@@ -75,11 +75,23 @@ left, and no key is shown twice. The plaque A presses is the lit one, and it sho
 a chip's room, else inside it at its right end. A plaque with a key of its own keeps that key's chip when the hammer
 is on it. A key with a chip presses its plaque and leaves the cursor where it was.
 
-When the cursor is on a card, a relic or a row and no plaque stands for what A does there, one plaque says it in its
-own words (CHOOSE CARD, READ IT ABOVE, OPEN THE BOOK, SWITCH IT) and lights: in a duel the first plaque of the foot is
-kept for this; elsewhere the screen's first plaque gives its place for as long as the cursor stays there, and only for
-a pad (a finger has pressed the thing itself). Where A does nothing new (a card already read on its page), no plaque
-lights.
+When the cursor is on a card, a monster, a relic or a row and no plaque stands for what A does there, a place kept
+for it says so in its own words (CHOOSE CARD, CHOOSE MONSTER, PICK TARGET, ATTACK IT, ADD TO MELD, OPEN THE BOOK,
+OPEN PAGE, SWITCH IT) and lights: the first place of a duel's foot, of the Codex and of the options. The cursor never
+stands on that place itself. A plaque that can be pressed never gives its place to such words, so no command is ever
+hidden; on a screen with no place to spare (the Anvil, the Winnower, a play already lit in a duel) the window of words
+says in a line what A does on another card. A lit plaque always does something: where A does nothing (a hand card
+that cannot be played this turn, a monster being melded onto, a card the window already reads) no plaque is lit.
+
+In a room the top frame's window reads whatever the cursor rests on: a card of the deck, a relic you hold. It goes
+back to the room's own words when the cursor leaves, so nothing needs a key to be read or put away. (A finger taps the
+thing to read it.)
+
+An attack by the pad: A on one of your monsters chooses it. With no rival monster the first plaque is DIRECT with its
+number, lit, and A does it at once; the bar says so. With rival monsters A (PICK TARGET) takes the cursor to the first
+target, as up does, and A there (ATTACK IT) attacks; the mark over each target says how it would end. A monster that
+cannot attack says why in the bar (the first turn, in defense, has attacked), and A then offers MELD ONTO IT when a
+meld can still be played, else nothing. B cancels.
 
 Where the cursor starts: on the first card of your hand at the start of each of your turns, on the first card of the
 deck at the Anvil and in the deck book, on the chosen door, plinth or row elsewhere. It never starts on a plaque that
@@ -116,7 +128,9 @@ a finger drags it.
   fight; below, the hand in six places that never move (a card played leaves its place empty, a card drawn takes the
   first empty place, sliding out whole from under the deck pile; the page counts a hand card by where it stands,
   left to right, and a turn opens with the cursor on the leftmost), the deck and the graveyard, the page of whatever the cursor is on, the relics and the plaques.
-  Both graveyards can be listed: yours beside the hand, the rival's on the rival's plate. While a hand card is chosen
+  Both graveyards can be listed whole: yours beside the hand, the rival's on the rival's plate, the newest card first,
+  more than sixteen in a list that the cursor walks and L2 and R2 page. A relic of yours that fires lights its place
+  on the relic belt while the bar says its words; no strip is drawn over the table. While a hand card is chosen
   the page stays on a card (the one under the cursor on the hand or the table, else the chosen one) and says at its
   foot what choosing it means, so the walk down through the relics to DEFENSE POS, SET VEILED, SCRAP CARD or the
   Forger's Power never takes the card being played off its page. With nothing chosen, L1 and R1 stand in the foot as
@@ -133,7 +147,8 @@ a finger drags it.
 - A question (the menu, leaving, the heat's rules, this duel): the bottom frame only. The top frame holds still until
   it is answered.
 - A story, and the card of a new floor: the painting in the room's window above with the words under it, where the
-  letters are largest; below, what you carry into what comes next.
+  letters are largest; below, what you carry into what comes next. A scene that has a speaker's face and no painting
+  sets your own face against it, so the dark window is not left bare.
 
 ## Checks
 
@@ -142,6 +157,8 @@ screen against the rules of the look, and against the rules of this layout: noth
 bare square on either (what is drawn is counted, not the window it is drawn in), every line of words on a whole frame
 pixel and none cut through at the foot of its box, every control reached by the d-pad, the table and the hand's six
 places fixed through a duel, the cursor's own drawing over no word, number or picture, a marker on every list with rows
-out of sight (and L2 and R2 paging it), the duel's page on the card being played, and the A chip on the lit plaque.
+out of sight (and L2 and R2 paging it), the duel's page on the card being played, the A chip on the lit plaque, a lit
+plaque that always does something, no command giving its place away, and an attack walked by the pad: with an
+attacker chosen, a legal attack done by A within three keys and by up and A, and none offered where none is legal.
 
 Not assessed: a real two-screen handheld, a real pad, and how fast it draws there.
