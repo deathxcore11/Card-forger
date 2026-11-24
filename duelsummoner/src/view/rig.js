@@ -203,6 +203,7 @@ export class DuelistRig {
   // call every frame with the sim's player and game, the frame time, and whether a card was just thrown
   update(p, g, dt, thrown) {
     if (this.debugHold) return;                                                // a test is posing the rig by hand
+    if (this._twSaved) { for (const [b, q] of this._twSaved) b.quaternion.copy(q); this._twSaved = null; }       // take last frame's torso twist off first: the mixer only writes a bone whose clip value changed, so on a held pose the twist would pile up frame after frame and snap back later
     const pr = this.prev; if (p.grounded && !pr.wasGrounded && pr.fallV < -9) { pr.landT = 0.5; pr.landHeavy = true; } else if (p.grounded && !pr.wasGrounded && pr.fallV < -4) { pr.landT = 0.3; pr.landHeavy = false; }
     if (!p.grounded) pr.fallV = p.vy; if (pr.landT > 0) pr.landT -= dt; if (p.airUsed > pr.airUsed) { pr.airJump = 0.5; } pr.airUsed = p.airUsed || 0; if (pr.airJump > 0) pr.airJump -= dt; pr.wasGrounded = p.grounded;
     const hasThrow = this.has('throw_card');
@@ -223,6 +224,7 @@ export class DuelistRig {
   twist(yaw) {
     if (!this._sp) { const all = []; this.root.traverse(o => { if (o.isBone && /spine|chest/i.test(o.name)) all.push(o); }); const depth = o => { let d = 0; for (let q = o; q.parent; q = q.parent) d++; return d; }; all.sort((a, b) => depth(a) - depth(b)); this._sp = all.slice(0, 3); }
     if (!this._sp.length || Math.abs(yaw) < 1e-3) return;
+    this._twSaved = this._sp.map(b => [b, b.quaternion.clone()]);
     this.group.updateMatrixWorld(true);
     const qy = new T.Quaternion(), qp = new T.Quaternion(), up = new T.Vector3(0, 1, 0), per = yaw / this._sp.length;
     for (const b of this._sp) { b.parent.getWorldQuaternion(qp); qy.setFromAxisAngle(up, per); b.quaternion.premultiply(qp).premultiply(qy).premultiply(qp.clone().invert()); b.updateMatrixWorld(true); }
@@ -239,9 +241,11 @@ export class DuelistRig {
     const L = this.L, lw = this.lw; let ti = 0, tw = 0, tr = 0;
     if (on) { const wi = clamp01(1 - (sp - 0.4) / 1.0), wr = clamp01((sp - 4.5) / 4); ti = wi; tr = (1 - wi) * wr; tw = (1 - wi) * (1 - wr); }
     const k = on ? Math.min(1, dt * 12) : Math.min(1, dt / 0.12);
-    lw.idle += (ti - lw.idle) * k; lw.walk += (tw - lw.walk) * k; lw.run += (tr - lw.run) * k; lw.up += ((throwing ? 0 : 1) - lw.up) * Math.min(1, dt / 0.06);
+    if (this._rs < 0.15) { this._rs += dt; const f = Math.min(1, this._rs / 0.15); lw.idle = ti * f; lw.walk = tw * f; lw.run = tr * f; }       // after a one-shot the blend comes in linearly over 0.15 s while the one-shot fades out, so the two always add up to a whole
+    else { lw.idle += (ti - lw.idle) * k; lw.walk += (tw - lw.walk) * k; lw.run += (tr - lw.run) * k; }
+    lw.up += ((throwing ? 0 : 1) - lw.up) * Math.min(1, dt / 0.06);
     for (const n of ['idle', 'walk', 'run']) { const w = lw[n], al = L[n + 'L'], au = L[n + 'U']; al.enabled = w > 0.002; al.setEffectiveWeight(w); au.enabled = w * lw.up > 0.002; au.setEffectiveWeight(w * lw.up); }
-    if (on && sp > 0.3) { const rs = lw.run / ((lw.walk + lw.run) || 1); this.ph = (this.ph + sp / (WALK_STRIDE + (RUN_STRIDE - WALK_STRIDE) * rs) * dt) % 1; }
+    if (on && sp > 0.3) { const rs = lw.run / ((lw.walk + lw.run) || 1); const stride = WALK_STRIDE + (RUN_STRIDE - WALK_STRIDE) * rs, nat = 1 / (L.walkL.getClip().duration + (L.runL.getClip().duration - L.walkL.getClip().duration) * rs); this.ph = (this.ph + Math.max(0.7 * nat, Math.min(1.4 * nat, sp / stride)) * dt) % 1; }       // cycles per second follow ground speed but stay within 0.7 to 1.4 of the clip's own rate, so the legs never blur or crawl
     const wd = L.walkL.getClip().duration, rd = L.runL.getClip().duration; L.walkL.time = L.walkU.time = this.ph * wd; L.runL.time = L.runU.time = this.ph * rd;
   }
   // an additive flinch (hurt, a small hit): laid on top of whatever is playing as the difference from the standing pose, so it never interrupts a run or a jump
@@ -249,17 +253,19 @@ export class DuelistRig {
   overlay(name, o = {}) {
     const src = this.clips.get(name); if (!src) return false; if (!this._add) this._add = new Map();
     const gap = (o.gap === undefined ? (name === 'hurt' ? 0.4 : 0.2) : o.gap) * 1000, now = performance.now(); if (!this._ovT) this._ovT = {}; if (now - (this._ovT[name] || 0) < gap) return false;
+    if (name !== 'hurt' && (now - (this._ovT.hurt || 0) < 100 || (this._ovList || []).some(x => x.hurt))) return false;       // a flick never lands on a flinch that has just started or is still playing: two arm kicks in one frame read as a twitch
     let c = this._add.get(name); if (!c) { c = T.AnimationUtils.makeClipAdditive(src.clone(), 0, src, 30); this._add.set(name, c); }
     const a = this.mixer.clipAction(c), L = this._ovList || (this._ovList = []); if (L.some(x => x.a === a)) return false;
+    if (name === 'hurt') for (const x of L) x.kt = 0.4;       // a throw flick already playing gives way to the flinch
     this._ovT[name] = now; a.blendMode = T.AdditiveAnimationBlendMode; a.reset(); a.setLoop(T.LoopOnce, 1); a.clampWhenFinished = false; a.setEffectiveWeight(0); a.enabled = true; const sp = o.speed || (name === 'hurt' ? 0.6 : 1); a.timeScale = sp; a.play();
-    L.push({ a, sp, dur: c.duration, fin: Math.max(0.08, o.fadeIn || 0.08), fout: Math.max(0.08, o.fadeOut || 0.15), w: o.weight === undefined ? (name === 'hurt' ? 0.7 : 1) : o.weight }); return true;
+    L.push({ a, sp, k: 1, hurt: name === 'hurt', dur: c.duration, fin: Math.max(0.08, o.fadeIn || (name === 'hurt' ? 0.16 : 0.08)), fout: Math.max(0.08, o.fadeOut || (name === 'hurt' ? 0.25 : 0.15)), w: o.weight === undefined ? (name === 'hurt' ? 0.55 : 1) : o.weight }); return true;
   }
   _overlays() {
     const L = this._ovList; if (!L || !L.length) return;
-    for (let i = L.length - 1; i >= 0; i--) { const x = L[i], t = x.a.time / x.sp, dur = x.dur / x.sp; if (t >= dur - 0.001) { x.a.stop(); L.splice(i, 1); continue; } const e = Math.min(1, t / x.fin) * Math.min(1, (dur - t) / x.fout); x.a.setEffectiveWeight(x.w * Math.max(0, e)); }
+    for (let i = L.length - 1; i >= 0; i--) { const x = L[i], t = x.a.time / x.sp, dur = x.dur / x.sp; if (t >= dur - 0.001) { x.a.stop(); L.splice(i, 1); continue; } const e = Math.min(1, t / x.fin) * Math.min(1, (dur - t) / x.fout); if (x.kt !== undefined) x.k += (x.kt - x.k) * 0.15; x.a.setEffectiveWeight(x.w * x.k * Math.max(0, e)); }
   }
   // one-shot actions the view triggers from sim events: hurt, level_up, summon, fusion, tribute, open_chest...
-  once(name) { if (this.L) for (const k of Object.keys(this.L)) this.L[k].fadeOut(0.15);       // the run blend gives way while the one-shot fades in, so the two never add up
+  once(name) { this._rs = 0; if (this.L) for (const k of Object.keys(this.L)) this.L[k].fadeOut(0.15);       // the run blend gives way while the one-shot fades in, so the two never add up
     const a = this._play(name, { loop: false, fade: 0.15 }); if (a) { if (this.curAct && this.curAct !== a) this.curAct.fadeOut(0.15); this.curAct = a; this.cur = '@' + name; this.holdUntil = performance.now() + a.getClip().duration * 1000; } return !!a; }
 }
 
