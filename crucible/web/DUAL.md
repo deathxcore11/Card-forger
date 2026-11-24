@@ -66,20 +66,33 @@ if you want it to repeat).
 | X (button 2)        | `X`                           | The screen's other main action: the plaque with the X chip (END TURN in a duel). |
 | Y (button 3)        | `Y`                           | Look closer: the plaque with the Y chip (THIS DUEL, the deck or the relics). |
 | L1, R1 (4, 5)       | `L1` `R1`                     | The one before and the next one: doors, choices, Traps, books. In a duel with no such plaque they jump between the hand, your row and the rival's row. |
-| L2, R2, right stick | `L2` `R2`                     | Page long text up and down. |
+| L2, R2, right stick | `L2` `R2`                     | Page up and down: the list the cursor is in, else long text, else another list with rows out of sight. |
 | Start (button 9)    | `START`                       | The menu. Pressed again, or in a book, it shuts the menu or the book. |
 | Select              |                               | Not used. |
 
 A key does only what a plaque on the screen says it does: each plaque that has a key shows the key on a chip at its
-left, and no key is shown twice. The plaque A presses is the lit one, and its chip shows A. A key with a chip presses
-its plaque and leaves the cursor where it was.
+left, and no key is shown twice. The plaque A presses is the lit one, and it shows the A chip: at its left where it has
+a chip's room, else inside it at its right end. A plaque with a key of its own keeps that key's chip when the hammer
+is on it. A key with a chip presses its plaque and leaves the cursor where it was.
+
+When the cursor is on a card, a relic or a row and no plaque stands for what A does there, one plaque says it in its
+own words (CHOOSE CARD, READ IT ABOVE, OPEN THE BOOK, SWITCH IT) and lights: in a duel the first plaque of the foot is
+kept for this; elsewhere the screen's first plaque gives its place for as long as the cursor stays there, and only for
+a pad (a finger has pressed the thing itself). Where A does nothing new (a card already read on its page), no plaque
+lights.
 
 Where the cursor starts: on the first card of your hand at the start of each of your turns, on the first card of the
 deck at the Anvil and in the deck book, on the chosen door, plinth or row elsewhere. It never starts on a plaque that
 goes back, leaves or ends a turn, so a stray A does none of those.
 
-The cursor is the hammer on a plaque, and a small marker over a card, a monster, a relic or a row. It is never lost:
-when the control it was on goes away, it waits on the screen's own plaque.
+The cursor is the hammer on a plaque. On a card the card's own frame turns light; on a relic or a row its border does.
+A small marker also stands over a hand card, a monster, a door or a plinth, and only where its nine by six pixels lie
+on nothing: no number, word, card or picture. The cursor is never lost: when the control it was on goes away, it waits
+on the screen's own place, and what the page reads goes there with it.
+
+A list that holds more rows than it shows has a small gold marker pointing to the rows out of sight (in the left margin
+of a grid of cards, after the heading of a list of rows). The d-pad walks into every such list, L2 and R2 page it, and
+a finger drags it.
 
 ## The keyboard, for a desk
 
@@ -101,9 +114,14 @@ when the control it was on goes away, it waits on the screen's own plaque.
   your strongest cards and the plaques.
 - A duel: the hall and the whole table above, with both duelists' plates and the bar of words, which only tells the
   fight; below, the hand in six places that never move (a card played leaves its place empty, a card drawn takes the
-  first empty place), the deck and the graveyard, the page of whatever the cursor is on, the relics and the plaques.
-  Both graveyards can be listed: yours beside the hand, the rival's on the rival's plate. An attack that waits on an
-  answer and the duel's end take the page's place below. Nothing covers the table.
+  first empty place, sliding out whole from under the deck pile; the page counts a hand card by where it stands,
+  left to right, and a turn opens with the cursor on the leftmost), the deck and the graveyard, the page of whatever the cursor is on, the relics and the plaques.
+  Both graveyards can be listed: yours beside the hand, the rival's on the rival's plate. While a hand card is chosen
+  the page stays on a card (the one under the cursor on the hand or the table, else the chosen one) and says at its
+  foot what choosing it means, so the walk down through the relics to DEFENSE POS, SET VEILED, SCRAP CARD or the
+  Forger's Power never takes the card being played off its page. With nothing chosen, L1 and R1 stand in the foot as
+  ROW BEFORE and NEXT ROW. An attack that waits on an answer and the duel's end take the page's place below; the
+  question shows your Trap in a gold box and what happens without it in a box beside it. Nothing covers the table.
 - A room with choices: the room and its plinths above with the chosen thing read whole; below, what it would join
   (the deck as a grid of whole cards, forty to a frame where the plaques leave five rows; the relics you hold by name
   over the deck; the kit's cards; the trunk).
@@ -123,6 +141,7 @@ when the control it was on goes away, it waits on the screen's own plaque.
 screen against the rules of the look, and against the rules of this layout: nothing said on both frames, no large
 bare square on either (what is drawn is counted, not the window it is drawn in), every line of words on a whole frame
 pixel and none cut through at the foot of its box, every control reached by the d-pad, the table and the hand's six
-places fixed through a duel.
+places fixed through a duel, the cursor's own drawing over no word, number or picture, a marker on every list with rows
+out of sight (and L2 and R2 paging it), the duel's page on the card being played, and the A chip on the lit plaque.
 
 Not assessed: a real two-screen handheld, a real pad, and how fast it draws there.
