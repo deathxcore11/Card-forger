@@ -92,7 +92,15 @@
 //   walk    the d-pad's own steps reach every control from where the cursor stands and come back from each (the
 //           controls of a frame held under a window wait), and a cursor always shows;
 //   table   the table is the top frame's 640 x 304 and nothing lies over it; it, every zone and the hand's ledge keep
-//           their place and size through a duel; the hand's six places stand at 8, 58 .. 258.
+//           their place and size through a duel; the hand's six places stand at 8, 58 .. 258;
+//   cursor  the cursor's own drawing (the marker over a card, a door or a plinth, a ring over a card, a list's marker,
+//           the A chip inside a plaque) lies on no line of words, number, card, plaque, chip, relic, face or picture;
+//   more    a list that holds more rows than it shows has its marker towards the rows out of sight and a place for the
+//           cursor in it, and R2 pages it to its end and L2 back to its start; words that page show their marker;
+//   page    in a duel on your turn the page reads a chosen hand card for as long as one is chosen (also while the
+//           cursor walks down through the relics to the plaques), and after the play what the cursor is on;
+//   A       the lit plaque shows the A chip (or the chip of its own key); after a pad key, a control under the cursor that A acts on has a plaque
+//           that says what A does.
 // Some shapes are checked inside a page that styles pictures the way a host page may (img { max-width: 100%;
 // height: auto } and the like), and at the end a few scenes are pictured with and without those styles, with every
 // animation stopped at its start, once every face is in and the screen has settled: the two pictures must be the same
@@ -288,7 +296,7 @@ function dualAudit(bare) {
   for (const [e, s] of all) if ((e.classList.contains('cd') || e.classList.contains('big')) && !e.closest('.gsc') && !e.closest('.dealt') && !s.whole) add(`fit: a card is cut (${s.f} frame, ${Math.round(s.full.x)}, ${Math.round(s.full.y)})`);
   const pqs = all.filter(([e]) => e.classList.contains('pq')), chips = all.filter(([e]) => e.classList.contains('kc')), lbs = all.filter(([e]) => e.classList.contains('lb') && text(e));
   for (let i = 0; i < pqs.length; i++) { for (let j = i + 1; j < pqs.length; j++) if (pqs[i][1].f === pqs[j][1].f && meet(pqs[i][1].cut, pqs[j][1].cut)) add(`fit: the plaques "${pqs[i][0].textContent}" and "${pqs[j][0].textContent}" lie on each other`);
-    for (const [c, cs] of chips) if (cs.f === pqs[i][1].f && meet(pqs[i][1].cut, cs.cut)) add(`fit: the key chip ${c.dataset.key} lies on the plaque "${pqs[i][0].textContent}"`);
+    for (const [c, cs] of chips) if (cs.f === pqs[i][1].f && !c.classList.contains('kin') && meet(pqs[i][1].cut, cs.cut)) add(`fit: the key chip ${c.dataset.key} lies on the plaque "${pqs[i][0].textContent}"`);
     for (const [l, ls] of lbs) if (ls.f === pqs[i][1].f && !pqs[i][0].contains(l) && meet(pqs[i][1].cut, ls.cut, 1)) add(`fit: "${text(l).slice(0, 20)}" lies on the plaque "${pqs[i][0].textContent}"`); }
   for (let i = 0; i < lbs.length; i++) for (let j = i + 1; j < lbs.length; j++) { const [a, sa] = lbs[i], [b, sb] = lbs[j]; if (sa.f === sb.f && !a.contains(b) && !b.contains(a) && meet(sa.cut, sb.cut, 1)) add(`fit: "${text(a).slice(0, 20)}" and "${text(b).slice(0, 20)}" lie on each other (${sa.f} frame)`); }
   // names: a name set short shows whole words of the name
@@ -303,7 +311,7 @@ function dualAudit(bare) {
   const lit = pqs.filter(([e]) => e.classList.contains('lit'));
   if (lit.length > 1) add(`plaque: ${lit.length} plaques are lit (${lit.map(x => x[0].textContent).join(', ')})`);
   for (const [e] of lit) { if (e.disabled) add(`plaque: the lit plaque "${e.textContent}" is switched off`); if (e.scrollWidth > e.clientWidth + 1) add(`plaque: the lit plaque "${e.textContent}" has no room for the hammer`); }
-  const keys = new Map(); for (const [c] of chips) { const key = c.classList.contains('ka') ? 'A' : c.dataset.key; if (!key) continue; keys.set(key, (keys.get(key) || 0) + 1); const p = c.nextElementSibling;
+  const keys = new Map(); for (const [c] of chips) { const key = c.classList.contains('ka') ? 'A' : c.dataset.key; if (!key) continue; keys.set(key, (keys.get(key) || 0) + 1); const p = c.classList.contains('kin') ? c.parentElement : c.nextElementSibling;
     if (!p || !p.classList.contains('pq')) add(`plaque: the key chip ${key} stands beside no plaque`); else if (!!p.disabled !== c.classList.contains('kco') && !c.classList.contains('ka')) add(`plaque: the key chip ${key} and its plaque "${p.textContent}" do not agree on whether it can be pressed`); }
   for (const [key, c] of keys) if (c > 1) add(`plaque: the key ${key} stands on ${c} chips`);
   // plinth: one chosen, and no name plate on its picture or numbers
@@ -332,6 +340,40 @@ function dualAudit(bare) {
   let walk = null; try { walk = D.walk(); } catch (e) { add('walk: ' + e.message); }
   if (walk) { if (walk.n && walk.at == null) add('walk: the cursor stands on nothing'); if (walk.lost.length && walk.at != null) add(`walk: the d-pad cannot reach ${walk.lost.slice(0, 6).join(', ')}${walk.lost.length > 6 ? ' and ' + (walk.lost.length - 6) + ' more' : ''} from ${walk.at}`); if (walk.trapped.length) add(`walk: the cursor cannot come back from ${walk.trapped.slice(0, 6).join(', ')}`); }
   if (live.length && !app.querySelector('.nvf, .scr .pq.lit')) add('walk: no cursor shows on the screen');
+  // cursor: the cursor's own drawing (a marker over a card, a door or a plinth; a ring drawn over a card; the marker of
+  // a list with rows out of sight; the A chip inside a plaque) lies on no line of words, no number, no card, plaque,
+  // chip, relic, face, gauge or picture
+  // (a room's painting behind everything is the ground the cursor stands on, as the hall is)
+  { const solid = all.filter(([e, s]) => e.matches('.cd, .pq, .kc, .sl, .big, .pf, .ga, .rw, img:not([data-pic="hall"])') && !(e.tagName === 'IMG' && s.cut.w >= 300 && s.cut.h >= 150));
+    const over = (e, c, f, what) => { for (const [lf, r, le] of lineRects) if (lf === f && !e.contains(le) && meet(c, r, .02)) { add(`cursor: ${what} lies over the words "${le.textContent.trim().slice(0, 20)}" (${f} frame)`); return; }
+      for (const [x, xs] of solid) if (xs.f === f && x !== e && !x.contains(e) && !e.contains(x) && meet(c, xs.cut, .02)) { add(`cursor: ${what} lies over <${x.tagName.toLowerCase()} class="${x.className}"> (${f} frame)`); return; } };
+    for (const [e, s] of all) { if (e.matches('.cur, .lmk') && !s.whole) add(`cursor: a marker is cut by the edge of a box or of the ${s.f} frame`);
+      if (e.matches('.cur')) over(e, s.cut, s.f, 'the marker'); if (e.matches('.lmk')) over(e, s.cut, s.f, "a list's marker");
+      if (e.matches('.kin')) { const p = e.parentElement; for (const [lf, r, le] of lineRects) if (le === p && meet(s.cut, r, .02)) add(`cursor: the A chip lies over the words of the plaque "${text(p)}"`); } }
+    for (const e of app.querySelectorAll('.scr .nvf')) { const s = shown(e), a = getComputedStyle(e, '::after'); if (!s || !a || a.content === 'none' || a.content === 'normal' || a.display === 'none') continue;
+      const bw = ['Top', 'Right', 'Bottom', 'Left'].map(d => parseFloat(a['border' + d + 'Width']) || 0); if (!bw.some(Boolean)) continue;
+      const eb = e.getBoundingClientRect(), ec = getComputedStyle(e), px = v => parseFloat(v) || 0, x0 = eb.left / 1 + (px(ec.borderLeftWidth) + px(a.left)) * k, y0 = eb.top + (px(ec.borderTopWidth) + px(a.top)) * k, x1 = eb.right - (px(ec.borderRightWidth) + px(a.right)) * k, y1 = eb.bottom - (px(ec.borderBottomWidth) + px(a.bottom)) * k;
+      const bands = [[x0, y0, x1 - x0, bw[0] * k], [x1 - bw[1] * k, y0, bw[1] * k, y1 - y0], [x0, y1 - bw[2] * k, x1 - x0, bw[2] * k], [x0, y0, bw[3] * k, y1 - y0]].filter(b => b[2] > 0 && b[3] > 0).map(b => rel({ left: b[0], top: b[1], width: b[2], height: b[3] }, s.f));
+      const hit = lineRects.find(([lf, r]) => lf === s.f && bands.some(b => meet(b, r, .02))); if (hit) add(`cursor: the ring on a card cuts "${hit[2].textContent.trim().slice(0, 20)}" (${s.f} frame)`); } }
+  // more: a list that holds more rows than it shows says so with its marker, towards the rows out of sight, and has a
+  // place for the cursor in it; words that page say so too
+  const lists = [];
+  for (const [g, s] of all) { if (!g.matches('.gsc')) continue; const max = g.scrollHeight - g.clientHeight; if (max < 8) continue;
+    const mk = [...g.parentElement.querySelectorAll(':scope > .lmk')], dn = g.scrollTop < max - 2, up = g.scrollTop > 2; lists.push({ sk: g.dataset.sk, top: g.scrollTop, max });
+    if (dn && !mk.some(m => !m.classList.contains('lmu'))) add(`more: the list ${g.dataset.sk} has rows below and no marker (${s.f} frame)`);
+    if (up && !mk.some(m => m.classList.contains('lmu'))) add(`more: the list ${g.dataset.sk} has rows above and no marker (${s.f} frame)`);
+    if (!g.closest('.held') && !g.querySelector('button[data-a]')) add(`more: the list ${g.dataset.sk} has rows out of sight and no place for the cursor (${s.f} frame)`); }
+  for (const [p, s] of all) if (p.matches('[data-pager]') && p.scrollTop + p.clientHeight < p.scrollHeight - 8 && !p.parentElement.classList.contains('more')) add(`more: words go on below with no marker, "${p.textContent.trim().slice(0, 24)}" (${s.f} frame)`);
+  // page: in a duel on your turn the page reads the card being played while one is chosen, else what the cursor is on
+  { const G = window.LM && LM.G, pg = app.querySelector('.scrB [data-page]'), turn = app.querySelector('.scrB .pq[data-a="end"]'), cur = app.querySelector('.scr .nvf'), cl = cur && cur.dataset.look, page = pg ? pg.dataset.page : '';
+    if (document.getElementById('tbl') && turn && G && !G.playing && !G.tab && !G.overlay) { const sel = [...app.querySelectorAll('.scrB .hand .cd.sel')];
+      if (sel.length) { if (!(sel.some(e => e.dataset.look === page) || (cl && /^(h|z|t0):/.test(cl) && cl === page))) add(`page: a hand card is chosen and the page reads ${page || 'no card'}`); }
+      else if (cl && !app.querySelector('.scr [data-hl="picked"]') && page !== cl) add(`page: the cursor is on ${cl} and the page reads ${page || 'nothing'}`); } }
+  // A: the lit plaque shows the A chip, beside it or inside it; and after a pad key, a control under the cursor that A
+  // acts on has a plaque that says so
+  { for (const [e] of lit) { const c = e.previousElementSibling; if (!((c && c.classList.contains('kc') && (c.classList.contains('ka') || c.dataset.key)) || e.querySelector('.kin'))) add(`A: the lit plaque "${text(e)}" shows no chip, neither A nor a key of its own`); }
+    const cur = app.querySelector('.scr .nvf'), verb = cur && !cur.classList.contains('pq') ? (cur.dataset.a || '').split(':')[0] : '';
+    if (window.__pad && verb && !/^(nop|inspect|inspectz)$/.test(verb) && cur.getAttribute('aria-disabled') !== 'true' && !lit.length) add(`A: the cursor is on ${cur.dataset.a} and no plaque says what A does`); }
   // table: the duel's fixed places, for the caller to hold against the rest of the duel
   const tbl = document.getElementById('tbl'); let table = null;
   if (tbl) { const q = e => { const b = e.getBoundingClientRect(), f = frameOf(e), r = rel(b, f); return [f, Math.round(r.x * 100) / 100, Math.round(r.y * 100) / 100, Math.round(r.w * 100) / 100, Math.round(r.h * 100) / 100].join(); };
@@ -343,7 +385,7 @@ function dualAudit(bare) {
     if (!frameOf(tbl) || D.top.querySelector('.mw, .dim')) add('table: a window lies over the table');
     const hall = app.querySelector('img[data-pic="hall"]'), hs = hall && shown(hall); if (hall && (!hs || hs.cut.x > .01 || hs.cut.x + hs.cut.w < 639.99 || hs.cut.y > .01)) add('table: the hall does not span the view');
   }
-  return { out, table, n, lit: lit.map(x => x[0].textContent).join(), sig: [app.dataset.phase, [...app.querySelectorAll('.scr .pq')].map(e => e.dataset.a).join()].join('|') };
+  return { out, table, n, lists, lit: lit.map(x => x[0].textContent).join(), sig: [app.dataset.phase, [...app.querySelectorAll('.scr .pq')].map(e => e.dataset.a).join()].join('|') };
 }
 // The dual pass: every save and every window and book over it on the first shapes, a short list on the others; a walk
 // of random pad keys from each scene; a duel's moves watched as they play out.
@@ -368,7 +410,7 @@ async function dualPass(browser, url, savesDir, steps) {
       await page.waitForTimeout(350);
       if (o) { await page.evaluate(() => { const b = document.querySelector('.scr [data-a="resume"]'); if (b) b.click(); }); await page.waitForTimeout(700); }
     };
-    const press = async key => { await page.evaluate(k => window.LM_DUAL.press(k), key); presses++; first = true; await page.waitForTimeout(60); };
+    const press = async key => { await page.evaluate(k => { window.__pad = true; window.LM_DUAL.press(k); }, key); presses++; first = true; await page.waitForTimeout(60); };
     const settle = () => page.waitForFunction(() => !(window.LM && LM.G && LM.G.playing), null, { timeout: 20000 }).catch(() => {});
     let fixed = null; // the table's fixed places through one duel
     let first = false; // the first drawing is read once, at the first reading of the table and before any key: a move changes the table
@@ -383,10 +425,18 @@ async function dualPass(browser, url, savesDir, steps) {
       for (const e of errors.splice(0)) fail(`${shape}, ${where}`, 'errors: ' + e);
       return a;
     };
+    // more: a list with rows out of sight is paged by R2 to its last row and by L2 back to its first
+    const tops = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.scr .gsc')].filter(g => g.scrollHeight - g.clientHeight >= 8).map(g => [g.dataset.sk, [g.scrollTop, g.scrollHeight - g.clientHeight]])));
+    const pageLists = async (where, a) => { if (!a || !a.lists || !a.lists.length) return;
+      for (let i = 0; i < 24; i++) { const t = await tops(); if (Object.values(t).every(v => v[0] >= v[1] - 2)) break; await press('R2'); }
+      let t = await tops(); for (const [sk, v] of Object.entries(t)) if (v[0] < v[1] - 2) fail(`${shape}, ${where}`, `more: R2 does not page the list ${sk} to its end`);
+      await audit(where + ', its lists paged down');
+      for (let i = 0; i < 24; i++) { const t2 = await tops(); if (Object.values(t2).every(v => v[0] <= 2)) break; await press('L2'); }
+      t = await tops(); for (const [sk, v] of Object.entries(t)) if (v[0] > 2) fail(`${shape}, ${where}`, `more: L2 does not page the list ${sk} back to its start`); };
     const list = full ? [null, ...saves] : [null, ...saves.filter(f => /^(chamber-f1|duel-regular-f1-h0|duel-regular-f1-trap-prompt-h0|reward-card-f2|reward-gift-f3|anvil-f2|bazaar-f2)\.json$/.test(f))];
     for (const save of list) {
       const name = save ? save.replace(/\.json$/, '') : 'title'; scenes++; fixed = null; first = false;
-      await load(save); await settle(); await audit(name);
+      await load(save); await settle(); { const a = await audit(name); await pageLists(name, a); }
       // every window and book over it, opened by its pad key or from the menu, and shut again
       const menu = await page.evaluate(() => !!document.querySelector('.scr .kc[data-key="START"]'));
       if (menu) { await press('START'); await audit(name + ', the menu');
@@ -404,6 +454,9 @@ async function dualPass(browser, url, savesDir, steps) {
       if (save && /^(duel|beat)-/.test(save) && !/trap-prompt/.test(save)) {
         await load(save); await settle(); fixed = null; first = false; await audit(name);
         await press('A'); await page.waitForTimeout(150); await audit(name + ', a hand card chosen');
+        // page: the card being played stays on the page while the cursor walks down through the relics to the plaques
+        for (const key of ['down', 'down', 'down', 'right', 'up']) { await press(key); await page.waitForTimeout(80); await audit(`${name}, a hand card chosen, the cursor walked ${key}`); }
+        await press('B'); await page.waitForTimeout(150); await press('A'); await page.waitForTimeout(150);
         await press('L1'); await page.waitForTimeout(150); await audit(name + ', the cursor on the table');
         await press('B'); await page.waitForTimeout(150);
         await page.evaluate(() => { const b = document.querySelector('.scr .pq[data-a="end"]:not(:disabled)'); if (b) b.click(); });
