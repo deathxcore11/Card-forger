@@ -250,6 +250,8 @@ async function playFrames() {
       await new Promise(r => setTimeout(r, G.fast ? 60 : heavy ? 620 : 140));
       continue;
     }
+    // With two frames the bar only tells the fight, so an attack is told from its first step, before the blow lands.
+    if (DUAL) for (const e of f.evs) if (e.e === 'attack') { G.log.push(e.seat === 0 ? 'You attack.' : 'The rival attacks.'); if (G.log.length > 40) G.log.shift(); }
     G.shown = f; const B = startBeat(f);
     if (RM) B.t0 -= (B.end + 2) * TICK / B.speed; // no motion asked for: each step shows as it ends, and stays as long as it used to
     render(); psLoop();
@@ -265,7 +267,7 @@ async function playFrames() {
 }
 // The text bar while a move plays: the last two lines of the log, as each is reached.
 function barSay() {
-  const p = app.querySelector('#app.ps .fr > .bar > p'); if (!p || !G.playing) return;
+  const p = app.querySelector(DUAL ? '#app.ps .fr > .bar .pgw > p' : '#app.ps .fr > .bar > p'); if (!p || !G.playing) return;
   const t = esc(G.log.slice(-2).join(' ') || ''); if (p.innerHTML !== t) { p.innerHTML = t; G.barText = t; barFits(); }
 }
 // The size of a relic's change, for the log and the flash: " +300/+0", or " -400 ATK" when a relic weakens a monster.
@@ -848,13 +850,15 @@ const relicFile = id => (RELICS[id].kind === 'M' ? 'masterwork' : 'relic') + '-'
 const CSHEET = { 40: [], 64: [], 96: [] }, CCANVAS = [];
 function convertSheets(size) {
   if (!D.sheets || convertSheets[size]) return; convertSheets[size] = 1;
+  if (DUAL && size === 40) convertSheets(96); // with two frames every card under the cursor is shown large: its sheet is made ready before it is asked for
   const n = Math.ceil(D.pool.cards.length / 100);
   for (let i = 0; i < n; i++) {
+    // With two frames each finished sheet is also held decoded, so the first card shown from it is drawn at once.
     const im = new Image(); im.onload = () => {
       const t = R3.crunch(R3.texFrom(im, size * 10, size * 10, 0, 0, im.naturalWidth, im.naturalHeight)); if (!t) return;
       const c = document.createElement('canvas'); c.width = c.height = size * 10; const x = c.getContext('2d'); const id = x.createImageData(size * 10, size * 10); new Uint32Array(id.data.buffer).set(t.d); x.putImageData(id, 0, 0);
       if (size === 40) CCANVAS[i] = t;
-      c.toBlob(b => { if (!b) return; CSHEET[size][i] = URL.createObjectURL(b); clearTimeout(convertSheets.t); convertSheets.t = setTimeout(() => { TEX.cards.clear(); if (app.classList.contains('ps')) render(); }, 60); });
+      c.toBlob(b => { if (!b) return; CSHEET[size][i] = URL.createObjectURL(b); if (DUAL) { const pre = new Image(); pre.src = CSHEET[size][i]; if (pre.decode) pre.decode().catch(() => {}); (convertSheets.kept = convertSheets.kept || []).push(pre); } clearTimeout(convertSheets.t); convertSheets.t = setTimeout(() => { TEX.cards.clear(); if (app.classList.contains('ps')) render(); }, 60); });
     };
     im.src = D.sheets + i + '.webp';
   }
@@ -1722,6 +1726,14 @@ function handSlots(hand, key) {
   if (s.length > 6) s = us.slice();
   H.s = s; return us.map(u => s.indexOf(u));
 }
+// Where a hand card stands counted from the left, 0 first, and the hand card that stands first. With one frame the
+// hand is closed up, so a card's place is its number in the hand.
+function handPlace(hand, n) {
+  if (!DUAL || !G.hslot) return n;
+  const at = handSlots(hand, G.hslot.key);
+  return at.filter(k => k < at[n]).length;
+}
+const handFirst = hand => { const i = hand.findIndex((c, n) => !handPlace(hand, n)); return i < 0 ? 0 : i; };
 function psDuel() {
   const live = G.run.duel, f = G.shown || endShown();
   const v = f ? f.view : live ? viewFor(live, db, 0) : null;
@@ -1729,8 +1741,8 @@ function psDuel() {
   if (DUAL) { F.view = { w: 640, h: 304 }; // the table has the top frame's whole width
     // Each turn of yours opens with the cursor on the first hand card and that card on the page, never on a plaque.
     const tk = live && !G.playing && live.active === 0 && !live.pending ? live.turn : null;
-    if (tk != null && G.turnAt !== tk) { G.turnAt = tk; NAV.key = null; G.look = v.hand.length ? 'h:0' : null; }
-    if (!G.look && v.hand.length && live && !G.playing) G.look = 'h:0';
+    if (tk != null && G.turnAt !== tk) { G.turnAt = tk; NAV.key = null; G.look = v.hand.length ? 'h:' + handFirst(v.hand) : null; }
+    if (!G.look && v.hand.length && live && !G.playing) G.look = 'h:' + handFirst(v.hand);
     if (G.attacker != null && !/^(z|g|r):/.test(G.look || '')) G.look = 'z:0:' + G.attacker; } // the page reads the monster that is about to attack
   const rv = f ? f.rival : info(G.run);
   const myTurn = !G.playing && live && !live.pending && live.active === 0;
@@ -1745,7 +1757,7 @@ function psDuel() {
   const aimed = aim && G.aim != null && aim.zones.includes(G.aim) ? G.aim : null;
   const T = tips(), lesson = canPlay && G.attacker == null && G.onto == null && live.seat[0].rs.loneTurn !== live.turn && !(T.meld && T.fuel && T.single) ? lessonFor(db, live, T) : null;
   G.lesson = lesson ? lesson.kind : null;
-  let bar = '', cmds = [];
+  let bar = '', cmds = [], chosen = null;
   if (canPlay && G.sel.length) {
     const cards = G.sel.map(i => live.hand[0][i]); const ontoM = G.onto != null ? live.mon[0][G.onto] : null;
     const plan = planChain(db, cards, ontoM, { tinder: v.relics.includes('tinder_vow'), steady: v.relics.includes('steady_hand') && !v.rs.steady });
@@ -1759,6 +1771,10 @@ function psDuel() {
     else if (ids.length === 1) bar += '. ' + esc(db.isMonster(ids[0]) ? `${card(ids[0]).type}, ${card(ids[0]).attr}, Level ${card(ids[0]).level}.` : rulesText(ids[0]));
     if (!vars.length) bar = esc(loneNow && (G.sel.length > 1 || G.onto != null) ? 'You played a free support card this turn, so you cannot meld. Play one card on its own.' : 'That cannot be played right now.');
     else if (aim) bar += ' ' + esc(aimM ? 'Target: ' + aimName + '.' : `Tap ${aim.side ? 'a rival monster' : 'one of your monsters'} to aim it.`);
+    // With two frames what choosing means stands on the chosen card's page, and the bar goes on telling the fight.
+    if (DUAL) { chosen = { head: `${ids.length} CHOSEN · ${!vars.length ? 'NO PLAY' : ids.length > 1 ? 'A MELD' : aim ? 'NEEDS A TARGET' : 'PLAYS ALONE'}`,
+        html: !vars.length ? bar : ids.length > 1 ? (allKnown ? `Makes ${esc(card(plan.final.id).name)}${plan.fizzles ? ` (${plan.fizzles} fizzle)` : ''}.` : 'An unknown meld. Play it to find out what it makes.') : esc(aim ? (aimM ? 'Target: ' + aimName + '.' : `Choose ${aim.side ? 'a rival monster' : 'one of your monsters'} to aim it.`) : loneNow ? 'No meld this turn: your support card was free.' : live.hand[0].length > 1 ? 'Choose a second card to meld, left to right.' : 'It is your last hand card.') };
+      bar = esc(G.log.slice(-2).join(' ')) || 'Your turn.'; }
     cmds = vars.map((x, i) => [PLAY_WORDS(x, freeNow, aimM), `play:${x.pos || ''}:${x.veiled ? 1 : 0}`, { lit: i === 0 }]).concat([['UNDO', 'undo']]);
     if (G.sel.length === 1) cmds.push(['SCRAP CARD', 'scrap']);
     if (v.relics.includes('clean_draw') && !v.rs.cleanDraw) cmds.push(['CLEAN DRAW', 'clean']);
@@ -1794,18 +1810,20 @@ function psDuel() {
   const pk = v.pending && v.pending.kind === 'trap' ? { seat: v.active, from: v.pending.from, to: v.pending.to } : null; // an attack held while it is answered stands poised
   PSV = { v, beat: PSV && PSV.beat && PSV.beat.f === f && f ? PSV.beat : null, hl: hl.size ? hl : null, marks: marks.size ? marks : null, pend: pk, s: hp.s, floats: PSV ? PSV.floats : [], strips: PSV ? PSV.strips : [] };
   const view = `<div class="tvw" style="width:${vs.w}px;height:${vs.h}px"><img class="ab" data-pic="hall" src="${hp.src}" style="left:${hp.ox}px;top:${hp.oy}px" width="${hp.pw}" height="${hp.ph}" alt="">${hp.edge}<canvas id="tbl" width="${vs.w}" height="${vs.h}"></canvas>${taps}</div>`;
+  // With two frames a card drawn comes out from under the deck pile, whole all the way, and the hand's box cuts nothing.
   // The hand. A card drawn in this step slides in from the ledge's empty right end, stepped, when the beat comes to it (timed from
   // the beat's own clock, so a screen drawn again part-way picks it up where it is).
   // Its slot shows empty until it lands, and it slides over the empty slots to its right, never under their outlines.
   const B = PSV.beat, was = B && B.P && B.hand >= 0 ? new Set(B.P.hand.map(c => c.u)) : null; let dealt = '', nd = 0;
   const hw = DUAL ? 308 : ledgeW(), hx = DUAL ? 8 : (hw - 296) >> 1, hy = DUAL ? 10 : 0, empty = x => `<i class="ab" style="left:${x}px;top:${hy}px;width:44px;height:60px;border:1px solid var(--dark)"></i>`; // with two frames: six places that never move, on the bottom frame
   const slot = DUAL ? handSlots(v.hand, `${G.run.floor}:${G.run.chamber}:${rv.name}`) : null, at6 = slot ? [0, 1, 2, 3, 4, 5].map(k => slot.indexOf(k)) : [0, 1, 2, 3, 4, 5];
+  const first = at6.findIndex(i => i >= 0);
   const hand = at6.map((i, place) => { const c = v.hand[i], k = G.sel.indexOf(i), lp = lesson ? lesson.cards.indexOf(i) : -1, x = hx + place * 50;
     if (!c) return empty(x);
-    const el = psCard(c, x, DUAL ? hy : k >= 0 ? -4 : 0, { cls: 'hs ' + (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: G.playing ? '' : `data-a="hand:${i}"` + (DUAL ? ` data-k="h${i}" data-g="hand" data-look="h:${i}"${i === 0 && myTurn && !G.sel.length && G.attacker == null && G.onto == null ? ' data-n1' : ''}` : ''), badge: k >= 0 ? k + 1 : '', pip: lp >= 0 ? lp + 1 : '' });
+    const el = psCard(c, x, DUAL ? hy : k >= 0 ? -4 : 0, { cls: 'hs ' + (canPlay ? 'can ' : '') + (k >= 0 ? 'sel' : ''), attrs: G.playing ? '' : `data-a="hand:${i}"` + (DUAL ? ` data-k="h${i}" data-g="hand" data-look="h:${i}"${place === first && myTurn && !G.sel.length && G.attacker == null && G.onto == null ? ' data-n1' : ''}` : ''), badge: k >= 0 ? k + 1 : '', pip: lp >= 0 ? lp + 1 : '' });
     if (!was || c.u == null || was.has(c.u)) return el;
     const at = B.t0 + (B.hand + 3 * nd++) * TICK / B.speed - performance.now();
-    dealt += `<div class="ab dealt" style="--dx:${Math.ceil((hw - x) / 6) * 6}px;animation-duration:${Math.round(6 * TICK / B.speed)}ms;animation-delay:${Math.round(at)}ms">${el}</div>`;
+    dealt += `<div class="ab dealt" style="--dx:${Math.ceil(((DUAL ? 314 : hw) - x) / 6) * 6}px;animation-duration:${Math.round(6 * TICK / B.speed)}ms;animation-delay:${Math.round(at)}ms">${el}</div>`;
     return empty(x); }).join('') + dealt;
   // the Forger's Power, on your pillar
   let power = '';
@@ -1819,7 +1837,7 @@ function psDuel() {
     if (myTurn && v.forger && !v.rs.power) { const Fg = FORGERS[v.forger], pa = powerActions(live, db, 0), ok = Fg.needs === 'hand' ? G.sel.length === 1 && pa.some(p => p.hand === G.sel[0]) : Fg.needs === 'zone' ? G.attacker != null && pa.some(p => p.zone === G.attacker) : pa.length > 0 && !G.sel.length;
       pw = { t: shortName(Fg.power), a: `power:${Fg.needs || ''}`, off: !ok, title: Fg.powerText, cls: ok ? 'on' : '' }; }
     G.barText = bar = padWords(bar);
-    return duelDual({ live, v, rv, rf, myTurn, pend, cmds, endOk, bar, view, hand, power: pw }); }
+    return duelDual({ live, v, rv, rf, myTurn, pend, cmds, endOk, bar, view, hand, power: pw, chosen }); }
   // The commands stand in the pillar's column of plaques: four over END TURN, five when it is not there. More than that
   // and the last place turns the page (MORE 1/2), so no plaque ever leaves the pillar.
   const room = endOk ? 4 : 5, per = cmds.length > room ? room - 1 : room, pages = Math.max(1, Math.ceil(cmds.length / per)), sig = cmds.map(c => c[1]).join();
@@ -2330,16 +2348,18 @@ function pnote(y, head, paras) {
   return [s, y + 4];
 }
 // The relic belt along the bottom frame: nine places, the ninth counting the rest when more are held. The cursor on one
-// reads it (in a duel, on the page above); A opens the book of relics.
-function stripB(y, r) {
+// reads it (in a duel, on the page above); A opens the book of relics. inert: true, only shown (on a sheet of words);
+// 'pass', the cursor walks past it and a finger still opens the book (in a duel while a card is chosen for play).
+function stripB(y, r, inert = false) {
   const rel = relicList(r), more = rel.length > 9 ? rel.length - 8 : 0;
   return box(0, y, 413, 30, 'st dk') + lb(6, y + 11, 'RELICS', 'g') + Array.from({ length: 9 }, (_, i) => { const id = more && i === 8 ? null : rel[i];
-    return `<button class="sl" style="left:${48 + i * 26}px;top:${y + 3}px" data-a="tab:relics" data-k="rs${i}"${id ? ` data-look="r:${id}"` : more && i === 8 ? '' : ' data-nonav'} aria-label="${id ? esc(RELICS[id].name) : more && i === 8 ? 'More relics' : 'Empty relic slot'}">${id ? medal(id, 24) : more && i === 8 ? `<b>+${more}</b>` : ''}</button>`; }).join('') + lb(292, y + 11, `CHARMS ${r.charms.length}/${db.config.charmSlots}`, 'g');
+    return `<button class="sl" style="left:${48 + i * 26}px;top:${y + 3}px" data-a="${inert === true ? 'nop' : 'tab:relics'}" data-k="rs${i}"${inert ? ' data-nonav' : id ? ` data-look="r:${id}"` : more && i === 8 ? '' : ' data-nonav'} aria-label="${id ? esc(RELICS[id].name) : more && i === 8 ? 'More relics' : 'Empty relic slot'}">${id ? medal(id, 24) : more && i === 8 ? `<b>+${more}</b>` : ''}</button>`; }).join('') + lb(292, y + 11, `CHARMS ${r.charms.length}/${db.config.charmSlots}`, 'g');
 }
-// A strip of the eight strongest cards of a list, whole, along the bottom frame. A on one reads it in the window above.
+// A strip of the eight strongest cards of a list, whole, along the bottom frame. A on one reads it in the window above
+// (key: how it is named there); with no key the cards are only shown.
 function deckStripB(y, head, list, key = 'd') {
   const ord = list.map((e, i) => [e, i]).sort((a, b) => cardValue(db, b[0]) - cardValue(db, a[0])).slice(0, 8); convertSheets(40);
-  return box(0, y, 413, 76, 'lg') + lb(6, y + 5, head, 'g') + ord.map(([e, i], k) => psCard(e, 8 + k * 50, y + 14, { attrs: `data-a="read:${key}:${key === 'c' ? e.id : i}"` })).join('') + (ord.length ? '' : lb(8, y + 34, 'NO CARDS YET', 'd'));
+  return box(0, y, 413, 76, 'lg') + lb(6, y + 5, head, 'g') + ord.map(([e, i], k) => psCard(e, 8 + k * 50, y + 14, { attrs: key ? `data-a="read:${key}:${key === 'c' ? e.id : i}"` : 'tabindex="-1"' })).join('') + (ord.length ? '' : lb(8, y + 34, 'NO CARDS YET', 'd'));
 }
 // The run in three lines across the bottom frame: Sparks, Embers and seals, the deck's weight and the Forge level.
 function descentWide(y, r, gain = '', sparks = true) {
@@ -2361,7 +2381,7 @@ function descentB(x, y, w, h, run, head, text = '', note = '') {
 // items: [words, verb, pad key]. The cursor on a choice shows what it opens in the panel.
 function menuB(items, panel) {
   const n = items.length, pitch = n > 7 ? 36 : 44, y0 = n > 7 ? 14 : 30;
-  return box(0, 0, 196, 360, 'st') + box(196, 0, 217, 360, 'st dk') + items.map(([t, a, k], i) => kc(6, y0 + i * pitch + 3, k || '', 22) + withAttr(pq(34, y0 + i * pitch, 150, t, a, { lit: i === 0 }), `data-look="m:${esc(a)}"`)).join('') + panel;
+  return box(0, 0, 196, 360, 'st') + box(196, 0, 217, 360, 'st dk') + items.map(([t, a, k], i) => kc(6, y0 + i * pitch + 3, k || '', 22) + withAttr(pq(34, y0 + i * pitch, 150, t, a, { lit: i === 0 }), `data-look="m:${esc(a)}"${i === 0 ? ' data-n1' : ''}`)).join('') + panel;
 }
 // The panel beside a list of choices: a heading, what the choice under the hammer opens, and at its foot where the
 // player stands (the descent's own counts in a run, the record before one), unless the panel is that record itself.
@@ -2374,6 +2394,7 @@ const panelB = (head, body, tail = true) => { const r = G.run, rows = !tail ? []
 // marked with a gold line), weakFirst, h (the grid's height), sk (the name its place is kept under).
 function gridB(list, o = {}) {
   const h = o.h || 320, nc = o.cols || 8, w = o.w || (nc === 8 ? 413 : 13 + nc * 50), ord = list.map((e, i) => [e, i]).sort((a, b) => (o.weakFirst ? -1 : 1) * (cardValue(db, b[0]) - cardValue(db, a[0]))), rows = Math.ceil(ord.length / nc), vis = Math.floor((h - 5) / 63); convertSheets(40);
+  if (!o.verb && (rows > vis || o.walk)) o = { ...o, verb: () => 'nop' }; // rows out of sight: the cursor can walk in to bring them up, though A does nothing there
   return `<div class="ab gsc" data-sk="${o.sk || 'grid'}" data-row="63" style="left:${o.x || 0}px;top:${o.y || 0}px;width:${w}px;height:${h}px"><div class="gin" style="height:${Math.max(h - 2, rows * 63 + h - 2 - vis * 63)}px">${ord.map(([e, i], k) => psCard(e, 9 + (k % nc) * 50, 3 + Math.floor(k / nc) * 63, { cls: (o.sel === i ? 'sel ' : o.sel2 === i ? 'sel2 ' : '') + (o.gold && o.gold.has(i) ? 'fam' : ''), attrs: (o.verb ? `data-a="${o.verb(i, e)}"${o.look ? ` data-look="${o.look(i, e)}"` : ''} data-k="${o.kp || 'g'}${i}"` : 'tabindex="-1"') + (k === 0 && o.n1 ? ' data-n1' : '') })).join('')}${ord.length ? '' : `<b class="ab lb d" style="left:8px;top:8px">${o.none || 'NO CARDS'}</b>`}</div></div>`;
 }
 // The place in a list of its strongest card, where a grid's cursor starts.
@@ -2381,36 +2402,44 @@ const firstOf = (list, weakFirst = false) => list.length ? list.map((e, i) => [e
 // Named rows on the bottom frame, two columns of rows 26 apart in a window: a medal or a tag, a name, a line under it.
 // A row with a verb is a control the cursor rests on. rows: { pic, name, sub, a, look, gold, on, k, f }.
 function rowsB(y, h, head, headR, rows, o = {}) {
-  const per = Math.floor((h - 20) / 26), hh = per * 26, n = Math.ceil(rows.length / 2);
-  const body = rows.map((x, i) => { const tag = x.a || x.look ? 'button' : 'i';
-    return `<${tag} class="rw${x.gold ? ' fam' : ''}${x.on ? ' on' : ''}" style="left:${4 + (i % 2) * 203}px;top:${Math.floor(i / 2) * 26}px"${x.a ? ` data-a="${esc(x.a)}"` : ''}${x.look ? ` data-look="${esc(x.look)}"` : ''}${x.k ? ` data-k="${x.k}"` : ''}${x.n0 ? ' data-n0' : ''}${x.f ? ' data-f' : ''}>${x.pic ? `<i class="ab rwp">${x.pic}</i>` : ''}<b class="ab lb${x.gold || x.on ? ' g' : ''}" data-name="${esc(x.name)}" style="left:${x.pic ? 30 : 4}px;top:4px">${esc(fitName(x.name, x.pic ? 27 : 31))}</b><b class="ab lb d" style="left:${x.pic ? 30 : 4}px;top:14px">${x.sub || ''}</b></${tag}>`; }).join('');
-  return box(0, y, 413, h, 'wn') + lb(8, y + 6, head, 'g') + (headR ? lbr(405, y + 6, headR, 'd') : '') + `<div class="ab gsc bare" data-sk="${o.sk || 'rows'}" data-row="26" style="left:1px;top:${y + 17}px;width:411px;height:${hh}px"><div class="gin" style="height:${Math.max(hh, n * 26)}px">${body}${rows.length ? '' : `<b class="ab lb d" style="left:8px;top:6px">${o.none || 'NONE YET'}</b>`}</div></div>`;
+  const per = Math.floor((h - 20) / 26), hh = per * 26, n = Math.ceil(rows.length / 2), walk = n > per || !!o.walk; // rows out of sight: every row is a place for the cursor
+  const body = rows.map((x, i) => { const tag = x.a || x.look || walk ? 'button' : 'i', a = x.a || (walk ? 'nop' : ''), k = x.k || (walk ? 'rw' + i : '');
+    return `<${tag} class="rw${x.gold ? ' fam' : ''}${x.on ? ' on' : ''}" style="left:${4 + (i % 2) * 203}px;top:${Math.floor(i / 2) * 26}px"${a ? ` data-a="${esc(a)}"` : ''}${x.look ? ` data-look="${esc(x.look)}"` : ''}${k ? ` data-k="${k}"` : ''}${i === 0 && o.n1 ? ' data-n1' : ''}${x.n0 ? ' data-n0' : ''}${x.f ? ' data-f' : ''}>${x.pic ? `<i class="ab rwp">${x.pic}</i>` : ''}<b class="ab lb${x.gold || x.on ? ' g' : ''}" data-name="${esc(x.name)}" style="left:${x.pic ? 30 : 4}px;top:4px">${esc(fitName(x.name, x.pic ? 27 : 31))}</b><b class="ab lb d" style="left:${x.pic ? 30 : 4}px;top:14px">${x.sub || ''}</b></${tag}>`; }).join('');
+  return box(0, y, 413, h, 'wn') + lb(8, y + 6, head, 'g') + (headR ? lbr(405, y + 6, headR, 'd') : '') + `<div class="ab gsc bare" data-sk="${o.sk || 'rows'}" data-row="26" data-mx="${8 + labelW(head) + 6}" style="left:1px;top:${y + 17}px;width:411px;height:${hh}px"><div class="gin" style="height:${Math.max(hh, n * 26)}px">${body}${rows.length ? '' : `<b class="ab lb d" style="left:8px;top:6px">${o.none || 'NONE YET'}</b>`}</div></div>`;
 }
 // What the player holds, as rows: every charm, Gift and Masterwork by name, kind and family, a gold line on those of one
 // family (the family of the Gift being weighed).
 const heldRows = (r, fam = null, look = false, read = true) => relicList(r).map(id => ({ pic: medal(id, 24), name: RELICS[id].name, sub: kindWord(id) + (FAMILY_NAME[RELICS[id].family] ? ' · ' + esc(FAMILY_NAME[RELICS[id].family].toUpperCase()) : ''), gold: !!fam && RELICS[id].family === fam, ...(!read ? {} : look ? { look: 'r:' + id, a: 'nop' } : { a: 'read:r:' + id }) }));
 // A run that carries no card yet, from row ya to row yb of the bottom frame: the player's record, and under it the Forger
-// who goes down, with the rule and the power.
+// who goes down, with the rule and the power at the left and the starter kits, open or still to earn, at the right.
 function beforeB(ya, yb, r) {
-  const f = r && r.forger ? FORGERS[r.forger] : null, y2 = ya + 96, h = yb - y2 - 22;
+  const id = r && r.forger, f = id ? FORGERS[id] : null, y2 = ya + 96, H = yb - y2, h = H - 22, w = id && P.forgers.includes(id) ? forgerStats(P, id).wins : 0;
   const rec = [['RUNS', P.runs], ['CLEARS', P.clears], ['DUELS WON', P.duelWins], ['GUARDIANS BEATEN', P.bossWins], ['FORGERS', `${P.forgers.length} OF ${FORGER_IDS.length}`], ['MEMORIES', P.memories]];
+  const kits = f ? (f.kits || []).slice(0, Math.max(0, Math.floor((H - 22) / 24))) : [];
   return box(0, ya, 413, 96, 'st') + lb(8, ya + 8, 'YOUR RECORD', 'g') + rec.map(([k, v], i) => lb(8 + (i % 2) * 206, ya + 26 + (i >> 1) * 22, k, 'g') + lbr(198 + (i % 2) * 206, ya + 26 + (i >> 1) * 22, v)).join('')
-    + (yb > y2 ? box(0, y2, 413, yb - y2, 'wn') + (f && h >= 32 ? lb(8, y2 + 6, 'WHO GOES DOWN', 'g') + lbr(405, y2 + 6, esc(f.name.toUpperCase()), 'd') + txb(8, y2 + 18, 397, h - h % 16, `<p>${esc(ruleText(f.rule))}</p><p class="d">${esc(f.power)}: ${esc(f.powerText)}</p>`) : '') : '');
+    + (H > 0 ? box(0, y2, 206, H, 'wn') + box(206, y2, 207, H, 'wn') : '')
+    + (f && h >= 32 ? lb(8, y2 + 6, 'WHO GOES DOWN', 'g') + pagerB(2, y2 + 16, 202, h - h % 16 + 4, `<p class="d">${esc(f.name)}.</p><p>${esc(ruleText(f.rule))}</p><p class="d">${esc(f.power)}: ${esc(f.powerText)}</p>`, 'bar')
+      + lb(214, y2 + 6, 'STARTER KITS', 'g') + lbr(405, y2 + 6, `${w} DUEL${w === 1 ? '' : 'S'} WON`, 'd') + kits.map((k, i) => { const ok = !i || w >= KIT_GOALS[i]; return lb(214, y2 + 22 + i * 24, fitName(k.name, 22), ok ? '' : 'd') + lbr(405, y2 + 22 + i * 24, ok ? 'OPEN' : `${Math.min(w, KIT_GOALS[i])}/${KIT_GOALS[i]}`, 'd') + gauge(214, y2 + 33 + i * 24, 191, ok ? 1 : w / KIT_GOALS[i], 'x'); }).join('')
+      + (() => { let y = y2 + 28 + kits.length * 24, t = ''; // under the kits, where there is room: how they open, and the heat this descent carries
+        if (yb - y >= 66) { t += lb(214, y, 'HOW THE KITS OPEN', 'g') + txb(214, y + 12, 190, 48, '<p class="d">Each duel this Forger wins counts toward the next kit.</p>'); y += 68; }
+        const heat = HEAT_RULES.filter(x => x.n <= (r.heat || 0)).slice(-Math.max(0, Math.floor((yb - y - 18) / 12)));
+        if (yb - y >= 30) t += lb(214, y, `HEAT ${r.heat || 0}`, 'g') + (heat.length ? (heat.length < (r.heat || 0) ? lbr(405, y, `THE LAST ${heat.length} OF ${r.heat}`, 'd') : '') + heat.map((x, i) => lb(214, y + 14 + i * 12, `${x.n}. ${fitName(x.name, 26)}`)).join('') : lb(214, y + 14, 'NONE: THE PYRAMID AS IT IS', 'd'));
+        return t; })() : '');
 }
 // What the player holds and carries, from row y0 to row y1 of the bottom frame, with no part of it left bare: the relics
-// as named rows, as many rows as are held (four at the most; more are moved through), and under them the deck as a grid
+// as named rows, as many rows as are held (seven at the most, fourteen names; more are moved through, and say so), and under them the deck as a grid
 // of whole cards in the rows that are left. o: fam (the family marked), look (the cursor reads a relic on the page),
 // read (a card or relic can be asked into the window above), head, headR.
 function holdDeckB(y0, y1, r, o = {}) {
-  const held = relicList(r), list = o.rows || heldRows(r, o.fam || null, !!o.look, o.read !== false), n = Math.max(1, Math.ceil(list.length / 2)), H = y1 - y0, want = 20 + 26 * Math.min(n, 4);
+  const held = relicList(r), list = o.rows || heldRows(r, o.fam || null, !!o.look, o.read !== false), n = Math.max(1, Math.ceil(list.length / 2)), H = y1 - y0, want = 20 + 26 * Math.min(n, 7);
   // Before the first kit there is no card to show: the rows keep their place and the record stands under them.
-  if (!r.deck.length) { const rh = Math.min(H - 150, 20 + 26 * n); return rowsB(y0, rh, o.head || `YOU HOLD ${held.length}`, o.headR || '', list, { none: o.none || 'NO CHARM OR GIFT YET', sk: o.sk }) + beforeB(y0 + rh, y1, r); }
+  if (!r.deck.length) { const rh = Math.min(H - 150, 20 + 26 * n); return rowsB(y0, rh, o.head || `YOU HOLD ${held.length}`, o.headR || '', list, { none: o.none || 'NO CHARM OR GIFT YET', sk: o.sk, walk: o.walk }) + beforeB(y0 + rh, y1, r); }
   let v = 4; while (v > 1 && H - 23 - 63 * v < want) v--;
   const gh = 5 + 63 * v, rh = H - 18 - gh, per = Math.floor((rh - 20) / 26), spare = per > n;
-  return rowsB(y0, rh, o.head || `YOU HOLD ${held.length}`, o.headR || '', list, { none: o.none || 'NO CHARM OR GIFT YET', sk: o.sk })
+  return rowsB(y0, rh, o.head || `YOU HOLD ${held.length}`, o.headR || '', list, { none: o.none || 'NO CHARM OR GIFT YET', sk: o.sk, walk: o.walk })
     + (spare && !o.rows && o.read !== false && held.length ? lb(8, y0 + rh - 14, o.look ? 'THE CURSOR ON ONE READS IT ABOVE' : 'A ON ONE READS IT IN THE WINDOW ABOVE', 'd') : '')
     + box(0, y0 + rh, 413, 18, 'st dk') + lb(6, y0 + rh + 5, o.deckHead || 'YOUR DECK, STRONGEST FIRST', 'g') + lbr(407, y0 + rh + 5, `${r.deck.length} CARDS`)
-    + gridB(r.deck, { y: y0 + rh + 18, h: gh, verb: o.read === false ? null : i => `read:d:${i}`, sk: 'held' });
+    + gridB(r.deck, { y: y0 + rh + 18, h: gh, verb: o.read === false || o.grid === false ? null : i => `read:d:${i}`, sk: 'held', walk: o.walk, n1: o.walk });
 }
 // A card at the size of its page, 104 x 152: its picture at 96, its numbers, its Attribute and Level.
 function bigCard(inst, x, y, ea, ed) {
@@ -2437,6 +2466,7 @@ const bookOf = t => { const ring = bookRing(), i = ring.indexOf(t); return i < 0
 function bookFoot(t, first = [], held = false) {
   const ring = bookRing(), i = ring.indexOf(t), turn = d => 'tab:' + ring[(i + d + ring.length) % ring.length];
   const cells = [...first, held ? { k: 'B', t: 'PUT BACK', a: 'unpick' } : { k: 'B', t: 'CLOSE', a: 'tab:' }, ...(i >= 0 && ring.length > 1 ? [{ k: 'L1', t: 'LAST BOOK', a: turn(-1) }, { k: 'R1', t: 'NEXT BOOK', a: turn(1) }] : [])];
+  { const at = cells.findIndex(c => c && c.k === 'L1'); if (at % 4 === 3) cells.splice(at, 0, null); } // the one before and the next one share a row
   while (cells.length % 4) cells.push(null);
   return [...cells, ...ring.map(b => ({ t: BOOKS[b], a: 'tab:' + b, cls: b === t ? 'on' : '' }))];
 }
@@ -2541,6 +2571,10 @@ function drawDual(screen) {
   for (const b of app.querySelectorAll('.scr .pq.lit')) b.dataset.l0 = '1'; // the plaque each screen lights by itself: what A presses when the cursor says nothing else
   for (const g of app.querySelectorAll('.gsc')) { const at = NAV.sk[NAV.sig + g.dataset.sk]; if (at) g.scrollTop = at; }
   dualPagers(); navShow(); gridLines();
+  // What the page reads goes where the cursor is: when the cursor's control went away (a card played, a plaque gone)
+  // and the cursor waits on the screen's own place, or a move was undone, the page never stays on what the cursor left.
+  // A card asked onto the page by a key (B puts it away) and a monster about to attack keep the page.
+  if (!G.lookB && G.attacker == null && !drawDual.again) { const f = navEl(); if (f && f.dataset.look != null && f.dataset.look !== G.look) { G.look = f.dataset.look; drawDual.again = true; try { drawDual(screen); } finally { drawDual.again = false; } return; } }
   if (!drawDual.fonts && document.fonts) { drawDual.fonts = 1; const again = () => { if (app.classList.contains('ps')) { dualPagers(); gridLines(); } }; pixelText(); document.fonts.ready.then(again); if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', again); }
   fit();
 }
@@ -2554,6 +2588,8 @@ function dualPagers() {
     const m = NAV.pg[i]; if (m && m.sig === p.textContent) p.scrollTop = m.top; else NAV.pg[i] = { sig: p.textContent, top: 0 };
     par.classList.toggle('more', over && p.scrollTop + p.clientHeight < p.scrollHeight - 8); });
 }
+// Whether some window of words has a page more that way.
+const textPages = d => [...app.querySelectorAll('.scr [data-pager]')].some(p => p.scrollHeight > p.clientHeight + 8 && (d > 0 ? p.scrollTop + p.clientHeight < p.scrollHeight - 8 : p.scrollTop > 0));
 function pageText(d, wrap = false, from = null) {
   const ps = [...app.querySelectorAll('.scr [data-pager]')], more = p => p.scrollHeight > p.clientHeight + 8;
   const p = (from && ps.find(x => x.parentElement === from)) || ps.find(x => more(x) && x.closest('.scrB')) || ps.find(more) || ps[0]; if (!p) return;
@@ -2568,11 +2604,12 @@ function pageText(d, wrap = false, from = null) {
 const NAV = { key: null, sig: '', stack: [], sk: {}, pg: [] };
 const navList = () => { const items = navItems(app), keys = navKeys(items); return { items, keys }; };
 function navEl() {
-  const { items, keys } = navList(); let i = keys.indexOf(NAV.key);
+  const { items, keys } = navList(); let i = keys.indexOf(NAV.key); NAV.fell = false;
   // a choice the screen itself holds chosen (a door, a plinth, a row) wins over an older place among the choices
   const own = items.find(e => e.hasAttribute('data-n0'));
   if (own && (i < 0 || (items[i].hasAttribute('data-f') && items[i] !== own))) { if (i >= 0 || NAV.key == null) NAV.key = keys[items.indexOf(own)]; return own; }
   if (i >= 0) return items[i];
+  NAV.fell = true;
   // Nowhere yet: the place the screen names (data-n1), else its own lit plaque unless that one goes back or ends something
   // (a plaque with a key of its own), else the first card or row, so a stray A never leaves a room or ends a turn.
   const keyed = e => { const c = e.previousElementSibling; return !!(c && c.classList.contains('kc') && c.dataset.key); };
@@ -2594,18 +2631,77 @@ function aPlaque(t) {
   const a = t.dataset.a || ''; if (!a || t.getAttribute('aria-disabled') === 'true') return null;
   return [...app.querySelectorAll('.scr .pq:not(:disabled)')].find(p => p.dataset.a === a || (p.dataset.for && p.dataset.for.split(' ').some(v => a.startsWith(v + ':')))) || null;
 }
+// What A does to the control under the cursor when no plaque stands for it, in a plaque's words (longest first). A card
+// that is only read where the cursor already reads it, and a row that only marks a place, give nothing: A does nothing
+// new there, and no plaque may say otherwise.
+function aWords(f) {
+  if (f.getAttribute('aria-disabled') === 'true') return null;
+  const a = (f.dataset.a || '').split(':')[0], sel = !!app.querySelector('.scr .hand .cd.sel');
+  return { hand: sel ? ['ADD TO MELD', 'ADD'] : ['CHOOSE CARD', 'CHOOSE'], mine: ['CHOOSE MONSTER', 'CHOOSE'], hit: ['ATTACK IT', 'ATTACK'], aim: ['AIM AT IT', 'AIM'], read: ['READ IT ABOVE', 'READ IT', 'READ'], tab: ['OPEN THE BOOK', 'OPEN'],
+    deckpick: ['CHOOSE CARD', 'CHOOSE'], trunkpick: ['CHOOSE CARD', 'CHOOSE'], anvilpick: ['CHOOSE CARD', 'CHOOSE'], lab: ['SWITCH IT', 'SWITCH'], cxopen: ['OPEN THE PAGE', 'OPEN'] }[a] || null;
+}
+// The plaque that says it: the duel's own place for it, else (for a pad; a finger has pressed the thing itself) the
+// plaque with room for the A chip at its left, the screen's own lit one first. It is given back its own words and verb
+// as soon as the cursor moves on.
+function aSlot() {
+  const free = p => { const c = p.previousElementSibling; return !!(c && c.classList.contains('kc') && !c.dataset.key); };
+  return app.querySelector('.scr:not(.held) .pq.aslot') || (NAV.pad === false ? null : [...app.querySelectorAll('.scr:not(.held) .pq[data-l0]'), ...app.querySelectorAll('.scr:not(.held) .pq')].find(free) || null);
+}
+// The cursor is shown: the lit plaque with the hammer, and the A chip on whatever plaque A presses now (beside it where
+// it has a chip's room, else at its right end inside it); on a card the card's own frame turns light, on a relic or a
+// row its border does; and the marker stands over a card only where the marker's nine by six pixels cover nothing.
 function navShow() {
-  const f = navEl(), p = aPlaque(aTarget(f));
+  for (const e of app.querySelectorAll('.scr .kin')) e.remove();
+  for (const e of app.querySelectorAll('.scr .pq[data-t0]')) { e.textContent = e.dataset.t0; e.dataset.a = e.dataset.a0; e.disabled = e.dataset.d0 === '1'; delete e.dataset.t0; delete e.dataset.a0; delete e.dataset.d0; }
+  const f = navEl(); let p = aPlaque(aTarget(f));
+  if (!p && f && !f.classList.contains('pq')) { const ws = aWords(f), slot = ws && aSlot(), t = slot && ws.find(w => pqW(w) <= slot.offsetWidth);
+    if (t) { slot.dataset.t0 = slot.textContent; slot.dataset.a0 = slot.dataset.a || ''; slot.dataset.d0 = slot.disabled ? '1' : ''; slot.textContent = t; slot.dataset.a = 'acur'; slot.disabled = false; p = slot; } }
   for (const e of app.querySelectorAll('.scr .pq.lit')) if (e !== p) e.classList.remove('lit', 'nh');
   if (p) p.classList.add('lit');
-  for (const e of app.querySelectorAll('.scr .kc.ka')) { e.classList.remove('ka'); e.classList.add('kce'); e.textContent = ''; }
-  if (p) { const c = p.previousElementSibling; if (c && c.classList.contains('kc') && !c.dataset.key) { c.textContent = 'A'; c.classList.add('ka'); c.classList.remove('kce'); } }
+  for (const e of app.querySelectorAll('.scr .kc.ka')) { e.classList.remove('ka'); e.classList.add('kce'); e.classList.toggle('kco', !!e.dataset.o); e.textContent = ''; }
+  if (p) { const c = p.previousElementSibling;
+    if (c && c.classList.contains('kc') && !c.dataset.key) { if (c.classList.contains('kco')) c.dataset.o = '1'; c.textContent = 'A'; c.classList.add('ka'); c.classList.remove('kce', 'kco'); }
+    else if (!(c && c.classList.contains('kc')) && p.offsetWidth >= labelW(p.textContent) + 34) p.insertAdjacentHTML('beforeend', '<i class="kc ka kin">A</i>'); }
   for (const e of app.querySelectorAll('.nvf')) e.classList.remove('nvf'); for (const e of app.querySelectorAll('.dcur')) e.remove();
+  listMarks();
   if (!f || f.classList.contains('pq')) return;
-  const g = f.closest('.gsc'); if (g) { const row = +g.dataset.row, top = f.offsetTop - f.offsetTop % row, vis = Math.floor(g.clientHeight / row); if (top < g.scrollTop) g.scrollTop = top; else if (top + row > g.scrollTop + g.clientHeight) g.scrollTop = top - (vis - 1) * row; }
+  const g = f.closest('.gsc'); if (g) { const row = +g.dataset.row, top = f.offsetTop - f.offsetTop % row, vis = Math.floor(g.clientHeight / row); if (top < g.scrollTop) g.scrollTop = top; else if (top + row > g.scrollTop + g.clientHeight) g.scrollTop = top - (vis - 1) * row; listMarks(); }
   f.classList.add('nvf');
-  if (f.hasAttribute('data-f') || f.classList.contains('rw') || (g && f.offsetTop < 9)) return; // a choice draws its own cursor; a row is ringed
+  if (f.hasAttribute('data-f') || f.classList.contains('rw') || g) return; // a choice draws its own cursor; a row is ringed; a card of a grid has no room over it
   const m = document.createElement('i'); m.className = 'cur dcur'; m.style.left = (f.offsetLeft + (f.offsetWidth >> 1) - 4) + 'px'; m.style.top = (f.offsetTop - 9) + 'px'; (f.offsetParent || f.parentElement).appendChild(m);
+  // the marker stays only where it lies on nothing: no card, plaque, chip, relic, picture or line of words under it
+  const q = m.getBoundingClientRect(), hit = r => r.width > 0 && r.height > 0 && r.left < q.right - .5 && r.right > q.left + .5 && r.top < q.bottom - .5 && r.bottom > q.top + .5;
+  const scr = f.closest('.scr'), solid = [...scr.querySelectorAll('.cd, .pq, .kc, .sl, .rw, .lb, .pf, .big, .ga, img:not([data-pic="hall"])')].some(e => e !== m && !e.contains(m) && getComputedStyle(e).visibility !== 'hidden' && hit(e.getBoundingClientRect()));
+  const words = () => { const w = document.createTreeWalker(scr, NodeFilter.SHOW_TEXT), rg = document.createRange(); for (let n = w.nextNode(); n; n = w.nextNode()) { if (!n.nodeValue.trim()) continue; rg.selectNodeContents(n); if ([...rg.getClientRects()].some(hit)) return true; } return false; };
+  const sb = scr.getBoundingClientRect(), inside = q.left >= sb.left - .5 && q.top >= sb.top - .5 && q.right <= sb.right + .5 && q.bottom <= sb.bottom + .5; // and only whole, inside its frame
+  if (!inside || solid || words()) m.remove();
+}
+// A list that holds more rows than it shows says so: a small gold marker pointing down while rows lie below, and one
+// pointing up while rows lie above. On a grid of cards the markers stand in the margin at its left, where no card
+// reaches; on a list of named rows, after its heading. The d-pad walks the list, L2 and R2 page it, a finger drags it.
+function listMarks() {
+  for (const e of app.querySelectorAll('.scr .lmk')) e.remove();
+  for (const g of app.querySelectorAll('.scr .gsc')) { const max = g.scrollHeight - g.clientHeight; if (max < 8) continue;
+    const up = g.scrollTop > 2, dn = g.scrollTop < max - 2, bare = g.classList.contains('bare'), par = g.parentElement;
+    const mk = (cls, x, y) => { const m = document.createElement('i'); m.className = 'lmk' + cls; m.style.left = x + 'px'; m.style.top = y + 'px'; par.appendChild(m); };
+    if (bare) { const x = +g.dataset.mx || 8; if (dn) mk('', x, g.offsetTop - 9); if (up) mk(' lmu', x + 8, g.offsetTop - 9); }
+    else { if (dn) mk('', g.offsetLeft + 3, g.offsetTop + g.offsetHeight - 6); if (up) mk(' lmu', g.offsetLeft + 3, g.offsetTop + 3); } }
+}
+// L2 and R2 on a list: a page of whole rows up or down. The list the cursor is in takes the cursor with it, to the
+// control as many rows on in the same column; another list only moves. Gives back whether a list moved.
+function pageList(d) {
+  const f = navEl(), over = g => g.scrollHeight - g.clientHeight >= 8, can = g => over(g) && (d > 0 ? g.scrollTop < g.scrollHeight - g.clientHeight - 2 : g.scrollTop > 2);
+  const own = f && f.closest('.gsc'), gs = [...app.querySelectorAll('.scr:not(.held) .gsc')], g = own && can(own) ? own : (d > 0 ? gs : gs.reverse()).find(can); if (!g) return false;
+  const row = +g.dataset.row, vis = Math.max(1, Math.floor(g.clientHeight / row)), top = Math.max(0, Math.min(g.scrollHeight - g.clientHeight, g.scrollTop + d * vis * row));
+  g.scrollTop = top - top % row; NAV.sk[NAV.sig + g.dataset.sk] = g.scrollTop;
+  if (g === own) { const { items } = navList(), col = items.filter(e => e.closest('.gsc') === g && e.offsetLeft === f.offsetLeft), want = f.offsetTop + d * vis * row;
+    const nx = col.reduce((b, e) => !b || Math.abs(e.offsetTop - want) < Math.abs(b.offsetTop - want) ? e : b, null); if (nx && nx !== f) { navTo(nx); return true; } }
+  listMarks(); return true;
+}
+// From the hand to your row to the rival's row and round again (L1 and R1 in a duel).
+function rowJump(d) {
+  const f = navEl(), { items } = navList(), gs = ['hand', 'row0', 'row1'].filter(g => items.some(e => e.dataset.g === g)); if (!gs.length || (gs.length < 2 && f && f.dataset.g)) return;
+  const at = f ? gs.indexOf(f.dataset.g) : -1, g = gs[(at + d + gs.length * 2 + (at < 0 && d < 0 ? 1 : 0)) % gs.length], e = items.find(x => x.dataset.g === g); if (e && e !== f) navTo(e);
 }
 function navTo(e) {
   const { items, keys } = navList(), i = items.indexOf(e); if (i < 0) return;
@@ -2618,7 +2714,10 @@ function navTo(e) {
 // stands, and from which the cursor could not come back (DUAL.md; the checks ask this of every screen).
 function navWalk() {
   const { items, keys } = navList(), at = items.indexOf(navEl()); if (at < 0) return { n: items.length, at: null, lost: keys, trapped: [] };
+  // every list is measured at its top: a row moved out of sight is reached through its list, which the cursor moves
+  const lists = [...app.querySelectorAll('.scr .gsc')].map(g => [g, g.scrollTop]); for (const [g] of lists) g.scrollTop = 0;
   const next = items.map(e => ['up', 'down', 'left', 'right'].map(d => items.indexOf(navStep(app, items, e, d))).filter(i => i >= 0));
+  for (const [g, t] of lists) g.scrollTop = t;
   const reach = (from, edges) => { const seen = new Set([from]), q = [from]; while (q.length) for (const j of edges[q.pop()]) if (!seen.has(j)) { seen.add(j); q.push(j); } return seen; };
   const back = items.map(() => []); next.forEach((l, i) => l.forEach(j => back[j].push(i)));
   const out = reach(at, next), home = reach(at, back);
@@ -2628,30 +2727,32 @@ function navWalk() {
 // directions press the plaque whose chip shows them, so a key does only what a plaque on the screen says it does.
 function padPress(k) {
   if (!DUAL || !app.classList.contains('ps') || booting || G.opening) return;
+  const was = NAV.pad; NAV.pad = true; NAV.inPad = true;
   try {
+    if (was === false) navShow();
     const f = navEl();
     if (/^(up|down|left|right)$/.test(k)) { NAV.sure = null;
       if (f && f.type === 'range' && (k === 'left' || k === 'right')) { f.value = String(Math.max(+f.min, Math.min(+f.max, +f.value + (k === 'left' ? -1 : 1) * (+f.step || .05)))); f.dispatchEvent(new Event('input', { bubbles: true })); return; }
       if (!f) return; const { items } = navList(), nx = navStep(app, items, f, k); if (nx) navTo(nx); return;
     }
     if (k === 'A') { const t = aTarget(f); if (t && t.getAttribute('aria-disabled') !== 'true' && !t.disabled) t.click(); return; }
-    if (k === 'L2' || k === 'R2') { pageText(k === 'R2' ? 1 : -1); return; }
+    if (k === 'L2' || k === 'R2') { const d = k === 'R2' ? 1 : -1, own = f && f.closest('.gsc'); // the list the cursor is in first, then the words, then any other list
+      if (own && own.scrollHeight - own.clientHeight >= 8 && pageList(d)) return;
+      if (textPages(d)) pageText(d); else if (!pageList(d)) pageText(d);
+      return; }
     if (k === 'B' && G.lookB) { G.look = null; render(); return; }
     const chip = [...app.querySelectorAll('.scr .kc')].find(c => c.dataset.key === k), b = chip && chip.nextElementSibling;
     // B that would walk away from a room and what it offers is asked for twice; any other key forgets the first press.
-    if (k === 'B' && b && !b.disabled && /^(skip|leave)$/.test(b.dataset.a || '') && NAV.sure !== NAV.sig + b.dataset.a) { NAV.sure = NAV.sig + b.dataset.a; toast(b.dataset.a === 'skip' ? 'B again to take nothing.' : 'B again to leave.'); render(); return; }
+    if (k === 'B' && b && !b.disabled && /^(skip|leave)$/.test(b.dataset.a || '') && NAV.sure !== NAV.sig + b.dataset.a) { NAV.sure = NAV.sig + b.dataset.a; toast(/NOTHING/.test(b.textContent) ? 'B again to take nothing.' : 'B again to leave.'); render(); return; } // by the plaque's own words: the Omen's way out is LEAVE
     if (k !== 'B') NAV.sure = null;
     if (k === 'START' && !chip && G.tab) { G.tab = null; G.pickDeck = G.pickTrunk = null; render(); return; } // Start shuts the menu or the book it opened
     if (b && !b.disabled) { NAV.hold = true; try { b.click(); } finally { NAV.hold = false; } return; } // the key presses its plaque; the cursor stays where it is
-    if ((k === 'L1' || k === 'R1') && f) { // in a duel: from the hand to your row to the rival's row and round again
-      const { items } = navList(), gs = ['hand', 'row0', 'row1'].filter(g => items.some(e => e.dataset.g === g)); if (gs.length < 2 && f.dataset.g) return; if (!gs.length) return;
-      const at = gs.indexOf(f.dataset.g), g = gs[(at + (k === 'R1' ? 1 : -1) + gs.length * 2 + (at < 0 && k === 'L1' ? 1 : 0)) % gs.length], e = items.find(x => x.dataset.g === g); if (e && e !== f) navTo(e);
-    }
-  } catch (e) { recover(e, false); }
+    if ((k === 'L1' || k === 'R1') && f) rowJump(k === 'R1' ? 1 : -1); // in a duel, also while the plaques that say so have given their places to a card's commands
+  } catch (e) { recover(e, false); } finally { NAV.inPad = false; }
 }
 if (DUAL) {
   padLoop(padPress);
-  app.addEventListener('scroll', ev => { const g = ev.target; if (g && g.classList && g.classList.contains('gsc')) NAV.sk[NAV.sig + g.dataset.sk] = g.scrollTop; }, true);
+  app.addEventListener('scroll', ev => { const g = ev.target; if (g && g.classList && g.classList.contains('gsc')) { NAV.sk[NAV.sig + g.dataset.sk] = g.scrollTop; listMarks(); } }, true);
 }
 
 // ---------- the two-screen layout: the screens ----------
@@ -2668,10 +2769,10 @@ function titlePanel(a, saved) {
   if (a === 'screen:codex') { const X = codexIndex(), found = codexFound();
     return panelB('THE CODEX', rows(32, [['RESULTS FOUND', `${found.size} OF ${X.list.length}`], ['RECIPES WRITTEN', G.known.size]]) + txb(210, 68, 190, 128, '<p>Every monster a meld can make has a page here. A page you have found shows why the meld works.</p>')); }
   if (a === 'screen:feats') { const fs = featList(!!labs.long);
-    return panelB('FEATS', fs.slice(0, 8).map((f, i) => { const done = (P.featsDone || []).includes(f.id), n = done ? f.goal : (P.feats || {})[f.id] || 0, y = 32 + i * 36;
+    return panelB('FEATS', (fs.length > 8 ? lbr(398, 14, `8 OF ${fs.length} · THE BOOK HAS ALL`, 'd') : '') + fs.slice(0, 8).map((f, i) => { const done = (P.featsDone || []).includes(f.id), n = done ? f.goal : (P.feats || {})[f.id] || 0, y = 32 + i * 36;
       return lb(210, y, fitName(f.name, 20), done ? 'g' : '') + lbr(398, y, done ? 'DONE' : `${n}/${f.goal}`) + gauge(210, y + 11, 188, n / f.goal, 'x') + lb(210, y + 22, fitName(RELICS[f.gift].name, 30), 'd'); }).join('')); }
   if (a === 'screen:vault') return panelB('THE MEMORY VAULT', rows(32, [['MEMORIES', P.memories], ['BOUGHT', `${VAULT.filter(v => P.bought.includes(v.id)).length} OF ${VAULT.length}`]]) + txb(210, 68, 190, 128, '<p>Spend Memories to widen what a run can offer. Nothing here makes you stronger at the start.</p>'));
-  if (a === 'tab:help') return panelB('HOW TO PLAY', lb(210, 32, `${helpPages().length} PAGES OF RULES`) + txb(210, 48, 190, 160, `<p>${helpPages()[0][1]}</p>`));
+  if (a === 'tab:help') return panelB('HOW TO PLAY', lb(210, 32, `${helpPages().length} PAGES OF RULES`) + txb(210, 48, 190, 96, `<p>${padWords(helpPages()[0][1])}</p>`) + helpPages().map((q, i) => lb(210, 152 + i * 13, `${i + 1}. ${q[0]}`, 'd')).join(''));
   return panelB('OPTIONS', rows(32, [['SWITCHES ON', labKeys().filter(k => pref[k]).length], ['SWITCHES', labKeys().length]]) + txb(210, 68, 190, 96, '<p>Sound, the look of the game and the lab switches.</p>'));
 }
 // The chamber of doors on two frames. Top: the hall and its doors, your run and relics on the pillars with the floor's
@@ -2709,21 +2810,25 @@ function chamberDual({ r, sel, d, n, at, view, said, secret, boss, locked, pips 
 // the hand never move or change size; an attack that waits on an answer, and the duel's end, take the bottom frame's
 // page, never the table.
 // What the page reads in a duel (G.look): a hand card, a monster, a set Trap, a graveyard, the deck, a relic.
-function duelLook(v) {
-  const L = G.look ? String(G.look).split(':') : [], k = L[0], n = +L[1];
-  if (k === 'h' && v.hand[n]) return { ...readCard(v.hand[n]), where: `HAND CARD ${n + 1} OF ${v.hand.length}` };
+function duelLook(v, look = G.look) {
+  const L = look ? String(look).split(':') : [], k = L[0], n = +L[1];
+  if (k === 'h' && v.hand[n]) return { ...readCard(v.hand[n]), where: `HAND CARD ${handPlace(v.hand, n) + 1} OF ${v.hand.length}` };
   if (k === 'z') { const m = v.mon[n] && v.mon[n][+L[2]]; if (!m) return null;
     if (!m.id) return { name: 'A veiled monster', where: 'RIVAL MONSTER', sub: 'FACE DOWN', lines: ['It lies face down in defense. You see it when it is attacked or when it turns.'] };
     const c = readCard(m); return { ...c, ea: m.ea, ed: m.ed, where: n ? 'RIVAL MONSTER' : 'YOUR MONSTER', lines: [...c.lines, `${m.pos === 'd' ? 'In defense' : 'In attack position'}, at ${m.ea} / ${m.ed} now.`] }; }
   if (k === 't0' && v.traps[0][n]) return { ...readCard(v.traps[0][n]), where: 'YOUR SET TRAP' };
   if (k === 'c' && card(n)) return { ...readCard({ id: n }), where: 'CARD' };
-  if (k === 'r' && RELICS[L[1]]) return { ...lookOf(), where: 'RELIC' };
+  if (k === 'r' && RELICS[L[1]]) return { ...lookOf(look), where: 'RELIC' };
   if (k === 'g' && v.gy[n]) { const ids = v.gy[n].map(x => x && x.id != null ? x.id : x).filter(id => card(id)); return { name: n ? "The rival's graveyard" : 'Your graveyard', where: `${ids.length} CARD${ids.length === 1 ? '' : 'S'}`, list: ids }; }
   if (k === 'p') return { name: 'Your deck', where: `${v.deckCount[0]} CARDS LEFT`, lines: ['You draw toward five cards at the start of your turn, two at the most.', `The rival has ${v.deckCount[1]} cards left. A duelist who cannot draw loses the duel.`] };
   return null;
 }
-function duelPage(y, h, v, rv) {
-  const L = duelLook(v), s = box(0, y, 413, h, 'wn');
+// chosen: the hand card (or the meld) picked for play, { head, html }. While one is chosen the page stays on a card: the
+// one under the cursor on the hand or the table, else the card chosen last, so the walk down to the plaques through the
+// relic belt never takes the card being played off its page. What choosing means stands at the page's foot.
+function duelPage(y, h, v, rv, chosen = null) {
+  const look = chosen && !/^(h|z|t0):/.test(G.look || '') ? 'h:' + G.sel[G.sel.length - 1] : G.look;
+  const L = duelLook(v, look), s = box(0, y, 413, h, 'wn');
   if (!L) { // nothing under the cursor: what this duel is fought over, in two columns
     const tw = { fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist] || '';
     const law = [rv.lawText ? lawShown(rv.lawText) : '', tw].filter(Boolean).join(' '), Fg = v.forger ? FORGERS[v.forger] : null, hh = h - 24 - (h - 24) % 16;
@@ -2735,8 +2840,10 @@ function duelPage(y, h, v, rv) {
   const gl = L.list ? L.list.slice(-16).reverse() : [], body = L.list ? (gl.length ? gl.map((id, i) => psCard({ id }, 8 + (i % 8) * 50, ty + (i >> 3) * 62, { attrs: 'tabindex="-1"' })).join('')
       + (gl.length <= 8 ? gl.map((id, i) => `<b class="ab lb" data-name="${esc(card(id).name)}" style="left:${8 + (i & 1) * 200}px;top:${ty + 66 + (i >> 1) * 10}px">${esc(fitName(card(id).name, 31))}</b>`).join('') : '')
       + (L.list.length > 16 ? lbr(405, y + 8, `THE LAST 16 OF ${L.list.length}`, 'd') : gl.length <= 4 ? txb(216, ty, 189, 48, '<p class="d">What falls in battle or is spent lies here.</p>') : '') : lb(x0, ty, 'NOTHING IN IT YET', 'd') + txb(x0, ty + 14, 397, 32, '<p class="d">What falls in battle or is spent lies here.</p>'))
+    : chosen ? pagerB(x0 - 6, ty - 4, w + 8, y + h - 50 - ty + 4, L.lines.filter(t => !/ Printed \d+ \/ \d+\.$/.test(t)).map(t => `<p>${esc(t)}</p>`).join(''), 'bar') // the printed numbers stand under the picture
+      + `<i class="ab" style="left:${x0}px;top:${y + h - 50}px;width:${w}px;height:1px;background:var(--dark)"></i>` + lb(x0, y + h - 46, chosen.head, 'g') + txb(x0, y + h - 36, w, 32, `<p class="d">${chosen.html}</p>`)
     : txb(x0, ty, w, y + h - 4 - ty - (y + h - 4 - ty) % 16, L.lines.map(t => `<p>${esc(t)}</p>`).join(''));
-  return s + pic + lb(x0, y + 8, L.where, 'g') + nl.map((t, i) => `<b class="ab lb" data-name="${esc(L.name)}" style="left:${x0}px;top:${y + 20 + i * 10}px">${esc(t)}</b>`).join('') + (L.sub ? `<b class="ab lb d" style="left:${x0}px;top:${y + 20 + nl.length * 10 + 2}px">${L.sub}</b>` : '') + body;
+  return s.replace('<div ', `<div data-page="${esc(look || '')}" `) + pic + lb(x0, y + 8, L.where, 'g') + nl.map((t, i) => `<b class="ab lb" data-name="${esc(L.name)}" style="left:${x0}px;top:${y + 20 + i * 10}px">${esc(t)}</b>`).join('') + (L.sub ? `<b class="ab lb d" style="left:${x0}px;top:${y + 20 + nl.length * 10 + 2}px">${L.sub}</b>` : '') + body;
 }
 // An attack waiting on your answer, on the bottom frame: the attack, one of your Traps that can answer it (R1 turns to
 // the next), and how the attack ends if nothing is sprung.
@@ -2744,12 +2851,15 @@ function trapB(y, h, live, v) {
   const pd = live.pending, n = pd.options.length, k = (G.trapSel || 0) % n, i = pd.options[k], t = live.traps[0][i], X = live.mon[1][pd.from], T = pd.to >= 0 ? live.mon[0][pd.to] : null;
   let fore = '';
   try { if (T) { const q = forecast(live, db, 1, X, 0, T); fore = q.killT && q.killX ? 'Both monsters fall.' : q.killT ? 'Your defender falls.' : q.killX ? 'The attacker falls.' : 'Neither monster falls.'; } else fore = `The blow lands on your Life Points${v.mon[1][pd.from] && v.mon[1][pd.from].ea != null ? ': ' + v.mon[1][pd.from].ea : ''}.`; } catch { fore = ''; }
-  const bounty = (G.shown ? G.shown.rival : info(G.run)).bountyText || '', two2 = shortText(t.id).length <= 48 && fore.length <= 66 && bounty && bounty.length <= 96 && nameLines(card(t.id).name, 140, 2).every(l => !l.endsWith('..')); // each box holds its words whole, or the plainer layout is used
+  const bounty = (G.shown ? G.shown.rival : info(G.run)).bountyText || '', two2 = shortText(t.id).length <= 48 && fore.length <= 60 && bounty && bounty.length <= 96 && nameLines(card(t.id).name, 142, 2).every(l => !l.endsWith('..')); // each box holds its words whole, or the plainer layout is used
+  // Two boxes side by side, as the approved frame has them: your Trap in a gold box, what happens without it in a dim
+  // one, eight pixels of the window between them. Words too long for the pair stand in two boxes one over the other.
+  const name = w => nameLines(card(t.id).name, w, 2).map((s, j) => `<b class="ab lb g" data-name="${esc(card(t.id).name)}" style="left:58px;top:${6 + j * 10}px">${esc(s)}</b>`).join('');
+  const trap = (x, w, hh, lines) => box(x, y + 70, w, hh, 'tbx', psCard(t, 5, 6, { attrs: `data-a="respond:${i}" data-k="trap"` }) + name(w - 64) + txb(58, 28, w - 64, lines * 16, `<p>${esc(shortText(t.id))}</p>`));
   return box(0, y, 413, h, 'wn') + lb(8, y + 8, 'SPRING A TRAP?', 'g') + lbr(405, y + 8, `TRAP ${k + 1} OF ${n}`, 'd') + txb(8, y + 22, 397, 48, `<p>${trapHead(live)}</p>`)
-    + psCard(t, 8, y + 74, { attrs: `data-a="respond:${i}" data-k="trap"` }) + (two2 ? nameLines(card(t.id).name, 140, 2).map((s, j) => `<b class="ab lb g" data-name="${esc(card(t.id).name)}" style="left:60px;top:${y + 74 + j * 10}px">${esc(s)}</b>`).join('') + txb(60, y + 96, 144, 48, `<p>${esc(shortText(t.id))}</p>`)
-      + lb(212, y + 74, 'IF YOU LET IT THROUGH', 'd') + txb(212, y + 96, 192, 48, `<p>${esc(fore)}</p>`) + lb(8, y + 150, 'BOUNTY THIS DUEL', 'd') + txb(8, y + 162, 397, 32, `<p class="d">${esc(bounty)}</p>`)
-      : nameLines(card(t.id).name, 340, 2).map((s, j) => `<b class="ab lb g" data-name="${esc(card(t.id).name)}" style="left:62px;top:${y + 76 + j * 10}px">${esc(s)}</b>`).join('') + txb(62, y + 98, 343, 32, `<p>${esc(shortText(t.id))}</p>`)
-      + lb(8, y + 148, 'IF YOU LET IT THROUGH', 'd') + txb(8, y + 160, 397, 32, `<p>${esc(fore)}</p>`));
+    + (two2 ? trap(6, 206, 80, 3) + box(220, y + 70, 187, 80, 'tbx dm', lb(6, 6, 'IF YOU LET IT THROUGH', 'd') + txb(6, 28, 174, 48, `<p>${esc(fore)}</p>`))
+        + lb(8, y + 154, 'BOUNTY THIS DUEL', 'd') + txb(8, y + 164, 397, 32, `<p class="d">${esc(bounty)}</p>`)
+      : trap(6, 401, 74, 2) + box(6, y + 148, 401, 48, 'tbx dm', lb(6, 4, 'IF YOU LET IT THROUGH', 'd') + txb(6, 14, 388, 32, `<p>${esc(fore)}</p>`)));
 }
 // The end of a duel, on the bottom frame: the run as it now stands, what the duel paid, the deck and the relics.
 function endB(o) {
@@ -2763,10 +2873,10 @@ function endB(o) {
     + (s.won ? lb(8, 100, `BOUNTY · ${s.bountyMet ? 'MET' : 'NOT MET'}`, 'g') + txb(8, 112, 397, 32, `<p${s.bountyMet ? '' : ' class="d"'}>${esc(rv.bountyText || 'None.')}</p>`)
       + lb(8, 152, 'BEHIND THIS DOOR', 'g') + txb(8, 164, 397, 48, `<p>${esc(next)}${s.reason === 'deckout' ? ' A deck ran out.' : ''}</p>`)
       : lb(8, 100, 'WHAT IT COSTS, AND WHY', 'g') + `<div class="ab bar" style="left:2px;top:108px;width:409px;height:108px"><div class="pgw" data-pager><p>${esc(next)}</p>${why}</div></div>`)
-    + deckStripB(218, s.won && r.offer && r.offer.kind === 'card' ? 'THE DECK YOUR PICK WILL JOIN' : 'YOUR STRONGEST CARDS', r.deck) + stripB(294, r)
+    + deckStripB(218, s.won && r.offer && r.offer.kind === 'card' ? 'THE DECK YOUR PICK WILL JOIN' : 'YOUR STRONGEST CARDS', r.deck, null) + stripB(294, r)
     + foot(324, [[{ t: 'CONTINUE', a: 'closeov', lit: true }, { k: 'Y', t: 'THIS DUEL', a: 'tab:duel' }, { k: 'START', t: 'MENU', a: 'tab:menu' }]]);
 }
-function duelDual({ live, v, rv, rf, myTurn, pend, cmds, endOk, bar, view, hand, power }) {
+function duelDual({ live, v, rv, rf, myTurn, pend, cmds, endOk, bar, view, hand, power, chosen }) {
   const r = G.run, endO = G.overlay && G.overlay.kind === 'duelEnd' && !G.playing ? G.overlay : null;
   const lifeAt = (id, L, R, y) => `<b id="${id}" class="ab lb" data-r="${R}" style="left:${R - String(L.n).length * 6}px;top:${y}px${L.hot == null ? '' : `;color:${L.hot < 0 ? '#f08a72' : '#9fd0c0'}`}">${L.n}</b>`;
   const port = (n, x, pic) => { const fc = n && CART.has(n + '-48') ? n + '-48' : ''; return `<div class="pf s48${fc ? '' : ' none'}" data-face="${pic}" style="left:${x}px;top:2px">${fc ? `<img data-pic="${pic}" src="${cimg(fc)}" width="48" height="48" alt="">` : ''}</div>`; };
@@ -2785,7 +2895,7 @@ function duelDual({ live, v, rv, rf, myTurn, pend, cmds, endOk, bar, view, hand,
   if (pend && live && live.pending && live.pending.options && live.pending.options.length) {
     const pd = live.pending, n = pd.options.length, k = (G.trapSel || 0) % n, lookOn = G.look && /^z:1:/.test(G.look);
     G.lookB = !!lookOn;
-    return two(top, ledge + (lookOn ? duelPage(76, 198, v, rv) : trapB(76, 198, live, v)) + stripB(274, r)
+    return two(top, ledge + (lookOn ? duelPage(76, 198, v, rv) : trapB(76, 198, live, v)) + stripB(274, r, 'pass')
       + foot(304, [[{ t: 'SPRING IT', a: `respond:${pd.options[k]}`, lit: true }, { k: 'B', t: lookOn ? 'BACK' : 'LET IT THROUGH', a: lookOn ? 'unlook' : 'respond:-1' }, { k: 'Y', t: 'THIS DUEL', a: 'tab:duel' }],
         [{ k: 'X', t: 'READ ATTACKER', a: `read:z:1:${pd.from}`, off: !!lookOn }, { k: 'R1', t: 'NEXT TRAP', a: 'trapnext', off: n < 2 }, { k: 'START', t: 'MENU', a: 'tab:menu' }]]));
   }
@@ -2793,9 +2903,15 @@ function duelDual({ live, v, rv, rf, myTurn, pend, cmds, endOk, bar, view, hand,
   const sig = mains.map(c => c.a).join(); if (!G.cmdPage || G.cmdPage.sig !== sig) G.cmdPage = { sig, n: 0 };
   const per = mains.length > 5 ? 4 : 5, pages = Math.max(1, Math.ceil(mains.length / per)), pg = G.cmdPage.n % pages, s = mains.slice(pg * per, pg * per + per);
   while (s.length < per) s.push(null); if (pages > 1) s.push({ t: `MORE ${pg + 1}/${pages}`, a: 'cmdpage' });
+  // With nothing chosen the first place says what A does to what the cursor is on (navShow writes it), and the two
+  // places under END TURN's neighbours hold the keys that jump from row to row.
+  const jump = !mains.filter(c => c !== power).length;
+  if (!s[0] || (jump && s[0] === power)) { s.unshift({ t: 'CHOOSE CARD', a: 'acur', off: true, cls: 'aslot' }); s.pop(); }
   const rows = [[s[0], { k: 'B', t: undo ? undo[0] : 'UNDO', a: 'undo', off: !undo }, { k: 'X', t: 'END TURN', a: 'end', off: !endOk }],
-    [s[1], s[3], { k: 'Y', t: 'THIS DUEL', a: 'tab:duel' }], [s[2], s[4], { k: 'START', t: 'MENU', a: 'tab:menu' }]];
-  return two(top, ledge + duelPage(76, 158, v, rv) + stripB(234, r) + foot(264, rows));
+    jump ? [{ k: 'L1', t: 'ROW BEFORE', a: 'rowjump:-1' }, { k: 'R1', t: 'NEXT ROW', a: 'rowjump:1' }, { k: 'Y', t: 'THIS DUEL', a: 'tab:duel' }] : [s[1], s[3], { k: 'Y', t: 'THIS DUEL', a: 'tab:duel' }],
+    jump ? [s[1], null, { k: 'START', t: 'MENU', a: 'tab:menu' }] : [s[2], s[4], { k: 'START', t: 'MENU', a: 'tab:menu' }]];
+  // While a card is chosen the d-pad goes from the hand straight down to the card's commands, not through the relics.
+  return two(top, ledge + duelPage(76, 158, v, rv, chosen) + stripB(234, r, chosen ? 'pass' : false) + foot(264, rows));
 }
 // ---- rooms on two frames
 // Words that page, in a window of their own on either frame (L2 and R2, or a tap, page them).
@@ -2811,7 +2927,9 @@ function gridScreen(head, headR, list, o, cells) {
   return { head: !!hd, html: (hd ? box(0, 0, 413, 18, 'st dk') + lb(6, 5, head, 'g') + (headR ? lbr(407, 5, headR) : '') : '') + gridB(list, { ...o, y: hd, h: gh }) + foot(hd + gh, rows, cols) };
 }
 // The plaques of a bottom frame from row y down: three columns, or four when there are more than nine.
-const footOf = (y, cells) => { cells = cells.filter(Boolean); return cells.length > 9 ? foot(y, rowsOf(cells, 4), 4) : foot(y, rowsOf(cells, 3)); };
+const footOf = (y, cells) => { cells = cells.filter(Boolean); return cells.length > 9 ? foot(y, rowsOf(cells.map((c, i) => i || c.k ? c : { ...c, ka: true }), 4), 4) : foot(y, rowsOf(cells, 3)); };
+// The row at which such a foot starts when it is only as tall as its rows of plaques.
+const footTop = cells => { cells = cells.filter(Boolean); return 360 - (cells.length > 9 ? rowsOf(cells.map((c, i) => i || c.k ? c : { ...c, ka: true }), 4).length * 21 + 12 : rowsOf(cells, 3).length * 28 + 8); };
 // A Forger's record, beside the heat's rules, under the choice of Forgers.
 function forgerB(id, h) {
   const f = FORGERS[id], own = P.forgers.includes(id), w = own ? forgerStats(P, id).wins : 0, heat = G.pickHeat, open = heatOpen();
@@ -2824,7 +2942,7 @@ function forgerB(id, h) {
   else s += txb(8, 24, 190, 96, `<p>${esc(id === 'last' ? 'Nobody says how.' : 'To unlock: ' + FORGER_FEATS[id].text)}</p>`) + lb(8, 132, 'UNTIL THEN', 'g') + txb(8, 144, 190, 64, '<p class="d">Its kits and its Power wait with it.</p>');
   // every rule the heat can add, the ones this descent would carry bright, the rest dim
   const per = Math.max(1, Math.floor((h - 42) / 12)), rules = labs.heat ? HEAT_RULES.slice(Math.max(0, Math.min(heat - per + 2, HEAT_RULES.length - per)), Math.max(0, Math.min(heat - per + 2, HEAT_RULES.length - per)) + per) : [];
-  s += lb(214, 8, 'WHAT THE HEAT ADDS', 'g') + (rules.length ? rules.map((x, i) => lb(214, 24 + i * 12, `${x.n}. ${fitName(x.name, 26)}`, x.n <= heat ? '' : 'd')).join('') + lb(214, h - 14, open ? 'BRIGHT: THE ONES YOU WOULD CARRY' : 'CLEAR THE PYRAMID TO OPEN IT', 'd') : txb(214, 24, 190, 64, '<p class="d">No heat: the pyramid as it is.</p>'));
+  s += lb(214, 8, 'WHAT THE HEAT ADDS', 'g') + (rules.length && rules.length < HEAT_RULES.length ? lbr(405, 8, `${rules[0].n} TO ${rules[rules.length - 1].n} OF ${HEAT_RULES.length}`, 'd') : '') + (rules.length ? rules.map((x, i) => lb(214, 24 + i * 12, `${x.n}. ${fitName(x.name, 26)}`, x.n <= heat ? '' : 'd')).join('') + lb(214, h - 14, open ? 'BRIGHT: THE ONES YOU WOULD CARRY' : 'CLEAR THE PYRAMID TO OPEN IT', 'd') : txb(214, 24, 190, 64, '<p class="d">No heat: the pyramid as it is.</p>'));
   return s;
 }
 // A room that offers choices on plinths. Top: the room, the plinths, and the chosen thing read whole in the window.
@@ -2834,7 +2952,7 @@ function forgerB(id, h) {
 function offerDual({ r, items, it, sel, n, selA, view, left, right, pillar, bar0, kind, key }) {
   const turn = d => selA ? selA((sel + d + n) % n) : `osel:${(sel + d + n) % n}`;
   const extra = plaques((right || '') + (pillar || '') + (left || '')), back = extra.find(c => /^(skip|leave|home)$/.test(c.a));
-  const others = extra.filter(c => c !== back && !/^tab:(deck|relics|menu)$/.test(c.a)).map(c => c.t === '<' ? { ...c, t: 'LESS HEAT' } : c.t === '>' ? { ...c, t: 'MORE HEAT' } : c), main2 = others.find(c => /^(reroll|redeal|pick:1)/.test(c.a));
+  const others = extra.filter(c => c !== back && !/^tab:(deck|relics|menu)$/.test(c.a)).map(c => c.t === '<' ? { ...c, t: 'LESS HEAT', pair: true } : c.t === '>' ? { ...c, t: 'MORE HEAT' } : c), main2 = others.find(c => /^(reroll|redeal|pick:1)/.test(c.a));
   const noun = it.fid ? 'FORGER' : it.deck ? 'KIT' : it.relic ? kindWord(it.relic) : it.card ? 'CARD' : 'CHOICE';
   const t4 = t => String(t).replace(/^TAKE NOTHING$/, 'NOTHING').replace(/^DEAL AGAIN/, 'REDEAL');
   const cells = [{ t: it.take || 'TAKE', a: it.a, lit: !it.off, off: it.off }, back && { k: 'B', ...back, t4: t4(back.t), lit: false }, main2 && { k: 'X', ...main2, t4: t4(main2.t) }, r && { k: 'Y', t: it.relic ? 'RELICS' : 'DECK', a: it.relic ? 'tab:relics' : 'tab:deck' },
@@ -2842,14 +2960,16 @@ function offerDual({ r, items, it, sel, n, selA, view, left, right, pillar, bar0
   const emb = it.price != null && r ? (r.embers >= it.price ? `${r.embers - it.price} LEFT AFTER BUYING` : `${it.price - r.embers} SHORT`) : '', facts = (it.facts || []).filter(Boolean);
   let bottom, bare = false, gridSaid = true, said = '';
   const grid = (...a) => { const g = gridScreen(...a); gridSaid = g.head; return g.html; };
-  if (it.fid) { const cs = cells.filter(Boolean), y0 = 360 - (cs.length > 9 ? rowsOf(cs, 4).length * 21 + 12 : rowsOf(cs, 3).length * 28 + 8); bottom = forgerB(it.fid, y0) + footOf(y0, cells); }
+  if (it.fid) { const y0 = footTop(cells); bottom = forgerB(it.fid, y0) + footOf(y0, cells); }
   else if (it.deck) bottom = grid(`${String(it.name).toUpperCase()} · ${it.deck.length} CARDS`, `WEIGHT ${deckWeight(db, it.deck)}`, it.deck, { verb: (i, e) => `read:c:${e.id}`, sk: 'kit' + sel }, cells);
   else if (key === 'omen' && r) { const weak = r.trunk.map((e, i) => [e, i]).sort((a, b) => cardValue(db, a[0]) - cardValue(db, b[0])).slice(0, 2).map(x => x[1]);
     const tr = Math.max(1, Math.ceil(r.trunk.length / 8)), to = { verb: i => `read:t:${i}`, weakFirst: true, gold: new Set(r.trunk.length >= 2 ? weak : []), sk: 'omen', kp: 't', none: 'YOUR TRUNK IS EMPTY' }, hr = r.trunk.length >= 2 ? 'THE TWO MARKED ARE TAKEN' : 'IT NEEDS TWO CARDS';
     // A short trunk leaves the deck its place under it, in every row the foot leaves free, so the frame is never half empty.
     const c4 = cells.filter(Boolean).map((c, i) => ({ ...c, t: c.t4 || c.t, ka: i === 0 && !c.k })), fr = rowsOf(c4, 4), tot = Math.floor((360 - (fr.length * 21 - 2) - 46) / 63);
-    if (tr < tot) { const y1 = 18 + 5 + tr * 63, dh = 5 + (tot - tr) * 63;
-      bottom = box(0, 0, 413, 18, 'st dk') + lb(6, 5, 'YOUR TRUNK, WEAKEST FIRST', 'g') + lbr(407, 5, hr) + gridB(r.trunk, { ...to, y: 18, h: 5 + tr * 63 })
+    if (tr < tot) { const y1 = 18 + 5 + tr * 63, dh = 5 + (tot - tr) * 63, few = r.trunk.length <= 4, gw = 213;
+      // a trunk of four cards or fewer leaves the row's right half to their names and what the altar does with them
+      const names = few ? box(gw, 18, 413 - gw, 68, 'wn', lb(8, 6, r.trunk.length >= 2 ? 'THE ALTAR TAKES' : 'IN THE TRUNK', 'g') + (r.trunk.length ? weak.map(i => r.trunk[i]).concat(r.trunk.filter((e, i) => !weak.includes(i))).slice(0, 4).map((e, i) => `<b class="ab lb${r.trunk.length >= 2 && i < 2 ? '' : ' d'}" data-name="${esc(card(e.id).name)}" style="left:8px;top:${20 + i * 11}px">${esc(fitName(card(e.id).name, 30))}</b>`).join('') : lb(8, 20, 'NOTHING YET', 'd'))) : '';
+      bottom = box(0, 0, 413, 18, 'st dk') + lb(6, 5, 'YOUR TRUNK, WEAKEST FIRST', 'g') + lbr(407, 5, hr) + gridB(r.trunk, { ...to, y: 18, h: 5 + tr * 63, ...(few ? { cols: 4 } : {}) }) + names
         + box(0, y1, 413, 18, 'st dk') + lb(6, y1 + 5, 'YOUR DECK, STRONGEST FIRST', 'g') + gridB(r.deck, { y: y1 + 18, h: dh, verb: i => `read:d:${i}`, sk: 'omendeck' }) + foot(y1 + 18 + dh, fr, 4); }
     else bottom = grid('YOUR TRUNK, WEAKEST FIRST', hr, r.trunk, to, cells); }
   else if (it.card && r) { const c = card(it.card), mon = db.isMonster(it.card), gold = new Set(r.deck.map((e, i) => e.id === it.card || (mon && db.isMonster(e.id) && card(e.id).type === c.type) ? i : -1).filter(i => i >= 0));
@@ -2857,7 +2977,7 @@ function offerDual({ r, items, it, sel, n, selA, view, left, right, pillar, bar0
     bottom = grid('YOUR DECK, STRONGEST FIRST', emb || (mon ? 'MARKED: THE SAME CARD OR TYPE' : 'MARKED: THE SAME CARD'), r.deck, { verb: i => `read:d:${i}`, gold, sk: 'pick' }, cells); }
   else if (r) { bare = true; const fam = it.relic ? RELICS[it.relic].family : null, held = relicList(r).length;
     const marked = fam && FAMILY_NAME[fam] && relicList(r).some(id => RELICS[id].family === fam);
-    bottom = holdDeckB(0, 276, r, { fam, head: `YOU HOLD ${held}${emb ? ' · ' + emb : ''}`, headR: marked ? 'MARKED: ITS FAMILY' : '' }) + footOf(276, cells); }
+    const fy = footTop(cells); bottom = holdDeckB(0, fy, r, { fam, head: `YOU HOLD ${held}${emb ? ' · ' + emb : ''}`, headR: marked ? 'MARKED: ITS FAMILY' : '' }) + footOf(fy, cells); }
   else bottom = box(0, 0, 413, 276, 'st dk') + footOf(276, cells);
   const note = bare && (facts.length > 1 || bar0) ? pnote(44, it.relic ? 'THIS ' + noun : 'HERE', [...facts.slice(1).map(t => String(t).replace(/&amp;/g, '&')), ...sentences(bar0).map(t => t.replace(/\.$/, ''))])[0] : '';
   const top = roomTop({ left: left != null ? noPq(left) : psYou(r), right: pillar != null ? noPq(pillar) : psRight(r, '', { bare, note }), view, head: it.name,
@@ -2952,7 +3072,7 @@ function overDual({ head, unl, tally, mem }) {
   const r = G.run, R = G.results, fs = R ? R.feats : [];
   const cells = [{ t: 'NEW RUN', a: 'new', lit: true }, { k: 'X', t: 'CODEX', a: 'screen:codex' }, { k: 'Y', t: 'FEATS', a: 'screen:feats' }, { t: `VAULT ${P.memories}`, a: 'screen:vault' }, { k: 'B', t: 'TITLE', a: 'home' }];
   return two(bookTop(head, R ? `+${R.total} MEMORIES` : 'ALREADY BANKED', pagerB(10, 24, 610, 320, tally + mem + unl, 'bar')),
-    descentWide(0, r) + holdDeckB(76, 276, r, { read: false, head: 'FEATS THIS RUN', headR: fs.length ? 'THEY COUNT ACROSS RUNS' : '', rows: fs.map(f => ({ name: f.name, sub: f.done ? 'COMPLETE' : `${f.after} / ${f.goal}${f.gain ? ` (+${f.gain})` : ''}`, gold: f.done })), none: 'NO FEAT MOVED THIS RUN', sk: 'over', deckHead: 'THE DECK YOU CARRIED' }) + footOf(276, cells));
+    descentWide(0, r) + holdDeckB(76, 276, r, { read: false, head: 'FEATS THIS RUN', headR: fs.length ? 'THEY COUNT ACROSS RUNS' : '', rows: fs.map(f => ({ name: f.name, sub: f.done ? 'COMPLETE' : `${f.after} / ${f.goal}${f.gain ? ` (+${f.gain})` : ''}`, gold: f.done })), none: 'NO FEAT MOVED THIS RUN', sk: 'over', deckHead: 'THE DECK YOU CARRIED', walk: true }) + footOf(276, cells));
 }
 // ---- windows on two frames. Nothing lies over a frame: a question or a short list takes the bottom frame and leaves
 // the top one as it stands (the table is never covered); a book takes both, its open page on the top frame and its list
@@ -2976,10 +3096,12 @@ function tellBottom(r, cells, told = []) {
   const rows = rowsOf(cells.filter(Boolean), 3), fy = 360 - (rows.length * 28 + 8);
   if (r && r.deck.length) return holdDeckB(0, fy, r, { read: false }) + foot(fy, rows);
   const f = r && r.forger ? FORGERS[r.forger] : null, y2 = f ? 232 : fy; // before the first card: the record, what was told, and the Forger going down
+  if (f && !told.length) return beforeB(0, fy, r) + foot(fy, rows); // nothing told yet: the Forger's words and kits have the room
   const rec = [['RUNS', P.runs], ['CLEARS', P.clears], ['DUELS WON', P.duelWins], ['GUARDIANS BEATEN', P.bossWins], ['FORGERS', `${P.forgers.length} OF ${FORGER_IDS.length}`], ['MEMORIES', P.memories]];
   return box(0, 0, 413, 96, 'st') + lb(8, 8, 'YOUR RECORD', 'g') + rec.map(([k, v], i) => lb(8 + (i % 2) * 206, 26 + (i >> 1) * 22, k, 'g') + lbr(198 + (i % 2) * 206, 26 + (i >> 1) * 22, v)).join('')
-    + box(0, 96, 413, y2 - 96, 'wn') + lb(8, 104, 'TOLD SO FAR', 'g') + txb(8, 118, 397, y2 - 126 - (y2 - 126) % 16, told.length ? told.slice(-6).map(t => `<p class="d">${esc(t)}</p>`).join('') : '<p class="d">Nothing yet. This is where it begins.</p>')
-    + (f ? box(0, y2, 413, fy - y2, 'wn') + lb(8, y2 + 6, 'WHO GOES DOWN', 'g') + txb(8, y2 + 18, 397, fy - y2 - 22 - (fy - y2 - 22) % 16, `<p>${esc(ruleText(f.rule))}</p><p class="d">${esc(f.power)}: ${esc(f.powerText)}</p>`) : '') + foot(fy, rows);
+    + (box(0, 96, 413, y2 - 96, 'wn') + lb(8, 104, 'TOLD SO FAR', 'g') + txb(8, 118, 397, y2 - 126 - (y2 - 126) % 16, told.length ? told.slice(-6).map(t => `<p class="d">${esc(t)}</p>`).join('') : '<p class="d">Nothing yet. This is where it begins.</p>')
+      + (f ? box(0, y2, 413, fy - y2, 'wn') + lb(8, y2 + 6, 'WHO GOES DOWN', 'g') + txb(8, y2 + 18, 397, fy - y2 - 22 - (fy - y2 - 22) % 16, `<p>${esc(ruleText(f.rule))}</p><p class="d">${esc(f.power)}: ${esc(f.powerText)}</p>`) : ''))
+    + foot(fy, rows);
 }
 function menuPanel(a, r) {
   const rows = (y, list) => list.map(([k, v], i) => lb(210, y + i * 12, k, 'g') + lbr(398, y + i * 12, v)).join(''), words = (y, t) => txb(210, y, 190, 160, `<p>${esc(t)}</p>`);
@@ -2987,7 +3109,7 @@ function menuPanel(a, r) {
     return panelB('THE DECK', rows(32, [['MONSTERS', mons], ['OTHER CARDS', r.deck.length - mons], ...Object.entries(kinds).sort((p, q) => q[1] - p[1]).slice(0, 8).map(([k, n]) => [String(k).toUpperCase(), n])]) + words(168, r.phase === 'chamber' ? 'Every card you carry. Here you can swap a deck card for one in the trunk.' : 'Every card you carry.')); }
   if (a === 'tab:relics' && r) { const rel = relicList(r), n = k => rel.filter(id => RELICS[id].kind === k).length;
     return panelB('THE RELICS', rows(32, [['GIFTS', n('G')], ['MASTERWORKS', n('M')], ['READY AT AN ANVIL', possibleMasterworks(r).length]]) + words(80, 'Every charm, Gift and Masterwork you hold, each read whole.')); }
-  if (a === 'tab:duel' && r) { const rv = G.shown ? G.shown.rival : info(r); return panelB('THIS DUEL', words(32, `${rv.styleText || ''} The rival's Law, the bounty, your Forger's Power and the last moves.`)); }
+  if (a === 'tab:duel' && r) { const rv = G.shown ? G.shown.rival : info(r); return panelB('THIS DUEL', txb(210, 32, 190, 112, `<p>${esc(rv.styleText || '')} The rival's Law, the bounty, your Forger's Power and the last moves.</p>`) + lb(210, 152, G.log.length ? 'THE LAST MOVES' : 'NO MOVES YET', 'g') + txb(210, 164, 190, 96, G.log.slice(-3).map(t => `<p class="d">${esc(t)}</p>`).join('') || '<p class="d">The moves of the duel are told there as they are made.</p>')); }
   if (a === 'speed') return panelB('SPEED', words(32, 'How fast a move plays out on the table.'));
   if (a === 'quit' && r) { const w = worth(r); return panelB('LEAVE THE RUN', rows(32, [['MEMORIES KEPT', w.total], ['DUELS WON', r.stats.wins]]) + words(64, 'Leaving ends this run as a loss. You are asked once more before it ends.'), false); }
   if (a === 'tab:') return panelB('CLOSE', words(32, 'Back to where you were.'));
@@ -3024,7 +3146,7 @@ function dualWindows(s) {
     const side = lb(332, 32, 'THE PAD', 'g') + keys.map(([k, t], i) => lb(332, 49 + i * 22, k, 'g') + lb(380, 49 + i * 22, t.toUpperCase())).join('') + lb(332, 232, 'ON A PLAQUE', 'g') + txb(332, 244, 288, 96, '<p class="d">A key shown beside a plaque presses that plaque. The lit plaque is the one A presses.</p>');
     return { top: pageSide('HOW TO PLAY', bookOf('help'), '', pages[at][0], `PAGE ${at + 1} OF ${pages.length}`, `<p>${padWords(pages[at][1])}</p>` + pages.slice(at + 1).map(q => `<p class="gp"><span class="d">${esc(q[0][0] + q[0].slice(1).toLowerCase())}. ${padWords(q[1])}</span></p>`).join(''), side),
       bottom: listRecordB(ft.y0, 'THE RULES, A PAGE AT A TIME', '', pages.map((p, i) => ({ name: p[0], sub: `PAGE ${i + 1}`, a: 'nop', look: 'b:' + i, k: 'b' + i, n0: i === at })), { sk: 'help' }) + ft.html }; }
-  if (t === 'options' || t === 'sound') { const keys = labKeys(), at = lookRow(keys.length), k = keys[at], isOn = x => !!(pref[x] || (pref.depth && DEPTH_SET.includes(x))), ft = foot4(bookFoot('options'));
+  if (t === 'options' || t === 'sound') { const keys = labKeys(), at = lookRow(keys.length), k = keys[at], isOn = x => !!(pref[x] || (pref.depth && DEPTH_SET.includes(x))), ft = foot4(bookFoot('options', [{ t: 'SWITCH IT', a: 'acur', off: true, cls: 'aslot', ka: true }]));
     return { top: bookTop('OPTIONS', bookOf('options'), lb(16, 32, 'SOUND', 'g') + `<div id="soundslot" class="soundslot ab" style="left:16px;top:46px;width:264px"></div>` + lb(300, 32, `LAB SWITCH ${at + 1} OF ${keys.length}`, 'g') + txb(300, 46, 320, 80, '<p class="d">Experiments. A is the switch: it turns the one under the cursor on or off.</p>')
         + pagerB(10, 136, 610, 208, `<p>${esc(LABS[k])}${pref.depth && DEPTH_SET.includes(k) && !pref[k] ? ' (On through the depth set.)' : ''}</p><p class="gp"><span class="d">Experiments. A run in progress keeps the rules it started with.</span></p>`, 'bar')),
       bottom: rowsB(0, ft.y0, 'LAB SWITCHES', `${keys.filter(isOn).length} OF ${keys.length} ON`, keys.map((x, i) => ({ name: String(LABS[x]).split(/[.:,(]/)[0], sub: isOn(x) ? 'ON' : 'OFF', on: isOn(x), a: `lab:${x}`, look: 'b:' + i, k: 'b' + i, n0: i === at })), { sk: 'options' }) + ft.html }; }
@@ -3035,31 +3157,31 @@ function dualWindows(s) {
     const side = lb(404, 26, 'WHAT YOU HOLD', 'g') + lbr(620, 26, `${list.length} IN ALL`) + tally(404, 40, 216, [['CHARMS', r.charms.length], ['CHARM PLACES', db.config.charmSlots], ['GIFTS', kinds('G')], ['MASTERWORKS', kinds('M')], ...fr.slice(0, 3)]);
     const sub = id ? kindWord(id) + (FAMILY_NAME[RELICS[id].family] ? ' · ' + esc(FAMILY_NAME[RELICS[id].family].toUpperCase()) : '') : '', anvil = `<p class="d">${ready.length ? 'Ready to forge at an Anvil: ' + ready.map(x => esc(RELICS[x].name)).join(', ') + '.' : 'No Masterwork is ready at an Anvil yet.'}</p>`;
     return { top: id ? pageTop('YOUR RELICS', bookOf('relics'), medal(id, 64), RELICS[id].name, sub, `<p>${esc(RELICS[id].text)}</p>${anvil}`, side) : pageTop('YOUR RELICS', bookOf('relics'), '', 'None yet', '', `<p>Gifts come with Forge levels, charms from the pyramid.</p>${anvil}`, side),
-      bottom: holdDeckB(0, fy, r, { look: true, headR: `${at + 1} OF ${Math.max(1, list.length)}` }).replace(/data-look="r:([a-z0-9_]+)"/g, (m, x) => { const i = list.indexOf(x); return `data-look="b:${i}" data-k="b${i}"${i === at ? ' data-n0' : ''}`; }) + foot(fy, rows, 4) }; }
+      bottom: holdDeckB(0, fy, r, { look: true, grid: false, headR: `${at + 1} OF ${Math.max(1, list.length)}` }).replace(/data-look="r:([a-z0-9_]+)"/g, (m, x) => { const i = list.indexOf(x); return `data-look="b:${i}" data-k="b${i}"${i === at ? ' data-n0' : ''}`; }) + foot(fy, rows, 4) }; }
   if (t === 'deck') { if (!/^[dt]:/.test(G.look || '') || !lookOf()) G.look = r.deck.length ? 'd:' + firstOf(r.deck) : null; // the page opens on the card the cursor starts on
     const L = lookOf(), one = G.pickDeck != null || G.pickTrunk != null, kinds = {}, wt = deckWeight(db, r.deck), cap = weightCap(db, r);
     for (const e of r.deck) { const k = db.isMonster(e.id) ? 'MONSTERS' : String(roleOf(db, e.id)).toUpperCase(); kinds[k] = (kinds[k] || 0) + 1; }
     const hint = r.phase === 'chamber' ? (one ? 'Now choose the card to swap it with. B puts it back.' : 'Cards you take go to your trunk. Choose a deck card, then a trunk card, to swap them.') : 'You can swap cards with the trunk in a chamber.';
     const copies = L && L.inst ? r.deck.filter(e => e.id === L.inst.id).length : 0, inTrunk = /^t:/.test(G.look || '');
     const heavy = [...r.deck].sort((p, q) => weightOf(db, q.id) - weightOf(db, p.id)).slice(0, 8); // a short trunk leaves room beside it for the cards that weigh most
-    const page = !r.deck.length ? lb(12, 80, 'NO CARDS YET', 'g') + txb(12, 94, 300, 32, '<p class="d">The kit you choose is your first deck.</p>') : L ? bigCard(L.inst, 12, 30) + `<b class="ab lb g" data-name="${esc(L.name)}" style="left:128px;top:32px;width:190px;white-space:normal">${nameLines(L.name, 186, 2).map(esc).join('<br>')}</b>` + pagerB(122, 56, 196, 128, L.lines.map(x => `<p>${esc(x)}</p>`).join('') + `<p class="d">${inTrunk ? 'In the trunk.' : copies > 1 ? `${copies} copies in the deck.` : 'One copy in the deck.'} Weight ${weightOf(db, L.inst.id)}.</p>`, 'bar') : '';
+    const page = !r.deck.length ? psPort(r.forger ? faceName(r.forger) : '', 12, 32) + lb(92, 36, 'NO CARDS YET', 'g') + txb(92, 50, 220, 48, '<p class="d">The kit you choose is your first deck.</p>') + lb(12, 112, 'THE KITS', 'g') + ((r.forger && FORGERS[r.forger].kits) || []).slice(0, 4).map((k, i) => lb(12, 126 + i * 22, fitName(k.name, 30)) + lb(172, 126 + i * 22, fitName((k.types || []).join(' · '), 28), 'd')).join('') : L ? bigCard(L.inst, 12, 30) + `<b class="ab lb g" data-name="${esc(L.name)}" style="left:128px;top:32px;width:190px;white-space:normal">${nameLines(L.name, 186, 2).map(esc).join('<br>')}</b>` + pagerB(122, 56, 196, 128, L.lines.map(x => `<p>${esc(x)}</p>`).join('') + `<p class="d">${inTrunk ? 'In the trunk.' : copies > 1 ? `${copies} copies in the deck.` : 'One copy in the deck.'} Weight ${weightOf(db, L.inst.id)}.</p>`, 'bar') : '';
     const act1 = r.phase === 'chamber' ? { t: one ? 'SWAP' : 'PICK UP', a: 'pickcur', for: 'deckpick trunkpick' } : { t: 'PICK UP', a: 'nop', off: true };
     return { top: bookTop('YOUR DECK', bookOf('deck'), page + lb(12, r.deck.length ? 192 : 216, `TRUNK · ${r.trunk.length} CARD${r.trunk.length === 1 ? '' : 'S'}`, 'g')
-        + (r.trunk.length > 6 ? gridB(r.trunk, { x: 8, y: 204, cols: 6, h: 131, verb: i => `trunkpick:${i}`, look: i => `t:${i}`, sel: G.pickTrunk, kp: 't', sk: 'trunk' })
-          : (r.trunk.length ? gridB(r.trunk, { x: 8, y: 204, cols: 3, h: 131, verb: i => `trunkpick:${i}`, look: i => `t:${i}`, sel: G.pickTrunk, kp: 't', sk: 'trunk' }) : txb(12, r.deck.length ? 204 : 228, heavy.length ? 150 : 300, 64, '<p class="d">The trunk is empty. Cards you take go to your trunk.</p>'))
+        + (r.trunk.length > 6 ? gridB(r.trunk, { x: 8, y: 204, cols: 6, h: 131, verb: i => r.phase === 'chamber' ? `trunkpick:${i}` : 'nop', look: i => `t:${i}`, sel: G.pickTrunk, kp: 't', sk: 'trunk' })
+          : (r.trunk.length ? gridB(r.trunk, { x: 8, y: 204, cols: 3, h: 131, verb: i => r.phase === 'chamber' ? `trunkpick:${i}` : 'nop', look: i => `t:${i}`, sel: G.pickTrunk, kp: 't', sk: 'trunk' }) : txb(12, r.deck.length ? 204 : 228, heavy.length ? 150 : 300, 64, '<p class="d">The trunk is empty. Cards you take go to your trunk.</p>'))
             + (heavy.length ? lb(180, 192, 'HEAVIEST CARDS', 'g') : '') + heavy.map((e, i) => lb(180, 208 + i * 14, esc(fitName(card(e.id).name, 18))) + lbr(314, 208 + i * 14, weightOf(db, e.id))).join(''))
         + `<i class="ab" style="left:322px;top:28px;width:1px;height:316px;background:var(--dark)"></i>` + lb(332, 32, 'WEIGHT', 'g') + lbr(620, 32, `${wt}/${cap}`) + gauge(332, 42, 288, wt / cap, 'w' + (wt > cap ? ' over' : ''))
         + txb(332, 54, 288, 32, `<p class="d">Every card has a weight. This deck may carry ${cap}.</p>`) + lb(332, 96, 'WHAT IS IN IT', 'g') + lbr(620, 96, `${r.deck.length} CARDS`)
         + tally(332, 110, 288, Object.entries(kinds).sort((p, q) => (q[0] === 'MONSTERS') - (p[0] === 'MONSTERS') || q[1] - p[1]).slice(0, 8).concat(r.deck.length ? [] : ['MONSTERS', 'EQUIP', 'FIELD', 'TRAP', 'SPELL', 'FUEL'].map(k => [k, 0]))) + lb(332, 232, 'SWAPPING', 'g') + txb(332, 244, 288, 96, `<p>${hint}</p>`)),
-      bottom: (r.deck.length ? gridB(r.deck, { y: 0, h: 320, verb: i => `deckpick:${i}`, look: i => `d:${i}`, sel: G.pickDeck, sk: 'deck', n1: true }) : beforeB(0, 320, r))
+      bottom: (r.deck.length ? gridB(r.deck, { y: 0, h: 320, verb: i => r.phase === 'chamber' ? `deckpick:${i}` : 'nop', look: i => `d:${i}`, sel: G.pickDeck, sk: 'deck', n1: true }) : beforeB(0, 320, r))
         + foot(320, footRows4([...bookFoot('deck', [{ ...act1, ka: true }], one).map(c => c && /BOOK$/.test(c.t) ? { ...c, t: [c.t, c.t.replace(' BOOK', '')] } : c)]), 4) }; }
   if (t === 'duel') { const rv = G.shown ? G.shown.rival : G.overlay && G.overlay.rival ? G.overlay.rival : info(r), v = r.duel ? viewFor(r.duel, db, 0) : null, log = G.log.slice(-8);
-    const words = `${rv.styleText ? `<p>${esc(rv.styleText)}</p>` : ''}${rv.lawText ? `<p><b class="lb g">LAW</b> ${esc(lawShown(rv.lawText))}</p>` : ''}${rv.twist ? `<p>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</p>` : ''}<p><b class="lb g">BOUNTY</b> ${esc(rv.bountyText || '')}</p>${v && v.forger ? `<p><b class="lb g">${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))}</p><p><b class="lb g">${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'Used this duel.' : esc(FORGERS[v.forger].powerText)}</p>` : ''}`, moves = `<p><b class="lb g">${log.length ? 'THE LAST MOVES' : 'NO MOVES YET'}</b></p>${log.map(x => `<p>${esc(x)}</p>`).join('')}`;
+    const words = `${rv.styleText ? `<p>${esc(rv.styleText)}</p>` : ''}${rv.lawText ? `<p><b class="lb g">LAW</b> ${esc(lawShown(rv.lawText))}</p>` : ''}${rv.twist ? `<p>${{ fog: 'Fog: monsters arrive veiled.', narrow: 'Narrow Pass: three zones.', storm: 'Storm Front: terrain shifts every third turn.', locked: 'Locked terrain.' }[rv.twist]}</p>` : ''}<p><b class="lb g">BOUNTY</b> ${esc(rv.bountyText || '')}</p>${v && v.forger ? `<p><b class="lb g">${esc(FORGERS[v.forger].name)}</b> ${esc(ruleText(FORGERS[v.forger].rule))}</p><p><b class="lb g">${esc(FORGERS[v.forger].power)}</b> ${v.rs.power ? 'Used this duel.' : esc(FORGERS[v.forger].powerText)}</p>` : ''}`, moves = `<p><b class="lb g">${log.length ? 'THE LAST MOVES' : 'NO MOVES YET'}</b>${log.length ? '' : ' <span class="d">The last eight moves of the duel are told here as they are made.</span>'}</p>${log.map(x => `<p>${esc(x)}</p>`).join('')}`;
     // the words in a window of twelve lines, and under it what you carry into the fight: the relics and the strongest cards
     // Few words leave the window seven lines and the deck two whole rows, so no part of the frame stands bare.
     const few = (words + moves).split('</p>').reduce((n, x) => n + Math.ceil(x.replace(/<[^>]+>/g, '').length / 44), 0) <= 6;
-    return { bottom: box(0, 0, 413, 22, 'st dk') + lb(8, 7, 'THIS DUEL', 'g') + (few ? pagerB(0, 22, 413, 116, words + moves) + stripB(138, r) + box(0, 168, 413, 18, 'st dk') + lb(6, 173, 'YOUR DECK, STRONGEST FIRST', 'g') + gridB(r.deck, { y: 186, h: 131, verb: (i, e) => `read:c:${e.id}`, sk: 'duelsheet' })
-        : pagerB(0, 22, 413, 196, words + moves) + stripB(218, r) + deckStripB(248, 'YOUR STRONGEST CARDS', r.deck, 'c'))
+    return { bottom: box(0, 0, 413, 22, 'st dk') + lb(8, 7, 'THIS DUEL', 'g') + (few ? pagerB(0, 22, 413, 116, words + moves) + stripB(138, r, true) + box(0, 168, 413, 18, 'st dk') + lb(6, 173, 'YOUR DECK, STRONGEST FIRST', 'g') + gridB(r.deck, { y: 186, h: 131, sk: 'duelsheet' })
+        : pagerB(0, 22, 413, 196, words + moves) + stripB(218, r, true) + deckStripB(248, 'YOUR STRONGEST CARDS', r.deck, null))
       + foot(few ? 317 : 324, [[{ k: 'B', t: 'CLOSE', a: 'tab:' }, { k: 'X', t: G.fast ? 'SPEED: FAST' : 'SPEED: NORMAL', a: 'speed' }, { k: 'START', t: 'MENU', a: 'tab:menu' }]]) }; }
   return null;
 }
@@ -3386,6 +3508,8 @@ addEventListener('keydown', ev => {
 function tapped(ev) {
   const el = ev.target.closest('[data-a]'); if (!el || el.disabled || G.opening) return; // nothing is taken while a door swings open
   G.toast = ''; // a tap puts away the last message, so it cannot lie over the screen the tap opens
+  if (DUAL && !NAV.inPad) NAV.pad = false;
+  if (DUAL && el.dataset.a === 'acur') { const f = navEl(); if (f && f !== el && !f.classList.contains('pq')) f.click(); return; } // the plaque that says what A does presses what the cursor is on
   if (DUAL && !NAV.hold) { const it = el.closest('button, input'), { items, keys } = navList(), i = items.indexOf(it); if (i >= 0) { NAV.key = keys[i]; if (it.dataset.look != null) G.look = it.dataset.look; } } // the cursor goes where the finger went
   syncP();
   const [verb, x, y] = el.dataset.a.split(':'); const r = G.run, n = x === undefined || x === '' ? null : +x;
@@ -3399,6 +3523,7 @@ function tapped(ev) {
     // two frames: read a card or a relic in the window above, page its words on, put a picked card back, and a control that only holds the cursor
     case 'read': G.look = el.dataset.a.slice(5); render(); break;
     case 'unlook': G.look = null; render(); break;
+    case 'rowjump': rowJump(n); break;
     case 'pagetext': pageText(1, true, el.closest('.bar')); break;
     case 'unpick': G.pickDeck = G.pickTrunk = null; render(); break;
     case 'pickcur': { const m = /^([dt]):(\d+)$/.exec(G.look || ''); if (!m) break; if (m[1] === 'd') G.pickDeck = +m[2]; else G.pickTrunk = +m[2]; trySwap(); break; }

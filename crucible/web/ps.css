@@ -342,11 +342,22 @@ body.ps { background: #000; }
 #app.ps .rw.nvf { border-color: var(--ink); background: var(--sh); }
 #app.ps .rw .rwp { left: 2px; top: 0; width: 24px; height: 24px; } #app.ps .rw .rwp img { display: block; }
 /* the cursor's marks: a line inside the card it is on, a bright edge on a relic's place, the marker over what it rests on */
-#app.ps .cd.nvf::after { content: ''; position: absolute; left: 0; top: 0; right: 0; bottom: 0; border: 1px solid var(--ink); pointer-events: none; }
+/* The cursor on a card: the card's own frame turns light. Nothing is drawn over the card or beside it, so the cursor can
+   never cut a number, a mark or a neighbour. */
+#app.ps .cd.nvf { border-color: var(--ink); }
+/* The A chip inside a plaque that has no chip's room beside it, at its right end, clear of its words. */
+#app.ps .pq .kin { right: 3px; top: 2px; width: 10px; padding-left: 2px; pointer-events: none; }
+/* A list with rows out of sight: five by three pixels of gold, pointing to where they lie. */
+#app.ps .lmk { position: absolute; z-index: 4; width: 5px; height: 3px; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='3' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h5v1h-1v1h-1v1h-1v-1h-1v-1h-1z' fill='%23e9c46a'/%3E%3C/svg%3E"); }
+#app.ps .lmk.lmu { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='3' shape-rendering='crispEdges'%3E%3Cpath d='M2 0h1v1h1v1h1v1h-5v-1h1v-1h1z' fill='%23e9c46a'/%3E%3C/svg%3E"); }
+/* The two boxes of a question on the bottom frame: the answer you hold in gold, what happens without it in a dim one. */
+#app.ps .tbx { border: 1px solid var(--gl); background: var(--sh); } #app.ps .tbx.dm { border-color: var(--sm); background: none; }
 #app.ps .sl.nvf, #app.ps .pile.nvf { border-color: var(--ink); }
 #app.ps .dcur { pointer-events: none; z-index: 6; }
 /* the duel's hand on the bottom frame: six places that never move, a chosen card marked where it lies */
 #app.ps.dual .hand .cd.sel { top: 10px !important; }
+/* With two frames a drawn card slides out from under the deck pile beside the hand, so the hand's box cuts nothing. */
+#app.ps.dual .ledge > .hand { overflow: visible; }
 #app.ps .pile { cursor: pointer; }
 /* a card of a grid marked as kin to the one being weighed */
 #app.ps .cd.fam { box-shadow: 0 0 0 1px var(--ink), 0 0 0 2px var(--gl); }

@@ -25,13 +25,26 @@ export function foot(y0, rows, cols = 3) {
   return s;
 }
 // A list of cells cut into rows of so many columns, a cell whose words need two columns followed by a gap for the second.
+// Two cells that belong together stand side by side on one row: the one before and the next one (L1 and R1), and a cell
+// marked pair with the cell after it. The menu (START) always stands in the last column of the last row, so it is found
+// in the same corner of every foot; when that needs a row more, the one before and the next one come down beside it.
 export function rowsOf(cells, cols) {
   const colw = cols === 3 ? 131 : 99, gx = cols === 3 ? 6 : 3, out = [[]]; let i = 0;
   const spanOf = c => { const cw = cols === 3 || (c && (c.k || c.ka)) ? (c && c.k && c.k.length > 2 ? 32 : 22) : 0, need = c ? pqW([].concat(c.t).slice(-1)[0]) + (cw ? cw + 4 : 0) : 0; return Math.min(cols, Math.max(1, Math.ceil((need + gx) / (colw + gx)))); };
-  for (let n = 0; n < cells.length; n++) { const c = cells[n], span = spanOf(c), nx = cells[n + 1], pair = c && c.k === 'L1' && nx && nx.k === 'R1' ? spanOf(nx) : 0; // the one before and the next one stand side by side
-    if (i + span > cols || (pair && i + span + pair > cols && span + pair <= cols)) { out.push([]); i = 0; }
+  const menu = cells.find(c => c && c.k === 'START'); cells = cells.filter(c => c !== menu);
+  for (let n = 0; n < cells.length; n++) { const c = cells[n], span = spanOf(c), nx = cells[n + 1], pair = c && nx && ((c.k === 'L1' && nx.k === 'R1') || c.pair) ? spanOf(nx) : 0;
+    if (i + span > cols || (pair && i + span + pair > cols && span + pair <= cols)) {
+      // a pair that goes down to the next row leaves a place: a later plaque that stands alone comes up into it
+      for (let m = n + (pair ? 2 : 1); i < cols && m < cells.length; m++) { const x = cells[m], alone = x && !x.pair && x.k !== 'L1' && x.k !== 'R1' && !(cells[m - 1] && cells[m - 1].pair);
+        if (alone && i + spanOf(x) <= cols) { out[out.length - 1].push(x, ...Array(spanOf(x) - 1).fill(null)); i += spanOf(x); cells = cells.filter(y => y !== x); m--; } }
+      out.push([]); i = 0; }
     out[out.length - 1].push(c, ...Array(span - 1).fill(null)); i += span; }
-  return out.filter(r => r.length);
+  const rows = out.filter(r => r.length);
+  if (menu) { let last = rows[rows.length - 1];
+    if (!last || last.length + 1 > cols) { const at = last ? last.findIndex(c => c && c.k === 'L1') : -1; last = at > 0 ? last.splice(at) : []; rows.push(last); }
+    while (last.length + 1 < cols) last.push(null);
+    last.push(menu); }
+  return rows;
 }
 
 // Every plaque written in a piece of a screen, as cells for the foot: the single-screen layout writes its plaques where
@@ -65,11 +78,14 @@ export function navStep(app, items, cur, dir) {
   const c = rectOf(app, cur), scr = cur.closest('.scr'), horiz = dir === 'left' || dir === 'right', sign = dir === 'left' || dir === 'up' ? -1 : 1;
   let best = null, bs = Infinity, inside = null, is = Infinity; // inside: the nearest row of the same grid, which comes before anything outside it
   const box = cur.closest('.gsc');
+  const tbl = cur.closest('.tvw');
   for (const e of items) { if (e === cur) continue; const r = rectOf(app, e);
     const g = e.closest('.gsc'); if (g && g !== box) { const q = rectOf(app, g); if (r.y < q.y - 1 || r.y + r.h > q.y + q.h + 1) continue; } // a row of a grid that is moved out of sight is reached through the grid, not from beside it
     const d = horiz ? (r.x + r.w / 2 - c.x - c.w / 2) * sign : (r.y + r.h / 2 - c.y - c.h / 2) * sign; if (d < 1) continue;
     const gap = horiz ? Math.max(0, r.y - (c.y + c.h), c.y - (r.y + r.h)) : Math.max(0, r.x - (c.x + c.w), c.x - (r.x + r.w)); // how far apart their rows (or columns) lie; 0 when they share some
     if (horiz && (e.closest('.scr') !== scr || gap > d)) continue;
+    if (horiz && tbl && e.closest('.tvw') !== tbl) continue; // along a row of the table the cursor stays on the table
+    if (!horiz && e.closest('.scr') === scr && r.y < c.y + c.h && r.y + r.h > c.y && gap > 0) continue; // a control that stands beside this one is not above or below it
     const off = horiz ? Math.abs(r.y + r.h / 2 - c.y - c.h / 2) : Math.abs(r.x + r.w / 2 - c.x - c.w / 2);
     const edge = horiz ? (sign > 0 ? r.x - c.x - c.w : c.x - r.x - r.w) : (sign > 0 ? r.y - c.y - c.h : c.y - r.y - r.h); // from this one's far edge to that one's near edge
     const s = Math.max(0, edge) + gap * (horiz ? 40 : 3) + off * .05 + d * .01; // sideways, a control in the same row always wins over one in the row under it
