@@ -137,6 +137,7 @@ function syncMap() {                                                       // th
     if (grassMesh) { scene.remove(grassMesh); grassMesh.geometry.dispose(); grassMesh = null; }
     if (sceneryGroup) { scene.remove(sceneryGroup); sceneryGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); }); sceneryGroup = null; }
     if (!/[?&]scenery=0/.test(location.search)) { sceneryGroup = buildScenery(game.map, game.stage || 0, assets); scene.add(sceneryGroup); setShadeMask(sceneryGroup.userData.mask, look); if (game.map && game.map.open) MASK.ck.value = 0; /* the open desert has no cloud shadows on the sand */ grassMesh = buildGrass(game.map, game.stage || 0, sceneryGroup.userData.scatter, sceneryGroup.userData.theme, null, scene.fog.near); if (grassMesh) scene.add(grassMesh); ambient.setSpots(sceneryGroup.userData.flowerSpots, game.stage || 0, game.map.hash); } else { ambient.clear(); setShadeMask(null, look); } minimap.setMap(game.map);
+    camera.far = game.map && game.map.open ? 1300 : 600; camera.updateProjectionMatrix();       // the open desert shows its far mountains
     try { renderer.compile(scene, camera); } catch (e) { /* warm-up is best effort */ }       // shaders are built behind the stage card, so the first frames do not hitch
 }
 let duelist = 'kael';
@@ -334,7 +335,7 @@ let lastBlockTick = 0;
 const groundY = (x, z) => Math.min(heightAt(x, z), 40);       // the one ground height for marks drawn on the map (view only: sim events carry no y)
 function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
-  if (type === 'bosscard') { const el = $('bosscard'); if (el) { el.textContent = data; el.classList.add('on'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 2500); } }       // the stage boss's name, in the top third, 2.5 s
+  if (type === 'bosscard') { const el = $('bosscard'); if (el) { el.textContent = data; el.classList.add('on'); document.body.classList.add('cardon'); clearTimeout(el._t); el._t = setTimeout(() => { el.classList.remove('on'); document.body.classList.remove('cardon'); }, 2500); } }       // the stage boss's name, in the top third, 2.5 s
   else if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(keyWords(data, inputMode())); }       // a refused chest pulses its price tag instead of a banner
   else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); if (game.mode !== 'classic' && (game.stage || 0) < 2) setTimeout(() => prewarmStage(game.seed, (game.stage || 0) + 1), 60); }       // the next stage is drawn while the player reads the offer
   else if (type === 'levelup') { host.haptic('levelup'); fx.ring(ip.x, ip.y, ip.z, 3.2, 0xffd56a, 0.55); fx.burst(ip.x, ip.y + 1, ip.z, 22, 0xffe08a, 3, 6, 0.22, 0.8, 4); }
@@ -384,6 +385,7 @@ let plateIdol = false, fovDirty = false, hopFov = 0, speedLines = 0;
 function bossIntro() {                                              // name plate for elites and the boss, plus a 2 s zoom (skipped by A, B, Enter or a tap; no prompt is drawn)
   for (const sp of game.sp) {
     if (!sp.alive || seenSp.has(sp)) continue; seenSp.add(sp);
+    if (game.openFlow) { if (sp.asleep) { seenSp.delete(sp); continue; } if (sp.role === 'gate') fx.push = fx.settings.reduceMotion ? 0 : 2; continue; }       // the open desert: no centre plate; a sleeper has no intro until it wakes (a ribbon says so); the stage boss gets the short push and the card at the top
     if (sp.kind === 'idol') { if (plateIdol) continue; plateIdol = true; }
     const pl = $('plate'); pl.innerHTML = sp.role ? sp.name.toUpperCase() : (PLATES[sp.kind] || ''); pl.classList.remove('on'); void pl.offsetWidth; pl.classList.add('on'); fx.push = fx.settings.reduceMotion ? 0 : 2;
   }

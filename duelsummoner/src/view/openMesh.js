@@ -20,6 +20,13 @@ function streakTex() {
   const tex = new T.CanvasTexture(cv); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.anisotropy = 4; return tex;
 }
 
+// the far range must stay a readable pale shape: on the upper faces of the mountains (more than about 34 m up) the fog is capped at 60 percent, so they never fade to the colour of the sky; the dunes keep the normal fog
+function mountainFog(mat) {
+  const prev = mat.onBeforeCompile, key = mat.customProgramCacheKey ? mat.customProgramCacheKey.bind(mat) : () => '';
+  mat.onBeforeCompile = sh => { if (prev) prev(sh); if (!sh.fragmentShader.includes('0.0, 1.00);')) return; sh.fragmentShader = sh.fragmentShader.replace('0.0, 1.00);', '0.0, mix(1.0, 0.6, smoothstep(34.0, 46.0, vWP.y)));'); };
+  mat.customProgramCacheKey = () => key() + 'mtnfog';
+}
+
 export function buildOpen(map, look) {
   const group = new T.Group(), blocks = map.blocks || [], wind = map.dune ? map.dune.wind : 0, cw = Math.cos(wind), sw = Math.sin(wind);
   // under a block the view ground is the plain dune (the box drawn by openDressing hides it), so the 2 m grid leaves no teeth round the foot
@@ -54,7 +61,7 @@ export function buildOpen(map, look) {
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
   const tex = streakTex(); let shared = null, tris = 0;
   const meshOf = (Bd, streaks) => {                                                            // every chunk mesh shares one material
-    const m = Bd.mesh(false, fadeU); if (!shared) { shared = m.material; shared.map = tex; shared.needsUpdate = true; } else { m.material.dispose(); m.material = shared; }
+    const m = Bd.mesh(false, fadeU); if (!shared) { shared = m.material; shared.map = tex; mountainFog(shared); shared.needsUpdate = true; } else { m.material.dispose(); m.material = shared; }
     if (streaks) { const p = m.geometry.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv[i * 2] = (x * cw + z * sw) / 24; uv[i * 2 + 1] = (-x * sw + z * cw) / 12; } m.geometry.setAttribute('uv', new T.BufferAttribute(uv, 2)); }
     tris += Bd.pos.length / 9 | 0; m.geometry.computeBoundingSphere(); return m;
   };
