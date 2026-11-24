@@ -146,7 +146,9 @@ function syncMap() {                                                       // th
 }
 let duelist = 'kael';
 const withProps = /[?&]props/.test(location.search);       // map objects are placed by the coming map generator; ?props shows the region-placed test set
-const game = new Game(Date.now() & 0xffff, { duelist, world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: /[?&]terrain=open/.test(location.search) ? 'open' : undefined, arch: (/[?&]arch=([a-f])/.exec(location.search) || [])[1] });
+const RUN_OPEN = /[?&]terrain=open/.test(location.search), RUN_ARCH = (/[?&]arch=([a-f])/.exec(location.search) || [])[1];
+const MENU_SEED = +((/[?&]menuseed=(d+)/.exec(location.search) || [])[1] || 47514), MENU_ARCH = (/[?&]menuarch=([a-f])/.exec(location.search) || [])[1] || 'f';       // the menu backdrop is always the open desert, from a fixed seed with a good view; runs follow the terrain option as before
+const game = new Game(/[?&]seed=(d+)/.test(location.search) ? +/[?&]seed=(d+)/.exec(location.search)[1] : MENU_SEED, { duelist, mode: 'run', world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: 'open', arch: RUN_ARCH || MENU_ARCH });
 const host = createBrowserHost(canvas);
 const save = loadSave(host);
 const fx = new Fx(scene, save.settings);
@@ -199,6 +201,7 @@ function begin(mode, sel) {       // a short loading card first: the stage is dr
 function beginNow(mode, sel) {
   sealToast.clear();
   sel = sel || {}; if (sel.duelist) pickDuelist(sel.duelist);
+  game.opts.terrain = RUN_OPEN ? 'open' : undefined; game.opts.arch = RUN_ARCH;       // a run builds its own map; only the menu backdrop is always the open desert
   game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions'; game.opts.difficulty = sel.difficulty || save.settings.difficulty; game.opts.oaths = sel.oaths || []; game.opts.map = sel.map || 'ruins';
   ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; capBurstDone = false; tb.on = false; tb.fired = false; fx.dir.newRun(); fx.stopB.log.length = 0; fx.stopB.last = -1e9; fx.stopLog.length = 0; game.opts.meta = simMeta(save.meta); bars.reset(); game.reset(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();
@@ -416,7 +419,7 @@ dbg.style.display = showDebug ? 'block' : 'none';
 // the dev overlay (?dev=1): what the pacing checks read. Enemies on screen, spawns so far, LP %, spawn rate over the last 10 s, level-ups this minute, and the stage clock.
 const dev = /[?&]dev=1/.test(location.search) ? (() => { const d = document.createElement('div'); d.id = 'dev'; d.style.cssText = 'position:fixed;left:8px;top:300px;z-index:60;font:13px/1.35 monospace;color:#9fffb0;background:#000b;padding:6px 8px;border:1px solid #3a6a44;pointer-events:none;white-space:pre'; document.body.appendChild(d); return { d, spawn: [], lv: [], last: 0, fr: new T.Frustum(), pm: new T.Matrix4(), lastLevel: 1 }; })() : null;
 if (dev) { const a = document.createElement('a'); a.id = 'devSample'; const on = game.opts.sample; a.textContent = on ? 'Sample area: ON (leave)' : 'Sample area'; a.href = location.pathname + (on ? '?dev=1' : '?dev=1&sample=1'); a.style.cssText = 'position:fixed;left:8px;top:270px;z-index:61;font:13px/1.35 monospace;color:#ffe08a;background:#000b;padding:5px 8px;border:1px solid #8a6a2a;text-decoration:none;pointer-events:auto'; document.body.appendChild(a); }       // the Sunken Court sample (a hand-built Stage 1), a dev switch
-if (dev) { const a = document.createElement('a'); a.id = 'devOpen'; const on = game.opts.terrain === 'open'; a.textContent = on ? 'Open terrain: ON (leave)' : 'Open terrain'; a.href = location.pathname + (on ? '?dev=1' : '?dev=1&terrain=open'); a.style.cssText = 'position:fixed;left:8px;top:244px;z-index:61;font:13px/1.35 monospace;color:#9fe8ff;background:#000b;padding:5px 8px;border:1px solid #2a6a8a;text-decoration:none;pointer-events:auto'; document.body.appendChild(a); }       // the open terrain preview, a dev switch (add &arch=a..f to pick a landscape)
+if (dev) { const a = document.createElement('a'); a.id = 'devOpen'; const on = RUN_OPEN; a.textContent = on ? 'Open terrain: ON (leave)' : 'Open terrain'; a.href = location.pathname + (on ? '?dev=1' : '?dev=1&terrain=open'); a.style.cssText = 'position:fixed;left:8px;top:244px;z-index:61;font:13px/1.35 monospace;color:#9fe8ff;background:#000b;padding:5px 8px;border:1px solid #2a6a8a;text-decoration:none;pointer-events:auto'; document.body.appendChild(a); }       // the open terrain preview, a dev switch (add &arch=a..f to pick a landscape)
 function devTick(now) {
   if (!dev || now - dev.last < 200) return; dev.last = now; const g = game, e = g.en, t = g.t; dev.pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); dev.fr.setFromProjectionMatrix(dev.pm);
   let onScreen = 0, v = new T.Vector3(); for (let i = 0; i < e.max; i++) if (e.alive[i]) { v.set(e.x[i], e.y[i] + 0.8, e.z[i]); if (dev.fr.containsPoint(v)) onScreen++; }
