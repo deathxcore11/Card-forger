@@ -43,7 +43,7 @@ export const damageOf = m => param(m, 'dmg') * monsterMul(m.id, m.level);       
 export function recompute(g) {
   const f = g.field, M = { reach: 0, burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0,
     trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0, drill: [0, 0, 0, 0, 0], aff: [0, 0, 0, 0, 0, 0, 0, 0], toll: 0, locket: 0,
-    critDmg: 0, drillMon: 0, drillCard: 0, drillTrap: 0, drillSpell: 0, jumpH: 0, killHeal: 0, heartMul: 0, vaseLuck: 0, sight: 0, thorns: 0 };
+    stakes: 0, critDmg: 0, drillMon: 0, drillCard: 0, drillTrap: 0, drillSpell: 0, jumpH: 0, killHeal: 0, heartMul: 0, vaseLuck: 0, sight: 0, thorns: 0 };
   const WHOLE = { armour: 1, maxLp: 1, airJumps: 1 };
   const addMods = (mods, mul) => { mul = mul || 1; for (const k of Object.keys(mods)) if (k in M && typeof M[k] === 'number') M[k] += WHOLE[k] ? Math.round(mods[k] * mul) : mods[k] * mul; };
   if (g.metaMods) addMods(g.metaMods);                                    // Deck Box ranks
@@ -188,7 +188,7 @@ const TIERS4 = ['common', 'rare', 'epic', 'legendary'];
 export function rollItemTier(g, chest) {
   if (g.forceChest) return g.forceChest;       // test hook only
   const I = ENCOUNTERS.itemChests, S = g.stageSpec, f = Math.min(1, g.sc / (S ? S.clock : 720)), st = g.stage | 0, sealed = chest && (chest.kind === 'sealed' || chest.trophy || chest.guaranteed), w = {};
-  for (const k of TIERS4) { w[k] = I.odds[k] + (I.perClock[k] || 0) * f + (I.perStage[k] || 0) * st; if (k === 'epic' || k === 'legendary') w[k] *= 1 + g.mods.luck * I.luckGain; if (sealed) w[k] *= I.sealed[k]; }
+  for (const k of TIERS4) { w[k] = I.odds[k] + (I.perClock[k] || 0) * f + (I.perStage[k] || 0) * st; if (k === 'epic' || k === 'legendary') w[k] *= 1 + (g.mods.luck + (g.stakes || 0) / 400) * I.luckGain; if (sealed) w[k] *= I.sealed[k]; }
   let t = 0; for (const k of TIERS4) t += w[k]; let r = g.rl() * t; for (const k of TIERS4) { r -= w[k]; if (r < 0) return k; } return 'common';
 }
 export function itemPool(g, tier) { return Object.keys(ITEMS).filter(id => (g.big || !ITEMS[id].big) && ITEMS[id].rarity === tier && !(ITEMS[id].unique && g.items.includes(id)) && (!g.unlockedItems || g.unlockedItems.has(id))); }

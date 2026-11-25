@@ -160,7 +160,7 @@ export class Game {
     const sum = this.kills * S.kill + R.elite * S.elite + R.bossA * S.bossA + R.bossB * S.bossB + R.gate * S.gate + R.other * S.other + this.stagesCleared * S.stage +
       Math.floor(this.overtimeSeconds()) * S.overtimeSec + this.fusions * S.fusion + this.godFusions * S.god + this.secretFusions * S.secret;
     let pct = Math.round(this.diff.score * 100); for (const id of this.oathList) pct += OATH_BY_ID[id].scorePct;     // each Oath adds to the score multiplier
-    return Math.floor(sum * pct / 100);
+    return Math.floor(sum * pct / 100 * (this.big ? 1 + (this.stakes || 0) / 200 : 1));
   }
   startTape() { this.tape = []; return this.tape; }
   // For tests, bots and tools: dt seconds as whole ticks of the same fixed step. cmd may be a record or a { f, r, yaw, jump, dash, slide, use } command.

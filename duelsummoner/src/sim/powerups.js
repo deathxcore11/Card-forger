@@ -8,7 +8,7 @@ export function rollPickup(g, banded) {
   const open = k => !g.unlockedPickups || g.unlockedPickups.has(k), c = COMMON_KINDS.filter(open), r = RARE_KINDS.filter(open);
   let t = g.rl();
   if (banded) { const pool = t < POWER.bandedCommonShare ? (c.length ? c : r) : (r.length ? r : c); return pool.length ? pool[Math.floor(g.rl() * pool.length)] : 0; }
-  const lk = 1 + (g.mods.vaseLuck || 0), none = 1 - (1 - POWER.vaseNone) * lk; if (t < none) return 0; t -= none;
+  const lk = 1 + (g.mods.vaseLuck || 0) + (g.stakes || 0) / 250, none = 1 - (1 - POWER.vaseNone) * lk; if (t < none) return 0; t -= none;
   const pool = t < POWER.vaseCommon * lk ? c : r; return pool.length ? pool[Math.floor(g.rl() * pool.length)] : 0;
 }
 // a rare pickup from an elite or an Ace

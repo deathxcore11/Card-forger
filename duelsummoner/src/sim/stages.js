@@ -5,6 +5,7 @@ import { RUN } from '../data/waves.js';
 import { sealStageStart, sealGateCleared } from './seals.js';
 import { RUNSPEC, stagesFor, DIFFICULTY, ACES, BIG_PACE, BIG_TUNE } from '../data/stages.js';
 import { initDoor, doorTick, doorReady } from './door.js';
+import { STAKES, stakesDensity, stakesFrac } from './stakes.js';
 import { pow, sin, cos, atan2 } from './dmath.js';
 import { spawnEnemy, spawnAce, mergeEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
 import { aliveAces } from './aces.js';
@@ -31,14 +32,14 @@ const clockText = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60
 // XP gained is scaled by the run minute so the first minutes give about 4 level-ups a minute (data: RUNSPEC.xp)
 export function xpScale(g) {
   const X = RUNSPEC.xp, m = g.mode === 'classic' ? g.t / 60 : (g.scTotal + g.sc) / 60 * (g.paceK || 1), boost = (g.big && g.stage === 0 ? 1 + 1.6 * Math.max(0, 1 - g.sc / 300) : 1) * (g.big && g.surgeP && g.surgeP.on ? 2.2 : 1);       // the big desert's first five minutes pay level-ups faster (the first minutes of the reference run are full of them)
-  return boost * (X.start + (X.end - X.start) * (m >= X.minutes ? 1 : m / X.minutes)) * (1 + X.growth * (m > X.growFrom ? m - X.growFrom : 0));
+  return boost * (g.big ? 1 + (g.stakes || 0) * STAKES.xp : 1) * (X.start + (X.end - X.start) * (m >= X.minutes ? 1 : m / X.minutes)) * (1 + X.growth * (m > X.growFrom ? m - X.growFrom : 0));
 }
 
 // ---- setup ----
 // Generates this stage's map from the run seed and loads it as the live terrain; the duelist starts on its plaza.
 export function loadStageMap(g, i) {
-  if (g.opts.terrain === 'open' && g.mode !== 'classic') { const T = BIG_TUNE[g.difficulty], base = DIFFICULTY[g.difficulty]; g.diff = Object.assign({}, base); if (T && i === 0) for (const k of ['hp', 'spawn', 'dmg', 'boss']) g.diff[k] = base[k] * T[k]; }       // the big desert's first stage is tuned harder (a first-timer may not get through it); later stages keep the base numbers
-  g.map = g.opts.terrain === 'open' ? bigMap(g.seed, i) : g.opts.terrain === 'small' ? (openMap(g.seed, i, g.opts.arch) || generateStage(g.seed, i, g.stages[i].gen)) : g.opts.sample && i === 0 ? sampleMap() : generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.syncGrid(); g.colliders = buildColliders(g.map, i); g.streamed = new Set(); g._sq = -1; if (g.big) initDoor(g); if (g.map.big) { g.fog = makeFogBig(); streamTo(g.map.spawn.x, g.map.spawn.z, 49, 3); g.colliders.ensure(g.map.spawn.x - 130, g.map.spawn.z - 130, g.map.spawn.x + 130, g.map.spawn.z + 130); } g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
+  if (g.opts.terrain === 'open' && g.mode !== 'classic') { const T = BIG_TUNE[g.difficulty], base = DIFFICULTY[g.difficulty]; g.diff = Object.assign({}, base); if (T && i === 0) for (const k of ['hp', 'spawn', 'dmg', 'boss']) g.diff[k] = base[k] * T[k]; if (T && i === 0) g.diff.gate = T.gate || 1; }       // the big desert's first stage is tuned harder (a first-timer may not get through it); later stages keep the base numbers
+  g.map = g.opts.terrain === 'open' ? bigMap(g.seed, i) : g.opts.terrain === 'small' ? (openMap(g.seed, i, g.opts.arch) || generateStage(g.seed, i, g.stages[i].gen)) : g.opts.sample && i === 0 ? sampleMap() : generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.syncGrid(); g.colliders = buildColliders(g.map, i); g.streamed = new Set(); g._sq = -1; if (g.big) initDoor(g); if (g.big && g.stakesAdd === undefined) g.stakesAdd = 0; if (g.map.big) { g.fog = makeFogBig(); streamTo(g.map.spawn.x, g.map.spawn.z, 49, 3); g.colliders.ensure(g.map.spawn.x - 130, g.map.spawn.z - 130, g.map.spawn.x + 130, g.map.spawn.z + 130); } g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
   const p = g.p; p.x = g.map.spawn.x; p.z = g.map.spawn.z; p.y = heightAt(p.x, p.z); p.vx = p.vz = p.vy = 0; p.grounded = true;
   g.openFlow = !!(g.map && g.map.open && g.mode !== 'classic'); g.gateSeen = false; g.sleepersMade = false; g.horde = { on: false, t: 0, why: '' };       // the open desert has its own stage flow: the gate wakes by choice, the elite and the mini bosses sleep, a horde rises after the boss or when the clock runs out
 }
@@ -72,8 +73,8 @@ export function updateStages(g, dt) {
   const fight = G.state === 'fight';
   if (G.state === 'closed') g.sc += dt;                         // the clock freezes during the gate fight and after it
   const m = (g.scTotal + g.sc) / 60 * (g.paceK || 1), D = g.diff, C = D.hpCurve;
-  g.hpMul = S.mult * (1 + C.a * m + C.b * m * m) * g.heat * D.hp;
-  g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3));
+  g.hpMul = S.mult * (1 + C.a * m + C.b * m * m) * g.heat * D.hp * (1 + STAKES.hpAtCap * stakesFrac(g));
+  g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3)) * (1 + STAKES.dmgAtCap * stakesFrac(g));
   g.maxAlive = Math.floor(D.cap.start + (D.cap.end - D.cap.start) * (m >= D.cap.minutes ? 1 : m / D.cap.minutes));
   g.stagePrompt = '';
   if (g.openFlow && g.horde.on) { g.horde.t += dt; const hm = Math.max(0, g.horde.t) / 60; if (g.horde.t > 0) { g.hpMul *= 1.6 * (1 + 0.25 * hm); g.dmgMul *= 1.25 * (1 + 0.1 * hm); g.maxAlive = Math.floor(g.maxAlive * (1.5 + 0.2 * hm)); } }       // a clearly stronger, endless, rising horde
@@ -328,7 +329,7 @@ function spawner(g, dt, fight, toll) {
     if (g.golemT <= 0) { g.golemT = RUN.golem.every; if (enemyCount(g.en) < cap) spawnEnemy(g, 'golem'); }
   }
   if (toll) { g.huntT -= dt; if (g.huntT <= 0) { g.huntT = RUNSPEC.tollHunterEvery; for (let k = 0; k < RUNSPEC.tollHunterCount; k++) if (enemyCount(g.en) < cap) spawnEnemy(g, 'hunter'); } }
-  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt * hm * (g.big ? surgeMul(g) : 1);
+  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt * hm * (g.big ? surgeMul(g) * stakesDensity(g) : 1);
   let live = enemyCount(g.en);
   if (g.spawnAcc > 60) g.spawnAcc = 60;                                // never a runaway backlog
   while (g.spawnAcc >= 1) { g.spawnAcc -= 1; const kind = pickKind(g, te); if (live < cap) { if (spawnEnemy(g, kind)) live++; } else mergeEnemy(g, kind); }       // past the cap a spawn merges into the nearest of its kind

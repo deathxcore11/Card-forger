@@ -75,12 +75,16 @@ function nextEvent(g) {
   return '';
 }
 let buffKey = '';
+let stakeKey = '';
+function drawStakes(g) {       // the Stakes percent under the clock (big desert only)
+  const el = $('stakes'); if (!el) return; const v = g.big ? Math.round(g.stakes || 0) : -1, k = String(v); if (k === stakeKey) return; stakeKey = k; el.textContent = v < 0 ? '' : 'STAKES ' + v + '%'; el.className = v >= 300 ? 'max' : v >= 100 ? 'hi' : '';
+}
 function drawBuffs(g) {       // the timed pickups: a small chip each, with the seconds left (or the hits)
   const L = []; if (g.windT > 0) L.push('Wind Step ' + Math.ceil(g.windT) + 's'); if (g.drumT > 0) L.push('War Drum ' + Math.ceil(g.drumT) + 's'); if (g.stopT > 0) L.push('Stopped Sand ' + Math.ceil(g.stopT) + 's'); if (g.wardHits > 0) L.push('Ward x' + g.wardHits);
   const k = L.join('|'); if (k === buffKey) return; buffKey = k; const el = $('buffs'); if (el) el.innerHTML = L.map(t => '<span>' + t + '</span>').join('');
 }
 export function drawHud(g, force) {
-  drawBuffs(g);
+  drawBuffs(g); drawStakes(g);
   if (!zonesBuilt) buildZones();
   const k = Math.ceil(g.p.hp) + '|' + g.p.maxHp + '|' + Math.floor(g.xpCur) + '|' + g.level + '|' + Math.floor(g.t) + '|' + g.kills + '|' + g.coins;
   if (force || k !== key) {

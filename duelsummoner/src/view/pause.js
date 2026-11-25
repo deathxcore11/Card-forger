@@ -37,6 +37,7 @@ export function pauseMat(g) {
 export function matHtml(g) { const m = pauseMat(g); return '<div class="pmHeader">' + m.header + '</div><div class="pmRow m">' + m.monsters + '</div><div class="pmRow s">' + m.spells + '</div>' + m.items; }
 export function statRows(g, all) {
   const M = g.mods, out = [];
+  if (g.big) out.push('<h4>Stakes</h4><div class="srow2"><span>Stakes (crowd, hp, damage, rewards)</span><b>' + Math.round(g.stakes || 0) + '%</b></div>');
   for (const [gname, ids] of STAT_GROUPS) {
     const rows = []; for (const id of ids) { const s = STAT_INFO[id], v = M[s.mod] || 0; if (!all && !v) continue; rows.push('<div class="srow2' + (v ? '' : ' zero') + '"><span>' + esc(s.label) + '</span><b class="' + (v ? 'gain' : '') + '">' + (v ? fmtStat(s, v) : '0') + '</b></div>'); }
     if (rows.length) out.push('<h4>' + esc(gname) + '</h4>' + rows.join(''));

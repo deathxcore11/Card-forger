@@ -9,6 +9,7 @@ import { heightAt } from './terrain.js';
 import { dropPickup, addFx, killEnemy, PICK_COIN, PICK_XP, PICK_HEART } from './combat.js';
 import { buildOffer, candidates, itemChestOffer } from './field.js';
 import { powerTick, rollPickup } from './powerups.js';
+import { wager, stakesOf } from './stakes.js';
 import { procTick, procEvent } from './procs.js';
 import { ACES } from '../data/stages.js';
 
@@ -35,7 +36,7 @@ export function pickSpot(g, regions, taken, apart, tries = 300, accept) {
   return null;
 }
 
-export const emptyWorld = () => ({ vases: [], stones: [], broker: null, shrines: [], cchests: [], altar: null, relic: null, opened: 0, kills50: 0 });
+export const emptyWorld = () => ({ wagers: [], vases: [], stones: [], broker: null, shrines: [], cchests: [], altar: null, relic: null, opened: 0, kills50: 0 });
 
 // One screen-clear relic per stage on a seeded flat spot 45 to 130 m from the spawn (the same spot on a replay). Taking it clears every swarm enemy within 30 m and starts the Coin Rite frenzy.
 function placeRelic(g) {
@@ -54,6 +55,7 @@ export const RELIC = { radius: 30, pick: 2.2, frenzySeconds: 20 };
 export function placeObject(g, type, s) {
   const W = g.world;
   if (type === 'vase') { W.vases.push({ x: s.x, y: s.y, z: s.z, alive: true, banded: !!s.banded, hp: 1 }); return W.vases[W.vases.length - 1]; }
+  if (type === 'wager') { W.wagers.push({ x: s.x, y: s.y, z: s.z, used: false }); return W.wagers[W.wagers.length - 1]; }
   if (type === 'stone') { W.stones.push({ x: s.x, y: s.y, z: s.z, used: false }); return W.stones[W.stones.length - 1]; }
   if (type === 'broker') { if (g.oaths && g.oaths.pauper) return null; W.broker = { x: s.x, y: s.y, z: s.z, stock: pickStock(g) }; return W.broker; }
   if (type === 'shrine') { W.shrines.push(newShrine(g, s)); return W.shrines[W.shrines.length - 1]; }
@@ -147,7 +149,7 @@ export function updateWorld(g, dt) {
     g.frenzyT = RELIC.frenzySeconds; g.emit('relic', R.x, R.z, n); g.event('banner', 'Screen cleared: ' + n + ' defeated. The Coin Rite begins.');
   }
   if (g.frenzyT > 0) g.frenzyT = Math.max(0, g.frenzyT - dt);
-  powerTick(g, dt); if (g.big) procTick(g, dt);
+  powerTick(g, dt); if (g.big) { procTick(g, dt); g.stakes = stakesOf(g); }
   if (g.mods.toll > 0) {                                                  // Toll of Ash: pay a share of current LP every few seconds, never below 1
     g.tollT -= dt;
     if (g.tollT <= 0) { g.tollT = K.tollEverySec; g.hurtPlayer(Math.max(1, Math.round(p.hp * K.tollPct)), false, 'Toll of Ash', 1); }
@@ -224,6 +226,7 @@ export function nearestProp(g) {
   const consider = (obj, type, text) => { const dx = obj.x - p.x, dz = obj.z - p.z, d = dx * dx + dz * dz; if (d < bd && Math.abs(obj.y - p.y) < 2.5) { bd = d; best = { obj, type, text }; } };
   for (const c of W.cchests) if (!c.open) { const pr = c.free ? 0 : chestPrice(g); consider(c, 'cchest', '{use}: open the chest (' + (pr === 0 ? 'free' : pr + ' coins' + (g.coins < pr ? ', you have ' + g.coins : '')) + ')'); }
   for (const s of W.stones) if (!s.used) consider(s, 'stone', '{use}: Witness Stone, take 1 free item of 3');
+  for (const s of W.wagers || []) if (!s.used) consider(s, 'wager', '{use}: Wager Shrine: a gift now, Stakes up 5 to 10%');
   if (W.broker) consider(W.broker, 'broker', '{use}: Relic Broker, buy from 3 items');
   if (W.altar && !W.altar.used) consider(W.altar, 'altar', '{use}: Altar of Tribute (Banish a card, or Tribute one from your field)');
   return best;
@@ -231,6 +234,7 @@ export function nearestProp(g) {
 export function useProp(g, hit) {
   if (hit.type === 'cchest') openCardChest(g, hit.obj);
   else if (hit.type === 'stone') openStone(g, hit.obj);
+  else if (hit.type === 'wager') { if (wager(g, hit.obj)) { const o = itemChestOffer(g, { free: true, kind: 'sealed' }); if (o) { g.offer = o; g.event('offer', null); } else g.coins += 60; } }
   else if (hit.type === 'broker') openShop(g);
   else if (hit.type === 'altar') openAltar(g, hit.obj);
 }

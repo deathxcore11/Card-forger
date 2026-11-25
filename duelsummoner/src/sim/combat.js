@@ -78,7 +78,7 @@ export function killEnemy(g, i) {
   const mg = e.mrg[i];                                                        // enemies merged into this one: their rewards are summed
   dropPickup(g, PICK_XP, x, y, z, 1 + mg);
   for (let k = 0; k <= mg; k++) {
-    if (g.rl() < RUN.coinChance * (g.diff.coin || 1) || g.frenzyT > 0) dropPickup(g, PICK_COIN, x + 0.6, y, z, (g.t < RUN.coinEarly.until ? RUN.coinEarly.mult : 1) * (g.frenzyT > 0 ? 2 : 1));      // the Coin Rite: every kill pays a coin, worth double       // the quiet first minutes pay a coin worth a few, so the first paid chest opens before 2:00
+    if (g.rl() < RUN.coinChance * (g.diff.coin || 1) * (g.big ? 1 + (g.stakes || 0) / 300 : 1) || g.frenzyT > 0) dropPickup(g, PICK_COIN, x + 0.6, y, z, (g.t < RUN.coinEarly.until ? RUN.coinEarly.mult : 1) * (g.frenzyT > 0 ? 2 : 1));      // the Coin Rite: every kill pays a coin, worth double       // the quiet first minutes pay a coin worth a few, so the first paid chest opens before 2:00
     if (g.rl() < RUN.heartChance) dropPickup(g, PICK_HEART, x - 0.6, y, z);
   }
   if (g.big && g.rl() < POWER.enemyChance) { const k = rollRare(g); if (k) dropPickup(g, k, x, y, z - 0.6); }       // the big desert: now and then a rare pickup from an ordinary kill

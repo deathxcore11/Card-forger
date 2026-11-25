@@ -59,3 +59,4 @@ Object.assign(BLESSINGS, {
   magnetism:  { big: true, name: 'Boon of Magnetism', text: '+15% pickup range.', fmt: m => '+' + r1(15 * m) + '% pickup range.', mods: { pickup: 0.15 } },
   tempo:      { big: true, name: 'Boon of Tempo', text: 'Card throw 6% faster.', fmt: m => 'Card throw ' + r1(6 * m) + '% faster.', mods: { cardRate: 0.06 } }
 });
+for (const k of Object.keys(ITEMS)) if (ITEMS[k].mods && ITEMS[k].mods.stakes) ITEMS[k].risk = true;       // the items that trade Stakes for power

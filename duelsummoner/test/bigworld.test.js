@@ -189,3 +189,17 @@ test('pickups: with the pool full of gems and coins a heart or a power-up still 
   const g = mkBig(); const m = g.pick; for (let i = 0; i < m.max; i++) { m.alive[i] = 1; m.kind[i] = i % 2; m.age[i] = i; m.val[i] = 1; m.x[i] = i; m.z[i] = 0; m.y[i] = 0; }
   const xp0 = g.xp; dropPickup(g, PICK.WARD, 5, 0, 5, 1); let n = 0; for (let i = 0; i < m.max; i++) if (m.alive[i] && m.kind[i] === PICK.WARD) n++; assert.equal(n, 1); assert.ok(g.xp > xp0, 'the gem it replaced paid its XP');
 });
+
+import { stakesOf, stakesDensity, stakesFrac, STAKES } from '../src/sim/stakes.js';
+import { nearestProp, useProp, placeObject } from '../src/sim/world.js';
+test('stakes: it starts at 0, climbs 2% a minute, a Wager Shrine adds 5 to 10 and pays at once, risk items raise it, one legendary lowers it, it carries over, density is 1 + stakes/100 up to 6x', () => {
+  const g = mkBig(); g.god = true; g.stakes = stakesOf(g); assert.equal(g.stakes, 0); g.sc = 600; assert.ok(Math.abs(stakesOf(g) - 20) < 1e-9);
+  g.sc = 0; const w = placeObject(g, 'wager', { x: g.p.x, y: g.p.y, z: g.p.z }); g.world.cchests.length = 0; const hit = nearestProp(g); assert.equal(hit.type, 'wager'); const coins0 = g.coins; useProp(g, hit);
+  assert.ok(g.stakesAdd >= 5 && g.stakesAdd <= 10 && w.used); assert.ok(g.coins > coins0 || (g.offer && g.offer.cards.length === 1), 'a gift now');
+  addItem(g, 'sun-disc'); g.stakes = stakesOf(g); assert.ok(g.stakes >= g.stakesAdd + 10 - 1e-9); addItem(g, 'phoenix-sigil'); const low = stakesOf(g); assert.ok(low < g.stakes, 'the legendary lowers it'); assert.ok(low >= 0);
+  g.stakesAdd = 1e6; g.stakes = stakesOf(g); assert.equal(g.stakes, STAKES.cap); assert.equal(stakesDensity(g), 6); assert.equal(stakesFrac(g), 1);
+  const h = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy', meta: Object.assign(simMeta(defaultMeta()), { stagesOpen: 3 }) }); h.stakesAdd = 40; jumpToStage(h, 1); assert.equal(h.stakesAdd, 40, 'carried to the next stage');
+  const hard = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'hard' }); assert.equal(stakesOf(hard), STAKES.base.hard);
+  const risk = Object.values(ALL_ITEMS).filter(i => i.risk); assert.ok(risk.length >= 8, 'risk items ' + risk.length);
+});
+import { jumpToStage } from '../src/sim/stages.js';
