@@ -8,8 +8,8 @@ export function rollPickup(g, banded) {
   const open = k => !g.unlockedPickups || g.unlockedPickups.has(k), c = COMMON_KINDS.filter(open), r = RARE_KINDS.filter(open);
   let t = g.rl();
   if (banded) { const pool = t < POWER.bandedCommonShare ? (c.length ? c : r) : (r.length ? r : c); return pool.length ? pool[Math.floor(g.rl() * pool.length)] : 0; }
-  if (t < POWER.vaseNone) return 0; t -= POWER.vaseNone;
-  const pool = t < POWER.vaseCommon ? c : r; return pool.length ? pool[Math.floor(g.rl() * pool.length)] : 0;
+  const lk = 1 + (g.mods.vaseLuck || 0), none = 1 - (1 - POWER.vaseNone) * lk; if (t < none) return 0; t -= none;
+  const pool = t < POWER.vaseCommon * lk ? c : r; return pool.length ? pool[Math.floor(g.rl() * pool.length)] : 0;
 }
 // a rare pickup from an elite or an Ace
 export function rollRare(g) { const r = RARE_KINDS.filter(k => !g.unlockedPickups || g.unlockedPickups.has(k)); return r.length ? r[Math.floor(g.rl() * r.length)] : 0; }
@@ -17,7 +17,7 @@ export function collectPowerup(g, kind, val) {
   const p = g.p, def = POWERUPS[kind]; if (!def) return;
   const say = t => g.event('banner', def.name + ': ' + t);
   switch (kind) {
-    case PICK.GREAT: p.hp = Math.min(p.maxHp, p.hp + POWER.healGreat); say('healed.'); break;
+    case PICK.GREAT: p.hp = Math.min(p.maxHp, p.hp + POWER.healGreat * (1 + g.mods.heartMul)); say('healed.'); break;
     case PICK.PURSE: { g.coinFrac += (val > 1 ? val : POWER.purseCoins) * (1 + g.mods.coinMult); const w = Math.floor(g.coinFrac); g.coins += w; g.coinsGained = (g.coinsGained | 0) + w; g.coinFrac -= w; say('+' + w + ' coins.'); break; }
     case PICK.LODE: { const m = g.pick; for (let i = 0; i < m.max; i++) if (m.alive[i] && m.kind[i] === PICK.XP) { m.far[i] = 1; if (m.age[i] < 1.6) m.age[i] = 1.6; } say('every crystal comes to you.'); break; }
     case PICK.STOP: g.stopT = POWER.stopSeconds; say('the enemies stand still.'); break;

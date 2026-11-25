@@ -4,6 +4,7 @@ import { RUN } from '../data/waves.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { damageEnemy, explode, addFx, PICK_XP, PICK_COIN, PICK_HEART } from './combat.js';
 import { collectPowerup } from './powerups.js';
+import { procEvent } from './procs.js';
 import { POWER, POWERUPS } from '../data/powerups.js';
 import { breakVasesNear } from './world.js';
 import { sin, cos, atan2 } from './dmath.js';
@@ -172,8 +173,9 @@ export function updatePickups(g, dt) {
       addFx(g, { type: 'ring', owner: 2, x: m.x[i], y: m.y[i] - 0.3, z: m.z[i], r: 0.9, dur: 0.25, color: m.kind[i] === PICK_XP ? 0x46e0ff : m.kind[i] >= 3 && POWERUPS[m.kind[i]] ? POWERUPS[m.kind[i]].color : 0xe0b765 });   // sparkle on collect
       if (m.kind[i] === PICK_XP) g.addXp(m.val[i]);
       else if (m.kind[i] === PICK_COIN) { g.coinFrac += (m.val[i] || 1) * (1 + g.mods.coinMult); const w = Math.floor(g.coinFrac); g.coins += w; g.coinsGained = (g.coinsGained || 0) + w; g.coinFrac -= w; }
-      else if (m.kind[i] === PICK_HEART) p.hp = Math.min(p.maxHp, p.hp + (g.big ? POWER.heal : RUN.heartHeal));
-      else if (m.kind[i] >= 3) collectPowerup(g, m.kind[i], m.val[i]);
+      else if (m.kind[i] === PICK_HEART) p.hp = Math.min(p.maxHp, p.hp + (g.big ? POWER.heal * (1 + g.mods.heartMul) : RUN.heartHeal));
+      if (g.procs && g.procs.length && m.kind[i] >= 2) procEvent(g, 'pickup');
+      else if (m.kind[i] >= 3) { collectPowerup(g, m.kind[i], m.val[i]); if (g.procs && g.procs.length) procEvent(g, 'pickup'); }
     }
   }
 }

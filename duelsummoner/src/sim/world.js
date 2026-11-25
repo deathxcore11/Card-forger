@@ -9,6 +9,7 @@ import { heightAt } from './terrain.js';
 import { dropPickup, addFx, killEnemy, PICK_COIN, PICK_XP, PICK_HEART } from './combat.js';
 import { buildOffer, candidates, itemChestOffer } from './field.js';
 import { powerTick, rollPickup } from './powerups.js';
+import { procTick, procEvent } from './procs.js';
 import { ACES } from '../data/stages.js';
 
 const DEG = Math.PI / 180;
@@ -96,7 +97,7 @@ export function buildWorld(g) {
 }
 
 function pickStock(g) {
-  const ids = Object.keys(ITEMS).filter(id => (!g.unlockedItems || g.unlockedItems.has(id)) && !(ITEMS[id].unique && g.items.includes(id))), W = E.broker.rarityWeights, out = [];
+  const ids = Object.keys(ITEMS).filter(id => (g.big || !ITEMS[id].big) && (!g.unlockedItems || g.unlockedItems.has(id)) && !(ITEMS[id].unique && g.items.includes(id))), W = E.broker.rarityWeights, out = [];
   const pool = ids.slice();
   while (out.length < E.broker.stock && pool.length) {
     const tot = pool.reduce((a, id) => a + (W[ITEMS[id].rarity] || 1), 0); let r = g.rl() * tot, pick = pool[0];
@@ -123,7 +124,7 @@ export function breakVase(g, v) {
   dropPickup(g, PICK_XP, v.x, v.y, v.z, v.banded ? d.xp : 1);
   if (g.big) { const k = rollPickup(g, v.banded); if (k) dropPickup(g, k, v.x, v.y, v.z + 0.6); }       // the big desert: 85 in 100 nothing, 12 a common pickup, 3 a rare one; a banded vase always one
   else if (g.rl() < (v.banded ? d.heartChance : D.heartChance)) dropPickup(g, PICK_HEART, v.x, v.y, v.z + 0.6);
-  g.vasesBroken++;
+  g.vasesBroken++; if (g.big && g.procs && g.procs.length) procEvent(g, 'vase', { x: v.x, y: v.y, z: v.z });
 }
 export function breakVasesNear(g, x, z, r) {
   for (const v of g.world.vases) if (v.alive) { const dx = v.x - x, dz = v.z - z; if (dx * dx + dz * dz < r * r) breakVase(g, v); }
@@ -146,7 +147,7 @@ export function updateWorld(g, dt) {
     g.frenzyT = RELIC.frenzySeconds; g.emit('relic', R.x, R.z, n); g.event('banner', 'Screen cleared: ' + n + ' defeated. The Coin Rite begins.');
   }
   if (g.frenzyT > 0) g.frenzyT = Math.max(0, g.frenzyT - dt);
-  powerTick(g, dt);
+  powerTick(g, dt); if (g.big) procTick(g, dt);
   if (g.mods.toll > 0) {                                                  // Toll of Ash: pay a share of current LP every few seconds, never below 1
     g.tollT -= dt;
     if (g.tollT <= 0) { g.tollT = K.tollEverySec; g.hurtPlayer(Math.max(1, Math.round(p.hp * K.tollPct)), false, 'Toll of Ash', 1); }
@@ -159,7 +160,7 @@ export function updateWorld(g, dt) {
 function itemCards(g, ids) { return ids.map(id => ({ id, kind: 'item', isNew: true, to: 1, rarity: ITEMS[id].rarity })); }
 // a shrine rolls its three blessings and their rarities when it is placed (seeded), so the circle can show the best one and a declined shrine offers the same three again
 function newShrine(g, s) {
-  const R = E.shrines.rarity, ids = (g.unlockedBoons ? Object.keys(BLESSINGS).filter(k => g.unlockedBoons.has(k)) : Object.keys(BLESSINGS)), pick = [];
+  const R = E.shrines.rarity, ids = Object.keys(BLESSINGS).filter(k => (g.big || !BLESSINGS[k].big) && (!g.unlockedBoons || g.unlockedBoons.has(k))), pick = [];
   // the big desert: a boon's tier grows richer with the stage clock and the stage, like a chest's
   const f = g.big && g.stageSpec ? Math.min(1, g.sc / g.stageSpec.clock) : 0, st = g.big ? g.stage | 0 : 0, W = {}; for (const k of R.order) W[k] = R.weights[k] + (k === 'common' ? -30 * f : k === 'rare' ? 6 * f : k === 'epic' ? 10 * f + 4 * st : k === 'legendary' ? 3 * f + 1.5 * st : 0);
   const tot = R.order.reduce((a, k) => a + W[k], 0);
@@ -173,7 +174,7 @@ function openBlessing(g, shrine) {
   g.event('offer', null);
 }
 function openStone(g, stone) {
-  const owned = new Set(g.items), ids = Object.keys(ITEMS).filter(id => !(ITEMS[id].unique && owned.has(id)) && ITEMS[id].rarity === 'common' && (!g.unlockedItems || g.unlockedItems.has(id))), pick = [];
+  const owned = new Set(g.items), ids = Object.keys(ITEMS).filter(id => (g.big || !ITEMS[id].big) && !(ITEMS[id].unique && owned.has(id)) && ITEMS[id].rarity === 'common' && (!g.unlockedItems || g.unlockedItems.has(id))), pick = [];
   while (pick.length < E.witnessStones.choices && ids.length) pick.push(ids.splice(Math.floor(g.rl() * ids.length), 1)[0]);
   if (!pick.length) { g.event('banner', 'The stones have nothing left to offer you.'); return; }
   g.offer = { type: 'item', cards: itemCards(g, pick), leave: true, source: stone }; g.event('offer', null);

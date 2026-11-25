@@ -72,9 +72,9 @@ export function damageSpecial(g, sp, dmg, fromX, fromZ, o) {
   const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0); let cls = g.srcClassOf[g.curSrc]; if (cls === undefined) cls = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]);
   let b3 = 1; if (el) { let sum = 0, cnt = 0; for (let k = 0; k < 8; k++) if (el & (1 << k)) { sum += g.mods.aff[k]; cnt++; } b3 = affinityBracket(sum / cnt); }
   const b4m = sp.mark > 0 ? targetBracket(MARKS.bonus + g.mods.markBonus) : 1;       // bracket 4 reads the mark on a boss or an elite too
-  let d = dmg * b4m * mightBracket(g.mods.dmgMult + (g.drumT > 0 ? 0.5 : 0)) * targetBracket(g.mods.bossDmg) * (cls >= 0 ? sourceBracket(g.mods.drill[cls]) : 1) * b3 * (g.otStep > 0 ? overtimeBracket(g.otStep) : 1);
+  let d = dmg * b4m * mightBracket(g.mods.dmgMult + (g.drumT > 0 ? 0.5 : 0) + (g.buf ? g.buf.might : 0)) * targetBracket(g.mods.bossDmg) * (cls >= 0 ? sourceBracket(g.mods.drill[cls]) : 1) * b3 * (g.otStep > 0 ? overtimeBracket(g.otStep) : 1);
   let crit = 0;
-  if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) { d *= K.critBase; crit = 1; }
+  if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) { d *= Math.min(K.critCap, K.critBase + g.mods.critDmg); crit = 1; }
   g.logDealt(d); g.emit('hit', d, sp.x, sp.z, crit | ((o.elem || 0) << 1));
   if (el & ELEMENTS.fire.bit) { sp.burn = ELEMENTS.fire.burn.dur + g.mods.burnDur; sp.burnDps = ELEMENTS.fire.burn.dps + g.mods.burnDps; }
   sp.hp -= d; sp.flash = 0.12;

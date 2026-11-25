@@ -17,6 +17,7 @@ test('S1: every stacking item changes the sheet with a second copy, and every un
     const g = mk(5); assert.ok(addItem(g, id), id + ' first copy'); const snap = JSON.stringify(g.mods, (k, v) => (k === 'raw' ? undefined : v));
     const second = addItem(g, id);
     if (ITEMS[id].unique) { assert.equal(second, false, id + ' is unique'); assert.equal(g.items.filter(x => x === id).length, 1); }
+    else if (ITEMS[id].proc && !Object.keys(ITEMS[id].mods).length) { assert.ok(second, id + ' stacks'); assert.equal(g.procs.find(q => q.id === id).n, 2, id + ': a second copy is counted by its proc'); }
     else { assert.ok(second, id + ' stacks'); assert.notEqual(JSON.stringify(g.mods, (k, v) => (k === 'raw' ? undefined : v)), snap, id + ': the second copy changes the sheet (or is a counted copy)'); }
   }
 });

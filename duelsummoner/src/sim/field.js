@@ -4,6 +4,7 @@ import { sealSpend } from './seals.js';
 import { addFx } from './combat.js';
 import { monsterMul, knee } from './ledger.js';
 import { STAT_BY_MOD } from '../data/stats.js';
+import { buildProcs, procEvent } from './procs.js';
 import { K } from '../data/tuning.js';
 import { RECIPES, TIERS, ELEMENTS } from '../data/elements.js';
 import { ITEMS, BLESSINGS, ITEM_CAPS } from '../data/items.js';
@@ -41,7 +42,8 @@ export const damageOf = m => param(m, 'dmg') * monsterMul(m.id, m.level);       
 // ---- derived stats from spells ----
 export function recompute(g) {
   const f = g.field, M = { reach: 0, burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0,
-    trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0, drill: [0, 0, 0, 0, 0], aff: [0, 0, 0, 0, 0, 0, 0, 0], toll: 0, locket: 0 };
+    trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0, drill: [0, 0, 0, 0, 0], aff: [0, 0, 0, 0, 0, 0, 0, 0], toll: 0, locket: 0,
+    critDmg: 0, drillMon: 0, drillCard: 0, drillTrap: 0, drillSpell: 0, jumpH: 0, killHeal: 0, heartMul: 0, vaseLuck: 0, sight: 0, thorns: 0 };
   const WHOLE = { armour: 1, maxLp: 1, airJumps: 1 };
   const addMods = (mods, mul) => { mul = mul || 1; for (const k of Object.keys(mods)) if (k in M && typeof M[k] === 'number') M[k] += WHOLE[k] ? Math.round(mods[k] * mul) : mods[k] * mul; };
   if (g.metaMods) addMods(g.metaMods);                                    // Deck Box ranks
@@ -65,6 +67,7 @@ export function recompute(g) {
     if (P.affPerElement) { for (const m of f.monsters) if (m) { const D = MONSTERS[m.id] || FUSIONS[m.id]; if (D) for (const el of D.elements) M.aff[ELEMENTS[el].bit === 1 ? 0 : ELEMENTS[el].bit === 2 ? 1 : ELEMENTS[el].bit === 4 ? 2 : ELEMENTS[el].bit === 8 ? 3 : ELEMENTS[el].bit === 16 ? 4 : ELEMENTS[el].bit === 32 ? 5 : ELEMENTS[el].bit === 64 ? 6 : 7] += P.affPerElement * n; } }       // bracket 3: more for every monster that shares the element
     if (P.toll) { M.toll += n; M.dmgMult += P.dmgMult * n; note('dmgMult', SPELLS[s.id].name, P.dmgMult * n); }
   }
+  M.drill[0] += M.drillMon; M.drill[1] += M.drillCard; M.drill[2] += M.drillTrap; M.drill[3] += M.drillSpell;       // the big desert's items feed the source brackets the same way a Drill spell does
   for (const m of f.monsters) if (m && m.id === 'astral-magus') M.markExplode = { radius: param(m, 'explodeRadius'), dmg: param(m, 'explodeDmg') };
   // rate stats have a ceiling (Tempo and Draw approach x3): linear up to +100%, then a knee
   M.cardRateRaw = M.cardRate; M.monsterRateRaw = M.monsterRate;
@@ -72,7 +75,7 @@ export function recompute(g) {
   M.raw = {}; for (const k of Object.keys(ITEM_CAPS)) { M.raw[k] = M[k]; if (M[k] > ITEM_CAPS[k]) M[k] = ITEM_CAPS[k]; }
   if (M.reach > K.reachCap) M.reach = K.reachCap;       // Reach: the one cap, however many sources stack (Widening Rite, Surveyor's Lens, a future Secret Fusion trait)
   M.raw.pickup = M.pickup; if (M.pickup > K.magCap) M.pickup = K.magCap;       // Magnet is clamped at K.magCap (+180%), not at the old item ceiling that cut Collector's Eye 5 to +10%          // ceilings on stacked stats; the raw sum stays for the stat panel
-  g.sheetSrc = src; g.mods = M;
+  g.sheetSrc = src; g.mods = M; buildProcs(g);
   const maxHp = g.oaths && g.oaths.glass ? 1 : g.cfgHp + M.maxLp;                  // Glass Oath: 1 LP and it cannot be raised
   if (maxHp !== g.p.maxHp) g.p.maxHp = maxHp;
 }
@@ -188,7 +191,7 @@ export function rollItemTier(g, chest) {
   for (const k of TIERS4) { w[k] = I.odds[k] + (I.perClock[k] || 0) * f + (I.perStage[k] || 0) * st; if (k === 'epic' || k === 'legendary') w[k] *= 1 + g.mods.luck * I.luckGain; if (sealed) w[k] *= I.sealed[k]; }
   let t = 0; for (const k of TIERS4) t += w[k]; let r = g.rl() * t; for (const k of TIERS4) { r -= w[k]; if (r < 0) return k; } return 'common';
 }
-export function itemPool(g, tier) { return Object.keys(ITEMS).filter(id => ITEMS[id].rarity === tier && !(ITEMS[id].unique && g.items.includes(id)) && (!g.unlockedItems || g.unlockedItems.has(id))); }
+export function itemPool(g, tier) { return Object.keys(ITEMS).filter(id => (g.big || !ITEMS[id].big) && ITEMS[id].rarity === tier && !(ITEMS[id].unique && g.items.includes(id)) && (!g.unlockedItems || g.unlockedItems.has(id))); }
 // the offer a chest opens: one item of the rolled tier (a tier with nothing left steps down); null when there is nothing at all
 export function itemChestOffer(g, chest) {
   if (!chest.rolled) chest.rolled = rollItemTier(g, chest);
@@ -255,7 +258,7 @@ export function chooseCard(g, idx) {
     if (c.sold || g.coins < c.price || (ITEMS[c.id].unique && g.items.includes(c.id))) return false;
     g.coins -= c.price; sealSpend(g, c.price); c.sold = true; c.stockRef.sold = true; addItem(g, c.id); return true;
   }
-  if (c.kind === 'item') addItem(g, c.id);
+  if (c.kind === 'item') { addItem(g, c.id); if (o.itemChest) procEvent(g, 'chest'); }
   else if (c.kind === 'blessing') addBlessing(g, c.id, c.mult);
   else if (c.kind === 'banish') { g.field.banished.add(c.id); g.event('banner', cardDef(c.id).name + ' will no longer be offered.'); }
   else if (c.kind === 'tribute') tributeCard(g, c);

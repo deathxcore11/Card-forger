@@ -25,7 +25,7 @@ export const ITEMS = {
 };
 // Items stack: a second Sand Sandals adds another +6%. Ceilings on the summed stat keep copies sensible (the stat panel shows the raw sum and the capped value).
 // Items marked unique:true are single-only (a second copy would do nothing or work against you) and are never offered again once owned.
-export const ITEM_CAPS = { reach: 1.5, move: 1.0, crit: 0.6, dashCd: 0.6, trapRecharge: 0.6, shopDiscount: 0.6, luck: 0.5, airJumps: 3, bossDmg: 1.0, regen: 3, coinMult: 2.0 };
+export const ITEM_CAPS = { critDmg: 3.0, jumpH: 1.0, heartMul: 3.0, vaseLuck: 3.0, sight: 1.5, thorns: 300, killHeal: 30, reach: 1.5, move: 1.0, crit: 0.6, dashCd: 0.6, trapRecharge: 0.6, shopDiscount: 0.6, luck: 0.5, airJumps: 3, bossDmg: 1.0, regen: 3, coinMult: 2.0 };
 export const PLANNED_ITEMS = ['Summoner\'s Chalk', 'Mirror Shard', 'Soul Lantern', 'Twin Seal Ring', 'Crown of the Hollow King', 'Sandglass of Haste',
   'Polymer Flask', 'Tome Binder', "Summoner's Whistle", 'Field Banner', 'Eye of the Sealed One', 'Deck of Fate'];
 
@@ -40,3 +40,22 @@ export const BLESSINGS = {
   plenty:    { name: 'Blessing of Plenty', text: '+15% XP.', fmt: m => '+' + r1(15 * m) + '% XP.', mods: { xp: 0.15 } },
   renewal:   { name: 'Blessing of Renewal', text: 'Regain 1 health every 4 s.', fmt: m => 'Regain 1 health every ' + r1(4 / m) + ' s.', mods: { regen: 0.25 } }
 };
+
+// ---- the big desert's catalog: 100 more items (data/items2.js), flagged big:true so the older modes keep their small pools, and the families of the first twenty
+import { MORE_ITEMS } from './items2.js';
+for (const k of Object.keys(MORE_ITEMS)) ITEMS[k] = Object.assign({ big: true }, MORE_ITEMS[k]);
+const OLD_FAM = { 'thornbound-locket': 'defence', 'worn-duel-glove': 'card', 'surveyors-lens': 'spell', 'sand-sandals': 'move', 'cracked-hourglass': 'trap', 'scarab-charm': 'economy', 'clay-heart': 'defence', 'lucky-coin': 'risk', 'whetstone-tablet': 'card', 'travelling-cloak': 'move', 'lodestone': 'explore', 'bandaged-hand': 'defence', 'bronze-scale': 'defence', 'dueling-boots': 'move', 'hunters-mark': 'card', 'burning-deck': 'card', 'traders-seal': 'economy', 'paper-talisman': 'defence', 'jar-of-avarice': 'economy', 'graveyard-bell': 'spell' };
+for (const k of Object.keys(OLD_FAM)) ITEMS[k].fam = OLD_FAM[k];
+
+// ---- nine more boons for the big desert (sixteen in all): one stat each, its size rolled by the shrine's tier
+Object.assign(BLESSINGS, {
+  fortune:    { big: true, name: 'Boon of Fortune', text: '+4% luck.', fmt: m => '+' + r1(4 * m) + '% luck.', mods: { luck: 0.04 } },
+  precision:  { big: true, name: 'Boon of Precision', text: '+4% crit chance.', fmt: m => '+' + r1(4 * m) + '% crit chance.', mods: { crit: 0.04 } },
+  ferocity:   { big: true, name: 'Boon of Ferocity', text: 'Crits hit 20% harder.', fmt: m => 'Crits hit ' + r1(20 * m) + '% harder.', mods: { critDmg: 0.20 } },
+  agility:    { big: true, name: 'Boon of Agility', text: 'Dash cooldown 8% shorter.', fmt: m => 'Dash cooldown ' + r1(8 * m) + '% shorter.', mods: { dashCd: 0.08 } },
+  reaching:   { big: true, name: 'Boon of Reach', text: 'Area attacks cover 8% more ground.', fmt: m => 'Area attacks cover ' + r1(8 * m) + '% more ground.', mods: { reach: 0.08 } },
+  plunder:    { big: true, name: 'Boon of Plunder', text: '+10% coins.', fmt: m => '+' + r1(10 * m) + '% coins.', mods: { coinMult: 0.10 } },
+  keensight:  { big: true, name: 'Boon of Keen Sight', text: 'See 12% further across the fog.', fmt: m => 'See ' + r1(12 * m) + '% further across the fog.', mods: { sight: 0.12 } },
+  magnetism:  { big: true, name: 'Boon of Magnetism', text: '+15% pickup range.', fmt: m => '+' + r1(15 * m) + '% pickup range.', mods: { pickup: 0.15 } },
+  tempo:      { big: true, name: 'Boon of Tempo', text: 'Card throw 6% faster.', fmt: m => 'Card throw ' + r1(6 * m) + '% faster.', mods: { cardRate: 0.06 } }
+});

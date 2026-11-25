@@ -34,6 +34,7 @@ const STEP = 1 / 60;
 
 import { BUILD_VERSION } from './results.js';
 import { streamWorld } from './stream.js';
+import { procEvent } from './procs.js';
 const BUILD_VERSION_REPLAY = BUILD_VERSION;
 const EV_START = 1024, EV_MAX = 1 << 16;       // the event ring: starts at 1,024 and grows to 65,536
 export class Game {
@@ -262,7 +263,7 @@ export class Game {
   addXp(n) {
     const v = n * (1 + this.mods.xp) * xpScale(this);
     this.xp += v; this.xpCur += v;
-    while (this.xpCur >= this.xpNeed) { this.xpCur -= this.xpNeed; this.level++; this.xpNeed = xpNeeded(this.level); this.pendingLevels++; this.levelUps++; this.emit('levelup', this.level); }
+    while (this.xpCur >= this.xpNeed) { this.xpCur -= this.xpNeed; this.level++; this.xpNeed = xpNeeded(this.level); this.pendingLevels++; this.levelUps++; this.emit('levelup', this.level); if (this.procs && this.procs.length) procEvent(this, 'level'); }
   }
 
   // flags (SPEC section 6): 1 SELF (the player's own cost: 1 HP floor, never kills, no grace, no dodge or Ward), 2 PIERCE, 4 TRUE (ignores Guard)
@@ -283,6 +284,7 @@ export class Game {
     this.emit('hurt', n, bigF, SELF ? 1 : 0, src);
     if (!SELF) { const pp = this.p, R = CFG.player.speed * (1 + this.mods.move), hs = Math.sqrt(pp.vx * pp.vx + pp.vz * pp.vz); if (hs > R) { const k = (R + (hs - R) * K.hopHitKeep) / hs; pp.vx *= k; pp.vz *= k; } pp.chain >>= 1; }       // a hit that lands takes half of the speed bonus
     onPlayerHurt(this, SELF);
+    if (!SELF && this.big) { if (this.mods.thorns > 0) explode(this, this.p.x, this.p.y, this.p.z, 3.5, 0, this.mods.thorns, 0xffb347, 'Thorns'); if (this.procs && this.procs.length) procEvent(this, 'hurt'); }
     if (!SELF && this.p.hp <= 0) { this.over = true; this.killedBy = src; }
     return true;
   }

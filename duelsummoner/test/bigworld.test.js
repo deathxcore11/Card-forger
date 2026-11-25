@@ -115,3 +115,28 @@ test('big world chests: a chest holds one item, its rarity rolled at opening (ri
   const id = g.offer.cards[0].id, rar = g.offer.reveal; assert.equal(ITEMS[id].rarity, rar); chooseCard(g, 0); assert.ok(g.items.includes(id) && c.open && !g.offer);
   const h = mkBig(); h.god = true; h.xp = 1e6; h.addXp(1); for (let i = 0; i < 3 && !h.offer; i++) h.step(STEP, IDLE); if (h.offer) assert.ok(h.offer.cards.every(q => q.kind !== 'item' && q.kind !== 'blessing'), 'level-up cards only: ' + h.offer.cards.map(q => q.kind));
 });
+
+import { ITEMS as ALL_ITEMS, BLESSINGS as ALL_BOONS, ITEM_CAPS } from '../src/data/items.js';
+import { addItem } from '../src/sim/field.js';
+import { procEvent, procTick } from '../src/sim/procs.js';
+
+test('big world catalog: 120 items (45 common, 40 rare, 25 epic, 10 legendary), 16 boons, every item reads and works', () => {
+  const c = { common: 0, rare: 0, epic: 0, legendary: 0 }; for (const it of Object.values(ALL_ITEMS)) c[it.rarity]++;
+  assert.deepEqual(c, { common: 45, rare: 40, epic: 25, legendary: 10 }); assert.equal(Object.keys(ALL_BOONS).length, 16);
+  for (const [id, it] of Object.entries(ALL_ITEMS)) { assert.ok(it.name && it.text && it.fam && it.price > 0, id); assert.ok(!/undefined|NaN/.test(it.text), id + ': ' + it.text); if (it.rarity === 'legendary') assert.ok(it.unique, id + ' single only'); }
+  for (const id of Object.keys(ALL_BOONS)) { const b = ALL_BOONS[id]; assert.ok(b.name && b.text && b.fmt(1) && b.mods, id); }
+  const g = mkBig(); g.god = true; g.spawnAcc = -1e9;
+  for (const id of Object.keys(ALL_ITEMS)) { if (!g.items.includes(id)) addItem(g, id); }       // every item at once: nothing throws, the stats stay inside their ceilings
+  for (let i = 0; i < 600; i++) { g.step(STEP, Object.assign({}, IDLE, { f: 1, dash: i % 90 === 0 })); }
+  for (const k of Object.keys(ITEM_CAPS)) assert.ok(g.mods[k] <= ITEM_CAPS[k] + 1e-9, k + ' ' + g.mods[k]);
+  assert.ok(g.procs.length >= 55, 'procs built: ' + g.procs.length); for (const ev of ['kill', 'crit', 'hurt', 'dash', 'level', 'chest', 'vase', 'pickup']) procEvent(g, ev, { x: g.p.x, y: g.p.y, z: g.p.z });
+  procTick(g, 1); assert.ok(Number.isFinite(g.p.hp));
+});
+
+test('big world items: stat items change the stat, procs fire on their trigger, a second copy is stronger', () => {
+  const g = mkBig(); g.god = true; const a = g.mods.critDmg; addItem(g, 'sharpened-edge'); assert.ok(Math.abs(g.mods.critDmg - a - 0.25) < 1e-9); addItem(g, 'ox-hide'); assert.equal(g.p.maxHp, 100 + 20);
+  g.p.hp = 50; addItem(g, 'vampire-fang'); for (let i = 0; i < 15; i++) procEvent(g, 'kill', { x: g.p.x, y: g.p.y, z: g.p.z }); assert.equal(g.p.hp, 52, 'the 15th kill heals 2');
+  const h = mkBig(); h.god = true; addItem(h, 'last-stand'); h.p.hp = 10; procTick(h, 0.1); assert.ok(h.buf.might >= 0.35 - 1e-9, 'below 35%: +35% damage'); h.p.hp = 100; procTick(h, 0.1); assert.equal(h.buf.might, 0);
+  const w = mkBig(); w.god = true; addItem(w, 'level-lantern'); w.addXp(1e5); assert.ok(w.wardHits >= 1, 'a Ward on level-up');
+  const t = mkBig(); t.god = true; addItem(t, 'old-hourglass'); for (let i = 0; i < 46 * 60; i++) t.step(STEP, IDLE); assert.ok(t.stopT > 0 || t.sc > 45, 'the sand stops every 45 s');
+});

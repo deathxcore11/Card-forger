@@ -6,6 +6,7 @@ import { atan2, cos, exp, sin } from './dmath.js';
 import { heightAt, moveXZ, WALL } from './terrain.js';
 import { breakVasesNear } from './world.js';
 import { resolveColliders } from './colliders.js';
+import { procEvent } from './procs.js';
 
 export function makePlayer() {
   return { x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0, pface: 0, vx: 0, vz: 0, vy: 0, hp: CFG.player.hp, maxHp: CFG.player.hp, face: 0, grounded: true,
@@ -28,14 +29,14 @@ export function updatePlayer(g, dt, cmd) {
   if (g.oaths.still) cmd.dash = false;                                   // Still Oath: no dash
   g.camYaw = cmd.yaw; const fx = -sin(cmd.yaw), fz = -cos(cmd.yaw), rx = -fz, rz = fx;
   let mx = fx * cmd.f + rx * cmd.r, mz = fz * cmd.f + rz * cmd.r;
-  const ml = Math.sqrt(mx * mx + mz * mz), hasInput = ml > 0.001, speed = C.speed * (1 + g.mods.move) * (g.windT > 0 ? 2 : 1);
+  const ml = Math.sqrt(mx * mx + mz * mz), hasInput = ml > 0.001, speed = C.speed * (1 + g.mods.move) * (g.windT > 0 ? 2 : 1) * (1 + (g.buf ? g.buf.haste : 0));
   if (hasInput) { mx /= ml; mz /= ml; p.face = atan2(mx, mz); }
 
   p.dashCd = Math.max(0, p.dashCd - dt);
   if (p.grounded) { if (p.landT < 255) p.landT++; } else p.landT = 0;                      // ticks on the ground since landing (1 on the first grounded tick)
   if (p.dashT > 0) p.sinceDash = 0; else if (p.sinceDash < 255) p.sinceDash++;
   if (cmd.dash && p.dashCd <= 0 && p.dashT <= 0) {
-    p.dashT = C.dashTime; p.dashCd = C.dashCd * (1 - g.mods.dashCd); p.sliding = false; sealDash(g);
+    p.dashT = C.dashTime; p.dashCd = C.dashCd * (1 - g.mods.dashCd); p.sliding = false; sealDash(g); if (g.procs && g.procs.length) procEvent(g, 'dash');
     p.dashDx = hasInput ? mx : fx; p.dashDz = hasInput ? mz : fz;
     breakVasesNear(g, p.x + p.dashDx * 2, p.z + p.dashDz * 2, 3);                 // dashing through vases breaks them
   }
@@ -89,7 +90,7 @@ export function updatePlayer(g, dt, cmd) {
   if (blocked) { p.chain = 0; p.hopped = false; const w = Math.sqrt(p.vx * p.vx + p.vz * p.vz); if (w > speed) { p.vx *= speed / w; p.vz *= speed / w; } }       // a wall takes the bonus away
 
   // vertical
-  const jumpV = Math.sqrt(2 * CFG.gravity * C.jumpHeight);
+  const jumpV = Math.sqrt(2 * CFG.gravity * C.jumpHeight * (1 + g.mods.jumpH));
   let h = heightAt(p.x, p.z);
   if (p.grounded) {
     if (h > p.y || p.y - h <= 0.5) { if (h - p.y > K.hopStep) { p.chain = 0; p.hopped = false; const w = Math.sqrt(p.vx * p.vx + p.vz * p.vz); if (w > speed) { p.vx *= speed / w; p.vz *= speed / w; } } p.y = h; } else p.grounded = false;       // a step up of more than 0.5 m takes the bonus away

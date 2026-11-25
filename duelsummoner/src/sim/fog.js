@@ -12,7 +12,7 @@ export const makeFog = () => ({ n: FOG_N, cells: new Uint8Array(FOG_N * FOG_N), 
 export const sightRadius = y => Math.min(80, 30 + 1.6 * Math.max(0, y));
 export function revealFog(g) {
   const f = g.fog; if (!f) return;
-  if (f.big) return revealBig(g, f); const p = g.p, half = MAP.half, cell = half * 2 / f.n, r = sightRadius(p.y), r2 = r * r;
+  if (f.big) return revealBig(g, f); const p = g.p, half = MAP.half, cell = half * 2 / f.n, r = sightRadius(p.y) * (1 + (g.mods && g.mods.sight || 0)), r2 = r * r;
   const i0 = Math.max(0, Math.floor((p.x - r + half) / cell)), i1 = Math.min(f.n - 1, Math.floor((p.x + r + half) / cell)), j0 = Math.max(0, Math.floor((p.z - r + half) / cell)), j1 = Math.min(f.n - 1, Math.floor((p.z + r + half) / cell));
   let added = 0;
   for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
@@ -23,7 +23,7 @@ export function revealFog(g) {
 }
 export const exploredAt = (f, x, z) => { if (!f) return true; if (f.big) { const gx = Math.floor(x / FOG_CELL), gz = Math.floor(z / FOG_CELL), t = f.tiles.get(tileKey(Math.floor(gx / FOG_TILE), Math.floor(gz / FOG_TILE))); return !!t && t[(gz - Math.floor(gz / FOG_TILE) * FOG_TILE) * FOG_TILE + (gx - Math.floor(gx / FOG_TILE) * FOG_TILE)] === 1; } const cell = MAP.half * 2 / f.n, i = Math.floor((x + MAP.half) / cell), j = Math.floor((z + MAP.half) / cell); return i >= 0 && j >= 0 && i < f.n && j < f.n && f.cells[j * f.n + i] === 1; };
 function revealBig(g, f) {
-  const p = g.p, r = sightRadius(p.y), r2 = r * r, C = FOG_CELL, T = FOG_TILE;
+  const p = g.p, r = sightRadius(p.y) * (1 + (g.mods ? g.mods.sight : 0)), r2 = r * r, C = FOG_CELL, T = FOG_TILE;
   const i0 = Math.floor((p.x - r) / C), i1 = Math.floor((p.x + r) / C), j0 = Math.floor((p.z - r) / C), j1 = Math.floor((p.z + r) / C); let added = 0;
   for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
     const cx = (i + 0.5) * C - p.x, cz = (j + 0.5) * C - p.z; if (cx * cx + cz * cz > r2) continue;
