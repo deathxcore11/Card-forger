@@ -204,6 +204,7 @@ export class DuelistRig {
   // call every frame with the sim's player and game, the frame time, and whether a card was just thrown
   update(p, g, dt, thrown) {
     if (this.debugHold) return;                                                // a test is posing the rig by hand
+    if (this._legSaved) { for (const [b, q] of this._legSaved) b.quaternion.copy(q); this._legSaved = null; }
     if (this._twSaved) { for (const [b, q] of this._twSaved) b.quaternion.copy(q); this._twSaved = null; }       // take last frame's torso twist off first: the mixer only writes a bone whose clip value changed, so on a held pose the twist would pile up frame after frame and snap back later
     const pr = this.prev; this._airT = p.grounded ? 0 : (this._airT || 0) + dt; this._airWas = p.grounded ? (this._airLast || 0) : 0; if (p.grounded) { this._airLast = this._airMax || 0; this._airMax = 0; } else this._airMax = this._airT;       // how long the last flight lasted: a landing animation only follows a real one (over 0.12 s)
     if (p.grounded && !pr.wasGrounded && this._airLast < 0.12) pr.fallV = 0; if (p.grounded && !pr.wasGrounded && this._airLast >= 0.12) this._landDip = 0.18;       // the landing is a 0.18 s dip of the whole body (see actors), not a second jump clip
@@ -217,7 +218,8 @@ export class DuelistRig {
     let sp = Math.hypot(p.vx || 0, p.vz || 0); if (p.grounded && this._py !== undefined && dt > 0.002) { const rise = (p.y - this._py) / dt; if (Math.abs(rise) < 8) this._rv = (this._rv || 0) + (rise - (this._rv || 0)) * Math.min(1, dt * 6); sp = Math.hypot(sp, this._rv || 0); } this._py = p.y;       // 3D ground speed: climbing or descending a dune counts the height too, so the legs match the distance covered
     const locoNow = LOCO.includes(want.clip) && this.has('idle_cards') && this.has('walk') && this.has('run');
     this._loco(sp, dt, locoNow, this.upperT > 0);
-    if (locoNow) { if (this.curAct) { this.curAct.fadeOut(0.15); this.curAct = null; } if (this.cur !== 'loco') this._rs = 0; this.cur = 'loco'; this.mixer.update(dt); return; }       // a finished one-shot fades out when running resumes, so it no longer blends half and half with the run                      // the blend plays the legs and the torso; the throw layer (if any) plays the arms
+    if (locoNow) { if (this.curAct) { this.curAct.fadeOut(0.15); this.curAct = null; } if (this.cur !== 'loco') this._rs = 0; this.cur = 'loco'; this.mixer.update(dt); this._kS = (this._kS || 1) + (this._legK - (this._kS || 1)) * Math.min(1, dt * 10); this._stretch(this._kS); return; }       // a finished one-shot fades out when running resumes, so it no longer blends half and half with the run                      // the blend plays the legs and the torso; the throw layer (if any) plays the arms
+    this._kS = 1;       // out of the run (air, dash, slide, a one-shot): the stride stretch is off, and it eases back in when the run resumes
     const part = this.upperT > 0 && hasThrow && !['defeat', 'victory', 'slide', 'dash'].includes(want.clip) ? 'lower' : 'all';
     const key = want.clip + '|' + part;
     if (key !== this.cur) { const prevAct = this.curAct; const act = this._play(want.clip, { loop: want.loop, speed: want.speed || AIRSPEED[want.clip] || 1, part, fade: FADE[want.clip] || FADE.default }); if (act) { if (prevAct && prevAct !== act) prevAct.fadeOut(0.15); this.curAct = act; this.cur = key; } }
@@ -233,23 +235,45 @@ export class DuelistRig {
     const qy = new T.Quaternion(), qp = new T.Quaternion(), up = new T.Vector3(0, 1, 0), per = yaw / this._sp.length;
     for (const b of this._sp) { b.parent.getWorldQuaternion(qp); qy.setFromAxisAngle(up, per); b.quaternion.premultiply(qp).premultiply(qy).premultiply(qp.clone().invert()); b.updateMatrixWorld(true); }
   }
+  // How fast the planted foot travels back in each clip (m/s at normal speed, in the model's own metres) and the mean pose of the leg bones over the cycle (for stretching the stride). Measured once from the clips themselves.
+  _measure() {
+    if (this.vf) return; this.vf = { walk: 0.45, run: 1.6 }; this.legRef = null; const bones = {}; this.root.traverse(o => { if (o.isBone && /^(Left|Right)(UpLeg|Leg|Foot)$/.test(o.name)) bones[o.name] = o; }); if (!bones.LeftFoot || !bones.RightFoot) return;
+    this.legBones = Object.values(bones); const V = new T.Vector3(), N = 60, refs = new Map(); this.root.updateMatrixWorld(true);
+    for (const name of ['walk', 'run']) {
+      const clip = this._clip(name, 'all'); if (!clip) continue; const a = this.mixer.clipAction(clip); a.reset(); a.setLoop(T.LoopRepeat, Infinity); a.enabled = true; a.setEffectiveWeight(1); a.play(); const d = clip.duration, pts = [];
+      for (let i = 0; i < N; i++) { a.time = d * i / N; this.mixer.update(0); this.root.updateMatrixWorld(true); const f = this.legBones.find(b => b.name === 'LeftFoot'); f.getWorldPosition(V); this.root.worldToLocal(V); V.multiplyScalar(this.root.scale.x); pts.push([V.x, V.y, V.z]);
+        if (name === 'run') for (const b of this.legBones) { const r = refs.get(b) || { x: 0, y: 0, z: 0, w: 0, q0: b.quaternion.clone(), n: 0 }; const q = b.quaternion; const sg = q.dot(r.q0) < 0 ? -1 : 1; r.x += sg * q.x; r.y += sg * q.y; r.z += sg * q.z; r.w += sg * q.w; r.n++; refs.set(b, r); } }
+      const ys = pts.map(p => p[1]), mn = Math.min(...ys), st = pts.filter(p => p[1] < mn + 0.05), rg = a2 => Math.max(...st.map(p => p[a2])) - Math.min(...st.map(p => p[a2])), ax = rg(0) > rg(2) ? 0 : 2, travel = rg(ax), dur = st.length / N * d;
+      if (dur > 0.02 && travel > 0.02) this.vf[name] = travel / dur; a.stop(); this.mixer.uncacheAction(clip); }
+    this.legRef = new Map(); for (const [b, r] of refs) this.legRef.set(b, new T.Quaternion(r.x, r.y, r.z, r.w).normalize());
+    this.mixer.stopAllAction(); this._legQ = new T.Quaternion(); this._legD = new T.Quaternion();
+  }
+  // stretch the legs' swing about their mean pose by k (about 1 to 2): at speeds the clip cannot match even at a fast cycle, the stride grows instead of the feet sliding. Undone before the next frame's mixer update.
+  _stretch(k) {
+    if (!this.legRef || k < 1.02) return; this._legSaved = []; const q0 = this._legQ, d = this._legD, ax = this._legAx || (this._legAx = new T.Vector3());
+    for (const [b, ref] of this.legRef) { this._legSaved.push([b, b.quaternion.clone()]); d.copy(ref).invert().multiply(b.quaternion); if (d.w < 0) { d.x = -d.x; d.y = -d.y; d.z = -d.z; d.w = -d.w; } const w = Math.min(1, d.w), sn = Math.sqrt(1 - w * w); if (sn < 1e-5) continue; ax.set(d.x / sn, d.y / sn, d.z / sn); d.setFromAxisAngle(ax, 2 * Math.acos(w) * k); b.quaternion.copy(ref).multiply(d); }
+  }
   // idle, walk and run are one blend: weights follow ground speed and the walk and run share one foot phase, so feet do not slide and nothing switches.
   // Two sets (legs and hips, arms and torso) so a card throw can take the arms and torso while the legs keep running.
   _loco(sp, dt, on, throwing) {
     if (!this.L) {
       if (!(this.has('idle_cards') && this.has('walk') && this.has('run'))) return;
+      this._measure();       // before the blend's actions exist: measuring plays and stops the clips
       const mk = (n, part) => { const a = this._play(n, { loop: true, fade: 0, part }); a.setEffectiveWeight(0); return a; };
       this.L = { idleL: mk('idle_cards', 'lower'), walkL: mk('walk', 'lower'), runL: mk('run', 'lower'), idleU: mk('idle_cards', 'upper'), walkU: mk('walk', 'upper'), runU: mk('run', 'upper') };
       for (const k of ['walkL', 'runL', 'walkU', 'runU']) this.L[k].timeScale = 0; this.lw = { idle: 0, walk: 0, run: 0, up: 1 }; this.ph = 0;
     }
     const L = this.L, lw = this.lw; let ti = 0, tw = 0, tr = 0;
-    if (on) { const wi = clamp01(1 - (sp - 0.4) / 1.0), wr = clamp01((sp - 4.5) / 4); ti = wi; tr = (1 - wi) * wr; tw = (1 - wi) * (1 - wr); }
+    if (on) { const wi = clamp01(1 - (sp - 0.4) / 1.0), wr = clamp01((sp - 1.4) / 2.2); ti = wi; tr = (1 - wi) * wr; tw = (1 - wi) * (1 - wr); }
     const k = on ? Math.min(1, dt * 9) : Math.min(1, dt / 0.04);       // idle to run blend over about 0.15 s; out of the run (into the air, a dash) in about 0.08 s       // idle to run blend over about 0.15 s
     if (this._rs < 0.15) { this._rs += dt; const f = Math.min(1, this._rs / 0.15); lw.idle = ti * f; lw.walk = tw * f; lw.run = tr * f; }       // after a one-shot the blend comes in linearly over 0.15 s while the one-shot fades out, so the two always add up to a whole
     else { lw.idle += (ti - lw.idle) * k; lw.walk += (tw - lw.walk) * k; lw.run += (tr - lw.run) * k; }
     lw.up += ((throwing ? 0 : 1) - lw.up) * Math.min(1, dt / 0.06);
     for (const n of ['idle', 'walk', 'run']) { const w = lw[n], al = L[n + 'L'], au = L[n + 'U']; al.enabled = w > 0.002; al.setEffectiveWeight(w); au.enabled = w * lw.up > 0.002; au.setEffectiveWeight(w * lw.up); }
-    if (on && sp > 0.3) { const rs = lw.run / ((lw.walk + lw.run) || 1); const stride = WALK_STRIDE + (RUN_STRIDE - WALK_STRIDE) * rs, nat = 1 / (L.walkL.getClip().duration + (L.runL.getClip().duration - L.walkL.getClip().duration) * rs); this.ph = (this.ph + Math.max(0.7 * nat, Math.min(1.4 * nat, sp / stride)) * dt) % 1; }       // cycles per second follow ground speed but stay within 0.7 to 1.4 of the clip's own rate, so the legs never blur or crawl
+    this._legK = 1;       // the stride: stretching the swing by k lengthens the planted foot's travel by about 1 + 0.4 (k - 1) (measured); the cycle rate goes up to 2.2 first and the stretch takes the rest
+    if (on && sp > 0.3 && this.vf) { const rs = lw.run / ((lw.walk + lw.run) || 1), vf = this.vf.walk + (this.vf.run - this.vf.walk) * rs, nat = 1 / (L.walkL.getClip().duration + (L.runL.getClip().duration - L.walkL.getClip().duration) * rs), need = sp / vf;       // how many times faster than the clip's own pace the planted foot must go
+      const TU = (typeof window !== 'undefined' && window.__rigTune) || {}, GK = TU.GK || 0.4, kmax = TU.kmax || 1.5, rmax = TU.rmax || 3.0, r0 = TU.r0 || 3.0, kAmp = Math.max(1, Math.min(kmax, 1 + (need / r0 - 1) / GK)), gk = 1 + GK * (kAmp - 1), rate = Math.max(0.6, Math.min(rmax, need / gk)); this._legK = kAmp; this.ph = (this.ph + rate * nat * dt) % 1; this.sprint = Math.max(0, Math.min(1, (need - 3.2 * (1 + GK * 1.4)) / (3.2 * (1 + GK * 1.4) * 0.5)));       // past what rate and stride can match, the rest shows as a forward lean (this.sprint 0 to 1)
+    } else this.sprint = 0;       // cycles per second follow ground speed but stay within 0.7 to 1.4 of the clip's own rate, so the legs never blur or crawl
     const wd = L.walkL.getClip().duration, rd = L.runL.getClip().duration; L.walkL.time = L.walkU.time = this.ph * wd; L.runL.time = L.runU.time = this.ph * rd;
   }
   // an additive flinch (hurt, a small hit): laid on top of whatever is playing as the difference from the standing pose, so it never interrupts a run or a jump
