@@ -37,7 +37,7 @@ const BASE = {
 
 export const STAGE_SPECS = {
   1: {
-    ...BASE, stage: 1, name: 'Surface Ruins', grid: 15, palette: 'ruins_day', gate: 'Arbiter\'s Gate', gateBoss: 'The Stone Arbiter',
+    ...BASE, stage: 1, name: 'The Open Desert', grid: 15, palette: 'ruins_day', gate: 'Arbiter\'s Gate', gateBoss: 'The Stone Arbiter',
     districtPool: [
       { id: 'sunken_colosseum', hero: 'colosseum_stands', name: 'Sunken Colosseum', required: true, gate: true, w: 0, arche: { plaza: 3, terraces: 1 } },
       { id: 'market_tablets', hero: 'market_awnings', name: 'Market of Tablets', w: 10, arche: { necropolis: 3, dunes: 1 } },

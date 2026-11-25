@@ -51,7 +51,7 @@ const masteryQuests = [];
 for (const d of ['kael', 'mira']) for (const r of [2, 3, 5, 8]) masteryQuests.push(q('mastery-' + d + '-' + r, 'Mastery', d[0].toUpperCase() + d.slice(1) + ' mastery rank ' + r, 'Reach mastery rank ' + r + ' with ' + d[0].toUpperCase() + d.slice(1) + '.', r >= 8 ? 'Radiant' : r >= 5 ? 'Gilded' : 'Bright', 'mastery.' + d, r, r === 5 ? { outfit: d + '-2' } : { chips: 10 * r }));
 // regalia (hats and trinkets) come from hidden finds on maps and from quests: not buildable until the map generator places finds
 const regaliaQuests = [
-  q('regalia-hat1', 'Regalia', 'The Dusty Hat', 'Find the hat buried in the Surface Ruins.', 'Gilded', 'manual', 1, { regalia: 'dusty-hat' }),
+  q('regalia-hat1', 'Regalia', 'The Dusty Hat', 'Find the hat buried in the Open Desert.', 'Gilded', 'manual', 1, { regalia: 'dusty-hat' }),
   q('regalia-trinket1', 'Regalia', 'A Cracked Charm', 'Find a charm hidden in a vase on any map.', 'Bright', 'manual', 1, { regalia: 'cracked-charm' }),
   q('regalia-mastery', 'Regalia', 'Veteran Insignia', 'Reach mastery rank 10 with any duelist.', 'Mythic', 'mastery.any', 10, { regalia: 'veteran-insignia' })
 ];

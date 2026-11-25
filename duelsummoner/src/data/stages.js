@@ -46,7 +46,7 @@ const ev = (t, role, id, name, engine, hpScale, drop) => ({ t, role, id, name, e
 
 export const STAGES = [
   {
-    id: 'ruins', name: 'Surface Ruins', clock: 420, mult: 1.0, gateWake: 360, falls: null,
+    id: 'ruins', name: 'The Open Desert', clock: 420, mult: 1.0, gateWake: 360, falls: null,
     waves: { offset: 0, scale: 480 / 420 },
     gen: { counts: { cchest: 8, stone: 2, broker: 1, shrine: 2, altar: 1, vaseClusters: 12 } },
     timeline: [

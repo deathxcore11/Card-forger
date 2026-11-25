@@ -13,7 +13,7 @@ const ROMAN = ['I', 'II', 'III'];
 const pips = (n, max) => '<span class="pips">' + Array.from({ length: max }, (_, k) => '<i class="' + (k < n ? 'on' : '') + '"></i>').join('') + '</span>';
 
 export function pauseHeader(g) {
-  const map = (MAPS.find(m => m.id === (g.opts && g.opts.map)) || MAPS[0] || {}).name || 'Surface Ruins', dif = DIFFICULTY[(g.opts && g.opts.difficulty) || 'medium'];
+  const map = (MAPS.find(m => m.id === (g.opts && g.opts.map)) || MAPS[0] || {}).name || 'The Open Desert', dif = DIFFICULTY[(g.opts && g.opts.difficulty) || 'medium'];
   const stage = g.stages && g.stages.length > 1 ? 'Stage ' + (g.stage + 1) + ' of ' + g.stages.length : 'Quick duel';
   const seals = g.oaths ? Object.keys(g.oaths).filter(k => g.oaths[k]).length : 0;
   return '<h1>Duel paused</h1><div class="pm2">' + esc(map) + ' &middot; ' + stage + ' &middot; ' + (dif ? dif.name : '') + ' &middot; ' + clock(Math.floor(g.sc || g.t || 0)) + '</div><div class="pm3">Coins <b>' + g.coins + '</b> &middot; Kills <b>' + g.kills + '</b> &middot; Level <b>' + g.level + '</b>' + (seals ? ' &middot; Oaths <b>' + seals + '</b>' : '') + '</div>';

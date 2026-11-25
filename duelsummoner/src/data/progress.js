@@ -21,7 +21,8 @@ export function masteryRank(entry) {
 }
 
 export const MAPS = [
-  { id: 'ruins', name: 'Surface Ruins', blurb: 'The sun-bleached top of the Buried Kingdom. Three stages, each deeper than the last.', stages: 3, quickDuel: true }
+  // the id stays 'ruins' (saves, records, unlocks and leaderboards are keyed by it); only the name and blurb the player sees changed
+  { id: 'ruins', name: 'The Open Desert', blurb: 'Rolling dunes ringed by far mountains, with mesas, dead trees and a sleeping gate. Three stages, each harder than the last.', stages: 3, quickDuel: true }
 ];
 // Star Chip multiplier per difficulty (separate from the score multiplier in data/stages.js)
 export const DIFF_CHIPS = { easy: 1.0, medium: 1.1, hard: 1.2 };
