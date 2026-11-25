@@ -375,3 +375,10 @@ body.ps { background: #000; }
 #app.ps .pgw p.gp, #app.ps .txw p.gp { margin-top: 16px; }
 /* under a story's painting the whole top frame goes dark, so nothing of the screen shows round it */
 #app.ps.dual.stblk .scrT > :not(.story):not(.toast) { visibility: hidden; }
+/* the achievements (ach.mjs): a line of the body face set on its own row; the pop-up, which takes no tap; a row of the
+   book's list that a tap chooses (it draws nothing itself); a row of the two-screen list not yet earned */
+#app.ps .tl { font: 16px/16px 'LM Text', monospace; white-space: nowrap; pointer-events: none; }
+#app.ps .acht { left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 5; }
+#app.ps .achr { position: absolute; padding: 0; margin: 0; background: none; border: 0; cursor: pointer; }
+#app.ps .rw.dk0:not(.nvf) { border-color: var(--dark); }
+#app.ps .rw.achgap { border-color: var(--dark); background: none; pointer-events: none; }

@@ -4,7 +4,7 @@ import { buildDb, roleOf, weightOf, meldPairRaw } from '../engine/cards.mjs';
 import { legalActions, playVariants, planChain, viewFor, forecast } from '../engine/duel.mjs';
 import { RELICS as BASE_RELICS, LAB, TUNED_TEXT, relicText, relicLinks } from '../engine/relics.mjs';
 const RELICS = { ...BASE_RELICS, ...LAB }; // the page's own copy: an item's words follow the rules in force (see setLabs)
-import { newRun, runApply, MIN_DECK, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw, ENCHANT_TEXT, carries, THEMES, TWISTS } from '../engine/run.mjs';
+import { newRun, MIN_DECK, deckWeight, weightCap, relicList, possibleMasterworks, cardValue, BOSSES, BUILD_FAMILIES, HEAT_RULES, bossLaw, ENCHANT_TEXT, carries, THEMES, TWISTS } from '../engine/run.mjs';
 import { codexResult, codexKnows, codexUpgrade } from '../engine/cards.mjs';
 import { powerActions } from '../engine/duel.mjs';
 import { FORGERS, FORGER_IDS, HIDDEN_FORGERS } from '../engine/forgers.mjs';
@@ -16,6 +16,8 @@ import { F, F2, fitConsole, fitDual, yb, xr, cx0, cy0, viewSize, ledgeW, pq, pqW
 import * as R3 from './raster.mjs';
 import { kc, foot, rowsOf, plaques, navItems, navKeys, navStep, padLoop, KEYS } from './dual.mjs';
 import { pixelText } from './pxtext.mjs';
+import { achRunApply, achCheck, achView, achProgress, ACH_BY_ID, ACH_GROUPS } from '../engine/achievements.mjs';
+import * as AC from './ach.mjs';
 import { shortText as shortTextOf, rulesText as rulesTextOf } from './text.mjs';
 import './sound.mjs';
 import { runFault, okProfile } from './saves.mjs'; // sets window.LMAudio; the cue() hook below is all the page knows about sound
@@ -82,12 +84,21 @@ let lostStore = storeSize() === 0 && (() => { try { return sessionStorage.getIte
 const markStore = () => { try { if (storeSize() > 0) sessionStorage.setItem(HAD, '1'); } catch { /* no session store, so no guard */ } };
 markStore();
 
-const G = { run: null, sel: [], onto: null, attacker: null, aim: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
+const G = { run: null, sel: [], onto: null, attacker: null, aim: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null }, achOff: new Set() }; // achOff: rows a Vault purchase earned between runs (they belong to no run's last page)
 const P = Object.assign(newProfile(), (() => { const s = store.get(PROFILE); if (s == null) return {}; if (okProfile(s)) return s; store.unreadable.add(PROFILE); try { localStorage.setItem(PROFILE + '.unreadable', JSON.stringify(s)); } catch { /* the copy could not be kept */ } return {}; })());
 // Switches stored before Rumours was on for everyone (22 November 2026) take it on once; a player may turn it off after.
 { const st = store.get(LABKEY); pref = st ? { heat: true, kits: true, ...st, ...(st.rumoursOn ? {} : { secret: true, rumoursOn: 1 }) } : { ...LAB_DEFAULTS, rumoursOn: 1 }; setLabs(pref); }
 // Saves from before 20 November 2026 wrote a shared pair (the two Robo fusions) without its order: bring them up to date once.
 { const pc = codexUpgrade(db, P.codex), kn = codexUpgrade(db, [...G.known].concat(pc)); if (pc.join() !== P.codex.join()) { P.codex = pc; store.set(PROFILE, P); } if (kn.join() !== [...G.known].join()) store.set(KNOWN, kn); G.known = new Set(kn); }
+// Achievements (engine/achievements.mjs): a profile from before them has no p.ach. Keep only rows the engine knows, each
+// once, with a run number; then judge the profile as it stands, so what was already done is earned (quietly) at once.
+function achMigrate() {
+  const ids = Array.isArray(P.ach) ? P.ach.filter((id, i, a) => typeof id === 'string' && ACH_BY_ID[id] && a.indexOf(id) === i) : [];
+  const at = P.achAt && typeof P.achAt === 'object' && !Array.isArray(P.achAt) ? P.achAt : {}, was = JSON.stringify([P.ach, P.achAt]);
+  P.ach = ids; P.achAt = Object.fromEntries(ids.map(id => [id, Number.isFinite(at[id]) ? at[id] : P.runs || 0]));
+  try { achCheck(db, P, null); } catch (e) { later(e); }
+  return JSON.stringify([P.ach, P.achAt]) !== was;
+}
 // Two tabs of this page share one store. Each keeps its own copy of the profile in P, so before a tab changes P it
 // takes in whatever another tab stored since (syncP), and a tab's write never undoes what another tab banked.
 const rawP = () => { try { return localStorage.getItem(PROFILE); } catch { return null; } };
@@ -98,7 +109,7 @@ function syncP() {
   if (store.failed.has(PROFILE)) return; // this tab holds progress that is not stored yet: it is the newer one
   const raw = rawP(); if (raw == null || raw === pRaw) return;
   let o = null; try { o = JSON.parse(raw); } catch { return; }
-  if (okProfile(o)) { setP(o); pRaw = raw; }
+  if (okProfile(o)) { setP(o); pRaw = raw; achMigrate(); }
 }
 // First lessons: a profile that has finished a few runs already knows them. "Show the first lessons again" on the Rules page resets this.
 const tips = () => P.tips || (P.tips = P.runs > 2 ? learnedAll() : {});
@@ -139,12 +150,13 @@ const storedIs = run => { if (store.failed.has(SAVE)) return true; const s = sto
 function bank(run, long) {
   syncP();
   const before = JSON.stringify(P); let res;
-  try { res = applyRun(P, nameRun(run), { long }); } catch (e) { setP(JSON.parse(before)); throw e; } // a run that cannot be banked leaves the profile as it was
+  try { res = applyRun(P, nameRun(run), { long }); achAdd(achCheck(db, P, null)); } catch (e) { setP(JSON.parse(before)); throw e; } // a run that cannot be banked leaves the profile as it was
   const same = storedIs(run);
   if (saveP()) { if (same) { store.del(SAVE); store.del(REV); } } else if (same) store.set(SAVE, run);
   if (!res.already && ((res.unlocks || []).length || (res.feats || []).length)) cueShown('unlock', { big: (res.unlocks || []).length > 0 });
   return res.already ? null : res;
 }
+if (achMigrate() && !store.unreadable.has(PROFILE)) saveP();
 if (store.unreadable.has(PROFILE)) G.notice = 'Your saved progress could not be read, so this is a fresh start. A copy of the old data was kept on this device.';
 // A finished run still on disk means the page closed before the run was banked (or before the bank was stored): bank it now, once.
 { const s = readRun();
@@ -192,9 +204,10 @@ function act(a) {
   let rev; const fl0 = run.floor;
   let last = run.duel ? JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))) : null; // each frame keeps the board it began from, which it shows until each move lands
   try {
-    rev = runApply(run, a, db, { onStep: evs => { if (run.duel) { const view = JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))); frames.push({ view, prev: last, evs, rival: info(run) }); last = view; } } });
+    rev = achRunApply(run, a, db, P, { onStep: evs => { if (run.duel) { const view = JSON.parse(JSON.stringify(viewFor(run.duel, db, 0))); frames.push({ view, prev: last, evs, rival: info(run) }); last = view; } } });
   } catch (e) { if (e && e.constructor !== Error) { recover(e, true); return; } cue('refused', { action: a.t }); toast(e.message); render(); return; } // the engine refuses a move with a plain Error; anything else means the run itself is damaged
   G.faulty = null;
+  { const got = (rev || []).filter(e => e.e === 'ach').map(e => e.id); if (got.length) { saveP(); achAdd(got, wasDuel); } }
   if (run.floor > fl0 && run.phase !== 'over') G.floorCard = { u: uidOf(run), n: run.floor + 1 }; // shown at the new floor's first chamber
   holding = wasDuel && frames.length > 0; // released by playFrames when the last frame has been shown
   if (bossId && (rev || []).some(e => e.e === 'duelWon') && !(P.beaten || []).includes(bossId)) { P.beaten = (P.beaten || []).concat(bossId); saveP(); } // counsel on a guardian's door stops once it has been beaten
@@ -211,7 +224,7 @@ function act(a) {
     if (a.t === 'door' || !G.note) G.note = newNote(a.t !== 'door'); // a note begun part-way (after a reload) is partial
     noteFrames(G.note, frames);
     if (learnFrom(tips(), frames.flatMap(f => f.evs))) saveP();
-    G.frames = frames; if (!run.duel && run.lastDuel) { G.overlay = { kind: 'duelEnd', sum: run.lastDuel, rival: G.lastRival, why: run.lastDuel.won ? [] : whyLost(G.note, run.lastDuel, G.lastRival || {}) }; G.note = null; } playFrames(); }
+    G.frames = frames; if (!run.duel && run.lastDuel) { G.overlay = { kind: 'duelEnd', sum: run.lastDuel, rival: G.lastRival, ach: achToWindow(), why: run.lastDuel.won ? [] : whyLost(G.note, run.lastDuel, G.lastRival || {}) }; G.note = null; } playFrames(); }
   else render();
 }
 const info = run => (G.lastRival = run.rival ? { name: run.rival.name, tier: run.rival.tier, law: run.rival.law || null, lawText: run.rival.lawText, bountyText: run.rival.bountyText, twist: run.rival.twist, style: run.rival.style, styleText: run.rival.styleText } : G.lastRival);
@@ -231,6 +244,59 @@ const held = []; let holding = false;
 function cueShown(name, data) { if (holding) held.push([name, data]); else cue(name, data); }
 function releaseCues() { holding = false; for (const [n, d] of held.splice(0)) cue(n, d); }
 function toast(m) { cue('toast', { text: m }); G.toast = m; clearTimeout(toast.t); toast.t = setTimeout(() => { G.toast = ''; const t = $('#toast'); if (t) t.textContent = ''; }, 2600); }
+
+// ---- the achievement pop-up (ach.mjs draws it). Rows earned wait in a queue and show one at a time: 4 s alone, 3 s each
+// while several wait (n/m says which). One starts only when the move's frames have been shown and no window, story or
+// Trap question is open; it never needs a press. Its place is a rule: on one screen (and the rooms of two) the bare stone
+// of your own pillar, six rows under its last piece and ending four rows above its first plaque, else nowhere; in a duel
+// on two screens the empty middle place of the bottom frame's third row of plaques, while no command needs it. A row
+// earned in a duel on a frame too short for the pillar is written in the VICTORY window instead; one earned in a room
+// there waits for the run's last page, which lists every row the run earned.
+function achAdd(ids, duel = false) {
+  const Q = G.aq || (G.aq = { q: [], cur: null, n: 0, of: 0, timer: 0 });
+  for (const id of ids || []) if (ACH_BY_ID[id]) { Q.q.push({ id, duel: !!duel }); Q.of++; }
+  if (Q.q.length) setTimeout(achPaint);
+}
+const achCalm = () => { const r = G.run, d = r && r.duel;
+  return !G.playing && !G.tab && !G.overlay && !G.inspect && !G.story && !G.screen && !G.forge && !G.opening && !G.floorCard && !(d && d.pending && d.active === 1) && !!r && r.phase !== 'over'; };
+// where the pop-up may stand on the frame now: { el, html } or null
+function achSpot(id, o) {
+  if (!app.classList.contains('ps') || look === 'old') return null;
+  const phase = app.dataset.phase;
+  if (DUAL && phase === 'duel') return G.achStrip ? { el: scrB, html: AC.stripToast(id, o) } : null;
+  const pil = (DUAL ? scrT : app).querySelector('.fr > .pil0'); if (!pil) return null;
+  // measured in the frame's own pixels (offsets), never the page's: a frame turned for an upright phone has its rects turned too
+  const top = e => { let y = 0, n = e; while (n && n !== pil) { y += n.offsetTop; n = n.offsetParent; } return n === pil ? y : null; };
+  let last = 0, plq = DUAL ? 360 : F.H;
+  if (phase === 'duel') { last = G.achTerr ? 176 : 146; plq = F.H - 64; } // the duel's pillar: SPARKS ends at 146, a terrain's lines at 176; the Forger's Power plaque stands 64 rows from the foot
+  else { const parts = [...pil.querySelectorAll('*')].filter(e => e instanceof HTMLElement && !e.closest('.pq, .acht') && e.getClientRects().length);
+    for (const e of parts) { const t = top(e); if (t == null || !e.offsetHeight) continue; last = Math.max(last, t + e.offsetHeight + (e.classList.contains('ga') ? 1 : 0)); }
+    for (const e of pil.querySelectorAll('.pq')) { const t = top(e); if (t != null && t >= last) plq = Math.min(plq, t); } }
+  const y = last + AC.TOAST.gap; if (y + AC.TOAST.h + AC.TOAST.clear > plq) return null;
+  return { el: pil, html: AC.pillarToast(id, y, o) };
+}
+function achPaint() {
+  for (const e of app.querySelectorAll('.acht')) e.remove();
+  const Q = G.aq; if (!Q || (!Q.cur && !Q.q.length)) return;
+  if (G.run && G.run.phase === 'over') { clearTimeout(Q.timer); G.aq = null; return; } // the run's last page lists them all
+  const calm = achCalm();
+  if (!Q.cur) { if (!calm) return; const nx = Q.q[0], sp = achSpot(nx.id, { n: Q.n + 1, of: Q.of }); if (!sp) return;
+    Q.q.shift(); Q.cur = { ...nx, left: Q.of > 1 ? 3000 : 4000, t0: 0 }; Q.n++; }
+  const d = G.run && G.run.duel, C = Q.cur, sp = (calm || C.t0) && !(G.tab || G.overlay || G.story || G.screen || (d && d.pending && d.active === 1)) ? achSpot(C.id, { n: Q.n, of: Q.of }) : null;
+  if (!sp) { if (C.t0) { C.left -= performance.now() - C.t0; C.t0 = 0; clearTimeout(Q.timer); } return; } // put away until its place is free again, keeping the time it has left
+  sp.el.insertAdjacentHTML('beforeend', `<div class="ab acht" data-ach="${C.id}">${sp.html}</div>`);
+  if (!C.t0) { C.t0 = performance.now(); clearTimeout(Q.timer); Q.timer = setTimeout(achNext, Math.max(0, C.left)); }
+}
+function achNext() { const Q = G.aq; if (!Q) return; Q.cur = null; if (!Q.q.length) { Q.n = 0; Q.of = 0; } achPaint(); }
+// A duel ends on a frame too short for the pillar's pop-up: the rows it earned that are still waiting go to its window.
+function achToWindow() {
+  const Q = G.aq; if (DUAL || !Q) return [];
+  const dfit = (G.achTerr ? 176 : 146) + AC.TOAST.gap + AC.TOAST.h + AC.TOAST.clear <= F.H - 64; if (dfit) return [];
+  const out = [Q.cur, ...Q.q].filter(x => x && x.duel).map(x => x.id);
+  if (Q.cur && Q.cur.duel) { clearTimeout(Q.timer); Q.cur = null; }
+  Q.q = Q.q.filter(x => !x.duel); if (!Q.cur && !Q.q.length) { Q.n = 0; Q.of = 0; }
+  return out;
+}
 
 // The frames of a move, one after another. The text bar reads out each step as it begins, never the one before.
 // In the console look each frame is a beat (beatOf): the frame lasts as long as its beat, its sounds are sent as the
@@ -712,7 +778,7 @@ function draw() {
   if (psOn) { drawConsole(psOn); screenCue(); return; }
   if (app.classList.contains('ps')) { app.classList.remove('ps'); document.body.classList.remove('ps'); app.style.margin = app.style.left = app.style.top = app.style.transformOrigin = ''; fit(); }
   const r = G.run; let body;
-  if (G.screen) body = { forger: screenForger, vault: screenVault, codex: screenCodex, feats: screenFeats }[G.screen]();
+  if (G.screen) body = { forger: screenForger, vault: screenVault, codex: screenCodex, feats: screenFeats, ach: screenFeats }[G.screen]();
   else if (!r) body = screenHome();
   else if (G.shown || r.phase === 'duel') body = screenDuel();
   else body = { kit: screenKit, charm: screenCharm, chamber: screenChamber, reward: screenReward, anvil: screenAnvil, bazaar: screenBazaar, over: screenOver }[r.phase]();
@@ -1874,6 +1940,7 @@ function psDuel() {
     + plaques + (endOk ? pq(4, yb(220), 88, 'END TURN', 'end', { lit: !cmds.some(c => c[2] && c[2].lit) }) : '');
   // the terrain, under your numbers: its name in whole words on up to two lines of the pillar's 80 pixels (every terrain's
   // name sets whole so), clear of the plaque under it, and how long it holds or that it is locked
+  G.achTerr = !!v.terrain;
   const ter = v.terrain, terr = ter ? lb(8, 149, 'TERRAIN', 'g') + (ter.lock ? lbr(88, 149, 'LOCKED', 'd') : ter.temp != null ? lbr(88, 149, ter.temp, 'd') : '') + nameLines(card(ter.id).name, 80, 2).map((t, i) => `<b class="ab lb" data-name="${esc(card(ter.id).name)}" style="left:8px;top:${158 + 9 * i}px">${esc(t)}</b>`).join('') : '';
   const left = psYou(G.run, v, terr + power + pq(4, yb(198), 88, 'THIS DUEL', 'tab:duel'), lifeAt);
   const prompt = pend && !G.tab && !G.inspect && !G.overlay ? psTrap(live) : ''; // another window opened over the question takes its place until it is closed
@@ -2257,6 +2324,14 @@ const row = (pic, head, text, side = '') => `<div class="brow">${pic ? `<div cla
 const inl = (label, a, o = {}) => `<button class="pq in${o.lit ? ' lit' : ''}${o.on ? ' on' : ''}" ${a ? `data-a="${esc(a)}"` : ''}${o.off ? ' disabled' : ''}>${esc(label)}</button>`; // a plaque that sits in a line
 const meter = (n, goal, gain = 0) => `<i class="ga in" style="width:120px"><i style="width:${Math.round(118 * Math.min(1, n / goal))}px"></i>${gain ? `<u style="left:${Math.round(118 * Math.min(1, (n - gain) / goal))}px;width:${Math.round(118 * Math.min(1, gain / goal))}px"></u>` : ''}</i>`;
 const featPs = f => row('', `${esc(f.name.toUpperCase())} <span class="d">${esc(f.build.toUpperCase())}</span>`, `${esc(f.text)}`, `${meter(f.after, f.goal, f.after - f.before)}<b class="lb">${f.done ? 'COMPLETE' : `${f.after} / ${f.goal}`}${f.gain && !f.done ? ` (+${f.gain})` : ''}</b>`);
+// The rows this run earned (each one keeps the number of the run it was earned in), and the counting row it brought
+// nearest, from how far each had come when the run began (kept on the run as uiAch0 by the page).
+const achRunRows = () => achView(db, P, null).filter(r => r.earned && r.at === P.runs && !G.achOff.has(r.id));
+function achCloser() {
+  const r = G.run, at0 = r && r.uiAch0; if (!at0) return null; let best = null;
+  for (const x of achProgress(db, P, null)) { if (x.done || !(x.id in at0)) continue; const gain = x.have - at0[x.id]; if (gain > 0 && (!best || gain / x.goal > best.gain / best.goal)) best = { name: ACH_BY_ID[x.id].name, have: x.have, goal: x.goal, gain }; }
+  return best;
+}
 function psOver() {
   const r = G.run, S = r.stats, R = G.results, won = r.result.won;
   const head = won ? 'THE PYRAMID IS CLEARED' : r.result.reason === 'abandoned' ? 'YOU LEFT THE PYRAMID' : 'THE RUN ENDS';
@@ -2265,15 +2340,41 @@ function psOver() {
   const tally = `<p>Floor ${r.floor + 1}, chamber ${Math.min(6, r.chamber + 1)}. ${esc(r.forger ? FORGERS[r.forger].name : 'No Forger')}. Duels won ${S.wins} of ${S.duels}. Guardians beaten ${S.bossWins}. Melds ${S.melds}.${Object.keys(S.ranks).length ? ' Ranks ' + Object.entries(S.ranks).map(([k, v]) => k + ' x' + v).join(', ') + '.' : ''}</p>`;
   const mem = R ? `${R.lines.length ? `<p>${R.lines.map(l => `${esc(l[0])} +${l[1]}`).join('. ')}.</p>` : ''}<p><b class="lb g">+${R.total} MEMORIES</b></p>` : '<p class="d">Already banked.</p>';
   const feats = R && R.feats.length ? `<p><b class="lb g">FEATS</b></p>${R.feats.map(featPs).join('')}<p class="d">Feats count across runs, win or lose.</p>` : '';
-  if (DUAL) return overDual({ head, unl, tally, mem });
-  return psBook(head, unl + tally + mem + feats, inl('NEW RUN', 'new', { lit: true }) + inl('CODEX', 'screen:codex') + inl('FEATS', 'screen:feats') + inl(`VAULT ${P.memories}`, 'screen:vault') + inl('TITLE', 'home'));
+  const ach = achRunRows();
+  if (DUAL) return overDual({ head, unl, tally, mem, ach });
+  return psBook(head, unl + tally + mem + AC.runEndOne(ach, achCloser()) + feats, inl('NEW RUN', 'new', { lit: true }) + inl('CODEX', 'screen:codex') + inl('FEATS', 'screen:feats') + inl(`VAULT ${P.memories}`, 'screen:vault') + inl('TITLE', 'home'));
 }
 function psFeats() {
   if (DUAL) return featsDual();
   const rows = featList(!!labs.long).map(f => { const done = (P.featsDone || []).includes(f.id), n = done ? f.goal : (P.feats || {})[f.id] || 0;
     return featPs({ ...f, before: n, after: n, gain: 0, done }) + row(medal(f.gift, 32), `${esc(RELICS[f.gift].name.toUpperCase())} <span class="d">${done ? 'UNLOCKED GIFT' : 'GIFT, LOCKED'}</span>`, esc(RELICS[f.gift].text)); }).join('');
   const forg = FORGER_IDS.concat(HIDDEN_FORGERS.filter(id => P.forgers.includes(id))).filter(id => id !== 'tarn').map(id => row('', `${esc(FORGERS[id].name.toUpperCase())} <span class="d">${P.forgers.includes(id) ? 'UNLOCKED' : 'LOCKED'}</span>`, esc(FORGER_FEATS[id].text))).join('');
-  return psBook('FEATS', `<p>Each feat follows a way of playing and adds one Gift to what the forge can offer. Progress counts across runs, win or lose.</p>${rows}<p><b class="lb g">FORGERS</b></p>${forg}${labs.long ? `<p><b class="lb g">STARTER KITS</b></p>${plainKits()}` : ''}`, inl('BACK', 'home', { lit: true }));
+  return psBook('FEATS', `<p>Each feat follows a way of playing and adds one Gift to what the forge can offer. Progress counts across runs, win or lose.</p>${rows}<p><b class="lb g">FORGERS</b></p>${forg}${labs.long ? `<p><b class="lb g">STARTER KITS</b></p>${plainKits()}` : ''}`, inl('BACK', 'home', { lit: true }) + inl('ACHIEVEMENTS', 'screen:ach'));
+}
+// The achievements: pages of the Feats book, one group of rows at a time (L1 and R1, or the < and > plaques, turn the
+// groups; a tap chooses the row LOOK CLOSER opens). The Rumours switch (db.config.secretLast) decides which rows are open.
+const achBook = () => G.achB || (G.achB = { g: 0, pg: 0, sel: null, look: false, pages: 1 });
+const achAll = () => achView(db, P, null);
+function psAch() {
+  if (DUAL) return achDual();
+  const B = achBook(), all = achAll(), { W, H } = F, bw = 416, bx = (W - bw) >> 1, h = H - 18, open = !!db.config.secretLast;
+  let bk = AC.bookOne(all, B.g, B.pg, B.sel, h, open); B.pg = bk.page; B.pages = bk.pages;
+  if (!bk.ids.includes(B.sel)) { B.sel = bk.ids[0] || null; bk = AC.bookOne(all, B.g, B.pg, B.sel, h, open); }
+  const bgPic = H > 360 && CART.has('room-archive-book-x') ? 'room-archive-book-x' : CART.has('room-archive-book') ? 'room-archive-book' : 'key-title';
+  const bg = CART.has(bgPic) && D.cart && D.cart.title === 720 ? `<img class="bg" src="${cimg(bgPic)}" width="720" height="480" style="position:absolute;left:${(W - 720) >> 1}px;top:${(H - 480) >> 1}px" alt="">` : box(0, 0, W, H, 'st dk');
+  const c = carve('FEATS', 16, render), head = c ? `<img class="ab" src="${c.url}" width="${c.w}" height="${c.h}" style="left:${(bw - c.w) >> 1}px;top:4px" alt="FEATS">` : lb(8, 8, 'FEATS', 'g');
+  let s = `<div class="ti">${bg}<div class="wn book" style="left:${bx}px;top:9px;width:${bw}px;height:${h}px">${head}${bk.html}</div>`;
+  const r = B.look && all.find(x => x.id === B.sel);
+  if (r) { const L = AC.lookOne(r, all), lw = 368, lx = (W - lw) >> 1, ly = Math.max(4, Math.min(56, (H - L.h) >> 1)); s += `<div class="dim"></div><div class="wn mw" style="left:${lx}px;top:${ly}px;width:${lw}px;height:${L.h}px;padding:0">${L.html}</div>`; }
+  return s + '</div>';
+}
+function achDual() {
+  const B = achBook(), all = achAll(), gi = B.g, rows = AC.groupRows(all, gi), m = /^a:(\d+)$/.exec(G.look || ''), at = m ? Math.min(rows.length - 1, +m[1]) : 0, r = rows[at];
+  // the keys on the game's four columns (4, 106, 208, 310), as every two-frame foot: a plaque too wide for its column
+  // says its shorter words instead. The Y place stays empty while the window is open, and each key keeps its x.
+  const keys = [B.look ? { k: 'B', t: 'CLOSE', a: 'achclose', lit: true } : { k: 'B', t: 'BACK', a: 'screen:feats' }, { k: 'L1', t: ['LAST GROUP', 'LAST'], a: 'achg:-1' }, { k: 'R1', t: ['NEXT GROUP', 'NEXT'], a: 'achg:1' }, B.look ? null : { k: 'Y', t: ['LOOK CLOSER', 'LOOK'], a: 'achlook' }];
+  const y0 = 360 - (2 * 21 + 11), ft = { y0, html: foot(y0, [keys, TBOOKS.map(b => ({ t: b[1], a: 'screen:' + b[0], cls: b[0] === 'feats' ? 'on' : '' }))], 4) };
+  return two(lectern('', '', B.look ? AC.lookTop(all, gi, r) : AC.lecternTop(all, gi, r)), AC.listBottom(all, gi, at, ft.y0, !!db.config.secretLast, B.look) + ft.html);
 }
 const plainKits = () => FORGER_IDS.concat(HIDDEN_FORGERS).filter(id => P.forgers.includes(id)).map(id => FORGERS[id].kits.map((k, i) => { if (!i) return ''; const w = forgerStats(P, id).wins, g = KIT_GOALS[i], n = Math.min(w, g); return row('', `${esc(k.name.toUpperCase())} <span class="d">${esc(FORGERS[id].name.toUpperCase())}</span>`, `Win ${g} duels as ${esc(FORGERS[id].name)}.`, `${meter(n, g)}<b class="lb">${w >= g ? 'OPEN' : n + ' / ' + g}</b>`); }).join('')).join('');
 function psVault() {
@@ -2444,9 +2545,9 @@ const firstOf = (list, weakFirst = false) => list.length ? list.map((e, i) => [e
 // Named rows on the bottom frame, two columns of rows 26 apart in a window: a medal or a tag, a name, a line under it.
 // A row with a verb is a control the cursor rests on. rows: { pic, name, sub, a, look, gold, on, k, f }.
 function rowsB(y, h, head, headR, rows, o = {}) {
-  const per = Math.floor((h - 20) / 26), hh = per * 26, n = Math.ceil(rows.length / 2), walk = n > per || !!o.walk; // rows out of sight: every row is a place for the cursor
+  const per = Math.floor((h - 20) / 26), hh = per * 26, n = Math.ceil(rows.length / 2) + (o.tailRows || 0), walk = n > per || !!o.walk; // rows out of sight: every row is a place for the cursor
   const body = rows.map((x, i) => { const tag = x.a || x.look || walk ? 'button' : 'i', a = x.a || (walk ? 'nop' : ''), k = x.k || (walk ? 'rw' + i : '');
-    return `<${tag} class="rw${x.gold ? ' fam' : ''}${x.on ? ' on' : ''}" style="left:${4 + (i % 2) * 203}px;top:${Math.floor(i / 2) * 26}px"${a ? ` data-a="${esc(a)}"` : ''}${x.look ? ` data-look="${esc(x.look)}"` : ''}${k ? ` data-k="${k}"` : ''}${i === 0 && o.n1 ? ' data-n1' : ''}${x.n0 ? ' data-n0' : ''}${x.f ? ' data-f' : ''}>${x.pic ? `<i class="ab rwp">${x.pic}</i>` : ''}<b class="ab lb${x.gold || x.on ? ' g' : ''}" data-name="${esc(x.name)}" style="left:${x.pic ? 30 : 4}px;top:4px">${esc(fitName(x.name, x.pic ? 27 : 31))}</b><b class="ab lb d" style="left:${x.pic ? 30 : 4}px;top:14px">${x.sub || ''}</b></${tag}>`; }).join('');
+    return `<${tag} class="rw${x.gold ? ' fam' : ''}${x.on ? ' on' : ''}" style="left:${4 + (i % 2) * 203}px;top:${Math.floor(i / 2) * 26}px"${a ? ` data-a="${esc(a)}"` : ''}${x.look ? ` data-look="${esc(x.look)}"` : ''}${k ? ` data-k="${k}"` : ''}${i === 0 && o.n1 ? ' data-n1' : ''}${x.n0 ? ' data-n0' : ''}${x.f ? ' data-f' : ''}>${x.pic ? `<i class="ab rwp">${x.pic}</i>` : ''}${x.seal ? AC.seal(4, 7, true) : ''}<b class="ab lb${x.gold || x.on ? ' g' : ''}" data-name="${esc(x.name)}" style="left:${x.pic ? 30 : x.seal ? 19 : 4}px;top:4px">${esc(fitName(x.name, x.pic ? 27 : x.seal ? 29 : 31))}</b><b class="ab lb d" style="left:${x.pic ? 30 : x.seal ? 19 : 4}px;top:14px">${x.sub || ''}</b></${tag}>`; }).join('') + (o.tail || '');
   return box(0, y, 413, h, 'wn') + lb(8, y + 6, head, 'g') + (headR ? lbr(405, y + 6, headR, 'd') : '') + `<div class="ab gsc bare" data-sk="${o.sk || 'rows'}" data-row="26" data-mx="${8 + labelW(head) + 6}" style="left:1px;top:${y + 17}px;width:411px;height:${hh}px"><div class="gin" style="height:${Math.max(hh, n * 26)}px">${body}${rows.length ? '' : `<b class="ab lb d" style="left:8px;top:6px">${o.none || 'NONE YET'}</b>`}</div></div>`;
 }
 // What the player holds, as rows: every charm, Gift and Masterwork by name, kind and family, a gold line on those of one
@@ -2508,7 +2609,7 @@ function bookTop(title, right, inner) {
 // window's height. A page that fills the frame (the deck, the rules, the options, a run's last page) uses bookTop.
 function lectern(title, right, inner, h = 152) {
   const bg = CART.has('room-archive-book-x') && D.cart && D.cart.title === 720 ? `<img class="ab" src="${cimg('room-archive-book-x')}" width="720" height="480" style="left:-40px;top:${h > 160 ? -136 : -112}px" alt="">` : box(0, 0, 640, 360, 'st dk');
-  return `<div class="ti">${bg}<div class="wn ab bk2" style="left:4px;top:${356 - h}px;width:632px;height:${h}px">${lb(10, 8, title, 'g')}${right ? lbr(622, 8, right, 'd') : ''}${inner}</div></div>`;
+  return `<div class="ti">${bg}<div class="wn ab bk2" style="left:4px;top:${356 - h}px;width:632px;height:${h}px">${title ? lb(10, 8, title, 'g') : ''}${right ? lbr(622, 8, right, 'd') : ''}${inner}</div></div>`;
 }
 // The books a run carries (the deck, the relics, the rules, the options), turned with L1 and R1, their names along the
 // foot of the bottom frame. Without a run there are the rules and the options.
@@ -2533,9 +2634,12 @@ const storyPic = (id, i) => { const p = STORY_PIC[id] || (id.startsWith('memory:
 function endWindow(o) {
   const s = o.sum, head = `${o.rival ? o.rival.name : ''}, ${s.turns} turns${s.reason === 'deckout' ? ', a deck ran out' : ''}.`;
   const paras = s.won ? [head, `Embers +${s.embers}${s.bountyMet ? '. Bounty met.' : '.'}`] : [head, `You lose a Spark. ${G.run.sparks} left.`, ...(o.why || []).slice(0, 2)];
-  const more = paras.reduce((n, t) => n + Math.ceil(t.length / 36), s.won ? 1 : 0) * 16 + (paras.length - 1) * 16 > 142; // the text face is 8 pixels a letter: some 36 to a line here, a blank line between paragraphs
-  const body = s.won ? `<p>${esc(head)}</p><p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b></p><p>${esc(paras[1])}</p>` : paras.map((t, i) => `<p${i > 1 ? ' class="d"' : ''}>${esc(t)}</p>`).join('');
-  return win(96, 8, 320, 224, `<div style="display:flex;justify-content:center;margin:0 0 4px${endPad(s.won ? 'VICTORY' : 'DEFEAT')}">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><div class="sc" style="height:142px">${body}</div>${more ? lb(8, 202, 'MORE BELOW, SCROLL', 'g') : ''}${pq(216, 198, 88, 'CONTINUE', 'closeov', { lit: true })}`);
+  // rows earned in this duel that a frame this short had no room to pop up: a gold line each, under RANK (or after the words)
+  const ach = (o.ach || []).filter(id => ACH_BY_ID[id]).map(id => `<b class="lb g">${esc(`${AC.toastHead(ACH_BY_ID[id])} · ${ACH_BY_ID[id].name} · +${AC.PTS(ACH_BY_ID[id].tier)}`)}</b>`);
+  // the window keeps the size it has without them (its list scrolls, and says so), so it never grows onto the text bar
+  const base = paras.reduce((n, t) => n + Math.ceil(t.length / 36), s.won ? 1 : 0) * 16 + (paras.length - (s.won ? 0 : 1)) * 16, more = base + ach.length * 16 > (ach.length ? Math.min(142, base) : 142); // the text face is 8 pixels a letter: some 36 to a line here, a blank line between paragraphs
+  const body = s.won ? `<p>${esc(head)}</p><p><b class="lb g">RANK ${esc(s.rank.rank)} · ${s.rank.points} POINTS · ${s.rank.style === 'craft' ? 'CRAFT' : 'FURY'}</b>${ach.map(t => '<br>' + t).join('')}</p><p>${esc(paras[1])}</p>` : paras.map((t, i) => `<p${i > 1 ? ' class="d"' : ''}>${esc(t)}</p>`).join('') + (ach.length ? `<p>${ach.join('<br>')}</p>` : '');
+  return win(96, 8, 320, 224, `<div style="display:flex;justify-content:center;margin:0 0 4px${endPad(s.won ? 'VICTORY' : 'DEFEAT')}">${carveImg(s.won ? 'VICTORY' : 'DEFEAT', 24, render)}</div><div class="sc" style="height:${ach.length ? Math.min(142, base) : 142}px">${body}</div>${more ? lb(8, 202, 'MORE BELOW, SCROLL', 'g') : ''}${pq(216, 198, 88, 'CONTINUE', 'closeov', { lit: true })}`);
 }
 // How a duel works, a page at a time: each page's name (the two-screen layout lists them) and its words.
 const helpPages = () => [['THE TURN', `Each turn: draw toward five cards (two a turn at most), play one card or one meld, then attack.`], ['MELDING', `Meld: tap two or more hand cards in order. They combine left to right into one monster. Tap one of your table monsters first to meld onto it.`], ['PRINTED NUMBERS', `Monsters fight with their printed ATK and DEF. Effects printed on a card are not used in Lost Memories.`], ['POSITIONS', `Attack position fights with ATK. Defense uses DEF and protects your Life Points. Veiled is face down in defense.`], ['THE WHEEL', `WATER beats FIRE beats WIND beats EARTH beats WATER. LIGHT and DARK beat each other when attacking. The edge is +500 for that battle.`], ['SUPPORT CARDS', `Field Spells set the terrain (+500 for its Types). ${db.config.equipKinds ? 'Equips made for a Type or Attribute give +800 to that kind and +300 to any other.' : 'Equips give +500.'} Traps wait face down for an attack. Other cards are fuel: +300 in a meld.`], ['ORDER OF PLAY', `Play comes before attacks. A monster that attacked or just arrived cannot change position.`], ['SPARKS AND SEALS', `Lose a duel and you lose a Spark. The guardian's door needs two seals, one from each duel you win on the floor.`]];
@@ -2601,6 +2705,7 @@ function drawDual(screen) {
     if (under && under.sig === sig) { NAV.key = under.key; NAV.stack.pop(); } else { if (win) NAV.stack.push({ sig: NAV.sig, key: NAV.key }); else NAV.stack = []; NAV.key = null; }
     NAV.sig = sig; G.look = null; G.lookCur = false;
   }
+  if (G.lookNext) { G.look = G.lookNext; G.lookNext = null; } // a place a screen was opened on (back from the achievements)
   if (G.inspect) { if (G.inspect.id != null) G.look = G.look && /^(h|z|t0|d|t):/.test(G.look) ? G.look : 'c:' + G.inspect.id; G.inspect = null; } // a card asked for is read where this layout reads cards, never in a window over a frame
   G.lookB = false;
   // Under a book or a sheet the screen is drawn as it stands by itself: what the book's cursor reads is the book's own.
@@ -2628,7 +2733,7 @@ function drawDual(screen) {
   // A card asked onto the page by a key (B puts it away) and a monster about to attack keep the page.
   if (!G.lookB && G.attacker == null && !drawDual.again) { const f = navEl(); if (f && f.dataset.look != null && f.dataset.look !== G.look) { G.look = f.dataset.look; drawDual.again = true; try { drawDual(screen); } finally { drawDual.again = false; } return; } }
   if (!drawDual.fonts && document.fonts) { drawDual.fonts = 1; const again = () => { if (app.classList.contains('ps')) { dualPagers(); gridLines(); } }; pixelText(); document.fonts.ready.then(again); if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', again); }
-  fit();
+  achPaint(); fit();
 }
 // Words that page: a box of whole lines, as many as its window has room for under what stands above it. While more lies
 // below, the window shows its marker and a tap pages on; L2 and R2 (or the right stick) page both ways.
@@ -2962,6 +3067,7 @@ function duelDual({ live, v, rv, rf, myTurn, pend, cmds, endOk, bar, view, hand,
   const word = endO ? carve(endO.sum.won ? 'VICTORY' : 'DEFEAT', 24, render) : null;
   const barIn = endO ? (word ? `<img class="ab" src="${word.url}" width="${word.w}" height="${word.h}" style="left:${(334 - word.w) >> 1}px;top:${(54 - word.h) >> 1}px" alt="${endO.sum.won ? 'VICTORY' : 'DEFEAT'}">` : lb(140, 22, endO.sum.won ? 'VICTORY' : 'DEFEAT', 'g')) : `<div class="pgw" data-pager data-foot="1" style="width:226px"><p>${bar}</p></div>${terr}`;
   const top = `<div class="fr">${box(0, 0, 640, 304, 'vw', view)}${box(0, 304, 152, 56, 'st pl')}${box(488, 304, 152, 56, 'st pl')}${box(152, 304, 336, 56, 'wn bar', barIn)}<div class="ab" style="left:0;top:304px;width:152px;height:56px">${you}</div><div class="ab" style="left:488px;top:304px;width:152px;height:56px">${endO ? rival.replace(/<button class="rw"/, '<button data-nonav class="rw"') : rival}</div></div>`;
+  G.achStrip = false;
   if (endO) return two(top, endB(endO));
   const ledge = box(0, 0, 413, 76, 'lg ledge', `<div class="hand" style="width:308px">${hand}</div><button class="cd back pile" style="left:314px;top:6px" data-a="nop" data-k="pile" data-look="p:0" aria-label="Your deck, ${v.deckCount[0]} cards"><i class="art"></i></button>${lb(364, 8, 'DECK', 'g')}${lb(364, 18, v.deckCount[0])}<button class="rw" style="left:360px;top:36px;width:46px;height:28px" data-a="nop" data-k="grave" data-look="g:0" aria-label="Your graveyard, ${v.gy[0].length} cards"><b class="ab lb g" style="left:3px;top:4px">GRAVE</b><b class="ab lb" style="left:3px;top:14px">${v.gy[0].length}</b></button>`);
   if (pend && live && live.pending && live.pending.options && live.pending.options.length) {
@@ -2985,6 +3091,7 @@ function duelDual({ live, v, rv, rf, myTurn, pend, cmds, endOk, bar, view, hand,
     jump ? [{ k: 'L1', t: 'ROW BEFORE', a: 'rowjump:-1' }, { k: 'R1', t: 'NEXT ROW', a: 'rowjump:1' }, { k: 'Y', t: 'THIS DUEL', a: 'tab:duel' }] : [s[1], s[3], { k: 'Y', t: 'THIS DUEL', a: 'tab:duel' }],
     jump ? [s[1], null, { k: 'START', t: 'MENU', a: 'tab:menu' }] : [s[2], s[4], { k: 'START', t: 'MENU', a: 'tab:menu' }]];
   // While a card is chosen the d-pad goes from the hand straight down to the card's commands, not through the relics.
+  G.achStrip = !rows[2][1]; // the third row's middle place is free: an achievement may stand there
   return two(top, ledge + duelPage(76, 158, v, rv, chosen) + stripB(234, r, chosen ? 'pass' : false) + foot(264, rows));
 }
 // ---- rooms on two frames
@@ -3101,19 +3208,28 @@ const pageSide = (title, right, pic, name, sub, html, side) => bookTop(title, ri
 // A list of rows over the player's record, from the top of the bottom frame down to row y1: the list as tall as its rows
 // (seven at the most; more are moved through), the record in two columns under it, so a short list leaves nothing bare.
 function listRecordB(y1, head, headR, rows, o = {}) {
-  const n = Math.max(1, Math.ceil(rows.length / 2)), rh = Math.max(20 + 26 * Math.min(n, 7), y1 - 124), fs = featList(!!labs.long);
+  const n = Math.max(1, Math.ceil(rows.length / 2) + (o.tailRows || 0)), rh = Math.max(20 + 26 * Math.min(n, 7), y1 - 124), fs = featList(!!labs.long);
   const rec = [['RUNS', P.runs], ['CLEARS', P.clears], ['DUELS WON', P.duelWins], ['GUARDIANS BEATEN', P.bossWins], ['MEMORIES EARNED', P.earned], ['FORGERS', `${P.forgers.length} OF ${FORGER_IDS.length}`], ['RECIPES WRITTEN', G.known.size], ['FEATS DONE', `${(P.featsDone || []).length} OF ${fs.length}`], ['VAULT BOUGHT', `${VAULT.filter(v => P.bought.includes(v.id)).length} OF ${VAULT.length}`], ['HEAT OPEN', heatOpen()]];
   const per = Math.max(1, Math.floor((y1 - rh - 24) / 14)), show = rec.slice(0, per * 2);
   return rowsB(0, rh, head, headR, rows, o) + (y1 - rh >= 38 ? box(0, rh, 413, y1 - rh, 'wn') + lb(8, rh + 6, 'YOUR RECORD', 'd') + show.map(([k, v], i) => lb(8 + (i % 2) * 206, rh + 20 + (i >> 1) * 14, k, 'g') + lbr(198 + (i % 2) * 206, rh + 20 + (i >> 1) * 14, v)).join('') : '');
 }
+// the Feats page's rows on two frames: the feats, then the Forgers (the achievements' row comes after them)
+const featForgers = () => FORGER_IDS.concat(HIDDEN_FORGERS.filter(id => P.forgers.includes(id))).filter(id => id !== 'tarn');
+const featRows = () => [...featList(!!labs.long), ...featForgers()];
+// back from the achievements to the Feats page: the cursor stands on the achievements' row it left from
+// (the screen's change sets the cursor afresh, so the place is kept for the first drawing after it)
+const achBack = () => { G.lookNext = 'b:' + featRows().length; };
 function featsDual() {
-  const fs = featList(!!labs.long), forg = FORGER_IDS.concat(HIDDEN_FORGERS.filter(id => P.forgers.includes(id))).filter(id => id !== 'tarn');
+  const fs = featList(!!labs.long), forg = featForgers();
   const list = fs.map(f => { const done = (P.featsDone || []).includes(f.id), n = done ? f.goal : (P.feats || {})[f.id] || 0;
     return { pic: medal(f.gift, 24), name: f.name, sub: done ? 'DONE' : `${n} / ${f.goal}`, gold: done, page: [medal(f.gift, 64), f.name, esc(String(f.build).toUpperCase()) + (done ? ' · COMPLETE' : ` · ${n} OF ${f.goal}`), `<p>${esc(f.text)}</p><p class="gp">${done ? 'Unlocked Gift' : 'Gift, locked'}: ${esc(RELICS[f.gift].name)}. ${esc(RELICS[f.gift].text)}</p>`] }; })
     .concat(forg.map(id => ({ name: FORGERS[id].name, sub: P.forgers.includes(id) ? 'FORGER · UNLOCKED' : 'FORGER · LOCKED', gold: P.forgers.includes(id), page: ['', FORGERS[id].name, P.forgers.includes(id) ? 'UNLOCKED' : 'LOCKED', `<p>${esc(FORGER_FEATS[id].text)}</p>`] })));
-  const at = lookRow(list.length), pg = list[at].page, ft = foot4(tbookFoot('feats'));
-  return two(pageTop('FEATS', `${(P.featsDone || []).length} OF ${fs.length} DONE`, pg[0], pg[1], pg[2], pg[3] + '<p class="gp"><span class="d">Each feat follows a way of playing and adds one Gift to what the forge can offer. Progress counts across runs, win or lose.</span></p>'),
-    listRecordB(ft.y0, 'FEATS AND FORGERS', `${at + 1} OF ${list.length}`, list.map((x, i) => ({ ...x, a: 'nop', look: 'b:' + i, k: 'b' + i, n0: i === at })), { sk: 'feats' }) + ft.html);
+  // one more place under the rows: the achievements, a row across the list that A opens
+  const at = lookRow(list.length + 1), onA = at === list.length, pg = onA ? null : list[at].page, ft = foot4(tbookFoot('feats')), tt = AC.totals(achAll()), words = `${tt.got} OF ${tt.n} EARNED · ${tt.gotPts} OF ${tt.pts} POINTS`;
+  const tail = `<button class="rw fam" style="left:4px;top:${Math.ceil(list.length / 2) * 26 + 1}px;width:403px;height:25px" data-a="screen:ach" data-look="b:${list.length}" data-k="b${list.length}"${onA ? ' data-n0' : ''} aria-label="Achievements">${AC.seal(5, 6, true)}${lb(21, 3, 'ACHIEVEMENTS', 'g')}${lb(21, 13, words, 'd')}${AC.lbR(396, 8, 'A OPENS', 'd')}</button>`;
+  const top = onA ? pageTop('FEATS', `${(P.featsDone || []).length} OF ${fs.length} DONE`, '', 'Achievements', words, `<p>Rows earned in play, across every descent, in ${ACH_GROUPS.length} groups. A pack for every five earned.</p><p class="gp"><span class="d">Open them to read each group, how far a counting row has come, and what each one pays.</span></p>`)
+    : pageTop('FEATS', `${(P.featsDone || []).length} OF ${fs.length} DONE`, pg[0], pg[1], pg[2], pg[3] + '<p class="gp"><span class="d">Each feat follows a way of playing and adds one Gift to what the forge can offer. Progress counts across runs, win or lose.</span></p>');
+  return two(top, listRecordB(ft.y0, 'FEATS AND FORGERS', `${at + 1} OF ${list.length + 1}`, list.map((x, i) => ({ ...x, a: 'nop', look: 'b:' + i, k: 'b' + i, n0: i === at })), { sk: 'feats', tail, tailRows: 1 }) + ft.html);
 }
 function vaultDual() {
   const list = VAULT.map(v => ({ id: v.id, key: v.id, price: v.price, name: RELICS[v.id].name, kind: RELICS[v.id].kind === 'M' ? 'MASTERWORK' : 'CHARM', text: RELICS[v.id].text, pic: medal(v.id, 24), big: medal(v.id, 64) }))
@@ -3145,11 +3261,13 @@ function codexDual() {
     + (rumours() ? `<p class="gp"><span class="d">Rumours: ${heard.length} of ${BOSSES.flat().length} memories heard.</span></p>${heard.map(b => `<p>${esc(b.name)}: ${esc(SCENES['memory:' + b.id].lines[0])}</p>`).join('')}` : '');
   return two(top, pagerB(0, 0, 413, ft.y0, words) + ft.html);
 }
-function overDual({ head, unl, tally, mem }) {
-  const r = G.run, R = G.results, fs = R ? R.feats : [];
-  const cells = [{ t: 'NEW RUN', a: 'new', lit: true }, { k: 'X', t: 'CODEX', a: 'screen:codex' }, { k: 'Y', t: 'FEATS', a: 'screen:feats' }, { t: `VAULT ${P.memories}`, a: 'screen:vault' }, { k: 'B', t: 'TITLE', a: 'home' }];
-  return two(bookTop(head, R ? `+${R.total} MEMORIES` : 'ALREADY BANKED', pagerB(10, 24, 610, 320, tally + mem + unl, 'bar')),
-    descentWide(0, r) + holdDeckB(76, 276, r, { read: false, head: 'FEATS THIS RUN', headR: fs.length ? 'THEY COUNT ACROSS RUNS' : '', rows: fs.map(f => ({ name: f.name, sub: f.done ? 'COMPLETE' : `${f.after} / ${f.goal}${f.gain ? ` (+${f.gain})` : ''}`, gold: f.done })), none: 'NO FEAT MOVED THIS RUN', sk: 'over', deckHead: 'THE DECK YOU CARRIED', walk: true }) + footOf(276, cells));
+function overDual({ head, unl, tally, mem, ach = [] }) {
+  const r = G.run, R = G.results, fs = R ? R.feats : [], pts = ach.reduce((n, x) => n + AC.PTS(x.tier), 0), cells = AC.runEndCells(ach, fs), hid = cells.slice(6);
+  const kind = hid.every(c => c.seal) ? 'ACHIEVEMENTS' : hid.every(c => !c.seal) ? 'FEATS' : 'ROWS', below = hid.length && ach.length ? lb(8, 176, `${AC.numWord(hid.length)} MORE ${hid.length === 1 ? kind.replace(/S$/, '') : kind} BELOW`, 'd') : ''; // the list's own marker, after its heading, points to them
+  const plq = [{ t: 'NEW RUN', a: 'new', lit: true }, { k: 'X', t: 'CODEX', a: 'screen:codex' }, { k: 'Y', t: 'FEATS', a: 'screen:feats' }, { t: `VAULT ${P.memories}`, a: 'screen:vault' }, { k: 'B', t: 'TITLE', a: 'home' }];
+  return two(bookTop(head, R ? `+${R.total} MEMORIES` : 'ALREADY BANKED', pagerB(10, 24, 610, 320, tally + mem + (ach.length ? AC.runEndTop(ach) : '') + unl, 'bar')),
+    descentWide(0, r) + (ach.length ? holdDeckB(76, 276, r, { read: false, head: 'EARNED THIS RUN', headR: `${ach.length} ACHIEVEMENT${ach.length === 1 ? '' : 'S'} · +${pts} POINTS`, rows: cells, sk: 'over', deckHead: 'THE DECK YOU CARRIED', walk: true }) + below
+      : holdDeckB(76, 276, r, { read: false, head: 'FEATS THIS RUN', headR: fs.length ? 'THEY COUNT ACROSS RUNS' : '', rows: fs.map(f => ({ name: f.name, sub: f.done ? 'COMPLETE' : `${f.after} / ${f.goal}${f.gain ? ` (+${f.gain})` : ''}`, gold: f.done })), none: 'NO FEAT MOVED THIS RUN', sk: 'over', deckHead: 'THE DECK YOU CARRIED', walk: true })) + footOf(276, plq));
 }
 // ---- windows on two frames. Nothing lies over a frame: a question or a short list takes the bottom frame and leaves
 // the top one as it stands (the table is never covered); a book takes both, its open page on the top frame and its list
@@ -3273,7 +3391,7 @@ function psScreen() {
   if (look === 'old' || lostStore) return null;
   const r = G.run;
   if (G.screen === 'forger') return psForger;
-  if (G.screen) return { codex: psCodex, feats: psFeats, vault: psVault }[G.screen] || null;
+  if (G.screen) return { codex: psCodex, feats: psFeats, vault: psVault, ach: psAch }[G.screen] || null;
   if (!r) return psHome;
   if (G.forge) return psForge; // the hammer is still falling on the last working
   if (G.shown || r.phase === 'duel' || endShown()) return psDuel;
@@ -3318,7 +3436,7 @@ function drawConsole(screen) {
   if (!drawConsole.fonts && document.fonts) { // a text face may arrive after the drawing that first asks for it (the body face only with the first page of words): measure again
     drawConsole.fonts = 1; const again = () => { if (app.classList.contains('ps')) { barFits(); fitScrolls(); gridLines(); } }; pixelText();
     document.fonts.ready.then(again); if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', again); }
-  fit();
+  achPaint(); fit();
 }
 // A box of pages that scrolls, in a window or a book, shows whole lines and only whole lines, and its window closes up
 // under it, so no empty band is left in it. When the screen is drawn, the box's height is cut from the one the screen gave
@@ -3614,7 +3732,12 @@ function tapped(ev) {
     case 'startempty': lostStore = false; try { sessionStorage.removeItem(HAD); } catch { /* nothing to forget */ } render(); break;
     case 'leavetab': Object.assign(G, { run: null, overlay: null, screen: null, shown: null, frames: [], results: null, banked: false, story: null }); setLabs(pref); render(); break;
     case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; G.banked = false; setLabs(pref); } render(); break;
-    case 'screen': if (DUAL && G.cx) G.cx.open = null; G.screen = x; render(); break; // two frames: a book turned to opens on its list, never on a page left open
+    case 'screen': if (DUAL && G.cx) G.cx.open = null; if (x === 'ach') achBook().look = false; if (DUAL && x === 'feats' && G.screen === 'ach') achBack(); G.screen = x; render(); break; // two frames: a book turned to opens on its list, never on a page left open
+    case 'achg': { const B = achBook(); B.g = (B.g + n + ACH_GROUPS.length) % ACH_GROUPS.length; B.pg = 0; B.sel = null; if (DUAL) { G.look = null; NAV.key = null; } render(); break; } // the group before or after
+    case 'achpg': { const B = achBook(); B.pg = (B.pg + 1) % Math.max(1, B.pages); B.sel = null; render(); break; }
+    case 'achsel': { const rw = AC.groupRows(achAll(), n)[+y]; if (rw) achBook().sel = rw.id; render(); break; } // a row by its group and place: a hidden row's id would spell its name
+    case 'achlook': achBook().look = true; render(); break;
+    case 'achclose': achBook().look = false; render(); break;
     case 'lab': pref = { ...pref, [x]: !pref[x] }; store.set(LABKEY, pref); setLabs(pref); render(); break;
     case 'forger': G.pickForger = x; G.pickHeat = Math.min(G.pickHeat, heatOpen()); render(); break;
     case 'heat': G.pickHeat = n; render(); break;
@@ -3641,8 +3764,8 @@ function tapped(ev) {
     }
     case 'descend': if (!P.forgers.includes(G.pickForger)) { render(); break; } /* a locked Forger can be looked at, never taken */ { const s = liveSave(); if (s) { G.screen = null; G.overlay = { kind: 'leave', saved: nameRun(s), at: storedAt() }; render(); break; } } // a run is stored that this screen did not know of (another tab began it): ask, never end it unasked
       if (store.failed.has(PROFILE)) { toast('Your progress is not saved yet. Tap Try again first.'); render(); break; }
-      G.banked = false; setLabs(pref); store.set(RUNLABS, pref); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, ...runOptions(P, G.pickForger, !!labs.long), uid: Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36) }); G.log = []; G.overlay = null; G.rev = 0; G.at = storedAt(); writeRun(G.run); queueStory('intro'); render(); break;
-    case 'vbuy': try { const b = buy(P, y ? x + ':' + y : x); saveP(); toast(b.name + (y ? ' can now be offered at an Anvil.' : ' can now appear in your runs.')); } catch (e) { toast(e.message); } render(); break;
+      G.banked = false; setLabs(pref); store.set(RUNLABS, pref); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, ...runOptions(P, G.pickForger, !!labs.long), uid: Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36) }); G.run.uiAch0 = Object.fromEntries(achProgress(db, P, null).filter(x => !x.done).map(x => [x.id, x.have])); G.log = []; G.overlay = null; G.rev = 0; G.at = storedAt(); writeRun(G.run); queueStory('intro'); render(); break;
+    case 'vbuy': try { const b = buy(P, y ? x + ':' + y : x); for (const id of achCheck(db, P, null)) G.achOff.add(id); saveP(); toast(b.name + (y ? ' can now be offered at an Anvil.' : ' can now appear in your runs.')); } catch (e) { toast(e.message); } render(); break;
     case 'storynext': { const st = G.story; if (!st) break; if (++st.i >= SCENES[st.id].lines.length) { G.story = null; if (st.then) { st.then(); break; } nextStory(); } render(); break; }
     case 'storyskip': { const st = G.story; G.story = null; if (st && st.then) { st.then(); break; } nextStory(); render(); break; }
     case 'power': { const a = { t: 'power' }; if (x === 'hand') a.hand = G.sel[0]; if (x === 'zone') a.zone = G.attacker; duel(a); break; }
@@ -3713,5 +3836,5 @@ function trySwap() {
 }
 const warmOld = () => { for (const f of D.art || []) { const im = new Image(); im.src = 'art/' + f + '.webp'; (window.__keep = window.__keep || []).push(im); } }; // keep the old look's pictures warm so a redraw never flashes; in the console look only once its own pack is in
 for (let i = 0; D.sheets && i < Math.ceil(D.pool.cards.length / 100); i++) { const im = new Image(); im.src = D.sheets + i + '.webp'; (window.__keep = window.__keep || []).push(im); }
-window.LM = { G, P, db, act, render, labKeys, labWords: () => Object.keys(LABS), unsaved: () => [...store.failed.keys()] }; // for tests
+window.LM = { G, P, db, act, render, achAdd, achAll, achProgress: () => achProgress(db, P, null), labKeys, labWords: () => Object.keys(LABS), unsaved: () => [...store.failed.keys()] }; // for tests
 if (PACK && look !== 'old') bootWait().then(warmOld); else { warmOld(); render(); loadPack(); }

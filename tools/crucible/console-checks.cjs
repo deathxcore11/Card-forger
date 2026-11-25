@@ -239,6 +239,79 @@ function heldFaults() {
   const t = document.getElementById('tbl'); if (!t || !t.dataset.held || +t.dataset.tick >= 0) return [];
   return JSON.parse(t.dataset.held).map(([s, z]) => `numbers of zone ${s}:${z} not shown at rest: another card lies over their place`);
 }
+// ---------- achievements (crucible/web/ach.mjs) ----------
+// The pop-up that says a row was earned, read in the page wherever it stands: on whole frame pixels, inside its frame,
+// its words whole inside its window, and over nothing in play: no card, number, word, plaque (lit or not), chip, hand
+// card, relic, face, gauge, the table or the text bar. Its place is a rule, and it is checked as one: on one screen a
+// duel's pop-up stands in the pillar exactly when the frame is tall enough for it (six rows under SPARKS, or under a
+// terrain's lines, ending four rows above the Forger's Power plaque) and nowhere else; on two screens a duel's stands at
+// the bottom frame's third plaque row (139, 326) and only while that place is free. Gives { shown, out }.
+function achFaults() {
+  const out = [], app = document.getElementById('app'), G = window.LM && LM.G, t = app && app.querySelector('.acht'), dual = app.classList.contains('dual');
+  const pos = e => { let x = 0, y = 0; for (let q = e; q && q !== app; q = q.offsetParent) { x += q.offsetLeft; y += q.offsetTop; } return { x, y, w: e.offsetWidth, h: e.offsetHeight }; };
+  const scrOf = e => e.closest('.scr'), base = e => { const s = scrOf(e); return s ? pos(s) : { x: 0, y: 0 }; };
+  const at = e => { const r = pos(e), b = base(e); return { x: r.x - b.x, y: r.y - b.y, w: r.w, h: r.h }; };
+  const calm = G && !G.playing && !G.tab && !G.overlay && !G.inspect && !G.story && !G.screen && !G.forge && !G.floorCard && !(G.run && G.run.duel && G.run.duel.pending && G.run.duel.active === 1) && !app.querySelector('.mw, .story');
+  const phase = app.dataset.phase, H = dual ? 360 : app.offsetHeight;
+  if (!t) {
+    if (calm && G.aq && (G.aq.cur || G.aq.q.length) && phase === 'duel') {
+      if (!dual) { const terr = !!app.querySelector('.pil0 [data-name]'), fits = (terr ? 176 : 146) + 66 <= H - 64; if (fits) out.push(`pop-up: a row waits in a duel ${app.offsetWidth} x ${H} whose pillar has room for it, and none is drawn`); }
+      else { const place = [...app.querySelectorAll('.scrB .pq, .scrB .kc')].some(e => { const r = at(e); return r.x < 274 && r.x + r.w > 139 && r.y < 354 && r.y + r.h > 326; }); if (!place && app.querySelector('.scrB .pq[data-a="end"]')) out.push('pop-up: a row waits in a duel on two screens, the third plaque row\'s middle place is free, and none is drawn'); }
+    }
+    return { shown: false, out };
+  }
+  const w = t.querySelector('.wn'), W = at(w), scr = scrOf(t), FW = scr ? scr.offsetWidth : app.offsetWidth, FH = scr ? scr.offsetHeight : app.offsetHeight;
+  for (const k of ['x', 'y', 'w', 'h']) if (Math.abs(W[k] - Math.round(W[k])) > .01) out.push(`pop-up: its window's ${k} is ${W[k]}, not a whole frame pixel`);
+  if (W.x < 0 || W.y < 0 || W.x + W.w > FW || W.y + W.h > FH) out.push(`pop-up: its window ${W.x}, ${W.y}, ${W.w} x ${W.h} leaves its frame`);
+  // a label's words' width in frame pixels (a frame turned for an upright phone turns the page's rects)
+  for (const l of t.querySelectorAll('.lb')) { const r = at(l), iw = Math.max(l.scrollWidth, l.offsetWidth);
+    if (r.x < W.x + 2 || r.y < W.y + 2 || r.x + iw > W.x + W.w - 2 || r.y + 8 > W.y + W.h - 2) out.push(`pop-up: the words "${l.textContent}" are cut by its window`); }
+  // the part of a thing that can be seen: inside every box above it that cuts what overflows it, and, for a thing in the
+  // middle of a frame with pillars, between them (the pillars are drawn over a room's painting that runs under them)
+  const pil = (scr || app).querySelector('.fr > .pil0');
+  const clip = e => { let r = at(e), x0 = r.x, y0 = r.y, x1 = r.x + r.w, y1 = r.y + r.h;
+    for (let a = e.parentElement; a && a !== app && a !== scr; a = a.parentElement) if (getComputedStyle(a).overflow !== 'visible') { const b = at(a); x0 = Math.max(x0, b.x); y0 = Math.max(y0, b.y); x1 = Math.min(x1, b.x + b.w); y1 = Math.min(y1, b.y + b.h); }
+    if (pil && !pil.contains(e) && !(pil.nextElementSibling && pil.nextElementSibling.contains(e))) { x0 = Math.max(x0, 96); x1 = Math.min(x1, FW - 96); }
+    return x1 > x0 && y1 > y0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null; };
+  // what is in play: anything with words of its own, and these
+  const PLAY = '.cd, .pq, .kc, .ga, .pf, .spk, .seal, .pip, .rw, .lb, .vw, .tvw, canvas, img, .bar, .hand, .big, .sl, [data-zone], .txw, .backs, .wn, .mw';
+  for (const e of (scr || app).querySelectorAll('*')) {
+    if (t.contains(e) || e.contains(t) || !e.offsetParent || getComputedStyle(e).visibility === 'hidden' || e.id === 'toast') continue;
+    const own = [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()); if (!own && !e.matches(PLAY)) continue;
+    const r = clip(e); if (!r) continue;
+    if (r.x < W.x + W.w && r.x + r.w > W.x && r.y < W.y + W.h && r.y + r.h > W.y) out.push(`pop-up: it lies over ${e.tagName.toLowerCase()}.${[...e.classList].join('.') || '-'}${own ? ` "${e.textContent.trim().slice(0, 24)}"` : ''} in play`);
+  }
+  if (phase === 'duel' && !dual) { const terr = !!app.querySelector('.pil0 [data-name]'), y = (terr ? 176 : 146) + 6;
+    if (W.x !== 4 || W.y !== y || W.w !== 88 || W.h !== 56) out.push(`pop-up: in a duel it stands at ${W.x}, ${W.y}, ${W.w} x ${W.h}, not at 4, ${y}, 88 x 56`);
+    if (y + 56 + 4 > H - 64) out.push(`pop-up: drawn in a duel ${app.offsetWidth} x ${H} whose pillar has no room for it`); }
+  if (phase === 'duel' && dual && (!scr || !scr.classList.contains('scrB') || W.x !== 139 || W.y !== 326 || W.w !== 135 || W.h !== 28)) out.push(`pop-up: in a duel on two screens it stands at ${W.x}, ${W.y}, ${W.w} x ${W.h}, not on the bottom frame's plaque row at 139, 326`);
+  if (phase !== 'duel' && W.x !== 4) out.push(`pop-up: in a room it stands at x ${W.x}, not in the pillar at 4`);
+  if (!calm && !(G && G.playing)) out.push('pop-up: shown while a window, a story or a question is open');
+  return { shown: true, out };
+}
+// The rows the checks earn by hand: the longest name, a hidden one (HIDDEN FOUND), and a third so that n/m shows.
+// the rows a run's last page lists in the checks: seven earned in the run it ends, two of them with words long enough
+// to need a second line on either layout
+const ACH_RUN = ['hammer_finds_its_weight', 'struck_true', 'written_before_you', 'fivefold_weld', 'the_long_seam', 'the_door_unsealed', 'ten_times_down'];
+// The run's last page, read in the page: every row of ACHIEVEMENTS THIS RUN shows its words whole (none cut to a line),
+// CAME CLOSER is drawn with the row named (closer), and no label there lies on a gauge.
+function achEndFaults([ids, closer]) {
+  const out = [], secs = [...document.querySelectorAll('#app .achsec')];
+  if (!secs.length) return ['the run\'s end: no ACHIEVEMENTS THIS RUN section'];
+  const norm = t => String(t).replace(/\s+/g, ' ').trim().toUpperCase(), txt = norm(secs.map(s => [...s.querySelectorAll('.tl, .lb')].map(e => e.textContent).join(' ')).join(' '));
+  for (const r of LM.achAll()) if (ids.includes(r.id) && r.earned && !txt.includes(norm(r.how))) out.push(`the run's end: the words of ${r.name} are not shown whole`);
+  if (closer && !txt.includes(norm('CAME CLOSER ' + closer))) out.push(`the run's end: CAME CLOSER does not name ${closer}`);
+  for (const s of secs) { const box = e => e.getBoundingClientRect(), lbs = [...s.querySelectorAll('.lb, .tl')].map(e => [e, box(e)]).filter(([, r]) => r.width && r.height);
+    for (const g of s.querySelectorAll('.ga')) { const b = box(g); if (!b.width) continue;
+      for (const [e, r] of lbs) if (r.left < b.right - .5 && r.right > b.left + .5 && r.top < b.bottom - .5 && r.bottom > b.top + .5) out.push(`the run's end: the words "${e.textContent.slice(0, 24)}" lie on a gauge`); } }
+  return out;
+}
+// CAME CLOSER: the counting row with the longest name is made the one this run brought nearest (gives its name)
+function achCloserSet() { const all = LM.achAll(), pr = LM.achProgress().filter(x => !x.done), name = id => (all.find(r => r.id === id) || {}).name || '';
+  const x = pr.filter(x => name(x.id)).sort((a, b) => name(b.id).length - name(a.id).length)[0]; if (!x || !LM.G.run) return null;
+  LM.G.run.uiAch0 = { [x.id]: x.have - 1 }; LM.render(); return name(x.id); }
+const ACH_TRY = ['hammer_finds_its_weight', 'left_it_standing', 'the_name_returns'];
+const ACH_SAVES = /^(duel-(regular|boss|champion|cursed)-f\d-h\d+|duel-boss-f1-trap-prompt-h0|chamber-f1|reward-card-f\d|anvil-f\d|bazaar-f2|beat-spells)\.json$/;
 // ---------- the two-screen layout (CC_DUAL=1; crucible/web/DUAL.md) ----------
 // One screen of the two-screen layout, read in the page: both frames against the rules listed at the head of this file
 // under "two screens". bare: the side, in frame pixels, of the largest square of bare stone or black a frame may show.
@@ -516,6 +589,20 @@ async function dualPass(browser, url, savesDir, steps) {
         for (let i = 0; i < steps; i++) { rnd = (rnd * 1103515245 + 12345) & 0x7fffffff; const key = DUAL_KEYS[rnd % DUAL_KEYS.length]; await press(key);
           if (key === 'A' || key === 'X' || key === 'B' || i % 5 === 4) { await page.waitForTimeout(250); const where = await page.evaluate(() => document.getElementById('app').dataset.phase + (window.LM && LM.G.tab ? ' ' + LM.G.tab : '')); if (!/duel/.test(where)) fixed = null; await audit(`${name}, pad key ${i + 1} (${key}), ${where}`); } } }
     }
+    // achievements: a pop-up earned in every scene that has one (a duel, a duel with a chosen card, a Trap question, the
+    // rooms), the Feats book's achievements pages (every group, looked at closely, the Rumours switch off) and the run's end
+    for (const save of saves.filter(f => ACH_SAVES.test(f)).slice(0, full ? 99 : 4)) { const name = save.replace(/\.json$/, '') + ', an achievement';
+      await load(save); await settle(); fixed = null; first = true;
+      await page.evaluate(ids => LM.achAdd(ids, true), ACH_TRY); await page.waitForTimeout(200);
+      const r = await page.evaluate(achFaults); for (const t of r.out) fail(`${shape}, ${name}`, t); await audit(name);
+      if (/^duel-regular/.test(save)) { await press('A'); await page.waitForTimeout(150); for (const t of (await page.evaluate(achFaults)).out) fail(`${shape}, ${name}, a card chosen`, t); await audit(name + ', a card chosen'); }
+      if (full && /^duel-regular/.test(save)) { await press('B'); await page.waitForTimeout(150); const n = await page.evaluate(() => { const t = document.querySelector('.acht'); return t ? t.textContent : ''; }); await page.waitForTimeout(3300);
+        const n2 = await page.evaluate(() => { const t = document.querySelector('.acht'); return t ? t.textContent : ''; }); if (n2 && n2 === n) fail(`${shape}, ${name}`, 'pop-up: the first of three rows is still shown after its 3 s'); if (n2 && !/2\/3|3\/3/.test(n2)) fail(`${shape}, ${name}`, `pop-up: the second of three rows does not say so ("${n2}")`); } }
+    for (const steps of [['screen:feats'], ['screen:feats', 'down', 'down', 'down', 'down', 'down'], ['screen:ach'], ['screen:ach', 'Y'], ['screen:ach', 'R1', 'R1', 'down'], ['screen:ach', 'L1', 'Y'], ['screen:ach', 'L1', 'L1'], ['rumoursOff', 'screen:ach', 'L1', 'L1']]) {
+      const save = saves.find(f => /^chamber-f\d\.json$/.test(f)); if (!save) break; await load(save); await settle();
+      for (const s of steps) { if (s === 'rumoursOff') await page.evaluate(() => { LM.db.config.secretLast = false; }); else if (/^screen:/.test(s)) await page.evaluate(a => { LM.G.screen = a.slice(7); LM.render(); }, s); else await press(s); await page.waitForTimeout(120); }
+      const a = await audit('the achievements, ' + steps.join(' ')); await pageLists('the achievements, ' + steps.join(' '), a); }
+    if (full) { const save = saves.find(f => /^chamber-f3\.json$/.test(f)) || saves.find(f => /^chamber-f\d\.json$/.test(f)); if (save) { await load(save); await settle(); await page.evaluate(() => LM.act({ t: 'abandon' })); await page.waitForTimeout(900); await page.evaluate(ids => { for (const id of ids) { if (!LM.P.ach.includes(id)) LM.P.ach.push(id); LM.P.achAt[id] = LM.P.runs; } LM.G.story = null; LM.G.storyQ = []; LM.render(); }, ACH_RUN); await page.waitForTimeout(200); const a = await audit('the run\'s end, its achievements'); for (const t of await page.evaluate(achEndFaults, [ACH_RUN, null])) fail(`${shape}, the run's end`, t); await pageLists('the run\'s end', a); } }
     await ctx.close();
   }
   console.log(`two screens: ${DUAL_SHAPES.length} shapes, ${scenes} scenes, ${screens} screens read, ${presses} pad keys pressed; the largest bare square allowed is under ${BARE} pixels`);
@@ -1117,6 +1204,48 @@ const DEEP = ['chamber-f1.json', 'duel-regular-f1-h0.json']; // the scenes whose
         if (r.sig && r.sig === last && Math.random() < .3) { await page.keyboard.press('Escape').catch(() => {}); }
         last = r.sig || '';
       }
+    }
+    // achievements: a pop-up earned in each scene that may show one, read against everything in play (achFaults), on this
+    // shape; the Feats book's achievements pages (every group and page, a row looked at closely, the Rumours switch off);
+    // the run's end with its section. A frame too short for a duel's pop-up writes the row in the duel's end window.
+    if (!only) {
+      for (const save of saves.filter(f => ACH_SAVES.test(f)).slice(0, full ? 99 : 5)) { const base = `${shape} ${W}x${H}@${dpr} ${save}, an achievement`;
+        await load(save); await page.waitForTimeout(300);
+        await page.evaluate(ids => LM.achAdd(ids, true), ACH_TRY); await page.waitForTimeout(200);
+        for (const t of (await page.evaluate(achFaults)).out) fail(base, t); await audit(base); }
+      // a pop-up already showing when a Trap question opens is put away, keeping its time, until the question is answered
+      { const tq = saves.find(f => /trap-prompt/.test(f)); if (tq) { const base = `${shape} ${W}x${H}@${dpr} ${tq}, a pop-up when the Trap question opens`; await load(tq); await page.waitForTimeout(300);
+        const r = await page.evaluate(async () => { const d = LM.G.run && LM.G.run.duel; if (!d || !d.pending) return null; const pend = d.pending; d.pending = null; LM.render(); LM.achAdd(['hammer_finds_its_weight'], true); await new Promise(ok => setTimeout(ok, 250));
+          const before = !!document.querySelector('.acht'); d.pending = pend; LM.render(); await new Promise(ok => setTimeout(ok, 100)); const Q = LM.G.aq; return { before, after: !!document.querySelector('.acht'), kept: !!(Q && Q.cur && !Q.cur.t0 && Q.cur.left > 0) }; });
+        if (r && r.before && (r.after || !r.kept)) fail(base, `pop-up: ${r.after ? 'still shown' : 'its time not kept'} while a Trap question is open`); } }
+      const book = [['screen:feats'], ['screen:ach'], ['screen:ach', 'achpg'], ['screen:ach', 'achpg', 'achpg', 'achpg'], ['screen:ach', 'achlook'], ['screen:ach', 'achg:-1', 'achlook'], ['screen:ach', 'achg:-1', 'achg:-1'], ['off', 'screen:ach', 'achg:-1', 'achg:-1'], ...[1, 2, 3, 4, 5].map(i => ['screen:ach', ...Array(i).fill('achg:1')])];
+      for (const steps of full ? book : book.slice(0, 6)) { const base = `${shape} ${W}x${H}@${dpr} the achievements, ${steps.join(' ')}`;
+        await load(saves.find(f => /^chamber-f1\.json$/.test(f)) || null); await page.waitForTimeout(200);
+        for (const st of steps) { if (st === 'off') await page.evaluate(() => { LM.db.config.secretLast = false; }); else if (/^screen:/.test(st)) await page.evaluate(a => { LM.G.screen = a.slice(7); LM.render(); }, st); else await page.locator(`[data-a="${st}"]`).first().click({ force: true }).catch(() => {}); await page.waitForTimeout(150); }
+        await audit(base); if (full) await edges(base); }
+      { const base = `${shape} ${W}x${H}@${dpr} the run's end, its achievements`; await load(saves.find(f => /^chamber-f1\.json$/.test(f)) || null);
+        await page.evaluate(() => { LM.achAdd(['hammer_finds_its_weight'], false); LM.act({ t: 'abandon' }); }); await page.waitForTimeout(800); await page.evaluate(ids => { for (const id of ids) { if (!LM.P.ach.includes(id)) LM.P.ach.push(id); LM.P.achAt[id] = LM.P.runs; } LM.G.story = null; LM.G.storyQ = []; LM.render(); }, ACH_RUN); await page.waitForTimeout(200);
+        const closer = await page.evaluate(achCloserSet); await page.waitForTimeout(150);
+        for (const t of await page.evaluate(achEndFaults, [ACH_RUN, closer])) fail(base, t); await audit(base); if (full) { await edges(base); await scrolled(base, true); } }
+      // a Memory Vault purchase between runs is judged at once: Paid in Memories is in the stored profile, and it waits
+      // for no pop-up (there is no pillar off a run) and is listed on no run's last page
+      if (shape === SHAPES[0][0]) { const base = `${shape} ${W}x${H}@${dpr} the Memory Vault, a purchase`; await load(saves.find(f => /^chamber-f1\.json$/.test(f)) || null);
+        await page.evaluate(() => { const k = 'lostmemories.profile.v1', o = JSON.parse(localStorage.getItem(k)); o.memories = 9999; o.bought = []; o.ach = (o.ach || []).filter(id => !['paid_in_memories', 'bare_shelves'].includes(id)); if (o.achAt) { delete o.achAt.paid_in_memories; delete o.achAt.bare_shelves; } localStorage.setItem(k, JSON.stringify(o)); LM.G.run = null; LM.G.screen = 'vault'; LM.render(); });
+        await page.waitForTimeout(150); await page.locator('[data-a^="vbuy:"]:not([disabled])').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(200);
+        const v = await page.evaluate(() => { const o = JSON.parse(localStorage.getItem('lostmemories.profile.v1')), Q = LM.G.aq; return { bought: o.bought.length, got: (o.ach || []).includes('paid_in_memories'), queued: !!(Q && [Q.cur, ...Q.q].some(x => x && x.id === 'paid_in_memories')) }; });
+        if (!v.bought) fail(base, 'the Vault check bought nothing');
+        else { if (!v.got) fail(base, 'achievements: a Vault purchase did not earn Paid in Memories in the stored profile'); if (v.queued) fail(base, 'achievements: a Vault purchase between runs queued a pop-up for the next run'); } }
+      // a duel won on this frame with a row waiting: the pillar's pop-up, or the row written in the window that ends it
+      const win = saves.find(f => /^last-move-win/.test(f)) || saves.find(f => /^beat-direct/.test(f));
+      if (win && full) { const base = `${shape} ${W}x${H}@${dpr} ${win}, a duel won with a row earned`; await load(win); await page.waitForTimeout(300);
+        await page.evaluate(() => { if (LM.G.run.duel) LM.G.run.duel.lp[1] = 1; LM.achAdd(['ink_on_the_page'], true); LM.render(); }); await page.waitForTimeout(200);
+        await page.locator('[data-a="mine:0"]').first().click({ force: true }).catch(() => {}); await page.waitForTimeout(300);
+        const hit = await page.evaluate(() => { const e = [...document.querySelectorAll('#app [data-a^="hit:"]')][0]; return e ? e.dataset.a : null; });
+        if (hit) { await page.locator(`[data-a="${hit}"]`).first().click({ force: true }).catch(() => {}); await page.waitForTimeout(6000);
+          const r = await page.evaluate(() => { const app = document.getElementById('app'), H = app.offsetHeight, terr = LM.G.achTerr, fits = (terr ? 176 : 146) + 66 <= H - 64, w = app.querySelector('.mw'); return { end: !!(LM.G.overlay && LM.G.overlay.kind === 'duelEnd'), fits, said: !!(w && /INK ON THE PAGE/.test(w.textContent)) }; });
+          if (r.end && !r.fits && !r.said) fail(base, 'pop-up: a frame too short for the pillar\'s pop-up ended the duel without the row in its window');
+          if (r.end && r.fits && r.said) fail(base, 'pop-up: a frame with room in the pillar wrote the row in the end window as well');
+          await audit(base); } }
     }
     await ctx.close();
   }
