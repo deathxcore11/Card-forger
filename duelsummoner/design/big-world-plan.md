@@ -221,6 +221,79 @@ There are 10 kinds at launch. Each has its own look, one job, and reads from afa
 - Pace numbers against section 4.
 - Report Pass, Fail or Not assessed honestly.
 
-## 9. Research numbers (filled in by step 1)
+## 9. Research numbers (step 1, 24 Nov)
 
-(empty)
+Method: contact sheets of the owner's recordings, one frame every 2 s with the video clock burned in. Small HUD text is often unreadable; those cells say "Not seen". Times are video time. All numbers are for the reference run on its first stage and the start of its second. Footage and names stay on the owner's PC.
+
+**Level-ups** (run started at level 2, so the count is levels gained)
+- Level 13 at 4:46, 31 at 9:36, 43 at 13:26. That is about 3.2 a minute over the first 10 minutes.
+- Early gaps are slow: 24, 12, 28, 48, 52 s up to 3:10. Then 12 to 16 s once the swarm is being farmed (from 3:52).
+- Horde bursts pay in bunches: 4 levels in 14 s at 9:36, 5 in 20 s at 5:00 to 5:20.
+- Late gaps 30 to 70 s. Every level-up is a pause with 3 cards plus Banish, Skip and Refresh (Refresh costs about 25 coins early, 50 to 60 later).
+- Ours: target about 5 a minute early. That is above theirs, so keep the first 3 minutes at 3 to 4 and let hordes spike it.
+
+**Chests**
+- 3 opened in the first 4:46, one per 80 s (0:36, 1:40, 3:32), all common. 8 unopened chests were seen on screen in the next 4:46 and 1 opened (rare, 8:36).
+- Around the boss and portal the rate was 7 in 3.7 minutes (about 2 a minute): 10:00, 10:08, 11:24, 11:48, 12:32 (legendary), 12:42, 13:44.
+- Rarity of the 8 that could be read: 6 common, 1 rare, 1 legendary. Rarity shows as beam colour during the opening reveal.
+- Stage 2 first chest at 12 s in.
+- Paid chest prices: Not seen. Elite chest drops: Not seen.
+- Chest items offer Take or Banish.
+
+**Vases and pots**
+- Seen at about 0.4 to 2 a minute, in clusters (1:56 to 2:10, 6:10, 8:22). None seen broken, so share dropping something is Not seen.
+
+**Pickups** (look only, the legend is not readable)
+- XP crystals: constant, 5 to 20 a minute, burst on a horde kill.
+- Gold coin type, a yellow oval: 1 to 3 on screen all the time from 0:48.
+- White dice: the most common after crystals, 2 to 8 on screen from 5:00.
+- Red heart: 4 in a cluster at 7:04 to 7:12, 2 at 12:16.
+- Red magnet: 1:24 and 5:14.
+- Cyan clock: 4:06, 10:48, 12:22.
+- Purple lightning bolt 7:02, large yellow bubble 5:50, 6:28, 8:22, skull cage 11:14.
+- A "Powerup Drop Chance" stat exists, so power-up drops are a rolled event.
+- Roughly one rare pickup every 60 to 90 s.
+
+**Shrines, shops, stones**
+- Shrines: 1:16, 2:32, 7:36, 8:08, 8:50, 10:48. That is 2 in the first 4:46, 3 in 80 s at 7:36 to 9:00, then one at 10:48.
+- Each shrine takes about 8 to 10 s to charge, then offers 3 stat boons plus Ignore. Rarity on offer: common, uncommon, rare. Typical boons are move speed, extra jumps, thorns, lifesteal, regen, armor, luck, XP gain, projectile speed, jump height.
+- Shop: one stone figure at 3:12 with 2 item offers (one rare, one common) and Skip and Refresh.
+- Free-pick stones: Not seen.
+
+**Pace of items**
+- Weapons plus tomes: 3 at 0:00, 5 at 1:00, 7 at 2:00, 8 at 3:00, then fixed at 8 (caps).
+- Items: 0 at 0:00, 1 at 1:00, 3 at 2:00, 3 at 3:00, 5 at 4:00, 5 to 7 at 5:00 to 8:00, 8 to 9 at 9:00 to 11:00, about 12 at 13:00.
+- So a player has about 3 items at 2 minutes, 5 to 7 at 5, 8 to 9 at 10. Our "4 to 6 by the gate on stage 1" fits.
+
+**Enemies and bosses**
+- On screen: 1 to 2 at 0:00, 12 to 18 at 0:28, 30 to 40 at 1:16, 25 to 50 at 2:30 to 3:00, boss plus 10 to 15 at 4:00, 100+ at 4:30 to 5:10.
+- Horde peaks last 25 to 35 s with 60 to 90 s of calm between: 4:48 to 5:10, 6:04 to 6:30, 8:24 to 9:00, 9:14 to 9:18. Hundreds on screen at the peak.
+- A banner warns before a swarm ("swarm incoming") about 2 s ahead.
+- Elites are marked with a crown icon: first at 0:28, then every 1 to 2 minutes.
+- First boss: appears at 3:10, 1,183 HP, dies at 4:30 (80 s fight), a swarm follows. The late boss is on the exit portal: spawns 11:42 (hold to wake), 18.9K HP, dies 12:16 (34 s). Another boss 4,989 HP died at 9:58 after about 20 s.
+- Dust storm at 9:18 to 9:34: screen tint, minimap dims.
+
+**Deaths** (two clips)
+- Stage 1, death at 1:18 of a 1:23 run: the player woke a shrine, which spawned 15 to 20 melee scorpions on top of them at 58 s. HP 79 to 8 in 8 s (about 24 HP per 2 s), then 12 s at 4 to 6 HP with a red screen edge, dead at 78 s. The player had 1 level and 1 item. Lesson: a shrine trade (risk now, boon after) is lethal for a fresh build, and the red edge warns about 10 s early.
+- Stage 2, level 45, 1:58 of a 2:04 clip: full 196 HP to 0 within 2 s from a boss attack, with two bosses of 76.5K HP and a screen full of damage numbers. Lesson: late deaths are one-shots from bosses, not slow grinds.
+- Shrine spawns: a shrine charge (4 to 6 s dome) spawns 12 to 25 enemies around it. Shop (stage 1, 22 s): 3 items at 38, 81 and 87 coins (common, rare, rare), player had 30 coins and bought nothing. Shrine boons offered: 3 plus Ignore, rarities common, uncommon, rare, legendary seen once (21.5% projectile speed).
+- Kills: 55 a minute early (219 in 236 s), a screen of 3 to 10 enemies; late builds show dozens of damage numbers at once.
+- Stage 2 late build: 4 weapons, 4 tomes, 18 to 20 items, move speed 1.85x, luck 70 to 75%.
+
+**The exit**
+- The objective line reads "find the portal" the whole run. A stone arch is seen near the first boss at 3:10, again at 4:54 and 6:12, so a landmark is always near. The ring portal appears at 12:54 after the boss dies at 12:16, then the player stands in it for a charge (about 30 s) with a final swarm before it opens. Black screen at 13:28, new stage at 13:32.
+- Pointing: a "!" glyph on screen edge and the minimap; no beam. Distance and time from spawn to portal: Not seen (the recording does not show the spawn point).
+
+**Stage 2 first minute**: title card, first chest at 12 s, first enemies at 17 s, very few enemies for the first 30 s, no level-up in the first 28 s.
+
+**Coins**
+- 30 at 0:00, 72 at 1:44, 115 at 3:36, 159 at 10:14, 205 at 11:24, 256 at 12:12, 363 at 13:46. About 45 to 50 per few minutes. Coins are a trickle and spend on Refresh and the shop.
+
+**HP**
+- Full on every frame until the late boss: 113 max at level 13, 131 at level 31. At 12:00 to 12:16 HP dropped from 170 to 29 in 12 s (the boss fight), then healed to full by 12:30.
+
+**What this means for the plan**
+- Payout steady: a level-up every 12 to 50 s, a chest every 60 to 80 s, a shrine or shop every 60 to 90 s, a rare pickup every 60 to 90 s.
+- The strongest rewards come as bursts during hordes and boss kills, not evenly. That is what feels like "things explode".
+- Chests mostly common, rare and above are rarer than 1 in 5.
+- Hordes with a warning banner, then a calm, then another.
