@@ -136,7 +136,7 @@ export { CLIPS, UPPER, locomotion };
 // crossfade seconds: about 0.12 for movement, shorter for snappy actions, longer into idle. Nothing ever cuts.
 const FADE = { default: 0.12, idle_cards: 0.2, select_fidget: 0.2, dash: 0.06, slide: 0.1, hurt: 0.08, throw_card: 0.1, land_light: 0.1, land_heavy: 0.1, jump_rise: 0.1, jump_apex: 0.1, fall_loop: 0.12, air_jump: 0.1, defeat: 0.15, victory: 0.2 };
 const TUNE_LEG = d => (typeof window !== 'undefined' && window.__rigTune && window.__rigTune.legDeg) || d;
-const LEG_DEG = 15;       // the most a thigh or knee may turn in one rendered frame (degrees, 90th percentile of the run cycle, at 60 frames a second): the run cycle speeds up to match the ground only as far as this allows; raise it to trade twitch for less foot slide
+const LEG_DEG = 30;       // the most a thigh or knee may turn in one rendered frame (degrees, 90th percentile of the run cycle, at 60 frames a second): the run cycle speeds up to match the ground only as far as this allows; raise it to trade twitch for less foot slide
 const AIRSPEED = { jump_rise: 2.2, jump_apex: 2.5, air_jump: 1.6 };       // the jump clips are 0.45 s long but the rise lasts 0.2 s and the apex 0.1 s: they play fast enough to reach their pose in time
 const LOCO = ['idle_cards', 'walk', 'run'], WALK_STRIDE = 2.88, RUN_STRIDE = 5.67;   // metres per cycle of the Meshy walk (1.03 s at about 2.8 m/s) and run (0.63 s at about 9 m/s)
 const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
