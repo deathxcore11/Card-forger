@@ -30,7 +30,7 @@ const core = [
   q('runs5', 'General', 'Regular', 'Finish 5 runs.', 'Plain', 'total.runs', 5, { item: 'jar-of-avarice' }),
   // more, to fill the tabs (placeholder rewards)
   q('stage1', 'General', 'First Descent', 'Clear a stage.', 'Plain', 'total.stagesCleared', 1, { card: 'toll-of-ash' }),
-  q('stage3', 'General', 'The Whole Kingdom', 'Clear all three stages in one run.', 'Radiant', 'best.stagesCleared', 3, { chips: 150 }),
+  q('stage3', 'General', 'Beyond the Desert', 'Clear all three stages in one run.', 'Radiant', 'best.stagesCleared', 3, { chips: 150 }),
   q('kills5000', 'General', 'Horde Breaker', 'Defeat 5,000 enemies in total.', 'Bright', 'total.kills', 5000, { item: 'thornbound-locket' }),
   q('runs20', 'General', 'Dedicated', 'Finish 20 runs.', 'Bright', 'total.runs', 20, { chips: 60 }),
   q('fullwyvern', 'Monsters', 'Grown Up', 'Take an Ember Wyvern to level 10.', 'Plain', 'key.dsfull:ember-wyvern', 1, { chips: 20 }),
