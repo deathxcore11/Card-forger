@@ -31,6 +31,7 @@ export function runResults(g, ctx) {
     chestsOpened: g.chestsOpenedTotal, trapsFired: g.trapsFired, trapsSet: g.trapsSet, maxMonstersOnField: g.maxMonsters,
     gateOpenedAt: g.gateOpenedAt, oaths: g.oathList.slice(), oathsKept: oathsKept(g), sealsCracked: g.sealT ? g.sealT.cracked.slice() : [], map: (g.opts && g.opts.map) || 'ruins', stagesCleared: g.stagesCleared, stageFacts: g.stageFacts, mode: g.mode, difficulty: g.difficulty, score: g.score(), stateHash: hashHex(g), damagePerMinute: dealtOf(g), keys,
     // extras this build also reports
+    ...(g.big ? { big: true, doorsFound: g.gate && g.gate.state !== 'closed' ? 1 : 0, pickups: g.pickupsTaken | 0, boons: g.blessings ? g.blessings.length : 0, items: g.items ? Array.from(new Set(g.items)) : [] } : {}),
     level: g.level, wardenKilled: g.wardenKilled, elitesKilled: g.elitesKilled, vasesBroken: g.vasesBroken, starChips: g.starChips(), killedBy: g.killedBy
   };
 }

@@ -140,3 +140,47 @@ test('big world items: stat items change the stat, procs fire on their trigger, 
   const w = mkBig(); w.god = true; addItem(w, 'level-lantern'); w.addXp(1e5); assert.ok(w.wardHits >= 1, 'a Ward on level-up');
   const t = mkBig(); t.god = true; addItem(t, 'old-hourglass'); for (let i = 0; i < 46 * 60; i++) t.step(STEP, IDLE); assert.ok(t.stopT > 0 || t.sc > 45, 'the sand stops every 45 s');
 });
+
+import { defaultMeta, applyRun, simMeta, migrateLadder } from '../src/core/meta.js';
+import { loadSave, freshSave as freshSave4, SAVE_VERSION as SV } from '../src/core/save.js';
+import { QUESTS } from '../src/data/quests.js';
+import { STARTER } from '../src/data/starter.js';
+
+test('unlock ladder: a fresh save starts small (1 duelist, 12 cards, 15 items, 4 boons, 6 pickups, Easy, stage 1), and the first ten runs unlock something almost every time', () => {
+  const m = defaultMeta(); assert.deepEqual([m.duelists.length, m.unlockedCards.length, m.unlockedItems.length, m.unlockedBoons.length, m.unlockedPickups.length, m.stagesOpen], [1, 12, 15, 4, 6, 1]); assert.equal(m.diffUnlock.ruins, undefined);
+  const sm = simMeta(m); assert.deepEqual([sm.boons.length, sm.pickups.length, sm.stagesOpen], [4, 6, 1]);
+  const total = ITEMS_COUNT(); assert.equal(total, 120);
+  // ten short runs: about 1.5 minutes, 80 kills, a few vases and chests, some pickups, a boon now and then, never a win
+  let unlockedRuns = 0, firstTen = [];
+  for (let run = 1; run <= 10; run++) { const done = applyRun(m, { game: 'ds', big: true, mode: 'run', map: 'ruins', difficulty: 'easy', result: 'loss', timeSurvived: 90 + run * 15, kills: 60 + run * 25, vasesBroken: 5 + run, chestsOpened: 2, pickups: 3, boons: run % 3 === 0 ? 1 : 0, doorsFound: 0, stagesCleared: 0, items: ['sand-sandals', 'brass-ring', 'spyglass'.slice(0, 0) || 'bronze-scale'], duelist: 'kael', keys: [], oathsKept: [], level: 5 + run }); const gained = done.filter(q => q.reward && (q.reward.item || q.reward.boon || q.reward.pickup || q.reward.card)).length; firstTen.push(gained); if (gained > 0) unlockedRuns++; }
+  assert.ok(unlockedRuns >= 8, 'runs with an unlock in the first ten: ' + unlockedRuns + ' ' + firstTen);
+});
+function ITEMS_COUNT() { return Object.keys(ALL_ITEMS).length; }
+
+test('unlock ladder: clearing stage 1 opens stage 2 and the next difficulty; the ladder never grants an item twice and every locked item has exactly one quest', () => {
+  const m = defaultMeta(); applyRun(m, { game: 'ds', big: true, mode: 'run', map: 'ruins', difficulty: 'easy', result: 'win', timeSurvived: 700, kills: 400, stagesCleared: 1, items: [], duelist: 'kael', keys: [], oathsKept: [], level: 20 });
+  assert.equal(m.stagesOpen, 2); assert.ok(m.diffUnlock.ruins && m.diffUnlock.ruins.includes('medium'));
+  const granted = {}; for (const q of QUESTS) for (const k of ['item', 'boon', 'pickup']) if (q.reward && q.reward[k] !== undefined) { const key = k + ':' + q.reward[k]; granted[key] = (granted[key] || 0) + 1; }
+  for (const [k, n] of Object.entries(granted)) assert.equal(n, 1, k + ' has one quest');
+  for (const id of Object.keys(ALL_ITEMS)) if (!STARTER.items.includes(id)) assert.equal(granted['item:' + id], 1, id + ' can be unlocked');
+  for (const id of Object.keys(ALL_BOONS)) if (ALL_BOONS[id].big && !STARTER.boons.includes(id)) assert.equal(granted['boon:' + id], 1, id + ' can be unlocked');
+});
+
+test('unlock ladder: a save from before the ladder keeps everything it owned (cards, items, duelists, boons) and opens all stages; a fresh older save gets the small start', () => {
+  const old = { v: 3, starChips: 40, runs: 9, records: {}, settings: {}, meta: { unlockedCards: ['ember-wyvern', 'kindling-rite', 'deep-marks'], unlockedItems: ['worn-duel-glove', 'hunters-mark', 'traders-seal'], duelists: ['kael', 'mira', 'vesh'], totals: { runs: 9, kills: 2000, chests: 30, vases: 90, bossKills: 2, stagesCleared: 3 }, questsDone: ['husks500'], maps: {}, deck: {}, oathCount: {} } };
+  const host = { save: { load: () => old, write: () => true } }, s = loadSave(host);
+  assert.equal(s.v, SV); for (const c of old.meta.unlockedCards) assert.ok(s.meta.unlockedCards.includes(c), c); for (const c of old.meta.unlockedItems) assert.ok(s.meta.unlockedItems.includes(c), c);
+  assert.ok(s.meta.duelists.includes('vesh') && s.meta.duelists.includes('mira') && s.meta.duelists.includes('kael')); assert.equal(s.meta.stagesOpen, 3);
+  for (const b of ['might', 'swiftness', 'vigor', 'haste', 'guard', 'plenty', 'renewal']) assert.ok(s.meta.unlockedBoons.includes(b), b);
+  assert.equal(s.meta.unlockedItems.length, 3, 'an old save is not handed the new starter items it did not choose'); assert.equal(s.meta.totals.runs, 9);
+  const young = { v: 3, starChips: 0, runs: 0, records: {}, settings: {}, meta: { unlockedCards: ['ember-wyvern'], unlockedItems: ['worn-duel-glove'], duelists: ['kael', 'mira'], totals: { runs: 0 }, questsDone: [], maps: {}, deck: {}, oathCount: {} } };
+  const y = loadSave({ save: { load: () => young, write: () => true } }); assert.equal(y.meta.stagesOpen, 1); assert.deepEqual(y.meta.duelists, ['kael']); assert.equal(y.meta.unlockedItems.length, 15);
+  const f = loadSave({ save: { load: () => null, write: () => true } }); assert.equal(f.meta.stagesOpen, 1);
+});
+
+test('unlock ladder: a run on a save that has only stage 1 open is one stage long; with the stages open it is three', () => {
+  const one = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy', meta: simMeta(defaultMeta()) }); assert.equal(one.stages.length, 1);
+  const m = defaultMeta(); m.stagesOpen = 3; const three = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy', meta: simMeta(m) }); assert.equal(three.stages.length, 3);
+  const none = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); assert.equal(none.stages.length, 3);
+  assert.ok(one.unlockedBoons.size === 4 && one.unlockedPickups.size === 6 && one.unlockedCards.size === 12);
+});

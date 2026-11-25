@@ -8,6 +8,7 @@
 //   manual            cannot be earned yet (hidden finds are not built)
 // reward: { chips: n } | { card: id } | { item: id } | { duelist: id } | { outfit: id } | { regalia: id }
 import { OATHS } from './progress.js';
+import { ladderQuests } from './quests2.js';
 
 export const QUEST_TABS = ['Duelists', 'Monsters', 'Spells/Traps', 'Items', 'General', 'Oaths', 'Mastery', 'Regalia'];
 export const RARITIES = ['Plain', 'Bright', 'Gilded', 'Radiant', 'Mythic'];
@@ -42,7 +43,7 @@ const core = [
   q('godfuse', 'Monsters', 'Beyond Fusion', 'Make a God Fusion.', 'Mythic', 'total.godFusions', 1, { chips: 400 }),
   q('duelist-vesh', 'Duelists', 'A Hollow Welcome', 'Clear a stage on Hard.', 'Gilded', 'best.hardStages', 1, { duelist: 'vesh' }),
   q('duelist-oren', 'Duelists', 'Bound to Win', 'Clear all three stages on Medium.', 'Gilded', 'best.mediumFull', 1, { duelist: 'oren' }),
-  q('duelist-mira', 'Duelists', 'Runes Aplenty', 'Use Kael to finish 3 runs.', 'Plain', 'key.dsdu:kael', 3, { chips: 20 })
+  q('duelist-mira', 'Duelists', 'Runes Aplenty', 'Use Kael to finish 3 runs.', 'Plain', 'key.dsdu:kael', 3, { duelist: 'mira' })
 ];
 // every Oath is its own quest: keep it once (finish a run with it sworn and every stage cleared)
 const oathQuests = OATHS.map(o => q('oath-' + o.id, 'Oaths', o.name, 'Clear a run while keeping the ' + o.name + ': ' + o.text, o.reward.chips >= 50 ? 'Gilded' : 'Bright', 'oath.' + o.id, 1, o.reward));
@@ -55,4 +56,4 @@ const regaliaQuests = [
   q('regalia-trinket1', 'Regalia', 'A Cracked Charm', 'Find a charm hidden in a vase on any map.', 'Bright', 'manual', 1, { regalia: 'cracked-charm' }),
   q('regalia-mastery', 'Regalia', 'Veteran Insignia', 'Reach mastery rank 10 with any duelist.', 'Mythic', 'mastery.any', 10, { regalia: 'veteran-insignia' })
 ];
-export const QUESTS = [...core, ...oathQuests, ...masteryQuests, ...regaliaQuests];
+export const QUESTS = [...core, ...oathQuests, ...masteryQuests, ...regaliaQuests, ...ladderQuests(new Set(core.filter(x => x.reward && x.reward.item).map(x => x.reward.item)))];

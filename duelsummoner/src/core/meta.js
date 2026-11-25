@@ -1,13 +1,13 @@
 // Meta rules (pure, testable): Deck Box ranks to run modifiers, quest progress and rewards, mastery, map records, unlock sets, buying upgrades.
-import { DECK_BOX, STARTER } from '../data/meta.js';
+import { DECK_BOX, STARTER, OLD_STARTER } from '../data/meta.js';
 import { QUESTS } from '../data/quests.js';
 import { MASTERY, masteryRank, MAPS, DUELIST_INFO, LIBRARY_MIN } from '../data/progress.js';
 
 export function defaultMeta() {
   return {
-    deck: {}, unlockedCards: STARTER.cards.slice(), unlockedItems: STARTER.items.slice(), questsDone: [],
-    totals: { kills: 0, chests: 0, vases: 0, runs: 0, bossKills: 0, stagesCleared: 0, fusions: 0, godFusions: 0, wardenKills: 0 },
-    best: {}, keys: {}, oathCount: {}, mastery: {}, maps: {}, duelists: ['kael', 'mira'], outfits: [], regalia: [], libraryOff: [], diffUnlock: {}, oathsOpen: []
+    deck: {}, unlockedCards: STARTER.cards.slice(), unlockedItems: STARTER.items.slice(), unlockedBoons: STARTER.boons.slice(), unlockedPickups: STARTER.pickups.slice(), itemsFound: [], stagesOpen: STARTER.stages, questsDone: [],
+    totals: { kills: 0, chests: 0, vases: 0, runs: 0, bossKills: 0, stagesCleared: 0, fusions: 0, godFusions: 0, wardenKills: 0, minutes: 0, doorsFound: 0, deaths: 0, pickups: 0, boons: 0 },
+    best: {}, keys: {}, oathCount: {}, mastery: {}, maps: {}, duelists: STARTER.duelists.slice(), outfits: [], regalia: [], libraryOff: [], diffUnlock: {}, oathsOpen: []
   };
 }
 export const rankOf = (meta, key) => Math.min(5, meta.deck[key] || 0);
@@ -25,7 +25,7 @@ export function deckMods(meta) {
 // what the sim receives. Cards the player switched off in the Card Library stay out of the offer pool.
 export function simMeta(meta) {
   const off = new Set(meta.libraryOff || []);
-  return { mods: deckMods(meta), cards: meta.unlockedCards.filter(c => !off.has(c)), items: meta.unlockedItems.filter(c => !off.has(c)), deck: Object.assign({}, meta.deck) };
+  return { mods: deckMods(meta), cards: meta.unlockedCards.filter(c => !off.has(c)), items: meta.unlockedItems.filter(c => !off.has(c)), deck: Object.assign({}, meta.deck), boons: (meta.unlockedBoons || STARTER.boons).slice(), pickups: (meta.unlockedPickups || STARTER.pickups).slice(), stagesOpen: meta.stagesOpen || 3 };
 }
 // switching a card off is refused when fewer than LIBRARY_MIN would stay on
 export function setCardEnabled(meta, id, on) {
@@ -62,6 +62,7 @@ export function effectText(key, r) {
 export function statValue(meta, stat) {
   const [kind, name] = [stat.slice(0, stat.indexOf('.')), stat.slice(stat.indexOf('.') + 1)];
   if (kind === 'total') return meta.totals[name] || 0;
+  if (kind === 'found') return (meta.itemsFound || []).length;
   if (kind === 'best') return meta.best[name] || 0;
   if (kind === 'key') return meta.keys[name] || 0;
   if (kind === 'oath') return meta.oathCount[name] || 0;
@@ -78,6 +79,8 @@ function grant(meta, q) {
   const r = q.reward || {};
   if (r.card && !meta.unlockedCards.includes(r.card)) meta.unlockedCards.push(r.card);
   if (r.item && !meta.unlockedItems.includes(r.item)) meta.unlockedItems.push(r.item);
+  if (r.boon) { const b = meta.unlockedBoons || (meta.unlockedBoons = []); if (!b.includes(r.boon)) b.push(r.boon); }
+  if (r.pickup) { const b = meta.unlockedPickups || (meta.unlockedPickups = []); if (!b.includes(r.pickup)) b.push(r.pickup); }
   if (r.duelist && !meta.duelists.includes(r.duelist)) meta.duelists.push(r.duelist);
   if (r.outfit && !meta.outfits.includes(r.outfit)) meta.outfits.push(r.outfit);
   if (r.regalia && !meta.regalia.includes(r.regalia)) meta.regalia.push(r.regalia);
@@ -109,6 +112,14 @@ export function migrateDiffUnlock(meta) {
   return meta;
 }
 
+// a save from before the unlock ladder (it has runs, items or quests done): keep every card, item, boon, duelist and stage it already had, and open the three stages. A fresh save starts small.
+export function migrateLadder(meta) {
+  if (meta.stagesOpen) return meta; const T = meta.totals || {}, old = (T.runs || 0) > 0 || (meta.unlockedItems || []).length > OLD_STARTER.items.length || (meta.questsDone || []).length > 0;
+  meta.unlockedBoons = (old ? OLD_STARTER.boons.concat(STARTER.boons) : STARTER.boons).filter((b, i, a) => a.indexOf(b) === i); meta.unlockedPickups = STARTER.pickups.slice(); meta.itemsFound = (meta.itemsFound || []).slice(); meta.stagesOpen = old ? 3 : STARTER.stages;
+  if (old) { for (const d of OLD_STARTER.duelists) if (!meta.duelists.includes(d)) meta.duelists.push(d); } else meta.duelists = STARTER.duelists.slice();
+  for (const k of ['minutes', 'doorsFound', 'deaths', 'pickups', 'boons']) if (T[k] === undefined) T[k] = 0; meta.totals = T; return meta;
+}
+
 // ---- Oath seals: every Oath starts sealed; a feat in a normal run (sim/seals.js) breaks its seal for good. oathsOpen lists the unsealed ones. ----
 export const oathOpen = (meta, id) => (meta.oathsOpen || []).includes(id);
 // older saves had every Oath open: anyone who already KEPT an Oath (cleared a run with it sworn) keeps it; the rest start sealed
@@ -124,6 +135,11 @@ export function applyRun(meta, r) {
   const d = defaultMeta(); for (const k of Object.keys(d)) if (meta[k] === undefined) meta[k] = d[k];           // saves from older builds gain the new fields
   const T = meta.totals, B = meta.best, mx = (k, v) => { if ((v || 0) > (B[k] || 0)) B[k] = v || 0; };
   const win = r.result === 'win' || (r.stagesCleared || 0) > 0 && r.result === 'win';
+  if (r.big) {       // the big desert's own counters and the unlock ladder
+    T.minutes = (T.minutes || 0) + Math.floor((r.timeSurvived || 0) / 60); T.doorsFound = (T.doorsFound || 0) + (r.doorsFound || 0); T.deaths = (T.deaths || 0) + (r.result === 'win' ? 0 : 1); T.pickups = (T.pickups || 0) + (r.pickups || 0); T.boons = (T.boons || 0) + (r.boons || 0);
+    const found = meta.itemsFound || (meta.itemsFound = []); for (const id of r.items || []) if (!found.includes(id)) found.push(id);
+    if (win && r.mode === 'run' && (r.stagesCleared || 0) >= (meta.stagesOpen || 1)) meta.stagesOpen = Math.min(3, (meta.stagesOpen || 1) + 1);
+  }
   T.kills += r.kills || 0; T.chests += r.chestsOpened || 0; T.vases += r.vasesBroken || 0; T.runs += 1; T.bossKills += r.bossKills || 0;
   T.stagesCleared = (T.stagesCleared || 0) + (r.stagesCleared || 0); T.fusions = (T.fusions || 0) + (r.fusions || 0); T.godFusions = (T.godFusions || 0) + (r.godFusions || 0); T.wardenKills = (T.wardenKills || 0) + (r.wardenKilled ? 1 : 0);
   mx('level', r.level); mx('timeSurvived', r.timeSurvived); mx('overtimeSeconds', r.overtimeSeconds); mx('trapsSet', r.trapsSet); mx('stagesCleared', r.stagesCleared);

@@ -36,7 +36,7 @@ test('save migration: a save from before the unlock order keeps every difficulty
 });
 
 test('save: the unlocks are written and read back, and survive a version-3 round trip', () => {
-  const store = {}, h = host(store), s = freshSave(); run(s.meta, { difficulty: 'easy' }); writeSave(h, s); assert.equal(store.s.v, 3);
+  const store = {}, h = host(store), s = freshSave(); run(s.meta, { difficulty: 'easy' }); writeSave(h, s); assert.equal(store.s.v, SAVE_VERSION);
   const back = loadSave(h); assert.ok(diffUnlocked(back.meta, 'ruins', 'medium')); assert.ok(!diffUnlocked(back.meta, 'ruins', 'hard'));
   const again = migrateDiffUnlock({ maps: {}, diffUnlock: { ruins: ['medium'] } }); assert.deepEqual(again.diffUnlock, { ruins: ['medium'] }, 'an already migrated meta is untouched');
 });

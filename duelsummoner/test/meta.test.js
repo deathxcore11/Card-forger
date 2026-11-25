@@ -27,9 +27,9 @@ test('Card Library: locked cards and items never appear; a quest unlocks them', 
   const locked = new Set(['kindling-rite', 'deep-marks', 'pit-of-seals', 'storm-of-cards', 'second-wind']);
   for (let k = 0; k < 60; k++) for (const c of buildOffer(g)) assert.ok(!locked.has(c.id), c.id + ' is locked');
   const done = applyRun(m, { timeSurvived: 400, kills: 600, level: 16, fusions: 1, bossKills: 0, wardenKilled: true, overtimeSeconds: 0, trapsSet: 1, chestsOpened: 0, vasesBroken: 0 });
-  assert.deepEqual(done.map(q => q.id).sort(), ['fuse1', 'husks500', 'level15', 'survive6', 'trapset', 'warden'].sort());
+  for (const id of ['fuse1', 'husks500', 'level15', 'survive6', 'trapset', 'warden']) assert.ok(done.some(q => q.id === id), id + ' done');       // (the unlock ladder of the big desert adds first-run quests on top)
   for (const id of ['kindling-rite', 'deep-marks', 'pit-of-seals', 'storm-of-cards', 'hunters-mark']) assert.ok(m.unlockedCards.includes(id) || m.unlockedItems.includes(id), id);
-  assert.ok(applyRun(m, { timeSurvived: 10, kills: 1, level: 1, fusions: 0, bossKills: 0 }).length === 0, 'a quest pays out once');
+  assert.ok(!applyRun(m, { timeSurvived: 10, kills: 1, level: 1, fusions: 0, bossKills: 0 }).some(q => ['fuse1', 'husks500', 'level15', 'survive6', 'trapset', 'warden'].includes(q.id)), 'a quest pays out once');
   const g2 = new Game(8, { meta: simMeta(m) }); g2.level = 2; let seen = false;
   for (let k = 0; k < 80 && !seen; k++) for (const c of buildOffer(g2)) if (c.id === 'kindling-rite') seen = true;
   assert.ok(seen, 'unlocked card can be offered now');

@@ -15,11 +15,7 @@ export const DECK_BOX = {
   openingHand: { name: 'Opening Hand', text: 'Start the run with a random unlocked Spell, rank 1; a second at rank 5', cost: [60, 100, 150, 210, 300], perRank: [{ openingHand: 1 }, {}, {}, {}, { openingHand: 1 }] }
 };
 
-// What a fresh save can already use (20 of the launch set is the plan; this build has fewer cards, the rest unlock by quest).
-export const STARTER = {
-  cards: ['ember-wyvern', 'cinder-hatchling', 'rune-apprentice', 'sigil-familiar', 'swift-draw', 'collectors-eye', 'heart-of-the-cards', 'runners-sash', 'gust-ward'],
-  items: ['worn-duel-glove', 'sand-sandals', 'cracked-hourglass', 'scarab-charm', 'clay-heart', 'lucky-coin', 'whetstone-tablet', 'travelling-cloak', 'lodestone', 'bandaged-hand', 'bronze-scale', 'dueling-boots']
-};
+export { STARTER, OLD_STARTER } from './starter.js';
 
 // Quests are data in data/quests.js (tabs, rarity, goal, reward).
 export { QUESTS } from './quests.js';

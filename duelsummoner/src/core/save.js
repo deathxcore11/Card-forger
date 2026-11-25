@@ -1,7 +1,8 @@
 // One local save file with a version number, written after every run (and, later, every purchase).
 // records are kept per duelist: longest time survived, most kills, highest level.
-import { defaultMeta, migrateDiffUnlock, migrateSeals } from './meta.js';
-export const SAVE_VERSION = 3;       // v3: difficulty unlock order (meta.diffUnlock, migrated from the map records)
+import { defaultMeta, migrateDiffUnlock, migrateSeals, migrateLadder } from './meta.js';
+import { STARTER } from '../data/starter.js';
+export const SAVE_VERSION = 4;       // v4: the unlock ladder (stagesOpen, unlockedBoons, unlockedPickups, itemsFound), migrated so an older save keeps everything it owned; v3: difficulty unlock order       // v3: difficulty unlock order (meta.diffUnlock, migrated from the map records)
 
 export function freshSave() { return { v: SAVE_VERSION, records: {}, starChips: 0, runs: 0, bossKills: 0, meta: defaultMeta(), settings: defaultSettings() }; }
 // In memory `settings` is the resolved flat object the game reads (defaults plus the player's overrides). On disk (v2) it is overrides only, under the spec names (camShake, not shake),
@@ -19,8 +20,9 @@ function withDefaults(s) {                                           // older sa
   out.settings = resolveSettings(s.settings);
   if (!(s.meta && s.meta.oathsOpen)) { out.meta.oathsOpen = undefined; migrateSeals(out.meta); }       // a save from before the seals: Oaths already kept stay open, the rest are sealed
   if (!(s.meta && s.meta.diffUnlock)) { out.meta.diffUnlock = undefined; migrateDiffUnlock(out.meta); }       // a save from before the unlock order
-  for (const c of m.unlockedCards) if (!out.meta.unlockedCards.includes(c)) out.meta.unlockedCards.push(c);
-  for (const c of m.unlockedItems) if (!out.meta.unlockedItems.includes(c)) out.meta.unlockedItems.push(c);
+  const had = s.meta || {}, hadLadder = !!had.stagesOpen;
+  if (!hadLadder) { out.meta.stagesOpen = undefined; out.meta.unlockedItems = (had.unlockedItems || []).slice(); out.meta.unlockedCards = (had.unlockedCards || []).slice(); out.meta.duelists = (had.duelists || ['kael']).slice(); migrateLadder(out.meta); }       // a save from before the ladder keeps what it had
+  if (hadLadder || !((had.totals || {}).runs > 0 || (had.questsDone || []).length > 0)) { for (const c of STARTER.cards) if (!out.meta.unlockedCards.includes(c)) out.meta.unlockedCards.push(c); for (const c of STARTER.items) if (!out.meta.unlockedItems.includes(c)) out.meta.unlockedItems.push(c); }       // a fresh or current save gains the starter lists; an old one keeps exactly what it had
   return out;
 }
 
@@ -30,7 +32,7 @@ export function loadSave(host) {
   if (!s) return freshSave();
   if (s.v > SAVE_VERSION) { const f = freshSave(); f._readOnly = true; return f; }       // a save from a newer build: shown as fresh, never written over
   if (s.v === 1) return withDefaults(Object.assign(migrateV1(s), { v: SAVE_VERSION }));
-  if (s.v === 2) return withDefaults(Object.assign({}, s, { v: 3 }));
+  if (s.v === 2 || s.v === 3) return withDefaults(Object.assign({}, s, { v: SAVE_VERSION }));
   if (s.v !== SAVE_VERSION) return freshSave();
   return withDefaults(s);
 }

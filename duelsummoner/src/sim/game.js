@@ -74,6 +74,7 @@ export class Game {
     const meta = this.opts.meta || null;                                    // permanent progress, handed in by the browser (pure data)
     this.metaMods = meta ? meta.mods : {};
     this.unlockedCards = meta ? new Set(meta.cards) : null; this.unlockedItems = meta ? new Set(meta.items) : null;
+    this.unlockedBoons = meta && meta.boons ? new Set(meta.boons) : null; this.unlockedPickups = meta && meta.pickups ? new Set(meta.pickups) : null;
     this.wardenKilled = false; this.trapEver = false;
     this.field = makeField(this.duelist, this.rcos); this.fog = makeFog();
     this.field.redraws += this.metaMods.redraws || 0; this.field.banishes += this.metaMods.banishes || 0;

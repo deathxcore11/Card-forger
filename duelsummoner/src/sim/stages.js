@@ -44,7 +44,7 @@ export function loadStageMap(g, i) {
 export function initRun(g) {
   g.mode = g.opts.mode || 'classic'; g.difficulty = DIFFICULTY[g.opts.difficulty] ? g.opts.difficulty : 'medium'; g.diff = DIFFICULTY[g.difficulty]; g.maxAlive = RUN.maxAlive;
   if (g.mode === 'classic') { g.stages = null; g.stageSpec = null; return; }
-  g.big = g.opts.terrain === 'open'; g.paceK = g.big ? BIG_PACE : 1; g.stages = stagesFor(g.mode, g.big); g.stage = 0; g.scTotal = 0; g.stagesCleared = 0; g.stageFacts = [];
+  g.big = g.opts.terrain === 'open'; g.paceK = g.big ? BIG_PACE : 1; g.stages = stagesFor(g.mode, g.big); const open = g.opts.meta && g.opts.meta.stagesOpen; if (open && g.mode === 'run' && open < g.stages.length) g.stages = g.stages.slice(0, open); g.stage = 0; g.scTotal = 0; g.stagesCleared = 0; g.stageFacts = [];
   g.swiftChips = 0; g.duelOn = false; g.otT = 0; g.desc = null; g.chestsOpenedTotal = 0; g.heat = 1;
   initStage(g); loadStageMap(g, 0); g.world = buildWorld(g); if (g.map.big) streamWorld(g, 0);
   g.event('banner', g.stageSpec.name + '. Seal Code ' + g.sealCode);
