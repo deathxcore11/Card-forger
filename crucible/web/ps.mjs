@@ -72,7 +72,7 @@ export function frame({ left = '', right = '', view = '', ledge = '', bar = '', 
   const { W, H } = F, ww = W - 192, ly = H - 104;
   return `<div class="fr">${box(0, 0, 96, H, 'st pl')}${box(W - 96, 0, 96, H, 'st pl')}${box(96, 0, ww, ly, 'st dk')}
     ${box(100, 4, ww - 8, ly - 8, 'vw', view)}${tall != null ? box(96, ly, ww, 104, 'wn bar tall', tall) : box(96, ly, ww, 64, 'lg ledge', ledge) + box(96, H - 40, ww, 40, 'wn bar' + (barMore ? ' more' : ''), `<p>${bar}</p>`, barMore ? 'data-a="barmore"' : '')}
-    <div class="ab" style="left:0;top:0;width:96px;height:${H}px">${left}</div><div class="ab" style="left:${W - 96}px;top:0;width:96px;height:${H}px">${right}</div>${extra}</div>`;
+    <div class="ab pil0" style="left:0;top:0;width:96px;height:${H}px">${left}</div><div class="ab" style="left:${W - 96}px;top:0;width:96px;height:${H}px">${right}</div>${extra}</div>`;
 }
 // The view window's size in this frame, and the ledge's width.
 // F.view: a screen whose view is not the window between the pillars (the duel on the top frame of two) says its size.
