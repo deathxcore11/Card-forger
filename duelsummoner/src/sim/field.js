@@ -180,9 +180,27 @@ export function openLevelOffer(g) {
   g.offer = { type: 'level', cards, leave: false };
   g.event('offer', null);
 }
+// ---- the big desert's chests: one item each ----
+const TIERS4 = ['common', 'rare', 'epic', 'legendary'];
+export function rollItemTier(g, chest) {
+  if (g.forceChest) return g.forceChest;       // test hook only
+  const I = ENCOUNTERS.itemChests, S = g.stageSpec, f = Math.min(1, g.sc / (S ? S.clock : 720)), st = g.stage | 0, sealed = chest && (chest.kind === 'sealed' || chest.trophy || chest.guaranteed), w = {};
+  for (const k of TIERS4) { w[k] = I.odds[k] + (I.perClock[k] || 0) * f + (I.perStage[k] || 0) * st; if (k === 'epic' || k === 'legendary') w[k] *= 1 + g.mods.luck * I.luckGain; if (sealed) w[k] *= I.sealed[k]; }
+  let t = 0; for (const k of TIERS4) t += w[k]; let r = g.rl() * t; for (const k of TIERS4) { r -= w[k]; if (r < 0) return k; } return 'common';
+}
+export function itemPool(g, tier) { return Object.keys(ITEMS).filter(id => ITEMS[id].rarity === tier && !(ITEMS[id].unique && g.items.includes(id)) && (!g.unlockedItems || g.unlockedItems.has(id))); }
+// the offer a chest opens: one item of the rolled tier (a tier with nothing left steps down); null when there is nothing at all
+export function itemChestOffer(g, chest) {
+  if (!chest.rolled) chest.rolled = rollItemTier(g, chest);
+  let ti = TIERS4.indexOf(chest.rolled), ids = itemPool(g, TIERS4[ti]); while (!ids.length && ti > 0) { ti--; ids = itemPool(g, TIERS4[ti]); }
+  if (!ids.length) for (ti = 0; ti < 4 && !ids.length; ti++) ids = itemPool(g, TIERS4[ti]);
+  if (!ids.length) return null; const id = ids[Math.floor(g.rl() * ids.length)], tier = ITEMS[id].rarity; chest.rarity = chest.rolled = tier;
+  return { type: 'chest', itemChest: true, cards: [{ id, kind: 'item', isNew: true, to: 1, rarity: tier }], leave: false, chest, reveal: tier };
+}
 export function openChest(g, chest) {
   const ready = fusionsReady(g);
   if (ready.length) { g.offer = { type: 'fusion', cards: ready.map(id => ({ id, kind: 'fusion', isNew: true, to: 1, rarity: 'epic' })), leave: true, chest }; }
+  else if (g.big) { const o = itemChestOffer(g, chest); if (!o) { g.event('banner', 'The chest holds nothing you could use.'); return; } g.offer = o; }
   else { const cards = buildOffer(g, OFFER.chestRarityFloor); if (!cards.length) { g.event('banner', 'The chest is empty of anything you can use.'); return; } g.offer = { type: 'chest', cards, leave: true, chest }; }
   g.event('offer', null);
 }
@@ -249,12 +267,12 @@ export function chooseCard(g, idx) {
   return true;
 }
 export function redraw(g) {
-  const o = g.offer, f = g.field; if (!o || !(o.type === 'level' || o.type === 'chest')) return false;
+  const o = g.offer, f = g.field; if (!o || !(o.type === 'level' || o.type === 'chest') || o.itemChest) return false;
   if (o.freeRedraws > 0) o.freeRedraws--;                                 // Deck Box: free Redraws on chests
   else if (f.redraws > 0) f.redraws--; else return false; o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined), true); return o.cards.length > 0;
 }
 export function banish(g, idx) {
-  const o = g.offer, f = g.field; if (!o || f.banishes <= 0 || !o.cards[idx] || !(o.type === 'level' || o.type === 'chest')) return false;
+  const o = g.offer, f = g.field; if (!o || f.banishes <= 0 || !o.cards[idx] || !(o.type === 'level' || o.type === 'chest') || o.itemChest) return false;
   f.banished.add(o.cards[idx].id); f.banishes--;
   o.cards = buildOffer(g, o.floor || (o.type === 'chest' ? OFFER.chestRarityFloor : undefined), true); return true;
 }

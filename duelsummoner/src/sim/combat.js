@@ -9,6 +9,8 @@ import { FIELD_RULES, MARKS } from '../data/cards.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { ELEMENTS } from '../data/elements.js';
 import { aceFell } from './aces.js';
+import { rollRare } from './powerups.js';
+import { POWER } from '../data/powerups.js';
 import { CAP, capTake } from './caps.js';
 import { takeBuf, freeBuf } from './scratch.js';
 import { sourceBracket, affinityBracket, overtimeBracket, sourceClass } from './ledger.js';
@@ -30,7 +32,7 @@ export function damageEnemy(g, i, dmg, o) {
   const e = g.en; if (!e.alive[i]) return false;
   o = o || {};
   let d = dmg;
-  const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0), BD = g.bracketDmg, b4 = e.mark[i] > 0 ? targetBracket(MARKS.bonus + g.mods.markBonus) : 1, b1 = mightBracket(g.mods.dmgMult);
+  const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0), BD = g.bracketDmg, b4 = e.mark[i] > 0 ? targetBracket(MARKS.bonus + g.mods.markBonus) : 1, b1 = mightBracket(g.mods.dmgMult + (g.drumT > 0 ? 0.5 : 0));
   let cls = g.srcClassOf[g.curSrc]; if (cls === undefined) cls = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]);
   const b2 = cls >= 0 ? sourceBracket(g.mods.drill[cls]) : 1, b8 = g.otStep > 0 ? overtimeBracket(g.otStep) : 1;
   let b3 = 1; if (el) { let sum = 0, cnt = 0; for (let k = 0; k < 8; k++) if (el & (1 << k)) { sum += g.mods.aff[k]; cnt++; } b3 = affinityBracket(sum / cnt); }
@@ -77,6 +79,7 @@ export function killEnemy(g, i) {
     if (g.rl() < RUN.coinChance * (g.diff.coin || 1) || g.frenzyT > 0) dropPickup(g, PICK_COIN, x + 0.6, y, z, (g.t < RUN.coinEarly.until ? RUN.coinEarly.mult : 1) * (g.frenzyT > 0 ? 2 : 1));      // the Coin Rite: every kill pays a coin, worth double       // the quiet first minutes pay a coin worth a few, so the first paid chest opens before 2:00
     if (g.rl() < RUN.heartChance) dropPickup(g, PICK_HEART, x - 0.6, y, z);
   }
+  if (g.big && g.rl() < POWER.enemyChance) { const k = rollRare(g); if (k) dropPickup(g, k, x, y, z - 0.6); }       // the big desert: now and then a rare pickup from an ordinary kill
   if (e.ace[i]) aceFell(g, x, y, z);                                          // a star-crested Ace: extra reward and a chance of a Trophy Chest
   if (kind === KINDS.bloat) explode(g, x, y, z, kind.blast.radius, kind.blast.dmg * g.dmgMul, kind.blast.dmg, 0xff9030, 'Sand Bloat');
   if (e.mark[i] > 0 && g.mods.markExplode && g.markDepth < K.explodeDepth && capTake(g, CAP.MARK_EXPLODE)) { g.markDepth++; explode(g, x, y, z, g.mods.markExplode.radius, 0, g.mods.markExplode.dmg, 0xb070ff); g.markDepth--; }       // victims of a mark blast do not blast again (depth), and the bucket holds a tick's worth (K.explodeBudget)

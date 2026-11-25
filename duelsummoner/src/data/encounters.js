@@ -25,6 +25,8 @@ export const ENCOUNTERS = {
     placement: [{ n: 3, r: [10, 28], deg: [[0, 360]], h: 0 }, { n: 3, r: [36, 50], deg: [[0, 360]], h: 4 }, { n: 2, r: [53, 58], deg: [[0, 360]], h: 5.8 }],
     rarityByOrder: ['common', 'common', 'common', 'rare', 'rare', 'rare', 'epic', 'epic']      // the lowest tier a chest can roll (a hidden floor): the tier is rolled and first seen when the chest is opened, never shown before
   },
+  // the big desert: a chest holds one item. Its rarity is rolled when it is opened (shown by the build-up, never on the outside) and grows richer with the stage clock and the stage; an elite's chest rolls higher.
+  itemChests: { odds: { common: 62, rare: 28, epic: 8, legendary: 2 }, perClock: { rare: 6, epic: 14, legendary: 3.5 }, perStage: { epic: 6, legendary: 1.5 }, sealed: { common: 0.4, rare: 1.2, epic: 1.8, legendary: 2 }, luckGain: 2 },
   altar: { count: 1, regions: [{ r: [14, 24], deg: [[-25, 25]], h: 0 }], tributeBonus: 2, banishChoices: 3 },   // one landmark, two labelled actions
   minSpacing: 5,                                                          // spots keep this far from each other
   interactRange: 3.2

@@ -50,7 +50,7 @@ function drawStrip(g) {                                                    // el
 // the boss bar shows for the final boss, the gate boss and the timed bosses, with the name on it
 const bossOf = g => g.sp.find(s => s.alive && !s.dead && !s.asleep && (s.kind === 'pharaoh' || s.role === 'gate' || s.role === 'bossA' || s.role === 'bossB'));
 function riteLines(g) {
-  if (g.openFlow) { const st = g.gate.state, S0 = g.stageSpec, last0 = g.stage >= 2, W0 = g.door ? 'door' : 'gate', L0 = g.door && g.door.state !== 'risen' && st === 'closed' ? [[false, 'Hunt and loot: a door will rise near you']] : st === 'closed' ? [[false, g.gateSeen ? 'Wake the ' + W0 + ' when ready' : 'Find the ' + W0]] : st === 'fight' ? [[true, 'Wake the ' + W0], [false, 'Fell ' + S0.gate.name]] : [[true, 'Wake the ' + W0], [true, 'Fell ' + S0.gate.name], [!!(g.desc || g.won), last0 ? 'Claim the Final Altar' : 'Step through the gateway']]; return L0.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join(''); }
+  if (g.openFlow) { const st = g.gate.state, S0 = g.stageSpec, last0 = g.stage >= 2, W0 = g.door ? 'door' : 'gate', L0 = g.door && g.door.state !== 'risen' && st === 'closed' ? [[false, 'Loot: a door will rise soon']] : st === 'closed' ? [[false, g.gateSeen ? 'Wake the ' + W0 + ' when ready' : 'Find the ' + W0]] : st === 'fight' ? [[true, 'Wake the ' + W0], [false, 'Fell ' + S0.gate.name]] : [[true, 'Wake the ' + W0], [true, 'Fell ' + S0.gate.name], [!!(g.desc || g.won), last0 ? 'Claim the Final Altar' : 'Step through the gateway']]; return L0.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join(''); }
   const S = g.stageSpec, awake = g.gate.awake || g.gate.state !== 'closed', fell = g.gate.state === 'done', last = g.stage >= 2;
   const L = [[awake, 'Wake the gate (' + (awake ? 'awake' : clock(Math.max(0, S.gateWake - g.sc))) + ')']];
   for (let i = 0; i < S.timeline.length; i++) if (g.evState[i] < 2 && !awake) { L.unshift([false, S.timeline[i].name + ' (' + clock(Math.max(0, S.timeline[i].t - g.sc)) + ')']); break; }       // the next timed event and its time, so the player can plan
@@ -74,7 +74,13 @@ function nextEvent(g) {
   for (const [t, name] of EVENTS) if (g.t < t && !(name === 'The Hollow Pharaoh' && g.boss.state !== 'idle')) return name + ' in ' + clock(t - g.t);
   return '';
 }
+let buffKey = '';
+function drawBuffs(g) {       // the timed pickups: a small chip each, with the seconds left (or the hits)
+  const L = []; if (g.windT > 0) L.push('Wind Step ' + Math.ceil(g.windT) + 's'); if (g.drumT > 0) L.push('War Drum ' + Math.ceil(g.drumT) + 's'); if (g.stopT > 0) L.push('Stopped Sand ' + Math.ceil(g.stopT) + 's'); if (g.wardHits > 0) L.push('Ward x' + g.wardHits);
+  const k = L.join('|'); if (k === buffKey) return; buffKey = k; const el = $('buffs'); if (el) el.innerHTML = L.map(t => '<span>' + t + '</span>').join('');
+}
 export function drawHud(g, force) {
+  drawBuffs(g);
   if (!zonesBuilt) buildZones();
   const k = Math.ceil(g.p.hp) + '|' + g.p.maxHp + '|' + Math.floor(g.xpCur) + '|' + g.level + '|' + Math.floor(g.t) + '|' + g.kills + '|' + g.coins;
   if (force || k !== key) {

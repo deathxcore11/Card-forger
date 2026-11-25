@@ -28,7 +28,7 @@ export function updatePlayer(g, dt, cmd) {
   if (g.oaths.still) cmd.dash = false;                                   // Still Oath: no dash
   g.camYaw = cmd.yaw; const fx = -sin(cmd.yaw), fz = -cos(cmd.yaw), rx = -fz, rz = fx;
   let mx = fx * cmd.f + rx * cmd.r, mz = fz * cmd.f + rz * cmd.r;
-  const ml = Math.sqrt(mx * mx + mz * mz), hasInput = ml > 0.001, speed = C.speed * (1 + g.mods.move);
+  const ml = Math.sqrt(mx * mx + mz * mz), hasInput = ml > 0.001, speed = C.speed * (1 + g.mods.move) * (g.windT > 0 ? 2 : 1);
   if (hasInput) { mx /= ml; mz /= ml; p.face = atan2(mx, mz); }
 
   p.dashCd = Math.max(0, p.dashCd - dt);

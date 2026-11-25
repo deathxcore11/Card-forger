@@ -61,7 +61,7 @@ test('big world door: stages are 12 minutes, the door rises near the duelist bet
     assert.ok(g.map.gate.x > 1e6, 'the gate is parked off the world until the door rises');
     let t = 0; const banners = []; const ev = g.event.bind(g); g.event = (k, d) => { if (k === 'banner') banners.push(d); ev(k, d); };
     while (g.door.state === 'hidden' && t < 700 * 60) { g.step(STEP, IDLE); t++; g.p.hp = g.p.maxHp; }
-    assert.equal(g.door.state, 'risen'); assert.ok(g.sc >= 479 && g.sc <= 601, seed + ' rose at ' + g.sc);
+    assert.equal(g.door.state, 'risen'); assert.ok(g.sc >= 359 && g.sc <= 601 && (g.sc >= 479 || g.door.shards || g.elitesKilled), seed + ' rose at ' + g.sc);       // before 8:00 only through a Rumour Shard or a felled elite
     const dd = Math.hypot(g.map.gate.x - g.p.x, g.map.gate.z - g.p.z); assert.ok(dd >= 150 && dd <= 300, seed + ' door ' + Math.round(dd) + ' m away');
     assert.ok(banners.some(b => /door has risen/.test(b))); assert.ok(heightAt(g.map.gate.x, g.map.gate.z) < 50);
     // hold to wake: standing at it for 0.5 s does nothing, 2 s (after it has finished rising) wakes the stage boss
@@ -74,4 +74,44 @@ test('big world door: each elite or mini boss felled makes it rise 30 s sooner, 
   const g = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); const base = g.door.base;
   g.elitesKilled += 1; assert.equal(Math.round(g.door.base - 30), Math.round(base - 30)); g.step(STEP, IDLE); assert.equal(Math.round(g.door.at), Math.round(Math.max(360, base - 30)));
   g.elitesKilled += 20; g.step(STEP, IDLE); assert.equal(g.door.at, 360);
+});
+
+import { rollPickup, collectPowerup } from '../src/sim/powerups.js';
+import { dropPickup } from '../src/sim/combat.js';
+import { PICK, POWER, COMMON_KINDS, RARE_KINDS } from '../src/data/powerups.js';
+import { openCardChest } from '../src/sim/world.js';
+import { chooseCard } from '../src/sim/field.js';
+import { ITEMS } from '../src/data/items.js';
+const mkBig = () => { const g = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); g.god = false; return g; };
+
+test('big world pickups: a vase drops nothing extra 85 in 100, a common one 12, a rare one 3; a banded vase always drops one', () => {
+  const g = mkBig(), n = 20000, t = { none: 0, common: 0, rare: 0 }, b = { none: 0, common: 0, rare: 0 };
+  for (let i = 0; i < n; i++) { const k = rollPickup(g, false); t[k === 0 ? 'none' : COMMON_KINDS.includes(k) ? 'common' : RARE_KINDS.includes(k) ? 'rare' : 'bad']++; const q = rollPickup(g, true); b[q === 0 ? 'none' : COMMON_KINDS.includes(q) ? 'common' : 'rare']++; }
+  assert.ok(Math.abs(t.none / n - 0.85) < 0.01 && Math.abs(t.common / n - 0.12) < 0.01 && Math.abs(t.rare / n - 0.03) < 0.006, JSON.stringify(t)); assert.equal(t.bad, undefined);
+  assert.equal(b.none, 0); assert.ok(Math.abs(b.common / n - 0.7) < 0.015, JSON.stringify(b));
+  const seen = new Set(); for (let i = 0; i < 4000; i++) seen.add(rollPickup(g, true)); for (const k of [...COMMON_KINDS, ...RARE_KINDS]) assert.ok(seen.has(k), 'kind ' + k + ' can drop');
+});
+
+test('big world pickups: each does its one job', () => {
+  const g = mkBig(); g.p.hp = 10; g.p.maxHp = 100; const take = k => collectPowerup(g, k, 1);
+  take(PICK.GREAT); assert.equal(g.p.hp, 70); take(PICK.PURSE); assert.ok(g.coins >= 14);
+  take(PICK.WIND); assert.ok(g.windT === POWER.windSeconds); take(PICK.DRUM); assert.equal(g.drumT, POWER.drumSeconds); take(PICK.STOP); assert.equal(g.stopT, POWER.stopSeconds);
+  take(PICK.WARD); assert.equal(g.wardHits, 3); const hp = g.p.hp; for (let i = 0; i < 3; i++) g.hurtPlayer(20, false, 'test'); assert.equal(g.p.hp, hp, 'three hits blocked'); g.hurtPlayer(20, false, 'test'); assert.ok(g.p.hp < hp, 'the fourth lands');
+  // lodestar: every crystal on the field is on its way
+  const g2 = mkBig(); for (let i = 0; i < 5; i++) dropPickup(g2, PICK.XP, g2.p.x + 30 + i * 3, g2.p.y, g2.p.z, 1); collectPowerup(g2, PICK.LODE, 1); let flying = 0; for (let i = 0; i < g2.pick.max; i++) if (g2.pick.alive[i] && g2.pick.kind[i] === PICK.XP && g2.pick.far[i]) flying++; assert.equal(flying, 5);
+  // wind step doubles the speed, stopped sand freezes the enemies, seal burst clears the near ones
+  const a = mkBig(), b = mkBig(); const run = (gg, s) => { const x0 = gg.p.x, z0 = gg.p.z; for (let i = 0; i < s * 60; i++) gg.step(STEP, Object.assign({}, IDLE, { f: 1, yaw: 0 })); return Math.hypot(gg.p.x - x0, gg.p.z - z0); };
+  a.god = b.god = true; a.spawnAcc = b.spawnAcc = -1e9; collectPowerup(b, PICK.WIND, 1); const da = run(a, 3), db = run(b, 3); assert.ok(db > da * 1.6, 'wind step ' + da.toFixed(1) + ' vs ' + db.toFixed(1));
+  const s = mkBig(); s.god = true; s.spawnAcc = -1e9; for (let i = 0; i < 12; i++) spawnEnemyAt(s, s.p.x + 8 + i, s.p.z); collectPowerup(s, PICK.STOP, 1); const xs = Array.from(s.en.x.slice(0, 12)), was = Array.from(s.en.alive.slice(0, 12)); for (let i = 0; i < 120; i++) s.step(STEP, IDLE); let held = 0; for (let i = 0; i < 12; i++) if (was[i] && s.en.alive[i]) { assert.ok(Math.abs(s.en.x[i] - xs[i]) < 0.8, 'frozen ' + (s.en.x[i] - xs[i])); held++; } assert.ok(held >= 4, 'some stood and were checked: ' + held);
+  const z = mkBig(); z.god = true; z.spawnAcc = -1e9; for (let i = 0; i < 12; i++) spawnEnemyAt(z, z.p.x + 8 + i, z.p.z); const k0 = z.kills; collectPowerup(z, PICK.BURST, 1); assert.ok(z.kills >= k0 + 10, 'seal burst cleared ' + (z.kills - k0));
+});
+
+import { spawnEnemy } from '../src/sim/enemies.js';
+function spawnEnemyAt(g, x, z) { return spawnEnemy(g, 'husk', { x, z }); }
+
+test('big world chests: a chest holds one item, its rarity rolled at opening (richer later), and taking it puts it in the build; level-ups stay cards', () => {
+  const g = mkBig(); g.god = true; const c = g.world.cchests.find(q => q.free); g.coins = 999; g.p.x = c.x; g.p.z = c.z;
+  openCardChest(g, c); assert.ok(g.offer && g.offer.type === 'chest' && g.offer.itemChest && g.offer.cards.length === 1 && g.offer.cards[0].kind === 'item', 'one item');
+  const id = g.offer.cards[0].id, rar = g.offer.reveal; assert.equal(ITEMS[id].rarity, rar); chooseCard(g, 0); assert.ok(g.items.includes(id) && c.open && !g.offer);
+  const h = mkBig(); h.god = true; h.xp = 1e6; h.addXp(1); for (let i = 0; i < 3 && !h.offer; i++) h.step(STEP, IDLE); if (h.offer) assert.ok(h.offer.cards.every(q => q.kind !== 'item' && q.kind !== 'blessing'), 'level-up cards only: ' + h.offer.cards.map(q => q.kind));
 });

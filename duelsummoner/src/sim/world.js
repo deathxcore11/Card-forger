@@ -7,7 +7,8 @@ import { K } from '../data/tuning.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { heightAt } from './terrain.js';
 import { dropPickup, addFx, killEnemy, PICK_COIN, PICK_XP, PICK_HEART } from './combat.js';
-import { buildOffer, candidates } from './field.js';
+import { buildOffer, candidates, itemChestOffer } from './field.js';
+import { powerTick, rollPickup } from './powerups.js';
 import { ACES } from '../data/stages.js';
 
 const DEG = Math.PI / 180;
@@ -120,7 +121,8 @@ export function breakVase(g, v) {
   const coins = D.coins[0] + Math.floor(g.rl() * (D.coins[1] - D.coins[0] + 1));
   for (let i = 0; i < coins; i++) dropPickup(g, PICK_COIN, v.x + (g.rl() - 0.5), v.y, v.z + (g.rl() - 0.5));
   dropPickup(g, PICK_XP, v.x, v.y, v.z, v.banded ? d.xp : 1);
-  if (g.rl() < (v.banded ? d.heartChance : D.heartChance)) dropPickup(g, PICK_HEART, v.x, v.y, v.z + 0.6);
+  if (g.big) { const k = rollPickup(g, v.banded); if (k) dropPickup(g, k, v.x, v.y, v.z + 0.6); }       // the big desert: 85 in 100 nothing, 12 a common pickup, 3 a rare one; a banded vase always one
+  else if (g.rl() < (v.banded ? d.heartChance : D.heartChance)) dropPickup(g, PICK_HEART, v.x, v.y, v.z + 0.6);
   g.vasesBroken++;
 }
 export function breakVasesNear(g, x, z, r) {
@@ -144,6 +146,7 @@ export function updateWorld(g, dt) {
     g.frenzyT = RELIC.frenzySeconds; g.emit('relic', R.x, R.z, n); g.event('banner', 'Screen cleared: ' + n + ' defeated. The Coin Rite begins.');
   }
   if (g.frenzyT > 0) g.frenzyT = Math.max(0, g.frenzyT - dt);
+  powerTick(g, dt);
   if (g.mods.toll > 0) {                                                  // Toll of Ash: pay a share of current LP every few seconds, never below 1
     g.tollT -= dt;
     if (g.tollT <= 0) { g.tollT = K.tollEverySec; g.hurtPlayer(Math.max(1, Math.round(p.hp * K.tollPct)), false, 'Toll of Ash', 1); }
@@ -156,9 +159,12 @@ export function updateWorld(g, dt) {
 function itemCards(g, ids) { return ids.map(id => ({ id, kind: 'item', isNew: true, to: 1, rarity: ITEMS[id].rarity })); }
 // a shrine rolls its three blessings and their rarities when it is placed (seeded), so the circle can show the best one and a declined shrine offers the same three again
 function newShrine(g, s) {
-  const R = E.shrines.rarity, ids = Object.keys(BLESSINGS), pick = [], tot = R.order.reduce((a, k) => a + R.weights[k], 0);
+  const R = E.shrines.rarity, ids = (g.unlockedBoons ? Object.keys(BLESSINGS).filter(k => g.unlockedBoons.has(k)) : Object.keys(BLESSINGS)), pick = [];
+  // the big desert: a boon's tier grows richer with the stage clock and the stage, like a chest's
+  const f = g.big && g.stageSpec ? Math.min(1, g.sc / g.stageSpec.clock) : 0, st = g.big ? g.stage | 0 : 0, W = {}; for (const k of R.order) W[k] = R.weights[k] + (k === 'common' ? -30 * f : k === 'rare' ? 6 * f : k === 'epic' ? 10 * f + 4 * st : k === 'legendary' ? 3 * f + 1.5 * st : 0);
+  const tot = R.order.reduce((a, k) => a + W[k], 0);
   while (pick.length < E.shrines.choices && ids.length) pick.push(ids.splice(Math.floor(g.rl() * ids.length), 1)[0]);
-  const cards = pick.map(id => { let r = g.rl() * tot, rar = R.order[0]; for (const k of R.order) { r -= R.weights[k]; if (r < 0) { rar = k; break; } } return { id, kind: 'blessing', isNew: true, to: 1, rarity: rar, mult: R.mult[rar] }; });
+  const cards = pick.map(id => { let r = g.rl() * tot, rar = R.order[0]; for (const k of R.order) { r -= W[k]; if (r < 0) { rar = k; break; } } return { id, kind: 'blessing', isNew: true, to: 1, rarity: rar, mult: R.mult[rar] }; });
   const best = cards.reduce((b, c) => (R.order.indexOf(c.rarity) > R.order.indexOf(b) ? c.rarity : b), R.order[0]);
   return { x: s.x, y: s.y, z: s.z, charge: 0, idle: 0, done: false, cards, best };
 }
@@ -198,6 +204,10 @@ function rollTier(g, c) {
 export function openCardChest(g, c) {
   const price = c.free ? 0 : chestPrice(g);
   if (g.coins < price) { g.event('banner', 'This chest costs ' + price + ' coins.'); return; }
+  if (g.big) {       // the big desert: a chest holds one item
+    const o = itemChestOffer(g, c); if (!o) { g.event('banner', 'Nothing in this chest you could use.'); return; }
+    g.coins -= price; sealSpend(g, price); if (!c.free) g.world.opened++; g.chestsOpenedTotal++; g.offer = o; g.event('offer', null); return;
+  }
   if (!c.rolled) { c.base = c.rarity; c.rolled = rollTier(g, c); }                         // the tier is rolled now, from the seeded loot stream, and never shown before this
   let cards = buildOffer(g, c.rolled), ti = TIERS.indexOf(c.rolled);
   while (!cards.length && ti > 0) { ti--; cards = buildOffer(g, TIERS[ti]); }                 // a legendary roll with nothing legendary left to give steps down to what the chest can really hold
@@ -211,7 +221,7 @@ export function openCardChest(g, c) {
 export function nearestProp(g) {
   const p = g.p, W = g.world, R = E.interactRange; let best = null, bd = R * R;
   const consider = (obj, type, text) => { const dx = obj.x - p.x, dz = obj.z - p.z, d = dx * dx + dz * dz; if (d < bd && Math.abs(obj.y - p.y) < 2.5) { bd = d; best = { obj, type, text }; } };
-  for (const c of W.cchests) if (!c.open) { const pr = c.free ? 0 : chestPrice(g); consider(c, 'cchest', '{use}: open the Card Chest (' + (pr === 0 ? 'free' : pr + ' coins' + (g.coins < pr ? ', you have ' + g.coins : '')) + ')'); }
+  for (const c of W.cchests) if (!c.open) { const pr = c.free ? 0 : chestPrice(g); consider(c, 'cchest', '{use}: open the chest (' + (pr === 0 ? 'free' : pr + ' coins' + (g.coins < pr ? ', you have ' + g.coins : '')) + ')'); }
   for (const s of W.stones) if (!s.used) consider(s, 'stone', '{use}: Witness Stone, take 1 free item of 3');
   if (W.broker) consider(W.broker, 'broker', '{use}: Relic Broker, buy from 3 items');
   if (W.altar && !W.altar.used) consider(W.altar, 'altar', '{use}: Altar of Tribute (Banish a card, or Tribute one from your field)');

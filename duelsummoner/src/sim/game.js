@@ -64,7 +64,7 @@ export class Game {
     this.cardT = 0.3; this.flowT = 0; this.ringT = 0; this.golemT = 0; this.storm = null; this.offer = null; this.prompt = '';
     this.dmgMul = 1; this.hpMul = 1; this.speedMul = 1; this.cfgHp = CFG.player.hp;
     this.flags = { warden: false, idols: false };
-    this.items = []; this.blessings = []; this.blessingMult = []; this.vasesBroken = 0; this.talismanCd = 0; this.coinFrac = 0; this.frenzyT = 0;
+    this.items = []; this.blessings = []; this.blessingMult = []; this.vasesBroken = 0; this.talismanCd = 0; this.coinFrac = 0; this.frenzyT = 0; this.windT = 0; this.drumT = 0; this.stopT = 0; this.wardHits = 0;
     this.boss = { state: 'idle', early: false, phase: 1 };
     this.sp = []; this.chests = [];
     this.faceOf = {};
@@ -274,6 +274,7 @@ export class Game {
     if (this.over) return false;
     if (!SELF && this.p.dashT > 0) { this.emit('dodge', n, bigF, 0, src || null); return false; }
     if (this.god) { this.emit('hurt', n, bigF, SELF ? 1 : 0, src || null); return false; }
+    if (!SELF && this.wardHits > 0) { this.wardHits--; this.event('banner', 'The Ward blocks the hit.' + (this.wardHits ? ' ' + this.wardHits + ' left.' : '')); this.emit('ward', n, bigF, 0, src || null); return false; }
     if (!SELF && this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = Math.max(6, 20 / this.mods.talisman); this.event('banner', 'The Paper Talisman blocks the hit.'); this.emit('ward', n, bigF, 0, src || null); return false; }
     if (!(flags & 5)) n *= 1 - guardMit(this.mods.armour * K.guardPerArmour);       // Guard points through the hyperbola: never a flat cut, never above the cap
     this.p.hp = SELF ? Math.max(Math.min(this.p.hp, 1), this.p.hp - n) : Math.max(0, this.p.hp - n);       // the 1 HP floor never raises LP already below 1

@@ -29,6 +29,7 @@ import { Actors } from './view/actors.js';
 import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
 import { buildDoor } from './view/doorview.js';
+import { POWERUPS } from './data/powerups.js';
 import { drawHud, showFlash, showBanner, dropBanner, clearBanners, drawStatPanel, inputMode } from './view/hud.js';
 import { keyWords } from './ui/prompts.js';
 import { renderPause, setTab as pauseTab, bindHolds, matHtml, statRows } from './view/pause.js';
@@ -354,7 +355,7 @@ function countUp(id, to) {
   const t0 = performance.now(), dur = 700; el.textContent = 0;
   (function step(now) { const u = Math.min(1, (now - t0) / dur); el.textContent = Math.round(to * (1 - (1 - u) * (1 - u))); if (u < 1) requestAnimationFrame(step); })(t0);
 }
-const KCOL = KIND_LIST.map(k => k.color), PCOL = [0x46e0ff, 0xe0b765, 0xff5a7a];
+const KCOL = KIND_LIST.map(k => k.color), PCOL = [0x46e0ff, 0xe0b765, 0xff5a7a, ...Array.from({ length: 9 }, (_, k) => POWERUPS[k + 3].color)];
 let lastBlockTick = 0;
 const groundY = (x, z) => Math.min(heightAt(x, z), 40);       // the one ground height for marks drawn on the map (view only: sim events carry no y)
 function onEvent(type, a, b, c, data) {
@@ -476,7 +477,7 @@ function landmarkTags() {
     for (const s of W.shrines || []) if (!s.done || spentFor(s)) add(s, s.done ? 'Shrine of Tribute: done' : 'Shrine of Tribute: hold the ring, pick a boon', s.done ? 'spent' : 'free', 2.4);
     if (W.broker) add(W.broker, 'Relic Broker: shop', 'shop', 2.6);
     if (W.altar && (!W.altar.used || spentFor(W.altar))) add(W.altar, W.altar.used ? 'Altar: used' : 'Altar of Tribute: banish or tribute', W.altar.used ? 'spent' : 'seal', 2.4);
-    for (const c of W.cchests || []) if (!c.open) { if (c.trophy || c.free) add(c, c.trophy ? 'Trophy Chest: free, open it' : 'Card Chest: free', 'free', 1.9); else { const pr = chestPrice(game); add(c, game.coins >= pr ? 'Card Chest: ' + pr + ' coins' : 'Card Chest: ' + pr + ', need ' + (pr - game.coins) + ' more', game.coins >= pr ? 'shop' : 'poor', 1.9); } }       // the price, gold when you can pay it and muted red when you cannot (the tier stays hidden)
+    for (const c of W.cchests || []) if (!c.open) { if (c.trophy || c.free) add(c, c.trophy ? 'Trophy Chest: free, open it' : 'Chest: free', 'free', 1.9); else { const pr = chestPrice(game); add(c, game.coins >= pr ? 'Card Chest: ' + pr + ' coins' : 'Card Chest: ' + pr + ', need ' + (pr - game.coins) + ' more', game.coins >= pr ? 'shop' : 'poor', 1.9); } }       // the price, gold when you can pay it and muted red when you cannot (the tier stays hidden)
   }
   for (const c of game.chests) if (!c.open) add(c, 'Sealed Chest: free item', 'free', 1.9);
   return out;

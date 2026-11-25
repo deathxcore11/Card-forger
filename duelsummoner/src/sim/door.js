@@ -13,7 +13,7 @@ export function initDoor(g) {
   g.door.at = g.door.base;
 }
 // when the door will rise now: the seeded time, sooner for each elite or mini boss felled this stage, never before 6:00
-export function doorAt(g) { const d = g.door; return Math.max(DOOR.earliest, d.base - DOOR.speedUp * Math.max(0, (g.elitesKilled | 0) - d.k0)); }
+export function doorAt(g) { const d = g.door; return Math.max(DOOR.earliest, d.base - DOOR.speedUp * (Math.max(0, (g.elitesKilled | 0) - d.k0) + (d.shards | 0))); }
 
 export function doorTick(g, dt) {
   const d = g.door; if (!d) return;

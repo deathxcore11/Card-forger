@@ -16,6 +16,7 @@ import { ownColour } from './fxcolour.js';
 import { statusLit, statusAttr } from './status.js';
 import { creatureGeometry, creatureLit } from './creatures.js';
 import { PICKUP_COLORS } from '../data/pickups.js';
+import { POWERUPS } from '../data/powerups.js';
 import { makeCreature } from './creature.js';
 
 const T = window.THREE;
@@ -140,8 +141,10 @@ export class Actors {
     this.bolts = instanced(new T.OctahedronGeometry(0.25, 0), basic(0xa57bff), 64);
     this.bolt2 = instanced(new T.BoxGeometry(0.2, 0.2, 1.4), basic(0xe0e8ff), 48);
     scene.add(this.cards, this.fire, this.lob, this.bolts, this.bolt2);
-    this.pk = [gemGeometry(), new T.CylinderGeometry(0.3, 0.3, 0.08, 10), new T.OctahedronGeometry(0.34, 0)].map((geo, i) => {
-      const m = i === 0 ? instanced(geo, lambert(0xffffff, { vertexColors: true, emissive: 0x1a5f73 }), CFG.xp.max) : instanced(geo, basic([PICKUP_COLORS.xp, PICKUP_COLORS.coin, PICKUP_COLORS.heart][i]), CFG.xp.max);
+    // kinds 0 to 2: crystal, coin, heart. 3 to 11 are the big desert's pickups, each its own shape in its own colour: great heart (a big gem), purse (a sack), lodestar (a tetrahedron), stopped sand (an hourglass post), wind step (a ring), war drum (a drum), ward (a plate), seal burst (a many-sided stone), rumour shard (a tall shard)
+    const rum = new T.OctahedronGeometry(0.3, 0); rum.scale(1, 1.8, 1);
+    this.pk = [gemGeometry(), new T.CylinderGeometry(0.3, 0.3, 0.08, 10), new T.OctahedronGeometry(0.34, 0), new T.OctahedronGeometry(0.55, 0), new T.SphereGeometry(0.34, 8, 6), new T.TetrahedronGeometry(0.44), new T.CylinderGeometry(0.2, 0.3, 0.55, 6), new T.TorusGeometry(0.26, 0.08, 6, 12), new T.CylinderGeometry(0.32, 0.32, 0.34, 10), new T.BoxGeometry(0.46, 0.58, 0.14), new T.DodecahedronGeometry(0.34), rum].map((geo, i) => {
+      const m = i === 0 ? instanced(geo, lambert(0xffffff, { vertexColors: true, emissive: 0x1a5f73 }), CFG.xp.max) : instanced(geo, basic(i < 3 ? [PICKUP_COLORS.xp, PICKUP_COLORS.coin, PICKUP_COLORS.heart][i] : POWERUPS[i].color), i < 3 ? CFG.xp.max : 64);
       if (i === 0) m.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.xp.max * 3), 3);
       if (i === 1) geo.rotateX(Math.PI / 2); scene.add(m); return m;
     });
@@ -559,7 +562,7 @@ export class Actors {
 
     // pickups: crystals glow in a slow pulse and bob, coins spin
     this.pk[0].material.emissiveIntensity = 0.75 + 0.3 * Math.sin(t * 4);
-    const m = g.pick, pc = [0, 0, 0];
+    const m = g.pick, pc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     for (let i = 0; i < m.max; i++) {
       if (!m.alive[i]) continue; const kk = m.kind[i];
       if (kk === 0) {                                          // crystal: tilted 20 degrees, one turn per 2.5 s, bobs 6 cm; size and tint by value
@@ -567,9 +570,9 @@ export class Actors {
         d.position.set(m.x[i], m.y[i] + 0.12 + Math.sin(t * 3 + i) * 0.1, m.z[i]); d.rotation.set(0.35, t * Math.PI * 2 / 2.5 + i, 0); d.scale.setScalar(sz * (1 + 0.1 * Math.sin(t * 4 + i))); d.updateMatrix();
         this.pk[0].setMatrixAt(pc[0], d.matrix); this.pk[0].setColorAt(pc[0], col); pc[0]++; continue;
       }
-      d.position.set(m.x[i], m.y[i] + Math.sin(t * 3 + i) * 0.1, m.z[i]); d.rotation.set(0, t * 3, 0); d.scale.setScalar(SCALE.pickup); d.updateMatrix(); this.pk[kk].setMatrixAt(pc[kk]++, d.matrix);
+      d.position.set(m.x[i], m.y[i] + Math.sin(t * 3 + i) * 0.1, m.z[i]); d.rotation.set(0, t * 3, 0); d.scale.setScalar(SCALE.pickup * (kk >= 3 ? 1.5 : 1)); d.updateMatrix(); this.pk[kk].setMatrixAt(pc[kk]++, d.matrix);
     }
-    if (Math.random() < dt * 25) { const j = Math.floor(Math.random() * m.max); if (m.alive[j]) fx.spark(m.x[j], m.y[j] + 0.9, m.z[j], 0, 0.7, 0, m.kind[j] === 1 ? 0xffe08a : m.kind[j] === 2 ? 0xff9aa8 : 0xe6c8ff, 0.16, 0.4); }
+    if (Math.random() < dt * 25) { const j = Math.floor(Math.random() * m.max); if (m.alive[j]) fx.spark(m.x[j], m.y[j] + 0.9, m.z[j], 0, 0.7, 0, m.kind[j] === 1 ? 0xffe08a : m.kind[j] === 2 ? 0xff9aa8 : m.kind[j] >= 3 ? POWERUPS[m.kind[j]].color : 0xe6c8ff, 0.16, 0.4); }
     this.pk.forEach((mm, i) => { mm.count = pc[i]; mm.instanceMatrix.needsUpdate = true; if (i === 0) mm.instanceColor.needsUpdate = true; });
     let nt = 0; for (const tr of g.btraps) { if (!tr.on) continue; d.position.set(tr.x, tr.y + 0.05, tr.z); d.rotation.set(0, 0.2, 0); d.scale.set(1, 1, 1); d.updateMatrix(); this.btrap.setMatrixAt(nt++, d.matrix); }
     this.btrap.count = nt; this.btrap.instanceMatrix.needsUpdate = true;

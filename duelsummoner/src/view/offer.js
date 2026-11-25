@@ -86,8 +86,8 @@ export function showOffer(g, act) {
   if (o.type === 'chest' && o.reveal && !revealed.has(o)) { revealed.add(o); const rm = document.body.classList.contains('rm'); $('offerScreen').style.visibility = 'hidden'; playReveal(o.reveal, { rm }, t => { $('offerScreen').style.visibility = ''; showOffer(g, act); if (t === 'legendary') for (const cd of document.querySelectorAll('#offerCards .card')) cd.classList.add('flipslow'); }); return; }
   if (o !== openOffer) { openOffer = o; openedAt = performance.now(); }
   const shop = o.type === 'shop', level = o.type === 'level', cardy = level || o.type === 'chest';
-  $('offerTitle').textContent = TITLES[o.type] ? TITLES[o.type] + (shop ? '  (coins ' + g.coins + ')' : '') : 'LEVEL UP ' + g.level;
-  $('offerSub').textContent = SUBS[o.type] || 'Choose a card. Exile removes a card from all future offers.';
+  $('offerTitle').textContent = o.itemChest ? 'CHEST' : TITLES[o.type] ? TITLES[o.type] + (shop ? '  (coins ' + g.coins + ')' : '') : 'LEVEL UP ' + g.level;
+  $('offerSub').textContent = o.itemChest ? 'One item, yours for the rest of the run.' : SUBS[o.type] || 'Choose a card. Exile removes a card from all future offers.';
   const wrap = $('offerCards'); wrap.innerHTML = '';
   o.cards.forEach((c, i) => {
     const { D, kind, lv, fx } = describe(c, g);
@@ -102,8 +102,8 @@ export function showOffer(g, act) {
   { let pill = $('offerPill'); if (!pill) { pill = document.createElement('div'); pill.id = 'offerPill'; $('offerTitle').after(pill); } const waiting = level ? g.pendingLevels : 0; pill.textContent = waiting > 1 ? waiting + ' level-ups waiting' : ''; pill.style.display = waiting > 1 ? 'inline-block' : 'none'; }
   const btns = $('offerBtns'); btns.innerHTML = '';
   const rds = (o.freeRedraws || 0) + g.field.redraws;       // free redraws from the offer are spent first, so they count here too
-  if (cardy) btns.insertAdjacentHTML('beforeend', '<button data-act="redraw"' + (rds > 0 ? '' : ' disabled') + '>REDRAW (' + rds + ')</button>');
-  if (cardy && g.field.banishes > 0) btns.insertAdjacentHTML('beforeend', '<button data-act="banish">EXILE (' + g.field.banishes + ')</button>');       // one shared Banish: press it, then press the card to remove
+  if (cardy && !o.itemChest) btns.insertAdjacentHTML('beforeend', '<button data-act="redraw"' + (rds > 0 ? '' : ' disabled') + '>REDRAW (' + rds + ')</button>');
+  if (cardy && !o.itemChest && g.field.banishes > 0) btns.insertAdjacentHTML('beforeend', '<button data-act="banish">EXILE (' + g.field.banishes + ')</button>');       // one shared Banish: press it, then press the card to remove
   if (level) btns.insertAdjacentHTML('beforeend', '<button data-act="pass">PASS (+' + OFFER.passCoins + ' coins)</button>');
   if (o.leave) btns.insertAdjacentHTML('beforeend', '<button data-act="leave">' + (shop ? 'LEAVE THE STALL' : o.type === 'blessing' ? 'DECLINE' : 'LEAVE IT FOR LATER') + '</button>');
   banishMode = false; $('offerScreen').classList.remove('closing', 'banishing');

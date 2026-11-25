@@ -23,7 +23,7 @@ const core = [
   q('warden', 'General', 'Shieldbreaker', 'Defeat the Sealed Warden.', 'Bright', 'total.wardenKills', 1, { card: 'storm-of-cards' }),
   q('pharaoh', 'General', 'The Last Round', 'Defeat a gate boss (or the Hollow Pharaoh).', 'Gilded', 'total.bossKills', 1, { card: 'second-wind' }),
   q('survive6', 'General', 'Long Duel', 'Survive 6:00 in one run.', 'Plain', 'best.timeSurvived', 360, { item: 'hunters-mark' }),
-  q('chests10', 'Items', 'Collector', 'Open 10 Card Chests in total.', 'Plain', 'total.chests', 10, { item: 'traders-seal' }),
+  q('chests10', 'Items', 'Collector', 'Open 10 chests in total.', 'Plain', 'total.chests', 10, { item: 'traders-seal' }),
   q('vases40', 'Items', 'Clay Breaker', 'Break 40 vases in total.', 'Plain', 'total.vases', 40, { item: 'graveyard-bell' }),
   q('overtime2', 'General', 'Overtime', 'Survive 2:00 of Overtime.', 'Gilded', 'best.overtimeSeconds', 120, { item: 'paper-talisman' }),
   q('noTrap', 'Spells/Traps', 'Bare Hands', 'Defeat a gate boss with no Trap set.', 'Radiant', 'best.bareBossKill', 1, { item: 'burning-deck' }),

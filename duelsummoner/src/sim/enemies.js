@@ -97,6 +97,7 @@ export function spawnAce(g, kindName) {
 const o = { x: 0, y: 0, z: 0, vy: 0, dx: 0, dz: 0 }, sv = { x: 0, z: 0, d: 0, direct: true };
 
 export function updateEnemies(g, dt) {
+  if (g.stopT > 0) return;       // Stopped Sand: every ordinary enemy stands still and cannot hurt
   const e = g.en, p = g.p, E = CFG.enemy, mul = g.dmgMul; let burnSum = 0;       // burn is summed over the tick and logged once, under its own source
   for (let i = 0; i < e.max; i++) {
     if (!e.alive[i]) continue;

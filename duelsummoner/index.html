@@ -6,6 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Duel Summoner</title>
 <style>
+#buffs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; } #buffs span { font-size: 11px; padding: 1px 6px; border: 1px solid #f3e6c8; border-radius: 3px; background: #1a1620cc; color: #f3e6c8; letter-spacing: 0.04em; } #buffs:empty { display: none; }
   :root { --t:clamp(12px, 2.2vh, 44px); --tz:clamp(12px, 2.7vh, 48px); --ink:#f3e3c2; --dim:#b89a6a; --panel:#1b1220; --line:#6b4fa0; --hp:#c8402c; --xp:#8f6bff; --bg:#0d0810; }
   html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); overflow:hidden;
     font-family: "Courier New", ui-monospace, monospace; -webkit-user-select:none; user-select:none; }
@@ -397,6 +398,7 @@
   <div class="bar" id="hpbar"><i></i></div>
   <div>XP <span id="xpnum">0</span></div>
   <div class="bar" id="xpbar"><i></i></div>
+  <div id="buffs"></div>
 </div>
 <div class="hud" id="topright">
   <div id="clock">0:00</div>

@@ -20,7 +20,7 @@ export const ITEMS = {
   'burning-deck':      { name: 'Burning Deck', rarity: 'rare', price: 60, text: 'Your card throw sets enemies on fire.', mods: { cardBurn: 1 }, unique: true },
   'traders-seal':      { name: "Trader's Seal", rarity: 'rare', price: 60, text: 'Shop prices 25% lower.', mods: { shopDiscount: 0.25 } },
   'paper-talisman':    { name: 'Paper Talisman', rarity: 'rare', price: 60, text: 'Blocks one hit every 20 s.', mods: { talisman: 1 } },
-  'jar-of-avarice':    { name: 'Jar of Avarice', rarity: 'rare', price: 60, text: 'Every 5th Card Chest is free.', mods: { freeChestEvery: 5 }, unique: true },
+  'jar-of-avarice':    { name: 'Jar of Avarice', rarity: 'rare', price: 60, text: 'Every 5th chest is free.', mods: { freeChestEvery: 5 }, unique: true },
   'graveyard-bell':    { name: 'Graveyard Bell', rarity: 'rare', price: 60, text: 'Every 50th kill explodes for 10 damage in 4 m.', mods: { bell: 1 } }
 };
 // Items stack: a second Sand Sandals adds another +6%. Ceilings on the summed stat keep copies sensible (the stat panel shows the raw sum and the capped value).
