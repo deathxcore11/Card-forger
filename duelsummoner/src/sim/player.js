@@ -7,6 +7,7 @@ import { heightAt, moveXZ, WALL } from './terrain.js';
 import { breakVasesNear } from './world.js';
 import { resolveColliders } from './colliders.js';
 import { procEvent } from './procs.js';
+import { laneFactor, LANE } from './lanes.js';
 
 export function makePlayer() {
   return { x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0, pface: 0, vx: 0, vz: 0, vy: 0, hp: CFG.player.hp, maxHp: CFG.player.hp, face: 0, grounded: true,
@@ -29,8 +30,8 @@ export function updatePlayer(g, dt, cmd) {
   if (g.oaths.still) cmd.dash = false;                                   // Still Oath: no dash
   g.camYaw = cmd.yaw; const fx = -sin(cmd.yaw), fz = -cos(cmd.yaw), rx = -fz, rz = fx;
   let mx = fx * cmd.f + rx * cmd.r, mz = fz * cmd.f + rz * cmd.r;
-  const ml = Math.sqrt(mx * mx + mz * mz), hasInput = ml > 0.001, speed = C.speed * (1 + g.mods.move) * (g.windT > 0 ? 2 : 1) * (1 + (g.buf ? g.buf.haste : 0));
-  if (hasInput) { mx /= ml; mz /= ml; p.face = atan2(mx, mz); }
+  const ml = Math.sqrt(mx * mx + mz * mz), hasInput = ml > 0.001; let speed = C.speed * (1 + g.mods.move) * (g.windT > 0 ? 2 : 1) * (1 + (g.buf ? g.buf.haste : 0));
+  if (hasInput) { mx /= ml; mz /= ml; p.face = atan2(mx, mz); if (g.big) speed *= laneFactor(g, mx, mz); }
 
   p.dashCd = Math.max(0, p.dashCd - dt);
   if (p.grounded) { if (p.landT < 255) p.landT++; } else p.landT = 0;                      // ticks on the ground since landing (1 on the first grounded tick)
@@ -63,7 +64,7 @@ export function updatePlayer(g, dt, cmd) {
       let dh = heightAt(p.x + hx * S.probe, p.z + hz * S.probe) - p.y;
       if (dh > 0.9) dh = 0;                                   // a wall, not a slope (a 1:2 ramp over the probe is 0.6)
       const slope = dh / S.probe;
-      p.slideSpeed = Math.max(0, Math.min(Math.min(S.max, K.hopSlideDown * speed), p.slideSpeed + (-slope * S.downhill - S.friction) * dt));
+      p.slideSpeed = Math.max(0, Math.min(Math.min(S.max, K.hopSlideDown * speed), p.slideSpeed + (-slope * S.downhill - S.friction * (g.big ? LANE.slideFriction : 1)) * dt));
       if (slope > -0.05 && p.slideSpeed > K.hopCap * speed) p.slideSpeed = Math.max(K.hopCap * speed, p.slideSpeed - (K.hopSlideDown - K.hopCap) * speed / K.hopDecayTicks);       // on a downward slope a slide may reach 2.0x run speed; on the flat it falls to 1.6x over 18 ticks
       if (p.slideSpeed < S.keepMin) p.sliding = false;
       p.vx = hx * p.slideSpeed; p.vz = hz * p.slideSpeed;
@@ -78,7 +79,7 @@ export function updatePlayer(g, dt, cmd) {
       if (over) { if (p.decayN === 0) p.decay0 = hs - speed; p.decayN++; } else p.decayN = 0;
       p.vx += (mx * speed * (hasInput ? 1 : 0) - p.vx) * k;
       p.vz += (mz * speed * (hasInput ? 1 : 0) - p.vz) * k;
-      if (over) { const m = Math.max(speed, hs - p.decay0 / K.hopDecayTicks * p.decayN), vn = Math.sqrt(p.vx * p.vx + p.vz * p.vz); if (vn > 1e-9 && vn < m) { p.vx *= m / vn; p.vz *= m / vn; } }
+      if (over) { const m = Math.max(speed, hs - p.decay0 / (K.hopDecayTicks * (g.big ? LANE.carry : 1)) * p.decayN), vn = Math.sqrt(p.vx * p.vx + p.vz * p.vz); if (vn > 1e-9 && vn < m) { p.vx *= m / vn; p.vz *= m / vn; } }
     }
     moveX = p.vx * dt; moveZ = p.vz * dt;
   }
