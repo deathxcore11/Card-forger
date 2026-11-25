@@ -76,6 +76,7 @@ export function updateStages(g, dt) {
   g.hpMul = S.mult * (1 + C.a * m + C.b * m * m) * g.heat * D.hp * (1 + STAKES.hpAtCap * stakesFrac(g));
   g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3)) * (1 + STAKES.dmgAtCap * stakesFrac(g));
   g.maxAlive = Math.floor(D.cap.start + (D.cap.end - D.cap.start) * (m >= D.cap.minutes ? 1 : m / D.cap.minutes));
+  if (g.big) g.maxAlive = Math.min(CFG.enemy.max, Math.floor(300 + (g.stakes || 0) * 2));       // the big desert: the crowd grows with Stakes, up to the pool (900); past it a spawn merges into the nearest of its kind
   g.stagePrompt = '';
   if (g.openFlow && g.horde.on) { g.horde.t += dt; const hm = Math.max(0, g.horde.t) / 60; if (g.horde.t > 0) { g.hpMul *= 1.6 * (1 + 0.25 * hm); g.dmgMul *= 1.25 * (1 + 0.1 * hm); g.maxAlive = Math.floor(g.maxAlive * (1.5 + 0.2 * hm)); } }       // a clearly stronger, endless, rising horde
   shadesTick(g, dt); surgeTick(g);

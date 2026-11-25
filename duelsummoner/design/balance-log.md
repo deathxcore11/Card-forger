@@ -42,3 +42,10 @@ Perf (hit-feel read, sim / view ms): 104 enemies 0.26 / 0.51 before the new effe
 - Per minute, 12 (newbie): enemies on screen mean 9 / 33 / 10 / 56 / 56 / 123 ... 292, kills a minute (cumulative 49 at 1:00, 842 at 5:00, 2480 at 10:00, 3029 at 12:00), Stakes 24% at 12:00. Pusher: kills 3010 at 12:00, Stakes 50% at 12:00, died 45% against 28%.
 - Not met: newbie stage 1 clear 47% (band 25 to 45, just over). The pusher gets only 2x the Stakes of the newbie and about the same kills (3010 against 3029), so the "pusher scores far more kills" is NOT shown: the pool cap (300) hides density beyond about 6 minutes, so Stakes only pays in coins, XP and drops, not in kills. Raising the pool is the next lever.
 - Perf at the pool cap (278 to 281 enemies): sim 0.32 ms, view 0.60 ms (412x915), 0.31 / 0.53 (915x412). Pool max 300 not raised.
+
+## Pool, elites, damage back to x1 (25 Nov)
+- Swarm damage back to x1.0 (the gate boss stays x10, spawn x7): newbie 60 seeds found 53%, cleared 47%, died 42%; pusher found 30%, cleared 32%, died 67%. (Bands 40 to 60 and 25 to 45: found ok, newbie clear 2 over.)
+- Pool 300 to 900 (CFG.enemy.max); the live cap is 300 + 2 x Stakes (so 900 at 300%). CPU per frame at 412x915 (sim / view ms): 281 enemies 0.32 / 0.57, 575 0.44 / 0.76, 875 0.55 / 0.78; 915x412 the same or lower. No LOD change was needed on this PC; the phone is not measured.
+- Pusher against newbie kills at 12:00 among the runs still alive: 4785 against 4439 (+8%); Stakes 50% against 24%. The pusher out-kills only a little: the bot's kill rate, not the crowd, limits it.
+- Elite times, skilled bot, 20 seeds (median s, before to after): Ace 7.6 to 6.2, elite 12.4 to 7.8, sleeper A 56.9 to 4.2, sleeper B 33.3 to 5.2 (hp scale x0.6, x0.12, x0.25 in STAGES_BIG). The long tails (p90 25 to 157 s) are fights the bot walks away from.
+- See-through: the big desert's ground meshes no longer get the see-through porthole; only props, blocks and mesas do.

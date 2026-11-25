@@ -121,10 +121,10 @@ test('spawn rate: a quiet first minute (0.3 to 0.4/s), then 2.2/s at 3:00 and 4.
   assert.ok(g.spawned >= 12 && g.spawned <= 16, `late ${g.spawned}`);
 });
 
-test('enemies spawn 22 to 30 m away and the live count never exceeds 300', () => {
+test('enemies spawn 22 to 30 m away and the live count never exceeds the pool', () => {
   const g = new Game(7); g.god = true;
-  for (let i = 0; i < 400; i++) spawnEnemy(g);
-  assert.equal(g.enemyCount(), 300);
+  for (let i = 0; i < CFG.enemy.max + 100; i++) spawnEnemy(g);
+  assert.equal(g.enemyCount(), CFG.enemy.max);
   for (let i = 0; i < 300; i++) { const d = Math.hypot(g.en.x[i] - g.p.x, g.en.z[i] - g.p.z); assert.ok(d >= 21.9 && d <= 30.1, `d=${d}`); }
 });
 

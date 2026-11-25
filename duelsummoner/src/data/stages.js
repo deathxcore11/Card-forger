@@ -104,8 +104,8 @@ const BIG = [
   { clock: 720, gateWake: 600, doorRise: [480, 600], waves: { offset: 150, scale: 330 / 720 }, t: [180, 385, 565] },
   { clock: 720, gateWake: 600, doorRise: [480, 600], waves: { offset: 220, scale: 260 / 720 }, t: [205, 430, 640] }
 ];
-export const STAGES_BIG = STAGES.map((s, i) => Object.assign({}, s, { clock: BIG[i].clock, gateWake: BIG[i].gateWake, doorRise: BIG[i].doorRise, waves: BIG[i].waves, big: true, timeline: s.timeline.map((e, k) => Object.assign({}, e, { t: BIG[i].t[k] })) }));
+export const STAGES_BIG = STAGES.map((s, i) => Object.assign({}, s, { clock: BIG[i].clock, gateWake: BIG[i].gateWake, doorRise: BIG[i].doorRise, waves: BIG[i].waves, big: true, timeline: s.timeline.map((e, k) => Object.assign({}, e, { t: BIG[i].t[k], hpScale: e.hpScale * [0.6, 0.12, 0.25][k] })) }));       // elites and mini bosses fall in about 4 to 8 s to a stage-appropriate build (measured with the skilled bot: 12 s, 57 s and 33 s before)
 export const BIG_PACE = 7 / 12;
 
 // How much harder the big desert is than the same difficulty's base numbers (tuned with tools/bigbot.mjs, design/balance-log.md): a first-timer on a fresh save should find the door about half the time and clear stage 1 a third of the time.
-export const BIG_TUNE = { easy: { hp: 1, spawn: 4.5, dmg: 2.0, boss: 1, gate: 6 }, medium: { hp: 1, spawn: 1, dmg: 1, boss: 1 }, hard: { hp: 1, spawn: 1, dmg: 1, boss: 1 } };
+export const BIG_TUNE = { easy: { hp: 1, spawn: 7, dmg: 1.0, boss: 1, gate: 10 }, medium: { hp: 1, spawn: 1, dmg: 1, boss: 1 }, hard: { hp: 1, spawn: 1, dmg: 1, boss: 1 } };

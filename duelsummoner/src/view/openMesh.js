@@ -63,7 +63,7 @@ export function buildOpen(map, look) {
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
   const tex = streakTex(); let shared = null, tris = 0;
   const meshOf = (Bd, streaks) => {                                                            // every chunk mesh shares one material
-    const m = Bd.mesh(false, fadeU); if (!shared) { shared = m.material; shared.map = tex; mountainFog(shared); shared.needsUpdate = true; } else { m.material.dispose(); m.material = shared; }
+    const m = Bd.mesh(false, BIG ? undefined : fadeU); if (!shared) { shared = m.material; shared.map = tex; mountainFog(shared); shared.needsUpdate = true; } else { m.material.dispose(); m.material = shared; }
     if (streaks) { const p = m.geometry.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv[i * 2] = (x * cw + z * sw) / 24; uv[i * 2 + 1] = (-x * sw + z * cw) / 12; } m.geometry.setAttribute('uv', new T.BufferAttribute(uv, 2)); }
     tris += Bd.pos.length / 9 | 0; m.geometry.computeBoundingSphere(); return m;
   };
