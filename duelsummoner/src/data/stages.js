@@ -80,7 +80,7 @@ export const STAGES = [
 // Quick Duel: one Stage 1 map on an 8:00 clock, the Stage 1 timeline, the Stone Arbiter as gate boss, no Overtime.
 export const QUICK = Object.assign({}, STAGES[0], { id: 'quick', name: 'Quick Duel', clock: 480, gateWake: 420, waves: { offset: 0, scale: 1 } });
 
-export const stagesFor = mode => (mode === 'quick' ? [QUICK] : STAGES);
+export const stagesFor = (mode, big) => (mode === 'quick' ? [QUICK] : big ? STAGES_BIG : STAGES);
 
 
 
@@ -96,3 +96,13 @@ export const ACES = {
 
 
 
+
+// ---- The big streamed desert (terrain 'open'): three stages of 12 minutes. The exit door rises near the duelist between doorRise[0] and doorRise[1] on the clock (seeded), hidden behind a ridge or mesa where it can be.
+// The wave tables are stretched over the longer clock (offset + scale x clock ends at the same table time as before), stages 2 and 3 start further in. paceK turns run minutes into the old per-stage pace for enemy strength and crystal value, so a 12 minute stage is as hard per fraction of the clock as the old 7 minute one.
+const BIG = [
+  { clock: 720, gateWake: 600, doorRise: [480, 600], waves: { offset: 0, scale: 480 / 720 }, t: [180, 385, 565] },
+  { clock: 720, gateWake: 600, doorRise: [480, 600], waves: { offset: 150, scale: 330 / 720 }, t: [180, 385, 565] },
+  { clock: 720, gateWake: 600, doorRise: [480, 600], waves: { offset: 220, scale: 260 / 720 }, t: [205, 430, 640] }
+];
+export const STAGES_BIG = STAGES.map((s, i) => Object.assign({}, s, { clock: BIG[i].clock, gateWake: BIG[i].gateWake, doorRise: BIG[i].doorRise, waves: BIG[i].waves, big: true, timeline: s.timeline.map((e, k) => Object.assign({}, e, { t: BIG[i].t[k] })) }));
+export const BIG_PACE = 7 / 12;

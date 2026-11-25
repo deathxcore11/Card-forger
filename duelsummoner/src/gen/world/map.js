@@ -3,11 +3,11 @@
 import { makeWorld, EDGE, WORLD_HALF, REGION, sq } from './world.js';
 const r2 = v => Math.round(v * 100) / 100;
 export function bigMap(seedLo, stageIndex) {
-  const W = makeWorld(seedLo, stageIndex), seed = W.seed, key = 'big-' + seed.toString(16), gt = W.gate;
+  const W = makeWorld(seedLo, stageIndex), seed = W.seed, key = 'big-' + seed.toString(16);
   const map = {
     key, hash: key, sealCode: 'BIG-' + seed.toString(16).slice(0, 4).toUpperCase(), stage: stageIndex, attempt: 0, fallback: false, half: 420, simN: 840, v2: true, open: true, big: true, arch: 'w', n: 840, off: 0, play: EDGE, edgeSeed: seed,
     prims: [], palette: undefined, stageName: 'The Open Desert', districts: [],
-    spawn: { x: W.spawn.x, z: W.spawn.z }, gate: { x: gt.x, z: gt.z, radius: 5.5, guide: { far: 340, mid: 190, near: 60 } }, arena: { center: { x: gt.x, z: gt.z }, boss: { x: r2(gt.x + 9), z: gt.z }, tollPull: { x: r2(gt.x + 6), z: gt.z } },
+    spawn: { x: W.spawn.x, z: W.spawn.z }, gate: { x: 1e7, z: 1e7, radius: 5.5, guide: { far: 340, mid: 190, near: 60 } }, arena: { center: { x: 1e7, z: 1e7 }, boss: { x: 1e7, z: 1e7 }, tollPull: { x: 1e7, z: 1e7 } },       // parked far off the world until the door rises (sim/door.js)
     bossRings: [], encounters: W.freeChest ? [{ type: 'cchest', x: r2(W.freeChest.x), z: r2(W.freeChest.z), y: r2(W.viewAt(W.freeChest.x, W.freeChest.z)), free: true }] : [], landmarks: [], kits: [], rooms: [], roomOf: null, gateways: [],
     clearings: [], groves: [], paths: [], dune: { wind: W.wind }, startYaw: W.startYaw, sleepers: W.sleepers.map(q => ({ role: q.role, x: q.x, z: q.z })),
     blocks: [], ruins: [], dress: {}, solid: [], far: { rocks: [], dead: [], ruins: [] }, _road: { main: [[9000, 9000], [9001, 9001]], trails: [], width: 4.5, trailWidth: 3 }, _pools: [],

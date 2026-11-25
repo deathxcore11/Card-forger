@@ -53,3 +53,25 @@ test('big world: a run on it starts in the open, the things of the cells near th
   assert.ok(g.world.vases.length + g.world.cchests.length + g.world.shrines.length + g.world.stones.length > n0, 'new pockets were placed 900 m on'); assert.ok(g.fog.count > 100 && g.fog.big, 'the fog opens as the duelist goes');
   assert.ok(heightAt(g.p.x, g.p.z) < 50 && Math.abs(g.p.y - heightAt(g.p.x, g.p.z)) < 5, 'standing on the ground');
 });
+
+test('big world door: stages are 12 minutes, the door rises near the duelist between 8:00 and 10:00 (never a beam), and waking it is still hold-to-wake', () => {
+  for (const seed of [11, 4711, 90210, 77, 31337, 5, 123456, 8080]) {
+    const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); g.god = true; g.spawnAcc = -1e9;
+    assert.equal(g.stageSpec.clock, 720); assert.deepEqual(g.stageSpec.doorRise, [480, 600]); assert.equal(g.door.state, 'hidden'); assert.ok(g.door.base >= 480 && g.door.base <= 600);
+    assert.ok(g.map.gate.x > 1e6, 'the gate is parked off the world until the door rises');
+    let t = 0; const banners = []; const ev = g.event.bind(g); g.event = (k, d) => { if (k === 'banner') banners.push(d); ev(k, d); };
+    while (g.door.state === 'hidden' && t < 700 * 60) { g.step(STEP, IDLE); t++; g.p.hp = g.p.maxHp; }
+    assert.equal(g.door.state, 'risen'); assert.ok(g.sc >= 479 && g.sc <= 601, seed + ' rose at ' + g.sc);
+    const dd = Math.hypot(g.map.gate.x - g.p.x, g.map.gate.z - g.p.z); assert.ok(dd >= 150 && dd <= 300, seed + ' door ' + Math.round(dd) + ' m away');
+    assert.ok(banners.some(b => /door has risen/.test(b))); assert.ok(heightAt(g.map.gate.x, g.map.gate.z) < 50);
+    // hold to wake: standing at it for 0.5 s does nothing, 2 s (after it has finished rising) wakes the stage boss
+    g.p.x = g.map.gate.x + 1; g.p.z = g.map.gate.z; g.p.y = heightAt(g.p.x, g.p.z); for (let i = 0; i < 6 * 60; i++) g.step(STEP, IDLE); assert.equal(g.gate.state, 'closed');
+    for (let i = 0; i < 2.2 * 60; i++) g.step(STEP, Object.assign({}, IDLE, { use: true })); assert.equal(g.gate.state, 'fight', seed + ' boss woken');
+  }
+});
+
+test('big world door: each elite or mini boss felled makes it rise 30 s sooner, never before 6:00', () => {
+  const g = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); const base = g.door.base;
+  g.elitesKilled += 1; assert.equal(Math.round(g.door.base - 30), Math.round(base - 30)); g.step(STEP, IDLE); assert.equal(Math.round(g.door.at), Math.round(Math.max(360, base - 30)));
+  g.elitesKilled += 20; g.step(STEP, IDLE); assert.equal(g.door.at, 360);
+});

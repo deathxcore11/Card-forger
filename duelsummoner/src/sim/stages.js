@@ -3,7 +3,8 @@
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
 import { RUN } from '../data/waves.js';
 import { sealStageStart, sealGateCleared } from './seals.js';
-import { RUNSPEC, stagesFor, DIFFICULTY, ACES } from '../data/stages.js';
+import { RUNSPEC, stagesFor, DIFFICULTY, ACES, BIG_PACE } from '../data/stages.js';
+import { initDoor, doorTick, doorReady } from './door.js';
 import { pow, sin, cos, atan2 } from './dmath.js';
 import { spawnEnemy, spawnAce, mergeEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
 import { aliveAces } from './aces.js';
@@ -29,21 +30,21 @@ const clockText = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60
 
 // XP gained is scaled by the run minute so the first minutes give about 4 level-ups a minute (data: RUNSPEC.xp)
 export function xpScale(g) {
-  const X = RUNSPEC.xp, m = g.mode === 'classic' ? g.t / 60 : (g.scTotal + g.sc) / 60;
+  const X = RUNSPEC.xp, m = g.mode === 'classic' ? g.t / 60 : (g.scTotal + g.sc) / 60 * (g.paceK || 1);
   return (X.start + (X.end - X.start) * (m >= X.minutes ? 1 : m / X.minutes)) * (1 + X.growth * (m > X.growFrom ? m - X.growFrom : 0));
 }
 
 // ---- setup ----
 // Generates this stage's map from the run seed and loads it as the live terrain; the duelist starts on its plaza.
 export function loadStageMap(g, i) {
-  g.map = g.opts.terrain === 'open' ? bigMap(g.seed, i) : g.opts.terrain === 'small' ? (openMap(g.seed, i, g.opts.arch) || generateStage(g.seed, i, g.stages[i].gen)) : g.opts.sample && i === 0 ? sampleMap() : generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.syncGrid(); g.colliders = buildColliders(g.map, i); g.streamed = new Set(); g._sq = -1; if (g.map.big) { g.fog = makeFogBig(); streamTo(g.map.spawn.x, g.map.spawn.z, 49, 3); g.colliders.ensure(g.map.spawn.x - 130, g.map.spawn.z - 130, g.map.spawn.x + 130, g.map.spawn.z + 130); } g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
+  g.map = g.opts.terrain === 'open' ? bigMap(g.seed, i) : g.opts.terrain === 'small' ? (openMap(g.seed, i, g.opts.arch) || generateStage(g.seed, i, g.stages[i].gen)) : g.opts.sample && i === 0 ? sampleMap() : generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.syncGrid(); g.colliders = buildColliders(g.map, i); g.streamed = new Set(); g._sq = -1; if (g.big) initDoor(g); if (g.map.big) { g.fog = makeFogBig(); streamTo(g.map.spawn.x, g.map.spawn.z, 49, 3); g.colliders.ensure(g.map.spawn.x - 130, g.map.spawn.z - 130, g.map.spawn.x + 130, g.map.spawn.z + 130); } g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
   const p = g.p; p.x = g.map.spawn.x; p.z = g.map.spawn.z; p.y = heightAt(p.x, p.z); p.vx = p.vz = p.vy = 0; p.grounded = true;
   g.openFlow = !!(g.map && g.map.open && g.mode !== 'classic'); g.gateSeen = false; g.sleepersMade = false; g.horde = { on: false, t: 0, why: '' };       // the open desert has its own stage flow: the gate wakes by choice, the elite and the mini bosses sleep, a horde rises after the boss or when the clock runs out
 }
 export function initRun(g) {
   g.mode = g.opts.mode || 'classic'; g.difficulty = DIFFICULTY[g.opts.difficulty] ? g.opts.difficulty : 'medium'; g.diff = DIFFICULTY[g.difficulty]; g.maxAlive = RUN.maxAlive;
   if (g.mode === 'classic') { g.stages = null; g.stageSpec = null; return; }
-  g.stages = stagesFor(g.mode); g.stage = 0; g.scTotal = 0; g.stagesCleared = 0; g.stageFacts = [];
+  g.big = g.opts.terrain === 'open'; g.paceK = g.big ? BIG_PACE : 1; g.stages = stagesFor(g.mode, g.big); g.stage = 0; g.scTotal = 0; g.stagesCleared = 0; g.stageFacts = [];
   g.swiftChips = 0; g.duelOn = false; g.otT = 0; g.desc = null; g.chestsOpenedTotal = 0; g.heat = 1;
   initStage(g); loadStageMap(g, 0); g.world = buildWorld(g); if (g.map.big) streamWorld(g, 0);
   g.event('banner', g.stageSpec.name + '. Seal Code ' + g.sealCode);
@@ -68,7 +69,7 @@ export function updateStages(g, dt) {
   const S = g.stageSpec, G = g.gate, p = g.p, cmd = g._cmd;
   const fight = G.state === 'fight';
   if (G.state === 'closed') g.sc += dt;                         // the clock freezes during the gate fight and after it
-  const m = (g.scTotal + g.sc) / 60, D = g.diff, C = D.hpCurve;
+  const m = (g.scTotal + g.sc) / 60 * (g.paceK || 1), D = g.diff, C = D.hpCurve;
   g.hpMul = S.mult * (1 + C.a * m + C.b * m * m) * g.heat * D.hp;
   g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3));
   g.maxAlive = Math.floor(D.cap.start + (D.cap.end - D.cap.start) * (m >= D.cap.minutes ? 1 : m / D.cap.minutes));
@@ -147,7 +148,7 @@ function startGate(g, early, toll) {
   startBoss(g, G.early, gate);
   g.gateOpenedAt = g.sc;
   if (toll) { g.p.x = g.map.arena.tollPull.x; g.p.z = g.map.arena.tollPull.z; g.p.y = heightAt(g.p.x, g.p.z); g.p.vx = g.p.vz = 0; g.p.grounded = true; g.event('banner', 'The Toll Bell rings. The sigil pulls you in.'); g.emit('tollbell'); }
-  if (g.openFlow) { g.event('bannerdrop', 'You see the gate'); g.event('bosscard', gate.name); }       // the large name card: only for the stage boss, when the player wakes the gate
+  if (g.openFlow) { g.event('bannerdrop', g.door ? 'You see the door' : 'You see the gate'); g.event('bosscard', gate.name); }       // the large name card: only for the stage boss, when the player wakes the gate
   g.emit('gatefight', g.stage);
 }
 
@@ -276,11 +277,12 @@ function openTick(g, dt) {
     g.sleepersMade = true;
     for (let i = 0; i < S.timeline.length; i++) { const ev = S.timeline[i], sl = (g.map.sleepers || []).find(q => q.role === ev.role); if (!sl) continue; const at = { x: sl.x, y: heightAt(sl.x, sl.z), z: sl.z }, n0 = g.sp.length; spawnSpecial(g, ev, at, true); for (let k = n0; k < g.sp.length; k++) { const q = g.sp[k]; q.asleep = true; q.hpBase = q.maxHp / (g.hpMul || 1); } g.evState[i] = 2; }
   }
-  const gx = p.x - gr.x, gz = p.z - gr.z, gd2 = gx * gx + gz * gz;
-  if (!g.gateSeen && (gd2 < 90 * 90 || exploredAt(g.fog, gr.x, gr.z))) { g.gateSeen = true; if (G.state === 'closed' && gd2 > 64) g.event('banner', 'You see the gate. Wake it when you are ready.'); }
+  if (g.door) { doorTick(g, dt); if (g.door.state !== 'risen') { G.awake = false; G.hold = 0; if (G.state === 'closed' && !g.horde.on && g.sc >= S.clock) startHorde(g, 'clock'); return; } }       // the big desert: nothing to wake until the door has risen
+  const gx = p.x - gr.x, gz = p.z - gr.z, gd2 = gx * gx + gz * gz, W = g.door ? 'door' : 'gate';
+  if (!g.gateSeen && (gd2 < 90 * 90 || exploredAt(g.fog, gr.x, gr.z))) { g.gateSeen = true; if (G.state === 'closed' && gd2 > 64) g.event('banner', 'You see the ' + W + '. Wake it when you are ready.'); }
   G.awake = true;
-  if (G.state === 'closed' && gd2 < gr.radius * gr.radius) {
-    g.stagePrompt = 'Hold {use}: wake the gate (the stage boss comes)';
+  if (G.state === 'closed' && gd2 < gr.radius * gr.radius && doorReady(g)) {
+    g.stagePrompt = 'Hold {use}: wake the ' + W + ' (the stage boss comes)';
     G.hold = cmd && (cmd.use || cmd.hold) ? G.hold + dt : Math.max(0, G.hold - 2 * dt);
     if (G.hold >= 1.5) startGate(g, false);
   } else G.hold = Math.max(0, G.hold - 2 * dt);
@@ -323,7 +325,7 @@ function spawner(g, dt, fight, toll) {
 function overtime(g, dt) {
   const O = RUNSPEC.overtime, R = RUN.overtime;
   g.otT += dt; const k = Math.floor(g.otT / O.stepSeconds); g.otStep = k;
-  const m = (g.scTotal + g.sc) / 60, D = g.diff, C = D.hpCurve; g.hpMul = g.stageSpec.mult * (1 + C.a * m + C.b * m * m) * g.heat * D.hp;
+  const m = (g.scTotal + g.sc) / 60 * (g.paceK || 1), D = g.diff, C = D.hpCurve; g.hpMul = g.stageSpec.mult * (1 + C.a * m + C.b * m * m) * g.heat * D.hp;
   g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3)) * pow(R.dmgGrowth, k + 1);
   g.otAcc += (O.baseRate + O.rateStep * k) * dt;
   while (g.otAcc >= 1) { g.otAcc -= 1; if (enemyCount(g.en) < g.maxAlive) spawnEnemy(g, 'hunter'); else mergeEnemy(g, 'hunter'); }

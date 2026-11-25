@@ -50,7 +50,7 @@ function drawStrip(g) {                                                    // el
 // the boss bar shows for the final boss, the gate boss and the timed bosses, with the name on it
 const bossOf = g => g.sp.find(s => s.alive && !s.dead && !s.asleep && (s.kind === 'pharaoh' || s.role === 'gate' || s.role === 'bossA' || s.role === 'bossB'));
 function riteLines(g) {
-  if (g.openFlow) { const st = g.gate.state, S0 = g.stageSpec, last0 = g.stage >= 2, L0 = st === 'closed' ? [[false, g.gateSeen ? 'Wake the gate when ready' : 'Find the gate']] : st === 'fight' ? [[true, 'Wake the gate'], [false, 'Fell ' + S0.gate.name]] : [[true, 'Wake the gate'], [true, 'Fell ' + S0.gate.name], [!!(g.desc || g.won), last0 ? 'Claim the Final Altar' : 'Step through the gateway']]; return L0.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join(''); }
+  if (g.openFlow) { const st = g.gate.state, S0 = g.stageSpec, last0 = g.stage >= 2, W0 = g.door ? 'door' : 'gate', L0 = g.door && g.door.state !== 'risen' && st === 'closed' ? [[false, 'Hunt and loot: a door will rise near you']] : st === 'closed' ? [[false, g.gateSeen ? 'Wake the ' + W0 + ' when ready' : 'Find the ' + W0]] : st === 'fight' ? [[true, 'Wake the ' + W0], [false, 'Fell ' + S0.gate.name]] : [[true, 'Wake the ' + W0], [true, 'Fell ' + S0.gate.name], [!!(g.desc || g.won), last0 ? 'Claim the Final Altar' : 'Step through the gateway']]; return L0.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join(''); }
   const S = g.stageSpec, awake = g.gate.awake || g.gate.state !== 'closed', fell = g.gate.state === 'done', last = g.stage >= 2;
   const L = [[awake, 'Wake the gate (' + (awake ? 'awake' : clock(Math.max(0, S.gateWake - g.sc))) + ')']];
   for (let i = 0; i < S.timeline.length; i++) if (g.evState[i] < 2 && !awake) { L.unshift([false, S.timeline[i].name + ' (' + clock(Math.max(0, S.timeline[i].t - g.sc)) + ')']); break; }       // the next timed event and its time, so the player can plan
@@ -60,7 +60,7 @@ function riteLines(g) {
 }
 function nextEventRun(g) {
   const S = g.stageSpec;
-  if (g.openFlow && g.gate.state === 'closed' && !g.duelOn) return g.horde.on ? 'The horde is rising' : 'Horde rises in ' + clock(Math.max(0, Math.ceil(S.clock - g.sc)));
+  if (g.openFlow && g.gate.state === 'closed' && !g.duelOn) return g.horde.on ? 'The horde is rising' : g.door && g.door.state !== 'risen' ? 'Hunt and loot' : 'Horde rises in ' + clock(Math.max(0, Math.ceil(S.clock - g.sc)));
   if (g.duelOn) return 'Hunters grow in ' + clock(30 - (g.otT % 30));
   if (g.circle) return 'Descent Circle closes in ' + clock(g.circle.t);
   if (g.altar) return 'The Final Altar';
