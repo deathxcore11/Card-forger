@@ -18,3 +18,14 @@ The newbie bot is a first-timer: starter pools, goes to the nearest pocket, sees
 - Pass 6: hide chance 0.75 and softer stage 2 and 3 waves (offsets 90 and 140): skilled door 82% (no change, so the misses are not about hiding: the bot is late or lost, not blind), 3 stages 50% (worse, within noise on 40 seeds), newbie 39% found and 40% cleared (no change). Both reverted (hide 0.9, waves as before).
 - Stopped after two passes as ordered. Best numbers: skilled door 82%, skilled 3-stage clear 63%, newbie fresh found 40% / cleared 42%, first-10-runs set cleared 42%. Limits: the bot has no map sense (it walks a heading), so a skilled door find under 90% is the bot arriving late; unlocked sets do not beat starter sets because the bot's fight is dodge-and-walk, not a build.
 - Movement pass (big desert only, src/sim/lanes.js): dry-lake and mesa-field flats +8% (measured 9.72 m/s on a lake flat), dune-sea climbs steeper than 9 degrees -6%, flat ground never below 9 m/s (measured 9.00), downhill slide friction halved, hop-chain carry fades 1.5x slower. Newbie bot after it, 100 seeds: door found 36% (was 40%), cleared 40% (was 42%), median wake 566 s (was 594 s): inside the noise of 100 seeds.
+
+## Pace pass (round 3), newbie bot on a fresh save, 30 seeds, level / items / chests by minute
+| minute | before: level, items, chests, enemies | after: level, items, chests, enemies |
+|---|---|---|
+| 2 | 2.7, 0.2, 0.1, 6 | 5.4, 0.6, 0.4, 4 |
+| 4 | 6.1, 1.4, 1.0, 13 | 9.5, 1.5, 1.1, 14 |
+| 5 | 7.6, 2.0, 1.4, 50 | 10.6, 2.0, 1.3, 55 |
+| 8 | 14.0, 3.8, 2.2, 69 | 16.6, 5.2, 3.0, 77 |
+| 10 | 19.8, 5.2, 2.8, 137 | 22.8, 7.1, 4.4, 130 |
+Changes: surges (banner 2 s ahead, 25 to 35 s at x3 spawn, then 60 to 90 s at x0.55, first at 1:10, a busier first 2:30), level-up pay x2.6 falling to x1 over the first 5 minutes of stage 1, chest and shrine weights up, 7 chests in 10 free, a Witness Stone 35 to 60 m and a second free chest 60 to 100 m from the start. Newbie bot: door found 43%, stage 1 cleared 43% (bands 40 to 60 and 25 to 45 held). Reference section 9 targets: about 3 items by 2:00 (we reach 0.6: the bot walks past the start stone), 5 to 7 by 5:00 (2.0), 8 to 9 by 10:00 (7.1): items are still behind early, level-ups and chests now close.
+Perf (hit-feel read, sim / view ms): 104 enemies 0.26 / 0.51 before the new effects, 0.25 / 0.51 after; 279 enemies 0.33 / 0.57.
