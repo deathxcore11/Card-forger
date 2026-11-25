@@ -33,6 +33,7 @@ import { runResults } from './results.js';
 const STEP = 1 / 60;
 
 import { BUILD_VERSION } from './results.js';
+import { streamWorld } from './stream.js';
 const BUILD_VERSION_REPLAY = BUILD_VERSION;
 const EV_START = 1024, EV_MAX = 1 << 16;       // the event ring: starts at 1,024 and grows to 65,536
 export class Game {
@@ -83,7 +84,7 @@ export class Game {
     this.p.maxHp = this.oaths.glass ? 1 : this.cfgHp + this.mods.maxLp; this.p.hp = this.p.maxHp;
     this.en.alive.fill(0); this.shots.alive.fill(0); this.pick.alive.fill(0);
     this.tele.forEach(o => { o.on = false; }); this.fx.forEach(o => { o.on = false; }); this.eb.forEach(o => { o.on = false; }); this.btraps.forEach(o => { o.on = false; });
-    this.grid.rebuild(this.en.max, this.en.x, this.en.z, this.en.alive);
+    if (this.p && this.map && this.map.big) this.grid.center(this.p.x, this.p.z); this.grid.rebuild(this.en.max, this.en.x, this.en.z, this.en.alive);
     this.flow.valid = false; this.evHead = this.evTail = 0;
     this.tickN = 0; this.levelUps = 0; this.trapsFired = 0; this.trapsSet = 0; this.maxMonsters = 0; this.gateOpenedAt = -1; this.godFusions = 0; this.secretFusions = 0;
     this.fusionIds = []; this.elementsUsed = 0; this.cardsPicked = []; this.fullForms = [];
@@ -192,7 +193,8 @@ export class Game {
     this._snap();
     this.t += dt; this.tickN++;
     if (this.mode !== 'classic' && this.desc) { descentTick(this, dt); return; }                 // the Descent: the world waits
-    this.grid.rebuild(e.max, e.x, e.z, e.alive);
+    if (this.map.big) this.grid.center(this.p.x, this.p.z); this.grid.rebuild(e.max, e.x, e.z, e.alive);
+    if (this.map.big) streamWorld(this);
     this.flowT -= dt;
     if (this.flowT <= 0 || !this.flow.valid) { this.flow.update(this.p.x, this.p.z); this.flowT = CFG.path.refresh; }
     updatePlayer(this, dt, cmd);

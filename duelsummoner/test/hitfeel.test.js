@@ -4,7 +4,7 @@ import { Game } from '../src/sim/game.js';
 import { spawnEnemy } from '../src/sim/enemies.js';
 import { damageEnemy } from '../src/sim/combat.js';
 
-const mk = () => { const g = new Game(11, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', arch: 'a', difficulty: 'easy' }); g.god = true; return g; };
+const mk = () => { const g = new Game(11, { mode: 'run', duelist: 'kael', offers: false, terrain: 'small', arch: 'a', difficulty: 'easy' }); g.god = true; return g; };
 const dist = (g, i, x, z) => Math.hypot(g.en.x[i] - x, g.en.z[i] - z);
 
 test('hit feel: a card hit pushes a swarm enemy about 0.4 m away, and an Ace ignores it', () => {

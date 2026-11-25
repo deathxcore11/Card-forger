@@ -90,7 +90,7 @@ test('open desert: the same seed gives the same ground, different seeds differ i
   const a = openMap(12345, 0, 'e'), b = openMap(12345, 0, 'e'), c = openMap(54321, 0, 'e');
   assert.deepEqual(Array.from(a.heights), Array.from(b.heights)); assert.notDeepEqual(Array.from(a.heights), Array.from(c.heights)); assert.deepEqual(a.dress, b.dress); assert.notDeepEqual(a.dress.cacti, c.dress.cacti); assert.notDeepEqual(a.spawn, c.spawn);
   const tones = new Set(); for (let s = 1; s <= 8; s++) for (const bl of openMap(s * 101, 0, 'a').blocks) tones.add(bl.tone); assert.ok(tones.has(1) && tones.has(2), 'both rock styles appear across seeds');
-  const g = new Game(5, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', arch: 'b' }); assert.equal(g.map.open, true); assert.equal(g.map.arch, 'b'); assert.equal(MAP.half, HALF); assert.equal(g.grid.half, HALF);
+  const g = new Game(5, { mode: 'run', duelist: 'kael', offers: false, terrain: 'small', arch: 'b' }); assert.equal(g.map.open, true); assert.equal(g.map.arch, 'b'); assert.equal(MAP.half, HALF); assert.equal(g.grid.half, HALF);
   const n = new Game(5, { mode: 'run', duelist: 'kael', offers: false }); assert.ok(!n.map.open); assert.equal(MAP.half, 200); assert.equal(n.grid.half, 200);
 });
 
@@ -103,7 +103,7 @@ test('open desert: no trees or boulders of the other stages, solid pieces only w
 });
 
 test('open desert: enemies keep to the ground in a bot run far from the start, and packs keep arriving', () => {
-  const g = new Game(9, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', arch: 'a', difficulty: 'easy' }), bot = newBot({ focus: true }); g.god = true;
+  const g = new Game(9, { mode: 'run', duelist: 'kael', offers: false, terrain: 'small', arch: 'a', difficulty: 'easy' }), bot = newBot({ focus: true }); g.god = true;
   const far = { x: g.map.gate.x * 0.5, z: g.map.gate.z * 0.5 }; g.p.x = far.x; g.p.z = far.z; g.p.y = heightAt(far.x, far.z); let seen = 0;
   for (let i = 0; i < 60 * 120 && !g.over; i++) {
     g.tick(botRecord(g, bot));

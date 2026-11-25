@@ -10,9 +10,27 @@ let HALF = 200, N = 400, grid, SLX, SLZ, PB, LO, HI, SL;
 function alloc(h) { HALF = h; N = h * 2; MAP.half = h; grid = new Float32Array(N * N); SLX = new Float32Array(N * N); SLZ = new Float32Array(N * N); PB = new Float32Array(N * N); LO = new Float32Array(N * N); HI = new Float32Array(N * N); SL = { x: SLX, z: SLZ, pb: PB, lo: LO, hi: HI }; }
 alloc(MAP.half);
 let currentKey = '', farGround = null;
+// The big streamed world: the heights live in a ring of 64 m chunks (16 x 16 of them, 1 m cells) filled from the generator on demand. A chunk that is not there is built the moment something asks for it, so every answer is the same whatever was loaded before.
+let ST = null, ring = null, tagX = null, tagZ = null, verOf = null, loadCount = 0; const RN = 1024, RM = 1023, tmpC = new Float32Array(64 * 64);
+function stLoad(ci, cj) {
+  const s = ((cj & 15) << 4) | (ci & 15); ST.fillSim(ci * 64, cj * 64, 64, tmpC);
+  for (let j = 0; j < 64; j++) { const b = ((cj * 64 + j) & RM) * RN; for (let i = 0; i < 64; i++) ring[b + ((ci * 64 + i) & RM)] = tmpC[j * 64 + i]; }
+  tagX[s] = ci; tagZ[s] = cj; verOf[s] = ++loadCount;
+}
+export const isStreamed = () => !!ST;
+export const chunkLoaded = (ci, cj) => { const s = ((cj & 15) << 4) | (ci & 15); return tagX[s] === ci && tagZ[s] === cj; };
+export function ensureChunk(ci, cj) { if (!chunkLoaded(ci, cj)) stLoad(ci, cj); return verOf[((cj & 15) << 4) | (ci & 15)]; }       // the load number of this chunk (it changes when the chunk is rebuilt)
+// load the chunks nearest (x, z) that are missing, nearest first, at most max of them; returns how many were loaded
+export function streamTo(x, z, max, rad) {
+  if (!ST) return 0; const cx = Math.floor(x / 64), cz = Math.floor(z / 64), R = rad || 6; let n = 0;
+  for (let r = 0; r <= R && n < max; r++) for (let dz = -r; dz <= r && n < max; dz++) for (let dx = -r; dx <= r && n < max; dx++) { if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue; if (!chunkLoaded(cx + dx, cz + dz)) { stLoad(cx + dx, cz + dz); n++; } }
+  return n;
+}
 
 // Loads a map's primitives into the collision grid. The live terrain is one global: the sim checks mapKey() each tick and reloads if needed.
 export function loadMap(map) {
+  if (map.big) { ST = map; ring = new Float32Array(RN * RN); tagX = new Int32Array(256).fill(0x7fffffff); tagZ = new Int32Array(256).fill(0x7fffffff); verOf = new Int32Array(256); loadCount = 0; MAP.half = map.half || 420; farGround = null; currentKey = map.key; return; }
+  ST = null;
   const want = map.half || 200; if (want !== HALF) alloc(want);
   farGround = map.open ? (x, z) => groundAt(map, x, z) : null;       // the open desert carries on past its boundary line: the camera (view only) reads the sand drawn there, the sim still sees wall
   if (map.heights) { grid.set(map.heights); SLX.fill(0); SLZ.fill(0); PB.fill(0); LO.fill(0); HI.fill(0); currentKey = map.key; return; }       // a designed (v2) map is already a heightfield: 1 m cells, no ramp slopes inside a cell
@@ -24,6 +42,7 @@ export function camGround(x, z) { const h = heightAt(x, z); return h >= 50 && fa
 loadMap({ key: 'classic', prims: PRIMS });
 
 export function heightAt(x, z) {
+  if (ST) { const i = Math.floor(x), j = Math.floor(z), ci = i >> 6, cj = j >> 6, s = ((cj & 15) << 4) | (ci & 15); if (tagX[s] !== ci || tagZ[s] !== cj) stLoad(ci, cj); return ring[(j & RM) * RN + (i & RM)]; }
   const i = Math.floor(x + HALF), j = Math.floor(z + HALF);
   if (i < 0 || j < 0 || i >= N || j >= N) return WALL;
   const k = j * N + i, h = grid[k], sx = SLX[k], sz = SLZ[k];
@@ -33,11 +52,13 @@ export function heightAt(x, z) {
 }
 // How fast the ground rises in the direction (ax, az) at a point: 0 on the flat, the ramp's slope on a ramp. A wide body leading up a ramp has its front edge this much higher than its centre.
 function riseAlong(x, z, ax, az) {
+  if (ST) return 0;
   const i = Math.floor(x + HALF), j = Math.floor(z + HALF); if (i < 0 || j < 0 || i >= N || j >= N) return 0;
   const k = j * N + i, r = SLX[k] * ax + SLZ[k] * az; return r > 0 ? r : 0;
 }
 // Coarse cells for enemy pathing: height at the centre of each cell.
 export function buildCells(size) {
+  if (ST) return { n: 512, size, ring: true, h: new Float32Array(512 * 512).fill(WALL) };       // the streamed world: 2 m cells in a ring of 1024 m, filled tile by tile by the flow field
   const n = Math.floor(N / size), h = new Float32Array(n * n);
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {                // a cell is as tall as its tallest 1 m sample
     const x = i * size - HALF, z = j * size - HALF; let m = 0;

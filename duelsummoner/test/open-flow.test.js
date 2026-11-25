@@ -5,7 +5,7 @@ import { heightAt } from '../src/sim/terrain.js';
 import { damageSpecial } from '../src/sim/specials.js';
 
 const STEP = 1 / 60, IDLE = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false, hold: false };
-const mk = () => { const g = new Game(11, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', arch: 'a', difficulty: 'easy' }); g.god = true; g.events = []; const ev = g.event.bind(g); g.event = (t, d) => { g.events.push([t, d]); return ev(t, d); }; return g; };
+const mk = () => { const g = new Game(11, { mode: 'run', duelist: 'kael', offers: false, terrain: 'small', arch: 'a', difficulty: 'easy' }); g.god = true; g.events = []; const ev = g.event.bind(g); g.event = (t, d) => { g.events.push([t, d]); return ev(t, d); }; return g; };
 const run = (g, secs, cmd = IDLE) => { for (let i = 0; i < secs * 60 && !g.over; i++) { Object.assign(g._cmd, cmd); g._tick(STEP, g._cmd); } };
 const at = (g, x, z) => { g.p.x = x; g.p.z = z; g.p.y = heightAt(x, z); g.p.vx = g.p.vz = g.p.vy = 0; };
 const banners = g => g.events.filter(e => e[0] === 'banner').map(e => e[1]);

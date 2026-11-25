@@ -7,7 +7,7 @@ import { RUNSPEC, stagesFor, DIFFICULTY, ACES } from '../data/stages.js';
 import { pow, sin, cos, atan2 } from './dmath.js';
 import { spawnEnemy, spawnAce, mergeEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
 import { aliveAces } from './aces.js';
-import { makeFog, exploredAt } from './fog.js';
+import { makeFog, makeFogBig, exploredAt } from './fog.js';
 import { buildColliders } from './colliders.js';
 import { CFG } from '../data/config.js';
 import { K } from '../data/tuning.js';
@@ -18,6 +18,9 @@ import { loadMap } from './terrain.js';
 import { generateStage } from '../gen/generate.js';
 import { sampleMap } from '../gen/sample.js';
 import { openMap } from '../gen/open/terrain.js';
+import { bigMap } from '../gen/world/map.js';
+import { streamTo } from './terrain.js';
+import { streamWorld } from './stream.js';
 import { fusionsReady } from './field.js';
 import { mixFor, pickKind } from './spawner.js';
 
@@ -33,7 +36,7 @@ export function xpScale(g) {
 // ---- setup ----
 // Generates this stage's map from the run seed and loads it as the live terrain; the duelist starts on its plaza.
 export function loadStageMap(g, i) {
-  g.map = g.opts.terrain === 'open' ? (openMap(g.seed, i, g.opts.arch) || generateStage(g.seed, i, g.stages[i].gen)) : g.opts.sample && i === 0 ? sampleMap() : generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.syncGrid(); g.colliders = buildColliders(g.map, i); g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
+  g.map = g.opts.terrain === 'open' ? bigMap(g.seed, i) : g.opts.terrain === 'small' ? (openMap(g.seed, i, g.opts.arch) || generateStage(g.seed, i, g.stages[i].gen)) : g.opts.sample && i === 0 ? sampleMap() : generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.syncGrid(); g.colliders = buildColliders(g.map, i); g.streamed = new Set(); g._sq = -1; if (g.map.big) { g.fog = makeFogBig(); streamTo(g.map.spawn.x, g.map.spawn.z, 49, 3); g.colliders.ensure(g.map.spawn.x - 130, g.map.spawn.z - 130, g.map.spawn.x + 130, g.map.spawn.z + 130); } g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
   const p = g.p; p.x = g.map.spawn.x; p.z = g.map.spawn.z; p.y = heightAt(p.x, p.z); p.vx = p.vz = p.vy = 0; p.grounded = true;
   g.openFlow = !!(g.map && g.map.open && g.mode !== 'classic'); g.gateSeen = false; g.sleepersMade = false; g.horde = { on: false, t: 0, why: '' };       // the open desert has its own stage flow: the gate wakes by choice, the elite and the mini bosses sleep, a horde rises after the boss or when the clock runs out
 }
@@ -42,11 +45,11 @@ export function initRun(g) {
   if (g.mode === 'classic') { g.stages = null; g.stageSpec = null; return; }
   g.stages = stagesFor(g.mode); g.stage = 0; g.scTotal = 0; g.stagesCleared = 0; g.stageFacts = [];
   g.swiftChips = 0; g.duelOn = false; g.otT = 0; g.desc = null; g.chestsOpenedTotal = 0; g.heat = 1;
-  initStage(g); loadStageMap(g, 0); g.world = buildWorld(g);
+  initStage(g); loadStageMap(g, 0); g.world = buildWorld(g); if (g.map.big) streamWorld(g, 0);
   g.event('banner', g.stageSpec.name + '. Seal Code ' + g.sealCode);
 }
 // For tools, tests and golden scenes: restart the stage machine at stage i (the build and the clock total carry as they are).
-export function jumpToStage(g, i) { g.stage = i; initStage(g); loadStageMap(g, i); g.world = buildWorld(g); }
+export function jumpToStage(g, i) { g.stage = i; initStage(g); loadStageMap(g, i); g.world = buildWorld(g); if (g.map.big) streamWorld(g, 0); }
 function initStage(g) {
   const S = g.stageSpec = g.stages[g.stage];
   g.sc = 0; g.evState = S.timeline.map(() => 0); g.evSpot = S.timeline.map(() => ({ x: 0, y: 0, z: 0 }));
@@ -342,7 +345,7 @@ function swapStage(g) {
   g.sp = []; g.chests = []; g.en.alive.fill(0); g.shots.alive.fill(0); g.pick.alive.fill(0);
   g.tele.forEach(o => { o.on = false; }); g.fx.forEach(o => { o.on = false; }); g.eb.forEach(o => { o.on = false; }); g.btraps.forEach(o => { o.on = false; });
   g.storm = null; g.offer = null; g.flow.valid = false;
-  initStage(g); loadStageMap(g, g.stage); g.world = buildWorld(g); g.world.opened = Math.round(prevOpened * RUNSPEC.chestPriceCarry);
+  initStage(g); loadStageMap(g, g.stage); g.world = buildWorld(g); if (g.map.big) streamWorld(g, 0); g.world.opened = Math.round(prevOpened * RUNSPEC.chestPriceCarry);
   p.sliding = false; p.dashT = 0;
   p.hp = Math.min(p.maxHp, p.hp + (p.maxHp - p.hp) * RUNSPEC.descentHeal);
   g.field.redraws++;                                            // one free Redraw at the start of each stage

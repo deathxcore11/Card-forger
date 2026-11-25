@@ -39,17 +39,25 @@ export class Props {
     // vases: instanced; banded ones are taller with a gold band
     const vg = new T.CylinderGeometry(0.3, 0.38, 0.8, 8); vg.translate(0, 0.4, 0);
     const bg = new T.CylinderGeometry(0.34, 0.42, 1.05, 8); bg.translate(0, 0.52, 0);
-    this.vases = new T.InstancedMesh(vg, lambert(0xc9965a), 128); this.banded = new T.InstancedMesh(bg, lambert(0xe3b34c, { emissive: 0x3a2808 }), 64);
+    this.vases = new T.InstancedMesh(vg, lambert(0xc9965a), 1024); this.banded = new T.InstancedMesh(bg, lambert(0xe3b34c, { emissive: 0x3a2808 }), 256);
     for (const m of [this.vases, this.banded]) { m.frustumCulled = false; m.count = 0; G.add(m); }
 
+    this.gems = new T.InstancedMesh(new T.OctahedronGeometry(1, 0), new T.MeshBasicMaterial({ color: 0xffffff }), 256); this.gems.instanceColor = new T.InstancedBufferAttribute(new Float32Array(256 * 3), 3); this.gems.frustumCulled = false; this.gems.count = 0; G.add(this.gems);
+    this.G = G; this.chestMeshes = []; this._chestN = -1; this._seen = new Set(); this._sync(world);
+  }
+  // the stones, the broker, the shrines and the altar: made once each, the first time they are in the world (the big desert hands them over as the duelist nears them)
+  _sig(w) { return w.stones.length * 4096 + w.shrines.length * 4 + (w.broker ? 1 : 0) + (w.altar ? 2 : 0); }
+  _sync(world) {
+    const G = this.G, P = this.parts, seen = this._seen; this._sigV = this._sig(world);
     for (const s of world.stones) {                                    // ring of four tall slabs round a low offering pedestal
+      if (seen.has(s)) continue; seen.add(s);
       const g = new T.Group(); g.position.set(s.x, s.y, s.z);
       for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.4, slab = new T.Mesh(new T.BoxGeometry(0.8, 3.4, 0.4), lambert(0x9aa0a8)); slab.position.set(Math.cos(a) * 2.4, 1.7, Math.sin(a) * 2.4); slab.rotation.y = -a + Math.PI / 2; g.add(slab); }
       const ped = new T.Mesh(new T.CylinderGeometry(0.7, 0.9, 0.7, 8), lambert(0xb8b0a0)); ped.position.y = 0.35; g.add(ped);
       const gem = new T.Mesh(new T.OctahedronGeometry(0.32, 0), basic(0xffe07a)); gem.position.y = 1.4; g.add(gem);
-      gem.userData.dyn = true; bake(g); G.add(g); P.stones.push({ s, g, gem });
+      gem.userData.dyn = true; gem.visible = false; bake(g); G.add(g); P.stones.push({ s, g, gem });
     }
-    if (world.broker) {                                                // lantern, folded canopy, three plinths
+    if (world.broker && !P.broker) {                                                // lantern, folded canopy, three plinths
       const b = world.broker, g = new T.Group(); g.position.set(b.x, b.y, b.z);
       for (const [x, z] of [[-2.2, -1.2], [2.2, -1.2], [-2.2, 1.2], [2.2, 1.2]]) { const pole = new T.Mesh(new T.CylinderGeometry(0.1, 0.1, 3, 5), lambert(0x6a4a2a)); pole.position.set(x, 1.5, z); g.add(pole); }
       const canopy = new T.Mesh(new T.ConeGeometry(3.4, 1.2, 4), lambert(0xa8442a)); canopy.position.y = 3.6; canopy.rotation.y = Math.PI / 4; g.add(canopy);
@@ -57,11 +65,12 @@ export class Props {
       const plinths = [];
       for (let k = 0; k < 3; k++) {
         const pl = new T.Mesh(new T.BoxGeometry(0.9, 0.8, 0.9), lambert(0xc8b890)); pl.position.set(-1.6 + k * 1.6, 0.4, 0.4); g.add(pl);
-        const it = new T.Mesh(new T.OctahedronGeometry(0.3, 0), basic(RARITY[ITEMS[b.stock[k].id].rarity])); it.position.set(-1.6 + k * 1.6, 1.3, 0.4); g.add(it); plinths.push(it); it.userData.dyn = true;
+        const it = new T.Mesh(new T.OctahedronGeometry(0.3, 0), basic(RARITY[ITEMS[b.stock[k].id].rarity])); it.position.set(-1.6 + k * 1.6, 1.3, 0.4); g.add(it); plinths.push(it); it.userData.dyn = true; it.visible = false;
       }
       bake(g); G.add(g); P.broker = { g, plinths };
     }
     for (const s of world.shrines) {                                   // low basin with a filling ring on the floor
+      if (seen.has(s)) continue; seen.add(s);
       const g = new T.Group(); g.position.set(s.x, s.y, s.z); const rc = RARITY[s.best] || 0x7fffc8, dim = (h, f) => (((h >> 16 & 255) * f) << 16) | (((h >> 8 & 255) * f) << 8) | ((h & 255) * f);      // the circle takes the colour of the best blessing on offer
       const basin = new T.Mesh(new T.CylinderGeometry(1.4, 1.8, 0.5, 10), lambert(0x6a5a3a)); basin.position.y = 0.25; g.add(basin);
       const water = new T.Mesh(new T.CylinderGeometry(1.1, 1.1, 0.05, 10), basic(rc)); water.position.y = 0.5; g.add(water);
@@ -69,15 +78,12 @@ export class Props {
       const fill = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.6, E.shrines.radius, 48, 1, 0, 0.01), basic(rc, { side: T.DoubleSide, depthWrite: false })); fill.rotation.x = -Math.PI / 2; fill.position.y = 0.12; g.add(fill);
       fill.userData.dyn = water.userData.dyn = track.userData.dyn = true; track.renderOrder = 1; fill.renderOrder = 2; bake(g); G.add(g); P.shrines.push({ s, g, fill, water, lastP: -1 });       // the track stays out of the bake and draws first, the progress band over it (0.6 m wide)
     }
-    if (world.altar) {                                                  // stepped altar with two bowls: Banish and Tribute
+    if (world.altar && !P.altar) {                                                  // stepped altar with two bowls: Banish and Tribute
       const a = world.altar, g = new T.Group(); g.position.set(a.x, a.y, a.z);
       for (let k = 0; k < 3; k++) { const st = new T.Mesh(new T.BoxGeometry(3.2 - k * 0.8, 0.35, 2.2 - k * 0.5), lambert(0xb0a28a)); st.position.y = 0.18 + k * 0.35; g.add(st); }
-      for (const [x, col] of [[-0.6, 0xe8c56a], [0.6, 0xa060e0]]) { const bowl = new T.Mesh(new T.CylinderGeometry(0.4, 0.25, 0.3, 8), lambert(0x7a6a50)); bowl.position.set(x, 1.3, 0); g.add(bowl); const flame = new T.Mesh(new T.OctahedronGeometry(0.22, 0), basic(col)); flame.position.set(x, 1.7, 0); g.add(flame); }
+      for (const [x, col] of [[-0.6, 0xe8c56a], [0.6, 0xa060e0]]) { const bowl = new T.Mesh(new T.CylinderGeometry(0.4, 0.25, 0.3, 8), lambert(0x7a6a50)); bowl.position.set(x, 1.3, 0); g.add(bowl); const flame = new T.Mesh(new T.OctahedronGeometry(0.22, 0), basic(col)); flame.position.set(x, 1.7, 0); flame.visible = false; g.add(flame); }
       bake(g); G.add(g); P.altar = { a, g };
     }
-    this.gems = new T.InstancedMesh(new T.OctahedronGeometry(1, 0), new T.MeshBasicMaterial({ color: 0xffffff }), 48); this.gems.instanceColor = new T.InstancedBufferAttribute(new Float32Array(48 * 3), 3); this.gems.frustumCulled = false; this.gems.count = 0; G.add(this.gems);
-    for (const o of P.stones) o.gem.visible = false; if (P.broker) P.broker.plinths.forEach(m => { m.visible = false; }); if (P.altar) P.altar.g.children.forEach(m => { if (m.geometry && m.geometry.type === 'OctahedronGeometry') m.visible = false; });       // the gems are drawn together below
-    this.G = G; this.chestMeshes = []; this._chestN = -1;
   }
   // All Card Chests (and Trophy Chests, which are pale wood with the lid thrown open) share two meshes, one lit and one unlit, rebuilt when a chest appears. An opened chest is hidden by
   // collapsing its own vertices in the shader (aHide), so the whole set is two draws however many chests there are. Only a Trophy Chest's light pillar is a mesh of its own (neutral gold, never the tier).
@@ -108,8 +114,9 @@ export class Props {
   }
 
   update(g) {
-    if (this.world !== g.world) { this._build(g.world); this._known = null; }
+    if (this.world !== g.world) { this._build(g.world); this._known = null; } else if (this._sigV !== this._sig(g.world)) this._sync(g.world);
     const P = this.parts, d = this.d, t = g.t;
+    { const px = g.p.x, pz = g.p.z, R2 = 420 * 420, vis = (o, g2) => { g2.visible = (o.x - px) * (o.x - px) + (o.z - pz) * (o.z - pz) < R2; }; for (const o of P.stones) vis(o.s, o.g); for (const o of P.shrines) vis(o.s, o.g); if (P.broker) vis(g.world.broker, P.broker.g); if (P.altar) vis(P.altar.a, P.altar.g); }       // the big desert has hundreds of them: only the near ones are drawn
     let n = 0, b = 0, vk = 0; for (const v of g.world.vases) if (v.alive) vk += v.banded ? 1000 : 1;
     if (vk !== this._vk || this._vw !== g.world) { this._vk = vk; this._vw = g.world;       // the vases are re-laid and re-uploaded only when one breaks
     for (const v of g.world.vases) {
@@ -117,7 +124,7 @@ export class Props {
       if (v.banded) this.banded.setMatrixAt(b++, d.matrix); else this.vases.setMatrixAt(n++, d.matrix);
     }
     this.vases.count = n; this.banded.count = b; this.vases.instanceMatrix.needsUpdate = this.banded.instanceMatrix.needsUpdate = true; }
-    let ng = 0, gsig = 0; const gc = new T.Color(), gem = (x, y, z, ry, sc, hex) => { if (ng >= 48) return; d.position.set(x, y, z); d.rotation.set(0, ry, 0); d.scale.setScalar(sc); d.updateMatrix(); this.gems.setMatrixAt(ng, d.matrix); this.gems.setColorAt(ng, gc.setHex(hex)); gsig = gsig * 31 + hex + ng | 0; ng++; };
+    let ng = 0, gsig = 0; const gc = new T.Color(), gem = (x, y, z, ry, sc, hex) => { if (ng >= 256) return; d.position.set(x, y, z); d.rotation.set(0, ry, 0); d.scale.setScalar(sc); d.updateMatrix(); this.gems.setMatrixAt(ng, d.matrix); this.gems.setColorAt(ng, gc.setHex(hex)); gsig = gsig * 31 + hex + ng | 0; ng++; };
     for (const o of P.stones) {                                                       // a used stone stays where it is and changes colour: gold and bobbing when ready, still and grey once spent
       const used = o.s.used; gem(o.s.x, o.s.y + (used ? 1.1 : 1.4 + Math.sin(t * 2) * 0.1), o.s.z, used ? 0.6 : t * 2, 0.32 * (used ? 0.8 : 1), used ? 0x6a6872 : 0xffe07a);
     }

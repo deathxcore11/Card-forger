@@ -9,14 +9,14 @@ export const EDGE_R = 345;                                                      
 export const ARCHETYPES = ['a', 'b', 'c', 'd', 'e', 'f'];
 export const ARCH_NAME = { a: 'Long Swells', b: 'Cross Winds', c: 'Low Pan', d: 'High Shelf', e: 'Short Swells', f: 'Ringed Pan' };
 const TAU = 6.283185307179586;
-function sq(v) { if (!(v > 0)) return 0; let x = v > 1 ? (v + 1) / 2 : 1; for (let k = 0; k < 40; k++) { const y = 0.5 * (x + v / x); if (y >= x && k > 4) break; x = y; } return x; }       // square root by Newton's method (+ - * / only, the same on every platform)
-const sstep = (a, b, x) => { let t = (x - a) / (b - a); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
-function rngOf(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+export function sq(v) { if (!(v > 0)) return 0; let x = v > 1 ? (v + 1) / 2 : 1; for (let k = 0; k < 40; k++) { const y = 0.5 * (x + v / x); if (y >= x && k > 4) break; x = y; } return x; }       // square root by Newton's method (+ - * / only, the same on every platform)
+export const sstep = (a, b, x) => { let t = (x - a) / (b - a); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
+export function rngOf(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function lat(seed, ix, iz) { let h = Math.imul(ix, 374761393) ^ Math.imul(iz, 668265263) ^ Math.imul(seed, 2246822519); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 export function vnoise(seed, x, z) { const x0 = Math.floor(x), z0 = Math.floor(z), fx = x - x0, fz = z - z0, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz), a = lat(seed, x0, z0), b = lat(seed, x0 + 1, z0), c = lat(seed, x0, z0 + 1), d = lat(seed, x0 + 1, z0 + 1); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
-const cosA = a => { a = ((a % TAU) + TAU) % TAU; const t = a > 3.141592653589793 ? a - TAU : a; return polyCos(t); };       // cos and sin by a short series (no Math.cos): angles are reduced to -pi..pi
+export const cosA = a => { a = ((a % TAU) + TAU) % TAU; const t = a > 3.141592653589793 ? a - TAU : a; return polyCos(t); };       // cos and sin by a short series (no Math.cos): angles are reduced to -pi..pi
 function polyCos(t) { let q = t, flip = 1; if (q > 1.5707963267948966) { q = 3.141592653589793 - q; flip = -1; } else if (q < -1.5707963267948966) { q = -3.141592653589793 - q; flip = -1; } const x = q * q; return flip * (1 - x / 2 + x * x / 24 - x * x * x / 720 + x * x * x * x / 40320 - x * x * x * x * x / 3628800); }
-const sinA = a => cosA(a - 1.5707963267948966);
+export const sinA = a => cosA(a - 1.5707963267948966);
 const r2 = v => Math.round(v * 100) / 100;
 
 // ---- the dune sheet: a pure function of (params, x, z), used for the playable square and, unchanged, for the land beyond the line.
@@ -61,24 +61,25 @@ function params(arch, rn, seed) {
 }
 
 // ---- blocks: a flat-topped box standing on the sand, 5 to 8 m above the highest ground under it (mesas) or about 3 m (lone ruin blocks), steep sides, no ramps
-function block(rn, cx, cz, rx, rz, h, cw, tone) {
+export function block(rn, cx, cz, rx, rz, h, cw, tone) {
   const rot = rn() * TAU; return { cx, cz, rx, rz, h, cw, rot, cr: cosA(rot), sr: sinA(rot), seed: Math.floor(rn() * 1e9) & 0xffff, tone, T: 0, door: false };
 }
-function cbrt(v) { if (!(v > 0)) return 0; let x = v > 1 ? v / 3 + 0.67 : 1; for (let k = 0; k < 40; k++) { const y = (2 * x + v / (x * x)) / 3; if (Math.abs(y - x) < 1e-9) { x = y; break; } x = y; } return x; }       // cube root by Newton's method (+ - * / only)
-function qOf(b, x, z) { const dx = x - b.cx, dz = z - b.cz, ux = (dx * b.cr + dz * b.sr) / b.rx, uz = (-dx * b.sr + dz * b.cr) / b.rz, u2 = ux * ux, v2 = uz * uz, q6 = u2 * u2 * u2 + v2 * v2 * v2; return q6 > 40 ? 9 : cbrt(sq(q6)); }
+export function cbrt(v) { if (!(v > 0)) return 0; let x = v > 1 ? v / 3 + 0.67 : 1; for (let k = 0; k < 40; k++) { const y = (2 * x + v / (x * x)) / 3; if (Math.abs(y - x) < 1e-9) { x = y; break; } x = y; } return x; }       // cube root by Newton's method (+ - * / only)
+export function qOf(b, x, z) { const dx = x - b.cx, dz = z - b.cz, ux = (dx * b.cr + dz * b.sr) / b.rx, uz = (-dx * b.sr + dz * b.cr) / b.rz, u2 = ux * ux, v2 = uz * uz, q6 = u2 * u2 * u2 + v2 * v2 * v2; return q6 > 40 ? 9 : cbrt(sq(q6)); }
 function prof(b, x, z) {                                                                           // 0 outside, 1 on the flat top, a smooth rise across the steep side
   const dx = x - b.cx, dz = z - b.cz, ux = (dx * b.cr + dz * b.sr) / b.rx, uz = (-dx * b.sr + dz * b.cr) / b.rz, u2 = ux * ux, v2 = uz * uz, q6 = u2 * u2 * u2 + v2 * v2 * v2;
   if (q6 > 3) return 0; const q = cbrt(sq(q6)); const s = (1 - q) * ((b.rx + b.rz) / 2); return s > 0 ? sstep(0, b.cw, s) : 0;
 }
 export const blockProf = prof;
 // the sand banked against the windward face of a block (a low broad mound, up to 0.9 m, fading over 14 m; it carries on at full height under the box so there is no step at the foot)
-function bankOf(P, b, x, z) {
+export function bankOf(P, b, x, z) {
   const so = Math.max(0, qOf(b, x, z) - 1) * (b.rx + b.rz) / 2; if (so > 14) return 0;
   const dx = x - b.cx, dz = z - b.cz, d = sq(dx * dx + dz * dz) || 1;
   return 0.9 * (1 - sstep(0, 14, so)) * sstep(0.1, 0.7, -(dx * cosA(P.wind) + dz * sinA(P.wind)) / d);
 }
 // the ground the view draws: the heightfield, except wherever a block's rise has started (the drawn box hides it): there the plain dune plus the same banked sand, so the ground is continuous at the foot and the steep rise is never drawn as a cone
 export function viewH(map, x, z) {
+  if (map.viewFn) return map.viewFn(x, z);       // the big streamed world answers for itself
   const bl = map.blocks || []; let under = false, bank = 0;
   for (const b of bl) { const dx = x - b.cx, dz = z - b.cz, R = Math.max(b.rx, b.rz) * 1.3 + 3; if (dx * dx + dz * dz < R * R && (prof(b, x, z) > 0 || (qOf(b, x, z) - 1) * (b.rx + b.rz) / 2 < 1.6)) under = true; }       // also the 1.6 m just outside the foot: the 1 m cells there borrow height from the steep rise inside and would stand up as a cone
   if (!under) return groundAt(map, x, z);
@@ -86,8 +87,8 @@ export function viewH(map, x, z) {
   return duneH(map.dune, x, z) + bank;
 }
 // where the drawn wall of a block stops at a point on its outline: 1 m below the lowest of the plain dune and the heightfield there, so the wall is always sunk into the ground and never hangs
-export function footY(map, x, z) { return Math.min(duneH(map.dune, x, z), groundAt(map, x, z)) - 1.0; }
-const reachOf = b => Math.max(b.rx, b.rz) * 1.25 + 2;
+export function footY(map, x, z) { if (map.viewFn) return map.viewFn(x, z) - 1.0; return Math.min(duneH(map.dune, x, z), groundAt(map, x, z)) - 1.0; }
+export const reachOf = b => Math.max(b.rx, b.rz) * 1.25 + 2;
 
 // the mountain range all round: steep faceted rock rising 35 to 70 m out of the dunes. The outline is a rounded square that wanders by up to 30 m; the rise takes 30 to 44 m, so the faces are far too steep to climb
 function mount(P, x, z) {
@@ -116,6 +117,7 @@ function field(P, blocks) {
 }
 // the ground height anywhere (bilinear on the 1 m cells, clamped to the inside of the heightfield); used by the view and the dressing
 export function groundAt(map, x, z) {
+  if (map.viewFn) return map.viewFn(x, z);
   const L = HALF - 3.5, cx = x < -L ? -L : x > L ? L : x, cz = z < -L ? -L : z > L ? L : z, H = map.heights, fx = cx + HALF - 0.5, fz = cz + HALF - 0.5, i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j;
   return (H[j * SIM + i] * (1 - u) + H[j * SIM + i + 1] * u) * (1 - v) + (H[(j + 1) * SIM + i] * (1 - u) + H[(j + 1) * SIM + i + 1] * u) * v;
 }
