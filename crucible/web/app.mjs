@@ -737,7 +737,7 @@ const LOOKKEY = 'lostmemories.look.v1';
 // sizes in frame pixels), rects() (where each stands in the page, in device pixels) and press(key), which presses a pad
 // key by its name for a host that reads the pad itself. Every screen describes its parts once; with one frame they are
 // placed as they always were, with two the parts are shared out between the frames (the section further down).
-const DUAL = /[?&]dual=1(?:[&#]|$)/.test(location.search);
+const DUAL = /[?&]dual=1(?:[&#]|$)/.test(location.search) || window.LM_HOST_DUAL === true; // the address asks for it, or the host page set the switch before this script ran
 const scrT = Object.assign(document.createElement('div'), { className: 'scr scrT' }), scrB = Object.assign(document.createElement('div'), { className: 'scr scrB' });
 if (DUAL) window.LM_DUAL = { top: scrT, bottom: scrB, frames: { top: [640, 360], bottom: [413, 360] }, press: k => padPress(k),
   rects: () => { const d = devicePixelRatio || 1, q = e => { const b = e.getBoundingClientRect(); return [b.left, b.top, b.width, b.height].map(v => Math.round(v * d)); }; return { top: q(scrT), bottom: q(scrB), scale: F.n }; }, walk: () => navWalk() };

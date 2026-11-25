@@ -6,7 +6,7 @@ pad's keys in.
 
 ## Turning it on
 
-Open the game page with `?dual=1` in its address. Without it the page is the one-frame console look, unchanged.
+Open the game page with `?dual=1` in its address, or have the host page set `window.LM_HOST_DUAL = true` in a script that runs before the game's (for a host that cannot change the address). Without it the page is the one-frame console look, unchanged.
 
 In this mode the page draws two frames:
 
