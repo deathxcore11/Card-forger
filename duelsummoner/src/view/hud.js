@@ -39,7 +39,7 @@ function drawFrenzy(g) {
 const ROLE_LETTER = { elite: 'ELITE', bossA: 'BOSS', bossB: 'TWINS' };
 function drawStrip(g) {                                                    // elite, boss A, boss B and gate icons under the clock
   const S = g.stageSpec, st = g.evState, G = g.gate;
-  if (g.openFlow) { const on = g.horde.on, left = Math.max(0, Math.ceil(S.clock - g.sc)), k2 = 'open|' + (on ? 'on' : left) + '|' + G.state; if (k2 === stripKey) return; stripKey = k2; $('strip').innerHTML = '<span class="' + (on ? 'fight' : 'now') + '">' + (on ? 'The horde rises' : G.state === 'closed' ? 'Horde rises in ' + clock(left) : 'The horde waits') + '</span>'; return; }       // the open desert: one line, no elite, boss and twins chips
+  if (g.openFlow) { const on = g.horde.on, left = Math.max(0, Math.ceil(S.clock - g.sc)), k2 = 'open|' + (on ? 'on' : left) + '|' + G.state; if (k2 === stripKey) return; stripKey = k2; $('strip').innerHTML = '<span class="' + (on ? 'fight' : 'now') + '">' + (on ? 'The horde rises' : G.state === 'closed' ? (g.door && g.door.state !== 'risen' && left > 60 ? '' : 'Horde rises in ') + (g.door && g.door.state !== 'risen' && left > 60 ? '' : clock(left)) : 'The horde waits') + '</span>'; return; }       // the open desert: one line, no elite, boss and twins chips
   let k = S.id + '|' + G.state + '|' + G.awake; for (let i = 0; i < st.length; i++) k += st[i];
   if (k === stripKey) return; stripKey = k;
   let h = ''; S.timeline.forEach((ev, i) => { h += '<span class="' + (st[i] === 2 ? 'done' : st[i] === 1 ? 'now' : '') + '" title="' + ev.name + ' at ' + clock(ev.t) + '">' + ROLE_LETTER[ev.role] + ' ' + clock(Math.max(0, S.clock - ev.t)) + '</span>'; });       // the chips count down on the same clock as the big timer

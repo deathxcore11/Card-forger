@@ -29,3 +29,9 @@ The newbie bot is a first-timer: starter pools, goes to the nearest pocket, sees
 | 10 | 19.8, 5.2, 2.8, 137 | 22.8, 7.1, 4.4, 130 |
 Changes: surges (banner 2 s ahead, 25 to 35 s at x3 spawn, then 60 to 90 s at x0.55, first at 1:10, a busier first 2:30), level-up pay x2.6 falling to x1 over the first 5 minutes of stage 1, chest and shrine weights up, 7 chests in 10 free, a Witness Stone 35 to 60 m and a second free chest 60 to 100 m from the start. Newbie bot: door found 43%, stage 1 cleared 43% (bands 40 to 60 and 25 to 45 held). Reference section 9 targets: about 3 items by 2:00 (we reach 0.6: the bot walks past the start stone), 5 to 7 by 5:00 (2.0), 8 to 9 by 10:00 (7.1): items are still behind early, level-ups and chests now close.
 Perf (hit-feel read, sim / view ms): 104 enemies 0.26 / 0.51 before the new effects, 0.25 / 0.51 after; 279 enemies 0.33 / 0.57.
+
+## Last small round (timeline)
+- The 10 s timeline (tools/bigbot.mjs --timeline) showed the newbie bot ran 230 m to wake the sleeping elite at the start (a bot rule that fired before its own goal): first item at 100 s, a chest every 160 s. Fixed in tools/bot.mjs. After the fix the bot took the start stone and chest in the first 20 s.
+- The bot then ran far too rich (15 items by 10:00, 73% clears), so: chest, stone and shrine weights trimmed (stone 0.07, chest 0.13, shrine 0.15 in the main pocket), XP x2.2 while a surge is on, Easy enemies x2.5 hp and damage, x1.6 spawn on stage 1 (data/stages.js BIG_TUNE).
+- Result, newbie, fresh save, 40 seeds: door found 55%, stage 1 cleared 48%, died 53%. Items 3.8 by 2:00, 7.6 by 5:00, 11.7 by 10:00 (targets about 3, 5 to 7, 8 to 9: early and mid ok, late a little rich). Chests 7.5 by 10:00, one per 80 s. Level-ups 7 by 2:00, 13 by 5:00.
+- Surge level bursts: the XP boost makes a surge window pay about twice a calm window; the 4 to 5 in 20 s burst is NOT reached (about 2 to 3 in 20 s).

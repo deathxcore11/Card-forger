@@ -61,7 +61,7 @@ export function botRecord(g, bot) {
     if (!target && g.mode && g.mode !== 'classic' && g.sc >= 335 && g.gate && g.gate.state === 'closed' && !g.circle && !g.door) { target = { x: g.map.gate.x, z: g.map.gate.z }; hold = g.gate.awake && Math.hypot(target.x - p.x, target.z - p.z) < 3; }       // by about 5:35 the bot is at the gate, so it can walk in the moment it wakes
     const gb = g.sp.find(s => s.alive && s.role === 'gate');                            // the gate boss: close in to about 9 m so the summons can hit it, strafing around it
     const tb = g.sp.find(s => s.alive && !s.dead && s.role !== 'gate');                // a timed boss or elite: keep it in range of the monsters
-    if (tb && !target) { const dd = Math.hypot(tb.x - p.x, tb.z - p.z); if (dd > 13) target = { x: tb.x, z: tb.z }; }
+    if (tb && !target && !(bot.goalFn && tb.asleep)) { const dd = Math.hypot(tb.x - p.x, tb.z - p.z); if (dd > 13) target = { x: tb.x, z: tb.z }; }
     if (gb && !target) { const dd = Math.hypot(gb.x - p.x, gb.z - p.z); if (dd > 11) target = { x: gb.x, z: gb.z }; }
     if (g.mode && g.mode !== 'classic' && !target) {                                    // stage run: gate, Descent Circle, Final Altar
       if (g.circle) target = g.circle;

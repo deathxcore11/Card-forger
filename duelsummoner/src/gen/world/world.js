@@ -16,8 +16,8 @@ const hsh = (s, a, b, c) => { let h = (s ^ Math.imul(a | 0, 374761393) ^ Math.im
 const r4 = (x, z) => sq(sq(x * x * x * x + z * z * z * z));
 const dist = (ax, az, bx, bz) => sq((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 // pocket kinds by weight (the first four are the free things of the stage, the broker is rare)
-const POCKETS2 = [['vases', 0.42], ['stone', 0.2], ['cchest', 0.2], ['shrine', 0.14], ['broker', 0.02], ['altar', 0.02]];
-const POCKETS = [['vases', 0.28], ['cchest', 0.30], ['shrine', 0.17], ['stone', 0.17], ['altar', 0.04], ['broker', 0.04]];
+const POCKETS2 = [['vases', 0.67], ['stone', 0.08], ['cchest', 0.08], ['shrine', 0.1], ['broker', 0.02], ['altar', 0.02]];
+const POCKETS = [['vases', 0.5], ['cchest', 0.13], ['shrine', 0.15], ['stone', 0.07], ['altar', 0.04], ['broker', 0.04]];
 // blocks per cell by region type: [mesa p/count, wall, ruin]  (counts are lo..hi inclusive)
 const COUNTS = [[[0, 1, 0.3], [0, 0, 0], [0, 1, 0.3]], [[2, 3, 1], [0, 1, 0.6], [1, 2, 1]], [[0, 1, 0.1], [0, 0, 0], [0, 1, 0.3]], [[1, 2, 1], [0, 1, 0.5], [0, 1, 0.4]], [[0, 1, 0.4], [0, 0, 0], [4, 7, 1]], [[0, 1, 0.2], [0, 0, 0], [0, 1, 0.5]], [[0, 1, 0.5], [1, 1, 0.4], [0, 1, 0.3]]];
 
