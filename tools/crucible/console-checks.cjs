@@ -468,7 +468,15 @@ async function dualPass(browser, url, savesDir, steps) {
         if (a !== 'new') { await press('down'); await press('right'); await page.waitForTimeout(150); await audit(`title, ${a}, the cursor moved by the pad`); }
         for (const m of more) { await page.evaluate(a => { const b = document.querySelector(`.scr [data-a="${a}"]`); if (b) b.click(); }, m); await page.waitForTimeout(300); await audit(`title, ${a}, ${m}`); await press('up'); await press('up'); await press('A'); await page.waitForTimeout(400); await audit(`title, ${a}, a page open`); }
         if (a === 'new') { await press('A'); await page.waitForTimeout(1200); await audit('title, a new descent, its first words'); await press('B'); await page.waitForTimeout(900); await audit('title, a new descent, the kits'); } }
-      // attack: with one of your monsters chosen by the pad, a legal attack is done by A within three keys (A on the lit
+      // prompt: a Trap prompt that opens while the cursor waits elsewhere (as it does in a duel played through) takes
+      // the cursor: SPRING IT is lit with the A chip. Here the cursor is walked off, then the prompt is opened again.
+      if (save && /trap-prompt/.test(save)) {
+        for (const key of ['down', 'right', 'up', 'up']) await press(key);
+        await page.evaluate(() => { LM.G.promptAt = null; LM.render(); }); await page.waitForTimeout(150);
+        const got = await page.evaluate(() => { const c = document.querySelector('.scr .kc.ka'), p = c && c.nextElementSibling; return p ? (p.dataset.a || '') + (p.classList.contains('lit') ? '' : ' unlit') : 'none'; });
+        if (!/^respond:\d+$/.test(got)) fail(`${shape}, ${name}`, `prompt: a Trap prompt opening under a cursor that waits elsewhere leaves A on ${got}, not on SPRING IT`);
+        await audit(name + ', the prompt opened again');
+      }
       // DIRECT, or A to the first target and A on it), and also by up to the rival's row and A; where no attack is
       // legal the screen offers none
       if (save && /^(duel|beat|rings)/.test(save) && !/trap-prompt/.test(save)) {

@@ -1746,6 +1746,9 @@ function psDuel() {
     // Each turn of yours opens with the cursor on the first hand card and that card on the page, never on a plaque.
     const tk = live && !G.playing && live.active === 0 && !live.pending ? live.turn : null;
     if (tk != null && G.turnAt !== tk) { G.turnAt = tk; NAV.key = null; G.look = v.hand.length ? 'h:' + handFirst(v.hand) : null; }
+    // A Trap prompt that opens in the rival's turn takes the cursor from wherever it waited: it starts on SPRING IT, so A springs the Trap and B lets the attack through.
+    const pk = live && !G.playing && live.active === 1 && live.pending && live.pending.options && live.pending.options.length ? live.turn + ':' + live.pending.from + ':' + live.pending.to : null;
+    if (pk !== G.promptAt) { G.promptAt = pk; if (pk != null) { NAV.key = null; G.trapSel = 0; G.look = null; } }
     if (!G.look && v.hand.length && live && !G.playing) G.look = 'h:' + handFirst(v.hand);
     if (G.attacker != null && !/^(z|g|r):/.test(G.look || '')) G.look = 'z:0:' + G.attacker; } // the page reads the monster that is about to attack
   const rv = f ? f.rival : info(G.run);
@@ -1794,7 +1797,9 @@ function psDuel() {
       const X = live.mon[0][G.attacker], meld = canPlay && live.hand[0].length > 0 && live.seat[0].rs.loneTurn !== live.turn;
       bar = targets.includes(-1) ? `No rival monster stands in the way. A attacks directly for ${v.mon[0][G.attacker].ea}.` : targets.length ? 'Pick a target above. Its mark says how the attack ends.'
         : live.turn === 1 ? 'No attacks on the first turn.' : X && X.pos !== 'a' ? 'A monster in defense cannot attack.' : X && (X.att || 0) > 0 ? 'This monster has attacked this turn.' : live.attacked && !canAtk.size ? 'No more attacks this turn.' : 'This monster cannot attack now.';
-      if (meld) cmds.push(['MELD ONTO IT', `onto:${G.attacker}`, { lit: !targets.length }]); }
+      if (meld) cmds.push(['MELD ONTO IT', `onto:${G.attacker}`, { lit: !targets.length }]);
+      // with no attack and no meld left, turning the monster is the one thing A can still do with it: that plaque is lit and the bar says so
+      const turnIt = cmds.find(c => c[1] === 'pos'); if (turnIt && !targets.length && !cmds.some(c => c[2] && c[2].lit)) { turnIt[2] = { lit: true }; bar += ' A changes its position.'; } }
     cmds.push(['CANCEL', 'undo']);
   } else if (G.onto != null) { bar = 'Now tap hand cards to meld onto it.'; cmds.push(['CANCEL', 'undo']); }
   else if (lesson) { const [h, t] = lessonText(lesson.kind, lesson.cards.map(i => card(live.hand[0][i].id).name)); bar = `<b class="g">${esc(h)}.</b> ${esc(t)}`; cmds.push(['NO LESSONS', 'tipsoff']); }
@@ -1820,7 +1825,7 @@ function psDuel() {
       // or MELD ONTO IT when it cannot attack), else the cursor goes to its first target. A does nothing on a monster
       // being melded onto, nor on any monster while hand cards are chosen.
       if (DUAL && !canPlay && !G.sel.length && G.attacker == null && G.onto == null && z === [...canAtk.keys()].sort((p, q) => p - q)[0]) attrs += ' data-n1'; // once the hand cannot be played the cursor waits on the first monster that can still attack
-      if (DUAL) { const first = targets.find(t => t >= 0); if (G.attacker === z) attrs += ` data-act="${targets.includes(-1) || cmds.some(c => c[2] && c[2].lit) ? 'plaque' : first != null ? 'to:z1' + first : ''}"`; else if (G.onto === z || G.sel.length) attrs += ' data-act=""'; } }
+      if (DUAL) { const first = targets.filter(t => t >= 0).sort((p, q) => Math.abs(p - z) - Math.abs(q - z) || p - q)[0]; if (G.attacker === z) attrs += ` data-act="${targets.includes(-1) || cmds.some(c => c[2] && c[2].lit) ? 'plaque' : first != null ? 'to:z1' + first : ''}"`; else if (G.onto === z || G.sel.length) attrs += ' data-act=""'; } }
     else if (seat === 1 && m && targets.includes(z)) { hl.set(k, 'target'); attrs += ` data-a="hit:${z}"`; marks.set(z, fc(z)); }
     else if (m) attrs += ` data-a="inspectz:${seat}:${z}"`;
     const said = !m ? 'Empty zone' : m.id && !(seat === 1 && m.veil) ? card(m.id).name + nums(m) + (marks.has(z) ? `, ${marks.get(z).toLowerCase()}` : '') : 'Veiled monster';
