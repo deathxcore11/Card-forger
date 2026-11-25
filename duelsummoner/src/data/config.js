@@ -32,4 +32,5 @@ export const CFG = {
 
 
 // Ley Threads: the one place their colour lives. A near-white core inside a violet halo with a thin dark under-stroke so it reads on bright sand (red stays reserved for enemy attacks).
-export const LEY = { core: 0xf4ecff, halo: 0xb26bff, under: 0x2e1a52, corePx: 1, haloPx: 2.2, underPx: 3.2, maxAlpha: 0.6, coreAlpha: 0.9 };
+export const LEY = { core: 0xc8402c, halo: 0x8a2a1c, under: 0x6a1c14,       // red wind streaks: a deep warm red core, a darker red halo and under-stroke (never the danger red, never violet)
+   corePx: 3, haloPx: 6, underPx: 8, maxAlpha: 0.85, coreAlpha: 0.95 };

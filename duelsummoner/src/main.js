@@ -211,6 +211,11 @@ function beginNow(mode, sel) {
   const blind = !!game.oaths.blind; for (const id of ['minimap', 'boss', 'plate']) $(id).style.visibility = blind ? 'hidden' : '';      // Blind Oath
 }
 function pickDuelist(id) { duelist = id; }
+let _lmKey = '', _lm = null;
+function menuLandmark() {       // what the menu camera looks toward: the nearest big mesa 45 to 220 m from the spawn (the gate has no beacon any more); the gate only if there is none
+  const m = game.map; if (!m) return null; if (_lmKey === m.key) return _lm; _lmKey = m.key; let best = null, bd = 1e9;
+  for (const b of m.blocks || []) { const d = Math.hypot(b.cx - m.spawn.x, b.cz - m.spawn.z); if (b.tone > 0 && b.rz >= 5 && d > 45 && d < 220 && d < bd) { bd = d; best = { x: b.cx, z: b.cz }; } }
+  return (_lm = best || (m.gate ? { x: m.gate.x, z: m.gate.z } : null)); }
 let freshSeals = [];
 const portraits = {}; for (const id of Object.keys(actors.rigs)) { const b = bakeDuelist(renderer, actors.rigs[id]); if (b) portraits[id] = b; }       // real-model pictures for the duelist screen, taken once
 const menus = initMenus({ save, portraits, freshSeals: () => freshSeals, persist: () => writeSave(host, save), begin, bindSettings: () => { bindSettings(); },
@@ -554,7 +559,7 @@ function frame(now) {
   devTick(now); bars.tick(dtReal || 0.016, game, document.body.classList.contains('rm'), performance.now());
   chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
   // the menu camera: lower and almost level, so the horizon sits about 47% down and the dunes, the mesa and the gate beam show behind the panels, while Kael stays where he was on screen
-  if (MODE === 'start' && !(window.__ds && window.__ds.camHold)) { const tc = performance.now() / 1000, ac = (game.map && game.map.gate ? Math.atan2(game.map.spawn.x - game.map.gate.x, game.map.spawn.z - game.map.gate.z) : 0.7) + Math.sin(tc * 0.08) * 0.5, pc = game.p; camera.position.set(pc.x + Math.sin(ac) * 7.2, pc.y + 1.35 + Math.sin(tc * 0.3) * 0.12, pc.z + Math.cos(ac) * 7.2); const sh = innerWidth > innerHeight * 1.25 ? (document.body.dataset.cam === 'left' ? -3.4 : 0) : 0; camera.lookAt(pc.x - Math.cos(ac) * sh, camera.position.y + 0.42, pc.z + Math.sin(ac) * sh); }       // the Camp: a slow orbit around the duelist while a menu is up (view only)
+  if (MODE === 'start' && !(window.__ds && window.__ds.camHold)) { const tc = performance.now() / 1000, ac = (menuLandmark() ? Math.atan2(game.map.spawn.x - menuLandmark().x, game.map.spawn.z - menuLandmark().z) : 0.7) + Math.sin(tc * 0.08) * 0.5, pc = game.p; camera.position.set(pc.x + Math.sin(ac) * 7.2, pc.y + 1.35 + Math.sin(tc * 0.3) * 0.12, pc.z + Math.cos(ac) * 7.2); const sh = innerWidth > innerHeight * 1.25 ? (document.body.dataset.cam === 'left' ? -3.4 : 0) : 0; camera.lookAt(pc.x - Math.cos(ac) * sh, camera.position.y + 0.42, pc.z + Math.sin(ac) * sh); }       // the Camp: a slow orbit around the duelist while a menu is up (view only)
   if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures
   updateSee(camera, ip, renderer);                                         // the see-through uniforms, from the unshaken camera and the smoothed duelist
   if (MODE === 'play') ambient.update(dtReal, camera, game.en);

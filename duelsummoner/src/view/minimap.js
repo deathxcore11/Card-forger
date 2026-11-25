@@ -70,12 +70,8 @@ export class Minimap {
       if (W.broker && ex(W.broker.x, W.broker.z)) sq(W.broker.x, W.broker.z, '#ffd23f', r0);                                          // the Broker
       if (W.altar && !W.altar.used && ex(W.altar.x, W.altar.z)) sq(W.altar.x, W.altar.z, '#c9a0ff', r0);                              // the Altar
     }
-    if (g.map && g.map.gate && g.mode !== 'classic' && ((g.gate && g.gate.awake) || ex(g.map.gate.x, g.map.gate.z))) { const gx = X(g.map.gate.x), gz = X(g.map.gate.z), r = big ? 7 : 3.5; c.fillStyle = g.gate && g.gate.awake ? '#ff5a3a' : '#c0503a'; c.fillRect(gx - r, gz - r, r * 2, r * 2); c.strokeStyle = '#000'; c.lineWidth = 1; c.strokeRect(gx - r, gz - r, r * 2, r * 2); }
-    if (g.map && g.map.gate && g.mode !== 'classic' && !((g.gate && g.gate.awake) || ex(g.map.gate.x, g.map.gate.z))) {       // the gate is not on the map yet: an arrow on the edge shows which way it is, from the first second
-      const gx = X(g.map.gate.x), gz = X(g.map.gate.z), pxx = X(g.p.x), pzz = X(g.p.z), dx = gx - pxx, dz = gz - pzz, m = (big ? 16 : 9), k = Math.min((size / 2 - m) / (Math.abs(dx) || 1e-6), (size / 2 - m) / (Math.abs(dz) || 1e-6), 1e9);
-      const ex2 = size / 2 + dx * Math.min(k, 1e9) , ez2 = size / 2 + dz * Math.min(k, 1e9), q = big ? 1.8 : 1; const dxm = gx - size / 2, dzm = gz - size / 2, kk = Math.min((size / 2 - m) / (Math.abs(dxm) || 1e-6), (size / 2 - m) / (Math.abs(dzm) || 1e-6));
-      c.save(); c.translate(size / 2 + dxm * kk, size / 2 + dzm * kk); c.rotate(Math.atan2(dxm, -dzm)); c.scale(q, q); c.beginPath(); c.moveTo(0, -6); c.lineTo(5, 5); c.lineTo(0, 2); c.lineTo(-5, 5); c.closePath(); c.fillStyle = '#e0503a'; c.fill(); c.lineWidth = 1; c.strokeStyle = '#000'; c.stroke(); c.restore();
-    }
+    if (g.map && g.map.gate && g.mode !== 'classic' && ex(g.map.gate.x, g.map.gate.z)) { const gx = X(g.map.gate.x), gz = X(g.map.gate.z), r = big ? 7 : 3.5; c.fillStyle = g.gate && g.gate.awake ? '#ff5a3a' : '#c0503a'; c.fillRect(gx - r, gz - r, r * 2, r * 2); c.strokeStyle = '#000'; c.lineWidth = 1; c.strokeRect(gx - r, gz - r, r * 2, r * 2); }
+    // no pointer to a gate the fog of war has not shown yet: the red wind near it is the only guidance
     for (const ch of g.chests) if (ch.guaranteed && !ch.open) {
       const cx = X(ch.x), cz = X(ch.z), q = big ? 1.7 : 1; c.fillStyle = (Math.floor(performance.now() / 350) % 2) ? '#ffe08a' : '#ff9d2a'; c.beginPath(); c.moveTo(cx, cz - 5 * q); c.lineTo(cx + 4 * q, cz); c.lineTo(cx, cz + 5 * q); c.lineTo(cx - 4 * q, cz); c.closePath(); c.fill(); c.lineWidth = 1; c.strokeStyle = '#000'; c.stroke();
     }

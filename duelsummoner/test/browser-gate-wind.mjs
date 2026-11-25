@@ -1,0 +1,16 @@
+import { launch, wait } from './cdp.mjs';
+import { writeFileSync, mkdirSync } from 'node:fs'; import { join } from 'node:path';
+// The gate has no beam; red wind streaks start within about 90 m and lead to it; the minimap shows the gate only once the fog of war has revealed its cell. Pictures at 915x412 and 412x915: far (nothing), about 85 m (first wind), about 30 m (strong wind); the minimap before and after the reveal. Also, for each map type a to f from the spawn: no wind alive, gate not explored.
+//   node test/browser-gate-wind.mjs <outdir>
+const [out] = process.argv.slice(2); mkdirSync(out, { recursive: true });
+const jar = async (W, H, arch, fn) => { const b = await launch({ out, query: '?debug&play=1&seed=1&arch=' + arch }); await b.send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: W < H }); await wait(2500); for (let i = 0; i < 60 && !(await b.evalIn('!!window.__ds')); i++) await wait(200);
+  await b.evalIn(`(async()=>{ const D = __ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 3500)); const g = D.game; g.opts.offers = false; g.god = true; g.spawnAcc = -1e9; for (let i = 0; i < g.en.max; i++) g.en.alive[i] = 0; return 1; })()`); const r = await fn(b); b.close(); await wait(300); return r; };
+// 1. the six map types at the spawn
+for (const a of 'abcdef') console.log(a, await jar(915, 412, a, b => b.evalIn(`(async()=>{ const D = __ds, g = D.game, F = await import('/src/sim/fog.js'); await new Promise(r => setTimeout(r, 1500)); const alive = D.threads.list.filter(t => t.alive).length, gd = Math.hypot(g.map.gate.x - g.p.x, g.map.gate.z - g.p.z); const sealKids = D.scene.children.filter(o => o.type === 'Group' && o.children.length === 2 && o.children[0].geometry && o.children[0].geometry.type === 'BufferGeometry' && o.children[0].geometry.attributes.position.count === 0).length; return JSON.stringify({ gateDist: Math.round(gd), windAlive: alive, gateExplored: !!F.exploredAt(g.fog, g.map.gate.x, g.map.gate.z) }); })()`)));
+// 2. walk toward the gate on seed 1 type a
+for (const [W, H] of [[915, 412], [412, 915]]) {
+  console.log(W + 'x' + H, await jar(W, H, 'a', async b => { const res = {}; for (const dist of [200, 85, 30]) {
+    res[dist] = await b.evalIn(`(async()=>{ const D = __ds, g = D.game, T = await import('/src/sim/terrain.js'), F = await import('/src/sim/fog.js'); const gx = g.map.gate.x, gz = g.map.gate.z, sx = g.map.spawn.x - gx, sz = g.map.spawn.z - gz, l = Math.hypot(sx, sz); const px = gx + sx / l * ${dist}, pz = gz + sz / l * ${dist}; g.p.x = px; g.p.z = pz; g.p.y = T.heightAt(px, pz); g.p.vx = g.p.vz = 0; D.input.yaw = Math.atan2(-(gx - px), -(gz - pz)); let mx = 0; for (let k = 0; k < (${dist} === 85 ? 28 : 16); k++) { await new Promise(r => setTimeout(r, 250)); mx = Math.max(mx, D.threads.list.filter(t => t.alive).length); } return JSON.stringify({ windAliveMax: mx, windAlive: D.threads.list.filter(t => t.alive).length, gateExplored: !!F.exploredAt(g.fog, gx, gz) }); })()`);
+    const r = await b.send('Page.captureScreenshot', { format: 'png' }); writeFileSync(join(out, 'wind-' + dist + 'm-' + W + 'x' + H + '.png'), Buffer.from(r.result.data, 'base64')); } return JSON.stringify(res); }));
+}
+setTimeout(() => process.exit(0), 300);

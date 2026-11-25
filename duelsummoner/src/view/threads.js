@@ -13,7 +13,7 @@ export class LeyThreads {
   constructor(scene, quality = 6) {
     this.max = quality; this.list = []; this.t = 0; this.acc = 0; this.on = true; this.strength = 1;
     this.core = new T.Color(LEY.core); this.halo = new T.Color(LEY.halo); this.under = new T.Color(LEY.under);
-    this.matAdd = new T.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: T.DoubleSide, blending: T.AdditiveBlending });
+    this.matAdd = new T.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: T.DoubleSide });       // plain alpha (not additive): red on bright sand must read
     this.matUnder = new T.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: T.DoubleSide });
     this.group = new T.Group(); scene.add(this.group); this.rng = 12345;
     const mk = (strips, mat) => { const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array(SEG * 2 * strips * 3), 3)); g.setAttribute('color', new T.BufferAttribute(new Float32Array(SEG * 2 * strips * 4), 4));
@@ -25,21 +25,21 @@ export class LeyThreads {
   _show(th, v) { th.mesh.visible = v; th.under.visible = v; }
   // gate: { x, z } or null; player: { x, y, z }; dt seconds; show: false hides them (boss fight, menus)
   update(gate, player, dt, camera, show) {
-    this.t += dt; const GU = this.gu = gate && gate.guide ? gate.guide : { far: FAR, mid: MID, near: NEAR };       // the open desert is big: its gate's threads start 340 m out
+    this.t += dt; const GU = this.gu = { far: 90, mid: 60, near: 32 };       // red wind shows only within about 90 m of the gate: fading in from 90 to 70 m, denser and lower closer in; never from across the map
     const live = this.on && show && gate;
     let d = 1e9, dx = 0, dz = 0;
     if (gate) { dx = gate.x - player.x; dz = gate.z - player.z; d = Math.hypot(dx, dz); }
     if (live && d < GU.far && d > 6) {
-      const step = d < GU.near ? 0.35 : d < GU.mid ? 0.9 : 3.2;                   // seconds between threads
+      const step = d < GU.near ? 0.3 : d < GU.mid ? 0.7 : 1.6, fadeIn = sstep(90, 70, d);                   // seconds between threads; the first ones come thin and few
       this.acc += dt;
-      if (this.acc >= step / this.strength) { this.acc = 0; this._spawn(player, dx / d, dz / d, d); }
+      if (fadeIn > 0.02 && this.acc >= step / (this.strength * Math.max(0.6, fadeIn))) { this.acc = 0; this._spawn(player, dx / d, dz / d, d); }
     }
     if (camera) { camera.getWorldDirection(this._f || (this._f = new T.Vector3())); }
     const cam = camera ? camera.position : null, pxk = camera ? 2 * Math.tan(camera.fov * Math.PI / 360) / Math.max(1, (typeof innerHeight === 'number' ? innerHeight : 720)) : 0.002;
     for (const th of this.list) {
       if (!th.alive) { this._show(th, false); continue; }
       th.life -= dt; th.x += th.dx * th.spd * dt; th.z += th.dz * th.spd * dt;
-      const ground = Math.abs(th.x) < 190 && Math.abs(th.z) < 190 ? heightAt(th.x, th.z) : 0;
+      const ground = heightAt(th.x, th.z);
       if (ground >= 50 || Math.abs(ground - th.gr) > 1.5) { th.alive = false; this._show(th, false); continue; }       // a step over 1.5 m (a pylon, a ledge) ends the thread instead of climbing it
       th.gr = ground; th.gy += (ground - th.gy) * Math.min(1, dt * 5);                                            // the height is low-passed, so a thread never zigzags up a wall
       th.dist = (th.dist || 0) + th.spd * dt; const y = th.gy + th.h + Math.sin(th.dist * 0.18 + th.lat) * 0.25;
@@ -55,8 +55,8 @@ export class LeyThreads {
     const px = -uz, pz = ux;
     th.x = p.x + px * side + ux * ahead; th.z = p.z + pz * side + uz * ahead;
     th.dx = ux + px * (this.rnd() - 0.5) * 0.06; th.dz = uz + pz * (this.rnd() - 0.5) * 0.06; const l = Math.hypot(th.dx, th.dz); th.dx /= l; th.dz /= l;
-    th.h = near ? 0.35 + this.rnd() * 0.5 : mid ? 1.4 + this.rnd() * 1.6 : 8 + this.rnd() * 9;     // far threads ride high, near ones hug the ground
-    const g0 = Math.abs(th.x) < 190 && Math.abs(th.z) < 190 ? heightAt(th.x, th.z) : 0; if (g0 >= 50) return;
+    th.h = near ? 0.25 + this.rnd() * 0.4 : mid ? 0.5 + this.rnd() * 0.9 : 0.8 + this.rnd() * 1.2;     // wind along the ground: lower the closer you are
+    const g0 = heightAt(th.x, th.z); if (g0 >= 50) return;
     th.gy = th.gr = g0; th.spd = (near ? 26 : 20) + this.rnd() * 8; th.life = near ? 1.8 : 3; th.dist = 0; th.lat = this.rnd() * 6; th.alive = true; th.trail.length = 0; this._show(th, true);
     th.far = d >= this.gu.mid;
   }
@@ -69,7 +69,7 @@ export class LeyThreads {
       let vx = 0, vy = 1, vz = 0, dist = 50, depth = 50; if (cam) { vx = cam.x - q[0]; vy = cam.y - q[1]; vz = cam.z - q[2]; dist = Math.hypot(vx, vy, vz) || 1; depth = Math.max(0.5, -(vx * this._f.x + vy * this._f.y + vz * this._f.z)); vx /= dist; vy /= dist; vz /= dist; }
       let sx = ty * vz - tz * vy, sy = tz * vx - tx * vz, sz = tx * vy - ty * vx; const sl = Math.hypot(sx, sy, sz) || 1; sx /= sl; sy /= sl; sz /= sl;   // across the thread, facing the camera
       const taper = 1 - s / SEG, tw = 0.35 + taper * 0.65, near = sstep(4, 9, dist), a = taper * fade * fl * near * (th.far ? 0.75 : 1);
-      const wc = Math.min(0.2, 0.5 * LEY.corePx * pxk * depth * tw), wh = Math.min(0.3, 0.5 * LEY.haloPx * pxk * depth * tw), wu = Math.min(0.4, 0.5 * LEY.underPx * pxk * depth * tw);       // sized by depth along the view axis, so the pixel width holds out to the screen edges
+      const wc = Math.min(0.4, 0.5 * LEY.corePx * pxk * depth * tw), wh = Math.min(0.6, 0.5 * LEY.haloPx * pxk * depth * tw), wu = Math.min(0.8, 0.5 * LEY.underPx * pxk * depth * tw);       // sized by depth along the view axis, so the pixel width holds out to the screen edges
       const put = (P, i, w, sg) => P.setXYZ(i, q[0] + sx * w * sg, q[1] + sy * w * sg, q[2] + sz * w * sg);
       put(pos, s * 2, wh, 1); put(pos, s * 2 + 1, wh, -1); put(upos, s * 2, wu, 1); put(upos, s * 2 + 1, wu, -1); put(upos, (SEG + s) * 2, wc, 1); put(upos, (SEG + s) * 2 + 1, wc, -1);
       const ah = Math.min(maxA, a * 0.5), ac = Math.min(LEY.coreAlpha, a * 1.1), au = Math.min(maxA, a * 0.55);       // the core is drawn with normal blending (additive white vanishes on bright sand), so it can be bright
