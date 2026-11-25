@@ -122,7 +122,7 @@ li{margin:3px 0;max-width:80ch}
       <input id="fq" type="search" placeholder="Find: tree, chest, dragon, W118…" aria-label="Find an asset">
       <label><input id="fh" type="checkbox"> Hide finished</label>
       <label><input id="fn" type="checkbox"> New only</label>
-      <label><input id="fs" type="checkbox" checked> First slice only</label>
+      <label><input id="fs" type="checkbox" checked> This batch only</label>
     </div>
     <div id="list"></div>
   </section>
@@ -159,13 +159,13 @@ function header(){var tot=0,dn=0,af=0,an=0,nn=0,nd=[];D.assets.forEach(function(
   var pct=tot?Math.round(dn/tot*100):0;$('#bar').style.width=pct+'%';$('#barBox').setAttribute('aria-valuenow',pct);
   $('#counts').innerHTML='<span><b>'+dn.toLocaleString()+'</b> of '+tot.toLocaleString()+' files made ('+pct+'%)</span><span><b>'+af+'</b> of '+an+' assets finished</span><span><b>'+(tot-dn).toLocaleString()+'</b> files left</span>'+(nn?'<span><b>'+nn+'</b> new assets, added '+esc(nd.join(', '))+'</span>':'')+'<span><b>'+(D.ok||[]).length+'</b> approved in the game</span>';
   var st=0,sd=0;(D.slice||[]).forEach(function(k){st++;if(isDone(k))sd++});var sa=0;(D.sliceCodes||[]).forEach(function(c){if(okCode[c])sa++});
-  var sb=$('#sliceBox');if(sb)sb.innerHTML='<b>First slice: one playable piece of the Surface Ruins.</b> '+sd+' of '+st+' files made, '+sa+' of '+(D.sliceCodes||[]).length+' approved in the game. '+(D.sliceOk?'The slice is approved, so everything else is open.':'Make only these for now. Everything else waits until I have seen the slice working in the game on the handheld and the phone, so nothing is made twice.')}
+  var sb=$('#sliceBox');if(sb)sb.innerHTML='<b>Now making: the Stage 1 bosses and enemies, gate boss first.</b> '+sd+' of '+st+' files made, '+sa+' of '+(D.sliceCodes||[]).length+' approved in the game. '+(D.sliceOk?'This batch is approved, so everything else is open.':'Make only these for now. Everything else waits until I have seen this batch working in the game on your phone, so nothing is made twice.')}
 
 // ---------- next up
 var skip={},phase=0,phaseKey='';
 function nameOf(k){return /\.png$/i.test(k)?k:k.replace(/\.[a-z0-9]+$/i,'')}
 function nextStep(){var g=$('#fg').value,so=$('#fs').checked,ord=order;if(so){ord=[];(D.sliceCodes||[]).forEach(function(c){ord.push(byCode[c])})}for(var i=0;i<ord.length;i++){var a=ord[i];if(a.mine||a.sk||(!so&&g&&a.g!==g))continue;for(var j=0;j<a.steps.length;j++){var k=a.steps[j].key;if(so&&!inSlice[k])continue;if(!isDone(k)&&!skip[k])return{a:a,s:a.steps[j],j:j}}}return null}
-function renderNext(){var n=nextStep(),el=$('#next');if(!n){var sk=Object.keys(skip).length;el.innerHTML='<div class="lbl">Next up</div><h3>'+(sk?'Only skipped steps are left here.':$('#fs').checked?'The first slice is made.':'Everything here is made.')+'</h3><p class="sub">'+(sk?'':$('#fs').checked?'Tell me, and I will put it in the game and check it. The rest opens once it passes.':'Pick another category, or enjoy the game.')+'</p>'+(sk?'<div class="acts"><button id="nUnskip">Go back to the '+sk+' skipped</button></div>':'');if(sk)$('#nUnskip').onclick=function(){skip={};renderNext()};return}
+function renderNext(){var n=nextStep(),el=$('#next');if(!n){var sk=Object.keys(skip).length;el.innerHTML='<div class="lbl">Next up</div><h3>'+(sk?'Only skipped steps are left here.':$('#fs').checked?'This batch is made.':'Everything here is made.')+'</h3><p class="sub">'+(sk?'':$('#fs').checked?'Tell me, and I will put it in the game and check it. The rest opens once it passes.':'Pick another category, or enjoy the game.')+'</p>'+(sk?'<div class="acts"><button id="nUnskip">Go back to the '+sk+' skipped</button></div>':'');if(sk)$('#nUnskip').onclick=function(){skip={};renderNext()};return}
   var a=n.a,s=n.s,g=gById[a.g],nm=nameOf(s.key);if(phaseKey!==s.key){phaseKey=s.key;phase=0}
   var acts=[];if(s.copy)acts.push(['Copy the prompt',function(){copy(s.text)},'Paste it into '+s.tool+' and make it.']);
   var nms=s.names||[nm];if(nms.length>1){acts.push(['Copy name 1 (plain)',function(){copy(nms[0])},'Save the plain download with this name.']);acts.push(['Copy name 2 (with texture)',function(){copy(nms[1])},'Save the textured download with this name.'])}else acts.push(['Copy the name',function(){copy(nm)},'Save the result with this name.']);
@@ -201,7 +201,7 @@ function renderList(){var g=$('#fg').value,q=$('#fq').value.trim().toLowerCase()
     items.forEach(function(a){if(!fin(a))left++;if(hide&&fin(a))return;if(nw&&!a.nw)return;if(so&&!sliceCode[a.c])return;if(q&&(a.c+' '+a.n+' '+a.w).toLowerCase().indexOf(q)<0)return;rows+=rowHtml(a)});
     if(!rows)return;any=true;
     h+='<div class="ghead"><h3>'+esc(G.title)+'</h3><span class="kind">'+esc(G.kind)+'</span><span class="left">'+left+' of '+items.length+' left</span></div><p class="sub" style="margin-top:0">'+esc(G.blurb)+'</p>'+rows});
-  $('#list').innerHTML=any?h:'<div class="empty">Nothing matches. Clear the search, or turn off "Hide finished", "New only" or "First slice only".</div>'}
+  $('#list').innerHTML=any?h:'<div class="empty">Nothing matches. Clear the search, or turn off "Hide finished", "New only" or "This batch only".</div>'}
 function fill(d){var b=$('.ab',d);if(!b.firstChild)b.innerHTML=bodyHtml(byCode[d.id])}
 function openAsset(c){var d=document.getElementById(c);if(!d){$('#fq').value='';$('#fh').checked=false;$('#fn').checked=false;$('#fs').checked=false;$('#fg').value='';renderList();d=document.getElementById(c)}if(d){d.open=true;fill(d);d.scrollIntoView({block:'start'})}}
 function refresh(keepOpen){var open=[].map.call(document.querySelectorAll('details.a[open]'),function(d){return d.id});header();renderNext();renderList();

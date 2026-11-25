@@ -23,8 +23,8 @@ const ROOT = 'app art\\DS\\';
 // ---------------------------------------------------------------- context every prompt carries
 // Carved Cards style bible, locked by the owner 23 Nov. Every prompt is MASTER, then BECOMES 3D (models only), then ONE class block,
 // then the PALETTE line(s), then the subject and size. Block texts are verbatim from design/style bible (tool-revision-data.md).
-const MASTER = 'DUEL SUMMONER LOOK LOCK. Duel Summoner is a 3D horde-survival game played on phones, seen from behind and above. Its world is the Sunlit Kingdom: ruins built by card duelists, with giant stone playing cards, carved card frames, terraces, olive groves and bleached stone.\nOne look for everything: chunky faceted low-poly shapes, like a toy cut from big flat planes. Every face is ONE flat solid colour. Big simple shapes that still read as a black silhouette at 40 pixels tall. Edges are bevelled like the edge of a thick card.\nNo texture, no pixel art, no gradients, no painted light or shadow, no outlines, no shine, no glow, no smoke, no sparkles. The game adds light, glow and effects itself.\nUse only the colours listed under PALETTE, as flat fills.\nNever: text, letters, numbers or runes; logos or watermarks; an eye in a triangle, ankhs, puzzle pendants, millennium-style gold items, hieroglyphs, pharaoh headdresses, sphinx faces; anything from an existing game, anime, show or film; gore; photo textures.';
-const WORLD = 'DUEL SUMMONER. Duel Summoner is a 3D horde-survival game played on phones, seen from behind and above. Its world is the Sunlit Kingdom: ruins built by card duelists, with giant stone playing cards, carved card frames, terraces, olive groves and bleached stone.';
+const MASTER = 'DUEL SUMMONER LOOK LOCK. Duel Summoner is a 3D horde-survival game played on phones, seen from behind and above. Its first world is the Open Desert: a sunlit sea of pale rolling dunes ringed by far sandstone mountains, with flat-topped mesas, lone cacti, dead grey trees, half-sunk wooden beams and old carved stone cards left behind by card duelists.\nOne look for everything: chunky faceted low-poly shapes, like a toy cut from big flat planes. Every face is ONE flat solid colour. Big simple shapes that still read as a black silhouette at 40 pixels tall. Edges are bevelled like the edge of a thick card.\nNo texture, no pixel art, no gradients, no painted light or shadow, no outlines, no shine, no glow, no smoke, no sparkles. The game adds light, glow and effects itself.\nUse only the colours listed under PALETTE, as flat fills.\nNever: text, letters, numbers or runes; logos or watermarks; an eye in a triangle, ankhs, puzzle pendants, millennium-style gold items, hieroglyphs, pharaoh headdresses, sphinx faces; anything from an existing game, anime, show or film; gore; photo textures.';
+const WORLD = 'DUEL SUMMONER. Duel Summoner is a 3D horde-survival game played on phones, seen from behind and above. Its first world is the Open Desert: a sunlit sea of pale rolling dunes ringed by far sandstone mountains, with flat-topped mesas, lone cacti, dead grey trees, half-sunk wooden beams and old carved stone cards left behind by card duelists.';
 const B3D_VIEW = {
   model: 'in a three-quarter view from slightly above',
   biped: 'standing in an A-pose (arms straight, angled down and out about 45 degrees, legs slightly apart, hands open), facing the viewer straight on, full body head to feet',
@@ -49,7 +49,7 @@ const CLASS = {
 };
 const FLAT2D = 'THIS ONE IS A FLAT PICTURE, NOT A 3D MODEL. Where the look lock above and the block below disagree, the block below wins.';
 const PAL = {
-  s1: 'PALETTE (Surface Ruins): sand #8f7048 #c09c66 #c8a46c #e2c896; road #b09470; canopy #3f6e4e #5a9a66 #74ae72 #9cc88a; meadow #6f8a4a #8fa860 #aebf78; bark #3e342f #5e5048 #7d6a5c; rock #8c8579 #b0aa9e #bdb8ae #dcd8ce; ruin stone #7a6a52 #a89578 #c9b896; bone #b8ab8c #e6dcc0 #f4eedc; landmark stone #2f2a36 #4a4250 #6a6272; terracotta #8a4a30 #b4643f #d0835a; cloth #2c5c60 #3e7f80 #e8dcc0; pool ink #1c2440 #2e3f66; sky #8fb2cc #e8d6b0.',
+  s1: 'PALETTE (The Open Desert): sunlit sand #fbeab4 #f6d489 #f1c773; shaded sand #d0832f; mesa and mountain sandstone #f0c394 #d49a60 #a56a3e; cactus #7cc04a #5d9a34 #3f6a22; dead wood #dcd3bc #8a7a5a #4f4130; pale rock #c2b498 #aa9c82; sky #a8c4d8 #f4ead0.',
   s2: 'PALETTE (Ashen Orchard): slate #0f1a26 #23384d #3c5a73 #6e8aa0; old bone #9a917c #d9d0b8; rust #5a3020 #8c4a2f; verdigris #3f5f52 #5f8a74; ghost-light #8fbf8a #d8f0c8.',
   s3: 'PALETTE (Frostbound Archive): basalt #0d0b12 #1e1e2a #2e2c3a #46445a; ash-gold sand #8a7a5c #b8a37c #d9c7a0; moon-white #9fb4d0 #d8e4f4 #f4f8ff; crimson #5a1420 #a3203a.',
   actor: 'PALETTE (duelists and summons): skin #8a5a40 #c08a64 #e8b890; ember #8a2a20 #c8462c #f08040; teal #1f4f5a #2f7f86 #6fc0c0; leather #3a2a20 #5e4030 #8a6448; cream #d8ccb0 #f0e8d4; ink #18161c #2a2632.',
@@ -91,7 +91,7 @@ const USE = {
 };
 const MOVES = {
   meshy: 'HOW IT WILL MOVE. It gets a skeleton and is animated like a person (walking, running, attacking). So draw it standing in an A-pose: arms straight, angled down and away from the body about 45 degrees, legs slightly apart, facing the viewer straight on, hands open with fingers visible. Keep cloaks, coats, hair and anything loose short or close to the body so the arms and legs are clearly separate.',
-  parts: 'HOW IT WILL MOVE. It gets a skeleton and the game moves its wings, tail, head and legs. So draw it in a neutral pose with every moving part clearly separate from the body: wings fully spread and flat, tail straight out, legs straight and apart, mouth closed.',
+  parts: 'HOW IT WILL MOVE. It gets a skeleton and the game moves its legs, head, jaw and tail, and its wings if it has any. So draw it in a neutral pose with every moving part clearly separate from the body: legs straight and apart, tail straight out, mouth closed, and wings (only if it has them) fully spread and flat.',
   vat: 'HOW IT WILL MOVE. Hundreds of these are on screen at once with a simple looping animation, so it must be very simple: a few big chunky shapes, limbs clearly separate from the body, neutral standing pose.',
   bend: 'HOW IT WILL MOVE. The game bobs, sways and bends it as one piece, so draw it in a calm neutral pose, upright and symmetrical.',
   none: 'HOW IT WILL MOVE. It does not move: it is scenery. Draw it sitting naturally as it would in the world.',
@@ -132,7 +132,7 @@ const creatureRigSteps = (a, glb) => [
 const P = (lines) => lines.filter(Boolean).join('\n\n');
 const conceptPrompt = (a, subject, o = {}) => { const L = lookOf(a); return P([
   MASTER, B3D(a.view), L.cls, L.pal.join('\n'),
-  `WHAT IT IS IN THE GAME. ${a.name}${o.sub ? ' (' + o.sub + ')' : ''}: ${a.where || ''}${a.attack ? '. Its attack: ' + a.attack : ''}.`,
+  `WHAT IT IS IN THE GAME. ${a.name}${o.sub ? ' (' + o.sub + ')' : ''}: ${a.where || a.kind || ''}${a.attack ? '. Its attack: ' + a.attack : ''}.`,
   MOVES[(a.rig && a.rig.startsWith('meshy') ? 'meshy' : a.rig) || (a.anim ? 'bend' : 'none')],
   SOLID,
   'SUBJECT. ' + subject,
@@ -220,7 +220,7 @@ const MUS = MUSIC.map(m => ({ code: m.code, name: m.name, file: m.file, how: 'mu
 
 const GROUPS = [
   { id: 'materials', title: 'Ground and wall textures', kind: 'Flat picture that repeats', blurb: 'Flat pictures the game repeats across the ground and walls. No 3D needed. Every prop in a stage is coloured with these, so the stage looks hand-made.', items: [...SWATCHES, ...DECALS] },
-  { id: 'stage1', title: 'Stage 1 scenery: Surface Ruins', kind: '3D model', blurb: 'Trees, bushes, rocks, ruins and landmarks. These do not move.', items: [...STAGE1, ...MORE1] },
+  { id: 'stage1', title: 'Stage 1 scenery: The Open Desert', kind: '3D model', blurb: 'Trees, bushes, rocks, ruins and landmarks. These do not move.', items: [...STAGE1, ...MORE1] },
   { id: 'stage2', title: 'Stage 2 scenery: Ashen Orchard', kind: '3D model', blurb: 'Crypt pieces and props. Boulders, cliffs and crates come back from Stage 1, re-coloured by me.', items: [...STAGE2, ...MORE2] },
   { id: 'stage3', title: 'Stage 3 scenery: Frostbound Archive', kind: '3D model', blurb: 'The cavern, the sand sea, the statues and the throne.', items: [...STAGE3, ...MORE3] },
   { id: 'ambient', title: 'Ambient life', kind: '3D model with a skeleton', blurb: 'Small creatures that make a stage feel alive: butterflies, birds, rabbits, bats, crabs. They wander and flutter and never fight.', items: AMBIENT },
@@ -302,7 +302,7 @@ for (const c of Object.keys(SKIP)) if (!seen.has(c)) throw new Error('SKIP unkno
 for (const c of FIRST) if (!seen.has(c)) throw new Error('FIRST unknown ' + c);
 DATA.first = FIRST;
 // The playable slice (style bible fix 17): the owner makes only these until the slice is approved in the game. code -> filter on file keys (null = every step).
-const SLICE = [['CH01', k => !/outfit/.test(k)], ['SM01', null], ['EN01', null], ['WX01', null], ['W105', null], ['W101', null], ['W109', null], ['MT47', null], ['MT11', null], ['PK01', null], ['SF011', null], ['SF012', null], ['SF014', null], ['SF001', null]];
+const SLICE = [['GB01', null], ['TB01', null], ['TB02', null], ['EL01', null], ['EN01', null], ['EN02', null], ['EN04', null], ['EN05', null], ['EN03', null], ['EN06', null], ['EN17', null]];       // the batch being made now: Stage 1 bosses and enemies, gate boss first (the first playable slice is in the game)
 DATA.slice = []; DATA.sliceCodes = SLICE.map(x => x[0]);
 for (const [c, f] of SLICE) { const a = DATA.assets.find(x => x.c === c); if (!a) throw new Error('SLICE unknown ' + c); for (const st of a.steps) if (!f || f(st.key)) DATA.slice.push(st.key); }
 // Approved in game (fix 18): codes the builder has loaded and judged from the real game camera. Kept in approved.json: ["CODE", ...].
