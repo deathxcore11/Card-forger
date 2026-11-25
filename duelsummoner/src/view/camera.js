@@ -18,6 +18,7 @@ function hitProp(col, x, y, z) {
   return false;
 }
 
+const OLD = () => typeof window !== 'undefined' && !!window.__camOld;       // test switch: the camera as it was before the crest easing
 export class ChaseCamera {
   constructor(camera) { this.camera = camera; this.t = 1; this.py = 0; this.ready = false; this.pos = { x: 0, y: 0, z: 0 }; this.sx = 0; this.sz = 0; this.lag = true; this.zoom = 1; this.zoomTo = 1; this.cols = null; this.fovK = 1; this.spd = 1; this.lx = 0; this.lz = 0; }
   reset() { this.ready = false; this.t = 1; this.ready0 = false; }
@@ -38,9 +39,9 @@ export class ChaseCamera {
     const wanted = (ang, ys) => { const back = Math.cos(ang) * ARM * sc, up = Math.sin(ang) * ARM * sc, cs = Math.cos(ys), sn = Math.sin(ys), dx = fx * cs - fz * sn, dz = fx * sn + fz * cs; return [px - dx * back, py + up, pz - dz * back, Math.hypot(back, up)]; };       // ys: the arm is yawed round the duelist by this much (the sideways swing)
     // march from the pivot toward a wanted position; report the first solid sample, how many samples are solid and whether the end itself is
     const march = (ang, ys = this.ys) => {
-      const [tx, ty, tz, len] = wanted(ang, ys); let first = -1, solidN = 0, endSolid = false;
-      for (let i = 1; i <= 40; i++) { const t = i / 40, sx = px + (tx - px) * t, sy = py + (ty - py) * t, sz = pz + (tz - pz) * t; if (solidAt(sx, sy, sz) || hitProp(this.cols, sx, sy, sz)) { solidN++; if (first < 0) first = i; if (i === 40) endSolid = true; } }
-      return { free: first < 0 ? 1 : (first - 1) / 40, first, solidN, endSolid, len, tx, ty, tz };
+      const [tx, ty, tz, len] = wanted(ang, ys); let first = -1, solidN = 0, endSolid = false, props = 0;
+      for (let i = 1; i <= 40; i++) { const t = i / 40, sx = px + (tx - px) * t, sy = py + (ty - py) * t, sz = pz + (tz - pz) * t, ground = solidAt(sx, sy, sz), prop = !ground && hitProp(this.cols, sx, sy, sz); if (ground || prop) { solidN++; if (prop) props++; if (first < 0) first = i; if (i === 40) endSolid = true; } }
+      return { free: first < 0 ? 1 : (first - 1) / 40, first, solidN, endSolid, len, tx, ty, tz, terrainOnly: props === 0 };
     };
     const rayClear = (ex, ey, ez, qx, qy, qz) => { for (let i = 1; i < 10; i++) { const t = i / 10; if (solidAt(ex + (qx - ex) * t, ey + (qy - ey) * t, ez + (qz - ez) * t)) return false; } return true; };
     let ang = aFloor + this.swing, m = march(ang), free = m.free;
@@ -75,12 +76,14 @@ export class ChaseCamera {
       if (m.first >= 0 && this.pb && !m.endSolid) free = 1;
     } else { this.swing = Math.max(0, this.swing - dt * 0.5); }
     const armLen = m.len; if (free < 1) free = Math.max(C.minDist / armLen, free - C.margin / armLen);   // keep clear of the wall only when one is in the way
+    if (free < 1) this.lastTerr = m.terrainOnly;
+    if (free < 1 && m.terrainOnly && !OLD()) free = Math.max(free, 0.6);       // a dune crest behind the duelist never pulls the camera closer than 60% of its distance: the camera rises over the crest instead (below)
     if (free < this.t) {                                           // pull in: about 0.06 s when the eye is in the clear, at once when it is already inside something
       const cur = this.t, cx0 = px + (this.lastTx - px) * cur, cy0 = py + (this.lastTy - py) * cur, cz0 = pz + (this.lastTz - pz) * cur;
-      if (this.lastTx === undefined || solidAt(cx0, cy0, cz0) || hitProp(this.cols, cx0, cy0, cz0)) this.t = free; else this.t += (free - this.t) * Math.min(1, dt / 0.06);
-    } else this.t = Math.min(free, this.t + dt * 2.5);               // ease back out over about 0.4 s
+      if (this.lastTx === undefined || ((solidAt(cx0, cy0, cz0) || hitProp(this.cols, cx0, cy0, cz0)) && !(m.terrainOnly && !OLD() && !hitProp(this.cols, cx0, cy0, cz0)))) this.t = free;       // inside a wall or a prop: at once; inside a dune crest: eased (the eye is held above the ground by the floor below) else this.t += (free - this.t) * Math.min(1, dt / (m.terrainOnly && !OLD() ? 0.5 : 0.06));       // 0.3 s over a dune crest, 0.06 s against a wall or a prop
+    } else this.t = Math.min(free, this.t + dt * (this.lastTerr && !OLD() ? 1.4 : 2.5));               // ease back out over about 0.7 s after a crest, 0.4 s after a wall
     this.lastTx = m.tx; this.lastTy = m.ty; this.lastTz = m.tz;
-    { const q = this.t, qx = px + (m.tx - px) * q, qy = py + (m.ty - py) * q, qz = pz + (m.tz - pz) * q; if (q > free && (solidAt(qx, qy, qz) || hitProp(this.cols, qx, qy, qz))) this.t = free; }       // the smoothed pull-in never carries the eye into a wall or the ground: then it goes straight to the free point
+    { const q = this.t, qx = px + (m.tx - px) * q, qy = py + (m.ty - py) * q, qz = pz + (m.tz - pz) * q; if (q > free && (hitProp(this.cols, qx, qy, qz) || (solidAt(qx, qy, qz) && !(m.terrainOnly && !OLD())))) this.t = free; }       // the smoothed pull-in never carries the eye into a wall or the ground: then it goes straight to the free point
     const t = this.t < free ? this.t : Math.max(free, Math.min(this.t, free + (this.t - free))), tx = m.tx, ty = m.ty, tz = m.tz;
     let x = px + (tx - px) * t, y = py + (ty - py) * t, z = pz + (tz - pz) * t;
     // pinned against something tall at the minimum distance: rise over it, looking down at the duelist. The rise is smoothed to at most 6 m a second (0.1 m a frame), never a 1 m jump
