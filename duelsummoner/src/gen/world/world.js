@@ -74,6 +74,9 @@ export function makeWorld(seedLo, stageIndex) {
     const n = near2(x, z), t = sstep(-320, 320, n.db - n.da); let h = regH(n.A, x, z) * t; if (t < 0.999) h += regH(n.B, x, z) * (1 - t);
     return h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z);
   }
+  // the colour a region gives the sand (view only): [colour, strength] per type, blended across the same 640 m band as the heights
+  const TINT = [[0xf3c978, 0], [0xe0a060, 0.38], [0xeee2c8, 0.6], [0xd98a50, 0.45], [0xe8d29a, 0.25], [0xc9b378, 0.4], [0xd6a878, 0.35]], mixh = (a, b, t) => { const m = sh => Math.round(((a >> sh) & 255) * (1 - t) + ((b >> sh) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
+  W.tintAt = (x, z) => { const n = near2(x, z), t = sstep(-320, 320, n.db - n.da), A = TINT[n.A.type], B = TINT[n.B.type]; return { c: mixh(B[0], A[0], t), k: B[1] * (1 - t) + A[1] * t }; };
   W.baseH = baseH; W.regionAt = (x, z) => near2(x, z).A; W.mount = mount;
   const spread = (x, z, r) => { let lo = baseH(x, z), hi = lo; for (let a = 0; a < 12; a++) { const t = a * TAU / 12, h = baseH(x + cosA(t) * r, z + sinA(t) * r); if (h < lo) lo = h; if (h > hi) hi = h; } return hi - lo; };
   const slope = (x, z) => { const a = baseH(x + 1, z), b = baseH(x - 1, z), c = baseH(x, z + 1), d = baseH(x, z - 1); return sq(((a - b) * (a - b) + (c - d) * (c - d)) / 4); };
@@ -89,8 +92,8 @@ export function makeWorld(seedLo, stageIndex) {
     const rn = rngOf(hsh(seed, lx, lz, 0x1A4D)), kind = (rn() * 3) | 0; let best = null, bd = 1e9;
     for (let t = 0; t < 24; t++) {
       const x = (lx + 0.12 + 0.76 * rn()) * LC, z = (lz + 0.12 + 0.76 * rn()) * LC; if (r4(x, z) > EDGE - 500) continue;
-      const b = kind === 0 ? block(rn, x, z, 14 + rn() * 6, 12 + rn() * 6, 22 + rn() * 10, 3.4, rn() < 0.5 ? 2 : 1) : kind === 1 ? block(rn, x, z, 4 + rn() * 2, 4 + rn() * 2, 28 + rn() * 12, 2.4, rn() < 0.5 ? 2 : 1) : block(rn, x, z, 13 + rn() * 4, 2.2, 16 + rn() * 6, 2.2, rn() < 0.5 ? 2 : 1);
-      const d = drop(b); if (d < bd) { bd = d; best = b; } if (d <= 2.2) break;
+      const b = kind === 0 ? block(rn, x, z, 26 + rn() * 14, 22 + rn() * 12, 34 + rn() * 20, 5, rn() < 0.5 ? 2 : 1) : kind === 1 ? block(rn, x, z, 7 + rn() * 3, 7 + rn() * 3, 55 + rn() * 25, 3.4, rn() < 0.5 ? 2 : 1) : block(rn, x, z, 30 + rn() * 10, 3.5, 36 + rn() * 14, 3, rn() < 0.5 ? 2 : 1);
+      const d = drop(b); if (d < bd) { bd = d; best = b; } if (d <= 3) break;
     }
     if (best) { setT(best); best.landmark = true; best.kind = kind; }
     lms.set(k, best); return best;

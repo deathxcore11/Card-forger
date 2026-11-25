@@ -12,7 +12,7 @@ export function bigMap(seedLo, stageIndex) {
     clearings: [], groves: [], paths: [], dune: { wind: W.wind }, startYaw: W.startYaw, sleepers: W.sleepers.map(q => ({ role: q.role, x: q.x, z: q.z })),
     blocks: [], ruins: [], dress: {}, solid: [], far: { rocks: [], dead: [], ruins: [] }, _road: { main: [[9000, 9000], [9001, 9001]], trails: [], width: 4.5, trailWidth: 3 }, _pools: [],
     report: { genVersion: 'big1', v2: true, attempt: 0, fallback: false, big: true },
-    world: W, viewFn: W.viewAt, fillSim: W.fillSim, dressCell: W.dressCell, cell: W.cell, landmark: W.landmark, regionAt: W.regionAt, baseH: W.baseH, inside: W.inside,
+    world: W, viewFn: W.viewAt, fillSim: W.fillSim, dressCell: W.dressCell, cell: W.cell, landmark: W.landmark, regionAt: W.regionAt, tintAt: W.tintAt, baseH: W.baseH, inside: W.inside,
     outer: (x, z) => sq(sq(x * x * x * x + z * z * z * z)) > EDGE + 220,
     worldHalf: WORLD_HALF, regionName: (x, z) => REGION[W.regionAt(x, z).type],
   };

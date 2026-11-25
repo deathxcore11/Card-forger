@@ -35,7 +35,7 @@ export function buildOpen(map, look) {
   const gh = (x, z) => viewH(map, x, z);
   const sandColour = (cx, cz, cy) => {
     const e = 3, gx = (groundAt(map, cx + e, cz) - groundAt(map, cx - e, cz)) / (2 * e), gz = (groundAt(map, cx, cz + e) - groundAt(map, cx, cz - e)) / (2 * e), sh = Math.max(-1, Math.min(1, (-gx * 0.8 - gz * 0.55) * 4.2));       // the slope over a 6 m window (not the facet), so a dune reads as one lit side and one shaded side
-    const base = mixc(TINT_A, TINT_B, vnoise(77, cx / 110, cz / 110));                          // one slow tint across the map, no blotches
+    let base = mixc(TINT_A, TINT_B, vnoise(77, cx / 110, cz / 110)); if (map.tintAt) { const q = map.tintAt(cx, cz); if (q.k > 0) base = mixc(base, q.c, q.k); }       // the region gives the sand its colour                          // one slow tint across the map, no blotches
     const g = sh > 0 ? mixc(base, LIT, sh) : mixc(base, LEE, -sh * 0.9); return dim(g, 0.97 + 0.05 * Math.max(0, Math.min(1, (cy - 1) / 8)));
   };
   const colour = (cx, cz, cy, nx, ny, nz) => {
@@ -80,8 +80,8 @@ export function buildOpen(map, look) {
   const ctl = new T.Mesh(new T.BufferGeometry().setAttribute('position', new T.Float32BufferAttribute([0, 0, 0, 0, 0.01, 0, 0.01, 0, 0], 3)), new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false })); ctl.frustumCulled = false;
   let built = 0; const stats = group.userData.stats = { near: 0, far: 0, dress: 0, builtNear: 0 };
   // ---- the big world: chunks and landmarks are made as the camera comes near and dropped behind it
-  const bigChunks = new Map(), lmMeshes = new Map(), HZ = 0xe8d6b0, FARB = 520, FREEB = 700, LM_ON = 330, LM_MAX = 2600;
-  const tintB = B => ({ quad: (a, b, c, d, nrm, col) => B.quad(a, b, c, d, nrm, mixc(col, HZ, 0.5)), tri: (a, b, c, nrm, col) => B.tri(a, b, c, nrm, mixc(col, HZ, 0.5)) });
+  const bigChunks = new Map(), lmMeshes = new Map(), HZ = 0xe8d6b0, FARB = 520, FREEB = 700, LM_ON = 330, LM_MAX = 3600;
+  const hazeC = look.sky ? look.sky[1] : HZ, tintB = B => ({ quad: (a, b, c, d, nrm, col) => B.quad(a, b, c, d, nrm, mixc(col, hazeC, 0.42)), tri: (a, b, c, nrm, col) => B.tri(a, b, c, nrm, mixc(col, hazeC, 0.42)) });       // a landmark far off keeps its own flat colours, pulled toward the haze (it is drawn unlit and unfogged, so it never dissolves into the sky)
   const subMap = (qx, qz) => { const C = map.cell(qx, qz); return { dress: map.dressCell(qx, qz), blocks: C.blocks, gate: map.gate, spawn: map.spawn, far: {}, viewFn: map.viewFn, dune: map.dune }; };
   const bigUpdate = (cam, budget) => {
     const ci0 = Math.floor(cam.x / CHK), cj0 = Math.floor(cam.z / CHK), R = Math.ceil(FARB / CHK) + 1; let made = 0, dm = 0; const stats2 = stats; stats2.near = 0; stats2.far = 0; stats2.dress = 0;
@@ -104,12 +104,12 @@ export function buildOpen(map, look) {
     // the landmarks: tall blocks that stand out of the haze, drawn tinted toward the horizon colour (no fog) once they are too far for their chunk
     const l0x = Math.floor((cam.x - LM_MAX) / WLC), l1x = Math.floor((cam.x + LM_MAX) / WLC), l0z = Math.floor((cam.z - LM_MAX) / WLC), l1z = Math.floor((cam.z + LM_MAX) / WLC);
     for (let j = l0z; j <= l1z; j++) for (let i = l0x; i <= l1x; i++) { const b = map.landmark(i, j); if (!b) continue; const key = (i + 64) * 256 + (j + 64); let m = lmMeshes.get(key); const d = Math.hypot(b.cx - cam.x, b.cz - cam.z);
-      if (!m && d < LM_MAX && budget.lm > 0 && map.inside(b.cx, b.cz)) { budget.lm--; const D = new Builder(); addDressing(tintB(D), { dress: {}, blocks: [b], gate: { x: 1e9, z: 1e9 }, spawn: map.spawn, far: {}, viewFn: map.viewFn, dune: map.dune }, () => true); m = dmesh(D); m.geometry.computeBoundingSphere(); m.material = lmMat(m.material); group.add(m); lmMeshes.set(key, m); }
+      if (!m && d < LM_MAX && budget.lm > 0 && map.inside(b.cx, b.cz)) { budget.lm--; const D = new Builder(); addDressing(tintB(D), { dress: {}, blocks: [b], gate: { x: 1e9, z: 1e9 }, spawn: map.spawn, far: {}, viewFn: map.viewFn, dune: map.dune }, (x, z) => Math.abs(x) < 1e7); const tm = D.mesh(false, undefined); tm.material.dispose(); m = new T.Mesh(tm.geometry, lmMat()); m.geometry.computeBoundingSphere(); group.add(m); lmMeshes.set(key, m); }
       if (m) m.visible = d > LM_ON && d < LM_MAX + 200; }
     for (const [k, m] of lmMeshes) { const i = Math.floor(k / 256) - 64, j = (k % 256) - 64, b = map.landmark(i, j); if (b && Math.hypot(b.cx - cam.x, b.cz - cam.z) > LM_MAX + 600) { group.remove(m); m.geometry.dispose(); lmMeshes.delete(k); } }
     built = 0;
   };
-  let lmM = null; const lmMat = m => { if (!lmM) { lmM = m.clone(); lmM.fog = false; } m.dispose(); return lmM; };
+  let lmM = null; const lmMat = () => lmM || (lmM = new T.MeshBasicMaterial({ vertexColors: true, fog: false }));
   const update = cam => {
     if (BIG) { bigUpdate(cam, { far: 6, near: 3, dress: 2, lm: 3 }); return; }
     let nn = 0, nf = 0, nd = 0;
