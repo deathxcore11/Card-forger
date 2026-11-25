@@ -313,3 +313,65 @@ body.ps { background: #000; }
 #app.ps .lb .d, #app.ps span.d, #app.ps p.d { color: #b39a7c; }
 #app.ps .cd.unk { background: var(--sh); border-color: var(--dark); } #app.ps .cd.unk .n1 { top: 24px; left: 18px; color: var(--sd); }
 #app.ps .big.unk { background: var(--sh); }
+
+/* ---- the two-screen layout (?dual=1, DUAL.md): a top frame of 640 x 360 and a bottom frame of 413 x 360 in one page,
+   both under the rules of the look above. Each frame cuts off what leaves it. */
+#app.ps.dual { background: #000; }
+#app.ps .scr { position: absolute; overflow: hidden; background: #000; }
+/* a key chip: the pad key that presses the plaque beside it */
+#app.ps .kc { position: absolute; height: 10px; background: var(--sh); color: var(--gl); font: 8px/10px 'LM Label', monospace; box-shadow: 0 0 0 1px var(--gold); white-space: nowrap; text-transform: uppercase; overflow: hidden; }
+#app.ps .kc.kce { visibility: hidden; }
+#app.ps .kc.kco { color: var(--dusty); box-shadow: 0 0 0 1px var(--dark); }
+#app.ps .txw { font: 16px/16px 'LM Text', monospace; color: var(--ink); overflow: hidden; } #app.ps .txw p { margin: 0; }
+/* the top frame's window of words: a first line in the label face, then the words, paged when they are longer */
+#app.ps .bar .th { display: block; position: relative; white-space: normal; line-height: 10px; padding: 3px 0; }
+#app.ps .bar .pgw { overflow: hidden; } #app.ps .bar .pgw p { max-height: none; overflow: visible; }
+/* the chamber's columns: what each door costs and gives */
+#app.ps .dcol { position: absolute; width: 133px; height: 178px; padding: 0; margin: 0; background: none; border: 1px solid var(--dark); color: var(--ink); text-align: left; cursor: pointer; }
+#app.ps .dcol.on { border-color: var(--gl); background: var(--sh); }
+#app.ps .nof { border: 1px solid var(--dark); }
+/* a grid of cards or a list of rows that moves a whole row at a time */
+/* the list's gold line is an outline, drawn over the cards: a row moved half out of sight never breaks it */
+#app.ps .gsc { overflow-x: hidden; overflow-y: auto; scrollbar-width: none; background: var(--sh); border: 1px solid var(--sh); outline: 1px solid var(--gold); outline-offset: -2px; scroll-snap-type: y mandatory; }
+#app.ps .gsc.bare { background: none; border: 0; outline: 0; }
+#app.ps .gsc::-webkit-scrollbar { display: none; }
+#app.ps .gin { position: relative; }
+#app.ps .gsc .cd { scroll-snap-align: start; scroll-margin-top: 3px; } #app.ps .gsc .rw { scroll-snap-align: start; }
+#app.ps .rw { position: absolute; width: 200px; height: 26px; padding: 0; margin: 0; background: none; border: 1px solid transparent; color: var(--ink); text-align: left; }
+#app.ps button.rw { cursor: pointer; }
+#app.ps .rw.fam, #app.ps .rw.on { border-color: var(--gl); background: var(--sh); }
+/* the cursor on a row: a light frame two pixels thick, so it never reads as one more gold line among rows that carry one */
+#app.ps .rw.nvf { border-color: var(--ink); background: var(--wine); box-shadow: 0 0 0 1px var(--ink); z-index: 2; }
+#app.ps .rw .rwp { left: 2px; top: 0; width: 24px; height: 24px; } #app.ps .rw .rwp img { display: block; }
+/* the cursor's marks: a line inside the card it is on, a bright edge on a relic's place, the marker over what it rests on */
+/* The cursor on a card: the card's own frame turns light. Nothing is drawn over the card or beside it, so the cursor can
+   never cut a number, a mark or a neighbour. */
+#app.ps .cd.nvf { border-color: var(--ink); }
+/* The A chip inside a plaque that has no chip's room beside it, at its right end, clear of its words. */
+#app.ps .pq .kin { right: 3px; top: 2px; width: 10px; padding-left: 2px; pointer-events: none; }
+/* a lit plaque with no room for the A chip at its right end: the chip stands where the hammer does, the words where they were */
+#app.ps .pq.lit.ah::before { display: none; } #app.ps .pq .kin.kl { right: auto; left: 3px; }
+/* A list with rows out of sight: five by three pixels of gold, pointing to where they lie. */
+#app.ps .lmk { position: absolute; z-index: 4; width: 5px; height: 3px; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='3' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h5v1h-1v1h-1v1h-1v-1h-1v-1h-1z' fill='%23e9c46a'/%3E%3C/svg%3E"); }
+#app.ps .lmk.lmu { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='3' shape-rendering='crispEdges'%3E%3Cpath d='M2 0h1v1h1v1h1v1h-5v-1h1v-1h1z' fill='%23e9c46a'/%3E%3C/svg%3E"); }
+/* The two boxes of a question on the bottom frame: the answer you hold in gold, what happens without it in a dim one. */
+#app.ps .tbx { border: 1px solid var(--gl); background: var(--sh); } #app.ps .tbx.dm { border-color: var(--sm); background: none; }
+#app.ps .sl.nvf, #app.ps .pile.nvf { border-color: var(--ink); }
+/* a relic of yours that fires in a duel lights its place on the belt for as long as the bar says its words */
+#app.ps .sl.fire { border-color: var(--gl); box-shadow: 0 0 0 1px var(--gl); }
+#app.ps .dcur { pointer-events: none; z-index: 6; }
+/* the duel's hand on the bottom frame: six places that never move, a chosen card marked where it lies */
+#app.ps.dual .hand .cd.sel { top: 10px !important; }
+/* With two frames a drawn card slides out from under the deck pile beside the hand, so the hand's box cuts nothing. */
+#app.ps.dual .ledge > .hand { overflow: visible; }
+#app.ps .pile { cursor: pointer; }
+/* a card of a grid marked as kin to the one being weighed */
+#app.ps .cd.fam { box-shadow: 0 0 0 1px var(--ink), 0 0 0 2px var(--gl); }
+/* a frame held under a window on the other one: it shows, and nothing on it is pressed (a story's own layer still is) */
+#app.ps .scr.held > :not(.story) { pointer-events: none; }
+#app.ps .pgw span, #app.ps .txw span, #app.ps .bar .th span { line-height: inherit; }
+/* a paragraph set apart from the one before it by one whole line */
+#app.ps .pgw p, #app.ps .txw p { margin: 0; padding: 0; }
+#app.ps .pgw p.gp, #app.ps .txw p.gp { margin-top: 16px; }
+/* under a story's painting the whole top frame goes dark, so nothing of the screen shows round it */
+#app.ps.dual.stblk .scrT > :not(.story):not(.toast) { visibility: hidden; }

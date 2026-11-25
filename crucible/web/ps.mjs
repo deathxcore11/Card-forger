@@ -3,7 +3,7 @@
 // screen sizes. Each frame pixel is a whole number of device pixels, so every pixel stays square and sharp, and the
 // frame takes the shape of the screen it is on, so no band of black is left. On a phone held upright the frame is
 // turned a quarter turn (on a touch screen only). The pillars keep their size; the window, the view and the ledge take what is left.
-export const F = { W: 512, H: 240, n: 1, up: false };
+export const F = { W: 512, H: 240, n: 1, up: false, dual: false, view: null };
 export const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 export const yb = y => y + F.H - 240; // a place measured from the bottom of the smallest frame
 export const xr = x => x + F.W - 512; // the same from its right edge
@@ -30,6 +30,21 @@ export function fitConsole(app) {
   app.style.transform = `translate(${tx}px,${ty}px) ${up ? 'rotate(90deg) ' : ''}scale(${k})`;
   return { k, n, up, changed };
 }
+// The two-screen layout (DUAL.md): a top frame of 640 x 360 and a bottom frame of 413 x 360, the bottom one centred under
+// the top one, both enlarged by the same whole number of device pixels, the largest at which the pair fits the window.
+// Rows the window has left over at that size, sixteen at the most, lie between the two as the hinge. F stays the top
+// frame, so every screen laid out for a frame of 640 x 360 is laid out as it always was; F2 is the bottom frame and
+// where it stands under the top one, in frame pixels.
+export const F2 = { W: 413, H: 360, x: 113, y: 360 };
+export function fitDual(app, top, bottom) {
+  const dpr = window.devicePixelRatio || 1, aw = Math.floor(innerWidth * dpr + .01), ah = Math.floor(innerHeight * dpr + .01);
+  const n = Math.max(1, Math.min(Math.floor(aw / 640), Math.floor(ah / 720))), gap = Math.max(0, Math.min(16, Math.floor(ah / n) - 720));
+  const changed = F.W !== 640 || F.H !== 360 || F2.y !== 360 + gap || F.n !== n; Object.assign(F, { W: 640, H: 360, n, up: false, dual: true }); F2.y = 360 + gap;
+  const H = 720 + gap, dx = Math.max(0, Math.floor((aw - 640 * n) / 2)), dy = Math.max(0, Math.floor((ah - H * n) / 2));
+  app.style.width = '640px'; app.style.height = H + 'px'; app.style.transform = `translate(${dx / dpr}px,${dy / dpr}px) scale(${n / dpr})`;
+  Object.assign(top.style, { left: '0', top: '0', width: '640px', height: '360px' }); Object.assign(bottom.style, { left: F2.x + 'px', top: F2.y + 'px', width: '413px', height: '360px' });
+  return { k: n / dpr, n, up: false, changed };
+}
 
 // The label face's own advances, in pixels (measured from the face at 8 pixels); a character not listed takes 6. A word
 // set in it is as wide as its letters' advances.
@@ -52,14 +67,16 @@ export const gauge = (x, y, w, frac, cls = '') => `<i class="ga ${cls}" style="l
 export const lbr = (right, y, txt, cls = '') => lb(right - String(txt).length * 6, y, txt, cls);
 
 // The frame: two stone pillars, the window with the view inside it, the ledge, the text bar.
-export function frame({ left = '', right = '', view = '', ledge = '', bar = '', barMore = false, extra = '' }) {
+// tall: on the top frame of the two-screen layout the ledge and the bar are one window of words, 104 rows high.
+export function frame({ left = '', right = '', view = '', ledge = '', bar = '', barMore = false, extra = '', tall = null }) {
   const { W, H } = F, ww = W - 192, ly = H - 104;
   return `<div class="fr">${box(0, 0, 96, H, 'st pl')}${box(W - 96, 0, 96, H, 'st pl')}${box(96, 0, ww, ly, 'st dk')}
-    ${box(100, 4, ww - 8, ly - 8, 'vw', view)}${box(96, ly, ww, 64, 'lg ledge', ledge)}${box(96, H - 40, ww, 40, 'wn bar' + (barMore ? ' more' : ''), `<p>${bar}</p>`, barMore ? 'data-a="barmore"' : '')}
+    ${box(100, 4, ww - 8, ly - 8, 'vw', view)}${tall != null ? box(96, ly, ww, 104, 'wn bar tall', tall) : box(96, ly, ww, 64, 'lg ledge', ledge) + box(96, H - 40, ww, 40, 'wn bar' + (barMore ? ' more' : ''), `<p>${bar}</p>`, barMore ? 'data-a="barmore"' : '')}
     <div class="ab" style="left:0;top:0;width:96px;height:${H}px">${left}</div><div class="ab" style="left:${W - 96}px;top:0;width:96px;height:${H}px">${right}</div>${extra}</div>`;
 }
 // The view window's size in this frame, and the ledge's width.
-export const viewSize = () => ({ w: F.W - 200, h: F.H - 112 });
+// F.view: a screen whose view is not the window between the pillars (the duel on the top frame of two) says its size.
+export const viewSize = () => F.view || ({ w: F.W - 200, h: F.H - 112 });
 export const ledgeW = () => F.W - 192;
 
 // A patch of fog or shadow: one colour (black unless asked), 1-bit, its density falling away toward the edges through
