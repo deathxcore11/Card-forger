@@ -44,7 +44,7 @@ function goalFn(g, bot) {
   const R2 = (PLAYER === 'skilled' ? 320 : 180) ** 2; let best = null, bd = R2; const consider = o => { const dd = (o.x - p.x) ** 2 + (o.z - p.z) ** 2; if (dd < bd && !(bot.skip && bot.skip.has(o))) { bd = dd; best = o; } };
   for (const c of W.cchests) if (!c.open && (c.free || g.coins >= 30)) consider(c);
   for (const s of W.stones) if (!s.used) consider(s); for (const s of W.shrines) if (!s.done) consider(s);
-  for (const v of W.vases) if (v.alive) { const dd = (v.x - p.x) ** 2 + (v.z - p.z) ** 2; if (dd < bd * 0.5) { best = v; bd = dd * 2; } }
+  for (const v of W.vases) if (v.alive) { const dd = (v.x - p.x) ** 2 + (v.z - p.z) ** 2; if (dd < (best ? 225 : bd * 0.5) && (!best || dd < bd * 0.1)) { best = v; bd = dd * 2; } }       // a vase is worth a detour only when nothing bigger is near
   if (best) { if (!bot.skip) bot.skip = new Set(); bot.visit = (bot.visit || 0) + 1; const near = Math.hypot(best.x - p.x, best.z - p.z) < 3.5; if (near) { bot.stay = (bot.stay || 0) + 1; if (bot.stay > 70) { bot.skip.add(best); bot.stay = 0; } } else bot.stay = 0; return { t: { x: best.x, z: best.z }, hold: near && !!best.charge !== undefined }; }
   // nothing in sight: walk on, turning now and then, leaning toward ground not yet seen
   if (!bot.rng) { bot.rng = lcg(SEED0 + g.seed); bot.hd = bot.rng() * 6.283; bot.hdT = 0; }
@@ -56,12 +56,14 @@ function goalFn(g, bot) {
 // tuning knobs for sweeps: --spawn --hp --dmg --boss multiply the chosen difficulty's numbers for this process only
 for (const k of ['spawn', 'hp', 'dmg', 'boss', 'ramp']) if (argv.includes('--' + k)) DIFFICULTY[DIF][k] *= Number(val('--' + k, 1));
 if (argv.includes('--hid')) DOOR.hiddenChance = Number(val('--hid', 0.6)); if (argv.includes('--near')) DOOR.near = Number(val('--near', 150)); if (argv.includes('--far')) DOOR.far = Number(val('--far', 300));
+const TABLE = flag('--table'), tab = Array.from({ length: 13 }, () => ({ n: 0, lv: 0, items: 0, chests: 0, boons: 0, enemies: 0, maxEn: 0, lvUps: 0, shrines: 0, kills: 0 }));
 const rows = [];
 for (let r = 0; r < RUNS; r++) {
   const seed = SEED0 + r, w0 = Date.now(), g = new Game(seed, { mode: 'run', duelist: 'kael', difficulty: DIF, terrain: 'open', meta: metaFor() }), bot = newBot({ focus: false, world: true }); bot.goalFn = goalFn; bot.noGateSense = PLAYER === 'newbie'; g.skilledBuild = PLAYER === 'skilled';
   let ticks = 0, wokeAt = null, wokeDist = null, clearedAt = null, deadAt = null, doorAt = null; const stageMax = FULL ? g.stages.length : 1;
   while (!g.over && ticks < MAXMIN * 3600 * 4) {
     g.tick(botRecord(g, bot)); ticks++;
+    if (TABLE && g.stage === 0 && ticks % 60 === 0) { const m = Math.floor(g.sc / 60); if (m < 13) { const t = tab[m]; if (!t.cur || t.cur !== r + 1) { t.cur = r + 1; t.n++; t.lv += g.level; t.items += g.items.length; t.chests += g.chestsOpenedTotal; t.boons += g.blessings.length; t.kills += g.kills; t.lvUps += g.levelUps; } let en = 0; for (let i = 0; i < g.en.max; i++) if (g.en.alive[i]) en++; t.enemies += en; t.maxEn = Math.max(t.maxEn, en); t.samples = (t.samples || 0) + 1; } }
     if (doorAt === null && g.door && g.door.state === 'risen') doorAt = Math.round(g.sc);
     if (wokeAt === null && g.gate.state === 'fight') { wokeAt = Math.round(g.sc); wokeDist = g.door ? g.door.dist : 0; if (STAGE1) break; }
     if (g.stagesCleared >= stageMax && g.stage + (g.gate.state === 'done' ? 1 : 0) >= stageMax) { clearedAt = Math.round(g.scTotal + g.sc); }
@@ -76,3 +78,4 @@ for (let r = 0; r < RUNS; r++) {
 const n = rows.length, pct = k => (100 * rows.filter(r => r[k]).length / n).toFixed(0) + '%';
 const sum = { player: PLAYER, difficulty: DIF, runs: n, doorFound: pct('found'), cleared: pct('cleared'), died: (100 * rows.filter(r => r.deadAt !== null).length / n).toFixed(0) + '%', medianWoke: (rows.filter(r => r.wokeAt !== null).map(r => r.wokeAt).sort((a, b) => a - b)[Math.floor(rows.filter(r => r.wokeAt !== null).length / 2)] || null), meanLevel: +(rows.reduce((a, r) => a + r.level, 0) / n).toFixed(1), meanItems: +(rows.reduce((a, r) => a + r.items, 0) / n).toFixed(1), meanWall: +(rows.reduce((a, r) => a + r.wall, 0) / n).toFixed(1) };
 console.log('\n' + JSON.stringify(sum)); if (JSON_OUT || flag('--rows')) console.log(JSON.stringify(rows));
+if (TABLE) { console.log('min | level | items | chests | boons | level-ups | mean enemies | max enemies'); tab.forEach((t, m) => { if (t.n) console.log(String(m).padStart(3), '|', (t.lv / t.n).toFixed(1).padStart(5), '|', (t.items / t.n).toFixed(1).padStart(5), '|', (t.chests / t.n).toFixed(1).padStart(6), '|', (t.boons / t.n).toFixed(1).padStart(5), '|', (t.lvUps / t.n).toFixed(1).padStart(8), '|', (t.enemies / t.samples).toFixed(0).padStart(5), '|', t.maxEn); }); }

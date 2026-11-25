@@ -30,8 +30,8 @@ const clockText = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60
 
 // XP gained is scaled by the run minute so the first minutes give about 4 level-ups a minute (data: RUNSPEC.xp)
 export function xpScale(g) {
-  const X = RUNSPEC.xp, m = g.mode === 'classic' ? g.t / 60 : (g.scTotal + g.sc) / 60 * (g.paceK || 1);
-  return (X.start + (X.end - X.start) * (m >= X.minutes ? 1 : m / X.minutes)) * (1 + X.growth * (m > X.growFrom ? m - X.growFrom : 0));
+  const X = RUNSPEC.xp, m = g.mode === 'classic' ? g.t / 60 : (g.scTotal + g.sc) / 60 * (g.paceK || 1), boost = g.big && g.stage === 0 ? 1 + 1.6 * Math.max(0, 1 - g.sc / 300) : 1;       // the big desert's first five minutes pay level-ups faster (the first minutes of the reference run are full of them)
+  return boost * (X.start + (X.end - X.start) * (m >= X.minutes ? 1 : m / X.minutes)) * (1 + X.growth * (m > X.growFrom ? m - X.growFrom : 0));
 }
 
 // ---- setup ----
@@ -291,6 +291,17 @@ function openTick(g, dt) {
   if (G.state === 'closed' && !g.horde.on && g.sc >= S.clock) startHorde(g, 'clock');       // the clock ran out before the gate was woken: the horde starts anyway and keeps rising
 }
 
+// ---- the big desert's surges: a banner about 2 s before, 25 to 35 s of crowd, then 60 to 90 s of calm; the first minute is busier than the table so there is always something to hit ----
+const SURGE = { first: 70, calmLo: 60, calmHi: 90, lenLo: 25, lenHi: 35, hi: 3.0, lo: 0.55, early: 1.6, earlyEnd: 150 };
+function surgePlan(g) { const P = g.surgeP || (g.surgeP = { next: SURGE.first, on: false, end: 0, ann: false, n: 0 }); return P; }
+function surgeMul(g) {
+  const P = surgePlan(g), t = g.sc, h = k => { let x = (Math.imul((g.seed | 0) ^ Math.imul(g.stage + 3, 0x9E3779B1) ^ Math.imul(P.n + 1, 0x85EBCA6B), 0x27D4EB2F) >>> 0) / 4294967296; return k * x; };
+  if (!P.on) { if (!P.ann && t >= P.next - 2) { P.ann = true; g.event('banner', 'THE SAND STIRS'); g.emit('surge', 0); } if (t >= P.next) { P.on = true; P.ann = false; P.end = t + SURGE.lenLo + h(SURGE.lenHi - SURGE.lenLo); } }
+  else if (t >= P.end) { P.on = false; P.n++; P.next = t + SURGE.calmLo + h(SURGE.calmHi - SURGE.calmLo); }
+  const early = t < SURGE.earlyEnd ? 1 + (SURGE.early - 1) * (1 - t / SURGE.earlyEnd) : 1;
+  return (P.on ? SURGE.hi : SURGE.lo) * early;
+}
+
 // ---- the swarm ----
 function spawner(g, dt, fight, toll) {
   const S = g.stageSpec;
@@ -317,7 +328,7 @@ function spawner(g, dt, fight, toll) {
     if (g.golemT <= 0) { g.golemT = RUN.golem.every; if (enemyCount(g.en) < cap) spawnEnemy(g, 'golem'); }
   }
   if (toll) { g.huntT -= dt; if (g.huntT <= 0) { g.huntT = RUNSPEC.tollHunterEvery; for (let k = 0; k < RUNSPEC.tollHunterCount; k++) if (enemyCount(g.en) < cap) spawnEnemy(g, 'hunter'); } }
-  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt * hm;
+  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt * hm * (g.big ? surgeMul(g) : 1);
   let live = enemyCount(g.en);
   if (g.spawnAcc > 60) g.spawnAcc = 60;                                // never a runaway backlog
   while (g.spawnAcc >= 1) { g.spawnAcc -= 1; const kind = pickKind(g, te); if (live < cap) { if (spawnEnemy(g, kind)) live++; } else mergeEnemy(g, kind); }       // past the cap a spawn merges into the nearest of its kind

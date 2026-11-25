@@ -16,8 +16,8 @@ const hsh = (s, a, b, c) => { let h = (s ^ Math.imul(a | 0, 374761393) ^ Math.im
 const r4 = (x, z) => sq(sq(x * x * x * x + z * z * z * z));
 const dist = (ax, az, bx, bz) => sq((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 // pocket kinds by weight (the first four are the free things of the stage, the broker is rare)
-const POCKETS2 = [['vases', 0.5], ['stone', 0.2], ['cchest', 0.14], ['shrine', 0.11], ['broker', 0.02], ['altar', 0.03]];
-const POCKETS = [['vases', 0.34], ['cchest', 0.22], ['shrine', 0.15], ['stone', 0.17], ['altar', 0.07], ['broker', 0.05]];
+const POCKETS2 = [['vases', 0.42], ['stone', 0.2], ['cchest', 0.2], ['shrine', 0.14], ['broker', 0.02], ['altar', 0.02]];
+const POCKETS = [['vases', 0.28], ['cchest', 0.30], ['shrine', 0.17], ['stone', 0.17], ['altar', 0.04], ['broker', 0.04]];
 // blocks per cell by region type: [mesa p/count, wall, ruin]  (counts are lo..hi inclusive)
 const COUNTS = [[[0, 1, 0.3], [0, 0, 0], [0, 1, 0.3]], [[2, 3, 1], [0, 1, 0.6], [1, 2, 1]], [[0, 1, 0.1], [0, 0, 0], [0, 1, 0.3]], [[1, 2, 1], [0, 1, 0.5], [0, 1, 0.4]], [[0, 1, 0.4], [0, 0, 0], [4, 7, 1]], [[0, 1, 0.2], [0, 0, 0], [0, 1, 0.5]], [[0, 1, 0.5], [1, 1, 0.4], [0, 1, 0.3]]];
 
@@ -222,6 +222,8 @@ export function makeWorld(seedLo, stageIndex) {
   // the free chest a short way from the start
   let fc = null; { const o = gather9(sp[0], sp[1]); for (let r = 14; r <= 30 && !fc; r += 2) for (let a2 = 0; a2 < 16 && !fc; a2++) { const x = sp[0] + cosA(a2 * TAU / 16) * r, z = sp[1] + sinA(a2 * TAU / 16) * r; if (spread(x, z, 3) < 0.9 && !o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 3) && !o.pockets.some(p => dist(p.x, p.z, x, z) < 14)) fc = { type: 'cchest', x, z, free: true }; } }
   if (fc) { W.addPad(fc.x, fc.z, 3, 8); } W.freeChest = fc;
+  // the start is generous: a Witness Stone 35 to 60 m out and a second free chest 60 to 100 m out, on flat ground clear of everything, so the first item comes inside the first minute
+  W.startExtras = []; { const o = gather9(sp[0], sp[1]); for (const [type, lo, hi] of [['stone', 35, 60], ['cchest', 60, 100]]) { let site = null; for (let t = 0; t < 400 && !site; t++) { const r = lo + rs() * (hi - lo), a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (spread(x, z, 3) > 0.9 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 4) || o.pockets.some(p => dist(p.x, p.z, x, z) < 16) || o.rings.some(q => dist(q.x, q.z, x, z) < 30) || (fc && dist(fc.x, fc.z, x, z) < 12) || W.startExtras.some(q => dist(q.x, q.z, x, z) < 14)) continue; site = { type, x, z, free: true }; } if (site) { W.addPad(site.x, site.z, 3, 8); W.startExtras.push(site); } } }
   // the first landmark or mesa the start looks at
   { let bd = 1e9, bt = null; const o = gather9(sp[0], sp[1]); for (const b of o.blocks) { const d = dist(b.cx, b.cz, sp[0], sp[1]); if (b.h >= 7 && d >= 50 && d < bd) { bd = d; bt = b; } } for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const b = landmark(Math.floor(sp[0] / LC) + i, Math.floor(sp[1] / LC) + j); if (b) { const d = dist(b.cx, b.cz, sp[0], sp[1]); if (d >= 80 && d < 900 && d < bd * 3) { bd = Math.min(bd, d); bt = b; } } } { let by = 0, bdot = -2; if (bt) { const dx = bt.cx - sp[0], dz = bt.cz - sp[1], dl = sq(dx * dx + dz * dz) || 1; for (let k = 0; k < 48; k++) { const a = k * TAU / 48, dot = (-sinA(a) * dx - cosA(a) * dz) / dl; if (dot > bdot) { bdot = dot; by = a; } } } W.startYaw = r2(by); } W.startLandmark = bt; }
   // the three sleepers (the elite and the two mini bosses): on flat sand 220, 420 and 650 m from the start

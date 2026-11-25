@@ -65,8 +65,8 @@ test('big world door: stages are 12 minutes, the door rises near the duelist bet
     const dd = Math.hypot(g.map.gate.x - g.p.x, g.map.gate.z - g.p.z); assert.ok(dd >= 150 && dd <= 300, seed + ' door ' + Math.round(dd) + ' m away');
     assert.ok(banners.some(b => /door has risen/.test(b))); assert.ok(heightAt(g.map.gate.x, g.map.gate.z) < 50);
     // hold to wake: standing at it for 0.5 s does nothing, 2 s (after it has finished rising) wakes the stage boss
-    g.p.x = g.map.gate.x + 1; g.p.z = g.map.gate.z; g.p.y = heightAt(g.p.x, g.p.z); for (let i = 0; i < 6 * 60; i++) g.step(STEP, IDLE); assert.equal(g.gate.state, 'closed');
-    for (let i = 0; i < 2.2 * 60; i++) g.step(STEP, Object.assign({}, IDLE, { use: true })); assert.equal(g.gate.state, 'fight', seed + ' boss woken');
+    g.p.x = g.map.gate.x + 0.5; g.p.z = g.map.gate.z; g.p.y = heightAt(g.p.x, g.p.z); g.p.vx = g.p.vz = 0; for (let i = 0; i < 6 * 60; i++) g.step(STEP, IDLE); assert.equal(g.gate.state, 'closed');
+    for (let i = 0; i < 4 * 60; i++) { if (g.offer) chooseCard(g, 0); g.step(STEP, Object.assign({}, IDLE, { use: true })); } assert.equal(g.gate.state, 'fight', seed + ' boss woken');
   }
 });
 
