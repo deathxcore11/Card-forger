@@ -40,6 +40,7 @@ function goalFn(g, bot) {
     const known = PLAYER === 'skilled' || bot.doorKnown || (bot.doorKnown = seesDoor(g)); if (known) { const dist = Math.hypot(g.map.gate.x - p.x, g.map.gate.z - p.z); return { t: { x: g.map.gate.x, z: g.map.gate.z }, hold: dist < 3.5 }; }
   }
   // the nearest pocket not yet used: a free thing to open or break, within 220 m (a first-timer goes toward what it sees)
+  if (PLAYER === 'skilled' && p.hp > p.maxHp * 0.8 && g.level >= 12 && g.sc < 440 && d.state === 'hidden') { let sl = null, sd = 1e12; for (const q of g.sp) if (q.alive && !q.dead && q.asleep) { const dd = (q.x - p.x) ** 2 + (q.z - p.z) ** 2; if (dd < sd) { sd = dd; sl = q; } } if (sl) return { t: { x: sl.x, z: sl.z }, hold: false }; }       // a practised player fells the sleepers early: each makes the door rise 30 s sooner
   const R2 = (PLAYER === 'skilled' ? 320 : 180) ** 2; let best = null, bd = R2; const consider = o => { const dd = (o.x - p.x) ** 2 + (o.z - p.z) ** 2; if (dd < bd && !(bot.skip && bot.skip.has(o))) { bd = dd; best = o; } };
   for (const c of W.cchests) if (!c.open && (c.free || g.coins >= 30)) consider(c);
   for (const s of W.stones) if (!s.used) consider(s); for (const s of W.shrines) if (!s.done) consider(s);
@@ -57,7 +58,7 @@ for (const k of ['spawn', 'hp', 'dmg', 'boss', 'ramp']) if (argv.includes('--' +
 if (argv.includes('--hid')) DOOR.hiddenChance = Number(val('--hid', 0.6)); if (argv.includes('--near')) DOOR.near = Number(val('--near', 150)); if (argv.includes('--far')) DOOR.far = Number(val('--far', 300));
 const rows = [];
 for (let r = 0; r < RUNS; r++) {
-  const seed = SEED0 + r, w0 = Date.now(), g = new Game(seed, { mode: 'run', duelist: 'kael', difficulty: DIF, terrain: 'open', meta: metaFor() }), bot = newBot({ focus: false, world: true }); bot.goalFn = goalFn; bot.noGateSense = PLAYER === 'newbie';
+  const seed = SEED0 + r, w0 = Date.now(), g = new Game(seed, { mode: 'run', duelist: 'kael', difficulty: DIF, terrain: 'open', meta: metaFor() }), bot = newBot({ focus: false, world: true }); bot.goalFn = goalFn; bot.noGateSense = PLAYER === 'newbie'; g.skilledBuild = PLAYER === 'skilled';
   let ticks = 0, wokeAt = null, wokeDist = null, clearedAt = null, deadAt = null, doorAt = null; const stageMax = FULL ? g.stages.length : 1;
   while (!g.over && ticks < MAXMIN * 3600 * 4) {
     g.tick(botRecord(g, bot)); ticks++;

@@ -2,6 +2,7 @@
 // drive balance runs. It thinks ten times a second and handles level-up / chest / Altar / shop offers through menu input.
 import { quantise, emptyRecord, takeCode, MENU_LEAVE } from '../src/sim/input.js';
 import { DUELISTS } from '../src/data/cards.js';
+import { ITEMS, BLESSINGS } from '../src/data/items.js';
 import { Flow } from '../src/sim/flow.js';
 import { chestPrice } from '../src/sim/world.js';
 import { ENCOUNTERS as EN } from '../src/data/encounters.js';
@@ -15,7 +16,7 @@ function score(g, c, focus) {
   if (c.kind === 'fusion') return 1000;
   if (c.kind === 'final') return c.id === 'close' ? 100 : 1;
   if (c.kind === 'tribute') return 1; if (c.kind === 'banish') return 2;
-  if (c.kind === 'item') return 50; if (c.kind === 'blessing') return 50;
+  if (c.kind === 'item' || c.kind === 'blessing') { if (!g.skilledBuild) return 50; const rb = { common: 0, rare: 12, epic: 26, legendary: 45 }[c.rarity] || 0, M = ITEMS[c.id] ? ITEMS[c.id].mods : BLESSINGS[c.id] ? BLESSINGS[c.id].mods : {}; let b = 0; for (const k of Object.keys(M)) b += ({ dmgMult: 14, drillCard: 10, drillMon: 12, drillTrap: 6, drillSpell: 8, crit: 8, critDmg: 8, maxLp: 0.25, armour: 9, regen: 10, move: 12, cardRate: 10, monsterRate: 12, reach: 6, xp: 6, luck: 3, pickup: 2, killHeal: 4, thorns: 0.4, heartMul: 4, dash: 3, dashCd: 4, airJumps: 3, jumpH: 2, bossDmg: 5, sight: 3 })[k] * (M[k] > 1 ? 1 : M[k] * 10 + 0.5) || 0; if (ITEMS[c.id] && ITEMS[c.id].proc) b += 14; return 48 + rb + Math.min(30, b); }
   if (c.kind === 'monster') { const m = g.field.monsters.find(x => x && x.id === c.id), isPair = pair.includes(c.id); return focus ? (isPair ? (c.isNew ? 90 : 85) : 25) : (c.isNew ? 60 : 40) + (m ? 0 : 0); }
   if (c.kind === 'spell') return ({ 'swift-draw': 50, 'collectors-eye': 48, 'kindling-rite': 45, 'deep-marks': 40, 'runners-sash': 35, 'heart-of-the-cards': 38 })[c.id] || 30;
   if (c.kind === 'trap') return 33; return c.id === 'second-wind' ? (g.p.hp < 40 ? 80 : 20) : 45;
@@ -45,7 +46,7 @@ export function botRecord(g, bot) {
       const ga = bk / SEC * Math.PI * 2, mag = Math.hypot(rx, rz) + 0.2; rx = Math.cos(ga) * mag; rz = Math.sin(ga) * mag;
     }
     let ax = 0, az = 0, best = 400; const m = g.pick;
-    for (let i = 0; i < m.max; i++) { if (!m.alive[i]) continue; const dx = m.x[i] - p.x, dz = m.z[i] - p.z, d2 = dx * dx + dz * dz; if (d2 < best) { best = d2; ax = dx; az = dz; } }
+    for (let i = 0; i < m.max; i++) { if (!m.alive[i]) continue; const dx = m.x[i] - p.x, dz = m.z[i] - p.z, d2 = dx * dx + dz * dz; const dw = g.skilledBuild && m.kind[i] >= 2 ? d2 * 0.08 : d2; if (dw < best) { best = dw; ax = dx; az = dz; } }
     const al = Math.sqrt(ax * ax + az * az) || 1; ax /= al; az /= al;
     let cx = 0, cz = 0, target = g.chests.find(c => c.guaranteed && !c.open) || g.chests.find(c => !c.open);       // the banner says a Fusion chest has appeared: a player goes to it first
     if (g.mode && g.mode !== 'classic' && g.gate && g.gate.awake && g.gate.state === 'closed') { if (bot.awakeT === undefined) bot.awakeT = g.sc; if (!target || g.sc - bot.awakeT > 40) target = null; } else bot.awakeT = undefined;
