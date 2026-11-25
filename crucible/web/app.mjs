@@ -84,7 +84,7 @@ let lostStore = storeSize() === 0 && (() => { try { return sessionStorage.getIte
 const markStore = () => { try { if (storeSize() > 0) sessionStorage.setItem(HAD, '1'); } catch { /* no session store, so no guard */ } };
 markStore();
 
-const G = { run: null, sel: [], onto: null, attacker: null, aim: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null } };
+const G = { run: null, sel: [], onto: null, attacker: null, aim: null, frames: [], playing: false, shown: null, inspect: null, toast: '', overlay: null, known: new Set(store.get(KNOWN) || []), tab: null, screen: null, story: null, results: null, pickForger: 'tarn', pickHeat: 0, pickDeck: null, pickTrunk: null, log: [], fast: false, cx: { view: 'found', type: null, open: null }, achOff: new Set() }; // achOff: rows a Vault purchase earned between runs (they belong to no run's last page)
 const P = Object.assign(newProfile(), (() => { const s = store.get(PROFILE); if (s == null) return {}; if (okProfile(s)) return s; store.unreadable.add(PROFILE); try { localStorage.setItem(PROFILE + '.unreadable', JSON.stringify(s)); } catch { /* the copy could not be kept */ } return {}; })());
 // Switches stored before Rumours was on for everyone (22 November 2026) take it on once; a player may turn it off after.
 { const st = store.get(LABKEY); pref = st ? { heat: true, kits: true, ...st, ...(st.rumoursOn ? {} : { secret: true, rumoursOn: 1 }) } : { ...LAB_DEFAULTS, rumoursOn: 1 }; setLabs(pref); }
@@ -282,7 +282,7 @@ function achPaint() {
   const calm = achCalm();
   if (!Q.cur) { if (!calm) return; const nx = Q.q[0], sp = achSpot(nx.id, { n: Q.n + 1, of: Q.of }); if (!sp) return;
     Q.q.shift(); Q.cur = { ...nx, left: Q.of > 1 ? 3000 : 4000, t0: 0 }; Q.n++; }
-  const C = Q.cur, sp = (calm || C.t0) && !(G.tab || G.overlay || G.story || G.screen) ? achSpot(C.id, { n: Q.n, of: Q.of }) : null;
+  const d = G.run && G.run.duel, C = Q.cur, sp = (calm || C.t0) && !(G.tab || G.overlay || G.story || G.screen || (d && d.pending && d.active === 1)) ? achSpot(C.id, { n: Q.n, of: Q.of }) : null;
   if (!sp) { if (C.t0) { C.left -= performance.now() - C.t0; C.t0 = 0; clearTimeout(Q.timer); } return; } // put away until its place is free again, keeping the time it has left
   sp.el.insertAdjacentHTML('beforeend', `<div class="ab acht" data-ach="${C.id}">${sp.html}</div>`);
   if (!C.t0) { C.t0 = performance.now(); clearTimeout(Q.timer); Q.timer = setTimeout(achNext, Math.max(0, C.left)); }
@@ -2326,7 +2326,7 @@ const meter = (n, goal, gain = 0) => `<i class="ga in" style="width:120px"><i st
 const featPs = f => row('', `${esc(f.name.toUpperCase())} <span class="d">${esc(f.build.toUpperCase())}</span>`, `${esc(f.text)}`, `${meter(f.after, f.goal, f.after - f.before)}<b class="lb">${f.done ? 'COMPLETE' : `${f.after} / ${f.goal}`}${f.gain && !f.done ? ` (+${f.gain})` : ''}</b>`);
 // The rows this run earned (each one keeps the number of the run it was earned in), and the counting row it brought
 // nearest, from how far each had come when the run began (kept on the run as uiAch0 by the page).
-const achRunRows = () => achView(db, P, null).filter(r => r.earned && r.at === P.runs);
+const achRunRows = () => achView(db, P, null).filter(r => r.earned && r.at === P.runs && !G.achOff.has(r.id));
 function achCloser() {
   const r = G.run, at0 = r && r.uiAch0; if (!at0) return null; let best = null;
   for (const x of achProgress(db, P, null)) { if (x.done || !(x.id in at0)) continue; const gain = x.have - at0[x.id]; if (gain > 0 && (!best || gain / x.goal > best.gain / best.goal)) best = { name: ACH_BY_ID[x.id].name, have: x.have, goal: x.goal, gain }; }
@@ -2369,16 +2369,11 @@ function psAch() {
   return s + '</div>';
 }
 function achDual() {
-  const B = achBook(), all = achAll(), gi = B.g, rows = AC.groupRows(all, gi), m = /^a:(.+)$/.exec(G.look || ''), at = Math.max(0, rows.findIndex(r => m && r.id === m[1])), r = rows[at];
-  const turn = [{ k: 'L1', t: 'LAST GROUP', a: 'achg:-1' }, { k: 'R1', t: 'NEXT GROUP', a: 'achg:1' }];
-  // the keys' row laid by its words, not by four even columns: LAST GROUP, NEXT GROUP and LOOK CLOSER are each wider
-  // than a quarter's plaque. Each place keeps its x with the window open or closed.
-  const keys = [B.look ? { k: 'B', t: 'CLOSE', a: 'achclose', lit: true } : { k: 'B', t: 'BACK', a: 'screen:feats' }, ...turn, B.look ? null : { k: 'Y', t: 'LOOK CLOSER', a: 'achlook' }];
-  const ws = [Math.max(pqW('BACK'), pqW('CLOSE')), pqW(turn[0].t), pqW(turn[1].t), pqW('LOOK CLOSER')].map(w => w + 26), gap = Math.floor((405 - ws.reduce((a, b) => a + b, 0)) / 3);
-  const y0 = 360 - (2 * 21 + 11), ky = y0 + ((360 - y0 - 37) >> 1);
-  let kx = 4, krow = '';
-  keys.forEach((c, i) => { if (c) krow += kc(kx, ky + 3, c.k, 22) + pq(kx + 26, ky, ws[i] - 26, c.t, c.a, { lit: c.lit }); kx += ws[i] + gap; });
-  const ft = { y0, html: foot(y0, [[null, null, null, null], TBOOKS.map(b => ({ t: b[1], a: 'screen:' + b[0], cls: b[0] === 'feats' ? 'on' : '' }))], 4) + krow };
+  const B = achBook(), all = achAll(), gi = B.g, rows = AC.groupRows(all, gi), m = /^a:(\d+)$/.exec(G.look || ''), at = m ? Math.min(rows.length - 1, +m[1]) : 0, r = rows[at];
+  // the keys on the game's four columns (4, 106, 208, 310), as every two-frame foot: a plaque too wide for its column
+  // says its shorter words instead. The Y place stays empty while the window is open, and each key keeps its x.
+  const keys = [B.look ? { k: 'B', t: 'CLOSE', a: 'achclose', lit: true } : { k: 'B', t: 'BACK', a: 'screen:feats' }, { k: 'L1', t: ['LAST GROUP', 'LAST'], a: 'achg:-1' }, { k: 'R1', t: ['NEXT GROUP', 'NEXT'], a: 'achg:1' }, B.look ? null : { k: 'Y', t: ['LOOK CLOSER', 'LOOK'], a: 'achlook' }];
+  const y0 = 360 - (2 * 21 + 11), ft = { y0, html: foot(y0, [keys, TBOOKS.map(b => ({ t: b[1], a: 'screen:' + b[0], cls: b[0] === 'feats' ? 'on' : '' }))], 4) };
   return two(lectern('', '', B.look ? AC.lookTop(all, gi, r) : AC.lecternTop(all, gi, r)), AC.listBottom(all, gi, at, ft.y0, !!db.config.secretLast, B.look) + ft.html);
 }
 const plainKits = () => FORGER_IDS.concat(HIDDEN_FORGERS).filter(id => P.forgers.includes(id)).map(id => FORGERS[id].kits.map((k, i) => { if (!i) return ''; const w = forgerStats(P, id).wins, g = KIT_GOALS[i], n = Math.min(w, g); return row('', `${esc(k.name.toUpperCase())} <span class="d">${esc(FORGERS[id].name.toUpperCase())}</span>`, `Win ${g} duels as ${esc(FORGERS[id].name)}.`, `${meter(n, g)}<b class="lb">${w >= g ? 'OPEN' : n + ' / ' + g}</b>`); }).join('')).join('');
@@ -2710,6 +2705,7 @@ function drawDual(screen) {
     if (under && under.sig === sig) { NAV.key = under.key; NAV.stack.pop(); } else { if (win) NAV.stack.push({ sig: NAV.sig, key: NAV.key }); else NAV.stack = []; NAV.key = null; }
     NAV.sig = sig; G.look = null; G.lookCur = false;
   }
+  if (G.lookNext) { G.look = G.lookNext; G.lookNext = null; } // a place a screen was opened on (back from the achievements)
   if (G.inspect) { if (G.inspect.id != null) G.look = G.look && /^(h|z|t0|d|t):/.test(G.look) ? G.look : 'c:' + G.inspect.id; G.inspect = null; } // a card asked for is read where this layout reads cards, never in a window over a frame
   G.lookB = false;
   // Under a book or a sheet the screen is drawn as it stands by itself: what the book's cursor reads is the book's own.
@@ -3217,8 +3213,14 @@ function listRecordB(y1, head, headR, rows, o = {}) {
   const per = Math.max(1, Math.floor((y1 - rh - 24) / 14)), show = rec.slice(0, per * 2);
   return rowsB(0, rh, head, headR, rows, o) + (y1 - rh >= 38 ? box(0, rh, 413, y1 - rh, 'wn') + lb(8, rh + 6, 'YOUR RECORD', 'd') + show.map(([k, v], i) => lb(8 + (i % 2) * 206, rh + 20 + (i >> 1) * 14, k, 'g') + lbr(198 + (i % 2) * 206, rh + 20 + (i >> 1) * 14, v)).join('') : '');
 }
+// the Feats page's rows on two frames: the feats, then the Forgers (the achievements' row comes after them)
+const featForgers = () => FORGER_IDS.concat(HIDDEN_FORGERS.filter(id => P.forgers.includes(id))).filter(id => id !== 'tarn');
+const featRows = () => [...featList(!!labs.long), ...featForgers()];
+// back from the achievements to the Feats page: the cursor stands on the achievements' row it left from
+// (the screen's change sets the cursor afresh, so the place is kept for the first drawing after it)
+const achBack = () => { G.lookNext = 'b:' + featRows().length; };
 function featsDual() {
-  const fs = featList(!!labs.long), forg = FORGER_IDS.concat(HIDDEN_FORGERS.filter(id => P.forgers.includes(id))).filter(id => id !== 'tarn');
+  const fs = featList(!!labs.long), forg = featForgers();
   const list = fs.map(f => { const done = (P.featsDone || []).includes(f.id), n = done ? f.goal : (P.feats || {})[f.id] || 0;
     return { pic: medal(f.gift, 24), name: f.name, sub: done ? 'DONE' : `${n} / ${f.goal}`, gold: done, page: [medal(f.gift, 64), f.name, esc(String(f.build).toUpperCase()) + (done ? ' · COMPLETE' : ` · ${n} OF ${f.goal}`), `<p>${esc(f.text)}</p><p class="gp">${done ? 'Unlocked Gift' : 'Gift, locked'}: ${esc(RELICS[f.gift].name)}. ${esc(RELICS[f.gift].text)}</p>`] }; })
     .concat(forg.map(id => ({ name: FORGERS[id].name, sub: P.forgers.includes(id) ? 'FORGER · UNLOCKED' : 'FORGER · LOCKED', gold: P.forgers.includes(id), page: ['', FORGERS[id].name, P.forgers.includes(id) ? 'UNLOCKED' : 'LOCKED', `<p>${esc(FORGER_FEATS[id].text)}</p>`] })));
@@ -3730,12 +3732,12 @@ function tapped(ev) {
     case 'startempty': lostStore = false; try { sessionStorage.removeItem(HAD); } catch { /* nothing to forget */ } render(); break;
     case 'leavetab': Object.assign(G, { run: null, overlay: null, screen: null, shown: null, frames: [], results: null, banked: false, story: null }); setLabs(pref); render(); break;
     case 'home': G.screen = null; if (r && r.phase === 'over') { G.run = null; G.results = null; G.banked = false; setLabs(pref); } render(); break;
-    case 'screen': if (DUAL && G.cx) G.cx.open = null; if (x === 'ach') achBook().look = false; G.screen = x; render(); break;
+    case 'screen': if (DUAL && G.cx) G.cx.open = null; if (x === 'ach') achBook().look = false; if (DUAL && x === 'feats' && G.screen === 'ach') achBack(); G.screen = x; render(); break; // two frames: a book turned to opens on its list, never on a page left open
     case 'achg': { const B = achBook(); B.g = (B.g + n + ACH_GROUPS.length) % ACH_GROUPS.length; B.pg = 0; B.sel = null; if (DUAL) { G.look = null; NAV.key = null; } render(); break; } // the group before or after
     case 'achpg': { const B = achBook(); B.pg = (B.pg + 1) % Math.max(1, B.pages); B.sel = null; render(); break; }
-    case 'achsel': achBook().sel = x; render(); break;
+    case 'achsel': { const rw = AC.groupRows(achAll(), n)[+y]; if (rw) achBook().sel = rw.id; render(); break; } // a row by its group and place: a hidden row's id would spell its name
     case 'achlook': achBook().look = true; render(); break;
-    case 'achclose': achBook().look = false; render(); break; // two frames: a book turned to opens on its list, never on a page left open
+    case 'achclose': achBook().look = false; render(); break;
     case 'lab': pref = { ...pref, [x]: !pref[x] }; store.set(LABKEY, pref); setLabs(pref); render(); break;
     case 'forger': G.pickForger = x; G.pickHeat = Math.min(G.pickHeat, heatOpen()); render(); break;
     case 'heat': G.pickHeat = n; render(); break;
@@ -3763,7 +3765,7 @@ function tapped(ev) {
     case 'descend': if (!P.forgers.includes(G.pickForger)) { render(); break; } /* a locked Forger can be looked at, never taken */ { const s = liveSave(); if (s) { G.screen = null; G.overlay = { kind: 'leave', saved: nameRun(s), at: storedAt() }; render(); break; } } // a run is stored that this screen did not know of (another tab began it): ask, never end it unasked
       if (store.failed.has(PROFILE)) { toast('Your progress is not saved yet. Tap Try again first.'); render(); break; }
       G.banked = false; setLabs(pref); store.set(RUNLABS, pref); G.screen = null; G.results = null; G.run = newRun(db, { seed: (Date.now() % 2147483647) + Math.floor(Math.random() * 1e6), heat: G.pickHeat, forger: G.pickForger, ...runOptions(P, G.pickForger, !!labs.long), uid: Date.now().toString(36) + Math.floor(Math.random() * 1e9).toString(36) }); G.run.uiAch0 = Object.fromEntries(achProgress(db, P, null).filter(x => !x.done).map(x => [x.id, x.have])); G.log = []; G.overlay = null; G.rev = 0; G.at = storedAt(); writeRun(G.run); queueStory('intro'); render(); break;
-    case 'vbuy': try { const b = buy(P, y ? x + ':' + y : x); saveP(); toast(b.name + (y ? ' can now be offered at an Anvil.' : ' can now appear in your runs.')); } catch (e) { toast(e.message); } render(); break;
+    case 'vbuy': try { const b = buy(P, y ? x + ':' + y : x); for (const id of achCheck(db, P, null)) G.achOff.add(id); saveP(); toast(b.name + (y ? ' can now be offered at an Anvil.' : ' can now appear in your runs.')); } catch (e) { toast(e.message); } render(); break;
     case 'storynext': { const st = G.story; if (!st) break; if (++st.i >= SCENES[st.id].lines.length) { G.story = null; if (st.then) { st.then(); break; } nextStory(); } render(); break; }
     case 'storyskip': { const st = G.story; G.story = null; if (st && st.then) { st.then(); break; } nextStory(); render(); break; }
     case 'power': { const a = { t: 'power' }; if (x === 'hand') a.hand = G.sel[0]; if (x === 'zone') a.zone = G.attacker; duel(a); break; }
@@ -3834,5 +3836,5 @@ function trySwap() {
 }
 const warmOld = () => { for (const f of D.art || []) { const im = new Image(); im.src = 'art/' + f + '.webp'; (window.__keep = window.__keep || []).push(im); } }; // keep the old look's pictures warm so a redraw never flashes; in the console look only once its own pack is in
 for (let i = 0; D.sheets && i < Math.ceil(D.pool.cards.length / 100); i++) { const im = new Image(); im.src = D.sheets + i + '.webp'; (window.__keep = window.__keep || []).push(im); }
-window.LM = { G, P, db, act, render, achAdd, labKeys, labWords: () => Object.keys(LABS), unsaved: () => [...store.failed.keys()] }; // for tests
+window.LM = { G, P, db, act, render, achAdd, achAll, achProgress: () => achProgress(db, P, null), labKeys, labWords: () => Object.keys(LABS), unsaved: () => [...store.failed.keys()] }; // for tests
 if (PACK && look !== 'old') bootWait().then(warmOld); else { warmOld(); render(); loadPack(); }

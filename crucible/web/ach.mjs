@@ -63,7 +63,7 @@ export function bookOne(all, gi, page, sel, h, open) {
   const g = ACH_GROUPS[gi], rows = groupRows(all, gi), tt = totals(all), tg = totals(rows), pages = pagesOf(rows, h - 36), pg = Math.min(page, pages.length - 1), P = pages[pg], note = g.id === 'rumours' ? offNote(rows, open) : '';
   let s = lb(8, 24, `ACHIEVEMENTS ${tt.got} OF ${tt.n}`, 'g') + lbR(407, 24, `${tt.gotPts} OF ${tt.pts} POINTS`) + lb(8, 37, 'PACK TRACK', 'g') + track(74, 36, tt.got) + lbR(407, 37, nextPack(tt), 'd')
     + rule(8, 49, 400) + pq(8, 53, 28, '<', 'achg:-1') + lb(42, 57, g.name, 'g') + lb(42 + labelW(g.name) + 6, 57, `· GROUP ${gi + 1} OF ${ACH_GROUPS.length}`, 'd') + lbR(374, 57, `${tg.got} OF ${tg.n} EARNED`) + pq(380, 53, 28, '>', 'achg:1');
-  let y = 72; for (const r of P) { s += rowOne(r, y, r.id === sel, 0, 'achsel:' + r.id); y += rowH(r); }
+  let y = 72; for (const r of P) { s += rowOne(r, y, r.id === sel, 0, `achsel:${gi}:${rows.indexOf(r)}`); y += rowH(r); }
   if (note) s += tl(8, y + 6, wrap(note, 50), 'd');
   if (pages.length > 1) s += lb(8, h - 32, `PAGE ${pg + 1} OF ${pages.length}`, 'd') + (pg < pages.length - 1 ? lbR(396, h - 32, 'MORE', 'g') + more(400, h - 30) : '');
   // the plaques: BACK (lit, as the book's own), LOOK CLOSER, and the next page when there is one
@@ -110,7 +110,7 @@ export function lookTop(all, gi, r) { const v = veiled(r), L = wrap(r.shownText,
 export function listBottom(all, gi, at, y1, open, look = false) { const g = ACH_GROUPS[gi], rows = groupRows(all, gi), tg = totals(rows), note = g.id === 'rumours' ? offNote(rows, open) : '';
   let s = box(0, 0, 413, y1, 'wn') + lb(8, 6, g.name, 'g') + lbR(405, 6, `ROW ${at + 1} OF ${rows.length} · ${tg.got} EARNED`, 'd');
   rows.forEach((r, i) => { const y = 17 + i * 26, v = veiled(r);
-    s += `<button class="rw achrw${r.earned ? ' fam' : ' dk0'}" style="left:4px;top:${y}px;width:405px;height:25px" data-a="nop" data-look="a:${r.id}" data-k="a${i}"${i === at ? ' data-n0' : ''}${look ? ' data-act="plaque"' : ''} aria-label="${esc(v ? 'A hidden row' : r.name)}">`
+    s += `<button class="rw achrw${r.earned ? ' fam' : ' dk0'}" style="left:4px;top:${y}px;width:405px;height:25px" data-a="nop" data-look="a:${i}" data-k="a${i}"${i === at ? ' data-n0' : ''}${look ? ' data-act="plaque"' : ''} aria-label="${esc(v ? 'A hidden row' : r.name)}">`
       + seal(5, 6, r.earned, v) + lb(21, 3, v ? '? ? ?' : r.name, r.earned ? 'g' : '') + lb(21, 13, tierPts(r.tier), 'd')
       + (r.earned ? lbR(397, 8, 'EARNED', 'g') : counting(r) ? lbR(397, 3, `${r.have} / ${r.goal}`) + gauge(293, 13, 104, r.have / r.goal) : v ? lbR(397, 8, 'HIDDEN', 'd') : '') + '</button>'; });
   const nl = note ? wrap(note, 49) : [];
@@ -124,13 +124,17 @@ export function listBottom(all, gi, at, y1, open, look = false) { const g = ACH_
 export function runEndOne(got, closer) { const pts = got.reduce((n, r) => n + PTS(r.tier), 0);
   let s = rule(0, 0, 400) + lb(0, 4, 'ACHIEVEMENTS THIS RUN', 'g') + lbR(399, 4, got.length ? `${got.length} EARNED · +${pts} POINTS` : 'NONE EARNED'), y = 16;
   for (const r of got) { s += rowOne(r, y, false, -8); y += rowH(r); }
-  if (closer) { s += lb(0, y + 2, 'CAME CLOSER', 'd') + lb(76, y + 2, closer.name) + gauge(152, y + 2, 120, closer.have / closer.goal, closer.gain / closer.goal) + lb(278, y + 2, `${closer.have} / ${closer.goal} (+${closer.gain})`); y += 14; }
+  // CAME CLOSER: the row's name, then its gauge and number after the name's measured end; when they do not all fit on
+  // the line, the gauge and number take the next line, under the name
+  if (closer) { const nm = closer.name, num = `${closer.have} / ${closer.goal} (+${closer.gain})`, gx0 = 76 + labelW(nm) + 6, one = gx0 + 126 + labelW(num) <= 400, gx = one ? gx0 : 76, gy = one ? y + 2 : y + 16;
+    s += lb(0, y + 2, 'CAME CLOSER', 'd') + lb(76, y + 2, nm) + gauge(gx, gy, 120, closer.have / closer.goal, closer.gain / closer.goal) + lb(gx + 126, gy, num); y = gy + 12; }
   const h = Math.ceil(y / 16) * 16;
   return `<div class="achsec" style="position:relative;height:${h}px">${s}</div>`; }
-// two screens, top: the same section in the page's box of words, four rows every 28 (at most ten)
-export function runEndTop(got) { const pts = got.reduce((n, r) => n + PTS(r.tier), 0), list = got.slice(0, 10);
+// two screens, top: the same section in the page's box of words (its pager turns the box): a row every 28, and 16 more
+// for each further line its words take, so every row's words are shown whole
+export function runEndTop(got) { const pts = got.reduce((n, r) => n + PTS(r.tier), 0);
   let s = lb(0, 4, 'ACHIEVEMENTS THIS RUN', 'g') + lbR(588, 4, `${got.length} EARNED · +${pts} POINTS`), y = 16;
-  for (const r of list) { const L = wrap(r.how, 70); s += seal(0, y, true) + lb(16, y + 1, r.name, 'g') + lbR(588, y + 1, tierPts(r.tier), 'g') + tl(16, y + 10, L.slice(0, 1)); y += 28; }
+  for (const r of got) { const L = wrap(r.how, 70); s += seal(0, y, true) + lb(16, y + 1, r.name, 'g') + lbR(588, y + 1, tierPts(r.tier), 'g') + tl(16, y + 10, L); y += 12 + L.length * 16; }
   return `<div class="achsec" style="position:relative;height:${Math.ceil(y / 16) * 16}px">${s}</div>`; }
 // two screens, bottom: the cells of what this run earned, achievements first, then the feats it moved
 export const runEndCells = (got, feats) => got.map(r => ({ name: r.name, sub: tierPts(r.tier), gold: true, seal: true })).concat(feats.map(f => ({ name: f.name, sub: f.done ? 'FEAT · COMPLETE' : `FEAT · ${f.after} / ${f.goal}${f.gain ? ` (+${f.gain})` : ''}`, gold: f.done })));
