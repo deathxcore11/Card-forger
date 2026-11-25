@@ -3,7 +3,7 @@
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
 import { RUN } from '../data/waves.js';
 import { sealStageStart, sealGateCleared } from './seals.js';
-import { RUNSPEC, stagesFor, DIFFICULTY, ACES, BIG_PACE } from '../data/stages.js';
+import { RUNSPEC, stagesFor, DIFFICULTY, ACES, BIG_PACE, BIG_TUNE } from '../data/stages.js';
 import { initDoor, doorTick, doorReady } from './door.js';
 import { pow, sin, cos, atan2 } from './dmath.js';
 import { spawnEnemy, spawnAce, mergeEnemy, spawnRate, spotNear, enemyCount } from './enemies.js';
@@ -37,12 +37,14 @@ export function xpScale(g) {
 // ---- setup ----
 // Generates this stage's map from the run seed and loads it as the live terrain; the duelist starts on its plaza.
 export function loadStageMap(g, i) {
+  if (g.opts.terrain === 'open' && g.mode !== 'classic') { const T = BIG_TUNE[g.difficulty], base = DIFFICULTY[g.difficulty]; g.diff = Object.assign({}, base); if (T && i === 0) for (const k of ['hp', 'spawn', 'dmg', 'boss']) g.diff[k] = base[k] * T[k]; }       // the big desert's first stage is tuned harder (a first-timer may not get through it); later stages keep the base numbers
   g.map = g.opts.terrain === 'open' ? bigMap(g.seed, i) : g.opts.terrain === 'small' ? (openMap(g.seed, i, g.opts.arch) || generateStage(g.seed, i, g.stages[i].gen)) : g.opts.sample && i === 0 ? sampleMap() : generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.syncGrid(); g.colliders = buildColliders(g.map, i); g.streamed = new Set(); g._sq = -1; if (g.big) initDoor(g); if (g.map.big) { g.fog = makeFogBig(); streamTo(g.map.spawn.x, g.map.spawn.z, 49, 3); g.colliders.ensure(g.map.spawn.x - 130, g.map.spawn.z - 130, g.map.spawn.x + 130, g.map.spawn.z + 130); } g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
   const p = g.p; p.x = g.map.spawn.x; p.z = g.map.spawn.z; p.y = heightAt(p.x, p.z); p.vx = p.vz = p.vy = 0; p.grounded = true;
   g.openFlow = !!(g.map && g.map.open && g.mode !== 'classic'); g.gateSeen = false; g.sleepersMade = false; g.horde = { on: false, t: 0, why: '' };       // the open desert has its own stage flow: the gate wakes by choice, the elite and the mini bosses sleep, a horde rises after the boss or when the clock runs out
 }
 export function initRun(g) {
   g.mode = g.opts.mode || 'classic'; g.difficulty = DIFFICULTY[g.opts.difficulty] ? g.opts.difficulty : 'medium'; g.diff = DIFFICULTY[g.difficulty]; g.maxAlive = RUN.maxAlive;
+
   if (g.mode === 'classic') { g.stages = null; g.stageSpec = null; return; }
   g.big = g.opts.terrain === 'open'; g.paceK = g.big ? BIG_PACE : 1; g.stages = stagesFor(g.mode, g.big); const open = g.opts.meta && g.opts.meta.stagesOpen; if (open && g.mode === 'run' && open < g.stages.length) g.stages = g.stages.slice(0, open); g.stage = 0; g.scTotal = 0; g.stagesCleared = 0; g.stageFacts = [];
   g.swiftChips = 0; g.duelOn = false; g.otT = 0; g.desc = null; g.chestsOpenedTotal = 0; g.heat = 1;

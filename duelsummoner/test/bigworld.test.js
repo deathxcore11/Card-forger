@@ -184,3 +184,8 @@ test('unlock ladder: a run on a save that has only stage 1 open is one stage lon
   const none = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); assert.equal(none.stages.length, 3);
   assert.ok(one.unlockedBoons.size === 4 && one.unlockedPickups.size === 6 && one.unlockedCards.size === 12);
 });
+
+test('pickups: with the pool full of gems and coins a heart or a power-up still lands (it takes the oldest gem slot and banks its XP)', () => {
+  const g = mkBig(); const m = g.pick; for (let i = 0; i < m.max; i++) { m.alive[i] = 1; m.kind[i] = i % 2; m.age[i] = i; m.val[i] = 1; m.x[i] = i; m.z[i] = 0; m.y[i] = 0; }
+  const xp0 = g.xp; dropPickup(g, PICK.WARD, 5, 0, 5, 1); let n = 0; for (let i = 0; i < m.max; i++) if (m.alive[i] && m.kind[i] === PICK.WARD) n++; assert.equal(n, 1); assert.ok(g.xp > xp0, 'the gem it replaced paid its XP');
+});

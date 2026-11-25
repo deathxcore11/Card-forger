@@ -91,6 +91,7 @@ export function dropPickup(g, kind, x, y, z, val) {
   const m = g.pick; val = val || 1; const far = kind === PICK_XP && g.srcNames[g.curSrc] !== 'card-throw' ? 1 : 0;
   if (kind === PICK_XP) for (let i = 0; i < m.max; i++) if (m.alive[i] && m.kind[i] === PICK_XP && (m.x[i] - x) ** 2 + (m.z[i] - z) ** 2 < 1.44) { m.val[i] += val; if (far) m.far[i] = 1; return; }       // gems dropped within 1.2 m merge into one
   for (let i = 0; i < m.max; i++) if (!m.alive[i]) { m.alive[i] = 1; m.kind[i] = kind; m.x[i] = x; m.y[i] = y + 0.5; m.z[i] = z; m.val[i] = val; m.age[i] = 0; m.far[i] = far; m.ht[i] = -1; return; }
+  if (kind >= 2) { let o = -1, oa = -1; for (let i = 0; i < m.max; i++) if (m.alive[i] && m.kind[i] === PICK_XP && m.age[i] > oa) { oa = m.age[i]; o = i; } if (o >= 0) { g.addXp(m.val[o]); m.kind[o] = kind; m.x[o] = x; m.y[o] = y + 0.5; m.z[o] = z; m.val[o] = val; m.age[o] = 0; m.far[o] = 0; m.ht[o] = -1; return; } }       // a heart or a power-up never vanishes in a full pool: it takes the oldest XP gem's slot and banks that gem's XP
   if (kind === PICK_XP) g.addXp(val);                                    // pool full: bank the XP directly
 }
 

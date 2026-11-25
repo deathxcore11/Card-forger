@@ -43,7 +43,7 @@ export class Minimap {
     this.cv = canvas; canvas.width = SIZE; canvas.height = SIZE; this.ctx = canvas.getContext('2d'); this.map = null; this.base = null; this.big = null;
     this.tiny = document.createElement('canvas'); this.tinyV = -1; this.tinyKey = null;                     // the fog, one pixel per cell, scaled up with smoothing so its edge is soft
   }
-  setMap(map) { this.map = map; this.tiles = new Map(); this.base = map && map.big ? null : paintBase(SIZE, map); this.big = null; this.tinyV = -1; this.tfog = null; }
+  setMap(map) { this.map = map; this.tiles = new Map(); this.dimT = new Map(); this.base = map && map.big ? null : paintBase(SIZE, map); this.big = null; this.tinyV = -1; this.tfog = null; }
   // ---- the big world: the picture is built from the fog. Each 256 m tile is a 32 x 32 canvas, one pixel per 8 m cell, painted (height shade, a little hill shading) as the cell is first seen
   _cellPaint(g, i, j) {
     const T = FOG_TILE, tx = Math.floor(i / T), tz = Math.floor(j / T), key = tileKey(tx, tz); let t = this.tiles.get(key); if (!t) { const cv = document.createElement('canvas'); cv.width = cv.height = T; t = { cv, c: cv.getContext('2d'), tx, tz }; this.tiles.set(key, t); }
@@ -56,11 +56,20 @@ export class Minimap {
     if (this.tfog !== f) { this.tfog = f; this.tiles = new Map(); for (const [key, arr] of f.tiles) { const tx = Math.floor(key / 512) - 128, tz = (key % 512) - 128; for (let k = 0; k < arr.length; k++) if (arr[k]) this._cellPaint(g, tx * FOG_TILE + (k % FOG_TILE), tz * FOG_TILE + ((k / FOG_TILE) | 0)); } }
     f.track = true; const a = f.added; for (let k = 0; k < a.length; k += 2) this._cellPaint(g, a[k], a[k + 1]); a.length = 0;
   }
+  // the small map's unexplored ground: the same shading, dimmed, so the window is a readable picture of the land and not a black square (tiles painted one a frame)
+  _dim(c, size, g, cx, cz, win, s) {
+    const T = FOG_TILE * FOG_CELL, D = this.dimT || (this.dimT = new Map()), x0 = Math.floor((cx - win / 2) / T), x1 = Math.floor((cx + win / 2) / T), z0 = Math.floor((cz - win / 2) / T), z1 = Math.floor((cz + win / 2) / T); let made = 0;
+    c.save(); c.translate(size / 2 - cx * s, size / 2 - cz * s); c.imageSmoothingEnabled = true; c.globalAlpha = 0.42;
+    for (let tz = z0; tz <= z1; tz++) for (let tx = x0; tx <= x1; tx++) { const key = tileKey(tx, tz); let t = D.get(key);
+      if (!t && made < 1) { made++; const cv = document.createElement('canvas'); cv.width = cv.height = FOG_TILE; const cc = cv.getContext('2d'), m = this.map; for (let j = 0; j < FOG_TILE; j++) for (let i = 0; i < FOG_TILE; i++) { const x = tx * T + (i + 0.5) * FOG_CELL, z = tz * T + (j + 0.5) * FOG_CELL, h = m.viewFn(x, z); let r, gg, b; if (h > 33) { r = 40; gg = 28; b = 22; } else { const tr = TIER[Math.max(0, Math.min(5, Math.floor(h / 4)))], sh = Math.max(-0.28, Math.min(0.28, (m.viewFn(x - 4, z - 3) - m.viewFn(x + 4, z + 3)) * 0.07)); r = tr[0] * (1 + sh); gg = tr[1] * (1 + sh); b = tr[2] * (1 + sh); } cc.fillStyle = 'rgb(' + (r | 0) + ',' + (gg | 0) + ',' + (b | 0) + ')'; cc.fillRect(i, j, 1, 1); } t = { cv }; D.set(key, t); }
+      if (t) c.drawImage(t.cv, tx * T * s, tz * T * s, T * s, T * s); }
+    c.restore();
+  }
   // a window of the world (north up): the small map shows 360 m round the duelist, the big one the whole explored area
   _renderBig(c, size, g, yaw, big) {
     this._syncTiles(g); const f = g.fog, b = f.bb; let cx = g.p.x, cz = g.p.z, win = 360;
     if (big) { const x0 = Math.min(b[0], g.p.x - 150), x1 = Math.max(b[2], g.p.x + 150), z0 = Math.min(b[1], g.p.z - 150), z1 = Math.max(b[3], g.p.z + 150); win = Math.min(33000, Math.max(800, Math.max(x1 - x0, z1 - z0) * 1.15)); cx = (x0 + x1) / 2; cz = (z0 + z1) / 2; }
-    const s = size / win; c.fillStyle = 'rgb(12,10,18)'; c.fillRect(0, 0, size, size); c.save(); c.translate(size / 2 - cx * s, size / 2 - cz * s); c.imageSmoothingEnabled = true; const T = FOG_TILE * FOG_CELL;
+    const s = size / win; c.fillStyle = 'rgb(12,10,18)'; c.fillRect(0, 0, size, size); if (!big) this._dim(c, size, g, cx, cz, win, s); c.save(); c.translate(size / 2 - cx * s, size / 2 - cz * s); c.imageSmoothingEnabled = true; const T = FOG_TILE * FOG_CELL;
     for (const t of this.tiles.values()) { const x = t.tx * T, z = t.tz * T; if (x + T < cx - win / 2 || x > cx + win / 2 || z + T < cz - win / 2 || z > cz + win / 2) continue; c.drawImage(t.cv, x * s, z * s, T * s, T * s); }
     c.imageSmoothingEnabled = false; this._icons(c, size, g, yaw, big, { s }); c.restore();
   }
