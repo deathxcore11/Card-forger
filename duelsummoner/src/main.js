@@ -402,7 +402,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'arch') { const y0 = groundY(a, b); fx.ring(a, y0 + 1.8, b, 2.2 + (c || 1) * 0.2, 0xffd56a, 0.35); fx.burst(a, y0 + 3.4, b, 10 + (c || 1) * 3, 0xffe08a, 3, 3, 0.26, 0.5, 6); }       // an arch threaded (the ring grows with each)
   else if (type === 'shrineride') { const y0 = groundY(a, b); fx.ring(a, y0 + 0.3, b, 8, 0xfff2c0, 0.6); for (let k = 0; k < 3; k++) fx.burst(a, y0 + 1.2, b, 26, k ? 0xffd56a : 0xfff2c0, 6, 7 + k * 2, 0.34, 0.8, 8); fx.shake(0.3); }
   else if (type === 'loop') { const y0 = groundY(a, b); fx.ring(a, y0 + (c || 5), b, (c || 5) + 1.5, 0xffd56a, 0.6); fx.burst(a, y0 + (c || 5) * 2, b, 24, 0xfff2c0, 5, 3, 0.3, 0.8, 6); }       // round the full pipe
-  else if (type === 'volley') { const y0 = groundY(a, b); fx.ring(a, y0 + 1.6, b, 3.6, 0xfff2c0, 0.3); }       // the summons all strike with the landing
+  else if (type === 'volley') { const y0 = groundY(a, b), k = Math.min(1, Math.max(0, ((c || 600) - 600) / 4000)); fx.ring(a, y0 + 1.6, b, 3.6 + 9 * k, 0xfff2c0, 0.3 + 0.4 * k); if (k > 0.3) { fx.ring(a, y0 + 0.4, b, 6 + 10 * k, 0xffd56a, 0.5 + 0.3 * k); for (let q = 0; q < 2; q++) fx.burst(a, y0 + 2, b, 20 + Math.round(30 * k), q ? 0xffd56a : 0xfff2c0, 4 + 6 * k, 6, 0.32, 0.8, 8); fx.shake(0.15 + 0.35 * k); } }       // a small combo: a quick ring; a big one fills the screen       // the summons all strike with the landing
   else if (type === 'trick') { if (FLIPS.includes(data)) schoolDid('flip'); }
   else if (type === 'cardlit') { const y0 = (c || groundY(a, b)); fx.ring(a, y0, b, 2.4, 0xfff2c0, 0.4); fx.burst(a, y0, b, 26, 0xffd56a, 5, 6, 0.3, 0.7, 7); }       // a stone card lights for good
   else if (type === 'seal') { const y0 = groundY(a, b); fx.ring(a, y0 + 0.3, b, 1.6 + (c || 1) * 0.3, 0xffd56a, 0.35); fx.burst(a, y0 + 1, b, 10 + (c || 1) * 4, 0xffe08a, 3, 4, 0.24, 0.5, 6); }       // a seal stone lit (the ring grows with each stone of the set)
@@ -411,7 +411,8 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'special') { fx.ring(a, game.p.y + 0.3, b, 16, 0xfff2c0, 0.8); fx.burst(a, game.p.y + 1.5, b, 60, 0xffd56a, 9, 7, 0.36, 1, 6); fx.shake(0.6); }
   else if (type === 'procfx') { fx.ring(ip.x, ip.y + 0.2, ip.z, 4.5, 0xffd56a, 0.4); fx.burst(ip.x, ip.y + 1, ip.z, 14, 0xffe08a, 4, 5, 0.22, 0.55, 6); }       // an item's effect fired
   else if (type === 'surge') { fx.shake(0.2); }
-  else if (type === 'doorrise') { const y0 = Math.min(heightAt(a, b), 40); fx.moment('gatewake', 'A', { shake: 0.45 }); for (let k = 0; k < 4; k++) fx.burst(a + (k - 1.5) * 3, y0 + 0.5, b, 18, 0xd9b872, 3, 3, 0.3, 1.4, 8); fx.ring(a, y0 + 0.3, b, 10, 0xd9b872, 1.4); }       // sand and a low tremor: no beam, no light
+  else if (type === 'doorrise') { rumble.t = 3; rumble.x = a; rumble.z = b; rumble.acc = 0; }
+  if (type === 'doorrise') { const y0 = Math.min(heightAt(a, b), 40); fx.moment('gatewake', 'A', { shake: 0.45 }); for (let k = 0; k < 4; k++) fx.burst(a + (k - 1.5) * 3, y0 + 0.5, b, 18, 0xd9b872, 3, 3, 0.3, 1.4, 8); fx.ring(a, y0 + 0.3, b, 10, 0xd9b872, 1.4); }       // sand and a low tremor: no beam, no light
   else if (type === 'gatewake') { fx.moment('gatewake', 'A', { shake: 0.5 }); fx.beam(game.map.gate.x, 4, game.map.gate.z, 0xffe9a0, 6); fx.ring(game.map.gate.x, 4, game.map.gate.z, 8, 0xffe9a0, 1); }
   else if (type === 'descent') { fx.moment('descent', 'A', { flash: 1, shake: 0.4 }); }
   else if (type === 'stage') { fx.dir.newStage(); fx.moment('stage', 'A', { flash: 0.8 }); }
@@ -463,7 +464,7 @@ function schoolDid(what) { const S = school(); if (S.step >= SCHOOL.length || SC
 // the school beams glint gold until the first grind ever
 let glintT = 0;
 function schoolGlint(dt) { const S = game.big && !school().grind && game.map && game.map.world && game.map.world.school; if (!S || MODE !== 'play') return; glintT -= dt; if (glintT > 0) return; glintT = 0.5; for (const s of S) { const t0 = Math.random(), x = s[0] + (s[2] - s[0]) * t0, z = s[1] + (s[3] - s[1]) * t0, y = groundY(x, z) + 0.75; fx.burst(x, y, z, 9, 0xffe08a, 1.6, 2.2, 0.3, 0.7, 4); fx.ring((s[0] + s[2]) / 2, y - 0.5, (s[1] + s[3]) / 2, 2.6, 0xffd56a, 0.35); } }
-function rideHint(riding) { schoolGlint(1 / 60); const el = document.getElementById('rideHint'); if (!el) return; if (riding) schoolDid('ride'); const on = school().step < SCHOOL.length && game.big && MODE === 'play' && game.t > 0.5; if (el.classList.contains('on') !== on) el.classList.toggle('on', on); if (on) { const im = inputMode(), k = im === 'pad' && window.__dsRideLayout !== 'onfoot' ? SCHOOL_KEYS.classic : SCHOOL_KEYS[im] || SCHOOL_KEYS.keys, txt = SCHOOL[school().step][1](k); if (el.textContent !== txt) el.textContent = txt; } }
+function rideHint(riding) { schoolGlint(1 / 60); rumbleTick(1 / 60); const el = document.getElementById('rideHint'); if (!el) return; if (riding) schoolDid('ride'); const on = school().step < SCHOOL.length && game.big && MODE === 'play' && game.t > 0.5; if (el.classList.contains('on') !== on) el.classList.toggle('on', on); if (on) { const im = inputMode(), k = im === 'pad' && window.__dsRideLayout !== 'onfoot' ? SCHOOL_KEYS.classic : SCHOOL_KEYS[im] || SCHOOL_KEYS.keys, txt = SCHOOL[school().step][1](k); if (el.textContent !== txt) el.textContent = txt; } }
 // on the card, once the look has been left alone for 0.5 s the camera eases round behind the card's heading (Settings: Camera assist; Gentle by default on phones, Off on handhelds and PC)
 const rcam = { yaw: null, idle: 0 };
 function rideCam(dt) {
@@ -471,6 +472,9 @@ function rideCam(dt) {
   if (r && r.on && k > 0 && rcam.idle > 0.5 && MODE === 'play') { let d = (r.heading + Math.PI) - input.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); input.yaw += d * Math.min(1, dt * k); }
   rcam.yaw = input.yaw;
 }
+// the door's rumble: plumes of sand 22 m out on the side the door rose, for 3 s; a direction, never a marker
+const rumble = { t: 0, x: 0, z: 0, acc: 0 };
+function rumbleTick(dt) { if (rumble.t <= 0 || !game.p) return; rumble.t -= dt; rumble.acc -= dt; if (rumble.acc > 0) return; rumble.acc = 0.3; const p = game.p, dx = rumble.x - p.x, dz = rumble.z - p.z, l = Math.hypot(dx, dz) || 1, side = (Math.random() - 0.5) * 0.5, ux = dx / l, uz = dz / l, px = p.x + (ux - uz * side) * 22, pz = p.z + (uz + ux * side) * 22, y0 = groundY(px, pz); fx.burst(px, y0 + 0.4, pz, 22, 0xd9b872, 5, 7, 0.4, 1.2, 9); fx.shake(0.08); }
 function drainEvents() { game.drainEvents(onEvent); }
 
 const dbg = $('debug'), showDebug = /[?&]debug/.test(location.search);

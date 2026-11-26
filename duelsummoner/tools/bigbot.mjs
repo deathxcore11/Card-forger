@@ -23,6 +23,10 @@ function rider(g, bot, c) {
   if (!r || !r.on) { c.slide = (bot.k % 50) === 40 && !c.dash; return; }       // after a moment of running, SLIDE kicks the card out
   c.slide = false; c.dash = false; c.use = false;
   if (!bot.doorKnown && g.door && g.door.state === 'risen' && seesDoor(g)) bot.doorKnown = true;       // a rider keeps its eyes open every tick
+  if (!bot.doorKnown && g.door && g.door.state === 'risen' && g.gate.state === 'closed' && p.grounded && !r.grind) {       // the banner and rumble said a door rose 150 to 300 m away: search in widening loops round where it fired
+    if (!bot.search) { const W = []; let a0 = Math.atan2(p.vz, p.vx); for (const R of [150, 225, 300]) for (let k = 0; k < 8; k++) { const a = a0 + k * Math.PI / 4; W.push([p.x + Math.cos(a) * R, p.z + Math.sin(a) * R]); } bot.search = { W, i: 0 }; }
+    const S = bot.search; while (S.i < S.W.length && Math.hypot(S.W[S.i][0] - p.x, S.W[S.i][1] - p.z) < 30) S.i++; if (S.i < S.W.length) { const dx = S.W[S.i][0] - p.x, dz = S.W[S.i][1] - p.z, dl = Math.hypot(dx, dz) || 1; c.yaw = 0; c.f = -dz / dl; c.r = dx / dl; }
+  }
   if (bot.doorKnown && g.gate.state === 'closed' && p.grounded && !r.grind) { const dx = g.map.gate.x - p.x, dz = g.map.gate.z - p.z, dl = Math.hypot(dx, dz) || 1; c.yaw = 0; c.f = -dz / dl; c.r = dx / dl; c.jump = false; return; }       // the door is known: no more tricks, ride straight to it       // the door is known: no more tricks, ride straight to it
   if (r.grind) { c.yaw = 0; c.f = 0; c.r = Math.max(-1, Math.min(1, r.bal * 3)); c.jump = r.grind.time > (build === 'rail' ? 2.5 : 0.8); return; }       // ride the rail, keep the balance, hop off
   if (p.grounded || r.grind) c.yaw = 0;

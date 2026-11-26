@@ -220,3 +220,27 @@ Each shrine is a small course. How well you ride it sets the boon tier.
 5. Bots for the three builds, then balance.
 
 Contact sheets and drives for each. Report Pass, Fail or Not assessed.
+
+## 13. Measured balance (26 Nov, build 4d29954 and the next push)
+
+**The yardstick is clear rate and death rate on stage 1 Easy, not kills.** Riders out-killing a walker 2x is fine: the summons riding along into fresh enemies is the fantasy. Level pace is checked so it does not run away (rider level within about 1.3x of the walker at 4, 8 and 12 minutes).
+
+Bots (`node tools/bigbot.mjs 24 --player <bot>`), 24 runs each:
+
+| Bot | Cleared | Died | Door found | Kills/min | Level 4 / 8 / 12 min | Chorus a stage |
+|---|---|---|---|---|---|---|
+| Walker (never rides) | 42% | 42% | 54% | 484 | 25 / 39 / 58 | 0 |
+| Newbie (no tricks) | 50% | 38% | 58% | 496 | 24 / 38 / 58 | 0 |
+| Reckless rider | 33% | 42% | 38% | 682 | 24 / 38 / 59 | 111 |
+| Meteor (air and slams) | 50% | 13% | 54% | 967 | 27 / 40 / 58 | 58 |
+| Rail Dragon (grinds) | 33% | 58% | 75% | 914 | 28 / 44 / 62 | 72 |
+| Seal Runner (seal lines, marks) | 42% | 54% | 58% | 1018 | 29 / 44 / 61 | 78 |
+
+Targets: walker clears 35 to 45%; newbie door find 50 to 60%; skilled riders clear 50 to 65% and die 10 to 25%; builds within 1.5x on clear rate and kills a minute.
+- Met: walker, newbie, rider level pace, builds on kills a minute, Meteor.
+- Not yet: Rail Dragon and Seal Runner die 54 to 58%, so they clear 33 to 42%.
+
+What the riders meet: the swarm and the elites lead a fast card; the door rises ahead of a fast card; the rise rumble throws sand on the door's side for 3 s (no beam and no map pin, the standing rule); the red wind reaches 160 m while riding (90 m on foot).
+What riding gives: full slams (4 to 14 m), full trick answers, a chorus strike from a 600 combo at most every 6 s (its spectacle grows with the combo), Flow +5% damage and summon rate a step, summons spaced out at speed.
+
+**Not assessed yet:** feel by hand on any device; phone fps while riding (desktop headless shows 60); touch swipe and draw gestures (touch uses buttons); the Thor bottom-screen ride panel (needs a mock and the owner's yes first).

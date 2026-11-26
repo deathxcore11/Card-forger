@@ -51,7 +51,7 @@ function bank(g, r) {
     else if (T === 0) { const e = g.en, R2 = (rad * 1.7) ** 2; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z, d2 = dx * dx + dz * dz; if (d2 < R2 && d2 > rad * rad) { const d = Math.sqrt(d2); e.x[i] += dx / d * 3; e.z[i] += dz / d * 3; damageEnemy(g, i, dmg * 0.35, { noCrit: true }); } } g.emit('slamland', p.x, p.z, 0); }
     else if (T === 3 || r.lastLoopT > g.t - 2) { r.echo = { t: 0.35, x: p.x, y: p.y, z: p.z, rad, dmg: dmg * 0.6 }; g.emit('slamland', p.x, p.z, 3); } }
   // every summon on the field strikes at once with the landing (their cooldowns end now)
-  if (g.field && g.field.monsters && v >= 600 && !((r.volleyT || -9) > g.t - 6)) { r.volleyT = g.t; g.chorusN = (g.chorusN || 0) + 1; let n = 0; for (const m of g.field.monsters) if (m) { m.cd = Math.min(m.cd, 0); n++; } if (n) g.emit('volley', p.x, p.z, n); }       // the chorus strike: a combo of 600 or more (two or three tricks), at most every 6 s
+  if (g.field && g.field.monsters && v >= 600 && !((r.volleyT || -9) > g.t - 6)) { r.volleyT = g.t; g.chorusN = (g.chorusN || 0) + 1; let n = 0; for (const m of g.field.monsters) if (m) { m.cd = Math.min(m.cd, 0); n++; } if (n) g.emit('volley', p.x, p.z, v); }       // the chorus strike: a combo of 600 or more (two or three tricks), at most every 6 s
   g.score2 = (g.score2 || 0) + v * F.step; g.emit('slam', p.x, p.z, rad); g.event('banked', v);
 }
 function bail(g, r, why) {
