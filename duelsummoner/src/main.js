@@ -702,6 +702,9 @@ function duelistPixels() {
   return { alone, visible, silhouette };
 }
 window.__ds = {
+  // debug lists for walking to the riding landforms: every full pipe within r metres of the start, and the two great drops (x, z, and which way the drop faces)
+  pipes: (r = 2000) => { const m = game.map, sp = m.world && m.world.spawn; if (!sp || !m.big) return []; const out = []; for (let qz = Math.floor((sp.z - r) / 256); qz <= Math.floor((sp.z + r) / 256); qz++) for (let qx = Math.floor((sp.x - r) / 256); qx <= Math.floor((sp.x + r) / 256); qx++) for (const q of m.dressCell(qx, qz).pipes || []) out.push({ x: q[0], z: q[2], radius: q[5], dist: Math.round(Math.hypot(q[0] - sp.x, q[2] - sp.z)) }); return out.sort((a, b) => a.dist - b.dist); },
+  drops: () => { const m = game.map, W = m.world; return W && W.drops ? W.drops.map(d => ({ x: Math.round(d.x), z: Math.round(d.z), faceX: +d.c.toFixed(2), faceZ: +d.s.toFixed(2), shelf: +d.H.toFixed(1) })) : []; },
   blitU: blitMat.uniforms, maskRead: () => { const w = maskRT.width, h = maskRT.height, b = new Uint8Array(w * h * 4); renderer.readRenderTargetPixels(maskRT, 0, 0, w, h, b); return { w, h, b: Array.from(b.filter((_, i) => i % 4 === 0)) }; }, tablebreak: hold => { tb.hold = !!hold; tb.fired = true; blitMat.uniforms.uTBang.value.set(0.5, 2.1, 3.9); tb.on = true; tb.t0 = performance.now(); }, composite, get grass() { return grassMesh; }, chaseZoom: () => chase.zoom, chaseCap: () => chase.zoomCap,
   duelistPixels, see: SEE, tagBlocked, menus,
   bars,

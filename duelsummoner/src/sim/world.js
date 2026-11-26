@@ -1,6 +1,7 @@
 // The map's life: breakable vases, Witness Stones, the Relic Broker, Shrines of Tribute and Card Chests, placed each run from
 // authored regions (data/encounters.js). Every spot is standable, flat, spaced out and has at least three ways off it.
 import { ENCOUNTERS as E } from '../data/encounters.js';
+import { shrineCourse } from '../gen/world/world.js';
 import { sealSpend } from './seals.js';
 import { cos, sin } from './dmath.js';
 import { K } from '../data/tuning.js';
@@ -171,7 +172,7 @@ function newShrine(g, s) {
   while (pick.length < E.shrines.choices && ids.length) pick.push(ids.splice(Math.floor(g.rl() * ids.length), 1)[0]);
   const cards = pick.map(id => { let r = g.rl() * tot, rar = R.order[0]; for (const k of R.order) { r -= W[k]; if (r < 0) { rar = k; break; } } return { id, kind: 'blessing', isNew: true, to: 1, rarity: rar, mult: R.mult[rar] }; });
   const best = cards.reduce((b, c) => (R.order.indexOf(c.rarity) > R.order.indexOf(b) ? c.rarity : b), R.order[0]);
-  return { x: s.x, y: s.y, z: s.z, charge: 0, idle: 0, done: false, cards, best };
+  return { x: s.x, y: s.y, z: s.z, charge: 0, idle: 0, done: false, cards, best, form: s.form || (g.big ? shrineCourse(s.x, s.z).kind : 'stand') };       // form: stand (charged only by standing in it), ring, gate, bowl, spire or pipe (each also charged by riding its course)
 }
 // a shrine charged by riding its course: Flow x3 or more makes every boon at least rare, Flow x5 at least epic, and a clean extra lap lifts each one tier
 export function rideShrineDone(g, s, minRar, bump, how) {

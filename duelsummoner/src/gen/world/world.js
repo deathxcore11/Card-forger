@@ -37,9 +37,13 @@ export function makeWorld(seedLo, stageIndex) {
   // the drop's land is its own: inside its footprint the dunes are smoothed to the level at its foot, so the shelf, the cliff and the landing slope are what you ride
   const dropAt = (x, z, h0) => { for (const d of W.drops) { const dx = x - d.x, dz = z - d.z; if (dx * dx + dz * dz > 150 * 150) continue; const a = dx * d.c + dz * d.s, b = Math.abs(-dx * d.s + dz * d.c); if (b > d.w + 16 || a < -110 || a > 100) continue;
     if (d.ref === undefined) d.ref = base0(d.x + d.c * 30, d.z + d.s * 30);
-    let p = a < -90 ? 0 : a < -20 ? (a + 90) / 70 : a < 0 ? 1 : a < 2 ? 1 - 0.45 * (a / 2) : a < 50 ? 0.55 - 0.45 * (a - 2) / 48 : a < 80 ? 0.1 * (1 - (a - 50) / 30) : 0; const sp = a < 0 || a >= 2 ? p * p * (3 - 2 * p) * 0.5 + p * 0.5 : p;
+    let p = a < -90 ? 0 : a < -20 ? (a + 90) / 70 : a < 0 ? 1 : a < 2 ? 1 - 0.45 * (a / 2) : a < 34 ? 0.55 - 0.45 * (a - 2) / 32 : a < 80 ? 0.1 * (1 - (a - 34) / 46) : 0; const sp = a < 0 || a >= 2 ? p * p * (3 - 2 * p) * 0.5 + p * 0.5 : p;
     const m = (1 - sstep(d.w, d.w + 16, b)) * sstep(-110, -90, a) * (1 - sstep(80, 100, a)); return h0 * (1 - m) + (d.ref + d.H * sp) * m; } return h0; };
   W.dropH = (x, z) => dropAt(x, z, 0);
+  // the start valley: one wave valley through the middle of the map, where the start is, whatever the land there, so every run opens with a line to ride (it fades out 700 m away)
+  { const sr = rngOf(seed ^ 0x5A11), a = sr() * TAU; W.sv = { c: cosA(a), s: sinA(a), off: (sr() - 0.5) * 60 }; }
+  const startValleyQ = (x, z) => { const S = W.sv, u = x * S.c + z * S.s; if (u > 700 || u < -700) return 0; const v = -x * S.s + z * S.c + 22 * sinA(u / 90) - S.off, d = Math.abs(v) / 28; if (d >= 1) return 0; const q = 1 - d * d; return q * q * (1 - sstep(450, 700, Math.abs(u))); };
+  W.startValleyQ = startValleyQ;
   // ---- regions
   const regs = new Map();
   function region(rx, rz) {
@@ -83,7 +87,7 @@ export function makeWorld(seedLo, stageIndex) {
   W.landSites = (kind, x0, z0, x1, z1) => { const G = kind === 1 ? 200 : kind === 3 ? 240 : 180, out = []; for (let j = Math.floor(z0 / G); j <= Math.floor(z1 / G); j++) for (let i = Math.floor(x0 / G); i <= Math.floor(x1 / G); i++) { const s = siteOf(kind, i, j, G); if (s && (kind === 3 ? [4, 6].includes(near2(s.x, s.z).A.type) : near2(s.x, s.z).A.type === (kind === 1 ? 2 : 1))) out.push(s); } return out; };
   // how deep in a wave valley (0 on the crests, 1 on the floor): S-shaped valleys 56 m wide every 150 m
   function valleyQ(P, x, z) { const u = x * P.c1 + z * P.s1, v = -x * P.s1 + z * P.c1 + 28 * sinA(u / 95), vv = v - 150 * Math.floor(v / 150) - 75, d = Math.abs(vv) / 28; if (d >= 1) return 0; const q = 1 - d * d; return q * q; }
-  W.valleyAt = (x, z) => { const A = near2(x, z).A; if (A.type === 0) return valleyQ(A.P, x, z); if (A.type === 3) { const a = Math.abs(2 * vnoise(A.P.seed ^ 0x701, x / 520, z / 520) - 1); return a < 0.12 ? 1 - a / 0.12 : 0; } return 0; };
+  W.valleyAt = (x, z) => { const A = near2(x, z).A, sv = startValleyQ(x, z); if (A.type === 0) return Math.max(sv, valleyQ(A.P, x, z)); if (A.type === 3) { const a = Math.abs(2 * vnoise(A.P.seed ^ 0x701, x / 520, z / 520) - 1); return Math.max(sv, a < 0.12 ? 1 - a / 0.12 : 0); } return sv; };
   function landform(R, x, z) {
     const T = R.type, P = R.P; let h = 0;
     if (T === 0) {       // wave valleys: S-shaped valleys 48 m wide every 170 m, banked so a carve from side to side keeps speed; rollers in patches: rows of 1.2 m bumps 10.5 m apart
@@ -94,15 +98,17 @@ export function makeWorld(seedLo, stageIndex) {
       for (let j = cj - 1; j <= cj + 1; j++) for (let i = ci - 1; i <= ci + 1; i++) { const s = siteOf(1, i, j, G); if (!s) continue; const dx = x - s.x, dz = z - s.z, r2 = dx * dx + dz * dz, RR = s.R + 7; if (r2 > RR * RR) continue; const r = sq(r2), k = r / s.R;
         if (k < 1) h -= s.D * (1 - k * k * k); const l = (r - s.R - 1.5) / 4; if (l > -1 && l < 1) h += 1.2 * (1 - l * l); }
       const m = sstep(0.62, 0.72, vnoise(P.seed ^ 0x9A2, x / 220, z / 220)); if (m > 0) h += m * 0.6 * (1 - cosA(TAU * (x * P.c1 + z * P.s1) / 11));
-    } else if (T === 1) {       // mesa fields: step-downs
-      const G = 180, ci = Math.floor(x / G), cj = Math.floor(z / G);
-      for (let j = cj - 1; j <= cj + 1; j++) for (let i = ci - 1; i <= ci + 1; i++) { const s = siteOf(2, i, j, G); if (!s) continue; const dx = x - s.x, dz = z - s.z, a = dx * s.c + dz * s.s, b = Math.abs(-dx * s.s + dz * s.c); if (b > 10 || a < -s.L1 || a > 4 + s.L2) continue;
-        const prof = a < 0 ? (a + s.L1) / s.L1 : a < 4 ? 1 : 1 - (a - 4) / s.L2, sm = prof * prof * (3 - 2 * prof); h += s.H * (a < 0 ? prof : sm) * (1 - sstep(7, 10, b)); }
     }
     return h;
   }
   const regH = (R, x, z) => {
     let h = duneH(R.P, x, z) - R.off + landform(R, x, z);
+    if (R.type === 1) {       // mesa fields: step-downs, each on its own smoothed ground (the dunes under it are levelled to the height where its ramp starts), so the ramp, the top and the landing slope are exactly what you ride
+      const G = 180, ci = Math.floor(x / G), cj = Math.floor(z / G);
+      for (let j = cj - 1; j <= cj + 1; j++) for (let i = ci - 1; i <= ci + 1; i++) { const s = siteOf(2, i, j, G); if (!s) continue; const dx = x - s.x, dz = z - s.z, a = dx * s.c + dz * s.s, b = Math.abs(-dx * s.s + dz * s.c); if (b > 16 || a < -s.L1 - 12 || a > 16 + s.L2) continue;
+        if (s.ref === undefined) s.ref = duneH(R.P, s.x - s.c * s.L1, s.z - s.s * s.L1) - R.off;
+        const prof = a < -s.L1 ? 0 : a < 0 ? (a + s.L1) / s.L1 : a < 4 ? 1 : a < 4 + s.L2 ? 1 - (a - 4) / s.L2 : 0, sm = prof * prof * (3 - 2 * prof), m = (1 - sstep(10, 16, b)) * sstep(-s.L1 - 12, -s.L1, a) * (1 - sstep(4 + s.L2, 16 + s.L2, a));
+        h = h * (1 - m) + (s.ref + s.H * (a < 0 ? prof : sm)) * m; } }
     if (R.type === 3) { const a = Math.abs(2 * vnoise(R.P.seed ^ 0x701, x / 520, z / 520) - 1), d = a / 0.17; if (d < 1) { const d2 = d * d; h -= R.trD * 1.45 * (1 - d2 * d2); } }       // canyon runs: a half-pipe, a flat floor and walls that steepen toward the top
     else if (R.type === 6) h += R.rgH * (1 - sstep(0, 0.2, Math.abs(2 * vnoise(R.P.seed ^ 0x711, x / 900, z / 900) - 1)));
     return h;
@@ -117,12 +123,12 @@ export function makeWorld(seedLo, stageIndex) {
   // the ground before anything is placed on it: the blended regions, the slow global rise and fall, the mountains
   function baseH(x, z) {
     const n = near2(x, z), t = sstep(-320, 320, n.db - n.da); let h = regH(n.A, x, z) * t; if (t < 0.999) h += regH(n.B, x, z) * (1 - t);
-    return dropAt(x, z, h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z));
+    return dropAt(x, z, h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z) - 8 * startValleyQ(x, z));
   }
-  function base0(x, z) { const n = near2(x, z), t = sstep(-320, 320, n.db - n.da); let h = regH(n.A, x, z) * t; if (t < 0.999) h += regH(n.B, x, z) * (1 - t); return h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z); }
+  function base0(x, z) { const n = near2(x, z), t = sstep(-320, 320, n.db - n.da); let h = regH(n.A, x, z) * t; if (t < 0.999) h += regH(n.B, x, z) * (1 - t); return h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z) - 8 * startValleyQ(x, z); }
   // the colour a region gives the sand (view only): [colour, strength] per type, blended across the same 640 m band as the heights
   const TINT = [[0xf3c978, 0], [0xe0a060, 0.38], [0xeee2c8, 0.6], [0xd98a50, 0.45], [0xe8d29a, 0.25], [0xc9b378, 0.4], [0xd6a878, 0.35]], mixh = (a, b, t) => { const m = sh => Math.round(((a >> sh) & 255) * (1 - t) + ((b >> sh) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
-  W.tintAt = (x, z) => { const n = near2(x, z), t = sstep(-320, 320, n.db - n.da), A = TINT[n.A.type], B = TINT[n.B.type], c = mixh(B[0], A[0], t), k = B[1] * (1 - t) + A[1] * t, vq = n.A.type === 0 ? valleyQ(n.A.P, x, z) * t : 0; return vq > 0.02 ? { c: mixh(c, 0xc87436, Math.min(1, vq * 1.1)), k: k + (0.55 - k) * Math.min(1, vq * 1.2) } : { c, k }; };       // a wave valley's floor is a warmer, darker sand: the line to ride reads at once
+  W.tintAt = (x, z) => { const n = near2(x, z), t = sstep(-320, 320, n.db - n.da), A = TINT[n.A.type], B = TINT[n.B.type], c = mixh(B[0], A[0], t), k = B[1] * (1 - t) + A[1] * t, vq = Math.max(n.A.type === 0 ? valleyQ(n.A.P, x, z) * t : 0, startValleyQ(x, z)); return vq > 0.02 ? { c: mixh(c, 0xc87436, Math.min(1, vq * 1.1)), k: k + (0.55 - k) * Math.min(1, vq * 1.2) } : { c, k }; };       // a wave valley's floor is a warmer, darker sand: the line to ride reads at once
   W.baseH = baseH; W.regionAt = (x, z) => near2(x, z).A; W.mount = mount;
   // names: every region and every landmark has its own, seeded, in our own words (shown when you arrive)
   const RNAMES = [['the Amber Sea', 'the Whispering Dunes', 'the Sea of Cinders', 'the Long Drift', 'the Gilded Swells', 'the Tallow Dunes', 'the Slow Waves'], ['the Anvil Mesas', 'the Red Tables', 'the Broken Altars', 'the Stacks', 'the Kiln Mesas', 'the Hearth Tables'],
@@ -297,8 +303,9 @@ export function makeWorld(seedLo, stageIndex) {
   // the start is generous: a Witness Stone 35 to 60 m out and a second free chest 60 to 100 m out, on flat ground clear of everything, so the first item comes inside the first minute
   W.startExtras = []; { const o = gather9(sp[0], sp[1]); for (const [type, lo, hi] of [['stone', 35, 60], ['cchest', 60, 100]]) { let site = null; for (let t = 0; t < 400 && !site; t++) { const r = lo + rs() * (hi - lo), a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (spread(x, z, 3) > 0.9 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 4) || o.pockets.some(p => dist(p.x, p.z, x, z) < 16) || o.rings.some(q => dist(q.x, q.z, x, z) < 30) || (fc && dist(fc.x, fc.z, x, z) < 12) || W.startExtras.some(q => dist(q.x, q.z, x, z) < 14)) continue; site = { type, x, z, free: true }; } if (site) { W.addPad(site.x, site.z, 3, 8); W.startExtras.push(site); } } }
   // the first landmark or mesa the start looks at
-  { let bd = 1e9, bt = null; const o = gather9(sp[0], sp[1]); for (const b of o.blocks) { const d = dist(b.cx, b.cz, sp[0], sp[1]); if (b.h >= 7 && d >= 50 && d < bd) { bd = d; bt = b; } } for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const b = landmark(Math.floor(sp[0] / LC) + i, Math.floor(sp[1] / LC) + j); if (b) { const d = dist(b.cx, b.cz, sp[0], sp[1]); if (d >= 80 && d < 900 && d < bd * 3) { bd = Math.min(bd, d); bt = b; } } } { let by = 0, bdot = -2; if (bt) { const dx = bt.cx - sp[0], dz = bt.cz - sp[1], dl = sq(dx * dx + dz * dz) || 1; for (let k = 0; k < 48; k++) { const a = k * TAU / 48, dot = (-sinA(a) * dx - cosA(a) * dz) / dl; if (dot > bdot) { bdot = dot; by = a; } } } W.startYaw = r2(by); } W.startLandmark = bt; }
+  { let bd = 1e9, bt = null; const o = gather9(sp[0], sp[1]); for (const b of o.blocks) { const d = dist(b.cx, b.cz, sp[0], sp[1]); if (b.h >= 7 && d >= 50 && d < bd) { bd = d; bt = b; } } for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const b = landmark(Math.floor(sp[0] / LC) + i, Math.floor(sp[1] / LC) + j); if (b) { const d = dist(b.cx, b.cz, sp[0], sp[1]); if (d >= 80 && d < 900 && d < bd * 3) { bd = Math.min(bd, d); bt = b; } } } { let by = 0, bdot = -9; const dx = bt ? bt.cx - sp[0] : 0, dz = bt ? bt.cz - sp[1] : 0, dl = sq(dx * dx + dz * dz) || 1; for (let k = 0; k < 48; k++) { const a = k * TAU / 48, fx = -sinA(a), fz = -cosA(a); let vq = 0; for (let d = 25; d <= 110; d += 12) { const q = W.valleyAt(sp[0] + fx * d, sp[1] + fz * d); if (q > vq) vq = q; } const dot = (bt ? (fx * dx + fz * dz) / dl : 0) + 1.5 * vq; if (dot > bdot) { bdot = dot; by = a; } } W.startYaw = r2(by); } W.startLandmark = bt; }
   // ride school: a straight line of three beams just ahead of the spawn and 3.5 m to the right, along the start view, for the first ollie and grind (the tutorial points at it)
+  // (the opening view looks toward the landmark and a wave valley in sight within 110 m, the valley weighted more)
   // ride school: three short beams in the opening view (within about 25 degrees of the start camera, 18 to 36 m ahead), the flattest such line, with the ground flattened under each
   { let best = null, bs = 1e9; for (const k of [0, 0.12, -0.12, 0.24, -0.24]) for (const side of [2.5, -2.5]) { const yw = W.startYaw + k, fx = -sinA(yw), fz = -cosA(yw), ox = sp[0] - fz * side, oz = sp[1] + fx * side, L = []; let worst = 0; for (const [d0, d1] of [[18, 22.5], [25, 29.5], [32, 36.5]]) { const ax = ox + fx * d0, az = oz + fz * d0, bx = ox + fx * d1, bz = oz + fz * d1; worst = Math.max(worst, spread((ax + bx) / 2, (az + bz) / 2, 4)); L.push([ax, az, bx, bz]); } if (worst < bs) { bs = worst; best = L; } }
     W.school = best; for (const s of best) W.addPad((s[0] + s[2]) / 2, (s[1] + s[3]) / 2, 3.5, 7); }

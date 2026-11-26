@@ -11,7 +11,8 @@ const wp = { x: 0, z: 0 };
 export function newBot(opts) { return { rec: emptyRecord(), cmd: { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false }, dashAt: -9, hold: false, flow: null, navAt: -1, navKey: '', lx: 0, lz: 0, still: 0, panic: 0, stuck: 0, wander: 0, wang: 0, tick: 0, focus: !!(opts && opts.focus), world: !!(opts && opts.world), hop: opts && opts.hop !== undefined ? opts.hop : Number(process.env.HOP || 0), hopSeed: 12345, hopWait: 0, hopDecided: false, hopOk: false, hopP() { return this.hop; } }; }       // hop: the share of landings on which the bot hits a frame-perfect slide hop (HOP=0.5 in the environment): the rest are hopped late, which gives nothing
 
 function score(g, c, focus) {
-  if (process.env.REACHBOT && c.id === 'widening-rite') return 500;       // the Reach balance check: the bot takes Widening Rite at every offer that has it
+  if (process.env.REACHBOT && c.id === 'widening-rite') return 500;
+  if (g._prefer && g._prefer.includes(c.id)) return 600 + (c.isNew ? 0 : 50);       // a build bot takes its build's cards first       // the Reach balance check: the bot takes Widening Rite at every offer that has it
   const D = DUELISTS[g.field.duelist], pair = [D.start, D.second];
   if (c.kind === 'fusion') return 1000;
   if (c.kind === 'final') return c.id === 'close' ? 100 : 1;
@@ -102,6 +103,7 @@ export function botRecord(g, bot) {
       if (p.grounded) { if (bot.hopWait > 0) bot.hopWait--; else { c.jump = true; c.slide = true; } }
     }
   } else { bot.cmd.dash = false; bot.cmd.use = bot.hold; }
+  if (bot.rider && !g.offer) bot.rider(g, bot, bot.cmd);       // a riding layer on top (tools/bigbot.mjs builds)
   quantise(bot.cmd, rec);
   return rec;
 }

@@ -61,6 +61,7 @@ function bail(g, r, why) {
 
 // returns true when the ride moved the duelist this tick (the run code then skips its own movement)
 export function rideTick(g, dt, cmd, mx, mz, hasInput) {
+  if (g.opts && g.opts.noRide) return false;       // a walker (the bots' control group)
   const p = g.p, r = p.ride || (p.ride = makeRide()), F = flowOf(g);
   if (r.on) shrineRide(g, p, r, dt);
   if (F.step > 1) { F.idle += dt; if (F.idle > FLOW.idle + (g.mods.flowHold || 0)) { F.step--; F.idle = 0; F.xp = 0; g.event('flowdown', F.step); } }
@@ -144,7 +145,7 @@ const TWO_PI = 6.283185307179586, wrapPi = a => (a > 3.141592653589793 ? a - TWO
 function shrineTier(g) { const st = flowOf(g).step; return st >= 5 ? 'epic' : st >= 3 ? 'rare' : null; }
 export function shrineRide(g, p, r, dt) {
   for (const s of g.world.shrines || []) {
-    if (s.done) continue; const dx = p.x - s.x, dz = p.z - s.z; if (dx * dx + dz * dz > 70 * 70) continue; const C = s.course || (s.course = shrineCourse(s.x, s.z));
+    if (s.done || s.form === 'stand') continue; const dx = p.x - s.x, dz = p.z - s.z; if (dx * dx + dz * dz > 70 * 70) continue; const C = s.course || (s.course = shrineCourse(s.x, s.z));
     if (C.kind === 'ring') {
       const on = r.grind && r.grind.s[6] === 'ring' && Math.abs(r.grind.s[7] - s.x) < 1.5 && Math.abs(r.grind.s[8] - s.z) < 1.5;
       if (on) { const a = atan2(dz, dx); if (s.rLast !== undefined && s.rIdle < 0.8) s.ra += wrapPi(a - s.rLast); else s.ra = 0; s.rLast = a; s.rIdle = 0;
@@ -203,8 +204,8 @@ function land(g, p, r, cmd) {
   // landing assist (touch, on by default; only at Flow x1 and x2): a wider landing angle, a flip nearly done counts, a grab still held is let go on touchdown
   const assist = !!(g.opts && g.opts.rideAssist) && flowOf(g).step <= 2; let letGo = false; if (assist && r.grabbing) { letGo = true; r.grabbing = false; addTrick(g, r, r.grabName, POINTS.grab + POINTS.grabPerSecond * r.grabT); }
   const clean = !r.grabbing && r.flipT <= (assist ? 0.16 : 0.06) && rem <= RIDE.landTol * (assist ? 1.6 : 1);
-  r.spin = 0; r.flipT = 0; r.airT = 0;
-  if (!clean) { bail(g, r, r.grabbing ? 'grab' : r.flipT > 0.06 ? 'flip' : 'angle'); return; }
+  const why = r.grabbing ? 'grab' : r.flipT > 0.06 ? 'flip' : 'angle'; r.spin = 0; r.flipT = 0; r.airT = 0;       // (the reason is read before the flip clock is cleared)
+  if (!clean) { bail(g, r, why); return; }
   if (r.revertT > 0 && vy < -9) { addTrick(g, r, 'Revert', POINTS.revert); r.revertT = 0; }
   if (letGo) r.manualHold = true;       // the slide still held from the grab is not a manual
   if (r.manualArm !== undefined && r.clk - r.manualArm < 0.4) { r.manualArm = undefined; r.manual = true; r.manualFlick = true; r.bal = 0; r.manualT = 0; return; }       // flicked just before landing: land into a manual

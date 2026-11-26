@@ -27,7 +27,7 @@ float bayer4(highp vec2 fc, vec2 off) {
 
 const NEAR_GLSL = `
 uniform vec2 uNear;
-float nearKeep(float viewZ) { return floor(clamp((viewZ - uNear.x) / (uNear.y - uNear.x), 0.0, 1.0) * 4.0 + 0.5) / 4.0; }
+float nearKeep(float viewZ) { return viewZ < uNear.y ? 0.0 : 1.0; }       // a piece right at the lens is simply gone (no grey dither wall across the screen)
 `;
 
 // merged map pieces and props: the screen-space porthole plus the near fade
@@ -45,7 +45,7 @@ float holeKeep() {
   highp vec2 q = (gl_FragCoord.xy - uHole.xy) / uHoleR;
   float d = dot(q, q);
   float front = step(vViewZ, uHole.z - 0.8) * step(uFeetY + 0.4, vWY);
-  float k = d < 0.55 ? 0.25 : (d < 1.0 ? 0.5 : 1.0);
+  float k = d < 0.45 ? 0.25 : (d < 0.8 ? 0.5 : 1.0);       // only the part round the duelist thins
   return mix(1.0, k, front);
 }
 void main() {

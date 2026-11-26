@@ -27,7 +27,7 @@ function placeCell(g, m, C) {
   for (const pk of C.pockets) {
     let kind = pk.type;
     if (kind === 'altar' && W.altar) kind = 'stone'; if (kind === 'broker' && (W.broker || (g.oaths && g.oaths.pauper))) kind = 'shrine';
-    if (kind === 'vases') vases(g, pk); else put(g, m, kind, pk.x, pk.z, kind === 'cchest' ? { free: ((Math.floor(pk.x * 7 + pk.z * 13) % 10) + 10) % 10 < 7 } : undefined);       // seven chests in ten are free, the rest cost coins
+    if (kind === 'vases') vases(g, pk); else put(g, m, kind, pk.x, pk.z, kind === 'cchest' ? { free: ((Math.floor(pk.x * 7 + pk.z * 13) % 10) + 10) % 10 < 7 } : kind === 'shrine' && pk.type !== 'shrine' ? { form: 'stand' } : undefined);       // a shrine standing in for a broker has no course: stand in it       // seven chests in ten are free, the rest cost coins
     m.encounters.push({ type: kind, x: pk.x, z: pk.z });
   }
   for (const e of C.extras) vases(g, e);

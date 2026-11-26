@@ -38,7 +38,8 @@ export function spawnRate(t) {
 function ringSpot(g, out) {
   const S = CFG.spawn, p = g.p;
   for (let k = 0; k < S.tries; k++) {
-    const a = g.rsp() * Math.PI * 2, d = S.min + g.rsp() * (S.max - S.min);
+    let a = g.rsp() * Math.PI * 2, d = S.min + g.rsp() * (S.max - S.min);
+    const rd = g.big && p.ride && p.ride.on && p.ride.speed > 10 ? p.ride : null; if (rd) { a = atan2(cos(rd.heading), sin(rd.heading)) + (a - Math.PI) * 0.45; d += rd.speed * 0.8; }       // a rider meets the swarm ahead: spawns gather in front of the card (about 80 degrees either side), further out the faster it goes
     const x = p.x + cos(a) * d, z = p.z + sin(a) * d, h = heightAt(x, z);
     if (h >= 50 || (g.map && g.map.open && h > 38)) continue;
     out.x = x; out.z = z; out.y = h; return true;

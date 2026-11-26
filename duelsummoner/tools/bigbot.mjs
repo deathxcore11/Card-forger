@@ -1,7 +1,8 @@
 // Bots for the big desert, to tune the door and the first runs. Two players:
 //   newbie  a first-timer: starter pools, goes toward what it can see (the nearest pocket, a mesa to climb), notices the door only when it can see it (a clear line within 200 m, or the red wind within 90 m, or the fog has shown it), simple dodging
 //   skilled a practised player: knows the door's place the moment it rises, farms pockets and sleepers meanwhile
-// usage: node tools/bigbot.mjs <runs> [--player newbie|skilled] [--seed0 N] [--stage1] [--full] [--unlocked] [--difficulty easy|medium|hard] [--maxmin N] [--json]
+//   rail | meteor | seal  riders with a build (Rail Dragon grinds, Meteor big air and slams, Seal Runner seal lines and marks); reckless tricks through everything; walker never rides (the control group)
+// usage: node tools/bigbot.mjs <runs> [--player newbie|skilled|rail|meteor|seal|reckless|walker] [--seed0 N] [--stage1] [--full] [--unlocked] [--difficulty easy|medium|hard] [--maxmin N] [--json]
 //   --stage1  stop a run when the door is woken or the clock hits 12:00 (door-find rate); default plays the whole stage; --full all stages
 //   --unlocked the first 10 runs' unlocks (about 40 items and 8 boons) instead of a fresh save
 import { Game } from '../src/sim/game.js';
@@ -11,6 +12,30 @@ import { heightAt } from '../src/sim/terrain.js';
 import { exploredAt } from '../src/sim/fog.js';
 import { DIFFICULTY } from '../src/data/stages.js';
 import { DOOR } from '../src/sim/door.js';
+import { railsNear, sealsNear } from '../src/sim/rails.js';
+const BUILDS = { rail: ['ember-wyvern', 'kindling-rite', 'twinflare-tyrant', 'pack-drill', 'rails', 'poise', 'ruin-chalk'], meteor: ['cinder-hatchling', 'elemental-litany', 'widening-rite', 'heart-of-the-cards', 'pop', 'quake', 'dune-kite'],
+  seal: ['rune-apprentice', 'sigil-familiar', 'astral-magus', 'deep-marks', 'pit-of-seals', 'flowkeep'], reckless: ['ember-wyvern', 'cinder-hatchling', 'swift-draw', 'whirl'] };
+const RIDERS = ['rail', 'meteor', 'seal', 'reckless'];
+// the riding layer: kick the card out, steer where the walking bot wanted to go, and trick by build; its own counter, never the sim's streams
+function rider(g, bot, c) {
+  const p = g.p, r = p.ride, build = PLAYER; bot.k = (bot.k || 0) + 1;
+  if (!r || !r.on) { c.slide = (bot.k % 50) === 40 && !c.dash; return; }       // after a moment of running, SLIDE kicks the card out
+  c.slide = false; c.dash = false; c.use = false;
+  if (r.grind) { c.yaw = 0; c.f = 0; c.r = Math.max(-1, Math.min(1, r.bal * 3)); c.jump = r.grind.time > (build === 'rail' ? 2.5 : 0.8); return; }       // ride the rail, keep the balance, hop off
+  if (p.grounded || r.grind) c.yaw = 0;
+  if (p.grounded) {
+    bot.air = 0;
+    if (build === 'rail' && !bot.railT) { const L = railsNear(g, p.x, p.z, 14); if (L.length) { const s = L[0], mx = (s[0] + s[3]) / 2, mz = (s[2] + s[5]) / 2, dx = mx - p.x, dz = mz - p.z, dl = Math.hypot(dx, dz) || 1; c.f = -dz / dl; c.r = dx / dl; if (dl < 5) { bot.railT = 12; } } }
+    if (build === 'seal') { const S = sealsNear(g, p.x, p.z, 60).filter(q => !(g.rideLit && g.rideLit.sealsDone[q[3]])); if (S.length) { let b = S[0], bd = 1e9; for (const q of S) { const d = Math.hypot(q[0] - p.x, q[2] - p.z); if (d < bd && d > 1) { bd = d; b = q; } } const dx = b[0] - p.x, dz = b[2] - p.z, dl = Math.hypot(dx, dz) || 1; c.f = -dz / dl; c.r = dx / dl; } }
+    if (bot.railT > 0) { bot.railT--; c.jump = bot.railT > 4; return; }       // a short crouch and pop up onto the rail (it snaps on as the card comes down)
+    const every = build === 'meteor' ? 70 : build === 'reckless' ? 45 : 90, crouch = build === 'meteor' ? 30 : build === 'reckless' ? 12 : 24; const ph = bot.k % every; c.jump = ph < crouch;
+    return;
+  }
+  bot.air = (bot.air || 0) + 1; c.yaw = r.heading + Math.PI; c.r = 0; c.f = 1; c.jump = false;       // in the air: the camera behind the card, the stick forward (no stray spin)
+  if (build === 'rail' || build === 'seal') { c.dash = bot.air === 6 && p.vy > 5; }       // flip only off a real pop (enough air to finish it)
+  else if (build === 'meteor') { c.dash = bot.air === 5; c.slide = bot.air > 16 && bot.air < 26 && p.vy > -6; }
+  else { c.dash = bot.air === 4 || bot.air === 22; c.slide = bot.air > 8 && bot.air < 40; }       // reckless: two flips and a long grab, often into the ground
+}
 
 const argv = process.argv.slice(2), flag = f => argv.includes(f), val = (f, d) => (argv.includes(f) ? argv[argv.indexOf(f) + 1] : d);
 const RUNS = Number(argv.find(a => /^\d+$/.test(a)) || 20), PLAYER = val('--player', 'newbie'), SEED0 = Number(val('--seed0', 1000)), DIF = val('--difficulty', 'easy'), MAXMIN = Number(val('--maxmin', 14));
@@ -20,10 +45,13 @@ function metaFor() {
   const m = defaultMeta();
   if (UNLOCKED) { m.stagesOpen = FULL ? 3 : 1; for (const id of ['hunters-mark', 'traders-seal', 'sharpened-edge', 'stacked-deck', 'summoners-chalk', 'field-banner', 'leather-vest', 'waterskin', 'herb-pouch', 'spyglass', 'iron-filings', 'treasure-sack', 'rabbit-foot', 'vampire-fang', 'echo-bell', 'last-stand', 'second-breath', 'level-spark']) if (!m.unlockedItems.includes(id)) m.unlockedItems.push(id); for (const b of ['fortune', 'precision', 'plunder', 'haste']) m.unlockedBoons.push(b); for (const k of [6, 8]) m.unlockedPickups.push(k); m.duelists.push('mira'); }
   else if (FULL) m.stagesOpen = 3;
+  if (RIDERS.includes(PLAYER) || PLAYER === 'walker') { for (const id of Object.keys(CARDS_ALL)) if (!m.unlockedCards.includes(id)) m.unlockedCards.push(id); for (const id of Object.keys(ITEMS_ALL)) if (!m.unlockedItems.includes(id)) m.unlockedItems.push(id); for (const b of Object.keys(BOONS_ALL)) if (!m.unlockedBoons.includes(b)) m.unlockedBoons.push(b); }       // the build bots all play with everything open, so builds compare fairly
   if (PLAYER === 'skilled') { m.stagesOpen = 3; for (const id of Object.keys(ITEMS_ALL)) if (!m.unlockedItems.includes(id)) m.unlockedItems.push(id); for (const b of Object.keys(BOONS_ALL)) if (!m.unlockedBoons.includes(b)) m.unlockedBoons.push(b); for (let k = 2; k <= 11; k++) if (!m.unlockedPickups.includes(k)) m.unlockedPickups.push(k); }
   return simMeta(m);
 }
 import { ITEMS as ITEMS_ALL, BLESSINGS as BOONS_ALL } from '../src/data/items.js';
+import { MONSTERS as M_ALL, FUSIONS as F_ALL, SPELLS as S_ALL, TRAPS as T_ALL } from '../src/data/cards.js';
+const CARDS_ALL = { ...M_ALL, ...S_ALL, ...T_ALL };
 
 // a tiny generator of its own, so the bot never touches the sim's streams
 const lcg = seed => { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; };
@@ -61,10 +89,10 @@ const EL = flag('--elite'), ELT = {}, aceT = new Map(); const addEl = (k, v) => 
 const TL = flag('--timeline'), TLrows = [], TLprev = {};
 const rows = [];
 for (let r = 0; r < RUNS; r++) {
-  const seed = SEED0 + r, w0 = Date.now(), g = new Game(seed, { mode: 'run', duelist: 'kael', difficulty: DIF, terrain: 'open', meta: metaFor() }), bot = newBot({ focus: false, world: true }); bot.goalFn = goalFn; bot.noGateSense = PLAYER !== 'skilled'; g.skilledBuild = PLAYER === 'skilled';
+  const seed = SEED0 + r, w0 = Date.now(), g = new Game(seed, { mode: 'run', duelist: 'kael', difficulty: DIF, terrain: 'open', meta: metaFor() }), bot = newBot({ focus: false, world: true }); bot.goalFn = goalFn; if (RIDERS.includes(PLAYER)) { bot.rider = rider; g._prefer = BUILDS[PLAYER]; } if (PLAYER === 'walker') g.opts.noRide = true; bot.why = {}; { const ev = g.event.bind(g); g.event = (ty, d) => { if (ty === 'bailed') { bot.why[d] = (bot.why[d] || 0) + 1; if (process.env.DBG && d === 'angle' && (bot.dbgN = (bot.dbgN || 0) + 1) < 6) console.error('angle', JSON.stringify(bot.cmd), bot.air, g.p.ride.heading.toFixed(2)); } return ev(ty, d); }; } bot.noGateSense = PLAYER !== 'skilled'; g.skilledBuild = PLAYER === 'skilled';
   let ticks = 0, wokeAt = null, wokeDist = null, clearedAt = null, deadAt = null, doorAt = null; const stageMax = FULL ? g.stages.length : 1;
   while (!g.over && ticks < MAXMIN * 3600 * 4) {
-    g.tick(botRecord(g, bot)); ticks++;
+    g.tick(botRecord(g, bot)); ticks++; if (g.p.ride && g.p.ride.on) bot.rideT = (bot.rideT || 0) + 1; if (g.p.ride && g.p.ride.bailT > 0 && !bot.inBail) { bot.bails = (bot.bails || 0) + 1; bot.inBail = true; } else if (g.p.ride && g.p.ride.bailT <= 0) bot.inBail = false;
     if (EL && g.stage === 0) { for (const q of g.sp) { if (q.asleep) continue; if (q._w === undefined) q._w = g.sc; if ((!q.alive || q.dead) && !q._d) { q._d = 1; addEl(q.role || 'gate', g.sc - q._w); } } if (ticks % 6 === 0) { const e = g.en; for (let i = 0; i < e.max; i++) { if (e.ace[i] && e.alive[i]) { const k = r * 1000 + i; if (!aceT.has(k)) aceT.set(k, g.sc); } else if (aceT.size) { const k = r * 1000 + i; if (aceT.has(k)) { addEl('ace', g.sc - aceT.get(k)); aceT.delete(k); } } } } }
     if (TL && g.stage === 0 && ticks % 600 === 0 && g.sc < 540) { const W = g.world, st = { t: Math.round(g.sc), surge: g.surgeP && g.surgeP.on ? 1 : 0, lv: g.levelUps, chests: g.chestsOpenedTotal, shrines: W.shrines.filter(x => x.done).length, stones: W.stones.filter(x => x.used).length, items: g.items.length }; const pr = TLprev[r] || (TLprev[r] = { lv: 0, chests: 0, shrines: 0, stones: 0, items: 0 }); TLrows.push([r, st.t, st.surge, st.lv - pr.lv, st.chests - pr.chests, st.shrines + st.stones - pr.shrines - pr.stones, st.items - pr.items]); TLprev[r] = st; }
     if (TABLE && g.stage === 0 && ticks % 60 === 0) { const m = Math.floor(g.sc / 60); if (m < 13) { const t = tab[m]; if (!t.cur || t.cur !== r + 1) { t.cur = r + 1; t.n++; t.lv += g.level; t.items += g.items.length; t.chests += g.chestsOpenedTotal; t.boons += g.blessings.length; t.kills += g.kills; t.lvUps += g.levelUps; t.stakes = (t.stakes || 0) + (g.stakes || 0); } let en = 0; for (let i = 0; i < g.en.max; i++) if (g.en.alive[i]) en++; t.enemies += en; t.maxEn = Math.max(t.maxEn, en); t.samples = (t.samples || 0) + 1; } }
@@ -76,11 +104,13 @@ for (let r = 0; r < RUNS; r++) {
     if (g.scTotal + g.sc > MAXMIN * 60) break;
   }
   if (g.over) deadAt = Math.round(g.scTotal + g.sc);
-  rows.push({ seed, doorAt, found: wokeAt !== null && wokeAt <= 720, wokeAt, wokeDist, cleared: clearedAt !== null && !g.over, deadAt, level: g.level, items: g.items.length, kills: g.kills, wall: +((Date.now() - w0) / 1000).toFixed(1) });
+  rows.push({ why: bot.why, ansN: Object.values(g.ansCount || {}).reduce((a, b) => a + b, 0), flowBest: g.rflow ? g.rflow.best : 0, slams: g.rflow ? g.rflow.slams : 0, bails: bot.bails || 0, rideMin: +((bot.rideT || 0) / 3600).toFixed(2), sc: Math.round(g.sc), seed, doorAt, found: wokeAt !== null && wokeAt <= 720, wokeAt, wokeDist, cleared: clearedAt !== null && !g.over, deadAt, level: g.level, items: g.items.length, kills: g.kills, wall: +((Date.now() - w0) / 1000).toFixed(1) });
   if (!JSON_OUT) process.stderr.write('.');
 }
 const n = rows.length, pct = k => (100 * rows.filter(r => r[k]).length / n).toFixed(0) + '%';
-const sum = { player: PLAYER, difficulty: DIF, runs: n, doorFound: pct('found'), cleared: pct('cleared'), died: (100 * rows.filter(r => r.deadAt !== null).length / n).toFixed(0) + '%', medianWoke: (rows.filter(r => r.wokeAt !== null).map(r => r.wokeAt).sort((a, b) => a - b)[Math.floor(rows.filter(r => r.wokeAt !== null).length / 2)] || null), meanLevel: +(rows.reduce((a, r) => a + r.level, 0) / n).toFixed(1), meanItems: +(rows.reduce((a, r) => a + r.items, 0) / n).toFixed(1), meanWall: +(rows.reduce((a, r) => a + r.wall, 0) / n).toFixed(1) };
+const avg = k => +(rows.reduce((s, r) => s + (r[k] || 0), 0) / n).toFixed(1), kpm = +(rows.reduce((s, r) => s + r.kills, 0) / Math.max(1, rows.reduce((s, r) => s + r.sc, 0) / 60)).toFixed(1);
+const why = {}; for (const r of rows) for (const k in r.why || {}) why[k] = (why[k] || 0) + r.why[k];
+const sum = { why, kills: avg('kills'), killsPerMin: kpm, answers: avg('ansN'), slams: avg('slams'), bails: avg('bails'), rideMin: avg('rideMin'), player: PLAYER, difficulty: DIF, runs: n, doorFound: pct('found'), cleared: pct('cleared'), died: (100 * rows.filter(r => r.deadAt !== null).length / n).toFixed(0) + '%', medianWoke: (rows.filter(r => r.wokeAt !== null).map(r => r.wokeAt).sort((a, b) => a - b)[Math.floor(rows.filter(r => r.wokeAt !== null).length / 2)] || null), meanLevel: +(rows.reduce((a, r) => a + r.level, 0) / n).toFixed(1), meanItems: +(rows.reduce((a, r) => a + r.items, 0) / n).toFixed(1), meanWall: +(rows.reduce((a, r) => a + r.wall, 0) / n).toFixed(1) };
 console.log('\n' + JSON.stringify(sum)); if (JSON_OUT || flag('--rows')) console.log(JSON.stringify(rows));
 if (TABLE) { console.log('min | level | items | chests | boons | level-ups | mean enemies | max enemies | kills | stakes %'); tab.forEach((t, m) => { if (t.n) console.log(String(m).padStart(3), '|', (t.lv / t.n).toFixed(1).padStart(5), '|', (t.items / t.n).toFixed(1).padStart(5), '|', (t.chests / t.n).toFixed(1).padStart(6), '|', (t.boons / t.n).toFixed(1).padStart(5), '|', (t.lvUps / t.n).toFixed(1).padStart(8), '|', (t.enemies / t.samples).toFixed(0).padStart(5), '|', String(t.maxEn).padStart(4), '|', (t.kills / t.n).toFixed(0).padStart(5), '|', ((t.stakes || 0) / t.n).toFixed(0).padStart(5)); }); }
 if (TL) { console.log('seed | t | surge | level-ups | chests | shrines+stones | items  (per 10 s)'); for (const q of TLrows) console.log(q.join(' | ')); const on = TLrows.filter(q => q[2]), off = TLrows.filter(q => !q[2]); console.log('level-ups per surge window of 10 s', (on.reduce((a, q) => a + q[3], 0) / Math.max(1, on.length)).toFixed(2), 'off', (off.reduce((a, q) => a + q[3], 0) / Math.max(1, off.length)).toFixed(2)); }
