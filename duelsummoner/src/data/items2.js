@@ -3,6 +3,7 @@
 // Families (fam) group them for unlocking: finding a new item of a family counts toward the family's quests. Procs are run by sim/procs.js, stats by sim/field.js.
 const pc = v => Math.round(v * 100) + '%', n1 = v => Math.round(v * 10) / 10;
 const STAT_TEXT = {
+  duneAir: v => 'Big air over the dune sea: a second slam where you land, ' + Math.round(60 * v) + '% bigger.', canyonVert: v => 'Each vert in a canyon heals ' + Math.round(3 * v) + ' and holds Flow 1 s longer.', ruinGrind: v => 'Grinding in a ruin field: sparks hit ' + Math.round(80 * v) + '% harder and reach 1 m further.',
   cardRate: v => 'Card throw ' + pc(v) + ' faster.', monsterRate: v => 'Your monsters attack ' + pc(v) + ' faster.', reach: v => 'Area attacks cover ' + pc(v) + ' more ground.', move: v => '+' + pc(v) + ' move speed.',
   trapRecharge: v => 'Trap recharge ' + pc(v) + ' shorter.', coinMult: v => '+' + pc(v) + ' coins.', maxLp: v => '+' + v + ' max health.', luck: v => '+' + pc(v) + ' luck: better rarities.', crit: v => '+' + pc(v) + ' crit chance.',
   critDmg: v => 'Crits hit ' + pc(v) + ' harder.', dashCd: v => 'Dash cooldown ' + pc(v) + ' shorter.', dash: v => 'Dash goes ' + pc(v) + ' further.', pickup: v => '+' + pc(v) + ' pickup range.', regen: v => 'Regain 1 health every ' + n1(1 / v) + ' s.',
@@ -62,6 +63,8 @@ export const MORE_ITEMS = Object.fromEntries([
   R('risk')('war-paint', 'War Paint', { stakes: 8 }, { on: 'hurt', fx: { might: { amt: 0.25, t: 4 } } }), R('defence')('second-breath', 'Second Breath', {}, { on: 'hurt', cd: 90, fx: { healPct: 0.25 } }), R('explore')('magnet-heart', 'Magnet Heart', {}, { on: 'pickup', cd: 20, fx: { magnet: 1 } }),
   R('economy')('vase-breakers-glove', "Vase-Breaker's Glove", {}, { on: 'vase', chance: 0.10, fx: { pickup: {} } }), R('move')('wind-hawk', 'Wind Hawk', {}, { on: 'dash', chance: 0.2, fx: { dashReset: 1 } }), R('economy')('greedy-scale', 'Greedy Scale', {}, { on: 'chest', fx: { coins: 40 } }),
   R('economy')('fortune-tellers-cup', "Fortune Teller's Cup", {}, { on: 'level', fx: { coins: 25 } }), R('monster')('battle-hymn', 'Battle Hymn', {}, { on: 'tick', every: 30, fx: { might: { amt: 0.2, t: 6 } } }), R('move')('quick-feet', 'Quick Feet', {}, { on: 'tick', every: 25, fx: { haste: { amt: 0.25, t: 4 } } }),
+  // ---- land items (card riding plan section 11): each rewards riding its own land
+  R('move')('dune-kite', 'Dune Kite', { duneAir: 1 }), R('move')('canyon-spur', 'Canyon Spur', { canyonVert: 1 }), R('move')('ruin-chalk', 'Ruin Chalk', { ruinGrind: 1 }),
   // ---- epic: 25 builds
   E('defence')('ember-heart', 'Ember Heart', { maxLp: 30 }, { cond: 'lowhp', fx: { heal: 3 } }), E('card')('crown-of-cards', 'Crown of Cards', { drillCard: 0.25, drillMon: 0.15 }), E('move')('sandstorm-mantle', 'Sandstorm Mantle', { move: 0.12 }, { cond: 'moving', fx: { might: { amt: 0.15 } } }),
   E('spell')('reaper-scythe', 'Reaper Scythe', {}, kill(10, { nova: { dmg: 30, r: 5 } })), E('defence')('phoenix-feather', 'Phoenix Feather', {}, { on: 'hurt', cd: 120, fx: { healPct: 0.5, ward: 3 } }), E('explore')('hollow-lantern', 'Hollow Lantern', { sight: 0.5 }, { on: 'tick', every: 120, fx: { rumour: 1 } }),

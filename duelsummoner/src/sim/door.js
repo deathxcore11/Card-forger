@@ -4,7 +4,7 @@
 import { heightAt } from './terrain.js';
 import { cos, sin } from './dmath.js';
 
-export const DOOR = { near: 150, far: 300, widen: [110, 420], speedUp: 30, earliest: 360, riseSeconds: 5, hiddenChance: 0.9 };
+export const DOOR = { near: 150, far: 300, widen: [110, 420], speedUp: 30, earliest: 360, riseSeconds: 5, hiddenChance: 0.75 };
 const hash3 = (a, b, c) => { let h = (a ^ Math.imul(b + 1, 374761393) ^ Math.imul(c + 7, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 
 export function initDoor(g) {

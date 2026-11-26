@@ -163,3 +163,11 @@ test('ride shrines 2: Bowl (three laps inside its stones), Spire (air over it) a
   { const { g, s, r } = setup('spire'); const C = shrineCourse(s.x, s.z), top = heightAt(C.spire.x, C.spire.z) + C.spire.h; g.p.x = C.spire.x; g.p.z = C.spire.z; g.p.y = top + 2.5; g.p.grounded = false; shrineRide(g, g.p, r, 1 / 60); g.p.grounded = true; shrineRide(g, g.p, r, 1 / 60); assert.ok(s.done && s.ridden, 'spire: aired over'); }
   { const { g, s, r } = setup('pipe'); const C = shrineCourse(s.x, s.z); r.loop = { x: C.pipe.x, z: C.pipe.z }; shrineRide(g, g.p, r, 1 / 60); r.loop = null; shrineRide(g, g.p, r, 1 / 60); assert.ok(s.done && s.ridden, 'pipe: a loop'); }
 });
+test('trick answers: every held card answers one trick (a Fusion two); a flip with the Rune Apprentice marks enemies, a grind with the Ember Wyvern burns along the rail, on cooldowns', async () => {
+  const { ANSWERS } = await import('../src/data/answers.js'); const { MONSTERS, FUSIONS, SPELLS, TRAPS } = await import('../src/data/cards.js'); const { answerTrick } = await import('../src/sim/answers.js');
+  for (const id of [...Object.keys(MONSTERS), ...Object.keys(SPELLS), ...Object.keys(TRAPS)]) assert.equal(ANSWERS[id].length, 1, id); for (const id of Object.keys(FUSIONS)) assert.equal(ANSWERS[id].length, 2, id);
+  const g = mk(); g.field.monsters[1] = { id: 'rune-apprentice', level: 1, cd: 9, ang: 0, x: g.p.x, y: g.p.y, z: g.p.z }; for (let i = 0; i < 6; i++) spawnEnemy(g, 'husk', { x: g.p.x + 3 + i, z: g.p.z + 2 });
+  const e = g.en; assert.equal(answerTrick(g, 'flip', g.p.x, g.p.y, g.p.z), 1); let marked = 0; for (let i = 0; i < e.max; i++) if (e.alive[i] && e.mark[i] > 0) marked++; assert.ok(marked >= 3, 'marked ' + marked);
+  assert.equal(answerTrick(g, 'flip', g.p.x, g.p.y, g.p.z), 0, 'on cooldown'); const hp0 = []; for (let i = 0; i < e.max; i++) if (e.alive[i]) hp0.push(e.hp[i]);
+  g.t += 1; assert.equal(answerTrick(g, 'grind', g.p.x + 3, g.p.y, g.p.z + 2), 1, 'the Wyvern answers the grind'); assert.equal(g.ansCount['ember-wyvern'], 1);
+});

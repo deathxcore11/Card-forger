@@ -591,7 +591,7 @@ function frame(now) {
       if (cmd.use) pendingUse = true; cmd.use = pendingUse; const t0 = game.tickN;
       alpha = game.fixed(dtReal, quantise(cmd, liveRec)); if (game.tickN !== t0) pendingUse = false;
     }
-    bossIntro(); { const riding = !!(game.p && game.p.ride && game.p.ride.on); window.__dsRiding = riding; touch.setRiding && touch.setRiding(riding); touch.setUseVisible((riding || !!game.prompt) && !game.offer); rideHint(riding); }
+    bossIntro(); { const riding = !!(game.p && game.p.ride && game.p.ride.on); window.__dsRiding = riding; window.__dsBig = !!game.big; touch.setRiding && touch.setRiding(riding); touch.setUseVisible((riding || !!game.prompt) && !game.offer); rideHint(riding); }
     prof.sim = performance.now() - s0; stepMs += prof.sim;
     drainEvents();
     if (game.offer && MODE === 'play') { drawHud(game, true); setMode('offer'); showOffer(game, menu); }       // safety net: the sim is waiting on an offer the screen never opened (its event was lost), so open it from the state

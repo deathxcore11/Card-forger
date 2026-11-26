@@ -57,6 +57,13 @@ Object.assign(BLESSINGS, {
   plunder:    { big: true, name: 'Boon of Plunder', text: '+10% coins.', fmt: m => '+' + r1(10 * m) + '% coins.', mods: { coinMult: 0.10 } },
   keensight:  { big: true, name: 'Boon of Keen Sight', text: 'See 12% further across the fog.', fmt: m => 'See ' + r1(12 * m) + '% further across the fog.', mods: { sight: 0.12 } },
   magnetism:  { big: true, name: 'Boon of Magnetism', text: '+15% pickup range.', fmt: m => '+' + r1(15 * m) + '% pickup range.', mods: { pickup: 0.15 } },
+  // ride boons (card riding plan section 11)
+  pop:        { big: true, ride: true, name: 'Boon of the Pop', text: 'Ollies go 8% higher.', fmt: m => 'Ollies go ' + r1(8 * m) + '% higher.', mods: { ridePop: 0.08 } },
+  poise:      { big: true, ride: true, name: 'Boon of Poise', text: 'Grind and manual balance drifts 12% slower.', fmt: m => 'Balance drifts ' + r1(12 * m) + '% slower.', mods: { rideBal: 0.12 } },
+  whirl:      { big: true, ride: true, name: 'Boon of the Whirl', text: 'Spins turn 10% faster.', fmt: m => 'Spins turn ' + r1(10 * m) + '% faster.', mods: { rideSpin: 0.10 } },
+  flowkeep:   { big: true, ride: true, name: 'Boon of Flow', text: 'Flow holds 2 s longer before it falls.', fmt: m => 'Flow holds ' + r1(2 * m) + ' s longer.', mods: { flowHold: 2 } },
+  quake:      { big: true, ride: true, name: 'Boon of the Quake', text: 'Landing slams reach 10% further.', fmt: m => 'Slams reach ' + r1(10 * m) + '% further.', mods: { slamSize: 0.10 } },
+  rails:      { big: true, ride: true, name: 'Boon of Rails', text: 'Grinds run 8% faster.', fmt: m => 'Grinds run ' + r1(8 * m) + '% faster.', mods: { grindSpeed: 0.08 } },
   tempo:      { big: true, name: 'Boon of Tempo', text: 'Card throw 6% faster.', fmt: m => 'Card throw ' + r1(6 * m) + '% faster.', mods: { cardRate: 0.06 } }
 });
 for (const k of Object.keys(ITEMS)) if (ITEMS[k].mods && ITEMS[k].mods.stakes) ITEMS[k].risk = true;       // the items that trade Stakes for power

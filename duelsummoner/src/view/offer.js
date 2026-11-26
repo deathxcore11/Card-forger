@@ -1,5 +1,6 @@
 // The offer screen: level-ups, chests, Witness Stones, the Relic Broker and shrine blessings. Plain placeholder styling.
 import { OFFER, LEVELS } from '../data/cards.js';
+import { ANSWERS } from '../data/answers.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
 import { cardDef, monsterMax, damageOf, param } from '../sim/field.js';
 import { SPELLS, TRAPS } from '../data/cards.js';
@@ -94,7 +95,7 @@ export function showOffer(g, act) {
     const el = document.createElement('div'); el.className = 'card ' + c.rarity + (c.isNew && cardy ? ' new' : '');
     const act = c.kind === 'banish' ? 'EXILE' : c.kind === 'tribute' ? 'TRIBUTE' : 'TAKE';
     const buy = shop ? (c.sold ? '<button disabled>SOLD</button>' : '<button data-pick="' + i + '"' + (g.coins < c.price ? ' disabled' : '') + '>BUY ' + c.price + '</button>') : '<button data-pick="' + i + '">' + act + '</button>';
-    el.innerHTML = '<h3>' + D.name + '</h3><div class="t">' + kind + ' &middot; ' + c.rarity + '</div><div>' + (D.text || '') + '</div><div class="t">' + lv + '</div>' + fx +
+    el.innerHTML = '<h3>' + D.name + '</h3><div class="t">' + kind + ' &middot; ' + c.rarity + '</div><div>' + (D.text || '') + '</div>' + (ANSWERS[c.id] && ANSWERS[c.id].length && window.__dsBig ? '<div class="t" style="color:#ffd56a">On the card: ' + ANSWERS[c.id].map(q => q.text).join(' ') + '</div>' : '') + '<div class="t">' + lv + '</div>' + fx +
       '<div class="rowBtn">' + buy + '' + '</div>';
     wrap.appendChild(el);
   });

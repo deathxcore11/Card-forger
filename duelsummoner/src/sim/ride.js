@@ -13,6 +13,7 @@ import { explode, damageEnemy } from './combat.js';
 import { breakVasesNear, rideShrineDone } from './world.js';
 import { shrineCourse } from '../gen/world/world.js';
 import { railsNear, sealsNear, sealSet, pipesNear } from './rails.js';
+import { answerTrick } from './answers.js';
 
 export const RIDE = { mountAt: 10.5, dismountAt: 7, top: 24, push: 3.4, pushTo: 12.5, friction: 0.55, soft: 2.2, downhill: 10, carve: 2.6, airTurn: 1.0, crouchMax: 0.5, popLo: 2.2, popHi: 4.5,
   snap: 1.6, flipTime: 0.42, spinRate: 9.42, landTol: 0.52, bailT: 0.6, revertWin: 0.28, balDrift: 0.9, balFix: 2.6, sparkR: 2.5, sparkDmg: 7, sparkEvery: 0.2, gravity: 28, kickRun: 0.4, kickTo: 12.5, brake: 16, holdMin: 8.5 };
@@ -43,8 +44,12 @@ function bank(g, r) {
   if (F.step === 5) F.xp = Math.min(F.xp, FLOW.need[4]);
   r.specialReady = F.step === 5;
   // the landing slam: radius and damage from the combo just banked, capped by the Flow step
-  const p = g.p, rad = Math.min(FLOW.slamR[1], FLOW.slamR[0] + v / 900), dmg = Math.min(FLOW.slamCapPerStep * F.step, 6 + v / FLOW.slamDiv);
+  const p = g.p, rad = Math.min(FLOW.slamR[1], FLOW.slamR[0] + v / 900) * (1 + (g.mods.slamSize || 0)), dmg = Math.min(FLOW.slamCapPerStep * F.step, 6 + v / FLOW.slamDiv);
   explode(g, p.x, p.y, p.z, rad, 0, dmg, 0xffd56a, 'Landing slam'); F.slams++;
+  { const T = g.map && g.map.regionAt ? g.map.regionAt(p.x, p.z).type : -1;       // the land answers the slam
+    if (T === 2) { for (let k = 0; k < 5; k++) { const a = k * 1.2566 + r.heading, d = rad * 0.9; explode(g, p.x + sin(a) * d, p.y, p.z + cos(a) * d, rad * 0.45, 0, dmg * 0.5, 0xfff2c0, 'Star crack'); } g.emit('slamland', p.x, p.z, 2); }
+    else if (T === 0) { const e = g.en, R2 = (rad * 1.7) ** 2; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z, d2 = dx * dx + dz * dz; if (d2 < R2 && d2 > rad * rad) { const d = Math.sqrt(d2); e.x[i] += dx / d * 3; e.z[i] += dz / d * 3; damageEnemy(g, i, dmg * 0.35, { noCrit: true }); } } g.emit('slamland', p.x, p.z, 0); }
+    else if (T === 3 || r.lastLoopT > g.t - 2) { r.echo = { t: 0.35, x: p.x, y: p.y, z: p.z, rad, dmg: dmg * 0.6 }; g.emit('slamland', p.x, p.z, 3); } }
   // every summon on the field strikes at once with the landing (their cooldowns end now)
   if (g.field && g.field.monsters) { let n = 0; for (const m of g.field.monsters) if (m) { m.cd = Math.min(m.cd, 0); n++; } if (n) g.emit('volley', p.x, p.z, n); }
   g.score2 = (g.score2 || 0) + v * F.step; g.emit('slam', p.x, p.z, rad); g.event('banked', v);
@@ -58,7 +63,7 @@ function bail(g, r, why) {
 export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   const p = g.p, r = p.ride || (p.ride = makeRide()), F = flowOf(g);
   if (r.on) shrineRide(g, p, r, dt);
-  if (F.step > 1) { F.idle += dt; if (F.idle > FLOW.idle) { F.step--; F.idle = 0; F.xp = 0; g.event('flowdown', F.step); } }
+  if (F.step > 1) { F.idle += dt; if (F.idle > FLOW.idle + (g.mods.flowHold || 0)) { F.step--; F.idle = 0; F.xp = 0; g.event('flowdown', F.step); } }
   const hs = Math.sqrt(p.vx * p.vx + p.vz * p.vz);
   if (!r.on) {
     // kick the card out: SLIDE pressed after at least 0.4 s of running at full speed mounts at once, anywhere, flat sand included (and a fast enough slide or slope still mounts on its own)
@@ -70,10 +75,12 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   }
   const jumpPress = !!cmd.jump && !r.jumpWas, jumpRel = !cmd.jump && r.jumpWas, dashPress = !!cmd.dash && !r.dashWas, usePress = !!cmd.use && !r.useWas;
   const revertPress = !!cmd.revert && !r.revertWas; r.revertWas = !!cmd.revert;
-  r.clk = (r.clk || 0) + dt; const fy = cmd.f || 0; let flick = false; if (fy > 0.7) { if (r.dnT !== undefined && r.clk - r.dnT < 0.25 && !r.upHeld) flick = true; r.upT = r.clk; r.upHeld = true; } else r.upHeld = false; if (fy < -0.7) { if (r.upT !== undefined && r.clk - r.upT < 0.25 && !r.dnHeld) flick = true; r.dnT = r.clk; r.dnHeld = true; } else r.dnHeld = false;       // up then down quickly, or down then up: a manual
+  r.clk = (r.clk || 0) + dt; const fy = cmd.f || 0; let flick = false; if (fy > 0.7) { if (r.dnT !== undefined && r.clk - r.dnT < 0.25 && !r.upHeld) r.flickPend = r.clk; r.upT = r.clk; r.upHeld = true; } else r.upHeld = false; if (fy < -0.7) { if (r.upT !== undefined && r.clk - r.upT < 0.25 && !r.dnHeld) r.flickPend = r.clk; r.dnT = r.clk; r.dnHeld = true; } else r.dnHeld = false;
+  if (r.flickPend !== undefined) { if (Math.abs(fy) < 0.3) { flick = true; r.flickPend = undefined; } else if (r.clk - r.flickPend > 0.3) r.flickPend = undefined; }       // a flick is let go at once: held back it stays a brake       // up then down quickly, or down then up: a manual
   { const d = dir4(cmd), m = (cmd.f || 0) * (cmd.f || 0) + (cmd.r || 0) * (cmd.r || 0); if (m > 0.36) (r.dirT || (r.dirT = [-9, -9, -9, -9]))[d] = r.clk; }
   r.jumpWas = !!cmd.jump; r.dashWas = !!cmd.dash; r.useWas = !!cmd.use; if (!cmd.slide) r.manualHold = false; if (r.manualHold) cmd = Object.assign({}, cmd, { slide: false });
   if (r.bailT > 0) { r.bailT -= dt; r.speed = Math.max(0, r.speed - 18 * dt); step(g, p, r, dt); groundFollow(g, p, r, dt); if (r.bailT <= 0 && r.speed < RIDE.dismountAt) dismount(g, p, r); return true; }
+  if (r.echo) { r.echo.t -= dt; if (r.echo.t <= 0) { const E = r.echo; r.echo = null; explode(g, E.x, E.y, E.z, E.rad, 0, E.dmg, 0xffe08a, 'Echo slam'); g.emit('slam', E.x, E.z, E.rad); } }
   if (r.loop) { loopTick(g, p, r, dt); return true; }
   if (r.grind) { grindTick(g, p, r, dt, cmd, jumpPress); return true; }
   if (p.grounded && r.speed >= 13 && !(r.loopCd > 0)) { for (const q of pipesNear(g, p.x, p.z, 9)) { const [x, y, z, ux, uz, R] = q, dx = p.x - x, dz = p.z - z, al = dx * ux + dz * uz, lat = Math.abs(-dx * uz + dz * ux), hx = sin(r.heading), hz = cos(r.heading), dot = hx * ux + hz * uz;
@@ -88,30 +95,30 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
     const ax = sin(r.heading), az = cos(r.heading), dh = heightAt(p.x + ax * 1.2, p.z + az * 1.2) - heightAt(p.x, p.z), slope = dh > 0.9 ? 0 : dh / 1.2;
     let acc = -slope * RIDE.downhill * (cmd.jump && slope < 0 ? 1.6 : 1) - RIDE.friction;       // pump: crouching down the back of a roller or into a dip gains more
     // a wall steeper than about 40 degrees ahead at speed (a half-pipe, a bowl wall): the card goes up it and comes back down facing the other way (vert air)
-    if (dh / 1.2 > 0.85 && dh < 3 && r.speed > 8 && !r.manual && heightAt(p.x + ax * 3, p.z + az * 3) - heightAt(p.x, p.z) > 2.7) { p.vy = Math.min(11, r.speed * 0.6); p.grounded = false; r.airT = 0; r.vert = true; r.heading += 3.141592653589793; r.speed *= 0.18; r.lastLandVy = 0; addTrick(g, r, 'Vert', POINTS.vert); g.emit('ollie', 2, 0, 0); return true; } if (slope > 0.12 && g.map.regionAt && g.map.regionAt(p.x, p.z).type === 0) acc -= RIDE.soft;
+    if (dh / 1.2 > 0.85 && dh < 3 && r.speed > 8 && !r.manual && heightAt(p.x + ax * 3, p.z + az * 3) - heightAt(p.x, p.z) > 2.7) { p.vy = Math.min(11, r.speed * 0.6); p.grounded = false; r.airT = 0; r.vert = true; r.heading += 3.141592653589793; r.speed *= 0.18; r.lastLandVy = 0; addTrick(g, r, 'Vert', POINTS.vert); g.emit('ollie', 2, 0, 0); if (g.mods.canyonVert > 0 && g.map.regionAt && g.map.regionAt(p.x, p.z).type === 3) { p.hp = Math.min(p.maxHp, p.hp + 3 * g.mods.canyonVert); F.idle = Math.max(-g.mods.canyonVert, F.idle - g.mods.canyonVert); } return true; }       // Canyon Spur if (slope > 0.12 && g.map.regionAt && g.map.regionAt(p.x, p.z).type === 0) acc -= RIDE.soft;
     const wk = g.windT > 0 ? 2 : 1, fwd = hasInput && (mx * ax + mz * az) > 0.5; if (fwd && r.speed < RIDE.pushTo * wk) acc += RIDE.push * wk;
     const top = RIDE.top * (1 + g.mods.move * 0.5); r.speed = Math.max(fwd ? Math.min(r.speed, RIDE.holdMin) : 0, Math.min(top, r.speed + acc * dt)); if (fwd && r.speed < RIDE.holdMin) r.speed = Math.min(RIDE.holdMin, r.speed + RIDE.push * 2 * dt);       // the stick held forward kicks along: a dune climb never drops the rider below 8.5 m/s
     if (flick && !r.manual) { r.manual = true; r.manualFlick = true; r.bal = 0; r.manualT = 0; }       // a stick flick on the ground starts a manual (held until an ollie or a fall)
     if (r.manual) { manualTick(g, p, r, dt, cmd, jumpPress); if (!r.manual) return true; }
     // the ollie: hold to crouch, release to pop
     if (cmd.jump) r.crouch = Math.min(RIDE.crouchMax, r.crouch + dt);
-    if (jumpRel && r.crouch > 0) { const h = RIDE.popLo + (RIDE.popHi - RIDE.popLo) * (r.crouch / RIDE.crouchMax); p.vy = Math.sqrt(2 * RIDE.gravity * h * (1 + g.mods.jumpH)); p.grounded = false; r.crouch = 0; r.airT = 0; g.emit('ollie', h, 0, 0); }
+    if (jumpRel && r.crouch > 0) { const h = (RIDE.popLo + (RIDE.popHi - RIDE.popLo) * (r.crouch / RIDE.crouchMax)) * (1 + (g.mods.ridePop || 0)); p.vy = Math.sqrt(2 * RIDE.gravity * h * (1 + g.mods.jumpH)); p.grounded = false; r.crouch = 0; r.airT = 0; g.emit('ollie', h, 0, 0); }
     step(g, p, r, dt); if (p.grounded) groundFollow(g, p, r, dt);
     if (p.grounded && !r.manual && !fwd && !cmd.jump && r.speed < RIDE.dismountAt) { bank(g, r); dismount(g, p, r); }       // only a stop, the brake or a bail takes the rider off: never while pushing forward or charging an ollie
     return true;
   }
   // in the air
-  r.airT += dt;
+  r.airT += dt; if (hasInput && (mx * sin(r.heading) + mz * cos(r.heading)) < -0.5) r.speed = Math.max(0, r.speed - RIDE.brake * 0.5 * dt);       // pulling back in the air still slows the card
   if (hasInput) { const want = atan2(mx, mz), d = wrapA(want - r.heading), lim = RIDE.airTurn * dt; r.heading += d > lim ? lim : d < -lim ? -lim : d; }
   if (r.flipT > 0) { r.flipT = Math.max(0, r.flipT - dt); r.flipK = 1 - r.flipT / RIDE.flipTime; }
   const twoDirs = r.dirT && r.dirT.filter(t0 => r.clk - t0 < 0.35).length >= 2;
-  if ((dashPress || (cmd.slide && !r.grabbing && !r.slideAirWas)) && twoDirs && r.specialReady && F.step === 5) { r.specialReady = false; addTrick(g, r, 'Royal Flush', POINTS.special); explode(g, p.x, p.y, p.z, 16, 0, 120, 0xfff2c0, 'Royal Flush'); F.step = 3; F.xp = 0; g.emit('special', p.x, p.z, 0); r.slideAirWas = !!cmd.slide; r.dirT = null; return true; }       // two directions then a face button, Flow full: the special
+  if ((dashPress || (cmd.slide && !r.grabbing && !r.slideAirWas)) && twoDirs && r.specialReady && F.step === 5) { r.specialReady = false; addTrick(g, r, 'Royal Flush', POINTS.special); explode(g, p.x, p.y, p.z, 16, 0, 120, 0xfff2c0, 'Royal Flush'); F.step = 1; F.xp = 0; for (const q of g.field.monsters) if (q) q.cd = 0; g.emit('volley', p.x, p.z, 9); g.emit('special', p.x, p.z, 0); r.slideAirWas = !!cmd.slide; r.dirT = null; return true; }       // two directions then a face button, Flow full: the special
   r.slideAirWas = !!cmd.slide;
-  if (dashPress && r.flipT <= 0) { const d = dir8(cmd); r.flipName = FLIPS[d]; r.flipT = RIDE.flipTime; r.flipK = 0; r.flipDir = d; addTrick(g, r, r.flipName, POINTS.flip); }
+  if (dashPress && r.flipT <= 0) { const d = dir8(cmd); r.flipName = FLIPS[d]; r.flipT = RIDE.flipTime; r.flipK = 0; r.flipDir = d; addTrick(g, r, r.flipName, POINTS.flip); answerTrick(g, 'flip', p.x, p.y, p.z); }
   if (cmd.slide && !r.grabbing && r.flipT <= 0) { r.grabbing = true; r.grabT = 0; r.grabName = GRABS[dir4(cmd)]; }
-  if (r.grabbing) { if (cmd.slide) r.grabT += dt; else { r.grabbing = false; addTrick(g, r, r.grabName, POINTS.grab + POINTS.grabPerSecond * r.grabT); } }
-  const sx = cmd.r || 0; if (cmd.spin) r.spin += (cmd.spin > 0 ? 1 : -1) * RIDE.spinRate * dt; else if (sx * sx > 0.36 && !hasForward(cmd)) r.spin += (sx > 0 ? 1 : -1) * RIDE.spinRate * dt;       // the shoulders spin (pad), or the stick left or right
-  if (usePress && r.specialReady && F.step === 5) { r.specialReady = false; addTrick(g, r, 'Royal Flush', POINTS.special); explode(g, p.x, p.y, p.z, 16, 0, 120, 0xfff2c0, 'Royal Flush'); F.step = 3; F.xp = 0; g.emit('special', p.x, p.z, 0); }
+  if (r.grabbing) { if (cmd.slide) r.grabT += dt; else { r.grabbing = false; addTrick(g, r, r.grabName, POINTS.grab + POINTS.grabPerSecond * r.grabT); answerTrick(g, 'grab', p.x, p.y, p.z); } }
+  const sx = cmd.r || 0; if (cmd.spin) r.spin += (cmd.spin > 0 ? 1 : -1) * RIDE.spinRate * (1 + (g.mods.rideSpin || 0)) * dt; else if (sx * sx > 0.36 && !hasForward(cmd)) r.spin += (sx > 0 ? 1 : -1) * RIDE.spinRate * (1 + (g.mods.rideSpin || 0)) * dt;       // the shoulders spin (pad), or the stick left or right
+  if (usePress && r.specialReady && F.step === 5) { r.specialReady = false; addTrick(g, r, 'Royal Flush', POINTS.special); explode(g, p.x, p.y, p.z, 16, 0, 120, 0xfff2c0, 'Royal Flush'); F.step = 1; F.xp = 0; for (const q of g.field.monsters) if (q) q.cd = 0; g.emit('volley', p.x, p.z, 9); g.emit('special', p.x, p.z, 0); }
   // grind: auto-snap onto a rail while coming down, or with use
   if ((p.vy <= 1.5 || usePress) && trySnap(g, p, r, cmd)) return true;
   if (flick) r.manualArm = r.clk;
@@ -172,7 +179,7 @@ function closeCall(g, p, r) {
 function sealTouch(g, p, r) {
   for (const s of sealsNear(g, p.x, p.z, 3.0)) {
     const sid = s[3], dy = p.y - s[1]; if (dy < -1 || dy > 5) continue; const L = litOf(g); if (L.sealsDone[sid]) continue;
-    const c = r.combo, have = c.seals[sid] || (c.seals[sid] = []), key = s[0] + ',' + s[2]; if (have.includes(key)) continue; have.push(key); addTrick(g, r, 'Seal', POINTS.seal); L.ver++; g.emit('seal', s[0], s[2], have.length);
+    const c = r.combo, have = c.seals[sid] || (c.seals[sid] = []), key = s[0] + ',' + s[2]; if (have.includes(key)) continue; have.push(key); addTrick(g, r, 'Seal', POINTS.seal); answerTrick(g, 'seal', s[0], s[1], s[2]); L.ver++; g.emit('seal', s[0], s[2], have.length);
     if (have.length >= sealSet(g, sid).length) { L.sealsDone[sid] = true; L.ver++; addTrick(g, r, 'Seal Set', POINTS.sealSet); const tx = s[0] + sin(r.heading) * 6, tz = s[2] + cos(r.heading) * 6; const wonder = sid === -1; g.world.cchests.push({ x: tx, y: heightAt(tx, tz), z: tz, open: false, rarity: wonder ? 'epic' : null, free: true, trophy: true }); g.emit('sealset', tx, tz, wonder ? 1 : 0); g.event('banner', wonder ? 'The wonder wakes: an epic chest rises.' : 'The seal stones wake: a chest rises.'); }
   }
 }
@@ -182,7 +189,7 @@ export function litSeals(g) { const L = litOf(g), r = g.p.ride, out = []; for (c
 function groundFollow(g, p, r, dt) {
   const h = heightAt(p.x, p.z), prev = p.y;
   if (h >= prev - 0.35) { const rvy = (h - prev) / Math.max(dt, 1e-4), sx = sin(r.heading), sz = cos(r.heading), ahead = (heightAt(p.x + sx * 0.8, p.z + sz * 0.8) - h) / 0.8 * r.speed;
-    if (r.rvy > 2.5 && ahead < r.rvy * 0.35 && rvy > 0) { p.y = h; p.grounded = false; p.vy = r.rvy * 0.95; r.airT = 0; r.lastLandVy = 0; if (r.rvy > 3 && r.speed > 13) { addTrick(g, r, 'Crest Launch', POINTS.crest); g.emit('crest', p.x, p.z, 0); } r.rvy = 0; return; }       // the lip of a ramp or a crest: the climb carries the card into the air
+    if (r.rvy > 4 && ahead < r.rvy * 0.35 && rvy > 0) { p.y = h; p.grounded = false; p.vy = r.rvy * 0.95; r.airT = 0; r.lastLandVy = 0; if (r.rvy > 3 && r.speed > 13) { addTrick(g, r, 'Crest Launch', POINTS.crest); g.emit('crest', p.x, p.z, 0); } r.rvy = 0; return; }       // the lip of a ramp or a crest: the climb carries the card into the air
     r.rvy = Math.min(rvy, r.speed * 0.6); p.y = h; return; }       // the climb rate, capped at a 31-degree ramp: a step in the ground is not a launcher
   // the ground falls away faster than the card can follow: off the crest into the air, carrying the climb
   p.grounded = false; p.vy = Math.max(0, r.rvy) * 0.9; r.airT = 0;
@@ -190,7 +197,7 @@ function groundFollow(g, p, r, dt) {
 }
 function land(g, p, r, cmd) {
   p.grounded = true; const vy = r.lastLandVy || p.vy; p.vy = 0;
-  if (r.airT > 1.1) addTrick(g, r, 'Big Air', POINTS.bigAir * r.airT);
+  const bigAir = r.airT > 1.1; if (bigAir) addTrick(g, r, 'Big Air', POINTS.bigAir * r.airT);
   const halves = Math.round(Math.abs(r.spin) / 3.141592653589793), rem = Math.abs(Math.abs(r.spin) - halves * 3.141592653589793);
   if (halves > 0) addTrick(g, r, (halves * 180) + ' Spin', POINTS.spin180 * halves);
   // landing assist (touch, on by default; only at Flow x1 and x2): a wider landing angle, a flip nearly done counts, a grab still held is let go on touchdown
@@ -202,12 +209,14 @@ function land(g, p, r, cmd) {
   if (letGo) r.manualHold = true;       // the slide still held from the grab is not a manual
   if (r.manualArm !== undefined && r.clk - r.manualArm < 0.4) { r.manualArm = undefined; r.manual = true; r.manualFlick = true; r.bal = 0; r.manualT = 0; return; }       // flicked just before landing: land into a manual
   if (cmd.slide && !letGo && comboValue(r.combo) > 0) { r.manual = true; r.bal = 0; r.manualT = 0; return; }       // land into a manual: the combo stays open
-  bank(g, r); g.emit('land', p.x, p.z, -vy);
+  if (halves >= 2) answerTrick(g, 'spin', p.x, p.y, p.z); if (bigAir) answerTrick(g, 'air', p.x, p.y, p.z);
+  if (bigAir && g.mods.duneAir > 0 && g.map.regionAt && g.map.regionAt(p.x, p.z).type === 0) { const k = 1 + 0.6 * g.mods.duneAir; explode(g, p.x, p.y, p.z, 6 * k, 0, 14 * k, 0xf3c978, 'Dune Kite'); g.emit('slam', p.x, p.z, 6 * k); }       // Dune Kite
+  bank(g, r); answerTrick(g, 'land', p.x, p.y, p.z); g.emit('land', p.x, p.z, -vy);
 }
 function manualTick(g, p, r, dt, cmd, jumpPress) {
   if (r.manualFlick) { if (jumpPress) { r.manual = false; r.manualFlick = false; addTrick(g, r, 'Manual', POINTS.manualPerSecond * (r.manualT || 0)); r.crouch = 0.001; return; } }       // a flick manual ends with an ollie, the combo still open
   else if (!cmd.slide) { r.manual = false; addTrick(g, r, 'Manual', POINTS.manualPerSecond * (r.manualT || 0)); bank(g, r); return; }
-  r.manualT = (r.manualT || 0) + dt; const drift = sin(g.tickN * 0.05 + 1.3) * RIDE.balDrift + r.bal * 1.1; r.bal += (drift - (cmd.f || 0) * RIDE.balFix) * dt;
+  const mt0 = r.manualT || 0; r.manualT = mt0 + dt; if (Math.floor(r.manualT) > Math.floor(mt0)) answerTrick(g, 'manual', p.x, p.y, p.z); const drift = (sin(g.tickN * 0.05 + 1.3) * RIDE.balDrift + r.bal * 1.1) * (1 - (g.mods.rideBal || 0)); r.bal += (drift - (cmd.f || 0) * RIDE.balFix) * dt;
   if (r.bal > 1 || r.bal < -1) bail(g, r, 'manual');
 }
 // ---- grinds
@@ -220,7 +229,7 @@ function trySnap(g, p, r, cmd) {
   }
   if (!best) return false;
   const s = best.s, ux = (s[3] - s[0]) / best.L, uz = (s[5] - s[2]) / best.L, along = p.vx * ux + p.vz * uz, dir = along >= 0 ? 1 : -1;
-  const hs = Math.sqrt(p.vx * p.vx + p.vz * p.vz); r.grind = { s, t: best.t, L: best.L, dir, speed: Math.max(6, Math.abs(along) * 0.6 + hs * 0.4), time: 0, name: GRINDS[cmd.f > 0.4 ? 1 : cmd.f < -0.4 ? 2 : 0] };
+  const hs = Math.sqrt(p.vx * p.vx + p.vz * p.vz); r.grind = { s, t: best.t, L: best.L, dir, speed: Math.max(6, Math.abs(along) * 0.6 + hs * 0.4) * (1 + (g.mods.grindSpeed || 0)), time: 0, name: GRINDS[cmd.f > 0.4 ? 1 : cmd.f < -0.4 ? 2 : 0] };
   r.bal = 0; r.flipT = 0; r.grabbing = false; p.vy = 0; p.grounded = false; g.emit('grind', 1, 0, 0);
   if (s[6] === 'card') { const L = litOf(g), key = s[7] + ',' + s[8]; if (!L.cards[key]) { L.cards[key] = [(s[0] + s[3]) / 2, s[1], (s[2] + s[5]) / 2]; L.ver++; addTrick(g, r, 'Lit Card', POINTS.cardLit); g.emit('cardlit', L.cards[key][0], L.cards[key][2], s[1]); } }       // a stone card lights for good the first time it is ground
   return true;
@@ -228,21 +237,22 @@ function trySnap(g, p, r, cmd) {
 function grindTick(g, p, r, dt, cmd, jumpPress) {
   const G = r.grind, s = G.s, ux = (s[3] - s[0]) / G.L, uz = (s[5] - s[2]) / G.L, slope = (s[4] - s[1]) / G.L * G.dir;
   G.speed = Math.max(4, Math.min(RIDE.top, G.speed + (-slope * 12 - 0.35) * dt)); G.t += G.dir * G.speed * dt / G.L; G.time += dt;
-  const drift = sin(g.tickN * 0.07 + G.L) * RIDE.balDrift + r.bal * (0.9 + G.time * 0.25); r.bal += (drift - (cmd.r || 0) * RIDE.balFix) * dt;
+  const drift = (sin(g.tickN * 0.07 + G.L) * RIDE.balDrift + r.bal * (0.9 + G.time * 0.25)) * (1 - (g.mods.rideBal || 0)); r.bal += (drift - (cmd.r || 0) * RIDE.balFix) * dt;
   const done = G.t <= 0 || G.t >= 1, fell = r.bal > 1 || r.bal < -1;
   const t = Math.max(0, Math.min(1, G.t)); p.x = s[0] + (s[3] - s[0]) * t; p.z = s[2] + (s[5] - s[2]) * t; p.y = s[1] + (s[4] - s[1]) * t + 0.08; p.vx = ux * G.dir * G.speed; p.vz = uz * G.dir * G.speed; r.heading = atan2(p.vx, p.vz); r.speed = G.speed; p.face = r.heading;
-  r.sparkT -= dt; if (r.sparkT <= 0) { r.sparkT = RIDE.sparkEvery; sparks(g, p); }
+  r.sparkT -= dt; if (r.sparkT <= 0) { r.sparkT = RIDE.sparkEvery; sparks(g, p); answerTrick(g, 'grind', p.x, p.y, p.z); }
   if (fell) { r.grind = null; addTrick(g, r, G.name, POINTS.grind + POINTS.grindPerSecond * G.time); bail(g, r, 'balance'); p.grounded = false; p.vy = 0; return; }
   if (done || jumpPress) { r.grind = null; addTrick(g, r, G.name, POINTS.grind + POINTS.grindPerSecond * G.time); p.grounded = false; p.vy = jumpPress ? Math.sqrt(2 * RIDE.gravity * RIDE.popLo) : 1.5; r.airT = 0; r.lastLandVy = 0; }
 }
 function sparks(g, p) {
-  const e = g.en, R2 = RIDE.sparkR * RIDE.sparkR; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z; if (dx * dx + dz * dz < R2) damageEnemy(g, i, RIDE.sparkDmg * flowDamage(g), { noCrit: true }); }
+  const ru = g.mods.ruinGrind > 0 && g.map.regionAt && g.map.regionAt(p.x, p.z).type === 4 ? g.mods.ruinGrind : 0, SR = RIDE.sparkR + ru, R2 = SR * SR;       // Ruin Chalk
+  const e = g.en; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z; if (dx * dx + dz * dz < R2) damageEnemy(g, i, RIDE.sparkDmg * flowDamage(g) * (1 + 0.8 * ru), { noCrit: true }); }
   g.emit('sparks', p.x, p.z, 0);
 }
 // round the inside of the hoop: the angle runs at speed over radius, the card upside down at the top; out the bottom going on the same way
 function loopTick(g, p, r, dt) {
   const L = r.loop; L.th += Math.max(r.speed, 13) / L.R * dt; const th = Math.min(L.th, 6.283185307179586), al = sin(th) * L.R * 0.35 + (th / 6.283185307179586) * 1.2;
   p.x = L.x + L.ux * al; p.z = L.z + L.uz * al; p.y = L.y + L.R - cos(th) * L.R; p.vx = L.ux * r.speed; p.vz = L.uz * r.speed; p.vy = 0; p.grounded = false; r.heading = atan2(L.ux, L.uz); p.face = r.heading; r.loopTh = th;
-  if (th >= 6.283185307179586) { r.loop = null; r.loopTh = 0; r.loopCd = 0.8; p.grounded = true; p.y = heightAt(p.x, p.z); r.speed = Math.min(RIDE.top, r.speed * 1.05); }
+  if (th >= 6.283185307179586) { r.loop = null; r.lastLoopT = g.t; r.loopTh = 0; r.loopCd = 0.8; p.grounded = true; p.y = heightAt(p.x, p.z); r.speed = Math.min(RIDE.top, r.speed * 1.05); }
 }
 function dismount(g, p, r) { r.on = false; r.runT = 0; r.slideWas = true; r.grind = null; r.manual = false; const ax = sin(r.heading), az = cos(r.heading); p.vx = ax * r.speed; p.vz = az * r.speed; g.emit('ride', 0, 0, 0); }
