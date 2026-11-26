@@ -10,7 +10,7 @@
 import { OATHS } from './progress.js';
 import { ladderQuests } from './quests2.js';
 
-export const QUEST_TABS = ['Duelists', 'Monsters', 'Spells/Traps', 'Items', 'General', 'Oaths', 'Mastery', 'Regalia'];
+export const QUEST_TABS = ['Duelists', 'Monsters', 'Spells/Traps', 'Items', 'Riding', 'General', 'Oaths', 'Mastery', 'Regalia'];
 export const RARITIES = ['Plain', 'Bright', 'Gilded', 'Radiant', 'Mythic'];
 export const RARITY_COLOUR = { Plain: '#8a8f99', Bright: '#5fb0e8', Gilded: '#e8b84a', Radiant: '#e87fc8', Mythic: '#ff7a3a' };
 

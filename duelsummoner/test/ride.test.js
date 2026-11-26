@@ -182,3 +182,9 @@ test('summon flourishes: every summon adds its element to a banked slam, bigger 
   run(g, 30, { ...I, f: 1, jump: true }); run(g, 2, { ...I, f: 1 }); run(g, 1, { ...I, f: 1, dash: true }); for (let i = 0; i < 120 && !seen.length; i++) run(g, 1, { ...I, f: 1 });
   assert.ok(seen.length >= 2, 'flourishes: ' + seen); assert.ok(seen.some(c => c >= 100 && c % 10 === 1), 'the Fusion fire flourish: ' + seen);
 });
+test('riding unlocks: 8 boards (3 owned at the start), each a small lean; the ride quests unlock the other boards, the ride boons and the land items', async () => {
+  const { BOARDS } = await import('../src/data/boards.js'); const { defaultMeta } = await import('../src/core/meta.js'); const { ladderQuests } = await import('../src/data/quests2.js'); const { recompute } = await import('../src/sim/field.js');
+  assert.equal(Object.keys(BOARDS).length, 8); assert.equal(defaultMeta().boards.length, 3);
+  const Q = ladderQuests().filter(q => q.tab === 'Riding'); assert.equal(Q.filter(q => q.reward.board).length, 5); assert.equal(Q.filter(q => q.reward.boon).length, 6); assert.equal(Q.filter(q => q.reward.item).length, 3);
+  const g = mk(); g.opts.board = 'sun-back'; recompute(g); assert.ok(Math.abs(g.mods.ridePop - 0.05) < 1e-9, 'the Sun Back lean');
+});

@@ -1,6 +1,7 @@
 // Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
 // telegraphs and effects, pickups. Positions are blended between the last two sim ticks so any refresh rate looks smooth.
 import { CFG } from '../data/config.js';
+import { BOARDS } from '../data/boards.js';
 import { litSeals } from '../sim/ride.js';
 import { KIND_LIST, BOSS_COLORS as BC } from '../data/enemies.js';
 import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
@@ -388,13 +389,14 @@ export class Actors {
     const rd = p.ride && p.ride.on ? p.ride : null;
     if (!this.boardG) { const G = this.boardG = new T.Group(), M = (c, e) => lambert(c, { emissive: e || 0x000000 }), B = (w, h, l, m, y, z) => { const o = new T.Mesh(new T.BoxGeometry(w, h, l), m); o.position.set(0, y, z || 0); G.add(o); return o; };
       // a giant spell card 1.25 m x 2 m: a dark ink rim so it reads on pale sand, a thick gold edge, a bright cream face, a deep art window and a big gold seal
-      B(1.34, 0.08, 2.1, M(0x1b1220), 0.04); B(1.25, 0.14, 2.0, M(0xe0b24e, 0x4a3410), 0.09); B(1.07, 0.03, 1.82, M(0xfff4d8, 0x5a4a2a), 0.17);
+      B(1.34, 0.08, 2.1, M(0x1b1220), 0.04); this._bEdge = B(1.25, 0.14, 2.0, M(0xe0b24e, 0x4a3410), 0.09); this._bFace = B(1.07, 0.03, 1.82, M(0xfff4d8, 0x5a4a2a), 0.17);
       B(0.86, 0.02, 0.98, M(0x23304f, 0x0c1424), 0.19, 0.18);
       const ring = new T.Mesh(new T.TorusGeometry(0.3, 0.055, 4, 18), M(0xffd56a, 0x6a4a10)); ring.rotation.x = Math.PI / 2; ring.position.set(0, 0.21, 0.18); G.add(ring);
       const star = new T.Mesh(new T.OctahedronGeometry(0.17, 0), M(0xfff2c0, 0x8a6a20)); star.scale.set(1, 0.3, 1); star.position.set(0, 0.22, 0.18); G.add(star);
       for (const zz of [-0.62, -0.75]) B(0.7, 0.02, 0.05, M(0xe0b24e, 0x3a2a08), 0.19, zz);
       G.visible = false; this.scene.add(G); this._spinV = 0; }
-    const G = this.boardG; G.visible = !!rd && !(g.over && !g.won); if (!rd) return;       // (not this.player.visible: the rig hides the stand-in player mesh every frame)
+    const G = this.boardG; G.visible = !!rd && !(g.over && !g.won); if (!rd) return;
+    { const bid = (g.opts && g.opts.board) || 'plain-back'; if (bid !== this._bId && BOARDS[bid]) { this._bId = bid; this._bEdge.material.color.setHex(BOARDS[bid].edge); this._bFace.material.color.setHex(BOARDS[bid].face); } }       // the chosen card back's colours       // (not this.player.visible: the rig hides the stand-in player mesh every frame)
     const yaw = rd.heading + rd.spin; G.position.set(px, py + 0.02, pz); G.rotation.order = 'YXZ'; G.rotation.y = yaw;
     let roll = 0, pitch = 0; if (rd.flipT > 0) { const k = 1 - rd.flipT / 0.42, d = rd.flipDir || 0; if (d === 0 || d === 4) roll = k * Math.PI * 2 * (d === 4 ? -1 : 1); else if (d === 2 || d === 6) pitch = k * Math.PI * 2 * (d === 6 ? -1 : 1); else { roll = k * Math.PI * 2; pitch = k * Math.PI * (d < 4 ? 1 : -1); } }
     if (rd.grabbing) pitch += 0.28; if (rd.manual) pitch -= 0.22; if (rd.loop) pitch -= rd.loopTh || 0; G.rotation.x = pitch; G.rotation.z = roll;

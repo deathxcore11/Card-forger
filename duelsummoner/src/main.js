@@ -223,7 +223,8 @@ function beginNow(mode, sel) {
   sel = sel || {}; if (sel.duelist) pickDuelist(sel.duelist);
   game.opts.terrain = RUN_OPEN ? 'open' : undefined; game.opts.arch = RUN_ARCH;       // a run builds its own map; only the menu backdrop is always the open desert
   game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions'; game.opts.difficulty = sel.difficulty || save.settings.difficulty; game.opts.oaths = sel.oaths || []; game.opts.map = sel.map || 'ruins';
-  game.opts.rideAssist = inputMode() === 'touch';       // Card Riding landing assist: on for touch (Flow x1 and x2 only)
+  game.opts.rideAssist = inputMode() === 'touch';
+  { const owned = save.meta.boards || ['plain-back', 'sun-back', 'tide-back']; game.opts.board = owned.includes(save.meta.board) ? save.meta.board : 'plain-back'; }       // the card back you ride       // Card Riding landing assist: on for touch (Flow x1 and x2 only)
   if (!diffUnlocked(save.meta, game.opts.map, game.opts.difficulty)) { game.opts.difficulty = 'easy'; if (save.settings.difficulty !== 'easy' && !diffUnlocked(save.meta, game.opts.map, save.settings.difficulty)) save.settings.difficulty = 'easy'; }       // a locked difficulty can never be the one played (debug starts and old saves included)
   ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; capBurstDone = false; tb.on = false; tb.fired = false; fx.dir.newRun(); fx.stopB.log.length = 0; fx.stopB.last = -1e9; fx.stopLog.length = 0; game.opts.meta = simMeta(save.meta); bars.reset(); game.reset(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; startYawDue = true; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();

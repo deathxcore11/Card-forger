@@ -36,6 +36,7 @@ const dir8 = (cmd) => { const f = cmd.f || 0, s = cmd.r || 0; if (f * f + s * s 
 const dir4 = (cmd) => { const f = cmd.f || 0, s = cmd.r || 0; if (f * f + s * s < 0.16) return 0; return Math.abs(f) >= Math.abs(s) ? (f > 0 ? 0 : 2) : (s > 0 ? 1 : 3); };
 const wrapA = a => { while (a > 3.141592653589793) a -= 6.283185307179586; while (a < -3.141592653589793) a += 6.283185307179586; return a; };
 
+const F0 = g => flowOf(g);
 export function flowOf(g) { return g.rflow || (g.rflow = { step: 1, xp: 0, idle: 0, best: 0, slams: 0, banked: 0 }); }
 export const flowDamage = g => (g.rflow ? 1 + (g.rflow.step - 1) * FLOW.dmgPerStep : 1);
 export const flowGain = g => (g.rflow ? 1 + (g.rflow.step - 1) * FLOW.gainPerStep : 1);
@@ -188,7 +189,7 @@ function sealTouch(g, p, r) {
   for (const s of sealsNear(g, p.x, p.z, 3.0)) {
     const sid = s[3], dy = p.y - s[1]; if (dy < -1 || dy > 5) continue; const L = litOf(g); if (L.sealsDone[sid]) continue;
     const run = r.sealRun || (r.sealRun = {}); let E = run[sid]; if (!E || g.t - E.t > 15) { E = run[sid] = { k: [], t: g.t }; L.ver++; } const have = E.k, key = s[0] + ',' + s[2]; if (have.includes(key)) continue; have.push(key); addTrick(g, r, 'Seal', POINTS.seal); answerTrick(g, 'seal', s[0], s[1], s[2]); L.ver++; g.emit('seal', s[0], s[2], have.length);
-    if (have.length >= sealSet(g, sid).length) { L.sealsDone[sid] = true; L.ver++; addTrick(g, r, 'Seal Set', POINTS.sealSet); const tx = s[0] + sin(r.heading) * 6, tz = s[2] + cos(r.heading) * 6; const wonder = sid === -1; g.world.cchests.push({ x: tx, y: heightAt(tx, tz), z: tz, open: false, rarity: wonder ? 'epic' : null, free: true, trophy: true }); g.emit('sealset', tx, tz, wonder ? 1 : 0); g.event('banner', wonder ? 'The wonder wakes: an epic chest rises.' : 'The seal stones wake: a chest rises.'); }
+    if (have.length >= sealSet(g, sid).length) { L.sealsDone[sid] = true; L.ver++; flowOf(g).sets = (flowOf(g).sets || 0) + 1; addTrick(g, r, 'Seal Set', POINTS.sealSet); const tx = s[0] + sin(r.heading) * 6, tz = s[2] + cos(r.heading) * 6; const wonder = sid === -1; g.world.cchests.push({ x: tx, y: heightAt(tx, tz), z: tz, open: false, rarity: wonder ? 'epic' : null, free: true, trophy: true }); g.emit('sealset', tx, tz, wonder ? 1 : 0); g.event('banner', wonder ? 'The wonder wakes: an epic chest rises.' : 'The seal stones wake: a chest rises.'); }
   }
 }
 export function litOf(g) { return g.rideLit || (g.rideLit = { cards: {}, sealsDone: {}, ver: 0 }); }
@@ -248,6 +249,7 @@ function grindTick(g, p, r, dt, cmd, jumpPress) {
   const drift = (sin(g.tickN * 0.07 + G.L) * RIDE.balDrift + r.bal * (0.9 + G.time * 0.25)) * (1 - (g.mods.rideBal || 0)); r.bal += (drift - (cmd.r || 0) * RIDE.balFix) * dt;
   const done = G.t <= 0 || G.t >= 1, fell = r.bal > 1 || r.bal < -1;
   const t = Math.max(0, Math.min(1, G.t)); p.x = s[0] + (s[3] - s[0]) * t; p.z = s[2] + (s[5] - s[2]) * t; p.y = s[1] + (s[4] - s[1]) * t + 0.08; p.vx = ux * G.dir * G.speed; p.vz = uz * G.dir * G.speed; r.heading = atan2(p.vx, p.vz); r.speed = G.speed; p.face = r.heading;
+  F0(g).grindSec = (F0(g).grindSec || 0) + dt;
   r.sparkT -= dt; if (r.sparkT <= 0) { r.sparkT = RIDE.sparkEvery; sparks(g, p); answerTrick(g, 'grind', p.x, p.y, p.z); } sealTouch(g, p, r);       // seal stones light from a rail too
   if (fell) { r.grind = null; addTrick(g, r, G.name, POINTS.grind + POINTS.grindPerSecond * G.time); bail(g, r, 'balance'); p.grounded = false; p.vy = 0; return; }
   if (done || jumpPress) { r.grind = null; addTrick(g, r, G.name, POINTS.grind + POINTS.grindPerSecond * G.time); p.grounded = false; p.vy = jumpPress ? Math.sqrt(2 * RIDE.gravity * RIDE.popLo) : 1.5; r.airT = 0; r.lastLandVy = 0; }
@@ -261,6 +263,6 @@ function sparks(g, p) {
 function loopTick(g, p, r, dt) {
   const L = r.loop; L.th += Math.max(r.speed, 13) / L.R * dt; const th = Math.min(L.th, 6.283185307179586), al = sin(th) * L.R * 0.35 + (th / 6.283185307179586) * 1.2;
   p.x = L.x + L.ux * al; p.z = L.z + L.uz * al; p.y = L.y + L.R - cos(th) * L.R; p.vx = L.ux * r.speed; p.vz = L.uz * r.speed; p.vy = 0; p.grounded = false; r.heading = atan2(L.ux, L.uz); p.face = r.heading; r.loopTh = th;
-  if (th >= 6.283185307179586) { r.loop = null; r.lastLoopT = g.t; r.loopTh = 0; r.loopCd = 0.8; p.grounded = true; p.y = heightAt(p.x, p.z); r.speed = Math.min(RIDE.top, r.speed * 1.05); }
+  if (th >= 6.283185307179586) { r.loop = null; r.lastLoopT = g.t; flowOf(g).loops = (flowOf(g).loops || 0) + 1; r.loopTh = 0; r.loopCd = 0.8; p.grounded = true; p.y = heightAt(p.x, p.z); r.speed = Math.min(RIDE.top, r.speed * 1.05); }
 }
 function dismount(g, p, r) { r.on = false; r.runT = 0; r.slideWas = true; r.grind = null; r.manual = false; const ax = sin(r.heading), az = cos(r.heading); p.vx = ax * r.speed; p.vz = az * r.speed; g.emit('ride', 0, 0, 0); }

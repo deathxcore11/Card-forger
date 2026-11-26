@@ -1,5 +1,6 @@
 // Meta rules (pure, testable): Deck Box ranks to run modifiers, quest progress and rewards, mastery, map records, unlock sets, buying upgrades.
 import { DECK_BOX, STARTER, OLD_STARTER } from '../data/meta.js';
+import { START_BOARDS } from '../data/boards.js';
 import { QUESTS } from '../data/quests.js';
 import { MASTERY, masteryRank, MAPS, DUELIST_INFO, LIBRARY_MIN } from '../data/progress.js';
 
@@ -7,6 +8,7 @@ export function defaultMeta() {
   return {
     deck: {}, unlockedCards: STARTER.cards.slice(), unlockedItems: STARTER.items.slice(), unlockedBoons: STARTER.boons.slice(), unlockedPickups: STARTER.pickups.slice(), itemsFound: [], stagesOpen: STARTER.stages, questsDone: [],
     totals: { kills: 0, chests: 0, vases: 0, runs: 0, bossKills: 0, stagesCleared: 0, fusions: 0, godFusions: 0, wardenKills: 0, minutes: 0, doorsFound: 0, deaths: 0, pickups: 0, boons: 0 },
+    boards: START_BOARDS.slice(), board: 'plain-back',
     best: {}, keys: {}, oathCount: {}, mastery: {}, maps: {}, duelists: STARTER.duelists.slice(), outfits: [], regalia: [], libraryOff: [], diffUnlock: {}, oathsOpen: []
   };
 }
@@ -84,6 +86,7 @@ function grant(meta, q) {
   if (r.duelist && !meta.duelists.includes(r.duelist)) meta.duelists.push(r.duelist);
   if (r.outfit && !meta.outfits.includes(r.outfit)) meta.outfits.push(r.outfit);
   if (r.regalia && !meta.regalia.includes(r.regalia)) meta.regalia.push(r.regalia);
+  if (r.board) { const b = meta.boards || (meta.boards = START_BOARDS.slice()); if (!b.includes(r.board)) b.push(r.board); }
 }
 export function evaluateQuests(meta) {
   const done = [];
@@ -140,6 +143,7 @@ export function applyRun(meta, r) {
     const found = meta.itemsFound || (meta.itemsFound = []); for (const id of r.items || []) if (!found.includes(id)) found.push(id);
     if (win && r.mode === 'run' && (r.stagesCleared || 0) >= (meta.stagesOpen || 1)) meta.stagesOpen = Math.min(3, (meta.stagesOpen || 1) + 1);
   }
+  if (r.ride) { const R2 = r.ride; T.slams = (T.slams || 0) + (R2.slams || 0); T.grindSec = (T.grindSec || 0) + Math.floor(R2.grindSec || 0); T.sealSets = (T.sealSets || 0) + (R2.sealSets || 0); T.loops = (T.loops || 0) + (R2.loops || 0); mx('combo', R2.bestCombo); }       // the ride quests' counters
   T.kills += r.kills || 0; T.chests += r.chestsOpened || 0; T.vases += r.vasesBroken || 0; T.runs += 1; T.bossKills += r.bossKills || 0;
   T.stagesCleared = (T.stagesCleared || 0) + (r.stagesCleared || 0); T.fusions = (T.fusions || 0) + (r.fusions || 0); T.godFusions = (T.godFusions || 0) + (r.godFusions || 0); T.wardenKills = (T.wardenKills || 0) + (r.wardenKilled ? 1 : 0);
   mx('level', r.level); mx('timeSurvived', r.timeSurvived); mx('overtimeSeconds', r.overtimeSeconds); mx('trapsSet', r.trapsSet); mx('stagesCleared', r.stagesCleared);

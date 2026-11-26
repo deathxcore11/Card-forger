@@ -1,5 +1,6 @@
 // The field: 4 Monster Zones and 4 shared Spell and Trap Zones, level-up offers, Redraw / Banish / Pass, and Fusion.
 import { MONSTERS, FUSIONS, SPELLS, ONE_SHOTS, TRAPS, DUELISTS, OFFER, LEVELS, FIELD_RULES, XP, formOf } from '../data/cards.js';
+import { BOARDS } from '../data/boards.js';
 import { sealSpend } from './seals.js';
 import { addFx } from './combat.js';
 import { monsterMul, knee } from './ledger.js';
@@ -46,7 +47,8 @@ export function recompute(g) {
     stakes: 0, critDmg: 0, drillMon: 0, drillCard: 0, drillTrap: 0, drillSpell: 0, jumpH: 0, killHeal: 0, heartMul: 0, vaseLuck: 0, sight: 0, thorns: 0, ridePop: 0, rideBal: 0, rideSpin: 0, flowHold: 0, slamSize: 0, grindSpeed: 0, duneAir: 0, canyonVert: 0, ruinGrind: 0 };
   const WHOLE = { armour: 1, maxLp: 1, airJumps: 1 };
   const addMods = (mods, mul) => { mul = mul || 1; for (const k of Object.keys(mods)) if (k in M && typeof M[k] === 'number') M[k] += WHOLE[k] ? Math.round(mods[k] * mul) : mods[k] * mul; };
-  if (g.metaMods) addMods(g.metaMods);                                    // Deck Box ranks
+  if (g.metaMods) addMods(g.metaMods);
+  if (g.big && g.opts && g.opts.board && BOARDS[g.opts.board]) addMods(BOARDS[g.opts.board].mods);       // the board's lean                                    // Deck Box ranks
   const src = {};                                                                   // stat mod key -> [[source name, value], ...]
   const note = (key, name, v) => { if (v && STAT_BY_MOD[key]) (src[key] || (src[key] = [])).push([name, v]); };
   if (g.metaMods) for (const k of Object.keys(g.metaMods)) note(k, 'Deck Box', g.metaMods[k]);

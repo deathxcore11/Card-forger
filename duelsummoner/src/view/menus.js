@@ -1,6 +1,7 @@
 // The menu screens: main menu, duelist select, map select with Oaths, Card Library, Quests, Settings. Plain placeholder styling; everything
 // shown comes from data (src/data/progress.js, quests.js, cards.js, items.js) and the saved progress (src/core/meta.js).
 import { DUELIST_INFO, DUELIST_ORDER, MASTERY, MAPS, DIFF_CHIPS, OATHS, OATH_BY_ID, masteryRank, USEFUL_BY_ATTACK, USEFUL_BY_ELEMENT, LIBRARY_MIN } from '../data/progress.js';
+import { BOARDS, START_BOARDS } from '../data/boards.js';
 import { QUESTS, QUEST_TABS, RARITY_COLOUR } from '../data/quests.js';
 import { DIFFICULTY, DIFFICULTIES } from '../data/stages.js';
 import { MONSTERS, FUSIONS, SPELLS, TRAPS, ONE_SHOTS } from '../data/cards.js';
@@ -70,10 +71,11 @@ export function initMenus(env) {
       '<div>Mastery rank <b>' + mst.rank + '</b> ' + bar(mst.frac, mst.next === null ? 'max' : mst.points + ' / ' + mst.next) + '</div>' +
       '<div class="dim">Runs played ' + m.runs + ' &middot; kills ' + m.kills + '</div><p class="joke">&ldquo;' + D.joke + '&rdquo;</p>' +
       '<div><b>Starts with</b> ' + (D.start ? MONSTERS[D.start].name : 'coming later') + '</div><div><b>Passive</b> ' + D.passive + '</div>' +
-      '<div class="slots"><span>Outfits</span>' + outfits + '<span>Regalia</span><span class="slot" title="Regalia slot">&#128081;</span></div></div></div>' +
+      '<div class="slots"><span>Outfits</span>' + outfits + '<span>Regalia</span><span class="slot" title="Regalia slot">&#128081;</span></div>' + boardRow() + '</div></div>' +
       '<div class="navRow"><button id="selBack" class="small">BACK</button><button id="selNext"' + (D.locked || !unlocked(sel.duelist) ? ' disabled' : '') + '>NEXT: CHOOSE A MAP</button></div>');
     document.body.dataset.cam = 'left';       // the Camp camera puts the live duelist on the left, the panels on the right
     preview = portraits[sel.duelist] ? startBakedPreview($('duelPreview'), portraits[sel.duelist]) : startPreview($('duelPreview'), D.color);       // the real model from its baked frames; the robe stand-in only when a model is missing
+    for (const b of root().querySelectorAll('[data-board]')) b.onclick = () => { const M = meta(); if ((M.boards || START_BOARDS).includes(b.dataset.board)) { M.board = b.dataset.board; if (env.persist) env.persist(); showDuelists(); } };
     for (const b of root().querySelectorAll('.portrait')) b.onclick = () => { if (unlocked(b.dataset.d)) { sel.duelist = b.dataset.d; showDuelists(); } else { sel.duelist = b.dataset.d; showDuelists(); } };
     $('selBack').onclick = showMain; $('selNext').onclick = showMaps;
   }
@@ -101,6 +103,8 @@ export function initMenus(env) {
     if ($('oathDone')) $('oathDone').onclick = () => { oathPanel = false; showMaps(); };
     $('mapBack').onclick = showDuelists; $('mapGo').onclick = () => start('run'); $('mapQuick').onclick = () => start('quick');
   }
+  // the card back you ride on the big desert: the three you start with and the ones earned on the ride quests
+  function boardRow() { const M = meta(), owned = M.boards || START_BOARDS, cur = owned.includes(M.board) ? M.board : 'plain-back'; return '<div class="slots"><span>Board</span>' + Object.keys(BOARDS).map(id => { const B = BOARDS[id], has = owned.includes(id); return '<button class="slot' + (id === cur ? ' on' : '') + '"' + (has ? '' : ' disabled') + ' data-board="' + id + '" title="' + B.name + ': ' + (has ? B.text : 'earned on a ride quest') + '" style="background:#' + B.face.toString(16).padStart(6, '0') + ';border:2px solid #' + B.edge.toString(16).padStart(6, '0') + ';' + (has ? '' : 'opacity:0.35;') + '"></button>'; }).join('') + '<span class="dim">' + BOARDS[cur].name + ': ' + BOARDS[cur].text + '</span></div>'; }
   function start(mode) { if (!diffUnlocked(meta(), sel.map, sel.difficulty)) sel.difficulty = 'easy'; stopPreview(); $('menuScreen').classList.remove('on'); $('startScreen').classList.remove('on'); env.begin(mode, { duelist: sel.duelist, difficulty: sel.difficulty, oaths: sel.oaths.slice(), map: sel.map }); }
 
   // ---------- Card Library ----------

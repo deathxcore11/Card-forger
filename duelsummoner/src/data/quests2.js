@@ -4,6 +4,7 @@
 import { ITEMS, BLESSINGS } from './items.js';
 import { STARTER } from './starter.js';
 import { POWERUPS } from './powerups.js';
+import { BOARDS } from './boards.js';
 
 const METRICS = [
   { stat: 'total.runs',        a: 1,  end: 200,     text: g => 'Finish ' + g + ' run' + (g > 1 ? 's' : '') + '.', name: 'Another Run' },
@@ -17,6 +18,15 @@ const METRICS = [
   { stat: 'total.pickups',     a: 4,  end: 3000,    text: g => 'Take ' + g + ' pickups in total.', name: 'Magpie' },
   { stat: 'total.boons',       a: 1,  end: 1500,    text: g => 'Take ' + g + ' boons from shrines.', name: 'Shrine Walker' }
 ];
+// the ride quests (card riding plan section 7): ride boons, land items and boards are earned by riding
+const RIDE_METRICS = [
+  { stat: 'total.slams',    a: 10,  end: 25000, text: g => 'Bank ' + g + ' landing slams in total.', name: 'Slam Down' },
+  { stat: 'best.combo',     a: 800, end: 60000, text: g => 'Bank a combo worth ' + g + ' in one go.', name: 'Combo' },
+  { stat: 'total.grindSec', a: 10,  end: 8000,  text: g => 'Grind ' + g + ' seconds in total.', name: 'Rail Time' },
+  { stat: 'total.sealSets', a: 1,   end: 300,   text: g => 'Light ' + g + ' seal set' + (g > 1 ? 's' : '') + '.', name: 'Seal Lighter' },
+  { stat: 'total.loops',    a: 1,   end: 400,   text: g => 'Ride ' + g + ' full pipe loop' + (g > 1 ? 's' : '') + '.', name: 'Looper' }
+];
+const isRideItem = id => !!(ITEMS[id] && ITEMS[id].mods && (ITEMS[id].mods.duneAir || ITEMS[id].mods.canyonVert || ITEMS[id].mods.ruinGrind));
 const LEGEND = [
   ['best.stagesCleared', 3, 'Beyond the Desert II', 'Clear all three stages in one run.'], ['best.hardStages', 1, 'Hard Door', 'Clear a stage on Hard.'], ['best.mediumFull', 1, 'Middle Road', 'Clear all three stages on Medium.'],
   ['best.level', 40, 'Overflowing', 'Reach level 40 in one run.'], ['best.timeSurvived', 2000, 'The Long Dark', 'Survive 33 minutes in one run.'], ['total.doorsFound', 50, 'Doorkeeper', 'Find and wake 50 doors.'],
@@ -37,9 +47,9 @@ export function ladderQuests(skip) {
   skip = skip || new Set();
   const targets = [];
   for (const id of ordered('common', skip)) targets.push(['item', id, 'Plain']);
-  for (const id of Object.keys(BLESSINGS)) if (BLESSINGS[id].big && !STARTER.boons.includes(id)) targets.push(['boon', id, 'Plain']);
+  for (const id of Object.keys(BLESSINGS)) if (BLESSINGS[id].big && !BLESSINGS[id].ride && !STARTER.boons.includes(id)) targets.push(['boon', id, 'Plain']);
   for (const k of Object.keys(POWERUPS)) if (!STARTER.pickups.includes(+k)) targets.push(['pickup', +k, 'Bright']);
-  for (const id of ordered('rare', skip)) targets.push(['item', id, 'Bright']);
+  for (const id of ordered('rare', skip)) if (!isRideItem(id)) targets.push(['item', id, 'Bright']);
   for (const id of ordered('epic', skip)) targets.push(['item', id, 'Gilded']);
   const per = METRICS.map((m, mi) => Math.ceil((targets.length - mi) / METRICS.length)), goals = METRICS.map((m, mi) => goalsOf(m, per[mi])), used = METRICS.map(() => 0), out = [];
   targets.forEach(([kind, id, rarity], i) => {
@@ -48,5 +58,9 @@ export function ladderQuests(skip) {
     out.push({ id: 'unlock-' + kind + '-' + id, tab: kind === 'item' ? 'Items' : 'General', name: m.name + ': ' + label, text: m.text(goal), rarity, stat: m.stat, goal, reward: { [kind]: id } });
   });
   ordered('legendary', skip).forEach((id, i) => { const L = LEGEND[i % LEGEND.length]; out.push({ id: 'unlock-item-' + id, tab: 'Items', name: L[2] + ': ' + ITEMS[id].name, text: L[3], rarity: 'Mythic', stat: L[0], goal: L[1], reward: { item: id } }); });
+  // the ride quests: ride boons, land items and boards, dealt round-robin over the five riding measures
+  const rt = []; for (const id of Object.keys(BLESSINGS)) if (BLESSINGS[id].ride && !STARTER.boons.includes(id)) rt.push(['boon', id, 'Plain']); for (const id of Object.keys(ITEMS)) if (isRideItem(id) && !STARTER.items.includes(id)) rt.push(['item', id, 'Bright']); for (const id of Object.keys(BOARDS)) if (!BOARDS[id].start) rt.push(['board', id, 'Bright']);
+  const rper = RIDE_METRICS.map((m, mi) => Math.ceil((rt.length - mi) / RIDE_METRICS.length)), rgoals = RIDE_METRICS.map((m, mi) => goalsOf(m, rper[mi])), rused = RIDE_METRICS.map(() => 0);
+  rt.forEach(([kind, id, rarity], i) => { const mi = i % RIDE_METRICS.length, m = RIDE_METRICS[mi], goal = rgoals[mi][rused[mi]++], label = kind === 'item' ? ITEMS[id].name : kind === 'boon' ? BLESSINGS[id].name : BOARDS[id].name; out.push({ id: 'unlock-' + kind + '-' + id, tab: 'Riding', name: m.name + ': ' + label, text: m.text(goal), rarity, stat: m.stat, goal, reward: { [kind]: id } }); });
   return out;
 }
