@@ -48,6 +48,7 @@ export const ROWS = [
   seg('moveStick', 'controls', 'Move stick', ['floating', 'fixed'], { phone: 'floating', thor: null, portal: 'floating', pc: null }, { section: 'touch', show: c => !(c.values && c.values.onScreenControls === 'off') }),
   sld('controlSize', 'controls', 'Control size', 70, 140, 10, { phone: 100, thor: null, portal: 100, pc: null }, { section: 'touch', show: c => !(c.values && c.values.onScreenControls === 'off') }),
   sld('controlOpacity', 'controls', 'Control opacity', 20, 100, 10, { phone: 60, thor: null, portal: 60, pc: null }, { section: 'touch', show: c => !(c.values && c.values.onScreenControls === 'off') }),
+  seg('rideHelpers', 'controls', 'Riding helpers', ['on', 'off'], { phone: 'on', thor: null, portal: 'on', pc: null }, { section: 'touch' }),       // auto-grind near a rail and landing assist at low Flow (card riding)
   sld('dragLook', 'controls', 'Drag look speed', 1, 10, 1, { phone: 5, thor: null, portal: 5, pc: null }, { section: 'touch', show: c => !(c.values && c.values.onScreenControls === 'off') }),
   sw('tapToUse', 'controls', 'Tap to use', { phone: true, thor: true, portal: true, pc: null }, { section: 'touch' }),
   sw('touchHaptics', 'controls', 'Touch haptics', { phone: true, thor: false, portal: false, pc: null }, { section: 'touch' }),

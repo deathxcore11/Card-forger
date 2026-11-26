@@ -50,6 +50,7 @@ function bank(g, r) {
   // the landing slam: radius and damage from the combo just banked, capped by the Flow step
   const p = g.p, rad = Math.min(FLOW.slamR[1], FLOW.slamR[0] + v / 900) * (1 + (g.mods.slamSize || 0)), dmg = Math.min(FLOW.slamCapPerStep * F.step, 6 + v / FLOW.slamDiv);
   explode(g, p.x, p.y, p.z, rad, 0, dmg, 0xffd56a, 'Landing slam'); F.slams++;
+  if (g.field && g.field.duelist === 'kael') { g.curSrc = g.srcIndex('ember-rider'); splash(g, p.x, p.y, p.z, rad * 0.7, 3 + F.step, 1); g.curSrc = 0; }       // Kael's ride style, Ember Rider: the slam leaves the ground burning
   // summon flourishes: each summon on the field adds its element to the slam, bigger with each evolution form; a Fusion adds a double ring
   if (g.field && g.field.monsters) for (const m of g.field.monsters) { if (!m) continue; const D = MONSTERS[m.id] || FUSIONS[m.id]; if (!D) continue; const fu = !!FUSIONS[m.id], fm = formOf(m.id, m.level), el = elemBits(D.elements), R = (fu ? 6 : 3) + fm * 1.5, dm = (fu ? 12 : 4) + fm * 3; g.curSrc = g.srcIndex(m.id); splash(g, p.x, p.y, p.z, R, dm, el); if (fu) splash(g, p.x, p.y, p.z, R * 0.55, dm * 0.6, el); g.curSrc = 0; g.emit('flourish', p.x, p.z, (el & 1 ? 1 : el & 2 ? 2 : 0) + 10 * fm + (fu ? 100 : 0)); }
   { const T = g.map && g.map.regionAt ? g.map.regionAt(p.x, p.z).type : -1;       // the land answers the slam
@@ -128,7 +129,7 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   const sx = cmd.r || 0; if (cmd.spin) r.spin += (cmd.spin > 0 ? 1 : -1) * RIDE.spinRate * (1 + (g.mods.rideSpin || 0)) * dt; else if (sx * sx > 0.36 && !hasForward(cmd)) r.spin += (sx > 0 ? 1 : -1) * RIDE.spinRate * (1 + (g.mods.rideSpin || 0)) * dt;       // the shoulders spin (pad), or the stick left or right
   if (usePress && r.specialReady && F.step === 5) { r.specialReady = false; addTrick(g, r, 'Royal Flush', POINTS.special); explode(g, p.x, p.y, p.z, 16, 0, 120, 0xfff2c0, 'Royal Flush'); F.step = 1; F.xp = 0; for (const q of g.field.monsters) if (q) q.cd = 0; g.emit('volley', p.x, p.z, 9); g.emit('special', p.x, p.z, 0); }
   // grind: auto-snap onto a rail while coming down, or with use
-  if ((p.vy <= 1.5 || usePress) && trySnap(g, p, r, cmd)) return true;
+  if ((usePress || (p.vy <= 1.5 && !(g.opts && g.opts.autoGrind === false))) && trySnap(g, p, r, cmd)) return true;       // auto-grind as the card comes down, unless switched off (then GRIND snaps it)
   if (flick) r.manualArm = r.clk;
   if (usePress || jumpPress || revertPress) r.revertT = RIDE.revertWin;       // a tap of USE or of OLLIE just before touching down: a revert
   else if (r.revertT > 0) r.revertT -= dt;
@@ -250,7 +251,7 @@ function grindTick(g, p, r, dt, cmd, jumpPress) {
   const done = G.t <= 0 || G.t >= 1, fell = r.bal > 1 || r.bal < -1;
   const t = Math.max(0, Math.min(1, G.t)); p.x = s[0] + (s[3] - s[0]) * t; p.z = s[2] + (s[5] - s[2]) * t; p.y = s[1] + (s[4] - s[1]) * t + 0.08; p.vx = ux * G.dir * G.speed; p.vz = uz * G.dir * G.speed; r.heading = atan2(p.vx, p.vz); r.speed = G.speed; p.face = r.heading;
   F0(g).grindSec = (F0(g).grindSec || 0) + dt;
-  r.sparkT -= dt; if (r.sparkT <= 0) { r.sparkT = RIDE.sparkEvery; sparks(g, p); answerTrick(g, 'grind', p.x, p.y, p.z); } sealTouch(g, p, r);       // seal stones light from a rail too
+  r.sparkT -= dt; if (r.sparkT <= 0) { r.sparkT = RIDE.sparkEvery; sparks(g, p); if (g.field && g.field.duelist === 'mira') { const e = g.en; for (let i = 0; i < e.max; i++) if (e.alive[i] && (e.x[i] - p.x) ** 2 + (e.z[i] - p.z) ** 2 < 36) e.mark[i] = Math.max(e.mark[i], 3); } answerTrick(g, 'grind', p.x, p.y, p.z); } sealTouch(g, p, r);       // seal stones light from a rail too
   if (fell) { r.grind = null; addTrick(g, r, G.name, POINTS.grind + POINTS.grindPerSecond * G.time); bail(g, r, 'balance'); p.grounded = false; p.vy = 0; return; }
   if (done || jumpPress) { r.grind = null; addTrick(g, r, G.name, POINTS.grind + POINTS.grindPerSecond * G.time); p.grounded = false; p.vy = jumpPress ? Math.sqrt(2 * RIDE.gravity * RIDE.popLo) : 1.5; r.airT = 0; r.lastLandVy = 0; }
 }

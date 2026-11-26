@@ -4,7 +4,7 @@ import { DUELIST_INFO, DUELIST_ORDER, MASTERY, MAPS, DIFF_CHIPS, OATHS, OATH_BY_
 import { BOARDS, START_BOARDS } from '../data/boards.js';
 import { QUESTS, QUEST_TABS, RARITY_COLOUR } from '../data/quests.js';
 import { DIFFICULTY, DIFFICULTIES } from '../data/stages.js';
-import { MONSTERS, FUSIONS, SPELLS, TRAPS, ONE_SHOTS } from '../data/cards.js';
+import { MONSTERS, FUSIONS, SPELLS, TRAPS, ONE_SHOTS, DUELISTS } from '../data/cards.js';
 import { ITEMS } from '../data/items.js';
 import { boardUrl, fetchBoard } from '../core/board.js';
 import { deviceClass } from '../ui/device.js';
@@ -70,7 +70,7 @@ export function initMenus(env) {
       '<canvas id="duelPreview" width="120" height="140" class="prev"></canvas><h2>' + D.name + ', ' + D.title + '</h2>' +
       '<div>Mastery rank <b>' + mst.rank + '</b> ' + bar(mst.frac, mst.next === null ? 'max' : mst.points + ' / ' + mst.next) + '</div>' +
       '<div class="dim">Runs played ' + m.runs + ' &middot; kills ' + m.kills + '</div><p class="joke">&ldquo;' + D.joke + '&rdquo;</p>' +
-      '<div><b>Starts with</b> ' + (D.start ? MONSTERS[D.start].name : 'coming later') + '</div><div><b>Passive</b> ' + D.passive + '</div>' +
+      '<div><b>Starts with</b> ' + (D.start ? MONSTERS[D.start].name : 'coming later') + '</div><div><b>Passive</b> ' + D.passive + '</div>' + (DUELISTS[sel.duelist] && DUELISTS[sel.duelist].rideStyle ? '<div><b>Ride style</b> ' + DUELISTS[sel.duelist].rideStyle.name + ': ' + DUELISTS[sel.duelist].rideStyle.text + '</div>' : '') +
       '<div class="rowLabel">Outfits</div><div class="slots slotRow">' + outfits + '<span>Regalia</span><span class="slot" title="Regalia slot">&#128081;</span></div>' + boardRow() + '</div></div>' +
       '<div class="navRow"><button id="selBack" class="small">BACK</button><button id="selNext"' + (D.locked || !unlocked(sel.duelist) ? ' disabled' : '') + '>NEXT: CHOOSE A MAP</button></div>');
     document.body.dataset.cam = 'left';       // the Camp camera puts the live duelist on the left, the panels on the right

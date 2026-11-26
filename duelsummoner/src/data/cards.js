@@ -77,8 +77,8 @@ export const TRAPS = {
 };
 
 export const DUELISTS = {
-  kael: { name: 'Kael, Ember Tamer', start: 'ember-wyvern', second: 'cinder-hatchling' },
-  mira: { name: 'Mira, Rune Scribe', start: 'rune-apprentice', second: 'sigil-familiar' }
+  kael: { name: 'Kael, Ember Tamer', start: 'ember-wyvern', second: 'cinder-hatchling', rideStyle: { name: 'Ember Rider', text: 'Your landing slams leave the ground burning.' } },
+  mira: { name: 'Mira, Rune Scribe', start: 'rune-apprentice', second: 'sigil-familiar', rideStyle: { name: 'Rune Rider', text: 'Enemies near the rail you grind are marked.' } }
 };
 
 // Balance targets, checked by test/run-sim.mjs and tools/balance.mjs. Stage 1 pace: level-ups per minute 0-1, 2, 2-3, 3, 3, 3-4, 4-5 (about 20 by 7:00),

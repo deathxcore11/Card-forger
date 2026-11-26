@@ -4,8 +4,8 @@ const n = (tab, ctx) => visibleRows(tab, ctx).length, ids = (tab, ctx) => visibl
 test('row counts per device class match spec 9.8', () => {
   const ph = { cls: 'phone' };
   assert.deepEqual(['game', 'display', 'sound', 'access'].map(t => n(t, ph)), [10, 7, 6, 10]);       // Access has 8 in the spec plus Big moments and Duelist marker
-  assert.deepEqual(ids('controls', ph), ['slideMode', 'onScreenControls', 'moveStick', 'controlSize', 'controlOpacity', 'dragLook', 'tapToUse', 'touchHaptics', 'resetControls']);
-  assert.equal(n('controls', { cls: 'phone', pad: true }), 9 + 10, 'a phone with a pad adds the Controller section');       // (spec 9.8 plus Riding buttons, 26 Nov)
+  assert.deepEqual(ids('controls', ph), ['slideMode', 'onScreenControls', 'moveStick', 'controlSize', 'controlOpacity', 'rideHelpers', 'dragLook', 'tapToUse', 'touchHaptics', 'resetControls']);
+  assert.equal(n('controls', { cls: 'phone', pad: true }), 10 + 10, 'a phone with a pad adds the Controller section');       // (spec 9.8 plus Riding buttons, 26 Nov)
   const th = { cls: 'thor', dual: true };
   assert.deepEqual(['game', 'display', 'sound', 'access'].map(t => n(t, th)), [9, 7, 6, 10]);
   assert.equal(n('game', { cls: 'thor', dual: false }), 10, 'Map overlay size shows only while Dual screen is Off');

@@ -188,3 +188,11 @@ test('riding unlocks: 8 boards (3 owned at the start), each a small lean; the ri
   const Q = ladderQuests().filter(q => q.tab === 'Riding'); assert.equal(Q.filter(q => q.reward.board).length, 5); assert.equal(Q.filter(q => q.reward.boon).length, 6); assert.equal(Q.filter(q => q.reward.item).length, 3);
   const g = mk(); g.opts.board = 'sun-back'; recompute(g); assert.ok(Math.abs(g.mods.ridePop - 0.05) < 1e-9, 'the Sun Back lean');
 });
+test('duelist ride styles: Kael (Ember Rider) burns the slam ground; touch riding helpers can be switched off (no auto-grind then)', () => {
+  const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 2, { ...I, f: 1 });
+  run(g, 30, { ...I, f: 1, jump: true }); run(g, 140, { ...I, f: 1 }); assert.ok(flowOf(g).slams > 0 && g.srcNames.includes('ember-rider'), 'Ember Rider fired with the slam');
+  const h = mk(); h.opts.autoGrind = false; let rail = null; for (let r = 20; r < 1500 && !rail; r += 40) { const L = railsNear(h, h.p.x + r, h.p.z, 60); rail = L.find(s => Math.hypot(s[3] - s[0], s[5] - s[2]) > 5 && Math.abs(s[4] - s[1]) < 1 && s[1] < 30); }
+  const mx = (rail[0] + rail[3]) / 2, mz = (rail[2] + rail[5]) / 2, my = (rail[1] + rail[4]) / 2, ux = rail[3] - rail[0], uz = rail[5] - rail[2], L = Math.hypot(ux, uz);
+  h.p.ride = undefined; h.p.x = mx - ux / L * 1.5; h.p.z = mz - uz / L * 1.5; h.p.y = my + 1.0; h.p.vx = ux / L * 12; h.p.vz = uz / L * 12; h.p.vy = -1; h.p.grounded = false; run(h, 1); h.p.ride.on = true; h.p.ride.speed = 12;
+  run(h, 6, { ...I }); assert.ok(!h.p.ride.grind, 'no auto-grind with the helpers off');
+});
