@@ -36,7 +36,8 @@ function rider(g, bot, c) {
     const late = g.sc > 480;       // after 8:00 the build bots go for the door like anyone (their own targets only before)
     c.f = Math.max(c.f, -0.6);       // the bot never flicks the stick back (that is a manual)
     if (build === 'rail' && !bot.railT && !late) { const L = railsNear(g, p.x, p.z, 14); if (L.length) { const s = L[0], mx = (s[0] + s[3]) / 2, mz = (s[2] + s[5]) / 2, dx = mx - p.x, dz = mz - p.z, dl = Math.hypot(dx, dz) || 1; c.f = -dz / dl; c.r = dx / dl; if (dl < 5) { bot.railT = 12; } } }
-    if (build === 'seal' && !late) { const S = sealsNear(g, p.x, p.z, 60).filter(q => !(g.rideLit && g.rideLit.sealsDone[q[3]])); if (S.length) { let b = S[0], bd = 1e9; for (const q of S) { const d = Math.hypot(q[0] - p.x, q[2] - p.z); if (d < bd && d > 1) { bd = d; b = q; } } const dx = b[0] - p.x, dz = b[2] - p.z, dl = Math.hypot(dx, dz) || 1; c.f = -dz / dl; c.r = dx / dl; } }
+    const risen = g.door && g.door.state === 'risen' && g.gate.state === 'closed';       // the rise banner fired: seals only to finish a set whose next stone is within 60 m
+    if (build === 'seal' && !late) { const S = sealsNear(g, p.x, p.z, 60).filter(q => !(g.rideLit && g.rideLit.sealsDone[q[3]]) && (!risen || (r.sealRun && r.sealRun[q[3]] && r.sealRun[q[3]].k.length > 0))); if (S.length) { let b = S[0], bd = 1e9; for (const q of S) { const d = Math.hypot(q[0] - p.x, q[2] - p.z); if (d < bd && d > 1) { bd = d; b = q; } } const dx = b[0] - p.x, dz = b[2] - p.z, dl = Math.hypot(dx, dz) || 1; c.f = -dz / dl; c.r = dx / dl; } }
     if (bot.railT > 0) { bot.railT--; c.jump = bot.railT > 4; return; }       // a short crouch and pop up onto the rail (it snaps on as the card comes down)
     const every = build === 'meteor' ? 70 : build === 'reckless' ? 45 : 90, crouch = build === 'meteor' ? 30 : build === 'reckless' ? 12 : 24; const ph = bot.k % every; c.jump = ph < crouch;
     return;
