@@ -99,6 +99,13 @@ class CommanderDeckShotTest {
         assertEquals("the commander is first in the list", "Korvold, Fae-Cursed King", ui.edit.cards.first().name)
         assertTrue("the pill names it", rule.onAllNodesWithText("Commander: Korvold").fetchSemanticsNodes().isNotEmpty())
         assertTrue("Fill is a real button now", rule.onAllNodesWithText("Fill 87 empty slots").fetchSemanticsNodes().isNotEmpty())
+        // Pins: Viscera Seer is marked in the list and counted; the craft button steps through its budgets.
+        rule.runOnUiThread { ui.pins = setOf("Viscera Seer") }; settle(20); shot("7-pinned")
+        assertTrue("the list marks the pinned card", rule.onAllNodesWithText("PIN").fetchSemanticsNodes().isNotEmpty())
+        assertTrue("the Pinned button counts it", rule.onAllNodesWithText("Pinned").fetchSemanticsNodes().isNotEmpty())
+        rule.onNodeWithText("Fill: owned only").performSemanticsAction(SemanticsActions.OnClick); settle(10)
+        assertEquals(3, ui.craftMax)
+        assertTrue("the button says what it allows", rule.onAllNodesWithText("Fill: owned + craft up to 3").fetchSemanticsNodes().isNotEmpty())
     }
 
     @Test @Config(sdk = [35], qualifiers = "w960dp-h540dp-xxhdpi")

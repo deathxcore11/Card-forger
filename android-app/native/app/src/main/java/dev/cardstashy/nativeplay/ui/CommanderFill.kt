@@ -32,10 +32,16 @@ internal object CommanderFill {
         return Plan(ramp, draw, removal, sweepers, nonbasic, lands - nonbasic, spells - ramp - draw - removal - sweepers)
     }
 
-    /** The first [n] of [candidates] not already in the deck: cards you own first, then (only when [craftOk]) the ones you would craft. */
-    fun select(candidates: List<String>, owned: (String) -> Boolean, craftOk: Boolean, have: Set<String>, n: Int): List<String> {
+    /** How many cards you would craft that Fill may add: Owned only, then 3, 6, 12, or any (Play has no dollars: what a card costs is seals). */
+    val CRAFT_STEPS = listOf(0, 3, 6, 12, Int.MAX_VALUE)
+    fun craftWord(max: Int) = if (max <= 0) "owned only" else if (max == Int.MAX_VALUE) "owned + any craft" else "owned + craft up to $max"
+    fun nextCraft(max: Int) = CRAFT_STEPS[(CRAFT_STEPS.indexOf(max).coerceAtLeast(0) + 1) % CRAFT_STEPS.size]
+
+    /** The first [n] of [candidates] not already in the deck: cards you own first, then up to [craftMax] you would craft. */
+    fun select(candidates: List<String>, owned: (String) -> Boolean, craftMax: Int, have: Set<String>, n: Int): List<String> {
         val fresh = candidates.distinct().filter { it.lowercase() !in have }
-        return (fresh.filter(owned) + if (craftOk) fresh.filterNot(owned) else emptyList()).take(n.coerceAtLeast(0))
+        val own = fresh.filter(owned).take(n.coerceAtLeast(0))
+        return own + fresh.filterNot(owned).take(minOf(craftMax.coerceAtLeast(0), (n - own.size).coerceAtLeast(0)))
     }
 
     private val BASIC = mapOf('w' to "Plains", 'u' to "Island", 'b' to "Swamp", 'r' to "Mountain", 'g' to "Forest")

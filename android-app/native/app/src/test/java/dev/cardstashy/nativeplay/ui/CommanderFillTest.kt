@@ -55,8 +55,15 @@ class CommanderFillTest {
         val have = setOf("sol ring")
         val c = listOf("Sol Ring", "Cultivate", "Beast Within", "Rampant Growth")
         val own = { n: String -> n == "Beast Within" || n == "Sol Ring" }
-        assertEquals(listOf("Beast Within"), CommanderFill.select(c, own, craftOk = false, have = have, n = 3))
-        assertEquals(listOf("Beast Within", "Cultivate", "Rampant Growth"), CommanderFill.select(c, own, craftOk = true, have = have, n = 3))
+        assertEquals(listOf("Beast Within"), CommanderFill.select(c, own, craftMax = 0, have = have, n = 3))
+        assertEquals(listOf("Beast Within", "Cultivate"), CommanderFill.select(c, own, craftMax = 1, have = have, n = 3))
+        assertEquals(listOf("Beast Within", "Cultivate", "Rampant Growth"), CommanderFill.select(c, own, craftMax = Int.MAX_VALUE, have = have, n = 3))
+    }
+
+    @Test fun craftChipsStepThroughTheBudgets() {
+        assertEquals("owned only", CommanderFill.craftWord(0))
+        assertEquals("owned + craft up to 6", CommanderFill.craftWord(6))
+        assertEquals(3, CommanderFill.nextCraft(0)); assertEquals(Int.MAX_VALUE, CommanderFill.nextCraft(12)); assertEquals(0, CommanderFill.nextCraft(Int.MAX_VALUE))
     }
 
     @Test fun basicsSpreadOverTheColours() {

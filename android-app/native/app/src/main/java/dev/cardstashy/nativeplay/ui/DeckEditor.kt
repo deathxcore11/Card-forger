@@ -92,8 +92,9 @@ class EditorUi {
     var cmdrPick by mutableStateOf<String?>(null)
     /** Cards the player pinned "always include": Fill's engine must keep them (up to 8). */
     var pins by mutableStateOf<Set<String>>(emptySet())
-    /** Fill may also add cards you would craft (off: owned cards only). */
-    var fillCraft by mutableStateOf(false)
+    /** How many cards Fill may add that you would still craft (0: owned cards only). */
+    var craftMax by mutableStateOf(0)
+    val fillCraft get() = craftMax > 0
     /** The card whose Play card actions are open. */
     var holdName by mutableStateOf<String?>(null)
     /** Kept for the callers that open a saved deck as its list (the Bench always shows the Trunk under the deck). */
@@ -340,7 +341,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
             else if (need >= 1 && !ui.filling) { ui.filling = true
                 scope.launch {
                     val inDeck = ui.edit.cards.map { it.name.lowercase() }.toHashSet(); var failed = false
-                    val adds = ArrayList<DeckEdit.Line>(); var owned0 = 0; var craft0 = 0
+                    val adds = ArrayList<DeckEdit.Line>(); var owned0 = 0; var craft0 = 0; var craftLeft = ui.craftMax
                     fun have(n: String) = (owned[n] ?: owned[n.split(" // ")[0]] ?: 0) > 0
                     // One job at a time: its Scryfall search in the commander's colours, owned cards first, a card you would craft only when allowed.
                     suspend fun job(query: String, n: Int, plain: Boolean = false): Int {
@@ -348,15 +349,15 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                         val names = ArrayList<String>()
                         for (page in 1..2) { val r = CardFacts.search(query, "edhrec", page); if (r == null) { failed = failed || (page == 1 && adds.isEmpty()); break }
                             names += r.first.mapNotNull { it.get("name")?.asString }; if (!r.second) break }
-                        val pick = CommanderFill.select(names, ::have, ui.fillCraft || ui.edit.format != "Commander", inDeck, n)
-                        pick.forEach { inDeck.add(it.lowercase()); adds += DeckEdit.Line(it, 1); if (have(it) || Decks.isBasicLand(it)) owned0++ else craft0++ }
+                        val pick = CommanderFill.select(names, ::have, if (ui.edit.format != "Commander") Int.MAX_VALUE else craftLeft, inDeck, n)
+                        pick.forEach { inDeck.add(it.lowercase()); adds += DeckEdit.Line(it, 1); if (have(it) || Decks.isBasicLand(it)) owned0++ else { craft0++; craftLeft-- } }
                         return pick.size
                     }
                     // Commander: the Build a deck engine first (around the commander and the pins, your own cards preferred); the job-by-job search is the fallback.
                     val viaEngine: Boolean = if (ui.edit.format != "Commander") false else run {
                         val lead = leader!!
                         val args = JsonObject().apply {
-                            addProperty("format", "Commander"); addProperty("commander", lead)
+                            addProperty("format", "Commander"); addProperty("commander", lead); bracket?.let { addProperty("bracket", it) }
                             add("pins", com.google.gson.JsonArray().apply { ui.pins.filter { n -> ui.edit.cards.any { it.name == n } && n != lead }.take(8).forEach { add(it) } })
                             add("keep", com.google.gson.JsonArray().apply { ui.edit.cards.filter { it.name != lead && it.name !in ui.pins }.take(40).forEach { c -> add(JsonObject().apply { addProperty("name", c.name); addProperty("qty", c.qty) }) } })
                             add("collection", com.google.gson.JsonArray().apply { owned.forEach { (n, q) -> add(JsonObject().apply { addProperty("name", n); addProperty("qty", q) }) } })
@@ -366,8 +367,8 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                         if (rows == null) false else {
                             val fresh = rows.filter { r -> r.str("name").lowercase() !in inDeck && r.str("name") != lead }
                             val named = fresh.filter { !Decks.isBasicLand(it.str("name")) }
-                            val picks = CommanderFill.select(named.map { it.str("name") }, ::have, ui.fillCraft, inDeck, need)
-                            picks.forEach { inDeck.add(it.lowercase()); adds += DeckEdit.Line(it, 1); if (have(it)) owned0++ else craft0++ }
+                            val picks = CommanderFill.select(named.map { it.str("name") }, ::have, craftLeft, inDeck, need)
+                            picks.forEach { inDeck.add(it.lowercase()); adds += DeckEdit.Line(it, 1); if (have(it)) owned0++ else { craft0++; craftLeft-- } }
                             var room = need - picks.size
                             fresh.filter { Decks.isBasicLand(it.str("name")) }.forEach { r -> val q = minOf(room, r.get("qty")?.asInt ?: 1); if (q > 0) { adds += DeckEdit.Line(r.str("name"), q); room -= q; owned0 += q } }
                             true
@@ -434,7 +435,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 "", emptyList(), st?.set ?: "", st?.num ?: "", "", key = LandStyles.key(l.name, LandStyles.rowId(l)), ref = l.name) }
         BenchRow(l.name, l.qty, pr?.miss ?: 0, pr?.seal ?: "", fx?.a?.ifBlank { null } ?: named(l.name, "art_crop"), byName[l.name]?.pimage ?: fx?.i?.ifBlank { null } ?: named(l.name, "normal"),
             fx?.mc ?: "", colorsOf(card), card.str("set"), card.str("collector_number"), card.str("rarity"),
-            (cardRoles?.get(l.name) as? JsonArray)?.mapNotNull { it.takeIf { r -> r.isJsonPrimitive }?.asString } ?: emptyList(), cmc = fx?.m ?: -1.0) }) }
+            (cardRoles?.get(l.name) as? JsonArray)?.mapNotNull { it.takeIf { r -> r.isJsonPrimitive }?.asString } ?: emptyList(), cmc = fx?.m ?: -1.0, pinned = l.name in ui.pins) }) }
     // Find, the colours and the Filters panel are the Bench's own now (BenchFilter.kt), read from each tile's facts below.
     fun keep(@Suppress("UNUSED_PARAMETER") name: String, @Suppress("UNUSED_PARAMETER") colors: List<String>, group: String): Boolean {
         return when (b.type) { "Creatures" -> group == "Creatures"; "Lands" -> group == "Lands"; "Spells" -> group != "Creatures" && group != "Lands"; else -> true }
@@ -503,7 +504,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 if (e.format == "Commander") BenchPill(if (leader == null) "Choose commander" else "Commander: ${leader.substringBefore(",")}", gold = leader == null) { ui.cmdrPick = null; ui.sheet = "commander" }
                 if (nums.count < nums.size) BenchPill(CommanderFill.fillLabel(e.format, leader, nums.size - nums.count, ui.filling), enabled = !ui.filling, onClick = actions.fill)
                 if (e.format == "Commander" && ui.pins.isNotEmpty()) BenchPill("Pinned", count = ui.pins.size, desc = "${ui.pins.size} pinned cards: ${ui.pins.joinToString()}. Tap to clear") { ui.pins = emptySet() }
-                if (e.format == "Commander" && nums.count < nums.size && leader != null) BenchPill(if (ui.fillCraft) "Fill: owned + craft" else "Fill: owned only") { ui.fillCraft = !ui.fillCraft }
+                if (e.format == "Commander" && nums.count < nums.size && leader != null) BenchPill("Fill: " + CommanderFill.craftWord(ui.craftMax)) { ui.craftMax = CommanderFill.nextCraft(ui.craftMax) }
                 for (g in goals) BenchPill("${g.code.uppercase()} packs", count = g.miss, desc = "${g.name}: ${g.miss} missing") { actions.pack(g.code) }
             }) else null,
             browserSwitch = { BenchSwitch(listOf("mine" to "Your cards", "all" to "All cards", "lands" to "Lands"), ui.mode) { if (it == "lands") openLands(ui.landType) else ui.mode = it } },

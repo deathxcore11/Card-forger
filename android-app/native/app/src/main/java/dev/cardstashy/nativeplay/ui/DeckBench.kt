@@ -141,7 +141,9 @@ class BenchRow(val name: String, val qty: Int, val short: Int, val seal: String,
                /** The row's own legality tags (tcg.js deckCardsTab: Limited, Forbidden, Not legal …), true = bad; the Detailed view shows them. */
                val flags: List<Pair<String, Boolean>> = emptyList(),
                /** Its mana value (the curve, the list's Mana sort); -1 = not known (Yu-Gi-Oh!, Pokémon, a card still loading). */
-               val cmc: Double = -1.0)
+               val cmc: Double = -1.0,
+               /** Commander (Play): the player pinned it "always include"; the list marks it. */
+               val pinned: Boolean = false)
 class BenchGroup(val name: String, val rows: List<BenchRow>)
 /** A chip in the hero that does something (Collection's "2 to review", views.js deckPage's review eyebrow): its words, warn colour, the site action. */
 class BenchChip(val label: String, val warn: Boolean, val act: String)
@@ -258,6 +260,8 @@ class BenchActions(
 class BenchUi {
     /** Thor top and phone landscape: the header folded to its one line (the grip under it), so the deck list gets the room. */
     var heroFolded by mutableStateOf(false)
+    /** True while the screen draws the grip (Thor top, phone landscape), so the pad's Y can fold the header. */
+    var gripOn by mutableStateOf(false)
     var tab by mutableStateOf("cards")
     var view by mutableStateOf("list")
     var find by mutableStateOf("")
@@ -489,6 +493,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
     BottomScreen { if (ui.filters && magic) FilterPanel(m, ui, count, sets, "bottom", onFilter) else BenchBottom(m, ui, onFilter) { if (a.tab?.invoke("cards") != false) ui.tab = "cards" } }
     // Magic: LT/RT step the browser's mana value (specs/dual-screen-native.md), R3 opens Filters; the others keep LT/RT as a page.
     PadScreen(PadActs(x = a.save?.takeIf { m.canSave && !m.busy }?.let { PadAct(a.saveLabel, it) },
+        y = if (ui.gripOn) PadAct(if (ui.heroFolded) "Show header" else "More room") { ui.heroFolded = !ui.heroFolded } else null,
         tabs = if (m.tabs.size > 1) ({ d -> padTab(m.tabs.map { it.first }, ui.tab, d, a.drawn)?.let { k -> ui.peek = null; if (a.tab?.invoke(k) != false) ui.tab = k } }) else null,
         page = if (magic && ui.tab == "cards") ({ d -> if (PadPrompts.keyRepeat == 0) { ui.filter = ui.filter.stepMana(d); onFilter() } }) else ({ d -> repeat(6) { focus.moveFocus(if (d > 0) FocusDirection.Down else FocusDirection.Up) } }),
         pageLabel = if (magic && ui.tab == "cards") "Mana value" else "Page",
@@ -513,6 +518,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
         val split = maxWidth >= 720.dp || maxWidth > maxHeight
         val wide = split && maxHeight >= 600.dp
         val land = split && !wide
+        androidx.compose.runtime.SideEffect { ui.gripOn = land }
         // The art wash behind everything (.app:before): the hero art, heavily blurred, at a third.
         val wash = heroPainter(m.heroArt?.let(homeArt))
         if (wash != null) Image(wash, null, Modifier.fillMaxSize().scale(1.15f).blur(46.dp).alpha(.32f), contentScale = ContentScale.Crop)
@@ -1052,6 +1058,8 @@ internal fun DeckStripRow(r: BenchRow, outer: Modifier = Modifier, inner: Modifi
                     Text(qty ?: "${r.qty}×", style = f(if (big) 15f else 13f, 800, if (short) B.Coral else B.Gold), maxLines = 1, softWrap = false)
                 }
                 FitName(r.name, Modifier.weight(1f).padding(vertical = 3.dp), if (big) 17f else 12f)
+                if (r.pinned) Text("PIN", style = f(9f, 800, B.Gold), maxLines = 1, softWrap = false,
+                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(Color(0x73000000)).border(1.dp, Color(0x80E5C47E), RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 1.dp))
                 end()
             }
         }

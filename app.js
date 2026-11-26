@@ -149,6 +149,7 @@ import { profileOf, simulateMatchup, podProfile, calibratePods } from "./matchup
 import { mtgConstructedPower } from "./deckpower.js";
 import { fieldStore, celebrate, calibrateField } from "./matchups-ui.js";
 import { completionPlan, commanderTheme } from "./planner.js";
+import { identityFits } from "./core.js";
 import { sourceCredit, mtgjsonDeck, collectionIdeas, upgradeSuggestions, applyUpgradeSwaps } from "./strategy.js";
 import { searchQuery, rankByName, magicFilterError, hasMagicSearchQuery, magicSearchSpec, scryfallSearchPath, mergeMagicCards, loadMagicPrintingPage, captureSearchFocus, restoreSearchFocus } from "./catalog-tools.js";
 import { promptInstall, dismissInstall, onInstallable, installGuide, installHelpMarkup } from "./install.js";
@@ -7337,6 +7338,18 @@ A.fillRun = async () => {
     saveCatalogSoon();
     render();
   }
+};
+// "Always include this card" (Randall 26 Nov): the card goes into the list, which Fill keeps and builds around (its roles count what the list already holds).
+A.fillPin = async () => {
+  const commit=scopedCommit(),editDeck=scopedEditDeck(commit);
+  const name = $("#fillPinName")?.value.trim(), d = currentDeck();
+  if (!name || !d) return toast("Type a card name.");
+  const c = await resolve(name, true), lead = meta(d.commander);
+  if (!c) return toast("That card was not found.");
+  if (lead && !identityFits(c, lead)) return toast(`${c.name} is outside your commander’s colors.`);
+  if (c.legalities?.commander && c.legalities.commander !== "legal") return toast(`${c.name} is not legal in Commander.`);
+  S.ui.fill.plan = null;
+  await editDeck((x) => mergeDeckCard(x, c.name, 1), { msg: `${c.name} will always be in this deck.` });
 };
 A.fillApply = async () => {
   const commit=scopedCommit(),editDeck=scopedEditDeck(commit);

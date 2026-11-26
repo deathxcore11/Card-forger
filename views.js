@@ -1208,7 +1208,8 @@ export function deckPage() {
     fm = formatOf(d),
     target = fm.size,
     // No shopping on the Deck page: what is missing is a collection filter, not a store.
-    tab = S.ui.deckTab === "shop" ? "cards" : (S.ui.deckTab === "matchups" || S.ui.deckTab === "upgrade") ? "engine" : S.ui.deckTab,
+    // "upgrade" is the Fill panel ("Fill N slots" opens it); the old Matchups tab folded into Power.
+    tab = S.ui.deckTab === "shop" ? "cards" : S.ui.deckTab === "matchups" ? "engine" : S.ui.deckTab,
     tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["versions", "Versions", "viewStacks"], ["playtest", "War Chest", "random"]];
   const power = shownPower(mtgPower(d)), countOk = fm.exact ? mainCopies === target : mainCopies >= target;
   return `${deckShell({game:"mtg",source:"mine",artHtml:img(coverOf(d), d.name, "hero-art"),title:d.name,
@@ -1721,6 +1722,8 @@ function fillPanel(d, open) {
   <div class="chips">${[0, 10, 25, 50, 100].map((n) => `<button class="chip pick ${F.budget === n ? "on" : ""}" data-act="fillBudget" data-v="${n}">${n ? "$" + n : "Owned only"}</button>`).join("")}</div>
   <label class="custom-budget">Custom purchase budget ($)<input type="number" min="0" max="100000" step="0.01" value="${F.budget}" data-change="fillCustom" aria-label="Custom slot-filling budget"></label>
   <div class="grid2"><label>Target lands<input type="number" min="30" max="42" value="${F.lands}" data-change="fill" data-field="lands"></label><label class="check"><input type="checkbox" data-change="fill" data-field="simple" ${F.simple ? "checked" : ""}> Prefer simpler cards</label></div>
+  <p class="muted small">Cards already in your list stay, and Fill builds around them. Add a card you always want:</p>
+  <div class="searchbar"><input id="fillPinName" type="search" data-suggest="mtg" placeholder="Always include this card" data-enter="fillPin" autocomplete="off" aria-label="Card to always include"><button class="btn ghost" data-act="fillPin">Add</button></div>
   <button class="btn block" data-act="fillRun" ${F.busy ? "disabled" : ""}>${F.busy ? "Working…" : "Recommend cards"}</button>
   ${F.busy ? buildOverlay(F.msg, { title: "Finding cards for your deck", note: "Searching ramp, draw, removal, lands and budget picks in your colors, then filling the open slots. This can take up to a minute.", id: "fillMsg" }) : `<p class="muted small" role="status" id="fillMsg">${esc(F.msg)}</p>`}
   ${plan ? fillResults(d, plan) : ""}</section>`;
