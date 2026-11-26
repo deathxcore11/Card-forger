@@ -121,3 +121,28 @@ test('the wonder: every seed has a long ride line with five seal stones; lightin
   for (const s of stones) { g.p.x = s[0]; g.p.z = s[2]; g.p.y = s[1] + 2; g.p.grounded = false; g.p.vy = 4; g.p.ride.on = true; g.p.ride.speed = 3; g.p.ride.grind = null; run(g, 1); }
   assert.equal(g.world.cchests.length, n0 + 1, 'a chest'); assert.equal(g.world.cchests[n0].rarity, 'epic');
 });
+test('landforms: a canyon half-pipe wall sends the card up (vert) and it comes back down on the wall without a bail; bowls and step-downs exist', () => {
+  const g = mk(), W = g.map.world, sp = W.spawn; let spot = null;
+  for (let r = 200; r < 6000 && !spot; r += 23) for (let a = 0; a < 6.28 && !spot; a += 0.21) { const x = sp.x + Math.cos(a) * r, z = sp.z + Math.sin(a) * r; if (W.regionAt(x, z).type !== 3) continue;
+    for (let k = 0; k < 8 && !spot; k++) { const b = k * 0.785, c = Math.cos(b), s = Math.sin(b), h0 = heightAt(x, z), flat = Math.abs(heightAt(x - c * 6, z - s * 6) - h0) < 0.4; if (flat && heightAt(x + c * 3, z + s * 3) - h0 > 2.8 && heightAt(x + c * 1.2, z + s * 1.2) - h0 > 1.0 && heightAt(x + c * 1.2, z + s * 1.2) - h0 < 3) spot = [x, z, c, s]; } }
+  assert.ok(spot, 'a half-pipe wall');
+  const [x, z, c, s] = spot; g.p.x = x - c * 8; g.p.z = z - s * 8; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.vx = c * 15; g.p.vz = s * 15; const yaw = Math.atan2(-c, -s);
+  let vert = false, bail = false; for (let i = 0; i < 150; i++) { run(g, 1, { ...I, f: i < 30 ? 1 : 0, yaw }); const r = g.p.ride; if (r && r.vert) vert = true; if (r && r.bailT > 0) bail = true; }
+  assert.ok(vert, 'went vert'); assert.ok(!bail, 'no bail');
+  assert.ok(W.landSites(1, sp.x - 6000, sp.z - 6000, sp.x + 6000, sp.z + 6000).length > 0, 'bowls'); assert.ok(W.landSites(2, sp.x - 6000, sp.z - 6000, sp.x + 6000, sp.z + 6000).length > 0, 'step-downs');
+});
+test('ride shrines: a Ring Shrine charges from two laps grinded (tier lifted, rare or better at Flow x3); a Gate Shrine from its five arches threaded; standing on foot still charges at base tier', async () => {
+  const { shrineCourse } = await import('../src/gen/world/world.js'); const { placeObject } = await import('../src/sim/world.js');
+  // find a spot whose course is a ring, and one that is a gate
+  let ringAt = null, gateAt = null; for (let i = 0; i < 400 && (!ringAt || !gateAt); i++) { const x = 40 + i * 0.37, z = 60; const k = shrineCourse(x, z).kind; if (k === 'ring' && !ringAt) ringAt = [x, z]; if (k === 'gate' && !gateAt) gateAt = [x, z]; }
+  { const g = mk(); g.world.shrines.length = 0; const s = placeObject(g, 'shrine', { x: ringAt[0], y: heightAt(ringAt[0], ringAt[1]), z: ringAt[1] }); flowOf(g).step = 3; const was = s.cards.map(c => c.rarity);
+    g.p.ride = undefined; place(g, s.x + 6.2, s.z, 12); run(g, 2, { ...I, f: 1 }); const r = g.p.ride; r.on = true;
+    // grind round the ring: drive the grind state along a fake ring rail by moving the duelist round the centre
+    const rail = [0, 0, 0, 0, 0, 0, 'ring', s.x, s.z]; for (let k = 0; k <= 140; k++) { const a = k / 60 * 6.283185307179586; g.p.x = s.x + Math.cos(a) * 6.2; g.p.z = s.z + Math.sin(a) * 6.2; r.grind = { s: rail, t: 0.5, L: 3, dir: 1, speed: 10, time: 0, name: 'Rim Ride' }; const { shrineRide } = await import('../src/sim/ride.js'); shrineRide(g, g.p, r, 1 / 60); }
+    assert.ok(s.done && s.ridden, 'ring shrine charged'); const O = ['common', 'rare', 'epic', 'legendary']; s.cards.forEach((c, i) => assert.ok(O.indexOf(c.rarity) >= Math.max(1, Math.min(3, O.indexOf(was[i]) + 1)), c.rarity + ' from ' + was[i])); }
+  { const g = mk(); g.world.shrines.length = 0; const s = placeObject(g, 'shrine', { x: gateAt[0], y: heightAt(gateAt[0], gateAt[1]), z: gateAt[1] }); const C = shrineCourse(s.x, s.z), A0 = C.arches[0];
+    g.p.ride = undefined; place(g, s.x, s.z, 12); run(g, 2, { ...I, f: 1 }); const r = g.p.ride; r.on = true; const { shrineRide } = await import('../src/sim/ride.js');
+    for (let d = 6; d <= 54; d += 0.5) { g.p.x = s.x + A0.ux * d; g.p.z = s.z + A0.uz * d; g.p.y = heightAt(g.p.x, g.p.z); shrineRide(g, g.p, r, 1 / 60); }
+    assert.ok(s.done && s.ridden, 'gate shrine charged: ' + s.gn); }
+  { const g = mk(); g.world.shrines.length = 0; const s = placeObject(g, 'shrine', { x: g.p.x + 3, y: g.p.y, z: g.p.z }); g.p.ride = undefined; run(g, 400); assert.ok(s.done && !s.ridden, 'on foot: charged by standing'); }
+});

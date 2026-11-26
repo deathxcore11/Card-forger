@@ -139,7 +139,7 @@ export function updateWorld(g, dt) {
   const p = g.p, S = E.shrines;
   for (const s of g.world.shrines) {
     if (s.done) continue;
-    const dx = p.x - s.x, dz = p.z - s.z, inside = dx * dx + dz * dz < S.radius * S.radius && Math.abs(p.y - s.y) < 2;
+    const dx = p.x - s.x, dz = p.z - s.z, inside = !(p.ride && p.ride.on) && dx * dx + dz * dz < S.radius * S.radius && Math.abs(p.y - s.y) < 2;       // standing in it (on foot) charges it at base tier; riding charges it by its course (sim/ride.js)
     if (inside) { s.idle = 0; s.charge = Math.min(S.hold, s.charge + dt); }
     else { s.idle += dt; if (s.idle > S.leaveGrace && s.charge > 0) s.charge = Math.max(0, s.charge - S.decayPerSecond * dt); }
     if (s.charge >= S.hold) { s.done = true; g.event('banner', 'The shrine accepts your tribute.'); openBlessing(g, s); }
@@ -172,6 +172,13 @@ function newShrine(g, s) {
   const cards = pick.map(id => { let r = g.rl() * tot, rar = R.order[0]; for (const k of R.order) { r -= W[k]; if (r < 0) { rar = k; break; } } return { id, kind: 'blessing', isNew: true, to: 1, rarity: rar, mult: R.mult[rar] }; });
   const best = cards.reduce((b, c) => (R.order.indexOf(c.rarity) > R.order.indexOf(b) ? c.rarity : b), R.order[0]);
   return { x: s.x, y: s.y, z: s.z, charge: 0, idle: 0, done: false, cards, best };
+}
+// a shrine charged by riding its course: Flow x3 or more makes every boon at least rare, Flow x5 at least epic, and a clean extra lap lifts each one tier
+export function rideShrineDone(g, s, minRar, bump, how) {
+  if (s.done) return; const R = E.shrines.rarity, O = R.order, lo = minRar ? O.indexOf(minRar) : 0;
+  for (const c of s.cards) { let i = Math.max(O.indexOf(c.rarity), lo); if (bump) i = Math.min(O.length - 1, i + 1); c.rarity = O[i]; c.mult = R.mult[O[i]]; }
+  s.best = s.cards.reduce((b, c) => (O.indexOf(c.rarity) > O.indexOf(b) ? c.rarity : b), O[0]); s.done = true; s.charge = E.shrines.hold; s.ridden = true;
+  g.event('banner', how + ': the shrine answers your riding.'); g.emit('shrineride', s.x, s.z, O.indexOf(s.best)); openBlessing(g, s);
 }
 function openBlessing(g, shrine) {
   g.offer = { type: 'blessing', cards: shrine.cards.map(c => ({ ...c })), leave: true, source: shrine };

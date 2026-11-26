@@ -13,6 +13,7 @@ function cellRails(m, qx, qz) {
     for (let k = 0; k < N; k++) { const t = k / N * 6.283185307179586, ct = cos(t), st = sin(t), cr = Math.sign(ct) * cbrt(Math.abs(ct)), sr = Math.sign(st) * cbrt(Math.abs(st)), ux = q * cr * b.rx, uz = q * sr * b.rz; pts.push([b.cx + ux * b.cr - uz * b.sr, b.cz + ux * b.sr + uz * b.cr]); }
     for (let k = 0; k < N; k++) { const a = pts[k], bb = pts[(k + 1) % N]; out.push([a[0], b.T, a[1], bb[0], b.T, bb[1]]); }
   }
+  for (const q of D.rings || []) { const n = q.length; let cx = 0, cz = 0; for (const p of q) { cx += p[0] / n; cz += p[2] / n; } for (let i = 0; i < n; i++) { const a = q[i], b = q[(i + 1) % n]; out.push([a[0], a[1], a[2], b[0], b[1], b[2], 'ring', cx, cz]); } }       // a Ring Shrine's rail remembers its shrine's centre
   out.seals = (D.seals || []).slice();
   return out;
 }

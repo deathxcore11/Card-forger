@@ -10,13 +10,14 @@ import { heightAt, moveXZ } from './terrain.js';
 import { atan2, cos, sin } from './dmath.js';
 import { resolveColliders } from './colliders.js';
 import { explode, damageEnemy } from './combat.js';
-import { breakVasesNear } from './world.js';
+import { breakVasesNear, rideShrineDone } from './world.js';
+import { shrineCourse } from '../gen/world/world.js';
 import { railsNear, sealsNear, sealSet } from './rails.js';
 
 export const RIDE = { mountAt: 10.5, dismountAt: 7, top: 24, push: 3.4, pushTo: 12.5, friction: 0.55, soft: 2.2, downhill: 10, carve: 2.6, airTurn: 1.0, crouchMax: 0.5, popLo: 2.2, popHi: 4.5,
   snap: 1.6, flipTime: 0.42, spinRate: 9.42, landTol: 0.52, bailT: 0.6, revertWin: 0.28, balDrift: 0.9, balFix: 2.6, sparkR: 2.5, sparkDmg: 7, sparkEvery: 0.2, gravity: 28, kickRun: 0.4, kickTo: 12.5, brake: 16, holdMin: 8.5 };
 export const FLIPS = ['Card Flip', 'Ace Flip', 'Deal Flip', 'Riffle', 'Heel Card', 'Cut Flip', 'Fan Flip', 'Shuffle'], GRABS = ['Hand Grab', 'Seal Grab', 'Joker Grab', 'Crown Grab'], GRINDS = ['Edge Grind', 'Rim Ride', 'Spine Slide'];
-export const POINTS = { flip: 300, grab: 200, grabPerSecond: 420, spin180: 260, grind: 120, grindPerSecond: 160, manualPerSecond: 90, revert: 180, special: 3000, bigAir: 100, smash: 150, crest: 150, closeCall: 120, cardLit: 400, seal: 250, sealSet: 2500 };
+export const POINTS = { flip: 300, grab: 200, grabPerSecond: 420, spin180: 260, grind: 120, grindPerSecond: 160, manualPerSecond: 90, revert: 180, special: 3000, bigAir: 100, vert: 250, smash: 150, crest: 150, closeCall: 120, cardLit: 400, seal: 250, sealSet: 2500 };
 export const FLOW = { need: [0, 1800, 4200, 7500, 12000], idle: 10, dmgPerStep: 0.25, gainPerStep: 0.5, stakesPerStep: 5, slamR: [4, 14], slamDiv: 22, slamCapPerStep: 45 };
 
 export const makeRide = () => ({ on: false, heading: 0, speed: 0, crouch: 0, jumpWas: false, dashWas: false, useWas: false, flipT: 0, flipName: '', flipK: 0, grabbing: false, grabT: 0, grabName: '', spin: 0, airT: 0,
@@ -56,6 +57,7 @@ function bail(g, r, why) {
 // returns true when the ride moved the duelist this tick (the run code then skips its own movement)
 export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   const p = g.p, r = p.ride || (p.ride = makeRide()), F = flowOf(g);
+  if (r.on) shrineRide(g, p, r, dt);
   if (F.step > 1) { F.idle += dt; if (F.idle > FLOW.idle) { F.step--; F.idle = 0; F.xp = 0; g.event('flowdown', F.step); } }
   const hs = Math.sqrt(p.vx * p.vx + p.vz * p.vz);
   if (!r.on) {
@@ -80,7 +82,9 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
     if (hasInput && !back) { const want = atan2(mx, mz), d = wrapA(want - r.heading), lim = RIDE.carve * dt; r.heading += d > lim ? lim : d < -lim ? -lim : d; }
     if (back) r.speed = Math.max(0, r.speed - RIDE.brake * dt);
     const ax = sin(r.heading), az = cos(r.heading), dh = heightAt(p.x + ax * 1.2, p.z + az * 1.2) - heightAt(p.x, p.z), slope = dh > 0.9 ? 0 : dh / 1.2;
-    let acc = -slope * RIDE.downhill - RIDE.friction; if (slope > 0.12 && g.map.regionAt && g.map.regionAt(p.x, p.z).type === 0) acc -= RIDE.soft;
+    let acc = -slope * RIDE.downhill * (cmd.jump && slope < 0 ? 1.6 : 1) - RIDE.friction;       // pump: crouching down the back of a roller or into a dip gains more
+    // a wall steeper than about 40 degrees ahead at speed (a half-pipe, a bowl wall): the card goes up it and comes back down facing the other way (vert air)
+    if (dh / 1.2 > 0.85 && dh < 3 && r.speed > 8 && !r.manual && heightAt(p.x + ax * 3, p.z + az * 3) - heightAt(p.x, p.z) > 2.7) { p.vy = Math.min(11, r.speed * 0.6); p.grounded = false; r.airT = 0; r.vert = true; r.heading += 3.141592653589793; r.speed *= 0.18; r.lastLandVy = 0; addTrick(g, r, 'Vert', POINTS.vert); g.emit('ollie', 2, 0, 0); return true; } if (slope > 0.12 && g.map.regionAt && g.map.regionAt(p.x, p.z).type === 0) acc -= RIDE.soft;
     const wk = g.windT > 0 ? 2 : 1, fwd = hasInput && (mx * ax + mz * az) > 0.5; if (fwd && r.speed < RIDE.pushTo * wk) acc += RIDE.push * wk;
     const top = RIDE.top * (1 + g.mods.move * 0.5); r.speed = Math.max(fwd ? Math.min(r.speed, RIDE.holdMin) : 0, Math.min(top, r.speed + acc * dt)); if (fwd && r.speed < RIDE.holdMin) r.speed = Math.min(RIDE.holdMin, r.speed + RIDE.push * 2 * dt);       // the stick held forward kicks along: a dune climb never drops the rider below 8.5 m/s
     if (flick && !r.manual) { r.manual = true; r.manualFlick = true; r.bal = 0; r.manualT = 0; }       // a stick flick on the ground starts a manual (held until an ollie or a fall)
@@ -124,6 +128,29 @@ function step(g, p, r, dt) {
   if (r.speed > 12) { const n = breakVasesNear(g, p.x, p.z, 1.6); for (let i = 0; i < n; i++) addTrick(g, r, 'Smash', POINTS.smash); }
   sealTouch(g, p, r); if (r.speed > 14) closeCall(g, p, r);
 }
+// ---- shrines you ride (plan section 10): Ring Shrine, one lap of its ring rail grinded (a second lap lifts the tier); Gate Shrine, its five arches threaded in one go
+const TWO_PI = 6.283185307179586, wrapPi = a => (a > 3.141592653589793 ? a - TWO_PI : a < -3.141592653589793 ? a + TWO_PI : a);
+function shrineTier(g) { const st = flowOf(g).step; return st >= 5 ? 'epic' : st >= 3 ? 'rare' : null; }
+export function shrineRide(g, p, r, dt) {
+  for (const s of g.world.shrines || []) {
+    if (s.done) continue; const dx = p.x - s.x, dz = p.z - s.z; if (dx * dx + dz * dz > 70 * 70) continue; const C = s.course || (s.course = shrineCourse(s.x, s.z));
+    if (C.kind === 'ring') {
+      const on = r.grind && r.grind.s[6] === 'ring' && Math.abs(r.grind.s[7] - s.x) < 1.5 && Math.abs(r.grind.s[8] - s.z) < 1.5;
+      if (on) { const a = atan2(dz, dx); if (s.rLast !== undefined && s.rIdle < 0.8) s.ra += wrapPi(a - s.rLast); else s.ra = 0; s.rLast = a; s.rIdle = 0;
+        const laps = Math.floor(Math.abs(s.ra) / TWO_PI); s.charge = Math.max(s.charge, Math.min(0.98, Math.abs(s.ra) / TWO_PI) * 5);
+        if (laps >= 1 && !s.lap1) { s.lap1 = true; g.event('banner', 'Ring Shrine: a full lap. Another clean lap lifts it.'); }
+        if (laps >= 2) rideShrineDone(g, s, shrineTier(g), true, 'Two laps'); }
+      else { s.rIdle = (s.rIdle || 0) + dt; if (s.lap1 && s.rIdle > 0.8) rideShrineDone(g, s, shrineTier(g), false, 'A lap'); }
+    } else {
+      s.gIdle = (s.gIdle || 0) + dt; if (s.gIdle > 6) { s.gn = 0; s.gDir = 0; }
+      const prev = s.gPrev || (s.gPrev = []); C.arches.forEach((A, i) => { const ax = p.x - A.x, az = p.z - A.z, d = ax * A.ux + az * A.uz, lat = Math.abs(-ax * A.uz + az * A.ux), was = prev[i]; prev[i] = d;
+        if (was === undefined || (was < 0) === (d < 0) || lat > 1.8 || p.y - heightAt(A.x, A.z) > 3.3) return;
+        const dir = d > was ? 1 : -1, want = dir > 0 ? (s.gn || 0) : 4 - (s.gn || 0); if ((s.gDir && s.gDir !== dir) || i !== want) { s.gn = 0; s.gDir = 0; if (!((dir > 0 && i === 0) || (dir < 0 && i === 4))) return; }
+        s.gDir = dir; s.gn = (s.gn || 0) + 1; s.gIdle = 0; s.charge = Math.max(s.charge, s.gn * 0.98); g.emit('arch', A.x, A.z, s.gn);
+        if (s.gn >= 5) rideShrineDone(g, s, shrineTier(g), false, 'Five arches'); });
+    }
+  }
+}
 // a trunk, a cactus or a stone card passed within a hand of the card at speed: Close Call (once per thing)
 function closeCall(g, p, r) {
   const C = g.colliders; if (!C || !C.grid) return; const i0 = Math.floor((p.x - 3) / C.CELL), i1 = Math.floor((p.x + 3) / C.CELL), j0 = Math.floor((p.z - 3) / C.CELL), j1 = Math.floor((p.z + 3) / C.CELL);
@@ -142,7 +169,9 @@ export function litOf(g) { return g.rideLit || (g.rideLit = { cards: {}, sealsDo
 export function litSeals(g) { const L = litOf(g), r = g.p.ride, out = []; for (const sid in L.sealsDone) for (const s of sealSet(g, +sid)) out.push([s[0], s[1], s[2], 1]); if (r && r.combo) for (const sid in r.combo.seals) if (!L.sealsDone[sid]) for (const k of r.combo.seals[sid]) { const [x, z] = k.split(',').map(Number); const s = sealSet(g, +sid).find(q => q[0] === x && q[2] === z); if (s) out.push([s[0], s[1], s[2], 0]); } return out; }
 function groundFollow(g, p, r, dt) {
   const h = heightAt(p.x, p.z), prev = p.y;
-  if (h >= prev - 0.35) { r.rvy = (h - prev) / Math.max(dt, 1e-4); p.y = h; return; }
+  if (h >= prev - 0.35) { const rvy = (h - prev) / Math.max(dt, 1e-4), sx = sin(r.heading), sz = cos(r.heading), ahead = (heightAt(p.x + sx * 0.8, p.z + sz * 0.8) - h) / 0.8 * r.speed;
+    if (r.rvy > 2.5 && ahead < r.rvy * 0.35 && rvy > 0) { p.y = h; p.grounded = false; p.vy = r.rvy * 0.95; r.airT = 0; r.lastLandVy = 0; if (r.rvy > 3 && r.speed > 13) { addTrick(g, r, 'Crest Launch', POINTS.crest); g.emit('crest', p.x, p.z, 0); } r.rvy = 0; return; }       // the lip of a ramp or a crest: the climb carries the card into the air
+    r.rvy = Math.min(rvy, r.speed * 0.6); p.y = h; return; }       // the climb rate, capped at a 31-degree ramp: a step in the ground is not a launcher
   // the ground falls away faster than the card can follow: off the crest into the air, carrying the climb
   p.grounded = false; p.vy = Math.max(0, r.rvy) * 0.9; r.airT = 0;
   if (r.rvy > 3 && r.speed > 13) { p.vy *= 1.15; addTrick(g, r, 'Crest Launch', POINTS.crest); g.emit('crest', p.x, p.z, 0); }       // a dune crest taken fast throws the card up a little more, and counts

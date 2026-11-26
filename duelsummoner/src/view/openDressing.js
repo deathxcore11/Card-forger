@@ -143,8 +143,13 @@ function stoneCard(D, x, y, z, s, rot) { frustum(D, x, y - 1.3 * s, z, 1.35 * s,
 function crack(D, map, pts) { for (let i = 0; i + 3 < pts.length; i += 2) { const x0 = pts[i], z0 = pts[i + 1], x1 = pts[i + 2], z1 = pts[i + 3], dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1, nx = -dz / l * 0.07, nz = dx / l * 0.07, y0 = groundAt(map, x0, z0) + 0.04, y1 = groundAt(map, x1, z1) + 0.04; D.quad([x0 - nx, y0, z0 - nz], [x0 + nx, y0, z0 + nz], [x1 + nx, y1, z1 + nz], [x1 - nx, y1, z1 - nz], [0, 1, 0], 0xb39a72); } }
 // ---- a dormant seal stone: a low dark plinth with a dull gem on top (lit ones get a gold halo from the actors)
 function sealStone(D, x, y, z) { frustum(D, x, y - 0.3, z, 0.75, 0.75, 0.55, 0.55, 1.6, 0.4, 0x4a4038, 0x6a6058); frustum(D, x, y + 1.3, z, 0.6, 0.6, 0.62, 0.62, 0.12, 0.4, 0x8a7a68); frustum(D, x, y + 1.42, z, 0.26, 0.26, 0.05, 0.05, 0.5, 1.2, 0x9a8a72); }       // 1.4 m tall, a cap and a dull gem: it reads from the card at speed
+// a Ring Shrine's ring rail: low carved posts holding a pale stone rail; a Gate Shrine's arch: two posts and a lintel, a gold band on the keystone
+function ringRail(D, q) { const n = q.length; for (let i = 0; i < n; i++) { const a = q[i], b = q[(i + 1) % n]; rod(D, [a[0], a[1], a[2]], [b[0], b[1], b[2]], 0.16, 0.16, 5, [0xcfc3a8, 0xb6aa94], false, false, 0); if (i % 2 === 0) rod(D, [a[0], a[1] - 1.2, a[2]], [a[0], a[1], a[2]], 0.13, 0.11, 5, [0x8a7a68, 0x6a6058], false, false, 0); } }
+function arch(D, q) { const [x, y, z, ux, uz] = q, px = -uz * 2.1, pz = ux * 2.1; for (const s of [1, -1]) rod(D, [x + px * s, y - 0.3, z + pz * s], [x + px * s, y + 3.4, z + pz * s], 0.42, 0.36, 6, [0xb6aa94, 0xa09580], true, false, 0); rod(D, [x + px * 1.15, y + 3.55, z + pz * 1.15], [x - px * 1.15, y + 3.55, z - pz * 1.15], 0.38, 0.38, 6, [0xcfc3a8, 0xb6aa94], true, true, 0); rod(D, [x, y + 3.2, z], [x, y + 3.95, z], 0.3, 0.3, 6, [0xe0b24e, 0xc9a24a], true, true, 0); }
 export function addDressing(D, map, ok) {
   const d = map.dress || {}, yes = ok || (() => true);
+  for (const q of d.rings || []) if (yes(q[0][0], q[0][2])) ringRail(D, q);
+  for (const q of d.arches || []) if (yes(q[0], q[2])) arch(D, q);
   for (const q of d.seals || []) if (yes(q[0], q[2])) sealStone(D, q[0], q[1], q[2]);
   for (const q of d.cards || []) if (yes(q[0], q[2])) stoneCard(D, q[0], q[1], q[2], q[3], q[4]);
   for (const q of d.cracks || []) if (yes(q[0], q[1])) crack(D, map, q);

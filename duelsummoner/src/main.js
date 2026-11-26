@@ -31,6 +31,7 @@ import { Minimap } from './view/minimap.js';
 import { buildDoor } from './view/doorview.js';
 import { POWERUPS } from './data/powerups.js';
 import { FLIPS } from './sim/ride.js';
+import { shrineCourse } from './gen/world/world.js';
 import { drawHud, showFlash, showBanner, dropBanner, clearBanners, drawStatPanel, inputMode, rideBanked } from './view/hud.js';
 import { keyWords } from './ui/prompts.js';
 import { renderPause, setTab as pauseTab, bindHolds, matHtml, statRows } from './view/pause.js';
@@ -398,6 +399,8 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'ollie') { schoolDid('ollie'); fx.burst(ip.x, ip.y + 0.1, ip.z, 10, 0xe2c48a, 2.4, 1.6, 0.24, 0.45, 6); }
   else if (type === 'ride') { if (a) { fx.ring(ip.x, ip.y + 0.1, ip.z, 1.8, 0xffd56a, 0.25); fx.burst(ip.x, ip.y + 0.2, ip.z, 14, 0xffe08a, 2.6, 2, 0.22, 0.5, 6); } }
   else if (type === 'crest') { const y0 = groundY(a, b); fx.burst(a, y0 + 0.2, b, 16, 0xe8c890, 3.5, 3, 0.3, 0.6, 7); }       // sand thrown off a crest
+  else if (type === 'arch') { const y0 = groundY(a, b); fx.ring(a, y0 + 1.8, b, 2.2 + (c || 1) * 0.2, 0xffd56a, 0.35); fx.burst(a, y0 + 3.4, b, 10 + (c || 1) * 3, 0xffe08a, 3, 3, 0.26, 0.5, 6); }       // an arch threaded (the ring grows with each)
+  else if (type === 'shrineride') { const y0 = groundY(a, b); fx.ring(a, y0 + 0.3, b, 8, 0xfff2c0, 0.6); for (let k = 0; k < 3; k++) fx.burst(a, y0 + 1.2, b, 26, k ? 0xffd56a : 0xfff2c0, 6, 7 + k * 2, 0.34, 0.8, 8); fx.shake(0.3); }
   else if (type === 'volley') { const y0 = groundY(a, b); fx.ring(a, y0 + 1.6, b, 3.6, 0xfff2c0, 0.3); }       // the summons all strike with the landing
   else if (type === 'trick') { if (FLIPS.includes(data)) schoolDid('flip'); }
   else if (type === 'cardlit') { const y0 = (c || groundY(a, b)); fx.ring(a, y0, b, 2.4, 0xfff2c0, 0.4); fx.burst(a, y0, b, 26, 0xffd56a, 5, 6, 0.3, 0.7, 7); }       // a stone card lights for good
@@ -520,7 +523,7 @@ function landmarkTags() {
   if (W) {
     const spentFor = o => { if (!doneAt.has(o)) doneAt.set(o, performance.now()); return performance.now() - doneAt.get(o) < 3000; };       // a 'used' label fades out after 3 s (the object keeps its used colour)
     for (const s of W.stones || []) if (!s.used || spentFor(s)) add(s, s.used ? 'Witness Stone: used' : 'Witness Stone: 1 free item of 3', s.used ? 'spent' : 'free', 2.1);
-    for (const s of W.shrines || []) if (!s.done || spentFor(s)) add(s, s.done ? 'Shrine of Tribute: done' : 'Shrine of Tribute: hold the ring, pick a boon', s.done ? 'spent' : 'free', 2.4);
+    for (const s of W.shrines || []) if (!s.done || spentFor(s)) add(s, s.done ? 'Shrine of Tribute: done' : game.big ? (shrineCourse(s.x, s.z).kind === 'ring' ? 'Ring Shrine: grind a lap of the ring (or stand in it)' : 'Gate Shrine: ride through all five arches (or stand in it)') : 'Shrine of Tribute: hold the ring, pick a boon', s.done ? 'spent' : 'free', 2.4);
     if (W.broker) add(W.broker, 'Relic Broker: shop', 'shop', 2.6);
     if (W.altar && (!W.altar.used || spentFor(W.altar))) add(W.altar, W.altar.used ? 'Altar: used' : 'Altar of Tribute: banish or tribute', W.altar.used ? 'spent' : 'seal', 2.4);
     for (const c of W.cchests || []) if (!c.open) { if (c.trophy || c.free) add(c, c.trophy ? 'Trophy Chest: free, open it' : 'Chest: free', 'free', 1.9); else { const pr = chestPrice(game); add(c, game.coins >= pr ? 'Card Chest: ' + pr + ' coins' : 'Card Chest: ' + pr + ', need ' + (pr - game.coins) + ' more', game.coins >= pr ? 'shop' : 'poor', 1.9); } }       // the price, gold when you can pay it and muted red when you cannot (the tier stays hidden)
