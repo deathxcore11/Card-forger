@@ -33,7 +33,7 @@ export function damageEnemy(g, i, dmg, o) {
   const e = g.en; if (!e.alive[i]) return false;
   o = o || {};
   let d = dmg;
-  const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0), BD = g.bracketDmg, b4 = e.mark[i] > 0 ? targetBracket(MARKS.bonus + g.mods.markBonus) : 1, b1 = mightBracket(g.mods.dmgMult + (g.drumT > 0 ? 0.5 : 0) + (g.buf ? g.buf.might : 0));
+  const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0), BD = g.bracketDmg, b4 = e.mark[i] > 0 ? targetBracket(MARKS.bonus + g.mods.markBonus) : 1, b1 = mightBracket(g.mods.dmgMult + (g.drumT > 0 ? 0.5 : 0) + (g.buf ? g.buf.might : 0)) * (g.rflow ? 1 + (g.rflow.step - 1) * 0.25 : 1);
   let cls = g.srcClassOf[g.curSrc]; if (cls === undefined) cls = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]);
   const b2 = cls >= 0 ? sourceBracket(g.mods.drill[cls]) : 1, b8 = g.otStep > 0 ? overtimeBracket(g.otStep) : 1;
   let b3 = 1; if (el) { let sum = 0, cnt = 0; for (let k = 0; k < 8; k++) if (el & (1 << k)) { sum += g.mods.aff[k]; cnt++; } b3 = affinityBracket(sum / cnt); }

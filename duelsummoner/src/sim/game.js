@@ -158,7 +158,7 @@ export class Game {
   score() {
     const S = SCORE, R = this.roleKills;
     const sum = this.kills * S.kill + R.elite * S.elite + R.bossA * S.bossA + R.bossB * S.bossB + R.gate * S.gate + R.other * S.other + this.stagesCleared * S.stage +
-      Math.floor(this.overtimeSeconds()) * S.overtimeSec + this.fusions * S.fusion + this.godFusions * S.god + this.secretFusions * S.secret;
+      Math.floor(this.overtimeSeconds()) * S.overtimeSec + this.fusions * S.fusion + this.godFusions * S.god + this.secretFusions * S.secret + Math.floor((this.score2 || 0) / 10);       // banked ride combos x their Flow step
     let pct = Math.round(this.diff.score * 100); for (const id of this.oathList) pct += OATH_BY_ID[id].scorePct;     // each Oath adds to the score multiplier
     return Math.floor(sum * pct / 100 * (this.big ? 1 + (this.stakes || 0) / 200 : 1));
   }

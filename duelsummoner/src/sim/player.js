@@ -8,6 +8,7 @@ import { breakVasesNear } from './world.js';
 import { resolveColliders } from './colliders.js';
 import { procEvent } from './procs.js';
 import { laneFactor, LANE } from './lanes.js';
+import { rideTick } from './ride.js';
 
 export function makePlayer() {
   return { x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0, pface: 0, vx: 0, vz: 0, vy: 0, hp: CFG.player.hp, maxHp: CFG.player.hp, face: 0, grounded: true,
@@ -34,6 +35,7 @@ export function updatePlayer(g, dt, cmd) {
   if (hasInput) { mx /= ml; mz /= ml; p.face = atan2(mx, mz); if (g.big) speed *= laneFactor(g, mx, mz); }
 
   p.dashCd = Math.max(0, p.dashCd - dt);
+  if (g.big && rideTick(g, dt, cmd, mx, mz, hasInput)) { p.landT = p.grounded ? Math.min(255, (p.landT || 0) + 1) : 0; p.jumpWas = !!cmd.jump; return; }       // the big desert: on the card, the ride moves the duelist
   if (p.grounded) { if (p.landT < 255) p.landT++; } else p.landT = 0;                      // ticks on the ground since landing (1 on the first grounded tick)
   if (p.dashT > 0) p.sinceDash = 0; else if (p.sinceDash < 255) p.sinceDash++;
   if (cmd.dash && p.dashCd <= 0 && p.dashT <= 0) {

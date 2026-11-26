@@ -83,8 +83,19 @@ function drawBuffs(g) {       // the timed pickups: a small chip each, with the 
   const L = []; if (g.windT > 0) L.push('Wind Step ' + Math.ceil(g.windT) + 's'); if (g.drumT > 0) L.push('War Drum ' + Math.ceil(g.drumT) + 's'); if (g.stopT > 0) L.push('Stopped Sand ' + Math.ceil(g.stopT) + 's'); if (g.wardHits > 0) L.push('Ward x' + g.wardHits);
   const k = L.join('|'); if (k === buffKey) return; buffKey = k; const el = $('buffs'); if (el) el.innerHTML = L.map(t => '<span>' + t + '</span>').join('');
 }
+let rideKey = '', bankT = 0, bankV = 0;
+export function rideBanked(v) { bankV = v; bankT = performance.now(); }
+function drawRide(g) {       // Card Riding: the open combo (tricks, points x distinct tricks), the banked number, the balance bar on a grind or manual, the Flow pips
+  const el = $('rideHud'); if (!el) return; const r = g.p && g.p.ride, F = g.rflow, on = !!(g.big && ((r && r.on) || (F && F.step > 1))); el.classList.toggle('on', on); if (!on) return;
+  const c = r && r.combo, names = c ? Object.keys(c.names) : [], pts = c ? Math.round(c.pts) : 0, bal = r && (r.grind || r.manual) ? r.bal : null, age = performance.now() - bankT;
+  const k = (c ? c.list.join('|') + pts : '') + '|' + (F ? F.step : 1) + '|' + (bal === null ? 'n' : Math.round(bal * 20)) + '|' + (age < 1200 ? bankV : 0) + '|' + (r && r.grind ? r.grind.name : ''); if (k === rideKey) return; rideKey = k;
+  $('rhCombo').innerHTML = c && c.list.length ? c.list.slice(-4).join(' + ') + (r.grind ? ' + <em>' + r.grind.name + '</em>' : '') + '  <em>' + pts.toLocaleString() + ' x ' + Math.max(1, names.length) + '</em>' : (r && r.grind ? '<em>' + r.grind.name + '</em>' : '');
+  $('rhBank').textContent = age < 1200 && bankV ? '+' + bankV.toLocaleString() : '';
+  const b = $('rhBal'); b.style.visibility = bal === null ? 'hidden' : 'visible'; if (bal !== null) b.firstChild.style.left = (77 + Math.max(-1, Math.min(1, bal)) * 77) + 'px';
+  const sp = $('rhFlow').querySelectorAll('span'), st = F ? F.step : 1; sp.forEach((s, i) => s.classList.toggle('lit', i < st)); $('rhFlow').querySelector('b').textContent = 'FLOW x' + st;
+}
 export function drawHud(g, force) {
-  drawBuffs(g); drawStakes(g);
+  drawBuffs(g); drawStakes(g); drawRide(g);
   if (!zonesBuilt) buildZones();
   const k = Math.ceil(g.p.hp) + '|' + g.p.maxHp + '|' + Math.floor(g.xpCur) + '|' + g.level + '|' + Math.floor(g.t) + '|' + g.kills + '|' + g.coins;
   if (force || k !== key) {

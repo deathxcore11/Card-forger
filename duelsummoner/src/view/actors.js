@@ -371,6 +371,28 @@ export class Actors {
     const fx = this.fx; ud.shock = 0; fx.moment('arrival', 'A', { flash: 0.65, shake: 0.7 }); fx.ring(x, y, z, 9, 0xffffff, 0.7); fx.ring(x, y, z, 5, 0xffb060, 0.5); fx.burst(x, y + 1, z, 60, 0xfff0c0, 9, 6, 0.32, 0.9, 7); fx.beam(x, y, z, 0xfff0c0, 0.9);
   }
 
+  // ---- Card Riding (code-made motion on the current model): the giant spell card under the feet, and how the rider stands on it
+  _board(g, p, px, py, pz, dt) {
+    const rd = p.ride && p.ride.on ? p.ride : null;
+    if (!this.boardG) { const G = this.boardG = new T.Group(), M = (c, e) => new T.MeshLambertMaterial({ color: c, emissive: e || 0x000000 });
+      const edge = new T.Mesh(new T.BoxGeometry(1.06, 0.07, 1.86), M(0xc9a24a, 0x2a1e08)); edge.position.y = 0.035; G.add(edge);
+      const face = new T.Mesh(new T.BoxGeometry(0.9, 0.08, 1.68), M(0xf3e6c8)); face.position.y = 0.05; G.add(face);
+      const seal = new T.Mesh(new T.OctahedronGeometry(0.26, 0), M(0x7a3cff === 0 ? 0 : 0x3a2a60, 0x120a24)); seal.scale.set(1, 0.18, 1.4); seal.position.y = 0.1; G.add(seal);
+      for (const zz of [-0.62, 0.62]) { const pip = new T.Mesh(new T.BoxGeometry(0.5, 0.02, 0.05), M(0xc9a24a)); pip.position.set(0, 0.095, zz); G.add(pip); }
+      G.visible = false; this.scene.add(G); this._spinV = 0; }
+    const G = this.boardG; G.visible = !!rd && this.player.visible; if (!rd) return;
+    const yaw = rd.heading + rd.spin; G.position.set(px, py + 0.04, pz); G.rotation.order = 'YXZ'; G.rotation.y = yaw;
+    let roll = 0, pitch = 0; if (rd.flipT > 0) { const k = 1 - rd.flipT / 0.42, d = rd.flipDir || 0; if (d === 0 || d === 4) roll = k * Math.PI * 2 * (d === 4 ? -1 : 1); else if (d === 2 || d === 6) pitch = k * Math.PI * 2 * (d === 6 ? -1 : 1); else { roll = k * Math.PI * 2; pitch = k * Math.PI * (d < 4 ? 1 : -1); } }
+    if (rd.grabbing) pitch += 0.28; if (rd.manual) pitch -= 0.22; G.rotation.x = pitch; G.rotation.z = roll;
+    G.position.y += rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.45 : 0;
+    if (rd.grind && Math.random() < 0.9) for (let k = 0; k < 2; k++) this.fx.spark(px + (Math.random() - 0.5) * 0.6, py + 0.1, pz + (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 4, 1.5 + Math.random() * 2.5, (Math.random() - 0.5) * 4, Math.random() < 0.5 ? 0xffd56a : 0xfff2c0, 0.32, 0.45);
+  }
+  _rideRig(R, rd, p, dt) {
+    const yaw = rd.heading + rd.spin; R.group.rotation.y = yaw + R.yaw;
+    const want = Math.max(-0.35, Math.min(0.35, ((this._lastH === undefined ? rd.heading : this._lastH) - rd.heading) / Math.max(dt, 0.004) * 0.06)); this._lastH = rd.heading; this._carve = (this._carve || 0) + (want - (this._carve || 0)) * Math.min(1, dt * 8); R.group.rotation.z = this._carve;
+    const crouch = rd.crouch > 0 ? rd.crouch / 0.5 : rd.flipT > 0 ? 0.6 : rd.grabbing ? 0.7 : rd.grind ? 0.35 : 0.15; R.group.scale.y *= 1 - 0.28 * crouch; R.group.scale.x *= 1 + 0.08 * crouch; R.group.scale.z *= 1 + 0.08 * crouch;
+    R.group.position.y += 0.1 + (rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.6 : 0); R.group.rotation.x = rd.manual ? -0.18 : rd.grabbing ? 0.2 : 0;
+  }
   update(g, a, cam, head, dt) {
     this._dt = dt;
     dt = dt || 0.016; this.vt += dt;
@@ -397,12 +419,14 @@ export class Actors {
       const R = this.rig, ct = g.cardT, thrown = this._ct !== undefined && ct > this._ct + 0.01; this._ct = ct;
       R.group.position.copy(this.player.position); R.group.rotation.order = 'YXZ'; R.group.rotation.y = this.player.rotation.y + R.yaw; { const yr = this._yr = (this._yr || 0) + (((this._ly === undefined ? this.player.rotation.y : this._ly) - this.player.rotation.y) / Math.max(dt, 0.004) - (this._yr || 0)) * Math.min(1, dt * 10); this._ly = this.player.rotation.y; const dy = Math.max(-2.5, Math.min(2.5, yr)); R.group.rotation.x = (R.sprint || 0) * 0.14; R.group.rotation.z = p.grounded && !p.sliding && !fx.rm_ ? Math.max(-0.2, Math.min(0.2, (dy > 0 ? Math.max(0, dy - 0.5) : Math.min(0, dy + 0.5)) * 0.1)) * Math.min(1, Math.hypot(p.vx || 0, p.vz || 0) / 5) : 0; } R.group.scale.setScalar(g.oaths.small ? 0.5 : 1); this.player.visible = false;
       { const S = R.see; if (S) { const on = (this._nearN || 0) > 0 && !fx.rm_; if (S.silOn !== on) { S.silOn = on; for (const m of S.extras) m.visible = on && m.userData.extra === 'sil'; } } }       // only the flat dark covered-silhouette ink is ever drawn, and only while an enemy is within 4.5 m; the white and ink outline hulls are never drawn (Kael has no white rim in any screen)
-      R.update(p, g, dt, thrown);
+      const rd = p.ride && p.ride.on ? p.ride : null; R.update(rd ? (this._rp || (this._rp = {})) && Object.assign(this._rp, p, { vx: 0, vz: 0, sliding: false, grounded: true, dashT: 0 }) : p, g, dt, thrown);       // on the card the rig stands (code-made pose below), it does not run
+      if (rd) this._rideRig(R, rd, p, dt);
       if (R._landDip > 0) { R._landDip = Math.max(0, R._landDip - dt); const k = Math.sin((0.18 - R._landDip) / 0.18 * Math.PI) * 0.17; R.group.scale.y *= 1 - k; R.group.scale.x *= 1 + k * 0.4; R.group.scale.z *= 1 + k * 0.4; }       // the landing dip: squash down and out over 0.18 s and back
       if (thrown && g.aimX !== undefined) { const ay = Math.atan2(g.aimX - p.x, g.aimZ - p.z); if (!(this._aimT > 0)) this._aimYs = ay; this._aimY = ay; this._aimT = 0.9; }       // one aim, followed slowly while throws keep coming, faded out over 0.4 s after the last
       let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees
       this._tw = (this._tw || 0) + (tw - (this._tw || 0)) * Math.min(1, dt / 0.3); R.twist(this._tw);
     }
+    this._board(g, p, px, py, pz, dt);
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);

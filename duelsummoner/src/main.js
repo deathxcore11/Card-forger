@@ -30,7 +30,7 @@ import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
 import { buildDoor } from './view/doorview.js';
 import { POWERUPS } from './data/powerups.js';
-import { drawHud, showFlash, showBanner, dropBanner, clearBanners, drawStatPanel, inputMode } from './view/hud.js';
+import { drawHud, showFlash, showBanner, dropBanner, clearBanners, drawStatPanel, inputMode, rideBanked } from './view/hud.js';
 import { keyWords } from './ui/prompts.js';
 import { renderPause, setTab as pauseTab, bindHolds, matHtml, statRows } from './view/pause.js';
 import { deviceClass } from './ui/device.js';
@@ -370,6 +370,8 @@ function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'bosscard') { const el = $('bosscard'); if (el) { el.textContent = data; el.classList.add('on'); document.body.classList.add('cardon'); clearTimeout(el._t); el._t = setTimeout(() => { el.classList.remove('on'); document.body.classList.remove('cardon'); }, 2500); } }       // the stage boss's name, in the top third, 2.5 s
   else if (type === 'bannerdrop') dropBanner(data);
+  else if (type === 'banked') rideBanked(data);
+  else if (type === 'flowup') showBanner('FLOW x' + data);
   else if (type === 'sealcrack') { sealToast.crack(); fx.ring(ip.x, ip.y + 1.2, ip.z, 2.4, 0xb8913f, 0.5); fx.burst(ip.x, ip.y + 1.4, ip.z, 14, 0xd8b86a, 2.6, 3.5, 0.16, 0.6, 5); tone(196, 0.25, 0.05, 'triangle'); }       // a feat broke an Oath seal: the Oath itself is named on the results screen
   else if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(keyWords(data, inputMode())); }       // a refused chest pulses its price tag instead of a banner
   else if (type === 'offer') { drawHud(game, true); setMode('offer'); showOffer(game, menu); if (game.mode !== 'classic' && (game.stage || 0) < 2) setTimeout(() => prewarmStage(game.seed, (game.stage || 0) + 1), 60); }       // the next stage is drawn while the player reads the offer
@@ -386,6 +388,12 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'hurt') { if (!c) host.haptic('hurt'); if (!c) fx.shake(b ? 0.55 : 0.28, true); }       // the player's own cost (c is 1) neither flinches nor shakes
   else if (type === 'announce') sigils.push({ x: b, z: c, until: actors.vt + 6.5, next: 0 });
   else if (type === 'landmark') { fx.ring(a, game.p.y + 0.3, b, 12, 0xffe08a, 0.8); fx.burst(a, game.p.y + 1.5, b, 50, 0xffe08a, 7, 6, 0.3, 0.9, 6); fx.shake(0.25); }       // a landmark reached: a golden ring and a fountain of sparks
+  else if (type === 'slam') { const rr = c || 6, y0 = groundY(a, b); fx.ring(a, y0 + 0.2, b, rr, 0xffd56a, 0.5); fx.ring(a, y0 + 0.25, b, rr * 0.55, 0xfff2c0, 0.32); for (let k = 0; k < 3; k++) fx.burst(a, y0 + 0.4, b, 22, k ? 0xd9b872 : 0xffd56a, 4 + rr * 0.5, 5 + k, 0.34, 0.8, 8); fx.shake(Math.min(0.6, 0.22 + rr * 0.03)); }       // the landing slam: a gold shockwave, chunky sand and sparks, a weighty shake
+  else if (type === 'bail') { fx.shake(0.22); fx.burst(a, groundY(a, b) + 0.3, b, 16, 0xd9b872, 3, 2, 0.3, 0.6, 6); }
+  else if (type === 'ollie') { fx.burst(ip.x, ip.y + 0.1, ip.z, 10, 0xe2c48a, 2.4, 1.6, 0.24, 0.45, 6); }
+  else if (type === 'ride') { if (a) { fx.ring(ip.x, ip.y + 0.1, ip.z, 1.8, 0xffd56a, 0.25); fx.burst(ip.x, ip.y + 0.2, ip.z, 14, 0xffe08a, 2.6, 2, 0.22, 0.5, 6); } }
+  else if (type === 'grind') { fx.burst(ip.x, ip.y + 0.2, ip.z, 12, 0xffd56a, 3, 3, 0.24, 0.4, 6); }
+  else if (type === 'special') { fx.ring(a, game.p.y + 0.3, b, 16, 0xfff2c0, 0.8); fx.burst(a, game.p.y + 1.5, b, 60, 0xffd56a, 9, 7, 0.36, 1, 6); fx.shake(0.6); }
   else if (type === 'procfx') { fx.ring(ip.x, ip.y + 0.2, ip.z, 4.5, 0xffd56a, 0.4); fx.burst(ip.x, ip.y + 1, ip.z, 14, 0xffe08a, 4, 5, 0.22, 0.55, 6); }       // an item's effect fired
   else if (type === 'surge') { fx.shake(0.2); }
   else if (type === 'doorrise') { const y0 = Math.min(heightAt(a, b), 40); fx.moment('gatewake', 'A', { shake: 0.45 }); for (let k = 0; k < 4; k++) fx.burst(a + (k - 1.5) * 3, y0 + 0.5, b, 18, 0xd9b872, 3, 3, 0.3, 1.4, 8); fx.ring(a, y0 + 0.3, b, 10, 0xd9b872, 1.4); }       // sand and a low tremor: no beam, no light
