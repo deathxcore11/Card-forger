@@ -30,6 +30,7 @@ import { ChaseCamera } from './view/camera.js';
 import { Minimap } from './view/minimap.js';
 import { buildDoor } from './view/doorview.js';
 import { POWERUPS } from './data/powerups.js';
+import { FLIPS } from './sim/ride.js';
 import { drawHud, showFlash, showBanner, dropBanner, clearBanners, drawStatPanel, inputMode, rideBanked } from './view/hud.js';
 import { keyWords } from './ui/prompts.js';
 import { renderPause, setTab as pauseTab, bindHolds, matHtml, statRows } from './view/pause.js';
@@ -219,6 +220,7 @@ function beginNow(mode, sel) {
   sel = sel || {}; if (sel.duelist) pickDuelist(sel.duelist);
   game.opts.terrain = RUN_OPEN ? 'open' : undefined; game.opts.arch = RUN_ARCH;       // a run builds its own map; only the menu backdrop is always the open desert
   game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions'; game.opts.difficulty = sel.difficulty || save.settings.difficulty; game.opts.oaths = sel.oaths || []; game.opts.map = sel.map || 'ruins';
+  game.opts.rideAssist = inputMode() === 'touch';       // Card Riding landing assist: on for touch (Flow x1 and x2 only)
   if (!diffUnlocked(save.meta, game.opts.map, game.opts.difficulty)) { game.opts.difficulty = 'easy'; if (save.settings.difficulty !== 'easy' && !diffUnlocked(save.meta, game.opts.map, save.settings.difficulty)) save.settings.difficulty = 'easy'; }       // a locked difficulty can never be the one played (debug starts and old saves included)
   ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; capBurstDone = false; tb.on = false; tb.fired = false; fx.dir.newRun(); fx.stopB.log.length = 0; fx.stopB.last = -1e9; fx.stopLog.length = 0; game.opts.meta = simMeta(save.meta); bars.reset(); game.reset(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();
@@ -371,7 +373,7 @@ function onEvent(type, a, b, c, data) {
   if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'bosscard') { const el = $('bosscard'); if (el) { el.textContent = data; el.classList.add('on'); document.body.classList.add('cardon'); clearTimeout(el._t); el._t = setTimeout(() => { el.classList.remove('on'); document.body.classList.remove('cardon'); }, 2500); } }       // the stage boss's name, in the top third, 2.5 s
   else if (type === 'bannerdrop') dropBanner(data);
-  else if (type === 'banked') rideBanked(data);
+  else if (type === 'banked') { rideBanked(data); schoolDid('banked'); }
   else if (type === 'flowup') showBanner('FLOW x' + data);
   else if (type === 'sealcrack') { sealToast.crack(); fx.ring(ip.x, ip.y + 1.2, ip.z, 2.4, 0xb8913f, 0.5); fx.burst(ip.x, ip.y + 1.4, ip.z, 14, 0xd8b86a, 2.6, 3.5, 0.16, 0.6, 5); tone(196, 0.25, 0.05, 'triangle'); }       // a feat broke an Oath seal: the Oath itself is named on the results screen
   else if (type === 'banner') { if (/^This chest costs/.test(data)) tagPulse = performance.now() + 900; else showBanner(keyWords(data, inputMode())); }       // a refused chest pulses its price tag instead of a banner
@@ -391,14 +393,15 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'landmark') { fx.ring(a, game.p.y + 0.3, b, 12, 0xffe08a, 0.8); fx.burst(a, game.p.y + 1.5, b, 50, 0xffe08a, 7, 6, 0.3, 0.9, 6); fx.shake(0.25); }       // a landmark reached: a golden ring and a fountain of sparks
   else if (type === 'slam') { const rr = c || 6, y0 = groundY(a, b); fx.ring(a, y0 + 0.2, b, rr, 0xffd56a, 0.5); fx.ring(a, y0 + 0.25, b, rr * 0.55, 0xfff2c0, 0.32); for (let k = 0; k < 3; k++) fx.burst(a, y0 + 0.4, b, 22, k ? 0xd9b872 : 0xffd56a, 4 + rr * 0.5, 5 + k, 0.34, 0.8, 8); fx.shake(Math.min(0.6, 0.22 + rr * 0.03)); }       // the landing slam: a gold shockwave, chunky sand and sparks, a weighty shake
   else if (type === 'bail') { fx.shake(0.22); fx.burst(a, groundY(a, b) + 0.3, b, 16, 0xd9b872, 3, 2, 0.3, 0.6, 6); }
-  else if (type === 'ollie') { fx.burst(ip.x, ip.y + 0.1, ip.z, 10, 0xe2c48a, 2.4, 1.6, 0.24, 0.45, 6); }
+  else if (type === 'ollie') { schoolDid('ollie'); fx.burst(ip.x, ip.y + 0.1, ip.z, 10, 0xe2c48a, 2.4, 1.6, 0.24, 0.45, 6); }
   else if (type === 'ride') { if (a) { fx.ring(ip.x, ip.y + 0.1, ip.z, 1.8, 0xffd56a, 0.25); fx.burst(ip.x, ip.y + 0.2, ip.z, 14, 0xffe08a, 2.6, 2, 0.22, 0.5, 6); } }
   else if (type === 'crest') { const y0 = groundY(a, b); fx.burst(a, y0 + 0.2, b, 16, 0xe8c890, 3.5, 3, 0.3, 0.6, 7); }       // sand thrown off a crest
   else if (type === 'volley') { const y0 = groundY(a, b); fx.ring(a, y0 + 1.6, b, 3.6, 0xfff2c0, 0.3); }       // the summons all strike with the landing
+  else if (type === 'trick') { if (FLIPS.includes(data)) schoolDid('flip'); }
   else if (type === 'cardlit') { const y0 = (c || groundY(a, b)); fx.ring(a, y0, b, 2.4, 0xfff2c0, 0.4); fx.burst(a, y0, b, 26, 0xffd56a, 5, 6, 0.3, 0.7, 7); }       // a stone card lights for good
   else if (type === 'seal') { const y0 = groundY(a, b); fx.ring(a, y0 + 0.3, b, 1.6 + (c || 1) * 0.3, 0xffd56a, 0.35); fx.burst(a, y0 + 1, b, 10 + (c || 1) * 4, 0xffe08a, 3, 4, 0.24, 0.5, 6); }       // a seal stone lit (the ring grows with each stone of the set)
   else if (type === 'sealset') { const y0 = groundY(a, b); fx.ring(a, y0 + 0.2, b, 7, 0xfff2c0, 0.7); fx.ring(a, y0 + 0.3, b, 4, 0xffd56a, 0.5); for (let k = 0; k < 3; k++) fx.burst(a, y0 + 1, b, 30, k ? 0xffd56a : 0xfff2c0, 6, 8 + k * 2, 0.36, 0.9, 9); fx.shake(0.35); }       // the whole set: the chest rises
-  else if (type === 'grind') { fx.burst(ip.x, ip.y + 0.2, ip.z, 12, 0xffd56a, 3, 3, 0.24, 0.4, 6); }
+  else if (type === 'grind') { schoolDid('grind'); fx.burst(ip.x, ip.y + 0.2, ip.z, 12, 0xffd56a, 3, 3, 0.24, 0.4, 6); }
   else if (type === 'special') { fx.ring(a, game.p.y + 0.3, b, 16, 0xfff2c0, 0.8); fx.burst(a, game.p.y + 1.5, b, 60, 0xffd56a, 9, 7, 0.36, 1, 6); fx.shake(0.6); }
   else if (type === 'procfx') { fx.ring(ip.x, ip.y + 0.2, ip.z, 4.5, 0xffd56a, 0.4); fx.burst(ip.x, ip.y + 1, ip.z, 14, 0xffe08a, 4, 5, 0.22, 0.55, 6); }       // an item's effect fired
   else if (type === 'surge') { fx.shake(0.2); }
@@ -446,10 +449,13 @@ function bossIntro() {                                              // name plat
 }
 const skipIntro = () => { fx.push = 0; };
 window.addEventListener('keydown', e => { if (e.code === 'Enter') skipIntro(); }); canvas.addEventListener('pointerdown', skipIntro);
-// first runs on the big desert: a hint chip until the card has been kicked out once
-let rideHintDone = (() => { try { return localStorage.getItem('ds-ridehint') === '1'; } catch (e) { return false; } })();
-function rideHint(riding) { const el = document.getElementById('rideHint'); if (!el) return; if (riding && !rideHintDone) { rideHintDone = true; try { localStorage.setItem('ds-ridehint', '1'); } catch (e) {} } const on = !rideHintDone && game.big && MODE === 'play' && game.t > 3; if (el.classList.contains('on') !== on) el.classList.toggle('on', on); if (on) el.textContent = (inputMode() === 'keys' ? 'C' : 'SLIDE') + ' while running: ride your card'; }
-// on the card, once the look has been left alone for 0.5 s the camera eases round behind the card's heading (Settings: Camera assist; Gentle by default on phones, Off on handhelds and PC), so carving on a phone needs one thumb
+// ride school (the first runs on the big desert): five short chips, each cleared by doing it, about 20 s in all; the beam line just ahead and right of the spawn is there for the grind
+const SCHOOL = [['ride', k => k.slide + ' while running: ride your card'], ['ollie', k => 'Hold ' + k.jump + ', let go: ollie'], ['flip', k => 'In the air: ' + k.dash + ' flips the card'], ['banked', () => 'Land straight: bank it and slam'], ['grind', k => 'Ollie onto the beam to grind (' + k.use + ' grabs one)']];
+const SCHOOL_KEYS = { keys: { slide: 'C', jump: 'SPACE', dash: 'SHIFT', use: 'E' }, pad: { slide: 'RB', jump: 'A', dash: 'B', use: 'X' }, touch: { slide: 'SLIDE', jump: 'OLLIE', dash: 'FLIP', use: 'GRIND' } };
+let schoolStep = (() => { try { return +(localStorage.getItem('ds-rideschool') || 0) || (localStorage.getItem('ds-ridehint') === '1' ? 1 : 0); } catch (e) { return 0; } })();
+function schoolDid(what) { if (schoolStep >= SCHOOL.length || SCHOOL[schoolStep][0] !== what) return; schoolStep++; try { localStorage.setItem('ds-rideschool', String(schoolStep)); } catch (e) {} if (schoolStep === SCHOOL.length) showBanner('Ride school done. Chain tricks, keep Flow up.'); }
+function rideHint(riding) { const el = document.getElementById('rideHint'); if (!el) return; if (riding) schoolDid('ride'); const on = schoolStep < SCHOOL.length && game.big && MODE === 'play' && game.t > 3; if (el.classList.contains('on') !== on) el.classList.toggle('on', on); if (on) { const k = SCHOOL_KEYS[inputMode()] || SCHOOL_KEYS.keys, txt = SCHOOL[schoolStep][1](k); if (el.textContent !== txt) el.textContent = txt; } }
+// on the card, once the look has been left alone for 0.5 s the camera eases round behind the card's heading (Settings: Camera assist; Gentle by default on phones, Off on handhelds and PC)
 const rcam = { yaw: null, idle: 0 };
 function rideCam(dt) {
   const r = game.p && game.p.ride, k = window.__dsRideCam === undefined ? 1.4 : window.__dsRideCam; if (rcam.yaw !== null && Math.abs(input.yaw - rcam.yaw) > 1e-5) rcam.idle = 0; else rcam.idle += dt;

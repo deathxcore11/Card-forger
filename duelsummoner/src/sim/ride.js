@@ -15,7 +15,7 @@ import { railsNear, sealsNear, sealSet } from './rails.js';
 
 export const RIDE = { mountAt: 10.5, dismountAt: 7, top: 24, push: 3.4, pushTo: 12.5, friction: 0.55, soft: 2.2, downhill: 10, carve: 2.6, airTurn: 1.0, crouchMax: 0.5, popLo: 2.2, popHi: 4.5,
   snap: 1.6, flipTime: 0.42, spinRate: 9.42, landTol: 0.52, bailT: 0.6, revertWin: 0.28, balDrift: 0.9, balFix: 2.6, sparkR: 2.5, sparkDmg: 7, sparkEvery: 0.2, gravity: 28, kickRun: 0.4, kickTo: 12.5, brake: 16, holdMin: 8.5 };
-const FLIPS = ['Card Flip', 'Ace Flip', 'Deal Flip', 'Riffle', 'Heel Card', 'Cut Flip', 'Fan Flip', 'Shuffle'], GRABS = ['Hand Grab', 'Seal Grab', 'Joker Grab', 'Crown Grab'], GRINDS = ['Edge Grind', 'Rim Ride', 'Spine Slide'];
+export const FLIPS = ['Card Flip', 'Ace Flip', 'Deal Flip', 'Riffle', 'Heel Card', 'Cut Flip', 'Fan Flip', 'Shuffle'], GRABS = ['Hand Grab', 'Seal Grab', 'Joker Grab', 'Crown Grab'], GRINDS = ['Edge Grind', 'Rim Ride', 'Spine Slide'];
 export const POINTS = { flip: 300, grab: 200, grabPerSecond: 420, spin180: 260, grind: 120, grindPerSecond: 160, manualPerSecond: 90, revert: 180, special: 3000, bigAir: 100, smash: 150, crest: 150, closeCall: 120, cardLit: 400, seal: 250, sealSet: 2500 };
 export const FLOW = { need: [0, 1800, 4200, 7500, 12000], idle: 10, dmgPerStep: 0.25, gainPerStep: 0.5, stakesPerStep: 5, slamR: [4, 14], slamDiv: 22, slamCapPerStep: 45 };
 
@@ -95,11 +95,11 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   if (dashPress && r.flipT <= 0) { const d = dir8(cmd); r.flipName = FLIPS[d]; r.flipT = RIDE.flipTime; r.flipK = 0; r.flipDir = d; addTrick(g, r, r.flipName, POINTS.flip); }
   if (cmd.slide && !r.grabbing && r.flipT <= 0) { r.grabbing = true; r.grabT = 0; r.grabName = GRABS[dir4(cmd)]; }
   if (r.grabbing) { if (cmd.slide) r.grabT += dt; else { r.grabbing = false; addTrick(g, r, r.grabName, POINTS.grab + POINTS.grabPerSecond * r.grabT); } }
-  const sx = cmd.r || 0; if (sx * sx > 0.36 && !hasForward(cmd)) r.spin += (sx > 0 ? 1 : -1) * RIDE.spinRate * dt;
+  const sx = cmd.r || 0; if (cmd.spin) r.spin += (cmd.spin > 0 ? 1 : -1) * RIDE.spinRate * dt; else if (sx * sx > 0.36 && !hasForward(cmd)) r.spin += (sx > 0 ? 1 : -1) * RIDE.spinRate * dt;       // the shoulders spin (pad), or the stick left or right
   if (usePress && r.specialReady && F.step === 5) { r.specialReady = false; addTrick(g, r, 'Royal Flush', POINTS.special); explode(g, p.x, p.y, p.z, 16, 0, 120, 0xfff2c0, 'Royal Flush'); F.step = 3; F.xp = 0; g.emit('special', p.x, p.z, 0); }
   // grind: auto-snap onto a rail while coming down, or with use
   if ((p.vy <= 1.5 || usePress) && trySnap(g, p, r, cmd)) return true;
-  if (usePress) r.revertT = RIDE.revertWin;
+  if (usePress || jumpPress) r.revertT = RIDE.revertWin;       // a tap of USE or of OLLIE just before touching down: a revert
   else if (r.revertT > 0) r.revertT -= dt;
   r.lastLandVy = p.vy;
   step(g, p, r, dt);
@@ -144,11 +144,14 @@ function land(g, p, r, cmd) {
   if (r.airT > 1.1) addTrick(g, r, 'Big Air', POINTS.bigAir * r.airT);
   const halves = Math.round(Math.abs(r.spin) / 3.141592653589793), rem = Math.abs(Math.abs(r.spin) - halves * 3.141592653589793);
   if (halves > 0) addTrick(g, r, (halves * 180) + ' Spin', POINTS.spin180 * halves);
-  const clean = !r.grabbing && r.flipT <= 0.06 && rem <= RIDE.landTol;
+  // landing assist (touch, on by default; only at Flow x1 and x2): a wider landing angle, a flip nearly done counts, a grab still held is let go on touchdown
+  const assist = !!(g.opts && g.opts.rideAssist) && flowOf(g).step <= 2; let letGo = false; if (assist && r.grabbing) { letGo = true; r.grabbing = false; addTrick(g, r, r.grabName, POINTS.grab + POINTS.grabPerSecond * r.grabT); }
+  const clean = !r.grabbing && r.flipT <= (assist ? 0.16 : 0.06) && rem <= RIDE.landTol * (assist ? 1.6 : 1);
   r.spin = 0; r.flipT = 0; r.airT = 0;
   if (!clean) { bail(g, r, r.grabbing ? 'grab' : r.flipT > 0.06 ? 'flip' : 'angle'); return; }
   if (r.revertT > 0 && vy < -9) { addTrick(g, r, 'Revert', POINTS.revert); r.revertT = 0; }
-  if (cmd.slide && comboValue(r.combo) > 0) { r.manual = true; r.bal = 0; r.manualT = 0; return; }       // land into a manual: the combo stays open
+  if (letGo) r.manualHold = true;       // the slide still held from the grab is not a manual
+  if (cmd.slide && !letGo && comboValue(r.combo) > 0) { r.manual = true; r.bal = 0; r.manualT = 0; return; }       // land into a manual: the combo stays open
   bank(g, r); g.emit('land', p.x, p.z, -vy);
 }
 function manualTick(g, p, r, dt, cmd) {

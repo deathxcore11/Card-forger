@@ -13,7 +13,7 @@ export function createBrowserHost(canvas) {
   };
   const input = new Input(canvas);
 
-  // Gamepad: left stick moves, right stick looks, A jump, B dash, right bumper slide, X use.
+  // Gamepad: left stick moves, right stick looks, A jump, B dash, right bumper slide, X use (Y too: grind on the card). On the card: left bumper and right trigger spin.
   const dead = v => (Math.abs(v) < 0.18 ? 0 : v);
   let prevUse = false;                                       // X is an edge for Use (one press, one try) and a hold for shrines and gates
   function padCommand(cmd, dt) {
@@ -24,7 +24,7 @@ export function createBrowserHost(canvas) {
       if (lx || ly) { cmd.r = lx; cmd.f = -ly; }
       if (rx || ry) { const l = padLook(rx, ry, dt === undefined ? 1 / 60 : dt); input.look(l[0], l[1], 'pad'); }      // turn per second, not per frame
       const b = i => !!(p.buttons[i] && p.buttons[i].pressed);
-      cmd.jump = cmd.jump || b(0); cmd.dash = cmd.dash || b(1); cmd.slide = cmd.slide || b(5); const x = b(2); cmd.use = cmd.use || (x && !prevUse); cmd.hold = cmd.hold || x; prevUse = x;
+      cmd.jump = cmd.jump || b(0); cmd.dash = cmd.dash || b(1); cmd.slide = cmd.slide || b(5); cmd.spin = (b(7) ? 1 : 0) - (b(4) ? 1 : 0) || cmd.spin; const x = b(2) || b(3); cmd.use = cmd.use || (x && !prevUse); cmd.hold = cmd.hold || x; prevUse = x;
       cmd.yaw = input.yaw;
       return cmd;
     }

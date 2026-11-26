@@ -92,3 +92,15 @@ test('ride: passing a trunk within a hand at speed counts a Close Call, once per
   const c = { x: g.p.x + 1.2, y: g.p.y - 1, z: g.p.z - 8, r: 0.4, top: g.p.y + 9 }, k = Math.floor(c.x / C.CELL) * 4096 + Math.floor(c.z / C.CELL); let a = C.grid.get(k); if (!a) C.grid.set(k, a = []); a.push(c);
   run(g, 50, { ...I, f: 1 }); assert.equal(g.p.ride.combo.names['Close Call'], 1, JSON.stringify(g.p.ride.combo.names));
 });
+test('ride: the spin button turns the card in the air (counted in 180s); landing assist lets a grab held into touchdown land clean at low Flow', () => {
+  const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 2, { ...I, f: 1 });
+  run(g, 30, { ...I, f: 1, jump: true }); run(g, 2, { ...I, f: 1 }); let names = null;
+  for (let i = 0; i < 200 && !names; i++) { run(g, 1, { ...I, f: 1, spin: i < 20 ? 1 : 0 }); if (g.p.grounded) names = Object.keys(flowOf(g)).length && g.p.ride.combo; }
+  assert.ok(flowOf(g).banked > 0 && flowOf(g).step >= 1, 'banked a spin');
+  const h = mk(); h.opts.rideAssist = true; const [x2, z2] = flatSpot(h); place(h, x2, z2, 14); run(h, 2, { ...I, f: 1 }); run(h, 30, { ...I, f: 1, jump: true }); run(h, 200, i => ({ ...I, f: 1, slide: i < 120 }));
+  assert.equal(flowOf(h).step >= 1 && h.p.ride.bailT <= 0, true, 'no bail'); assert.ok(flowOf(h).banked > 0, 'the grab banked: ' + flowOf(h).banked);
+});
+test('ride school: a line of beams ahead of the spawn, grindable', async () => {
+  const g = mk(), W = g.map.world; assert.ok(W.school && W.school.length >= 2, 'school beams: ' + (W.school || []).length);
+  const s = W.school[0], L = railsNear(g, (s[0] + s[2]) / 2, (s[1] + s[3]) / 2, 3); assert.ok(L.length >= 1, 'a rail there');
+});
