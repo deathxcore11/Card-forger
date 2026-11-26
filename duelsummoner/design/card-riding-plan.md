@@ -134,3 +134,89 @@ Grindable or launchable, and each reacts:
 7. Unlocks: 8 boards, ride items, quests, then summons that join your tricks (section 7).
 
 After steps 1 and 2: commit, report with picture strips at 412x915 and 915x412, and continue. The owner plays 1 and 2 as soon as they are in the preview.
+
+## 9. Land made for riding (owner, 26 Nov 1:08 PM ET)
+
+His words: vast hills, flowing terrain like a wandering desert journey, ramps, cool dips, land-formed half pipes and full pipes. The map stays one open seeded square. Only the landforms change. Same seed, same land.
+
+| Landform | Region | Shape and ride |
+|---|---|---|
+| Wave valleys | Dune sea | Long S-shaped valleys with banked sides; carving bank to bank gains speed |
+| Rollers | Dune sea, lake edges | Rows of low bumps (about 1.2 m tall, 9 to 12 m apart); ollie the tops and absorb the dips for pump speed |
+| Bowls | Dry lakes | Round basins 30 to 60 m across with a rideable lip |
+| Half-pipes | Canyon runs | U cross-section, walls ride up to vertical; revert on re-entry |
+| Full pipes | Ridge spines, ruin fields | Wind-carved stone tubes and giant buried card arches. Collision is a curved surface the card sticks to above a speed threshold, and falls off below it |
+| Step-downs | Mesa fields | Ramp up one side, long landing slope off the other |
+| Spines and hips | Region borders | Sharp ridges for transfers between valleys |
+| Great drops | 1 or 2 per map | A cliff with a long run-out |
+
+**Generator rules:**
+- Every launch has a landing slope of matching angle within its range at 12 to 24 m/s.
+- No flat landings from more than 4 m of air.
+- Valleys lead toward pockets or landmarks.
+- Everything stays reachable on foot by another way.
+- The newbie door find and the pocket gap checks keep passing.
+
+**Tool:** extend linecheck so that each launch and landing pair is simulated at 3 speeds.
+
+## 10. Shrines you ride (replaces stand-in-the-circle as the main way)
+
+Each shrine is a small course. How well you ride it sets the boon tier.
+
+| Shrine | Course | Charged when |
+|---|---|---|
+| Ring Shrine | A stone ring rail around the altar | One full lap grinded; a second clean lap lifts the tier |
+| Bowl Shrine | A bowl around the altar | Three carved laps; faster is better |
+| Gate Shrine | A line of five arches | All five threaded in one go; each arch adds a fifth |
+| Spire Shrine | A spire | You air over it; height and tricks lift the tier |
+| Pipe Shrine | A full pipe | One clean loop |
+
+- **Tier by style.**
+  - A plain charge gives the normal 1-of-3 boons at the clock's tier.
+  - Charged while holding Flow x3 guarantees a rare or better.
+  - Flow x5 guarantees an epic or better.
+- **On foot.** Standing inside any shrine still charges it, slowly (as now), for the base tier. A new player loses nothing.
+- **The fight.** A charged shrine still spawns its pack.
+- **Wager Shrines** become a dare: a marked gap or line to clear for the prize. Stakes rise either way.
+
+## 11. Riding is the build
+
+- **Trick answers.** Every monster, spell and trap gets ONE trick it answers. This is data on the card: `answers: 'grind' | 'flip' | 'grab' | 'spin' | 'land' | 'manual' | 'seal' | 'air'`. It carries an effect and a short cooldown. Examples:
+  - Ember Wyvern: fire along the rail you grind.
+  - Cinder Hatchling: a fireball where you land.
+  - A trap arms on each seal stone lit.
+  - A spell casts free on every third distinct trick in a combo.
+- **Evolutions and Fusions.**
+  - The answer grows at level 5 and at level 10.
+  - Fusions answer two tricks.
+- **Flow fuels summons.**
+  - Attack rate rises per Flow step.
+  - The special spends the whole meter for one large chorus strike.
+- **Ride boons.** These join the boon list: pop, balance, spin speed, Flow hold, slam size, grind speed.
+- **Land items.**
+  - Dune items reward air.
+  - Canyon items reward wall-to-wall.
+  - Ruin items reward long grinds.
+- **Land answers the slam.**
+  - Salt flat: a wide star crack.
+  - Dune: a rolling sand wave.
+  - Pipe: a double echo.
+- **Three reference builds for the bots:**
+  - Rail Dragon: grinds.
+  - Meteor: big air and slam.
+  - Seal Runner: traps and seal lines.
+- **Balance guard.**
+  - Trick answers have cooldowns, so spam does not multiply.
+  - A walker keeps all normal attacks and can still clear stage 1.
+  - The rider bot out-kills the walker by 40% or more on clears.
+  - Each reference build is viable, and none is more than about 1.5x the others in kills per minute at equal levels.
+
+## 12. Order for sections 9 to 11
+
+1. Landforms: wave valleys, rollers with pump, bowls, half-pipes, step-downs first. Then full pipes and great drops.
+2. Ride shrines: Ring and Gate first, then Bowl, Spire, Pipe.
+3. Trick answers on the existing 20 cards, plus ride boons.
+4. Land items and slam land answers.
+5. Bots for the three builds, then balance.
+
+Contact sheets and drives for each. Report Pass, Fail or Not assessed.
