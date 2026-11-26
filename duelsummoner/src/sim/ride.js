@@ -16,7 +16,7 @@ import { railsNear, sealsNear, sealSet } from './rails.js';
 export const RIDE = { mountAt: 10.5, dismountAt: 7, top: 24, push: 3.4, pushTo: 12.5, friction: 0.55, soft: 2.2, downhill: 10, carve: 2.6, airTurn: 1.0, crouchMax: 0.5, popLo: 2.2, popHi: 4.5,
   snap: 1.6, flipTime: 0.42, spinRate: 9.42, landTol: 0.52, bailT: 0.6, revertWin: 0.28, balDrift: 0.9, balFix: 2.6, sparkR: 2.5, sparkDmg: 7, sparkEvery: 0.2, gravity: 28, kickRun: 0.4, kickTo: 12.5, brake: 16, holdMin: 8.5 };
 const FLIPS = ['Card Flip', 'Ace Flip', 'Deal Flip', 'Riffle', 'Heel Card', 'Cut Flip', 'Fan Flip', 'Shuffle'], GRABS = ['Hand Grab', 'Seal Grab', 'Joker Grab', 'Crown Grab'], GRINDS = ['Edge Grind', 'Rim Ride', 'Spine Slide'];
-export const POINTS = { flip: 300, grab: 200, grabPerSecond: 420, spin180: 260, grind: 120, grindPerSecond: 160, manualPerSecond: 90, revert: 180, special: 3000, bigAir: 100, smash: 150, cardLit: 400, seal: 250, sealSet: 2500 };
+export const POINTS = { flip: 300, grab: 200, grabPerSecond: 420, spin180: 260, grind: 120, grindPerSecond: 160, manualPerSecond: 90, revert: 180, special: 3000, bigAir: 100, smash: 150, crest: 150, closeCall: 120, cardLit: 400, seal: 250, sealSet: 2500 };
 export const FLOW = { need: [0, 1800, 4200, 7500, 12000], idle: 10, dmgPerStep: 0.25, gainPerStep: 0.5, stakesPerStep: 5, slamR: [4, 14], slamDiv: 22, slamCapPerStep: 45 };
 
 export const makeRide = () => ({ on: false, heading: 0, speed: 0, crouch: 0, jumpWas: false, dashWas: false, useWas: false, flipT: 0, flipName: '', flipK: 0, grabbing: false, grabT: 0, grabName: '', spin: 0, airT: 0,
@@ -114,11 +114,16 @@ function step(g, p, r, dt) {
   if (blocked) { r.speed *= 0.5; if (!p.grounded && r.speed > 6) { bail(g, r, 'wall'); } }
   resolveColliders(g.colliders, p, CFG.player.radius);
   if (r.speed > 12) { const n = breakVasesNear(g, p.x, p.z, 1.6); for (let i = 0; i < n; i++) addTrick(g, r, 'Smash', POINTS.smash); }
-  sealTouch(g, p, r);
+  sealTouch(g, p, r); if (r.speed > 14) closeCall(g, p, r);
+}
+// a trunk, a cactus or a stone card passed within a hand of the card at speed: Close Call (once per thing)
+function closeCall(g, p, r) {
+  const C = g.colliders; if (!C || !C.grid) return; const i0 = Math.floor((p.x - 3) / C.CELL), i1 = Math.floor((p.x + 3) / C.CELL), j0 = Math.floor((p.z - 3) / C.CELL), j1 = Math.floor((p.z + 3) / C.CELL);
+  for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const a = C.grid.get(i * 4096 + j); if (!a) continue; for (const c of a) { if (c === r.ccLast || p.y > c.top) continue; const dx = p.x - c.x, dz = p.z - c.z, d = Math.sqrt(dx * dx + dz * dz) - c.r - CFG.player.radius; if (d < 0.9) { r.ccLast = c; addTrick(g, r, 'Close Call', POINTS.closeCall); return; } } }
 }
 // a seal stone lights as the card passes over it (within 2 m, on the ground or in the air); light all five of one set inside one combo and the set opens a free chest
 function sealTouch(g, p, r) {
-  for (const s of sealsNear(g, p.x, p.z, 2.2)) {
+  for (const s of sealsNear(g, p.x, p.z, 3.0)) {
     const sid = s[3], dy = p.y - s[1]; if (dy < -1 || dy > 5) continue; const L = litOf(g); if (L.sealsDone[sid]) continue;
     const c = r.combo, have = c.seals[sid] || (c.seals[sid] = []), key = s[0] + ',' + s[2]; if (have.includes(key)) continue; have.push(key); addTrick(g, r, 'Seal', POINTS.seal); L.ver++; g.emit('seal', s[0], s[2], have.length);
     if (have.length >= sealSet(g, sid).length) { L.sealsDone[sid] = true; L.ver++; addTrick(g, r, 'Seal Set', POINTS.sealSet); const tx = s[0] + sin(r.heading) * 6, tz = s[2] + cos(r.heading) * 6; g.world.cchests.push({ x: tx, y: heightAt(tx, tz), z: tz, open: false, rarity: null, free: true, trophy: true }); g.emit('sealset', tx, tz, 0); g.event('banner', 'The seal stones wake: a chest rises.'); }
@@ -132,6 +137,7 @@ function groundFollow(g, p, r, dt) {
   if (h >= prev - 0.35) { r.rvy = (h - prev) / Math.max(dt, 1e-4); p.y = h; return; }
   // the ground falls away faster than the card can follow: off the crest into the air, carrying the climb
   p.grounded = false; p.vy = Math.max(0, r.rvy) * 0.9; r.airT = 0;
+  if (r.rvy > 3 && r.speed > 13) { p.vy *= 1.15; addTrick(g, r, 'Crest Launch', POINTS.crest); g.emit('crest', p.x, p.z, 0); }       // a dune crest taken fast throws the card up a little more, and counts
 }
 function land(g, p, r, cmd) {
   p.grounded = true; const vy = r.lastLandVy || p.vy; p.vy = 0;

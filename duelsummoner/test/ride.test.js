@@ -87,3 +87,8 @@ test('ride: holding the stick forward up a 15-degree climb never drops the rider
   assert.equal(off, false, 'still on the card at ' + g.p.ride.speed.toFixed(1) + ' m/s');
   let n = 0; while (g.p.ride.on && n < 240) { run(g, 1, { ...I, f: -1 }); n++; } assert.equal(g.p.ride.on, false, 'the brake still takes the rider off');
 });
+test('ride: passing a trunk within a hand at speed counts a Close Call, once per trunk', () => {
+  const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 16); run(g, 2, { ...I, f: 1 }); const C = g.colliders;
+  const c = { x: g.p.x + 1.2, y: g.p.y - 1, z: g.p.z - 8, r: 0.4, top: g.p.y + 9 }, k = Math.floor(c.x / C.CELL) * 4096 + Math.floor(c.z / C.CELL); let a = C.grid.get(k); if (!a) C.grid.set(k, a = []); a.push(c);
+  run(g, 50, { ...I, f: 1 }); assert.equal(g.p.ride.combo.names['Close Call'], 1, JSON.stringify(g.p.ride.combo.names));
+});

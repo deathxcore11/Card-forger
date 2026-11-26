@@ -381,7 +381,7 @@ export class Actors {
     if (L.ver !== this._litVer) { this._litVer = L.ver; for (const c of this.litG.children.slice()) this.litG.remove(c);
       const add = (x, y, z, m, s) => { const o = new T.Mesh(this._litGeo, m); o.position.set(x, y, z); o.scale.set(s, s * 1.5, s); o.userData.y0 = y; this.litG.add(o); };
       for (const k in L.cards) { const c = L.cards[k]; add(c[0], c[1] + 0.9, c[2], this._litM[2], 1); }
-      for (const s of litSeals(g)) add(s[0], s[1] + 1.35, s[2], this._litM[s[3] ? 1 : 0], s[3] ? 0.8 : 0.6); }
+      for (const s of litSeals(g)) add(s[0], s[1] + 2.2, s[2], this._litM[s[3] ? 1 : 0], s[3] ? 0.8 : 0.6); }
     const t = performance.now() / 1000; for (const o of this.litG.children) { o.rotation.y = t * 1.4 + o.position.x; o.position.y = o.userData.y0 + Math.sin(t * 2 + o.position.z) * 0.12; }
   }
   _board(g, p, px, py, pz, dt) {

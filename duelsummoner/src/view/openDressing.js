@@ -142,7 +142,7 @@ function stoneCard(D, x, y, z, s, rot) { frustum(D, x, y - 1.3 * s, z, 1.35 * s,
 // ---- cracked salt on a dry lake: thin darker lines lying on the ground
 function crack(D, map, pts) { for (let i = 0; i + 3 < pts.length; i += 2) { const x0 = pts[i], z0 = pts[i + 1], x1 = pts[i + 2], z1 = pts[i + 3], dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1, nx = -dz / l * 0.07, nz = dx / l * 0.07, y0 = groundAt(map, x0, z0) + 0.04, y1 = groundAt(map, x1, z1) + 0.04; D.quad([x0 - nx, y0, z0 - nz], [x0 + nx, y0, z0 + nz], [x1 + nx, y1, z1 + nz], [x1 - nx, y1, z1 - nz], [0, 1, 0], 0xb39a72); } }
 // ---- a dormant seal stone: a low dark plinth with a dull gem on top (lit ones get a gold halo from the actors)
-function sealStone(D, x, y, z) { frustum(D, x, y - 0.2, z, 0.45, 0.45, 0.35, 0.35, 0.9, 0.4, 0x5a5048, 0x6a6058); frustum(D, x, y + 0.7, z, 0.16, 0.16, 0.04, 0.04, 0.35, 0.8, 0x8a7a68); }
+function sealStone(D, x, y, z) { frustum(D, x, y - 0.3, z, 0.75, 0.75, 0.55, 0.55, 1.6, 0.4, 0x4a4038, 0x6a6058); frustum(D, x, y + 1.3, z, 0.6, 0.6, 0.62, 0.62, 0.12, 0.4, 0x8a7a68); frustum(D, x, y + 1.42, z, 0.26, 0.26, 0.05, 0.05, 0.5, 1.2, 0x9a8a72); }       // 1.4 m tall, a cap and a dull gem: it reads from the card at speed
 export function addDressing(D, map, ok) {
   const d = map.dress || {}, yes = ok || (() => true);
   for (const q of d.seals || []) if (yes(q[0], q[2])) sealStone(D, q[0], q[1], q[2]);
