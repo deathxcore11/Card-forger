@@ -43,6 +43,7 @@ export function riseDoor(g) {
   for (let k = 0; k < 70; k++) { const a = g.rsp() * 6.2832, r = DOOR.near + g.rsp() * (DOOR.far - DOOR.near), x = p.x + cos(a) * r, z = p.z + sin(a) * r; if (!reach(x, z)) continue; const f = flatness(x, z); if (f < 3.2) cand.push({ x, z, ring: false, f }); }
   let list = cand;
   if (!list.length) for (const r of rings) { const d = dist(r); if (d >= DOOR.widen[0] && d <= DOOR.widen[1] && reach(r.x, r.z)) list.push({ x: r.x, z: r.z, ring: true }); }
+  { const r = p.ride, sp = Math.sqrt(p.vx * p.vx + p.vz * p.vz); if (r && r.on && sp > 10) { const ahead = list.filter(c => ((c.x - p.x) * p.vx + (c.z - p.z) * p.vz) / (dist(c) * sp) > 0.4); if (ahead.length) list = ahead; } }       // a rider meets the door ahead of the card, not behind it
   let site = null, hidden = false;
   if (list.length) { const hid = list.filter(r => hiddenFrom(g, r.x, r.z)), vis = list.filter(r => !hid.includes(r)), wantHid = g.rsp() < DOOR.hiddenChance, pool = wantHid && hid.length ? hid : vis.length ? vis : list; site = pool[Math.floor(g.rsp() * pool.length) % pool.length]; hidden = hid.includes(site); }
   if (!site) site = { x: p.x + 160, z: p.z };

@@ -24,13 +24,13 @@ export class LeyThreads {
   rnd() { this.rng = (this.rng * 1664525 + 1013904223) >>> 0; return this.rng / 4294967296; }
   _show(th, v) { th.mesh.visible = v; th.under.visible = v; }
   // gate: { x, z } or null; player: { x, y, z }; dt seconds; show: false hides them (boss fight, menus)
-  update(gate, player, dt, camera, show) {
-    this.t += dt; const GU = this.gu = { far: 90, mid: 60, near: 32 };       // red wind shows only within about 90 m of the gate: fading in from 90 to 70 m, denser and lower closer in; never from across the map
+  update(gate, player, dt, camera, show, riding) {
+    this.t += dt; const GU = this.gu = riding ? { far: 160, mid: 90, near: 32 } : { far: 90, mid: 60, near: 32 };       // on the card the red wind reaches 160 m (a rider covers ground fast)       // red wind shows only within about 90 m of the gate: fading in from 90 to 70 m, denser and lower closer in; never from across the map
     const live = this.on && show && gate;
     let d = 1e9, dx = 0, dz = 0;
     if (gate) { dx = gate.x - player.x; dz = gate.z - player.z; d = Math.hypot(dx, dz); }
     if (live && d < GU.far && d > 6) {
-      const step = d < GU.near ? 0.3 : d < GU.mid ? 0.7 : 1.6, fadeIn = sstep(90, 70, d);                   // seconds between threads; the first ones come thin and few
+      const step = d < GU.near ? 0.3 : d < GU.mid ? 0.7 : 1.6, fadeIn = sstep(GU.far, GU.far - 20, d);                   // seconds between threads; the first ones come thin and few
       this.acc += dt;
       if (fadeIn > 0.02 && this.acc >= step / (this.strength * Math.max(0.6, fadeIn))) { this.acc = 0; this._spawn(player, dx / d, dz / d, d); }
     }

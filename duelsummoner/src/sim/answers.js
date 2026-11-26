@@ -14,15 +14,15 @@ export function answerTrick(g, kind, x, y, z) {
   for (const [id, L, m] of held(g)) {
     const list = ANSWERS[id]; if (!list) continue;
     list.forEach((a, ai) => {
-      if (a.on !== kind) return; const key = id + ai; if ((cd[key] || 0) > g.t) return; cd[key] = g.t + a.cd * 1.6; fired++; cnt[id] = (cnt[id] || 0) + 1;
-      const k = (m ? lvlK(L) : 1 + 0.25 * (L - 1)) * 0.6, D = m ? damageOf(m) : 0, fl = m ? elemBits(def(id).elements) : 0; g.curSrc = g.srcIndex ? g.srcIndex(id) : 0;
+      if (a.on !== kind) return; const key = id + ai; if ((cd[key] || 0) > g.t) return; cd[key] = g.t + a.cd; fired++; cnt[id] = (cnt[id] || 0) + 1;
+      const k = m ? lvlK(L) : 1 + 0.25 * (L - 1), D = m ? damageOf(m) : 0, fl = m ? elemBits(def(id).elements) : 0; g.curSrc = g.srcIndex ? g.srcIndex(id) : 0;
       switch (id) {
         case 'ember-wyvern': splash(g, x, y, z, 2.5, D * 1.2 * k, fl); break;
         case 'cinder-hatchling': splash(g, x, y, z, 3.5 * (1 + (k - 1) * 0.4), D * 3 * k, fl); break;
-        case 'rune-apprentice': markNear(g, x, z, Math.round(3 * k / 0.6), 18); break;
+        case 'rune-apprentice': markNear(g, x, z, Math.round(3 * k), 18); break;
         case 'sigil-familiar': splash(g, x, y, z, 5, D * 2 * k, fl); break;
         case 'twinflare-tyrant': if (kind === 'grind') splash(g, x, y, z, 3.5, D * 1.5 * k, fl); else splash(g, x, y, z, 6.5, D * 4 * k, fl); break;
-        case 'astral-magus': if (kind === 'flip') markNear(g, x, z, Math.round(5 * k / 0.6), 22); else splash(g, x, y, z, 5, 7 * k, fl); break;
+        case 'astral-magus': if (kind === 'flip') markNear(g, x, z, Math.round(5 * k), 22); else splash(g, x, y, z, 5, 12 * k, fl); break;
         case 'toll-of-ash': splash(g, x, y, z, 4, 4 * k, 1); break;
         case 'kindling-rite': splash(g, x, y, z, 2.5, 2 * k, 1); break;
         case 'deep-marks': markNear(g, x, z, 99, 10); break;
@@ -34,7 +34,7 @@ export function answerTrick(g, kind, x, y, z) {
         case 'heart-of-the-cards': g.p.hp = Math.min(g.p.maxHp, g.p.hp + 1.5 * k); break;
         case 'collectors-eye': { const P = g.pick, R = 8 + 2 * k; for (let i = 0; i < P.max; i++) { if (!P.alive[i]) continue; const dx = P.x[i] - x, dz = P.z[i] - z; if (dx * dx + dz * dz < R * R) { P.x[i] = g.p.x; P.z[i] = g.p.z; } } break; }
         case 'gust-ward': { const e = g.en; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < 25 && d2 > 1e-6) { const d = Math.sqrt(d2); e.x[i] += dx / d * 4; e.z[i] += dz / d * 4; damageEnemy(g, i, 2 * k, { noCrit: true }); } } break; }
-        case 'pit-of-seals': splash(g, x, y, z, 4, 6 * k, 0); break;
+        case 'pit-of-seals': splash(g, x, y, z, 4, 10 * k, 0); break;
       }
       g.curSrc = 0; g.emit('answer', x, z, 0, id);
     });
