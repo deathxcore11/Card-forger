@@ -118,6 +118,20 @@ flowCalls.flowGenerate = async a => {
   status = '';
   return result.ok ? {ok: true, model: resultModel(register(result))} : {ok: false, message: result.message, setup: setupModel(request, result.message, true)};
 };
+// Play deck editor's Fill (Randall 26 Nov): the same Build a deck engine, around the commander, the cards the player pinned (required) and
+// everything the deck already holds (locked), preferring what the player owns (the Trunk, handed in as the collection). It answers the
+// main-deck rows as plain data; the editor adds the ones the deck lacks.
+flowCalls.flowFill = async a => {
+  const me = ++current; status = 'Finding cards for your deck…';
+  workspace({collection: a.collection || [], decks: []});
+  const req = {game: 'mtg', format: a.format || 'Commander', seed: a.commander || '', budget: a.budget || '', budgetBasis: 'total', budgetMode: 'cap', preferOwned: true,
+    sideboard: false, closest: false, retune: false, required_cards: (a.pins || []).slice(0, 8), locked_cards: (a.keep || []).slice(0, 40),
+    ...(a.bracket ? {bracket: a.bracket} : {}), ...(a.power ? {power: a.power} : {})};
+  const result = await deckPipeline.build(req, {current: live(me), onStatus: m => { if (me === current) status = String(m); }});
+  if (me !== current) return {cancelled: true};
+  status = '';
+  return result.ok ? {ok: true, rows: result.rows.filter(r => r.zone === 'main').map(r => ({name: r.name, qty: r.qty}))} : {ok: false, message: result.message};
+};
 // A.flowAdjust's first step: customBudget's check of the amount typed, before anything builds (its message when it fails).
 flowCalls.flowBudget = a => { customBudget(a.budget); return true; };
 // A.flowAdjust: Rebuild with budget (customBudget checks the amount), from the previous deck and its estimate.

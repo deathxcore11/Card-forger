@@ -4,6 +4,7 @@ import dev.cardstashy.nativeplay.account.Decks as Workspace
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -83,6 +85,15 @@ class EditorUi {
     var crafting by mutableStateOf(false)
     var armed by mutableStateOf(false)
     var filling by mutableStateOf(false)
+    /** Commander: the commander picked from the slot (null: read off the list) and the picker's search, results and highlighted card. */
+    var cmdr by mutableStateOf<String?>(null)
+    var cmdrFind by mutableStateOf("")
+    var cmdrHits by mutableStateOf<List<JsonObject>>(emptyList())
+    var cmdrPick by mutableStateOf<String?>(null)
+    /** Cards the player pinned "always include": Fill's engine must keep them (up to 8). */
+    var pins by mutableStateOf<Set<String>>(emptySet())
+    /** Fill may also add cards you would craft (off: owned cards only). */
+    var fillCraft by mutableStateOf(false)
     /** The card whose Play card actions are open. */
     var holdName by mutableStateOf<String?>(null)
     /** Kept for the callers that open a saved deck as its list (the Bench always shows the Trunk under the deck). */
@@ -154,10 +165,19 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val sets by SetFacts.sets.collectAsState()
     val goals = DeckEdit.packGoals(plan) { n -> fact(n)?.card?.let { c -> val code = c.get("set")?.asString ?: ""; code to (sets[code]?.name ?: c.get("set_name")?.asString ?: code.uppercase()) } }
     fun setEdit(cards: List<DeckEdit.Line>) { ui.edit = e.copy(cards = cards, dirty = true) }
+    /** The commander slot: the card goes first on the list as the one copy, and the deck takes its colours. */
+    fun setCommander(name: String) {
+        val rest = ui.edit.cards.filter { it.name != name }
+        ui.cmdr = name; ui.edit = ui.edit.copy(cards = listOf(DeckEdit.Line(name, 1)) + rest, dirty = true)
+    }
     fun stepCard(name: String, step: Int) = setEdit(DeckEdit.step(ui.edit.cards, name, step, ui.edit.format))
     fun idOf(name: String) = fact(name)?.card?.get("id")?.asString ?: ""
     suspend fun craftCopies(id: String, n: Int): Int { var made = 0; repeat(n) { if (runCatching { Progress.craft(id) }.isSuccess) made++ else return made }; return made }
 
+    // Commander: the commander the slot holds, else the first legendary creature on the list (as before); null: none yet.
+    val leader: String? = if (e.format != "Commander") null
+        else ui.cmdr?.takeIf { n -> e.cards.any { it.name == n } }
+            ?: e.cards.firstOrNull { c -> fact(c.name)?.let { f -> Regex("Legendary").containsMatchIn(f.t) && Regex("Creature").containsMatchIn(f.t) } == true }?.name
     // ---- pool (app.js poolQuery / loadPool), on the Bench's find, colour and type filters
     fun poolQuery(find: String = b.find, colors: Set<String> = b.colors, type: String = b.type, filter: BenchFilter = b.filter): String {
         val q = mutableListOf("legal:${ui.edit.format.lowercase()}", "game:paper")
@@ -166,8 +186,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
         POOL_TYPES[type]?.let { q += it }
         // The Filters panel's picks Scryfall can search itself (mana value, type, rarity, set); Does and copies are the Bench's own.
         q += BenchFilter.query(filter)
-        if (ui.edit.format == "Commander") ui.edit.cards.mapNotNull { fact(it.name) }.firstOrNull { Regex("Legendary").containsMatchIn(it.t) && Regex("Creature").containsMatchIn(it.t) }
-            ?.let { q += "id<=" + it.k.lowercase().ifEmpty { "c" } }
+        leader?.let { fact(it) }?.let { q += CommanderFill.identityClause(it.k).trim() }
         return q.joinToString(" ")
     }
     fun loadPool(more: Boolean = false) {
@@ -317,16 +336,65 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
             else scope.launch { val made = craftCopies(id, n); if (made > 0) toast("$made $name crafted into your Play collection.") else toast("Not enough seals for $name yet.") } },
         fill = {
             val size = Decks.deckRules(ui.edit.format).size; val need = size - ui.edit.cards.sumOf { it.qty }
-            if (need >= 1 && !ui.filling) { ui.filling = true
+            if (ui.edit.format == "Commander" && leader == null) { ui.cmdrPick = null; ui.sheet = "commander"; toast("Pick a commander first.") }
+            else if (need >= 1 && !ui.filling) { ui.filling = true
                 scope.launch {
-                    val q = poolQuery("", emptySet(), "All") + " -t:land"; val inDeck = ui.edit.cards.map { it.name.lowercase() }.toHashSet(); var added = 0; var failed = false
-                    val adds = ArrayList<DeckEdit.Line>()
-                    for (page in 1..3) { if (added >= need) break
-                        val r = CardFacts.search(q, "edhrec", page); if (r == null) { failed = page == 1; break }
-                        for (c in r.first) { if (added >= need) break; val n = c.get("name")?.asString ?: continue; if (!inDeck.add(n.lowercase())) continue; adds += DeckEdit.Line(n, 1); added++ }
-                        if (!r.second) break }
+                    val inDeck = ui.edit.cards.map { it.name.lowercase() }.toHashSet(); var failed = false
+                    val adds = ArrayList<DeckEdit.Line>(); var owned0 = 0; var craft0 = 0
+                    fun have(n: String) = (owned[n] ?: owned[n.split(" // ")[0]] ?: 0) > 0
+                    // One job at a time: its Scryfall search in the commander's colours, owned cards first, a card you would craft only when allowed.
+                    suspend fun job(query: String, n: Int, plain: Boolean = false): Int {
+                        if (n <= 0) return 0
+                        val names = ArrayList<String>()
+                        for (page in 1..2) { val r = CardFacts.search(query, "edhrec", page); if (r == null) { failed = failed || (page == 1 && adds.isEmpty()); break }
+                            names += r.first.mapNotNull { it.get("name")?.asString }; if (!r.second) break }
+                        val pick = CommanderFill.select(names, ::have, ui.fillCraft || ui.edit.format != "Commander", inDeck, n)
+                        pick.forEach { inDeck.add(it.lowercase()); adds += DeckEdit.Line(it, 1); if (have(it) || Decks.isBasicLand(it)) owned0++ else craft0++ }
+                        return pick.size
+                    }
+                    // Commander: the Build a deck engine first (around the commander and the pins, your own cards preferred); the job-by-job search is the fallback.
+                    val viaEngine: Boolean = if (ui.edit.format != "Commander") false else run {
+                        val lead = leader!!
+                        val args = JsonObject().apply {
+                            addProperty("format", "Commander"); addProperty("commander", lead)
+                            add("pins", com.google.gson.JsonArray().apply { ui.pins.filter { n -> ui.edit.cards.any { it.name == n } && n != lead }.take(8).forEach { add(it) } })
+                            add("keep", com.google.gson.JsonArray().apply { ui.edit.cards.filter { it.name != lead && it.name !in ui.pins }.take(40).forEach { c -> add(JsonObject().apply { addProperty("name", c.name); addProperty("qty", c.qty) }) } })
+                            add("collection", com.google.gson.JsonArray().apply { owned.forEach { (n, q) -> add(JsonObject().apply { addProperty("name", n); addProperty("qty", q) }) } })
+                        }
+                        val fl = RandomBuild.flow("flowFill", args)
+                        val rows = (fl.obj?.get("rows") as? JsonArray)?.mapNotNull { it as? JsonObject }
+                        if (rows == null) false else {
+                            val fresh = rows.filter { r -> r.str("name").lowercase() !in inDeck && r.str("name") != lead }
+                            val named = fresh.filter { !Decks.isBasicLand(it.str("name")) }
+                            val picks = CommanderFill.select(named.map { it.str("name") }, ::have, ui.fillCraft, inDeck, need)
+                            picks.forEach { inDeck.add(it.lowercase()); adds += DeckEdit.Line(it, 1); if (have(it)) owned0++ else craft0++ }
+                            var room = need - picks.size
+                            fresh.filter { Decks.isBasicLand(it.str("name")) }.forEach { r -> val q = minOf(room, r.get("qty")?.asInt ?: 1); if (q > 0) { adds += DeckEdit.Line(r.str("name"), q); room -= q; owned0 += q } }
+                            true
+                        }
+                    }
+                    if (viaEngine) { /* added above */ }
+                    else if (ui.edit.format == "Commander") {
+                        val idc = fact(leader!!)?.k
+                        val base = poolQuery("", emptySet(), "All", BenchFilter()) + " -t:land"
+                        val landsHave = ui.edit.cards.filter { Decks.isBasicLand(it.name) || fact(it.name)?.t?.contains("Land") == true }.sumOf { it.qty }
+                        val p = CommanderFill.plan(need, landsHave)
+                        var got = 0
+                        got += job("$base otag:ramp", p.ramp); got += job("$base otag:draw", p.draw)
+                        got += job("$base otag:removal", p.removal); got += job("$base otag:sweeper", p.sweepers)
+                        val nonbasic = job(poolQuery("", emptySet(), "All", BenchFilter()) + " t:land -t:basic", p.nonbasic); got += nonbasic
+                        got += job(base, need - got - (p.basics + (p.nonbasic - nonbasic)))
+                        val basics = CommanderFill.basicsFor(idc, need - got)
+                        basics.forEach { (nm, q) -> adds += DeckEdit.Line(nm, q); got += q }
+                    } else {
+                        job(poolQuery("", emptySet(), "All") + " -t:land", need)
+                    }
                     if (adds.isNotEmpty()) ui.edit = ui.edit.copy(cards = ui.edit.cards + adds, dirty = true)
-                    toast(if (failed) "Suggestions could not load. Check your connection." else if (added > 0) "$added suggested card${if (added > 1) "s" else ""} added. Greyed ones are still to craft." else "No suggestions found right now.")
+                    val added = adds.sumOf { it.qty }; val left = need - added
+                    toast(if (failed) "Suggestions could not load. Check your connection."
+                        else if (added == 0) "No suggestions found right now."
+                        else "$added card${if (added > 1) "s" else ""} added: $owned0 you own${if (craft0 > 0) ", $craft0 to craft" else ""}." +
+                            if (left > 0) " $left still open${if (!ui.fillCraft) ". Turn on Craft to fill them" else ""}." else "")
                     ui.filling = false
                 } }
         },
@@ -341,7 +409,7 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
     val toApp: () -> Unit = {
         val ed = ui.edit
         if (ed.cards.isNotEmpty()) scope.launch {
-            val lead = if (ed.format == "Commander") ed.cards.firstOrNull { it.qty == 1 && Regex("Legendary").containsMatchIn(fact(it.name)?.t ?: "") } else null
+            val lead = if (ed.format == "Commander") ed.cards.firstOrNull { it.qty == 1 && it.name == leader } ?: ed.cards.firstOrNull { it.qty == 1 && Regex("Legendary").containsMatchIn(fact(it.name)?.t ?: "") } else null
             val d = JsonObject().apply {
                 addProperty("id", java.util.UUID.randomUUID().toString()); addProperty("name", ed.name.ifBlank { "Play deck" }.take(100)); addProperty("format", ed.format.ifBlank { "Standard" })
                 addProperty("commander", lead?.name ?: ""); addProperty("strategy", "Auto"); addProperty("budget", 0); addProperty("locked", false)
@@ -430,8 +498,12 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
 
     Box(Modifier.fillMaxSize().background(Site.Bg)) {
         DeckBench(model, b, benchActions,
-            actionRow = if (nums.count < nums.size || goals.isNotEmpty()) ({
-                if (nums.count < nums.size) BenchPill(if (ui.filling) "Finding cards…" else "Fill ${nums.size - nums.count} empty slot${if (nums.size - nums.count > 1) "s" else ""}", enabled = !ui.filling, onClick = actions.fill)
+            actionRow = if (nums.count < nums.size || goals.isNotEmpty() || e.format == "Commander") ({
+                // Commander: the commander slot first (a gold pill until one is set), then Fill, which waits for it.
+                if (e.format == "Commander") BenchPill(if (leader == null) "Choose commander" else "Commander: ${leader.substringBefore(",")}", gold = leader == null) { ui.cmdrPick = null; ui.sheet = "commander" }
+                if (nums.count < nums.size) BenchPill(CommanderFill.fillLabel(e.format, leader, nums.size - nums.count, ui.filling), enabled = !ui.filling, onClick = actions.fill)
+                if (e.format == "Commander" && ui.pins.isNotEmpty()) BenchPill("Pinned", count = ui.pins.size, desc = "${ui.pins.size} pinned cards: ${ui.pins.joinToString()}. Tap to clear") { ui.pins = emptySet() }
+                if (e.format == "Commander" && nums.count < nums.size && leader != null) BenchPill(if (ui.fillCraft) "Fill: owned + craft" else "Fill: owned only") { ui.fillCraft = !ui.fillCraft }
                 for (g in goals) BenchPill("${g.code.uppercase()} packs", count = g.miss, desc = "${g.name}: ${g.miss} missing") { actions.pack(g.code) }
             }) else null,
             browserSwitch = { BenchSwitch(listOf("mine" to "Your cards", "all" to "All cards", "lands" to "Lands"), ui.mode) { if (it == "lands") openLands(ui.landType) else ui.mode = it } },
@@ -441,6 +513,9 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 Field(ui.edit.name, "Deck name") { ui.edit = ui.edit.copy(name = it.take(80), dirty = true) }
                 GoldCta("Done", Modifier.fillMaxWidth()) { ui.sheet = null }
             }
+            "commander" -> CommanderSheet(ui, trunk.map { it.n }.filter { n -> fact(n)?.let { f -> CommanderFill.canLead(f.t, f.card.get("oracle_text")?.takeIf { x -> x.isJsonPrimitive }?.asString ?: "") } == true }.distinct(),
+                owned = { n -> (owned[n] ?: owned[n.split(" // ")[0]] ?: 0) > 0 }, factOf = { n -> fact(n) },
+                onSet = { name -> setCommander(name); ui.sheet = null; toast("$name is your commander.") }, onClose = { ui.sheet = null })
             "format" -> EditSheet("Change format", { ui.sheet = null }) {
                 for (fm in Decks.PLAY_FORMATS) Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).clickable { ui.edit = ui.edit.copy(format = fm, dirty = true); ui.sheet = null }
                     .padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -456,7 +531,9 @@ fun DeckEditor(state: JsonObject, ui: EditorUi, onBack: () -> Unit, onCard: (Car
                 onStep = { k -> stepAny(name, k); toast(if (k > 0) "Added to ${ui.edit.name.ifBlank { "your deck" }}." else "Taken out of ${ui.edit.name.ifBlank { "your deck" }}.") },
                 onPack = { code -> ui.holdName = null; onPack(code) },
                 onArt = { ui.holdName = null; ArtPick.open("avatar", ArtPick.Card("mtg", f?.card?.get("id")?.asString ?: name, name, set.uppercase(), art, art)) },
-                onClose = { ui.holdName = null }) }
+                onClose = { ui.holdName = null },
+                onPin = if (e.format == "Commander") ({ ui.pins = if (name in ui.pins) ui.pins - name else if (ui.pins.size < 8) ui.pins + name else ui.pins; ui.holdName = null
+                    toast(if (name in ui.pins) "$name is pinned. Fill will keep it." else "Pins: up to 8 cards.") }) else null) }
     }
 }
 
@@ -466,8 +543,8 @@ private fun craftWord(plan: DeckEdit.Plan, ui: EditorUi) = if (ui.crafting) "Cra
 
 /** .fill / .goal: a glass pill in the action row (a gold count when it has one). */
 @Composable
-internal fun BenchPill(label: String, enabled: Boolean = true, count: Int? = null, desc: String? = null, onClick: () -> Unit) {
-    Row(Modifier.heightIn(min = 44.dp).alpha(if (enabled) 1f else .6f).clip(RoundedCornerShape(12.dp)).background(Color(0x59000000)).border(1.dp, Color(0x17FFFFFF), RoundedCornerShape(12.dp))
+internal fun BenchPill(label: String, enabled: Boolean = true, count: Int? = null, desc: String? = null, gold: Boolean = false, onClick: () -> Unit) {
+    Row(Modifier.heightIn(min = 44.dp).alpha(if (enabled) 1f else .6f).clip(RoundedCornerShape(12.dp)).background(if (gold) Color(0x33E5C47E) else Color(0x59000000)).border(1.dp, if (gold) Color(0xFFE5C47E) else Color(0x17FFFFFF), RoundedCornerShape(12.dp))
         .clickable(enabled = enabled, onClick = onClick).semantics { role = Role.Button; if (desc != null) contentDescription = desc }.padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(label, style = t(12.5f, FontWeight.Bold), maxLines = 1, softWrap = false)
@@ -510,7 +587,7 @@ private fun EditSheet(title: String, onClose: () -> Unit, content: @Composable C
  */
 @Composable
 private fun PlayDeckHold(ui: EditorUi, name: String, image: String, set: String, have: Int, toast: (String) -> Unit,
-                         onOpen: (tab: String) -> Unit, onStep: (Int) -> Unit, onPack: (String) -> Unit, onArt: () -> Unit, onClose: () -> Unit) {
+                         onOpen: (tab: String) -> Unit, onStep: (Int) -> Unit, onPack: (String) -> Unit, onArt: () -> Unit, onClose: () -> Unit, onPin: (() -> Unit)? = null) {
     val context = androidx.compose.ui.platform.LocalContext.current; val scope = rememberCoroutineScope()
     val e = ui.edit; val id = e.id; val deck = e.name.ifBlank { "this deck" }
     val q = e.cards.filter { it.name == name }.sumOf { it.qty }; val room = DeckEdit.room(e.cards, name, e.format)
@@ -522,7 +599,8 @@ private fun PlayDeckHold(ui: EditorUi, name: String, image: String, set: String,
         listOfNotNull(
             ContextAction(SiteIcons.CardStack, "Open card", "Copies, crafting and Secret Lair art") { onOpen("overview") },
             if (room > 0) ContextAction(SiteIcons.Decks, "Add a copy to $deck", if (have > q) "${q + 1} in deck" else "${q + 1} in deck · greyed until it is in your Trunk") { onStep(1) } else null,
-            if (q > 0) ContextAction(SiteIcons.Close, "Take one out", if (q == 1) "Out of the deck" else "${q - 1} left in deck") { onStep(-1) } else null),
+            if (q > 0) ContextAction(SiteIcons.Close, "Take one out", if (q == 1) "Out of the deck" else "${q - 1} left in deck") { onStep(-1) } else null,
+            if (onPin != null && q > 0) ContextAction(SiteIcons.CardStack, if (name in ui.pins) "Unpin" else "Always include (pin)", if (name in ui.pins) "Fill may use it again" else "Fill keeps it and builds around it") { onPin() } else null),
         listOfNotNull(
             if (have < 4) ContextAction(SiteIcons.Trunk, if (have > 0) "Get more copies" else "Get it", "Stamp a copy or make it holo with seals") { onOpen("get") } else null,
             if (set.isNotBlank()) ContextAction(SiteIcons.PackIcon, "Its pack at the Merchant") { onPack(set) } else null,
@@ -590,5 +668,51 @@ private fun PlayDeckTab(tab: String, e: DeckEdit.Edit) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 10.dp)) { SitePanel(p, siteUi) }
         }
         p?.let { SiteGlass(it, siteUi, pageLayer) { it.glass?.find { n -> n.has("rule-dismiss") }?.let { n -> siteUi.tap(n.id) } } }
+    }
+}
+
+/**
+ * Commander's slot, opened: the legends you own first, then every card that can lead a deck (Scryfall's is:commander), typed over
+ * as you go. Tap one to highlight it (its colours show), then Set. Nothing here makes up a card: names and colours are Scryfall's.
+ */
+@Composable
+private fun CommanderSheet(ui: EditorUi, yours: List<String>, owned: (String) -> Boolean, factOf: (String) -> CardFacts.Fact?,
+                           onSet: (String) -> Unit, onClose: () -> Unit) {
+    LaunchedEffect(ui.cmdrFind) {
+        if (ui.cmdrFind.isNotBlank()) delay(350)
+        val name = ui.cmdrFind.trim().replace(Regex("[\"\\\\]"), "").takeIf { it.isNotEmpty() }?.let { " name:\"$it\"" } ?: ""
+        ui.cmdrHits = CardFacts.search("is:commander legal:commander$name", "edhrec", 1)?.first ?: emptyList()
+    }
+    val find = ui.cmdrFind.trim().lowercase()
+    val mine = yours.filter { find.isEmpty() || it.lowercase().contains(find) }
+    val hitCards = ui.cmdrHits.mapNotNull { c -> c.get("name")?.asString?.let { it to c } }.filter { it.first !in mine }
+    fun colours(name: String, card: JsonObject?): String {
+        val k = factOf(name)?.k ?: card?.get("color_identity")?.let { (it as? JsonArray).orEmptyList().joinToString("") }
+        return (k ?: "").uppercase().toCharArray().sortedBy { "WUBRG".indexOf(it) }.joinToString(" ").ifEmpty { "Colourless" }
+    }
+    @Composable fun LegendRow(name: String, card: JsonObject?) {
+        val sel = ui.cmdrPick == name
+        val p = heroPainter(homeArt(named(name, "art_crop")))
+        Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(10.dp)).background(if (sel) Color(0x33E5C47E) else Color(0x0DFFFFFF))
+            .then(if (sel) Modifier.border(1.5.dp, Site.Gold, RoundedCornerShape(10.dp)) else Modifier).clickable { ui.cmdrPick = name }
+            .semantics { role = Role.RadioButton; selected = sel; contentDescription = name }.padding(6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(Modifier.size(width = 64.dp, height = 44.dp).clip(RoundedCornerShape(6.dp)).background(Color(0xFF1B1F2B))) { if (p != null) Image(p, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            Column(Modifier.weight(1f)) {
+                Text(name, style = t(13.5f, FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(colours(name, card), style = t(11.5f, FontWeight.Medium, Color(0xFF9B9CA8)))
+            }
+            Text(if (owned(name)) "owned" else "craft", style = t(11.5f, FontWeight.Bold, if (owned(name)) Color(0xFF4EC27A) else Color(0xFFE69A3A)))
+        }
+    }
+    EditSheet("Choose your commander", onClose) {
+        Field(ui.cmdrFind, "Search legends") { ui.cmdrFind = it }
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 300.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (mine.isNotEmpty()) item { Text("YOURS", style = t(11f, FontWeight.ExtraBold, Site.Gold)) }
+            items(mine.size) { LegendRow(mine[it], null) }
+            if (hitCards.isNotEmpty()) item { Text("ALL LEGENDS", style = t(11f, FontWeight.ExtraBold, Site.Gold)) }
+            items(hitCards.size) { LegendRow(hitCards[it].first, hitCards[it].second) }
+            if (mine.isEmpty() && hitCards.isEmpty()) item { Text(if (find.isEmpty()) "Loading legends…" else "No legend matches “${ui.cmdrFind}”.", style = t(13f, FontWeight.Medium, Color(0xFF9B9CA8))) }
+        }
+        GoldCta(ui.cmdrPick?.let { "Set ${it.substringBefore(",")} as commander" } ?: "Pick a card above", Modifier.fillMaxWidth(), enabled = ui.cmdrPick != null) { ui.cmdrPick?.let(onSet) }
     }
 }

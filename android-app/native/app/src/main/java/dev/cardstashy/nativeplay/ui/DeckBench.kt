@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.horizontalScroll
@@ -255,6 +256,8 @@ class BenchActions(
 
 /** Where the Bench is: tab, deck view, find and filters, the card in the big view. Kept by the caller so Back keeps your place. */
 class BenchUi {
+    /** Thor top and phone landscape: the header folded to its one line (the grip under it), so the deck list gets the room. */
+    var heroFolded by mutableStateOf(false)
     var tab by mutableStateOf("cards")
     var view by mutableStateOf("list")
     var find by mutableStateOf("")
@@ -524,6 +527,7 @@ fun DeckBench(m: BenchModel, ui: BenchUi, a: BenchActions, actionRow: (@Composab
             Column(Modifier.fillMaxWidth(if (wide) .37f else .43f).fillMaxHeight().background(Color(0x33000000)).drawBehind {
                 drawLine(B.Line, Offset(0f, 0f), Offset(0f, size.height), 1.dp.toPx()) }) {
                 Hero(m, a, compact = land, ui = ui, drag = drag)
+                if (land) HeroGrip(ui)
                 // Phone landscape: the four views sit at the end of the icon tabs; wider, under the list in the footer.
                 Tabs(m.tabs, ui, iconsOnly = land, a.tab, trailing = if (land && ui.tab == "cards") ({ ViewSwitch(ui, bare = true) }) else if (!land && m.chips.isNotEmpty()) ({ for (c in m.chips) ActChip(c, a); Spacer(Modifier.width(8.dp)) }) else null)
                 Dock(m, ui, a, drag, actionRow, split = true, Modifier.weight(1f), lift, compact = land, onFilter = onFilter)
@@ -667,11 +671,11 @@ private fun Hero(m: BenchModel, a: BenchActions, compact: Boolean, ui: BenchUi, 
                 MenuButton(a.menu, a.menuOpen, ui)
             }
             // .ds-actions' other buttons (War Chest, Share): ghost glass beside the gold one's line, under the title.
-            if (a.heroActions.isNotEmpty() || a.craftAll != null) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (!ui.heroFolded && (a.heroActions.isNotEmpty() || a.craftAll != null)) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 a.craftAll?.let { HeroGhost(it.label, it.onClick, gold = true, enabled = it.enabled) }
                 for (h in a.heroActions) HeroGhost(h.label, h.onClick)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!ui.heroFolded) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     for (s in m.stats) Text(buildAnnotatedString {
                         withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = if (s.warn) B.Coral else B.Fg, fontFeatureSettings = "tnum")) { append(s.value) }
@@ -690,6 +694,20 @@ private fun Hero(m: BenchModel, a: BenchActions, compact: Boolean, ui: BenchUi, 
         }, contentAlignment = Alignment.BottomCenter) {
             Text("Deck art", style = f(14f, 800, B.Gold), modifier = Modifier.padding(bottom = 12.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xD90A0B0F)).padding(horizontal = 14.dp, vertical = 6.dp))
         }
+    }
+}
+
+/**
+ * Deck screen on the Thor's top screen (Randall 26 Nov: the list was too small beside the header): a gold grip under the header.
+ * Drag it up, or tap it, and the header folds to one line; drag down or tap and it opens again. The deck list takes the room.
+ */
+@Composable
+private fun HeroGrip(ui: BenchUi) {
+    var sum by remember { mutableStateOf(0f) }
+    Box(Modifier.fillMaxWidth().height(28.dp).clickable { ui.heroFolded = !ui.heroFolded }
+        .pointerInput(Unit) { detectVerticalDragGestures(onDragStart = { sum = 0f }, onDragEnd = { if (sum < -16f) ui.heroFolded = true else if (sum > 16f) ui.heroFolded = false }) { _, dy -> sum += dy } }
+        .semantics { role = Role.Button; contentDescription = if (ui.heroFolded) "Show the deck header" else "Hide the deck header for more room" }, contentAlignment = Alignment.Center) {
+        Box(Modifier.width(64.dp).height(5.dp).clip(RoundedCornerShape(3.dp)).background(B.Gold))
     }
 }
 

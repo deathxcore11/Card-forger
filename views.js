@@ -1695,10 +1695,14 @@ export function goldfishTable(g, b = null) {
 
 export function commanderPicker(d) {
   const fm = formatOf(d),
-    legends = aggregateCards(d.cards).map((c) => meta(c.name)).filter((c) => c && canLead(c, fm));
+    inDeck = aggregateCards(d.cards).map((c) => meta(c.name)).filter((c) => c && canLead(c, fm)),
+    // Nothing legendary in the list: offer the legends the player owns (Randall 26 Nov: the typed box was the only way).
+    owned = inDeck.length ? [] : aggregateCards(S.state.collection || []).map((c) => meta(c.name)).filter((c) => c && canLead(c, fm)).slice(0, 12),
+    legends = inDeck.length ? inDeck : owned;
   return `<section class="panel pick-commander"><p class="eyebrow">One quick step</p><h2>Which card is your commander?</h2><p class="muted small">This deck doesn’t have a commander set, so CardStashy can’t tell your colors. Tap it below.</p>
-  ${legends.length ? `<div class="list compact">${legends.map((c) => `<button class="mini-row" data-act="setCommander" data-name="${esc(c.name)}"><span class="row">${img(art(c), c.name, "mini-art")}<span class="ellip"><b>${esc(c.name)}</b></span></span>${colorDots(c)}</button>`).join("")}</div>` : `<p class="small">No legendary creatures were found in this list.</p>`}
-  <div class="searchbar"><input id="cmdName" placeholder="Or type the commander’s name" data-enter="setCommander"><button class="btn ghost" data-act="setCommander">Set</button></div></section>`;
+  ${legends.length ? `<div class="list compact">${legends.map((c) => `<button class="mini-row" data-act="setCommander" data-name="${esc(c.name)}"><span class="row">${img(art(c), c.name, "mini-art")}<span class="ellip"><b>${esc(c.name)}</b></span></span>${colorDots(c)}</button>`).join("")}</div>` : `<p class="small">No legendary creatures were found in this list or your collection. Search for one below.</p>`}
+  ${owned.length ? `<p class="muted small">Legends you own. Or search every card below.</p>` : ""}
+  <div class="searchbar"><input id="cmdName" type="search" data-suggest="mtg" placeholder="Or search the commander’s name" data-enter="setCommander" autocomplete="off"><button class="btn ghost" data-act="setCommander">Set</button></div></section>`;
 }
 
 function deckUpgrade(d) {
