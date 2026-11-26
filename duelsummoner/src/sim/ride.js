@@ -19,7 +19,7 @@ export const RIDE = { mountAt: 10.5, dismountAt: 7, top: 24, push: 3.4, pushTo: 
   snap: 1.6, flipTime: 0.42, spinRate: 9.42, landTol: 0.52, bailT: 0.6, revertWin: 0.28, balDrift: 0.9, balFix: 2.6, sparkR: 2.5, sparkDmg: 7, sparkEvery: 0.2, gravity: 28, kickRun: 0.4, kickTo: 12.5, brake: 16, holdMin: 8.5 };
 export const FLIPS = ['Card Flip', 'Ace Flip', 'Deal Flip', 'Riffle', 'Heel Card', 'Cut Flip', 'Fan Flip', 'Shuffle'], GRABS = ['Hand Grab', 'Seal Grab', 'Joker Grab', 'Crown Grab'], GRINDS = ['Edge Grind', 'Rim Ride', 'Spine Slide'];
 export const POINTS = { flip: 300, grab: 200, grabPerSecond: 420, spin180: 260, grind: 120, grindPerSecond: 160, manualPerSecond: 90, revert: 180, special: 3000, bigAir: 100, vert: 250, loop: 800, smash: 150, crest: 150, closeCall: 120, cardLit: 400, seal: 250, sealSet: 2500 };
-export const FLOW = { need: [0, 1800, 4200, 7500, 12000], idle: 10, dmgPerStep: 0.25, gainPerStep: 0.3, stakesPerStep: 5, slamR: [4, 14], slamDiv: 22, slamCapPerStep: 45 };
+export const FLOW = { need: [0, 1800, 4200, 7500, 12000], idle: 10, dmgPerStep: 0.05, gainPerStep: 0.3, stakesPerStep: 5, slamR: [3, 8], slamDiv: 60, slamCapPerStep: 12 };
 
 export const makeRide = () => ({ on: false, heading: 0, speed: 0, crouch: 0, jumpWas: false, dashWas: false, useWas: false, flipT: 0, flipName: '', flipK: 0, grabbing: false, grabT: 0, grabName: '', spin: 0, airT: 0,
   grind: null, manual: false, bal: 0, bailT: 0, combo: newCombo(), lastLandVy: 0, revertT: 0, sparkT: 0, rvy: 0, specialReady: false });
@@ -44,14 +44,14 @@ function bank(g, r) {
   if (F.step === 5) F.xp = Math.min(F.xp, FLOW.need[4]);
   r.specialReady = F.step === 5;
   // the landing slam: radius and damage from the combo just banked, capped by the Flow step
-  const p = g.p, rad = Math.min(FLOW.slamR[1], FLOW.slamR[0] + v / 900) * (1 + (g.mods.slamSize || 0)), dmg = Math.min(FLOW.slamCapPerStep * F.step, 6 + v / FLOW.slamDiv);
+  const p = g.p, rad = Math.min(FLOW.slamR[1], FLOW.slamR[0] + v / 1500) * (1 + (g.mods.slamSize || 0)), dmg = Math.min(FLOW.slamCapPerStep * F.step, 2 + v / FLOW.slamDiv);
   explode(g, p.x, p.y, p.z, rad, 0, dmg, 0xffd56a, 'Landing slam'); F.slams++;
   { const T = g.map && g.map.regionAt ? g.map.regionAt(p.x, p.z).type : -1;       // the land answers the slam
     if (T === 2) { for (let k = 0; k < 5; k++) { const a = k * 1.2566 + r.heading, d = rad * 0.9; explode(g, p.x + sin(a) * d, p.y, p.z + cos(a) * d, rad * 0.45, 0, dmg * 0.5, 0xfff2c0, 'Star crack'); } g.emit('slamland', p.x, p.z, 2); }
     else if (T === 0) { const e = g.en, R2 = (rad * 1.7) ** 2; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z, d2 = dx * dx + dz * dz; if (d2 < R2 && d2 > rad * rad) { const d = Math.sqrt(d2); e.x[i] += dx / d * 3; e.z[i] += dz / d * 3; damageEnemy(g, i, dmg * 0.35, { noCrit: true }); } } g.emit('slamland', p.x, p.z, 0); }
     else if (T === 3 || r.lastLoopT > g.t - 2) { r.echo = { t: 0.35, x: p.x, y: p.y, z: p.z, rad, dmg: dmg * 0.6 }; g.emit('slamland', p.x, p.z, 3); } }
   // every summon on the field strikes at once with the landing (their cooldowns end now)
-  if (g.field && g.field.monsters) { let n = 0; for (const m of g.field.monsters) if (m) { m.cd = Math.min(m.cd, 0); n++; } if (n) g.emit('volley', p.x, p.z, n); }
+  if (g.field && g.field.monsters && v >= 1200 && !((r.volleyT || -9) > g.t - 3)) { r.volleyT = g.t; let n = 0; for (const m of g.field.monsters) if (m) { m.cd = Math.min(m.cd, 0); n++; } if (n) g.emit('volley', p.x, p.z, n); }       // the chorus strike: a real combo (1,200 or more) and at most every 3 s
   g.score2 = (g.score2 || 0) + v * F.step; g.emit('slam', p.x, p.z, rad); g.event('banked', v);
 }
 function bail(g, r, why) {

@@ -32,7 +32,7 @@ const clockText = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60
 // XP gained is scaled by the run minute so the first minutes give about 4 level-ups a minute (data: RUNSPEC.xp)
 export function xpScale(g) {
   const X = RUNSPEC.xp, m = g.mode === 'classic' ? g.t / 60 : (g.scTotal + g.sc) / 60 * (g.paceK || 1), boost = (g.big && g.stage === 0 ? 1 + 1.6 * Math.max(0, 1 - g.sc / 300) : 1) * (g.big && g.surgeP && g.surgeP.on ? 2.2 : 1);       // the big desert's first five minutes pay level-ups faster (the first minutes of the reference run are full of them)
-  return boost * (g.big ? (1 + (g.stakes || 0) * STAKES.xp) * (g.rflow ? 1 + (g.rflow.step - 1) * 0.3 : 1) : 1) * (X.start + (X.end - X.start) * (m >= X.minutes ? 1 : m / X.minutes)) * (1 + X.growth * (m > X.growFrom ? m - X.growFrom : 0));
+  return boost * (g.big ? (1 + (g.stakes || 0) * STAKES.xp) * (g.rflow ? 1 + (g.rflow.step - 1) * 0.1 : 1) : 1) * (X.start + (X.end - X.start) * (m >= X.minutes ? 1 : m / X.minutes)) * (1 + X.growth * (m > X.growFrom ? m - X.growFrom : 0));
 }
 
 // ---- setup ----

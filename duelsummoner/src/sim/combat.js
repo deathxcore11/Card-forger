@@ -33,7 +33,7 @@ export function damageEnemy(g, i, dmg, o) {
   const e = g.en; if (!e.alive[i]) return false;
   o = o || {};
   let d = dmg;
-  const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0), BD = g.bracketDmg, b4 = e.mark[i] > 0 ? targetBracket(MARKS.bonus + g.mods.markBonus) : 1, b1 = mightBracket(g.mods.dmgMult + (g.drumT > 0 ? 0.5 : 0) + (g.buf ? g.buf.might : 0)) * (g.rflow ? 1 + (g.rflow.step - 1) * 0.25 : 1);
+  const el = o.elem || (o.flame ? ELEMENTS.fire.bit : 0), BD = g.bracketDmg, b4 = e.mark[i] > 0 ? targetBracket(MARKS.bonus + g.mods.markBonus) : 1, b1 = mightBracket(g.mods.dmgMult + (g.drumT > 0 ? 0.5 : 0) + (g.buf ? g.buf.might : 0)) * (g.rflow ? 1 + (g.rflow.step - 1) * 0.05 : 1);
   let cls = g.srcClassOf[g.curSrc]; if (cls === undefined) cls = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]);
   const b2 = cls >= 0 ? sourceBracket(g.mods.drill[cls]) : 1, b8 = g.otStep > 0 ? overtimeBracket(g.otStep) : 1;
   let b3 = 1; if (el) { let sum = 0, cnt = 0; for (let k = 0; k < 8; k++) if (el & (1 << k)) { sum += g.mods.aff[k]; cnt++; } b3 = affinityBracket(sum / cnt); }
@@ -71,7 +71,7 @@ function chain(g, from, x, z, dmg) {
 
 export function killEnemy(g, i) {
   const e = g.en; if (!e.alive[i]) return;
-  e.alive[i] = 0; g.kills++; g.emit('kill', e.kind[i], e.x[i], e.z[i]);
+  e.alive[i] = 0; g.kills++; g.emit('kill', e.kind[i], e.x[i], e.z[i]); if (g.killBy) g.killBy[g.curSrc] = (g.killBy[g.curSrc] || 0) + 1;
   if (g.big) { if (g.mods.killHeal > 0 && g.kills % 20 === 0) g.p.hp = Math.min(g.p.maxHp, g.p.hp + g.mods.killHeal); if (g.procs && g.procs.length) procEvent(g, 'kill', { x: e.x[i], y: e.y[i], z: e.z[i] }); } { let cl = g.srcClassOf[g.curSrc]; if (cl === undefined) cl = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]); sealKill(g, cl); }
   if (g.mods.bell && g.kills % Math.max(10, Math.floor(K.bellEvery / g.mods.bell)) === 0 && capTake(g, CAP.BELL)) { const prev = g.curSrc; g.curSrc = g.srcIndex('graveyard-bell'); explode(g, e.x[i], e.y[i], e.z[i], 4, 0, K.bellBase, 0xc0c0ff); g.curSrc = prev; }       // Graveyard Bell: its own source, so the toll is the same whoever landed the kill
   const x = e.x[i], y = e.y[i], z = e.z[i], kind = KIND_LIST[e.kind[i]];

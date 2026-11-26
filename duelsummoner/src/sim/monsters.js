@@ -67,7 +67,7 @@ export function updateMonsters(g, dt) {
     { const sr = param(m, 'ring'); if (sr > 0) { m.ringT = (m.ringT === undefined ? RING_EVERY : m.ringT) - dt; if (m.ringT <= 0 && g.nearest(m.x, m.z, sr * g.reachK) >= 0) { m.ringT = RING_EVERY; g.curSrc = g.srcIndex(m.id); splash(g, m.x, heightAt(m.x, m.z), m.z, sr, damageOf(m) * AREA_SHARE, elemBits(def(m.id).elements)); g.curSrc = 0; } else if (m.ringT <= 0) m.ringT = 0; } }       // the Seal Ring: a pulse around the Sigil Familiar every RING_EVERY s once an enemy is inside it (level 3 and up)
     m.cd -= dt;
     if (m.cd > 0) continue;
-    const D = def(m.id), A = D.attack, cd = A.cd / (1 + g.mods.monsterRate) / (g.rflow ? 1 + 0.1 * (g.rflow.step - 1) : 1);       // Flow fuels the summons: +10% attack rate a Flow step
+    const D = def(m.id), A = D.attack, cd = A.cd / (1 + g.mods.monsterRate) / (g.rflow ? 1 + 0.05 * (g.rflow.step - 1) : 1) * (g.p.ride && g.p.ride.on && g.p.ride.speed > 12 ? 1.4 : 1);       // Flow fuels the summons: +5% attack rate a Flow step; while the card goes fast they spend part of their time keeping up (attacks 1.4x apart)
     g.curSrc = g.srcIndex(m.id);
     if (attack(g, m, D, A)) m.cd = cd; else m.cd = 0;
     g.curSrc = 0;

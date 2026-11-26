@@ -19,6 +19,6 @@ export const ANSWERS = {
   'heart-of-the-cards':[{ on: 'land', cd: 2, text: 'A clean landing heals a little.' }],
   'collectors-eye':    [{ on: 'grab', cd: 1, text: 'Each grab pulls in pickups nearby.' }],
   'gust-ward':         [{ on: 'grab', cd: 2, text: 'Each grab: a gust knocks back everything within 5 m.' }],
-  'pit-of-seals':      [{ on: 'seal', cd: 1.5, text: 'Each seal stone lit opens a seal pit there.' }],
+  'pit-of-seals':      [{ on: 'seal', cd: 2.5, text: 'Each seal stone lit opens a seal pit there.' }],
   'second-wind':       [], 'storm-of-cards': []       // one-shots act once when picked: no answer
 };
