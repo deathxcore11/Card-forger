@@ -1,0 +1,139 @@
+# Card Riding and a living desert: the build plan (26 Nov 2026)
+
+Owner's ask (26 Nov, 12:10 PM ET):
+- Board riding with grinds and tricks in a reactive world.
+- Trick landings are a multiplier.
+- A rad 90s console feel.
+- Thousands of hours of unlocks.
+- Broken builds that are still balanced.
+- A cool dog.
+- A polished seeded world that generates in a fun, cool way.
+
+He added: "Go hard and surprise me on how well this works and fits the world and game feel." The controller should play like the classic early-2000s skate games, and touch should be just as easy.
+
+Everything here is our own design, names and art. Never write another game's name in the repo.
+
+**One rule keeps it a fight game:** riding makes you fast and stylish, landing tricks makes you deadly, and bailing in a crowd gets you killed.
+
+Rules that stay:
+- Carved Cards style.
+- Approved run feel on foot (LEG_DEG 30, camera).
+- Stakes.
+- No sponges (density, not hp).
+- Door rules.
+- Everything reachable with the starting kit.
+- 60 fps.
+- Big desert only (classic maps untouched).
+
+## 1. The ride
+
+- **Getting on and off.** Above about 10.5 m/s (a slide, a downhill, a fast flat) the duelist kicks a giant spell card under their feet and rides it. Below about 7 m/s they step off and run. Monsters, spells and traps keep fighting on their own.
+- **Ride physics.** Downhill builds speed and uphill bleeds it. Soft sand slows you; flats keep speed. Top speed is about 24 m/s on long slopes. Carve turning.
+- **Ollie.** Hold jump to crouch (up to 0.5 s), release to pop. Longer hold gives a higher pop: 2.2 m up to about 4.5 m.
+- **Grind.** Within about 1.6 m of a grindable edge while airborne (or with the grind button), snap onto it. Speed is kept along the edge. A balance bar drifts and the stick corrects it. Losing balance is a bail. Flick to change grind type (3 types).
+- **Air tricks.**
+  - Flips: 8 directions, quick.
+  - Grabs: hold; worth more the longer held; cannot land while held.
+  - Spin: 180 steps.
+  - Each trick has points; the same trick repeated in one combo is worth 0.75x each time.
+- **Manual.** A balance trick on flat ground that keeps a combo alive between spots.
+- **Revert.** A timed press when landing from a steep ramp keeps the combo going.
+- **Landing.** Board within about 30 degrees of travel direction and not mid-grab is clean, and banks the combo. Otherwise it is a bail: lose the unbanked combo, lose one Flow step, knocked down for 0.6 s (no invulnerability).
+- **Special.** One special trick per board when the Flow meter is full: big points and a shockwave.
+
+## 2. Flow
+
+- **Combo.** Points x count of distinct tricks. Banked on a clean landing.
+- **Flow meter.** Steps x1 to x5 (thresholds tuned by bots). It drains one step per about 10 s without a banked trick.
+- **What Flow multiplies:**
+  - damage, x1 to x2 (linear over steps);
+  - XP and coins from kills, x1 to x3;
+  - score, x1 to x5.
+- **Landing slam.** On a banked landing, a shockwave. Radius 4 to 14 m and damage from the combo just banked (capped per Flow step). It kills swarm enemies and staggers elites.
+- **Grind sparks.** Damage ticks to enemies within about 2.5 m of the rail while grinding.
+- **Flow feeds Stakes.** +5% Stakes per Flow step above 1, only while held.
+
+## 3. The reactive desert
+
+Grindable or launchable, and each reacts:
+
+| Thing | What you do | What it does back |
+|---|---|---|
+| Half-sunk beams, fallen pillars | Grind | Sparks |
+| Giant carved stone cards | Grind the top edge, wall-ride the face | Lights up, stays lit on the map |
+| Mesa rims, canyon lips | Long grinds | |
+| Dune crests | Launch ramps | |
+| Canyon runs | Half-pipes, with revert | |
+| Dry lakes | Manual flats | |
+| Vases, dead trees | Smash at speed | Drops, plus a combo bonus |
+| Dormant seal stones | Grind or slam | Lighting all five in a pocket within one combo opens a chest |
+| Rare set pieces (bone ribs, rope bridges, chimes) | Ride | A signature line |
+
+- **Generator lines.** Each pocket gets a line: 2 to 5 pieces placed so one flows into the next, aimed toward the neighbouring pocket. Deterministic per seed.
+- **Line check tool.** Every line is rideable with the starter board, has no dead ends into walls, and nothing floats.
+
+## 4. Controls
+
+| Action | Controller | Touch |
+|---|---|---|
+| Ollie | Hold A, release | Hold the big right button, release |
+| Grind | Y near an edge | Grind button, or Auto-grind (default on) |
+| Flip | X + direction | Swipe on the right pad |
+| Grab | B + direction, hold | Press-hold then drag on the right pad |
+| Spin | L1 / R1 | Two-finger twist, or gyro option |
+| Manual | Up then down quickly | Swipe down then up |
+| Revert | R2 on landing | Tap the right button on landing |
+| Special | Two directions + button, full meter | Draw a circle on the right pad |
+
+- **Touch helpers** (each can be switched off): Auto-grind, landing assist at low Flow, big transparent zones.
+- **Keyboard:** map sensibly.
+- **Thor:** the bottom screen shows the combo, the meter and the trick list.
+- **Tutorial:** a 20-second pocket near the start.
+
+## 5. World polish
+
+- **Region faces.** Each region type has its own skyline, sand colour, prop family and ride style.
+- **Border features** where regions meet: cliff step, dry river, wall of stone cards, bone ridge. No plain blends.
+- **One wonder per seed** within reach of the start, with its own long line and a reward.
+- **Composed views.** The start faces a landmark; crests reveal the next thing; pockets sit where sight lines break.
+- **No-junk rule.** Every prop can be ridden, broken or looted, or is part of a landmark. Cut the rest.
+- **Contact sheets.** 12 seeds from the game camera at 412x915 and 915x412, plus drives along 3 lines per seed.
+
+## 6. Balance
+
+- Enemies spawn ahead along the direction of travel. Surges put packs across lines. Add fast runner and leaper behaviour so that riders get caught.
+- Damage from Flow caps at x2.
+- **Gate boss arena:** a ring with a few rails and a quarter-pipe rim. Its attacks punish long grinds.
+- **Door:** widen the band for riders so the newbie door find stays 40 to 60%.
+- **Bots:**
+  - The newbie never tricks and keeps current numbers.
+  - The rider lands simple combos and out-kills the newbie by 40% or more on clears.
+  - The reckless rider tricks through surges and dies more than both.
+
+## 7. Unlocks
+
+- **Boards are card backs:** 30 planned, 8 first. Each has one stat lean, one passive and one special trick.
+- **Duelist ride styles.**
+- **About 30 ride items.**
+- **Ride quests:** combo score, grind distance, gaps found, lines completed, slams.
+- **Daily seeded line challenge.**
+- **Boards for best combo and best slam.**
+- **The dog:**
+  - runs beside you;
+  - rides the card nose on long grinds;
+  - fetches far pickups;
+  - barks toward the door only inside the red wind range;
+  - cannot die;
+  - breeds and hats unlock.
+
+## 8. Order
+
+1. The ride (section 1), on code-made motion.
+2. Flow and the slam (section 2).
+3. Reactive desert and lines (section 3).
+4. Controls and tutorial (section 4).
+5. World polish and contact sheets (section 5).
+6. Balance with bots (section 6).
+7. Unlocks: 8 boards, ride items, quests, then the dog (section 7).
+
+After steps 1 and 2: commit, report with picture strips at 412x915 and 915x412, and continue. The owner plays 1 and 2 as soon as they are in the preview.
