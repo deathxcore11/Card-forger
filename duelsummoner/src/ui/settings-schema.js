@@ -36,6 +36,7 @@ export const ROWS = [
   seg('confirmButton', 'controls', 'Confirm button', ['match', 'choose'], all('match'), { section: 'controller' }),
   seg('stickLayout', 'controls', 'Stick layout', ['standard', 'swapped'], all('standard'), { section: 'controller' }),
   R('buttonMap', 'controls', 'Button map and test', 'action', null, all(null), { section: 'controller' }),
+  seg('rideLayout', 'controls', 'Riding buttons', ['classic', 'onfoot'], all('classic'), { section: 'controller' }),       // on the card: Classic (A ollie, X flip, B grab, Y grind, L1 and R1 spin, R2 revert) or On-foot style (the run buttons)
   sld('lookSpeed', 'controls', 'Look speed', 1, 10, 1, all(5), { section: 'controller' }),
   seg('lookEasing', 'controls', 'Look easing', ['off', 'light', 'smooth'], all('light'), { section: 'controller' }),
   seg('invertLook', 'controls', 'Invert look', ['none', 'vertical', 'horizontal', 'both'], all('none'), { section: 'controller' }),

@@ -104,3 +104,20 @@ test('ride school: a line of beams ahead of the spawn, grindable', async () => {
   const g = mk(), W = g.map.world; assert.ok(W.school && W.school.length >= 2, 'school beams: ' + (W.school || []).length);
   const s = W.school[0], L = railsNear(g, (s[0] + s[2]) / 2, (s[1] + s[3]) / 2, 3); assert.ok(L.length >= 1, 'a rail there');
 });
+test('ride (classic pad): a stick flick up then down starts a manual, held until an ollie; R2 before touchdown is a revert; two directions then flip at full Flow is the special', () => {
+  const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 2, { ...I, f: 1 });
+  run(g, 3, { ...I, f: 1 }); run(g, 3, { ...I, f: -1 }); run(g, 1, { ...I, f: 0.1 }); assert.ok(g.p.ride.manual, 'manual from a flick');
+  run(g, 20, { ...I, f: 0.1 }); assert.ok(g.p.ride.manual, 'it holds with no button');
+  run(g, 1, { ...I, f: 0.1, jump: true }); assert.ok(!g.p.ride.manual, 'an ollie ends it'); assert.ok(g.p.ride.combo.names.Manual, 'counted');
+  const h = mk(), [x2, z2] = flatSpot(h); place(h, x2, z2, 14); run(h, 2, { ...I, f: 1 }); const F = flowOf(h); F.step = 5; h.p.ride.specialReady = true;
+  run(h, 30, { ...I, f: 1, jump: true }); run(h, 4, { ...I, f: 1 }); run(h, 3, { ...I, f: 0, r: 1 }); run(h, 1, { ...I, f: 0, r: 1, dash: true });
+  assert.ok(h.p.ride.combo.names['Royal Flush'], 'special: ' + JSON.stringify(h.p.ride.combo.names));
+});
+test('the wonder: every seed has a long ride line with five seal stones; lighting all five in one combo opens an epic chest', async () => {
+  const { sealSet } = await import('../src/sim/rails.js'); let n = 0;
+  for (let s = 0; s < 12; s++) { const g = new Game(2000 + s * 53, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); const w = g.map.world.wonder; if (w && w.beams.length >= 5 && sealSet(g, -1).length === 5) n++; }
+  assert.equal(n, 12, 'seeds with a whole wonder: ' + n);
+  const g = mk(); g.god = true; const stones = sealSet(g, -1), n0 = g.world.cchests.length; place(g, stones[0][0], stones[0][2], 12); run(g, 2, { ...I, f: 1 }); g.p.ride.on = true; g.p.ride.combo.pts = 1;
+  for (const s of stones) { g.p.x = s[0]; g.p.z = s[2]; g.p.y = s[1] + 2; g.p.grounded = false; g.p.vy = 4; g.p.ride.on = true; g.p.ride.speed = 3; g.p.ride.grind = null; run(g, 1); }
+  assert.equal(g.world.cchests.length, n0 + 1, 'a chest'); assert.equal(g.world.cchests[n0].rarity, 'epic');
+});

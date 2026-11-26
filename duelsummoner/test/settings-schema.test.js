@@ -5,11 +5,11 @@ test('row counts per device class match spec 9.8', () => {
   const ph = { cls: 'phone' };
   assert.deepEqual(['game', 'display', 'sound', 'access'].map(t => n(t, ph)), [10, 7, 6, 10]);       // Access has 8 in the spec plus Big moments and Duelist marker
   assert.deepEqual(ids('controls', ph), ['slideMode', 'onScreenControls', 'moveStick', 'controlSize', 'controlOpacity', 'dragLook', 'tapToUse', 'touchHaptics', 'resetControls']);
-  assert.equal(n('controls', { cls: 'phone', pad: true }), 9 + 9, 'a phone with a pad adds the Controller section');
+  assert.equal(n('controls', { cls: 'phone', pad: true }), 9 + 10, 'a phone with a pad adds the Controller section');       // (spec 9.8 plus Riding buttons, 26 Nov)
   const th = { cls: 'thor', dual: true };
   assert.deepEqual(['game', 'display', 'sound', 'access'].map(t => n(t, th)), [9, 7, 6, 10]);
   assert.equal(n('game', { cls: 'thor', dual: false }), 10, 'Map overlay size shows only while Dual screen is Off');
-  assert.deepEqual(ids('controls', th), ['slideMode', 'glyphs', 'confirmButton', 'stickLayout', 'buttonMap', 'lookSpeed', 'lookEasing', 'invertLook', 'deadZone', 'vibration', 'tapToUse', 'touchHaptics', 'resetControls']);
+  assert.deepEqual(ids('controls', th), ['slideMode', 'glyphs', 'confirmButton', 'stickLayout', 'buttonMap', 'rideLayout', 'lookSpeed', 'lookEasing', 'invertLook', 'deadZone', 'vibration', 'tapToUse', 'touchHaptics', 'resetControls']);
   assert.ok(ids('display', th).includes('dualScreen') && !ids('display', th).includes('edgePadding') && !ids('display', th).includes('fullScreen'));
   const po = { cls: 'portal' }; assert.equal(n('game', po), 10); assert.ok(!ids('display', po).includes('dualScreen')); assert.ok(ids('controls', po).includes('onScreenControls'));
   const pc = { cls: 'pc' }; assert.ok(ids('display', pc).includes('fullScreen') && !ids('display', pc).includes('batteryHeat') && !ids('display', pc).includes('edgePadding'));

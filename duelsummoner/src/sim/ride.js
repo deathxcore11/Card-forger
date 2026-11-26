@@ -67,20 +67,24 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
     else return false;
   }
   const jumpPress = !!cmd.jump && !r.jumpWas, jumpRel = !cmd.jump && r.jumpWas, dashPress = !!cmd.dash && !r.dashWas, usePress = !!cmd.use && !r.useWas;
+  const revertPress = !!cmd.revert && !r.revertWas; r.revertWas = !!cmd.revert;
+  r.clk = (r.clk || 0) + dt; const fy = cmd.f || 0; let flick = false; if (fy > 0.7) { if (r.dnT !== undefined && r.clk - r.dnT < 0.25 && !r.upHeld) flick = true; r.upT = r.clk; r.upHeld = true; } else r.upHeld = false; if (fy < -0.7) { if (r.upT !== undefined && r.clk - r.upT < 0.25 && !r.dnHeld) flick = true; r.dnT = r.clk; r.dnHeld = true; } else r.dnHeld = false;       // up then down quickly, or down then up: a manual
+  { const d = dir4(cmd), m = (cmd.f || 0) * (cmd.f || 0) + (cmd.r || 0) * (cmd.r || 0); if (m > 0.36) (r.dirT || (r.dirT = [-9, -9, -9, -9]))[d] = r.clk; }
   r.jumpWas = !!cmd.jump; r.dashWas = !!cmd.dash; r.useWas = !!cmd.use; if (!cmd.slide) r.manualHold = false; if (r.manualHold) cmd = Object.assign({}, cmd, { slide: false });
   if (r.bailT > 0) { r.bailT -= dt; r.speed = Math.max(0, r.speed - 18 * dt); step(g, p, r, dt); groundFollow(g, p, r, dt); if (r.bailT <= 0 && r.speed < RIDE.dismountAt) dismount(g, p, r); return true; }
   if (r.grind) { grindTick(g, p, r, dt, cmd, jumpPress); return true; }
   if (p.grounded) {
     // carve toward the stick; slope, sand and pushing
     // pulling the stick back brakes (no carve): below 7 m/s the duelist steps off and runs
-    const back = hasInput && (mx * sin(r.heading) + mz * cos(r.heading)) < -0.5;
+    const back = !r.manual && hasInput && (mx * sin(r.heading) + mz * cos(r.heading)) < -0.5;
     if (hasInput && !back) { const want = atan2(mx, mz), d = wrapA(want - r.heading), lim = RIDE.carve * dt; r.heading += d > lim ? lim : d < -lim ? -lim : d; }
     if (back) r.speed = Math.max(0, r.speed - RIDE.brake * dt);
     const ax = sin(r.heading), az = cos(r.heading), dh = heightAt(p.x + ax * 1.2, p.z + az * 1.2) - heightAt(p.x, p.z), slope = dh > 0.9 ? 0 : dh / 1.2;
     let acc = -slope * RIDE.downhill - RIDE.friction; if (slope > 0.12 && g.map.regionAt && g.map.regionAt(p.x, p.z).type === 0) acc -= RIDE.soft;
     const wk = g.windT > 0 ? 2 : 1, fwd = hasInput && (mx * ax + mz * az) > 0.5; if (fwd && r.speed < RIDE.pushTo * wk) acc += RIDE.push * wk;
     const top = RIDE.top * (1 + g.mods.move * 0.5); r.speed = Math.max(fwd ? Math.min(r.speed, RIDE.holdMin) : 0, Math.min(top, r.speed + acc * dt)); if (fwd && r.speed < RIDE.holdMin) r.speed = Math.min(RIDE.holdMin, r.speed + RIDE.push * 2 * dt);       // the stick held forward kicks along: a dune climb never drops the rider below 8.5 m/s
-    if (r.manual) { manualTick(g, p, r, dt, cmd); if (!r.manual) return true; }
+    if (flick && !r.manual) { r.manual = true; r.manualFlick = true; r.bal = 0; r.manualT = 0; }       // a stick flick on the ground starts a manual (held until an ollie or a fall)
+    if (r.manual) { manualTick(g, p, r, dt, cmd, jumpPress); if (!r.manual) return true; }
     // the ollie: hold to crouch, release to pop
     if (cmd.jump) r.crouch = Math.min(RIDE.crouchMax, r.crouch + dt);
     if (jumpRel && r.crouch > 0) { const h = RIDE.popLo + (RIDE.popHi - RIDE.popLo) * (r.crouch / RIDE.crouchMax); p.vy = Math.sqrt(2 * RIDE.gravity * h * (1 + g.mods.jumpH)); p.grounded = false; r.crouch = 0; r.airT = 0; g.emit('ollie', h, 0, 0); }
@@ -92,6 +96,9 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   r.airT += dt;
   if (hasInput) { const want = atan2(mx, mz), d = wrapA(want - r.heading), lim = RIDE.airTurn * dt; r.heading += d > lim ? lim : d < -lim ? -lim : d; }
   if (r.flipT > 0) { r.flipT = Math.max(0, r.flipT - dt); r.flipK = 1 - r.flipT / RIDE.flipTime; }
+  const twoDirs = r.dirT && r.dirT.filter(t0 => r.clk - t0 < 0.35).length >= 2;
+  if ((dashPress || (cmd.slide && !r.grabbing && !r.slideAirWas)) && twoDirs && r.specialReady && F.step === 5) { r.specialReady = false; addTrick(g, r, 'Royal Flush', POINTS.special); explode(g, p.x, p.y, p.z, 16, 0, 120, 0xfff2c0, 'Royal Flush'); F.step = 3; F.xp = 0; g.emit('special', p.x, p.z, 0); r.slideAirWas = !!cmd.slide; r.dirT = null; return true; }       // two directions then a face button, Flow full: the special
+  r.slideAirWas = !!cmd.slide;
   if (dashPress && r.flipT <= 0) { const d = dir8(cmd); r.flipName = FLIPS[d]; r.flipT = RIDE.flipTime; r.flipK = 0; r.flipDir = d; addTrick(g, r, r.flipName, POINTS.flip); }
   if (cmd.slide && !r.grabbing && r.flipT <= 0) { r.grabbing = true; r.grabT = 0; r.grabName = GRABS[dir4(cmd)]; }
   if (r.grabbing) { if (cmd.slide) r.grabT += dt; else { r.grabbing = false; addTrick(g, r, r.grabName, POINTS.grab + POINTS.grabPerSecond * r.grabT); } }
@@ -99,7 +106,8 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   if (usePress && r.specialReady && F.step === 5) { r.specialReady = false; addTrick(g, r, 'Royal Flush', POINTS.special); explode(g, p.x, p.y, p.z, 16, 0, 120, 0xfff2c0, 'Royal Flush'); F.step = 3; F.xp = 0; g.emit('special', p.x, p.z, 0); }
   // grind: auto-snap onto a rail while coming down, or with use
   if ((p.vy <= 1.5 || usePress) && trySnap(g, p, r, cmd)) return true;
-  if (usePress || jumpPress) r.revertT = RIDE.revertWin;       // a tap of USE or of OLLIE just before touching down: a revert
+  if (flick) r.manualArm = r.clk;
+  if (usePress || jumpPress || revertPress) r.revertT = RIDE.revertWin;       // a tap of USE or of OLLIE just before touching down: a revert
   else if (r.revertT > 0) r.revertT -= dt;
   r.lastLandVy = p.vy;
   step(g, p, r, dt);
@@ -126,7 +134,7 @@ function sealTouch(g, p, r) {
   for (const s of sealsNear(g, p.x, p.z, 3.0)) {
     const sid = s[3], dy = p.y - s[1]; if (dy < -1 || dy > 5) continue; const L = litOf(g); if (L.sealsDone[sid]) continue;
     const c = r.combo, have = c.seals[sid] || (c.seals[sid] = []), key = s[0] + ',' + s[2]; if (have.includes(key)) continue; have.push(key); addTrick(g, r, 'Seal', POINTS.seal); L.ver++; g.emit('seal', s[0], s[2], have.length);
-    if (have.length >= sealSet(g, sid).length) { L.sealsDone[sid] = true; L.ver++; addTrick(g, r, 'Seal Set', POINTS.sealSet); const tx = s[0] + sin(r.heading) * 6, tz = s[2] + cos(r.heading) * 6; g.world.cchests.push({ x: tx, y: heightAt(tx, tz), z: tz, open: false, rarity: null, free: true, trophy: true }); g.emit('sealset', tx, tz, 0); g.event('banner', 'The seal stones wake: a chest rises.'); }
+    if (have.length >= sealSet(g, sid).length) { L.sealsDone[sid] = true; L.ver++; addTrick(g, r, 'Seal Set', POINTS.sealSet); const tx = s[0] + sin(r.heading) * 6, tz = s[2] + cos(r.heading) * 6; const wonder = sid === -1; g.world.cchests.push({ x: tx, y: heightAt(tx, tz), z: tz, open: false, rarity: wonder ? 'epic' : null, free: true, trophy: true }); g.emit('sealset', tx, tz, wonder ? 1 : 0); g.event('banner', wonder ? 'The wonder wakes: an epic chest rises.' : 'The seal stones wake: a chest rises.'); }
   }
 }
 export function litOf(g) { return g.rideLit || (g.rideLit = { cards: {}, sealsDone: {}, ver: 0 }); }
@@ -151,11 +159,13 @@ function land(g, p, r, cmd) {
   if (!clean) { bail(g, r, r.grabbing ? 'grab' : r.flipT > 0.06 ? 'flip' : 'angle'); return; }
   if (r.revertT > 0 && vy < -9) { addTrick(g, r, 'Revert', POINTS.revert); r.revertT = 0; }
   if (letGo) r.manualHold = true;       // the slide still held from the grab is not a manual
+  if (r.manualArm !== undefined && r.clk - r.manualArm < 0.4) { r.manualArm = undefined; r.manual = true; r.manualFlick = true; r.bal = 0; r.manualT = 0; return; }       // flicked just before landing: land into a manual
   if (cmd.slide && !letGo && comboValue(r.combo) > 0) { r.manual = true; r.bal = 0; r.manualT = 0; return; }       // land into a manual: the combo stays open
   bank(g, r); g.emit('land', p.x, p.z, -vy);
 }
-function manualTick(g, p, r, dt, cmd) {
-  if (!cmd.slide) { r.manual = false; addTrick(g, r, 'Manual', POINTS.manualPerSecond * (r.manualT || 0)); bank(g, r); return; }
+function manualTick(g, p, r, dt, cmd, jumpPress) {
+  if (r.manualFlick) { if (jumpPress) { r.manual = false; r.manualFlick = false; addTrick(g, r, 'Manual', POINTS.manualPerSecond * (r.manualT || 0)); r.crouch = 0.001; return; } }       // a flick manual ends with an ollie, the combo still open
+  else if (!cmd.slide) { r.manual = false; addTrick(g, r, 'Manual', POINTS.manualPerSecond * (r.manualT || 0)); bank(g, r); return; }
   r.manualT = (r.manualT || 0) + dt; const drift = sin(g.tickN * 0.05 + 1.3) * RIDE.balDrift + r.bal * 1.1; r.bal += (drift - (cmd.f || 0) * RIDE.balFix) * dt;
   if (r.bal > 1 || r.bal < -1) bail(g, r, 'manual');
 }

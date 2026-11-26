@@ -48,7 +48,7 @@ function deadTree(D, x, y, z, s, rot, v, small) {
 }
 // ---- logs and beams: bleached grey-brown, a darker end-grain disc at each end, one end broken; every fifth one stands as a broken post
 function log(D, map, q) {
-  const [x0, y0, z0, x1, y1, z1, rad, kind] = q, base = kind >= 2 ? 0xe0c89a : kind ? 0xd6b88a : 0xcaa878, col = [base, mixc(base, 0xb98a55, 0.28)], ns = kind >= 2 ? 4 : 6, grain = 0x6a4f30, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1;
+  const [x0, y0, z0, x1, y1, z1, rad, kind] = q, base = kind === 3 ? 0x8a6038 : kind === 2 ? 0xe0c89a : kind ? 0xd6b88a : 0xcaa878, col = [base, mixc(base, 0xb98a55, 0.28)], ns = kind >= 2 ? 4 : 6, grain = 0x6a4f30, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1;
   if (kind !== 3 && ((Math.floor(x0 * 7 + z0 * 13) % 5) + 5) % 5 === 0) {       // (a ride-line beam, kind 3, always lies flat)       // a broken post standing up, half sunk, with a jagged top
     const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2, my = groundAt(map, mx, mz), h = 2.4 + (rad * 6 % 1.5); rod(D, [mx, my - 0.5, mz], [mx + 0.12, my + h, mz], rad, rad * 0.85, ns, col, true, false, 0.3, grain); rod(D, [mx + 0.05, my + h - 0.05, mz], [mx + 0.25, my + h + rad * 1.5, mz + 0.1], rad * 0.35, 0.03, 4, col[0], true); return; }
   const n = Math.max(1, Math.round(l / 2)), pt = t => { const x = x0 + dx * t, z = z0 + dz * t; return [x, groundAt(map, x, z) + rad * 0.1, z]; };       // 2 m pieces that follow the ground, the middle of the beam on the surface so it is half sunk

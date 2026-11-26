@@ -24,7 +24,8 @@ export function sealsNear(g, x, z, r) {
   return out;
 }
 // every seal stone of one set (they all sit in the set's own cell)
-export function sealSet(g, sid) { const m = g.map, k = Math.floor(sid / 4), qx = Math.floor(k / 512) - 128, qz = (k % 512) - 128; return (cellOf(g, m, qx, qz).seals || []).filter(s => s[3] === sid); }
+export function sealSet(g, sid) { if (sid === -1) { const W = g.map.world, w = W && W.wonder; if (!w) return []; const out = []; for (const s of w.seals) for (const q of cellOf(g, g.map, Math.floor(s[0] / Q), Math.floor(s[1] / Q)).seals || []) if (q[3] === -1 && Math.abs(q[0] - s[0]) < 0.02 && Math.abs(q[2] - s[1]) < 0.02) out.push(q); return out; }       // the wonder: its five stones span cells
+  const m = g.map, k = Math.floor(sid / 4), qx = Math.floor(k / 512) - 128, qz = (k % 512) - 128; return (cellOf(g, m, qx, qz).seals || []).filter(s => s[3] === sid); }
 export function railsNear(g, x, z, r) {
   const m = g.map; if (!m || !m.big) return []; const cache = g.railCache && g.railCache.key === m.key ? g.railCache : (g.railCache = { key: m.key, cells: new Map() }), out = [];
   for (let qz = Math.floor((z - r) / Q); qz <= Math.floor((z + r) / Q); qz++) for (let qx = Math.floor((x - r) / Q); qx <= Math.floor((x + r) / Q); qx++) {
