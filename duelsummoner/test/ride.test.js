@@ -77,3 +77,13 @@ test('ride: a banked landing makes every summon strike at once', async () => {
   let hit = false; for (let i = 0; i < 120 && !hit; i++) { run(g, 1, { ...I, f: 1 }); if (flowOf(g).slams > 0) hit = true; }
   assert.ok(hit, 'banked'); for (const m of ms) assert.ok(m.cd < 4.5, 'summon cooldown cut: ' + m.cd);
 });
+test('ride: holding the stick forward up a 15-degree climb never drops the rider off, charging an ollie included; braking still does', () => {
+  const g = mk(); let spot = null;
+  // a real climb near the start: rising at least 13 to 20 degrees over 14 m toward -z
+  for (let r = 0; r < 1500 && !spot; r += 9) for (let a = 0; a < 6.28 && !spot; a += 0.35) { const x = g.p.x + Math.cos(a) * r, z = g.p.z + Math.sin(a) * r, h0 = heightAt(x, z); let ok = true; for (let k = 2; k <= 14 && ok; k += 2) { const s = (heightAt(x, z - k) - heightAt(x, z - k + 2)) / 2; if (s < 0.23 || s > 0.37) ok = false; } if (ok && h0 < 60) spot = [x, z]; }
+  assert.ok(spot, 'a 15-degree climb');
+  place(g, spot[0], spot[1] + 4, 12.3); run(g, 2, { ...I, f: 1 }); assert.ok(g.p.ride.on, 'riding');
+  let off = false; for (let i = 0; i < 90; i++) { run(g, 1, { ...I, f: 1, jump: i > 40 && i < 70 }); if (!g.p.ride.on) off = true; }
+  assert.equal(off, false, 'still on the card at ' + g.p.ride.speed.toFixed(1) + ' m/s');
+  let n = 0; while (g.p.ride.on && n < 240) { run(g, 1, { ...I, f: -1 }); n++; } assert.equal(g.p.ride.on, false, 'the brake still takes the rider off');
+});

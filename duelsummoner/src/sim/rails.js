@@ -5,7 +5,8 @@ import { cbrt } from '../gen/open/terrain.js';
 const Q = 256;
 function cellRails(m, qx, qz) {
   const out = [], D = m.dressCell(qx, qz), C = m.cell(qx, qz);
-  for (const q of D.logs || []) { const rad = q[6]; out.push([q[0], q[1] + rad * 1.1 + 0.15, q[2], q[3], q[4] + rad * 1.1 + 0.15, q[5]]); }
+  // one log in five is drawn as a standing broken post (view/openDressing.js): no rail along the ground there
+  for (const q of D.logs || []) { if (q[7] !== 3 && ((Math.floor(q[0] * 7 + q[2] * 13) % 5) + 5) % 5 === 0) continue; const rad = q[6]; out.push([q[0], q[1] + rad * 1.1 + 0.15, q[2], q[3], q[4] + rad * 1.1 + 0.15, q[5]]); }
   for (const q of D.cards || []) { const [x, y, z, s, rot] = q, c = cos(rot), sn = sin(rot), hw = 1.25 * s, top = y + 3.1 * s; out.push([x - c * hw, top, z - sn * hw, x + c * hw, top, z + sn * hw, 'card', x, z]); }       // a card's rail remembers its card (it lights when ground)
   for (const b of C.blocks || []) {
     const N = 16, q = 1 - 0.15 * b.cw / ((b.rx + b.rz) / 2), pts = [];

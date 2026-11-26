@@ -7,7 +7,7 @@ export const SAVE_VERSION = 4;       // v4: the unlock ladder (stagesOpen, unloc
 export function freshSave() { return { v: SAVE_VERSION, records: {}, starChips: 0, runs: 0, bossKills: 0, meta: defaultMeta(), settings: defaultSettings() }; }
 // In memory `settings` is the resolved flat object the game reads (defaults plus the player's overrides). On disk (v2) it is overrides only, under the spec names (camShake, not shake),
 // so a default that changes later reaches every player who never touched the row.
-export function defaultSettings() { return { reduceMotion: false, shake: 80, difficulty: 'medium', fov: 100, fpsCap: 60, detail: 'auto' }; }
+export function defaultSettings() { return { reduceMotion: false, shake: 80, difficulty: 'easy', fov: 100, fpsCap: 60, detail: 'auto' }; }
 const V1_DEFAULTS = { reduceMotion: false, shake: 100, difficulty: 'medium', fov: 100, fpsCap: 60 };
 const TO_DISK = { shake: 'camShake' }, FROM_DISK = { camShake: 'shake' };
 export function overridesOf(settings) { const d = defaultSettings(), out = {}; for (const k in settings) if (settings[k] !== d[k] && settings[k] !== undefined) out[TO_DISK[k] || k] = settings[k]; return out; }

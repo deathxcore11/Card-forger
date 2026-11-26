@@ -42,7 +42,7 @@ import { Props } from './view/props.js';
 import { quantise, emptyRecord } from './sim/input.js';
 import { loadSave, recordRun, writeSave } from './core/save.js';
 import { createBrowserHost } from './core/host.js';
-import { simMeta, applyRun, unseal } from './core/meta.js';
+import { simMeta, applyRun, unseal, diffUnlocked } from './core/meta.js';
 import { showDeckBox, showLibrary } from './view/metaui.js';
 import { QUESTS } from './data/meta.js';
 import { Fx } from './view/fx.js';
@@ -186,7 +186,7 @@ function applySettings() {
   const s = save.settings; document.body.classList.toggle('rm', !!s.reduceMotion); chase.lag = !s.reduceMotion;
   fpsCap = [30, 60, 90, 120].includes(+s.fpsCap) ? +s.fpsCap : 60; for (const el of document.querySelectorAll('.setFps')) el.value = fpsCap;
   fovSetting = Math.max(80, Math.min(115, +s.fov || 100)); fitFov(); for (const el of document.querySelectorAll('.setFov')) el.value = fovSetting; for (const el of document.querySelectorAll('.setFovV')) el.textContent = fovSetting;
-  { const cls = deviceClass(), V = (id, d) => { const v = s[id]; if (v !== undefined) return v; const dv = defaultFor(id, cls); return dv === null || dv === undefined ? d : dv; }; fx.dmgMode = V('damageNumbers', 'all'); fx.gentle = !!s.reduceMotion || (new URLSearchParams(location.search).get('moments') || V('bigMoments', 'full')) !== 'full'; /* Big moments: Full by default; Reduce motion forces Gentle */ window.__dsMarker = V('duelistMarker', true) !== false; input.mult = { pad: V('lookSpeed', 5) / 5, drag: V('dragLook', 5) / 5, mouse: V('mouseLook', 5) / 5 }; const il = V('invertLook', 'none'); input.inv = { pad: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, drag: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, mouse: { x: false, y: !!V('invertMouse', false) } }; window.__dsVib = V('vibration', 70) / 100; }
+  { const cls = deviceClass(), V = (id, d) => { const v = s[id]; if (v !== undefined) return v; const dv = defaultFor(id, cls); return dv === null || dv === undefined ? d : dv; }; fx.dmgMode = V('damageNumbers', 'all'); fx.gentle = !!s.reduceMotion || (new URLSearchParams(location.search).get('moments') || V('bigMoments', 'full')) !== 'full'; /* Big moments: Full by default; Reduce motion forces Gentle */ window.__dsMarker = V('duelistMarker', true) !== false; input.mult = { pad: V('lookSpeed', 5) / 5, drag: V('dragLook', 5) / 5, mouse: V('mouseLook', 5) / 5 }; const il = V('invertLook', 'none'); input.inv = { pad: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, drag: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, mouse: { x: false, y: !!V('invertMouse', false) } }; window.__dsVib = V('vibration', 70) / 100; window.__dsRideCam = ({ off: 0, gentle: 1.4, strong: 3 })[V('camAssist', 'gentle')] || 0;       /* Camera assist: on the card the camera eases round behind the heading */ }
   window.__dsDetail = s.detail === 'low' || s.detail === 'medium' || s.detail === 'high' ? s.detail : null; composite.on = detailLevel() !== 'low' && !/[?&]composite=0/.test(location.search); for (const el of document.querySelectorAll('.setDetail button')) el.classList.toggle('on', el.dataset.v === detailLevel());       // Detail: Low drops the composite pass and the blade grass; it applies live to the composite and to the next stage's grass
   for (const el of document.querySelectorAll('.setRM')) el.checked = !!s.reduceMotion;
   for (const el of document.querySelectorAll('.setShake')) { el.value = s.shake; el.disabled = !!s.reduceMotion; }
@@ -219,6 +219,7 @@ function beginNow(mode, sel) {
   sel = sel || {}; if (sel.duelist) pickDuelist(sel.duelist);
   game.opts.terrain = RUN_OPEN ? 'open' : undefined; game.opts.arch = RUN_ARCH;       // a run builds its own map; only the menu backdrop is always the open desert
   game.opts.mode = typeof mode === 'string' ? mode : 'run'; game.opts.world = 'regions'; game.opts.difficulty = sel.difficulty || save.settings.difficulty; game.opts.oaths = sel.oaths || []; game.opts.map = sel.map || 'ruins';
+  if (!diffUnlocked(save.meta, game.opts.map, game.opts.difficulty)) { game.opts.difficulty = 'easy'; if (save.settings.difficulty !== 'easy' && !diffUnlocked(save.meta, game.opts.map, save.settings.difficulty)) save.settings.difficulty = 'easy'; }       // a locked difficulty can never be the one played (debug starts and old saves included)
   ended = false; plateIdol = false; sigils.length = 0; lastFusions = 0; holdT = 0; seenSp.clear(); fx.push = 0; capBurstDone = false; tb.on = false; tb.fired = false; fx.dir.newRun(); fx.stopB.log.length = 0; fx.stopB.last = -1e9; fx.stopLog.length = 0; game.opts.meta = simMeta(save.meta); bars.reset(); game.reset(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : Date.now() & 0xffff, duelist); game.acc = 0; input.yaw = 0; input.pitch = 0; chase.reset(); input.keys = {};
   for (const m of actors.monsters.values()) scene.remove(m); actors.monsters.clear();
   for (const m of actors.specials.values()) scene.remove(m); actors.specials.clear();
@@ -447,6 +448,13 @@ window.addEventListener('keydown', e => { if (e.code === 'Enter') skipIntro(); }
 // first runs on the big desert: a hint chip until the card has been kicked out once
 let rideHintDone = (() => { try { return localStorage.getItem('ds-ridehint') === '1'; } catch (e) { return false; } })();
 function rideHint(riding) { const el = document.getElementById('rideHint'); if (!el) return; if (riding && !rideHintDone) { rideHintDone = true; try { localStorage.setItem('ds-ridehint', '1'); } catch (e) {} } const on = !rideHintDone && game.big && MODE === 'play' && game.t > 3; if (el.classList.contains('on') !== on) el.classList.toggle('on', on); if (on) el.textContent = (inputMode() === 'keys' ? 'C' : 'SLIDE') + ' while running: ride your card'; }
+// on the card, once the look has been left alone for 0.5 s the camera eases round behind the card's heading (Settings: Camera assist; Gentle by default on phones, Off on handhelds and PC), so carving on a phone needs one thumb
+const rcam = { yaw: null, idle: 0 };
+function rideCam(dt) {
+  const r = game.p && game.p.ride, k = window.__dsRideCam === undefined ? 1.4 : window.__dsRideCam; if (rcam.yaw !== null && Math.abs(input.yaw - rcam.yaw) > 1e-5) rcam.idle = 0; else rcam.idle += dt;
+  if (r && r.on && k > 0 && rcam.idle > 0.5 && MODE === 'play') { let d = (r.heading + Math.PI) - input.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); input.yaw += d * Math.min(1, dt * k); }
+  rcam.yaw = input.yaw;
+}
 function drainEvents() { game.drainEvents(onEvent); }
 
 const dbg = $('debug'), showDebug = /[?&]debug/.test(location.search);
@@ -592,7 +600,7 @@ function frame(now) {
 
   if (MODE === 'play') { const dv = new T.Vector3(ip.x, ip.y + 1, ip.z).project(camera); window.__dealFrom = { x: (dv.x + 1) / 2 * innerWidth, y: (1 - dv.y) / 2 * innerHeight }; }       // where the level-up cards fan out from
   devTick(now); bars.tick(dtReal || 0.016, game, document.body.classList.contains('rm'), performance.now());
-  chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
+  chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); rideCam(dtReal || 0.016); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
   // the menu camera: lower and almost level, so the horizon sits about 47% down and the dunes, the mesa and the gate beam show behind the panels, while Kael stays where he was on screen
   if (MODE === 'start' && !(window.__ds && window.__ds.camHold)) { const tc = performance.now() / 1000, ac = (menuLandmark() ? Math.atan2(game.map.spawn.x - menuLandmark().x, game.map.spawn.z - menuLandmark().z) : 0.7) + Math.sin(tc * 0.08) * 0.5, pc = game.p; camera.position.set(pc.x + Math.sin(ac) * 7.2, pc.y + 1.35 + Math.sin(tc * 0.3) * 0.12, pc.z + Math.cos(ac) * 7.2); const sh = innerWidth > innerHeight * 1.25 ? (document.body.dataset.cam === 'left' ? -3.4 : 0) : 0; camera.lookAt(pc.x - Math.cos(ac) * sh, camera.position.y + 0.42, pc.z + Math.sin(ac) * sh); }       // the Camp: a slow orbit around the duelist while a menu is up (view only)
   if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures

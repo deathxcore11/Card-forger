@@ -54,7 +54,7 @@ export function initMenus(env) {
           (b.me && b.me.rank > 10 ? '<div class="lbrow">#' + b.me.rank + ' You <b>' + b.me.score + '</b></div>' : '');
         for (const t of el.querySelectorAll('[data-lbd]')) t.onclick = () => draw(t.dataset.lbd);
       }).catch(() => { const el = $('lbOnline'); if (el) el.innerHTML = '<p class="dim">Could not reach the leaderboard.</p>'; });
-      draw('medium');
+      draw('easy');
     }
   }
 
