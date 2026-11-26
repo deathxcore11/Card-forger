@@ -14,7 +14,7 @@ function cellRails(m, qx, qz) {
     for (let k = 0; k < N; k++) { const a = pts[k], bb = pts[(k + 1) % N]; out.push([a[0], b.T, a[1], bb[0], b.T, bb[1]]); }
   }
   for (const q of D.rings || []) { const n = q.length; let cx = 0, cz = 0; for (const p of q) { cx += p[0] / n; cz += p[2] / n; } for (let i = 0; i < n; i++) { const a = q[i], b = q[(i + 1) % n]; out.push([a[0], a[1], a[2], b[0], b[1], b[2], 'ring', cx, cz]); } }       // a Ring Shrine's rail remembers its shrine's centre
-  out.seals = (D.seals || []).slice();
+  out.seals = (D.seals || []).filter(q => q[3] !== -2); out.pipes = (D.pipes || []).slice();
   return out;
 }
 function cellOf(g, m, qx, qz) { const cache = g.railCache && g.railCache.key === m.key ? g.railCache : (g.railCache = { key: m.key, cells: new Map() }), k = (qx + 128) * 512 + (qz + 128); let L = cache.cells.get(k); if (!L) { L = cellRails(m, qx, qz); cache.cells.set(k, L); } return L; }
@@ -24,6 +24,8 @@ export function sealsNear(g, x, z, r) {
   for (let qz = Math.floor((z - r) / Q); qz <= Math.floor((z + r) / Q); qz++) for (let qx = Math.floor((x - r) / Q); qx <= Math.floor((x + r) / Q); qx++) for (const s of cellOf(g, m, qx, qz).seals || []) { const dx = s[0] - x, dz = s[2] - z; if (dx * dx + dz * dz < r * r) out.push(s); }
   return out;
 }
+// the full pipes [x, y, z, ux, uz, R] within r of (x, z)
+export function pipesNear(g, x, z, r) { const m = g.map; if (!m || !m.big) return []; const out = [], M = r + 24; for (let qz = Math.floor((z - M) / Q); qz <= Math.floor((z + M) / Q); qz++) for (let qx = Math.floor((x - M) / Q); qx <= Math.floor((x + M) / Q); qx++) for (const s of cellOf(g, m, qx, qz).pipes || []) { const dx = s[0] - x, dz = s[2] - z; if (dx * dx + dz * dz < r * r) out.push(s); } return out; }
 // every seal stone of one set (they all sit in the set's own cell)
 export function sealSet(g, sid) { if (sid === -1) { const W = g.map.world, w = W && W.wonder; if (!w) return []; const out = []; for (const s of w.seals) for (const q of cellOf(g, g.map, Math.floor(s[0] / Q), Math.floor(s[1] / Q)).seals || []) if (q[3] === -1 && Math.abs(q[0] - s[0]) < 0.02 && Math.abs(q[2] - s[1]) < 0.02) out.push(q); return out; }       // the wonder: its five stones span cells
   const m = g.map, k = Math.floor(sid / 4), qx = Math.floor(k / 512) - 128, qz = (k % 512) - 128; return (cellOf(g, m, qx, qz).seals || []).filter(s => s[3] === sid); }

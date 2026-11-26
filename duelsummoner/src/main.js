@@ -401,6 +401,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'crest') { const y0 = groundY(a, b); fx.burst(a, y0 + 0.2, b, 16, 0xe8c890, 3.5, 3, 0.3, 0.6, 7); }       // sand thrown off a crest
   else if (type === 'arch') { const y0 = groundY(a, b); fx.ring(a, y0 + 1.8, b, 2.2 + (c || 1) * 0.2, 0xffd56a, 0.35); fx.burst(a, y0 + 3.4, b, 10 + (c || 1) * 3, 0xffe08a, 3, 3, 0.26, 0.5, 6); }       // an arch threaded (the ring grows with each)
   else if (type === 'shrineride') { const y0 = groundY(a, b); fx.ring(a, y0 + 0.3, b, 8, 0xfff2c0, 0.6); for (let k = 0; k < 3; k++) fx.burst(a, y0 + 1.2, b, 26, k ? 0xffd56a : 0xfff2c0, 6, 7 + k * 2, 0.34, 0.8, 8); fx.shake(0.3); }
+  else if (type === 'loop') { const y0 = groundY(a, b); fx.ring(a, y0 + (c || 5), b, (c || 5) + 1.5, 0xffd56a, 0.6); fx.burst(a, y0 + (c || 5) * 2, b, 24, 0xfff2c0, 5, 3, 0.3, 0.8, 6); }       // round the full pipe
   else if (type === 'volley') { const y0 = groundY(a, b); fx.ring(a, y0 + 1.6, b, 3.6, 0xfff2c0, 0.3); }       // the summons all strike with the landing
   else if (type === 'trick') { if (FLIPS.includes(data)) schoolDid('flip'); }
   else if (type === 'cardlit') { const y0 = (c || groundY(a, b)); fx.ring(a, y0, b, 2.4, 0xfff2c0, 0.4); fx.burst(a, y0, b, 26, 0xffd56a, 5, 6, 0.3, 0.7, 7); }       // a stone card lights for good
@@ -552,7 +553,7 @@ function drawTags() {
     const t = list[i]; tagV.set(t.x, t.y, t.z).project(camera); if (tagV.z > 1 || tagBlocked(t)) { el.style.display = 'none'; continue; }
     if (bannerUp && (1 - tagV.y) / 2 > 0.12 && (1 - tagV.y) / 2 < 0.31) { el.style.display = 'none'; continue; }       // world labels never draw inside the announcement lane
     { const px = (tagV.x * 0.5 + 0.5) * w, py = (-tagV.y * 0.5 + 0.5) * h; if (px < 14 || px > w - 14 || py < 14 || py > h - 14 || fx._underHud(px, py)) { el.style.display = 'none'; continue; } }       // a label is whole or absent: never cut at an edge, never over a HUD panel
-    el.style.display = 'block'; el.className = 'wtag ' + t.cls + (t.cls === 'poor' && performance.now() < tagPulse ? ' pulse' : ''); if (el.textContent !== t.text) el.textContent = t.text; el.style.left = ((tagV.x * 0.5 + 0.5) * w) + 'px'; el.style.top = ((-tagV.y * 0.5 + 0.5) * h) + 'px';
+    el.style.display = 'block'; el.className = 'wtag ' + t.cls + (t.cls === 'poor' && performance.now() < tagPulse ? ' pulse' : ''); if (el.textContent !== t.text) el.textContent = t.text; { const hw = el.offsetWidth / 2 + 10; el.style.left = Math.max(hw, Math.min(w - hw, (tagV.x * 0.5 + 0.5) * w)) + 'px'; }       // kept 10 px inside the screen edges el.style.top = ((-tagV.y * 0.5 + 0.5) * h) + 'px';
   }
 }
 // Upload only what changed: an instanced mesh with no instances this frame and last frame is not re-uploaded (its version is put back), and one with instances uploads just the first count rows,

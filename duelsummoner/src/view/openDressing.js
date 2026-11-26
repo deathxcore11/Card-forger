@@ -146,11 +146,16 @@ function sealStone(D, x, y, z) { frustum(D, x, y - 0.3, z, 0.75, 0.75, 0.55, 0.5
 // a Ring Shrine's ring rail: low carved posts holding a pale stone rail; a Gate Shrine's arch: two posts and a lintel, a gold band on the keystone
 function ringRail(D, q) { const n = q.length; for (let i = 0; i < n; i++) { const a = q[i], b = q[(i + 1) % n]; rod(D, [a[0], a[1], a[2]], [b[0], b[1], b[2]], 0.16, 0.16, 5, [0xcfc3a8, 0xb6aa94], false, false, 0); if (i % 2 === 0) rod(D, [a[0], a[1] - 1.2, a[2]], [a[0], a[1], a[2]], 0.13, 0.11, 5, [0x8a7a68, 0x6a6058], false, false, 0); } }
 function arch(D, q) { const [x, y, z, ux, uz] = q, px = -uz * 2.1, pz = ux * 2.1; for (const s of [1, -1]) rod(D, [x + px * s, y - 0.3, z + pz * s], [x + px * s, y + 3.4, z + pz * s], 0.42, 0.36, 6, [0xb6aa94, 0xa09580], true, false, 0); rod(D, [x + px * 1.15, y + 3.55, z + pz * 1.15], [x - px * 1.15, y + 3.55, z - pz * 1.15], 0.38, 0.38, 6, [0xcfc3a8, 0xb6aa94], true, true, 0); rod(D, [x, y + 3.2, z], [x, y + 3.95, z], 0.3, 0.3, 6, [0xe0b24e, 0xc9a24a], true, true, 0); }
+// a full pipe: a giant carved card bent into a hoop and half buried, two pale bands with a gold edge and ribs across
+function pipeHoop(D, q) { const [x, y, z, ux, uz, R] = q, px = -uz, pz = ux, N = 22, pt = (i, s) => { const t = i / N * 6.283185307179586, al = Math.sin(t) * R, up = R - Math.cos(t) * R; return [x + ux * al + px * s, y - 0.4 + up, z + uz * al + pz * s]; };
+  for (let i = 0; i < N; i++) { for (const s of [1.5, -1.5]) rod(D, pt(i, s), pt(i + 1, s), 0.3, 0.3, 5, [0xe6dcc4, 0xcfc3a8], false, false, 0); if (i % 2 === 0) rod(D, pt(i, 1.5), pt(i, -1.5), 0.2, 0.2, 5, [0xe0b24e, 0xc9a24a], false, false, 0); } }
 export function addDressing(D, map, ok) {
   const d = map.dress || {}, yes = ok || (() => true);
+  for (const q of d.pipes || []) if (yes(q[0], q[2])) pipeHoop(D, q);
   for (const q of d.rings || []) if (yes(q[0][0], q[0][2])) ringRail(D, q);
   for (const q of d.arches || []) if (yes(q[0], q[2])) arch(D, q);
-  for (const q of d.seals || []) if (yes(q[0], q[2])) sealStone(D, q[0], q[1], q[2]);
+  for (const q of d.seals || []) if (yes(q[0], q[2])) { if (q[3] === -2) frustum(D, q[0], q[1] - 0.3, q[2], 0.35, 0.35, 0.22, 0.22, 1.1, 0.4, 0xb6aa94, 0xe0b24e); else sealStone(D, q[0], q[1], q[2]); }       // set -2: a Bowl Shrine's marker stone, not a seal
+  for (const q of d.spires || []) if (yes(q[0], q[2])) { frustum(D, q[0], q[1] - 0.4, q[2], 0.6, 0.6, 0.18, 0.18, q[3] + 0.4, 0.3, 0xa09580, 0xcfc3a8); frustum(D, q[0], q[1] + q[3], q[2], 0.2, 0.2, 0.02, 0.02, 0.6, 0.8, 0xe0b24e); }
   for (const q of d.cards || []) if (yes(q[0], q[2])) stoneCard(D, q[0], q[1], q[2], q[3], q[4]);
   for (const q of d.cracks || []) if (yes(q[0], q[1])) crack(D, map, q);
   for (const q of d.cacti || []) if (yes(q[0], q[2])) cactus(D, q[0], q[1], q[2], q[3], q[4], q[5]);

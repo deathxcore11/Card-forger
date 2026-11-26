@@ -146,3 +146,20 @@ test('ride shrines: a Ring Shrine charges from two laps grinded (tier lifted, ra
     assert.ok(s.done && s.ridden, 'gate shrine charged: ' + s.gn); }
   { const g = mk(); g.world.shrines.length = 0; const s = placeObject(g, 'shrine', { x: g.p.x + 3, y: g.p.y, z: g.p.z }); g.p.ride = undefined; run(g, 400); assert.ok(s.done && !s.ridden, 'on foot: charged by standing'); }
 });
+test('landforms 2: full pipes stand in ridge and ruin regions and loop the card at 13 m/s or more; two great drops near the start, each a shelf, a cliff and a landing slope', async () => {
+  const { pipesNear } = await import('../src/sim/rails.js'); const g = mk(), W = g.map.world, sp = W.spawn; let P = null;
+  for (let r = 0; r < 6000 && !P; r += 200) for (let a = 0; a < 6.28 && !P; a += 0.5) { const L = pipesNear(g, sp.x + Math.cos(a) * r, sp.z + Math.sin(a) * r, 200); if (L.length) P = L[0]; }
+  assert.ok(P, 'a full pipe'); const [x, y, z, ux, uz] = P;
+  g.p.x = x - ux * 12; g.p.z = z - uz * 12; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.vx = ux * 16; g.p.vz = uz * 16; const yaw = Math.atan2(-ux, -uz);
+  let top = -1e9, looped = false; for (let i = 0; i < 120; i++) { run(g, 1, { ...I, f: 1, yaw }); const r = g.p.ride; if (r && r.loop) { looped = true; top = Math.max(top, g.p.y); } }
+  assert.ok(looped, 'rode the loop'); assert.ok(top - y > 8, 'over the top: ' + (top - y).toFixed(1)); assert.ok(g.p.ride.combo.names['Full Pipe'] || flowOf(g).banked > 0, 'counted');
+  assert.equal(W.drops.length, 2); for (const d of W.drops) { const h = a => heightAt(d.x + d.c * a, d.z + d.s * a); assert.ok(h(-10) - h(3) > 3.5, 'a cliff: ' + (h(-10) - h(3)).toFixed(1)); assert.ok(h(3) - h(50) > 2, 'a landing slope: ' + (h(3) - h(50)).toFixed(1)); }
+});
+test('ride shrines 2: Bowl (three laps inside its stones), Spire (air over it) and Pipe (one loop of its full pipe) charge by riding', async () => {
+  const { shrineCourse } = await import('../src/gen/world/world.js'); const { placeObject } = await import('../src/sim/world.js'); const { shrineRide } = await import('../src/sim/ride.js');
+  const at = {}; for (let i = 0; i < 2000 && Object.keys(at).length < 5; i++) { const x = 40 + i * 0.37, z = 60, k = shrineCourse(x, z).kind; if (!at[k]) at[k] = [x, z]; }
+  const setup = kind => { const g = mk(); g.world.shrines.length = 0; const s = placeObject(g, 'shrine', { x: at[kind][0], y: heightAt(at[kind][0], at[kind][1]), z: at[kind][1] }); g.p.ride = undefined; place(g, s.x + 10, s.z, 12); run(g, 2, { ...I, f: 1 }); g.p.ride.on = true; return { g, s, r: g.p.ride }; };
+  { const { g, s, r } = setup('bowl'); for (let k = 0; k <= 3 * 60 + 2; k++) { const a = k / 60 * 6.283185307179586; g.p.x = s.x + Math.cos(a) * 10; g.p.z = s.z + Math.sin(a) * 10; shrineRide(g, g.p, r, 1 / 30); } assert.ok(s.done && s.ridden, 'bowl: three laps'); }
+  { const { g, s, r } = setup('spire'); const C = shrineCourse(s.x, s.z), top = heightAt(C.spire.x, C.spire.z) + C.spire.h; g.p.x = C.spire.x; g.p.z = C.spire.z; g.p.y = top + 2.5; g.p.grounded = false; shrineRide(g, g.p, r, 1 / 60); g.p.grounded = true; shrineRide(g, g.p, r, 1 / 60); assert.ok(s.done && s.ridden, 'spire: aired over'); }
+  { const { g, s, r } = setup('pipe'); const C = shrineCourse(s.x, s.z); r.loop = { x: C.pipe.x, z: C.pipe.z }; shrineRide(g, g.p, r, 1 / 60); r.loop = null; shrineRide(g, g.p, r, 1 / 60); assert.ok(s.done && s.ridden, 'pipe: a loop'); }
+});

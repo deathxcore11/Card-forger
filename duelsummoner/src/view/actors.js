@@ -397,7 +397,7 @@ export class Actors {
     const G = this.boardG; G.visible = !!rd && !(g.over && !g.won); if (!rd) return;       // (not this.player.visible: the rig hides the stand-in player mesh every frame)
     const yaw = rd.heading + rd.spin; G.position.set(px, py + 0.02, pz); G.rotation.order = 'YXZ'; G.rotation.y = yaw;
     let roll = 0, pitch = 0; if (rd.flipT > 0) { const k = 1 - rd.flipT / 0.42, d = rd.flipDir || 0; if (d === 0 || d === 4) roll = k * Math.PI * 2 * (d === 4 ? -1 : 1); else if (d === 2 || d === 6) pitch = k * Math.PI * 2 * (d === 6 ? -1 : 1); else { roll = k * Math.PI * 2; pitch = k * Math.PI * (d < 4 ? 1 : -1); } }
-    if (rd.grabbing) pitch += 0.28; if (rd.manual) pitch -= 0.22; G.rotation.x = pitch; G.rotation.z = roll;
+    if (rd.grabbing) pitch += 0.28; if (rd.manual) pitch -= 0.22; if (rd.loop) pitch -= rd.loopTh || 0; G.rotation.x = pitch; G.rotation.z = roll;
     G.position.y += rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.45 : 0;
     if (rd.speed > 13 && !rd.grind) { const tx = px - Math.sin(yaw) * 1.05, tz = pz - Math.cos(yaw) * 1.05, n = rd.speed > 18 ? 3 : 2; for (let k = 0; k < n; k++) this.fx.spark(tx + (Math.random() - 0.5) * 0.9, py + 0.15, tz + (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.6, 0.3 + Math.random() * 0.5, (Math.random() - 0.5) * 0.6, Math.random() < 0.6 ? 0xffd56a : 0xfff2c0, 0.26, 0.35); }       // the gold trail at speed
     if (rd.grind && Math.random() < 0.9) for (let k = 0; k < 2; k++) this.fx.spark(px + (Math.random() - 0.5) * 0.6, py + 0.1, pz + (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 4, 1.5 + Math.random() * 2.5, (Math.random() - 0.5) * 4, Math.random() < 0.5 ? 0xffd56a : 0xfff2c0, 0.32, 0.45);
@@ -406,7 +406,7 @@ export class Actors {
     const yaw = rd.heading + rd.spin; R.group.rotation.y = yaw + R.yaw;
     const want = Math.max(-0.35, Math.min(0.35, ((this._lastH === undefined ? rd.heading : this._lastH) - rd.heading) / Math.max(dt, 0.004) * 0.06)); this._lastH = rd.heading; this._carve = (this._carve || 0) + (want - (this._carve || 0)) * Math.min(1, dt * 8); R.group.rotation.z = this._carve;
     const crouch = rd.crouch > 0 ? rd.crouch / 0.5 : rd.flipT > 0 ? 0.6 : rd.grabbing ? 0.7 : rd.grind ? 0.35 : 0.15; R.group.scale.y *= 1 - 0.28 * crouch; R.group.scale.x *= 1 + 0.08 * crouch; R.group.scale.z *= 1 + 0.08 * crouch;
-    R.group.position.y += 0.22 + (rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.6 : 0); R.group.rotation.x = rd.manual ? -0.18 : rd.grabbing ? 0.2 : 0;
+    R.group.position.y += 0.22 + (rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.6 : 0); R.group.rotation.x = rd.loop ? -(rd.loopTh || 0) : rd.manual ? -0.18 : rd.grabbing ? 0.2 : 0;
   }
   update(g, a, cam, head, dt) {
     this._dt = dt;

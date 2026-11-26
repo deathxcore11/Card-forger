@@ -12,12 +12,12 @@ import { resolveColliders } from './colliders.js';
 import { explode, damageEnemy } from './combat.js';
 import { breakVasesNear, rideShrineDone } from './world.js';
 import { shrineCourse } from '../gen/world/world.js';
-import { railsNear, sealsNear, sealSet } from './rails.js';
+import { railsNear, sealsNear, sealSet, pipesNear } from './rails.js';
 
 export const RIDE = { mountAt: 10.5, dismountAt: 7, top: 24, push: 3.4, pushTo: 12.5, friction: 0.55, soft: 2.2, downhill: 10, carve: 2.6, airTurn: 1.0, crouchMax: 0.5, popLo: 2.2, popHi: 4.5,
   snap: 1.6, flipTime: 0.42, spinRate: 9.42, landTol: 0.52, bailT: 0.6, revertWin: 0.28, balDrift: 0.9, balFix: 2.6, sparkR: 2.5, sparkDmg: 7, sparkEvery: 0.2, gravity: 28, kickRun: 0.4, kickTo: 12.5, brake: 16, holdMin: 8.5 };
 export const FLIPS = ['Card Flip', 'Ace Flip', 'Deal Flip', 'Riffle', 'Heel Card', 'Cut Flip', 'Fan Flip', 'Shuffle'], GRABS = ['Hand Grab', 'Seal Grab', 'Joker Grab', 'Crown Grab'], GRINDS = ['Edge Grind', 'Rim Ride', 'Spine Slide'];
-export const POINTS = { flip: 300, grab: 200, grabPerSecond: 420, spin180: 260, grind: 120, grindPerSecond: 160, manualPerSecond: 90, revert: 180, special: 3000, bigAir: 100, vert: 250, smash: 150, crest: 150, closeCall: 120, cardLit: 400, seal: 250, sealSet: 2500 };
+export const POINTS = { flip: 300, grab: 200, grabPerSecond: 420, spin180: 260, grind: 120, grindPerSecond: 160, manualPerSecond: 90, revert: 180, special: 3000, bigAir: 100, vert: 250, loop: 800, smash: 150, crest: 150, closeCall: 120, cardLit: 400, seal: 250, sealSet: 2500 };
 export const FLOW = { need: [0, 1800, 4200, 7500, 12000], idle: 10, dmgPerStep: 0.25, gainPerStep: 0.5, stakesPerStep: 5, slamR: [4, 14], slamDiv: 22, slamCapPerStep: 45 };
 
 export const makeRide = () => ({ on: false, heading: 0, speed: 0, crouch: 0, jumpWas: false, dashWas: false, useWas: false, flipT: 0, flipName: '', flipK: 0, grabbing: false, grabT: 0, grabName: '', spin: 0, airT: 0,
@@ -74,7 +74,11 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   { const d = dir4(cmd), m = (cmd.f || 0) * (cmd.f || 0) + (cmd.r || 0) * (cmd.r || 0); if (m > 0.36) (r.dirT || (r.dirT = [-9, -9, -9, -9]))[d] = r.clk; }
   r.jumpWas = !!cmd.jump; r.dashWas = !!cmd.dash; r.useWas = !!cmd.use; if (!cmd.slide) r.manualHold = false; if (r.manualHold) cmd = Object.assign({}, cmd, { slide: false });
   if (r.bailT > 0) { r.bailT -= dt; r.speed = Math.max(0, r.speed - 18 * dt); step(g, p, r, dt); groundFollow(g, p, r, dt); if (r.bailT <= 0 && r.speed < RIDE.dismountAt) dismount(g, p, r); return true; }
+  if (r.loop) { loopTick(g, p, r, dt); return true; }
   if (r.grind) { grindTick(g, p, r, dt, cmd, jumpPress); return true; }
+  if (p.grounded && r.speed >= 13 && !(r.loopCd > 0)) { for (const q of pipesNear(g, p.x, p.z, 9)) { const [x, y, z, ux, uz, R] = q, dx = p.x - x, dz = p.z - z, al = dx * ux + dz * uz, lat = Math.abs(-dx * uz + dz * ux), hx = sin(r.heading), hz = cos(r.heading), dot = hx * ux + hz * uz;
+    if (lat < 1.3 && Math.abs(dot) > 0.85 && Math.abs(al) < 0.9) { const d = dot > 0 ? 1 : -1; r.loop = { x: x + ux * al, y: p.y, z: z + uz * al, ux: ux * d, uz: uz * d, R, th: 0 }; addTrick(g, r, 'Full Pipe', POINTS.loop); g.emit('loop', x, z, R); return true; } } }       // a full pipe at 13 m/s or more: the card sticks and rides the loop
+  if (r.loopCd > 0) r.loopCd -= dt;
   if (p.grounded) {
     // carve toward the stick; slope, sand and pushing
     // pulling the stick back brakes (no carve): below 7 m/s the duelist steps off and runs
@@ -141,6 +145,14 @@ export function shrineRide(g, p, r, dt) {
         if (laps >= 1 && !s.lap1) { s.lap1 = true; g.event('banner', 'Ring Shrine: a full lap. Another clean lap lifts it.'); }
         if (laps >= 2) rideShrineDone(g, s, shrineTier(g), true, 'Two laps'); }
       else { s.rIdle = (s.rIdle || 0) + dt; if (s.lap1 && s.rIdle > 0.8) rideShrineDone(g, s, shrineTier(g), false, 'A lap'); }
+    } else if (C.kind === 'bowl') {       // three laps ridden inside the marker stones (6 to 16 m out) within 20 s; under 12 s lifts the tier
+      const d = Math.sqrt(dx * dx + dz * dz), a = atan2(dz, dx); if (d > 5 && d < 17) { if (s.bLast !== undefined) s.ba += wrapPi(a - s.bLast); else { s.ba = 0; s.bT = 0; } s.bLast = a; s.bT += dt; s.charge = Math.max(s.charge, Math.min(0.98, Math.abs(s.ba) / (3 * TWO_PI)) * 5);
+        if (s.bT > 20) { s.ba = 0; s.bT = 0; } if (Math.abs(s.ba) >= 3 * TWO_PI) rideShrineDone(g, s, shrineTier(g), s.bT < 12, 'Three laps'); } else s.bLast = undefined;
+    } else if (C.kind === 'spire') {       // air over the spire: clear its top by 0.3 m within 2 m of it; 2 m clear or a trick in that air lifts the tier
+      const sp = C.spire, ex = p.x - sp.x, ez = p.z - sp.z, top = heightAt(sp.x, sp.z) + sp.h; if (!p.grounded && ex * ex + ez * ez < 4 && p.y > top + 0.3) { s.sp = Math.max(s.sp || 0, p.y - top); s.spTr = s.spTr || r.combo.n; }
+      if (s.sp && p.grounded) rideShrineDone(g, s, shrineTier(g), s.sp > 2 || r.combo.n > (s.spTr || 0), 'Over the spire');
+    } else if (C.kind === 'pipe') {       // one clean loop of its full pipe
+      if (r.loop && Math.abs(r.loop.x - C.pipe.x) < 3 && Math.abs(r.loop.z - C.pipe.z) < 3) s.inLoop = true; if (s.inLoop && !r.loop) { s.inLoop = false; if (r.bailT <= 0) rideShrineDone(g, s, shrineTier(g), false, 'A loop'); }
     } else {
       s.gIdle = (s.gIdle || 0) + dt; if (s.gIdle > 6) { s.gn = 0; s.gDir = 0; }
       const prev = s.gPrev || (s.gPrev = []); C.arches.forEach((A, i) => { const ax = p.x - A.x, az = p.z - A.z, d = ax * A.ux + az * A.uz, lat = Math.abs(-ax * A.uz + az * A.ux), was = prev[i]; prev[i] = d;
@@ -226,5 +238,11 @@ function grindTick(g, p, r, dt, cmd, jumpPress) {
 function sparks(g, p) {
   const e = g.en, R2 = RIDE.sparkR * RIDE.sparkR; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z; if (dx * dx + dz * dz < R2) damageEnemy(g, i, RIDE.sparkDmg * flowDamage(g), { noCrit: true }); }
   g.emit('sparks', p.x, p.z, 0);
+}
+// round the inside of the hoop: the angle runs at speed over radius, the card upside down at the top; out the bottom going on the same way
+function loopTick(g, p, r, dt) {
+  const L = r.loop; L.th += Math.max(r.speed, 13) / L.R * dt; const th = Math.min(L.th, 6.283185307179586), al = sin(th) * L.R * 0.35 + (th / 6.283185307179586) * 1.2;
+  p.x = L.x + L.ux * al; p.z = L.z + L.uz * al; p.y = L.y + L.R - cos(th) * L.R; p.vx = L.ux * r.speed; p.vz = L.uz * r.speed; p.vy = 0; p.grounded = false; r.heading = atan2(L.ux, L.uz); p.face = r.heading; r.loopTh = th;
+  if (th >= 6.283185307179586) { r.loop = null; r.loopTh = 0; r.loopCd = 0.8; p.grounded = true; p.y = heightAt(p.x, p.z); r.speed = Math.min(RIDE.top, r.speed * 1.05); }
 }
 function dismount(g, p, r) { r.on = false; r.runT = 0; r.slideWas = true; r.grind = null; r.manual = false; const ax = sin(r.heading), az = cos(r.heading); p.vx = ax * r.speed; p.vz = az * r.speed; g.emit('ride', 0, 0, 0); }

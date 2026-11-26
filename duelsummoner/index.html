@@ -84,7 +84,7 @@
   /* touch: every button is at least 44 px tall, with no hover-only controls */
   @media (pointer:coarse) { button, .tab { min-height:46px; min-width:46px; } button.small { padding:10px 14px; } .trk, .lbrow { padding:4px 0; } }  .hud { z-index:14; }
   #tags { position:fixed; inset:0; pointer-events:none; z-index:12; overflow:hidden; }
-  .wtag { position:absolute; transform:translate(-50%,-100%); white-space:nowrap; font-size:12px; letter-spacing:0; padding:2px 7px; border:1px solid #000a; background:#0d0810c8; color:#ffe9a0; text-shadow:none; }
+  .wtag { position:absolute; transform:translate(-50%,-100%); white-space:normal; width:max-content; max-width:min(64vw, 300px); text-align:center; line-height:1.25; font-size:12px; letter-spacing:0; padding:3px 9px; border:1px solid #c9a24a99; border-radius:8px; background:#0d0810d0; color:#ffe9a0; text-shadow:none; box-shadow:0 0 8px #0008; }       /* a long label wraps to two lines inside dark glass with a gold line, never edge to edge */
   .wtag.spent { color:#8a8a92; border-color:#4a4a52; }
   .wtag.poor { color:#c46a60; } .wtag.free { color:#ffffff; } .wtag.shop { color:#ffd23f; } .wtag.danger { color:#ff6a5a; } .wtag.seal { color:#c9a0ff; }          /* one colour code everywhere: white free, gold coins, red danger, violet Fusion and seals; grey once used */
   #offerScreen { pointer-events:auto; }
