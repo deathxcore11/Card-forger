@@ -14,7 +14,7 @@ export function bigMap(seedLo, stageIndex) {
     report: { genVersion: 'big1', v2: true, attempt: 0, fallback: false, big: true },
     world: W, viewFn: W.viewAt, fillSim: W.fillSim, dressCell: W.dressCell, cell: W.cell, landmark: W.landmark, regionAt: W.regionAt, tintAt: W.tintAt, baseH: W.baseH, inside: W.inside,
     outer: (x, z) => sq(sq(x * x * x * x + z * z * z * z)) > EDGE + 220,
-    worldHalf: WORLD_HALF, regionName: (x, z) => REGION[W.regionAt(x, z).type],
+    worldHalf: WORLD_HALF, regionName: (x, z) => REGION[W.regionAt(x, z).type], regionLabel: (x, z) => W.regionLabel(W.regionAt(x, z)), regionId: (x, z) => W.regionAt(x, z).id, landmarkLabel: W.landmarkLabel,
   };
   return map;
 }

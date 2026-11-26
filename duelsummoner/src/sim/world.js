@@ -10,6 +10,7 @@ import { dropPickup, addFx, killEnemy, PICK_COIN, PICK_XP, PICK_HEART } from './
 import { buildOffer, candidates, itemChestOffer } from './field.js';
 import { powerTick, rollPickup } from './powerups.js';
 import { wager, stakesOf } from './stakes.js';
+import { discoverTick } from './discover.js';
 import { procTick, procEvent } from './procs.js';
 import { ACES } from '../data/stages.js';
 
@@ -149,7 +150,7 @@ export function updateWorld(g, dt) {
     g.frenzyT = RELIC.frenzySeconds; g.emit('relic', R.x, R.z, n); g.event('banner', 'Screen cleared: ' + n + ' defeated. The Coin Rite begins.');
   }
   if (g.frenzyT > 0) g.frenzyT = Math.max(0, g.frenzyT - dt);
-  powerTick(g, dt); if (g.big) { procTick(g, dt); g.stakes = stakesOf(g); }
+  powerTick(g, dt); if (g.big) { procTick(g, dt); g.stakes = stakesOf(g); discoverTick(g); }
   if (g.mods.toll > 0) {                                                  // Toll of Ash: pay a share of current LP every few seconds, never below 1
     g.tollT -= dt;
     if (g.tollT <= 0) { g.tollT = K.tollEverySec; g.hurtPlayer(Math.max(1, Math.round(p.hp * K.tollPct)), false, 'Toll of Ash', 1); }

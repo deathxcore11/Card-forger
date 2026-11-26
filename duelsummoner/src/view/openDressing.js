@@ -137,8 +137,14 @@ const ROCKC = [[0xc98a4a, 0xdcae72], [0xd39a5a, 0xe3bd82], [0xbb7d41, 0xd29f66]]
 function farRock(D, q) { const [x, y, z, w, h, rot, v] = q, c = ROCKC[v % 3]; frustum(D, x, y - 1, z, w * 0.55, w * 0.42, w * 0.48, w * 0.36, h * 0.62 + 1, rot, c[0], c[1]); frustum(D, x + Math.cos(rot) * w * 0.05, y + h * 0.62 - 1, z + Math.sin(rot) * w * 0.05, w * 0.4, w * 0.3, w * 0.34, w * 0.26, h * 0.38, rot, c[1], mixc(c[1], 0xffffff, 0.15)); }
 function farRuin(D, q) { const [x, y, z, w, h, rot, v] = q, c = Math.cos(rot), s = Math.sin(rot), col = 0xd6b98a; frustum(D, x, y - 0.8, z, w * 0.5, 0.7, w * 0.46, 0.6, h + 0.8, rot, col, 0xe2c99c); frustum(D, x + c * w * 0.9, y - 0.5, z + s * w * 0.9, 1.2, 1.1, 1.1, 1.0, 1.3, rot + 0.5, col); frustum(D, x - s * 2.8, y - 0.5, z + c * 2.8, 0.9, 0.9, 0.8, 0.8, 0.9, rot + 1.2, 0xc9ab7c); }
 
+// ---- a carved stone card half sunk in the sand: a pale slab with a darker inset panel on both faces and a worn top
+function stoneCard(D, x, y, z, s, rot) { frustum(D, x, y - 1.3 * s, z, 1.35 * s, 0.16 * s, 1.25 * s, 0.13 * s, 4.4 * s, rot, 0xd8c8a8, 0xe6dac0); frustum(D, x, y - 0.2 * s, z, 0.95 * s, 0.19 * s, 0.85 * s, 0.17 * s, 2.6 * s, rot, 0xb39c78, 0xc8b490); frustum(D, x, y + 1.0 * s, z, 0.32 * s, 0.21 * s, 0.05 * s, 0.2 * s, 0.6 * s, rot, 0x8a7458); }
+// ---- cracked salt on a dry lake: thin darker lines lying on the ground
+function crack(D, map, pts) { for (let i = 0; i + 3 < pts.length; i += 2) { const x0 = pts[i], z0 = pts[i + 1], x1 = pts[i + 2], z1 = pts[i + 3], dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1, nx = -dz / l * 0.07, nz = dx / l * 0.07, y0 = groundAt(map, x0, z0) + 0.04, y1 = groundAt(map, x1, z1) + 0.04; D.quad([x0 - nx, y0, z0 - nz], [x0 + nx, y0, z0 + nz], [x1 + nx, y1, z1 + nz], [x1 - nx, y1, z1 - nz], [0, 1, 0], 0xb39a72); } }
 export function addDressing(D, map, ok) {
   const d = map.dress || {}, yes = ok || (() => true);
+  for (const q of d.cards || []) if (yes(q[0], q[2])) stoneCard(D, q[0], q[1], q[2], q[3], q[4]);
+  for (const q of d.cracks || []) if (yes(q[0], q[1])) crack(D, map, q);
   for (const q of d.cacti || []) if (yes(q[0], q[2])) cactus(D, q[0], q[1], q[2], q[3], q[4], q[5]);
   for (const q of d.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], false);
   for (const q of d.logs || []) if (yes(q[0], q[2])) log(D, map, q);

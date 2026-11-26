@@ -78,6 +78,13 @@ export function makeWorld(seedLo, stageIndex) {
   const TINT = [[0xf3c978, 0], [0xe0a060, 0.38], [0xeee2c8, 0.6], [0xd98a50, 0.45], [0xe8d29a, 0.25], [0xc9b378, 0.4], [0xd6a878, 0.35]], mixh = (a, b, t) => { const m = sh => Math.round(((a >> sh) & 255) * (1 - t) + ((b >> sh) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
   W.tintAt = (x, z) => { const n = near2(x, z), t = sstep(-320, 320, n.db - n.da), A = TINT[n.A.type], B = TINT[n.B.type]; return { c: mixh(B[0], A[0], t), k: B[1] * (1 - t) + A[1] * t }; };
   W.baseH = baseH; W.regionAt = (x, z) => near2(x, z).A; W.mount = mount;
+  // names: every region and every landmark has its own, seeded, in our own words (shown when you arrive)
+  const RNAMES = [['the Amber Sea', 'the Whispering Dunes', 'the Sea of Cinders', 'the Long Drift', 'the Gilded Swells', 'the Tallow Dunes', 'the Slow Waves'], ['the Anvil Mesas', 'the Red Tables', 'the Broken Altars', 'the Stacks', 'the Kiln Mesas', 'the Hearth Tables'],
+    ['the Salt Mirror', 'the Bone Flat', 'the White Pan', 'the Glass Lake', 'the Pale Floor'], ['the Throat Canyons', 'the Split Runs', 'the Knife Gullies', 'the Hollow Cuts'], ['the Field of Fallen Cards', 'the Card Graves', 'the Ashen Deck', 'the Sunken Hand', 'the Discard Pile'],
+    ['the Dead Orchard', 'the Grey Wood', 'the Bleached Grove', 'the Thorn Wood'], ['the Spine of Teeth', 'the Long Ridge', 'the Saw Ridge', 'the Old Backbone']];
+  W.regionLabel = R => { const L = RNAMES[R.type]; return L[hsh(seed, R.rx, R.rz, 0x4E4D) % L.length]; };
+  const LWORD = ['Ember', 'Ash', 'Gilded', 'Silent', 'Hollow', 'Last', 'Weeping', 'Crowned', 'Sunken', 'Broken', 'Sleeping', 'Ivory', 'Dusk', 'Oath', 'Gambler', 'Lantern'];
+  W.landmarkLabel = (b, lx, lz) => { const w = LWORD[hsh(seed, lx, lz, 0x4C4D) % LWORD.length]; return b.kind === 1 ? 'the ' + w + ' Spire' : b.kind === 2 ? 'the ' + w + ' Card' : 'the ' + w + ' Mesa'; };
   const spread = (x, z, r) => { let lo = baseH(x, z), hi = lo; for (let a = 0; a < 12; a++) { const t = a * TAU / 12, h = baseH(x + cosA(t) * r, z + sinA(t) * r); if (h < lo) lo = h; if (h > hi) hi = h; } return hi - lo; };
   const slope = (x, z) => { const a = baseH(x + 1, z), b = baseH(x - 1, z), c = baseH(x, z + 1), d = baseH(x, z - 1); return sq(((a - b) * (a - b) + (c - d) * (c - d)) / 4); };
   W.spread = spread; W.slope = slope;
@@ -179,7 +186,7 @@ export function makeWorld(seedLo, stageIndex) {
   const dcache = new Map();
   W.dressCell = (qx, qz) => {
     const key = (qx + 128) * 512 + (qz + 128); let D = dcache.get(key); if (D) return D;
-    D = { cacti: [], dead: [], logs: [], pots: [], heads: [], stalls: [], solid: [] }; dcache.set(key, D); const C = cell(qx, qz); if (!C.type && r4(C.x0 + Q / 2, C.z0 + Q / 2) > EDGE - 300) return D;
+    D = { cacti: [], dead: [], logs: [], pots: [], heads: [], stalls: [], solid: [], cards: [], cracks: [] }; dcache.set(key, D); const C = cell(qx, qz); if (!C.type && r4(C.x0 + Q / 2, C.z0 + Q / 2) > EDGE - 300) return D;
     const rn = rngOf(hsh(seed, qx, qz, 0xD7E55)), T = C.type, F = W.gather(C.x0, C.z0, C.x0 + Q, C.z0 + Q, 40), keep = [];
     for (const q of C.pockets) keep.push([q.x, q.z, q.type === 'broker' ? 12 : 7]); if (C.ring) keep.push([C.ring.x, C.ring.z, 18]); for (const e of C.extras) keep.push([e.x, e.z, 5]); for (const p of W.extra) keep.push([p.x, p.z, Math.max(p.rOut, 10)]);
     const mul = { cactus: [0.6, 0.8, 0.15, 0.9, 0.7, 0.4, 0.6][T], dead: [0.6, 0.8, 0.2, 0.6, 1.0, 3.0, 0.5][T], logs: [0.6, 0.8, 0.2, 0.7, 1.6, 1.2, 0.5][T] };
@@ -203,6 +210,9 @@ export function makeWorld(seedLo, stageIndex) {
     fill(Math.round(21 * mul.dead), 300, 'd', 16, (x, z) => ok(x, z, 2), (x, z) => dead(x, z, 1.25 + rn() * 0.35));
     fill(Math.round(75 * mul.logs), 500, 'l', 10, (x, z) => ok(x, z, 1, 0.5), (x, z) => beam(x, z, 6 + rn() * 3, 0.4 + rn() * 0.3, (rn() * 2) | 0));
     fill(Math.round(8 * (T === 4 ? 2 : T === 2 ? 0.3 : 1)), 200, 'p', 20, (x, z) => ok(x, z, 2, 0.35), (x, z) => potc(x, z));
+    // the ruin field's half-sunk carved stone cards (solid), and the dry lake's cracked salt (flat, view only)
+    if (T === 4) fill(9, 300, 'k', 16, (x, z) => ok(x, z, 2.5, 0.3), (x, z) => { const y = gy(x, z), s = 0.8 + rn() * 0.7; D.cards.push([r2(x), r2(y), r2(z), r2(s), r2(rn() * TAU)]); D.solid.push([r2(x), r2(y), r2(z), r2(1.2 * s), r2(3.2 * s)]); put('k', x, z); });
+    if (T === 2) for (let k = 0, t = 0; k < 46 && t < 200; t++) { let x = C.x0 + rn() * Q, z = C.z0 + rn() * Q; if (!free(x, z, 1)) continue; const pts = [r2(x), r2(z)]; let a = rn() * TAU; for (let s = 0; s < 3; s++) { a += (rn() - 0.5) * 1.4; const l = 2.5 + rn() * 4; x += cosA(a) * l; z += sinA(a) * l; pts.push(r2(x), r2(z)); } D.cracks.push(pts); k++; }
     return D;
   };
   W.cellOf = (x, z) => cell(Math.floor(x / Q), Math.floor(z / Q));

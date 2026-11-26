@@ -132,6 +132,14 @@ const STAGE_INDEX_OF = look => STAGE_LOOK_LIST.indexOf(look);
 let waterMesh = null, curLook = null, ripT = 0;
 const ownPeak = { r: 0, t: 0 }; let capBurstDone = false;
 let grassMesh = null, sceneryGroup = null, mapMesh = null, gateSeal = null, viewMapKey = '';
+// the big desert's movement feel: sand kicks up behind a fast run and sprays off a slide (view only)
+let dustAcc = 0, dustT = 0;
+function sandDust() {
+  const now = performance.now(), dt = Math.min(0.05, (now - (dustT || now)) / 1000); dustT = now; if (!game.map || !game.map.big || MODE !== 'play') return;
+  const p = game.p, sp = Math.hypot(p.vx, p.vz); if (!p.grounded || !(sp > 9.6 || (p.sliding && sp > 5))) { dustAcc = 0; return; }
+  dustAcc += dt * (p.sliding ? 36 : 14) * Math.min(2, sp / 9);
+  while (dustAcc >= 1) { dustAcc--; const bx = p.x - p.vx / sp * 0.6 + (Math.random() - 0.5) * 0.7, bz = p.z - p.vz / sp * 0.6 + (Math.random() - 0.5) * 0.7; fx.burst(bx, p.y + 0.15, bz, 1, p.sliding ? 0xf0d9a6 : 0xe2c48a, 1.3, 1.4, p.sliding ? 0.26 : 0.18, 0.55, 6); }
+}
 let doorMesh = null, doorKey = '';
 function syncDoor() {       // the big desert's door: built when it rises, lifted out of the sand over five seconds
   const d = game.door, key = d && d.state === 'risen' ? game.map.key + '|' + d.x + '|' + d.z : '';
@@ -377,6 +385,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'hop') { if (!fx.rm_) tone(330 * Math.pow(1.07, Math.min(a, 10)), 0.05, 0.035, 'triangle'); }       // a rising tick for every chained slide hop
   else if (type === 'hurt') { if (!c) host.haptic('hurt'); if (!c) fx.shake(b ? 0.55 : 0.28, true); }       // the player's own cost (c is 1) neither flinches nor shakes
   else if (type === 'announce') sigils.push({ x: b, z: c, until: actors.vt + 6.5, next: 0 });
+  else if (type === 'landmark') { fx.ring(a, game.p.y + 0.3, b, 12, 0xffe08a, 0.8); fx.burst(a, game.p.y + 1.5, b, 50, 0xffe08a, 7, 6, 0.3, 0.9, 6); fx.shake(0.25); }       // a landmark reached: a golden ring and a fountain of sparks
   else if (type === 'procfx') { fx.ring(ip.x, ip.y + 0.2, ip.z, 4.5, 0xffd56a, 0.4); fx.burst(ip.x, ip.y + 1, ip.z, 14, 0xffe08a, 4, 5, 0.22, 0.55, 6); }       // an item's effect fired
   else if (type === 'surge') { fx.shake(0.2); }
   else if (type === 'doorrise') { const y0 = Math.min(heightAt(a, b), 40); fx.moment('gatewake', 'A', { shake: 0.45 }); for (let k = 0; k < 4; k++) fx.burst(a + (k - 1.5) * 3, y0 + 0.5, b, 18, 0xd9b872, 3, 3, 0.3, 1.4, 8); fx.ring(a, y0 + 0.3, b, 10, 0xd9b872, 1.4); }       // sand and a low tremor: no beam, no light
@@ -601,7 +610,7 @@ function frame(now) {
   ringMarks();
   fx.update(dtReal, camera);
   props.cam = camera.position; props.update(game);
-  syncDoor(); drawTags(); minimap.draw(game, input.yaw); if (mapOpen) minimap.drawFull($('fullmap'), game, input.yaw);
+  syncDoor(); sandDust(); drawTags(); minimap.draw(game, input.yaw); if (mapOpen) minimap.drawFull($('fullmap'), game, input.yaw);
   showFlash(game);
   const a1 = performance.now();
   trimUploads();
