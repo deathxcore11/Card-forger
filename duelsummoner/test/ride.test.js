@@ -175,3 +175,10 @@ test('ride: a player who has never kicked the card out this run is not put on it
   const g = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); g.god = true; g.spawnAcc = -1e9; const [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 5, { ...I, f: 1 });
   assert.ok(!(g.p.ride && g.p.ride.on), 'not riding'); g.rideKicks = 1; place(g, x, z, 14); run(g, 2, { ...I, f: 1 }); assert.ok(g.p.ride.on, 'after a kick, speed mounts again');
 });
+test('summon flourishes: every summon adds its element to a banked slam, bigger with its form; a Fusion adds a double ring', () => {
+  const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 2, { ...I, f: 1 });
+  g.field.monsters[1] = { id: 'twinflare-tyrant', level: 6, cd: 9, ang: 0, x: g.p.x, y: g.p.y, z: g.p.z };
+  const seen = []; const em = g.emit.bind(g); g.emit = (t, a, b, c, d) => { if (t === 'flourish') seen.push(c); return em(t, a, b, c, d); };
+  run(g, 30, { ...I, f: 1, jump: true }); run(g, 2, { ...I, f: 1 }); run(g, 1, { ...I, f: 1, dash: true }); for (let i = 0; i < 120 && !seen.length; i++) run(g, 1, { ...I, f: 1 });
+  assert.ok(seen.length >= 2, 'flourishes: ' + seen); assert.ok(seen.some(c => c >= 100 && c % 10 === 1), 'the Fusion fire flourish: ' + seen);
+});

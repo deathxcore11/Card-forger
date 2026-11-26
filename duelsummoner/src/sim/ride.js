@@ -14,6 +14,9 @@ import { breakVasesNear, rideShrineDone } from './world.js';
 import { shrineCourse } from '../gen/world/world.js';
 import { railsNear, sealsNear, sealSet, pipesNear } from './rails.js';
 import { answerTrick } from './answers.js';
+import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
+import { elemBits } from '../data/elements.js';
+import { splash } from './weapons.js';
 
 export const RIDE = { mountAt: 10.5, dismountAt: 7, top: 24, push: 3.4, pushTo: 12.5, friction: 0.55, soft: 2.2, downhill: 10, carve: 2.6, airTurn: 1.0, crouchMax: 0.5, popLo: 2.2, popHi: 4.5,
   snap: 1.6, flipTime: 0.42, spinRate: 9.42, landTol: 0.52, bailT: 0.6, revertWin: 0.28, balDrift: 0.9, balFix: 2.6, sparkR: 2.5, sparkDmg: 7, sparkEvery: 0.2, gravity: 28, kickRun: 0.4, kickTo: 12.5, brake: 16, holdMin: 8.5 };
@@ -46,6 +49,8 @@ function bank(g, r) {
   // the landing slam: radius and damage from the combo just banked, capped by the Flow step
   const p = g.p, rad = Math.min(FLOW.slamR[1], FLOW.slamR[0] + v / 900) * (1 + (g.mods.slamSize || 0)), dmg = Math.min(FLOW.slamCapPerStep * F.step, 6 + v / FLOW.slamDiv);
   explode(g, p.x, p.y, p.z, rad, 0, dmg, 0xffd56a, 'Landing slam'); F.slams++;
+  // summon flourishes: each summon on the field adds its element to the slam, bigger with each evolution form; a Fusion adds a double ring
+  if (g.field && g.field.monsters) for (const m of g.field.monsters) { if (!m) continue; const D = MONSTERS[m.id] || FUSIONS[m.id]; if (!D) continue; const fu = !!FUSIONS[m.id], fm = formOf(m.id, m.level), el = elemBits(D.elements), R = (fu ? 6 : 3) + fm * 1.5, dm = (fu ? 12 : 4) + fm * 3; g.curSrc = g.srcIndex(m.id); splash(g, p.x, p.y, p.z, R, dm, el); if (fu) splash(g, p.x, p.y, p.z, R * 0.55, dm * 0.6, el); g.curSrc = 0; g.emit('flourish', p.x, p.z, (el & 1 ? 1 : el & 2 ? 2 : 0) + 10 * fm + (fu ? 100 : 0)); }
   { const T = g.map && g.map.regionAt ? g.map.regionAt(p.x, p.z).type : -1;       // the land answers the slam
     if (T === 2) { for (let k = 0; k < 5; k++) { const a = k * 1.2566 + r.heading, d = rad * 0.9; explode(g, p.x + sin(a) * d, p.y, p.z + cos(a) * d, rad * 0.45, 0, dmg * 0.5, 0xfff2c0, 'Star crack'); } g.emit('slamland', p.x, p.z, 2); }
     else if (T === 0) { const e = g.en, R2 = (rad * 1.7) ** 2; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z, d2 = dx * dx + dz * dz; if (d2 < R2 && d2 > rad * rad) { const d = Math.sqrt(d2); e.x[i] += dx / d * 3; e.z[i] += dz / d * 3; damageEnemy(g, i, dmg * 0.35, { noCrit: true }); } } g.emit('slamland', p.x, p.z, 0); }
