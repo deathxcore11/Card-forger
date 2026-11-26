@@ -518,13 +518,14 @@ export function pickAndUse(cx, cy) {
 // Landmark tags: a short label over every landmark you are close to, saying what it is and what it gives, so nothing has to be guessed. Spent ones turn grey and stay.
 const tagEls = [], tagV = new T.Vector3();
 const doneAt = new Map();
+const SHRINE_ASK = { stand: 'Shrine: stand in the ring, pick a boon', ring: 'Ring Shrine: grind a lap of the ring rail (or stand in it)', gate: 'Gate Shrine: ride through all five arches in one go (or stand in it)', bowl: 'Bowl Shrine: ride three laps inside the stones (or stand in it)', spire: 'Spire Shrine: air past the needle above its gold band (or stand in it)', pipe: 'Pipe Shrine: ride a loop of its full pipe (or stand in it)' };
 function landmarkTags() {
   const W = game.world, p = game.p, out = [];
   const add = (o, text, cls, y) => { const dx = o.x - p.x, dz = o.z - p.z, d2 = dx * dx + dz * dz; if (d2 < 30 * 30) out.push({ x: o.x, y: (o.y || 0) + y, z: o.z, text, cls, d2 }); };
   if (W) {
     const spentFor = o => { if (!doneAt.has(o)) doneAt.set(o, performance.now()); return performance.now() - doneAt.get(o) < 3000; };       // a 'used' label fades out after 3 s (the object keeps its used colour)
     for (const s of W.stones || []) if (!s.used || spentFor(s)) add(s, s.used ? 'Witness Stone: used' : 'Witness Stone: 1 free item of 3', s.used ? 'spent' : 'free', 2.1);
-    for (const s of W.shrines || []) if (!s.done || spentFor(s)) add(s, s.done ? 'Shrine of Tribute: done' : game.big ? (shrineCourse(s.x, s.z).kind === 'ring' ? 'Ring Shrine: grind a lap of the ring (or stand in it)' : 'Gate Shrine: ride through all five arches (or stand in it)') : 'Shrine of Tribute: hold the ring, pick a boon', s.done ? 'spent' : 'free', 2.4);
+    for (const s of W.shrines || []) if (!s.done || spentFor(s)) add(s, s.done ? 'Shrine of Tribute: done' : game.big ? (SHRINE_ASK[s.form] || SHRINE_ASK.stand) : 'Shrine of Tribute: hold the ring, pick a boon', s.done ? 'spent' : 'free', 2.4);
     if (W.broker) add(W.broker, 'Relic Broker: shop', 'shop', 2.6);
     if (W.altar && (!W.altar.used || spentFor(W.altar))) add(W.altar, W.altar.used ? 'Altar: used' : 'Altar of Tribute: banish or tribute', W.altar.used ? 'spent' : 'seal', 2.4);
     for (const c of W.cchests || []) if (!c.open) { if (c.trophy || c.free) add(c, c.trophy ? 'Trophy Chest: free, open it' : 'Chest: free', 'free', 1.9); else { const pr = chestPrice(game); add(c, game.coins >= pr ? 'Card Chest: ' + pr + ' coins' : 'Card Chest: ' + pr + ', need ' + (pr - game.coins) + ' more', game.coins >= pr ? 'shop' : 'poor', 1.9); } }       // the price, gold when you can pay it and muted red when you cannot (the tier stays hidden)

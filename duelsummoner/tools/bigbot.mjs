@@ -19,6 +19,7 @@ const RIDERS = ['rail', 'meteor', 'seal', 'reckless'];
 // the riding layer: kick the card out, steer where the walking bot wanted to go, and trick by build; its own counter, never the sim's streams
 function rider(g, bot, c) {
   const p = g.p, r = p.ride, build = PLAYER; bot.k = (bot.k || 0) + 1;
+  if (bot.doorKnown && g.gate.state === 'closed' && Math.hypot(g.map.gate.x - p.x, g.map.gate.z - p.z) < 45) { if (r && r.on) { c.yaw = 0; c.r = -Math.sin(r.heading); c.f = Math.cos(r.heading); c.jump = false; c.dash = false; c.slide = false; } else c.slide = false; return; }       // near the door: brake off the card and walk in to wake it
   if (!r || !r.on) { c.slide = (bot.k % 50) === 40 && !c.dash; return; }       // after a moment of running, SLIDE kicks the card out
   c.slide = false; c.dash = false; c.use = false;
   if (r.grind) { c.yaw = 0; c.f = 0; c.r = Math.max(-1, Math.min(1, r.bal * 3)); c.jump = r.grind.time > (build === 'rail' ? 2.5 : 0.8); return; }       // ride the rail, keep the balance, hop off

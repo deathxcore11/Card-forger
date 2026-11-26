@@ -6,10 +6,10 @@ import { RIDE, comboValue, flowOf } from '../src/sim/ride.js';
 import { railsNear } from '../src/sim/rails.js';
 import { spawnEnemy } from '../src/sim/enemies.js';
 const STEP = 1 / 60, I = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: false, use: false, hold: false };
-const mk = () => { const g = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); g.god = true; g.spawnAcc = -1e9; return g; };
+const mk = () => { const g = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); g.god = true; g.spawnAcc = -1e9; g.rideKicks = 1; return g; };
 const run = (g, n, cmd) => { for (let i = 0; i < n; i++) g.step(STEP, typeof cmd === 'function' ? cmd(i) : cmd || I); };
 // find flat ground near the start to ride on
-function flatSpot(g) { for (let r = 30; r < 600; r += 7) for (let a = 0; a < 6.28; a += 0.3) { const x = g.p.x + Math.cos(a) * r, z = g.p.z + Math.sin(a) * r, h = heightAt(x, z); let ok = h < 50; for (let k = 1; k <= 30 && ok; k++) if (Math.abs(heightAt(x, z - k) - h) > 0.25 * k / 10 + 0.15) ok = false; if (ok) return [x, z]; } return [g.p.x, g.p.z]; }
+function flatSpot(g) { for (let r = 30; r < 600; r += 7) for (let a = 0; a < 6.28; a += 0.3) { const x = g.p.x + Math.cos(a) * r, z = g.p.z + Math.sin(a) * r, h = heightAt(x, z); let ok = h < 50 && railsNear(g, x, z - 15, 22).length === 0; for (let k = 1; k <= 30 && ok; k++) if (Math.abs(heightAt(x, z - k) - h) > 0.25 * k / 10 + 0.15) ok = false; if (ok) return [x, z]; } return [g.p.x, g.p.z]; }
 const place = (g, x, z, speed) => { g.p.x = x; g.p.z = z; g.p.y = heightAt(x, z); g.p.grounded = true; g.p.vx = 0; g.p.vz = -speed; g.p.vy = 0; };
 
 test('ride: above 10.5 m/s the duelist steps on the card; below 7 m/s on the ground steps off', () => {
@@ -123,8 +123,8 @@ test('the wonder: every seed has a long ride line with five seal stones; lightin
 });
 test('landforms: a canyon half-pipe wall sends the card up (vert) and it comes back down on the wall without a bail; bowls and step-downs exist', () => {
   const g = mk(), W = g.map.world, sp = W.spawn; let spot = null;
-  for (let r = 200; r < 6000 && !spot; r += 23) for (let a = 0; a < 6.28 && !spot; a += 0.21) { const x = sp.x + Math.cos(a) * r, z = sp.z + Math.sin(a) * r; if (W.regionAt(x, z).type !== 3) continue;
-    for (let k = 0; k < 8 && !spot; k++) { const b = k * 0.785, c = Math.cos(b), s = Math.sin(b), h0 = heightAt(x, z), flat = Math.abs(heightAt(x - c * 6, z - s * 6) - h0) < 0.4; if (flat && heightAt(x + c * 3, z + s * 3) - h0 > 2.8 && heightAt(x + c * 1.2, z + s * 1.2) - h0 > 1.0 && heightAt(x + c * 1.2, z + s * 1.2) - h0 < 3) spot = [x, z, c, s]; } }
+  for (let r = 200; r < 12000 && !spot; r += 23) for (let a = 0; a < 6.28 && !spot; a += 0.21) { const x = sp.x + Math.cos(a) * r, z = sp.z + Math.sin(a) * r; if (W.regionAt(x, z).type !== 3) continue;
+    for (let k = 0; k < 8 && !spot; k++) { const b = k * 0.785, c = Math.cos(b), s = Math.sin(b), h0 = heightAt(x, z), flat = Math.abs(heightAt(x - c * 6, z - s * 6) - h0) < 2; if (flat && heightAt(x + c * 3, z + s * 3) - h0 > 2.8 && heightAt(x + c * 1.2, z + s * 1.2) - h0 > 1.0 && heightAt(x + c * 1.2, z + s * 1.2) - h0 < 3) spot = [x, z, c, s]; } }
   assert.ok(spot, 'a half-pipe wall');
   const [x, z, c, s] = spot; g.p.x = x - c * 8; g.p.z = z - s * 8; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.vx = c * 15; g.p.vz = s * 15; const yaw = Math.atan2(-c, -s);
   let vert = false, bail = false; for (let i = 0; i < 150; i++) { run(g, 1, { ...I, f: i < 30 ? 1 : 0, yaw }); const r = g.p.ride; if (r && r.vert) vert = true; if (r && r.bailT > 0) bail = true; }
@@ -170,4 +170,8 @@ test('trick answers: every held card answers one trick (a Fusion two); a flip wi
   const e = g.en; assert.equal(answerTrick(g, 'flip', g.p.x, g.p.y, g.p.z), 1); let marked = 0; for (let i = 0; i < e.max; i++) if (e.alive[i] && e.mark[i] > 0) marked++; assert.ok(marked >= 3, 'marked ' + marked);
   assert.equal(answerTrick(g, 'flip', g.p.x, g.p.y, g.p.z), 0, 'on cooldown'); const hp0 = []; for (let i = 0; i < e.max; i++) if (e.alive[i]) hp0.push(e.hp[i]);
   g.t += 1; assert.equal(answerTrick(g, 'grind', g.p.x + 3, g.p.y, g.p.z + 2), 1, 'the Wyvern answers the grind'); assert.equal(g.ansCount['ember-wyvern'], 1);
+});
+test('ride: a player who has never kicked the card out this run is not put on it by speed alone (a slope or a dash)', () => {
+  const g = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); g.god = true; g.spawnAcc = -1e9; const [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 5, { ...I, f: 1 });
+  assert.ok(!(g.p.ride && g.p.ride.on), 'not riding'); g.rideKicks = 1; place(g, x, z, 14); run(g, 2, { ...I, f: 1 }); assert.ok(g.p.ride.on, 'after a kick, speed mounts again');
 });

@@ -8,7 +8,7 @@ for (let s = 0; s < N; s++) {
   const seed = 3000 + s * 131, g0 = new Game(seed, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }), W = g0.map.world, sp = W.spawn;
   const S = W.landSites(2, sp.x - 2500, sp.z - 2500, sp.x + 2500, sp.z + 2500).filter(st => { for (let a = -st.L1 - 14; a < 4 + st.L2 + 20; a += 6) { const x = st.x + st.c * a, z = st.z + st.s * a, C = W.cell(Math.floor(x / 256), Math.floor(z / 256)); if (C.blocks.some(b => Math.hypot(b.cx - x, b.cz - z) < Math.max(b.rx, b.rz) * 1.3 + 8)) return false; } return true; }).slice(0, 6).concat(W.drops.map(d => ({ x: d.x, z: d.z, c: d.c, s: d.s, L1: 30, L2: 58, drop: true }))) ;       // plus the two great drops: approach from 44 m back on the shelf       // a step-down that runs into a mesa or ruin block is the block's cliff, not the landform: counted apart
   for (const st of S) for (const v of [12, 18, 24]) {
-    const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); g.god = true; g.spawnAcc = -1e9; runs++;
+    const g = new Game(seed, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); g.god = true; g.spawnAcc = -1e9; g.rideKicks = 1; runs++;
     const x0 = st.x - st.c * (st.L1 + 14), z0 = st.z - st.s * (st.L1 + 14); g.p.x = x0; g.p.z = z0; g.p.y = heightAt(x0, z0); g.p.grounded = true; g.p.vx = st.c * v; g.p.vz = st.s * v; g.p.vy = 0;
     const yaw = Math.atan2(-st.c, -st.s); let air = 0, top = -1e9, landY = 0, landSlope = 0, wasAir = false, bailed = false, vert = false, vmax = 0;
     g.step(1 / 60, { ...I, f: 1, yaw }); if (g.p.ride) g.p.ride.speed = v;

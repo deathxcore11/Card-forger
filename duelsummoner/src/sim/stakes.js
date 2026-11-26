@@ -7,7 +7,7 @@ export function stakesOf(g) {
   return s < 0 ? 0 : s > STAKES.cap ? STAKES.cap : s;
 }
 export const stakesFrac = g => Math.min(1, (g.stakes || 0) / STAKES.cap);
-export const stakesDensity = g => (1 + (g.stakes || 0) / 100) * (g.rflow && g.p && g.p.ride && g.p.ride.on ? 1 + 0.15 * (g.rflow.step - 1) : 1);       // a rider in Flow meets more: +15% spawns a Flow step while on the card
+export const stakesDensity = g => (1 + (g.stakes || 0) / 100) * (g.rflow && g.p && g.p.ride && g.p.ride.on ? 1 : 1);       // (riders meet more through Flow Stakes and the spawns ahead of the card, plan section 6)
 export function wager(g, shrine) {
   const lo = STAKES.wager[0], hi = STAKES.wager[1], add = lo + Math.floor(g.rl() * (hi - lo + 1)); shrine.used = true; g.stakesAdd = (g.stakesAdd || 0) + add; g.wagersTaken = (g.wagersTaken | 0) + 1;
   g.stakes = stakesOf(g);
