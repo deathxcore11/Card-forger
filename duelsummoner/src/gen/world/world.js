@@ -186,7 +186,7 @@ export function makeWorld(seedLo, stageIndex) {
   const dcache = new Map();
   W.dressCell = (qx, qz) => {
     const key = (qx + 128) * 512 + (qz + 128); let D = dcache.get(key); if (D) return D;
-    D = { cacti: [], dead: [], logs: [], pots: [], heads: [], stalls: [], solid: [], cards: [], cracks: [] }; dcache.set(key, D); const C = cell(qx, qz); if (!C.type && r4(C.x0 + Q / 2, C.z0 + Q / 2) > EDGE - 300) return D;
+    D = { cacti: [], dead: [], logs: [], pots: [], heads: [], stalls: [], solid: [], cards: [], cracks: [], seals: [] }; dcache.set(key, D); const C = cell(qx, qz); if (!C.type && r4(C.x0 + Q / 2, C.z0 + Q / 2) > EDGE - 300) return D;
     const rn = rngOf(hsh(seed, qx, qz, 0xD7E55)), T = C.type, F = W.gather(C.x0, C.z0, C.x0 + Q, C.z0 + Q, 40), keep = [];
     for (const q of C.pockets) keep.push([q.x, q.z, q.type === 'broker' ? 12 : 7]); if (C.ring) keep.push([C.ring.x, C.ring.z, 18]); for (const e of C.extras) keep.push([e.x, e.z, 5]); for (const p of W.extra) keep.push([p.x, p.z, Math.max(p.rOut, 10)]);
     const mul = { cactus: [0.6, 0.8, 0.15, 0.9, 0.7, 0.4, 0.6][T], dead: [0.6, 0.8, 0.2, 0.6, 1.0, 3.0, 0.5][T], logs: [0.6, 0.8, 0.2, 0.7, 1.6, 1.2, 0.5][T] };
@@ -210,8 +210,13 @@ export function makeWorld(seedLo, stageIndex) {
     fill(Math.round(21 * mul.dead), 300, 'd', 16, (x, z) => ok(x, z, 2), (x, z) => dead(x, z, 1.25 + rn() * 0.35));
     fill(Math.round(75 * mul.logs), 500, 'l', 10, (x, z) => ok(x, z, 1, 0.5), (x, z) => beam(x, z, 6 + rn() * 3, 0.4 + rn() * 0.3, (rn() * 2) | 0));
     fill(Math.round(8 * (T === 4 ? 2 : T === 2 ? 0.3 : 1)), 200, 'p', 20, (x, z) => ok(x, z, 2, 0.35), (x, z) => potc(x, z));
+    // ride lines: from every pocket, 2 to 4 grindable beams laid one after another toward the next pocket (a short gap between, so an ollie carries from one to the next), and in two pockets out of five a set of five seal stones along the line
+    C.pockets.forEach((pk, pi) => { let tx = C.x0 + Q / 2, tz = C.z0 + Q / 2; const other = C.pockets[1 - pi]; if (other) { tx = other.x; tz = other.z; } else { tx += (rn() - 0.5) * Q; tz += (rn() - 0.5) * Q; }
+      let dx = tx - pk.x, dz = tz - pk.z, dl = sq(dx * dx + dz * dz) || 1; dx /= dl; dz /= dl; const n = 2 + ((rn() * 3) | 0); let ox = pk.x + dx * 12, oz = pk.z + dz * 12;
+      for (let k = 0; k < n; k++) { const len = 7 + rn() * 3, cx = ox + dx * len / 2, cz = oz + dz * len / 2; if (!free(cx, cz, 0.5) || slp(cx, cz) > 0.35) break; const ax = cx - dx * len / 2, az = cz - dz * len / 2, bx = cx + dx * len / 2, bz = cz + dz * len / 2; D.logs.push([r2(ax), r2(gy(ax, az) - 0.15), r2(az), r2(bx), r2(gy(bx, bz) - 0.15), r2(bz), r2(0.5), 2]); put('l', cx, cz); ox = bx + dx * (3 + rn() * 2); oz = bz + dz * (3 + rn() * 2); const lat = (rn() - 0.5) * 0.6, c2 = 1 - lat * lat * 0.5; const ndx = dx * c2 - dz * lat, ndz = dz * c2 + dx * lat; dx = ndx; dz = ndz; }
+      if (rn() < 0.4) { const sid = ((qx + 128) * 512 + (qz + 128)) * 4 + pi; for (let k = 0; k < 5; k++) { const d = 10 + k * 7, side = (k % 2 ? 1 : -1) * 2.5, sx = pk.x + dx * d - dz * side, sz = pk.z + dz * d + dx * side; if (free(sx, sz, 0)) D.seals.push([r2(sx), r2(gy(sx, sz)), r2(sz), sid]); } } });
     // the ruin field's half-sunk carved stone cards (solid), and the dry lake's cracked salt (flat, view only)
-    if (T === 4) fill(9, 300, 'k', 16, (x, z) => ok(x, z, 2.5, 0.3), (x, z) => { const y = gy(x, z), s = 0.8 + rn() * 0.7; D.cards.push([r2(x), r2(y), r2(z), r2(s), r2(rn() * TAU)]); D.solid.push([r2(x), r2(y), r2(z), r2(1.2 * s), r2(3.2 * s)]); put('k', x, z); });
+    if (T === 4) fill(9, 300, 'k', 16, (x, z) => ok(x, z, 2.5, 0.3), (x, z) => { const y = gy(x, z), s = 0.8 + rn() * 0.7; D.cards.push([r2(x), r2(y), r2(z), r2(s), r2(rn() * TAU)]); D.solid.push([r2(x), r2(y), r2(z), r2(1.2 * s), r2(3.2 * s), 1]); put('k', x, z); });
     if (T === 2) for (let k = 0, t = 0; k < 46 && t < 200; t++) { let x = C.x0 + rn() * Q, z = C.z0 + rn() * Q; if (!free(x, z, 1)) continue; const pts = [r2(x), r2(z)]; let a = rn() * TAU; for (let s = 0; s < 3; s++) { a += (rn() - 0.5) * 1.4; const l = 2.5 + rn() * 4; x += cosA(a) * l; z += sinA(a) * l; pts.push(r2(x), r2(z)); } D.cracks.push(pts); k++; }
     return D;
   };

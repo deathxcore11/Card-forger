@@ -86,6 +86,8 @@ export class TouchControls {
     bt('use', 'USE', { width: u, height: u, right: 'calc(' + pad + ' + ' + bg + ' + 10px)', bottom: 'calc(' + bot + ' + ' + bg + ' + 10px)', display: 'none' });
     const pause = mk('tcb tcpause', root); pause.textContent = '||'; pause.addEventListener('pointerdown', e => { e.preventDefault(); this.hooks.onPause(); });
   }
+  // on the card the buttons say what they do there: OLLIE, FLIP, GRAB and GRIND (Use)
+  setRiding(on) { if (this._riding === on) return; this._riding = on; const L = on ? { jump: 'OLLIE', dash: 'FLIP', slide: 'GRAB', use: 'GRIND' } : { jump: 'JUMP', dash: 'DASH', slide: 'SLIDE', use: 'USE' }; for (const k in L) if (this.btns[k]) this.btns[k].el.textContent = L[k]; }
   // the Use button only appears when the game has something to use
   setUseVisible(v) { const b = this.btns.use; if (b && (b.el.style.display !== 'none') !== v) b.el.style.display = v ? 'flex' : 'none'; }
 }

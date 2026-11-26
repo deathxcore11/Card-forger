@@ -130,7 +130,8 @@ export function breakVase(g, v) {
   g.vasesBroken++; if (g.big && g.procs && g.procs.length) procEvent(g, 'vase', { x: v.x, y: v.y, z: v.z });
 }
 export function breakVasesNear(g, x, z, r) {
-  for (const v of g.world.vases) if (v.alive) { const dx = v.x - x, dz = v.z - z; if (dx * dx + dz * dz < r * r) breakVase(g, v); }
+  let n = 0; for (const v of g.world.vases) if (v.alive) { const dx = v.x - x, dz = v.z - z; if (dx * dx + dz * dz < r * r) { breakVase(g, v); n++; } }
+  return n;
 }
 
 // ---- per-tick: shrines charge, regen ----

@@ -8,13 +8,14 @@ for (const [W, H] of [[412, 915], [915, 412]]) {
   await b.evalIn(`(async()=>{ const D = __ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 2500)); const g = D.game; g.god = true; g.spawnAcc = -1e9; g.opts.offers = false; D.freeze(true); return 1; })()`);
   // a long gentle slope or flat run
   await b.evalIn(`(async()=>{ const D = __ds, g = D.game, { heightAt, streamTo } = await import('/src/sim/terrain.js'); let best = null; for (let r = 20; r < 500 && !best; r += 6) for (let a = 0; a < 6.28 && !best; a += 0.4) { const x = g.p.x + Math.cos(a) * r, z = g.p.z + Math.sin(a) * r, h = heightAt(x, z); let ok = h < 50; for (let k = 2; k <= 40 && ok; k += 2) { const hh = heightAt(x, z - k); if (hh > h - k * 0.02 + 0.3 || hh < h - k * 0.25) ok = false; } if (ok) best = [x, z]; }
-    if (!best) best = [g.p.x, g.p.z]; g.p.x = best[0]; g.p.z = best[1]; streamTo(g.p.x, g.p.z, 60, 4); g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.vx = 0; g.p.vz = -14; g.p.vy = 0; D.input.yaw = 0;
+    if (!best) best = [g.p.x, g.p.z]; g.p.x = best[0]; g.p.z = best[1]; streamTo(g.p.x, g.p.z, 60, 4); g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.vx = 0; g.p.vz = 0; g.p.vy = 0; D.input.yaw = 0;
     for (let i = 0; i < 6; i++) (await import('/src/sim/enemies.js')).spawnEnemy(g, 'husk', { x: g.p.x + (i - 3) * 1.5, z: g.p.z - 22 }); return 1; })()`);
   const act = (cmd, n) => b.evalIn(`(async()=>{ const D = __ds; for (let i = 0; i < ${n}; i++) { D.drive(1 / 60, Object.assign({ f: 1, yaw: 0 }, ${JSON.stringify(cmd)})); await new Promise(r => requestAnimationFrame(r)); } return 1; })()`);
-  await act({}, 20); await b.shot(`ride-1-card-${W}x${H}`);
+  await act({}, 40); await act({ slide: true }, 4); await act({}, 30);       // run, then SLIDE kicks the card out on the flat
+  console.log(W + 'x' + H, 'riding', await b.evalIn('__ds.game.p.ride && __ds.game.p.ride.on ? 1 : 0')); await b.shot(`ride-1-card-${W}x${H}`);
   await act({ jump: true }, 24); await b.shot(`ride-2-crouch-${W}x${H}`);
   await act({}, 7); await b.shot(`ride-3-pop-${W}x${H}`);
-  await act({ dash: true }, 1); await act({}, 9); await b.shot(`ride-4-flip-${W}x${H}`);
+  await act({ dash: true }, 1); await act({}, 11); await b.shot(`ride-4-flip-${W}x${H}`);
   await b.evalIn(`(async()=>{ const D = __ds, g = D.game; for (let i = 0; i < 160 && !g.p.grounded; i++) { D.drive(1 / 60, { f: 1, yaw: 0 }); await new Promise(r => requestAnimationFrame(r)); } for (let i = 0; i < 4; i++) await new Promise(r => requestAnimationFrame(r)); return 1; })()`); await b.shot(`ride-5-slam-${W}x${H}`);
   // a grind: put the card just above a beam or card edge near here, moving along it
   const ok = await b.evalIn(`(async()=>{ const D = __ds, g = D.game, { railsNear } = await import('/src/sim/rails.js'), { heightAt, streamTo } = await import('/src/sim/terrain.js'); let s = null; for (let r = 0; r < 1500 && !s; r += 50) { const L = railsNear(g, g.p.x + r, g.p.z, 60); s = L.find(q => Math.hypot(q[3] - q[0], q[5] - q[2]) > 6 && Math.abs(q[4] - q[1]) < 1 && q[1] - heightAt(q[0], q[2]) < 4); }

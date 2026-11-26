@@ -1,6 +1,7 @@
 // Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
 // telegraphs and effects, pickups. Positions are blended between the last two sim ticks so any refresh rate looks smooth.
 import { CFG } from '../data/config.js';
+import { litSeals } from '../sim/ride.js';
 import { KIND_LIST, BOSS_COLORS as BC } from '../data/enemies.js';
 import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { MAP } from '../data/map.js';
@@ -372,26 +373,40 @@ export class Actors {
   }
 
   // ---- Card Riding (code-made motion on the current model): the giant spell card under the feet, and how the rider stands on it
+  // the reactive desert's lights: a gold seal over every stone card ground at least once, and a glow on each seal stone lit (warm while the combo is open, bright once its set is done)
+  _lit(g, dt) {
+    const L = g.rideLit; if (!L) { if (this.litG) this.litG.visible = false; return; }
+    if (!this.litG) { this.litG = new T.Group(); this.scene.add(this.litG); this._litVer = -1; this._litGeo = new T.OctahedronGeometry(0.32, 0); this._litM = [new T.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.55 }), new T.MeshBasicMaterial({ color: 0xffd56a }), new T.MeshBasicMaterial({ color: 0xfff2c0 })]; }
+    this.litG.visible = true;
+    if (L.ver !== this._litVer) { this._litVer = L.ver; for (const c of this.litG.children.slice()) this.litG.remove(c);
+      const add = (x, y, z, m, s) => { const o = new T.Mesh(this._litGeo, m); o.position.set(x, y, z); o.scale.set(s, s * 1.5, s); o.userData.y0 = y; this.litG.add(o); };
+      for (const k in L.cards) { const c = L.cards[k]; add(c[0], c[1] + 0.9, c[2], this._litM[2], 1); }
+      for (const s of litSeals(g)) add(s[0], s[1] + 1.35, s[2], this._litM[s[3] ? 1 : 0], s[3] ? 0.8 : 0.6); }
+    const t = performance.now() / 1000; for (const o of this.litG.children) { o.rotation.y = t * 1.4 + o.position.x; o.position.y = o.userData.y0 + Math.sin(t * 2 + o.position.z) * 0.12; }
+  }
   _board(g, p, px, py, pz, dt) {
     const rd = p.ride && p.ride.on ? p.ride : null;
-    if (!this.boardG) { const G = this.boardG = new T.Group(), M = (c, e) => new T.MeshLambertMaterial({ color: c, emissive: e || 0x000000 });
-      const edge = new T.Mesh(new T.BoxGeometry(1.06, 0.07, 1.86), M(0xc9a24a, 0x2a1e08)); edge.position.y = 0.035; G.add(edge);
-      const face = new T.Mesh(new T.BoxGeometry(0.9, 0.08, 1.68), M(0xf3e6c8)); face.position.y = 0.05; G.add(face);
-      const seal = new T.Mesh(new T.OctahedronGeometry(0.26, 0), M(0x7a3cff === 0 ? 0 : 0x3a2a60, 0x120a24)); seal.scale.set(1, 0.18, 1.4); seal.position.y = 0.1; G.add(seal);
-      for (const zz of [-0.62, 0.62]) { const pip = new T.Mesh(new T.BoxGeometry(0.5, 0.02, 0.05), M(0xc9a24a)); pip.position.set(0, 0.095, zz); G.add(pip); }
+    if (!this.boardG) { const G = this.boardG = new T.Group(), M = (c, e) => lambert(c, { emissive: e || 0x000000 }), B = (w, h, l, m, y, z) => { const o = new T.Mesh(new T.BoxGeometry(w, h, l), m); o.position.set(0, y, z || 0); G.add(o); return o; };
+      // a giant spell card 1.25 m x 2 m: a dark ink rim so it reads on pale sand, a thick gold edge, a bright cream face, a deep art window and a big gold seal
+      B(1.34, 0.08, 2.1, M(0x1b1220), 0.04); B(1.25, 0.14, 2.0, M(0xe0b24e, 0x4a3410), 0.09); B(1.07, 0.03, 1.82, M(0xfff4d8, 0x5a4a2a), 0.17);
+      B(0.86, 0.02, 0.98, M(0x23304f, 0x0c1424), 0.19, 0.18);
+      const ring = new T.Mesh(new T.TorusGeometry(0.3, 0.055, 4, 18), M(0xffd56a, 0x6a4a10)); ring.rotation.x = Math.PI / 2; ring.position.set(0, 0.21, 0.18); G.add(ring);
+      const star = new T.Mesh(new T.OctahedronGeometry(0.17, 0), M(0xfff2c0, 0x8a6a20)); star.scale.set(1, 0.3, 1); star.position.set(0, 0.22, 0.18); G.add(star);
+      for (const zz of [-0.62, -0.75]) B(0.7, 0.02, 0.05, M(0xe0b24e, 0x3a2a08), 0.19, zz);
       G.visible = false; this.scene.add(G); this._spinV = 0; }
-    const G = this.boardG; G.visible = !!rd && this.player.visible; if (!rd) return;
-    const yaw = rd.heading + rd.spin; G.position.set(px, py + 0.04, pz); G.rotation.order = 'YXZ'; G.rotation.y = yaw;
+    const G = this.boardG; G.visible = !!rd && !(g.over && !g.won); if (!rd) return;       // (not this.player.visible: the rig hides the stand-in player mesh every frame)
+    const yaw = rd.heading + rd.spin; G.position.set(px, py + 0.02, pz); G.rotation.order = 'YXZ'; G.rotation.y = yaw;
     let roll = 0, pitch = 0; if (rd.flipT > 0) { const k = 1 - rd.flipT / 0.42, d = rd.flipDir || 0; if (d === 0 || d === 4) roll = k * Math.PI * 2 * (d === 4 ? -1 : 1); else if (d === 2 || d === 6) pitch = k * Math.PI * 2 * (d === 6 ? -1 : 1); else { roll = k * Math.PI * 2; pitch = k * Math.PI * (d < 4 ? 1 : -1); } }
     if (rd.grabbing) pitch += 0.28; if (rd.manual) pitch -= 0.22; G.rotation.x = pitch; G.rotation.z = roll;
     G.position.y += rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.45 : 0;
+    if (rd.speed > 13 && !rd.grind) { const tx = px - Math.sin(yaw) * 1.05, tz = pz - Math.cos(yaw) * 1.05, n = rd.speed > 18 ? 3 : 2; for (let k = 0; k < n; k++) this.fx.spark(tx + (Math.random() - 0.5) * 0.9, py + 0.15, tz + (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.6, 0.3 + Math.random() * 0.5, (Math.random() - 0.5) * 0.6, Math.random() < 0.6 ? 0xffd56a : 0xfff2c0, 0.26, 0.35); }       // the gold trail at speed
     if (rd.grind && Math.random() < 0.9) for (let k = 0; k < 2; k++) this.fx.spark(px + (Math.random() - 0.5) * 0.6, py + 0.1, pz + (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 4, 1.5 + Math.random() * 2.5, (Math.random() - 0.5) * 4, Math.random() < 0.5 ? 0xffd56a : 0xfff2c0, 0.32, 0.45);
   }
   _rideRig(R, rd, p, dt) {
     const yaw = rd.heading + rd.spin; R.group.rotation.y = yaw + R.yaw;
     const want = Math.max(-0.35, Math.min(0.35, ((this._lastH === undefined ? rd.heading : this._lastH) - rd.heading) / Math.max(dt, 0.004) * 0.06)); this._lastH = rd.heading; this._carve = (this._carve || 0) + (want - (this._carve || 0)) * Math.min(1, dt * 8); R.group.rotation.z = this._carve;
     const crouch = rd.crouch > 0 ? rd.crouch / 0.5 : rd.flipT > 0 ? 0.6 : rd.grabbing ? 0.7 : rd.grind ? 0.35 : 0.15; R.group.scale.y *= 1 - 0.28 * crouch; R.group.scale.x *= 1 + 0.08 * crouch; R.group.scale.z *= 1 + 0.08 * crouch;
-    R.group.position.y += 0.1 + (rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.6 : 0); R.group.rotation.x = rd.manual ? -0.18 : rd.grabbing ? 0.2 : 0;
+    R.group.position.y += 0.22 + (rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.6 : 0); R.group.rotation.x = rd.manual ? -0.18 : rd.grabbing ? 0.2 : 0;
   }
   update(g, a, cam, head, dt) {
     this._dt = dt;
@@ -426,7 +441,7 @@ export class Actors {
       let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees
       this._tw = (this._tw || 0) + (tw - (this._tw || 0)) * Math.min(1, dt / 0.3); R.twist(this._tw);
     }
-    this._board(g, p, px, py, pz, dt);
+    this._board(g, p, px, py, pz, dt); this._lit(g, dt);
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);

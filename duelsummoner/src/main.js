@@ -392,6 +392,10 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'bail') { fx.shake(0.22); fx.burst(a, groundY(a, b) + 0.3, b, 16, 0xd9b872, 3, 2, 0.3, 0.6, 6); }
   else if (type === 'ollie') { fx.burst(ip.x, ip.y + 0.1, ip.z, 10, 0xe2c48a, 2.4, 1.6, 0.24, 0.45, 6); }
   else if (type === 'ride') { if (a) { fx.ring(ip.x, ip.y + 0.1, ip.z, 1.8, 0xffd56a, 0.25); fx.burst(ip.x, ip.y + 0.2, ip.z, 14, 0xffe08a, 2.6, 2, 0.22, 0.5, 6); } }
+  else if (type === 'volley') { const y0 = groundY(a, b); fx.ring(a, y0 + 1.6, b, 3.6, 0xfff2c0, 0.3); }       // the summons all strike with the landing
+  else if (type === 'cardlit') { const y0 = (c || groundY(a, b)); fx.ring(a, y0, b, 2.4, 0xfff2c0, 0.4); fx.burst(a, y0, b, 26, 0xffd56a, 5, 6, 0.3, 0.7, 7); }       // a stone card lights for good
+  else if (type === 'seal') { const y0 = groundY(a, b); fx.ring(a, y0 + 0.3, b, 1.6 + (c || 1) * 0.3, 0xffd56a, 0.35); fx.burst(a, y0 + 1, b, 10 + (c || 1) * 4, 0xffe08a, 3, 4, 0.24, 0.5, 6); }       // a seal stone lit (the ring grows with each stone of the set)
+  else if (type === 'sealset') { const y0 = groundY(a, b); fx.ring(a, y0 + 0.2, b, 7, 0xfff2c0, 0.7); fx.ring(a, y0 + 0.3, b, 4, 0xffd56a, 0.5); for (let k = 0; k < 3; k++) fx.burst(a, y0 + 1, b, 30, k ? 0xffd56a : 0xfff2c0, 6, 8 + k * 2, 0.36, 0.9, 9); fx.shake(0.35); }       // the whole set: the chest rises
   else if (type === 'grind') { fx.burst(ip.x, ip.y + 0.2, ip.z, 12, 0xffd56a, 3, 3, 0.24, 0.4, 6); }
   else if (type === 'special') { fx.ring(a, game.p.y + 0.3, b, 16, 0xfff2c0, 0.8); fx.burst(a, game.p.y + 1.5, b, 60, 0xffd56a, 9, 7, 0.36, 1, 6); fx.shake(0.6); }
   else if (type === 'procfx') { fx.ring(ip.x, ip.y + 0.2, ip.z, 4.5, 0xffd56a, 0.4); fx.burst(ip.x, ip.y + 1, ip.z, 14, 0xffe08a, 4, 5, 0.22, 0.55, 6); }       // an item's effect fired
@@ -440,6 +444,9 @@ function bossIntro() {                                              // name plat
 }
 const skipIntro = () => { fx.push = 0; };
 window.addEventListener('keydown', e => { if (e.code === 'Enter') skipIntro(); }); canvas.addEventListener('pointerdown', skipIntro);
+// first runs on the big desert: a hint chip until the card has been kicked out once
+let rideHintDone = (() => { try { return localStorage.getItem('ds-ridehint') === '1'; } catch (e) { return false; } })();
+function rideHint(riding) { const el = document.getElementById('rideHint'); if (!el) return; if (riding && !rideHintDone) { rideHintDone = true; try { localStorage.setItem('ds-ridehint', '1'); } catch (e) {} } const on = !rideHintDone && game.big && MODE === 'play' && game.t > 3; if (el.classList.contains('on') !== on) el.classList.toggle('on', on); if (on) el.textContent = (inputMode() === 'keys' ? 'C' : 'SLIDE') + ' while running: ride your card'; }
 function drainEvents() { game.drainEvents(onEvent); }
 
 const dbg = $('debug'), showDebug = /[?&]debug/.test(location.search);
@@ -560,7 +567,7 @@ function frame(now) {
       if (cmd.use) pendingUse = true; cmd.use = pendingUse; const t0 = game.tickN;
       alpha = game.fixed(dtReal, quantise(cmd, liveRec)); if (game.tickN !== t0) pendingUse = false;
     }
-    bossIntro(); touch.setUseVisible(!!game.prompt && !game.offer);
+    bossIntro(); { const riding = !!(game.p && game.p.ride && game.p.ride.on); touch.setRiding && touch.setRiding(riding); touch.setUseVisible((riding || !!game.prompt) && !game.offer); rideHint(riding); }
     prof.sim = performance.now() - s0; stepMs += prof.sim;
     drainEvents();
     if (game.offer && MODE === 'play') { drawHud(game, true); setMode('offer'); showOffer(game, menu); }       // safety net: the sim is waiting on an offer the screen never opened (its event was lost), so open it from the state
