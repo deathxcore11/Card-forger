@@ -6,7 +6,7 @@ Owner's ask (26 Nov, 12:10 PM ET):
 - A rad 90s console feel.
 - Thousands of hours of unlocks.
 - Broken builds that are still balanced.
-- A cool dog.
+- (The dog was dropped by the owner: summons that evolve and fuse fill that role.)
 - A polished seeded world that generates in a fun, cool way.
 
 He added: "Go hard and surprise me on how well this works and fits the world and game feel." The controller should play like the classic early-2000s skate games, and touch should be just as easy.
@@ -118,13 +118,10 @@ Grindable or launchable, and each reacts:
 - **Ride quests:** combo score, grind distance, gaps found, lines completed, slams.
 - **Daily seeded line challenge.**
 - **Boards for best combo and best slam.**
-- **The dog:**
-  - runs beside you;
-  - rides the card nose on long grinds;
-  - fetches far pickups;
-  - barks toward the door only inside the red wind range;
-  - cannot die;
-  - breeds and hats unlock.
+- **No dog (owner, 26 Nov 12:33 PM ET).** The summons are the companions:
+  - summoned monsters keep pace with the card;
+  - a banked landing makes every summon attack at once (a "chorus strike");
+  - each evolution form and each Fusion adds its own flourish to the slam (its element on the shockwave).
 
 ## 8. Order
 
@@ -134,6 +131,6 @@ Grindable or launchable, and each reacts:
 4. Controls and tutorial (section 4).
 5. World polish and contact sheets (section 5).
 6. Balance with bots (section 6).
-7. Unlocks: 8 boards, ride items, quests, then the dog (section 7).
+7. Unlocks: 8 boards, ride items, quests, then summons that join your tricks (section 7).
 
 After steps 1 and 2: commit, report with picture strips at 412x915 and 915x412, and continue. The owner plays 1 and 2 as soon as they are in the preview.
