@@ -554,7 +554,7 @@ function drawTags() {
     const t = list[i]; tagV.set(t.x, t.y, t.z).project(camera); if (tagV.z > 1 || tagBlocked(t)) { el.style.display = 'none'; continue; }
     if (bannerUp && (1 - tagV.y) / 2 > 0.12 && (1 - tagV.y) / 2 < 0.31) { el.style.display = 'none'; continue; }       // world labels never draw inside the announcement lane
     { const px = (tagV.x * 0.5 + 0.5) * w, py = (-tagV.y * 0.5 + 0.5) * h; if (px < 14 || px > w - 14 || py < 14 || py > h - 14 || fx._underHud(px, py)) { el.style.display = 'none'; continue; } }       // a label is whole or absent: never cut at an edge, never over a HUD panel
-    el.style.display = 'block'; el.className = 'wtag ' + t.cls + (t.cls === 'poor' && performance.now() < tagPulse ? ' pulse' : ''); if (el.textContent !== t.text) el.textContent = t.text; { const hw = el.offsetWidth / 2 + 10; el.style.left = Math.max(hw, Math.min(w - hw, (tagV.x * 0.5 + 0.5) * w)) + 'px'; }       // kept 10 px inside the screen edges el.style.top = ((-tagV.y * 0.5 + 0.5) * h) + 'px';
+    el.style.display = 'block'; el.className = 'wtag ' + t.cls + (t.cls === 'poor' && performance.now() < tagPulse ? ' pulse' : ''); if (el.textContent !== t.text) el.textContent = t.text; { const hw = el.offsetWidth / 2 + 10; el.style.left = Math.max(hw, Math.min(w - hw, (tagV.x * 0.5 + 0.5) * w)) + 'px'; } el.style.top = ((-tagV.y * 0.5 + 0.5) * h) + 'px';       // kept 10 px inside the screen edges
   }
 }
 // Upload only what changed: an instanced mesh with no instances this frame and last frame is not re-uploaded (its version is put back), and one with instances uploads just the first count rows,
