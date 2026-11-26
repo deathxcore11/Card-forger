@@ -3,7 +3,7 @@
 import { launch, wait } from '../test/cdp.mjs';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-const [out, nArg, wArg, hArg] = process.argv.slice(2), N = +nArg || 12, W = +wArg || 915, H = +hArg || 412, SEEDS = Array.from({ length: N }, (_, i) => 101 + i * 977);
+const [out, nArg, wArg, hArg] = process.argv.slice(2), N = +nArg || 12, W = +wArg || 915, H = +hArg || 412, SEEDS = process.env.SEEDS ? process.env.SEEDS.split(',').map(Number) : Array.from({ length: N }, (_, i) => 101 + i * 977);
 const NAMES = ['Dune Sea', 'Mesa Field', 'Dry Lake', 'Canyon Run', 'Ruin Field', 'Dead Forest', 'Ridge Spine'];
 const b = await launch({ out, query: '?debug&play=1&seed=' + SEEDS[0] }); const shots = [];
 await b.send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: W < H });

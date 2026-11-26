@@ -27,7 +27,7 @@ const dist = (ax, az, bx, bz) => sq((ax - bx) * (ax - bx) + (az - bz) * (az - bz
 const POCKETS2 = [['wager', 0.08], ['vases', 0.63], ['stone', 0.08], ['cchest', 0.08], ['shrine', 0.1], ['broker', 0.02], ['altar', 0.02]];
 const POCKETS = [['wager', 0.12], ['vases', 0.45], ['cchest', 0.13], ['shrine', 0.15], ['stone', 0.07], ['altar', 0.04], ['broker', 0.04]];
 // blocks per cell by region type: [mesa p/count, wall, ruin]  (counts are lo..hi inclusive)
-const COUNTS = [[[0, 1, 0.3], [0, 0, 0], [0, 1, 0.3]], [[2, 3, 1], [0, 1, 0.6], [1, 2, 1]], [[0, 1, 0.1], [0, 0, 0], [0, 1, 0.3]], [[1, 2, 1], [0, 1, 0.5], [0, 1, 0.4]], [[0, 1, 0.4], [0, 0, 0], [4, 7, 1]], [[0, 1, 0.2], [0, 0, 0], [0, 1, 0.5]], [[0, 1, 0.5], [1, 1, 0.4], [0, 1, 0.3]]];
+const COUNTS = [[[0, 0, 0], [0, 0, 0], [0, 1, 0.15]], [[3, 4, 1], [0, 1, 0.6], [1, 2, 1]], [[0, 1, 0.1], [0, 0, 0], [0, 1, 0.3]], [[1, 2, 1], [0, 1, 0.5], [0, 1, 0.4]], [[0, 1, 0.4], [0, 0, 0], [4, 7, 1]], [[0, 1, 0.2], [0, 0, 0], [0, 1, 0.5]], [[0, 1, 0.5], [1, 1, 0.4], [0, 1, 0.3]]];
 
 export function makeWorld(seedLo, stageIndex) {
   const seed = ((seedLo >>> 0) ^ Math.imul(stageIndex + 1, 0x85EBCA6B)) >>> 0, rr = rngOf(seed ^ 0xC0FFEE), wind = rr() * TAU, WP = { wind };
@@ -109,7 +109,7 @@ export function makeWorld(seedLo, stageIndex) {
         if (s.ref === undefined) s.ref = duneH(R.P, s.x - s.c * s.L1, s.z - s.s * s.L1) - R.off;
         const prof = a < -s.L1 ? 0 : a < 0 ? (a + s.L1) / s.L1 : a < 4 ? 1 : a < 4 + s.L2 ? 1 - (a - 4) / s.L2 : 0, sm = prof * prof * (3 - 2 * prof), m = (1 - sstep(10, 16, b)) * sstep(-s.L1 - 12, -s.L1, a) * (1 - sstep(4 + s.L2, 16 + s.L2, a));
         h = h * (1 - m) + (s.ref + s.H * (a < 0 ? prof : sm)) * m; } }
-    if (R.type === 3) { const a = Math.abs(2 * vnoise(R.P.seed ^ 0x701, x / 520, z / 520) - 1), d = a / 0.17; if (d < 1) { const d2 = d * d; h -= R.trD * 1.45 * (1 - d2 * d2 * d2); } }       // canyon runs: a half-pipe, a flat floor and walls that steepen toward the top
+    if (R.type === 3) { const a = Math.abs(2 * vnoise(R.P.seed ^ 0x701, x / 520, z / 520) - 1), d = a / 0.17; if (d < 1) { const d2 = d * d; h -= R.trD * 2.2 * (1 - d2 * d2 * d2); } }       // canyon runs: a half-pipe, a flat floor and walls that steepen toward the top
     else if (R.type === 6) h += R.rgH * (1 - sstep(0, 0.2, Math.abs(2 * vnoise(R.P.seed ^ 0x711, x / 900, z / 900) - 1)));
     return h;
   };
@@ -127,7 +127,7 @@ export function makeWorld(seedLo, stageIndex) {
   }
   function base0(x, z) { const n = near2(x, z), t = sstep(-320, 320, n.db - n.da); let h = regH(n.A, x, z) * t; if (t < 0.999) h += regH(n.B, x, z) * (1 - t); return h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z) - 8 * startValleyQ(x, z); }
   // the colour a region gives the sand (view only): [colour, strength] per type, blended across the same 640 m band as the heights
-  const TINT = [[0xf3c978, 0], [0xd88a4a, 0.6], [0xf4ecda, 0.75], [0xc8703c, 0.65], [0xd9c48c, 0.5], [0xa89a68, 0.6], [0xb88a5c, 0.55]], mixh = (a, b, t) => { const m = sh => Math.round(((a >> sh) & 255) * (1 - t) + ((b >> sh) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
+  const TINT = [[0xf3c978, 0], [0xd88a4a, 0.6], [0xf4f0e4, 0.9], [0xb8582c, 0.75], [0xdcc890, 0.6], [0x8c8462, 0.6], [0x7a5236, 0.6]], mixh = (a, b, t) => { const m = sh => Math.round(((a >> sh) & 255) * (1 - t) + ((b >> sh) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
   W.tintAt = (x, z) => { const n = near2(x, z), t = sstep(-320, 320, n.db - n.da), A = TINT[n.A.type], B = TINT[n.B.type], c = mixh(B[0], A[0], t), k = B[1] * (1 - t) + A[1] * t, vq = Math.max(n.A.type === 0 ? valleyQ(n.A.P, x, z) * t : 0, startValleyQ(x, z)); if (W.drops) for (const d of W.drops) { const dx = x - d.x, dz = z - d.z; if (dx * dx + dz * dz > 120 * 120) continue; const aa = dx * d.c + dz * d.s, bb = Math.abs(-dx * d.s + dz * d.c); if (aa > -92 && aa < 1.5 && bb < d.w - 2) { const stripe = ((aa % 10) + 10) % 10 < 3.5 ? 1 : 0, edge = aa > -6 ? 1 : 0; return { c: edge ? 0x6a3416 : stripe ? 0x8a4420 : 0xb0602c, k: 0.9 }; } if (aa >= 1.5 && aa < 40 && bb < d.w - 2) return { c: aa < 4 ? 0x5a2c12 : 0xc07838, k: aa < 4 ? 0.95 : 0.7 * (1 - (aa - 4) / 36) + 0.2 }; }       // a great drop's ramp is carved dark stone with a band every 9 m, darkest at the lip: it reads as a launch from 100 m
     return vq > 0.02 ? { c: mixh(c, 0xc87436, Math.min(1, vq * 1.1)), k: k + (0.55 - k) * Math.min(1, vq * 1.2) } : { c, k }; };       // a wave valley's floor is a warmer, darker sand: the line to ride reads at once
   W.baseH = baseH; W.regionAt = (x, z) => near2(x, z).A; W.mount = mount;
@@ -239,7 +239,7 @@ export function makeWorld(seedLo, stageIndex) {
   const dcache = new Map();
   W.dressCell = (qx, qz) => {
     const key = (qx + 128) * 512 + (qz + 128); let D = dcache.get(key); if (D) return D;
-    D = { cacti: [], dead: [], logs: [], pots: [], heads: [], stalls: [], solid: [], cards: [], cracks: [], seals: [], rings: [], arches: [], pipes: [], spires: [], lips: [] }; dcache.set(key, D); const C = cell(qx, qz); if (!C.type && r4(C.x0 + Q / 2, C.z0 + Q / 2) > EDGE - 300) return D;
+    D = { cacti: [], dead: [], logs: [], pots: [], heads: [], stalls: [], solid: [], cards: [], cracks: [], seals: [], rings: [], arches: [], pipes: [], spires: [], lips: [], rspires: [], bones: [] }; dcache.set(key, D); const C = cell(qx, qz); if (!C.type && r4(C.x0 + Q / 2, C.z0 + Q / 2) > EDGE - 300) return D;
     const rn = rngOf(hsh(seed, qx, qz, 0xD7E55)), T = C.type, F = W.gather(C.x0, C.z0, C.x0 + Q, C.z0 + Q, 40), keep = [];
     for (const q of C.pockets) keep.push([q.x, q.z, q.type === 'broker' ? 12 : 7]); if (C.ring) keep.push([C.ring.x, C.ring.z, 18]); for (const e of C.extras) keep.push([e.x, e.z, 5]); for (const p of W.extra) keep.push([p.x, p.z, Math.max(p.rOut, 10)]);
     const wb = W.wonder ? W.wonder.beams.filter(s => Math.floor((s[0] + s[2]) / 2 / Q) === qx && Math.floor((s[1] + s[3]) / 2 / Q) === qz) : [], ws = W.wonder ? W.wonder.seals.filter(s => Math.floor(s[0] / Q) === qx && Math.floor(s[1] / Q) === qz) : [];
@@ -247,7 +247,7 @@ export function makeWorld(seedLo, stageIndex) {
     for (const s of W.landSites(3, C.x0 - 20, C.z0 - 20, C.x0 + Q + 20, C.z0 + Q + 20)) keep.push([s.x, s.z, 9]);
     const courses = C.pockets.filter(q => q.type === 'shrine').map(q => shrineCourse(q.x, q.z)); for (const cs of courses) { for (const a of cs.arches) keep.push([a.x, a.z, 4]); for (const m of cs.marks) keep.push([m[0], m[1], 2]); if (cs.spire) keep.push([cs.spire.x, cs.spire.z, 3]); if (cs.pipe) keep.push([cs.pipe.x, cs.pipe.z, 9]); }
     const school = (W.school || []).filter(s => Math.floor((s[0] + s[2]) / 2 / Q) === qx && Math.floor((s[1] + s[3]) / 2 / Q) === qz); for (const s of W.school || []) for (let k = 0; k <= 4; k++) keep.push([s[0] + (s[2] - s[0]) * k / 4, s[1] + (s[3] - s[1]) * k / 4, 2.5]);
-    const mul = { cactus: [0.6, 0.8, 0.15, 0.9, 0.7, 0.4, 0.6][T], dead: [0.6, 0.8, 0.2, 0.6, 1.0, 3.0, 0.5][T], logs: [0.6, 0.8, 0.2, 0.7, 1.6, 1.2, 0.5][T] };
+    const mul = { cactus: [0.12, 0.8, 0.05, 0.9, 0.5, 0.2, 0.4][T], dead: [0.05, 0.5, 0.15, 0.4, 0.6, 7.0, 0.3][T], logs: [0.6, 0.8, 0.25, 0.7, 1.6, 1.2, 0.5][T] };       // region faces: the dune sea stands empty but for beams, the dead forest is the most crowded with trunks
     const free = (x, z, pad) => { for (const k of keep) { const r = k[2] + (pad || 0); if ((x - k[0]) * (x - k[0]) + (z - k[1]) * (z - k[1]) < r * r) return false; } for (const b of F.blocks) if (dist(b.cx, b.cz, x, z) < reachOf(b) + 1 + (pad || 0)) return false; return true; };
     const gy = (x, z) => viewOver(x, z, baseH(x, z), F), slp = (x, z) => { const e = 1.2; return sq(((gy(x + e, z) - gy(x - e, z)) ** 2 + (gy(x, z + e) - gy(x, z - e)) ** 2) / (4 * e * e)); };
     for (const s of W.landSites(3, C.x0, C.z0, C.x0 + Q - 0.01, C.z0 + Q - 0.01)) if (Math.floor(s.x / Q) === qx && Math.floor(s.z / Q) === qz && spread(s.x, s.z, 6) < 1.6 && (!W.spawn || dist(s.x, s.z, W.spawn.x, W.spawn.z) > 150)) { D.pipes.push([r2(s.x), r2(gy(s.x, s.z)), r2(s.z), r2(s.ux), r2(s.uz), r2(s.R)]); }
@@ -272,6 +272,8 @@ export function makeWorld(seedLo, stageIndex) {
       { const a0 = rn() * TAU, d0 = Math.max(b.rx, b.rz) * 1.05 + 4 + rn() * 3, x = b.cx + cosA(a0) * d0, z = b.cz + sinA(a0) * d0; if (ok(x, z, 1.5, 0.35)) potc(x, z); const a1 = a0 + 2 + rn() * 2, d1 = d0 + 3 + rn() * 3, x1 = b.cx + cosA(a1) * d1, z1 = b.cz + sinA(a1) * d1; if (free(x1, z1, 1) && slp(x1, z1) < 0.5) beam(x1, z1, 6 + rn() * 3, 0.45 + rn() * 0.25, 2); }
     }
     fill(Math.round(50 * mul.cactus), 400, 'c', 12, (x, z) => dens(x, z) > 0.3 && ok(x, z, 2), (x, z) => cactus(x, z, 0.9 + rn() * 0.6));
+    if (T === 6) fill(14, 300, 's', 14, (x, z) => ok(x, z, 3, 0.6), (x, z) => { const y = gy(x, z), h = 7 + rn() * 9, w = 1.2 + rn() * 1.4; D.rspires.push([r2(x), r2(y), r2(z), r2(h), r2(w), r2(rn() * TAU)]); D.solid.push([r2(x), r2(y), r2(z), r2(w * 0.8), r2(h)]); put('s', x, z); });       // ridge spine: umber rock spires
+    if (T === 2) fill(10, 200, 'b', 18, (x, z) => ok(x, z, 2), (x, z) => { const y = gy(x, z); D.bones.push([r2(x), r2(y), r2(z), r2(rn() * TAU), r2(0.8 + rn() * 0.6)]); put('b', x, z); });       // dry lake: bleached bones on the flats
     fill(Math.round(21 * mul.dead), 300, 'd', 16, (x, z) => ok(x, z, 2), (x, z) => dead(x, z, 1.25 + rn() * 0.35));
     fill(Math.round(75 * mul.logs), 500, 'l', 10, (x, z) => ok(x, z, 1, 0.5), (x, z) => beam(x, z, 6 + rn() * 3, 0.4 + rn() * 0.3, (rn() * 2) | 0));
     fill(Math.round(8 * (T === 4 ? 2 : T === 2 ? 0.3 : 1)), 200, 'p', 20, (x, z) => ok(x, z, 2, 0.35), () => {});       // (no loose pots out in the open: the no-junk rule; pots stand only by landmarks, and vases you can break are in the pockets)
