@@ -13,10 +13,10 @@ for (const seed of SEEDS) {
   await b.shot(`r-${seed}-start`); shots.push([`r-${seed}-start`, seed + ' start']);
   for (let T = 0; T < 7; T++) {
     const ok = await b.evalIn(`(async()=>{ const D = __ds, g = D.game, m = g.map, sp = m.world.spawn, { streamTo, heightAt } = await import('/src/sim/terrain.js'); let at = null;
-      for (let R = 300; R < 9000 && !at; R += 150) for (let a = 0; a < 6.28 && !at; a += 0.25) { const x = sp.x + Math.cos(a) * R, z = sp.z + Math.sin(a) * R; const A = m.regionAt(x, z); if (A.type === ${T} && Math.hypot(x - A.cx, z - A.cz) < 500) at = [x, z, A.cx, A.cz]; }
+      for (let R = 300; R < 9000 && !at; R += 150) for (let a = 0; a < 6.28 && !at; a += 0.25) { const x = sp.x + Math.cos(a) * R, z = sp.z + Math.sin(a) * R; const A = m.regionAt(x, z); if (A.type === ${T} && Math.hypot(x - A.cx, z - A.cz) < 500 && (${T} !== 3 || m.world.valleyAt(x, z) > 0.8)) { at = [x, z, A.cx, A.cz]; if (${T} === 3) { let bd = -1; for (let k = 0; k < 16; k++) { const b2 = k * Math.PI / 8, q = m.world.valleyAt(x + Math.cos(b2) * 40, z + Math.sin(b2) * 40); if (q > bd) { bd = q; at[2] = x + Math.cos(b2) * 40; at[3] = z + Math.sin(b2) * 40; } } } } }
       if (!at) return 0; D.freeze(true); streamTo(at[0], at[1], 120, 6); g.p.ride = undefined; g.p.x = at[0]; g.p.z = at[1]; g.p.y = heightAt(at[0], at[1]); g.p.vx = 0; g.p.vz = 0; const dx = at[2] - at[0], dz = at[3] - at[1]; D.input.yaw = Math.atan2(-dx, -dz); D.input.pitch = 0;
       for (let i = 0; i < 12; i++) { D.drive(1 / 60, { f: 0, yaw: D.input.yaw }); await new Promise(r => requestAnimationFrame(r)); } D.freeze(false); await new Promise(r => setTimeout(r, 1600)); D.freeze(true); return 1; })()`);
-    if (ok) { await b.shot(`r-${seed}-${T}`); shots.push([`r-${seed}-${T}`, seed + ' ' + NAMES[T]]); }
+    if (ok) { await b.shot(`r-${seed}-${T}`); shots.push([`r-${seed}-${T}`, seed + ' ' + NAMES[T]]); await b.evalIn('(async()=>{ __ds.freeze(false); await new Promise(r => setTimeout(r, 1200)); __ds.freeze(true); return 1; })()'); await b.shot(`r-${seed}-${T}b`); shots.push([`r-${seed}-${T}b`, seed + ' ' + NAMES[T] + ' again']); }       // every spot twice in a row, so a leftover from the last spot shows
   }
   const errs = await b.evalIn('JSON.stringify((window.__errs||[]).slice(0,3))'); if (errs !== '[]') console.log(seed, 'errors', errs);
 }

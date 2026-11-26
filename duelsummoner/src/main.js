@@ -477,6 +477,9 @@ function rideCam(dt) {
 // the door's rumble: plumes of sand 22 m out on the side the door rose, for 3 s; a direction, never a marker
 const rumble = { t: 0, x: 0, z: 0, acc: 0 };
 function rumbleTick(dt) { if (rumble.t <= 0 || !game.p) return; rumble.t -= dt; rumble.acc -= dt; if (rumble.acc > 0) return; rumble.acc = 0.3; const p = game.p, dx = rumble.x - p.x, dz = rumble.z - p.z, l = Math.hypot(dx, dz) || 1, side = (Math.random() - 0.5) * 0.5, ux = dx / l, uz = dz / l, px = p.x + (ux - uz * side) * 22, pz = p.z + (uz + ux * side) * 22, y0 = groundY(px, pz); fx.burst(px, y0 + 0.4, pz, 22, 0xd9b872, 5, 7, 0.4, 1.2, 9); fx.shake(0.08); }
+// a long jump of the duelist (a debug teleport, a stage change): anything still drawn from the old place to the new one is dropped (sim effects like wakes and bolts, the summons' trail), so no long stretched shape crosses the screen
+const tg = { x: null, z: 0 };
+function teleGuard() { const p = game.p; if (!p) return; if (tg.x !== null && Math.hypot(p.x - tg.x, p.z - tg.z) > 60) { for (const o of game.fx || []) if (o.on) o.on = false; for (const m of (game.field && game.field.monsters) || []) if (m) { m.x = m.px = p.x; m.z = m.pz = p.z; m.y = m.py = p.y + 2; } } tg.x = p.x; tg.z = p.z; }
 function drainEvents() { game.drainEvents(onEvent); }
 
 const dbg = $('debug'), showDebug = /[?&]debug/.test(location.search);
@@ -623,7 +626,7 @@ function frame(now) {
 
   if (MODE === 'play') { const dv = new T.Vector3(ip.x, ip.y + 1, ip.z).project(camera); window.__dealFrom = { x: (dv.x + 1) / 2 * innerWidth, y: (1 - dv.y) / 2 * innerHeight }; }       // where the level-up cards fan out from
   devTick(now); bars.tick(dtReal || 0.016, game, document.body.classList.contains('rm'), performance.now());
-  chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); rideCam(dtReal || 0.016); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
+  chase.cols = game.colliders; chase.fovK = fovK; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); teleGuard(); rideCam(dtReal || 0.016); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
   // the menu camera: lower and almost level, so the horizon sits about 47% down and the dunes, the mesa and the gate beam show behind the panels, while Kael stays where he was on screen
   if (MODE === 'start' && !(window.__ds && window.__ds.camHold)) { const tc = performance.now() / 1000, ac = (menuLandmark() ? Math.atan2(game.map.spawn.x - menuLandmark().x, game.map.spawn.z - menuLandmark().z) : 0.7) + Math.sin(tc * 0.08) * 0.5, pc = game.p; camera.position.set(pc.x + Math.sin(ac) * 7.2, pc.y + 1.35 + Math.sin(tc * 0.3) * 0.12, pc.z + Math.cos(ac) * 7.2); const sh = innerWidth > innerHeight * 1.25 ? (document.body.dataset.cam === 'left' ? -3.4 : 0) : 0; camera.lookAt(pc.x - Math.cos(ac) * sh, camera.position.y + 0.42, pc.z + Math.sin(ac) * sh); }       // the Camp: a slow orbit around the duelist while a menu is up (view only)
   if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures
