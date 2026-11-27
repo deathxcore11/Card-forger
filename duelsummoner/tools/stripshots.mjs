@@ -6,7 +6,7 @@ const [out, sArg] = process.argv.slice(2), SEEDS = (sArg || '21,77').split(',').
 const b = await launch({ out, query: '?debug&play=1&seed=' + SEEDS[0] });
 const go = async (seed, W, H) => {
   await b.send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: W < H });
-  await b.send('Page.navigate', { url: 'http://127.0.0.1:8767/?debug&play=1&seed=' + seed }); await wait(1500); for (let i = 0; i < 60 && !(await b.evalIn('!!window.__ds')); i++) await wait(200);
+  await b.send('Page.navigate', { url: 'http://127.0.0.1:8767/?debug&play=1&seed=' + seed + (process.env.Q || '') }); await wait(1500); for (let i = 0; i < 60 && !(await b.evalIn('!!window.__ds')); i++) await wait(200);
   await b.evalIn(`(async()=>{ const D = __ds; D.pickDuelist('kael'); D.start(); await new Promise(r => setTimeout(r, 3500)); const g = D.game; g.god = true; g.spawnAcc = -1e9; g.opts.offers = false; g.rideKicks = 1; const e = document.getElementById('devbar'); if (e) e.style.visibility = 'hidden'; return 1; })()`);
 };
 // put the duelist 22 m behind the k-th line start nearest the spawn (a kicker with no piece 30 m behind it), facing down the line; riding or on foot
@@ -22,6 +22,11 @@ for (const seed of SEEDS) for (const [W, H] of SIZES) {
   const tag = seed + '-' + W + 'x' + H; await go(seed, W, H);
   await b.shot('spawn-' + tag);
   for (let k = 0; k < 3; k++) { if (await place(k, false)) await b.shot('line' + k + '-foot-' + tag); await resume(); if (await place(k, true)) await b.shot('line' + k + '-ride-' + tag); await resume(); }
+  // near a chest: 6 m from the nearest closed chest, looking at it; then a crowd of 80 husks in front
+  if (await b.evalIn(`(async()=>{ const D = __ds, g = D.game, { streamTo, heightAt } = await import('/src/sim/terrain.js'); const C = (g.world.cchests || []).filter(c => !c.open && !c.trophy).sort((a, c) => Math.hypot(a.x - g.p.x, a.z - g.p.z) - Math.hypot(c.x - g.p.x, c.z - g.p.z))[0]; if (!C) return 0;
+    D.freeze(true); const dx = g.p.x - C.x, dz = g.p.z - C.z, d = Math.hypot(dx, dz) || 1, px = C.x + dx / d * 6, pz = C.z + dz / d * 6; streamTo(px, pz, 120, 6); g.p.ride = undefined; g.p.x = px; g.p.z = pz; g.p.y = heightAt(px, pz); g.p.vx = 0; g.p.vz = 0; D.input.keys.KeyW = false; D.input.yaw = Math.atan2(-(C.x - px), -(C.z - pz)) + 0.5; D.input.pitch = 0; for (let i = 0; i < 12; i++) { D.drive(1 / 60, { f: 0, yaw: D.input.yaw }); await new Promise(r => requestAnimationFrame(r)); } D.freeze(false); await new Promise(r => setTimeout(r, 1200)); D.freeze(true); return 1; })()`)) await b.shot('chest-' + tag);
+  await resume();
+  await b.evalIn(`(async()=>{ const D = __ds, g = D.game, { spawnEnemy } = await import('/src/sim/enemies.js'); const cy = g.camYaw || 0, fx = -Math.sin(cy), fz = -Math.cos(cy); for (let k = 0; k < 80; k++) spawnEnemy(g, 'husk', { x: g.p.x + fx * (8 + (k % 10) * 1.6) + fz * ((k * 7) % 19 - 9) * 1.1, z: g.p.z + fz * (8 + (k % 10) * 1.6) - fx * ((k * 7) % 19 - 9) * 1.1 }); await new Promise(r => setTimeout(r, 1500)); D.freeze(true); return 1; })()`); await b.shot('crowd-' + tag); await resume();
   await b.evalIn(`(async()=>{ const D = __ds, g = D.game, { openLevelOffer } = await import('/src/sim/field.js'); g.opts.offers = true; g.pendingLevels = (g.pendingLevels || 0) + 1; openLevelOffer(g); await new Promise(r => setTimeout(r, 1200)); return 1; })()`);
   await b.shot('levelup-' + tag);
   const errs = await b.evalIn('JSON.stringify((window.__errs||[]).slice(0,3))'); if (errs !== '[]') console.log(tag, 'errors', errs);

@@ -68,3 +68,90 @@ export async function loadPuffTexture(url) {
   return make(c);
 }
 
+
+// ---- EWV3: block-built models (the block look, owner 27 Nov). Byte layout: app art/DS/block-look/FORMAT.md (kept out of the repo, like the models).
+// Faces are merged axis-aligned quads in whole half-blocks; parts carry a parent and a pivot; the palette is exact 24-bit with a glow bit;
+// emitters are halos and smoke puffs; level 1 (swarm enemies only) is a half-detail far copy.
+export function decodeEwv3(bytes) {
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength); let o = 0;
+  const u8 = () => dv.getUint8(o++), u16 = () => { const v = dv.getUint16(o, true); o += 2; return v; }, i16 = () => { const v = dv.getInt16(o, true); o += 2; return v; }, u32 = () => { const v = dv.getUint32(o, true); o += 4; return v; }, f32 = () => { const v = dv.getFloat32(o, true); o += 4; return v; };
+  if (String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]) !== 'EWV3') throw new Error('not EWV3');
+  o = 4;
+  const version = u16(); u16(); const voxel = f32(), hover = version >= 2 ? { amp: f32(), speed: f32() } : null, nPal = u16(), nParts = u16(), nEm = u16(), nLv = u16(), H = voxel / 2;       // version 2 adds the baked motion: a hover for the whole model and one hint per part
+  const palette = []; for (let i = 0; i < nPal; i++) palette.push({ r: u8() / 255, g: u8() / 255, b: u8() / 255, glow: (u8() & 1) === 1 });
+  const parts = []; for (let i = 0; i < nParts; i++) { const n = u8(); let name = ''; for (let k = 0; k < n; k++) name += String.fromCharCode(u8()); const pt = { name, parent: i16(), pivot: [i16() * H, i16() * H, i16() * H] }; if (version >= 2) pt.motion = { kind: u8(), axis: u8(), amp: f32(), speed: f32(), phase: f32() }; parts.push(pt); }
+  const emitters = []; for (let i = 0; i < nEm; i++) emitters.push({ kind: u8(), part: i16(), pos: [i16() * H, i16() * H, i16() * H], rgb: [u8() / 255, u8() / 255, u8() / 255], size: u16() * H });
+  const levels = [];
+  for (let l = 0; l < nLv; l++) {
+    const scale = u8(), ps = [];
+    for (let i = 0; i < nParts; i++) {
+      const n = u32(), S = { p: [], n: [], c: [] }, G = { p: [], n: [], c: [] };
+      for (let q = 0; q < n; q++) {
+        const org = [i16(), i16(), i16()], nc = u8(), du = u16(), dw = u16(), pi = u8(), d = nc >> 1, s = nc & 1 ? -1 : 1, u = (d + 1) % 3, w = (d + 2) % 3, P = palette[pi] || palette[0], B = P.glow ? G : S;
+        const cs = s > 0 ? [[0, 0], [du, 0], [du, dw], [0, dw]] : [[0, 0], [0, dw], [du, dw], [du, 0]], V = cs.map(([a, c]) => { const v = org.slice(); v[u] += a; v[w] += c; return [v[0] * H, v[1] * H, v[2] * H]; });
+        for (const k of [0, 1, 2, 0, 2, 3]) { B.p.push(V[k][0], V[k][1], V[k][2]); B.n.push(d === 0 ? s : 0, d === 1 ? s : 0, d === 2 ? s : 0); B.c.push(P.r, P.g, P.b); }
+      }
+      const geo = b => { if (!b.p.length) return null; const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(b.p, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(b.n, 3)); g.setAttribute('color', new T.Float32BufferAttribute(b.c, 3)); return g; };
+      ps.push({ solid: geo(S), glow: geo(G), quads: n });
+    }
+    levels.push({ scale, parts: ps });
+  }
+  if (o !== bytes.byteLength) throw new Error('EWV3: trailing bytes ' + (bytes.byteLength - o));
+  // the model's box in metres (level 0, parts at their pivots, no motion)
+  const mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
+  levels[0].parts.forEach((pp, i) => { const pv = parts[i].pivot; for (const gg of [pp.solid, pp.glow]) if (gg) { const a = gg.attributes.position.array; for (let k = 0; k < a.length; k += 3) for (let j = 0; j < 3; j++) { const v = a[k + j] + pv[j]; if (v < mn[j]) mn[j] = v; if (v > mx[j]) mx[j] = v; } } });
+  return { version, voxel, hover, palette, parts, emitters, levels, min: mn, max: mx, size: { x: mx[0] - mn[0], y: mx[1] - mn[1], z: mx[2] - mn[2] } };
+}
+
+let _bm = null;
+export function blockMats() { return _bm || (_bm = { solid: new T.MeshLambertMaterial({ vertexColors: true }), glow: new T.MeshBasicMaterial({ vertexColors: true }) }); }
+
+// one model as a tree of part groups: each group sits at its pivot minus its parent's pivot and holds that part's meshes. Returns { root, p: { name: group, root: inner }, model }:
+// the game places and turns root; the animator moves only the inner groups (p.root bobs and sways inside it).
+export function blockGroup(model, level = 0, mats) {
+  const M = mats || blockMats(), outer = new T.Group(), root = new T.Group(), p = { root }, L = model.levels[Math.min(level, model.levels.length - 1)];
+  const groups = model.parts.map((pt, i) => { const g = new T.Group(); g.name = pt.name; const sh = L.parts[i]; if (sh.solid) g.add(new T.Mesh(sh.solid, M.solid)); if (sh.glow) g.add(new T.Mesh(sh.glow, M.glow)); p[pt.name] = g; return g; });
+  model.parts.forEach((pt, i) => { const par = pt.parent >= 0 ? model.parts[pt.parent] : null, g = groups[i]; g.position.set(pt.pivot[0] - (par ? par.pivot[0] : 0), pt.pivot[1] - (par ? par.pivot[1] : 0), pt.pivot[2] - (par ? par.pivot[2] : 0)); (par ? groups[pt.parent] : root).add(g); });
+  for (const g of groups.concat([root])) g.userData.rest = { pos: g.position.clone(), scale: g.scale.clone() };
+  outer.add(root); return { root: outer, p, model };
+}
+
+// all parts of one level merged into one buffer for instancing, with the part index per vertex (aPart) and the parts placed at their pivots (no motion)
+export function blockMerged(model, level = 0) {
+  const L = model.levels[Math.min(level, model.levels.length - 1)], pos = [], nor = [], col = [], part = [];
+  L.parts.forEach((sh, i) => { const pv = model.parts[i].pivot; for (const gg of [sh.solid, sh.glow]) if (gg) { const a = gg.attributes.position.array, n = gg.attributes.normal.array, c = gg.attributes.color.array; for (let k = 0; k < a.length; k += 3) { pos.push(a[k] + pv[0], a[k + 1] + pv[1], a[k + 2] + pv[2]); nor.push(n[k], n[k + 1], n[k + 2]); col.push(c[k], c[k + 1], c[k + 2]); part.push(i); } } });
+  const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new T.Float32BufferAttribute(col, 3)); g.setAttribute('aPart', new T.Float32BufferAttribute(part, 1));
+  return g;
+}
+
+// the part animator hook: per model id, a few sines per part (numbers from the block-look recipes' M.anim; their offsets are in blocks, so they are scaled by the voxel size).
+// The format does not carry motion yet; when it does (kind, axis, amp, speed per part) this table is filled from the file instead.
+const rot = (g, ax, a) => { if (g) g.rotation[ax] = a; };
+const lift = (g, dy) => { if (g) g.position.y = g.userData.rest.pos.y + dy; };
+export const BLOCK_ANIM = {
+  husk: (p, t, v) => { const a = Math.sin(t * 3); rot(p.armL, 'x', 0.4 * a); rot(p.armR, 'x', -0.4 * a); rot(p.root, 'z', 0.07 * a); rot(p.head, 'z', 0.12 * Math.sin(t * 1.5)); lift(p.root, 0.6 * Math.abs(a) * v); },
+  kaelRide: (p, t) => { rot(p.armL, 'z', 1.15 + 0.1 * Math.sin(t * 3)); rot(p.armR, 'z', -1.0 + 0.1 * Math.sin(t * 3 + 1)); rot(p.armL, 'x', 0.2); rot(p.torso, 'z', 0.06 * Math.sin(t * 2)); rot(p.head, 'y', -1.1); rot(p.scarf, 'x', -0.9 + 0.25 * Math.sin(t * 9)); rot(p.scarf, 'y', 0.3 * Math.sin(t * 7)); if (p.legs) p.legs.scale.y = 0.9; },
+  chestSealed: (p, t, v, s) => { rot(p.lid, 'x', s && s.open ? -1.25 : 0); }
+};
+// one animator for every version 2 model, from its baked hints. Kinds: 0 none, 1 flap, 2 sway, 3 open, 4 spin, 5 pulse, 6 bob; axis 0 x, 1 y, 2 z.
+// PROVISIONAL: these formulas are my reading of the order note; they are checked against FORMAT.md version 2 when that file reaches this PC.
+const AX = ['x', 'y', 'z'];
+export function animateHints(bg, t, state) {
+  const m = bg.model, H = m.hover; if (H && bg.p.root) bg.p.root.position.y = bg.p.root.userData.rest.pos.y + H.amp * Math.sin(t * H.speed);
+  for (const pt of m.parts) { const M = pt.motion, g = bg.p[pt.name]; if (!M || !M.kind || !g) continue; const ax = AX[M.axis] || 'x', s = Math.sin(t * M.speed + M.phase), mir = /R$/.test(pt.name) ? -1 : 1;
+    if (M.kind === 1 || M.kind === 2) g.rotation[ax] = M.amp * s * (M.kind === 1 ? mir : 1);
+    else if (M.kind === 3) g.rotation[ax] = M.amp * (state && state.open !== undefined ? (state.open ? 1 : 0) : 0.5 + 0.5 * s);
+    else if (M.kind === 4) g.rotation[ax] = t * M.speed + M.phase;
+    else if (M.kind === 5) g.scale[ax] = g.userData.rest.scale[ax] * (1 + M.amp * s);
+    else if (M.kind === 6) g.position[ax] = g.userData.rest.pos[ax] + M.amp * s; }
+}
+export function animateBlocks(id, bg, t, state) { if (bg.model.version >= 2) { animateHints(bg, t, state); return; } const f = BLOCK_ANIM[id]; if (f) f(bg.p, t, bg.model.voxel, state); }       // version 1 files carry no motion: the hand-copied table above
+
+// the block models, loaded once behind ?blocks=1 (files in assets/models/blocks/, kept out of the repo). A missing file is skipped and the current look stays.
+export const BLOCKS = {};
+export const blocksOn = typeof location !== 'undefined' && /[?&]blocks=1/.test(location.search);
+export async function loadBlocks(ids) {
+  if (!blocksOn) return BLOCKS;
+  await Promise.all(ids.map(async id => { try { const r = await fetch('assets/models/blocks/' + id + '.ewv3', { cache: 'no-store' }); if (!r.ok) return; BLOCKS[id] = decodeEwv3(new Uint8Array(await r.arrayBuffer())); } catch (e) { console.warn('block model', id, e.message); } }));
+  return BLOCKS;
+}

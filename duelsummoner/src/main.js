@@ -39,7 +39,7 @@ import { renderPause, setTab as pauseTab, bindHolds, matHtml, statRows } from '.
 import { deviceClass } from './ui/device.js';
 import { defaultFor } from './ui/settings-schema.js';
 import { showOffer, offerKey, offerGuard } from './view/offer.js';
-import { loadModel, loadPuffTexture } from './view/models.js';
+import { loadModel, loadPuffTexture, loadBlocks } from './view/models.js';
 import { spawnEnemy } from './sim/enemies.js';
 import { Props } from './view/props.js';
 import { quantise, emptyRecord } from './sim/input.js';
@@ -127,6 +127,7 @@ assets.kael = await loadRig('assets/models/duelist-kael-anim.glb', undefined, [{
 assets.wyvernPrep = await loadCreature('assets/models/mon-ember-wyvern-f1-rig.glb');       // the rigged Ember Wyvern, form 1
 assets.butterflyPrep = await loadCreature('assets/models/life-butterfly-rig.glb');         // ambient life: the rigged butterfly
 assets.mira = await loadRig('assets/models/duelist-mira-anim.glb', { retime: { land_light: 0.5, land_heavy: 0.9 } });
+await loadBlocks(['husk', 'kaelRide', 'card', 'chestSealed']);       // the block look, only with ?blocks=1 (files kept out of the repo)
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 document.addEventListener('contextmenu', e => { if (!/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName)) e.preventDefault(); });       // no browser menu over the game or its overlays
@@ -734,7 +735,8 @@ window.__ds = {
   unseal: ids => { unseal(save.meta, ids); freshSeals = ids.slice(); },
   fillSwarm: (n, kind) => { for (let i = 0; i < n; i++) spawnEnemy(game, kind); },
   perfReset: () => { perf.frames = 0; perf.worst = 0; perf.lastNow = 0; perf.t0 = performance.now(); },
-  perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst })
+  perfRead: () => ({ frames: perf.frames, ms: performance.now() - perf.t0, worstFrameMs: perf.worst }),
+  renderRead: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles })       // test hook: draw calls and triangles of the last frame (all passes)
 };
 if (/[?&]fxlab\b/.test(location.search)) import('./view/fxlab.js').then(m => m.startLab(window.__ds));
 

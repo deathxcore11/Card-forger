@@ -2,6 +2,7 @@
 import { ENCOUNTERS as E } from '../data/encounters.js';
 import { seeMap } from './seethrough.js';
 import { ITEMS } from '../data/items.js';
+import { BLOCKS, blockGroup, animateBlocks } from './models.js';
 
 const T = window.THREE;
 const lambert = (c, x) => new T.MeshLambertMaterial(Object.assign({ color: c, flatShading: true }, x || {}));
@@ -97,6 +98,7 @@ export class Props {
     const OPEN = !!this.openMap;       // the open desert: a warm wood chest with a lit top, readable from 30 m
     const lit = { pos: [], nor: [], col: [], hide: [] }, unlit = { pos: [], nor: [], col: [], hide: [] }, M = new T.Matrix4(), R = new T.Matrix4(), col = new T.Color();
     world.cchests.forEach((c, ci) => {
+      if (BLOCKS.chestSealed && !c.trophy) { const bg = blockGroup(BLOCKS.chestSealed), s = 1.5 / BLOCKS.chestSealed.size.x; bg.root.scale.setScalar(s); bg.root.position.set(c.x, c.y, c.z); bg.root.rotation.y = c.ry || 0; bg.root.userData.bc = { c, bg }; animateBlocks('chestSealed', bg, 0, { open: !!c.open }); this.G.add(bg.root); this.chestMeshes.push(bg.root); this.chestRange[ci] = []; return; }       // the block look (?blocks=1): the sealed chest, its lid opens when the chest does
       const piece = (geo, x, y, z, hex, un, rx, when) => {       // when: 'c' shows only while closed, 'o' only while open, none always
         const hv = when === 'c' ? (c.open ? 1 : 0) : when === 'o' ? (c.open ? 0 : 1) : 0; M.makeTranslation(c.x + x, c.y + y, c.z + z); if (rx) { R.makeRotationX(rx); M.multiply(R); } const g2 = geo.toNonIndexed(); g2.applyMatrix4(M); col.setHex(hex); const o = un ? unlit : lit, st = o.pos.length / 3, p = g2.attributes.position, n = g2.attributes.normal; for (let i = 0; i < p.count; i++) { o.pos.push(p.getX(i), p.getY(i), p.getZ(i)); if (n) o.nor.push(n.getX(i), n.getY(i), n.getZ(i)); o.col.push(col.r, col.g, col.b); o.hide.push(hv); } return [un ? 1 : 0, st, p.count, when || '']; };
       const lid = c.trophy ? piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.25, -0.55, 0xeee4c8, false, -1.1) : piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.05, 0, OPEN ? 0xc98a4a : 0x2a2026, false, 0, 'c');
@@ -115,6 +117,7 @@ export class Props {
   _syncChests(world, t) {
     const sets = [null, null]; for (const m of this.chestMeshes) if (m.userData.set !== undefined) sets[m.userData.set] = m;
     world.cchests.forEach((c, ci) => { const open = !!c.open; if (open === this.chestOpen[ci]) return; this.chestOpen[ci] = open; for (const [which, st, n, when] of this.chestRange[ci]) { const m = sets[which]; if (!m) continue; const a = m.geometry.attributes.aHide, hv = when === 'c' ? (open ? 1 : 0) : when === 'o' ? (open ? 0 : 1) : 0; for (let i = 0; i < n; i++) a.array[st + i] = hv; a.needsUpdate = true; } });
+    for (const m of this.chestMeshes) if (m.userData.bc) animateBlocks('chestSealed', m.userData.bc.bg, t, { open: !!m.userData.bc.c.open });
     for (const m of this.chestMeshes) if (m.userData.c) { m.visible = !m.userData.c.open; m.material.opacity = (0.3 + 0.12 * Math.sin(t * 3)) * (this.cam ? Math.max(0.1, Math.min(1, (Math.hypot(this.cam.x - m.position.x, this.cam.z - m.position.z) - 3) / 12)) : 1); }
   }
 

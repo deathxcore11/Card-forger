@@ -21,6 +21,7 @@ import { creatureGeometry, creatureLit } from './creatures.js';
 import { PICKUP_COLORS } from '../data/pickups.js';
 import { POWERUPS } from '../data/powerups.js';
 import { makeCreature } from './creature.js';
+import { BLOCKS, blockGroup, blockMerged, animateBlocks } from './models.js';
 
 const T = window.THREE;
 const lambert = (color, extra, k) => actorLit(new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {})), k || 1);
@@ -120,16 +121,20 @@ export class Actors {
     this.monsters = new Map(); this.specials = new Map(); this.chests = new Map();
 
     // the swarm: one instanced mesh per kind (+ eyes for the ground swarmers)
-    this.kinds = KIND_LIST.map(K => {
-      const cg = creatureGeometry(K.id), geo = cg || (K.id === 3 ? new T.BoxGeometry(1.1, 1.1, 1.1) : K.id === 4 ? new T.IcosahedronGeometry(0.8, 0) : new T.OctahedronGeometry(0.75, 0));
-      geo.computeBoundingBox(); const bb = geo.boundingBox, mat = lambert(0xffffff, cg ? { vertexColors: true, side: T.DoubleSide } : null, 0.3); if (cg) creatureLit(mat); statusLit(mat, bb.min.y, bb.max.y);
+    const fitBlock = (bg, ref) => { ref.computeBoundingBox(); bg.computeBoundingBox(); const a = ref.boundingBox, b = bg.boundingBox, s = (a.max.y - a.min.y) / (b.max.y - b.min.y); bg.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2); bg.scale(s, s, s); bg.translate((a.min.x + a.max.x) / 2, a.min.y, (a.min.z + a.max.z) / 2); bg.rotateY(Math.PI); return bg; };       // the block model's height and foot matched to the old creature's, facing the same way
+    const blockGeo = (id, lv) => { const cg0 = creatureGeometry(id); return id === 0 && BLOCKS.husk ? fitBlock(blockMerged(BLOCKS.husk, lv), cg0 || new T.BoxGeometry(1, 1.25, 1)) : null; };
+    const kindOf = (K, far) => {
+      const bgeo = blockGeo(K.id, far ? 1 : 0), cg = bgeo ? null : creatureGeometry(K.id), geo = bgeo || cg || (K.id === 3 ? new T.BoxGeometry(1.1, 1.1, 1.1) : K.id === 4 ? new T.IcosahedronGeometry(0.8, 0) : new T.OctahedronGeometry(0.75, 0));
+      geo.computeBoundingBox(); const bb = geo.boundingBox, mat = lambert(0xffffff, cg || bgeo ? { vertexColors: true, side: T.DoubleSide } : null, 0.3); if (cg) creatureLit(mat); statusLit(mat, bb.min.y, bb.max.y);
       const body = instanced(geo, mat, CFG.enemy.max); statusAttr(geo, CFG.enemy.max);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.enemy.max * 3), 3);
       const eye = !cg && K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xe0a040), CFG.enemy.max) : null;
       const out = new T.InstancedMesh(geo, OUTLINE, CFG.enemy.max); out.instanceMatrix = body.instanceMatrix; out.frustumCulled = false; out.count = 0; out.renderOrder = -1;       // a dark hull drawn behind each enemy, pushed out 5 cm: a clear outline against pale sand, one extra draw per kind
       scene.add(body, out); if (eye) scene.add(eye);
-      return { K, body, out, eye, base: cg ? new T.Color(1, 1, 1) : new T.Color(K.color), boost: cg ? 2.4 : 1, fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false };
-    });    // Toll Shades: a tall violet-black hooded silhouette with a glowing eye line and a gold bell (stand-in look until the art arrives)
+      return { K, body, out, eye, base: cg || bgeo ? new T.Color(1, 1, 1) : new T.Color(K.color), boost: cg || bgeo ? 2.4 : 1, fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false, block: !!bgeo };
+    };
+    this.kinds = KIND_LIST.map(K => kindOf(K, false));
+    for (const k of this.kinds.slice()) if (k.block) { k.farIdx = this.kinds.length; this.kinds.push(kindOf(k.K, true)); }       // the block husk's half-detail far copy (beyond 30 m), its own instanced draw    // Toll Shades: a tall violet-black hooded silhouette with a glowing eye line and a gold bell (stand-in look until the art arrives)
     this.shadeBody = instanced(new T.ConeGeometry(0.9, 3.0, 7), seeActor(basic(0x1d1030)), 24); this.shadeHood = instanced(new T.ConeGeometry(0.5, 1.0, 6), seeActor(basic(0x0b0716)), 24);
     this.shadeEye = instanced(new T.BoxGeometry(0.34, 0.07, 0.1), basic(0xc07bff), 24); this.shadeBell = instanced(new T.ConeGeometry(0.17, 0.3, 6), basic(0xe8c56a), 24);
     scene.add(this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell);
@@ -403,14 +408,23 @@ export class Actors {
       const star = new T.Mesh(new T.OctahedronGeometry(0.17, 0), M(0xfff2c0, 0x8a6a20)); star.scale.set(1, 0.3, 1); star.position.set(0, 0.22, 0.18); G.add(star);
       for (const zz of [-0.62, -0.75]) B(0.7, 0.02, 0.05, M(0xe0b24e, 0x3a2a08), 0.19, zz);
       G.visible = false; this.scene.add(G); this._spinV = 0; }
-    const G = this.boardG; G.visible = !!rd && !(g.over && !g.won); if (!rd) return;
+    const G = this.boardG; G.visible = !!rd && !(g.over && !g.won); if (!rd) { this._blockRide(g, G, null); return; }
     { const bid = (g.opts && g.opts.board) || 'plain-back'; if (bid !== this._bId && BOARDS[bid]) { this._bId = bid; this._bEdge.material.color.setHex(BOARDS[bid].edge); this._bFace.material.color.setHex(BOARDS[bid].face); } }       // the chosen card back's colours       // (not this.player.visible: the rig hides the stand-in player mesh every frame)
     const yaw = rd.heading + rd.spin; G.position.set(px, py + 0.02, pz); G.rotation.order = 'YXZ'; G.rotation.y = yaw;
     let roll = 0, pitch = 0; if (rd.flipT > 0) { const k = 1 - rd.flipT / 0.42, d = rd.flipDir || 0; if (d === 0 || d === 4) roll = k * Math.PI * 2 * (d === 4 ? -1 : 1); else if (d === 2 || d === 6) pitch = k * Math.PI * 2 * (d === 6 ? -1 : 1); else { roll = k * Math.PI * 2; pitch = k * Math.PI * (d < 4 ? 1 : -1); } }
     if (rd.grabbing) pitch += 0.28; if (rd.manual) pitch -= 0.22; if (rd.loop) pitch -= rd.loopTh || 0; G.rotation.x = pitch; G.rotation.z = roll;
     G.position.y += rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.45 : 0;
+    this._blockRide(g, G, rd);
     if (rd.speed > 13 && !rd.grind && Math.random() < 0.6) { const tx = px - Math.sin(yaw) * 1.05, tz = pz - Math.cos(yaw) * 1.05; this.fx.spark(tx, py + 0.12, tz, 0, 0.1, 0, 0xffd56a, 0.12, 0.22); }       // a thin short gold streak at speed (about a quarter of the old stream, no spread)
     if (rd.grind && Math.random() < 0.45) for (let k = 0; k < 1; k++) this.fx.spark(px + (Math.random() - 0.5) * 0.6, py + 0.1, pz + (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 4, 1.5 + Math.random() * 2.5, (Math.random() - 0.5) * 4, Math.random() < 0.5 ? 0xffd56a : 0xfff2c0, 0.32, 0.45);
+  }
+  // the block look (?blocks=1): Kael riding and the ride card as block models. The card replaces the board's own pieces; the rider follows the board, and the skinned rig is hidden while riding.
+  _blockRide(g, G, rd) {
+    if (!BLOCKS.kaelRide || !BLOCKS.card) return;
+    if (!this._bRide) { this._bRide = blockGroup(BLOCKS.kaelRide); this._bCard = blockGroup(BLOCKS.card); const c = this._bCard.root, m = BLOCKS.card; c.scale.setScalar(2.0 / m.size.z); c.position.y = 0.02; for (const ch of G.children) ch.visible = false; G.add(c); this.scene.add(this._bRide.root); }       // the card scaled to the board's 2 m length
+    const on = G.visible && !!rd, Rr = this._bRide.root; Rr.visible = on; this._bRideOn = on; if (!on) return;
+    G.updateMatrixWorld(); Rr.position.set(0, 0.02 + BLOCKS.card.size.y * this._bCard.root.scale.y, 0).applyMatrix4(G.matrixWorld); Rr.rotation.order = 'YXZ'; Rr.rotation.set(G.rotation.x, G.rotation.y, G.rotation.z);
+    animateBlocks('kaelRide', this._bRide, g.t);
   }
   _rideRig(R, rd, p, dt) {
     const yaw = rd.heading + rd.spin; R.group.rotation.y = yaw + R.yaw;
@@ -451,7 +465,7 @@ export class Actors {
       let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees
       this._tw = (this._tw || 0) + (tw - (this._tw || 0)) * Math.min(1, dt / 0.3); R.twist(this._tw);
     }
-    this._board(g, p, px, py, pz, dt); this._lit(g, dt); this._rollers(g); this._arenaSeals(g);
+    this._board(g, p, px, py, pz, dt); if (this.rig) this.rig.group.visible = !this._bRideOn; this._lit(g, dt); this._rollers(g); this._arenaSeals(g);
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);
@@ -536,8 +550,9 @@ export class Actors {
       if (!e.alive[i]) { this._wasSwarm[i] = 0; continue; }
       if (!this._wasSwarm[i]) { this._wasSwarm[i] = 1; this.spawnAge[i] = 0; if (this._dustBudget > 0) { this._dustBudget--; fx.burst(e.x[i], e.y[i] + 0.1, e.z[i], 3, 0xb09a6a, 1.5, 1.5, 0.2, 0.45, 5); } }
       this.spawnAge[i] += dt; const sage = this.spawnAge[i], rise = sage < 0.35 ? 1 - sage / 0.35 : 0;
-      const k = this.kinds[e.kind[i]], K = k.K, n = counts[e.kind[i]];
       const x = pl(e.px[i], e.x[i], a), y = pl(e.py[i], e.y[i], a), z = pl(e.pz[i], e.z[i], a);
+      let ki = e.kind[i]; { const k0 = this.kinds[ki]; if (k0.farIdx !== undefined && (x - px) * (x - px) + (z - pz) * (z - pz) > 900) ki = k0.farIdx; }       // block look: the half-detail copy beyond 30 m
+      const k = this.kinds[ki], K = k.K, n = counts[ki];
       { const ddx = x - px, ddz = z - pz; if (ddx * ddx + ddz * ddz < 20) nearN++; }
       if (blocked(x, y + 0.9, z, 2.4)) continue;
       const hit = e.flash[i] > 0; let bob; if (K.fly) bob = Math.sin(t * 9 + i) * 0.08; else { const bp = this._bp || (this._bp = new Float32Array(e.max * 3)), j3 = i * 3; if (sage < 0.02) { bp[j3] = i; bp[j3 + 1] = x; bp[j3 + 2] = z; } const spd = Math.min(14, Math.hypot(x - bp[j3 + 1], z - bp[j3 + 2]) / Math.max(dt, 0.004)); bp[j3 + 1] = x; bp[j3 + 2] = z; bp[j3] += spd / 1.3 * dt * Math.PI; bob = Math.abs(Math.sin(bp[j3])) * (K.id === 0 ? 0.04 : 0.15) * Math.min(1, spd / 1.5); }       // the hop follows ground speed (one hop per 1.3 m), and stops when the enemy stands
@@ -554,7 +569,7 @@ export class Actors {
       if (k.eye) {
         d.position.set(x + Math.sin(face) * 0.62 * sc[0], y + 1.05 + bob, z + Math.cos(face) * 0.62 * sc[0]); d.scale.set(1, 1, 1); d.updateMatrix(); k.eye.setMatrixAt(n, d.matrix);
       }
-      counts[e.kind[i]]++;
+      counts[ki]++;
       if (e.ace[i] && cc < 24) { d.position.set(x, y + 2.1 * mgs + 0.4 + Math.sin(t * 3 + i) * 0.08, z); d.rotation.set(0, t * 2.4 + i, 0); d.scale.set(1, 1.5, 1); d.updateMatrix(); this.crests.setMatrixAt(cc++, d.matrix); }
       if (e.mark[i] > 0) { d.position.set(x, y + 2.3 + Math.sin(t * 4) * 0.1, z); d.rotation.set(0, t * 3, 0); d.scale.set(1, 1.4, 1); d.updateMatrix(); this.marks.setMatrixAt(mc.n++, d.matrix); }
     }
