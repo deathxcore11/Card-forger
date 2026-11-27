@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Thor ride panel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;family=Space+Mono:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0b0910}
+a{color:#e0b765}a:hover{color:#f3d79a}
+</style>
+</helmet>
+<div style="width: 1240px; height: 1080px; box-sizing: border-box; padding: 36px; display: flex; flex-direction: column; gap: 24px; background: radial-gradient(120% 90% at 50% 0%, #1c1622 0%, #0b0910 70%); color: #f2e8d5; font-family: Inter, system-ui, sans-serif;">
+
+  <section style="display: flex; flex-direction: column; gap: 18px; padding: 26px 30px; border: 2px solid #e0b765; border-radius: 18px; background: rgba(20,16,24,0.82);" aria-label="Flow and combo">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 18px; letter-spacing: 4px; color: #bfae8e; font-weight: 600;">FLOW</span>
+        <span style="font-family: Cinzel, serif; font-size: 84px; line-height: 0.9; color: #e0b765; font-weight: 700;">x{{flow}}</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+        <span style="font-size: 18px; letter-spacing: 4px; color: #bfae8e; font-weight: 600;">COMBO</span>
+        <span style="font-family: 'Space Mono', monospace; font-size: 76px; line-height: 0.9; color: #fff4dc;">+2,340</span>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px;" role="img" aria-label="Flow meter at level {{flow}} of 5">
+      <sc-for list="{{segs}}" as="s" hint-placeholder-count="5">
+        <div style="height: 22px; border-radius: 6px; border: 2px solid #e0b765; background: {{s.fill}};"></div>
+      </sc-for>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+      <span style="font-size: 16px; color: #bfae8e; font-weight: 600; letter-spacing: 2px;">CHAIN</span>
+      <span style="padding: 8px 16px; border-radius: 999px; background: #2a2230; font-size: 20px; font-weight: 600;">Ollie</span>
+      <span style="color: #8a7c66; font-size: 20px;">+</span>
+      <span style="padding: 8px 16px; border-radius: 999px; background: #2a2230; font-size: 20px; font-weight: 600;">Kickflip</span>
+      <span style="color: #8a7c66; font-size: 20px;">+</span>
+      <span style="padding: 8px 16px; border-radius: 999px; background: #2a2230; font-size: 20px; font-weight: 600;">Rail grind 2.1 s</span>
+      <span style="color: #8a7c66; font-size: 20px;">+</span>
+      <span style="padding: 8px 16px; border-radius: 999px; background: #e0b765; color: #1a1410; font-size: 20px; font-weight: 700;">360 spin</span>
+      <span style="margin-left: auto; font-size: 18px; color: #bfae8e;">Land it to bank and slam</span>
+    </div>
+  </section>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; flex-grow: 1;">
+
+    <section style="display: flex; flex-direction: column; gap: 14px; padding: 24px 26px; border: 1px solid rgba(224,183,101,0.45); border-radius: 18px; background: rgba(20,16,24,0.82);" aria-label="Buttons right now">
+      <h2 style="margin: 0; font-family: Cinzel, serif; font-size: 26px; letter-spacing: 3px; color: #e0b765;">YOUR BUTTONS</h2>
+      <sc-for list="{{moves}}" as="m" hint-placeholder-count="6">
+        <div style="display: flex; align-items: center; gap: 18px; padding: 12px 14px; border-radius: 14px; background: {{m.bg}}; border: 2px solid {{m.edge}};">
+          <span style="width: 64px; height: 64px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 26px; background: #2a2230; color: {{m.keyColor}}; border: 2px solid {{m.keyColor}};">{{m.key}}</span>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 24px; font-weight: 700; color: {{m.nameColor}};">{{m.name}}</span>
+            <span style="font-size: 18px; color: #bfae8e;">{{m.how}}</span>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 14px; padding: 24px 26px; border: 1px solid rgba(224,183,101,0.45); border-radius: 18px; background: rgba(20,16,24,0.82);" aria-label="Summons and the tricks they answer">
+      <h2 style="margin: 0; font-family: Cinzel, serif; font-size: 26px; letter-spacing: 3px; color: #e0b765;">YOUR SUMMONS</h2>
+      <sc-for list="{{summons}}" as="c" hint-placeholder-count="4">
+        <div style="display: flex; align-items: center; gap: 16px; padding: 12px 14px; border-radius: 14px; background: #1a1520; border: 1px solid #3a3040;">
+          <div style="width: 54px; height: 76px; flex-shrink: 0; border-radius: 6px; border: 2px solid #e0b765; background: {{c.art}};" role="img" aria-label="{{c.name}} card"></div>
+          <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+            <span style="font-size: 22px; font-weight: 700;">{{c.name}}</span>
+            <span style="font-size: 18px; color: #bfae8e;">Answers <strong style="color: #f2e8d5;">{{c.trick}}</strong>: {{c.does}}</span>
+          </div>
+          <span style="min-width: 86px; text-align: center; padding: 8px 10px; border-radius: 10px; font-family: 'Space Mono', monospace; font-size: 20px; background: {{c.stateBg}}; color: {{c.stateColor}};">{{c.state}}</span>
+        </div>
+      </sc-for>
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
+        <div style="display: flex; justify-content: space-between; font-size: 18px;">
+          <span style="font-weight: 700; letter-spacing: 2px; color: #e0b765;">CHORUS STRIKE</span>
+          <span style="color: #bfae8e;">every summon fires at 600</span>
+        </div>
+        <div style="height: 20px; border-radius: 10px; background: #2a2230; border: 1px solid #e0b765; overflow: hidden;" role="img" aria-label="Chorus strike charged">
+          <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #a8843f, #e0b765 60%, #fff0c4);"></div>
+        </div>
+        <span style="font-size: 18px; color: #fff4dc; font-weight: 600;">Ready. Press SPECIAL on landing for the big one.</span>
+      </div>
+    </section>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; height: 200px;">
+    <section style="display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 20px 24px; border: 1px solid rgba(224,183,101,0.45); border-radius: 18px; background: rgba(20,16,24,0.82);" aria-label="Grind balance">
+      <span style="font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #e0b765;">GRIND BALANCE</span>
+      <div style="position: relative; height: 30px; border-radius: 15px; background: linear-gradient(90deg, #5a2a22 0%, #2a2230 22%, #2a2230 78%, #5a2a22 100%); border: 1px solid #5a4c3a;" role="img" aria-label="Balance needle slightly left of centre">
+        <div style="position: absolute; left: 50%; top: -6px; width: 2px; height: 42px; background: #8a7c66;"></div>
+        <div style="position: absolute; left: 41%; top: -8px; width: 10px; height: 46px; border-radius: 5px; background: #e0b765;"></div>
+      </div>
+      <span style="font-size: 18px; color: #bfae8e;">Steer to hold the needle in the middle</span>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 10px; padding: 20px 24px; border: 1px solid rgba(224,183,101,0.45); border-radius: 18px; background: rgba(20,16,24,0.82);" aria-label="Next line">
+      <span style="font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #e0b765;">NEXT LINE</span>
+      <svg viewBox="0 0 300 110" style="width: 100%; height: 110px;" role="img" aria-label="Mini map: a kicker 40 metres ahead, then a ledge and a spine down the valley">
+        <rect x="0" y="0" width="300" height="110" rx="12" fill="#1a1520"></rect>
+        <path d="M20 95 C 90 80, 120 40, 190 38 S 270 20, 290 10" fill="none" stroke="#5a4c3a" stroke-width="14" stroke-linecap="round"></path>
+        <path d="M20 95 C 90 80, 120 40, 190 38 S 270 20, 290 10" fill="none" stroke="#e0b765" stroke-width="2" stroke-dasharray="6 6"></path>
+        <polygon points="24,88 36,96 24,104" fill="#fff4dc"></polygon>
+        <rect x="96" y="60" width="16" height="10" rx="2" fill="#e0b765"></rect>
+        <rect x="160" y="36" width="26" height="6" rx="2" fill="#e0b765"></rect>
+        <rect x="232" y="20" width="14" height="12" rx="2" fill="#e0b765"></rect>
+      </svg>
+      <span style="font-size: 18px; color: #bfae8e;">Kicker in 40 m, ledge, spine</span>
+    </section>
+    <section style="display: flex; align-items: center; gap: 18px; padding: 20px 24px; border: 1px solid rgba(224,183,101,0.45); border-radius: 18px; background: rgba(20,16,24,0.82);" aria-label="Your board">
+      <div style="width: 92px; height: 132px; flex-shrink: 0; border-radius: 10px; border: 3px solid #e0b765; background: radial-gradient(circle at 50% 45%, #fff0c4 0 14px, #e0b765 15px 18px, #f3dca2 19px 100%);" role="img" aria-label="Sun Back card board"></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 18px; font-weight: 700; letter-spacing: 2px; color: #e0b765;">BOARD</span>
+        <span style="font-size: 24px; font-weight: 700;">Sun Back</span>
+        <span style="font-size: 18px; color: #bfae8e;">Ollies 5% higher</span>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"flow":{"editor":"int","default":3,"min":1,"max":5},"railNear":{"editor":"boolean","default":true},"$preview":{"width":1240,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const flow = Math.max(1, Math.min(5, this.props.flow ?? 3));
+    const railNear = this.props.railNear ?? true;
+    const segs = [1, 2, 3, 4, 5].map(i => ({ fill: i <= flow ? '#e0b765' : '#2a2230' }));
+    const gold = '#e0b765', dim = '#3a3040';
+    const row = (key, name, how, hot) => ({ key, name, how, bg: hot ? 'rgba(224,183,101,0.16)' : '#1a1520', edge: hot ? gold : dim, keyColor: hot ? gold : '#f2e8d5', nameColor: hot ? '#fff4dc' : '#f2e8d5' });
+    const moves = [
+      row('A', 'Ollie', 'Hold, let go to pop', false),
+      row('Y', 'Grind', railNear ? 'Rail in reach: press now' : 'Near a rail, ledge or edge', railNear),
+      row('X', 'Flip', 'In the air, with a direction', false),
+      row('B', 'Grab', 'In the air, hold with a direction', false),
+      row('L1 R1', 'Spin', 'Hold in the air', false),
+      row('Up Dn', 'Manual', 'Up then down quickly as you land', false)
+    ];
+    const card = (name, trick, does, state, ready, art) => ({ name, trick, does, state, art, stateBg: ready ? '#e0b765' : '#2a2230', stateColor: ready ? '#1a1410' : '#bfae8e' });
+    const summons = [
+      card('Ember Wyvern', 'Grind', 'burns along your rail', 'READY', true, 'linear-gradient(160deg, #ff9a3c, #7a2a14)'),
+      card('Cinder Hatchling', 'Land', 'bursts where you land', '2.1 s', false, 'linear-gradient(160deg, #ffc46b, #8a3a1a)'),
+      card('Rune Apprentice', 'Flip', 'marks foes on each flip', 'READY', true, 'linear-gradient(160deg, #d9d2c0, #4a4458)')
+    ];
+    return { flow, segs, moves, summons };
+  }
+}
+</script>
+</body>
+</html>
