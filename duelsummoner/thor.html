@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duel Summoner, Thor layout</title>
+<style>
+  /* the AYN Thor's two screens at their real sizes, stacked in one window for checking: top 1920 x 1080 (the game), bottom 1240 x 1080 (the ride panel) */
+  html, body { margin: 0; background: #050407; }
+  #top { display: block; width: 1920px; height: 1080px; border: 0; }
+  #bottom { display: block; width: 1240px; height: 1080px; border: 0; margin: 0 auto; }
+</style>
+</head>
+<body>
+<iframe id="top" title="Top screen"></iframe>
+<iframe id="bottom" title="Bottom screen" src="thor-panel.html"></iframe>
+<script>
+  // the top screen takes this page's query (seed, debug, play) and runs the game as usual
+  document.getElementById('top').src = 'index.html' + (location.search || '');
+</script>
+</body>
+</html>

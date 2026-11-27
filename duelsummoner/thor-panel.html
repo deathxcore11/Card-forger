@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Duel Summoner, Thor bottom screen</title>
+<style>
+  /* the Thor bottom screen (1240 x 1080): the ride panel while on the card, the run board on foot. Dark glass, gold lines, cream text (style bible); no violet; red only for a bail flash */
+  :root { --gold: #e0b765; --cream: #f2e8d5; --dim: #bfae8e; --ink: #1a1520; --glass: rgba(20,16,24,0.82); --serif: Cinzel, 'Palatino Linotype', Georgia, serif; --sans: Inter, system-ui, 'Segoe UI', sans-serif; --mono: 'Space Mono', 'Courier New', monospace; }
+  html, body { margin: 0; background: #0b0910; color: var(--cream); font-family: var(--sans); overflow: hidden; }
+  #root { width: 1240px; height: 1080px; box-sizing: border-box; padding: 30px 36px; display: flex; flex-direction: column; gap: 20px; background: radial-gradient(120% 90% at 50% 0%, #1c1622 0%, #0b0910 70%); }
+  .box { padding: 24px 26px; border: 1px solid rgba(224,183,101,0.45); border-radius: 18px; background: var(--glass); }
+  .lab { font-size: 18px; letter-spacing: 4px; color: var(--dim); font-weight: 600; }
+  h2 { margin: 0; font-family: var(--serif); font-size: 26px; letter-spacing: 3px; color: var(--gold); }
+  #flowBox { display: flex; flex-direction: column; gap: 14px; border: 2px solid var(--gold); padding: 20px 30px; transition: background .15s; }
+  #flowBox.bail { background: rgba(110,30,26,0.85); }
+  .row2 { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+  #flow { font-family: var(--serif); font-size: 84px; line-height: .9; color: var(--gold); font-weight: 700; }
+  #combo { font-family: var(--mono); font-size: 76px; line-height: .9; color: #fff4dc; }
+  #segs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; } #segs i { height: 22px; border-radius: 6px; border: 2px solid var(--gold); background: #2a2230; } #segs i.on { background: var(--gold); }
+  #chain { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-height: 44px; } #chain .chip { padding: 8px 16px; border-radius: 999px; background: #2a2230; font-size: 20px; font-weight: 600; } #chain .chip.new { background: var(--gold); color: #1a1410; font-weight: 700; } #chain .plus { color: #8a7c66; font-size: 20px; } #chainHint { margin-left: auto; font-size: 18px; color: var(--dim); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex-grow: 1; min-height: 0; }
+  .col { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; }
+  .mv { display: flex; align-items: center; gap: 14px; padding: 4px 12px; border-radius: 14px; background: var(--ink); border: 2px solid #3a3040; } .mv.hot { background: rgba(224,183,101,0.16); border-color: var(--gold); }
+  .mv .k { width: 58px; height: 44px; border-radius: 22px !important; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 15px; white-space: nowrap; background: #2a2230; color: var(--cream); border: 2px solid var(--cream); } .mv.hot .k { color: var(--gold); border-color: var(--gold); }
+  .mv .n { font-size: 21px; font-weight: 700; } .mv.hot .n { color: #fff4dc; } .mv .h { font-size: 16px; color: var(--dim); }
+  .sm { display: flex; align-items: center; gap: 16px; padding: 10px 14px; border-radius: 14px; background: var(--ink); border: 1px solid #3a3040; }
+  .sm .art { width: 50px; height: 70px; flex-shrink: 0; border-radius: 6px; border: 2px solid var(--gold); } .sm .n { font-size: 21px; font-weight: 700; } .sm .h { font-size: 17px; color: var(--dim); } .sm .h b { color: var(--cream); }
+  .sm .st { margin-left: auto; min-width: 86px; text-align: center; padding: 8px 10px; border-radius: 10px; font-family: var(--mono); font-size: 19px; background: #2a2230; color: var(--dim); } .sm .st.ready { background: var(--gold); color: #1a1410; }
+  #chorus { margin-top: auto; display: flex; flex-direction: column; gap: 8px; } #chorus .top { display: flex; justify-content: space-between; font-size: 18px; } #chorus .top b { letter-spacing: 2px; color: var(--gold); } #chorus .top span { color: var(--dim); }
+  #chorusBar { height: 20px; border-radius: 10px; background: #2a2230; border: 1px solid var(--gold); overflow: hidden; } #chorusFill { height: 100%; width: 0; background: linear-gradient(90deg, #a8843f, #e0b765 60%, #fff0c4); }
+  #chorusTxt { font-size: 18px; color: #fff4dc; font-weight: 600; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; height: 160px; } .grid3 .box { padding: 20px 24px; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+  .bt { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: var(--gold); }
+  #bal { position: relative; height: 30px; border-radius: 15px; background: linear-gradient(90deg, #5a2a22 0%, #2a2230 22%, #2a2230 78%, #5a2a22 100%); border: 1px solid #5a4c3a; } #bal .mid { position: absolute; left: 50%; top: -6px; width: 2px; height: 42px; background: #8a7c66; } #needle { position: absolute; left: 50%; top: -8px; width: 10px; height: 46px; margin-left: -5px; border-radius: 5px; background: var(--gold); transition: left .05s; } #bal.off #needle { background: #5a4c3a; }
+  .small { font-size: 18px; color: var(--dim); }
+  #map { width: 100%; height: 110px; cursor: pointer; }
+  #boardCard { width: 92px; height: 132px; flex-shrink: 0; border-radius: 10px; border: 3px solid var(--gold); }
+  #boardBox { flex-direction: row !important; align-items: center; justify-content: flex-start !important; gap: 18px !important; }
+  #run { display: none; width: 1240px; height: 1080px; box-sizing: border-box; padding: 36px; flex-direction: column; gap: 24px; align-items: center; justify-content: center; background: radial-gradient(120% 90% at 50% 0%, #1c1622 0%, #0b0910 70%); text-align: center; }
+  #run h1 { font-family: var(--serif); color: var(--gold); letter-spacing: 4px; font-size: 44px; margin: 0; } #run p { color: var(--dim); font-size: 22px; max-width: 900px; }
+  body.foot #root { display: none; } body.foot #run { display: flex; }
+</style>
+</head>
+<body class="foot">
+<div id="root">
+  <section id="flowBox" class="box" aria-label="Flow and combo">
+    <div class="row2">
+      <div style="display:flex;flex-direction:column;gap:6px"><span class="lab">FLOW</span><span id="flow">x1</span></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="lab">COMBO</span><span id="combo">0</span></div>
+    </div>
+    <div id="segs" role="img" aria-label="Flow meter"><i></i><i></i><i></i><i></i><i></i></div>
+    <div id="chain"><span class="lab" style="font-size:16px;letter-spacing:2px">CHAIN</span><span id="chips"></span><span id="chainHint">Land it to bank and slam</span></div>
+  </section>
+  <div class="grid2">
+    <section class="box col" aria-label="Buttons right now"><h2>YOUR BUTTONS</h2><div id="moves" class="col"></div></section>
+    <section class="box col" aria-label="Summons and the tricks they answer"><h2>YOUR SUMMONS</h2><div id="summons" class="col"></div>
+      <div id="chorus"><div class="top"><b>CHORUS STRIKE</b><span>every summon fires at 600</span></div><div id="chorusBar"><div id="chorusFill"></div></div><span id="chorusTxt"></span></div></section>
+  </div>
+  <div class="grid3">
+    <section class="box" aria-label="Balance"><span class="bt" id="balLab">BALANCE</span><div id="bal" class="off"><div class="mid"></div><div id="needle"></div></div><span class="small" id="balTxt">Steer to hold the needle in the middle</span></section>
+    <section class="box" aria-label="Next line" style="justify-content:flex-start"><span class="bt">NEXT LINE</span><svg id="map" viewBox="0 0 300 110" role="img" aria-label="Mini map of the line ahead; tap for the full map"></svg><span class="small" id="mapTxt"></span></section>
+    <section class="box" id="boardBox" aria-label="Your board"><div id="boardCard" role="img"></div><div style="display:flex;flex-direction:column;gap:6px"><span class="bt">BOARD</span><span id="boardName" style="font-size:24px;font-weight:700"></span><span class="small" id="boardLean"></span></div></section>
+  </div>
+</div>
+<div id="run"><h1>RUN BOARD</h1><p>On foot. The bottom screen's run board (map, summons, spells) is not built in the web build yet; the ride panel shows the moment you kick out your card.</p></div>
+<script type="module" src="src/view/thorpanel.js"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 // Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
 import { CFG } from './data/config.js';
+if (/[?&]thor=1/.test(location.search) && window.top === window) location.replace('thor.html' + location.search.replace(/([?&])thor=1&?/, '$1').replace(/[?&]$/, ''));       // ?thor=1: the AYN Thor's two screens at their real sizes, the game on top and the ride panel below (thor.html)
 import { K } from './data/tuning.js';
 import { Game } from './sim/game.js';
 import { Input } from './core/input.js';
@@ -712,6 +713,7 @@ function duelistPixels() {
   return { alone, visible, silhouette };
 }
 window.__ds = {
+  toggleMap: v => toggleMap(v),       // the Thor bottom screen opens the full map from its small map
   // debug lists for walking to the riding landforms: every full pipe within r metres of the start, and the two great drops (x, z, and which way the drop faces)
   pipes: (r = 2000) => { const m = game.map, sp = m.world && m.world.spawn; if (!sp || !m.big) return []; const out = []; for (let qz = Math.floor((sp.z - r) / 256); qz <= Math.floor((sp.z + r) / 256); qz++) for (let qx = Math.floor((sp.x - r) / 256); qx <= Math.floor((sp.x + r) / 256); qx++) for (const q of m.dressCell(qx, qz).pipes || []) out.push({ x: q[0], z: q[2], radius: q[5], dist: Math.round(Math.hypot(q[0] - sp.x, q[2] - sp.z)) }); return out.sort((a, b) => a.dist - b.dist); },
   drops: () => { const m = game.map, W = m.world; return W && W.drops ? W.drops.map(d => ({ x: Math.round(d.x), z: Math.round(d.z), faceX: +d.c.toFixed(2), faceZ: +d.s.toFixed(2), shelf: +d.H.toFixed(1) })) : []; },
