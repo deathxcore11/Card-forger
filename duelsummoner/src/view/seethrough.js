@@ -35,10 +35,10 @@ export function seeMap(mat) {
   const prev = mat.onBeforeCompile;
   mat.onBeforeCompile = sh => {
     if (prev) prev(sh);
-    sh.uniforms.uHole = SEE.hole; sh.uniforms.uHoleR = SEE.holeR; sh.uniforms.uFeetY = SEE.feetY; sh.uniforms.uNear = SEE.near;
-    sh.vertexShader = sh.vertexShader.replace('void main() {', 'varying float vViewZ; varying float vWY;\nvoid main() {')
-      .replace('#include <project_vertex>', '#include <project_vertex>\nvViewZ = -mvPosition.z; vWY = (modelMatrix * vec4(transformed, 1.0)).y;');
-    sh.fragmentShader = sh.fragmentShader.replace('void main() {', `varying float vViewZ; varying float vWY;
+    sh.uniforms.uHole = SEE.hole; sh.uniforms.uHoleR = SEE.holeR; sh.uniforms.uFeetY = SEE.feetY; sh.uniforms.uNear = SEE.near; sh.uniforms.uCam = SEE.cam; sh.uniforms.uDuelist = SEE.duelist;
+    sh.vertexShader = sh.vertexShader.replace('void main() {', 'varying float vViewZ; varying float vWY; varying vec3 vSeeWP;\nvoid main() {')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvViewZ = -mvPosition.z; vSeeWP = (modelMatrix * vec4(transformed, 1.0)).xyz; vWY = vSeeWP.y;');
+    sh.fragmentShader = sh.fragmentShader.replace('void main() {', `varying float vViewZ; varying float vWY; varying vec3 vSeeWP; uniform highp vec3 uCam; uniform highp vec3 uDuelist;
 uniform highp vec3 uHole; uniform highp vec2 uHoleR; uniform highp float uFeetY;
 ${DITHER_GLSL}${NEAR_GLSL}
 float holeKeep() {
@@ -49,7 +49,8 @@ float holeKeep() {
   return mix(1.0, k, front);
 }
 void main() {
-  { float k = min(holeKeep(), nearKeep(vViewZ)); DS_FADE(k) }`);
+  { highp vec3 dd = uDuelist - uCam; float tt = clamp(dot(vSeeWP - uCam, dd) / max(dot(dd, dd), 0.0001), 0.0, 1.0); float gap = length(vSeeWP - (uCam + dd * tt)); float corridor = (tt < 0.9 && gap < 2.2) ? 0.25 : 1.0;
+    float k = min(min(holeKeep(), nearKeep(vViewZ)), corridor); DS_FADE(k) }`);       // and anything on the line from the camera to the duelist (a kicker, a post) thins along that line
   };
   mat.needsUpdate = true;
   return mat;
