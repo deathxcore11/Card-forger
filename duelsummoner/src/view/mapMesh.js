@@ -13,13 +13,16 @@ export class Builder {
   rnd() { this.seed = (this.seed * 1664525 + 1013904223) >>> 0; return this.seed / 4294967296; }
   // quad a,b,c,d (any winding); `out` is a vector pointing away from the solid so we can face it correctly
   quad(a, b, c, d, out, color) { this.tri(a, b, c, out, color); this.tri(a, c, d, out, color); }
+  // a triangle with its own normal and colour at each corner (the ground: lit and coloured smoothly across the facets)
+  triV(P, N, C) { for (let k = 0; k < 3; k++) { const p = P[k], n = N[k], c = C[k]; this.pos.push(p[0], p[1], p[2]); this.nor.push(n[0], n[1], n[2]); this.col.push(((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255); if (this.uv) this.uv.push(p[0] / 26, p[2] / 26); } }
   tri(a, b, c, out, color) {
     let ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
     let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
     const l = Math.sqrt(nx * nx + ny * ny + nz * nz); if (l < 1e-9) return;
     nx /= l; ny /= l; nz /= l;
     if (nx * out[0] + ny * out[1] + nz * out[2] < 0) { const t = b; b = c; c = t; nx = -nx; ny = -ny; nz = -nz; }
-    const j = 0.97 + this.rnd() * 0.06, r = ((color >> 16) & 255) / 255 * j, g = ((color >> 8) & 255) / 255 * j, bl = (color & 255) / 255 * j;
+    const j = this.plain ? 1 : 0.97 + this.rnd() * 0.06, r = ((color >> 16) & 255) / 255 * j, g = ((color >> 8) & 255) / 255 * j, bl = (color & 255) / 255 * j;
+    if (this.smooth) { const ol = Math.hypot(out[0], out[1], out[2]) || 1; nx = out[0] / ol; ny = out[1] / ol; nz = out[2] / ol; }       // the ground passes its own smoothed normal (lit by the slope, not the facet)
     [a, b, c].forEach(p => { this.pos.push(p[0], p[1], p[2]); this.nor.push(nx, ny, nz); this.col.push(r, g, bl); if (this.uv) this.uv.push(p[0] / 26, p[2] / 26); });
   }
   mesh(far, fade, sand) {

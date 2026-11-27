@@ -151,7 +151,7 @@ export class Actors {
       if (i === 0) m.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.xp.max * 3), 3);
       if (i === 1) geo.rotateX(Math.PI / 2); scene.add(m); return m;
     });
-    this.btrap = instanced(new T.BoxGeometry(1.2, 0.06, 1.7), basic(0x8a3ad8), 8); scene.add(this.btrap);
+    this.btrap = instanced(new T.BoxGeometry(1.2, 0.06, 1.7), basic(0x9a7432), 8);       // a face-down trap card: a dull gold card back (it was a violet square) scene.add(this.btrap);
 
     // telegraphs and effects (flat, drawn on the ground)
     const ghost = c => basic(c, WARN(Object.assign({ transparent: true, opacity: 0.5, depthWrite: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8 })));       // pulled toward the lens so a flat warning does not sink into a 20 cm bump of the designed ground
@@ -387,8 +387,8 @@ export class Actors {
     const t = performance.now() / 1000; for (const o of this.litG.children) { o.rotation.y = t * 1.4 + o.position.x; o.position.y = o.userData.y0 + Math.sin(t * 2 + o.position.z) * 0.12; }
   }
   // the park lines' rolling logs (sim toys): a pale beam with gold bands, turning as it rolls
-  // the gate arena's five seal stones while the fight is on: a dark plinth with a gem, gold once lit
-  _arenaSeals(g) { const on = g.big && g.gate && g.gate.state === 'fight'; if (!this._as) { this._as = []; for (let k = 0; k < 5; k++) { const G = new T.Group(), base = new T.Mesh(new T.CylinderGeometry(0.55, 0.75, 1.6, 6), lambert(0x4a4038)), gem = new T.Mesh(new T.OctahedronGeometry(0.34, 0), new T.MeshBasicMaterial({ color: 0x8a7a68 })); base.position.y = 0.5; gem.position.y = 1.65; G.add(base, gem); G.userData.gem = gem; G.visible = false; this.scene.add(G); this._as.push(G); } }
+  // the gate arena's five seal stones while the fight is on: a sandstone plinth with a gem, gold once lit
+  _arenaSeals(g) { const on = g.big && g.gate && g.gate.state === 'fight'; if (!this._as) { this._as = []; for (let k = 0; k < 5; k++) { const G = new T.Group(), base = new T.Mesh(new T.CylinderGeometry(0.55, 0.75, 1.6, 6), lambert(0xc9a878)), gem = new T.Mesh(new T.OctahedronGeometry(0.34, 0), new T.MeshBasicMaterial({ color: 0x8a7a68 })); base.position.y = 0.5; gem.position.y = 1.65; G.add(base, gem); G.userData.gem = gem; G.visible = false; this.scene.add(G); this._as.push(G); } }
     if (!on) { for (const G of this._as) G.visible = false; return; } const S = arenaSealSpots(g), A = g.arenaSeal; S.forEach((s, k) => { const G = this._as[k]; G.visible = true; G.position.set(s[0], s[1], s[2]); G.userData.gem.material.color.setHex(A && A.lit[k] ? 0xffd56a : 0x8a7a68); G.userData.gem.rotation.y += 0.03; }); }
   _rollers(g) { const L = (g.world && g.world.rollers) || []; if (!this._rl) this._rl = []; while (this._rl.length < L.length) { const G = new T.Group(), M = lambert(0xcbb48a), m = new T.Mesh(new T.CylinderGeometry(0.5, 0.5, 5, 8), M); m.rotation.z = Math.PI / 2; G.add(m); for (const s of [-1.6, 1.6]) { const b2 = new T.Mesh(new T.CylinderGeometry(0.53, 0.53, 0.25, 8), lambert(0xe0b24e)); b2.rotation.z = Math.PI / 2; b2.position.x = s; G.add(b2); } this.scene.add(G); this._rl.push(G); }
     const p = g.p; this._rl.forEach((G, i) => { const q = L[i]; if (!q) { G.visible = false; return; } const dx = q.x - p.x, dz = q.z - p.z; G.visible = dx * dx + dz * dz < 260 * 260; if (!G.visible) return; G.position.set(q.x, q.y + 0.45, q.z); G.rotation.order = 'YXZ'; G.rotation.y = Math.atan2(-q.az, q.ax); G.rotation.x = q.spin; }); }

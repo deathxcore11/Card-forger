@@ -48,13 +48,16 @@ export function buildOpen(map, look) {
     return sandColour(cx, cz, cy);
   };
   const tri = (Bd, a, b, c) => { const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2]; let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; nx /= l; ny /= l; nz /= l; if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }
-    Bd.tri(a, b, c, [nx, ny, nz], colour((a[0] + b[0] + c[0]) / 3, (a[2] + b[2] + c[2]) / 3, (a[1] + b[1] + c[1]) / 3, nx, ny, nz)); };
+    const mx = (a[0] + b[0] + c[0]) / 3, mz = (a[2] + b[2] + c[2]) / 3, E = 3, sgx = (gh(mx + E, mz) - gh(mx - E, mz)) / (2 * E), sgz = (gh(mx, mz + E) - gh(mx, mz - E)) / (2 * E), sl = Math.sqrt(sgx * sgx + 1 + sgz * sgz);       // lit by the slope over 6 m, not the facet: no per-triangle blotching
+    Bd.tri(a, b, c, [-sgx / sl, 1 / sl, -sgz / sl], colour((a[0] + b[0] + c[0]) / 3, (a[2] + b[2] + c[2]) / 3, (a[1] + b[1] + c[1]) / 3, nx, ny, nz)); };
   // one chunk's ground at a cell size, with a 3 m skirt all round
   const grid = (Bd, x0, z0, step) => {
-    const n = Math.round(CHK / step), V = new Float32Array((n + 1) * (n + 1)); for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) V[j * (n + 1) + i] = gh(x0 + i * step, z0 + j * step);
-    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
-      const xa = x0 + i * step, za = z0 + j * step, a = [xa, V[j * (n + 1) + i], za], b = [xa + step, V[j * (n + 1) + i + 1], za], c = [xa + step, V[(j + 1) * (n + 1) + i + 1], za + step], d = [xa, V[(j + 1) * (n + 1) + i], za + step];
-      if (Math.abs(a[1] - c[1]) < Math.abs(b[1] - d[1])) { tri(Bd, a, b, c); tri(Bd, a, c, d); } else { tri(Bd, a, b, d); tri(Bd, b, c, d); }       // the cut follows the smaller height change
+    const n = Math.round(CHK / step), W1 = n + 1, V = new Float32Array(W1 * W1); for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) V[j * W1 + i] = gh(x0 + i * step, z0 + j * step);
+    const NV = new Array(W1 * W1), CV = new Array(W1 * W1), E = 3;       // a normal from the slope over 6 m and a colour at every corner: the ground is lit and tinted smoothly, never per facet
+    for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) { const x = x0 + i * step, z = z0 + j * step, gx = (gh(x + E, z) - gh(x - E, z)) / (2 * E), gz = (gh(x, z + E) - gh(x, z - E)) / (2 * E), l = Math.sqrt(gx * gx + 1 + gz * gz), nn = [-gx / l, 1 / l, -gz / l]; NV[j * W1 + i] = nn; CV[j * W1 + i] = colour(x, z, V[j * W1 + i], nn[0], nn[1], nn[2]); }
+    const P = (i, j) => [x0 + i * step, V[j * W1 + i], z0 + j * step], tv = (A, B, C) => Bd.triV([P(...A), P(...B), P(...C)], [NV[A[1] * W1 + A[0]], NV[B[1] * W1 + B[0]], NV[C[1] * W1 + C[0]]], [CV[A[1] * W1 + A[0]], CV[B[1] * W1 + B[0]], CV[C[1] * W1 + C[0]]]);
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const a = [i, j], b = [i + 1, j], c = [i + 1, j + 1], d = [i, j + 1];
+      if (Math.abs(V[j * W1 + i] - V[(j + 1) * W1 + i + 1]) < Math.abs(V[j * W1 + i + 1] - V[(j + 1) * W1 + i])) { tv(a, c, b); tv(a, d, c); } else { tv(a, d, b); tv(b, d, c); }       // the cut follows the smaller height change (wound to face up)
     }
     const sk = (p, q, out) => { const col = dim(sandColour((p[0] + q[0]) / 2, (p[2] + q[2]) / 2, p[1]), 0.8); Bd.quad(p, q, [q[0], q[1] - 3, q[2]], [p[0], p[1] - 3, p[2]], out, col); };
     for (let i = 0; i < n; i++) { const xa = x0 + i * step; sk([xa, V[i], z0], [xa + step, V[i + 1], z0], [0, 0, -1]); sk([xa, V[n * (n + 1) + i], z0 + CHK], [xa + step, V[n * (n + 1) + i + 1], z0 + CHK], [0, 0, 1]); }
@@ -63,7 +66,7 @@ export function buildOpen(map, look) {
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
   const tex = streakTex(); let shared = null, tris = 0;
   const meshOf = (Bd, streaks) => {                                                            // every chunk mesh shares one material
-    const m = Bd.mesh(false, BIG ? undefined : fadeU); if (!shared) { shared = m.material; shared.map = tex; mountainFog(shared); shared.needsUpdate = true; } else { m.material.dispose(); m.material = shared; }
+    const m = Bd.mesh(false, BIG ? undefined : fadeU); if (!shared) { shared = m.material; shared.flatShading = false; shared.map = tex; mountainFog(shared); shared.needsUpdate = true; } else { m.material.dispose(); m.material = shared; }
     if (streaks) { const p = m.geometry.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv[i * 2] = (x * cw + z * sw) / 24; uv[i * 2 + 1] = (-x * sw + z * cw) / 12; } m.geometry.setAttribute('uv', new T.BufferAttribute(uv, 2)); }
     tris += Bd.pos.length / 9 | 0; m.geometry.computeBoundingSphere(); return m;
   };
