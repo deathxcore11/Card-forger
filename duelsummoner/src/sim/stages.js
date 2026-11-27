@@ -330,7 +330,8 @@ function spawner(g, dt, fight, toll) {
     if (g.golemT <= 0) { g.golemT = RUN.golem.every; if (enemyCount(g.en) < cap) spawnEnemy(g, 'golem'); }
   }
   if (toll) { g.huntT -= dt; if (g.huntT <= 0) { g.huntT = RUNSPEC.tollHunterEvery; for (let k = 0; k < RUNSPEC.tollHunterCount; k++) if (enemyCount(g.en) < cap) spawnEnemy(g, 'hunter'); } }
-  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt * hm * (g.big ? surgeMul(g) * stakesDensity(g) : 1);
+  const KB = g.map && g.map.world && g.map.world.killBowl, inBowl = !!KB && (p.x - KB.x) * (p.x - KB.x) + (p.z - KB.z) * (p.z - KB.z) < KB.r * KB.r; g.inBowl = inBowl;       // the kill bowl: the horde comes three times as thick while you ride it
+  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt * hm * (inBowl ? 3 : 1) * (g.big ? surgeMul(g) * stakesDensity(g) : 1);
   let live = enemyCount(g.en);
   if (g.spawnAcc > 60) g.spawnAcc = 60;                                // never a runaway backlog
   while (g.spawnAcc >= 1) { g.spawnAcc -= 1; const kind = pickKind(g, te); if (live < cap) { if (spawnEnemy(g, kind)) live++; } else mergeEnemy(g, kind); }       // past the cap a spawn merges into the nearest of its kind

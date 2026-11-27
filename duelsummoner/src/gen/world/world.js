@@ -128,7 +128,17 @@ export function makeWorld(seedLo, stageIndex, opts) {
     if (u >= 30 && u <= 42 && v >= 40 && v <= 52) h += 6;       // the block mesa: 12 m square, 6 m sheer, a reward on top
     return h;
   }
-  function baseH(x, z) { const h = baseH1(x, z); if (!W.gym) return h; const G = W.gym, u = x - G.x, v = z - G.z, d = sq(u * u + v * v); if (d >= G.edge) return h; const h0 = G.h0 === undefined ? (G.h0 = baseH1(G.x, G.z)) : G.h0, k = sstep(G.r, G.edge, d); return gymH(u, v, h0) * (1 - k) + h * k; }
+  // the kill bowl (owner, 27 Nov: "a vast fun enemy kill area where you can do tricks and zoom around hitting the entire corner"): a flat floor 110 m across, banked up to a rim
+  // with quarter pipes all round it, two park lines across the floor, and the horde thicker while you are inside it (sim/stages.js). One a stage, 190 m ahead of the start.
+  function bowlH(x, z, h) { const B = W.killBowl; if (!B) return h; const dx = x - B.x, dz = z - B.z, d2 = dx * dx + dz * dz; if (d2 > B.out * B.out) return h; const d = sq(d2), hf = B.h0 === undefined ? (B.h0 = baseH1(B.x, B.z) - 3) : B.h0;
+    if (d <= B.floor) return hf; const rim = hf + B.bank * sstep(B.floor, B.r, d); return d <= B.r ? rim : rim * (1 - sstep(B.r, B.out, d)) + h * sstep(B.r, B.out, d); }
+  // a climb: three square plateaus stepping up (2.5, 4.5 and 6.5 m, sheer sides) with a chest on the top one: a spot to reach by ollies and wall rides
+  function climbOf(qx, qz) { if (!W.spawn) return null; const k = hsh(seed, qx, qz, 0xC11B); if (k % 3 !== 0) return null; const r = rngOf(k), x = qx * Q + 50 + r() * (Q - 100), z = qz * Q + 50 + r() * (Q - 100); if (dist(x, z, W.spawn.x, W.spawn.z) < 340) return null; return { x: r2(x), z: r2(z) }; }       // (none near the start: the start, the ride school and the wonder line keep their ground)
+  const CLIMB = [[0, 0, 2.5], [10, 4, 4.5], [5, 14, 6.5]];
+  function climbH(x, z, h) { if (W.gym) return h; const c = climbOf(Math.floor(x / Q), Math.floor(z / Q)); if (!c) return h; let up = 0; for (const [ox, oz, hh] of CLIMB) if (Math.abs(x - c.x - ox) <= 4 && Math.abs(z - c.z - oz) <= 4) up = Math.max(up, hh); return up ? Math.max(h, (c.h0 === undefined ? (c.h0 = baseH1(c.x, c.z)) : c.h0) + up) : h; }
+  W.climbOf = climbOf;       // (a climb's chest is a pocket marked climb: reached by ollies and wall rides, not on foot)
+  function baseH(x, z) { const h = climbH(x, z, bowlH(x, z, baseH2(x, z))); return h; }
+  function baseH2(x, z) { const h = baseH1(x, z); if (!W.gym) return h; const G = W.gym, u = x - G.x, v = z - G.z, d = sq(u * u + v * v); if (d >= G.edge) return h; const h0 = G.h0 === undefined ? (G.h0 = baseH1(G.x, G.z)) : G.h0, k = sstep(G.r, G.edge, d); return gymH(u, v, h0) * (1 - k) + h * k; }
   function baseH1(x, z) {
     const n = near2(x, z), t = sstep(-320, 320, n.db - n.da); let h = regH(n.A, x, z) * t; if (t < 0.999) h += regH(n.B, x, z) * (1 - t);
     return dropAt(x, z, soft0(h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z) - 8 * startValleyQ(x, z) + roll(x, z)));
@@ -172,7 +182,8 @@ export function makeWorld(seedLo, stageIndex, opts) {
   W.landmark = landmark;
   // ---- cells
   const cells = new Map();
-  function cell(qx, qz) { const C = cell0(qx, qz); if (W.gym && !C.gymDone) { C.gymDone = true; const G = W.gym, out = (x, z, r) => dist(x, z, G.x, G.z) > G.edge + 20 + (r || 0); C.blocks = C.blocks.filter(b => out(b.cx, b.cz, reachOf(b))); C.pockets = C.pockets.filter(q => out(q.x, q.z)); C.extras = C.extras.filter(q => out(q.x, q.z)); if (C.ring && !out(C.ring.x, C.ring.z)) C.ring = null; } return C; }
+  function cell(qx, qz) { const C = cell0(qx, qz); if (W.killBowl && !C.bowlDone) { C.bowlDone = true; const B = W.killBowl, out = (x, z, r) => dist(x, z, B.x, B.z) > B.out + 10 + (r || 0); C.blocks = C.blocks.filter(b => out(b.cx, b.cz, reachOf(b))); C.pockets = C.pockets.filter(q => out(q.x, q.z)); C.extras = C.extras.filter(q => out(q.x, q.z)); if (C.ring && !out(C.ring.x, C.ring.z)) C.ring = null; }
+    if (!C.climbDone) { C.climbDone = true; const c = climbOf(qx, qz); if (c && (!W.killBowl || dist(c.x, c.z, W.killBowl.x, W.killBowl.z) > W.killBowl.out + 20)) { C.blocks = C.blocks.filter(b => dist(b.cx, b.cz, c.x + 5, c.z + 7) > reachOf(b) + 14); C.pockets.push({ type: 'cchest', x: c.x + 5, z: c.z + 14, climb: true }); } } if (W.gym && !C.gymDone) { C.gymDone = true; const G = W.gym, out = (x, z, r) => dist(x, z, G.x, G.z) > G.edge + 20 + (r || 0); C.blocks = C.blocks.filter(b => out(b.cx, b.cz, reachOf(b))); C.pockets = C.pockets.filter(q => out(q.x, q.z)); C.extras = C.extras.filter(q => out(q.x, q.z)); if (C.ring && !out(C.ring.x, C.ring.z)) C.ring = null; } return C; }
   function cell0(qx, qz) {
     const key = (qx + 128) * 512 + (qz + 128); let C = cells.get(key); if (C) return C;
     const x0 = qx * Q, z0 = qz * Q, cxm = x0 + Q / 2, czm = z0 + Q / 2; C = { qx, qz, x0, z0, blocks: [], pocket: null, pockets: [], ring: null, extras: [], type: 0, pads: [] }; cells.set(key, C);
@@ -293,7 +304,7 @@ export function makeWorld(seedLo, stageIndex, opts) {
       const TPL = [['k', 'l', 'k', 'q'], ['k', 'r', 'k'], ['k', 'l', 'k'], ['k', 'r', 'k', 'q'], ['l', 'k', 'r', 'k']];
       const line = (x, z, a, open, T0) => { const ux = cosA(a), uz = sinA(a), tpl = T0 || (open ? ['k', 'l', 'k', 'q'] : TPL[(prn() * TPL.length) | 0]), P = []; let t = 0;
         for (let e = 0; e < tpl.length; e++) { const kind = tpl[e], nx = tpl[e + 1], len = kind === 'k' ? 9 : kind === 'q' ? 3 : 8 + ((prn() * 3) | 0); P.push([kind, t, len]); t += len + (kind === 'k' ? (nx === 'l' || nx === 'r' ? 8 : 15) : kind === 'q' ? 0 : 9); }       // off a kicker the card comes down onto the rail that follows (7 m on), or lands clear before the next ramp (15 m)
-        const y0 = gy(x, z); for (let s = -18; s <= t + 6; s += 3) { const px = x + ux * s, pz = z + uz * s; if (!ok(px, pz, 5, 0.5) || nearby('k', px, pz, 14) || gy(px, pz) > y0 + 2 + s * 0.04) return false; }       // the whole line fits: clear, gentle, never climbing, and well apart from every other line
+        const y0 = gy(x, z); for (let s = -18; s <= t + 6; s += 3) { const px = x + ux * s, pz = z + uz * s; if (px < C.x0 + 6 || px > C.x0 + Q - 6 || pz < C.z0 + 6 || pz > C.z0 + Q - 6 || !ok(px, pz, 5, 0.5) || nearby('k', px, pz, 14) || gy(px, pz) > y0 + 2 + s * 0.04) return false; }       // the whole line fits: clear, gentle, never climbing, and well apart from every other line
         for (const [kind, t0, len] of P) { const ax = x + ux * t0, az = z + uz * t0, bx = ax + ux * len, bz = az + uz * len, cx = (ax + bx) / 2, cz = (az + bz) / 2;
           if (kind === 'k' && gy(bx, bz) - gy(bx + ux * 14, bz + uz * 14) > 2.5) D.kickers.push([r2(cx), r2(gy(cx, cz)), r2(cz), r2(ux), r2(uz), 9, 9, 3.3]);       // the land falls away past the lip: a gap kicker, the dip below is the landing
           else if (kind === 'k') D.kickers.push([r2(cx), r2(gy(cx, cz)), r2(cz), r2(ux), r2(uz), 9, 9, r2(2.4 + prn() * 0.8)]);
@@ -301,6 +312,7 @@ export function makeWorld(seedLo, stageIndex, opts) {
           else if (kind === 'r') D.poles.push([r2(ax), r2(gy(ax, az) + 0.7), r2(az), r2(bx), r2(gy(bx, bz) + 0.7), r2(bz)]);
           else D.quarters.push([r2(ax), r2(gy(ax, az)), r2(az), r2(ux), r2(uz), 12]);
           for (let s = 0; s <= len; s += 4) put('k', ax + ux * s, az + uz * s); }
+        { const lane = (q, pad) => { const dx = q[0] - x, dz = q[2] - z, s = dx * ux + dz * uz, w = dx * uz - dz * ux; return s > -20 && s < t + 4 && Math.abs(w) < 5.5 + pad; }; for (const k of ['cacti', 'dead', 'solid']) D[k] = D[k].filter(q => !lane(q, k === 'solid' ? q[3] : 0)); }       // nothing standing in the run-up or along the line: a cactus by a block can sit in the lane
         if (open) D.parkPots.push({ x: r2(x + ux * (t + 6)), z: r2(z + uz * (t + 6)), vases: [[r2(-uz * 1.4), r2(ux * 1.4), false], [r2(uz * 1.4), r2(-ux * 1.4), prn() < 0.2]] });
         return true; };
       // the opening view: in the start's own cell, a line from about 40 m out along the start view, running away from the camera
@@ -324,6 +336,11 @@ export function makeWorld(seedLo, stageIndex, opts) {
     { const near = (x, z) => (W.spawn && dist(x, z, W.spawn.x, W.spawn.z) < 9) || D.kickers.some(q => dist(x, z, q[0], q[2]) < 6 + q[5] / 2) || D.quarters.some(q => dist(x, z, q[0], q[2]) < 7) || D.ledges.concat(D.poles).some(q => { const sx = q[3] - q[0], sz = q[5] - q[2], l2 = sx * sx + sz * sz || 1, u = Math.max(0, Math.min(1, ((x - q[0]) * sx + (z - q[2]) * sz) / l2)); return dist(x, z, q[0] + sx * u, q[2] + sz * u) < 6; });
       const gone = new Set(); D.cacti.forEach((c, k) => { if (near(c[0], c[2])) gone.add(k); else if (k % 2 && D.cacti.some((o, j) => j !== k && !gone.has(j) && dist(o[0], o[2], c[0], c[2]) < 3)) gone.add(k); });       // every other cactus of a tight clump goes
       if (gone.size) { const keyOf = c => c[0] + "," + c[2], dead = new Set([...gone].map(k => keyOf(D.cacti[k]))); D.cacti = D.cacti.filter((c, k) => !gone.has(k)); D.solid = D.solid.filter(s => !dead.has(s[0] + "," + s[2])); } }
+    if (W.killBowl) { const B = W.killBowl, inside = (x, z) => dist(x, z, B.x, B.z) < B.out + 6;
+      for (const k of Object.keys(D)) if (Array.isArray(D[k])) D[k] = D[k].filter(q => { const x = Array.isArray(q) ? q[0] : q.x, z = Array.isArray(q) ? (q.length > 2 && typeof q[2] === 'number' ? q[2] : q[1]) : q.z; return typeof x !== 'number' || !inside(x, z); });
+      if (Math.floor(B.x / Q) === qx && Math.floor(B.z / Q) === qz) { const y = B.h0 === undefined ? gy(B.x, B.z) : B.h0;
+        for (const s of [-1, 1]) { const v = B.z + s * 16; D.kickers.push([r2(B.x - 30), r2(y), r2(v), 1, 0, 9, 9, 2.6]); D.poles.push([r2(B.x - 17.5), r2(y + 0.7), r2(v), r2(B.x - 7.5), r2(y + 0.7), r2(v)]); D.kickers.push([r2(B.x + 6), r2(y), r2(v), 1, 0, 9, 9, 2.6]); D.ledges.push([r2(B.x + 20), r2(y), r2(v + s * 8), r2(B.x + 30), r2(y), r2(v + s * 8), 0.8]); }
+        for (let k = 0; k < 8; k++) { const a = k * TAU / 8, ux = cosA(a), uz = sinA(a), x = B.x + ux * (B.floor + 2), z = B.z + uz * (B.floor + 2); D.quarters.push([r2(x), r2(gy(x, z)), r2(z), r2(ux), r2(uz), 12]); } } }
     if (W.gym) { const G = W.gym, inside = (x, z) => dist(x, z, G.x, G.z) < G.edge + 10;
       for (const k of Object.keys(D)) if (Array.isArray(D[k])) D[k] = D[k].filter(q => { const x = Array.isArray(q) ? q[0] : q.x, z = Array.isArray(q) ? (q.length > 2 && typeof q[2] === 'number' ? q[2] : q[1]) : q.z; return !inside(x, z); });
       if (Math.floor(G.x / Q) === qx && Math.floor(G.z / Q) === qz) { const v = G.z - 30, y = gy(G.x, v);
@@ -354,7 +371,8 @@ export function makeWorld(seedLo, stageIndex, opts) {
   W.startExtras = []; { const o = gather9(sp[0], sp[1]); for (const [type, lo, hi] of [['stone', 35, 60], ['cchest', 60, 100]]) { let site = null; for (let t = 0; t < 400 && !site; t++) { const r = lo + rs() * (hi - lo), a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (spread(x, z, 3) > 0.9 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 4) || o.pockets.some(p => dist(p.x, p.z, x, z) < 16) || o.rings.some(q => dist(q.x, q.z, x, z) < 30) || (fc && dist(fc.x, fc.z, x, z) < 12) || W.startExtras.some(q => dist(q.x, q.z, x, z) < 14)) continue; site = { type, x, z, free: true }; } if (site) { W.addPad(site.x, site.z, 3, 8); W.startExtras.push(site); } } }
   // the first landmark or mesa the start looks at
   { let bd = 1e9, bt = null; const o = gather9(sp[0], sp[1]); for (const b of o.blocks) { const d = dist(b.cx, b.cz, sp[0], sp[1]); if (b.h >= 7 && d >= 50 && d < bd) { bd = d; bt = b; } } for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const b = landmark(Math.floor(sp[0] / LC) + i, Math.floor(sp[1] / LC) + j); if (b) { const d = dist(b.cx, b.cz, sp[0], sp[1]); if (d >= 80 && d < 900 && d < bd * 3) { bd = Math.min(bd, d); bt = b; } } } { let by = 0, bdot = -9; const dx = bt ? bt.cx - sp[0] : 0, dz = bt ? bt.cz - sp[1] : 0, dl = sq(dx * dx + dz * dz) || 1; for (let k = 0; k < 48; k++) { const a = k * TAU / 48, fx = -sinA(a), fz = -cosA(a); let vq = 0; for (let d = 18; d <= 60; d += 6) { const q = W.valleyAt(sp[0] + fx * d, sp[1] + fz * d); if (q > vq) vq = q; } const dot = (bt ? (fx * dx + fz * dz) / dl : 0) + 1.5 * vq; if (dot > bdot) { bdot = dot; by = a; } } W.startYaw = r2(by); } W.startLandmark = bt; }
-  if (W.gym) W.startYaw = r2(3.141592653589793);       // the gym: facing north up the arena
+  if (W.gym) W.startYaw = r2(3.141592653589793);
+  else { const ba = W.startYaw + 1.7, fx = -sinA(ba), fz = -cosA(ba); W.killBowl = { x: r2(W.spawn.x + fx * 200), z: r2(W.spawn.z + fz * 200), floor: 55, r: 72, out: 92, bank: 7 }; }       // the kill bowl, 200 m out to the side of the start view (clear of the wonder line ahead)       // the gym: facing north up the arena
   // ride school: a straight line of three beams just ahead of the spawn and 3.5 m to the right, along the start view, for the first ollie and grind (the tutorial points at it)
   // (the opening view looks toward the landmark and a wave valley in sight within 110 m, the valley weighted more)
   // ride school: three short beams in the opening view (within about 25 degrees of the start camera, 18 to 36 m ahead), the flattest such line, with the ground flattened under each

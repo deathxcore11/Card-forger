@@ -34,7 +34,7 @@ test('big world: regions of every character exist, walkable ground is one connec
     while (q.length) { const c = q.pop(), x = c % n, z = (c / n) | 0; for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const xx = x + dx, zz = z + dz; if (xx < 0 || zz < 0 || xx >= n || zz >= n) continue; const m = zz * n + xx; if (got[m] || hs[m] >= 50 || Math.abs(hs[m] - hs[c]) > 0.55 * S) continue; got[m] = 1; q.push(m); } }
     for (let k = 0; k < n * n; k++) if (got[k]) reach++;
     assert.ok(reach / walk > 0.97, seed + ' connected ' + (reach / walk).toFixed(3));
-    for (let qz = -1; qz <= 1; qz++) for (let qx = -1; qx <= 1; qx++) for (const p of W.cell(Math.floor(W.spawn.x / Q) + qx, Math.floor(W.spawn.z / Q) + qz).pockets) { const i = Math.floor((p.x - ox) / S), j = Math.floor((p.z - oz) / S); if (i > 0 && j > 0 && i < n && j < n) assert.ok(got[j * n + i], seed + ' pocket ' + p.type + ' reachable'); }
+    for (let qz = -1; qz <= 1; qz++) for (let qx = -1; qx <= 1; qx++) for (const p of W.cell(Math.floor(W.spawn.x / Q) + qx, Math.floor(W.spawn.z / Q) + qz).pockets) { if (p.climb) continue; const i = Math.floor((p.x - ox) / S), j = Math.floor((p.z - oz) / S); if (i > 0 && j > 0 && i < n && j < n) assert.ok(got[j * n + i], seed + ' pocket ' + p.type + ' reachable'); }
     // the longest stretch of a straight 3 km drive with no pocket within 90 m of the line is under 60 s at 9 m/s (540 m)
     for (let d = 0; d < 6; d++) { const a = d * 1.0471975 + 0.3, dx = Math.cos(a), dz = Math.sin(a); let last = 0, gap = 0;
       for (let t = 0; t <= 3000; t += 10) { const x = W.spawn.x + dx * t, z = W.spawn.z + dz * t; let near = false;
