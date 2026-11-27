@@ -66,15 +66,18 @@ export function buildOpen(map, look) {
       let h = (V[k] * (1 - tx) + V[k + 1] * tx) * (1 - tz) + (V[k + W1] * (1 - tx) + V[k + W1 + 1] * tx) * tz; if (caps.length) { const cp = capAt(caps, x0 + (i + 0.5) * c, z0 + (j + 0.5) * c); if (h > cp) h = cp; } Hq[j * M + i] = Math.round(h / BQ) * BQ; }
     const UP = [0, 1, 0];
     for (let j = 0; j < M; j++) for (let i = 0; i < M;) { const h = Hq[j * M + i]; let e = i + 1; while (e < M && e - i < 32 && Hq[j * M + e] === h) e++; const col = sandBlock(x0 + (i + e) / 2 * c, z0 + j * c, 1);
-      Bd.quadN([x0 + i * c, h, z0 + j * c], [x0 + e * c, h, z0 + j * c], [x0 + e * c, h, z0 + (j + 1) * c], [x0 + i * c, h, z0 + (j + 1) * c], UP, UP, col); i = e; }       // tops
+      const o = 0.002; Bd.quadN([x0 + i * c - o, h, z0 + j * c - o], [x0 + e * c + o, h, z0 + j * c - o], [x0 + e * c + o, h, z0 + (j + 1) * c + o], [x0 + i * c - o, h, z0 + (j + 1) * c + o], UP, UP, col); i = e; }       // tops, 2 mm over their edges (no T-junction cracks)
     for (let i = 0; i < M - 1; i++) for (let j = 0; j < M;) { const a = Hq[j * M + i], b = Hq[j * M + i + 1]; if (a === b) { j++; continue; } let e = j + 1; while (e < M && e - j < 32 && Hq[e * M + i] === a && Hq[e * M + i + 1] === b) e++;
-      const x = x0 + (i + 1) * c, lo = Math.min(a, b), hi = Math.max(a, b); Bd.quadN([x, lo, z0 + j * c], [x, lo, z0 + e * c], [x, hi, z0 + e * c], [x, hi, z0 + j * c], [a > b ? 1 : -1, 0, 0], UP, sandBlock(x, z0 + j * c, 0.88)); j = e; }       // walls facing x
+      const x = x0 + (i + 1) * c, lo = Math.min(a, b), hi = Math.max(a, b); Bd.quadN([x, lo - 0.002, z0 + j * c - 0.002], [x, lo - 0.002, z0 + e * c + 0.002], [x, hi + 0.002, z0 + e * c + 0.002], [x, hi + 0.002, z0 + j * c - 0.002], [a > b ? 1 : -1, 0, 0], UP, sandBlock(x, z0 + j * c, 0.88)); j = e; }       // walls facing x
     for (let j = 0; j < M - 1; j++) for (let i = 0; i < M;) { const a = Hq[j * M + i], b = Hq[(j + 1) * M + i]; if (a === b) { i++; continue; } let e = i + 1; while (e < M && e - i < 32 && Hq[j * M + e] === a && Hq[(j + 1) * M + e] === b) e++;
-      const z = z0 + (j + 1) * c, lo = Math.min(a, b), hi = Math.max(a, b); Bd.quadN([x0 + i * c, lo, z], [x0 + e * c, lo, z], [x0 + e * c, hi, z], [x0 + i * c, hi, z], [0, 0, a > b ? 1 : -1], UP, sandBlock(x0 + i * c, z, 0.88)); i = e; }       // walls facing z
+      const z = z0 + (j + 1) * c, lo = Math.min(a, b), hi = Math.max(a, b); Bd.quadN([x0 + i * c - 0.002, lo - 0.002, z], [x0 + e * c + 0.002, lo - 0.002, z], [x0 + e * c + 0.002, hi + 0.002, z], [x0 + i * c - 0.002, hi + 0.002, z], [0, 0, a > b ? 1 : -1], UP, sandBlock(x0 + i * c, z, 0.88)); i = e; }       // walls facing z
+    { const edge = (len, H, P, out) => { for (let k = 0; k < len;) { const h = H(k); let e = k + 1; while (e < len && e - k < 32 && H(e) === h) e++; const [p0, p1] = P(k, e); Bd.quadN([p0[0], h - 2.4, p0[1]], [p1[0], h - 2.4, p1[1]], [p1[0], h, p1[1]], [p0[0], h, p0[1]], out, UP, sandBlock(p0[0], p0[1], 0.88)); k = e; } };       // the chunk's own edge walls, 2.4 m down: where the next chunk steps lower there is sand, not a dark seam
+      edge(M, k => Hq[k], (k, e) => [[x0 + k * c, z0], [x0 + e * c, z0]], [0, 0, -1]); edge(M, k => Hq[(M - 1) * M + k], (k, e) => [[x0 + k * c, z0 + CHK], [x0 + e * c, z0 + CHK]], [0, 0, 1]);
+      edge(M, k => Hq[k * M], (k, e) => [[x0, z0 + k * c], [x0, z0 + e * c]], [-1, 0, 0]); edge(M, k => Hq[k * M + M - 1], (k, e) => [[x0 + CHK, z0 + k * c], [x0 + CHK, z0 + e * c]], [1, 0, 0]); }
   };
   // one chunk's ground at a cell size, with a 3 m skirt all round
   const grid = (Bd, x0, z0, step) => {
-    const n = Math.round(CHK / step), W1 = n + 1, V = new Float32Array(W1 * W1); for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) V[j * W1 + i] = gh(x0 + i * step, z0 + j * step);
+    const n = Math.round(CHK / step), W1 = n + 1, V = new Float32Array(W1 * W1), sink = blocksOn && step > 2 ? 0.08 : 0; for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) V[j * W1 + i] = gh(x0 + i * step, z0 + j * step) - sink;       // (block look: the far smooth ground 8 cm under the block tops)
     const NV = new Array(W1 * W1), CV = new Array(W1 * W1), E = 3;       // a normal from the slope over 6 m and a colour at every corner: the ground is lit and tinted smoothly, never per facet
     for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) { const x = x0 + i * step, z = z0 + j * step, gx = (gh(x + E, z) - gh(x - E, z)) / (2 * E), gz = (gh(x, z + E) - gh(x, z - E)) / (2 * E), l = Math.sqrt(gx * gx + 1 + gz * gz), nn = [-gx / l, 1 / l, -gz / l]; NV[j * W1 + i] = nn; CV[j * W1 + i] = colour(x, z, V[j * W1 + i], nn[0], nn[1], nn[2]); }
     const P = (i, j) => [x0 + i * step, V[j * W1 + i], z0 + j * step], tv = (A, B, C) => Bd.triV([P(...A), P(...B), P(...C)], [NV[A[1] * W1 + A[0]], NV[B[1] * W1 + B[0]], NV[C[1] * W1 + C[0]]], [CV[A[1] * W1 + A[0]], CV[B[1] * W1 + B[0]], CV[C[1] * W1 + C[0]]]);
@@ -82,7 +85,7 @@ export function buildOpen(map, look) {
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const a = [i, j], b = [i + 1, j], c = [i + 1, j + 1], d = [i, j + 1];
       if (Math.abs(V[j * W1 + i] - V[(j + 1) * W1 + i + 1]) < Math.abs(V[j * W1 + i + 1] - V[(j + 1) * W1 + i])) { tv(a, c, b); tv(a, d, c); } else { tv(a, d, b); tv(b, d, c); }       // the cut follows the smaller height change (wound to face up)
     }
-    const sk = (p, q, out) => { const col = dim(sandColour((p[0] + q[0]) / 2, (p[2] + q[2]) / 2, p[1]), 0.8); Bd.quad(p, q, [q[0], q[1] - 3, q[2]], [p[0], p[1] - 3, p[2]], out, col); };
+    const sk = (p, q, out) => { if (blocksOn && step <= 2) return; const col = dim(sandColour((p[0] + q[0]) / 2, (p[2] + q[2]) / 2, p[1]), 0.8); Bd.quad(p, q, [q[0], q[1] - 3, q[2]], [p[0], p[1] - 3, p[2]], out, col); };
     for (let i = 0; i < n; i++) { const xa = x0 + i * step; sk([xa, V[i], z0], [xa + step, V[i + 1], z0], [0, 0, -1]); sk([xa, V[n * (n + 1) + i], z0 + CHK], [xa + step, V[n * (n + 1) + i + 1], z0 + CHK], [0, 0, 1]); }
     for (let j = 0; j < n; j++) { const za = z0 + j * step; sk([x0, V[j * (n + 1)], za], [x0, V[(j + 1) * (n + 1)], za + step], [-1, 0, 0]); sk([x0 + CHK, V[j * (n + 1) + n], za], [x0 + CHK, V[(j + 1) * (n + 1) + n], za + step], [1, 0, 0]); }
   };

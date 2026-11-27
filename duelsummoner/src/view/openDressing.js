@@ -63,7 +63,7 @@ function deadTree(D, x, y, z, s, rot, v, small) {
 }
 // ---- logs and beams: bleached grey-brown, a darker end-grain disc at each end, one end broken; every fifth one stands as a broken post
 function log(D, map, q) {
-  { const [x0, , z0, x1, , z1, rad] = q, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2; if (l > 0.5 && blockInto(D, 'beam', mx, groundAt(map, mx, mz) - rad * 0.4, mz, [rad * 2.2, rad * 2.2, l], Math.atan2(dx, dz))) return; }       // the block look: one half-sunk beam along the whole span
+  { const [x0, , z0, x1, , z1, rad] = q, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2; if (l > 0.5 && blocksOn) { blockBar(D, [x0, groundAt(map, x0, z0) + rad * 0.9, z0], [x1, groundAt(map, x1, z1) + rad * 0.9, z1], rad, false, 0x9a7a52); return; } }       // the block look: one straight half-sunk beam lying on the ground end to end
   const [x0, y0, z0, x1, y1, z1, rad, kind] = q, base = kind === 3 ? 0x8a6038 : kind === 2 ? 0xe0c89a : kind ? 0xd6b88a : 0xcaa878, col = [base, mixc(base, 0xb98a55, 0.28)], ns = kind >= 2 ? 4 : 6, grain = 0x6a4f30, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1;
   if (false) {       // (no standing broken posts: every beam lies flat and can be ground, the no-junk rule)       // (a ride-line beam, kind 3, always lies flat)       // a broken post standing up, half sunk, with a jagged top
     const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2, my = groundAt(map, mx, mz), h = 2.4 + (rad * 6 % 1.5); rod(D, [mx, my - 0.5, mz], [mx + 0.12, my + h, mz], rad, rad * 0.85, ns, col, true, false, 0.3, grain); rod(D, [mx + 0.05, my + h - 0.05, mz], [mx + 0.25, my + h + rad * 1.5, mz + 0.1], rad * 0.35, 0.03, 4, col[0], true); return; }
@@ -121,13 +121,13 @@ function pane(D, K, cx, y, cz, tx, tz, nx, nz, w, h) {
 }
 // the block look (?blocks=1): a mesa or landmark drawn on the 24 cm ground grid, rows of cells inside its outline with flat tops and vertical walls, the same banded faces
 function blockMeshVox(D, map, b) {
-  const cr = Math.cos(b.rot), sr = Math.sin(b.rot), avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg, K = BLK[b.tone], T = Math.round((b.T + 0.04) / 0.06) * 0.06, C = 0.24, R0 = Math.max(b.rx, b.rz) * q + 1;
+  const cr = Math.cos(b.rot), sr = Math.sin(b.rot), avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg, K = { face: mixc(0xc09c66, [0xb88a5a, 0xc8a070, 0xb07850][b.tone % 3], 0.35), top: 0xcaa874 }, T = Math.round((b.T + 0.04) / 0.06) * 0.06, C = 0.96, R0 = Math.max(b.rx, b.rz) * q + 1;
   const inside = (x, z) => { const dx = x - b.cx, dz = z - b.cz, lx = (dx * cr + dz * sr) / (q * b.rx), lz = (-dx * sr + dz * cr) / (q * b.rz); return Math.abs(lx) ** 3 + Math.abs(lz) ** 3 <= 1; };
   const x0 = Math.floor((b.cx - R0) / C) * C, z0 = Math.floor((b.cz - R0) / C) * C, N = Math.ceil(2 * R0 / C) + 2, runs = [];
   for (let j = 0; j < N; j++) { const z = z0 + (j + 0.5) * C; let L = -1, Rr = -1; for (let i = 0; i < N; i++) if (inside(x0 + (i + 0.5) * C, z)) { if (L < 0) L = i; Rr = i + 1; } runs.push(L < 0 ? null : [L, Rr]); }
-  const band = y => mixc(K.face, 0x000000, [0.0, 0.035, 0.015, 0.05][((Math.floor(y / 0.24 + 1e-6) % 4) + 4) % 4]);       // one subtle shade per 24 cm course
+  const band = y => mixc(K.face, 0x000000, [0.0, 0.03, 0.015, 0.045][((Math.floor(y / 0.24 + 1e-6) % 4) + 4) % 4]);       // one subtle shade per 24 cm course, a sandstone of the ground's tone
   const wall = (a, bb, out) => { const g = Math.round(Math.min(footY(map, a[0], a[1]), footY(map, bb[0], bb[1])) / 0.24) * 0.24 - 0.24, mx = (a[0] + bb[0]) / 2 - b.cx, mz = (a[1] + bb[1]) / 2 - b.cz, ml = Math.hypot(mx, mz) || 1, nrm = [mx / ml, 0, mz / ml];       // lit by the outward direction from the centre, so the stepped outline reads as one smooth face
-    for (let y = g; y < T - 0.01;) { const y1 = Math.min(T, (Math.floor(y / 0.24 + 1e-6) + 1) * 0.24); if (D.quadN) D.quadN([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, nrm, band(y)); else D.quad([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, band(y)); y = y1; } };
+    for (let y = g; y < T - 0.01;) { const y1 = Math.min(T, (Math.floor(y / 0.24 + 1e-6) + 1) * 0.24); D.quad([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, band(y)); y = y1; } };
   runs.forEach((r, j) => { if (!r) return; const za = z0 + j * C, zb = za + C, xa = x0 + r[0] * C, xb = x0 + r[1] * C;
     D.quad([xa, T, za], [xb, T, za], [xb, T, zb], [xa, T, zb], [0, 1, 0], K.top); wall([xa, za], [xa, zb], [-1, 0, 0]); wall([xb, za], [xb, zb], [1, 0, 0]);
     for (const [nb, dz, zz] of [[runs[j - 1], -1, za], [runs[j + 1], 1, zb]]) { const segs = nb ? [[r[0], Math.min(r[1], nb[0])], [Math.max(r[0], nb[1]), r[1]]] : [[r[0], r[1]]]; for (const [s0, s1] of segs) if (s1 > s0) wall([x0 + s0 * C, zz], [x0 + s1 * C, zz], [0, 0, dz]); } });
@@ -196,12 +196,12 @@ function steppedPiece(D, x, y0, z, ux, uz, w, steps, backA, goldLast) {
 }
 function blockKicker(D, q) { const [x, y, z, ux, uz, len, w, h] = q, n = Math.max(1, Math.round(h / BK)), st = []; for (let k = 1; k <= n; k++) st.push([len * (k - 1) / n, len * k / n, k * BK]); steppedPiece(D, x - ux * len / 2, y - 0.2, z - uz * len / 2, ux, uz, w, st, len, true); }
 function blockQuarter(D, map, q) { const [x, y, z, ux, uz, w] = q, Rr = 3.2, n = Math.round(Rr / BK), st = [], g0 = groundAt(map, x, z) - 0.2; let a = 0; for (let k = 1; k <= n; k++) { const hk = k * BK, a1 = Math.sqrt(Math.max(0, Rr * Rr - (Rr - hk) * (Rr - hk))); st.push([a, Math.max(a + 0.02, a1), hk]); a = Math.max(a + 0.02, a1); } steppedPiece(D, x, g0, z, ux, uz, w, st, a, true); }
-function blockBar(D, a, b, half, gold) {       // a square bar of blocks from a to b (its top at a[1], b[1]), courses down to the ground, a gold top layer
+function blockBar(D, a, b, half, gold, col) {       // a straight bar from a to b in its own frame (its top at a[1], b[1]), sides down into the ground, a gold top when it is ridden
   const dx = b[0] - a[0], dz = b[2] - a[2], l = Math.sqrt(dx * dx + dz * dz) || 1, ux = dx / l, uz = dz / l, px = -uz * half, pz = ux * half, P = (p, s, y) => [p[0] + px * s, y, p[2] + pz * s];
-  const ya = a[1], yb = b[1], lo = Math.min(ya, yb) - 0.6 - 2 * half;
-  D.quad(P(a, -1, ya), P(b, -1, yb), P(b, 1, yb), P(a, 1, ya), [0, 1, 0], gold ? TG : T1);
-  for (let y = lo; y < Math.max(ya, yb) - 0.001; y += BK * 4) { const y1 = Math.min(y + BK * 4, ya), y2 = Math.min(y + BK * 4, yb), c = course(y); if (y1 > y || y2 > y) { D.quad(P(a, 1, y), P(b, 1, y), P(b, 1, Math.max(y, y2)), P(a, 1, Math.max(y, y1)), [px, 0, pz], c); D.quad(P(b, -1, y), P(a, -1, y), P(a, -1, Math.max(y, y1)), P(b, -1, Math.max(y, y2)), [-px, 0, -pz], c); } }
-  D.quad(P(a, 1, lo), P(a, 1, ya), P(a, -1, ya), P(a, -1, lo), [-ux, 0, -uz], TD); D.quad(P(b, -1, lo), P(b, -1, yb), P(b, 1, yb), P(b, 1, lo), [ux, 0, uz], TD);
+  const ya = a[1], yb = b[1], la = ya - 0.6 - 2 * half, lb = yb - 0.6 - 2 * half, c = col || T1;
+  D.quad(P(a, -1, ya), P(b, -1, yb), P(b, 1, yb), P(a, 1, ya), [0, 1, 0], gold ? TG : c);
+  D.quad(P(a, 1, la), P(b, 1, lb), P(b, 1, yb), P(a, 1, ya), [px, 0, pz], c); D.quad(P(b, -1, lb), P(a, -1, la), P(a, -1, ya), P(b, -1, yb), [-px, 0, -pz], c);
+  D.quad(P(a, 1, la), P(a, 1, ya), P(a, -1, ya), P(a, -1, la), [-ux, 0, -uz], TD); D.quad(P(b, -1, lb), P(b, -1, yb), P(b, 1, yb), P(b, 1, lb), [ux, 0, uz], TD);
 }
 export function addDressing(D, map, ok) {
   D.plain = true;       // flat clean faces: no per-triangle colour jitter on built pieces

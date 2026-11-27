@@ -278,18 +278,18 @@ export function makeWorld(seedLo, stageIndex) {
     if (T === 6) fill(14, 300, 's', 14, (x, z) => ok(x, z, 3, 0.6), (x, z) => { const y = gy(x, z), h = 7 + rn() * 9, w = 1.2 + rn() * 1.4; D.rspires.push([r2(x), r2(y), r2(z), r2(h), r2(w), r2(rn() * TAU)]); D.solid.push([r2(x), r2(y), r2(z), r2(w * 0.8), r2(h)]); put('s', x, z); });       // ridge spine: umber rock spires
     if (T === 2) fill(10, 200, 'b', 18, (x, z) => ok(x, z, 2), (x, z) => { const y = gy(x, z); D.bones.push([r2(x), r2(y), r2(z), r2(rn() * TAU), r2(0.8 + rn() * 0.6)]); put('b', x, z); });       // dry lake: bleached bones on the flats
     // park lines (owner, 27 Nov strip-back): three lines a cell plus one in the opening view. A line is 3 or 4 pieces in a row on ONE heading, gaps sized so the landing from one leads into the next:
-    // kicker (carved wedge 9 m long, 9 m wide, 2.4 to 3.4 m at a gold lip), then a ledge or a carved rail (12 to 16 m, grind top at 1.2 m), then a kicker or a quarter pipe. No lone pieces: a line that does not fit whole is not laid.
+    // kicker (carved wedge 9 m long, 9 m wide, 2.4 to 3.4 m at a gold lip), then a ledge or a carved rail (8 to 10 m, knee to waist high: ledge top 0.8 m, rail 0.7 m), then a kicker or a quarter pipe. No lone pieces: a line that does not fit whole is not laid.
     // Lines run down the fall line or along a valley floor, so the land carries the card from piece to piece.
     { const prn = rngOf(hsh(seed, qx, qz, 0x9A7)), lineScore = (x, z, ux, uz) => W.valleyAt(x + ux * 30, z + uz * 30) + (gy(x, z) - gy(x + ux * 40, z + uz * 40)) / 10;
       const TPL = [['k', 'l', 'k', 'q'], ['k', 'r', 'k'], ['k', 'l', 'k'], ['k', 'r', 'k', 'q'], ['l', 'k', 'r', 'k']];
       const line = (x, z, a, open, T0) => { const ux = cosA(a), uz = sinA(a), tpl = T0 || (open ? ['k', 'l', 'k', 'q'] : TPL[(prn() * TPL.length) | 0]), P = []; let t = 0;
-        for (let e = 0; e < tpl.length; e++) { const kind = tpl[e], nx = tpl[e + 1], len = kind === 'k' ? 9 : kind === 'q' ? 3 : 12 + ((prn() * 5) | 0); P.push([kind, t, len]); t += len + (kind === 'k' ? (nx === 'l' || nx === 'r' ? 7 : 15) : kind === 'q' ? 0 : 9); }       // off a kicker the card comes down onto the rail that follows (7 m on), or lands clear before the next ramp (15 m)
+        for (let e = 0; e < tpl.length; e++) { const kind = tpl[e], nx = tpl[e + 1], len = kind === 'k' ? 9 : kind === 'q' ? 3 : 8 + ((prn() * 3) | 0); P.push([kind, t, len]); t += len + (kind === 'k' ? (nx === 'l' || nx === 'r' ? 7 : 15) : kind === 'q' ? 0 : 9); }       // off a kicker the card comes down onto the rail that follows (7 m on), or lands clear before the next ramp (15 m)
         const y0 = gy(x, z); for (let s = -18; s <= t + 6; s += 3) { const px = x + ux * s, pz = z + uz * s; if (!ok(px, pz, 5, 0.5) || nearby('k', px, pz, 14) || gy(px, pz) > y0 + 2 + s * 0.04) return false; }       // the whole line fits: clear, gentle, never climbing, and well apart from every other line
         for (const [kind, t0, len] of P) { const ax = x + ux * t0, az = z + uz * t0, bx = ax + ux * len, bz = az + uz * len, cx = (ax + bx) / 2, cz = (az + bz) / 2;
           if (kind === 'k' && gy(bx, bz) - gy(bx + ux * 14, bz + uz * 14) > 2.5) D.kickers.push([r2(cx), r2(gy(cx, cz)), r2(cz), r2(ux), r2(uz), 9, 9, 3.3]);       // the land falls away past the lip: a gap kicker, the dip below is the landing
           else if (kind === 'k') D.kickers.push([r2(cx), r2(gy(cx, cz)), r2(cz), r2(ux), r2(uz), 9, 9, r2(2.4 + prn() * 0.8)]);
-          else if (kind === 'l') D.ledges.push([r2(ax), r2(gy(ax, az)), r2(az), r2(bx), r2(gy(bx, bz)), r2(bz), 1.2]);
-          else if (kind === 'r') D.poles.push([r2(ax), r2(gy(ax, az) + 1.2), r2(az), r2(bx), r2(gy(bx, bz) + 1.2), r2(bz)]);
+          else if (kind === 'l') D.ledges.push([r2(ax), r2(gy(ax, az)), r2(az), r2(bx), r2(gy(bx, bz)), r2(bz), 0.8]);
+          else if (kind === 'r') D.poles.push([r2(ax), r2(gy(ax, az) + 0.7), r2(az), r2(bx), r2(gy(bx, bz) + 0.7), r2(bz)]);
           else D.quarters.push([r2(ax), r2(gy(ax, az)), r2(az), r2(ux), r2(uz), 12]);
           for (let s = 0; s <= len; s += 4) put('k', ax + ux * s, az + uz * s); }
         if (open) D.parkPots.push({ x: r2(x + ux * (t + 6)), z: r2(z + uz * (t + 6)), vases: [[r2(-uz * 1.4), r2(ux * 1.4), false], [r2(uz * 1.4), r2(-ux * 1.4), prn() < 0.2]] });
@@ -311,6 +311,10 @@ export function makeWorld(seedLo, stageIndex) {
     // the ruin field's half-sunk carved stone cards (solid), and the dry lake's cracked salt (flat, view only)
     if (T === 4) fill(9, 300, 'k', 16, (x, z) => ok(x, z, 2.5, 0.3), (x, z) => { const y = gy(x, z), s = 0.8 + rn() * 0.7; D.cards.push([r2(x), r2(y), r2(z), r2(s), r2(rn() * TAU)]); D.solid.push([r2(x), r2(y), r2(z), r2(1.2 * s), r2(3.2 * s), 1]); put('k', x, z); });
     if (T === 2) for (let k = 0, t = 0; k < 46 && t < 200; t++) { let x = C.x0 + rn() * Q, z = C.z0 + rn() * Q; if (!free(x, z, 1)) continue; const pts = [r2(x), r2(z)]; let a = rn() * TAU; for (let s = 0; s < 3; s++) { a += (rn() - 0.5) * 1.4; const l = 2.5 + rn() * 4; x += cosA(a) * l; z += sinA(a) * l; pts.push(r2(x), r2(z)); } D.cracks.push(pts); k++; }
+    // cactus clumps (owner, 27 Nov): fewer and smaller, and never within 6 m of the start or of a park line piece (they hid the path). Removed after placement, so nothing else in the cell moves.
+    { const near = (x, z) => (W.spawn && dist(x, z, W.spawn.x, W.spawn.z) < 9) || D.kickers.some(q => dist(x, z, q[0], q[2]) < 6 + q[5] / 2) || D.quarters.some(q => dist(x, z, q[0], q[2]) < 7) || D.ledges.concat(D.poles).some(q => { const sx = q[3] - q[0], sz = q[5] - q[2], l2 = sx * sx + sz * sz || 1, u = Math.max(0, Math.min(1, ((x - q[0]) * sx + (z - q[2]) * sz) / l2)); return dist(x, z, q[0] + sx * u, q[2] + sz * u) < 6; });
+      const gone = new Set(); D.cacti.forEach((c, k) => { if (near(c[0], c[2])) gone.add(k); else if (k % 2 && D.cacti.some((o, j) => j !== k && !gone.has(j) && dist(o[0], o[2], c[0], c[2]) < 3)) gone.add(k); });       // every other cactus of a tight clump goes
+      if (gone.size) { const keyOf = c => c[0] + "," + c[2], dead = new Set([...gone].map(k => keyOf(D.cacti[k]))); D.cacti = D.cacti.filter((c, k) => !gone.has(k)); D.solid = D.solid.filter(s => !dead.has(s[0] + "," + s[2])); } }
     return D;
   };
   W.cellOf = (x, z) => cell(Math.floor(x / Q), Math.floor(z / Q));
