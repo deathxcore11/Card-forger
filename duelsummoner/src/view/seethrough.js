@@ -11,7 +11,7 @@ export const SEE = {
   hole: { value: new T.Vector3() },           // x, y: duelist chest in buffer pixels; z: its view depth in m
   holeR: { value: new T.Vector2(1, 1) },      // 0.9 and 1.3 times the duelist's height on screen, in buffer pixels
   feetY: { value: 0 },
-  near: { value: new T.Vector2(0.8, 2.4) },   // scenery is gone under x metres from the lens and solid from y
+  near: { value: new T.Vector2(0.8, 5.0) },   // scenery is gone under 5 m from the lens (a cactus or post beside the camera never fills a corner)
   on: true                                    // a debug switch (the porthole off, for the silhouette test)
 };
 

@@ -1,6 +1,7 @@
 // Everything that moves in the scene: duelist, field monsters, the swarm (instanced per kind), elites and the boss,
 // telegraphs and effects, pickups. Positions are blended between the last two sim ticks so any refresh rate looks smooth.
 import { CFG } from '../data/config.js';
+import { arenaSealSpots } from '../sim/world.js';
 import { BOARDS } from '../data/boards.js';
 import { litSeals } from '../sim/ride.js';
 import { KIND_LIST, BOSS_COLORS as BC } from '../data/enemies.js';
@@ -386,6 +387,9 @@ export class Actors {
     const t = performance.now() / 1000; for (const o of this.litG.children) { o.rotation.y = t * 1.4 + o.position.x; o.position.y = o.userData.y0 + Math.sin(t * 2 + o.position.z) * 0.12; }
   }
   // the park lines' rolling logs (sim toys): a pale beam with gold bands, turning as it rolls
+  // the gate arena's five seal stones while the fight is on: a dark plinth with a gem, gold once lit
+  _arenaSeals(g) { const on = g.big && g.gate && g.gate.state === 'fight'; if (!this._as) { this._as = []; for (let k = 0; k < 5; k++) { const G = new T.Group(), base = new T.Mesh(new T.CylinderGeometry(0.55, 0.75, 1.6, 6), lambert(0x4a4038)), gem = new T.Mesh(new T.OctahedronGeometry(0.34, 0), new T.MeshBasicMaterial({ color: 0x8a7a68 })); base.position.y = 0.5; gem.position.y = 1.65; G.add(base, gem); G.userData.gem = gem; G.visible = false; this.scene.add(G); this._as.push(G); } }
+    if (!on) { for (const G of this._as) G.visible = false; return; } const S = arenaSealSpots(g), A = g.arenaSeal; S.forEach((s, k) => { const G = this._as[k]; G.visible = true; G.position.set(s[0], s[1], s[2]); G.userData.gem.material.color.setHex(A && A.lit[k] ? 0xffd56a : 0x8a7a68); G.userData.gem.rotation.y += 0.03; }); }
   _rollers(g) { const L = (g.world && g.world.rollers) || []; if (!this._rl) this._rl = []; while (this._rl.length < L.length) { const G = new T.Group(), M = lambert(0xcbb48a), m = new T.Mesh(new T.CylinderGeometry(0.5, 0.5, 5, 8), M); m.rotation.z = Math.PI / 2; G.add(m); for (const s of [-1.6, 1.6]) { const b2 = new T.Mesh(new T.CylinderGeometry(0.53, 0.53, 0.25, 8), lambert(0xe0b24e)); b2.rotation.z = Math.PI / 2; b2.position.x = s; G.add(b2); } this.scene.add(G); this._rl.push(G); }
     const p = g.p; this._rl.forEach((G, i) => { const q = L[i]; if (!q) { G.visible = false; return; } const dx = q.x - p.x, dz = q.z - p.z; G.visible = dx * dx + dz * dz < 260 * 260; if (!G.visible) return; G.position.set(q.x, q.y + 0.45, q.z); G.rotation.order = 'YXZ'; G.rotation.y = Math.atan2(-q.az, q.ax); G.rotation.x = q.spin; }); }
   _board(g, p, px, py, pz, dt) {
@@ -446,7 +450,7 @@ export class Actors {
       let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees
       this._tw = (this._tw || 0) + (tw - (this._tw || 0)) * Math.min(1, dt / 0.3); R.twist(this._tw);
     }
-    this._board(g, p, px, py, pz, dt); this._lit(g, dt); this._rollers(g);
+    this._board(g, p, px, py, pz, dt); this._lit(g, dt); this._rollers(g); this._arenaSeals(g);
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);

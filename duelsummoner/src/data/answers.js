@@ -10,7 +10,7 @@ export const ANSWERS = {
   'astral-magus':      [{ on: 'flip', cd: 0.8, text: 'Each flip marks the 5 nearest.' }, { on: 'seal', cd: 0.6, text: 'Each seal stone lit: a star burst there.' }],
   'toll-of-ash':       [{ on: 'spin', cd: 1.5, text: 'A landed spin: an ash burst around you.' }],
   'kindling-rite':     [{ on: 'grind', cd: 0.5, text: 'Grinding: the sparks set enemies alight.' }],
-  'deep-marks':        [{ on: 'seal', cd: 0.6, text: 'Each seal stone lit marks every enemy within 10 m.' }],
+  'deep-marks':        [{ on: 'seal', cd: 0.6, text: 'Each seal stone lit marks every enemy within 10 m and mends you a little.' }],
   'pack-drill':        [{ on: 'manual', cd: 0.9, text: 'Each second of a manual: your monsters strike again sooner.' }],
   'elemental-litany':  [{ on: 'air', cd: 1.5, text: 'Big air: an elemental burst where you land.' }],
   'widening-rite':     [{ on: 'land', cd: 1.5, text: 'A clean landing: a wider second ring.' }],
@@ -19,6 +19,6 @@ export const ANSWERS = {
   'heart-of-the-cards':[{ on: 'land', cd: 2, text: 'A clean landing heals a little.' }],
   'collectors-eye':    [{ on: 'grab', cd: 1, text: 'Each grab pulls in pickups nearby.' }],
   'gust-ward':         [{ on: 'grab', cd: 2, text: 'Each grab: a gust knocks back everything within 5 m.' }],
-  'pit-of-seals':      [{ on: 'seal', cd: 2.5, text: 'Each seal stone lit opens a seal pit there.' }],
+  'pit-of-seals':      [{ on: 'seal', cd: 2.5, text: 'Each seal stone lit opens a seal pit there: it roots what is near for 2 s and mends you a little.' }],
   'second-wind':       [], 'storm-of-cards': []       // one-shots act once when picked: no answer
 };

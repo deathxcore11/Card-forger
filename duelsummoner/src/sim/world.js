@@ -14,6 +14,8 @@ import { wager, stakesOf } from './stakes.js';
 import { discoverTick } from './discover.js';
 import { procTick, procEvent } from './procs.js';
 import { ACES } from '../data/stages.js';
+import { answerTrick } from './answers.js';
+import { splash } from './weapons.js';
 
 const DEG = Math.PI / 180;
 
@@ -135,6 +137,17 @@ export function breakVasesNear(g, x, z, r) {
   return n;
 }
 
+// ---- the gate arena's seal stones (card riding plan section 6): five stones round the gate fight, lit by passing over them on foot or on the card;
+// each one lit fires every card that answers a seal (marks, seal pits, star bursts), and all five lit breaks a seal on the boss: a 10 m burst; they go dark again 6 s later, to light again
+export const ARENA_SEALS = { n: 5, r: 11, touch: 2.6, relight: 6 };
+export function arenaSealSpots(g) { const c = g.map.arena.center, out = []; for (let k = 0; k < ARENA_SEALS.n; k++) { const a = k * 6.283185307179586 / ARENA_SEALS.n + 0.3, x = c.x + cos(a) * ARENA_SEALS.r, z = c.z + sin(a) * ARENA_SEALS.r; out.push([x, heightAt(x, z), z]); } return out; }
+function arenaSeals(g, dt) {
+  if (!g.big || !g.gate || g.gate.state !== 'fight') { g.arenaSeal = null; return; }
+  const A = g.arenaSeal || (g.arenaSeal = { lit: [0, 0, 0, 0, 0], cd: 0, sets: 0 }), p = g.p;
+  if (A.cd > 0) { A.cd -= dt; if (A.cd <= 0) A.lit = [0, 0, 0, 0, 0]; return; }
+  arenaSealSpots(g).forEach((s, k) => { if (A.lit[k]) return; const dx = p.x - s[0], dz = p.z - s[2]; if (dx * dx + dz * dz > ARENA_SEALS.touch * ARENA_SEALS.touch || p.y - s[1] > 5) return; A.lit[k] = 1; answerTrick(g, 'seal', s[0], s[1], s[2]); g.emit('seal', s[0], s[2], A.lit.reduce((a, b) => a + b, 0)); });
+  if (A.lit.every(v => v)) { const c = g.map.arena.center; splash(g, c.x, heightAt(c.x, c.z), c.z, 10, 30 * (1 + (g.stage | 0)), 0); A.sets++; A.cd = ARENA_SEALS.relight; g.emit('sealset', c.x, c.z, 1); g.event('banner', 'The arena seals break on the guardian.'); }
+}
 // ---- per-tick: shrines charge, regen ----
 export function updateWorld(g, dt) {
   const p = g.p, S = E.shrines;
@@ -152,6 +165,7 @@ export function updateWorld(g, dt) {
     g.frenzyT = RELIC.frenzySeconds; g.emit('relic', R.x, R.z, n); g.event('banner', 'Screen cleared: ' + n + ' defeated. The Coin Rite begins.');
   }
   if (g.frenzyT > 0) g.frenzyT = Math.max(0, g.frenzyT - dt);
+  arenaSeals(g, dt);
   powerTick(g, dt); if (g.big) { procTick(g, dt); g.stakes = stakesOf(g); discoverTick(g); }
   if (g.mods.toll > 0) {                                                  // Toll of Ash: pay a share of current LP every few seconds, never below 1
     g.tollT -= dt;

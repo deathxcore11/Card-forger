@@ -10,7 +10,7 @@ const mk = () => { const g = new Game(4711, { mode: 'run', duelist: 'kael', offe
 const run = (g, n, cmd) => { for (let i = 0; i < n; i++) g.step(STEP, typeof cmd === 'function' ? cmd(i) : cmd || I); };
 // find flat ground near the start to ride on
 function flatSpot(g) { for (let r = 30; r < 600; r += 7) for (let a = 0; a < 6.28; a += 0.3) { const x = g.p.x + Math.cos(a) * r, z = g.p.z + Math.sin(a) * r, h = heightAt(x, z); let ok = h < 50 && railsNear(g, x, z - 15, 22).length === 0; for (let k = 1; k <= 30 && ok; k++) if (Math.abs(heightAt(x, z - k) - h) > 0.25 * k / 10 + 0.15) ok = false; if (ok) return [x, z]; } return [g.p.x, g.p.z]; }
-const place = (g, x, z, speed) => { g.p.x = x; g.p.z = z; g.p.y = heightAt(x, z); g.p.grounded = true; g.p.vx = 0; g.p.vz = -speed; g.p.vy = 0; };
+const place = (g, x, z, speed) => { g.p.x = x; g.p.z = z; g.p.y = heightAt(x, z); g.p.grounded = true; g.p.sliding = speed > 0; g.p.vx = 0; g.p.vz = -speed; g.p.vy = 0; };
 
 test('ride: above 10.5 m/s the duelist steps on the card; below 7 m/s on the ground steps off', () => {
   const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 13); run(g, 2, { ...I, f: 1 }); assert.ok(g.p.ride && g.p.ride.on, 'riding'); 
@@ -126,7 +126,7 @@ test('landforms: a canyon half-pipe wall sends the card up (vert) and it comes b
   for (let r = 200; r < 12000 && !spot; r += 23) for (let a = 0; a < 6.28 && !spot; a += 0.21) { const x = sp.x + Math.cos(a) * r, z = sp.z + Math.sin(a) * r; if (W.regionAt(x, z).type !== 3) continue;
     for (let k = 0; k < 8 && !spot; k++) { const b = k * 0.785, c = Math.cos(b), s = Math.sin(b), h0 = heightAt(x, z), flat = Math.abs(heightAt(x - c * 6, z - s * 6) - h0) < 2; if (flat && heightAt(x + c * 3, z + s * 3) - h0 > 2.8 && heightAt(x + c * 1.2, z + s * 1.2) - h0 > 1.0 && heightAt(x + c * 1.2, z + s * 1.2) - h0 < 3) spot = [x, z, c, s]; } }
   assert.ok(spot, 'a half-pipe wall');
-  const [x, z, c, s] = spot; g.p.x = x - c * 8; g.p.z = z - s * 8; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.vx = c * 15; g.p.vz = s * 15; const yaw = Math.atan2(-c, -s);
+  const [x, z, c, s] = spot; g.p.x = x - c * 8; g.p.z = z - s * 8; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.sliding = true; g.p.vx = c * 15; g.p.vz = s * 15; const yaw = Math.atan2(-c, -s);
   let vert = false, bail = false; for (let i = 0; i < 150; i++) { run(g, 1, { ...I, f: i < 30 ? 1 : 0, yaw }); const r = g.p.ride; if (r && r.vert) vert = true; if (r && r.bailT > 0) bail = true; }
   assert.ok(vert, 'went vert'); assert.ok(!bail, 'no bail');
   assert.ok(W.landSites(1, sp.x - 6000, sp.z - 6000, sp.x + 6000, sp.z + 6000).length > 0, 'bowls'); assert.ok(W.landSites(2, sp.x - 6000, sp.z - 6000, sp.x + 6000, sp.z + 6000).length > 0, 'step-downs');
@@ -150,7 +150,7 @@ test('landforms 2: full pipes stand in ridge and ruin regions and loop the card 
   const { pipesNear } = await import('../src/sim/rails.js'); const g = mk(), W = g.map.world, sp = W.spawn; let P = null;
   for (let r = 0; r < 6000 && !P; r += 200) for (let a = 0; a < 6.28 && !P; a += 0.5) { const L = pipesNear(g, sp.x + Math.cos(a) * r, sp.z + Math.sin(a) * r, 200); if (L.length) P = L[0]; }
   assert.ok(P, 'a full pipe'); const [x, y, z, ux, uz] = P;
-  g.p.x = x - ux * 12; g.p.z = z - uz * 12; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.vx = ux * 16; g.p.vz = uz * 16; const yaw = Math.atan2(-ux, -uz);
+  g.p.x = x - ux * 12; g.p.z = z - uz * 12; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.sliding = true; g.p.vx = ux * 16; g.p.vz = uz * 16; const yaw = Math.atan2(-ux, -uz);
   let top = -1e9, looped = false; for (let i = 0; i < 120; i++) { run(g, 1, { ...I, f: 1, yaw }); const r = g.p.ride; if (r && r.loop) { looped = true; top = Math.max(top, g.p.y); } }
   assert.ok(looped, 'rode the loop'); assert.ok(top - y > 8, 'over the top: ' + (top - y).toFixed(1)); assert.ok(g.p.ride.combo.names['Full Pipe'] || flowOf(g).banked > 0, 'counted');
   assert.equal(W.drops.length, 2); for (const d of W.drops) { const h = a => heightAt(d.x + d.c * a, d.z + d.s * a); assert.ok(h(-10) - h(3) > 3.5, 'a cliff: ' + (h(-10) - h(3)).toFixed(1)); assert.ok(h(3) - h(50) > 2, 'a landing slope: ' + (h(3) - h(50)).toFixed(1)); }
@@ -208,7 +208,7 @@ test('park toys and shapes: spines, gaps and quarter pipes exist; a quarter pipe
   for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const D = W.dressCell(Math.floor(sp.x / 256) + i, Math.floor(sp.z / 256) + j); qs += D.quarters.length; gaps += D.kickers.filter(k => k[7] === 2.2).length; }
   assert.ok(qs > 5, 'quarter pipes: ' + qs); assert.ok(gaps >= 1, 'gaps: ' + gaps);
   let q = null; for (let r = 0; r < 2000 && !q; r += 50) for (const a of [0, 1.57, 3.14, 4.71]) { const L = quartersNear(g, sp.x + Math.cos(a) * r, sp.z + Math.sin(a) * r, 60); if (L.length) { q = L[0]; break; } }
-  const [x, y, z, ux, uz] = q; g.p.ride = undefined; g.p.x = x - ux * 6; g.p.z = z - uz * 6; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.vx = ux * 14; g.p.vz = uz * 14; const yaw = Math.atan2(-ux, -uz);
+  const [x, y, z, ux, uz] = q; g.p.ride = undefined; g.p.x = x - ux * 6; g.p.z = z - uz * 6; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.sliding = true; g.p.vx = ux * 14; g.p.vz = uz * 14; const yaw = Math.atan2(-ux, -uz);
   let vert = false; for (let i = 0; i < 40; i++) { run(g, 1, { ...I, f: 1, yaw }); if (g.p.ride && g.p.ride.vert) vert = true; } assert.ok(vert, 'went vert off the quarter');
   const h = mk(); h.world.rollers = [{ x: h.p.x + 2, y: h.p.y, z: h.p.z, ax: 1, az: 0, vx: 0, vz: 0, t: 0, spin: 0 }]; const [fx2, fz2] = flatSpot(h); place(h, h.p.x, h.p.z, 14); run(h, 2, { ...I, f: 1 }); run(h, 30, { ...I, f: 1, jump: true }); for (let i = 0; i < 150; i++) { const L = h.world.rollers[0]; if (L.t <= 0 && L.spin === 0) { L.x = h.p.x + 2; L.z = h.p.z; } run(h, 1, { ...I, f: 1 }); }
   assert.ok(h.world.rollers[0].spin > 0 || flowOf(h).slams === 0, 'the log rolled');

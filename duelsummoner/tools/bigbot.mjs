@@ -13,6 +13,7 @@ import { exploredAt } from '../src/sim/fog.js';
 import { DIFFICULTY } from '../src/data/stages.js';
 import { DOOR } from '../src/sim/door.js';
 import { railsNear, sealsNear } from '../src/sim/rails.js';
+import { arenaSealSpots } from '../src/sim/world.js';
 const BUILDS = { rail: ['ember-wyvern', 'kindling-rite', 'twinflare-tyrant', 'pack-drill', 'rails', 'poise', 'ruin-chalk'], meteor: ['cinder-hatchling', 'elemental-litany', 'widening-rite', 'heart-of-the-cards', 'pop', 'quake', 'dune-kite'],
   seal: ['rune-apprentice', 'sigil-familiar', 'astral-magus', 'deep-marks', 'pit-of-seals', 'flowkeep'], reckless: ['ember-wyvern', 'cinder-hatchling', 'swift-draw', 'whirl'] };
 const RIDERS = ['rail', 'meteor', 'seal', 'reckless'];
@@ -20,6 +21,7 @@ const RIDERS = ['rail', 'meteor', 'seal', 'reckless'];
 // the riding layer: kick the card out, steer where the walking bot wanted to go, and trick by build; its own counter, never the sim's streams
 function rider(g, bot, c) {
   const p = g.p, r = p.ride, build = PLAYER; bot.k = (bot.k || 0) + 1;
+  if (g.gate.state === 'fight' && (build === 'seal' || build === 'rail') && g.arenaSeal && !(g.arenaSeal.cd > 0)) { const S = arenaSealSpots(g); let b = null, bd = 1e9; S.forEach((s, k) => { if (g.arenaSeal.lit[k]) return; const d = Math.hypot(s[0] - p.x, s[2] - p.z); if (d < bd) { bd = d; b = s; } }); if (b) { const dx = b[0] - p.x, dz = b[2] - p.z, dl = Math.hypot(dx, dz) || 1; c.yaw = 0; c.f = -dz / dl; c.r = dx / dl; c.slide = false; c.jump = false; return; } }       // in the gate fight, a seal or rail build goes round the arena's seal stones
   if (g.gate.state === 'fight' || (bot.doorKnown && g.gate.state === 'closed' && Math.hypot(g.map.gate.x - p.x, g.map.gate.z - p.z) < 45)) { if (r && r.on) { c.yaw = 0; c.r = -Math.sin(r.heading); c.f = Math.cos(r.heading); c.jump = false; c.dash = false; c.slide = false; } else c.slide = false; return; }       // near the door: brake off the card and walk in to wake it
   if (!r || !r.on) { c.slide = (bot.k % 50) === 40 && !c.dash; return; }       // after a moment of running, SLIDE kicks the card out
   c.slide = false; c.dash = false; c.use = false;

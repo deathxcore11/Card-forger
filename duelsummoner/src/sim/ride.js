@@ -75,12 +75,12 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   if (F.step > 1) { F.idle += dt; if (F.idle > FLOW.idle + (g.mods.flowHold || 0)) { F.step--; F.idle = 0; F.xp = 0; g.event('flowdown', F.step); } }
   const hs = Math.sqrt(p.vx * p.vx + p.vz * p.vz);
   if (!r.on) {
-    // (riding on speed alone starts only once the card has been kicked out this run: a player who never rides is never put on it by a slope)
+    // (riding on speed alone starts only from a foot slide, and only once the card has been kicked out this run: running down a hill never puts anyone on the card)
     // kick the card out: SLIDE pressed after at least 0.4 s of running at full speed mounts at once, anywhere, flat sand included (and a fast enough slide or slope still mounts on its own)
     const slidePress = !!cmd.slide && !r.slideWas; r.slideWas = !!cmd.slide; if (slidePress && r.runT > 0) r.kickArm = true; if (!cmd.slide) r.kickArm = false;       // a press a moment early still counts while it is held
     r.runT = p.grounded && hasInput && hs >= 6 && p.dashT <= 0 ? (r.runT || 0) + dt : 0;       // running (soft sand slows the run to about 7 m/s, so the bar is 6)
     if ((slidePress || (cmd.slide && r.kickArm)) && r.runT >= RIDE.kickRun) { r.on = true; r.heading = atan2(p.vx, p.vz); r.speed = Math.max(hs, RIDE.kickTo); r.combo = newCombo(); r.jumpWas = !!cmd.jump; r.dashWas = !!cmd.dash; r.useWas = !!cmd.use; r.manualHold = true; p.sliding = false; r.runT = 0; g.rideKicks = (g.rideKicks || 0) + 1; g.emit('ride', 1, 0, 0); }
-    else if (p.grounded && hs >= RIDE.mountAt && p.dashT <= 0 && (g.rideKicks || 0) > 0) { r.on = true; r.heading = atan2(p.vx, p.vz); r.speed = hs; r.combo = newCombo(); r.jumpWas = !!cmd.jump; r.dashWas = !!cmd.dash; r.useWas = !!cmd.use; p.sliding = false; g.emit('ride', 1, 0, 0); }
+    else if (p.grounded && p.sliding && hs >= RIDE.mountAt && p.dashT <= 0 && (g.rideKicks || 0) > 0) { r.on = true; r.heading = atan2(p.vx, p.vz); r.speed = hs; r.combo = newCombo(); r.jumpWas = !!cmd.jump; r.dashWas = !!cmd.dash; r.useWas = !!cmd.use; p.sliding = false; g.emit('ride', 1, 0, 0); }
     else return false;
   }
   const jumpPress = !!cmd.jump && !r.jumpWas, jumpRel = !cmd.jump && r.jumpWas, dashPress = !!cmd.dash && !r.dashWas, usePress = !!cmd.use && !r.useWas;

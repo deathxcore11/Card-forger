@@ -25,7 +25,7 @@ export function answerTrick(g, kind, x, y, z) {
         case 'astral-magus': if (kind === 'flip') markNear(g, x, z, Math.round(5 * k), 22); else splash(g, x, y, z, 5, 12 * k, fl); break;
         case 'toll-of-ash': splash(g, x, y, z, 4, 4 * k, 1); break;
         case 'kindling-rite': splash(g, x, y, z, 2.5, 2 * k, 1); break;
-        case 'deep-marks': markNear(g, x, z, 99, 10); break;
+        case 'deep-marks': markNear(g, x, z, 99, 10); g.p.hp = Math.min(g.p.maxHp, g.p.hp + 2 * k); break;
         case 'pack-drill': for (const q of g.field.monsters) if (q) q.cd = Math.max(0, q.cd - 0.25 * k); break;
         case 'elemental-litany': splash(g, x, y, z, 5, 3 * k * Math.max(1, g.field.monsters.filter(Boolean).length), 0); break;
         case 'widening-rite': splash(g, x, y, z, 5 + 1.2 * k, 3 * k, 0); break;
@@ -34,7 +34,7 @@ export function answerTrick(g, kind, x, y, z) {
         case 'heart-of-the-cards': g.p.hp = Math.min(g.p.maxHp, g.p.hp + 1.5 * k); break;
         case 'collectors-eye': { const P = g.pick, R = 8 + 2 * k; for (let i = 0; i < P.max; i++) { if (!P.alive[i]) continue; const dx = P.x[i] - x, dz = P.z[i] - z; if (dx * dx + dz * dz < R * R) { P.x[i] = g.p.x; P.z[i] = g.p.z; } } break; }
         case 'gust-ward': { const e = g.en; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < 25 && d2 > 1e-6) { const d = Math.sqrt(d2); e.x[i] += dx / d * 4; e.z[i] += dz / d * 4; damageEnemy(g, i, 2 * k, { noCrit: true }); } } break; }
-        case 'pit-of-seals': splash(g, x, y, z, 4, 10 * k, 0); break;
+        case 'pit-of-seals': { splash(g, x, y, z, 4, 10 * k, 0); const e = g.en; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z; if (dx * dx + dz * dz < 36) e.root[i] = Math.max(e.root[i], 2); } g.p.hp = Math.min(g.p.maxHp, g.p.hp + 3 * k); break; }       // the seal pit roots what is near the stone for 2 s and mends you a little
       }
       g.curSrc = 0; g.emit('answer', x, z, 0, id);
     });
