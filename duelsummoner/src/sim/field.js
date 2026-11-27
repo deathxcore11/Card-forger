@@ -93,13 +93,13 @@ export function anyFusion(a, b) {
   const id = 'fx:' + a + '+' + b; if (FUSIONS[id]) return id;
   const A = def(a), B = def(b), w = s => s.replace(/ (Prime|Apex)$/, '').split(' '), name = w(B.name)[0] + ' ' + w(A.name)[w(A.name).length - 1] + suffix[rank];       // the graft's first word, the Line's last word, then Prime or Apex
   const els = []; for (const e of A.elements.concat(B.elements)) if (!els.includes(e) && els.length < 3) els.push(e);
-  FUSIONS[id] = { name, type: A.type, elements: els, flame: els.includes('fire'), from: [a, b], rank, rarity: 'epic', forms: [{ fromLevel: 1, modelId: id, scale: 0.7 }, { fromLevel: 5, modelId: id, scale: 0.85 }, { fromLevel: 10, modelId: id, scale: 1 }],
+  FUSIONS[id] = { name, type: A.type, elements: els, flame: els.includes('fire'), from: [a, b], rank, rarity: ['common', 'rare', 'epic', 'legendary', 'legendary'][rank], forms: [{ fromLevel: 1, modelId: id, scale: 0.7 }, { fromLevel: 5, modelId: id, scale: 0.85 }, { fromLevel: 10, modelId: id, scale: 1 }],
     text: RANK_NAME[rank] + ' of ' + A.name + ' and ' + B.name + '.', attack: { kind: 'line', dmg: 2.5, cd: 0.9, length: 16, pierce: 1, speed: 32 }, fx: {}, fxText: {}, any: true };
   return id;
 }
 export function fusionsReady(g) {
   const f = g.field, out = [], FL = FIELD_RULES.fusionLevel, M = f.monsters.filter(m => m && m.level >= FL);
-  for (let i = 0; i < M.length; i++) for (let j = 0; j < M.length; j++) { if (i === j) continue; const id = anyFusion(M[i].id, M[j].id); if (id && !out.includes(id) && !(FUSIONS[id] && !FUSIONS[id].any && FUSIONS[id].from[0] !== M[i].id)) out.push(id); }       // the first is the Line: each order is its own Fusion (a named pair only one way)
+  const seen = new Set(); for (let i = 0; i < M.length; i++) for (let j = 0; j < M.length; j++) { if (i === j) continue; const pk = [M[i].id, M[j].id].sort().join('|'); if (seen.has(pk)) continue; const id = anyFusion(M[i].id, M[j].id); if (id && !out.includes(id) && !(FUSIONS[id] && !FUSIONS[id].any && FUSIONS[id].from[0] !== M[i].id)) { out.push(id); seen.add(pk); } }       // one Fusion per pair: the summon that has been on the field longest is the Line       // the first is the Line: each order is its own Fusion (a named pair only one way)
   return out.slice(0, 4);
 }
 // the monsters of a Fusion pair you field that are not both at the Fusion level yet, lower first; .relax is set once the higher of the two has reached OFFER.fusionPushAt

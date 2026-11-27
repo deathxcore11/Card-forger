@@ -174,7 +174,7 @@ let duelist = 'kael';
 const withProps = /[?&]props/.test(location.search);       // map objects are placed by the coming map generator; ?props shows the region-placed test set
 const RUN_OPEN = !/[?&]terrain=classic/.test(location.search), RUN_ARCH = (/[?&]arch=([a-f])/.exec(location.search) || [])[1];
 const MENU_SEED = +((/[?&]menuseed=(\d+)/.exec(location.search) || [])[1] || 47514), MENU_ARCH = (/[?&]menuarch=([a-f])/.exec(location.search) || [])[1] || 'f';       // the menu backdrop is always the open desert, from a fixed seed with a good view; runs follow the terrain option as before
-const game = new Game(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : MENU_SEED, { duelist, mode: 'run', world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: 'open', flow: /[?&]flow=1/.test(location.search) ? 'v1' : 'v2', arch: RUN_ARCH || MENU_ARCH, gym: /[?&]gym=1/.test(location.search) });
+const game = new Game(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : MENU_SEED, { duelist, mode: 'run', world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: 'open', card: !/[?&]foot=1/.test(location.search), flow: /[?&]flow=1/.test(location.search) ? 'v1' : 'v2', arch: RUN_ARCH || MENU_ARCH, gym: /[?&]gym=1/.test(location.search) });
 const host = createBrowserHost(canvas);
 const save = loadSave(host);
 const fx = new Fx(scene, save.settings);
@@ -474,7 +474,7 @@ function bossIntro() {                                              // name plat
 const skipIntro = () => { fx.push = 0; };
 window.addEventListener('keydown', e => { if (e.code === 'Enter') skipIntro(); }); canvas.addEventListener('pointerdown', skipIntro);
 // ride school (the first runs on the big desert): five short chips, each cleared by doing it, about 20 s in all; the beam line just ahead and right of the spawn is there for the grind
-const SCHOOL = [['ride', k => k.slide + ' while running: ride your card'], ['ollie', k => 'Hold ' + k.jump + ', let go: ollie'], ['flip', k => 'In the air: ' + k.dash + ' flips the card'], ['banked', () => 'Land straight: bank it and slam'], ['grind', k => 'Ollie onto the beam to grind (' + k.use + ' snaps onto one)']];
+const SCHOOL = [['ollie', k => 'Hold ' + k.jump + ', let go: ollie'], ['flip', k => 'In the air: ' + k.dash + ' flips the card'], ['banked', () => 'Land straight: bank it and slam'], ['grind', k => 'Ollie onto the beam to grind (' + k.use + ' snaps onto one)']];
 const SCHOOL_KEYS = { keys: { slide: 'C', jump: 'SPACE', dash: 'J', use: 'F' }, pad: { slide: 'RB', jump: 'A', dash: 'B', use: 'X' }, classic: { slide: 'RB', jump: 'A', dash: 'X', use: 'Y' }, touch: { slide: 'SLIDE', jump: 'OLLIE', dash: 'FLIP', use: 'GRIND' } };
 const school = () => save.meta.rideSchool || (save.meta.rideSchool = { step: 0, grind: false });       // ride-school progress lives in the save: a fresh save starts the school again
 function schoolDid(what) { const S = school(); if (S.step >= SCHOOL.length || SCHOOL[S.step][0] !== what) return; S.step++; writeSave(host, save); if (S.step === SCHOOL.length) showBanner('Ride school done. Chain tricks, keep Flow up.'); }

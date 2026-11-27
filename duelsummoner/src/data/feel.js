@@ -3,9 +3,10 @@
 // design/feel-v2.md holds the final table. Values here are starting points; sliders move them.
 import { CFG } from './config.js';
 import { K } from './tuning.js';
-import { RIDE, POINTS } from '../sim/ride.js';
+import { RIDE, POINTS, LAUNCH } from '../sim/ride.js';
 
 export const FEEL = {
+  launch: { startSpeed: 10, chargeT: 0.6, perfectT: 0.15, perfectK: 1.25, carryK: 0.09, tuck: 1.25, flatLandKeep: 0.9, boostSpeed: 7, boostCost: 0.34, boostRefill: 0.08 },       // carve, charge, launch (world v3 section 7)
   foot: {
     top: 9,               // m/s run speed
     accelT: 0.15,         // seconds to reach top speed from a stand
@@ -60,7 +61,7 @@ export const FEEL = {
 
 // write the table into what it drives (called at load and by the slider panel)
 export function applyFeel() {
-  const F = FEEL.foot, R = FEEL.ride, T = FEEL.trick, P = CFG.player;
+  const F = FEEL.foot, R = FEEL.ride, T = FEEL.trick, P = CFG.player; Object.assign(LAUNCH, FEEL.launch);
   P.speed = F.top; P.groundAccel = 3 / F.accelT; P.groundStop = 3 / F.stopT; P.airAccel = P.groundAccel * F.air; P.coyote = F.coyote; P.jumpBuffer = F.buffer; P.jumpHeight = F.jumpH;
   P.hop = { win: F.hopWindow, gain: F.hopGain, cap: F.hopCap };       // (the tuning table K is frozen, so the hop chain reads these from the player settings)
   Object.assign(RIDE, { pushTo: R.cruise, pushMax: R.push, top: R.top, crouchMax: R.crouchMax, popLo: R.ollieLo, popHi: R.ollieHi, snap: R.magnet, gravity: R.gravity, landTol: T.landTol * Math.PI / 180, bailT: T.bailT,

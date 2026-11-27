@@ -436,7 +436,8 @@ export class Actors {
       G.visible = false; this.scene.add(G); this._spinV = 0; }
     const G = this.boardG; G.visible = !!rd && !(g.over && !g.won); if (!rd) { this._blockRide(g, G, null); return; }
     { const bid = (g.opts && g.opts.board) || 'plain-back'; if (bid !== this._bId && BOARDS[bid]) { this._bId = bid; this._bEdge.material.color.setHex(BOARDS[bid].edge); this._bFace.material.color.setHex(BOARDS[bid].face); } }       // the chosen card back's colours       // (not this.player.visible: the rig hides the stand-in player mesh every frame)
-    const yaw = rd.heading + rd.spin; G.position.set(px, py + 0.02, pz); G.rotation.order = 'YXZ'; G.rotation.y = yaw;
+    this._hover = (p.grounded ? 0.38 : 0.3) + 0.05 * Math.sin(this.vt * 2.4); if (p.grounded && !this._wasG && rd.airT === 0) this._landK = 1; this._wasG = p.grounded; if (this._landK > 0) this._landK = Math.max(0, this._landK - (dt || 0.016) / 0.18);       // a flying card: it hovers 0.3 to 0.45 m over the sand with a soft bob; a landing compresses the rider
+    const yaw = rd.heading + rd.spin; G.position.set(px, py + 0.02 + this._hover, pz); G.rotation.order = 'YXZ'; G.rotation.y = yaw;
     const P = this._pose = trickPose(rd); G.rotation.y = yaw + P.yaw; G.rotation.x = P.pitch - (rd.loop ? rd.loopTh || 0 : 0); G.rotation.z = P.roll; G.position.y += P.lift;       // the trick poses (view/trickpose.js): the card turns under the duelist on its own axes for each trick
     if (P.trail) for (let k = 0; k < 3; k++) this.fx.spark(px + (Math.random() - 0.5) * 1.2, py + 0.4 + Math.random() * 1.2, pz + (Math.random() - 0.5) * 1.2, 0, 0.5, 0, Math.random() < 0.5 ? 0xffd56a : 0xfff2c0, 0.22, 0.5);       // a special: the gold card trail
     this._blockRide(g, G, rd);
@@ -450,14 +451,15 @@ export class Actors {
     if (!this._bCard) { this._bCard = blockGroup(BLOCKS.card); const c = this._bCard.root, m = BLOCKS.card; c.scale.setScalar(2.0 / m.size.z); c.position.y = 0.02; for (const ch of G.children) ch.visible = false; G.add(c); }
     if (!this._bRide) { this._bRide = blockGroup(BLOCKS[rid]); this._bRide.id = rid; this.scene.add(this._bRide.root); }       // the card scaled to the board's 2 m length; the rider is the duelist's ride model, or its on-foot one
     const on = G.visible && !!rd, Rr = this._bRide.root; Rr.visible = on; this._bRideOn = on; if (!on) return;
-    const P = this._pose || trickPose(rd), top = 0.02 + BLOCKS.card.size.y * this._bCard.root.scale.y, cr = 1 - 0.22 * (P.crouch || 0); Rr.position.set(G.position.x, G.position.y - P.lift + top + P.bodyLift, G.position.z); Rr.rotation.order = 'YXZ'; Rr.rotation.set(P.bodyPitch, rd.heading + rd.spin + P.bodyYaw, P.bodyRoll); Rr.scale.set(1, cr, 1);       // the rider stays upright over the card (the card flips under him) and takes the trick's body pose
+    const P = this._pose || trickPose(rd), top = 0.02 + BLOCKS.card.size.y * this._bCard.root.scale.y, cr = 1 - 0.22 * (P.crouch || 0); Rr.position.set(G.position.x, G.position.y - P.lift + top + P.bodyLift, G.position.z); Rr.rotation.order = 'YXZ'; { const tr = this._lastBH === undefined ? 0 : (rd.heading - this._lastBH) / Math.max(this._dt || 0.016, 0.004); this._lastBH = rd.heading; const want = Math.max(-0.35, Math.min(0.35, -tr * 0.09)); this._lean = (this._lean || 0) + (want - (this._lean || 0)) * Math.min(1, (this._dt || 0.016) * 9); }       // lean into a carve, up to 20 degrees, eased over about 0.12 s
+    const sway = rd.grind || rd.manual || rd.flipT > 0 || rd.grabbing ? 0 : Math.sin(this.vt * 1.7) * 0.035, comp = (this._landK || 0) * 0.18 + Math.min(1, (rd.crouch || 0) / 0.6) * 0.14; Rr.position.y -= comp; Rr.scale.y = 1 - comp * 0.6; Rr.rotation.set(P.bodyPitch + comp * 0.5, rd.heading + rd.spin + P.bodyYaw, P.bodyRoll + (this._lean || 0) + sway);       // idle sway on the card, a crouch while the ollie charges, the knees giving on a landing Rr.scale.set(1, cr, 1);       // the rider stays upright over the card (the card flips under him) and takes the trick's body pose
     animateBlocks(this._bRide.id, this._bRide, g.t); for (const n in P.parts) { const pg = this._bRide.p[n]; if (pg) for (const ax in P.parts[n]) pg.rotation[ax] = P.parts[n][ax]; }
   }
   _rideRig(R, rd, p, dt) {
     const yaw = rd.heading + rd.spin; R.group.rotation.y = yaw + R.yaw;
     const want = Math.max(-0.35, Math.min(0.35, ((this._lastH === undefined ? rd.heading : this._lastH) - rd.heading) / Math.max(dt, 0.004) * 0.06)); this._lastH = rd.heading; this._carve = (this._carve || 0) + (want - (this._carve || 0)) * Math.min(1, dt * 8); R.group.rotation.z = this._carve;
     const crouch = rd.crouch > 0 ? rd.crouch / 0.5 : rd.flipT > 0 ? 0.6 : rd.grabbing ? 0.7 : rd.grind ? 0.35 : 0.15; R.group.scale.y *= 1 - 0.28 * crouch; R.group.scale.x *= 1 + 0.08 * crouch; R.group.scale.z *= 1 + 0.08 * crouch;
-    R.group.position.y += 0.22 + (rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.6 : 0); R.group.rotation.x = rd.loop ? -(rd.loopTh || 0) : rd.manual ? -0.18 : rd.grabbing ? 0.2 : 0;
+    R.group.position.y += 0.22 + (this._hover || 0) - (this._landK || 0) * 0.15 + (rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.6 : 0); R.group.rotation.x = rd.loop ? -(rd.loopTh || 0) : rd.manual ? -0.18 : rd.grabbing ? 0.2 : 0;
   }
   update(g, a, cam, head, dt) {
     this._dt = dt;
