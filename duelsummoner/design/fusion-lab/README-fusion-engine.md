@@ -1,4 +1,4 @@
-# Fusion engine and attack engine (lab Version 6, 27 Nov 2026)
+# Fusion engine and attack engine (lab Version 7, 27 Nov 2026)
 
 Reference code, seen running only in the Fusion Lab in a cloud browser. Not tuned. Port the rules, not the drawing code.
 
@@ -15,6 +15,7 @@ Reference code, seen running only in the Fusion Lab in a cloud browser. Not tune
 4. New in V6. When the Line has no such limb, the engine tries every height and length along the body, presses the joint onto the body surface, and keeps the spot that cuts through the least. Arms sit at the shoulders of a long body and mid-way on an upright one.
 5. New in V6. Graft blocks that would sit inside existing blocks are removed, so two surfaces never flicker through each other.
 6. New in V6. A grafted head is sized by volume, not by its longest side.
+9. New in V7, hybrid bodies. Up to two free limb slots are filled per fusion (`fxSlots`). The graft's body is laid over the Line's at the same size, then: HIDE, part of the Line's body wears the graft's real surface block for block (`FX[id].hide`: saddle, haunch, stripes or patches, fixed by a hash of the id); GROWTH, what the graft's body has that the Line's lacks grows out of the Line (`FX[id].grow`: mantle along the back, rump at the hind end, or none); CREST, a tower, frill, ring or wisp the graft carries rides on the Line's back. The same pair always makes the same creature.
 7. Names: newest two graft words, the Line's last word, then Prime at rank 3 and Apex at rank 4.
 8. Mutation roll: 80% standard, 15% Twin-Core, 5% Prismatic, from the run's seeded dice.
 
