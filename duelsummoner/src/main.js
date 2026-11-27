@@ -172,7 +172,7 @@ let duelist = 'kael';
 const withProps = /[?&]props/.test(location.search);       // map objects are placed by the coming map generator; ?props shows the region-placed test set
 const RUN_OPEN = !/[?&]terrain=classic/.test(location.search), RUN_ARCH = (/[?&]arch=([a-f])/.exec(location.search) || [])[1];
 const MENU_SEED = +((/[?&]menuseed=(\d+)/.exec(location.search) || [])[1] || 47514), MENU_ARCH = (/[?&]menuarch=([a-f])/.exec(location.search) || [])[1] || 'f';       // the menu backdrop is always the open desert, from a fixed seed with a good view; runs follow the terrain option as before
-const game = new Game(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : MENU_SEED, { duelist, mode: 'run', world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: 'open', arch: RUN_ARCH || MENU_ARCH, gym: /[?&]gym=1/.test(location.search) });
+const game = new Game(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : MENU_SEED, { duelist, mode: 'run', world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: 'open', flow: /[?&]flow=1/.test(location.search) ? 'v1' : 'v2', arch: RUN_ARCH || MENU_ARCH, gym: /[?&]gym=1/.test(location.search) });
 const host = createBrowserHost(canvas);
 const save = loadSave(host);
 const fx = new Fx(scene, save.settings);
@@ -451,6 +451,9 @@ function ringMarks() {
   fusionMarker();
   for (let i = sigils.length - 1; i >= 0; i--) { const s = sigils[i]; if (now > s.until) { sigils.splice(i, 1); continue; } if (now >= s.next) { s.next = now + 0.5; fx.ring(s.x, groundY(s.x, s.z) + 0.1, s.z, 4, 0xe8b84a, 0.7); } }
   if (game.mode !== 'classic') {
+    if (game.circle && game.circle.portal) { const c = game.circle, p = game.p, dx = c.x - p.x, dz = c.z - p.z, d = Math.hypot(dx, dz) || 1;       // flow v2: the portal, and a red wind toward it within 60 m (no beam)
+      if (now >= (ringMarks.p || 0)) { ringMarks.p = now + 0.25; const y = groundY(c.x, c.z); fx.ring(c.x, y + 0.2, c.z, 4.5, 0xff4a3a, 0.6); fx.ring(c.x, y + 1.6, c.z, 3, 0xffb0a0, 0.5); fx.ring(c.x, y + 3.2, c.z, 2.2, 0xff4a3a, 0.5); fx.burst(c.x, y + 1.2, c.z, 6, 0xff5040, 3, 3, 0.25, 0.8, -1); }
+      if (d < 60 && d > 5) for (let k = 0; k < 2; k++) { const a = Math.random() * 6.283, r = 2 + Math.random() * 6, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r; fx.spark(x, p.y + 0.6 + Math.random() * 1.6, z, dx / d * 18, 0.2, dz / d * 18, 0xff5a40, 0.08, 0.45); } }
     if (game.circle && now >= (ringMarks.c || 0)) { ringMarks.c = now + 0.5; fx.ring(game.circle.x, groundY(game.circle.x, game.circle.z) + 0.1, game.circle.z, 3.5, 0xc9a3ff, 0.7); }
     if (game.altar && !game.altar.used && now >= (ringMarks.a || 0)) { ringMarks.a = now + 0.5; fx.ring(game.altar.x, groundY(game.altar.x, game.altar.z) + 0.1, game.altar.z, 3.5, 0xffd56a, 0.7); }
   }

@@ -39,6 +39,7 @@ function drawFrenzy(g) {
 const ROLE_LETTER = { elite: 'ELITE', bossA: 'BOSS', bossB: 'TWINS' };
 function drawStrip(g) {                                                    // elite, boss A, boss B and gate icons under the clock
   const S = g.stageSpec, st = g.evState, G = g.gate;
+  if (g.flow2) { const left = Math.max(0, Math.ceil(S.clock - g.sc)), ot = g.ot2, k2 = 'f2|' + G.state + '|' + (ot ? Math.floor(ot.t) : left); if (k2 === stripKey) return; stripKey = k2; $('strip').innerHTML = '<span class="' + (G.state === 'closed' ? 'now' : 'fight') + '">' + (ot ? (ot.endless ? 'Endless Overtime ' : 'Overtime ') + clock(Math.floor(ot.t)) : G.state === 'fight' ? S.gate.name + ' hunts you' : 'Boss in ' + clock(left)) + '</span>'; return; }       // flow v2: one line, the clock to the boss, then Overtime
   if (g.openFlow) { const on = g.horde.on, left = Math.max(0, Math.ceil(S.clock - g.sc)), k2 = 'open|' + (on ? 'on' : left) + '|' + G.state; if (k2 === stripKey) return; stripKey = k2; $('strip').innerHTML = '<span class="' + (on ? 'fight' : 'now') + '">' + (on ? 'The horde rises' : G.state === 'closed' ? (g.door && g.door.state !== 'risen' && left > 60 ? '' : 'Horde rises in ') + (g.door && g.door.state !== 'risen' && left > 60 ? '' : clock(left)) : 'The horde waits') + '</span>'; return; }       // the open desert: one line, no elite, boss and twins chips
   let k = S.id + '|' + G.state + '|' + G.awake; for (let i = 0; i < st.length; i++) k += st[i];
   if (k === stripKey) return; stripKey = k;
@@ -50,6 +51,7 @@ function drawStrip(g) {                                                    // el
 // the boss bar shows for the final boss, the gate boss and the timed bosses, with the name on it
 const bossOf = g => g.sp.find(s => s.alive && !s.dead && !s.asleep && (s.kind === 'pharaoh' || s.role === 'gate' || s.role === 'bossA' || s.role === 'bossB'));
 function riteLines(g) {
+  if (g.flow2) { const st = g.gate.state, S0 = g.stageSpec, ot = g.ot2, L2 = [[st !== 'closed', 'Survive the clock'], [st === 'done', 'Fell ' + S0.gate.name]]; if (st === 'done') L2.push([!!g.desc, ot && ot.endless ? 'Endless Overtime: stay alive' : 'Find the portal (follow the red wind)']); return L2.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join(''); }
   if (g.openFlow) { const st = g.gate.state, S0 = g.stageSpec, last0 = g.stage >= 2, W0 = g.door ? 'door' : 'gate', L0 = g.door && g.door.state !== 'risen' && st === 'closed' ? [[false, 'A door will rise soon']] : st === 'closed' ? [[false, g.gateSeen ? 'Wake the ' + W0 + ' when ready' : 'Find the ' + W0]] : st === 'fight' ? [[true, 'Wake the ' + W0], [false, 'Fell ' + S0.gate.name]] : [[true, 'Wake the ' + W0], [true, 'Fell ' + S0.gate.name], [!!(g.desc || g.won), last0 ? 'Claim the Final Altar' : 'Step through the gateway']]; return L0.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join(''); }
   const S = g.stageSpec, awake = g.gate.awake || g.gate.state !== 'closed', fell = g.gate.state === 'done', last = g.stage >= 2;
   const L = [[awake, 'Wake the gate (' + (awake ? 'awake' : clock(Math.max(0, S.gateWake - g.sc))) + ')']];
@@ -60,6 +62,12 @@ function riteLines(g) {
 }
 function nextEventRun(g) {
   const S = g.stageSpec;
+  if (g.flow2) {       // flow v2: the clock, then the boss, then Overtime
+    if (g.ot2) return (g.ot2.endless ? 'Endless Overtime ' : 'Overtime ') + clock(Math.floor(g.ot2.t)) + '  x' + (1 + 0.1 * Math.floor(g.ot2.t / 30)).toFixed(1) + ' XP' + (g.circle ? '  (portal ' + Math.round(Math.hypot(g.circle.x - g.p.x, g.circle.z - g.p.z)) + ' m)' : '');
+    if (g.gate.state === 'fight') return S.gate.name + ' hunts you';
+    for (let i = 0; i < S.timeline.length; i++) if (g.evState[i] < 2) return S.timeline[i].name + ' in ' + clock(Math.max(0, S.timeline[i].t - g.sc));
+    return S.gate.name + ' comes in ' + clock(Math.max(0, Math.ceil(S.clock - g.sc)));
+  }
   if (g.openFlow && g.gate.state === 'closed' && !g.duelOn) return g.horde.on ? 'The horde is rising' : g.door && g.door.state !== 'risen' ? 'Hunt and loot' : 'Horde rises in ' + clock(Math.max(0, Math.ceil(S.clock - g.sc)));
   if (g.duelOn) return 'Hunters grow in ' + clock(30 - (g.otT % 30));
   if (g.circle) return 'Descent Circle closes in ' + clock(g.circle.t);

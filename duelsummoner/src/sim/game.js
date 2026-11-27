@@ -313,7 +313,7 @@ export class Game {
   runStats() { return { time: this.t, kills: this.kills, level: this.level, fusions: this.fusions, bossKilled: this.bossKilled, wardenKilled: this.wardenKilled, overtime: this.overtimeSeconds(), trapSet: this.trapEver, chests: this.world.opened, vases: this.vasesBroken }; }
 
   results(ctx) { return runResults(this, ctx); }
-  overtimeSeconds() { return this.mode !== 'classic' ? (this.duelOn ? this.otT : 0) : Math.max(0, this.t - RUN.overtime.from); }
+  overtimeSeconds() { return this.mode !== 'classic' ? (this.duelOn ? this.otT : this.ot2 ? this.ot2.t : 0) : Math.max(0, this.t - RUN.overtime.from); }
   endRun() { if (!this.over) { this.over = true; this.ended = true; this.endAt = this.callN; } }
 
   starChips() {
