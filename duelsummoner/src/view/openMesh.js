@@ -10,7 +10,7 @@ import { Q as WQ, LC as WLC } from '../gen/world/world.js';
 const T = window.THREE;
 const mixc = (a, b, t) => { const m = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
 const dim = (c, k) => ((Math.min(255, Math.round(((c >> 16) & 255) * k)) << 16) | (Math.min(255, Math.round(((c >> 8) & 255) * k)) << 8) | Math.min(255, Math.round((c & 255) * k)));
-const LIT = 0xfbeab4, LEE = 0xd0832f, TINT_A = 0xf1c773, TINT_B = 0xf6d489;       // sunlit slopes pale cream (never white), flat sand warm yellow, lee slopes orange
+const LIT = 0xf0d49a, LEE = 0xd0832f, TINT_A = 0xe9bd6c, TINT_B = 0xedc67c;       // sunlit slopes warm cream (never near white, even close to the camera), flat sand warm yellow, lee slopes orange
 const ROCK = 0xd49a60, ROCK_LIT = 0xf0c394, ROCK_SH = 0xa56a3e;                  // mountain faces: banded sandstone, sun side light, shade side deep warm brown
 const CH = 84, HALF = 420, NCH = 10, NEAR_ON = 120, NEAR_OFF = 150, FAR_MAX = 1100, DRESS_ON = 340, DRESS_OFF = 370;
 
@@ -18,7 +18,7 @@ const CH = 84, HALF = 420, NCH = 10, NEAR_ON = 120, NEAR_OFF = 150, FAR_MAX = 11
 function streakTex() {
   const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256; const c = cv.getContext('2d'); c.fillStyle = '#ebebeb'; c.fillRect(0, 0, 512, 256);
   let s = 12345; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-  for (let k = 0; k < 260; k++) { const y = r() * 256, x = r() * 512, len = 60 + r() * 220, light = r() < 0.5, a = 0.09 + r() * 0.2; c.strokeStyle = light ? 'rgba(255,255,255,' + a * 1.4 + ')' : 'rgba(150,150,150,' + a + ')'; c.lineWidth = 1 + (r() < 0.25 ? 1 : 0); for (const ox of [-512, 0, 512]) { c.beginPath(); c.moveTo(x + ox, y); c.lineTo(x + ox + len, y + (r() - 0.5) * 2); c.stroke(); } }
+  for (let k = 0; k < 260; k++) { const y = r() * 256, x = r() * 512, len = 40 + r() * 120, light = r() < 0.5, a = 0.03 + r() * 0.06; c.strokeStyle = light ? 'rgba(255,255,255,' + a + ')' : 'rgba(170,170,170,' + a + ')'; c.lineWidth = 2; for (const ox of [-512, 0, 512]) { c.beginPath(); c.moveTo(x + ox, y); c.lineTo(x + ox + len, y + (r() - 0.5) * 2); c.stroke(); } }       // soft wide ripples, low contrast: never read as scratches or drawn lines
   const tex = new T.CanvasTexture(cv); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.anisotropy = 4; return tex;
 }
 
@@ -111,7 +111,8 @@ export function buildOpen(map, look) {
   // ---- the big world: chunks and landmarks are made as the camera comes near and dropped behind it
   const bigChunks = new Map(), lmMeshes = new Map(), HZ = 0xe8d6b0, FARB = 520, FREEB = 700, LM_ON = 330, LM_MAX = 3600;
   const hazeC = look.sky ? look.sky[1] : HZ, tintB = B => ({ quad: (a, b, c, d, nrm, col) => B.quad(a, b, c, d, nrm, mixc(col, hazeC, 0.42)), tri: (a, b, c, nrm, col) => B.tri(a, b, c, nrm, mixc(col, hazeC, 0.42)) });       // a landmark far off keeps its own flat colours, pulled toward the haze (it is drawn unlit and unfogged, so it never dissolves into the sky)
-  const subMap = (qx, qz) => { const C = map.cell(qx, qz); return { dress: map.dressCell(qx, qz), blocks: C.blocks, gate: map.gate, spawn: map.spawn, far: {}, viewFn: map.viewFn, dune: map.dune }; };
+  const PARK = ['kickers', 'quarters', 'ledges', 'poles'], dressNear = (qx, qz) => { const d = Object.assign({}, map.dressCell(qx, qz)); for (const k of PARK) { d[k] = []; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) d[k] = d[k].concat(map.dressCell(qx + i, qz + j)[k] || []); } return d; };       // a park piece can stand outside the cell that laid it (the kill bowl's quarter pipes): each is drawn by the chunk it stands in
+  const subMap = (qx, qz) => { const C = map.cell(qx, qz); return { dress: dressNear(qx, qz), blocks: C.blocks, gate: map.gate, spawn: map.spawn, far: {}, viewFn: map.viewFn, dune: map.dune }; };
   const bigUpdate = (cam, budget) => {
     const ci0 = Math.floor(cam.x / CHK), cj0 = Math.floor(cam.z / CHK), R = Math.ceil(FARB / CHK) + 1; let made = 0, dm = 0; const stats2 = stats; stats2.near = 0; stats2.far = 0; stats2.dress = 0;
     for (let r = 0; r <= R; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {

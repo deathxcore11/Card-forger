@@ -283,8 +283,9 @@ export function makeWorld(seedLo, stageIndex, opts) {
     const grid = new Map(), gk = (x, z) => Math.floor(x / 8) * 4096 + Math.floor(z / 8), put = (kind, x, z) => { const k = gk(x, z); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push([kind, x, z]); };
     const nearby = (kind, x, z, d) => { for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) { const a = grid.get(gk(x + i * 8, z + j * 8)); if (a) for (const o of a) if ((kind === '*' || o[0] === kind) && (o[1] - x) * (o[1] - x) + (o[2] - z) * (o[2] - z) < d * d) return true; } return false; };
     const dens = (x, z) => 0.6 * vnoise(seed & 0xffff, x / 70, z / 70) + 0.4 * vnoise((seed >>> 7) & 0xffff, x / 28, z / 28), ok = (x, z, pad, ms) => free(x, z, pad) && slp(x, z) < (ms || 0.42);
-    const cactus = (x, z, s) => { const y = gy(x, z); D.cacti.push([r2(x), r2(y), r2(z), r2(s), r2(rn() * TAU), (rn() * 3) | 0]); D.solid.push([r2(x), r2(y), r2(z), r2(0.55 * s), r2(3.5 * s)]); put('c', x, z); };
-    const dead = (x, z, s) => { const y = gy(x, z); D.dead.push([r2(x), r2(y), r2(z), r2(s), r2(rn() * TAU), (rn() * 3) | 0]); D.solid.push([r2(x), r2(y), r2(z), r2(0.55 * s), r2(6 * s)]); put('d', x, z); };
+    const clearOfPark = (x, z) => x >= C.x0 && x < C.x0 + Q && z >= C.z0 && z < C.z0 + Q && !nearby('k', x, z, 6) && !nearby('u', x, z, 5);       // no cactus or tree on a park piece or in its run-up, and none spilling into the next cell (where that cell's pieces cannot see it)
+    const cactus = (x, z, s) => { if (!clearOfPark(x, z)) return; const y = gy(x, z); D.cacti.push([r2(x), r2(y), r2(z), r2(s), r2(rn() * TAU), (rn() * 3) | 0]); D.solid.push([r2(x), r2(y), r2(z), r2(0.55 * s), r2(3.5 * s)]); put('c', x, z); };
+    const dead = (x, z, s) => { if (!clearOfPark(x, z)) return; const y = gy(x, z); D.dead.push([r2(x), r2(y), r2(z), r2(s), r2(rn() * TAU), (rn() * 3) | 0]); D.solid.push([r2(x), r2(y), r2(z), r2(0.55 * s), r2(6 * s)]); put('d', x, z); };
     const beam = (x, z, len, rad, kind) => { const a = rn() * TAU, dx = cosA(a) * len / 2, dz = sinA(a) * len / 2; D.logs.push([r2(x - dx), r2(gy(x - dx, z - dz) - 0.15), r2(z - dz), r2(x + dx), r2(gy(x + dx, z + dz) - 0.15), r2(z + dz), r2(rad), kind]); put('l', x, z); };
     const potc = (x, z) => { const n = 3 + ((rn() * 3) | 0); for (let q = 0; q < n; q++) { const a = rn() * TAU, d = q ? 0.8 + rn() * 1.3 : 0, px = x + cosA(a) * d, pz = z + sinA(a) * d; D.pots.push([r2(px), r2(gy(px, pz)), r2(pz), r2(0.9 + rn() * 0.7), r2(rn() * TAU), (rn() * 3) | 0]); } put('p', x, z); };
     const fill = (n, tries, kind, sep, pred, make) => { let k = 0; for (let t = 0; t < tries && k < n; t++) { const x = C.x0 + rn() * Q, z = C.z0 + rn() * Q; if (!pred(x, z) || nearby(kind, x, z, sep)) continue; make(x, z); k++; } };
@@ -312,6 +313,7 @@ export function makeWorld(seedLo, stageIndex, opts) {
           else if (kind === 'r') D.poles.push([r2(ax), r2(gy(ax, az) + 0.7), r2(az), r2(bx), r2(gy(bx, bz) + 0.7), r2(bz)]);
           else D.quarters.push([r2(ax), r2(gy(ax, az)), r2(az), r2(ux), r2(uz), 12]);
           for (let s = 0; s <= len; s += 4) put('k', ax + ux * s, az + uz * s); }
+        for (let s = -20; s < 0; s += 4) put('u', x + ux * s, z + uz * s);       // the run-up
         { const lane = (q, pad) => { const dx = q[0] - x, dz = q[2] - z, s = dx * ux + dz * uz, w = dx * uz - dz * ux; return s > -20 && s < t + 4 && Math.abs(w) < 5.5 + pad; }; for (const k of ['cacti', 'dead', 'solid']) D[k] = D[k].filter(q => !lane(q, k === 'solid' ? q[3] : 0)); }       // nothing standing in the run-up or along the line: a cactus by a block can sit in the lane
         if (open) D.parkPots.push({ x: r2(x + ux * (t + 6)), z: r2(z + uz * (t + 6)), vases: [[r2(-uz * 1.4), r2(ux * 1.4), false], [r2(uz * 1.4), r2(-ux * 1.4), prn() < 0.2]] });
         return true; };
