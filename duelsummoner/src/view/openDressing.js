@@ -11,10 +11,11 @@ const BLK_TRIS = {};
 function blkTris(id) { if (BLK_TRIS[id] !== undefined) return BLK_TRIS[id]; const M = BLOCKS[id]; if (!M) return (BLK_TRIS[id] = null); const P = [], N = [], C = [];
   M.levels[0].parts.forEach((sh, i) => { const pv = M.parts[i].pivot; for (const g of [sh.solid, sh.glow]) if (g) { const a = g.attributes.position.array, n = g.attributes.normal.array, c = g.attributes.color.array; for (let k = 0; k < a.length; k += 9) { for (let j = 0; j < 9; j += 3) P.push(a[k + j] + pv[0], a[k + j + 1] + pv[1], a[k + j + 2] + pv[2]); N.push(n[k], n[k + 1], n[k + 2]); C.push((Math.round(c[k] * 255) << 16) | (Math.round(c[k + 1] * 255) << 8) | Math.round(c[k + 2] * 255)); } } });
   return (BLK_TRIS[id] = { P, N, C, M }); }
+const BLK_TINT = { tree: c => mixc(c, 0x9a8a70, 0.8) };       // the block dead tree's near-black bark lifted to a dry grey-brown
 function blockInto(D, id, x, y, z, size, yaw) {
-  const B = blkTris(id); if (!B) return false; const { P, N, C, M } = B, sx = size[0] / M.size.x, sy = size[1] / M.size.y, sz = size[2] / M.size.z, c = Math.cos(yaw), s = Math.sin(yaw), cx = (M.min[0] + M.max[0]) / 2, cz = (M.min[2] + M.max[2]) / 2;
+  const B = blkTris(id); if (!B) return false; const tint = BLK_TINT[id] || (c => c); const { P, N, C, M } = B, sx = size[0] / M.size.x, sy = size[1] / M.size.y, sz = size[2] / M.size.z, c = Math.cos(yaw), s = Math.sin(yaw), cx = (M.min[0] + M.max[0]) / 2, cz = (M.min[2] + M.max[2]) / 2;
   const v = k => { const lx = (P[k] - cx) * sx, ly = P[k + 1] * sy, lz = (P[k + 2] - cz) * sz; return [x + lx * c + lz * s, y + ly, z - lx * s + lz * c]; };
-  for (let i = 0, k = 0; i < C.length; i++, k += 9) { const nx = N[i * 3], ny = N[i * 3 + 1], nz = N[i * 3 + 2]; D.tri(v(k), v(k + 3), v(k + 6), [nx * c + nz * s, ny, -nx * s + nz * c], C[i]); }
+  for (let i = 0, k = 0; i < C.length; i++, k += 9) { const nx = N[i * 3], ny = N[i * 3 + 1], nz = N[i * 3 + 2]; D.tri(v(k), v(k + 3), v(k + 6), [nx * c + nz * s, ny, -nx * s + nz * c], tint(C[i])); }
   return true;
 }
 // a tapered n-sided rod between two points (a log, a branch, a cactus arm); end caps optional
@@ -124,8 +125,9 @@ function blockMeshVox(D, map, b) {
   const inside = (x, z) => { const dx = x - b.cx, dz = z - b.cz, lx = (dx * cr + dz * sr) / (q * b.rx), lz = (-dx * sr + dz * cr) / (q * b.rz); return Math.abs(lx) ** 3 + Math.abs(lz) ** 3 <= 1; };
   const x0 = Math.floor((b.cx - R0) / C) * C, z0 = Math.floor((b.cz - R0) / C) * C, N = Math.ceil(2 * R0 / C) + 2, runs = [];
   for (let j = 0; j < N; j++) { const z = z0 + (j + 0.5) * C; let L = -1, Rr = -1; for (let i = 0; i < N; i++) if (inside(x0 + (i + 0.5) * C, z)) { if (L < 0) L = i; Rr = i + 1; } runs.push(L < 0 ? null : [L, Rr]); }
-  const band = y => mixc(K.face, 0x000000, 1 - K.bands[((Math.floor(y / 1.2) % 3) + 3) % 3]);
-  const wall = (a, bb, out) => { const g = Math.round(Math.min(footY(map, a[0], a[1]), footY(map, bb[0], bb[1])) / 0.06) * 0.06 - 0.12; for (let y = g; y < T - 0.01;) { const y1 = Math.min(T, (Math.floor(y / 1.2 + 1e-6) + 1) * 1.2); D.quad([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, band(y)); y = y1; } };
+  const band = y => mixc(K.face, 0x000000, [0.0, 0.035, 0.015, 0.05][((Math.floor(y / 0.24 + 1e-6) % 4) + 4) % 4]);       // one subtle shade per 24 cm course
+  const wall = (a, bb, out) => { const g = Math.round(Math.min(footY(map, a[0], a[1]), footY(map, bb[0], bb[1])) / 0.24) * 0.24 - 0.24, mx = (a[0] + bb[0]) / 2 - b.cx, mz = (a[1] + bb[1]) / 2 - b.cz, ml = Math.hypot(mx, mz) || 1, nrm = [mx / ml, 0, mz / ml];       // lit by the outward direction from the centre, so the stepped outline reads as one smooth face
+    for (let y = g; y < T - 0.01;) { const y1 = Math.min(T, (Math.floor(y / 0.24 + 1e-6) + 1) * 0.24); if (D.quadN) D.quadN([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, nrm, band(y)); else D.quad([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, band(y)); y = y1; } };
   runs.forEach((r, j) => { if (!r) return; const za = z0 + j * C, zb = za + C, xa = x0 + r[0] * C, xb = x0 + r[1] * C;
     D.quad([xa, T, za], [xb, T, za], [xb, T, zb], [xa, T, zb], [0, 1, 0], K.top); wall([xa, za], [xa, zb], [-1, 0, 0]); wall([xb, za], [xb, zb], [1, 0, 0]);
     for (const [nb, dz, zz] of [[runs[j - 1], -1, za], [runs[j + 1], 1, zb]]) { const segs = nb ? [[r[0], Math.min(r[1], nb[0])], [Math.max(r[0], nb[1]), r[1]]] : [[r[0], r[1]]]; for (const [s0, s1] of segs) if (s1 > s0) wall([x0 + s0 * C, zz], [x0 + s1 * C, zz], [0, 0, dz]); } });

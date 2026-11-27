@@ -93,7 +93,7 @@ export function buildOpen(map, look) {
     if (streaks) { const p = m.geometry.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv[i * 2] = (x * cw + z * sw) / 24; uv[i * 2 + 1] = (-x * sw + z * cw) / 12; } m.geometry.setAttribute('uv', new T.BufferAttribute(uv, 2)); }
     tris += Bd.pos.length / 9 | 0; m.geometry.computeBoundingSphere(); return m;
   };
-  let dshared = null; const dmesh = Bd => { const m = Bd.mesh(false, fadeU); if (!dshared) dshared = m.material; else { m.material.dispose(); m.material = dshared; } return m; };
+  let dshared = null; const dmesh = Bd => { const m = Bd.mesh(false, fadeU); if (!dshared) { dshared = m.material; if (blocksOn) { dshared.flatShading = false; dshared.needsUpdate = true; } } else { m.material.dispose(); m.material = dshared; } return m; };
   const chunks = [];
   for (let cj = 0; cj < (BIG ? 0 : NCH); cj++) for (let ci = 0; ci < NCH; ci++) {
     const x0 = -HALF + ci * CH, z0 = -HALF + cj * CH, c = { x0, z0, cx: x0 + CH / 2, cz: z0 + CH / 2, far: null, near: null, dress: null, nearOn: false };

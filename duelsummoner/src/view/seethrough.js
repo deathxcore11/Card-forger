@@ -50,7 +50,7 @@ float holeKeep() {
   return mix(1.0, k, front);
 }
 void main() {
-  { highp vec3 dd = uDuelist - uCam; float tt = clamp(dot(vSeeWP - uCam, dd) / max(dot(dd, dd), 0.0001), 0.0, 1.0); float gap = length(vSeeWP - (uCam + dd * tt)); float corridor = (tt < 0.9 && gap < 2.2 + (1.0 - tt) * 3.5) ? ${blocksOn ? '0.0' : '0.25'} : 1.0;
+  { highp vec3 dd = uDuelist - uCam; float tt = clamp(dot(vSeeWP - uCam, dd) / max(dot(dd, dd), 0.0001), 0.0, 1.0); float gap = length(vSeeWP - (uCam + dd * tt)); ${blocksOn ? 'highp vec2 dh = dd.xz; float th = clamp(dot(vSeeWP.xz - uCam.xz, dh) / max(dot(dh, dh), 0.0001), 0.0, 1.0); float gh = length(vSeeWP.xz - (uCam.xz + dh * th)); float corridor = (th < 0.9 && gh < 2.2 + (1.0 - th) * 3.5) ? 0.0 : 1.0;' : 'float corridor = (tt < 0.9 && gap < 2.2 + (1.0 - tt) * 3.5) ? 0.25 : 1.0;'}
     float k = min(min(holeKeep(), nearKeep(vViewZ)), corridor); DS_FADE(k) }`);       // and anything on the line from the camera to the duelist (a kicker, a post) thins along that line
   };
   mat.needsUpdate = true;
