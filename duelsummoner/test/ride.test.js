@@ -119,7 +119,7 @@ test('the wonder: every seed has a long ride line with five seal stones; lightin
   assert.equal(n, 12, 'seeds with a whole wonder: ' + n);
   const g = mk(); g.god = true; const stones = sealSet(g, -1), n0 = g.world.cchests.length; place(g, stones[0][0], stones[0][2], 12); run(g, 2, { ...I, f: 1 }); g.p.ride.on = true; g.p.ride.combo.pts = 1;
   for (const s of stones) { g.p.x = s[0]; g.p.z = s[2]; g.p.y = s[1] + 2; g.p.grounded = false; g.p.vy = 4; g.p.ride.on = true; g.p.ride.speed = 3; g.p.ride.grind = null; run(g, 1); }
-  assert.equal(g.world.cchests.length, n0 + 1, 'a chest'); assert.equal(g.world.cchests[n0].rarity, 'epic');
+  assert.ok(g.world.cchests.slice(n0).some(c => c.rarity === 'epic' && c.trophy), 'an epic chest rose');       // (streaming may place pocket chests meanwhile)
 });
 test('landforms: a canyon half-pipe wall sends the card up (vert) and it comes back down on the wall without a bail; bowls and step-downs exist', () => {
   const g = mk(), W = g.map.world, sp = W.spawn; let spot = null;
