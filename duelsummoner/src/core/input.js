@@ -30,7 +30,8 @@ export class Input {
     return {
       f: t && t.f ? t.f : f, r: t && t.r ? t.r : r,                                // touch stick is analogue; keys are -1, 0, 1
       yaw: this.yaw, jump: !!k.Space || !!(t && t.jump), dash: !!(k.ShiftLeft || k.ShiftRight) || !!(t && t.dash),
-      slide: !!(k.ControlLeft || k.ControlRight || k.KeyC) || !!(t && t.slide), use, hold: !!k.KeyE || !!(t && t.use)
+      slide: !!(k.ControlLeft || k.ControlRight || k.KeyC) || !!(t && t.slide), use, hold: !!k.KeyE || !!(t && t.use),
+      flip: !!k.KeyJ, grab: !!k.KeyK, grind: !!k.KeyL, spin: (k.KeyE ? 1 : 0) - (k.KeyQ ? 1 : 0), revert: !!(k.ShiftLeft || k.ShiftRight), kb: !(t && (t.f || t.r || t.jump || t.dash || t.slide || t.use))       // the feel pass keys
     };
   }
 }

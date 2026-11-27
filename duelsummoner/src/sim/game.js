@@ -35,6 +35,7 @@ const STEP = 1 / 60;
 import { BUILD_VERSION } from './results.js';
 import { streamWorld } from './stream.js';
 import { procEvent } from './procs.js';
+import '../data/feel.js';       // the feel table writes its numbers into the sim at load
 const BUILD_VERSION_REPLAY = BUILD_VERSION;
 const EV_START = 1024, EV_MAX = 1 << 16;       // the event ring: starts at 1,024 and grows to 65,536
 export class Game {

@@ -16,8 +16,8 @@ test('ride: above 10.5 m/s the duelist steps on the card; below 7 m/s on the gro
   const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 13); run(g, 2, { ...I, f: 1 }); assert.ok(g.p.ride && g.p.ride.on, 'riding'); 
   place(g, x, z, 5); g.p.ride.speed = 5; run(g, 3); assert.equal(g.p.ride.on, false, 'stepped off');
 });
-test('ride: hold jump to crouch, release to pop: a short tap about 2.2 m, a full half-second crouch about 4.5 m', () => {
-  for (const [hold, lo, hi] of [[1, 1.8, 2.8], [32, 3.8, 5.0]]) {
+test('ride: hold jump to crouch, release to pop: a tap about 1.2 m, a full 0.35 s crouch about 2.6 m (the feel table)', () => {
+  for (const [hold, lo, hi] of [[1, 1.0, 1.6], [24, 2.3, 3.0]]) {
     const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 2, { ...I, f: 1 }); const y0 = g.p.y; let top = y0;
     run(g, hold, { ...I, f: 1, jump: true }); run(g, 70, i => { top = Math.max(top, g.p.y); return { ...I, f: 1 }; });
     assert.ok(top - y0 > lo && top - y0 < hi, 'hold ' + hold + ' ticks: ' + (top - y0).toFixed(2) + ' m');

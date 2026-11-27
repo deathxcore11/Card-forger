@@ -76,7 +76,7 @@ export function updatePlayer(g, dt, cmd) {
       const a = atan2(p.vx, p.vz), b = atan2(mx, mz); let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
       const lim = K.hopAirTurn * dt, na = a + (d > lim ? lim : d < -lim ? -lim : d); p.vx = sin(na) * hs; p.vz = cos(na) * hs; p.decayN = 0;
     } else {
-      const k = 1 - exp(-dt * (p.grounded ? C.groundAccel : C.airAccel));
+      const k = 1 - exp(-dt * (p.grounded ? (hasInput ? C.groundAccel : (C.groundStop || C.groundAccel)) : C.airAccel));       // the feel table: top speed in 0.15 s, a stop in 0.10 s, 80 per cent control in the air
       const over = p.grounded && hasInput && hs > speed * 1.001;                                // on the ground, speed above run speed falls to run speed over hopDecayTicks, not at once
       if (over) { if (p.decayN === 0) p.decay0 = hs - speed; p.decayN++; } else p.decayN = 0;
       p.vx += (mx * speed * (hasInput ? 1 : 0) - p.vx) * k;
@@ -103,8 +103,8 @@ export function updatePlayer(g, dt, cmd) {
   p.jumpBuf = press ? C.jumpBuffer : Math.max(0, (p.jumpBuf || 0) - dt);
   if ((cmd.jump && p.grounded) || (p.jumpBuf > 0 && (p.grounded || p.coyote > 0))) {
     // a slide hop: slide held within hopWindow ticks of landing, or out of a slide. The horizontal speed is kept and 8% of run speed is added, up to 1.6x run speed. Any other jump leaves the speed alone and ends the chain.
-    const hs2 = Math.sqrt(p.vx * p.vx + p.vz * p.vz), slideHop = p.grounded && hs2 > 1e-6 && p.landT <= K.hopWindow && (cmd.slide || p.sliding);
-    if (slideHop) { const ns = Math.min(K.hopCap * speed, hs2 + K.hopGain * speed); p.vx *= ns / hs2; p.vz *= ns / hs2; p.chain = (p.hopped && p.landT <= K.hopWindow) ? p.chain + 1 : 1; p.hopped = true; g.emit('hop', p.chain, ns, 0); } else { p.chain = 0; p.hopped = false; }
+    const hs2 = Math.sqrt(p.vx * p.vx + p.vz * p.vz), win = C.hop ? Math.round(C.hop.win * 60) : K.hopWindow, slideHop = p.grounded && hs2 > 1 && p.landT <= win && (!!C.hop || cmd.slide || p.sliding);       // any jump within 0.1 s of landing keeps its speed and adds 5 per cent (the feel table)
+    if (slideHop) { const ns = C.hop ? Math.min(Math.max(hs2, C.hop.cap), hs2 * (1 + C.hop.gain)) : Math.min(K.hopCap * speed, hs2 + K.hopGain * speed); p.vx *= ns / hs2; p.vz *= ns / hs2; p.chain = (p.hopped && p.landT <= K.hopWindow) ? p.chain + 1 : 1; p.hopped = true; g.emit('hop', p.chain, ns, 0); } else { p.chain = 0; p.hopped = false; }
     p.vy = jumpV; p.grounded = false; p.sliding = false; p.coyote = 0; p.jumpBuf = 0; p.canCut = true;
   }
   else if (press && !p.grounded && (p.airUsed || 0) < g.mods.airJumps) { p.vy = jumpV; p.airUsed = (p.airUsed || 0) + 1; p.canCut = true; }

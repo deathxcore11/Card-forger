@@ -23,14 +23,14 @@ function ramps(g) {
 }
 const sample = (seeds, per) => { const all = []; for (const s of seeds) { const g = mk(s), r = ramps(g); const seen = new Set(); let n = 0; for (const q of r) { const key = q.slope.toFixed(2) + ':' + q.len.toFixed(0); if (seen.has(key) || n >= per) continue; seen.add(key); n++; all.push({ seed: s, ...q }); } } return all; };
 
-test('pinned jumps: standing 5.06 m, running 7.20 m, a short tap 4.65 m (the numbers movement must not change by accident)', () => {
+test('pinned jumps: standing 6.75 m (the feel table, a quicker start), running 7.20 m, a short tap 4.65 m (the numbers movement must not change by accident)', () => {
   const jump = (pre, hold) => {
     const g = mk(1), p = g.p; let found = null;
     for (let z0 = 60; z0 > -150 && !found; z0 -= 3) for (let x0 = -120; x0 < 120 && !found; x0 += 3) { let ok = true; for (let d = 0; d < 40 && ok; d++) if (heightAt(x0, z0 - d) !== 0) ok = false; if (ok) found = [x0, z0]; }
     p.x = found[0]; p.z = found[1]; p.y = 0; p.grounded = true; g.step(1 / 60, idle); for (let i = 0; i < pre; i++) g.step(1 / 60, { ...idle, f: 1 });
     const sx = p.x, sz = p.z; let landed = false; for (let i = 0; i < 400 && !landed; i++) { g.step(1 / 60, { ...idle, f: 1, jump: i < hold }); if (p.grounded && i > 3) landed = true; } return Math.hypot(p.x - sx, p.z - sz);
   };
-  assert.ok(Math.abs(jump(0, 40) - 5.06) < 0.01, 'standing jump ' + jump(0, 40)); assert.ok(Math.abs(jump(60, 40) - 7.20) < 0.01, 'running jump ' + jump(60, 40)); assert.ok(Math.abs(jump(60, 4) - 4.65) < 0.01, 'a tap ' + jump(60, 4));
+  assert.ok(Math.abs(jump(0, 40) - 6.75) < 0.01, 'standing jump ' + jump(0, 40)); assert.ok(Math.abs(jump(60, 40) - 7.20) < 0.01, 'running jump ' + jump(60, 40)); assert.ok(Math.abs(jump(60, 4) - 4.65) < 0.01, 'a tap ' + jump(60, 4));
 });
 
 test('ramps: running up any ramp never pops the duelist up by more than the slope allows (slope x 9/60 + 0.02 a tick)', () => {

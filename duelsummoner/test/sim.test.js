@@ -42,8 +42,8 @@ test('jump reaches a roof from the stands but plain walking does not', () => {
   const mk = () => { const g = new Game(1); noEnemies(g); g.p.x = 49 * fx; g.p.z = 49 * fz; g.p.y = 4; return g; };
   const walk = mk(); run(walk, 2, { ...idle, f: 1, yaw });
   assert.ok(walk.p.y < 4.2, 'cannot walk onto the roof');
-  const jump = mk(); run(jump, 2, { ...idle, f: 1, yaw, jump: true });
-  assert.ok(jump.p.y > 5.7, `jump y=${jump.p.y}`);
+  const jump = mk(); let top = 0; for (let i = 0; i < 120; i++) { run(jump, 1 / 60, { ...idle, f: 1, yaw, jump: true }); if (jump.p.grounded) top = Math.max(top, jump.p.y); }       // (with the feel table's air control the jump may carry on past the roof: it has to land on it)
+  assert.ok(top > 5.7, `jump y=${top}`);
 });
 
 test('jump height is 2.2 m', () => {

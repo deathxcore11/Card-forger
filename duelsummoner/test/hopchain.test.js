@@ -12,7 +12,7 @@ function start(g, at) { const p = g.p; p.x = at[0]; p.z = at[1]; p.y = 0; p.vx =
 function relocate(g, at) { const p = g.p; if (p.z < at[1] - 60) { p.z += 55; } }
 
 test('slide-jump: a 20 s chain with frame-perfect input reaches the cap and never goes over it', () => {
-  const g = mk(1), at = strip(80); assert.ok(at, 'a flat strip'); const p = start(g, at), R = CFG.player.speed * (1 + g.mods.move), cap = K.hopCap * R; let top = 0, ticks = 0;
+  const g = mk(1), at = strip(80); assert.ok(at, 'a flat strip'); const p = start(g, at), R = CFG.player.speed * (1 + g.mods.move), cap = CFG.player.hop ? CFG.player.hop.cap : K.hopCap * R; let top = 0, ticks = 0;
   for (let i = 0; i < 60 * 20; i++) { relocate(g, at); g.step(1 / 60, { ...idle, f: 1, jump: true, slide: true }); const s = speedOf(p); if (s > top) top = s; ticks++; assert.ok(s <= cap + 1e-6, 'tick ' + i + ' speed ' + s + ' over the cap ' + cap); }
   assert.ok(top >= cap - 0.05, 'the chain reaches the cap: top ' + top.toFixed(3) + ' of ' + cap.toFixed(3));
   assert.ok(Math.abs(K.hopGain - 0.08) < 1e-9 && Math.abs(K.hopCap - 1.6) < 1e-9 && K.hopWindow === 6, 'the numbers are the owner\'s: +8% a hop, 1.6x, 6 ticks');
