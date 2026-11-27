@@ -140,7 +140,7 @@ export function drawHud(g, force) {
   f.style.display = ready.length ? 'block' : 'none';
   if (ready.length) f.textContent = 'FUSION READY: ' + ready.map(id => FUSIONS[id].name).join(' or ') + '. Open a sealed chest ({use}).'; if (ready.length) f.textContent = keyWords(f.textContent, inputMode());
   const boss = bossOf(g);
-  $('boss').style.display = boss ? 'block' : 'none';
+  $('boss').style.display = boss ? 'block' : 'none'; document.body.classList.toggle('bossOn', !!boss);       // the banner moves below the boss bar while it shows
   if (boss) { $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%'; if ($('bossname').textContent !== boss.name) $('bossname').textContent = boss.name; }
   if (g.mode !== 'classic') { drawStrip(g); drawFrenzy(g); }
   $('prompt').textContent = keyWords(g.prompt, inputMode());

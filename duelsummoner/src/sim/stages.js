@@ -47,7 +47,7 @@ export function initRun(g) {
   g.mode = g.opts.mode || 'classic'; g.difficulty = DIFFICULTY[g.opts.difficulty] ? g.opts.difficulty : 'medium'; g.diff = DIFFICULTY[g.difficulty]; g.maxAlive = RUN.maxAlive;
 
   if (g.mode === 'classic') { g.stages = null; g.stageSpec = null; return; }
-  g.big = g.opts.terrain === 'open'; g.paceK = g.big ? BIG_PACE : 1; g.stages = stagesFor(g.mode, g.big); const open = g.opts.meta && g.opts.meta.stagesOpen; if (open && g.mode === 'run' && open < g.stages.length) g.stages = g.stages.slice(0, open); g.stage = 0; g.scTotal = 0; g.stagesCleared = 0; g.stageFacts = [];
+  g.big = g.opts.terrain === 'open'; g.paceK = g.big ? BIG_PACE : 1; g.stages = stagesFor(g.mode, g.big); const open = g.opts.meta && g.opts.meta.stagesOpen; if (open && g.opts.flow !== 'v2' && g.mode === 'run' && open < g.stages.length) g.stages = g.stages.slice(0, open); g.stage = 0; g.scTotal = 0; g.stagesCleared = 0; g.stageFacts = [];
   g.flow2 = g.big && g.opts.flow === 'v2'; g.swiftChips = 0; g.duelOn = false; g.otT = 0; g.desc = null; g.chestsOpenedTotal = 0; g.heat = 1;
   initStage(g); loadStageMap(g, 0); g.world = buildWorld(g); if (g.map.big) streamWorld(g, 0);
   g.event('banner', g.stageSpec.name + '. Seal Code ' + g.sealCode);
@@ -389,7 +389,7 @@ const OT2 = { hpStep: 1.22, stepSeconds: 30, xpPerStep: 0.1, shadesAfter: 120, c
 export const FLOW2 = OT2;
 function flow2Tick(g, dt) {
   const S = g.stageSpec, G = g.gate;
-  if (G.state === 'closed') timelineNear(g);
+  if (G.state === 'closed' && g.sc < S.clock) timelineNear(g);       // the clock end belongs to the stage boss alone
   if (G.state === 'closed' && g.sc >= S.clock) startHunt(g);
 }
 // the clock marks: announced 5 s ahead, then the elite or mini boss arrives 30 to 40 m from the duelist and comes for them
@@ -397,6 +397,7 @@ function timelineNear(g) {
   const S = g.stageSpec, p = g.p;
   for (let i = 0; i < S.timeline.length; i++) {
     const ev = S.timeline[i], st = g.evState[i];
+    if (st < 2 && ev.t > S.clock - 30) { g.evState[i] = 2; continue; }       // no timed mark in the last 30 s of the clock: the stage boss owns them
     if (st === 0 && g.sc >= ev.t - RUNSPEC.announceSeconds) { const at = g.evSpot[i]; if (!openSpot(g, p.x, p.z, 30, 40, i * 2.1 + g.stage, at)) { at.x = p.x + 30; at.z = p.z; at.y = heightAt(at.x, at.z); } g.evState[i] = 1; g.emit('announce', i, at.x, at.z, ev.role); g.event('banner', ev.name + ' comes in ' + RUNSPEC.announceSeconds + ' seconds.'); }
     else if (st === 1 && g.sc >= ev.t) { const at = g.evSpot[i]; openSpot(g, p.x, p.z, 30, 40, i * 2.1 + g.stage + 1, at); spawnSpecial(g, ev, at); g.evState[i] = 2; }
   }
