@@ -1,9 +1,9 @@
 // The feel sliders (?debug): every number in src/data/feel.js on a slider, applied live (applyFeel), with a button that copies the table as text.
-// In the ride gym (?gym=1) a one-line control card sits at the bottom of the screen.
+// In the ride gym (?gym=1) a control card sits under the health and XP box.
 import { FEEL, applyFeel } from '../data/feel.js';
 export function feelPanel() {
   const q = location.search;
-  if (/[?&]gym=1/.test(q)) { const c = document.createElement('div'); c.id = 'gymCard'; c.textContent = 'RIDE GYM   WASD move · mouse look · Space ollie/jump (hold to crouch) · C ride/slide · J flip · K grab · L grind · Q/E spin · Shift revert'; Object.assign(c.style, { position: 'fixed', left: '50%', bottom: '8px', transform: 'translateX(-50%)', zIndex: 35, padding: '6px 14px', borderRadius: '10px', background: '#120d16e6', border: '1px solid #c9a24a99', color: '#f3e6c8', font: '13px "Courier New", monospace', whiteSpace: 'nowrap', pointerEvents: 'none' }); document.body.appendChild(c); }
+  if (/[?&]gym=1/.test(q)) { const c = document.createElement('div'); c.id = 'gymCard'; c.textContent = 'RIDE GYM   WASD move · mouse look · Space ollie/jump (hold to crouch) · C ride/slide · J flip · K grab · L grind · Q/E spin · Shift revert'; Object.assign(c.style, { position: 'fixed', left: '16px', top: '156px', zIndex: 35, maxWidth: '420px', padding: '6px 12px', borderRadius: '10px', background: '#120d16e6', border: '1px solid #c9a24a99', color: '#f3e6c8', font: '12px "Courier New", monospace', lineHeight: '1.5', pointerEvents: 'none' }); document.body.appendChild(c); }       // under the health and XP box, clear of the summon bar
   if (!/[?&]debug/.test(q)) return;
   const box = document.createElement('div'); box.id = 'feelPanel';
   Object.assign(box.style, { position: 'fixed', right: '8px', top: '200px', zIndex: 60, width: '270px', maxHeight: '70vh', overflow: 'auto', padding: '8px', borderRadius: '8px', background: '#120d16ee', border: '1px solid #c9a24a99', color: '#f3e6c8', font: '11px "Courier New", monospace', display: 'none' });

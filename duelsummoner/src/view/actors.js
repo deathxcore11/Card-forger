@@ -22,6 +22,7 @@ import { PICKUP_COLORS } from '../data/pickups.js';
 import { POWERUPS } from '../data/powerups.js';
 import { makeCreature } from './creature.js';
 import { BLOCKS, blockGroup, blockMerged, animateBlocks, blockSwing } from './models.js';
+import { trickPose } from './trickpose.js';
 // the block look (?blocks=1): which block model draws which game actor (index.json ids). An actor with no entry, or whose file is missing, keeps its current look.
 const BLK_ENEMY = { 0: 'husk', 1: 'runner', 2: 'seer', 3: 'ram', 4: 'bloat', 5: 'scarab', 6: 'hunter' };
 const BLK_SUMMON = { 'ember-wyvern': ['wyv1', 'wyv2', 'wyv3'], 'cinder-hatchling': ['hat1', 'hat2', 'hat3'], 'sigil-familiar': ['familiar'], 'twinflare-tyrant': ['tyrant'], 'rune-apprentice': ['newt'], 'astral-magus': ['strix'] };       // the roster renamed the Rune Apprentice to the Rune Newt and the Astral Magus to the Astral Strix (22 Nov)
@@ -309,6 +310,10 @@ export class Actors {
     const M = BLOCKS[id]; if (!M) return null; const bg = blockGroup(M), s = size / (axis === 'max' ? Math.max(M.size.x, M.size.y, M.size.z) : M.size.y); bg.root.scale.setScalar(s); if (flip) bg.root.rotation.y = Math.PI;
     const g = new T.Group(); g.add(bg.root); const rec = { id, bg, g, ph: Math.random() * 6 }; (this._blks || (this._blks = new Set())).add(rec); g.userData.blk = rec; return g;
   }
+  // thrown enemies (feel pass): a small enemy ridden through flies up and away spinning, lands and poofs
+  throwEnemy(x, z, heading) { const L = this._thrown || (this._thrown = []); let o = L.find(q => !q.on); if (!o) { if (L.length >= 12) return; const m = BLOCKS.husk ? this._blk('husk', 1.25, 'y', true) : new T.Mesh(new T.BoxGeometry(0.8, 1.2, 0.6), lambert(0x6a5a48)); this.scene.add(m); o = { m }; L.push(o); }
+    const s = 14, side = (Math.random() - 0.5) * 6; o.on = true; o.x = x; o.z = z; o.y = heightGround(x, z) + 0.3; o.vx = Math.sin(heading) * s + Math.cos(heading) * side; o.vz = Math.cos(heading) * s - Math.sin(heading) * side; o.vy = 7 + Math.random() * 3; o.rx = (Math.random() - 0.5) * 18; o.rz = (Math.random() - 0.5) * 18; o.ax = 0; o.az = 0; o.m.visible = true; }
+  _thrownTick(dt) { for (const o of this._thrown || []) { if (!o.on) continue; o.vy -= 26 * dt; o.x += o.vx * dt; o.y += o.vy * dt; o.z += o.vz * dt; o.ax += o.rx * dt; o.az += o.rz * dt; const gy = heightGround(o.x, o.z); if (o.y <= gy && o.vy < 0) { o.on = false; o.m.visible = false; this.fx.burst(o.x, gy + 0.3, o.z, 14, 0xd9b872, 3, 3, 0.3, 0.5, 8); continue; } o.m.position.set(o.x, o.y, o.z); o.m.rotation.set(o.ax, Math.atan2(o.vx, o.vz), o.az); } }
   _blkAnimate(t) { if (!this._blks) return; for (const b of this._blks) { if (!b.g.parent) { this._blks.delete(b); continue; } if (b.g.visible && b.g.parent.visible !== false) animateBlocks(b.id, b.bg, t + b.ph); } }       // every block actor in the scene, from its baked hints
   _monsterMesh(id, form) {
     const A = this.assets;
@@ -429,9 +434,8 @@ export class Actors {
     const G = this.boardG; G.visible = !!rd && !(g.over && !g.won); if (!rd) { this._blockRide(g, G, null); return; }
     { const bid = (g.opts && g.opts.board) || 'plain-back'; if (bid !== this._bId && BOARDS[bid]) { this._bId = bid; this._bEdge.material.color.setHex(BOARDS[bid].edge); this._bFace.material.color.setHex(BOARDS[bid].face); } }       // the chosen card back's colours       // (not this.player.visible: the rig hides the stand-in player mesh every frame)
     const yaw = rd.heading + rd.spin; G.position.set(px, py + 0.02, pz); G.rotation.order = 'YXZ'; G.rotation.y = yaw;
-    let roll = 0, pitch = 0; if (rd.flipT > 0) { const k = 1 - rd.flipT / 0.42, d = rd.flipDir || 0; if (d === 0 || d === 4) roll = k * Math.PI * 2 * (d === 4 ? -1 : 1); else if (d === 2 || d === 6) pitch = k * Math.PI * 2 * (d === 6 ? -1 : 1); else { roll = k * Math.PI * 2; pitch = k * Math.PI * (d < 4 ? 1 : -1); } }
-    if (rd.grabbing) pitch += 0.28; if (rd.manual) pitch -= 0.22; if (rd.loop) pitch -= rd.loopTh || 0; G.rotation.x = pitch; G.rotation.z = roll;
-    G.position.y += rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.45 : 0;
+    const P = this._pose = trickPose(rd); G.rotation.y = yaw + P.yaw; G.rotation.x = P.pitch - (rd.loop ? rd.loopTh || 0 : 0); G.rotation.z = P.roll; G.position.y += P.lift;       // the trick poses (view/trickpose.js): the card turns under the duelist on its own axes for each trick
+    if (P.trail) for (let k = 0; k < 3; k++) this.fx.spark(px + (Math.random() - 0.5) * 1.2, py + 0.4 + Math.random() * 1.2, pz + (Math.random() - 0.5) * 1.2, 0, 0.5, 0, Math.random() < 0.5 ? 0xffd56a : 0xfff2c0, 0.22, 0.5);       // a special: the gold card trail
     this._blockRide(g, G, rd);
     if (rd.speed > 13 && !rd.grind && Math.random() < 0.6) { const tx = px - Math.sin(yaw) * 1.05, tz = pz - Math.cos(yaw) * 1.05; this.fx.spark(tx, py + 0.12, tz, 0, 0.1, 0, 0xffd56a, 0.12, 0.22); }       // a thin short gold streak at speed (about a quarter of the old stream, no spread)
     if (rd.grind && Math.random() < 0.45) for (let k = 0; k < 1; k++) this.fx.spark(px + (Math.random() - 0.5) * 0.6, py + 0.1, pz + (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 4, 1.5 + Math.random() * 2.5, (Math.random() - 0.5) * 4, Math.random() < 0.5 ? 0xffd56a : 0xfff2c0, 0.32, 0.45);
@@ -443,8 +447,8 @@ export class Actors {
     if (!this._bCard) { this._bCard = blockGroup(BLOCKS.card); const c = this._bCard.root, m = BLOCKS.card; c.scale.setScalar(2.0 / m.size.z); c.position.y = 0.02; for (const ch of G.children) ch.visible = false; G.add(c); }
     if (!this._bRide) { this._bRide = blockGroup(BLOCKS[rid]); this._bRide.id = rid; this.scene.add(this._bRide.root); }       // the card scaled to the board's 2 m length; the rider is the duelist's ride model, or its on-foot one
     const on = G.visible && !!rd, Rr = this._bRide.root; Rr.visible = on; this._bRideOn = on; if (!on) return;
-    G.updateMatrixWorld(); Rr.position.set(0, 0.02 + BLOCKS.card.size.y * this._bCard.root.scale.y, 0).applyMatrix4(G.matrixWorld); Rr.rotation.order = 'YXZ'; Rr.rotation.set(G.rotation.x, G.rotation.y, G.rotation.z);
-    animateBlocks(this._bRide.id, this._bRide, g.t);
+    const P = this._pose || trickPose(rd), top = 0.02 + BLOCKS.card.size.y * this._bCard.root.scale.y, cr = 1 - 0.22 * (P.crouch || 0); Rr.position.set(G.position.x, G.position.y - P.lift + top + P.bodyLift, G.position.z); Rr.rotation.order = 'YXZ'; Rr.rotation.set(P.bodyPitch, rd.heading + rd.spin + P.bodyYaw, P.bodyRoll); Rr.scale.set(1, cr, 1);       // the rider stays upright over the card (the card flips under him) and takes the trick's body pose
+    animateBlocks(this._bRide.id, this._bRide, g.t); for (const n in P.parts) { const pg = this._bRide.p[n]; if (pg) for (const ax in P.parts[n]) pg.rotation[ax] = P.parts[n][ax]; }
   }
   _rideRig(R, rd, p, dt) {
     const yaw = rd.heading + rd.spin; R.group.rotation.y = yaw + R.yaw;
@@ -568,7 +572,7 @@ export class Actors {
       for (const mm of [this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell]) { mm.count = this._blockShade && mm !== this.shadeBody ? 0 : n; mm.instanceMatrix.needsUpdate = true; }
     }
     // swarm
-    if (this._swT) this._swT.value = t; this._blkAnimate(t);       // the block swarm's swing clock
+    if (this._swT) this._swT.value = t; this._blkAnimate(t); this._thrownTick(dt);       // the block swarm's swing clock
     this.lastEn = e; let nearN = 0; this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); for (const kk of this.kinds) { kk.fxNow = false; kk.cs = 0; kk.fs = 0; } const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
     for (let i = 0; i < e.max; i++) {
       if (!e.alive[i]) { this._wasSwarm[i] = 0; continue; }

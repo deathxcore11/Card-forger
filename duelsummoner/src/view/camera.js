@@ -26,16 +26,17 @@ export class ChaseCamera {
   update(p, yaw, pitch, dt) {
     const fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = -fz, rz = fx;
     { const out = this.zoomTo > this.zoom, rate = this.zoomRate ? this.zoomRate : (out ? 1.6 : 0.7); if (Math.abs(this.zoomTo / this.zoom - 1) >= 0.05 || this.zoomTo === 1) this.zoom += (this.zoomTo - this.zoom) * Math.min(1, dt * rate); }       // out 1.6 a second, in 0.7 (0.5 both ways under Reduce motion); changes under 5% are ignored               // pulls back and up for big bosses so they fit
-    const mv = Math.hypot(p.x - this.lx, p.z - this.lz) / Math.max(dt, 1e-3); this.lx = p.x; this.lz = p.z;      // fast play pulls the camera back by up to a quarter so the whole map reads
+    const mvx = (p.x - this.lx) / Math.max(dt, 1e-3), mvz = (p.z - this.lz) / Math.max(dt, 1e-3), mv = Math.hypot(mvx, mvz); this.lx = p.x; this.lz = p.z;
+    { const la = this.lookAhead || 0, k0 = mv > 0.5 && mv < 60 ? la * Math.min(1, mv / 14) / mv : 0, kk = Math.min(1, dt * 3); this.lax = (this.lax || 0) + (mvx * k0 - (this.lax || 0)) * kk; this.laz = (this.laz || 0) + (mvz * k0 - (this.laz || 0)) * kk; }       // the feel table: the view looks ahead along the travel, up to lookAhead m at cruise speed      // fast play pulls the camera back by up to a quarter so the whole map reads
     this.spd += ((1 + 0.25 * clamp((Math.min(mv, 60) - 9) / 9, 0, 1)) - this.spd) * Math.min(1, dt * 1.5);
     const a0 = BASE + clamp(pitch, C.pitchMin, C.pitchMax) + 0.2 * clamp((this.zoom - 1) / Math.max(0.01, (this.zoomCap || 1.78) - 1), 0, 1), aFloor = Math.max(a0, 0), lookUp = (aFloor - a0) * 8;      // the arm never goes below the pivot: looking up tilts the look target instead, so the camera cannot sink under a ledge
     const sc = this.zoom * this.spd * this.fovK;
     if (!this.ready) { this.py = p.y; this.sx = p.x; this.sz = p.z; this.ready = true; this.swing = 0; this.ys = 0; this.ysSide = 0; this.ysT = 0; this.rise = 0; this.pb = false; this.pbT = 0; }
     // gentle horizontal follow lag (about 55 ms); a jump of more than 3 m is a teleport and snaps
     if (!this.lag || Math.abs(p.x - this.sx) > 3 || Math.abs(p.z - this.sz) > 3) { this.sx = p.x; this.sz = p.z; this.ready0 = false; this.rise = 0; this.py = p.y; }       // a teleport resyncs the height limiter too
-    else { const k = Math.min(1, dt * 18); this.sx += (p.x - this.sx) * k; this.sz += (p.z - this.sz) * k; }
+    else { const k = Math.min(1, this.lagT ? dt / this.lagT : dt * 18); this.sx += (p.x - this.sx) * k; this.sz += (p.z - this.sz) * k; }       // the follow lag (the feel table's cam.lag)
     this.py += (p.y - this.py) * Math.min(1, dt * 14);           // smooth the vertical follow over steps
-    const px = this.sx + rx * C.shoulder, py = this.py + C.headY, pz = this.sz + rz * C.shoulder;
+    const px = this.sx + rx * C.shoulder + (this.lax || 0), py = this.py + C.headY, pz = this.sz + rz * C.shoulder + (this.laz || 0);
     const wanted = (ang, ys) => { const back = Math.cos(ang) * ARM * sc, up = Math.sin(ang) * ARM * sc, cs = Math.cos(ys), sn = Math.sin(ys), dx = fx * cs - fz * sn, dz = fx * sn + fz * cs; return [px - dx * back, py + up, pz - dz * back, Math.hypot(back, up)]; };       // ys: the arm is yawed round the duelist by this much (the sideways swing)
     // march from the pivot toward a wanted position; report the first solid sample, how many samples are solid and whether the end itself is
     const march = (ang, ys = this.ys) => {

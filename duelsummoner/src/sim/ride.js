@@ -45,7 +45,7 @@ export const flowStakes = g => (g.rflow ? (g.rflow.step - 1) * FLOW.stakesPerSte
 function specialTick(g, r, F, flipP, grabP, spinP, grindP) {
   const T = r.pT || (r.pT = { flip: -9, grab: -9, spin: -9, grind: -9 }); if (flipP) T.flip = r.clk; if (grabP) T.grab = r.clk; if (spinP) T.spin = r.clk; if (grindP) T.grind = r.clk;
   if (!(flipP || grabP || spinP || grindP) || (F.meter || 0) < 1) return;
-  for (const key in SPECIALS) { const [a, b] = key.split('+'); if (Math.abs(T[a] - T[b]) < 0.15 && r.clk - T[a] < 0.15) { const base = (POINTS[a] || POINTS.flip) + (POINTS[b] || POINTS.flip); addTrick(g, r, SPECIALS[key], base * ((typeof RIDE.specialMul === 'number' ? RIDE.specialMul : 3))); r.combo.special = true; F.meter = 0; T[a] = T[b] = -9; g.emit('special', g.p.x, g.p.z, 0); return; } }
+  for (const key in SPECIALS) { const [a, b] = key.split('+'); if (Math.abs(T[a] - T[b]) < 0.15 && r.clk - T[a] < 0.15) { const base = (POINTS[a] || POINTS.flip) + (POINTS[b] || POINTS.flip); addTrick(g, r, SPECIALS[key], base * ((typeof RIDE.specialMul === 'number' ? RIDE.specialMul : 3))); r.combo.special = true; r.specialName = SPECIALS[key]; r.specialT = 0.9; F.meter = 0; T[a] = T[b] = -9; g.emit('special', g.p.x, g.p.z, 0); return; } }
 }
 function bank(g, r) {
   const special = !!r.combo.special, v = comboValue(r.combo), F = flowOf(g); r.combo = newCombo(); if (v <= 0) return;
@@ -93,7 +93,7 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   const jumpPress = !!cmd.jump && !r.jumpWas, jumpRel = !cmd.jump && r.jumpWas, dashPress = !!cmd.dash && !r.dashWas && !cmd.kb, usePress = !!cmd.use && !r.useWas;
   const flipPress = !!cmd.flip && !r.flipWas, grindPress = !!cmd.grind && !r.grindWas, grabPress = !!cmd.grab && !r.grabWas, spinPress = !!cmd.spin && !r.spinWas; r.flipWas = !!cmd.flip; r.grindWas = !!cmd.grind; r.grabWas = !!cmd.grab; r.spinWas = !!cmd.spin;       // the feel pass: keyboard J flips, K grabs, L grinds, Q and E spin (Shift is the revert on the keyboard, so it never flips)
   const revertPress = !!cmd.revert && !r.revertWas; r.revertWas = !!cmd.revert;
-  r.clk = (r.clk || 0) + dt; const fy = cmd.f || 0; let flick = false; if (fy > 0.7) { if (r.dnT !== undefined && r.clk - r.dnT < 0.25 && !r.upHeld) r.flickPend = r.clk; r.upT = r.clk; r.upHeld = true; } else r.upHeld = false; if (fy < -0.7) { if (r.upT !== undefined && r.clk - r.upT < 0.25 && !r.dnHeld) r.flickPend = r.clk; r.dnT = r.clk; r.dnHeld = true; } else r.dnHeld = false;
+  r.clk = (r.clk || 0) + dt; if (r.specialT > 0) r.specialT -= dt; const fy = cmd.f || 0; let flick = false; if (fy > 0.7) { if (r.dnT !== undefined && r.clk - r.dnT < 0.25 && !r.upHeld) r.flickPend = r.clk; r.upT = r.clk; r.upHeld = true; } else r.upHeld = false; if (fy < -0.7) { if (r.upT !== undefined && r.clk - r.upT < 0.25 && !r.dnHeld) r.flickPend = r.clk; r.dnT = r.clk; r.dnHeld = true; } else r.dnHeld = false;
   if (r.flickPend !== undefined) { if (Math.abs(fy) < 0.3) { flick = true; r.flickPend = undefined; } else if (r.clk - r.flickPend > 0.3) r.flickPend = undefined; }       // a flick is let go at once: held back it stays a brake       // up then down quickly, or down then up: a manual
   { const d = dir4(cmd), m = (cmd.f || 0) * (cmd.f || 0) + (cmd.r || 0) * (cmd.r || 0); if (m > 0.36) (r.dirT || (r.dirT = [-9, -9, -9, -9]))[d] = r.clk; }
   r.jumpWas = !!cmd.jump; r.dashWas = !!cmd.dash; r.useWas = !!cmd.use; if (!cmd.slide) r.manualHold = false; if (r.manualHold) cmd = Object.assign({}, cmd, { slide: false });
@@ -250,10 +250,11 @@ function land(g, p, r, cmd) {
   if (halves > 0) addTrick(g, r, (halves * 180) + ' Spin', POINTS.spin180 * halves);
   // landing assist (touch, on by default; only at Flow x1 and x2): a wider landing angle, a flip nearly done counts, a grab still held is let go on touchdown
   const assist = !!(g.opts && g.opts.rideAssist) && flowOf(g).step <= 2; let letGo = false; if (assist && r.grabbing) { letGo = true; r.grabbing = false; addTrick(g, r, r.grabName, POINTS.grab + POINTS.grabPerSecond * r.grabT); }
-  const clean = !r.grabbing && r.flipT <= (assist ? 0.16 : 0.06) && rem <= RIDE.landTol * (assist ? 1.6 : 1);
-  const why = r.grabbing ? 'grab' : r.flipT > 0.06 ? 'flip' : 'angle'; r.spin = 0; r.flipT = 0; r.airT = 0;       // (the reason is read before the flip clock is cleared)
+  const clean = !r.grabbing && r.flipT <= (assist ? 0.16 : 0.1) && rem <= RIDE.landTol * (assist ? 1.6 : 1);
+  const why = r.grabbing ? 'grab' : r.flipT > 0.1 ? 'flip' : 'angle';       // a flip with 0.1 s or less to go finishes on touchdown (the feel pass: the finish grace)
+ r.spin = 0; r.flipT = 0; r.airT = 0;       // (the reason is read before the flip clock is cleared)
   if (!clean) { bail(g, r, why); return; }
-  if (r.revertT > 0 && vy < -9) { addTrick(g, r, 'Revert', POINTS.revert); r.revertT = 0; }
+  if (r.revertT > 0 && vy < -4) { addTrick(g, r, 'Revert', POINTS.revert); r.revertT = 0; }
   if (letGo) r.manualHold = true;       // the slide still held from the grab is not a manual
   if (r.manualArm !== undefined && r.clk - r.manualArm < 0.4) { r.manualArm = undefined; r.manual = true; r.manualFlick = true; r.bal = 0; r.manualT = 0; return; }       // flicked just before landing: land into a manual
   if (cmd.slide && !letGo && comboValue(r.combo) > 0) { r.manual = true; r.bal = 0; r.manualT = 0; return; }       // land into a manual: the combo stays open
