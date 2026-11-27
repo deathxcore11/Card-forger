@@ -47,3 +47,21 @@ Each biome keeps: one wind per run, about 70% open ground, riverbed half-pipes, 
 - **Asset tool (roster thread):** landmark silhouettes, stone cards, aqueduct and beam sections, stepped ruins, plus biome dressing for all three biomes. Use EWV3 v2 with kind, footprint and ride-surface data in index.json.
 - **Sound thread:** the sand hiss and the air cut-out, plus ash and snow versions.
 - **Build:** terrain, light, fog and juice, measured in the sim. Every crest launches to a clean landing. Report speed gained down a face and time spent on the card across a full stage.
+
+## 6. Setpieces stamped into seeded sand (Randall, 6:10 PM ET)
+
+Pure random scatter is why the map looks junky. Replace it with hand-built setpieces stamped into a clean, seeded landscape.
+
+- **A library, not five.** About 15 to 20 hand-tuned setpieces per biome, each with 2 or 3 internal variants. Each seed picks 5 to 8 of them: one central landmark plus a rough ring of outer pieces, at well-spaced spots with varied rotation. Desert examples:
+  - Sunken Aqueduct: a row of broken arches with one long, wide grind rail through it and a launch at each end.
+  - Card-Tomb Bowl: a sunken round basin ringed by tilted stone cards to launch off and wall ride. This can be the kill bowl.
+  - Great Spine: a long wind ridge under a buried stone ribcage, for downhill speed and big air.
+  - Ruined Plaza: temple steps, shrines and wide ledges, with clear sightlines for elite fights.
+  - Spire Oasis: the colossal tilted card spire in a shallow valley, the map's compass.
+  - Also: a riverbed with fallen beams, a sunken gate, a stepped mesa climb, a dune slalom of half-buried cards, and so on.
+- **The ground molds to the setpiece.** Before placing a piece, blend the heightmap to its base height with a wide soft skirt. Every lip, rail and ruin then sits flush with the sand. Nothing floats or half-buries. Test every setpiece by riding it (ramps 20 of 20), then it is trusted on every seed.
+- **Surf highways between them.** Only smooth, low-frequency wind dunes and worn sand paths linking the setpieces in a loop. Nothing stands in the middle of nowhere: anything seen on the horizon is worth surfing to.
+- **One open arena.** Setpieces sit inside open sand. They are never rooms, walls or districts (standing rule).
+- **Cut clutter by about 70%.** Delete tiny rocks and scattered junk, and make landmarks about 3 times bigger, so they silhouette against the fog.
+- **Palette.** Golden peach sand, sun-bleached sandstone and dusty violet shadow lead. Other colours are allowed, but this trio guides everything.
+- **The asset tool builds setpieces** as composed kits (pieces plus a footprint and base height in index.json). Each stage biome gets its own library.
