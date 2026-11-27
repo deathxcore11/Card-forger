@@ -6,7 +6,7 @@ import { K } from './tuning.js';
 import { RIDE, POINTS, LAUNCH } from '../sim/ride.js';
 
 export const FEEL = {
-  launch: { startSpeed: 10, chargeT: 0.6, perfectT: 0.15, perfectK: 1.25, carryK: 0.09, tuck: 1.25, flatLandKeep: 0.9, boostSpeed: 7, boostCost: 0.34, boostRefill: 0.08 },       // carve, charge, launch (world v3 section 7)
+  launch: { startSpeed: 12, chargeT: 0.6, perfectT: 0.15, perfectK: 1.25, carryK: 0.09, tuck: 1.25, flatLandKeep: 0.9, boostSpeed: 7, boostCost: 0.34, boostRefill: 0.08 },       // carve, charge, launch (world v3 section 7)
   foot: {
     top: 9,               // m/s run speed
     accelT: 0.15,         // seconds to reach top speed from a stand

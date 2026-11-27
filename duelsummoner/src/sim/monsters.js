@@ -59,8 +59,8 @@ export function updateMonsters(g, dt) {
     const m = f.monsters[k]; if (!m) continue;
     m.px = m.x; m.py = m.y; m.pz = m.z;
     // fixed slots beside the duelist, relative to the camera yaw (right, left, then wider and a step back): a summon never sits on the camera line over the duelist, and none overlap each other
-    const cy = g.camYaw || 0, fx0 = -sin(cy), fz0 = -cos(cy), rx0 = -fz0, rz0 = fx0, side = (k % 2 ? -1 : 1) * (k < 2 ? 2.7 : 3.6), ahead = k < 2 ? 0.8 : -0.6;
-    const tx = p.x + rx0 * side + fx0 * ahead, tz = p.z + rz0 * side + fz0 * ahead, ty = p.y + 2.2 + sin(g.t * 3 + k) * 0.2;
+    const cy = g.camYaw || 0, fx0 = -sin(cy), fz0 = -cos(cy), rx0 = -fz0, rz0 = fx0, rid = p.ride && p.ride.on, side = (k % 2 ? -1 : 1) * (k < 2 ? (rid ? 3.4 : 2.7) : (rid ? 4.4 : 3.6)), ahead = rid ? (k < 2 ? -0.8 : -2) : (k < 2 ? 0.8 : -0.6);       // on the card the summons fly wider and a little behind, never over the rider's head
+    const tx = p.x + rx0 * side + fx0 * ahead, tz = p.z + rz0 * side + fz0 * ahead, ty = p.y + (rid ? 2.8 : 2.2) + sin(g.t * 3 + k) * 0.2;
     if (!m.init) { m.x = tx; m.y = ty; m.z = tz; m.px = tx; m.py = ty; m.pz = tz; m.init = true; }
     const kk = Math.min(1, dt * 6); m.x += (tx - m.x) * kk; m.y += (ty - m.y) * kk; m.z += (tz - m.z) * kk;
     if (g.colliders) { const o = SUMMON_AT; o.x = m.x; o.z = m.z; o.y = Math.max(0, heightAt(m.x, m.z)) + 0.5; resolveColliders(g.colliders, o, 0.7); m.x = o.x; m.z = o.z; }

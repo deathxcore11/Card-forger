@@ -18,14 +18,14 @@ import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { elemBits } from '../data/elements.js';
 import { splash } from './weapons.js';
 
-export const RIDE = { mountAt: 10.5, dismountAt: 7, top: 24, push: 3.4, pushTo: 12.5, friction: 0.55, soft: 2.2, downhill: 10, carve: 2.6, airTurn: 1.0, crouchMax: 0.5, popLo: 2.2, popHi: 4.5,
+export const RIDE = { mountAt: 10.5, dismountAt: 7, top: 24, push: 6, pushTo: 12.5, friction: 0.55, soft: 2.2, downhill: 10, carve: 2.6, airTurn: 1.0, crouchMax: 0.5, popLo: 2.2, popHi: 4.5,
   snap: 2.4, flipTime: 0.42, spinRate: 9.42, landTol: 0.52, bailT: 0.6, revertWin: 0.28, balDrift: 0.9, balFix: 2.6, sparkR: 2.5, sparkDmg: 7, sparkEvery: 0.2, gravity: 28, kickRun: 0.4, kickTo: 12.5, brake: 16, holdMin: 8.5 };
 // controls v2 (owner, 27 Nov, design/controls-v2.md): four face buttons each do one job, the stick picks the trick. By stick direction: up, right, down, left (no direction: the left one).
 export const FLIPS = ['Impossible', 'Heelflip', 'Pop Shuvit', 'Kickflip', 'Double Flip'], GRABS = ['Nosegrab', 'Indy', 'Method', 'Melon'], GRINDS = ['50-50', 'Nosegrind', '5-0', 'Boardslide'];
 export const FLIP_POSE = [2, 4, 8, 0];       // the pose each flip uses (src/view/trickpose.js): an impossible pitches, a heelflip rolls back, a shuvit spins the card flat, a kickflip rolls
 export const SPECIALS = { flip: 'Deck Shuffle', grab: 'Tableflip', grind: 'Seal Grind' };       // up then down on the stick, then a face button, once the special meter is full (touch: the Special button)
 // carve, charge, launch (world v3 section 7): the numbers are in src/data/feel.js (FEEL.launch) and copied here by applyFeel
-export const LAUNCH = { startSpeed: 10, holdSpeed: 4, chargeT: 0.6, perfectT: 0.15, perfectK: 1.25, perfectPts: 250, carryK: 0.09, carryFrom: 12, tuck: 1.25, flatLandKeep: 0.9, boostSpeed: 7, boostCost: 0.34, boostRefill: 0.08, boostPerPoint: 1 / 3000 };
+export const LAUNCH = { startSpeed: 12, holdSpeed: 4, chargeT: 0.6, perfectT: 0.15, perfectK: 1.25, perfectPts: 250, carryK: 0.09, carryFrom: 12, tuck: 1.25, flatLandKeep: 0.9, boostSpeed: 7, boostCost: 0.34, boostRefill: 0.08, boostPerPoint: 1 / 3000 };
 export const CTRL = { comboT: 2.5, iframes: 0.25, slamDropVy: -32, slamClear: 9, wallplantH: 1.6, wallplantSpeed: 4, powerslideTurn: 7, fallMul: 1.6, hang: 0.45, hangVy: 2, hangAfter: 0.45, powerslideBrake: 10, nosegrindSpeed: 1.25, fiveOhSpark: 1.8 };
 export const POINTS = { flip: 300, grab: 200, grabPerSecond: 420, spin180: 260, grind: 120, grindPerSecond: 160, manualPerSecond: 90, revert: 180, special: 3000, bigAir: 100, vert: 250, loop: 800, smash: 150, crest: 150, closeCall: 120, cardLit: 400, seal: 250, sealSet: 2500 };
 export const FLOW = { need: [0, 1800, 4200, 7500, 12000], idle: 10, dmgPerStep: 0.05, gainPerStep: 0.3, stakesPerStep: 5, slamR: [4, 14], slamDiv: 22, slamCapPerStep: 45 };
@@ -176,7 +176,7 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
 export function lipAhead(g, p, r) {
   const ax = sin(r.heading), az = cos(r.heading), v = Math.max(1, r.speed), h0 = heightAt(p.x, p.z);
   const k = kickerAt(g, p, r); if (k) return Math.max(0, (k.len - k.a) / v);
-  for (let s = 0.02; s <= 0.4; s += 0.02) { const d = v * s, h1 = heightAt(p.x + ax * d, p.z + az * d), h2 = heightAt(p.x + ax * (d + 1.5), p.z + az * (d + 1.5)); if (h1 >= h0 - 0.05 && h2 < h1 - 0.25) return s; }
+  for (let s = 0.02; s <= 0.4; s += 0.02) { const d = v * s, h1 = heightAt(p.x + ax * d, p.z + az * d), h2 = heightAt(p.x + ax * (d + 1.5), p.z + az * (d + 1.5)); const s1 = (h1 - h0) / Math.max(0.3, d), s2 = (h2 - h1) / 1.5; if (s1 > -0.03 && s2 < s1 - 0.15 && s2 < 0.05) return s; }       // a crest: the climb (or the flat) ahead turns over into a fall
   return -1;
 }
 const hasForward = cmd => Math.abs(cmd.f || 0) > 0.6;

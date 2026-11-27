@@ -119,7 +119,9 @@ export function makeWorld(seedLo, stageIndex, opts) {
     if (q <= 0) return 0;
     const top = 31 + 25 * vnoise(seed ^ 0x403, x / 130, z / 130), rise = 28 + 10 * vnoise(seed ^ 0x404, x / 90, z / 90), u = q >= rise ? 1 : q / rise, su = u * u * (3 - 2 * u);
     const rid = 1 - Math.abs(2 * vnoise(seed ^ 0x405, x / 26, z / 26) - 1), rid2 = 1 - Math.abs(2 * vnoise(seed ^ 0x407, x / 11, z / 11) - 1);
-    return top * su + 10 * rid * sstep(0.15, 0.9, u) + 3.5 * rid2 * sstep(0.3, 1, u) + 2 * (vnoise(seed ^ 0x406, x / 12, z / 12) - 0.5) * sstep(0.3, 1, u);
+    const hm = top * su + 10 * rid * sstep(0.15, 0.9, u) + 3.5 * rid2 * sstep(0.3, 1, u) + 2 * (vnoise(seed ^ 0x406, x / 12, z / 12) - 0.5) * sstep(0.3, 1, u);
+    const bank = q < 11.4 ? 12 - sq(144 - q * q) : 8.25 + (q - 11.4) * 3.2;       // the foot of the range is a rideable bank (world v3 section 7): a 12 m quarter-pipe curve that turns a rider back in, never a dead stop
+    return Math.max(hm, Math.min(bank, hm + 14));
   }
   // the ground before anything is placed on it: the blended regions, the slow global rise and fall, the mountains
   function gymH(u, v, h0) {       // u, v from the gym's centre; h0 the flat floor

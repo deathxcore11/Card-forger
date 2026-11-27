@@ -23,6 +23,7 @@ import { POWERUPS } from '../data/powerups.js';
 import { makeCreature } from './creature.js';
 import { BLOCKS, blockGroup, blockMerged, animateBlocks, blockSwing } from './models.js';
 import { fusedBody } from './chimera.js';
+import { makeRidePose, applyRidePose } from './ridepose.js';
 import { trickPose } from './trickpose.js';
 // the block look (?blocks=1): which block model draws which game actor (index.json ids). An actor with no entry, or whose file is missing, keeps its current look.
 const BLK_ENEMY = { 0: 'husk', 1: 'runner', 2: 'seer', 3: 'ram', 4: 'bloat', 5: 'scarab', 6: 'hunter' };
@@ -458,8 +459,8 @@ export class Actors {
   _rideRig(R, rd, p, dt) {
     const yaw = rd.heading + rd.spin; R.group.rotation.y = yaw + R.yaw;
     const want = Math.max(-0.35, Math.min(0.35, ((this._lastH === undefined ? rd.heading : this._lastH) - rd.heading) / Math.max(dt, 0.004) * 0.06)); this._lastH = rd.heading; this._carve = (this._carve || 0) + (want - (this._carve || 0)) * Math.min(1, dt * 8); R.group.rotation.z = this._carve;
-    const crouch = rd.crouch > 0 ? rd.crouch / 0.5 : rd.flipT > 0 ? 0.6 : rd.grabbing ? 0.7 : rd.grind ? 0.35 : 0.15; R.group.scale.y *= 1 - 0.28 * crouch; R.group.scale.x *= 1 + 0.08 * crouch; R.group.scale.z *= 1 + 0.08 * crouch;
-    R.group.position.y += 0.22 + (this._hover || 0) - (this._landK || 0) * 0.15 + (rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.6 : 0); R.group.rotation.x = rd.loop ? -(rd.loopTh || 0) : rd.manual ? -0.18 : rd.grabbing ? 0.2 : 0;
+    R.group.rotation.z *= 0.3;       // the lean and the crouch are done bone by bone now (view/ridepose.js): only a little whole-body roll stays
+    R.group.position.y += 0.22 + (this._hover || 0); R.group.rotation.x = rd.loop ? -(rd.loopTh || 0) : rd.manual ? -0.18 : rd.grabbing ? 0.2 : 0;
   }
   update(g, a, cam, head, dt) {
     this._dt = dt;
@@ -488,7 +489,7 @@ export class Actors {
       R.group.position.copy(this.player.position); R.group.rotation.order = 'YXZ'; R.group.rotation.y = this.player.rotation.y + R.yaw; { const yr = this._yr = (this._yr || 0) + (((this._ly === undefined ? this.player.rotation.y : this._ly) - this.player.rotation.y) / Math.max(dt, 0.004) - (this._yr || 0)) * Math.min(1, dt * 10); this._ly = this.player.rotation.y; const dy = Math.max(-2.5, Math.min(2.5, yr)); R.group.rotation.x = (R.sprint || 0) * 0.14; R.group.rotation.z = p.grounded && !p.sliding && !fx.rm_ ? Math.max(-0.2, Math.min(0.2, (dy > 0 ? Math.max(0, dy - 0.5) : Math.min(0, dy + 0.5)) * 0.1)) * Math.min(1, Math.hypot(p.vx || 0, p.vz || 0) / 5) : 0; } R.group.scale.setScalar(g.oaths.small ? 0.5 : 1); this.player.visible = false;
       { const S = R.see; if (S) { const on = (this._nearN || 0) > 0 && !fx.rm_; if (S.silOn !== on) { S.silOn = on; for (const m of S.extras) m.visible = on && m.userData.extra === 'sil'; } } }       // only the flat dark covered-silhouette ink is ever drawn, and only while an enemy is within 4.5 m; the white and ink outline hulls are never drawn (Kael has no white rim in any screen)
       const rd = p.ride && p.ride.on ? p.ride : null; R.update(rd ? (this._rp || (this._rp = {})) && Object.assign(this._rp, p, { vx: 0, vz: 0, sliding: false, grounded: true, dashT: 0 }) : p, g, dt, thrown);       // on the card the rig stands (code-made pose below), it does not run
-      if (rd) this._rideRig(R, rd, p, dt);
+      if (rd) { this._rideRig(R, rd, p, dt); applyRidePose(R, rd, p, this._rpose || (this._rpose = makeRidePose()), dt, this.vt); }       // the rider posed bone by bone on the card (view/ridepose.js)
       if (R._landDip > 0) { R._landDip = Math.max(0, R._landDip - dt); const k = Math.sin((0.18 - R._landDip) / 0.18 * Math.PI) * 0.17; R.group.scale.y *= 1 - k; R.group.scale.x *= 1 + k * 0.4; R.group.scale.z *= 1 + k * 0.4; }       // the landing dip: squash down and out over 0.18 s and back
       if (thrown && g.aimX !== undefined) { const ay = Math.atan2(g.aimX - p.x, g.aimZ - p.z); if (!(this._aimT > 0)) this._aimYs = ay; this._aimY = ay; this._aimT = 0.9; }       // one aim, followed slowly while throws keep coming, faded out over 0.4 s after the last
       let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees

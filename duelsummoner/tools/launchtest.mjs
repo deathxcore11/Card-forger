@@ -19,9 +19,10 @@ for (const seed of seeds) {
     for (let t = 0; t < 360; t++) { const r = p.ride, lip = lipAhead(g, p, r); let jump = held;
       if (!popped && p.grounded) { if (!held && Math.hypot(p.x - c.x, p.z - c.z) < 14) held = true; jump = held && !(lip >= 0 && lip <= aim); }
       g.step(1 / 60, { ...I, yaw, jump }); if (!popped && r.lastPop) { popped = r.lastPop; r.lastPop = null; }
-      if (popped) { top = Math.max(top, p.y - heightAt(p.x, p.z)); if (p.grounded && t > 5) break; } }
-    if (popped) out.push({ seed, speed: +popped.speed.toFixed(1), perfect: popped.perfect, h: +popped.h.toFixed(2), air: +top.toFixed(2) });
+      if (!p.grounded) top = Math.max(top, p.y - heightAt(p.x, p.z)); if (popped && p.grounded && t > 5 && top > 0) break; }
+    out.push({ seed, speed: popped ? +popped.speed.toFixed(1) : 0, perfect: popped ? popped.perfect : false, popped: !!popped, launched: top > 0.3, air: +top.toFixed(2) });
   }
 }
-const n = out.length, perf = out.filter(o => o.perfect).length, bins = {}; for (const o of out) { const b = Math.floor(o.speed / 4) * 4; (bins[b] || (bins[b] = [])).push(o.air); }
+const fast = out.filter(o => o.speed >= 8), n = out.length, perf = out.filter(o => o.perfect).length; console.log(JSON.stringify({ crests: n, launched: out.filter(o => o.launched).length, popped: out.filter(o => o.popped).length, fastLaunched: fast.filter(o => o.launched).length + " of " + fast.length, fails: fast.filter(o => !o.launched) }));
+const _x = 0, bins = {}; for (const o of out) { const b = Math.floor(o.speed / 4) * 4; (bins[b] || (bins[b] = [])).push(o.air); }
 console.log(JSON.stringify({ launches: n, perfectRate: +(perf / Math.max(1, n)).toFixed(2), byEntrySpeed: Object.fromEntries(Object.entries(bins).map(([k, v]) => [k + '-' + (+k + 4) + ' m/s', { n: v.length, peakHeight: +(v.reduce((a, b) => a + b, 0) / v.length).toFixed(2) }])) }));
