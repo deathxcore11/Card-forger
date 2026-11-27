@@ -31,7 +31,8 @@ function placeCell(g, m, C) {
     m.encounters.push({ type: kind, x: pk.x, z: pk.z });
   }
   for (const e of C.extras) vases(g, e);
-  if (m.dressCell) for (const e of m.dressCell(C.qx, C.qz).parkPots || []) vases(g, e);       // the park lines' pots: ride through them for coins
+  if (m.dressCell) for (const e of m.dressCell(C.qx, C.qz).parkPots || []) vases(g, e);
+  if (m.dressCell) for (const q of m.dressCell(C.qx, C.qz).rollLogs || []) (g.world.rollers || (g.world.rollers = [])).push({ x: q[0], y: q[1], z: q[2], ax: q[3], az: q[4], vx: 0, vz: 0, t: 0, spin: 0 });       // the park lines' logs: a slam near one sends it rolling       // the park lines' pots: ride through them for coins
 }
 function vases(g, v) {
   for (const [dx, dz, banded] of v.vases) { const x = v.x + dx, z = v.z + dz, y = heightAt(x, z); if (y >= 50) continue; g.world.vases.push({ x, y, z, alive: true, banded: !!banded, hp: E_VASE_HP }); }

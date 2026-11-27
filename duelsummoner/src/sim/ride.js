@@ -12,7 +12,7 @@ import { resolveColliders } from './colliders.js';
 import { explode, damageEnemy } from './combat.js';
 import { breakVasesNear, rideShrineDone } from './world.js';
 import { shrineCourse } from '../gen/world/world.js';
-import { railsNear, sealsNear, sealSet, pipesNear, kickersNear } from './rails.js';
+import { railsNear, sealsNear, sealSet, pipesNear, kickersNear, quartersNear } from './rails.js';
 import { answerTrick } from './answers.js';
 import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { elemBits } from '../data/elements.js';
@@ -50,6 +50,7 @@ function bank(g, r) {
   // the landing slam: radius and damage from the combo just banked, capped by the Flow step
   const p = g.p, rad = Math.min(FLOW.slamR[1], FLOW.slamR[0] + v / 900) * (1 + (g.mods.slamSize || 0)), dmg = Math.min(FLOW.slamCapPerStep * F.step, 6 + v / FLOW.slamDiv);
   explode(g, p.x, p.y, p.z, rad, 0, dmg, 0xffd56a, 'Landing slam'); F.slams++;
+  for (const L of g.world.rollers || []) { const dx = L.x - p.x, dz = L.z - p.z, d = Math.sqrt(dx * dx + dz * dz); if (d < rad + 3 && L.t <= 0) { const k = (dx * L.az - dz * L.ax) >= 0 ? 1 : -1; L.vx = -L.az * k * 9; L.vz = L.ax * k * 9; L.t = 4; L.vx += dx / (d || 1) * 2; L.vz += dz / (d || 1) * 2; g.emit('rolllog', L.x, L.z, 0); } }       // a log near the slam rolls away, across its length
   if (g.field && g.field.duelist === 'kael') { g.curSrc = g.srcIndex('ember-rider'); splash(g, p.x, p.y, p.z, rad * 0.7, 3 + F.step, 1); g.curSrc = 0; }       // Kael's ride style, Ember Rider: the slam leaves the ground burning
   // summon flourishes: each summon on the field adds its element to the slam, bigger with each evolution form; a Fusion adds a double ring
   if (g.field && g.field.monsters) for (const m of g.field.monsters) { if (!m) continue; const D = MONSTERS[m.id] || FUSIONS[m.id]; if (!D) continue; const fu = !!FUSIONS[m.id], fm = formOf(m.id, m.level), el = elemBits(D.elements), R = (fu ? 6 : 3) + fm * 1.5, dm = (fu ? 12 : 4) + fm * 3; g.curSrc = g.srcIndex(m.id); splash(g, p.x, p.y, p.z, R, dm, el); if (fu) splash(g, p.x, p.y, p.z, R * 0.55, dm * 0.6, el); g.curSrc = 0; g.emit('flourish', p.x, p.z, (el & 1 ? 1 : el & 2 ? 2 : 0) + 10 * fm + (fu ? 100 : 0)); }
@@ -70,7 +71,7 @@ function bail(g, r, why) {
 export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   if (g.opts && g.opts.noRide) return false;       // a walker (the bots' control group)
   const p = g.p, r = p.ride || (p.ride = makeRide()), F = flowOf(g);
-  if (r.on) shrineRide(g, p, r, dt);
+  if (r.on) shrineRide(g, p, r, dt); rollersTick(g, dt);
   if (F.step > 1) { F.idle += dt; if (F.idle > FLOW.idle + (g.mods.flowHold || 0)) { F.step--; F.idle = 0; F.xp = 0; g.event('flowdown', F.step); } }
   const hs = Math.sqrt(p.vx * p.vx + p.vz * p.vz);
   if (!r.on) {
@@ -112,7 +113,7 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
     // the ollie: hold to crouch, release to pop
     if (cmd.jump) r.crouch = Math.min(RIDE.crouchMax, r.crouch + dt);
     if (jumpRel && r.crouch > 0) { const h = (RIDE.popLo + (RIDE.popHi - RIDE.popLo) * (r.crouch / RIDE.crouchMax)) * (1 + (g.mods.ridePop || 0)); p.vy = Math.sqrt(2 * RIDE.gravity * h * (1 + g.mods.jumpH)); p.grounded = false; r.crouch = 0; r.airT = 0; g.emit('ollie', h, 0, 0); }
-    step(g, p, r, dt); if (p.grounded) groundFollow(g, p, r, dt); if (p.grounded && kickerTick(g, p, r)) return true;
+    step(g, p, r, dt); if (p.grounded) groundFollow(g, p, r, dt); if (p.grounded && (kickerTick(g, p, r) || quarterTick(g, p, r))) return true;
     if (p.grounded && !r.manual && !(hasInput && (mx * sin(r.heading) + mz * cos(r.heading)) > -0.3) && !cmd.jump && !(r.vertG > 0) && r.speed < RIDE.dismountAt) { bank(g, r); dismount(g, p, r); }       // only a stop, the brake or a bail takes the rider off: never while pushing forward or charging an ollie
     return true;
   }
@@ -143,7 +144,8 @@ const hasForward = cmd => Math.abs(cmd.f || 0) > 0.6;
 function step(g, p, r, dt) {
   const ax = sin(r.heading), az = cos(r.heading); p.vx = ax * r.speed; p.vz = az * r.speed; p.face = r.heading;
   const blocked = moveXZ(p, p.vx * dt, p.vz * dt, CFG.player.radius, p.grounded ? 1.0 : CFG.player.stepUp);
-  if (blocked) { const fast = r.speed > 15; r.speed *= 0.5; if (!p.grounded && fast) { bail(g, r, 'wall'); } }       // only a fast crash into a wall in the air bails; a slow bump just stops the card
+  if (blocked && p.grounded && r.speed > 10 && !(r.wallieT > g.t)) { r.wallieT = g.t + 1; p.grounded = false; p.vy = 6; r.airT = 0; r.lastLandVy = 0; r.speed *= 0.75; r.heading += r.heading > 0 ? -0.35 : 0.35; addTrick(g, r, 'Wallie', 150); g.emit('ollie', 2, 0, 0); }       // a mesa foot or a wall met at speed: the card pops up off it (a wallie) and turns away
+  else if (blocked) { const fast = r.speed > 15; r.speed *= 0.5; if (!p.grounded && fast) { bail(g, r, 'wall'); } }       // only a fast crash into a wall in the air bails; a slow bump just stops the card
   resolveColliders(g.colliders, p, CFG.player.radius);
   if (r.speed > 12) { const n = breakVasesNear(g, p.x, p.z, 1.6); for (let i = 0; i < n; i++) addTrick(g, r, 'Smash', POINTS.smash); }
   sealTouch(g, p, r); if (r.speed > 14) closeCall(g, p, r);
@@ -151,6 +153,10 @@ function step(g, p, r, dt) {
 // ---- shrines you ride (plan section 10): Ring Shrine, one lap of its ring rail grinded (a second lap lifts the tier); Gate Shrine, its five arches threaded in one go
 const TWO_PI = 6.283185307179586, wrapPi = a => (a > 3.141592653589793 ? a - TWO_PI : a < -3.141592653589793 ? a + TWO_PI : a);
 function shrineTier(g) { const st = flowOf(g).step; return st >= 5 ? 'epic' : st >= 3 ? 'rare' : null; }
+// rolling logs: roll for 4 s, slowing, flattening enemies in the way
+export function rollersTick(g, dt) {
+  for (const L of g.world.rollers || []) { if (L.t <= 0) continue; L.t -= dt; const k = Math.max(0, L.t / 4); L.x += L.vx * k * dt; L.z += L.vz * k * dt; L.y = heightAt(L.x, L.z); L.spin += 9 * k * dt; const e = g.en; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - L.x, dz = e.z[i] - L.z; if (dx * dx + dz * dz < 5) damageEnemy(g, i, 12 * dt * 10, { noCrit: true }); } }
+}
 export function shrineRide(g, p, r, dt) {
   for (const s of g.world.shrines || []) {
     if (s.done || s.form === 'stand') continue; const dx = p.x - s.x, dz = p.z - s.z; if (dx * dx + dz * dz > 70 * 70) continue; const C = s.course || (s.course = shrineCourse(s.x, s.z));
@@ -271,6 +277,13 @@ function kickerTick(g, p, r) {
   if (r.speed < 6) return false; const hx = sin(r.heading), hz = cos(r.heading);
   for (const q of kickersNear(g, p.x, p.z, 6)) { const [x, y, z, ux, uz, len, w, h] = q, dx = p.x - x, dz = p.z - z, a = dx * ux + dz * uz + len / 2, b = Math.abs(-dx * uz + dz * ux); if (b > w / 2 || a < 0 || a > len || hx * ux + hz * uz < 0.5) continue;
     p.y = heightAt(p.x, p.z) + h * a / len; if (a > len - 0.5) { p.grounded = false; p.vy = Math.min(10, 2.5 + r.speed * 0.35); r.airT = 0; r.lastLandVy = 0; addTrick(g, r, 'Kicker', 80); g.emit('ollie', 3, 0, 0); return true; } return false; }
+  return false;
+}
+// a quarter pipe cut into a hill face: riding up the face (uphill, within 4 m of its line) into the carved lip sends the card vert, back down facing out
+function quarterTick(g, p, r) {
+  if (r.speed < 9) return false; const hx = sin(r.heading), hz = cos(r.heading);
+  for (const q of quartersNear(g, p.x, p.z, 6)) { const [x, y, z, ux, uz, w] = q, dx = p.x - x, dz = p.z - z, along = Math.abs(-dx * uz + dz * ux), into = dx * ux + dz * uz; if (along > w / 2 || into < -1.5 || into > 1.5 || hx * ux + hz * uz < 0.5) continue;
+    p.vy = Math.min(11, r.speed * 0.6); p.grounded = false; r.airT = 0; r.vert = true; r.vertG = 1.5; r.heading += 3.141592653589793; r.speed *= 0.2; r.lastLandVy = 0; addTrick(g, r, 'Quarter', POINTS.vert); g.emit('ollie', 2, 0, 0); return true; }
   return false;
 }
 function dismount(g, p, r) { r.on = false; r.runT = 0; r.slideWas = true; r.grind = null; r.manual = false; const ax = sin(r.heading), az = cos(r.heading); p.vx = ax * r.speed; p.vz = az * r.speed; g.emit('ride', 0, 0, 0); }

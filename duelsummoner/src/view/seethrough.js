@@ -43,7 +43,7 @@ uniform highp vec3 uHole; uniform highp vec2 uHoleR; uniform highp float uFeetY;
 ${DITHER_GLSL}${NEAR_GLSL}
 float holeKeep() {
   highp vec2 q = (gl_FragCoord.xy - uHole.xy) / uHoleR;
-  float d = dot(q, q);
+  float d = q.x * q.x + (q.y > 0.0 ? q.y * q.y * 0.12 : q.y * q.y);       // the hole reaches up the screen above the duelist (a post or pole standing between camera and rider thins all the way up), not down into the ground
   float front = step(vViewZ, uHole.z - 0.8) * step(uFeetY + 0.4, vWY);
   float k = d < 0.45 ? 0.25 : (d < 0.8 ? 0.5 : 1.0);       // only the part round the duelist thins
   return mix(1.0, k, front);

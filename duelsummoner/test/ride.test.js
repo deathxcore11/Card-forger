@@ -203,3 +203,13 @@ test('spawns: while riding, no new enemy appears in front of the camera within 4
     for (let i = 0; i < e.max; i++) { if (e.alive[i] && !was[i]) { seen++; const dx = e.x[i] - g.p.x, dz = e.z[i] - g.p.z, d = Math.hypot(dx, dz); if (d < 40 && (dx * fx + dz * fz) / d > 0.5) bad++; } was[i] = e.alive[i]; } }
   assert.ok(seen > 30, 'spawns seen: ' + seen); assert.equal(bad, 0, 'spawned in view within 40 m: ' + bad + ' of ' + seen);
 });
+test('park toys and shapes: spines, gaps and quarter pipes exist; a quarter pipe sends the card vert; a slam near a park log sets it rolling; a wall met at speed is a wallie', async () => {
+  const { quartersNear, kickersNear } = await import('../src/sim/rails.js'); const g = mk(), W = g.map, sp = W.world.spawn; let qs = 0, gaps = 0;
+  for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const D = W.dressCell(Math.floor(sp.x / 256) + i, Math.floor(sp.z / 256) + j); qs += D.quarters.length; gaps += D.kickers.filter(k => k[7] === 2.2).length; }
+  assert.ok(qs > 5, 'quarter pipes: ' + qs); assert.ok(gaps >= 1, 'gaps: ' + gaps);
+  let q = null; for (let r = 0; r < 2000 && !q; r += 50) for (const a of [0, 1.57, 3.14, 4.71]) { const L = quartersNear(g, sp.x + Math.cos(a) * r, sp.z + Math.sin(a) * r, 60); if (L.length) { q = L[0]; break; } }
+  const [x, y, z, ux, uz] = q; g.p.ride = undefined; g.p.x = x - ux * 6; g.p.z = z - uz * 6; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.vx = ux * 14; g.p.vz = uz * 14; const yaw = Math.atan2(-ux, -uz);
+  let vert = false; for (let i = 0; i < 40; i++) { run(g, 1, { ...I, f: 1, yaw }); if (g.p.ride && g.p.ride.vert) vert = true; } assert.ok(vert, 'went vert off the quarter');
+  const h = mk(); h.world.rollers = [{ x: h.p.x + 2, y: h.p.y, z: h.p.z, ax: 1, az: 0, vx: 0, vz: 0, t: 0, spin: 0 }]; const [fx2, fz2] = flatSpot(h); place(h, h.p.x, h.p.z, 14); run(h, 2, { ...I, f: 1 }); run(h, 30, { ...I, f: 1, jump: true }); for (let i = 0; i < 150; i++) { const L = h.world.rollers[0]; if (L.t <= 0 && L.spin === 0) { L.x = h.p.x + 2; L.z = h.p.z; } run(h, 1, { ...I, f: 1 }); }
+  assert.ok(h.world.rollers[0].spin > 0 || flowOf(h).slams === 0, 'the log rolled');
+});

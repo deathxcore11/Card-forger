@@ -385,6 +385,9 @@ export class Actors {
       for (const s of litSeals(g)) add(s[0], s[1] + 2.2, s[2], this._litM[s[3] ? 1 : 0], s[3] ? 0.8 : 0.6); }
     const t = performance.now() / 1000; for (const o of this.litG.children) { o.rotation.y = t * 1.4 + o.position.x; o.position.y = o.userData.y0 + Math.sin(t * 2 + o.position.z) * 0.12; }
   }
+  // the park lines' rolling logs (sim toys): a pale beam with gold bands, turning as it rolls
+  _rollers(g) { const L = (g.world && g.world.rollers) || []; if (!this._rl) this._rl = []; while (this._rl.length < L.length) { const G = new T.Group(), M = lambert(0xcbb48a), m = new T.Mesh(new T.CylinderGeometry(0.5, 0.5, 5, 8), M); m.rotation.z = Math.PI / 2; G.add(m); for (const s of [-1.6, 1.6]) { const b2 = new T.Mesh(new T.CylinderGeometry(0.53, 0.53, 0.25, 8), lambert(0xe0b24e)); b2.rotation.z = Math.PI / 2; b2.position.x = s; G.add(b2); } this.scene.add(G); this._rl.push(G); }
+    const p = g.p; this._rl.forEach((G, i) => { const q = L[i]; if (!q) { G.visible = false; return; } const dx = q.x - p.x, dz = q.z - p.z; G.visible = dx * dx + dz * dz < 260 * 260; if (!G.visible) return; G.position.set(q.x, q.y + 0.45, q.z); G.rotation.order = 'YXZ'; G.rotation.y = Math.atan2(-q.az, q.ax); G.rotation.x = q.spin; }); }
   _board(g, p, px, py, pz, dt) {
     const rd = p.ride && p.ride.on ? p.ride : null;
     if (!this.boardG) { const G = this.boardG = new T.Group(), M = (c, e) => lambert(c, { emissive: e || 0x000000 }), B = (w, h, l, m, y, z) => { const o = new T.Mesh(new T.BoxGeometry(w, h, l), m); o.position.set(0, y, z || 0); G.add(o); return o; };
@@ -443,7 +446,7 @@ export class Actors {
       let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees
       this._tw = (this._tw || 0) + (tw - (this._tw || 0)) * Math.min(1, dt / 0.3); R.twist(this._tw);
     }
-    this._board(g, p, px, py, pz, dt); this._lit(g, dt);
+    this._board(g, p, px, py, pz, dt); this._lit(g, dt); this._rollers(g);
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);
