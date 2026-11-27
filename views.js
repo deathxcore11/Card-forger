@@ -1210,7 +1210,8 @@ export function deckPage() {
     fm = formatOf(d),
     target = fm.size,
     // No shopping on the Deck page: what is missing is a collection filter, not a store.
-    tab = S.ui.deckTab === "shop" ? "cards" : (S.ui.deckTab === "matchups" || S.ui.deckTab === "upgrade") ? "engine" : S.ui.deckTab,
+    // "upgrade" is the Fill panel ("Fill N slots" opens it); the old Matchups tab folded into Power.
+    tab = S.ui.deckTab === "shop" ? "cards" : S.ui.deckTab === "matchups" ? "engine" : S.ui.deckTab,
     tabs = [["cards", "Cards", "cardStack"], ["rules", "Rules", "book"], ["engine", "Power", "trophy"], ["versions", "Versions", "viewStacks"], ["playtest", "War Chest", "random"]];
   const power = shownPower(mtgPower(d)), countOk = fm.exact ? mainCopies === target : mainCopies >= target;
   return `${deckShell({game:"mtg",source:"mine",artHtml:img(coverOf(d), d.name, "hero-art"),title:d.name,
@@ -1709,10 +1710,14 @@ export function goldfishTable(g, b = null) {
 
 export function commanderPicker(d) {
   const fm = formatOf(d),
-    legends = aggregateCards(d.cards).map((c) => meta(c.name)).filter((c) => c && canLead(c, fm));
+    inDeck = aggregateCards(d.cards).map((c) => meta(c.name)).filter((c) => c && canLead(c, fm)),
+    // Nothing legendary in the list: offer the legends the player owns (Randall 26 Nov: the typed box was the only way).
+    owned = inDeck.length ? [] : aggregateCards(S.state.collection || []).map((c) => meta(c.name)).filter((c) => c && canLead(c, fm)).slice(0, 12),
+    legends = inDeck.length ? inDeck : owned;
   return `<section class="panel pick-commander"><p class="eyebrow">One quick step</p><h2>Which card is your commander?</h2><p class="muted small">This deck doesn’t have a commander set, so CardStashy can’t tell your colors. Tap it below.</p>
-  ${legends.length ? `<div class="list compact">${legends.map((c) => `<button class="mini-row" data-act="setCommander" data-name="${esc(c.name)}"><span class="row">${img(art(c), c.name, "mini-art")}<span class="ellip"><b>${esc(c.name)}</b></span></span>${colorDots(c)}</button>`).join("")}</div>` : `<p class="small">No legendary creatures were found in this list.</p>`}
-  <div class="searchbar"><input id="cmdName" placeholder="Or type the commander’s name" data-enter="setCommander"><button class="btn ghost" data-act="setCommander">Set</button></div></section>`;
+  ${legends.length ? `<div class="list compact">${legends.map((c) => `<button class="mini-row" data-act="setCommander" data-name="${esc(c.name)}"><span class="row">${img(art(c), c.name, "mini-art")}<span class="ellip"><b>${esc(c.name)}</b></span></span>${colorDots(c)}</button>`).join("")}</div>` : `<p class="small">No legendary creatures were found in this list or your collection. Search for one below.</p>`}
+  ${owned.length ? `<p class="muted small">Legends you own. Or search every card below.</p>` : ""}
+  <div class="searchbar"><input id="cmdName" type="search" data-suggest="mtg" placeholder="Or search the commander’s name" data-enter="setCommander" autocomplete="off"><button class="btn ghost" data-act="setCommander">Set</button></div></section>`;
 }
 
 function deckUpgrade(d) {
@@ -1731,6 +1736,8 @@ function fillPanel(d, open) {
   <div class="chips">${[0, 10, 25, 50, 100].map((n) => `<button class="chip pick ${F.budget === n ? "on" : ""}" data-act="fillBudget" data-v="${n}">${n ? "$" + n : "Owned only"}</button>`).join("")}</div>
   <label class="custom-budget">Custom purchase budget ($)<input type="number" min="0" max="100000" step="0.01" value="${F.budget}" data-change="fillCustom" aria-label="Custom slot-filling budget"></label>
   <div class="grid2"><label>Target lands<input type="number" min="30" max="42" value="${F.lands}" data-change="fill" data-field="lands"></label><label class="check"><input type="checkbox" data-change="fill" data-field="simple" ${F.simple ? "checked" : ""}> Prefer simpler cards</label></div>
+  <p class="muted small">Cards already in your list stay, and Fill builds around them. Add a card you always want:</p>
+  <div class="searchbar"><input id="fillPinName" type="search" data-suggest="mtg" placeholder="Always include this card" data-enter="fillPin" autocomplete="off" aria-label="Card to always include"><button class="btn ghost" data-act="fillPin">Add</button></div>
   <button class="btn block" data-act="fillRun" ${F.busy ? "disabled" : ""}>${F.busy ? "Working…" : "Recommend cards"}</button>
   ${F.busy ? buildOverlay(F.msg, { title: "Finding cards for your deck", note: "Searching ramp, draw, removal, lands and budget picks in your colors, then filling the open slots. This can take up to a minute.", id: "fillMsg" }) : `<p class="muted small" role="status" id="fillMsg">${esc(F.msg)}</p>`}
   ${plan ? fillResults(d, plan) : ""}</section>`;
