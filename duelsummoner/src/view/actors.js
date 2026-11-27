@@ -514,7 +514,7 @@ export class Actors {
       let mesh = this.monsters.get(m); const form = formOf(m.id, m.level);
       let formSwap = false;
       if (mesh && mesh.userData.formIdx !== form) { this.scene.remove(mesh); mesh = null; formSwap = true; }          // crossing level 5 or 10 swaps the model
-      const x = pl(m.px, m.x, a), z = pl(m.pz, m.z, a);
+      const lg = m.lunge > 0 ? Math.sin(Math.PI * (1 - m.lunge / 0.22)) * 1.6 : 0, x = pl(m.px, m.x, a) + (m.lungeX || 0) * lg, z = pl(m.pz, m.z, a) + (m.lungeZ || 0) * lg;       // a Fusion's claws: the summon lunges 1.6 m at what it swipes, then springs back
       if (!mesh) { mesh = this._monsterMesh(m.id, form); this.monsters.set(m, mesh); mesh.position.set(x, heightGround(x, z), z); this._enter(mesh, m, formSwap, g, x, z); }
       let y = pl(m.py, m.y, a);
       const ud = mesh.userData;

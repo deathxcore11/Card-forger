@@ -53,6 +53,7 @@ export function damageEnemy(g, i, dmg, o) {
   }
   const x0 = e.x[i], z0 = e.z[i];
   const dead = e.hp[i] <= 0; if (dead) killEnemy(g, i);
+  if (g.curChain >= 0 && g.fxHit) { const c = g.curChain; g.curChain = -1; g.fxHit(g, c, i, x0, z0, dead); g.curChain = c; }       // a Fusion's shot landed: its next layer fires from here (src/sim/fusion.js)
   if (chainAfter) chain(g, i, x0, z0, d * ELEMENTS.lightning.chain.falloff);
   return dead;
 }

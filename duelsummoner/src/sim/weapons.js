@@ -15,7 +15,7 @@ const MAXHITS = 6;
 export function makeShots(max) {
   const f = () => new Float32Array(max);
   return { max, alive: new Uint8Array(max), kind: new Uint8Array(max), flame: new Uint8Array(max), pierce: new Int8Array(max), nHit: new Uint8Array(max), hits: new Int32Array(max * MAXHITS),
-    src: new Uint8Array(max), x: f(), y: f(), z: f(), vx: f(), vy: f(), vz: f(), life: f(), dmg: f(), splash: f(), tx: f(), tz: f(), t0: f(), dur: f(), target: new Int32Array(max), speed: f(),
+    src: new Uint8Array(max), chain: new Int16Array(max).fill(-1), x: f(), y: f(), z: f(), vx: f(), vy: f(), vz: f(), life: f(), dmg: f(), splash: f(), tx: f(), tz: f(), t0: f(), dur: f(), target: new Int32Array(max), speed: f(),
     px: f(), py: f(), pz: f() };
 }
 export function makePickups(max) { return { max, alive: new Uint8Array(max), kind: new Uint8Array(max), val: new Float32Array(max), x: new Float32Array(max), y: new Float32Array(max), z: new Float32Array(max), age: new Float32Array(max), far: new Uint8Array(max), ht: new Float32Array(max).fill(-1), hd: new Float32Array(max) }; }
@@ -29,20 +29,20 @@ function init(s, i, kind, x, y, z, flame, dmg) {
 // straight shot at a point (card throw, fire line)
 export function fireShot(g, kind, x, y, z, tx, ty, tz, speed, life, dmg, o) {
   const s = g.shots, i = slot(s); if (i < 0) return -1;
-  o = o || {}; init(s, i, kind, x, y, z, o.flame, dmg); s.src[i] = g.curSrc;
+  o = o || {}; init(s, i, kind, x, y, z, o.flame, dmg); s.src[i] = g.curSrc; s.chain[i] = g.curChain >= 0 ? g.curChain : -1;       // a Fusion cast this shot carries (src/sim/fusion.js): its next layer fires from what it hits
   const dx = tx - x, dy = ty - y, dz = tz - z, l = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
   s.vx[i] = dx / l * speed; s.vy[i] = dy / l * speed; s.vz[i] = dz / l * speed; s.life[i] = life; s.pierce[i] = o.pierce || 0; s.speed[i] = speed; s.splash[i] = o.burst || 0;       // burst: a fire line's end burst radius (before Reach), dmg x BURST_SHARE
   return i;
 }
 export function fireLob(g, x, y, z, tx, tz, flight, dmg, splash, flame) {
   const s = g.shots, i = slot(s); if (i < 0) return -1;
-  init(s, i, KIND_LOB, x, y, z, flame, dmg); s.src[i] = g.curSrc;
+  init(s, i, KIND_LOB, x, y, z, flame, dmg); s.src[i] = g.curSrc; s.chain[i] = g.curChain >= 0 ? g.curChain : -1;
   s.tx[i] = tx; s.tz[i] = tz; s.t0[i] = 0; s.dur[i] = flight; s.splash[i] = splash; s.life[i] = flight + 0.5; s.vx[i] = x; s.vz[i] = z; s.vy[i] = y;   // vx,vz,vy hold the start point
   return i;
 }
 export function fireHoming(g, x, y, z, target, speed, life, dmg, sp) {       // sp: an elite or boss to chase (target is then -2 - its index in g.sp)
   const s = g.shots, i = slot(s); if (i < 0) return -1;
-  init(s, i, KIND_HOMING, x, y, z, false, dmg); s.src[i] = g.curSrc;
+  init(s, i, KIND_HOMING, x, y, z, false, dmg); s.src[i] = g.curSrc; s.chain[i] = g.curChain >= 0 ? g.curChain : -1;
   s.target[i] = sp ? -2 - g.sp.indexOf(sp) : target; s.speed[i] = speed; s.life[i] = life; s.vy[i] = 0;
   const e = g.en; let dx = (sp ? sp.x : e.x[target]) - x, dz = (sp ? sp.z : e.z[target]) - z; const l = Math.sqrt(dx * dx + dz * dz) || 1; s.vx[i] = dx / l * speed; s.vz[i] = dz / l * speed;
   return i;
@@ -54,7 +54,7 @@ export function updateShots(g, dt) {
   const s = g.shots, e = g.en;
   for (let i = 0; i < s.max; i++) {
     if (!s.alive[i]) continue;
-    g.curSrc = s.src[i];
+    g.curSrc = s.src[i]; g.curChain = s.chain[i];
     s.px[i] = s.x[i]; s.py[i] = s.y[i]; s.pz[i] = s.z[i];
     s.life[i] -= dt;
     const kind = s.kind[i];
@@ -111,7 +111,7 @@ export function updateShots(g, dt) {
     }
     if (dead) { s.alive[i] = 0; endBurst(g, s, i); }
   }
-  g.curSrc = 0;
+  g.curSrc = 0; g.curChain = -1;
 }
 export let AREA_SHARE = 0.35; export const setAreaShare = v => { AREA_SHARE = v; };       // an added area part (the Wake strip, the line's end burst, the Seal Ring) deals this share of the main hit to each target in it
 function endBurst(g, s, i) { if (s.kind[i] === KIND_FIRE && s.splash[i] > 0) splash(g, s.x[i], heightAt(s.x[i], s.z[i]), s.z[i], s.splash[i], s.dmg[i] * AREA_SHARE, s.flame[i]); }

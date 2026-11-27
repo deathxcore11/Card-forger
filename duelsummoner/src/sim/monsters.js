@@ -13,6 +13,7 @@ import { fireShot, fireLob, fireHoming, KIND_CARD, KIND_FIRE, splash, AREA_SHARE
 import { damageEnemy, addFx, addTele, explode } from './combat.js';
 import { def, param, damageOf } from './field.js';
 import { elemBits } from '../data/elements.js';
+import { fusionAttack, fusionTick, fusionCd as fusionCdOf } from './fusion.js';
 
 const pick = [];
 
@@ -53,6 +54,7 @@ export function inWake(o, x, z, pad) { const a = (x - o.ax) * o.dx + (z - o.az) 
 export function updateMonsters(g, dt) {
   const p = g.p, f = g.field;
   updateWakes(g, dt);
+  if (g.fusionRule === 3) fusionTick(g, dt);
   for (let k = 0; k < f.monsters.length; k++) {
     const m = f.monsters[k]; if (!m) continue;
     m.px = m.x; m.py = m.y; m.pz = m.z;
@@ -65,11 +67,12 @@ export function updateMonsters(g, dt) {
     if (g.world) propPush(g, m);       // a summon is pushed out of trunks and boulders as a body on the ground, whatever height it hovers at
     { const lx = m.x - tx, ly = m.y - ty, lz = m.z - tz, l2 = lx * lx + ly * ly + lz * lz, LEASH = 9; if (l2 > LEASH * LEASH) { const l = Math.sqrt(l2), s = LEASH / l; if (l > 40) { m.x = tx; m.y = ty; m.z = tz; m.px = tx; m.py = ty; m.pz = tz; } else { m.x = tx + lx * s; m.y = ty + ly * s; m.z = tz + lz * s; } } }       // the leash: a summon is never more than 9 m from its duelist, and after a teleport (stage change, gate) it simply arrives with them
     { const sr = param(m, 'ring'); if (sr > 0) { m.ringT = (m.ringT === undefined ? RING_EVERY : m.ringT) - dt; if (m.ringT <= 0 && g.nearest(m.x, m.z, sr * g.reachK) >= 0) { m.ringT = RING_EVERY; g.curSrc = g.srcIndex(m.id); splash(g, m.x, heightAt(m.x, m.z), m.z, sr, damageOf(m) * AREA_SHARE, elemBits(def(m.id).elements)); g.curSrc = 0; } else if (m.ringT <= 0) m.ringT = 0; } }       // the Seal Ring: a pulse around the Sigil Familiar every RING_EVERY s once an enemy is inside it (level 3 and up)
-    m.cd -= dt;
+    m.cd -= dt; if (m.lunge > 0) m.lunge -= dt;
     if (m.cd > 0) continue;
     const D = def(m.id), A = D.attack, cd = A.cd / (1 + g.mods.monsterRate) / (g.rflow ? 1 + 0.05 * (g.rflow.step - 1) : 1) * (g.p.ride && g.p.ride.on && g.p.ride.speed > 12 ? 1.4 : 1);       // Flow fuels the summons: +5% attack rate a Flow step; while the card goes fast they spend part of their time keeping up (attacks 1.4x apart)
     g.curSrc = g.srcIndex(m.id);
-    if (attack(g, m, D, A)) m.cd = cd; else m.cd = 0;
+    if (g.fusionRule === 3 && D.from) { if (fusionAttack(g, m)) m.cd = cd * fusionCdOf(m) / A.cd; else m.cd = 0; }       // a Fusion fires by the layered rule, at its Line's rate
+    else if (attack(g, m, D, A)) m.cd = cd; else m.cd = 0;
     g.curSrc = 0;
   }
   // the duelist's own card throw
