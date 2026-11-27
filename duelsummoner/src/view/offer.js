@@ -95,6 +95,8 @@ export function showOffer(g, act) {
     const el = document.createElement('div'); el.className = 'card ' + c.rarity + (c.isNew && cardy ? ' new' : '');
     const act = c.kind === 'banish' ? 'EXILE' : c.kind === 'tribute' ? 'TRIBUTE' : 'TAKE';
     const buy = shop ? (c.sold ? '<button disabled>SOLD</button>' : '<button data-pick="' + i + '"' + (g.coins < c.price ? ' disabled' : '') + '>BUY ' + c.price + '</button>') : '<button data-pick="' + i + '">' + act + '</button>';
+    const one = s => { s = String(s || '').replace(/<[^>]*>/g, ''); const m = /^(.*?[.!?])(\s|$)/.exec(s); return m ? m[1] : s; };       // the first sentence only
+    if (level) { const now = c.kind === 'monster' && D.fxText && !c.isNew && D.fxText[c.to] ? 'Now: ' + D.fxText[c.to] : one(D.text); el.innerHTML = '<h3>' + D.name + '</h3><div class="t">' + kind + ' &middot; ' + c.rarity + (lv ? ' &middot; ' + lv.replace(/ of \d+$/, '') : '') + '</div><div class="eff">' + now + '</div><div class="rowBtn">' + buy + '</div>'; wrap.appendChild(el); return; }       // a level-up card: name, one small line, one short line of what it does (owner, 27 Nov)
     el.innerHTML = '<h3>' + D.name + '</h3><div class="t">' + kind + ' &middot; ' + c.rarity + '</div><div>' + (D.text || '') + '</div>' + (ANSWERS[c.id] && ANSWERS[c.id].length && window.__dsBig ? '<div class="t" style="color:#ffd56a">On the card: ' + ANSWERS[c.id].map(q => q.text).join(' ') + '</div>' : '') + '<div class="t">' + lv + '</div>' + fx +
       '<div class="rowBtn">' + buy + '' + '</div>';
     wrap.appendChild(el);

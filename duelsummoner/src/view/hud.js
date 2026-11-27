@@ -87,13 +87,12 @@ let rideKey = '', bankT = 0, bankV = 0;
 export function rideBanked(v) { bankV = v; bankT = performance.now(); }
 function drawRide(g) {       // Card Riding: the open combo (tricks, points x distinct tricks), the banked number, the balance bar on a grind or manual, the Flow pips
   const el = $('rideHud'); if (!el) return; const r = g.p && g.p.ride, F = g.rflow, on = !!(g.big && ((r && r.on) || (F && F.step > 1))); el.classList.toggle('on', on); if (!on) return;
-  { const now = performance.now(); if (!el._tt || now - el._tt > 1000) { el._tt = now; let b = 0; for (const id of ['topleft', 'devbar']) { const q = document.getElementById(id); if (q && q.offsetParent !== null) { const rc = q.getBoundingClientRect(); if (rc.left < 260 && rc.top < 200) b = Math.max(b, rc.bottom); } } if (b) el.style.setProperty('--rideTop', Math.round(b + 16) + 'px'); } }       // landscape: sit just under the health and XP box, whatever its height
   const c = r && r.combo, names = c ? Object.keys(c.names) : [], pts = c ? Math.round(c.pts) : 0, bal = r && (r.grind || r.manual) ? r.bal : null, age = performance.now() - bankT;
   const k = (c ? c.list.join('|') + pts : '') + '|' + (F ? F.step : 1) + '|' + (bal === null ? 'n' : Math.round(bal * 20)) + '|' + (age < 1200 ? bankV : 0) + '|' + (r && r.grind ? r.grind.name : ''); if (k === rideKey) return; rideKey = k;
-  $('rhCombo').innerHTML = c && c.list.length ? c.list.slice(-4).join(' + ') + (r.grind ? ' + <em>' + r.grind.name + '</em>' : '') + '  <em>' + pts.toLocaleString() + ' x ' + Math.max(1, names.length) + '</em>' : (r && r.grind ? '<em>' + r.grind.name + '</em>' : '');
+  $('rhCombo').innerHTML = c && c.list.length ? c.list.slice(-3).join(' + ') + (r.grind ? ' + <em>' + r.grind.name + '</em>' : '') + '  <em>' + pts.toLocaleString() + ' x ' + Math.max(1, names.length) + '</em>' : (r && r.grind ? '<em>' + r.grind.name + '</em>' : '');
   $('rhBank').textContent = age < 1200 && bankV ? '+' + bankV.toLocaleString() : '';
   const b = $('rhBal'); b.style.visibility = bal === null ? 'hidden' : 'visible'; if (bal !== null) b.firstChild.style.left = (77 + Math.max(-1, Math.min(1, bal)) * 77) + 'px';
-  const sp = $('rhFlow').querySelectorAll('span'), st = F ? F.step : 1; sp.forEach((s, i) => s.classList.toggle('lit', i < st)); $('rhFlow').querySelector('b').textContent = 'FLOW x' + st;
+  const sp = $('rhFlow').querySelectorAll('span'), st = F ? F.step : 1; sp.forEach((s, i) => s.classList.toggle('lit', i < st)); $('rhFlow').querySelector('b').textContent = 'x' + st;
 }
 export function drawHud(g, force) {
   drawBuffs(g); drawStakes(g); drawRide(g);
@@ -175,10 +174,10 @@ const bq = [], BANNER_MAX = 2; let bShowing = null, bTimer = 0, bCount = 0;
 const bKind = t => String(t).replace(/[0-9]+/g, '#');
 function bannerNext() {
   const b = $('banner'); clearTimeout(bTimer); clearInterval(bCount);
-  if (!bq.length) { bShowing = null; b.classList.remove('on'); return; }
+  if (!bq.length) { bShowing = null; b.classList.remove('on'); document.body.classList.remove('bannerOn'); return; }
   const it = bq.shift(); bShowing = it; const cd = /in (\d+) seconds?/.exec(it.text); let left = cd ? +cd[1] : 0;
   const paint = () => { b.textContent = cd ? it.text.replace(/in \d+ seconds?/, 'in ' + left + (left === 1 ? ' second' : ' seconds')) : it.text; };
-  paint(); b.classList.add('on');
+  paint(); b.classList.add('on'); document.body.classList.add('bannerOn');
   if (cd) bCount = setInterval(() => { if (left > 1) { left--; paint(); } }, 1000);
   bTimer = setTimeout(bannerNext, cd ? (left + 1) * 1000 : (bq.length ? 1200 : 2400));
 }
@@ -190,7 +189,7 @@ export function showBanner(text) {
   if (!bShowing) bannerNext();
 }
 export function dropBanner(start) { for (let i = bq.length - 1; i >= 0; i--) if (bq[i].text.startsWith(start)) bq.splice(i, 1); if (bShowing && bShowing.text.startsWith(start)) bannerNext(); }       // a banner that has stopped being true leaves at once
-export function clearBanners() { bq.length = 0; bShowing = null; clearTimeout(bTimer); clearInterval(bCount); $('banner').classList.remove('on'); }
+export function clearBanners() { bq.length = 0; bShowing = null; clearTimeout(bTimer); clearInterval(bCount); $('banner').classList.remove('on'); document.body.classList.remove('bannerOn'); }
 let flashShown = -1, flashEl = null, flashPrev = 0, flashStart = -1e9;
 export function showFlash(g) {
   // one short edge vignette per hit, and a new one starts at most every 350 ms (three a second): hits inside that window hold the level instead of retriggering

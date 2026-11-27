@@ -20,3 +20,14 @@ for (const seed of seeds) {
     let grind = false; for (let tk = 0; tk < 90 && !grind; tk++) { g.step(1 / 60, { ...I, f: 1, yaw, jump: tk > 2 && tk < 14 }); if (g.p.ride && g.p.ride.grind) grind = true; } out.rails.runs++; if (grind) out.rails.grind++; else (out.rails.fails || (out.rails.fails = [])).push({ seed, i, kind: s[6] || "log" }); });
 }
 console.log(JSON.stringify(out));
+// whole lines: from 22 m behind each of the 10 line starts nearest the spawn, ride at 15 m/s with the stick forward for 9 s and list what the card did (no other input)
+out.lines = [];
+for (const seed of seeds) {
+  const g0 = mk(seed), sp = g0.map.world.spawn;
+  const S = kickersNear(g0, sp.x, sp.z, 700).filter(q => !kickersNear(g0, q[0] - q[3] * 26, q[2] - q[4] * 26, 6).length && !railsNear(g0, q[0] - q[3] * 26, q[2] - q[4] * 26, 4).some(s => s[6] === 'ledge' || s[6] === 'pole')).map(q => [Math.hypot(q[0] - sp.x, q[2] - sp.z), q]).sort((a, c) => a[0] - c[0]).slice(0, 10).map(a => a[1]);
+  for (const q of S) { const g = mk(seed), [x, , z, ux, uz, len] = q; g.p.x = x - ux * (len / 2 + 22); g.p.z = z - uz * (len / 2 + 22); g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.sliding = true; const yaw = Math.atan2(-ux, -uz);
+    g.step(1 / 60, { ...I, f: 1, yaw }); Object.assign(g.p.ride, { on: true, heading: Math.atan2(ux, uz), speed: 15 }); const did = []; let n0 = 0;
+    for (let tk = 0; tk < 540; tk++) { g.step(1 / 60, { ...I, f: 1, yaw }); const r = g.p.ride, L = (r && r.combo && r.combo.list) || []; if (L.length < n0) n0 = 0; for (let k = n0; k < L.length; k++) did.push(L[k]); n0 = L.length; if (r && r.grind && did[did.length - 1] !== 'grind') did.push('grind'); if (!r || !r.on) { did.push('OFF'); break; } }
+    out.lines.push({ seed, did: did.join(' ') }); }
+}
+console.log(JSON.stringify(out.lines, null, 1));

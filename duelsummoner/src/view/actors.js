@@ -408,8 +408,8 @@ export class Actors {
     let roll = 0, pitch = 0; if (rd.flipT > 0) { const k = 1 - rd.flipT / 0.42, d = rd.flipDir || 0; if (d === 0 || d === 4) roll = k * Math.PI * 2 * (d === 4 ? -1 : 1); else if (d === 2 || d === 6) pitch = k * Math.PI * 2 * (d === 6 ? -1 : 1); else { roll = k * Math.PI * 2; pitch = k * Math.PI * (d < 4 ? 1 : -1); } }
     if (rd.grabbing) pitch += 0.28; if (rd.manual) pitch -= 0.22; if (rd.loop) pitch -= rd.loopTh || 0; G.rotation.x = pitch; G.rotation.z = roll;
     G.position.y += rd.flipT > 0 ? Math.sin((1 - rd.flipT / 0.42) * Math.PI) * 0.45 : 0;
-    if (rd.speed > 13 && !rd.grind) { const tx = px - Math.sin(yaw) * 1.05, tz = pz - Math.cos(yaw) * 1.05, n = rd.speed > 18 ? 3 : 2; for (let k = 0; k < n; k++) this.fx.spark(tx + (Math.random() - 0.5) * 0.9, py + 0.15, tz + (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.6, 0.3 + Math.random() * 0.5, (Math.random() - 0.5) * 0.6, Math.random() < 0.6 ? 0xffd56a : 0xfff2c0, 0.26, 0.35); }       // the gold trail at speed
-    if (rd.grind && Math.random() < 0.9) for (let k = 0; k < 2; k++) this.fx.spark(px + (Math.random() - 0.5) * 0.6, py + 0.1, pz + (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 4, 1.5 + Math.random() * 2.5, (Math.random() - 0.5) * 4, Math.random() < 0.5 ? 0xffd56a : 0xfff2c0, 0.32, 0.45);
+    if (rd.speed > 13 && !rd.grind && Math.random() < 0.6) { const tx = px - Math.sin(yaw) * 1.05, tz = pz - Math.cos(yaw) * 1.05; this.fx.spark(tx, py + 0.12, tz, 0, 0.1, 0, 0xffd56a, 0.12, 0.22); }       // a thin short gold streak at speed (about a quarter of the old stream, no spread)
+    if (rd.grind && Math.random() < 0.45) for (let k = 0; k < 1; k++) this.fx.spark(px + (Math.random() - 0.5) * 0.6, py + 0.1, pz + (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 4, 1.5 + Math.random() * 2.5, (Math.random() - 0.5) * 4, Math.random() < 0.5 ? 0xffd56a : 0xfff2c0, 0.32, 0.45);
   }
   _rideRig(R, rd, p, dt) {
     const yaw = rd.heading + rd.spin; R.group.rotation.y = yaw + R.yaw;
@@ -457,7 +457,7 @@ export class Actors {
       lean.rotation.x += (want - lean.rotation.x) * Math.min(1, dt * 12);
       if (!p.grounded) this._pvy = p.vy;
       if (p.grounded && !this._pg && this._pvy < -5) { ud.squash = 0.16; fx.burst(px, py + 0.1, pz, 8, 0xd8c08a, 2.2, 1.2, 0.22, 0.5, 6); if (this._pvy < -9) { fx.shake(Math.min(0.22, -this._pvy * 0.012)); fx.ring(px, py + 0.05, pz, 1.3, 0xd8c08a, 0.18); fx.burst(px, py + 0.1, pz, 14, 0xd8c08a, 3.2, 1.6, 0.3, 0.6, 8); } }       // a heavy landing kicks the camera and throws a ring of dust
-      if (p.dashT > 0 && !this._pd) { fx.shake(0.07); fx.ring(px, py + 0.05, pz, 1.0, 0x9fe8ff, 0.14); }       // dash start
+      if (p.dashT > 0 && !this._pd) { fx.shake(0.07); }       // dash start
       this._pd = p.dashT > 0;
       this._pg = p.grounded;
       if (ud.squash > 0) { ud.squash = Math.max(0, ud.squash - dt); const k = ud.squash / 0.16 * 0.28; lean.scale.set(1 + k * 0.5, 1 - k, 1 + k * 0.5); } else if (lean.scale.y !== 1) lean.scale.set(1, 1, 1);
