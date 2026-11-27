@@ -126,7 +126,7 @@ export class Fx {
     for (let i = 0; i < this.M; i++) {
       if (this.nage[i] < 0 || this.nage[i] > 0.2) continue;
       const j = i * 3, dx = this.nx[j] - x, dz = this.nx[j + 2] - z;
-      if (dx * dx + dz * dz < 2.25) { this.nage[i] = Math.min(this.nage[i], 0.12); this.nval[i] += value; if (flags & 1) this.nbig[i] = 1; this._paint(i, this.nval[i], this.nbig[i], flags); return; }
+      if (dx * dx + dz * dz < 2.25) { this.nage[i] = Math.min(this.nage[i], 0.12); this.nval[i] += value; if (flags & 1) this.nbig[i] = 1; (this._dirty || (this._dirty = new Map())).set(i, flags); return; }       // a merged total is repainted once a frame at most (a texture upload each: a meteor shower used to upload dozens in one frame)
     }    let live = 0; for (let k = 0; k < this.M; k++) if (this.nage[k] >= 0) live++; if (live >= 16) return;         // at most 16 numbers on screen
     if (this.numBudget < 1) return; this.numBudget -= 1;
     const big = flags === undefined || flags === null ? value > this.avgDmg * 2.2 + 1 : (flags & 1) === 1; this.avgDmg += (value - this.avgDmg) * 0.05; if (this.dmgMode === 'off' || (this.dmgMode === 'big' && !big)) return;       // Settings > Damage numbers: Off, Big hits (crits and hits well above the average) or All
@@ -163,7 +163,8 @@ export class Fx {
   }
   // ---- per frame ----
   update(dt, camera) {
-    this.numBudget = Math.min(8, this.numBudget + dt * 60);
+    this.numBudget = Math.min(4, this.numBudget + dt * 60);
+    if (this._dirty && this._dirty.size) { let k = 0; for (const [i, fl] of this._dirty) { if (k++ >= 6) break; this._dirty.delete(i); if (this.nage[i] >= 0) this._paint(i, this.nval[i], this.nbig[i], fl); } }       // at most six repaints a frame
     // particles: the GPU moves them; here only the clock, the one upload of the slots spawned this frame, and the live count (the tests and the lab read it)
     this.pt += dt; this.puni.uTime.value = this.pt;
     if (this._hi >= 0) { const b = this.pbuf; if (this._wrap) b.updateRange.count = -1; else { b.updateRange.offset = this._lo * 15; b.updateRange.count = (this._hi - this._lo + 1) * 15; } b.needsUpdate = true; this._lo = this.N; this._hi = -1; this._wrap = false; }

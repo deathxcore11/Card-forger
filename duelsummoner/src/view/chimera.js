@@ -47,6 +47,6 @@ export async function loadFusionBodies() {
 export function fusedBody(idA, idB, seed) {
   const key = idA + '__' + idB; if (fcache.has(key)) return fcache.get(key);
   let m = null;
-  if (frt && globalThis.__dsFuse) { try { const id = globalThis.__dsFuse(idA, idB, seed || 7); if (id) m = decodeEwv3(frt.bake(id)); } catch (e) { console.warn('Fused body failed for', key, e.message); } }
+  if (frt && globalThis.__dsFuse) { try { const id = globalThis.__dsFuse(idA, idB, seed || 7); if (id) { m = decodeEwv3(frt.bake(id)); m.rtId = id; } } catch (e) { console.warn('Fused body failed for', key, e.message); } }       // rtId: the runtime's own id, so a Fusion of Fusions can be fused from it
   fcache.set(key, m); return m;
 }

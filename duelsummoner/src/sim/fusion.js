@@ -39,7 +39,7 @@ export function nameOf(chain, els, forms) { const rx = els.length > 1 ? reaction
 const BUILDS = {};
 export function buildOf(id) {
   if (BUILDS[id]) return BUILDS[id];
-  const D = FUSIONS[id]; return BUILDS[id] = D && D.from ? makeBuild(id, 1, D.from.map(buildOf)) : makeBuild(id, 0, null);
+  const D = FUSIONS[id]; return BUILDS[id] = D && D.from ? makeBuild(id, D.rank || 1, D.from.map(buildOf)) : makeBuild(id, 0, null);
 }
 
 // ---- state, per game ----

@@ -322,7 +322,7 @@ export class Actors {
     const size = summonSize(!!FUSIONS[id], form);                      // metres: form 1 / 2 / 3 = 0.5x / 1x / 2x the duelist, Fusions 2x to 3x
     let modelled = true;
     let bk = blkSummon(id, form);
-    { const F = FUSIONS[id]; if (F && F.from) { const P = F.from.map(p => { const L = BLK_SUMMON[p]; return L && L[L.length - 1]; }); if (P[0] && P[1]) { const k = 'fx_' + id, M = BLOCKS[k] || fusedBody(P[0], P[1], 7); if (M) { BLOCKS[k] = M; bk = k; } } } }       // a Fusion: one fused body of its two parents' full forms (the lab's v7 body rule)
+    { const F = FUSIONS[id]; if (F && F.from) { const P = F.from.map(p => { if (FUSIONS[p]) { const q = BLOCKS['fx_' + p]; return q && q.rtId; } const L = BLK_SUMMON[p]; return L && L[L.length - 1]; }); if (P[0] && P[1]) { const k = 'fx_' + id, M = BLOCKS[k] || fusedBody(P[0], P[1], 7); if (M) { BLOCKS[k] = M; bk = k; } } } }       // a Fusion: one fused body of its two parents' full forms (the lab's v7 body rule)
     if (bk) { g = this._blk(bk, size, 'max', true); if (id === 'ember-wyvern' || id === 'twinflare-tyrant' || id === 'sigil-familiar') g.userData.fly = true; if (id === 'cinder-hatchling' || id === 'rune-apprentice') g.userData.walk = true; }       // the block look: the summon in its own form
     else if (id === 'ember-wyvern' && form === 0 && A.wyvernPrep) { const cr = makeCreature(A.wyvernPrep, size); cr.root.rotation.y = Math.PI; g = cr.group; g.userData.crit = cr; modelled = true; }          // rigged and animated: wings beat, tail sways
     else if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, size, 'max'); g.userData.fly = true; }

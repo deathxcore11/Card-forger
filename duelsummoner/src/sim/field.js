@@ -83,13 +83,24 @@ export function recompute(g) {
 }
 
 // ---- Fusion ----
+// Any two summons fuse (owner, 27 Nov): both at level 10; the Fusion starts again at level 1 and can fuse again at 10, up to rank 4 (Epic). The two named pairs keep their own Fusions.
+// An any-pair Fusion is made on demand (anyFusion) and lives in FUSIONS like the named ones; its attack and body come from the fusion rule (src/sim/fusion.js, src/view/chimera.js).
+export const rankOf = id => { const D = FUSIONS[id]; return D ? (D.rank || 1) : 0; };
+const RANK_NAME = ['', 'Fusion', 'Greater Fusion', 'Super Fusion', 'Epic Fusion'], suffix = ['', '', '', ' Prime', ' Apex'];
+export function anyFusion(a, b) {
+  const named = RECIPES.find(r => (r.a === a && r.b === b) || (r.a === b && r.b === a)); if (named) return named.result;
+  const rank = Math.max(rankOf(a), rankOf(b)) + 1; if (rank > 4 || a === b) return null;
+  const id = 'fx:' + a + '+' + b; if (FUSIONS[id]) return id;
+  const A = def(a), B = def(b), w = s => s.replace(/ (Prime|Apex)$/, '').split(' '), name = w(B.name)[0] + ' ' + w(A.name)[w(A.name).length - 1] + suffix[rank];       // the graft's first word, the Line's last word, then Prime or Apex
+  const els = []; for (const e of A.elements.concat(B.elements)) if (!els.includes(e) && els.length < 3) els.push(e);
+  FUSIONS[id] = { name, type: A.type, elements: els, flame: els.includes('fire'), from: [a, b], rank, rarity: 'epic', forms: [{ fromLevel: 1, modelId: id, scale: 0.7 }, { fromLevel: 5, modelId: id, scale: 0.85 }, { fromLevel: 10, modelId: id, scale: 1 }],
+    text: RANK_NAME[rank] + ' of ' + A.name + ' and ' + B.name + '.', attack: { kind: 'line', dmg: 2.5, cd: 0.9, length: 16, pierce: 1, speed: 32 }, fx: {}, fxText: {}, any: true };
+  return id;
+}
 export function fusionsReady(g) {
-  const f = g.field, out = [];
-  for (const r of RECIPES) {                                         // generic table: any tier, any pair
-    const ma = f.monsters.find(m => m && m.id === r.a), mb = f.monsters.find(m => m && m.id === r.b);
-    if (ma && mb && ma.level >= FIELD_RULES.fusionLevel && mb.level >= FIELD_RULES.fusionLevel && !out.includes(r.result)) out.push(r.result);
-  }
-  return out;
+  const f = g.field, out = [], FL = FIELD_RULES.fusionLevel, M = f.monsters.filter(m => m && m.level >= FL);
+  for (let i = 0; i < M.length; i++) for (let j = 0; j < M.length; j++) { if (i === j) continue; const id = anyFusion(M[i].id, M[j].id); if (id && !out.includes(id) && !(FUSIONS[id] && !FUSIONS[id].any && FUSIONS[id].from[0] !== M[i].id)) out.push(id); }       // the first is the Line: each order is its own Fusion (a named pair only one way)
+  return out.slice(0, 4);
 }
 // the monsters of a Fusion pair you field that are not both at the Fusion level yet, lower first; .relax is set once the higher of the two has reached OFFER.fusionPushAt
 export function pairPush(g) {
@@ -102,7 +113,7 @@ export function pairPush(g) {
   const none = []; none.relax = false; return none;
 }
 export function doFusion(g, id) {
-  const r = RECIPES.find(x => x.result === id); if (!r) return false;
+  const r = RECIPES.find(x => x.result === id) || (FUSIONS[id] && FUSIONS[id].from && { a: FUSIONS[id].from[0], b: FUSIONS[id].from[1], tier: 'fusion' }); if (!r) return false;
   const f = g.field, ia = f.monsters.findIndex(m => m && m.id === r.a), ib = f.monsters.findIndex(m => m && m.id === r.b);
   if (ia < 0 || ib < 0) return false;
   f.monsters[Math.min(ia, ib)] = newMonster(id, TIERS[r.tier].startLevel, g.rcos); f.monsters[Math.max(ia, ib)] = null;      // takes one zone, frees the other

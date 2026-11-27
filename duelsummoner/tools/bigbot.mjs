@@ -77,7 +77,7 @@ function seesDoor(g) {                                  // the first-timer's eye
 }
 function goalFn(g, bot) {
   const p = g.p, d = g.door; if (!d) return null; const W = g.world;
-  if (g.circle && g.circle.portal && g.ot2 && g.ot2.t > 45) return { t: { x: g.circle.x, z: g.circle.z }, hold: false };       // flow v2: farm Overtime for 45 s, then walk to the portal
+  if (g.circle && g.circle.portal && g.ot2 && g.ot2.t > 20) return { t: { x: g.circle.x, z: g.circle.z }, hold: false };       // flow v2: farm Overtime for 45 s, then walk to the portal
   if (d.state === 'risen' && g.gate.state === 'closed') {
     const known = PLAYER === 'skilled' || bot.doorKnown || (bot.doorKnown = seesDoor(g)); if (known) { const dist = Math.hypot(g.map.gate.x - p.x, g.map.gate.z - p.z); return { t: { x: g.map.gate.x, z: g.map.gate.z }, hold: dist < 3.5 }; }
   }
