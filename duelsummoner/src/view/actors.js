@@ -24,7 +24,7 @@ import { makeCreature } from './creature.js';
 import { BLOCKS, blockGroup, blockMerged, animateBlocks, blockSwing } from './models.js';
 // the block look (?blocks=1): which block model draws which game actor (index.json ids). An actor with no entry, or whose file is missing, keeps its current look.
 const BLK_ENEMY = { 0: 'husk', 1: 'runner', 2: 'seer', 3: 'ram', 4: 'bloat', 5: 'scarab', 6: 'hunter' };
-const BLK_SUMMON = { 'ember-wyvern': ['wyv1', 'wyv2', 'wyv3'], 'cinder-hatchling': ['hat1', 'hat2', 'hat3'], 'sigil-familiar': ['familiar'], 'twinflare-tyrant': ['tyrant'] };
+const BLK_SUMMON = { 'ember-wyvern': ['wyv1', 'wyv2', 'wyv3'], 'cinder-hatchling': ['hat1', 'hat2', 'hat3'], 'sigil-familiar': ['familiar'], 'twinflare-tyrant': ['tyrant'], 'rune-apprentice': ['newt'], 'astral-magus': ['strix'] };       // the roster renamed the Rune Apprentice to the Rune Newt and the Astral Magus to the Astral Strix (22 Nov)
 const BLK_SPECIAL = { warden: 'warden' };
 const blkSummon = (id, form) => { const L = BLK_SUMMON[id]; const k = L && L[Math.min(form, L.length - 1)]; return k && BLOCKS[k] ? k : null; };
 
@@ -316,7 +316,7 @@ export class Actors {
     const size = summonSize(!!FUSIONS[id], form);                      // metres: form 1 / 2 / 3 = 0.5x / 1x / 2x the duelist, Fusions 2x to 3x
     let modelled = true;
     const bk = blkSummon(id, form);
-    if (bk) { g = this._blk(bk, size, 'max', true); if (id === 'ember-wyvern' || id === 'twinflare-tyrant' || id === 'sigil-familiar') g.userData.fly = true; if (id === 'cinder-hatchling') g.userData.walk = true; }       // the block look: the summon in its own form
+    if (bk) { g = this._blk(bk, size, 'max', true); if (id === 'ember-wyvern' || id === 'twinflare-tyrant' || id === 'sigil-familiar') g.userData.fly = true; if (id === 'cinder-hatchling' || id === 'rune-apprentice') g.userData.walk = true; }       // the block look: the summon in its own form
     else if (id === 'ember-wyvern' && form === 0 && A.wyvernPrep) { const cr = makeCreature(A.wyvernPrep, size); cr.root.rotation.y = Math.PI; g = cr.group; g.userData.crit = cr; modelled = true; }          // rigged and animated: wings beat, tail sways
     else if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, size, 'max'); g.userData.fly = true; }
     else if (id === 'cinder-hatchling' && A.hatchling) { g = modelGroup(A.hatchling, size, 'max', 0xff7319); g.userData.walk = true; g.userData.puffs = true; }

@@ -39,7 +39,7 @@ import { renderPause, setTab as pauseTab, bindHolds, matHtml, statRows } from '.
 import { deviceClass } from './ui/device.js';
 import { defaultFor } from './ui/settings-schema.js';
 import { showOffer, offerKey, offerGuard } from './view/offer.js';
-import { loadModel, loadPuffTexture, loadBlocks } from './view/models.js';
+import { loadModel, loadPuffTexture, loadBlocks, blocksOn } from './view/models.js';
 import { spawnEnemy } from './sim/enemies.js';
 import { Props } from './view/props.js';
 import { quantise, emptyRecord } from './sim/input.js';
@@ -127,7 +127,7 @@ assets.kael = await loadRig('assets/models/duelist-kael-anim.glb', undefined, [{
 assets.wyvernPrep = await loadCreature('assets/models/mon-ember-wyvern-f1-rig.glb');       // the rigged Ember Wyvern, form 1
 assets.butterflyPrep = await loadCreature('assets/models/life-butterfly-rig.glb');         // ambient life: the rigged butterfly
 assets.mira = await loadRig('assets/models/duelist-mira-anim.glb', { retime: { land_light: 0.5, land_heavy: 0.9 } });
-await loadBlocks(['kael', 'kaelRide', 'mira', 'vesh', 'oren', 'card', 'husk', 'runner', 'seer', 'ram', 'bloat', 'scarab', 'hunter', 'toll', 'warden', 'wyv1', 'wyv2', 'wyv3', 'hat1', 'hat2', 'hat3', 'familiar', 'tyrant', 'chestCard', 'chestSealed', 'chestTrophy', 'gem', 'coin', 'cactus', 'tree', 'stonecard', 'beam', 'urn', 'broker', 'shrine', 'spire']);       // the block look, only with ?blocks=1 (files kept out of the repo)
+await loadBlocks(['kael', 'kaelRide', 'mira', 'vesh', 'oren', 'card', 'husk', 'runner', 'seer', 'ram', 'bloat', 'scarab', 'hunter', 'toll', 'warden', 'wyv1', 'wyv2', 'wyv3', 'hat1', 'hat2', 'hat3', 'familiar', 'tyrant', 'newt', 'strix', 'chestCard', 'chestSealed', 'chestTrophy', 'gem', 'coin', 'cactus', 'tree', 'stonecard', 'beam', 'urn', 'broker', 'shrine', 'spire']);       // the block look, only with ?blocks=1 (files kept out of the repo)
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 document.addEventListener('contextmenu', e => { if (!/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName)) e.preventDefault(); });       // no browser menu over the game or its overlays
@@ -162,7 +162,7 @@ function syncMap() {                                                       // th
     if (gateSeal) scene.remove(gateSeal); gateSeal = buildGateSeal(game.map, look); scene.add(gateSeal);
     if (grassMesh) { scene.remove(grassMesh); grassMesh.geometry.dispose(); grassMesh = null; }
     if (sceneryGroup) { scene.remove(sceneryGroup); sceneryGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); }); sceneryGroup = null; }
-    if (!/[?&]scenery=0/.test(location.search)) { sceneryGroup = buildScenery(game.map, game.stage || 0, assets); scene.add(sceneryGroup); setShadeMask(sceneryGroup.userData.mask, look); if (game.map && game.map.open) MASK.ck.value = 0; /* the open desert has no cloud shadows on the sand */ grassMesh = buildGrass(game.map, game.stage || 0, sceneryGroup.userData.scatter, sceneryGroup.userData.theme, null, scene.fog.near); if (grassMesh) scene.add(grassMesh); ambient.setSpots(sceneryGroup.userData.flowerSpots, game.stage || 0, game.map.hash); } else { ambient.clear(); setShadeMask(null, look); } minimap.setMap(game.map);
+    if (!/[?&]scenery=0/.test(location.search)) { sceneryGroup = buildScenery(game.map, game.stage || 0, assets); scene.add(sceneryGroup); setShadeMask(sceneryGroup.userData.mask, look); if (game.map && game.map.open) MASK.ck.value = 0; /* the open desert has no cloud shadows on the sand */ grassMesh = blocksOn ? null : buildGrass(game.map, game.stage || 0, sceneryGroup.userData.scatter, sceneryGroup.userData.theme, null, scene.fog.near); if (grassMesh) scene.add(grassMesh); ambient.setSpots(sceneryGroup.userData.flowerSpots, game.stage || 0, game.map.hash); } else { ambient.clear(); setShadeMask(null, look); } minimap.setMap(game.map);
     camera.far = game.map && game.map.big ? 2600 : game.map && game.map.open ? 1300 : 600; camera.updateProjectionMatrix();       // the open desert shows its far mountains
     try { renderer.compile(scene, camera); } catch (e) { /* warm-up is best effort */ }       // shaders are built behind the stage card, so the first frames do not hitch
 }
@@ -720,7 +720,7 @@ window.__ds = {
   pipes: (r = 2000) => { const m = game.map, sp = m.world && m.world.spawn; if (!sp || !m.big) return []; const out = []; for (let qz = Math.floor((sp.z - r) / 256); qz <= Math.floor((sp.z + r) / 256); qz++) for (let qx = Math.floor((sp.x - r) / 256); qx <= Math.floor((sp.x + r) / 256); qx++) for (const q of m.dressCell(qx, qz).pipes || []) out.push({ x: q[0], z: q[2], radius: q[5], dist: Math.round(Math.hypot(q[0] - sp.x, q[2] - sp.z)) }); return out.sort((a, b) => a.dist - b.dist); },
   drops: () => { const m = game.map, W = m.world; return W && W.drops ? W.drops.map(d => ({ x: Math.round(d.x), z: Math.round(d.z), faceX: +d.c.toFixed(2), faceZ: +d.s.toFixed(2), shelf: +d.H.toFixed(1) })) : []; },
   blitU: blitMat.uniforms, maskRead: () => { const w = maskRT.width, h = maskRT.height, b = new Uint8Array(w * h * 4); renderer.readRenderTargetPixels(maskRT, 0, 0, w, h, b); return { w, h, b: Array.from(b.filter((_, i) => i % 4 === 0)) }; }, tablebreak: hold => { tb.hold = !!hold; tb.fired = true; blitMat.uniforms.uTBang.value.set(0.5, 2.1, 3.9); tb.on = true; tb.t0 = performance.now(); }, composite, get grass() { return grassMesh; }, chaseZoom: () => chase.zoom, chaseCap: () => chase.zoomCap,
-  duelistPixels, see: SEE, tagBlocked, menus,
+  duelistPixels, see: SEE, tagBlocked, menus, scene,       // (scene: a test hook for the block look checks)
   bars,
   summonPos: () => { const g = actors.monsters.values().next().value; return g ? { x: g.position.x, y: g.position.y, z: g.position.z } : null; },
   measure: kind => { const A = actors; if (kind === 'duelist') return measureObject(A.rig.group); if (kind === 'summon') { const g = A.monsters.values().next().value; return g ? measureObject(g) : { n: 0 }; } if (String(kind).startsWith('enemy')) return measureObject(null, A.kinds[+String(kind).slice(6) || 0].body); return { n: 0 }; },

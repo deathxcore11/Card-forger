@@ -118,7 +118,20 @@ function pane(D, K, cx, y, cz, tx, tz, nx, nz, w, h) {
   const q = (o, hw, y0, y1, col) => D.quad([cx + nx * o - tx * hw, y0, cz + nz * o - tz * hw], [cx + nx * o + tx * hw, y0, cz + nz * o + tz * hw], [cx + nx * o + tx * hw, y1, cz + nz * o + tz * hw], [cx + nx * o - tx * hw, y1, cz + nz * o - tz * hw], [nx, 0, nz], col);
   q(0.03, w / 2 + 0.22, y - 0.22, y + h + 0.22, K.frame); q(0.07, w / 2, y, y + h, K.sl);
 }
+// the block look (?blocks=1): a mesa or landmark drawn on the 24 cm ground grid, rows of cells inside its outline with flat tops and vertical walls, the same banded faces
+function blockMeshVox(D, map, b) {
+  const cr = Math.cos(b.rot), sr = Math.sin(b.rot), avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg, K = BLK[b.tone], T = Math.round((b.T + 0.04) / 0.06) * 0.06, C = 0.24, R0 = Math.max(b.rx, b.rz) * q + 1;
+  const inside = (x, z) => { const dx = x - b.cx, dz = z - b.cz, lx = (dx * cr + dz * sr) / (q * b.rx), lz = (-dx * sr + dz * cr) / (q * b.rz); return Math.abs(lx) ** 3 + Math.abs(lz) ** 3 <= 1; };
+  const x0 = Math.floor((b.cx - R0) / C) * C, z0 = Math.floor((b.cz - R0) / C) * C, N = Math.ceil(2 * R0 / C) + 2, runs = [];
+  for (let j = 0; j < N; j++) { const z = z0 + (j + 0.5) * C; let L = -1, Rr = -1; for (let i = 0; i < N; i++) if (inside(x0 + (i + 0.5) * C, z)) { if (L < 0) L = i; Rr = i + 1; } runs.push(L < 0 ? null : [L, Rr]); }
+  const band = y => mixc(K.face, 0x000000, 1 - K.bands[((Math.floor(y / 1.2) % 3) + 3) % 3]);
+  const wall = (a, bb, out) => { const g = Math.round(Math.min(footY(map, a[0], a[1]), footY(map, bb[0], bb[1])) / 0.06) * 0.06 - 0.12; for (let y = g; y < T - 0.01;) { const y1 = Math.min(T, (Math.floor(y / 1.2 + 1e-6) + 1) * 1.2); D.quad([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, band(y)); y = y1; } };
+  runs.forEach((r, j) => { if (!r) return; const za = z0 + j * C, zb = za + C, xa = x0 + r[0] * C, xb = x0 + r[1] * C;
+    D.quad([xa, T, za], [xb, T, za], [xb, T, zb], [xa, T, zb], [0, 1, 0], K.top); wall([xa, za], [xa, zb], [-1, 0, 0]); wall([xb, za], [xb, zb], [1, 0, 0]);
+    for (const [nb, dz, zz] of [[runs[j - 1], -1, za], [runs[j + 1], 1, zb]]) { const segs = nb ? [[r[0], Math.min(r[1], nb[0])], [Math.max(r[0], nb[1]), r[1]]] : [[r[0], r[1]]]; for (const [s0, s1] of segs) if (s1 > s0) wall([x0 + s0 * C, zz], [x0 + s1 * C, zz], [0, 0, dz]); } });
+}
 function blockMesh(D, map, b) {
+  if (blocksOn) { blockMeshVox(D, map, b); return; }
   const cr = Math.cos(b.rot), sr = Math.sin(b.rot), avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg, K = BLK[b.tone], N = 56, T = b.T + 0.04;
   const pt = k => { const t = k / N * TAU, c = Math.cos(t), s = Math.sin(t), ux = q * Math.sign(c) * Math.cbrt(Math.abs(c)), uz = q * Math.sign(s) * Math.cbrt(Math.abs(s)); return [b.cx + ux * b.rx * cr - uz * b.rz * sr, b.cz + ux * b.rx * sr + uz * b.rz * cr]; };
   const P = []; for (let k = 0; k <= N; k++) P.push(pt(k % N));

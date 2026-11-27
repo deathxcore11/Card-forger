@@ -12,6 +12,7 @@ export class Builder {
   constructor(uv) { this.pos = []; this.nor = []; this.col = []; this.uv = uv ? [] : null; this.seed = 12345; }
   rnd() { this.seed = (this.seed * 1664525 + 1013904223) >>> 0; return this.seed / 4294967296; }
   // quad a,b,c,d (any winding); `out` is a vector pointing away from the solid so we can face it correctly
+  quadN(a, b, c, d, out, nrm, color) { const s = this.smooth, o = this.plain; this.plain = true; this.smooth = false; const i0 = this.nor.length; this.quad(a, b, c, d, out, color); for (let k = i0; k < this.nor.length; k += 3) { this.nor[k] = nrm[0]; this.nor[k + 1] = nrm[1]; this.nor[k + 2] = nrm[2]; } this.smooth = s; this.plain = o; }       // the block ground: walls lit like the tops, their colour carries the step
   quad(a, b, c, d, out, color) { this.tri(a, b, c, out, color); this.tri(a, c, d, out, color); }
   // a triangle with its own normal and colour at each corner (the ground: lit and coloured smoothly across the facets)
   triV(P, N, C) { for (let k = 0; k < 3; k++) { const p = P[k], n = N[k], c = C[k]; this.pos.push(p[0], p[1], p[2]); this.nor.push(n[0], n[1], n[2]); this.col.push(((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255); if (this.uv) this.uv.push(p[0] / 26, p[2] / 26); } }
