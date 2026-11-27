@@ -1,4 +1,5 @@
 // Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
+import { loadFusionBodies } from './view/chimera.js';
 import { CFG } from './data/config.js';
 if (/[?&]thor=1/.test(location.search) && window.top === window) location.replace('thor.html' + location.search.replace(/([?&])thor=1&?/, '$1').replace(/[?&]$/, ''));       // ?thor=1: the AYN Thor's two screens at their real sizes, the game on top and the ride panel below (thor.html)
 import { K } from './data/tuning.js';
@@ -130,6 +131,7 @@ assets.wyvernPrep = await loadCreature('assets/models/mon-ember-wyvern-f1-rig.gl
 assets.butterflyPrep = await loadCreature('assets/models/life-butterfly-rig.glb');         // ambient life: the rigged butterfly
 assets.mira = await loadRig('assets/models/duelist-mira-anim.glb', { retime: { land_light: 0.5, land_heavy: 0.9 } });
 await loadBlocks(['kael', 'kaelRide', 'mira', 'vesh', 'oren', 'card', 'husk', 'runner', 'seer', 'ram', 'bloat', 'scarab', 'hunter', 'toll', 'warden', 'wyv1', 'wyv2', 'wyv3', 'hat1', 'hat2', 'hat3', 'familiar', 'tyrant', 'newt', 'strix', 'king', 'jackalT', 'jackalC', 'heart', 'power', 'sealstone', 'chestCard', 'chestSealed', 'chestTrophy', 'gem', 'coin', 'cactus', 'tree', 'stonecard', 'beam', 'urn', 'broker', 'shrine', 'spire']);       // the block look, only with ?blocks=1 (files kept out of the repo)
+await loadFusionBodies();       // the lab's fused-body engine in the block runtime (a Fusion is drawn as one fused body of its parents); without it, the old models
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 document.addEventListener('contextmenu', e => { if (!/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName)) e.preventDefault(); });       // no browser menu over the game or its overlays
