@@ -133,17 +133,19 @@ export const BLOCK_ANIM = {
   kaelRide: (p, t) => { rot(p.armL, 'z', 1.15 + 0.1 * Math.sin(t * 3)); rot(p.armR, 'z', -1.0 + 0.1 * Math.sin(t * 3 + 1)); rot(p.armL, 'x', 0.2); rot(p.torso, 'z', 0.06 * Math.sin(t * 2)); rot(p.head, 'y', -1.1); rot(p.scarf, 'x', -0.9 + 0.25 * Math.sin(t * 9)); rot(p.scarf, 'y', 0.3 * Math.sin(t * 7)); if (p.legs) p.legs.scale.y = 0.9; },
   chestSealed: (p, t, v, s) => { rot(p.lid, 'x', s && s.open ? -1.25 : 0); }
 };
-// one animator for every version 2 model, from its baked hints. Kinds: 0 none, 1 flap, 2 sway, 3 open, 4 spin, 5 pulse, 6 bob; axis 0 x, 1 y, 2 z.
-// PROVISIONAL: these formulas are my reading of the order note; they are checked against FORMAT.md version 2 when that file reaches this PC.
+// one animator for every version 2 model, from its baked hints (FORMAT.md version 2). With a = speed * time + phase, about the part's axis through its pivot:
+// 1 flap: 0.15 * sign(amp) + amp * sin(a) | 2 sway: amp * sin(a) | 3 open: amp * max(0, sin(a))^2 | 4 spin: speed * time | 5 pulse: scale 1 + amp * max(0, sin(a)) | 6 bob: amp blocks * sin(a) along the axis.
+// The whole model rises and falls by hoverAmp half-blocks * sin(hoverSpeed * time). A chest's open state (state.open) overrides its lid's open motion.
 const AX = ['x', 'y', 'z'];
 export function animateHints(bg, t, state) {
-  const m = bg.model, H = m.hover; if (H && bg.p.root) bg.p.root.position.y = bg.p.root.userData.rest.pos.y + H.amp * Math.sin(t * H.speed);
-  for (const pt of m.parts) { const M = pt.motion, g = bg.p[pt.name]; if (!M || !M.kind || !g) continue; const ax = AX[M.axis] || 'x', s = Math.sin(t * M.speed + M.phase), mir = /R$/.test(pt.name) ? -1 : 1;
-    if (M.kind === 1 || M.kind === 2) g.rotation[ax] = M.amp * s * (M.kind === 1 ? mir : 1);
-    else if (M.kind === 3) g.rotation[ax] = M.amp * (state && state.open !== undefined ? (state.open ? 1 : 0) : 0.5 + 0.5 * s);
-    else if (M.kind === 4) g.rotation[ax] = t * M.speed + M.phase;
-    else if (M.kind === 5) g.scale[ax] = g.userData.rest.scale[ax] * (1 + M.amp * s);
-    else if (M.kind === 6) g.position[ax] = g.userData.rest.pos[ax] + M.amp * s; }
+  const m = bg.model, H = m.hover; if (H && H.amp && bg.p.root) bg.p.root.position.y = bg.p.root.userData.rest.pos.y + H.amp * m.voxel / 2 * Math.sin(H.speed * t);
+  for (const pt of m.parts) { const M = pt.motion, g = bg.p[pt.name]; if (!M || !M.kind || !g) continue; const ax = AX[M.axis] || 'x', s = Math.sin(M.speed * t + M.phase);
+    if (M.kind === 1) g.rotation[ax] = 0.15 * Math.sign(M.amp) + M.amp * s;
+    else if (M.kind === 2) g.rotation[ax] = M.amp * s;
+    else if (M.kind === 3) g.rotation[ax] = state && state.open !== undefined ? (state.open ? M.amp : 0) : M.amp * Math.max(0, s) ** 2;
+    else if (M.kind === 4) g.rotation[ax] = M.speed * t;
+    else if (M.kind === 5) g.scale.copy(g.userData.rest.scale).multiplyScalar(1 + M.amp * Math.max(0, s));
+    else if (M.kind === 6) g.position[ax] = g.userData.rest.pos[ax] + M.amp * m.voxel * s; }
 }
 export function animateBlocks(id, bg, t, state) { if (bg.model.version >= 2) { animateHints(bg, t, state); return; } const f = BLOCK_ANIM[id]; if (f) f(bg.p, t, bg.model.voxel, state); }       // version 1 files carry no motion: the hand-copied table above
 
@@ -154,4 +156,41 @@ export async function loadBlocks(ids) {
   if (!blocksOn) return BLOCKS;
   await Promise.all(ids.map(async id => { try { const r = await fetch('assets/models/blocks/' + id + '.ewv3', { cache: 'no-store' }); if (!r.ok) return; BLOCKS[id] = decodeEwv3(new Uint8Array(await r.arrayBuffer())); } catch (e) { console.warn('block model', id, e.message); } }));
   return BLOCKS;
+}
+
+
+// ---- the swarm swing: instanced block enemies move their parts in the vertex shader from the part hints (the part index is on every vertex, the pivots and hints are uniforms).
+// Version 1 files carry no hints, so a few are copied from the recipes' M.anim (kind 2 = sway; axis 0 x, 1 y, 2 z; amp in radians; speed in radians a second).
+const HINTS_V1 = { husk: { armL: [2, 0, 0.4, 3, 0], armR: [2, 0, -0.4, 3, 0], head: [2, 2, 0.12, 1.5, 0] } };
+export function partHints(model, id) { return model.parts.map(pt => { if (pt.motion) return pt.motion; const h = (HINTS_V1[id] || {})[pt.name]; return h ? { kind: h[0], axis: h[1], amp: h[2], speed: h[3], phase: h[4] } : { kind: 0, axis: 0, amp: 0, speed: 0, phase: 0 }; }); }
+const SWING_GLSL = [
+  '{ int pi = int(aPart + 0.5); vec4 M = uSwMot[0]; vec3 P = uSwPiv[0], K = uSwAx[0]; float PH = uSwPh[0];',
+  '  for (int j = 1; j < 8; j++) if (j == pi) { M = uSwMot[j]; P = uSwPiv[j]; K = uSwAx[j]; PH = uSwPh[j]; }',
+  '  float off = 0.0;',
+  '#ifdef USE_INSTANCING',
+  '  off = instanceMatrix[3].x * 0.37 + instanceMatrix[3].z * 0.61;',
+  '#endif',
+  '  float s = sin(uSwT * M.z + PH + off); int kd = int(M.x + 0.5);',
+  '  if (kd == 1) transformed = P + swRot(transformed - P, K, 0.15 * sign(M.y) + M.y * s);',
+  '  else if (kd == 2) transformed = P + swRot(transformed - P, K, M.y * s);',
+  '  else if (kd == 3) transformed = P + swRot(transformed - P, K, M.y * max(0.0, s) * max(0.0, s));',
+  '  else if (kd == 4) transformed = P + swRot(transformed - P, K, M.z * uSwT);',
+  '  else if (kd == 5) transformed = P + (transformed - P) * (1.0 + M.y * max(0.0, s));',
+  '  else if (kd == 6) transformed += K * M.w * s; }'
+].join('\n');
+const SWING_HEAD = 'attribute float aPart; uniform float uSwT; uniform vec3 uSwPiv[8]; uniform vec4 uSwMot[8]; uniform vec3 uSwAx[8]; uniform float uSwPh[8];\n' +
+  'vec3 swRot(vec3 v, vec3 k, float a) { float c = cos(a), s = sin(a); return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c); }\n';
+// fit: the Matrix4 the merged geometry was moved by (uniform scale and turns), so the pivots and axes follow it. clock: a shared { value } in seconds.
+export function blockSwing(mat, model, id, fit, clock) {
+  const N = 8, H = partHints(model, id), piv = [], mot = [], ph = [], ax = [], Q = new T.Matrix3().setFromMatrix4(fit), fitScale = new T.Vector3().setFromMatrixColumn(fit, 0).length();
+  for (let i = 0; i < N; i++) { const pt = model.parts[i], h = H[i]; if (!pt || !h) { piv.push(new T.Vector3()); mot.push(new T.Vector4()); ph.push(0); ax.push(new T.Vector3(1, 0, 0)); continue; }
+    piv.push(new T.Vector3(pt.pivot[0], pt.pivot[1], pt.pivot[2]).applyMatrix4(fit)); ax.push(new T.Vector3(h.axis === 0 ? 1 : 0, h.axis === 1 ? 1 : 0, h.axis === 2 ? 1 : 0).applyMatrix3(Q).normalize());
+    mot.push(new T.Vector4(h.kind, h.amp, h.speed, h.amp * model.voxel * fitScale)); ph.push(h.phase); }       // w: a bob's distance in metres after the fit
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (sh, r) => { if (prev) prev(sh, r);
+    Object.assign(sh.uniforms, { uSwT: clock, uSwPiv: { value: piv }, uSwMot: { value: mot }, uSwAx: { value: ax }, uSwPh: { value: ph } });
+    sh.vertexShader = SWING_HEAD + sh.vertexShader.replace('#include <morphtarget_vertex>', '#include <morphtarget_vertex>\n' + SWING_GLSL);
+  };
+  mat.customProgramCacheKey = () => 'blockswing';
+  return mat;
 }

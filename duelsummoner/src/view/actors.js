@@ -21,10 +21,11 @@ import { creatureGeometry, creatureLit } from './creatures.js';
 import { PICKUP_COLORS } from '../data/pickups.js';
 import { POWERUPS } from '../data/powerups.js';
 import { makeCreature } from './creature.js';
-import { BLOCKS, blockGroup, blockMerged, animateBlocks } from './models.js';
+import { BLOCKS, blockGroup, blockMerged, animateBlocks, blockSwing } from './models.js';
 
 const T = window.THREE;
 const lambert = (color, extra, k) => actorLit(new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {})), k || 1);
+const outlineMat = () => { const m = new T.MeshBasicMaterial({ color: 0x1b1008, side: T.BackSide }); m.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', 'vec3 transformed = position + normalize(normal) * 0.05;'); }; return m; };       // the dark hull (a block enemy gets its own, so it swings with the parts)
 const OUTLINE = new T.MeshBasicMaterial({ color: 0x1b1008, side: T.BackSide }); OUTLINE.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', 'vec3 transformed = position + normalize(normal) * 0.05;'); };
 const basic = (color, extra) => new T.MeshBasicMaterial(Object.assign({ color }, extra || {}));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -121,15 +122,15 @@ export class Actors {
     this.monsters = new Map(); this.specials = new Map(); this.chests = new Map();
 
     // the swarm: one instanced mesh per kind (+ eyes for the ground swarmers)
-    const fitBlock = (bg, ref) => { ref.computeBoundingBox(); bg.computeBoundingBox(); const a = ref.boundingBox, b = bg.boundingBox, s = (a.max.y - a.min.y) / (b.max.y - b.min.y); bg.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2); bg.scale(s, s, s); bg.translate((a.min.x + a.max.x) / 2, a.min.y, (a.min.z + a.max.z) / 2); bg.rotateY(Math.PI); return bg; };       // the block model's height and foot matched to the old creature's, facing the same way
+    const fitBlock = (bg, ref) => { ref.computeBoundingBox(); bg.computeBoundingBox(); const a = ref.boundingBox, b = bg.boundingBox, s = (a.max.y - a.min.y) / (b.max.y - b.min.y), F = new T.Matrix4().makeRotationY(Math.PI).multiply(new T.Matrix4().makeTranslation((a.min.x + a.max.x) / 2, a.min.y, (a.min.z + a.max.z) / 2)).multiply(new T.Matrix4().makeScale(s, s, s)).multiply(new T.Matrix4().makeTranslation(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2)); bg.applyMatrix4(F); bg.userData.fit = F; return bg; };       // the block model's height and foot matched to the old creature's, facing the same way
     const blockGeo = (id, lv) => { const cg0 = creatureGeometry(id); return id === 0 && BLOCKS.husk ? fitBlock(blockMerged(BLOCKS.husk, lv), cg0 || new T.BoxGeometry(1, 1.25, 1)) : null; };
     const kindOf = (K, far) => {
       const bgeo = blockGeo(K.id, far ? 1 : 0), cg = bgeo ? null : creatureGeometry(K.id), geo = bgeo || cg || (K.id === 3 ? new T.BoxGeometry(1.1, 1.1, 1.1) : K.id === 4 ? new T.IcosahedronGeometry(0.8, 0) : new T.OctahedronGeometry(0.75, 0));
-      geo.computeBoundingBox(); const bb = geo.boundingBox, mat = lambert(0xffffff, cg || bgeo ? { vertexColors: true, side: T.DoubleSide } : null, 0.3); if (cg) creatureLit(mat); statusLit(mat, bb.min.y, bb.max.y);
+      geo.computeBoundingBox(); const bb = geo.boundingBox, mat = lambert(0xffffff, cg || bgeo ? { vertexColors: true, side: T.DoubleSide } : null, 0.3); if (cg) creatureLit(mat); statusLit(mat, bb.min.y, bb.max.y); if (bgeo) blockSwing(mat, BLOCKS.husk, 'husk', bgeo.userData.fit, this._swT || (this._swT = { value: 0 }));       // the block husk swings its arms and head in the shader
       const body = instanced(geo, mat, CFG.enemy.max); statusAttr(geo, CFG.enemy.max);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.enemy.max * 3), 3);
-      const eye = !cg && K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xe0a040), CFG.enemy.max) : null;
-      const out = new T.InstancedMesh(geo, OUTLINE, CFG.enemy.max); out.instanceMatrix = body.instanceMatrix; out.frustumCulled = false; out.count = 0; out.renderOrder = -1;       // a dark hull drawn behind each enemy, pushed out 5 cm: a clear outline against pale sand, one extra draw per kind
+      const eye = !cg && !bgeo && K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xe0a040), CFG.enemy.max) : null;
+      const out = new T.InstancedMesh(geo, bgeo ? blockSwing(outlineMat(), BLOCKS.husk, 'husk', bgeo.userData.fit, this._swT) : OUTLINE, CFG.enemy.max); out.instanceMatrix = body.instanceMatrix; out.frustumCulled = false; out.count = 0; out.renderOrder = -1;       // a dark hull drawn behind each enemy, pushed out 5 cm: a clear outline against pale sand, one extra draw per kind
       scene.add(body, out); if (eye) scene.add(eye);
       return { K, body, out, eye, base: cg || bgeo ? new T.Color(1, 1, 1) : new T.Color(K.color), boost: cg || bgeo ? 2.4 : 1, fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false, block: !!bgeo };
     };
@@ -465,7 +466,7 @@ export class Actors {
       let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees
       this._tw = (this._tw || 0) + (tw - (this._tw || 0)) * Math.min(1, dt / 0.3); R.twist(this._tw);
     }
-    this._board(g, p, px, py, pz, dt); if (this.rig) this.rig.group.visible = !this._bRideOn; this._lit(g, dt); this._rollers(g); this._arenaSeals(g);
+    this._board(g, p, px, py, pz, dt); if (this.rig) this.rig.group.visible = !this._bRideOn; if (this._bRideOn) this.player.visible = false; this._lit(g, dt); this._rollers(g); this._arenaSeals(g);
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);
@@ -545,6 +546,7 @@ export class Actors {
       for (const mm of [this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell]) { mm.count = n; mm.instanceMatrix.needsUpdate = true; }
     }
     // swarm
+    if (this._swT) this._swT.value = t;       // the block swarm's swing clock
     this.lastEn = e; let nearN = 0; this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); for (const kk of this.kinds) { kk.fxNow = false; kk.cs = 0; kk.fs = 0; } const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
     for (let i = 0; i < e.max; i++) {
       if (!e.alive[i]) { this._wasSwarm[i] = 0; continue; }

@@ -36,5 +36,5 @@ test('EWV3: a hand-made file decodes to parts at their pivots, exact colours, gl
 test('EWV3 version 2: the baked hover and part motion are read and drive the one animator', () => {
   const m = decodeEwv3(file(true)); assert.equal(m.version, 2); assert.ok(Math.abs(m.hover.amp - 0.5) < 1e-6 && m.hover.speed === 2);
   assert.equal(m.parts[1].motion.kind, 2); assert.equal(m.parts[1].motion.axis, 1); assert.equal(m.parts[0].motion.kind, 0);
-  const bg = blockGroup(m); animateBlocks('any', bg, Math.PI / 8, null); assert.ok(Math.abs(bg.p.head.rotation.y - 0.3 * Math.sin(Math.PI / 2)) < 1e-6, 'a sway turns the part about its axis'); assert.ok(Math.abs(bg.p.root.position.y - 0.5 * Math.sin(Math.PI / 4)) < 1e-6, 'the hover lifts the inner root'); assert.equal(bg.root.position.y, 0, 'the game-placed outer group is never moved');
+  const bg = blockGroup(m); animateBlocks('any', bg, Math.PI / 8, null); assert.ok(Math.abs(bg.p.head.rotation.y - 0.3 * Math.sin(Math.PI / 2)) < 1e-6, 'a sway turns the part about its axis'); assert.ok(Math.abs(bg.p.root.position.y - 0.5 * 0.03 * Math.sin(Math.PI / 4)) < 1e-6, 'the hover lifts the inner root (half-blocks)'); assert.equal(bg.root.position.y, 0, 'the game-placed outer group is never moved');
 });

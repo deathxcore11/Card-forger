@@ -98,7 +98,7 @@ export class Props {
     const OPEN = !!this.openMap;       // the open desert: a warm wood chest with a lit top, readable from 30 m
     const lit = { pos: [], nor: [], col: [], hide: [] }, unlit = { pos: [], nor: [], col: [], hide: [] }, M = new T.Matrix4(), R = new T.Matrix4(), col = new T.Color();
     world.cchests.forEach((c, ci) => {
-      if (BLOCKS.chestSealed && !c.trophy) { const bg = blockGroup(BLOCKS.chestSealed), s = 1.5 / BLOCKS.chestSealed.size.x; bg.root.scale.setScalar(s); bg.root.position.set(c.x, c.y, c.z); bg.root.rotation.y = c.ry || 0; bg.root.userData.bc = { c, bg }; animateBlocks('chestSealed', bg, 0, { open: !!c.open }); this.G.add(bg.root); this.chestMeshes.push(bg.root); this.chestRange[ci] = []; return; }       // the block look (?blocks=1): the sealed chest, its lid opens when the chest does
+      if (BLOCKS.chestSealed && !c.trophy) { const bg = blockGroup(BLOCKS.chestSealed), s = 1.5 / BLOCKS.chestSealed.size.x; bg.root.scale.setScalar(s); bg.root.position.set(c.x, c.y, c.z); { const S = this._spawn; bg.root.rotation.y = S ? Math.atan2(S.x - c.x, S.z - c.z) : 0; } bg.root.userData.bc = { c, bg }; animateBlocks('chestSealed', bg, 0, { open: !!c.open }); this.G.add(bg.root); this.chestMeshes.push(bg.root); this.chestRange[ci] = []; return; }       // the block look (?blocks=1): the sealed chest facing the spawn (nothing new stored), its lid opens when the chest does
       const piece = (geo, x, y, z, hex, un, rx, when) => {       // when: 'c' shows only while closed, 'o' only while open, none always
         const hv = when === 'c' ? (c.open ? 1 : 0) : when === 'o' ? (c.open ? 0 : 1) : 0; M.makeTranslation(c.x + x, c.y + y, c.z + z); if (rx) { R.makeRotationX(rx); M.multiply(R); } const g2 = geo.toNonIndexed(); g2.applyMatrix4(M); col.setHex(hex); const o = un ? unlit : lit, st = o.pos.length / 3, p = g2.attributes.position, n = g2.attributes.normal; for (let i = 0; i < p.count; i++) { o.pos.push(p.getX(i), p.getY(i), p.getZ(i)); if (n) o.nor.push(n.getX(i), n.getY(i), n.getZ(i)); o.col.push(col.r, col.g, col.b); o.hide.push(hv); } return [un ? 1 : 0, st, p.count, when || '']; };
       const lid = c.trophy ? piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.25, -0.55, 0xeee4c8, false, -1.1) : piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.05, 0, OPEN ? 0xc98a4a : 0x2a2026, false, 0, 'c');
@@ -122,6 +122,7 @@ export class Props {
   }
 
   update(g) {
+    this._spawn = g.map && g.map.world && g.map.world.spawn;
     if (this.world !== g.world) { this._build(g.world); this._known = null; } else if (this._sigV !== this._sig(g.world)) this._sync(g.world);
     const P = this.parts, d = this.d, t = g.t;
     { const px = g.p.x, pz = g.p.z, R2 = 420 * 420, vis = (o, g2) => { g2.visible = (o.x - px) * (o.x - px) + (o.z - pz) * (o.z - pz) < R2; }; for (const o of P.stones) vis(o.s, o.g); for (const o of P.wagers) vis(o.s, o.g); for (const o of P.shrines) vis(o.s, o.g); if (P.broker) vis(g.world.broker, P.broker.g); if (P.altar) vis(P.altar.a, P.altar.g); }       // the big desert has hundreds of them: only the near ones are drawn
