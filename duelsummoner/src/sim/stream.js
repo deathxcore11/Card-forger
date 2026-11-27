@@ -31,6 +31,7 @@ function placeCell(g, m, C) {
     m.encounters.push({ type: kind, x: pk.x, z: pk.z });
   }
   for (const e of C.extras) vases(g, e);
+  if (m.dressCell) for (const e of m.dressCell(C.qx, C.qz).parkPots || []) vases(g, e);       // the park lines' pots: ride through them for coins
 }
 function vases(g, v) {
   for (const [dx, dz, banded] of v.vases) { const x = v.x + dx, z = v.z + dz, y = heightAt(x, z); if (y >= 50) continue; g.world.vases.push({ x, y, z, alive: true, banded: !!banded, hp: E_VASE_HP }); }

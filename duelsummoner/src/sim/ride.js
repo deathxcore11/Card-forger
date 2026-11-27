@@ -12,7 +12,7 @@ import { resolveColliders } from './colliders.js';
 import { explode, damageEnemy } from './combat.js';
 import { breakVasesNear, rideShrineDone } from './world.js';
 import { shrineCourse } from '../gen/world/world.js';
-import { railsNear, sealsNear, sealSet, pipesNear } from './rails.js';
+import { railsNear, sealsNear, sealSet, pipesNear, kickersNear } from './rails.js';
 import { answerTrick } from './answers.js';
 import { MONSTERS, FUSIONS, formOf } from '../data/cards.js';
 import { elemBits } from '../data/elements.js';
@@ -112,7 +112,7 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
     // the ollie: hold to crouch, release to pop
     if (cmd.jump) r.crouch = Math.min(RIDE.crouchMax, r.crouch + dt);
     if (jumpRel && r.crouch > 0) { const h = (RIDE.popLo + (RIDE.popHi - RIDE.popLo) * (r.crouch / RIDE.crouchMax)) * (1 + (g.mods.ridePop || 0)); p.vy = Math.sqrt(2 * RIDE.gravity * h * (1 + g.mods.jumpH)); p.grounded = false; r.crouch = 0; r.airT = 0; g.emit('ollie', h, 0, 0); }
-    step(g, p, r, dt); if (p.grounded) groundFollow(g, p, r, dt);
+    step(g, p, r, dt); if (p.grounded) groundFollow(g, p, r, dt); if (p.grounded && kickerTick(g, p, r)) return true;
     if (p.grounded && !r.manual && !(hasInput && (mx * sin(r.heading) + mz * cos(r.heading)) > -0.3) && !cmd.jump && !(r.vertG > 0) && r.speed < RIDE.dismountAt) { bank(g, r); dismount(g, p, r); }       // only a stop, the brake or a bail takes the rider off: never while pushing forward or charging an ollie
     return true;
   }
@@ -265,5 +265,12 @@ function loopTick(g, p, r, dt) {
   const L = r.loop; L.th += Math.max(r.speed, 13) / L.R * dt; const th = Math.min(L.th, 6.283185307179586), al = sin(th) * L.R * 0.35 + (th / 6.283185307179586) * 1.2;
   p.x = L.x + L.ux * al; p.z = L.z + L.uz * al; p.y = L.y + L.R - cos(th) * L.R; p.vx = L.ux * r.speed; p.vz = L.uz * r.speed; p.vy = 0; p.grounded = false; r.heading = atan2(L.ux, L.uz); p.face = r.heading; r.loopTh = th;
   if (th >= 6.283185307179586) { r.loop = null; r.lastLoopT = g.t; flowOf(g).loops = (flowOf(g).loops || 0) + 1; r.loopTh = 0; r.loopCd = 0.8; p.grounded = true; p.y = heightAt(p.x, p.z); r.speed = Math.min(RIDE.top, r.speed * 1.05); }
+}
+// a kicker: on its ramp the card rises with it; off its lip at speed it launches (more air the faster), and counts
+function kickerTick(g, p, r) {
+  if (r.speed < 6) return false; const hx = sin(r.heading), hz = cos(r.heading);
+  for (const q of kickersNear(g, p.x, p.z, 6)) { const [x, y, z, ux, uz, len, w, h] = q, dx = p.x - x, dz = p.z - z, a = dx * ux + dz * uz + len / 2, b = Math.abs(-dx * uz + dz * ux); if (b > w / 2 || a < 0 || a > len || hx * ux + hz * uz < 0.5) continue;
+    p.y = heightAt(p.x, p.z) + h * a / len; if (a > len - 0.5) { p.grounded = false; p.vy = Math.min(10, 2.5 + r.speed * 0.35); r.airT = 0; r.lastLandVy = 0; addTrick(g, r, 'Kicker', 80); g.emit('ollie', 3, 0, 0); return true; } return false; }
+  return false;
 }
 function dismount(g, p, r) { r.on = false; r.runT = 0; r.slideWas = true; r.grind = null; r.manual = false; const ax = sin(r.heading), az = cos(r.heading); p.vx = ax * r.speed; p.vz = az * r.speed; g.emit('ride', 0, 0, 0); }
