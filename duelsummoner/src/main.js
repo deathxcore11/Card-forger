@@ -397,7 +397,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'announce') sigils.push({ x: b, z: c, until: actors.vt + 6.5, next: 0 });
   else if (type === 'landmark') { fx.ring(a, game.p.y + 0.3, b, 12, 0xffe08a, 0.8); fx.burst(a, game.p.y + 1.5, b, 50, 0xffe08a, 7, 6, 0.3, 0.9, 6); fx.shake(0.25); }       // a landmark reached: a golden ring and a fountain of sparks
   else if (type === 'slam') { const rr = c || 6, y0 = groundY(a, b); if (rr < 4.4) { fx.burst(a, y0 + 0.3, b, 10, 0xd9b872, 3, 3, 0.26, 0.5, 6); } else {       // a small bank: a puff of sand, no ring (rings only on a real slam: a combo of about 400 or more)
-    fx.ring(a, y0 + 0.2, b, rr, 0xffd56a, 0.5); for (let k = 0; k < 3; k++) fx.burst(a, y0 + 0.4, b, 22, k ? 0xd9b872 : 0xffd56a, 4 + rr * 0.5, 5 + k, 0.34, 0.8, 8); fx.shake(Math.min(0.6, 0.22 + rr * 0.03)); } }       // the landing slam: a gold shockwave, chunky sand and sparks, a weighty shake
+    fx.ring(a, y0 + 0.2, b, Math.min(rr, 6), 0xffd56a, 0.4); for (let k = 0; k < 1; k++) fx.burst(a, y0 + 0.4, b, 18, k ? 0xd9b872 : 0xffd56a, 4 + Math.min(rr, 6) * 0.5, 5 + k, 0.34, 0.8, 8); fx.shake(Math.min(0.6, 0.22 + rr * 0.03)); } }       // the landing slam: a gold shockwave, chunky sand and sparks, a weighty shake       // the ring at most 6 m and 0.4 s, so it never sweeps over the Flow meter
   else if (type === 'bail') { fx.shake(0.22); fx.burst(a, groundY(a, b) + 0.3, b, 16, 0xd9b872, 3, 2, 0.3, 0.6, 6); }
   else if (type === 'ollie') { schoolDid('ollie'); fx.burst(ip.x, ip.y + 0.1, ip.z, 10, 0xe2c48a, 2.4, 1.6, 0.24, 0.45, 6); }
   else if (type === 'ride') { if (a) { fx.burst(ip.x, ip.y + 0.2, ip.z, 14, 0xffe08a, 2.6, 2, 0.22, 0.5, 6); } }

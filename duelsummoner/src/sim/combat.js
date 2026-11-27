@@ -98,7 +98,7 @@ export function dropPickup(g, kind, x, y, z, val) {
 // ---- explosions: hurt the duelist (if pDmg) and every enemy and elite in range (if eDmg) ----
 export function explode(g, x, y, z, r, pDmg, eDmg, color, src) {
   if (!(pDmg > 0)) r *= g.reachK;       // Reach scales the player's own area bursts (the Locket nova, the Graveyard Bell, Mark blasts); a hostile blast (it hurts the duelist) never grows
-  addFx(g, { type: 'ring', owner: pDmg > 0 ? 1 : 0, x, y, z, r, dur: 0.45, color: color || 0xff9030 });
+  addFx(g, { type: 'ring', owner: pDmg > 0 ? 1 : 0, x, y, z, r, dur: src === 'Landing slam' ? 0.4 : 0.45, color: color || 0xff9030, vr: src === 'Landing slam' ? 6 : 0 });       // vr: the landing slam is drawn no wider than 6 m (view only; the hit is still its full radius)
   const p = g.p;
   if (pDmg > 0) { const dx = p.x - x, dz = p.z - z; if (dx * dx + dz * dz < r * r && Math.abs(p.y - y) < 2.5) g.hurtPlayer(pDmg, true, src || 'an explosion'); }
   if (eDmg > 0) {
@@ -119,7 +119,7 @@ export function explode(g, x, y, z, r, pDmg, eDmg, color, src) {
 
 export function addFx(g, spec) {
   const list = g.fx;
-  for (let i = 0; i < list.length; i++) if (!list[i].on) { Object.assign(list[i], { on: true, t: 0, dur: 0.4, r: 1, arc: 0, dx: 0, dz: 1, color: 0xff9030, owner: 2, el: null }, spec); return list[i]; }
+  for (let i = 0; i < list.length; i++) if (!list[i].on) { Object.assign(list[i], { on: true, t: 0, dur: 0.4, r: 1, arc: 0, dx: 0, dz: 1, color: 0xff9030, owner: 2, el: null, vr: 0 }, spec); return list[i]; }
   return null;
 }
 export function makeFx(n) { const a = []; for (let i = 0; i < n; i++) a.push({ on: false, type: 'ring', owner: 2, el: null, x: 0, y: 0, z: 0, r: 1, arc: 0, dx: 0, dz: 1, t: 0, dur: 0.4, color: 0xff9030 }); return a; }

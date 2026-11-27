@@ -84,7 +84,8 @@ function wingMesh(color, span) {
 function cone(r, h, color) { const m = new T.Mesh(new T.ConeGeometry(r, h, 5), lambert(color)); m.rotation.x = Math.PI / 2; return m; }
 
 const PLACEHOLDER = {
-  'ember-wyvern': () => { const g = new T.Group(); g.add(cone(0.4, 1.4, 0xd9502a), wingMesh(0xf0913a, 1.5)); return g; },
+  'ember-wyvern': () => { const g = new T.Group(), M = c => lambert(c), body = new T.Mesh(new T.IcosahedronGeometry(0.42, 0), M(0xd9502a)), head = new T.Mesh(new T.IcosahedronGeometry(0.24, 0), M(0xe86a34)), tail = new T.Mesh(new T.ConeGeometry(0.14, 0.9, 4), M(0xb8401f)), w = wingMesh(0xf0913a, 1.4);       // the stand-in when the model file is missing: a small round body, a head, a tail and wings (it was a bare cone that read as an arrow)
+    body.scale.set(1, 0.85, 1.35); head.position.set(0, 0.2, 0.55); tail.rotation.x = -Math.PI / 2; tail.position.set(0, 0, -0.75); w.position.y = 0.15; g.add(body, head, tail, w); return g; },
   'cinder-hatchling': () => { const g = new T.Group(); const b = new T.Mesh(new T.IcosahedronGeometry(0.4, 0), lambert(0x3a3438)); b.position.y = 0.4; const c = cone(0.18, 0.5, 0xff7a20); c.position.set(0, 0.5, 0.4); g.add(b, c); return g; },
   'rune-apprentice': () => { const g = new T.Group(); const b = new T.Mesh(new T.ConeGeometry(0.4, 1.2, 6), lambert(0x6a4aa8)); const h = new T.Mesh(new T.OctahedronGeometry(0.28, 0), lambert(0xe8c39a)); h.position.y = 0.8; g.add(b, h); return g; },
   'sigil-familiar': () => { const g = new T.Group(); g.add(new T.Mesh(new T.OctahedronGeometry(0.4, 0), lambert(0xa57bff))); return g; },
@@ -674,6 +675,7 @@ export class Actors {
       if (o.type === 'bolt') { if (this.ribbon.see(o) && o.el === 'lightning') this._arcAt(g, o.x2, o.z2); continue; }
       const f = Math.min(1, o.t / o.dur), fade = 1 - f;
       if (o.type === 'wake') { if (this.ownCtx) this.own.card((o.ax + o.bx) / 2, o.y, (o.az + o.bz) / 2, o.r, o.hw, 0xff8a30, 0, 0, Math.atan2(o.dz, o.dx)); continue; }       // the Ember Wake: the sim's rectangle itself (half length r, half width hw), lit from the Wyvern to the line's end
+      if (o.vr) { d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = Math.min(o.r, o.vr) * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix(); this.fxRing.setMatrixAt(nr, d.matrix); this.fxRing.setColorAt(nr, col.setHex(0xffd56a).multiplyScalar(0.4 + 0.6 * fade)); nr++; continue; }       // the landing slam: one thin gold ring, at most 6 m, 0.4 s
       if (o.owner === 0 && this.ownCtx) { if (!this.own.hideAll) { if (tier > 0) this._tierFx(o, tier); if (this.tier5 && o.r >= 8) this._tier5(o, rch); else this._grow(o, stier, rch); } if (o.type === 'ring') this.own.area(o.x, o.y + 0.15, o.z, o.r * (0.35 + 0.65 * f), this._ownHex(o), false, 0, 1, 0, 0.4 + 0.6 * fade); else this.own.area(o.x, o.y + 0.15, o.z, o.r, this._ownHex(o), true, o.dx, o.dz, o.arc / 2, 0.3 + 0.7 * fade); continue; }
       if (o.type === 'ring') {
         d.rotation.set(0, 0, 0); d.position.set(o.x, o.y + 0.15, o.z); const r = o.r * (0.35 + 0.65 * f); d.scale.set(r, 1, r); d.updateMatrix();
