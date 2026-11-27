@@ -196,3 +196,10 @@ test('duelist ride styles: Kael (Ember Rider) burns the slam ground; touch ridin
   h.p.ride = undefined; h.p.x = mx - ux / L * 1.5; h.p.z = mz - uz / L * 1.5; h.p.y = my + 1.0; h.p.vx = ux / L * 12; h.p.vz = uz / L * 12; h.p.vy = -1; h.p.grounded = false; run(h, 1); h.p.ride.on = true; h.p.ride.speed = 12;
   run(h, 6, { ...I }); assert.ok(!h.p.ride.grind, 'no auto-grind with the helpers off');
 });
+test('spawns: while riding, no new enemy appears in front of the camera within 40 m (they come from the sides and behind)', () => {
+  const g = mk(); g.god = true; g.spawnAcc = 0; g.rideKicks = 1; const [x, z] = flatSpot(g); place(g, x, z, 16); run(g, 2, { ...I, f: 1 });
+  let bad = 0, seen = 0; const e = g.en, was = new Uint8Array(e.max);
+  for (let t = 0; t < 60 * 40; t++) { run(g, 1, { ...I, f: 1, jump: t % 180 < 20 }); const cy = g.camYaw || 0, fx = -Math.sin(cy), fz = -Math.cos(cy);
+    for (let i = 0; i < e.max; i++) { if (e.alive[i] && !was[i]) { seen++; const dx = e.x[i] - g.p.x, dz = e.z[i] - g.p.z, d = Math.hypot(dx, dz); if (d < 40 && (dx * fx + dz * fz) / d > 0.5) bad++; } was[i] = e.alive[i]; } }
+  assert.ok(seen > 30, 'spawns seen: ' + seen); assert.equal(bad, 0, 'spawned in view within 40 m: ' + bad + ' of ' + seen);
+});

@@ -204,7 +204,7 @@ function surgeTick(g) {
     if (g.surgeAnn[i] && g.sc >= g.surgeAt[i]) {
       g.surgeDone[i] = 1;
       const SU = RUN.surge, n = SU.count[0] + Math.floor(g.rsp() * (SU.count[1] - SU.count[0] + 1)), p = g.p; let made = 0;
-      for (let k = 0; k < n; k++) { if (enemyCount(g.en) >= Math.max(g.maxAlive, 140)) break; const a2 = k / n * 6.283185307, r = 26 + (k % 3) * 4; if (spawnEnemy(g, 'husk', { x: p.x + cos(a2) * r, z: p.z + sin(a2) * r })) { g.en.hp[g.lastSlot] *= RUN.surge.hpMul; made++; } }
+      for (let k = 0; k < n; k++) { if (enemyCount(g.en) >= Math.max(g.maxAlive, 140)) break; const a2 = k / n * 6.283185307, r = 26 + (k % 3) * 4; if (spawnEnemy(g, 'husk', { ring: 1, x: p.x + cos(a2) * r, z: p.z + sin(a2) * r })) { g.en.hp[g.lastSlot] *= RUN.surge.hpMul; made++; } }
       g.surgeSize = made;
     }
   }
@@ -318,7 +318,7 @@ function spawner(g, dt, fight, toll) {
     g.ringT -= dt;
     if (g.ringT <= 0) {
       g.ringT = RUN.ring.every; g.event('banner', 'The Last Audience closes in.');
-      for (let k = 0; k < RUN.ring.count; k++) { if (enemyCount(g.en) >= cap) break; const a = k / RUN.ring.count * Math.PI * 2; spawnEnemy(g, 'husk', { x: p.x + cos(a) * RUN.ring.radius, z: p.z + sin(a) * RUN.ring.radius }); }
+      for (let k = 0; k < RUN.ring.count; k++) { if (enemyCount(g.en) >= cap) break; const a = k / RUN.ring.count * Math.PI * 2; spawnEnemy(g, 'husk', { ring: 1, x: p.x + cos(a) * RUN.ring.radius, z: p.z + sin(a) * RUN.ring.radius }); }
     }
   }
   if (!toll && g.sc >= ACES.from) {                              // an Ace monster now and then, from 1:24 of the stage

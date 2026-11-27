@@ -39,7 +39,7 @@ function ringSpot(g, out) {
   const S = CFG.spawn, p = g.p;
   for (let k = 0; k < S.tries; k++) {
     let a = g.rsp() * Math.PI * 2, d = S.min + g.rsp() * (S.max - S.min);
-    const rd = g.big && p.ride && p.ride.on && p.ride.speed > 10 ? p.ride : null; if (rd) { a = atan2(cos(rd.heading), sin(rd.heading)) + (a - Math.PI) * 0.45; d += rd.speed * 0.8; }       // a rider meets the swarm ahead: spawns gather in front of the card (about 80 degrees either side), further out the faster it goes
+    if (g.big) { const cy = g.camYaw || 0, fx = -sin(cy), fz = -cos(cy); if (cos(a) * fx + sin(a) * fz > 0.26) a += Math.PI; }       // the big desert: never in front of the camera (75 degrees either side of where it looks); a new enemy comes in from the sides or behind and closes in
     const x = p.x + cos(a) * d, z = p.z + sin(a) * d, h = heightAt(x, z);
     if (h >= 50 || (g.map && g.map.open && h > 38)) continue;
     out.x = x; out.z = z; out.y = h; return true;
@@ -76,6 +76,7 @@ export function spawnEnemy(g, kindName, at) {
   let slot = -1;
   for (let i = 0; i < e.max; i++) if (!e.alive[i]) { slot = i; break; }
   if (slot < 0) return false;
+  if (at && at.ring && g.big) { const p = g.p, cy = g.camYaw || 0, fx = -sin(cy), fz = -cos(cy), dx = at.x - p.x, dz = at.z - p.z, d = Math.sqrt(dx * dx + dz * dz) || 1; if ((dx * fx + dz * fz) / d > 0.26 && d < 60) at = { x: p.x + dx / d * 62, z: p.z + dz / d * 62 }; }       // a ring round the duelist: the part in front of the camera starts 62 m out, beyond sight, and closes in
   if (at) { const h = heightAt(at.x, at.z); if (h >= 50) return false; spot.x = at.x; spot.z = at.z; spot.y = h; }
   else if (!ringSpot(g, spot)) return false;
   put(g, slot, spot.x, spot.y, spot.z, K.id);

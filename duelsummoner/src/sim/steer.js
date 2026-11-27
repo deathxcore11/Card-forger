@@ -17,8 +17,8 @@ export function lineClear(x0, z0, x1, z1, y) {
 }
 
 // o: { x, y, z, vy, dx, dz }. Sets out.x/out.z to a unit steering vector toward (px,pz) and out.d to the distance.
-export function steerVec(g, o, px, py, pz, out) {
-  { const p = g.p, r = p.ride; if (g.big && r && r.on && r.speed > 12 && px === p.x && pz === p.z) { const ddx = px - o.x, ddz = pz - o.z, lead = Math.min(1.6, Math.sqrt(ddx * ddx + ddz * ddz) / 14); px += p.vx * lead; pz += p.vz * lead; } }       // a fast rider is met where it is going: the swarm and the elites lead the card (a straight line gets cut off; a carve or a trick dodges)
+export function steerVec(g, o, px, py, pz, out, lead) {
+  { const p = g.p, r = p.ride; if (lead && g.big && r && r.on && r.speed > 12 && px === p.x && pz === p.z) { const ddx = px - o.x, ddz = pz - o.z, lead = Math.min(1.6, Math.sqrt(ddx * ddx + ddz * ddz) / 14); px += p.vx * lead; pz += p.vz * lead; } }       // a fast rider is met where it is going: the swarm and the elites lead the card (a straight line gets cut off; a carve or a trick dodges)
   const E = CFG.enemy, dx = px - o.x, dz = pz - o.z, d = Math.sqrt(dx * dx + dz * dz) || 0.001;
   out.d = d; out.x = dx / d; out.z = dz / d; out.direct = true;
   if (!(d < E.directRange && Math.abs(py - o.y) < 1.0 && lineClear(o.x, o.z, px, pz, o.y))) {

@@ -116,7 +116,7 @@ function turn(sp, want, rate, dt) {
   sp.face += Math.max(-rate * dt, Math.min(rate * dt, d));
 }
 function chase(g, sp, spd, dt) {
-  load(sp); steerVec(g, o, g.p.x, g.p.y, g.p.z, sv);
+  load(sp); steerVec(g, o, g.p.x, g.p.y, g.p.z, sv, true);       // an elite already on the field aims at where the card is going
   if (!(sv.direct && sv.d < sp.radius + 0.8)) walk(g, o, sv.x, sv.z, spd, dt, Math.min(sp.radius, SCALE.walkRadiusCap), CFG.enemy.stepUp);
   settle(o, dt); store(sp);
 }
