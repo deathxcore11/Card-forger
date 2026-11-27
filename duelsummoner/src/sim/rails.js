@@ -2,7 +2,7 @@
 // Built per 256 m cell from the same seeded dressing and blocks the view draws (so what you see is what you can grind), cached for the run.
 import { cos, sin } from './dmath.js';
 import { cbrt } from '../gen/open/terrain.js';
-const Q = 256;
+const Q = 256, SPILL = 96;       // a park line can run past the edge of the cell that made it: look that far into the neighbours too
 function cellRails(m, qx, qz) {
   const out = [], D = m.dressCell(qx, qz), C = m.cell(qx, qz);
   // one log in five is drawn as a standing broken post (view/openDressing.js): no rail along the ground there
@@ -24,20 +24,20 @@ function cellOf(g, m, qx, qz) { const cache = g.railCache && g.railCache.key ===
 // the seal stones [x, y, z, setId] within r of (x, z)
 export function sealsNear(g, x, z, r) {
   const m = g.map; if (!m || !m.big) return []; const out = [];
-  for (let qz = Math.floor((z - r) / Q); qz <= Math.floor((z + r) / Q); qz++) for (let qx = Math.floor((x - r) / Q); qx <= Math.floor((x + r) / Q); qx++) for (const s of cellOf(g, m, qx, qz).seals || []) { const dx = s[0] - x, dz = s[2] - z; if (dx * dx + dz * dz < r * r) out.push(s); }
+  for (let qz = Math.floor((z - r - SPILL) / Q); qz <= Math.floor((z + r + SPILL) / Q); qz++) for (let qx = Math.floor((x - r - SPILL) / Q); qx <= Math.floor((x + r + SPILL) / Q); qx++) for (const s of cellOf(g, m, qx, qz).seals || []) { const dx = s[0] - x, dz = s[2] - z; if (dx * dx + dz * dz < r * r) out.push(s); }
   return out;
 }
 // the full pipes [x, y, z, ux, uz, R] within r of (x, z)
 export function pipesNear(g, x, z, r) { const m = g.map; if (!m || !m.big) return []; const out = [], M = r + 24; for (let qz = Math.floor((z - M) / Q); qz <= Math.floor((z + M) / Q); qz++) for (let qx = Math.floor((x - M) / Q); qx <= Math.floor((x + M) / Q); qx++) for (const s of cellOf(g, m, qx, qz).pipes || []) { const dx = s[0] - x, dz = s[2] - z; if (dx * dx + dz * dz < r * r) out.push(s); } return out; }
 // kickers [x, y, z, ux, uz, len, width, height] within r of (x, z)
-export function kickersNear(g, x, z, r) { const m = g.map; if (!m || !m.big) return []; const out = []; for (let qz = Math.floor((z - r) / Q); qz <= Math.floor((z + r) / Q); qz++) for (let qx = Math.floor((x - r) / Q); qx <= Math.floor((x + r) / Q); qx++) for (const s of cellOf(g, m, qx, qz).kickers || []) { const dx = s[0] - x, dz = s[2] - z; if (dx * dx + dz * dz < r * r) out.push(s); } return out; }
-export function quartersNear(g, x, z, r) { const m = g.map; if (!m || !m.big) return []; const out = []; for (let qz = Math.floor((z - r) / Q); qz <= Math.floor((z + r) / Q); qz++) for (let qx = Math.floor((x - r) / Q); qx <= Math.floor((x + r) / Q); qx++) for (const s of cellOf(g, m, qx, qz).quarters || []) { const dx = s[0] - x, dz = s[2] - z; if (dx * dx + dz * dz < r * r) out.push(s); } return out; }
+export function kickersNear(g, x, z, r) { const m = g.map; if (!m || !m.big) return []; const out = []; for (let qz = Math.floor((z - r - SPILL) / Q); qz <= Math.floor((z + r + SPILL) / Q); qz++) for (let qx = Math.floor((x - r - SPILL) / Q); qx <= Math.floor((x + r + SPILL) / Q); qx++) for (const s of cellOf(g, m, qx, qz).kickers || []) { const dx = s[0] - x, dz = s[2] - z; if (dx * dx + dz * dz < r * r) out.push(s); } return out; }
+export function quartersNear(g, x, z, r) { const m = g.map; if (!m || !m.big) return []; const out = []; for (let qz = Math.floor((z - r - SPILL) / Q); qz <= Math.floor((z + r + SPILL) / Q); qz++) for (let qx = Math.floor((x - r - SPILL) / Q); qx <= Math.floor((x + r + SPILL) / Q); qx++) for (const s of cellOf(g, m, qx, qz).quarters || []) { const dx = s[0] - x, dz = s[2] - z; if (dx * dx + dz * dz < r * r) out.push(s); } return out; }
 // every seal stone of one set (they all sit in the set's own cell)
 export function sealSet(g, sid) { if (sid === -1) { const W = g.map.world, w = W && W.wonder; if (!w) return []; const out = []; for (const s of w.seals) for (const q of cellOf(g, g.map, Math.floor(s[0] / Q), Math.floor(s[1] / Q)).seals || []) if (q[3] === -1 && Math.abs(q[0] - s[0]) < 0.02 && Math.abs(q[2] - s[1]) < 0.02) out.push(q); return out; }       // the wonder: its five stones span cells
   const m = g.map, k = Math.floor(sid / 4), qx = Math.floor(k / 512) - 128, qz = (k % 512) - 128; return (cellOf(g, m, qx, qz).seals || []).filter(s => s[3] === sid); }
 export function railsNear(g, x, z, r) {
   const m = g.map; if (!m || !m.big) return []; const cache = g.railCache && g.railCache.key === m.key ? g.railCache : (g.railCache = { key: m.key, cells: new Map() }), out = [];
-  for (let qz = Math.floor((z - r) / Q); qz <= Math.floor((z + r) / Q); qz++) for (let qx = Math.floor((x - r) / Q); qx <= Math.floor((x + r) / Q); qx++) {
+  for (let qz = Math.floor((z - r - SPILL) / Q); qz <= Math.floor((z + r + SPILL) / Q); qz++) for (let qx = Math.floor((x - r - SPILL) / Q); qx <= Math.floor((x + r + SPILL) / Q); qx++) {
     const L = cellOf(g, m, qx, qz);
     for (const s of L) { const lo = Math.min(s[0], s[3]) - r, hi = Math.max(s[0], s[3]) + r, lz = Math.min(s[2], s[5]) - r, hz = Math.max(s[2], s[5]) + r; if (x >= lo && x <= hi && z >= lz && z <= hz) out.push(s); }
   }

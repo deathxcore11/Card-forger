@@ -205,7 +205,7 @@ test('spawns: while riding, no new enemy appears in front of the camera within 4
 });
 test('park toys and shapes: spines, gaps and quarter pipes exist; a quarter pipe sends the card vert; a slam near a park log sets it rolling; a wall met at speed is a wallie', async () => {
   const { quartersNear, kickersNear } = await import('../src/sim/rails.js'); const g = mk(), W = g.map, sp = W.world.spawn; let qs = 0, gaps = 0;
-  for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const D = W.dressCell(Math.floor(sp.x / 256) + i, Math.floor(sp.z / 256) + j); qs += D.quarters.length; gaps += D.kickers.filter(k => k[7] === 2.2).length; }
+  for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const D = W.dressCell(Math.floor(sp.x / 256) + i, Math.floor(sp.z / 256) + j); qs += D.quarters.length; gaps += D.kickers.filter(k => k[7] === 3.3).length; }
   assert.ok(qs > 5, 'quarter pipes: ' + qs); assert.ok(gaps >= 1, 'gaps: ' + gaps);
   let q = null; for (let r = 0; r < 2000 && !q; r += 50) for (const a of [0, 1.57, 3.14, 4.71]) { const L = quartersNear(g, sp.x + Math.cos(a) * r, sp.z + Math.sin(a) * r, 60); if (L.length) { q = L[0]; break; } }
   const [x, y, z, ux, uz] = q; g.p.ride = undefined; g.p.x = x - ux * 6; g.p.z = z - uz * 6; g.p.y = heightAt(g.p.x, g.p.z); g.p.grounded = true; g.p.sliding = true; g.p.vx = ux * 14; g.p.vz = uz * 14; const yaw = Math.atan2(-ux, -uz);

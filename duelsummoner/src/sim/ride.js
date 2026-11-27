@@ -19,7 +19,7 @@ import { elemBits } from '../data/elements.js';
 import { splash } from './weapons.js';
 
 export const RIDE = { mountAt: 10.5, dismountAt: 7, top: 24, push: 3.4, pushTo: 12.5, friction: 0.55, soft: 2.2, downhill: 10, carve: 2.6, airTurn: 1.0, crouchMax: 0.5, popLo: 2.2, popHi: 4.5,
-  snap: 1.6, flipTime: 0.42, spinRate: 9.42, landTol: 0.52, bailT: 0.6, revertWin: 0.28, balDrift: 0.9, balFix: 2.6, sparkR: 2.5, sparkDmg: 7, sparkEvery: 0.2, gravity: 28, kickRun: 0.4, kickTo: 12.5, brake: 16, holdMin: 8.5 };
+  snap: 2.4, flipTime: 0.42, spinRate: 9.42, landTol: 0.52, bailT: 0.6, revertWin: 0.28, balDrift: 0.9, balFix: 2.6, sparkR: 2.5, sparkDmg: 7, sparkEvery: 0.2, gravity: 28, kickRun: 0.4, kickTo: 12.5, brake: 16, holdMin: 8.5 };
 export const FLIPS = ['Card Flip', 'Ace Flip', 'Deal Flip', 'Riffle', 'Heel Card', 'Cut Flip', 'Fan Flip', 'Shuffle'], GRABS = ['Hand Grab', 'Seal Grab', 'Joker Grab', 'Crown Grab'], GRINDS = ['Edge Grind', 'Rim Ride', 'Spine Slide'];
 export const POINTS = { flip: 300, grab: 200, grabPerSecond: 420, spin180: 260, grind: 120, grindPerSecond: 160, manualPerSecond: 90, revert: 180, special: 3000, bigAir: 100, vert: 250, loop: 800, smash: 150, crest: 150, closeCall: 120, cardLit: 400, seal: 250, sealSet: 2500 };
 export const FLOW = { need: [0, 1800, 4200, 7500, 12000], idle: 10, dmgPerStep: 0.05, gainPerStep: 0.3, stakesPerStep: 5, slamR: [4, 14], slamDiv: 22, slamCapPerStep: 45 };
@@ -130,7 +130,7 @@ export function rideTick(g, dt, cmd, mx, mz, hasInput) {
   const sx = cmd.r || 0; if (cmd.spin) r.spin += (cmd.spin > 0 ? 1 : -1) * RIDE.spinRate * (1 + (g.mods.rideSpin || 0)) * dt; else if (sx * sx > 0.36 && !hasForward(cmd)) r.spin += (sx > 0 ? 1 : -1) * RIDE.spinRate * (1 + (g.mods.rideSpin || 0)) * dt;       // the shoulders spin (pad), or the stick left or right
   if (usePress && r.specialReady && F.step === 5) { r.specialReady = false; addTrick(g, r, 'Royal Flush', POINTS.special); explode(g, p.x, p.y, p.z, 16, 0, 120, 0xfff2c0, 'Royal Flush'); F.step = 1; F.xp = 0; for (const q of g.field.monsters) if (q) q.cd = 0; g.emit('volley', p.x, p.z, 9); g.emit('special', p.x, p.z, 0); }
   // grind: auto-snap onto a rail while coming down, or with use
-  if ((usePress || (p.vy <= 1.5 && !(g.opts && g.opts.autoGrind === false))) && trySnap(g, p, r, cmd)) return true;       // auto-grind as the card comes down, unless switched off (then GRIND snaps it)
+  if ((usePress || !(g.opts && g.opts.autoGrind === false)) && trySnap(g, p, r, cmd, usePress || p.vy <= 1.5)) return true;       // auto-grind as the card comes down, unless switched off (then GRIND snaps it)
   if (flick) r.manualArm = r.clk;
   if (usePress || jumpPress || revertPress) r.revertT = RIDE.revertWin;       // a tap of USE or of OLLIE just before touching down: a revert
   else if (r.revertT > 0) r.revertT -= dt;
@@ -203,7 +203,8 @@ export function litOf(g) { return g.rideLit || (g.rideLit = { cards: {}, sealsDo
 // the seal stones glowing now: every finished set, and the stones lit in the open combo
 export function litSeals(g) { const L = litOf(g), r = g.p.ride, out = []; for (const sid in L.sealsDone) for (const s of sealSet(g, +sid)) out.push([s[0], s[1], s[2], 1]); if (r && r.sealRun) for (const sid in r.sealRun) { const E = r.sealRun[sid]; if (L.sealsDone[sid] || g.t - E.t > 15) continue; for (const k of E.k) { const [x, z] = k.split(',').map(Number); const s = sealSet(g, +sid).find(q => q[0] === x && q[2] === z); if (s) out.push([s[0], s[1], s[2], 0]); } } return out; }
 function groundFollow(g, p, r, dt) {
-  const h = heightAt(p.x, p.z), prev = p.y;
+  const lift = kickerLift(g, p, r), h = heightAt(p.x, p.z) + lift, prev = p.y;       // on a kicker's face the ground is the ramp (so the card climbs it instead of being thrown off its foot)
+  if (lift > 0) { r.rvy = 0; p.y = h; return; }       // on the face: climb it; the lip throws the card (kickerTick), never a crest halfway up
   if (h >= prev - 0.35) { const rvy = (h - prev) / Math.max(dt, 1e-4), sx = sin(r.heading), sz = cos(r.heading), ahead = (heightAt(p.x + sx * 0.8, p.z + sz * 0.8) - h) / 0.8 * r.speed;
     if (r.rvy > 4 && ahead < r.rvy * 0.35 && rvy > 0) { p.y = h; p.grounded = false; p.vy = r.rvy * 0.95; r.airT = 0; r.lastLandVy = 0; if (r.rvy > 3 && r.speed > 13) { addTrick(g, r, 'Crest Launch', POINTS.crest); g.emit('crest', p.x, p.z, 0); } r.rvy = 0; return; }       // the lip of a ramp or a crest: the climb carries the card into the air
     r.rvy = Math.min(rvy, r.speed * 0.6); p.y = h; return; }       // the climb rate, capped at a 31-degree ramp: a step in the ground is not a launcher
@@ -236,12 +237,12 @@ function manualTick(g, p, r, dt, cmd, jumpPress) {
   if (r.bal > 1 || r.bal < -1) bail(g, r, 'manual');
 }
 // ---- grinds
-function trySnap(g, p, r, cmd) {
+function trySnap(g, p, r, cmd, down) {
   const rails = railsNear(g, p.x, p.z, 8); let best = null, bd = RIDE.snap * RIDE.snap;
   for (const s of rails) {
     const dx = s[3] - s[0], dz = s[5] - s[2], L2 = dx * dx + dz * dz; if (L2 < 0.25) continue; let t = ((p.x - s[0]) * dx + (p.z - s[2]) * dz) / L2; if (t < 0.02 || t > 0.98) continue;
     const qx = s[0] + dx * t, qz = s[2] + dz * t, qy = s[1] + (s[4] - s[1]) * t, d2 = (qx - p.x) * (qx - p.x) + (qz - p.z) * (qz - p.z), dy = p.y - qy;
-    if (dy < -0.6 || dy > 1.6 || d2 >= bd) continue; bd = d2; best = { s, t, L: Math.sqrt(L2) };
+    if (dy < (down ? -0.8 : 0.15) || dy > (down ? 2.4 : 1.4) || d2 >= bd || (!down && d2 > 2.6)) continue; bd = d2; best = { s, t, L: Math.sqrt(L2) };       // still rising: it takes the rail once the card is just over its top (jump near a rail and it grinds, no pixel aim)
   }
   if (!best) return false;
   const s = best.s, ux = (s[3] - s[0]) / best.L, uz = (s[5] - s[2]) / best.L, along = p.vx * ux + p.vz * uz, dir = along >= 0 ? 1 : -1;
@@ -273,10 +274,19 @@ function loopTick(g, p, r, dt) {
   if (th >= 6.283185307179586) { r.loop = null; r.lastLoopT = g.t; flowOf(g).loops = (flowOf(g).loops || 0) + 1; r.loopTh = 0; r.loopCd = 0.8; p.grounded = true; p.y = heightAt(p.x, p.z); r.speed = Math.min(RIDE.top, r.speed * 1.05); }
 }
 // a kicker: on its ramp the card rises with it; off its lip at speed it launches (more air the faster), and counts
+// a kicker: the ramp's height over the ground where the card is, when it rides up the face (from the front, along its heading); 0 elsewhere
+function kickerAt(g, p, r) {
+  const hx = sin(r.heading), hz = cos(r.heading);
+  let best = null; for (const q of kickersNear(g, p.x, p.z, 10)) { const [x, y, z, ux, uz, len, w, h] = q, dx = p.x - x, dz = p.z - z, a = dx * ux + dz * uz + len / 2, b = Math.abs(-dx * uz + dz * ux); if (b > w / 2 + 0.3 || a < -0.2 || a > len + 0.4 || hx * ux + hz * uz < 0.35) continue; const k = { a: Math.max(0, a), len, h }, l = h * Math.min(1, k.a / len); if (!best || l > best.l) { best = k; best.l = l; } }
+  return best;       // two faces overlapping: ride the higher one, so the ground never drops under the card
+}
+function kickerLift(g, p, r) { const k = kickerAt(g, p, r); return k ? k.h * Math.min(1, k.a / k.len) : 0; }
+// off the lip at speed: launch, more air the faster, and it counts
 function kickerTick(g, p, r) {
-  if (r.speed < 6) return false; const hx = sin(r.heading), hz = cos(r.heading);
-  for (const q of kickersNear(g, p.x, p.z, 6)) { const [x, y, z, ux, uz, len, w, h] = q, dx = p.x - x, dz = p.z - z, a = dx * ux + dz * uz + len / 2, b = Math.abs(-dx * uz + dz * ux); if (b > w / 2 || a < 0 || a > len || hx * ux + hz * uz < 0.5) continue;
-    p.y = heightAt(p.x, p.z) + h * a / len; if (a > len - 0.5) { p.grounded = false; p.vy = Math.min(10, 2.5 + r.speed * 0.35); r.airT = 0; r.lastLandVy = 0; addTrick(g, r, 'Kicker', 80); g.emit('ollie', 3, 0, 0); return true; } return false; }
+  if (r.speed < 4) return false; const k = kickerAt(g, p, r); if (!k) { r.kickA = -1; return false; }
+  const lipNow = k.a >= k.len - 0.05, crossed = r.kickA >= 0 && r.kickA < k.len && k.a >= k.len - 0.6; r.kickA = k.a;
+  if (lipNow || crossed) { p.y = heightAt(p.x, p.z) + k.h; p.grounded = false; p.vy = Math.min(12.5, 6.5 + r.speed * 0.3 + k.h * 0.8);       // at least ~0.75 s of air off any lip, at any ride speed
+ r.airT = 0; r.lastLandVy = 0; r.kickA = -1; addTrick(g, r, 'Kicker', 80); g.emit('ollie', 3, 0, 0); return true; }
   return false;
 }
 // a quarter pipe cut into a hill face: riding up the face (uphill, within 4 m of its line) into the carved lip sends the card vert, back down facing out
