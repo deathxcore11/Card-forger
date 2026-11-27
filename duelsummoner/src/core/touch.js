@@ -21,7 +21,7 @@ export class TouchControls {
   // host: { yawLook(dx,dy), onTap(x,y), onPause() }; get(): the live Input object whose .touch this fills
   constructor(input, hooks) {
     this.input = input; this.hooks = hooks; this.enabled = false; this.visible = false; this.lastTouch = 0; this.lastPad = 0;
-    this.state = { f: 0, r: 0, jump: false, slide: false, dash: false, use: false };
+    this.state = { f: 0, r: 0, jump: false, slide: false, dash: false, use: false, revert: false, special: false };
     input.touch = this.state;
     this.stick = null; this.look = null; this.btns = {};
     this._build();
@@ -84,10 +84,13 @@ export class TouchControls {
     bt('slide', 'SLIDE', { width: u, height: u, right: 'calc(' + pad + ' + ' + bg + ' + 10px)', bottom: bot });
     bt('dash', 'DASH', { width: u, height: u, right: pad, bottom: 'calc(' + bot + ' + ' + bg + ' + 10px)' });
     bt('use', 'USE', { width: u, height: u, right: 'calc(' + pad + ' + ' + bg + ' + 10px)', bottom: 'calc(' + bot + ' + ' + bg + ' + 10px)', display: 'none' });
+    bt('revert', 'MANUAL', { width: u, height: u, right: 'calc(' + pad + ' + ' + bg + ' + ' + u + ' + 20px)', bottom: bot, display: 'none' });       // controls v2: on the card, Manual (held on landing) and the Special (when the meter is full)
+    bt('special', 'SPECIAL', { width: u, height: u, right: 'calc(' + pad + ' + ' + bg + ' + ' + u + ' + 20px)', bottom: 'calc(' + bot + ' + ' + bg + ' + 10px)', display: 'none' });
     const pause = mk('tcb tcpause', root); pause.textContent = '||'; pause.addEventListener('pointerdown', e => { e.preventDefault(); this.hooks.onPause(); });
   }
   // on the card the buttons say what they do there: OLLIE, FLIP, GRAB and GRIND (Use)
-  setRiding(on) { if (this._riding === on) return; this._riding = on; const L = on ? { jump: 'OLLIE', dash: 'FLIP', slide: 'GRAB', use: 'GRIND' } : { jump: 'JUMP', dash: 'DASH', slide: 'SLIDE', use: 'USE' }; for (const k in L) if (this.btns[k]) this.btns[k].el.textContent = L[k]; }
+  setRiding(on) { if (this._riding === on) return; this._riding = on; const L = on ? { jump: 'OLLIE', dash: 'FLIP', slide: 'GRAB', use: 'GRIND' } : { jump: 'JUMP', dash: 'DASH', slide: 'SLIDE', use: 'USE' }; for (const k in L) if (this.btns[k]) this.btns[k].el.textContent = L[k]; if (this.btns.revert) this.btns.revert.el.style.display = on ? 'flex' : 'none'; if (!on) this.setSpecial(false); }
+  setSpecial(v) { const b = this.btns.special; if (b && (b.el.style.display !== 'none') !== v) b.el.style.display = v ? 'flex' : 'none'; }
   // the Use button only appears when the game has something to use
   setUseVisible(v) { const b = this.btns.use; if (b && (b.el.style.display !== 'none') !== v) b.el.style.display = v ? 'flex' : 'none'; }
 }

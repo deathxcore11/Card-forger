@@ -281,6 +281,7 @@ export class Game {
     // order: over, dash (dodge), god (hurt, which keeps the golden record), Talisman (ward), Guard, LP, then 'hurt' for a hit that landed
     if (this.over) return false;
     if (!SELF && this.p.dashT > 0) { this.emit('dodge', n, bigF, 0, src || null); return false; }
+    if (!SELF && this.p.iframeT > 0) { this.emit('dodge', n, bigF, 0, src || null); return false; }       // trick i-frames (an ollie pop, a Slam Drop landing, a Wallplant)
     if (this.god) { this.emit('hurt', n, bigF, SELF ? 1 : 0, src || null); return false; }
     if (!SELF && this.wardHits > 0) { this.wardHits--; this.event('banner', 'The Ward blocks the hit.' + (this.wardHits ? ' ' + this.wardHits + ' left.' : '')); this.emit('ward', n, bigF, 0, src || null); return false; }
     if (!SELF && this.mods.talisman && this.talismanCd <= 0) { this.talismanCd = Math.max(6, 20 / this.mods.talisman); this.event('banner', 'The Paper Talisman blocks the hit.'); this.emit('ward', n, bigF, 0, src || null); return false; }

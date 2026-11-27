@@ -104,14 +104,19 @@ test('ride school: a line of beams ahead of the spawn, grindable', async () => {
   const g = mk(), W = g.map.world; assert.ok(W.school && W.school.length >= 2, 'school beams: ' + (W.school || []).length);
   const s = W.school[0], L = railsNear(g, (s[0] + s[2]) / 2, (s[1] + s[3]) / 2, 3); assert.ok(L.length >= 1, 'a rail there');
 });
-test('ride (classic pad): a stick flick up then down starts a manual, held until an ollie; R2 before touchdown is a revert; two directions then flip at full Flow is the special', () => {
-  const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 2, { ...I, f: 1 });
-  run(g, 3, { ...I, f: 1 }); run(g, 3, { ...I, f: -1 }); run(g, 1, { ...I, f: 0.1 }); assert.ok(g.p.ride.manual, 'manual from a flick');
-  run(g, 20, { ...I, f: 0.1 }); assert.ok(g.p.ride.manual, 'it holds with no button');
-  run(g, 1, { ...I, f: 0.1, jump: true }); assert.ok(!g.p.ride.manual, 'an ollie ends it'); assert.ok(g.p.ride.combo.names.Manual, 'counted');
-  const h = mk(), [x2, z2] = flatSpot(h); place(h, x2, z2, 14); run(h, 2, { ...I, f: 1 }); const F = flowOf(h); F.step = 5; h.p.ride.specialReady = true;
-  run(h, 30, { ...I, f: 1, jump: true }); run(h, 4, { ...I, f: 1 }); run(h, 3, { ...I, f: 0, r: 1 }); run(h, 1, { ...I, f: 0, r: 1, dash: true });
-  assert.ok(h.p.ride.combo.names['Royal Flush'], 'special: ' + JSON.stringify(h.p.ride.combo.names));
+test('controls v2: each trick fires from its button and stick direction; manual on the held button; the combo timer; i-frames; the special', () => {
+  const air = (cmd, frames) => { const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 2, { ...I, f: 1 }); run(g, 30, { ...I, f: 1, jump: true }); run(g, 2, { ...I, f: 1 }); assert.ok(!g.p.grounded, 'airborne'); run(g, frames || 1, cmd); return g; };
+  const names = g => Object.keys(g.p.ride.combo.names);
+  for (const [f, r, want] of [[1, 0, 'Impossible'], [0, 1, 'Heelflip'], [-1, 0, 'Pop Shuvit'], [0, -1, 'Kickflip'], [0, 0, 'Kickflip']]) assert.ok(names(air({ ...I, f, r, flip: true })).includes(want), 'flip ' + want);
+  for (const [f, r, want] of [[1, 0, 'Nosegrab'], [0, 1, 'Indy'], [0, -1, 'Melon']]) { const g = air({ ...I, f, r, grab: true }, 6); run(g, 1, { ...I }); assert.ok(names(g).includes(want), 'grab ' + want + ' ' + names(g)); }
+  { const g = air({ ...I, flip: true }); run(g, 4, { ...I }); run(g, 1, { ...I, flip: true }); assert.ok(names(g).includes('Double Flip'), 'double flip'); }
+  { const g = air({ ...I }, 1); for (let k = 0; k < 40 && g.p.vy >= 0; k++) run(g, 1, { ...I }); run(g, 1, { ...I, f: -1, grab: true }); assert.ok(names(g).includes('Slam Drop'), 'slam drop'); assert.ok(g.p.vy < -20, 'straight down');
+    g.eb[0].on = true; g.eb[0].x = g.p.x + 2; g.eb[0].z = g.p.z; for (let k = 0; k < 60 && !g.p.grounded; k++) run(g, 1, { ...I }); assert.ok(!g.eb[0].on, 'a Slam Drop landing wipes nearby enemy shots'); assert.ok(g.p.iframeT > 0, 'and gives i-frames'); }
+  { const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 2, { ...I, f: 1 }); run(g, 20, { ...I, f: 1, jump: true }); run(g, 1, { ...I, f: 1 }); assert.ok(g.p.iframeT > 0, 'an ollie pop gives i-frames'); g.god = false; const hp = g.p.hp; g.hurtPlayer(10, false, 'test'); assert.equal(g.p.hp, hp, 'no damage inside them'); run(g, 20, { ...I, f: 1 }); assert.ok(!(g.p.iframeT > 0), 'they last 0.25 s'); }
+  { const g = air({ ...I, flip: true }); for (let k = 0; k < 120 && !g.p.grounded; k++) run(g, 1, { ...I, revert: true }); run(g, 1, { ...I, revert: true }); assert.ok(g.p.ride.manual, 'the manual button held on landing: a manual');
+    run(g, 60, { ...I, revert: true }); assert.ok(g.p.ride.manual, 'it holds while the button does (no balance bar)'); run(g, 100, { ...I, revert: true }); assert.ok(!g.p.ride.manual, 'the 2.5 s combo timer runs out and banks it'); assert.equal(comboValue(g.p.ride.combo), 0, 'banked, not bailed'); }
+  { const h = mk(), [x, z] = flatSpot(h); place(h, x, z, 14); run(h, 2, { ...I, f: 1 }); flowOf(h).meter = 1; run(h, 30, { ...I, f: 1, jump: true }); run(h, 4, { ...I, f: 1 }); run(h, 3, { ...I, f: 1 }); run(h, 3, { ...I, f: -1 }); run(h, 1, { ...I, f: -1, flip: true });
+    assert.ok(h.p.ride.combo.names['Deck Shuffle'], 'up, down, flip with the meter full: Deck Shuffle ' + names(h)); }
 });
 test('the wonder: every seed has a long ride line with five seal stones; lighting all five in one combo opens an epic chest', async () => {
   const { sealSet } = await import('../src/sim/rails.js'); let n = 0;

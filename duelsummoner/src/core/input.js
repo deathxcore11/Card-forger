@@ -12,7 +12,9 @@ export class Input {
     document.addEventListener('mousemove', e => {
       if (document.pointerLockElement === canvas || this.dragging) this.look(e.movementX, e.movementY, 'mouse');
     });
-    canvas.addEventListener('mousedown', () => { this.dragging = true; });
+    canvas.addEventListener('mousedown', e => { this.dragging = true; if (document.pointerLockElement === canvas) { if (e.button === 0) this.mouseL = true; if (e.button === 2) this.mouseR = true; } });       // controls v2: with the mouse captured, left click flips and right click grabs
+    window.addEventListener('mouseup', e => { if (e.button === 0) this.mouseL = false; if (e.button === 2) this.mouseR = false; });
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
     window.addEventListener('mouseup', () => { this.dragging = false; });
     window.addEventListener('blur', () => { this.keys = {}; });
   }
@@ -30,8 +32,8 @@ export class Input {
     return {
       f: t && t.f ? t.f : f, r: t && t.r ? t.r : r,                                // touch stick is analogue; keys are -1, 0, 1
       yaw: this.yaw, jump: !!k.Space || !!(t && t.jump), dash: !!(k.ShiftLeft || k.ShiftRight) || !!(t && t.dash),
-      slide: !!(k.ControlLeft || k.ControlRight || k.KeyC) || !!(t && t.slide), use, hold: !!k.KeyE || !!(t && t.use),
-      flip: !!k.KeyJ, grab: !!k.KeyK, grind: !!k.KeyL, spin: (k.KeyE ? 1 : 0) - (k.KeyQ ? 1 : 0), revert: !!(k.ShiftLeft || k.ShiftRight), kb: !(t && (t.f || t.r || t.jump || t.dash || t.slide || t.use))       // the feel pass keys
+      slide: !!((!window.__dsRiding && (k.ControlLeft || k.ControlRight)) || k.KeyC) || !!(t && t.slide), use, hold: !!k.KeyE || !!(t && t.use),       // on the card Ctrl is the manual button, not slide
+      flip: !!k.KeyJ || !!this.mouseL || !!(t && t.flip), grab: !!k.KeyK || !!this.mouseR || !!(t && t.grab), grind: !!k.KeyL || !!k.KeyF || !!(t && t.grind), spin: (k.KeyE ? 1 : 0) - (k.KeyQ ? 1 : 0), revert: !!(k.ControlLeft || k.ControlRight) || !!(t && t.revert), special: !!k.KeyX || !!(t && t.special),       // controls v2: left click or J flip, right click or K grab, F or L grind, Ctrl held manual and revert, X (or the touch button) the special kb: !(t && (t.f || t.r || t.jump || t.dash || t.slide || t.use))       // the feel pass keys
     };
   }
 }
