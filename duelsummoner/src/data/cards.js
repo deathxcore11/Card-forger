@@ -29,7 +29,7 @@ export const MONSTERS = {
     text: 'Lobbed fireball, 3 m splash.',
     attack: { kind: 'lob', dmg: 3, cd: 1.4, splash: 3, range: 22, flight: 0.7, count: 1 },
     fx: { 3: { splash: 0.75 }, 6: { count: 1 }, 10: { splash: 1.75 } }, fxText: { 3: 'splash +0.75 m (3.75 m)', 6: 'a second fireball', 10: 'splash +1.75 m (5.5 m)' } },
-  'rune-apprentice': { name: 'Rune Apprentice', type: 'Spellcaster', elements: ['lightning'], rarity: 'common', partner: 'sigil-familiar', forms: forms('rune-apprentice'),
+  'rune-apprentice': { name: 'Rune Newt', type: 'Spellcaster', elements: ['lightning'], rarity: 'common', partner: 'sigil-familiar', forms: forms('rune-apprentice'),
     text: 'Marks the 3 nearest for 6 s; marked take +30%.',
     attack: { kind: 'mark', dmg: 1, cd: 1.0, marks: 3, range: 24 },
     fx: { 3: { marks: 1 }, 6: { marks: 1 }, 10: { marks: 2 } }, fxText: { 3: 'marks +1', 6: 'marks +1', 10: 'marks +2' } },
@@ -42,7 +42,7 @@ export const FUSIONS = {
   'twinflare-tyrant': { name: 'Twinflare Tyrant', type: 'Dragon', elements: ['fire'], flame: true, from: ['ember-wyvern', 'cinder-hatchling'], forms: forms('twinflare-tyrant'),
     text: '60 degree cone, 14 m, about 11 damage a hit at level 1. Starts stronger than a level 10 basic.',
     attack: { kind: 'cone', dmg: 2.5, cd: 0.9, range: 14, arc: 60 }, fx: { 3: { range: 2 }, 6: { arc: 20 }, 10: { range: 3, arc: 20 } }, fxText: { 3: 'cone +2 m', 6: 'cone wider', 10: 'longest, widest cone' } },
-  'astral-magus': { name: 'Astral Magus', type: 'Spellcaster', elements: ['lightning'], from: ['rune-apprentice', 'sigil-familiar'], forms: forms('astral-magus'),
+  'astral-magus': { name: 'Astral Strix', type: 'Spellcaster', elements: ['lightning'], from: ['rune-apprentice', 'sigil-familiar'], forms: forms('astral-magus'),
     text: 'Marks 6. Marked enemies explode on defeat: 4 m, 8 damage.',
     attack: { kind: 'mark', dmg: 1, cd: 1.0, marks: 6, range: 26, explodeRadius: 4, explodeDmg: 8 }, fx: { 3: { marks: 2, explodeRadius: 0.75 }, 6: { explodeDmg: 4 }, 10: { marks: 2, explodeRadius: 0.75 } }, fxText: { 3: 'marks +2, blasts +0.75 m', 6: 'bigger blasts', 10: 'marks +2, blasts reach 5.5 m' } }
 };
