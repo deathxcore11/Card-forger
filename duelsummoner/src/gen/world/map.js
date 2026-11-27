@@ -2,8 +2,8 @@
 // heights come from fillSim in 64 m chunks (sim/terrain.js), the ground the view draws from viewFn, and the things placed in each 256 m cell are handed over as the duelist nears them (sim/stream.js).
 import { makeWorld, EDGE, WORLD_HALF, REGION, sq } from './world.js';
 const r2 = v => Math.round(v * 100) / 100;
-export function bigMap(seedLo, stageIndex) {
-  const W = makeWorld(seedLo, stageIndex), seed = W.seed, key = 'big-' + seed.toString(16);
+export function bigMap(seedLo, stageIndex, opts) {
+  const W = makeWorld(seedLo, stageIndex, opts), seed = W.seed, key = 'big-' + seed.toString(16);
   const map = {
     key, hash: key, sealCode: 'BIG-' + seed.toString(16).slice(0, 4).toUpperCase(), stage: stageIndex, attempt: 0, fallback: false, half: 420, simN: 840, v2: true, open: true, big: true, arch: 'w', n: 840, off: 0, play: EDGE, edgeSeed: seed,
     prims: [], palette: undefined, stageName: 'The Open Desert', districts: [],

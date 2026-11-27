@@ -40,6 +40,8 @@ import { deviceClass } from './ui/device.js';
 import { defaultFor } from './ui/settings-schema.js';
 import { showOffer, offerKey, offerGuard } from './view/offer.js';
 import { loadModel, loadPuffTexture, loadBlocks, blocksOn } from './view/models.js';
+import { FEEL } from './data/feel.js';
+import { feelPanel } from './view/feelpanel.js';
 import { spawnEnemy } from './sim/enemies.js';
 import { Props } from './view/props.js';
 import { quantise, emptyRecord } from './sim/input.js';
@@ -79,7 +81,7 @@ const sky = makeSky(); scene.add(sky);       // the engine sky dome: banded grad
 const camera = new T.PerspectiveCamera(62, 1, 0.15, 600);
 let fpsCap = 60, lastRender = 0;                     // a setting (30, 60, 90 or 120); a frame that comes sooner than the cap allows is skipped
 let fovSetting = 100, baseV = 62, defV = 62;                    // the setting is HORIZONTAL degrees, so it means the same on every screen shape; the vertical angle follows from the aspect and never goes past 88
-let fovK = 1;
+let fovK = 1, rideFov = 0;
 const vOf = (h, a) => { let raw = a < 1 ? 50 + (h - 80) * 1.1 : 2 * Math.atan(Math.tan(h * Math.PI / 360) / a) * 180 / Math.PI; raw = Math.max(40, raw); return raw < 70 ? raw : 70 + 18 * (1 - Math.exp(-(raw - 70) / 18)); };       // horizontal degrees to vertical: exact on wide screens, a straight 50 to 88 ramp on tall ones, and a soft ceiling at 88 so no step of the slider is lost
 function fitFov() { const a = Math.max(0.3, camera.aspect || 1.78); baseV = vOf(fovSetting, a); defV = vOf(100, a); fovK = 1;       // the chase arm no longer follows the setting: a wider FOV shows more, a narrower one shows less
   camera.fov = baseV; camera.updateProjectionMatrix(); }
@@ -170,7 +172,7 @@ let duelist = 'kael';
 const withProps = /[?&]props/.test(location.search);       // map objects are placed by the coming map generator; ?props shows the region-placed test set
 const RUN_OPEN = !/[?&]terrain=classic/.test(location.search), RUN_ARCH = (/[?&]arch=([a-f])/.exec(location.search) || [])[1];
 const MENU_SEED = +((/[?&]menuseed=(\d+)/.exec(location.search) || [])[1] || 47514), MENU_ARCH = (/[?&]menuarch=([a-f])/.exec(location.search) || [])[1] || 'f';       // the menu backdrop is always the open desert, from a fixed seed with a good view; runs follow the terrain option as before
-const game = new Game(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : MENU_SEED, { duelist, mode: 'run', world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: 'open', arch: RUN_ARCH || MENU_ARCH });
+const game = new Game(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : MENU_SEED, { duelist, mode: 'run', world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: 'open', arch: RUN_ARCH || MENU_ARCH, gym: /[?&]gym=1/.test(location.search) });
 const host = createBrowserHost(canvas);
 const save = loadSave(host);
 const fx = new Fx(scene, save.settings);
@@ -398,7 +400,8 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'announce') sigils.push({ x: b, z: c, until: actors.vt + 6.5, next: 0 });
   else if (type === 'landmark') { fx.ring(a, game.p.y + 0.3, b, 12, 0xffe08a, 0.8); fx.burst(a, game.p.y + 1.5, b, 50, 0xffe08a, 7, 6, 0.3, 0.9, 6); fx.shake(0.25); }       // a landmark reached: a golden ring and a fountain of sparks
   else if (type === 'slam') { const rr = c || 6, y0 = groundY(a, b); if (rr < 4.4) { fx.burst(a, y0 + 0.3, b, 10, 0xd9b872, 3, 3, 0.26, 0.5, 6); } else {       // a small bank: a puff of sand, no ring (rings only on a real slam: a combo of about 400 or more)
-    fx.ring(a, y0 + 0.2, b, Math.min(rr, 6), 0xffd56a, 0.4); for (let k = 0; k < 1; k++) fx.burst(a, y0 + 0.4, b, 18, k ? 0xd9b872 : 0xffd56a, 4 + Math.min(rr, 6) * 0.5, 5 + k, 0.34, 0.8, 8); fx.shake(Math.min(0.6, 0.22 + rr * 0.03)); } }       // the landing slam: a gold shockwave, chunky sand and sparks, a weighty shake       // the ring at most 6 m and 0.4 s, so it never sweeps over the Flow meter
+    fx.ring(a, y0 + 0.2, b, Math.min(rr, 6), 0xffd56a, 0.4); fx.hitstop(FEEL.hit.hitstop); for (let k = 0; k < 1; k++) fx.burst(a, y0 + 0.4, b, 18, k ? 0xd9b872 : 0xffd56a, 4 + Math.min(rr, 6) * 0.5, 5 + k, 0.34, 0.8, 8); fx.shake(Math.min(0.6, 0.22 + rr * 0.03)); } }       // the landing slam: a gold shockwave, chunky sand and sparks, a weighty shake       // the ring at most 6 m and 0.4 s, so it never sweeps over the Flow meter
+  else if (type === 'knock') { const y0 = groundY(a, b); fx.burst(a, y0 + 0.8, b, 12, 0xd9b872, 6, 8, 0.3, 0.7, 12); fx.shake(0.08); }       // a small enemy ridden through: thrown up and away
   else if (type === 'bail') { fx.shake(0.22); fx.burst(a, groundY(a, b) + 0.3, b, 16, 0xd9b872, 3, 2, 0.3, 0.6, 6); }
   else if (type === 'ollie') { schoolDid('ollie'); fx.burst(ip.x, ip.y + 0.1, ip.z, 10, 0xe2c48a, 2.4, 1.6, 0.24, 0.45, 6); }
   else if (type === 'ride') { if (a) { fx.burst(ip.x, ip.y + 0.2, ip.z, 14, 0xffe08a, 2.6, 2, 0.22, 0.5, 6); } }
@@ -643,8 +646,10 @@ function frame(now) {
     const R = CFG.player.speed * (1 + game.mods.move), hv = (window.__ds && window.__ds.hv > 0) ? window.__ds.hv : Math.sqrt(game.p.vx * game.p.vx + game.p.vz * game.p.vz), rm = fx.rm_ || MODE !== 'play';       // __ds.hv: a test hook that pretends the duelist is that fast
     const bonus = rm ? 0 : Math.max(0, Math.min(1, (hv / R - 1) / (K.hopCap - 1)));
     hopFov += (bonus - hopFov) * Math.min(1, (dtReal || 0.016) * 6); if (hopFov < 0.001) hopFov = 0;
-    if (fx.push <= 0 && !fovDirty && Math.abs(camera.fov - baseV * (1 + 0.06 * hopFov)) > 0.01) { camera.fov = baseV * (1 + 0.06 * hopFov); camera.updateProjectionMatrix(); }
-    const sl = rm ? 0 : Math.max(0, Math.min(1, (hv / R - 1.3) / 0.3)) * 0.85; if (Math.abs(sl - speedLines) > 0.01) { speedLines = sl; $('speedlines').style.opacity = sl.toFixed(2); }
+    const rd = game.p.ride && game.p.ride.on ? game.p.ride : null, FC = FEEL.cam, rk = rd && !rm ? Math.max(0, Math.min(1, (rd.speed - FEEL.ride.cruise) / Math.max(1, FEEL.ride.top - FEEL.ride.cruise))) : 0; rideFov += (rk - rideFov) * Math.min(1, (dtReal || 0.016) * 4);       // the feel table: on the card the view widens from 70 to 85 degrees with speed
+    const fovWant = baseV * (1 + 0.06 * hopFov) * (1 + (FC.fovMax / FC.fovMin - 1) * rideFov);
+    if (fx.push <= 0 && !fovDirty && Math.abs(camera.fov - fovWant) > 0.01) { camera.fov = fovWant; camera.updateProjectionMatrix(); }
+    const sv = rd ? rd.speed : hv, sl = rm ? 0 : (rd ? Math.max(0, Math.min(1, (sv - FC.speedLines) / 6)) : Math.max(0, Math.min(1, (hv / R - 1.3) / 0.3))) * 0.85;       // speed lines from 18 m/s on the card if (Math.abs(sl - speedLines) > 0.01) { speedLines = sl; $('speedlines').style.opacity = sl.toFixed(2); }
   }
   if (!capBurstDone && (game.mods.reach || 0) >= 1.5 - 1e-9) { capBurstDone = true; fx.moment('capburst', 'B', { hitstop: 0.04 }, { once: 'run' }); { const lead = game.field.monsters.find(m => m), D0 = lead && (MONSTERS[lead.id] || FUSIONS[lead.id]), el0 = D0 && D0.elements && D0.elements[0]; actors.capBurst = { t: 0, x: ip.x, y: ip.y, z: ip.z, hex: el0 && RAMP[el0] ? ownColour(el0) : 0xf3e3c2 }; } fx.cardRing(ip.x, ip.y + 0.6, ip.z, 12, 6); showBanner('Reach has hit its cap'); }
   { const t5 = ((game.otStep || 0) > 0 && (game.mods.reach || 0) >= 1.5 - 1e-9) || !!(window.__ds && window.__ds.tier5Force); actors.tier5 = t5;       // the screen tier: Tier 5 (Tablebreak) when Overtime is running and Reach is at its +150% ceiling
@@ -714,6 +719,7 @@ function duelistPixels() {
   for (const c of hid) c.visible = true; for (const [o, m] of saved) o.material = m; for (const [o, v] of extras) o.visible = v; idMat.dispose();
   return { alone, visible, silhouette };
 }
+feelPanel();       // the feel sliders (?debug) and the gym control card (?gym=1)
 window.__ds = {
   toggleMap: v => toggleMap(v),       // the Thor bottom screen opens the full map from its small map
   // debug lists for walking to the riding landforms: every full pipe within r metres of the start, and the two great drops (x, z, and which way the drop faces)

@@ -64,7 +64,7 @@ export function applyFeel() {
   P.speed = F.top; P.groundAccel = 3 / F.accelT; P.groundStop = 3 / F.stopT; P.airAccel = P.groundAccel * F.air; P.coyote = F.coyote; P.jumpBuffer = F.buffer; P.jumpHeight = F.jumpH;
   P.hop = { win: F.hopWindow, gain: F.hopGain, cap: F.hopCap };       // (the tuning table K is frozen, so the hop chain reads these from the player settings)
   Object.assign(RIDE, { pushTo: R.cruise, pushMax: R.push, top: R.top, crouchMax: R.crouchMax, popLo: R.ollieLo, popHi: R.ollieHi, snap: R.magnet, gravity: R.gravity, landTol: T.landTol * Math.PI / 180, bailT: T.bailT,
-    turnLow: R.turnLow, turnHigh: R.turnHigh, headOn: R.headOn, deflectKeep: R.deflectKeep, wallMin: R.wallMin, wallT: R.wallT, wallSink: R.wallSink, repeat: T.repeat, specialMul: T.specialMul, meterPerPoint: T.meterPerPoint, bigAirT: T.bigAirT });
+    turnLow: R.turnLow, turnHigh: R.turnHigh, headOn: R.headOn, deflectKeep: R.deflectKeep, wallMin: R.wallMin, wallT: R.wallT, wallSink: R.wallSink, repeat: T.repeat, specialMul: T.specialMul, meterPerPoint: T.meterPerPoint, bigAirT: T.bigAirT, knock: { points: FEEL.hit.trickKill, hop: 5.5 } });
   Object.assign(POINTS, { flip: T.flip, grab: T.grab, grabPerSecond: T.grabPerSecond, spin180: T.spin180, grind: T.grind, grindPerSecond: T.grindPerSecond, manualPerSecond: T.manualPerSecond, revert: T.revert, wallRide: T.wallRide });
 }
 applyFeel();

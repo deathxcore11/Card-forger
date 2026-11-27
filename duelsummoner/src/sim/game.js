@@ -35,7 +35,11 @@ const STEP = 1 / 60;
 import { BUILD_VERSION } from './results.js';
 import { streamWorld } from './stream.js';
 import { procEvent } from './procs.js';
-import '../data/feel.js';       // the feel table writes its numbers into the sim at load
+import '../data/feel.js';
+import { spawnEnemy as spawnE, enemyCount as countE } from './enemies.js';
+import { sin as sinG, cos as cosG } from './dmath.js';
+// the ride gym (?gym=1): no stage clock, no offers; 40 husks kept round the duelist, 25 to 60 m out, inside the arena
+function gymTick(g, dt) { g.opts.offers = false; const G = g.map && g.map.world && g.map.world.gym; if (!G) return; for (let k = 0; k < 2 && countE(g.en) < 40; k++) { const a = g.rsp() * 6.283185307179586, d = 25 + g.rsp() * 35, x = g.p.x + sinG(a) * d, z = g.p.z + cosG(a) * d, dx = x - G.x, dz = z - G.z; if (dx * dx + dz * dz < G.r * G.r) spawnE(g, 'husk', { x, z }); } }       // the feel table writes its numbers into the sim at load
 const BUILD_VERSION_REPLAY = BUILD_VERSION;
 const EV_START = 1024, EV_MAX = 1 << 16;       // the event ring: starts at 1,024 and grows to 65,536
 export class Game {
@@ -203,7 +207,7 @@ export class Game {
     updatePlayer(this, dt, cmd);
     if (this.p.hp > this.p.maxHp) this.p.hp = this.p.maxHp;
 
-    if (this.mode === 'classic') updateSpawner(this, dt); else updateStages(this, dt);
+    if (this.opts.gym) gymTick(this, dt); else if (this.mode === 'classic') updateSpawner(this, dt); else updateStages(this, dt);       // the ride gym has no stage clock: 40 husks that come back
     updateEnemies(this, dt);
     updateSpecials(this, dt);
     updateMonsters(this, dt);

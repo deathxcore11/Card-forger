@@ -29,9 +29,10 @@ const POCKETS = [['wager', 0.12], ['vases', 0.45], ['cchest', 0.13], ['shrine', 
 // blocks per cell by region type: [mesa p/count, wall, ruin]  (counts are lo..hi inclusive)
 const COUNTS = [[[0, 0, 0], [0, 0, 0], [0, 1, 0.15]], [[3, 4, 1], [0, 1, 0.6], [1, 2, 1]], [[0, 1, 0.1], [0, 0, 0], [0, 1, 0.3]], [[1, 2, 1], [0, 1, 0.5], [0, 1, 0.4]], [[0, 1, 0.4], [0, 0, 0], [4, 7, 1]], [[0, 1, 0.2], [0, 0, 0], [0, 1, 0.5]], [[0, 1, 0.5], [1, 1, 0.4], [0, 1, 0.3]]];
 
-export function makeWorld(seedLo, stageIndex) {
+export function makeWorld(seedLo, stageIndex, opts) {
   const seed = ((seedLo >>> 0) ^ Math.imul(stageIndex + 1, 0x85EBCA6B)) >>> 0, rr = rngOf(seed ^ 0xC0FFEE), wind = rr() * TAU, WP = { wind };
   const W = { seed, wind, stage: stageIndex, regionNames: REGION, extra: [] };
+  if (opts && opts.gym) W.gym = { x: 0, z: 0, r: 110, edge: 150 };       // the ride gym (?gym=1): a flat 200 m arena round (0, 0) with set pieces, see gymH and the gym dressing
   // great drops (plan section 9): two per map, 450 to 800 m from the middle where the start is, from the seed alone. Each: a long approach rising to a 10 to 14 m shelf, a 45% cliff, then a long landing slope down to the land
   W.drops = []; { const dr = rngOf(seed ^ 0xD80B); for (let k = 0; k < 2; k++) { const a = dr() * TAU, r = 450 + dr() * 350, H = 10 + dr() * 4, e = a + (dr() - 0.5) * 0.8; W.drops.push({ x: cosA(a) * r, z: sinA(a) * r, c: cosA(e), s: sinA(e), H, w: 34 + dr() * 14 }); } }
   // the drop's land is its own: inside its footprint the dunes are smoothed to the level at its foot, so the shelf, the cliff and the landing slope are what you ride
@@ -121,7 +122,14 @@ export function makeWorld(seedLo, stageIndex) {
     return top * su + 10 * rid * sstep(0.15, 0.9, u) + 3.5 * rid2 * sstep(0.3, 1, u) + 2 * (vnoise(seed ^ 0x406, x / 12, z / 12) - 0.5) * sstep(0.3, 1, u);
   }
   // the ground before anything is placed on it: the blended regions, the slow global rise and fall, the mountains
-  function baseH(x, z) {
+  function gymH(u, v, h0) {       // u, v from the gym's centre; h0 the flat floor
+    let h = h0; const d = sq((u - 35) * (u - 35) + v * v); if (d < 12) h -= 3 * (1 - (d / 12) * (d / 12));       // the bowl: 24 m across, 3 m deep
+    if (u > -66 && u < -19 && v > 14 && v < 111) { const e = Math.min(1, Math.min(u + 66, -19 - u, v - 14, 111 - v) / 6), s = sstep(20, 105, v); h += 14 * s * e; }       // the downhill run: 14 m over 85 m
+    if (u >= 30 && u <= 42 && v >= 40 && v <= 52) h += 6;       // the block mesa: 12 m square, 6 m sheer, a reward on top
+    return h;
+  }
+  function baseH(x, z) { const h = baseH1(x, z); if (!W.gym) return h; const G = W.gym, u = x - G.x, v = z - G.z, d = sq(u * u + v * v); if (d >= G.edge) return h; const h0 = G.h0 === undefined ? (G.h0 = baseH1(G.x, G.z)) : G.h0, k = sstep(G.r, G.edge, d); return gymH(u, v, h0) * (1 - k) + h * k; }
+  function baseH1(x, z) {
     const n = near2(x, z), t = sstep(-320, 320, n.db - n.da); let h = regH(n.A, x, z) * t; if (t < 0.999) h += regH(n.B, x, z) * (1 - t);
     return dropAt(x, z, soft0(h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z) - 8 * startValleyQ(x, z) + roll(x, z)));
   }
@@ -164,7 +172,8 @@ export function makeWorld(seedLo, stageIndex) {
   W.landmark = landmark;
   // ---- cells
   const cells = new Map();
-  function cell(qx, qz) {
+  function cell(qx, qz) { const C = cell0(qx, qz); if (W.gym && !C.gymDone) { C.gymDone = true; const G = W.gym, out = (x, z, r) => dist(x, z, G.x, G.z) > G.edge + 20 + (r || 0); C.blocks = C.blocks.filter(b => out(b.cx, b.cz, reachOf(b))); C.pockets = C.pockets.filter(q => out(q.x, q.z)); C.extras = C.extras.filter(q => out(q.x, q.z)); if (C.ring && !out(C.ring.x, C.ring.z)) C.ring = null; } return C; }
+  function cell0(qx, qz) {
     const key = (qx + 128) * 512 + (qz + 128); let C = cells.get(key); if (C) return C;
     const x0 = qx * Q, z0 = qz * Q, cxm = x0 + Q / 2, czm = z0 + Q / 2; C = { qx, qz, x0, z0, blocks: [], pocket: null, pockets: [], ring: null, extras: [], type: 0, pads: [] }; cells.set(key, C);
     if (r4(cxm, czm) > EDGE - 300) return C;
@@ -283,7 +292,7 @@ export function makeWorld(seedLo, stageIndex) {
     { const prn = rngOf(hsh(seed, qx, qz, 0x9A7)), lineScore = (x, z, ux, uz) => W.valleyAt(x + ux * 30, z + uz * 30) + (gy(x, z) - gy(x + ux * 40, z + uz * 40)) / 10;
       const TPL = [['k', 'l', 'k', 'q'], ['k', 'r', 'k'], ['k', 'l', 'k'], ['k', 'r', 'k', 'q'], ['l', 'k', 'r', 'k']];
       const line = (x, z, a, open, T0) => { const ux = cosA(a), uz = sinA(a), tpl = T0 || (open ? ['k', 'l', 'k', 'q'] : TPL[(prn() * TPL.length) | 0]), P = []; let t = 0;
-        for (let e = 0; e < tpl.length; e++) { const kind = tpl[e], nx = tpl[e + 1], len = kind === 'k' ? 9 : kind === 'q' ? 3 : 8 + ((prn() * 3) | 0); P.push([kind, t, len]); t += len + (kind === 'k' ? (nx === 'l' || nx === 'r' ? 7 : 15) : kind === 'q' ? 0 : 9); }       // off a kicker the card comes down onto the rail that follows (7 m on), or lands clear before the next ramp (15 m)
+        for (let e = 0; e < tpl.length; e++) { const kind = tpl[e], nx = tpl[e + 1], len = kind === 'k' ? 9 : kind === 'q' ? 3 : 8 + ((prn() * 3) | 0); P.push([kind, t, len]); t += len + (kind === 'k' ? (nx === 'l' || nx === 'r' ? 8 : 15) : kind === 'q' ? 0 : 9); }       // off a kicker the card comes down onto the rail that follows (7 m on), or lands clear before the next ramp (15 m)
         const y0 = gy(x, z); for (let s = -18; s <= t + 6; s += 3) { const px = x + ux * s, pz = z + uz * s; if (!ok(px, pz, 5, 0.5) || nearby('k', px, pz, 14) || gy(px, pz) > y0 + 2 + s * 0.04) return false; }       // the whole line fits: clear, gentle, never climbing, and well apart from every other line
         for (const [kind, t0, len] of P) { const ax = x + ux * t0, az = z + uz * t0, bx = ax + ux * len, bz = az + uz * len, cx = (ax + bx) / 2, cz = (az + bz) / 2;
           if (kind === 'k' && gy(bx, bz) - gy(bx + ux * 14, bz + uz * 14) > 2.5) D.kickers.push([r2(cx), r2(gy(cx, cz)), r2(cz), r2(ux), r2(uz), 9, 9, 3.3]);       // the land falls away past the lip: a gap kicker, the dip below is the landing
@@ -315,6 +324,10 @@ export function makeWorld(seedLo, stageIndex) {
     { const near = (x, z) => (W.spawn && dist(x, z, W.spawn.x, W.spawn.z) < 9) || D.kickers.some(q => dist(x, z, q[0], q[2]) < 6 + q[5] / 2) || D.quarters.some(q => dist(x, z, q[0], q[2]) < 7) || D.ledges.concat(D.poles).some(q => { const sx = q[3] - q[0], sz = q[5] - q[2], l2 = sx * sx + sz * sz || 1, u = Math.max(0, Math.min(1, ((x - q[0]) * sx + (z - q[2]) * sz) / l2)); return dist(x, z, q[0] + sx * u, q[2] + sz * u) < 6; });
       const gone = new Set(); D.cacti.forEach((c, k) => { if (near(c[0], c[2])) gone.add(k); else if (k % 2 && D.cacti.some((o, j) => j !== k && !gone.has(j) && dist(o[0], o[2], c[0], c[2]) < 3)) gone.add(k); });       // every other cactus of a tight clump goes
       if (gone.size) { const keyOf = c => c[0] + "," + c[2], dead = new Set([...gone].map(k => keyOf(D.cacti[k]))); D.cacti = D.cacti.filter((c, k) => !gone.has(k)); D.solid = D.solid.filter(s => !dead.has(s[0] + "," + s[2])); } }
+    if (W.gym) { const G = W.gym, inside = (x, z) => dist(x, z, G.x, G.z) < G.edge + 10;
+      for (const k of Object.keys(D)) if (Array.isArray(D[k])) D[k] = D[k].filter(q => { const x = Array.isArray(q) ? q[0] : q.x, z = Array.isArray(q) ? (q.length > 2 && typeof q[2] === 'number' ? q[2] : q[1]) : q.z; return !inside(x, z); });
+      if (Math.floor(G.x / Q) === qx && Math.floor(G.z / Q) === qz) { const v = G.z - 30, y = gy(G.x, v);
+        D.kickers.push([r2(G.x - 6), r2(y), r2(v), 1, 0, 9, 9, 2.6]); D.poles.push([r2(G.x + 6.5), r2(y + 0.7), r2(v), r2(G.x + 16.5), r2(y + 0.7), r2(v)]); D.kickers.push([r2(G.x + 30), r2(y), r2(v), 1, 0, 9, 9, 2.6]); D.quarters.push([r2(G.x + 55), r2(y), r2(v), 1, 0, 12]); } }       // the gym's line runs east 30 m south of the centre
     return D;
   };
   W.cellOf = (x, z) => cell(Math.floor(x / Q), Math.floor(z / Q));
@@ -331,14 +344,17 @@ export function makeWorld(seedLo, stageIndex) {
     if (o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 20) || o.pockets.some(p => dist(p.x, p.z, x, z) < 45) || o.rings.some(q => dist(q.x, q.z, x, z) < 45)) continue; sp = [x, z];
   }
   if (!sp) sp = [0, 0];
+  if (W.gym) sp = [W.gym.x, W.gym.z - 45];
   W.spawn = { x: r2(sp[0]), z: r2(sp[1]) }; W.addPad(sp[0], sp[1], 3, 9);
   // the free chest a short way from the start
   let fc = null; { const o = gather9(sp[0], sp[1]); for (let r = 14; r <= 30 && !fc; r += 2) for (let a2 = 0; a2 < 16 && !fc; a2++) { const x = sp[0] + cosA(a2 * TAU / 16) * r, z = sp[1] + sinA(a2 * TAU / 16) * r; if (spread(x, z, 3) < 0.9 && !o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 3) && !o.pockets.some(p => dist(p.x, p.z, x, z) < 14)) fc = { type: 'cchest', x, z, free: true }; } }
+  if (W.gym) fc = { type: 'cchest', x: W.gym.x + 36, z: W.gym.z + 46, free: true };       // the gym: the reward sits on the mesa
   if (fc) { W.addPad(fc.x, fc.z, 3, 8); } W.freeChest = fc;
   // the start is generous: a Witness Stone 35 to 60 m out and a second free chest 60 to 100 m out, on flat ground clear of everything, so the first item comes inside the first minute
   W.startExtras = []; { const o = gather9(sp[0], sp[1]); for (const [type, lo, hi] of [['stone', 35, 60], ['cchest', 60, 100]]) { let site = null; for (let t = 0; t < 400 && !site; t++) { const r = lo + rs() * (hi - lo), a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (spread(x, z, 3) > 0.9 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 4) || o.pockets.some(p => dist(p.x, p.z, x, z) < 16) || o.rings.some(q => dist(q.x, q.z, x, z) < 30) || (fc && dist(fc.x, fc.z, x, z) < 12) || W.startExtras.some(q => dist(q.x, q.z, x, z) < 14)) continue; site = { type, x, z, free: true }; } if (site) { W.addPad(site.x, site.z, 3, 8); W.startExtras.push(site); } } }
   // the first landmark or mesa the start looks at
   { let bd = 1e9, bt = null; const o = gather9(sp[0], sp[1]); for (const b of o.blocks) { const d = dist(b.cx, b.cz, sp[0], sp[1]); if (b.h >= 7 && d >= 50 && d < bd) { bd = d; bt = b; } } for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const b = landmark(Math.floor(sp[0] / LC) + i, Math.floor(sp[1] / LC) + j); if (b) { const d = dist(b.cx, b.cz, sp[0], sp[1]); if (d >= 80 && d < 900 && d < bd * 3) { bd = Math.min(bd, d); bt = b; } } } { let by = 0, bdot = -9; const dx = bt ? bt.cx - sp[0] : 0, dz = bt ? bt.cz - sp[1] : 0, dl = sq(dx * dx + dz * dz) || 1; for (let k = 0; k < 48; k++) { const a = k * TAU / 48, fx = -sinA(a), fz = -cosA(a); let vq = 0; for (let d = 18; d <= 60; d += 6) { const q = W.valleyAt(sp[0] + fx * d, sp[1] + fz * d); if (q > vq) vq = q; } const dot = (bt ? (fx * dx + fz * dz) / dl : 0) + 1.5 * vq; if (dot > bdot) { bdot = dot; by = a; } } W.startYaw = r2(by); } W.startLandmark = bt; }
+  if (W.gym) W.startYaw = r2(3.141592653589793);       // the gym: facing north up the arena
   // ride school: a straight line of three beams just ahead of the spawn and 3.5 m to the right, along the start view, for the first ollie and grind (the tutorial points at it)
   // (the opening view looks toward the landmark and a wave valley in sight within 110 m, the valley weighted more)
   // ride school: three short beams in the opening view (within about 25 degrees of the start camera, 18 to 36 m ahead), the flattest such line, with the ground flattened under each

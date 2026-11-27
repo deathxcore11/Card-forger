@@ -171,6 +171,15 @@ function step(g, p, r, dt) {
   resolveColliders(g.colliders, p, CFG.player.radius);
   if (r.speed > 12) { const n = breakVasesNear(g, p.x, p.z, 1.6); for (let i = 0; i < n; i++) addTrick(g, r, 'Smash', POINTS.smash); }
   sealTouch(g, p, r); if (r.speed > 14) closeCall(g, p, r);
+  if (r.speed > 8 && RIDE.knock) runThrough(g, p, r);
+}
+// the feel pass: riding through small enemies throws them (a trick kill that counts toward the combo); a big one (golem, hunter) hops the card over it instead of stopping it
+const SMALL = [1, 1, 1, 0, 1, 1, 0];       // by kind id: husk, runner, seer, golem, bloat, scarab, hunter
+function runThrough(g, p, r) {
+  const e = g.en, ax = sin(r.heading), az = cos(r.heading);
+  for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z; if (dx * dx + dz * dz > 1.7 * 1.7 || Math.abs(e.y[i] - p.y) > 1.6) continue;
+    if (SMALL[e.kind[i]]) { g.curSrc = g.srcIndex ? g.srcIndex('run-through') : 0; damageEnemy(g, i, 9999, {}); g.curSrc = 0; if (!e.alive[i]) { addTrick(g, r, 'Run Through', RIDE.knock.points); g.emit('knock', e.x[i], e.z[i], r.heading); } }
+    else if (p.grounded) { p.grounded = false; p.vy = RIDE.knock.hop; r.airT = 0; r.lastLandVy = 0; damageEnemy(g, i, 20, {}); addTrick(g, r, 'Bump Hop', 100); g.emit('ollie', 2, 0, 0); } }
 }
 // ---- shrines you ride (plan section 10): Ring Shrine, one lap of its ring rail grinded (a second lap lifts the tier); Gate Shrine, its five arches threaded in one go
 const TWO_PI = 6.283185307179586, wrapPi = a => (a > 3.141592653589793 ? a - TWO_PI : a < -3.141592653589793 ? a + TWO_PI : a);
