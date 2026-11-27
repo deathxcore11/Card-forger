@@ -1,10 +1,22 @@
 // The open desert's dressing, drawn into one flat-faceted, vertex-coloured builder: cacti, bare dead trees, half-sunk grey logs and beams, clay pots, one large carved head, the slits and doorways on the ruin blocks,
 // and, beyond the boundary line, large rock blocks, dead trees and ruin pieces. No textures; every piece is a handful of prisms and frusta with one colour per piece. View only: the sim reads map.solid.
 import { vnoise, groundAt, footY } from '../gen/open/terrain.js';
+import { BLOCKS, blocksOn } from './models.js';
 const TAU = 6.283185307179586;
 const mixc = (a, b, t) => { const m = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
 function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
+// the block look (?blocks=1): a block model's full-detail faces written into the builder at a place, a size [x, y, z] in metres and a turn (no motion: scenery stands still). False when the model is not loaded.
+const BLK_TRIS = {};
+function blkTris(id) { if (BLK_TRIS[id] !== undefined) return BLK_TRIS[id]; const M = BLOCKS[id]; if (!M) return (BLK_TRIS[id] = null); const P = [], N = [], C = [];
+  M.levels[0].parts.forEach((sh, i) => { const pv = M.parts[i].pivot; for (const g of [sh.solid, sh.glow]) if (g) { const a = g.attributes.position.array, n = g.attributes.normal.array, c = g.attributes.color.array; for (let k = 0; k < a.length; k += 9) { for (let j = 0; j < 9; j += 3) P.push(a[k + j] + pv[0], a[k + j + 1] + pv[1], a[k + j + 2] + pv[2]); N.push(n[k], n[k + 1], n[k + 2]); C.push((Math.round(c[k] * 255) << 16) | (Math.round(c[k + 1] * 255) << 8) | Math.round(c[k + 2] * 255)); } } });
+  return (BLK_TRIS[id] = { P, N, C, M }); }
+function blockInto(D, id, x, y, z, size, yaw) {
+  const B = blkTris(id); if (!B) return false; const { P, N, C, M } = B, sx = size[0] / M.size.x, sy = size[1] / M.size.y, sz = size[2] / M.size.z, c = Math.cos(yaw), s = Math.sin(yaw), cx = (M.min[0] + M.max[0]) / 2, cz = (M.min[2] + M.max[2]) / 2;
+  const v = k => { const lx = (P[k] - cx) * sx, ly = P[k + 1] * sy, lz = (P[k + 2] - cz) * sz; return [x + lx * c + lz * s, y + ly, z - lx * s + lz * c]; };
+  for (let i = 0, k = 0; i < C.length; i++, k += 9) { const nx = N[i * 3], ny = N[i * 3 + 1], nz = N[i * 3 + 2]; D.tri(v(k), v(k + 3), v(k + 6), [nx * c + nz * s, ny, -nx * s + nz * c], C[i]); }
+  return true;
+}
 // a tapered n-sided rod between two points (a log, a branch, a cactus arm); end caps optional
 function rod(D, a, b, r0, r1, n, col, capTop = true, capBot = false, spin = 0, capCol) {
   const pick = i => (Array.isArray(col) ? col[i % col.length] : col), cc = capCol === undefined ? pick(0) : capCol;       // col may be a list: the sides take turns (ribs)
@@ -27,6 +39,7 @@ function frustum(D, cx, y0, cz, hx0, hz0, hx1, hz1, h, yaw, col, colTop) {
 // ---- cactus: three shapes of our own, each ribbed (the sides take turns light and dark) with a paler top and a slight lean. 0: a tall column with one or two arms. 1: a branching cactus, a short trunk that forks into three up-curving stems. 2: a low cluster of squat barrels.
 const CACT = [[0x7cc04a, 0x5d9a34], [0x86c850, 0x62a038], [0x74b844, 0x568f30]], CTOP = 0xb5dc7e;
 function cactus(D, x, y, z, s, rot, v) {
+  if (blockInto(D, 'cactus', x, y - 0.1, z, [1.7 * s, 3.4 * s, 0.6 * s], rot)) return;
   const r = rng(Math.floor(x * 131 + z * 71 + v * 7)), lean = (r() - 0.5) * 0.45, rib = CACT[v % 3], dk = [mixc(rib[0], 0x3f6a22, 0.3), mixc(rib[1], 0x3f6a22, 0.3)], lx = Math.cos(rot) * lean * s, lz = Math.sin(rot) * lean * s;
   if (v % 3 === 2) { const n = 3 + ((r() * 3) | 0); for (let k = 0; k < n; k++) { const a = r() * 6.28, d = k ? (0.6 + r() * 0.9) * s : 0, bx = x + Math.cos(a) * d, bz = z + Math.sin(a) * d, h = (0.9 + r() * 0.8) * s, rr = (0.55 + r() * 0.3) * s; rod(D, [bx, y - 0.2, bz], [bx + 0.05, y + h, bz], rr, rr * 0.82, 8, rib, true, false, 0, CTOP); } return; }
   if (v % 3 === 1) { const h0 = (1.1 + r() * 0.5) * s; rod(D, [x, y - 0.25, z], [x + lx * 0.2, y + h0, z + lz * 0.2], 0.6 * s, 0.5 * s, 8, rib, false);
@@ -39,6 +52,7 @@ function cactus(D, x, y, z, s, rot, v) {
 // ---- dead tree: a thick pale bleached trunk with three to five forked branches, 6 to 9 m
 const WOOD = [0xdcd3bc, 0xd0c6aa, 0xe4dcc8];
 function deadTree(D, x, y, z, s, rot, v, small) {
+  if (blockInto(D, 'tree', x, y - 0.1, z, [3.1 * s, 6 * s, 1.2 * s], rot)) return;
   const r = rng(Math.floor(x * 97 + z * 53 + v * 11)), col = WOOD[v % 3], dkc = mixc(col, 0x8a7a5a, 0.35), h = (4.6 + r() * 0.9) * s, lean = (r() - 0.5) * 0.9, tx = x + Math.cos(rot) * lean * s, tz = z + Math.sin(rot) * lean * s;
   rod(D, [x, y - 0.4, z], [x + (tx - x) * 0.12, y + h * 0.12, z + (tz - z) * 0.12], 0.9 * s, 0.68 * s, 7, [col, dkc], false);       // a flared root, then a thick trunk with a broken flat top: never a thin point
   rod(D, [x + (tx - x) * 0.12, y + h * 0.12, z + (tz - z) * 0.12], [tx, y + h, tz], 0.68 * s, 0.34 * s, 7, [col, dkc], true);
@@ -48,6 +62,7 @@ function deadTree(D, x, y, z, s, rot, v, small) {
 }
 // ---- logs and beams: bleached grey-brown, a darker end-grain disc at each end, one end broken; every fifth one stands as a broken post
 function log(D, map, q) {
+  { const [x0, , z0, x1, , z1, rad] = q, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2; if (l > 0.5 && blockInto(D, 'beam', mx, groundAt(map, mx, mz) - rad * 0.4, mz, [rad * 2.2, rad * 2.2, l], Math.atan2(dx, dz))) return; }       // the block look: one half-sunk beam along the whole span
   const [x0, y0, z0, x1, y1, z1, rad, kind] = q, base = kind === 3 ? 0x8a6038 : kind === 2 ? 0xe0c89a : kind ? 0xd6b88a : 0xcaa878, col = [base, mixc(base, 0xb98a55, 0.28)], ns = kind >= 2 ? 4 : 6, grain = 0x6a4f30, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1;
   if (false) {       // (no standing broken posts: every beam lies flat and can be ground, the no-junk rule)       // (a ride-line beam, kind 3, always lies flat)       // a broken post standing up, half sunk, with a jagged top
     const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2, my = groundAt(map, mx, mz), h = 2.4 + (rad * 6 % 1.5); rod(D, [mx, my - 0.5, mz], [mx + 0.12, my + h, mz], rad, rad * 0.85, ns, col, true, false, 0.3, grain); rod(D, [mx + 0.05, my + h - 0.05, mz], [mx + 0.25, my + h + rad * 1.5, mz + 0.1], rad * 0.35, 0.03, 4, col[0], true); return; }
@@ -57,6 +72,7 @@ function log(D, map, q) {
 // ---- clay pot
 const CLAY = [0xc2642f, 0xb4562a, 0xd0793c];
 function pot(D, x, y, z, s, rot, v) {
+  if (blockInto(D, 'urn', x, y - 0.05, z, [0.9 * s, 1.0 * s, 0.9 * s], rot)) return;
   const col = CLAY[v % 3], dk = mixc(col, 0x6a2c12, 0.3), lean = 0.06 * Math.sin(rot * 3);
   rod(D, [x, y - 0.06 * s, z], [x + lean, y + 0.3 * s, z], 0.2 * s, 0.34 * s, 7, dk, false, true); rod(D, [x + lean, y + 0.3 * s, z], [x + lean, y + 0.6 * s, z], 0.34 * s, 0.22 * s, 7, col, false);
   rod(D, [x + lean, y + 0.6 * s, z], [x + lean, y + 0.72 * s, z], 0.22 * s, 0.17 * s, 7, col, false); rod(D, [x + lean, y + 0.72 * s, z], [x + lean, y + 0.78 * s, z], 0.2 * s, 0.2 * s, 7, dk, true);
@@ -138,7 +154,7 @@ function farRock(D, q) { const [x, y, z, w, h, rot, v] = q, c = ROCKC[v % 3]; fr
 function farRuin(D, q) { const [x, y, z, w, h, rot, v] = q, c = Math.cos(rot), s = Math.sin(rot), col = 0xd6b98a; frustum(D, x, y - 0.8, z, w * 0.5, 0.7, w * 0.46, 0.6, h + 0.8, rot, col, 0xe2c99c); frustum(D, x + c * w * 0.9, y - 0.5, z + s * w * 0.9, 1.2, 1.1, 1.1, 1.0, 1.3, rot + 0.5, col); frustum(D, x - s * 2.8, y - 0.5, z + c * 2.8, 0.9, 0.9, 0.8, 0.8, 0.9, rot + 1.2, 0xc9ab7c); }
 
 // ---- a carved stone card half sunk in the sand: a pale slab with a darker inset panel on both faces and a worn top
-function stoneCard(D, x, y, z, s, rot) { frustum(D, x, y - 1.3 * s, z, 1.35 * s, 0.16 * s, 1.25 * s, 0.13 * s, 4.4 * s, rot, 0xd8c8a8, 0xe6dac0); frustum(D, x, y - 0.2 * s, z, 0.95 * s, 0.19 * s, 0.85 * s, 0.17 * s, 2.6 * s, rot, 0xb39c78, 0xc8b490); frustum(D, x, y + 1.0 * s, z, 0.32 * s, 0.21 * s, 0.05 * s, 0.2 * s, 0.6 * s, rot, 0x8a7458); }
+function stoneCard(D, x, y, z, s, rot) { if (blockInto(D, 'stonecard', x, y - 0.4 * s, z, [2.7 * s, 4.4 * s, 0.5 * s], rot)) return; frustum(D, x, y - 1.3 * s, z, 1.35 * s, 0.16 * s, 1.25 * s, 0.13 * s, 4.4 * s, rot, 0xd8c8a8, 0xe6dac0); frustum(D, x, y - 0.2 * s, z, 0.95 * s, 0.19 * s, 0.85 * s, 0.17 * s, 2.6 * s, rot, 0xb39c78, 0xc8b490); frustum(D, x, y + 1.0 * s, z, 0.32 * s, 0.21 * s, 0.05 * s, 0.2 * s, 0.6 * s, rot, 0x8a7458); }
 // ---- cracked salt on a dry lake: thin darker lines lying on the ground
 function crack(D, map, pts) { for (let i = 0; i + 3 < pts.length; i += 2) { const x0 = pts[i], z0 = pts[i + 1], x1 = pts[i + 2], z1 = pts[i + 3], dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1, nx = -dz / l * 0.07, nz = dx / l * 0.07, y0 = groundAt(map, x0, z0) + 0.04, y1 = groundAt(map, x1, z1) + 0.04; D.quad([x0 - nx, y0, z0 - nz], [x0 + nx, y0, z0 + nz], [x1 + nx, y1, z1 + nz], [x1 - nx, y1, z1 - nz], [0, 1, 0], 0xb39a72); } }
 // ---- a dormant seal stone: a low dark plinth with a dull gem on top (lit ones get a gold halo from the actors)
@@ -150,6 +166,28 @@ function arch(D, q) { const [x, y, z, ux, uz] = q, px = -uz * 2.1, pz = ux * 2.1
 function pipeHoop(D, q) { const [x, y, z, ux, uz, R] = q, px = -uz, pz = ux, N = 22, pt = (i, s) => { const t = i / N * 6.283185307179586, al = Math.sin(t) * R, up = R - Math.cos(t) * R; return [x + ux * al + px * s, y - 0.4 + up, z + uz * al + pz * s]; };
   for (let i = 0; i < N; i++) { for (const s of [-1.5, -0.9, -0.3, 0.3, 0.9, 1.5]) rod(D, pt(i, s), pt(i + 1, s), 0.42, 0.42, 5, [0xe6dcc4, 0xcfc3a8], false, false, 0); for (const s of [1.9, -1.9]) rod(D, pt(i, s), pt(i + 1, s), 0.22, 0.22, 5, [0xe0b24e, 0xc9a24a], false, false, 0); }
   for (const side of [1, -1]) for (let k = 0; k < 9; k++) { const d = side * (R + 3 + k * 1.7), gx = x + ux * d, gz = z + uz * d; frustum(D, gx, y - 0.12, gz, 0.8, 0.8, 0.8, 0.8, 0.16, 0, 0x9a6a3c); } }       // a solid band of carved stone, gold edges, and a dark groove leading in from each side
+// the block look (?blocks=1) for the park pieces: the same 0.06 m block grid, terracotta courses (a shade darker every fourth block), a gold top edge.
+// The ramps are stepped in 6 cm steps; the card still rides the smooth sim surface (sim/ride.js), so they launch exactly as before.
+const BK = 0.06, T1 = 0x9a6a4e, T2 = 0x8c5f45, TS = 0x80553f, TD = 0x6a4434, TG = 0xe0b24e;
+const course = y => (Math.floor(y / (BK * 4)) % 2 ? T2 : T1);
+// a stepped profile along u (unit ux, uz) across width w: steps[k] = [a0, a1, height] (heights rising), from base y0 at (x, z) = the start of the piece
+function steppedPiece(D, x, y0, z, ux, uz, w, steps, backA, goldLast) {
+  const px = -uz * w / 2, pz = ux * w / 2, at = (a, s, y) => [x + ux * a + px * s, y0 + y, z + uz * a + pz * s];
+  steps.forEach(([a0, a1, h], k) => { const last = k === steps.length - 1, top = goldLast && last ? TG : course(h), hp = k ? steps[k - 1][2] : 0;
+    D.quad(at(a0, -1, h), at(a1, -1, h), at(a1, 1, h), at(a0, 1, h), [0, 1, 0], top);       // the tread
+    D.quad(at(a0, 1, hp), at(a0, -1, hp), at(a0, -1, h), at(a0, 1, h), [-ux, 0, -uz], goldLast && last ? TG : course(h));       // the riser
+    D.quad(at(a0, 1, 0), at(a0, 1, h), at(a1, 1, h), at(a1, 1, 0), [px, 0, pz], TS); D.quad(at(a1, -1, 0), at(a1, -1, h), at(a0, -1, h), at(a0, -1, 0), [-px, 0, -pz], TS); });       // the two stepped sides
+  const H = steps[steps.length - 1][2]; D.quad(at(backA, -1, 0), at(backA, -1, H), at(backA, 1, H), at(backA, 1, 0), [ux, 0, uz], TD);       // the back
+}
+function blockKicker(D, q) { const [x, y, z, ux, uz, len, w, h] = q, n = Math.max(1, Math.round(h / BK)), st = []; for (let k = 1; k <= n; k++) st.push([len * (k - 1) / n, len * k / n, k * BK]); steppedPiece(D, x - ux * len / 2, y - 0.2, z - uz * len / 2, ux, uz, w, st, len, true); }
+function blockQuarter(D, map, q) { const [x, y, z, ux, uz, w] = q, Rr = 3.2, n = Math.round(Rr / BK), st = [], g0 = groundAt(map, x, z) - 0.2; let a = 0; for (let k = 1; k <= n; k++) { const hk = k * BK, a1 = Math.sqrt(Math.max(0, Rr * Rr - (Rr - hk) * (Rr - hk))); st.push([a, Math.max(a + 0.02, a1), hk]); a = Math.max(a + 0.02, a1); } steppedPiece(D, x, g0, z, ux, uz, w, st, a, true); }
+function blockBar(D, a, b, half, gold) {       // a square bar of blocks from a to b (its top at a[1], b[1]), courses down to the ground, a gold top layer
+  const dx = b[0] - a[0], dz = b[2] - a[2], l = Math.sqrt(dx * dx + dz * dz) || 1, ux = dx / l, uz = dz / l, px = -uz * half, pz = ux * half, P = (p, s, y) => [p[0] + px * s, y, p[2] + pz * s];
+  const ya = a[1], yb = b[1], lo = Math.min(ya, yb) - 0.6 - 2 * half;
+  D.quad(P(a, -1, ya), P(b, -1, yb), P(b, 1, yb), P(a, 1, ya), [0, 1, 0], gold ? TG : T1);
+  for (let y = lo; y < Math.max(ya, yb) - 0.001; y += BK * 4) { const y1 = Math.min(y + BK * 4, ya), y2 = Math.min(y + BK * 4, yb), c = course(y); if (y1 > y || y2 > y) { D.quad(P(a, 1, y), P(b, 1, y), P(b, 1, Math.max(y, y2)), P(a, 1, Math.max(y, y1)), [px, 0, pz], c); D.quad(P(b, -1, y), P(a, -1, y), P(a, -1, Math.max(y, y1)), P(b, -1, Math.max(y, y2)), [-px, 0, -pz], c); } }
+  D.quad(P(a, 1, lo), P(a, 1, ya), P(a, -1, ya), P(a, -1, lo), [-ux, 0, -uz], TD); D.quad(P(b, -1, lo), P(b, -1, yb), P(b, 1, yb), P(b, 1, lo), [ux, 0, uz], TD);
+}
 export function addDressing(D, map, ok) {
   D.plain = true;       // flat clean faces: no per-triangle colour jitter on built pieces
   const d = map.dress || {}, yes = ok || (() => true);
@@ -157,17 +195,20 @@ export function addDressing(D, map, ok) {
   for (const q of d.rings || []) if (yes(q[0][0], q[0][2])) ringRail(D, q);
   for (const q of d.arches || []) if (yes(q[0], q[2])) arch(D, q);
   for (const q of d.seals || []) if (yes(q[0], q[2])) { if (q[3] === -2) { frustum(D, q[0], q[1] - 0.3, q[2], 0.4, 0.4, 0.26, 0.26, 2.6, 0.4, 0xcfc3a8, 0xb6aa94); frustum(D, q[0], q[1] + 2.3, q[2], 0.34, 0.34, 0.06, 0.06, 0.55, 0.8, 0xe0b24e); } else sealStone(D, q[0], q[1], q[2]); }       // set -2: a Bowl Shrine's marker stone, not a seal
-  for (const q of d.spires || []) if (yes(q[0], q[2])) { const top = q[4] || 9; frustum(D, q[0], q[1] - 0.4, q[2], 0.42, 0.42, 0.05, 0.05, top + 0.4, 0.3, 0xcfc3a8, 0xe6dcc4); rod(D, [q[0], q[1] + q[3] - 0.15, q[2]], [q[0], q[1] + q[3] + 0.15, q[2]], 0.55, 0.55, 8, [0xe0b24e, 0xc9a24a], true, true, 0); frustum(D, q[0], q[1] + top - 0.2, q[2], 0.12, 0.12, 0.01, 0.01, 0.9, 0.8, 0xe0b24e); }       // the needle: pale stone, a gold band at 2.6 m, a gold tip
+  for (const q of d.spires || []) if (yes(q[0], q[2]) && !blockInto(D, 'spire', q[0], q[1] - 0.2, q[2], [2.2, (q[4] || 9) + 0.4, 2.2], 0)) { const top = q[4] || 9; frustum(D, q[0], q[1] - 0.4, q[2], 0.42, 0.42, 0.05, 0.05, top + 0.4, 0.3, 0xcfc3a8, 0xe6dcc4); rod(D, [q[0], q[1] + q[3] - 0.15, q[2]], [q[0], q[1] + q[3] + 0.15, q[2]], 0.55, 0.55, 8, [0xe0b24e, 0xc9a24a], true, true, 0); frustum(D, q[0], q[1] + top - 0.2, q[2], 0.12, 0.12, 0.01, 0.01, 0.9, 0.8, 0xe0b24e); }       // the needle: pale stone, a gold band at 2.6 m, a gold tip
   // park lines (strip-back, 27 Nov): plain data-driven shapes with flat faces, one sandstone tone per face and one gold edge, so they can be swapped for block-built pieces later
   const SAND = 0x9a6a4e, SAND_S = 0x80553f, SAND_D = 0x6a4434, GOLD = [0xffd56a, 0xe0b24e];       // one darker carved-stone tone (terracotta brown), so a line reads against the sand at 40 m
-  for (const q of d.kickers || []) if (yes(q[0], q[2])) { const [x, y, z, ux, uz, len, w, h] = q, px = -uz * w / 2, pz = ux * w / 2, ax = x - ux * len / 2, az = z - uz * len / 2, bx = x + ux * len / 2, bz = z + uz * len / 2, y0 = y - 0.2;
+  if (blocksOn) { for (const q of d.kickers || []) if (yes(q[0], q[2])) blockKicker(D, q); for (const q of d.quarters || []) if (yes(q[0], q[2])) blockQuarter(D, map, q);
+    for (const q of d.ledges || []) if (yes(q[0], q[2])) { const h = q[6]; blockBar(D, [q[0], q[1] + h, q[2]], [q[3], q[4] + h, q[5]], 0.6, true); blockBar(D, [q[0], q[1] + h + BK, q[2]], [q[3], q[4] + h + BK, q[5]], 0.12, true); }
+    for (const q of d.poles || []) if (yes(q[0], q[2])) { blockBar(D, [q[0], q[1], q[2]], [q[3], q[4], q[5]], 0.18, true); const n = Math.max(2, Math.round(Math.hypot(q[3] - q[0], q[5] - q[2]) / 6)); for (let k = 0; k <= n; k++) { const f = k / n, x = q[0] + (q[3] - q[0]) * f, z = q[2] + (q[5] - q[2]) * f, top = q[1] + (q[4] - q[1]) * f - 0.36; frustum(D, x, groundAt(map, x, z) - 0.3, z, 0.24, 0.24, 0.24, 0.24, Math.max(0.2, top - groundAt(map, x, z) + 0.3), 0, TD); } } }       // the block look: stepped kickers and quarter pipes, ledges and rails as block bars with a gold top
+  else for (const q of d.kickers || []) if (yes(q[0], q[2])) { const [x, y, z, ux, uz, len, w, h] = q, px = -uz * w / 2, pz = ux * w / 2, ax = x - ux * len / 2, az = z - uz * len / 2, bx = x + ux * len / 2, bz = z + uz * len / 2, y0 = y - 0.2;
     const A = [ax + px, y0, az + pz], B = [ax - px, y0, az - pz], Cc = [bx - px, y0 + h, bz - pz], Dd = [bx + px, y0 + h, bz + pz], E = [bx - px, y0, bz - pz], F = [bx + px, y0, bz + pz];
     D.quad(A, B, Cc, Dd, [-ux * h, len, -uz * h], SAND); D.quad(Dd, Cc, E, F, [ux, 0, uz], SAND_D); D.tri(A, Dd, F, [px, 0, pz], SAND_S); D.tri(B, Cc, E, [-px, 0, -pz], SAND_S);
     rod(D, [bx + px, y0 + h + 0.05, bz + pz], [bx - px, y0 + h + 0.05, bz - pz], 0.17, 0.17, 6, GOLD, true, true, 0); }       // a kicker: a plain wedge, one gold lip
-  for (const q of d.ledges || []) if (yes(q[0], q[2])) { const [ax, ay, az, bx, by, bz, h] = q; rod(D, [ax, ay - 0.3, az], [bx, by - 0.3, bz], (h + 0.25) * 0.72, (h + 0.25) * 0.72, 4, [SAND, SAND_S], true, true, 0.785); rod(D, [ax, ay + h, az], [bx, by + h, bz], 0.11, 0.11, 5, GOLD, true, true, 0); }       // a ledge: a plain block, a gold grind edge
-  for (const q of d.poles || []) if (yes(q[0], q[2])) { const [ax, ay, az, bx, by, bz] = q; rod(D, [ax, ay - 0.3, az], [bx, by - 0.3, bz], 0.36, 0.36, 4, [SAND, SAND_S], true, true, 0.785); rod(D, [ax, ay + 0.02, az], [bx, by + 0.02, bz], 0.09, 0.09, 5, GOLD, true, true, 0);
+  if (!blocksOn) for (const q of d.ledges || []) if (yes(q[0], q[2])) { const [ax, ay, az, bx, by, bz, h] = q; rod(D, [ax, ay - 0.3, az], [bx, by - 0.3, bz], (h + 0.25) * 0.72, (h + 0.25) * 0.72, 4, [SAND, SAND_S], true, true, 0.785); rod(D, [ax, ay + h, az], [bx, by + h, bz], 0.11, 0.11, 5, GOLD, true, true, 0); }       // a ledge: a plain block, a gold grind edge
+  if (!blocksOn) for (const q of d.poles || []) if (yes(q[0], q[2])) { const [ax, ay, az, bx, by, bz] = q; rod(D, [ax, ay - 0.3, az], [bx, by - 0.3, bz], 0.36, 0.36, 4, [SAND, SAND_S], true, true, 0.785); rod(D, [ax, ay + 0.02, az], [bx, by + 0.02, bz], 0.09, 0.09, 5, GOLD, true, true, 0);
     const n = Math.max(2, Math.round(Math.hypot(bx - ax, bz - az) / 6)); for (let k = 0; k <= n; k++) { const f = k / n, x = ax + (bx - ax) * f, z = az + (bz - az) * f, top = ay + (by - ay) * f - 0.4; frustum(D, x, groundAt(map, x, z) - 0.3, z, 0.3, 0.3, 0.3, 0.3, Math.max(0.2, top - groundAt(map, x, z) + 0.3), 0, SAND_D); } }       // a rail: one thick stone bar on square posts, a gold top edge
-  for (const q of d.quarters || []) if (yes(q[0], q[2])) { const [x, y, z, ux, uz, w] = q, px = -uz * w / 2, pz = ux * w / 2, R = 3.2, g0 = groundAt(map, x, z) - 0.2, N = 6, P = k => { const a = k / N * 1.5707963, o = Math.sin(a) * R, hh = R - Math.cos(a) * R; return [x + ux * o, g0 + hh, z + uz * o]; };       // a quarter pipe: a plain curved stone wall, one gold coping
+  if (!blocksOn) for (const q of d.quarters || []) if (yes(q[0], q[2])) { const [x, y, z, ux, uz, w] = q, px = -uz * w / 2, pz = ux * w / 2, R = 3.2, g0 = groundAt(map, x, z) - 0.2, N = 6, P = k => { const a = k / N * 1.5707963, o = Math.sin(a) * R, hh = R - Math.cos(a) * R; return [x + ux * o, g0 + hh, z + uz * o]; };       // a quarter pipe: a plain curved stone wall, one gold coping
     for (let k = 0; k < N; k++) { const a = P(k), b = P(k + 1); D.quad([a[0] + px, a[1], a[2] + pz], [a[0] - px, a[1], a[2] - pz], [b[0] - px, b[1], b[2] - pz], [b[0] + px, b[1], b[2] + pz], [-ux, 1 - k / N, -uz], SAND); D.quad([a[0] + px, g0, a[2] + pz], [a[0] + px, a[1], a[2] + pz], [b[0] + px, b[1], b[2] + pz], [b[0] + px, g0, b[2] + pz], [px, 0, pz], SAND_D); D.quad([b[0] - px, g0, b[2] - pz], [b[0] - px, b[1], b[2] - pz], [a[0] - px, a[1], a[2] - pz], [a[0] - px, g0, a[2] - pz], [-px, 0, -pz], SAND_D); }
     const t = P(N); D.quad([t[0] + px, g0, t[2] + pz], [t[0] - px, g0, t[2] - pz], [t[0] - px, t[1], t[2] - pz], [t[0] + px, t[1], t[2] + pz], [ux, 0, uz], SAND_D); rod(D, [t[0] + px, t[1] + 0.05, t[2] + pz], [t[0] - px, t[1] + 0.05, t[2] - pz], 0.16, 0.16, 6, GOLD, true, true, 0); }
   for (const q of d.rspires || []) if (yes(q[0], q[2])) { const [x, y, z, h, w, a] = q; frustum(D, x, y - 0.5, z, w, w * 0.8, w * 0.35, w * 0.3, h * 0.65, a, 0x7a5236, 0x8a6040); frustum(D, x + 0.2, y + h * 0.6, z, w * 0.4, w * 0.35, w * 0.08, w * 0.06, h * 0.4, a + 0.5, 0x8a6040, 0x9a7050); }       // a ridge spine's umber rock spire

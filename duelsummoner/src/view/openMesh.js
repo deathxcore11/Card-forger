@@ -5,6 +5,7 @@
 import { Builder } from './mapMesh.js';
 import { vnoise, groundAt, duneH, blockProf, viewH } from '../gen/open/terrain.js';
 import { addDressing } from './openDressing.js';
+import { blocksOn } from './models.js';
 import { Q as WQ, LC as WLC } from '../gen/world/world.js';
 const T = window.THREE;
 const mixc = (a, b, t) => { const m = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
@@ -50,12 +51,27 @@ export function buildOpen(map, look) {
   const tri = (Bd, a, b, c) => { const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2]; let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; nx /= l; ny /= l; nz /= l; if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }
     const mx = (a[0] + b[0] + c[0]) / 3, mz = (a[2] + b[2] + c[2]) / 3, E = 3, sgx = (gh(mx + E, mz) - gh(mx - E, mz)) / (2 * E), sgz = (gh(mx, mz + E) - gh(mx, mz - E)) / (2 * E), sl = Math.sqrt(sgx * sgx + 1 + sgz * sgz);       // lit by the slope over 6 m, not the facet: no per-triangle blotching
     Bd.tri(a, b, c, [-sgx / sl, 1 / sl, -sgz / sl], colour((a[0] + b[0] + c[0]) / 3, (a[2] + b[2] + c[2]) / 3, (a[1] + b[1] + c[1]) / 3, nx, ny, nz)); };
+  // the block look (?blocks=1): the ground as 24 cm columns, heights in 24 cm steps read from the smooth 2 m grid (the sim walks the smooth surface, unchanged);
+  // equal tops are merged along each row and equal side walls along each edge, the colour is the smooth ground's colour at the nearest 2 m corner (one sand tone per region, blended over distance)
+  const blockGround = (Bd, x0, z0, step, n, W1, V, CV) => {
+    const Q = 0.24, M = Math.round(CHK / Q), c = CHK / M, Hq = new Float32Array(M * M), Ci = new Int32Array(M * M);
+    for (let j = 0; j < M; j++) for (let i = 0; i < M; i++) { const fx = (i + 0.5) * c / step, fz = (j + 0.5) * c / step, ix = Math.min(n - 1, fx | 0), iz = Math.min(n - 1, fz | 0), tx = fx - ix, tz = fz - iz, k = iz * W1 + ix;
+      const h = (V[k] * (1 - tx) + V[k + 1] * tx) * (1 - tz) + (V[k + W1] * (1 - tx) + V[k + W1 + 1] * tx) * tz; Hq[j * M + i] = Math.round(h / Q) * Q; Ci[j * M + i] = Math.round(fz) * W1 + Math.round(fx); }
+    Bd.plain = true; Bd.smooth = false;
+    for (let j = 0; j < M; j++) for (let i = 0; i < M;) { const h = Hq[j * M + i]; let e = i + 1; while (e < M && e - i < 32 && Hq[j * M + e] === h) e++; const col = CV[Ci[j * M + ((i + e) >> 1)]];
+      Bd.quad([x0 + i * c, h, z0 + j * c], [x0 + e * c, h, z0 + j * c], [x0 + e * c, h, z0 + (j + 1) * c], [x0 + i * c, h, z0 + (j + 1) * c], [0, 1, 0], col); i = e; }       // tops
+    for (let i = 0; i < M - 1; i++) for (let j = 0; j < M;) { const a = Hq[j * M + i], b = Hq[j * M + i + 1]; if (a === b) { j++; continue; } let e = j + 1; while (e < M && e - j < 32 && Hq[e * M + i] === a && Hq[e * M + i + 1] === b) e++;
+      const x = x0 + (i + 1) * c, lo = Math.min(a, b), hi = Math.max(a, b), col = CV[Ci[j * M + i]]; Bd.quad([x, lo, z0 + j * c], [x, lo, z0 + e * c], [x, hi, z0 + e * c], [x, hi, z0 + j * c], [a > b ? 1 : -1, 0, 0], col); j = e; }       // walls facing x
+    for (let j = 0; j < M - 1; j++) for (let i = 0; i < M;) { const a = Hq[j * M + i], b = Hq[(j + 1) * M + i]; if (a === b) { i++; continue; } let e = i + 1; while (e < M && e - i < 32 && Hq[j * M + e] === a && Hq[(j + 1) * M + e] === b) e++;
+      const z = z0 + (j + 1) * c, lo = Math.min(a, b), hi = Math.max(a, b), col = CV[Ci[j * M + i]]; Bd.quad([x0 + i * c, lo, z], [x0 + e * c, lo, z], [x0 + e * c, hi, z], [x0 + i * c, hi, z], [0, 0, a > b ? 1 : -1], col); i = e; }       // walls facing z
+  };
   // one chunk's ground at a cell size, with a 3 m skirt all round
   const grid = (Bd, x0, z0, step) => {
     const n = Math.round(CHK / step), W1 = n + 1, V = new Float32Array(W1 * W1); for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) V[j * W1 + i] = gh(x0 + i * step, z0 + j * step);
     const NV = new Array(W1 * W1), CV = new Array(W1 * W1), E = 3;       // a normal from the slope over 6 m and a colour at every corner: the ground is lit and tinted smoothly, never per facet
     for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) { const x = x0 + i * step, z = z0 + j * step, gx = (gh(x + E, z) - gh(x - E, z)) / (2 * E), gz = (gh(x, z + E) - gh(x, z - E)) / (2 * E), l = Math.sqrt(gx * gx + 1 + gz * gz), nn = [-gx / l, 1 / l, -gz / l]; NV[j * W1 + i] = nn; CV[j * W1 + i] = colour(x, z, V[j * W1 + i], nn[0], nn[1], nn[2]); }
     const P = (i, j) => [x0 + i * step, V[j * W1 + i], z0 + j * step], tv = (A, B, C) => Bd.triV([P(...A), P(...B), P(...C)], [NV[A[1] * W1 + A[0]], NV[B[1] * W1 + B[0]], NV[C[1] * W1 + C[0]]], [CV[A[1] * W1 + A[0]], CV[B[1] * W1 + B[0]], CV[C[1] * W1 + C[0]]]);
+    if (blocksOn && step <= 2) blockGround(Bd, x0, z0, step, n, W1, V, CV); else       // the block look: 24 cm sand columns over the smooth collision surface (near chunks only)
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const a = [i, j], b = [i + 1, j], c = [i + 1, j + 1], d = [i, j + 1];
       if (Math.abs(V[j * W1 + i] - V[(j + 1) * W1 + i + 1]) < Math.abs(V[j * W1 + i + 1] - V[(j + 1) * W1 + i])) { tv(a, c, b); tv(a, d, c); } else { tv(a, d, b); tv(b, d, c); }       // the cut follows the smaller height change (wound to face up)
     }

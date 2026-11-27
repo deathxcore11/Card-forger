@@ -68,7 +68,8 @@ export class Props {
         const pl = new T.Mesh(new T.BoxGeometry(0.9, 0.8, 0.9), lambert(0xc8b890)); pl.position.set(-1.6 + k * 1.6, 0.4, 0.4); g.add(pl);
         const it = new T.Mesh(new T.OctahedronGeometry(0.3, 0), basic(RARITY[ITEMS[b.stock[k].id].rarity])); it.position.set(-1.6 + k * 1.6, 1.3, 0.4); g.add(it); plinths.push(it); it.userData.dyn = true; it.visible = false;
       }
-      bake(g); G.add(g); P.broker = { g, plinths };
+      bake(g); if (BLOCKS.broker) { const bg = blockGroup(BLOCKS.broker); bg.root.scale.setScalar(1.8 / BLOCKS.broker.size.y); bg.root.position.set(0, 0, -0.9); g.add(bg.root); }       // the block look: the Broker in the stall
+      G.add(g); P.broker = { g, plinths };
     }
     for (const s of world.wagers || []) {                              // the Wager Shrine: two leaning dark slabs round a low brazier and an ember gem, in orange (never red, never violet)
       if (seen.has(s)) continue; seen.add(s); const g = new T.Group(); g.position.set(s.x, s.y, s.z);
@@ -78,7 +79,7 @@ export class Props {
     for (const s of world.shrines) {                                   // low basin with a filling ring on the floor
       if (seen.has(s)) continue; seen.add(s);
       const g = new T.Group(); g.position.set(s.x, s.y, s.z); const rc = RARITY[s.best] || 0x7fffc8, dim = (h, f) => (((h >> 16 & 255) * f) << 16) | (((h >> 8 & 255) * f) << 8) | ((h & 255) * f);      // the circle takes the colour of the best blessing on offer
-      const basin = new T.Mesh(new T.CylinderGeometry(1.4, 1.8, 0.5, 10), lambert(0x6a5a3a)); basin.position.y = 0.25; g.add(basin);
+      if (BLOCKS.shrine) { const bg = blockGroup(BLOCKS.shrine), sc = 2.4 / BLOCKS.shrine.size.y; bg.root.scale.setScalar(sc); g.add(bg.root); g.userData.blkShrine = bg; } else { const basin = new T.Mesh(new T.CylinderGeometry(1.4, 1.8, 0.5, 10), lambert(0x6a5a3a)); basin.position.y = 0.25; g.add(basin); }       // the block look: the rune shrine in the ring
       const water = new T.Mesh(new T.CylinderGeometry(1.1, 1.1, 0.05, 10), basic(rc)); water.position.y = 0.5; g.add(water);
       const track = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.6, E.shrines.radius, 48), basic(dim(rc, 0.75), { side: T.DoubleSide })); track.rotation.x = -Math.PI / 2; track.position.y = 0.1; g.add(track);
       const fill = new T.Mesh(new T.RingGeometry(E.shrines.radius - 0.6, E.shrines.radius, 48, 1, 0, 0.01), basic(rc, { side: T.DoubleSide, depthWrite: false })); fill.rotation.x = -Math.PI / 2; fill.position.y = 0.12; g.add(fill);
@@ -98,7 +99,7 @@ export class Props {
     const OPEN = !!this.openMap;       // the open desert: a warm wood chest with a lit top, readable from 30 m
     const lit = { pos: [], nor: [], col: [], hide: [] }, unlit = { pos: [], nor: [], col: [], hide: [] }, M = new T.Matrix4(), R = new T.Matrix4(), col = new T.Color();
     world.cchests.forEach((c, ci) => {
-      if (BLOCKS.chestSealed && !c.trophy) { const bg = blockGroup(BLOCKS.chestSealed), s = 1.5 / BLOCKS.chestSealed.size.x; bg.root.scale.setScalar(s); bg.root.position.set(c.x, c.y, c.z); { const S = this._spawn; bg.root.rotation.y = S ? Math.atan2(S.x - c.x, S.z - c.z) : 0; } bg.root.userData.bc = { c, bg }; animateBlocks('chestSealed', bg, 0, { open: !!c.open }); this.G.add(bg.root); this.chestMeshes.push(bg.root); this.chestRange[ci] = []; return; }       // the block look (?blocks=1): the sealed chest facing the spawn (nothing new stored), its lid opens when the chest does
+      const cid = c.trophy ? 'chestTrophy' : c.free ? 'chestSealed' : 'chestCard'; if (BLOCKS[cid]) { const bg = blockGroup(BLOCKS[cid]), s = 1.5 / BLOCKS[cid].size.x; bg.root.scale.setScalar(s); bg.root.position.set(c.x, c.y, c.z); { const S = this._spawn; bg.root.rotation.y = S ? Math.atan2(S.x - c.x, S.z - c.z) : 0; } bg.root.userData.bc = { c, bg, id: cid }; animateBlocks(cid, bg, 0, { open: !!c.open }); if (c.trophy) { const beam = new T.Mesh(new T.CylinderGeometry(0.28, 0.5, 18, 8, 1, true), new T.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.4, depthWrite: false, side: T.DoubleSide })); beam.position.set(c.x, c.y + 9, c.z); this.G.add(beam); this.chestMeshes.push(beam); beam.userData.c = c; } this.G.add(bg.root); this.chestMeshes.push(bg.root); this.chestRange[ci] = []; return; }       // the block look (?blocks=1): the sealed chest facing the spawn (nothing new stored), its lid opens when the chest does
       const piece = (geo, x, y, z, hex, un, rx, when) => {       // when: 'c' shows only while closed, 'o' only while open, none always
         const hv = when === 'c' ? (c.open ? 1 : 0) : when === 'o' ? (c.open ? 0 : 1) : 0; M.makeTranslation(c.x + x, c.y + y, c.z + z); if (rx) { R.makeRotationX(rx); M.multiply(R); } const g2 = geo.toNonIndexed(); g2.applyMatrix4(M); col.setHex(hex); const o = un ? unlit : lit, st = o.pos.length / 3, p = g2.attributes.position, n = g2.attributes.normal; for (let i = 0; i < p.count; i++) { o.pos.push(p.getX(i), p.getY(i), p.getZ(i)); if (n) o.nor.push(n.getX(i), n.getY(i), n.getZ(i)); o.col.push(col.r, col.g, col.b); o.hide.push(hv); } return [un ? 1 : 0, st, p.count, when || '']; };
       const lid = c.trophy ? piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.25, -0.55, 0xeee4c8, false, -1.1) : piece(new T.BoxGeometry(1.6, 0.35, 1.1), 0, 1.05, 0, OPEN ? 0xc98a4a : 0x2a2026, false, 0, 'c');
@@ -117,7 +118,7 @@ export class Props {
   _syncChests(world, t) {
     const sets = [null, null]; for (const m of this.chestMeshes) if (m.userData.set !== undefined) sets[m.userData.set] = m;
     world.cchests.forEach((c, ci) => { const open = !!c.open; if (open === this.chestOpen[ci]) return; this.chestOpen[ci] = open; for (const [which, st, n, when] of this.chestRange[ci]) { const m = sets[which]; if (!m) continue; const a = m.geometry.attributes.aHide, hv = when === 'c' ? (open ? 1 : 0) : when === 'o' ? (open ? 0 : 1) : 0; for (let i = 0; i < n; i++) a.array[st + i] = hv; a.needsUpdate = true; } });
-    for (const m of this.chestMeshes) if (m.userData.bc) animateBlocks('chestSealed', m.userData.bc.bg, t, { open: !!m.userData.bc.c.open });
+    for (const m of this.chestMeshes) if (m.userData.bc) animateBlocks(m.userData.bc.id, m.userData.bc.bg, t, { open: !!m.userData.bc.c.open });
     for (const m of this.chestMeshes) if (m.userData.c) { m.visible = !m.userData.c.open; m.material.opacity = (0.3 + 0.12 * Math.sin(t * 3)) * (this.cam ? Math.max(0.1, Math.min(1, (Math.hypot(this.cam.x - m.position.x, this.cam.z - m.position.z) - 3) / 12)) : 1); }
   }
 

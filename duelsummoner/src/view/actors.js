@@ -22,6 +22,11 @@ import { PICKUP_COLORS } from '../data/pickups.js';
 import { POWERUPS } from '../data/powerups.js';
 import { makeCreature } from './creature.js';
 import { BLOCKS, blockGroup, blockMerged, animateBlocks, blockSwing } from './models.js';
+// the block look (?blocks=1): which block model draws which game actor (index.json ids). An actor with no entry, or whose file is missing, keeps its current look.
+const BLK_ENEMY = { 0: 'husk', 1: 'runner', 2: 'seer', 3: 'ram', 4: 'bloat', 5: 'scarab', 6: 'hunter' };
+const BLK_SUMMON = { 'ember-wyvern': ['wyv1', 'wyv2', 'wyv3'], 'cinder-hatchling': ['hat1', 'hat2', 'hat3'], 'sigil-familiar': ['familiar'], 'twinflare-tyrant': ['tyrant'] };
+const BLK_SPECIAL = { warden: 'warden' };
+const blkSummon = (id, form) => { const L = BLK_SUMMON[id]; const k = L && L[Math.min(form, L.length - 1)]; return k && BLOCKS[k] ? k : null; };
 
 const T = window.THREE;
 const lambert = (color, extra, k) => actorLit(new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {})), k || 1);
@@ -123,14 +128,14 @@ export class Actors {
 
     // the swarm: one instanced mesh per kind (+ eyes for the ground swarmers)
     const fitBlock = (bg, ref) => { ref.computeBoundingBox(); bg.computeBoundingBox(); const a = ref.boundingBox, b = bg.boundingBox, s = (a.max.y - a.min.y) / (b.max.y - b.min.y), F = new T.Matrix4().makeRotationY(Math.PI).multiply(new T.Matrix4().makeTranslation((a.min.x + a.max.x) / 2, a.min.y, (a.min.z + a.max.z) / 2)).multiply(new T.Matrix4().makeScale(s, s, s)).multiply(new T.Matrix4().makeTranslation(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2)); bg.applyMatrix4(F); bg.userData.fit = F; return bg; };       // the block model's height and foot matched to the old creature's, facing the same way
-    const blockGeo = (id, lv) => { const cg0 = creatureGeometry(id); return id === 0 && BLOCKS.husk ? fitBlock(blockMerged(BLOCKS.husk, lv), cg0 || new T.BoxGeometry(1, 1.25, 1)) : null; };
+    const blockGeo = (id, lv) => { const k = BLK_ENEMY[id], cg0 = creatureGeometry(id); return k && BLOCKS[k] ? fitBlock(blockMerged(BLOCKS[k], lv), cg0 || new T.BoxGeometry(1, 1.25, 1)) : null; };
     const kindOf = (K, far) => {
       const bgeo = blockGeo(K.id, far ? 1 : 0), cg = bgeo ? null : creatureGeometry(K.id), geo = bgeo || cg || (K.id === 3 ? new T.BoxGeometry(1.1, 1.1, 1.1) : K.id === 4 ? new T.IcosahedronGeometry(0.8, 0) : new T.OctahedronGeometry(0.75, 0));
-      geo.computeBoundingBox(); const bb = geo.boundingBox, mat = lambert(0xffffff, cg || bgeo ? { vertexColors: true, side: T.DoubleSide } : null, 0.3); if (cg) creatureLit(mat); statusLit(mat, bb.min.y, bb.max.y); if (bgeo) blockSwing(mat, BLOCKS.husk, 'husk', bgeo.userData.fit, this._swT || (this._swT = { value: 0 }));       // the block husk swings its arms and head in the shader
+      geo.computeBoundingBox(); const bb = geo.boundingBox, mat = lambert(0xffffff, cg || bgeo ? { vertexColors: true, side: T.DoubleSide } : null, 0.3); if (cg) creatureLit(mat); statusLit(mat, bb.min.y, bb.max.y); if (bgeo) blockSwing(mat, BLOCKS[BLK_ENEMY[K.id]], BLK_ENEMY[K.id], bgeo.userData.fit, this._swT || (this._swT = { value: 0 }));       // a block enemy swings its parts in the shader
       const body = instanced(geo, mat, CFG.enemy.max); statusAttr(geo, CFG.enemy.max);
       body.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.enemy.max * 3), 3);
       const eye = !cg && !bgeo && K.eye ? instanced(new T.BoxGeometry(0.5, 0.12, 0.1), basic(0xe0a040), CFG.enemy.max) : null;
-      const out = new T.InstancedMesh(geo, bgeo ? blockSwing(outlineMat(), BLOCKS.husk, 'husk', bgeo.userData.fit, this._swT) : OUTLINE, CFG.enemy.max); out.instanceMatrix = body.instanceMatrix; out.frustumCulled = false; out.count = 0; out.renderOrder = -1;       // a dark hull drawn behind each enemy, pushed out 5 cm: a clear outline against pale sand, one extra draw per kind
+      const out = new T.InstancedMesh(geo, bgeo ? blockSwing(outlineMat(), BLOCKS[BLK_ENEMY[K.id]], BLK_ENEMY[K.id], bgeo.userData.fit, this._swT) : OUTLINE, CFG.enemy.max); out.instanceMatrix = body.instanceMatrix; out.frustumCulled = false; out.count = 0; out.renderOrder = -1;       // a dark hull drawn behind each enemy, pushed out 5 cm: a clear outline against pale sand, one extra draw per kind
       scene.add(body, out); if (eye) scene.add(eye);
       return { K, body, out, eye, base: cg || bgeo ? new T.Color(1, 1, 1) : new T.Color(K.color), boost: cg || bgeo ? 2.4 : 1, fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false, block: !!bgeo };
     };
@@ -138,6 +143,7 @@ export class Actors {
     for (const k of this.kinds.slice()) if (k.block) { k.farIdx = this.kinds.length; this.kinds.push(kindOf(k.K, true)); }       // the block husk's half-detail far copy (beyond 30 m), its own instanced draw    // Toll Shades: a tall violet-black hooded silhouette with a glowing eye line and a gold bell (stand-in look until the art arrives)
     this.shadeBody = instanced(new T.ConeGeometry(0.9, 3.0, 7), seeActor(basic(0x1d1030)), 24); this.shadeHood = instanced(new T.ConeGeometry(0.5, 1.0, 6), seeActor(basic(0x0b0716)), 24);
     this.shadeEye = instanced(new T.BoxGeometry(0.34, 0.07, 0.1), basic(0xc07bff), 24); this.shadeBell = instanced(new T.ConeGeometry(0.17, 0.3, 6), basic(0xe8c56a), 24);
+    if (BLOCKS.toll) { const M = BLOCKS.toll, gg = blockMerged(M, 0), s = 3.7 / M.size.y, F = new T.Matrix4().makeTranslation(0, -1.5, 0).multiply(new T.Matrix4().makeScale(s, s, s)); gg.applyMatrix4(F); const mat = blockSwing(seeActor(basic(0xffffff, { vertexColors: true })), M, 'toll', F, this._swT || (this._swT = { value: 0 })); this.shadeBody.geometry = gg; this.shadeBody.material = mat; this._blockShade = true; }       // the block look: the shade's feet at the bottom of the old cone
     scene.add(this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell);
     this.marks = instanced(new T.OctahedronGeometry(0.22, 0), basic(0xc090ff), CFG.enemy.max); scene.add(this.marks);
     this.orbit = instanced(new T.CylinderGeometry(0.17, 0.17, 0.05, 12), basic(0xffd23f), 10); this.orbit.count = 0; scene.add(this.orbit);          // the Coin Rite: ten coins circling the duelist
@@ -153,10 +159,11 @@ export class Actors {
     scene.add(this.cards, this.fire, this.lob, this.bolts, this.bolt2);
     // kinds 0 to 2: crystal, coin, heart. 3 to 11 are the big desert's pickups, each its own shape in its own colour: great heart (a big gem), purse (a sack), lodestar (a tetrahedron), stopped sand (an hourglass post), wind step (a ring), war drum (a drum), ward (a plate), seal burst (a many-sided stone), rumour shard (a tall shard)
     const rum = new T.OctahedronGeometry(0.3, 0); rum.scale(1, 1.8, 1);
-    this.pk = [gemGeometry(), new T.CylinderGeometry(0.3, 0.3, 0.08, 10), new T.OctahedronGeometry(0.34, 0), new T.OctahedronGeometry(0.55, 0), new T.SphereGeometry(0.34, 8, 6), new T.TetrahedronGeometry(0.44), new T.CylinderGeometry(0.2, 0.3, 0.55, 6), new T.TorusGeometry(0.26, 0.08, 6, 12), new T.CylinderGeometry(0.32, 0.32, 0.34, 10), new T.BoxGeometry(0.46, 0.58, 0.14), new T.DodecahedronGeometry(0.34), rum].map((geo, i) => {
+    const pkBlk = (id, ref) => { const M = BLOCKS[id]; if (!M) return ref; ref.computeBoundingBox(); const g = blockMerged(M, 0), h = ref.boundingBox.max.y - ref.boundingBox.min.y, s = Math.max(h, 0.5) / M.size.y; g.translate(-(M.min[0] + M.max[0]) / 2, -(M.min[1] + M.max[1]) / 2, -(M.min[2] + M.max[2]) / 2); g.scale(s, s, s); g.userData.block = true; return g; };       // the block look: centred like the old shapes
+    this.pk = [pkBlk('gem', gemGeometry()), pkBlk('coin', new T.CylinderGeometry(0.3, 0.3, 0.08, 10)), new T.OctahedronGeometry(0.34, 0), new T.OctahedronGeometry(0.55, 0), new T.SphereGeometry(0.34, 8, 6), new T.TetrahedronGeometry(0.44), new T.CylinderGeometry(0.2, 0.3, 0.55, 6), new T.TorusGeometry(0.26, 0.08, 6, 12), new T.CylinderGeometry(0.32, 0.32, 0.34, 10), new T.BoxGeometry(0.46, 0.58, 0.14), new T.DodecahedronGeometry(0.34), rum].map((geo, i) => {
       const m = i === 0 ? instanced(geo, lambert(0xffffff, { vertexColors: true, emissive: 0x1a5f73 }), CFG.xp.max) : instanced(geo, basic(i < 3 ? [PICKUP_COLORS.xp, PICKUP_COLORS.coin, PICKUP_COLORS.heart][i] : POWERUPS[i].color), i < 3 ? CFG.xp.max : 64);
       if (i === 0) m.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.xp.max * 3), 3);
-      if (i === 1) geo.rotateX(Math.PI / 2); scene.add(m); return m;
+      if (i === 1 && !geo.userData.block) geo.rotateX(Math.PI / 2); if (i === 1 && geo.userData.block) { m.material = basic(0xffffff, { vertexColors: true }); } scene.add(m); return m;
     });
     this.btrap = instanced(new T.BoxGeometry(1.2, 0.06, 1.7), basic(0x9a7432), 8);       // a face-down trap card: a dull gold card back (it was a violet square) scene.add(this.btrap);
 
@@ -298,12 +305,19 @@ export class Actors {
     return f;
   }
 
+  _blk(id, size, axis, flip) {
+    const M = BLOCKS[id]; if (!M) return null; const bg = blockGroup(M), s = size / (axis === 'max' ? Math.max(M.size.x, M.size.y, M.size.z) : M.size.y); bg.root.scale.setScalar(s); if (flip) bg.root.rotation.y = Math.PI;
+    const g = new T.Group(); g.add(bg.root); const rec = { id, bg, g, ph: Math.random() * 6 }; (this._blks || (this._blks = new Set())).add(rec); g.userData.blk = rec; return g;
+  }
+  _blkAnimate(t) { if (!this._blks) return; for (const b of this._blks) { if (!b.g.parent) { this._blks.delete(b); continue; } if (b.g.visible && b.g.parent.visible !== false) animateBlocks(b.id, b.bg, t + b.ph); } }       // every block actor in the scene, from its baked hints
   _monsterMesh(id, form) {
     const A = this.assets;
     let g;
     const size = summonSize(!!FUSIONS[id], form);                      // metres: form 1 / 2 / 3 = 0.5x / 1x / 2x the duelist, Fusions 2x to 3x
     let modelled = true;
-    if (id === 'ember-wyvern' && form === 0 && A.wyvernPrep) { const cr = makeCreature(A.wyvernPrep, size); cr.root.rotation.y = Math.PI; g = cr.group; g.userData.crit = cr; modelled = true; }          // rigged and animated: wings beat, tail sways
+    const bk = blkSummon(id, form);
+    if (bk) { g = this._blk(bk, size, 'max', true); if (id === 'ember-wyvern' || id === 'twinflare-tyrant' || id === 'sigil-familiar') g.userData.fly = true; if (id === 'cinder-hatchling') g.userData.walk = true; }       // the block look: the summon in its own form
+    else if (id === 'ember-wyvern' && form === 0 && A.wyvernPrep) { const cr = makeCreature(A.wyvernPrep, size); cr.root.rotation.y = Math.PI; g = cr.group; g.userData.crit = cr; modelled = true; }          // rigged and animated: wings beat, tail sways
     else if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, size, 'max'); g.userData.fly = true; }
     else if (id === 'cinder-hatchling' && A.hatchling) { g = modelGroup(A.hatchling, size, 'max', 0xff7319); g.userData.walk = true; g.userData.puffs = true; }
     else if (id === 'twinflare-tyrant' && A.tyrant) { g = modelGroup(A.tyrant, size, 'max', 0xff7319); g.userData.fly = true; g.userData.glowPeriod = 1.2; g.userData.breath = true; }
@@ -333,7 +347,8 @@ export class Actors {
 
   _specialMesh(sp) {
     const g = new T.Group(), r = sp.radius;
-    if (sp.kind === 'warden') {
+    if (BLK_SPECIAL[sp.kind] && BLOCKS[BLK_SPECIAL[sp.kind]]) g.add(this._blk(BLK_SPECIAL[sp.kind], 3.4, 'y', true));       // the block look
+    else if (sp.kind === 'warden') {
       const body = new T.Mesh(new T.BoxGeometry(1.8, 2.6, 1.4), lambert(BC.warden.body)); body.position.y = 1.3;
       const head = new T.Mesh(new T.BoxGeometry(0.9, 0.8, 0.9), lambert(BC.warden.head)); head.position.y = 3.0;
       const shield = new T.Mesh(new T.BoxGeometry(2.6, 3.0, 0.3), lambert(BC.warden.shield)); shield.position.set(0, 1.6, 1.0);
@@ -358,6 +373,7 @@ export class Actors {
   }
 
   _chestMesh() {
+    if (BLOCKS.chestCard) { const g = this._blk('chestCard', 1.4, 'max', false); g.userData.seals = []; this.scene.add(g); return g; }       // the block look
     const g = new T.Group();
     const b = new T.Mesh(new T.BoxGeometry(1.6, 1.0, 1.1), lambert(0x7a5a3a)); b.position.y = 0.5;
     const lid = new T.Mesh(new T.BoxGeometry(1.7, 0.4, 1.2), lambert(0x9a7a4a)); lid.position.y = 1.2;
@@ -421,11 +437,13 @@ export class Actors {
   }
   // the block look (?blocks=1): Kael riding and the ride card as block models. The card replaces the board's own pieces; the rider follows the board, and the skinned rig is hidden while riding.
   _blockRide(g, G, rd) {
-    if (!BLOCKS.kaelRide || !BLOCKS.card) return;
-    if (!this._bRide) { this._bRide = blockGroup(BLOCKS.kaelRide); this._bCard = blockGroup(BLOCKS.card); const c = this._bCard.root, m = BLOCKS.card; c.scale.setScalar(2.0 / m.size.z); c.position.y = 0.02; for (const ch of G.children) ch.visible = false; G.add(c); this.scene.add(this._bRide.root); }       // the card scaled to the board's 2 m length
+    const rid = BLOCKS[g.duelist + 'Ride'] ? g.duelist + 'Ride' : g.duelist; if (!BLOCKS[rid] || !BLOCKS.card) return;
+    if (this._bRide && this._bRide.id !== rid) { this.scene.remove(this._bRide.root); this._bRide = null; }
+    if (!this._bCard) { this._bCard = blockGroup(BLOCKS.card); const c = this._bCard.root, m = BLOCKS.card; c.scale.setScalar(2.0 / m.size.z); c.position.y = 0.02; for (const ch of G.children) ch.visible = false; G.add(c); }
+    if (!this._bRide) { this._bRide = blockGroup(BLOCKS[rid]); this._bRide.id = rid; this.scene.add(this._bRide.root); }       // the card scaled to the board's 2 m length; the rider is the duelist's ride model, or its on-foot one
     const on = G.visible && !!rd, Rr = this._bRide.root; Rr.visible = on; this._bRideOn = on; if (!on) return;
     G.updateMatrixWorld(); Rr.position.set(0, 0.02 + BLOCKS.card.size.y * this._bCard.root.scale.y, 0).applyMatrix4(G.matrixWorld); Rr.rotation.order = 'YXZ'; Rr.rotation.set(G.rotation.x, G.rotation.y, G.rotation.z);
-    animateBlocks('kaelRide', this._bRide, g.t);
+    animateBlocks(this._bRide.id, this._bRide, g.t);
   }
   _rideRig(R, rd, p, dt) {
     const yaw = rd.heading + rd.spin; R.group.rotation.y = yaw + R.yaw;
@@ -466,7 +484,10 @@ export class Actors {
       let tw = 0; if (this._aimT > 0) { this._aimT -= dt; let da = this._aimY - this._aimYs; da -= Math.PI * 2 * Math.round(da / (Math.PI * 2)); this._aimYs += da * Math.min(1, dt / 0.3); let d = this._aimYs - this.player.rotation.y; d -= Math.PI * 2 * Math.round(d / (Math.PI * 2)); tw = Math.max(-0.785, Math.min(0.785, d)) * Math.min(1, Math.max(0, this._aimT) / 0.4); }       // torso aim at the throw target, capped at 45 degrees
       this._tw = (this._tw || 0) + (tw - (this._tw || 0)) * Math.min(1, dt / 0.3); R.twist(this._tw);
     }
-    this._board(g, p, px, py, pz, dt); if (this.rig) this.rig.group.visible = !this._bRideOn; if (this._bRideOn) this.player.visible = false; this._lit(g, dt); this._rollers(g); this._arenaSeals(g);
+    this._board(g, p, px, py, pz, dt); if (this.rig) this.rig.group.visible = !this._bRideOn; if (this._bRideOn) this.player.visible = false;
+    { const id = g.duelist, M = BLOCKS[id], on = !!M && !this._bRideOn && !(g.over && !g.won); if (M && !this._bFoot) { this._bFoot = {}; } let F = this._bFoot && this._bFoot[id]; if (M && !F) { F = this._bFoot[id] = this._blk(id, 1.8, 'y', false); this.scene.add(F); }
+      if (this._bFoot) for (const k in this._bFoot) this._bFoot[k].visible = on && k === id;
+      if (on) { F.position.copy(this.player.position); F.rotation.y = this.player.rotation.y; F.scale.setScalar(g.oaths.small ? 0.5 : 1); if (this.rig) this.rig.group.visible = false; this.player.visible = false; } }       // the block look on foot this._lit(g, dt); this._rollers(g); this._arenaSeals(g);
     {   // lean into movement, landing squash, dash trail, slide dust
       const ud = this.player.userData, lean = ud.lean, sp = Math.sqrt((p.vx || 0) * (p.vx || 0) + (p.vz || 0) * (p.vz || 0));
       const want = p.sliding || fx.rm_ ? 0 : Math.min(0.28, sp * 0.03);
@@ -543,10 +564,10 @@ export class Actors {
         if (Math.random() < dt * 1.5) fx.spark(x, y + 2.5, z, 0, 0.6, 0, 0xc07bff, 0.18, 0.6);
         n++;
       }
-      for (const mm of [this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell]) { mm.count = n; mm.instanceMatrix.needsUpdate = true; }
+      for (const mm of [this.shadeBody, this.shadeHood, this.shadeEye, this.shadeBell]) { mm.count = this._blockShade && mm !== this.shadeBody ? 0 : n; mm.instanceMatrix.needsUpdate = true; }
     }
     // swarm
-    if (this._swT) this._swT.value = t;       // the block swarm's swing clock
+    if (this._swT) this._swT.value = t; this._blkAnimate(t);       // the block swarm's swing clock
     this.lastEn = e; let nearN = 0; this._dustBudget = 4; const counts = this._counts || (this._counts = this.kinds.map(() => 0)); counts.fill(0); for (const kk of this.kinds) { kk.fxNow = false; kk.cs = 0; kk.fs = 0; } const mc = this._mc || (this._mc = { n: 0 }); mc.n = 0; let cc = 0;
     for (let i = 0; i < e.max; i++) {
       if (!e.alive[i]) { this._wasSwarm[i] = 0; continue; }
