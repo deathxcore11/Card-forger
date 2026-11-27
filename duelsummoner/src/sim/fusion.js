@@ -29,7 +29,7 @@ export function makeBuild(id, rank, parents) {
     for (const f of parents[1].forms) if (!forms.includes(f) && forms.length < 2) forms.push(f); }
   else { const q = kitOf(id) || { d: 'bite', dmg: 2, cd: 1, el: 'earth' }; chain = [{ d: q.d, q, el: q.el }]; }
   const els = []; for (const p of parents || [{ els: [chain[0].el] }]) for (const e of p.els) if (!els.includes(e) && els.length < 3) els.push(e);
-  const A = parents ? parents[0] : null; let mult = F.rankMul[rank], cd = A ? A.cd : chain[0].q.cd, size = 1;
+  const A = parents ? parents[0] : null; let mult = F.rankMul[rank] * F.gameTier[rank], cd = A ? A.cd : chain[0].q.cd, size = 1;
   if (forms.includes('Giant')) { mult *= FORM.Giant.mult; size = FORM.Giant.size; if (!A.forms.includes('Giant')) cd *= FORM.Giant.cd; }       // one huge slow version
   if (forms.includes('Spiral')) { mult *= FORM.Spiral.mult; if (!A.forms.includes('Spiral')) cd *= FORM.Spiral.cd; }       // a constant turning stream
   return { id, rank, chain, els, forms, mult, cd, size, loop: rank >= 3, key: rank >= 4 ? els[0] : null, name: nameOf(chain, els, forms) };
@@ -58,7 +58,7 @@ export function knock(g, i, dx, dz, speed) { const S = fusionState(g), l = Math.
 function each(g, x, z, r, skip, fn) { const e = g.en, buf = takeBuf(), c = g.grid.query(x, z, r, buf); for (let k = 0; k < c; k++) { const j = buf[k]; if (j === skip || !e.alive[j]) continue; const dx = e.x[j] - x, dz = e.z[j] - z; if (dx * dx + dz * dz < r * r) fn(j, dx, dz); } freeBuf(); }
 function nearestTo(g, x, z, r, skip) { const e = g.en; let best = -1, bd = r * r; each(g, x, z, r, skip, (j, dx, dz) => { const d = dx * dx + dz * dz - (e.mark[j] > 0 ? 9 : 0); if (d < bd) { bd = d; best = j; } }); return best; }
 function eachSpecial(g, x, z, r, fn) { for (const sp of g.sp) if (sp.alive && !sp.dead) { const dx = sp.x - x, dz = sp.z - z, rr = r + (sp.radius || 1); if (dx * dx + dz * dz < rr * rr) fn(sp); } }
-const lvlOf = m => m ? monsterMul(m.id, m.level || 1) / monsterMul(m.id, 1) : 1;       // level growth only: the rank is the build's own multiplier
+const lvlOf = m => m ? monsterMul(m.id, m.level || 1) / monsterMul(m.id, 1) * (1 + F.levelExtra * ((m.level || 1) - 1)) : 1;       // level growth only: the rank is the build's own multiplier
 
 // ---- one landed hit from layer k ----
 // ctx: one cast of one layer: lvl (level growth), sc (a share from a link or a form), per (how often each later layer has fired from it)
@@ -105,7 +105,7 @@ function status(g, i, el, B, depth, lvl) {
   const others = ELS.filter(o => had & bit(o)), o = others[Math.floor(g.rc() * others.length) % others.length], name = reactionOf(el, o); if (!name) return;
   S.rc[i] = F.reactEvery; S.bank--; S.reactions++; S.reactBy[name] = (S.reactBy[name] | 0) + 1;
   const kind = REACT_KIND[name], x = e.x[i], y = e.y[i], z = e.z[i], col = COL[el], base = B.chain[0].q.dmg * B.mult * lvl;
-  addFx(g, { type: 'ring', owner: 0, el, x, y: y + 0.2, z, r: kind === 'spread' ? 4 : 3.2, dur: 0.35, color: col }); g.emit('reaction', name, x, z);
+  addFx(g, { type: 'ring', owner: 0, el, x, y: y + 0.2, z, r: kind === 'spread' ? 4 : 3.2, dur: 0.35, color: col }); g.emit('reaction', x, z, 0, name);
   if (kind === 'burst') { each(g, x, z, 3.2, -1, j => { damageEnemy(g, j, base * F.reactDmg, { elem: bit(el), noChain: true }); }); eachSpecial(g, x, z, 3.2, sp => g.damageSpecial(sp, base * F.reactDmg, x, z, { area: true, elem: bit(el) })); }
   else if (kind === 'zone') S.zones.push({ x, z, r: 2.6, t: 4, dps: base * 1.2, el, B, lvl });
   else if (kind === 'spread') each(g, x, z, 4, i, j => { for (const q of [el, o]) { S.el[j] |= bit(q); S.elT[j * 8 + EI[q]] = F.statusT; } if (el === 'poison' || o === 'poison') S.venom[j] = Math.min(F.venomCap, S.venom[j] + 2); track(S, j); });
@@ -158,7 +158,7 @@ export function cast(g, B, k, x, y, z, skip, lvl, m, face, fixed, sc) {
   each(g, x, z, r, skip, (j, dx, dz) => { const dd = Math.sqrt(dx * dx + dz * dz) || 1; if (arc < 6.2 && (dx * fx + dz * fz) / dd < ca) return; hit(g, B, k, j, ctx, j === t ? 1 : 0.7); if (e.alive[j] && !e.ace[j]) knock(g, j, dx, dz, k ? C.layerKnock : C.knock); });
   if (!k) eachSpecial(g, x, z, r, sp => g.damageSpecial(sp, q.dmg * B.mult * lvl * ctx.sc, x, z, { elem: el }));
   addFx(g, arc < 6.2 ? { type: 'fan', owner: 0, el: L.el, x, y, z, r, arc: arc * 57.2958, dx: fx, dz: fz, dur: 0.2, color: col } : { type: 'ring', owner: 0, el: L.el, x, y, z, r, dur: 0.25, color: col });
-  if (!k) g.emit('swipe', x, z, fx, fz, L.el);
+  if (!k) g.emit('swipe', x, z, 0);
   nova(); return { face };
 }
 function S0(g, H) { const S = fusionState(g), h = S.ci; S.casts[h] = H; S.ci = (S.ci + 1) % 256; return h; }
@@ -182,7 +182,7 @@ function stoppers(g, S) {
   const els = [], f = g.field; let P = 0, rank = 1;
   for (const m of f.monsters) { if (!m || !FUSIONS[m.id]) continue; const B = buildOf(m.id); P = Math.max(P, B.chain[0].q.dmg * B.mult * lvlOf(m) * F.stopperMul); rank = Math.max(rank, B.rank); for (const e of B.els) if (!els.includes(e)) els.push(e); }
   if (!els.length) return false;
-  S.meter = 0; S.stoppers++; S.stopperNames = els.map(e => STOPPERS[e]); g.emit('banner', S.stopperNames.join(' + ')); g.emit('stopper', S.stopperNames.join(' + '));
+  S.meter = 0; S.stoppers++; S.stopperNames = els.map(e => STOPPERS[e]); g.event('banner', S.stopperNames.join(' + ')); g.emit('stopper');
   S.stopUntil = g.t + 0.35 + els.length * F.stopperGap + 1;
   els.forEach((el, n) => S.q.push({ t: g.t + 0.35 + n * F.stopperGap, kind: 'stopper', el, P, rank }));
   return true;

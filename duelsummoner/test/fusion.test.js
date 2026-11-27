@@ -35,7 +35,7 @@ test('forms: a fusion of two fusions takes one from a hash of its id, never more
   const [a, b, c, d] = ['ember-wyvern', 'cinder-hatchling', 'rune-apprentice', 'sigil-familiar'].map(basic), f1 = makeBuild('f1', 1, [a, b]), f2 = makeBuild('f2', 1, [c, d]);
   let giant = null; for (let k = 0; k < 60; k++) { const w = makeBuild('w' + k, 2, [f1, f2]); assert.equal(w.forms.length, 1); assert.ok(FORMS.includes(w.forms[0])); assert.deepEqual(makeBuild('w' + k, 2, [f1, f2]).forms, w.forms, 'the same id, the same form'); if (w.forms[0] === 'Giant') giant = w;
     const ww = makeBuild('ww' + k, 3, [w, makeBuild('v' + k, 2, [f2, f1])]); assert.ok(ww.forms.length <= 2); }
-  assert.ok(giant, 'some id gives Giant'); assert.ok(Math.abs(giant.mult - FUSION.rankMul[2] * FORM.Giant.mult) < 1e-9); assert.ok(giant.cd > f1.cd);
+  assert.ok(giant, 'some id gives Giant'); assert.ok(Math.abs(giant.mult - FUSION.rankMul[2] * FUSION.gameTier[2] * FORM.Giant.mult) < 1e-9); assert.ok(giant.cd > f1.cd);
   assert.equal(makeBuild('t', 2, [f1, c]).forms.length, 0, 'a fusion and a basic take no form');
 });
 

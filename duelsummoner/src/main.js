@@ -402,7 +402,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'slam') { const rr = c || 6, y0 = groundY(a, b); if (rr < 4.4) { fx.burst(a, y0 + 0.3, b, 10, 0xd9b872, 3, 3, 0.26, 0.5, 6); } else {       // a small bank: a puff of sand, no ring (rings only on a real slam: a combo of about 400 or more)
     fx.ring(a, y0 + 0.2, b, Math.min(rr, 6), 0xffd56a, 0.4); fx.hitstop(FEEL.hit.hitstop); for (let k = 0; k < 1; k++) fx.burst(a, y0 + 0.4, b, 18, k ? 0xd9b872 : 0xffd56a, 4 + Math.min(rr, 6) * 0.5, 5 + k, 0.34, 0.8, 8); fx.shake(Math.min(0.6, 0.22 + rr * 0.03)); } }       // the landing slam: a gold shockwave, chunky sand and sparks, a weighty shake       // the ring at most 6 m and 0.4 s, so it never sweeps over the Flow meter
   else if (type === 'swipe') fx.shake(0.05);       // a Fusion's claws: the swipe is drawn by the sim's fan; a small kick
-  else if (type === 'reaction') fx.shake(0.04);
+  else if (type === 'reaction') { const y = Math.min(heightAt(a, b), 40) + 2.6; fx.word(a, y, b, data || '', '#ffe9a8'); fx.burst(a, y - 1.2, b, 14, 0xfff0c0, 5, 4, 0.3, 0.5, 4); fx.shake(0.04); }       // a reaction: its name over the enemy, a spray of light
   else if (type === 'stopper') fx.shake(0.22);       // a show-stopper: one firm shake, inside the comfort limit, no strobe
   else if (type === 'knock') { actors.throwEnemy(a, b, c); fx.shake(0.08); }       // a small enemy ridden through: thrown up and away in an arc       // a small enemy ridden through: thrown up and away
   else if (type === 'bail') { fx.shake(0.22); fx.burst(a, groundY(a, b) + 0.3, b, 16, 0xd9b872, 3, 2, 0.3, 0.6, 6); }

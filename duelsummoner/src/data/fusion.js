@@ -3,6 +3,8 @@
 // Rank sets the multiplier; the parents set the kit. Super Fusions add the reaction loop, Epic Fusions a keystone by the Line's element.
 export const FUSION = {
   rankMul: [1, 1.25, 1.6, 2, 2.5],          // by rank: Basic, Fusion, Greater, Super, Epic (x the Line's own damage)
+  gameTier: [1, 2.2, 2.2, 2.2, 2.2],                // in the game, a Fusion's layers also carry the game's Fusion tier (the kits are basic numbers). Set by tools/fusionbot.mjs so no named Fusion deals less than its old fixed attack
+  levelExtra: 0.04,                         // each level past 1 adds this share on top of the game's level growth: it stands in for the old per-level extras (a wider cone, more marks)
   layerCap: [1, 2, 3, 4, 4],                // layers an attack may carry, by rank
   layerScale: [1, 0.6, 0.45, 0.35],         // each layer's damage, a share of that layer's own number
   fireFrom: [0, 2, 2, 1],                   // layer k fires from at most this many of the enemies the layer before it hit
@@ -28,7 +30,7 @@ export const LAYER_NAME = { bolt: 'Lance', lob: 'Mortar', mark: 'Brand', seeker:
 export const KITS = {
   'ember-wyvern': { d: 'bolt', dmg: 2, cd: 0.65, range: 20, pierce: 2, speed: 34, el: 'fire' },
   'cinder-hatchling': { d: 'lob', dmg: 3, cd: 1.4, range: 22, splash: 3, flight: 0.7, el: 'fire' },
-  'rune-apprentice': { d: 'mark', dmg: 1, cd: 1, range: 24, marks: 3, el: 'lightning' },
+  'rune-apprentice': { d: 'mark', dmg: 2, cd: 1, range: 24, marks: 3, el: 'lightning' },
   'sigil-familiar': { d: 'seeker', dmg: 3, cd: 0.5, range: 26, speed: 22, el: 'lightning' },
   golem: { d: 'plant', dmg: 2, cd: 1.2, range: 10, radius: 5, el: 'earth', riders: ['taunt'] },
   lynx: { d: 'dash', dmg: 5, cd: 1.5, range: 14, el: 'ice', riders: ['elite'] },

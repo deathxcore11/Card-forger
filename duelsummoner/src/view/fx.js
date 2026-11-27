@@ -142,6 +142,12 @@ export class Fx {
     const sp = this.nsp[i]; sp.visible = true; sp.material.opacity = 1;
   }
 
+  // a word over the fight (a reaction's name): drawn in a number slot, in the element's colour, never more than one at a time from the same spot
+  word(x, y, z, text, col) {
+    if (this.dmgMode === 'off') return; const i = this.nh, j = i * 3; this.nh = (this.nh + 1) % this.M; this.nval[i] = 0;
+    const ctx = this.nctx[i]; ctx.clearRect(0, 0, 128, 48); ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 5; ctx.strokeStyle = '#1a0a20'; ctx.strokeText(text.toUpperCase(), 64, 24); ctx.fillStyle = col; ctx.fillText(text.toUpperCase(), 64, 24); this.ntex[i].needsUpdate = true;
+    this.nx[j] = x; this.nx[j + 1] = y + 0.6; this.nx[j + 2] = z; this.nvx[i] = 0; this.nage[i] = 0; this.nbig[i] = 1; const sp = this.nsp[i]; sp.visible = true; sp.material.opacity = 1;
+  }
   _underHud(px, py) {                                                      // a number never draws over a HUD panel (rects read twice a second)
     const now = performance.now(); if (!this._hudR || now - this._hudT > 500) { this._hudT = now; this._hudR = ['topleft', 'topright', 'zones', 'minimap', 'stats', 'itemsList'].map(id => { const e = document.getElementById(id); return e && e.offsetWidth ? e.getBoundingClientRect() : null; }).filter(Boolean); }
     for (const r of this._hudR) if (px > r.left && px < r.right && py > r.top && py < r.bottom) return true; return false;
