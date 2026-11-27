@@ -432,6 +432,7 @@ export class Actors {
       const ring = new T.Mesh(new T.TorusGeometry(0.3, 0.055, 4, 18), M(0xffd56a, 0x6a4a10)); ring.rotation.x = Math.PI / 2; ring.position.set(0, 0.21, 0.18); G.add(ring);
       const star = new T.Mesh(new T.OctahedronGeometry(0.17, 0), M(0xfff2c0, 0x8a6a20)); star.scale.set(1, 0.3, 1); star.position.set(0, 0.22, 0.18); G.add(star);
       for (const zz of [-0.62, -0.75]) B(0.7, 0.02, 0.05, M(0xe0b24e, 0x3a2a08), 0.19, zz);
+      this._bBack = B(1.07, 0.03, 1.82, M(0x7a2a3a, 0x2a0a12), -0.01); B(0.62, 0.02, 1.2, M(0xe0b24e, 0x4a3410), -0.03); B(0.36, 0.025, 0.36, M(0xfff2c0, 0x6a5020), -0.045);       // the card's back: a wine-red back with a gold panel and a light centre, so a flip shows a card, never a black slab
       G.visible = false; this.scene.add(G); this._spinV = 0; }
     const G = this.boardG; G.visible = !!rd && !(g.over && !g.won); if (!rd) { this._blockRide(g, G, null); return; }
     { const bid = (g.opts && g.opts.board) || 'plain-back'; if (bid !== this._bId && BOARDS[bid]) { this._bId = bid; this._bEdge.material.color.setHex(BOARDS[bid].edge); this._bFace.material.color.setHex(BOARDS[bid].face); } }       // the chosen card back's colours       // (not this.player.visible: the rig hides the stand-in player mesh every frame)

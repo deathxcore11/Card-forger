@@ -27,6 +27,7 @@ const pips = (n, max) => '<i class="pips">' + Array.from({ length: max }, (_, k)
 const stars = (n, max) => '*'.repeat(n) + '.'.repeat(Math.max(0, max - n));
 
 function runClock(g) {
+  if (g.opts && g.opts.gym) return 'RIDE GYM';       // the gym has no clock
   if (g.duelOn) return 'DUEL ON +' + clock(g.otT);
   return (g.stages.length > 1 ? 'STAGE ' + (g.stage + 1) + '  ' : '') + clock(Math.max(0, g.stageSpec.clock - g.sc));
 }
@@ -142,9 +143,9 @@ export function drawHud(g, force) {
   const boss = bossOf(g);
   $('boss').style.display = boss ? 'block' : 'none'; document.body.classList.toggle('bossOn', !!boss);       // the banner moves below the boss bar while it shows
   if (boss) { $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%'; if ($('bossname').textContent !== boss.name) $('bossname').textContent = boss.name; }
-  if (g.mode !== 'classic') { drawStrip(g); drawFrenzy(g); }
+  if (g.mode !== 'classic' && !(g.opts && g.opts.gym)) { drawStrip(g); drawFrenzy(g); } else if (g.opts && g.opts.gym && $('strip').innerHTML) $('strip').innerHTML = '';
   $('prompt').textContent = keyWords(g.prompt, inputMode());
-  if (g.mode !== 'classic') { $('nextEvent').textContent = ''; const rh = riteLines(g); if ($('rite').innerHTML !== rh) $('rite').innerHTML = rh; } else $('nextEvent').textContent = nextEvent(g);
+  if (g.mode !== 'classic') { $('nextEvent').textContent = ''; const rh = g.opts && g.opts.gym ? '' : riteLines(g); if ($('rite').innerHTML !== rh) $('rite').innerHTML = rh; } else $('nextEvent').textContent = nextEvent(g);
   const cnt = {}; for (const id of g.items) cnt[id] = (cnt[id] || 0) + 1;
   const items = Object.keys(cnt).map(id => ITEMS[id].name + (cnt[id] > 1 ? ' x' + cnt[id] : '')).concat(g.blessings.map(id => BLESSINGS[id].name.replace('Blessing of ', '') + '+'));
   $('itemsList').textContent = items.length ? 'ITEMS: ' + items.join(', ') : '';
