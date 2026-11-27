@@ -65,3 +65,34 @@ Pure random scatter is why the map looks junky. Replace it with hand-built setpi
 - **Cut clutter by about 70%.** Delete tiny rocks and scattered junk, and make landmarks about 3 times bigger, so they silhouette against the fog.
 - **Palette.** Golden peach sand, sun-bleached sandstone and dusty violet shadow lead. Other colours are allowed, but this trio guides everything.
 - **The asset tool builds setpieces** as composed kits (pieces plus a footprint and base height in index.json). Each stage biome gets its own library.
+
+## 7. Vast, bounded, and built to the horizon (Randall, 27 Nov, 6:30 PM ET)
+
+Generated, not bespoke. The hybrid in section 6 stays the plan: seeded wind terrain gives every run a new map, and the hand-built setpiece library makes it feel designed. Bespoke maps would be memorised in a week; pure noise feels junky. This keeps both strengths.
+
+### Edges
+- The map is about 720 m across, ringed by an impassable mountain range (already in code: `EDGE_R` in src/gen/open/terrain.js). This replaces the 23 Nov "no edge wall" rule: the edge is a natural wall, never a fence or an invisible stop.
+- The range is part of the look: tall themed silhouettes, layered in 2 or 3 depth bands, fading into the stage fog. Near the foot it rises as a steep, rideable bank (a giant quarter pipe) that turns you back in, so touching the edge is a trick, not a dead stop.
+- One or two passes in the range are closed gates with a structure behind them. They are reserved for secrets and the stage boss's entrance later.
+
+### Horizon structures (themed per map)
+Two tiers, both made in the asset tool as voxel kits.
+- **Far silhouettes** (300 to 1,500 m away, outside or on the range): huge, simple shapes that only need to read in fog. They never collide. They are cheap: one low-detail mesh each, no props. 3 to 5 per seed, picked from the map's list.
+- **Compounds** (inside the arena): the section 6 setpieces, scaled so their tallest part is visible from 300 m. Anything seen on the horizon inside the range can be reached and ridden.
+
+Desert (the beta map):
+- Far: a colossal tilted stone card spire, a half-buried ribcage of stone arches, a sunken gate, a broken colossus head, a terraced mesa city in the range, and a long aqueduct running off into the dunes.
+- Compounds: Sunken Aqueduct, Card-Tomb Bowl, Great Spine, Ruined Plaza, Spire Oasis, Fallen Beam Riverbed, Sunken Gate, Stepped Mesa Climb, Card Slalom, Seal Shrine Ring, Buried Arena (an old dueling floor, half in the sand), Obelisk Field, Caravan Wreck (giant stone cart), Lighthouse of Cards (a stacked card tower), and Duelist's Tomb (a stepped pyramid with a rail spiral).
+- Every other element map gets its own list of 15 to 20 compounds and 5 or 6 far silhouettes in the same shape, written by the roster thread into Library duel-summoner/ and logged in its README.
+
+### Movement: carve, charge, launch
+The world is built like a big snowy mountain run in sand. Every slope is speed, and every crest is a jump.
+- **Slope speed.** Riding downhill builds speed (a stronger gravity pull along the slope), and riding up spends it. There is no flat top speed: the fastest you go is at the bottom of a long face.
+- **Crouch charge.** Hold ollie while riding to crouch. Charge builds over 0.6 s and holds there. Crouching also tucks you, adding a little downhill speed.
+- **Lip boost.** Release ollie at a lip or crest for a boosted launch. A launch inside the last 0.15 s before the lip is a Perfect Pop: a gold flash, extra height and a Flow bonus. Height is the pop charge plus the speed you carried up the face, so a long downhill into a big crest sends you highest.
+- **Air control.** In the air, the stick tilts the card a little (pre-rotation for landing) and picks the trick. Landing on a downslope, aligned with it, keeps all your speed. Landing flat or crooked bleeds some speed, but never bails you on a normal landing.
+- **Boost meter.** Landed tricks fill a short boost (Shift). It is the reward for style, and it is how you cross flat ground fast.
+- Every crest has a clean landing slope (section 1), and every compound has a run-in and a run-out, so a line flows: downhill, charge, lip, trick, land on the next downslope.
+
+### The boss comes to you
+Unchanged: at time-out the stage boss hunts you across open sand. Its approach is visible from far off (a dust plume and a horizon silhouette), so you can choose your ground, ideally the kill bowl.
