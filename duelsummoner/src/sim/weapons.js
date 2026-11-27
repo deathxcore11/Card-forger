@@ -152,7 +152,8 @@ export function updatePickups(g, dt) {
     if (flying) {
       const o = MAG; o.x = m.x[i]; o.y = m.y[i]; o.z = m.z[i];
       const sp = Math.min(34, 12 + 10 * (m.age[i] - FLY_AFTER));                 // a short speed-up as it flies in
-      moveXZ(o, dx / d * sp * dt, dz / d * sp * dt, 0.1, 12);   // never climbs a wall taller than 12 m
+      const sw = (i & 1 ? 1 : -1) * sp * 0.55 * Math.max(0, 1 - (m.age[i] - FLY_AFTER) * 1.4);       // a curved path: it swings out to one side first and straightens as it speeds in
+      moveXZ(o, (dx / d * sp - dz / d * sw) * dt, (dz / d * sp + dx / d * sw) * dt, 0.1, 12);   // never climbs a wall taller than 12 m
       m.x[i] = o.x; m.z[i] = o.z;
       const hh = heightAt(o.x, o.z); if (hh < 50) m.y[i] = Math.max(hh, 0) + 0.5;   // keep the old height over a wall cell
     } else if (m.age[i] > MAG_SETTLE && (m.ht[i] >= 0 || (d < range && Math.abs(p.y - m.y[i]) < 3 + range * 0.3))) {

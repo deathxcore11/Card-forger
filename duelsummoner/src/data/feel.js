@@ -29,7 +29,7 @@ export const FEEL = {
     crouchMax: 0.35,      // s of crouch for the highest ollie
     ollieLo: 1.2,         // m, a tapped ollie
     ollieHi: 2.6,         // m, a full crouch
-    magnet: 2.0,          // m: rails snap within this when airborne or on an ollie near one
+    magnet: 2.8,          // m: rails snap within this when airborne or on an ollie near one (27 Nov: wider and forgiving)
     wallMin: 10,          // m/s to ride a wall
     wallT: 1.2,           // s a wall ride lasts at most
     wallSink: 1.2,        // m/s the card slides down a wall while riding it

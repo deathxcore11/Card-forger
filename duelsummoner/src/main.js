@@ -80,7 +80,7 @@ scene.background = new T.Color(HORIZON);
 scene.fog = new T.Fog(HORIZON, 80, 300);
 const sky = makeSky(); scene.add(sky);       // the engine sky dome: banded gradient, sun, clouds (view/engine.js)
 const camera = new T.PerspectiveCamera(62, 1, 0.15, 600);
-let fpsCap = 60, lastRender = 0;                     // a setting (30, 60, 90 or 120); a frame that comes sooner than the cap allows is skipped
+let fpsCap = 0, lastRender = 0;                     // a setting (30, 60, 90 or 120); a frame that comes sooner than the cap allows is skipped
 let fovSetting = 100, baseV = 62, defV = 62;                    // the setting is HORIZONTAL degrees, so it means the same on every screen shape; the vertical angle follows from the aspect and never goes past 88
 let fovK = 1, rideFov = 0;
 const vOf = (h, a) => { let raw = a < 1 ? 50 + (h - 80) * 1.1 : 2 * Math.atan(Math.tan(h * Math.PI / 360) / a) * 180 / Math.PI; raw = Math.max(40, raw); return raw < 70 ? raw : 70 + 18 * (1 - Math.exp(-(raw - 70) / 18)); };       // horizontal degrees to vertical: exact on wide screens, a straight 50 to 88 ramp on tall ones, and a soft ceiling at 88 so no step of the slider is lost
@@ -194,7 +194,7 @@ let pendingUse = false, MODE = 'start', last = 0, frozen = false, holdT = 0, las
 // settings: reduce motion turns off shake, hit-stop, flashes, the boss zoom and the follow lag
 function applySettings() {
   const s = save.settings; document.body.classList.toggle('rm', !!s.reduceMotion); chase.lag = !s.reduceMotion;
-  fpsCap = [30, 60, 90, 120].includes(+s.fpsCap) ? +s.fpsCap : 60; for (const el of document.querySelectorAll('.setFps')) el.value = fpsCap;
+  { const fr = s.frameRate !== undefined ? s.frameRate : defaultFor('frameRate', deviceClass()); fpsCap = [30, 60, 90, 120].includes(+fr) ? +fr : 0; }       // Settings > Frame rate; 'match' (the PC default) runs at the display's own rate: 120 or 144 Hz screens are never held at 60 for (const el of document.querySelectorAll('.setFps')) el.value = fpsCap;
   fovSetting = Math.max(80, Math.min(115, +s.fov || 100)); fitFov(); for (const el of document.querySelectorAll('.setFov')) el.value = fovSetting; for (const el of document.querySelectorAll('.setFovV')) el.textContent = fovSetting;
   { const cls = deviceClass(), V = (id, d) => { const v = s[id]; if (v !== undefined) return v; const dv = defaultFor(id, cls); return dv === null || dv === undefined ? d : dv; }; fx.dmgMode = V('damageNumbers', 'all'); fx.gentle = !!s.reduceMotion || (new URLSearchParams(location.search).get('moments') || V('bigMoments', 'full')) !== 'full'; /* Big moments: Full by default; Reduce motion forces Gentle */ window.__dsMarker = V('duelistMarker', true) !== false; input.mult = { pad: V('lookSpeed', 5) / 5, drag: V('dragLook', 5) / 5, mouse: V('mouseLook', 5) / 5 }; const il = V('invertLook', 'none'); input.inv = { pad: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, drag: { x: il === 'horizontal' || il === 'both', y: il === 'vertical' || il === 'both' }, mouse: { x: false, y: !!V('invertMouse', false) } }; window.__dsVib = V('vibration', 70) / 100; window.__dsRideLayout = V('rideLayout', 'classic'); window.__dsRideHelpers = V('rideHelpers', 'on') !== 'off'; window.__dsRideCam = ({ off: 0, gentle: 1.4, strong: 3 })[V('camAssist', 'gentle')] || 0;       /* Camera assist: on the card the camera eases round behind the heading */ }
   window.__dsDetail = s.detail === 'low' || s.detail === 'medium' || s.detail === 'high' ? s.detail : null; composite.on = detailLevel() !== 'low' && !/[?&]composite=0/.test(location.search); for (const el of document.querySelectorAll('.setDetail button')) el.classList.toggle('on', el.dataset.v === detailLevel());       // Detail: Low drops the composite pass and the blade grass; it applies live to the composite and to the next stage's grass
@@ -403,6 +403,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'landmark') { fx.ring(a, game.p.y + 0.3, b, 12, 0xffe08a, 0.8); fx.burst(a, game.p.y + 1.5, b, 50, 0xffe08a, 7, 6, 0.3, 0.9, 6); fx.shake(0.25); }       // a landmark reached: a golden ring and a fountain of sparks
   else if (type === 'slam') { const rr = c || 6, y0 = groundY(a, b); if (rr < 4.4) { fx.burst(a, y0 + 0.3, b, 10, 0xd9b872, 3, 3, 0.26, 0.5, 6); } else {       // a small bank: a puff of sand, no ring (rings only on a real slam: a combo of about 400 or more)
     fx.ring(a, y0 + 0.2, b, Math.min(rr, 6), 0xffd56a, 0.4); fx.hitstop(FEEL.hit.hitstop); for (let k = 0; k < 1; k++) fx.burst(a, y0 + 0.4, b, 18, k ? 0xd9b872 : 0xffd56a, 4 + Math.min(rr, 6) * 0.5, 5 + k, 0.34, 0.8, 8); fx.shake(Math.min(0.6, 0.22 + rr * 0.03)); } }       // the landing slam: a gold shockwave, chunky sand and sparks, a weighty shake       // the ring at most 6 m and 0.4 s, so it never sweeps over the Flow meter
+  else if (type === 'land') { if (c > 9) { rj.punch = 0.12; fx.ring(a, groundY(a, b) + 0.05, b, 2.6, 0xead2a0, 0.45); } }       // a landing from big air: a small camera punch and a thin sand ring
   else if (type === 'swipe') fx.shake(0.05);       // a Fusion's claws: the swipe is drawn by the sim's fan; a small kick
   else if (type === 'reaction') { const y = Math.min(heightAt(a, b), 40) + 2.6; fx.word(a, y, b, data || '', '#ffe9a8'); fx.burst(a, y - 1.2, b, 14, 0xfff0c0, 5, 4, 0.3, 0.5, 4); fx.shake(0.04); }       // a reaction: its name over the enemy, a spray of light
   else if (type === 'stopper') fx.shake(0.22);       // a show-stopper: one firm shake, inside the comfort limit, no strobe
@@ -474,7 +475,7 @@ const skipIntro = () => { fx.push = 0; };
 window.addEventListener('keydown', e => { if (e.code === 'Enter') skipIntro(); }); canvas.addEventListener('pointerdown', skipIntro);
 // ride school (the first runs on the big desert): five short chips, each cleared by doing it, about 20 s in all; the beam line just ahead and right of the spawn is there for the grind
 const SCHOOL = [['ride', k => k.slide + ' while running: ride your card'], ['ollie', k => 'Hold ' + k.jump + ', let go: ollie'], ['flip', k => 'In the air: ' + k.dash + ' flips the card'], ['banked', () => 'Land straight: bank it and slam'], ['grind', k => 'Ollie onto the beam to grind (' + k.use + ' snaps onto one)']];
-const SCHOOL_KEYS = { keys: { slide: 'C', jump: 'SPACE', dash: 'J', use: 'L' }, pad: { slide: 'RB', jump: 'A', dash: 'B', use: 'X' }, classic: { slide: 'RB', jump: 'A', dash: 'X', use: 'Y' }, touch: { slide: 'SLIDE', jump: 'OLLIE', dash: 'FLIP', use: 'GRIND' } };
+const SCHOOL_KEYS = { keys: { slide: 'C', jump: 'SPACE', dash: 'J', use: 'F' }, pad: { slide: 'RB', jump: 'A', dash: 'B', use: 'X' }, classic: { slide: 'RB', jump: 'A', dash: 'X', use: 'Y' }, touch: { slide: 'SLIDE', jump: 'OLLIE', dash: 'FLIP', use: 'GRIND' } };
 const school = () => save.meta.rideSchool || (save.meta.rideSchool = { step: 0, grind: false });       // ride-school progress lives in the save: a fresh save starts the school again
 function schoolDid(what) { const S = school(); if (S.step >= SCHOOL.length || SCHOOL[S.step][0] !== what) return; S.step++; writeSave(host, save); if (S.step === SCHOOL.length) showBanner('Ride school done. Chain tricks, keep Flow up.'); }
 // the school beams glint gold until the first grind ever
@@ -483,6 +484,20 @@ function schoolGlint(dt) { const S = game.big && !school().grind && game.map && 
 function rideHint(riding) { schoolGlint(1 / 60); rumbleTick(1 / 60); const el = document.getElementById('rideHint'); if (!el) return; if (riding) schoolDid('ride'); const on = school().step < SCHOOL.length && game.big && MODE === 'play' && game.t > 0.5; if (el.classList.contains('on') !== on) el.classList.toggle('on', on); if (on) { const im = inputMode(), k = im === 'pad' && window.__dsRideLayout !== 'onfoot' ? SCHOOL_KEYS.classic : SCHOOL_KEYS[im] || SCHOOL_KEYS.keys, txt = SCHOOL[school().step][1](k); if (el.textContent !== txt) el.textContent = txt; } }
 // on the card, once the look has been left alone for 0.5 s the camera eases round behind the card's heading (Settings: Camera assist; Gentle by default on phones, Off on handhelds and PC)
 const rcam = { yaw: null, idle: 0 };
+// ride juice (feel pass, 27 Nov): the camera rolls 2 to 3 degrees into a hard carve and pulls back on a downhill rush; a landing from big air punches it down 0.15 m and back over 0.12 s;
+// a hard carve or a powerslide throws voxel sand off the card's back edge. View only.
+const rj = { h: null, roll: 0, pull: 0, punch: 0, sprayT: 0 };
+function rideJuice(dt) {
+  const r = game.p && game.p.ride, p = game.p; if (!r || MODE !== 'play') return;
+  let turn = 0; if (r.on && rj.h !== null) { let d = r.heading - rj.h; d = Math.atan2(Math.sin(d), Math.cos(d)); turn = d / Math.max(dt, 1e-3); } rj.h = r.on ? r.heading : null;
+  const hard = r.on && p.grounded && (Math.abs(turn) > 1.6 && r.speed > 10 || r.pslide), wantRoll = hard ? Math.max(-0.05, Math.min(0.05, -turn * 0.02)) : 0; rj.roll += (wantRoll - rj.roll) * Math.min(1, dt * 6);
+  const down = r.on && p.grounded && r.speed > 18 && p.vy <= 0.01 ? 1 : 0; rj.pull += (down - rj.pull) * Math.min(1, dt * 1.5);
+  if (rj.punch > 0) rj.punch = Math.max(0, rj.punch - dt);
+  const pk = rj.punch > 0 ? Math.sin(Math.PI * (1 - rj.punch / 0.12)) * 0.15 : 0;
+  if (rj.pull > 0.01) { const fx0 = camera.position.x - p.x, fz0 = camera.position.z - p.z, l = Math.hypot(fx0, fz0) || 1; camera.position.x += fx0 / l * 1.6 * rj.pull; camera.position.z += fz0 / l * 1.6 * rj.pull; camera.position.y += 0.5 * rj.pull; }
+  camera.position.y -= pk; if (Math.abs(rj.roll) > 1e-4) camera.rotateZ(rj.roll);
+  if (hard) { rj.sprayT -= dt; if (rj.sprayT <= 0) { rj.sprayT = 0.04; const bx = p.x - Math.sin(r.heading) * 0.9, bz = p.z - Math.cos(r.heading) * 0.9, side = turn > 0 ? -1 : 1, sx = Math.cos(r.heading) * side, sz = -Math.sin(r.heading) * side; for (let k = 0; k < 3; k++) fx.spark(bx, p.y + 0.15, bz, sx * (4 + Math.random() * 4) - Math.sin(r.heading) * 2, 2 + Math.random() * 3, sz * (4 + Math.random() * 4) - Math.cos(r.heading) * 2, 0xe3bf7e, 0.16, 0.5); } }
+}
 function rideCam(dt) {
   const r = game.p && game.p.ride, k = window.__dsRideCam === undefined ? 1.4 : window.__dsRideCam; if (rcam.yaw !== null && Math.abs(input.yaw - rcam.yaw) > 1e-5) rcam.idle = 0; else rcam.idle += dt;
   if (r && r.on && k > 0 && rcam.idle > 0.5 && MODE === 'play') { let d = (r.heading + Math.PI) - input.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); input.yaw += d * Math.min(1, dt * k); }
@@ -640,7 +655,7 @@ function frame(now) {
 
   if (MODE === 'play') { const dv = new T.Vector3(ip.x, ip.y + 1, ip.z).project(camera); window.__dealFrom = { x: (dv.x + 1) / 2 * innerWidth, y: (1 - dv.y) / 2 * innerHeight }; }       // where the level-up cards fan out from
   devTick(now); bars.tick(dtReal || 0.016, game, document.body.classList.contains('rm'), performance.now());
-  chase.cols = game.colliders; chase.fovK = fovK; chase.lagT = FEEL.cam.lag; chase.lookAhead = game.p.ride && game.p.ride.on ? FEEL.cam.lookAhead : 0; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); teleGuard(); rideCam(dtReal || 0.016); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016);
+  chase.cols = game.colliders; chase.fovK = fovK; chase.lagT = FEEL.cam.lag; chase.lookAhead = game.p.ride && game.p.ride.on ? FEEL.cam.lookAhead : 0; sky.position.copy(camera.position); if (gateSeal) gateSeal.userData.update(camera.position, performance.now() / 1000); teleGuard(); rideCam(dtReal || 0.016); chase.update(ip, input.yaw, input.pitch, dtReal || 0.016); rideJuice(dtReal || 0.016);
   // the menu camera: lower and almost level, so the horizon sits about 47% down and the dunes, the mesa and the gate beam show behind the panels, while Kael stays where he was on screen
   if (MODE === 'start' && !(window.__ds && window.__ds.camHold)) { const tc = performance.now() / 1000, ac = (menuLandmark() ? Math.atan2(game.map.spawn.x - menuLandmark().x, game.map.spawn.z - menuLandmark().z) : 0.7) + Math.sin(tc * 0.08) * 0.5, pc = game.p; camera.position.set(pc.x + Math.sin(ac) * 7.2, pc.y + 1.35 + Math.sin(tc * 0.3) * 0.12, pc.z + Math.cos(ac) * 7.2); const sh = innerWidth > innerHeight * 1.25 ? (document.body.dataset.cam === 'left' ? -3.4 : 0) : 0; camera.lookAt(pc.x - Math.cos(ac) * sh, camera.position.y + 0.42, pc.z + Math.sin(ac) * sh); }       // the Camp: a slow orbit around the duelist while a menu is up (view only)
   if (window.__ds && window.__ds.camHold) { const h = window.__ds.camHold; camera.position.set(h.x, h.y, h.z); camera.lookAt(h.lx, h.ly, h.lz); }   // test hook: fixed camera for pictures
