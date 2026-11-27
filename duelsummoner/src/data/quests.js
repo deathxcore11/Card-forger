@@ -22,7 +22,7 @@ const core = [
   q('level15', 'General', 'Quick Study', 'Reach level 15 in one run.', 'Plain', 'best.level', 15, { card: 'deep-marks' }),
   q('fuse1', 'Monsters', 'Two Become One', 'Make a Fusion.', 'Bright', 'total.fusions', 1, { card: 'pit-of-seals' }),
   q('warden', 'General', 'Shieldbreaker', 'Defeat the Sealed Warden.', 'Bright', 'total.wardenKills', 1, { card: 'storm-of-cards' }),
-  q('pharaoh', 'General', 'The Last Round', 'Defeat a gate boss (or the Hollow Pharaoh).', 'Gilded', 'total.bossKills', 1, { card: 'second-wind' }),
+  q('pharaoh', 'General', 'The Last Round', 'Defeat a gate boss (or the Hollow King).', 'Gilded', 'total.bossKills', 1, { card: 'second-wind' }),
   q('survive6', 'General', 'Long Duel', 'Survive 6:00 in one run.', 'Plain', 'best.timeSurvived', 360, { item: 'hunters-mark' }),
   q('chests10', 'Items', 'Collector', 'Open 10 chests in total.', 'Plain', 'total.chests', 10, { item: 'traders-seal' }),
   q('vases40', 'Items', 'Clay Breaker', 'Break 40 vases in total.', 'Plain', 'total.vases', 40, { item: 'graveyard-bell' }),

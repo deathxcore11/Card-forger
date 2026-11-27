@@ -25,7 +25,7 @@ import { BLOCKS, blockGroup, blockMerged, animateBlocks, blockSwing } from './mo
 // the block look (?blocks=1): which block model draws which game actor (index.json ids). An actor with no entry, or whose file is missing, keeps its current look.
 const BLK_ENEMY = { 0: 'husk', 1: 'runner', 2: 'seer', 3: 'ram', 4: 'bloat', 5: 'scarab', 6: 'hunter' };
 const BLK_SUMMON = { 'ember-wyvern': ['wyv1', 'wyv2', 'wyv3'], 'cinder-hatchling': ['hat1', 'hat2', 'hat3'], 'sigil-familiar': ['familiar'], 'twinflare-tyrant': ['tyrant'], 'rune-apprentice': ['newt'], 'astral-magus': ['strix'] };       // the roster renamed the Rune Apprentice to the Rune Newt and the Astral Magus to the Astral Strix (22 Nov)
-const BLK_SPECIAL = { warden: 'warden' };
+const BLK_SPECIAL = { warden: 'warden', pharaoh: 'king', idol: 'jackalT' };       // the gate boss is the Hollow King; the Twin Jackal Idols are a pair (jackalT and jackalC)
 const blkSummon = (id, form) => { const L = BLK_SUMMON[id]; const k = L && L[Math.min(form, L.length - 1)]; return k && BLOCKS[k] ? k : null; };
 
 const T = window.THREE;
@@ -160,10 +160,10 @@ export class Actors {
     // kinds 0 to 2: crystal, coin, heart. 3 to 11 are the big desert's pickups, each its own shape in its own colour: great heart (a big gem), purse (a sack), lodestar (a tetrahedron), stopped sand (an hourglass post), wind step (a ring), war drum (a drum), ward (a plate), seal burst (a many-sided stone), rumour shard (a tall shard)
     const rum = new T.OctahedronGeometry(0.3, 0); rum.scale(1, 1.8, 1);
     const pkBlk = (id, ref) => { const M = BLOCKS[id]; if (!M) return ref; ref.computeBoundingBox(); const g = blockMerged(M, 0), h = ref.boundingBox.max.y - ref.boundingBox.min.y, s = Math.max(h, 0.5) / M.size.y; g.translate(-(M.min[0] + M.max[0]) / 2, -(M.min[1] + M.max[1]) / 2, -(M.min[2] + M.max[2]) / 2); g.scale(s, s, s); g.userData.block = true; return g; };       // the block look: centred like the old shapes
-    this.pk = [pkBlk('gem', gemGeometry()), pkBlk('coin', new T.CylinderGeometry(0.3, 0.3, 0.08, 10)), new T.OctahedronGeometry(0.34, 0), new T.OctahedronGeometry(0.55, 0), new T.SphereGeometry(0.34, 8, 6), new T.TetrahedronGeometry(0.44), new T.CylinderGeometry(0.2, 0.3, 0.55, 6), new T.TorusGeometry(0.26, 0.08, 6, 12), new T.CylinderGeometry(0.32, 0.32, 0.34, 10), new T.BoxGeometry(0.46, 0.58, 0.14), new T.DodecahedronGeometry(0.34), rum].map((geo, i) => {
+    this.pk = [pkBlk('gem', gemGeometry()), pkBlk('coin', new T.CylinderGeometry(0.3, 0.3, 0.08, 10)), pkBlk('heart', new T.OctahedronGeometry(0.34, 0)), pkBlk('power', new T.OctahedronGeometry(0.55, 0)), new T.SphereGeometry(0.34, 8, 6), new T.TetrahedronGeometry(0.44), new T.CylinderGeometry(0.2, 0.3, 0.55, 6), new T.TorusGeometry(0.26, 0.08, 6, 12), new T.CylinderGeometry(0.32, 0.32, 0.34, 10), new T.BoxGeometry(0.46, 0.58, 0.14), new T.DodecahedronGeometry(0.34), rum].map((geo, i) => (i >= 4 ? pkBlk('power', geo) : geo)).map((geo, i) => {
       const m = i === 0 ? instanced(geo, lambert(0xffffff, { vertexColors: true, emissive: 0x1a5f73 }), CFG.xp.max) : instanced(geo, basic(i < 3 ? [PICKUP_COLORS.xp, PICKUP_COLORS.coin, PICKUP_COLORS.heart][i] : POWERUPS[i].color), i < 3 ? CFG.xp.max : 64);
       if (i === 0) m.instanceColor = new T.InstancedBufferAttribute(new Float32Array(CFG.xp.max * 3), 3);
-      if (i === 1 && !geo.userData.block) geo.rotateX(Math.PI / 2); if (i === 1 && geo.userData.block) { m.material = basic(0xffffff, { vertexColors: true }); } scene.add(m); return m;
+      if (i === 1 && !geo.userData.block) geo.rotateX(Math.PI / 2); if (i >= 1 && geo.userData.block) { m.material = basic(i < 3 ? 0xffffff : POWERUPS[i].color, { vertexColors: true }); } scene.add(m); return m;
     });
     this.btrap = instanced(new T.BoxGeometry(1.2, 0.06, 1.7), basic(0x9a7432), 8);       // a face-down trap card: a dull gold card back (it was a violet square) scene.add(this.btrap);
 
@@ -347,7 +347,8 @@ export class Actors {
 
   _specialMesh(sp) {
     const g = new T.Group(), r = sp.radius;
-    if (BLK_SPECIAL[sp.kind] && BLOCKS[BLK_SPECIAL[sp.kind]]) g.add(this._blk(BLK_SPECIAL[sp.kind], 3.4, 'y', true));       // the block look
+    const bid = sp.kind === 'idol' && sp.twin && sp.x > sp.twin.x ? 'jackalC' : BLK_SPECIAL[sp.kind];
+    if (bid && BLOCKS[bid]) g.add(this._blk(bid, sp.kind === 'pharaoh' ? 5.8 : sp.kind === 'idol' ? 2.4 : 3.4, 'y', true));       // the block look
     else if (sp.kind === 'warden') {
       const body = new T.Mesh(new T.BoxGeometry(1.8, 2.6, 1.4), lambert(BC.warden.body)); body.position.y = 1.3;
       const head = new T.Mesh(new T.BoxGeometry(0.9, 0.8, 0.9), lambert(BC.warden.head)); head.position.y = 3.0;

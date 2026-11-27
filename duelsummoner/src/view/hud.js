@@ -68,10 +68,10 @@ function nextEventRun(g) {
   for (let i = 0; i < S.timeline.length; i++) if (g.evState[i] < 2) return S.timeline[i].name + ' in ' + clock(Math.max(0, S.timeline[i].t - g.sc));
   return g.gate.awake ? 'The gate is awake' : 'The gate wakes in ' + clock(Math.max(0, S.gateWake - g.sc));
 }
-const EVENTS = [[240, 'Sealed Warden'], [360, 'Twin Jackal Idols'], [420, 'The Last Audience'], [480, 'The Hollow Pharaoh']];
+const EVENTS = [[240, 'Sealed Warden'], [360, 'Twin Jackal Idols'], [420, 'The Last Audience'], [480, 'The Hollow King']];
 function nextEvent(g) {
   if (g.t >= 480) { const n = 30 - ((g.t - 480) % 30); return 'Overtime hunters grow in ' + clock(n); }
-  for (const [t, name] of EVENTS) if (g.t < t && !(name === 'The Hollow Pharaoh' && g.boss.state !== 'idle')) return name + ' in ' + clock(t - g.t);
+  for (const [t, name] of EVENTS) if (g.t < t && !(name === 'The Hollow King' && g.boss.state !== 'idle')) return name + ' in ' + clock(t - g.t);
   return '';
 }
 let buffKey = '';

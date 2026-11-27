@@ -127,7 +127,7 @@ assets.kael = await loadRig('assets/models/duelist-kael-anim.glb', undefined, [{
 assets.wyvernPrep = await loadCreature('assets/models/mon-ember-wyvern-f1-rig.glb');       // the rigged Ember Wyvern, form 1
 assets.butterflyPrep = await loadCreature('assets/models/life-butterfly-rig.glb');         // ambient life: the rigged butterfly
 assets.mira = await loadRig('assets/models/duelist-mira-anim.glb', { retime: { land_light: 0.5, land_heavy: 0.9 } });
-await loadBlocks(['kael', 'kaelRide', 'mira', 'vesh', 'oren', 'card', 'husk', 'runner', 'seer', 'ram', 'bloat', 'scarab', 'hunter', 'toll', 'warden', 'wyv1', 'wyv2', 'wyv3', 'hat1', 'hat2', 'hat3', 'familiar', 'tyrant', 'newt', 'strix', 'chestCard', 'chestSealed', 'chestTrophy', 'gem', 'coin', 'cactus', 'tree', 'stonecard', 'beam', 'urn', 'broker', 'shrine', 'spire']);       // the block look, only with ?blocks=1 (files kept out of the repo)
+await loadBlocks(['kael', 'kaelRide', 'mira', 'vesh', 'oren', 'card', 'husk', 'runner', 'seer', 'ram', 'bloat', 'scarab', 'hunter', 'toll', 'warden', 'wyv1', 'wyv2', 'wyv3', 'hat1', 'hat2', 'hat3', 'familiar', 'tyrant', 'newt', 'strix', 'king', 'jackalT', 'jackalC', 'heart', 'power', 'sealstone', 'chestCard', 'chestSealed', 'chestTrophy', 'gem', 'coin', 'cactus', 'tree', 'stonecard', 'beam', 'urn', 'broker', 'shrine', 'spire']);       // the block look, only with ?blocks=1 (files kept out of the repo)
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 document.addEventListener('contextmenu', e => { if (!/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName)) e.preventDefault(); });       // no browser menu over the game or its overlays

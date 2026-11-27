@@ -1,4 +1,4 @@
-// Elites and the boss: the Sealed Warden (4:00), the Twin Jackal Idols (6:00) and The Hollow Pharaoh (8:00 or the Royal Gate).
+// Elites and the boss: the Sealed Warden (4:00), the Twin Jackal Idols (6:00) and The Hollow King (8:00 or the Royal Gate).
 import { CFG } from '../data/config.js';
 import { atan2, cos, sin } from './dmath.js';
 import { SPECIALS } from '../data/enemies.js';
@@ -56,7 +56,7 @@ export function startBoss(g, early, gate) {
   const sp = make('pharaoh', gate ? gate.name : S.name, S, B.x, heightAt(B.x, B.z), B.z); sp.hp = sp.maxHp = gate ? gate.hp * g.stageSpec.mult * g.diff.boss * (g.diff.gate || 1) * (g.big ? 1 + 0.5 * Math.min(1, (g.stakes || 0) / 500) : 1) : S.hp * g.hpMul; sp.cd = 3; sp.aux = 6;
   if (gate) { const Z = specialSize(gate.id, 'pharaoh'); sp.role = 'gate'; sp.id = gate.id; sp.enrage = gate.enrage || 1; sp.size = Z.h; sp.radius = Z.radius; sp.k = Z.k; sp.kr = Z.kr; }
   g.sp.push(sp); g.gateOpenedAt = early ? (gate ? g.sc : g.t) : -1; g.boss = { state: 'active', early: !!early, t0: g.t, phase: 1, sandT: 0, summonT: S.summon.every, trapT: 2 };
-  if (!(gate && g.openFlow && !(gate.enrage > 1))) g.event('banner', gate ? gate.name + (gate.enrage > 1 ? ' is enraged by the Toll Bell.' : ' wakes.') : early ? 'You enter the Royal Gate early. The Hollow Pharaoh wakes.' : 'The Hollow Pharaoh wakes.');
+  if (!(gate && g.openFlow && !(gate.enrage > 1))) g.event('banner', gate ? gate.name + (gate.enrage > 1 ? ' is enraged by the Toll Bell.' : ' wakes.') : early ? 'You enter the Royal Gate early. The Hollow King wakes.' : 'The Hollow King wakes.');
   return true;
 }
 
@@ -103,7 +103,7 @@ function onDeath(g, sp) {
     sp.alive = false; g.boss.state = 'dead'; g.elitesKilled++; g.gateDown = sp; credit(g, sp); g.event('banner', sp.name + ' falls.');
   } else if (sp.kind === 'pharaoh') {
     sp.alive = false; g.boss.state = 'dead'; g.elitesKilled++; credit(g, sp); g.bossKilled = true; g.won = true;
-    g.event('banner', 'The Hollow Pharaoh falls. VICTORY. Overtime goes on: pause to end the run.');
+    g.event('banner', 'The Hollow King falls. VICTORY. Overtime goes on: pause to end the run.');
     g.en.alive.fill(0);
   }
 }
@@ -194,7 +194,7 @@ function updatePharaoh(g, sp, dt, dx, dz, d) {
     if (sp.stT <= 0) {
       sp.st = 0; sp.cd = S.blade.cooldown;
       const fx = sin(sp.face), fz = cos(sp.face), l = d || 1, dot = (dx / l) * fx + (dz / l) * fz;
-      if (d < BR && dot > cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true, 'The Hollow Pharaoh blade');
+      if (d < BR && dot > cos(S.blade.arcDeg / 2 * DEG) && Math.abs(p.y - sp.y) < 2.5) g.hurtPlayer(S.blade.dmg * mul, true, 'The Hollow King blade');
       addFx(g, { type: 'fan', owner: 1, x: sp.x, y: sp.y, z: sp.z, r: BR, arc: S.blade.arcDeg, dx: fx, dz: fz, dur: 0.3, color: 0xffe0a0 });
     }
     return;

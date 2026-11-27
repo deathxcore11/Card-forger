@@ -23,7 +23,7 @@ export const SPECIALS = {
             slam: { dmg: 20, radius: 5, trigger: 5.5, telegraph: 1.0, cooldown: 4 } },
   idol:   { name: 'Twin Jackal Idol', hp: 250, speed: 6.0, radius: 0.9, bite: 15, reach: 1.7, reviveSeconds: 10, reviveHpFraction: 0.6 },
   pharaoh: {
-    name: 'The Hollow Pharaoh', hp: 3000, speed: 4.0, radius: 1.5, phase2: 0.66, phase3: 0.33,
+    name: 'The Hollow King', hp: 3000, speed: 4.0, radius: 1.5, phase2: 0.66, phase3: 0.33,
     blade: { dmg: 30, arcDeg: 100, range: 9, telegraph: 1.0, cooldown: 5 },
     summon: { every: 12, count: 10 },                              // phase 1 only
     traps: { count: 3, every: 10, burstRadius: 3, dmg: 25, stepRadius: 1.3, lifetime: 30, max: 6, spread: 14 },   // phase 2
