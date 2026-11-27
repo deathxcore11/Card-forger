@@ -242,7 +242,7 @@ export function makeWorld(seedLo, stageIndex) {
   const dcache = new Map();
   W.dressCell = (qx, qz) => {
     const key = (qx + 128) * 512 + (qz + 128); let D = dcache.get(key); if (D) return D;
-    D = { cacti: [], dead: [], logs: [], pots: [], heads: [], stalls: [], solid: [], cards: [], cracks: [], seals: [], rings: [], arches: [], pipes: [], spires: [], lips: [], rspires: [], bones: [], kickers: [], ledges: [], poles: [], parkPots: [] }; dcache.set(key, D); const C = cell(qx, qz); if (!C.type && r4(C.x0 + Q / 2, C.z0 + Q / 2) > EDGE - 300) return D;
+    D = { cacti: [], dead: [], logs: [], pots: [], heads: [], stalls: [], solid: [], cards: [], cracks: [], seals: [], rings: [], arches: [], pipes: [], spires: [], lips: [], rspires: [], bones: [], kickers: [], ledges: [], poles: [], parkPots: [], grooves: [] }; dcache.set(key, D); const C = cell(qx, qz); if (!C.type && r4(C.x0 + Q / 2, C.z0 + Q / 2) > EDGE - 300) return D;
     const rn = rngOf(hsh(seed, qx, qz, 0xD7E55)), T = C.type, F = W.gather(C.x0, C.z0, C.x0 + Q, C.z0 + Q, 40), keep = [];
     for (const q of C.pockets) keep.push([q.x, q.z, q.type === 'broker' ? 12 : 7]); if (C.ring) keep.push([C.ring.x, C.ring.z, 18]); for (const e of C.extras) keep.push([e.x, e.z, 5]); for (const p of W.extra) keep.push([p.x, p.z, Math.max(p.rOut, 10)]);
     const wb = W.wonder ? W.wonder.beams.filter(s => Math.floor((s[0] + s[2]) / 2 / Q) === qx && Math.floor((s[1] + s[3]) / 2 / Q) === qz) : [], ws = W.wonder ? W.wonder.seals.filter(s => Math.floor(s[0] / Q) === qx && Math.floor(s[1] / Q) === qz) : [];
@@ -277,16 +277,23 @@ export function makeWorld(seedLo, stageIndex) {
     fill(Math.round(50 * mul.cactus), 400, 'c', 12, (x, z) => dens(x, z) > 0.3 && ok(x, z, 2), (x, z) => cactus(x, z, 0.9 + rn() * 0.6));
     if (T === 6) fill(14, 300, 's', 14, (x, z) => ok(x, z, 3, 0.6), (x, z) => { const y = gy(x, z), h = 7 + rn() * 9, w = 1.2 + rn() * 1.4; D.rspires.push([r2(x), r2(y), r2(z), r2(h), r2(w), r2(rn() * TAU)]); D.solid.push([r2(x), r2(y), r2(z), r2(w * 0.8), r2(h)]); put('s', x, z); });       // ridge spine: umber rock spires
     if (T === 2) fill(10, 200, 'b', 18, (x, z) => ok(x, z, 2), (x, z) => { const y = gy(x, z); D.bones.push([r2(x), r2(y), r2(z), r2(rn() * TAU), r2(0.8 + rn() * 0.6)]); put('b', x, z); });       // dry lake: bleached bones on the flats
-    // park lines (owner, 27 Nov: more to skate on): four lines a cell, each five or six pieces 16 to 24 m apart along a gently turning path, so one lands into the next:
-    // kickers (launch ramps), ledges (low carved blocks with a grind edge), banner poles (a pole to grind between two posts) and pairs of pots that burst into coins when ridden through
-    { const prn = rngOf(hsh(seed, qx, qz, 0x9A7)); for (let li = 0; li < 7; li++) { let x = C.x0 + 20 + prn() * (Q - 40), z = C.z0 + 20 + prn() * (Q - 40), a = prn() * TAU; const kinds = ['k', 'l', 'p', 'k', 'l', 'p', 'k'], k0 = (prn() * 4) | 0;
-      for (let e = 0; e < 6; e++) { const ux = cosA(a), uz = sinA(a), kind = kinds[(k0 + e) % kinds.length]; if (!ok(x, z, 2.5, 0.5)) { x += ux * 20; z += uz * 20; continue; } const y = gy(x, z);
-        if (kind === 'k') D.kickers.push([r2(x), r2(y), r2(z), r2(ux), r2(uz), 4, 3, r2(1 + prn() * 0.4)]);
-        else if (kind === 'l') { const len = 6 + prn() * 3; D.ledges.push([r2(x - ux * len / 2), r2(gy(x - ux * len / 2, z - uz * len / 2)), r2(z - uz * len / 2), r2(x + ux * len / 2), r2(gy(x + ux * len / 2, z + uz * len / 2)), r2(z + uz * len / 2), r2(0.65 + prn() * 0.2)]); }
-        else if (kind === 'p') { const len = 7 + prn() * 3; D.poles.push([r2(x - ux * len / 2), r2(gy(x - ux * len / 2, z - uz * len / 2) + 1.15), r2(z - uz * len / 2), r2(x + ux * len / 2), r2(gy(x + ux * len / 2, z + uz * len / 2) + 1.15), r2(z + uz * len / 2)]); }
-        else D.parkPots.push({ x: r2(x), z: r2(z), vases: [[r2(-uz * 1.4), r2(ux * 1.4), false], [r2(uz * 1.4), r2(-ux * 1.4), prn() < 0.2]] });
-        if (e === 5 && li % 3 === 0) D.parkPots.push({ x: r2(x + ux * 6), z: r2(z + uz * 6), vases: [[r2(-uz * 1.4), r2(ux * 1.4), false], [r2(uz * 1.4), r2(-ux * 1.4), prn() < 0.2]] });       // a pair of pots at the end of some lines, to burst through
-        put('k', x, z); x += ux * (16 + prn() * 8); z += uz * (16 + prn() * 8); a += (prn() - 0.5) * 0.5; } } }
+    // park lines (owner, 27 Nov: much more to skate on, big enough to read from 60 m): seven lines a cell, laid where riders go (along valley floors and down hill faces), plus one in the opening view;
+    // each five or six pieces 16 to 24 m apart, so one lands into the next: kickers (carved launch wedges 6 m wide, 1.5 to 2.5 m at a bright gold lip), ledges (0.8 m carved blocks 8 to 12 m long with a gold grind edge),
+    // banner poles (a gold pole to grind between tall posts with pennants), a pair of pots at the end of the opening line only (more pots pulled new players off the door); a faint carved groove in the sand links the pieces so the line reads as a path
+    { const prn = rngOf(hsh(seed, qx, qz, 0x9A7)), lineScore = (x, z, ux, uz) => W.valleyAt(x + ux * 20, z + uz * 20) + (gy(x, z) - gy(x + ux * 20, z + uz * 20)) / 8;
+      const line = (x, z, a, li) => { const kinds = ['k', 'l', 'p', 'k', 'l', 'p', 'k'], k0 = (prn() * 4) | 0; let px = null, pz = 0;
+        for (let e = 0; e < 6; e++) { let ux = cosA(a), uz = sinA(a); if (e > 0) { let ba = a, bs = -9; for (const da of [-0.4, 0, 0.4]) { const s2 = lineScore(x, z, cosA(a + da), sinA(a + da)); if (s2 > bs) { bs = s2; ba = a + da; } } a = ba; ux = cosA(a); uz = sinA(a); }       // turn to follow the valley or the fall line
+          const kind = kinds[(k0 + e) % kinds.length]; if (!ok(x, z, 3, 0.55)) { x += ux * 20; z += uz * 20; px = null; continue; } const y = gy(x, z);
+          if (px !== null) D.grooves.push([r2(px), r2(pz), r2(x), r2(z)]);
+          if (kind === 'k') D.kickers.push([r2(x), r2(y), r2(z), r2(ux), r2(uz), 6, 6, r2(1.5 + prn())]);
+          else if (kind === 'l') { const len = 8 + prn() * 4; D.ledges.push([r2(x - ux * len / 2), r2(gy(x - ux * len / 2, z - uz * len / 2)), r2(z - uz * len / 2), r2(x + ux * len / 2), r2(gy(x + ux * len / 2, z + uz * len / 2)), r2(z + uz * len / 2), 0.8]); }
+          else { const len = 8 + prn() * 3; D.poles.push([r2(x - ux * len / 2), r2(gy(x - ux * len / 2, z - uz * len / 2) + 1.2), r2(z - uz * len / 2), r2(x + ux * len / 2), r2(gy(x + ux * len / 2, z + uz * len / 2) + 1.2), r2(z + uz * len / 2)]); }
+          if (li < 0 && e === 5) D.parkPots.push({ x: r2(x + ux * 6), z: r2(z + uz * 6), vases: [[r2(-uz * 1.4), r2(ux * 1.4), false], [r2(uz * 1.4), r2(-ux * 1.4), prn() < 0.2]] });
+          put('k', x, z); px = x; pz = z; const step = 16 + prn() * 8; x += ux * step; z += uz * step; } };
+      // the opening view: in the start's own cell, a line from 35 m out along the start view
+      if (W.spawn && Math.floor(W.spawn.x / Q) === qx && Math.floor(W.spawn.z / Q) === qz) { const fx = -sinA(W.startYaw), fz = -cosA(W.startYaw); let a0 = 0, bd = -2; for (let k = 0; k < 48; k++) { const a = k * TAU / 48, d = cosA(a) * fx + sinA(a) * fz; if (d > bd) { bd = d; a0 = a; } } line(W.spawn.x + fx * 35 + fz * 6, W.spawn.z + fz * 35 - fx * 6, a0, -1); }
+      for (let li = 0; li < 7; li++) { let bx = 0, bz = 0, bs = -9; for (let c = 0; c < 6; c++) { const x = C.x0 + 20 + prn() * (Q - 40), z = C.z0 + 20 + prn() * (Q - 40), sc = W.valleyAt(x, z) + slp(x, z); if (sc > bs) { bs = sc; bx = x; bz = z; } }       // start where riders go: a valley floor or a hill face
+        let a = 0, as = -9; for (let k = 0; k < 8; k++) { const aa = k * TAU / 8, s2 = lineScore(bx, bz, cosA(aa), sinA(aa)); if (s2 > as) { as = s2; a = aa; } } line(bx, bz, a, li); } }
     fill(Math.round(21 * mul.dead), 300, 'd', 16, (x, z) => ok(x, z, 2), (x, z) => dead(x, z, 1.25 + rn() * 0.35));
     fill(Math.round(75 * mul.logs), 500, 'l', 10, (x, z) => ok(x, z, 1, 0.5), (x, z) => beam(x, z, 6 + rn() * 3, 0.4 + rn() * 0.3, (rn() * 2) | 0));
     fill(Math.round(8 * (T === 4 ? 2 : T === 2 ? 0.3 : 1)), 200, 'p', 20, (x, z) => ok(x, z, 2, 0.35), () => {});       // (no loose pots out in the open: the no-junk rule; pots stand only by landmarks, and vases you can break are in the pockets)
