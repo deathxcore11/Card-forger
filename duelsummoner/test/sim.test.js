@@ -128,17 +128,16 @@ test('enemies spawn 22 to 30 m away and the live count never exceeds the pool', 
   for (let i = 0; i < 300; i++) { const d = Math.hypot(g.en.x[i] - g.p.x, g.en.z[i] - g.p.z); assert.ok(d >= 21.9 && d <= 30.1, `d=${d}`); }
 });
 
-test('touch damage: 0.9 s per enemy and 0.25 s shared grace', () => {
+test('touch damage (AI v1): a 0.4 s wind-up tell before every hit, at most 4 wind-ups at once, then 0.9 s per enemy and 0.5 s shared grace', () => {
   const g = new Game(1); g.spawnAcc = -1e9; g.cardT = 1e9; g.field.monsters.fill(null);
-  const put = (i, dx) => { g.en.alive[i] = 1; g.en.x[i] = dx; g.en.z[i] = 0; g.en.y[i] = 0; g.en.hp[i] = 4; g.en.atk[i] = 0; g.en.spd[i] = 0; };
-  put(0, 1); put(1, -1); put(2, 0.8);
-  g.step(1 / 60, idle);
-  assert.equal(Math.round(g.p.hp), 92, 'one hit, the others wait out the grace');
-  run(g, 0.2, idle); assert.equal(Math.round(g.p.hp), 92, 'still inside 0.25 s grace');
-  run(g, 0.1, idle); assert.equal(Math.round(g.p.hp), 84, 'second enemy hits once grace ends');
-  run(g, 0.3, idle); assert.equal(Math.round(g.p.hp), 76, 'third enemy hits');
-  run(g, 0.2, idle); assert.equal(Math.round(g.p.hp), 76, 'first enemy is on its 0.9 s cooldown');
-  run(g, 0.35, idle); assert.equal(Math.round(g.p.hp), 68, 'first enemy hits again after 0.9 s');
+  const put = (i, dx, dz) => { g.en.alive[i] = 1; g.en.x[i] = dx; g.en.z[i] = dz || 0; g.en.y[i] = 0; g.en.hp[i] = 4; g.en.atk[i] = 0; g.en.spd[i] = 0; };
+  for (let k = 0; k < 6; k++) put(k, Math.cos(k) * 0.9, Math.sin(k) * 0.9);
+  g.step(1 / 60, idle); assert.equal(Math.round(g.p.hp), 100, 'no hit lands without its tell');
+  run(g, 0.3, idle); assert.equal(Math.round(g.p.hp), 100, 'still in the tell'); assert.ok(g.windPrev <= 4, 'at most 4 wind-ups at once: ' + g.windPrev);
+  run(g, 0.15, idle); assert.equal(Math.round(g.p.hp), 92, 'one hit lands after the tell; the others meet the grace');
+  run(g, 0.3, idle); assert.equal(Math.round(g.p.hp), 92, 'inside the 0.5 s grace');
+  run(g, 1.5, idle); assert.ok(g.p.hp < 92, 'the horde keeps hitting after the grace and the cooldown');
+  assert.ok((g.aiStats.maxWind | 0) <= 4, 'the token cap held: ' + g.aiStats.maxWind);
 });
 
 test('the duelist throws a card every 0.8 s for 2 damage at the nearest enemy', () => {
@@ -171,8 +170,8 @@ test('enemies more than 60 m away are relocated to the spawn ring', () => {
 test('death stops the run and reset restores everything', () => {
   const g = new Game(1);
   g.spawnAcc = 0;
-  g.p.hp = 5; g.en.alive[0] = 1; g.en.x[0] = 1; g.en.z[0] = 0; g.en.hp[0] = 4; g.en.atk[0] = 0;
-  g.step(1 / 60, idle);
+  g.p.hp = 5; g.en.alive[0] = 1; g.en.x[0] = 1; g.en.z[0] = 0; g.en.hp[0] = 400; g.en.atk[0] = 0;       // tough enough to outlive its 0.4 s tell
+  run(g, 0.5, idle);       // (the hit lands after its 0.4 s tell)
   assert.ok(g.over && g.p.hp === 0);
   const t = g.t; g.step(1, idle); assert.equal(g.t, t, 'sim frozen after death');
   for (let k = 0; k < 2; k++) {

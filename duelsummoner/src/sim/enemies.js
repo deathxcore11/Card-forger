@@ -22,7 +22,8 @@ export function makeEnemies(max) {
     stT: f(), ax: f(), az: f(), mark: f(), burn: f(), burnDps: f(), root: f(),
     px: f(), py: f(), pz: f(), pface: f(),                      // previous tick, for smooth drawing
     mrg: new Uint8Array(max), size: f(),                        // enemies merged into this one past the cap, and its size factor (1 to 1.5)
-    ace: new Uint8Array(max)                                    // 1 = an Ace monster (star crest, big, tough, may drop a Trophy Chest)
+    ace: new Uint8Array(max),                                   // 1 = an Ace monster (star crest, big, tough, may drop a Trophy Chest)
+    wind: f()                                                   // AI v1: a melee wind-up in progress (seconds left); it holds one of the attack tokens
   };
 }
 export function enemyCount(e) { let c = 0; for (let i = 0; i < e.max; i++) c += e.alive[i]; return c; }
@@ -82,7 +83,7 @@ export function spawnEnemy(g, kindName, at) {
   put(g, slot, spot.x, spot.y, spot.z, K.id);
   e.alive[slot] = 1; e.kind[slot] = K.id; e.st[slot] = 0; e.stT[slot] = K.id === SEER ? 1.2 : K.id === GOLEM ? 2 : 0;
   const ot = K === KINDS.hunter ? Math.max(0, g.otStep || 0) : 0, O = RUN.overtime;
-  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; g.lastSlot = slot;
+  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; e.wind[slot] = 0; g.lastSlot = slot;
   e.hp[slot] = K.hp * g.hpMul * pow(O.hpGrowth, ot); e.atk[slot] = 0.4; e.flash[slot] = 0; e.mark[slot] = 0; e.burn[slot] = 0; e.root[slot] = 0;
   e.spd[slot] = K.speed * (1 + (g.rsp() * 2 - 1) * CFG.enemy.speedJitter) * g.speedMul * Math.min(O.speedCap, pow(O.speedGrowth, ot));
   e.dx[slot] = 0; e.dz[slot] = 0; e.face[slot] = e.pface[slot] = 0;
@@ -98,8 +99,11 @@ export function spawnAce(g, kindName) {
 
 const o = { x: 0, y: 0, z: 0, vy: 0, dx: 0, dz: 0 }, sv = { x: 0, z: 0, d: 0, direct: true };
 
+// AI v1 (design/ai-v1.md): attack tokens, so a horde never lands forty hits in one frame, and every hit has a tell
+export const TOKENS = { melee: 4, ranged: 3, tell: 0.4 };
+function aiHit(g, x, z) { const p = g.p, A = g.aiStats || (g.aiStats = { ahead: 0, side: 0, behind: 0, maxWind: 0 }), v = Math.sqrt(p.vx * p.vx + p.vz * p.vz), dx = x - p.x, dz = z - p.z, d = Math.sqrt(dx * dx + dz * dz) || 1; if (v < 2) { A.side++; return; } const c = (dx * p.vx + dz * p.vz) / (d * v); if (c > 0.35) A.ahead++; else if (c < -0.35) A.behind++; else A.side++; }       // where each landed hit came from, against the rider's travel
 export function updateEnemies(g, dt) {
-  if (g.stopT > 0) return;       // Stopped Sand: every ordinary enemy stands still and cannot hurt
+  if (g.stopT > 0) return; let windN = 0, windNew = 0, aimN = 0, aimNew = 0;       // Stopped Sand: every ordinary enemy stands still and cannot hurt
   const e = g.en, p = g.p, E = CFG.enemy, mul = g.dmgMul; let burnSum = 0;       // burn is summed over the tick and logged once, under its own source
   for (let i = 0; i < e.max; i++) {
     if (!e.alive[i]) continue;
@@ -107,6 +111,7 @@ export function updateEnemies(g, dt) {
     o.x = e.x[i]; o.y = e.y[i]; o.z = e.z[i]; o.vy = e.vy[i]; o.dx = e.dx[i]; o.dz = e.dz[i];
 
     if (e.mark[i] > 0) e.mark[i] -= dt;
+    if (e.wind[i] !== 0) { windN++; if (e.wind[i] > 0) { e.wind[i] -= dt; if (e.wind[i] <= 0) e.wind[i] = -1; } }       // a wind-up runs on whatever the enemy does; -1: it is due
     if (e.flash[i] > 0) e.flash[i] -= dt;
     if (e.burn[i] > 0) { const bd = e.burnDps[i] * dt; burnSum += bd; e.burn[i] -= dt; e.hp[i] -= bd; if (e.hp[i] <= 0) { killEnemy(g, i); continue; } }
     const rooted = e.root[i] > 0; if (rooted) e.root[i] -= dt;
@@ -135,7 +140,7 @@ export function updateEnemies(g, dt) {
       }
       case SEER: {
         const S = K.shot;
-        if (e.st[i] === 1) {                                        // telegraph: stand still, then fire along the locked line
+        if (e.st[i] === 1) { aimN++;                               // telegraph: stand still, then fire along the locked line
           e.stT[i] -= dt;
           if (e.stT[i] <= 0) { g.fireBolt(o.x, o.y + 1.0, o.z, e.ax[i] * S.speed, e.az[i] * S.speed, S.life, S.dmg * mul, S.radius, 'Glass Seer bolt'); e.st[i] = 0; e.stT[i] = S.every; }
           break;
@@ -144,7 +149,7 @@ export function updateEnemies(g, dt) {
         steerVec(g, o, p.x, p.y, p.z, sv);
         if (d > S.keepMax) walk(g, o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
         else if (d < S.keepMin) walk(g, o, -dx / d, -dz / d, spd, dt, K.radius, E.stepUp);
-        if (e.stT[i] <= 0 && d < S.range && lineClear(o.x, o.z, p.x, p.z, o.y)) {
+        if (e.stT[i] <= 0 && d < S.range && (g.aimPrev | 0) + aimNew < TOKENS.ranged && lineClear(o.x, o.z, p.x, p.z, o.y)) { aimNew++;       // at most TOKENS.ranged shooters aiming at once
           { const tl = Math.min(K2.leadCap, S.telegraph + d / S.speed), lx = dx + p.vx * tl, lz = dz + p.vz * tl, ll = Math.sqrt(lx * lx + lz * lz) || 1; e.ax[i] = lx / ll; e.az[i] = lz / ll; }       // the bolt leads the duelist's real velocity
           e.st[i] = 1; e.stT[i] = S.telegraph;
           addTele(g.tele, { type: 0, x: o.x, y: o.y, z: o.z, dx: e.ax[i], dz: e.az[i], len: S.speed * S.life, w: S.width, dur: S.telegraph });
@@ -229,8 +234,12 @@ export function updateEnemies(g, dt) {
       } else if (touching && e.atk[i] <= 0 && g.grace <= 0 && !g.over) {
         e.st[i] = 1; e.stT[i] = 0.5; addTele(g.tele, { type: 1, x: o.x, y: o.y, z: o.z, r: K.reach * (e.size[i] || 1) * 1.2 + 0.6, dur: 0.5, color: 0xff3020 });
       }
-    } else if (touching && K.touch > 0 && e.atk[i] <= 0 && g.grace <= 0 && !isDashing(p) && !g.over) { e.atk[i] = E.attackCd; g.hurtPlayer(K.touch * mul, false, K.name); }
+    } else if (K.touch > 0 && !g.over) {       // AI v1: a melee hit is a wind-up of 0.4 s first (its tell), and only TOKENS.melee enemies may wind up at once; the rest press in and wait
+      if (e.wind[i] < 0) { { e.wind[i] = 0; e.atk[i] = E.attackCd; const reach = K.reach * (e.size[i] || 1) + 0.9; if (d < reach && Math.abs(p.y - o.y) < E.vReach && g.grace <= 0 && !isDashing(p)) { aiHit(g, o.x, o.z); g.hurtPlayer(K.touch * mul, false, K.name); } } }
+      else if (e.wind[i] === 0 && touching && e.atk[i] <= 0 && g.grace <= 0 && !isDashing(p) && (g.windPrev | 0) + windNew < TOKENS.melee) { e.wind[i] = TOKENS.tell; windNew++; windN++; addTele(g.tele, { type: 1, x: o.x, y: o.y, z: o.z, r: K.reach * (e.size[i] || 1) + 0.6, dur: TOKENS.tell, color: 0xff3020 }); }
+    }
   }
+  g.windPrev = windN; g.aimPrev = aimN + aimNew; { const A = g.aiStats || (g.aiStats = { ahead: 0, side: 0, behind: 0, maxWind: 0 }); if (windN > A.maxWind) A.maxWind = windN; }
   if (burnSum > 0) { const prev = g.curSrc; g.curSrc = g.srcIndex('burn'); g.logDealt(burnSum); g.curSrc = prev; }
 }
 

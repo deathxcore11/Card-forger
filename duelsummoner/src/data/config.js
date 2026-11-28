@@ -19,7 +19,7 @@ export const CFG = {
   },
   enemy: {
     max: 900, hp: 4, speed: 4.2, speedJitter: 0.18, radius: 0.7, reach: 1.45, vReach: 1.3,
-    damage: 8, attackCd: 0.9, grace: 0.25,             // 0.9 s per enemy, 0.25 s shared after any hit
+    damage: 8, attackCd: 0.9, grace: 0.5,             // 0.9 s per enemy, 0.5 s shared after any hit (AI v1 damage grace)
     stepUp: 0.55, separation: 1.3, relocateDist: 60, knock: 0.4,
     directRange: 9
   },
