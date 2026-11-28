@@ -87,7 +87,7 @@ function nextEvent(g) {
 let buffKey = '';
 let stakeKey = '';
 function drawStakes(g) {       // the Stakes percent under the clock (big desert only)
-  const el = $('stakes'); if (!el) return; const v = g.big ? Math.round(g.stakes || 0) : -1, k = String(v); if (k === stakeKey) return; stakeKey = k; el.textContent = v < 0 ? '' : 'Stakes ' + v + '%'; el.className = v >= 300 ? 'max' : v >= 100 ? 'hi' : ''; clearTimeout(el._q); el.classList.remove('quiet'); el._q = setTimeout(() => el.classList.add('quiet'), 4000);       // shown only while it rises
+  const el = $('stakes'); if (!el) return; const v = g.big ? Math.round(g.stakes || 0) : -1, k = String(v); if (k === stakeKey) return; stakeKey = k; el.textContent = v <= 0 ? '' : 'Stakes ' + v + '%'; el.className = v >= 300 ? 'max' : v >= 100 ? 'hi' : ''; clearTimeout(el._q); el.classList.remove('quiet'); el._q = setTimeout(() => el.classList.add('quiet'), 4000);       // shown only while it rises
 }
 function drawBuffs(g) {       // the timed pickups: a small chip each, with the seconds left (or the hits)
   const L = []; if (g.windT > 0) L.push('Wind Step ' + Math.ceil(g.windT) + 's'); if (g.drumT > 0) L.push('War Drum ' + Math.ceil(g.drumT) + 's'); if (g.stopT > 0) L.push('Stopped Sand ' + Math.ceil(g.stopT) + 's'); if (g.wardHits > 0) L.push('Ward x' + g.wardHits);
