@@ -409,7 +409,10 @@
   #zones .zone { border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)), rgba(8,10,15,.6) !important; border:1px solid rgba(232,196,110,.35); font-family:var(--sans); }
   #zones .zone:not(.full) { background:none !important; border:1px dashed rgba(232,196,110,.18) !important; box-shadow:none !important; opacity:.55; } #zones .zone:not(.full)::after { content:'' !important; }
   #zones .zone .short { display:none; }
-  #rhBal { display:none !important; }       /* controls v2: no balance bar, the combo timer runs */
+  #rhBal { display:none !important; }
+  .wtag { font-family:var(--sans) !important; font-weight:600; letter-spacing:.4px; border-radius:999px !important; padding:4px 12px !important; background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)), rgba(8,10,15,.66) !important; border:1px solid rgba(232,196,110,.4) !important; box-shadow:0 4px 12px #0006; }       /* world labels in the pill style */
+  #offerScreen .card { min-height:0 !important; } #offerScreen .card .glyph { float:right; font-size:34px; line-height:1; margin:-4px 0 0 8px; opacity:.85; } #offerScreen .card .big { font:700 26px/1.1 var(--serif); color:var(--gold2); margin:6px 0 4px; }
+  #offerScreen .card.common { border-color:rgba(232,196,110,.28) !important; } #offerScreen .card.rare { border-color:#6FC3FFaa !important; box-shadow:inset 0 0 0 1px #6FC3FF33, 0 10px 30px #0008 !important; } #offerScreen .card.epic { border-color:#C08BFFbb !important; box-shadow:inset 0 0 0 1px #C08BFF44, 0 10px 30px #0008 !important; } #offerScreen .card.legendary { border-color:#E8B95Bdd !important; box-shadow:inset 0 0 0 1px #E8B95B55, 0 0 24px #E8B95B33 !important; }       /* controls v2: no balance bar, the combo timer runs */
   /* (the NEW badge is the card title's ::after; the card itself never takes the gold fill) */
   @media (max-width: 600px) {
     #topleft, #topright { padding:6px 9px; border-radius:11px; } #topleft { width:46vw; } #topright { min-width:0; max-width:46vw; }

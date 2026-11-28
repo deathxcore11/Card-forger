@@ -663,7 +663,7 @@ export class Actors {
     this.pk[0].material.emissiveIntensity = 0.75 + 0.3 * Math.sin(t * 4);
     const m = g.pick, pc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     for (let i = 0; i < m.max; i++) {
-      if (!m.alive[i]) continue; const kk = m.kind[i];
+      if (!m.alive[i]) continue; const kk = m.kind[i]; { const cx = m.x[i] - cam.x, cy = m.y[i] - cam.y, cz = m.z[i] - cam.z; if (cx * cx + cy * cy + cz * cz < 6.25) continue; }       // a pickup flying in past the lens is never drawn huge across the screen
       if (kk === 0) {                                          // crystal: tilted 20 degrees, one turn per 2.5 s, bobs 6 cm; size and tint by value
         const v = m.val[i], sz = (v >= 20 ? 0.5 : v >= 5 ? 0.35 : 0.25) * SCALE.pickup, col = v >= 20 ? this._gold : v >= 5 ? this._blue : this._plain;
         d.position.set(m.x[i], m.y[i] + 0.12 + Math.sin(t * 3 + i) * 0.1, m.z[i]); d.rotation.set(0.35, t * Math.PI * 2 / 2.5 + i, 0); d.scale.setScalar(sz * (1 + 0.1 * Math.sin(t * 4 + i))); d.updateMatrix();

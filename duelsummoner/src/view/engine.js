@@ -137,7 +137,7 @@ export function makeSky() {
     uniform float uCover; uniform float uSunOn; uniform float uDither; uniform vec3 uSkyM; uniform vec3 uCldL; uniform vec3 uCldS; uniform vec3 uDisc; varying vec3 vD;
     void main() {
       vec3 d = normalize(vD); float th = bayer() - 0.5;
-      float k = floor(sqrt(max(d.y, 0.0)) * 12.0 + 0.5 + th * uDither) / 12.0;
+      float k = floor(sqrt(max(d.y, 0.0)) * 64.0 + 0.5 + th * uDither * 0.5) / 64.0;       // UI polish 18: a smooth sky (64 fine steps, a light dither), no visible bands
       vec3 c = k < 0.4 ? mix(uSkyH, uSkyM, k / 0.4) : mix(uSkyM, uSkyT, (k - 0.4) / 0.6);
       float s = max(dot(d, uSunD), 0.0);
       if (uSunOn > 0.5) { c += uSunK * (floor(pow(s, 6.0) * 4.0 + 0.5 + th * uDither) / 4.0) * 0.22 * (1.0 - 0.5 * k); c = mix(c, uDisc, step(0.9985, s)); }
