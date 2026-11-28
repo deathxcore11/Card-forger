@@ -63,7 +63,7 @@ function deadTree(D, x, y, z, s, rot, v, small) {
 }
 // ---- logs and beams: bleached grey-brown, a darker end-grain disc at each end, one end broken; every fifth one stands as a broken post
 function log(D, map, q) {
-  { const [x0, , z0, x1, , z1, rad] = q, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2; if (l > 0.5 && blocksOn) { blockBar(D, [x0, groundAt(map, x0, z0) + rad * 0.9, z0], [x1, groundAt(map, x1, z1) + rad * 0.9, z1], rad, false, 0x9a7a52); return; } }       // the block look: one straight half-sunk beam lying on the ground end to end
+  { const [x0, , z0, x1, , z1, rad] = q, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz), mx = (x0 + x1) / 2, mz = (z0 + z1) / 2; if (l > 0.5 && blocksOn) { voxBeam(D, [x0, groundAt(map, x0, z0) + rad * 0.9, z0], [x1, groundAt(map, x1, z1) + rad * 0.9, z1], rad, q[7] === 3); return; } }       // the block look: one straight half-sunk beam lying on the ground end to end
   const [x0, y0, z0, x1, y1, z1, rad, kind] = q, base = kind === 3 ? 0x8a6038 : kind === 2 ? 0xe0c89a : kind ? 0xd6b88a : 0xcaa878, col = [base, mixc(base, 0xb98a55, 0.28)], ns = kind >= 2 ? 4 : 6, grain = 0x6a4f30, dx = x1 - x0, dz = z1 - z0, l = Math.sqrt(dx * dx + dz * dz) || 1;
   if (false) {       // (no standing broken posts: every beam lies flat and can be ground, the no-junk rule)       // (a ride-line beam, kind 3, always lies flat)       // a broken post standing up, half sunk, with a jagged top
     const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2, my = groundAt(map, mx, mz), h = 2.4 + (rad * 6 % 1.5); rod(D, [mx, my - 0.5, mz], [mx + 0.12, my + h, mz], rad, rad * 0.85, ns, col, true, false, 0.3, grain); rod(D, [mx + 0.05, my + h - 0.05, mz], [mx + 0.25, my + h + rad * 1.5, mz + 0.1], rad * 0.35, 0.03, 4, col[0], true); return; }
@@ -121,17 +121,22 @@ function pane(D, K, cx, y, cz, tx, tz, nx, nz, w, h) {
 }
 // the block look (?blocks=1): a mesa or landmark drawn on the 24 cm ground grid, rows of cells inside its outline with flat tops and vertical walls, the same banded faces
 function blockMeshVox(D, map, b) {
-  const cr = Math.cos(b.rot), sr = Math.sin(b.rot), avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg, K = { face: mixc(0xc09c66, [0xb88a5a, 0xc8a070, 0xb07850][b.tone % 3], 0.35), top: 0xcaa874 }, T = Math.round((b.T + 0.04) / 0.06) * 0.06, C = 0.96, R0 = Math.max(b.rx, b.rz) * q + 1;
-  const inside = (x, z) => { const dx = x - b.cx, dz = z - b.cz, lx = (dx * cr + dz * sr) / (q * b.rx), lz = (-dx * sr + dz * cr) / (q * b.rz); const an = Math.atan2(lz, lx), crag = 1 - 0.07 * (0.5 + 0.5 * Math.sin(an * 7 + b.seed)) - 0.05 * (0.5 + 0.5 * Math.sin(an * 17 + b.seed * 1.7)); return Math.abs(lx) ** 3 + Math.abs(lz) ** 3 <= crag * crag * crag; };       // a craggy outline (buttresses and clefts), always inside the solid shape the sim rides
-  const x0 = Math.floor((b.cx - R0) / C) * C, z0 = Math.floor((b.cz - R0) / C) * C, N = Math.ceil(2 * R0 / C) + 2, runs = [];
-  for (let j = 0; j < N; j++) { const z = z0 + (j + 0.5) * C; let L = -1, Rr = -1; for (let i = 0; i < N; i++) if (inside(x0 + (i + 0.5) * C, z)) { if (L < 0) L = i; Rr = i + 1; } runs.push(L < 0 ? null : [L, Rr]); }
+  // a mesa as stepped rock: a craggy top and, below it, a ledge of varying width that follows the slope the sim rides at the rim (never outside the sim's footprint)
+  const cr = Math.cos(b.rot), sr = Math.sin(b.rot), avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg, face = mixc(0xc09c66, [0xb88a5a, 0xc8a070, 0xb07850][b.tone % 3], 0.35), K = { face, top: mixc(face, 0xe8c890, 0.3), ledge: mixc(face, 0xe8c890, 0.16) }, T = Math.round((b.T + 0.04) / 0.06) * 0.06, C = 0.96, R0 = Math.max(b.rx, b.rz) + 1;
+  const TL = T - Math.max(4, Math.round(0.5 * b.h / 0.24)) * 0.24, out3 = 1 / (q * q * q);
+  const level = (x, z) => { const dx = x - b.cx, dz = z - b.cz, lx = (dx * cr + dz * sr) / (q * b.rx), lz = (-dx * sr + dz * cr) / (q * b.rz), an = Math.atan2(lz, lx), r3 = Math.abs(lx) ** 3 + Math.abs(lz) ** 3;
+    const top = 0.93 - 0.10 * (0.5 + 0.5 * Math.sin(an * 7 + b.seed)) - 0.07 * (0.5 + 0.5 * Math.sin(an * 17 + b.seed * 1.7)); if (r3 <= top * top * top) return 2;
+    const led = top + (1 / q - top) * Math.max(0, Math.sin(an * 3 + b.seed * 2.3) * 0.7 + 0.45 * Math.sin(an * 11 + b.seed)); return b.h >= 3 && led > top + 0.02 && r3 <= Math.min(out3, led * led * led) ? 1 : 0; };
+  const x0 = Math.floor((b.cx - R0) / C) * C, z0 = Math.floor((b.cz - R0) / C) * C, N = Math.ceil(2 * R0 / C) + 2, L = new Uint8Array(N * N);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) L[j * N + i] = level(x0 + (i + 0.5) * C, z0 + (j + 0.5) * C);
   const STR = [[0x000000, 0], [0x7a3a1c, 0.2], [0x000000, 0.07], [0xe8c890, 0.18], [0x5a2a18, 0.26], [0x000000, 0.03], [0x9a5a2a, 0.22]];       // rock strata: a tone every 1.2 m, each seed starts on a different one
-  const band = (y, hx) => { const st = STR[(((Math.floor((y + 0.25 * Math.sin((hx || 0) * 0.35)) / 1.2) + (b.seed | 0)) % 7) + 7) % 7], c = mixc(K.face, st[0], st[1]); return mixc(c, 0x000000, [0.0, 0.05, 0.02, 0.07][((Math.floor(y / 0.24 + 1e-6) % 4) + 4) % 4] + (T - y < 0.48 ? -0.0 : 0)); };       // 24 cm courses inside each stratum; the strata waver a little along the wall       // one subtle shade per 24 cm course, a sandstone of the ground's tone
-  const wall = (a, bb, out) => { const g = Math.round(Math.min(footY(map, a[0], a[1]), footY(map, bb[0], bb[1])) / 0.24) * 0.24 - 0.24, mx = (a[0] + bb[0]) / 2 - b.cx, mz = (a[1] + bb[1]) / 2 - b.cz, ml = Math.hypot(mx, mz) || 1, nrm = [mx / ml, 0, mz / ml];       // lit by the outward direction from the centre, so the stepped outline reads as one smooth face
-    for (let y = g; y < T - 0.01;) { const y1 = Math.min(T, (Math.floor(y / 0.24 + 1e-6) + 1) * 0.24); D.quad([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, band(y, a[0] + a[1])); y = y1; } };
-  runs.forEach((r, j) => { if (!r) return; const za = z0 + j * C, zb = za + C, xa = x0 + r[0] * C, xb = x0 + r[1] * C;
-    D.quad([xa, T, za], [xb, T, za], [xb, T, zb], [xa, T, zb], [0, 1, 0], K.top); wall([xa, za], [xa, zb], [-1, 0, 0]); wall([xb, za], [xb, zb], [1, 0, 0]);
-    for (const [nb, dz, zz] of [[runs[j - 1], -1, za], [runs[j + 1], 1, zb]]) { const segs = nb ? [[r[0], Math.min(r[1], nb[0])], [Math.max(r[0], nb[1]), r[1]]] : [[r[0], r[1]]]; for (const [s0, s1] of segs) if (s1 > s0) wall([x0 + s0 * C, zz], [x0 + s1 * C, zz], [0, 0, dz]); } });
+  const band = (y, hx) => { const st = STR[(((Math.floor((y + 0.25 * Math.sin((hx || 0) * 0.35)) / 1.2) + (b.seed | 0)) % 7) + 7) % 7], c = mixc(K.face, st[0], st[1]); return mixc(c, 0x000000, [0.0, 0.05, 0.02, 0.07][((Math.floor(y / 0.24 + 1e-6) % 4) + 4) % 4]); };       // 24 cm courses inside each stratum; the strata waver a little along the wall
+  const wall = (a, bb, out, from, to) => { const g = from !== null ? from : Math.round(Math.min(footY(map, a[0], a[1]), footY(map, bb[0], bb[1])) / 0.24) * 0.24 - 0.24;
+    for (let y = g; y < to - 0.01;) { const y1 = Math.min(to, (Math.floor(y / 0.24 + 1e-6) + 1) * 0.24); D.quad([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, band(y, a[0] + a[1])); y = y1; } };
+  const hOf = l => (l === 2 ? T : TL), at = (i, j) => (i < 0 || j < 0 || i >= N || j >= N ? 0 : L[j * N + i]);
+  for (let j = 0; j < N; j++) { const za = z0 + j * C, zb = za + C; for (let i = 0; i < N; i++) { const l = L[j * N + i]; if (!l) continue; const xa = x0 + i * C, xb = xa + C, h = hOf(l);
+    D.quad([xa, h, za], [xb, h, za], [xb, h, zb], [xa, h, zb], [0, 1, 0], mixc(l === 2 ? K.top : K.ledge, 0x000000, 0.05 * ((i * 7 + j * 13) % 3)));
+    for (const [di, dj, a, bb, n] of [[-1, 0, [xa, za], [xa, zb], [-1, 0, 0]], [1, 0, [xb, za], [xb, zb], [1, 0, 0]], [0, -1, [xa, za], [xb, za], [0, 0, -1]], [0, 1, [xa, zb], [xb, zb], [0, 0, 1]]]) { const nl = at(i + di, j + dj); if (nl >= l) continue; wall(a, bb, n, nl ? hOf(nl) : null, h); } } }
 }
 function blockMesh(D, map, b) {
   if (blocksOn) { blockMeshVox(D, map, b); return; }
@@ -197,12 +202,23 @@ function steppedPiece(D, x, y0, z, ux, uz, w, steps, backA, goldLast) {
 }
 function blockKicker(D, q) { const [x, y, z, ux, uz, len, w, h] = q, n = Math.max(1, Math.round(h / BK)), st = []; for (let k = 1; k <= n; k++) st.push([len * (k - 1) / n, len * k / n, k * BK]); steppedPiece(D, x - ux * len / 2, y - 0.2, z - uz * len / 2, ux, uz, w, st, len, true); }
 function blockQuarter(D, map, q) { const [x, y, z, ux, uz, w] = q, Rr = 3.2, n = Math.round(Rr / BK), st = [], g0 = groundAt(map, x, z) - 0.2; let a = 0; for (let k = 1; k <= n; k++) { const hk = k * BK, a1 = Math.sqrt(Math.max(0, Rr * Rr - (Rr - hk) * (Rr - hk))); st.push([a, Math.max(a + 0.02, a1), hk]); a = Math.max(a + 0.02, a1); } steppedPiece(D, x, g0, z, ux, uz, w, st, a, true); }
-function blockBar(D, a, b, half, gold, col) {       // a straight bar from a to b in its own frame (its top at a[1], b[1]), sides down into the ground, a gold top when it is ridden
-  const dx = b[0] - a[0], dz = b[2] - a[2], l = Math.sqrt(dx * dx + dz * dz) || 1, ux = dx / l, uz = dz / l, px = -uz * half, pz = ux * half, P = (p, s, y) => [p[0] + px * s, y, p[2] + pz * s];
-  const ya = a[1], yb = b[1], la = ya - 0.6 - 2 * half, lb = yb - 0.6 - 2 * half, c = col || T1;
-  D.quad(P(a, -1, ya), P(b, -1, yb), P(b, 1, yb), P(a, 1, ya), [0, 1, 0], gold ? TG : c);
-  D.quad(P(a, 1, la), P(b, 1, lb), P(b, 1, yb), P(a, 1, ya), [px, 0, pz], c); D.quad(P(b, -1, lb), P(a, -1, la), P(a, -1, ya), P(b, -1, yb), [-px, 0, -pz], c);
-  D.quad(P(a, 1, la), P(a, 1, ya), P(a, -1, ya), P(a, -1, la), [-ux, 0, -uz], TD); D.quad(P(b, -1, lb), P(b, -1, yb), P(b, 1, yb), P(b, 1, lb), [ux, 0, uz], TD);
+// a timber beam of the block look: 48 cm blocks end to end in three wood tones with darker joints and end grain, a gold strip along the top of a ride-line beam
+function voxBeam(D, a, b, half, ride) {
+  const dx = b[0] - a[0], dz = b[2] - a[2], l = Math.sqrt(dx * dx + dz * dz) || 1, ux = dx / l, uz = dz / l, px = -uz, pz = ux, n = Math.max(1, Math.round(l / 0.48)), W = [0x8a6038, 0x7a5230, 0x9a6e42], END = 0x5a3a20, GOLDT = 0xe0b765;
+  const at = (t, s, y) => [a[0] + dx * t + px * s, y, a[2] + dz * t + pz * s];
+  for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n, y0 = a[1] + (b[1] - a[1]) * t0, y1 = a[1] + (b[1] - a[1]) * t1, lo0 = y0 - 0.6 - 2 * half, lo1 = y1 - 0.6 - 2 * half, c = mixc(W[i % 3], 0x000000, i & 1 ? 0.2 : 0), cs = mixc(c, 0x000000, 0.14);
+    D.quad(at(t0, -half, y0), at(t1, -half, y1), at(t1, half, y1), at(t0, half, y0), [0, 1, 0], c);
+    if (ride || half >= 0.3) D.quad(at(t0, -0.12, y0 + 0.02), at(t1, -0.12, y1 + 0.02), at(t1, 0.12, y1 + 0.02), at(t0, 0.12, y0 + 0.02), [0, 1, 0], GOLDT);
+    D.quad(at(t0, half, lo0), at(t1, half, lo1), at(t1, half, y1), at(t0, half, y0), [px, 0, pz], cs); D.quad(at(t1, -half, lo1), at(t0, -half, lo0), at(t0, -half, y0), at(t1, -half, y1), [-px, 0, -pz], cs); }
+  const ya = a[1], yb = b[1]; D.quad(at(0, half, ya - 0.6 - 2 * half), at(0, half, ya), at(0, -half, ya), at(0, -half, ya - 0.6 - 2 * half), [-ux, 0, -uz], END); D.quad(at(1, -half, yb - 0.6 - 2 * half), at(1, -half, yb), at(1, half, yb), at(1, half, yb - 0.6 - 2 * half), [ux, 0, uz], END);
+}
+function blockBar(D, a, b, half, gold, col) {       // a straight bar from a to b in its own frame (its top at a[1], b[1]), sides down into the ground, a gold top when it is ridden; built of 48 cm blocks in two tones so it never reads as one plain slab
+  const dx = b[0] - a[0], dz = b[2] - a[2], l = Math.sqrt(dx * dx + dz * dz) || 1, ux = dx / l, uz = dz / l, px = -uz * half, pz = ux * half, n = half < 0.3 ? 1 : Math.max(1, Math.round(l / 0.48)), c0 = col || T1, c1 = mixc(c0, 0x000000, 0.1);
+  const at = (t, s, y) => [a[0] + dx * t + px * s, y, a[2] + dz * t + pz * s], top = t => a[1] + (b[1] - a[1]) * t, low = t => top(t) - 0.6 - 2 * half;
+  for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n, c = i & 1 ? c1 : c0, cs = mixc(c, 0x000000, 0.08);
+    D.quad(at(t0, -1, top(t0)), at(t1, -1, top(t1)), at(t1, 1, top(t1)), at(t0, 1, top(t0)), [0, 1, 0], gold ? (i & 1 ? mixc(TG, 0x000000, 0.08) : TG) : c);
+    D.quad(at(t0, 1, low(t0)), at(t1, 1, low(t1)), at(t1, 1, top(t1)), at(t0, 1, top(t0)), [px, 0, pz], cs); D.quad(at(t1, -1, low(t1)), at(t0, -1, low(t0)), at(t0, -1, top(t0)), at(t1, -1, top(t1)), [-px, 0, -pz], cs); }
+  D.quad(at(0, 1, low(0)), at(0, 1, top(0)), at(0, -1, top(0)), at(0, -1, low(0)), [-ux, 0, -uz], TD); D.quad(at(1, -1, low(1)), at(1, -1, top(1)), at(1, 1, top(1)), at(1, 1, low(1)), [ux, 0, uz], TD);
 }
 // a map's own dressing kit (themes: dressing.kit, baked models): when set, the desert's cacti, dead trees, pots, spires and bones are drawn as the map's own props instead, picked by place
 let KIT = null;
@@ -226,7 +242,7 @@ export function themeCol(c) { if (!PAL) return c; const r = (c >> 16) & 255, g =
   const t = l < 0.5 ? mixc(PAL[0], PAL[1], l * 2) : mixc(PAL[1], PAL[2], (l - 0.5) * 2); return mixc(c, t, 0.85 - 0.35 * sat); }
 function themeCols(col, from, skip) { for (let i = from; i < col.length; i += 3) { if (skip.some(s => i >= s[0] && i < s[1])) continue; const c = themeCol((Math.round(col[i] * 255) << 16) | (Math.round(col[i + 1] * 255) << 8) | Math.round(col[i + 2] * 255)); col[i] = ((c >> 16) & 255) / 255; col[i + 1] = ((c >> 8) & 255) / 255; col[i + 2] = (c & 255) / 255; } }
 const kitAt = (x, z, salt) => KIT[(((Math.imul((x * 10) | 0, 73856093) ^ Math.imul((z * 10) | 0, 19349663) ^ salt) >>> 0) % KIT.length)];
-function kitProp(D, x, y, z, salt) { const k = kitAt(x, z, salt); D.addModel(k.geo, x, y - 0.1, z, ((x * 7.31 + z * 3.17) % 6.283), k.s || 1); }
+function kitProp(D, x, y, z, salt, placed) { if (placed) { for (let i = 0; i < placed.length; i += 2) { const dx = placed[i] - x, dz = placed[i + 1] - z; if (dx * dx + dz * dz < 36) return; } placed.push(x, z); } const k = kitAt(x, z, salt); D.addModel(k.geo, x, y - 0.1, z, ((x * 7.31 + z * 3.17) % 6.283), k.s || 1); }       // props of the kit stand at least 6 m apart, so none grows out of another
 export function addDressing(D, map, ok) {
   D.plain = true;       // flat clean faces: no per-triangle colour jitter on built pieces
   const c0 = D.col ? D.col.length : 0, skip = []; if (PAL && D.col) { D.addModel = function (...a) { const s = this.col.length; Object.getPrototypeOf(this).addModel.apply(this, a); skip.push([s, this.col.length]); }; }       // kit models keep their own colours
@@ -261,7 +277,7 @@ export function addDressing(D, map, ok) {
   for (const q of d.lips || []) if (yes(q[0], q[2])) { rod(D, [q[0], q[1] - 0.1, q[2]], [q[3], q[4] - 0.1, q[5]], 0.45, 0.45, 6, [0x5a4030, 0x4a3426], true, true, 0); for (const [x, y, z] of [[q[0], q[1], q[2]], [q[3], q[4], q[5]]]) { frustum(D, x, y - 0.3, z, 0.8, 0.8, 0.4, 0.4, 10, 0.4, 0xe6dcc4, 0xf3ead6); for (const hb of [3.2, 6.4, 8.6]) rod(D, [x, y + hb, z], [x, y + hb + 0.5, z], 0.62, 0.55, 8, [0xe0b24e, 0xc9a24a], true, true, 0); frustum(D, x, y + 9.6, z, 0.45, 0.45, 0.05, 0.05, 1.6, 0.8, 0xffd56a); } }       // a great drop's lip: a dark carved edge across it and a marker stone at each end
   for (const q of d.cards || []) if (yes(q[0], q[2])) stoneCard(D, q[0], q[1], q[2], q[3], q[4]);
   for (const q of d.cracks || []) if (yes(q[0], q[1])) crack(D, map, q);
-  if (KIT) { for (const q of d.cacti || []) if (yes(q[0], q[2])) kitProp(D, q[0], q[1], q[2], 1); for (const q of d.dead || []) if (yes(q[0], q[2])) kitProp(D, q[0], q[1], q[2], 2); }       // the map's own props
+  if (KIT) { const placed = [], sites = map.sites || [], free = (x, z) => yes(x, z) && !sites.some(st => (st.x - x) * (st.x - x) + (st.z - z) * (st.z - z) < (st.R + 3) * (st.R + 3)); for (const q of d.logs || []) placed.push((q[0] + q[3]) / 2, (q[2] + q[5]) / 2); for (const q of d.dead || []) if (free(q[0], q[2])) kitProp(D, q[0], q[1], q[2], 2, placed); for (const q of d.cacti || []) if (free(q[0], q[2])) kitProp(D, q[0], q[1], q[2], 1, placed); }       // none inside a structure's ground either       // the map's own props
   else { for (const q of d.cacti || []) if (yes(q[0], q[2])) cactus(D, q[0], q[1], q[2], q[3], q[4], q[5]);
   for (const q of d.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], false); }
   for (const q of d.logs || []) if (yes(q[0], q[2])) log(D, map, q);
