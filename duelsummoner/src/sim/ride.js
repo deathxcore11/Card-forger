@@ -287,7 +287,8 @@ function land(g, p, r, cmd) {
   if ((cmd.revert || (cmd.slide && !letGo)) && comboValue(r.combo) > 0) { r.manual = true; r.manualFlick = false; r.bal = 0; r.manualT = 0; r.comboT = CTRL.comboT; return; }       // the manual button held on landing: a manual, the combo stays open (C held still works)
   if (halves >= 2) answerTrick(g, 'spin', p.x, p.y, p.z); if (bigAir) answerTrick(g, 'air', p.x, p.y, p.z);
   if (bigAir && g.mods.duneAir > 0 && g.map.regionAt && g.map.regionAt(p.x, p.z).type === 0) { const k = 1 + 0.6 * g.mods.duneAir; explode(g, p.x, p.y, p.z, 6 * k, 0, 14 * k, 0xf3c978, 'Dune Kite'); g.emit('slam', p.x, p.z, 6 * k); }       // Dune Kite
-  { const ax = sin(r.heading), az = cos(r.heading), down = heightAt(p.x, p.z) - heightAt(p.x + ax * 2, p.z + az * 2); if (down < 0.3) r.speed *= LAUNCH.flatLandKeep; }       // a landing on a downslope, along it, keeps all its speed
+  { const ax = sin(r.heading), az = cos(r.heading), down = (heightAt(p.x, p.z) - heightAt(p.x + ax * 2, p.z + az * 2)) / 2, fall = atan2(-(vy || 0), Math.max(1, r.speed)), slope = atan2(down, 1), mis = Math.abs(fall - slope) * 57.3;       // AI v1 feel table: the angle between the fall and the ground along the travel
+    r.speed *= down > 0.15 && mis < 20 ? 1.03 : mis < 35 ? 0.85 : 0.7; }       // along a downslope: all the speed and a little more; under 35 degrees off: 85%; worse: 70%, never a bail       // a landing on a downslope, along it, keeps all its speed
   F0(g).boost = Math.min(1, (F0(g).boost || 0) + comboValue(r.combo) * LAUNCH.boostPerPoint);       // landed tricks fill the boost
   bank(g, r); answerTrick(g, 'land', p.x, p.y, p.z); g.emit('land', p.x, p.z, -vy);
 }

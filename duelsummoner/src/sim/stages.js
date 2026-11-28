@@ -307,6 +307,21 @@ function surgeMul(g) {
 }
 
 // ---- the swarm ----
+// AI v1 step 4: the pacing director, on top of the stage clock (which still sets the baseline). Intensity rises with damage taken and with enemies close round the duelist, and falls with time;
+// a long stretch at high intensity earns a relax window (spawns held to a fifth for 10 to 20 s, longer when the duelist is low on health), a long calm earns a peak (spawns doubled for 12 s).
+// It never relaxes during the stage boss hunt or Overtime. Deterministic: it reads only the sim.
+export const DIRECTOR = { hurtK: 0.02, nearK: 0.03, decay: 0.12, high: 0.7, highFor: 9, relaxMin: 10, relaxMax: 20, calmFor: 40, peakT: 12, peakMul: 2, relaxMul: 0.2 };
+function directorMul(g, dt) {
+  const D = DIRECTOR, S = g.dir || (g.dir = { I: 0, hi: 0, calm: 0, mode: 'build', t: 0, hp: g.p.hp, cycles: 0 }), p = g.p;
+  const lost = Math.max(0, S.hp - p.hp); S.hp = p.hp; let near = 0; if (g.tickN % 15 === 0) { const e = g.en; for (let i = 0; i < e.max; i++) if (e.alive[i]) { const dx = e.x[i] - p.x, dz = e.z[i] - p.z; if (dx * dx + dz * dz < 225) near++; } S.near = near; }
+  S.I = Math.max(0, Math.min(1, S.I + lost * D.hurtK + (S.near || 0) * D.nearK * dt - D.decay * dt));
+  const noRelax = (g.gate && g.gate.state === 'fight') || g.ot2 || g.duelOn;
+  if (S.mode === 'relax' || S.mode === 'peak') { S.t -= dt; if (S.t <= 0) { S.mode = 'build'; S.hi = 0; S.calm = 0; } }
+  else { if (S.I > D.high) S.hi += dt; else S.hi = Math.max(0, S.hi - dt); if (S.I < 0.2) S.calm += dt; else S.calm = 0;
+    if (S.hi > D.highFor && !noRelax) { S.mode = 'relax'; S.t = D.relaxMin + (D.relaxMax - D.relaxMin) * (1 - p.hp / p.maxHp); S.cycles++; }
+    else if (S.calm > D.calmFor) { S.mode = 'peak'; S.t = D.peakT; S.cycles++; } }
+  return S.mode === 'relax' ? D.relaxMul : S.mode === 'peak' ? D.peakMul : 1;
+}
 function spawner(g, dt, fight, toll) {
   const S = g.stageSpec;
   const hordeOn = g.openFlow && g.horde.on && g.horde.t > 0, hm = hordeOn ? 2.2 + 0.5 * g.horde.t / 60 : 1;
@@ -333,7 +348,7 @@ function spawner(g, dt, fight, toll) {
   }
   if (toll) { g.huntT -= dt; if (g.huntT <= 0) { g.huntT = RUNSPEC.tollHunterEvery; for (let k = 0; k < RUNSPEC.tollHunterCount; k++) if (enemyCount(g.en) < cap) spawnEnemy(g, 'hunter'); } }
   const KB = g.map && g.map.world && g.map.world.killBowl, inBowl = !!KB && (p.x - KB.x) * (p.x - KB.x) + (p.z - KB.z) * (p.z - KB.z) < KB.r * KB.r; g.inBowl = inBowl;       // the kill bowl: the horde comes three times as thick while you ride it
-  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt * hm * (inBowl ? 3 : 1) * (g.big ? surgeMul(g) * stakesDensity(g) : 1);
+  g.spawnAcc += (toll ? spawnRate(420) : spawnRate(te)) * D.spawn * dt * hm * (inBowl ? 3 : 1) * directorMul(g, dt) * (g.big ? surgeMul(g) * stakesDensity(g) : 1);
   let live = enemyCount(g.en);
   if (g.spawnAcc > 60) g.spawnAcc = 60;                                // never a runaway backlog
   while (g.spawnAcc >= 1) { g.spawnAcc -= 1; const kind = pickKind(g, te); if (live < cap) { if (spawnEnemy(g, kind)) live++; } else mergeEnemy(g, kind); }       // past the cap a spawn merges into the nearest of its kind
