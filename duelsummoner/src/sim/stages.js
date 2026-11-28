@@ -1,6 +1,7 @@
 // The stage machine: a run is Stage 1, 2 and 3 (or one Quick Duel stage). Each stage has a clock, an elite and two timed bosses on a
 // timeline, a gate that wakes, a gate boss, then a Descent Circle to the next stage (Stage 3: the Final Altar). Pure and deterministic.
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
+import { familyOf } from '../core/summonUnlocks.js';
 import { v2Clock } from './items3.js';
 import { RUN } from '../data/waves.js';
 import { sealStageStart, sealGateCleared } from './seals.js';
@@ -176,6 +177,7 @@ function goodSpot(g, sp, wx, wz) {
 function gateCleared(g, sp) {
   const S = g.stageSpec, G = g.gate, p = g.p, last = g.stage >= g.stages.length - 1;
   G.state = 'done'; g.stagesCleared++; g.afterGate = 0; sealGateCleared(g, last);
+  { const n = {}; for (const m of g.field.monsters) { const fam = m && familyOf(m.id); if (fam) n[fam] = (n[fam] || 0) + 1; } for (const k of Object.keys(n)) if (n[k] >= 3) (g.clear3 || (g.clear3 = [])).push(k); }       // a stage cleared with three of one family on the field (an unlock rule)
   g.stageFacts.push({ stage: g.stage + 1, id: S.id, seconds: Math.round(g.sc), kills: g.kills - g.killsAtStage, gateOpenedAt: Math.round(g.gateOpenedAt), early: G.early, toll: G.toll, level: g.level });
   g.en.alive.fill(0);                                           // every enemy crumbles
   if (g.flow2) { for (const o of g.sp) if (o !== sp) o.alive = false; g.chests.push({ x: sp.x, y: sp.y, z: sp.z, open: false, kind: 'sealed' }); bossFell2(g, sp, last); g.emit('gatedown', g.stage); return; }       // flow v2: a portal and Overtime

@@ -1,4 +1,5 @@
 // Meta rules (pure, testable): Deck Box ranks to run modifiers, quest progress and rewards, mastery, map records, unlock sets, buying upgrades.
+import { summonMeta, applySummonRun } from './summonUnlocks.js';
 import { DECK_BOX, STARTER, OLD_STARTER } from '../data/meta.js';
 import { START_BOARDS } from '../data/boards.js';
 import { QUESTS } from '../data/quests.js';
@@ -27,7 +28,7 @@ export function deckMods(meta) {
 // what the sim receives. Cards the player switched off in the Card Library stay out of the offer pool.
 export function simMeta(meta) {
   const off = new Set(meta.libraryOff || []);
-  return { mods: deckMods(meta), cards: meta.unlockedCards.filter(c => !off.has(c)), items: meta.unlockedItems.filter(c => !off.has(c)), deck: Object.assign({}, meta.deck), boons: (meta.unlockedBoons || STARTER.boons).slice(), pickups: (meta.unlockedPickups || STARTER.pickups).slice(), stagesOpen: meta.stagesOpen || 3 };
+  return { summons: summonMeta(meta).summons.slice(), mods: deckMods(meta), cards: meta.unlockedCards.filter(c => !off.has(c)), items: meta.unlockedItems.filter(c => !off.has(c)), deck: Object.assign({}, meta.deck), boons: (meta.unlockedBoons || STARTER.boons).slice(), pickups: (meta.unlockedPickups || STARTER.pickups).slice(), stagesOpen: meta.stagesOpen || 3 };
 }
 // switching a card off is refused when fewer than LIBRARY_MIN would stay on
 export function setCardEnabled(meta, id, on) {
@@ -136,6 +137,7 @@ export const mapRecord = (meta, map, difficulty, mode) => meta.maps[mapKey(map, 
 // results: the flat run report from the sim (src/sim/results.js). Returns the quests completed by this run.
 export function applyRun(meta, r) {
   const d = defaultMeta(); for (const k of Object.keys(d)) if (meta[k] === undefined) meta[k] = d[k];           // saves from older builds gain the new fields
+  r.newSummons = applySummonRun(meta, r);       // the summons this run unlocked, for the results screen
   const T = meta.totals, B = meta.best, mx = (k, v) => { if ((v || 0) > (B[k] || 0)) B[k] = v || 0; };
   const win = r.result === 'win' || (r.stagesCleared || 0) > 0 && r.result === 'win';
   if (r.big) {       // the big desert's own counters and the unlock ladder

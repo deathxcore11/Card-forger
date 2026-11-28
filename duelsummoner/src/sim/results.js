@@ -32,6 +32,7 @@ export function runResults(g, ctx) {
     gateOpenedAt: g.gateOpenedAt, oaths: g.oathList.slice(), oathsKept: oathsKept(g), sealsCracked: g.sealT ? g.sealT.cracked.slice() : [], map: (g.opts && g.opts.map) || 'ruins', stagesCleared: g.stagesCleared, stageFacts: g.stageFacts, mode: g.mode, difficulty: g.difficulty, score: g.score(), stateHash: hashHex(g), damagePerMinute: dealtOf(g), keys,
     // extras this build also reports
     ...(g.big ? { big: true, doorsFound: g.gate && g.gate.state !== 'closed' ? 1 : 0, pickups: g.pickupsTaken | 0, boons: g.blessings ? g.blessings.length : 0, items: g.items ? Array.from(new Set(g.items)) : [] } : {}),
+    summonPeaks: (() => { const P = Object.assign({}, g.sumPeak || {}); for (const m of g.field.monsters) if (m && m.level > (P[m.id] || 0)) P[m.id] = m.level; return Object.keys(P).map(k => [k, P[k]]); })(), fusedPairs: (g.fusedPairs || []).slice(), clear3: (g.clear3 || []).slice(),
     level: g.level, wardenKilled: g.wardenKilled, elitesKilled: g.elitesKilled, vasesBroken: g.vasesBroken, ride: g.rflow ? { slams: g.rflow.slams || 0, bestCombo: g.rflow.best || 0, grindSec: g.rflow.grindSec || 0, sealSets: g.rflow.sets || 0, loops: g.rflow.loops || 0 } : null, starChips: g.starChips(), killedBy: g.killedBy
   };
 }

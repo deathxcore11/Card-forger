@@ -29,6 +29,7 @@ import { lookFor, buildPaletteLUT, STAGE_LOOK as STAGE_LOOK_LIST } from './data/
 import { Bars } from './view/bars.js';
 import { chestPrice } from './sim/world.js';
 import { heightAt } from './sim/terrain.js';
+import { gameId } from './core/summonUnlocks.js';
 import { viewH as openViewH } from './gen/open/terrain.js';
 import { solidAt as solidAtCol } from './sim/colliders.js';
 const bars = new Bars();
@@ -380,18 +381,19 @@ function afterOfferChange() {
   if (game.offer) showOffer(game, menu);                 // redraw / banish / shop buy: same screen, new cards
   else { setMode('play'); lock(); drawHud(game, true); }
 }
-let ended = false;
+let ended = false, lastNewSummons = [];
 function results() {
   let info = { record: { bestTime: 0 }, newBest: false };
   let unlocked = [];
   if (!ended) {                                                          // saved once per run
     ended = true; const chips = Math.floor(game.starChips() * (DIFF_CHIPS[game.difficulty] || 1));         // Star Chips scale with difficulty (separate from the score multiplier)
     info = recordRun(host, save, duelist, { time: game.t, kills: game.kills, level: game.level, bossKilled: game.bossKilled, chips });
-    const report = game.results({ runId: 'ds-' + game.seed + '-' + save.runs }); unlocked = applyRun(save.meta, report); freshSeals = (report.newSeals || []).slice(); for (const q of unlocked) if (q.reward && q.reward.chips) save.starChips += q.reward.chips; writeSave(host, save);
+    const report = game.results({ runId: 'ds-' + game.seed + '-' + save.runs }); unlocked = applyRun(save.meta, report); lastNewSummons = report.newSummons || []; freshSeals = (report.newSeals || []).slice(); for (const q of unlocked) if (q.reward && q.reward.chips) save.starChips += q.reward.chips; writeSave(host, save);
     // the verifiable replay (seed, difficulty, mode, build, the run-length input tape and the final state hash) rides along with the report
     packReplay(game.replayRaw(), typeof CompressionStream !== 'undefined' ? deflateInBrowser : null).then(r => { report.replay = r; host.reportRun(report); const base = boardUrl(save.settings); if (base) sendAndFollow(base, r, t => { $('dBoard').textContent = t; }); }).catch(() => host.reportRun(report));
   }
   $('dSeals').innerHTML = freshSeals.length && ended ? freshSeals.map(id => '<div class="unseal"><span class="sealBig"><i></i><i></i></span><span class="unsealTxt"><b>' + (OATH_BY_ID[id] ? OATH_BY_ID[id].name : id) + ' unsealed</b><br>' + (OATH_BY_ID[id] ? OATH_BY_ID[id].text : '') + '<br><span class="dim">' + (SEALS[id] ? SEALS[id].feat : '') + '</span></span></div>').join('') : '';
+  { const el = $('dSummons'), ns = (lastNewSummons || []); if (el) el.innerHTML = ns.length ? '<b>New summon' + (ns.length > 1 ? 's' : '') + ' unlocked</b> ' + ns.map(id => '<span class="newSum">' + ((cardDef(gameId(id)) || {}).name || id) + '</span>').join(' ') : ''; }
   $('dQuests').textContent = unlocked.length ? 'Quest done: ' + unlocked.map(q => q.name + ' (' + (q.reward.chips ? '+' + q.reward.chips + ' Star Chips' : 'unlocked ' + (q.reward.card || q.reward.item || q.reward.duelist || q.reward.outfit || q.reward.regalia)) + ')').join(', ') : '';
   $('resTitle').textContent = game.bossKilled ? 'VICTORY' : game.ended ? 'RUN ENDED' : 'DEFEATED';
   $('dTime').textContent = clock(game.t); countUp('dLevel', game.level); countUp('dKills', game.kills); countUp('dFusions', game.fusions);

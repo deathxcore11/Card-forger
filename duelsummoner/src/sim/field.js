@@ -119,6 +119,7 @@ export function doFusion(g, id) {
   const r = RECIPES.find(x => x.result === id) || (FUSIONS[id] && FUSIONS[id].from && { a: FUSIONS[id].from[0], b: FUSIONS[id].from[1], tier: 'fusion' }); if (!r) return false;
   const f = g.field, ia = f.monsters.findIndex(m => m && m.id === r.a), ib = f.monsters.findIndex(m => m && m.id === r.b);
   if (ia < 0 || ib < 0) return false;
+  { const P = g.sumPeak || (g.sumPeak = {}); for (const m of [f.monsters[ia], f.monsters[ib]]) if (m.level > (P[m.id] || 0)) P[m.id] = m.level; (g.fusedPairs || (g.fusedPairs = [])).push([r.a, r.b]); }       // what the unlock rules need to know of the parents
   f.monsters[Math.min(ia, ib)] = newMonster(id, TIERS[r.tier].startLevel, g.rcos); f.monsters[Math.max(ia, ib)] = null;      // takes one zone, frees the other
   if (f.firstFusionAt < 0) f.firstFusionAt = g.t;
   g.fusions++; g.fusionIds.push(id); recompute(g); g.event('banner', FUSIONS[id].name + ' is summoned!'); g.event('summon', id);
@@ -138,7 +139,7 @@ const ORDER = ['common', 'rare', 'epic', 'legendary'];
 export function candidates(g, minRarity) {
   const f = g.field, c = [], free = f.monsters.some(m => !m), freeS = f.spells.some(s => !s);
   const minI = minRarity ? ORDER.indexOf(minRarity) : 0;
-  const push = (id, kind, isNew, to) => { const RB = MONSTERS[id] && MONSTERS[id].roster; if (RB && !(g.opts && g.opts.roster)) return; if (!RB && g.unlockedCards && (MONSTERS[id] || SPELLS[id] || TRAPS[id] || ONE_SHOTS[id]) && !g.unlockedCards.has(id)) return;       /* the roster's basics are all in the pool of a roster game (their unlock rules are not set yet) */ const d = cardDef(id); if (!f.banished.has(id) && ORDER.indexOf(d.rarity || 'common') >= minI) c.push({ id, kind, isNew, to, rarity: d.rarity || 'common' }); };
+  const push = (id, kind, isNew, to) => { const RB = MONSTERS[id] && MONSTERS[id].roster; if (RB && !(g.opts && g.opts.roster)) return; if (RB && g.unlockedSummons && !g.unlockedSummons.has(id)) return;       /* a save owns 8 summons at first and unlocks the rest (src/core/summonUnlocks.js) */ if (!RB && g.unlockedCards && (MONSTERS[id] || SPELLS[id] || TRAPS[id] || ONE_SHOTS[id]) && !g.unlockedCards.has(id)) return;       /* the roster's basics are all in the pool of a roster game (their unlock rules are not set yet) */ const d = cardDef(id); if (!f.banished.has(id) && ORDER.indexOf(d.rarity || 'common') >= minI) c.push({ id, kind, isNew, to, rarity: d.rarity || 'common' }); };
   for (const id of Object.keys(MONSTERS)) {
     const m = f.monsters.find(x => x && x.id === id);
     if (m) { if (m.level < monsterMax(id)) push(id, 'monster', false, m.level + 1); }

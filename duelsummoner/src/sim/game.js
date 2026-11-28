@@ -82,7 +82,7 @@ export class Game {
     this.mods = { reach: 0, burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0 };
     const meta = this.opts.meta || null;                                    // permanent progress, handed in by the browser (pure data)
     this.metaMods = meta ? meta.mods : {};
-    this.unlockedCards = meta ? new Set(meta.cards) : null; this.unlockedItems = meta ? new Set(meta.items) : null; if (this.unlockedItems) for (const k of Object.keys(ITEMS3)) this.unlockedItems.add(k);       // the new-design items have no unlock rule yet: open in every game
+    this.unlockedCards = meta ? new Set(meta.cards) : null; this.unlockedSummons = meta && meta.summons ? new Set(meta.summons) : null; this.unlockedItems = meta ? new Set(meta.items) : null; if (this.unlockedItems) for (const k of Object.keys(ITEMS3)) this.unlockedItems.add(k);       // the new-design items have no unlock rule yet: open in every game
     this.unlockedBoons = meta && meta.boons ? new Set(meta.boons) : null; this.unlockedPickups = meta && meta.pickups ? new Set(meta.pickups) : null;
     this.wardenKilled = false; this.trapEver = false;
     this.field = makeField(this.duelist, this.rcos); this.fog = makeFog();
