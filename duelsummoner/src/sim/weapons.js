@@ -87,7 +87,7 @@ export function updateShots(g, dt) {
       }
     }
     s.x[i] += s.vx[i] * dt; s.y[i] += s.vy[i] * dt; s.z[i] += s.vz[i] * dt;
-    if (s.life[i] <= 0 || s.y[i] < heightAt(s.x[i], s.z[i])) { s.alive[i] = 0; endBurst(g, s, i); continue; }
+    if (s.life[i] <= 0 || s.y[i] < heightAt(s.x[i], s.z[i])) { if (s.life[i] > 0 && g.big) g.emit('chip', s.x[i], s.z[i], 3); s.alive[i] = 0; endBurst(g, s, i); continue; }       // a shot that ends on rock or a wall knocks chips off it
     if (kind !== KIND_HOMING && g.colliders && g.colliders.big) { const c = solidAt(g.colliders, s.x[i], s.z[i], 0.25); if (c && s.y[i] < c.top + 0.2) {       // a standing prop is in the way: a breakable one is smashed and takes one pierce (or the shot), anything else stops the shot
       if (c.brk) smashProps(g, c.x, c.z, 0.2); else g.emit('chip', s.x[i], s.z[i], 5);
       if (c.brk && s.pierce[i] > 0) s.pierce[i]--; else { s.alive[i] = 0; endBurst(g, s, i); continue; } } }
