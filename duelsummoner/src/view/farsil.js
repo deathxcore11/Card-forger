@@ -1,7 +1,7 @@
 // Far silhouettes (world v3 section 7): 3 to 5 huge, simple shapes 430 to 560 m from the stage start (past the fog wall, inside the 600 m camera reach), picked by the seed from the desert list.
 // They only need to read in the fog: one low-detail mesh group each, sandstone and violet shade, no collision, no props. Stand-in voxel shapes until the asset tool's kits arrive.
 const T = window.THREE, _sz = new T.Vector3();
-const SAND = 0xc9925e, SHADE = 0x7d5a78, DARK = 0x5e4560;
+let SAND = 0xc9925e, SHADE = 0x7d5a78, DARK = 0x5e4560;
 let FOGC = 0xe8c9a0, HAZE = 0.55;
 const mat = c => new T.MeshBasicMaterial({ color: new T.Color(c).lerp(new T.Color(FOGC), HAZE), fog: false });       // past the fog wall: pre-mixed toward the fog colour so it reads as a hazy silhouette, never a sharp prop
 const VIOLET = 0x4a3a78;
@@ -18,10 +18,11 @@ const MAKERS = {
 };
 export const FAR_KINDS = Object.keys(MAKERS);
 // seed: the run seed; at: the stage start { x, z }; groundY(x, z): the ground height for the base
-export function addFarSilhouettes(scene, seed, at, groundY, fogColor) {
+export function addFarSilhouettes(scene, seed, at, groundY, fogColor, theme) {
+  if (theme && theme.farColours) { SAND = theme.farColours.sun; SHADE = theme.farColours.shade; DARK = theme.farColours.dark; }
   if (fogColor !== undefined) FOGC = fogColor;
   let s = (seed >>> 0) ^ 0x5f3759df; const rnd = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
-  const kinds = FAR_KINDS.slice(); for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
+  let kinds = (theme && theme.far ? theme.far.filter(k => MAKERS[k]) : FAR_KINDS).slice(); if (!kinds.length) kinds = FAR_KINDS.slice();       // (a map whose own far kits have not landed yet uses the stand-in shapes in its own colours) for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
   const n = 3 + Math.floor(rnd() * 3), group = new T.Group(), list = []; const a0 = rnd() * Math.PI * 2;
   for (let k = 0; k < n; k++) {
     const a = a0 + k * (Math.PI * 2 / n) + (rnd() - 0.5) * 0.6, d = 430 + rnd() * 130,       /* inside the camera's 600 m reach, past the fog wall */ x = at.x + Math.cos(a) * d, z = at.z + Math.sin(a) * d, g = new T.Group();

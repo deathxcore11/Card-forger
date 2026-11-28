@@ -1,6 +1,7 @@
 // Map themes (design/themes-v1.md, owner, 27 Nov): one entry per map drives the place, and each time of day overrides part of it. The generator and the view hold no theme in code:
 // they read these entries. A run's stages 1, 2 and 3 are the map's morning, evening and night. Colours are hex; the sky is [top, horizon, below]; fog is [near, far] in metres.
 // Desert is filled in from the doc; ash is a stand-in second map to prove the system makes a clearly different place (the roster thread writes the other seven).
+import { MAP_THEMES } from './themes.gen.js';
 export const TIMES = ['morning', 'evening', 'night'];
 export const THEMES = {
   desert: {
@@ -46,6 +47,7 @@ export const THEMES = {
     }
   }
 };
+Object.assign(THEMES, MAP_THEMES);       // the other seven maps, imported from the roster thread (tools/themes-import.mjs)
 export const MAP_IDS = Object.keys(THEMES);
 // the theme for a map at a stage: the map entry with that stage's time of day merged on top
 export function themeFor(mapId, stage) {
