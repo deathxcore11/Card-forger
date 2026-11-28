@@ -37,11 +37,11 @@ export function initMenus(env) {
   // ---------- main menu ----------
   function showMain() {
     stopPreview(); document.body.dataset.cam = 'center'; $('menuScreen').classList.remove('on'); $('startScreen').classList.add('on');
-    const tracker = closestQuests(meta(), 4).map(({ q, frac }) => '<div class="trk"><b>' + q.name + '</b><span>' + questProgress(meta(), q) + ' / ' + q.goal + '</span>' + bar(frac) + '</div>').join('');
+    const tracker = closestQuests(meta(), 12).filter((x, i, A) => A.findIndex(y => y.q.name.replace(/ rank d+$/, '') === x.q.name.replace(/ rank d+$/, '')) === i).slice(0, 3).map(({ q, frac }) => '<div class="trk"><b>' + q.name + '</b><span>' + questProgress(meta(), q) + ' / ' + q.goal + '</span>' + bar(frac) + '</div>').join('');
     const recs = []; for (const map of MAPS) for (const d of DIFFICULTIES) { const r = mapRecord(meta(), map.id, d, 'run'); if (r.bestScore) recs.push(map.name + ', ' + DIFFICULTY[d].name + ': ' + r.bestScore + (r.bestTime ? ' (' + clockText(r.bestTime) + ')' : '')); }
     const now = new Date(), nextMon = new Date(now); nextMon.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7)); nextMon.setHours(0, 0, 0, 0); const ms = nextMon - now, dd = Math.floor(ms / 864e5), hh = Math.floor(ms % 864e5 / 36e5);
     $('startScreen').innerHTML = '<div class="chipsTop">Star Chips <b>' + save.starChips + '</b></div><h1>DUEL SUMMONER</h1>' +
-      '<div class="mainRow"><div class="mainBtns"><button id="mPlay">PLAY</button><button id="mShop">DECK BOX</button><button id="mLib">CARD LIBRARY</button><button id="mQuests">QUESTS</button><button id="mSettings">SETTINGS</button><button class="small" id="mQuick">QUICK DUEL</button></div>' +
+      '<div class="mainRow"><div class="mainBtns"><button id="mPlay">PLAY</button><button id="mShop">DECK BOX</button><button id="mLib">CARD LIBRARY</button><button id="mQuests">QUESTS</button><button id="mSettings">SETTINGS</button><button id="mQuick">QUICK DUEL</button></div>' +
       '<div class="mainMid"></div><div class="mainSide"><div class="panel goals"><h3>NEXT GOALS</h3>' + (tracker || '<p>No quests in progress.</p>') + '</div>' +
       '</div></div>';       // (the weekly leaderboard panel is gone: leaderboards were skipped, 27 Nov)
     $('mPlay').onclick = showDuelists; const gl = document.querySelector('.goals'); if (gl) gl.onclick = () => gl.classList.toggle('open'); $('mLib').onclick = () => showLibrary(); $('mQuests').onclick = () => showQuests(); $('mShop').onclick = () => { $('startScreen').classList.remove('on'); env.showDeckBox(); };
