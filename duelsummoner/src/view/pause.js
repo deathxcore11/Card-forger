@@ -6,6 +6,7 @@ import { STAT_INFO, STAT_GROUPS, fmtStat } from '../data/stats.js';
 import { DIFFICULTY } from '../data/stages.js';
 import { MAPS } from '../data/progress.js';
 import { fusionsReady } from '../sim/field.js';
+import { thumbInto, HAND_BODY } from './thumbs.js';
 import { clock } from '../core/util.js';
 const $ = id => document.getElementById(id), esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 let showAll = false, tab = 'actions';
@@ -21,7 +22,8 @@ export function pauseHeader(g) {
 function monsterTile(m) {
   if (!m) return '<div class="ptile empty">Monster zone<br><small>empty</small></div>';
   const D = MONSTERS[m.id] || FUSIONS[m.id], ready = false;
-  return '<div class="ptile mon"><span class="pform">' + ROMAN[formOf(m.id, m.level)] + '</span><b>' + esc(D.name) + '</b><span class="plv">Level ' + m.level + '</span>' + pips(m.level, LEVELS.monsterMax) + (D.from ? '<small>Fusion</small>' : '') + '</div>';
+  const f = formOf(m.id, m.level), art = D.roster && D.forms ? (D.forms[f] || D.forms[0]).modelId : HAND_BODY[m.id] ? HAND_BODY[m.id][Math.min(f, HAND_BODY[m.id].length - 1)] : '';       // the summon's own model at its form, as on the level-up cards
+  return '<div class="ptile mon">' + (art ? '<img class="pmArt" alt="" hidden data-art="' + art + '">' : '') + '<span class="pform">' + ROMAN[formOf(m.id, m.level)] + '</span><b>' + esc(D.name) + '</b><span class="plv">Level ' + m.level + '</span>' + pips(m.level, LEVELS.monsterMax) + (D.from ? '<small>Fusion</small>' : '') + '</div>';
 }
 function spellTile(s) {
   if (!s) return '<div class="ptile empty">Spell / Trap<br><small>empty</small></div>';
@@ -49,7 +51,7 @@ export function ritesRows(g) {
   return rows.join('') || '<div class="dim">No Rites taken yet. Shrines and altars add them.</div>';
 }
 export function renderPause(g) {
-  const m = pauseMat(g); $('pmHeader').innerHTML = m.header; $('pmMonsters').innerHTML = m.monsters; $('pmSpells').innerHTML = m.spells; $('pmItems').innerHTML = m.items;
+  const m = pauseMat(g); $('pmHeader').innerHTML = m.header; $('pmMonsters').innerHTML = m.monsters; $('pmSpells').innerHTML = m.spells; $('pmItems').innerHTML = m.items; for (const im of $('pmMonsters').querySelectorAll('img[data-art]')) thumbInto(im, im.dataset.art);
   const st = $('pmStats'); st.innerHTML = '<a href="#" id="pmShowAll" class="tlink">' + (showAll ? 'Show changed' : 'Show all') + '</a>' + statRows(g, showAll);
   $('pmShowAll').onclick = e => { e.preventDefault(); showAll = !showAll; renderPause(g); };
   $('pmRites').innerHTML = ritesRows(g); setTab(tab);
