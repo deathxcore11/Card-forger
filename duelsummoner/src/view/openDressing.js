@@ -222,7 +222,9 @@ function blockBar(D, a, b, half, gold, col) {       // a straight bar from a to 
 }
 // a map's own dressing kit (themes: dressing.kit, baked models): when set, the desert's cacti, dead trees, pots, spires and bones are drawn as the map's own props instead, picked by place
 let KIT = null;
-export function setDressKit(list, sites) { KIT = list && list.length ? list : null; SITES = sites && sites.length ? sites : null; }
+const NATURAL = /boulder|palm|tree|skull|ribs|pine|shards|mushroom|mangrove|reeds|toadstool|lily|bog-log|heap|fulgurite|prism|glass-wave|cairn|strike|pod|vent|bones/;
+let KNAT = null, KMADE = null;
+export function setDressKit(list, sites) { KIT = list && list.length ? list : null; KNAT = KIT ? KIT.filter(k => !k.id || NATURAL.test(k.id)) : null; KMADE = KIT ? KIT.filter(k => k.id && !NATURAL.test(k.id)) : null; if (KNAT && !KNAT.length) KNAT = KIT; SITES = sites && sites.length ? sites : null; }
 let SITES = null;
 // the map's riding pieces (the baked park kit, p-quarter, p-kicker-card, p-ledge, p-rail): each is stretched onto the sim's own piece (its length, width and height), so what you see is what you ride
 let PARK = null;
@@ -241,7 +243,7 @@ export function setDressPalette(G) { PAL = G ? [G.lee, G.tintA, G.lit] : null; }
 export function themeCol(c) { if (!PAL) return c; const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255, l = (0.3 * r + 0.55 * g + 0.15 * b) / 255, mx = Math.max(r, g, b), sat = mx ? (mx - Math.min(r, g, b)) / mx : 0;
   const t = l < 0.5 ? mixc(PAL[0], PAL[1], l * 2) : mixc(PAL[1], PAL[2], (l - 0.5) * 2); return mixc(c, t, 0.85 - 0.35 * sat); }
 function themeCols(col, from, skip) { for (let i = from; i < col.length; i += 3) { if (skip.some(s => i >= s[0] && i < s[1])) continue; const c = themeCol((Math.round(col[i] * 255) << 16) | (Math.round(col[i + 1] * 255) << 8) | Math.round(col[i + 2] * 255)); col[i] = ((c >> 16) & 255) / 255; col[i + 1] = ((c >> 8) & 255) / 255; col[i + 2] = (c & 255) / 255; } }
-const kitAt = (x, z, salt) => KIT[(((Math.imul((x * 10) | 0, 73856093) ^ Math.imul((z * 10) | 0, 19349663) ^ salt) >>> 0) % KIT.length)];
+const kitAt = (x, z, salt) => KNAT[(((Math.imul((x * 10) | 0, 73856093) ^ Math.imul((z * 10) | 0, 19349663) ^ salt) >>> 0) % KNAT.length)];       // scattered props are the natural ones only (rocks, trees, bones), in the groves the map lays
 function kitProp(D, x, y, z, salt, placed) { if (placed) { for (let i = 0; i < placed.length; i += 2) { const dx = placed[i] - x, dz = placed[i + 1] - z; if (dx * dx + dz * dz < 36) return; } placed.push(x, z); } const k = kitAt(x, z, salt); D.addModel(k.geo, x, y - 0.1, z, ((x * 7.31 + z * 3.17) % 6.283), k.s || 1); }       // props of the kit stand at least 6 m apart, so none grows out of another
 export function addDressing(D, map, ok) {
   D.plain = true;       // flat clean faces: no per-triangle colour jitter on built pieces
@@ -277,7 +279,8 @@ export function addDressing(D, map, ok) {
   for (const q of d.lips || []) if (yes(q[0], q[2])) { rod(D, [q[0], q[1] - 0.1, q[2]], [q[3], q[4] - 0.1, q[5]], 0.45, 0.45, 6, [0x5a4030, 0x4a3426], true, true, 0); for (const [x, y, z] of [[q[0], q[1], q[2]], [q[3], q[4], q[5]]]) { frustum(D, x, y - 0.3, z, 0.8, 0.8, 0.4, 0.4, 10, 0.4, 0xe6dcc4, 0xf3ead6); for (const hb of [3.2, 6.4, 8.6]) rod(D, [x, y + hb, z], [x, y + hb + 0.5, z], 0.62, 0.55, 8, [0xe0b24e, 0xc9a24a], true, true, 0); frustum(D, x, y + 9.6, z, 0.45, 0.45, 0.05, 0.05, 1.6, 0.8, 0xffd56a); } }       // a great drop's lip: a dark carved edge across it and a marker stone at each end
   for (const q of d.cards || []) if (yes(q[0], q[2])) stoneCard(D, q[0], q[1], q[2], q[3], q[4]);
   for (const q of d.cracks || []) if (yes(q[0], q[1])) crack(D, map, q);
-  if (KIT) { const placed = [], sites = map.sites || [], free = (x, z) => yes(x, z) && !sites.some(st => (st.x - x) * (st.x - x) + (st.z - z) * (st.z - z) < (st.R + 3) * (st.R + 3)); for (const q of d.logs || []) placed.push((q[0] + q[3]) / 2, (q[2] + q[5]) / 2); for (const q of d.dead || []) if (free(q[0], q[2])) kitProp(D, q[0], q[1], q[2], 2, placed); for (const q of d.cacti || []) if (free(q[0], q[2])) kitProp(D, q[0], q[1], q[2], 1, placed); }       // none inside a structure's ground either       // the map's own props
+  if (KIT) { const placed = [], sites = map.sites || [], free = (x, z) => yes(x, z) && !sites.some(st => (st.x - x) * (st.x - x) + (st.z - z) * (st.z - z) < (st.R + 3) * (st.R + 3)); for (const q of d.logs || []) placed.push((q[0] + q[3]) / 2, (q[2] + q[5]) / 2); for (const q of d.dead || []) if (free(q[0], q[2])) kitProp(D, q[0], q[1], q[2], 2, placed); for (const q of d.cacti || []) if (free(q[0], q[2])) kitProp(D, q[0], q[1], q[2], 1, placed);
+    if (KMADE && KMADE.length) for (const q of d.camps || []) if (free(q[0], q[2])) { const k = KMADE[(q[4] * 4 + q[5]) % KMADE.length]; D.addModel(k.geo, q[0], q[1] - 0.1, q[2], q[3], 1); } }       // a camp: made props on an arc, each facing the centre       // none inside a structure's ground either       // the map's own props
   else { for (const q of d.cacti || []) if (yes(q[0], q[2])) cactus(D, q[0], q[1], q[2], q[3], q[4], q[5]);
   for (const q of d.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], false); }
   for (const q of d.logs || []) if (yes(q[0], q[2])) log(D, map, q);

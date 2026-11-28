@@ -58,9 +58,12 @@ function duck(dB, a, r) { const g = audio.duck.gain, n = audio.ctx.currentTime; 
 export async function setMusic(code, time) {
   if (!audio.ctx) return; const key = code + '_' + time; if (audio.music && audio.music.key === key) return; stopMusic();
   const M = audio.music = { key, layers: {} }, files = ['A', 'B', 'C', 'D', 'E'].map(l => key + '_' + l), bufs = await Promise.all(files.map(f => load(f)));
-  if (audio.music !== M) return; const at = audio.ctx.currentTime + 0.1;
+  if (audio.music !== M) return; const at = audio.ctx.currentTime + 0.1; M.t0 = at;
   files.forEach((f, i) => { const b = bufs[i]; if (!b) return; const s = audio.ctx.createBufferSource(), g = audio.ctx.createGain(); s.buffer = b; s.loop = true; g.gain.value = i === 0 ? 1 : 0; s.connect(g); g.connect(audio.bus.music); s.start(at); M.layers['ABCDE'[i]] = { s, g }; });
 }
+// the beat clock of the playing bed (beats.json: bpm and first downbeat), for everything that moves with the music; with no music yet it runs at 100 bpm so the look never freezes.
+// ph: 0..1 through the beat, pulse: 1 on the beat falling to 0, bar: which beat of four
+export function beat() { const M = audio.music; let t = performance.now() / 1000, bpm = 100; if (M && audio.ctx && M.t0 !== undefined) { const B = audio.beats[M.key + '_A'] || audio.beats[M.key]; bpm = (B && B.bpm) || 100; t = audio.ctx.currentTime - M.t0 - ((B && B.firstDownbeat) || 0); } if (bpm < 80) bpm *= 2; const b = t * bpm / 60, ph = ((b % 1) + 1) % 1; return { ph, pulse: Math.exp(-ph * 4.5), bar: ((Math.floor(b) % 4) + 4) % 4, bpm }; }
 export function stopMusic() { const M = audio.music; if (!M) return; for (const k in M.layers) { try { M.layers[k].s.stop(); } catch (e) { /* stopped */ } } audio.music = null; }
 export function musicTier(t, danger) { const M = audio.music; if (!M || !audio.ctx) return; const n = audio.ctx.currentTime; const want = { A: 1, B: t >= 1 ? 1 : 0, C: t >= 2 ? 1 : 0, D: danger ? 1 : 0, E: t >= 4 ? 1 : 0 }; for (const k in M.layers) M.layers[k].g.gain.setTargetAtTime(want[k], n, 0.8); }
 export async function setAmbience(code) { if (!audio.ctx) return; if (audio.amb && audio.amb.code === code) return; if (audio.amb) { try { audio.amb.s.stop(); } catch (e) { /* stopped */ } } const b = await load(code); if (!b) return; const s = audio.ctx.createBufferSource(); s.buffer = b; s.loop = true; s.connect(audio.bus.ambience); s.start(); audio.amb = { code, s }; }

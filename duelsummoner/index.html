@@ -14,6 +14,11 @@
 /* 28 Nov: the Flow meter is one slim row, so it never reaches up to the rider; the trick line shows only while a combo runs */
 #rideHud { bottom: calc(112px + env(safe-area-inset-bottom)); padding: 5px 14px; } #rhFlow { flex-direction: row; gap: 10px; min-width: 0; } #rhFlow b { font-size: 28px; } #rhFlow .segs { margin-top: 0; } #rhRight { min-width: 0; } #rhRight:not(:has(#rhCombo:not(:empty), #rhBank:not(:empty))) { display: none; }
 #offerScreen .card .cardArt[hidden] { display: none; }
+/* the beat look: the HUD's gold edges breathe with the music (--beat runs 1 on the beat down to 0); a glow only, nothing moves or flashes */
+#rideHud.on, #zones .zone.full, #topright, #topleft { box-shadow: 0 0 calc(4px + 14px * var(--beat, 0)) rgba(255, 210, 63, calc(0.10 + 0.32 * var(--beat, 0))); }
+#rhFlow b { text-shadow: 0 0 calc(4px + 12px * var(--beat, 0)) rgba(255, 210, 63, calc(0.3 + 0.5 * var(--beat, 0))) !important; }
+/* HUD words large enough to read on a PC screen */
+@media (min-width: 1400px) { #topleft, #topright { transform: scale(1.25); } #topleft { transform-origin: top left; } #topright { transform-origin: top right; } }
 @media (max-width: 600px) { #rideHud { gap: 10px; padding: 6px 12px; } #rhFlow { min-width: 70px; } #rhFlow b { font-size: 34px; } #rhRight { min-width: 150px; max-width: 58vw; } #rhCombo { font-size: 14px; } }
 #banner { font-size: clamp(13px, 2vh, 22px) !important; padding: 5px 30px !important; max-height: 2.8em !important; } @media (orientation: landscape) { #banner { top: 58px !important; } body.bossOn #banner { top: 104px !important; } } body.bannerOn #rideHint { display: none !important; } @media (max-width: 600px) { #hint { display: none !important; } }       /* one banner at a time, small, top centre; the ride hint steps aside while it shows */
 #stakes { text-align: right; font-size: 12px; letter-spacing: 0.06em; color: #f3c27a; } #stakes:empty { display: none; } #stakes.hi { color: #ffd23f; } #stakes.max { color: #ff9a3c; }
