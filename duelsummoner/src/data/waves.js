@@ -8,9 +8,10 @@ export const RUN = {
   // from this second on, each spawn rolls these chances in order; whatever is left over is a Husk
   mix: [
     { from: 0,   chance: {} },
-    { from: 45,  chance: { scarab: 0.06 } },                                 // flyers from 0:45 so roofs are not safe
-    { from: 60,  chance: { scarab: 0.06, runner: 0.25 } },
-    { from: 120, chance: { scarab: 0.06, runner: 0.25, seer: 0.06 } },
+    { from: 15,  chance: { runner: 0.2 } },                                  // a second kind inside the first quarter minute, so the horde is never one shape (owner's playtest, 27 Nov)
+    { from: 30,  chance: { scarab: 0.08, runner: 0.25 } },                   // flyers from 0:30 so roofs are not safe
+    { from: 75,  chance: { scarab: 0.08, runner: 0.25, seer: 0.06 } },
+    { from: 150, chance: { scarab: 0.1, runner: 0.24, seer: 0.06, bloat: 0.06 } },
     { from: 300, chance: { scarab: 0.12, runner: 0.22, seer: 0.06, bloat: 0.08 } }
   ],
   caps: { seer: 4, bloat: 6, golem: 3 },                                      // most of each kind alive at once
