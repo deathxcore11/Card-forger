@@ -1,4 +1,5 @@
 // Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
+import { audio, initAudio, setVolumes, play, setMusic, setAmbience, musicTier, carve, stopCarve, preload } from './view/audio.js';
 import { themeFor } from './data/themes.js';
 import { setGroundTheme } from './view/openMesh.js';
 import { addFarSilhouettes } from './view/farsil.js';
@@ -165,7 +166,7 @@ function syncMap() {                                                       // th
   if (game.map.key === viewMapKey) return; viewMapKey = game.map.key;
   if (mapMesh) { scene.remove(mapMesh); mapMesh.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
   let look = lookFor(game.mode === 'classic' ? 0 : game.stage || 0);
-  if (game.map.big) { const th = curTheme = themeFor(game.opts.theme, game.stage || 0), N = th.now; setGroundTheme(th); look = Object.assign({}, lookFor(0), { name: th.id + '-' + th.time, sky: N.sky, fogNear: N.fog[0], fogFar: N.fog[1], dome: N.dome, actor: N.actor }); sun.color.setHex(N.sun.color); sun.intensity = N.sun.k; sun.position.set(60, 20 + 140 * N.sun.elev, 30); hemi.color.setHex(N.hemi[0]); hemi.groundColor.setHex(N.hemi[1]); hemi.intensity = N.hemi[2]; }       // the map theme and its time of day (src/data/themes.js): stage 1 morning, 2 evening, 3 night
+  if (game.map.big) { const th = curTheme = themeFor(game.opts.theme, game.stage || 0), N = th.now; setGroundTheme(th); setMusic(th.music, th.time); setAmbience(th.ambience + '_' + th.time.toUpperCase()); look = Object.assign({}, lookFor(0), { name: th.id + '-' + th.time, sky: N.sky, fogNear: N.fog[0], fogFar: N.fog[1], dome: N.dome, actor: N.actor }); sun.color.setHex(N.sun.color); sun.intensity = N.sun.k; sun.position.set(60, 20 + 140 * N.sun.elev, 30); hemi.color.setHex(N.hemi[0]); hemi.groundColor.setHex(N.hemi[1]); hemi.intensity = N.hemi[2]; }       // the map theme and its time of day (src/data/themes.js): stage 1 morning, 2 evening, 3 night
   applyStageLook(look);       // the stage's palette: ground, rim, sky and fog, seal
   mapMesh = buildMapMesh(game.map, look); scene.add(mapMesh);
   if (game.map.v2) input.yaw = chooseStartYaw(game.map);       // a designed map: the camera starts turned toward the best view from the spawn (open ground, a landmark or the gate, two tiers; never a wall within 40 m)
@@ -184,6 +185,7 @@ const MENU_SEED = +((/[?&]menuseed=(\d+)/.exec(location.search) || [])[1] || 475
 const game = new Game(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : MENU_SEED, { duelist, mode: 'run', world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: 'open', theme: (/[?&](?:map|theme)=([a-z]+)/.exec(location.search) || [])[1] || 'desert', card: !/[?&]foot=1/.test(location.search), flow: /[?&]flow=1/.test(location.search) ? 'v1' : 'v2', arch: RUN_ARCH || MENU_ARCH, gym: /[?&]gym=1/.test(location.search) });
 const host = createBrowserHost(canvas);
 const save = loadSave(host);
+initAudio(save.settings).then(ok => { if (ok) { const warm = () => preload(['RD03', 'RD07', 'RD10', 'RD11', 'RD05', 'RD12', 'SF121', 'SF012', 'SF080', 'SF081', 'SF014', 'SF104', 'RD08', 'RD09']); window.addEventListener('pointerdown', warm, { once: true }); window.addEventListener('keydown', warm, { once: true }); } });       // the sound pack (silent without it)
 const fx = new Fx(scene, save.settings);
 const actors = new Actors(scene, assets, fx); actors.ownCtx = { camera, renderer };
 const ambient = new Ambient(scene, assets.butterflyPrep);
@@ -200,6 +202,7 @@ let pendingUse = false, MODE = 'start', last = 0, frozen = false, holdT = 0, las
 
 // settings: reduce motion turns off shake, hit-stop, flashes, the boss zoom and the follow lag
 function applySettings() {
+  setVolumes(save.settings || {});
   const s = save.settings; document.body.classList.toggle('rm', !!s.reduceMotion); chase.lag = !s.reduceMotion;
   { const fr = s.frameRate !== undefined ? s.frameRate : defaultFor('frameRate', deviceClass()); fpsCap = [30, 60, 90, 120].includes(+fr) ? +fr : 0; }       // Settings > Frame rate; 'match' (the PC default) runs at the display's own rate: 120 or 144 Hz screens are never held at 60 for (const el of document.querySelectorAll('.setFps')) el.value = fpsCap;
   fovSetting = Math.max(80, Math.min(115, +s.fov || 100)); fitFov(); for (const el of document.querySelectorAll('.setFov')) el.value = fovSetting; for (const el of document.querySelectorAll('.setFovV')) el.textContent = fovSetting;
@@ -386,7 +389,21 @@ function countUp(id, to) {
 const KCOL = KIND_LIST.map(k => k.color), PCOL = [0x46e0ff, 0xe0b765, 0xff5a7a, ...Array.from({ length: 9 }, (_, k) => POWERUPS[k + 3].color)];
 let lastBlockTick = 0;
 const groundY = (x, z) => Math.min(heightAt(x, z), 40);       // the one ground height for marks drawn on the map (view only: sim events carry no y)
+// ---- sound: the game's events to the pack's cues (codes from design/art-book/audio.mjs and the pack's README; the mix rules are in mix.json) ----
+const SND = { ollie: 'RD03', bail: 'RD11', grind: 'RD05', ride: 'RD01', perfectpop: 'RD04', flowup: 'RD09', banked: 'RD08', levelup: 'SF104', elitefall: 'SF041', bossphase: 'SF075', gatefight: 'SF060', gatedown: 'SF076', reaction: 'SF037', stopper: 'SF071', brace: 'SF123', bracebreak: 'SF037', stagger: 'SF046', surge: 'SF137', descent: 'SF094', special: 'SF110', slamdrop: 'RD10', hurt: 'SF014', fusionchest: 'SF127', trophy: 'SF087' };
+const pk = { n: 0, t: 0, coin: 0, ct: 0 };
+function soundFor(type, a, b, c, data) {
+  if (!audio.ok || !audio.ctx) return; const now = performance.now() / 1000;
+  if (type === 'land') { play(c > 9 ? 'RD10' : 'RD07'); return; }
+  if (type === 'kill') { play('SF121', { gain: -2 }); return; }
+  if (type === 'hit') { play('SF012', { gain: -6 }); return; }
+  if (type === 'trick' && /flip|Shuvit|Impossible/i.test(data || '')) { play('RD12'); return; }
+  if (type === 'pickup') { if (a === 0) { pk.n = now - pk.t < 0.6 ? pk.n + 1 : 1; pk.t = now; play('SF080', pk.n <= 8 ? { take: pk.n, rate: 1 } : { take: 7 + (pk.n % 2), gain: -4, rate: 1 }); } else if (a === 1) { pk.coin = now - pk.ct < 0.6 ? pk.coin + 1 : 0; pk.ct = now; play('SF081', { rate: Math.pow(2, Math.min(12, pk.coin) / 12) }); } else play('SF082'); return; }       // the XP ladder climbs one note a gem, coins a semitone a coin
+  if (type === 'stage') { play('MP01'); return; }
+  const code = SND[type]; if (code) play(code);
+}
 function onEvent(type, a, b, c, data) {
+  soundFor(type, a, b, c, data);
   if (actors.rig) { if (type === 'hurt' && !c) actors.rig.overlay('hurt'); else if (type === 'levelup') actors.rig.once('level_up'); else if (type === 'fusionchest') actors.rig.once('fusion'); }      // one-shot poses, played only if the clip exists
   if (type === 'bosscard') { const el = $('bosscard'); if (el) { el.textContent = data; el.classList.add('on'); document.body.classList.add('cardon'); clearTimeout(el._t); el._t = setTimeout(() => { el.classList.remove('on'); document.body.classList.remove('cardon'); }, 2500); } }       // the stage boss's name, in the top third, 2.5 s
   else if (type === 'bannerdrop') dropBanner(data);
@@ -503,6 +520,7 @@ function braceTick() { const e = game.en; if (!braceFx.mat) { braceFx.mat = new 
   let n = 0; const now = performance.now() / 1000; if (game.map && game.map.big) for (let i = 0; i < e.max && n < 8; i++) { if (!e.alive[i] || !e.brace || e.brace[i] === 0) continue; const [s, r] = braceFx.pool[n++], tell = e.brace[i] > 0, k = tell ? 0.85 + 0.25 * Math.sin(now * 18) : 1; s.visible = r.visible = true; s.position.set(e.x[i], e.y[i] + 1.4, e.z[i]); s.scale.set(1.9 * k, 2.1 * k, 1.9 * k); r.position.set(e.x[i], groundY(e.x[i], e.z[i]) + 0.12, e.z[i]); r.scale.setScalar(k); }
   for (let k = n; k < 8; k++) { braceFx.pool[k][0].visible = braceFx.pool[k][1].visible = false; } }
 function rideJuice(dt) {
+  if (audio.ctx && game.p && MODE === 'play') { if (curTheme && (!audio.music || audio.music.key !== curTheme.music + '_' + curTheme.time)) { setMusic(curTheme.music, curTheme.time); setAmbience(curTheme.ambience + '_' + curTheme.time.toUpperCase()); } const r0 = game.p.ride; if (r0 && r0.on) carve(curTheme && curTheme.ground.material === 'ash' ? 'ash' : curTheme && curTheme.ground.material === 'snow' ? 'snow' : 'sand', Math.min(1, r0.speed / 30), r0.pslide ? 1 : 0, !game.p.grounded); else stopCarve(); if (game.rflow) musicTier(Math.max(0, game.rflow.step - 1), game.sp.some(s => s.alive && s.role === 'gate') || game.p.hp < game.p.maxHp * 0.3); }       // the card's hiss and the music's tier
   const r = game.p && game.p.ride, p = game.p; if (!r || MODE !== 'play') return;
   if (curTheme && Math.random() < dt * 30) { const W = curTheme.wind, a = Math.random() * 6.283, d = 4 + Math.random() * 14, x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d, y0 = groundY(x, z); if (W.drift === 'embers') fx.spark(x, y0 + 0.3 + Math.random() * 3, z, (Math.random() - 0.5) * 1.5, 1.2 + Math.random() * 1.5, (Math.random() - 0.5) * 1.5, Math.random() < 0.5 ? 0xff7a2a : 0xffc060, 0.07, 1.6); else fx.spark(x, y0 + 0.12, z, 3 * W.strength, 0.05, 1.5 * W.strength, curTheme.now.groundTint && curTheme.time === 'night' ? 0x8a9ad0 : 0xf2d9a8, 0.06, 0.9); }       // what the wind carries over the ground (the theme's drift): sand streams, or rising embers
   let turn = 0; if (r.on && rj.h !== null) { let d = r.heading - rj.h; d = Math.atan2(Math.sin(d), Math.cos(d)); turn = d / Math.max(dt, 1e-3); } rj.h = r.on ? r.heading : null;

@@ -35,7 +35,7 @@ export const THEMES = {
     far: ['cardSpire', 'colossusHead', 'sunkenGate', 'ribcage'], farColours: { sun: 0x4a3a3a, shade: 0x1e1418, dark: 0xff5a20 },
     dressing: { density: 0.25, plants: 'charred' },
     enemies: { swarm: ['Cinder Husk', 'Ember Mite'], elite: ['Slag Golem', 'Ash Caster'], ace: ['Ace Cinder Husk'], bosses: ['The Forge Warden'], night: { swarm: ['Coal Wraith'] }, roles: { 'Ember Mite': 'interceptor', 'Coal Wraith': 'blocker' } },
-    music: 'MU04', ambience: 'AM_ASH', sting: 'MP02',
+    music: 'MU04', ambience: 'AM_ASHEN', sting: 'MP02',
     times: {
       morning: { sun: { color: 0xffb890, k: 0.5, elev: 0.25 }, hemi: [0xb0a0a0, 0x3a2a2a, 0.7], sky: [0x6a6a78, 0xc8a090, 0x7a6a66], fog: [50, 220],
         dome: { top: 0x5a5a6a, mid: 0x8a7a80, hor: 0xc8a090, gnd: 0x6a5a56, cldL: 0xa89898, cldS: 0x4a4048, cover: 0.85, sun: true, shade: 0.35 }, actor: { lift: [0.24, 0.16, 0.14], key: [0.18, 0.12, 0.12] }, groundTint: null },
