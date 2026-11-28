@@ -206,7 +206,18 @@ function blockBar(D, a, b, half, gold, col) {       // a straight bar from a to 
 // a map's own dressing kit (themes: dressing.kit, baked models): when set, the desert's cacti, dead trees, pots, spires and bones are drawn as the map's own props instead, picked by place
 let KIT = null;
 export function setDressKit(list, sites) { KIT = list && list.length ? list : null; SITES = sites && sites.length ? sites : null; }
-let SITES = null;       // the map's structure models, by site index (gen W.sites)
+let SITES = null;
+// the map's riding pieces (the baked park kit, p-quarter, p-kicker-card, p-ledge, p-rail): each is stretched onto the sim's own piece (its length, width and height), so what you see is what you ride
+let PARK = null;
+export function setParkKit(geos) { PARK = null; if (!geos) return; const out = {};
+  for (const k in geos) { const g = geos[k]; if (!g) continue; const P = g.attributes.position.array; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9; for (let i = 0; i < P.length; i += 3) { x0 = Math.min(x0, P[i]); x1 = Math.max(x1, P[i]); y0 = Math.min(y0, P[i + 1]); y1 = Math.max(y1, P[i + 1]); z0 = Math.min(z0, P[i + 2]); z1 = Math.max(z1, P[i + 2]); }
+    const G = g.clone(), Q = G.attributes.position.array, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2; let hz = 0, hn = 0; for (let i = 0; i < Q.length; i += 3) { Q[i] -= cx; Q[i + 1] -= y0; Q[i + 2] -= cz; if (Q[i + 1] > (y1 - y0) * 0.8) { hz += Q[i + 2]; hn++; } }
+    out[k] = { geo: G, w: x1 - x0, h: y1 - y0, d: z1 - z0, hi: hn && hz / hn < 0 ? -1 : 1 }; }       // centred, standing on y 0; hi: which local z end is the tall one
+  PARK = Object.keys(out).length ? out : null; }
+// a ramp rising along (ux, uz) from its low edge at (x, z): length len, width w, height h
+function parkRamp(D, M, x, y, z, ux, uz, len, w, h) { const yaw = M.hi > 0 ? Math.atan2(ux, uz) : Math.atan2(-ux, -uz); D.addModel(M.geo, x + ux * len / 2, y, z + uz * len / 2, yaw, [w / M.w, h / M.h, len / M.d]); }
+// a bar from a to b (a ledge or a rail) whose top is h above the lower end's ground
+function parkBar(D, M, ax, az, bx, bz, y, h, thick) { const dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz) || 1; D.addModel(M.geo, (ax + bx) / 2, y, (az + bz) / 2, Math.atan2(-dz, dx), [L / M.w, h / M.h, thick ? thick / M.d : 1]); }       // the map's structure models, by site index (gen W.sites)
 // a themed map's palette: the built pieces (mesas, gate, rails, stalls, far rocks) were drawn in desert colours; each colour keeps its brightness and moves onto the map's ground ramp (lee, mid, lit), saturated accents a little less
 let PAL = null;
 export function setDressPalette(G) { PAL = G ? [G.lee, G.tintA, G.lit] : null; }
@@ -218,7 +229,12 @@ function kitProp(D, x, y, z, salt) { const k = kitAt(x, z, salt); D.addModel(k.g
 export function addDressing(D, map, ok) {
   D.plain = true;       // flat clean faces: no per-triangle colour jitter on built pieces
   const c0 = D.col ? D.col.length : 0, skip = []; if (PAL && D.col) { D.addModel = function (...a) { const s = this.col.length; Object.getPrototypeOf(this).addModel.apply(this, a); skip.push([s, this.col.length]); }; }       // kit models keep their own colours
-  const d = map.dress || {}, yes = ok || (() => true);
+  const d0 = map.dress || {}, yes = ok || (() => true), d = PARK ? Object.assign({}, d0, { kickers: PARK.kicker ? [] : d0.kickers, quarters: PARK.quarter ? [] : d0.quarters, ledges: PARK.ledge ? [] : d0.ledges, poles: PARK.rail ? [] : d0.poles }) : d0;
+  if (PARK) { const P = PARK;
+    if (P.quarter) for (const q of d0.quarters || []) if (yes(q[0], q[2])) parkRamp(D, P.quarter, q[0], groundAt(map, q[0], q[2]) - 0.2, q[2], q[3], q[4], 3.2, q[5], 3.4);
+    if (P.kicker) for (const q of d0.kickers || []) if (yes(q[0], q[2])) { const [x, y, z, ux, uz, len, w, h] = q; parkRamp(D, P.kicker, x - ux * len / 2, y - 0.2, z - uz * len / 2, ux, uz, len, w, h + 0.2); }
+    if (P.ledge) for (const q of d0.ledges || []) if (yes(q[0], q[2])) { const g = Math.min(q[1], q[4]) - 0.3; parkBar(D, P.ledge, q[0], q[2], q[3], q[5], g, (q[1] + q[4]) / 2 + q[6] - g, null); }
+    if (P.rail) for (const q of d0.poles || []) if (yes(q[0], q[2])) { const g = Math.min(groundAt(map, q[0], q[2]), groundAt(map, q[3], q[5])) - 0.2; parkBar(D, P.rail, q[0], q[2], q[3], q[5], g, (q[1] + q[4]) / 2 + 0.05 - g, null); } }
   for (const q of d.pipes || []) if (yes(q[0], q[2])) pipeHoop(D, q);
   for (const q of d.rings || []) if (yes(q[0][0], q[0][2])) ringRail(D, q);
   for (const q of d.arches || []) if (yes(q[0], q[2])) arch(D, q);
@@ -257,7 +273,7 @@ export function addDressing(D, map, ok) {
   for (const q of f.rocks || []) if (yes(q[0], q[2])) farRock(D, q);
   for (const q of f.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], true);
   for (const q of f.ruins || []) if (yes(q[0], q[2])) farRuin(D, q);
-  if (SITES) for (const s of map.sites || []) if (yes(s.x, s.z)) { const k = SITES[s.i % SITES.length]; if (k) D.addModel(k.geo, s.x, groundAt(map, s.x, s.z) - 0.25, s.z, s.yaw, 1); }       // each structure stands on its pad, sunk 25 cm so no gap shows under it
+  if (SITES) for (const s of map.sites || []) if (yes(s.x, s.z)) { const k = SITES[(s.k !== undefined ? s.k : s.i) % SITES.length]; if (k) D.addModel(k.geo, s.x, groundAt(map, s.x, s.z) - 0.25, s.z, s.yaw, 1); }       // each structure stands on its pad, sunk 25 cm so no gap shows under it
   if (PAL && D.col) { delete D.addModel; themeCols(D.col, c0, skip); }
 }
 void vnoise;

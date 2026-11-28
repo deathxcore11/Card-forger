@@ -10,9 +10,10 @@ export const THEMES = {
     wind: { strength: 0.6, ripple: 1, drift: 'sand' },
     landform: { style: 'dunes', ridgeScale: 1, slipFace: 1, riverbeds: 3, basinKillBowl: true },
     edge: { range: 'mesas', bank: 12 },
-    setpieces: ['sunken-aqueduct', 'card-tomb-bowl', 'great-spine', 'ruined-plaza', 'spire-oasis', 'fallen-beam-riverbed', 'sunken-gate', 'stepped-mesa-climb', 'card-slalom', 'seal-shrine-ring', 'buried-arena', 'obelisk-field', 'caravan-wreck', 'lighthouse-of-cards', 'duelists-tomb'],
-    far: ['cardSpire', 'ribcage', 'sunkenGate', 'colossusHead', 'mesaCity', 'aqueduct'], farColours: { sun: 0xc9925e, shade: 0x7d5a78, dark: 0x5e4560 },
-    dressing: { density: 0.3, plants: 'warm' },       // about 70% less clutter than before (world v3), plants tinted to the warm and violet palette
+    kitPrefix: '', sitesPerSeed: 8,       // the desert's baked kit has no map prefix (p-quarter, k-great-spine, f-range, w-palm)
+    setpieces: ['k-sunken-aqueduct', 'k-card-tomb-bowl', 'k-great-spine', 'k-ruined-plaza', 'k-spire-oasis', 'k-beam-riverbed', 'k-sunken-gate', 'k-stepped-mesa', 'k-card-slalom', 'k-seal-shrine', 'k-buried-arena', 'k-obelisk-field', 'k-caravan-wreck', 'k-card-lighthouse', 'k-duelists-tomb'], central: 'k-duelists-tomb',
+    far: ['f-spire', 'f-ribcage', 'f-gate', 'f-head', 'f-mesa-city', 'f-aqueduct'], farRange: 'f-range', farColours: { sun: 0xc9925e, shade: 0x7d5a78, dark: 0x5e4560 },
+    dressing: { density: 0.3, plants: 'warm', kit: ['w-boulder-a', 'w-boulder-b', 'w-boulder-c', 'w-palm', 'w-palm-pair', 'w-deadtree', 'w-column', 'w-column-broken', 'w-wall', 'w-arch', 'w-obelisk', 'w-skull', 'w-ribs', 'w-tent', 'w-cart', 'w-well', 'w-sarcophagus', 'w-banner', 'w-statue-feet'] },       // about 70% less clutter than before (world v3), plants tinted to the warm and violet palette
     enemies: { swarm: ['Dust Husk', 'Sand Skitter', 'Shard Bat'], elite: ['Dune Golem', 'Glass Scorpion', 'Mirage Caster'], ace: ['Ace Dust Husk'], bosses: ['The Stone Arbiter'],
       night: { swarm: ['Grave Husk', 'Sand Wraith'], elite: ['Lantern Scorpion'] }, roles: { 'Sand Skitter': 'interceptor', 'Sand Wraith': 'blocker', 'Glass Scorpion': 'shooter' } },
     music: 'MU03', ambience: 'AM_DESERT', sting: 'MP01',
