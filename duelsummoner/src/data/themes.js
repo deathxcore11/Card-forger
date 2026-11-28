@@ -55,3 +55,6 @@ export function themeFor(mapId, stage) {
   const M = THEMES[mapId] || THEMES.desert, time = TIMES[Math.max(0, Math.min(2, stage | 0))], T = M.times[time];
   return Object.assign({}, M, { time, now: T, cast: T.swap && T.swap.swarm === 'night' ? Object.assign({}, M.enemies, M.enemies.night) : M.enemies });
 }
+
+// the order a map's structures are dealt to sites: the central one first (the generator's site 0), then the rest as listed
+export const kitOrder = T => (T && T.setpieces ? [T.central, ...T.setpieces.filter(k => k !== T.central)].filter(Boolean) : []);

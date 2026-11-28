@@ -273,7 +273,7 @@ export function addDressing(D, map, ok) {
   for (const q of f.rocks || []) if (yes(q[0], q[2])) farRock(D, q);
   for (const q of f.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], true);
   for (const q of f.ruins || []) if (yes(q[0], q[2])) farRuin(D, q);
-  if (SITES) for (const s of map.sites || []) if (yes(s.x, s.z)) { const k = SITES[(s.k !== undefined ? s.k : s.i) % SITES.length]; if (k) D.addModel(k.geo, s.x, groundAt(map, s.x, s.z) - 0.25, s.z, s.yaw, 1); }       // each structure stands on its pad, sunk 25 cm so no gap shows under it
+  if (SITES) for (const s of map.sites || []) if (yes(s.x, s.z)) { const k = SITES[(s.k !== undefined ? s.k : s.i) % SITES.length]; if (k) D.addModel(k.geo, s.x, (s.y !== undefined ? s.y : groundAt(map, s.x, s.z)) - 0.25, s.z, s.yaw, 1); }       // each structure stands on its pad, sunk 25 cm so no gap shows under it
   if (PAL && D.col) { delete D.addModel; themeCols(D.col, c0, skip); }
 }
 void vnoise;
