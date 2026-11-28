@@ -64,6 +64,7 @@ import { showDeckBox, showLibrary } from './view/metaui.js';
 import { QUESTS } from './data/meta.js';
 import { Fx } from './view/fx.js';
 import { Juice } from './view/juice.js';
+import { smashProp } from './view/openDressing.js';
 import { initMenus } from './view/menus.js';
 import { bakeDuelist } from './view/portraits.js';
 import { initThumbs } from './view/thumbs.js';
@@ -416,6 +417,7 @@ function soundFor(type, a, b, c, data) {
   if (!audio.ok || !audio.ctx) return; const now = performance.now() / 1000;
   if (type === 'land') { play(c > 9 ? 'RD10' : 'RD07'); return; }
   if (type === 'kill') { play('SF121', { gain: -2 }); return; }
+  if (type === 'smash') { play('RD10', { gain: -3 }); return; }
   if (type === 'hit') { play('SF012', { gain: -6 }); return; }
   if (type === 'trick' && /flip|Shuvit|Impossible/i.test(data || '')) { play('RD12'); return; }
   if (type === 'pickup') { if (a === 0) { pk.n = now - pk.t < 0.6 ? pk.n + 1 : 1; pk.t = now; play('SF080', pk.n <= 8 ? { take: pk.n, rate: 1 } : { take: 7 + (pk.n % 2), gain: -4, rate: 1 }); } else if (a === 1) { pk.coin = now - pk.ct < 0.6 ? pk.coin + 1 : 0; pk.ct = now; play('SF081', { rate: Math.pow(2, Math.min(12, pk.coin) / 12) }); } else play('SF082'); return; }       // the XP ladder climbs one note a gem, coins a semitone a coin
@@ -438,7 +440,7 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'block') { fx.burst(data.x, data.y, data.z, 5, 0xc8d0e0, 2.6, 1.5, 0.1, 0.22, 8); fx.ring(data.x, data.y, data.z, 0.7, 0xc8d0e0, 0.18); if (performance.now() - lastBlockTick > 90) { lastBlockTick = performance.now(); tone(150, 0.06, 0.05, 'square'); } }      // the Warden's shield took a hit: a small grey spark and a dull tick, nothing else
   else if (type === 'ace') { fx.ring(a, b, c, 4, 0xffd23f, 0.5); fx.moment('ace', 'C'); showBanner('An Ace approaches'); }
   else if (type === 'trophy') { fx.ring(a, b, c, 4.5, 0xffe9a0, 0.6); fx.burst(a, b + 1, c, 24, 0xffe9a0, 3, 6, 0.25, 0.9, 6); fx.moment('trophy', 'C'); }
-  else if (type === 'kill') { const KB = game.big ? 1.7 : 1; juice.kill(b, groundY(b, c) + 0.5, c, KCOL[a] || 0xc8a070); fx.burst(b, groundY(b, c) + 0.9, c, 4, KCOL[a] || 0xaaaaaa, 3.5 * KB, 4, 0.2, 0.35, 22); /* (fewer, smaller, quicker-falling kill bits: the floating grey squares in the owner's shot) */ if (KB > 1) fx.ring(b, groundY(b, c) + 0.3, c, 1.6, KCOL[a] || 0xaaaaaa, 0.22); if (!actors.corpse(a, b, c)) { actors.pop(a, b, c); fx.burst(b, groundY(b, c) + 0.3, c, 5, 0xd8c08a, 2.2, 1.2, 0.25, 0.35, 6); } }       // a quick pop, then sand puffs; the XP gem is already dropped by the sim at the same spot
+  else if (type === 'kill') { const KB = game.big ? 1.7 : 1; juice.kill(b, groundY(b, c) + 0.5, c, KCOL[a] || 0xc8a070); fx.burst(b, groundY(b, c) + 0.9, c, 4, KCOL[a] || 0xaaaaaa, 3.5 * KB, 4, 0.2, 0.35, 22); /* (fewer, smaller, quicker-falling kill bits: the floating grey squares in the owner's shot) */ if (KB > 1) fx.ring(b, groundY(b, c) + 0.3, c, 1.6, KCOL[a] || 0xaaaaaa, 0.22); if (!actors.corpse(a, b, c)) { actors.pop(a, b, c, ip.x, ip.z); fx.burst(b, groundY(b, c) + 0.3, c, 5, 0xd8c08a, 2.2, 1.2, 0.25, 0.35, 6); } }       // a quick pop, then sand puffs; the XP gem is already dropped by the sim at the same spot
   else if (type === 'elitefall') fx.hitstop(0.02);       // hit-stop scaled by impact (AI v1 feel table): an elite or Ace kill 0.02 s, a slam kill 0.04 s, a boss stagger 0.06 s, all under the stop budget
   else if (type === 'pickup') { fx.burst(ip.x, ip.y + 1.1, ip.z, 3, PCOL[a] || 0xffffff, 1.6, 2.5, 0.14, 0.35, 0); if (a >= 3) { fx.ring(ip.x, ip.y + 0.3, ip.z, 4.5, PCOL[a], 0.4); fx.burst(ip.x, ip.y + 1.2, ip.z, 16, PCOL[a], 4, 5, 0.22, 0.6, 6); if (a === 10) { fx.ring(ip.x, ip.y + 0.3, ip.z, 30, 0xfff2c0, 0.6); fx.shake(0.3); } } }       // a power-up reads at a glance: a ring and a burst in its own colour, a wide flash for the Seal Burst
   else if (type === 'hop') { if (!fx.rm_) tone(330 * Math.pow(1.07, Math.min(a, 10)), 0.05, 0.035, 'triangle'); }       // a rising tick for every chained slide hop
@@ -454,6 +456,8 @@ function onEvent(type, a, b, c, data) {
   else if (type === 'swipe') fx.shake(0.05);       // a Fusion's claws: the swipe is drawn by the sim's fan; a small kick
   else if (type === 'reaction') { const y = Math.min(heightAt(a, b), 40) + 2.6; fx.word(a, y, b, data || '', '#ffe9a8'); fx.burst(a, y - 1.2, b, 14, 0xfff0c0, 5, 4, 0.3, 0.5, 4); fx.shake(0.04); }       // a reaction: its name over the enemy, a spray of light
   else if (type === 'stopper') fx.shake(0.22);       // a show-stopper: one firm shake, inside the comfort limit, no strobe
+  else if (type === 'smash') { smashProp(b, c); const y = groundY(b, c), cols = a === 3 ? [0xd6b98a, 0x8a5a3a, 0xc9a24a] : [0x8f8372, 0x6a4a30, 0xe6dcc4]; for (const h of cols) juice.debris(b, y + 0.4, c, 7, h, 7, 0.44); juice.ring(b, y + 0.12, c, 2.8, null, 0xe8d8b0, 0.4); juice.flash(b, y + 1, c, 0xfff0d0, 3.2, 0.16); if ((b - ip.x) * (b - ip.x) + (c - ip.z) * (c - ip.z) < 200) fx.shake(0.1); }       // a prop smashed: it leaves the map in a burst of its own blocks, a dust ring and a kick
+  else if (type === 'slam') { const y = groundY(a, b); juice.debris(a, y + 0.6, b, 5, 0x8f8372, 5, 0.26); juice.flash(a, y + 0.9, b, 0xfff0d0, 2.4, 0.14); juice.ring(a, y + 0.12, b, 1.6, null, 0xe8d8b0, 0.25); }       // an enemy thrown into rock: chips and a thud
   else if (type === 'knock') { actors.throwEnemy(a, b, c); fx.shake(0.08); }       // a small enemy ridden through: thrown up and away in an arc       // a small enemy ridden through: thrown up and away
   else if (type === 'bail') { fx.shake(0.22); fx.burst(a, groundY(a, b) + 0.3, b, 16, 0xd9b872, 3, 2, 0.3, 0.6, 6); }
   else if (type === 'ollie') { schoolDid('ollie'); fx.burst(ip.x, ip.y + 0.1, ip.z, 10, 0xe2c48a, 2.4, 1.6, 0.24, 0.45, 6); }

@@ -10,6 +10,7 @@ import { CFG } from '../data/config.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { atan2, cos, sin } from './dmath.js';
 import { resolveColliders } from './colliders.js';
+import { smashProps } from './smash.js';
 import { explode, damageEnemy } from './combat.js';
 import { aiHit } from './enemies.js';
 import { breakVasesNear, rideShrineDone } from './world.js';
@@ -196,6 +197,7 @@ function step(g, p, r, dt) {
   }
   else if (blocked && p.grounded && r.speed > 10 && !(r.wallieT > g.t)) { r.wallieT = g.t + 1; p.grounded = false; p.vy = 6; r.airT = 0; r.lastLandVy = 0; r.speed *= 0.75; r.heading += r.heading > 0 ? -0.35 : 0.35; addTrick(g, r, 'Wallie', 150); g.emit('ollie', 2, 0, 0); }       // a mesa foot or a wall met at speed: the card pops up off it (a wallie) and turns away
   else if (blocked) { const fast = r.speed > 15; r.speed *= 0.5; if (!p.grounded && fast) { bail(g, r, 'wall'); } }       // only a fast crash into a wall in the air bails; a slow bump just stops the card
+  if (r.speed > 9) { const n = smashProps(g, p.x, p.z, CFG.player.radius + 0.3); for (let i = 0; i < n; i++) { r.speed *= 0.93; addTrick(g, r, 'Smash', POINTS.smash); } }       // at speed the card goes through a prop, not round it: a small price in speed, a trick in the line
   resolveColliders(g.colliders, p, CFG.player.radius);
   if (r.speed > 12) { const n = breakVasesNear(g, p.x, p.z, 1.6); for (let i = 0; i < n; i++) addTrick(g, r, 'Smash', POINTS.smash); }
   sealTouch(g, p, r); if (r.speed > 14) closeCall(g, p, r);

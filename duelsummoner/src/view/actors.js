@@ -208,17 +208,19 @@ export class Actors {
     if (P.length >= 48) P.shift(); P.push(c); return true;
   }
   // the quick death: scale up 15% in 0.08 s, then collapse to nothing by 0.25 s (the sand puffs come from main); drawn in the enemy's own instanced mesh from a pool of 64
-  pop(kind, x, z) {
+  pop(kind, x, z, fromX, fromZ) {
     const e = this.lastEn; if (!e || this.fx.rm_) return; let face = 0, size = 1, y = NaN; for (let i = 0; i < e.max; i++) if (!e.alive[i] && e.x[i] === x && e.z[i] === z && e.kind[i] === kind) { face = e.face[i]; size = e.size[i]; y = e.y[i]; break; } if (y !== y) return;
-    const P = this.pops || (this.pops = []); if (P.length >= 64) P.shift(); P.push({ kind, x, y, z, face, size, t: 0, seed: Math.random() });
+    const P = this.pops || (this.pops = []); if (P.length >= 64) P.shift(); let dx = x - (fromX === undefined ? x : fromX), dz = z - (fromZ === undefined ? z : fromZ); const l = Math.sqrt(dx * dx + dz * dz); if (l > 0.01) { dx /= l; dz /= l; } else { const a = Math.random() * 6.283; dx = Math.cos(a); dz = Math.sin(a); }
+    const sp = 6 + Math.random() * 6, side = (Math.random() - 0.5) * 5; P.push({ kind, x, y, z, face, size, t: 0, seed: Math.random(), vx: dx * sp - dz * side, vz: dz * sp + dx * side, vy: 5 + Math.random() * 4.5, oy: 0, rx: (Math.random() - 0.5) * 14, rz: (Math.random() - 0.5) * 14 });       // a body with weight: thrown away from the blow in an arc, tumbling, one bounce
   }
   _pops(dt, counts) {
     const P = this.pops; if (!P || !P.length) return; const d = this.d;
     for (let n = P.length - 1; n >= 0; n--) {
-      const c = P[n]; c.t += dt; if (c.t >= 0.25) { P.splice(n, 1); continue; }
+      const c = P[n]; c.t += dt; if (c.t >= 0.8) { P.splice(n, 1); continue; }
+      c.vy -= 24 * dt; c.x += c.vx * dt; c.z += c.vz * dt; c.oy += c.vy * dt; const gy = heightGround(c.x, c.z) - c.y; if (c.oy < gy) { c.oy = gy; if (c.vy < 0) { c.vy *= -0.4; c.vx *= 0.6; c.vz *= 0.6; if (!c.hit) { c.hit = true; this.fx.burst(c.x, c.y + c.oy + 0.2, c.z, 4, 0xd8c08a, 2.2, 1.2, 0.25, 0.35, 6); } } }
       const k = this.kinds[c.kind], K = k.K, idx = counts[c.kind]; if (idx >= CFG.enemy.max) continue;
-      const sc = K.id === 5 ? SC_SCARAB : K.scale, mg = c.size, f = c.t < 0.08 ? 1 + 0.15 * c.t / 0.08 : 1.15 * (1 - (c.t - 0.08) / 0.17);
-      d.position.set(c.x, c.y + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85), c.z); d.rotation.set(0, c.face, 0); d.scale.set(sc[0] * mg * f, sc[1] * mg * f, sc[2] * mg * f); d.updateMatrix();
+      const sc = K.id === 5 ? SC_SCARAB : K.scale, mg = c.size, f = c.t < 0.06 ? 1 + 0.15 * c.t / 0.06 : c.t < 0.62 ? 1.15 : 1.15 * (1 - (c.t - 0.62) / 0.18);
+      d.position.set(c.x, c.y + c.oy + (K.id === 3 ? 0.7 : K.id === 2 ? 1.2 : 0.85), c.z); d.rotation.set(c.rx * c.t, c.face, c.rz * c.t); d.scale.set(sc[0] * mg * f, sc[1] * mg * f, sc[2] * mg * f); d.updateMatrix();
       k.body.setMatrixAt(idx, d.matrix); k.body.setColorAt(idx, k.base);
       const o3 = idx * 4, fa = k.fxArr; fa[o3] = 0; fa[o3 + 1] = 0; fa[o3 + 2] = c.seed; fa[o3 + 3] = 0; k.fs += (idx + 1) * 3; k.cs += (idx + 1) * 5; k.fxNow = true;
       if (k.eye) { d.position.set(c.x, c.y + 1.05, c.z); d.scale.set(0.001, 0.001, 0.001); d.updateMatrix(); k.eye.setMatrixAt(idx, d.matrix); }

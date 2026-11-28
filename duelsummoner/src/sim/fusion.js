@@ -3,6 +3,8 @@
 // Two elements on one enemy react, within limits: one reaction per enemy a second, a few a second for the whole build, only the strongest ground zone hurts.
 // Kills fill the show-stopper meter; when it is full, a build with a Fusion fires one big move for each element it carries, back to back.
 // Basic monsters keep their own attacks (src/sim/monsters.js); this file runs only for Fusions and only while g.fusionRule is 3.
+import { smashProps } from './smash.js';
+import { solidAt } from './colliders.js';
 import { FUSION as F, kitOf, LAYER_NAME, REACT_KIND, STOPPERS, reactionOf, FORMS, FORM, LINK, DIRECTIONAL, hashKey, pickLink, LAB_KEY } from '../data/fusion.js';
 import { FUSIONS, MARKS } from '../data/cards.js';
 import { ELEMENTS } from '../data/elements.js';
@@ -231,6 +233,7 @@ export function fusionTick(g, dt) {
     for (let k = 0; k < 8; k++) { const o = i * 8 + k; if (S.elT[o] > 0) { S.elT[o] -= dt; if (S.elT[o] <= 0) { S.el[i] &= ~(1 << k); if (k === EI.poison) S.venom[i] = 0; } } }
     if (S.venom[i] > 0 && (S.el[i] & bit('poison'))) { S.venomAcc[i] += S.venom[i] * F.venom * dt; if (S.venomAcc[i] >= 1) { const v = S.venomAcc[i]; S.venomAcc[i] = 0; damageEnemy(g, i, v, { noCrit: true, elem: bit('poison') }); if (!e.alive[i]) { clear(S, i); continue; } } }
     if (S.kvx[i] || S.kvz[i]) { tmp.x = e.x[i]; tmp.y = e.y[i]; tmp.z = e.z[i]; moveXZ(tmp, S.kvx[i] * dt, S.kvz[i] * dt, KIND_LIST[e.kind[i]].radius, CFG.enemy.stepUp); e.x[i] = tmp.x; e.z[i] = tmp.z;
+      { const v2 = S.kvx[i] * S.kvx[i] + S.kvz[i] * S.kvz[i]; if (v2 > 36 && g.colliders) { const c = solidAt(g.colliders, e.x[i], e.z[i], KIND_LIST[e.kind[i]].radius); if (c) { const v = Math.sqrt(v2); if (c.brk) smashProps(g, e.x[i], e.z[i], KIND_LIST[e.kind[i]].radius + 0.2); else { S.kvx[i] *= -0.3; S.kvz[i] *= -0.3; g.emit('slam', e.x[i], e.z[i], v); } damageEnemy(g, i, 4 + v * 0.6, { noChain: true, noCrit: true }); if (!e.alive[i]) { clear(S, i); continue; } } } }       // weight: an enemy thrown into a prop breaks it, thrown into rock it stops dead; both hurt
       const f = Math.max(0, 1 - F.knockDecay * dt); S.kvx[i] *= f; S.kvz[i] *= f; if (S.kvx[i] * S.kvx[i] + S.kvz[i] * S.kvz[i] < 0.04) S.kvx[i] = S.kvz[i] = 0; }
     if (!S.el[i] && !S.kvx[i] && !S.kvz[i] && S.rc[i] <= 0) { S.on[i] = 0; continue; }
     S.act[w++] = i;

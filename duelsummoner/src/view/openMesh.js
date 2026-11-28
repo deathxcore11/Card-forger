@@ -4,7 +4,7 @@
 // Ground look: pale cream sand on the sun side of every dune, orange on the lee side; fine ripple streaks along the wind (a tiling streak map, view only); steep faces (mountains, blocks) are banded sandstone, lit and shaded.
 import { Builder } from './mapMesh.js';
 import { vnoise, groundAt, duneH, blockProf, viewH } from '../gen/open/terrain.js';
-import { addDressing, themeCol } from './openDressing.js';
+import { addDressing, themeCol, GONE, SMASH } from './openDressing.js';
 import { blocksOn } from './models.js';
 import { Q as WQ, LC as WLC } from '../gen/world/world.js';
 const T = window.THREE;
@@ -116,6 +116,7 @@ export function buildOpen(map, look) {
   const ctl = new T.Mesh(new T.BufferGeometry().setAttribute('position', new T.Float32BufferAttribute([0, 0, 0, 0, 0.01, 0, 0.01, 0, 0], 3)), new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false })); ctl.frustumCulled = false;
   let built = 0; const stats = group.userData.stats = { near: 0, far: 0, dress: 0, builtNear: 0 };
   // ---- the big world: chunks and landmarks are made as the camera comes near and dropped behind it
+  GONE.clear(); SMASH.fn = (x, z) => { for (const c of bigChunks.values()) if (x >= c.x0 && x < c.x0 + CHK && z >= c.z0 && z < c.z0 + CHK) c.dressDirty = true; };       // a new map starts whole; a smashed prop marks its chunk to be laid again
   const bigChunks = new Map(), lmMeshes = new Map(), HZ = 0xe8d6b0, FARB = 520, FREEB = 700, LM_ON = 330, LM_MAX = 3600;
   const hazeC = look.sky ? look.sky[1] : HZ, tintB = B => ({ quad: (a, b, c, d, nrm, col) => B.quad(a, b, c, d, nrm, mixc(themeCol(col), hazeC, 0.42)), tri: (a, b, c, nrm, col) => B.tri(a, b, c, nrm, mixc(themeCol(col), hazeC, 0.42)) });       // a landmark far off keeps its own flat colours, pulled toward the haze (it is drawn unlit and unfogged, so it never dissolves into the sky)
   const PARK = ['kickers', 'quarters', 'ledges', 'poles'], dressNear = (qx, qz) => { const d = Object.assign({}, map.dressCell(qx, qz)); for (const k of PARK) { d[k] = []; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) d[k] = d[k].concat(map.dressCell(qx + i, qz + j)[k] || []); } return d; };       // a park piece can stand outside the cell that laid it (the kill bowl's quarter pipes): each is drawn by the chunk it stands in
@@ -135,7 +136,7 @@ export function buildOpen(map, look) {
       if (wantNear && !c.near && built < budget.near) { const N = new Builder(); grid(N, c.x0, c.z0, 2); c.near = meshOf(N, true); group.add(c.near); built++; stats.builtNear++; }
       if (c.near && !wantNear && d > 380) { group.remove(c.near); c.near.geometry.dispose(); c.near = null; }
       c.nearOn = wantNear && !!c.near; if (c.near) c.near.visible = c.nearOn; c.far.visible = !c.nearOn && d < FARB + 40;
-      if (!c.dressBuilt && d < DRESS_ON && dm < budget.dress) { dm++; c.dressBuilt = true; const qx = Math.floor(c.x0 / WQ), qz = Math.floor(c.z0 / WQ), D = new Builder(); addDressing(D, subMap(qx, qz), (x, z) => x >= c.x0 && x < c.x0 + CHK && z >= c.z0 && z < c.z0 + CHK); if (D.pos.length) { c.dress = dmesh(D); c.dress.geometry.computeBoundingSphere(); c.dress.visible = false; tris += D.pos.length / 9 | 0; group.add(c.dress); } }
+      if ((!c.dressBuilt || c.dressDirty) && d < DRESS_ON && (dm < budget.dress || c.dressDirty)) { dm++; c.dressBuilt = true; const old = c.dressDirty ? c.dress : null, was = old ? old.visible : false; c.dressDirty = false; c.dress = null; const qx = Math.floor(c.x0 / WQ), qz = Math.floor(c.z0 / WQ), D = new Builder(); addDressing(D, subMap(qx, qz), (x, z) => x >= c.x0 && x < c.x0 + CHK && z >= c.z0 && z < c.z0 + CHK); if (D.pos.length) { c.dress = dmesh(D); c.dress.geometry.computeBoundingSphere(); c.dress.visible = false; tris += D.pos.length / 9 | 0; group.add(c.dress); } if (old) { if (c.dress) c.dress.visible = was; group.remove(old); old.geometry.dispose(); } }       // a chunk whose prop was smashed is laid again at once; the old mesh stays until the new one is in, so nothing blinks
       if (c.dress) c.dress.visible = c.dress.visible ? d < DRESS_OFF : d < DRESS_ON;
       if (c.nearOn) stats.near++; else if (c.far.visible) stats.far++; if (c.dress && c.dress.visible) stats.dress++;
     }

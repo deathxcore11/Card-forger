@@ -1,4 +1,5 @@
 // Damage, status effects, explosions, drops and the little pools the view draws (telegraphs, effects).
+import { smashProps } from './smash.js';
 import { K } from '../data/tuning.js';
 import { sealKill } from './seals.js';
 import { mightBracket, targetBracket } from './ledger.js';
@@ -129,6 +130,7 @@ export function explode(g, x, y, z, r, pDmg, eDmg, color, src) {
 }
 
 export function addFx(g, spec) {
+  if (spec.owner === 0 && g.colliders && g.colliders.big) { if (spec.type === 'ring' && (spec.r || 1) >= 1.5) smashProps(g, spec.x, spec.z, (spec.r || 1) * 0.8); else if (spec.type === 'fan') smashProps(g, spec.x + (spec.dx || 0) * (spec.r || 1) * 0.6, spec.z + (spec.dz === undefined ? 1 : spec.dz) * (spec.r || 1) * 0.6, (spec.r || 1) * 0.55); else if (spec.type === 'bolt' && spec.x2 !== undefined) smashProps(g, spec.x2, spec.z2, 0.9); }       // your side's blasts, swipes and bolts break the props they land on
   const list = g.fx;
   for (let i = 0; i < list.length; i++) if (!list[i].on) { Object.assign(list[i], { on: true, t: 0, dur: 0.4, r: 1, arc: 0, dx: 0, dz: 1, color: 0xff9030, owner: 2, el: null, vr: 0 }, spec); return list[i]; }
   return null;

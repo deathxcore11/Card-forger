@@ -370,10 +370,16 @@ export function makeWorld(seedLo, stageIndex, opts) {
     { const crn = rngOf(hsh(seed, qx, qz, 0xCA3B)), grove = (x, z) => vnoise((seed >>> 3) & 0xffff, x / 46, z / 46) > 0.6, gone = new Set();
       for (const k of ['cacti', 'dead']) D[k] = D[k].filter(c => { if (grove(c[0], c[2])) return true; gone.add(c[0] + ',' + c[2]); return false; });
       if (gone.size) D.solid = D.solid.filter(q => !gone.has(q[0] + ',' + q[2]));
+      // what the eye sees is what the card hits (owner, 28 Nov: "no real physics and detection"): props on a structure's ground go, the rest stand 6 m apart (the view draws every one that is left),
+      // and each prop's solid follows its shape class (v: 0 a small mass about 2.2 m across, 1 a tall trunk, 2 a big mass about 3.6 m across; the view sizes the model to it); the 7th number marks a solid that can be smashed (1 a natural prop, 3 a camp piece)
+      { const keep = [], drop = new Set(), logs = (D.logs || []).map(q => [(q[0] + q[3]) / 2, 0, (q[2] + q[5]) / 2]), far = (x, z) => !keep.concat(logs).some(o => dist(o[0], o[2], x, z) < 6) && !(W.sites || []).some(st => dist(st.x, st.z, x, z) < st.R + 3);
+        for (const k of ['dead', 'cacti']) D[k] = D[k].filter(c => { if (far(c[0], c[2])) { keep.push(c); return true; } drop.add(c[0] + ',' + c[2]); return false; });
+        const mine = new Set(keep.map(c => c[0] + ',' + c[2])); D.solid = D.solid.filter(q => !drop.has(q[0] + ',' + q[2]) && !mine.has(q[0] + ',' + q[2]));
+        for (const c of keep) { const v = c[5] % 3; D.solid.push([c[0], c[1], c[2], v === 0 ? 0.95 : v === 1 ? 0.6 : 1.55, v === 0 ? 1.6 : v === 1 ? 6 : 2.6, 0, 1]); } }
       D.camps = [];
       for (let t = 0, n = 0; t < 40 && n < 2; t++) { const x = C.x0 + 34 + crn() * (Q - 68), z = C.z0 + 34 + crn() * (Q - 68), kind = (crn() * 8) | 0, a0 = crn() * TAU; if (!ok(x, z, 10, 0.2) || nearby('*', x, z, 18) || (W.spawn && dist(x, z, W.spawn.x, W.spawn.z) < 30)) continue;
-        const hold = D.cacti.length + D.dead.length; D.cacti = D.cacti.filter(c => dist(c[0], c[2], x, z) > 11); D.dead = D.dead.filter(c => dist(c[0], c[2], x, z) > 11); if (D.cacti.length + D.dead.length !== hold) D.solid = D.solid.filter(q => dist(q[0], q[2], x, z) > 11 || q[3] > 1);
-        for (let k = 0; k < 4; k++) { const a = a0 + k * 1.2, px = x + cosA(a) * 6.5, pz = z + sinA(a) * 6.5, y = gy(px, pz); D.camps.push([r2(px), r2(y), r2(pz), r2(-a - TAU / 4), kind, k]); D.solid.push([r2(px), r2(y), r2(pz), 1.3, 4]); }
+        const out = new Set(); for (const k of ['cacti', 'dead']) D[k] = D[k].filter(c => { if (dist(c[0], c[2], x, z) > 11) return true; out.add(c[0] + ',' + c[2]); return false; }); if (out.size) D.solid = D.solid.filter(q => !out.has(q[0] + ',' + q[2]));
+        for (let k = 0; k < 4; k++) { const a = a0 + k * 1.2, px = x + cosA(a) * 6.5, pz = z + sinA(a) * 6.5, y = gy(px, pz); D.camps.push([r2(px), r2(y), r2(pz), r2(-a - TAU / 4), kind, k]); D.solid.push([r2(px), r2(y), r2(pz), 1.7, 4, 0, 3]); }
         put('k', x, z); n++; } }
     if (W.killBowl) { const B = W.killBowl, inside = (x, z) => dist(x, z, B.x, B.z) < B.out + 6;
       for (const k of Object.keys(D)) if (Array.isArray(D[k])) D[k] = D[k].filter(q => { const x = Array.isArray(q) ? q[0] : q.x, z = Array.isArray(q) ? (q.length > 2 && typeof q[2] === 'number' ? q[2] : q[1]) : q.z; return typeof x !== 'number' || !inside(x, z); });
