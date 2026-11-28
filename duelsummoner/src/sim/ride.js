@@ -5,6 +5,7 @@
 // Holding slide as you land rides a manual (a balance trick that keeps the combo open); use as you land from a steep drop is a revert. A bail loses the open combo and a Flow step and knocks you down for 0.6 s.
 // Flow (section 2): steps x1 to x5 fed by banked combos, one step lost after about 10 s without one. It multiplies damage (x1 to x2), XP and coins (x1 to x3) and score (x1 to x5), and adds 5% Stakes a step above 1.
 // Every banked landing slams: a shockwave of 4 to 14 m whose damage comes from the combo just banked (capped by the Flow step). Grinding throws sparks that hurt enemies within 2.5 m of the rail.
+import { reachable } from './stream.js';
 import { CFG } from '../data/config.js';
 import { heightAt, moveXZ } from './terrain.js';
 import { atan2, cos, sin } from './dmath.js';
@@ -256,7 +257,7 @@ function sealTouch(g, p, r) {
   for (const s of sealsNear(g, p.x, p.z, 3.0)) {
     const sid = s[3], dy = p.y - s[1]; if (dy < -1 || dy > 5) continue; const L = litOf(g); if (L.sealsDone[sid]) continue;
     const run = r.sealRun || (r.sealRun = {}); let E = run[sid]; if (!E || g.t - E.t > 15) { E = run[sid] = { k: [], t: g.t }; L.ver++; } const have = E.k, key = s[0] + ',' + s[2]; if (have.includes(key)) continue; have.push(key); addTrick(g, r, 'Seal', POINTS.seal); answerTrick(g, 'seal', s[0], s[1], s[2]); L.ver++; g.emit('seal', s[0], s[2], have.length);
-    if (have.length >= sealSet(g, sid).length) { L.sealsDone[sid] = true; L.ver++; flowOf(g).sets = (flowOf(g).sets || 0) + 1; addTrick(g, r, 'Seal Set', POINTS.sealSet); const tx = s[0] + sin(r.heading) * 6, tz = s[2] + cos(r.heading) * 6; const wonder = sid === -1; g.world.cchests.push({ x: tx, y: heightAt(tx, tz), z: tz, open: false, rarity: wonder ? 'epic' : null, free: true, trophy: true }); g.emit('sealset', tx, tz, wonder ? 1 : 0); g.event('banner', wonder ? 'The wonder wakes: an epic chest rises.' : 'The seal stones wake: a chest rises.'); }
+    if (have.length >= sealSet(g, sid).length) { L.sealsDone[sid] = true; L.ver++; flowOf(g).sets = (flowOf(g).sets || 0) + 1; addTrick(g, r, 'Seal Set', POINTS.sealSet); const [tx, tz] = reachable(g.map, s[0] + sin(r.heading) * 6, s[2] + cos(r.heading) * 6); const wonder = sid === -1; g.world.cchests.push({ x: tx, y: heightAt(tx, tz), z: tz, open: false, rarity: wonder ? 'epic' : null, free: true, trophy: true }); g.emit('sealset', tx, tz, wonder ? 1 : 0); g.event('banner', wonder ? 'The wonder wakes: an epic chest rises.' : 'The seal stones wake: a chest rises.'); }
   }
 }
 export function litOf(g) { return g.rideLit || (g.rideLit = { cards: {}, sealsDone: {}, ver: 0 }); }

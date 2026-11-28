@@ -59,7 +59,7 @@ export function initRun(g) {
 // For tools, tests and golden scenes: restart the stage machine at stage i (the build and the clock total carry as they are).
 export function jumpToStage(g, i) { g.stage = i; initStage(g); loadStageMap(g, i); g.world = buildWorld(g); if (g.map.big) streamWorld(g, 0); }
 function initStage(g) {
-  const S = g.stageSpec = g.stages[g.stage];
+  const S = g.stageSpec = (() => { const S0 = g.stages[g.stage], TB = g.opts.theme && THEMES[g.opts.theme] && THEMES[g.opts.theme].enemies && THEMES[g.opts.theme].enemies.bosses, nm = TB && TB[Math.min(g.stage, TB.length - 1)]; return nm && S0.gate && S0.gate.name !== nm ? (g.stages[g.stage] = Object.assign({}, S0, { gate: Object.assign({}, S0.gate, { name: nm }) })) : S0; })();       // the stage boss carries the map's own boss name
   g.sc = 0; g.evState = S.timeline.map(() => 0); g.evSpot = S.timeline.map(() => ({ x: 0, y: 0, z: 0 }));
   g.gate = { state: 'closed', awake: false, hold: 0, early: false, toll: false };
   g.aceT = 0; g.fog = makeFog(); g.bDown = false; g.gateDown = null; g.circle = null; g.altar = null; g.stagePrompt = '';

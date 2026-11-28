@@ -38,6 +38,8 @@ function paintBase(size, map) {
   return base;
 }
 
+let MT = null;
+export function setMinimapTheme(th) { MT = th && th.id !== 'desert' ? { ground: th.ground.tintA, water: th.water ? th.water[0] : 0 } : null; }
 export class Minimap {
   constructor(canvas) {
     this.cv = canvas; canvas.width = SIZE; canvas.height = SIZE; this.ctx = canvas.getContext('2d'); this.map = null; this.base = null; this.big = null;
@@ -49,6 +51,7 @@ export class Minimap {
     const T = FOG_TILE, tx = Math.floor(i / T), tz = Math.floor(j / T), key = tileKey(tx, tz); let t = this.tiles.get(key); if (!t) { const cv = document.createElement('canvas'); cv.width = cv.height = T; t = { cv, c: cv.getContext('2d'), tx, tz }; this.tiles.set(key, t); }
     const m = this.map, x = (i + 0.5) * FOG_CELL, z = (j + 0.5) * FOG_CELL, h = m.viewFn(x, z); let r, gg, b;
     if (h > 33) { r = 40; gg = 28; b = 22; } else { const tr = TIER[Math.max(0, Math.min(5, Math.floor(h / 4)))], sh = Math.max(-0.28, Math.min(0.28, (m.viewFn(x - 4, z - 3) - m.viewFn(x + 4, z + 3)) * 0.07)); r = tr[0] * (1 + sh); gg = tr[1] * (1 + sh); b = tr[2] * (1 + sh); }
+    if (MT) { const k = (0.62 + 0.38 * Math.max(0, Math.min(1, h / 24))) * (1 + Math.max(-0.28, Math.min(0.28, (m.viewFn(x - 4, z - 3) - m.viewFn(x + 4, z + 3)) * 0.07))), c0 = m.waterY !== undefined && h < m.waterY && MT.water ? MT.water : MT.ground; r = Math.min(255, ((c0 >> 16) & 255) * k); gg = Math.min(255, ((c0 >> 8) & 255) * k); b = Math.min(255, (c0 & 255) * k); }       // a themed map paints its own ground colour (and its water)
     t.c.fillStyle = 'rgb(' + (r | 0) + ',' + (gg | 0) + ',' + (b | 0) + ')'; t.c.fillRect(i - tx * T, j - tz * T, 1, 1);
   }
   _syncTiles(g) {

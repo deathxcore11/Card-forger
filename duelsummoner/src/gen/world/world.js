@@ -143,12 +143,24 @@ export function makeWorld(seedLo, stageIndex, opts) {
   function baseH(x, z) { const h = climbH(x, z, bowlH(x, z, baseH2(x, z))); return h; }
   function baseH2(x, z) { const h = baseH1(x, z); if (!W.gym) return h; const G = W.gym, u = x - G.x, v = z - G.z, d = sq(u * u + v * v); if (d >= G.edge) return h; const h0 = G.h0 === undefined ? (G.h0 = baseH1(G.x, G.z)) : G.h0, k = sstep(G.r, G.edge, d); return gymH(u, v, h0) * (1 - k) + h * k; }
   // a map's landform over the shared ground (themes-v1): terraces are 5 m steps, flat treads ending in a steep 5 m drop (a launch going down, a wall to ride going up)
+  // a map's own land (themes-v1 seed rules): the shared dunes are damped by k and the map's shape is laid over a level 11 m base. Water maps carry a water level; their bed lies 35 cm under it, so the card skims the surface.
+  const WL = 9.4, mod = (v, m) => ((v % m) + m) % m, fph = rngOf(hsh(seed, 3, 5, 0xF0))() * TAU, craters = new Map();
+  const craterOf = (ci, cj) => { const key = ci * 4096 + cj; let c = craters.get(key); if (c === undefined) { const rn = rngOf(hsh(seed, ci, cj, 0xC7)); c = rn() < 0.75 ? [(ci + 0.2 + 0.6 * rn()) * 420, (cj + 0.2 + 0.6 * rn()) * 420, 0.7 + 0.6 * rn()] : null; craters.set(key, c); } return c; };
+  const FORMS = {
+    rings: { k: 0.1, f: (x, z) => { const d = dist(x, z, 0, 0); return 6.5 * sstep(0.5, 0.96, sinA(d * 0.018 + fph)) * sstep(60, 120, d); } },       // flat ice with round snowbank rings every 350 m
+    swells: { k: 0.15, f: (x, z) => { const c = cosA(wind), w = sinA(wind), u = x * c + z * w, v = -x * w + z * c; return 12 + 12 * sinA(u * 0.011) + 4 * sinA(u * 0.029 + 1) + 2.5 * sinA(v * 0.008); } },       // long grass swells along the wind
+    'flats and craters': { k: 0.04, f: (x, z) => { let h = 0.5 * sinA(x * 0.02) * cosA(z * 0.02); const ci = Math.floor(x / 420), cj = Math.floor(z / 420); for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const c = craterOf(ci + a, cj + b); if (!c) continue; const d = dist(x, z, c[0], c[1]); if (d > 400) continue; const t = 1 - d / 400, t2 = t * t, bw = Math.max(0, 1 - d * d / 8100); h += c[2] * (4.5 * sinA(d * 0.07) * t2 * t2 * t - 7 * bw * bw); } return h + 4; } },       // dead flat glass with strike craters and the ripples round them
+    islands: { k: 0, water: WL, f: (x, z) => { const raw = 8 * sinA(x * 0.013 + fph) * cosA(z * 0.011 - fph) + 5 * sinA(x * 0.03 + z * 0.027 + fph) - 0.5, land = sstep(0.6, 2.8, raw); return WL - 0.35 - 11 + land * (1.3 + 0.8 * Math.max(0, raw - 1.5)); } },       // low islands in shallow water
+    causeways: { k: 0, water: WL, f: (x, z) => { const o = (seed % 200) - 100, ax = Math.abs(mod(x - o, 300) - 150), az = Math.abs(mod(z + o, 300) - 150), road = sstep(23, 15, Math.min(ax, az)), plaza = sstep(98, 86, sq(ax * ax + az * az)); return WL - 0.35 - 11 + Math.max(road * 1.9, plaza * 2.9); } },       // still water crossed by straight causeways in a grid, a round plaza at every crossing
+    pit: { k: 0.06, f: (x, z) => { const m = r4(x, z), t = Math.min(4, m / 240), fl = Math.floor(t); return 8 * (fl + (fl < 4 ? sstep(0.86, 1, t - fl) : 0)); } } };       // a square pit of five tiers stepping up 32 m from the middle
+  const FORM = FORMS[W.landform] || null; if (FORM && FORM.water) W.waterY = FORM.water;
   function mapForm(x, z, h) {
     if (W.landform === 'terraces') { const q = h / 5, f = Math.floor(q), t = q - f; return (f + sstep(0.82, 1, t)) * 5 + 0.6 * (vnoise(seed ^ 0x7e, x / 40, z / 40) - 0.5); }
     return h;
   }
   function baseH1(x, z) {
     const n = near2(x, z), t = sstep(-320, 320, n.db - n.da); let h = regH(n.A, x, z) * t; if (t < 0.999) h += regH(n.B, x, z) * (1 - t);
+    if (FORM) return soft0(11 + FORM.k * (h + roll(x, z)) + FORM.f(x, z) + mount(x, z));
     return dropAt(x, z, mapForm(x, z, soft0(h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z) - 8 * startValleyQ(x, z) + roll(x, z))));
   }
   // the whole map rolls (owner, 27 Nov: more hills and large dips): broad hills up to about 14 m either way every 200 m or so, and dips 8 to 20 m deep in patches, all with smooth slopes a card can ride and a walker can climb
@@ -177,8 +189,8 @@ export function makeWorld(seedLo, stageIndex, opts) {
   // ---- landmarks: one per 1100 m cell, a tall mesa, a spire or a giant half-sunk card, seen from far off
   const lms = new Map();
   function landmark(lx, lz) {
-    const k = (lx + 64) * 256 + (lz + 64); if (lms.has(k)) return lms.get(k);
-    const rn = rngOf(hsh(seed, lx, lz, 0x1A4D)), kind = (rn() * 3) | 0; let best = null, bd = 1e9;
+    const k = (lx + 64) * 256 + (lz + 64); if (lms.has(k)) return lms.get(k); if (W.landform !== 'dunes') { lms.set(k, null); return null; }       // mesas and spires are the desert's landmarks; other maps are marked by their own structures
+    const rn = rngOf(hsh(seed, lx, lz, 0x1A4D)), kind = (rn() * 2) | 0; let best = null, bd = 1e9;       // (the giant flat card is gone: it read as a blank wall) let best = null, bd = 1e9;
     for (let t = 0; t < 24; t++) {
       const x = (lx + 0.12 + 0.76 * rn()) * LC, z = (lz + 0.12 + 0.76 * rn()) * LC; if (r4(x, z) > EDGE - 500) continue;
       const b = kind === 0 ? block(rn, x, z, 26 + rn() * 14, 22 + rn() * 12, 34 + rn() * 20, 5, rn() < 0.5 ? 2 : 1) : kind === 1 ? block(rn, x, z, 7 + rn() * 3, 7 + rn() * 3, 55 + rn() * 25, 3.4, rn() < 0.5 ? 2 : 1) : block(rn, x, z, 30 + rn() * 10, 3.5, 36 + rn() * 14, 3, rn() < 0.5 ? 2 : 1);
@@ -217,7 +229,7 @@ export function makeWorld(seedLo, stageIndex, opts) {
     // blocks: mesas (kind 0), tall walls (1), small ruin blocks (2), kept inside the cell and clear of the pocket and the ring
     const placed = C.blocks.slice();
     for (let kind = 0; kind < 3; kind++) {
-      const [lo, hi, pr] = COUNTS[T][kind]; let n = rn() < pr ? lo + ((rn() * (hi - lo + 1)) | 0) : (lo > 0 ? lo : 0); if (kind === 2 && T === 4) n = lo + ((rn() * (hi - lo + 1)) | 0);
+      const [lo, hi, pr] = COUNTS[T][kind]; let n = rn() < pr ? lo + ((rn() * (hi - lo + 1)) | 0) : (lo > 0 ? lo : 0); if (kind === 2 && T === 4) n = lo + ((rn() * (hi - lo + 1)) | 0); if (W.landform !== 'dunes') n = 0;       // mesas, walls and ruin blocks are the desert's; other maps have their own structures
       for (let t = 0; t < 60 && n > 0; t++) {
         const probe = mk(rn, kind, 0, 0), m = reachOf(probe) + 4; if (m * 2 > Q - 30) continue;
         const x = x0 + m + rn() * (Q - 2 * m), z = z0 + m + rn() * (Q - 2 * m); if (C.pockets.some(q => dist(x, z, q.x, q.z) < reachOf(probe) + 14)) continue; if (C.ring && dist(x, z, C.ring.x, C.ring.z) < reachOf(probe) + 30) continue;
@@ -406,7 +418,7 @@ export function makeWorld(seedLo, stageIndex, opts) {
   // the map's structures (themes-v1 setpieces): site 0 is the central one about 150 m out, the rest in a widening spiral, each on a flat pad with a soft skirt; the view stands the kit model on it
   W.sites = []; { const n = (opts && opts.setpieces) | 0, nk = Math.max(n, (opts && opts.kits) | 0), order = [], SH = (opts && opts.shapes) || []; for (let k = 0; k < nk - 1; k++) order.push(k); for (let k = order.length - 1; k > 0; k--) { const j = (rs() * (k + 1)) | 0, t0 = order[k]; order[k] = order[j]; order[j] = t0; }       // which kit stands at each site: the central one first, the rest shuffled by seed
  for (let i = 0; i < n; i++) { let site = null; const k = i === 0 ? 0 : 1 + order[i - 1], sh = SH[k] || null, R = sh ? sh.r : 14, r0 = i === 0 ? Math.max(150, R + 75) : 260 + i * 95;       // each structure keeps clear of everything by its own size, and its pad is as wide as it is
-  for (let t = 0; t < 600 && !site; t++) { const r = r0 + (rs() - 0.5) * 80 + t * 0.5, a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (r4(x, z) > EDGE - 300 - R) continue; const o = gather9(x, z); if (spread(x, z, 10) > 6 + t * 0.01 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + R + 10) || o.rings.some(q => dist(q.x, q.z, x, z) < R + 16) || o.pockets.some(p => dist(p.x, p.z, x, z) < R + 10) || W.sleepers.some(q => dist(q.x, q.z, x, z) < R + 26) || W.sites.some(q => dist(q.x, q.z, x, z) < R + q.R + 60) || dist(x, z, sp[0], sp[1]) < R + 45) continue; const yaw = r2(rs() * TAU); site = { i, k, x: r2(x), z: r2(z), yaw, R, c: cosA(yaw), s: sinA(yaw), sh }; }
+  for (let t = 0; t < 600 && !site; t++) { const r = r0 + (rs() - 0.5) * 80 + t * 0.5, a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (r4(x, z) > EDGE - 300 - R) continue; if (W.waterY !== undefined && baseH1(x, z) < W.waterY + 0.9) continue; const o = gather9(x, z); if (spread(x, z, 10) > 6 + t * 0.01 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + R + 10) || o.rings.some(q => dist(q.x, q.z, x, z) < R + 16) || o.pockets.some(p => dist(p.x, p.z, x, z) < R + 10) || W.sleepers.some(q => dist(q.x, q.z, x, z) < R + 26) || W.sites.some(q => dist(q.x, q.z, x, z) < R + q.R + 60) || dist(x, z, sp[0], sp[1]) < R + 45) continue; const yaw = r2(rs() * TAU); site = { i, k, x: r2(x), z: r2(z), yaw, R, c: cosA(yaw), s: sinA(yaw), sh }; }
   if (site) { W.sites.push(site); site.y = r2(W.addPad(site.x, site.z, R + 2, R + 22).hc); } } }
   void cbrt; void qOf;
   return W;

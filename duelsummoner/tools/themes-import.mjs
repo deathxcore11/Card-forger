@@ -10,7 +10,7 @@ for (const f of readdirSync(dir).filter(f => f.endsWith('.json'))) {
   const T = JSON.parse(readFileSync(dir + '/' + f, 'utf8')), [lit, mid, shade] = T.ground.colours.map(hex), times = {};
   for (const [k, v] of Object.entries(T.times)) {
     const sky = hex(v.sky), fogc = hex(v.fog.colour), night = k === 'night', sunEl = Math.max(0.05, Math.min(0.9, (v.sun.direction || [0, 0.4, 0])[1]));
-    times[k] = { sun: { color: hex(v.sun.colour), k: Math.max(0.2, Math.min(0.8, v.sun.strength * 0.72)), elev: sunEl }, hemi: [hex(v.light[0]), mix(hex(v.light[1]), 0x101018, 0.4), 0.45 + (v.fill || 0.5) * 0.5],
+    times[k] = { sun: { color: mix(hex(v.sun.colour), 0xffffff, night ? 0.3 : 0.6), k: Math.max(0.2, Math.min(0.8, v.sun.strength * 0.72)), elev: sunEl }, hemi: [mix(hex(v.light[0]), 0xffffff, night ? 0.25 : 0.72), mix(hex(v.light[1]), 0x101018, 0.4), (0.45 + (v.fill || 0.5) * 0.5) * (night ? 0.6 : 1)],
       sky: [mix(sky, 0x000000, 0.35), fogc, mix(fogc, 0x000000, 0.2)], fog: [Math.round(Math.min(110, v.fog.near * 0.45)), Math.round(Math.min(320, Math.max(180, v.fog.far * 0.22)))],
       dome: { top: mix(sky, 0x000000, night ? 0.5 : 0.3), mid: sky, hor: fogc, gnd: mix(fogc, 0x000000, 0.25), cldL: mix(sky, 0xffffff, 0.4), cldS: mix(sky, 0x000000, 0.4), cover: night ? 0.15 : 0.5, sun: !night, shade: night ? 0 : 0.3, mode: night ? 2 : 0 },
       actor: night ? { lift: [0.18, 0.16, 0.28], key: [0.12, 0.1, 0.22] } : null, groundTint: k === 'morning' ? null : [fogc, night ? 0.4 : 0.18], swap: (v.swaps || []).length ? { swarm: 'night' } : null, mood: v.mood, extras: v.extras };

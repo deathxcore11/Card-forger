@@ -28,7 +28,8 @@ import { trickPose } from './trickpose.js';
 // the block look (?blocks=1): which block model draws which game actor (index.json ids). An actor with no entry, or whose file is missing, keeps its current look.
 export const BLK_ENEMY = { 0: 'husk', 1: 'runner', 2: 'seer', 3: 'ram', 4: 'bloat', 5: 'scarab', 6: 'hunter' };
 // a map theme casts its own enemies over the sim kinds (husk the swarm, runner the rusher, seer the shooter, golem the charger, bloat the exploder, scarab the flyer, hunter the pack): set before the actors are built
-export function setEnemyModels(prefix, have) { const job = { 0: 'swarm', 1: 'rusher', 2: 'shooter', 3: 'charger', 4: 'exploder', 5: 'flyer', 6: 'shielded' }; for (const k in job) { const id = 'e-' + prefix + '-' + job[k]; if (have(id)) BLK_ENEMY[k] = id; } }
+export function setEnemyModels(prefix, have, night) { const job = { 0: 'swarm', 1: 'rusher', 2: 'shooter', 3: 'charger', 4: 'exploder', 5: 'flyer', 6: 'shielded' }; let ch = false; for (const k in job) { const d = 'e-' + prefix + '-' + job[k], n = 'n-' + prefix + '-' + job[k], id = night && have(n) ? n : d; if (have(id) && BLK_ENEMY[k] !== id) { BLK_ENEMY[k] = id; ch = true; } } return ch; }       // a map's own enemy bodies; at night the map's night creatures take over the jobs they have a body for. True when a body changed.
+export function setBossModel(id, have) { if (have(id)) { BLK_SPECIAL.pharaoh = id; return true; } return false; }       // the stage boss wears the map's own boss body
 const BLK_SUMMON = { 'ember-wyvern': ['wyv1', 'wyv2', 'wyv3'], 'cinder-hatchling': ['hat1', 'hat2', 'hat3'], 'sigil-familiar': ['familiar'], 'twinflare-tyrant': ['tyrant'], 'rune-apprentice': ['newt'], 'astral-magus': ['strix'] };       // the roster renamed the Rune Apprentice to the Rune Newt and the Astral Magus to the Astral Strix (22 Nov)
 const BLK_SPECIAL = { warden: 'warden', pharaoh: 'king', idol: 'jackalT' };       // the gate boss is the Hollow King; the Twin Jackal Idols are a pair (jackalT and jackalC)
 const blkSummon = (id, form) => { const L = BLK_SUMMON[id]; const k = L && L[Math.min(form, L.length - 1)]; return k && BLOCKS[k] ? k : null; };
@@ -144,8 +145,9 @@ export class Actors {
       scene.add(body, out); if (eye) scene.add(eye);
       return { K, body, out, eye, base: cg || bgeo ? new T.Color(1, 1, 1) : new T.Color(K.color), boost: cg || bgeo ? 2.4 : 1, fxArr: geo.attributes.aFx.array, fxNow: false, fxPrev: false, block: !!bgeo };
     };
-    this.kinds = KIND_LIST.map(K => kindOf(K, false));
-    for (const k of this.kinds.slice()) if (k.block) { k.farIdx = this.kinds.length; this.kinds.push(kindOf(k.K, true)); }       // the block husk's half-detail far copy (beyond 30 m), its own instanced draw    // Toll Shades: a tall violet-black hooded silhouette with a glowing eye line and a gold bell (stand-in look until the art arrives)
+    const buildKinds = () => { this.kinds = KIND_LIST.map(K => kindOf(K, false));     for (const k of this.kinds.slice()) if (k.block) { k.farIdx = this.kinds.length; this.kinds.push(kindOf(k.K, true)); } };       // (a block kind also gets a half-detail far copy, its own instanced draw)
+    buildKinds();
+    this.rebuildSwarm = () => { for (const k of this.kinds) { scene.remove(k.body, k.out); if (k.eye) scene.remove(k.eye); k.body.geometry.dispose(); k.body.material.dispose(); } this._counts = null; buildKinds(); };       // the swarm's bodies changed (a night stage): build the instanced draws again
     this.shadeBody = instanced(new T.ConeGeometry(0.9, 3.0, 7), seeActor(basic(0x1d1030)), 24); this.shadeHood = instanced(new T.ConeGeometry(0.5, 1.0, 6), seeActor(basic(0x0b0716)), 24);
     this.shadeEye = instanced(new T.BoxGeometry(0.34, 0.07, 0.1), basic(0xc07bff), 24); this.shadeBell = instanced(new T.ConeGeometry(0.17, 0.3, 6), basic(0xe8c56a), 24);
     if (BLOCKS.toll) { const M = BLOCKS.toll, gg = blockMerged(M, 0), s = 3.7 / M.size.y, F = new T.Matrix4().makeTranslation(0, -1.5, 0).multiply(new T.Matrix4().makeScale(s, s, s)); gg.applyMatrix4(F); const mat = blockSwing(seeActor(basic(0xffffff, { vertexColors: true })), M, 'toll', F, this._swT || (this._swT = { value: 0 })); this.shadeBody.geometry = gg; this.shadeBody.material = mat; this._blockShade = true; }       // the block look: the shade's feet at the bottom of the old cone

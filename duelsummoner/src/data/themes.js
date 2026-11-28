@@ -48,7 +48,9 @@ export const THEMES = {
     }
   }
 };
-Object.assign(THEMES, MAP_THEMES);       // the other seven maps, imported from the roster thread (tools/themes-import.mjs)
+Object.assign(THEMES, MAP_THEMES);
+if (THEMES.sporefen) THEMES.sporefen.water = [0x2f7f86, 0.82]; if (THEMES['dawn-causeway']) THEMES['dawn-causeway'].water = [0xa8e0e8, 0.9];       // the open water of the two water maps: colour and opacity
+       // the other seven maps, imported from the roster thread (tools/themes-import.mjs)
 export const MAP_IDS = Object.keys(THEMES);
 // the theme for a map at a stage: the map entry with that stage's time of day merged on top
 export function themeFor(mapId, stage) {

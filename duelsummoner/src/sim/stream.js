@@ -1,6 +1,7 @@
 // The streamed world's per-tick upkeep: load the 64 m terrain chunks round the duelist (nearest first, one a tick), make the solid props of the near cells, and hand the sim the things each 256 m cell holds
 // (a pocket to do, vases, a boss ring) the first time the duelist comes within about 420 m of it. Nothing here changes the answer to a question: heights and props are the same whether or not they were loaded early.
 import { heightAt, streamTo } from './terrain.js';
+import { cos, sin } from './dmath.js';
 import { placeObject } from './world.js';
 import { E_VASE_HP } from './streamcfg.js';
 
@@ -29,7 +30,9 @@ function prefetch(g, m, p) {
   if (!best) { const qx = Math.floor(p.x / Q), qz = Math.floor(p.z / Q); for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const cx = qx + i, cz = qz + j, key = (cx + 128) * 512 + (cz + 128); if (done.has(key)) continue; const sc = Math.abs(i) + Math.abs(j); if (sc < bs) { bs = sc; best = [cx, cz, key]; } } }       // the line ahead is ready: fill the ring round the duelist (a turn or a stop needs it)
   if (!best) return; done.add(best[2]); m.cell(best[0], best[1]); m.dressCell(best[0], best[1]);
 }
-const put = (g, m, type, x, z, extra) => { const y = heightAt(x, z); if (y >= 50) return null; return placeObject(g, type, Object.assign({ x, y, z }, extra)); };
+// every placed thing stands on ground the rider can reach: a spot on top of a mesa or a structure (more than 1.2 m above the open ground there) moves out to the nearest open ground
+export function reachable(m, x, z) { if (!m.viewFn || heightAt(x, z) - m.viewFn(x, z) < 1.2) return [x, z]; for (let r = 4; r <= 90; r += 4) for (let k = 0; k < 12; k++) { const a = k * 0.5236 + r, qx = x + cos(a) * r, qz = z + sin(a) * r; if (heightAt(qx, qz) < 50 && heightAt(qx, qz) - m.viewFn(qx, qz) < 0.4) return [qx, qz]; } return [x, z]; }
+const put = (g, m, type, x, z, extra) => { [x, z] = reachable(m, x, z); const y = heightAt(x, z); if (y >= 50) return null; return placeObject(g, type, Object.assign({ x, y, z }, extra)); };
 function placeCell(g, m, C) {
   const W = g.world;
   for (const b of C.blocks) if (!m.blocks.includes(b)) m.blocks.push(b);

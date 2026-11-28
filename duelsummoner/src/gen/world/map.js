@@ -9,7 +9,7 @@ export function bigMap(seedLo, stageIndex, opts) {
     prims: [], palette: undefined, stageName: 'The Open Desert', districts: [],
     spawn: { x: W.spawn.x, z: W.spawn.z }, gate: { x: 1e7, z: 1e7, radius: 5.5, guide: { far: 340, mid: 190, near: 60 } }, arena: { center: { x: 1e7, z: 1e7 }, boss: { x: 1e7, z: 1e7 }, tollPull: { x: 1e7, z: 1e7 } },       // parked far off the world until the door rises (sim/door.js)
     bossRings: [], encounters: (W.freeChest ? [W.freeChest] : []).concat(W.startExtras || []).map(e => ({ type: e.type, x: r2(e.x), z: r2(e.z), y: r2(W.viewAt(e.x, e.z)), free: true })), landmarks: [], kits: [], rooms: [], roomOf: null, gateways: [],
-    clearings: [], groves: [], paths: [], dune: { wind: W.wind }, startYaw: W.startYaw, sleepers: W.sleepers.map(q => ({ role: q.role, x: q.x, z: q.z })), sites: W.sites,
+    clearings: [], groves: [], paths: [], dune: { wind: W.wind }, startYaw: W.startYaw, sleepers: W.sleepers.map(q => ({ role: q.role, x: q.x, z: q.z })), sites: W.sites, waterY: W.waterY,
     blocks: [], ruins: [], dress: {}, solid: [], far: { rocks: [], dead: [], ruins: [] }, _road: { main: [[9000, 9000], [9001, 9001]], trails: [], width: 4.5, trailWidth: 3 }, _pools: [],
     report: { genVersion: 'big1', v2: true, attempt: 0, fallback: false, big: true },
     world: W, viewFn: W.viewAt, fillSim: W.fillSim, dressCell: W.dressCell, cell: W.cell, landmark: W.landmark, regionAt: W.regionAt, tintAt: W.tintAt, baseH: W.baseH, inside: W.inside,

@@ -9,7 +9,7 @@ const STEP = 1 / 60, I = { f: 0, r: 0, yaw: 0, jump: false, dash: false, slide: 
 const mk = () => { const g = new Game(4711, { mode: 'run', duelist: 'kael', offers: false, terrain: 'open', difficulty: 'easy' }); g.god = true; g.spawnAcc = -1e9; g.rideKicks = 1; return g; };
 const run = (g, n, cmd) => { for (let i = 0; i < n; i++) g.step(STEP, typeof cmd === 'function' ? cmd(i) : cmd || I); };
 // find flat ground near the start to ride on
-function flatSpot(g) { for (let r = 30; r < 600; r += 7) for (let a = 0; a < 6.28; a += 0.3) { const x = g.p.x + Math.cos(a) * r, z = g.p.z + Math.sin(a) * r, h = heightAt(x, z); let ok = h < 50 && railsNear(g, x, z - 15, 22).length === 0; for (let k = 1; k <= 30 && ok; k++) if (Math.abs(heightAt(x, z - k) - h) > 0.25 * k / 10 + 0.15) ok = false; if (ok) return [x, z]; } return [g.p.x, g.p.z]; }
+function flatSpot(g, skip = 0) { for (let r = 30; r < 600; r += 7) for (let a = 0; a < 6.28; a += 0.3) { const x = g.p.x + Math.cos(a) * r, z = g.p.z + Math.sin(a) * r, h = heightAt(x, z); let ok = h < 50 && railsNear(g, x, z - 15, 22).length === 0; for (let k = 1; k <= 30 && ok; k++) if (Math.abs(heightAt(x, z - k) - h) > 0.25 * k / 10 + 0.15) ok = false; if (ok && skip-- <= 0) return [x, z]; } return [g.p.x, g.p.z]; }
 const place = (g, x, z, speed) => { g.p.x = x; g.p.z = z; g.p.y = heightAt(x, z); g.p.grounded = true; g.p.sliding = speed > 0; g.p.vx = 0; g.p.vz = -speed; g.p.vy = 0; };
 
 test('ride: above 10.5 m/s the duelist steps on the card; below 7 m/s on the ground steps off', () => {
@@ -194,8 +194,8 @@ test('riding unlocks: 8 boards (3 owned at the start), each a small lean; the ri
   const g = mk(); g.opts.board = 'sun-back'; recompute(g); assert.ok(Math.abs(g.mods.ridePop - 0.05) < 1e-9, 'the Sun Back lean');
 });
 test('duelist ride styles: Kael (Ember Rider) burns the slam ground; touch riding helpers can be switched off (no auto-grind then)', () => {
-  const g = mk(), [x, z] = flatSpot(g); place(g, x, z, 14); run(g, 2, { ...I, f: 1 });
-  run(g, 30, { ...I, f: 1, jump: true }); run(g, 140, { ...I, f: 1 }); assert.ok(flowOf(g).slams > 0 && g.srcNames.includes('ember-rider'), 'Ember Rider fired with the slam');
+  let g = null; for (let n = 0; n < 12 && !(g && flowOf(g).slams > 0); n += 3) { g = mk(); const [x, z] = flatSpot(g, n); place(g, x, z, 14); run(g, 2, { ...I, f: 1 }); run(g, 30, { ...I, f: 1, jump: true }); run(g, 140, { ...I, f: 1 }); }       // a full-charge ollie banks a slam only where the ground gives it enough air: try a few flat spots
+  assert.ok(flowOf(g).slams > 0 && g.srcNames.includes('ember-rider'), 'Ember Rider fired with the slam');
   const h = mk(); h.opts.autoGrind = false; let rail = null; for (let r = 20; r < 1500 && !rail; r += 40) { const L = railsNear(h, h.p.x + r, h.p.z, 60); rail = L.find(s => Math.hypot(s[3] - s[0], s[5] - s[2]) > 5 && Math.abs(s[4] - s[1]) < 1 && s[1] < 30); }
   const mx = (rail[0] + rail[3]) / 2, mz = (rail[2] + rail[5]) / 2, my = (rail[1] + rail[4]) / 2, ux = rail[3] - rail[0], uz = rail[5] - rail[2], L = Math.hypot(ux, uz);
   h.p.ride = undefined; h.p.x = mx - ux / L * 1.5; h.p.z = mz - uz / L * 1.5; h.p.y = my + 1.0; h.p.vx = ux / L * 12; h.p.vz = uz / L * 12; h.p.vy = -1; h.p.grounded = false; run(h, 1); h.p.ride.on = true; h.p.ride.speed = 12;

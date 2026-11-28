@@ -1,7 +1,7 @@
 // Duel Summoner, browser entry. Wires the simulation to the view and the UI modes: start, play, pause, offer, results.
 import { loadMapModels, blockMerged as blockMergedM, BLOCKS as BLOCKS_M } from './view/models.js';
 import { setDressKit, setDressPalette, setParkKit } from './view/openDressing.js';
-import { setEnemyModels } from './view/actors.js';
+import { setEnemyModels, setBossModel } from './view/actors.js';
 import { THEMES as THEMES_ALL } from './data/themes.js';
 import { audio, initAudio, setVolumes, play, setMusic, setAmbience, musicTier, carve, stopCarve, preload } from './view/audio.js';
 import { themeFor } from './data/themes.js';
@@ -37,7 +37,7 @@ import { ownColour } from './view/fxcolour.js';
 import { LeyThreads } from './view/threads.js';
 import { Actors } from './view/actors.js';
 import { ChaseCamera } from './view/camera.js';
-import { Minimap } from './view/minimap.js';
+import { Minimap, setMinimapTheme } from './view/minimap.js';
 import { buildDoor } from './view/doorview.js';
 import { POWERUPS } from './data/powerups.js';
 import { FLIPS, makeRide } from './sim/ride.js';
@@ -140,16 +140,17 @@ assets.butterflyPrep = await loadCreature('assets/models/life-butterfly-rig.glb'
 assets.mira = await loadRig('assets/models/duelist-mira-anim.glb', { retime: { land_light: 0.5, land_heavy: 0.9 } });
 await loadBlocks(['kael', 'kaelRide', 'mira', 'vesh', 'oren', 'card', 'husk', 'runner', 'seer', 'ram', 'bloat', 'scarab', 'hunter', 'toll', 'warden', 'wyv1', 'wyv2', 'wyv3', 'hat1', 'hat2', 'hat3', 'familiar', 'tyrant', 'newt', 'strix', 'king', 'jackalT', 'jackalC', 'heart', 'power', 'sealstone', 'chestCard', 'chestSealed', 'chestTrophy', 'gem', 'coin', 'cactus', 'tree', 'stonecard', 'beam', 'urn', 'broker', 'shrine', 'spire']);       // the block look, only with ?blocks=1 (files kept out of the repo)
 await loadFusionBodies();       // the lab's fused-body engine in the block runtime (a Fusion is drawn as one fused body of its parents); without it, the old models
-{ const tid = (/[?&](?:map|theme)=([a-z-]+)/.exec(location.search) || [])[1] || 'desert', TH = THEMES_ALL[tid]; if (TH && TH.dressing && TH.dressing.kit) { const pre = TH.kitPrefix !== undefined ? TH.kitPrefix : (TH.setpieces[0] || '').split('-')[0], id = s => (pre ? pre + '-' + s : s), en = pre ? ['swarm', 'rusher', 'flyer', 'shooter', 'charger', 'exploder', 'controller', 'shielded', 'support', 'trickster'].flatMap(j => ['e-' + pre + '-' + j, 'n-' + pre + '-' + j]) : [], park = ['quarter', 'kicker-card', 'ledge', 'rail'].map(k => id('p-' + k));
+let ENEMY_PRE = '';       // the map's model prefix when it has its own enemy bodies
+{ const tid = (/[?&](?:map|theme)=([a-z-]+)/.exec(location.search) || [])[1] || 'desert', TH = THEMES_ALL[tid]; if (TH && TH.dressing && TH.dressing.kit) { const pre = TH.kitPrefix !== undefined ? TH.kitPrefix : (TH.setpieces[0] || '').split('-')[0], id = s => (pre ? pre + '-' + s : s), en = pre ? ['swarm', 'rusher', 'flyer', 'shooter', 'charger', 'exploder', 'controller', 'shielded', 'support', 'trickster'].flatMap(j => ['e-' + pre + '-' + j, 'n-' + pre + '-' + j]).concat([1, 2, 3, 4].map(n => 'b-' + pre + '-' + n)) : [], park = ['quarter', 'kicker-card', 'ledge', 'rail'].map(k => id('p-' + k));
   await loadMapModels([...TH.dressing.kit, ...TH.far, ...(TH.farRange ? [TH.farRange] : []), ...TH.setpieces, ...en, ...park]); const pg = k => (BLOCKS_M[k] ? blockMergedM(BLOCKS_M[k]) : null);
   setParkKit({ quarter: pg(park[0]), kicker: pg(park[1]), ledge: pg(park[2]), rail: pg(park[3]) }); setDressKit(TH.dressing.kit.filter(k => BLOCKS_M[k]).map(k => ({ geo: blockMergedM(BLOCKS_M[k]) })), [TH.central, ...TH.setpieces.filter(k => k !== TH.central)].map(k => (BLOCKS_M[k] ? { id: k, geo: blockMergedM(BLOCKS_M[k]) } : null)));
-  if (TH.id !== 'desert') setDressPalette(TH.ground); if (pre) setEnemyModels(pre, k => !!BLOCKS_M[k]); } }       // a map's own kits (structures, far silhouettes, dressing, park pieces, enemies) from the baked models, before the first chunk is built; the desert is the default map
+  if (TH.id !== 'desert') setDressPalette(TH.ground); if (pre) { setEnemyModels(pre, k => !!BLOCKS_M[k]); ENEMY_PRE = pre; } } }       // a map's own kits (structures, far silhouettes, dressing, park pieces, enemies) from the baked models, before the first chunk is built; the desert is the default map
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 
 document.addEventListener('contextmenu', e => { if (!/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName)) e.preventDefault(); });       // no browser menu over the game or its overlays
 function applyStageLook(look) { setActorLight(look.actor); setPaletteStage(Math.max(0, STAGE_INDEX_OF(look))); scene.background.setHex(look.sky[1]); scene.fog.color.setHex(look.sky[1]); scene.fog.near = look.fogNear; scene.fog.far = look.fogFar;  }
 const STAGE_INDEX_OF = look => STAGE_LOOK_LIST.indexOf(look);
-let waterMesh = null, curLook = null, ripT = 0;
+let seaMesh = null, waterMesh = null, curLook = null, ripT = 0;
 const ownPeak = { r: 0, t: 0 }; let capBurstDone = false;
 let grassMesh = null, sceneryGroup = null, mapMesh = null, gateSeal = null, viewMapKey = '';
 // the big desert's movement feel: sand kicks up behind a fast run and sprays off a slide (view only)
@@ -174,11 +175,12 @@ function syncMap() {                                                       // th
   if (game.map.key === viewMapKey) return; viewMapKey = game.map.key;
   if (mapMesh) { scene.remove(mapMesh); mapMesh.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
   let look = lookFor(game.mode === 'classic' ? 0 : game.stage || 0);
-  if (game.map.big) { const th = curTheme = themeFor(game.opts.theme, game.stage || 0), N = th.now; setGroundTheme(th); setMusic(th.music, th.time); setAmbience(th.ambience + '_' + th.time.toUpperCase()); look = Object.assign({}, lookFor(0), { name: th.id + '-' + th.time, sky: N.sky, fogNear: N.fog[0], fogFar: N.fog[1], dome: N.dome, actor: N.actor }); sun.color.setHex(N.sun.color); sun.intensity = N.sun.k; sun.position.set(60, 20 + 140 * N.sun.elev, 30); hemi.color.setHex(N.hemi[0]); hemi.groundColor.setHex(N.hemi[1]); hemi.intensity = N.hemi[2]; }       // the map theme and its time of day (src/data/themes.js): stage 1 morning, 2 evening, 3 night
+  if (game.map.big) { const th = curTheme = themeFor(game.opts.theme, game.stage || 0), N = th.now; setGroundTheme(th); setMinimapTheme(th); if (ENEMY_PRE && actors) { const ch = setEnemyModels(ENEMY_PRE, k => !!BLOCKS_M[k], th.time === 'night'), cb = setBossModel('b-' + ENEMY_PRE + '-' + (Math.min(2, game.stage || 0) + 1), k => !!BLOCKS_M[k]); if (ch && actors.rebuildSwarm) actors.rebuildSwarm(); void cb; }       /* the map's night creatures and the stage's own boss body */ setMusic(th.music, th.time); setAmbience(th.ambience + '_' + th.time.toUpperCase()); look = Object.assign({}, lookFor(0), { name: th.id + '-' + th.time, sky: N.sky, fogNear: N.fog[0], fogFar: N.fog[1], dome: N.dome, actor: N.actor }); sun.color.setHex(N.sun.color); sun.intensity = N.sun.k; sun.position.set(60, 20 + 140 * N.sun.elev, 30); hemi.color.setHex(N.hemi[0]); hemi.groundColor.setHex(N.hemi[1]); hemi.intensity = N.hemi[2]; }       // the map theme and its time of day (src/data/themes.js): stage 1 morning, 2 evening, 3 night
   applyStageLook(look);       // the stage's palette: ground, rim, sky and fog, seal
   mapMesh = buildMapMesh(game.map, look); scene.add(mapMesh);
   if (game.map.v2) input.yaw = chooseStartYaw(game.map);       // a designed map: the camera starts turned toward the best view from the spawn (open ground, a landmark or the gate, two tiers; never a wall within 40 m)
-  if (waterMesh) { scene.remove(waterMesh); waterMesh.geometry.dispose(); waterMesh = null; } { const pl = poolSpots(game.map); if (pl.length) { waterMesh = buildWater(pl, look); scene.add(waterMesh); } } curLook = look;
+  if (waterMesh) { scene.remove(waterMesh); waterMesh.geometry.dispose(); waterMesh = null; } { const pl = poolSpots(game.map); if (pl.length) { waterMesh = buildWater(pl, look); scene.add(waterMesh); } } if (seaMesh) { scene.remove(seaMesh); seaMesh.geometry.dispose(); seaMesh.material.dispose(); seaMesh = null; } if (game.map.waterY !== undefined && curTheme && curTheme.water) { seaMesh = new T.Mesh(new T.PlaneGeometry(9000, 9000).rotateX(-Math.PI / 2), new T.MeshLambertMaterial({ color: curTheme.water[0], transparent: true, opacity: curTheme.water[1], depthWrite: false })); seaMesh.position.y = game.map.waterY; seaMesh.renderOrder = 2; scene.add(seaMesh); }       // the open water of a water map: one sheet at the water level, following the camera
+  curLook = look;
     if (gateSeal) scene.remove(gateSeal); gateSeal = buildGateSeal(game.map, look); scene.add(gateSeal);
     if (grassMesh) { scene.remove(grassMesh); grassMesh.geometry.dispose(); grassMesh = null; }
     if (sceneryGroup) { scene.remove(sceneryGroup); sceneryGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); }); sceneryGroup = null; }
@@ -727,6 +729,7 @@ function frame(now) {
     if (t5 && !tb.fired && !(window.__ds && window.__ds.tier5Force === 'quiet')) { tb.fired = true; const gm = fx.moment('tablebreak', 'A', { hitstop: 0.12 }, { once: 'run' }); if (gm.screen) { const sd = (game.seed || 1) * 0.6180339, f1 = sd % 1, f2 = (sd * 7.31) % 1, f3 = (sd * 3.97) % 1, a0 = f1 * 0.9, a1 = a0 + 1.25 + f2 * 0.8, a2 = a1 + 1.25 + f3 * 0.8; blitMat.uniforms.uTBang.value.set(a0, a1, a2); tb.on = true; tb.t0 = performance.now(); } } }
   fx.tick = Math.round(game.t * 60); fx.stage = game.stage || 0; fx.blocked = !!game.offer || mapOpen; fx.camDist = Math.hypot(camera.position.x - ip.x, camera.position.y - ip.y, camera.position.z - ip.z);
   E.pl.value.set(ip.x, ip.y, ip.z); updateEngine(dtReal || 0.016, curLook); ageRipples(dtReal || 0.016);
+  if (seaMesh) seaMesh.position.set(Math.round(camera.position.x / 64) * 64, game.map.waterY, Math.round(camera.position.z / 64) * 64);
   if (waterMesh) { waterMesh.userData.update(camera.position); ripT -= dtReal || 0.016; if (ripT <= 0) { const sp = Math.hypot(game.p.vx, game.p.vz); for (const q of poolSpots(game.map)) if (Math.hypot(ip.x - q.x, ip.z - q.z) < q.r + 0.3 && sp > 1) { ripple(ip.x, ip.z, Math.min(1, 0.4 + sp / 14)); ripT = 0.28; } } }       // the duelist's steps in a pool make ripples
   const lpf = game.p.hp / game.p.maxHp, low = MODE === 'play' && !game.over && (lowShown ? lpf <= 0.33 : lpf <= 0.30);       if (low !== lowShown) { lowShown = low; $('lowhp').classList.toggle('on', low); }       // on at 30% of max LP or less, off again above 33%
   head.x = ip.x; head.y = ip.y + 1.5; head.z = ip.z;

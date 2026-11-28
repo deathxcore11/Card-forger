@@ -122,12 +122,13 @@ function pane(D, K, cx, y, cz, tx, tz, nx, nz, w, h) {
 // the block look (?blocks=1): a mesa or landmark drawn on the 24 cm ground grid, rows of cells inside its outline with flat tops and vertical walls, the same banded faces
 function blockMeshVox(D, map, b) {
   const cr = Math.cos(b.rot), sr = Math.sin(b.rot), avg = (b.rx + b.rz) / 2, q = 1 - 0.15 * b.cw / avg, K = { face: mixc(0xc09c66, [0xb88a5a, 0xc8a070, 0xb07850][b.tone % 3], 0.35), top: 0xcaa874 }, T = Math.round((b.T + 0.04) / 0.06) * 0.06, C = 0.96, R0 = Math.max(b.rx, b.rz) * q + 1;
-  const inside = (x, z) => { const dx = x - b.cx, dz = z - b.cz, lx = (dx * cr + dz * sr) / (q * b.rx), lz = (-dx * sr + dz * cr) / (q * b.rz); return Math.abs(lx) ** 3 + Math.abs(lz) ** 3 <= 1; };
+  const inside = (x, z) => { const dx = x - b.cx, dz = z - b.cz, lx = (dx * cr + dz * sr) / (q * b.rx), lz = (-dx * sr + dz * cr) / (q * b.rz); const an = Math.atan2(lz, lx), crag = 1 - 0.07 * (0.5 + 0.5 * Math.sin(an * 7 + b.seed)) - 0.05 * (0.5 + 0.5 * Math.sin(an * 17 + b.seed * 1.7)); return Math.abs(lx) ** 3 + Math.abs(lz) ** 3 <= crag * crag * crag; };       // a craggy outline (buttresses and clefts), always inside the solid shape the sim rides
   const x0 = Math.floor((b.cx - R0) / C) * C, z0 = Math.floor((b.cz - R0) / C) * C, N = Math.ceil(2 * R0 / C) + 2, runs = [];
   for (let j = 0; j < N; j++) { const z = z0 + (j + 0.5) * C; let L = -1, Rr = -1; for (let i = 0; i < N; i++) if (inside(x0 + (i + 0.5) * C, z)) { if (L < 0) L = i; Rr = i + 1; } runs.push(L < 0 ? null : [L, Rr]); }
-  const band = y => mixc(K.face, 0x000000, [0.0, 0.03, 0.015, 0.045][((Math.floor(y / 0.24 + 1e-6) % 4) + 4) % 4]);       // one subtle shade per 24 cm course, a sandstone of the ground's tone
+  const STR = [[0x000000, 0], [0x7a3a1c, 0.2], [0x000000, 0.07], [0xe8c890, 0.18], [0x5a2a18, 0.26], [0x000000, 0.03], [0x9a5a2a, 0.22]];       // rock strata: a tone every 1.2 m, each seed starts on a different one
+  const band = (y, hx) => { const st = STR[(((Math.floor((y + 0.25 * Math.sin((hx || 0) * 0.35)) / 1.2) + (b.seed | 0)) % 7) + 7) % 7], c = mixc(K.face, st[0], st[1]); return mixc(c, 0x000000, [0.0, 0.05, 0.02, 0.07][((Math.floor(y / 0.24 + 1e-6) % 4) + 4) % 4] + (T - y < 0.48 ? -0.0 : 0)); };       // 24 cm courses inside each stratum; the strata waver a little along the wall       // one subtle shade per 24 cm course, a sandstone of the ground's tone
   const wall = (a, bb, out) => { const g = Math.round(Math.min(footY(map, a[0], a[1]), footY(map, bb[0], bb[1])) / 0.24) * 0.24 - 0.24, mx = (a[0] + bb[0]) / 2 - b.cx, mz = (a[1] + bb[1]) / 2 - b.cz, ml = Math.hypot(mx, mz) || 1, nrm = [mx / ml, 0, mz / ml];       // lit by the outward direction from the centre, so the stepped outline reads as one smooth face
-    for (let y = g; y < T - 0.01;) { const y1 = Math.min(T, (Math.floor(y / 0.24 + 1e-6) + 1) * 0.24); D.quad([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, band(y)); y = y1; } };
+    for (let y = g; y < T - 0.01;) { const y1 = Math.min(T, (Math.floor(y / 0.24 + 1e-6) + 1) * 0.24); D.quad([a[0], y, a[1]], [bb[0], y, bb[1]], [bb[0], y1, bb[1]], [a[0], y1, a[1]], out, band(y, a[0] + a[1])); y = y1; } };
   runs.forEach((r, j) => { if (!r) return; const za = z0 + j * C, zb = za + C, xa = x0 + r[0] * C, xb = x0 + r[1] * C;
     D.quad([xa, T, za], [xb, T, za], [xb, T, zb], [xa, T, zb], [0, 1, 0], K.top); wall([xa, za], [xa, zb], [-1, 0, 0]); wall([xb, za], [xb, zb], [1, 0, 0]);
     for (const [nb, dz, zz] of [[runs[j - 1], -1, za], [runs[j + 1], 1, zb]]) { const segs = nb ? [[r[0], Math.min(r[1], nb[0])], [Math.max(r[0], nb[1]), r[1]]] : [[r[0], r[1]]]; for (const [s0, s1] of segs) if (s1 > s0) wall([x0 + s0 * C, zz], [x0 + s1 * C, zz], [0, 0, dz]); } });
@@ -215,9 +216,9 @@ export function setParkKit(geos) { PARK = null; if (!geos) return; const out = {
     out[k] = { geo: G, w: x1 - x0, h: y1 - y0, d: z1 - z0, hi: hn && hz / hn < 0 ? -1 : 1 }; }       // centred, standing on y 0; hi: which local z end is the tall one
   PARK = Object.keys(out).length ? out : null; }
 // a ramp rising along (ux, uz) from its low edge at (x, z): length len, width w, height h
-function parkRamp(D, M, x, y, z, ux, uz, len, w, h) { const yaw = M.hi > 0 ? Math.atan2(ux, uz) : Math.atan2(-ux, -uz); D.addModel(M.geo, x + ux * len / 2, y, z + uz * len / 2, yaw, [w / M.w, h / M.h, len / M.d]); }
+function parkRamp(D, M, x, y, z, ux, uz, len, w, h) { const yaw = M.hi > 0 ? Math.atan2(ux, uz) : Math.atan2(-ux, -uz), n = Math.max(1, Math.round(w / M.w + 0.2)); for (let i = 0; i < n; i++) { const o = (i + 0.5 - n / 2) * w / n; D.addModel(M.geo, x + ux * len / 2 + uz * o, y, z + uz * len / 2 - ux * o, yaw, [w / n / M.w, h / M.h, len / M.d]); } }       // a wide ramp is whole copies side by side, not one piece stretched
 // a bar from a to b (a ledge or a rail) whose top is h above the lower end's ground
-function parkBar(D, M, ax, az, bx, bz, y, h, thick) { const dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz) || 1; D.addModel(M.geo, (ax + bx) / 2, y, (az + bz) / 2, Math.atan2(-dz, dx), [L / M.w, h / M.h, thick ? thick / M.d : 1]); }       // the map's structure models, by site index (gen W.sites)
+function parkBar(D, M, ax, az, bx, bz, g, ta, tb) { const dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz) || 1, n = Math.max(1, Math.round(L / M.w)), sy = Math.max(0.6, Math.min(1.6, ((ta + tb) / 2 - g) / M.h)), yaw = Math.atan2(-dz, dx); for (let i = 0; i < n; i++) { const t = (i + 0.5) / n; D.addModel(M.geo, ax + dx * t, ta + (tb - ta) * t - M.h * sy, az + dz * t, yaw, [L / n / M.w, sy, 1]); } }       // whole copies of the piece end to end (never one piece stretched into a slab), each at its own height along a sloped run       // the map's structure models, by site index (gen W.sites)
 // a themed map's palette: the built pieces (mesas, gate, rails, stalls, far rocks) were drawn in desert colours; each colour keeps its brightness and moves onto the map's ground ramp (lee, mid, lit), saturated accents a little less
 let PAL = null;
 export function setDressPalette(G) { PAL = G ? [G.lee, G.tintA, G.lit] : null; }
@@ -233,8 +234,8 @@ export function addDressing(D, map, ok) {
   if (PARK) { const P = PARK;
     if (P.quarter) for (const q of d0.quarters || []) if (yes(q[0], q[2])) parkRamp(D, P.quarter, q[0], groundAt(map, q[0], q[2]) - 0.2, q[2], q[3], q[4], 3.2, q[5], 3.4);
     if (P.kicker) for (const q of d0.kickers || []) if (yes(q[0], q[2])) { const [x, y, z, ux, uz, len, w, h] = q; parkRamp(D, P.kicker, x - ux * len / 2, y - 0.2, z - uz * len / 2, ux, uz, len, w, h + 0.2); }
-    if (P.ledge) for (const q of d0.ledges || []) if (yes(q[0], q[2])) { const g = Math.min(q[1], q[4]) - 0.3; parkBar(D, P.ledge, q[0], q[2], q[3], q[5], g, (q[1] + q[4]) / 2 + q[6] - g, null); }
-    if (P.rail) for (const q of d0.poles || []) if (yes(q[0], q[2])) { const g = Math.min(groundAt(map, q[0], q[2]), groundAt(map, q[3], q[5])) - 0.2; parkBar(D, P.rail, q[0], q[2], q[3], q[5], g, (q[1] + q[4]) / 2 + 0.05 - g, null); } }
+    if (P.ledge) for (const q of d0.ledges || []) if (yes(q[0], q[2])) { const g = Math.min(q[1], q[4]) - 0.3; parkBar(D, P.ledge, q[0], q[2], q[3], q[5], g, q[1] + q[6], q[4] + q[6]); }
+    if (P.rail) for (const q of d0.poles || []) if (yes(q[0], q[2])) { const g = Math.min(groundAt(map, q[0], q[2]), groundAt(map, q[3], q[5])) - 0.2; parkBar(D, P.rail, q[0], q[2], q[3], q[5], g, q[1] + 0.05, q[4] + 0.05); } }
   for (const q of d.pipes || []) if (yes(q[0], q[2])) pipeHoop(D, q);
   for (const q of d.rings || []) if (yes(q[0][0], q[0][2])) ringRail(D, q);
   for (const q of d.arches || []) if (yes(q[0], q[2])) arch(D, q);
