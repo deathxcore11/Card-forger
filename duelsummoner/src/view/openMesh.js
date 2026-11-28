@@ -38,7 +38,9 @@ export function buildOpen(map, look) {
   const group = new T.Group(), blocks = map.blocks || [], wind = map.dune ? map.dune.wind : 0, cw = Math.cos(wind), sw = Math.sin(wind);
   // under a block (wherever its rise has started, so the ground is continuous at its foot and no cone of ramp is left standing beside the wall) the view ground is the plain dune; the box drawn by openDressing hides it
   const gh = (x, z) => viewH(map, x, z);
+  const GY = map.world && map.world.gym, plaza = (x, z) => (GY && (x - GY.x) * (x - GY.x) + (z - GY.z) * (z - GY.z) < GY.r * GY.r ? (((Math.floor(x / 4) + Math.floor(z / 4)) & 1) ? 0xb9a88c : 0xae9c80) : 0);       // the ride gym's floor: pale stone paving in 4 m slabs
   const sandColour = (cx, cz, cy, nx, ny, nz) => {
+    if (blocksOn && plaza(cx, cz)) return plaza(cx, cz);
     if (blocksOn) return OWN_G ? ownBlock(cx, cz) : dim(0xc09c66, 0.97 + 0.06 * vnoise(91, cx / 90, cz / 90));       // the block look: one sand tone with a slow soft drift
     const e = 3, gx = ny ? -nx / ny : (groundAt(map, cx + e, cz) - groundAt(map, cx - e, cz)) / (2 * e), gz = ny ? -nz / ny : (groundAt(map, cx, cz + e) - groundAt(map, cx, cz - e)) / (2 * e), sh =       /* the slope from the corner normal when the grid has it (four height reads fewer a corner) */ Math.max(-1, Math.min(1, (-gx * 0.8 - gz * 0.55) * 4.2));       // the slope over a 6 m window (not the facet), so a dune reads as one lit side and one shaded side
     let base = mixc(TINT_A, TINT_B, vnoise(77, cx / 110, cz / 110)); if (map.tintAt && SANDY) { const q = map.tintAt(cx, cz); if (q.k > 0) base = mixc(base, q.c, q.k); }       // the region gives the sand its colour                          // one slow tint across the map, no blotches
@@ -60,7 +62,7 @@ export function buildOpen(map, look) {
   // a vertical rectangle. One sand tone (c09c66) with a slow soft drift of a few per cent, step sides at 88 per cent of the top, lit as the tops are (no dark wedges). Equal tops merge along a row,
   // equal walls along an edge. Under a park piece's ramp the columns are kept below its treads. The sim walks and rides the smooth unsnapped surface (unchanged).
   const SAND_B = 0xc09c66, BQ = 0.06;
-  const sandBlock = (x, z, k) => (OWN_G ? dim(ownBlock(x, z), k) : dim(SAND_B, (0.97 + 0.06 * vnoise(91, x / 90, z / 90)) * k));
+  const sandBlock = (x, z, k) => plaza(x, z) ? dim(plaza(x, z), k) : (OWN_G ? dim(ownBlock(x, z), k) : dim(SAND_B, (0.97 + 0.06 * vnoise(91, x / 90, z / 90)) * k));
   const pieceCaps = (x0, z0) => { const out = []; if (!map.dressCell) return out; const Q2 = 256; for (let qz = Math.floor((z0 - 20) / Q2); qz <= Math.floor((z0 + CHK + 20) / Q2); qz++) for (let qx = Math.floor((x0 - 20) / Q2); qx <= Math.floor((x0 + CHK + 20) / Q2); qx++) { const D = map.dressCell(qx, qz); for (const q of D.kickers || []) out.push(['k', q]); for (const q of D.quarters || []) out.push(['q', q]); } return out; };
   const capAt = (caps, x, z) => { let cap = Infinity; for (const [kind, q] of caps) { if (kind === 'k') { const [kx, ky, kz, ux, uz, len, w, h] = q, dx = x - kx, dz = z - kz, a = dx * ux + dz * uz + len / 2, b = -dx * uz + dz * ux; if (a < -0.2 || a > len + 0.2 || Math.abs(b) > w / 2 + 0.2) continue; cap = Math.min(cap, ky - 0.2 + Math.max(0, Math.floor(Math.min(1, a / len) * h / BQ)) * BQ); }
       else { const [kx, ky, kz, ux, uz, w] = q, dx = x - kx, dz = z - kz, a = dx * ux + dz * uz, b = -dx * uz + dz * ux; if (a < -0.2 || a > 3.4 || Math.abs(b) > w / 2 + 0.2) continue; cap = Math.min(cap, groundAt(map, kx, kz) - 0.2); } } return cap; };

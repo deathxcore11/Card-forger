@@ -2,7 +2,7 @@
 import { loadMapModels, blockMerged as blockMergedM, BLOCKS as BLOCKS_M } from './view/models.js';
 import { setDressKit, setDressPalette, setParkKit } from './view/openDressing.js';
 import { setEnemyModels, setBossModel } from './view/actors.js';
-import { THEMES as THEMES_ALL } from './data/themes.js';
+import { THEMES as THEMES_ALL, GYM_KIT } from './data/themes.js';
 import { audio, initAudio, setVolumes, play, setMusic, setAmbience, musicTier, carve, stopCarve, preload } from './view/audio.js';
 import { themeFor } from './data/themes.js';
 import { setGroundTheme } from './view/openMesh.js';
@@ -142,8 +142,9 @@ await loadBlocks(['kael', 'kaelRide', 'mira', 'vesh', 'oren', 'card', 'husk', 'r
 await loadFusionBodies();       // the lab's fused-body engine in the block runtime (a Fusion is drawn as one fused body of its parents); without it, the old models
 let ENEMY_PRE = '';       // the map's model prefix when it has its own enemy bodies
 { const tid = (/[?&](?:map|theme)=([a-z-]+)/.exec(location.search) || [])[1] || 'desert', TH = THEMES_ALL[tid]; if (TH && TH.dressing && TH.dressing.kit) { const pre = TH.kitPrefix !== undefined ? TH.kitPrefix : (TH.setpieces[0] || '').split('-')[0], id = s => (pre ? pre + '-' + s : s), en = pre ? ['swarm', 'rusher', 'flyer', 'shooter', 'charger', 'exploder', 'controller', 'shielded', 'support', 'trickster'].flatMap(j => ['e-' + pre + '-' + j, 'n-' + pre + '-' + j]).concat([1, 2, 3, 4].map(n => 'b-' + pre + '-' + n)) : [], park = ['quarter', 'kicker-card', 'ledge', 'rail'].map(k => id('p-' + k));
-  await loadMapModels([...TH.dressing.kit, ...TH.far, ...(TH.farRange ? [TH.farRange] : []), ...TH.setpieces, ...en, ...park]); const pg = k => (BLOCKS_M[k] ? blockMergedM(BLOCKS_M[k]) : null);
-  setParkKit({ quarter: pg(park[0]), kicker: pg(park[1]), ledge: pg(park[2]), rail: pg(park[3]) }); setDressKit(TH.dressing.kit.filter(k => BLOCKS_M[k]).map(k => ({ geo: blockMergedM(BLOCKS_M[k]) })), [TH.central, ...TH.setpieces.filter(k => k !== TH.central)].map(k => (BLOCKS_M[k] ? { id: k, geo: blockMergedM(BLOCKS_M[k]) } : null)));
+  const GYM = /[?&]gym=1/.test(location.search) && TH.id === 'desert';
+  await loadMapModels([...TH.dressing.kit, ...TH.far, ...(TH.farRange ? [TH.farRange] : []), ...TH.setpieces, ...en, ...park, ...(GYM ? GYM_KIT : [])]); const pg = k => (BLOCKS_M[k] ? blockMergedM(BLOCKS_M[k]) : null);
+  setParkKit({ quarter: pg(park[0]), kicker: pg(park[1]), ledge: pg(park[2]), rail: pg(park[3]) }); setDressKit(TH.dressing.kit.filter(k => BLOCKS_M[k]).map(k => ({ geo: blockMergedM(BLOCKS_M[k]) })), (GYM ? GYM_KIT : [TH.central, ...TH.setpieces.filter(k => k !== TH.central)]).map(k => (BLOCKS_M[k] ? { id: k, geo: blockMergedM(BLOCKS_M[k]) } : null)));
   if (TH.id !== 'desert') setDressPalette(TH.ground); if (pre) { setEnemyModels(pre, k => !!BLOCKS_M[k]); ENEMY_PRE = pre; } } }       // a map's own kits (structures, far silhouettes, dressing, park pieces, enemies) from the baked models, before the first chunk is built; the desert is the default map
 assets.puff = await loadPuffTexture('assets/models/puff.png.b64');                // falls back to a drawn puff if the file is missing
 

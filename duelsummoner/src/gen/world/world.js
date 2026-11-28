@@ -29,6 +29,8 @@ const POCKETS = [['wager', 0.12], ['vases', 0.45], ['cchest', 0.13], ['shrine', 
 // blocks per cell by region type: [mesa p/count, wall, ruin]  (counts are lo..hi inclusive)
 const COUNTS = [[[0, 0, 0], [0, 0, 0], [0, 1, 0.15]], [[3, 4, 1], [0, 1, 0.6], [1, 2, 1]], [[0, 1, 0.1], [0, 0, 0], [0, 1, 0.3]], [[1, 2, 1], [0, 1, 0.5], [0, 1, 0.4]], [[0, 1, 0.4], [0, 0, 0], [4, 7, 1]], [[0, 1, 0.2], [0, 0, 0], [0, 1, 0.5]], [[0, 1, 0.5], [1, 1, 0.4], [0, 1, 0.3]]];
 
+// the ride gym's plaza: where each park piece stands from the centre (x, z, turn), in the order of GYM_KIT (src/data/themes.js)
+const GYM_LAY = [[36, 4, 0], [-40, 6, 0], [0, 22, 0], [-26, -8, 1.5708], [0, 80, 3.1416], [44, 50, 0], [-46, 52, 0.6], [-70, -6, 1.5708], [70, 30, 0.8], [0, 112, 0]];
 export function makeWorld(seedLo, stageIndex, opts) {
   const seed = ((seedLo >>> 0) ^ Math.imul(stageIndex + 1, 0x85EBCA6B)) >>> 0, rr = rngOf(seed ^ 0xC0FFEE), wind = rr() * TAU, WP = { wind };
   const W = { seed, wind, stage: stageIndex, regionNames: REGION, extra: [] };
@@ -126,9 +128,7 @@ export function makeWorld(seedLo, stageIndex, opts) {
   }
   // the ground before anything is placed on it: the blended regions, the slow global rise and fall, the mountains
   function gymH(u, v, h0) {       // u, v from the gym's centre; h0 the flat floor
-    let h = h0; const d = sq((u - 35) * (u - 35) + v * v); if (d < 12) h -= 3 * (1 - (d / 12) * (d / 12));       // the bowl: 24 m across, 3 m deep
-    if (u > -66 && u < -19 && v > 14 && v < 111) { const e = Math.min(1, Math.min(u + 66, -19 - u, v - 14, 111 - v) / 6), s = sstep(20, 105, v); h += 14 * s * e; }       // the downhill run: 14 m over 85 m
-    if (u >= 30 && u <= 42 && v >= 40 && v <= 52) h += 6;       // the block mesa: 12 m square, 6 m sheer, a reward on top
+    void u; void v; let h = h0;       // a level plaza: the bowl, the pipe, the stairs and the rest are the voxel park pieces standing on it (W.sites), solid by their height grids
     return h;
   }
   // the kill bowl (owner, 27 Nov: "a vast fun enemy kill area where you can do tricks and zoom around hitting the entire corner"): a flat floor 110 m across, banked up to a rim
@@ -394,7 +394,7 @@ export function makeWorld(seedLo, stageIndex, opts) {
   W.spawn = { x: r2(sp[0]), z: r2(sp[1]) }; W.addPad(sp[0], sp[1], 3, 9);
   // the free chest a short way from the start
   let fc = null; { const o = gather9(sp[0], sp[1]); for (let r = 14; r <= 30 && !fc; r += 2) for (let a2 = 0; a2 < 16 && !fc; a2++) { const x = sp[0] + cosA(a2 * TAU / 16) * r, z = sp[1] + sinA(a2 * TAU / 16) * r; if (spread(x, z, 3) < 0.9 && !o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 3) && !o.pockets.some(p => dist(p.x, p.z, x, z) < 14)) fc = { type: 'cchest', x, z, free: true }; } }
-  if (W.gym) fc = { type: 'cchest', x: W.gym.x + 36, z: W.gym.z + 46, free: true };       // the gym: the reward sits on the mesa
+  if (W.gym) fc = { type: 'cchest', x: W.gym.x + 14, z: W.gym.z - 52, free: true };       // the gym: the reward stands on open floor near the start
   if (fc) { W.addPad(fc.x, fc.z, 3, 8); } W.freeChest = fc;
   // the start is generous: a Witness Stone 35 to 60 m out and a second free chest 60 to 100 m out, on flat ground clear of everything, so the first item comes inside the first minute
   W.startExtras = []; { const o = gather9(sp[0], sp[1]); for (const [type, lo, hi] of [['stone', 35, 60], ['cchest', 60, 100]]) { let site = null; for (let t = 0; t < 400 && !site; t++) { const r = lo + rs() * (hi - lo), a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (spread(x, z, 3) > 0.9 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 4) || o.pockets.some(p => dist(p.x, p.z, x, z) < 16) || o.rings.some(q => dist(q.x, q.z, x, z) < 30) || (fc && dist(fc.x, fc.z, x, z) < 12) || W.startExtras.some(q => dist(q.x, q.z, x, z) < 14)) continue; site = { type, x, z, free: true }; } if (site) { W.addPad(site.x, site.z, 3, 8); W.startExtras.push(site); } } }
@@ -417,7 +417,8 @@ export function makeWorld(seedLo, stageIndex, opts) {
   W.sleepers = []; { const o0 = gather9(sp[0], sp[1]); void o0; for (const [role, r0] of [['elite', 230], ['bossA', 430], ['bossB', 650]]) { let site = null; for (let t = 0; t < 600 && !site; t++) { const r = r0 + (rs() - 0.5) * 80, a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (r4(x, z) > EDGE - 400) continue; const o = gather9(x, z); if (spread(x, z, 5) > 1.3 || slope(x, z) > 0.25 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 14) || o.pockets.some(p => dist(p.x, p.z, x, z) < 22) || o.rings.some(q => dist(q.x, q.z, x, z) < 24) || W.sleepers.some(q => dist(q.x, q.z, x, z) < 120)) continue; site = { role, x: r2(x), z: r2(z) }; } if (site) { W.sleepers.push(site); W.addPad(site.x, site.z, 4, 8); } } }
   // the map's structures (themes-v1 setpieces): site 0 is the central one about 150 m out, the rest in a widening spiral, each on a flat pad with a soft skirt; the view stands the kit model on it
   W.sites = []; { const n = (opts && opts.setpieces) | 0, nk = Math.max(n, (opts && opts.kits) | 0), order = [], SH = (opts && opts.shapes) || []; for (let k = 0; k < nk - 1; k++) order.push(k); for (let k = order.length - 1; k > 0; k--) { const j = (rs() * (k + 1)) | 0, t0 = order[k]; order[k] = order[j]; order[j] = t0; }       // which kit stands at each site: the central one first, the rest shuffled by seed
- for (let i = 0; i < n; i++) { let site = null; const k = i === 0 ? 0 : 1 + order[i - 1], sh = SH[k] || null, R = sh ? sh.r : 14, r0 = i === 0 ? Math.max(150, R + 75) : 260 + i * 95;       // each structure keeps clear of everything by its own size, and its pad is as wide as it is
+ for (let i = 0; i < n; i++) { if (W.gym) { const L = GYM_LAY[i], sh0 = SH[i] || null; if (!L || !sh0) continue; const st = { i, k: i, x: W.gym.x + L[0], z: W.gym.z + L[1], yaw: L[2], R: sh0.r, c: cosA(L[2]), s: sinA(L[2]), sh: sh0 }; W.sites.push(st); st.y = r2(W.addPad(st.x, st.z, sh0.r + 1, sh0.r + 6).hc); continue; }       // the ride gym: the park pieces at their set places
+  let site = null; const k = i === 0 ? 0 : 1 + order[i - 1], sh = SH[k] || null, R = sh ? sh.r : 14, r0 = i === 0 ? Math.max(150, R + 75) : 260 + i * 95;       // each structure keeps clear of everything by its own size, and its pad is as wide as it is
   for (let t = 0; t < 600 && !site; t++) { const r = r0 + (rs() - 0.5) * 80 + t * 0.5, a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (r4(x, z) > EDGE - 300 - R) continue; if (W.waterY !== undefined && baseH1(x, z) < W.waterY + 0.9) continue; const o = gather9(x, z); if (spread(x, z, 10) > 6 + t * 0.01 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + R + 10) || o.rings.some(q => dist(q.x, q.z, x, z) < R + 16) || o.pockets.some(p => dist(p.x, p.z, x, z) < R + 10) || W.sleepers.some(q => dist(q.x, q.z, x, z) < R + 26) || W.sites.some(q => dist(q.x, q.z, x, z) < R + q.R + 60) || dist(x, z, sp[0], sp[1]) < R + 45) continue; const yaw = r2(rs() * TAU); site = { i, k, x: r2(x), z: r2(z), yaw, R, c: cosA(yaw), s: sinA(yaw), sh }; }
   if (site) { W.sites.push(site); site.y = r2(W.addPad(site.x, site.z, R + 2, R + 22).hc); } } }
   void cbrt; void qOf;

@@ -59,4 +59,5 @@ export function themeFor(mapId, stage) {
 }
 
 // the order a map's structures are dealt to sites: the central one first (the generator's site 0), then the rest as listed
+export const GYM_KIT = ['p-bowl', 'p-halfpipe', 'p-funbox', 'p-spine', 'p-quarter-tall', 'p-stairs-rail', 'p-gap', 'p-wallride-card', 'p-beam', 'p-aqueduct'];       // the ride gym's plaza pieces (placed by GYM_LAY in gen/world/world.js)
 export const kitOrder = T => (T && T.setpieces ? [T.central, ...T.setpieces.filter(k => k !== T.central)].filter(Boolean) : []);

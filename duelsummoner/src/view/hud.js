@@ -149,7 +149,7 @@ export function drawHud(g, force) {
   if (g.mode !== 'classic') { $('nextEvent').textContent = ''; const rh = g.opts && g.opts.gym ? '' : riteLines(g); if ($('rite').innerHTML !== rh) $('rite').innerHTML = rh; } else $('nextEvent').textContent = nextEvent(g);
   const cnt = {}; for (const id of g.items) cnt[id] = (cnt[id] || 0) + 1;
   const items = Object.keys(cnt).map(id => ITEMS[id].name + (cnt[id] > 1 ? ' x' + cnt[id] : '')).concat(g.blessings.map(id => BLESSINGS[id].name.replace('Blessing of ', '') + '+'));
-  $('itemsList').textContent = items.length ? 'ITEMS: ' + items.join(', ') : '';
+  $('itemsList').textContent = items.length ? 'Items  ·  ' + items.join('  ·  ') : '';
   if (g.mode !== 'classic') { $('stats').textContent = ''; return; }
   const idol = g.sp.filter(s => s.kind === 'idol' && s.alive);
   const st = [];
