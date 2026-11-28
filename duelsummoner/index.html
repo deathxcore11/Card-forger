@@ -402,19 +402,21 @@
   #clock.bossSoon { color:#ff8a6a !important; }
   #strip span { display:inline-block; font-family:var(--sans); font-size:.72em; letter-spacing:1.4px; text-transform:uppercase; color:var(--gold); border:0 !important; background:none !important; padding:0 !important; }
   #stakes:empty, #stakes.quiet { display:none; } #chestPrice { font-size:.8em; color:var(--dim); }
-  #rite div { font-size:.92em; } #rite .tick { display:inline-block; width:1em; color:var(--gold); } #rite .done { color:#bfe6c4; opacity:.8; }
+  #rite div { font-size:.92em; } #rite .tick { display:inline-block; width:1.1em; margin-right:.4em; text-align:center; color:var(--gold); } #rite .done { color:#bfe6c4; opacity:.8; }
   #minimap { border-radius:50% !important; border:2px solid rgba(232,196,110,.75) !important; box-shadow:0 4px 14px #0008; width:136px !important; height:136px !important; top:auto !important; right:16px !important; bottom:16px !important; image-rendering:auto !important; }
   #devbar { display:none !important; } body[data-mode=pause] #devbar, body[data-mode=start] #devbar { display:flex !important; }
   #rideHint { font-family:var(--sans) !important; font-weight:600 !important; letter-spacing:.6px; background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)), rgba(8,10,15,.62) !important; border:1px solid rgba(232,196,110,.4) !important; border-radius:999px !important; color:#f6dc9a !important; padding:7px 18px !important; box-shadow:0 6px 18px #0006; }
   #zones .zone { border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)), rgba(8,10,15,.6) !important; border:1px solid rgba(232,196,110,.35); font-family:var(--sans); }
   #zones .zone:not(.full) { background:none !important; border:1px dashed rgba(232,196,110,.18) !important; box-shadow:none !important; opacity:.55; } #zones .zone:not(.full)::after { content:'' !important; }
+  #zones .zone .short { display:none; }
   #rhBal { display:none !important; }       /* controls v2: no balance bar, the combo timer runs */
-  #offerScreen .card .new, #offerScreen .new { background:linear-gradient(180deg, #f6dc9a, #e0b765) !important; color:#1a1206 !important; border-radius:6px; padding:1px 6px; font-weight:700; }
+  /* (the NEW badge is the card title's ::after; the card itself never takes the gold fill) */
   @media (max-width: 600px) {
     #topleft, #topright { padding:6px 9px; border-radius:11px; } #topleft { width:46vw; } #topright { min-width:0; max-width:46vw; }
     #topright > div:not(#clock):not(#rite) { display:none; } #rite div:not(:first-child) { display:none; }
     #minimap { width:96px !important; height:96px !important; bottom:auto !important; top:auto !important; }
-    #zones .zone:not(.full) { display:none; } #zones .zone > span { display:none; }
+    #zones .zone:not(.full) { display:none; } #zones .zone > span { display:none; } #zones .zone .short { display:block !important; font:700 11px/1.2 var(--sans); text-align:center; margin-top:4px; font-style:normal; }
+    #offerScreen #offerBtns button, #offerScreen .offerBtns button { padding:8px 10px !important; font-size:11px !important; letter-spacing:.8px !important; }
     #prompt { white-space:normal !important; max-width:92vw; text-align:center; line-height:1.3; }
     #topleft { width:calc(50vw - 18px) !important; left:8px !important; } #topright { right:8px !important; max-width:calc(50vw - 18px) !important; } #clock { font-size:18px !important; white-space:nowrap; letter-spacing:1px; }
   }

@@ -469,9 +469,10 @@ export class Actors {
     if (this.fusionAt !== undefined && this.vt - this.fusionAt > 1.8) { this.fusionAt = undefined; }
     // hide anything standing between the camera and the duelist's head, or right at the camera
     const sx = head.x - cam.x, sy = head.y - cam.y, sz = head.z - cam.z, sl2 = sx * sx + sy * sy + sz * sz || 1;
-    const blocked = (x, y, z, r) => {
-      const dx = x - cam.x, dy = y - cam.y, dz = z - cam.z; let u = (dx * sx + dy * sy + dz * sz) / sl2;
-      if (u < -0.02 || u > 0.97) return dx * dx + dy * dy + dz * dz < 3 * 3;
+    const blocked = (x, y, z, r, near) => {
+      const dx = x - cam.x, dy = y - cam.y, dz = z - cam.z; let u = (dx * sx + dy * sy + dz * sz) / sl2; const nr = near || 3;
+      if (dx * dx + dy * dy + dz * dz < nr * nr) return true;       // anything right at the camera hides (a big body within its own size of the lens never fills the screen)
+      if (u < -0.02 || u > 0.97) return false;
       if (u > 0.84) return false;                                // enemies right at the duelist stay visible
       u = Math.max(0, u); const qx = dx - sx * u, qy = dy - sy * u, qz = dz - sz * u;
       return qx * qx + qy * qy + qz * qz < r * r;
@@ -588,7 +589,7 @@ export class Actors {
       let ki = e.kind[i]; { const k0 = this.kinds[ki]; if (k0.farIdx !== undefined && (x - px) * (x - px) + (z - pz) * (z - pz) > 900) ki = k0.farIdx; }       // block look: the half-detail copy beyond 30 m
       const k = this.kinds[ki], K = k.K, n = counts[ki];
       { const ddx = x - px, ddz = z - pz; if (ddx * ddx + ddz * ddz < 20) nearN++; }
-      if (blocked(x, y + 0.9, z, 2.4)) continue;
+      if (blocked(x, y + 0.9, z, 2.4, 3 + (K.radius || 0.5) * 4 * (e.size[i] || 1))) continue;
       const hit = e.flash[i] > 0; let bob; if (K.fly) bob = Math.sin(t * 9 + i) * 0.08; else { const bp = this._bp || (this._bp = new Float32Array(e.max * 3)), j3 = i * 3; if (sage < 0.02) { bp[j3] = i; bp[j3 + 1] = x; bp[j3 + 2] = z; } const spd = Math.min(14, Math.hypot(x - bp[j3 + 1], z - bp[j3 + 2]) / Math.max(dt, 0.004)); bp[j3 + 1] = x; bp[j3 + 2] = z; bp[j3] += spd / 1.3 * dt * Math.PI; bob = Math.abs(Math.sin(bp[j3])) * (K.id === 0 ? 0.04 : 0.15) * Math.min(1, spd / 1.5); }       // the hop follows ground speed (one hop per 1.3 m), and stops when the enemy stands
       let sc = K.scale, pulse = 1; if (K.id === 5) sc = SC_SCARAB;       // the Tomb Scarab is drawn 1.3x so it can be picked out of a crowd (the sim hitbox is unchanged)
       if (K.id === 4 && e.st[i] === 1) pulse = 1 + 0.25 * Math.sin(t * 30);                        // Sand Bloat swelling before it bursts

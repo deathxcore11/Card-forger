@@ -125,7 +125,7 @@ export function drawHud(g, force) {
       if (!m) { el.innerHTML = 'empty<b>MONSTER ' + (i + 1) + '</b>'; return; }
       const D = MONSTERS[m.id] || FUSIONS[m.id], max = LEVELS.monsterMax;
       const els = D.elements || []; if (els[0]) el.style.borderColor = EL_COL[els[0]] || ''; if (els[1] && els[1] !== els[0]) el.style.boxShadow = 'inset 0 0 0 2px ' + (EL_COL[els[1]] || 'transparent');     // the element colours the border (two elements: the second shows inside it)
-      el.innerHTML = '<em class="fm" title="form ' + (formOf(m.id, m.level) + 1) + ' of 3">' + ROMAN[formOf(m.id, m.level)] + '</em><span style="color:#fff3d0;font-weight:bold">' + D.name + '</span>' + pips(m.level, max) + '<b>L' + m.level + '</b>';
+      el.innerHTML = '<em class="fm" title="form ' + (formOf(m.id, m.level) + 1) + ' of 3">' + ROMAN[formOf(m.id, m.level)] + '</em><span style="color:#fff3d0;font-weight:bold">' + D.name + '</span><i class="short" style="color:' + (EL_COL[els[0]] || '#fff3d0') + '">' + D.name.split(' ')[0] + '</i>' + pips(m.level, max) + '<b>L' + m.level + '</b>';
     });
     g.field.spells.forEach((s, i) => {
       const el = $('sz' + i); el.className = 'zone st' + (s ? ' full' : '');
