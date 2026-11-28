@@ -140,7 +140,7 @@ export function drawHud(g, force) {
   slowT = slow;
   const ready = fusionsReady(g), f = $('fusion');
   f.style.display = ready.length ? 'block' : 'none';
-  if (ready.length) f.textContent = 'FUSION READY: ' + ready.map(id => FUSIONS[id].name).join(' or ') + '. Open a sealed chest ({use}).'; if (ready.length) f.textContent = keyWords(f.textContent, inputMode());
+  if (ready.length) f.textContent = 'Fusion ready  ·  ' + ready.slice(0, 2).map(id => FUSIONS[id].name).join(' or ') + (ready.length > 2 ? ' and ' + (ready.length - 2) + ' more' : '') + '  ·  open a sealed chest ({use})'; if (ready.length) f.textContent = keyWords(f.textContent, inputMode());
   const boss = bossOf(g);
   $('boss').style.display = boss ? 'block' : 'none'; document.body.classList.toggle('bossOn', !!boss);       // the banner moves below the boss bar while it shows
   if (boss) { $('bossfill').style.width = Math.max(0, boss.hp / boss.maxHp * 100) + '%'; if ($('bossname').textContent !== boss.name) $('bossname').textContent = boss.name; }

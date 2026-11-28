@@ -383,12 +383,15 @@ export function makeWorld(seedLo, stageIndex, opts) {
   const relief = (x, z, r) => { let lo = 1e9, hi = -1e9; for (const f of [r, r * 0.6]) for (let a = 0; a < 12; a++) { const t = a * TAU / 12, h = baseH(x + cosA(t) * f, z + sinA(t) * f); if (h < lo) lo = h; if (h > hi) hi = h; } return hi - lo; };
   const rs = rngOf(seed ^ 0x5EED5);
   let sp = null;
+  const wetAt = (x, z) => { if (W.waterY === undefined) return false; if (baseH(x, z) < W.waterY + 0.8) return true; for (let a = 0; a < 8; a++) if (baseH(x + cosA(a * TAU / 8) * 10, z + sinA(a * TAU / 8) * 10) < W.waterY + 0.5) return true; return false; };       // the start never stands in or at the edge of water
   for (let t = 0; t < 4000 && !sp; t++) {
     const r = 40 + (t / 4000) * 700, a = rs() * TAU, x = cosA(a) * r, z = sinA(a) * r, o = gather9(x, z);
     if (t < 3000) { const S = W.sv, u = x * S.c + z * S.s, v = Math.abs(-x * S.s + z * S.c + 22 * sinA(u / 90) - S.off); if (v < 14 || v > 48) continue; }       // the start sits beside the start valley, so its line is in sight within 60 m
+    if (wetAt(x, z)) continue;
     if (slope(x, z) > 0.22 || spread(x, z, 5) > 0.9) continue; const rl = relief(x, z, 30); if (rl < 3 || rl > 14) continue;
     if (o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 20) || o.pockets.some(p => dist(p.x, p.z, x, z) < 45) || o.rings.some(q => dist(q.x, q.z, x, z) < 45)) continue; sp = [x, z];
   }
+  if (!sp && W.waterY !== undefined) for (let r = 0; r < 900 && !sp; r += 12) for (let k = 0; k < 24 && !sp; k++) { const a = k * TAU / 24, x = cosA(a) * r, z = sinA(a) * r; if (!wetAt(x, z) && slope(x, z) < 0.25) sp = [x, z]; }       // a water map with no start by the usual rules: the nearest dry flat ground
   if (!sp) sp = [0, 0];
   if (W.gym) sp = [W.gym.x, W.gym.z - 45];
   W.spawn = { x: r2(sp[0]), z: r2(sp[1]) }; W.addPad(sp[0], sp[1], 3, 9);

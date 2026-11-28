@@ -427,6 +427,10 @@
     /* one visual language (ui-polish-v1): the small utility tags wear the menu's glass and gold, never a debug look */
   body:not([data-mode=play]) #gymCard { display:none; }
   #itemsList { font:600 12px var(--sans); letter-spacing:.02em; color:#f3e6c8; background:rgba(24,20,30,.62); border:1px solid rgba(224,183,101,.45); border-radius:10px; padding:6px 12px; backdrop-filter:blur(8px); }
+  #prompt, #fusion { font-family:var(--sans); font-weight:600; letter-spacing:.02em; background:rgba(24,20,30,.62); border-radius:10px; padding:6px 14px; backdrop-filter:blur(8px); }
+  #prompt { border:1px solid rgba(224,183,101,.45); color:#f3e6c8; } #fusion { border:1px solid rgba(178,107,255,.6); color:#e2ccff; }
+  #rideHint { font:600 14px var(--sans); background:rgba(24,20,30,.62); border:1px solid rgba(224,183,101,.45); color:#f3e6c8; box-shadow:none; backdrop-filter:blur(8px); }
+  @media (orientation:landscape) and (max-height:520px) { #rideHud { top:6px; bottom:auto !important; transform:translateX(-50%) scale(.72); transform-origin:top center; } #rideHint { top:30%; } }       /* a short wide screen: the Flow meter sits in the top gap, never over the rider */
   #devbar { font:600 11px var(--sans); letter-spacing:.06em; }
   #devbar button { background:rgba(24,20,30,.62); border:1px solid rgba(224,183,101,.45); border-radius:8px; color:#f3e6c8; padding:5px 10px; backdrop-filter:blur(8px); }
   #buildLabel { background:none; border:0; color:rgba(243,230,200,.45); padding:0 2px; }

@@ -71,7 +71,7 @@ export function updateMonsters(g, dt) {
     if (m.cd > 0) continue;
     const D = def(m.id), A = D.attack, cd = A.cd / (1 + g.mods.monsterRate) / (g.rflow ? 1 + 0.05 * (g.rflow.step - 1) : 1) * (g.p.ride && g.p.ride.on && g.p.ride.speed > 12 ? 1.4 : 1);       // Flow fuels the summons: +5% attack rate a Flow step; while the card goes fast they spend part of their time keeping up (attacks 1.4x apart)
     g.curSrc = g.srcIndex(m.id);
-    if (g.fusionRule === 3 && D.from) { if (fusionAttack(g, m)) m.cd = cd * fusionCdOf(m) / A.cd; else m.cd = 0; }       // a Fusion fires by the layered rule, at its Line's rate
+    if (g.fusionRule === 3 && (D.from || D.roster)) { if (fusionAttack(g, m)) m.cd = cd * fusionCdOf(m) / A.cd; else m.cd = 0; }       // a Fusion fires by the layered rule, at its Line's rate
     else if (attack(g, m, D, A)) m.cd = cd; else m.cd = 0;
     g.curSrc = 0;
   }

@@ -1,5 +1,6 @@
 // The field: 4 Monster Zones and 4 shared Spell and Trap Zones, level-up offers, Redraw / Banish / Pass, and Fusion.
 import { MONSTERS, FUSIONS, SPELLS, ONE_SHOTS, TRAPS, DUELISTS, OFFER, LEVELS, FIELD_RULES, XP, formOf } from '../data/cards.js';
+import '../data/basics.js';       // the whole roster joins MONSTERS (offered only in a game made with { roster: true })
 import { BOARDS } from '../data/boards.js';
 import { sealSpend } from './seals.js';
 import { addFx } from './combat.js';
@@ -135,7 +136,7 @@ const ORDER = ['common', 'rare', 'epic', 'legendary'];
 export function candidates(g, minRarity) {
   const f = g.field, c = [], free = f.monsters.some(m => !m), freeS = f.spells.some(s => !s);
   const minI = minRarity ? ORDER.indexOf(minRarity) : 0;
-  const push = (id, kind, isNew, to) => { if (g.unlockedCards && (MONSTERS[id] || SPELLS[id] || TRAPS[id] || ONE_SHOTS[id]) && !g.unlockedCards.has(id)) return; const d = cardDef(id); if (!f.banished.has(id) && ORDER.indexOf(d.rarity || 'common') >= minI) c.push({ id, kind, isNew, to, rarity: d.rarity || 'common' }); };
+  const push = (id, kind, isNew, to) => { const RB = MONSTERS[id] && MONSTERS[id].roster; if (RB && !(g.opts && g.opts.roster)) return; if (!RB && g.unlockedCards && (MONSTERS[id] || SPELLS[id] || TRAPS[id] || ONE_SHOTS[id]) && !g.unlockedCards.has(id)) return;       /* the roster's basics are all in the pool of a roster game (their unlock rules are not set yet) */ const d = cardDef(id); if (!f.banished.has(id) && ORDER.indexOf(d.rarity || 'common') >= minI) c.push({ id, kind, isNew, to, rarity: d.rarity || 'common' }); };
   for (const id of Object.keys(MONSTERS)) {
     const m = f.monsters.find(x => x && x.id === id);
     if (m) { if (m.level < monsterMax(id)) push(id, 'monster', false, m.level + 1); }

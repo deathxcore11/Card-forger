@@ -32,6 +32,7 @@ import { Composite } from './view/composite.js';
 import { OWN as OWN_NS } from './view/ownfx.js';
 const OWN_UNI = OWN_NS.uni;
 import { MONSTERS, FUSIONS } from './data/cards.js';
+import { bodyIds } from './data/basics.js';
 import { RAMP } from './data/fxramp.js';
 import { ownColour } from './view/fxcolour.js';
 import { LeyThreads } from './view/threads.js';
@@ -140,6 +141,7 @@ assets.butterflyPrep = await loadCreature('assets/models/life-butterfly-rig.glb'
 assets.mira = await loadRig('assets/models/duelist-mira-anim.glb', { retime: { land_light: 0.5, land_heavy: 0.9 } });
 await loadBlocks(['kael', 'kaelRide', 'mira', 'vesh', 'oren', 'card', 'husk', 'runner', 'seer', 'ram', 'bloat', 'scarab', 'hunter', 'toll', 'warden', 'wyv1', 'wyv2', 'wyv3', 'hat1', 'hat2', 'hat3', 'familiar', 'tyrant', 'newt', 'strix', 'king', 'jackalT', 'jackalC', 'heart', 'power', 'sealstone', 'chestCard', 'chestSealed', 'chestTrophy', 'gem', 'coin', 'cactus', 'tree', 'stonecard', 'beam', 'urn', 'broker', 'shrine', 'spire']);       // the block look, only with ?blocks=1 (files kept out of the repo)
 await loadFusionBodies();       // the lab's fused-body engine in the block runtime (a Fusion is drawn as one fused body of its parents); without it, the old models
+let bodyT = 0; const bodyAsked = new Set();
 let ENEMY_PRE = '';       // the map's model prefix when it has its own enemy bodies
 { const tid = (/[?&](?:map|theme)=([a-z-]+)/.exec(location.search) || [])[1] || 'desert', TH = THEMES_ALL[tid]; if (TH && TH.dressing && TH.dressing.kit) { const pre = TH.kitPrefix !== undefined ? TH.kitPrefix : (TH.setpieces[0] || '').split('-')[0], id = s => (pre ? pre + '-' + s : s), en = pre ? ['swarm', 'rusher', 'flyer', 'shooter', 'charger', 'exploder', 'controller', 'shielded', 'support', 'trickster'].flatMap(j => ['e-' + pre + '-' + j, 'n-' + pre + '-' + j]).concat([1, 2, 3, 4].map(n => 'b-' + pre + '-' + n)) : [], park = ['quarter', 'kicker-card', 'ledge', 'rail'].map(k => id('p-' + k));
   const GYM = /[?&]gym=1/.test(location.search) && TH.id === 'desert';
@@ -193,7 +195,7 @@ let duelist = 'kael';
 const withProps = /[?&]props/.test(location.search);       // map objects are placed by the coming map generator; ?props shows the region-placed test set
 const RUN_OPEN = !/[?&]terrain=classic/.test(location.search), RUN_ARCH = (/[?&]arch=([a-f])/.exec(location.search) || [])[1];
 const MENU_SEED = +((/[?&]menuseed=(\d+)/.exec(location.search) || [])[1] || 47514), MENU_ARCH = (/[?&]menuarch=([a-f])/.exec(location.search) || [])[1] || 'f';       // the menu backdrop is always the open desert, from a fixed seed with a good view; runs follow the terrain option as before
-const game = new Game(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : MENU_SEED, { duelist, mode: 'run', world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: 'open', theme: (/[?&](?:map|theme)=([a-z-]+)/.exec(location.search) || [])[1] || 'desert', card: !/[?&]foot=1/.test(location.search), flow: /[?&]flow=1/.test(location.search) ? 'v1' : 'v2', arch: RUN_ARCH || MENU_ARCH, gym: /[?&]gym=1/.test(location.search) });
+const game = new Game(/[?&]seed=(\d+)/.test(location.search) ? +/[?&]seed=(\d+)/.exec(location.search)[1] : MENU_SEED, { duelist, mode: 'run', world: withProps ? 'regions' : 'none', sample: /[?&]sample=1/.test(location.search), terrain: 'open', roster: !/[?&]roster=0/.test(location.search), theme: (/[?&](?:map|theme)=([a-z-]+)/.exec(location.search) || [])[1] || 'desert', card: !/[?&]foot=1/.test(location.search), flow: /[?&]flow=1/.test(location.search) ? 'v1' : 'v2', arch: RUN_ARCH || MENU_ARCH, gym: /[?&]gym=1/.test(location.search) });
 const host = createBrowserHost(canvas);
 const save = loadSave(host);
 initAudio(save.settings).then(ok => { if (ok) { const warm = () => preload(['RD03', 'RD07', 'RD10', 'RD11', 'RD05', 'RD12', 'SF121', 'SF012', 'SF080', 'SF081', 'SF014', 'SF104', 'RD08', 'RD09']); window.addEventListener('pointerdown', warm, { once: true }); window.addEventListener('keydown', warm, { once: true }); } });       // the sound pack (silent without it)
@@ -340,6 +342,7 @@ function padPress(n) {
   if (n === 'up' || n === 'down' || n === 'left' || n === 'right') padMove(n);
 }
 window.addEventListener('blur', () => { if (MODE === 'play') setMode('pause'); });
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => fitHud()).observe($('topright'));       /* the clock box grows when goals are added: the minimap follows it */
 // the prompt and the fusion line sit just above the zone bar, and the items list stays clear of it, whatever the bar's height is
 function fitHud() {
   const z = $('zones').getBoundingClientRect(); if (!z.width) return;
@@ -730,6 +733,7 @@ function frame(now) {
     if (t5 && !tb.fired && !(window.__ds && window.__ds.tier5Force === 'quiet')) { tb.fired = true; const gm = fx.moment('tablebreak', 'A', { hitstop: 0.12 }, { once: 'run' }); if (gm.screen) { const sd = (game.seed || 1) * 0.6180339, f1 = sd % 1, f2 = (sd * 7.31) % 1, f3 = (sd * 3.97) % 1, a0 = f1 * 0.9, a1 = a0 + 1.25 + f2 * 0.8, a2 = a1 + 1.25 + f3 * 0.8; blitMat.uniforms.uTBang.value.set(a0, a1, a2); tb.on = true; tb.t0 = performance.now(); } } }
   fx.tick = Math.round(game.t * 60); fx.stage = game.stage || 0; fx.blocked = !!game.offer || mapOpen; fx.camDist = Math.hypot(camera.position.x - ip.x, camera.position.y - ip.y, camera.position.z - ip.z);
   E.pl.value.set(ip.x, ip.y, ip.z); updateEngine(dtReal || 0.016, curLook); ageRipples(dtReal || 0.016);
+  if ((bodyT -= dtReal || 0.016) <= 0) { bodyT = 0.25; const want = []; const add = id => { for (const k of bodyIds(id)) if (!BLOCKS_M[k] && !bodyAsked.has(k)) { bodyAsked.add(k); want.push(k); } const F = FUSIONS[id]; if (F && F.from) F.from.forEach(add); }; if (game.offer && game.offer.cards) for (const c of game.offer.cards) add(c.id); if (game.field) for (const m of game.field.monsters) if (m) add(m.id); if (want.length) loadMapModels(want); }       // the bodies of the summons on offer and on the field are fetched as soon as they show up (three small files each)
   if (seaMesh) seaMesh.position.set(Math.round(camera.position.x / 64) * 64, game.map.waterY, Math.round(camera.position.z / 64) * 64);
   if (waterMesh) { waterMesh.userData.update(camera.position); ripT -= dtReal || 0.016; if (ripT <= 0) { const sp = Math.hypot(game.p.vx, game.p.vz); for (const q of poolSpots(game.map)) if (Math.hypot(ip.x - q.x, ip.z - q.z) < q.r + 0.3 && sp > 1) { ripple(ip.x, ip.z, Math.min(1, 0.4 + sp / 14)); ripT = 0.28; } } }       // the duelist's steps in a pool make ripples
   const lpf = game.p.hp / game.p.maxHp, low = MODE === 'play' && !game.over && (lowShown ? lpf <= 0.33 : lpf <= 0.30);       if (low !== lowShown) { lowShown = low; $('lowhp').classList.toggle('on', low); }       // on at 30% of max LP or less, off again above 33%

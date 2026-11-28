@@ -35,6 +35,14 @@ export function answerTrick(g, kind, x, y, z) {
         case 'collectors-eye': { const P = g.pick, R = 8 + 2 * k; for (let i = 0; i < P.max; i++) { if (!P.alive[i]) continue; const dx = P.x[i] - x, dz = P.z[i] - z; if (dx * dx + dz * dz < R * R) { P.x[i] = g.p.x; P.z[i] = g.p.z; } } break; }
         case 'gust-ward': { const e = g.en; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z, d2 = dx * dx + dz * dz; if (d2 < 25 && d2 > 1e-6) { const d = Math.sqrt(d2); e.x[i] += dx / d * 4; e.z[i] += dz / d * 4; damageEnemy(g, i, 2 * k, { noCrit: true }); } } break; }
         case 'pit-of-seals': { splash(g, x, y, z, 4, 10 * k, 0); const e = g.en; for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - x, dz = e.z[i] - z; if (dx * dx + dz * dz < 36) e.root[i] = Math.max(e.root[i], 2); } g.p.hp = Math.min(g.p.maxHp, g.p.hp + 3 * k); break; }       // the seal pit roots what is near the stone for 2 s and mends you a little
+        default: switch (a.gen) {       // a roster summon answers by its job
+          case 'burst': splash(g, x, y, z, 3.5, D * 2.5 * k, fl); break;
+          case 'storm': splash(g, x, y, z, 6, D * 3 * k, fl); break;
+          case 'haste': if (m) m.cd = 0; break;
+          case 'mark': markNear(g, x, z, Math.round(3 * k), 18); break;
+          case 'mend': g.p.hp = Math.min(g.p.maxHp, g.p.hp + 1.5 * k); break;
+          case 'drill': for (const q of g.field.monsters) if (q) q.cd = Math.max(0, q.cd - 0.15 * k); break;
+        }
       }
       g.curSrc = 0; g.emit('answer', x, z, 0, id);
     });

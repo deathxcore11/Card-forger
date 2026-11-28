@@ -32,7 +32,9 @@ export function setEnemyModels(prefix, have, night) { const job = { 0: 'swarm', 
 export function setBossModel(id, have) { if (have(id)) { BLK_SPECIAL.pharaoh = id; return true; } return false; }       // the stage boss wears the map's own boss body
 const BLK_SUMMON = { 'ember-wyvern': ['wyv1', 'wyv2', 'wyv3'], 'cinder-hatchling': ['hat1', 'hat2', 'hat3'], 'sigil-familiar': ['familiar'], 'twinflare-tyrant': ['tyrant'], 'rune-apprentice': ['newt'], 'astral-magus': ['strix'] };       // the roster renamed the Rune Apprentice to the Rune Newt and the Astral Magus to the Astral Strix (22 Nov)
 const BLK_SPECIAL = { warden: 'warden', pharaoh: 'king', idol: 'jackalT' };       // the gate boss is the Hollow King; the Twin Jackal Idols are a pair (jackalT and jackalC)
-const blkSummon = (id, form) => { const L = BLK_SUMMON[id]; const k = L && L[Math.min(form, L.length - 1)]; return k && BLOCKS[k] ? k : null; };
+const blkSummon = (id, form) => { const R = MONSTERS[id] && MONSTERS[id].roster ? MONSTERS[id].forms.map(f => f.modelId) : null, L = R || BLK_SUMMON[id]; const k = L && L[Math.min(form, L.length - 1)]; return k && BLOCKS[k] ? k : null; };       // a roster summon wears its own baked body for each form
+const bodyOf = p => { const L = MONSTERS[p] && MONSTERS[p].roster ? MONSTERS[p].forms.map(f => f.modelId) : BLK_SUMMON[p]; return L && L[L.length - 1]; };
+export const summonReady = id => { const D = MONSTERS[id]; if (D && D.roster) return D.forms.every(f => BLOCKS[f.modelId]); const F = FUSIONS[id]; return !(F && F.from) || F.from.every(summonReady); };       // its body files are loaded (a Fusion: its parents')
 
 const T = window.THREE;
 const lambert = (color, extra, k) => actorLit(new T.MeshLambertMaterial(Object.assign({ color, flatShading: true }, extra || {})), k || 1);
@@ -326,8 +328,9 @@ export class Actors {
     let g;
     const size = summonSize(!!FUSIONS[id], form);                      // metres: form 1 / 2 / 3 = 0.5x / 1x / 2x the duelist, Fusions 2x to 3x
     let modelled = true;
+    if (!summonReady(id)) { const e = new T.Group(); e.userData.pending = true; e.userData.formIdx = form; e.userData.size = size; this.scene.add(e); return e; }       // its body is still on the way (a few frames): nothing is drawn rather than a stand-in
     let bk = blkSummon(id, form);
-    { const F = FUSIONS[id]; if (F && F.from) { const P = F.from.map(p => { if (FUSIONS[p]) { const q = BLOCKS['fx_' + p]; return q && q.rtId; } const L = BLK_SUMMON[p]; return L && L[L.length - 1]; }); if (P[0] && P[1]) { const k = 'fx_' + id, M = BLOCKS[k] || fusedBody(P[0], P[1], 7); if (M) { BLOCKS[k] = M; bk = k; } } } }       // a Fusion: one fused body of its two parents' full forms (the lab's v7 body rule)
+    { const F = FUSIONS[id]; if (F && F.from) { const P = F.from.map(p => { if (FUSIONS[p]) { const q = BLOCKS['fx_' + p]; return q && q.rtId; } const k9 = bodyOf(p); return k9 && BLOCKS[k9] ? k9 : null; }); if (P[0] && P[1]) { const k = 'fx_' + id, M = BLOCKS[k] || fusedBody(P[0], P[1], 7); if (M) { BLOCKS[k] = M; bk = k; } } } }       // a Fusion: one fused body of its two parents' full forms (the lab's v7 body rule)
     if (bk) { g = this._blk(bk, size, 'max', true); if (id === 'ember-wyvern' || id === 'twinflare-tyrant' || id === 'sigil-familiar') g.userData.fly = true; if (id === 'cinder-hatchling' || id === 'rune-apprentice') g.userData.walk = true; }       // the block look: the summon in its own form
     else if (id === 'ember-wyvern' && form === 0 && A.wyvernPrep) { const cr = makeCreature(A.wyvernPrep, size); cr.root.rotation.y = Math.PI; g = cr.group; g.userData.crit = cr; modelled = true; }          // rigged and animated: wings beat, tail sways
     else if (id === 'ember-wyvern' && A.wyvern) { g = modelGroup(A.wyvern, size, 'max'); g.userData.fly = true; }
@@ -524,6 +527,7 @@ export class Actors {
       if (!m) return; live.add(m);
       let mesh = this.monsters.get(m); const form = formOf(m.id, m.level);
       let formSwap = false;
+      if (mesh && mesh.userData.pending && summonReady(m.id)) { this.scene.remove(mesh); mesh = null; }       // its body has arrived
       if (mesh && mesh.userData.formIdx !== form) { this.scene.remove(mesh); mesh = null; formSwap = true; }          // crossing level 5 or 10 swaps the model
       const lg = m.lunge > 0 ? Math.sin(Math.PI * (1 - m.lunge / 0.22)) * 1.6 : 0, x = pl(m.px, m.x, a) + (m.lungeX || 0) * lg, z = pl(m.pz, m.z, a) + (m.lungeZ || 0) * lg;       // a Fusion's claws: the summon lunges 1.6 m at what it swipes, then springs back
       if (!mesh) { mesh = this._monsterMesh(m.id, form); this.monsters.set(m, mesh); mesh.position.set(x, heightGround(x, z), z); this._enter(mesh, m, formSwap, g, x, z); }
