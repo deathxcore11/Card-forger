@@ -43,7 +43,7 @@ export function initMenus(env) {
     $('startScreen').innerHTML = '<div class="chipsTop">Star Chips <b>' + save.starChips + '</b></div><h1>DUEL SUMMONER</h1>' +
       '<div class="mainRow"><div class="mainBtns"><button id="mPlay">PLAY</button><button id="mShop">DECK BOX</button><button id="mLib">CARD LIBRARY</button><button id="mQuests">QUESTS</button><button id="mSettings">SETTINGS</button><button class="small" id="mQuick">QUICK DUEL</button></div>' +
       '<div class="mainMid"></div><div class="mainSide"><div class="panel goals"><h3>NEXT GOALS</h3>' + (tracker || '<p>No quests in progress.</p>') + '</div>' +
-      '<div class="panel board"><h3>WEEKLY LEADERBOARD</h3><div class="tabs"><button class="tab sel">Global</button><button class="tab">Friends</button></div><div id="lbOnline"></div><p class="dim">' + (boardUrl(save.settings) ? 'Your local bests:' : 'Online boards are off. Your local bests:') + '</p>' + (recs.length ? recs.map(r => '<div class="lbrow">' + r + '</div>').join('') : '<p class="dim">No runs yet.</p>') + '<p class="dim">Resets in ' + dd + 'd ' + hh + 'h</p></div></div></div>';
+      '</div></div>';       // (the weekly leaderboard panel is gone: leaderboards were skipped, 27 Nov)
     $('mPlay').onclick = showDuelists; const gl = document.querySelector('.goals'); if (gl) gl.onclick = () => gl.classList.toggle('open'); $('mLib').onclick = () => showLibrary(); $('mQuests').onclick = () => showQuests(); $('mShop').onclick = () => { $('startScreen').classList.remove('on'); env.showDeckBox(); };
     $('mSettings').onclick = showSettings; $('mQuick').onclick = () => start('quick');
     const base = boardUrl(save.settings);

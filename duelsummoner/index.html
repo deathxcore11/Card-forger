@@ -115,7 +115,7 @@
   .card .t { color:var(--dim); font-size:13px; margin:2px 0; }
   .card .nums { margin-top:8px; border-top:1px solid #3a2a50; padding-top:6px; } .card .nl { font-size:15px; } .card .nl b { color:#ffd23f; }
   .card.rare { border-color:#5b9bd5; } .card.epic { border-color:#a974e0; } .card.legendary { border-color:#e8b84a; }
-  .card.new h3::after { content:' NEW'; color:#8f6; font-size:10px; }
+  .card.new h3::after { content:'NEW'; margin-left:8px; padding:1px 6px; border-radius:6px; background:linear-gradient(180deg, #f6dc9a, #e0b765); color:#1a1206; font:700 10px/1.4 var(--sans); letter-spacing:1px; vertical-align:middle; }
   #offerBtns button { font-size:14px; padding:8px 16px; margin:4px; }
   #metaScreen { background:#0d0810; }
   #metaRows { max-height:60vh; overflow:auto; text-align:left; margin:8px 0; }
@@ -391,6 +391,34 @@
   @media (pointer:coarse) and (min-aspect-ratio: 3/4) and (max-aspect-ratio: 13/10) { #zones { top:100px; bottom:auto; left:8px; transform:none; width:calc(100vw - 190px); } #prompt { bottom:190px; } #fusion { bottom:222px; } #itemsList { bottom:210px; } }    @media (max-height:560px) { #zones .zone .pips { display:none; } #zones .zone { font-size:9px; } }
   body.touch #prompt, body.touch #fusion { left:8px; right:calc(max(14px, env(safe-area-inset-right)) + min(19vmin, 104px) + min(15vmin, 84px) + 36px); transform:none; width:auto; white-space:normal; text-align:center; }       /* on touch the hints sit between the left edge and the leftmost button (SLIDE), wrapping when the line is long */
   @media (pointer:coarse) { #prompt, #fusion { left:8px; right:calc(max(14px, env(safe-area-inset-right)) + min(19vmin, 104px) + min(15vmin, 84px) + 36px); transform:none; width:auto; white-space:normal; text-align:center; } }
+  /* ---- UI polish v1 (design/ui-polish-v1.md): one visual language in the run, the menu's serif and sans on dark glass with a thin gold edge; quiet by default ---- */
+  .hud, #rideHint, #hint, #prompt { font-family:var(--sans); letter-spacing:.3px; }
+  #topleft, #topright { background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)), rgba(8,10,15,.55); border:1px solid rgba(232,196,110,.28); border-radius:14px; box-shadow:inset 0 1px 0 rgba(232,196,110,.35), 0 6px 18px #0006; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); padding:10px 14px; font-size:clamp(12px, 1.6vh, 18px); color:#f1e6c8; }
+  #topleft { width:min(300px, 40vw); } #topleft > div:not(.bar):not(#buffs) { font-size:.82em; letter-spacing:1.2px; color:#e8d7b0; text-transform:uppercase; }
+  #topleft .bar { height:8px; border-radius:5px; border:0; background:rgba(0,0,0,.45); overflow:hidden; margin:3px 0 7px; } #topleft .bar i { border-radius:5px; }
+  #hpbar i { background:linear-gradient(90deg, #ff3b30, #ff7a5a) !important; } #xpbar i { background:linear-gradient(90deg, #2ab8ff, #46e0ff) !important; }
+  #topright { min-width:180px; } #topright > div { font-size:.84em; color:#e8d7b0; }
+  #clock { font-family:var(--serif) !important; font-weight:600; font-size:clamp(20px, 3.4vh, 38px) !important; letter-spacing:2px; color:var(--gold2) !important; text-shadow:0 2px 10px #000a; }
+  #clock.bossSoon { color:#ff8a6a !important; }
+  #strip span { display:inline-block; font-family:var(--sans); font-size:.72em; letter-spacing:1.4px; text-transform:uppercase; color:var(--gold); border:0 !important; background:none !important; padding:0 !important; }
+  #stakes:empty, #stakes.quiet { display:none; } #chestPrice { font-size:.8em; color:var(--dim); }
+  #rite div { font-size:.92em; } #rite .tick { display:inline-block; width:1em; color:var(--gold); } #rite .done { color:#bfe6c4; opacity:.8; }
+  #minimap { border-radius:50% !important; border:2px solid rgba(232,196,110,.75) !important; box-shadow:0 4px 14px #0008; width:136px !important; height:136px !important; top:auto !important; right:16px !important; bottom:16px !important; image-rendering:auto !important; }
+  #devbar { display:none !important; } body[data-mode=pause] #devbar, body[data-mode=start] #devbar { display:flex !important; }
+  #rideHint { font-family:var(--sans) !important; font-weight:600 !important; letter-spacing:.6px; background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)), rgba(8,10,15,.62) !important; border:1px solid rgba(232,196,110,.4) !important; border-radius:999px !important; color:#f6dc9a !important; padding:7px 18px !important; box-shadow:0 6px 18px #0006; }
+  #zones .zone { border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)), rgba(8,10,15,.6) !important; border:1px solid rgba(232,196,110,.35); font-family:var(--sans); }
+  #zones .zone:not(.full) { background:none !important; border:1px dashed rgba(232,196,110,.18) !important; box-shadow:none !important; opacity:.55; } #zones .zone:not(.full)::after { content:'' !important; }
+  #rhBal { display:none !important; }       /* controls v2: no balance bar, the combo timer runs */
+  #offerScreen .card .new, #offerScreen .new { background:linear-gradient(180deg, #f6dc9a, #e0b765) !important; color:#1a1206 !important; border-radius:6px; padding:1px 6px; font-weight:700; }
+  @media (max-width: 600px) {
+    #topleft, #topright { padding:6px 9px; border-radius:11px; } #topleft { width:46vw; } #topright { min-width:0; max-width:46vw; }
+    #topright > div:not(#clock):not(#rite) { display:none; } #rite div:not(:first-child) { display:none; }
+    #minimap { width:96px !important; height:96px !important; bottom:auto !important; top:auto !important; }
+    #zones .zone:not(.full) { display:none; } #zones .zone > span { display:none; }
+    #prompt { white-space:normal !important; max-width:92vw; text-align:center; line-height:1.3; }
+    #topleft { width:calc(50vw - 18px) !important; left:8px !important; } #topright { right:8px !important; max-width:calc(50vw - 18px) !important; } #clock { font-size:18px !important; white-space:nowrap; letter-spacing:1px; }
+  }
+  #rideHud, #rideHud * { font-family:var(--sans) !important; } #rideHud { background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)), rgba(8,10,15,.6) !important; border:1px solid rgba(232,196,110,.35) !important; border-radius:14px !important; } #rhFlow b { font-family:var(--serif) !important; }
   </style>
 </head>
 <body>

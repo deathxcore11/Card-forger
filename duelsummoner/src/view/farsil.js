@@ -1,10 +1,12 @@
 // Far silhouettes (world v3 section 7): 3 to 5 huge, simple shapes 430 to 560 m from the stage start (past the fog wall, inside the 600 m camera reach), picked by the seed from the desert list.
 // They only need to read in the fog: one low-detail mesh group each, sandstone and violet shade, no collision, no props. Stand-in voxel shapes until the asset tool's kits arrive.
-const T = window.THREE;
+const T = window.THREE, _sz = new T.Vector3();
 const SAND = 0xc9925e, SHADE = 0x7d5a78, DARK = 0x5e4560;
 let FOGC = 0xe8c9a0, HAZE = 0.55;
 const mat = c => new T.MeshBasicMaterial({ color: new T.Color(c).lerp(new T.Color(FOGC), HAZE), fog: false });       // past the fog wall: pre-mixed toward the fog colour so it reads as a hazy silhouette, never a sharp prop
-function box(g, w, h, d, x, y, z, c, ry, rz) { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat(c)); m.position.set(x, y, z); if (ry) m.rotation.y = ry; if (rz) m.rotation.z = rz; g.add(m); return m; }
+const VIOLET = 0x4a3a78;
+function shaded(geo, c) { const lit = new T.Color(c).lerp(new T.Color(FOGC), HAZE), dk = new T.Color(c).lerp(new T.Color(VIOLET), 0.6).lerp(new T.Color(FOGC), HAZE * 0.8), n = geo.attributes.normal, col = new Float32Array(n.count * 3); for (let i = 0; i < n.count; i++) { const k = n.getX(i) * 0.7 + n.getZ(i) * 0.7 + n.getY(i) * 0.4 > 0 ? lit : dk; col[i * 3] = k.r; col[i * 3 + 1] = k.g; col[i * 3 + 2] = k.b; } geo.setAttribute('color', new T.BufferAttribute(col, 3)); return new T.MeshBasicMaterial({ vertexColors: true, fog: false }); }       // the sun side warm, the shade side violet, both carried by the haze
+function box(g, w, h, d, x, y, z, c, ry, rz) { const geo = new T.BoxGeometry(w, h, d), m = new T.Mesh(geo, shaded(geo, c)); m.position.set(x, y, z); if (ry) m.rotation.y = ry; if (rz) m.rotation.z = rz; g.add(m); return m; }
 // each maker builds about 20 to 60 m tall at scale 1 (then scaled up 2 to 3 times)
 const MAKERS = {
   cardSpire(g) { const m = box(g, 16, 70, 2.5, 0, 33, 0, SAND, 0, 0.22); box(g, 12, 50, 2.8, 0, 33, 0, SHADE, 0, 0.22); return 'a colossal tilted stone card spire'; },
@@ -23,7 +25,8 @@ export function addFarSilhouettes(scene, seed, at, groundY, fogColor) {
   const n = 3 + Math.floor(rnd() * 3), group = new T.Group(), list = []; const a0 = rnd() * Math.PI * 2;
   for (let k = 0; k < n; k++) {
     const a = a0 + k * (Math.PI * 2 / n) + (rnd() - 0.5) * 0.6, d = 430 + rnd() * 130,       /* inside the camera's 600 m reach, past the fog wall */ x = at.x + Math.cos(a) * d, z = at.z + Math.sin(a) * d, g = new T.Group();
-    const what = MAKERS[kinds[k]](g); g.scale.setScalar(2 + rnd()); g.position.set(x, (groundY(x, z) || 0) - 6, z); g.rotation.y = rnd() * Math.PI * 2; g.userData.far = what;
+    const what = MAKERS[kinds[k]](g); const sc = 2 + rnd(); g.scale.setScalar(sc); new T.Box3().setFromObject(g).getSize(_sz); g.position.set(x, (groundY(x, z) || 0) - _sz.y * (0.15 + rnd() * 0.1), z);       // half buried: 15 to 25% of its height under the sand
+    { const drift = new T.Mesh(new T.SphereGeometry(1, 16, 8), new T.MeshBasicMaterial({ color: new T.Color(0xe0b47e).lerp(new T.Color(FOGC), HAZE), fog: false })); drift.scale.set(_sz.x * 0.75 + 20, _sz.y * 0.12 + 6, _sz.z * 0.75 + 20); drift.position.set(x, (groundY(x, z) || 0) - 2, z); group.add(drift); }       // a soft sand drift round its foot g.rotation.y = rnd() * Math.PI * 2; g.userData.far = what;
     group.add(g); list.push({ kind: kinds[k], what, x: Math.round(x), z: Math.round(z) });
   }
   group.name = 'farSilhouettes'; scene.add(group); return { group, list };

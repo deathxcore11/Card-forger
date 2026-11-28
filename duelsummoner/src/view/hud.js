@@ -40,7 +40,7 @@ function drawFrenzy(g) {
 const ROLE_LETTER = { elite: 'ELITE', bossA: 'BOSS', bossB: 'TWINS' };
 function drawStrip(g) {                                                    // elite, boss A, boss B and gate icons under the clock
   const S = g.stageSpec, st = g.evState, G = g.gate;
-  if (g.flow2) { const left = Math.max(0, Math.ceil(S.clock - g.sc)), ot = g.ot2, k2 = 'f2|' + G.state + '|' + (ot ? Math.floor(ot.t) : left); if (k2 === stripKey) return; stripKey = k2; $('strip').innerHTML = '<span class="' + (G.state === 'closed' ? 'now' : 'fight') + '">' + (ot ? (ot.endless ? 'Endless Overtime ' : 'Overtime ') + clock(Math.floor(ot.t)) : G.state === 'fight' ? S.gate.name + ' hunts you' : 'Boss in ' + clock(left)) + '</span>'; return; }       // flow v2: one line, the clock to the boss, then Overtime
+  if (g.flow2) { const left = Math.max(0, Math.ceil(S.clock - g.sc)), ot = g.ot2, k2 = 'f2|' + G.state + '|' + (ot ? Math.floor(ot.t) : left); if (k2 === stripKey) return; stripKey = k2; $('strip').innerHTML = '<span class="' + (G.state === 'closed' ? 'now' : 'fight') + '">' + (ot ? (ot.endless ? 'Endless Overtime ' : 'Overtime ') + clock(Math.floor(ot.t)) : G.state === 'fight' ? sentence(' ' + S.gate.name).trim() + ' hunts you' : '') + '</span>'; return; }       // flow v2: one line, the clock to the boss, then Overtime
   if (g.openFlow) { const on = g.horde.on, left = Math.max(0, Math.ceil(S.clock - g.sc)), k2 = 'open|' + (on ? 'on' : left) + '|' + G.state; if (k2 === stripKey) return; stripKey = k2; $('strip').innerHTML = '<span class="' + (on ? 'fight' : 'now') + '">' + (on ? 'The horde rises' : G.state === 'closed' ? (g.door && g.door.state !== 'risen' && left > 60 ? '' : 'Horde rises in ') + (g.door && g.door.state !== 'risen' && left > 60 ? '' : clock(left)) : 'The horde waits') + '</span>'; return; }       // the open desert: one line, no elite, boss and twins chips
   let k = S.id + '|' + G.state + '|' + G.awake; for (let i = 0; i < st.length; i++) k += st[i];
   if (k === stripKey) return; stripKey = k;
@@ -51,15 +51,16 @@ function drawStrip(g) {                                                    // el
 // The Rite: three objective lines that appear in sequence and tick. They replace the next-event text as the main goal; the strip above stays.
 // the boss bar shows for the final boss, the gate boss and the timed bosses, with the name on it
 const bossOf = g => g.sp.find(s => s.alive && !s.dead && !s.asleep && (s.kind === 'pharaoh' || s.role === 'gate' || s.role === 'bossA' || s.role === 'bossB'));
+const sentence = s => s.replace(/ The ([A-Z])/g, (m, c) => ' the ' + c);       // 'Fell The Stone Arbiter' reads 'Fell the Stone Arbiter'
 function riteLines(g) {
-  if (g.flow2) { const st = g.gate.state, S0 = g.stageSpec, ot = g.ot2, L2 = [[st !== 'closed', 'Survive the clock'], [st === 'done', 'Fell ' + S0.gate.name]]; if (st === 'done') L2.push([!!g.desc, ot && ot.endless ? 'Endless Overtime: stay alive' : 'Find the portal (follow the red wind)']); return L2.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join(''); }
-  if (g.openFlow) { const st = g.gate.state, S0 = g.stageSpec, last0 = g.stage >= 2, W0 = g.door ? 'door' : 'gate', L0 = g.door && g.door.state !== 'risen' && st === 'closed' ? [[false, 'A door will rise soon']] : st === 'closed' ? [[false, g.gateSeen ? 'Wake the ' + W0 + ' when ready' : 'Find the ' + W0]] : st === 'fight' ? [[true, 'Wake the ' + W0], [false, 'Fell ' + S0.gate.name]] : [[true, 'Wake the ' + W0], [true, 'Fell ' + S0.gate.name], [!!(g.desc || g.won), last0 ? 'Claim the Final Altar' : 'Step through the gateway']]; return L0.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join(''); }
+  if (g.flow2) { const st = g.gate.state, S0 = g.stageSpec, ot = g.ot2, L2 = [[st !== 'closed', 'Survive the clock'], [st === 'done', 'Fell ' + S0.gate.name]]; if (st === 'done') L2.push([!!g.desc, ot && ot.endless ? 'Endless Overtime: stay alive' : 'Find the portal (follow the red wind)']); return L2.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '<span class="tick">✓</span>' : '<span class="tick">•</span>') + sentence(l[1]) + '</div>').join(''); }
+  if (g.openFlow) { const st = g.gate.state, S0 = g.stageSpec, last0 = g.stage >= 2, W0 = g.door ? 'door' : 'gate', L0 = g.door && g.door.state !== 'risen' && st === 'closed' ? [[false, 'A door will rise soon']] : st === 'closed' ? [[false, g.gateSeen ? 'Wake the ' + W0 + ' when ready' : 'Find the ' + W0]] : st === 'fight' ? [[true, 'Wake the ' + W0], [false, 'Fell ' + S0.gate.name]] : [[true, 'Wake the ' + W0], [true, 'Fell ' + S0.gate.name], [!!(g.desc || g.won), last0 ? 'Claim the Final Altar' : 'Step through the gateway']]; return L0.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '<span class="tick">✓</span>' : '<span class="tick">•</span>') + sentence(l[1]) + '</div>').join(''); }
   const S = g.stageSpec, awake = g.gate.awake || g.gate.state !== 'closed', fell = g.gate.state === 'done', last = g.stage >= 2;
   const L = [[awake, 'Wake the gate (' + (awake ? 'awake' : clock(Math.max(0, S.gateWake - g.sc))) + ')']];
   for (let i = 0; i < S.timeline.length; i++) if (g.evState[i] < 2 && !awake) { L.unshift([false, S.timeline[i].name + ' (' + clock(Math.max(0, S.timeline[i].t - g.sc)) + ')']); break; }       // the next timed event and its time, so the player can plan
   if (awake) L.push([fell, 'Fell ' + S.gate.name]);
   if (fell) L.push([!!(g.desc || g.won), last ? 'Claim the Final Altar' : 'Step into the Descent Circle']);
-  return L.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '[x] ' : '[ ] ') + l[1] + '</div>').join('');
+  return L.map(l => '<div style="color:' + (l[0] ? '#8fd89a' : '#f3e6c8') + '">' + (l[0] ? '<span class="tick">✓</span>' : '<span class="tick">•</span>') + sentence(l[1]) + '</div>').join('');
 }
 function nextEventRun(g) {
   const S = g.stageSpec;
@@ -86,7 +87,7 @@ function nextEvent(g) {
 let buffKey = '';
 let stakeKey = '';
 function drawStakes(g) {       // the Stakes percent under the clock (big desert only)
-  const el = $('stakes'); if (!el) return; const v = g.big ? Math.round(g.stakes || 0) : -1, k = String(v); if (k === stakeKey) return; stakeKey = k; el.textContent = v < 0 ? '' : 'STAKES ' + v + '%'; el.className = v >= 300 ? 'max' : v >= 100 ? 'hi' : '';
+  const el = $('stakes'); if (!el) return; const v = g.big ? Math.round(g.stakes || 0) : -1, k = String(v); if (k === stakeKey) return; stakeKey = k; el.textContent = v < 0 ? '' : 'Stakes ' + v + '%'; el.className = v >= 300 ? 'max' : v >= 100 ? 'hi' : ''; clearTimeout(el._q); el.classList.remove('quiet'); el._q = setTimeout(() => el.classList.add('quiet'), 4000);       // shown only while it rises
 }
 function drawBuffs(g) {       // the timed pickups: a small chip each, with the seconds left (or the hits)
   const L = []; if (g.windT > 0) L.push('Wind Step ' + Math.ceil(g.windT) + 's'); if (g.drumT > 0) L.push('War Drum ' + Math.ceil(g.drumT) + 's'); if (g.stopT > 0) L.push('Stopped Sand ' + Math.ceil(g.stopT) + 's'); if (g.wardHits > 0) L.push('Ward x' + g.wardHits);
@@ -98,7 +99,7 @@ function drawRide(g) {       // Card Riding: the open combo (tricks, points x di
   const el = $('rideHud'); if (!el) return; const r = g.p && g.p.ride, F = g.rflow, on = !!(g.big && ((r && r.on) || (F && F.step > 1))); el.classList.toggle('on', on); if (!on) return;
   const c = r && r.combo, names = c ? Object.keys(c.names) : [], pts = c ? Math.round(c.pts) : 0, bal = r && (r.grind || r.manual) ? r.bal : null, age = performance.now() - bankT;
   const k = (c ? c.list.join('|') + pts : '') + '|' + (F ? F.step : 1) + '|' + (bal === null ? 'n' : Math.round(bal * 20)) + '|' + (age < 1200 ? bankV : 0) + '|' + (r && r.grind ? r.grind.name : ''); if (k === rideKey) return; rideKey = k;
-  $('rhCombo').innerHTML = c && c.list.length ? c.list.slice(-3).join(' + ') + (r.grind ? ' + <em>' + r.grind.name + '</em>' : '') + '  <em>' + pts.toLocaleString() + ' x ' + Math.max(1, names.length) + '</em>' : (r && r.grind ? '<em>' + r.grind.name + '</em>' : '');
+  $('rhCombo').innerHTML = c && c.list.length ? c.list.slice(-3).join(' + ') + (r.grind ? ' + <em>' + r.grind.name + '</em>' : '') + '  <em>' + Math.round(pts * Math.max(1, names.length)).toLocaleString() + '</em>' : (r && r.grind ? '<em>' + r.grind.name + '</em>' : '');
   $('rhBank').textContent = age < 1200 && bankV ? '+' + bankV.toLocaleString() : '';
   const b = $('rhBal'); b.style.visibility = bal === null ? 'hidden' : 'visible'; if (bal !== null) b.firstChild.style.left = (77 + Math.max(-1, Math.min(1, bal)) * 77) + 'px';
   const sp = $('rhFlow').querySelectorAll('span'), st = F ? F.step : 1; sp.forEach((s, i) => s.classList.toggle('lit', i < st)); $('rhFlow').querySelector('b').textContent = 'x' + st;
@@ -111,7 +112,7 @@ export function drawHud(g, force) {
     key = k;
     $('hpnum').textContent = Math.ceil(g.p.hp); $('hpmax').textContent = g.p.maxHp;
         $('xpnum').textContent = 'LV ' + g.level;       // the level and the bar only: a fraction beside a bar always disagreed with it
-        $('clock').textContent = g.mode !== 'classic' ? runClock(g) : g.t >= 480 ? 'OVERTIME +' + clock(g.t - 480) : clock(g.t); $('kills').textContent = g.kills; $('coins').textContent = g.coins; { const W = g.world, open = W && (W.cchests || []).some(c => !c.open && !c.free); const el = $('chestPrice'); el.textContent = open ? '(chest ' + chestPrice(g) + ')' : ''; el.style.color = open && g.coins >= chestPrice(g) ? '#ffd23f' : ''; }       // the next paid chest and its price, gold once you can pay it
+        $('clock').textContent = g.mode !== 'classic' ? runClock(g) : g.t >= 480 ? 'OVERTIME +' + clock(g.t - 480) : clock(g.t); $('kills').textContent = g.kills; $('coins').textContent = g.coins; { const W = g.world, open = W && (W.cchests || []).some(c => !c.open && !c.free); const el = $('chestPrice'); el.textContent = open && /chest/i.test(g.stagePrompt || '') ? 'chest ' + chestPrice(g) : ''; el.style.color = open && g.coins >= chestPrice(g) ? '#ffd23f' : ''; }       // the next paid chest and its price, gold once you can pay it       // the chest price, only near a chest
   }
   // field: 4 Monster Zones then 4 Spell and Trap Zones
   let zdiff = force;
