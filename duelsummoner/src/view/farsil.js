@@ -1,5 +1,6 @@
 // Far silhouettes (world v3 section 7): 3 to 5 huge, simple shapes 430 to 560 m from the stage start (past the fog wall, inside the 600 m camera reach), picked by the seed from the desert list.
 // They only need to read in the fog: one low-detail mesh group each, sandstone and violet shade, no collision, no props. Stand-in voxel shapes until the asset tool's kits arrive.
+import { BLOCKS, blockMerged } from './models.js';
 const T = window.THREE, _sz = new T.Vector3();
 let SAND = 0xc9925e, SHADE = 0x7d5a78, DARK = 0x5e4560;
 let FOGC = 0xe8c9a0, HAZE = 0.55;
@@ -17,16 +18,18 @@ const MAKERS = {
   aqueduct(g) { for (let k = 0; k < 14; k++) { box(g, 4, 26, 4, k * 14, 13, 0, k % 3 ? SAND : SHADE); } box(g, 200, 5, 6, 91, 28, 0, SAND); return 'a long aqueduct running off into the dunes'; }
 };
 export const FAR_KINDS = Object.keys(MAKERS);
+// a baked far silhouette: its own colours carried toward the fog by the haze, no lighting, no collision
+function farModel(g, id, theme) { const geo = blockMerged(BLOCKS[id]).clone(), c = geo.attributes.color, f = new T.Color(FOGC), tmp = new T.Color(); for (let i = 0; i < c.count; i++) { tmp.setRGB(c.getX(i), c.getY(i), c.getZ(i)).lerp(f, HAZE * 0.8); c.setXYZ(i, tmp.r, tmp.g, tmp.b); } const m = new T.Mesh(geo, new T.MeshBasicMaterial({ vertexColors: true, fog: false })); m.scale.setScalar(0.4); g.add(m); return (theme && theme.farNames && theme.farNames[id]) || id; }       /* (scaled 0.4 then by the group: its real 80 to 200 m size reads huge at 450 m) */
 // seed: the run seed; at: the stage start { x, z }; groundY(x, z): the ground height for the base
 export function addFarSilhouettes(scene, seed, at, groundY, fogColor, theme) {
   if (theme && theme.farColours) { SAND = theme.farColours.sun; SHADE = theme.farColours.shade; DARK = theme.farColours.dark; }
   if (fogColor !== undefined) FOGC = fogColor;
   let s = (seed >>> 0) ^ 0x5f3759df; const rnd = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
-  let kinds = (theme && theme.far ? theme.far.filter(k => MAKERS[k]) : FAR_KINDS).slice(); if (!kinds.length) kinds = FAR_KINDS.slice();       // (a map whose own far kits have not landed yet uses the stand-in shapes in its own colours) for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
+  let kinds = (theme && theme.far ? theme.far.filter(k => MAKERS[k] || BLOCKS[k]) : FAR_KINDS).slice(); if (!kinds.length) kinds = FAR_KINDS.slice();       // a map's own baked far kits when they are loaded       // (a map whose own far kits have not landed yet uses the stand-in shapes in its own colours) for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
   const n = 3 + Math.floor(rnd() * 3), group = new T.Group(), list = []; const a0 = rnd() * Math.PI * 2;
   for (let k = 0; k < n; k++) {
     const a = a0 + k * (Math.PI * 2 / n) + (rnd() - 0.5) * 0.6, d = 430 + rnd() * 130,       /* inside the camera's 600 m reach, past the fog wall */ x = at.x + Math.cos(a) * d, z = at.z + Math.sin(a) * d, g = new T.Group();
-    const what = MAKERS[kinds[k]](g); const sc = 2 + rnd(); g.scale.setScalar(sc); new T.Box3().setFromObject(g).getSize(_sz); g.position.set(x, (groundY(x, z) || 0) - _sz.y * (0.15 + rnd() * 0.1), z);       // half buried: 15 to 25% of its height under the sand
+    const what = MAKERS[kinds[k]] ? MAKERS[kinds[k]](g) : farModel(g, kinds[k], theme); const sc = 2 + rnd(); g.scale.setScalar(sc); new T.Box3().setFromObject(g).getSize(_sz); g.position.set(x, (groundY(x, z) || 0) - _sz.y * (0.15 + rnd() * 0.1), z);       // half buried: 15 to 25% of its height under the sand
     { const drift = new T.Mesh(new T.SphereGeometry(1, 16, 8), new T.MeshBasicMaterial({ color: new T.Color(0xe0b47e).lerp(new T.Color(FOGC), HAZE), fog: false })); drift.scale.set(_sz.x * 0.75 + 20, _sz.y * 0.12 + 6, _sz.z * 0.75 + 20); drift.position.set(x, (groundY(x, z) || 0) - 2, z); group.add(drift); }       // a soft sand drift round its foot g.rotation.y = rnd() * Math.PI * 2; g.userData.far = what;
     group.add(g); list.push({ kind: kinds[k], what, x: Math.round(x), z: Math.round(z) });
   }

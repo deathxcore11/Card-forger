@@ -25,6 +25,8 @@ import { streamTo } from './terrain.js';
 import { streamWorld } from './stream.js';
 import { fusionsReady } from './field.js';
 import { mixFor, pickKind } from './spawner.js';
+import { THEMES } from '../data/themes.js';
+import { KINDS } from '../data/enemies.js';
 
 const spot = { x: 0, y: 0, z: 0 };
 const clockText = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
@@ -39,7 +41,8 @@ export function xpScale(g) {
 // Generates this stage's map from the run seed and loads it as the live terrain; the duelist starts on its plaza.
 export function loadStageMap(g, i) {
   if (g.opts.terrain === 'open' && g.mode !== 'classic') { const T = BIG_TUNE[g.difficulty], base = DIFFICULTY[g.difficulty]; g.diff = Object.assign({}, base); if (T && i === 0) for (const k of ['hp', 'spawn', 'dmg', 'boss']) g.diff[k] = base[k] * T[k]; if (T && i === 0) g.diff.gate = T.gate || 1; }       // the big desert's first stage is tuned harder (a first-timer may not get through it); later stages keep the base numbers
-  g.map = g.opts.terrain === 'open' ? bigMap(g.seed, i, { gym: !!g.opts.gym }) : g.opts.terrain === 'small' ? (openMap(g.seed, i, g.opts.arch) || generateStage(g.seed, i, g.stages[i].gen)) : g.opts.sample && i === 0 ? sampleMap() : generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.syncGrid(); g.colliders = buildColliders(g.map, i); g.streamed = new Set(); g._sq = -1; if (g.big) initDoor(g); if (g.big && g.stakesAdd === undefined) g.stakesAdd = 0; if (g.map.big) { g.fog = makeFogBig(); streamTo(g.map.spawn.x, g.map.spawn.z, 49, 3); g.colliders.ensure(g.map.spawn.x - 130, g.map.spawn.z - 130, g.map.spawn.x + 130, g.map.spawn.z + 130); } g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
+  g.roleOf = themeRoles(g.opts.theme);
+  g.map = g.opts.terrain === 'open' ? bigMap(g.seed, i, { gym: !!g.opts.gym, landform: g.opts.theme && THEMES[g.opts.theme] && THEMES[g.opts.theme].landform ? THEMES[g.opts.theme].landform.style : undefined, setpieces: g.opts.theme && THEMES[g.opts.theme] && THEMES[g.opts.theme].dressing && THEMES[g.opts.theme].dressing.kit ? THEMES[g.opts.theme].setpieces.length : 0 }) : g.opts.terrain === 'small' ? (openMap(g.seed, i, g.opts.arch) || generateStage(g.seed, i, g.stages[i].gen)) : g.opts.sample && i === 0 ? sampleMap() : generateStage(g.seed, i, g.opts.oldGen ? Object.assign({}, g.stages[i].gen, { old: true }) : g.stages[i].gen); loadMap(g.map); g.syncGrid(); g.colliders = buildColliders(g.map, i); g.streamed = new Set(); g._sq = -1; if (g.big) initDoor(g); if (g.big && g.stakesAdd === undefined) g.stakesAdd = 0; if (g.map.big) { g.fog = makeFogBig(); streamTo(g.map.spawn.x, g.map.spawn.z, 49, 3); g.colliders.ensure(g.map.spawn.x - 130, g.map.spawn.z - 130, g.map.spawn.x + 130, g.map.spawn.z + 130); } g.flow.col = g.colliders; g.flow.rebuild(); g.sealCode = g.map.sealCode;
   const p = g.p; p.x = g.map.spawn.x; p.z = g.map.spawn.z; p.y = heightAt(p.x, p.z); p.vx = p.vz = p.vy = 0; p.grounded = true;
   g.openFlow = !!(g.map && g.map.open && g.mode !== 'classic'); g.gateSeen = false; g.sleepersMade = false; g.horde = { on: false, t: 0, why: '' };       // the open desert has its own stage flow: the gate wakes by choice, the elite and the mini bosses sleep, a horde rises after the boss or when the clock runs out
 }
@@ -324,12 +327,17 @@ function directorMul(g, dt) {
 }
 // AI v1 threats ahead (design lead, 28 Nov): while the duelist rides fast, every 6 to 9 s the route ahead is contested by one of: a braced line blocker (a golem planted on the line, a 1 s shield tell, riding into it costs speed and health;
 // a trick landing or a slam breaks it), a shooter on the highest ground near the line ahead (its shots lead the rider with a lead line), or a bloat field on the ground the rider will land on (fuses shown from far off).
+// a map's unique swarm and elite (themes-v1 enemies.uniqueSwarm / uniqueElite): their model job names the sim kind, their role picks the AI part they get
+const JOB_KIND = { swarm: 'husk', rusher: 'runner', shooter: 'seer', charger: 'golem', exploder: 'bloat', flyer: 'scarab', shielded: 'hunter' };
+export function themeRoles(id) { const T = THEMES[id], U = T && T.enemies && T.enemies.unique, out = {}; if (U) for (const u of [U.swarm, U.elite]) { if (!u) continue; const K = KINDS[JOB_KIND[u.id.split('-').pop()]]; if (K) out[K.id] = /intercept/.test(u.role) ? 'interceptor' : /block/.test(u.role) ? 'blocker' : u.role; } return out; }
 export const CONTEST = { every: [4, 7], ahead: [3.0, 4.2], blockerBrace: 1, field: 3 };
 function contestTick(g, dt) {
   const p = g.p, r = p.ride; if (!g.big || !r || !r.on || r.speed < 12 || (g.opts && g.opts.gym) || (g.gate && g.gate.state === 'fight')) return;
   g.contestT = (g.contestT === undefined ? CONTEST.every[0] : g.contestT) - dt; if (g.contestT > 0) return; g.contestT = CONTEST.every[0] + g.rsp() * (CONTEST.every[1] - CONTEST.every[0]);
   const lead = CONTEST.ahead[0] + g.rsp() * (CONTEST.ahead[1] - CONTEST.ahead[0]), x = p.x + p.vx * lead, z = p.z + p.vz * lead, k = g.rsp(); if (heightAt(x, z) > 38) return;
-  if (k < 0.4) { if (spawnEnemy(g, 'golem', { x, z })) { const i = g.lastSlot; g.en.root[i] = 8; g.en.brace[i] = CONTEST.blockerBrace; g.emit('brace', x, z, 0); } }
+  const lineK = Object.keys(g.roleOf || {}).find(id => g.roleOf[id] === 'blocker'), LK = lineK !== undefined ? Object.keys(KINDS).find(n => KINDS[n].id === +lineK) : null;
+  if (k < 0.4 && LK && LK !== 'golem') { const sp = Math.sqrt(p.vx * p.vx + p.vz * p.vz) || 1, nx = -p.vz / sp, nz = p.vx / sp; for (let s = -2; s <= 2; s++) spawnEnemy(g, LK, { x: x + nx * s * 1.8, z: z + nz * s * 1.8 }); g.emit('brace', x, z, 0); }       // the map's line blocker: a row of its swarm across the line ahead
+  else if (k < 0.4) { if (spawnEnemy(g, 'golem', { x, z })) { const i = g.lastSlot; g.en.root[i] = 8; g.en.brace[i] = CONTEST.blockerBrace; g.emit('brace', x, z, 0); } }
   else if (k < 0.7) { let bx = x, bz = z, bh = -1e9; for (let s = 0; s < 8; s++) { const a = s * 0.785, qx = x + cos(a) * 14, qz = z + sin(a) * 14, h = heightAt(qx, qz); if (h < 38 && h > bh) { bh = h; bx = qx; bz = qz; } } spawnEnemy(g, 'seer', { x: bx, z: bz }); }
   else for (let s = 0; s < CONTEST.field; s++) { const a = g.rsp() * 6.283, d = 2 + g.rsp() * 5; spawnEnemy(g, 'bloat', { x: x + cos(a) * d, z: z + sin(a) * d }); }
 }

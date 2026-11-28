@@ -152,6 +152,11 @@ export function animateBlocks(id, bg, t, state) { if (bg.model.version >= 2) { a
 // the block models, loaded once behind ?blocks=1 (files in assets/models/blocks/, kept out of the repo). A missing file is skipped and the current look stays.
 export const BLOCKS = {};
 export const blocksOn = typeof location !== 'undefined' && /[?&]blocks=1/.test(location.search);
+// the map kits (structures, far silhouettes, dressing, enemies), baked by the asset tool and listed in assets/models/maps/index.json; loaded by id for the map being played, in every look
+export async function loadMapModels(ids) {
+  await Promise.all(ids.filter(id => !BLOCKS[id]).map(async id => { try { const r = await fetch('assets/models/maps/' + id + '.ewv3'); if (!r.ok) return; BLOCKS[id] = decodeEwv3(new Uint8Array(await r.arrayBuffer())); } catch (e) { console.warn('map model', id, e.message); } }));
+  return BLOCKS;
+}
 export async function loadBlocks(ids) {
   if (!blocksOn) return BLOCKS;
   await Promise.all(ids.map(async id => { try { const r = await fetch('assets/models/blocks/' + id + '.ewv3', { cache: 'no-store' }); if (!r.ok) return; BLOCKS[id] = decodeEwv3(new Uint8Array(await r.arrayBuffer())); } catch (e) { console.warn('block model', id, e.message); } }));

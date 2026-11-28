@@ -203,8 +203,21 @@ function blockBar(D, a, b, half, gold, col) {       // a straight bar from a to 
   D.quad(P(a, 1, la), P(b, 1, lb), P(b, 1, yb), P(a, 1, ya), [px, 0, pz], c); D.quad(P(b, -1, lb), P(a, -1, la), P(a, -1, ya), P(b, -1, yb), [-px, 0, -pz], c);
   D.quad(P(a, 1, la), P(a, 1, ya), P(a, -1, ya), P(a, -1, la), [-ux, 0, -uz], TD); D.quad(P(b, -1, lb), P(b, -1, yb), P(b, 1, yb), P(b, 1, lb), [ux, 0, uz], TD);
 }
+// a map's own dressing kit (themes: dressing.kit, baked models): when set, the desert's cacti, dead trees, pots, spires and bones are drawn as the map's own props instead, picked by place
+let KIT = null;
+export function setDressKit(list, sites) { KIT = list && list.length ? list : null; SITES = sites && sites.length ? sites : null; }
+let SITES = null;       // the map's structure models, by site index (gen W.sites)
+// a themed map's palette: the built pieces (mesas, gate, rails, stalls, far rocks) were drawn in desert colours; each colour keeps its brightness and moves onto the map's ground ramp (lee, mid, lit), saturated accents a little less
+let PAL = null;
+export function setDressPalette(G) { PAL = G ? [G.lee, G.tintA, G.lit] : null; }
+export function themeCol(c) { if (!PAL) return c; const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255, l = (0.3 * r + 0.55 * g + 0.15 * b) / 255, mx = Math.max(r, g, b), sat = mx ? (mx - Math.min(r, g, b)) / mx : 0;
+  const t = l < 0.5 ? mixc(PAL[0], PAL[1], l * 2) : mixc(PAL[1], PAL[2], (l - 0.5) * 2); return mixc(c, t, 0.85 - 0.35 * sat); }
+function themeCols(col, from, skip) { for (let i = from; i < col.length; i += 3) { if (skip.some(s => i >= s[0] && i < s[1])) continue; const c = themeCol((Math.round(col[i] * 255) << 16) | (Math.round(col[i + 1] * 255) << 8) | Math.round(col[i + 2] * 255)); col[i] = ((c >> 16) & 255) / 255; col[i + 1] = ((c >> 8) & 255) / 255; col[i + 2] = (c & 255) / 255; } }
+const kitAt = (x, z, salt) => KIT[(((Math.imul((x * 10) | 0, 73856093) ^ Math.imul((z * 10) | 0, 19349663) ^ salt) >>> 0) % KIT.length)];
+function kitProp(D, x, y, z, salt) { const k = kitAt(x, z, salt); D.addModel(k.geo, x, y - 0.1, z, ((x * 7.31 + z * 3.17) % 6.283), k.s || 1); }
 export function addDressing(D, map, ok) {
   D.plain = true;       // flat clean faces: no per-triangle colour jitter on built pieces
+  const c0 = D.col ? D.col.length : 0, skip = []; if (PAL && D.col) { D.addModel = function (...a) { const s = this.col.length; Object.getPrototypeOf(this).addModel.apply(this, a); skip.push([s, this.col.length]); }; }       // kit models keep their own colours
   const d = map.dress || {}, yes = ok || (() => true);
   for (const q of d.pipes || []) if (yes(q[0], q[2])) pipeHoop(D, q);
   for (const q of d.rings || []) if (yes(q[0][0], q[0][2])) ringRail(D, q);
@@ -226,15 +239,16 @@ export function addDressing(D, map, ok) {
   if (!blocksOn) for (const q of d.quarters || []) if (yes(q[0], q[2])) { const [x, y, z, ux, uz, w] = q, px = -uz * w / 2, pz = ux * w / 2, R = 3.2, g0 = groundAt(map, x, z) - 0.2, N = 6, P = k => { const a = k / N * 1.5707963, o = Math.sin(a) * R, hh = R - Math.cos(a) * R; return [x + ux * o, g0 + hh, z + uz * o]; };       // a quarter pipe: a plain curved stone wall, one gold coping
     for (let k = 0; k < N; k++) { const a = P(k), b = P(k + 1); D.quad([a[0] + px, a[1], a[2] + pz], [a[0] - px, a[1], a[2] - pz], [b[0] - px, b[1], b[2] - pz], [b[0] + px, b[1], b[2] + pz], [-ux, 1 - k / N, -uz], SAND); D.quad([a[0] + px, g0, a[2] + pz], [a[0] + px, a[1], a[2] + pz], [b[0] + px, b[1], b[2] + pz], [b[0] + px, g0, b[2] + pz], [px, 0, pz], SAND_D); D.quad([b[0] - px, g0, b[2] - pz], [b[0] - px, b[1], b[2] - pz], [a[0] - px, a[1], a[2] - pz], [a[0] - px, g0, a[2] - pz], [-px, 0, -pz], SAND_D); }
     const t = P(N); D.quad([t[0] + px, g0, t[2] + pz], [t[0] - px, g0, t[2] - pz], [t[0] - px, t[1], t[2] - pz], [t[0] + px, t[1], t[2] + pz], [ux, 0, uz], SAND_D); rod(D, [t[0] + px, t[1] + 0.05, t[2] + pz], [t[0] - px, t[1] + 0.05, t[2] - pz], 0.16, 0.16, 6, GOLD, true, true, 0); }
-  for (const q of d.rspires || []) if (yes(q[0], q[2])) { const [x, y, z, h, w, a] = q; frustum(D, x, y - 0.5, z, w, w * 0.8, w * 0.35, w * 0.3, h * 0.65, a, 0x7a5236, 0x8a6040); frustum(D, x + 0.2, y + h * 0.6, z, w * 0.4, w * 0.35, w * 0.08, w * 0.06, h * 0.4, a + 0.5, 0x8a6040, 0x9a7050); }       // a ridge spine's umber rock spire
-  for (const q of d.bones || []) if (yes(q[0], q[2])) { const [x, y, z, a, s] = q, ca = Math.cos(a), sa = Math.sin(a); rod(D, [x - ca * 1.6 * s, y + 0.15, z - sa * 1.6 * s], [x + ca * 1.6 * s, y + 0.25, z + sa * 1.6 * s], 0.18 * s, 0.14 * s, 5, [0xf0e8d4, 0xdcd8ce], true, true, 0); for (let k = -2; k <= 2; k++) { const bx = x + ca * k * 0.6 * s, bz = z + sa * k * 0.6 * s; rod(D, [bx, y + 0.2, bz], [bx - sa * 1.1 * s, y + 0.9 * s, bz + ca * 1.1 * s], 0.07 * s, 0.05 * s, 4, [0xf0e8d4, 0xdcd8ce], true, false, 0); } }       // a dry lake's bleached bones
+  if (!KIT) for (const q of d.rspires || []) if (yes(q[0], q[2])) { const [x, y, z, h, w, a] = q; frustum(D, x, y - 0.5, z, w, w * 0.8, w * 0.35, w * 0.3, h * 0.65, a, 0x7a5236, 0x8a6040); frustum(D, x + 0.2, y + h * 0.6, z, w * 0.4, w * 0.35, w * 0.08, w * 0.06, h * 0.4, a + 0.5, 0x8a6040, 0x9a7050); }       // a ridge spine's umber rock spire
+  if (!KIT) for (const q of d.bones || []) if (yes(q[0], q[2])) { const [x, y, z, a, s] = q, ca = Math.cos(a), sa = Math.sin(a); rod(D, [x - ca * 1.6 * s, y + 0.15, z - sa * 1.6 * s], [x + ca * 1.6 * s, y + 0.25, z + sa * 1.6 * s], 0.18 * s, 0.14 * s, 5, [0xf0e8d4, 0xdcd8ce], true, true, 0); for (let k = -2; k <= 2; k++) { const bx = x + ca * k * 0.6 * s, bz = z + sa * k * 0.6 * s; rod(D, [bx, y + 0.2, bz], [bx - sa * 1.1 * s, y + 0.9 * s, bz + ca * 1.1 * s], 0.07 * s, 0.05 * s, 4, [0xf0e8d4, 0xdcd8ce], true, false, 0); } }       // a dry lake's bleached bones
   for (const q of d.lips || []) if (yes(q[0], q[2])) { rod(D, [q[0], q[1] - 0.1, q[2]], [q[3], q[4] - 0.1, q[5]], 0.45, 0.45, 6, [0x5a4030, 0x4a3426], true, true, 0); for (const [x, y, z] of [[q[0], q[1], q[2]], [q[3], q[4], q[5]]]) { frustum(D, x, y - 0.3, z, 0.8, 0.8, 0.4, 0.4, 10, 0.4, 0xe6dcc4, 0xf3ead6); for (const hb of [3.2, 6.4, 8.6]) rod(D, [x, y + hb, z], [x, y + hb + 0.5, z], 0.62, 0.55, 8, [0xe0b24e, 0xc9a24a], true, true, 0); frustum(D, x, y + 9.6, z, 0.45, 0.45, 0.05, 0.05, 1.6, 0.8, 0xffd56a); } }       // a great drop's lip: a dark carved edge across it and a marker stone at each end
   for (const q of d.cards || []) if (yes(q[0], q[2])) stoneCard(D, q[0], q[1], q[2], q[3], q[4]);
   for (const q of d.cracks || []) if (yes(q[0], q[1])) crack(D, map, q);
-  for (const q of d.cacti || []) if (yes(q[0], q[2])) cactus(D, q[0], q[1], q[2], q[3], q[4], q[5]);
-  for (const q of d.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], false);
+  if (KIT) { for (const q of d.cacti || []) if (yes(q[0], q[2])) kitProp(D, q[0], q[1], q[2], 1); for (const q of d.dead || []) if (yes(q[0], q[2])) kitProp(D, q[0], q[1], q[2], 2); }       // the map's own props
+  else { for (const q of d.cacti || []) if (yes(q[0], q[2])) cactus(D, q[0], q[1], q[2], q[3], q[4], q[5]);
+  for (const q of d.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], false); }
   for (const q of d.logs || []) if (yes(q[0], q[2])) log(D, map, q);
-  for (const q of d.pots || []) if (yes(q[0], q[2])) pot(D, q[0], q[1], q[2], q[3], q[4], q[5]);
+  if (!KIT) for (const q of d.pots || []) if (yes(q[0], q[2])) pot(D, q[0], q[1], q[2], q[3], q[4], q[5]);
   for (const q of d.heads || []) if (yes(q.x, q.z)) monument(D, q);
   if (yes(map.gate.x, map.gate.z)) gateway(D, map);
   for (const q of d.stalls || []) if (yes(q.x, q.z)) stall(D, map, q);
@@ -243,5 +257,7 @@ export function addDressing(D, map, ok) {
   for (const q of f.rocks || []) if (yes(q[0], q[2])) farRock(D, q);
   for (const q of f.dead || []) if (yes(q[0], q[2])) deadTree(D, q[0], q[1], q[2], q[3], q[4], q[5], true);
   for (const q of f.ruins || []) if (yes(q[0], q[2])) farRuin(D, q);
+  if (SITES) for (const s of map.sites || []) if (yes(s.x, s.z)) { const k = SITES[s.i % SITES.length]; if (k) D.addModel(k.geo, s.x, groundAt(map, s.x, s.z) - 0.25, s.z, s.yaw, 1); }       // each structure stands on its pad, sunk 25 cm so no gap shows under it
+  if (PAL && D.col) { delete D.addModel; themeCols(D.col, c0, skip); }
 }
 void vnoise;

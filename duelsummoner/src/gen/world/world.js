@@ -32,7 +32,8 @@ const COUNTS = [[[0, 0, 0], [0, 0, 0], [0, 1, 0.15]], [[3, 4, 1], [0, 1, 0.6], [
 export function makeWorld(seedLo, stageIndex, opts) {
   const seed = ((seedLo >>> 0) ^ Math.imul(stageIndex + 1, 0x85EBCA6B)) >>> 0, rr = rngOf(seed ^ 0xC0FFEE), wind = rr() * TAU, WP = { wind };
   const W = { seed, wind, stage: stageIndex, regionNames: REGION, extra: [] };
-  if (opts && opts.gym) W.gym = { x: 0, z: 0, r: 110, edge: 150 };       // the ride gym (?gym=1): a flat 200 m arena round (0, 0) with set pieces, see gymH and the gym dressing
+  if (opts && opts.gym) W.gym = { x: 0, z: 0, r: 110, edge: 150 };
+  W.landform = (opts && opts.landform) || 'dunes';       // the map theme's landform style (src/data/themes.js): dunes, terraces, ... (themes-v1)       // the ride gym (?gym=1): a flat 200 m arena round (0, 0) with set pieces, see gymH and the gym dressing
   // great drops (plan section 9): two per map, 450 to 800 m from the middle where the start is, from the seed alone. Each: a long approach rising to a 10 to 14 m shelf, a 45% cliff, then a long landing slope down to the land
   W.drops = []; { const dr = rngOf(seed ^ 0xD80B); for (let k = 0; k < 2; k++) { const a = dr() * TAU, r = 450 + dr() * 350, H = 10 + dr() * 4, e = a + (dr() - 0.5) * 0.8; W.drops.push({ x: cosA(a) * r, z: sinA(a) * r, c: cosA(e), s: sinA(e), H, w: 34 + dr() * 14 }); } }
   // the drop's land is its own: inside its footprint the dunes are smoothed to the level at its foot, so the shelf, the cliff and the landing slope are what you ride
@@ -141,9 +142,14 @@ export function makeWorld(seedLo, stageIndex, opts) {
   W.climbOf = climbOf;       // (a climb's chest is a pocket marked climb: reached by ollies and wall rides, not on foot)
   function baseH(x, z) { const h = climbH(x, z, bowlH(x, z, baseH2(x, z))); return h; }
   function baseH2(x, z) { const h = baseH1(x, z); if (!W.gym) return h; const G = W.gym, u = x - G.x, v = z - G.z, d = sq(u * u + v * v); if (d >= G.edge) return h; const h0 = G.h0 === undefined ? (G.h0 = baseH1(G.x, G.z)) : G.h0, k = sstep(G.r, G.edge, d); return gymH(u, v, h0) * (1 - k) + h * k; }
+  // a map's landform over the shared ground (themes-v1): terraces are 5 m steps, flat treads ending in a steep 5 m drop (a launch going down, a wall to ride going up)
+  function mapForm(x, z, h) {
+    if (W.landform === 'terraces') { const q = h / 5, f = Math.floor(q), t = q - f; return (f + sstep(0.82, 1, t)) * 5 + 0.6 * (vnoise(seed ^ 0x7e, x / 40, z / 40) - 0.5); }
+    return h;
+  }
   function baseH1(x, z) {
     const n = near2(x, z), t = sstep(-320, 320, n.db - n.da); let h = regH(n.A, x, z) * t; if (t < 0.999) h += regH(n.B, x, z) * (1 - t);
-    return dropAt(x, z, soft0(h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z) - 8 * startValleyQ(x, z) + roll(x, z)));
+    return dropAt(x, z, mapForm(x, z, soft0(h + 11 + 5 * vnoise(seed ^ 0x31, x / 2600, z / 2600) + mount(x, z) - 8 * startValleyQ(x, z) + roll(x, z))));
   }
   // the whole map rolls (owner, 27 Nov: more hills and large dips): broad hills up to about 14 m either way every 200 m or so, and dips 8 to 20 m deep in patches, all with smooth slopes a card can ride and a walker can climb
   const soft0 = h => (h > 4 ? h : 2 + 2 * sstep(-6, 4, h) + (h - 4) * 0.05);       // the deepest dips level out into a floor a little above 0 (smoothly, no shelf)
@@ -381,7 +387,7 @@ export function makeWorld(seedLo, stageIndex, opts) {
   // (the opening view looks toward the landmark and a wave valley in sight within 110 m, the valley weighted more)
   // ride school: three short beams in the opening view (within about 25 degrees of the start camera, 18 to 36 m ahead), the flattest such line, with the ground flattened under each
   { let best = null, bs = 1e9; for (const k of [0, 0.12, -0.12, 0.24, -0.24]) for (const side of [2.5, -2.5]) { const yw = W.startYaw + k, fx = -sinA(yw), fz = -cosA(yw), ox = sp[0] - fz * side, oz = sp[1] + fx * side, L = []; let worst = 0; for (const [d0, d1] of [[18, 22.5], [25, 29.5], [32, 36.5]]) { const ax = ox + fx * d0, az = oz + fz * d0, bx = ox + fx * d1, bz = oz + fz * d1; worst = Math.max(worst, spread((ax + bx) / 2, (az + bz) / 2, 4)); L.push([ax, az, bx, bz]); } if (worst < bs) { bs = worst; best = L; } }
-    W.school = best; for (const s of best) W.addPad((s[0] + s[2]) / 2, (s[1] + s[3]) / 2, 3.5, 7); }
+    W.school = best || []; for (const s of best || []) W.addPad((s[0] + s[2]) / 2, (s[1] + s[3]) / 2, 3.5, 7); }
   // the wonder of this seed: a long ride line of 5 to 8 beams from about 60 m out, leading toward the landmark the start faces, with five seal stones along it; all five lit in one combo opens an epic chest
   W.wonder = null; { const bt = W.startLandmark, base = bt ? (() => { const dx = bt.cx - sp[0], dz = bt.cz - sp[1]; let best = W.startYaw, bd = -2; const dl = sq(dx * dx + dz * dz) || 1; for (let k = 0; k < 96; k++) { const a = k * TAU / 96, d = (-sinA(a) * dx - cosA(a) * dz) / dl; if (d > bd) { bd = d; best = a; } } return best; })() : W.startYaw, stop = bt ? dist(bt.cx, bt.cz, sp[0], sp[1]) - reachOf(bt) - 12 : 1e9;
     for (const [b0, lim] of [[base, stop]].concat([0, 1, 2, 3, 4, 5, 6, 7].map(i => [base + (i + 0.5) * TAU / 8, 1e9]))) for (const k of [0, 1, -1, 2, -2, 3, -3]) { if (W.wonder) break; const yw = b0 + k * 0.12, fx = -sinA(yw), fz = -cosA(yw); let beams = [], best = [], d = 50, last = -1e9;
@@ -390,6 +396,8 @@ export function makeWorld(seedLo, stageIndex, opts) {
       if (beams.length >= 5) { const seals = []; for (let s = 0; s < 5; s++) { const b = beams[s], side = (s % 2 ? 1 : -1) * 2.0, cx = (b[0] + b[2]) / 2 - fz * side, cz = (b[1] + b[3]) / 2 + fx * side; seals.push([cx, cz]); } W.wonder = { beams, seals, yaw: r2(yw) }; } } }
   // the three sleepers (the elite and the two mini bosses): on flat sand 220, 420 and 650 m from the start
   W.sleepers = []; { const o0 = gather9(sp[0], sp[1]); void o0; for (const [role, r0] of [['elite', 230], ['bossA', 430], ['bossB', 650]]) { let site = null; for (let t = 0; t < 600 && !site; t++) { const r = r0 + (rs() - 0.5) * 80, a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (r4(x, z) > EDGE - 400) continue; const o = gather9(x, z); if (spread(x, z, 5) > 1.3 || slope(x, z) > 0.25 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 14) || o.pockets.some(p => dist(p.x, p.z, x, z) < 22) || o.rings.some(q => dist(q.x, q.z, x, z) < 24) || W.sleepers.some(q => dist(q.x, q.z, x, z) < 120)) continue; site = { role, x: r2(x), z: r2(z) }; } if (site) { W.sleepers.push(site); W.addPad(site.x, site.z, 4, 8); } } }
+  // the map's structures (themes-v1 setpieces): site 0 is the central one about 150 m out, the rest in a widening spiral, each on a flat pad with a soft skirt; the view stands the kit model on it
+  W.sites = []; { const n = (opts && opts.setpieces) | 0; for (let i = 0; i < n; i++) { let site = null; const r0 = i === 0 ? 150 : 240 + i * 75; for (let t = 0; t < 400 && !site; t++) { const r = r0 + (rs() - 0.5) * 60, a = rs() * TAU, x = sp[0] + cosA(a) * r, z = sp[1] + sinA(a) * r; if (r4(x, z) > EDGE - 400) continue; const o = gather9(x, z); if (spread(x, z, 10) > 6 || o.blocks.some(b => dist(b.cx, b.cz, x, z) < reachOf(b) + 24) || o.rings.some(q => dist(q.x, q.z, x, z) < 30) || o.pockets.some(p => dist(p.x, p.z, x, z) < 24) || W.sleepers.some(q => dist(q.x, q.z, x, z) < 40) || W.sites.some(q => dist(q.x, q.z, x, z) < 140) || dist(x, z, sp[0], sp[1]) < 70) continue; site = { i, x: r2(x), z: r2(z), yaw: r2(rs() * TAU) }; } if (site) { W.sites.push(site); site.y = r2(W.addPad(site.x, site.z, 16, 32).hc); } } }
   void cbrt; void qOf;
   return W;
 }

@@ -4,7 +4,7 @@
 // Ground look: pale cream sand on the sun side of every dune, orange on the lee side; fine ripple streaks along the wind (a tiling streak map, view only); steep faces (mountains, blocks) are banded sandstone, lit and shaded.
 import { Builder } from './mapMesh.js';
 import { vnoise, groundAt, duneH, blockProf, viewH } from '../gen/open/terrain.js';
-import { addDressing } from './openDressing.js';
+import { addDressing, themeCol } from './openDressing.js';
 import { blocksOn } from './models.js';
 import { Q as WQ, LC as WLC } from '../gen/world/world.js';
 const T = window.THREE;
@@ -113,9 +113,9 @@ export function buildOpen(map, look) {
   let built = 0; const stats = group.userData.stats = { near: 0, far: 0, dress: 0, builtNear: 0 };
   // ---- the big world: chunks and landmarks are made as the camera comes near and dropped behind it
   const bigChunks = new Map(), lmMeshes = new Map(), HZ = 0xe8d6b0, FARB = 520, FREEB = 700, LM_ON = 330, LM_MAX = 3600;
-  const hazeC = look.sky ? look.sky[1] : HZ, tintB = B => ({ quad: (a, b, c, d, nrm, col) => B.quad(a, b, c, d, nrm, mixc(col, hazeC, 0.42)), tri: (a, b, c, nrm, col) => B.tri(a, b, c, nrm, mixc(col, hazeC, 0.42)) });       // a landmark far off keeps its own flat colours, pulled toward the haze (it is drawn unlit and unfogged, so it never dissolves into the sky)
+  const hazeC = look.sky ? look.sky[1] : HZ, tintB = B => ({ quad: (a, b, c, d, nrm, col) => B.quad(a, b, c, d, nrm, mixc(themeCol(col), hazeC, 0.42)), tri: (a, b, c, nrm, col) => B.tri(a, b, c, nrm, mixc(themeCol(col), hazeC, 0.42)) });       // a landmark far off keeps its own flat colours, pulled toward the haze (it is drawn unlit and unfogged, so it never dissolves into the sky)
   const PARK = ['kickers', 'quarters', 'ledges', 'poles'], dressNear = (qx, qz) => { const d = Object.assign({}, map.dressCell(qx, qz)); for (const k of PARK) { d[k] = []; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) d[k] = d[k].concat(map.dressCell(qx + i, qz + j)[k] || []); } return d; };       // a park piece can stand outside the cell that laid it (the kill bowl's quarter pipes): each is drawn by the chunk it stands in
-  const subMap = (qx, qz) => { const C = map.cell(qx, qz); return { dress: dressNear(qx, qz), blocks: C.blocks, gate: map.gate, spawn: map.spawn, far: {}, viewFn: map.viewFn, dune: map.dune }; };
+  const subMap = (qx, qz) => { const C = map.cell(qx, qz); return { dress: dressNear(qx, qz), sites: map.sites, blocks: C.blocks, gate: map.gate, spawn: map.spawn, far: {}, viewFn: map.viewFn, dune: map.dune }; };
   let this_frame = 0;
   const bigUpdate = (cam, budget) => {
     const ci0 = Math.floor(cam.x / CHK), cj0 = Math.floor(cam.z / CHK), R = Math.ceil(FARB / CHK) + 1; let made = 0, dm = 0; const stats2 = stats; stats2.near = 0; stats2.far = 0; stats2.dress = 0;

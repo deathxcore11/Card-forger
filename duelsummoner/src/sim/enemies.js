@@ -87,7 +87,7 @@ export function spawnEnemy(g, kindName, at) {
   put(g, slot, spot.x, spot.y, spot.z, K.id);
   e.alive[slot] = 1; e.kind[slot] = K.id; e.st[slot] = 0; e.stT[slot] = K.id === SEER ? 1.2 : K.id === GOLEM ? 2 : 0;
   const ot = K === KINDS.hunter ? Math.max(0, g.otStep || 0) : 0, O = RUN.overtime;
-  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; e.wind[slot] = 0; e.icpt[slot] = (!at && g.spawnAhead) || K.id === RUNNER ? 1 : 0; e.brace[slot] = 0; g.spawnAhead = false; g.lastSlot = slot;
+  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; e.wind[slot] = 0; e.icpt[slot] = (!at && g.spawnAhead) || K.id === RUNNER || (g.roleOf && g.roleOf[K.id] === 'interceptor') ? 1 : 0; e.brace[slot] = 0; g.spawnAhead = false; g.lastSlot = slot;
   e.hp[slot] = K.hp * g.hpMul * pow(O.hpGrowth, ot); e.atk[slot] = 0.4; e.flash[slot] = 0; e.mark[slot] = 0; e.burn[slot] = 0; e.root[slot] = 0;
   e.spd[slot] = K.speed * (1 + (g.rsp() * 2 - 1) * CFG.enemy.speedJitter) * g.speedMul * Math.min(O.speedCap, pow(O.speedGrowth, ot));
   e.dx[slot] = 0; e.dz[slot] = 0; e.face[slot] = e.pface[slot] = 0;

@@ -26,7 +26,9 @@ import { fusedBody } from './chimera.js';
 import { makeRidePose, applyRidePose } from './ridepose.js';
 import { trickPose } from './trickpose.js';
 // the block look (?blocks=1): which block model draws which game actor (index.json ids). An actor with no entry, or whose file is missing, keeps its current look.
-const BLK_ENEMY = { 0: 'husk', 1: 'runner', 2: 'seer', 3: 'ram', 4: 'bloat', 5: 'scarab', 6: 'hunter' };
+export const BLK_ENEMY = { 0: 'husk', 1: 'runner', 2: 'seer', 3: 'ram', 4: 'bloat', 5: 'scarab', 6: 'hunter' };
+// a map theme casts its own enemies over the sim kinds (husk the swarm, runner the rusher, seer the shooter, golem the charger, bloat the exploder, scarab the flyer, hunter the pack): set before the actors are built
+export function setEnemyModels(prefix, have) { const job = { 0: 'swarm', 1: 'rusher', 2: 'shooter', 3: 'charger', 4: 'exploder', 5: 'flyer', 6: 'shielded' }; for (const k in job) { const id = 'e-' + prefix + '-' + job[k]; if (have(id)) BLK_ENEMY[k] = id; } }
 const BLK_SUMMON = { 'ember-wyvern': ['wyv1', 'wyv2', 'wyv3'], 'cinder-hatchling': ['hat1', 'hat2', 'hat3'], 'sigil-familiar': ['familiar'], 'twinflare-tyrant': ['tyrant'], 'rune-apprentice': ['newt'], 'astral-magus': ['strix'] };       // the roster renamed the Rune Apprentice to the Rune Newt and the Astral Magus to the Astral Strix (22 Nov)
 const BLK_SPECIAL = { warden: 'warden', pharaoh: 'king', idol: 'jackalT' };       // the gate boss is the Hollow King; the Twin Jackal Idols are a pair (jackalT and jackalC)
 const blkSummon = (id, form) => { const L = BLK_SUMMON[id]; const k = L && L[Math.min(form, L.length - 1)]; return k && BLOCKS[k] ? k : null; };
