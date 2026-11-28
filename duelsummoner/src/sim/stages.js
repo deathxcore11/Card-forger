@@ -322,7 +322,19 @@ function directorMul(g, dt) {
     else if (S.calm > D.calmFor) { S.mode = 'peak'; S.t = D.peakT; S.cycles++; } }
   return S.mode === 'relax' ? D.relaxMul : S.mode === 'peak' ? D.peakMul : 1;
 }
+// AI v1 threats ahead (design lead, 28 Nov): while the duelist rides fast, every 6 to 9 s the route ahead is contested by one of: a braced line blocker (a golem planted on the line, a 1 s shield tell, riding into it costs speed and health;
+// a trick landing or a slam breaks it), a shooter on the highest ground near the line ahead (its shots lead the rider with a lead line), or a bloat field on the ground the rider will land on (fuses shown from far off).
+export const CONTEST = { every: [4, 7], ahead: [3.0, 4.2], blockerBrace: 1, field: 3 };
+function contestTick(g, dt) {
+  const p = g.p, r = p.ride; if (!g.big || !r || !r.on || r.speed < 12 || (g.opts && g.opts.gym) || (g.gate && g.gate.state === 'fight')) return;
+  g.contestT = (g.contestT === undefined ? CONTEST.every[0] : g.contestT) - dt; if (g.contestT > 0) return; g.contestT = CONTEST.every[0] + g.rsp() * (CONTEST.every[1] - CONTEST.every[0]);
+  const lead = CONTEST.ahead[0] + g.rsp() * (CONTEST.ahead[1] - CONTEST.ahead[0]), x = p.x + p.vx * lead, z = p.z + p.vz * lead, k = g.rsp(); if (heightAt(x, z) > 38) return;
+  if (k < 0.4) { if (spawnEnemy(g, 'golem', { x, z })) { const i = g.lastSlot; g.en.root[i] = 8; g.en.brace[i] = CONTEST.blockerBrace; g.emit('brace', x, z, 0); } }
+  else if (k < 0.7) { let bx = x, bz = z, bh = -1e9; for (let s = 0; s < 8; s++) { const a = s * 0.785, qx = x + cos(a) * 14, qz = z + sin(a) * 14, h = heightAt(qx, qz); if (h < 38 && h > bh) { bh = h; bx = qx; bz = qz; } } spawnEnemy(g, 'seer', { x: bx, z: bz }); }
+  else for (let s = 0; s < CONTEST.field; s++) { const a = g.rsp() * 6.283, d = 2 + g.rsp() * 5; spawnEnemy(g, 'bloat', { x: x + cos(a) * d, z: z + sin(a) * d }); }
+}
 function spawner(g, dt, fight, toll) {
+  contestTick(g, dt);
   const S = g.stageSpec;
   const hordeOn = g.openFlow && g.horde.on && g.horde.t > 0, hm = hordeOn ? 2.2 + 0.5 * g.horde.t / 60 : 1;
   const D = g.diff, te = Math.min(479, S.waves.offset + g.sc * S.waves.scale * D.ramp + (hordeOn ? 90 : 0)), p = g.p, cap = g.maxAlive;

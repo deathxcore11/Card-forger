@@ -101,7 +101,7 @@ export function explode(g, x, y, z, r, pDmg, eDmg, color, src) {
   if (!(pDmg > 0)) r *= g.reachK;       // Reach scales the player's own area bursts (the Locket nova, the Graveyard Bell, Mark blasts); a hostile blast (it hurts the duelist) never grows
   addFx(g, { type: 'ring', owner: pDmg > 0 ? 1 : 0, x, y, z, r, dur: src === 'Landing slam' ? 0.4 : 0.45, color: color || 0xff9030, vr: src === 'Landing slam' ? 6 : 0 });       // vr: the landing slam is drawn no wider than 6 m (view only; the hit is still its full radius)
   const p = g.p;
-  if (pDmg > 0) { const dx = p.x - x, dz = p.z - z; if (dx * dx + dz * dz < r * r && Math.abs(p.y - y) < 2.5) g.hurtPlayer(pDmg, true, src || 'an explosion'); }
+  if (pDmg > 0) { const dx = p.x - x, dz = p.z - z; if (dx * dx + dz * dz < r * r && Math.abs(p.y - y) < 2.5) { if (g.aiHitFn) g.aiHitFn(g, x, z); g.hurtPlayer(pDmg, true, src || 'an explosion'); } }
   if (eDmg > 0) {
     const e = g.en, buf = takeBuf(), n = g.grid.query(x, z, r, buf);       // its own list: a Bloat felled in this loop blasts inside it
     for (let k = 0; k < n; k++) {

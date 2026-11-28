@@ -24,7 +24,8 @@ export function makeEnemies(max) {
     mrg: new Uint8Array(max), size: f(),                        // enemies merged into this one past the cap, and its size factor (1 to 1.5)
     ace: new Uint8Array(max),                                   // 1 = an Ace monster (star crest, big, tough, may drop a Trophy Chest)
     wind: f(),                                                  // AI v1: a melee wind-up in progress (seconds left); it holds one of the attack tokens
-    icpt: new Uint8Array(max)                                   // AI v1: an interceptor (it runs to where the rider will be, not where it is)
+    icpt: new Uint8Array(max),                                  // AI v1: an interceptor (it runs to where the rider will be, not where it is)
+    brace: f()                                                  // AI v1: a line blocker's brace (seconds of tell left, then -1 while braced)
   };
 }
 export function enemyCount(e) { let c = 0; for (let i = 0; i < e.max; i++) c += e.alive[i]; return c; }
@@ -86,7 +87,7 @@ export function spawnEnemy(g, kindName, at) {
   put(g, slot, spot.x, spot.y, spot.z, K.id);
   e.alive[slot] = 1; e.kind[slot] = K.id; e.st[slot] = 0; e.stT[slot] = K.id === SEER ? 1.2 : K.id === GOLEM ? 2 : 0;
   const ot = K === KINDS.hunter ? Math.max(0, g.otStep || 0) : 0, O = RUN.overtime;
-  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; e.wind[slot] = 0; e.icpt[slot] = (!at && g.spawnAhead) || K.id === RUNNER ? 1 : 0; g.spawnAhead = false; g.lastSlot = slot;
+  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; e.wind[slot] = 0; e.icpt[slot] = (!at && g.spawnAhead) || K.id === RUNNER ? 1 : 0; e.brace[slot] = 0; g.spawnAhead = false; g.lastSlot = slot;
   e.hp[slot] = K.hp * g.hpMul * pow(O.hpGrowth, ot); e.atk[slot] = 0.4; e.flash[slot] = 0; e.mark[slot] = 0; e.burn[slot] = 0; e.root[slot] = 0;
   e.spd[slot] = K.speed * (1 + (g.rsp() * 2 - 1) * CFG.enemy.speedJitter) * g.speedMul * Math.min(O.speedCap, pow(O.speedGrowth, ot));
   e.dx[slot] = 0; e.dz[slot] = 0; e.face[slot] = e.pface[slot] = 0;
@@ -105,7 +106,7 @@ const o = { x: 0, y: 0, z: 0, vy: 0, dx: 0, dz: 0 }, sv = { x: 0, z: 0, d: 0, di
 // AI v1 (design/ai-v1.md): attack tokens, so a horde never lands forty hits in one frame, and every hit has a tell
 export const TOKENS = { melee: 4, ranged: 3, tell: 0.4 };
 export const AHEAD = { share: 0.65, cone: 1.05, min: 70, max: 110, lead: 2.2 };       // spawns ahead: the share of spawns, the cone (radians), the distance (past the fog wall); an interceptor leads the rider by up to 2.2 s
-function aiHit(g, x, z) { const p = g.p, A = g.aiStats || (g.aiStats = { ahead: 0, side: 0, behind: 0, maxWind: 0 }), v = Math.sqrt(p.vx * p.vx + p.vz * p.vz), dx = x - p.x, dz = z - p.z, d = Math.sqrt(dx * dx + dz * dz) || 1; if (v < 8) { A.slow = (A.slow || 0) + 1; return; } const c = (dx * p.vx + dz * p.vz) / (d * v); if (c > 0.35) A.ahead++; else if (c < -0.35) A.behind++; else A.side++; }       // where each landed hit came from, against the rider's travel       // (only hits taken while riding count for ahead, side and behind)
+export function aiHit(g, x, z) { const p = g.p, A = g.aiStats || (g.aiStats = { ahead: 0, side: 0, behind: 0, maxWind: 0 }), v = Math.sqrt(p.vx * p.vx + p.vz * p.vz), dx = x - p.x, dz = z - p.z, d = Math.sqrt(dx * dx + dz * dz) || 1; if (v < 8) { A.slow = (A.slow || 0) + 1; return; } const c = (dx * p.vx + dz * p.vz) / (d * v); if (c > 0.35) A.ahead++; else if (c < -0.35) A.behind++; else A.side++; }       // where each landed hit came from, against the rider's travel       // (only hits taken while riding count for ahead, side and behind)
 export function updateEnemies(g, dt) {
   if (g.stopT > 0) return; let windN = 0, windNew = 0, aimN = 0, aimNew = 0;       // Stopped Sand: every ordinary enemy stands still and cannot hurt
   const e = g.en, p = g.p, E = CFG.enemy, mul = g.dmgMul; let burnSum = 0;       // burn is summed over the tick and logged once, under its own source
@@ -115,6 +116,7 @@ export function updateEnemies(g, dt) {
     o.x = e.x[i]; o.y = e.y[i]; o.z = e.z[i]; o.vy = e.vy[i]; o.dx = e.dx[i]; o.dz = e.dz[i];
 
     if (e.mark[i] > 0) e.mark[i] -= dt;
+    if (e.brace[i] > 0) { e.brace[i] -= dt; if (e.brace[i] <= 0) e.brace[i] = -1; }       // a blocker's shield tell, then braced
     if (e.wind[i] !== 0) { windN++; if (e.wind[i] > 0) { e.wind[i] -= dt; if (e.wind[i] <= 0) e.wind[i] = -1; } }       // a wind-up runs on whatever the enemy does; -1: it is due
     if (e.flash[i] > 0) e.flash[i] -= dt;
     if (e.burn[i] > 0) { const bd = e.burnDps[i] * dt; burnSum += bd; e.burn[i] -= dt; e.hp[i] -= bd; if (e.hp[i] <= 0) { killEnemy(g, i); continue; } }

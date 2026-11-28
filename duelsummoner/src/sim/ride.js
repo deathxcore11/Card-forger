@@ -10,6 +10,7 @@ import { heightAt, moveXZ } from './terrain.js';
 import { atan2, cos, sin } from './dmath.js';
 import { resolveColliders } from './colliders.js';
 import { explode, damageEnemy } from './combat.js';
+import { aiHit } from './enemies.js';
 import { breakVasesNear, rideShrineDone } from './world.js';
 import { shrineCourse } from '../gen/world/world.js';
 import { railsNear, sealsNear, sealSet, pipesNear, kickersNear, quartersNear } from './rails.js';
@@ -204,8 +205,10 @@ const SMALL = [1, 1, 1, 0, 1, 1, 0];       // by kind id: husk, runner, seer, go
 function runThrough(g, p, r) {
   const e = g.en, ax = sin(r.heading), az = cos(r.heading);
   for (let i = 0; i < e.max; i++) { if (!e.alive[i]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z; if (dx * dx + dz * dz > 1.7 * 1.7 || Math.abs(e.y[i] - p.y) > 1.6) continue;
-    if (SMALL[e.kind[i]]) { g.curSrc = g.srcIndex ? g.srcIndex('run-through') : 0; damageEnemy(g, i, 9999, {}); g.curSrc = 0; if (!e.alive[i]) { addTrick(g, r, 'Run Through', RIDE.knock.points); g.emit('knock', e.x[i], e.z[i], r.heading); } }
-    else if (p.grounded) { p.grounded = false; p.vy = RIDE.knock.hop; r.airT = 0; r.lastLandVy = 0; damageEnemy(g, i, 20, {}); addTrick(g, r, 'Bump Hop', 100); g.emit('ollie', 2, 0, 0); } }
+    if (SMALL[e.kind[i]] && !e.ace[i]) { g.curSrc = g.srcIndex ? g.srcIndex('run-through') : 0; damageEnemy(g, i, 9999, {}); g.curSrc = 0; if (!e.alive[i]) { addTrick(g, r, 'Run Through', RIDE.knock.points); g.emit('knock', e.x[i], e.z[i], r.heading); } }
+    else if (p.grounded && !(r.bumpT > g.t)) { r.bumpT = g.t + 0.6; const v = r.speed;       // a big body (a golem, a hunter, an Ace) met at speed (AI v1 threat 1): the card loses 40% of its speed and the rider takes contact damage by speed, a stagger, never a bail unless stalled
+      if (v < 4) { bail(g, r, 'stalled'); g.hurtPlayer(6, true, 'a big body'); }
+      else { r.speed *= 0.6; aiHit(g, e.x[i], e.z[i]); g.hurtPlayer(Math.round(3 + v * 0.5), true, 'a big body'); damageEnemy(g, i, 20, { kx: ax, kz: az, knock: 1.2 }); g.emit('stagger', p.x, p.z, v); } } }
 }
 // ---- shrines you ride (plan section 10): Ring Shrine, one lap of its ring rail grinded (a second lap lifts the tier); Gate Shrine, its five arches threaded in one go
 const TWO_PI = 6.283185307179586, wrapPi = a => (a > 3.141592653589793 ? a - TWO_PI : a < -3.141592653589793 ? a + TWO_PI : a);
@@ -290,6 +293,7 @@ function land(g, p, r, cmd) {
   { const ax = sin(r.heading), az = cos(r.heading), down = (heightAt(p.x, p.z) - heightAt(p.x + ax * 2, p.z + az * 2)) / 2, fall = atan2(-(vy || 0), Math.max(1, r.speed)), slope = atan2(down, 1), mis = Math.abs(fall - slope) * 57.3;       // AI v1 feel table: the angle between the fall and the ground along the travel
     r.speed *= down > 0.15 && mis < 20 ? 1.03 : mis < 35 ? 0.85 : 0.7; }       // along a downslope: all the speed and a little more; under 35 degrees off: 85%; worse: 70%, never a bail       // a landing on a downslope, along it, keeps all its speed
   F0(g).boost = Math.min(1, (F0(g).boost || 0) + comboValue(r.combo) * LAUNCH.boostPerPoint);       // landed tricks fill the boost
+  { const e = g.en, tricked = Object.keys(r.combo.names).length > 0; if (tricked) for (let i = 0; i < e.max; i++) { if (!e.alive[i] || SMALL[e.kind[i]]) continue; const dx = e.x[i] - p.x, dz = e.z[i] - p.z; if (dx * dx + dz * dz < 9) { e.brace[i] = 0; e.root[i] = 0; damageEnemy(g, i, 60, { kx: dx, kz: dz, knock: 4 }); addTrick(g, r, 'Brace Break', 300); g.emit('knock', e.x[i], e.z[i], r.heading); } } }       // a trick landed on a big body breaks its brace and throws it
   bank(g, r); answerTrick(g, 'land', p.x, p.y, p.z); g.emit('land', p.x, p.z, -vy);
 }
 function manualTick(g, p, r, dt, cmd, jumpPress) {

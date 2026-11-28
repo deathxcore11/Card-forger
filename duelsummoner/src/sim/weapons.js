@@ -134,7 +134,7 @@ export function updateBolts(g, dt) {
     b.life -= dt; b.x += b.vx * dt; b.z += b.vz * dt;
     if (b.life <= 0 || heightAt(b.x, b.z) > b.y + 0.4) { b.on = false; continue; }
     const dx = p.x - b.x, dz = p.z - b.z;
-    if (dx * dx + dz * dz < b.r * b.r && Math.abs(p.y + 0.9 - b.y) < 1.4) { b.on = false; g.hurtPlayer(b.dmg, true, b.src); }
+    if (dx * dx + dz * dz < b.r * b.r && Math.abs(p.y + 0.9 - b.y) < 1.4) { b.on = false; if (g.aiHitFn) g.aiHitFn(g, b.x - b.vx * 0.5, b.z - b.vz * 0.5); g.hurtPlayer(b.dmg, true, b.src); }       // (the AI check counts where a shot came from)
   }
 }
 
