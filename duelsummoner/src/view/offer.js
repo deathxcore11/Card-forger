@@ -1,4 +1,6 @@
 // The offer screen: level-ups, chests, Witness Stones, the Relic Broker and shrine blessings. Plain placeholder styling.
+import { formOf } from '../data/cards.js';
+import { thumbInto, HAND_BODY } from './thumbs.js';
 import { OFFER, LEVELS } from '../data/cards.js';
 import { ANSWERS } from '../data/answers.js';
 import { ITEMS, BLESSINGS } from '../data/items.js';
@@ -96,9 +98,10 @@ export function showOffer(g, act) {
     const act = c.kind === 'banish' ? 'EXILE' : c.kind === 'tribute' ? 'TRIBUTE' : 'TAKE';
     const buy = shop ? (c.sold ? '<button disabled>SOLD</button>' : '<button data-pick="' + i + '"' + (g.coins < c.price ? ' disabled' : '') + '>BUY ' + c.price + '</button>') : '<button data-pick="' + i + '">' + act + '</button>';
     const one = s => { s = String(s || '').replace(/<[^>]*>/g, ''); const m = /^(.*?[.!?])(\s|$)/.exec(s); return m ? m[1] : s; };       // the first sentence only
-    if (level) { const now = c.kind === 'monster' && D.fxText && !c.isNew && D.fxText[c.to] ? 'Now: ' + D.fxText[c.to] : one(D.text); const EG = { fire: ['▲', '#ff8a40'], lightning: ['⚡', '#ffe060'], ice: ['❄', '#8fd8f0'], poison: ['⬣', '#8ad048'], wind: ['≈', '#bfeee0'], earth: ['◆', '#c09050'], light: ['✦', '#fff0b0'], dark: ['●', '#b080ff'] }, el0 = (D.elements || [])[0], gl = EG[el0] || (c.kind === 'trap' ? ['◈', '#e0b765'] : ['✧', '#b26bff']), big = D.roster ? (D.job || '') : (String(now).match(/[+]?\d+(?:\.\d+)?(?:%|(?: m| s)(?![a-z]))?/) || [])[0]; el.innerHTML = '<span class="glyph" style="color:' + gl[1] + '">' + gl[0] + '</span><h3>' + D.name + '</h3>' + (big ? '<div class="big">' + big + '</div>' : '') + '<div class="t">' + kind + ' &middot; ' + c.rarity[0].toUpperCase() + c.rarity.slice(1) + (lv ? ' &middot; ' + lv.replace(/ of \d+$/, '') : '') + '</div><div class="eff">' + now + '</div><div class="rowBtn">' + buy + '</div>'; wrap.appendChild(el); return; }       // a level-up card: name, one small line, one short line of what it does (owner, 27 Nov)
+    if (level) { const now = c.kind === 'monster' && D.fxText && !c.isNew && D.fxText[c.to] ? 'Now: ' + D.fxText[c.to] : one(D.text); const EG = { fire: ['▲', '#ff8a40'], lightning: ['⚡', '#ffe060'], ice: ['❄', '#8fd8f0'], poison: ['⬣', '#8ad048'], wind: ['≈', '#bfeee0'], earth: ['◆', '#c09050'], light: ['✦', '#fff0b0'], dark: ['●', '#b080ff'] }, el0 = (D.elements || [])[0], gl = EG[el0] || (c.kind === 'trap' ? ['◈', '#e0b765'] : ['✧', '#b26bff']), big = D.roster ? (D.job || '') : (String(now).match(/[+]?\d+(?:\.\d+)?(?:%|(?: m| s)(?![a-z]))?/) || [])[0]; el.innerHTML = '<span class="glyph" style="color:' + gl[1] + '">' + gl[0] + '</span><h3>' + D.name + '</h3>' + (big ? '<div class="big">' + big + '</div>' : '') + '<div class="t">' + kind + ' &middot; ' + c.rarity[0].toUpperCase() + c.rarity.slice(1) + (lv ? ' &middot; ' + lv.replace(/ of \d+$/, '') : '') + '</div><div class="eff">' + now + '</div><div class="rowBtn">' + buy + '</div>'; addArt(el, c, D, true); wrap.appendChild(el); return; }       // a level-up card: name, one small line, one short line of what it does (owner, 27 Nov)
     el.innerHTML = '<h3>' + D.name + '</h3><div class="t">' + kind + ' &middot; ' + c.rarity + '</div><div>' + (D.text || '') + '</div>' + (ANSWERS[c.id] && ANSWERS[c.id].length && window.__dsBig ? '<div class="t" style="color:#ffd56a">On the card: ' + ANSWERS[c.id].map(q => q.text).join(' ') + '</div>' : '') + '<div class="t">' + lv + '</div>' + fx +
       '<div class="rowBtn">' + buy + '' + '</div>';
+    addArt(el, c, D, false);
     wrap.appendChild(el);
   });
   if ((level || o.type === 'blessing') && window.__dealFrom && !document.body.classList.contains('rm')) { const O = window.__dealFrom; [...wrap.children].forEach((el, i, all) => { const r = el.getBoundingClientRect(); el.style.animation = 'none'; el.animate([{ transform: 'translate(' + (O.x - (r.left + r.width / 2)) + 'px,' + (O.y - (r.top + r.height / 2)) + 'px) scale(0.12) rotate(' + ((i - (all.length - 1) / 2) * 38) + 'deg)', opacity: 0.9 }, { transform: 'none', opacity: 1 }], { duration: 340, delay: i * 45, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'backwards' }); }); }       // the cards travel out from the duelist (about 0.43 s from the bar filling to the last card landed)
@@ -131,3 +134,9 @@ export function offerKey(g, code, act) {                // keyboard: 1 to 4 take
   return false;
 }
 
+
+// the card's own voxel model as its picture: an item's model, a summon's body at the form the card gives (in the corner of a level-up card)
+function addArt(el, c, D, corner) {
+  const art = c.kind === 'item' && ITEMS[c.id] && ITEMS[c.id].v2 ? 'it-' + c.id : (c.kind === 'monster' || c.kind === 'fusion') && D ? (D.roster && D.forms ? (D.forms[formOf(c.id, c.to || 1)] || D.forms[0]).modelId : HAND_BODY[c.id] ? HAND_BODY[c.id][Math.min(formOf(c.id, c.to || 1), HAND_BODY[c.id].length - 1)] : null) : null; if (!art) return;
+  const im = document.createElement('img'); im.className = 'cardArt' + (corner ? ' corner' : ''); im.alt = ''; im.hidden = true; if (corner) el.classList.add('hasArt'); el.insertBefore(im, el.firstChild); thumbInto(im, art);
+}

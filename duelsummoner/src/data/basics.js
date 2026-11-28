@@ -28,7 +28,7 @@ for (const b of BASICS) {
   const q = ATTACK_ROWS[b.id]; if (!q) continue;
   const forms = FROM.map((lv, i) => ({ fromLevel: lv, modelId: (b.forms[i] && b.forms[i].model) || b.id + (i + 1), scale: SCALE[i], baked: true }));
   MONSTERS[b.id] = { name: b.name, type: TYPE[b.bodyFamily] || cap(b.bodyFamily || 'creature'), elements: [q.el || b.element], rarity: b.rarity || 'common', partner: b.partner, roster: true, job: b.job, forms,
-    text: b.text + '.', attack: { kind: LEGACY_KIND[q.d] || 'homing', dmg: q.dmg, cd: q.cd, range: q.range || 20, speed: q.speed || 26, length: q.range || 20, pierce: q.pierce || 0, splash: q.splash || 3, flight: q.flight || 0.7 }, fx: {}, fxText: {} };
+    text: b.text.replace(/\bLP\b/g, 'health') + '.', attack: { kind: LEGACY_KIND[q.d] || 'homing', dmg: q.dmg, cd: q.cd, range: q.range || 20, speed: q.speed || 26, length: q.range || 20, pierce: q.pierce || 0, splash: q.splash || 3, flight: q.flight || 0.7 }, fx: {}, fxText: {} };
   ANSWERS[b.id] = [JOB_ANSWER[b.job] || JOB_ANSWER.Melee]; ROSTER_IDS.push(b.id);
 }
 // the body files a summon needs (its three forms), for the view to fetch before it draws it

@@ -1,4 +1,5 @@
 // The trick answers engine (plan section 11): ride.js calls answerTrick(g, kind, x, y, z) when a trick lands; each card held that answers it acts, on its cooldown.
+import { v2Event } from './items3.js';
 import { ANSWERS } from '../data/answers.js';
 import { damageOf, def } from './field.js';
 import { splash } from './weapons.js';
@@ -10,7 +11,7 @@ function markNear(g, x, z, n, r) { const e = g.en, pick = []; for (let i = 0; i 
 // every card held: [id, level, monster or null]
 function held(g) { const out = []; for (const m of g.field.monsters) if (m) out.push([m.id, m.level, m]); for (const s of g.field.spells) if (s) out.push([s.id, s.level || 1, null]); return out; }
 export function answerTrick(g, kind, x, y, z) {
-  const cd = g.ansCd || (g.ansCd = {}), cnt = g.ansCount || (g.ansCount = {}); let fired = 0;
+  const cd = g.ansCd || (g.ansCd = {}), cnt = g.ansCount || (g.ansCount = {}); let fired = 0; if (g.v2) v2Event(g, 'trick', kind);
   for (const [id, L, m] of held(g)) {
     const list = ANSWERS[id]; if (!list) continue;
     list.forEach((a, ai) => {

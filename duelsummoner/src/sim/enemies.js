@@ -19,7 +19,7 @@ export function makeEnemies(max) {
   return {
     max, alive: new Uint8Array(max), kind: new Uint8Array(max), st: new Uint8Array(max),
     x: f(), y: f(), z: f(), vy: f(), hp: f(), atk: f(), flash: f(), face: f(), spd: f(), dx: f(), dz: f(),
-    stT: f(), ax: f(), az: f(), mark: f(), burn: f(), burnDps: f(), root: f(),
+    stT: f(), ax: f(), az: f(), mark: f(), burn: f(), burnDps: f(), root: f(), slow: f(), fresh: new Uint8Array(max),
     px: f(), py: f(), pz: f(), pface: f(),                      // previous tick, for smooth drawing
     mrg: new Uint8Array(max), size: f(),                        // enemies merged into this one past the cap, and its size factor (1 to 1.5)
     ace: new Uint8Array(max),                                   // 1 = an Ace monster (star crest, big, tough, may drop a Trophy Chest)
@@ -87,7 +87,7 @@ export function spawnEnemy(g, kindName, at) {
   put(g, slot, spot.x, spot.y, spot.z, K.id);
   e.alive[slot] = 1; e.kind[slot] = K.id; e.st[slot] = 0; e.stT[slot] = K.id === SEER ? 1.2 : K.id === GOLEM ? 2 : 0;
   const ot = K === KINDS.hunter ? Math.max(0, g.otStep || 0) : 0, O = RUN.overtime;
-  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; e.wind[slot] = 0; e.icpt[slot] = (!at && g.spawnAhead) || K.id === RUNNER || (g.roleOf && g.roleOf[K.id] === 'interceptor') ? 1 : 0; e.brace[slot] = 0; g.spawnAhead = false; g.lastSlot = slot;
+  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; e.slow[slot] = 0; e.fresh[slot] = 1; e.wind[slot] = 0; e.icpt[slot] = (!at && g.spawnAhead) || K.id === RUNNER || (g.roleOf && g.roleOf[K.id] === 'interceptor') ? 1 : 0; e.brace[slot] = 0; g.spawnAhead = false; g.lastSlot = slot;
   e.hp[slot] = K.hp * g.hpMul * pow(O.hpGrowth, ot); e.atk[slot] = 0.4; e.flash[slot] = 0; e.mark[slot] = 0; e.burn[slot] = 0; e.root[slot] = 0;
   e.spd[slot] = K.speed * (1 + (g.rsp() * 2 - 1) * CFG.enemy.speedJitter) * g.speedMul * Math.min(O.speedCap, pow(O.speedGrowth, ot));
   e.dx[slot] = 0; e.dz[slot] = 0; e.face[slot] = e.pface[slot] = 0;
@@ -128,7 +128,7 @@ export function updateEnemies(g, dt) {
       o.x = e.x[i]; o.y = e.y[i]; o.z = e.z[i]; o.vy = 0;
       dx = p.x - o.x; dz = p.z - o.z; d = Math.sqrt(dx * dx + dz * dz) || 0.001;
     }
-    let spd = rooted ? 0 : e.spd[i];
+    let spd = rooted ? 0 : e.spd[i]; if (e.slow[i] > 0) { e.slow[i] -= dt; spd *= 0.5; }       // slowed (Frost Pebble): half speed
     if (kid === HUNTER && !rooted) { const fl = Math.min(K2.hunterBurst * CFG.player.speed * (1 + g.mods.move), Math.sqrt(p.vx * p.vx + p.vz * p.vz) * K2.chaseLead); if (fl > spd) spd = fl; }       // an Overtime hunter bursts to the duelist's real speed (up to 1.7x run speed)
     let touching = false;
 

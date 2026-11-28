@@ -35,7 +35,7 @@ const LEGEND = [
 const FAM_ORDER = ['card', 'monster', 'spell', 'trap', 'move', 'defence', 'economy', 'explore', 'risk'];
 // the locked items in unlock order: commons first, balanced across families, then rares, epics, legendaries
 function ordered(rarity, skip) {
-  const by = {}; for (const id of Object.keys(ITEMS)) if (ITEMS[id].rarity === rarity && !STARTER.items.includes(id) && !skip.has(id)) (by[ITEMS[id].fam] || (by[ITEMS[id].fam] = [])).push(id);
+  const by = {}; for (const id of Object.keys(ITEMS)) if (ITEMS[id].rarity === rarity && !ITEMS[id].v2 && !STARTER.items.includes(id) && !skip.has(id)) (by[ITEMS[id].fam] || (by[ITEMS[id].fam] = [])).push(id);
   const out = []; for (let k = 0; ; k++) { let any = false; for (const f of FAM_ORDER) if (by[f] && by[f][k]) { out.push(by[f][k]); any = true; } if (!any) break; }
   return out;
 }

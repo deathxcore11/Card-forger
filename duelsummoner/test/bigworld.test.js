@@ -120,9 +120,9 @@ import { ITEMS as ALL_ITEMS, BLESSINGS as ALL_BOONS, ITEM_CAPS } from '../src/da
 import { addItem } from '../src/sim/field.js';
 import { procEvent, procTick } from '../src/sim/procs.js';
 
-test('big world catalog: 123 items (45 common, 43 rare (3 land items), 25 epic, 10 legendary), 22 boons (16 and 6 ride boons), every item reads and works', () => {
+test('big world catalog: 162 items (65 common, 52 rare (3 land items), 33 epic, 12 legendary; 40 of them the coded new-design items), 22 boons (16 and 6 ride boons), every item reads and works', () => {
   const c = { common: 0, rare: 0, epic: 0, legendary: 0 }; for (const it of Object.values(ALL_ITEMS)) c[it.rarity]++;
-  assert.deepEqual(c, { common: 45, rare: 43, epic: 25, legendary: 10 }); assert.equal(Object.keys(ALL_BOONS).length, 22); assert.equal(Object.values(ALL_BOONS).filter(b => b.ride).length, 6);
+  assert.deepEqual(c, { common: 65, rare: 52, epic: 33, legendary: 12 }); assert.equal(Object.keys(ALL_BOONS).length, 22); assert.equal(Object.values(ALL_BOONS).filter(b => b.ride).length, 6);
   for (const [id, it] of Object.entries(ALL_ITEMS)) { assert.ok(it.name && it.text && it.fam && it.price > 0, id); assert.ok(!/undefined|NaN/.test(it.text), id + ': ' + it.text); if (it.rarity === 'legendary') assert.ok(it.unique, id + ' single only'); }
   for (const id of Object.keys(ALL_BOONS)) { const b = ALL_BOONS[id]; assert.ok(b.name && b.text && b.fmt(1) && b.mods, id); }
   const g = mkBig(); g.god = true; g.spawnAcc = -1e9;
@@ -149,7 +149,7 @@ import { STARTER } from '../src/data/starter.js';
 test('unlock ladder: a fresh save starts small (1 duelist, 12 cards, 15 items, 4 boons, 6 pickups, Easy, stage 1), and the first ten runs unlock something almost every time', () => {
   const m = defaultMeta(); assert.deepEqual([m.duelists.length, m.unlockedCards.length, m.unlockedItems.length, m.unlockedBoons.length, m.unlockedPickups.length, m.stagesOpen], [1, 12, 15, 4, 6, 1]); assert.equal(m.diffUnlock.ruins, undefined);
   const sm = simMeta(m); assert.deepEqual([sm.boons.length, sm.pickups.length, sm.stagesOpen], [4, 6, 1]);
-  const total = ITEMS_COUNT(); assert.equal(total, 123);
+  const total = ITEMS_COUNT(); assert.equal(total, 162);
   // ten short runs: about 1.5 minutes, 80 kills, a few vases and chests, some pickups, a boon now and then, never a win
   let unlockedRuns = 0, firstTen = [];
   for (let run = 1; run <= 10; run++) { const done = applyRun(m, { game: 'ds', big: true, mode: 'run', map: 'ruins', difficulty: 'easy', result: 'loss', timeSurvived: 90 + run * 15, kills: 60 + run * 25, vasesBroken: 5 + run, chestsOpened: 2, pickups: 3, boons: run % 3 === 0 ? 1 : 0, doorsFound: 0, stagesCleared: 0, items: ['sand-sandals', 'brass-ring', 'spyglass'.slice(0, 0) || 'bronze-scale'], duelist: 'kael', keys: [], oathsKept: [], level: 5 + run }); const gained = done.filter(q => q.reward && (q.reward.item || q.reward.boon || q.reward.pickup || q.reward.card)).length; firstTen.push(gained); if (gained > 0) unlockedRuns++; }
@@ -162,7 +162,7 @@ test('unlock ladder: clearing stage 1 opens stage 2 and the next difficulty; the
   assert.equal(m.stagesOpen, 2); assert.ok(m.diffUnlock.ruins && m.diffUnlock.ruins.includes('medium'));
   const granted = {}; for (const q of QUESTS) for (const k of ['item', 'boon', 'pickup']) if (q.reward && q.reward[k] !== undefined) { const key = k + ':' + q.reward[k]; granted[key] = (granted[key] || 0) + 1; }
   for (const [k, n] of Object.entries(granted)) assert.equal(n, 1, k + ' has one quest');
-  for (const id of Object.keys(ALL_ITEMS)) if (!STARTER.items.includes(id)) assert.equal(granted['item:' + id], 1, id + ' can be unlocked');
+  for (const id of Object.keys(ALL_ITEMS)) if (!STARTER.items.includes(id) && !ALL_ITEMS[id].v2) assert.equal(granted['item:' + id], 1, id + ' can be unlocked');       // the new-design items are open in every game until their unlock rules are set
   for (const id of Object.keys(ALL_BOONS)) if (ALL_BOONS[id].big && !STARTER.boons.includes(id)) assert.equal(granted['boon:' + id], 1, id + ' can be unlocked');
 });
 

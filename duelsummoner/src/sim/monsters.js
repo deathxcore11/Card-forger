@@ -12,6 +12,7 @@ const SUMMON_AT = { x: 0, y: 0, z: 0, vx: 0, vz: 0 };
 import { fireShot, fireLob, fireHoming, KIND_CARD, KIND_FIRE, splash, AREA_SHARE } from './weapons.js';
 import { damageEnemy, addFx, addTele, explode } from './combat.js';
 import { def, param, damageOf } from './field.js';
+import { v2Rate, v2Attacked } from './items3.js';
 import { elemBits } from '../data/elements.js';
 import { fusionAttack, fusionTick, fusionCd as fusionCdOf } from './fusion.js';
 
@@ -69,10 +70,10 @@ export function updateMonsters(g, dt) {
     { const sr = param(m, 'ring'); if (sr > 0) { m.ringT = (m.ringT === undefined ? RING_EVERY : m.ringT) - dt; if (m.ringT <= 0 && g.nearest(m.x, m.z, sr * g.reachK) >= 0) { m.ringT = RING_EVERY; g.curSrc = g.srcIndex(m.id); splash(g, m.x, heightAt(m.x, m.z), m.z, sr, damageOf(m) * AREA_SHARE, elemBits(def(m.id).elements)); g.curSrc = 0; } else if (m.ringT <= 0) m.ringT = 0; } }       // the Seal Ring: a pulse around the Sigil Familiar every RING_EVERY s once an enemy is inside it (level 3 and up)
     m.cd -= dt; if (m.lunge > 0) m.lunge -= dt;
     if (m.cd > 0) continue;
-    const D = def(m.id), A = D.attack, cd = A.cd / (1 + g.mods.monsterRate) / (g.rflow ? 1 + 0.05 * (g.rflow.step - 1) : 1) * (g.p.ride && g.p.ride.on && g.p.ride.speed > 12 ? 1.4 : 1);       // Flow fuels the summons: +5% attack rate a Flow step; while the card goes fast they spend part of their time keeping up (attacks 1.4x apart)
+    const D = def(m.id), A = D.attack, cd = A.cd / (1 + g.mods.monsterRate) / (g.v2 ? 1 + v2Rate(g, m) : 1) / (g.rflow ? 1 + 0.05 * (g.rflow.step - 1) : 1) * (g.p.ride && g.p.ride.on && g.p.ride.speed > 12 ? 1.4 : 1);       // Flow fuels the summons: +5% attack rate a Flow step; while the card goes fast they spend part of their time keeping up (attacks 1.4x apart)
     g.curSrc = g.srcIndex(m.id);
-    if (g.fusionRule === 3 && (D.from || D.roster)) { if (fusionAttack(g, m)) m.cd = cd * fusionCdOf(m) / A.cd; else m.cd = 0; }       // a Fusion fires by the layered rule, at its Line's rate
-    else if (attack(g, m, D, A)) m.cd = cd; else m.cd = 0;
+    if (g.fusionRule === 3 && (D.from || D.roster)) { if (fusionAttack(g, m)) { m.cd = cd * fusionCdOf(m) / A.cd; if (g.v2) v2Attacked(g, m); } else m.cd = 0; }       // a Fusion fires by the layered rule, at its Line's rate
+    else if (attack(g, m, D, A)) { m.cd = cd; if (g.v2) v2Attacked(g, m); } else m.cd = 0;
     g.curSrc = 0;
   }
   // the duelist's own card throw

@@ -15,6 +15,7 @@ import { POWER } from '../data/powerups.js';
 import { CAP, capTake } from './caps.js';
 import { takeBuf, freeBuf } from './scratch.js';
 import { sourceBracket, affinityBracket, overtimeBracket, sourceClass } from './ledger.js';
+import { v2Hit, v2Crit, v2After, v2Kill, v2Burn, v2Hops } from './items3.js';
 
 export const PICK_XP = 0, PICK_COIN = 1, PICK_HEART = 2;
 const tmp = { x: 0, y: 0, z: 0 };
@@ -37,13 +38,14 @@ export function damageEnemy(g, i, dmg, o) {
   let cls = g.srcClassOf[g.curSrc]; if (cls === undefined) cls = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]);
   const b2 = cls >= 0 ? sourceBracket(g.mods.drill[cls]) : 1, b8 = g.otStep > 0 ? overtimeBracket(g.otStep) : 1;
   let b3 = 1; if (el) { let sum = 0, cnt = 0; for (let k = 0; k < 8; k++) if (el & (1 << k)) { sum += g.mods.aff[k]; cnt++; } b3 = affinityBracket(sum / cnt); }
-  d *= b4 * b1 * b2 * b3 * b8;                                                    // brackets 4, 1 (knee), 2, 3 and 8: add within a bracket, multiply across
+  d *= b4 * b1 * b2 * b3 * b8; if (g.v2) d *= v2Hit(g, i, el, cls, dmg);                                                    // brackets 4, 1 (knee), 2, 3 and 8: add within a bracket, multiply across
   let crit = 0;
-  if (!o.noCrit && g.rc() < FIELD_RULES.critChance + g.mods.crit) { d *= Math.min(K.critCap, K.critBase + g.mods.critDmg); crit = 1; if (g.procs && g.procs.length) procEvent(g, 'crit', { x: e.x[i], y: e.y[i], z: e.z[i] }); }
+  if (!o.noCrit && (g.rc() < FIELD_RULES.critChance + g.mods.crit || (g.v2 && v2Crit(g, i, cls)))) { d *= Math.min(K.critCap, K.critBase + g.mods.critDmg); crit = 1; if (g.procs && g.procs.length) procEvent(g, 'crit', { x: e.x[i], y: e.y[i], z: e.z[i] }); }
   if (BD) { const x1 = b1 - 1, x2 = b2 - 1, x3 = b3 - 1, x4 = b4 - 1, x5 = crit ? K.critBase - 1 : 0, x8 = b8 - 1, tot = x1 + x2 + x3 + x4 + x5 + x8; if (tot > 1e-9) { const sh = d / tot; BD[1] += sh * x1; BD[2] += sh * x2; BD[3] += sh * x3; BD[4] += sh * x4; BD[5] += sh * x5; BD[8] += sh * x8; } }       // where the damage came from, for the end-of-run screen (each bracket's share of the extra damage; no logs, so it stays inside the sim's maths rule)
   g.logDealt(d);
   e.hp[i] -= d; e.flash[i] = 0.07; g.emit('hit', d, e.x[i], e.z[i], crit | (el << 1));       // flags for the view: bit 0 crit, bits 1+ element mask
-  if (el & ELEMENTS.fire.bit) { e.burn[i] = ELEMENTS.fire.burn.dur + g.mods.burnDur; e.burnDps[i] = ELEMENTS.fire.burn.dps + g.mods.burnDps; }
+  if (el & ELEMENTS.fire.bit) v2Burn(g, i, ELEMENTS.fire.burn.dur + g.mods.burnDur, ELEMENTS.fire.burn.dps + g.mods.burnDps);
+  const fresh = e.fresh[i]; e.fresh[i] = 0;
   const chainAfter = (el & ELEMENTS.lightning.bit) && !o.noChain;
   if (o.kx !== undefined) {
     const l = Math.sqrt(o.kx * o.kx + o.kz * o.kz) || 1, k = o.knock === undefined ? (e.ace[i] ? 0 : CFG.enemy.knock) : o.knock;       // a card hit pushes a swarm enemy 0.4 m away; an Ace is not pushed by it (a named push such as the Gust Ward still moves everything)
@@ -54,25 +56,33 @@ export function damageEnemy(g, i, dmg, o) {
   const x0 = e.x[i], z0 = e.z[i];
   const dead = e.hp[i] <= 0; if (dead) killEnemy(g, i);
   if (g.curChain >= 0 && g.fxHit) { const c = g.curChain; g.curChain = -1; g.fxHit(g, c, i, x0, z0, dead); g.curChain = c; }       // a Fusion's shot landed: its next layer fires from here (src/sim/fusion.js)
-  if (chainAfter) chain(g, i, x0, z0, d * ELEMENTS.lightning.chain.falloff);
+  if (chainAfter) chain(g, i, x0, z0, d * ELEMENTS.lightning.chain.falloff, 1 + v2Hops(g));
+  if (g.v2) v2After(g, i, d, el, cls, x0, z0, dead, fresh);
   return dead;
 }
 
 // lightning: arc to the nearest other enemy within a few metres for a fraction of the damage
-function chain(g, from, x, z, dmg) {
-  const C = ELEMENTS.lightning.chain, e = g.en, buf = takeBuf(), n = g.grid.query(x, z, C.radius, buf);
-  let best = -1, bd = C.radius * C.radius;
-  for (let k = 0; k < n; k++) { const j = buf[k]; if (j === from || !e.alive[j]) continue; const dx = e.x[j] - x, dz = e.z[j] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = j; } }
-  freeBuf();
-  if (best < 0) return;
-  addFx(g, { type: 'bolt', owner: 0, el: 'lightning', x: x, y: e.y[from] + 0.9, z: z, x2: e.x[best], y2: e.y[best] + 0.9, z2: e.z[best], dur: 0.3, seed: best + 1, w: 0.12 });       // the link arc: the record carries the source point as well as the target
-  addFx(g, { type: 'ring', owner: 0, el: 'lightning', x: e.x[best], y: e.y[best] + 0.5, z: e.z[best], r: 1.0, dur: 0.2, color: 0x7fe8ff });
-  damageEnemy(g, best, dmg, { noCrit: true, noChain: true });
+function chain(g, from, x, z, dmg, hops) {
+  const C = ELEMENTS.lightning.chain, e = g.en; let y = e.y[from];
+  for (let h = 0; h < (hops || 1); h++) {       // one jump, or more with the Conductor Rod (a later jump may come back to an enemy already hit)
+    const buf = takeBuf(), n = g.grid.query(x, z, C.radius, buf);
+    let best = -1, bd = C.radius * C.radius;
+    for (let k = 0; k < n; k++) { const j = buf[k]; if (j === from || !e.alive[j]) continue; const dx = e.x[j] - x, dz = e.z[j] - z, d2 = dx * dx + dz * dz; if (d2 < bd) { bd = d2; best = j; } }
+    freeBuf();
+    if (best < 0) return;
+    const bx = e.x[best], by = e.y[best], bz = e.z[best];
+    addFx(g, { type: 'bolt', owner: 0, el: 'lightning', x: x, y: y + 0.9, z: z, x2: bx, y2: by + 0.9, z2: bz, dur: 0.3, seed: best + 1, w: 0.12 });       // the link arc: the record carries the source point as well as the target
+    addFx(g, { type: 'ring', owner: 0, el: 'lightning', x: bx, y: by + 0.5, z: bz, r: 1.0, dur: 0.2, color: 0x7fe8ff });
+    damageEnemy(g, best, dmg, { noCrit: true, noChain: true });
+    from = best; x = bx; y = by; z = bz; dmg *= C.falloff;
+  }
 }
+export const chainFrom = chain;
 
 export function killEnemy(g, i) {
   const e = g.en; if (!e.alive[i]) return;
   e.alive[i] = 0; g.kills++; g.emit('kill', e.kind[i], e.x[i], e.z[i]); if (g.killBy) g.killBy[g.curSrc] = (g.killBy[g.curSrc] || 0) + 1;
+  if (g.v2) { let c0 = g.srcClassOf[g.curSrc]; if (c0 === undefined) c0 = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]); v2Kill(g, i, c0); }
   if (g.big) { if (g.mods.killHeal > 0 && g.kills % 20 === 0) g.p.hp = Math.min(g.p.maxHp, g.p.hp + g.mods.killHeal); if (g.procs && g.procs.length) procEvent(g, 'kill', { x: e.x[i], y: e.y[i], z: e.z[i] }); } { let cl = g.srcClassOf[g.curSrc]; if (cl === undefined) cl = g.srcClassOf[g.curSrc] = sourceClass(g.srcNames[g.curSrc]); sealKill(g, cl); }
   if (g.mods.bell && g.kills % Math.max(10, Math.floor(K.bellEvery / g.mods.bell)) === 0 && capTake(g, CAP.BELL)) { const prev = g.curSrc; g.curSrc = g.srcIndex('graveyard-bell'); explode(g, e.x[i], e.y[i], e.z[i], 4, 0, K.bellBase, 0xc0c0ff); g.curSrc = prev; }       // Graveyard Bell: its own source, so the toll is the same whoever landed the kill
   const x = e.x[i], y = e.y[i], z = e.z[i], kind = KIND_LIST[e.kind[i]];

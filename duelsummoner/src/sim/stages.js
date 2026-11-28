@@ -1,6 +1,7 @@
 // The stage machine: a run is Stage 1, 2 and 3 (or one Quick Duel stage). Each stage has a clock, an elite and two timed bosses on a
 // timeline, a gate that wakes, a gate boss, then a Descent Circle to the next stage (Stage 3: the Final Altar). Pure and deterministic.
 // Everything tunable lives in data/stages.js. See design/run-structure.md (draft v1).
+import { v2Clock } from './items3.js';
 import { RUN } from '../data/waves.js';
 import { sealStageStart, sealGateCleared } from './seals.js';
 import { RUNSPEC, stagesFor, DIFFICULTY, ACES, BIG_PACE, BIG_TUNE } from '../data/stages.js';
@@ -75,7 +76,7 @@ export function updateStages(g, dt) {
   if (g.duelOn) { shadesTick(g, dt); overtime(g, dt); return; }
   const S = g.stageSpec, G = g.gate, p = g.p, cmd = g._cmd;
   const fight = G.state === 'fight';
-  if (G.state === 'closed') g.sc += dt;                         // the clock freezes during the gate fight and after it
+  if (G.state === 'closed') g.sc += dt * v2Clock(g);                         // the clock freezes during the gate fight and after it
   const m = (g.scTotal + g.sc) / 60 * (g.paceK || 1), D = g.diff, C = D.hpCurve;
   g.hpMul = S.mult * (1 + C.a * m + C.b * m * m) * g.heat * D.hp * (1 + STAKES.hpAtCap * stakesFrac(g));
   g.dmgMul = D.dmg * (1 + D.dmgPerMinute * Math.max(0, m - 3)) * (1 + STAKES.dmgAtCap * stakesFrac(g));
@@ -244,7 +245,8 @@ export function finalChoice(g, i) {
 }
 
 // ---- Toll Shades ----
-function addShade(g, cap) {
+function addShade(g, cap, twin) {
+  if (!twin && g.v2 && g.v2['sealed-hourglass']) addShade(g, cap + 1, true);       // Sealed Hourglass: the Toll Shades come in pairs
   const SH = RUNSPEC.shades; if (g.shades.length >= cap) return;
   const a = g.rsp() * 6.283185307179586, d = SH.spawnMin + g.rsp() * (SH.spawnMax - SH.spawnMin), p = g.p, x = p.x + cos(a) * d, z = p.z + sin(a) * d;
   g.shades.push({ x, y: p.y, z, px: x, py: p.y, pz: z, face: 0, cd: 1.0, born: g.t });                  // a short grace so the rise can be seen

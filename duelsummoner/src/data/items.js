@@ -43,7 +43,9 @@ export const BLESSINGS = {
 
 // ---- the big desert's catalog: 100 more items (data/items2.js), flagged big:true so the older modes keep their small pools, and the families of the first twenty
 import { MORE_ITEMS } from './items2.js';
+import { ITEMS3 } from './items3.js';
 for (const k of Object.keys(MORE_ITEMS)) ITEMS[k] = Object.assign({ big: true }, MORE_ITEMS[k]);
+for (const k of Object.keys(ITEMS3)) ITEMS[k] = Object.assign({ big: true }, ITEMS3[k]);       // the coded new-design items (the new Echo Bell takes the place of the old one)
 const OLD_FAM = { 'thornbound-locket': 'defence', 'worn-duel-glove': 'card', 'surveyors-lens': 'spell', 'sand-sandals': 'move', 'cracked-hourglass': 'trap', 'scarab-charm': 'economy', 'clay-heart': 'defence', 'lucky-coin': 'risk', 'whetstone-tablet': 'card', 'travelling-cloak': 'move', 'lodestone': 'explore', 'bandaged-hand': 'defence', 'bronze-scale': 'defence', 'dueling-boots': 'move', 'hunters-mark': 'card', 'burning-deck': 'card', 'traders-seal': 'economy', 'paper-talisman': 'defence', 'jar-of-avarice': 'economy', 'graveyard-bell': 'spell' };
 for (const k of Object.keys(OLD_FAM)) ITEMS[k].fam = OLD_FAM[k];
 

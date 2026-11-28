@@ -63,6 +63,7 @@ import { QUESTS } from './data/meta.js';
 import { Fx } from './view/fx.js';
 import { initMenus } from './view/menus.js';
 import { bakeDuelist } from './view/portraits.js';
+import { initThumbs } from './view/thumbs.js';
 import { DIFF_CHIPS, DUELIST_INFO, OATH_BY_ID } from './data/progress.js';
 import { SEALS } from './data/seals.js';
 import { sealToasts } from './view/sealtoast.js';
@@ -269,6 +270,7 @@ function menuLandmark() {       // what the menu camera looks toward: the neares
   for (const b of m.blocks || []) { const d = Math.hypot(b.cx - m.spawn.x, b.cz - m.spawn.z); if (b.tone > 0 && b.rz >= 5 && d > 45 && d < 220 && d < bd) { bd = d; best = { x: b.cx, z: b.cz }; } }
   return (_lm = best || (m.gate ? { x: m.gate.x, z: m.gate.z } : null)); }
 let freshSeals = [];
+initThumbs(renderer);
 const portraits = {}; for (const id of Object.keys(actors.rigs)) { const b = bakeDuelist(renderer, actors.rigs[id]); if (b) portraits[id] = b; }       // real-model pictures for the duelist screen, taken once
 const menus = initMenus({ save, portraits, freshSeals: () => freshSeals, persist: () => writeSave(host, save), begin, bindSettings: () => { bindSettings(); },
   showDeckBox: () => showDeckBox(save, () => writeSave(host, save), () => menus.showMain()) });

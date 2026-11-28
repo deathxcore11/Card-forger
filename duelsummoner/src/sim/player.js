@@ -1,4 +1,5 @@
 // Duelist movement: run, jump, dash (no damage while it lasts), slide (gains speed downhill).
+import { v2Event } from './items3.js';
 import { CFG } from '../data/config.js';
 import { sealDash } from './seals.js';
 import { K } from '../data/tuning.js';
@@ -39,7 +40,7 @@ export function updatePlayer(g, dt, cmd) {
   if (p.grounded) { if (p.landT < 255) p.landT++; } else p.landT = 0;                      // ticks on the ground since landing (1 on the first grounded tick)
   if (p.dashT > 0) p.sinceDash = 0; else if (p.sinceDash < 255) p.sinceDash++;
   if (cmd.dash && p.dashCd <= 0 && p.dashT <= 0) {
-    p.dashT = C.dashTime; p.dashCd = C.dashCd * (1 - g.mods.dashCd); p.sliding = false; sealDash(g); if (g.procs && g.procs.length) procEvent(g, 'dash');
+    p.dashT = C.dashTime; p.dashCd = C.dashCd * (1 - g.mods.dashCd); p.sliding = false; sealDash(g); if (g.procs && g.procs.length) procEvent(g, 'dash'); if (g.v2) v2Event(g, 'dash');
     p.dashDx = hasInput ? mx : fx; p.dashDz = hasInput ? mz : fz;
     breakVasesNear(g, p.x + p.dashDx * 2, p.z + p.dashDz * 2, 3);                 // dashing through vases breaks them
   }

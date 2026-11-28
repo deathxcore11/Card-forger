@@ -1,5 +1,6 @@
 // The map's life: breakable vases, Witness Stones, the Relic Broker, Shrines of Tribute and Card Chests, placed each run from
 // authored regions (data/encounters.js). Every spot is standable, flat, spaced out and has at least three ways off it.
+import { v2Event, v2Price, v2Tick } from './items3.js';
 import { ENCOUNTERS as E } from '../data/encounters.js';
 import { shrineCourse } from '../gen/world/world.js';
 import { sealSpend } from './seals.js';
@@ -117,7 +118,7 @@ export function chestPrice(g) {
   const C = E.cardChests, n = g.world.opened + 1;
   if (g.mods.freeChestEvery && n % g.mods.freeChestEvery === 0) return 0;
   let price = C.basePrice; for (let k = 0; k < g.world.opened; k++) { price += (C.step + C.stepGrowth * k) * (g.diff.priceMul || 1); if (price > C.cap) { price = C.cap; break; } }          // a plain loop: the same on every machine
-  return Math.max(1, Math.round(price * (1 - g.mods.shopDiscount)));
+  return Math.max(1, Math.round(price * (1 - g.mods.shopDiscount) * v2Price(g)));
 }
 
 // ---- vases ----
@@ -130,7 +131,7 @@ export function breakVase(g, v) {
   dropPickup(g, PICK_XP, v.x, v.y, v.z, v.banded ? d.xp : 1);
   if (g.big) { const k = rollPickup(g, v.banded); if (k) dropPickup(g, k, v.x, v.y, v.z + 0.6); }       // the big desert: 85 in 100 nothing, 12 a common pickup, 3 a rare one; a banded vase always one
   else if (g.rl() < (v.banded ? d.heartChance : D.heartChance)) dropPickup(g, PICK_HEART, v.x, v.y, v.z + 0.6);
-  g.vasesBroken++; if (g.big && g.procs && g.procs.length) procEvent(g, 'vase', { x: v.x, y: v.y, z: v.z });
+  g.vasesBroken++; if (g.big && g.procs && g.procs.length) procEvent(g, 'vase', { x: v.x, y: v.y, z: v.z }); if (g.v2) v2Event(g, 'vase', v);
 }
 export function breakVasesNear(g, x, z, r) {
   let n = 0; for (const v of g.world.vases) if (v.alive) { const dx = v.x - x, dz = v.z - z; if (dx * dx + dz * dz < r * r) { breakVase(g, v); n++; } }
@@ -166,7 +167,7 @@ export function updateWorld(g, dt) {
   }
   if (g.frenzyT > 0) g.frenzyT = Math.max(0, g.frenzyT - dt);
   arenaSeals(g, dt);
-  powerTick(g, dt); if (g.big) { procTick(g, dt); g.stakes = stakesOf(g); discoverTick(g); }
+  powerTick(g, dt); if (g.big) { procTick(g, dt); v2Tick(g, dt); g.stakes = stakesOf(g); discoverTick(g); }
   if (g.mods.toll > 0) {                                                  // Toll of Ash: pay a share of current LP every few seconds, never below 1
     g.tollT -= dt;
     if (g.tollT <= 0) { g.tollT = K.tollEverySec; g.hurtPlayer(Math.max(1, Math.round(p.hp * K.tollPct)), false, 'Toll of Ash', 1); }
@@ -233,14 +234,14 @@ export function openCardChest(g, c) {
   if (g.coins < price) { g.event('banner', 'This chest costs ' + price + ' coins.'); return; }
   if (g.big) {       // the big desert: a chest holds one item
     const o = itemChestOffer(g, c); if (!o) { g.event('banner', 'Nothing in this chest you could use.'); return; }
-    g.coins -= price; sealSpend(g, price); if (!c.free) g.world.opened++; g.chestsOpenedTotal++; g.offer = o; g.event('offer', null); return;
+    g.coins -= price; sealSpend(g, price); if (price > 0 && g.v2) v2Event(g, 'bought'); if (!c.free) g.world.opened++; g.chestsOpenedTotal++; g.offer = o; g.event('offer', null); return;
   }
   if (!c.rolled) { c.base = c.rarity; c.rolled = rollTier(g, c); }                         // the tier is rolled now, from the seeded loot stream, and never shown before this
   let cards = buildOffer(g, c.rolled), ti = TIERS.indexOf(c.rolled);
   while (!cards.length && ti > 0) { ti--; cards = buildOffer(g, TIERS[ti]); }                 // a legendary roll with nothing legendary left to give steps down to what the chest can really hold
   c.rarity = c.rolled = TIERS[ti];
   if (!cards.length) { g.event('banner', 'Nothing in this chest you could use.'); return; }
-  g.coins -= price; sealSpend(g, price); if (!c.free) g.world.opened++; g.chestsOpenedTotal++;
+  g.coins -= price; sealSpend(g, price); if (price > 0 && g.v2) v2Event(g, 'bought'); if (!c.free) g.world.opened++; g.chestsOpenedTotal++;
   g.offer = { type: 'chest', cards, leave: false, chest: c, floor: c.rarity, reveal: c.rarity, freeRedraws: g.metaMods.chestRedraws || 0 }; g.event('offer', null);
 }
 

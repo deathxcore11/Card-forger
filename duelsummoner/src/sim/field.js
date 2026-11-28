@@ -1,4 +1,5 @@
 // The field: 4 Monster Zones and 4 shared Spell and Trap Zones, level-up offers, Redraw / Banish / Pass, and Fusion.
+import { v2Build, v2Event, v2Egg, v2MaxHp } from './items3.js';
 import { MONSTERS, FUSIONS, SPELLS, ONE_SHOTS, TRAPS, DUELISTS, OFFER, LEVELS, FIELD_RULES, XP, formOf } from '../data/cards.js';
 import '../data/basics.js';       // the whole roster joins MONSTERS (offered only in a game made with { roster: true })
 import { BOARDS } from '../data/boards.js';
@@ -43,6 +44,7 @@ export const damageOf = m => param(m, 'dmg') * monsterMul(m.id, m.level);       
 
 // ---- derived stats from spells ----
 export function recompute(g) {
+  v2Build(g);
   const f = g.field, M = { reach: 0, burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0,
     trapRecharge: 0, coinMult: 0, luck: 0, crit: 0, dashCd: 0, regen: 0, armour: 0, airJumps: 0, bossDmg: 0, cardBurn: 0, shopDiscount: 0, talisman: 0, freeChestEvery: 0, bell: 0, dmgMult: 0, drill: [0, 0, 0, 0, 0], aff: [0, 0, 0, 0, 0, 0, 0, 0], toll: 0, locket: 0,
     stakes: 0, critDmg: 0, drillMon: 0, drillCard: 0, drillTrap: 0, drillSpell: 0, jumpH: 0, killHeal: 0, heartMul: 0, vaseLuck: 0, sight: 0, thorns: 0, ridePop: 0, rideBal: 0, rideSpin: 0, flowHold: 0, slamSize: 0, grindSpeed: 0, duneAir: 0, canyonVert: 0, ruinGrind: 0 };
@@ -79,7 +81,7 @@ export function recompute(g) {
   if (M.reach > K.reachCap) M.reach = K.reachCap;       // Reach: the one cap, however many sources stack (Widening Rite, Surveyor's Lens, a future Secret Fusion trait)
   M.raw.pickup = M.pickup; if (M.pickup > K.magCap) M.pickup = K.magCap;       // Magnet is clamped at K.magCap (+180%), not at the old item ceiling that cut Collector's Eye 5 to +10%          // ceilings on stacked stats; the raw sum stays for the stat panel
   g.sheetSrc = src; g.mods = M; buildProcs(g);
-  const maxHp = g.oaths && g.oaths.glass ? 1 : g.cfgHp + M.maxLp;                  // Glass Oath: 1 LP and it cannot be raised
+  const maxHp = g.oaths && g.oaths.glass ? 1 : v2MaxHp(g, g.cfgHp + M.maxLp);                  // Glass Oath: 1 LP and it cannot be raised
   if (maxHp !== g.p.maxHp) g.p.maxHp = maxHp;
 }
 
@@ -229,9 +231,9 @@ function applyCard(g, c) {
   if (c.kind === 'fusion') { doFusion(g, c.id); return; }
   if (c.kind === 'monster') {
     const m = f.monsters.find(x => x && x.id === c.id);
-    if (m) { const before = formOf(m.id, m.level); m.level = c.to; evolve(g, m, before); } else {
+    if (m) { const before = formOf(m.id, m.level), from = m.level; m.level = c.to; evolve(g, m, before); if (g.v2) v2Event(g, 'tier', { m, from, to: m.level }); } else {
       let i = f.monsters.findIndex((x, k) => !x && f.bonusM[k] > 0); if (i < 0) i = f.monsters.findIndex(x => !x);
-      if (i >= 0) { const start = Math.min(monsterMax(c.id), 1 + f.bonusM[i]); f.bonusM[i] = 0; f.monsters[i] = newMonster(c.id, start, g.rcos); g.event('summon', c.id); if (start > 1) g.event('banner', def(c.id).name + ' starts at level ' + start + ' (Tribute).'); }
+      if (i >= 0) { const start = Math.min(monsterMax(c.id), Math.max(1 + f.bonusM[i], g.v2 ? v2Egg(g) : 1)); f.bonusM[i] = 0; f.monsters[i] = newMonster(c.id, start, g.rcos); g.event('summon', c.id); if (start > 1) g.event('banner', def(c.id).name + ' starts at level ' + start + ' (Tribute).'); }
     }
   } else if (c.kind === 'spell' || c.kind === 'trap') {
     const s = f.spells.find(x => x && x.id === c.id);
@@ -249,6 +251,11 @@ function applyCard(g, c) {
 }
 
 // crossing level 5 or 10 swaps the monster to its next form with a short summon flash
+// a part of a level from an item (Trainer's Treat, Growth Ring): two halves make a level, up to the summon's top level
+export function gainLevel(g, m, amt) {
+  m.frac = (m.frac || 0) + amt;
+  while (m.frac >= 1 && m.level < monsterMax(m.id)) { m.frac -= 1; const before = formOf(m.id, m.level), from = m.level; m.level++; evolve(g, m, before); g.event('banner', def(m.id).name + ' grows to level ' + m.level + '.'); if (g.v2) v2Event(g, 'tier', { m, from, to: m.level }); }
+}
 function evolve(g, m, before) {
   if (formOf(m.id, m.level) === 2 && !g.fullForms.includes(m.id)) g.fullForms.push(m.id);          // reached its full form (unlock key dsfull:<monster>)
   if (formOf(m.id, m.level) <= before) return;
@@ -272,7 +279,7 @@ export function chooseCard(g, idx) {
     if (c.sold || g.coins < c.price || (ITEMS[c.id].unique && g.items.includes(c.id))) return false;
     g.coins -= c.price; sealSpend(g, c.price); c.sold = true; c.stockRef.sold = true; addItem(g, c.id); return true;
   }
-  if (c.kind === 'item') { addItem(g, c.id); if (o.itemChest) procEvent(g, 'chest'); }
+  if (c.kind === 'item') { addItem(g, c.id); if (o.itemChest) { procEvent(g, 'chest'); if (g.v2) v2Event(g, 'chest'); } }
   else if (c.kind === 'blessing') addBlessing(g, c.id, c.mult);
   else if (c.kind === 'banish') { g.field.banished.add(c.id); g.event('banner', cardDef(c.id).name + ' will no longer be offered.'); }
   else if (c.kind === 'tribute') tributeCard(g, c);

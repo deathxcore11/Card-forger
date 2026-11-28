@@ -1,4 +1,6 @@
 // The rules of a run. No drawing, no DOM: the view reads this state, tests and the run simulator drive it directly.
+import { v2Event, v2SkipLevel } from './items3.js';
+import { ITEMS3 } from '../data/items3.js';
 import { CFG } from '../data/config.js';
 import { sealInit, sealHit } from './seals.js';
 import { RUN } from '../data/waves.js';
@@ -80,7 +82,7 @@ export class Game {
     this.mods = { reach: 0, burnDps: 0, burnDur: 0, markDur: 0, markBonus: 0, cardRate: 0, move: 0, dash: 0, maxLp: 0, pickup: 0, xp: 0, markExplode: null, monsterRate: 0 };
     const meta = this.opts.meta || null;                                    // permanent progress, handed in by the browser (pure data)
     this.metaMods = meta ? meta.mods : {};
-    this.unlockedCards = meta ? new Set(meta.cards) : null; this.unlockedItems = meta ? new Set(meta.items) : null;
+    this.unlockedCards = meta ? new Set(meta.cards) : null; this.unlockedItems = meta ? new Set(meta.items) : null; if (this.unlockedItems) for (const k of Object.keys(ITEMS3)) this.unlockedItems.add(k);       // the new-design items have no unlock rule yet: open in every game
     this.unlockedBoons = meta && meta.boons ? new Set(meta.boons) : null; this.unlockedPickups = meta && meta.pickups ? new Set(meta.pickups) : null;
     this.wardenKilled = false; this.trapEver = false;
     this.field = makeField(this.duelist, this.rcos); this.fog = makeFog();
@@ -271,7 +273,7 @@ export class Game {
   addXp(n) {
     const v = n * (1 + this.mods.xp) * xpScale(this);
     this.xp += v; this.xpCur += v;
-    while (this.xpCur >= this.xpNeed) { this.xpCur -= this.xpNeed; this.level++; this.xpNeed = xpNeeded(this.level); this.pendingLevels++; this.levelUps++; this.emit('levelup', this.level); if (this.procs && this.procs.length) procEvent(this, 'level'); }
+    while (this.xpCur >= this.xpNeed) { this.xpCur -= this.xpNeed; this.level++; this.xpNeed = xpNeeded(this.level); this.pendingLevels++; if (this.v2 && v2SkipLevel(this)) this.pendingLevels--; this.levelUps++; this.emit('levelup', this.level); if (this.procs && this.procs.length) procEvent(this, 'level'); }
   }
 
   // flags (SPEC section 6): 1 SELF (the player's own cost: 1 HP floor, never kills, no grace, no dodge or Ward), 2 PIERCE, 4 TRUE (ignores Guard)
@@ -293,7 +295,7 @@ export class Game {
     this.emit('hurt', n, bigF, SELF ? 1 : 0, src);
     if (!SELF) { const pp = this.p, R = CFG.player.speed * (1 + this.mods.move), hs = Math.sqrt(pp.vx * pp.vx + pp.vz * pp.vz); if (hs > R) { const k = (R + (hs - R) * K.hopHitKeep) / hs; pp.vx *= k; pp.vz *= k; } pp.chain >>= 1; }       // a hit that lands takes half of the speed bonus
     onPlayerHurt(this, SELF);
-    if (!SELF && this.big) { if (this.mods.thorns > 0) explode(this, this.p.x, this.p.y, this.p.z, 3.5, 0, this.mods.thorns, 0xffb347, 'Thorns'); if (this.procs && this.procs.length) procEvent(this, 'hurt'); }
+    if (!SELF && this.big) { if (this.mods.thorns > 0) explode(this, this.p.x, this.p.y, this.p.z, 3.5, 0, this.mods.thorns, 0xffb347, 'Thorns'); if (this.procs && this.procs.length) procEvent(this, 'hurt'); } if (!SELF && this.v2) v2Event(this, 'hurt');
     if (!SELF && this.p.hp <= 0) { this.over = true; this.killedBy = src; }
     return true;
   }
