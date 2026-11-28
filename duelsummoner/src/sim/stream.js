@@ -9,6 +9,7 @@ const Q = 256, REACH = 420;
 export function streamWorld(g, max) {
   const m = g.map; if (!m || !m.big || !g.world) return;
   const p = g.p; streamTo(p.x, p.z, max === undefined ? 1 : max, 6);
+  prefetch(g, m, p);
   if (g.colliders && g.colliders.ensure) g.colliders.ensure(p.x - 120, p.z - 120, p.x + 120, p.z + 120);
   const qx = Math.floor(p.x / Q), qz = Math.floor(p.z / Q); if (g._sq === qx * 100000 + qz && !g._sqForce) return; g._sq = qx * 100000 + qz; g._sqForce = false;
   if (!g.streamed) g.streamed = new Set();
@@ -18,6 +19,15 @@ export function streamWorld(g, max) {
     const C = m.cell(cx, cz), x0 = cx * Q, z0 = cz * Q; if (Math.max(0, Math.abs(p.x - x0 - Q / 2) - Q / 2) ** 2 + Math.max(0, Math.abs(p.z - z0 - Q / 2) - Q / 2) ** 2 > REACH * REACH) continue;
     g.streamed.add(key); placeCell(g, m, C);
   }
+}
+// build the cells ahead before they are needed (a cell's dressing costs about 5 ms): one cell every fourth tick, the nearest first along the rider's heading up to 640 m ahead, plus the ring round the duelist.
+// The colliders and the pockets then find them cached, so crossing a cell boundary at speed costs nothing. (Caches only: it never changes what a cell holds.)
+function prefetch(g, m, p) {
+  if (!m.dressCell || ((g.tickN | 0) & 3)) return; const done = g._pre || (g._pre = new Set()), v = Math.sqrt(p.vx * p.vx + p.vz * p.vz), ux = v > 1 ? p.vx / v : 0, uz = v > 1 ? p.vz / v : 0;
+  let best = null, bs = 1e9;
+  for (let s = 0; s <= 640; s += 64) for (const side of [0, -96, 96]) { const x = p.x + ux * s - uz * side, z = p.z + uz * s + ux * side, cx = Math.floor(x / Q), cz = Math.floor(z / Q), key = (cx + 128) * 512 + (cz + 128); if (done.has(key)) continue; const sc = s + Math.abs(side); if (sc < bs) { bs = sc; best = [cx, cz, key]; } if (v <= 1) break; }
+  if (!best) { const qx = Math.floor(p.x / Q), qz = Math.floor(p.z / Q); for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) { const cx = qx + i, cz = qz + j, key = (cx + 128) * 512 + (cz + 128); if (done.has(key)) continue; const sc = Math.abs(i) + Math.abs(j); if (sc < bs) { bs = sc; best = [cx, cz, key]; } } }       // the line ahead is ready: fill the ring round the duelist (a turn or a stop needs it)
+  if (!best) return; done.add(best[2]); m.cell(best[0], best[1]); m.dressCell(best[0], best[1]);
 }
 const put = (g, m, type, x, z, extra) => { const y = heightAt(x, z); if (y >= 50) return null; return placeObject(g, type, Object.assign({ x, y, z }, extra)); };
 function placeCell(g, m, C) {

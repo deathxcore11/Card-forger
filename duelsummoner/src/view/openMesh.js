@@ -10,8 +10,10 @@ import { Q as WQ, LC as WLC } from '../gen/world/world.js';
 const T = window.THREE;
 const mixc = (a, b, t) => { const m = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
 const dim = (c, k) => ((Math.min(255, Math.round(((c >> 16) & 255) * k)) << 16) | (Math.min(255, Math.round(((c >> 8) & 255) * k)) << 8) | Math.min(255, Math.round((c & 255) * k)));
-const LIT = 0xf0d49a, LEE = 0xd0832f, TINT_A = 0xe9bd6c, TINT_B = 0xedc67c;       // sunlit slopes warm cream (never near white, even close to the camera), flat sand warm yellow, lee slopes orange
-const ROCK = 0xd49a60, ROCK_LIT = 0xf0c394, ROCK_SH = 0xa56a3e;                  // mountain faces: banded sandstone, sun side light, shade side deep warm brown
+let LIT = 0xf0d49a, LEE = 0xd0832f, TINT_A = 0xe9bd6c, TINT_B = 0xedc67c, GTINT = 0, GTINT_K = 0, SANDY = true;       // sunlit slopes warm cream (never near white, even close to the camera), flat sand warm yellow, lee slopes orange
+let ROCK = 0xd49a60, ROCK_LIT = 0xf0c394, ROCK_SH = 0xa56a3e;
+// the map theme (src/data/themes.js) sets the ground colours before the chunks are built; a time of day can tint them
+export function setGroundTheme(th) { const G = th.ground, t = th.now && th.now.groundTint; SANDY = G.material === 'sand'; LIT = G.lit; LEE = G.lee; TINT_A = G.tintA; TINT_B = G.tintB; GTINT = t ? t[0] : 0; GTINT_K = t ? t[1] : 0; if (G.rock) { ROCK = G.rock[0]; ROCK_LIT = G.rock[1]; ROCK_SH = G.rock[2]; } else if (G.material !== 'sand') { ROCK = mixc(G.lee, G.lit, 0.45); ROCK_LIT = G.lit; ROCK_SH = G.lee; } else { ROCK = 0xd49a60; ROCK_LIT = 0xf0c394; ROCK_SH = 0xa56a3e; } }                  // mountain faces: banded sandstone, sun side light, shade side deep warm brown
 const CH = 84, HALF = 420, NCH = 10, NEAR_ON = 120, NEAR_OFF = 150, FAR_MAX = 1100, DRESS_ON = 340, DRESS_OFF = 370;
 
 // the ripple streak map: long thin pale and dark lines along u (the wind), repeating every 24 m by 12 m
@@ -34,20 +36,20 @@ export function buildOpen(map, look) {
   const group = new T.Group(), blocks = map.blocks || [], wind = map.dune ? map.dune.wind : 0, cw = Math.cos(wind), sw = Math.sin(wind);
   // under a block (wherever its rise has started, so the ground is continuous at its foot and no cone of ramp is left standing beside the wall) the view ground is the plain dune; the box drawn by openDressing hides it
   const gh = (x, z) => viewH(map, x, z);
-  const sandColour = (cx, cz, cy) => {
+  const sandColour = (cx, cz, cy, nx, ny, nz) => {
     if (blocksOn) return dim(0xc09c66, 0.97 + 0.06 * vnoise(91, cx / 90, cz / 90));       // the block look: one sand tone with a slow soft drift
-    const e = 3, gx = (groundAt(map, cx + e, cz) - groundAt(map, cx - e, cz)) / (2 * e), gz = (groundAt(map, cx, cz + e) - groundAt(map, cx, cz - e)) / (2 * e), sh = Math.max(-1, Math.min(1, (-gx * 0.8 - gz * 0.55) * 4.2));       // the slope over a 6 m window (not the facet), so a dune reads as one lit side and one shaded side
-    let base = mixc(TINT_A, TINT_B, vnoise(77, cx / 110, cz / 110)); if (map.tintAt) { const q = map.tintAt(cx, cz); if (q.k > 0) base = mixc(base, q.c, q.k); }       // the region gives the sand its colour                          // one slow tint across the map, no blotches
-    const g = sh > 0 ? mixc(base, LIT, sh) : mixc(base, LEE, -sh * 0.9); return dim(g, 0.97 + 0.05 * Math.max(0, Math.min(1, (cy - 1) / 8)));
+    const e = 3, gx = ny ? -nx / ny : (groundAt(map, cx + e, cz) - groundAt(map, cx - e, cz)) / (2 * e), gz = ny ? -nz / ny : (groundAt(map, cx, cz + e) - groundAt(map, cx, cz - e)) / (2 * e), sh =       /* the slope from the corner normal when the grid has it (four height reads fewer a corner) */ Math.max(-1, Math.min(1, (-gx * 0.8 - gz * 0.55) * 4.2));       // the slope over a 6 m window (not the facet), so a dune reads as one lit side and one shaded side
+    let base = mixc(TINT_A, TINT_B, vnoise(77, cx / 110, cz / 110)); if (map.tintAt && SANDY) { const q = map.tintAt(cx, cz); if (q.k > 0) base = mixc(base, q.c, q.k); }       // the region gives the sand its colour                          // one slow tint across the map, no blotches
+    let g = sh > 0 ? mixc(base, LIT, sh) : mixc(base, LEE, -sh * 0.9); if (GTINT_K > 0) g = mixc(g, GTINT, GTINT_K); return dim(g, 0.97 + 0.05 * Math.max(0, Math.min(1, (cy - 1) / 8)));
   };
   const colour = (cx, cz, cy, nx, ny, nz) => {
     const ang = Math.acos(Math.max(0, Math.min(1, ny))) * 57.29578;
     if (ang > 24) {                                                                            // mountain faces: banded rock, lit on the sun side
       const t = ang >= 36 ? 1 : (ang - 24) / 12, sh = Math.max(-1, Math.min(1, nx * 0.8 + nz * 0.55)), band = [0.86, 0.94, 1.0][((Math.round(cy / 4) % 3) + 3) % 3];
-      let g = sh >= 0 ? mixc(ROCK, ROCK_LIT, sh * 0.9) : mixc(ROCK, ROCK_SH, -sh * 0.9); g = dim(g, band * (0.92 + 0.12 * vnoise(61, cx / 18, cz / 18)));
-      return t >= 1 ? g : mixc(sandColour(cx, cz, cy), g, t);
+      let g = sh >= 0 ? mixc(ROCK, ROCK_LIT, sh * 0.9) : mixc(ROCK, ROCK_SH, -sh * 0.9); g = dim(g, band * (0.92 + 0.12 * vnoise(61, cx / 18, cz / 18))); if (GTINT_K > 0) g = mixc(g, GTINT, GTINT_K);
+      return t >= 1 ? g : mixc(sandColour(cx, cz, cy, nx, ny, nz), g, t);
     }
-    return sandColour(cx, cz, cy);
+    return sandColour(cx, cz, cy, nx, ny, nz);
   };
   const tri = (Bd, a, b, c) => { const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2]; let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; nx /= l; ny /= l; nz /= l; if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }
     const mx = (a[0] + b[0] + c[0]) / 3, mz = (a[2] + b[2] + c[2]) / 3, E = 3, sgx = (gh(mx + E, mz) - gh(mx - E, mz)) / (2 * E), sgz = (gh(mx, mz + E) - gh(mx, mz - E)) / (2 * E), sl = Math.sqrt(sgx * sgx + 1 + sgz * sgz);       // lit by the slope over 6 m, not the facet: no per-triangle blotching
@@ -79,7 +81,8 @@ export function buildOpen(map, look) {
   const grid = (Bd, x0, z0, step) => {
     const n = Math.round(CHK / step), W1 = n + 1, V = new Float32Array(W1 * W1), sink = blocksOn && step > 2 ? 0.08 : 0; for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) V[j * W1 + i] = gh(x0 + i * step, z0 + j * step) - sink;       // (block look: the far smooth ground 8 cm under the block tops)
     const NV = new Array(W1 * W1), CV = new Array(W1 * W1), E = 3;       // a normal from the slope over 6 m and a colour at every corner: the ground is lit and tinted smoothly, never per facet
-    for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) { const x = x0 + i * step, z = z0 + j * step, gx = (gh(x + E, z) - gh(x - E, z)) / (2 * E), gz = (gh(x, z + E) - gh(x, z - E)) / (2 * E), l = Math.sqrt(gx * gx + 1 + gz * gz), nn = [-gx / l, 1 / l, -gz / l]; NV[j * W1 + i] = nn; CV[j * W1 + i] = colour(x, z, V[j * W1 + i], nn[0], nn[1], nn[2]); }
+    const W2 = n + 3, Vp = new Float32Array(W2 * W2); for (let j = -1; j <= n + 1; j++) for (let i = -1; i <= n + 1; i++) Vp[(j + 1) * W2 + i + 1] = (i >= 0 && i <= n && j >= 0 && j <= n) ? V[j * W1 + i] + sink : gh(x0 + i * step, z0 + j * step);       // one ring of extra heights: the normals come from the grid itself (they used four extra height reads a corner)
+    for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) { const x = x0 + i * step, z = z0 + j * step, gx = (Vp[(j + 1) * W2 + i + 2] - Vp[(j + 1) * W2 + i]) / (2 * step), gz = (Vp[(j + 2) * W2 + i + 1] - Vp[j * W2 + i + 1]) / (2 * step), l = Math.sqrt(gx * gx + 1 + gz * gz), nn = [-gx / l, 1 / l, -gz / l]; NV[j * W1 + i] = nn; CV[j * W1 + i] = colour(x, z, V[j * W1 + i], nn[0], nn[1], nn[2]); }
     const P = (i, j) => [x0 + i * step, V[j * W1 + i], z0 + j * step], tv = (A, B, C) => Bd.triV([P(...A), P(...B), P(...C)], [NV[A[1] * W1 + A[0]], NV[B[1] * W1 + B[0]], NV[C[1] * W1 + C[0]]], [CV[A[1] * W1 + A[0]], CV[B[1] * W1 + B[0]], CV[C[1] * W1 + C[0]]]);
     if (blocksOn && step <= 2) blockGround(Bd, x0, z0, step, n, W1, V); else       // the block look: 24 cm sand columns over the smooth collision surface (near chunks only)
     for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const a = [i, j], b = [i + 1, j], c = [i + 1, j + 1], d = [i, j + 1];
@@ -113,6 +116,7 @@ export function buildOpen(map, look) {
   const hazeC = look.sky ? look.sky[1] : HZ, tintB = B => ({ quad: (a, b, c, d, nrm, col) => B.quad(a, b, c, d, nrm, mixc(col, hazeC, 0.42)), tri: (a, b, c, nrm, col) => B.tri(a, b, c, nrm, mixc(col, hazeC, 0.42)) });       // a landmark far off keeps its own flat colours, pulled toward the haze (it is drawn unlit and unfogged, so it never dissolves into the sky)
   const PARK = ['kickers', 'quarters', 'ledges', 'poles'], dressNear = (qx, qz) => { const d = Object.assign({}, map.dressCell(qx, qz)); for (const k of PARK) { d[k] = []; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) d[k] = d[k].concat(map.dressCell(qx + i, qz + j)[k] || []); } return d; };       // a park piece can stand outside the cell that laid it (the kill bowl's quarter pipes): each is drawn by the chunk it stands in
   const subMap = (qx, qz) => { const C = map.cell(qx, qz); return { dress: dressNear(qx, qz), blocks: C.blocks, gate: map.gate, spawn: map.spawn, far: {}, viewFn: map.viewFn, dune: map.dune }; };
+  let this_frame = 0;
   const bigUpdate = (cam, budget) => {
     const ci0 = Math.floor(cam.x / CHK), cj0 = Math.floor(cam.z / CHK), R = Math.ceil(FARB / CHK) + 1; let made = 0, dm = 0; const stats2 = stats; stats2.near = 0; stats2.far = 0; stats2.dress = 0;
     for (let r = 0; r <= R; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
@@ -141,7 +145,7 @@ export function buildOpen(map, look) {
   };
   let lmM = null; const lmMat = () => lmM || (lmM = new T.MeshBasicMaterial({ vertexColors: true, fog: false }));
   const update = cam => {
-    if (BIG) { bigUpdate(cam, { far: 6, near: 3, dress: 2, lm: 3 }); return; }
+    if (BIG) { const f = (this_frame = (this_frame + 1) % 3); bigUpdate(cam, f === 0 ? { far: 2, near: 1, dress: 0, lm: 1 } : f === 1 ? { far: 0, near: 0, dress: 1, lm: 0 } : { far: 2, near: 0, dress: 0, lm: 1 }); return; }       // spread over frames: a fine ground chunk, a chunk of dressing and a few far chunks never land on the same frame (each costs a few ms)
     let nn = 0, nf = 0, nd = 0;
     for (const c of chunks) {
       const dx = Math.max(0, Math.abs(cam.x - c.cx) - CH / 2), dz = Math.max(0, Math.abs(cam.z - c.cz) - CH / 2), d = Math.sqrt(dx * dx + dz * dz);
