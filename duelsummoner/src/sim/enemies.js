@@ -23,7 +23,8 @@ export function makeEnemies(max) {
     px: f(), py: f(), pz: f(), pface: f(),                      // previous tick, for smooth drawing
     mrg: new Uint8Array(max), size: f(),                        // enemies merged into this one past the cap, and its size factor (1 to 1.5)
     ace: new Uint8Array(max),                                   // 1 = an Ace monster (star crest, big, tough, may drop a Trophy Chest)
-    wind: f()                                                   // AI v1: a melee wind-up in progress (seconds left); it holds one of the attack tokens
+    wind: f(),                                                  // AI v1: a melee wind-up in progress (seconds left); it holds one of the attack tokens
+    icpt: new Uint8Array(max)                                   // AI v1: an interceptor (it runs to where the rider will be, not where it is)
   };
 }
 export function enemyCount(e) { let c = 0; for (let i = 0; i < e.max; i++) c += e.alive[i]; return c; }
@@ -38,6 +39,8 @@ export function spawnRate(t) {
 // Pick a spot 22 to 30 m from the duelist on standable ground. Returns false if none found.
 function ringSpot(g, out) {
   const S = CFG.spawn, p = g.p;
+  g.spawnAhead = false;
+  { const r = p.ride; if (g.big && r && r.on && r.speed > 10 && g.rsp() < AHEAD.share) for (let k = 0; k < 6; k++) { const a = r.heading + (g.rsp() - 0.5) * AHEAD.cone, d = AHEAD.min + g.rsp() * (AHEAD.max - AHEAD.min), x = p.x + sin(a) * d, z = p.z + cos(a) * d, h = heightAt(x, z); if (h >= 38) continue; out.x = x; out.z = z; out.y = h; g.spawnAhead = true; return true; } }       // AI v1: a rider rides INTO the horde: most spawns come up out of the haze ahead, in a 60 degree cone
   for (let k = 0; k < S.tries; k++) {
     let a = g.rsp() * Math.PI * 2, d = S.min + g.rsp() * (S.max - S.min);
     if (g.big) { const cy = g.camYaw || 0, fx = -sin(cy), fz = -cos(cy); if (cos(a) * fx + sin(a) * fz > 0.26) a += Math.PI; }       // the big desert: never in front of the camera (75 degrees either side of where it looks); a new enemy comes in from the sides or behind and closes in
@@ -83,7 +86,7 @@ export function spawnEnemy(g, kindName, at) {
   put(g, slot, spot.x, spot.y, spot.z, K.id);
   e.alive[slot] = 1; e.kind[slot] = K.id; e.st[slot] = 0; e.stT[slot] = K.id === SEER ? 1.2 : K.id === GOLEM ? 2 : 0;
   const ot = K === KINDS.hunter ? Math.max(0, g.otStep || 0) : 0, O = RUN.overtime;
-  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; e.wind[slot] = 0; g.lastSlot = slot;
+  e.mrg[slot] = 0; e.size[slot] = 1; e.ace[slot] = 0; e.wind[slot] = 0; e.icpt[slot] = (!at && g.spawnAhead) || K.id === RUNNER ? 1 : 0; g.spawnAhead = false; g.lastSlot = slot;
   e.hp[slot] = K.hp * g.hpMul * pow(O.hpGrowth, ot); e.atk[slot] = 0.4; e.flash[slot] = 0; e.mark[slot] = 0; e.burn[slot] = 0; e.root[slot] = 0;
   e.spd[slot] = K.speed * (1 + (g.rsp() * 2 - 1) * CFG.enemy.speedJitter) * g.speedMul * Math.min(O.speedCap, pow(O.speedGrowth, ot));
   e.dx[slot] = 0; e.dz[slot] = 0; e.face[slot] = e.pface[slot] = 0;
@@ -101,7 +104,8 @@ const o = { x: 0, y: 0, z: 0, vy: 0, dx: 0, dz: 0 }, sv = { x: 0, z: 0, d: 0, di
 
 // AI v1 (design/ai-v1.md): attack tokens, so a horde never lands forty hits in one frame, and every hit has a tell
 export const TOKENS = { melee: 4, ranged: 3, tell: 0.4 };
-function aiHit(g, x, z) { const p = g.p, A = g.aiStats || (g.aiStats = { ahead: 0, side: 0, behind: 0, maxWind: 0 }), v = Math.sqrt(p.vx * p.vx + p.vz * p.vz), dx = x - p.x, dz = z - p.z, d = Math.sqrt(dx * dx + dz * dz) || 1; if (v < 2) { A.side++; return; } const c = (dx * p.vx + dz * p.vz) / (d * v); if (c > 0.35) A.ahead++; else if (c < -0.35) A.behind++; else A.side++; }       // where each landed hit came from, against the rider's travel
+export const AHEAD = { share: 0.65, cone: 1.05, min: 70, max: 110, lead: 2.2 };       // spawns ahead: the share of spawns, the cone (radians), the distance (past the fog wall); an interceptor leads the rider by up to 2.2 s
+function aiHit(g, x, z) { const p = g.p, A = g.aiStats || (g.aiStats = { ahead: 0, side: 0, behind: 0, maxWind: 0 }), v = Math.sqrt(p.vx * p.vx + p.vz * p.vz), dx = x - p.x, dz = z - p.z, d = Math.sqrt(dx * dx + dz * dz) || 1; if (v < 8) { A.slow = (A.slow || 0) + 1; return; } const c = (dx * p.vx + dz * p.vz) / (d * v); if (c > 0.35) A.ahead++; else if (c < -0.35) A.behind++; else A.side++; }       // where each landed hit came from, against the rider's travel       // (only hits taken while riding count for ahead, side and behind)
 export function updateEnemies(g, dt) {
   if (g.stopT > 0) return; let windN = 0, windNew = 0, aimN = 0, aimNew = 0;       // Stopped Sand: every ordinary enemy stands still and cannot hurt
   const e = g.en, p = g.p, E = CFG.enemy, mul = g.dmgMul; let burnSum = 0;       // burn is summed over the tick and logged once, under its own source
@@ -196,7 +200,8 @@ export function updateEnemies(g, dt) {
         break;
       }
       default: {                                                   // husk, runner
-        steerVec(g, o, p.x, p.y, p.z, sv);
+        if (e.icpt[i] && p.ride && p.ride.on && p.ride.speed > 8 && d > 6) { const lead = Math.max(0.4, Math.min(AHEAD.lead, d / Math.max(spd, 1) * 0.6)), tx = p.x + p.vx * lead - o.x, tz = p.z + p.vz * lead - o.z, tl = Math.sqrt(tx * tx + tz * tz) || 1; sv.x = tx / tl; sv.z = tz / tl; sv.direct = true; sv.d = tl; }       // an interceptor: it cuts across to where the rider will be
+        else steerVec(g, o, p.x, p.y, p.z, sv);
         if (!(sv.direct && d < K.reach * 0.8)) walk(g, o, sv.x, sv.z, spd, dt, K.radius, E.stepUp);
         touching = d < K.reach && Math.abs(p.y - o.y) < E.vReach;
       }
