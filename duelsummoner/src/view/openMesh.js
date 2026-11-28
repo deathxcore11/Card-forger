@@ -7,6 +7,8 @@ import { vnoise, groundAt, duneH, blockProf, viewH } from '../gen/open/terrain.j
 import { addDressing, themeCol, GONE, SMASH } from './openDressing.js';
 import { blocksOn } from './models.js';
 import { Q as WQ, LC as WLC } from '../gen/world/world.js';
+import { groundPattern } from './groundfx.js';
+import { detailLevel } from './grass.js';
 const T = window.THREE;
 const mixc = (a, b, t) => { const m = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
 const dim = (c, k) => ((Math.min(255, Math.round(((c >> 16) & 255) * k)) << 16) | (Math.min(255, Math.round(((c >> 8) & 255) * k)) << 8) | Math.min(255, Math.round((c & 255) * k)));
@@ -99,7 +101,7 @@ export function buildOpen(map, look) {
   const fadeU = { cam: { value: new T.Vector3() }, pl: { value: new T.Vector3() } }; group.userData.fade = fadeU;
   const tex = streakTex(); let shared = null, tris = 0;
   const meshOf = (Bd, streaks) => {                                                            // every chunk mesh shares one material
-    const m = Bd.mesh(false, BIG ? undefined : fadeU); if (!shared) { shared = m.material; shared.flatShading = false; shared.map = blocksOn ? null : tex; mountainFog(shared); shared.needsUpdate = true; } else { m.material.dispose(); m.material = shared; }
+    const m = Bd.mesh(false, BIG ? undefined : fadeU); if (!shared) { shared = m.material; shared.flatShading = false; shared.map = blocksOn ? null : tex; mountainFog(shared); if (blocksOn && BIG) groundPattern(shared, detailLevel() === 'low'); shared.needsUpdate = true; } else { m.material.dispose(); m.material = shared; }
     if (streaks) { const p = m.geometry.attributes.position, uv = new Float32Array(p.count * 2); for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv[i * 2] = (x * cw + z * sw) / 24; uv[i * 2 + 1] = (-x * sw + z * cw) / 12; } m.geometry.setAttribute('uv', new T.BufferAttribute(uv, 2)); }
     tris += Bd.pos.length / 9 | 0; m.geometry.computeBoundingSphere(); return m;
   };

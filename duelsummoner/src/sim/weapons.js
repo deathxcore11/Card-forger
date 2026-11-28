@@ -9,6 +9,8 @@ import { procEvent } from './procs.js';
 import { POWER, POWERUPS } from '../data/powerups.js';
 import { breakVasesNear } from './world.js';
 import { sin, cos, atan2 } from './dmath.js';
+import { solidAt } from './colliders.js';
+import { smashProps } from './smash.js';
 
 export const KIND_CARD = 0, KIND_FIRE = 1, KIND_LOB = 2, KIND_HOMING = 3;
 const MAXHITS = 6;
@@ -86,6 +88,9 @@ export function updateShots(g, dt) {
     }
     s.x[i] += s.vx[i] * dt; s.y[i] += s.vy[i] * dt; s.z[i] += s.vz[i] * dt;
     if (s.life[i] <= 0 || s.y[i] < heightAt(s.x[i], s.z[i])) { s.alive[i] = 0; endBurst(g, s, i); continue; }
+    if (kind !== KIND_HOMING && g.colliders && g.colliders.big) { const c = solidAt(g.colliders, s.x[i], s.z[i], 0.25); if (c && s.y[i] < c.top + 0.2) {       // a standing prop is in the way: a breakable one is smashed and takes one pierce (or the shot), anything else stops the shot
+      if (c.brk) smashProps(g, c.x, c.z, 0.2); else g.emit('chip', s.x[i], s.z[i], 5);
+      if (c.brk && s.pierce[i] > 0) s.pierce[i]--; else { s.alive[i] = 0; endBurst(g, s, i); continue; } } }
     breakVasesNear(g, s.x[i], s.z[i], 0.9);
     const hr = CFG.card.hitRadius;
     const nc = g.grid.query(s.x[i], s.z[i], hr + 0.5, near);
@@ -134,6 +139,7 @@ export function updateBolts(g, dt) {
     b.px = b.x; b.pz = b.z;
     b.life -= dt; b.x += b.vx * dt; b.z += b.vz * dt;
     if (b.life <= 0 || heightAt(b.x, b.z) > b.y + 0.4) { b.on = false; continue; }
+    if (g.colliders && g.colliders.big) { const c = solidAt(g.colliders, b.x, b.z, 0.2); if (c && b.y < c.top + 0.2) { b.on = false; g.emit('chip', b.x, b.z, 4); continue; } }       // a standing prop is cover: an enemy bolt stops on it
     const dx = p.x - b.x, dz = p.z - b.z;
     if (dx * dx + dz * dz < b.r * b.r && Math.abs(p.y + 0.9 - b.y) < 1.4) { b.on = false; if (g.aiHitFn) g.aiHitFn(g, b.x - b.vx * 0.5, b.z - b.vz * 0.5); g.hurtPlayer(b.dmg, true, b.src); }       // (the AI check counts where a shot came from)
   }
