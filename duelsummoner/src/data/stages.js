@@ -108,4 +108,4 @@ export const STAGES_BIG = STAGES.map((s, i) => Object.assign({}, s, { clock: BIG
 export const BIG_PACE = 7 / 12;
 
 // How much harder the big desert is than the same difficulty's base numbers (tuned with tools/bigbot.mjs, design/balance-log.md): a first-timer on a fresh save should find the door about half the time and clear stage 1 a third of the time.
-export const BIG_TUNE = { easy: { hp: 1, spawn: 7, dmg: 1.0, boss: 1, gate: 10 }, medium: { hp: 1, spawn: 1, dmg: 1, boss: 1 }, hard: { hp: 1, spawn: 1, dmg: 1, boss: 1 } };
+export const BIG_TUNE = { easy: { hp: 1, spawn: 7, dmg: 1.0, boss: 1, gate: 7 }, medium: { hp: 1, spawn: 1, dmg: 1, boss: 1 }, hard: { hp: 1, spawn: 1, dmg: 1, boss: 1 } };
