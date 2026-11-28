@@ -37,7 +37,7 @@ export function initMenus(env) {
   // ---------- main menu ----------
   function showMain() {
     stopPreview(); document.body.dataset.cam = 'center'; $('menuScreen').classList.remove('on'); $('startScreen').classList.add('on');
-    const tracker = closestQuests(meta(), 12).filter((x, i, A) => A.findIndex(y => y.q.name.replace(/ rank d+$/, '') === x.q.name.replace(/ rank d+$/, '')) === i).slice(0, 3).map(({ q, frac }) => '<div class="trk"><b>' + q.name + '</b><span>' + questProgress(meta(), q) + ' / ' + q.goal + '</span>' + bar(frac) + '</div>').join('');
+    const tracker = closestQuests(meta(), 12).filter((x, i, A) => A.findIndex(y => y.q.name.replace(/ rank \d+$/, '') === x.q.name.replace(/ rank \d+$/, '')) === i).slice(0, 3).map(({ q, frac }) => '<div class="trk"><b>' + q.name + '</b><span>' + questProgress(meta(), q) + ' / ' + q.goal + '</span>' + bar(frac) + '</div>').join('');
     const recs = []; for (const map of MAPS) for (const d of DIFFICULTIES) { const r = mapRecord(meta(), map.id, d, 'run'); if (r.bestScore) recs.push(map.name + ', ' + DIFFICULTY[d].name + ': ' + r.bestScore + (r.bestTime ? ' (' + clockText(r.bestTime) + ')' : '')); }
     const now = new Date(), nextMon = new Date(now); nextMon.setDate(now.getDate() + ((8 - now.getDay()) % 7 || 7)); nextMon.setHours(0, 0, 0, 0); const ms = nextMon - now, dd = Math.floor(ms / 864e5), hh = Math.floor(ms % 864e5 / 36e5);
     $('startScreen').innerHTML = '<div class="chipsTop">Star Chips <b>' + save.starChips + '</b></div><h1>DUEL SUMMONER</h1>' +
